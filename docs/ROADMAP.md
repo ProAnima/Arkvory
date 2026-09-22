@@ -9,6 +9,7 @@
 - [x] Standalone native API, runtime-сборка, PostgreSQL, local backend и первый transfer-сценарий.
 - [x] Offline GC/scrub, multipart/resume, UPack/assets каталог, UI/SDK, completion worker и локальные очереди.
 - [x] Поднабор legacy downloads и проверяемый импорт из файлового каталога.
+- [x] Ограниченные сетевые повторы SDK, восстановление потерянных ответов upload, проверяемая Range-докачка и resume с сохранённого prefix.
 - [ ] Полная ProGet compatibility, online retention, глобальный scheduler, репликация и HA.
 
 ## Этапы
@@ -29,6 +30,8 @@
 Выполнены основные native сценарии этапов 1–2 и часть 3–4: [runbook 0.2](LIFECYCLE_AND_CATALOG.md). Приёмку всего roadmap не объявляем: поднабор legacy download не заменяет ProGet; файловый импорт не равен переносу 4 ТБ; очереди одного API не равны распределённой балансировке. Этапы 5–7 требуют инфраструктуры и внешних клиентов.
 
 История assets, чтение конкретной ревизии и атомарное восстановление реализованы в API/SDK/консоли: [ADR 0006](adr/0006-asset-history-and-restore.md). Retention и удаление опубликованного содержимого пока не включены.
+
+Клиентское восстановление сетевых передач реализовано: [контракт и эксплуатация](TRANSFER_RECOVERY.md), [ADR 0007](adr/0007-client-transfer-recovery.md). Web использует проверяемый download, CLI upload — multipart/resume. Локальный дисковый журнал download и продолжение после закрытия браузера остаются будущими клиентскими функциями.
 
 Владелец выбрал **два сервера с репликацией**, стендовые проверки отложены: [проект профиля](TWO_NODE_PLAN.md). Следующие code milestones: legacy publication/list/metadata + контрактные fixtures; retention; два read gateways и глобальные сетевые квоты; реализация выбранного replication/fencing deployment.
 

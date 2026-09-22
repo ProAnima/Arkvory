@@ -288,16 +288,15 @@ element('download', HTMLButtonElement).onclick = () => {
     const artifact = { ...selected };
     const repo = artifact.repository;
     const handle = await window.showSaveFilePicker({ suggestedName: artifact.name });
-    const response = await client.download(repo, artifact.id);
-    if (!response.body) throw new Error('Missing download stream');
+    const stream = await client.downloadVerified(repo, artifact.id);
     let target: WritableStream<Uint8Array>;
     try {
       target = await handle.createWritable();
     } catch (error) {
-      await response.body.cancel();
+      await stream.cancel();
       throw error;
     }
-    await response.body.pipeTo(target);
+    await stream.pipeTo(target);
     feedback(output, 'downloaded', {}, 'success');
   });
 };

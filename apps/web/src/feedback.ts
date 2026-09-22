@@ -1,4 +1,4 @@
-import { DepotHttpError } from '@proanima/depot-sdk';
+import { DepotHttpError, DepotIntegrityError } from '@proanima/depot-sdk';
 import type { MessageKey } from './messages.js';
 import { message } from './i18n.js';
 export class UiError extends Error {
@@ -8,6 +8,7 @@ export class UiError extends Error {
 }
 export function errorKey(error: unknown): MessageKey {
   if (error instanceof UiError) return error.key;
+  if (error instanceof DepotIntegrityError) return 'errorIntegrity';
   if (error instanceof DOMException && error.name === 'AbortError') return 'cancelled';
   if (error instanceof DepotHttpError) {
     if (error.status === 401) return 'errorUnauthorized';

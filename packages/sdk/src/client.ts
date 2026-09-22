@@ -11,22 +11,27 @@ import {
   items,
 } from '@proanima/depot-contracts';
 import type { UploadResponse, AnnotationsResponse } from '@proanima/depot-contracts';
+import {
+  DepotHttpError,
+  DepotNetworkError,
+  TransferAttempts,
+  transferPolicy,
+  retryAfter,
+  readNetwork,
+  releaseReader,
+} from './transfer.js';
+import type { TransferPolicy, TransferOptions } from './transfer.js';
+import { verifiedDownload } from './verified-download.js';
 
-export class DepotHttpError extends Error {
-  constructor(
-    readonly status: number,
-    readonly code: string,
-    readonly requestId: string,
-  ) {
-    super(`Depot request failed (${String(status)}, ${code})`);
-  }
-}
 export class DepotClient {
   private readonly base: URL;
+  private readonly policy: ReturnType<typeof transferPolicy>;
   constructor(
     baseUrl: string,
     private readonly token: () => string,
+    policy: TransferPolicy = {},
   ) {
+    this.policy = transferPolicy(policy);
     this.base = new URL(baseUrl);
     if (
       this.base.username ||
@@ -57,37 +62,45 @@ export class DepotClient {
         cache: 'no-store',
         ...(signal ? { signal } : {}),
       },
-    );
+    ).catch(() => {
+      signal?.throwIfAborted();
+      throw new DepotNetworkError();
+    });
     if (!response.ok) {
       let code = 'http_error',
         requestId = '';
       try {
-        const value = record(await this.json(response));
+        const value = record(await this.json(response, signal));
         code = text(value['code']);
         requestId = text(value['requestId']);
       } catch {
         /* Non-JSON proxies are reported without reflecting their response. */
       }
-      throw new DepotHttpError(response.status, code, requestId);
+      signal?.throwIfAborted();
+      throw new DepotHttpError(
+        response.status,
+        code,
+        requestId,
+        retryAfter(response.headers.get('retry-after')),
+      );
     }
     return response;
   }
-  private async json(response: Response): Promise<unknown> {
+  private async json(response: Response, signal?: AbortSignal): Promise<unknown> {
     if (!response.body) throw new Error('Missing response body');
     const reader = response.body.getReader();
     const chunks: Uint8Array[] = [];
     let size = 0;
     try {
       for (;;) {
-        const result = await reader.read();
+        const result = await readNetwork(reader, signal);
         if (result.done) break;
         size += result.value.byteLength;
         if (size > 2 * 1024 ** 2) throw new Error('Response exceeds SDK limit');
         chunks.push(result.value);
       }
     } finally {
-      await reader.cancel();
-      reader.releaseLock();
+      await releaseReader(reader);
     }
     const data = new Uint8Array(size);
     let offset = 0;
@@ -110,6 +123,7 @@ export class DepotClient {
         },
         signal,
       ),
+      signal,
     );
   }
   async create(
@@ -117,6 +131,16 @@ export class DepotClient {
     key: string,
     descriptor: UploadResponse['descriptor'],
     signal?: AbortSignal,
+  ) {
+    return new TransferAttempts(this.policy, signal ? { signal } : {}).run((attemptSignal) =>
+      this.createOnce(repository, key, descriptor, attemptSignal),
+    );
+  }
+  private async createOnce(
+    repository: string,
+    key: string,
+    descriptor: UploadResponse['descriptor'],
+    signal: AbortSignal,
   ) {
     return readUpload(
       await this.json(
@@ -129,6 +153,7 @@ export class DepotClient {
           },
           signal,
         ),
+        signal,
       ),
     );
   }
@@ -322,25 +347,49 @@ export class DepotClient {
     repository: string,
     id: string,
     file: Blob,
-    options: { signal?: AbortSignal; onProgress?: (bytes: number) => void } = {},
+    options: TransferOptions & { onProgress?: (bytes: number) => void } = {},
   ) {
-    const upload = await this.status(repository, id, options.signal);
+    const attempts = new TransferAttempts(this.policy, options);
+    const upload = await attempts.run((signal) => this.status(repository, id, signal));
     if (Number(upload.descriptor.size) !== file.size)
       throw new Error('File size differs from upload');
     if (upload.status === 'available') return upload;
     if (upload.status !== 'pending') throw new Error('Upload is cancelled');
     if (file.size === 0)
-      return readUpload(
-        await this.json(
-          await this.request(
-            this.path(repository, `uploads/${encodeURIComponent(id)}/content`),
-            { method: 'PUT', headers: { 'Content-Type': 'application/octet-stream' }, body: file },
-            options.signal,
+      return attempts.run(async (signal) => {
+        // PUT /content is not replayed after publication; reconcile a lost response first.
+        const current = await this.status(repository, id, signal);
+        if (current.status === 'available') return current;
+        return readUpload(
+          await this.json(
+            await this.request(
+              this.path(repository, `uploads/${encodeURIComponent(id)}/content`),
+              {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/octet-stream' },
+                body: file,
+              },
+              signal,
+            ),
+            signal,
           ),
-        ),
-      );
-    const existing = await this.parts(repository, id, options.signal);
+        );
+      });
+    const existing = await attempts.run((signal) => this.parts(repository, id, signal));
     if (existing.partBytes !== 8 * 1024 ** 2) throw new Error('Unsupported part size');
+    const indices = new Set<number>();
+    if (existing.items.length > Math.ceil(file.size / existing.partBytes))
+      throw new Error('Invalid server parts');
+    for (const part of existing.items) {
+      if (
+        indices.has(part.index) ||
+        part.index >= Math.ceil(file.size / existing.partBytes) ||
+        part.size !== Math.min(existing.partBytes, file.size - part.index * existing.partBytes) ||
+        !/^[a-f0-9]{64}$/.test(part.sha256)
+      )
+        throw new Error('Invalid server parts');
+      indices.add(part.index);
+    }
     for (let offset = 0, index = 0; offset < file.size; offset += existing.partBytes, index++) {
       options.signal?.throwIfAborted();
       const part = file.slice(offset, Math.min(file.size, offset + existing.partBytes));
@@ -352,17 +401,57 @@ export class DepotClient {
       if (prior && prior.sha256 !== sha256)
         throw new Error('Selected file does not match uploaded parts');
       if (!prior)
-        await this.request(
-          this.path(repository, `uploads/${encodeURIComponent(id)}/parts/${String(index)}`),
-          {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/octet-stream', 'X-Content-SHA256': sha256 },
-            body: part,
-          },
-          options.signal,
-        );
+        await attempts.run(async (signal) => {
+          const response = await this.request(
+            this.path(repository, `uploads/${encodeURIComponent(id)}/parts/${String(index)}`),
+            {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/octet-stream', 'X-Content-SHA256': sha256 },
+              body: part,
+            },
+            signal,
+          );
+          await response.body?.cancel();
+        });
       options.onProgress?.(Math.min(file.size, offset + existing.partBytes));
     }
-    return this.complete(repository, id, options.signal);
+    // Assembly may be substantially slower than one bounded part transfer.
+    return attempts.run((signal) => this.complete(repository, id, signal), 1_800_000);
+  }
+
+  /** A verified suffix stream. Supply an immutable saved prefix to resume after a process restart.
+   * Commit the destination only when this stream closes successfully, never after the last write.
+   */
+  async downloadVerified(
+    repository: string,
+    id: string,
+    options: TransferOptions & { prefix?: Blob } = {},
+  ): Promise<ReadableStream<Uint8Array>> {
+    const controller = new AbortController();
+    const signal = options.signal
+      ? AbortSignal.any([options.signal, controller.signal])
+      : controller.signal;
+    const attempts = new TransferAttempts(this.policy, { ...options, signal });
+    const artifact = await attempts.run((attemptSignal) =>
+      this.artifact(repository, id, attemptSignal),
+    );
+    return verifiedDownload(
+      artifact,
+      options.prefix,
+      attempts,
+      signal,
+      controller,
+      (start, end, attemptSignal) =>
+        this.request(
+          this.path(repository, `artifacts/${encodeURIComponent(id)}/content`),
+          {
+            headers: {
+              Range: `bytes=${String(start)}-${String(end)}`,
+              'If-Range': `"sha256:${artifact.descriptor.sha256}"`,
+            },
+          },
+          attemptSignal,
+        ),
+    );
   }
 }

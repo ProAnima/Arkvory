@@ -1,40 +1,44 @@
-import { createReadStream } from 'node:fs';
-import { readFile, stat } from 'node:fs/promises';
+import { openAsBlob, createReadStream } from 'node:fs';
+import { readFile } from 'node:fs/promises';
 import { createHash, randomUUID } from 'node:crypto';
 import { basename } from 'node:path';
+import { DepotClient } from '@proanima/depot-sdk';
+
 const file = process.argv[2];
 const repository = process.argv[3] ?? 'releases';
-if (!file) throw new Error('Usage: npm run upload -- <file> [repository]');
+const uploadId = process.argv[4];
+if (!file) throw new Error('Usage: npm run upload -- <file> [repository] [uploadId to resume]');
 const token =
-  process.env.DEPOT_TOKEN ?? (await readFile(process.env.DEPOT_TOKEN_FILE, 'utf8')).trim();
-const base = process.env.DEPOT_BASE_URL ?? 'http://127.0.0.1:8080';
-const prefix = `${base}/api/v1/repositories/${encodeURIComponent(repository)}`;
-const headers = { authorization: `Bearer ${token}` };
+  process.env.DEPOT_TOKEN || (await readFile(process.env.DEPOT_TOKEN_FILE, 'utf8')).trim();
+const client = new DepotClient(process.env.DEPOT_BASE_URL ?? 'http://127.0.0.1:8080', () => token);
+const stop = new AbortController();
+process.once('SIGINT', () => stop.abort());
+process.once('SIGTERM', () => stop.abort());
+const blob = await openAsBlob(file);
 const hash = createHash('sha256');
-for await (const chunk of createReadStream(file)) hash.update(chunk);
-const info = await stat(file);
-const response = await fetch(prefix + '/uploads', {
-  method: 'POST',
-  headers: { ...headers, 'content-type': 'application/json', 'idempotency-key': randomUUID() },
-  body: JSON.stringify({
-    name: basename(file),
-    size: String(info.size),
-    sha256: hash.digest('hex'),
-  }),
-});
-if (!response.ok)
-  throw new Error(`Reservation failed (${response.status}): ${await response.text()}`);
-const upload = await response.json();
+for await (const chunk of createReadStream(file, { signal: stop.signal })) hash.update(chunk);
+const sha256 = hash.digest('hex');
+const key = process.env.DEPOT_IDEMPOTENCY_KEY ?? randomUUID();
+if (!uploadId) console.log(`Idempotency key: ${key}`);
+const upload = uploadId
+  ? await client.status(repository, uploadId, stop.signal)
+  : await client.create(
+      repository,
+      key,
+      {
+        name: basename(file),
+        size: String(blob.size),
+        sha256,
+        labels: [],
+        metadata: {},
+      },
+      stop.signal,
+    );
+if (upload.descriptor.sha256 !== sha256 || Number(upload.descriptor.size) !== blob.size)
+  throw new Error('Selected file does not match the upload');
 console.log(`Upload ID: ${upload.id}`);
-const sent = await fetch(`${prefix}/uploads/${upload.id}/content`, {
-  method: 'PUT',
-  headers: {
-    ...headers,
-    'content-type': 'application/octet-stream',
-    'content-length': String(info.size),
-  },
-  body: createReadStream(file),
-  duplex: 'half',
+await client.resume(repository, upload.id, blob, {
+  signal: stop.signal,
+  onRetry: ({ attempt, delayMs }) => console.log(`Retry ${attempt}, waiting ${delayMs} ms`),
 });
-if (!sent.ok) throw new Error(`Upload failed (${sent.status}): ${await sent.text()}`);
-console.log(`Published: ${prefix}/artifacts/${upload.id}/content`);
+console.log(`Published artifact: ${upload.id}`);

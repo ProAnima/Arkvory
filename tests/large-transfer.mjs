@@ -5,11 +5,17 @@ import { createHash, randomUUID } from 'node:crypto';
 import { Readable } from 'node:stream';
 import { writeFile, mkdir } from 'node:fs/promises';
 import { setup, base } from './integration/fixture.mjs';
+import { DepotClient } from '@proanima/depot-sdk';
+import { createServer, request } from 'node:http';
 
 const cleanups = [];
 const f = await setup({ after: (callback) => cleanups.push(callback) });
 let child;
 let peakRss = 0;
+let peakClientRss = 0;
+const memorySample = setInterval(() => {
+  peakClientRss = Math.max(peakClientRss, process.memoryUsage().rss);
+}, 100);
 async function start() {
   child = fork('tests/integration/api-child.mjs', [], {
     stdio: ['ignore', 'ignore', 'inherit', 'ipc'],
@@ -104,17 +110,66 @@ try {
   assert.deepEqual(Buffer.from(await range.arrayBuffer()), Buffer.alloc(17, 0x5a));
   const beginRead = Date.now();
   console.log('Verifying full download after process restart...');
-  const download = await fetch(`${address}${base}/artifacts/${id}/content`, { headers: f.headers });
-  assert.equal(download.status, 200);
+  const verified = process.argv.includes('--verified');
+  let downloadBody;
+  let interruptedDownload = false;
+  if (verified) {
+    const proxy = createServer((incoming, outgoing) => {
+      const forward = request(
+        new URL(incoming.url, address),
+        { headers: incoming.headers },
+        (response) => {
+          outgoing.writeHead(response.statusCode, response.headers);
+          if (incoming.url.endsWith('/content') && !interruptedDownload) {
+            interruptedDownload = true;
+            response.once('data', (chunk) => {
+              outgoing.write(chunk.subarray(0, 16));
+              setImmediate(() => {
+                outgoing.destroy();
+                forward.destroy();
+              });
+            });
+          } else response.pipe(outgoing);
+          response.on('error', () => outgoing.destroy());
+        },
+      );
+      forward.on('error', () => outgoing.destroy());
+      outgoing.on('close', () => forward.destroy());
+      incoming.pipe(forward);
+    });
+    proxy.listen(0, '127.0.0.1');
+    await once(proxy, 'listening');
+    cleanups.push(
+      () =>
+        new Promise((resolve) => {
+          proxy.close(resolve);
+          proxy.closeAllConnections();
+        }),
+    );
+    const client = new DepotClient(`http://127.0.0.1:${proxy.address().port}`, () =>
+      f.headers.authorization.slice(7),
+    );
+    downloadBody = await client.downloadVerified('releases', id);
+  } else {
+    const download = await fetch(`${address}${base}/artifacts/${id}/content`, {
+      headers: f.headers,
+    });
+    assert.equal(download.status, 200);
+    downloadBody = download.body;
+  }
   let received = 0;
   const actual = createHash('sha256');
-  for await (const data of download.body) {
+  for await (const data of downloadBody) {
     actual.update(data);
     received += data.byteLength;
   }
   assert.equal(received, size);
   assert.equal(actual.digest('hex'), sha256);
   assert(peakRss < 384 * 1024 ** 2, `Server peak RSS ${peakRss} exceeded 384 MiB`);
+  if (verified) {
+    assert(interruptedDownload);
+    assert(peakClientRss < 384 * 1024 ** 2, `Client peak RSS ${peakClientRss} exceeded 384 MiB`);
+  }
   const report = {
     date: new Date().toISOString(),
     os: process.platform,
@@ -124,6 +179,9 @@ try {
     uploadMs,
     downloadMs: Date.now() - beginRead,
     peakServerRssBytes: peakRss,
+    peakClientRssBytes: peakClientRss,
+    verifiedSdkDownload: verified,
+    interruptedDownload,
     processRestart: true,
     multipart,
     restartDuringUpload: multipart,
@@ -134,11 +192,12 @@ try {
   };
   await mkdir('test-results', { recursive: true });
   await writeFile(
-    `test-results/${multipart ? 'large-multipart' : 'large-transfer'}.json`,
+    `test-results/${verified ? 'large-verified' : multipart ? 'large-multipart' : 'large-transfer'}.json`,
     JSON.stringify(report, null, 2) + '\n',
   );
   console.log(JSON.stringify(report, null, 2));
 } finally {
+  clearInterval(memorySample);
   await stop();
   for (const cleanup of cleanups.reverse()) await cleanup();
 }

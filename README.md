@@ -20,21 +20,22 @@ An initial use case is replacing ProGet for Universal Packages and ordinary file
 
 ## Current status
 
-| Area                                                             | Status                                              |
-| ---------------------------------------------------------------- | --------------------------------------------------- |
-| Strict TypeScript, clean boundaries, runtime builds              | Implemented                                         |
-| Streaming transfers, SHA-256, GET/HEAD/Range/ETag                | Implemented                                         |
-| 8 MiB parts, resume, TTL, idempotent completion                  | Implemented                                         |
-| Metadata/labels/collections, CAS, search, catalog audit          | Implemented                                         |
-| UPack manifest/group/SemVer, immutable versions, asset revisions | Implemented with validator limits                   |
-| PostgreSQL completion jobs, lease/generation, retries, worker    | Implemented                                         |
-| Bounded upload/download admission with client rotation           | One gateway, in memory                              |
-| GC and scrub                                                     | Offline; published blobs are retained               |
-| SDK and RU/EN web console                                        | Implemented; details in runbook                     |
-| Asset history, exact revision lookup, atomic restore with audit  | API, SDK and console implemented                    |
-| Legacy UPack/assets download                                     | Subset; not tested against real ProGet              |
-| Directory import with resume and download/hash verification      | Implemented; ProGet export and ACL mapping separate |
-| Two-server replication, failover, global balancing               | Design stage; lab validation deferred               |
+| Area                                                               | Status                                                   |
+| ------------------------------------------------------------------ | -------------------------------------------------------- |
+| Strict TypeScript, clean boundaries, runtime builds                | Implemented                                              |
+| Streaming transfers, SHA-256, GET/HEAD/Range/ETag                  | Implemented                                              |
+| 8 MiB parts, resume, TTL, idempotent completion                    | Implemented                                              |
+| Bounded SDK retries, verified Range downloads, saved-prefix resume | Implemented; [recovery guide](docs/TRANSFER_RECOVERY.md) |
+| Metadata/labels/collections, CAS, search, catalog audit            | Implemented                                              |
+| UPack manifest/group/SemVer, immutable versions, asset revisions   | Implemented with validator limits                        |
+| PostgreSQL completion jobs, lease/generation, retries, worker      | Implemented                                              |
+| Bounded upload/download admission with client rotation             | One gateway, in memory                                   |
+| GC and scrub                                                       | Offline; published blobs are retained                    |
+| SDK and RU/EN web console                                          | Implemented; details in runbook                          |
+| Asset history, exact revision lookup, atomic restore with audit    | API, SDK and console implemented                         |
+| Legacy UPack/assets download                                       | Subset; not tested against real ProGet                   |
+| Directory import with resume and download/hash verification        | Implemented; ProGet export and ACL mapping separate      |
+| Two-server replication, failover, global balancing                 | Design stage; lab validation deferred                    |
 
 Run `npm run migrate`, `npm start` and `npm run worker` separately. Console: `/console/`. This is a development release, not a production HA system. See the [core runbook](docs/CORE_RUNBOOK.md), [0.2 features](docs/LIFECYCLE_AND_CATALOG.md), [ProGet API limits](docs/COMPATIBILITY.md), [migration](docs/MIGRATION.md), [two-server profile](docs/TWO_NODE_PLAN.md) and [validation](docs/CORE_VALIDATION.md) (engineering documents in Russian).
 

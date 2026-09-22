@@ -1,0 +1,320 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { createServer } from 'node:http';
+import { createHash } from 'node:crypto';
+import {
+  DepotClient,
+  DepotIntegrityError,
+  DepotHttpError,
+  DepotNetworkError,
+} from '@proanima/depot-sdk';
+
+const partBytes = 8 * 1024 ** 2;
+const policy = { baseDelayMs: 1, maxDelayMs: 5, maxAttempts: 3, attemptTimeoutMs: 1000 };
+function artifact(bytes) {
+  return {
+    id: 'test-id',
+    repository: 'releases',
+    status: 'available',
+    createdAt: '',
+    expiresAt: '',
+    descriptor: {
+      name: 'file',
+      size: String(bytes.length),
+      sha256: createHash('sha256').update(bytes).digest('hex'),
+      labels: [],
+      metadata: {},
+    },
+  };
+}
+async function serve(t, handler, settings = policy) {
+  const server = createServer(handler);
+  server.listen(0, '127.0.0.1');
+  await new Promise((resolve) => server.once('listening', resolve));
+  t.after(
+    () =>
+      new Promise((resolve) => {
+        server.close(resolve);
+        server.closeAllConnections();
+      }),
+  );
+  const address = `http://127.0.0.1:${server.address().port}`;
+  return { client: new DepotClient(address, () => 'test-token', settings), address };
+}
+function range(req, res, bytes, meta, alter = {}) {
+  const match = /^bytes=(\d+)-(\d+)$/.exec(req.headers.range);
+  assert(match);
+  const start = Number(match[1]),
+    end = Number(match[2]);
+  assert.equal(req.headers['if-range'], `"sha256:${meta.descriptor.sha256}"`);
+  res.writeHead(alter.status ?? 206, {
+    'Content-Length': String(end - start + 1),
+    'Content-Range': `bytes ${start}-${end}/${bytes.length}`,
+    ETag: `"sha256:${meta.descriptor.sha256}"`,
+    ...alter.headers,
+  });
+  return bytes.subarray(start, end + 1);
+}
+async function contents(stream) {
+  return Buffer.from(await new Response(stream).arrayBuffer());
+}
+
+test('verified download retries a real mid-body disconnect without duplicate bytes', async (t) => {
+  const bytes = Buffer.alloc(partBytes + 113, 0x37),
+    meta = artifact(bytes),
+    ranges = [];
+  let cuts = 0;
+  const { client } = await serve(t, (req, res) => {
+    if (!req.url.endsWith('/content')) return res.end(JSON.stringify(meta));
+    ranges.push(req.headers.range);
+    const body = range(req, res, bytes, meta);
+    if (ranges.length === 2 && cuts++ === 0) {
+      res.write(body.subarray(0, 32));
+      setImmediate(() => res.destroy());
+    } else res.end(body);
+  });
+  const result = await contents(await client.downloadVerified('releases', meta.id));
+  assert.deepEqual(result, bytes);
+  assert.deepEqual(ranges, [
+    `bytes=0-${partBytes - 1}`,
+    `bytes=${partBytes}-${bytes.length - 1}`,
+    `bytes=${partBytes}-${bytes.length - 1}`,
+  ]);
+});
+
+test('a new client resumes from a saved prefix and checks the hash of the whole file', async (t) => {
+  const bytes = Buffer.alloc(partBytes + 131, 0x2a),
+    meta = artifact(bytes),
+    ranges = [];
+  const { address } = await serve(t, (req, res) => {
+    if (!req.url.endsWith('/content')) return res.end(JSON.stringify(meta));
+    ranges.push(req.headers.range);
+    res.end(range(req, res, bytes, meta));
+  });
+  const first = new DepotClient(address, () => 'test', policy);
+  const reader = (await first.downloadVerified('releases', meta.id)).getReader();
+  const { value } = await reader.read();
+  await reader.cancel();
+  const second = new DepotClient(address, () => 'test', policy);
+  const suffix = await contents(
+    await second.downloadVerified('releases', meta.id, { prefix: new Blob([value]) }),
+  );
+  assert.deepEqual(Buffer.concat([value, suffix]), bytes);
+  assert.equal(ranges.length, 2);
+  await assert.rejects(
+    contents(
+      await second.downloadVerified('releases', meta.id, {
+        prefix: new Blob([Buffer.alloc(partBytes)]),
+      }),
+    ),
+    DepotIntegrityError,
+  );
+  const complete = await contents(
+    await second.downloadVerified('releases', meta.id, { prefix: new Blob([bytes]) }),
+  );
+  assert.equal(complete.length, 0);
+});
+
+test('empty files close only after checksum validation', async (t) => {
+  const meta = artifact(Buffer.alloc(0));
+  const { client } = await serve(t, (_req, res) => res.end(JSON.stringify(meta)));
+  assert.equal((await contents(await client.downloadVerified('releases', meta.id))).length, 0);
+  meta.descriptor.sha256 = 'a'.repeat(64);
+  await assert.rejects(
+    contents(await client.downloadVerified('releases', meta.id)),
+    DepotIntegrityError,
+  );
+});
+
+test('range, validator, encoding and checksum violations abort the destination without retries', async (t) => {
+  for (const alter of [
+    { status: 200 },
+    { headers: { ETag: '"other"' } },
+    { headers: { 'Content-Range': 'bytes 1-4/5' } },
+    { headers: { 'Content-Length': '99' } },
+    { headers: { 'Content-Encoding': 'gzip' } },
+    { corrupt: true },
+  ]) {
+    await t.test(JSON.stringify(alter), async (t) => {
+      const bytes = Buffer.from('hello'),
+        meta = artifact(bytes);
+      let requests = 0,
+        closed = false,
+        aborted = false;
+      const { client } = await serve(t, (req, res) => {
+        if (!req.url.endsWith('/content')) return res.end(JSON.stringify(meta));
+        requests++;
+        res.end(
+          alter.corrupt
+            ? (range(req, res, bytes, meta), Buffer.from('wrong'))
+            : range(req, res, bytes, meta, alter),
+        );
+      });
+      const stream = await client.downloadVerified('releases', meta.id);
+      await assert.rejects(
+        stream.pipeTo(
+          new WritableStream({
+            close() {
+              closed = true;
+            },
+            abort() {
+              aborted = true;
+            },
+          }),
+        ),
+        DepotIntegrityError,
+      );
+      assert.equal(requests, 1);
+      assert.equal(closed, false);
+      assert.equal(aborted, true);
+    });
+  }
+});
+
+test('bounded retries, Retry-After, cancellation and attempt deadlines', async (t) => {
+  await t.test('limits repeated connection loss', async (t) => {
+    let count = 0;
+    const { client } = await serve(t, (_req, res) => {
+      count++;
+      res.destroy();
+    });
+    await assert.rejects(client.downloadVerified('releases', 'id'), DepotNetworkError);
+    assert.equal(count, 3);
+  });
+  await t.test(
+    'does not retry permission errors or wait beyond policy for Retry-After',
+    async (t) => {
+      for (const status of [401, 403, 409, 422, 429, 503]) {
+        let count = 0;
+        const { client } = await serve(t, (_req, res) => {
+          count++;
+          res.writeHead(status, { 'Retry-After': '120' });
+          res.end('{}');
+        });
+        await assert.rejects(client.downloadVerified('releases', 'id'), DepotHttpError);
+        assert.equal(count, 1);
+      }
+    },
+  );
+  await t.test('abort stops backoff before another request', async (t) => {
+    let count = 0;
+    const controller = new AbortController();
+    const { client } = await serve(t, (_req, res) => {
+      count++;
+      res.writeHead(503);
+      res.end('{}');
+    });
+    await assert.rejects(
+      client.downloadVerified('releases', 'id', {
+        signal: controller.signal,
+        onRetry() {
+          controller.abort();
+        },
+      }),
+      { name: 'AbortError' },
+    );
+    assert.equal(count, 1);
+  });
+  await t.test('body stalls time out and release the connection', async (t) => {
+    let count = 0;
+    const { client } = await serve(
+      t,
+      (_req, res) => {
+        count++;
+        res.writeHead(200);
+        res.write('{');
+      },
+      { ...policy, attemptTimeoutMs: 50, maxAttempts: 2 },
+    );
+    await assert.rejects(client.downloadVerified('releases', 'id'), DepotNetworkError);
+    assert.equal(count, 2);
+  });
+  await t.test('CAS metadata is never retried automatically', async (t) => {
+    let count = 0;
+    const { client } = await serve(t, (_req, res) => {
+      count++;
+      res.destroy();
+    });
+    await assert.rejects(
+      client.annotate('releases', 'id', 0, { labels: [], metadata: {}, collections: [] }),
+      DepotNetworkError,
+    );
+    assert.equal(count, 1);
+  });
+});
+
+test('one download shares the retry budget across all ranges', async (t) => {
+  const bytes = Buffer.alloc(partBytes + 1, 0x49),
+    meta = artifact(bytes),
+    seen = new Set();
+  let retries = 0;
+  const { client } = await serve(
+    t,
+    (req, res) => {
+      if (!req.url.endsWith('/content')) return res.end(JSON.stringify(meta));
+      if (!seen.has(req.headers.range)) {
+        seen.add(req.headers.range);
+        res.destroy();
+        return;
+      }
+      res.end(range(req, res, bytes, meta));
+    },
+    { ...policy, maxRetries: 1 },
+  );
+  await assert.rejects(
+    contents(
+      await client.downloadVerified('releases', meta.id, {
+        onRetry() {
+          retries++;
+        },
+      }),
+    ),
+    DepotNetworkError,
+  );
+  assert.equal(retries, 1);
+});
+
+test('Retry-After is respected and cancelling a pending range releases its socket', async (t) => {
+  await t.test('successful retry waits for server admission', async (t) => {
+    const meta = artifact(Buffer.alloc(0));
+    let count = 0;
+    const { client } = await serve(
+      t,
+      (_req, res) => {
+        if (++count === 1) {
+          res.writeHead(503, { 'Retry-After': '1' });
+          res.end('{}');
+        } else res.end(JSON.stringify(meta));
+      },
+      { ...policy, maxDelayMs: 1500 },
+    );
+    const started = performance.now();
+    await contents(await client.downloadVerified('releases', meta.id));
+    assert(performance.now() - started >= 950);
+    assert.equal(count, 2);
+  });
+  await t.test('stream cancellation aborts an in-flight fetch', async (t) => {
+    const bytes = Buffer.alloc(128),
+      meta = artifact(bytes);
+    let ready, closed;
+    const rangeStarted = new Promise((resolve) => {
+      ready = resolve;
+    });
+    const socketClosed = new Promise((resolve) => {
+      closed = resolve;
+    });
+    const { client } = await serve(t, (req, res) => {
+      if (!req.url.endsWith('/content')) return res.end(JSON.stringify(meta));
+      range(req, res, bytes, meta);
+      res.write(bytes.subarray(0, 1));
+      res.once('close', closed);
+      ready();
+    });
+    const reader = (await client.downloadVerified('releases', meta.id)).getReader();
+    const pending = reader.read();
+    await rangeStarted;
+    await reader.cancel();
+    assert.equal((await pending).done, true);
+    await socketClosed;
+  });
+});
