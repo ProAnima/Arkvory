@@ -1,4 +1,4 @@
-import type { ArtifactDescriptor, Upload } from '@proanima/depot-domain';
+import type { ArtifactDescriptor, Upload, UploadPart } from '@proanima/depot-domain';
 
 // Portable cancellation contract: core does not depend on DOM or Node globals.
 export interface Cancellation {
@@ -14,16 +14,25 @@ export interface Catalog {
     createdAt: string;
   }): Promise<Upload>;
   get(repository: string, id: string): Promise<Upload>;
+  parts(id: string): Promise<readonly UploadPart[]>;
   list(repository: string, after: string | undefined, limit: number): Promise<readonly Upload[]>;
   exclusive<T>(id: string, action: (mutation: UploadMutation) => Promise<T>): Promise<T>;
 }
 
 export interface UploadMutation extends Cancellation {
+  recordPart(part: UploadPart): Promise<void>;
   publish(repository: string): Promise<Upload>;
   cancel(repository: string): Promise<Upload>;
 }
 
 export interface BlobStore {
+  putPart(
+    id: string,
+    part: UploadPart,
+    source: AsyncIterable<Uint8Array>,
+    cancellation: Cancellation,
+  ): Promise<void>;
+  readParts(id: string, parts: readonly UploadPart[]): AsyncIterable<Uint8Array>;
   // Immutable publication; existing blobs are verified before retry succeeds.
   put(
     id: string,

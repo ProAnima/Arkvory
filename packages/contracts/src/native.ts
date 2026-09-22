@@ -1,3 +1,4 @@
+import { catalogPaths } from './catalog-api.js';
 export const descriptorSchema = {
   type: 'object',
   additionalProperties: false,
@@ -20,6 +21,7 @@ export interface UploadResponse {
   repository: string;
   status: 'pending' | 'available' | 'cancelled';
   createdAt: string;
+  expiresAt: string;
   descriptor: {
     name: string;
     size: string;
@@ -32,12 +34,13 @@ export interface UploadResponse {
 export const uploadSchema = {
   type: 'object',
   additionalProperties: false,
-  required: ['id', 'repository', 'status', 'createdAt', 'descriptor'],
+  required: ['id', 'repository', 'status', 'createdAt', 'expiresAt', 'descriptor'],
   properties: {
     id: { type: 'string', format: 'uuid' },
     repository: { type: 'string' },
     status: { type: 'string', enum: ['pending', 'available', 'cancelled'] },
     createdAt: { type: 'string', format: 'date-time' },
+    expiresAt: { type: 'string', format: 'date-time' },
     descriptor: descriptorSchema,
   },
 } as const;
@@ -88,10 +91,11 @@ const byteResponses = {
 
 export const openApiDocument = {
   openapi: '3.0.3',
-  info: { title: 'ProAnima Depot Native Core', version: '0.1.0' },
+  info: { title: 'ProAnima Depot Native Core', version: '0.2.0' },
   security: [{ serviceKey: [] }],
   components: { securitySchemes: { serviceKey: { type: 'http', scheme: 'bearer' } } },
   paths: {
+    ...catalogPaths,
     '/api/v1/repositories/{repository}/uploads': {
       parameters: [repositoryParameter],
       post: {
@@ -115,7 +119,7 @@ export const openApiDocument = {
       parameters: [repositoryParameter, idParameter],
       get: { summary: 'Read own upload state', responses },
       delete: {
-        summary: 'Cancel own pending upload; storage reservation is retained until future GC',
+        summary: 'Cancel own pending upload; reservation retained until offline GC',
         responses,
       },
     },

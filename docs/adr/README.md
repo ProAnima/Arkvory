@@ -9,3 +9,4 @@ ADR нужен для изменения границ, публичных кон
 - [0003 — Бренд, права и распространение](0003-brand-ownership-and-distribution.md)
 
 - [0004 — Нативное standalone-ядро](0004-native-standalone-core.md)
+- [0005 — Жизненный цикл, каталог и worker](0005-lifecycle-catalog-and-worker.md)

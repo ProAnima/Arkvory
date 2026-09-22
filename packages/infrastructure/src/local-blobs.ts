@@ -1,9 +1,9 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { createReadStream } from 'node:fs';
-import { mkdir, open, link, unlink, stat, statfs, readFile } from 'node:fs/promises';
-import { join, resolve } from 'node:path';
+import { mkdir, open, link, unlink, stat, statfs, readFile, rm } from 'node:fs/promises';
+import { join, resolve, dirname, relative } from 'node:path';
 import { DepotError, requireId } from '@proanima/depot-domain';
-import type { ArtifactDescriptor } from '@proanima/depot-domain';
+import type { ArtifactDescriptor, UploadPart } from '@proanima/depot-domain';
 import type { BlobStore, Cancellation } from '@proanima/depot-application';
 
 function hasCode(error: unknown, code: string): boolean {
@@ -35,6 +35,7 @@ export class LocalBlobStore implements BlobStore {
     await mkdir(this.root, { recursive: true });
     await mkdir(join(this.root, 'blobs'), { recursive: true });
     await mkdir(join(this.root, 'staging'), { recursive: true });
+    await mkdir(join(this.root, 'parts'), { recursive: true });
     await syncDirectory(this.root);
   }
 
@@ -99,6 +100,7 @@ export class LocalBlobStore implements BlobStore {
     expected: ArtifactDescriptor,
     source: AsyncIterable<Uint8Array>,
     cancellation: Cancellation,
+    target = this.blob(id),
   ): Promise<void> {
     const directory = this.staging(id);
     await mkdir(directory, { recursive: true });
@@ -147,12 +149,12 @@ export class LocalBlobStore implements BlobStore {
     try {
       cancellation.throwIfAborted();
       try {
-        await link(temporary, this.blob(id));
+        await link(temporary, target);
       } catch (error) {
         if (!hasCode(error, 'EEXIST')) throw error;
-        await this.verify(id, expected, cancellation);
+        await this.verifyPath(target, expected, cancellation);
       }
-      await syncDirectory(join(this.root, 'blobs'));
+      await syncDirectory(dirname(target));
     } finally {
       await unlink(temporary);
     }
@@ -176,15 +178,26 @@ export class LocalBlobStore implements BlobStore {
     cancellation: Cancellation,
   ): Promise<void> {
     await this.exists(id, expected.size);
+    await this.verifyPath(this.blob(id), expected, cancellation);
+  }
+
+  private async verifyPath(
+    path: string,
+    expected: ArtifactDescriptor,
+    cancellation: Cancellation,
+  ): Promise<void> {
+    const info = await stat(path);
+    if (info.size !== expected.size)
+      throw new DepotError('integrity_mismatch', 'Stored size mismatch');
     const hash = createHash('sha256');
-    for await (const chunk of this.read(id, expected.size)) {
+    for await (const chunk of this.streamFile(path, expected.size)) {
       cancellation.throwIfAborted();
       hash.update(chunk);
     }
     cancellation.throwIfAborted();
     if (hash.digest('hex') !== expected.sha256)
       throw new DepotError('integrity_mismatch', 'Stored content failed integrity verification');
-    await syncDirectory(join(this.root, 'blobs'));
+    await syncDirectory(dirname(path));
   }
 
   async *read(
@@ -192,8 +205,16 @@ export class LocalBlobStore implements BlobStore {
     size: number,
     range?: { start: number; end: number },
   ): AsyncIterable<Uint8Array> {
+    yield* this.streamFile(this.blob(id), size, range);
+  }
+
+  private async *streamFile(
+    path: string,
+    size: number,
+    range?: { start: number; end: number },
+  ): AsyncIterable<Uint8Array> {
     if (size === 0) return;
-    const stream = createReadStream(this.blob(id), {
+    const stream = createReadStream(path, {
       start: range?.start ?? 0,
       end: range?.end ?? size - 1,
       highWaterMark: 64 * 1024,
@@ -203,6 +224,69 @@ export class LocalBlobStore implements BlobStore {
         throw new DepotError('unavailable', 'Invalid content stream');
       yield chunk;
     }
+  }
+
+  private partPath(id: string, part: UploadPart): string {
+    if (
+      !Number.isSafeInteger(part.index) ||
+      part.index < 0 ||
+      part.index >= 640 ||
+      !/^[a-f0-9]{64}$/.test(part.sha256)
+    )
+      throw new DepotError('invalid_input', 'Invalid part');
+    return join(this.root, 'parts', requireId(id), `${String(part.index)}-${part.sha256}`);
+  }
+
+  async putPart(
+    id: string,
+    part: UploadPart,
+    source: AsyncIterable<Uint8Array>,
+    cancellation: Cancellation,
+  ): Promise<void> {
+    const path = this.partPath(id, part);
+    await mkdir(dirname(path), { recursive: true });
+    await syncDirectory(join(this.root, 'parts'));
+    this.reservedBytes += part.size;
+    try {
+      await this.checkSpace(this.reservedBytes);
+      await this.write(
+        id,
+        { name: 'part', size: part.size, sha256: part.sha256, labels: [], metadata: {} },
+        source,
+        cancellation,
+        path,
+      );
+    } finally {
+      this.reservedBytes -= part.size;
+    }
+  }
+
+  async *readParts(id: string, parts: readonly UploadPart[]): AsyncIterable<Uint8Array> {
+    for (const part of parts) yield* this.streamFile(this.partPath(id, part), part.size);
+  }
+
+  async collect(id: string, removeContent: boolean): Promise<void> {
+    // Only offline maintenance holding the standalone claim may delete bytes.
+    requireId(id);
+    for (const folder of ['staging', 'parts']) {
+      const target = resolve(this.root, folder, id);
+      if (relative(resolve(this.root, folder), target) !== id)
+        throw new DepotError('invalid_input', 'Unsafe cleanup target');
+      await rm(target, { recursive: true, force: true });
+      await syncDirectory(join(this.root, folder));
+    }
+    if (removeContent) {
+      try {
+        await unlink(this.blob(id));
+      } catch (error) {
+        if (!hasCode(error, 'ENOENT')) throw error;
+      }
+      await syncDirectory(join(this.root, 'blobs'));
+    }
+  }
+
+  contentPath(id: string): string {
+    return this.blob(id);
   }
 
   async ready(): Promise<void> {

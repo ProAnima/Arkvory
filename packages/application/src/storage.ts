@@ -1,4 +1,11 @@
-import { authorize, DepotError, parseDescriptor, requireId } from '@proanima/depot-domain';
+import {
+  authorize,
+  DepotError,
+  parseDescriptor,
+  requireId,
+  partSize,
+  checkParts,
+} from '@proanima/depot-domain';
 import type { Principal, Upload } from '@proanima/depot-domain';
 import type { BlobStore, Cancellation, Catalog, IdentitySource } from './ports.js';
 
@@ -39,11 +46,9 @@ export class StorageService {
     requireId(id);
     return this.catalog.exclusive(id, async (mutation) => {
       const upload = await this.owned(principal, repository, id);
-      if (upload.status !== 'pending')
-        throw new DepotError(
-          'conflict',
-          'Content can only be sent to a pending upload; query its status',
-        );
+      this.pending(upload);
+      if ((await this.catalog.parts(id)).length > 0)
+        throw new DepotError('conflict', 'Multipart upload must be completed using its parts');
       await this.blobs.put(id, upload.descriptor, source, {
         throwIfAborted() {
           cancellation.throwIfAborted();
@@ -67,12 +72,24 @@ export class StorageService {
       const upload = await this.owned(principal, repository, id);
       if (upload.status === 'available') return upload;
       if (upload.status === 'cancelled') throw new DepotError('conflict', 'Upload is cancelled');
-      await this.blobs.verify(id, upload.descriptor, {
-        throwIfAborted() {
-          cancellation.throwIfAborted();
-          mutation.throwIfAborted();
-        },
-      });
+      this.pending(upload);
+      const parts = await this.catalog.parts(id);
+      if (parts.length > 0) {
+        checkParts(upload.descriptor.size, parts);
+        await this.blobs.put(id, upload.descriptor, this.blobs.readParts(id, parts), {
+          throwIfAborted() {
+            cancellation.throwIfAborted();
+            mutation.throwIfAborted();
+          },
+        });
+      }
+      if (parts.length === 0)
+        await this.blobs.verify(id, upload.descriptor, {
+          throwIfAborted() {
+            cancellation.throwIfAborted();
+            mutation.throwIfAborted();
+          },
+        });
       cancellation.throwIfAborted();
       return mutation.publish(repository);
     });
@@ -88,6 +105,47 @@ export class StorageService {
       // Cancellation hides content. Physical reclamation needs a separately fenced GC.
       return mutation.cancel(repository);
     });
+  }
+
+  async parts(principal: Principal, repository: string, id: string) {
+    await this.status(principal, repository, id);
+    return this.catalog.parts(id);
+  }
+
+  async uploadPart(
+    principal: Principal,
+    repository: string,
+    id: string,
+    index: number,
+    sha256: string,
+    source: AsyncIterable<Uint8Array>,
+    cancellation: Cancellation,
+  ): Promise<void> {
+    authorize(principal, repository, 'write');
+    requireId(id);
+    if (!/^[a-f0-9]{64}$/.test(sha256))
+      throw new DepotError('invalid_input', 'Invalid part checksum');
+    await this.catalog.exclusive(id, async (mutation) => {
+      const upload = await this.owned(principal, repository, id);
+      this.pending(upload);
+      const part = { index, size: partSize(upload.descriptor.size, index), sha256 };
+      const existing = (await this.catalog.parts(id)).find((value) => value.index === index);
+      if (existing && existing.sha256 !== sha256)
+        throw new DepotError('conflict', 'Part already has different content');
+      await this.blobs.putPart(id, part, source, {
+        throwIfAborted() {
+          cancellation.throwIfAborted();
+          mutation.throwIfAborted();
+        },
+      });
+      await mutation.recordPart(part);
+    });
+  }
+
+  private pending(upload: Upload): void {
+    if (upload.status !== 'pending') throw new DepotError('conflict', 'Upload is not pending');
+    if (upload.expiresAt <= this.identity.now())
+      throw new DepotError('conflict', 'Upload has expired');
   }
 
   async status(principal: Principal, repository: string, id: string): Promise<Upload> {

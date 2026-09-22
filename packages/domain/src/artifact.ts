@@ -32,6 +32,7 @@ export interface Upload {
   readonly owner: string;
   readonly descriptor: ArtifactDescriptor;
   readonly createdAt: string;
+  readonly expiresAt: string;
   readonly status: 'pending' | 'available' | 'cancelled';
 }
 

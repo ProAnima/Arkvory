@@ -1,0 +1,171 @@
+:root {
+  font-family: system-ui, sans-serif;
+  color: #173143;
+  background: #eff4f7;
+  color-scheme: light;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+}
+header,
+main,
+footer {
+  max-width: 1280px;
+  margin: auto;
+  padding: 24px;
+}
+header {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+h1 {
+  font-size: 28px;
+  margin: 0;
+}
+header p {
+  margin: 6px 0;
+  color: #527084;
+}
+.mark {
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  border-radius: 14px;
+  background: #086b73;
+  color: white;
+  font-size: 30px;
+  font-weight: 700;
+}
+.badge {
+  margin-left: auto;
+  padding: 8px 14px;
+  background: #d6e8ea;
+  border-radius: 20px;
+  font-size: 13px;
+}
+section {
+  background: white;
+  border: 1px solid #d5e1e8;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 20px;
+}
+h2 {
+  font-size: 19px;
+  margin: 0 0 18px;
+}
+form {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  align-items: end;
+  margin: 12px 0;
+}
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  font-size: 12px;
+  font-weight: 600;
+  min-width: 170px;
+}
+.grow {
+  flex: 1;
+}
+input,
+textarea,
+button {
+  font: inherit;
+  font-size: 14px;
+  border-radius: 6px;
+  padding: 11px 13px;
+}
+input,
+textarea {
+  border: 1px solid #aabfce;
+  background: #fbfdfe;
+  color: #173143;
+  max-width: 100%;
+}
+button {
+  border: 1px solid #086b73;
+  background: #086b73;
+  color: white;
+  cursor: pointer;
+}
+.secondary {
+  background: white;
+  color: #086b73;
+}
+button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+input:focus,
+textarea:focus,
+button:focus-visible {
+  outline: 3px solid #70c9d2;
+  outline-offset: 2px;
+}
+.hint {
+  font-size: 12px;
+  color: #526c7e;
+}
+progress {
+  width: 100%;
+  height: 10px;
+  accent-color: #086b73;
+}
+.table {
+  overflow: auto;
+}
+table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 13px;
+  margin: 20px 0;
+}
+th,
+td {
+  text-align: left;
+  padding: 12px;
+  border-bottom: 1px solid #e3ebef;
+}
+td:nth-child(2) {
+  font-family: monospace;
+}
+output {
+  display: block;
+  padding: 16px;
+  background: #dcecee;
+  border-radius: 8px;
+  overflow-wrap: anywhere;
+}
+footer {
+  font-size: 12px;
+  color: #527084;
+}
+@media (max-width: 650px) {
+  header,
+  main,
+  footer {
+    padding: 16px;
+  }
+  section {
+    padding: 16px;
+  }
+  h1 {
+    font-size: 22px;
+  }
+  .badge {
+    display: none;
+  }
+  label {
+    width: 100%;
+  }
+}

@@ -14,5 +14,9 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ProAnima/Depot.git"
+  },
+  "dependencies": {
+    "@proanima/depot-application": "0.0.0",
+    "@proanima/depot-domain": "0.0.0"
   }
 }

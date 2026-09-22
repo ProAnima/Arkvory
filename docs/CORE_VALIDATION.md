@@ -44,4 +44,20 @@ b23228f170c6e7ab93aeee2c5711299da5d561470be1c6842ef063f17bfed415
 
 ## Пока не подтверждено
 
-Аппаратное отключение питания, отказ диска/узла, HA PostgreSQL/blob-store, межузловая сеть, 4 ТБ миграции, ProGet-клиенты, распаковка UPack, прерванный multipart/resume, безопасный GC, справедливость очередей и ограничение общей полосы. Эти сценарии остаются отдельными этапами.
+Аппаратное отключение питания, отказ диска/узла, HA PostgreSQL/blob-store, межузловая сеть, 4 ТБ миграции, реальные ProGet-клиенты, распаковка payload/CRC всех ZIP entries, mixed-load fairness и ограничение общей полосы. Эти сценарии остаются отдельными этапами; владелец отложил стенд двух серверов.
+
+## Инкремент 0.2
+
+Локально проверены: части после restart, gaps, конфликт индекса/хеша; offline GC и отказ удаления без освобождения квоты; expiry и отозванные права worker; lease generation и реальный worker subprocess; CAS annotations/assets; UPack registration/immutable identity, SemVer/path/symlink validation; SDK по HTTP, legacy original downloads и ACL/Range; dry-run/import/repeat/read-back hash и offline scrub. 13 unit/local tests и 16 PostgreSQL/HTTP integration tests. Browser smoke: страница консоли отображается, обработчик выбора файла работает; полного browser upload/save теста нет.
+
+Реальный 5 GiB multipart: 640 частей по 8 MiB, SIGKILL API после части 319, новый процесс видит 320 подтверждений, продолжение до complete, повторный SIGKILL, Range и полный download. Общий SHA-256 совпал с указанным выше.
+
+| Измерение                 | Значение                                               |
+| ------------------------- | ------------------------------------------------------ |
+| Upload + restart + сборка | 71 678 ms                                              |
+| Полный download           | 13 408 ms                                              |
+| Пик RSS API               | 147 103 744 bytes, около 140 MiB                       |
+| Bytes                     | 5 368 709 120                                          |
+| Отчёт                     | test-results/large-multipart.json (локальный, ignored) |
+
+Первый прогон обнаружил timeout неактивного сокета во время сборки. Для синхронного complete увеличено ожидание до 30 минут при сохранении ограниченного допуска; убран повторный полный hash после уже проверенной потоковой сборки. Повторный прогон прошёл. Reverse proxy должен допускать такую длительность либо клиент использует complete-async и worker. Измерения относятся к одному потоку на локальном диске, не являются сетевым SLA.

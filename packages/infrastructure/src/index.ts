@@ -2,3 +2,9 @@
 export * from './local-blobs.js';
 export * from './postgres-catalog.js';
 export * from './migrations.js';
+export * from './operations.js';
+
+export * from './service-keys.js';
+export * from './browse.js';
+export * from './upack.js';
+export * from './admission.js';

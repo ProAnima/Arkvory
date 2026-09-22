@@ -1,0 +1,21 @@
+# Совместимость ProGet
+
+Реализован первый **поднабор чтения**, проверенный локальными fixture-тестами, не на работающем ProGet. Проверки Hub/CI/upack/pgutil на стенде отложены по указанию владельца.
+
+| Запрос                                                            | Сейчас                                                                |
+| ----------------------------------------------------------------- | --------------------------------------------------------------------- |
+| GET/HEAD `/upack/{feed}/download/{group}/{name}/{version}`        | Исходный зарегистрированный UPack, группа может быть пустой/составной |
+| GET/HEAD `/upack/{feed}/download/{group}/{name}?latest`           | Самая старшая SemVer-версия, включая prerelease                       |
+| GET/HEAD `/endpoints/{feed}/content/{path}`                       | Текущий asset pointer → неизменяемые bytes                            |
+| X-ApiKey; Basic `api:KEY`; Bearer                                 | Ключи Depot, scope репозитория                                        |
+| Range/If-Range/If-None-Match                                      | Тот же потоковый транспорт, что native API                            |
+| `contentOnly`, ZIP/TGZ transformations                            | Отклоняются 400                                                       |
+| Query-string keys, пользовательский Basic, anonymous              | Не поддерживаются                                                     |
+| Legacy push/import/delete, packages/versions, assets dir/metadata | Не реализованы                                                        |
+| Common Packages API, virtual packages, package file extraction    | Не реализованы                                                        |
+
+Feed соответствует native repository (нижний регистр, до 64 символов). Имя/group/version UPack ищутся без учёта регистра. Native ошибки пока используются и для адаптера; точное соответствие error body/status ProGet ещё не подтверждено. Поэтому текущая версия **не является полной заменой ProGet**. Нельзя переключать общий production hostname на этот набор маршрутов.
+
+Исходные контракты: [Universal Feed](https://docs.inedo.com/docs/proget/api/universal-feed), [legacy download в официальном архиве Inedo](https://github.com/Inedo/inedo-docs/blob/6dc089e74c549fdc1f5f880afcdce565a5f5ab24/Content/proget/reference-api/universal-feed/download.md), [Asset download](https://docs.inedo.com/docs/proget/api/assets/files/download). Документы задают формы адресов; неоднозначную latest/prerelease-политику нужно сверить с выбранной сборкой и клиентами.
+
+До cutover заполнить матрицу: клиент/версия → фактические endpoints → auth → запрос/ответ без секретов → overwrite/missing/range/retry → воспроизводимый тест. Сначала завершить запись и каталог legacy API, затем проверять перенастройку только base URL. Не переносить native 202/job-контракт в обычный legacy GET.

@@ -11,7 +11,7 @@ import {
 import type { Upload } from '@proanima/depot-domain';
 import type { Catalog, UploadMutation } from '@proanima/depot-application';
 
-function decode(row: Record<string, unknown> | undefined): Upload {
+export function decode(row: Record<string, unknown> | undefined): Upload {
   if (!row) throw new DepotError('not_found', 'Artifact or upload not found');
   const { id, repository, owner, descriptor, status, created_at: createdAt } = row;
   if (
@@ -31,6 +31,12 @@ function decode(row: Record<string, unknown> | undefined): Upload {
     descriptor: parseDescriptor(descriptor),
     status,
     createdAt: createdAt.toISOString(),
+    expiresAt:
+      row['expires_at'] instanceof Date
+        ? row['expires_at'].toISOString()
+        : (() => {
+            throw new DepotError('unavailable', 'Invalid expiry');
+          })(),
   };
 }
 
@@ -71,7 +77,10 @@ export class PostgresCatalog implements Catalog {
     return this.claimed;
   }
 
-  async claimStorage(storageId: string): Promise<void> {
+  async claimStorage(
+    storageId: string,
+    role: 'api' | 'worker' | 'maintenance' = 'api',
+  ): Promise<void> {
     const client = await this.pool.connect();
     const state = { lost: false };
     const failed = (): void => {
@@ -81,11 +90,30 @@ export class PostgresCatalog implements Catalog {
     client.on('error', failed);
     try {
       // One API process per standalone database. This is deliberately not HA.
-      const lock = await client.query<{ acquired: boolean }>(
-        'SELECT pg_try_advisory_lock(18471, 3) AS acquired',
+      if (role === 'worker') {
+        const worker = await client.query<{ acquired: boolean }>(
+          'SELECT pg_try_advisory_lock(18471,6) AS acquired',
+        );
+        if (!worker.rows[0]?.acquired)
+          throw new DepotError('busy', 'Standalone supports one completion worker');
+      }
+      if (role !== 'worker') {
+        const lock = await client.query<{ acquired: boolean }>(
+          'SELECT pg_try_advisory_lock(18471,3) AS acquired',
+        );
+        if (!lock.rows[0]?.acquired)
+          throw new DepotError(
+            'busy',
+            'Another standalone API or maintenance process owns this database',
+          );
+      }
+      const barrier = await client.query<{ acquired: boolean }>(
+        role === 'maintenance'
+          ? 'SELECT pg_try_advisory_lock(18471,4) AS acquired'
+          : 'SELECT pg_try_advisory_lock_shared(18471,4) AS acquired',
       );
-      if (!lock.rows[0]?.acquired)
-        throw new DepotError('busy', 'Another standalone API owns this database');
+      if (!barrier.rows[0]?.acquired)
+        throw new DepotError('busy', 'Maintenance requires the API and all workers to be stopped');
       await client.query(
         'INSERT INTO depot_storage_identity(singleton,storage_id) VALUES(true,$1) ON CONFLICT DO NOTHING',
         [requireId(storageId)],
@@ -100,7 +128,7 @@ export class PostgresCatalog implements Catalog {
         this.claimed = false;
         if (!state.lost) {
           try {
-            await client.query('SELECT pg_advisory_unlock(18471,3)');
+            await client.query('SELECT pg_advisory_unlock_all()');
           } catch {
             state.lost = true;
           }
@@ -134,7 +162,7 @@ export class PostgresCatalog implements Catalog {
         return upload;
       }
       const totals = await client.query<{ bytes: string; entries: string }>(
-        `SELECT COALESCE(SUM(size), 0)::text AS bytes, COUNT(*)::text AS entries FROM depot_uploads`,
+        `SELECT COALESCE(SUM(size) FILTER(WHERE NOT reclaimed), 0)::text AS bytes, COUNT(*)::text AS entries FROM depot_uploads`,
       );
       const total = totals.rows[0];
       if (
@@ -177,6 +205,18 @@ export class PostgresCatalog implements Catalog {
     return decode(result.rows[0]);
   }
 
+  async parts(id: string) {
+    const result = await this.pool.query<{ part_index: number; size: number; sha256: string }>(
+      'SELECT part_index,size,sha256 FROM depot_parts WHERE upload_id=$1 ORDER BY part_index',
+      [id],
+    );
+    return result.rows.map((row) => ({
+      index: row.part_index,
+      size: row.size,
+      sha256: row.sha256,
+    }));
+  }
+
   async list(
     repository: string,
     after: string | undefined,
@@ -215,7 +255,7 @@ export class PostgresCatalog implements Catalog {
         // Use the SAME connection that owns the advisory lock. A lost connection
         // cannot commit a stale publication through the general-purpose pool.
         const updated = await client.query<Record<string, unknown>>(
-          `UPDATE depot_uploads SET status=$3 WHERE repository=$1 AND id=$2 AND status IN ('pending',$3) RETURNING *`,
+          `UPDATE depot_uploads SET status=$3, cancelled_at=CASE WHEN $3='cancelled' THEN COALESCE(cancelled_at,now()) ELSE cancelled_at END WHERE repository=$1 AND id=$2 AND status IN ('pending',$3) AND (status='available' OR $3='cancelled' OR expires_at>now()) RETURNING *`,
           [repository, id, target],
         );
         if (!updated.rows[0])
@@ -223,6 +263,14 @@ export class PostgresCatalog implements Catalog {
         return decode(updated.rows[0]);
       };
       const value = await action({
+        recordPart: async (part) => {
+          check();
+          const result = await client.query(
+            `INSERT INTO depot_parts(upload_id,part_index,size,sha256) SELECT id,$2,$3,$4 FROM depot_uploads WHERE id=$1 AND status='pending' AND expires_at>now() ON CONFLICT(upload_id,part_index) DO UPDATE SET sha256=excluded.sha256 WHERE depot_parts.sha256=excluded.sha256 AND depot_parts.size=excluded.size RETURNING upload_id`,
+            [id, part.index, part.size, part.sha256],
+          );
+          if (result.rowCount !== 1) throw new DepotError('conflict', 'Part cannot be recorded');
+        },
         throwIfAborted: check,
         publish: (repository) => transition(repository, 'available'),
         cancel: (repository) => transition(repository, 'cancelled'),
@@ -244,7 +292,10 @@ export class PostgresCatalog implements Catalog {
   }
 
   async ready(): Promise<void> {
-    await this.pool.query('SELECT id FROM depot_uploads LIMIT 0');
+    const result = await this.pool.query('SELECT version FROM depot_migrations WHERE version=3');
+    if (result.rowCount !== 1)
+      throw new DepotError('unavailable', 'Database migration 3 is required');
+    await this.pool.query('SELECT id,expires_at FROM depot_uploads LIMIT 0');
   }
   async close(): Promise<void> {
     await this.releaseClaim?.();

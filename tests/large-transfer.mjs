@@ -47,23 +47,53 @@ try {
   assert.equal(reserved.status, 201, await reserved.clone().text());
   const { id } = await reserved.json();
   const started = Date.now();
+  const multipart = process.argv.includes('--multipart');
   console.log('Streaming 5 GiB to standalone API...');
-  const upload = await fetch(`${address}${base}/uploads/${id}/content`, {
-    method: 'PUT',
-    headers: {
-      ...f.headers,
-      'content-type': 'application/octet-stream',
-      'content-length': String(size),
-    },
-    duplex: 'half',
-    body: Readable.from(
-      (async function* () {
-        for (let n = 0; n < size / chunk.length; n++) yield chunk;
-      })(),
-      { objectMode: false, highWaterMark: chunk.length },
-    ),
-  });
-  assert.equal(upload.status, 200, await upload.text());
+  if (multipart) {
+    const part = Buffer.alloc(8 * 1024 ** 2, 0x5a);
+    const partHash = createHash('sha256').update(part).digest('hex');
+    for (let index = 0; index < size / part.length; index++) {
+      if (index === 320) {
+        await stop();
+        address = await start();
+        const saved = await fetch(`${address}${base}/uploads/${id}/parts`, { headers: f.headers });
+        assert.equal((await saved.json()).items.length, 320);
+        console.log('Resuming 5 GiB upload after process kill at part 320...');
+      }
+      const result = await fetch(`${address}${base}/uploads/${id}/parts/${index}`, {
+        method: 'PUT',
+        headers: {
+          ...f.headers,
+          'content-type': 'application/octet-stream',
+          'x-content-sha256': partHash,
+        },
+        body: part,
+      });
+      assert.equal(result.status, 204, await result.text());
+    }
+    const result = await fetch(`${address}${base}/uploads/${id}/complete`, {
+      method: 'POST',
+      headers: f.headers,
+    });
+    assert.equal(result.status, 200, await result.text());
+  } else {
+    const upload = await fetch(`${address}${base}/uploads/${id}/content`, {
+      method: 'PUT',
+      headers: {
+        ...f.headers,
+        'content-type': 'application/octet-stream',
+        'content-length': String(size),
+      },
+      duplex: 'half',
+      body: Readable.from(
+        (async function* () {
+          for (let n = 0; n < size / chunk.length; n++) yield chunk;
+        })(),
+        { objectMode: false, highWaterMark: chunk.length },
+      ),
+    });
+    assert.equal(upload.status, 200, await upload.text());
+  }
   const uploadMs = Date.now() - started;
   await stop();
   address = await start();
@@ -95,13 +125,18 @@ try {
     downloadMs: Date.now() - beginRead,
     peakServerRssBytes: peakRss,
     processRestart: true,
+    multipart,
+    restartDuringUpload: multipart,
     rangeVerified: true,
     concurrentTransfers: 1,
     storage: 'Local filesystem',
     database: 'PostgreSQL',
   };
   await mkdir('test-results', { recursive: true });
-  await writeFile('test-results/large-transfer.json', JSON.stringify(report, null, 2) + '\n');
+  await writeFile(
+    `test-results/${multipart ? 'large-multipart' : 'large-transfer'}.json`,
+    JSON.stringify(report, null, 2) + '\n',
+  );
   console.log(JSON.stringify(report, null, 2));
 } finally {
   await stop();

@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>ProAnima Depot</title>
+    <link rel="stylesheet" href="/console/style.css" />
+    <script type="module" src="/console/console.js"></script>
+  </head>
+  <body>
+    <header>
+      <span class="mark">D</span>
+      <div>
+        <h1>ProAnima Depot</h1>
+        <p>Файлы, пакеты и метаданные · Files, packages & metadata</p>
+      </div>
+      <span class="badge">Standalone</span>
+    </header>
+    <main>
+      <section>
+        <h2>Подключение / Connection</h2>
+        <form id="connect">
+          <label>Репозиторий / Repository<input id="repository" value="releases" required /></label
+          ><label class="grow"
+            >Ключ доступа / Service key<input
+              id="token"
+              type="password"
+              autocomplete="off"
+              required
+              minlength="32" /></label
+          ><button>Подключиться / Connect</button
+          ><button id="logout" type="button" class="secondary">Отключиться / Disconnect</button>
+        </form>
+        <p class="hint">
+          Ключ хранится только в памяти этой вкладки. / The key stays in this tab's memory.
+        </p>
+      </section>
+      <section>
+        <h2>Загрузка / Upload</h2>
+        <form id="upload">
+          <label class="grow"
+            >Файл до 5 GiB / File up to 5 GiB<input id="file" type="file" required /></label
+          ><label
+            >ID загрузки для продолжения / Resume upload ID<input
+              id="upload-id"
+              placeholder="Создаётся автоматически / Automatic" /></label
+          ><label
+            >Ключ повтора / Idempotency key<input
+              id="idempotency"
+              placeholder="Создаётся автоматически / Automatic" /></label
+          ><button>Загрузить / Resume</button
+          ><button id="cancel" type="button" class="secondary">Пауза / Pause</button
+          ><button id="new-upload" type="button" class="secondary">Новая / New</button>
+        </form>
+        <progress id="progress" max="1" value="0"></progress>
+        <p class="hint">
+          Сохраните ID для продолжения после закрытия вкладки. / Keep the upload ID to resume after
+          closing this tab.
+        </p>
+      </section>
+      <section>
+        <h2>Каталог / Catalog</h2>
+        <form id="search">
+          <label class="grow">Имя / Name<input id="query" type="search" /></label
+          ><label>Метка / Label<input id="filter-label" /></label><button>Найти / Search</button>
+        </form>
+        <div class="table">
+          <table>
+            <thead>
+              <tr>
+                <th>Имя / Name</th>
+                <th>ID</th>
+                <th>Действия / Actions</th>
+              </tr>
+            </thead>
+            <tbody id="artifacts"></tbody>
+          </table>
+        </div>
+        <button id="more" class="secondary" disabled>Ещё / More</button>
+      </section>
+      <section>
+        <h2>Метаданные / Metadata</h2>
+        <label>Выбранный файл / Selected artifact<input id="selected" readonly /></label>
+        <form id="edit">
+          <label>Метки через запятую / Labels<input id="labels" /></label
+          ><label>Коллекции / Collections<input id="collections" /></label
+          ><label class="grow">Metadata JSON<textarea id="metadata" rows="4">{}</textarea></label
+          ><button>Сохранить / Save</button
+          ><button id="download" type="button" class="secondary">Скачать / Download</button>
+          <button id="register-package" type="button" class="secondary">
+            Зарегистрировать UPack / Register
+          </button>
+        </form>
+        <form id="asset">
+          <label class="grow"
+            >Путь asset / Asset path<input
+              id="asset-path"
+              placeholder="releases/current.upack"
+              required /></label
+          ><label
+            >Текущая ревизия (0 = новый) / Current revision<input
+              id="asset-revision"
+              type="number"
+              min="0"
+              value="0"
+              required /></label
+          ><button>Привязать / Assign</button>
+        </form>
+      </section>
+      <output id="status" aria-live="polite"
+        >Подключитесь для начала работы. / Connect to begin.</output
+      >
+    </main>
+    <footer>© Ian Panaev · ProAnimaStudio</footer>
+  </body>
+</html>

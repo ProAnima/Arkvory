@@ -8,4 +8,4 @@ Linux и Windows: `npm ci --ignore-scripts`, `npm run check`, `npm test`. Это
 
 Ручной workflow_dispatch с `large_transfers=true` дополнительно запускает 5 GiB HTTP test с новым серверным процессом, принудительным завершением, повторным запуском, Range, полным скачиванием, SHA-256 и измерением RSS. Это тяжёлая проверка, поэтому не запускается при каждом изменении документации.
 
-Окружение — Node.js 24 LTS, npm 11. [Измерения локального стенда](CORE_VALIDATION.md), [запуск](CORE_RUNBOOK.md). Совместимость ProGet, HA, очереди и промышленный failover пока не реализованы и не проверяются этими jobs.
+Окружение — Node.js 24 LTS, npm 11. [Измерения локального стенда](CORE_VALIDATION.md), [запуск](CORE_RUNBOOK.md). Проверяются multipart, каталог, SDK, worker, GC, локальные очереди и документированный поднабор legacy downloads. Реальные ProGet-клиенты, HA и промышленный failover этими jobs не подтверждаются. Ручной large_transfers дополнительно запускает 5 GiB multipart с убийством процесса на середине загрузки.

@@ -2,7 +2,7 @@
 
 Публичный HTTP-клиент хранилища.
 
-Статус: граница модуля, рабочая реализация ещё не добавлена.
+Рабочий portable fetch SDK с runtime validation, multipart/resume и потоковым download. HTTPS кроме loopback. См. [runbook](../../docs/LIFECYCLE_AND_CATALOG.md).
 
 Разрешённые зависимости и правила: [ARCHITECTURE.md](../../docs/ARCHITECTURE.md). Общие инструкции: [AGENTS.md](../../AGENTS.md).
 

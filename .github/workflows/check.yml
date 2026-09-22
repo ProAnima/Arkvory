@@ -79,3 +79,6 @@ jobs:
       - name: Test 5 GiB transfer and process restart
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.large_transfers }}
         run: npm run test:large
+      - name: Test 5 GiB multipart with process kill during upload
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.large_transfers }}
+        run: node tests/large-transfer.mjs --multipart

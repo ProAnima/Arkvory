@@ -4,8 +4,18 @@ import Fastify from 'fastify';
 import type { FastifyRequest, FastifyReply } from 'fastify';
 import { DepotError } from '@proanima/depot-domain';
 import type { Principal, Upload } from '@proanima/depot-domain';
-import { StorageService } from '@proanima/depot-application';
-import { LocalBlobStore, PostgresCatalog } from '@proanima/depot-infrastructure';
+import { StorageService, ArtifactCatalog, CompletionQueue } from '@proanima/depot-application';
+import {
+  LocalBlobStore,
+  PostgresCatalog,
+  PostgresBrowse,
+  ZipManifestReader,
+  PostgresJobs,
+  AdmissionQueue,
+} from '@proanima/depot-infrastructure';
+import { registerCatalogRoutes } from './catalog-routes.js';
+import { registerConsole } from './console.js';
+import { ProGetDownloads } from '@proanima/depot-proget-compat';
 import { descriptorSchema, openApiDocument, uploadSchema } from '@proanima/depot-contracts';
 import type { UploadResponse } from '@proanima/depot-contracts';
 import type { ServerConfig } from './config.js';
@@ -17,6 +27,7 @@ function wire(upload: Upload): UploadResponse {
     repository: upload.repository,
     status: upload.status,
     createdAt: upload.createdAt,
+    expiresAt: upload.expiresAt,
     descriptor: { ...upload.descriptor, size: String(upload.descriptor.size) },
   };
 }
@@ -48,8 +59,8 @@ export async function createServer(config: ServerConfig) {
     ajv: { customOptions: { coerceTypes: false, removeAdditional: false } },
   });
   const principals = new WeakMap<FastifyRequest, Principal>();
-  let uploads = 0;
-  let downloads = 0;
+  const uploadGate = new AdmissionQueue(config.maxUploads);
+  const downloadGate = new AdmissionQueue(config.maxDownloads);
   let requests = 0;
   const principal = (request: FastifyRequest): Principal => {
     const result = principals.get(request);
@@ -70,6 +81,8 @@ export async function createServer(config: ServerConfig) {
     return controller.signal;
   };
   app.addHook('onClose', async () => {
+    uploadGate.close();
+    downloadGate.close();
     await catalog.close();
   });
   app.addHook('onRequest', async (request, reply) => {
@@ -77,14 +90,25 @@ export async function createServer(config: ServerConfig) {
       .header('X-Request-Id', request.id)
       .header('X-Content-Type-Options', 'nosniff')
       .header('Cache-Control', 'private, no-store');
-    if (request.routeOptions.url === '/health/live') return;
+    if (
+      request.routeOptions.url === '/health/live' ||
+      request.routeOptions.url?.startsWith('/console/')
+    )
+      return;
     if (!catalog.active)
       throw new DepotError(
         'unavailable',
         'Standalone database ownership lost; restart the service',
       );
     const auth = request.headers.authorization;
-    const token = auth?.startsWith('Bearer ') ? auth.slice(7) : '';
+    const legacy = request.url.startsWith('/upack/') || request.url.startsWith('/endpoints/');
+    let token = auth?.startsWith('Bearer ') ? auth.slice(7) : '';
+    if (legacy && typeof request.headers['x-apikey'] === 'string')
+      token = request.headers['x-apikey'];
+    if (legacy && auth?.startsWith('Basic ')) {
+      const basic = Buffer.from(auth.slice(6), 'base64').toString('utf8');
+      if (basic.startsWith('api:')) token = basic.slice(4);
+    }
     const digest = createHash('sha256').update(token).digest();
     const key = config.keys.find((candidate) =>
       timingSafeEqual(digest, Buffer.from(candidate.sha256, 'hex')),
@@ -164,13 +188,20 @@ export async function createServer(config: ServerConfig) {
   type Params = { repository: string; id: string };
   const base = '/api/v1/repositories/:repository';
   const response = { 200: uploadSchema };
-  const modifying = async <T>(action: () => Promise<T>): Promise<T> => {
-    if (uploads >= config.maxUploads) throw new DepotError('busy', 'Upload capacity exceeded');
-    uploads++;
+  const modifying = async <T>(request: FastifyRequest, action: () => Promise<T>): Promise<T> => {
+    const abort = new AbortController();
+    const cancel = () => {
+      abort.abort();
+    };
+    request.raw.once('aborted', cancel);
+    let release: (() => void) | undefined;
     try {
+      release = await uploadGate.acquire(principal(request).id, abort.signal);
+      if (!catalog.active) throw new DepotError('unavailable', 'Gateway ownership lost');
       return await action();
     } finally {
-      uploads--;
+      release?.();
+      request.raw.removeListener('aborted', cancel);
     }
   };
   app.post<{ Params: Params; Body: unknown }>(
@@ -199,7 +230,7 @@ export async function createServer(config: ServerConfig) {
     wire(await service.status(principal(request), request.params.repository, request.params.id)),
   );
   app.delete<{ Params: Params }>(`${base}/uploads/:id`, { schema: { response } }, async (request) =>
-    modifying(async () =>
+    modifying(request, async () =>
       wire(await service.cancel(principal(request), request.params.repository, request.params.id)),
     ),
   );
@@ -220,7 +251,7 @@ export async function createServer(config: ServerConfig) {
       }
       try {
         return wire(
-          await modifying(() =>
+          await modifying(request, () =>
             service.upload(
               principal(request),
               request.params.repository,
@@ -240,16 +271,20 @@ export async function createServer(config: ServerConfig) {
     `${base}/uploads/:id/complete`,
     { schema: { response } },
     async (request, reply) =>
-      modifying(async () =>
-        wire(
+      modifying(request, async () => {
+        // Assembly may run without socket traffic for minutes. Admission remains bounded.
+        reply.raw.setTimeout(30 * 60 * 1000, () => {
+          reply.raw.destroy();
+        });
+        return wire(
           await service.complete(
             principal(request),
             request.params.repository,
             request.params.id,
             signal(request, reply),
           ),
-        ),
-      ),
+        );
+      }),
   );
   app.get<{ Params: Params }>(`${base}/artifacts/:id`, { schema: { response } }, async (request) =>
     wire(await service.artifact(principal(request), request.params.repository, request.params.id)),
@@ -276,71 +311,113 @@ export async function createServer(config: ServerConfig) {
       };
     },
   );
+  const sendContent = async (
+    request: FastifyRequest,
+    reply: FastifyReply,
+    repository: string,
+    id: string,
+  ) => {
+    const releaseSlot = await downloadGate.acquire(principal(request).id, signal(request, reply));
+    let released = false;
+    const release = (): void => {
+      if (!released) {
+        releaseSlot();
+        released = true;
+      }
+    };
+    reply.raw.once('close', release);
+    try {
+      const result = await service.download(principal(request), repository, id);
+      const { size, sha256, name } = result.upload.descriptor;
+      const etag = `"sha256:${sha256}"`;
+      reply
+        .header('ETag', etag)
+        .header('Accept-Ranges', 'bytes')
+        .header('Content-Type', 'application/octet-stream')
+        .header(
+          'Content-Disposition',
+          `attachment; filename*=UTF-8''${encodeURIComponent(Buffer.from(name).toString('utf8')).replace(/['()*]/g, (c) => `%${c.charCodeAt(0).toString(16)}`)}`,
+        );
+      if (matchesEtag(request.headers['if-none-match'], etag)) return await reply.code(304).send();
+      const range =
+        request.method === 'HEAD' ||
+        (request.headers['if-range'] !== undefined && request.headers['if-range'] !== etag)
+          ? ({ kind: 'full' } as const)
+          : parseRange(request.headers.range, size);
+      if (range.kind === 'unsatisfiable')
+        return await reply
+          .code(416)
+          .header('Content-Range', `bytes */${String(size)}`)
+          .header('Content-Length', '0')
+          .send();
+      if (range.kind === 'partial')
+        reply
+          .code(206)
+          .header(
+            'Content-Range',
+            `bytes ${String(range.start)}-${String(range.end)}/${String(size)}`,
+          )
+          .header('Content-Length', String(range.end - range.start + 1));
+      else reply.header('Content-Length', String(size));
+      if (request.method === 'HEAD') return await reply.send();
+      return await reply.send(
+        Readable.from(result.read(range.kind === 'partial' ? range : undefined), {
+          objectMode: false,
+          highWaterMark: 64 * 1024,
+        }),
+      );
+    } catch (error) {
+      release();
+      throw error;
+    }
+  };
   app.route<{ Params: Params }>({
     method: ['GET', 'HEAD'],
-    url: `${base}/artifacts/:id/content`,
-    handler: async (request, reply) => {
-      if (downloads >= config.maxDownloads)
-        throw new DepotError('busy', 'Download capacity exceeded');
-      downloads++;
-      let released = false;
-      const release = (): void => {
-        if (!released) {
-          downloads--;
-          released = true;
-        }
-      };
-      reply.raw.once('close', release);
-      try {
-        const result = await service.download(
+    url: base + '/artifacts/:id/content',
+    handler: (request, reply) =>
+      sendContent(request, reply, request.params.repository, request.params.id),
+  });
+  const browse = new ArtifactCatalog(
+    service,
+    new PostgresBrowse(catalog.pool),
+    new ZipManifestReader(blobs),
+  );
+  const legacy = new ProGetDownloads(browse);
+  app.route<{ Params: { repository: string; '*': string }; Querystring: unknown }>({
+    method: ['GET', 'HEAD'],
+    url: '/upack/:repository/download/*',
+    handler: async (request, reply) =>
+      sendContent(
+        request,
+        reply,
+        request.params.repository,
+        await legacy.universal(
           principal(request),
           request.params.repository,
-          request.params.id,
-        );
-        const { size, sha256, name } = result.upload.descriptor;
-        const etag = `"sha256:${sha256}"`;
-        reply
-          .header('ETag', etag)
-          .header('Accept-Ranges', 'bytes')
-          .header('Content-Type', 'application/octet-stream')
-          .header(
-            'Content-Disposition',
-            `attachment; filename*=UTF-8''${encodeURIComponent(Buffer.from(name).toString('utf8')).replace(/['()*]/g, (c) => `%${c.charCodeAt(0).toString(16)}`)}`,
-          );
-        if (matchesEtag(request.headers['if-none-match'], etag))
-          return await reply.code(304).send();
-        const range =
-          request.method === 'HEAD' ||
-          (request.headers['if-range'] !== undefined && request.headers['if-range'] !== etag)
-            ? ({ kind: 'full' } as const)
-            : parseRange(request.headers.range, size);
-        if (range.kind === 'unsatisfiable')
-          return await reply
-            .code(416)
-            .header('Content-Range', `bytes */${String(size)}`)
-            .header('Content-Length', '0')
-            .send();
-        if (range.kind === 'partial')
-          reply
-            .code(206)
-            .header(
-              'Content-Range',
-              `bytes ${String(range.start)}-${String(range.end)}/${String(size)}`,
-            )
-            .header('Content-Length', String(range.end - range.start + 1));
-        else reply.header('Content-Length', String(size));
-        if (request.method === 'HEAD') return await reply.send();
-        return await reply.send(
-          Readable.from(result.read(range.kind === 'partial' ? range : undefined), {
-            objectMode: false,
-            highWaterMark: 64 * 1024,
-          }),
-        );
-      } catch (error) {
-        release();
-        throw error;
-      }
-    },
+          request.params['*'],
+          request.query,
+        ),
+      ),
   });
+  app.route<{ Params: { repository: string; '*': string } }>({
+    method: ['GET', 'HEAD'],
+    url: '/endpoints/:repository/content/*',
+    handler: async (request, reply) =>
+      sendContent(
+        request,
+        reply,
+        request.params.repository,
+        await legacy.asset(principal(request), request.params.repository, request.params['*']),
+      ),
+  });
+  registerCatalogRoutes(app, {
+    storage: service,
+    browse,
+    queue: new CompletionQueue(new PostgresJobs(catalog.pool), randomUUID),
+    principal,
+    signal,
+    modifying,
+  });
+  registerConsole(app, process.env['DEPOT_WEB_DIR'] ?? 'apps/web/public');
   return app;
 }

@@ -8,7 +8,7 @@ UPack packages, metadata, tagging, collections, transfer queues, and ProGet-comp
 
 A **ProAnimaStudio** project. **Ian Panaev** is the author, copyright holder, and owner of the ProAnimaStudio brand.
 
-> **Stage: working standalone core, under development.** Native HTTP upload/download, PostgreSQL metadata, immutable local blobs, integrity checks, service keys, and admission limits are implemented. ProGet compatibility, UPack manifest handling, durable queues, UI, SDK, multipart uploads, garbage collection, and HA remain planned.
+> **Stage: standalone 0.2, under development.** Native API, multipart/resume, UPack/assets catalog, metadata, worker, admission queues, offline GC/scrub, SDK and web console are implemented. Legacy download support is partial. Two-server replication, distributed delivery and full ProGet replacement are not ready.
 
 ## Purpose
 
@@ -20,22 +20,24 @@ An initial use case is replacing ProGet for Universal Packages and ordinary file
 
 ## Current status
 
-| Area                                                                   | Status                                                     |
-| ---------------------------------------------------------------------- | ---------------------------------------------------------- |
-| Strict TypeScript, clean boundaries, JS/declaration builds             | Implemented                                                |
-| Native upload sessions and idempotent creation/completion              | Implemented                                                |
-| PostgreSQL migrations, immutable metadata, labels, repository scopes   | Implemented                                                |
-| Local blob storage, streaming SHA-256, publication after verification  | Implemented                                                |
-| Service keys, permissions, capacity reservations, transfer admission   | Implemented                                                |
-| GET/HEAD, ETag, single Range, conditional downloads                    | Implemented                                                |
-| Real PostgreSQL and failure/recovery tests                             | Implemented                                                |
-| 5 GiB upload, process restart, full download and checksum verification | Passed locally; see [test report](docs/CORE_VALIDATION.md) |
-| ProGet API, UPack manifest/version semantics, mutable catalog, UI/SDK  | Planned                                                    |
-| Durable queues, upload resume, GC, distributed delivery, HA            | Planned                                                    |
+| Area                                                             | Status                                              |
+| ---------------------------------------------------------------- | --------------------------------------------------- |
+| Strict TypeScript, clean boundaries, runtime builds              | Implemented                                         |
+| Streaming transfers, SHA-256, GET/HEAD/Range/ETag                | Implemented                                         |
+| 8 MiB parts, resume, TTL, idempotent completion                  | Implemented                                         |
+| Metadata/labels/collections, CAS, search, catalog audit          | Implemented                                         |
+| UPack manifest/group/SemVer, immutable versions, asset revisions | Implemented with validator limits                   |
+| PostgreSQL completion jobs, lease/generation, retries, worker    | Implemented                                         |
+| Bounded upload/download admission with client rotation           | One gateway, in memory                              |
+| GC and scrub                                                     | Offline; published blobs are retained               |
+| SDK and RU/EN web console                                        | Implemented; details in runbook                     |
+| Legacy UPack/assets download                                     | Subset; not tested against real ProGet              |
+| Directory import with resume and download/hash verification      | Implemented; ProGet export and ACL mapping separate |
+| Two-server replication, failover, global balancing               | Design stage; lab validation deferred               |
 
-The runnable role is `apps/api`. Worker, scheduler, web, SDK, and ProGet adapter remain module boundaries. This is a development core, not a production release. [Runbook and implemented API](docs/CORE_RUNBOOK.md) (Russian).
+Run `npm run migrate`, `npm start` and `npm run worker` separately. Console: `/console/`. This is a development release, not a production HA system. See the [core runbook](docs/CORE_RUNBOOK.md), [0.2 features](docs/LIFECYCLE_AND_CATALOG.md), [ProGet API limits](docs/COMPATIBILITY.md), [migration](docs/MIGRATION.md), [two-server profile](docs/TWO_NODE_PLAN.md) and [validation](docs/CORE_VALIDATION.md) (engineering documents in Russian).
 
-## Planned capabilities
+## Capabilities and direction
 
 ### Packages, files, and catalog
 
