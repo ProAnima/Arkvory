@@ -7,4 +7,6 @@
 
 SDK fault tests входят в `npm test`: настоящие HTTP-сокеты без БД, неполные ответы, неправильные validators/Range, ограниченные повторы/тайм-ауты/отмена. Integration suite дополнительно теряет ответы после записи create/part/complete в настоящей БД и обрывает multipart upload.
 
+`bandwidth.test.mjs` использует виртуальные монотонные часы для проверки верхней границы shared/per-principal bucket, fairness, cancellation и backpressure. `integration/traffic.test.mjs` проверяет скорость параллельных full/multipart и native/legacy потоков по настоящим сокетам, ротацию ключей одного id, отмену и остановку API. Флаг `--traffic` большого теста включает квоты и отдельный отчёт `large-traffic.json`.
+
 Не запускайте интеграционные suites одновременно на одной БД: standalone-lock намеренно допускает один API. Unit/blob-тесты не требуют БД. Подробнее: [runbook](../docs/CORE_RUNBOOK.md), [результаты](../docs/CORE_VALIDATION.md).

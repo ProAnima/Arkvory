@@ -41,6 +41,8 @@ Run `npm run migrate`, `npm start` and `npm run worker` separately. Console: `/c
 
 ## Capabilities and direction
 
+The standalone gateway now supports aggregate upload/download rate ceilings, a shared ceiling per principal across keys and connections, per-principal active transfer caps, and authenticated readiness diagnostics. Rates are configurable and disabled by default; active transfer defaults are one upload and up to four downloads per principal. These budgets belong to one process. See [traffic control](docs/TRAFFIC_CONTROL.md).
+
 The console has light, dark and system themes, live English/Russian switching, and responsive catalog, upload, history and artifact screens. Colors, typography, spacing, radii, controls and motion use centralized design tokens. Only appearance and language preferences are stored in the browser. See the [design system](docs/DESIGN_SYSTEM.md).
 
 ### Packages, files, and catalog

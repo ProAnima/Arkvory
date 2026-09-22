@@ -10,6 +10,7 @@
 - [x] Offline GC/scrub, multipart/resume, UPack/assets каталог, UI/SDK, completion worker и локальные очереди.
 - [x] Поднабор legacy downloads и проверяемый импорт из файлового каталога.
 - [x] Ограниченные сетевые повторы SDK, восстановление потерянных ответов upload, проверяемая Range-докачка и resume с сохранённого prefix.
+- [x] Общие и per-principal сетевые бюджеты standalone-шлюза, предел активных передач клиента, закрытие очередей и диагностика.
 - [ ] Полная ProGet compatibility, online retention, глобальный scheduler, репликация и HA.
 
 ## Этапы
@@ -36,6 +37,8 @@
 Владелец выбрал **два сервера с репликацией**, стендовые проверки отложены: [проект профиля](TWO_NODE_PLAN.md). Следующие code milestones: legacy publication/list/metadata + контрактные fixtures; retention; два read gateways и глобальные сетевые квоты; реализация выбранного replication/fencing deployment.
 
 ## Открытые решения
+
+В рамках этапа 3 реализован локальный исполнитель общего/per-principal byte budget: [TRAFFIC_CONTROL](TRAFFIC_CONTROL.md), [ADR 0008](adr/0008-gateway-bandwidth-budgets.md). Для завершения этапа нужны независимые read gateways, подтверждённые копии blobs, конечные leases общего бюджета и проверки потери координации. Локальный bucket каждого процесса нельзя выдавать за общий лимит площадки.
 
 - Обязателен ли автоматический failover одного узла уже в первом промышленном выпуске?
 - Подтверждены две машины. Остаются ОС/диски, replication backend, fencing и способ резервирования PostgreSQL.

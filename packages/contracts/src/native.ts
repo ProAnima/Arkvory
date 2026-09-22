@@ -1,4 +1,5 @@
 import { catalogPaths } from './catalog-api.js';
+import { readinessSchema } from './health.js';
 export const descriptorSchema = {
   type: 'object',
   additionalProperties: false,
@@ -95,6 +96,19 @@ export const openApiDocument = {
   security: [{ serviceKey: [] }],
   components: { securitySchemes: { serviceKey: { type: 'http', scheme: 'bearer' } } },
   paths: {
+    '/health/ready': {
+      get: {
+        summary: 'Authenticated readiness and aggregate gateway transfer diagnostics',
+        responses: {
+          '200': {
+            description:
+              'Ready; counters reset on process restart, byte grants are not delivery receipts',
+            content: { 'application/json': { schema: readinessSchema } },
+          },
+          default: errorResponse,
+        },
+      },
+    },
     ...catalogPaths,
     '/api/v1/repositories/{repository}/uploads': {
       parameters: [repositoryParameter],

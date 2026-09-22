@@ -34,9 +34,14 @@ export function registerCatalogRoutes(
     principal: (request: FastifyRequest) => Principal;
     signal: (request: FastifyRequest, reply: FastifyReply) => AbortSignal;
     modifying: <T>(request: FastifyRequest, action: () => Promise<T>) => Promise<T>;
+    uploadStream: (
+      request: FastifyRequest,
+      reply: FastifyReply,
+      stream: Readable,
+    ) => AsyncIterable<Uint8Array>;
   },
 ) {
-  const { storage, browse, queue, principal, signal, modifying } = services;
+  const { storage, browse, queue, principal, signal, modifying, uploadStream } = services;
   type Params = { repository: string; id: string; index: string };
   const base = '/api/v1/repositories/:repository';
   app.get<{ Params: Params }>(`${base}/uploads/:id/parts`, async (request) => ({
@@ -47,12 +52,6 @@ export function registerCatalogRoutes(
     if (!(request.body instanceof Readable) || !/^\d{1,3}$/.test(request.params.index))
       throw new DepotError('invalid_input', 'Invalid part request');
     const stream = request.body;
-    async function* chunks() {
-      for await (const chunk of stream.iterator({ destroyOnReturn: false })) {
-        if (!(chunk instanceof Uint8Array)) throw new DepotError('invalid_input', 'Invalid bytes');
-        yield chunk;
-      }
-    }
     try {
       await modifying(request, () =>
         storage.uploadPart(
@@ -61,7 +60,7 @@ export function registerCatalogRoutes(
           request.params.id,
           Number(request.params.index),
           string(request.headers['x-content-sha256']),
-          chunks(),
+          uploadStream(request, reply, stream),
           signal(request, reply),
         ),
       );

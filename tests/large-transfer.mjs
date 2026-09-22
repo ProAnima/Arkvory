@@ -9,7 +9,18 @@ import { DepotClient } from '@proanima/depot-sdk';
 import { createServer, request } from 'node:http';
 
 const cleanups = [];
-const f = await setup({ after: (callback) => cleanups.push(callback) });
+const traffic = process.argv.includes('--traffic');
+const f = await setup(
+  { after: (callback) => cleanups.push(callback) },
+  traffic
+    ? {
+        uploadBytesPerSecond: 64 * 1024 ** 2,
+        downloadBytesPerSecond: 64 * 1024 ** 2,
+        uploadBytesPerSecondPerPrincipal: 48 * 1024 ** 2,
+        downloadBytesPerSecondPerPrincipal: 48 * 1024 ** 2,
+      }
+    : {},
+);
 let child;
 let peakRss = 0;
 let peakClientRss = 0;
@@ -182,6 +193,9 @@ try {
     peakClientRssBytes: peakClientRss,
     verifiedSdkDownload: verified,
     interruptedDownload,
+    trafficPolicy: traffic
+      ? { gatewayBytesPerSecond: 64 * 1024 ** 2, principalBytesPerSecond: 48 * 1024 ** 2 }
+      : null,
     processRestart: true,
     multipart,
     restartDuringUpload: multipart,
@@ -192,7 +206,7 @@ try {
   };
   await mkdir('test-results', { recursive: true });
   await writeFile(
-    `test-results/${verified ? 'large-verified' : multipart ? 'large-multipart' : 'large-transfer'}.json`,
+    `test-results/${traffic ? 'large-traffic' : verified ? 'large-verified' : multipart ? 'large-multipart' : 'large-transfer'}.json`,
     JSON.stringify(report, null, 2) + '\n',
   );
   console.log(JSON.stringify(report, null, 2));

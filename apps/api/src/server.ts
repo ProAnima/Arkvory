@@ -12,11 +12,17 @@ import {
   ZipManifestReader,
   PostgresJobs,
   AdmissionQueue,
+  BandwidthGovernor,
 } from '@proanima/depot-infrastructure';
 import { registerCatalogRoutes } from './catalog-routes.js';
 import { registerConsole } from './console.js';
 import { ProGetDownloads } from '@proanima/depot-proget-compat';
-import { descriptorSchema, openApiDocument, uploadSchema } from '@proanima/depot-contracts';
+import {
+  descriptorSchema,
+  openApiDocument,
+  uploadSchema,
+  readinessSchema,
+} from '@proanima/depot-contracts';
 import type { UploadResponse } from '@proanima/depot-contracts';
 import type { ServerConfig } from './config.js';
 import { matchesEtag, parseRange } from './range.js';
@@ -33,8 +39,39 @@ function wire(upload: Upload): UploadResponse {
 }
 
 export async function createServer(config: ServerConfig) {
+  const uploadGate = new AdmissionQueue(
+    config.maxUploads,
+    64,
+    8,
+    20000,
+    config.maxUploadsPerPrincipal ?? 1,
+  );
+  const downloadGate = new AdmissionQueue(
+    config.maxDownloads,
+    64,
+    8,
+    20000,
+    config.maxDownloadsPerPrincipal ?? Math.min(4, config.maxDownloads),
+  );
   const catalog = new PostgresCatalog(config.databaseUrl, config.capacityBytes, config.maxUploads);
   const blobs = new LocalBlobStore(config.dataDirectory);
+  const owners = [...new Set(config.keys.map((key) => key.principal.id))];
+  const uploadBandwidth = new BandwidthGovernor(
+    {
+      bytesPerSecond: config.uploadBytesPerSecond ?? 0,
+      perPrincipalBytesPerSecond: config.uploadBytesPerSecondPerPrincipal ?? 0,
+    },
+    owners,
+    () => catalog.active,
+  );
+  const downloadBandwidth = new BandwidthGovernor(
+    {
+      bytesPerSecond: config.downloadBytesPerSecond ?? 0,
+      perPrincipalBytesPerSecond: config.downloadBytesPerSecondPerPrincipal ?? 0,
+    },
+    owners,
+    () => catalog.active,
+  );
   try {
     await blobs.initialize();
     await catalog.ready();
@@ -59,8 +96,7 @@ export async function createServer(config: ServerConfig) {
     ajv: { customOptions: { coerceTypes: false, removeAdditional: false } },
   });
   const principals = new WeakMap<FastifyRequest, Principal>();
-  const uploadGate = new AdmissionQueue(config.maxUploads);
-  const downloadGate = new AdmissionQueue(config.maxDownloads);
+  const requestSignals = new WeakMap<FastifyRequest, AbortSignal>();
   let requests = 0;
   const principal = (request: FastifyRequest): Principal => {
     const result = principals.get(request);
@@ -68,6 +104,8 @@ export async function createServer(config: ServerConfig) {
     return result;
   };
   const signal = (request: FastifyRequest, reply: FastifyReply): AbortSignal => {
+    const existing = requestSignals.get(request);
+    if (existing) return existing;
     const controller = new AbortController();
     const abort = (): void => {
       controller.abort();
@@ -78,8 +116,16 @@ export async function createServer(config: ServerConfig) {
       if (!reply.raw.writableFinished) abort();
     });
     if (request.raw.destroyed) abort();
+    requestSignals.set(request, controller.signal);
     return controller.signal;
   };
+  app.addHook('preClose', () => {
+    uploadGate.close();
+    downloadGate.close();
+    uploadBandwidth.close();
+    downloadBandwidth.close();
+    return Promise.resolve();
+  });
   app.addHook('onClose', async () => {
     uploadGate.close();
     downloadGate.close();
@@ -122,6 +168,7 @@ export async function createServer(config: ServerConfig) {
       return;
     }
     principals.set(request, key.principal);
+    signal(request, reply);
     if (requests >= 128) throw new DepotError('busy', 'Request capacity exceeded');
     requests++;
     let released = false;
@@ -172,7 +219,7 @@ export async function createServer(config: ServerConfig) {
     done(null, payload);
   });
   app.get('/health/live', () => Promise.resolve({ status: 'ok' }));
-  app.get('/health/ready', async () => {
+  app.get('/health/ready', { schema: { response: { 200: readinessSchema } } }, async () => {
     await catalog.ready();
     await blobs.ready();
     let writable = true;
@@ -182,7 +229,14 @@ export async function createServer(config: ServerConfig) {
       if (error instanceof DepotError && error.code === 'capacity_exceeded') writable = false;
       else throw error;
     }
-    return { status: 'ready', writable };
+    return {
+      status: 'ready',
+      writable,
+      transfers: {
+        uploads: { admission: uploadGate.snapshot, bandwidth: uploadBandwidth.snapshot },
+        downloads: { admission: downloadGate.snapshot, bandwidth: downloadBandwidth.snapshot },
+      },
+    };
   });
   app.get('/api/v1/openapi.json', () => Promise.resolve(openApiDocument));
   type Params = { repository: string; id: string };
@@ -196,13 +250,27 @@ export async function createServer(config: ServerConfig) {
     request.raw.once('aborted', cancel);
     let release: (() => void) | undefined;
     try {
-      release = await uploadGate.acquire(principal(request).id, abort.signal);
+      const requestSignal = requestSignals.get(request);
+      release = await uploadGate.acquire(
+        principal(request).id,
+        requestSignal ? AbortSignal.any([abort.signal, requestSignal]) : abort.signal,
+      );
       if (!catalog.active) throw new DepotError('unavailable', 'Gateway ownership lost');
       return await action();
     } finally {
       release?.();
       request.raw.removeListener('aborted', cancel);
     }
+  };
+  const uploadStream = (request: FastifyRequest, reply: FastifyReply, stream: Readable) => {
+    async function* chunks(): AsyncIterable<Uint8Array> {
+      for await (const chunk of stream.iterator({ destroyOnReturn: false })) {
+        if (!(chunk instanceof Uint8Array))
+          throw new DepotError('invalid_input', 'Invalid request bytes');
+        yield chunk;
+      }
+    }
+    return uploadBandwidth.stream(chunks(), principal(request).id, signal(request, reply));
   };
   app.post<{ Params: Params; Body: unknown }>(
     `${base}/uploads`,
@@ -242,13 +310,6 @@ export async function createServer(config: ServerConfig) {
         throw new DepotError('invalid_input', 'Content-Type must be application/octet-stream');
       const stream = request.body;
       const cancellation = signal(request, reply);
-      async function* chunks(): AsyncIterable<Uint8Array> {
-        for await (const chunk of stream.iterator({ destroyOnReturn: false })) {
-          if (!(chunk instanceof Uint8Array))
-            throw new DepotError('invalid_input', 'Invalid request bytes');
-          yield chunk;
-        }
-      }
       try {
         return wire(
           await modifying(request, () =>
@@ -256,7 +317,7 @@ export async function createServer(config: ServerConfig) {
               principal(request),
               request.params.repository,
               request.params.id,
-              chunks(),
+              uploadStream(request, reply, stream),
               cancellation,
             ),
           ),
@@ -361,10 +422,17 @@ export async function createServer(config: ServerConfig) {
       else reply.header('Content-Length', String(size));
       if (request.method === 'HEAD') return await reply.send();
       return await reply.send(
-        Readable.from(result.read(range.kind === 'partial' ? range : undefined), {
-          objectMode: false,
-          highWaterMark: 64 * 1024,
-        }),
+        Readable.from(
+          downloadBandwidth.stream(
+            result.read(range.kind === 'partial' ? range : undefined),
+            principal(request).id,
+            signal(request, reply),
+          ),
+          {
+            objectMode: false,
+            highWaterMark: 64 * 1024,
+          },
+        ),
       );
     } catch (error) {
       release();
@@ -417,6 +485,7 @@ export async function createServer(config: ServerConfig) {
     principal,
     signal,
     modifying,
+    uploadStream,
   });
   registerConsole(app, process.env['DEPOT_WEB_DIR'] ?? 'apps/web/public');
   return app;

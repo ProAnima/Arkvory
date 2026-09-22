@@ -51,4 +51,6 @@ LocalBlobStore — профиль одного сервера. HA использ
 
 ## Текущее состояние
 
+В infrastructure добавлен BandwidthGovernor — локальный исполнитель upload/download бюджета и квоты принципала. API подключает его к HTTP-потокам; application/storage и worker не зависят от HTTP pacing. AdmissionQueue ограничивает также активные операции принципала. Контракт и граница одного процесса: [ADR 0008](adr/0008-gateway-bandwidth-budgets.md).
+
 Реализованы domain/application, нативный HTTP API, PostgreSQL с миграциями, LocalBlobStore, multipart/resume, каталог и история assets, SDK, консоль, completion worker и поднабор ProGet downloads. Один API владеет standalone-БД. Распределённый scheduler и HA остаются будущими ролями. Рабочие контракты и ограничения: [CORE_RUNBOOK](CORE_RUNBOOK.md), [LIFECYCLE_AND_CATALOG](LIFECYCLE_AND_CATALOG.md), [COMPATIBILITY](COMPATIBILITY.md), [ADR 0006](adr/0006-asset-history-and-restore.md).

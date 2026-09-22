@@ -13,6 +13,12 @@ export interface ServerConfig {
   readonly capacityBytes: number;
   readonly maxUploads: number;
   readonly maxDownloads: number;
+  readonly maxUploadsPerPrincipal?: number;
+  readonly maxDownloadsPerPrincipal?: number;
+  readonly uploadBytesPerSecond?: number;
+  readonly downloadBytesPerSecond?: number;
+  readonly uploadBytesPerSecondPerPrincipal?: number;
+  readonly downloadBytesPerSecondPerPrincipal?: number;
   readonly keys: readonly ServiceKey[];
 }
 
@@ -35,6 +41,19 @@ export async function loadConfig(env: NodeJS.ProcessEnv): Promise<ServerConfig> 
   const keyFile = await readFile(required('DEPOT_KEYS_FILE'), 'utf8');
   if (keyFile.length > 1024 * 1024) throw new Error('Key file is too large');
   const keys: unknown = JSON.parse(keyFile);
+  const maxUploads = number('DEPOT_MAX_UPLOADS', 2, 32);
+  const maxDownloads = number('DEPOT_MAX_DOWNLOADS', 16, 256);
+  const rate = (name: string): number => {
+    const raw = env[name] ?? '0';
+    const value = Number(raw);
+    if (
+      !/^(0|[1-9][0-9]*)$/.test(raw) ||
+      !Number.isSafeInteger(value) ||
+      (value !== 0 && (value < 65536 || value > 1024 ** 4))
+    )
+      throw new Error(`Invalid ${name}`);
+    return value;
+  };
   return {
     databaseUrl,
     dataDirectory: required('DEPOT_DATA_DIR'),
@@ -42,7 +61,17 @@ export async function loadConfig(env: NodeJS.ProcessEnv): Promise<ServerConfig> 
     host: env['DEPOT_HOST'] ?? '127.0.0.1',
     port: number('DEPOT_PORT', 8080, 65535),
     capacityBytes: number('DEPOT_CAPACITY_BYTES', 10 * 1024 ** 4, Number.MAX_SAFE_INTEGER),
-    maxUploads: number('DEPOT_MAX_UPLOADS', 2, 32),
-    maxDownloads: number('DEPOT_MAX_DOWNLOADS', 16, 256),
+    maxUploads,
+    maxDownloads,
+    maxUploadsPerPrincipal: number('DEPOT_MAX_UPLOADS_PER_PRINCIPAL', 1, maxUploads),
+    maxDownloadsPerPrincipal: number(
+      'DEPOT_MAX_DOWNLOADS_PER_PRINCIPAL',
+      Math.min(4, maxDownloads),
+      maxDownloads,
+    ),
+    uploadBytesPerSecond: rate('DEPOT_UPLOAD_BYTES_PER_SECOND'),
+    downloadBytesPerSecond: rate('DEPOT_DOWNLOAD_BYTES_PER_SECOND'),
+    uploadBytesPerSecondPerPrincipal: rate('DEPOT_UPLOAD_BYTES_PER_SECOND_PER_PRINCIPAL'),
+    downloadBytesPerSecondPerPrincipal: rate('DEPOT_DOWNLOAD_BYTES_PER_SECOND_PER_PRINCIPAL'),
   };
 }

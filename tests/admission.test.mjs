@@ -35,3 +35,19 @@ test('gateway wait timeout does not reserve a slot', async () => {
   assert.equal(gate.snapshot.waiting, 0);
   assert.equal(gate.snapshot.active, 0);
 });
+
+test('per-principal active cap leaves free slots usable by other clients and close is permanent', async () => {
+  const gate = new AdmissionQueue(3, 8, 4, 1000, 1);
+  const first = await gate.acquire('a');
+  const same = gate.acquire('a');
+  const other = await gate.acquire('b');
+  assert.equal(gate.snapshot.active, 2);
+  assert.equal(gate.snapshot.waiting, 1);
+  first();
+  const resumed = await same;
+  other();
+  resumed();
+  assert.equal(gate.snapshot.active, 0);
+  gate.close();
+  await assert.rejects(gate.acquire('a'), { code: 'unavailable' });
+});

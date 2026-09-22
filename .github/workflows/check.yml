@@ -81,4 +81,4 @@ jobs:
         run: npm run test:large
       - name: Test 5 GiB multipart with process kill during upload
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.large_transfers }}
-        run: node tests/large-transfer.mjs --multipart --verified
+        run: node tests/large-transfer.mjs --multipart --verified --traffic
