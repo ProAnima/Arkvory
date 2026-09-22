@@ -49,12 +49,18 @@ export class PostgresCatalog implements Catalog {
       max: 5,
       connectionTimeoutMillis: 5000,
       statement_timeout: 10000,
+      query_timeout: 15000,
+      keepAlive: true,
+      keepAliveInitialDelayMillis: 10000,
     });
     this.locks = new Pool({
       connectionString,
       max: maxWriters,
       connectionTimeoutMillis: 5000,
       statement_timeout: 10000,
+      query_timeout: 15000,
+      keepAlive: true,
+      keepAliveInitialDelayMillis: 10000,
     });
     // Idle connection failures are retried by the pool; never leak connection strings in logs.
     this.pool.on('error', () => undefined);
@@ -111,6 +117,7 @@ export class PostgresCatalog implements Catalog {
 
   async create(input: Parameters<Catalog['create']>[0]): Promise<Upload> {
     const client = await this.pool.connect();
+    let unusable = false;
     try {
       await client.query('BEGIN');
       // Serialize only reservations, never byte transfers.
@@ -151,10 +158,14 @@ export class PostgresCatalog implements Catalog {
       await client.query('COMMIT');
       return decode(inserted.rows[0]);
     } catch (error) {
-      await client.query('ROLLBACK');
+      try {
+        await client.query('ROLLBACK');
+      } catch {
+        unusable = true;
+      }
       throw error;
     } finally {
-      client.release();
+      client.release(unusable);
     }
   }
 

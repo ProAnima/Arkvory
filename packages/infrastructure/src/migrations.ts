@@ -2,6 +2,7 @@ import type { Pool } from 'pg';
 
 export async function migrate(pool: Pool): Promise<void> {
   const client = await pool.connect();
+  let unusable = false;
   try {
     await client.query('BEGIN');
     await client.query('SELECT pg_advisory_xact_lock(18471, 1)');
@@ -36,9 +37,13 @@ export async function migrate(pool: Pool): Promise<void> {
     }
     await client.query('COMMIT');
   } catch (error) {
-    await client.query('ROLLBACK');
+    try {
+      await client.query('ROLLBACK');
+    } catch {
+      unusable = true;
+    }
     throw error;
   } finally {
-    client.release();
+    client.release(unusable);
   }
 }
