@@ -19,6 +19,7 @@
     "isolatedModules": true,
     "noEmit": true,
     "noEmitOnError": true,
-    "skipLibCheck": false
+    "skipLibCheck": false,
+    "customConditions": ["depot-source"]
   }
 }

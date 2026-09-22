@@ -4,11 +4,22 @@
   "private": true,
   "type": "module",
   "description": "HTTP API и composition root",
-  "exports": "./src/index.ts",
+  "exports": {
+    "depot-source": "./src/index.ts",
+    "types": "./dist/index.d.ts",
+    "import": "./dist/index.js"
+  },
   "license": "UNLICENSED",
   "author": "Ian Panaev",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ProAnima/Depot.git"
+  },
+  "dependencies": {
+    "@proanima/depot-application": "0.0.0",
+    "@proanima/depot-contracts": "0.0.0",
+    "@proanima/depot-domain": "0.0.0",
+    "@proanima/depot-infrastructure": "0.0.0",
+    "fastify": "5.12.5"
   }
 }

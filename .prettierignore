@@ -8,3 +8,4 @@ staging/
 backups/
 artifacts/
 test-results/
+.cache/

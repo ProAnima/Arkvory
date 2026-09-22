@@ -1,18 +1,11 @@
 # Проверки в CI
 
-Репозиторий размещается в GitHub: [ProAnima/Depot](https://github.com/ProAnima/Depot). Workflow [.github/workflows/check.yml](../.github/workflows/check.yml) запускает проверки каркаса на `ubuntu-latest` и `windows-latest` при push в main, pull request и ручном запуске.
+[Workflow](../.github/workflows/check.yml) запускается при push в main, pull request и вручную. Actions закреплены по commit SHA, доступ — `contents: read`, credentials checkout не сохраняются. Deploy не выполняется.
 
-Actions закреплены по commit SHA; workflow имеет только `contents: read`, не сохраняет checkout credentials и не выполняет deploy. Установка в CI отключает lifecycle scripts зависимостей. Последовательность:
+Linux и Windows: `npm ci --ignore-scripts`, `npm run check`, `npm test`. Это установка из lock-файла, формат, TypeScript, ESLint, границы, сборка JS/declarations и тесты домена/Range/LocalBlobStore.
 
-```sh
-npm ci --ignore-scripts
-npm run check
-```
+Отдельная Linux job поднимает PostgreSQL 18.4 и запускает `npm run test:integration`. Тесты создают и удаляют собственную schema; credentials относятся только к изолированному CI service. Рабочие ключи и базы не нужны. Отсутствие тестовой БД приводит к ошибке, а не к зелёному пропуску.
 
-Окружение: Node.js 24 LTS с актуальными исправлениями, npm 11. Lock-файл обязателен; его рассогласование с manifests должно завершать установку ошибкой. Кешировать допустимо npm cache по версии Node и lock-файлу, а не случайный node_modules от другой среды.
+Ручной workflow_dispatch с `large_transfers=true` дополнительно запускает 5 GiB HTTP test с новым серверным процессом, принудительным завершением, повторным запуском, Range, полным скачиванием, SHA-256 и измерением RSS. Это тяжёлая проверка, поэтому не запускается при каждом изменении документации.
 
-Проверки каркаса: формат, typecheck всех workspaces, type-aware lint и dependency graph. Эти шаги не выполняют продуктовые тесты. Первый рабочий сценарий должен добавить отдельные обязательные unit/contract/integration jobs без `passWithNoTests`.
-
-По мере реализации нужны: сборка deployable JS из чистого checkout, smoke test артефакта, PostgreSQL/blob-store integration, проверки схем/OpenAPI/SDK и совместимости ProGet. Нагрузочные/отказные тесты выполняются на выделенном стенде с сохранённой конфигурацией и результатами.
-
-Runtime-секреты предоставляются только нужным jobs. Для проверки pull request не нужны ключи рабочего ProGet или производственного storage. Автоматический deploy и публикация пакетов в этом каркасе не настроены.
+Окружение — Node.js 24 LTS, npm 11. [Измерения локального стенда](CORE_VALIDATION.md), [запуск](CORE_RUNBOOK.md). Совместимость ProGet, HA, очереди и промышленный failover пока не реализованы и не проверяются этими jobs.

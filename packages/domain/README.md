@@ -1,9 +1,5 @@
 # domain
 
-Чистые предметные правила и состояния.
+Чистые правила ArtifactDescriptor, Upload, repository scopes, идентификаторов и канонизации. Нет Node/БД/HTTP зависимостей.
 
-Статус: граница модуля, рабочая реализация ещё не добавлена.
-
-Разрешённые зависимости и правила: [ARCHITECTURE.md](../../docs/ARCHITECTURE.md). Общие инструкции: [AGENTS.md](../../AGENTS.md).
-
-Публичный вход — src/index.ts. Импорт внутренних файлов другого workspace запрещён. Реальные зависимости объявляются в package.json при появлении импорта.
+[Запуск и API](../../docs/CORE_RUNBOOK.md), [границы](../../docs/ARCHITECTURE.md), [ADR](../../docs/adr/0004-native-standalone-core.md). Публичный вход — src/index.ts; runtime exports — dist/index.js и declarations.

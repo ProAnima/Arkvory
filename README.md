@@ -8,7 +8,7 @@ UPack packages, metadata, tagging, collections, transfer queues, and ProGet-comp
 
 A **ProAnimaStudio** project. **Ian Panaev** is the author, copyright holder, and owner of the ProAnimaStudio brand.
 
-> **Stage: architecture and development scaffold.** The repository contains documentation, strict TypeScript configuration, module boundaries, and automated quality checks. The storage server, user interface, APIs, queues, and high availability are not implemented yet. Product capabilities described below are planned unless explicitly marked as available.
+> **Stage: working standalone core, under development.** Native HTTP upload/download, PostgreSQL metadata, immutable local blobs, integrity checks, service keys, and admission limits are implemented. ProGet compatibility, UPack manifest handling, durable queues, UI, SDK, multipart uploads, garbage collection, and HA remain planned.
 
 ## Purpose
 
@@ -20,19 +20,20 @@ An initial use case is replacing ProGet for Universal Packages and ordinary file
 
 ## Current status
 
-| Area                                               | Status                                                               |
-| -------------------------------------------------- | -------------------------------------------------------------------- |
-| Product and technical plan                         | Prepared                                                             |
-| Clean architecture and SOLID guidelines            | Documented; import boundaries are checked automatically              |
-| Strict TypeScript and npm workspaces               | Configured for ten modules and applications                          |
-| Quality checks                                     | Typecheck, type-aware ESLint, Prettier, dependency-cruiser           |
-| GitHub Actions                                     | Scaffold checks configured for Linux and Windows                     |
-| Ownership and source access                        | Proprietary license; partner permissions require separate agreements |
-| APIs, UI, PostgreSQL integration, and blob storage | Planned                                                              |
-| 5 GB transfers, queues, load balancing, and HA     | Planned; performance and guarantees are not validated yet            |
-| Compatibility with specific ProGet clients         | Requires implementation and contract testing                         |
+| Area                                                                   | Status                                                     |
+| ---------------------------------------------------------------------- | ---------------------------------------------------------- |
+| Strict TypeScript, clean boundaries, JS/declaration builds             | Implemented                                                |
+| Native upload sessions and idempotent creation/completion              | Implemented                                                |
+| PostgreSQL migrations, immutable metadata, labels, repository scopes   | Implemented                                                |
+| Local blob storage, streaming SHA-256, publication after verification  | Implemented                                                |
+| Service keys, permissions, capacity reservations, transfer admission   | Implemented                                                |
+| GET/HEAD, ETag, single Range, conditional downloads                    | Implemented                                                |
+| Real PostgreSQL and failure/recovery tests                             | Implemented                                                |
+| 5 GiB upload, process restart, full download and checksum verification | Passed locally; see [test report](docs/CORE_VALIDATION.md) |
+| ProGet API, UPack manifest/version semantics, mutable catalog, UI/SDK  | Planned                                                    |
+| Durable queues, upload resume, GC, distributed delivery, HA            | Planned                                                    |
 
-Empty `src/index.ts` files mark future module boundaries. They are not working applications. Server startup commands and a production image are not available at this stage.
+The runnable role is `apps/api`. Worker, scheduler, web, SDK, and ProGet adapter remain module boundaries. This is a development core, not a production release. [Runbook and implemented API](docs/CORE_RUNBOOK.md) (Russian).
 
 ## Planned capabilities
 
@@ -101,9 +102,9 @@ Large files are transferred directly through delivery gateways and must not accu
 | Language                  | TypeScript with `strict` and additional indexed-access and optional-property checks |
 | Runtime                   | Node.js 24 LTS, ESM                                                                 |
 | Code organization         | npm workspaces; domain, application, adapters, and composition roots                |
-| HTTP API                  | Fastify, to be introduced with the first working use case                           |
-| Metadata and durable jobs | PostgreSQL; integration is planned                                                  |
-| Content                   | Local backend and S3-compatible adapter; HA backend selected separately             |
+| HTTP API                  | Fastify, implemented for the native core                                            |
+| Metadata and durable jobs | PostgreSQL; catalog and migrations implemented                                      |
+| Content                   | Local backend implemented; S3 and HA backend planned                                |
 | Delivery gateways         | Nginx with validated admission and bandwidth control                                |
 | UI                        | TypeScript; framework not yet selected                                              |
 | Quality                   | TypeScript, ESLint, Prettier, dependency-cruiser, GitHub Actions                    |
@@ -112,9 +113,9 @@ Development tool versions are pinned in manifests and the lockfile. Runtime depe
 
 ## Compatibility and integrations
 
-The native API is planned under `/api/v1`, covering the catalog, metadata, uploads, transfers, external references, events, and administration. Runtime schemas, OpenAPI, and the SDK must remain consistent.
+The implemented native API under `/api/v1` covers immutable artifact metadata, upload sessions, cancellation, and content delivery. OpenAPI is served at `/api/v1/openapi.json`. Transfers/jobs, mutable metadata, external references, events, administration, and SDK are planned. Runtime schemas, OpenAPI, and the future SDK must remain consistent.
 
-ProGet adapters target the operations used by clients across three API families:
+Planned ProGet adapters target the operations used by clients across three API families:
 
 | API family                   | Purpose                                             |
 | ---------------------------- | --------------------------------------------------- |
@@ -126,11 +127,11 @@ Compatibility includes response shapes, authentication, error codes, groups, ver
 
 Native clients will be able to create queued jobs, wait for admission, and resume transfers. A legacy client cannot transparently receive `202 + JSON` instead of file bytes: its validated synchronous contract, timeouts, and retry behavior must be respected.
 
-External applications use the public API and a versioned TypeScript SDK. They do not need shared database access or imports of Depot internals. Webhooks are planned with signatures, retries, and deduplication.
+External applications use the public API; a versioned TypeScript SDK is planned. They do not need shared database access or imports of Depot internals. Webhooks are planned with signatures, retries, and deduplication.
 
 ## Reliability and scale
 
-The initial design scenario is approximately **4 TB of data** with files **up to 5 GB**. These are requirements, not load-test results. Client concurrency, network capacity, hardware, and recovery objectives still need to be specified.
+The initial design scenario is approximately **4 TB of data** with files **up to 5 GB**. The 4 TB capacity remains a target. A single 5 GiB transfer and restart have been tested locally; see the validation report. Client concurrency, network capacity, hardware, and recovery objectives still need to be specified.
 
 - **Standalone:** one machine, local storage, and backups; no availability guarantee if that machine fails.
 - **Single-site HA:** multiple APIs/gateways, a resilient entry point, HA PostgreSQL, and durable content storage with an agreed write-acknowledgment policy.
@@ -164,29 +165,33 @@ scripts/            project verification tools
 
 ## Development setup
 
-These instructions are intended for the rights holder and developers with separately granted rights. They do not grant a license to use the code.
-
-Use Node.js 24 LTS with current security patches and npm 11. Run the following commands from the repository checkout:
+For authorized developers under the proprietary license. Requires Node.js 24 LTS, npm 11, PostgreSQL 18, and a local filesystem supporting hard links. Docker is optional if PostgreSQL is already available.
 
 ```sh
 git clone https://github.com/ProAnima/Depot.git
 cd Depot
 npm ci
-npm run check
+npm run build
+npm run init:local
+docker compose --env-file .env -f deploy/compose.dev.yml up -d --wait
+npm run migrate
+npm start
 ```
 
-Access to the private GitHub repository must be granted separately. These commands validate the scaffold; they do not start a storage server.
+Local initialization generates private credentials under ignored `data/` and `.env`; it refuses to overwrite an existing configuration. The API binds to `127.0.0.1:8080`. Upload from another terminal with `npm run upload -- ./example.upack releases`. The CLI prints an artifact URL; requests require the generated Bearer key.
 
-| Command                      | Purpose                                                          |
-| ---------------------------- | ---------------------------------------------------------------- |
-| `npm run check`              | Run all current scaffold checks                                  |
-| `npm run typecheck`          | Check ten workspaces in their Node/browser environments          |
-| `npm run lint`               | Run type-aware ESLint                                            |
-| `npm run architecture:check` | Detect cycles, forbidden layer dependencies, and invalid imports |
-| `npm run format:check`       | Check formatting                                                 |
-| `npm run format`             | Apply formatting                                                 |
+For an existing database, edit `DEPOT_DATABASE_URL` in `.env` instead of starting Compose. See the [runbook](docs/CORE_RUNBOOK.md) for configuration, permissions, recovery, and network access with TLS.
 
-Private workspace exports currently point to `.ts` sources for development. Runtime builds with JavaScript/declarations, application startup, and SDK publishing belong to the first implementation stage.
+| Command                    | Purpose                                                            |
+| -------------------------- | ------------------------------------------------------------------ |
+| `npm run check`            | Formatting, types, ESLint, architecture boundaries                 |
+| `npm run build`            | Compile all workspaces to JavaScript and declarations              |
+| `npm test`                 | Build and run domain/range/local-storage tests                     |
+| `npm run test:integration` | Real PostgreSQL and HTTP tests; requires `DEPOT_TEST_DATABASE_URL` |
+| `npm run test:large`       | 5 GiB HTTP upload/download, process restart, hash and RSS checks   |
+| `npm run format`           | Apply formatting                                                   |
+
+Current upload retries restart from byte zero. Cancelled sessions retain their storage reservation until a future safe GC. One API process owns a standalone database; this profile provides no node failover. Keep the database and the entire storage directory, including `storage-id`, together in backup/restore procedures.
 
 ## Development rules
 
@@ -201,7 +206,7 @@ The main contributor instructions are in [AGENTS.md](AGENTS.md) and [CONTRIBUTIN
 - Transfers require bounded buffers, cancellation, idempotency, and partial-failure handling.
 - Significant contract, durability, and boundary changes are recorded in ADRs.
 
-Scaffold checks are not product tests. A test runner and real unit, contract, and integration scenarios will be added with the first working behavior.
+The Node.js test runner covers the first working scenarios. Static checks alone do not establish storage durability or availability.
 
 ## Implementation roadmap
 
@@ -213,7 +218,7 @@ Scaffold checks are not product tests. A test runner and real unit, contract, an
 6. Test HA, backup/restore, and failure scenarios.
 7. Perform resumable migration, a pilot, final synchronization, cutover, and rollback validation.
 
-Full stage criteria are in [ROADMAP](docs/ROADMAP.md). The first technical milestone is a verifiable large-file transfer scenario.
+Full stage criteria are in [ROADMAP](docs/ROADMAP.md). The first standalone transfer scenario is implemented; distributed delivery and protocol compatibility remain separate milestones.
 
 ## Documentation
 
@@ -221,6 +226,8 @@ The English and Russian READMEs describe the same product scope. Detailed engine
 
 | Document                                     | Contents                                              |
 | -------------------------------------------- | ----------------------------------------------------- |
+| [CORE_RUNBOOK](docs/CORE_RUNBOOK.md)         | Running the native core, API, configuration, recovery |
+| [CORE_VALIDATION](docs/CORE_VALIDATION.md)   | Measured standalone test results and limitations      |
 | [PROJECT_PLAN](docs/PROJECT_PLAN.md)         | Detailed product and technical plan                   |
 | [ARCHITECTURE](docs/ARCHITECTURE.md)         | Layers and allowed dependencies                       |
 | [DOMAIN_MODEL](docs/DOMAIN_MODEL.md)         | Domain entities and invariants                        |

@@ -18,11 +18,20 @@
     "lint": "eslint apps packages --max-warnings=0",
     "architecture:check": "depcruise --config .dependency-cruiser.cjs apps packages",
     "format:check": "prettier . --check",
-    "format": "prettier . --write"
+    "format": "prettier . --write",
+    "build": "node scripts/build.mjs",
+    "start": "node --env-file-if-exists=.env apps/api/dist/main.js",
+    "migrate": "node --env-file-if-exists=.env apps/api/dist/migrate.js",
+    "test": "npm run build && node --test tests/*.test.mjs",
+    "test:integration": "npm run build && node --test --test-concurrency=1 tests/integration/*.test.mjs",
+    "test:large": "npm run build && node tests/large-transfer.mjs",
+    "init:local": "node scripts/init-local.mjs",
+    "upload": "node --env-file-if-exists=.env scripts/upload.mjs"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
     "@types/node": "24.13.6",
+    "@types/pg": "8.23.1",
     "dependency-cruiser": "18.4.0",
     "eslint": "10.11.0",
     "prettier": "3.9.8",

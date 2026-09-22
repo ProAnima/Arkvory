@@ -4,7 +4,11 @@
   "private": true,
   "type": "module",
   "description": "Публичный HTTP-клиент хранилища",
-  "exports": "./src/index.ts",
+  "exports": {
+    "depot-source": "./src/index.ts",
+    "types": "./dist/index.d.ts",
+    "import": "./dist/index.js"
+  },
   "license": "UNLICENSED",
   "author": "Ian Panaev",
   "repository": {

@@ -1,0 +1,19 @@
+name: depot-dev
+services:
+  postgres:
+    image: postgres:18.4
+    environment:
+      POSTGRES_USER: depot
+      POSTGRES_DB: depot
+      POSTGRES_PASSWORD: ${DEPOT_POSTGRES_PASSWORD:?Run npm run init:local first}
+    ports:
+      - '127.0.0.1:55432:5432'
+    volumes:
+      - depot-postgres:/var/lib/postgresql
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U depot -d depot']
+      interval: 3s
+      timeout: 3s
+      retries: 20
+volumes:
+  depot-postgres:

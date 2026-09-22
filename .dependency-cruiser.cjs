@@ -96,11 +96,12 @@ module.exports = {
   ],
   options: {
     doNotFollow: { path: 'node_modules' },
+    exclude: { path: '/dist/' },
     tsPreCompilationDeps: true,
     tsConfig: { fileName: 'tsconfig.json' },
     enhancedResolveOptions: {
       exportsFields: ['exports'],
-      conditionNames: ['types', 'import', 'node', 'default'],
+      conditionNames: ['depot-source', 'types', 'import', 'node', 'default'],
     },
     reporterOptions: { text: { highlightFocused: true } },
   },
