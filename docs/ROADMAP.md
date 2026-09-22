@@ -11,6 +11,7 @@
 - [x] Поднабор legacy downloads и проверяемый импорт из файлового каталога.
 - [x] Ограниченные сетевые повторы SDK, восстановление потерянных ответов upload, проверяемая Range-докачка и resume с сохранённого prefix.
 - [x] Общие и per-principal сетевые бюджеты standalone-шлюза, предел активных передач клиента, закрытие очередей и диагностика.
+- [x] Read gateways на общем root, фиксированные доли общего download-бюджета, конечные leases и локальная проверка потери связи с PostgreSQL.
 - [ ] Полная ProGet compatibility, online retention, глобальный scheduler, репликация и HA.
 
 ## Этапы
@@ -34,11 +35,11 @@
 
 Клиентское восстановление сетевых передач реализовано: [контракт и эксплуатация](TRANSFER_RECOVERY.md), [ADR 0007](adr/0007-client-transfer-recovery.md). Web использует проверяемый download, CLI upload — multipart/resume. Локальный дисковый журнал download и продолжение после закрытия браузера остаются будущими клиентскими функциями.
 
-Владелец выбрал **два сервера с репликацией**, стендовые проверки отложены: [проект профиля](TWO_NODE_PLAN.md). Следующие code milestones: legacy publication/list/metadata + контрактные fixtures; retention; два read gateways и глобальные сетевые квоты; реализация выбранного replication/fencing deployment.
+Владелец выбрал **два сервера с репликацией**, стендовые проверки отложены: [проект профиля](TWO_NODE_PLAN.md). Следующие code milestones: legacy publication/list/metadata + контрактные fixtures; retention; подтверждённые blob replicas и динамическое распределение квот; реализация выбранного replication/fencing deployment.
 
 ## Открытые решения
 
-В рамках этапа 3 реализован локальный исполнитель общего/per-principal byte budget: [TRAFFIC_CONTROL](TRAFFIC_CONTROL.md), [ADR 0008](adr/0008-gateway-bandwidth-budgets.md). Для завершения этапа нужны независимые read gateways, подтверждённые копии blobs, конечные leases общего бюджета и проверки потери координации. Локальный bucket каждого процесса нельзя выдавать за общий лимит площадки.
+В рамках этапа 3 реализован локальный исполнитель общего/per-principal byte budget: [TRAFFIC_CONTROL](TRAFFIC_CONTROL.md), [ADR 0008](adr/0008-gateway-bandwidth-budgets.md). Дополнительно реализованы независимые read gateways, конечные leases фиксированных долей и локальные проверки потери координации: [READ_GATEWAYS](READ_GATEWAYS.md), [ADR 0009](adr/0009-leased-read-gateways.md). Для завершения этапа нужны подтверждённые реплики blobs, инфраструктура входа и испытания смешанной нагрузки на выбранном стенде. Локальный bucket каждого процесса нельзя выдавать за общий лимит площадки.
 
 - Обязателен ли автоматический failover одного узла уже в первом промышленном выпуске?
 - Подтверждены две машины. Остаются ОС/диски, replication backend, fencing и способ резервирования PostgreSQL.

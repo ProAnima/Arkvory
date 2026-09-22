@@ -79,7 +79,8 @@ export class PostgresCatalog implements Catalog {
 
   async claimStorage(
     storageId: string,
-    role: 'api' | 'worker' | 'maintenance' = 'api',
+    role: 'api' | 'reader' | 'worker' | 'maintenance' = 'api',
+    sharedDownloads = false,
   ): Promise<void> {
     const client = await this.pool.connect();
     const state = { lost: false };
@@ -89,7 +90,23 @@ export class PostgresCatalog implements Catalog {
     };
     client.on('error', failed);
     try {
-      // One API process per standalone database. This is deliberately not HA.
+      if (role === 'reader' && !sharedDownloads)
+        throw new DepotError('invalid_input', 'Reader requires shared download policy');
+      if (role === 'api' || role === 'reader') {
+        const mode = await client.query<{ acquired: boolean }>(
+          sharedDownloads
+            ? 'SELECT pg_try_advisory_lock_shared(18471,7) AS acquired'
+            : 'SELECT pg_try_advisory_lock(18471,7) AS acquired',
+        );
+        if (!mode.rows[0]?.acquired)
+          throw new DepotError('busy', 'Conflicting gateway profile is active');
+        if (!sharedDownloads) {
+          const policy = await client.query('SELECT 1 FROM depot_download_policy');
+          if (policy.rowCount)
+            throw new DepotError('conflict', 'Database requires shared download configuration');
+        }
+      }
+      // One writer per database, including the shared-download profile. This is not HA.
       if (role === 'worker') {
         const worker = await client.query<{ acquired: boolean }>(
           'SELECT pg_try_advisory_lock(18471,6) AS acquired',
@@ -97,15 +114,12 @@ export class PostgresCatalog implements Catalog {
         if (!worker.rows[0]?.acquired)
           throw new DepotError('busy', 'Standalone supports one completion worker');
       }
-      if (role !== 'worker') {
+      if (role !== 'worker' && role !== 'reader') {
         const lock = await client.query<{ acquired: boolean }>(
           'SELECT pg_try_advisory_lock(18471,3) AS acquired',
         );
         if (!lock.rows[0]?.acquired)
-          throw new DepotError(
-            'busy',
-            'Another standalone API or maintenance process owns this database',
-          );
+          throw new DepotError('busy', 'Another writer or maintenance process owns this database');
       }
       const barrier = await client.query<{ acquired: boolean }>(
         role === 'maintenance'
@@ -113,11 +127,21 @@ export class PostgresCatalog implements Catalog {
           : 'SELECT pg_try_advisory_lock_shared(18471,4) AS acquired',
       );
       if (!barrier.rows[0]?.acquired)
-        throw new DepotError('busy', 'Maintenance requires the API and all workers to be stopped');
-      await client.query(
-        'INSERT INTO depot_storage_identity(singleton,storage_id) VALUES(true,$1) ON CONFLICT DO NOTHING',
-        [requireId(storageId)],
-      );
+        throw new DepotError('busy', 'Maintenance requires all gateways and workers to be stopped');
+      if (role === 'reader') {
+        const legacy = await client.query(`SELECT 1 FROM pg_locks writer
+          WHERE writer.locktype='advisory' AND writer.classid=18471 AND writer.objid=3 AND writer.objsubid=2 AND writer.granted
+          AND writer.database=(SELECT oid FROM pg_database WHERE datname=current_database())
+          AND NOT EXISTS(SELECT 1 FROM pg_locks mode WHERE mode.pid=writer.pid AND mode.locktype='advisory'
+            AND mode.classid=18471 AND mode.objid=7 AND mode.objsubid=2 AND mode.granted)`);
+        if (legacy.rowCount)
+          throw new DepotError('busy', 'Upgrade the writer before starting read gateways');
+      }
+      if (role !== 'reader')
+        await client.query(
+          'INSERT INTO depot_storage_identity(singleton,storage_id) VALUES(true,$1) ON CONFLICT DO NOTHING',
+          [requireId(storageId)],
+        );
       const identity = await client.query<{ storage_id: string }>(
         'SELECT storage_id FROM depot_storage_identity WHERE singleton=true',
       );
@@ -292,9 +316,9 @@ export class PostgresCatalog implements Catalog {
   }
 
   async ready(): Promise<void> {
-    const result = await this.pool.query('SELECT version FROM depot_migrations WHERE version=4');
+    const result = await this.pool.query('SELECT version FROM depot_migrations WHERE version=5');
     if (result.rowCount !== 1)
-      throw new DepotError('unavailable', 'Database migration 4 is required');
+      throw new DepotError('unavailable', 'Database migration 5 is required');
     await this.pool.query('SELECT id,expires_at FROM depot_uploads LIMIT 0');
   }
   async close(): Promise<void> {

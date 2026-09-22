@@ -68,6 +68,24 @@ export async function migrate(pool: Pool): Promise<void> {
         INSERT INTO depot_migrations(version) VALUES(4);
       `);
     }
+    const gateways = await client.query('SELECT version FROM depot_migrations WHERE version=5');
+    if (gateways.rowCount === 0) {
+      await client.query(`
+        CREATE TABLE depot_download_policy (
+          singleton boolean PRIMARY KEY CHECK(singleton),
+          slots integer NOT NULL CHECK(slots BETWEEN 2 AND 16),
+          bytes_per_second bigint NOT NULL CHECK(bytes_per_second BETWEEN 131072 AND 1099511627776),
+          principal_bytes_per_second bigint NOT NULL CHECK(principal_bytes_per_second>=0 AND principal_bytes_per_second<=1099511627776)
+        );
+        CREATE TABLE depot_gateway_leases (
+          slot integer PRIMARY KEY CHECK(slot BETWEEN 0 AND 15),
+          instance uuid NOT NULL,
+          generation bigint NOT NULL CHECK(generation>0),
+          expires_at timestamptz NOT NULL
+        );
+        INSERT INTO depot_migrations(version) VALUES(5);
+      `);
+    }
     await client.query('COMMIT');
   } catch (error) {
     try {

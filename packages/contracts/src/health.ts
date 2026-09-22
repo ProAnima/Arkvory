@@ -50,8 +50,16 @@ const direction = {
 export const readinessSchema = {
   type: 'object',
   additionalProperties: false,
-  required: ['status', 'writable', 'transfers'],
+  required: ['status', 'writable', 'transfers', 'role', 'sharedDownloads'],
   properties: {
+    role: { type: 'string', enum: ['api', 'reader'] },
+    sharedDownloads: {
+      type: 'object',
+      nullable: true,
+      additionalProperties: false,
+      required: ['slot', 'slots', 'active', 'leaseSeconds'],
+      properties: { slot: count, slots: count, active: { type: 'boolean' }, leaseSeconds: count },
+    },
     status: { type: 'string', enum: ['ready'] },
     writable: { type: 'boolean' },
     transfers: {

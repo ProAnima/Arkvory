@@ -8,7 +8,7 @@ UPack packages, metadata, tagging, collections, transfer queues, and ProGet-comp
 
 A **ProAnimaStudio** project. **Ian Panaev** is the author, copyright holder, and owner of the ProAnimaStudio brand.
 
-> **Stage: standalone 0.2, under development.** Native API, multipart/resume, UPack/assets catalog, metadata, worker, admission queues, offline GC/scrub, SDK and web console are implemented. Legacy download support is partial. Two-server replication, distributed delivery and full ProGet replacement are not ready.
+> **Stage: standalone 0.2, under development.** Native API, multipart/resume, UPack/assets catalog, metadata, worker, admission queues, offline GC/scrub, SDK and web console are implemented. Legacy download support is partial. Read gateways with leased shares of a common download budget are implemented for shared storage. Two-server replication and full ProGet replacement are not ready.
 
 ## Purpose
 
@@ -30,6 +30,7 @@ An initial use case is replacing ProGet for Universal Packages and ordinary file
 | UPack manifest/group/SemVer, immutable versions, asset revisions   | Implemented with validator limits                        |
 | PostgreSQL completion jobs, lease/generation, retries, worker      | Implemented                                              |
 | Bounded upload/download admission with client rotation             | One gateway, in memory                                   |
+| Shared-storage read gateways and fixed aggregate download shares   | Implemented; PostgreSQL leases, no node failover         |
 | GC and scrub                                                       | Offline; published blobs are retained                    |
 | SDK and RU/EN web console                                          | Implemented; details in runbook                          |
 | Asset history, exact revision lookup, atomic restore with audit    | API, SDK and console implemented                         |
@@ -42,6 +43,8 @@ Run `npm run migrate`, `npm start` and `npm run worker` separately. Console: `/c
 ## Capabilities and direction
 
 The standalone gateway now supports aggregate upload/download rate ceilings, a shared ceiling per principal across keys and connections, per-principal active transfer caps, and authenticated readiness diagnostics. Rates are configurable and disabled by default; active transfer defaults are one upload and up to four downloads per principal. These budgets belong to one process. See [traffic control](docs/TRAFFIC_CONTROL.md).
+
+An optional shared-storage profile runs one writer and additional read gateways. Fixed download shares are reserved through finite PostgreSQL leases; a lost lease stops delivery until restart. Idle shares are not redistributed. See [read gateways](docs/READ_GATEWAYS.md).
 
 The console has light, dark and system themes, live English/Russian switching, and responsive catalog, upload, history and artifact screens. Colors, typography, spacing, radii, controls and motion use centralized design tokens. Only appearance and language preferences are stored in the browser. See the [design system](docs/DESIGN_SYSTEM.md).
 
@@ -199,7 +202,7 @@ For an existing database, edit `DEPOT_DATABASE_URL` in `.env` instead of startin
 | `npm run test:large`       | 5 GiB HTTP upload/download, process restart, hash and RSS checks   |
 | `npm run format`           | Apply formatting                                                   |
 
-Multipart uploads resume from recorded 8 MiB parts; whole-file PUT retries restart from byte zero. Offline GC releases cancelled reservations after deleting their content and the grace period. One API process owns a standalone database; this profile provides no node failover. Keep the database and the entire storage directory, including `storage-id`, together in backup/restore procedures. Before updating, stop API/worker, back up both, run `npm run migrate` (schema 4), then start the new code. See [asset history and restore](docs/LIFECYCLE_AND_CATALOG.md#история-и-восстановление-файлов).
+Multipart uploads resume from recorded 8 MiB parts; whole-file PUT retries restart from byte zero. Offline GC releases cancelled reservations after deleting their content and the grace period. One API process owns a standalone database; this profile provides no node failover. Keep the database and the entire storage directory, including `storage-id`, together in backup/restore procedures. Before updating, stop API/worker, back up both, run `npm run migrate` (schema 5), then start the new code. See [asset history and restore](docs/LIFECYCLE_AND_CATALOG.md#история-и-восстановление-файлов).
 
 ## Development rules
 
@@ -226,7 +229,7 @@ The Node.js test runner covers the first working scenarios. Static checks alone 
 6. Test HA, backup/restore, and failure scenarios.
 7. Perform resumable migration, a pilot, final synchronization, cutover, and rollback validation.
 
-Full stage criteria are in [ROADMAP](docs/ROADMAP.md). The first standalone transfer scenario is implemented; distributed delivery and protocol compatibility remain separate milestones.
+Full stage criteria are in [ROADMAP](docs/ROADMAP.md). The first standalone transfer scenario is implemented; replicated delivery and full protocol compatibility remain separate milestones. Read gateways, fixed aggregate quotas and the offline upgrade procedure are documented in [READ_GATEWAYS](docs/READ_GATEWAYS.md). Stop all readers as well as the writer and worker before maintenance or changing the shared policy.
 
 ## Documentation
 

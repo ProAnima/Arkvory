@@ -6,4 +6,6 @@ LocalBlobStore и PostgresCatalog, миграции. Потоковые запи
 
 Расширения 0.2: [части, каталог, очереди и обслуживание](../../docs/LIFECYCLE_AND_CATALOG.md).
 
-BandwidthGovernor и AdmissionQueue обеспечивают общие/per-principal лимиты одного шлюза, bounded ожидание и остановку. Сетевые квоты не являются распределёнными: [TRAFFIC_CONTROL](../../docs/TRAFFIC_CONTROL.md).
+BandwidthGovernor и AdmissionQueue обеспечивают общие/per-principal лимиты одного шлюза, bounded ожидание и остановку. Локальный governor описан в [TRAFFIC_CONTROL](../../docs/TRAFFIC_CONTROL.md).
+
+PostgresDownloadLease и DownloadLeaseWindow координируют фиксированные доли раздачи, migration 5 хранит policy/slots. ClaimStorage сохраняет одного writer, добавляет readers и исключает смешение standalone/shared. Ограничения часов и общего storage: [ADR 0009](../../docs/adr/0009-leased-read-gateways.md).

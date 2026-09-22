@@ -47,3 +47,7 @@ Webhooks подписываются, могут дублироваться и п
 - [Asset Directories API](https://docs.inedo.com/docs/proget/api/assets)
 - [Multipart Assets](https://docs.inedo.com/docs/proget/api/assets/files/upload/multipart)
 - [RFC 9110](https://www.rfc-editor.org/rfc/rfc9110.html)
+
+## Профиль шлюза чтения
+
+`DEPOT_ROLE=reader` принимает только GET/HEAD; после аутентификации остальные методы получают 405, `Allow: GET, HEAD`, `code: read_only`, даже с write key. Прежние scopes чтения сохраняются. `/health/ready` содержит `role: api|reader`, `sharedDownloads: null|{slot,slots,active,leaseSeconds}`; `writable` всегда false на reader. Потеря ownership/lease — 503 с Retry-After, уже начатый поток прерывается. Консоль доступна на writer. Общая OpenAPI описывает операции writer; поддержка reader-профиля ограничена указанным правилом. [READ_GATEWAYS](READ_GATEWAYS.md).

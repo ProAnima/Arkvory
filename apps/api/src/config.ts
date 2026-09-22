@@ -1,11 +1,14 @@
 import { readFile } from 'node:fs/promises';
 import { DepotError } from '@proanima/depot-domain';
-import { parseKeys } from '@proanima/depot-infrastructure';
+import { parseKeys, downloadShare } from '@proanima/depot-infrastructure';
+import type { SharedDownloadPolicy } from '@proanima/depot-infrastructure';
 import type { ServiceKey } from '@proanima/depot-infrastructure';
 export { parseKeys } from '@proanima/depot-infrastructure';
 export type { ServiceKey } from '@proanima/depot-infrastructure';
 
 export interface ServerConfig {
+  readonly role?: 'api' | 'reader';
+  readonly sharedDownloads?: SharedDownloadPolicy;
   readonly databaseUrl: string;
   readonly dataDirectory: string;
   readonly host: string;
@@ -54,7 +57,33 @@ export async function loadConfig(env: NodeJS.ProcessEnv): Promise<ServerConfig> 
       throw new Error(`Invalid ${name}`);
     return value;
   };
+  const role = env['DEPOT_ROLE'] ?? 'api';
+  if (role !== 'api' && role !== 'reader') throw new Error('Invalid DEPOT_ROLE');
+  let sharedDownloads: SharedDownloadPolicy | undefined;
+  const clusterFields = [
+    'DEPOT_GATEWAY_SLOTS',
+    'DEPOT_GATEWAY_SLOT',
+    'DEPOT_SHARED_DOWNLOAD_BYTES_PER_SECOND',
+    'DEPOT_SHARED_DOWNLOAD_BYTES_PER_SECOND_PER_PRINCIPAL',
+  ];
+  if (clusterFields.some((name) => env[name] !== undefined)) {
+    const slot = required('DEPOT_GATEWAY_SLOT');
+    if (!/^(0|[1-9][0-9]?)$/.test(slot)) throw new Error('Invalid DEPOT_GATEWAY_SLOT');
+    sharedDownloads = {
+      slot: Number(slot),
+      slots: number('DEPOT_GATEWAY_SLOTS', 0, 16),
+      bytesPerSecond: rate('DEPOT_SHARED_DOWNLOAD_BYTES_PER_SECOND'),
+      perPrincipalBytesPerSecond: rate('DEPOT_SHARED_DOWNLOAD_BYTES_PER_SECOND_PER_PRINCIPAL'),
+    };
+    downloadShare(sharedDownloads);
+    if ((role === 'api') !== (sharedDownloads.slot === 0))
+      throw new Error('Writer must use slot zero; readers use other slots');
+  }
+  if (role === 'reader' && !sharedDownloads)
+    throw new Error('Read gateway requires shared download configuration');
   return {
+    role,
+    ...(sharedDownloads ? { sharedDownloads } : {}),
     databaseUrl,
     dataDirectory: required('DEPOT_DATA_DIR'),
     keys: parseKeys(keys),

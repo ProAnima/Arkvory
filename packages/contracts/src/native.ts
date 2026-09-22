@@ -92,7 +92,12 @@ const byteResponses = {
 
 export const openApiDocument = {
   openapi: '3.0.3',
-  info: { title: 'ProAnima Depot Native Core', version: '0.2.0' },
+  info: {
+    title: 'ProAnima Depot Native Core',
+    version: '0.2.0',
+    description:
+      'Writer API. Read gateways support GET/HEAD only; authenticated mutation requests receive 405 with Allow: GET, HEAD and code read_only. Readiness reports role and shared download lease status.',
+  },
   security: [{ serviceKey: [] }],
   components: { securitySchemes: { serviceKey: { type: 'http', scheme: 'bearer' } } },
   paths: {

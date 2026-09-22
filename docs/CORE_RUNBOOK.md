@@ -113,3 +113,7 @@ CI выполняет статические и локальные blob-тест
 ## Расширение 0.2
 
 [Части/resume, worker, очереди, каталог, UPack, SDK и консоль](LIFECYCLE_AND_CATALOG.md). [Совместимость](COMPATIBILITY.md), [перенос](MIGRATION.md), [два сервера](TWO_NODE_PLAN.md). Полная совместимость, распределённая сеть, replication/failover и production cutover остаются открытыми.
+
+## Дополнительные шлюзы чтения
+
+Текущий код требует схему 5: перед обновлением остановить writer/readers/worker, сделать согласованный backup, выполнить `npm run migrate`, запустить новый код. Standalone остаётся настройкой по умолчанию. Роль reader, общий storage, slots/rates, lease expiry, маршрутизация и offline-смена policy описаны в [READ_GATEWAYS](READ_GATEWAYS.md). Не подключайте произвольный сетевой share или асинхронную копию: конкретный backend сначала должен пройти проверку публикации и согласованного чтения.

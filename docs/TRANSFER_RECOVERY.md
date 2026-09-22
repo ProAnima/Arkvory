@@ -1,6 +1,6 @@
 # Возобновление сетевых передач
 
-Реализованный профиль: standalone API + portable TypeScript SDK. Два сервера, replication/fencing и глобальные квоты остаются отдельными этапами. Решение: [ADR 0007](adr/0007-client-transfer-recovery.md).
+Реализованный профиль: standalone API + portable TypeScript SDK. Дополнительно работают [read gateways с фиксированными общими квотами](READ_GATEWAYS.md); два физических сервера и replication/fencing остаются отдельным этапом. Решение: [ADR 0007](adr/0007-client-transfer-recovery.md).
 
 ## Ограниченные повторы
 

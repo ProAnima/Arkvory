@@ -13,6 +13,8 @@ import {
   PostgresJobs,
   AdmissionQueue,
   BandwidthGovernor,
+  PostgresDownloadLease,
+  downloadShare,
 } from '@proanima/depot-infrastructure';
 import { registerCatalogRoutes } from './catalog-routes.js';
 import { registerConsole } from './console.js';
@@ -39,6 +41,18 @@ function wire(upload: Upload): UploadResponse {
 }
 
 export async function createServer(config: ServerConfig) {
+  const role: unknown = config.role ?? 'api';
+  if (role !== 'api' && role !== 'reader') throw new Error('Invalid gateway role');
+  if (
+    (role === 'reader' && !config.sharedDownloads) ||
+    (config.sharedDownloads && (role === 'api') !== (config.sharedDownloads.slot === 0))
+  )
+    throw new Error('Shared downloads require writer slot zero and distinct reader slots');
+  const share = config.sharedDownloads ? downloadShare(config.sharedDownloads) : undefined;
+  const ceiling = (local: number | undefined, allocated: number | undefined) =>
+    Math.min(local || Infinity, allocated || Infinity) === Infinity
+      ? 0
+      : Math.min(local || Infinity, allocated || Infinity);
   const uploadGate = new AdmissionQueue(
     config.maxUploads,
     64,
@@ -55,6 +69,10 @@ export async function createServer(config: ServerConfig) {
   );
   const catalog = new PostgresCatalog(config.databaseUrl, config.capacityBytes, config.maxUploads);
   const blobs = new LocalBlobStore(config.dataDirectory);
+  const lease = config.sharedDownloads
+    ? new PostgresDownloadLease(catalog.pool, config.sharedDownloads)
+    : undefined;
+  const available = () => catalog.active && (lease?.active ?? true);
   const owners = [...new Set(config.keys.map((key) => key.principal.id))];
   const uploadBandwidth = new BandwidthGovernor(
     {
@@ -62,21 +80,31 @@ export async function createServer(config: ServerConfig) {
       perPrincipalBytesPerSecond: config.uploadBytesPerSecondPerPrincipal ?? 0,
     },
     owners,
-    () => catalog.active,
+    available,
   );
   const downloadBandwidth = new BandwidthGovernor(
     {
-      bytesPerSecond: config.downloadBytesPerSecond ?? 0,
-      perPrincipalBytesPerSecond: config.downloadBytesPerSecondPerPrincipal ?? 0,
+      bytesPerSecond: ceiling(config.downloadBytesPerSecond, share?.bytesPerSecond),
+      perPrincipalBytesPerSecond: ceiling(
+        config.downloadBytesPerSecondPerPrincipal,
+        share?.perPrincipalBytesPerSecond,
+      ),
     },
     owners,
-    () => catalog.active,
+    available,
   );
   try {
-    await blobs.initialize();
+    if (role === 'reader') await blobs.ready();
+    else await blobs.initialize();
     await catalog.ready();
-    await catalog.claimStorage(await blobs.identity());
+    await catalog.claimStorage(
+      await blobs.identity(role === 'reader'),
+      role,
+      !!config.sharedDownloads,
+    );
+    await lease?.start();
   } catch (error) {
+    lease?.close();
     await catalog.close();
     throw error;
   }
@@ -124,6 +152,7 @@ export async function createServer(config: ServerConfig) {
     downloadGate.close();
     uploadBandwidth.close();
     downloadBandwidth.close();
+    lease?.close();
     return Promise.resolve();
   });
   app.addHook('onClose', async () => {
@@ -141,10 +170,10 @@ export async function createServer(config: ServerConfig) {
       request.routeOptions.url?.startsWith('/console/')
     )
       return;
-    if (!catalog.active)
+    if (!available())
       throw new DepotError(
         'unavailable',
-        'Standalone database ownership lost; restart the service',
+        'Gateway ownership or download lease lost; restart the service',
       );
     const auth = request.headers.authorization;
     const legacy = request.url.startsWith('/upack/') || request.url.startsWith('/endpoints/');
@@ -168,6 +197,14 @@ export async function createServer(config: ServerConfig) {
       return;
     }
     principals.set(request, key.principal);
+    if (role === 'reader' && request.method !== 'GET' && request.method !== 'HEAD') {
+      await reply.code(405).header('Allow', 'GET, HEAD').send({
+        code: 'read_only',
+        message: 'Read gateway does not accept mutations',
+        requestId: request.id,
+      });
+      return;
+    }
     signal(request, reply);
     if (requests >= 128) throw new DepotError('busy', 'Request capacity exceeded');
     requests++;
@@ -222,16 +259,20 @@ export async function createServer(config: ServerConfig) {
   app.get('/health/ready', { schema: { response: { 200: readinessSchema } } }, async () => {
     await catalog.ready();
     await blobs.ready();
-    let writable = true;
+    let writable = role === 'api';
     try {
-      await blobs.checkSpace(0);
+      if (writable) await blobs.checkSpace(0);
     } catch (error) {
       if (error instanceof DepotError && error.code === 'capacity_exceeded') writable = false;
       else throw error;
     }
+    if (!available())
+      throw new DepotError('unavailable', 'Gateway ownership or download lease lost');
     return {
       status: 'ready',
       writable,
+      role,
+      sharedDownloads: lease?.snapshot ?? null,
       transfers: {
         uploads: { admission: uploadGate.snapshot, bandwidth: uploadBandwidth.snapshot },
         downloads: { admission: downloadGate.snapshot, bandwidth: downloadBandwidth.snapshot },
@@ -255,7 +296,7 @@ export async function createServer(config: ServerConfig) {
         principal(request).id,
         requestSignal ? AbortSignal.any([abort.signal, requestSignal]) : abort.signal,
       );
-      if (!catalog.active) throw new DepotError('unavailable', 'Gateway ownership lost');
+      if (!available()) throw new DepotError('unavailable', 'Gateway ownership lost');
       return await action();
     } finally {
       release?.();
@@ -487,6 +528,6 @@ export async function createServer(config: ServerConfig) {
     modifying,
     uploadStream,
   });
-  registerConsole(app, process.env['DEPOT_WEB_DIR'] ?? 'apps/web/public');
+  if (role === 'api') registerConsole(app, process.env['DEPOT_WEB_DIR'] ?? 'apps/web/public');
   return app;
 }

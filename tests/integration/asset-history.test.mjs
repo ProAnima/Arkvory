@@ -281,7 +281,10 @@ test('migration preserves old asset history without inventing authors or timesta
   await assign(f, id, 0);
   await f.app.close();
   await f.catalog.pool.query(
-    `ALTER TABLE depot_asset_revisions DROP COLUMN actor, DROP COLUMN created_at, DROP COLUMN source_revision; ALTER TABLE depot_asset_revisions DROP CONSTRAINT depot_asset_revision_positive; DELETE FROM depot_migrations WHERE version=4`,
+    `ALTER TABLE depot_asset_revisions DROP COLUMN actor, DROP COLUMN created_at, DROP COLUMN source_revision;
+     ALTER TABLE depot_asset_revisions DROP CONSTRAINT depot_asset_revision_positive;
+     DROP TABLE depot_gateway_leases, depot_download_policy;
+     DELETE FROM depot_migrations WHERE version>=4`,
   );
   await assert.rejects(f.catalog.ready(), { code: 'unavailable' });
   await migrate(f.catalog.pool);

@@ -39,12 +39,12 @@ export class LocalBlobStore implements BlobStore {
     await syncDirectory(this.root);
   }
 
-  async identity(): Promise<string> {
+  async identity(readOnly = false): Promise<string> {
     const path = join(this.root, 'storage-id');
     try {
       return requireId(await readFile(path, 'utf8'));
     } catch (error) {
-      if (!hasCode(error, 'ENOENT')) throw error;
+      if (!hasCode(error, 'ENOENT') || readOnly) throw error;
     }
     const temporary = join(this.root, `.identity-${randomUUID()}`);
     const handle = await open(temporary, 'wx', 0o600);

@@ -18,7 +18,7 @@ Standalone: один узел с backup, без доступности при е
 
 ## Очереди
 
-Реализованная локальная часть: [TRAFFIC_CONTROL](TRAFFIC_CONTROL.md) — общий и per-principal payload budget, bounded admission, отмена и preClose, агрегаты readiness. Описанная ниже распределённая координация остаётся целевой.
+Реализованная локальная часть: [TRAFFIC_CONTROL](TRAFFIC_CONTROL.md) — общий и per-principal payload budget, bounded admission, отмена и preClose, агрегаты readiness. Фиксированные доли download-бюджета и конечные leases уже реализованы для общего storage: [READ_GATEWAYS](READ_GATEWAYS.md). Динамическая распределённая координация, подтверждённые реплики и HA ниже остаются целевыми.
 
 Раздельные upload/download/background очереди. PostgreSQL сохраняет задания, попытки, резервы и leases; короткие транзакции захвата, TTL, heartbeat, fencing generation и повторяемые операции. Фактическая передача не удерживает SQL-транзакцию.
 

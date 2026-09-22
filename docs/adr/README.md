@@ -11,3 +11,7 @@ ADR нужен для изменения границ, публичных кон
 - [0004 — Нативное standalone-ядро](0004-native-standalone-core.md)
 - [0005 — Жизненный цикл, каталог и worker](0005-lifecycle-catalog-and-worker.md)
 - [0006 — История файлов и восстановление](0006-asset-history-and-restore.md)
+
+- [0007 — Клиентское восстановление передач](0007-client-transfer-recovery.md)
+- [0008 — Бюджеты полосы и допуск шлюза](0008-gateway-bandwidth-budgets.md)
+- [0009 — Шлюзы чтения и leases долей](0009-leased-read-gateways.md)

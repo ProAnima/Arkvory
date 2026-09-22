@@ -115,3 +115,15 @@ RSS обоих процессов ограничен assertion <384 MiB, выб�
 | Локальный отчёт                    | test-results/large-traffic.json (ignored)                        |
 
 Сценарий включает SIGKILL API после части 319, продолжение multipart, сборку, SIGKILL после публикации, suffix Range и принудительный обрыв download socket. Проверены целостность и RSS <384 MiB каждого процесса. Скорость не обязана достигать потолка: сюда входят fsync, сборка, restart, hash и HTTP-запросы. Общие квоты нескольких шлюзов, replication/fencing, физическая полоса интерфейса и HA этим прогоном не подтверждаются.
+
+## Шлюзы чтения и аренда долей (2026-09-22)
+
+Текущий набор: **47 unit/local/SDK tests + 34 PostgreSQL/HTTP integration tests**. Добавлены три unit-теста локального окна и расчёта долей, четыре интеграционных сценария; проверки конфигурации и обновления старого каталога расширены для схемы 5.
+
+Проверены writer и два reader в отдельных процессах, сумма скоростей, невозможность увеличить долю локальной настройкой, ACL/405/Range, обрыв при SIGKILL reader и целостность скачивания через writer. Проверены конфликт номера slot/policy, повторный startup до истечения аренды, рост generation, запрет standalone bypass и offline maintenance при живом reader, отсутствие создания storage на reader.
+
+TCP proxy приостанавливает обмен между reader и PostgreSQL во время активного download. Поток завершается до истечения DB reservation благодаря локальному окну; после expiry запускается новый reader с тем же slot. Возвращение DB-связи не оживляет старый процесс. Unit-тесты отдельно моделируют поздний heartbeat и паузу процесса. Условия часов и буферизации изложены в [READ_GATEWAYS](READ_GATEWAYS.md).
+
+Испытания выполнены на Windows, локальном PostgreSQL и одном согласованном storage root. Отказы двух физических серверов, репликация файлов/БД, внешний балансировщик, скачки DB clock и промышленный HA не проверялись.
+
+Повторный standalone regression `--multipart --verified --traffic` с новым кодом: 5 368 709 120 bytes, SIGKILL посреди upload и после публикации, обрыв download, полное совпадение SHA-256 `b23228f170c6e7ab93aeee2c5711299da5d561470be1c6842ef063f17bfed415`. Upload с продолжением и сборкой — 192,364 ms; verified download — 127,989 ms. RSS API — 151,617,536 bytes (около 145 MiB), клиента — 162,799,616 bytes (около 155 MiB), оба ниже assertion 384 MiB. Квоты: 64 MiB/s на шлюз и 48 MiB/s на principal в каждом направлении. Этот большой прогон проверяет standalone regression; несколько readers и потеря PostgreSQL проверены отдельными сценариями выше. Отчёт: ignored `test-results/large-traffic.json`.

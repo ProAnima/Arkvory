@@ -177,6 +177,33 @@ test('traffic environment configuration rejects invalid rates and active caps', 
     DEPOT_KEYS_FILE: path,
   };
   const defaults = await loadConfig(env);
+  assert.equal(defaults.role, 'api');
+  assert.equal(defaults.sharedDownloads, undefined);
+  const shared = {
+    ...env,
+    DEPOT_ROLE: 'reader',
+    DEPOT_GATEWAY_SLOT: '1',
+    DEPOT_GATEWAY_SLOTS: '2',
+    DEPOT_SHARED_DOWNLOAD_BYTES_PER_SECOND: '131072',
+  };
+  assert.deepEqual((await loadConfig(shared)).sharedDownloads, {
+    slots: 2,
+    slot: 1,
+    bytesPerSecond: 131072,
+    perPrincipalBytesPerSecond: 0,
+  });
+  for (const invalid of [
+    { DEPOT_ROLE: 'replica' },
+    { DEPOT_GATEWAY_SLOT: '0' },
+    { DEPOT_GATEWAY_SLOT: '2' },
+    { DEPOT_GATEWAY_SLOTS: '1' },
+    { DEPOT_SHARED_DOWNLOAD_BYTES_PER_SECOND: '65536' },
+    { DEPOT_SHARED_DOWNLOAD_BYTES_PER_SECOND_PER_PRINCIPAL: '65536' },
+    { DEPOT_ROLE: 'api' },
+  ])
+    await assert.rejects(loadConfig({ ...shared, ...invalid }));
+  await assert.rejects(loadConfig({ ...env, DEPOT_ROLE: 'reader' }));
+  await assert.rejects(loadConfig({ ...env, DEPOT_GATEWAY_SLOT: '0' }));
   assert.equal(defaults.downloadBytesPerSecond, 0);
   assert.equal(defaults.maxDownloadsPerPrincipal, 4);
   for (const value of ['-1', '1', '65535', '1e6', 'Infinity', '1.5', ' 65536', '1099511627777'])
