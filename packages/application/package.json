@@ -1,0 +1,14 @@
+{
+  "name": "@proanima/depot-application",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Сценарии приложения и порты зависимостей",
+  "exports": "./src/index.ts",
+  "license": "UNLICENSED",
+  "author": "Ian Panaev",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ProAnima/Depot.git"
+  }
+}

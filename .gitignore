@@ -1,0 +1,17 @@
+node_modules/
+dist/
+build/
+coverage/
+.cache/
+*.tsbuildinfo
+*.log
+.env
+.env.*
+!.env.example
+data/
+staging/
+backups/
+artifacts/
+test-results/
+.DS_Store
+Thumbs.db

@@ -1,0 +1,39 @@
+{
+  "name": "@proanima/depot",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Self-hosted artifact and file storage with UPack support, metadata, tagging, transfer queues, and ProGet-compatible APIs.",
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=24.13.0 <25",
+    "npm": ">=11 <12"
+  },
+  "scripts": {
+    "check": "npm run format:check && npm run typecheck && npm run lint && npm run architecture:check",
+    "typecheck": "node scripts/check-types.mjs",
+    "lint": "eslint apps packages --max-warnings=0",
+    "architecture:check": "depcruise --config .dependency-cruiser.cjs apps packages",
+    "format:check": "prettier . --check",
+    "format": "prettier . --write"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@types/node": "24.13.6",
+    "dependency-cruiser": "18.4.0",
+    "eslint": "10.11.0",
+    "prettier": "3.9.8",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.70.1"
+  },
+  "homepage": "https://github.com/ProAnima/Depot",
+  "license": "UNLICENSED",
+  "author": "Ian Panaev",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ProAnima/Depot.git"
+  }
+}
