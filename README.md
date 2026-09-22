@@ -40,6 +40,8 @@ Run `npm run migrate`, `npm start` and `npm run worker` separately. Console: `/c
 
 ## Capabilities and direction
 
+The console has light, dark and system themes, live English/Russian switching, and responsive catalog, upload, history and artifact screens. Colors, typography, spacing, radii, controls and motion use centralized design tokens. Only appearance and language preferences are stored in the browser. See the [design system](docs/DESIGN_SYSTEM.md).
+
 ### Packages, files, and catalog
 
 - UPack repositories with groups, names, versions, and original archives preserved during import.

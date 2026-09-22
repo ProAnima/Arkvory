@@ -34,6 +34,16 @@ test('portable SDK uploads parts, edits annotations and streams HTTP ranges', as
   assert.equal(page.status, 200);
   assert.match(page.headers.get('content-security-policy'), /frame-ancestors 'none'/);
   assert.match(await page.text(), /ProAnima Depot/);
+  for (const [file, type] of [
+    ['tokens.css', 'text/css'],
+    ['appearance-init.js', 'text/javascript'],
+  ]) {
+    const asset = await fetch(address + '/console/' + file);
+    assert.equal(asset.status, 200);
+    assert.match(asset.headers.get('content-type'), new RegExp(type));
+    assert.match(asset.headers.get('content-security-policy'), /script-src 'self'/);
+    assert((await asset.text()).length > 0);
+  }
   const unauthorized = await fetch(address + base + '/artifacts');
   assert.equal(unauthorized.status, 401);
 });

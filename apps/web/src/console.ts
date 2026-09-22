@@ -1,7 +1,10 @@
-import { DepotClient } from '@proanima/depot-sdk';
+import { DepotClient, DepotHttpError } from '@proanima/depot-sdk';
 import { record, text, stringMap } from '@proanima/depot-contracts';
 import { element } from './dom.js';
 import { installAssetHistory } from './asset-history.js';
+import { message } from './i18n.js';
+import { feedback, UiError, errorKey } from './feedback.js';
+import { initializeShell, showView } from './shell.js';
 declare global {
   interface Window {
     showSaveFilePicker?: (options: {
@@ -17,14 +20,27 @@ const token = element('token', HTMLInputElement),
   uploadId = element('upload-id', HTMLInputElement),
   progress = element('progress', HTMLProgressElement);
 const client = new DepotClient(location.origin, () => token.value);
+initializeShell();
 let stop: AbortController | undefined;
 let selected: { repository: string; id: string; revision: number; name: string } | undefined;
 let selectionGeneration = 0;
+let listGeneration = 0;
+const transferStatus = element('transfer-status', HTMLOutputElement);
 const run = (action: () => Promise<void>) => {
+  const requestId = element('request-id', HTMLSpanElement);
+  requestId.textContent = '';
+  delete requestId.dataset['i18n'];
   void action().catch((error: unknown) => {
-    output.textContent = error instanceof Error ? error.message : 'Operation failed';
+    feedback(output, errorKey(error), {}, 'error');
+    if (error instanceof DepotHttpError && error.requestId)
+      message(requestId, 'requestId', { id: error.requestId });
   });
 };
+function connection(connected: boolean) {
+  const state = element('connection-state', HTMLSpanElement);
+  state.dataset['connected'] = String(connected);
+  message(state, connected ? 'connected' : 'disconnected');
+}
 async function openArtifact(repo: string, id: string, name: string) {
   const generation = ++selectionGeneration;
   const a = await client.annotations(repo, id);
@@ -34,15 +50,31 @@ async function openArtifact(repo: string, id: string, name: string) {
   element('labels', HTMLInputElement).value = a.labels.join(', ');
   element('collections', HTMLInputElement).value = a.collections.join(', ');
   element('metadata', HTMLTextAreaElement).value = JSON.stringify(a.metadata, null, 2);
-  output.textContent = `Revision ${String(a.revision)}`;
+  element('editor', HTMLDivElement).hidden = false;
+  element('editor-empty', HTMLDivElement).hidden = true;
+  showView('metadata');
+  feedback(output, 'revisionStatus', { revision: a.revision });
 }
 function clearSelection() {
   selectionGeneration++;
   selected = undefined;
   for (const id of ['selected', 'labels', 'collections']) element(id, HTMLInputElement).value = '';
   element('metadata', HTMLTextAreaElement).value = '{}';
+  element('editor', HTMLDivElement).hidden = true;
+  element('editor-empty', HTMLDivElement).hidden = false;
 }
-for (const input of [repository, token]) input.addEventListener('input', clearSelection);
+function clearCatalog() {
+  listGeneration++;
+  rows.replaceChildren();
+  element('more', HTMLButtonElement).disabled = true;
+  element('catalog-empty', HTMLDivElement).hidden = false;
+  message(element('catalog-count', HTMLSpanElement), 'loaded', { count: 0 });
+  message(element('empty-title', HTMLHeadingElement), 'emptyTitle');
+  message(element('empty-description', HTMLParagraphElement), 'emptyDescription');
+  connection(false);
+  clearSelection();
+}
+for (const input of [repository, token]) input.addEventListener('input', clearCatalog);
 const resetHistory = installAssetHistory(client, repository, token, openArtifact, run);
 function hashFile(file: File, signal: AbortSignal): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -53,7 +85,7 @@ function hashFile(file: File, signal: AbortSignal): Promise<string> {
     };
     const cancel = () => {
       done();
-      reject(new Error('Остановлено / Cancelled'));
+      reject(new UiError('paused'));
     };
     signal.addEventListener('abort', cancel, { once: true });
     if (signal.aborted) {
@@ -62,7 +94,7 @@ function hashFile(file: File, signal: AbortSignal): Promise<string> {
     }
     worker.onerror = () => {
       done();
-      reject(new Error('Hash worker failed'));
+      reject(new UiError('hashError'));
     };
     worker.onmessage = (event: MessageEvent<unknown>) => {
       try {
@@ -72,25 +104,30 @@ function hashFile(file: File, signal: AbortSignal): Promise<string> {
           resolve(value['sha256']);
         } else if (typeof value['bytes'] === 'number') {
           progress.value = value['bytes'];
-          output.textContent = 'SHA-256…';
+          feedback(transferStatus, 'hashing');
         } else if (value['error']) {
           done();
-          reject(new Error('Hashing failed'));
+          reject(new UiError('hashError'));
         }
       } catch (error) {
         done();
-        reject(error instanceof Error ? error : new Error('Hashing failed'));
+        reject(error instanceof UiError ? error : new UiError('hashError'));
       }
     };
     worker.postMessage(file);
   });
 }
 async function list(after?: string) {
-  const page = await client.search(repository.value, {
+  const generation = ++listGeneration;
+  const repo = repository.value;
+  feedback(output, 'searching');
+  const page = await client.search(repo, {
     q: element('query', HTMLInputElement).value,
     label: element('filter-label', HTMLInputElement).value,
     ...(after ? { after } : {}),
   });
+  if (generation !== listGeneration) return;
+  connection(true);
   if (!after) rows.replaceChildren();
   for (const item of page.items) {
     const row = document.createElement('tr'),
@@ -99,10 +136,12 @@ async function list(after?: string) {
       actions = document.createElement('td');
     name.textContent = item.name;
     id.textContent = item.id;
+    id.className = 'artifact-id';
     const button = document.createElement('button');
-    button.textContent = 'Открыть / Open';
+    message(button, 'open');
+    button.className = 'secondary small';
     button.onclick = () => {
-      run(() => openArtifact(repository.value, item.id, item.name));
+      run(() => openArtifact(repo, item.id, item.name));
     };
     actions.append(button);
     row.append(name, id, actions);
@@ -113,7 +152,11 @@ async function list(after?: string) {
   more.onclick = () => {
     if (page.next) run(() => list(page.next ?? undefined));
   };
-  output.textContent = `${String(rows.rows.length)} файлов / files`;
+  element('catalog-empty', HTMLDivElement).hidden = rows.rows.length > 0;
+  message(element('empty-title', HTMLHeadingElement), 'noResultsTitle');
+  message(element('empty-description', HTMLParagraphElement), 'noResults');
+  message(element('catalog-count', HTMLSpanElement), 'loaded', { count: rows.rows.length });
+  feedback(output, 'loaded', { count: rows.rows.length });
 }
 element('connect', HTMLFormElement).onsubmit = (event) => {
   event.preventDefault();
@@ -126,20 +169,26 @@ element('search', HTMLFormElement).onsubmit = (event) => {
 element('logout', HTMLButtonElement).onclick = () => {
   stop?.abort();
   token.value = '';
-  rows.replaceChildren();
-  clearSelection();
+  clearCatalog();
   resetHistory();
-  output.textContent = 'Отключено / Disconnected';
+  feedback(output, 'disconnected');
 };
 element('cancel', HTMLButtonElement).onclick = () => stop?.abort();
 element('upload', HTMLFormElement).onsubmit = (event) => {
   event.preventDefault();
   run(async () => {
-    if (stop) throw new Error('Upload already running');
+    if (stop) throw new UiError('uploadRunning');
     const file = element('file', HTMLInputElement).files?.[0];
-    if (!file) throw new Error('Выберите файл / Choose a file');
-    if (file.size > 5 * 1024 ** 3) throw new Error('Maximum file size is 5 GiB');
+    if (!file) throw new UiError('chooseFileError');
+    if (file.size > 5 * 1024 ** 3) throw new UiError('fileTooLarge');
+    const repo = repository.value;
     stop = new AbortController();
+    element('connection-fields', HTMLFieldSetElement).disabled = true;
+    element('upload-submit', HTMLButtonElement).disabled = true;
+    element('cancel', HTMLButtonElement).disabled = false;
+    for (const id of ['file', 'upload-id', 'idempotency'])
+      element(id, HTMLInputElement).disabled = true;
+    element('new-upload', HTMLButtonElement).disabled = true;
     progress.max = Math.max(1, file.size);
     progress.value = 0;
     try {
@@ -148,24 +197,40 @@ element('upload', HTMLFormElement).onsubmit = (event) => {
         const key = element('idempotency', HTMLInputElement);
         if (!key.value) key.value = crypto.randomUUID();
         const upload = await client.create(
-          repository.value,
+          repo,
           key.value,
           { name: file.name, size: String(file.size), sha256, labels: [], metadata: {} },
           stop.signal,
         );
         uploadId.value = upload.id;
       }
-      const result = await client.resume(repository.value, uploadId.value, file, {
+      const result = await client.resume(repo, uploadId.value, file, {
         signal: stop.signal,
         onProgress: (bytes) => {
           progress.value = bytes;
-          output.textContent = `Загрузка / Upload: ${String(Math.round((bytes / file.size) * 100))}%`;
+          feedback(transferStatus, 'uploading', { percent: Math.round((bytes / file.size) * 100) });
         },
       });
-      output.textContent = `Готово / Published: ${result.id}`;
-      await list();
+      progress.value = progress.max;
+      feedback(transferStatus, 'published', { id: result.id }, 'success');
+      try {
+        await list();
+        feedback(output, 'published', { id: result.id }, 'success');
+      } catch {
+        feedback(output, 'publishedRefresh');
+      }
+    } catch (error) {
+      const failure = stop.signal.aborted ? new UiError('paused') : error;
+      feedback(transferStatus, errorKey(failure), {}, 'error');
+      throw failure;
     } finally {
       stop = undefined;
+      element('connection-fields', HTMLFieldSetElement).disabled = false;
+      element('upload-submit', HTMLButtonElement).disabled = false;
+      element('cancel', HTMLButtonElement).disabled = true;
+      for (const id of ['file', 'upload-id', 'idempotency'])
+        element(id, HTMLInputElement).disabled = false;
+      element('new-upload', HTMLButtonElement).disabled = false;
     }
   });
 };
@@ -173,43 +238,53 @@ element('new-upload', HTMLButtonElement).onclick = () => {
   if (!stop) {
     uploadId.value = '';
     element('idempotency', HTMLInputElement).value = '';
+    progress.value = 0;
+    feedback(transferStatus, 'transferIdle');
   }
 };
 element('edit', HTMLFormElement).onsubmit = (event) => {
   event.preventDefault();
   run(async () => {
-    if (!selected) throw new Error('Выберите файл / Select a file');
+    if (!selected) throw new UiError('selectError');
     const artifact = selected;
     const split = (id: string) =>
       element(id, HTMLInputElement)
         .value.split(',')
         .map((s) => s.trim())
         .filter(Boolean);
-    const raw: unknown = JSON.parse(element('metadata', HTMLTextAreaElement).value);
+    let metadata: Readonly<Record<string, string>>;
+    try {
+      const raw: unknown = JSON.parse(element('metadata', HTMLTextAreaElement).value);
+      metadata = stringMap(raw);
+    } catch {
+      throw new UiError('jsonError');
+    }
     const next = await client.annotate(artifact.repository, artifact.id, artifact.revision, {
       labels: split('labels'),
       collections: split('collections'),
-      metadata: stringMap(raw),
+      metadata,
     });
     if (selected !== artifact) return;
     artifact.revision = next.revision;
-    output.textContent = `Сохранено / Saved, revision ${String(next.revision)}`;
+    feedback(output, 'saved', { revision: next.revision }, 'success');
   });
 };
 element('register-package', HTMLButtonElement).onclick = () => {
   run(async () => {
-    if (!selected) throw new Error('Select a file');
+    if (!selected) throw new UiError('selectError');
     const value = await client.registerPackage(selected.repository, selected.id);
-    output.textContent = `UPack: ${text(value['name'])} ${text(value['version'])}`;
+    feedback(
+      output,
+      'registered',
+      { name: text(value['name']), version: text(value['version']) },
+      'success',
+    );
   });
 };
 element('download', HTMLButtonElement).onclick = () => {
   run(async () => {
-    if (!selected) throw new Error('Выберите файл / Select a file');
-    if (!window.showSaveFilePicker)
-      throw new Error(
-        'Потоковое сохранение требует Chrome/Edge и HTTPS. Используйте SDK в других браузерах. / Streaming save requires Chrome/Edge and HTTPS.',
-      );
+    if (!selected) throw new UiError('selectError');
+    if (!window.showSaveFilePicker) throw new UiError('saveUnsupported');
     const artifact = { ...selected };
     const repo = artifact.repository;
     const handle = await window.showSaveFilePicker({ suggestedName: artifact.name });
@@ -223,19 +298,20 @@ element('download', HTMLButtonElement).onclick = () => {
       throw error;
     }
     await response.body.pipeTo(target);
-    output.textContent = 'Скачано / Downloaded';
+    feedback(output, 'downloaded', {}, 'success');
   });
 };
 element('asset', HTMLFormElement).onsubmit = (event) => {
   event.preventDefault();
   run(async () => {
-    if (!selected) throw new Error('Select a file');
-    await client.setAsset(
+    if (!selected) throw new UiError('selectError');
+    const result = await client.setAsset(
       selected.repository,
       element('asset-path', HTMLInputElement).value,
       selected.id,
       Number(element('asset-revision', HTMLInputElement).value),
     );
-    output.textContent = 'Asset сохранён / saved';
+    element('asset-revision', HTMLInputElement).value = String(result.revision);
+    feedback(output, 'assigned', { revision: result.revision }, 'success');
   });
 };

@@ -2,6 +2,8 @@ import { DepotHttpError } from '@proanima/depot-sdk';
 import type { DepotClient } from '@proanima/depot-sdk';
 import type { AssetRevisionResponse } from '@proanima/depot-contracts';
 import { element } from './dom.js';
+import { message, dateMessage } from './i18n.js';
+import { feedback } from './feedback.js';
 
 export function installAssetHistory(
   client: DepotClient,
@@ -22,12 +24,12 @@ export function installAssetHistory(
     view = undefined;
     rows.replaceChildren();
     more.disabled = true;
-    status.textContent = 'Загрузите историю / Load history';
+    feedback(status, 'historyEmpty');
   };
   for (const input of [path, repository, token]) input.addEventListener('input', reset);
   function restored(repo: string, assetPath: string, revision: number) {
     if (view?.repository === repo && view.path === assetPath)
-      status.textContent = `Восстановлено как ревизия / Restored as revision ${String(revision)}`;
+      feedback(status, 'restored', { revision }, 'success');
   }
 
   async function load(before?: number) {
@@ -51,7 +53,7 @@ export function installAssetHistory(
       if (!view) return;
       view.next = page.next;
       for (const item of page.items) append(item, view);
-      status.textContent = `Ревизий / Revisions: ${String(rows.rows.length)} · Текущая / Current: ${String(view.revision)}`;
+      feedback(status, 'historyCount', { count: rows.rows.length, revision: view.revision });
     } catch (error) {
       if (!controller.signal.aborted) throw error;
     } finally {
@@ -63,19 +65,20 @@ export function installAssetHistory(
   }
   function append(item: AssetRevisionResponse, snapshot: NonNullable<typeof view>) {
     const row = document.createElement('tr');
-    for (const value of [
+    for (const [index, value] of [
       String(item.revision),
-      item.createdAt === null ? '—' : new Date(item.createdAt).toLocaleString(),
+      item.createdAt ?? '—',
       item.actor ?? '—',
       item.sourceRevision === null ? '—' : String(item.sourceRevision),
-    ]) {
+    ].entries()) {
       const cell = document.createElement('td');
       cell.textContent = value;
+      if (index === 1 && item.createdAt !== null) dateMessage(cell, item.createdAt);
       row.append(cell);
     }
     const actions = document.createElement('td');
     const select = document.createElement('button');
-    select.textContent = 'Открыть / Open';
+    message(select, 'open');
     select.className = 'secondary';
     select.onclick = () => {
       run(() =>
@@ -83,7 +86,7 @@ export function installAssetHistory(
       );
     };
     const restore = document.createElement('button');
-    restore.textContent = `Восстановить / Restore r${String(item.revision)}`;
+    message(restore, 'restore', { revision: item.revision });
     restore.disabled = item.revision === snapshot.revision;
     restore.onclick = () => {
       run(async () => {
@@ -106,8 +109,7 @@ export function installAssetHistory(
         } catch (error) {
           if (controller.signal.aborted) return;
           if (error instanceof DepotHttpError && error.status === 409)
-            status.textContent =
-              'Файл изменён. Обновите историю перед восстановлением. / File changed. Reload history before restoring.';
+            feedback(status, 'historyConflict', {}, 'error');
           else throw error;
         } finally {
           if (pending === controller) pending = undefined;

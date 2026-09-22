@@ -3,147 +3,396 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
     <title>ProAnima Depot</title>
+    <script src="/console/appearance-init.js"></script>
+    <link rel="stylesheet" href="/console/tokens.css" />
     <link rel="stylesheet" href="/console/style.css" />
     <script type="module" src="/console/console.js"></script>
   </head>
   <body>
-    <header>
-      <span class="mark">D</span>
-      <div>
-        <h1>ProAnima Depot</h1>
-        <p>Файлы, пакеты и метаданные · Files, packages & metadata</p>
-      </div>
-      <span class="badge">Standalone</span>
-    </header>
-    <main>
-      <section>
-        <h2>Подключение / Connection</h2>
-        <form id="connect">
-          <label>Репозиторий / Repository<input id="repository" value="releases" required /></label
-          ><label class="grow"
-            >Ключ доступа / Service key<input
-              id="token"
-              type="password"
-              autocomplete="off"
-              required
-              minlength="32" /></label
-          ><button>Подключиться / Connect</button
-          ><button id="logout" type="button" class="secondary">Отключиться / Disconnect</button>
-        </form>
-        <p class="hint">
-          Ключ хранится только в памяти этой вкладки. / The key stays in this tab's memory.
-        </p>
-      </section>
-      <section>
-        <h2>Загрузка / Upload</h2>
-        <form id="upload">
-          <label class="grow"
-            >Файл до 5 GiB / File up to 5 GiB<input id="file" type="file" required /></label
-          ><label
-            >ID загрузки для продолжения / Resume upload ID<input
-              id="upload-id"
-              placeholder="Создаётся автоматически / Automatic" /></label
-          ><label
-            >Ключ повтора / Idempotency key<input
-              id="idempotency"
-              placeholder="Создаётся автоматически / Automatic" /></label
-          ><button>Загрузить / Resume</button
-          ><button id="cancel" type="button" class="secondary">Пауза / Pause</button
-          ><button id="new-upload" type="button" class="secondary">Новая / New</button>
-        </form>
-        <progress id="progress" max="1" value="0"></progress>
-        <p class="hint">
-          Сохраните ID для продолжения после закрытия вкладки. / Keep the upload ID to resume after
-          closing this tab.
-        </p>
-      </section>
-      <section>
-        <h2>Каталог / Catalog</h2>
-        <form id="search">
-          <label class="grow">Имя / Name<input id="query" type="search" /></label
-          ><label>Метка / Label<input id="filter-label" /></label><button>Найти / Search</button>
-        </form>
-        <div class="table">
-          <table>
-            <thead>
-              <tr>
-                <th>Имя / Name</th>
-                <th>ID</th>
-                <th>Действия / Actions</th>
-              </tr>
-            </thead>
-            <tbody id="artifacts"></tbody>
-          </table>
-        </div>
-        <button id="more" class="secondary" disabled>Ещё / More</button>
-      </section>
-      <section>
-        <h2>Метаданные / Metadata</h2>
-        <label>Выбранный файл / Selected artifact<input id="selected" readonly /></label>
-        <form id="edit">
-          <label>Метки через запятую / Labels<input id="labels" /></label
-          ><label>Коллекции / Collections<input id="collections" /></label
-          ><label class="grow">Metadata JSON<textarea id="metadata" rows="4">{}</textarea></label
-          ><button>Сохранить / Save</button
-          ><button id="download" type="button" class="secondary">Скачать / Download</button>
-          <button id="register-package" type="button" class="secondary">
-            Зарегистрировать UPack / Register
-          </button>
-        </form>
-        <form id="asset">
-          <label class="grow"
-            >Путь asset / Asset path<input
-              id="asset-path"
-              placeholder="releases/current.upack"
-              required /></label
-          ><label
-            >Текущая ревизия (0 = новый) / Current revision<input
-              id="asset-revision"
-              type="number"
-              min="0"
-              value="0"
-              required /></label
-          ><button>Привязать / Assign</button>
-        </form>
-      </section>
-      <section>
-        <h2>История файла / File history</h2>
-        <form id="history">
-          <label class="grow"
-            >Путь файла / Asset path<input
-              id="history-path"
-              placeholder="releases/current.upack"
-              required
-          /></label>
-          <button>Обновить историю / Load history</button>
-        </form>
-        <p class="hint">
-          Восстановление создаёт новую ревизию. Откройте прежнюю ревизию, чтобы скачать её в разделе
-          метаданных. / Restore creates a new revision. Open an older revision to download it from
-          the metadata section.
-        </p>
-        <div class="table">
-          <table>
-            <thead>
-              <tr>
-                <th>Ревизия / Revision</th>
-                <th>Дата / Date</th>
-                <th>Автор / Actor</th>
-                <th>Источник / Restored from</th>
-                <th>Действия / Actions</th>
-              </tr>
-            </thead>
-            <tbody id="asset-history"></tbody>
-          </table>
-        </div>
-        <button id="history-more" class="secondary" disabled>Ещё ревизии / More revisions</button>
-        <output id="history-status" aria-live="polite">Загрузите историю / Load history</output>
-      </section>
-      <output id="status" aria-live="polite"
-        >Подключитесь для начала работы. / Connect to begin.</output
+    <a class="skip" href="#main" data-i18n="skip">Перейти к содержимому</a>
+    <aside class="sidebar">
+      <a class="brand" href="/console/" aria-label="ProAnima Depot"
+        ><span class="brand-mark" aria-hidden="true"
+          ><svg viewBox="0 0 32 32">
+            <path d="m16 3 12 7-12 7L4 10 16 3Zm-12 13 12 7 12-7M4 22l12 7 12-7" /></svg></span
+        ><span
+          ><strong>Depot<span class="brand-dot">.</span></strong
+          ><small>PROANIMA STUDIO</small></span
+        ></a
       >
-    </main>
-    <footer>© Ian Panaev · ProAnimaStudio</footer>
+      <p class="nav-caption" data-i18n="workspace">Рабочее пространство</p>
+      <nav data-i18n-label="navigation" aria-label="Навигация по хранилищу">
+        <button type="button" data-nav="catalog" aria-current="page" aria-controls="catalog-panel">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <rect x="3" y="3" width="7" height="7" rx="1.5" />
+            <rect x="14" y="3" width="7" height="7" rx="1.5" />
+            <rect x="3" y="14" width="7" height="7" rx="1.5" />
+            <rect x="14" y="14" width="7" height="7" rx="1.5" /></svg
+          ><span data-i18n="catalog">Артефакты</span>
+        </button>
+        <button type="button" data-nav="upload" aria-controls="upload-panel">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 16V3m-5 5 5-5 5 5M4 15v5h16v-5" /></svg
+          ><span data-i18n="upload">Загрузка</span>
+        </button>
+        <button type="button" data-nav="history" aria-controls="history-panel">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M3 11a9 9 0 1 1 2 7M3 4v7h7m2-4v6l4 2" /></svg
+          ><span data-i18n="history">История файлов</span>
+        </button>
+        <button type="button" data-nav="metadata" aria-controls="metadata-panel">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4 6h16M4 12h16M4 18h16M8 3v6m8 0v6m-8 0v6" /></svg
+          ><span data-i18n="metadata">Свойства артефакта</span>
+        </button>
+      </nav>
+      <div class="sidebar-bottom">
+        <div class="environment">
+          <span class="dot"></span><span>Standalone</span
+          ><small data-i18n="localProfile">Один сервер</small>
+        </div>
+        <p data-i18n="privateStorage">Ваши файлы. Ваша инфраструктура.</p>
+        <small>© Ian Panaev</small>
+      </div>
+    </aside>
+    <div class="workspace">
+      <header class="topbar">
+        <div class="breadcrumb">
+          <strong>Depot</strong><span aria-hidden="true">/</span
+          ><span data-i18n="console">Консоль хранилища</span>
+        </div>
+        <div class="preferences">
+          <label
+            ><span data-i18n="theme">Оформление</span
+            ><select id="theme">
+              <option value="system" data-i18n="system">Системная</option>
+              <option value="light" data-i18n="light">Светлая</option>
+              <option value="dark" data-i18n="dark">Тёмная</option>
+            </select></label
+          ><label
+            ><span data-i18n="language">Язык</span
+            ><select id="language">
+              <option value="ru">Русский</option>
+              <option value="en">English</option>
+            </select></label
+          >
+        </div>
+      </header>
+      <main id="main" tabindex="-1">
+        <div class="page-heading">
+          <div>
+            <p class="eyebrow">PROANIMA DEPOT</p>
+            <h1 id="page-title" tabindex="-1" data-i18n="catalog">Артефакты</h1>
+            <p id="page-description" data-i18n="catalogSubtitle">
+              Исходные файлы. Порядок в версиях. Всё готово к раздаче.
+            </p>
+          </div>
+          <button class="primary heading-action" type="button" data-go="upload">
+            <span aria-hidden="true">＋</span><span data-i18n="uploadFile">Загрузить файл</span>
+          </button>
+        </div>
+        <details class="connection card" open>
+          <summary>
+            <span class="connection-heading"
+              ><span class="connection-icon" aria-hidden="true">↗</span
+              ><span data-i18n="connection">Подключение к репозиторию</span></span
+            ><span id="connection-state" class="badge" data-i18n="disconnected"
+              >Нет подключения</span
+            >
+          </summary>
+          <form id="connect">
+            <fieldset id="connection-fields" class="connection-fields">
+              <label
+                ><span data-i18n="repository">Репозиторий</span
+                ><input
+                  id="repository"
+                  value="releases"
+                  required
+                  autocomplete="off"
+                  spellcheck="false" /></label
+              ><label class="grow"
+                ><span data-i18n="serviceKey">Ключ доступа</span
+                ><input
+                  id="token"
+                  type="password"
+                  autocomplete="off"
+                  required
+                  minlength="32"
+                  data-i18n-placeholder="keyPlaceholder"
+                  placeholder="Введите ключ доступа" /></label
+              ><button class="primary" data-i18n="connect">Подключиться</button
+              ><button id="logout" type="button" class="secondary" data-i18n="disconnect">
+                Отключиться
+              </button>
+            </fieldset>
+          </form>
+          <p class="hint" data-i18n="keyHint">
+            Ключ остаётся в этой вкладке и не сохраняется в хранилище браузера.
+          </p>
+        </details>
+        <section
+          id="catalog-panel"
+          data-view="catalog"
+          aria-labelledby="catalog-title"
+          class="card catalog-card"
+        >
+          <div class="section-heading">
+            <div class="inline">
+              <h2 id="catalog-title" data-i18n="catalog">Артефакты</h2>
+              <span id="catalog-count" class="badge" data-i18n="loaded" data-param-count="0"
+                >Загружено: 0</span
+              >
+            </div>
+            <span class="hint" data-i18n="catalogHint"
+              >Неизменяемые файлы · Редактируемые метаданные</span
+            >
+          </div>
+          <form id="search" class="search-form">
+            <label class="grow"
+              ><span class="sr-only" data-i18n="name">Имя файла</span
+              ><input
+                id="query"
+                type="search"
+                data-i18n-placeholder="searchPlaceholder"
+                placeholder="Поиск артефактов по имени…" /></label
+            ><label
+              ><span class="sr-only" data-i18n="labelFilter">Фильтр по метке</span
+              ><input
+                id="filter-label"
+                data-i18n-placeholder="labelPlaceholder"
+                placeholder="Любая метка" /></label
+            ><button class="secondary" data-i18n="search">Найти</button>
+          </form>
+          <div class="table">
+            <table>
+              <thead>
+                <tr>
+                  <th data-i18n="name">Имя файла</th>
+                  <th data-i18n="identifier">ID артефакта</th>
+                  <th data-i18n="actions">Действия</th>
+                </tr>
+              </thead>
+              <tbody id="artifacts"></tbody>
+            </table>
+          </div>
+          <div id="catalog-empty" class="empty-state">
+            <div class="empty-visual" aria-hidden="true">
+              <svg viewBox="0 0 80 80">
+                <path
+                  d="m40 12 25 14-25 14-25-14 25-14Zm-25 14v28l25 14 25-14V26M40 40v28M27 19l25 14v13"
+                />
+              </svg>
+            </div>
+            <h3 id="empty-title" data-i18n="emptyTitle">Место для ваших артефактов</h3>
+            <p id="empty-description" data-i18n="emptyDescription">
+              Подключите репозиторий, чтобы просматривать файлы, изменять метаданные и управлять
+              версиями.
+            </p>
+          </div>
+          <div class="table-footer">
+            <span class="hint" data-i18n="fileTypes">UPack · Файлы</span
+            ><button id="more" class="secondary small" disabled data-i18n="more">
+              Загрузить ещё
+            </button>
+          </div>
+        </section>
+        <section id="upload-panel" data-view="upload" aria-labelledby="upload-title" hidden>
+          <div class="split-layout">
+            <div class="card padded">
+              <h2 id="upload-title" data-i18n="uploadFile">Загрузить файл</h2>
+              <form id="upload" class="stack">
+                <label class="file-picker"
+                  ><span class="upload-symbol" aria-hidden="true">↥</span
+                  ><strong data-i18n="chooseFile">Выберите файл, чтобы начать</strong
+                  ><span class="hint" data-i18n="fileHint"
+                    >Архивы UPack и обычные файлы · До 5 GiB</span
+                  ><input
+                    id="file"
+                    type="file"
+                    required
+                    data-i18n-label="file"
+                    aria-label="Выберите файл"
+                /></label>
+                <details class="resume-settings">
+                  <summary data-i18n="resumeTitle">Продолжить загрузку</summary>
+                  <p class="hint" data-i18n="resumeHint">
+                    Уже есть ID загрузки? Выберите тот же файл и укажите его ID ниже.
+                  </p>
+                  <div class="stack">
+                    <label
+                      ><span data-i18n="uploadId">ID загрузки</span
+                      ><input
+                        id="upload-id"
+                        spellcheck="false"
+                        data-i18n-placeholder="automatic"
+                        placeholder="Создаётся автоматически" /></label
+                    ><label
+                      ><span data-i18n="idempotency">Ключ повторного запроса</span
+                      ><input
+                        id="idempotency"
+                        spellcheck="false"
+                        data-i18n-placeholder="automatic"
+                        placeholder="Создаётся автоматически"
+                    /></label>
+                  </div>
+                </details>
+                <div class="button-row">
+                  <button id="upload-submit" class="primary" data-i18n="startUpload">
+                    Загрузить / продолжить</button
+                  ><button id="cancel" type="button" class="secondary" disabled data-i18n="pause">
+                    Пауза</button
+                  ><button id="new-upload" type="button" class="ghost" data-i18n="newUpload">
+                    Новая загрузка
+                  </button>
+                </div>
+              </form>
+            </div>
+            <aside class="card padded transfer-card">
+              <h2 data-i18n="transferTitle">Состояние передачи</h2>
+              <output id="transfer-status" data-i18n="transferIdle" aria-live="polite"
+                >Всё готово к загрузке</output
+              ><progress
+                id="progress"
+                max="1"
+                value="0"
+                data-i18n-label="transferTitle"
+                aria-label="Состояние передачи"
+              ></progress>
+              <p class="hint" data-i18n="transferHint">
+                Файл станет доступен после полной проверки содержимого.
+              </p>
+              <div class="notice">
+                <span aria-hidden="true">↻</span>
+                <p data-i18n="uploadHint">
+                  Сохраните ID загрузки, чтобы продолжить после закрытия вкладки.
+                </p>
+              </div>
+            </aside>
+          </div>
+        </section>
+        <section id="metadata-panel" data-view="metadata" aria-labelledby="metadata-title" hidden>
+          <div class="section-heading">
+            <h2 id="metadata-title" data-i18n="metadata">Свойства артефакта</h2>
+            <button type="button" class="ghost" data-go="catalog" data-i18n="backCatalog">
+              Вернуться к артефактам
+            </button>
+          </div>
+          <div id="editor-empty" class="card empty-state">
+            <h3 data-i18n="selectArtifact">Выберите артефакт</h3>
+            <p data-i18n="selectHint">
+              Откройте файл в каталоге или истории, чтобы изменить его свойства.
+            </p>
+          </div>
+          <div id="editor" class="split-layout" hidden>
+            <div class="card padded">
+              <label
+                ><span data-i18n="selected">ID артефакта</span
+                ><input id="selected" readonly class="mono"
+              /></label>
+              <form id="edit" class="stack">
+                <div class="form-grid">
+                  <label
+                    ><span data-i18n="labels">Метки</span
+                    ><input
+                      id="labels"
+                      data-i18n-placeholder="commaHint"
+                      placeholder="Разделяйте запятыми" /></label
+                  ><label
+                    ><span data-i18n="collections">Коллекции</span
+                    ><input
+                      id="collections"
+                      data-i18n-placeholder="commaHint"
+                      placeholder="Разделяйте запятыми"
+                  /></label>
+                </div>
+                <label
+                  ><span data-i18n="metadataJson">Метаданные (JSON)</span
+                  ><textarea id="metadata" rows="7" spellcheck="false">{}</textarea>
+                </label>
+                <div class="button-row">
+                  <button class="primary" data-i18n="save">Сохранить изменения</button
+                  ><button id="download" type="button" class="secondary" data-i18n="download">
+                    Скачать</button
+                  ><button id="register-package" type="button" class="ghost" data-i18n="register">
+                    Зарегистрировать UPack
+                  </button>
+                </div>
+              </form>
+            </div>
+            <aside class="card padded">
+              <h2 data-i18n="assetTitle">Ссылка на файл</h2>
+              <p class="hint" data-i18n="assetHint">
+                Привяжите артефакт к пути. Ревизия 0 создаёт новую ссылку.
+              </p>
+              <form id="asset" class="stack">
+                <label
+                  ><span data-i18n="assetPath">Путь файла</span
+                  ><input id="asset-path" placeholder="releases/current.upack" required /></label
+                ><label
+                  ><span data-i18n="currentRevision">Ожидаемая ревизия</span
+                  ><input
+                    id="asset-revision"
+                    type="number"
+                    min="0"
+                    max="2147483646"
+                    value="0"
+                    required /></label
+                ><button class="secondary" data-i18n="assign">Привязать файл</button>
+              </form>
+            </aside>
+          </div>
+        </section>
+        <section
+          id="history-panel"
+          data-view="history"
+          aria-labelledby="history-title"
+          class="card padded"
+          hidden
+        >
+          <h2 id="history-title" data-i18n="history">История файлов</h2>
+          <p class="hint" data-i18n="historyHint">
+            Восстановление создаёт новую ревизию. Откройте любую ревизию, чтобы скачать исходный
+            файл.
+          </p>
+          <form id="history" class="search-form">
+            <label class="grow"
+              ><span data-i18n="assetPath">Путь файла</span
+              ><input id="history-path" placeholder="releases/current.upack" required /></label
+            ><button class="primary" data-i18n="historyLoad">Загрузить историю</button>
+          </form>
+          <div class="table">
+            <table>
+              <thead>
+                <tr>
+                  <th data-i18n="revision">Ревизия</th>
+                  <th data-i18n="date">Создана</th>
+                  <th data-i18n="actor">Автор</th>
+                  <th data-i18n="source">Источник</th>
+                  <th data-i18n="actions">Действия</th>
+                </tr>
+              </thead>
+              <tbody id="asset-history"></tbody>
+            </table>
+          </div>
+          <div class="table-footer">
+            <output id="history-status" aria-live="polite" data-i18n="historyEmpty"
+              >Укажите путь файла, чтобы просмотреть историю.</output
+            ><button id="history-more" class="secondary" disabled data-i18n="historyMore">
+              Предыдущие ревизии
+            </button>
+          </div>
+        </section>
+        <div class="status-bar">
+          <span class="dot" aria-hidden="true"></span
+          ><output id="status" aria-live="polite" data-i18n="ready"
+            >Подключите репозиторий, чтобы начать.</output
+          ><span id="request-id" class="mono"></span>
+        </div>
+        <noscript>Включите JavaScript / Enable JavaScript.</noscript>
+      </main>
+      <footer><span>ProAnima Depot</span><span>© Ian Panaev · ProAnimaStudio</span></footer>
+    </div>
   </body>
 </html>

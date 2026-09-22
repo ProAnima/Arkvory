@@ -33,6 +33,15 @@ await build({
   minify: true,
   legalComments: 'inline',
 });
-for (const file of ['index.html', 'style.css'])
+await build({
+  entryPoints: ['apps/web/src/appearance-init.ts'],
+  outdir: 'apps/web/public',
+  bundle: true,
+  format: 'iife',
+  platform: 'browser',
+  target: 'es2023',
+  minify: true,
+});
+for (const file of ['index.html', 'style.css', 'tokens.css'])
   await copyFile(`apps/web/${file}`, `apps/web/public/${file}`);
 await copyFile('node_modules/@noble/hashes/LICENSE', 'apps/web/public/THIRD-PARTY.txt');

@@ -9,6 +9,8 @@ export function registerConsole(app: FastifyInstance, directory: string) {
     ['/console/console.js', 'console.js', 'text/javascript; charset=utf-8'],
     ['/console/hash-worker.js', 'hash-worker.js', 'text/javascript; charset=utf-8'],
     ['/console/style.css', 'style.css', 'text/css; charset=utf-8'],
+    ['/console/tokens.css', 'tokens.css', 'text/css; charset=utf-8'],
+    ['/console/appearance-init.js', 'appearance-init.js', 'text/javascript; charset=utf-8'],
   ] as const;
   for (const [url, file, type] of files)
     app.get(url, async (_request, reply) =>
