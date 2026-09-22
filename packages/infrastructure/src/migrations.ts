@@ -54,6 +54,20 @@ export async function migrate(pool: Pool): Promise<void> {
         INSERT INTO depot_migrations(version) VALUES(3);
       `);
     }
+    const history = await client.query('SELECT version FROM depot_migrations WHERE version=4');
+    if (history.rowCount === 0) {
+      await client.query(`
+        ALTER TABLE depot_asset_revisions
+          ADD COLUMN actor text,
+          ADD COLUMN created_at timestamptz,
+          ADD COLUMN source_revision integer,
+          ADD CONSTRAINT depot_asset_revision_positive CHECK(revision>0),
+          ADD CONSTRAINT depot_asset_source_older CHECK(source_revision>0 AND source_revision<revision),
+          ADD CONSTRAINT depot_asset_source_exists FOREIGN KEY(repository,path,source_revision) REFERENCES depot_asset_revisions(repository,path,revision);
+        ALTER TABLE depot_asset_revisions ALTER COLUMN created_at SET DEFAULT now();
+        INSERT INTO depot_migrations(version) VALUES(4);
+      `);
+    }
     await client.query('COMMIT');
   } catch (error) {
     try {

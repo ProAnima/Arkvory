@@ -28,7 +28,9 @@
 
 Выполнены основные native сценарии этапов 1–2 и часть 3–4: [runbook 0.2](LIFECYCLE_AND_CATALOG.md). Приёмку всего roadmap не объявляем: поднабор legacy download не заменяет ProGet; файловый импорт не равен переносу 4 ТБ; очереди одного API не равны распределённой балансировке. Этапы 5–7 требуют инфраструктуры и внешних клиентов.
 
-Владелец выбрал **два сервера с репликацией**, стендовые проверки отложены: [проект профиля](TWO_NODE_PLAN.md). Следующие code milestones: legacy publication/list/metadata + контрактные fixtures; история assets/retention; два read gateways и глобальные сетевые квоты; реализация выбранного replication/fencing deployment.
+История assets, чтение конкретной ревизии и атомарное восстановление реализованы в API/SDK/консоли: [ADR 0006](adr/0006-asset-history-and-restore.md). Retention и удаление опубликованного содержимого пока не включены.
+
+Владелец выбрал **два сервера с репликацией**, стендовые проверки отложены: [проект профиля](TWO_NODE_PLAN.md). Следующие code milestones: legacy publication/list/metadata + контрактные fixtures; retention; два read gateways и глобальные сетевые квоты; реализация выбранного replication/fencing deployment.
 
 ## Открытые решения
 

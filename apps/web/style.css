@@ -139,6 +139,9 @@ td {
 td:nth-child(2) {
   font-family: monospace;
 }
+td button {
+  margin: 3px;
+}
 output {
   display: block;
   padding: 16px;

@@ -107,6 +107,39 @@
           ><button>Привязать / Assign</button>
         </form>
       </section>
+      <section>
+        <h2>История файла / File history</h2>
+        <form id="history">
+          <label class="grow"
+            >Путь файла / Asset path<input
+              id="history-path"
+              placeholder="releases/current.upack"
+              required
+          /></label>
+          <button>Обновить историю / Load history</button>
+        </form>
+        <p class="hint">
+          Восстановление создаёт новую ревизию. Откройте прежнюю ревизию, чтобы скачать её в разделе
+          метаданных. / Restore creates a new revision. Open an older revision to download it from
+          the metadata section.
+        </p>
+        <div class="table">
+          <table>
+            <thead>
+              <tr>
+                <th>Ревизия / Revision</th>
+                <th>Дата / Date</th>
+                <th>Автор / Actor</th>
+                <th>Источник / Restored from</th>
+                <th>Действия / Actions</th>
+              </tr>
+            </thead>
+            <tbody id="asset-history"></tbody>
+          </table>
+        </div>
+        <button id="history-more" class="secondary" disabled>Ещё ревизии / More revisions</button>
+        <output id="history-status" aria-live="polite">Загрузите историю / Load history</output>
+      </section>
       <output id="status" aria-live="polite"
         >Подключитесь для начала работы. / Connect to begin.</output
       >

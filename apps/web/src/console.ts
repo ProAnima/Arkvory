@@ -1,5 +1,7 @@
 import { DepotClient } from '@proanima/depot-sdk';
 import { record, text, stringMap } from '@proanima/depot-contracts';
+import { element } from './dom.js';
+import { installAssetHistory } from './asset-history.js';
 declare global {
   interface Window {
     showSaveFilePicker?: (options: {
@@ -8,11 +10,6 @@ declare global {
   }
 }
 
-function element<T extends HTMLElement>(id: string, constructor: { new (): T }): T {
-  const value = document.getElementById(id);
-  if (!(value instanceof constructor)) throw new Error(`Missing element ${id}`);
-  return value;
-}
 const token = element('token', HTMLInputElement),
   repository = element('repository', HTMLInputElement),
   output = element('status', HTMLOutputElement),
@@ -21,12 +18,32 @@ const token = element('token', HTMLInputElement),
   progress = element('progress', HTMLProgressElement);
 const client = new DepotClient(location.origin, () => token.value);
 let stop: AbortController | undefined;
-let selected: { id: string; revision: number; name: string } | undefined;
+let selected: { repository: string; id: string; revision: number; name: string } | undefined;
+let selectionGeneration = 0;
 const run = (action: () => Promise<void>) => {
   void action().catch((error: unknown) => {
     output.textContent = error instanceof Error ? error.message : 'Operation failed';
   });
 };
+async function openArtifact(repo: string, id: string, name: string) {
+  const generation = ++selectionGeneration;
+  const a = await client.annotations(repo, id);
+  if (generation !== selectionGeneration || repo !== repository.value) return;
+  selected = { repository: repo, id, revision: a.revision, name };
+  element('selected', HTMLInputElement).value = id;
+  element('labels', HTMLInputElement).value = a.labels.join(', ');
+  element('collections', HTMLInputElement).value = a.collections.join(', ');
+  element('metadata', HTMLTextAreaElement).value = JSON.stringify(a.metadata, null, 2);
+  output.textContent = `Revision ${String(a.revision)}`;
+}
+function clearSelection() {
+  selectionGeneration++;
+  selected = undefined;
+  for (const id of ['selected', 'labels', 'collections']) element(id, HTMLInputElement).value = '';
+  element('metadata', HTMLTextAreaElement).value = '{}';
+}
+for (const input of [repository, token]) input.addEventListener('input', clearSelection);
+const resetHistory = installAssetHistory(client, repository, token, openArtifact, run);
 function hashFile(file: File, signal: AbortSignal): Promise<string> {
   return new Promise((resolve, reject) => {
     const worker = new Worker('/console/hash-worker.js', { type: 'module' });
@@ -85,15 +102,7 @@ async function list(after?: string) {
     const button = document.createElement('button');
     button.textContent = 'Открыть / Open';
     button.onclick = () => {
-      run(async () => {
-        const a = await client.annotations(repository.value, item.id);
-        selected = { id: item.id, revision: a.revision, name: item.name };
-        element('selected', HTMLInputElement).value = item.id;
-        element('labels', HTMLInputElement).value = a.labels.join(', ');
-        element('collections', HTMLInputElement).value = a.collections.join(', ');
-        element('metadata', HTMLTextAreaElement).value = JSON.stringify(a.metadata, null, 2);
-        output.textContent = `Revision ${String(a.revision)}`;
-      });
+      run(() => openArtifact(repository.value, item.id, item.name));
     };
     actions.append(button);
     row.append(name, id, actions);
@@ -118,7 +127,8 @@ element('logout', HTMLButtonElement).onclick = () => {
   stop?.abort();
   token.value = '';
   rows.replaceChildren();
-  selected = undefined;
+  clearSelection();
+  resetHistory();
   output.textContent = 'Отключено / Disconnected';
 };
 element('cancel', HTMLButtonElement).onclick = () => stop?.abort();
@@ -169,25 +179,27 @@ element('edit', HTMLFormElement).onsubmit = (event) => {
   event.preventDefault();
   run(async () => {
     if (!selected) throw new Error('Выберите файл / Select a file');
+    const artifact = selected;
     const split = (id: string) =>
       element(id, HTMLInputElement)
         .value.split(',')
         .map((s) => s.trim())
         .filter(Boolean);
     const raw: unknown = JSON.parse(element('metadata', HTMLTextAreaElement).value);
-    const next = await client.annotate(repository.value, selected.id, selected.revision, {
+    const next = await client.annotate(artifact.repository, artifact.id, artifact.revision, {
       labels: split('labels'),
       collections: split('collections'),
       metadata: stringMap(raw),
     });
-    selected.revision = next.revision;
+    if (selected !== artifact) return;
+    artifact.revision = next.revision;
     output.textContent = `Сохранено / Saved, revision ${String(next.revision)}`;
   });
 };
 element('register-package', HTMLButtonElement).onclick = () => {
   run(async () => {
     if (!selected) throw new Error('Select a file');
-    const value = await client.registerPackage(repository.value, selected.id);
+    const value = await client.registerPackage(selected.repository, selected.id);
     output.textContent = `UPack: ${text(value['name'])} ${text(value['version'])}`;
   });
 };
@@ -199,7 +211,7 @@ element('download', HTMLButtonElement).onclick = () => {
         'Потоковое сохранение требует Chrome/Edge и HTTPS. Используйте SDK в других браузерах. / Streaming save requires Chrome/Edge and HTTPS.',
       );
     const artifact = { ...selected };
-    const repo = repository.value;
+    const repo = artifact.repository;
     const handle = await window.showSaveFilePicker({ suggestedName: artifact.name });
     const response = await client.download(repo, artifact.id);
     if (!response.body) throw new Error('Missing download stream');
@@ -219,7 +231,7 @@ element('asset', HTMLFormElement).onsubmit = (event) => {
   run(async () => {
     if (!selected) throw new Error('Select a file');
     await client.setAsset(
-      repository.value,
+      selected.repository,
       element('asset-path', HTMLInputElement).value,
       selected.id,
       Number(element('asset-revision', HTMLInputElement).value),

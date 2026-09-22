@@ -1,10 +1,11 @@
 const str = { type: 'string' } as const;
 const revision = { type: 'integer', minimum: 0, maximum: 2147483646 } as const;
+const storedRevision = { type: 'integer', minimum: 1, maximum: 2147483647 } as const;
 const annotation = {
   type: 'object',
   required: ['revision', 'labels', 'metadata', 'collections'],
   properties: {
-    revision,
+    revision: { ...storedRevision, minimum: 0 },
     labels: { type: 'array', maxItems: 32, items: str },
     metadata: { type: 'object', maxProperties: 32, additionalProperties: str },
     collections: { type: 'array', maxItems: 32, items: str },
@@ -34,7 +35,35 @@ const job = {
 };
 const asset = {
   type: 'object',
-  properties: { path: str, revision, artifactId: { type: 'string', format: 'uuid' } },
+  required: ['path', 'revision', 'artifactId'],
+  properties: {
+    path: str,
+    revision: storedRevision,
+    artifactId: { type: 'string', format: 'uuid' },
+  },
+};
+const assetRevision = {
+  type: 'object',
+  required: [...asset.required, 'actor', 'createdAt', 'sourceRevision'],
+  properties: {
+    ...asset.properties,
+    actor: {
+      type: 'string',
+      nullable: true,
+      description: 'Null for history recorded before migration 4',
+    },
+    createdAt: {
+      type: 'string',
+      format: 'date-time',
+      nullable: true,
+      description: 'Null for history recorded before migration 4',
+    },
+    sourceRevision: {
+      ...storedRevision,
+      nullable: true,
+      description: 'Restored revision; null for ordinary replacement',
+    },
+  },
 };
 const pkg = {
   type: 'object',
@@ -153,6 +182,64 @@ const paths: Record<string, Record<string, unknown>> = {
         },
       }),
     }),
+  },
+  [`${root}/asset/history`]: {
+    get: operation(
+      'Immutable revision history, newest first; at most 50 per page; unknown path is 404',
+      {
+        type: 'object',
+        required: ['items', 'next'],
+        properties: {
+          items: { type: 'array', maxItems: 50, items: assetRevision },
+          next: {
+            ...storedRevision,
+            nullable: true,
+            description: 'Exclusive before cursor; null at end',
+          },
+        },
+      },
+      {
+        parameters: [
+          { ...query('path'), required: true },
+          {
+            name: 'before',
+            in: 'query',
+            schema: storedRevision,
+            description: 'Only revisions strictly smaller than this value',
+          },
+        ],
+      },
+    ),
+  },
+  [`${root}/asset/revision`]: {
+    get: operation(
+      'Resolve immutable asset revision; download its artifact through the content API',
+      assetRevision,
+      {
+        parameters: [
+          { ...query('path'), required: true },
+          { name: 'revision', in: 'query', required: true, schema: storedRevision },
+        ],
+      },
+    ),
+  },
+  [`${root}/asset/restore`]: {
+    post: operation(
+      'Append a new revision pointing at historical bytes; CAS and audit are atomic. Repeating stale expectedRevision returns 409.',
+      asset,
+      {
+        requestBody: request({
+          type: 'object',
+          additionalProperties: false,
+          required: ['path', 'sourceRevision', 'expectedRevision'],
+          properties: {
+            path: str,
+            sourceRevision: storedRevision,
+            expectedRevision: { ...revision, minimum: 1 },
+          },
+        }),
+      },
+    ),
   },
   [`${root}/search`]: {
     get: operation(

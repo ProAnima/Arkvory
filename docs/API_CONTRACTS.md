@@ -1,6 +1,6 @@
 # Контракты API
 
-Документ задаёт целевые правила API. Реализованный первый native subset и ограничения: [CORE_RUNBOOK](CORE_RUNBOOK.md). Его OpenAPI доступна по `/api/v1/openapi.json`; схемы находятся в contracts. Остальные области ниже запланированы.
+Документ задаёт целевые правила API. Реализованные native сценарии и ограничения: [CORE_RUNBOOK](CORE_RUNBOOK.md), [LIFECYCLE_AND_CATALOG](LIFECYCLE_AND_CATALOG.md). OpenAPI доступна по `/api/v1/openapi.json`; схемы и проверка ответов SDK находятся в contracts. Распределённые transfers, schemas, events/webhooks и administration остаются запланированными.
 
 ## Собственный API
 

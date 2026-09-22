@@ -31,6 +31,7 @@ An initial use case is replacing ProGet for Universal Packages and ordinary file
 | Bounded upload/download admission with client rotation           | One gateway, in memory                              |
 | GC and scrub                                                     | Offline; published blobs are retained               |
 | SDK and RU/EN web console                                        | Implemented; details in runbook                     |
+| Asset history, exact revision lookup, atomic restore with audit  | API, SDK and console implemented                    |
 | Legacy UPack/assets download                                     | Subset; not tested against real ProGet              |
 | Directory import with resume and download/hash verification      | Implemented; ProGet export and ACL mapping separate |
 | Two-server replication, failover, global balancing               | Design stage; lab validation deferred               |
@@ -115,7 +116,7 @@ Development tool versions are pinned in manifests and the lockfile. Runtime depe
 
 ## Compatibility and integrations
 
-The implemented native API under `/api/v1` covers immutable artifact metadata, upload sessions, cancellation, and content delivery. OpenAPI is served at `/api/v1/openapi.json`. Transfers/jobs, mutable metadata, external references, events, administration, and SDK are planned. Runtime schemas, OpenAPI, and the future SDK must remain consistent.
+The native API under `/api/v1` covers multipart uploads, completion jobs, content delivery, mutable annotations, package/asset catalogs, asset history and restoration, external references and catalog audit. OpenAPI is served at `/api/v1/openapi.json`. Distributed transfers, events/webhooks and administration remain planned. Runtime response validation, OpenAPI and the TypeScript SDK are maintained together.
 
 Planned ProGet adapters target the operations used by clients across three API families:
 
@@ -129,7 +130,7 @@ Compatibility includes response shapes, authentication, error codes, groups, ver
 
 Native clients will be able to create queued jobs, wait for admission, and resume transfers. A legacy client cannot transparently receive `202 + JSON` instead of file bytes: its validated synchronous contract, timeouts, and retry behavior must be respected.
 
-External applications use the public API; a versioned TypeScript SDK is planned. They do not need shared database access or imports of Depot internals. Webhooks are planned with signatures, retries, and deduplication.
+External applications use the public API and the portable TypeScript SDK in this workspace. They do not need shared database access or imports of Depot internals. Webhooks are planned with signatures, retries, and deduplication.
 
 ## Reliability and scale
 
@@ -160,7 +161,7 @@ docs/
   adr/              architecture decisions
   templates/        change-description templates
 deploy/             future deployment profiles
-tests/              future cross-package tests
+tests/              unit, integration and large transfer tests
 scripts/            project verification tools
 .github/workflows/  GitHub Actions scaffold checks
 ```
@@ -193,7 +194,7 @@ For an existing database, edit `DEPOT_DATABASE_URL` in `.env` instead of startin
 | `npm run test:large`       | 5 GiB HTTP upload/download, process restart, hash and RSS checks   |
 | `npm run format`           | Apply formatting                                                   |
 
-Current upload retries restart from byte zero. Cancelled sessions retain their storage reservation until a future safe GC. One API process owns a standalone database; this profile provides no node failover. Keep the database and the entire storage directory, including `storage-id`, together in backup/restore procedures.
+Multipart uploads resume from recorded 8 MiB parts; whole-file PUT retries restart from byte zero. Offline GC releases cancelled reservations after deleting their content and the grace period. One API process owns a standalone database; this profile provides no node failover. Keep the database and the entire storage directory, including `storage-id`, together in backup/restore procedures. Before updating, stop API/worker, back up both, run `npm run migrate` (schema 4), then start the new code. See [asset history and restore](docs/LIFECYCLE_AND_CATALOG.md#история-и-восстановление-файлов).
 
 ## Development rules
 

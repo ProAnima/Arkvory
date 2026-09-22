@@ -292,9 +292,9 @@ export class PostgresCatalog implements Catalog {
   }
 
   async ready(): Promise<void> {
-    const result = await this.pool.query('SELECT version FROM depot_migrations WHERE version=3');
+    const result = await this.pool.query('SELECT version FROM depot_migrations WHERE version=4');
     if (result.rowCount !== 1)
-      throw new DepotError('unavailable', 'Database migration 3 is required');
+      throw new DepotError('unavailable', 'Database migration 4 is required');
     await this.pool.query('SELECT id,expires_at FROM depot_uploads LIMIT 0');
   }
   async close(): Promise<void> {

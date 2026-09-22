@@ -19,6 +19,11 @@ function revision(value: unknown): number {
     throw new DepotError('invalid_input', 'Numeric expectedRevision required');
   return value;
 }
+function queryRevision(value: unknown): number {
+  if (typeof value !== 'string' || !/^[1-9][0-9]{0,9}$/.test(value))
+    throw new DepotError('invalid_input', 'Positive asset revision required');
+  return Number(value);
+}
 
 export function registerCatalogRoutes(
   app: FastifyInstance,
@@ -127,6 +132,38 @@ export function registerCatalogRoutes(
       request.params.repository,
       string(body['path']),
       string(body['artifactId']),
+      revision(body['expectedRevision']),
+    );
+  });
+  app.get<{ Params: Params; Querystring: unknown }>(`${base}/asset/history`, async (request) => {
+    const q = object(request.query);
+    return browse.assetHistory(
+      principal(request),
+      request.params.repository,
+      string(q['path']),
+      q['before'] === undefined ? undefined : queryRevision(q['before']),
+    );
+  });
+  app.get<{ Params: Params; Querystring: unknown }>(`${base}/asset/revision`, async (request) => {
+    const q = object(request.query);
+    return browse.assetRevision(
+      principal(request),
+      request.params.repository,
+      string(q['path']),
+      queryRevision(q['revision']),
+    );
+  });
+  app.post<{ Params: Params; Body: unknown }>(`${base}/asset/restore`, async (request) => {
+    const body = object(request.body);
+    if (
+      Object.keys(body).some((key) => !['path', 'sourceRevision', 'expectedRevision'].includes(key))
+    )
+      throw new DepotError('invalid_input', 'Unknown restore field');
+    return browse.restoreAsset(
+      principal(request),
+      request.params.repository,
+      string(body['path']),
+      revision(body['sourceRevision']),
       revision(body['expectedRevision']),
     );
   });

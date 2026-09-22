@@ -4,7 +4,7 @@
 
 Модульная архитектура с направлением зависимостей внутрь: предметные правила → сценарии и порты → внешние адаптеры → точки сборки. Наличие TypeScript-интерфейса само по себе не делает код чистым: домен должен оставаться независимым от инфраструктуры и её форматов.
 
-Базовый стек: TypeScript strict, Node.js 24 LTS, npm workspaces. Для HTTP используется Fastify, для каталога — PostgreSQL. Устойчивые jobs в PostgreSQL и файловые шлюзы Nginx запланированы. Fastify и node-postgres подключены в первом сценарии. UI-фреймворк и конкретный HA blob-store ещё не выбраны.
+Базовый стек: TypeScript strict, Node.js 24 LTS, npm workspaces. Для HTTP используется Fastify, для каталога и устойчивых completion jobs — PostgreSQL. Консоль написана на TypeScript и обращается через SDK; файловые шлюзы Nginx и конкретный HA blob-store ещё не реализованы.
 
 ## Направление зависимостей
 
@@ -51,4 +51,4 @@ LocalBlobStore — профиль одного сервера. HA использ
 
 ## Текущее состояние
 
-Реализованы domain/application, нативный HTTP API, PostgreSQL с миграциями, LocalBlobStore, JS/declaration-сборка, сервисные ключи и тесты. Один API владеет standalone-БД; UI/SDK/worker/scheduler/ProGet остаются будущими ролями. Рабочий контракт и ограничения: [CORE_RUNBOOK](CORE_RUNBOOK.md), [ADR 0004](adr/0004-native-standalone-core.md).
+Реализованы domain/application, нативный HTTP API, PostgreSQL с миграциями, LocalBlobStore, multipart/resume, каталог и история assets, SDK, консоль, completion worker и поднабор ProGet downloads. Один API владеет standalone-БД. Распределённый scheduler и HA остаются будущими ролями. Рабочие контракты и ограничения: [CORE_RUNBOOK](CORE_RUNBOOK.md), [LIFECYCLE_AND_CATALOG](LIFECYCLE_AND_CATALOG.md), [COMPATIBILITY](COMPATIBILITY.md), [ADR 0006](adr/0006-asset-history-and-restore.md).

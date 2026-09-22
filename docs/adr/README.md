@@ -10,3 +10,4 @@ ADR нужен для изменения границ, публичных кон
 
 - [0004 — Нативное standalone-ядро](0004-native-standalone-core.md)
 - [0005 — Жизненный цикл, каталог и worker](0005-lifecycle-catalog-and-worker.md)
+- [0006 — История файлов и восстановление](0006-asset-history-and-restore.md)

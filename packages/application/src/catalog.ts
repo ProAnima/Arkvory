@@ -26,6 +26,15 @@ export interface AssetEntry {
   revision: number;
   artifactId: string;
 }
+export interface AssetRevision extends AssetEntry {
+  actor: string | null;
+  createdAt: string | null;
+  sourceRevision: number | null;
+}
+export interface AssetHistoryPage {
+  items: readonly AssetRevision[];
+  next: number | null;
+}
 export interface BrowseStore {
   annotation(repository: string, id: string): Promise<Annotation>;
   annotate(
@@ -47,6 +56,8 @@ export interface BrowseStore {
     name: string | undefined,
   ): Promise<readonly PackageEntry[]>;
   asset(repository: string, path: string): Promise<AssetEntry>;
+  assetRevision(repository: string, path: string, revision: number): Promise<AssetRevision>;
+  assetHistory(repository: string, path: string, before?: number): Promise<AssetHistoryPage>;
   assets(repository: string, prefix: string): Promise<readonly AssetEntry[]>;
   setAsset(
     repository: string,
@@ -54,6 +65,7 @@ export interface BrowseStore {
     id: string,
     expected: number,
     actor: string,
+    sourceRevision?: number,
   ): Promise<AssetEntry>;
   search(
     repository: string,
@@ -146,6 +158,37 @@ export class ArtifactCatalog {
     if (prefix.length > 1024) throw new DepotError('invalid_input', 'Invalid prefix');
     return this.store.assets(repo, prefix);
   }
+  async assetRevision(p: Principal, repo: string, path: string, revision: number) {
+    authorize(p, repo, 'read');
+    this.existingRevision(revision);
+    return this.store.assetRevision(repo, requireAssetPath(path), revision);
+  }
+  async assetHistory(p: Principal, repo: string, path: string, before?: number) {
+    authorize(p, repo, 'read');
+    if (before !== undefined) this.existingRevision(before);
+    return this.store.assetHistory(repo, requireAssetPath(path), before);
+  }
+  async restoreAsset(
+    p: Principal,
+    repo: string,
+    path: string,
+    sourceRevision: number,
+    expected: number,
+  ) {
+    authorize(p, repo, 'write');
+    this.revision(expected);
+    if (expected === 0) throw new DepotError('invalid_input', 'Restore requires an existing asset');
+    const source = await this.assetRevision(p, repo, path, sourceRevision);
+    await this.storage.artifact(p, repo, source.artifactId);
+    return this.store.setAsset(
+      repo,
+      source.path,
+      source.artifactId,
+      expected,
+      p.id,
+      sourceRevision,
+    );
+  }
   async setAsset(p: Principal, repo: string, path: string, id: string, expected: number) {
     authorize(p, repo, 'write');
     await this.storage.artifact(p, repo, requireId(id));
@@ -181,5 +224,9 @@ export class ArtifactCatalog {
   private revision(value: number) {
     if (!Number.isSafeInteger(value) || value < 0 || value > 2147483646)
       throw new DepotError('invalid_input', 'Invalid expected revision');
+  }
+  private existingRevision(value: number) {
+    if (!Number.isSafeInteger(value) || value < 1 || value > 2147483647)
+      throw new DepotError('invalid_input', 'Invalid asset revision');
   }
 }

@@ -2,6 +2,9 @@ import {
   readUpload,
   readAnnotations,
   readJob,
+  readAsset,
+  readAssetRevision,
+  readAssetHistory,
   record,
   text,
   integer,
@@ -238,7 +241,7 @@ export class DepotClient {
     );
   }
   async setAsset(repository: string, path: string, artifactId: string, expectedRevision: number) {
-    return record(
+    return readAsset(
       await this.call(this.path(repository, 'asset'), 'PUT', {
         path,
         artifactId,
@@ -247,14 +250,48 @@ export class DepotClient {
     );
   }
   async asset(repository: string, path: string) {
-    const r = record(
+    return readAsset(
       await this.call(this.path(repository, `asset?path=${encodeURIComponent(path)}`)),
     );
-    return {
-      path: text(r['path']),
-      artifactId: text(r['artifactId']),
-      revision: integer(r['revision']),
-    };
+  }
+  async assetHistory(repository: string, path: string, before?: number, signal?: AbortSignal) {
+    const query = new URLSearchParams({ path });
+    if (before !== undefined) query.set('before', String(before));
+    return readAssetHistory(
+      await this.call(
+        this.path(repository, `asset/history?${query.toString()}`),
+        'GET',
+        undefined,
+        signal,
+      ),
+    );
+  }
+  async assetRevision(repository: string, path: string, revision: number, signal?: AbortSignal) {
+    const query = new URLSearchParams({ path, revision: String(revision) });
+    return readAssetRevision(
+      await this.call(
+        this.path(repository, `asset/revision?${query.toString()}`),
+        'GET',
+        undefined,
+        signal,
+      ),
+    );
+  }
+  async restoreAsset(
+    repository: string,
+    path: string,
+    sourceRevision: number,
+    expectedRevision: number,
+    signal?: AbortSignal,
+  ) {
+    return readAsset(
+      await this.call(
+        this.path(repository, 'asset/restore'),
+        'POST',
+        { path, sourceRevision, expectedRevision },
+        signal,
+      ),
+    );
   }
   async cancel(repository: string, id: string) {
     return readUpload(
