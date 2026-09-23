@@ -34,6 +34,7 @@ export async function setup(t, overrides = {}) {
           id: 'test-writer',
           repositories: ['releases'],
           permissions: ['read', 'write'],
+          administrator: true,
         },
       },
       {

@@ -53,6 +53,22 @@ test('authorization requires both repository and operation scope; identifiers ar
   assert.throws(() => requireId('../secret'), { code: 'invalid_input' });
 });
 
+test('group grants do not combine repository and action into broader access', () => {
+  const principal = {
+    id: 'user:one',
+    repositories: [],
+    permissions: [],
+    grants: [
+      { repository: 'public', permissions: ['read'] },
+      { repository: 'private', permissions: ['read', 'write'] },
+    ],
+  };
+  authorize(principal, 'public', 'read');
+  authorize(principal, 'private', 'write');
+  assert.throws(() => authorize(principal, 'public', 'write'), { code: 'forbidden' });
+  assert.throws(() => authorize(principal, 'other', 'read'), { code: 'forbidden' });
+});
+
 test('single Range handles boundaries, suffixes, huge integers, and unsupported multi ranges', () => {
   assert.deepEqual(parseRange('bytes=3-9', 6), { kind: 'partial', start: 3, end: 5 });
   assert.deepEqual(parseRange('bytes=-2', 6), { kind: 'partial', start: 4, end: 5 });

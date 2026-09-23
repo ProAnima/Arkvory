@@ -22,6 +22,7 @@ await writeFile(
         sha256: createHash('sha256').update(token).digest('hex'),
         repositories: ['releases'],
         permissions: ['read', 'write'],
+        administrator: true,
       },
     ],
     null,

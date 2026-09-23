@@ -30,6 +30,18 @@ function virtualClock() {
   };
 }
 
+test('registered account principal receives the same bounded quota as a configured key', async () => {
+  const gate = new BandwidthGovernor(
+    { bytesPerSecond: 131072, perPrincipalBytesPerSecond: 65536 },
+    ['service'],
+  );
+  await assert.rejects(gate.acquire('user:alice', 1), { code: 'forbidden' });
+  gate.register('user:alice');
+  gate.register('user:alice');
+  await gate.acquire('user:alice', 1);
+  gate.close();
+});
+
 test('bandwidth shares aggregate and principal budgets across concurrent flows with bounded burst', async () => {
   const time = virtualClock();
   const gate = new BandwidthGovernor(

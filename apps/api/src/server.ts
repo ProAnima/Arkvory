@@ -4,7 +4,12 @@ import Fastify from 'fastify';
 import type { FastifyRequest, FastifyReply } from 'fastify';
 import { DepotError } from '@proanima/depot-domain';
 import type { Principal, Upload } from '@proanima/depot-domain';
-import { StorageService, ArtifactCatalog, CompletionQueue } from '@proanima/depot-application';
+import {
+  StorageService,
+  ArtifactCatalog,
+  CompletionQueue,
+  IdentityService,
+} from '@proanima/depot-application';
 import {
   LocalBlobStore,
   PostgresCatalog,
@@ -15,9 +20,11 @@ import {
   BandwidthGovernor,
   PostgresDownloadLease,
   downloadShare,
+  PostgresIdentity,
 } from '@proanima/depot-infrastructure';
 import { registerCatalogRoutes } from './catalog-routes.js';
 import { registerConsole } from './console.js';
+import { registerIdentityRoutes } from './identity-routes.js';
 import { ProGetDownloads } from '@proanima/depot-proget-compat';
 import {
   descriptorSchema,
@@ -67,7 +74,9 @@ export async function createServer(config: ServerConfig) {
     20000,
     config.maxDownloadsPerPrincipal ?? Math.min(4, config.maxDownloads),
   );
+  const loginGate = new AdmissionQueue(2, 16, 16, 1000, 2);
   const catalog = new PostgresCatalog(config.databaseUrl, config.capacityBytes, config.maxUploads);
+  const identity = new IdentityService(new PostgresIdentity(catalog.pool));
   const blobs = new LocalBlobStore(config.dataDirectory);
   const lease = config.sharedDownloads
     ? new PostgresDownloadLease(catalog.pool, config.sharedDownloads)
@@ -147,9 +156,21 @@ export async function createServer(config: ServerConfig) {
     requestSignals.set(request, controller.signal);
     return controller.signal;
   };
+  const countRequest = (reply: FastifyReply) => {
+    if (requests >= 128) throw new DepotError('busy', 'Request capacity exceeded');
+    requests++;
+    let released = false;
+    reply.raw.once('close', () => {
+      if (!released) {
+        requests--;
+        released = true;
+      }
+    });
+  };
   app.addHook('preClose', () => {
     uploadGate.close();
     downloadGate.close();
+    loginGate.close();
     uploadBandwidth.close();
     downloadBandwidth.close();
     lease?.close();
@@ -158,6 +179,7 @@ export async function createServer(config: ServerConfig) {
   app.addHook('onClose', async () => {
     uploadGate.close();
     downloadGate.close();
+    loginGate.close();
     await catalog.close();
   });
   app.addHook('onRequest', async (request, reply) => {
@@ -175,8 +197,24 @@ export async function createServer(config: ServerConfig) {
         'unavailable',
         'Gateway ownership or download lease lost; restart the service',
       );
+    if (request.routeOptions.url === '/api/v1/auth/login') {
+      if (role === 'reader')
+        await reply.code(405).header('Allow', 'GET, HEAD').send({
+          code: 'read_only',
+          message: 'Read gateway does not accept mutations',
+          requestId: request.id,
+        });
+      if (role === 'api') {
+        signal(request, reply);
+        countRequest(reply);
+      }
+      return;
+    }
     const auth = request.headers.authorization;
-    const legacy = request.url.startsWith('/upack/') || request.url.startsWith('/endpoints/');
+    const legacy =
+      request.url.startsWith('/upack/') ||
+      request.url.startsWith('/endpoints/') ||
+      request.url.startsWith('/api/packages/');
     let token = auth?.startsWith('Bearer ') ? auth.slice(7) : '';
     if (legacy && typeof request.headers['x-apikey'] === 'string')
       token = request.headers['x-apikey'];
@@ -188,7 +226,11 @@ export async function createServer(config: ServerConfig) {
     const key = config.keys.find((candidate) =>
       timingSafeEqual(digest, Buffer.from(candidate.sha256, 'hex')),
     );
-    if (token.length < 32 || token.length > 512 || !key) {
+    const authenticated =
+      token.length >= 32 && token.length <= 512
+        ? (key?.principal ?? (await identity.resolve(token)))
+        : null;
+    if (!authenticated) {
       await reply.code(401).header('WWW-Authenticate', 'Bearer').send({
         code: 'unauthorized',
         message: 'Valid service key required',
@@ -196,7 +238,11 @@ export async function createServer(config: ServerConfig) {
       });
       return;
     }
-    principals.set(request, key.principal);
+    principals.set(request, authenticated);
+    if (authenticated.id.startsWith('user:')) {
+      uploadBandwidth.register(authenticated.id);
+      downloadBandwidth.register(authenticated.id);
+    }
     if (role === 'reader' && request.method !== 'GET' && request.method !== 'HEAD') {
       await reply.code(405).header('Allow', 'GET, HEAD').send({
         code: 'read_only',
@@ -206,15 +252,7 @@ export async function createServer(config: ServerConfig) {
       return;
     }
     signal(request, reply);
-    if (requests >= 128) throw new DepotError('busy', 'Request capacity exceeded');
-    requests++;
-    let released = false;
-    reply.raw.once('close', () => {
-      if (!released) {
-        requests--;
-        released = true;
-      }
-    });
+    countRequest(reply);
   });
   app.setErrorHandler((error, request, reply) => {
     const codes = {
@@ -222,6 +260,7 @@ export async function createServer(config: ServerConfig) {
       not_found: 404,
       conflict: 409,
       forbidden: 403,
+      unauthorized: 401,
       capacity_exceeded: 507,
       integrity_mismatch: 422,
       busy: 503,
@@ -280,6 +319,7 @@ export async function createServer(config: ServerConfig) {
     };
   });
   app.get('/api/v1/openapi.json', () => Promise.resolve(openApiDocument));
+  registerIdentityRoutes(app, identity, principal, loginGate, signal);
   type Params = { repository: string; id: string };
   const base = '/api/v1/repositories/:repository';
   const response = { 200: uploadSchema };
@@ -492,6 +532,17 @@ export async function createServer(config: ServerConfig) {
     new ZipManifestReader(blobs),
   );
   const legacy = new ProGetDownloads(browse);
+  app.route<{ Params: { repository: string }; Querystring: unknown }>({
+    method: ['GET', 'HEAD'],
+    url: '/api/packages/:repository/download',
+    handler: async (request, reply) =>
+      sendContent(
+        request,
+        reply,
+        request.params.repository,
+        await legacy.common(principal(request), request.params.repository, request.query),
+      ),
+  });
   app.route<{ Params: { repository: string; '*': string }; Querystring: unknown }>({
     method: ['GET', 'HEAD'],
     url: '/upack/:repository/download/*',

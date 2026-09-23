@@ -3,6 +3,7 @@ export type ErrorCode =
   | 'not_found'
   | 'conflict'
   | 'forbidden'
+  | 'unauthorized'
   | 'capacity_exceeded'
   | 'integrity_mismatch'
   | 'busy'
@@ -129,6 +130,11 @@ export interface Principal {
   readonly id: string;
   readonly repositories: readonly string[];
   readonly permissions: readonly ('read' | 'write')[];
+  readonly grants?: readonly {
+    readonly repository: string;
+    readonly permissions: readonly ('read' | 'write')[];
+  }[];
+  readonly administrator?: boolean;
 }
 
 export function authorize(
@@ -137,6 +143,10 @@ export function authorize(
   permission: 'read' | 'write',
 ): void {
   requireRepository(repository);
-  if (!principal.repositories.includes(repository) || !principal.permissions.includes(permission))
-    throw new DepotError('forbidden', 'Repository access denied');
+  const allowed = principal.grants
+    ? principal.grants.some(
+        (grant) => grant.repository === repository && grant.permissions.includes(permission),
+      )
+    : principal.repositories.includes(repository) && principal.permissions.includes(permission);
+  if (!allowed) throw new DepotError('forbidden', 'Repository access denied');
 }

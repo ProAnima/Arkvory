@@ -284,6 +284,8 @@ test('migration preserves old asset history without inventing authors or timesta
     `ALTER TABLE depot_asset_revisions DROP COLUMN actor, DROP COLUMN created_at, DROP COLUMN source_revision;
      ALTER TABLE depot_asset_revisions DROP CONSTRAINT depot_asset_revision_positive;
      DROP TABLE depot_gateway_leases, depot_download_policy;
+     DROP TABLE depot_user_sessions, depot_group_members, depot_group_grants,
+                depot_users, depot_access_groups;
      DELETE FROM depot_migrations WHERE version>=4`,
   );
   await assert.rejects(f.catalog.ready(), { code: 'unavailable' });

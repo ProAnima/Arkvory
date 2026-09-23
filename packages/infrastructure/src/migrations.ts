@@ -86,6 +86,49 @@ export async function migrate(pool: Pool): Promise<void> {
         INSERT INTO depot_migrations(version) VALUES(5);
       `);
     }
+    const identities = await client.query('SELECT version FROM depot_migrations WHERE version=6');
+    if (identities.rowCount === 0) {
+      await client.query(`
+        CREATE TABLE depot_users (
+          id uuid PRIMARY KEY,
+          name varchar(64) NOT NULL,
+          password_salt char(32) NOT NULL,
+          password_hash char(128) NOT NULL,
+          administrator boolean NOT NULL DEFAULT false,
+          enabled boolean NOT NULL DEFAULT true,
+          failed_logins integer NOT NULL DEFAULT 0,
+          locked_until timestamptz,
+          created_at timestamptz NOT NULL DEFAULT now()
+        );
+        CREATE UNIQUE INDEX depot_users_name ON depot_users(lower(name));
+        CREATE TABLE depot_access_groups (
+          id uuid PRIMARY KEY,
+          name varchar(64) NOT NULL,
+          created_at timestamptz NOT NULL DEFAULT now()
+        );
+        CREATE UNIQUE INDEX depot_access_groups_name ON depot_access_groups(lower(name));
+        CREATE TABLE depot_group_members (
+          group_id uuid NOT NULL REFERENCES depot_access_groups(id) ON DELETE CASCADE,
+          user_id uuid NOT NULL REFERENCES depot_users(id) ON DELETE CASCADE,
+          PRIMARY KEY(group_id,user_id)
+        );
+        CREATE INDEX depot_group_members_user ON depot_group_members(user_id);
+        CREATE TABLE depot_group_grants (
+          group_id uuid NOT NULL REFERENCES depot_access_groups(id) ON DELETE CASCADE,
+          repository varchar(64) NOT NULL,
+          access text NOT NULL CHECK(access IN ('read','write')),
+          PRIMARY KEY(group_id,repository)
+        );
+        CREATE TABLE depot_user_sessions (
+          token_hash char(64) PRIMARY KEY,
+          user_id uuid NOT NULL REFERENCES depot_users(id) ON DELETE CASCADE,
+          expires_at timestamptz NOT NULL,
+          created_at timestamptz NOT NULL DEFAULT now()
+        );
+        CREATE INDEX depot_user_sessions_user ON depot_user_sessions(user_id);
+        INSERT INTO depot_migrations(version) VALUES(6);
+      `);
+    }
     await client.query('COMMIT');
   } catch (error) {
     try {

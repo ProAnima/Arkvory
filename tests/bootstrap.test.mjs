@@ -16,6 +16,7 @@ test('local bootstrap generates private credentials and refuses to replace them'
   const keys = JSON.parse(await readFile(join(directory, 'data/service-keys.json'), 'utf8'));
   assert.equal(token.length, 64);
   assert.equal(keys[0].sha256, createHash('sha256').update(token).digest('hex'));
+  assert.equal(keys[0].administrator, true);
   assert.throws(() =>
     execFileSync(process.execPath, [script], { cwd: directory, stdio: 'pipe', windowsHide: true }),
   );

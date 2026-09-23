@@ -1,4 +1,5 @@
 import { catalogPaths } from './catalog-api.js';
+import { identityPaths } from './identity-api.js';
 import { readinessSchema } from './health.js';
 export const descriptorSchema = {
   type: 'object',
@@ -99,7 +100,11 @@ export const openApiDocument = {
       'Writer API. Read gateways support GET/HEAD only; authenticated mutation requests receive 405 with Allow: GET, HEAD and code read_only. Readiness reports role and shared download lease status.',
   },
   security: [{ serviceKey: [] }],
-  components: { securitySchemes: { serviceKey: { type: 'http', scheme: 'bearer' } } },
+  components: {
+    securitySchemes: {
+      serviceKey: { type: 'http', scheme: 'bearer', description: 'Service key or account session' },
+    },
+  },
   paths: {
     '/health/ready': {
       get: {
@@ -115,6 +120,7 @@ export const openApiDocument = {
       },
     },
     ...catalogPaths,
+    ...identityPaths,
     '/api/v1/repositories/{repository}/uploads': {
       parameters: [repositoryParameter],
       post: {

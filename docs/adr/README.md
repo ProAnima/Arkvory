@@ -15,3 +15,6 @@ ADR нужен для изменения границ, публичных кон
 - [0007 — Клиентское восстановление передач](0007-client-transfer-recovery.md)
 - [0008 — Бюджеты полосы и допуск шлюза](0008-gateway-bandwidth-budgets.md)
 - [0009 — Шлюзы чтения и leases долей](0009-leased-read-gateways.md)
+- [0010 — Чтение UPack через Common Packages API](0010-common-package-download.md)
+- [0011 — Учётные записи, группы и каталог пакетов](0011-users-groups-and-package-browser.md)
+- [0012 — Самостоятельная смена пароля](0012-account-password-change.md)

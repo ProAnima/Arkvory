@@ -34,6 +34,8 @@ An initial use case is replacing ProGet for Universal Packages and ordinary file
 | GC and scrub                                                       | Offline; published blobs are retained                    |
 | SDK and RU/EN web console                                          | Implemented; details in runbook                          |
 | Asset history, exact revision lookup, atomic restore with audit    | API, SDK and console implemented                         |
+| User accounts and repository access groups                         | Administrator registration, sessions and group grants    |
+| Package catalog sorting and grouping                               | API, SDK and console; 1000-version limit                 |
 | Legacy UPack/assets download                                       | Subset; not tested against real ProGet                   |
 | Directory import with resume and download/hash verification        | Implemented; ProGet export and ACL mapping separate      |
 | Two-server replication, failover, global balancing                 | Design stage; lab validation deferred                    |
@@ -47,6 +49,8 @@ The standalone gateway now supports aggregate upload/download rate ceilings, a s
 An optional shared-storage profile runs one writer and additional read gateways. Fixed download shares are reserved through finite PostgreSQL leases; a lost lease stops delivery until restart. Idle shares are not redistributed. See [read gateways](docs/READ_GATEWAYS.md).
 
 The console has light, dark and system themes, live English/Russian switching, and responsive catalog, upload, history and artifact screens. Colors, typography, spacing, radii, controls and motion use centralized design tokens. Only appearance and language preferences are stored in the browser. See the [design system](docs/DESIGN_SYSTEM.md).
+
+Administrators can create accounts and repository access groups. Users sign in with 12-hour sessions and can change their own password; the console keeps session tokens only in the current tab. The package screen sorts by group, name or SemVer version and groups by UPack group or package. See the [runbook](docs/CORE_RUNBOOK.md).
 
 ### Packages, files, and catalog
 

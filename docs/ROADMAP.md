@@ -12,6 +12,8 @@
 - [x] Ограниченные сетевые повторы SDK, восстановление потерянных ответов upload, проверяемая Range-докачка и resume с сохранённого prefix.
 - [x] Общие и per-principal сетевые бюджеты standalone-шлюза, предел активных передач клиента, закрытие очередей и диагностика.
 - [x] Read gateways на общем root, фиксированные доли общего download-бюджета, конечные leases и локальная проверка потери связи с PostgreSQL.
+- [x] Common Packages download для зарегистрированных UPack по group/name/version.
+- [x] Создание пользователей администратором, группы доступа к репозиториям, вход через сессии и сортировка/группировка UPack-каталога.
 - [ ] Полная ProGet compatibility, online retention, глобальный scheduler, репликация и HA.
 
 ## Этапы
@@ -35,7 +37,7 @@
 
 Клиентское восстановление сетевых передач реализовано: [контракт и эксплуатация](TRANSFER_RECOVERY.md), [ADR 0007](adr/0007-client-transfer-recovery.md). Web использует проверяемый download, CLI upload — multipart/resume. Локальный дисковый журнал download и продолжение после закрытия браузера остаются будущими клиентскими функциями.
 
-Владелец выбрал **два сервера с репликацией**, стендовые проверки отложены: [проект профиля](TWO_NODE_PLAN.md). Следующие code milestones: legacy publication/list/metadata + контрактные fixtures; retention; подтверждённые blob replicas и динамическое распределение квот; реализация выбранного replication/fencing deployment.
+Владелец выбрал **два сервера с репликацией**, стендовые проверки отложены: [проект профиля](TWO_NODE_PLAN.md). Следующие code milestones: legacy publication/list/metadata + контрактные fixtures (Common Packages download уже добавлен); retention; подтверждённые blob replicas и динамическое распределение квот; реализация выбранного replication/fencing deployment.
 
 ## Открытые решения
 

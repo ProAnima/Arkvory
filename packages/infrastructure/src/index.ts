@@ -10,3 +10,4 @@ export * from './upack.js';
 export * from './admission.js';
 export * from './bandwidth.js';
 export * from './download-lease.js';
+export * from './identity.js';

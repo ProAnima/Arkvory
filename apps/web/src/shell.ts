@@ -3,6 +3,8 @@ import { initializeLanguage, message, setLanguage } from './i18n.js';
 import { themePreference, readPreference, savePreference, applyTheme } from './preferences.js';
 const views = {
   catalog: 'catalogSubtitle',
+  packages: 'packagesSubtitle',
+  administration: 'administrationSubtitle',
   upload: 'uploadSubtitle',
   history: 'historySubtitle',
   metadata: 'metadataSubtitle',

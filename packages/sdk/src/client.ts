@@ -9,6 +9,10 @@ import {
   text,
   integer,
   items,
+  readAccount,
+  readGroup,
+  readLogin,
+  readPackageList,
 } from '@proanima/depot-contracts';
 import type { UploadResponse, AnnotationsResponse } from '@proanima/depot-contracts';
 import {
@@ -125,6 +129,76 @@ export class DepotClient {
       ),
       signal,
     );
+  }
+  async login(name: string, password: string) {
+    return readLogin(await this.call('api/v1/auth/login', 'POST', { name, password }));
+  }
+  async me() {
+    const value = record(await this.call('api/v1/auth/me'));
+    if (typeof value['administrator'] !== 'boolean') throw new Error('Invalid account role');
+    return { id: text(value['id']), administrator: value['administrator'] };
+  }
+  async logout() {
+    await this.request('api/v1/auth/logout', { method: 'POST' });
+  }
+  async changePassword(currentPassword: string, newPassword: string) {
+    await this.request('api/v1/auth/password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ currentPassword, newPassword }),
+    });
+  }
+  async users() {
+    const result = record(await this.call('api/v1/users'));
+    return items(result['items']).map(readAccount);
+  }
+  async createUser(name: string, password: string, administrator = false) {
+    return readAccount(await this.call('api/v1/users', 'POST', { name, password, administrator }));
+  }
+  async updateUser(id: string, update: { enabled?: boolean; password?: string }) {
+    return readAccount(await this.call(`api/v1/users/${encodeURIComponent(id)}`, 'PATCH', update));
+  }
+  async accessGroups() {
+    const result = record(await this.call('api/v1/access-groups'));
+    return items(result['items']).map(readGroup);
+  }
+  async createAccessGroup(name: string) {
+    return readGroup(await this.call('api/v1/access-groups', 'POST', { name }));
+  }
+  async setGroupMember(groupId: string, userId: string, present: boolean) {
+    await this.request(
+      `api/v1/access-groups/${encodeURIComponent(groupId)}/members/${encodeURIComponent(userId)}`,
+      { method: present ? 'PUT' : 'DELETE' },
+    );
+  }
+  async setGroupGrant(groupId: string, repository: string, access: 'read' | 'write' | null) {
+    await this.request(
+      `api/v1/access-groups/${encodeURIComponent(groupId)}/grants/${encodeURIComponent(repository)}`,
+      access === null
+        ? { method: 'DELETE' }
+        : {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ access }),
+          },
+    );
+  }
+  async packages(
+    repository: string,
+    query: {
+      group?: string;
+      name?: string;
+      sort?: 'group' | 'name' | 'version';
+      direction?: 'asc' | 'desc';
+      groupBy?: 'none' | 'group' | 'package';
+    } = {},
+  ) {
+    const params = new URLSearchParams();
+    for (const key of ['group', 'name', 'sort', 'direction', 'groupBy'] as const) {
+      const value = query[key];
+      if (value !== undefined && value !== '') params.set(key, value);
+    }
+    return readPackageList(await this.call(this.path(repository, `packages?${params.toString()}`)));
   }
   async create(
     repository: string,

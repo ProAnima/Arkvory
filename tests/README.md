@@ -10,3 +10,5 @@ SDK fault tests входят в `npm test`: настоящие HTTP-сокеты
 `bandwidth.test.mjs` использует виртуальные монотонные часы для проверки верхней границы shared/per-principal bucket, fairness, cancellation и backpressure. `integration/traffic.test.mjs` проверяет скорость параллельных full/multipart и native/legacy потоков по настоящим сокетам, ротацию ключей одного id, отмену и остановку API. Флаг `--traffic` большого теста включает квоты и отдельный отчёт `large-traffic.json`.
 
 Не запускайте интеграционные suites одновременно на одной БД: standalone-lock намеренно допускает один API. Unit/blob-тесты не требуют БД. Подробнее: [runbook](../docs/CORE_RUNBOOK.md), [результаты](../docs/CORE_VALIDATION.md).
+
+`tests/integration/identity.test.mjs` проверяет регистрацию администратором, группы, чтение байтов по праву группы, изменение и отзыв прав, блокировку входа, смену пароля и ограничение числа сессий в PostgreSQL. Для запуска нужен `DEPOT_TEST_DATABASE_URL`; локальные unit-тесты не заменяют эту проверку.

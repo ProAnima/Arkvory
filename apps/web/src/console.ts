@@ -5,6 +5,8 @@ import { installAssetHistory } from './asset-history.js';
 import { message } from './i18n.js';
 import { feedback, UiError, errorKey } from './feedback.js';
 import { initializeShell, showView } from './shell.js';
+import { installPackageView } from './packages.js';
+import { installAdministration } from './administration.js';
 declare global {
   interface Window {
     showSaveFilePicker?: (options: {
@@ -73,9 +75,19 @@ function clearCatalog() {
   message(element('empty-description', HTMLParagraphElement), 'emptyDescription');
   connection(false);
   clearSelection();
+  clearPackages();
+  administration.clear();
+  element('change-password', HTMLFormElement).hidden = true;
+  if (!element('administration-panel', HTMLElement).hidden) showView('catalog');
 }
 for (const input of [repository, token]) input.addEventListener('input', clearCatalog);
 const resetHistory = installAssetHistory(client, repository, token, openArtifact, run);
+const clearPackages = installPackageView(client, repository, token, run, async (id) => {
+  const repo = repository.value;
+  const artifact = await client.artifact(repo, id);
+  await openArtifact(repo, id, artifact.descriptor.name);
+});
+const administration = installAdministration(client, run);
 function hashFile(file: File, signal: AbortSignal): Promise<string> {
   return new Promise((resolve, reject) => {
     const worker = new Worker('/console/hash-worker.js', { type: 'module' });
@@ -160,7 +172,43 @@ async function list(after?: string) {
 }
 element('connect', HTMLFormElement).onsubmit = (event) => {
   event.preventDefault();
-  run(() => list());
+  run(async () => {
+    const me = await client.me();
+    if (me.administrator) administration.show();
+    element('change-password', HTMLFormElement).hidden = !me.id.startsWith('user:');
+    await list();
+  });
+};
+element('login', HTMLFormElement).onsubmit = (event) => {
+  event.preventDefault();
+  run(async () => {
+    const name = element('login-name', HTMLInputElement).value;
+    const session = await client.login(name, element('login-password', HTMLInputElement).value);
+    token.value = session.token;
+    element('login-password', HTMLInputElement).value = '';
+    clearCatalog();
+    element('change-password', HTMLFormElement).hidden = false;
+    if (session.account.administrator) {
+      administration.show();
+      showView('administration');
+      await administration.refresh();
+    } else await list();
+    feedback(output, 'signedIn', { name: session.account.name }, 'success');
+  });
+};
+element('change-password', HTMLFormElement).onsubmit = (event) => {
+  event.preventDefault();
+  run(async () => {
+    const current = element('current-password', HTMLInputElement);
+    const next = element('own-new-password', HTMLInputElement);
+    await client.changePassword(current.value, next.value);
+    current.value = '';
+    next.value = '';
+    token.value = '';
+    clearCatalog();
+    resetHistory();
+    feedback(output, 'passwordChangedSignIn', {}, 'success');
+  });
 };
 element('search', HTMLFormElement).onsubmit = (event) => {
   event.preventDefault();
@@ -168,10 +216,16 @@ element('search', HTMLFormElement).onsubmit = (event) => {
 };
 element('logout', HTMLButtonElement).onclick = () => {
   stop?.abort();
-  token.value = '';
-  clearCatalog();
-  resetHistory();
-  feedback(output, 'disconnected');
+  run(async () => {
+    try {
+      if (token.value) await client.logout();
+    } finally {
+      token.value = '';
+      clearCatalog();
+      resetHistory();
+      feedback(output, 'disconnected');
+    }
+  });
 };
 element('cancel', HTMLButtonElement).onclick = () => stop?.abort();
 element('upload', HTMLFormElement).onsubmit = (event) => {

@@ -457,9 +457,15 @@ textarea {
 }
 .search-form {
   display: flex;
+  flex-wrap: wrap;
   align-items: end;
   gap: var(--space-3);
   margin-block: var(--space-5);
+}
+.group-row th {
+  background: var(--color-raised);
+  color: var(--color-text);
+  font-weight: var(--weight-semibold);
 }
 .catalog-card > .search-form {
   padding-inline: var(--panel-padding);

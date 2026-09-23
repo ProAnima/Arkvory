@@ -158,9 +158,46 @@ const paths: Record<string, Record<string, unknown>> = {
     post: operation('Validate and register immutable UPack identity', pkg),
   },
   [`${root}/packages`]: {
-    get: operation('SemVer ordered versions; narrow filter above 1000 results', page(pkg), {
-      parameters: [query('group'), query('name')],
-    }),
+    get: operation(
+      'Sorted and optionally grouped UPack versions; narrow filter above 1000 results',
+      {
+        type: 'object',
+        required: ['items', 'groups'],
+        properties: {
+          items: { type: 'array', items: pkg },
+          groups: {
+            type: 'array',
+            items: {
+              type: 'object',
+              required: ['group', 'name', 'artifactIds'],
+              properties: {
+                group: str,
+                name: { type: 'string', nullable: true },
+                artifactIds: { type: 'array', items: { type: 'string', format: 'uuid' } },
+              },
+            },
+          },
+        },
+      },
+      {
+        parameters: [
+          query('group'),
+          query('name'),
+          {
+            ...query('sort'),
+            schema: { type: 'string', enum: ['group', 'name', 'version'] },
+          },
+          {
+            ...query('direction'),
+            schema: { type: 'string', enum: ['asc', 'desc'] },
+          },
+          {
+            ...query('groupBy'),
+            schema: { type: 'string', enum: ['none', 'group', 'package'] },
+          },
+        ],
+      },
+    ),
   },
   [`${root}/assets`]: {
     get: operation('Asset paths by prefix; narrow above 1000 results', page(asset), {

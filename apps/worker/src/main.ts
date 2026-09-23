@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { setTimeout as delay } from 'node:timers/promises';
 import { StorageService } from '@proanima/depot-application';
 import { DepotError } from '@proanima/depot-domain';
-import { PostgresJobs, parseKeys } from '@proanima/depot-infrastructure';
+import { PostgresJobs, PostgresIdentity, parseKeys } from '@proanima/depot-infrastructure';
 import { resources } from './runtime.js';
 
 const stop = new AbortController();
@@ -16,6 +16,7 @@ try {
   if (!keyFile) throw new Error('DEPOT_KEYS_FILE is required');
   const { catalog, blobs } = await resources('worker');
   const jobs = new PostgresJobs(catalog.pool);
+  const identity = new PostgresIdentity(catalog.pool);
   const service = new StorageService(catalog, blobs, {
     next: randomUUID,
     now: () => new Date().toISOString(),
@@ -41,16 +42,21 @@ try {
       }, 10000);
       let errorCode: string | null = null;
       try {
-        const raw = await readFile(keyFile, 'utf8');
-        if (raw.length > 1024 * 1024)
-          throw new DepotError('forbidden', 'Key configuration too large');
-        const value: unknown = JSON.parse(raw);
-        const principal = parseKeys(value).find(
-          (key) =>
-            key.principal.id === job.owner &&
-            key.principal.repositories.includes(job.repository) &&
-            key.principal.permissions.includes('write'),
-        )?.principal;
+        let principal;
+        if (job.owner.startsWith('user:')) {
+          principal = await identity.principalForUser(job.owner.slice(5));
+        } else {
+          const raw = await readFile(keyFile, 'utf8');
+          if (raw.length > 1024 * 1024)
+            throw new DepotError('forbidden', 'Key configuration too large');
+          const value: unknown = JSON.parse(raw);
+          principal = parseKeys(value).find(
+            (key) =>
+              key.principal.id === job.owner &&
+              key.principal.repositories.includes(job.repository) &&
+              key.principal.permissions.includes('write'),
+          )?.principal;
+        }
         if (!principal) throw new DepotError('forbidden', 'Job authorization revoked');
         await service.complete(principal, job.repository, job.uploadId, {
           throwIfAborted() {

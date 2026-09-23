@@ -37,6 +37,12 @@
             <path d="M12 16V3m-5 5 5-5 5 5M4 15v5h16v-5" /></svg
           ><span data-i18n="upload">Загрузка</span>
         </button>
+        <button type="button" data-nav="packages" aria-controls="packages-panel">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="m12 2 9 5-9 5-9-5 9-5ZM3 12l9 5 9-5M3 17l9 5 9-5" />
+          </svg>
+          <span data-i18n="packages">Пакеты</span>
+        </button>
         <button type="button" data-nav="history" aria-controls="history-panel">
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path d="M3 11a9 9 0 1 1 2 7M3 4v7h7m2-4v6l4 2" /></svg
@@ -46,6 +52,19 @@
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path d="M4 6h16M4 12h16M4 18h16M8 3v6m8 0v6m-8 0v6" /></svg
           ><span data-i18n="metadata">Свойства артефакта</span>
+        </button>
+        <button
+          type="button"
+          data-nav="administration"
+          aria-controls="administration-panel"
+          id="admin-nav"
+          hidden
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="12" cy="7" r="4" />
+            <path d="M4 21v-2a8 8 0 0 1 16 0v2" />
+          </svg>
+          <span data-i18n="administration">Пользователи и доступ</span>
         </button>
       </nav>
       <div class="sidebar-bottom">
@@ -131,6 +150,38 @@
           <p class="hint" data-i18n="keyHint">
             Ключ остаётся в этой вкладке и не сохраняется в хранилище браузера.
           </p>
+          <form id="login" class="search-form padded">
+            <label
+              ><span data-i18n="accountName">Имя пользователя</span
+              ><input id="login-name" autocomplete="username" required
+            /></label>
+            <label
+              ><span data-i18n="password">Пароль</span
+              ><input id="login-password" type="password" autocomplete="current-password" required
+            /></label>
+            <button class="secondary" data-i18n="signIn">Войти</button>
+          </form>
+          <form id="change-password" class="search-form padded" hidden>
+            <label
+              ><span data-i18n="currentPassword">Текущий пароль</span
+              ><input
+                id="current-password"
+                type="password"
+                autocomplete="current-password"
+                required
+                minlength="12"
+            /></label>
+            <label
+              ><span data-i18n="newPassword">Новый пароль</span
+              ><input
+                id="own-new-password"
+                type="password"
+                autocomplete="new-password"
+                required
+                minlength="12"
+            /></label>
+            <button class="secondary" data-i18n="changeOwnPassword">Сменить свой пароль</button>
+          </form>
         </details>
         <section
           id="catalog-panel"
@@ -197,6 +248,61 @@
               Загрузить ещё
             </button>
           </div>
+        </section>
+        <section
+          id="packages-panel"
+          data-view="packages"
+          aria-labelledby="packages-title"
+          class="card padded"
+          hidden
+        >
+          <h2 id="packages-title" data-i18n="packages">Пакеты</h2>
+          <form id="package-filter" class="search-form">
+            <label
+              ><span data-i18n="packageGroup">Группа UPack</span><input id="package-group"
+            /></label>
+            <label
+              ><span data-i18n="packageName">Имя пакета</span><input id="package-name"
+            /></label>
+            <label
+              ><span data-i18n="sortBy">Сортировать</span
+              ><select id="package-sort">
+                <option value="group" data-i18n="packageGroup">Группа UPack</option>
+                <option value="name" data-i18n="packageName">Имя пакета</option>
+                <option value="version" data-i18n="version">Версия</option>
+              </select></label
+            >
+            <label
+              ><span data-i18n="direction">Порядок</span
+              ><select id="package-direction">
+                <option value="asc" data-i18n="ascending">По возрастанию</option>
+                <option value="desc" data-i18n="descending">По убыванию</option>
+              </select></label
+            >
+            <label
+              ><span data-i18n="groupBy">Группировать</span
+              ><select id="package-group-by">
+                <option value="group" data-i18n="packageGroup">Группа UPack</option>
+                <option value="package" data-i18n="packageName">Имя пакета</option>
+                <option value="none" data-i18n="noGrouping">Без группировки</option>
+              </select></label
+            >
+            <button class="secondary" data-i18n="apply">Применить</button>
+          </form>
+          <div class="table">
+            <table>
+              <thead>
+                <tr>
+                  <th data-i18n="packageGroup">Группа UPack</th>
+                  <th data-i18n="packageName">Имя пакета</th>
+                  <th data-i18n="version">Версия</th>
+                  <th data-i18n="actions">Действия</th>
+                </tr>
+              </thead>
+              <tbody id="package-rows"></tbody>
+            </table>
+          </div>
+          <output id="package-status" aria-live="polite"></output>
         </section>
         <section id="upload-panel" data-view="upload" aria-labelledby="upload-title" hidden>
           <div class="split-layout">
@@ -383,6 +489,121 @@
               Предыдущие ревизии
             </button>
           </div>
+        </section>
+        <section
+          id="administration-panel"
+          data-view="administration"
+          aria-labelledby="administration-title"
+          class="card padded"
+          hidden
+        >
+          <h2 id="administration-title" data-i18n="administration">Пользователи и доступ</h2>
+          <p class="hint" data-i18n="adminHint">
+            Создавайте учётные записи и выдавайте доступ через группы.
+          </p>
+          <form id="create-user" class="search-form">
+            <label
+              ><span data-i18n="accountName">Имя пользователя</span
+              ><input id="new-user-name" required minlength="3" maxlength="64"
+            /></label>
+            <label
+              ><span data-i18n="password">Пароль</span
+              ><input
+                id="new-user-password"
+                type="password"
+                autocomplete="new-password"
+                required
+                minlength="12"
+            /></label>
+            <label
+              ><span data-i18n="administrator">Администратор</span
+              ><input id="new-user-admin" type="checkbox"
+            /></label>
+            <button class="secondary" data-i18n="createUser">Создать пользователя</button>
+          </form>
+          <div class="table">
+            <table>
+              <thead>
+                <tr>
+                  <th data-i18n="accountName">Имя пользователя</th>
+                  <th data-i18n="administrator">Администратор</th>
+                  <th data-i18n="accountStatus">Состояние</th>
+                  <th data-i18n="actions">Действия</th>
+                </tr>
+              </thead>
+              <tbody id="user-rows"></tbody>
+            </table>
+          </div>
+          <form id="reset-password" class="search-form">
+            <label
+              ><span data-i18n="accountName">Имя пользователя</span
+              ><select id="reset-user" required></select
+            ></label>
+            <label
+              ><span data-i18n="newPassword">Новый пароль</span
+              ><input
+                id="reset-password-value"
+                type="password"
+                autocomplete="new-password"
+                required
+                minlength="12"
+            /></label>
+            <button class="secondary" data-i18n="resetPassword">Сменить пароль</button>
+          </form>
+          <form id="create-group" class="search-form">
+            <label
+              ><span data-i18n="accessGroup">Группа доступа</span
+              ><input id="new-group-name" required minlength="2" maxlength="64"
+            /></label>
+            <button class="secondary" data-i18n="createGroup">Создать группу</button>
+          </form>
+          <form id="group-member" class="search-form">
+            <label
+              ><span data-i18n="accessGroup">Группа доступа</span
+              ><select id="member-group" required></select
+            ></label>
+            <label
+              ><span data-i18n="accountName">Имя пользователя</span
+              ><select id="member-user" required></select
+            ></label>
+            <button class="secondary" data-i18n="addMember">Добавить в группу</button>
+            <button type="button" class="secondary" id="remove-member" data-i18n="removeMember">
+              Убрать из группы
+            </button>
+          </form>
+          <form id="group-grant" class="search-form">
+            <label
+              ><span data-i18n="accessGroup">Группа доступа</span
+              ><select id="grant-group" required></select
+            ></label>
+            <label
+              ><span data-i18n="repository">Репозиторий</span><input id="grant-repository" required
+            /></label>
+            <label
+              ><span data-i18n="access">Доступ</span
+              ><select id="grant-access">
+                <option value="read" data-i18n="read">Чтение</option>
+                <option value="write" data-i18n="write">Чтение и запись</option>
+              </select></label
+            >
+            <button class="secondary" data-i18n="saveGrant">Сохранить доступ</button>
+            <button type="button" class="secondary" id="remove-grant" data-i18n="removeGrant">
+              Убрать доступ
+            </button>
+          </form>
+          <div class="table">
+            <table>
+              <thead>
+                <tr>
+                  <th data-i18n="accessGroup">Группа доступа</th>
+                  <th data-i18n="members">Участники</th>
+                  <th data-i18n="grants">Права</th>
+                </tr>
+              </thead>
+              <tbody id="group-rows"></tbody>
+            </table>
+          </div>
+          <output id="admin-status" aria-live="polite"></output>
         </section>
         <div class="status-bar">
           <span class="dot" aria-hidden="true"></span
