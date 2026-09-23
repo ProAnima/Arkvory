@@ -1,4 +1,93 @@
-import type { Pool } from 'pg';
+import { Pool } from 'pg';
+import type { PoolClient } from 'pg';
+
+const packagePageIndexes = [
+  {
+    name: 'depot_package_page_group_asc',
+    order:
+      '(lower(package_group COLLATE "C") COLLATE "C") ASC, (lower(name COLLATE "C") COLLATE "C") ASC, (depot_semver_key(version) COLLATE "C") DESC',
+  },
+  {
+    name: 'depot_package_page_group_desc',
+    order:
+      '(lower(package_group COLLATE "C") COLLATE "C") DESC, (lower(name COLLATE "C") COLLATE "C") DESC, (depot_semver_key(version) COLLATE "C") DESC',
+  },
+  {
+    name: 'depot_package_page_name_asc',
+    order:
+      '(lower(name COLLATE "C") COLLATE "C") ASC, (lower(package_group COLLATE "C") COLLATE "C") ASC, (depot_semver_key(version) COLLATE "C") DESC',
+  },
+  {
+    name: 'depot_package_page_name_desc',
+    order:
+      '(lower(name COLLATE "C") COLLATE "C") DESC, (lower(package_group COLLATE "C") COLLATE "C") DESC, (depot_semver_key(version) COLLATE "C") DESC',
+  },
+  {
+    name: 'depot_package_page_version_asc',
+    order:
+      '(depot_semver_key(version) COLLATE "C") ASC, (lower(package_group COLLATE "C") COLLATE "C") ASC, (lower(name COLLATE "C") COLLATE "C") ASC',
+  },
+  {
+    name: 'depot_package_page_version_desc',
+    order:
+      '(depot_semver_key(version) COLLATE "C") DESC, (lower(package_group COLLATE "C") COLLATE "C") ASC, (lower(name COLLATE "C") COLLATE "C") ASC',
+  },
+] as const;
+
+async function migratePackagePageIndexes(pool: Pool): Promise<void> {
+  // Index builds can exceed the short request timeout on the runtime catalog pool.
+  const migrationPool = new Pool({
+    ...pool.options,
+    max: 1,
+    statement_timeout: 10 * 60 * 1000,
+    query_timeout: 11 * 60 * 1000,
+  });
+  let client: PoolClient | undefined;
+  let unusable = false;
+  let locked = false;
+  try {
+    client = await migrationPool.connect();
+    const deadline = Date.now() + 10 * 60 * 1000;
+    let delay = 100;
+    for (;;) {
+      const attempt = await client.query<{ locked: boolean }>(
+        'SELECT pg_try_advisory_lock(18471, 2) AS locked',
+      );
+      locked = attempt.rows[0]?.locked === true;
+      if (locked) break;
+      if (Date.now() >= deadline) throw new Error('Timed out waiting for package index migration');
+      await new Promise<void>((resolve) => setTimeout(resolve, delay));
+      delay = Math.min(delay * 2, 1000);
+    }
+    const applied = await client.query('SELECT version FROM depot_migrations WHERE version=8');
+    if (applied.rowCount !== 0) return;
+    for (const index of packagePageIndexes) {
+      const state = await client.query<{ indisvalid: boolean }>(
+        'SELECT indisvalid FROM pg_index WHERE indexrelid=to_regclass($1::text)',
+        [index.name],
+      );
+      if (state.rows[0]?.indisvalid === true) continue;
+      if (state.rowCount !== 0) await client.query(`DROP INDEX CONCURRENTLY ${index.name}`);
+      await client.query(
+        `CREATE INDEX CONCURRENTLY ${index.name} ON depot_packages (repository, ${index.order}, (version COLLATE "C") ASC, ((artifact_id::text) COLLATE "C") ASC)`,
+      );
+    }
+    await client.query('INSERT INTO depot_migrations(version) VALUES(8)');
+  } catch (error) {
+    unusable = true;
+    throw error;
+  } finally {
+    if (client && locked && !unusable) {
+      try {
+        await client.query('SELECT pg_advisory_unlock(18471, 2)');
+      } catch {
+        unusable = true;
+      }
+    }
+    client?.release(unusable);
+    await migrationPool.end();
+  }
+}
 
 export async function migrate(pool: Pool): Promise<void> {
   const client = await pool.connect();
@@ -175,4 +264,5 @@ export async function migrate(pool: Pool): Promise<void> {
   } finally {
     client.release(unusable);
   }
+  await migratePackagePageIndexes(pool);
 }

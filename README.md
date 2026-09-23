@@ -206,7 +206,7 @@ For an existing database, edit `DEPOT_DATABASE_URL` in `.env` instead of startin
 | `npm run test:large`       | 5 GiB HTTP upload/download, process restart, hash and RSS checks   |
 | `npm run format`           | Apply formatting                                                   |
 
-Multipart uploads resume from recorded 8 MiB parts; whole-file PUT retries restart from byte zero. Offline GC releases cancelled reservations after deleting their content and the grace period. One API process owns a standalone database; this profile provides no node failover. Keep the database and the entire storage directory, including `storage-id`, together in backup/restore procedures. Before updating, stop API/worker, back up both, run `npm run migrate` (schema 5), then start the new code. See [asset history and restore](docs/LIFECYCLE_AND_CATALOG.md#история-и-восстановление-файлов).
+Multipart uploads resume from recorded 8 MiB parts; whole-file PUT retries restart from byte zero. Offline GC releases cancelled reservations after deleting their content and the grace period. One API process owns a standalone database; this profile provides no node failover. Keep the database and the entire storage directory, including `storage-id`, together in backup/restore procedures. Before updating, stop API/worker, back up both, run `npm run migrate` (schema 8), then start the new code. See [asset history and restore](docs/LIFECYCLE_AND_CATALOG.md#история-и-восстановление-файлов) and [online catalog indexes](docs/adr/0014-online-package-page-indexes.md).
 
 ## Development rules
 

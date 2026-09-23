@@ -1,10 +1,28 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { compareVersions } from '@proanima/depot-domain';
+import { migrate } from '@proanima/depot-infrastructure';
 import { setup, base } from './fixture.mjs';
 
 test('PostgreSQL SemVer order matches the domain rule and pages past 1000 versions', async (t) => {
   const f = await setup(t);
+  const indexes = await f.catalog.pool.query(
+    `SELECT name.relname, index.indisvalid
+     FROM pg_index AS index JOIN pg_class AS name ON name.oid=index.indexrelid
+     JOIN pg_namespace AS namespace ON namespace.oid=name.relnamespace
+     WHERE namespace.nspname=current_schema() AND name.relname LIKE 'depot_package_page_%'
+     ORDER BY name.relname`,
+  );
+  assert.equal(indexes.rowCount, 6);
+  assert.ok(indexes.rows.every((row) => row.indisvalid === true));
+  assert.equal(
+    (
+      await f.catalog.pool.query(
+        'SELECT count(*)::integer AS count FROM depot_migrations WHERE version=8',
+      )
+    ).rows[0].count,
+    1,
+  );
   const versions = [
     '1.9.0',
     '1.10.0',
@@ -133,4 +151,22 @@ test('PostgreSQL SemVer order matches the domain rule and pages past 1000 versio
   assert.equal(filtered.statusCode, 200, filtered.body);
   assert.equal(filtered.json().next, null);
   assert.equal(filtered.json().items[0].name, 'A');
+
+  await f.catalog.pool.query('DELETE FROM depot_migrations WHERE version=8');
+  await f.catalog.pool.query('DROP INDEX CONCURRENTLY depot_package_page_group_asc');
+  await assert.rejects(
+    f.catalog.pool.query(
+      'CREATE UNIQUE INDEX CONCURRENTLY depot_package_page_group_asc ON depot_packages(repository)',
+    ),
+    { code: '23505' },
+  );
+  const invalid = await f.catalog.pool.query(
+    `SELECT indisvalid FROM pg_index WHERE indexrelid=to_regclass('depot_package_page_group_asc')`,
+  );
+  assert.equal(invalid.rows[0].indisvalid, false);
+  await Promise.all([migrate(f.catalog.pool), migrate(f.catalog.pool)]);
+  const repaired = await f.catalog.pool.query(
+    `SELECT indisvalid FROM pg_index WHERE indexrelid=to_regclass('depot_package_page_group_asc')`,
+  );
+  assert.equal(repaired.rows[0].indisvalid, true);
 });
