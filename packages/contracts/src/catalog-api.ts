@@ -159,12 +159,13 @@ const paths: Record<string, Record<string, unknown>> = {
   },
   [`${root}/packages`]: {
     get: operation(
-      'Sorted and optionally grouped UPack versions; narrow filter above 1000 results',
+      'Cursor-paged, sorted and optionally grouped UPack versions',
       {
         type: 'object',
-        required: ['items', 'groups'],
+        required: ['items', 'groups', 'next'],
         properties: {
           items: { type: 'array', items: pkg },
+          next: { type: 'string', nullable: true },
           groups: {
             type: 'array',
             items: {
@@ -195,6 +196,8 @@ const paths: Record<string, Record<string, unknown>> = {
             ...query('groupBy'),
             schema: { type: 'string', enum: ['none', 'group', 'package'] },
           },
+          query('after'),
+          { ...query('limit'), schema: { type: 'integer', minimum: 1, maximum: 100 } },
         ],
       },
     ),

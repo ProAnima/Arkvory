@@ -103,15 +103,22 @@ export function registerCatalogRoutes(
   app.get<{ Params: Params; Querystring: unknown }>(`${base}/packages`, async (request) => {
     const q = object(request.query);
     const options = parsePackageListOptions(q);
-    return organizePackages(
-      await browse.packages(
-        principal(request),
-        request.params.repository,
-        q['group'] === undefined ? undefined : string(q['group']),
-        q['name'] === undefined ? undefined : string(q['name']),
-      ),
+    const rawLimit = q['limit'];
+    if (
+      rawLimit !== undefined &&
+      (typeof rawLimit !== 'string' || !/^[1-9][0-9]{0,2}$/.test(rawLimit))
+    )
+      throw new DepotError('invalid_input', 'Invalid package page size');
+    const page = await browse.packagePage(
+      principal(request),
+      request.params.repository,
+      q['group'] === undefined ? undefined : string(q['group']),
+      q['name'] === undefined ? undefined : string(q['name']),
       options,
+      q['after'] === undefined ? undefined : string(q['after']),
+      rawLimit === undefined ? 50 : Number(rawLimit),
     );
+    return { ...organizePackages(page.items, options), next: page.next };
   });
   app.get<{ Params: Params; Querystring: unknown }>(`${base}/assets`, async (request) => ({
     items: await browse.assets(

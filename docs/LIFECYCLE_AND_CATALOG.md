@@ -31,7 +31,7 @@ HTTP upload/download имеют отдельные очереди допуска
 | GET `artifacts/{id}/annotations`                      | `{revision,labels,metadata,collections}`; revision 0 наследует descriptor                                    |
 | PUT `artifacts/{id}/annotations`                      | `{expectedRevision,value:{labels,metadata,collections}}`; полная замена, пропущенные поля становятся пустыми |
 | POST `artifacts/{id}/package`                         | Проверка UPack ZIP и регистрация group/name/version                                                          |
-| GET `packages?group=...&name=...`                     | Версии в порядке SemVer, до 1000; превышение требует уточнить фильтр                                         |
+| GET `packages?group=...&name=...`                     | Курсорные страницы до 100 версий; сортировка по SemVer и группировка внутри страницы                         |
 | PUT `asset`                                           | `{path,artifactId,expectedRevision}`; 0 создаёт путь, последующие ревизии меняют указатель                   |
 | GET `asset?path=...`                                  | Текущий artifactId/revision                                                                                  |
 | GET `assets?prefix=...`                               | Пути, до 1000; история ревизий сохраняется в БД                                                              |

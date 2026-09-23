@@ -35,7 +35,7 @@ An initial use case is replacing ProGet for Universal Packages and ordinary file
 | SDK and RU/EN web console                                          | Implemented; details in runbook                          |
 | Asset history, exact revision lookup, atomic restore with audit    | API, SDK and console implemented                         |
 | User accounts and repository access groups                         | Administrator registration, sessions and group grants    |
-| Package catalog sorting and grouping                               | API, SDK and console; 1000-version limit                 |
+| Package catalog sorting, grouping and cursor paging                | API, SDK and console; up to 100 versions per page        |
 | Legacy UPack/assets download                                       | Subset; not tested against real ProGet                   |
 | Directory import with resume and download/hash verification        | Implemented; ProGet export and ACL mapping separate      |
 | Two-server replication, failover, global balancing                 | Design stage; lab validation deferred                    |

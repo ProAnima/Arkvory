@@ -21,6 +21,15 @@ export interface PackageEntry {
   artifactId: string;
   manifest: Readonly<Record<string, unknown>>;
 }
+export interface PackageListOptions {
+  sort: 'group' | 'name' | 'version';
+  direction: 'asc' | 'desc';
+  groupBy: 'none' | 'group' | 'package';
+}
+export interface PackagePage {
+  items: readonly PackageEntry[];
+  next: string | null;
+}
 export interface AssetEntry {
   path: string;
   revision: number;
@@ -55,6 +64,14 @@ export interface BrowseStore {
     group: string | undefined,
     name: string | undefined,
   ): Promise<readonly PackageEntry[]>;
+  packagePage(
+    repository: string,
+    group: string | undefined,
+    name: string | undefined,
+    options: PackageListOptions,
+    after: string | undefined,
+    limit: number,
+  ): Promise<PackagePage>;
   asset(repository: string, path: string): Promise<AssetEntry>;
   assetRevision(repository: string, path: string, revision: number): Promise<AssetRevision>;
   assetHistory(repository: string, path: string, before?: number): Promise<AssetHistoryPage>;
@@ -148,6 +165,26 @@ export class ArtifactCatalog {
     if ((group?.length ?? 0) > 128 || (name?.length ?? 0) > 128)
       throw new DepotError('invalid_input', 'Invalid package filter');
     return this.store.packages(repo, group, name);
+  }
+  async packagePage(
+    p: Principal,
+    repo: string,
+    group: string | undefined,
+    name: string | undefined,
+    options: PackageListOptions,
+    after: string | undefined,
+    limit: number,
+  ): Promise<PackagePage> {
+    authorize(p, repo, 'read');
+    if (
+      (group?.length ?? 0) > 128 ||
+      (name?.length ?? 0) > 128 ||
+      !Number.isSafeInteger(limit) ||
+      limit < 1 ||
+      limit > 100
+    )
+      throw new DepotError('invalid_input', 'Invalid package page');
+    return this.store.packagePage(repo, group, name, options, after, limit);
   }
   async asset(p: Principal, repo: string, path: string) {
     authorize(p, repo, 'read');

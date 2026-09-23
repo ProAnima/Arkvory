@@ -4,6 +4,7 @@ import {
   parseDescriptor,
   parseManifest,
   compareVersions,
+  requireId,
 } from '@proanima/depot-domain';
 import type { PackageManifest } from '@proanima/depot-domain';
 import type {
@@ -13,7 +14,63 @@ import type {
   AssetHistoryPage,
   BrowseStore,
   PackageEntry,
+  PackagePage,
+  PackageListOptions,
 } from '@proanima/depot-application';
+
+interface PackageCursor {
+  groupKey: string;
+  nameKey: string;
+  versionKey: string;
+  versionText: string;
+  artifactId: string;
+}
+function readPackageCursor(
+  encoded: string,
+  repository: string,
+  group: string | undefined,
+  name: string | undefined,
+  options: PackageListOptions,
+): PackageCursor {
+  if (!/^[A-Za-z0-9_-]{1,2048}$/.test(encoded))
+    throw new DepotError('invalid_input', 'Invalid package cursor');
+  let value: unknown;
+  try {
+    const data = Buffer.from(encoded, 'base64url');
+    if (data.toString('base64url') !== encoded)
+      throw new DepotError('invalid_input', 'Invalid package cursor');
+    value = JSON.parse(data.toString('utf8'));
+  } catch {
+    throw new DepotError('invalid_input', 'Invalid package cursor');
+  }
+  if (typeof value !== 'object' || value === null || Array.isArray(value))
+    throw new DepotError('invalid_input', 'Invalid package cursor');
+  const row: Record<string, unknown> = Object.fromEntries(Object.entries(value));
+  if (
+    row['repository'] !== repository ||
+    row['sort'] !== options.sort ||
+    row['direction'] !== options.direction ||
+    row['filterGroup'] !== (group ?? null) ||
+    row['filterName'] !== (name ?? null) ||
+    typeof row['groupKey'] !== 'string' ||
+    row['groupKey'].length > 128 ||
+    typeof row['nameKey'] !== 'string' ||
+    row['nameKey'].length > 128 ||
+    typeof row['versionKey'] !== 'string' ||
+    row['versionKey'].length > 512 ||
+    typeof row['versionText'] !== 'string' ||
+    row['versionText'].length > 128 ||
+    typeof row['artifactId'] !== 'string'
+  )
+    throw new DepotError('invalid_input', 'Package cursor does not match the query');
+  return {
+    groupKey: row['groupKey'],
+    nameKey: row['nameKey'],
+    versionKey: row['versionKey'],
+    versionText: row['versionText'],
+    artifactId: requireId(row['artifactId']),
+  };
+}
 
 interface AssetRevisionRow {
   path: string;
@@ -192,6 +249,115 @@ export class PostgresBrowse implements BrowseStore {
           a.name.localeCompare(b.name) ||
           compareVersions(b.version, a.version),
       );
+  }
+  async packagePage(
+    repository: string,
+    group: string | undefined,
+    name: string | undefined,
+    options: PackageListOptions,
+    after: string | undefined,
+    limit: number,
+  ): Promise<PackagePage> {
+    const cursor =
+      after === undefined ? undefined : readPackageCursor(after, repository, group, name, options);
+    const groupField = {
+      expr: 'lower(package_group COLLATE "C") COLLATE "C"',
+      value: cursor?.groupKey ?? '',
+      direction: options.sort === 'version' || options.direction === 'asc' ? 'ASC' : 'DESC',
+    } as const;
+    const nameField = {
+      expr: 'lower(name COLLATE "C") COLLATE "C"',
+      value: cursor?.nameKey ?? '',
+      direction: options.sort === 'version' || options.direction === 'asc' ? 'ASC' : 'DESC',
+    } as const;
+    const versionField = {
+      expr: 'depot_semver_key(version) COLLATE "C"',
+      value: cursor?.versionKey ?? '',
+      direction: options.sort === 'version' && options.direction === 'asc' ? 'ASC' : 'DESC',
+    } as const;
+    const idField = {
+      expr: 'artifact_id::text COLLATE "C"',
+      value: cursor?.artifactId ?? '',
+      direction: 'ASC',
+    } as const;
+    const versionTextField = {
+      expr: 'version COLLATE "C"',
+      value: cursor?.versionText ?? '',
+      direction: 'ASC',
+    } as const;
+    const fields =
+      options.sort === 'name'
+        ? [nameField, groupField, versionField, versionTextField, idField]
+        : options.sort === 'version'
+          ? [versionField, groupField, nameField, versionTextField, idField]
+          : [groupField, nameField, versionField, versionTextField, idField];
+    const parameters: (string | number | null)[] = [repository, group ?? null, name ?? null];
+    let seek = '';
+    if (cursor) {
+      parameters.push(...fields.map((field) => field.value));
+      seek =
+        ' AND (' +
+        fields
+          .map((field, index) => {
+            const equal = fields
+              .slice(0, index)
+              .map((earlier, before) => `${earlier.expr}=$${String(4 + before)}`)
+              .join(' AND ');
+            const comparison = `${field.expr}${field.direction === 'ASC' ? '>' : '<'}$${String(4 + index)}`;
+            return `(${equal ? `${equal} AND ` : ''}${comparison})`;
+          })
+          .join(' OR ') +
+        ')';
+    }
+    parameters.push(limit + 1);
+    const result = await this.pool.query<{
+      artifact_id: string;
+      manifest: unknown;
+      group_key: string;
+      name_key: string;
+      version_key: string;
+      version: string;
+    }>(
+      `SELECT artifact_id,manifest,version,lower(package_group COLLATE "C") COLLATE "C" AS group_key,
+              lower(name COLLATE "C") COLLATE "C" AS name_key,
+              depot_semver_key(version) COLLATE "C" AS version_key
+       FROM depot_packages WHERE repository=$1
+         AND ($2::text IS NULL OR lower(package_group COLLATE "C")=lower($2 COLLATE "C"))
+         AND ($3::text IS NULL OR lower(name COLLATE "C")=lower($3 COLLATE "C"))${seek}
+       ORDER BY ${fields.map((field) => `${field.expr} ${field.direction}`).join(',')}
+       LIMIT $${String(parameters.length)}`,
+      parameters,
+    );
+    const rows = result.rows.slice(0, limit);
+    const items = rows.map((row) => {
+      const manifest = parseManifest(row.manifest);
+      return {
+        group: manifest.group,
+        name: manifest.name,
+        version: manifest.version,
+        artifactId: row.artifact_id,
+        manifest: manifest.original,
+      };
+    });
+    const last = rows.at(-1);
+    const next =
+      result.rows.length > limit && last
+        ? Buffer.from(
+            JSON.stringify({
+              groupKey: last.group_key,
+              nameKey: last.name_key,
+              versionKey: last.version_key,
+              versionText: last.version,
+              artifactId: last.artifact_id,
+              repository,
+              sort: options.sort,
+              direction: options.direction,
+              filterGroup: group ?? null,
+              filterName: name ?? null,
+            }),
+          ).toString('base64url')
+        : null;
+    return { items, next };
   }
   async asset(repository: string, path: string): Promise<AssetEntry> {
     const result = await this.pool.query<{ path: string; revision: number; artifact_id: string }>(

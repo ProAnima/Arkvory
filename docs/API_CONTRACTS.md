@@ -18,7 +18,7 @@
 
 Пользователь с действующей сессией может вызвать `POST /api/v1/auth/password` с `currentPassword` и `newPassword`. Ответ `204` означает, что все его сессии отозваны и нужен новый вход; неверный текущий пароль возвращает `401`, сервисный ключ — `403`. См. [ADR 0012](adr/0012-account-password-change.md).
 
-Каталог `GET /api/v1/repositories/{repository}/packages` поддерживает фильтры `group`, `name`, сортировку `sort=group|name|version`, `direction=asc|desc` и `groupBy=none|group|package`. Ответ содержит `items` и `groups`; группы ссылаются на элементы через `artifactIds`, чтобы не дублировать manifest. При `groupBy=none` список групп пуст. Максимум 1000 записей после фильтрации.
+Каталог `GET /api/v1/repositories/{repository}/packages` поддерживает фильтры `group`, `name`, сортировку `sort=group|name|version`, `direction=asc|desc`, группировку `groupBy=none|group|package` и курсор `after`. Ответ содержит `items`, `groups` и `next`; группы ссылаются на элементы текущей страницы через `artifactIds`, чтобы не дублировать manifest. При `groupBy=none` список групп пуст. Размер страницы: 50 по умолчанию, от 1 до 100 через `limit`. При переходе по `next` фильтры и порядок сохраняются. Добавления между страницами не образуют снимок каталога. См. [ADR 0013](adr/0013-package-cursor-pagination.md).
 
 ## Байтовые передачи
 

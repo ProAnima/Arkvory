@@ -1,15 +1,10 @@
 import { compareVersions, DepotError } from '@proanima/depot-domain';
-import type { PackageEntry } from './catalog.js';
+import type { PackageEntry, PackageListOptions } from './catalog.js';
 
-export interface PackageListOptions {
-  sort: 'group' | 'name' | 'version';
-  direction: 'asc' | 'desc';
-  groupBy: 'none' | 'group' | 'package';
-}
 export function parsePackageListOptions(value: Record<string, unknown>): PackageListOptions {
   if (
     Object.keys(value).some(
-      (key) => !['group', 'name', 'sort', 'direction', 'groupBy'].includes(key),
+      (key) => !['group', 'name', 'sort', 'direction', 'groupBy', 'after', 'limit'].includes(key),
     )
   )
     throw new DepotError('invalid_input', 'Unknown package list option');
@@ -26,7 +21,12 @@ export function parsePackageListOptions(value: Record<string, unknown>): Package
 }
 
 export function organizePackages(entries: readonly PackageEntry[], options: PackageListOptions) {
-  const byText = (a: string, b: string) => a.toLowerCase().localeCompare(b.toLowerCase());
+  const byText = (a: string, b: string) => {
+    const left = a.toLowerCase();
+    const right = b.toLowerCase();
+    return left < right ? -1 : left > right ? 1 : 0;
+  };
+  const byRaw = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
   const compare = (a: PackageEntry, b: PackageEntry) => {
     const group = byText(a.group, b.group);
     const name = byText(a.name, b.name);
@@ -38,7 +38,7 @@ export function organizePackages(entries: readonly PackageEntry[], options: Pack
         : options.sort === 'name'
           ? direction * (name || group) || -version
           : direction * version || group || name;
-    return result || byText(a.artifactId, b.artifactId);
+    return result || byRaw(a.version, b.version) || byText(a.artifactId, b.artifactId);
   };
   const items = [...entries].sort(compare);
   if (options.groupBy === 'none') return { items, groups: [] };

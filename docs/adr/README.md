@@ -18,3 +18,4 @@ ADR нужен для изменения границ, публичных кон
 - [0010 — Чтение UPack через Common Packages API](0010-common-package-download.md)
 - [0011 — Учётные записи, группы и каталог пакетов](0011-users-groups-and-package-browser.md)
 - [0012 — Самостоятельная смена пароля](0012-account-password-change.md)
+- [0013 — Курсорные страницы каталога UPack](0013-package-cursor-pagination.md)

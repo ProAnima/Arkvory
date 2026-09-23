@@ -286,6 +286,7 @@ test('migration preserves old asset history without inventing authors or timesta
      DROP TABLE depot_gateway_leases, depot_download_policy;
      DROP TABLE depot_user_sessions, depot_group_members, depot_group_grants,
                 depot_users, depot_access_groups;
+     DROP FUNCTION depot_semver_key(text);
      DELETE FROM depot_migrations WHERE version>=4`,
   );
   await assert.rejects(f.catalog.ready(), { code: 'unavailable' });

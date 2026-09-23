@@ -191,13 +191,16 @@ export class DepotClient {
       sort?: 'group' | 'name' | 'version';
       direction?: 'asc' | 'desc';
       groupBy?: 'none' | 'group' | 'package';
+      after?: string;
+      limit?: number;
     } = {},
   ) {
     const params = new URLSearchParams();
-    for (const key of ['group', 'name', 'sort', 'direction', 'groupBy'] as const) {
+    for (const key of ['group', 'name', 'sort', 'direction', 'groupBy', 'after'] as const) {
       const value = query[key];
       if (value !== undefined && value !== '') params.set(key, value);
     }
+    if (query.limit !== undefined) params.set('limit', String(query.limit));
     return readPackageList(await this.call(this.path(repository, `packages?${params.toString()}`)));
   }
   async create(

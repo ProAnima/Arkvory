@@ -129,6 +129,41 @@ export async function migrate(pool: Pool): Promise<void> {
         INSERT INTO depot_migrations(version) VALUES(6);
       `);
     }
+    const packagePaging = await client.query(
+      'SELECT version FROM depot_migrations WHERE version=7',
+    );
+    if (packagePaging.rowCount === 0) {
+      await client.query(`
+        CREATE FUNCTION depot_semver_key(input_version text) RETURNS text
+        LANGUAGE plpgsql IMMUTABLE STRICT AS $$
+        DECLARE
+          core text := split_part(input_version, '+', 1);
+          dash integer;
+          main text;
+          identifier text;
+          result text := '';
+        BEGIN
+          dash := strpos(core, '-');
+          main := CASE WHEN dash=0 THEN core ELSE left(core, dash-1) END;
+          FOREACH identifier IN ARRAY string_to_array(main, '.') LOOP
+            result := result || lpad(length(identifier)::text, 3, '0') || identifier;
+          END LOOP;
+          IF dash=0 THEN RETURN result || '1'; END IF;
+          result := result || '0';
+          FOREACH identifier IN ARRAY string_to_array(substr(core, dash+1), '.') LOOP
+            IF identifier ~ '^[0-9]+$' THEN
+              result := result || '0' || lpad(length(identifier)::text, 3, '0') || identifier;
+            ELSE
+              result := result || '1' || identifier;
+            END IF;
+            result := result || '!';
+          END LOOP;
+          RETURN result;
+        END;
+        $$;
+        INSERT INTO depot_migrations(version) VALUES(7);
+      `);
+    }
     await client.query('COMMIT');
   } catch (error) {
     try {

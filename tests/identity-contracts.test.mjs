@@ -23,12 +23,14 @@ test('account and package responses reject malformed identities and group refere
   const item = { group: 'Tools', name: 'Example', version: '1.0.0', artifactId: 'a', manifest: {} };
   const page = readPackageList({
     items: [item],
+    next: null,
     groups: [{ group: 'Tools', name: null, artifactIds: ['a'] }],
   });
   assert.strictEqual(page.groups[0].items[0], page.items[0]);
   assert.throws(() =>
     readPackageList({
       items: [item],
+      next: null,
       groups: [{ group: 'Tools', name: null, artifactIds: ['b'] }],
     }),
   );

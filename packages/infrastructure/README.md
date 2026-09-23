@@ -11,3 +11,5 @@ BandwidthGovernor и AdmissionQueue обеспечивают общие/per-prin
 PostgresDownloadLease и DownloadLeaseWindow координируют фиксированные доли раздачи, migration 5 хранит policy/slots. ClaimStorage сохраняет одного writer, добавляет readers и исключает смешение standalone/shared. Ограничения часов и общего storage: [ADR 0009](../../docs/adr/0009-leased-read-gateways.md).
 
 PostgresIdentity хранит пользователей, группы, права и хеши сессий в таблицах migration 6; пароли проверяются scrypt. [ADR 0011](../../docs/adr/0011-users-groups-and-package-browser.md).
+
+PostgresBrowse использует функцию SemVer-порядка из migration 7 и ограниченные курсорные запросы каталога пакетов. [ADR 0013](../../docs/adr/0013-package-cursor-pagination.md).
