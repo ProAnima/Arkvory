@@ -59,11 +59,12 @@ export interface BrowseStore {
     manifest: PackageManifest,
     actor: string,
   ): Promise<PackageEntry>;
-  packages(
+  resolvePackage(
     repository: string,
-    group: string | undefined,
-    name: string | undefined,
-  ): Promise<readonly PackageEntry[]>;
+    group: string,
+    name: string,
+    version: string | undefined,
+  ): Promise<string | null>;
   packagePage(
     repository: string,
     group: string | undefined,
@@ -160,11 +161,16 @@ export class ArtifactCatalog {
     await this.storage.artifact(p, repo, id);
     return this.store.register(repo, id, await this.manifests.inspect(id), p.id);
   }
-  async packages(p: Principal, repo: string, group?: string, name?: string) {
+  async resolvePackage(p: Principal, repo: string, group: string, name: string, version?: string) {
     authorize(p, repo, 'read');
-    if ((group?.length ?? 0) > 128 || (name?.length ?? 0) > 128)
+    if (
+      group.length > 128 ||
+      name.length === 0 ||
+      name.length > 128 ||
+      (version?.length ?? 0) > 128
+    )
       throw new DepotError('invalid_input', 'Invalid package filter');
-    return this.store.packages(repo, group, name);
+    return this.store.resolvePackage(repo, group, name, version);
   }
   async packagePage(
     p: Principal,

@@ -20,10 +20,9 @@ export class ProGetDownloads {
       version.length === 0
     )
       throw new DepotError('invalid_input', 'Group, name and version must identify one package');
-    const packages = await this.catalog.packages(principal, repository, group, name);
-    const selected = packages.find((item) => item.version.toLowerCase() === version.toLowerCase());
-    if (!selected) throw new DepotError('not_found', 'Package not found');
-    return selected.artifactId;
+    const id = await this.catalog.resolvePackage(principal, repository, group, name, version);
+    if (!id) throw new DepotError('not_found', 'Package not found');
+    return id;
   }
   async universal(
     principal: Principal,
@@ -43,12 +42,9 @@ export class ProGetDownloads {
     const group = segments.join('/');
     if (!name || (!latest && !version))
       throw new DepotError('invalid_input', 'Specify package version or latest');
-    const packages = await this.catalog.packages(principal, repository, group, name);
-    const selected = latest
-      ? packages[0]
-      : packages.find((item) => item.version.toLowerCase() === version?.toLowerCase());
-    if (!selected) throw new DepotError('not_found', 'Package not found');
-    return selected.artifactId;
+    const id = await this.catalog.resolvePackage(principal, repository, group, name, version);
+    if (!id) throw new DepotError('not_found', 'Package not found');
+    return id;
   }
   async asset(principal: Principal, repository: string, path: string): Promise<string> {
     return (await this.catalog.asset(principal, repository, path)).artifactId;

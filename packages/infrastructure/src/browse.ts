@@ -1,11 +1,5 @@
 import type { Pool, PoolClient } from 'pg';
-import {
-  DepotError,
-  parseDescriptor,
-  parseManifest,
-  compareVersions,
-  requireId,
-} from '@proanima/depot-domain';
+import { DepotError, parseDescriptor, parseManifest, requireId } from '@proanima/depot-domain';
 import type { PackageManifest } from '@proanima/depot-domain';
 import type {
   Annotation,
@@ -221,34 +215,25 @@ export class PostgresBrowse implements BrowseStore {
       };
     });
   }
-  async packages(
+  async resolvePackage(
     repository: string,
-    group: string | undefined,
-    name: string | undefined,
-  ): Promise<readonly PackageEntry[]> {
-    const result = await this.pool.query<{ artifact_id: string; manifest: unknown }>(
-      `SELECT artifact_id,manifest FROM depot_packages WHERE repository=$1 AND ($2::text IS NULL OR lower(package_group)=lower($2)) AND ($3::text IS NULL OR lower(name)=lower($3)) ORDER BY package_group,name,version LIMIT 1001`,
-      [repository, group ?? null, name ?? null],
+    group: string,
+    name: string,
+    version: string | undefined,
+  ): Promise<string | null> {
+    const result = await this.pool.query<{ artifact_id: string }>(
+      version === undefined
+        ? `SELECT artifact_id FROM depot_packages WHERE repository=$1
+           AND lower(package_group COLLATE "C")=lower($2 COLLATE "C")
+           AND lower(name COLLATE "C")=lower($3 COLLATE "C")
+           ORDER BY depot_semver_key(version) COLLATE "C" DESC,
+                    version COLLATE "C" ASC, artifact_id::text COLLATE "C" ASC LIMIT 1`
+        : `SELECT artifact_id FROM depot_packages WHERE repository=$1
+           AND lower(package_group)=lower($2) AND lower(name)=lower($3)
+           AND lower(version)=lower($4) LIMIT 1`,
+      version === undefined ? [repository, group, name] : [repository, group, name, version],
     );
-    if (result.rows.length > 1000)
-      throw new DepotError('invalid_input', 'Narrow the package filter (maximum 1000 results)');
-    return result.rows
-      .map((row) => {
-        const value = parseManifest(row.manifest);
-        return {
-          group: value.group,
-          name: value.name,
-          version: value.version,
-          artifactId: row.artifact_id,
-          manifest: value.original,
-        };
-      })
-      .sort(
-        (a, b) =>
-          a.group.localeCompare(b.group) ||
-          a.name.localeCompare(b.name) ||
-          compareVersions(b.version, a.version),
-      );
+    return result.rows[0]?.artifact_id ?? null;
   }
   async packagePage(
     repository: string,

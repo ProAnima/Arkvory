@@ -5,12 +5,13 @@ import { ProGetDownloads } from '@proanima/depot-proget-compat';
 test('Common Packages download resolves only an explicit UPack version', async () => {
   const calls = [];
   const catalog = {
-    async packages(_principal, repository, group, name) {
-      calls.push({ repository, group, name });
-      return [
-        { version: '2.0.0', artifactId: 'new' },
-        { version: '1.0.0', artifactId: 'old' },
-      ];
+    async resolvePackage(_principal, repository, group, name, version) {
+      calls.push({ repository, group, name, version });
+      return version === '1.0.0'
+        ? 'old'
+        : version === '2.0.0' || version === undefined
+          ? 'new'
+          : null;
     },
   };
   const downloads = new ProGetDownloads(catalog);
@@ -24,12 +25,29 @@ test('Common Packages download resolves only an explicit UPack version', async (
     }),
     'old',
   );
-  assert.deepEqual(calls, [{ repository: 'releases', group: 'Tools', name: 'Example' }]);
+  assert.deepEqual(calls, [
+    { repository: 'releases', group: 'Tools', name: 'Example', version: '1.0.0' },
+  ]);
   assert.equal(
     await downloads.common(principal, 'releases', { name: 'Example', version: '2.0.0' }),
     'new',
   );
-  assert.deepEqual(calls[1], { repository: 'releases', group: '', name: 'Example' });
+  assert.deepEqual(calls[1], {
+    repository: 'releases',
+    group: '',
+    name: 'Example',
+    version: '2.0.0',
+  });
+  assert.equal(
+    await downloads.universal(principal, 'releases', 'Tools/Example', { latest: '' }),
+    'new',
+  );
+  assert.deepEqual(calls[2], {
+    repository: 'releases',
+    group: 'Tools',
+    name: 'Example',
+    version: undefined,
+  });
 
   for (const query of [
     { name: 'Example' },

@@ -17,6 +17,8 @@
 
 Feed соответствует native repository (нижний регистр, до 64 символов). Имя/group/version UPack ищутся без учёта регистра. Native ошибки пока используются и для адаптера; точное соответствие error body/status ProGet ещё не подтверждено. Поэтому текущая версия **не является полной заменой ProGet**. Нельзя переключать общий production hostname на этот набор маршрутов.
 
+Exact и latest download выбирают один ID из каталога по group/name, без лимита в 1000 версий и без загрузки списка в память. Контракт маршрутов и выбор prerelease не меняются; прогон на реальных клиентах по-прежнему необходим.
+
 Common Packages download принимает только `group`, `name` и `version`; `name` и `version` обязательны, `group` по умолчанию пустая. Другие идентификаторы, включая `purl`, пока получают 400. Маршрут использует тот же ACL и потоковую выдачу, что остальные downloads. Формы URL и статусы сверены с [официальным описанием Download Package](https://docs.inedo.com/docs/proget/api/packages/download); фактический клиент и сервер ProGet пока не проверены. Решение о границе поднабора: [ADR 0010](adr/0010-common-package-download.md).
 
 Исходные контракты: [Universal Feed](https://docs.inedo.com/docs/proget/api/universal-feed), [legacy download в официальном архиве Inedo](https://github.com/Inedo/inedo-docs/blob/6dc089e74c549fdc1f5f880afcdce565a5f5ab24/Content/proget/reference-api/universal-feed/download.md), [Asset download](https://docs.inedo.com/docs/proget/api/assets/files/download). Документы задают формы адресов; неоднозначную latest/prerelease-политику нужно сверить с выбранной сборкой и клиентами.
