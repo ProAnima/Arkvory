@@ -35,12 +35,15 @@ npm run upload -- ./example.upack releases
 | `DEPOT_DATA_DIR`                     | Локальный каталог staging/blobs/storage-id, не сетевой share                                                |
 | `DEPOT_KEYS_FILE`                    | JSON-массив сервисных ключей: `id`, `sha256`, `repositories`, `permissions`, необязательный `administrator` |
 | `DEPOT_HOST`, `DEPOT_PORT`           | Bind; по умолчанию loopback и 8080                                                                          |
+| `DEPOT_CORS_ORIGINS`                 | Необязательный список точных origins внешнего браузерного UI через запятую; по умолчанию пустой             |
 | `DEPOT_CAPACITY_BYTES`               | Лимит логических резервов; по умолчанию 10 TiB, не обещание доступного диска                                |
 | `DEPOT_MAX_UPLOADS`                  | Параллельные PUT/complete/cancel; по умолчанию 2                                                            |
 | `DEPOT_MAX_DOWNLOADS`                | Параллельные GET/HEAD bytes; по умолчанию 16                                                                |
 | `DEPOT_TOKEN_FILE`, `DEPOT_BASE_URL` | Только локальный upload CLI                                                                                 |
 
 Нет встроенного TLS-терминатора. Для доступа с другой машины нужен TLS на доверенном reverse proxy, ограничение доступа к backend-порту и корректные stream/timeouts без буферизации всего тела. Не отправляйте ключи через открытый HTTP между машинами. CORS по умолчанию не открыт.
+
+Для UI на другом origin задайте `DEPOT_CORS_ORIGINS=https://ui.example.com` и перезапустите API. Допустимо до 16 точных origins без пути, query и wildcard; HTTP разрешён только для loopback. Разрешение origin не выдаёт прав: каждый запрос по-прежнему требует Bearer и серверную проверку доступа к репозиторию. Preflight `OPTIONS` для native API и `/health/ready` проходит до проверки Bearer; разрешённые методы и заголовки ограничены. Подробная настройка и пример клиента: [EXTERNAL_UI](EXTERNAL_UI.md).
 
 Подключение к БД ограничено 5 секундами, SQL statement — 10 секундами, ожидание ответа клиентом — 15 секундами. Если rollback не удался, соединение удаляется из пула. Эти лимиты не ограничивают длительность byte stream: SQL-транзакция на время передачи не удерживается.
 

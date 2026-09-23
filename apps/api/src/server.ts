@@ -35,6 +35,7 @@ import {
 import type { UploadResponse } from '@proanima/depot-contracts';
 import type { ServerConfig } from './config.js';
 import { matchesEtag, parseRange } from './range.js';
+import { registerCors } from './cors.js';
 
 function wire(upload: Upload): UploadResponse {
   return {
@@ -132,6 +133,7 @@ export async function createServer(config: ServerConfig) {
     requestIdHeader: false,
     ajv: { customOptions: { coerceTypes: false, removeAdditional: false } },
   });
+  registerCors(app, config.corsOrigins ?? []);
   const principals = new WeakMap<FastifyRequest, Principal>();
   const requestSignals = new WeakMap<FastifyRequest, AbortSignal>();
   let requests = 0;

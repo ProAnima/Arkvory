@@ -21,13 +21,23 @@ const token = element('token', HTMLInputElement),
   rows = element('artifacts', HTMLTableSectionElement),
   uploadId = element('upload-id', HTMLInputElement),
   progress = element('progress', HTMLProgressElement);
-const client = new DepotClient(location.origin, () => token.value);
+const apiBaseUrl =
+  document.querySelector<HTMLMetaElement>('meta[name="depot-api-base-url"]')?.content.trim() ||
+  location.origin;
 initializeShell();
+let client: DepotClient;
+try {
+  client = new DepotClient(apiBaseUrl, () => token.value);
+} catch {
+  feedback(output, 'apiAddressError', {}, 'error');
+  throw new Error('Invalid Depot API base URL');
+}
 let stop: AbortController | undefined;
 let selected: { repository: string; id: string; revision: number; name: string } | undefined;
 let selectionGeneration = 0;
 let listGeneration = 0;
 const transferStatus = element('transfer-status', HTMLOutputElement);
+let wasConnected = false;
 const run = (action: () => Promise<void>) => {
   const requestId = element('request-id', HTMLSpanElement);
   requestId.textContent = '';
@@ -40,8 +50,15 @@ const run = (action: () => Promise<void>) => {
 };
 function connection(connected: boolean) {
   const state = element('connection-state', HTMLSpanElement);
+  const details = element('connection-card', HTMLDetailsElement);
+  const connectedRepository = element('connection-repository', HTMLSpanElement);
   state.dataset['connected'] = String(connected);
   message(state, connected ? 'connected' : 'disconnected');
+  connectedRepository.hidden = !connected;
+  connectedRepository.textContent = connected ? repository.value : '';
+  if (connected && !wasConnected) details.open = false;
+  if (!connected) details.open = true;
+  wasConnected = connected;
 }
 async function openArtifact(repo: string, id: string, name: string) {
   const generation = ++selectionGeneration;

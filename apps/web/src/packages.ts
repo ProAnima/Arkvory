@@ -12,25 +12,36 @@ export function installPackageView(
 ) {
   const rows = element('package-rows', HTMLTableSectionElement);
   const status = element('package-status', HTMLOutputElement);
-  const previous = element('package-prev', HTMLButtonElement);
-  const next = element('package-next', HTMLButtonElement);
+  const pageTop = element('package-page-top', HTMLSpanElement);
+  const pages = [pageTop, element('package-page', HTMLSpanElement)];
+  const previous = [
+    element('package-prev-top', HTMLButtonElement),
+    element('package-prev', HTMLButtonElement),
+  ];
+  const next = [
+    element('package-next-top', HTMLButtonElement),
+    element('package-next', HTMLButtonElement),
+  ];
   let generation = 0;
   let cursors: (string | undefined)[] = [undefined];
   let pageIndex = 0;
   let nextCursor: string | null = null;
+  const controls = (busy: boolean) => {
+    for (const button of previous) button.disabled = busy || pageIndex === 0;
+    for (const button of next) button.disabled = busy || nextCursor === null;
+  };
   const resetPage = () => {
     generation++;
     cursors = [undefined];
     pageIndex = 0;
     nextCursor = null;
-    previous.disabled = true;
-    next.disabled = true;
+    controls(false);
   };
   const clear = () => {
     resetPage();
     rows.replaceChildren();
     status.textContent = '';
-    element('package-page', HTMLSpanElement).textContent = '';
+    for (const page of pages) page.textContent = '';
   };
   for (const field of [repository, token]) field.addEventListener('input', clear);
   const select = <T extends string>(id: string, allowed: readonly T[], fallback: T): T => {
@@ -57,8 +68,7 @@ export function installPackageView(
   };
   const refresh = async () => {
     const current = ++generation;
-    previous.disabled = true;
-    next.disabled = true;
+    controls(true);
     const repo = repository.value;
     const after = cursors[pageIndex];
     let result;
@@ -73,8 +83,7 @@ export function installPackageView(
       });
     } catch (error) {
       if (current === generation) {
-        previous.disabled = pageIndex === 0;
-        next.disabled = nextCursor === null;
+        controls(false);
       }
       throw error;
     }
@@ -99,23 +108,38 @@ export function installPackageView(
       count: result.items.length,
     });
     nextCursor = result.next;
-    previous.disabled = pageIndex === 0;
-    next.disabled = nextCursor === null;
-    message(element('package-page', HTMLSpanElement), 'pageNumber', { page: pageIndex + 1 });
+    controls(false);
+    for (const page of pages) message(page, 'pageNumber', { page: pageIndex + 1 });
   };
   element('package-filter', HTMLFormElement).onsubmit = (event) => {
     event.preventDefault();
     resetPage();
     run(refresh);
   };
-  for (const id of [
+  const filters = [
     'package-group',
     'package-name',
     'package-sort',
     'package-direction',
     'package-group-by',
-  ])
-    element(id, HTMLElement).addEventListener('change', resetPage);
+  ] as const;
+  for (const id of filters)
+    element(id, HTMLElement).addEventListener('change', () => {
+      resetPage();
+      rows.replaceChildren();
+      for (const page of pages) page.textContent = '';
+      message(status, 'applyFilters');
+    });
+  element('package-clear', HTMLButtonElement).onclick = () => {
+    element('package-group', HTMLInputElement).value = '';
+    element('package-name', HTMLInputElement).value = '';
+    element('package-sort', HTMLSelectElement).value = 'group';
+    element('package-direction', HTMLSelectElement).value = 'asc';
+    element('package-group-by', HTMLSelectElement).value = 'group';
+    resetPage();
+    if (token.value) run(refresh);
+    else clear();
+  };
   const navigate = (target: number, cursor?: string) => {
     const before = pageIndex;
     pageIndex = target;
@@ -123,22 +147,24 @@ export function installPackageView(
     run(async () => {
       try {
         await refresh();
+        if (pageIndex === target) pageTop.focus({ preventScroll: false });
       } catch (error) {
         if (pageIndex === target) {
           pageIndex = before;
-          previous.disabled = before === 0;
-          next.disabled = nextCursor === null;
+          controls(false);
         }
         throw error;
       }
     });
   };
-  previous.onclick = () => {
-    if (pageIndex > 0) navigate(pageIndex - 1);
-  };
-  next.onclick = () => {
-    if (nextCursor) navigate(pageIndex + 1, nextCursor);
-  };
+  for (const button of previous)
+    button.onclick = () => {
+      if (pageIndex > 0) navigate(pageIndex - 1);
+    };
+  for (const button of next)
+    button.onclick = () => {
+      if (nextCursor) navigate(pageIndex + 1, nextCursor);
+    };
   document
     .querySelector<HTMLButtonElement>('[data-nav="packages"]')
     ?.addEventListener('click', () => {

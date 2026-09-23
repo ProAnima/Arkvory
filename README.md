@@ -20,25 +20,26 @@ An initial use case is replacing ProGet for Universal Packages and ordinary file
 
 ## Current status
 
-| Area                                                               | Status                                                   |
-| ------------------------------------------------------------------ | -------------------------------------------------------- |
-| Strict TypeScript, clean boundaries, runtime builds                | Implemented                                              |
-| Streaming transfers, SHA-256, GET/HEAD/Range/ETag                  | Implemented                                              |
-| 8 MiB parts, resume, TTL, idempotent completion                    | Implemented                                              |
-| Bounded SDK retries, verified Range downloads, saved-prefix resume | Implemented; [recovery guide](docs/TRANSFER_RECOVERY.md) |
-| Metadata/labels/collections, CAS, search, catalog audit            | Implemented                                              |
-| UPack manifest/group/SemVer, immutable versions, asset revisions   | Implemented with validator limits                        |
-| PostgreSQL completion jobs, lease/generation, retries, worker      | Implemented                                              |
-| Bounded upload/download admission with client rotation             | One gateway, in memory                                   |
-| Shared-storage read gateways and fixed aggregate download shares   | Implemented; PostgreSQL leases, no node failover         |
-| GC and scrub                                                       | Offline; published blobs are retained                    |
-| SDK and RU/EN web console                                          | Implemented; details in runbook                          |
-| Asset history, exact revision lookup, atomic restore with audit    | API, SDK and console implemented                         |
-| User accounts and repository access groups                         | Administrator registration, sessions and group grants    |
-| Package catalog sorting, grouping and cursor paging                | API, SDK and console; up to 100 versions per page        |
-| Legacy UPack/assets download                                       | Subset; not tested against real ProGet                   |
-| Directory import with resume and download/hash verification        | Implemented; ProGet export and ACL mapping separate      |
-| Two-server replication, failover, global balancing                 | Design stage; lab validation deferred                    |
+| Area                                                                 | Status                                                   |
+| -------------------------------------------------------------------- | -------------------------------------------------------- |
+| Strict TypeScript, clean boundaries, runtime builds                  | Implemented                                              |
+| Streaming transfers, SHA-256, GET/HEAD/Range/ETag                    | Implemented                                              |
+| 8 MiB parts, resume, TTL, idempotent completion                      | Implemented                                              |
+| Bounded SDK retries, verified Range downloads, saved-prefix resume   | Implemented; [recovery guide](docs/TRANSFER_RECOVERY.md) |
+| Metadata/labels/collections, CAS, search, catalog audit              | Implemented                                              |
+| UPack manifest/group/SemVer, immutable versions, asset revisions     | Implemented with validator limits                        |
+| PostgreSQL completion jobs, lease/generation, retries, worker        | Implemented                                              |
+| Bounded upload/download admission with client rotation               | One gateway, in memory                                   |
+| Shared-storage read gateways and fixed aggregate download shares     | Implemented; PostgreSQL leases, no node failover         |
+| GC and scrub                                                         | Offline; published blobs are retained                    |
+| SDK and RU/EN web console                                            | Implemented; details in runbook                          |
+| External browser UI through Bearer API and explicit origin allowlist | Implemented for native API; [setup](docs/EXTERNAL_UI.md) |
+| Asset history, exact revision lookup, atomic restore with audit      | API, SDK and console implemented                         |
+| User accounts and repository access groups                           | Administrator registration, sessions and group grants    |
+| Package catalog sorting, grouping and cursor paging                  | API, SDK and console; up to 100 versions per page        |
+| Legacy UPack/assets download                                         | Subset; not tested against real ProGet                   |
+| Directory import with resume and download/hash verification          | Implemented; ProGet export and ACL mapping separate      |
+| Two-server replication, failover, global balancing                   | Design stage; lab validation deferred                    |
 
 Run `npm run migrate`, `npm start` and `npm run worker` separately. Console: `/console/`. This is a development release, not a production HA system. See the [core runbook](docs/CORE_RUNBOOK.md), [0.2 features](docs/LIFECYCLE_AND_CATALOG.md), [ProGet API limits](docs/COMPATIBILITY.md), [migration](docs/MIGRATION.md), [two-server profile](docs/TWO_NODE_PLAN.md) and [validation](docs/CORE_VALIDATION.md) (engineering documents in Russian).
 
@@ -49,6 +50,8 @@ The standalone gateway now supports aggregate upload/download rate ceilings, a s
 An optional shared-storage profile runs one writer and additional read gateways. Fixed download shares are reserved through finite PostgreSQL leases; a lost lease stops delivery until restart. Idle shares are not redistributed. See [read gateways](docs/READ_GATEWAYS.md).
 
 The console has light, dark and system themes, live English/Russian switching, and responsive catalog, upload, history and artifact screens. Colors, typography, spacing, radii, controls and motion use centralized design tokens. Only appearance and language preferences are stored in the browser. See the [design system](docs/DESIGN_SYSTEM.md).
+
+A UI hosted on another HTTPS origin can use the native API with Bearer tokens and a server configured origin allowlist. The bundled console also accepts a configured Depot API address. See the [external UI guide](docs/EXTERNAL_UI.md).
 
 Administrators can create accounts and repository access groups. Users sign in with 12-hour sessions and can change their own password; the console keeps session tokens only in the current tab. The package screen sorts by group, name or SemVer version and groups by UPack group or package. See the [runbook](docs/CORE_RUNBOOK.md).
 

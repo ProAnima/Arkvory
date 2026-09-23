@@ -44,6 +44,8 @@ Multipart-сессия сохраняет состояние вне памяти
 
 Клиенты на любом поддерживаемом языке используют HTTP/OpenAPI. Для TypeScript предоставляется версионированный SDK. Прямой доступ к БД, внутренним файловым путям и shared runtime internals запрещён. Внешние ссылки на версии защищают используемые компоненты от очистки.
 
+Внешний браузерный UI может вызывать тот же `/api/v1` с `Authorization: Bearer <token>`. Серверная опция `DEPOT_CORS_ORIGINS` разрешает только перечисленные точные HTTPS origins (loopback HTTP для разработки), максимум 16. Для `/api/v1/*` и `/health/ready` разрешён preflight `OPTIONS` без токена; методы: GET, HEAD, POST, PUT, DELETE; заголовки: Authorization, Content-Type, Idempotency-Key, X-Content-SHA256, Range, If-Range, If-None-Match. Ответ содержит конкретный `Access-Control-Allow-Origin`, `Vary`, не содержит разрешения credentials и открывает клиенту `X-Request-Id`, ETag, Content-Length, Content-Range, Accept-Ranges, Content-Disposition, Location, Retry-After. Незаявленный origin получает 403, пустая конфигурация закрывает cross-origin запросы. Проверки Bearer и ACL выполняются независимо от CORS. Legacy-маршруты в этот CORS-контракт не входят. [Настройка внешнего UI](EXTERNAL_UI.md), [ADR 0015](adr/0015-external-browser-ui.md).
+
 Webhooks подписываются, могут дублироваться и повторяются через outbox. Event ID обеспечивает дедупликацию; API позволяет восстановить состояние при пропущенных событиях.
 
 ## Эталонные источники

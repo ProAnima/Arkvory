@@ -3,6 +3,7 @@ import { DepotError } from '@proanima/depot-domain';
 import { parseKeys, downloadShare } from '@proanima/depot-infrastructure';
 import type { SharedDownloadPolicy } from '@proanima/depot-infrastructure';
 import type { ServiceKey } from '@proanima/depot-infrastructure';
+import { parseCorsOrigins } from './cors.js';
 export { parseKeys } from '@proanima/depot-infrastructure';
 export type { ServiceKey } from '@proanima/depot-infrastructure';
 
@@ -23,6 +24,7 @@ export interface ServerConfig {
   readonly uploadBytesPerSecondPerPrincipal?: number;
   readonly downloadBytesPerSecondPerPrincipal?: number;
   readonly keys: readonly ServiceKey[];
+  readonly corsOrigins?: readonly string[];
 }
 
 export async function loadConfig(env: NodeJS.ProcessEnv): Promise<ServerConfig> {
@@ -87,6 +89,7 @@ export async function loadConfig(env: NodeJS.ProcessEnv): Promise<ServerConfig> 
     databaseUrl,
     dataDirectory: required('DEPOT_DATA_DIR'),
     keys: parseKeys(keys),
+    corsOrigins: parseCorsOrigins(env['DEPOT_CORS_ORIGINS']),
     host: env['DEPOT_HOST'] ?? '127.0.0.1',
     port: number('DEPOT_PORT', 8080, 65535),
     capacityBytes: number('DEPOT_CAPACITY_BYTES', 10 * 1024 ** 4, Number.MAX_SAFE_INTEGER),

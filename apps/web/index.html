@@ -4,6 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <meta name="color-scheme" content="light dark" />
+    <meta name="depot-api-base-url" content="" />
     <title>ProAnima Depot</title>
     <script src="/console/appearance-init.js"></script>
     <link rel="stylesheet" href="/console/tokens.css" />
@@ -112,11 +113,12 @@
             <span aria-hidden="true">＋</span><span data-i18n="uploadFile">Загрузить файл</span>
           </button>
         </div>
-        <details class="connection card" open>
+        <details id="connection-card" class="connection card" open>
           <summary>
             <span class="connection-heading"
               ><span class="connection-icon" aria-hidden="true">↗</span
-              ><span data-i18n="connection">Подключение к репозиторию</span></span
+              ><span data-i18n="connection">Подключение к репозиторию</span
+              ><span id="connection-repository" class="hint" hidden></span></span
             ><span id="connection-state" class="badge" data-i18n="disconnected"
               >Нет подключения</span
             >
@@ -288,7 +290,36 @@
               </select></label
             >
             <button class="secondary" data-i18n="apply">Применить</button>
+            <button id="package-clear" class="secondary" type="button" data-i18n="clearFilters">
+              Сбросить
+            </button>
           </form>
+          <p class="hint" data-i18n="packageFilterHint">
+            Группа и имя ищутся точно, без учёта регистра.
+          </p>
+          <div class="table-footer package-toolbar">
+            <span id="package-page-top" class="hint" tabindex="-1" aria-live="polite"></span>
+            <div class="inline">
+              <button
+                id="package-prev-top"
+                class="secondary small"
+                type="button"
+                disabled
+                data-i18n="previousPage"
+              >
+                Назад
+              </button>
+              <button
+                id="package-next-top"
+                class="secondary small"
+                type="button"
+                disabled
+                data-i18n="nextPage"
+              >
+                Далее
+              </button>
+            </div>
+          </div>
           <div class="table">
             <table>
               <thead>
@@ -304,7 +335,7 @@
           </div>
           <output id="package-status" aria-live="polite"></output>
           <div class="table-footer">
-            <span id="package-page" class="hint" aria-live="polite"></span>
+            <span id="package-page" class="hint"></span>
             <div class="inline">
               <button
                 id="package-prev"
