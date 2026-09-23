@@ -53,7 +53,7 @@ The console has light, dark and system themes, live English/Russian switching, a
 
 A UI hosted on another HTTPS origin can use the native API with Bearer tokens and a server configured origin allowlist. The bundled console also accepts a configured Depot API address. See the [external UI guide](docs/EXTERNAL_UI.md).
 
-Administrators can create accounts and repository access groups. Users sign in with 12-hour sessions and can change their own password; the console keeps session tokens only in the current tab. The package screen sorts by group, name or SemVer version and groups by UPack group or package. See the [runbook](docs/CORE_RUNBOOK.md).
+Administrators can create accounts and repository access groups. Users sign in with 12-hour sessions and can change their own password; the console keeps session tokens only in the current tab and suggests readable repositories after sign-in. The package screen sorts by group, name or SemVer version and groups by UPack group or package. See the [runbook](docs/CORE_RUNBOOK.md).
 
 ### Packages, files, and catalog
 

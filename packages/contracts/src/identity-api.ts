@@ -80,6 +80,7 @@ export const identityPaths = {
       responses: {
         200: response({
           type: 'object',
+          required: ['id', 'administrator', 'grants'],
           properties: {
             id: str,
             administrator: { type: 'boolean' },
@@ -87,7 +88,14 @@ export const identityPaths = {
               type: 'array',
               items: {
                 type: 'object',
-                properties: { repository: str, permissions: { type: 'array', items: str } },
+                required: ['repository', 'permissions'],
+                properties: {
+                  repository: str,
+                  permissions: {
+                    type: 'array',
+                    items: { type: 'string', enum: ['read', 'write'] },
+                  },
+                },
               },
             },
           },

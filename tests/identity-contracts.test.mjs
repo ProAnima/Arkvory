@@ -1,8 +1,25 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readAccount, readLogin, readPackageList } from '@proanima/depot-contracts';
+import { readAccount, readLogin, readPackageList, readPrincipal } from '@proanima/depot-contracts';
 
 test('account and package responses reject malformed identities and group references', () => {
+  assert.deepEqual(
+    readPrincipal({
+      id: 'user:alice',
+      administrator: false,
+      grants: [{ repository: 'releases', permissions: ['read', 'write'] }],
+    }).grants,
+    [{ repository: 'releases', permissions: ['read', 'write'] }],
+  );
+  for (const grants of [
+    [{ repository: 'releases', permissions: ['admin'] }],
+    [{ repository: 'releases', permissions: [] }],
+    [
+      { repository: 'releases', permissions: ['read'] },
+      { repository: 'releases', permissions: ['write'] },
+    ],
+  ])
+    assert.throws(() => readPrincipal({ id: 'user:alice', administrator: false, grants }));
   assert.deepEqual(readAccount({ id: 'u', name: 'alice', administrator: false, enabled: true }), {
     id: 'u',
     name: 'alice',

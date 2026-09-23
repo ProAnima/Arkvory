@@ -1,6 +1,30 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
+import { DepotClient } from '@proanima/depot-sdk';
 import { setup, base, descriptor } from './fixture.mjs';
+
+test('principal grants are unique, sorted and omit empty service-key scopes', async (t) => {
+  const token = 'test-' + 'x'.repeat(48);
+  const noScope = 'test-' + 'y'.repeat(48);
+  const key = (value, id, repositories, permissions) => ({
+    sha256: createHash('sha256').update(value).digest('hex'),
+    principal: { id, repositories, permissions },
+  });
+  const f = await setup(t, {
+    keys: [
+      key(token, 'repeated', ['beta', 'alpha', 'alpha'], ['read']),
+      key(noScope, 'no-scope', ['alpha'], []),
+    ],
+  });
+  const address = await f.listen();
+  const grants = (await new DepotClient(address, () => token).me()).grants;
+  assert.deepEqual(grants, [
+    { repository: 'alpha', permissions: ['read'] },
+    { repository: 'beta', permissions: ['read'] },
+  ]);
+  assert.deepEqual((await new DepotClient(address, () => noScope).me()).grants, []);
+});
 
 test('registered accounts inherit and lose repository access through groups', async (t) => {
   const f = await setup(t);
@@ -73,6 +97,9 @@ test('registered accounts inherit and lose repository access through groups', as
   });
   assert.equal(login.statusCode, 200, login.body);
   const headers = { authorization: `Bearer ${login.json().token}` };
+  const me = await f.app.inject({ url: '/api/v1/auth/me', headers });
+  assert.equal(me.statusCode, 200, me.body);
+  assert.deepEqual(me.json().grants, [{ repository: 'releases', permissions: ['read'] }]);
   assert.equal((await f.app.inject({ url: `${base}/packages`, headers })).statusCode, 200);
   const download = await f.app.inject({ url: `${base}/artifacts/${artifactId}/content`, headers });
   assert.equal(download.statusCode, 200);
@@ -100,6 +127,9 @@ test('registered accounts inherit and lose repository access through groups', as
     ).statusCode,
     204,
   );
+  assert.deepEqual((await f.app.inject({ url: '/api/v1/auth/me', headers })).json().grants, [
+    { repository: 'releases', permissions: ['read', 'write'] },
+  ]);
   assert.equal(
     (
       await f.app.inject({

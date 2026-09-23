@@ -1,5 +1,6 @@
 import { DepotClient, DepotHttpError } from '@proanima/depot-sdk';
 import { record, text, stringMap } from '@proanima/depot-contracts';
+import type { PrincipalResponse } from '@proanima/depot-contracts';
 import { element } from './dom.js';
 import { installAssetHistory } from './asset-history.js';
 import { message } from './i18n.js';
@@ -38,6 +39,23 @@ let selectionGeneration = 0;
 let listGeneration = 0;
 const transferStatus = element('transfer-status', HTMLOutputElement);
 let wasConnected = false;
+let repositoryEdited = false;
+const repositoryOptions = element('repository-options', HTMLElement);
+function offerRepositories(grants: PrincipalResponse['grants']): boolean {
+  const readable = grants
+    .filter((grant) => grant.permissions.includes('read'))
+    .map((grant) => grant.repository)
+    .sort((left, right) => left.localeCompare(right));
+  repositoryOptions.replaceChildren();
+  for (const name of readable) {
+    const option = document.createElement('option');
+    option.value = name;
+    repositoryOptions.append(option);
+  }
+  if (readable.length && !readable.includes(repository.value) && !repositoryEdited)
+    repository.value = readable[0] ?? '';
+  return readable.length > 0;
+}
 const run = (action: () => Promise<void>) => {
   const requestId = element('request-id', HTMLSpanElement);
   requestId.textContent = '';
@@ -97,7 +115,14 @@ function clearCatalog() {
   element('change-password', HTMLFormElement).hidden = true;
   if (!element('administration-panel', HTMLElement).hidden) showView('catalog');
 }
-for (const input of [repository, token]) input.addEventListener('input', clearCatalog);
+repository.addEventListener('input', () => {
+  repositoryEdited = true;
+  clearCatalog();
+});
+token.addEventListener('input', () => {
+  repositoryOptions.replaceChildren();
+  clearCatalog();
+});
 const resetHistory = installAssetHistory(client, repository, token, openArtifact, run);
 const clearPackages = installPackageView(client, repository, token, run, async (id) => {
   const repo = repository.value;
@@ -193,7 +218,11 @@ element('connect', HTMLFormElement).onsubmit = (event) => {
     const me = await client.me();
     if (me.administrator) administration.show();
     element('change-password', HTMLFormElement).hidden = !me.id.startsWith('user:');
-    await list();
+    if (offerRepositories(me.grants)) await list();
+    else if (me.administrator) {
+      showView('administration');
+      await administration.refresh();
+    } else feedback(output, 'noRepositoryAccess', {}, 'error');
   });
 };
 element('login', HTMLFormElement).onsubmit = (event) => {
@@ -204,13 +233,20 @@ element('login', HTMLFormElement).onsubmit = (event) => {
     token.value = session.token;
     element('login-password', HTMLInputElement).value = '';
     clearCatalog();
+    const me = await client.me();
+    const hasRepository = offerRepositories(me.grants);
     element('change-password', HTMLFormElement).hidden = false;
     if (session.account.administrator) {
       administration.show();
       showView('administration');
       await administration.refresh();
-    } else await list();
-    feedback(output, 'signedIn', { name: session.account.name }, 'success');
+    } else if (hasRepository) await list();
+    feedback(
+      output,
+      hasRepository || me.administrator ? 'signedIn' : 'noRepositoryAccess',
+      { name: session.account.name },
+      hasRepository || me.administrator ? 'success' : 'error',
+    );
   });
 };
 element('change-password', HTMLFormElement).onsubmit = (event) => {
@@ -222,6 +258,8 @@ element('change-password', HTMLFormElement).onsubmit = (event) => {
     current.value = '';
     next.value = '';
     token.value = '';
+    repositoryEdited = false;
+    repositoryOptions.replaceChildren();
     clearCatalog();
     resetHistory();
     feedback(output, 'passwordChangedSignIn', {}, 'success');
@@ -238,6 +276,8 @@ element('logout', HTMLButtonElement).onclick = () => {
       if (token.value) await client.logout();
     } finally {
       token.value = '';
+      repositoryEdited = false;
+      repositoryOptions.replaceChildren();
       clearCatalog();
       resetHistory();
       feedback(output, 'disconnected');

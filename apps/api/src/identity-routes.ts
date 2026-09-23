@@ -53,12 +53,20 @@ export function registerIdentityRoutes(
   });
   app.get('/api/v1/auth/me', (request) => {
     const p = principal(request);
+    const grants = new Map<string, Set<'read' | 'write'>>();
+    for (const grant of p.grants ??
+      p.repositories.map((repository) => ({ repository, permissions: p.permissions }))) {
+      if (grant.permissions.length === 0) continue;
+      const permissions = grants.get(grant.repository) ?? new Set<'read' | 'write'>();
+      for (const permission of grant.permissions) permissions.add(permission);
+      grants.set(grant.repository, permissions);
+    }
     return Promise.resolve({
       id: p.id,
       administrator: p.administrator ?? false,
-      grants:
-        p.grants ??
-        p.repositories.map((repository) => ({ repository, permissions: p.permissions })),
+      grants: [...grants]
+        .map(([repository, permissions]) => ({ repository, permissions: [...permissions] }))
+        .sort((left, right) => left.repository.localeCompare(right.repository)),
     });
   });
   app.post<{ Body: unknown }>('/api/v1/users', async (request, reply) => {

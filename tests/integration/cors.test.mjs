@@ -70,3 +70,29 @@ test('unlisted origins and unsupported preflights remain closed', async (t) => {
     assert.equal(response.statusCode, 400, response.body);
   }
 });
+
+test('the bundled same-origin console works with CORS disabled', async (t) => {
+  const f = await setup(t);
+  const own = await f.app.inject({
+    url: '/api/v1/auth/me',
+    headers: { ...f.headers, host: 'depot.example.test', origin: 'https://depot.example.test' },
+  });
+  assert.equal(own.statusCode, 200, own.body);
+  assert.equal(own.headers['access-control-allow-origin'], undefined);
+  const login = await f.app.inject({
+    method: 'POST',
+    url: '/api/v1/auth/login',
+    headers: { host: 'depot.example.test', origin: 'https://depot.example.test' },
+    payload: { name: 'missing', password: 'test-password' },
+  });
+  assert.equal(login.statusCode, 401, login.body);
+  const otherPort = await f.app.inject({
+    url: '/api/v1/auth/me',
+    headers: {
+      ...f.headers,
+      host: 'depot.example.test',
+      origin: 'https://depot.example.test:8443',
+    },
+  });
+  assert.equal(otherPort.statusCode, 403, otherPort.body);
+});

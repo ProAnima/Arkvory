@@ -12,6 +12,7 @@ import {
   readAccount,
   readGroup,
   readLogin,
+  readPrincipal,
   readPackageList,
 } from '@proanima/depot-contracts';
 import type { UploadResponse, AnnotationsResponse } from '@proanima/depot-contracts';
@@ -134,9 +135,7 @@ export class DepotClient {
     return readLogin(await this.call('api/v1/auth/login', 'POST', { name, password }));
   }
   async me() {
-    const value = record(await this.call('api/v1/auth/me'));
-    if (typeof value['administrator'] !== 'boolean') throw new Error('Invalid account role');
-    return { id: text(value['id']), administrator: value['administrator'] };
+    return readPrincipal(await this.call('api/v1/auth/me'));
   }
   async logout() {
     await this.request('api/v1/auth/logout', { method: 'POST' });

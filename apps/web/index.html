@@ -129,12 +129,13 @@
                 ><span data-i18n="repository">Репозиторий</span
                 ><input
                   id="repository"
+                  list="repository-options"
                   value="releases"
                   required
                   autocomplete="off"
-                  spellcheck="false" /></label
+                  spellcheck="false" /><datalist id="repository-options"></datalist></label
               ><label class="grow"
-                ><span data-i18n="serviceKey">Ключ доступа</span
+                ><span data-i18n="serviceKey">Токен доступа</span
                 ><input
                   id="token"
                   type="password"
@@ -142,7 +143,7 @@
                   required
                   minlength="32"
                   data-i18n-placeholder="keyPlaceholder"
-                  placeholder="Введите ключ доступа" /></label
+                  placeholder="Введите токен доступа" /></label
               ><button class="primary" data-i18n="connect">Подключиться</button
               ><button id="logout" type="button" class="secondary" data-i18n="disconnect">
                 Отключиться
@@ -150,7 +151,7 @@
             </fieldset>
           </form>
           <p class="hint" data-i18n="keyHint">
-            Ключ остаётся в этой вкладке и не сохраняется в хранилище браузера.
+            Токен остаётся в этой вкладке и не сохраняется в хранилище браузера.
           </p>
           <form id="login" class="search-form padded">
             <label

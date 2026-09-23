@@ -56,10 +56,27 @@ function isNativePath(url: string): boolean {
   return url.startsWith('/api/v1/') || url === '/health/ready' || url.startsWith('/health/ready?');
 }
 
+function isOwnOrigin(origin: string, host: string | undefined): boolean {
+  if (!host) return false;
+  try {
+    const supplied = new URL(origin);
+    return (
+      supplied.origin === origin && new URL(`${supplied.protocol}//${host}`).host === supplied.host
+    );
+  } catch {
+    return false;
+  }
+}
+
 export function registerCors(app: FastifyInstance, origins: readonly string[]): void {
   const allowed = new Set(parseCorsOrigins(origins));
   app.addHook('onRequest', async (request, reply) => {
     if (!isNativePath(request.url) || request.headers.origin === undefined) return;
+    if (
+      typeof request.headers.origin === 'string' &&
+      isOwnOrigin(request.headers.origin, request.headers.host)
+    )
+      return;
     reply
       .header('X-Request-Id', request.id)
       .header('X-Content-Type-Options', 'nosniff')

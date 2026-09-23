@@ -17,6 +17,32 @@ export interface LoginResponse {
   expiresAt: string;
   account: AccountResponse;
 }
+export interface PrincipalResponse {
+  id: string;
+  administrator: boolean;
+  grants: readonly {
+    repository: string;
+    permissions: readonly ('read' | 'write')[];
+  }[];
+}
+export function readPrincipal(value: unknown): PrincipalResponse {
+  const row = record(value);
+  if (typeof row['administrator'] !== 'boolean') throw new Error('Invalid account role');
+  const grants = items(row['grants']).map((value) => {
+    const grant = record(value);
+    const repository = text(grant['repository']);
+    if (!repository) throw new Error('Invalid repository grant');
+    const permissions = items(grant['permissions']).map((value) => {
+      if (value !== 'read' && value !== 'write') throw new Error('Invalid repository permission');
+      return value;
+    });
+    if (permissions.length === 0) throw new Error('Empty repository grant');
+    return { repository, permissions };
+  });
+  if (new Set(grants.map((grant) => grant.repository)).size !== grants.length)
+    throw new Error('Duplicate repository grant');
+  return { id: text(row['id']), administrator: row['administrator'], grants };
+}
 export function readAccount(value: unknown): AccountResponse {
   const row = record(value);
   if (typeof row['administrator'] !== 'boolean' || typeof row['enabled'] !== 'boolean')
