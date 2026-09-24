@@ -13,3 +13,5 @@ Legacy чтение UPack доступно также через огранич�
 `DEPOT_ROLE=reader` запускает тот же composition root с запретом HTTP-изменений и без консоли. Writer использует slot 0, readers — остальные slots с одинаковой shared policy. Локальные governors ограничены leased share; потеря lease закрывает допуск до restart. Настройка/обновление: [READ_GATEWAYS](../../docs/READ_GATEWAYS.md).
 
 Управляемые service accounts/keys подключены через ServiceAccess и PostgresServices. Pending key разрешён только на activate-key; dpk credentials не используют file fallback. Новые маршруты: service-routes.ts. [Контракт и эксплуатация](../../docs/SERVICE_KEYS.md).
+
+Contract guard сверяет onRoute inventory с OpenAPI в onReady для writer/reader. Исключения ограничены точными static GET/HEAD. Неописанный или отсутствующий route блокирует startup. [Правила](../../docs/API_CONTRACT_GUARD.md).

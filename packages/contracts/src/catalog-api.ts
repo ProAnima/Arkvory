@@ -22,14 +22,29 @@ const part = {
 };
 const job = {
   type: 'object',
+  required: [
+    'id',
+    'uploadId',
+    'repository',
+    'owner',
+    'status',
+    'generation',
+    'attempts',
+    'errorCode',
+  ],
   properties: {
     id: { type: 'string', format: 'uuid' },
     uploadId: { type: 'string', format: 'uuid' },
     repository: str,
     owner: str,
     status: { type: 'string', enum: ['queued', 'running', 'completed', 'failed'] },
-    generation: revision,
-    attempts: { type: 'integer' },
+    generation: { type: 'integer', minimum: 0, maximum: 2147483647 },
+    attempts: { type: 'integer', minimum: 0 },
+    credentialId: {
+      type: 'string',
+      format: 'uuid',
+      description: 'Optional initiating managed key ID; never its secret.',
+    },
     errorCode: { type: 'string', nullable: true },
   },
 };
@@ -333,6 +348,11 @@ for (const [path, item] of Object.entries(paths))
     name: match[1],
     in: 'path',
     required: true,
-    schema: match[1] === 'index' ? { type: 'integer', minimum: 0, maximum: 639 } : str,
+    schema:
+      match[1] === 'index'
+        ? { type: 'integer', minimum: 0, maximum: 639 }
+        : match[1] === 'repository'
+          ? { type: 'string', pattern: '^[a-z0-9][a-z0-9_-]{0,63}$' }
+          : { type: 'string', format: 'uuid' },
   }));
 export const catalogPaths = paths;

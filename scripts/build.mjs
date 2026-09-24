@@ -1,6 +1,6 @@
 import { execFileSync } from 'node:child_process';
 import { resolve } from 'node:path';
-import { mkdir, copyFile } from 'node:fs/promises';
+import { mkdir, copyFile, writeFile } from 'node:fs/promises';
 import { build } from 'esbuild';
 
 const order = [
@@ -22,6 +22,11 @@ for (const project of order) {
     { stdio: 'inherit' },
   );
 }
+const { openApiDocument } = await import('../packages/contracts/dist/index.js');
+await writeFile(
+  'packages/contracts/dist/openapi.json',
+  JSON.stringify(openApiDocument, null, 2) + '\n',
+);
 await mkdir('apps/web/public', { recursive: true });
 await build({
   entryPoints: ['apps/web/src/console.ts', 'apps/web/src/hash-worker.ts'],

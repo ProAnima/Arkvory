@@ -9,3 +9,5 @@ Readiness дополнен `role` и nullable `sharedDownloads` (slot, slots, ac
 Контракты входа, учётных записей, групп и сортируемого UPack-каталога добавлены в OpenAPI и runtime-парсеры SDK: [ADR 0011](../../docs/adr/0011-users-groups-and-package-browser.md).
 
 Service-api экспортирует OpenAPI новых service routes и runtime-парсеры ответов. Wire-values содержит независимые примитивы валидации. Импорт domain/server не требуется. [Контракт и эксплуатация](../../docs/SERVICE_KEYS.md).
+
+Operation-policy и openapi-compose связывают wire-схемы с 91 HTTP-операцией, правами и retry. Сборка экспортирует `dist/openapi.json`; snapshots, runtime inventory и schema tests защищают совместимость. Пакет не имеет внешних side effects; экспорт документа не должен увеличивать browser bundle SDK. [Контракт](../../docs/API_CONTRACT_GUARD.md).

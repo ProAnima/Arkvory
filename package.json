@@ -37,6 +37,8 @@
     "@types/node": "24.13.6",
     "@types/pg": "8.23.1",
     "@types/yauzl": "3.4.0",
+    "ajv": "8.20.0",
+    "ajv-formats": "3.0.1",
     "dependency-cruiser": "18.4.0",
     "esbuild": "0.28.2",
     "eslint": "10.11.0",

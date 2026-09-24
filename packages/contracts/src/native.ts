@@ -2,6 +2,8 @@ import { catalogPaths } from './catalog-api.js';
 import { identityPaths } from './identity-api.js';
 import { readinessSchema } from './health.js';
 import { servicePaths } from './service-api.js';
+import { supplementalPaths, nativeErrorSchema } from './http-contract.js';
+import { composeApiPaths } from './openapi-compose.js';
 export const descriptorSchema = {
   type: 'object',
   additionalProperties: false,
@@ -92,7 +94,7 @@ const byteResponses = {
   default: errorResponse,
 };
 
-export const openApiDocument = {
+const baseDocument = {
   openapi: '3.0.3',
   info: {
     title: 'ProAnima Depot Native Core',
@@ -217,4 +219,30 @@ export const openApiDocument = {
       },
     },
   },
+};
+const composed = composeApiPaths({ ...baseDocument.paths, ...supplementalPaths });
+export const apiOperations = composed.operations;
+export const openApiDocument = {
+  ...baseDocument,
+  info: { ...baseDocument.info, title: 'ProAnima Depot API', version: '0.3.0' },
+  components: {
+    ...baseDocument.components,
+    schemas: { NativeError: nativeErrorSchema },
+    securitySchemes: {
+      ...baseDocument.components.securitySchemes,
+      legacyApiKey: {
+        type: 'apiKey',
+        in: 'header',
+        name: 'X-ApiKey',
+        description: 'Legacy download routes only.',
+      },
+      legacyBasic: {
+        type: 'http',
+        scheme: 'basic',
+        description:
+          'Legacy downloads: literal username api, password is the API key. User/password authentication is not supported.',
+      },
+    },
+  },
+  paths: composed.paths,
 };

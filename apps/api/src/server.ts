@@ -28,6 +28,7 @@ import { registerCatalogRoutes } from './catalog-routes.js';
 import { registerConsole } from './console.js';
 import { registerIdentityRoutes } from './identity-routes.js';
 import { registerServiceRoutes } from './service-routes.js';
+import { registerContractGuard } from './contract-guard.js';
 import { ProGetDownloads } from '@proanima/depot-proget-compat';
 import {
   descriptorSchema,
@@ -137,6 +138,7 @@ export async function createServer(config: ServerConfig) {
     requestIdHeader: false,
     ajv: { customOptions: { coerceTypes: false, removeAdditional: false } },
   });
+  registerContractGuard(app);
   registerCors(app, config.corsOrigins ?? []);
   const principals = new WeakMap<FastifyRequest, Principal>();
   const requestSignals = new WeakMap<FastifyRequest, AbortSignal>();

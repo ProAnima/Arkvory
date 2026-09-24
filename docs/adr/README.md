@@ -23,3 +23,4 @@ ADR нужен для изменения границ, публичных кон
 - [0015 — Браузерный UI на отдельном origin](0015-external-browser-ui.md)
 - [0016 — Права сервисных ключей и развитие API (proposed)](0016-service-access-and-api-evolution.md)
 - [0017 — Первый рабочий профиль управляемых сервисных ключей](0017-managed-service-keys.md)
+- [0018 — Проверяемая инвентаризация API](0018-executable-api-inventory.md)

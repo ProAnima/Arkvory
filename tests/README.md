@@ -18,3 +18,5 @@ SDK fault tests входят в `npm test`: настоящие HTTP-сокеты
 `tests/integration/compat.test.mjs` проверяет legacy exact/latest UPack download при каталоге более 1000 версий, те же байты, отсутствие версии и прежние ACL/Range.
 
 `tests/integration/service-access.test.mjs` проверяет managed ключи: точные права native/legacy, one-time issuance, ротацию и ownership, отзыв между записью bytes и commit, policy CAS, caps, worker/reader и отсутствие file fallback. `node tests/large-transfer.mjs --multipart --verified --traffic --managed` выполняет передачу 5 GiB с managed credential, kill/restart/resume и проверкой SHA-256. Standalone БД должна быть свободна от других suites.
+
+`api-contract.test.mjs` проверяет стабильные operationId, схемы, security/path metadata и собранный JSON. `integration/api-contract.test.mjs` проверяет реальный HTTP без credentials для всех операций, запрет всех mutations на reader, отказ startup при неизвестном route и схемы реальных PostgreSQL/HTTP ответов. Снимок `fixtures/api-operations.json` обновляется после review изменений контракта; не расширяйте исключения guard ради зелёного теста.
