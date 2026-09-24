@@ -91,7 +91,11 @@ export class DepotClient {
     }
     return response;
   }
-  private async json(response: Response, signal?: AbortSignal): Promise<unknown> {
+  private async json(
+    response: Response,
+    signal?: AbortSignal,
+    maxBytes = 2 * 1024 ** 2,
+  ): Promise<unknown> {
     if (!response.body) throw new Error('Missing response body');
     const reader = response.body.getReader();
     const chunks: Uint8Array[] = [];
@@ -101,7 +105,7 @@ export class DepotClient {
         const result = await readNetwork(reader, signal);
         if (result.done) break;
         size += result.value.byteLength;
-        if (size > 2 * 1024 ** 2) throw new Error('Response exceeds SDK limit');
+        if (size > maxBytes) throw new Error('Response exceeds SDK limit');
         chunks.push(result.value);
       }
     } finally {
@@ -197,10 +201,17 @@ export class DepotClient {
     const params = new URLSearchParams();
     for (const key of ['group', 'name', 'sort', 'direction', 'groupBy', 'after'] as const) {
       const value = query[key];
-      if (value !== undefined && value !== '') params.set(key, value);
+      if (value !== undefined) params.set(key, value);
     }
     if (query.limit !== undefined) params.set('limit', String(query.limit));
-    return readPackageList(await this.call(this.path(repository, `packages?${params.toString()}`)));
+    // A page contains up to 100 validated 64 KiB manifests plus bounded identity/group fields.
+    return readPackageList(
+      await this.json(
+        await this.request(this.path(repository, `packages?${params.toString()}`)),
+        undefined,
+        8 * 1024 ** 2,
+      ),
+    );
   }
   async create(
     repository: string,

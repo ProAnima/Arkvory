@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 
-const methods = ['GET', 'HEAD', 'POST', 'PUT', 'DELETE'] as const;
+const methods = ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE'] as const;
 const headers = [
   'authorization',
   'content-type',

@@ -23,14 +23,21 @@ export function registerIdentityRoutes(
   loginGate: AdmissionQueue,
   signal: (request: FastifyRequest, reply: FastifyReply) => AbortSignal,
 ): void {
-  app.post<{ Body: unknown }>('/api/v1/auth/login', async (request, reply) => {
-    const body = fields(request.body, ['name', 'password']);
-    const release = await loginGate.acquire('login', signal(request, reply));
+  const passwordWork = async <T>(
+    request: FastifyRequest,
+    reply: FastifyReply,
+    action: () => Promise<T>,
+  ): Promise<T> => {
+    const release = await loginGate.acquire('password', signal(request, reply));
     try {
-      return await service.login(body['name'], body['password']);
+      return await action();
     } finally {
       release();
     }
+  };
+  app.post<{ Body: unknown }>('/api/v1/auth/login', async (request, reply) => {
+    const body = fields(request.body, ['name', 'password']);
+    return passwordWork(request, reply, () => service.login(body['name'], body['password']));
   });
   app.post('/api/v1/auth/logout', async (request, reply) => {
     const auth = request.headers.authorization;
@@ -39,17 +46,14 @@ export function registerIdentityRoutes(
   });
   app.post<{ Body: unknown }>('/api/v1/auth/password', async (request, reply) => {
     const body = fields(request.body, ['currentPassword', 'newPassword']);
-    const release = await loginGate.acquire(principal(request).id, signal(request, reply));
-    try {
+    await passwordWork(request, reply, async () => {
       await service.changePassword(
         principal(request),
         body['currentPassword'],
         body['newPassword'],
       );
-      return await reply.code(204).send();
-    } finally {
-      release();
-    }
+    });
+    return reply.code(204).send();
   });
   app.get('/api/v1/auth/me', (request) => {
     const p = principal(request);
@@ -74,17 +78,23 @@ export function registerIdentityRoutes(
     return reply
       .code(201)
       .send(
-        await service.createUser(
-          principal(request),
-          body['name'],
-          body['password'],
-          body['administrator'] ?? false,
+        await passwordWork(request, reply, () =>
+          service.createUser(
+            principal(request),
+            body['name'],
+            body['password'],
+            body['administrator'] ?? false,
+          ),
         ),
       );
   });
   app.get('/api/v1/users', async (request) => ({ items: await service.users(principal(request)) }));
-  app.patch<{ Params: { id: string }; Body: unknown }>('/api/v1/users/:id', async (request) =>
-    service.updateUser(principal(request), requireId(request.params.id), request.body),
+  app.patch<{ Params: { id: string }; Body: unknown }>(
+    '/api/v1/users/:id',
+    async (request, reply) =>
+      passwordWork(request, reply, () =>
+        service.updateUser(principal(request), requireId(request.params.id), request.body),
+      ),
   );
   app.post<{ Body: unknown }>('/api/v1/access-groups', async (request, reply) => {
     const body = fields(request.body, ['name']);

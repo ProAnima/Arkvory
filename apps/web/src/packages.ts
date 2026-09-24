@@ -71,11 +71,13 @@ export function installPackageView(
     controls(true);
     const repo = repository.value;
     const after = cursors[pageIndex];
+    const group = element('package-group', HTMLInputElement).value;
+    const name = element('package-name', HTMLInputElement).value;
     let result;
     try {
       result = await client.packages(repo, {
-        group: element('package-group', HTMLInputElement).value,
-        name: element('package-name', HTMLInputElement).value,
+        ...(group ? { group } : {}),
+        ...(name ? { name } : {}),
         sort: select('package-sort', ['group', 'name', 'version'], 'group'),
         direction: select('package-direction', ['asc', 'desc'], 'asc'),
         groupBy: select('package-group-by', ['group', 'package', 'none'], 'group'),

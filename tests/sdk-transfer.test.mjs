@@ -11,6 +11,13 @@ import {
 
 const partBytes = 8 * 1024 ** 2;
 const policy = { baseDelayMs: 1, maxDelayMs: 5, maxAttempts: 3, attemptTimeoutMs: 1000 };
+test('package JSON remains bounded after allowing large manifest pages', async (t) => {
+  const { client } = await serve(t, (_request, response) => {
+    response.writeHead(200, { 'content-type': 'application/json' });
+    response.end('x'.repeat(8 * 1024 ** 2 + 1));
+  });
+  await assert.rejects(client.packages('releases'), /Response exceeds SDK limit/);
+});
 function artifact(bytes) {
   return {
     id: 'test-id',

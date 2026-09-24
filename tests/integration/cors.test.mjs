@@ -59,7 +59,7 @@ test('unlisted origins and unsupported preflights remain closed', async (t) => {
   assert.equal(rejected.statusCode, 403, rejected.body);
   assert.equal(rejected.headers['access-control-allow-origin'], undefined);
   for (const requested of [
-    { 'access-control-request-method': 'PATCH' },
+    { 'access-control-request-method': 'TRACE' },
     { 'access-control-request-method': 'GET', 'access-control-request-headers': 'x-api-key' },
   ]) {
     const response = await f.app.inject({

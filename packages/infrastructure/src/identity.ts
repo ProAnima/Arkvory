@@ -1,5 +1,5 @@
 import { createHash, randomBytes, randomUUID, scrypt, timingSafeEqual } from 'node:crypto';
-import type { Pool } from 'pg';
+import type { Pool, PoolClient } from 'pg';
 import { DepotError } from '@proanima/depot-domain';
 import type { Principal } from '@proanima/depot-domain';
 import type { AccessGroup, Account, IdentityStore, LoginResult } from '@proanima/depot-application';
@@ -41,15 +41,39 @@ interface UserRow {
 export class PostgresIdentity implements IdentityStore {
   constructor(private readonly pool: Pool) {}
 
+  private async capacityMutation<T>(action: (client: PoolClient) => Promise<T>): Promise<T> {
+    const client = await this.pool.connect();
+    let broken = false;
+    try {
+      await client.query('BEGIN');
+      // Count and insertion must see the previous writer's commit, in separate statements.
+      await client.query('SELECT pg_advisory_xact_lock(18471,10)');
+      const result = await action(client);
+      await client.query('COMMIT');
+      return result;
+    } catch (error) {
+      try {
+        await client.query('ROLLBACK');
+      } catch {
+        broken = true;
+      }
+      throw error;
+    } finally {
+      client.release(broken);
+    }
+  }
+
   async createUser(name: string, password: string, administrator: boolean): Promise<Account> {
     const salt = randomBytes(16).toString('hex');
     const hash = (await passwordHash(password, salt)).toString('hex');
     const id = randomUUID();
     try {
-      const inserted = await this.pool.query(
-        `INSERT INTO depot_users(id,name,password_salt,password_hash,administrator)
+      const inserted = await this.capacityMutation((client) =>
+        client.query(
+          `INSERT INTO depot_users(id,name,password_salt,password_hash,administrator)
          SELECT $1,$2,$3,$4,$5 WHERE (SELECT count(*) FROM depot_users)<1000`,
-        [id, name, salt, hash, administrator],
+          [id, name, salt, hash, administrator],
+        ),
       );
       if (!inserted.rowCount) throw new DepotError('capacity_exceeded', 'Account limit reached');
     } catch (error) {
@@ -110,10 +134,12 @@ export class PostgresIdentity implements IdentityStore {
   async createGroup(name: string): Promise<AccessGroup> {
     const id = randomUUID();
     try {
-      const inserted = await this.pool.query(
-        `INSERT INTO depot_access_groups(id,name)
+      const inserted = await this.capacityMutation((client) =>
+        client.query(
+          `INSERT INTO depot_access_groups(id,name)
          SELECT $1,$2 WHERE (SELECT count(*) FROM depot_access_groups)<100`,
-        [id, name],
+          [id, name],
+        ),
       );
       if (!inserted.rowCount) throw new DepotError('capacity_exceeded', 'Group limit reached');
     } catch (error) {
@@ -149,19 +175,29 @@ export class PostgresIdentity implements IdentityStore {
 
   async membership(groupId: string, userId: string, present: boolean): Promise<void> {
     if (present) {
-      const result = await this.pool.query(
-        `INSERT INTO depot_group_members(group_id,user_id)
+      await this.capacityMutation(async (client) => {
+        const result = await client.query(
+          `INSERT INTO depot_group_members(group_id,user_id)
          SELECT g.id,u.id FROM depot_access_groups g CROSS JOIN depot_users u
-         WHERE g.id=$1 AND u.id=$2 ON CONFLICT DO NOTHING`,
-        [groupId, userId],
-      );
-      if (result.rowCount === 0) {
-        const existing = await this.pool.query(
-          'SELECT 1 FROM depot_group_members WHERE group_id=$1 AND user_id=$2',
+         WHERE g.id=$1 AND u.id=$2 AND (SELECT count(*) FROM depot_group_members)<10000
+         ON CONFLICT DO NOTHING`,
           [groupId, userId],
         );
-        if (!existing.rowCount) throw new DepotError('not_found', 'User or group not found');
-      }
+        if (result.rowCount === 0) {
+          const existing = await client.query(
+            'SELECT 1 FROM depot_group_members WHERE group_id=$1 AND user_id=$2',
+            [groupId, userId],
+          );
+          if (!existing.rowCount) {
+            const valid = await client.query(
+              'SELECT 1 FROM depot_access_groups g CROSS JOIN depot_users u WHERE g.id=$1 AND u.id=$2',
+              [groupId, userId],
+            );
+            if (!valid.rowCount) throw new DepotError('not_found', 'User or group not found');
+            throw new DepotError('capacity_exceeded', 'Membership limit reached');
+          }
+        }
+      });
     } else {
       await this.pool.query('DELETE FROM depot_group_members WHERE group_id=$1 AND user_id=$2', [
         groupId,
@@ -178,13 +214,23 @@ export class PostgresIdentity implements IdentityStore {
       ]);
       return;
     }
-    const result = await this.pool.query(
-      `INSERT INTO depot_group_grants(group_id,repository,access)
-       SELECT id,$2,$3 FROM depot_access_groups WHERE id=$1
+    await this.capacityMutation(async (client) => {
+      const result = await client.query(
+        `INSERT INTO depot_group_grants(group_id,repository,access)
+       SELECT id,$2::text,$3 FROM depot_access_groups WHERE id=$1 AND
+       ((SELECT count(*) FROM depot_group_grants)<10000 OR
+        EXISTS(SELECT 1 FROM depot_group_grants WHERE group_id=$1 AND repository=$2::text))
        ON CONFLICT(group_id,repository) DO UPDATE SET access=EXCLUDED.access`,
-      [groupId, repository, access],
-    );
-    if (!result.rowCount) throw new DepotError('not_found', 'Group not found');
+        [groupId, repository, access],
+      );
+      if (!result.rowCount) {
+        const valid = await client.query('SELECT 1 FROM depot_access_groups WHERE id=$1', [
+          groupId,
+        ]);
+        if (!valid.rowCount) throw new DepotError('not_found', 'Group not found');
+        throw new DepotError('capacity_exceeded', 'Grant limit reached');
+      }
+    });
   }
 
   async login(name: string, password: string): Promise<LoginResult> {

@@ -40,6 +40,7 @@ let listGeneration = 0;
 const transferStatus = element('transfer-status', HTMLOutputElement);
 let wasConnected = false;
 let repositoryEdited = false;
+let authenticationGeneration = 0;
 const repositoryOptions = element('repository-options', HTMLElement);
 function offerRepositories(grants: PrincipalResponse['grants']): boolean {
   const readable = grants
@@ -120,6 +121,7 @@ repository.addEventListener('input', () => {
   clearCatalog();
 });
 token.addEventListener('input', () => {
+  authenticationGeneration++;
   repositoryOptions.replaceChildren();
   clearCatalog();
 });
@@ -214,8 +216,10 @@ async function list(after?: string) {
 }
 element('connect', HTMLFormElement).onsubmit = (event) => {
   event.preventDefault();
+  const generation = ++authenticationGeneration;
   run(async () => {
     const me = await client.me();
+    if (generation !== authenticationGeneration) return;
     if (me.administrator) administration.show();
     element('change-password', HTMLFormElement).hidden = !me.id.startsWith('user:');
     if (offerRepositories(me.grants)) await list();
@@ -227,13 +231,20 @@ element('connect', HTMLFormElement).onsubmit = (event) => {
 };
 element('login', HTMLFormElement).onsubmit = (event) => {
   event.preventDefault();
+  const generation = ++authenticationGeneration;
   run(async () => {
     const name = element('login-name', HTMLInputElement).value;
     const session = await client.login(name, element('login-password', HTMLInputElement).value);
+    if (generation !== authenticationGeneration) {
+      // A cancelled login must not reconnect a signed-out tab. Revoke the unused session.
+      await new DepotClient(apiBaseUrl, () => session.token).logout().catch(() => undefined);
+      return;
+    }
     token.value = session.token;
     element('login-password', HTMLInputElement).value = '';
     clearCatalog();
     const me = await client.me();
+    if (generation !== authenticationGeneration) return;
     const hasRepository = offerRepositories(me.grants);
     element('change-password', HTMLFormElement).hidden = false;
     if (session.account.administrator) {
@@ -241,6 +252,7 @@ element('login', HTMLFormElement).onsubmit = (event) => {
       showView('administration');
       await administration.refresh();
     } else if (hasRepository) await list();
+    if (generation !== authenticationGeneration) return;
     feedback(
       output,
       hasRepository || me.administrator ? 'signedIn' : 'noRepositoryAccess',
@@ -251,10 +263,13 @@ element('login', HTMLFormElement).onsubmit = (event) => {
 };
 element('change-password', HTMLFormElement).onsubmit = (event) => {
   event.preventDefault();
+  const generation = authenticationGeneration;
   run(async () => {
     const current = element('current-password', HTMLInputElement);
     const next = element('own-new-password', HTMLInputElement);
     await client.changePassword(current.value, next.value);
+    if (generation !== authenticationGeneration) return;
+    authenticationGeneration++;
     current.value = '';
     next.value = '';
     token.value = '';
@@ -271,16 +286,19 @@ element('search', HTMLFormElement).onsubmit = (event) => {
 };
 element('logout', HTMLButtonElement).onclick = () => {
   stop?.abort();
+  const generation = ++authenticationGeneration;
   run(async () => {
     try {
       if (token.value) await client.logout();
     } finally {
-      token.value = '';
-      repositoryEdited = false;
-      repositoryOptions.replaceChildren();
-      clearCatalog();
-      resetHistory();
-      feedback(output, 'disconnected');
+      if (generation === authenticationGeneration) {
+        token.value = '';
+        repositoryEdited = false;
+        repositoryOptions.replaceChildren();
+        clearCatalog();
+        resetHistory();
+        feedback(output, 'disconnected');
+      }
     }
   });
 };

@@ -51,7 +51,7 @@ async function migratePackagePageIndexes(pool: Pool): Promise<void> {
     let delay = 100;
     for (;;) {
       const attempt = await client.query<{ locked: boolean }>(
-        'SELECT pg_try_advisory_lock(18471, 2) AS locked',
+        'SELECT pg_try_advisory_lock(18471, 9) AS locked',
       );
       locked = attempt.rows[0]?.locked === true;
       if (locked) break;
@@ -79,7 +79,7 @@ async function migratePackagePageIndexes(pool: Pool): Promise<void> {
   } finally {
     if (client && locked && !unusable) {
       try {
-        await client.query('SELECT pg_advisory_unlock(18471, 2)');
+        await client.query('SELECT pg_advisory_unlock(18471, 9)');
       } catch {
         unusable = true;
       }

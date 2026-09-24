@@ -199,6 +199,9 @@ export async function createServer(config: ServerConfig) {
         'unavailable',
         'Gateway ownership or download lease lost; restart the service',
       );
+    // Admission precedes asynchronous authentication: session lookup also consumes resources.
+    signal(request, reply);
+    countRequest(reply);
     if (request.routeOptions.url === '/api/v1/auth/login') {
       if (role === 'reader')
         await reply.code(405).header('Allow', 'GET, HEAD').send({
@@ -206,10 +209,6 @@ export async function createServer(config: ServerConfig) {
           message: 'Read gateway does not accept mutations',
           requestId: request.id,
         });
-      if (role === 'api') {
-        signal(request, reply);
-        countRequest(reply);
-      }
       return;
     }
     const auth = request.headers.authorization;
@@ -253,8 +252,6 @@ export async function createServer(config: ServerConfig) {
       });
       return;
     }
-    signal(request, reply);
-    countRequest(reply);
   });
   app.setErrorHandler((error, request, reply) => {
     const codes = {
