@@ -17,6 +17,9 @@ export interface ServerConfig {
   readonly capacityBytes: number;
   readonly maxUploads: number;
   readonly maxDownloads: number;
+  readonly transferQueueLimit?: number;
+  readonly transferQueuePerPrincipal?: number;
+  readonly transferQueueTimeoutMs?: number;
   readonly maxUploadsPerPrincipal?: number;
   readonly maxDownloadsPerPrincipal?: number;
   readonly uploadBytesPerSecond?: number;
@@ -48,6 +51,7 @@ export async function loadConfig(env: NodeJS.ProcessEnv): Promise<ServerConfig> 
   const keys: unknown = JSON.parse(keyFile);
   const maxUploads = number('DEPOT_MAX_UPLOADS', 2, 32);
   const maxDownloads = number('DEPOT_MAX_DOWNLOADS', 16, 256);
+  const transferQueueLimit = number('DEPOT_TRANSFER_QUEUE_LIMIT', 64, 1024);
   const rate = (name: string): number => {
     const raw = env[name] ?? '0';
     const value = Number(raw);
@@ -95,6 +99,13 @@ export async function loadConfig(env: NodeJS.ProcessEnv): Promise<ServerConfig> 
     capacityBytes: number('DEPOT_CAPACITY_BYTES', 10 * 1024 ** 4, Number.MAX_SAFE_INTEGER),
     maxUploads,
     maxDownloads,
+    transferQueueLimit,
+    transferQueuePerPrincipal: number(
+      'DEPOT_TRANSFER_QUEUE_PER_PRINCIPAL',
+      Math.min(8, transferQueueLimit),
+      transferQueueLimit,
+    ),
+    transferQueueTimeoutMs: number('DEPOT_TRANSFER_QUEUE_TIMEOUT_MS', 20000, 120000),
     maxUploadsPerPrincipal: number('DEPOT_MAX_UPLOADS_PER_PRINCIPAL', 1, maxUploads),
     maxDownloadsPerPrincipal: number(
       'DEPOT_MAX_DOWNLOADS_PER_PRINCIPAL',

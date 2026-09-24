@@ -231,7 +231,7 @@ const composed = composeApiPaths({
 export const apiOperations = composed.operations;
 export const openApiDocument = {
   ...baseDocument,
-  info: { ...baseDocument.info, title: 'ProAnima Depot API', version: '0.6.0' },
+  info: { ...baseDocument.info, title: 'ProAnima Depot API', version: '0.6.1' },
   components: {
     ...baseDocument.components,
     schemas: { NativeError: nativeErrorSchema },

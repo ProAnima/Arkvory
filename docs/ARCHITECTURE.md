@@ -68,3 +68,5 @@ LocalBlobStore — профиль одного сервера. HA использ
 Файловые страницы выделены в небольшие application/infrastructure asset-page модули. Параметры и prefix bounds чистые, SQL seek и scope cursor находятся в адаптере; каталог/HTTP только вызывают сценарий. Новый API сохраняет прежний assets list. [ADR 0020](adr/0020-asset-cursor-pagination.md).
 
 Discovery репозиториев — чистая application projection актуального Principal, не новая таблица/RepositoryStore. Coarse permission mapping вынесен из HTTP в application с прежними semantics. Domain добавляет repository.read, transport и SDK используют отдельный wire contract. [ADR 0021](adr/0021-repository-discovery.md).
+
+Клиентская очередь скачиваний живёт в SDK: DownloadQueue управляет расписанием, checkpointedDownload использует узкий DownloadStorage и существующий HTTP-клиент. OPFS/выбор конечного файла принадлежат web; domain/application/server не зависят от браузерного storage. [ADR 0022](adr/0022-client-download-queue.md).

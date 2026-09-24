@@ -1,4 +1,4 @@
-import { DepotHttpError, DepotIntegrityError } from '@proanima/depot-sdk';
+import { DepotHttpError, DepotIntegrityError, DownloadQueueError } from '@proanima/depot-sdk';
 import type { MessageKey } from './messages.js';
 import { message } from './i18n.js';
 export class UiError extends Error {
@@ -7,6 +7,14 @@ export class UiError extends Error {
   }
 }
 export function errorKey(error: unknown): MessageKey {
+  if (error instanceof DownloadQueueError)
+    return error.code === 'wait_timeout'
+      ? 'downloadWaitTimeout'
+      : error.code === 'queue_full'
+        ? 'downloadQueueFull'
+        : 'errorInput';
+  if (error instanceof DOMException && error.name === 'QuotaExceededError')
+    return 'downloadDiskFull';
   if (error instanceof UiError) return error.key;
   if (error instanceof DepotIntegrityError) return 'errorIntegrity';
   if (error instanceof DOMException && error.name === 'AbortError') return 'cancelled';

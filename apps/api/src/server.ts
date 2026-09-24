@@ -68,16 +68,16 @@ export async function createServer(config: ServerConfig) {
       : Math.min(local || Infinity, allocated || Infinity);
   const uploadGate = new AdmissionQueue(
     config.maxUploads,
-    64,
-    8,
-    20000,
+    config.transferQueueLimit ?? 64,
+    config.transferQueuePerPrincipal ?? Math.min(8, config.transferQueueLimit ?? 64),
+    config.transferQueueTimeoutMs ?? 20000,
     config.maxUploadsPerPrincipal ?? 1,
   );
   const downloadGate = new AdmissionQueue(
     config.maxDownloads,
-    64,
-    8,
-    20000,
+    config.transferQueueLimit ?? 64,
+    config.transferQueuePerPrincipal ?? Math.min(8, config.transferQueueLimit ?? 64),
+    config.transferQueueTimeoutMs ?? 20000,
     config.maxDownloadsPerPrincipal ?? Math.min(4, config.maxDownloads),
   );
   const loginGate = new AdmissionQueue(2, 16, 16, 1000, 2);

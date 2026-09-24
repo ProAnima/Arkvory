@@ -26,3 +26,5 @@ SDK fault tests входят в `npm test`: настоящие HTTP-сокеты
 Файловые страницы: `tests/asset-page.test.mjs` и `tests/integration/asset-pagination.test.mjs` проверяют Unicode prefix bounds, bounded response parser, полный обход >1000, SQL seek на 20 000 путей, scope/ACL/revoke, restart и concurrent changes, совместимость старого API и восстановление индексной миграции 11.
 
 Discovery: tests/repositories.test.mjs и integration/repositories.test.mjs проверяют managed opt-in, frozen coarse mapping, empty/group overrides, 10 000 grants, фильтрацию до LIMIT, wire parsing, HTTP/SDK/HEAD, user groups/reader, revoke/expiry/disable/rotation и отсутствие data/admin escalation.
+
+`download-queue.test.mjs` проверяет scheduler/checkpoint/commit/cleanup. PostgreSQL suite дополняется `integration/download-queue.test.mjs` с реальными HTTP Range и файлами. Дополнительная браузерная приёмка: `browser/downloads.mjs` (Playwright Chromium/Edge, отдельная БД, запуск последовательно с integration); [инструкции](../docs/DOWNLOAD_QUEUE.md).

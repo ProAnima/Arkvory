@@ -27,7 +27,10 @@ export class AdmissionQueue {
       [slots, maxWaiting, perOwner, timeoutMs, maxActivePerOwner].some(
         (value) => !Number.isSafeInteger(value) || value < 1,
       ) ||
-      maxActivePerOwner > slots
+      maxActivePerOwner > slots ||
+      perOwner > maxWaiting ||
+      maxWaiting > 1024 ||
+      timeoutMs > 120000
     )
       throw new Error('Invalid admission capacity');
   }
@@ -37,6 +40,9 @@ export class AdmissionQueue {
       waiting: this.waiting.length,
       capacity: this.slots,
       perPrincipalCapacity: this.maxActivePerOwner,
+      waitingCapacity: this.maxWaiting,
+      perPrincipalWaitingCapacity: this.perOwner,
+      timeoutMs: this.timeoutMs,
       rejected: this.rejected,
       timedOut: this.timedOut,
       cancelled: this.cancelled,

@@ -276,3 +276,5 @@ ProAnima Depot is proprietary software. Ian Panaev is its author, copyright hold
 Repository access does not replace such an agreement. Permission scope, ownership of modifications, binary distribution, and use of branding are agreed separately. The original source code is not released under MIT, Apache, GPL, or another open-source license.
 
 Repository terms: [LICENSE.md](LICENSE.md). Attribution: [NOTICE.md](NOTICE.md). Third-party components retain their own licenses.
+
+Downloads now have a bounded client queue in the SDK and console: pause/resume from private disk staging, cancellation, waiting-queue cleanup, concurrency and start-delay controls. The final destination is saved only after checksum verification. Browser queues last for the current tab; they are not distributed server jobs. [Download queue and limits](docs/DOWNLOAD_QUEUE.md).

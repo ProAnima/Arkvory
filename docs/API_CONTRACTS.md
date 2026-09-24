@@ -69,3 +69,5 @@ Webhooks подписываются, могут дублироваться и п
 Текущая OpenAPI содержит 101 операцию со стабильными operationId, явными правами, retry и gateway metadata, включая [делегированное service administration](SERVICE_DELEGATION.md). Native/legacy/HEAD inventory сверяется при startup и в CI; сборка сохраняет `packages/contracts/dist/openapi.json`. Правила расширения и границы: [API_CONTRACT_GUARD](API_CONTRACT_GUARD.md).
 
 GET/HEAD списка и карточки репозитория реализованы в [REPOSITORY_DISCOVERY](REPOSITORY_DISCOVERY.md): отдельный managed action repository.read, legacy own scopes, bounded pagination и отсутствие data/admin escalation. Никакого SQL inventory всей площадки или автоматического импорта прав.
+
+Readiness дополнен параметрами admission waitingCapacity, perPrincipalWaitingCapacity и timeoutMs; OpenAPI document 0.6.1 сохраняет 101 операцию. Управление [клиентской очередью скачиваний](DOWNLOAD_QUEUE.md) не добавляет HTTP routes и не меняет права ProGet-adapter.

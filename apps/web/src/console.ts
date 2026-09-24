@@ -8,14 +8,7 @@ import { feedback, UiError, errorKey } from './feedback.js';
 import { initializeShell, showView } from './shell.js';
 import { installPackageView } from './packages.js';
 import { installAdministration } from './administration.js';
-declare global {
-  interface Window {
-    showSaveFilePicker?: (options: {
-      suggestedName: string;
-    }) => Promise<{ createWritable: () => Promise<WritableStream<Uint8Array>> }>;
-  }
-}
-
+import { installDownloads } from './downloads.js';
 const token = element('token', HTMLInputElement),
   repository = element('repository', HTMLInputElement),
   output = element('status', HTMLOutputElement),
@@ -33,6 +26,7 @@ try {
   feedback(output, 'apiAddressError', {}, 'error');
   throw new Error('Invalid Depot API base URL');
 }
+const downloads = installDownloads(apiBaseUrl, token);
 let stop: AbortController | undefined;
 let selected: { repository: string; id: string; revision: number; name: string } | undefined;
 let selectionGeneration = 0;
@@ -240,6 +234,7 @@ element('login', HTMLFormElement).onsubmit = (event) => {
       await new DepotClient(apiBaseUrl, () => session.token).logout().catch(() => undefined);
       return;
     }
+    downloads.reset();
     token.value = session.token;
     element('login-password', HTMLInputElement).value = '';
     clearCatalog();
@@ -272,6 +267,7 @@ element('change-password', HTMLFormElement).onsubmit = (event) => {
     authenticationGeneration++;
     current.value = '';
     next.value = '';
+    downloads.reset();
     token.value = '';
     repositoryEdited = false;
     repositoryOptions.replaceChildren();
@@ -285,6 +281,7 @@ element('search', HTMLFormElement).onsubmit = (event) => {
   run(() => list());
 };
 element('logout', HTMLButtonElement).onclick = () => {
+  downloads.reset();
   stop?.abort();
   const generation = ++authenticationGeneration;
   run(async () => {
@@ -413,20 +410,7 @@ element('register-package', HTMLButtonElement).onclick = () => {
 element('download', HTMLButtonElement).onclick = () => {
   run(async () => {
     if (!selected) throw new UiError('selectError');
-    if (!window.showSaveFilePicker) throw new UiError('saveUnsupported');
-    const artifact = { ...selected };
-    const repo = artifact.repository;
-    const handle = await window.showSaveFilePicker({ suggestedName: artifact.name });
-    const stream = await client.downloadVerified(repo, artifact.id);
-    let target: WritableStream<Uint8Array>;
-    try {
-      target = await handle.createWritable();
-    } catch (error) {
-      await stream.cancel();
-      throw error;
-    }
-    await stream.pipeTo(target);
-    feedback(output, 'downloaded', {}, 'success');
+    await downloads.enqueue(selected.repository, selected.id, selected.name);
   });
 };
 element('asset', HTMLFormElement).onsubmit = (event) => {

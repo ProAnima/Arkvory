@@ -12,7 +12,7 @@ Service-api экспортирует OpenAPI новых service routes и runtim
 
 Operation-policy и openapi-compose связывают wire-схемы с 101 HTTP-операцией, правами и retry. Сборка экспортирует `dist/openapi.json`; snapshots, runtime inventory и schema tests защищают совместимость. Пакет не имеет внешних side effects; экспорт документа не должен увеличивать browser bundle SDK. [Контракт](../../docs/API_CONTRACT_GUARD.md).
 
-delegation-api содержит wire actions, ограниченные runtime-парсеры и JSON schemas управления grants. OpenAPI document 0.6.0 отдельно описывает service-administration и bootstrap-or-own-key. Domain types и строки БД не импортируются.
+delegation-api содержит wire actions, ограниченные runtime-парсеры и JSON schemas управления grants. OpenAPI document 0.6.1 отдельно описывает service-administration и bootstrap-or-own-key. Domain types и строки БД не импортируются.
 
 Assets содержит независимый AssetPageResponse и readAssetPage: размер, строгий порядок Unicode scalar values и cursor валидируются до использования ответа. GET/HEAD assets/page добавлены в OpenAPI с явным asset.read.
 

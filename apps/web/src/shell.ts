@@ -6,6 +6,7 @@ const views = {
   packages: 'packagesSubtitle',
   administration: 'administrationSubtitle',
   upload: 'uploadSubtitle',
+  downloads: 'downloadsSubtitle',
   history: 'historySubtitle',
   metadata: 'metadataSubtitle',
 } as const;

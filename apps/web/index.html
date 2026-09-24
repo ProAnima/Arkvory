@@ -38,6 +38,11 @@
             <path d="M12 16V3m-5 5 5-5 5 5M4 15v5h16v-5" /></svg
           ><span data-i18n="upload">Загрузка</span>
         </button>
+        <button type="button" data-nav="downloads" aria-controls="downloads-panel">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 3v13m-5-5 5 5 5-5M4 17v4h16v-4" /></svg
+          ><span data-i18n="downloads">Скачивания</span>
+        </button>
         <button type="button" data-nav="packages" aria-controls="packages-panel">
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path d="m12 2 9 5-9 5-9-5 9-5ZM3 12l9 5 9-5M3 17l9 5 9-5" />
@@ -358,6 +363,109 @@
               </button>
             </div>
           </div>
+        </section>
+        <section
+          id="downloads-panel"
+          class="card padded"
+          data-view="downloads"
+          aria-labelledby="downloads-title"
+          hidden
+        >
+          <div class="section-heading">
+            <h2 id="downloads-title" data-i18n="downloads">Скачивания</h2>
+            <span id="download-summary" aria-live="polite"></span>
+          </div>
+          <form id="download-policy" class="download-policy">
+            <label
+              ><span data-i18n="downloadConcurrency">Одновременные скачивания</span
+              ><input
+                id="download-concurrency"
+                type="number"
+                min="1"
+                max="8"
+                step="1"
+                value="2"
+                required
+            /></label>
+            <label
+              ><span data-i18n="downloadInterval">Интервал запуска, мс</span
+              ><input
+                id="download-interval"
+                type="number"
+                min="0"
+                max="60000"
+                step="1"
+                value="250"
+                required
+            /></label>
+            <label
+              ><span data-i18n="downloadWait">Предел ожидания, секунды</span
+              ><input
+                id="download-wait"
+                type="number"
+                min="1"
+                max="1800"
+                step="1"
+                value="300"
+                required
+            /></label>
+            <button type="submit" class="secondary" data-i18n="downloadApply">
+              Применить ограничения
+            </button>
+          </form>
+          <div class="download-toolbar">
+            <button id="downloads-pause" type="button" class="secondary" data-i18n="downloadsPause">
+              Приостановить все
+            </button>
+            <button
+              id="downloads-resume"
+              type="button"
+              class="secondary"
+              data-i18n="downloadsResume"
+            >
+              Продолжить очередь
+            </button>
+            <button
+              id="downloads-clear-waiting"
+              type="button"
+              class="secondary"
+              data-i18n="downloadsClearWaiting"
+            >
+              Отменить ожидающие
+            </button>
+            <button
+              id="downloads-cancel"
+              type="button"
+              class="secondary"
+              data-i18n="downloadsCancel"
+            >
+              Отменить все
+            </button>
+            <button
+              id="downloads-clear-finished"
+              type="button"
+              class="secondary"
+              data-i18n="downloadsClearFinished"
+            >
+              Убрать завершённые
+            </button>
+          </div>
+          <p class="hint" data-i18n="downloadNote"></p>
+          <div class="table">
+            <table>
+              <thead>
+                <tr>
+                  <th data-i18n="name">Имя файла</th>
+                  <th data-i18n="downloadState">Состояние</th>
+                  <th data-i18n="downloadProgress">Прогресс</th>
+                  <th data-i18n="actions">Действия</th>
+                </tr>
+              </thead>
+              <tbody id="download-rows"></tbody>
+            </table>
+          </div>
+          <p id="download-empty" class="hint" data-i18n="downloadEmpty"></p>
+          <output id="download-status" aria-live="polite"></output>
         </section>
         <section id="upload-panel" data-view="upload" aria-labelledby="upload-title" hidden>
           <div class="split-layout">

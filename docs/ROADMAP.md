@@ -55,3 +55,5 @@
 До этих ответов нельзя обещать скорость, процент доступности или число необходимых серверов. Каркас не блокирует уточнение требований и не фиксирует неподтверждённые значения как обязательные.
 
 Дополнение этапа C API: [постраничный файловый каталог](ASSET_PAGINATION.md) реализован в API/SDK, с exact repository ACL, буквальным prefix и индексным seek. Миграция 11 не переписывает pointers/history. Репозиторные карточки теперь реализованы как [discovery из актуальных прав](REPOSITORY_DISCOVERY.md), без глобального registry. Настройки репозиториев, selectors, legacy identity import и события остаются открытыми.
+
+Управляемые клиентские скачивания реализованы в SDK и консоли: [DOWNLOAD_QUEUE](DOWNLOAD_QUEUE.md), [ADR 0022](adr/0022-client-download-queue.md). OPFS checkpoints, pause/resume/cancel, очистка ожидающих, параллелизм/задержки, серверные waiting limits/timeouts. Persistent очередь после reload и глобальный scheduler остаются открытыми.

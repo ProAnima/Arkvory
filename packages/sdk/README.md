@@ -24,3 +24,5 @@ serviceDelegations/setServiceDelegation/removeServiceDelegation и servicePolicy
 `assetPage(repository, {prefix, after, limit}, signal?)` возвращает ограниченные items/next. Клиент сам обрабатывает страницу и сохраняет checkpoint; SDK не накапливает весь каталог и не делает скрытых повторов. [Пример](../../docs/ASSET_PAGINATION.md).
 
 `repositories({after,limit}, signal?)` и `repository(id, signal?)` возвращают валидированные карточки id/formats/permissions. Обновить SDK до выдачи managed permission repository.read: старые parsers неизвестное имя отклоняют. [Контракт](../../docs/REPOSITORY_DISCOVERY.md).
+
+DownloadQueue и checkpointedDownload дают bounded очередь скачиваний с паузой, продолжением, отменой и приватным DownloadStorage. [API и требования к адаптеру](../../docs/DOWNLOAD_QUEUE.md).
