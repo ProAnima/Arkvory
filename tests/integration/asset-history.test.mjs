@@ -288,7 +288,7 @@ test('migration preserves old asset history without inventing authors or timesta
                 depot_users, depot_access_groups;
      DROP FUNCTION depot_semver_key(text) CASCADE;
      ALTER TABLE depot_jobs DROP COLUMN credential_id;
-     DROP TABLE depot_service_audit, depot_api_keys, depot_service_accounts;
+     DROP TABLE depot_service_delegations, depot_service_audit, depot_api_keys, depot_service_accounts;
      DELETE FROM depot_migrations WHERE version>=4`,
   );
   await assert.rejects(f.catalog.ready(), { code: 'unavailable' });

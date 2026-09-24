@@ -19,11 +19,14 @@ import {
   readKeyIssue,
   readServicePage,
   readServiceBindings,
+  readDelegation,
+  readDelegations,
 } from '@proanima/depot-contracts';
 import type {
   UploadResponse,
   AnnotationsResponse,
   ServiceBindingResponse,
+  AdministrationPermission,
 } from '@proanima/depot-contracts';
 import {
   DepotHttpError,
@@ -188,6 +191,10 @@ export class DepotClient {
       profile,
       bindings: readServiceBindings(r['bindings'], 10000),
       serviceAdministration: r['serviceAdministration'],
+      credentialId:
+        r['credentialId'] === undefined || r['credentialId'] === null
+          ? null
+          : text(r['credentialId']),
     };
   }
   async serviceAccounts(after?: string, signal?: AbortSignal) {
@@ -199,6 +206,58 @@ export class DepotClient {
         signal,
       ),
       readServiceAccount,
+    );
+  }
+  async serviceDelegations(keyId: string, signal?: AbortSignal) {
+    return readDelegations(
+      await this.call(
+        `api/v1/api-keys/${encodeURIComponent(keyId)}/delegations`,
+        'GET',
+        undefined,
+        signal,
+      ),
+    );
+  }
+  async servicePolicy(accountId: string, signal?: AbortSignal) {
+    return readServiceAccount(
+      await this.call(
+        `api/v1/service-accounts/${encodeURIComponent(accountId)}/policy`,
+        'GET',
+        undefined,
+        signal,
+      ),
+    );
+  }
+  async setServiceDelegation(
+    keyId: string,
+    accountId: string,
+    expectedRevision: number,
+    actions: readonly AdministrationPermission[],
+    ceiling: readonly ServiceBindingResponse[],
+    signal?: AbortSignal,
+  ) {
+    return readDelegation(
+      await this.call(
+        `api/v1/api-keys/${encodeURIComponent(keyId)}/delegations/${encodeURIComponent(accountId)}`,
+        'PUT',
+        { expectedRevision, actions, ceiling },
+        signal,
+      ),
+    );
+  }
+  async removeServiceDelegation(
+    keyId: string,
+    accountId: string,
+    expectedRevision: number,
+    signal?: AbortSignal,
+  ) {
+    return readDelegation(
+      await this.call(
+        `api/v1/api-keys/${encodeURIComponent(keyId)}/delegations/${encodeURIComponent(accountId)}`,
+        'DELETE',
+        { expectedRevision },
+        signal,
+      ),
     );
   }
   async serviceAccount(id: string, signal?: AbortSignal) {

@@ -110,6 +110,7 @@ export function composeApiPaths(source: Record<string, ObjectValue>) {
         tags: [policy.tag],
         security,
         'x-depot-authorization': policy.access,
+        'x-depot-authority': policy.access.kind,
         'x-depot-retry': policy.retry,
         'x-depot-route': route(path),
         'x-depot-gateway': method === 'get' || method === 'head' ? 'writer-or-reader' : 'writer',

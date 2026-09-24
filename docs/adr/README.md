@@ -24,3 +24,5 @@ ADR нужен для изменения границ, публичных кон
 - [0016 — Права сервисных ключей и развитие API (proposed)](0016-service-access-and-api-evolution.md)
 - [0017 — Первый рабочий профиль управляемых сервисных ключей](0017-managed-service-keys.md)
 - [0018 — Проверяемая инвентаризация API](0018-executable-api-inventory.md)
+
+- [0019 — Делегирование управления точными сервисными аккаунтами](0019-scoped-service-administration.md)

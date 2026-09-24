@@ -33,6 +33,7 @@ export function registerServiceRoutes(
       gatewayRole: role,
       features: {
         managedServiceKeys: true,
+        delegatedServiceAdministration: true,
         repositoryPermissions: true,
         namespacePermissions: false,
         webhooks: false,
@@ -75,6 +76,7 @@ export function registerServiceRoutes(
     return Promise.resolve({
       id: p.id,
       profile: p.managed ? 'managed' : 'legacy',
+      credentialId: p.managed?.keyId ?? null,
       bindings: p.managed?.bindings ?? bindings,
       serviceAdministration: p.serviceAdministrator === true && !p.managed,
     });
@@ -90,7 +92,7 @@ export function registerServiceRoutes(
     service.update(principal(r), r.params.id, r.body),
   );
   app.get<{ Params: Params }>('/api/v1/service-accounts/:id/policy', (r) =>
-    service.account(principal(r), r.params.id),
+    service.account(principal(r), r.params.id, true),
   );
   app.put<{ Params: Params }>('/api/v1/service-accounts/:id/policy', (r) =>
     service.policy(principal(r), r.params.id, r.body),
@@ -134,4 +136,15 @@ export function registerServiceRoutes(
   app.get<{ Params: Params }>('/api/v1/service-accounts/:id/audit', async (r) => ({
     items: await service.audit(principal(r), r.params.id, after(r)),
   }));
+  app.get<{ Params: Params }>('/api/v1/api-keys/:id/delegations', async (r) => ({
+    items: await service.delegations(principal(r), r.params.id),
+  }));
+  app.put<{ Params: Params & { accountId: string } }>(
+    '/api/v1/api-keys/:id/delegations/:accountId',
+    (r) => service.setDelegation(principal(r), r.params.id, r.params.accountId, r.body),
+  );
+  app.delete<{ Params: Params & { accountId: string } }>(
+    '/api/v1/api-keys/:id/delegations/:accountId',
+    (r) => service.removeDelegation(principal(r), r.params.id, r.params.accountId, r.body),
+  );
 }

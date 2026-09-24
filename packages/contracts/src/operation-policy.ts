@@ -1,4 +1,5 @@
 import type { servicePermissionNames } from './service-api.js';
+import type { AdministrationPermission } from './delegation-api.js';
 type ServicePermission = (typeof servicePermissionNames)[number];
 
 export type ApiMethod = 'get' | 'head' | 'post' | 'put' | 'patch' | 'delete';
@@ -13,7 +14,14 @@ export interface OperationPolicy {
           | 'account-session'
           | 'administrator'
           | 'service-bootstrap'
+          | 'bootstrap-or-own-key'
           | 'pending-or-active-key';
+      }
+    | {
+        kind: 'service-administration';
+        action: AdministrationPermission;
+        resource: 'visible-accounts' | 'path.id' | 'key.accountId';
+        bootstrapAlternative: true;
       }
     | {
         kind: 'repository';
@@ -121,8 +129,66 @@ for (const [path, method, id, retry] of [
   ['/api-keys/{id}', 'get', 'getServiceKey', 'read'],
   ['/api-keys/{id}/rotate', 'post', 'rotateServiceKey', 'idempotency-key'],
   ['/api-keys/{id}/revoke', 'post', 'revokeServiceKey', 'idempotent'],
-] as const)
-  add(`/api/v1${path}`, method, id, 'Services', { kind: 'service-bootstrap' }, retry);
+] as const) {
+  const actions: Record<string, AdministrationPermission> = {
+    listServiceAccounts: 'service-account.read',
+    getServiceAccount: 'service-account.read',
+    updateServiceAccount: 'service-account.manage',
+    getServicePolicy: 'policy.read',
+    setServicePolicy: 'policy.manage',
+    listServiceKeys: 'credential.read',
+    issueServiceKey: 'credential.manage',
+    getServiceAudit: 'service-audit.read',
+    getServiceKey: 'credential.read',
+    rotateServiceKey: 'credential.manage',
+    revokeServiceKey: 'credential.manage',
+  };
+  const action = actions[id];
+  add(
+    `/api/v1${path}`,
+    method,
+    id,
+    'Services',
+    action
+      ? {
+          kind: 'service-administration',
+          action,
+          resource:
+            id === 'listServiceAccounts'
+              ? 'visible-accounts'
+              : path.startsWith('/api-keys')
+                ? 'key.accountId'
+                : 'path.id',
+          bootstrapAlternative: true,
+        }
+      : { kind: 'service-bootstrap' },
+    retry,
+  );
+}
+add(
+  '/api/v1/api-keys/{id}/delegations',
+  'get',
+  'listServiceDelegations',
+  'Services',
+  { kind: 'bootstrap-or-own-key' },
+  'read',
+);
+add(
+  '/api/v1/api-keys/{id}/delegations/{accountId}',
+  'put',
+  'setServiceDelegation',
+  'Services',
+  { kind: 'service-bootstrap' },
+  'compare-and-swap',
+);
+add(
+  '/api/v1/api-keys/{id}/delegations/{accountId}',
+  'delete',
+  'removeServiceDelegation',
+  'Services',
+  { kind: 'service-bootstrap' },
+  'compare-and-swap',
+);
 add(
   '/api/v1/auth/activate-key',
   'post',

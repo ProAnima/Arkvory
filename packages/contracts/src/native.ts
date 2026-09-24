@@ -4,6 +4,7 @@ import { readinessSchema } from './health.js';
 import { servicePaths } from './service-api.js';
 import { supplementalPaths, nativeErrorSchema } from './http-contract.js';
 import { composeApiPaths } from './openapi-compose.js';
+import { delegationPaths } from './delegation-api.js';
 export const descriptorSchema = {
   type: 'object',
   additionalProperties: false,
@@ -220,11 +221,15 @@ const baseDocument = {
     },
   },
 };
-const composed = composeApiPaths({ ...baseDocument.paths, ...supplementalPaths });
+const composed = composeApiPaths({
+  ...baseDocument.paths,
+  ...supplementalPaths,
+  ...delegationPaths,
+});
 export const apiOperations = composed.operations;
 export const openApiDocument = {
   ...baseDocument,
-  info: { ...baseDocument.info, title: 'ProAnima Depot API', version: '0.3.0' },
+  info: { ...baseDocument.info, title: 'ProAnima Depot API', version: '0.4.0' },
   components: {
     ...baseDocument.components,
     schemas: { NativeError: nativeErrorSchema },

@@ -368,6 +368,7 @@ export const servicePaths = {
           profile: { type: 'string', enum: ['legacy', 'managed'] },
           bindings: { ...serviceBindingSchema, maxItems: 10000 },
           serviceAdministration: { type: 'boolean' },
+          credentialId: { type: 'string', format: 'uuid', nullable: true },
         },
       },
       undefined,

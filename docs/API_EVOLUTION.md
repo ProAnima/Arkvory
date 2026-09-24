@@ -1,6 +1,6 @@
 # Расширение API и интеграции сервисов
 
-Статус: план развития, 2026-09-24. Первый профиль этапа B и discovery из A реализованы: [SERVICE_KEYS](SERVICE_KEYS.md), [ADR 0017](adr/0017-managed-service-keys.md). Этап A дополнен полной инвентаризацией 91 операции, operationId, auth/retry metadata и drift guard runtime/CI: [API_CONTRACT_GUARD](API_CONTRACT_GUARD.md). Делегированное управление, импорт старых identities и этапы C–E остаются планом. Навигация: [карта маршрутов](API_MAP.md), [permissions и ключи](API_ACCESS.md), [ADR 0016](adr/0016-service-access-and-api-evolution.md).
+Статус: план развития, 2026-09-24. Реализованы discovery, managed keys и ограниченное делегирование B на точные аккаунты: [SERVICE_KEYS](SERVICE_KEYS.md), [SERVICE_DELEGATION](SERVICE_DELEGATION.md). Инвентаризация **95 операций**, operationId, auth/retry metadata и drift guard runtime/CI: [API_CONTRACT_GUARD](API_CONTRACT_GUARD.md). Импорт старых identities, рекурсивные роли и этапы C–E остаются планом. Навигация: [карта](API_MAP.md), [модель прав](API_ACCESS.md), [ADR 0016](adr/0016-service-access-and-api-evolution.md).
 
 ## Архитектура подключения
 
@@ -85,7 +85,7 @@ Transfer tickets — отдельный последующий контракт:
 
 ## План вертикальных инкрементов
 
-Исходная карта охватывала 41 операцию. Добавлены 15 работающих операций service access/discovery с operationId, OpenAPI и SDK. Поднабор B использует явный file bootstrap вместо делегируемых административных ключей; новый account получает новый owner, импорта старого ownership пока нет. Контрактная часть A теперь проверяет весь зарегистрированный inventory, включая HEAD/legacy: [приёмка и границы](API_CONTRACT_GUARD.md). Полная приёмка B с делегированием/импортом остаётся планом; готовый поднабор описан в SERVICE_KEYS.
+Исходная карта охватывала 41 операцию. Сейчас полный inventory включает 95 операций с HEAD/legacy, service access/discovery и delegation. Поднабор B позволяет root назначать конкретному key ID управление конкретным account ID с actions/ceiling, без цепочек и самоуправления. Новый account получает новый owner; импорт старого ownership пока отсутствует. Контрактная часть A проверяет весь зарегистрированный inventory: [приёмка](API_CONTRACT_GUARD.md). Рабочие поднаборы B: [ключи](SERVICE_KEYS.md), [делегирование](SERVICE_DELEGATION.md); полная исходная модель B ещё не объявляется завершённой.
 
 | Этап                              | Состав                                                                                                                                        | Условие готовности                                                                                                                                                      |
 | --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

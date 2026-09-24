@@ -121,7 +121,7 @@ test('managed issuance activates once, replays without secret, and does not wide
   assert.equal((await client.me()).id, `service:${account.id}`);
   assert.deepEqual((await client.permissions()).bindings, grants);
   assert.equal((await client.capabilities()).features.managedServiceKeys, true);
-  await assert.rejects(client.serviceAccounts(), { status: 403 });
+  assert.deepEqual(await client.serviceAccounts(), { items: [], next: null });
   const publicData = JSON.stringify(await f.root.serviceKeys(account.id));
   assert(!publicData.includes(first.secret));
   assert(!publicData.includes('secret_hash'));

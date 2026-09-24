@@ -1,6 +1,6 @@
 # Доступ сервисов и жизненный цикл API-ключей
 
-Статус: **целевая модель с реализованным первым поднабором**, 2026-09-24. Работающий профиль: [SERVICE_KEYS](SERVICE_KEYS.md), [ADR 0017](adr/0017-managed-service-keys.md). Реализованы managed keys, 18 repository actions, activation/rotation/revoke, CAS policy, SDK и проверки публикации. Нижеследующие system permissions, delegation ceiling, notBefore, импорт старых identities и namespace selectors остаются проектом; текущие точные лимиты и отличия задаёт runbook. Рабочие ограничения и точные методы отделены в [карте API](API_MAP.md). Решение: [ADR 0016](adr/0016-service-access-and-api-evolution.md); этапы внедрения: [API_EVOLUTION](API_EVOLUTION.md).
+Статус: **целевая модель с реализованным ограниченным профилем**, 2026-09-24. Работают [managed keys](SERVICE_KEYS.md) и [делегирование на точные аккаунты](SERVICE_DELEGATION.md): 18 repository actions, семь отдельных admin actions, ceiling, activation/rotation/revoke, CAS, SDK и проверки перед commit. Широкие system permissions, рекурсивное делегирование, notBefore, импорт старых identities и namespace selectors остаются проектом. Текущие лимиты и отличия задают runbooks. [Карта API](API_MAP.md), [план](API_EVOLUTION.md), [ADR 0016](adr/0016-service-access-and-api-evolution.md), принятый профиль [ADR 0019](adr/0019-scoped-service-administration.md).
 
 ## 1. Совместимый прежний профиль
 

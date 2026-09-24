@@ -18,3 +18,5 @@ SDK поддерживает вход/выход и смену собствен�
 Страницы пакетов допускают JSON до 8 MiB для 100 манифестов до 64 KiB с метаданными страницы; остальные JSON-ответы сохраняют предел 2 MiB. `packages(repository, { group: "" })` выбирает только корневую группу; отсутствие group означает все группы. Пустой фильтр в консоли по-прежнему означает все группы.
 
 DepotClient предоставляет capabilities/permissions, service accounts/policy, выдачу/активацию/ротацию/отзыв ключей и service audit. Ответ выдачи содержит secret только при первом успешном запросе; replay возвращает metadata. Control calls принимают AbortSignal без скрытого повтора mutations. [Контракт и эксплуатация](../../docs/SERVICE_KEYS.md).
+
+serviceDelegations/setServiceDelegation/removeServiceDelegation и servicePolicy реализуют [делегированное управление](../../docs/SERVICE_DELEGATION.md). permissions возвращает credentialId, discovery — delegatedServiceAdministration. CAS/tombstone и one-time secret не допускают скрытого mutation retry.

@@ -23,3 +23,5 @@ Migration 9 добавляет стабильные сервисные акка�
 ## Приёмка
 
 Проверки прав/пересечения, concurrency, expiry/rotation, отказа stale publication, реального worker и reader входят в функциональные тесты. Старые сценарии native/legacy и миграции продолжают проверяться. Standalone/общий root не объявляется репликацией.
+
+Последующее расширение root-only управления: [ADR 0019](0019-scoped-service-administration.md). Исходное решение выше фиксирует первый профиль; текущий контракт допускает scoped delegates.

@@ -7,8 +7,15 @@ import {
   intersectBindings,
   requireSubset,
   serviceActions,
+  administrationActions,
+  parseAdministrationActions,
 } from '@proanima/depot-domain';
-import { servicePermissionNames, readApiKey } from '@proanima/depot-contracts';
+import {
+  servicePermissionNames,
+  administrationPermissionNames,
+  readApiKey,
+  readDelegation,
+} from '@proanima/depot-contracts';
 import { parseKeys } from '@proanima/depot-infrastructure';
 import { ServiceAccess } from '@proanima/depot-application';
 
@@ -63,4 +70,25 @@ test('existing administrator has no implicit service bootstrap privilege', () =>
     code: 'forbidden',
   });
   assert.throws(() => readApiKey({}), /Invalid/);
+});
+
+test('administrative actions remain distinct from data permissions and reject recursive or wildcard authority', () => {
+  assert.deepEqual(administrationActions, administrationPermissionNames);
+  assert.deepEqual(parseAdministrationActions(['credential.manage', 'credential.manage']), [
+    'credential.manage',
+  ]);
+  for (const value of [[], ['*'], ['identity.manage'], ['delegation.manage'], ['content.read']])
+    assert.throws(() => parseAdministrationActions(value), { code: 'invalid_input' });
+  assert.throws(
+    () =>
+      readDelegation({
+        keyId: 'a',
+        targetAccountId: 'b',
+        enabled: true,
+        revision: 1,
+        actions: [],
+        ceiling: [],
+      }),
+    /Invalid/,
+  );
 });

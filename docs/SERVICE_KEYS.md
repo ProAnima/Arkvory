@@ -1,14 +1,14 @@
 # Управляемые сервисные ключи: запуск и эксплуатация
 
-Реализовано 2026-09-24, миграция **9**. Это первый работающий профиль [модели доступа](API_ACCESS.md): machine identities, 18 permissions на точные репозитории, key lifecycle, SDK, API/worker/reader enforcement. Делегированное управление, selectors папок/групп, federation, transfer tickets и webhooks не включены. [ADR 0017](adr/0017-managed-service-keys.md).
+Первый профиль реализован 2026-09-24 в миграции 9; текущая схема — **10**. Machine identities, 18 permissions на точные репозитории, lifecycle, SDK и API/worker/reader enforcement дополнены [делегированным управлением](SERVICE_DELEGATION.md): семь admin actions, точные цели и ceiling. Selectors папок/групп, federation, transfer tickets и webhooks не включены. Решения: [ADR 0017](adr/0017-managed-service-keys.md), [ADR 0019](adr/0019-scoped-service-administration.md).
 
 ## Обновление и bootstrap
 
-Остановить writer, readers и worker, сделать согласованный backup БД и storage, обновить сборку, выполнить `npm run migrate`, затем запустить процессы. Readiness требует markers 8 и 9: миграция 9 добавляет accounts/keys/audit и initiating credential в completion jobs, не заменяет индексы миграции 8.
+Остановить writer, readers и worker, сделать согласованный backup БД и storage, обновить сборку, выполнить `npm run migrate`, затем запустить процессы одной версии. Readiness требует markers 8, 9 и 10: индексы, service accounts/keys и delegation соответственно. Смешанный runtime не поддерживается: старый activation не проверяет issuer. Ограничения отката: [обновление delegation](SERVICE_DELEGATION.md#транзакции-лимиты-и-обновление).
 
 Для управления сервисными аккаунтами включить **`serviceAdministrator: true` у отдельного доверенного ключа в `DEPOT_KEYS_FILE`** и согласованно перезапустить процессы. У существующих ключей этот флаг по умолчанию false; `administrator: true` продолжает управлять пользователями/группами и не даёт новых полномочий. `npm run init:local` для новой установки создаёт bootstrap key с обоими флагами. Не перезапускайте init поверх существующих секретов и не копируйте bootstrap secret в CI, браузер или приложение-потребитель.
 
-Bootstrap может назначать любые реализованные repo permissions: это локально назначенный корневой оператор, а не делегируемая роль. Managed keys и пользовательские сессии не могут управлять сервисными identities/credentials, даже если в теле запроса указано administrator. Разделение операторских полномочий и delegation ceiling остаются следующим инкрементом; HTTP API изменения самого bootstrap флага нет.
+Bootstrap может назначать любые реализованные repo permissions, создавать аккаунты и выдавать grants конкретным managed keys. Делегат управляет только назначенными чужими аккаунтами и в пределах actions/ceiling. Пользовательские сессии и обычный administrator новых полномочий не получают; HTTP API изменения bootstrap флага нет. Подробные правила и отсутствие каскадного отзыва активных ключей: [SERVICE_DELEGATION](SERVICE_DELEGATION.md).
 
 Старые file keys сохраняют read/write и ownership. **Автоматического импорта их hash/owner в managed account нет**: новый service account получает новый `service:<uuid>`. Уже начатые старым принципалом uploads надо закончить старым ключом или создать заново. Ротация внутри одного managed account сохраняет owner. Префикс `dpk_` зарезервирован для managed credentials; он никогда не попадает в file fallback, в том числе после revoke. Если старый вручную выбранный secret использовал такой префикс, замените его до обновления.
 
@@ -16,21 +16,21 @@ Bootstrap может назначать любые реализованные re
 
 Все методы ниже используют Bearer и `Cache-Control: private, no-store`. Названия аккаунтов/ключей: 3–64 ASCII символа из букв, цифр, `_`, `.`, `-`. Идентификаторы UUID, policy — `bindings`, revision — целое. Неизвестные поля запросов и permissions отклоняются.
 
-| Метод       | Путь относительно `/api/v1`            | Результат                                                                    |
-| ----------- | -------------------------------------- | ---------------------------------------------------------------------------- |
-| GET / POST  | `/service-accounts`                    | Cursor-page / 201 account с name и bindings                                  |
-| GET / PATCH | `/service-accounts/{id}`               | Account / CAS `{expectedRevision,enabled}`                                   |
-| GET / PUT   | `/service-accounts/{id}/policy`        | Account с policy / CAS `{expectedRevision,bindings}`                         |
-| GET / POST  | `/service-accounts/{id}/keys`          | Cursor-page metadata / выдача pending key                                    |
-| GET         | `/api-keys/{id}`                       | Metadata без hash/secret                                                     |
-| POST        | `/api-keys/{id}/rotate`                | Новый pending key того же аккаунта, только прежние права или их подмножество |
-| POST        | `/api-keys/{id}/revoke`                | 204, повтор идемпотентен, отзыв необратим                                    |
-| GET         | `/service-accounts/{id}/audit?after=…` | До 100 событий, следующий after — sequence последнего полученного события    |
-| POST        | `/auth/activate-key`                   | 204; этот единственный маршрут принимает pending credential самого клиента   |
-| GET         | `/auth/permissions`                    | Собственный effective набор bindings, profile и serviceAdministration        |
-| GET         | `/capabilities`                        | Реальные features, gatewayRole, лимиты протокола; не разрешение на операцию  |
+| Метод       | Путь относительно `/api/v1`            | Результат                                                                           |
+| ----------- | -------------------------------------- | ----------------------------------------------------------------------------------- |
+| GET / POST  | `/service-accounts`                    | Cursor-page / 201 account с name и bindings                                         |
+| GET / PATCH | `/service-accounts/{id}`               | Account / CAS `{expectedRevision,enabled}`                                          |
+| GET / PUT   | `/service-accounts/{id}/policy`        | Account с policy / CAS `{expectedRevision,bindings}`                                |
+| GET / POST  | `/service-accounts/{id}/keys`          | Cursor-page metadata / выдача pending key                                           |
+| GET         | `/api-keys/{id}`                       | Metadata без hash/secret                                                            |
+| POST        | `/api-keys/{id}/rotate`                | Новый pending key того же аккаунта, только прежние права или их подмножество        |
+| POST        | `/api-keys/{id}/revoke`                | 204, повтор идемпотентен, отзыв необратим                                           |
+| GET         | `/service-accounts/{id}/audit?after=…` | До 100 событий, следующий after — sequence последнего полученного события           |
+| POST        | `/auth/activate-key`                   | 204; этот единственный маршрут принимает pending credential самого клиента          |
+| GET         | `/auth/permissions`                    | Собственный effective набор bindings, profile, credentialId и serviceAdministration |
+| GET         | `/capabilities`                        | Реальные features, gatewayRole, лимиты протокола; не разрешение на операцию         |
 
-Административные маршруты требуют bootstrap. Активация требует secret выдаваемого ключа. Permissions/capabilities доступны любой действующей identity. Lists используют 50 записей и `next`; `after` — UUID, отсутствие next означает завершение обхода. Список не является snapshot. CAS конфликт — 409, без потери чужих изменений. `PATCH` пока меняет только enabled, не имя.
+Создание аккаунтов требует bootstrap; остальные административные маршруты допускают bootstrap либо соответствующее действие делегата на точную цель. Активация требует secret выдаваемого ключа. Permissions/capabilities доступны любой действующей identity. Lists используют 50 записей и `next`; `after` — UUID, отсутствие next означает завершение обхода. Список не является snapshot. CAS конфликт — 409, без потери чужих изменений. `PATCH` пока меняет только enabled, не имя.
 
 Выдача и ротация принимают `Idempotency-Key` и `{name,bindings,expiresAt?}`. Первый ответ — `201 {key,secret}`. Повтор того же запроса — `200 {key}` **без secret**, другое тело — 409. При утрате секрета отозвать key по ID и повторить выдачу с новым Idempotency-Key. Идемпотентность ограничена account + issuing principal + ключ запроса; ротация также входит в fingerprint. Никакой raw secret не сохраняется ради повторной выдачи.
 
@@ -75,11 +75,11 @@ await client.activateServiceKey();
 const permissions = await client.permissions();
 ```
 
-SDK также предоставляет serviceAccounts/serviceAccount/updateServiceAccount/setServicePolicy/serviceKeys/serviceKey/rotateServiceKey/revokeServiceKey/serviceAudit/capabilities. Новые control calls принимают AbortSignal и не делают скрытых mutation retries. Идемпотентный replay выдачи не восстанавливает secret. TypeScript SDK использует portable fetch; другие языки могут использовать ту же OpenAPI 3.0.3.
+SDK также предоставляет serviceAccounts/serviceAccount/servicePolicy/updateServiceAccount/setServicePolicy/serviceKeys/serviceKey/rotateServiceKey/revokeServiceKey/serviceAudit/capabilities. Новые control calls принимают AbortSignal и не делают скрытых mutation retries. Идемпотентный replay выдачи не восстанавливает secret. TypeScript SDK использует portable fetch; другие языки могут использовать ту же OpenAPI 3.0.3.
 
 ## Права и защита публикации
 
-Реализованные actions: `artifact.read`, `artifact.list`, `content.read`, `upload.create`, `upload.read`, `upload.write`, `upload.complete`, `upload.cancel`, `job.read`, `package.read`, `package.publish`, `asset.read`, `asset.write`, `asset.restore`, `annotation.read`, `annotation.write`, `reference.write`, `audit.read`. Их привязка к методам — в [карте API](API_MAP.md). Остальные имена из целевой модели, включая repository.read/system.observe/credential.manage, пока отклоняются. Wildcards и path selectors не поддерживаются.
+Реализованные actions: `artifact.read`, `artifact.list`, `content.read`, `upload.create`, `upload.read`, `upload.write`, `upload.complete`, `upload.cancel`, `job.read`, `package.read`, `package.publish`, `asset.read`, `asset.write`, `asset.restore`, `annotation.read`, `annotation.write`, `reference.write`, `audit.read`. Их привязка к методам — в [карте API](API_MAP.md). Остальные имена из целевой модели, включая repository.read/system.observe, пока отклоняются. Семь administration actions, включая credential.manage, принимаются только отдельным delegation API, не в repository bindings. Wildcards и path selectors не поддерживаются.
 
 Эффективные права = пересечение account policy и key bindings по одной паре action/repository. Пустая policy запрещает data operations. Ключ не получает общий read/write; внутренний resolve legacy download требует content.read, а не право перечислять пакеты. Whole-file PUT требует upload.write **и** upload.complete; запись части — только upload.write. Метаданные и pointer mutations требуют указанных в карте дополнительных прав на источник. Ownership uploads/jobs/references остаётся отдельной проверкой.
 
@@ -97,7 +97,7 @@ Completion job хранит initiating key ID, worker заново разреш�
 - Один бюджет и admission owner на service account, независимо от числа ключей. Governor хранит не более 3000 principals: до 1000 file owners, 1000 users и 1000 service accounts.
 - Service audit атомарен с изменением; хранит actor/action/accountId/keyId/occurredAt, не secret/hash. Сохраняются последние **100 000 событий глобально**, более старые удаляются при mutations. Это ограниченная операционная история, не бессрочный compliance archive или гарантированный event replay; долговременный экспорт пока внешний.
 
-Readiness и существующий пользовательский auth остаются совместимыми. `/auth/me` возвращает для managed identity ID без coarse grants; подробные permissions находятся в новом endpoint. UI управления сервисными аккаунтами пока не добавлен: использовать API/SDK. Полную tenant isolation и HA эта реализация не объявляет.
+Существующий пользовательский auth сохраняет прежние права; readiness проверяет текущую схему. `/auth/me` возвращает для managed identity ID без coarse grants; подробные permissions находятся в новом endpoint. UI управления сервисными аккаунтами пока не добавлен: использовать API/SDK. Полную tenant isolation и HA эта реализация не объявляет.
 
 ## Проверки
 

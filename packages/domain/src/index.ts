@@ -5,3 +5,4 @@ export * from './identity.js';
 export * from './service-access.js';
 
 export * from './service-policy.js';
+export * from './service-delegation.js';
