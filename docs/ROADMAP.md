@@ -41,7 +41,7 @@
 
 ## Открытые решения
 
-Расширение API для сервисов: [карта](API_MAP.md), [модель](API_ACCESS.md), [план A–E](API_EVOLUTION.md). Реализованы discovery, managed keys, точные repository bindings, lifecycle и повторная авторизация перед публикацией. Добавлено [делегированное управление](SERVICE_DELEGATION.md) на точные аккаунты с actions/ceiling, без цепочек: [ADR 0019](adr/0019-scoped-service-administration.md). OpenAPI и drift guard покрывают [97 операций](API_CONTRACT_GUARD.md). Далее: импорт старых identities/ownership, namespace selectors, события, UI управления ключами и распределённые квоты. Legacy publication, retention и стендовая приёмка HA остаются открытыми.
+Расширение API для сервисов: [карта](API_MAP.md), [модель](API_ACCESS.md), [план A–E](API_EVOLUTION.md). Реализованы discovery, managed keys, точные repository bindings, lifecycle и повторная авторизация перед публикацией. Добавлено [делегированное управление](SERVICE_DELEGATION.md) на точные аккаунты с actions/ceiling, без цепочек: [ADR 0019](adr/0019-scoped-service-administration.md). OpenAPI и drift guard покрывают [101 операцию](API_CONTRACT_GUARD.md). Далее: импорт старых identities/ownership, namespace selectors, события, UI управления ключами и распределённые квоты. Legacy publication, retention и стендовая приёмка HA остаются открытыми.
 
 В рамках этапа 3 реализован локальный исполнитель общего/per-principal byte budget: [TRAFFIC_CONTROL](TRAFFIC_CONTROL.md), [ADR 0008](adr/0008-gateway-bandwidth-budgets.md). Дополнительно реализованы независимые read gateways, конечные leases фиксированных долей и локальные проверки потери координации: [READ_GATEWAYS](READ_GATEWAYS.md), [ADR 0009](adr/0009-leased-read-gateways.md). Для завершения этапа нужны подтверждённые реплики blobs, инфраструктура входа и испытания смешанной нагрузки на выбранном стенде. Локальный bucket каждого процесса нельзя выдавать за общий лимит площадки.
 
@@ -54,4 +54,4 @@
 
 До этих ответов нельзя обещать скорость, процент доступности или число необходимых серверов. Каркас не блокирует уточнение требований и не фиксирует неподтверждённые значения как обязательные.
 
-Дополнение этапа C API: [постраничный файловый каталог](ASSET_PAGINATION.md) реализован в API/SDK, с exact repository ACL, буквальным prefix и индексным seek. Миграция 11 не переписывает pointers/history. Репозиторные карточки, selectors, legacy identity import и события остаются открытыми.
+Дополнение этапа C API: [постраничный файловый каталог](ASSET_PAGINATION.md) реализован в API/SDK, с exact repository ACL, буквальным prefix и индексным seek. Миграция 11 не переписывает pointers/history. Репозиторные карточки теперь реализованы как [discovery из актуальных прав](REPOSITORY_DISCOVERY.md), без глобального registry. Настройки репозиториев, selectors, legacy identity import и события остаются открытыми.

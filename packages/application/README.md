@@ -11,3 +11,5 @@ IdentityService определяет регистрацию администра
 ServiceAccess задаёт порт ServiceStore и валидирует команды bootstrap/delegated управления, передавая Principal в порт для атомарной проверки authority с изменением. Изменяющие data use cases передают MutationAccess адаптерам для повторной проверки перед commit. [Контракт и эксплуатация](../../docs/SERVICE_KEYS.md).
 
 AssetPage/AssetPageOptions и чистые prefix bounds описывают ограниченный обход файлового каталога. ArtifactCatalog проверяет asset.read перед передачей запроса адаптеру. [Контракт](../../docs/ASSET_PAGINATION.md).
+
+Repositories формирует собственные карточки/страницы из bounded Principal, объединяя exact ID и фильтруя до LIMIT. Effective-permissions задаёт прежний coarse mapping за линейный проход grants; новые permissions не выдаются legacy автоматически. Дополнительный I/O/порт не требуется. [Контракт](../../docs/REPOSITORY_DISCOVERY.md).

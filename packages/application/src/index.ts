@@ -7,3 +7,5 @@ export * from './identity.js';
 export * from './package-list.js';
 export * from './service-access.js';
 export * from './asset-page.js';
+export * from './effective-permissions.js';
+export * from './repositories.js';

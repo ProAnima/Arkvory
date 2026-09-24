@@ -4,6 +4,8 @@ import {
   readJob,
   readAsset,
   readAssetPage,
+  readRepositoryCard,
+  readRepositoryPage,
   readAssetRevision,
   readAssetHistory,
   record,
@@ -197,6 +199,20 @@ export class DepotClient {
           ? null
           : text(r['credentialId']),
     };
+  }
+  async repositories(options: { after?: string; limit?: number } = {}, signal?: AbortSignal) {
+    const query = new URLSearchParams();
+    if (options.after !== undefined) query.set('after', options.after);
+    if (options.limit !== undefined) query.set('limit', String(options.limit));
+    return readRepositoryPage(
+      await this.call(`api/v1/repositories?${query}`, 'GET', undefined, signal),
+      options.limit ?? 50,
+    );
+  }
+  async repository(id: string, signal?: AbortSignal) {
+    return readRepositoryCard(
+      await this.call(`api/v1/repositories/${encodeURIComponent(id)}`, 'GET', undefined, signal),
+    );
   }
   async serviceAccounts(after?: string, signal?: AbortSignal) {
     return readServicePage(

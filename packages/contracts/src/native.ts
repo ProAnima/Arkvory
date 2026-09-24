@@ -5,6 +5,7 @@ import { servicePaths } from './service-api.js';
 import { supplementalPaths, nativeErrorSchema } from './http-contract.js';
 import { composeApiPaths } from './openapi-compose.js';
 import { delegationPaths } from './delegation-api.js';
+import { repositoryPaths } from './repositories.js';
 export const descriptorSchema = {
   type: 'object',
   additionalProperties: false,
@@ -225,11 +226,12 @@ const composed = composeApiPaths({
   ...baseDocument.paths,
   ...supplementalPaths,
   ...delegationPaths,
+  ...repositoryPaths,
 });
 export const apiOperations = composed.operations;
 export const openApiDocument = {
   ...baseDocument,
-  info: { ...baseDocument.info, title: 'ProAnima Depot API', version: '0.5.0' },
+  info: { ...baseDocument.info, title: 'ProAnima Depot API', version: '0.6.0' },
   components: {
     ...baseDocument.components,
     schemas: { NativeError: nativeErrorSchema },

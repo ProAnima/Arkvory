@@ -18,6 +18,13 @@ export interface OperationPolicy {
           | 'pending-or-active-key';
       }
     | {
+        kind: 'repository-discovery';
+        action: 'repository.read';
+        resource: 'visible-repositories' | 'path.repository';
+        legacy: 'own-nonempty-grants';
+        invisible: 'omit' | 'not_found';
+      }
+    | {
         kind: 'service-administration';
         action: AdministrationPermission;
         resource: 'visible-accounts' | 'path.id' | 'key.accountId';
@@ -78,6 +85,34 @@ function data(
   add(path, method, id, tag, repo(actions, legacy, owner), retry);
 }
 add('/health/live', 'get', 'getLiveness', 'System', { kind: 'public' }, 'read');
+add(
+  '/api/v1/repositories',
+  'get',
+  'listRepositories',
+  'Repositories',
+  {
+    kind: 'repository-discovery',
+    action: 'repository.read',
+    resource: 'visible-repositories',
+    legacy: 'own-nonempty-grants',
+    invisible: 'omit',
+  },
+  'read',
+);
+add(
+  root,
+  'get',
+  'getRepository',
+  'Repositories',
+  {
+    kind: 'repository-discovery',
+    action: 'repository.read',
+    resource: 'path.repository',
+    legacy: 'own-nonempty-grants',
+    invisible: 'not_found',
+  },
+  'read',
+);
 add('/health/ready', 'get', 'getReadiness', 'System', { kind: 'authenticated' }, 'read');
 add('/api/v1/openapi.json', 'get', 'getOpenApi', 'System', { kind: 'authenticated' }, 'read');
 add('/api/v1/capabilities', 'get', 'getCapabilities', 'System', { kind: 'authenticated' }, 'read');

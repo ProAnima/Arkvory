@@ -1,6 +1,6 @@
 # Управляемые сервисные ключи: запуск и эксплуатация
 
-Первый профиль реализован 2026-09-24 в миграции 9; текущая схема — **11**. Machine identities, 18 permissions на точные репозитории, lifecycle, SDK и API/worker/reader enforcement дополнены [делегированным управлением](SERVICE_DELEGATION.md): семь admin actions, точные цели и ceiling. Selectors папок/групп, federation, transfer tickets и webhooks не включены. Решения: [ADR 0017](adr/0017-managed-service-keys.md), [ADR 0019](adr/0019-scoped-service-administration.md).
+Первый профиль реализован 2026-09-24 в миграции 9; текущая схема — **11**. Machine identities, 19 permissions на точные репозитории, lifecycle, SDK и API/worker/reader enforcement дополнены [делегированным управлением](SERVICE_DELEGATION.md): семь admin actions, точные цели и ceiling. Selectors папок/групп, federation, transfer tickets и webhooks не включены. Решения: [ADR 0017](adr/0017-managed-service-keys.md), [ADR 0019](adr/0019-scoped-service-administration.md).
 
 ## Обновление и bootstrap
 
@@ -79,7 +79,7 @@ SDK также предоставляет serviceAccounts/serviceAccount/service
 
 ## Права и защита публикации
 
-Реализованные actions: `artifact.read`, `artifact.list`, `content.read`, `upload.create`, `upload.read`, `upload.write`, `upload.complete`, `upload.cancel`, `job.read`, `package.read`, `package.publish`, `asset.read`, `asset.write`, `asset.restore`, `annotation.read`, `annotation.write`, `reference.write`, `audit.read`. Их привязка к методам — в [карте API](API_MAP.md). Остальные имена из целевой модели, включая repository.read/system.observe, пока отклоняются. Семь administration actions, включая credential.manage, принимаются только отдельным delegation API, не в repository bindings. Wildcards и path selectors не поддерживаются.
+Реализованные actions: `repository.read`, `artifact.read`, `artifact.list`, `content.read`, `upload.create`, `upload.read`, `upload.write`, `upload.complete`, `upload.cancel`, `job.read`, `package.read`, `package.publish`, `asset.read`, `asset.write`, `asset.restore`, `annotation.read`, `annotation.write`, `reference.write`, `audit.read`. Их привязка к методам — в [карте API](API_MAP.md). Остальные имена из целевой модели, включая system.observe, пока отклоняются. Семь administration actions, включая credential.manage, принимаются только отдельным delegation API, не в repository bindings. Wildcards и path selectors не поддерживаются.
 
 Эффективные права = пересечение account policy и key bindings по одной паре action/repository. Пустая policy запрещает data operations. Ключ не получает общий read/write; внутренний resolve legacy download требует content.read, а не право перечислять пакеты. Whole-file PUT требует upload.write **и** upload.complete; запись части — только upload.write. Метаданные и pointer mutations требуют указанных в карте дополнительных прав на источник. Ownership uploads/jobs/references остаётся отдельной проверкой.
 
@@ -106,3 +106,5 @@ Completion job хранит initiating key ID, worker заново разреш�
 `tests/integration/service-access.test.mjs`: one-time issuance и replay, pending/expiry, concurrency caps, Publisher vs Downloader через native/legacy/Range/HEAD, чужие uploads, policy CAS/disable, rotation/resume, revoke между записью bytes и commit, stale annotation, реальный worker с переавторизацией, независимый reader, paging и отсутствие file fallback. Отдельно сохранены прежние интеграционные проверки и миграция исторических данных. Стенд двух реплицируемых серверов/ProGet остаётся отложенным.
 
 Локальный прогон 2026-09-24: `node --env-file=.cache/test-db.env tests/large-transfer.mjs --multipart --verified --traffic --managed` прошёл на Windows, Node 24.13.0, PostgreSQL и Local filesystem. Передано 5 368 709 120 bytes с managed key, kill/restart посреди upload, restart после публикации, прерыванием download и проверенной Range-докачкой. Итоговый SHA-256: `b23228f170c6e7ab93aeee2c5711299da5d561470be1c6842ef063f17bfed415`. Upload 169 078 ms, download 128 448 ms; peak RSS server 151 990 272 bytes (~145 MiB), client 168 595 456 bytes (~161 MiB). Лимиты gateway 64 MiB/s, principal 48 MiB/s, одна одновременная передача. Это результат конкретного локального теста, не SLA или подтверждение репликации/HA.
+
+Repository discovery добавляет явный `repository.read`: [контракт и порядок обновления runtime/SDK](REPOSITORY_DISCOVERY.md). Старые bindings не расширяются; перед назначением нового имени необходимо обновить его parser у всех потребителей. Схема БД остаётся 11.

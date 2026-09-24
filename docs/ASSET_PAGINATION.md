@@ -1,6 +1,6 @@
 # Постраничный файловый каталог
 
-Реализовано 2026-09-24: схема БД **11**, OpenAPI 3.0.3 / документ **0.5.0**. Новый GET/HEAD `/api/v1/repositories/{repository}/assets/page` позволяет полностью обходить каталог текущих asset pointers независимо от прежнего ограничения 1000 записей. Решение: [ADR 0020](adr/0020-asset-cursor-pagination.md).
+Реализовано 2026-09-24: схема БД **11**, OpenAPI 3.0.3 / документ **0.6.0**. Новый GET/HEAD `/api/v1/repositories/{repository}/assets/page` позволяет полностью обходить каталог текущих asset pointers независимо от прежнего ограничения 1000 записей. Решение: [ADR 0020](adr/0020-asset-cursor-pagination.md).
 
 ## Контракт
 

@@ -66,3 +66,5 @@ LocalBlobStore — профиль одного сервера. HA использ
 Ограниченный delegation профиль принят в [ADR 0019](adr/0019-scoped-service-administration.md): точный operator key → target account, отдельные admin actions и ceiling, без цепочек. Application валидирует команду и передаёт Principal порту; infrastructure повторно разрешает authority в той же транзакции, где меняет grants/keys/policy и пишет audit. Domain хранит чистые типы/actions. Контракт и обновление: [SERVICE_DELEGATION](SERVICE_DELEGATION.md).
 
 Файловые страницы выделены в небольшие application/infrastructure asset-page модули. Параметры и prefix bounds чистые, SQL seek и scope cursor находятся в адаптере; каталог/HTTP только вызывают сценарий. Новый API сохраняет прежний assets list. [ADR 0020](adr/0020-asset-cursor-pagination.md).
+
+Discovery репозиториев — чистая application projection актуального Principal, не новая таблица/RepositoryStore. Coarse permission mapping вынесен из HTTP в application с прежними semantics. Domain добавляет repository.read, transport и SDK используют отдельный wire contract. [ADR 0021](adr/0021-repository-discovery.md).

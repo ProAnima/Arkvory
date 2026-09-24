@@ -19,3 +19,5 @@ Contract guard сверяет onRoute inventory с OpenAPI в onReady для wri
 Service routes также предоставляют scoped delegation: handlers валидируют transport и передают команды ServiceAccess, без SQL и самостоятельного обхода ceiling. GET собственного grants допускается managed key; PUT/DELETE только bootstrap. Reader блокирует изменения прежним барьером. [Контракт](../../docs/SERVICE_DELEGATION.md).
 
 GET/HEAD assets/page валидирует query, вызывает ArtifactCatalog и сохраняет текущие auth/admission/no-store правила. Старый assets route не меняется. [Контракт](../../docs/ASSET_PAGINATION.md).
+
+Repository-routes разбирает ограниченные параметры списка/карточки и вызывает чистые application сценарии. Auth продолжает формировать актуальный Principal; repository.read не предоставляет bytes. Service-routes использует общий application effective-permissions вместо своей копии coarse mapping. [Контракт](../../docs/REPOSITORY_DISCOVERY.md).

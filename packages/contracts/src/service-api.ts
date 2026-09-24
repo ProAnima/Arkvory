@@ -1,6 +1,7 @@
 import { record, text, integer, items } from './wire-values.js';
 
 export const servicePermissionNames = [
+  'repository.read',
   'artifact.read',
   'artifact.list',
   'content.read',
@@ -127,7 +128,7 @@ export const serviceBindingSchema = {
       actions: {
         type: 'array',
         minItems: 1,
-        maxItems: 18,
+        maxItems: servicePermissionNames.length,
         uniqueItems: true,
         items: { type: 'string', enum: servicePermissionNames },
       },

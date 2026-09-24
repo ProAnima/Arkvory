@@ -1,12 +1,7 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
-import {
-  authorizeAction,
-  DepotError,
-  serviceActions,
-  MAX_OBJECT_BYTES,
-  PART_BYTES,
-} from '@proanima/depot-domain';
-import type { Principal, ServiceBinding } from '@proanima/depot-domain';
+import { DepotError, MAX_OBJECT_BYTES, PART_BYTES } from '@proanima/depot-domain';
+import type { Principal } from '@proanima/depot-domain';
+import { effectivePermissions } from '@proanima/depot-application';
 import type { ServiceAccess } from '@proanima/depot-application';
 
 export function registerServiceRoutes(
@@ -35,6 +30,7 @@ export function registerServiceRoutes(
         managedServiceKeys: true,
         delegatedServiceAdministration: true,
         assetPagination: true,
+        repositoryDiscovery: true,
         repositoryPermissions: true,
         namespacePermissions: false,
         webhooks: false,
@@ -45,40 +41,11 @@ export function registerServiceRoutes(
   );
   app.get('/api/v1/auth/permissions', (request) => {
     const p = principal(request);
-    const bindings: ServiceBinding[] = [];
-    if (!p.managed) {
-      for (const repo of new Set([
-        ...p.repositories,
-        ...(p.grants?.map((g) => g.repository) ?? []),
-      ])) {
-        const actions = serviceActions.filter((a) => {
-          const legacy: ('read' | 'write')[] = [
-            'annotation.write',
-            'package.publish',
-            'asset.write',
-            'asset.restore',
-            'reference.write',
-          ].includes(a)
-            ? ['read', 'write']
-            : a.startsWith('upload.') || a === 'job.read' || a === 'audit.read'
-              ? ['write']
-              : ['read'];
-          try {
-            authorizeAction(p, repo, a, legacy);
-            return true;
-          } catch {
-            return false;
-          }
-        });
-        if (actions.length > 0)
-          bindings.push({ resource: { kind: 'repository', id: repo }, actions });
-      }
-    }
     return Promise.resolve({
       id: p.id,
       profile: p.managed ? 'managed' : 'legacy',
       credentialId: p.managed?.keyId ?? null,
-      bindings: p.managed?.bindings ?? bindings,
+      bindings: effectivePermissions(p),
       serviceAdministration: p.serviceAdministrator === true && !p.managed,
     });
   });

@@ -1,6 +1,6 @@
 # Проверяемый контракт API
 
-Реализовано 2026-09-24. OpenAPI **3.0.3**, версия документа **0.5.0**, HTTP namespace остаётся `/api/v1`. В документе **97 операций**, включая явные и автоматически зарегистрированные HEAD, native API, liveness, endpoint самой спецификации и три семейства legacy downloads. Это инвентаризация работающего поднабора, не заявление о полной совместимости с ProGet.
+Реализовано 2026-09-24. OpenAPI **3.0.3**, версия документа **0.6.0**, HTTP namespace остаётся `/api/v1`. В документе **101 операция**, включая явные и автоматически зарегистрированные HEAD, native API, liveness, endpoint самой спецификации и три семейства legacy downloads. Это инвентаризация работающего поднабора, не заявление о полной совместимости с ProGet.
 
 ## Получение спецификации
 
@@ -20,7 +20,7 @@
 
 - Снимок method/path/operationId в `tests/fixtures/api-operations.json`: переименование не проходит незаметно. Изменение снимка требует обычного review совместимости.
 - Все path parameters, ссылки на auth schemes, metadata доступа, компилируемость request/response JSON schemas, отсутствие тела у HEAD/204/304/416 и идентичность экспортированного JSON.
-- Через настоящие HTTP-сокеты — границы аутентификации всех 97 операций, в том числе HEAD с ранним отказом.
+- Через настоящие HTTP-сокеты — границы аутентификации 101 операции, в том числе HEAD с ранним отказом.
 - Все изменяющие операции на reader возвращают 405/read_only до application work.
 - Реальные PostgreSQL/HTTP ответы uploads, jobs, каталога, services/keys, ошибки CAS/revoke, native и legacy bytes, Range/ETag соответствуют опубликованным схемам.
 - Новая неописанная runtime route останавливает readiness; лишняя или отсутствующая route проваливает сверку.
@@ -30,17 +30,17 @@
 
 ## Расширения OpenAPI
 
-| Поле операции                                  | Значение                                                                                                                                                     |
-| ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `operationId`                                  | Стабильное имя; прежние 15 service IDs сохранены                                                                                                             |
-| `x-depot-authorization`                        | kind: public/authenticated/account-session/administrator/service-bootstrap/bootstrap-or-own-key/service-administration/pending-or-active-key либо repository |
-| `actions`, `legacy` в repository authorization | Все требуемые managed actions; прежние coarse read/write, не wildcard                                                                                        |
-| `resource`                                     | `path.repository` либо `job.repository`, разрешаемый по заданию                                                                                              |
-| `owner`                                        | Дополнительная проверка upload/job/reference owner, когда требуется                                                                                          |
-| `x-depot-gateway`                              | writer либо writer-or-reader; наличие схемы не разрешает запись на reader                                                                                    |
-| `x-depot-retry`                                | Семантика повтора, описанная ниже; не инструкция бесконечно повторять запрос                                                                                 |
-| `x-depot-route`                                | Точный зарегистрированный шаблон для inventory, включая `:repository` и `*`                                                                                  |
-| `x-depot-streaming`                            | Предел объекта/запроса, checksum/recovery либо Range и способ разрешения объекта                                                                             |
+| Поле операции                                  | Значение                                                                                                                                                                          |
+| ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `operationId`                                  | Стабильное имя; прежние 15 service IDs сохранены                                                                                                                                  |
+| `x-depot-authorization`                        | kind: public/authenticated/account-session/administrator/service-bootstrap/bootstrap-or-own-key/repository-discovery/service-administration/pending-or-active-key либо repository |
+| `actions`, `legacy` в repository authorization | Все требуемые managed actions; прежние coarse read/write, не wildcard                                                                                                             |
+| `resource`                                     | `path.repository` либо `job.repository`, разрешаемый по заданию                                                                                                                   |
+| `owner`                                        | Дополнительная проверка upload/job/reference owner, когда требуется                                                                                                               |
+| `x-depot-gateway`                              | writer либо writer-or-reader; наличие схемы не разрешает запись на reader                                                                                                         |
+| `x-depot-retry`                                | Семантика повтора, описанная ниже; не инструкция бесконечно повторять запрос                                                                                                      |
+| `x-depot-route`                                | Точный зарегистрированный шаблон для inventory, включая `:repository` и `*`                                                                                                       |
+| `x-depot-streaming`                            | Предел объекта/запроса, checksum/recovery либо Range и способ разрешения объекта                                                                                                  |
 
 `read` — чтение можно повторять с ограниченным бюджетом; это не snapshot. `never-automatic` — потеря ответа требует отдельного решения вызывающего клиента. `idempotent` — целевое состояние допускает повтор; auth/expiry, аудит и конкурентные изменения всё равно учитываются. Например повтор logout с уже отозванной сессией может получить 401.
 

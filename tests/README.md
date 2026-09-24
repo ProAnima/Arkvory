@@ -24,3 +24,5 @@ SDK fault tests входят в `npm test`: настоящие HTTP-сокеты
 Делегирование: `tests/integration/delegation.test.mjs` проверяет lifecycle через SDK/HTTP, exact targets/actions, ceilings и expiry, запрет цепочек/самоуправления, tombstone CAS и конкурентные лимиты, фильтрацию до LIMIT, повторную авторизацию после ожидания lock, rollback audit и pending activation после смены authority. Интеграционные файлы используют общий тестовый PostgreSQL и запускаются с `--test-concurrency=1` перед списком файлов.
 
 Файловые страницы: `tests/asset-page.test.mjs` и `tests/integration/asset-pagination.test.mjs` проверяют Unicode prefix bounds, bounded response parser, полный обход >1000, SQL seek на 20 000 путей, scope/ACL/revoke, restart и concurrent changes, совместимость старого API и восстановление индексной миграции 11.
+
+Discovery: tests/repositories.test.mjs и integration/repositories.test.mjs проверяют managed opt-in, frozen coarse mapping, empty/group overrides, 10 000 grants, фильтрацию до LIMIT, wire parsing, HTTP/SDK/HEAD, user groups/reader, revoke/expiry/disable/rotation и отсутствие data/admin escalation.

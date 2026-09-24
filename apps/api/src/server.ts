@@ -1,3 +1,4 @@
+import { registerRepositoryRoutes } from './repository-routes.js';
 import { createHash, randomUUID, timingSafeEqual } from 'node:crypto';
 import { Readable } from 'node:stream';
 import Fastify from 'fastify';
@@ -333,6 +334,7 @@ export async function createServer(config: ServerConfig) {
   app.get('/api/v1/openapi.json', () => Promise.resolve(openApiDocument));
   registerIdentityRoutes(app, identity, principal, loginGate, signal);
   registerServiceRoutes(app, new ServiceAccess(serviceAccounts), principal, role);
+  registerRepositoryRoutes(app, principal);
   type Params = { repository: string; id: string };
   const base = '/api/v1/repositories/:repository';
   const response = { 200: uploadSchema };
