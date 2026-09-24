@@ -3,7 +3,12 @@ import { randomUUID } from 'node:crypto';
 import { setTimeout as delay } from 'node:timers/promises';
 import { StorageService } from '@proanima/depot-application';
 import { DepotError } from '@proanima/depot-domain';
-import { PostgresJobs, PostgresIdentity, parseKeys } from '@proanima/depot-infrastructure';
+import {
+  PostgresJobs,
+  PostgresIdentity,
+  PostgresServices,
+  parseKeys,
+} from '@proanima/depot-infrastructure';
 import { resources } from './runtime.js';
 
 const stop = new AbortController();
@@ -17,6 +22,7 @@ try {
   const { catalog, blobs } = await resources('worker');
   const jobs = new PostgresJobs(catalog.pool);
   const identity = new PostgresIdentity(catalog.pool);
+  const services = new PostgresServices(catalog.pool);
   const service = new StorageService(catalog, blobs, {
     next: randomUUID,
     now: () => new Date().toISOString(),
@@ -43,7 +49,10 @@ try {
       let errorCode: string | null = null;
       try {
         let principal;
-        if (job.owner.startsWith('user:')) {
+        if (job.owner.startsWith('service:')) {
+          principal = job.credentialId ? await services.principalForKey(job.credentialId) : null;
+          if (principal?.id !== job.owner) principal = null;
+        } else if (job.owner.startsWith('user:')) {
           principal = await identity.principalForUser(job.owner.slice(5));
         } else {
           const raw = await readFile(keyFile, 'utf8');

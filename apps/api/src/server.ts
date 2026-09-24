@@ -9,6 +9,7 @@ import {
   ArtifactCatalog,
   CompletionQueue,
   IdentityService,
+  ServiceAccess,
 } from '@proanima/depot-application';
 import {
   LocalBlobStore,
@@ -21,10 +22,12 @@ import {
   PostgresDownloadLease,
   downloadShare,
   PostgresIdentity,
+  PostgresServices,
 } from '@proanima/depot-infrastructure';
 import { registerCatalogRoutes } from './catalog-routes.js';
 import { registerConsole } from './console.js';
 import { registerIdentityRoutes } from './identity-routes.js';
+import { registerServiceRoutes } from './service-routes.js';
 import { ProGetDownloads } from '@proanima/depot-proget-compat';
 import {
   descriptorSchema,
@@ -78,6 +81,7 @@ export async function createServer(config: ServerConfig) {
   const loginGate = new AdmissionQueue(2, 16, 16, 1000, 2);
   const catalog = new PostgresCatalog(config.databaseUrl, config.capacityBytes, config.maxUploads);
   const identity = new IdentityService(new PostgresIdentity(catalog.pool));
+  const serviceAccounts = new PostgresServices(catalog.pool);
   const blobs = new LocalBlobStore(config.dataDirectory);
   const lease = config.sharedDownloads
     ? new PostgresDownloadLease(catalog.pool, config.sharedDownloads)
@@ -224,12 +228,19 @@ export async function createServer(config: ServerConfig) {
       if (basic.startsWith('api:')) token = basic.slice(4);
     }
     const digest = createHash('sha256').update(token).digest();
-    const key = config.keys.find((candidate) =>
-      timingSafeEqual(digest, Buffer.from(candidate.sha256, 'hex')),
-    );
+    const key = token.startsWith('dpk_')
+      ? undefined
+      : config.keys.find((candidate) =>
+          timingSafeEqual(digest, Buffer.from(candidate.sha256, 'hex')),
+        );
     const authenticated =
       token.length >= 32 && token.length <= 512
-        ? (key?.principal ?? (await identity.resolve(token)))
+        ? token.startsWith('dpk_')
+          ? await serviceAccounts.resolve(
+              token,
+              request.routeOptions.url === '/api/v1/auth/activate-key',
+            )
+          : (key?.principal ?? (await identity.resolve(token)))
         : null;
     if (!authenticated) {
       await reply.code(401).header('WWW-Authenticate', 'Bearer').send({
@@ -240,7 +251,7 @@ export async function createServer(config: ServerConfig) {
       return;
     }
     principals.set(request, authenticated);
-    if (authenticated.id.startsWith('user:')) {
+    if (authenticated.id.startsWith('user:') || authenticated.managed) {
       uploadBandwidth.register(authenticated.id);
       downloadBandwidth.register(authenticated.id);
     }
@@ -319,6 +330,7 @@ export async function createServer(config: ServerConfig) {
   });
   app.get('/api/v1/openapi.json', () => Promise.resolve(openApiDocument));
   registerIdentityRoutes(app, identity, principal, loginGate, signal);
+  registerServiceRoutes(app, new ServiceAccess(serviceAccounts), principal, role);
   type Params = { repository: string; id: string };
   const base = '/api/v1/repositories/:repository';
   const response = { 200: uploadSchema };

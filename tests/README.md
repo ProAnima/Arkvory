@@ -16,3 +16,5 @@ SDK fault tests входят в `npm test`: настоящие HTTP-сокеты
 `tests/integration/package-pagination.test.mjs` сравнивает SQL-порядок SemVer с доменным правилом и проходит курсором более 1000 версий без повторов и пропусков; также проверяет направления сортировки, привязку курсора к запросу, готовность шести индексов и восстановление прерванной миграции.
 
 `tests/integration/compat.test.mjs` проверяет legacy exact/latest UPack download при каталоге более 1000 версий, те же байты, отсутствие версии и прежние ACL/Range.
+
+`tests/integration/service-access.test.mjs` проверяет managed ключи: точные права native/legacy, one-time issuance, ротацию и ownership, отзыв между записью bytes и commit, policy CAS, caps, worker/reader и отсутствие file fallback. `node tests/large-transfer.mjs --multipart --verified --traffic --managed` выполняет передачу 5 GiB с managed credential, kill/restart/resume и проверкой SHA-256. Standalone БД должна быть свободна от других suites.

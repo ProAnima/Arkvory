@@ -4,3 +4,4 @@ export * from './responses.js';
 export * from './assets.js';
 export * from './health.js';
 export * from './identity.js';
+export * from './service-api.js';

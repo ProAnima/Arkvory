@@ -1,5 +1,7 @@
 import type { Pool } from 'pg';
 import { DepotError } from '@proanima/depot-domain';
+import type { MutationAccess } from '@proanima/depot-domain';
+import { lockServiceAccess } from './service-authorization.js';
 import type { CleanupCatalog, CompletionJob, JobStore } from '@proanima/depot-application';
 
 export class PostgresCleanup implements CleanupCatalog {
@@ -64,22 +66,65 @@ function job(row: Record<string, unknown> | undefined): CompletionJob {
     throw new DepotError('unavailable', 'Invalid job record');
   if (status !== 'queued' && status !== 'running' && status !== 'completed' && status !== 'failed')
     throw new DepotError('unavailable', 'Invalid job state');
-  return { id, repository, uploadId, owner, status, generation, attempts, errorCode };
+  const credential = row['credential_id'];
+  if (credential !== undefined && credential !== null && typeof credential !== 'string')
+    throw new DepotError('unavailable', 'Invalid job credential');
+  return {
+    id,
+    repository,
+    uploadId,
+    owner,
+    status,
+    generation,
+    attempts,
+    errorCode,
+    ...(typeof credential === 'string' ? { credentialId: credential } : {}),
+  };
 }
 
 export class PostgresJobs implements JobStore {
   constructor(private readonly pool: Pool) {}
-  async enqueue(repository: string, uploadId: string, owner: string, id: string) {
+  async enqueue(
+    repository: string,
+    uploadId: string,
+    owner: string,
+    id: string,
+    access?: MutationAccess,
+  ) {
     const client = await this.pool.connect();
     let broken = false;
     try {
       await client.query('BEGIN');
       await client.query('SELECT pg_advisory_xact_lock(18471,5)');
+      await lockServiceAccess(client, access);
       const prior = await client.query<Record<string, unknown>>(
-        'SELECT * FROM depot_jobs WHERE upload_id=$1 AND repository=$2 AND owner=$3',
+        'SELECT * FROM depot_jobs WHERE upload_id=$1 AND repository=$2 AND owner=$3 FOR UPDATE',
         [uploadId, repository, owner],
       );
       if (prior.rows[0]) {
+        const previous = job(prior.rows[0]);
+        const credential = access?.principal.managed?.keyId;
+        if (credential && previous.credentialId !== credential && previous.status !== 'completed') {
+          if (previous.status === 'running')
+            throw new DepotError('busy', 'Wait for the running job before reauthorizing');
+          const limits = (
+            await client.query<{ total: string; owned: string }>(
+              "SELECT count(*)::text AS total,count(*) FILTER(WHERE owner=$1)::text AS owned FROM depot_jobs WHERE status IN ('queued','running')",
+              [owner],
+            )
+          ).rows[0];
+          if (
+            previous.status === 'failed' &&
+            (!limits || Number(limits.total) >= 10000 || Number(limits.owned) >= 100)
+          )
+            throw new DepotError('capacity_exceeded', 'Completion queue is full');
+          const updated = await client.query<Record<string, unknown>>(
+            "UPDATE depot_jobs SET credential_id=$2,status='queued',attempts=0,generation=generation+1,error_code=NULL,available_at=now() WHERE id=$1 RETURNING *",
+            [previous.id, credential],
+          );
+          await client.query('COMMIT');
+          return job(updated.rows[0]);
+        }
         await client.query('COMMIT');
         return job(prior.rows[0]);
       }
@@ -90,8 +135,8 @@ export class PostgresJobs implements JobStore {
       if (Number(count.rows[0]?.total) >= 10000 || Number(count.rows[0]?.owned) >= 100)
         throw new DepotError('capacity_exceeded', 'Completion queue is full');
       const inserted = await client.query<Record<string, unknown>>(
-        `INSERT INTO depot_jobs(id,repository,upload_id,owner) SELECT $1,repository,id,owner FROM depot_uploads WHERE id=$2 AND repository=$3 AND owner=$4 AND status='pending' AND expires_at>now() RETURNING *`,
-        [id, uploadId, repository, owner],
+        `INSERT INTO depot_jobs(id,repository,upload_id,owner,credential_id) SELECT $1,repository,id,owner,$5 FROM depot_uploads WHERE id=$2 AND repository=$3 AND owner=$4 AND status='pending' AND expires_at>now() RETURNING *`,
+        [id, uploadId, repository, owner, access?.principal.managed?.keyId ?? null],
       );
       if (!inserted.rows[0])
         throw new DepotError('conflict', 'Upload is not eligible for completion');

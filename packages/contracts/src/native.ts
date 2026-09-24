@@ -1,6 +1,7 @@
 import { catalogPaths } from './catalog-api.js';
 import { identityPaths } from './identity-api.js';
 import { readinessSchema } from './health.js';
+import { servicePaths } from './service-api.js';
 export const descriptorSchema = {
   type: 'object',
   additionalProperties: false,
@@ -121,6 +122,7 @@ export const openApiDocument = {
     },
     ...catalogPaths,
     ...identityPaths,
+    ...servicePaths,
     '/api/v1/repositories/{repository}/uploads': {
       parameters: [repositoryParameter],
       post: {

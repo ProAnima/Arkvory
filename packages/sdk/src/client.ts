@@ -14,8 +14,17 @@ import {
   readLogin,
   readPrincipal,
   readPackageList,
+  readServiceAccount,
+  readApiKey,
+  readKeyIssue,
+  readServicePage,
+  readServiceBindings,
 } from '@proanima/depot-contracts';
-import type { UploadResponse, AnnotationsResponse } from '@proanima/depot-contracts';
+import type {
+  UploadResponse,
+  AnnotationsResponse,
+  ServiceBindingResponse,
+} from '@proanima/depot-contracts';
 import {
   DepotHttpError,
   DepotNetworkError,
@@ -137,6 +146,203 @@ export class DepotClient {
   }
   async login(name: string, password: string) {
     return readLogin(await this.call('api/v1/auth/login', 'POST', { name, password }));
+  }
+  async capabilities(signal?: AbortSignal) {
+    const r = record(await this.call('api/v1/capabilities', 'GET', undefined, signal));
+    const gatewayRole = r['gatewayRole'];
+    if (gatewayRole !== 'api' && gatewayRole !== 'reader') throw new Error('Invalid gateway role');
+    const features = Object.fromEntries(
+      Object.entries(record(r['features'])).map(([key, value]) => {
+        if (typeof value !== 'boolean') throw new Error('Invalid capability');
+        return [key, value] as const;
+      }),
+    );
+    const limits = record(r['limits']);
+    return {
+      apiVersions: items(r['apiVersions']).map(text),
+      gatewayRole,
+      features,
+      limits: {
+        maxObjectBytes: text(limits['maxObjectBytes']),
+        partBytes: integer(limits['partBytes']),
+        maxPageSize: integer(limits['maxPageSize']),
+      },
+    };
+  }
+  async permissions(signal?: AbortSignal) {
+    const r = record(
+      await this.json(
+        await this.request('api/v1/auth/permissions', {}, signal),
+        signal,
+        8 * 1024 ** 2,
+      ),
+    );
+    const profile = r['profile'];
+    if (
+      (profile !== 'legacy' && profile !== 'managed') ||
+      typeof r['serviceAdministration'] !== 'boolean'
+    )
+      throw new Error('Invalid permission profile');
+    return {
+      id: text(r['id']),
+      profile,
+      bindings: readServiceBindings(r['bindings'], 10000),
+      serviceAdministration: r['serviceAdministration'],
+    };
+  }
+  async serviceAccounts(after?: string, signal?: AbortSignal) {
+    return readServicePage(
+      await this.call(
+        `api/v1/service-accounts${after === undefined ? '' : '?after=' + encodeURIComponent(after)}`,
+        'GET',
+        undefined,
+        signal,
+      ),
+      readServiceAccount,
+    );
+  }
+  async serviceAccount(id: string, signal?: AbortSignal) {
+    return readServiceAccount(
+      await this.call(
+        `api/v1/service-accounts/${encodeURIComponent(id)}`,
+        'GET',
+        undefined,
+        signal,
+      ),
+    );
+  }
+  async createServiceAccount(
+    name: string,
+    bindings: readonly ServiceBindingResponse[],
+    signal?: AbortSignal,
+  ) {
+    return readServiceAccount(
+      await this.call('api/v1/service-accounts', 'POST', { name, bindings }, signal),
+    );
+  }
+  async updateServiceAccount(
+    id: string,
+    expectedRevision: number,
+    enabled: boolean,
+    signal?: AbortSignal,
+  ) {
+    return readServiceAccount(
+      await this.call(
+        `api/v1/service-accounts/${encodeURIComponent(id)}`,
+        'PATCH',
+        { expectedRevision, enabled },
+        signal,
+      ),
+    );
+  }
+  async setServicePolicy(
+    id: string,
+    expectedRevision: number,
+    bindings: readonly ServiceBindingResponse[],
+    signal?: AbortSignal,
+  ) {
+    return readServiceAccount(
+      await this.call(
+        `api/v1/service-accounts/${encodeURIComponent(id)}/policy`,
+        'PUT',
+        { expectedRevision, bindings },
+        signal,
+      ),
+    );
+  }
+  async serviceKeys(id: string, after?: string, signal?: AbortSignal) {
+    return readServicePage(
+      await this.call(
+        `api/v1/service-accounts/${encodeURIComponent(id)}/keys${after === undefined ? '' : '?after=' + encodeURIComponent(after)}`,
+        'GET',
+        undefined,
+        signal,
+      ),
+      readApiKey,
+    );
+  }
+  async serviceKey(id: string, signal?: AbortSignal) {
+    return readApiKey(
+      await this.call(`api/v1/api-keys/${encodeURIComponent(id)}`, 'GET', undefined, signal),
+    );
+  }
+  private async issueServiceCredential(
+    path: string,
+    idempotencyKey: string,
+    options: { name: string; bindings: readonly ServiceBindingResponse[]; expiresAt?: string },
+    signal?: AbortSignal,
+  ) {
+    return readKeyIssue(
+      await this.json(
+        await this.request(
+          path,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Idempotency-Key': idempotencyKey },
+            body: JSON.stringify(options),
+          },
+          signal,
+        ),
+        signal,
+      ),
+    );
+  }
+  async issueServiceKey(
+    id: string,
+    idempotencyKey: string,
+    options: { name: string; bindings: readonly ServiceBindingResponse[]; expiresAt?: string },
+    signal?: AbortSignal,
+  ) {
+    return this.issueServiceCredential(
+      `api/v1/service-accounts/${encodeURIComponent(id)}/keys`,
+      idempotencyKey,
+      options,
+      signal,
+    );
+  }
+  async rotateServiceKey(
+    id: string,
+    idempotencyKey: string,
+    options: { name: string; bindings: readonly ServiceBindingResponse[]; expiresAt?: string },
+    signal?: AbortSignal,
+  ) {
+    return this.issueServiceCredential(
+      `api/v1/api-keys/${encodeURIComponent(id)}/rotate`,
+      idempotencyKey,
+      options,
+      signal,
+    );
+  }
+  async revokeServiceKey(id: string, signal?: AbortSignal) {
+    await this.request(
+      `api/v1/api-keys/${encodeURIComponent(id)}/revoke`,
+      { method: 'POST' },
+      signal,
+    );
+  }
+  async activateServiceKey(signal?: AbortSignal) {
+    await this.request('api/v1/auth/activate-key', { method: 'POST' }, signal);
+  }
+  async serviceAudit(id: string, after = '0', signal?: AbortSignal) {
+    const result = record(
+      await this.call(
+        `api/v1/service-accounts/${encodeURIComponent(id)}/audit?after=${encodeURIComponent(after)}`,
+        'GET',
+        undefined,
+        signal,
+      ),
+    );
+    return items(result['items']).map((entry) => {
+      const r = record(entry);
+      return {
+        sequence: text(r['sequence']),
+        actor: text(r['actor']),
+        action: text(r['action']),
+        accountId: text(r['accountId']),
+        keyId: r['keyId'] === null ? null : text(r['keyId']),
+        occurredAt: text(r['occurredAt']),
+      };
+    });
   }
   async me() {
     return readPrincipal(await this.call('api/v1/auth/me'));

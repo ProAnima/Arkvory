@@ -1,10 +1,10 @@
 # Карта API Depot
 
-Дата сверки: 2026-09-24, runtime `4f9c7de`. Это точка входа для интеграторов: **реализованные маршруты** ниже отделены от **проектируемых расширений**. Детальные JSON-схемы текущего сервера: `GET /api/v1/openapi.json` с действующим Bearer. OpenAPI сейчас 3.0.3; новую модель доступа описывает [API_ACCESS](API_ACCESS.md), порядок внедрения — [API_EVOLUTION](API_EVOLUTION.md).
+Дата сверки: 2026-09-24, runtime с миграцией 9. Это точка входа для интеграторов: **реализованные маршруты** ниже отделены от **проектируемых расширений**. Детальные JSON-схемы текущего сервера: `GET /api/v1/openapi.json` с действующим Bearer. OpenAPI сейчас 3.0.3; новую модель доступа описывает [API_ACCESS](API_ACCESS.md), порядок внедрения — [API_EVOLUTION](API_EVOLUTION.md).
 
 ## Обозначения и общие правила
 
-`R = /api/v1/repositories/{repository}`. `read`, `write`, `administrator` — реальные сегодняшние проверки; `own` означает того же principal, не просто любой ключ с write. Пользовательская сессия также допустима. Администратор не обходит read/write. В таблице «целевое право» используются проектные permissions; **сервер пока их не понимает**. Несколько прав через `+` обязательны одновременно.
+`R = /api/v1/repositories/{repository}`. `read`, `write`, `administrator` — реальные сегодняшние проверки; `own` означает того же principal, не просто любой ключ с write. Пользовательская сессия также допустима. Администратор не обходит read/write. В таблице «целевое право» permissions репозиторных операций разделов 2–4 уже действуют для managed keys; глобальные identity/policy permissions пока проектные. Service administration выполняется отдельным file bootstrap, см. [текущий контракт ключей](SERVICE_KEYS.md). Несколько прав через `+` обязательны одновременно.
 
 У reader доступны только GET/HEAD, кроме инфраструктурного CORS preflight; изменяющие методы получают 405 даже при наличии права. `/console/` размещается только на writer. Автоматические HEAD у Fastify GET могут присутствовать; ниже перечислены контрактные методы, для bytes HEAD указан явно.
 
@@ -68,7 +68,7 @@ Upload owner привязан к principal. Долговечность сейч�
 | GET `R/audit?after=…`                       | write                         | До 100 событий каталога; after — sequence, не аудит всех auth/download событий      | `audit.read`                                                                      |
 | POST / DELETE `R/artifacts/{id}/references` | read + write, reference owner | 204; JSON body key, ссылка принадлежит principal                                    | `reference.write` + `artifact.read`                                               |
 
-Пустой `group=` выбирает корневую группу; отсутствие group — все группы. Cursor пакетов связан с параметрами запроса, страницы не образуют snapshot. SDK допускает package page до 8 MiB; остальные JSON-ответы до 2 MiB. Эти различия сохраняются до отдельного совместимого изменения.
+Пустой `group=` выбирает корневую группу; отсутствие group — все группы. Cursor пакетов связан с параметрами запроса, страницы не образуют snapshot. SDK допускает package page и own permissions до 8 MiB; остальные JSON-ответы до 2 MiB. Эти различия сохраняются до отдельного совместимого изменения.
 
 Отдельного CRUD для schemas, labels и collections пока нет: labels/collections — ограниченные поля annotations. Нет REST-управления репозиториями и нет native удаления опубликованного содержимого.
 
@@ -83,21 +83,21 @@ Upload owner привязан к principal. Долговечность сейч�
 
 Bearer, X-ApiKey и Basic `api:KEY` принимаются текущим адаптером; пользовательский Basic и query-string keys не поддерживаются. Формы error/status пока native, полная совместимость не подтверждена. Целевое право всех этих downloads — `content.read` на разрешённую привязку объекта; внутренний resolve не должен случайно требовать полный `package.read/asset.read` или обходить selector. Legacy publication/list/metadata добавляются по отдельной [матрице совместимости](COMPATIBILITY.md), а не по придуманным native маршрутам.
 
-## 5. Предлагаемые расширения — НЕ реализовано
+## 5. Сервисные API и дальнейшие расширения
 
-Пути ниже фиксируют предлагаемое направление контракта; окончательная runtime-схема и operationId появляются в соответствующем инкременте. Префикс `/api/v1` не означает, что сервер уже отвечает на эти запросы.
+Маршруты A/B ниже реализованы с уточнениями: управление требует локального serviceAdministrator, delegated credentials не поддерживаются; PATCH аккаунта меняет только enabled; effective permissions не возвращает policy revision. Добавлен GET `/api/v1/service-accounts/{id}/audit`. Точный текущий контракт — [SERVICE_KEYS](SERVICE_KEYS.md). Строки C–E остаются проектом и не входят в рабочую OpenAPI.
 
 | Этап | Метод / область                                                           | Назначение и право                                                                                                                               |
 | ---- | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
 | A    | GET `/api/v1/capabilities`                                                | Развёрнутые функции, gateway role, лимиты протокола; любой действующий credential. Не список чужих ресурсов.                                     |
-| A    | GET `/api/v1/auth/permissions`                                            | Собственные effective bindings и revision; клиентский UX, не замена серверному authorize.                                                        |
-| B    | GET / POST `/api/v1/service-accounts`                                     | Cursor-list / создать identity; `service-account.read/manage`.                                                                                   |
-| B    | GET / PATCH `/api/v1/service-accounts/{id}`                               | Карточка / name, enabled; policy меняется отдельным CAS-контрактом.                                                                              |
-| B    | GET / PUT `/api/v1/service-accounts/{id}/policy`                          | `policy.read/manage`, expectedRevision и delegation ceiling.                                                                                     |
-| B    | GET / POST `/api/v1/service-accounts/{id}/keys`                           | Metadata list / выдача pending key, `credential.read/manage`. Secret только в первом ответе POST.                                                |
-| B    | GET `/api/v1/api-keys/{keyId}`                                            | Метаданные без hash/secret, с проверкой target account scope.                                                                                    |
-| B    | POST `/api/v1/api-keys/{keyId}/rotate`                                    | Новый pending key, Idempotency-Key, прежние ограничения или сужение; `credential.manage`.                                                        |
-| B    | POST `/api/v1/api-keys/{keyId}/revoke`                                    | Необратимый идемпотентный отзыв, `credential.manage`; повтор — 204.                                                                              |
+| A    | GET `/api/v1/auth/permissions`                                            | Собственные effective bindings, profile и serviceAdministration; клиентский UX, не замена серверному authorize.                                  |
+| B    | GET / POST `/api/v1/service-accounts`                                     | Cursor-list / создать identity; bootstrap `serviceAdministrator`.                                                                                |
+| B    | GET / PATCH `/api/v1/service-accounts/{id}`                               | Карточка / enabled с expectedRevision; bootstrap. Policy меняется отдельным CAS-контрактом.                                                      |
+| B    | GET / PUT `/api/v1/service-accounts/{id}/policy`                          | Bootstrap; expectedRevision, точные repository/action bindings. Делегирование пока отсутствует.                                                  |
+| B    | GET / POST `/api/v1/service-accounts/{id}/keys`                           | Metadata list / выдача pending key; bootstrap. Secret только в первом ответе POST.                                                               |
+| B    | GET `/api/v1/api-keys/{id}`                                               | Метаданные без hash/secret; bootstrap.                                                                                                           |
+| B    | POST `/api/v1/api-keys/{id}/rotate`                                       | Новый pending key, Idempotency-Key, прежние ограничения или сужение; bootstrap.                                                                  |
+| B    | POST `/api/v1/api-keys/{id}/revoke`                                       | Необратимый идемпотентный отзыв; bootstrap; повтор — 204.                                                                                        |
 | B    | POST `/api/v1/auth/activate-key`                                          | Доказательство владения pending credential; 204, без выдачи дополнительных прав.                                                                 |
 | C    | GET `/api/v1/repositories` и `/{repository}`                              | Только разрешённые карточки, cursor, `repository.read`. Создание/настройка репозиториев требует отдельной административной policy.               |
 | C    | Пагинация assets и административных списков                               | Bounded pages, согласованный cursor, фильтрация ACL до LIMIT; старый ответ assets не менять молча.                                               |
@@ -126,4 +126,4 @@ OAuth/OIDC federation, S3/NuGet/npm/OCI adapters — потенциальные 
 
 При добавлении операции обновлять use case, runtime-схему, OpenAPI, SDK, право/ресурс в карте, негативные ACL-тесты и описание retry. HTTP method не определяет permission: GET jobs сегодня требует write, PUT annotations — read+write. Нельзя заменить эти проверки одним middleware «GET = read».
 
-На дату сверки экспортируемая OpenAPI содержит 41 операцию, но не описывает liveness, сам endpoint спецификации и legacy downloads; стабильные operationId отсутствуют. Это явный backlog этапа A. Карта построена также по `apps/api/src/server.ts`, `catalog-routes.ts`, `identity-routes.ts` и application-проверкам. Присутствие маршрута в runtime и OpenAPI пока не контролируется полной автоматической проверкой; такой check входит в этап A.
+Экспортируемая OpenAPI содержит 56 операций: прежнюю 41 и 15 новых с operationId. Liveness, сам endpoint спецификации и legacy downloads пока не описаны; у прежних операций стабильных operationId нет. Это оставшийся backlog этапа A. Карта построена также по `apps/api/src/server.ts`, `catalog-routes.ts`, `identity-routes.ts` и application-проверкам. Присутствие маршрута в runtime и OpenAPI пока не контролируется полной автоматической проверкой; такой check входит в этап A.

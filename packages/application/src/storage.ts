@@ -1,5 +1,5 @@
 import {
-  authorize,
+  authorizeAction,
   DepotError,
   parseDescriptor,
   requireId,
@@ -22,7 +22,7 @@ export class StorageService {
     key: string,
     descriptor: unknown,
   ): Promise<Upload> {
-    authorize(principal, repository, 'write');
+    authorizeAction(principal, repository, 'upload.create', ['write']);
     if (!/^[a-zA-Z0-9_.:-]{1,128}$/.test(key))
       throw new DepotError('invalid_input', 'Invalid Idempotency-Key');
     return this.catalog.create({
@@ -32,6 +32,7 @@ export class StorageService {
       key,
       descriptor: parseDescriptor(descriptor),
       createdAt: this.identity.now(),
+      access: { principal, repository, actions: ['upload.create'] },
     });
   }
 
@@ -42,22 +43,27 @@ export class StorageService {
     source: AsyncIterable<Uint8Array>,
     cancellation: Cancellation,
   ): Promise<Upload> {
-    authorize(principal, repository, 'write');
+    authorizeAction(principal, repository, 'upload.write', ['write']);
+    authorizeAction(principal, repository, 'upload.complete', ['write']);
     requireId(id);
-    return this.catalog.exclusive(id, async (mutation) => {
-      const upload = await this.owned(principal, repository, id);
-      this.pending(upload);
-      if ((await this.catalog.parts(id)).length > 0)
-        throw new DepotError('conflict', 'Multipart upload must be completed using its parts');
-      await this.blobs.put(id, upload.descriptor, source, {
-        throwIfAborted() {
-          cancellation.throwIfAborted();
-          mutation.throwIfAborted();
-        },
-      });
-      cancellation.throwIfAborted();
-      return mutation.publish(repository);
-    });
+    return this.catalog.exclusive(
+      id,
+      async (mutation) => {
+        const upload = await this.owned(principal, repository, id);
+        this.pending(upload);
+        if ((await this.catalog.parts(id)).length > 0)
+          throw new DepotError('conflict', 'Multipart upload must be completed using its parts');
+        await this.blobs.put(id, upload.descriptor, source, {
+          throwIfAborted() {
+            cancellation.throwIfAborted();
+            mutation.throwIfAborted();
+          },
+        });
+        cancellation.throwIfAborted();
+        return mutation.publish(repository);
+      },
+      { principal, repository, actions: ['upload.write', 'upload.complete'] },
+    );
   }
 
   async complete(
@@ -66,45 +72,53 @@ export class StorageService {
     id: string,
     cancellation: Cancellation,
   ): Promise<Upload> {
-    authorize(principal, repository, 'write');
+    authorizeAction(principal, repository, 'upload.complete', ['write']);
     requireId(id);
-    return this.catalog.exclusive(id, async (mutation) => {
-      const upload = await this.owned(principal, repository, id);
-      if (upload.status === 'available') return upload;
-      if (upload.status === 'cancelled') throw new DepotError('conflict', 'Upload is cancelled');
-      this.pending(upload);
-      const parts = await this.catalog.parts(id);
-      if (parts.length > 0) {
-        checkParts(upload.descriptor.size, parts);
-        await this.blobs.put(id, upload.descriptor, this.blobs.readParts(id, parts), {
-          throwIfAborted() {
-            cancellation.throwIfAborted();
-            mutation.throwIfAborted();
-          },
-        });
-      }
-      if (parts.length === 0)
-        await this.blobs.verify(id, upload.descriptor, {
-          throwIfAborted() {
-            cancellation.throwIfAborted();
-            mutation.throwIfAborted();
-          },
-        });
-      cancellation.throwIfAborted();
-      return mutation.publish(repository);
-    });
+    return this.catalog.exclusive(
+      id,
+      async (mutation) => {
+        const upload = await this.owned(principal, repository, id);
+        if (upload.status === 'available') return upload;
+        if (upload.status === 'cancelled') throw new DepotError('conflict', 'Upload is cancelled');
+        this.pending(upload);
+        const parts = await this.catalog.parts(id);
+        if (parts.length > 0) {
+          checkParts(upload.descriptor.size, parts);
+          await this.blobs.put(id, upload.descriptor, this.blobs.readParts(id, parts), {
+            throwIfAborted() {
+              cancellation.throwIfAborted();
+              mutation.throwIfAborted();
+            },
+          });
+        }
+        if (parts.length === 0)
+          await this.blobs.verify(id, upload.descriptor, {
+            throwIfAborted() {
+              cancellation.throwIfAborted();
+              mutation.throwIfAborted();
+            },
+          });
+        cancellation.throwIfAborted();
+        return mutation.publish(repository);
+      },
+      { principal, repository, actions: ['upload.complete'] },
+    );
   }
 
   async cancel(principal: Principal, repository: string, id: string): Promise<Upload> {
-    authorize(principal, repository, 'write');
+    authorizeAction(principal, repository, 'upload.cancel', ['write']);
     requireId(id);
-    return this.catalog.exclusive(id, async (mutation) => {
-      const upload = await this.owned(principal, repository, id);
-      if (upload.status === 'available')
-        throw new DepotError('conflict', 'Published artifacts cannot be cancelled');
-      // Cancellation hides content. Physical reclamation needs a separately fenced GC.
-      return mutation.cancel(repository);
-    });
+    return this.catalog.exclusive(
+      id,
+      async (mutation) => {
+        const upload = await this.owned(principal, repository, id);
+        if (upload.status === 'available')
+          throw new DepotError('conflict', 'Published artifacts cannot be cancelled');
+        // Cancellation hides content. Physical reclamation needs a separately fenced GC.
+        return mutation.cancel(repository);
+      },
+      { principal, repository, actions: ['upload.cancel'] },
+    );
   }
 
   async parts(principal: Principal, repository: string, id: string) {
@@ -121,25 +135,29 @@ export class StorageService {
     source: AsyncIterable<Uint8Array>,
     cancellation: Cancellation,
   ): Promise<void> {
-    authorize(principal, repository, 'write');
+    authorizeAction(principal, repository, 'upload.write', ['write']);
     requireId(id);
     if (!/^[a-f0-9]{64}$/.test(sha256))
       throw new DepotError('invalid_input', 'Invalid part checksum');
-    await this.catalog.exclusive(id, async (mutation) => {
-      const upload = await this.owned(principal, repository, id);
-      this.pending(upload);
-      const part = { index, size: partSize(upload.descriptor.size, index), sha256 };
-      const existing = (await this.catalog.parts(id)).find((value) => value.index === index);
-      if (existing && existing.sha256 !== sha256)
-        throw new DepotError('conflict', 'Part already has different content');
-      await this.blobs.putPart(id, part, source, {
-        throwIfAborted() {
-          cancellation.throwIfAborted();
-          mutation.throwIfAborted();
-        },
-      });
-      await mutation.recordPart(part);
-    });
+    await this.catalog.exclusive(
+      id,
+      async (mutation) => {
+        const upload = await this.owned(principal, repository, id);
+        this.pending(upload);
+        const part = { index, size: partSize(upload.descriptor.size, index), sha256 };
+        const existing = (await this.catalog.parts(id)).find((value) => value.index === index);
+        if (existing && existing.sha256 !== sha256)
+          throw new DepotError('conflict', 'Part already has different content');
+        await this.blobs.putPart(id, part, source, {
+          throwIfAborted() {
+            cancellation.throwIfAborted();
+            mutation.throwIfAborted();
+          },
+        });
+        await mutation.recordPart(part);
+      },
+      { principal, repository, actions: ['upload.write'] },
+    );
   }
 
   private pending(upload: Upload): void {
@@ -149,12 +167,17 @@ export class StorageService {
   }
 
   async status(principal: Principal, repository: string, id: string): Promise<Upload> {
-    authorize(principal, repository, 'write');
+    authorizeAction(principal, repository, 'upload.read', ['write']);
     return this.owned(principal, repository, requireId(id));
   }
 
-  async artifact(principal: Principal, repository: string, id: string): Promise<Upload> {
-    authorize(principal, repository, 'read');
+  async artifact(
+    principal: Principal,
+    repository: string,
+    id: string,
+    permission: 'artifact.read' | 'annotation.read' | 'content.read' = 'artifact.read',
+  ): Promise<Upload> {
+    authorizeAction(principal, repository, permission, ['read']);
     const upload = await this.catalog.get(repository, requireId(id));
     if (upload.status !== 'available') throw new DepotError('not_found', 'Artifact not found');
     return upload;
@@ -166,7 +189,7 @@ export class StorageService {
     after: string | undefined,
     limit: number,
   ): Promise<readonly Upload[]> {
-    authorize(principal, repository, 'read');
+    authorizeAction(principal, repository, 'artifact.list', ['read']);
     if (!Number.isSafeInteger(limit) || limit < 1 || limit > 100)
       throw new DepotError('invalid_input', 'Invalid page limit');
     if (after !== undefined) requireId(after);
@@ -181,7 +204,7 @@ export class StorageService {
     upload: Upload;
     read: (range?: { start: number; end: number }) => AsyncIterable<Uint8Array>;
   }> {
-    const upload = await this.artifact(principal, repository, id);
+    const upload = await this.artifact(principal, repository, id, 'content.read');
     await this.blobs.exists(id, upload.descriptor.size);
     return { upload, read: (range) => this.blobs.read(id, upload.descriptor.size, range) };
   }

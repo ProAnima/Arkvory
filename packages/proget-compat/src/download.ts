@@ -47,6 +47,6 @@ export class ProGetDownloads {
     return id;
   }
   async asset(principal: Principal, repository: string, path: string): Promise<string> {
-    return (await this.catalog.asset(principal, repository, path)).artifactId;
+    return (await this.catalog.resolveAssetContent(principal, repository, path)).artifactId;
   }
 }

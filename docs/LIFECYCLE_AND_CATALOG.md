@@ -1,6 +1,6 @@
 # Каталог и жизненный цикл: версия 0.2
 
-Реализовано для одного активного API, одного completion worker, PostgreSQL и local backend. Текущая схема требует миграцию 8. Дополнительные readers и барьеры обслуживания: [READ_GATEWAYS](READ_GATEWAYS.md). Перед обновлением остановить API/worker, сделать согласованный backup и выполнить `npm run migrate`, затем запустить новый код. Старые процессы не должны продолжать запись. OpenAPI: авторизованный `GET /api/v1/openapi.json`; полная [карта текущего API](API_MAP.md).
+Реализовано для одного активного API, одного completion worker, PostgreSQL и local backend. Текущая схема требует миграцию 9. Дополнительные readers и барьеры обслуживания: [READ_GATEWAYS](READ_GATEWAYS.md). Перед обновлением остановить API/worker, сделать согласованный backup и выполнить `npm run migrate`, затем запустить новый код. Старые процессы не должны продолжать запись. OpenAPI: авторизованный `GET /api/v1/openapi.json`; полная [карта текущего API](API_MAP.md).
 
 ## Части и продолжение загрузки
 

@@ -131,7 +131,7 @@ Development tool versions are pinned in manifests and the lockfile. Runtime depe
 
 ## Compatibility and integrations
 
-The [API map](docs/API_MAP.md) documents current routes, permissions and limitations. The proposed [service access model](docs/API_ACCESS.md) and [API evolution plan](docs/API_EVOLUTION.md) cover managed keys, granular permissions, rotation/revocation and integration scaling; these extensions are not implemented yet. Engineering documents are in Russian.
+The [API map](docs/API_MAP.md) documents current routes, permissions and limitations. [Managed service keys](docs/SERVICE_KEYS.md) now support exact repository actions, one-time issuance, activation, rotation, expiry and revocation, with API/worker/reader enforcement and SDK support. The broader [service access model](docs/API_ACCESS.md) and [API evolution plan](docs/API_EVOLUTION.md) retain delegated administration, namespace selectors and integration scaling as future work. Engineering documents are in Russian.
 
 The native API under `/api/v1` covers multipart uploads, completion jobs, content delivery, mutable annotations, package/asset catalogs, asset history and restoration, external references and catalog audit. OpenAPI is served at `/api/v1/openapi.json`. User and group administration is implemented; distributed transfers, events/webhooks and extended service administration remain planned. Runtime response validation, OpenAPI and the TypeScript SDK are maintained together.
 
@@ -211,7 +211,7 @@ For an existing database, edit `DEPOT_DATABASE_URL` in `.env` instead of startin
 | `npm run test:large`       | 5 GiB HTTP upload/download, process restart, hash and RSS checks   |
 | `npm run format`           | Apply formatting                                                   |
 
-Multipart uploads resume from recorded 8 MiB parts; whole-file PUT retries restart from byte zero. Offline GC releases cancelled reservations after deleting their content and the grace period. One API process owns a standalone database; this profile provides no node failover. Keep the database and the entire storage directory, including `storage-id`, together in backup/restore procedures. Before updating, stop API/worker, back up both, run `npm run migrate` (schema 8), then start the new code. See [asset history and restore](docs/LIFECYCLE_AND_CATALOG.md#история-и-восстановление-файлов) and [online catalog indexes](docs/adr/0014-online-package-page-indexes.md).
+Multipart uploads resume from recorded 8 MiB parts; whole-file PUT retries restart from byte zero. Offline GC releases cancelled reservations after deleting their content and the grace period. One API process owns a standalone database; this profile provides no node failover. Keep the database and the entire storage directory, including `storage-id`, together in backup/restore procedures. Before updating, stop API/worker, back up both, run `npm run migrate` (schema 9), then start the new code. See [asset history and restore](docs/LIFECYCLE_AND_CATALOG.md#история-и-восстановление-файлов) and [online catalog indexes](docs/adr/0014-online-package-page-indexes.md).
 
 ## Development rules
 

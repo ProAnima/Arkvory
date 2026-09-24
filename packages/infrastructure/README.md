@@ -13,3 +13,5 @@ PostgresDownloadLease и DownloadLeaseWindow координируют фикси
 PostgresIdentity хранит пользователей, группы, права и хеши сессий в таблицах migration 6; пароли проверяются scrypt. [ADR 0011](../../docs/adr/0011-users-groups-and-package-browser.md).
 
 PostgresBrowse использует функцию SemVer-порядка из migration 7 для курсорных страниц и точечной выборки старшей версии; exact lookup опирается на уникальный индекс идентичности пакета. Migration 8 строит шесть индексов страниц вне транзакции с безопасным продолжением после прерывания. [ADR 0013](../../docs/adr/0013-package-cursor-pagination.md), [ADR 0014](../../docs/adr/0014-online-package-page-indexes.md).
+
+PostgresServices реализует lifecycle ключей, CAS policy и ограниченный аудит. Миграция 9 расширяет схему. lockServiceAccess проверяет актуальные credentials под короткими row locks в транзакциях mutations; поток bytes не удерживает эти locks. [Контракт и эксплуатация](../../docs/SERVICE_KEYS.md).

@@ -7,3 +7,5 @@
 Readiness дополнен `role` и nullable `sharedDownloads` (slot, slots, active, leaseSeconds). Reader отвергает изменяющие методы: 405, Allow GET/HEAD, read_only. Правила маршрутизации: [READ_GATEWAYS](../../docs/READ_GATEWAYS.md).
 
 Контракты входа, учётных записей, групп и сортируемого UPack-каталога добавлены в OpenAPI и runtime-парсеры SDK: [ADR 0011](../../docs/adr/0011-users-groups-and-package-browser.md).
+
+Service-api экспортирует OpenAPI новых service routes и runtime-парсеры ответов. Wire-values содержит независимые примитивы валидации. Импорт domain/server не требуется. [Контракт и эксплуатация](../../docs/SERVICE_KEYS.md).

@@ -23,6 +23,7 @@ await writeFile(
         repositories: ['releases'],
         permissions: ['read', 'write'],
         administrator: true,
+        serviceAdministrator: true,
       },
     ],
     null,

@@ -1,11 +1,11 @@
 import {
-  authorize,
+  authorizeAction,
   DepotError,
   parseDescriptor,
   requireId,
   requireAssetPath,
 } from '@proanima/depot-domain';
-import type { Principal, PackageManifest } from '@proanima/depot-domain';
+import type { Principal, PackageManifest, MutationAccess } from '@proanima/depot-domain';
 import type { StorageService } from './storage.js';
 
 export interface Annotation {
@@ -52,12 +52,14 @@ export interface BrowseStore {
     expected: number,
     annotation: Omit<Annotation, 'revision'>,
     actor: string,
+    access: MutationAccess,
   ): Promise<Annotation>;
   register(
     repository: string,
     id: string,
     manifest: PackageManifest,
     actor: string,
+    access: MutationAccess,
   ): Promise<PackageEntry>;
   resolvePackage(
     repository: string,
@@ -83,6 +85,7 @@ export interface BrowseStore {
     id: string,
     expected: number,
     actor: string,
+    access: MutationAccess,
     sourceRevision?: number,
   ): Promise<AssetEntry>;
   search(
@@ -108,6 +111,7 @@ export interface BrowseStore {
     repository: string,
     id: string,
     owner: string,
+    access: MutationAccess,
     key: string,
     remove: boolean,
   ): Promise<void>;
@@ -123,11 +127,11 @@ export class ArtifactCatalog {
     private readonly manifests: ManifestReader,
   ) {}
   async annotation(p: Principal, repo: string, id: string) {
-    await this.storage.artifact(p, repo, id);
+    await this.storage.artifact(p, repo, id, 'annotation.read');
     return this.store.annotation(repo, id);
   }
   async annotate(p: Principal, repo: string, id: string, expected: number, value: unknown) {
-    authorize(p, repo, 'write');
+    authorizeAction(p, repo, 'annotation.write', ['write']);
     const upload = await this.storage.artifact(p, repo, id);
     if (typeof value !== 'object' || value === null || Array.isArray(value))
       throw new DepotError('invalid_input', 'Invalid annotations');
@@ -154,15 +158,20 @@ export class ArtifactCatalog {
       expected,
       { labels: fields.labels, metadata: fields.metadata, collections },
       p.id,
+      { principal: p, repository: repo, actions: ['annotation.write', 'artifact.read'] },
     );
   }
   async register(p: Principal, repo: string, id: string) {
-    authorize(p, repo, 'write');
+    authorizeAction(p, repo, 'package.publish', ['write']);
     await this.storage.artifact(p, repo, id);
-    return this.store.register(repo, id, await this.manifests.inspect(id), p.id);
+    return this.store.register(repo, id, await this.manifests.inspect(id), p.id, {
+      principal: p,
+      repository: repo,
+      actions: ['package.publish', 'artifact.read'],
+    });
   }
   async resolvePackage(p: Principal, repo: string, group: string, name: string, version?: string) {
-    authorize(p, repo, 'read');
+    authorizeAction(p, repo, 'content.read', ['read']);
     if (
       group.length > 128 ||
       name.length === 0 ||
@@ -181,7 +190,7 @@ export class ArtifactCatalog {
     after: string | undefined,
     limit: number,
   ): Promise<PackagePage> {
-    authorize(p, repo, 'read');
+    authorizeAction(p, repo, 'package.read', ['read']);
     if (
       (group?.length ?? 0) > 128 ||
       (name?.length ?? 0) > 128 ||
@@ -192,22 +201,26 @@ export class ArtifactCatalog {
       throw new DepotError('invalid_input', 'Invalid package page');
     return this.store.packagePage(repo, group, name, options, after, limit);
   }
+  async resolveAssetContent(p: Principal, repo: string, path: string) {
+    authorizeAction(p, repo, 'content.read', ['read']);
+    return this.store.asset(repo, requireAssetPath(path));
+  }
   async asset(p: Principal, repo: string, path: string) {
-    authorize(p, repo, 'read');
+    authorizeAction(p, repo, 'asset.read', ['read']);
     return this.store.asset(repo, requireAssetPath(path));
   }
   async assets(p: Principal, repo: string, prefix: string) {
-    authorize(p, repo, 'read');
+    authorizeAction(p, repo, 'asset.read', ['read']);
     if (prefix.length > 1024) throw new DepotError('invalid_input', 'Invalid prefix');
     return this.store.assets(repo, prefix);
   }
   async assetRevision(p: Principal, repo: string, path: string, revision: number) {
-    authorize(p, repo, 'read');
+    authorizeAction(p, repo, 'asset.read', ['read']);
     this.existingRevision(revision);
     return this.store.assetRevision(repo, requireAssetPath(path), revision);
   }
   async assetHistory(p: Principal, repo: string, path: string, before?: number) {
-    authorize(p, repo, 'read');
+    authorizeAction(p, repo, 'asset.read', ['read']);
     if (before !== undefined) this.existingRevision(before);
     return this.store.assetHistory(repo, requireAssetPath(path), before);
   }
@@ -218,7 +231,7 @@ export class ArtifactCatalog {
     sourceRevision: number,
     expected: number,
   ) {
-    authorize(p, repo, 'write');
+    authorizeAction(p, repo, 'asset.restore', ['write']);
     this.revision(expected);
     if (expected === 0) throw new DepotError('invalid_input', 'Restore requires an existing asset');
     const source = await this.assetRevision(p, repo, path, sourceRevision);
@@ -229,14 +242,19 @@ export class ArtifactCatalog {
       source.artifactId,
       expected,
       p.id,
+      { principal: p, repository: repo, actions: ['asset.restore', 'asset.read', 'artifact.read'] },
       sourceRevision,
     );
   }
   async setAsset(p: Principal, repo: string, path: string, id: string, expected: number) {
-    authorize(p, repo, 'write');
+    authorizeAction(p, repo, 'asset.write', ['write']);
     await this.storage.artifact(p, repo, requireId(id));
     this.revision(expected);
-    return this.store.setAsset(repo, requireAssetPath(path), id, expected, p.id);
+    return this.store.setAsset(repo, requireAssetPath(path), id, expected, p.id, {
+      principal: p,
+      repository: repo,
+      actions: ['asset.write', 'artifact.read'],
+    });
   }
   async search(
     p: Principal,
@@ -246,23 +264,30 @@ export class ArtifactCatalog {
     collection: string,
     after?: string,
   ) {
-    authorize(p, repo, 'read');
+    authorizeAction(p, repo, 'artifact.list', ['read']);
     if (query.length > 240 || label.length > 64 || collection.length > 64)
       throw new DepotError('invalid_input', 'Search filter too long');
     if (after !== undefined) requireId(after);
     return this.store.search(repo, query, label, collection, after);
   }
   async audit(p: Principal, repo: string, after: string) {
-    authorize(p, repo, 'write');
+    authorizeAction(p, repo, 'audit.read', ['write']);
     if (!/^[0-9]{1,18}$/.test(after)) throw new DepotError('invalid_input', 'Invalid audit cursor');
     return this.store.audit(repo, after);
   }
   async reference(p: Principal, repo: string, id: string, key: string, remove: boolean) {
-    authorize(p, repo, 'write');
+    authorizeAction(p, repo, 'reference.write', ['write']);
     await this.storage.artifact(p, repo, id);
     if (!/^[a-zA-Z0-9_.:/-]{1,256}$/.test(key))
       throw new DepotError('invalid_input', 'Invalid reference');
-    await this.store.reference(repo, id, p.id, key, remove);
+    await this.store.reference(
+      repo,
+      id,
+      p.id,
+      { principal: p, repository: repo, actions: ['reference.write', 'artifact.read'] },
+      key,
+      remove,
+    );
   }
   private revision(value: number) {
     if (!Number.isSafeInteger(value) || value < 0 || value > 2147483646)

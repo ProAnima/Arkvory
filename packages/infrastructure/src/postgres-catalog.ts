@@ -8,7 +8,8 @@ import {
   requireRepository,
   sameDescriptor,
 } from '@proanima/depot-domain';
-import type { Upload } from '@proanima/depot-domain';
+import type { Upload, MutationAccess } from '@proanima/depot-domain';
+import { lockServiceAccess } from './service-authorization.js';
 import type { Catalog, UploadMutation } from '@proanima/depot-application';
 
 export function decode(row: Record<string, unknown> | undefined): Upload {
@@ -174,6 +175,7 @@ export class PostgresCatalog implements Catalog {
       await client.query('BEGIN');
       // Serialize only reservations, never byte transfers.
       await client.query('SELECT pg_advisory_xact_lock(18471, 2)');
+      await lockServiceAccess(client, input.access);
       const existing = await client.query<Record<string, unknown>>(
         'SELECT * FROM depot_uploads WHERE repository=$1 AND owner=$2 AND idempotency_key=$3',
         [input.repository, input.owner, input.key],
@@ -253,7 +255,11 @@ export class PostgresCatalog implements Catalog {
     return result.rows.map(decode);
   }
 
-  async exclusive<T>(id: string, action: (mutation: UploadMutation) => Promise<T>): Promise<T> {
+  async exclusive<T>(
+    id: string,
+    action: (mutation: UploadMutation) => Promise<T>,
+    access?: MutationAccess,
+  ): Promise<T> {
     const client = await this.locks.connect();
     const key = createHash('sha256').update(id).digest().readBigInt64BE().toString();
     const state = { lost: false };
@@ -271,6 +277,23 @@ export class PostgresCatalog implements Catalog {
       const check = (): void => {
         if (state.lost) throw new DepotError('unavailable', 'Upload lock was lost');
       };
+      const guarded = async <R>(work: () => Promise<R>): Promise<R> => {
+        check();
+        await client.query('BEGIN');
+        try {
+          await lockServiceAccess(client, access);
+          const result = await work();
+          await client.query('COMMIT');
+          return result;
+        } catch (error) {
+          try {
+            await client.query('ROLLBACK');
+          } catch {
+            state.lost = true;
+          }
+          throw error;
+        }
+      };
       const transition = async (
         repository: string,
         target: 'available' | 'cancelled',
@@ -278,23 +301,26 @@ export class PostgresCatalog implements Catalog {
         check();
         // Use the SAME connection that owns the advisory lock. A lost connection
         // cannot commit a stale publication through the general-purpose pool.
-        const updated = await client.query<Record<string, unknown>>(
-          `UPDATE depot_uploads SET status=$3, cancelled_at=CASE WHEN $3='cancelled' THEN COALESCE(cancelled_at,now()) ELSE cancelled_at END WHERE repository=$1 AND id=$2 AND status IN ('pending',$3) AND (status='available' OR $3='cancelled' OR expires_at>now()) RETURNING *`,
-          [repository, id, target],
-        );
-        if (!updated.rows[0])
-          throw new DepotError('conflict', 'Upload state prevents this operation');
-        return decode(updated.rows[0]);
+        return guarded(async () => {
+          const updated = await client.query<Record<string, unknown>>(
+            `UPDATE depot_uploads SET status=$3, cancelled_at=CASE WHEN $3='cancelled' THEN COALESCE(cancelled_at,now()) ELSE cancelled_at END WHERE repository=$1 AND id=$2 AND status IN ('pending',$3) AND (status='available' OR $3='cancelled' OR expires_at>now()) RETURNING *`,
+            [repository, id, target],
+          );
+          if (!updated.rows[0])
+            throw new DepotError('conflict', 'Upload state prevents this operation');
+          return decode(updated.rows[0]);
+        });
       };
       const value = await action({
-        recordPart: async (part) => {
-          check();
-          const result = await client.query(
-            `INSERT INTO depot_parts(upload_id,part_index,size,sha256) SELECT id,$2,$3,$4 FROM depot_uploads WHERE id=$1 AND status='pending' AND expires_at>now() ON CONFLICT(upload_id,part_index) DO UPDATE SET sha256=excluded.sha256 WHERE depot_parts.sha256=excluded.sha256 AND depot_parts.size=excluded.size RETURNING upload_id`,
-            [id, part.index, part.size, part.sha256],
-          );
-          if (result.rowCount !== 1) throw new DepotError('conflict', 'Part cannot be recorded');
-        },
+        recordPart: async (part) =>
+          guarded(async () => {
+            check();
+            const result = await client.query(
+              `INSERT INTO depot_parts(upload_id,part_index,size,sha256) SELECT id,$2,$3,$4 FROM depot_uploads WHERE id=$1 AND status='pending' AND expires_at>now() ON CONFLICT(upload_id,part_index) DO UPDATE SET sha256=excluded.sha256 WHERE depot_parts.sha256=excluded.sha256 AND depot_parts.size=excluded.size RETURNING upload_id`,
+              [id, part.index, part.size, part.sha256],
+            );
+            if (result.rowCount !== 1) throw new DepotError('conflict', 'Part cannot be recorded');
+          }),
         throwIfAborted: check,
         publish: (repository) => transition(repository, 'available'),
         cancel: (repository) => transition(repository, 'cancelled'),
@@ -316,9 +342,11 @@ export class PostgresCatalog implements Catalog {
   }
 
   async ready(): Promise<void> {
-    const result = await this.pool.query('SELECT version FROM depot_migrations WHERE version=8');
-    if (result.rowCount !== 1)
-      throw new DepotError('unavailable', 'Database migration 8 is required');
+    const result = await this.pool.query(
+      'SELECT version FROM depot_migrations WHERE version IN (8,9)',
+    );
+    if (result.rowCount !== 2)
+      throw new DepotError('unavailable', 'Database migrations 8 and 9 are required');
     await this.pool.query('SELECT id,expires_at FROM depot_uploads LIMIT 0');
   }
   async close(): Promise<void> {

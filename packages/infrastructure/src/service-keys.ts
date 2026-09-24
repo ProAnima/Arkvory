@@ -13,7 +13,14 @@ export function parseKeys(value: unknown): readonly ServiceKey[] {
   for (const item of entries) {
     if (typeof item !== 'object' || item === null) throw new Error('Invalid service key entry');
     const entry: Record<string, unknown> = Object.fromEntries(Object.entries(item));
-    const { id, sha256, repositories, permissions, administrator = false } = entry;
+    const {
+      id,
+      sha256,
+      repositories,
+      permissions,
+      administrator = false,
+      serviceAdministrator = false,
+    } = entry;
     if (
       typeof id !== 'string' ||
       !/^[a-zA-Z0-9_.-]{1,128}$/.test(id) ||
@@ -21,7 +28,8 @@ export function parseKeys(value: unknown): readonly ServiceKey[] {
       !/^[a-f0-9]{64}$/.test(sha256) ||
       !Array.isArray(repositories) ||
       !Array.isArray(permissions) ||
-      typeof administrator !== 'boolean'
+      typeof administrator !== 'boolean' ||
+      typeof serviceAdministrator !== 'boolean'
     )
       throw new Error('Invalid service key entry');
     const repos: string[] = [];
@@ -38,7 +46,13 @@ export function parseKeys(value: unknown): readonly ServiceKey[] {
     if (keys.some((key) => key.sha256 === sha256)) throw new Error('Duplicate service key hash');
     keys.push({
       sha256,
-      principal: { id, repositories: repos, permissions: grants, administrator },
+      principal: {
+        id,
+        repositories: repos,
+        permissions: grants,
+        administrator,
+        serviceAdministrator,
+      },
     });
   }
   return keys;

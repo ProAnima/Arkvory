@@ -10,6 +10,7 @@ import { createServer, request } from 'node:http';
 
 const cleanups = [];
 const traffic = process.argv.includes('--traffic');
+const managed = process.argv.includes('--managed');
 const f = await setup(
   { after: (callback) => cleanups.push(callback) },
   traffic
@@ -49,6 +50,43 @@ async function stop() {
 }
 
 try {
+  if (managed) {
+    f.config.keys[0].principal.serviceAdministrator = true;
+    const bindings = [
+      {
+        resource: { kind: 'repository', id: 'releases' },
+        actions: [
+          'upload.create',
+          'upload.read',
+          'upload.write',
+          'upload.complete',
+          'artifact.read',
+          'content.read',
+        ],
+      },
+    ];
+    const account = await f.app.inject({
+      method: 'POST',
+      url: '/api/v1/service-accounts',
+      headers: f.headers,
+      payload: { name: 'large-transfer', bindings },
+    });
+    assert.equal(account.statusCode, 201, account.body);
+    const issued = await f.app.inject({
+      method: 'POST',
+      url: `/api/v1/service-accounts/${account.json().id}/keys`,
+      headers: { ...f.headers, 'idempotency-key': randomUUID() },
+      payload: { name: 'large-transfer', bindings },
+    });
+    assert.equal(issued.statusCode, 201, issued.body);
+    f.headers = { authorization: `Bearer ${issued.json().secret}` };
+    const activated = await f.app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/activate-key',
+      headers: f.headers,
+    });
+    assert.equal(activated.statusCode, 204, activated.body);
+  }
   await f.app.close();
   let address = await start();
   const chunk = Buffer.alloc(1024 ** 2, 0x5a);
@@ -192,6 +230,7 @@ try {
     peakServerRssBytes: peakRss,
     peakClientRssBytes: peakClientRss,
     verifiedSdkDownload: verified,
+    managedServiceKey: managed,
     interruptedDownload,
     trafficPolicy: traffic
       ? { gatewayBytesPerSecond: 64 * 1024 ** 2, principalBytesPerSecond: 48 * 1024 ** 2 }

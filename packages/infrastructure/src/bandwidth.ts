@@ -75,7 +75,7 @@ export class BandwidthGovernor {
 
   register(owner: string): void {
     if (this.principals.has(owner)) return;
-    if (this.principals.size >= 2000)
+    if (this.principals.size >= 3000)
       throw new DepotError('capacity_exceeded', 'Too many bandwidth principals');
     this.principals.set(owner, {
       tokens: burst(this.policy.perPrincipalBytesPerSecond),

@@ -1,4 +1,9 @@
-import type { ArtifactDescriptor, Upload, UploadPart } from '@proanima/depot-domain';
+import type {
+  ArtifactDescriptor,
+  Upload,
+  UploadPart,
+  MutationAccess,
+} from '@proanima/depot-domain';
 
 // Portable cancellation contract: core does not depend on DOM or Node globals.
 export interface Cancellation {
@@ -12,11 +17,16 @@ export interface Catalog {
     key: string;
     descriptor: ArtifactDescriptor;
     createdAt: string;
+    access?: MutationAccess;
   }): Promise<Upload>;
   get(repository: string, id: string): Promise<Upload>;
   parts(id: string): Promise<readonly UploadPart[]>;
   list(repository: string, after: string | undefined, limit: number): Promise<readonly Upload[]>;
-  exclusive<T>(id: string, action: (mutation: UploadMutation) => Promise<T>): Promise<T>;
+  exclusive<T>(
+    id: string,
+    action: (mutation: UploadMutation) => Promise<T>,
+    access?: MutationAccess,
+  ): Promise<T>;
 }
 
 export interface UploadMutation extends Cancellation {

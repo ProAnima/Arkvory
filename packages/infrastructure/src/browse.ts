@@ -1,6 +1,7 @@
 import type { Pool, PoolClient } from 'pg';
 import { DepotError, parseDescriptor, parseManifest, requireId } from '@proanima/depot-domain';
-import type { PackageManifest } from '@proanima/depot-domain';
+import { lockServiceAccess } from './service-authorization.js';
+import type { PackageManifest, MutationAccess } from '@proanima/depot-domain';
 import type {
   Annotation,
   AssetEntry,
@@ -93,11 +94,13 @@ export class PostgresBrowse implements BrowseStore {
     actor: string,
     action: string,
     work: (client: PoolClient) => Promise<T>,
+    access: MutationAccess | undefined,
   ): Promise<T> {
     const client = await this.pool.connect();
     let broken = false;
     try {
       await client.query('BEGIN');
+      await lockServiceAccess(client, access);
       const result = await work(client);
       await client.query(
         'INSERT INTO depot_audit(repository,artifact_id,actor,action) VALUES($1,$2,$3,$4)',
@@ -156,64 +159,81 @@ export class PostgresBrowse implements BrowseStore {
     expected: number,
     value: Omit<Annotation, 'revision'>,
     actor: string,
+    access: MutationAccess | undefined,
   ) {
-    return this.change(repository, id, actor, 'annotations.replace', async (client) => {
-      const result = await client.query(
-        `INSERT INTO depot_annotations(artifact_id,revision,labels,metadata,collections) SELECT id,1,$3,$4,$5 FROM depot_uploads WHERE id=$1 AND repository=$2 AND status='available' AND $6::integer=0 ON CONFLICT(artifact_id) DO NOTHING`,
-        [
-          id,
-          repository,
-          JSON.stringify(value.labels),
-          JSON.stringify(value.metadata),
-          JSON.stringify(value.collections),
-          expected,
-        ],
-      );
-      if (expected > 0) {
-        const updated = await client.query(
-          'UPDATE depot_annotations SET revision=revision+1,labels=$3,metadata=$4,collections=$5 WHERE artifact_id=$1 AND revision=$2',
+    return this.change(
+      repository,
+      id,
+      actor,
+      'annotations.replace',
+      async (client) => {
+        const result = await client.query(
+          `INSERT INTO depot_annotations(artifact_id,revision,labels,metadata,collections) SELECT id,1,$3,$4,$5 FROM depot_uploads WHERE id=$1 AND repository=$2 AND status='available' AND $6::integer=0 ON CONFLICT(artifact_id) DO NOTHING`,
           [
             id,
-            expected,
+            repository,
             JSON.stringify(value.labels),
             JSON.stringify(value.metadata),
             JSON.stringify(value.collections),
+            expected,
           ],
         );
-        if (updated.rowCount !== 1) throw new DepotError('conflict', 'Annotation revision changed');
-      } else if (result.rowCount !== 1)
-        throw new DepotError('conflict', 'Annotation revision changed');
-      return { revision: expected + 1, ...value };
-    });
+        if (expected > 0) {
+          const updated = await client.query(
+            'UPDATE depot_annotations SET revision=revision+1,labels=$3,metadata=$4,collections=$5 WHERE artifact_id=$1 AND revision=$2',
+            [
+              id,
+              expected,
+              JSON.stringify(value.labels),
+              JSON.stringify(value.metadata),
+              JSON.stringify(value.collections),
+            ],
+          );
+          if (updated.rowCount !== 1)
+            throw new DepotError('conflict', 'Annotation revision changed');
+        } else if (result.rowCount !== 1)
+          throw new DepotError('conflict', 'Annotation revision changed');
+        return { revision: expected + 1, ...value };
+      },
+      access,
+    );
   }
   async register(
     repository: string,
     id: string,
     manifest: PackageManifest,
     actor: string,
+    access: MutationAccess | undefined,
   ): Promise<PackageEntry> {
-    return this.change(repository, id, actor, 'package.register', async (client) => {
-      const result = await client.query<{ artifact_id: string }>(
-        `INSERT INTO depot_packages(repository,package_group,name,version,artifact_id,manifest) VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT(repository,lower(package_group),lower(name),lower(version)) DO UPDATE SET artifact_id=depot_packages.artifact_id RETURNING artifact_id`,
-        [
-          repository,
-          manifest.group,
-          manifest.name,
-          manifest.version,
-          id,
-          JSON.stringify(manifest.original),
-        ],
-      );
-      if (result.rows[0]?.artifact_id !== id)
-        throw new DepotError('conflict', 'Package version is immutable');
-      return {
-        group: manifest.group,
-        name: manifest.name,
-        version: manifest.version,
-        artifactId: id,
-        manifest: manifest.original,
-      };
-    });
+    return this.change(
+      repository,
+      id,
+      actor,
+      'package.register',
+      async (client) => {
+        const result = await client.query<{ artifact_id: string }>(
+          `INSERT INTO depot_packages(repository,package_group,name,version,artifact_id,manifest) VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT(repository,lower(package_group),lower(name),lower(version)) DO UPDATE SET artifact_id=depot_packages.artifact_id RETURNING artifact_id`,
+          [
+            repository,
+            manifest.group,
+            manifest.name,
+            manifest.version,
+            id,
+            JSON.stringify(manifest.original),
+          ],
+        );
+        if (result.rows[0]?.artifact_id !== id)
+          throw new DepotError('conflict', 'Package version is immutable');
+        return {
+          group: manifest.group,
+          name: manifest.name,
+          version: manifest.version,
+          artifactId: id,
+          manifest: manifest.original,
+        };
+      },
+      access,
+    );
   }
   async resolvePackage(
     repository: string,
@@ -390,6 +410,7 @@ export class PostgresBrowse implements BrowseStore {
     id: string,
     expected: number,
     actor: string,
+    access: MutationAccess | undefined,
     sourceRevision?: number,
   ) {
     return this.change(
@@ -422,6 +443,7 @@ export class PostgresBrowse implements BrowseStore {
         );
         return { path, revision: expected + 1, artifactId: id };
       },
+      access,
     );
   }
   async search(
@@ -456,7 +478,14 @@ export class PostgresBrowse implements BrowseStore {
       occurredAt: row.occurred_at.toISOString(),
     }));
   }
-  async reference(repository: string, id: string, owner: string, key: string, remove: boolean) {
+  async reference(
+    repository: string,
+    id: string,
+    owner: string,
+    access: MutationAccess | undefined,
+    key: string,
+    remove: boolean,
+  ) {
     await this.change(
       repository,
       id,
@@ -474,6 +503,7 @@ export class PostgresBrowse implements BrowseStore {
             [repository, id, owner, key],
           );
       },
+      access,
     );
   }
 }

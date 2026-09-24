@@ -1,3 +1,5 @@
+import type { ManagedCredential, ServiceAction } from './service-policy.js';
+
 export type ErrorCode =
   | 'invalid_input'
   | 'not_found'
@@ -127,6 +129,8 @@ export function sameDescriptor(left: ArtifactDescriptor, right: ArtifactDescript
 }
 
 export interface Principal {
+  readonly managed?: ManagedCredential;
+  readonly serviceAdministrator?: boolean;
   readonly id: string;
   readonly repositories: readonly string[];
   readonly permissions: readonly ('read' | 'write')[];
@@ -142,6 +146,7 @@ export function authorize(
   repository: string,
   permission: 'read' | 'write',
 ): void {
+  if (principal.managed) throw new DepotError('forbidden', 'Explicit service action required');
   requireRepository(repository);
   const allowed = principal.grants
     ? principal.grants.some(
@@ -149,4 +154,10 @@ export function authorize(
       )
     : principal.repositories.includes(repository) && principal.permissions.includes(permission);
   if (!allowed) throw new DepotError('forbidden', 'Repository access denied');
+}
+
+export interface MutationAccess {
+  readonly principal: Principal;
+  readonly repository: string;
+  readonly actions: readonly ServiceAction[];
 }

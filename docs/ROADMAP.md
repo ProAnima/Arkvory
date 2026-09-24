@@ -41,7 +41,7 @@
 
 ## Открытые решения
 
-Расширение API для сервисов проработано отдельно: [карта](API_MAP.md), [модель ключей](API_ACCESS.md), [план A–E](API_EVOLUTION.md). Ближайшие инкременты — A: проверяемая OpenAPI/permissions/discovery, B: managed service accounts/keys с точными repository bindings и безопасной миграцией старых ключей. Затем namespace selectors, события и распределённые квоты. Это проект, не выполненные пункты; он не снимает обязательства legacy publication, retention и стендовой приёмки HA.
+Расширение API для сервисов: [карта](API_MAP.md), [модель ключей](API_ACCESS.md), [план A–E](API_EVOLUTION.md). Реализован первый профиль A/B: discovery, собственные permissions, managed service accounts/keys, точные repository bindings, ротация/отзыв и повторная авторизация перед публикацией. Контракт и обновление: [SERVICE_KEYS](SERVICE_KEYS.md), [ADR 0017](adr/0017-managed-service-keys.md). Остаются полное покрытие прежних маршрутов OpenAPI, делегированное управление, импорт старых identities/ownership, namespace selectors, события и распределённые квоты. Обязательства legacy publication, retention и стендовой приёмки HA сохраняются.
 
 В рамках этапа 3 реализован локальный исполнитель общего/per-principal byte budget: [TRAFFIC_CONTROL](TRAFFIC_CONTROL.md), [ADR 0008](adr/0008-gateway-bandwidth-budgets.md). Дополнительно реализованы независимые read gateways, конечные leases фиксированных долей и локальные проверки потери координации: [READ_GATEWAYS](READ_GATEWAYS.md), [ADR 0009](adr/0009-leased-read-gateways.md). Для завершения этапа нужны подтверждённые реплики blobs, инфраструктура входа и испытания смешанной нагрузки на выбранном стенде. Локальный bucket каждого процесса нельзя выдавать за общий лимит площадки.
 

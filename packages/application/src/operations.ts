@@ -1,5 +1,5 @@
-import { authorize, DepotError, requireId } from '@proanima/depot-domain';
-import type { Principal } from '@proanima/depot-domain';
+import { authorizeAction, DepotError, requireId } from '@proanima/depot-domain';
+import type { Principal, MutationAccess } from '@proanima/depot-domain';
 
 export interface CleanupRecord {
   id: string;
@@ -65,6 +65,7 @@ export class GarbageCollector {
 }
 
 export interface CompletionJob {
+  credentialId?: string;
   id: string;
   repository: string;
   uploadId: string;
@@ -75,7 +76,13 @@ export interface CompletionJob {
   errorCode: string | null;
 }
 export interface JobStore {
-  enqueue(repository: string, uploadId: string, owner: string, id: string): Promise<CompletionJob>;
+  enqueue(
+    repository: string,
+    uploadId: string,
+    owner: string,
+    id: string,
+    access?: MutationAccess,
+  ): Promise<CompletionJob>;
   get(id: string): Promise<CompletionJob>;
   take(): Promise<CompletionJob | null>;
   heartbeat(id: string, generation: number): Promise<boolean>;
@@ -92,13 +99,17 @@ export class CompletionQueue {
     repository: string,
     uploadId: string,
   ): Promise<CompletionJob> {
-    authorize(principal, repository, 'write');
+    authorizeAction(principal, repository, 'upload.complete', ['write']);
     requireId(uploadId);
-    return this.jobs.enqueue(repository, uploadId, principal.id, this.next());
+    return this.jobs.enqueue(repository, uploadId, principal.id, this.next(), {
+      principal,
+      repository,
+      actions: ['upload.complete'],
+    });
   }
   async get(principal: Principal, id: string): Promise<CompletionJob> {
     const job = await this.jobs.get(requireId(id));
-    authorize(principal, job.repository, 'write');
+    authorizeAction(principal, job.repository, 'job.read', ['write']);
     if (job.owner !== principal.id) throw new DepotError('not_found', 'Job not found');
     return job;
   }

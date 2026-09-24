@@ -1,5 +1,6 @@
 import { Pool } from 'pg';
 import type { PoolClient } from 'pg';
+import { migrateServices } from './service-schema.js';
 
 const packagePageIndexes = [
   {
@@ -253,6 +254,7 @@ export async function migrate(pool: Pool): Promise<void> {
         INSERT INTO depot_migrations(version) VALUES(7);
       `);
     }
+    await migrateServices(client);
     await client.query('COMMIT');
   } catch (error) {
     try {

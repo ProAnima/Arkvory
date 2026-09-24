@@ -1,8 +1,8 @@
 # Доступ сервисов и жизненный цикл API-ключей
 
-Статус: **проект следующего инкремента**, 2026-09-24. Модель согласована с текущими границами Depot, но managed keys, детальные permissions и новые маршруты ещё не реализованы. Рабочие ограничения и точные методы отделены в [карте API](API_MAP.md). Решение: [ADR 0016](adr/0016-service-access-and-api-evolution.md); этапы внедрения: [API_EVOLUTION](API_EVOLUTION.md).
+Статус: **целевая модель с реализованным первым поднабором**, 2026-09-24. Работающий профиль: [SERVICE_KEYS](SERVICE_KEYS.md), [ADR 0017](adr/0017-managed-service-keys.md). Реализованы managed keys, 18 repository actions, activation/rotation/revoke, CAS policy, SDK и проверки публикации. Нижеследующие system permissions, delegation ceiling, notBefore, импорт старых identities и namespace selectors остаются проектом; текущие точные лимиты и отличия задаёт runbook. Рабочие ограничения и точные методы отделены в [карте API](API_MAP.md). Решение: [ADR 0016](adr/0016-service-access-and-api-evolution.md); этапы внедрения: [API_EVOLUTION](API_EVOLUTION.md).
 
-## 1. Что уже работает
+## 1. Совместимый прежний профиль
 
 Сервисный файл содержит SHA-256 ключа, стабильный `id` принципала, список `repositories`, `permissions: read|write`, необязательный `administrator`. Один набор permissions применяется ко всем перечисленным репозиториям. Ключи загружаются при старте; API выдачи/отзыва, срока действия и отдельного key ID нет. Изменение файла требует согласованного перезапуска API/readers/worker. Несколько ключей одного `id` используют общий владелец uploads и сетевой бюджет.
 
