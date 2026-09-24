@@ -1,0 +1,129 @@
+# Карта API Depot
+
+Дата сверки: 2026-09-24, runtime `4f9c7de`. Это точка входа для интеграторов: **реализованные маршруты** ниже отделены от **проектируемых расширений**. Детальные JSON-схемы текущего сервера: `GET /api/v1/openapi.json` с действующим Bearer. OpenAPI сейчас 3.0.3; новую модель доступа описывает [API_ACCESS](API_ACCESS.md), порядок внедрения — [API_EVOLUTION](API_EVOLUTION.md).
+
+## Обозначения и общие правила
+
+`R = /api/v1/repositories/{repository}`. `read`, `write`, `administrator` — реальные сегодняшние проверки; `own` означает того же principal, не просто любой ключ с write. Пользовательская сессия также допустима. Администратор не обходит read/write. В таблице «целевое право» используются проектные permissions; **сервер пока их не понимает**. Несколько прав через `+` обязательны одновременно.
+
+У reader доступны только GET/HEAD, кроме инфраструктурного CORS preflight; изменяющие методы получают 405 даже при наличии права. `/console/` размещается только на writer. Автоматические HEAD у Fastify GET могут присутствовать; ниже перечислены контрактные методы, для bytes HEAD указан явно.
+
+Сейчас размеры JSON — десятичные строки, revision — ограниченное целое; timestamps UTC. JSON body по умолчанию до 64 KiB, upload content передаётся отдельным бинарным stream. Ошибка native: `{code,message,requestId}`. Нет/неверный credential — 401; недостаточно права — 403; чужой upload/job скрывается 404; конфликт — 409; hash mismatch — 422; исчерпанная ёмкость — 507; busy/unavailable — 503 с Retry-After. Не считать любой POST безопасным для автоматического retry.
+
+## 1. Система и identity — реализовано
+
+| Метод и путь                                                  | Текущий доступ                | Результат / важное условие                                                     | Целевое право                                                               |
+| ------------------------------------------------------------- | ----------------------------- | ------------------------------------------------------------------------------ | --------------------------------------------------------------------------- |
+| GET `/health/live`                                            | Без ключа                     | 200, минимальная liveness                                                      | Публичный минимум                                                           |
+| GET `/health/ready`                                           | Любой действующий ключ/сессия | 200/503, writable, role, агрегаты admission/bandwidth                          | Совместимый прежний доступ; подробная диагностика отдельно `system.observe` |
+| GET `/api/v1/openapi.json`                                    | Любой действующий ключ/сессия | Рабочая спецификация                                                           | Аутентифицированный доступ                                                  |
+| POST `/api/v1/auth/login`                                     | Без предварительного ключа    | 200, token/expiresAt/account; password gate                                    | Учётные данные пользователя                                                 |
+| GET `/api/v1/auth/me`                                         | Любой действующий ключ/сессия | ID, administrator, точные repository grants                                    | Своя identity                                                               |
+| POST `/api/v1/auth/logout`                                    | Действующая авторизация       | 204; отзыв текущей пользовательской сессии. Не отзывает file-based service key | Своя сессия                                                                 |
+| POST `/api/v1/auth/password`                                  | Пользовательская сессия       | 204; currentPassword + newPassword, отзывает все сессии                        | Своя учётная запись                                                         |
+| GET `/api/v1/users`                                           | administrator                 | items, текущий предел 1000 пользователей                                       | `identity.read`                                                             |
+| POST `/api/v1/users`                                          | administrator                 | 201; name/password/administrator                                               | `identity.manage`, с ограничением назначения полномочий                     |
+| PATCH `/api/v1/users/{id}`                                    | administrator                 | 200; enabled и/или password; не изменение administrator                        | `identity.manage`                                                           |
+| GET `/api/v1/access-groups`                                   | administrator                 | Группы с members/grants; до 100 групп                                          | `identity.read`                                                             |
+| POST `/api/v1/access-groups`                                  | administrator                 | 201; name                                                                      | `identity.manage`                                                           |
+| PUT / DELETE `/api/v1/access-groups/{id}/members/{userId}`    | administrator                 | 204; добавить/убрать membership                                                | `identity.manage`, membership не обходит delegation ceiling                 |
+| PUT / DELETE `/api/v1/access-groups/{id}/grants/{repository}` | administrator                 | 204; access read/write либо снять grant                                        | `policy.manage` + разрешение делегировать конкретные actions/resources      |
+
+CORS: OPTIONS для `/api/v1/*` и `/health/ready` проверяет origin/method/headers без Bearer. Это не разрешение на саму операцию; см. [EXTERNAL_UI](EXTERNAL_UI.md). `/console/` — статический клиент, не API управления.
+
+## 2. Загрузки, задания и байты — реализовано
+
+| Метод и путь                          | Текущий доступ             | Контракт / повтор                                                                                 | Целевое право                            |
+| ------------------------------------- | -------------------------- | ------------------------------------------------------------------------------------------------- | ---------------------------------------- |
+| POST `R/uploads`                      | write                      | 201, descriptor; Idempotency-Key обязателен, конфликт другого descriptor                          | `upload.create`                          |
+| GET `R/uploads/{id}`                  | write + own                | Состояние собственной сессии                                                                      | `upload.read` + own                      |
+| DELETE `R/uploads/{id}`               | write + own                | 200, отменяет pending; опубликованный объект не удаляет                                           | `upload.cancel` + own                    |
+| PUT `R/uploads/{id}/content`          | write + own                | 200, целый octet-stream с проверкой размера/SHA и публикацией. После потери ответа сначала status | `upload.write` + `upload.complete` + own |
+| GET `R/uploads/{id}/parts`            | write + own                | partBytes и принятые parts; размер части 8 MiB                                                    | `upload.read` + own                      |
+| PUT `R/uploads/{id}/parts/{index}`    | write + own                | 204; X-Content-SHA256, повтор той же части безопасен; другой hash — 409                           | `upload.write` + own                     |
+| POST `R/uploads/{id}/complete`        | write + own                | 200; повтор завершённой сессии возвращает опубликованный результат                                | `upload.complete` + own                  |
+| POST `R/uploads/{id}/complete-async`  | write + own                | 202, durable job; публикация подтверждается отдельно                                              | `upload.complete` + own                  |
+| GET `/api/v1/jobs/{id}`               | write в repo задания + own | queued/running/completed/failed, attempts и errorCode                                             | `job.read` + own                         |
+| GET `R/artifacts`                     | read                       | items/next; limit 1–100, по умолчанию 50, after                                                   | `artifact.list`                          |
+| GET `R/artifacts/{id}`                | read                       | Только available; descriptor, не bytes                                                            | `artifact.read`                          |
+| GET / HEAD `R/artifacts/{id}/content` | read                       | GET: 200/206/304/416, ETag, Range/If-Range. HEAD не передаёт body и игнорирует Range              | `content.read`                           |
+
+Upload owner привязан к principal. Долговечность сейчас — local filesystem + PostgreSQL; наличие маршрута resume не означает сохранность после потери диска/узла. Вся схема восстановления: [TRANSFER_RECOVERY](TRANSFER_RECOVERY.md).
+
+## 3. Каталог, metadata и ссылки — реализовано
+
+| Метод и путь                                | Текущий доступ                | Контракт / граница                                                                  | Целевое право                                                                     |
+| ------------------------------------------- | ----------------------------- | ----------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| GET `R/artifacts/{id}/annotations`          | read                          | revision, labels, metadata, collections                                             | `annotation.read`                                                                 |
+| PUT `R/artifacts/{id}/annotations`          | read + write                  | expectedRevision + value; CAS, 409 при конфликте                                    | `annotation.write` + `artifact.read`                                              |
+| POST `R/artifacts/{id}/package`             | read + write                  | Читает и валидирует исходный UPack; регистрирует неизменяемую идентичность          | `package.publish` + `artifact.read`                                               |
+| GET `R/packages`                            | read                          | group/name, sort/direction/groupBy, after/limit; items/groups/next                  | `package.read`                                                                    |
+| GET `R/assets`                              | read                          | prefix; items, текущий предел 1000, полноценного cursor нет                         | `asset.read`                                                                      |
+| GET `R/asset?path=…`                        | read                          | Текущий path/revision/artifactId                                                    | `asset.read`                                                                      |
+| PUT `R/asset`                               | read + write                  | path/artifactId/expectedRevision; 0 для создания, CAS                               | `asset.write` + `artifact.read` исходника                                         |
+| GET `R/asset/history?path=…&before=…`       | read                          | До 50 ревизий и next                                                                | `asset.read`                                                                      |
+| GET `R/asset/revision?path=…&revision=…`    | read                          | Точная ревизия и artifactId                                                         | `asset.read`                                                                      |
+| POST `R/asset/restore`                      | read + write                  | path/sourceRevision/expectedRevision; создаёт новую revision, не меняет старый blob | `asset.restore` + `asset.read` + `artifact.read`                                  |
+| GET `R/search`                              | read                          | q/label/collection/after; до 100 items и next                                       | `artifact.list`; дополнительные metadata scopes при расширении возвращаемых полей |
+| GET `R/audit?after=…`                       | write                         | До 100 событий каталога; after — sequence, не аудит всех auth/download событий      | `audit.read`                                                                      |
+| POST / DELETE `R/artifacts/{id}/references` | read + write, reference owner | 204; JSON body key, ссылка принадлежит principal                                    | `reference.write` + `artifact.read`                                               |
+
+Пустой `group=` выбирает корневую группу; отсутствие group — все группы. Cursor пакетов связан с параметрами запроса, страницы не образуют snapshot. SDK допускает package page до 8 MiB; остальные JSON-ответы до 2 MiB. Эти различия сохраняются до отдельного совместимого изменения.
+
+Отдельного CRUD для schemas, labels и collections пока нет: labels/collections — ограниченные поля annotations. Нет REST-управления репозиториями и нет native удаления опубликованного содержимого.
+
+## 4. Legacy — реализован только поднабор чтения
+
+| Метод и путь                                                        | Текущий доступ   | Поведение                                                                   |
+| ------------------------------------------------------------------- | ---------------- | --------------------------------------------------------------------------- |
+| GET / HEAD `/upack/{feed}/download/{group}/{name}/{version}`        | read в feed      | Exact UPack; group может отсутствовать или состоять из нескольких сегментов |
+| GET / HEAD `/upack/{feed}/download/{group}/{name}?latest`           | read в feed      | Старшая SemVer, включая prerelease в текущем адаптере                       |
+| GET / HEAD `/api/packages/{feed}/download?group=…&name=…&version=…` | read в feed      | Однозначная версия UPack, group необязателен                                |
+| GET / HEAD `/endpoints/{directory}/content/{path}`                  | read в directory | Текущая asset revision, исходные bytes                                      |
+
+Bearer, X-ApiKey и Basic `api:KEY` принимаются текущим адаптером; пользовательский Basic и query-string keys не поддерживаются. Формы error/status пока native, полная совместимость не подтверждена. Целевое право всех этих downloads — `content.read` на разрешённую привязку объекта; внутренний resolve не должен случайно требовать полный `package.read/asset.read` или обходить selector. Legacy publication/list/metadata добавляются по отдельной [матрице совместимости](COMPATIBILITY.md), а не по придуманным native маршрутам.
+
+## 5. Предлагаемые расширения — НЕ реализовано
+
+Пути ниже фиксируют предлагаемое направление контракта; окончательная runtime-схема и operationId появляются в соответствующем инкременте. Префикс `/api/v1` не означает, что сервер уже отвечает на эти запросы.
+
+| Этап | Метод / область                                                           | Назначение и право                                                                                                                               |
+| ---- | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| A    | GET `/api/v1/capabilities`                                                | Развёрнутые функции, gateway role, лимиты протокола; любой действующий credential. Не список чужих ресурсов.                                     |
+| A    | GET `/api/v1/auth/permissions`                                            | Собственные effective bindings и revision; клиентский UX, не замена серверному authorize.                                                        |
+| B    | GET / POST `/api/v1/service-accounts`                                     | Cursor-list / создать identity; `service-account.read/manage`.                                                                                   |
+| B    | GET / PATCH `/api/v1/service-accounts/{id}`                               | Карточка / name, enabled; policy меняется отдельным CAS-контрактом.                                                                              |
+| B    | GET / PUT `/api/v1/service-accounts/{id}/policy`                          | `policy.read/manage`, expectedRevision и delegation ceiling.                                                                                     |
+| B    | GET / POST `/api/v1/service-accounts/{id}/keys`                           | Metadata list / выдача pending key, `credential.read/manage`. Secret только в первом ответе POST.                                                |
+| B    | GET `/api/v1/api-keys/{keyId}`                                            | Метаданные без hash/secret, с проверкой target account scope.                                                                                    |
+| B    | POST `/api/v1/api-keys/{keyId}/rotate`                                    | Новый pending key, Idempotency-Key, прежние ограничения или сужение; `credential.manage`.                                                        |
+| B    | POST `/api/v1/api-keys/{keyId}/revoke`                                    | Необратимый идемпотентный отзыв, `credential.manage`; повтор — 204.                                                                              |
+| B    | POST `/api/v1/auth/activate-key`                                          | Доказательство владения pending credential; 204, без выдачи дополнительных прав.                                                                 |
+| C    | GET `/api/v1/repositories` и `/{repository}`                              | Только разрешённые карточки, cursor, `repository.read`. Создание/настройка репозиториев требует отдельной административной policy.               |
+| C    | Пагинация assets и административных списков                               | Bounded pages, согласованный cursor, фильтрация ACL до LIMIT; старый ответ assets не менять молча.                                               |
+| C    | POST `/api/v1/transfer-tickets`                                           | Узкий краткоживущий допуск к одному immutable объекту; право выдачи отдельно от content access. Контракт после проверки gateway audience/revoke. |
+| D    | GET `R/events`; GET / POST `R/webhooks`; PATCH / DELETE `R/webhooks/{id}` | Cursor replay / подписки, `event.read` / `webhook.manage`, outbox, retry, подпись и журнал доставки.                                             |
+| D    | Каталог schemas и типизированных metadata                                 | Версионированные схемы, ограниченная сложность; собственная policy, без исполнения пользовательского кода.                                       |
+| E    | Управление retention / операции удаления                                  | Preview → согласованное удаление, отдельные permissions и защита references/readers; проектируется с storage lifecycle.                          |
+| E    | Статус replicas / gateways / очередей                                     | `system.observe`; управление квотами — отдельный операторский контракт, не параметр произвольного клиента.                                       |
+
+OAuth/OIDC federation, S3/NuGet/npm/OCI adapters — потенциальные отдельные интеграции, не обещание совместимости. Они добавляются только при конкретном сценарии и используют те же authorizer/storage use cases.
+
+## 6. Рецепты для клиентов
+
+| Клиент                     | Рабочий маршрут сегодня                                                       | Целевая минимизация                                                                       |
+| -------------------------- | ----------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| CI/CD                      | create upload → parts → complete или async job → register package / set asset | Publisher в одном repo, короткий срок ключа, отдельные identities dev/prod                |
+| Агент развёртывания        | resolve package/asset → artifact content + Range/ETag                         | Downloader либо только content по закреплённому объекту; approved/channel policy отдельно |
+| Индексатор / каталог       | packages/search/annotations                                                   | CatalogReader без content.read                                                            |
+| Редактор metadata          | annotations GET/PUT с expectedRevision                                        | MetadataEditor без публикации и удаления                                                  |
+| Внешняя браузерная консоль | login/me + native SDK, CORS exact origin                                      | Пользовательские сессии; machine secret не встроен в frontend                             |
+| Мониторинг                 | authenticated health/ready                                                    | Observer, минимум информации для health, подробности отдельно                             |
+| Интеграция по событиям     | Сейчас polling по доступным API                                               | Сначала авторизованный events cursor, затем подписанный webhook как уведомление           |
+| ProGet-клиент              | Только реализованный legacy download                                          | Контрактные fixtures конкретных клиентов, без обязанности знать native API                |
+
+## 7. Как поддерживать карту
+
+При добавлении операции обновлять use case, runtime-схему, OpenAPI, SDK, право/ресурс в карте, негативные ACL-тесты и описание retry. HTTP method не определяет permission: GET jobs сегодня требует write, PUT annotations — read+write. Нельзя заменить эти проверки одним middleware «GET = read».
+
+На дату сверки экспортируемая OpenAPI содержит 41 операцию, но не описывает liveness, сам endpoint спецификации и legacy downloads; стабильные operationId отсутствуют. Это явный backlog этапа A. Карта построена также по `apps/api/src/server.ts`, `catalog-routes.ts`, `identity-routes.ts` и application-проверкам. Присутствие маршрута в runtime и OpenAPI пока не контролируется полной автоматической проверкой; такой check входит в этап A.

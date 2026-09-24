@@ -131,7 +131,9 @@ Development tool versions are pinned in manifests and the lockfile. Runtime depe
 
 ## Compatibility and integrations
 
-The native API under `/api/v1` covers multipart uploads, completion jobs, content delivery, mutable annotations, package/asset catalogs, asset history and restoration, external references and catalog audit. OpenAPI is served at `/api/v1/openapi.json`. Distributed transfers, events/webhooks and administration remain planned. Runtime response validation, OpenAPI and the TypeScript SDK are maintained together.
+The [API map](docs/API_MAP.md) documents current routes, permissions and limitations. The proposed [service access model](docs/API_ACCESS.md) and [API evolution plan](docs/API_EVOLUTION.md) cover managed keys, granular permissions, rotation/revocation and integration scaling; these extensions are not implemented yet. Engineering documents are in Russian.
+
+The native API under `/api/v1` covers multipart uploads, completion jobs, content delivery, mutable annotations, package/asset catalogs, asset history and restoration, external references and catalog audit. OpenAPI is served at `/api/v1/openapi.json`. User and group administration is implemented; distributed transfers, events/webhooks and extended service administration remain planned. Runtime response validation, OpenAPI and the TypeScript SDK are maintained together.
 
 Planned ProGet adapters target the operations used by clients across three API families:
 

@@ -21,3 +21,4 @@ ADR нужен для изменения границ, публичных кон
 - [0013 — Курсорные страницы каталога UPack](0013-package-cursor-pagination.md)
 - [0014 — Индексы страниц каталога без длительной блокировки записи](0014-online-package-page-indexes.md)
 - [0015 — Браузерный UI на отдельном origin](0015-external-browser-ui.md)
+- [0016 — Права сервисных ключей и развитие API (proposed)](0016-service-access-and-api-evolution.md)

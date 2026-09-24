@@ -1,6 +1,6 @@
 # Каталог и жизненный цикл: версия 0.2
 
-Реализовано для одного активного API, одного completion worker, PostgreSQL и local backend. Текущая схема требует миграцию 5. Дополнительные readers и барьеры обслуживания: [READ_GATEWAYS](READ_GATEWAYS.md). Перед обновлением остановить API/worker, сделать согласованный backup и выполнить `npm run migrate`, затем запустить новый код. Старые процессы не должны продолжать запись. OpenAPI: авторизованный `GET /api/v1/openapi.json`.
+Реализовано для одного активного API, одного completion worker, PostgreSQL и local backend. Текущая схема требует миграцию 8. Дополнительные readers и барьеры обслуживания: [READ_GATEWAYS](READ_GATEWAYS.md). Перед обновлением остановить API/worker, сделать согласованный backup и выполнить `npm run migrate`, затем запустить новый код. Старые процессы не должны продолжать запись. OpenAPI: авторизованный `GET /api/v1/openapi.json`; полная [карта текущего API](API_MAP.md).
 
 ## Части и продолжение загрузки
 
@@ -20,7 +20,7 @@ HTTP upload/download имеют отдельные очереди допуска
 
 Задания хранятся в PostgreSQL, выбор — SKIP LOCKED, lease 30 секунд, heartbeat 10 секунд, generation проверяется при продлении/завершении. До 5 попыток, backoff 2^attempts, до 60 секунд. Ошибки целостности/прав/валидности завершают задание; временные ошибки повторяются. Максимум 10 000 активных заданий и 100 на principal. Worker перечитывает файл ключей перед исполнением: отозванные права блокируют новую попытку. Автоматического повторного запуска terminal failed-задания нет; после исправления причины можно вызвать синхронный complete.
 
-Это очередь сборки и локальный допуск передач. Распределённый scheduler, приоритеты, глобальное ограничение bytes/s и балансировка двух читающих узлов ещё не реализованы.
+Это очередь сборки и локальный допуск передач. Общие/per-principal bytes/s одного процесса реализованы; дополнительные readers общего хранилища используют фиксированные leased shares download-бюджета. Динамический распределённый scheduler, приоритеты и раздача с подтверждённых независимых реплик ещё не реализованы. См. [TRAFFIC_CONTROL](TRAFFIC_CONTROL.md) и [READ_GATEWAYS](READ_GATEWAYS.md).
 
 ## Каталог
 
@@ -69,7 +69,7 @@ UPack: root `upack.json` до 64 KiB, name/group и SemVer, сохранение
 
 ## SDK и консоль
 
-`@proanima/depot-sdk`: create/status/list/search, части/resume, complete/queue/job, annotations, registerPackage, assets, cancel и потоковый download. Ответы проходят runtime validation. HTTPS обязателен, кроме loopback HTTP. Ключ получается callback, не сохраняется в localStorage. SDK не делает неограниченных скрытых retries; ошибки имеют status/code/requestId. JSON-ответ ограничен 2 MiB. Для массивных манифестов следует сужать запрос.
+`@proanima/depot-sdk`: create/status/list/search, части/resume, complete/queue/job, annotations, registerPackage, assets, cancel и потоковый download. Ответы проходят runtime validation. HTTPS обязателен, кроме loopback HTTP. Ключ получается callback, не сохраняется в localStorage. SDK не делает неограниченных скрытых retries; ошибки имеют status/code/requestId. Страницы пакетов допускают JSON до 8 MiB, остальные JSON-ответы — до 2 MiB.
 
 `/console/` после `npm run build` доступна с того же origin, статические файлы задаются `DEPOT_WEB_DIR` (по умолчанию apps/web/public относительно cwd). Подключение, поиск, аннотации, UPack-регистрация, asset pointer, upload/resume. SHA-256 файла вычисляет Web Worker потоково; SDK удерживает до 8 MiB части. Кнопка «Пауза» прерывает текущую передачу, не отменяет сессию. Сохранить ID перед закрытием страницы. «Новая» сбрасывает поля для следующей загрузки. Скачать большой файл в браузере можно через File System Access API в Chrome/Edge; другие клиенты используют SDK/HTTP. Полный browser upload/download сценарий пока не автоматизирован.
 

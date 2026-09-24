@@ -1,6 +1,8 @@
 # Контракты API
 
-Документ задаёт целевые правила API. Реализованные native сценарии и ограничения: [CORE_RUNBOOK](CORE_RUNBOOK.md), [LIFECYCLE_AND_CATALOG](LIFECYCLE_AND_CATALOG.md). OpenAPI доступна по `/api/v1/openapi.json`; схемы и проверка ответов SDK находятся в contracts. Распределённые transfers, schemas, events/webhooks и administration остаются запланированными.
+Документ задаёт целевые правила API. Реализованные native сценарии и ограничения: [CORE_RUNBOOK](CORE_RUNBOOK.md), [LIFECYCLE_AND_CATALOG](LIFECYCLE_AND_CATALOG.md). OpenAPI доступна по `/api/v1/openapi.json`; схемы и проверка ответов SDK находятся в contracts. Управление пользователями и группами реализовано; распределённые transfers, schemas, events/webhooks и расширенное управление сервисами остаются запланированными.
+
+Полная [карта API](API_MAP.md) связывает текущие методы, права, ответы и ограничения. Проект расширения: [сервисные аккаунты, permissions и ключи](API_ACCESS.md), [масштабирование и этапы внедрения](API_EVOLUTION.md). Проектные маршруты и policies не входят в работающую OpenAPI до реализации.
 
 ## Собственный API
 
