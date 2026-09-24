@@ -343,6 +343,7 @@ data(
 );
 data(`${root}/packages`, 'get', 'listPackages', 'Catalog', ['package.read'], ['read'], 'read');
 data(`${root}/assets`, 'get', 'listAssets', 'Catalog', ['asset.read'], ['read'], 'read');
+data(`${root}/assets/page`, 'get', 'listAssetPage', 'Catalog', ['asset.read'], ['read'], 'read');
 data(`${root}/asset`, 'get', 'getAsset', 'Catalog', ['asset.read'], ['read'], 'read');
 data(
   `${root}/asset`,

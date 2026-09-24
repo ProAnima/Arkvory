@@ -34,6 +34,7 @@ export function registerServiceRoutes(
       features: {
         managedServiceKeys: true,
         delegatedServiceAdministration: true,
+        assetPagination: true,
         repositoryPermissions: true,
         namespacePermissions: false,
         webhooks: false,

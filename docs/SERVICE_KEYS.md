@@ -1,10 +1,10 @@
 # Управляемые сервисные ключи: запуск и эксплуатация
 
-Первый профиль реализован 2026-09-24 в миграции 9; текущая схема — **10**. Machine identities, 18 permissions на точные репозитории, lifecycle, SDK и API/worker/reader enforcement дополнены [делегированным управлением](SERVICE_DELEGATION.md): семь admin actions, точные цели и ceiling. Selectors папок/групп, federation, transfer tickets и webhooks не включены. Решения: [ADR 0017](adr/0017-managed-service-keys.md), [ADR 0019](adr/0019-scoped-service-administration.md).
+Первый профиль реализован 2026-09-24 в миграции 9; текущая схема — **11**. Machine identities, 18 permissions на точные репозитории, lifecycle, SDK и API/worker/reader enforcement дополнены [делегированным управлением](SERVICE_DELEGATION.md): семь admin actions, точные цели и ceiling. Selectors папок/групп, federation, transfer tickets и webhooks не включены. Решения: [ADR 0017](adr/0017-managed-service-keys.md), [ADR 0019](adr/0019-scoped-service-administration.md).
 
 ## Обновление и bootstrap
 
-Остановить writer, readers и worker, сделать согласованный backup БД и storage, обновить сборку, выполнить `npm run migrate`, затем запустить процессы одной версии. Readiness требует markers 8, 9 и 10: индексы, service accounts/keys и delegation соответственно. Смешанный runtime не поддерживается: старый activation не проверяет issuer. Ограничения отката: [обновление delegation](SERVICE_DELEGATION.md#транзакции-лимиты-и-обновление).
+Остановить writer, readers и worker, сделать согласованный backup БД и storage, обновить сборку, выполнить `npm run migrate`, затем запустить процессы одной версии. Readiness требует markers 8, 9, 10 и 11: package indexes, service accounts/keys, delegation и asset index соответственно. Смешанный runtime не поддерживается: старый activation не проверяет issuer. Ограничения отката: [обновление delegation](SERVICE_DELEGATION.md#транзакции-лимиты-и-обновление).
 
 Для управления сервисными аккаунтами включить **`serviceAdministrator: true` у отдельного доверенного ключа в `DEPOT_KEYS_FILE`** и согласованно перезапустить процессы. У существующих ключей этот флаг по умолчанию false; `administrator: true` продолжает управлять пользователями/группами и не даёт новых полномочий. `npm run init:local` для новой установки создаёт bootstrap key с обоими флагами. Не перезапускайте init поверх существующих секретов и не копируйте bootstrap secret в CI, браузер или приложение-потребитель.
 

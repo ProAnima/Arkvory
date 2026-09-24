@@ -222,6 +222,47 @@ const paths: Record<string, Record<string, unknown>> = {
       parameters: [query('prefix')],
     }),
   },
+  [`${root}/assets/page`]: {
+    get: operation(
+      'Cursor page of current asset pointers in UTF-8 byte order; literal prefix, no snapshot across pages',
+      {
+        type: 'object',
+        required: ['items', 'next'],
+        properties: {
+          items: { type: 'array', maxItems: 100, items: asset },
+          next: {
+            type: 'string',
+            nullable: true,
+            minLength: 1,
+            maxLength: 8192,
+            pattern: '^[A-Za-z0-9_-]+$',
+            description:
+              'Opaque cursor bound to repository and prefix; null at end. Never grants access.',
+          },
+        },
+      },
+      {
+        parameters: [
+          {
+            name: 'prefix',
+            in: 'query',
+            schema: { type: 'string', maxLength: 1024, default: '' },
+            description: 'Case-sensitive literal prefix; % and _ are ordinary characters.',
+          },
+          {
+            name: 'after',
+            in: 'query',
+            schema: { type: 'string', minLength: 1, maxLength: 8192, pattern: '^[A-Za-z0-9_-]+$' },
+          },
+          {
+            name: 'limit',
+            in: 'query',
+            schema: { type: 'integer', minimum: 1, maximum: 100, default: 50 },
+          },
+        ],
+      },
+    ),
+  },
   [`${root}/asset`]: {
     get: operation('Resolve latest asset revision', asset, {
       parameters: [{ ...query('path'), required: true }],

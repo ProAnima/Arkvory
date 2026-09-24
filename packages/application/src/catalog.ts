@@ -7,6 +7,9 @@ import {
 } from '@proanima/depot-domain';
 import type { Principal, PackageManifest, MutationAccess } from '@proanima/depot-domain';
 import type { StorageService } from './storage.js';
+import { validateAssetPage } from './asset-page.js';
+import type { AssetEntry, AssetPage, AssetPageOptions } from './asset-page.js';
+export type { AssetEntry } from './asset-page.js';
 
 export interface Annotation {
   revision: number;
@@ -29,11 +32,6 @@ export interface PackageListOptions {
 export interface PackagePage {
   items: readonly PackageEntry[];
   next: string | null;
-}
-export interface AssetEntry {
-  path: string;
-  revision: number;
-  artifactId: string;
 }
 export interface AssetRevision extends AssetEntry {
   actor: string | null;
@@ -79,6 +77,7 @@ export interface BrowseStore {
   assetRevision(repository: string, path: string, revision: number): Promise<AssetRevision>;
   assetHistory(repository: string, path: string, before?: number): Promise<AssetHistoryPage>;
   assets(repository: string, prefix: string): Promise<readonly AssetEntry[]>;
+  assetPage(repository: string, options: AssetPageOptions): Promise<AssetPage>;
   setAsset(
     repository: string,
     path: string,
@@ -213,6 +212,11 @@ export class ArtifactCatalog {
     authorizeAction(p, repo, 'asset.read', ['read']);
     if (prefix.length > 1024) throw new DepotError('invalid_input', 'Invalid prefix');
     return this.store.assets(repo, prefix);
+  }
+  async assetPage(p: Principal, repo: string, options: AssetPageOptions): Promise<AssetPage> {
+    authorizeAction(p, repo, 'asset.read', ['read']);
+    validateAssetPage(options);
+    return this.store.assetPage(repo, options);
   }
   async assetRevision(p: Principal, repo: string, path: string, revision: number) {
     authorizeAction(p, repo, 'asset.read', ['read']);

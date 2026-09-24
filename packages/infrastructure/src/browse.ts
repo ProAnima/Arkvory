@@ -1,6 +1,8 @@
 import type { Pool, PoolClient } from 'pg';
 import { DepotError, parseDescriptor, parseManifest, requireId } from '@proanima/depot-domain';
 import { lockServiceAccess } from './service-authorization.js';
+import { readAssetPage } from './asset-page.js';
+import type { AssetPageOptions } from '@proanima/depot-application';
 import type { PackageManifest, MutationAccess } from '@proanima/depot-domain';
 import type {
   Annotation,
@@ -385,6 +387,9 @@ export class PostgresBrowse implements BrowseStore {
       revision: row.revision,
       artifactId: row.artifact_id,
     }));
+  }
+  assetPage(repository: string, options: AssetPageOptions) {
+    return readAssetPage(this.pool, repository, options);
   }
   async assetRevision(repository: string, path: string, revision: number): Promise<AssetRevision> {
     const result = await this.pool.query<AssetRevisionRow>(

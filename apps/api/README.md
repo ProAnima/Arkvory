@@ -17,3 +17,5 @@ Legacy чтение UPack доступно также через огранич�
 Contract guard сверяет onRoute inventory с OpenAPI в onReady для writer/reader. Исключения ограничены точными static GET/HEAD. Неописанный или отсутствующий route блокирует startup. [Правила](../../docs/API_CONTRACT_GUARD.md).
 
 Service routes также предоставляют scoped delegation: handlers валидируют transport и передают команды ServiceAccess, без SQL и самостоятельного обхода ceiling. GET собственного grants допускается managed key; PUT/DELETE только bootstrap. Reader блокирует изменения прежним барьером. [Контракт](../../docs/SERVICE_DELEGATION.md).
+
+GET/HEAD assets/page валидирует query, вызывает ArtifactCatalog и сохраняет текущие auth/admission/no-store правила. Старый assets route не меняется. [Контракт](../../docs/ASSET_PAGINATION.md).

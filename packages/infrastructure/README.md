@@ -17,3 +17,5 @@ PostgresBrowse использует функцию SemVer-порядка из mi
 PostgresServices реализует lifecycle ключей, CAS policy и ограниченный аудит. Миграция 9 расширяет схему. lockServiceAccess проверяет актуальные credentials под короткими row locks в транзакциях mutations; поток bytes не удерживает эти locks. [Контракт и эксплуатация](../../docs/SERVICE_KEYS.md).
 
 Миграция 10 добавляет grants и issuer key reference. delegation-authorization разрешает действующий credential и exact grant; service-delegations отвечает за CAS/tombstones, пределы и запрет цепочек. PostgresServices удерживает короткий control lock для mutations и атомарного audit, использует repeatable-read snapshot для чтения и повторно проверяет issuer при pending activation. [Контракт](../../docs/SERVICE_DELEGATION.md).
+
+Asset-page выполняет ограниченный SQL seek по repository/path COLLATE C, валидирует cursor scope и возвращает limit+1 lookahead. Миграция 11 строит C index concurrently через тот же механизм восстановления, что package indexes. [Контракт](../../docs/ASSET_PAGINATION.md).

@@ -127,6 +127,19 @@ export function registerCatalogRoutes(
       string(object(request.query)['prefix'], ''),
     ),
   }));
+  app.get<{ Params: Params; Querystring: unknown }>(`${base}/assets/page`, (request) => {
+    const q = object(request.query);
+    if (Object.keys(q).some((key) => !['prefix', 'after', 'limit'].includes(key)))
+      throw new DepotError('invalid_input', 'Unknown asset page option');
+    const limit = q['limit'];
+    if (limit !== undefined && (typeof limit !== 'string' || !/^[1-9][0-9]{0,2}$/.test(limit)))
+      throw new DepotError('invalid_input', 'Invalid asset page size');
+    return browse.assetPage(principal(request), request.params.repository, {
+      prefix: string(q['prefix'], ''),
+      limit: limit === undefined ? 50 : Number(limit),
+      ...(q['after'] === undefined ? {} : { after: string(q['after']) }),
+    });
+  });
   app.get<{ Params: Params; Querystring: unknown }>(`${base}/asset`, async (request) =>
     browse.asset(
       principal(request),

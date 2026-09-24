@@ -1,6 +1,6 @@
 # Каталог и жизненный цикл: версия 0.2
 
-Реализовано для одного активного API, одного completion worker, PostgreSQL и local backend. Текущая схема требует миграцию 10. Дополнительные readers и барьеры обслуживания: [READ_GATEWAYS](READ_GATEWAYS.md). Перед обновлением остановить API/worker, сделать согласованный backup и выполнить `npm run migrate`, затем запустить новый код. Старые процессы не должны продолжать запись. OpenAPI: авторизованный `GET /api/v1/openapi.json`; полная [карта текущего API](API_MAP.md).
+Реализовано для одного активного API, одного completion worker, PostgreSQL и local backend. Текущая схема требует миграцию 11. Дополнительные readers и барьеры обслуживания: [READ_GATEWAYS](READ_GATEWAYS.md). Перед обновлением остановить API/worker, сделать согласованный backup и выполнить `npm run migrate`, затем запустить новый код. Старые процессы не должны продолжать запись. OpenAPI: авторизованный `GET /api/v1/openapi.json`; полная [карта текущего API](API_MAP.md).
 
 ## Части и продолжение загрузки
 
@@ -74,3 +74,5 @@ UPack: root `upack.json` до 64 KiB, name/group и SemVer, сохранение
 `/console/` после `npm run build` доступна с того же origin, статические файлы задаются `DEPOT_WEB_DIR` (по умолчанию apps/web/public относительно cwd). Подключение, поиск, аннотации, UPack-регистрация, asset pointer, upload/resume. SHA-256 файла вычисляет Web Worker потоково; SDK удерживает до 8 MiB части. Кнопка «Пауза» прерывает текущую передачу, не отменяет сессию. Сохранить ID перед закрытием страницы. «Новая» сбрасывает поля для следующей загрузки. Скачать большой файл в браузере можно через File System Access API в Chrome/Edge; другие клиенты используют SDK/HTTP. Полный browser upload/download сценарий пока не автоматизирован.
 
 Статическая страница публична; все данные защищены ключом. CSP запрещает сторонние scripts и frames. Разметка данных создаётся через textContent. SHA-реализация @noble/hashes поставляется со своей лицензией в `/console/THIRD-PARTY.txt`; права на Depot определяет LICENSE.md.
+
+Для полного обхода файлового каталога используйте [GET /assets/page](ASSET_PAGINATION.md): до 100 текущих pointers и next. Прежний GET /assets с пределом 1000 остаётся совместимым.

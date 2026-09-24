@@ -64,3 +64,5 @@ LocalBlobStore — профиль одного сервера. HA использ
 Контрактный guard composition root сверяет зарегистрированные HTTP routes с OpenAPI перед готовностью сервера. Metadata живёт в contracts и не исполняет ACL; авторизация остаётся в application/infrastructure. Спецификация экспортируется сборкой и не включается в браузерный bundle. [ADR 0018](adr/0018-executable-api-inventory.md).
 
 Ограниченный delegation профиль принят в [ADR 0019](adr/0019-scoped-service-administration.md): точный operator key → target account, отдельные admin actions и ceiling, без цепочек. Application валидирует команду и передаёт Principal порту; infrastructure повторно разрешает authority в той же транзакции, где меняет grants/keys/policy и пишет audit. Domain хранит чистые типы/actions. Контракт и обновление: [SERVICE_DELEGATION](SERVICE_DELEGATION.md).
+
+Файловые страницы выделены в небольшие application/infrastructure asset-page модули. Параметры и prefix bounds чистые, SQL seek и scope cursor находятся в адаптере; каталог/HTTP только вызывают сценарий. Новый API сохраняет прежний assets list. [ADR 0020](adr/0020-asset-cursor-pagination.md).

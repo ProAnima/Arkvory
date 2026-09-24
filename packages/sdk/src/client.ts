@@ -3,6 +3,7 @@ import {
   readAnnotations,
   readJob,
   readAsset,
+  readAssetPage,
   readAssetRevision,
   readAssetHistory,
   record,
@@ -629,6 +630,20 @@ export class DepotClient {
   async asset(repository: string, path: string) {
     return readAsset(
       await this.call(this.path(repository, `asset?path=${encodeURIComponent(path)}`)),
+    );
+  }
+  async assetPage(
+    repository: string,
+    options: { prefix?: string; after?: string; limit?: number } = {},
+    signal?: AbortSignal,
+  ) {
+    const query = new URLSearchParams();
+    if (options.prefix !== undefined) query.set('prefix', options.prefix);
+    if (options.after !== undefined) query.set('after', options.after);
+    if (options.limit !== undefined) query.set('limit', String(options.limit));
+    return readAssetPage(
+      await this.call(this.path(repository, `assets/page?${query}`), 'GET', undefined, signal),
+      options.limit ?? 50,
     );
   }
   async assetHistory(repository: string, path: string, before?: number, signal?: AbortSignal) {

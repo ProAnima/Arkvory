@@ -36,7 +36,26 @@ const packagePageIndexes = [
   },
 ] as const;
 
-async function migratePackagePageIndexes(pool: Pool): Promise<void> {
+const catalogIndexMigrations = [
+  {
+    version: 8,
+    indexes: packagePageIndexes.map((index) => ({
+      name: index.name,
+      definition: `ON depot_packages (repository, ${index.order}, (version COLLATE "C") ASC, ((artifact_id::text) COLLATE "C") ASC)`,
+    })),
+  },
+  {
+    version: 11,
+    indexes: [
+      {
+        name: 'depot_asset_page_path',
+        definition: 'ON depot_assets (repository, path COLLATE "C")',
+      },
+    ],
+  },
+] as const;
+
+async function migrateCatalogIndexes(pool: Pool): Promise<void> {
   // Index builds can exceed the short request timeout on the runtime catalog pool.
   const migrationPool = new Pool({
     ...pool.options,
@@ -57,24 +76,26 @@ async function migratePackagePageIndexes(pool: Pool): Promise<void> {
       );
       locked = attempt.rows[0]?.locked === true;
       if (locked) break;
-      if (Date.now() >= deadline) throw new Error('Timed out waiting for package index migration');
+      if (Date.now() >= deadline) throw new Error('Timed out waiting for catalog index migration');
       await new Promise<void>((resolve) => setTimeout(resolve, delay));
       delay = Math.min(delay * 2, 1000);
     }
-    const applied = await client.query('SELECT version FROM depot_migrations WHERE version=8');
-    if (applied.rowCount !== 0) return;
-    for (const index of packagePageIndexes) {
-      const state = await client.query<{ indisvalid: boolean }>(
-        'SELECT indisvalid FROM pg_index WHERE indexrelid=to_regclass($1::text)',
-        [index.name],
-      );
-      if (state.rows[0]?.indisvalid === true) continue;
-      if (state.rowCount !== 0) await client.query(`DROP INDEX CONCURRENTLY ${index.name}`);
-      await client.query(
-        `CREATE INDEX CONCURRENTLY ${index.name} ON depot_packages (repository, ${index.order}, (version COLLATE "C") ASC, ((artifact_id::text) COLLATE "C") ASC)`,
-      );
+    for (const migration of catalogIndexMigrations) {
+      const applied = await client.query('SELECT version FROM depot_migrations WHERE version=$1', [
+        migration.version,
+      ]);
+      if (applied.rowCount !== 0) continue;
+      for (const index of migration.indexes) {
+        const state = await client.query<{ indisvalid: boolean }>(
+          'SELECT indisvalid FROM pg_index WHERE indexrelid=to_regclass($1::text)',
+          [index.name],
+        );
+        if (state.rows[0]?.indisvalid === true) continue;
+        if (state.rowCount !== 0) await client.query(`DROP INDEX CONCURRENTLY ${index.name}`);
+        await client.query(`CREATE INDEX CONCURRENTLY ${index.name} ${index.definition}`);
+      }
+      await client.query('INSERT INTO depot_migrations(version) VALUES($1)', [migration.version]);
     }
-    await client.query('INSERT INTO depot_migrations(version) VALUES(8)');
   } catch (error) {
     unusable = true;
     throw error;
@@ -268,5 +289,5 @@ export async function migrate(pool: Pool): Promise<void> {
   } finally {
     client.release(unusable);
   }
-  await migratePackagePageIndexes(pool);
+  await migrateCatalogIndexes(pool);
 }

@@ -20,3 +20,5 @@ SDK поддерживает вход/выход и смену собствен�
 DepotClient предоставляет capabilities/permissions, service accounts/policy, выдачу/активацию/ротацию/отзыв ключей и service audit. Ответ выдачи содержит secret только при первом успешном запросе; replay возвращает metadata. Control calls принимают AbortSignal без скрытого повтора mutations. [Контракт и эксплуатация](../../docs/SERVICE_KEYS.md).
 
 serviceDelegations/setServiceDelegation/removeServiceDelegation и servicePolicy реализуют [делегированное управление](../../docs/SERVICE_DELEGATION.md). permissions возвращает credentialId, discovery — delegatedServiceAdministration. CAS/tombstone и one-time secret не допускают скрытого mutation retry.
+
+`assetPage(repository, {prefix, after, limit}, signal?)` возвращает ограниченные items/next. Клиент сам обрабатывает страницу и сохраняет checkpoint; SDK не накапливает весь каталог и не делает скрытых повторов. [Пример](../../docs/ASSET_PAGINATION.md).
