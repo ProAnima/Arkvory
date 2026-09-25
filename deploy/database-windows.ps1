@@ -26,8 +26,9 @@ if (-not $existing) {
   $xml = @"
 <service>
   <id>Depotdatabase</id><name>ProAnima Depot database</name>
+  <description>Dedicated PostgreSQL database for ProAnima Depot.</description>
   <executable>$(Xml $Node)</executable>
-  <arguments>&quot;$(Xml (Join-Path $Root 'launcher.mjs'))&quot; &quot;$(Xml $Root)&quot; database</arguments>
+  <startarguments>&quot;$(Xml (Join-Path $Root 'launcher.mjs'))&quot; &quot;$(Xml $Root)&quot; database</startarguments>
   <workingdirectory>$(Xml $directory)</workingdirectory>
   <serviceaccount><domain>NT AUTHORITY</domain><user>NetworkService</user></serviceaccount>
   <startmode>Automatic</startmode><onfailure action="restart" delay="10 sec"/>

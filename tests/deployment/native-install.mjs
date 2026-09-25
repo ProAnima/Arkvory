@@ -66,6 +66,7 @@ try {
   });
   assert.equal(response.status, 200);
   assert.equal((await fetch('http://127.0.0.1:8080/console/')).status, 200);
+  console.log(`Initial native readiness in ${Math.round((Date.now() - started) / 1000)} seconds`);
   if (windows) {
     const login = await fetch('http://127.0.0.1:8080/api/v1/auth/login', {
       method: 'POST',
@@ -137,7 +138,9 @@ try {
       200,
     );
   }
-  console.log(`Native installation ready in ${Math.round((Date.now() - started) / 1000)} seconds`);
+  console.log(
+    `Native lifecycle checks completed in ${Math.round((Date.now() - started) / 1000)} seconds`,
+  );
 } catch (error) {
   if (windows) {
     try {
