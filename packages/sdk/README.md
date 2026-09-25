@@ -29,3 +29,5 @@ DownloadQueue и checkpointedDownload дают bounded очередь скачи
 SDK имеет совместимые namespaces: `client.identity`, `client.administration.{users,groups,services,credentials}` и `client.inRepository(id).{artifacts,annotations,uploads,packages,assets}`. `client.operations(query, signal)` читает строгую bounded страницу применимых операций; это advisory-данные, не разрешение на произвольный объект. Прежний `client.repository(id)` по-прежнему возвращает карточку; flat API не изменён. [Примеры и матрица методов](../../docs/API_SURFACES.md).
 
 `client.inRepository(id).attachments.{get,replace,history}` и flat `attachments/replaceAttachments/attachmentHistory` принимают AbortSignal. CAS не повторяется автоматически, bytes используют прежние transfers. [Пример CI](../../docs/BUILD_DETAILS.md).
+
+client.inRepository(id).artifacts.inspectDeletion/delete и retention.preview/apply принимают AbortSignal и проверяют ответы runtime-парсерами. Flat методы: inspectDeletion, deleteArtifact, previewRetention, applyRetention. Mutations не повторяются скрыто; UI должен проверять outcome каждой строки. [Контракт и ограничения](../../docs/ARTIFACT_RETENTION.md).

@@ -4,6 +4,10 @@ import type { OperationQuery } from '@proanima/depot-contracts';
 type RepositoryTransport = Pick<
   DepotTransport,
   | 'repository'
+  | 'inspectDeletion'
+  | 'deleteArtifact'
+  | 'previewRetention'
+  | 'applyRetention'
   | 'operations'
   | 'list'
   | 'search'
@@ -45,6 +49,8 @@ export function repositoryClient(client: RepositoryTransport, repository: string
     operations: (query: Omit<OperationQuery, 'repository'> = {}, signal?: AbortSignal) =>
       client.operations({ ...query, repository }, signal),
     artifacts: Object.freeze({
+      inspectDeletion: bind(client.inspectDeletion),
+      delete: bind(client.deleteArtifact),
       list: bind(client.list),
       search: bind(client.search),
       get: bind(client.artifact),
@@ -55,6 +61,10 @@ export function repositoryClient(client: RepositoryTransport, repository: string
       get: bind(client.attachments),
       replace: bind(client.replaceAttachments),
       history: bind(client.attachmentHistory),
+    }),
+    retention: Object.freeze({
+      preview: bind(client.previewRetention),
+      apply: bind(client.applyRetention),
     }),
     annotations: Object.freeze({ get: bind(client.annotations), update: bind(client.annotate) }),
     uploads: Object.freeze({

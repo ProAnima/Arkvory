@@ -1,3 +1,6 @@
+import { registerRetentionRoutes } from './retention-routes.js';
+import { ArtifactRetention } from '@proanima/depot-application';
+import { PostgresRetention } from '@proanima/depot-infrastructure';
 import { registerAttachmentRoutes } from './attachment-routes.js';
 import { BuildAttachments } from '@proanima/depot-application';
 import { PostgresAttachments } from '@proanima/depot-infrastructure';
@@ -584,6 +587,11 @@ export async function createServer(config: ServerConfig) {
         await legacy.asset(principal(request), request.params.repository, request.params['*']),
       ),
   });
+  registerRetentionRoutes(
+    app,
+    new ArtifactRetention(new PostgresRetention(catalog.pool), () => new Date().toISOString()),
+    principal,
+  );
   registerAttachmentRoutes(
     app,
     new BuildAttachments(service, new PostgresAttachments(catalog.pool)),

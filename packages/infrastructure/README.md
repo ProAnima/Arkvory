@@ -21,3 +21,5 @@ PostgresServices реализует lifecycle ключей, CAS policy и огр
 Asset-page выполняет ограниченный SQL seek по repository/path COLLATE C, валидирует cursor scope и возвращает limit+1 lookahead. Миграция 11 строит C index concurrently через тот же механизм восстановления, что package indexes. [Контракт](../../docs/ASSET_PAGINATION.md).
 
 PostgresAttachments и migration 12 хранят историю вложений и FK-пины исходных файлов. CAS сериализуется на строке основного артефакта, targets проверяются в том же репозитории, audit входит в транзакцию. [Контракт](../../docs/BUILD_DETAILS.md).
+
+PostgresRetention сохраняет cancellation, deletion receipt и audit атомарно. Catalog-mutation сериализует короткие записи каталога по repository и исключает поздние pins/annotations после удаления; байты не блокируются. Миграция 13 фиксирует publication time, миграция 14 строит indexes concurrently. Package queries исключают tombstones, immutable identity сохраняется. [Контракт и ограничения](../../docs/ARTIFACT_RETENTION.md).

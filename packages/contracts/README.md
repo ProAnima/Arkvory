@@ -12,11 +12,13 @@ Service-api экспортирует OpenAPI новых service routes и runtim
 
 Operation-policy и openapi-compose связывают wire-схемы со 108 HTTP-операциями, правами и retry. Сборка экспортирует `dist/openapi.json`; snapshots, runtime inventory и schema tests защищают совместимость. Пакет не имеет внешних side effects; экспорт документа не должен увеличивать browser bundle SDK. [Контракт](../../docs/API_CONTRACT_GUARD.md).
 
-delegation-api содержит wire actions, ограниченные runtime-парсеры и JSON schemas управления grants. OpenAPI document 0.8.0 отдельно описывает service-administration и bootstrap-or-own-key. Domain types и строки БД не импортируются.
+delegation-api содержит wire actions, ограниченные runtime-парсеры и JSON schemas управления grants. OpenAPI document 0.9.0 отдельно описывает service-administration и bootstrap-or-own-key. Domain types и строки БД не импортируются.
 
 Assets содержит независимый AssetPageResponse и readAssetPage: размер, строгий порядок Unicode scalar values и cursor валидируются до использования ответа. GET/HEAD assets/page добавлены в OpenAPI с явным asset.read.
 
 Repositories содержит wire parser и OpenAPI directory/card. Repository-discovery metadata явно описывает repository.read, legacy own scopes и omit/404. Новый permission расширяет enum до 19 без расширения прежних bindings.
 `api-surfaces` классифицирует responsibility/visibility, `operations` задаёт bounded wire page/parser. Все операции OpenAPI содержат `x-depot-surface` и `x-depot-visibility`; `openApiSurface()` формирует документационное представление, не ACL-фильтр. [API_SURFACES](../../docs/API_SURFACES.md).
 
-AttachmentRevisionResponse/AttachmentHistoryResponse, строгие bounded parsers и attachmentPaths описывают именованные вложения. OpenAPI 0.8.0, 108 операций. [Контракт](../../docs/BUILD_DETAILS.md).
+AttachmentRevisionResponse/AttachmentHistoryResponse, строгие bounded parsers и attachmentPaths описывают именованные вложения. OpenAPI 0.9.0, 113 операций. [Контракт](../../docs/BUILD_DETAILS.md).
+
+Retention содержит wire request types, bounded response parsers, OpenAPI schemas и различимые outcomes. Policy legacy:null означает managed-only artifact.delete; version 0.9.0 описывает 113 операций. Старый coarse write не расширяется. [Контракт и ограничения](../../docs/ARTIFACT_RETENTION.md).

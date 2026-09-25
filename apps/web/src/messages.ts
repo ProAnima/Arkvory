@@ -1,4 +1,22 @@
 export const en = {
+  deletionTitle: 'Delete artifact',
+  deletionHelp:
+    'Deletion removes this artifact from the catalog and prevents new downloads. It cannot be undone here. Existing file history, attachments and external references are protected. Disk space is reclaimed separately during maintenance.',
+  deletionInspect: 'Check dependencies',
+  deletionChecking: 'Checking dependencies…',
+  deletionBlocked: 'Deletion is blocked by retained references.',
+  deletionReady:
+    'No blocking references. This action also permits deleting builds labelled release. Dependencies and metadata will be checked again.',
+  deletionReference: 'An external service has pinned this artifact.',
+  deletionAsset: 'A current or historical file revision uses this artifact.',
+  deletionAttachment: 'An attachment revision uses this artifact.',
+  deletionLabel: 'A retention rule protects this label.',
+  deletionConfirm: 'Paste the selected artifact ID to confirm deletion',
+  deletionSubmit: 'Delete this artifact',
+  deletionRecheck:
+    'The artifact changed or is protected. Check dependencies again before proceeding.',
+  deletionDone: 'Artifact deleted. Physical cleanup will run separately.',
+  deletionRefresh: 'Artifact deleted, but the catalog could not be refreshed. Reload the list.',
   labelPresets: 'Common build labels',
   labelsHelp: 'Use any labels. Presets can be combined; they do not move files or grant access.',
   metadataFields: 'Build metadata',
@@ -276,6 +294,23 @@ export const en = {
 } as const;
 export type MessageKey = keyof typeof en;
 export const ru: Record<MessageKey, string> = {
+  deletionTitle: 'Удаление артефакта',
+  deletionHelp:
+    'Удаление скрывает артефакт из каталога и запрещает новые скачивания. Отменить его здесь нельзя. История файлов, вложения и внешние ссылки защищены. Место на диске освобождается отдельно при обслуживании.',
+  deletionInspect: 'Проверить зависимости',
+  deletionChecking: 'Проверяем зависимости…',
+  deletionBlocked: 'Удаление заблокировано сохранёнными ссылками.',
+  deletionReady:
+    'Блокирующих ссылок нет. Это явное действие разрешает удаление с любыми метками, включая release. Зависимости и метаданные будут проверены повторно.',
+  deletionReference: 'Внешний сервис закрепил этот артефакт.',
+  deletionAsset: 'Текущая или историческая ревизия файла использует артефакт.',
+  deletionAttachment: 'Ревизия вложений использует этот артефакт.',
+  deletionLabel: 'Правило очистки защищает эту метку.',
+  deletionConfirm: 'Вставьте ID выбранного артефакта для подтверждения удаления',
+  deletionSubmit: 'Удалить этот артефакт',
+  deletionRecheck: 'Артефакт изменился или защищён. Проверьте зависимости ещё раз.',
+  deletionDone: 'Артефакт удалён. Физическая очистка выполняется отдельно.',
+  deletionRefresh: 'Артефакт удалён, но каталог не удалось обновить. Загрузите список заново.',
   labelPresets: 'Частые метки сборок',
   labelsHelp:
     'Можно использовать любые метки и сочетать подсказки. Метки не перемещают файлы и не меняют права.',

@@ -34,7 +34,7 @@ export interface OperationPolicy {
         kind: 'repository';
         resource: 'path.repository' | 'job.repository';
         actions: readonly ServicePermission[];
-        legacy: readonly ('read' | 'write')[];
+        legacy: readonly ('read' | 'write')[] | null;
         owner?: 'upload' | 'job' | 'reference';
       };
   retry:
@@ -48,7 +48,7 @@ export interface OperationPolicy {
 }
 const repo = (
   actions: readonly ServicePermission[],
-  legacy: readonly ('read' | 'write')[],
+  legacy: readonly ('read' | 'write')[] | null,
   owner?: 'upload' | 'job' | 'reference',
 ): OperationPolicy['access'] => ({
   kind: 'repository',
@@ -78,7 +78,7 @@ function data(
   id: string,
   tag: string,
   actions: readonly ServicePermission[],
-  legacy: readonly ('read' | 'write')[],
+  legacy: readonly ('read' | 'write')[] | null,
   retry: OperationPolicy['retry'],
   owner?: 'upload' | 'job' | 'reference',
 ) {
@@ -468,4 +468,40 @@ for (const [suffix, method, id, actions, legacy, retry] of [
     legacy,
     retry,
   );
+data(
+  root + '/artifacts/{id}/deletion',
+  'get',
+  'inspectArtifactDeletion',
+  'Catalog',
+  ['artifact.delete'],
+  null,
+  'read',
+);
+data(
+  root + '/artifacts/{id}',
+  'delete',
+  'deleteArtifact',
+  'Catalog',
+  ['artifact.delete'],
+  null,
+  'idempotent',
+);
+data(
+  root + '/retention/preview',
+  'post',
+  'previewRetention',
+  'Catalog',
+  ['artifact.delete'],
+  null,
+  'read',
+);
+data(
+  root + '/retention/apply',
+  'post',
+  'applyRetention',
+  'Catalog',
+  ['artifact.delete'],
+  null,
+  'idempotent',
+);
 export const operationPolicies: Readonly<typeof policies> = policies;

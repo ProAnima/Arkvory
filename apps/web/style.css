@@ -1048,7 +1048,8 @@ output:not(.status-bar output):not(.transfer-card output):not(:empty) {
   background: var(--color-accent);
   border-color: var(--color-accent);
 }
-.build-attachments {
+.build-attachments,
+.artifact-deletion {
   margin-top: var(--space-6);
 }
 #attachment-fields {
@@ -1062,7 +1063,8 @@ output:not(.status-bar output):not(.transfer-card output):not(:empty) {
   padding-inline: var(--space-2);
   font-weight: var(--weight-medium);
 }
-.build-attachments > * + * {
+.build-attachments > * + *,
+.artifact-deletion > * + * {
   margin-top: var(--space-4);
 }
 .attachment-row {

@@ -59,3 +59,7 @@ if (page.next) {
 Из origin UI браузер отправит preflight с `Origin`, `Access-Control-Request-Method` и `Access-Control-Request-Headers`. Сервер должен ответить `204` с тем же origin в `Access-Control-Allow-Origin`. Затем проверьте `GET /api/v1/auth/me` с Bearer и чтение одного разрешённого репозитория. `403` для неразрешённого origin означает ошибку настройки CORS; `401` или `403` с разрешённым origin означает проблему токена или прав. Для разбора ошибки используйте `X-Request-Id`.
 
 Публичный контракт CORS, методов и заголовков: [API_CONTRACTS](API_CONTRACTS.md). Стадия продукта и границы отказоустойчивости: [README](../README.ru.md).
+
+Логическое удаление и retention preview/apply реализованы в [ARTIFACT_RETENTION](ARTIFACT_RETENTION.md): managed-only artifact.delete, CAS аннотаций, пины истории и receipts. OpenAPI 0.9.0, 113 операций, миграции 13/14. Реестр/настройки/квоты репозиториев, SDK distribution, identity delegation/SSO, retention scheduler, online GC и глобальное управление очередями остаются отдельными этапами.
+
+Встроенная консоль выбирает доступные репозитории через repository discovery с пагинацией и artifact.list; managed key требует repository.read для показа области. Это не преобразование granular permissions в старые read/write grants.

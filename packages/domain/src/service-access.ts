@@ -75,13 +75,15 @@ export function authorizeAction(
   principal: Principal,
   repository: string,
   permission: ServiceAction,
-  legacy: readonly ('read' | 'write')[],
+  legacy: readonly ('read' | 'write')[] | null,
 ): void {
   requireRepository(repository);
   if (principal.managed) {
     if (!allows(principal.managed.bindings, repository, permission))
       throw new DepotError('forbidden', 'Service permission denied');
   } else {
+    if (legacy === null || legacy.length === 0)
+      throw new DepotError('forbidden', 'Explicit managed permission required');
     for (const p of legacy) authorize(principal, repository, p);
   }
 }

@@ -695,6 +695,31 @@
               </form>
             </aside>
           </div>
+          <details id="artifact-deletion" class="card padded artifact-deletion" hidden>
+            <summary data-i18n="deletionTitle">Удаление артефакта</summary>
+            <p class="hint" data-i18n="deletionHelp"></p>
+            <button
+              id="deletion-inspect"
+              type="button"
+              class="secondary"
+              data-i18n="deletionInspect"
+            ></button>
+            <output id="deletion-status" role="status" aria-live="polite"></output>
+            <ul id="deletion-reasons"></ul>
+            <form id="deletion-form" class="stack" hidden>
+              <label
+                ><span data-i18n="deletionConfirm"></span
+                ><input id="deletion-confirm" autocomplete="off" spellcheck="false" required
+              /></label>
+              <button
+                id="deletion-submit"
+                type="submit"
+                class="secondary"
+                data-i18n="deletionSubmit"
+                disabled
+              ></button>
+            </form>
+          </details>
           <section
             id="build-attachments"
             class="card padded build-attachments"

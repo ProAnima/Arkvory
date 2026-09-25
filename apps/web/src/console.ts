@@ -1,6 +1,5 @@
 import { DepotClient, DepotHttpError } from '@proanima/depot-sdk';
 import { text } from '@proanima/depot-contracts';
-import type { PrincipalResponse } from '@proanima/depot-contracts';
 import { element } from './dom.js';
 import { installAssetHistory } from './asset-history.js';
 import { message } from './i18n.js';
@@ -11,6 +10,7 @@ import { installAdministration } from './administration.js';
 import { hashFile } from './file-hash.js';
 import { installAnnotationEditor } from './annotation-editor.js';
 import { installBuildAttachments } from './build-attachments.js';
+import { installArtifactDeletion } from './artifact-deletion.js';
 import { installDownloads } from './downloads.js';
 const token = element('token', HTMLInputElement),
   repository = element('repository', HTMLInputElement),
@@ -34,6 +34,16 @@ const annotationEditor = installAnnotationEditor();
 const attachments = installBuildAttachments(client, (repo, id, name) =>
   downloads.enqueue(repo, id, name),
 );
+const deletion = installArtifactDeletion(client, async () => {
+  clearSelection();
+  showView('catalog');
+  try {
+    await list();
+    feedback(output, 'deletionDone', {}, 'success');
+  } catch {
+    feedback(output, 'deletionRefresh', {}, 'error');
+  }
+});
 let stop: AbortController | undefined;
 let selected: { repository: string; id: string; revision: number; name: string } | undefined;
 let selectionGeneration = 0;
@@ -43,11 +53,22 @@ let wasConnected = false;
 let repositoryEdited = false;
 let authenticationGeneration = 0;
 const repositoryOptions = element('repository-options', HTMLElement);
-function offerRepositories(grants: PrincipalResponse['grants']): boolean {
-  const readable = grants
-    .filter((grant) => grant.permissions.includes('read'))
-    .map((grant) => grant.repository)
-    .sort((left, right) => left.localeCompare(right));
+async function readableRepositories(): Promise<readonly string[]> {
+  const readable: string[] = [];
+  let after: string | undefined;
+  let count = 0;
+  do {
+    const page = await client.repositories({ limit: 100, ...(after ? { after } : {}) });
+    count += page.items.length;
+    if (count > 10000 || (page.next && after && page.next <= after))
+      throw new Error('Invalid repository pagination');
+    for (const card of page.items)
+      if (card.permissions.includes('artifact.list')) readable.push(card.id);
+    after = page.next ?? undefined;
+  } while (after);
+  return readable.sort((left, right) => left.localeCompare(right));
+}
+function offerRepositories(readable: readonly string[]): boolean {
   repositoryOptions.replaceChildren();
   for (const name of readable) {
     const option = document.createElement('option');
@@ -113,8 +134,10 @@ async function openArtifact(repo: string, id: string, name: string) {
   showView('metadata');
   feedback(output, 'revisionStatus', { revision: a.revision });
   await attachments.open(repo, id, operations);
+  if (generation === selectionGeneration) deletion.open(repo, id, operations.has('deleteArtifact'));
 }
 function clearSelection() {
+  deletion.clear();
   attachments.clear();
   annotationEditor.set({}, false);
   selectionGeneration++;
@@ -254,11 +277,11 @@ element('connect', HTMLFormElement).onsubmit = (event) => {
   event.preventDefault();
   const generation = ++authenticationGeneration;
   run(async () => {
-    const me = await client.me();
+    const [me, readable] = await Promise.all([client.me(), readableRepositories()]);
     if (generation !== authenticationGeneration) return;
     if (me.administrator) administration.show();
     element('change-password', HTMLFormElement).hidden = !me.id.startsWith('user:');
-    if (offerRepositories(me.grants)) await list();
+    if (offerRepositories(readable)) await list();
     else if (me.administrator) {
       showView('administration');
       await administration.refresh();
@@ -280,9 +303,9 @@ element('login', HTMLFormElement).onsubmit = (event) => {
     token.value = session.token;
     element('login-password', HTMLInputElement).value = '';
     clearCatalog();
-    const me = await client.me();
+    const [me, readable] = await Promise.all([client.me(), readableRepositories()]);
     if (generation !== authenticationGeneration) return;
-    const hasRepository = offerRepositories(me.grants);
+    const hasRepository = offerRepositories(readable);
     element('change-password', HTMLFormElement).hidden = false;
     if (session.account.administrator) {
       administration.show();

@@ -290,6 +290,11 @@ test('migration preserves old asset history without inventing authors or timesta
      ALTER TABLE depot_jobs DROP COLUMN credential_id;
      DROP TABLE depot_service_delegations, depot_service_audit, depot_api_keys, depot_service_accounts;
      DROP TABLE depot_attachment_targets, depot_attachment_revisions;
+     DROP TABLE depot_artifact_deletions;
+     DROP TRIGGER depot_record_publication ON depot_uploads;
+     DROP FUNCTION depot_record_publication();
+     ALTER TABLE depot_uploads DROP COLUMN published_at;
+     DROP INDEX depot_asset_history_artifact, depot_asset_current_artifact;
      DELETE FROM depot_migrations WHERE version>=4`,
   );
   await assert.rejects(f.catalog.ready(), { code: 'unavailable' });

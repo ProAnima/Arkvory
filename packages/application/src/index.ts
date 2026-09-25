@@ -13,3 +13,5 @@ export { operationVisible } from './api-visibility.js';
 export type { ApiAccessRequirement } from './api-visibility.js';
 
 export * from './attachments.js';
+
+export * from './retention.js';

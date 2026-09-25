@@ -66,11 +66,13 @@ Webhooks подписываются, могут дублироваться и п
 
 Пустой `group=` фильтрует корневые пакеты; отсутствие group выбирает все группы. SDK сохраняет это различие. Все изменения паролей разделяют ограниченный допуск с login; заполнение очереди даёт 503/Retry-After. Identity-каталог ограничен 1000 пользователями, 100 группами и по 10 000 memberships/grants, превышение при добавлении — 507/capacity_exceeded.
 
-Текущая OpenAPI содержит 108 операций со стабильными operationId, явными правами, retry и gateway metadata, включая [делегированное service administration](SERVICE_DELEGATION.md). Native/legacy/HEAD inventory сверяется при startup и в CI; сборка сохраняет `packages/contracts/dist/openapi.json`. Правила расширения и границы: [API_CONTRACT_GUARD](API_CONTRACT_GUARD.md).
+Текущая OpenAPI содержит 113 операций со стабильными operationId, явными правами, retry и gateway metadata, включая [делегированное service administration](SERVICE_DELEGATION.md). Native/legacy/HEAD inventory сверяется при startup и в CI; сборка сохраняет `packages/contracts/dist/openapi.json`. Правила расширения и границы: [API_CONTRACT_GUARD](API_CONTRACT_GUARD.md).
 
 GET/HEAD списка и карточки репозитория реализованы в [REPOSITORY_DISCOVERY](REPOSITORY_DISCOVERY.md): отдельный managed action repository.read, legacy own scopes, bounded pagination и отсутствие data/admin escalation. Никакого SQL inventory всей площадки или автоматического импорта прав.
 
-Readiness дополнен параметрами admission waitingCapacity, perPrincipalWaitingCapacity и timeoutMs; OpenAPI document 0.8.0 сохраняет 108 операций. Управление [клиентской очередью скачиваний](DOWNLOAD_QUEUE.md) не добавляет HTTP routes и не меняет права ProGet-adapter.
+Readiness дополнен параметрами admission waitingCapacity, perPrincipalWaitingCapacity и timeoutMs; OpenAPI document 0.9.0 сохраняет 113 операций. Управление [клиентской очередью скачиваний](DOWNLOAD_QUEUE.md) не добавляет HTTP routes и не меняет права ProGet-adapter.
 Каталог применимых операций и представления спецификации по областям реализованы в [API_SURFACES](API_SURFACES.md). `operations` фильтруется текущим credential и gateway, возвращает remaining conditions и не заменяет авторизацию рабочих запросов. Native URL/operationId и legacy права сохранены.
 
-Вложения сборки расширяют surface catalog; OpenAPI 0.8.0, 108 операций, миграция 12. До 32 ссылок на published artifacts того же репозитория, CAS и постраничная история. Annotation/read-write и content права разделены. [BUILD_DETAILS](BUILD_DETAILS.md), [ADR 0024](adr/0024-build-attachments.md).
+Вложения сборки расширяют surface catalog; OpenAPI 0.9.0, 113 операций; данные вложений добавлены миграцией 12. До 32 ссылок на published artifacts того же репозитория, CAS и постраничная история. Annotation/read-write и content права разделены. [BUILD_DETAILS](BUILD_DETAILS.md), [ADR 0024](adr/0024-build-attachments.md).
+
+Логическое удаление и retention preview/apply реализованы в [ARTIFACT_RETENTION](ARTIFACT_RETENTION.md): managed-only artifact.delete, CAS аннотаций, пины истории и receipts. OpenAPI 0.9.0, 113 операций, миграции 13/14. Реестр/настройки/квоты репозиториев, SDK distribution, identity delegation/SSO, retention scheduler, online GC и глобальное управление очередями остаются отдельными этапами.

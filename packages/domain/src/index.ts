@@ -8,3 +8,5 @@ export * from './service-policy.js';
 export * from './service-delegation.js';
 
 export * from './attachments.js';
+
+export * from './retention.js';

@@ -1,3 +1,4 @@
+import { retentionPaths, deletionOperation } from './retention.js';
 import { attachmentPaths } from './attachments.js';
 import { catalogPaths } from './catalog-api.js';
 import { identityPaths } from './identity-api.js';
@@ -232,11 +233,16 @@ const composed = composeApiPaths({
   ...repositoryPaths,
   ...operationPaths,
   ...attachmentPaths,
+  ...retentionPaths,
+  ['/api/v1/repositories/{repository}/artifacts/{id}']: {
+    ...baseDocument.paths['/api/v1/repositories/{repository}/artifacts/{id}'],
+    delete: deletionOperation,
+  },
 });
 export const apiOperations = composed.operations;
 export const openApiDocument = {
   ...baseDocument,
-  info: { ...baseDocument.info, title: 'ProAnima Depot API', version: '0.8.0' },
+  info: { ...baseDocument.info, title: 'ProAnima Depot API', version: '0.9.0' },
   components: {
     ...baseDocument.components,
     schemas: { NativeError: nativeErrorSchema },

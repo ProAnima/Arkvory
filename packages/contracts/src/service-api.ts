@@ -4,6 +4,7 @@ export const servicePermissionNames = [
   'repository.read',
   'artifact.read',
   'artifact.list',
+  'artifact.delete',
   'content.read',
   'upload.create',
   'upload.read',

@@ -14,3 +14,5 @@ export * from './identity.js';
 export { PostgresServices } from './service-accounts.js';
 
 export * from './attachments.js';
+
+export * from './retention.js';

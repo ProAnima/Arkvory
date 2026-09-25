@@ -1,5 +1,6 @@
 import type { Pool, PoolClient } from 'pg';
 import { DepotError, parseDescriptor, parseManifest, requireId } from '@proanima/depot-domain';
+import { lockCatalogMutation, requirePublished } from './catalog-mutation.js';
 import { lockServiceAccess } from './service-authorization.js';
 import { readAssetPage } from './asset-page.js';
 import type { AssetPageOptions } from '@proanima/depot-application';
@@ -103,6 +104,8 @@ export class PostgresBrowse implements BrowseStore {
     try {
       await client.query('BEGIN');
       await lockServiceAccess(client, access);
+      await lockCatalogMutation(client, repository);
+      await requirePublished(client, repository, id);
       const result = await work(client);
       await client.query(
         'INSERT INTO depot_audit(repository,artifact_id,actor,action) VALUES($1,$2,$3,$4)',
@@ -245,12 +248,12 @@ export class PostgresBrowse implements BrowseStore {
   ): Promise<string | null> {
     const result = await this.pool.query<{ artifact_id: string }>(
       version === undefined
-        ? `SELECT artifact_id FROM depot_packages WHERE repository=$1
+        ? `SELECT artifact_id FROM depot_packages WHERE repository=$1 AND EXISTS(SELECT 1 FROM depot_uploads u WHERE u.id=depot_packages.artifact_id AND u.status='available')
            AND lower(package_group COLLATE "C")=lower($2 COLLATE "C")
            AND lower(name COLLATE "C")=lower($3 COLLATE "C")
            ORDER BY depot_semver_key(version) COLLATE "C" DESC,
                     version COLLATE "C" ASC, artifact_id::text COLLATE "C" ASC LIMIT 1`
-        : `SELECT artifact_id FROM depot_packages WHERE repository=$1
+        : `SELECT artifact_id FROM depot_packages WHERE repository=$1 AND EXISTS(SELECT 1 FROM depot_uploads u WHERE u.id=depot_packages.artifact_id AND u.status='available')
            AND lower(package_group)=lower($2) AND lower(name)=lower($3)
            AND lower(version)=lower($4) LIMIT 1`,
       version === undefined ? [repository, group, name] : [repository, group, name, version],
@@ -328,7 +331,7 @@ export class PostgresBrowse implements BrowseStore {
       `SELECT artifact_id,manifest,version,lower(package_group COLLATE "C") COLLATE "C" AS group_key,
               lower(name COLLATE "C") COLLATE "C" AS name_key,
               depot_semver_key(version) COLLATE "C" AS version_key
-       FROM depot_packages WHERE repository=$1
+       FROM depot_packages WHERE repository=$1 AND EXISTS(SELECT 1 FROM depot_uploads u WHERE u.id=depot_packages.artifact_id AND u.status='available')
          AND ($2::text IS NULL OR lower(package_group COLLATE "C")=lower($2 COLLATE "C"))
          AND ($3::text IS NULL OR lower(name COLLATE "C")=lower($3 COLLATE "C"))${seek}
        ORDER BY ${fields.map((field) => `${field.expr} ${field.direction}`).join(',')}

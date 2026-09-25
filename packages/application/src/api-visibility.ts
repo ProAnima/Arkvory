@@ -24,7 +24,7 @@ export type ApiAccessRequirement =
   | {
       kind: 'repository';
       actions: readonly ServiceAction[];
-      legacy: readonly ('read' | 'write')[];
+      legacy: readonly ('read' | 'write')[] | null;
     };
 
 export function operationVisible(

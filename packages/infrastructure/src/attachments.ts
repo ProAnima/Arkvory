@@ -2,6 +2,7 @@ import type { Pool } from 'pg';
 import { DepotError, parseAttachments } from '@proanima/depot-domain';
 import type { BuildAttachment, MutationAccess } from '@proanima/depot-domain';
 import type { AttachmentRevision, AttachmentStore } from '@proanima/depot-application';
+import { lockCatalogMutation, requirePublished } from './catalog-mutation.js';
 import { lockServiceAccess } from './service-authorization.js';
 
 interface RevisionRow {
@@ -49,7 +50,9 @@ export class PostgresAttachments implements AttachmentStore {
     try {
       await client.query('BEGIN');
       await lockServiceAccess(client, access);
-      // Serialize only this build, including concurrent first revisions. No byte I/O in this transaction.
+      await lockCatalogMutation(client, repository);
+      await requirePublished(client, repository, id);
+      // Keep the parent revision lock after the repository gate. No byte I/O in this transaction.
       const parent = await client.query(
         "SELECT id FROM depot_uploads WHERE id=$1 AND repository=$2 AND status='available' FOR NO KEY UPDATE",
         [id, repository],

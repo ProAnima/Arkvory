@@ -2,6 +2,7 @@ export const serviceActions = [
   'repository.read',
   'artifact.read',
   'artifact.list',
+  'artifact.delete',
   'content.read',
   'upload.create',
   'upload.read',

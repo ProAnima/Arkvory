@@ -15,3 +15,5 @@ AssetPage/AssetPageOptions и чистые prefix bounds описывают ог
 Repositories формирует собственные карточки/страницы из bounded Principal, объединяя exact ID и фильтруя до LIMIT. Effective-permissions задаёт прежний coarse mapping за линейный проход grants; новые permissions не выдаются legacy автоматически. Дополнительный I/O/порт не требуется. [Контракт](../../docs/REPOSITORY_DISCOVERY.md).
 
 BuildAttachments владеет отдельным AttachmentStore, проверяет annotation actions и валидирует CAS-команду; передаёт MutationAccess для транзакционной проверки. [Контракт](../../docs/BUILD_DETAILS.md).
+
+ArtifactRetention владеет узким RetentionStore: inspection, bounded preview и fixed-selection apply. Сценарий проверяет artifact.delete, передаёт MutationAccess и не выполняет byte I/O. Criteria, selected IDs и revision проверяются до вызова адаптера. [Контракт и ограничения](../../docs/ARTIFACT_RETENTION.md).

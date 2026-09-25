@@ -1,4 +1,8 @@
 import {
+  readDeletionCandidate,
+  readDeletionResult,
+  readRetentionPreview,
+  readRetentionResult,
   readAttachmentRevision,
   readAttachmentHistory,
   readUpload,
@@ -29,6 +33,8 @@ import {
   readOperationPage,
 } from '@proanima/depot-contracts';
 import type {
+  RetentionPreviewRequest,
+  RetentionApplyRequest,
   BuildAttachmentResponse,
   UploadResponse,
   AnnotationsResponse,
@@ -49,6 +55,41 @@ import type { TransferPolicy, TransferOptions } from './transfer.js';
 import { verifiedDownload } from './verified-download.js';
 
 export class DepotTransport {
+  async inspectDeletion(repository: string, id: string, signal?: AbortSignal) {
+    return readDeletionCandidate(
+      await this.call(
+        this.path(repository, 'artifacts/' + encodeURIComponent(id) + '/deletion'),
+        'GET',
+        undefined,
+        signal,
+      ),
+    );
+  }
+  async deleteArtifact(
+    repository: string,
+    id: string,
+    expectedAnnotationRevision: number,
+    signal?: AbortSignal,
+  ) {
+    return readDeletionResult(
+      await this.call(
+        this.path(repository, 'artifacts/' + encodeURIComponent(id)),
+        'DELETE',
+        { expectedAnnotationRevision },
+        signal,
+      ),
+    );
+  }
+  async previewRetention(repository: string, input: RetentionPreviewRequest, signal?: AbortSignal) {
+    return readRetentionPreview(
+      await this.call(this.path(repository, 'retention/preview'), 'POST', input, signal),
+    );
+  }
+  async applyRetention(repository: string, input: RetentionApplyRequest, signal?: AbortSignal) {
+    return readRetentionResult(
+      await this.call(this.path(repository, 'retention/apply'), 'POST', input, signal),
+    );
+  }
   async operations(query: OperationQuery = {}, signal?: AbortSignal) {
     const params = new URLSearchParams();
     for (const key of ['repository', 'surface', 'after'] as const) {

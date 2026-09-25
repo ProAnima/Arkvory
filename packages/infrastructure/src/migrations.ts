@@ -1,4 +1,5 @@
 import { migrateAttachments } from './attachment-schema.js';
+import { migrateRetention } from './retention-migration.js';
 import { Pool } from 'pg';
 import type { PoolClient } from 'pg';
 import { migrateServices } from './service-schema.js';
@@ -38,6 +39,13 @@ const packagePageIndexes = [
 ] as const;
 
 const catalogIndexMigrations = [
+  {
+    version: 14,
+    indexes: [
+      { name: 'depot_asset_history_artifact', definition: 'ON depot_asset_revisions(artifact_id)' },
+      { name: 'depot_asset_current_artifact', definition: 'ON depot_assets(artifact_id)' },
+    ],
+  },
   {
     version: 8,
     indexes: packagePageIndexes.map((index) => ({
@@ -280,6 +288,7 @@ export async function migrate(pool: Pool): Promise<void> {
     await migrateServices(client);
     await migrateDelegations(client);
     await migrateAttachments(client);
+    await migrateRetention(client);
     await client.query('COMMIT');
   } catch (error) {
     try {

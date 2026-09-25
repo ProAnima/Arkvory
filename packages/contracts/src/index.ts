@@ -15,3 +15,5 @@ export { apiSurfaces, apiVisibilities } from './api-surfaces.js';
 export type { ApiSurface, ApiVisibility } from './api-surfaces.js';
 
 export * from './attachments.js';
+
+export * from './retention.js';

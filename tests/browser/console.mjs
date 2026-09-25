@@ -4,6 +4,7 @@ import { mkdir } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
 import { setup, create, base } from '../integration/fixture.mjs';
 import { exerciseBuildDetails } from './build-details.mjs';
+import { exerciseDeletion } from './deletion.mjs';
 const { chromium } = await import(
   process.env.DEPOT_PLAYWRIGHT_MODULE
     ? pathToFileURL(process.env.DEPOT_PLAYWRIGHT_MODULE).href
@@ -91,6 +92,7 @@ try {
   await page.locator('#artifacts button').first().click();
   await page.locator('#selected-name').waitFor();
   assert.equal(await page.locator('#selected-name').textContent(), 'artifact.upack');
+  assert.equal(await page.locator('#artifact-deletion').isVisible(), false);
   await page.locator('#metadata-advanced summary').click();
   await page.locator('#metadata').fill('{invalid');
   await page.locator('#edit button.primary').click();
@@ -190,6 +192,7 @@ try {
   await page.locator('#logout').click();
   await page.waitForFunction(() => document.querySelector('#token').value === '');
   assert.equal(await page.locator('#selected-name').isVisible(), false);
+  await exerciseDeletion(page, f);
   assert.deepEqual(errors, []);
   console.log(
     'PASS console: API upload/download, metadata, history, users, search/reset, keyboard menu, 7 views × 3 widths × RU/EN × light/dark',
