@@ -3,6 +3,7 @@ import { element } from './dom.js';
 import { message } from './i18n.js';
 import { UiError } from './feedback.js';
 
+// depot-exception ARCH-020 -- Existing UI controller contains event wiring and view state; freeze its size and extract cohesive controllers only with browser state/reset acceptance.
 export function installAnnotationEditor() {
   const rows = element('metadata-fields', HTMLDivElement);
   const raw = element('metadata', HTMLTextAreaElement);

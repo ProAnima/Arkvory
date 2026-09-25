@@ -41,6 +41,7 @@ export function decode(row: Record<string, unknown> | undefined): Upload {
   };
 }
 
+// depot-exception ARCH-008 -- Existing adapter or contract implementation combines related operations; freeze growth and extract cohesive responsibilities while preserving transactional and authorization invariants.
 export class PostgresCatalog implements Catalog {
   readonly pool: Pool;
   private readonly locks: Pool;

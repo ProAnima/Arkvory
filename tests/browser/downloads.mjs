@@ -1,14 +1,9 @@
-// Optional browser acceptance: dedicated PostgreSQL + an installed Playwright Chromium.
+// Browser gate: dedicated PostgreSQL and pinned Playwright Chromium.
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { mkdir } from 'node:fs/promises';
-import { pathToFileURL } from 'node:url';
 import { setup, create, base } from '../integration/fixture.mjs';
-const { chromium } = await import(
-  process.env.DEPOT_PLAYWRIGHT_MODULE
-    ? pathToFileURL(process.env.DEPOT_PLAYWRIGHT_MODULE).href
-    : 'playwright'
-);
+import { chromium } from 'playwright';
 const cleanup = [];
 const browser = await chromium.launch({
   headless: true,

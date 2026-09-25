@@ -24,6 +24,7 @@ interface Selection {
   canUpload: boolean;
   canDownload: boolean;
 }
+// depot-exception ARCH-023 -- Existing UI controller contains event wiring and view state; freeze its size and extract cohesive controllers only with browser state/reset acceptance.
 export function installBuildAttachments(
   client: DepotClient,
   download: (repo: string, id: string, name: string) => Promise<void>,

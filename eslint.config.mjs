@@ -23,8 +23,7 @@ export default [
           'ts-ignore': true,
           'ts-nocheck': true,
           'ts-check': false,
-          'ts-expect-error': 'allow-with-description',
-          minimumDescriptionLength: 12,
+          'ts-expect-error': true,
         },
       ],
       'no-restricted-imports': [

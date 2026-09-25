@@ -5,6 +5,7 @@ import { element } from './dom.js';
 import { message, dateMessage } from './i18n.js';
 import { feedback } from './feedback.js';
 
+// depot-exception ARCH-022 -- Existing UI controller contains event wiring and view state; freeze its size and extract cohesive controllers only with browser state/reset acceptance.
 export function installAssetHistory(
   client: DepotClient,
   repository: HTMLInputElement,

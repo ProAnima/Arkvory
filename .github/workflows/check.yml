@@ -1,13 +1,16 @@
-name: Core checks
+name: Depot gates
 
 on:
   push:
     branches: [main]
+    tags: ['v*']
   pull_request:
+  merge_group:
+    types: [checks_requested]
   workflow_dispatch:
     inputs:
       large_transfers:
-        description: Run the 5 GiB HTTP transfer and restart test
+        description: Require both real 5 GiB transfer scenarios
         type: boolean
         default: false
 
@@ -15,39 +18,40 @@ permissions:
   contents: read
 
 concurrency:
-  group: core-${{ github.workflow }}-${{ github.ref }}
+  group: depot-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   check:
     name: Quality (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 10
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest]
     steps:
-      - name: Check out repository
-        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           persist-credentials: false
-      - name: Set up Node.js
-        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: '24'
           cache: npm
-      - name: Install dependencies
-        run: npm ci --ignore-scripts
-      - name: Check code and boundaries
-        run: npm run check
-      - name: Build and test domain and local storage
-        run: npm test
+      - run: npm ci --ignore-scripts
+      - run: npm run gate -- quick
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        if: ${{ always() }}
+        with:
+          name: quality-${{ matrix.os }}
+          path: test-results/
+          retention-days: 7
+          if-no-files-found: warn
 
   integration:
     name: PostgreSQL integration
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     services:
       postgres:
         image: postgres:18.4
@@ -63,22 +67,134 @@ jobs:
     env:
       DEPOT_TEST_DATABASE_URL: postgresql://depot_test:depot_test@127.0.0.1:5432/depot_test
     steps:
-      - name: Check out repository
-        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           persist-credentials: false
-      - name: Set up Node.js
-        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: '24'
           cache: npm
-      - name: Install dependencies
-        run: npm ci --ignore-scripts
-      - name: Build and test PostgreSQL and HTTP
-        run: npm run test:integration
-      - name: Test 5 GiB transfer and process restart
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.large_transfers }}
-        run: npm run test:large
-      - name: Test 5 GiB multipart with process kill during upload
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.large_transfers }}
-        run: node tests/large-transfer.mjs --multipart --verified --traffic --managed
+      - run: npm ci --ignore-scripts
+      - run: npm run gate -- integration
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        if: ${{ always() }}
+        with:
+          name: integration
+          path: test-results/
+          retention-days: 7
+          if-no-files-found: warn
+
+  browser:
+    name: Browser acceptance
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:18.4
+        env:
+          POSTGRES_USER: depot_test
+          POSTGRES_PASSWORD: depot_test
+          POSTGRES_DB: depot_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U depot_test -d depot_test"
+          --health-interval 3s --health-timeout 3s --health-retries 20
+    env:
+      DEPOT_TEST_DATABASE_URL: postgresql://depot_test:depot_test@127.0.0.1:5432/depot_test
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run test:browser:install
+      - run: npm run gate -- browser
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        if: ${{ always() }}
+        with:
+          name: browser
+          path: test-results/
+          retention-days: 7
+          if-no-files-found: warn
+
+  large:
+    name: Release 5 GiB transfers
+    if: ${{ startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && inputs.large_transfers) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    services:
+      postgres:
+        image: postgres:18.4
+        env:
+          POSTGRES_USER: depot_test
+          POSTGRES_PASSWORD: depot_test
+          POSTGRES_DB: depot_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U depot_test -d depot_test"
+          --health-interval 3s --health-timeout 3s --health-retries 20
+    env:
+      DEPOT_TEST_DATABASE_URL: postgresql://depot_test:depot_test@127.0.0.1:5432/depot_test
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run gate -- large
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        if: ${{ always() }}
+        with:
+          name: large
+          path: test-results/
+          retention-days: 7
+          if-no-files-found: warn
+
+  security:
+    name: Dependency audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run gate -- security
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        if: ${{ always() }}
+        with:
+          name: security
+          path: test-results/
+          retention-days: 7
+          if-no-files-found: warn
+
+  verdict:
+    name: Depot merge gate
+    if: ${{ always() }}
+    needs: [check, integration, browser, security, large]
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '24'
+      - name: Require every applicable gate to pass
+        env:
+          DEPOT_CI_NEEDS: ${{ toJSON(needs) }}
+          DEPOT_RELEASE_REQUIRED: ${{ startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && inputs.large_transfers) }}
+        run: node scripts/ci-verdict.mjs

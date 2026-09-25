@@ -122,6 +122,7 @@ async function migrateCatalogIndexes(pool: Pool): Promise<void> {
   }
 }
 
+// depot-exception ARCH-007 -- Historical additive migrations must preserve old database upgrade behavior; extract migration steps without changing their SQL or version ordering.
 export async function migrate(pool: Pool): Promise<void> {
   const client = await pool.connect();
   let unusable = false;

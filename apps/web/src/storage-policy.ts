@@ -4,6 +4,7 @@ import { element } from './dom.js';
 import { message, dateMessage } from './i18n.js';
 import { feedback, errorKey, UiError } from './feedback.js';
 
+// depot-exception ARCH-028 -- Existing UI controller contains event wiring and view state; freeze its size and extract cohesive controllers only with browser state/reset acceptance.
 export function installStoragePolicy(client: DepotClient) {
   const panel = element('storage-panel', HTMLDetailsElement),
     form = element('storage-form', HTMLFormElement),

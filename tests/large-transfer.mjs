@@ -2,7 +2,6 @@ import assert from 'node:assert/strict';
 import { fork } from 'node:child_process';
 import { once } from 'node:events';
 import { createHash, randomUUID } from 'node:crypto';
-import { Readable } from 'node:stream';
 import { writeFile, mkdir } from 'node:fs/promises';
 import { setup, base } from './integration/fixture.mjs';
 import { DepotClient } from '@proanima/depot-sdk';
@@ -46,6 +45,44 @@ async function stop() {
     const exited = once(child, 'exit');
     child.kill('SIGKILL');
     await exited;
+  }
+}
+
+async function uploadFull(address, id, chunk, size) {
+  // HTTP writable drain is the backpressure boundary. Avoid fetch buffering the synthetic source.
+  const outgoing = request(`${address}${base}/uploads/${id}/content`, {
+    method: 'PUT',
+    headers: {
+      ...f.headers,
+      'content-type': 'application/octet-stream',
+      'content-length': String(size),
+    },
+  });
+  const reply = new Promise((resolve, reject) => {
+    outgoing.once('error', reject);
+    outgoing.once('response', (response) => {
+      void (async () => {
+        let body = '';
+        response.setEncoding('utf8');
+        for await (const data of response) {
+          body += data;
+          assert(body.length <= 65536, 'Unexpectedly large upload response');
+        }
+        assert.equal(response.statusCode, 200, body);
+      })().then(resolve, reject);
+    });
+  });
+  try {
+    await Promise.all([
+      reply,
+      (async () => {
+        for (let n = 0; n < size / chunk.length; n++)
+          if (!outgoing.write(chunk)) await once(outgoing, 'drain');
+        outgoing.end();
+      })(),
+    ]);
+  } finally {
+    outgoing.destroy();
   }
 }
 
@@ -132,22 +169,7 @@ try {
     });
     assert.equal(result.status, 200, await result.text());
   } else {
-    const upload = await fetch(`${address}${base}/uploads/${id}/content`, {
-      method: 'PUT',
-      headers: {
-        ...f.headers,
-        'content-type': 'application/octet-stream',
-        'content-length': String(size),
-      },
-      duplex: 'half',
-      body: Readable.from(
-        (async function* () {
-          for (let n = 0; n < size / chunk.length; n++) yield chunk;
-        })(),
-        { objectMode: false, highWaterMark: chunk.length },
-      ),
-    });
-    assert.equal(upload.status, 200, await upload.text());
+    await uploadFull(address, id, chunk, size);
   }
   const uploadMs = Date.now() - started;
   await stop();
@@ -215,9 +237,9 @@ try {
   assert.equal(received, size);
   assert.equal(actual.digest('hex'), sha256);
   assert(peakRss < 384 * 1024 ** 2, `Server peak RSS ${peakRss} exceeded 384 MiB`);
+  assert(peakClientRss < 384 * 1024 ** 2, `Client peak RSS ${peakClientRss} exceeded 384 MiB`);
   if (verified) {
     assert(interruptedDownload);
-    assert(peakClientRss < 384 * 1024 ** 2, `Client peak RSS ${peakClientRss} exceeded 384 MiB`);
   }
   const report = {
     date: new Date().toISOString(),

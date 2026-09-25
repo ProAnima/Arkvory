@@ -3,6 +3,7 @@ import type { PackageResponse } from '@proanima/depot-contracts';
 import { element } from './dom.js';
 import { message } from './i18n.js';
 
+// depot-exception ARCH-027 -- Existing UI controller contains event wiring and view state; freeze its size and extract cohesive controllers only with browser state/reset acceptance.
 export function installPackageView(
   client: DepotClient,
   repository: HTMLInputElement,

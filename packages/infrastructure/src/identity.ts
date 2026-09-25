@@ -38,6 +38,7 @@ interface UserRow {
   locked: boolean;
 }
 
+// depot-exception ARCH-006 -- Existing adapter or contract implementation combines related operations; freeze growth and extract cohesive responsibilities while preserving transactional and authorization invariants.
 export class PostgresIdentity implements IdentityStore {
   constructor(private readonly pool: Pool) {}
 

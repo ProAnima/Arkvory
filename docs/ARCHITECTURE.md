@@ -73,3 +73,5 @@ Discovery репозиториев — чистая application projection ак�
 Области и видимость API описываются contracts registry; application `operationVisible` проецирует применимость по действующим правам без HTTP/БД. API объединяет её с ролью шлюза и выдаёт advisory-каталог. SDK namespaces делегируют существующему транспорту. [ADR 0023](adr/0023-api-surfaces-and-operation-discovery.md), [контракт](API_SURFACES.md).
 
 Именованные вложения используют отдельные domain rules, application AttachmentStore/BuildAttachments и PostgreSQL-адаптер. Байты проходят прежний transfer stack. Migration 12 хранит append-only snapshots и FK-пины targets. Web разделяет annotation editor, attachments controller и общий worker hash. [ADR 0024](adr/0024-build-attachments.md).
+
+Границы и топологический порядок сборки теперь задаёт config/architecture.json. Проверяемые лимиты 500/300/100 и временные исключения описаны в [ADR 0027](adr/0027-executable-engineering-gates.md); команды, расширение и требования к комментариям — в [ENGINEERING_GATES](ENGINEERING_GATES.md). Существующий долг и порядок декомпозиции: [аудит 2026-09-25](ARCHITECTURE_AUDIT_2026-09-25.md).

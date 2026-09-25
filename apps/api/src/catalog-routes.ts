@@ -26,6 +26,7 @@ function queryRevision(value: unknown): number {
   return Number(value);
 }
 
+// depot-exception ARCH-014 -- Existing route registrar groups endpoints with shared authorizer dependencies; separate by responsibility with the complete operation inventory unchanged.
 export function registerCatalogRoutes(
   app: FastifyInstance,
   services: {

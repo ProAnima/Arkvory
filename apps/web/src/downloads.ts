@@ -25,6 +25,7 @@ const states: Record<DownloadState, MessageKey> = {
   failed: 'downloadFailed',
 };
 
+// depot-exception ARCH-025 -- Existing UI controller contains event wiring and view state; freeze its size and extract cohesive controllers only with browser state/reset acceptance.
 export function installDownloads(baseUrl: string, token: HTMLInputElement) {
   const queue = new DownloadQueue();
   const rows = element('download-rows', HTMLTableSectionElement);

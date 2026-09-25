@@ -68,6 +68,6 @@ await suffix.pipeTo(stagingWritableAtPrefixEnd, { signal });
 
 `tests/sdk-transfer.test.mjs`: реальные локальные HTTP-сокеты, разрыв внутри блока, восстановление новым клиентом с prefix, неверные ETag/Range/размер/encoding/hash, отмена, stalled body, Retry-After и общий бюджет. `tests/integration/transfer-recovery.test.mjs`: fault proxy перед настоящими API/PostgreSQL/local storage, потеря ответа после create/part/complete, разрыв отправки, отсутствие дубликатов и пустой файл.
 
-Большой профиль: `node tests/large-transfer.mjs --multipart --verified`, требует DEPOT_TEST_DATABASE_URL и отдельную тестовую БД. Передаёт 5 GiB, убивает API на середине multipart и после публикации, рвёт download socket и проверяет SHA-256/RSS клиента и сервера. Не запускайте одновременно другие интеграционные тесты на этой БД.
+Большой профиль: `npm run gate -- large-multipart`, требует DEPOT_TEST_DATABASE_URL и отдельную тестовую БД. Передаёт 5 GiB, убивает API на середине multipart и после публикации, рвёт download socket и проверяет SHA-256/RSS клиента и сервера. Не запускайте одновременно другие интеграционные тесты на этой БД.
 
 Консоль использует [DownloadQueue и приватные OPFS checkpoints](DOWNLOAD_QUEUE.md) для паузы и продолжения скачиваний в пределах вкладки. Закрытие/reload сбрасывает очередь; CLI-адаптер постоянного download journal по-прежнему не реализован.

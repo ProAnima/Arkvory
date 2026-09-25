@@ -29,6 +29,7 @@ function route(path: string): string {
     name === 'packagePath' || name === 'assetPath' ? '*' : `:${name}`,
   );
 }
+// depot-exception ARCH-001 -- Existing adapter or contract implementation combines related operations; freeze growth and extract cohesive responsibilities while preserving transactional and authorization invariants.
 export function composeApiPaths(source: Record<string, ObjectValue>) {
   const paths: Record<string, ObjectValue> = {};
   const operations: ApiOperation[] = [];

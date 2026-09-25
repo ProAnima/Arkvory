@@ -1,33 +1,4 @@
-const units = [
-  { path: 'packages/domain', allowed: [] },
-  { path: 'packages/application', allowed: ['packages/domain'] },
-  { path: 'packages/contracts', allowed: [] },
-  { path: 'packages/infrastructure', allowed: ['packages/application', 'packages/domain'] },
-  {
-    path: 'packages/proget-compat',
-    allowed: ['packages/application', 'packages/domain', 'packages/contracts'],
-  },
-  { path: 'packages/sdk', allowed: ['packages/contracts'] },
-  {
-    path: 'apps/api',
-    allowed: [
-      'packages/application',
-      'packages/domain',
-      'packages/contracts',
-      'packages/infrastructure',
-      'packages/proget-compat',
-    ],
-  },
-  {
-    path: 'apps/worker',
-    allowed: ['packages/application', 'packages/domain', 'packages/infrastructure'],
-  },
-  {
-    path: 'apps/scheduler',
-    allowed: ['packages/application', 'packages/domain', 'packages/infrastructure'],
-  },
-  { path: 'apps/web', allowed: ['packages/sdk', 'packages/contracts'] },
-];
+const { units } = require('./config/architecture.json');
 
 module.exports = {
   forbidden: [

@@ -13,7 +13,7 @@
     "npm": ">=11 <12"
   },
   "scripts": {
-    "check": "npm run format:check && npm run typecheck && npm run lint && npm run architecture:check",
+    "check": "node scripts/gates.mjs static",
     "typecheck": "node scripts/check-types.mjs",
     "lint": "eslint apps packages --max-warnings=0",
     "architecture:check": "depcruise --config .dependency-cruiser.cjs apps packages",
@@ -22,16 +22,23 @@
     "build": "node scripts/build.mjs",
     "start": "node --env-file-if-exists=.env apps/api/dist/main.js",
     "migrate": "node --env-file-if-exists=.env apps/api/dist/migrate.js",
-    "test": "npm run build && node --test tests/*.test.mjs",
-    "test:integration": "npm run build && node --test --test-concurrency=1 tests/integration/*.test.mjs",
-    "test:large": "npm run build && node tests/large-transfer.mjs",
+    "test": "node scripts/gates.mjs unit",
+    "test:integration": "node --env-file-if-exists=.env.test scripts/gates.mjs integration",
+    "test:large": "node --env-file-if-exists=.env.test scripts/gates.mjs large",
     "init:local": "node scripts/init-local.mjs",
     "upload": "node --env-file-if-exists=.env scripts/upload.mjs",
     "worker": "node --env-file-if-exists=.env apps/worker/dist/main.js",
     "gc": "node --env-file-if-exists=.env apps/worker/dist/gc.js",
     "import": "node --env-file-if-exists=.env scripts/import.mjs",
     "scrub": "node --env-file-if-exists=.env apps/worker/dist/scrub.js",
-    "upack:manifest": "node scripts/upack-manifest.mjs"
+    "upack:manifest": "node scripts/upack-manifest.mjs",
+    "gate": "node --env-file-if-exists=.env.test scripts/gates.mjs",
+    "gate:list": "node scripts/gates.mjs --list",
+    "test:browser": "node --env-file-if-exists=.env.test scripts/gates.mjs browser",
+    "test:browser:install": "node node_modules/playwright/cli.js install --with-deps chromium",
+    "policy:check": "node scripts/check-policy.mjs",
+    "test:db:up": "docker compose -f compose.test.yml up -d --wait",
+    "test:db:stop": "docker compose -f compose.test.yml stop"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
@@ -43,9 +50,11 @@
     "dependency-cruiser": "18.4.0",
     "esbuild": "0.28.2",
     "eslint": "10.11.0",
+    "playwright": "1.63.0",
     "prettier": "3.9.8",
     "typescript": "5.9.3",
     "typescript-eslint": "8.70.1",
+    "yaml": "2.9.1",
     "yazl": "3.3.1"
   },
   "homepage": "https://github.com/ProAnima/Depot",

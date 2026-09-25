@@ -37,12 +37,10 @@
 Запуск на выделенной тестовой БД:
 
 ```powershell
-# DEPOT_TEST_DATABASE_URL — из локального файла окружения, не из VCS.
-# DEPOT_PLAYWRIGHT_MODULE — путь к установленному playwright/index.mjs при необходимости.
+# DEPOT_TEST_DATABASE_URL — из .env.test или окружения, не production.
+# Playwright зафиксирован в devDependencies; по умолчанию используется pinned Chromium.
 $env:DEPOT_BROWSER_CHANNEL = 'msedge'
-npm run build
-node --env-file=.cache/test-db.env tests/browser/console.mjs
-node --env-file=.cache/test-db.env tests/browser/downloads.mjs
+npm run gate -- browser
 ```
 
 Браузерные сценарии запускаются последовательно: fixture использует эксклюзивный профиль API на тестовой БД. Проверено локально на Windows, Node 24.13, PostgreSQL 18.4, headless Edge. Основные проверки дополнены тестами полноты RU/EN и контраста текстовых пар. Это не сертификация WCAG: проверка screen reader, Safari/Firefox и пользовательское исследование ещё не проводились. Ограничения save picker/OPFS и времени жизни очереди описаны в [DOWNLOAD_QUEUE](DOWNLOAD_QUEUE.md).

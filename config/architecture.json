@@ -1,0 +1,34 @@
+{
+  "limits": { "file": 500, "class": 300, "function": 100 },
+  "maxExceptionDays": 90,
+  "units": [
+    { "path": "packages/domain", "allowed": [] },
+    { "path": "packages/contracts", "allowed": [] },
+    { "path": "packages/application", "allowed": ["packages/domain"] },
+    { "path": "packages/infrastructure", "allowed": ["packages/application", "packages/domain"] },
+    {
+      "path": "packages/proget-compat",
+      "allowed": ["packages/application", "packages/domain", "packages/contracts"]
+    },
+    { "path": "packages/sdk", "allowed": ["packages/contracts"] },
+    {
+      "path": "apps/api",
+      "allowed": [
+        "packages/application",
+        "packages/domain",
+        "packages/contracts",
+        "packages/infrastructure",
+        "packages/proget-compat"
+      ]
+    },
+    {
+      "path": "apps/worker",
+      "allowed": ["packages/application", "packages/domain", "packages/infrastructure"]
+    },
+    {
+      "path": "apps/scheduler",
+      "allowed": ["packages/application", "packages/domain", "packages/infrastructure"]
+    },
+    { "path": "apps/web", "allowed": ["packages/sdk", "packages/contracts"] }
+  ]
+}

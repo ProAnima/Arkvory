@@ -1,3 +1,4 @@
+// depot-exception ARCH-012 -- Existing public SDK compatibility facade also owns HTTP mechanics; keep existing methods stable while moving identity and catalog clients into composed modules.
 import {
   readStoragePolicySnapshot,
   readStorageUsage,
@@ -62,6 +63,7 @@ import {
 import type { TransferPolicy, TransferOptions } from './transfer.js';
 import { verifiedDownload } from './verified-download.js';
 
+// depot-exception ARCH-013 -- Existing public SDK compatibility facade also owns HTTP mechanics; keep existing methods stable while moving identity and catalog clients into composed modules.
 export class DepotTransport {
   async inspectDeletion(repository: string, id: string, signal?: AbortSignal) {
     return readDeletionCandidate(

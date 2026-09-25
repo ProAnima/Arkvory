@@ -4,6 +4,7 @@ import type { Principal } from '@proanima/depot-domain';
 import { effectivePermissions } from '@proanima/depot-application';
 import type { ServiceAccess } from '@proanima/depot-application';
 
+// depot-exception ARCH-018 -- Existing route registrar groups endpoints with shared authorizer dependencies; separate by responsibility with the complete operation inventory unchanged.
 export function registerServiceRoutes(
   app: FastifyInstance,
   service: ServiceAccess,

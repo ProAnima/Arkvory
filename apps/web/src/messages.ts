@@ -1,3 +1,4 @@
+// depot-exception ARCH-026 -- Paired RU/EN dictionaries are declarative data; preserve key parity and separate locales only with localization parity checks.
 export const en = {
   storageTitle: 'Storage & automatic cleanup',
   storageHelp:

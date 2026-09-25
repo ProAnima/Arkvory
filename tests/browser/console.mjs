@@ -1,16 +1,11 @@
 import { exerciseStoragePolicy } from './storage-policy.mjs';
-// Optional acceptance against a real API/database. Only the OS save picker is substituted.
+// Browser gate against real API/database. Only the OS save picker is substituted.
 import assert from 'node:assert/strict';
 import { mkdir } from 'node:fs/promises';
-import { pathToFileURL } from 'node:url';
 import { setup, create, base } from '../integration/fixture.mjs';
 import { exerciseBuildDetails } from './build-details.mjs';
 import { exerciseDeletion } from './deletion.mjs';
-const { chromium } = await import(
-  process.env.DEPOT_PLAYWRIGHT_MODULE
-    ? pathToFileURL(process.env.DEPOT_PLAYWRIGHT_MODULE).href
-    : 'playwright'
-);
+import { chromium } from 'playwright';
 const browser = await chromium.launch({
   headless: true,
   ...(process.env.DEPOT_BROWSER_CHANNEL ? { channel: process.env.DEPOT_BROWSER_CHANNEL } : {}),

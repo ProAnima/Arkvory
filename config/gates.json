@@ -1,0 +1,109 @@
+{
+  "profiles": {
+    "quick": ["static", "unit"],
+    "verify": ["static", "unit", "security", "integration", "browser"],
+    "release": [
+      "static",
+      "unit",
+      "security",
+      "integration",
+      "browser",
+      "large-full",
+      "large-multipart"
+    ],
+    "large": ["large-full", "large-multipart"]
+  },
+  "tasks": {
+    "static": {
+      "needs": ["policy"],
+      "timeoutSeconds": 600,
+      "commands": [
+        {
+          "script": "node_modules/prettier/bin/prettier.cjs",
+          "args": [".", "--check"]
+        },
+        {
+          "script": "scripts/check-types.mjs",
+          "args": []
+        },
+        {
+          "script": "node_modules/eslint/bin/eslint.js",
+          "args": ["apps", "packages", "--max-warnings=0"]
+        },
+        {
+          "script": "node_modules/dependency-cruiser/bin/dependency-cruiser.mjs",
+          "args": ["--config", ".dependency-cruiser.cjs", "apps", "packages"]
+        }
+      ]
+    },
+    "build": {
+      "needs": ["policy"],
+      "timeoutSeconds": 600,
+      "commands": [
+        {
+          "script": "scripts/build.mjs",
+          "args": []
+        }
+      ]
+    },
+    "unit": {
+      "needs": ["build"],
+      "timeoutSeconds": 300,
+      "pattern": "tests/*.test.mjs",
+      "kind": "node-test"
+    },
+    "integration": {
+      "needs": ["build"],
+      "timeoutSeconds": 900,
+      "pattern": "tests/integration/**/*.test.mjs",
+      "kind": "node-test",
+      "database": true
+    },
+    "browser": {
+      "needs": ["build"],
+      "timeoutSeconds": 600,
+      "entries": ["tests/browser/console.mjs", "tests/browser/downloads.mjs"],
+      "kind": "scenario",
+      "database": true,
+      "browser": true
+    },
+    "large-full": {
+      "needs": ["build"],
+      "timeoutSeconds": 900,
+      "entries": ["tests/large-transfer.mjs"],
+      "kind": "scenario",
+      "database": true
+    },
+    "large-multipart": {
+      "needs": ["build"],
+      "timeoutSeconds": 1200,
+      "entries": ["tests/large-transfer.mjs"],
+      "args": ["--multipart", "--verified", "--traffic", "--managed"],
+      "kind": "scenario",
+      "database": true
+    },
+    "security": {
+      "needs": [],
+      "timeoutSeconds": 120,
+      "commands": [
+        {
+          "script": "$npm",
+          "args": ["audit", "--audit-level=high"]
+        }
+      ]
+    },
+    "policy": {
+      "needs": [],
+      "timeoutSeconds": 120,
+      "commands": [
+        {
+          "script": "scripts/check-policy.mjs",
+          "args": []
+        }
+      ]
+    }
+  },
+  "spawnedHelpers": ["tests/integration/api-child.mjs"],
+  "mergeTasks": ["static", "unit", "security", "integration", "browser"],
+  "releaseTasks": ["large-full", "large-multipart"]
+}

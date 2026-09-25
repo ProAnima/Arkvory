@@ -1,3 +1,4 @@
+// depot-exception ARCH-002 -- Declarative operation inventory centralizes permission and retry policy; split by API surface without duplicating authorization definitions.
 import type { servicePermissionNames } from './service-api.js';
 import type { AdministrationPermission } from './delegation-api.js';
 type ServicePermission = (typeof servicePermissionNames)[number];

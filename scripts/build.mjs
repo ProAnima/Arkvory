@@ -1,20 +1,12 @@
 import { execFileSync } from 'node:child_process';
 import { resolve } from 'node:path';
-import { mkdir, copyFile, writeFile } from 'node:fs/promises';
+import { mkdir, copyFile, writeFile, readFile } from 'node:fs/promises';
 import { build } from 'esbuild';
+import { cleanBuild } from './gates/clean-build.mjs';
 
-const order = [
-  'packages/domain',
-  'packages/contracts',
-  'packages/application',
-  'packages/infrastructure',
-  'packages/proget-compat',
-  'packages/sdk',
-  'apps/api',
-  'apps/worker',
-  'apps/scheduler',
-  'apps/web',
-];
+const { units } = JSON.parse(await readFile('config/architecture.json', 'utf8'));
+const order = units.map((unit) => unit.path);
+await cleanBuild(process.cwd(), units);
 for (const project of order) {
   execFileSync(
     process.execPath,

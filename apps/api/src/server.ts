@@ -1,3 +1,4 @@
+// depot-exception ARCH-016 -- Existing composition root combines authentication, transfer routes and process lifecycle; freeze until those responsibilities are extracted under HTTP regression tests.
 import { registerStoragePolicyRoutes } from './storage-policy-routes.js';
 import { maintainStorage } from './storage-maintenance.js';
 import { RepositoryStorage } from '@proanima/depot-application';
@@ -59,6 +60,7 @@ function wire(upload: Upload): UploadResponse {
   };
 }
 
+// depot-exception ARCH-017 -- Existing composition root combines authentication, transfer routes and process lifecycle; freeze until those responsibilities are extracted under HTTP regression tests.
 export async function createServer(config: ServerConfig) {
   const role: unknown = config.role ?? 'api';
   if (role !== 'api' && role !== 'reader') throw new Error('Invalid gateway role');

@@ -5,6 +5,7 @@ import { element } from './dom.js';
 import { message } from './i18n.js';
 import { feedback, errorKey } from './feedback.js';
 
+// depot-exception ARCH-021 -- Existing UI controller contains event wiring and view state; freeze its size and extract cohesive controllers only with browser state/reset acceptance.
 export function installArtifactDeletion(client: DepotClient, deleted: () => Promise<void>) {
   const section = element('artifact-deletion', HTMLDetailsElement),
     inspect = element('deletion-inspect', HTMLButtonElement),

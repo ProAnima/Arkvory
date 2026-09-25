@@ -1,3 +1,4 @@
+// depot-exception ARCH-003 -- Existing adapter or contract implementation combines related operations; freeze growth and extract cohesive responsibilities while preserving transactional and authorization invariants.
 import type { Pool, PoolClient } from 'pg';
 import { DepotError, parseDescriptor, parseManifest, requireId } from '@proanima/depot-domain';
 import { lockCatalogMutation, requirePublished } from './catalog-mutation.js';
@@ -89,6 +90,7 @@ function assetRevision(row: AssetRevisionRow): AssetRevision {
   };
 }
 
+// depot-exception ARCH-004 -- Existing adapter or contract implementation combines related operations; freeze growth and extract cohesive responsibilities while preserving transactional and authorization invariants.
 export class PostgresBrowse implements BrowseStore {
   constructor(private readonly pool: Pool) {}
   private async change<T>(
@@ -260,6 +262,7 @@ export class PostgresBrowse implements BrowseStore {
     );
     return result.rows[0]?.artifact_id ?? null;
   }
+  // depot-exception ARCH-005 -- Existing adapter or contract implementation combines related operations; freeze growth and extract cohesive responsibilities while preserving transactional and authorization invariants.
   async packagePage(
     repository: string,
     group: string | undefined,

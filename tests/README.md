@@ -2,8 +2,9 @@
 
 - `npm test`: сборка, Node.js test runner, домен/Range и реальная локальная файловая система.
 - `npm run test:integration`: PostgreSQL/HTTP, требует `DEPOT_TEST_DATABASE_URL` на отдельную тестовую БД. Создаёт уникальные schema; удаляет только свои данные.
-- `npm run test:large`: настоящий HTTP, 5 GiB, отдельный серверный процесс, restart, Range, SHA-256 и RSS. Требует ту же тестовую БД и не менее 6 GiB места в системном temp.
-- `node tests/large-transfer.mjs --multipart --verified`: multipart, kill API на середине и после публикации, проверяемая SDK-докачка через fault proxy, SHA-256 и RSS обоих процессов. Не менее 11 GiB свободного места для частей и собранного blob.
+- `npm run gate -- browser`: оба браузерных сценария, настоящие API/БД, pinned Playwright Chromium; обязательный CI-гейт.
+- `npm run test:large`: оба сценария 5 GiB, настоящий HTTP, отдельный серверный процесс, restart, Range, SHA-256 и RSS, multipart kill/resume с managed credential и traffic limits. Требует ту же тестовую БД и не менее 11 GiB свободного места в системном temp.
+- `npm run gate -- quick|verify|release`: единые профили; имена передаются отдельно, например `npm run gate -- verify`. Реестр, добавление проверок и отчёты: [ENGINEERING_GATES](../docs/ENGINEERING_GATES.md).
 
 SDK fault tests входят в `npm test`: настоящие HTTP-сокеты без БД, неполные ответы, неправильные validators/Range, ограниченные повторы/тайм-ауты/отмена. Integration suite дополнительно теряет ответы после записи create/part/complete в настоящей БД и обрывает multipart upload.
 
@@ -17,7 +18,7 @@ SDK fault tests входят в `npm test`: настоящие HTTP-сокеты
 
 `tests/integration/compat.test.mjs` проверяет legacy exact/latest UPack download при каталоге более 1000 версий, те же байты, отсутствие версии и прежние ACL/Range.
 
-`tests/integration/service-access.test.mjs` проверяет managed ключи: точные права native/legacy, one-time issuance, ротацию и ownership, отзыв между записью bytes и commit, policy CAS, caps, worker/reader и отсутствие file fallback. `node tests/large-transfer.mjs --multipart --verified --traffic --managed` выполняет передачу 5 GiB с managed credential, kill/restart/resume и проверкой SHA-256. Standalone БД должна быть свободна от других suites.
+`tests/integration/service-access.test.mjs` проверяет managed ключи: точные права native/legacy, one-time issuance, ротацию и ownership, отзыв между записью bytes и commit, policy CAS, caps, worker/reader и отсутствие file fallback. `npm run gate -- large-multipart` выполняет передачу 5 GiB с managed credential, kill/restart/resume и проверкой SHA-256. Standalone БД должна быть свободна от других suites.
 
 `api-contract.test.mjs` проверяет стабильные operationId, схемы, security/path metadata и собранный JSON. `integration/api-contract.test.mjs` проверяет реальный HTTP без credentials для всех операций, запрет всех mutations на reader, отказ startup при неизвестном route и схемы реальных PostgreSQL/HTTP ответов. Снимок `fixtures/api-operations.json` обновляется после review изменений контракта; не расширяйте исключения guard ради зелёного теста.
 
@@ -31,7 +32,7 @@ Discovery: tests/repositories.test.mjs и integration/repositories.test.mjs пр
 
 ## Приёмка интерфейса
 
-`tests/browser/console.mjs` — дополнительный сценарий с реальными API/PostgreSQL: каталог, скачивание, метаданные, история, пользователи и загрузка. Проверяет семь экранов на трёх ширинах в RU/EN и обеих темах, сохранение полей, клавиатурное меню и блокировку входа во время передачи. Требует отдельно установленного Playwright и браузера, не включён в обычный `npm test`. Запуск и границы проверки: [CONSOLE_UX](../docs/CONSOLE_UX.md).
+`tests/browser/console.mjs` — обязательный сценарий verify/CI с реальными API/PostgreSQL: каталог, скачивание, метаданные, история, пользователи и загрузка. Проверяет семь экранов на трёх ширинах в RU/EN и обеих темах, сохранение полей, клавиатурное меню и блокировку входа во время передачи. Playwright входит в devDependencies; браузер устанавливается через `npm run test:browser:install`. Обычный `npm test` запускает только unit-гейт. Запуск и границы проверки: [CONSOLE_UX](../docs/CONSOLE_UX.md).
 `operations.test.mjs` и `integration/operations.test.mjs` проверяют partition всего API, visibility без cross-resource/admin escalation, schema/HEAD/cursors, revoke/delegation/reader, пользовательские группы и реальный SDK workflow через новые namespaces. [Контракт](../docs/API_SURFACES.md).
 
 `attachments.test.mjs` и integration/attachments проверяют ограничения, CAS/права, историю, restart и FK-пины. Browser console вызывает build-details: реальные metadata edits, labels, multipart pause/resume, conflict/reload, unlink/restore и reader. Браузерный сценарий и integration suite на одной PostgreSQL базе запускаются последовательно: storage advisory locks действуют на всю БД, даже при разных test schemas.

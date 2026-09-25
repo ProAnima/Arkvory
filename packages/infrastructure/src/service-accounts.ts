@@ -1,3 +1,4 @@
+// depot-exception ARCH-009 -- Existing adapter or contract implementation combines related operations; freeze growth and extract cohesive responsibilities while preserving transactional and authorization invariants.
 import { createHash, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
 import type { Pool, PoolClient } from 'pg';
 import { DepotError, parseBindings, requireSubset } from '@proanima/depot-domain';
@@ -66,6 +67,7 @@ function page<T>(rows: readonly T[], id: (row: T) => string) {
   const last = items.at(-1);
   return { items, next: rows.length > 50 && last ? id(last) : null };
 }
+// depot-exception ARCH-010 -- Existing adapter or contract implementation combines related operations; freeze growth and extract cohesive responsibilities while preserving transactional and authorization invariants.
 export class PostgresServices implements ServiceStore {
   constructor(private readonly pool: Pool) {}
   private async change<T>(work: (client: PoolClient) => Promise<T>, mutation = true): Promise<T> {
@@ -236,6 +238,7 @@ export class PostgresServices implements ServiceStore {
       return row;
     }, false);
   }
+  // depot-exception ARCH-011 -- Existing adapter or contract implementation combines related operations; freeze growth and extract cohesive responsibilities while preserving transactional and authorization invariants.
   async issue(
     actor: Principal,
     accountId: string,
