@@ -40,6 +40,11 @@ export async function exerciseRpm(output) {
       name,
     ]);
     created = true;
+    run(['exec', name, 'dnf', 'install', '-y', '/candidate/Depot-CLI-x86_64.rpm']);
+    assert.ok(JSON.parse(run(['exec', name, 'depotctl', '--version'])).version);
+    assert.throws(() => run(['exec', name, 'rpm', '-q', 'postgresql-server']));
+    run(['exec', name, 'dnf', 'reinstall', '-y', '/candidate/Depot-CLI-x86_64.rpm']);
+    run(['exec', name, 'dnf', 'remove', '-y', 'proanima-depot-cli']);
     run(['exec', name, 'dnf', 'install', '-y', '/candidate/Depot-x86_64.rpm']);
     run([
       'exec',

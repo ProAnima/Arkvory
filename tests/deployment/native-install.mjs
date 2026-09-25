@@ -6,6 +6,7 @@ import { randomBytes } from 'node:crypto';
 import assert from 'node:assert/strict';
 import { verifyNativeFiles } from '../../scripts/native-files.mjs';
 import { exerciseRpm } from './native-rpm.mjs';
+import { exerciseClient } from './client-install.mjs';
 
 // This gate uses production service names only on disposable CI machines, never a developer workstation.
 assert.equal(
@@ -25,6 +26,7 @@ await verifyNativeFiles(
   [process.platform],
 );
 const root = windows ? join(process.env.ProgramData, 'ProAnima/Depot') : '/opt/proanima-depot';
+await exerciseClient(output, manifest.version);
 await assert.rejects(
   access(join(root, 'installation.json')),
   /ENOENT/,

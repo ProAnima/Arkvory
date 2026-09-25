@@ -37,6 +37,9 @@ export const guideEnglish = {
   helpRetry: 'Retry policy',
   helpActions: 'Required actions',
   helpCli: 'Server lifecycle CLI',
+  helpRemoteCli: 'Remote client · depotctl',
+  helpRemoteCliBody:
+    'Install the separate Depot CLI package on your computer. It includes Node.js and needs no server services. Store your key in a private file. Repeat the same transfer command after interruption; use --json for CI/CD.',
   helpCliBody:
     'Run from an elevated terminal on the server. These commands manage deployment; integrations use the HTTP API and SDK. Replace ROOT with the installation directory.',
   helpRecipes: 'Integration checklist',
@@ -82,6 +85,9 @@ export const guideRussian: Record<keyof typeof guideEnglish, string> = {
   helpRetry: 'Политика повторов',
   helpActions: 'Необходимые права',
   helpCli: 'CLI обслуживания сервера',
+  helpRemoteCli: 'Удалённый клиент · depotctl',
+  helpRemoteCliBody:
+    'Установите отдельный пакет Depot CLI на свой компьютер. Node.js включён, службы сервера не нужны. Храните ключ в приватном файле. После обрыва повторите ту же команду передачи; для CI/CD используйте --json.',
   helpCliBody:
     'Запускайте в терминале администратора на сервере. Эти команды управляют развёртыванием; интеграции используют HTTP API и SDK. Вместо ROOT укажите папку установки.',
   helpRecipes: 'Порядок интеграции',

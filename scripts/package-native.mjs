@@ -5,6 +5,7 @@ import { execFileSync } from 'node:child_process';
 import { dependency } from './native-dependencies.mjs';
 import { verifyReleaseFiles, sha256 } from './release-files.mjs';
 import { linuxPackages } from './package-native-linux.mjs';
+import { windowsClient, linuxClient } from './package-client.mjs';
 
 const source = resolve(process.argv[2] ?? ''),
   output = resolve(process.argv[3] ?? 'artifacts/native');
@@ -24,7 +25,7 @@ for (const name of ['depot-runtime.zip', 'depot-release.json', 'depot-setup.mjs'
 await copyFile('LICENSE.md', join(payload, 'LICENSE.md'));
 let files;
 if (process.platform === 'win32') files = await windowsPackage();
-else if (process.platform === 'linux' && process.arch === 'x64')
+else if (process.platform === 'linux' && process.arch === 'x64') {
   files = await linuxPackages(
     payload,
     stage,
@@ -32,7 +33,8 @@ else if (process.platform === 'linux' && process.arch === 'x64')
     release,
     await dependency('nodeLinux', cache),
   );
-else throw Error('Native packaging supports Windows/Linux x64');
+  files.push(...(await linuxClient(source, stage, output, release)));
+} else throw Error('Native packaging supports Windows/Linux x64');
 const hashes = {};
 for (const name of files) hashes[name] = await sha256(join(output, name));
 await writeFile(
@@ -137,5 +139,16 @@ async function windowsPackage() {
     ],
     { stdio: 'inherit', windowsHide: true },
   );
-  return ['Depot-Setup-x64.exe'];
+  return [
+    'Depot-Setup-x64.exe',
+    ...(await windowsClient(
+      source,
+      stage,
+      output,
+      release,
+      compiler,
+      runtime,
+      join(payload, 'wizard.png'),
+    )),
+  ];
 }

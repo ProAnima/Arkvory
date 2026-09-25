@@ -17,6 +17,15 @@ import type { IdentityClient, AdministrationClient } from './management-client.j
 import { repositoryClient } from './repository-client.js';
 import type { RepositoryClient } from './repository-client.js';
 
+export interface ClientOptions extends TransferPolicy {
+  /** Cancels all requests of this client, including management operations. */
+  readonly signal?: AbortSignal;
+  /** Fallback request/body deadline when no per-operation signal is supplied.
+   * Explicit signals own their deadlines; transfer attempts retain their own deadlines.
+   */
+  readonly requestTimeoutMs?: number;
+}
+
 /** Compatible public facade. Each operation delegates to its responsible API module. */
 export class DepotClient {
   private readonly discovery: DiscoveryApi;
@@ -32,9 +41,9 @@ export class DepotClient {
   private readonly downloads: DownloadApi;
   readonly identity: IdentityClient;
   readonly administration: AdministrationClient;
-  constructor(baseUrl: string, token: () => string, policy: TransferPolicy = {}) {
+  constructor(baseUrl: string, token: () => string, policy: ClientOptions = {}) {
     const normalized = transferPolicy(policy);
-    const http = new HttpTransport(baseUrl, token);
+    const http = new HttpTransport(baseUrl, token, policy);
     this.discovery = new DiscoveryApi(http);
     this.authentication = new IdentityApi(http);
     this.usersApi = new UsersApi(http);

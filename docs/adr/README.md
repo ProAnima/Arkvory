@@ -44,3 +44,4 @@ ADR нужен для изменения границ, публичных кон
 - [0031 — Установка релизов и службы](0031-release-installation-and-supervision.md)
 - [0032 — Проверенные релизные комплекты](0032-tested-release-bundles.md)
 - [0033 — Нативные установщики и знакомство с Depot](0033-native-installers-and-guided-setup.md)
+- [0034 — Отдельный удалённый клиент depotctl](0034-remote-client-cli.md)

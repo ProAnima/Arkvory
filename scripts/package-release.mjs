@@ -75,6 +75,21 @@ await build({
   },
 });
 await copyFile(join(output, 'depot-setup.mjs'), join(staging, 'deploy/depot-setup.mjs'));
+await build({
+  entryPoints: ['apps/cli/src/main.ts'],
+  outfile: join(output, 'depotctl.mjs'),
+  bundle: true,
+  format: 'esm',
+  platform: 'node',
+  target: 'node24',
+  define: { 'process.env.DEPOT_CLI_VERSION': JSON.stringify(version) },
+  banner: {
+    js:
+      '/* Bundled SHA-256 implementation: @noble/hashes, MIT License.\n' +
+      (await readFile('node_modules/@noble/hashes/LICENSE', 'utf8')).replaceAll('*/', '* /') +
+      '\n*/',
+  },
+});
 const zip = new ZipFile();
 const archive = join(output, 'depot-runtime.zip');
 const completed = pipeline(zip.outputStream, createWriteStream(archive, { flags: 'wx' }));

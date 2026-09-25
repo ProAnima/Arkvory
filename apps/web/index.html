@@ -716,6 +716,15 @@
           </article>
           <div class="guide-grid">
             <article class="card">
+              <h3 data-i18n="helpRemoteCli"></h3>
+              <p data-i18n="helpRemoteCliBody"></p>
+              <pre><code>depotctl --help
+depotctl profile add production --server https://depot.example --token-file /private/depot.key
+depotctl doctor
+depotctl upload build.upack --label test
+depotctl download ARTIFACT_ID ./build.upack</code></pre>
+            </article>
+            <article class="card">
               <h3 data-i18n="helpCli"></h3>
               <p data-i18n="helpCliBody"></p>
               <pre><code>depot help

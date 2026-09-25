@@ -1,0 +1,2 @@
+#!/bin/sh
+exec /usr/lib/proanima-depot-cli/node /usr/lib/proanima-depot-cli/depotctl.mjs "$@"

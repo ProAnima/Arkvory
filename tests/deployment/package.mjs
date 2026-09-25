@@ -25,6 +25,22 @@ await verifyReleaseFiles(
   execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),
 );
 await verifyInstallers(output, root, extractArchive);
+assert.equal(
+  JSON.parse(
+    execFileSync(process.execPath, [join(output, 'depotctl.mjs'), '--version'], {
+      cwd: root,
+      encoding: 'utf8',
+    }),
+  ).version,
+  release.version,
+);
+assert.match(
+  execFileSync(process.execPath, [join(output, 'depotctl.mjs'), '--help', '--lang', 'ru'], {
+    cwd: root,
+    encoding: 'utf8',
+  }),
+  /Удалённый клиент/,
+);
 const target = join(root, 'installation');
 const selected = await source(target, null, output);
 await stage(target, selected);

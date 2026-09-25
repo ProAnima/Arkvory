@@ -17,10 +17,19 @@ export function repositoryPath(repository: string, suffix: string) {
 /** One credential callback and HTTP boundary per public client; never cache a credential. */
 export class HttpTransport implements HttpPort {
   private readonly base: URL;
+  private readonly responseSignals = new WeakMap<Response, AbortSignal>();
   constructor(
     baseUrl: string,
     private readonly token: () => string,
+    private readonly options: { signal?: AbortSignal; requestTimeoutMs?: number } = {},
   ) {
+    if (
+      options.requestTimeoutMs !== undefined &&
+      (!Number.isSafeInteger(options.requestTimeoutMs) ||
+        options.requestTimeoutMs < 1 ||
+        options.requestTimeoutMs > 3600000)
+    )
+      throw new Error('Invalid request timeout');
     this.base = new URL(baseUrl);
     if (
       this.base.username ||
@@ -36,6 +45,15 @@ export class HttpTransport implements HttpPort {
       throw new Error('Use HTTPS (HTTP is allowed only on loopback)');
   }
   async request(path: string, init: RequestInit = {}, signal?: AbortSignal) {
+    const deadline =
+      signal ??
+      (this.options.requestTimeoutMs === undefined
+        ? undefined
+        : AbortSignal.timeout(this.options.requestTimeoutMs));
+    const signals = [deadline, this.options.signal].filter(
+      (value): value is AbortSignal => value !== undefined,
+    );
+    signal = signals.length ? AbortSignal.any(signals) : undefined;
     const headers = new Headers(init.headers);
     headers.set('Authorization', `Bearer ${this.token()}`);
     const response = await fetch(
@@ -52,6 +70,7 @@ export class HttpTransport implements HttpPort {
       signal?.throwIfAborted();
       throw new DepotNetworkError();
     });
+    if (signal) this.responseSignals.set(response, signal);
     if (!response.ok) {
       let code = 'http_error',
         requestId = '';
@@ -73,6 +92,7 @@ export class HttpTransport implements HttpPort {
     return response;
   }
   async json(response: Response, signal?: AbortSignal, maxBytes = 2 * 1024 ** 2): Promise<unknown> {
+    signal = this.responseSignals.get(response) ?? signal;
     if (!response.body) throw new Error('Missing response body');
     const reader = response.body.getReader();
     const chunks: Uint8Array[] = [];

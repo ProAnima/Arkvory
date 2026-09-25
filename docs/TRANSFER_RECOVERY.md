@@ -1,5 +1,7 @@
 # Возобновление сетевых передач
 
+Для конечных клиентов доступен [depotctl](CLI.md): самостоятельная установка, сохранение upload idempotency/checkpoints, продолжение download и проверка SHA-256. Приведённые ниже SDK-примеры и прежний `npm run upload` остаются доступны для интеграций.
+
 Реализованный профиль: standalone API + portable TypeScript SDK. Дополнительно работают [read gateways с фиксированными общими квотами](READ_GATEWAYS.md); два физических сервера и replication/fencing остаются отдельным этапом. Решение: [ADR 0007](adr/0007-client-transfer-recovery.md).
 
 ## Ограниченные повторы

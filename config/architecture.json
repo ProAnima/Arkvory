@@ -11,6 +11,7 @@
       "allowed": ["packages/application", "packages/domain", "packages/contracts"]
     },
     { "path": "packages/sdk", "allowed": ["packages/contracts"] },
+    { "path": "apps/cli", "allowed": ["packages/sdk", "packages/contracts"] },
     {
       "path": "apps/api",
       "allowed": [

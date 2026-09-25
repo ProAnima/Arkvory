@@ -6,6 +6,7 @@ import { join } from 'node:path';
 export const releaseFiles = [
   'depot-runtime.zip',
   'depot-setup.mjs',
+  'depotctl.mjs',
   'depot-release.json',
   'install.sh',
   'install.ps1',

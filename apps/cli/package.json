@@ -1,0 +1,21 @@
+{
+  "name": "@proanima/depot-cli",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Remote Depot client for people and CI/CD",
+  "license": "UNLICENSED",
+  "author": "Ian Panaev",
+  "exports": {
+    "depot-source": "./src/index.ts",
+    "types": "./dist/index.d.ts",
+    "import": "./dist/index.js"
+  },
+  "bin": {
+    "depotctl": "./dist/main.js"
+  },
+  "dependencies": {
+    "@proanima/depot-sdk": "0.0.0",
+    "@proanima/depot-contracts": "0.0.0"
+  }
+}

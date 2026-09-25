@@ -6,6 +6,9 @@ export const nativeFiles = [
   'Depot-Setup-x64.exe',
   'Depot-amd64.deb',
   'Depot-x86_64.rpm',
+  'Depot-CLI-Setup-x64.exe',
+  'Depot-CLI-amd64.deb',
+  'Depot-CLI-x86_64.rpm',
   'native-win32.json',
   'native-linux.json',
 ];
@@ -17,7 +20,9 @@ export async function verifyNativeFiles(
 ) {
   for (const platform of platforms) {
     const names =
-      platform === 'win32' ? ['Depot-Setup-x64.exe'] : ['Depot-amd64.deb', 'Depot-x86_64.rpm'];
+      platform === 'win32'
+        ? ['Depot-Setup-x64.exe', 'Depot-CLI-Setup-x64.exe']
+        : ['Depot-amd64.deb', 'Depot-x86_64.rpm', 'Depot-CLI-amd64.deb', 'Depot-CLI-x86_64.rpm'];
     const manifest = JSON.parse(await readFile(join(directory, `native-${platform}.json`), 'utf8'));
     if (
       manifest.version !== version ||
