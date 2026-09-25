@@ -1,7 +1,7 @@
 import { join } from 'node:path';
 import { access } from 'node:fs/promises';
 import { provisionDatabase, databaseSettings } from './managed-database.js';
-import { command } from './process.js';
+import { command, isUnconfirmedTermination } from './process.js';
 import type { Installation, Release } from './model.js';
 import { jsonFile } from './files.js';
 import { runtimeEnvironment } from './runtime.js';
@@ -99,7 +99,9 @@ export class Services {
           await this.workerRunning();
           return;
         }
-      } catch {
+      } catch (error) {
+        // A readiness retry must not hide a live command from update recovery and its lock.
+        if (isUnconfirmedTermination(error)) throw error;
         consecutive = 0;
       }
       await delay(2000);
