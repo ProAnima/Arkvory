@@ -43,6 +43,7 @@ export function feedback(
   params: Readonly<Record<string, string | number>> = {},
   tone: 'info' | 'success' | 'error' = 'info',
 ) {
+  if (node.id === 'status' && node.parentElement) node.parentElement.hidden = false;
   node.dataset['tone'] = tone;
   message(node, key, params);
 }

@@ -112,6 +112,34 @@ export function installDownloads(baseUrl: string, token: HTMLInputElement) {
       );
     }
     element('download-empty', HTMLElement).hidden = snapshots.length > 0;
+    element('download-table', HTMLElement).hidden = snapshots.length === 0;
+    element('download-held', HTMLElement).hidden = !queue.paused;
+    const hasState = (...states: DownloadState[]) =>
+      snapshots.some((item) => states.includes(item.state));
+    element('downloads-pause', HTMLButtonElement).disabled = queue.paused;
+    element('downloads-resume', HTMLButtonElement).disabled =
+      !queue.paused && !hasState('paused', 'pausing');
+    element('downloads-clear-waiting', HTMLButtonElement).disabled = !hasState('queued', 'paused');
+    element('downloads-cancel', HTMLButtonElement).disabled = !hasState(
+      'queued',
+      'running',
+      'retrying',
+      'paused',
+      'pausing',
+      'failed',
+    );
+    element('downloads-clear-finished', HTMLButtonElement).disabled = !hasState(
+      'completed',
+      'cancelled',
+      'failed',
+    );
+    for (const id of ['downloads-clear-waiting', 'downloads-cancel', 'downloads-clear-finished']) {
+      const control = element(id, HTMLButtonElement);
+      control.hidden = control.disabled;
+    }
+    element('downloads-pause', HTMLButtonElement).hidden = queue.paused;
+    element('downloads-resume', HTMLButtonElement).hidden =
+      !queue.paused && !hasState('paused', 'pausing');
     message(element('download-summary', HTMLElement), 'downloadSummary', {
       active: snapshots.filter((item) =>
         ['running', 'retrying', 'pausing', 'saving', 'cancelling'].includes(item.state),

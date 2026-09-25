@@ -110,7 +110,7 @@ try {
     await page.locator('#download').click();
   }
   // New jobs respect the explicitly paused queue.
-  await page.locator('#downloads-pause').click();
+  assert.equal(await page.locator('#downloads-pause').isDisabled(), true);
   await page.waitForFunction(
     () => !document.querySelector('#download-rows')?.textContent.includes('Saving checkpoint'),
   );

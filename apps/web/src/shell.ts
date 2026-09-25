@@ -15,6 +15,7 @@ function isView(value: string): value is View {
   return Object.hasOwn(views, value);
 }
 export function showView(view: View) {
+  element('global-feedback', HTMLDivElement).hidden = true;
   for (const panel of document.querySelectorAll<HTMLElement>('[data-view]'))
     panel.hidden = panel.dataset['view'] !== view;
   for (const button of document.querySelectorAll<HTMLButtonElement>('[data-nav]')) {
@@ -23,9 +24,30 @@ export function showView(view: View) {
   }
   message(element('page-title', HTMLHeadingElement), view);
   message(element('page-description', HTMLParagraphElement), views[view]);
+  element('heading-upload', HTMLButtonElement).hidden = ![
+    'catalog',
+    'packages',
+    'history',
+  ].includes(view);
+  element('workspace-navigation', HTMLElement).dataset['expanded'] = 'false';
+  element('navigation-toggle', HTMLButtonElement).setAttribute('aria-expanded', 'false');
   element('page-title', HTMLHeadingElement).focus({ preventScroll: true });
 }
 export function initializeShell() {
+  const toggle = element('navigation-toggle', HTMLButtonElement);
+  const navigation = element('workspace-navigation', HTMLElement);
+  toggle.onclick = () => {
+    const expanded = toggle.getAttribute('aria-expanded') !== 'true';
+    toggle.setAttribute('aria-expanded', String(expanded));
+    navigation.dataset['expanded'] = String(expanded);
+  };
+  navigation.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && toggle.getAttribute('aria-expanded') === 'true') {
+      toggle.setAttribute('aria-expanded', 'false');
+      navigation.dataset['expanded'] = 'false';
+      toggle.focus();
+    }
+  });
   const language = element('language', HTMLSelectElement);
   language.value = initializeLanguage();
   language.onchange = () => {

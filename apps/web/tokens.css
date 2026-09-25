@@ -2,9 +2,9 @@
 :root {
   --font-sans: 'Inter', 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif;
   --font-mono: 'Cascadia Code', 'SFMono-Regular', Consolas, monospace;
-  --text-xs: 0.6875rem;
-  --text-sm: 0.8125rem;
-  --text-md: 0.875rem;
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-md: 0.9375rem;
   --text-base: 1rem;
   --text-lg: 1.125rem;
   --text-display: clamp(1.75rem, 2.8vw, 2.375rem);
@@ -42,12 +42,16 @@
   --brand-size: 2.5rem;
   --brand-type: 1.625rem;
   --brand-icon: 1.75rem;
-  --sidebar-width: 15rem;
+  --sidebar-width: 16rem;
   --content-max: 92rem;
   --page-gutter: clamp(1.25rem, 3.2vw, 3.5rem);
   --panel-padding: 1.5rem;
   --aside-width: 21rem;
-  --empty-height: 19rem;
+  --empty-height: 14rem;
+  --compact-empty-height: 12rem;
+  --checkbox-size: 1.125rem;
+  --table-actions-width: 16rem;
+  --z-status: 10;
   --empty-copy-width: 26rem;
   --empty-icon-size: 5rem;
   --file-picker-height: 15rem;
@@ -134,7 +138,7 @@
 /* Breakpoints: custom properties cannot be used in media-query conditions. */
 @media (max-width: 1100px) {
   :root {
-    --sidebar-width: 12.75rem;
+    --sidebar-width: 13.5rem;
     --panel-padding: 1.25rem;
   }
 }

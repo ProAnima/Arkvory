@@ -28,3 +28,7 @@ SDK fault tests входят в `npm test`: настоящие HTTP-сокеты
 Discovery: tests/repositories.test.mjs и integration/repositories.test.mjs проверяют managed opt-in, frozen coarse mapping, empty/group overrides, 10 000 grants, фильтрацию до LIMIT, wire parsing, HTTP/SDK/HEAD, user groups/reader, revoke/expiry/disable/rotation и отсутствие data/admin escalation.
 
 `download-queue.test.mjs` проверяет scheduler/checkpoint/commit/cleanup. PostgreSQL suite дополняется `integration/download-queue.test.mjs` с реальными HTTP Range и файлами. Дополнительная браузерная приёмка: `browser/downloads.mjs` (Playwright Chromium/Edge, отдельная БД, запуск последовательно с integration); [инструкции](../docs/DOWNLOAD_QUEUE.md).
+
+## Приёмка интерфейса
+
+`tests/browser/console.mjs` — дополнительный сценарий с реальными API/PostgreSQL: каталог, скачивание, метаданные, история, пользователи и загрузка. Проверяет семь экранов на трёх ширинах в RU/EN и обеих темах, сохранение полей, клавиатурное меню и блокировку входа во время передачи. Требует отдельно установленного Playwright и браузера, не включён в обычный `npm test`. Запуск и границы проверки: [CONSOLE_UX](../docs/CONSOLE_UX.md).

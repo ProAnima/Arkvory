@@ -2,6 +2,8 @@
 
 Автономный web UI.
 
+Сценарии, поведение адаптивной навигации, результаты операций и браузерная приёмка семи экранов: [CONSOLE_UX](../../docs/CONSOLE_UX.md).
+
 Рабочая RU/EN консоль через SDK: каталог, правки, загрузка частями, потоковый hash в Web Worker. Собирается esbuild, выдаётся API по /console/. См. [runbook](../../docs/LIFECYCLE_AND_CATALOG.md).
 
 Консоль можно разместить отдельно, сохранив её файлы под `/console/`: в `index.html` укажите `<meta name="depot-api-base-url" content="https://depot.example.com/">`, на API разрешите точный origin сайта через `DEPOT_CORS_ORIGINS`. Пустое значение meta использует origin текущей страницы. [Порядок развёртывания и ограничения](../../docs/EXTERNAL_UI.md).

@@ -20,6 +20,8 @@ An initial use case is replacing ProGet for Universal Packages and ordinary file
 
 ## Current status
 
+The RU/EN console includes direct catalog downloads, compact mobile navigation, contextual queue controls and grouped access-management forms. [UI behavior and browser acceptance](docs/CONSOLE_UX.md).
+
 | Area                                                                 | Status                                                   |
 | -------------------------------------------------------------------- | -------------------------------------------------------- |
 | Strict TypeScript, clean boundaries, runtime builds                  | Implemented                                              |

@@ -24,7 +24,20 @@
         ></a
       >
       <p class="nav-caption" data-i18n="workspace">Рабочее пространство</p>
-      <nav data-i18n-label="navigation" aria-label="Навигация по хранилищу">
+      <button
+        id="navigation-toggle"
+        class="secondary mobile-menu"
+        type="button"
+        aria-expanded="false"
+        aria-controls="workspace-navigation"
+      >
+        <span data-i18n="navigationMenu">Разделы</span><span aria-hidden="true">☰</span>
+      </button>
+      <nav
+        id="workspace-navigation"
+        data-i18n-label="navigation"
+        aria-label="Навигация по хранилищу"
+      >
         <button type="button" data-nav="catalog" aria-current="page" aria-controls="catalog-panel">
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <rect x="3" y="3" width="7" height="7" rx="1.5" />
@@ -74,10 +87,6 @@
         </button>
       </nav>
       <div class="sidebar-bottom">
-        <div class="environment">
-          <span class="dot"></span><span>Standalone</span
-          ><small data-i18n="localProfile">Один сервер</small>
-        </div>
         <p data-i18n="privateStorage">Ваши файлы. Ваша инфраструктура.</p>
         <small>© Ian Panaev</small>
       </div>
@@ -111,10 +120,10 @@
             <p class="eyebrow">PROANIMA DEPOT</p>
             <h1 id="page-title" tabindex="-1" data-i18n="catalog">Артефакты</h1>
             <p id="page-description" data-i18n="catalogSubtitle">
-              Исходные файлы. Порядок в версиях. Всё готово к раздаче.
+              Файлы, метки и коллекции репозитория.
             </p>
           </div>
-          <button class="primary heading-action" type="button" data-go="upload">
+          <button id="heading-upload" class="primary heading-action" type="button" data-go="upload">
             <span aria-hidden="true">＋</span><span data-i18n="uploadFile">Загрузить файл</span>
           </button>
         </div>
@@ -158,18 +167,25 @@
           <p class="hint" data-i18n="keyHint">
             Токен остаётся в этой вкладке и не сохраняется в хранилище браузера.
           </p>
-          <form id="login" class="search-form padded">
-            <label
-              ><span data-i18n="accountName">Имя пользователя</span
-              ><input id="login-name" autocomplete="username" required
-            /></label>
-            <label
-              ><span data-i18n="password">Пароль</span
-              ><input id="login-password" type="password" autocomplete="current-password" required
-            /></label>
-            <button class="secondary" data-i18n="signIn">Войти</button>
-          </form>
-          <form id="change-password" class="search-form padded" hidden>
+          <details class="disclosure" id="password-login">
+            <summary data-i18n="passwordSignIn">Войти по имени и паролю</summary>
+            <form id="login" class="search-form">
+              <label
+                ><span data-i18n="accountName">Имя пользователя</span
+                ><input id="login-name" autocomplete="username" required
+              /></label>
+              <label
+                ><span data-i18n="password">Пароль</span
+                ><input
+                  id="login-password"
+                  type="password"
+                  autocomplete="current-password"
+                  required
+              /></label>
+              <button class="secondary" data-i18n="signIn">Войти</button>
+            </form>
+          </details>
+          <form id="change-password" class="search-form" hidden>
             <label
               ><span data-i18n="currentPassword">Текущий пароль</span
               ><input
@@ -191,6 +207,12 @@
             <button class="secondary" data-i18n="changeOwnPassword">Сменить свой пароль</button>
           </form>
         </details>
+        <div id="global-feedback" class="status-bar">
+          <span class="dot" aria-hidden="true"></span
+          ><output id="status" aria-live="polite" data-i18n="ready"
+            >Подключите репозиторий, чтобы начать.</output
+          ><span id="request-id" class="mono"></span>
+        </div>
         <section
           id="catalog-panel"
           data-view="catalog"
@@ -222,15 +244,23 @@
                 id="filter-label"
                 data-i18n-placeholder="labelPlaceholder"
                 placeholder="Любая метка" /></label
-            ><button class="secondary" data-i18n="search">Найти</button>
+            ><button class="secondary" data-i18n="search">Найти</button
+            ><button
+              id="search-clear"
+              type="button"
+              class="ghost"
+              data-i18n="clearFilters"
+              disabled
+            >
+              Сбросить
+            </button>
           </form>
-          <div class="table">
+          <div class="table catalog-table" tabindex="0" role="region" data-i18n-label="tableRegion">
             <table>
               <thead>
                 <tr>
-                  <th data-i18n="name">Имя файла</th>
-                  <th data-i18n="identifier">ID артефакта</th>
-                  <th data-i18n="actions">Действия</th>
+                  <th scope="col" data-i18n="name">Имя файла</th>
+                  <th scope="col" data-i18n="actions">Действия</th>
                 </tr>
               </thead>
               <tbody id="artifacts"></tbody>
@@ -250,7 +280,7 @@
               версиями.
             </p>
           </div>
-          <div class="table-footer">
+          <div class="table-footer" tabindex="0" role="region" data-i18n-label="tableRegion">
             <span class="hint" data-i18n="fileTypes">UPack · Файлы</span
             ><button id="more" class="secondary small" disabled data-i18n="more">
               Загрузить ещё
@@ -303,7 +333,12 @@
           <p class="hint" data-i18n="packageFilterHint">
             Группа и имя ищутся точно, без учёта регистра.
           </p>
-          <div class="table-footer package-toolbar">
+          <div
+            class="table-footer package-toolbar"
+            tabindex="0"
+            role="region"
+            data-i18n-label="tableRegion"
+          >
             <span id="package-page-top" class="hint" tabindex="-1" aria-live="polite"></span>
             <div class="inline">
               <button
@@ -326,21 +361,21 @@
               </button>
             </div>
           </div>
-          <div class="table">
+          <div class="table" tabindex="0" role="region" data-i18n-label="tableRegion">
             <table>
               <thead>
                 <tr>
-                  <th data-i18n="packageGroup">Группа UPack</th>
-                  <th data-i18n="packageName">Имя пакета</th>
-                  <th data-i18n="version">Версия</th>
-                  <th data-i18n="actions">Действия</th>
+                  <th scope="col" data-i18n="packageGroup">Группа UPack</th>
+                  <th scope="col" data-i18n="packageName">Имя пакета</th>
+                  <th scope="col" data-i18n="version">Версия</th>
+                  <th scope="col" data-i18n="actions">Действия</th>
                 </tr>
               </thead>
               <tbody id="package-rows"></tbody>
             </table>
           </div>
           <output id="package-status" aria-live="polite"></output>
-          <div class="table-footer">
+          <div class="table-footer" tabindex="0" role="region" data-i18n-label="tableRegion">
             <span id="package-page" class="hint"></span>
             <div class="inline">
               <button
@@ -375,44 +410,50 @@
             <h2 id="downloads-title" data-i18n="downloads">Скачивания</h2>
             <span id="download-summary" aria-live="polite"></span>
           </div>
-          <form id="download-policy" class="download-policy">
-            <label
-              ><span data-i18n="downloadConcurrency">Одновременные скачивания</span
-              ><input
-                id="download-concurrency"
-                type="number"
-                min="1"
-                max="8"
-                step="1"
-                value="2"
-                required
-            /></label>
-            <label
-              ><span data-i18n="downloadInterval">Интервал запуска, мс</span
-              ><input
-                id="download-interval"
-                type="number"
-                min="0"
-                max="60000"
-                step="1"
-                value="250"
-                required
-            /></label>
-            <label
-              ><span data-i18n="downloadWait">Предел ожидания, секунды</span
-              ><input
-                id="download-wait"
-                type="number"
-                min="1"
-                max="1800"
-                step="1"
-                value="300"
-                required
-            /></label>
-            <button type="submit" class="secondary" data-i18n="downloadApply">
-              Применить ограничения
-            </button>
-          </form>
+          <details class="disclosure queue-settings">
+            <summary data-i18n="downloadSettings">Настройки очереди</summary>
+            <form id="download-policy" class="download-policy">
+              <label
+                ><span data-i18n="downloadConcurrency">Одновременные скачивания</span
+                ><input
+                  id="download-concurrency"
+                  type="number"
+                  min="1"
+                  max="8"
+                  step="1"
+                  value="2"
+                  required
+              /></label>
+              <label
+                ><span data-i18n="downloadInterval">Интервал запуска, мс</span
+                ><input
+                  id="download-interval"
+                  type="number"
+                  min="0"
+                  max="60000"
+                  step="1"
+                  value="250"
+                  required
+              /></label>
+              <label
+                ><span data-i18n="downloadWait">Предел ожидания, секунды</span
+                ><input
+                  id="download-wait"
+                  type="number"
+                  min="1"
+                  max="1800"
+                  step="1"
+                  value="300"
+                  required
+              /></label>
+              <button type="submit" class="secondary" data-i18n="downloadApply">
+                Применить ограничения
+              </button>
+            </form>
+          </details>
+          <p id="download-held" class="queue-notice" data-i18n="downloadHeld" hidden>
+            Очередь на паузе. Новые скачивания будут ждать.
+          </p>
           <div class="download-toolbar">
             <button id="downloads-pause" type="button" class="secondary" data-i18n="downloadsPause">
               Приостановить все
@@ -450,21 +491,37 @@
               Убрать завершённые
             </button>
           </div>
-          <p class="hint" data-i18n="downloadNote"></p>
-          <div class="table">
+          <div
+            id="download-table"
+            class="table"
+            tabindex="0"
+            role="region"
+            data-i18n-label="tableRegion"
+          >
             <table>
               <thead>
                 <tr>
-                  <th data-i18n="name">Имя файла</th>
-                  <th data-i18n="downloadState">Состояние</th>
-                  <th data-i18n="downloadProgress">Прогресс</th>
-                  <th data-i18n="actions">Действия</th>
+                  <th scope="col" data-i18n="name">Имя файла</th>
+                  <th scope="col" data-i18n="downloadState">Состояние</th>
+                  <th scope="col" data-i18n="downloadProgress">Прогресс</th>
+                  <th scope="col" data-i18n="actions">Действия</th>
                 </tr>
               </thead>
               <tbody id="download-rows"></tbody>
             </table>
           </div>
-          <p id="download-empty" class="hint" data-i18n="downloadEmpty"></p>
+          <div id="download-empty" class="empty-state compact-empty">
+            <h3 data-i18n="downloadEmptyTitle">Пока нет скачиваний</h3>
+            <p data-i18n="downloadEmpty"></p>
+            <button type="button" class="secondary" data-go="catalog" data-i18n="backCatalog">
+              Вернуться к артефактам
+            </button>
+          </div>
+          <p class="hint queue-help" data-i18n="downloadShortNote"></p>
+          <details class="disclosure queue-help">
+            <summary data-i18n="downloadHow">Как сохраняется прогресс</summary>
+            <p class="hint" data-i18n="downloadNote"></p>
+          </details>
           <output id="download-status" aria-live="polite"></output>
         </section>
         <section id="upload-panel" data-view="upload" aria-labelledby="upload-title" hidden>
@@ -554,12 +611,16 @@
               Откройте файл в каталоге или истории, чтобы изменить его свойства.
             </p>
           </div>
+          <p id="selected-name" class="selected-name" hidden></p>
           <div id="editor" class="split-layout" hidden>
             <div class="card padded">
-              <label
-                ><span data-i18n="selected">ID артефакта</span
-                ><input id="selected" readonly class="mono"
-              /></label>
+              <details class="disclosure">
+                <summary data-i18n="technicalDetails">Идентификатор файла</summary>
+                <label
+                  ><span data-i18n="selected">ID артефакта</span
+                  ><input id="selected" readonly class="mono"
+                /></label>
+              </details>
               <form id="edit" class="stack">
                 <div class="form-grid">
                   <label
@@ -631,21 +692,21 @@
               ><input id="history-path" placeholder="releases/current.upack" required /></label
             ><button class="primary" data-i18n="historyLoad">Загрузить историю</button>
           </form>
-          <div class="table">
+          <div class="table" tabindex="0" role="region" data-i18n-label="tableRegion">
             <table>
               <thead>
                 <tr>
-                  <th data-i18n="revision">Ревизия</th>
-                  <th data-i18n="date">Создана</th>
-                  <th data-i18n="actor">Автор</th>
-                  <th data-i18n="source">Источник</th>
-                  <th data-i18n="actions">Действия</th>
+                  <th scope="col" data-i18n="revision">Ревизия</th>
+                  <th scope="col" data-i18n="date">Создана</th>
+                  <th scope="col" data-i18n="actor">Автор</th>
+                  <th scope="col" data-i18n="source">Источник</th>
+                  <th scope="col" data-i18n="actions">Действия</th>
                 </tr>
               </thead>
               <tbody id="asset-history"></tbody>
             </table>
           </div>
-          <div class="table-footer">
+          <div class="table-footer" tabindex="0" role="region" data-i18n-label="tableRegion">
             <output id="history-status" aria-live="polite" data-i18n="historyEmpty"
               >Укажите путь файла, чтобы просмотреть историю.</output
             ><button id="history-more" class="secondary" disabled data-i18n="historyMore">
@@ -664,103 +725,121 @@
           <p class="hint" data-i18n="adminHint">
             Создавайте учётные записи и выдавайте доступ через группы.
           </p>
-          <form id="create-user" class="search-form">
-            <label
-              ><span data-i18n="accountName">Имя пользователя</span
-              ><input id="new-user-name" required minlength="3" maxlength="64"
-            /></label>
-            <label
-              ><span data-i18n="password">Пароль</span
-              ><input
-                id="new-user-password"
-                type="password"
-                autocomplete="new-password"
-                required
-                minlength="12"
-            /></label>
-            <label
-              ><span data-i18n="administrator">Администратор</span
-              ><input id="new-user-admin" type="checkbox"
-            /></label>
-            <button class="secondary" data-i18n="createUser">Создать пользователя</button>
-          </form>
-          <div class="table">
+          <h3 class="subheading" data-i18n="accountsHeading">Учётные записи</h3>
+          <details class="disclosure admin-operation">
+            <summary data-i18n="createUser"></summary>
+            <form id="create-user" class="search-form">
+              <label
+                ><span data-i18n="accountName">Имя пользователя</span
+                ><input id="new-user-name" required minlength="3" maxlength="64"
+              /></label>
+              <label
+                ><span data-i18n="password">Пароль</span
+                ><input
+                  id="new-user-password"
+                  type="password"
+                  autocomplete="new-password"
+                  required
+                  minlength="12"
+              /></label>
+              <label
+                ><span data-i18n="administrator">Администратор</span
+                ><input id="new-user-admin" type="checkbox"
+              /></label>
+              <button class="secondary" data-i18n="createUser">Создать пользователя</button>
+            </form>
+          </details>
+          <div class="table" tabindex="0" role="region" data-i18n-label="tableRegion">
             <table>
               <thead>
                 <tr>
-                  <th data-i18n="accountName">Имя пользователя</th>
-                  <th data-i18n="administrator">Администратор</th>
-                  <th data-i18n="accountStatus">Состояние</th>
-                  <th data-i18n="actions">Действия</th>
+                  <th scope="col" data-i18n="accountName">Имя пользователя</th>
+                  <th scope="col" data-i18n="administrator">Администратор</th>
+                  <th scope="col" data-i18n="accountStatus">Состояние</th>
+                  <th scope="col" data-i18n="actions">Действия</th>
                 </tr>
               </thead>
               <tbody id="user-rows"></tbody>
             </table>
           </div>
-          <form id="reset-password" class="search-form">
-            <label
-              ><span data-i18n="accountName">Имя пользователя</span
-              ><select id="reset-user" required></select
-            ></label>
-            <label
-              ><span data-i18n="newPassword">Новый пароль</span
-              ><input
-                id="reset-password-value"
-                type="password"
-                autocomplete="new-password"
-                required
-                minlength="12"
-            /></label>
-            <button class="secondary" data-i18n="resetPassword">Сменить пароль</button>
-          </form>
-          <form id="create-group" class="search-form">
-            <label
-              ><span data-i18n="accessGroup">Группа доступа</span
-              ><input id="new-group-name" required minlength="2" maxlength="64"
-            /></label>
-            <button class="secondary" data-i18n="createGroup">Создать группу</button>
-          </form>
-          <form id="group-member" class="search-form">
-            <label
-              ><span data-i18n="accessGroup">Группа доступа</span
-              ><select id="member-group" required></select
-            ></label>
-            <label
-              ><span data-i18n="accountName">Имя пользователя</span
-              ><select id="member-user" required></select
-            ></label>
-            <button class="secondary" data-i18n="addMember">Добавить в группу</button>
-            <button type="button" class="secondary" id="remove-member" data-i18n="removeMember">
-              Убрать из группы
-            </button>
-          </form>
-          <form id="group-grant" class="search-form">
-            <label
-              ><span data-i18n="accessGroup">Группа доступа</span
-              ><select id="grant-group" required></select
-            ></label>
-            <label
-              ><span data-i18n="repository">Репозиторий</span><input id="grant-repository" required
-            /></label>
-            <label
-              ><span data-i18n="access">Доступ</span
-              ><select id="grant-access">
-                <option value="read" data-i18n="read">Чтение</option>
-                <option value="write" data-i18n="write">Чтение и запись</option>
-              </select></label
-            >
-            <button class="secondary" data-i18n="saveGrant">Сохранить доступ</button>
-            <button type="button" class="secondary" id="remove-grant" data-i18n="removeGrant">
-              Убрать доступ
-            </button>
-          </form>
-          <div class="table">
+          <details class="disclosure admin-operation">
+            <summary data-i18n="resetPassword"></summary>
+            <form id="reset-password" class="search-form">
+              <label
+                ><span data-i18n="accountName">Имя пользователя</span
+                ><select id="reset-user" required></select
+              ></label>
+              <label
+                ><span data-i18n="newPassword">Новый пароль</span
+                ><input
+                  id="reset-password-value"
+                  type="password"
+                  autocomplete="new-password"
+                  required
+                  minlength="12"
+              /></label>
+              <button class="secondary" data-i18n="resetPassword">Сменить пароль</button>
+            </form>
+          </details>
+          <h3 class="subheading" data-i18n="groupsHeading">Группы и права</h3>
+          <details class="disclosure admin-operation">
+            <summary data-i18n="createGroup"></summary>
+            <form id="create-group" class="search-form">
+              <label
+                ><span data-i18n="accessGroup">Группа доступа</span
+                ><input id="new-group-name" required minlength="2" maxlength="64"
+              /></label>
+              <button class="secondary" data-i18n="createGroup">Создать группу</button>
+            </form>
+          </details>
+          <details class="disclosure admin-operation">
+            <summary data-i18n="manageMembers"></summary>
+            <form id="group-member" class="search-form">
+              <label
+                ><span data-i18n="accessGroup">Группа доступа</span
+                ><select id="member-group" required></select
+              ></label>
+              <label
+                ><span data-i18n="accountName">Имя пользователя</span
+                ><select id="member-user" required></select
+              ></label>
+              <button class="secondary" data-i18n="addMember">Добавить в группу</button>
+              <button type="button" class="secondary" id="remove-member" data-i18n="removeMember">
+                Убрать из группы
+              </button>
+            </form>
+          </details>
+          <details class="disclosure admin-operation">
+            <summary data-i18n="manageGrants"></summary>
+            <form id="group-grant" class="search-form">
+              <label
+                ><span data-i18n="accessGroup">Группа доступа</span
+                ><select id="grant-group" required></select
+              ></label>
+              <label
+                ><span data-i18n="repository">Репозиторий</span
+                ><input id="grant-repository" required
+              /></label>
+              <label
+                ><span data-i18n="access">Доступ</span
+                ><select id="grant-access">
+                  <option value="read" data-i18n="read">Чтение</option>
+                  <option value="write" data-i18n="write">Чтение и запись</option>
+                </select></label
+              >
+              <button class="secondary" data-i18n="saveGrant">Сохранить доступ</button>
+              <button type="button" class="secondary" id="remove-grant" data-i18n="removeGrant">
+                Убрать доступ
+              </button>
+            </form>
+          </details>
+          <div class="table" tabindex="0" role="region" data-i18n-label="tableRegion">
             <table>
               <thead>
                 <tr>
-                  <th data-i18n="accessGroup">Группа доступа</th>
-                  <th data-i18n="members">Участники</th>
-                  <th data-i18n="grants">Права</th>
+                  <th scope="col" data-i18n="accessGroup">Группа доступа</th>
+                  <th scope="col" data-i18n="members">Участники</th>
+                  <th scope="col" data-i18n="grants">Права</th>
                 </tr>
               </thead>
               <tbody id="group-rows"></tbody>
@@ -768,12 +847,7 @@
           </div>
           <output id="admin-status" aria-live="polite"></output>
         </section>
-        <div class="status-bar">
-          <span class="dot" aria-hidden="true"></span
-          ><output id="status" aria-live="polite" data-i18n="ready"
-            >Подключите репозиторий, чтобы начать.</output
-          ><span id="request-id" class="mono"></span>
-        </div>
+
         <noscript>Включите JavaScript / Enable JavaScript.</noscript>
       </main>
       <footer><span>ProAnima Depot</span><span>© Ian Panaev · ProAnimaStudio</span></footer>

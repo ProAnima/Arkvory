@@ -78,6 +78,8 @@ async function openArtifact(repo: string, id: string, name: string) {
   const a = await client.annotations(repo, id);
   if (generation !== selectionGeneration || repo !== repository.value) return;
   selected = { repository: repo, id, revision: a.revision, name };
+  element('selected-name', HTMLParagraphElement).textContent = name;
+  element('selected-name', HTMLParagraphElement).hidden = false;
   element('selected', HTMLInputElement).value = id;
   element('labels', HTMLInputElement).value = a.labels.join(', ');
   element('collections', HTMLInputElement).value = a.collections.join(', ');
@@ -90,6 +92,8 @@ async function openArtifact(repo: string, id: string, name: string) {
 function clearSelection() {
   selectionGeneration++;
   selected = undefined;
+  element('selected-name', HTMLParagraphElement).textContent = '';
+  element('selected-name', HTMLParagraphElement).hidden = true;
   for (const id of ['selected', 'labels', 'collections']) element(id, HTMLInputElement).value = '';
   element('metadata', HTMLTextAreaElement).value = '{}';
   element('editor', HTMLDivElement).hidden = true;
@@ -97,6 +101,11 @@ function clearSelection() {
 }
 function clearCatalog() {
   listGeneration++;
+  element('catalog-panel', HTMLElement).removeAttribute('aria-busy');
+  for (const button of element('search', HTMLFormElement).querySelectorAll<HTMLButtonElement>(
+    'button[type="submit"], button:not([type])',
+  ))
+    button.disabled = false;
   rows.replaceChildren();
   element('more', HTMLButtonElement).disabled = true;
   element('catalog-empty', HTMLDivElement).hidden = false;
@@ -126,6 +135,9 @@ const clearPackages = installPackageView(client, repository, token, run, async (
   await openArtifact(repo, id, artifact.descriptor.name);
 });
 const administration = installAdministration(client, run);
+element('admin-nav', HTMLButtonElement).addEventListener('click', () => {
+  run(() => administration.refresh());
+});
 function hashFile(file: File, signal: AbortSignal): Promise<string> {
   return new Promise((resolve, reject) => {
     const worker = new Worker('/console/hash-worker.js', { type: 'module' });
@@ -170,43 +182,87 @@ function hashFile(file: File, signal: AbortSignal): Promise<string> {
 async function list(after?: string) {
   const generation = ++listGeneration;
   const repo = repository.value;
+  const panel = element('catalog-panel', HTMLElement);
+  const searchButton = element('search', HTMLFormElement).querySelector<HTMLButtonElement>(
+    'button:not([type])',
+  );
+  const moreButton = element('more', HTMLButtonElement);
+  const wasDisabled = moreButton.disabled;
+  panel.setAttribute('aria-busy', 'true');
+  if (searchButton) searchButton.disabled = true;
+  moreButton.disabled = true;
   feedback(output, 'searching');
-  const page = await client.search(repo, {
-    q: element('query', HTMLInputElement).value,
-    label: element('filter-label', HTMLInputElement).value,
-    ...(after ? { after } : {}),
-  });
-  if (generation !== listGeneration) return;
-  connection(true);
-  if (!after) rows.replaceChildren();
-  for (const item of page.items) {
-    const row = document.createElement('tr'),
-      name = document.createElement('td'),
-      id = document.createElement('td'),
-      actions = document.createElement('td');
-    name.textContent = item.name;
-    id.textContent = item.id;
-    id.className = 'artifact-id';
-    const button = document.createElement('button');
-    message(button, 'open');
-    button.className = 'secondary small';
-    button.onclick = () => {
-      run(() => openArtifact(repo, item.id, item.name));
+  try {
+    const page = await client.search(repo, {
+      q: element('query', HTMLInputElement).value,
+      label: element('filter-label', HTMLInputElement).value,
+      ...(after ? { after } : {}),
+    });
+    if (generation !== listGeneration) return;
+    connection(true);
+    if (!after) rows.replaceChildren();
+    for (const item of page.items) {
+      const row = document.createElement('tr'),
+        name = document.createElement('td'),
+        id = document.createElement('span'),
+        actions = document.createElement('td');
+      const filename = document.createElement('span');
+      filename.textContent = item.name;
+      filename.className = 'artifact-name';
+      filename.id = `artifact-name-${item.id}`;
+      id.textContent = item.id;
+      id.className = 'artifact-id';
+      name.append(filename, id);
+      const button = document.createElement('button');
+      message(button, 'open');
+      button.className = 'secondary small';
+      button.setAttribute('aria-describedby', filename.id);
+      button.onclick = () => {
+        run(() => openArtifact(repo, item.id, item.name));
+      };
+      const download = document.createElement('button');
+      message(download, 'download');
+      download.type = 'button';
+      download.className = 'secondary small';
+      download.setAttribute('aria-describedby', filename.id);
+      download.onclick = () => {
+        run(() => downloads.enqueue(repo, item.id, item.name));
+      };
+      const controls = document.createElement('div');
+      controls.className = 'catalog-actions';
+      controls.append(button, download);
+      actions.append(controls);
+      row.append(name, actions);
+      rows.append(row);
+    }
+    const more = element('more', HTMLButtonElement);
+    more.disabled = page.next === null;
+    more.onclick = () => {
+      if (page.next) run(() => list(page.next ?? undefined));
     };
-    actions.append(button);
-    row.append(name, id, actions);
-    rows.append(row);
+    element('catalog-empty', HTMLDivElement).hidden = rows.rows.length > 0;
+    const filtered = Boolean(
+      element('query', HTMLInputElement).value || element('filter-label', HTMLInputElement).value,
+    );
+    message(
+      element('empty-title', HTMLHeadingElement),
+      filtered ? 'noResultsTitle' : 'searchEmptyTitle',
+    );
+    message(
+      element('empty-description', HTMLParagraphElement),
+      filtered ? 'noResults' : 'searchEmpty',
+    );
+    message(element('catalog-count', HTMLSpanElement), 'loaded', { count: rows.rows.length });
+    feedback(output, 'loaded', { count: rows.rows.length });
+  } catch (error) {
+    if (generation === listGeneration) moreButton.disabled = wasDisabled;
+    throw error;
+  } finally {
+    if (generation === listGeneration) {
+      panel.removeAttribute('aria-busy');
+      if (searchButton) searchButton.disabled = false;
+    }
   }
-  const more = element('more', HTMLButtonElement);
-  more.disabled = page.next === null;
-  more.onclick = () => {
-    if (page.next) run(() => list(page.next ?? undefined));
-  };
-  element('catalog-empty', HTMLDivElement).hidden = rows.rows.length > 0;
-  message(element('empty-title', HTMLHeadingElement), 'noResultsTitle');
-  message(element('empty-description', HTMLParagraphElement), 'noResults');
-  message(element('catalog-count', HTMLSpanElement), 'loaded', { count: rows.rows.length });
-  feedback(output, 'loaded', { count: rows.rows.length });
 }
 element('connect', HTMLFormElement).onsubmit = (event) => {
   event.preventDefault();
@@ -280,6 +336,19 @@ element('search', HTMLFormElement).onsubmit = (event) => {
   event.preventDefault();
   run(() => list());
 };
+const clearSearch = element('search-clear', HTMLButtonElement);
+const updateSearch = () => {
+  clearSearch.disabled =
+    !element('query', HTMLInputElement).value && !element('filter-label', HTMLInputElement).value;
+};
+for (const id of ['query', 'filter-label'])
+  element(id, HTMLInputElement).addEventListener('input', updateSearch);
+clearSearch.onclick = () => {
+  element('query', HTMLInputElement).value = '';
+  element('filter-label', HTMLInputElement).value = '';
+  updateSearch();
+  run(() => list());
+};
 element('logout', HTMLButtonElement).onclick = () => {
   downloads.reset();
   stop?.abort();
@@ -310,6 +379,11 @@ element('upload', HTMLFormElement).onsubmit = (event) => {
     const repo = repository.value;
     stop = new AbortController();
     element('connection-fields', HTMLFieldSetElement).disabled = true;
+    for (const formId of ['login', 'change-password'])
+      for (const input of element(formId, HTMLFormElement).querySelectorAll<
+        HTMLInputElement | HTMLButtonElement
+      >('input, button'))
+        input.disabled = true;
     element('upload-submit', HTMLButtonElement).disabled = true;
     element('cancel', HTMLButtonElement).disabled = false;
     for (const id of ['file', 'upload-id', 'idempotency'])
@@ -352,6 +426,11 @@ element('upload', HTMLFormElement).onsubmit = (event) => {
     } finally {
       stop = undefined;
       element('connection-fields', HTMLFieldSetElement).disabled = false;
+      for (const formId of ['login', 'change-password'])
+        for (const input of element(formId, HTMLFormElement).querySelectorAll<
+          HTMLInputElement | HTMLButtonElement
+        >('input, button'))
+          input.disabled = false;
       element('upload-submit', HTMLButtonElement).disabled = false;
       element('cancel', HTMLButtonElement).disabled = true;
       for (const id of ['file', 'upload-id', 'idempotency'])
