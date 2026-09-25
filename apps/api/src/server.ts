@@ -1,4 +1,5 @@
 import { registerRepositoryRoutes } from './repository-routes.js';
+import { registerOperationRoutes } from './operation-routes.js';
 import { createHash, randomUUID, timingSafeEqual } from 'node:crypto';
 import { Readable } from 'node:stream';
 import Fastify from 'fastify';
@@ -31,12 +32,7 @@ import { registerIdentityRoutes } from './identity-routes.js';
 import { registerServiceRoutes } from './service-routes.js';
 import { registerContractGuard } from './contract-guard.js';
 import { ProGetDownloads } from '@proanima/depot-proget-compat';
-import {
-  descriptorSchema,
-  openApiDocument,
-  uploadSchema,
-  readinessSchema,
-} from '@proanima/depot-contracts';
+import { descriptorSchema, uploadSchema, readinessSchema } from '@proanima/depot-contracts';
 import type { UploadResponse } from '@proanima/depot-contracts';
 import type { ServerConfig } from './config.js';
 import { matchesEtag, parseRange } from './range.js';
@@ -331,7 +327,7 @@ export async function createServer(config: ServerConfig) {
       },
     };
   });
-  app.get('/api/v1/openapi.json', () => Promise.resolve(openApiDocument));
+  registerOperationRoutes(app, new ServiceAccess(serviceAccounts), principal, role);
   registerIdentityRoutes(app, identity, principal, loginGate, signal);
   registerServiceRoutes(app, new ServiceAccess(serviceAccounts), principal, role);
   registerRepositoryRoutes(app, principal);

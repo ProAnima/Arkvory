@@ -10,3 +10,6 @@ export * from './repositories.js';
 export { apiMethods, assertRouteInventory } from './openapi-compose.js';
 export type { ApiOperation, RuntimeRoute } from './openapi-compose.js';
 export type { ApiMethod, OperationPolicy } from './operation-policy.js';
+export * from './operations.js';
+export { apiSurfaces, apiVisibilities } from './api-surfaces.js';
+export type { ApiSurface, ApiVisibility } from './api-surfaces.js';

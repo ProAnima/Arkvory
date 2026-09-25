@@ -9,3 +9,5 @@ export * from './service-access.js';
 export * from './asset-page.js';
 export * from './effective-permissions.js';
 export * from './repositories.js';
+export { operationVisible } from './api-visibility.js';
+export type { ApiAccessRequirement } from './api-visibility.js';

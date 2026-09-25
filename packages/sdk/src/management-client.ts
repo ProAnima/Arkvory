@@ -1,0 +1,80 @@
+import type { DepotTransport } from './transport.js';
+type ManagementTransport = Pick<
+  DepotTransport,
+  | 'login'
+  | 'logout'
+  | 'me'
+  | 'permissions'
+  | 'changePassword'
+  | 'activateServiceKey'
+  | 'users'
+  | 'createUser'
+  | 'updateUser'
+  | 'accessGroups'
+  | 'createAccessGroup'
+  | 'setGroupMember'
+  | 'setGroupGrant'
+  | 'serviceAccounts'
+  | 'serviceAccount'
+  | 'createServiceAccount'
+  | 'updateServiceAccount'
+  | 'servicePolicy'
+  | 'setServicePolicy'
+  | 'serviceAudit'
+  | 'serviceKeys'
+  | 'serviceKey'
+  | 'issueServiceKey'
+  | 'rotateServiceKey'
+  | 'revokeServiceKey'
+  | 'serviceDelegations'
+  | 'setServiceDelegation'
+  | 'removeServiceDelegation'
+>;
+
+/** Responsibility namespaces retain the exact existing transport signatures and authorization. */
+export function managementClients(client: ManagementTransport) {
+  return {
+    identity: Object.freeze({
+      login: client.login.bind(client),
+      logout: client.logout.bind(client),
+      me: client.me.bind(client),
+      permissions: client.permissions.bind(client),
+      changePassword: client.changePassword.bind(client),
+      activateKey: client.activateServiceKey.bind(client),
+    }),
+    administration: Object.freeze({
+      users: Object.freeze({
+        list: client.users.bind(client),
+        create: client.createUser.bind(client),
+        update: client.updateUser.bind(client),
+      }),
+      groups: Object.freeze({
+        list: client.accessGroups.bind(client),
+        create: client.createAccessGroup.bind(client),
+        setMember: client.setGroupMember.bind(client),
+        setGrant: client.setGroupGrant.bind(client),
+      }),
+      services: Object.freeze({
+        list: client.serviceAccounts.bind(client),
+        get: client.serviceAccount.bind(client),
+        create: client.createServiceAccount.bind(client),
+        update: client.updateServiceAccount.bind(client),
+        policy: client.servicePolicy.bind(client),
+        setPolicy: client.setServicePolicy.bind(client),
+        keys: client.serviceKeys.bind(client),
+        audit: client.serviceAudit.bind(client),
+      }),
+      credentials: Object.freeze({
+        get: client.serviceKey.bind(client),
+        issue: client.issueServiceKey.bind(client),
+        rotate: client.rotateServiceKey.bind(client),
+        revoke: client.revokeServiceKey.bind(client),
+        delegations: client.serviceDelegations.bind(client),
+        setDelegation: client.setServiceDelegation.bind(client),
+        removeDelegation: client.removeServiceDelegation.bind(client),
+      }),
+    }),
+  };
+}
+export type IdentityClient = ReturnType<typeof managementClients>['identity'];
+export type AdministrationClient = ReturnType<typeof managementClients>['administration'];

@@ -117,6 +117,14 @@ add('/health/ready', 'get', 'getReadiness', 'System', { kind: 'authenticated' },
 add('/api/v1/openapi.json', 'get', 'getOpenApi', 'System', { kind: 'authenticated' }, 'read');
 add('/api/v1/capabilities', 'get', 'getCapabilities', 'System', { kind: 'authenticated' }, 'read');
 add(
+  '/api/v1/operations',
+  'get',
+  'listVisibleOperations',
+  'System',
+  { kind: 'authenticated' },
+  'read',
+);
+add(
   '/api/v1/auth/permissions',
   'get',
   'getOwnPermissions',

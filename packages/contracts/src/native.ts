@@ -6,6 +6,8 @@ import { supplementalPaths, nativeErrorSchema } from './http-contract.js';
 import { composeApiPaths } from './openapi-compose.js';
 import { delegationPaths } from './delegation-api.js';
 import { repositoryPaths } from './repositories.js';
+import { operationPaths } from './operations.js';
+import type { ApiSurface } from './api-surfaces.js';
 export const descriptorSchema = {
   type: 'object',
   additionalProperties: false,
@@ -227,11 +229,12 @@ const composed = composeApiPaths({
   ...supplementalPaths,
   ...delegationPaths,
   ...repositoryPaths,
+  ...operationPaths,
 });
 export const apiOperations = composed.operations;
 export const openApiDocument = {
   ...baseDocument,
-  info: { ...baseDocument.info, title: 'ProAnima Depot API', version: '0.6.1' },
+  info: { ...baseDocument.info, title: 'ProAnima Depot API', version: '0.7.0' },
   components: {
     ...baseDocument.components,
     schemas: { NativeError: nativeErrorSchema },
@@ -253,3 +256,18 @@ export const openApiDocument = {
   },
   paths: composed.paths,
 };
+
+/** A documentation view, not an ACL-filtered specification. Existing full spec stays available. */
+export function openApiSurface(surface: ApiSurface) {
+  const paths: Record<string, Record<string, unknown>> = {};
+  for (const operation of apiOperations) {
+    if (operation.surface !== surface) continue;
+    const source = openApiDocument.paths[operation.path];
+    if (!source) throw new Error('Missing documented path');
+    const target = paths[operation.path] ?? {};
+    if (source['parameters']) target['parameters'] = source['parameters'];
+    target[operation.method] = source[operation.method];
+    paths[operation.path] = target;
+  }
+  return { ...openApiDocument, paths, 'x-depot-document-surface': surface };
+}

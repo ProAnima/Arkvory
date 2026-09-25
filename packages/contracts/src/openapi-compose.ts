@@ -1,4 +1,6 @@
 import { operationPolicies } from './operation-policy.js';
+import { apiClassification } from './api-surfaces.js';
+import type { ApiSurface, ApiVisibility } from './api-surfaces.js';
 import type { ApiMethod, OperationPolicy } from './operation-policy.js';
 import {
   contentResponses,
@@ -9,6 +11,9 @@ import {
 
 type ObjectValue = Record<string, unknown>;
 export interface ApiOperation extends OperationPolicy {
+  surface: ApiSurface;
+  visibility: ApiVisibility;
+  summary: string;
   method: ApiMethod;
   path: string;
   route: string;
@@ -45,6 +50,10 @@ export function composeApiPaths(source: Record<string, ObjectValue>) {
         throw new Error(`Duplicate operationId: ${policy.operationId}`);
       ids.add(policy.operationId);
       const originalOperation = object(item[method]);
+      const classification = apiClassification(policy);
+      const summary = originalOperation['summary'];
+      if (typeof summary !== 'string' || summary.length > 1024)
+        throw new Error(`Missing API summary: ${method} ${path}`);
       const content = policy.tag === 'Content' || policy.tag === 'Legacy';
       const upload =
         policy.operationId === 'putUploadContent' || policy.operationId === 'putUploadPart';
@@ -111,6 +120,8 @@ export function composeApiPaths(source: Record<string, ObjectValue>) {
         security,
         'x-depot-authorization': policy.access,
         'x-depot-authority': policy.access.kind,
+        'x-depot-surface': classification.surface,
+        'x-depot-visibility': classification.visibility,
         'x-depot-retry': policy.retry,
         'x-depot-route': route(path),
         'x-depot-gateway': method === 'get' || method === 'head' ? 'writer-or-reader' : 'writer',
@@ -140,7 +151,7 @@ export function composeApiPaths(source: Record<string, ObjectValue>) {
           : {}),
         responses: normalizedResponses,
       };
-      operations.push({ ...policy, method, path, route: route(path) });
+      operations.push({ ...policy, ...classification, summary, method, path, route: route(path) });
     }
     paths[path] = item;
   }

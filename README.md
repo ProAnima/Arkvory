@@ -20,6 +20,8 @@ An initial use case is replacing ProGet for Universal Packages and ordinary file
 
 ## Current status
 
+API discovery now exposes credential-scoped operations and seven responsibility areas, with separate visibility metadata and OpenAPI views. The SDK adds identity, administration and repository namespaces while retaining existing methods. [Integration contract](docs/API_SURFACES.md).
+
 The RU/EN console includes direct catalog downloads, compact mobile navigation, contextual queue controls and grouped access-management forms. [UI behavior and browser acceptance](docs/CONSOLE_UX.md).
 
 | Area                                                                 | Status                                                   |
@@ -141,7 +143,7 @@ Large file catalogs can be traversed with the new cursor-based `assets/page` API
 
 Repository discovery exposes only the caller’s logical repository scopes, including empty ones, with a paginated directory and cards showing supported formats and effective permissions. Managed credentials opt in with `repository.read`; content and administration remain separate. API and SDK are available. See the [discovery contract](docs/REPOSITORY_DISCOVERY.md).
 
-The native API under `/api/v1` covers multipart uploads, completion jobs, content delivery, mutable annotations, package/asset catalogs, asset history and restoration, external references and catalog audit. OpenAPI is served at `/api/v1/openapi.json`; the build also exports `packages/contracts/dist/openapi.json`. All 101 registered API operations, including HEAD and legacy downloads, have stable operation IDs and explicit access/retry metadata, checked against runtime routes at startup and in CI. See the [contract guard](docs/API_CONTRACT_GUARD.md). User and group administration is implemented; distributed transfers, events/webhooks and extended service administration remain planned. Runtime response validation, OpenAPI and the TypeScript SDK are maintained together.
+The native API under `/api/v1` covers multipart uploads, completion jobs, content delivery, mutable annotations, package/asset catalogs, asset history and restoration, external references and catalog audit. OpenAPI is served at `/api/v1/openapi.json`; the build also exports `packages/contracts/dist/openapi.json`. All 103 registered API operations, including HEAD and legacy downloads, have stable operation IDs and explicit access/retry metadata, checked against runtime routes at startup and in CI. See the [contract guard](docs/API_CONTRACT_GUARD.md). User and group administration is implemented; distributed transfers, events/webhooks and extended service administration remain planned. Runtime response validation, OpenAPI and the TypeScript SDK are maintained together.
 
 Planned ProGet adapters target the operations used by clients across three API families:
 

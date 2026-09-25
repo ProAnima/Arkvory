@@ -267,6 +267,7 @@ function operation(
 ) {
   return {
     operationId,
+    summary: operationId.replace(/([a-z])([A-Z])/g, '$1 $2'),
     tags: ['Service access'],
     'x-depot-authority': authority,
     ...(body

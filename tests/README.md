@@ -32,3 +32,4 @@ Discovery: tests/repositories.test.mjs и integration/repositories.test.mjs пр
 ## Приёмка интерфейса
 
 `tests/browser/console.mjs` — дополнительный сценарий с реальными API/PostgreSQL: каталог, скачивание, метаданные, история, пользователи и загрузка. Проверяет семь экранов на трёх ширинах в RU/EN и обеих темах, сохранение полей, клавиатурное меню и блокировку входа во время передачи. Требует отдельно установленного Playwright и браузера, не включён в обычный `npm test`. Запуск и границы проверки: [CONSOLE_UX](../docs/CONSOLE_UX.md).
+`operations.test.mjs` и `integration/operations.test.mjs` проверяют partition всего API, visibility без cross-resource/admin escalation, schema/HEAD/cursors, revoke/delegation/reader, пользовательские группы и реальный SDK workflow через новые namespaces. [Контракт](../docs/API_SURFACES.md).

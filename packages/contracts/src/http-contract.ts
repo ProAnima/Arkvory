@@ -88,6 +88,14 @@ export const supplementalPaths = {
   '/api/v1/openapi.json': {
     get: {
       summary: 'Get this deployment API contract.',
+      parameters: [
+        {
+          name: 'surface',
+          in: 'query',
+          description: 'Documentation view only; not filtered by caller permissions.',
+          schema: { type: 'string', enum: apiSurfaces },
+        },
+      ],
       responses: {
         '200': {
           description: 'OpenAPI 3.0.3 document.',
@@ -153,3 +161,4 @@ export const supplementalPaths = {
     get: legacyGet('Download current asset bytes.'),
   },
 };
+import { apiSurfaces } from './api-surfaces.js';
