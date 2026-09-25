@@ -11,18 +11,23 @@ export class Services {
     private readonly state: Installation,
   ) {}
   private compose(release: Release, args: string[]): Promise<void> {
-    return command(this.state.engine, [
-      'compose',
-      '--project-name',
-      'proanima-depot',
-      '--project-directory',
-      this.root,
-      '--env-file',
-      join(this.root, 'config/compose.env'),
-      '-f',
-      join(this.root, 'releases', release.version, 'deploy/compose.yml'),
-      ...args,
-    ]);
+    return command(
+      this.state.engine,
+      [
+        'compose',
+        '--project-name',
+        'proanima-depot',
+        '--project-directory',
+        this.root,
+        '--env-file',
+        join(this.root, 'config/compose.env'),
+        '-f',
+        join(this.root, 'releases', release.version, 'deploy/compose.yml'),
+        ...args,
+      ],
+      undefined,
+      { DEPOT_IMAGE: `proanima-depot:${release.version}` },
+    );
   }
   async prepare(release: Release): Promise<void> {
     if (this.state.mode === 'compose') {

@@ -1,6 +1,6 @@
-import { copyFile, access, writeFile, chmod } from 'node:fs/promises';
+import { copyFile, access, chmod } from 'node:fs/promises';
 import { join } from 'node:path';
-import { atomicJson, jsonFile } from './files.js';
+import { atomicJson, atomicText, jsonFile } from './files.js';
 import { parseInstallation, parseRelease, record, newer } from './model.js';
 import type { Installation } from './model.js';
 import { source, stage } from './staging.js';
@@ -12,10 +12,10 @@ import { protectInstallation } from './preflight.js';
 export async function save(root: string, state: Installation): Promise<void> {
   // Compose image follows the same journalled switch; data volumes never depend on a release directory.
   if (state.mode === 'compose')
-    await writeFile(
+    await atomicText(
       join(root, 'config/compose.env'),
       `DEPOT_IMAGE=proanima-depot:${state.current.version}\n`,
-      { mode: 0o600 },
+      0o600,
     );
   await atomicJson(join(root, 'installation.json'), state);
 }

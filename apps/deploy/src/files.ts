@@ -15,11 +15,14 @@ export async function jsonFile(path: string): Promise<unknown> {
   return JSON.parse(await readFile(path, 'utf8')) as unknown;
 }
 export async function atomicJson(path: string, value: unknown): Promise<void> {
+  await atomicText(path, JSON.stringify(value, null, 2) + '\n');
+}
+export async function atomicText(path: string, value: string, mode = 0o644): Promise<void> {
   const temporary = `${path}.${randomUUID()}.tmp`;
-  const file = await open(temporary, 'wx', 0o644);
+  const file = await open(temporary, 'wx', mode);
   try {
-    await file.writeFile(JSON.stringify(value, null, 2) + '\n');
-    await file.chmod(0o644);
+    await file.writeFile(value);
+    await file.chmod(mode);
     await file.sync();
   } finally {
     await file.close();

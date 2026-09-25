@@ -12,6 +12,7 @@ import { atomicJson, exclusive } from '../apps/deploy/dist/files.js';
 import { archivePath, extractArchive } from '../apps/deploy/dist/archive.js';
 import { GitHubReleases } from '../apps/deploy/dist/github.js';
 import { runtimeEnvironment } from '../apps/deploy/dist/runtime.js';
+import { parse } from 'yaml';
 
 const previous = {
   format: 1,
@@ -193,6 +194,14 @@ test('runtime configuration cannot inject Node process options or multiline valu
   assert.throws(() => runtimeEnvironment({ NODE_OPTIONS: '--inspect=0.0.0.0' }), /Invalid/);
   assert.throws(() => runtimeEnvironment({ DEPOT_HOST: 'x\nDEPOT_KEYS_FILE=x' }), /Invalid/);
 });
+test('Compose runtime keeps tmpfs options in one mount and persists data separately', async () => {
+  const compose = parse(await readFile('deploy/compose.yml', 'utf8'));
+  assert.deepEqual(compose.services.api.tmpfs, ['/tmp:size=64m,mode=1777']);
+  assert.equal(compose.services.api.read_only, true);
+  assert.equal(compose.services.api.restart, 'unless-stopped');
+  assert.ok(compose.services.api.volumes.includes('storage:/var/lib/depot'));
+  assert.deepEqual(compose.services.api.ports, ['127.0.0.1:8080:8080']);
+});
 test('stale lock fails closed without taking ownership from another updater', async () => {
   const root = await mkdtemp(join(tmpdir(), 'depot-stale-'));
   await writeFile(join(root, 'operation.lock'), 'interrupted');
@@ -201,4 +210,17 @@ test('stale lock fails closed without taking ownership from another updater', as
     /inspect journal/,
   );
   assert.equal(await readFile(join(root, 'operation.lock'), 'utf8'), 'interrupted');
+});
+test('release publishing stays manual, trusted-main-only and behind all release gates', async () => {
+  const workflow = parse(await readFile('.github/workflows/release.yml', 'utf8'));
+  assert.deepEqual(Object.keys(workflow.on), ['workflow_dispatch']);
+  assert.equal(workflow.jobs.release.if, "github.ref == 'refs/heads/main'");
+  const steps = workflow.jobs.release.steps;
+  const gate = steps.findIndex((step) => step.run === 'npm run gate -- release');
+  const publish = steps.findIndex((step) => step.run === 'node scripts/publish-release.mjs');
+  assert.ok(gate >= 0 && publish > gate);
+  assert.ok(steps.every((step) => !step['continue-on-error']));
+  const publisher = await readFile('scripts/publish-release.mjs', 'utf8');
+  assert.ok(publisher.includes('draft: true'));
+  assert.ok(publisher.includes('run.head_sha === sha'));
 });

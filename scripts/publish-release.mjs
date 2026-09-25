@@ -29,6 +29,7 @@ async function request(url, options = {}) {
       Authorization: `Bearer ${token}`,
       Accept: 'application/vnd.github+json',
       'X-GitHub-Api-Version': '2022-11-28',
+      'Content-Type': 'application/json',
       ...options.headers,
     },
     signal: AbortSignal.timeout(600000),
@@ -37,6 +38,21 @@ async function request(url, options = {}) {
   return response.json();
 }
 const base = 'https://api.github.com/repos/ProAnima/Depot';
+const checks = await request(
+  `${base}/actions/workflows/check.yml/runs?head_sha=${sha}&per_page=30`,
+);
+if (
+  !checks.workflow_runs?.some(
+    (run) =>
+      run.head_sha === sha &&
+      run.head_branch === 'main' &&
+      ['push', 'workflow_dispatch'].includes(run.event) &&
+      run.conclusion === 'success',
+  )
+)
+  throw Error(
+    'The complete Windows/Linux merge gate must pass for this exact commit before release creation',
+  );
 await request(`${base}/git/refs`, {
   method: 'POST',
   body: JSON.stringify({ ref: `refs/tags/v${version}`, sha }),

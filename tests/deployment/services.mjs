@@ -4,8 +4,13 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import assert from 'node:assert/strict';
-const root = await mkdtemp(join(tmpdir(), 'depot-service-gate-'));
 const windows = process.platform === 'win32';
+const root = windows
+  ? await mkdtemp(join(tmpdir(), 'depot-service-gate-'))
+  : execFileSync('sudo', ['mktemp', '-d', '/opt/depot-service-gate-XXXXXX'], {
+      encoding: 'utf8',
+    }).trim();
+if (!windows) execFileSync('sudo', ['chown', `${process.getuid()}:${process.getgid()}`, root]);
 if (!windows && process.platform !== 'linux')
   throw Error('Service gate requires Linux systemd or Windows');
 const prefix = `depotgate${process.pid}`;
@@ -61,6 +66,17 @@ try {
   assert.ok(recovered, 'Both service processes must restart after an actual crash');
   console.log('Native supervisor restarted both crashed processes');
 } finally {
+  if (!windows)
+    run('sudo', [
+      'journalctl',
+      '--no-pager',
+      '-n',
+      '30',
+      '-u',
+      `${prefix}-api`,
+      '-u',
+      `${prefix}-worker`,
+    ]);
   for (const role of ['api', 'worker']) {
     if (windows) {
       const exe = join(root, `service/depot-${role}.exe`);

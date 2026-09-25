@@ -7,7 +7,7 @@ x-runtime: &runtime
   security_opt: [no-new-privileges:true]
   cap_drop: [ALL]
   stop_grace_period: 120s
-  tmpfs: [/tmp:size=64m, mode=1777]
+  tmpfs: ['/tmp:size=64m,mode=1777']
   volumes:
     - storage:/var/lib/depot
     - ./config/runtime.json:/run/depot/runtime.json:ro
