@@ -95,7 +95,7 @@ end;
 
 function ShouldSkipPage(PageID: Integer): Boolean;
 begin
-  Result := (PageID = OwnerPage.ID) and FileExists(DataRoot + '\installation.json');
+  Result := (PageID = OwnerPage.ID) and (WizardSilent or FileExists(DataRoot + '\installation.json'));
 end;
 
 function ValidName(Value: String): Boolean;
@@ -109,8 +109,10 @@ end;
 function NextButtonClick(CurPageID: Integer): Boolean;
 begin
   Result := True;
+  // Inno simulates Next clicks during silent setup; credentials come from OWNERFILE there.
+  if WizardSilent then Exit;
   if (CurPageID = OwnerPage.ID) and ((not ValidName(OwnerPage.Values[0])) or (Length(OwnerPage.Values[1]) < 12) or (Length(OwnerPage.Values[1]) > 128) or (OwnerPage.Values[1] <> OwnerPage.Values[2])) then begin
-    MsgBox(CustomMessage('InvalidOwner'), mbError, MB_OK); Result := False;
+    SuppressibleMsgBox(CustomMessage('InvalidOwner'), mbError, MB_OK, IDOK); Result := False;
   end;
 end;
 
