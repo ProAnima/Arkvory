@@ -40,8 +40,11 @@ jobs:
           cache: npm
       - run: npm ci --ignore-scripts
       - run: npm run gate -- quick
-      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+      - name: Publish gate report to logs and job summary
         if: ${{ always() }}
+        run: node scripts/ci-report.mjs
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        if: ${{ always() && vars.DEPOT_UPLOAD_ARTIFACTS == 'true' }}
         with:
           name: quality-${{ matrix.os }}
           path: test-results/
@@ -76,8 +79,11 @@ jobs:
           cache: npm
       - run: npm ci --ignore-scripts
       - run: npm run gate -- integration
-      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+      - name: Publish gate report to logs and job summary
         if: ${{ always() }}
+        run: node scripts/ci-report.mjs
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        if: ${{ always() && vars.DEPOT_UPLOAD_ARTIFACTS == 'true' }}
         with:
           name: integration
           path: test-results/
@@ -113,8 +119,11 @@ jobs:
       - run: npm ci --ignore-scripts
       - run: npm run test:browser:install
       - run: npm run gate -- browser
-      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+      - name: Publish gate report to logs and job summary
         if: ${{ always() }}
+        run: node scripts/ci-report.mjs
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        if: ${{ always() && vars.DEPOT_UPLOAD_ARTIFACTS == 'true' }}
         with:
           name: browser
           path: test-results/
@@ -150,8 +159,11 @@ jobs:
           cache: npm
       - run: npm ci --ignore-scripts
       - run: npm run gate -- large
-      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+      - name: Publish gate report to logs and job summary
         if: ${{ always() }}
+        run: node scripts/ci-report.mjs
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        if: ${{ always() && vars.DEPOT_UPLOAD_ARTIFACTS == 'true' }}
         with:
           name: large
           path: test-results/
@@ -172,8 +184,11 @@ jobs:
           cache: npm
       - run: npm ci --ignore-scripts
       - run: npm run gate -- security
-      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+      - name: Publish gate report to logs and job summary
         if: ${{ always() }}
+        run: node scripts/ci-report.mjs
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        if: ${{ always() && vars.DEPOT_UPLOAD_ARTIFACTS == 'true' }}
         with:
           name: security
           path: test-results/

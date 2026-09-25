@@ -12,6 +12,7 @@ import { ciVerdict } from '../scripts/policy/ci-result.mjs';
 import { runProcess } from '../scripts/gates/process.mjs';
 import { lockGates } from '../scripts/gates/lock.mjs';
 import { cleanBuild } from '../scripts/gates/clean-build.mjs';
+import { gateSummary } from '../scripts/gates/report.mjs';
 import { removeTestDirectory } from './helpers.mjs';
 
 const now = Date.parse('2026-09-25');
@@ -194,6 +195,11 @@ test('workflow guard catches bypasses and mutable actions', async () => {
       w.jobs.large.if = 'false';
     },
     (w) => {
+      w.jobs.security.steps = w.jobs.security.steps.filter(
+        (s) => s.run !== 'node scripts/ci-report.mjs',
+      );
+    },
+    (w) => {
       w.jobs.verdict.steps.find(
         (s) => s.run === 'node scripts/ci-verdict.mjs',
       ).env.DEPOT_RELEASE_REQUIRED = 'false';
@@ -302,6 +308,35 @@ test('clean build removes only generated outputs and rejects traversal and junct
     await symlink(src, dist, process.platform === 'win32' ? 'junction' : 'dir');
     await assert.rejects(cleanBuild(root, [{ path: 'packages/core' }]), /symlink/);
     await access(join(src, 'keep.ts'));
+  } finally {
+    await removeTestDirectory(root);
+  }
+});
+
+test('CI summary preserves failed and unexecuted gates and rejects missing/malformed reports', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'depot-report-'));
+  try {
+    const folder = join(root, 'test-results/gates');
+    await mkdir(folder, { recursive: true });
+    await assert.rejects(gateSummary(root), /No gate report/);
+    const path = join(folder, 'run.json');
+    await writeFile(
+      path,
+      JSON.stringify({
+        status: 'failed',
+        tasks: [
+          { name: 'unit', status: 'failed' },
+          { name: 'browser', status: 'not_run' },
+        ],
+        error: 'failure\n::warning::example',
+      }),
+    );
+    const report = await gateSummary(root);
+    assert.match(report, /"status": "failed"/);
+    assert.match(report, /"status": "not_run"/);
+    assert.ok(!report.includes('\n::warning::'));
+    await writeFile(path, '{"status":"passed"}');
+    await assert.rejects(gateSummary(root), /Invalid gate report/);
   } finally {
     await removeTestDirectory(root);
   }

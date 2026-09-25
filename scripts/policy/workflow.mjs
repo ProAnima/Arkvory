@@ -1,6 +1,8 @@
 import { parse } from 'yaml';
 import { planGates } from './inventory.mjs';
 
+const archiveCondition = "${{ always() && vars.DEPOT_UPLOAD_ARTIFACTS == 'true' }}";
+
 export function inspectWorkflow(text, registry) {
   const errors = [],
     workflow = parse(text),
@@ -28,6 +30,8 @@ export function inspectWorkflow(text, registry) {
       if (step['continue-on-error']) errors.push(`${name}: step continue-on-error is forbidden`);
       if (step.uses && !/^[\w-]+\/[\w-]+@[a-f0-9]{40}$/.test(step.uses))
         errors.push(`${name}: actions must use immutable full SHAs`);
+      if (step.uses?.startsWith('actions/upload-artifact@') && step.if !== archiveCondition)
+        errors.push(`${name}: artifact archives must be explicitly enabled`);
       if (
         step.uses?.startsWith('actions/checkout@') &&
         step.with?.['persist-credentials'] !== false
@@ -60,6 +64,12 @@ export function inspectWorkflow(text, registry) {
       )
     )
       errors.push(`CI ${name} must execute gate ${profile}`);
+    if (
+      !jobs[name]?.steps?.some(
+        (s) => s.run === 'node scripts/ci-report.mjs' && s.if === '${{ always() }}',
+      )
+    )
+      errors.push(`CI ${name} must publish its gate report even on failure`);
   }
   for (const name of ['check', 'integration', 'browser', 'security'])
     if (jobs[name] && Object.hasOwn(jobs[name], 'if'))
