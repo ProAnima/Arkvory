@@ -91,7 +91,11 @@ export class ZipManifestReader implements ManifestReader {
             });
             stream.on('end', () => {
               try {
-                const value: unknown = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+                const value: unknown = JSON.parse(
+                  new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(
+                    Buffer.concat(chunks),
+                  ),
+                );
                 manifest = parseManifest(value);
                 zip.readEntry();
               } catch {

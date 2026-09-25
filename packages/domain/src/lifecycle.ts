@@ -1,4 +1,5 @@
 import { DepotError } from './artifact.js';
+import { validateManifestValues } from './manifest-values.js';
 
 export const PART_BYTES = 8 * 1024 ** 2;
 export interface UploadPart {
@@ -26,6 +27,7 @@ export function requireAssetPath(path: string): string {
   if (
     path.length < 1 ||
     path.length > 1024 ||
+    /[\uD800-\uDFFF]/u.test(path) ||
     path.includes('\\') ||
     path.includes(':') ||
     path
@@ -48,6 +50,7 @@ export interface PackageManifest {
 export function parseManifest(value: unknown): PackageManifest {
   if (typeof value !== 'object' || value === null || Array.isArray(value))
     throw new DepotError('invalid_input', 'Invalid UPack manifest');
+  validateManifestValues(value);
   const original: Record<string, unknown> = Object.fromEntries(Object.entries(value));
   const name = original['name'];
   const version = original['version'];

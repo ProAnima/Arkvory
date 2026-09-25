@@ -59,3 +59,23 @@ test('prepared UPack manifest preserves nested custom metadata inside the immuta
     promisify(execFile)(process.execPath, [...args.slice(0, -1), join(directory, 'rejected.json')]),
   );
 });
+
+test('UPack manifest decoding rejects invalid UTF-8 instead of changing metadata bytes', async (t) => {
+  const directory = await mkdtemp(join(tmpdir(), 'depot-upack-utf8-'));
+  t.after(() => removeTestDirectory(directory));
+  const blobs = new LocalBlobStore(join(directory, 'storage'));
+  await blobs.initialize();
+  const id = randomUUID();
+  const zip = new yazl.ZipFile();
+  zip.addBuffer(
+    Buffer.concat([
+      Buffer.from('{"name":"x","version":"1.0.0","_custom":"'),
+      Buffer.from([0xc3, 0x28]),
+      Buffer.from('"}'),
+    ]),
+    'upack.json',
+  );
+  zip.end();
+  await pipeline(zip.outputStream, createWriteStream(blobs.contentPath(id)));
+  await assert.rejects(new ZipManifestReader(blobs).inspect(id), { code: 'invalid_input' });
+});

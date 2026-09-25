@@ -1,5 +1,6 @@
 import type { Installation, Release } from './model.js';
 import { updateDecision } from './model.js';
+import { isUnconfirmedTermination } from './process.js';
 
 export interface UpdatePort {
   stage(release: Release): Promise<void>;
@@ -27,19 +28,48 @@ export async function applyUpdate(
     await port.healthy();
     await port.journal({ phase: 'committed', previous: state.current, next });
     return true;
-  } catch {
+  } catch (error) {
+    // A timed-out command may still mutate the installation. Do not race it with rollback;
+    // exclusive() retains the operation lock until the operator has fenced that process.
+    if (isUnconfirmedTermination(error)) {
+      await recoveryJournal(port, 'recovery-required', state.current, next);
+      throw error;
+    }
     // Same-schema updates never run migrations; restoration of the old executable is safe.
-    await port.journal({ phase: 'rolling-back', previous: state.current, next });
+    // A full/broken journal disk must not prevent restoring stopped services. The durable
+    // prepared/stopped record already identifies the previous release for manual recovery.
+    await recoveryJournal(port, 'rolling-back', state.current, next);
     try {
       await port.stop();
       await port.save(state);
       await port.start(state.current);
       await port.healthy();
-    } catch {
-      await port.journal({ phase: 'recovery-required', previous: state.current, next });
-      throw new Error('Update and rollback failed; inspect services and journal.json');
+    } catch (rollbackError) {
+      await recoveryJournal(port, 'recovery-required', state.current, next);
+      if (isUnconfirmedTermination(rollbackError)) throw rollbackError;
+      throw new Error('Update and rollback failed; inspect services and journal.json', {
+        cause: rollbackError,
+      });
     }
-    await port.journal({ phase: 'rolled-back', previous: state.current, next });
-    throw new Error('Update failed; previous release restored');
+    if (!(await recoveryJournal(port, 'rolled-back', state.current, next)))
+      throw new Error(
+        'Update failed; previous release restored but recovery journal could not be saved; inspect journal.json before retrying',
+        { cause: error },
+      );
+    throw new Error('Update failed; previous release restored', { cause: error });
+  }
+}
+
+async function recoveryJournal(
+  port: UpdatePort,
+  phase: string,
+  previous: Release,
+  next: Release,
+): Promise<boolean> {
+  try {
+    await port.journal({ phase, previous, next });
+    return true;
+  } catch {
+    return false;
   }
 }

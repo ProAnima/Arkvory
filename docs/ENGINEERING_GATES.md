@@ -4,16 +4,16 @@
 
 Node.js 24, npm 11. Установка: npm ci --ignore-scripts.
 
-| Команда                     | Состав                                                                 |
-| --------------------------- | ---------------------------------------------------------------------- |
-| npm run gate:list           | Доступные профили и отдельные гейты                                    |
-| npm run gate -- quick       | Политики, форматирование, TS, lint, границы, сборка, unit + governance |
-| npm run gate -- verify      | quick + audit зависимостей + PostgreSQL/HTTP + браузер                 |
-| npm run gate -- release     | verify + full и multipart передача 5 GiB с отказами                    |
-| npm run gate -- integration | Политики, сборка, PostgreSQL/HTTP                                      |
-| npm run gate -- browser     | Политики, сборка, оба браузерных сценария                              |
-| npm run gate -- large       | Политики, сборка, оба сценария 5 GiB                                   |
-| npm run gate -- security    | npm audit, high/critical блокируют                                     |
+| Команда                     | Состав                                                                                |
+| --------------------------- | ------------------------------------------------------------------------------------- |
+| npm run gate:list           | Доступные профили и отдельные гейты                                                   |
+| npm run gate -- quick       | Политики, форматирование, TS, lint, границы, сборка, unit + governance                |
+| npm run gate -- verify      | quick + audit + PostgreSQL/HTTP + браузер + упаковка/службы/контейнеры/native install |
+| npm run gate -- release     | verify + full и multipart передача 5 GiB с отказами                                   |
+| npm run gate -- integration | Политики, сборка, PostgreSQL/HTTP                                                     |
+| npm run gate -- browser     | Политики, сборка, консоль, скачивания и Remote Setup                                  |
+| npm run gate -- large       | Политики, сборка, оба сценария 5 GiB                                                  |
+| npm run gate -- security    | npm audit, high/critical блокируют                                                    |
 
 Можно передать несколько имён: npm run gate -- unit integration. Зависимости выполняются один раз, задания — последовательно. Старые npm test, test:integration, test:browser, test:large и check вызывают тот же runner. npm run build остаётся командой сборки для разработки, без заявления о прохождении тестов.
 

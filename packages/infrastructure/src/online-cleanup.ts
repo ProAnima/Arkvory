@@ -204,7 +204,7 @@ export class PostgresOnlineCleanup {
         return;
       }
       check();
-      await this.blobs.collect(item.id, item.status === 'cancelled');
+      await this.blobs.collect(item.id, item.status === 'cancelled', { throwIfAborted: check });
       check();
       // Retry after crash is safe: unlink is idempotent; quota is released only after durable deletion.
       const reclaimed = await c.query(

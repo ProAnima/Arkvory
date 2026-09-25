@@ -270,24 +270,29 @@ export class LocalBlobStore implements BlobStore {
     for (const part of parts) yield* this.streamFile(this.partPath(id, part), part.size);
   }
 
-  async collect(id: string, removeContent: boolean): Promise<void> {
-    // Caller owns either offline maintenance or both the upload and exclusive content guards.
+  async collect(id: string, removeContent: boolean, cancellation: Cancellation): Promise<void> {
+    // Both cleanup modes hold upload ownership and an exclusive content guard for blob removal.
     requireId(id);
     for (const folder of ['staging', 'parts']) {
+      cancellation.throwIfAborted();
       const target = resolve(this.root, folder, id);
       if (relative(resolve(this.root, folder), target) !== id)
         throw new DepotError('invalid_input', 'Unsafe cleanup target');
       await rm(target, { recursive: true, force: true });
+      cancellation.throwIfAborted();
       await syncDirectory(join(this.root, folder));
     }
     if (removeContent) {
+      cancellation.throwIfAborted();
       try {
         await unlink(this.blob(id));
       } catch (error) {
         if (!hasCode(error, 'ENOENT')) throw error;
       }
+      cancellation.throwIfAborted();
       await syncDirectory(join(this.root, 'blobs'));
     }
+    cancellation.throwIfAborted();
   }
 
   contentPath(id: string): string {

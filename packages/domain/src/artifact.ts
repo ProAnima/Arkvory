@@ -70,6 +70,7 @@ export function parseDescriptor(value: unknown): ArtifactDescriptor {
     typeof name !== 'string' ||
     name.length < 1 ||
     name.length > 240 ||
+    /[\uD800-\uDFFF]/u.test(name) ||
     name.includes('/') ||
     name.includes('\\') ||
     Array.from({ length: name.length }, (_, index) => name.charCodeAt(index)).some(
@@ -106,7 +107,10 @@ export function parseDescriptor(value: unknown): ArtifactDescriptor {
       !/^[a-zA-Z][a-zA-Z0-9_.-]{0,63}$/.test(key) ||
       ['__proto__', 'constructor', 'prototype'].includes(key) ||
       typeof entry !== 'string' ||
-      entry.length > 1024
+      entry.length > 1024 ||
+      entry.includes('\u0000') ||
+      // Unicode mode matches unpaired surrogates only; valid supplementary characters survive.
+      /[\uD800-\uDFFF]/u.test(entry)
     )
       throw new DepotError('invalid_input', 'Invalid metadata field');
     checkedMetadata[key] = entry;

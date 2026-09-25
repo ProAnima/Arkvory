@@ -213,7 +213,7 @@ test('independent-session content pins are counted and cancelled, failed and exp
     assert.equal((await row(f, id)).reclaimed, false);
     assert.equal((await client.cleanup('releases')).lastFailed, 1);
     // Crash window: bytes were removed, but accounting did not commit.
-    await store.collect(id, true);
+    await store.collect(id, true, { throwIfAborted() {} });
     assert.equal((await row(f, id)).reclaimed, false);
     await sweep(f);
     assert.equal((await row(f, id)).reclaimed, true);

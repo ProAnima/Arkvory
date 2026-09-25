@@ -14,6 +14,8 @@ Content shared session locks с reference counts защищают все byte do
 
 Namespace advisory locks: (18471,16) — singleton GC; (18471,17) — отметка поддерживаемого протокола на storage ownership session. Content keys — SHA-256 от `content:<uuid>` в пространстве bigint, upload keys сохраняют прежний SHA-256 от uuid. Совпадение хешей консервативно уменьшает параллелизм; не даёт разрешения на удаление.
 
+Уточнение аудита 2026-09-26: offline repair использует тот же порядок per-object upload/content guards, дополнительно к глобальной maintenance session. Application получает обязательный portable Cancellation и проверяет его до/после await; LocalBlobStore проверяет guard между фазами удаления. Поэтому потеря общей сессии не оставляет старый процесс бесконтрольно удалять объекты рядом с новым writer. Уже выполняемый системный вызов нельзя отозвать, если потеряна сама сессия объектных guards; требование к внешнему fencing для будущего HA сохраняется. Квота после неопределённого удаления освобождается только проверенным повтором.
+
 Миграция 16 добавляет состояние без удаления старых данных; 17 строит индексы конкурентно. Существующий declaration inventory операций разделён по хранению без изменения старых ACL/operationId; исключение ARCH-002 устранено, новые исключения размера не добавляются.
 
 ## Границы
@@ -23,3 +25,5 @@ Namespace advisory locks: (18471,16) — singleton GC; (18471,17) — отмет
 ## Приёмка
 
 Реальные PostgreSQL/HTTP: активный download при retirement, независимые content pins, занятый/истёкший upload, grace, защищённые ссылки, ошибка удаления, crash window до reclaimed, пауза между объектами, restart и автоматический запуск. API scopes/CAS и RU/EN UI проверяются отдельными сценариями через гейты.
+
+Offline regression: принудительное завершение maintenance backend при удерживаемых per-object guards, запуск replacement API, отказ конкурирующим reader/upload до release, сохранение bytes/quota и прекращение прохода. Unit-проверки покрывают потерю ownership после page/lock/delete и между filesystem-фазами. Все сценарии подключены общими unit/integration gates.

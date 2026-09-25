@@ -124,7 +124,11 @@ test('deletion is explicitly scoped, idempotent, persistent, and does not unlink
     });
     await f.app.close();
     await maintenance.claimStorage(await blobs.identity(), 'maintenance');
-    const gc = new GarbageCollector(new PostgresCleanup(maintenance.pool), blobs);
+    const gc = new GarbageCollector(new PostgresCleanup(maintenance.pool), blobs, {
+      throwIfAborted() {
+        if (!maintenance.active) throw new Error('Maintenance claim lost');
+      },
+    });
     await gc.run(new Date().toISOString());
     await blobs.exists(id, 36);
     assert.equal(

@@ -10,7 +10,7 @@ test('build attachment rules reject ambiguous names, unsafe paths, self links an
       name: 'build.json',
       kind: 'manifest',
       artifactId: randomUUID(),
-      description: 'CI manifest',
+      description: 'CI manifest 🚀',
     };
   assert.deepEqual(parseAttachments([entry], parent), [entry]);
   for (const invalid of [
@@ -24,6 +24,9 @@ test('build attachment rules reject ambiguous names, unsafe paths, self links an
       { name: 'bad\u0000' },
       { kind: 'script' },
       { description: 'x'.repeat(513) },
+      { description: 'bad\u0000' },
+      { description: 'bad\uD800' },
+      { description: 'bad\uDFFF' },
       { artifactId: parent },
       { artifactId: 'invalid' },
       { extra: true },

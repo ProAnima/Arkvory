@@ -152,7 +152,11 @@
       "kind": "scenario"
     }
   },
-  "spawnedHelpers": ["tests/integration/api-child.mjs", "tests/deployment/service-child.mjs"],
+  "spawnedHelpers": [
+    "tests/integration/api-child.mjs",
+    "tests/deployment/service-child.mjs",
+    "tests/deployment/process-child.mjs"
+  ],
   "mergeTasks": [
     "static",
     "unit",

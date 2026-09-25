@@ -38,11 +38,23 @@ test('descriptor enforces 5 GiB, flat metadata and canonical identity', () => {
     { sha256: 'bad' },
     { name: '../x' },
     { name: 'x\u0000y' },
+    { name: 'x\uD800y' },
+    { name: 'x\uDFFFy' },
     { metadata: { bad: { nested: true } } },
+    { metadata: { bad: 'before\u0000after' } },
+    { metadata: { bad: 'before\uD800after' } },
+    { metadata: { bad: 'before\uDFFFafter' } },
     { labels: Array(33).fill('x') },
     { unexpected: true },
   ])
     assert.throws(() => parseDescriptor({ ...valid, ...patch }), { code: 'invalid_input' });
+});
+
+test('descriptor preserves valid Unicode pairs and non-NUL metadata controls', () => {
+  const descriptor = { ...valid, name: 'build-🚀.upack', metadata: { notes: '🚀\n\t\u0001' } };
+  const parsed = parseDescriptor(descriptor);
+  assert.equal(parsed.name, descriptor.name);
+  assert.deepEqual(parsed.metadata, descriptor.metadata);
 });
 
 test('authorization requires both repository and operation scope; identifiers are path-safe', () => {

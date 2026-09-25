@@ -5,6 +5,7 @@ import type { IdentityService } from '@proanima/depot-application';
 import type { PostgresServices } from '@proanima/depot-infrastructure';
 import type { ServerConfig } from './config.js';
 import type { RequestContext } from './request-context.js';
+import { LoginAdmission } from './login-admission.js';
 
 interface Security {
   config: Pick<ServerConfig, 'keys'>;
@@ -18,6 +19,11 @@ interface Security {
 export function registerRequestSecurity(app: FastifyInstance, dependencies: Security) {
   const { config, role, available, identity, serviceAccounts, context, registerOwner } =
     dependencies;
+  const loginAdmission = new LoginAdmission();
+  app.addHook('preValidation', (request, _reply, done) => {
+    loginAdmission.bodyReceived(request);
+    done();
+  });
   app.addHook('onRequest', async (request, reply) => {
     reply
       .header('X-Request-Id', request.id)
@@ -33,9 +39,7 @@ export function registerRequestSecurity(app: FastifyInstance, dependencies: Secu
         'unavailable',
         'Gateway ownership or download lease lost; restart the service',
       );
-    // Admission precedes asynchronous authentication: session lookup also consumes resources.
     context.signal(request, reply);
-    context.countRequest(reply);
     if (request.routeOptions.url === '/api/v1/auth/login') {
       if (role === 'reader')
         await reply.code(405).header('Allow', 'GET, HEAD').send({
@@ -43,8 +47,11 @@ export function registerRequestSecurity(app: FastifyInstance, dependencies: Secu
           message: 'Read gateway does not accept mutations',
           requestId: request.id,
         });
+      else loginAdmission.acquire(request, reply);
       return;
     }
+    // Public login cannot consume the protected budget; session lookup remains bounded.
+    context.countRequest(reply);
     const auth = request.headers.authorization;
     const legacy =
       request.url.startsWith('/upack/') ||

@@ -65,8 +65,8 @@ Administrators can create accounts and repository access groups. Users sign in w
 
 - UPack repositories with groups, names, versions, and original archives preserved during import.
 - Ordinary files with directory paths, immutable revisions, and atomic updates of the current revision.
-- Schema-based metadata: description, owner, platform, architecture, build/commit, and custom fields.
-- Labels, release states, logical collections, filters, and permission-aware search.
+- Flat string metadata: description, owner, platform, architecture, build/commit, and custom fields. Schema validation is planned.
+- Labels, logical collections, filters, and permission-aware search. Release approvals and state workflows are planned.
 - Separate handling of original UPack fields and editable catalog properties.
 - Change history and external references that protect artifacts still used by consumers from automatic cleanup.
 
@@ -81,18 +81,18 @@ Administrators can create accounts and repository access groups. Users sign in w
 ### Queues and networking
 
 - Separate upload, download, and background job queues.
-- Priorities, fair allocation across clients, and protection against indefinite waiting.
+- Client rotation and bounded admission waiting; server-side priorities and starvation guarantees under mixed load remain planned.
 - Limits on concurrent transfers, bandwidth, staging space, and repository quotas.
 - Multiple gateways with admission control and allocated network budgets.
-- Controlled migration and replication traffic so background work does not displace operational delivery.
+- Planned: coordinated migration and replication budgets that preserve operational delivery capacity.
 
 ### Security and operations
 
 - Service accounts, repository and action permissions, key rotation, and auditing.
-- Short-lived transfer tokens scoped to an object and an action.
+- Planned: short-lived transfer tokens scoped to an object and an action; current downloads require ordinary API authorization.
 - Archive validation, safe paths, and metadata size limits.
 - Recovery of intermediate operations, idempotent completion, and integrity checks.
-- Metrics, health/readiness endpoints, backups, and tested restoration procedures.
+- Health/readiness and transfer diagnostics are implemented. Automated backup, coordinated database/blob recovery, and restore drills remain [planned](docs/BACKUP_RECOVERY.md).
 
 ## Architecture
 
@@ -129,7 +129,7 @@ Large files are transferred directly through delivery gateways and must not accu
 | HTTP API                  | Fastify, implemented for the native core                                            |
 | Metadata and durable jobs | PostgreSQL; catalog and migrations implemented                                      |
 | Content                   | Local backend implemented; S3 and HA backend planned                                |
-| Delivery gateways         | Nginx with validated admission and bandwidth control                                |
+| Delivery gateways         | Node.js gateway implemented; dedicated Nginx delivery integration planned           |
 | UI                        | TypeScript; framework not yet selected                                              |
 | Quality                   | TypeScript, ESLint, Prettier, dependency-cruiser, GitHub Actions                    |
 

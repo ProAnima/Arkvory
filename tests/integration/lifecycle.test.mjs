@@ -180,7 +180,11 @@ test('offline GC requires exclusive maintenance, retains published bytes, releas
   });
   await f.app.close();
   await maintenance.claimStorage(await blobs.identity(), 'maintenance');
-  const gc = new GarbageCollector(new PostgresCleanup(maintenance.pool), blobs);
+  const gc = new GarbageCollector(new PostgresCleanup(maintenance.pool), blobs, {
+    throwIfAborted() {
+      if (!maintenance.active) throw new Error('Maintenance claim lost');
+    },
+  });
   await gc.run(new Date().toISOString(), 0);
   assert.deepEqual(await readFile(blobs.contentPath(kept)), data);
   await assert.rejects(readFile(blobs.contentPath(discarded)), { code: 'ENOENT' });

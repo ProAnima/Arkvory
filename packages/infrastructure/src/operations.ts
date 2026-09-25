@@ -3,9 +3,57 @@ import { DepotError } from '@proanima/depot-domain';
 import type { MutationAccess } from '@proanima/depot-domain';
 import { lockServiceAccess } from './service-authorization.js';
 import type { CleanupCatalog, CompletionJob, JobStore } from '@proanima/depot-application';
+import type { Cancellation } from '@proanima/depot-application';
+import { contentLockKey, uploadLockKey } from './content-pins.js';
 
 export class PostgresCleanup implements CleanupCatalog {
   constructor(private readonly pool: Pool) {}
+  async exclusive<T>(
+    id: string,
+    removeContent: boolean,
+    action: (cancellation: Cancellation) => Promise<T>,
+  ): Promise<T> {
+    const client = await this.pool.connect();
+    const state = { lost: false };
+    const failed = () => {
+      state.lost = true;
+    };
+    const keys = [uploadLockKey(id), ...(removeContent ? [contentLockKey(id)] : [])];
+    const acquired: string[] = [];
+    client.on('error', failed);
+    try {
+      // Independent of the process-wide maintenance claim: a replacement gateway cannot
+      // race an already admitted unlink when that other session disconnects.
+      for (const key of keys) {
+        const result = await client.query<{ acquired: boolean }>(
+          'SELECT pg_try_advisory_lock($1::bigint) AS acquired',
+          [key],
+        );
+        if (!result.rows[0]?.acquired) throw new DepotError('busy', 'Cleanup object is in use');
+        acquired.push(key);
+      }
+      const cancellation = {
+        throwIfAborted() {
+          if (state.lost) throw new DepotError('unavailable', 'Cleanup object protection lost');
+        },
+      };
+      cancellation.throwIfAborted();
+      const result = await action(cancellation);
+      cancellation.throwIfAborted();
+      return result;
+    } finally {
+      if (!state.lost) {
+        try {
+          for (const key of acquired.reverse())
+            await client.query('SELECT pg_advisory_unlock($1::bigint)', [key]);
+        } catch {
+          state.lost = true;
+        }
+      }
+      client.removeListener('error', failed);
+      client.release(state.lost);
+    }
+  }
   async page(after: string | undefined, limit: number) {
     const result = await this.pool.query<{
       id: string;

@@ -52,12 +52,19 @@ export class CatalogApi {
     );
   }
   async list(repository: string, after?: string) {
+    // Up to 100 descriptors: 32 metadata values × 1024 UTF-16 code units each.
+    // JSON escaping can use six bytes per code unit; retain room for keys/labels/envelope.
+    // This limit follows the domain shape, not an HTTP request-size limit at one ingress.
     const r = record(
-      await this.http.call(
-        repositoryPath(
-          repository,
-          `artifacts${after ? '?after=' + encodeURIComponent(after) : ''}`,
+      await this.http.json(
+        await this.http.request(
+          repositoryPath(
+            repository,
+            `artifacts${after ? '?after=' + encodeURIComponent(after) : ''}`,
+          ),
         ),
+        undefined,
+        24 * 1024 ** 2,
       ),
     );
     return {

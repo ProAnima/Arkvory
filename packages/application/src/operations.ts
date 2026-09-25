@@ -1,5 +1,6 @@
 import { authorizeAction, DepotError, requireId } from '@proanima/depot-domain';
 import type { Principal, MutationAccess } from '@proanima/depot-domain';
+import type { Cancellation } from './ports.js';
 
 export interface CleanupRecord {
   id: string;
@@ -9,18 +10,26 @@ export interface CleanupRecord {
   cancelledAt: string | null;
 }
 export interface CleanupCatalog {
+  /** Hold upload ownership and, for blob removal, the exclusive content guard during action. */
+  exclusive<T>(
+    id: string,
+    removeContent: boolean,
+    action: (cancellation: Cancellation) => Promise<T>,
+  ): Promise<T>;
   page(after: string | undefined, limit: number): Promise<readonly CleanupRecord[]>;
   expire(id: string, now: string): Promise<void>;
   reclaimed(id: string): Promise<void>;
 }
 export interface CleanupBlobs {
-  collect(id: string, removeContent: boolean): Promise<void>;
+  /** Check ownership between filesystem operations; an already submitted syscall cannot be revoked. */
+  collect(id: string, removeContent: boolean, cancellation: Cancellation): Promise<void>;
 }
 
 export class GarbageCollector {
   constructor(
     private readonly catalog: CleanupCatalog,
     private readonly blobs: CleanupBlobs,
+    private readonly cancellation: Cancellation,
   ) {}
   async run(
     now: string,
@@ -36,31 +45,47 @@ export class GarbageCollector {
     let visited = 0;
     let collected = 0;
     for (;;) {
+      this.cancellation.throwIfAborted();
       const rows = await this.catalog.page(after, 100);
+      this.cancellation.throwIfAborted();
       if (rows.length === 0) break;
       for (const row of rows) {
         visited++;
         after = row.id;
-        if (row.status === 'pending' && Date.parse(row.expiresAt) <= Date.parse(now)) {
-          await this.catalog.expire(row.id, now);
-          continue;
-        }
-        if (row.status === 'available') {
-          await this.blobs.collect(row.id, false);
-          continue;
-        }
-        if (
-          row.status === 'cancelled' &&
-          row.cancelledAt !== null &&
-          Date.parse(row.cancelledAt) + graceMilliseconds <= Date.parse(now)
-        ) {
-          await this.blobs.collect(row.id, true);
-          await this.catalog.reclaimed(row.id);
-          collected++;
-        }
+        if (await this.collect(row, now, graceMilliseconds)) collected++;
       }
     }
     return { visited, collected };
+  }
+  private async collect(row: CleanupRecord, now: string, graceMilliseconds: number) {
+    this.cancellation.throwIfAborted();
+    if (row.status === 'pending' && Date.parse(row.expiresAt) > Date.parse(now)) return false;
+    if (
+      row.status === 'cancelled' &&
+      (row.cancelledAt === null ||
+        Date.parse(row.cancelledAt) + graceMilliseconds > Date.parse(now))
+    )
+      return false;
+    return this.catalog.exclusive(row.id, row.status === 'cancelled', async (ownership) => {
+      const cancellation = {
+        throwIfAborted: () => {
+          this.cancellation.throwIfAborted();
+          ownership.throwIfAborted();
+        },
+      };
+      cancellation.throwIfAborted();
+      if (row.status === 'pending') {
+        await this.catalog.expire(row.id, now);
+        cancellation.throwIfAborted();
+        return false;
+      }
+      await this.blobs.collect(row.id, row.status === 'cancelled', cancellation);
+      cancellation.throwIfAborted();
+      if (row.status === 'available') return false;
+      await this.catalog.reclaimed(row.id);
+      cancellation.throwIfAborted();
+      return true;
+    });
   }
 }
 

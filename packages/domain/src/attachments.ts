@@ -35,7 +35,8 @@ export function parseAttachments(value: unknown, parentId: string): readonly Bui
     if (
       typeof description !== 'string' ||
       description.length > 512 ||
-      description.includes('\u0000')
+      description.includes('\u0000') ||
+      /[\uD800-\uDFFF]/u.test(description)
     )
       throw new DepotError('invalid_input', 'Invalid attachment description');
     const checked = parseDescriptor({ name, size: '0', sha256: '0'.repeat(64) }).name;

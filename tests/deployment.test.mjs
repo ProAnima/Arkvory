@@ -8,6 +8,7 @@ import { pipeline } from 'node:stream/promises';
 import { ZipFile } from 'yazl';
 import { parseRelease, updateDecision, newer } from '../apps/deploy/dist/model.js';
 import { applyUpdate } from '../apps/deploy/dist/update.js';
+import { DeploymentCommandTimeout } from '../apps/deploy/dist/process.js';
 import { atomicJson, exclusive } from '../apps/deploy/dist/files.js';
 import { archivePath, extractArchive } from '../apps/deploy/dist/archive.js';
 import { GitHubReleases } from '../apps/deploy/dist/github.js';
@@ -117,6 +118,59 @@ test('failed readiness restores old pointer and running version', async () => {
 test('failed rollback retains recovery-required journal instead of reporting success', async () => {
   const fake = port('always');
   await assert.rejects(applyUpdate(state, next, true, fake), /rollback failed/);
+  assert.equal(fake.events.at(-1), 'recovery-required');
+});
+test('journal failure after stop still attempts rollback and restarts the previous release', async () => {
+  const fake = port();
+  const journal = fake.journal;
+  fake.journal = async (value) => {
+    await journal(value);
+    if (['stopped', 'rolling-back'].includes(value.phase)) throw Error('journal unavailable');
+  };
+  await assert.rejects(applyUpdate(state, next, true, fake), /previous release restored/);
+  assert.equal(fake.saved.current.version, previous.version);
+  assert.ok(fake.events.includes('start:1.0.0'));
+  assert.equal(fake.events.at(-1), 'rolled-back');
+});
+test('unwritable rollback journal is reported after restoring services, never as success', async () => {
+  const fake = port('health');
+  const journal = fake.journal;
+  fake.journal = async (value) => {
+    await journal(value);
+    if (['rolling-back', 'rolled-back'].includes(value.phase)) throw Error('disk full');
+  };
+  await assert.rejects(applyUpdate(state, next, true, fake), /restored but recovery journal/);
+  assert.equal(fake.saved.current.version, previous.version);
+  assert.ok(fake.events.includes('start:1.0.0'));
+});
+test('rollback and journal failures preserve the recovery-required error', async () => {
+  const fake = port('always');
+  const journal = fake.journal;
+  fake.journal = async (value) => {
+    await journal(value);
+    if (['rolling-back', 'recovery-required'].includes(value.phase)) throw Error('disk full');
+  };
+  await assert.rejects(applyUpdate(state, next, true, fake), /rollback failed; inspect/);
+  assert.ok(fake.events.includes('start:1.0.0'));
+});
+test('unconfirmed command termination never races automatic rollback against a live command', async () => {
+  const fake = port();
+  const failure = new DeploymentCommandTimeout(false);
+  fake.stop = async () => {
+    fake.events.push('unconfirmed-stop');
+    throw failure;
+  };
+  await assert.rejects(applyUpdate(state, next, true, fake), (error) => error === failure);
+  assert.deepEqual(fake.events, ['stage', 'prepared', 'unconfirmed-stop', 'recovery-required']);
+});
+test('unconfirmed rollback termination is preserved for the outer installation lock', async () => {
+  const fake = port('health');
+  const failure = new DeploymentCommandTimeout(false);
+  fake.start = async (release) => {
+    fake.events.push('start:' + release.version);
+    if (release.version === previous.version) throw failure;
+  };
+  await assert.rejects(applyUpdate(state, next, true, fake), (error) => error === failure);
   assert.equal(fake.events.at(-1), 'recovery-required');
 });
 test('filesystem lock rejects a concurrent writer and preserves configuration atomically', async () => {

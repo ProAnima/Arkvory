@@ -15,7 +15,7 @@
 - [x] Read gateways на общем root, фиксированные доли общего download-бюджета, конечные leases и локальная проверка потери связи с PostgreSQL.
 - [x] Common Packages download для зарегистрированных UPack по group/name/version.
 - [x] Создание пользователей администратором, группы доступа к репозиториям, вход через сессии и сортировка/группировка UPack-каталога.
-- [ ] Полная ProGet compatibility, online retention, глобальный scheduler, репликация и HA.
+- [ ] Полная ProGet compatibility, глобальный scheduler, репликация и HA.
 
 ## Этапы
 
@@ -70,7 +70,7 @@ Backup/recovery выделен в самостоятельные вертика�
 
 Реализованы расписание last-N retention, настройки квот и предупреждений, bounded диагностика API/worker, SDK и RU/EN-консоль. Группировка выбирается по пакету/каналу, пакету или репозиторию; ключ расписания перепроверяется. [STORAGE_POLICIES](STORAGE_POLICIES.md), [ADR 0026](adr/0026-storage-retention-quotas-diagnostics.md). Физические реплики и стендовые HA-проверки остаются открытыми.
 
-После архитектурного аудита SDK разделён на HTTP transport, группы операций и transfer workflows за прежним DepotClient. Устранены два исключения размера; совместимость 68 методов проверяется строгим внешним TS consumer и сетевыми регрессиями. [ADR 0028](adr/0028-sdk-composition.md). Следующий приоритет архитектурного долга — API composition root; распространение SDK как отдельного версионированного пакета остаётся отдельной задачей.
+После архитектурного аудита SDK разделён на HTTP transport, группы операций и transfer workflows за прежним DepotClient. Устранены два исключения размера; совместимость 68 методов проверяется строгим внешним TS consumer и сетевыми регрессиями. [ADR 0028](adr/0028-sdk-composition.md). Декомпозиция API composition root также завершена, см. ниже; распространение SDK как отдельного версионированного пакета остаётся отдельной задачей.
 
 Из API composition root выделены upload/session/completion routes и управление временем upload. Реализованы отдельные sender-idle и absolute deadlines, диагностика причин прерывания, точное завершение blob/Range/part reads и регистрация ошибок начатой раздачи. Старый TCP timer больше не обрывает допущенный upload только из-за паузы backend. [ADR 0029](adr/0029-upload-lifetime-and-exact-reads.md). Исторические локальные ECONNRESET не объявляются полностью объяснёнными без соответствующих логов; HA/репликация остаются отдельными этапами. Online GC реализован: [ONLINE_CLEANUP](ONLINE_CLEANUP.md).
 
