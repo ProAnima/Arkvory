@@ -33,6 +33,7 @@ $handler = [Net.Http.HttpClientHandler]::new()
 $handler.AllowAutoRedirect = $false
 $client = [Net.Http.HttpClient]::new($handler)
 $client.Timeout = [TimeSpan]::FromMinutes(2)
+$client.MaxResponseContentBufferSize = 8MB
 $tokenFile = Join-Path $Root 'github-token.txt'
 $token = if (Test-Path -LiteralPath $tokenFile) { [IO.File]::ReadAllText($tokenFile).Trim() } else { '' }
 $base = 'https://api.github.com/repos/ProAnima/Depot/releases/'

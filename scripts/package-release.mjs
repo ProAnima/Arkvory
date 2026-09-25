@@ -23,7 +23,10 @@ if (!/^(0|[1-9][0-9]{0,5})\.(0|[1-9][0-9]{0,5})\.(0|[1-9][0-9]{0,5})$/.test(vers
   throw new Error('Usage: npm run release:package -- 1.2.3 [output]');
 const output = resolve(process.argv[3] ?? `artifacts/${version}`);
 await mkdir(output, { recursive: true });
-const staging = await mkdtemp(join(tmpdir(), 'depot-release-'));
+if ((await readdir(output)).length !== 0)
+  throw new Error('Release output must be empty; refusing to replace existing artifacts');
+// Windows TEMP may use an 8.3 alias. Compare canonical paths on both sides of the containment check.
+const staging = await realpath(await mkdtemp(join(tmpdir(), 'depot-release-')));
 const { units } = JSON.parse(await readFile('config/architecture.json', 'utf8'));
 for (const name of ['package.json', 'package-lock.json', 'LICENSE.md'])
   await copyFile(name, join(staging, name));

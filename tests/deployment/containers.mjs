@@ -103,6 +103,28 @@ try {
     '0.0.2',
   );
   console.log('Container install, migrations, crash restart and persistent-volume update passed');
+} catch (error) {
+  console.error(run([...compose, 'logs', '--no-color', '--tail', '40', 'api', 'worker']));
+  run([...compose, 'stop', '--timeout', '10', 'api', 'worker']);
+  const diagnostic =
+    "import {readFile} from 'node:fs/promises';Object.assign(process.env,JSON.parse(await readFile('/run/depot/runtime.json','utf8')));process.env.DEPOT_WEB_DIR='/opt/depot/apps/web/public';try{const {loadConfig}=await import('./apps/api/dist/config.js');const {createServer}=await import('./apps/api/dist/server.js');const app=await createServer(await loadConfig(process.env));await app.close();}catch(e){console.error('Startup diagnostic: '+String(e.message).replace(/postgres(?:ql)?:\\/\\/\\S+/g,'[database URL redacted]'));process.exitCode=1;}";
+  try {
+    run([
+      ...compose,
+      'run',
+      '--rm',
+      '--no-deps',
+      '--entrypoint',
+      'node',
+      'api',
+      '--input-type=module',
+      '-e',
+      diagnostic,
+    ]);
+  } catch {
+    console.error('Startup diagnostic reported a failure');
+  }
+  throw error;
 } finally {
   run([...compose, 'down', '--volumes', '--remove-orphans']);
 }

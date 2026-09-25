@@ -195,7 +195,7 @@ test('runtime configuration cannot inject Node process options or multiline valu
   assert.throws(() => runtimeEnvironment({ DEPOT_HOST: 'x\nDEPOT_KEYS_FILE=x' }), /Invalid/);
 });
 test('Compose runtime keeps tmpfs options in one mount and persists data separately', async () => {
-  const compose = parse(await readFile('deploy/compose.yml', 'utf8'));
+  const compose = parse(await readFile('deploy/compose.yml', 'utf8'), { merge: true });
   assert.deepEqual(compose.services.api.tmpfs, ['/tmp:size=64m,mode=1777']);
   assert.equal(compose.services.api.read_only, true);
   assert.equal(compose.services.api.restart, 'unless-stopped');
