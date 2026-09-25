@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { mkdtemp, mkdir, writeFile, copyFile, readFile } from 'node:fs/promises';
+import { mkdtemp, mkdir, writeFile, copyFile, readFile, readdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
@@ -73,6 +73,18 @@ try {
   assert.ok(recovered, 'Both service processes must restart after an actual crash');
   console.log('Native supervisor restarted both crashed processes');
 } finally {
+  if (windows) {
+    for (const directory of ['logs', 'service'])
+      for (const name of await readdir(join(root, directory)))
+        if (name.endsWith('.log'))
+          console.log(name, (await readFile(join(root, directory, name), 'utf8')).slice(-12000));
+    for (const role of ['api', 'worker']) {
+      console.log(
+        role,
+        await readFile(join(root, 'data', `${role}.starts`), 'utf8').catch(() => 'not started'),
+      );
+    }
+  }
   if (!windows)
     run('sudo', [
       'journalctl',
@@ -88,7 +100,7 @@ try {
     if (windows) {
       const exe = join(root, `service/depot-${role}.exe`);
       if (existsSync(exe)) {
-        run(exe, ['stop']);
+        run(exe, ['stopwait']);
         run(exe, ['uninstall']);
       }
     } else {

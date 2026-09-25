@@ -56,7 +56,8 @@ export class Services {
       await command('systemctl', ['stop', 'depot-worker', 'depot-api']);
     else
       for (const role of ['worker', 'api'])
-        await command(join(this.root, `service/depot-${role}.exe`), ['stop']);
+        // WinSW stop returns before shutdown; wait before switching the release pointer.
+        await command(join(this.root, `service/depot-${role}.exe`), ['stopwait']);
   }
   async start(release: Release): Promise<void> {
     if (this.state.mode === 'compose') {

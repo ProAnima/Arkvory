@@ -17,7 +17,7 @@ try {
   const file = await open(join(root, `forbidden-${role}`), 'wx');
   await file.close();
 } catch (error) {
-  if (error.code === 'EACCES' || error.code === 'EPERM') writeDenied = true;
+  if (['EACCES', 'EPERM', 'EROFS'].includes(error.code)) writeDenied = true;
   else throw error;
 }
 if (!writeDenied) throw Error('Service identity must not modify the installation');
