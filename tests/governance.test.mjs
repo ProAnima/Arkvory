@@ -160,6 +160,9 @@ test('aggregate cannot accept missing, failed, cancelled or skipped mandatory jo
     ]),
   );
   assert.deepEqual(ciVerdict(needs, true), []);
+  assert.deepEqual(ciVerdict({ ...needs, newAdapter: { result: 'success' } }, true), []);
+  assert.ok(ciVerdict({ ...needs, newAdapter: { result: 'failure' } }, true).length);
+  assert.ok(ciVerdict({ ...needs, newAdapter: { result: 'skipped' } }, false).length);
   for (const name of ['check', 'integration', 'browser', 'security', 'large']) {
     for (const result of ['failure', 'cancelled', 'skipped'])
       assert.ok(ciVerdict({ ...needs, [name]: { result } }, true).length);
@@ -181,6 +184,9 @@ test('workflow guard catches bypasses and mutable actions', async () => {
     },
     (w) => {
       w.jobs.verdict.needs = ['check'];
+    },
+    (w) => {
+      w.jobs.newAdapter = structuredClone(w.jobs.integration);
     },
     (w) => {
       w.jobs.browser.if = 'false';
@@ -229,6 +235,15 @@ test('every registered gate must reach CI and explicit strict overrides are reje
   assert.deepEqual(inspectWorkflow(workflow, registry), []);
   registry.tasks.forgotten = { needs: [], timeoutSeconds: 10 };
   assert.match(inspectWorkflow(workflow, registry).join('\n'), /Gate absent from CI: forgotten/);
+  const expanded = parse(workflow);
+  expanded.jobs.extra = structuredClone(expanded.jobs.integration);
+  expanded.jobs.extra.steps.find((s) => s.run === 'npm run gate -- integration').run =
+    'npm run gate -- forgotten';
+  expanded.jobs.verdict.needs.push('extra');
+  assert.match(
+    inspectWorkflow(stringify(expanded), registry).join('\n'),
+    /missing from verify: forgotten/,
+  );
   const { compilerOptions } = JSON.parse(await readFile('tsconfig.base.json', 'utf8'));
   assert.deepEqual(inspectCompilerOptions(compilerOptions, 'test'), []);
   assert.deepEqual(

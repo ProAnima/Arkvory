@@ -45,9 +45,10 @@ export function inspectWorkflow(text, registry) {
         errors.push(`${name}: invoke tests through npm run gate`);
     }
   }
-  const required = ['check', 'integration', 'browser', 'security', 'large'];
+  const required = Object.keys(jobs).filter((name) => name !== 'verdict');
   if (
     jobs.verdict?.if !== '${{ always() }}' ||
+    !Array.isArray(jobs.verdict?.needs) ||
     required.some((j) => !jobs.verdict?.needs?.includes(j))
   )
     errors.push('Aggregate verdict must always inspect every lane');
@@ -71,23 +72,33 @@ export function inspectWorkflow(text, registry) {
     )
       errors.push(`CI ${name} must publish its gate report even on failure`);
   }
-  for (const name of ['check', 'integration', 'browser', 'security'])
+  for (const name of required.filter((name) => name !== 'large'))
     if (jobs[name] && Object.hasOwn(jobs[name], 'if'))
       errors.push(`Mandatory CI lane ${name} cannot be conditional`);
   for (const trigger of ['push', 'pull_request'])
     if (workflow.on[trigger]?.paths || workflow.on[trigger]?.['paths-ignore'])
       errors.push('Required workflows must not silently skip changed paths');
   errors.push(...inspectVerdictWiring(jobs));
-  if (registry) {
-    const executed = new Set();
-    for (const job of Object.values(jobs))
-      for (const step of job.steps ?? []) {
-        const match = /^npm run gate -- ([a-z-]+)$/.exec(step.run ?? '');
-        if (match) for (const task of planGates(registry, [match[1]])) executed.add(task);
+  if (registry) errors.push(...inspectCoverage(jobs, registry));
+  return errors;
+}
+
+function inspectCoverage(jobs, registry) {
+  const errors = [],
+    executed = new Set(),
+    merge = new Set(planGates(registry, ['verify']));
+  for (const [name, job] of Object.entries(jobs))
+    for (const step of job.steps ?? []) {
+      const match = /^npm run gate -- ([a-z-]+)$/.exec(step.run ?? '');
+      if (!match || Object.hasOwn(step, 'if')) continue;
+      for (const task of planGates(registry, [match[1]])) {
+        executed.add(task);
+        if (name !== 'large' && !merge.has(task))
+          errors.push(`Mandatory CI gate missing from verify: ${task}`);
       }
-    for (const task of Object.keys(registry.tasks))
-      if (!executed.has(task)) errors.push(`Gate absent from CI: ${task}`);
-  }
+    }
+  for (const task of Object.keys(registry.tasks))
+    if (!executed.has(task)) errors.push(`Gate absent from CI: ${task}`);
   return errors;
 }
 

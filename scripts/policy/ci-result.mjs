@@ -1,10 +1,13 @@
 export function ciVerdict(needs, releaseRequired) {
   const required = [
-    'check',
-    'integration',
-    'browser',
-    'security',
-    ...(releaseRequired ? ['large'] : []),
+    ...new Set([
+      'check',
+      'integration',
+      'browser',
+      'security',
+      ...(releaseRequired ? ['large'] : []),
+      ...Object.keys(needs).filter((name) => name !== 'large'),
+    ]),
   ];
   const errors = required
     .filter((name) => needs[name]?.result !== 'success')
