@@ -1,9 +1,11 @@
 import { guideEnglish } from './guide-messages.js';
+import { cleanupEnglish } from './cleanup-messages.js';
 export const en = {
   ...guideEnglish,
+  ...cleanupEnglish,
   storageTitle: 'Storage & automatic cleanup',
   storageHelp:
-    'Retention applies to registered UPack builds. Pinned builds, file history and protected labels survive. Save a disabled policy first to preview it; enabling starts automatic deletion. Physical disk cleanup remains a separate offline maintenance operation.',
+    'Retention applies to registered UPack builds. Pinned builds, file history and protected labels survive. Save a disabled policy first to preview it; enabling starts automatic deletion. Configure physical reclamation below without stopping Depot.',
   storageRefresh: 'Reload settings & usage',
   storagePolicy: 'Retention policy',
   storageGrouping: 'Count last N by',

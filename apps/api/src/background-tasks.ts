@@ -5,6 +5,7 @@ interface Tasks {
   role: 'api' | 'reader';
   available: () => boolean;
   maintain: () => Promise<void>;
+  collect?: () => Promise<void>;
   flush: () => Promise<void>;
   close: () => void;
   diagnostics: Pick<DiagnosticLogger, 'write'>;
@@ -14,10 +15,30 @@ interface Tasks {
 export function registerBackgroundTasks(app: FastifyInstance, tasks: Tasks) {
   let maintenance: Promise<void> | undefined;
   let flushing: Promise<void> | undefined;
+  let collecting: Promise<void> | undefined;
+  let collectionTimer: ReturnType<typeof setInterval> | undefined;
   let timer: ReturnType<typeof setInterval> | undefined;
   let flushTimer: ReturnType<typeof setInterval> | undefined;
   let stopping: Promise<void> | undefined;
   app.addHook('onReady', () => {
+    if (tasks.role === 'api' && tasks.collect) {
+      collectionTimer = setInterval(() => {
+        if (collecting || !tasks.available()) return;
+        collecting = tasks
+          .collect?.()
+          .catch(() => {
+            tasks.diagnostics.write({
+              level: 'error',
+              component: 'storage',
+              code: 'cleanup.unavailable',
+            });
+          })
+          .finally(() => {
+            collecting = undefined;
+          });
+      }, 5000);
+      collectionTimer.unref();
+    }
     if (tasks.role === 'api')
       timer = setInterval(() => {
         if (maintenance || !tasks.available()) return;
@@ -47,7 +68,9 @@ export function registerBackgroundTasks(app: FastifyInstance, tasks: Tasks) {
   const drain = async () => {
     clearInterval(timer);
     clearInterval(flushTimer);
+    clearInterval(collectionTimer);
     try {
+      await collecting;
       await maintenance;
       await flushing;
       // One final batch only; stdout already contains all accepted diagnostics.

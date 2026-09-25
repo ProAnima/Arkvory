@@ -19,3 +19,4 @@ export * from './attachments.js';
 export * from './retention.js';
 
 export * from './storage-policy.js';
+export * from './cleanup.js';

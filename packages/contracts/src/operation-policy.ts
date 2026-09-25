@@ -1,4 +1,4 @@
-// depot-exception ARCH-002 -- Declarative operation inventory centralizes permission and retry policy; split by API surface without duplicating authorization definitions.
+import { storageOperations } from './storage-operation-policies.js';
 import type { servicePermissionNames } from './service-api.js';
 import type { AdministrationPermission } from './delegation-api.js';
 type ServicePermission = (typeof servicePermissionNames)[number];
@@ -469,86 +469,6 @@ for (const [suffix, method, id, actions, legacy, retry] of [
     legacy,
     retry,
   );
-data(
-  root + '/artifacts/{id}/deletion',
-  'get',
-  'inspectArtifactDeletion',
-  'Catalog',
-  ['artifact.delete'],
-  null,
-  'read',
-);
-data(
-  root + '/artifacts/{id}',
-  'delete',
-  'deleteArtifact',
-  'Catalog',
-  ['artifact.delete'],
-  null,
-  'idempotent',
-);
-data(
-  root + '/retention/preview',
-  'post',
-  'previewRetention',
-  'Catalog',
-  ['artifact.delete'],
-  null,
-  'read',
-);
-data(
-  root + '/retention/apply',
-  'post',
-  'applyRetention',
-  'Catalog',
-  ['artifact.delete'],
-  null,
-  'idempotent',
-);
-data(
-  root + '/storage/policy',
-  'get',
-  'getStoragePolicy',
-  'Catalog',
-  ['storage.read'],
-  null,
-  'read',
-);
-data(
-  root + '/storage/policy',
-  'put',
-  'setStoragePolicy',
-  'Catalog',
-  ['storage.manage'],
-  null,
-  'compare-and-swap',
-);
-data(root + '/storage/usage', 'get', 'getStorageUsage', 'Catalog', ['storage.read'], null, 'read');
-data(
-  root + '/storage/preview',
-  'get',
-  'previewStoragePolicy',
-  'Catalog',
-  ['artifact.delete'],
-  null,
-  'read',
-);
-data(
-  root + '/storage/run',
-  'post',
-  'runStoragePolicy',
-  'Catalog',
-  ['storage.manage', 'artifact.delete'],
-  null,
-  'never-automatic',
-);
-data(
-  root + '/storage/events',
-  'get',
-  'getStorageEvents',
-  'Catalog',
-  ['diagnostics.read'],
-  null,
-  'read',
-);
+for (const [path, method, id, actions, retry] of storageOperations)
+  data(root + path, method, id, 'Catalog', actions, null, retry);
 export const operationPolicies: Readonly<typeof policies> = policies;

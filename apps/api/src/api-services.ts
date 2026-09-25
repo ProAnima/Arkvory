@@ -8,6 +8,7 @@ import {
   RepositoryStorage,
   ArtifactRetention,
   BuildAttachments,
+  RepositoryCleanup,
 } from '@proanima/depot-application';
 import {
   PostgresIdentity,
@@ -18,12 +19,22 @@ import {
   PostgresJobs,
   PostgresRetention,
   PostgresAttachments,
+  PostgresCleanupSettings,
+  PostgresOnlineCleanup,
 } from '@proanima/depot-infrastructure';
-import type { LocalBlobStore, PostgresCatalog } from '@proanima/depot-infrastructure';
+import type {
+  LocalBlobStore,
+  PostgresCatalog,
+  PostgresContentPins,
+} from '@proanima/depot-infrastructure';
 import { ProGetDownloads } from '@proanima/depot-proget-compat';
 
 /** Composition only: each registrar receives just the services it consumes. */
-export function createApiServices(catalog: PostgresCatalog, blobs: LocalBlobStore) {
+export function createApiServices(
+  catalog: PostgresCatalog,
+  blobs: LocalBlobStore,
+  pins: PostgresContentPins,
+) {
   const now = () => new Date().toISOString();
   const service = new StorageService(catalog, blobs, { next: randomUUID, now });
   const serviceAccounts = new PostgresServices(catalog.pool);
@@ -31,9 +42,12 @@ export function createApiServices(catalog: PostgresCatalog, blobs: LocalBlobStor
   const browse = new ArtifactCatalog(
     service,
     new PostgresBrowse(catalog.pool),
-    new ZipManifestReader(blobs),
+    new ZipManifestReader(blobs, pins),
   );
   return {
+    pins,
+    cleanup: new RepositoryCleanup(new PostgresCleanupSettings(catalog.pool)),
+    collector: new PostgresOnlineCleanup(catalog.pool, blobs),
     service,
     serviceAccounts,
     storagePolicies,

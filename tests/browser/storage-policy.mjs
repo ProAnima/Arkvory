@@ -51,6 +51,22 @@ export async function exerciseStoragePolicy(page, f) {
   await page.locator('#storage-save').click();
   await page.locator('#storage-status[data-i18n=storageSaved]').waitFor();
   assert.equal((await client.storagePolicy('releases')).policy.enabled, true);
+  await page.locator('#cleanup-panel > summary').click();
+  await page.waitForFunction(() => !document.querySelector('#cleanup-fields').disabled);
+  assert.equal(await page.locator('#cleanup-enabled').isChecked(), false);
+  await page.locator('#cleanup-batch').fill('3');
+  await page.locator('#cleanup-enabled').check();
+  await page.locator('#cleanup-save').click();
+  await page.locator('#cleanup-status[data-i18n=cleanupSaved]').waitFor();
+  assert.equal((await client.cleanup('releases')).policy.batchSize, 3);
+  await page.locator('#cleanup-run').click();
+  await page.locator('#cleanup-status[data-i18n=cleanupRequested]').waitFor();
+  await page.locator('#cleanup-enabled').uncheck();
+  await page.locator('#cleanup-save').click();
+  await page.waitForFunction(
+    () => document.querySelector('#cleanup-state').dataset.i18n === 'cleanupPaused',
+  );
+  assert.equal((await client.cleanup('releases')).policy.enabled, false);
   await page.locator('#storage-keep').fill('9');
   for (const [width, language, theme] of [
     [1440, 'en', 'light'],

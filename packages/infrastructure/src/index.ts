@@ -20,3 +20,6 @@ export { PostgresRetention } from './retention.js';
 export * from './storage-policy.js';
 
 export * from './diagnostics.js';
+export { PostgresCleanupSettings } from './cleanup-settings.js';
+export { PostgresOnlineCleanup } from './online-cleanup.js';
+export { PostgresContentPins } from './content-pins.js';

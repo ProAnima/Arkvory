@@ -1,5 +1,5 @@
 // depot-exception ARCH-024 -- Existing UI controller contains event wiring and view state; freeze its size and extract cohesive controllers only with browser state/reset acceptance.
-import { installStoragePolicy } from './storage-policy.js';
+import { installRepositoryStorage } from './repository-storage.js';
 import { DepotClient, DepotHttpError } from '@proanima/depot-sdk';
 import { text } from '@proanima/depot-contracts';
 import { element } from './dom.js';
@@ -31,7 +31,7 @@ try {
   feedback(output, 'apiAddressError', {}, 'error');
   throw new Error('Invalid Depot API base URL');
 }
-const repositoryStorage = installStoragePolicy(client);
+const repositoryStorage = installRepositoryStorage(client);
 const downloads = installDownloads(apiBaseUrl, token);
 const annotationEditor = installAnnotationEditor();
 const attachments = installBuildAttachments(client, (repo, id, name) =>

@@ -145,7 +145,7 @@ export class PostgresCatalog implements Catalog {
           [requireId(storageId)],
         );
       const identity = await client.query<{ storage_id: string }>(
-        'SELECT storage_id FROM depot_storage_identity WHERE singleton=true',
+        'SELECT storage_id,pg_advisory_lock_shared(18471,17) FROM depot_storage_identity WHERE singleton=true',
       );
       if (identity.rows[0]?.storage_id !== storageId)
         throw new DepotError('conflict', 'Database belongs to a different storage directory');
@@ -355,10 +355,10 @@ export class PostgresCatalog implements Catalog {
 
   async ready(): Promise<void> {
     const result = await this.pool.query(
-      'SELECT version FROM depot_migrations WHERE version IN (8,9,10,11,12,13,14,15)',
+      'SELECT version FROM depot_migrations WHERE version IN (8,9,10,11,12,13,14,15,16,17)',
     );
-    if (result.rowCount !== 8)
-      throw new DepotError('unavailable', 'Database migrations 8 through 15 are required');
+    if (result.rowCount !== 10)
+      throw new DepotError('unavailable', 'Database migrations 8 through 17 are required');
     await this.pool.query('SELECT id,expires_at FROM depot_uploads LIMIT 0');
   }
   async close(): Promise<void> {

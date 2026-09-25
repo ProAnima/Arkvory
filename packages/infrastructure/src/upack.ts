@@ -4,10 +4,24 @@ import { DepotError, parseManifest, requireAssetPath } from '@proanima/depot-dom
 import type { PackageManifest } from '@proanima/depot-domain';
 import type { ManifestReader } from '@proanima/depot-application';
 import type { LocalBlobStore } from './local-blobs.js';
+import type { PostgresContentPins } from './content-pins.js';
 
 export class ZipManifestReader implements ManifestReader {
-  constructor(private readonly blobs: LocalBlobStore) {}
+  constructor(
+    private readonly blobs: LocalBlobStore,
+    private readonly pins?: PostgresContentPins,
+  ) {}
   async inspect(id: string): Promise<PackageManifest> {
+    const pin = await this.pins?.acquire(id);
+    try {
+      const result = await this.inspectArchive(id);
+      pin?.check();
+      return result;
+    } finally {
+      await pin?.release();
+    }
+  }
+  private async inspectArchive(id: string): Promise<PackageManifest> {
     const zip = await new Promise<ZipFile>((resolve, reject) => {
       open(
         this.blobs.contentPath(id),

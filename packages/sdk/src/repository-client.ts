@@ -10,6 +10,9 @@ import type { OperationQuery } from '@proanima/depot-contracts';
 type RepositoryTransport = Pick<
   StorageApi,
   | 'storagePolicy'
+  | 'cleanup'
+  | 'configureCleanup'
+  | 'requestCleanup'
   | 'setStoragePolicy'
   | 'storageUsage'
   | 'previewStoragePolicy'
@@ -69,6 +72,9 @@ export function repositoryClient(client: RepositoryTransport, repository: string
       history: bind(client.attachmentHistory),
     }),
     storage: Object.freeze({
+      cleanup: bind(client.cleanup),
+      configureCleanup: bind(client.configureCleanup),
+      requestCleanup: bind(client.requestCleanup),
       policy: bind(client.storagePolicy),
       configure: bind(client.setStoragePolicy),
       usage: bind(client.storageUsage),

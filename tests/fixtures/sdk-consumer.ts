@@ -17,7 +17,15 @@ type ChangedMethods = {
 export type UnchangedMethods = Assert<Equal<ChangedMethods, never>>;
 export type UnchangedKeys = Assert<
   Equal<
-    Exclude<keyof DepotClient, 'identity' | 'administration' | 'inRepository'>,
+    Exclude<
+      keyof DepotClient,
+      | 'identity'
+      | 'administration'
+      | 'inRepository'
+      | 'cleanup'
+      | 'configureCleanup'
+      | 'requestCleanup'
+    >,
     keyof LegacyClient
   >
 >;

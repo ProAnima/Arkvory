@@ -1,4 +1,4 @@
-import { migrateStoragePolicy } from './storage-policy-schema.js';
+import { migrateStorageSchemas } from './storage-migrations.js';
 import { migrateAttachments } from './attachment-schema.js';
 import { migrateRetention } from './retention-migration.js';
 import { Pool } from 'pg';
@@ -40,6 +40,21 @@ const packagePageIndexes = [
 ] as const;
 
 const catalogIndexMigrations = [
+  {
+    version: 17,
+    indexes: [
+      {
+        name: 'depot_online_cleanup_candidates',
+        definition:
+          "ON depot_uploads(repository,gc_checked_at,id) WHERE NOT reclaimed AND (status<>'available' OR NOT temp_cleaned)",
+      },
+      {
+        name: 'depot_online_cleanup_due',
+        definition:
+          "ON depot_cleanup_settings(next_run_at,repository) WHERE policy->>'enabled'='true'",
+      },
+    ],
+  },
   {
     version: 14,
     indexes: [
@@ -291,7 +306,7 @@ export async function migrate(pool: Pool): Promise<void> {
     await migrateDelegations(client);
     await migrateAttachments(client);
     await migrateRetention(client);
-    await migrateStoragePolicy(client);
+    await migrateStorageSchemas(client);
     await client.query('COMMIT');
   } catch (error) {
     try {

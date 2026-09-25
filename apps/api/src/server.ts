@@ -33,7 +33,7 @@ export async function createServer(config: ServerConfig) {
   });
   try {
     await runtime.start();
-    const services = createApiServices(runtime.catalog, runtime.blobs);
+    const services = createApiServices(runtime.catalog, runtime.blobs, runtime.pins);
     const context = createRequestContext();
     const responses = new ResponseDiagnostics(diagnostics, services.storagePolicies, context);
     // Guard registration precedes feature routes and background startup.
@@ -44,6 +44,7 @@ export async function createServer(config: ServerConfig) {
       available: runtime.available,
       maintain: () =>
         maintainStorage(services.storagePolicies, services.serviceAccounts, runtime.available),
+      collect: () => services.collector.tick(runtime.available),
       flush: () => responses.flush(),
       close: () => {
         responses.close();

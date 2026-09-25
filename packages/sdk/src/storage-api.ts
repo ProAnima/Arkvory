@@ -4,8 +4,9 @@ import {
   readStoragePreview,
   readStorageRun,
   readStorageEvents,
+  readCleanupSnapshot,
 } from '@proanima/depot-contracts';
-import type { StoragePolicyRequest } from '@proanima/depot-contracts';
+import type { StoragePolicyRequest, CleanupPolicyRequest } from '@proanima/depot-contracts';
 import {
   readDeletionCandidate,
   readDeletionResult,
@@ -18,6 +19,36 @@ import { repositoryPath } from './http-transport.js';
 
 export class StorageApi {
   constructor(private readonly http: HttpPort) {}
+  async cleanup(repository: string, signal?: AbortSignal) {
+    return readCleanupSnapshot(
+      await this.http.call(repositoryPath(repository, 'storage/cleanup'), 'GET', undefined, signal),
+    );
+  }
+  async configureCleanup(
+    repository: string,
+    expectedRevision: number,
+    policy: CleanupPolicyRequest,
+    signal?: AbortSignal,
+  ) {
+    return readCleanupSnapshot(
+      await this.http.call(
+        repositoryPath(repository, 'storage/cleanup'),
+        'PUT',
+        { expectedRevision, policy },
+        signal,
+      ),
+    );
+  }
+  async requestCleanup(repository: string, expectedRevision: number, signal?: AbortSignal) {
+    return readCleanupSnapshot(
+      await this.http.call(
+        repositoryPath(repository, 'storage/cleanup/run'),
+        'POST',
+        { expectedRevision },
+        signal,
+      ),
+    );
+  }
   async inspectDeletion(repository: string, id: string, signal?: AbortSignal) {
     return readDeletionCandidate(
       await this.http.call(

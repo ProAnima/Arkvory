@@ -8,9 +8,9 @@ UPack packages, metadata, tagging, collections, transfer queues, and ProGet-comp
 
 A **ProAnimaStudio** project. **Ian Panaev** is the author, copyright holder, and owner of the ProAnimaStudio brand.
 
-> **Stage: standalone 0.2, under development.** Native API, multipart/resume, UPack/assets catalog, metadata, worker, admission queues, offline GC/scrub, SDK and web console are implemented. Legacy download support is partial. Read gateways with leased shares of a common download budget are implemented for shared storage. Two-server replication and full ProGet replacement are not ready.
+> **Stage: standalone 0.2, under development.** Native API, multipart/resume, UPack/assets catalog, metadata, worker, admission queues, online physical cleanup, offline repair/scrub, SDK and web console are implemented. Legacy download support is partial. Read gateways with leased shares of a common download budget are implemented for shared storage. Two-server replication and full ProGet replacement are not ready.
 
-Logical artifact deletion is available through API, SDK and the RU/EN console with an explicit scoped permission, dependency checks and revision protection. Retention previews and applies only selected IDs; physical reclamation remains offline after a grace period. [Lifecycle contract](docs/ARTIFACT_RETENTION.md).
+Logical artifact deletion is available through API, SDK and the RU/EN console with an explicit scoped permission, dependency checks and revision protection. Retention previews and applies only selected IDs; physical reclamation runs in the background after a configurable grace period, without stopping uploads or downloads. [Online cleanup](docs/ONLINE_CLEANUP.md). [Lifecycle contract](docs/ARTIFACT_RETENTION.md).
 
 ## Purpose
 
@@ -37,7 +37,7 @@ The RU/EN console includes direct catalog downloads, compact mobile navigation, 
 | PostgreSQL completion jobs, lease/generation, retries, worker        | Implemented                                              |
 | Bounded upload/download admission with client rotation               | One gateway, in memory                                   |
 | Shared-storage read gateways and fixed aggregate download shares     | Implemented; PostgreSQL leases, no node failover         |
-| GC and scrub                                                         | Offline; explicit deletion and grace before reclamation  |
+| GC and scrub                                                         | Online bounded cleanup; offline repair/scrub             |
 | SDK and RU/EN web console                                            | Implemented; details in runbook                          |
 | External browser UI through Bearer API and explicit origin allowlist | Implemented for native API; [setup](docs/EXTERNAL_UI.md) |
 | Asset history, exact revision lookup, atomic restore with audit      | API, SDK and console implemented                         |
@@ -145,7 +145,7 @@ Large file catalogs can be traversed with the new cursor-based `assets/page` API
 
 Repository discovery exposes only the caller’s logical repository scopes, including empty ones, with a paginated directory and cards showing supported formats and effective permissions. Managed credentials opt in with `repository.read`; content and administration remain separate. API and SDK are available. See the [discovery contract](docs/REPOSITORY_DISCOVERY.md).
 
-The native API under `/api/v1` covers multipart uploads, completion jobs, content delivery, mutable annotations, package/asset catalogs, asset history and restoration, external references and catalog audit. OpenAPI is served at `/api/v1/openapi.json`; the build also exports `packages/contracts/dist/openapi.json`. All 123 registered API operations, including HEAD and legacy downloads, have stable operation IDs and explicit access/retry metadata, checked against runtime routes at startup and in CI. See the [contract guard](docs/API_CONTRACT_GUARD.md). User and group administration is implemented; distributed transfers, events/webhooks and extended service administration remain planned. Runtime response validation, OpenAPI and the TypeScript SDK are maintained together.
+The native API under `/api/v1` covers multipart uploads, completion jobs, content delivery, mutable annotations, package/asset catalogs, asset history and restoration, external references and catalog audit. OpenAPI is served at `/api/v1/openapi.json`; the build also exports `packages/contracts/dist/openapi.json`. All 127 registered API operations, including HEAD and legacy downloads, have stable operation IDs and explicit access/retry metadata, checked against runtime routes at startup and in CI. See the [contract guard](docs/API_CONTRACT_GUARD.md). User and group administration is implemented; distributed transfers, events/webhooks and extended service administration remain planned. Runtime response validation, OpenAPI and the TypeScript SDK are maintained together.
 
 Planned ProGet adapters target the operations used by clients across three API families:
 
@@ -223,7 +223,7 @@ For an existing database, edit `DEPOT_DATABASE_URL` in `.env` instead of startin
 | `npm run test:large`       | 5 GiB HTTP upload/download, process restart, hash and RSS checks   |
 | `npm run format`           | Apply formatting                                                   |
 
-Multipart uploads resume from recorded 8 MiB parts; whole-file PUT retries restart from byte zero. Offline GC releases cancelled reservations after deleting their content and the grace period. One API process owns a standalone database; this profile provides no node failover. Keep the database and the entire storage directory, including `storage-id`, together in backup/restore procedures. Before updating, stop API/worker, back up both, run `npm run migrate` (schema 14), then start the new code. See [asset history and restore](docs/LIFECYCLE_AND_CATALOG.md#история-и-восстановление-файлов) and [online catalog indexes](docs/adr/0014-online-package-page-indexes.md).
+Multipart uploads resume from recorded 8 MiB parts; whole-file PUT retries restart from byte zero. Online cleanup releases cancelled reservations after deleting their content and the grace period. One API process owns a standalone database; this profile provides no node failover. Keep the database and the entire storage directory, including `storage-id`, together in backup/restore procedures. Before updating, stop API/worker, back up both, run `npm run migrate` (schema 17), then start the new code. See [asset history and restore](docs/LIFECYCLE_AND_CATALOG.md#история-и-восстановление-файлов) and [online catalog indexes](docs/adr/0014-online-package-page-indexes.md).
 
 ## Development rules
 
@@ -291,7 +291,7 @@ Published artifacts support editable labels, text metadata and collections, plus
 
 ### Storage policies and diagnostics
 
-Automatic retention keeps the last N registered UPack builds per package/channel, per package or across a repository, while preserving protected labels and reference/history pins. Repository quotas include pending uploads and retired bytes until physical GC. API, SDK and RU/EN console expose revisioned settings, previews, usage and bounded warning/error history. New managed permissions are `storage.read`, `storage.manage` and `diagnostics.read`; activation also requires `artifact.delete`. Scheduling rechecks the enabling key and stops when its authority expires. Policies start disabled. Migration 15 is required. Physical GC still requires offline maintenance; this is not automatic online disk reclamation. [Contract and operations](docs/STORAGE_POLICIES.md).
+Automatic retention keeps the last N registered UPack builds per package/channel, per package or across a repository, while preserving protected labels and reference/history pins. Repository quotas include pending uploads and retired bytes until physical GC. API, SDK and RU/EN console expose revisioned settings, previews, usage and bounded warning/error history. New managed permissions are `storage.read`, `storage.manage` and `diagnostics.read`; activation also requires `artifact.delete`. Scheduling rechecks the enabling key and stops when its authority expires. Policies start disabled. Migration 15 is required. Online physical cleanup has separate, revisioned settings: grace, batch size, interval, delay and live pause. Active transfers and referenced content are protected; quota is released after deletion succeeds. It starts disabled and requires all processes upgraded to schema 17. [Online cleanup](docs/ONLINE_CLEANUP.md). [Contract and operations](docs/STORAGE_POLICIES.md).
 
 `npm run upack:manifest -- --input manifest.json --metadata custom.json --output upack.json` prepares embedded custom UPack metadata before packaging. It preserves nested `_` fields without modifying published archives.
 

@@ -4,6 +4,7 @@ import type {
   AdmissionQueue,
   BandwidthGovernor,
   DiagnosticLogger,
+  PostgresContentPins,
 } from '@proanima/depot-infrastructure';
 import type { ProGetDownloads } from '@proanima/depot-proget-compat';
 import type { RequestContext } from './request-context.js';
@@ -17,9 +18,11 @@ interface ContentServices {
   diagnostics: Pick<DiagnosticLogger, 'write'>;
   principal: RequestContext['principal'];
   signal: RequestContext['signal'];
+  pins: Pick<PostgresContentPins, 'acquire'>;
 }
 export function createContentSender(dependencies: ContentServices) {
-  const { service, downloadGate, downloadBandwidth, diagnostics, principal, signal } = dependencies;
+  const { service, downloadGate, downloadBandwidth, diagnostics, principal, signal, pins } =
+    dependencies;
   const sendContent = async (
     request: FastifyRequest,
     reply: FastifyReply,
@@ -35,7 +38,11 @@ export function createContentSender(dependencies: ContentServices) {
       }
     };
     reply.raw.once('close', release);
+    let pin: Awaited<ReturnType<PostgresContentPins['acquire']>> | undefined;
+    let streaming = false;
     try {
+      pin = await pins.acquire(id);
+      signal(request, reply).throwIfAborted();
       const result = await service.download(principal(request), repository, id);
       const { size, sha256, name } = result.upload.descriptor;
       const etag = `"sha256:${sha256}"`;
@@ -69,25 +76,42 @@ export function createContentSender(dependencies: ContentServices) {
           .header('Content-Length', String(range.end - range.start + 1));
       else reply.header('Content-Length', String(size));
       if (request.method === 'HEAD') return await reply.send();
-      return await reply.send(
-        downloadStream(
-          downloadBandwidth.stream(
-            result.read(range.kind === 'partial' ? range : undefined),
-            principal(request).id,
-            signal(request, reply),
-          ),
-          request,
+      const stream = downloadStream(
+        downloadBandwidth.stream(
+          protectedContent(result.read(range.kind === 'partial' ? range : undefined), pin.check),
+          principal(request).id,
           signal(request, reply),
-          diagnostics,
         ),
+        request,
+        signal(request, reply),
+        diagnostics,
       );
+      const held = pin;
+      const closeSource = () => stream.destroy();
+      reply.raw.once('close', closeSource);
+      stream.once('close', () => {
+        reply.raw.removeListener('close', closeSource);
+        void held.release();
+      });
+      streaming = true;
+      return await reply.send(stream);
     } catch (error) {
       release();
       throw error;
+    } finally {
+      if (!streaming) await pin?.release();
     }
   };
 
   return sendContent;
+}
+async function* protectedContent(source: AsyncIterable<Uint8Array>, check: () => void) {
+  check();
+  for await (const chunk of source) {
+    check();
+    yield chunk;
+  }
+  check();
 }
 export function registerDownloadRoutes(
   app: FastifyInstance,

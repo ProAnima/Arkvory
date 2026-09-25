@@ -35,7 +35,7 @@ export function registerServiceRoutes(
         buildAttachments: true,
         artifactDeletion: true,
         retentionPreview: true,
-        onlineGarbageCollection: false,
+        onlineGarbageCollection: true,
         operationDiscovery: true,
         apiSurfaces: true,
         repositoryPermissions: true,

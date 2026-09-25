@@ -298,7 +298,7 @@ export const storagePolicyPaths = {
     parameters,
     post: {
       summary:
-        'Execute one bounded batch of the enabled policy; rechecks rank, authority and references; physical GC is offline',
+        'Execute one bounded batch of the enabled policy; rechecks rank, authority and references; physical GC follows the independent online cleanup policy',
       requestBody: body(object({ expectedRevision: int(0, 2147483647) })),
       responses: response(runSchema),
     },

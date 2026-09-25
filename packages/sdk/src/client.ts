@@ -216,6 +216,15 @@ export class DepotClient {
   storagePolicy(...args: Parameters<StorageApi['storagePolicy']>) {
     return this.storage.storagePolicy(...args);
   }
+  cleanup(...args: Parameters<StorageApi['cleanup']>) {
+    return this.storage.cleanup(...args);
+  }
+  configureCleanup(...args: Parameters<StorageApi['configureCleanup']>) {
+    return this.storage.configureCleanup(...args);
+  }
+  requestCleanup(...args: Parameters<StorageApi['requestCleanup']>) {
+    return this.storage.requestCleanup(...args);
+  }
   setStoragePolicy(...args: Parameters<StorageApi['setStoragePolicy']>) {
     return this.storage.setStoragePolicy(...args);
   }

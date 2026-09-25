@@ -12,6 +12,7 @@ import { registerIdentityRoutes } from './identity-routes.js';
 import { registerServiceRoutes } from './service-routes.js';
 import { registerRepositoryRoutes } from './repository-routes.js';
 import { registerStoragePolicyRoutes } from './storage-policy-routes.js';
+import { registerCleanupRoutes } from './cleanup-routes.js';
 import { registerRetentionRoutes } from './retention-routes.js';
 import { registerAttachmentRoutes } from './attachment-routes.js';
 import { registerUploadRoutes } from './upload-routes.js';
@@ -48,9 +49,11 @@ export function registerApiRoutes(app: FastifyInstance, dependencies: Compositio
       principal,
       signal,
       diagnostics,
+      pins: s.pins,
     }),
   );
   registerStoragePolicyRoutes(app, s.storage, s.storagePolicies, principal);
+  registerCleanupRoutes(app, s.cleanup, principal);
   registerRetentionRoutes(app, s.retention, principal);
   registerAttachmentRoutes(app, s.attachments, principal);
   registerUploadRoutes(app, {

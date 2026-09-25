@@ -13,19 +13,6 @@
     "tests": ["tests/api-contract.test.mjs"]
   },
   {
-    "id": "ARCH-002",
-    "file": "packages/contracts/src/operation-policy.ts",
-    "metric": "file",
-    "symbol": "<file>",
-    "ceiling": 551,
-    "reason": "Declarative operation inventory centralizes permission and retry policy; split by API surface without duplicating authorization definitions.",
-    "owner": "Depot maintainers",
-    "recordedAt": "2026-09-25",
-    "reviewBy": "2026-12-20",
-    "decision": "docs/adr/0027-executable-engineering-gates.md",
-    "tests": ["tests/api-contract.test.mjs"]
-  },
-  {
     "id": "ARCH-003",
     "file": "packages/infrastructure/src/browse.ts",
     "metric": "file",

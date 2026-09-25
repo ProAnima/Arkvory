@@ -239,6 +239,81 @@
           <details id="storage-panel" hidden>
             <summary data-i18n="storageTitle">Хранение и автоочистка</summary>
             <p class="hint" data-i18n="storageHelp"></p>
+            <details id="cleanup-panel" hidden>
+              <summary data-i18n="cleanupTitle">Физическая очистка</summary>
+              <p class="hint" data-i18n="cleanupHelp"></p>
+              <button
+                type="button"
+                id="cleanup-refresh"
+                class="secondary"
+                data-i18n="cleanupRefresh"
+              ></button>
+              <p id="cleanup-state"></p>
+              <p id="cleanup-stats" aria-live="polite"></p>
+              <p><span data-i18n="cleanupLastRun"></span>: <span id="cleanup-last">—</span></p>
+              <p id="cleanup-error" role="status"></p>
+              <form id="cleanup-form">
+                <fieldset id="cleanup-fields" disabled>
+                  <legend data-i18n="cleanupTitle"></legend>
+                  <label class="inline"
+                    ><input id="cleanup-enabled" type="checkbox" /><span
+                      data-i18n="cleanupEnabled"
+                    ></span
+                  ></label>
+                  <div class="form-grid">
+                    <label
+                      ><span data-i18n="cleanupGrace"></span
+                      ><input
+                        id="cleanup-grace"
+                        type="number"
+                        min="0"
+                        max="8760"
+                        required
+                        value="24"
+                    /></label>
+                    <label
+                      ><span data-i18n="cleanupBatch"></span
+                      ><input
+                        id="cleanup-batch"
+                        type="number"
+                        min="1"
+                        max="100"
+                        required
+                        value="25"
+                    /></label>
+                    <label
+                      ><span data-i18n="cleanupInterval"></span
+                      ><input
+                        id="cleanup-interval"
+                        type="number"
+                        min="5"
+                        max="86400"
+                        required
+                        value="60"
+                    /></label>
+                    <label
+                      ><span data-i18n="cleanupDelay"></span
+                      ><input
+                        id="cleanup-delay"
+                        type="number"
+                        min="0"
+                        max="1000"
+                        required
+                        value="50"
+                    /></label>
+                  </div>
+                  <button type="submit" id="cleanup-save" data-i18n="cleanupSave"></button>
+                </fieldset>
+              </form>
+              <button
+                type="button"
+                id="cleanup-run"
+                class="secondary"
+                data-i18n="cleanupRun"
+                disabled
+              ></button>
+              <output id="cleanup-status" role="status" aria-live="polite"></output>
+            </details>
             <button type="button" id="storage-refresh" class="secondary" data-i18n="storageRefresh">
               Обновить
             </button>

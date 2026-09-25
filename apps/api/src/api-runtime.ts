@@ -2,6 +2,7 @@ import {
   LocalBlobStore,
   PostgresCatalog,
   PostgresDownloadLease,
+  PostgresContentPins,
 } from '@proanima/depot-infrastructure';
 import type { ServerConfig } from './config.js';
 import { createTransferControls } from './transfer-controls.js';
@@ -23,6 +24,7 @@ export class ApiRuntime {
   readonly transfers;
   readonly catalog: PostgresCatalog;
   readonly blobs: LocalBlobStore;
+  readonly pins: PostgresContentPins;
   readonly lease: PostgresDownloadLease | undefined;
   private closing: Promise<void> | undefined;
   private stopped = false;
@@ -33,6 +35,7 @@ export class ApiRuntime {
     this.transfers = createTransferControls(config, this.available);
     this.blobs = new LocalBlobStore(config.dataDirectory);
     this.catalog = new PostgresCatalog(config.databaseUrl, config.capacityBytes, config.maxUploads);
+    this.pins = new PostgresContentPins(this.catalog.pool);
     this.lease = config.sharedDownloads
       ? new PostgresDownloadLease(this.catalog.pool, config.sharedDownloads)
       : undefined;
@@ -66,7 +69,7 @@ export class ApiRuntime {
   close(): Promise<void> {
     this.stop();
     // Startup rollback, Fastify onClose and explicit close may converge here.
-    this.closing ??= this.catalog.close();
+    this.closing ??= this.pins.close().then(() => this.catalog.close());
     return this.closing;
   }
 }

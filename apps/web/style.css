@@ -1115,23 +1115,25 @@ output:not(.status-bar output):not(.transfer-card output):not(:empty) {
   padding: var(--panel-padding);
   border-top: var(--border-width) solid var(--color-border);
 }
-#storage-fields label:has(> input[type='checkbox']) {
+:is(#storage-fields, #cleanup-fields) label:has(> input[type='checkbox']) {
   display: grid;
   grid-template-columns: var(--checkbox-size) minmax(0, 1fr);
   align-items: start;
 }
 #storage-panel > * + *,
+#cleanup-panel > * + *,
+#cleanup-fields > * + *,
 #storage-form > * + *,
 #storage-fields > * + * {
   margin-top: var(--space-4);
 }
-#storage-fields {
+:is(#storage-fields, #cleanup-fields) {
   min-width: 0;
   padding: var(--space-4);
   border: var(--border-width) solid var(--color-border);
   border-radius: var(--radius-control);
 }
-#storage-fields .form-grid {
+:is(#storage-fields, #cleanup-fields) .form-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--space-4);
@@ -1144,12 +1146,12 @@ output:not(.status-bar output):not(.transfer-card output):not(:empty) {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
-#storage-status {
+:is(#storage-status, #cleanup-status) {
   display: block;
   margin-top: var(--space-4);
 }
 @media (max-width: 760px) {
-  #storage-fields .form-grid {
+  :is(#storage-fields, #cleanup-fields) .form-grid {
     grid-template-columns: minmax(0, 1fr);
   }
 }

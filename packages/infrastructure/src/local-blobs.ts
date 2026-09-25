@@ -271,7 +271,7 @@ export class LocalBlobStore implements BlobStore {
   }
 
   async collect(id: string, removeContent: boolean): Promise<void> {
-    // Only offline maintenance holding the standalone claim may delete bytes.
+    // Caller owns either offline maintenance or both the upload and exclusive content guards.
     requireId(id);
     for (const folder of ['staging', 'parts']) {
       const target = resolve(this.root, folder, id);

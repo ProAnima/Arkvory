@@ -123,7 +123,7 @@ const release = {
   format: 1,
   version,
   commit: execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),
-  schema: 15,
+  schema: 17,
   archiveSha256: await digest(archive),
   setupSha256: await digest(join(output, 'depot-setup.mjs')),
 };

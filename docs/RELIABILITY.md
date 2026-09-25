@@ -48,4 +48,4 @@ Backup БД и содержимого согласован по точке во�
 
 Испытания: остановка процессов в каждой фазе upload; потеря ответа после commit; отказ узла БД/storage; сетевое разделение; заполненный staging; повтор части; конфликт перезаписи; отзыв доступа; удаление во время download; работа при отключённых внешних приложениях.
 
-Last-N автоочистка фиксирует только tombstones и audit под repository gate; physical bytes остаются до offline GC. Квоты сериализуют upload reservations с policy update и учитывают retired bytes. Scheduler bounded, с live key recheck; диагностика best-effort с ограничением памяти, не блокирует transfer на ожидании записи логов. [Гарантии и ограничения](STORAGE_POLICIES.md).
+Last-N автоочистка фиксирует только tombstones и audit под repository gate; physical bytes остаются до успешного online GC; [блокировки читателей и гарантии](ONLINE_CLEANUP.md). Квоты сериализуют upload reservations с policy update и учитывают retired bytes. Scheduler bounded, с live key recheck; диагностика best-effort с ограничением памяти, не блокирует transfer на ожидании записи логов. [Гарантии и ограничения](STORAGE_POLICIES.md).
