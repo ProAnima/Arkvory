@@ -75,3 +75,5 @@ Discovery репозиториев — чистая application projection ак�
 Именованные вложения используют отдельные domain rules, application AttachmentStore/BuildAttachments и PostgreSQL-адаптер. Байты проходят прежний transfer stack. Migration 12 хранит append-only snapshots и FK-пины targets. Web разделяет annotation editor, attachments controller и общий worker hash. [ADR 0024](adr/0024-build-attachments.md).
 
 Границы и топологический порядок сборки теперь задаёт config/architecture.json. Проверяемые лимиты 500/300/100 и временные исключения описаны в [ADR 0027](adr/0027-executable-engineering-gates.md); команды, расширение и требования к комментариям — в [ENGINEERING_GATES](ENGINEERING_GATES.md). Существующий долг и порядок декомпозиции: [аудит 2026-09-25](ARCHITECTURE_AUDIT_2026-09-25.md).
+
+SDK использует композицию: публичный DepotClient делегирует группам операций, которые используют общий узкий HttpPort. HTTP-авторизация, ошибки и bounded parsing централизованы; transfer workflows сохраняют отдельные retry/checksum/abort-инварианты. Прежние flat methods и namespaces защищены проверкой строгого внешнего TS consumer. [ADR 0028](adr/0028-sdk-composition.md).

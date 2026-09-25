@@ -4,6 +4,19 @@ let timer;
 process.once('message', async (config) => {
   try {
     app = await createServer(config);
+    // Observe the socket only: request/response/server timeout listeners change Node's teardown.
+    app.server.on('connection', (socket) => {
+      socket.on('timeout', () => {
+        console.error(
+          JSON.stringify({
+            event: 'test.socket_timeout',
+            timeoutMs: socket.timeout,
+            bytesRead: socket.bytesRead,
+            bytesWritten: socket.bytesWritten,
+          }),
+        );
+      });
+    });
     const address = await app.listen({ host: '127.0.0.1', port: 0 });
     process.send({ address });
     timer = setInterval(() => process.send?.({ rss: process.memoryUsage().rss }), 100);

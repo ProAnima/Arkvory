@@ -2,7 +2,7 @@
 
 ## Что уже проверяется
 
-`npm run check`: форматирование, TypeScript каждого workspace, type-aware ESLint, архитектурный граф. Это статические проверки. `npm test` собирает JS и запускает Node.js test runner для домена, Range и LocalBlobStore. `npm run test:integration` проверяет HTTP и реальную PostgreSQL; `npm run test:large` — 5 GiB и перезапуск процесса. [Результаты](CORE_VALIDATION.md), [инструкции](CORE_RUNBOOK.md).
+Все проверки запускаются через единый реестр config/gates.json. `npm run gate -- quick` проверяет архитектурную политику, формат, TypeScript, lint, зависимости, сборку и unit-тесты. `verify` добавляет аудит зависимостей, реальную PostgreSQL/HTTP и браузер. `release` добавляет оба сценария 5 GiB с перезапусками. Старые npm aliases делегируют гейтам. [Команды и расширение](ENGINEERING_GATES.md), [результаты](CORE_VALIDATION.md), [инструкции](CORE_RUNBOOK.md).
 
 ## Проверки по уровням
 
@@ -17,7 +17,7 @@
 | Transfer         | 5 ГБ, bounded memory, Range, backpressure, повтор частей, совместная нагрузка |
 | Failure/restore  | Отключение узла, потеря ответа, разделение сети, чистое восстановление        |
 
-Unit-тесты размещаются рядом со сценарием как `*.test.ts`; межпакетные интеграционные/контрактные/нагрузочные сценарии — в `tests/`. Используется Node.js test runner. Первый набор находится в tests/_.test.mjs и tests/integration/_.test.mjs и импортирует собранный JS; типизация и lint исходного TypeScript выполняются отдельно. Product test job не может быть зелёным за счёт отсутствия тестов.
+Текущие unit/fault/governance тесты находятся в `tests/*.test.mjs`, интеграционные — в `tests/integration/**/*.test.mjs` и импортируют собранный JS через Node.js test runner. Браузерные и большие сценарии перечислены в реестре явно. TS fixtures в `tests/fixtures` используются consumer-тестами и не являются самостоятельными входами. Новый набор подключается к реестру, verify/release и CI; неизвестные входы, only/skip/todo, пустые наборы и отсутствие инфраструктуры проваливают гейт.
 
 Данные больших тестов генерируются потоково; не коммитим архивы 5 ГБ. Fixtures маленькие, обезличенные, с описанием происхождения и версии протокола. Контрактные записи не выполняются на рабочих фидах ProGet.
 

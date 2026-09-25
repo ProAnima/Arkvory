@@ -1,35 +1,42 @@
-import type { DepotTransport } from './transport.js';
+import type { IdentityApi } from './identity-api.js';
+import type { UsersApi } from './users-api.js';
+import type { ServiceAccountsApi } from './service-accounts-api.js';
+import type { CredentialsApi } from './credentials-api.js';
 type ManagementTransport = Pick<
-  DepotTransport,
-  | 'login'
-  | 'logout'
-  | 'me'
-  | 'permissions'
-  | 'changePassword'
-  | 'activateServiceKey'
-  | 'users'
-  | 'createUser'
-  | 'updateUser'
-  | 'accessGroups'
-  | 'createAccessGroup'
-  | 'setGroupMember'
-  | 'setGroupGrant'
-  | 'serviceAccounts'
-  | 'serviceAccount'
-  | 'createServiceAccount'
-  | 'updateServiceAccount'
-  | 'servicePolicy'
-  | 'setServicePolicy'
-  | 'serviceAudit'
-  | 'serviceKeys'
-  | 'serviceKey'
-  | 'issueServiceKey'
-  | 'rotateServiceKey'
-  | 'revokeServiceKey'
-  | 'serviceDelegations'
-  | 'setServiceDelegation'
-  | 'removeServiceDelegation'
->;
+  IdentityApi,
+  'login' | 'logout' | 'me' | 'permissions' | 'changePassword' | 'activateServiceKey'
+> &
+  Pick<
+    UsersApi,
+    | 'users'
+    | 'createUser'
+    | 'updateUser'
+    | 'accessGroups'
+    | 'createAccessGroup'
+    | 'setGroupMember'
+    | 'setGroupGrant'
+  > &
+  Pick<
+    ServiceAccountsApi,
+    | 'serviceAccounts'
+    | 'serviceAccount'
+    | 'createServiceAccount'
+    | 'updateServiceAccount'
+    | 'servicePolicy'
+    | 'setServicePolicy'
+    | 'serviceAudit'
+    | 'serviceKeys'
+  > &
+  Pick<
+    CredentialsApi,
+    | 'serviceKey'
+    | 'issueServiceKey'
+    | 'rotateServiceKey'
+    | 'revokeServiceKey'
+    | 'serviceDelegations'
+    | 'setServiceDelegation'
+    | 'removeServiceDelegation'
+  >;
 
 /** Responsibility namespaces retain the exact existing transport signatures and authorization. */
 export function managementClients(client: ManagementTransport) {

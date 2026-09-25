@@ -127,3 +127,5 @@ const verifiedBytes = await repository.artifacts.downloadVerified(artifactId, {
 Unit: ответственность всех операций, разделение областей OpenAPI, отсутствие перемножения bindings, независимость bootstrap/admin/delegation, exact repository после 100-й записи, строгий parser страниц. Integration: реальный HTTP/PostgreSQL, schema validation, HEAD, paging, узкие managed keys, отзыв policy/key/delegation, reader-фильтрация, пользовательская сессия/группы и SDK upload/download/metadata/assets. Новая версия не требует миграции БД и не объявляет HA или полную ProGet compatibility.
 
 Для манифестов и дополнительных файлов добавлена группа `repository.attachments.{get,replace,history}`. Операции `getBuildAttachments`, `replaceBuildAttachments`, `getBuildAttachmentHistory` относятся к catalog/repository. [Контракт и UI](BUILD_DETAILS.md).
+
+Внутренняя композиция SDK не меняет эти поверхности: 68 flat methods и namespaces сохранены, группы используют общий HTTP-транспорт с актуальным credential для каждого запроса. Снимок публичных типов и сетевые регрессии входят в unit-гейт. [Архитектурное решение](adr/0028-sdk-composition.md).

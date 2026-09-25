@@ -49,6 +49,8 @@ async function stop() {
 }
 
 async function uploadFull(address, id, chunk, size) {
+  const started = Date.now();
+  let written = 0;
   // HTTP writable drain is the backpressure boundary. Avoid fetch buffering the synthetic source.
   const outgoing = request(`${address}${base}/uploads/${id}/content`, {
     method: 'PUT',
@@ -76,11 +78,19 @@ async function uploadFull(address, id, chunk, size) {
     await Promise.all([
       reply,
       (async () => {
-        for (let n = 0; n < size / chunk.length; n++)
-          if (!outgoing.write(chunk)) await once(outgoing, 'drain');
+        for (let n = 0; n < size / chunk.length; n++) {
+          const ready = outgoing.write(chunk);
+          written += chunk.length;
+          if (!ready) await once(outgoing, 'drain');
+        }
         outgoing.end();
       })(),
     ]);
+  } catch (error) {
+    throw new Error(
+      `Full upload failed: written=${written}/${size}, bodyFlushed=${outgoing.writableFinished}, elapsedMs=${Date.now() - started}`,
+      { cause: error },
+    );
   } finally {
     outgoing.destroy();
   }

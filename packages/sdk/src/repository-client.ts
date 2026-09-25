@@ -1,46 +1,46 @@
-import type { DepotTransport } from './transport.js';
+import type { StorageApi } from './storage-api.js';
+import type { DiscoveryApi } from './discovery-api.js';
+import type { CatalogApi } from './catalog-api.js';
+import type { DownloadApi } from './download-api.js';
+import type { UploadsApi } from './uploads-api.js';
+import type { UploadTransfer } from './upload-transfer.js';
+import type { AssetsApi } from './assets-api.js';
 import type { OperationQuery } from '@proanima/depot-contracts';
 
 type RepositoryTransport = Pick<
-  DepotTransport,
+  StorageApi,
   | 'storagePolicy'
   | 'setStoragePolicy'
   | 'storageUsage'
   | 'previewStoragePolicy'
   | 'runStoragePolicy'
   | 'storageEvents'
-  | 'repository'
   | 'inspectDeletion'
   | 'deleteArtifact'
   | 'previewRetention'
   | 'applyRetention'
-  | 'operations'
-  | 'list'
-  | 'search'
-  | 'artifact'
-  | 'download'
-  | 'downloadVerified'
-  | 'attachments'
-  | 'replaceAttachments'
-  | 'attachmentHistory'
-  | 'annotations'
-  | 'annotate'
-  | 'create'
-  | 'status'
-  | 'parts'
-  | 'resume'
-  | 'complete'
-  | 'enqueue'
-  | 'cancel'
-  | 'packages'
-  | 'registerPackage'
-  | 'asset'
-  | 'assetPage'
-  | 'assetHistory'
-  | 'assetRevision'
-  | 'setAsset'
-  | 'restoreAsset'
->;
+> &
+  Pick<DiscoveryApi, 'repository' | 'operations'> &
+  Pick<
+    CatalogApi,
+    | 'list'
+    | 'search'
+    | 'artifact'
+    | 'attachments'
+    | 'replaceAttachments'
+    | 'attachmentHistory'
+    | 'annotations'
+    | 'annotate'
+    | 'packages'
+    | 'registerPackage'
+  > &
+  Pick<DownloadApi, 'download' | 'downloadVerified'> &
+  Pick<UploadsApi, 'create' | 'status' | 'parts' | 'complete' | 'enqueue' | 'cancel'> &
+  Pick<UploadTransfer, 'resume'> &
+  Pick<
+    AssetsApi,
+    'asset' | 'assetPage' | 'assetHistory' | 'assetRevision' | 'setAsset' | 'restoreAsset'
+  >;
 
 /** Ergonomic scope, not a credential or security boundary. Transport/retry behavior stays shared. */
 export function repositoryClient(client: RepositoryTransport, repository: string) {

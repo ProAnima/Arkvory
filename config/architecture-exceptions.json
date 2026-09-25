@@ -152,32 +152,6 @@
     "tests": ["tests/integration/service-access.test.mjs", "tests/integration/delegation.test.mjs"]
   },
   {
-    "id": "ARCH-012",
-    "file": "packages/sdk/src/transport.ts",
-    "metric": "file",
-    "symbol": "<file>",
-    "ceiling": 984,
-    "reason": "Existing public SDK compatibility facade also owns HTTP mechanics; keep existing methods stable while moving identity and catalog clients into composed modules.",
-    "owner": "Depot maintainers",
-    "recordedAt": "2026-09-25",
-    "reviewBy": "2026-12-20",
-    "decision": "docs/adr/0027-executable-engineering-gates.md",
-    "tests": ["tests/integration/sdk.test.mjs", "tests/sdk-transfer.test.mjs"]
-  },
-  {
-    "id": "ARCH-013",
-    "file": "packages/sdk/src/transport.ts",
-    "metric": "class",
-    "symbol": "DepotTransport",
-    "ceiling": 921,
-    "reason": "Existing public SDK compatibility facade also owns HTTP mechanics; keep existing methods stable while moving identity and catalog clients into composed modules.",
-    "owner": "Depot maintainers",
-    "recordedAt": "2026-09-25",
-    "reviewBy": "2026-12-20",
-    "decision": "docs/adr/0027-executable-engineering-gates.md",
-    "tests": ["tests/integration/sdk.test.mjs", "tests/sdk-transfer.test.mjs"]
-  },
-  {
     "id": "ARCH-014",
     "file": "apps/api/src/catalog-routes.ts",
     "metric": "function",
