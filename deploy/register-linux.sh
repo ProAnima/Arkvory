@@ -14,6 +14,7 @@ if [[ -f "$root/github-token.txt" ]]; then
 fi
 chown root:depot "$root" "$root/config"
 chmod 0750 "$root" "$root/config"
+if [[ -d "$root/database" ]]; then chmod 0711 "$root"; fi
 chown -R depot:depot "$root/data" "$root/logs"
 chmod 0750 "$root/data" "$root/logs"
 chown root:depot "$root/config/runtime.json" "$root/config/keys.json"

@@ -1,4 +1,5 @@
 import { exerciseStoragePolicy } from './storage-policy.mjs';
+import { exerciseGuides } from './guides.mjs';
 // Browser gate against real API/database. Only the OS save picker is substituted.
 import assert from 'node:assert/strict';
 import { mkdir } from 'node:fs/promises';
@@ -190,6 +191,7 @@ try {
   assert.equal(await page.locator('#selected-name').isVisible(), false);
   await exerciseDeletion(page, f);
   await exerciseStoragePolicy(page, f);
+  await exerciseGuides(page, f);
   assert.deepEqual(errors, []);
   console.log(
     'PASS console: API upload/download, metadata, history, users, search/reset, keyboard menu, 7 views × 3 widths × RU/EN × light/dark',

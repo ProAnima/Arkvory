@@ -85,6 +85,12 @@
           </svg>
           <span data-i18n="administration">Пользователи и доступ</span>
         </button>
+        <div class="guide-navigation">
+          <button type="button" class="secondary" data-go="onboarding" data-i18n="onboarding">
+            Добро пожаловать в Depot
+          </button>
+          <button type="button" class="secondary" data-go="help" data-i18n="help">API и CLI</button>
+        </div>
       </nav>
       <div class="sidebar-bottom">
         <p data-i18n="privateStorage">Ваши файлы. Ваша инфраструктура.</p>
@@ -609,6 +615,123 @@
             <p class="hint" data-i18n="downloadNote"></p>
           </details>
           <output id="download-status" aria-live="polite"></output>
+        </section>
+        <section
+          id="onboarding-panel"
+          data-view="onboarding"
+          aria-labelledby="welcome-title"
+          hidden
+        >
+          <div class="card guide-hero">
+            <p class="eyebrow">PROANIMA DEPOT</p>
+            <h2 id="welcome-title" data-i18n="welcomeLead">Ваше хранилище. Готово к работе.</h2>
+            <p data-i18n="welcomeBody"></p>
+          </div>
+          <div class="guide-grid">
+            <article class="card">
+              <h3 data-i18n="welcomeAccess"></h3>
+              <p data-i18n="welcomeAccessBody"></p>
+              <button
+                type="button"
+                id="welcome-sign-in"
+                class="primary"
+                data-i18n="welcomeSignIn"
+              ></button>
+              <details>
+                <summary data-i18n="welcomeOwner"></summary>
+                <form id="welcome-owner-form" class="guide-form">
+                  <label
+                    ><span data-i18n="welcomeRecovery"></span
+                    ><input
+                      id="welcome-key"
+                      type="password"
+                      required
+                      minlength="32"
+                      autocomplete="off"
+                  /></label>
+                  <label
+                    ><span data-i18n="welcomeName"></span
+                    ><input
+                      id="welcome-name"
+                      required
+                      autocomplete="username"
+                      minlength="3"
+                      maxlength="64"
+                      pattern="[a-zA-Z0-9_.\-]{3,64}"
+                  /></label>
+                  <label
+                    ><span data-i18n="welcomePassword"></span
+                    ><input
+                      id="welcome-password"
+                      type="password"
+                      required
+                      minlength="12"
+                      maxlength="128"
+                      autocomplete="new-password"
+                  /></label>
+                  <button
+                    type="submit"
+                    class="primary"
+                    id="welcome-create"
+                    data-i18n="welcomeCreate"
+                  ></button>
+                  <output id="welcome-status" aria-live="polite"></output>
+                </form>
+              </details>
+            </article>
+            <article class="card">
+              <h3 data-i18n="welcomePublish"></h3>
+              <p data-i18n="welcomePublishBody"></p>
+              <button
+                type="button"
+                class="secondary"
+                data-go="upload"
+                data-i18n="welcomePublishAction"
+              ></button>
+            </article>
+            <article class="card">
+              <h3 data-i18n="welcomeConnect"></h3>
+              <p data-i18n="welcomeConnectBody"></p>
+              <button type="button" class="secondary" data-go="help" data-i18n="help"></button>
+            </article>
+            <article class="card">
+              <h3 data-i18n="welcomeOperate"></h3>
+              <p data-i18n="welcomeOperateBody"></p>
+            </article>
+          </div>
+        </section>
+        <section id="help-panel" data-view="help" aria-labelledby="help-title" hidden>
+          <article class="card">
+            <h2 id="help-title" data-i18n="help"></h2>
+            <p data-i18n="helpHint"></p>
+            <div class="guide-form">
+              <button type="button" id="help-load" class="primary" data-i18n="helpLoad"></button>
+              <label
+                ><span data-i18n="helpSearch"></span
+                ><input id="help-search" type="search" autocomplete="off"
+              /></label>
+            </div>
+            <output id="help-status" aria-live="polite"></output>
+            <div id="help-operations" class="guide-operations"></div>
+          </article>
+          <div class="guide-grid">
+            <article class="card">
+              <h3 data-i18n="helpCli"></h3>
+              <p data-i18n="helpCliBody"></p>
+              <pre><code>depot help
+depot status --root ROOT
+depot update --root ROOT
+depot configure --root ROOT --disable-updates
+depot configure --root ROOT --pin --version 1.2.3</code></pre>
+            </article>
+            <article class="card">
+              <h3 data-i18n="helpRecipes"></h3>
+              <p data-i18n="helpRecipesBody"></p>
+              <pre><code>GET /api/v1/capabilities
+GET /api/v1/repositories
+GET /api/v1/operations?repository=releases</code></pre>
+            </article>
+          </div>
         </section>
         <section id="upload-panel" data-view="upload" aria-labelledby="upload-title" hidden>
           <div class="split-layout">

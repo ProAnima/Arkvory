@@ -39,6 +39,11 @@ await build({
   target: 'es2023',
   minify: true,
 });
-for (const file of ['index.html', 'style.css', 'tokens.css'])
+for (const file of ['index.html', 'tokens.css'])
   await copyFile(`apps/web/${file}`, `apps/web/public/${file}`);
+await build({
+  entryPoints: ['apps/web/style.css'],
+  outfile: 'apps/web/public/style.css',
+  bundle: true,
+});
 await copyFile('node_modules/@noble/hashes/LICENSE', 'apps/web/public/THIRD-PARTY.txt');

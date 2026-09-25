@@ -9,7 +9,7 @@ foreach ($name in @('data','logs')) {
     & icacls.exe (Join-Path $Root $name) /grant:r '*S-1-5-19:(OI)(CI)M' | Out-Null
     if ($LASTEXITCODE -ne 0) { throw 'Cannot grant runtime directory access' }
 }
-foreach ($name in @('config/bootstrap-token.txt','config/postgres.env','github-token.txt')) {
+foreach ($name in @('config/bootstrap-token.txt','config/postgres.env','github-token.txt','bootstrap.owner')) {
     $path = Join-Path $Root $name
     if (Test-Path -LiteralPath $path) {
         & icacls.exe $path /inheritance:r /grant:r '*S-1-5-18:F' '*S-1-5-32-544:F' | Out-Null
@@ -18,7 +18,9 @@ foreach ($name in @('config/bootstrap-token.txt','config/postgres.env','github-t
 }
 $wrapper = Join-Path $Root 'service/WinSW-x64.exe'
 if (-not (Test-Path -LiteralPath $wrapper)) {
-    Invoke-WebRequest 'https://github.com/winsw/winsw/releases/download/v2.12.0/WinSW-x64.exe' -OutFile $wrapper -UseBasicParsing
+    $bundled = Join-Path $Root 'runtime/WinSW-x64.exe'
+    if (Test-Path -LiteralPath $bundled) { Copy-Item -LiteralPath $bundled -Destination $wrapper }
+    else { Invoke-WebRequest 'https://github.com/winsw/winsw/releases/download/v2.12.0/WinSW-x64.exe' -OutFile $wrapper -UseBasicParsing }
 }
 if ((Get-FileHash $wrapper -Algorithm SHA256).Hash -ne '05B82D46AD331CC16BDC00DE5C6332C1EF818DF8CEEFCD49C726553209B3A0DA') { throw 'WinSW checksum mismatch' }
 function Xml([string]$value) { [Security.SecurityElement]::Escape($value) }
@@ -27,7 +29,8 @@ foreach ($role in @('api','worker')) {
     $exe = Join-Path $Root "service/depot-$role.exe"
     $existing = Get-CimInstance Win32_Service -Filter "Name='$name'"
     if ($existing -and $existing.PathName.Trim('"') -ne $exe) { throw 'Another installation owns this service' }
-    Copy-Item -LiteralPath $wrapper -Destination $exe -Force
+    if (-not $existing) { Copy-Item -LiteralPath $wrapper -Destination $exe -Force }
+    elseif ((Get-FileHash -LiteralPath $exe -Algorithm SHA256).Hash -ne (Get-FileHash -LiteralPath $wrapper -Algorithm SHA256).Hash) { throw 'Service wrapper replacement requires stopped-service maintenance' }
     $xml = @"
 <service>
   <id>$name</id><name>ProAnima Depot $role</name>

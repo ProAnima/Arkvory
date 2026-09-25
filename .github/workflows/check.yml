@@ -24,6 +24,29 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  native:
+    name: Native installer (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, windows-2022]
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y rpm postgresql
+      - run: npm run gate -- native-install
+      - name: Publish gate report
+        if: ${{ always() }}
+        run: node scripts/ci-report.mjs
   check:
     name: Quality (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
@@ -218,7 +241,7 @@ jobs:
   verdict:
     name: Depot merge gate
     if: ${{ always() }}
-    needs: [check, integration, browser, security, large, deployment-containers]
+    needs: [check, integration, browser, security, large, deployment-containers, native]
     runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:

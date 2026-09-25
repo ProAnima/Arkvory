@@ -282,19 +282,6 @@
     "tests": ["tests/browser/console.mjs"]
   },
   {
-    "id": "ARCH-026",
-    "file": "apps/web/src/messages.ts",
-    "metric": "file",
-    "symbol": "<file>",
-    "ceiling": 683,
-    "reason": "Paired RU/EN dictionaries are declarative data; preserve key parity and separate locales only with localization parity checks.",
-    "owner": "Depot maintainers",
-    "recordedAt": "2026-09-25",
-    "reviewBy": "2026-12-20",
-    "decision": "docs/adr/0027-executable-engineering-gates.md",
-    "tests": ["tests/browser/console.mjs"]
-  },
-  {
     "id": "ARCH-027",
     "file": "apps/web/src/packages.ts",
     "metric": "function",

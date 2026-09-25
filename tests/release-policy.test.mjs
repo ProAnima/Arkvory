@@ -12,6 +12,15 @@ test('release workflow rejects privilege escalation, unchecked bytes and accepta
   assert.deepEqual(inspectReleaseWorkflow(original), []);
   for (const mutate of [
     (w) => {
+      w.jobs.native.steps.find((s) => s.run === 'npm run gate -- native-install').if = false;
+    },
+    (w) => {
+      w.jobs.native.permissions = { contents: 'write' };
+    },
+    (w) => {
+      w.jobs.publish.steps.find((s) => s.with?.pattern === 'native-*').with['run-id'] = 1;
+    },
+    (w) => {
       w.jobs.build.permissions = { contents: 'write' };
     },
     (w) => {

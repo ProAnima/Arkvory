@@ -222,7 +222,7 @@ test('release publishing stays manual, trusted-main-only and behind all release 
   assert.equal(workflow.permissions.contents, 'read');
   assert.equal(workflow.jobs.build.permissions, undefined);
   assert.equal(workflow.jobs.acceptance.permissions, undefined);
-  assert.deepEqual(workflow.jobs.publish.needs, ['build', 'acceptance']);
+  assert.deepEqual(workflow.jobs.publish.needs, ['build', 'acceptance', 'native']);
   assert.equal(workflow.jobs.publish.permissions.contents, 'write');
   const steps = workflow.jobs.build.steps;
   const gate = steps.findIndex((step) => step.run === 'npm run gate -- release');
@@ -232,6 +232,6 @@ test('release publishing stays manual, trusted-main-only and behind all release 
   const publisher = await readFile('scripts/publish-release.mjs', 'utf8');
   assert.ok(publisher.includes('draft: true'));
   assert.ok(publisher.includes('run.head_sha === sha'));
-  assert.ok(publisher.includes('verifyReleaseFiles(output, version, sha)'));
+  assert.ok(publisher.includes('verifyReleaseFiles(output, version, sha, nativeFiles)'));
   assert.ok(!publisher.includes('release:package'));
 });

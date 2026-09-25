@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Link
+Name=ProAnima Depot
+Comment=Open storage console and onboarding
+Comment[ru]=Открыть хранилище и знакомство с Depot
+URL=http://127.0.0.1:8080/console/#onboarding
+Icon=folder-remote
+Categories=Network;

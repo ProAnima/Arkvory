@@ -1,6 +1,7 @@
 import { element } from './dom.js';
 import { initializeLanguage, message, setLanguage } from './i18n.js';
 import { themePreference, readPreference, savePreference, applyTheme } from './preferences.js';
+import { initializeGuides } from './guides.js';
 const views = {
   catalog: 'catalogSubtitle',
   packages: 'packagesSubtitle',
@@ -9,6 +10,8 @@ const views = {
   downloads: 'downloadsSubtitle',
   history: 'historySubtitle',
   metadata: 'metadataSubtitle',
+  onboarding: 'onboardingSubtitle',
+  help: 'helpSubtitle',
 } as const;
 type View = keyof typeof views;
 function isView(value: string): value is View {
@@ -34,6 +37,7 @@ export function showView(view: View) {
   element('page-title', HTMLHeadingElement).focus({ preventScroll: true });
 }
 export function initializeShell() {
+  initializeGuides();
   const toggle = element('navigation-toggle', HTMLButtonElement);
   const navigation = element('workspace-navigation', HTMLElement);
   toggle.onclick = () => {
@@ -68,4 +72,6 @@ export function initializeShell() {
       const value = button.dataset['nav'] ?? button.dataset['go'];
       if (value && isView(value)) showView(value);
     };
+  if (location.hash === '#onboarding') showView('onboarding');
+  if (location.hash === '#help') showView('help');
 }

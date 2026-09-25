@@ -6,6 +6,7 @@ export function ciVerdict(needs, releaseRequired) {
       'browser',
       'security',
       'deployment-containers',
+      'native',
       ...(releaseRequired ? ['large'] : []),
       ...Object.keys(needs).filter((name) => name !== 'large'),
     ]),

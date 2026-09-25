@@ -1,0 +1,10 @@
+#!/bin/sh
+set -eu
+# Package upgrades preserve running services until the journalled updater switches code.
+case "${1:-}" in upgrade|1) exit 0 ;; esac
+for unit in depot-worker depot-api depot-database depot-update.timer; do
+  if systemctl cat "$unit" >/dev/null 2>&1; then
+    systemctl disable --now "$unit"
+  fi
+done
+# No rm -rf: /opt/proanima-depot is intentionally retained with all blobs and credentials.

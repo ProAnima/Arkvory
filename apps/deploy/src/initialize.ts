@@ -4,17 +4,24 @@ import { join } from 'node:path';
 import type { Installation } from './model.js';
 import { runtimeEnvironment } from './runtime.js';
 import { jsonFile } from './files.js';
+import { configureDatabase } from './managed-database.js';
 
 export async function initialize(
   root: string,
   state: Installation,
   input: string | undefined,
+  databaseBin?: string,
 ): Promise<void> {
   const token = randomBytes(32).toString('hex');
   const healthToken = randomBytes(32).toString('hex');
   const password = randomBytes(32).toString('hex');
   const container = state.mode === 'compose';
   const supplied = input ? runtimeEnvironment(await jsonFile(input)) : {};
+  if (databaseBin) {
+    if (container || supplied['DEPOT_DATABASE_URL'])
+      throw new Error('Managed database cannot replace an external database');
+    supplied['DEPOT_DATABASE_URL'] = await configureDatabase(root, databaseBin);
+  }
   if (!container && !supplied['DEPOT_DATABASE_URL'])
     throw new Error('Native installation requires --config with DEPOT_DATABASE_URL');
   for (const name of ['config', 'data', 'logs', 'service'])

@@ -1,4 +1,6 @@
 import { join } from 'node:path';
+import { access } from 'node:fs/promises';
+import { provisionDatabase, databaseSettings } from './managed-database.js';
 import { command } from './process.js';
 import type { Installation, Release } from './model.js';
 import { jsonFile } from './files.js';
@@ -31,6 +33,21 @@ export class Services {
     );
   }
   async prepare(release: Release): Promise<void> {
+    if (this.state.mode !== 'compose' && (await databaseSettings(this.root))) {
+      await provisionDatabase(this.root, join(this.root, 'releases', release.version));
+      let ready = false;
+      for (let attempt = 0; attempt < 90; attempt++) {
+        try {
+          await access(join(this.root, 'database/initialized'));
+          ready = true;
+          break;
+        } catch {
+          await delay(1000);
+        }
+      }
+      if (!ready)
+        throw new Error('Database setup failed; inspect database service logs before retrying');
+    }
     if (this.state.mode === 'compose') {
       await command(this.state.engine, [
         'build',

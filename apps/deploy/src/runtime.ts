@@ -2,6 +2,7 @@ import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { jsonFile, inside } from './files.js';
 import { record, parseInstallation } from './model.js';
+import { runDatabase } from './database-runner.js';
 
 export function runtimeEnvironment(value: unknown): Record<string, string> {
   const values = record(value);
@@ -36,6 +37,7 @@ export async function runRole(
   await import(pathToFileURL(join(directory, entry)).href);
 }
 export async function launch(root: string, role: string): Promise<void> {
+  if (role === 'database') return runDatabase(root);
   const state = parseInstallation(await jsonFile(join(root, 'installation.json')));
   await runRole(
     inside(root, 'releases', state.current.version),

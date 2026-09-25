@@ -3,11 +3,23 @@ import { exclusive, jsonFile } from './files.js';
 import { parseInstallation, version } from './model.js';
 import { install, update, recover, upgrade, save, finishInstall } from './operations.js';
 import { Services } from './services.js';
+import { deploymentHelp } from './help.js';
+import { createOwner } from './owner.js';
 
 function argumentsOf(args: string[]): Map<string, string> {
   const options = new Map<string, string>();
   const flags = ['automatic', 'scheduled', 'pin', 'disable-updates', 'enable-updates', 'unpin'];
-  const values = ['root', 'mode', 'engine', 'version', 'artifact', 'config', 'backup-record'];
+  const values = [
+    'root',
+    'mode',
+    'engine',
+    'version',
+    'artifact',
+    'config',
+    'backup-record',
+    'database-bin',
+    'owner-file',
+  ];
   for (let index = 0; index < args.length; index++) {
     const name = args[index]?.replace(/^--/, '');
     if (!name || !args[index]?.startsWith('--') || options.has(name))
@@ -25,6 +37,10 @@ async function main(): Promise<void> {
   if (Number(process.versions.node.split('.')[0]) !== 24)
     throw new Error('Depot requires Node.js 24 LTS');
   const operation = process.argv[2] ?? '';
+  if (['', '--help', '-h', 'help'].includes(operation)) {
+    console.log(deploymentHelp());
+    return;
+  }
   const options = argumentsOf(process.argv.slice(3));
   const rawRoot = options.get('root');
   if (!rawRoot) throw new Error('Specify --root (absolute installation directory)');
@@ -38,10 +54,31 @@ async function main(): Promise<void> {
     switch (operation) {
       case 'install':
         await install(root, options);
+        if (options.get('owner-file')) await createOwner(root, options.get('owner-file') ?? '');
         break;
       case 'finish-install':
         await finishInstall(root);
+        if (options.get('owner-file')) await createOwner(root, options.get('owner-file') ?? '');
         break;
+      case 'apply-installer': {
+        const state = parseInstallation(await jsonFile(join(root, 'installation.json')));
+        if (state.mode !== (process.platform === 'win32' ? 'windows' : 'systemd'))
+          throw new Error('Native installer cannot change deployment mode');
+        const artifact = options.get('artifact');
+        if (!artifact) throw new Error('Installer requires local release artifact');
+        const candidate = await jsonFile(join(artifact, 'depot-release.json'));
+        const { parseRelease } = await import('./model.js');
+        const next = parseRelease(candidate);
+        if (next.version === state.current.version) {
+          if (
+            next.archiveSha256 !== state.current.archiveSha256 ||
+            next.setupSha256 !== state.current.setupSha256
+          )
+            throw new Error('Installed version cannot be replaced with different bytes');
+          await finishInstall(root);
+        } else await update(root, options);
+        break;
+      }
       case 'update':
         await update(root, options);
         break;

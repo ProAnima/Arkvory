@@ -11,10 +11,7 @@ export async function packageInstallers(output, staging, release) {
   for (const platform of ['Windows', 'Linux']) {
     const directory = join(staging, `installer-${platform}`);
     await mkdir(directory);
-    const launchers =
-      platform === 'Windows'
-        ? ['Setup-Windows.cmd', 'Setup-Docker.cmd', 'setup.ps1']
-        : ['Setup-Linux.desktop', 'Setup-Docker.desktop', 'setup.sh'];
+    const launchers = [];
     const installer = platform === 'Windows' ? 'install.ps1' : 'install.sh';
     const files = [...common, installer, 'START-HERE.md', ...launchers];
     for (const name of common) await copyFile(join(output, name), join(directory, name));

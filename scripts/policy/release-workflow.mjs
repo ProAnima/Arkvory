@@ -7,7 +7,7 @@ export function inspectReleaseWorkflow(text) {
   if (
     Object.keys(workflow.jobs ?? {})
       .sort()
-      .join() !== 'acceptance,build,publish'
+      .join() !== 'acceptance,build,native,publish'
   )
     errors.push('Unexpected release jobs require an explicit policy change');
   if (Object.keys(workflow.on ?? {}).join() !== 'workflow_dispatch')
@@ -17,7 +17,7 @@ export function inspectReleaseWorkflow(text) {
   for (const name of ['build', 'publish'])
     if (workflow.jobs?.[name]?.if !== "github.ref == 'refs/heads/main'")
       errors.push(`${name}: trusted main required`);
-  if (build?.permissions || acceptance?.permissions)
+  if (build?.permissions || acceptance?.permissions || workflow.jobs?.native?.permissions)
     errors.push('Build and acceptance may not elevate permissions');
   if (
     JSON.stringify(publish?.permissions) !== JSON.stringify({ contents: 'write', actions: 'read' })
@@ -25,7 +25,7 @@ export function inspectReleaseWorkflow(text) {
     errors.push('Only publishing receives the bounded release token');
   if (
     acceptance?.needs !== 'build' ||
-    JSON.stringify(publish?.needs) !== JSON.stringify(['build', 'acceptance'])
+    JSON.stringify(publish?.needs) !== JSON.stringify(['build', 'acceptance', 'native'])
   )
     errors.push('Publishing requires artifact acceptance');
   const platforms = ['ubuntu-22.04', 'ubuntu-24.04', 'windows-2022', 'windows-2025'];
@@ -83,6 +83,7 @@ export function inspectReleaseWorkflow(text) {
     errors.push('Acceptance must use the supplied artifact');
   for (const [name, path] of [
     ['acceptance', 'candidate'],
+    ['native', 'candidate'],
     ['publish', 'artifacts/${{ inputs.version }}'],
   ])
     if (
@@ -96,5 +97,43 @@ export function inspectReleaseWorkflow(text) {
       )
     )
       errors.push(`${name}: current-run candidate required`);
+  errors.push(...inspectNative(workflow));
+  return errors;
+}
+
+function inspectNative(workflow) {
+  const errors = [];
+  const { native, publish } = workflow.jobs ?? {};
+  if (
+    native?.needs !== 'build' ||
+    native?.env?.DEPOT_RELEASE_ARTIFACT !== '${{ github.workspace }}/candidate' ||
+    native?.env?.DEPOT_NATIVE_ARTIFACT !== '${{ github.workspace }}/native-candidate' ||
+    Object.hasOwn(native ?? {}, 'if') ||
+    JSON.stringify(native?.strategy?.matrix?.os) !==
+      JSON.stringify(['ubuntu-24.04', 'windows-2022']) ||
+    !native?.steps?.some(
+      (s) => s.run === 'npm run gate -- native-install' && !Object.hasOwn(s, 'if'),
+    ) ||
+    !native?.steps?.some(
+      (s) =>
+        s.uses?.startsWith('actions/upload-artifact@') &&
+        s.with?.name === 'native-${{ matrix.os }}' &&
+        s.with?.['if-no-files-found'] === 'error' &&
+        !Object.hasOwn(s, 'if'),
+    )
+  )
+    errors.push('Native packages require blocking installation acceptance before upload');
+  if (
+    !publish?.steps?.some(
+      (s) =>
+        s.uses?.startsWith('actions/download-artifact@') &&
+        s.with?.pattern === 'native-*' &&
+        s.with?.['merge-multiple'] === true &&
+        s.with?.path === 'artifacts/${{ inputs.version }}' &&
+        !s.with?.['run-id'] &&
+        !Object.hasOwn(s, 'if'),
+    )
+  )
+    errors.push('Publish requires tested native packages from this run');
   return errors;
 }

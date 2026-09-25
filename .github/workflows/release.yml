@@ -39,6 +39,7 @@ jobs:
           cache: npm
       - run: npm ci --ignore-scripts
       - run: npm run test:browser:install
+      - run: sudo apt-get update && sudo apt-get install -y rpm postgresql
       - run: npm run gate -- release
       - name: Package once after all release gates
         run: npm run release:package -- "$DEPOT_RELEASE_VERSION"
@@ -85,10 +86,48 @@ jobs:
       - name: Publish gate report
         if: ${{ always() }}
         run: node scripts/ci-report.mjs
+  native:
+    needs: build
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, windows-2022]
+    env:
+      DEPOT_RELEASE_ARTIFACT: ${{ github.workspace }}/candidate
+      DEPOT_NATIVE_ARTIFACT: ${{ github.workspace }}/native-candidate
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: '24'
+          cache: npm
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          name: release-candidate
+          path: candidate
+      - run: npm ci --ignore-scripts
+      - if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y rpm postgresql
+      - run: npm run gate -- native-install
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: native-${{ matrix.os }}
+          path: native-candidate/
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 0
+      - name: Publish gate report
+        if: ${{ always() }}
+        run: node scripts/ci-report.mjs
   publish:
     needs:
       - build
       - acceptance
+      - native
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
@@ -107,6 +146,11 @@ jobs:
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
         with:
           name: release-candidate
+          path: artifacts/${{ inputs.version }}
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          pattern: native-*
+          merge-multiple: true
           path: artifacts/${{ inputs.version }}
       - name: Verify and publish the tested bytes as a draft
         env:

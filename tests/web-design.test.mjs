@@ -85,7 +85,9 @@ test('both themes meet text contrast requirements and components use centralized
       assert((Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05) >= 4.5, `${fg} on ${bg}`);
     }
   }
-  const components = await readFile('apps/web/style.css', 'utf8');
+  const components =
+    (await readFile('apps/web/style.css', 'utf8')) +
+    (await readFile('apps/web/guides.css', 'utf8'));
   assert.doesNotMatch(components, /#[a-f\d]{3,8}\b|\b(?:rgb|hsl|oklch)\(/i);
   for (const match of components.matchAll(/var\((--[\w-]+)\)/g))
     assert(Object.hasOwn(light, match[1]), match[1]);

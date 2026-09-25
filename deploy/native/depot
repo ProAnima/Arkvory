@@ -1,0 +1,5 @@
+#!/bin/sh
+set -eu
+root=/opt/proanima-depot
+case "${1:-help}" in help|--help|-h) exec /usr/lib/proanima-depot/node /usr/lib/proanima-depot/depot-setup.mjs help ;; esac
+exec "$root/runtime/node" "$root/manage.mjs" "$@"

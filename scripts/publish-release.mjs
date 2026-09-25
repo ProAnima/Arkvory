@@ -3,6 +3,7 @@ import { createReadStream } from 'node:fs';
 import { stat } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
 import { releaseFiles, verifyReleaseFiles } from './release-files.mjs';
+import { nativeFiles, verifyNativeFiles } from './native-files.mjs';
 
 const version = process.env.DEPOT_RELEASE_VERSION;
 if (!/^(0|[1-9][0-9]{0,5})\.(0|[1-9][0-9]{0,5})\.(0|[1-9][0-9]{0,5})$/.test(version ?? ''))
@@ -16,7 +17,8 @@ const sha = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).tri
 if (sha !== process.env.GITHUB_SHA) throw Error('Checkout differs from tested workflow commit');
 const output = resolve('artifacts', version);
 // Publishing has write permission but never builds or executes the supplied application artifact.
-await verifyReleaseFiles(output, version, sha);
+await verifyReleaseFiles(output, version, sha, nativeFiles);
+await verifyNativeFiles(output, version, sha);
 const token = process.env.GH_TOKEN;
 if (!token) throw Error('Missing release token');
 async function request(url, options = {}) {
@@ -70,7 +72,7 @@ if (
   !release.upload_url.startsWith('https://uploads.github.com/repos/ProAnima/Depot/')
 )
   throw Error('Invalid asset upload URL');
-for (const name of [...releaseFiles, 'release-checksums.json']) {
+for (const name of [...releaseFiles, 'release-checksums.json', ...nativeFiles]) {
   const path = join(output, name);
   await request(release.upload_url.split('{')[0] + `?name=${encodeURIComponent(name)}`, {
     method: 'POST',

@@ -9,7 +9,8 @@
       "browser",
       "deployment",
       "deployment-services",
-      "deployment-containers"
+      "deployment-containers",
+      "native-install"
     ],
     "release": [
       "static",
@@ -21,7 +22,8 @@
       "large-multipart",
       "deployment",
       "deployment-services",
-      "deployment-containers"
+      "deployment-containers",
+      "native-install"
     ],
     "large": ["large-full", "large-multipart"]
   },
@@ -131,6 +133,18 @@
       "timeoutSeconds": 900,
       "entries": ["tests/deployment/containers.mjs"],
       "kind": "scenario"
+    },
+    "native-package": {
+      "needs": ["build"],
+      "timeoutSeconds": 1800,
+      "entries": ["tests/deployment/native-package.mjs"],
+      "kind": "scenario"
+    },
+    "native-install": {
+      "needs": ["native-package"],
+      "timeoutSeconds": 900,
+      "entries": ["tests/deployment/native-install.mjs"],
+      "kind": "scenario"
     }
   },
   "spawnedHelpers": ["tests/integration/api-child.mjs", "tests/deployment/service-child.mjs"],
@@ -142,7 +156,9 @@
     "browser",
     "deployment",
     "deployment-services",
-    "deployment-containers"
+    "deployment-containers",
+    "native-package",
+    "native-install"
   ],
   "releaseTasks": ["large-full", "large-multipart"]
 }

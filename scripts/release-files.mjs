@@ -17,7 +17,7 @@ export async function sha256(path) {
   for await (const chunk of createReadStream(path)) hash.update(chunk);
   return hash.digest('hex');
 }
-export async function verifyReleaseFiles(directory, version, commit) {
+export async function verifyReleaseFiles(directory, version, commit, additional = []) {
   const inventory = JSON.parse(await readFile(join(directory, 'release-checksums.json'), 'utf8'));
   if (inventory.version !== version || inventory.commit !== commit || inventory.format !== 1)
     throw Error('Release inventory identity mismatch');
@@ -27,7 +27,10 @@ export async function verifyReleaseFiles(directory, version, commit) {
   )
     throw Error('Release inventory must contain exactly the supported assets');
   const actual = (await readdir(directory)).sort();
-  if (JSON.stringify(actual) !== JSON.stringify([...releaseFiles, 'release-checksums.json'].sort()))
+  if (
+    JSON.stringify(actual) !==
+    JSON.stringify([...releaseFiles, 'release-checksums.json', ...additional].sort())
+  )
     throw Error('Unexpected or missing release assets');
   for (const name of releaseFiles) {
     const info = await lstat(join(directory, name));

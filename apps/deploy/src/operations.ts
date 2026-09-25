@@ -41,7 +41,7 @@ export async function install(root: string, options: Map<string, string>): Promi
   if (state.mode === 'windows' && process.platform !== 'win32')
     throw new Error('Windows service installation requires Windows');
   await stage(root, selected);
-  await initialize(root, state, options.get('config'));
+  await initialize(root, state, options.get('config'), options.get('database-bin'));
   await copyFile(
     join(root, 'releases', state.current.version, 'deploy/launcher.mjs'),
     join(root, 'launcher.mjs'),
