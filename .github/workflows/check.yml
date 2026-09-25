@@ -7,6 +7,8 @@ on:
   pull_request:
   merge_group:
     types: [checks_requested]
+  schedule:
+    - cron: '20 2 * * 1'
   workflow_dispatch:
     inputs:
       large_transfers:
@@ -29,7 +31,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [ubuntu-22.04, ubuntu-24.04, windows-2022, windows-2025]
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
@@ -39,9 +41,7 @@ jobs:
           node-version: '24'
           cache: npm
       - run: npm ci --ignore-scripts
-      - run: npm run gate -- quick
-      - run: npm run gate -- deployment
-      - run: npm run gate -- deployment-services
+      - run: npm run gate -- quick deployment deployment-services
       - name: Publish gate report to logs and job summary
         if: ${{ always() }}
         run: node scripts/ci-report.mjs
@@ -134,7 +134,7 @@ jobs:
 
   large:
     name: Release 5 GiB transfers
-    if: ${{ startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && inputs.large_transfers) }}
+    if: ${{ github.event_name == 'push' || github.event_name == 'merge_group' || github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.large_transfers) }}
     runs-on: ubuntu-latest
     timeout-minutes: 45
     services:
@@ -231,5 +231,5 @@ jobs:
       - name: Require every applicable gate to pass
         env:
           DEPOT_CI_NEEDS: ${{ toJSON(needs) }}
-          DEPOT_RELEASE_REQUIRED: ${{ startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && inputs.large_transfers) }}
+          DEPOT_RELEASE_REQUIRED: ${{ github.event_name == 'push' || github.event_name == 'merge_group' || github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.large_transfers) }}
         run: node scripts/ci-verdict.mjs

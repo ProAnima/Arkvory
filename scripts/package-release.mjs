@@ -17,6 +17,7 @@ import { pipeline } from 'node:stream/promises';
 import { createHash } from 'node:crypto';
 import { build } from 'esbuild';
 import { ZipFile } from 'yazl';
+import { packageInstallers } from './package-installers.mjs';
 
 const version = process.argv[2];
 if (!/^(0|[1-9][0-9]{0,5})\.(0|[1-9][0-9]{0,5})\.(0|[1-9][0-9]{0,5})$/.test(version ?? ''))
@@ -116,4 +117,5 @@ await writeFile(join(output, 'depot-release.json'), JSON.stringify(release, null
 });
 for (const name of ['install.sh', 'install.ps1'])
   await copyFile(join('deploy', name), join(output, name));
+await packageInstallers(output, staging, release);
 console.log(`Release ${version}: ${output}. Temporary dependency tree: ${staging}`);

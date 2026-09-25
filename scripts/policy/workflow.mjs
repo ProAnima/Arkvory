@@ -7,12 +7,17 @@ export function inspectWorkflow(text, registry) {
   const errors = [],
     workflow = parse(text),
     jobs = workflow.jobs;
-  for (const trigger of ['push', 'pull_request', 'merge_group', 'workflow_dispatch'])
+  for (const trigger of ['push', 'pull_request', 'merge_group', 'workflow_dispatch', 'schedule'])
     if (!Object.hasOwn(workflow.on, trigger)) errors.push(`CI missing trigger: ${trigger}`);
   if (Object.hasOwn(workflow.on, 'pull_request_target'))
     errors.push('CI must not execute untrusted changes with pull_request_target');
   if (workflow.permissions?.contents !== 'read' || Object.keys(workflow.permissions).length !== 1)
     errors.push('CI default token must be contents:read only');
+  if (
+    JSON.stringify(jobs.check?.strategy?.matrix?.os) !==
+    JSON.stringify(['ubuntu-22.04', 'ubuntu-24.04', 'windows-2022', 'windows-2025'])
+  )
+    errors.push('CI must cover all supported native platforms');
   for (const [name, job] of Object.entries(jobs)) {
     if (
       job.permissions &&
@@ -61,7 +66,10 @@ export function inspectWorkflow(text, registry) {
   ]) {
     if (
       !jobs[name]?.steps?.some(
-        (s) => s.run === `npm run gate -- ${profile}` && !Object.hasOwn(s, 'if'),
+        (s) =>
+          s.run?.startsWith('npm run gate -- ') &&
+          s.run.slice(16).split(' ').includes(profile) &&
+          !Object.hasOwn(s, 'if'),
       )
     )
       errors.push(`CI ${name} must execute gate ${profile}`);
@@ -89,9 +97,9 @@ function inspectCoverage(jobs, registry) {
     merge = new Set(planGates(registry, ['verify']));
   for (const [name, job] of Object.entries(jobs))
     for (const step of job.steps ?? []) {
-      const match = /^npm run gate -- ([a-z-]+)$/.exec(step.run ?? '');
+      const match = /^npm run gate -- ([a-z-]+(?: [a-z-]+)*)$/.exec(step.run ?? '');
       if (!match || Object.hasOwn(step, 'if')) continue;
-      for (const task of planGates(registry, [match[1]])) {
+      for (const task of planGates(registry, match[1].split(' '))) {
         executed.add(task);
         if (name !== 'large' && !merge.has(task))
           errors.push(`Mandatory CI gate missing from verify: ${task}`);
@@ -104,7 +112,7 @@ function inspectCoverage(jobs, registry) {
 
 function inspectVerdictWiring(jobs) {
   const release =
-    "${{ startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && inputs.large_transfers) }}";
+    "${{ github.event_name == 'push' || github.event_name == 'merge_group' || github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.large_transfers) }}";
   const errors = [];
   if (jobs.large?.if !== release)
     errors.push('Large transfers must run for every release tag/manual request');

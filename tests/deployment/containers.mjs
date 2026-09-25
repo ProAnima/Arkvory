@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import assert from 'node:assert/strict';
+import { verifyReleaseFiles } from '../../scripts/release-files.mjs';
 const run = (args) =>
   execFileSync('docker', args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'inherit'] }).trim();
 run(['info']);
@@ -15,24 +16,33 @@ for (const args of [
     throw Error('Deployment container gate requires an unused proanima-depot project');
 }
 const temporary = await mkdtemp(join(tmpdir(), 'depot-container-gate-'));
-const artifact = join(temporary, 'artifact');
+const artifact = process.env.DEPOT_RELEASE_ARTIFACT ?? join(temporary, 'artifact');
 const root = join(temporary, 'install');
-execFileSync(
-  process.execPath,
-  [process.env.npm_execpath, 'run', 'release:package', '--', '0.0.1', artifact],
-  { stdio: 'inherit' },
-);
-const manage = (args) =>
+if (!process.env.DEPOT_RELEASE_ARTIFACT)
   execFileSync(
     process.execPath,
-    [
-      args[0] === 'install' ? join(artifact, 'depot-setup.mjs') : join(root, 'manage.mjs'),
-      ...args,
-      '--root',
-      root,
-    ],
+    [process.env.npm_execpath, 'run', 'release:package', '--', '0.0.1', artifact],
     { stdio: 'inherit' },
   );
+const manifest = JSON.parse(await readFile(join(artifact, 'depot-release.json'), 'utf8'));
+await verifyReleaseFiles(
+  artifact,
+  manifest.version,
+  execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),
+);
+const nextVersion = manifest.version.replace(/\d+$/, (patch) => String(Number(patch) + 1));
+const bundle = join(temporary, 'Linux installer with spaces');
+await mkdir(bundle);
+execFileSync('tar', ['-xzf', join(artifact, 'Depot-Linux.tar.gz'), '-C', bundle]);
+const manage = (args) =>
+  args[0] === 'install'
+    ? execFileSync('bash', [join(bundle, 'install.sh'), '--mode', 'compose'], {
+        env: { ...process.env, DEPOT_INSTALL_ROOT: root, DEPOT_ARTIFACT_DIR: bundle },
+        stdio: 'inherit',
+      })
+    : execFileSync(process.execPath, [join(root, 'manage.mjs'), ...args, '--root', root], {
+        stdio: 'inherit',
+      });
 const compose = [
   'compose',
   '--project-name',
@@ -42,7 +52,7 @@ const compose = [
   '--env-file',
   join(root, 'config/compose.env'),
   '-f',
-  join(root, 'releases/0.0.1/deploy/compose.yml'),
+  join(root, 'releases', manifest.version, 'deploy/compose.yml'),
 ];
 async function ready() {
   for (let attempt = 0; attempt < 60; attempt++) {
@@ -91,10 +101,9 @@ try {
   const next = join(temporary, 'next');
   await mkdir(next);
   await copyFile(join(artifact, 'depot-runtime.zip'), join(next, 'depot-runtime.zip'));
-  const manifest = JSON.parse(await readFile(join(artifact, 'depot-release.json'), 'utf8'));
   await writeFile(
     join(next, 'depot-release.json'),
-    JSON.stringify({ ...manifest, version: '0.0.2' }),
+    JSON.stringify({ ...manifest, version: nextVersion }),
   );
   manage(['update', '--artifact', next]);
   assert.equal(
@@ -111,7 +120,7 @@ try {
   );
   assert.equal(
     JSON.parse(await readFile(join(root, 'installation.json'), 'utf8')).current.version,
-    '0.0.2',
+    nextVersion,
   );
   console.log('Container install, migrations, crash restart and persistent-volume update passed');
 } catch (error) {

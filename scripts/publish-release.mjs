@@ -2,6 +2,7 @@ import { execFileSync } from 'node:child_process';
 import { createReadStream } from 'node:fs';
 import { stat } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
+import { releaseFiles, verifyReleaseFiles } from './release-files.mjs';
 
 const version = process.env.DEPOT_RELEASE_VERSION;
 if (!/^(0|[1-9][0-9]{0,5})\.(0|[1-9][0-9]{0,5})\.(0|[1-9][0-9]{0,5})$/.test(version ?? ''))
@@ -14,12 +15,8 @@ if (
 const sha = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
 if (sha !== process.env.GITHUB_SHA) throw Error('Checkout differs from tested workflow commit');
 const output = resolve('artifacts', version);
-// Invoke npm to preserve the packaging environment; the workflow already ran every release gate.
-execFileSync(
-  process.platform === 'win32' ? 'npm.cmd' : 'npm',
-  ['run', 'release:package', '--', version, output],
-  { stdio: 'inherit', shell: false },
-);
+// Publishing has write permission but never builds or executes the supplied application artifact.
+await verifyReleaseFiles(output, version, sha);
 const token = process.env.GH_TOKEN;
 if (!token) throw Error('Missing release token');
 async function request(url, options = {}) {
@@ -73,13 +70,7 @@ if (
   !release.upload_url.startsWith('https://uploads.github.com/repos/ProAnima/Depot/')
 )
   throw Error('Invalid asset upload URL');
-for (const name of [
-  'depot-runtime.zip',
-  'depot-setup.mjs',
-  'depot-release.json',
-  'install.sh',
-  'install.ps1',
-]) {
+for (const name of [...releaseFiles, 'release-checksums.json']) {
   const path = join(output, name);
   await request(release.upload_url.split('{')[0] + `?name=${encodeURIComponent(name)}`, {
     method: 'POST',

@@ -154,16 +154,22 @@ test('test inventory reaches imported helpers but rejects an orphan or empty sui
 
 test('aggregate cannot accept missing, failed, cancelled or skipped mandatory jobs', () => {
   const needs = Object.fromEntries(
-    ['check', 'integration', 'browser', 'security', 'large'].map((name) => [
-      name,
-      { result: 'success' },
-    ]),
+    ['check', 'integration', 'browser', 'security', 'large', 'deployment-containers'].map(
+      (name) => [name, { result: 'success' }],
+    ),
   );
   assert.deepEqual(ciVerdict(needs, true), []);
   assert.deepEqual(ciVerdict({ ...needs, newAdapter: { result: 'success' } }, true), []);
   assert.ok(ciVerdict({ ...needs, newAdapter: { result: 'failure' } }, true).length);
   assert.ok(ciVerdict({ ...needs, newAdapter: { result: 'skipped' } }, false).length);
-  for (const name of ['check', 'integration', 'browser', 'security', 'large']) {
+  for (const name of [
+    'check',
+    'integration',
+    'browser',
+    'security',
+    'large',
+    'deployment-containers',
+  ]) {
     for (const result of ['failure', 'cancelled', 'skipped'])
       assert.ok(ciVerdict({ ...needs, [name]: { result } }, true).length);
     assert.ok(ciVerdict({ ...needs, [name]: undefined }, true).length);

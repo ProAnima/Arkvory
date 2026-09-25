@@ -1,7 +1,7 @@
 param([string]$Root = 'C:\ProgramData\ProAnima\Depot', [string]$Version = '',
     [ValidateSet('windows','compose')][string]$Mode = 'windows',
     [ValidateSet('docker','podman')][string]$Engine = 'docker',
-    [string]$Config = '', [switch]$AutomaticUpdates, [switch]$Pin)
+    [string]$Config = '', [string]$Artifact = '', [switch]$AutomaticUpdates, [switch]$Pin)
 $ErrorActionPreference = 'Stop'
 $admin = [Security.Principal.WindowsPrincipal]::new([Security.Principal.WindowsIdentity]::GetCurrent())
 if (-not $admin.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) { throw 'Run installer as Administrator' }
@@ -27,6 +27,13 @@ if (-not (Test-Path -LiteralPath $node)) {
     $node = Join-Path $Root 'runtime/node-v24.21.0-win-x64/node.exe'
 }
 if ($Version -and $Version -notmatch '^(0|[1-9][0-9]{0,5})\.(0|[1-9][0-9]{0,5})\.(0|[1-9][0-9]{0,5})$') { throw 'Invalid stable version' }
+if ($Artifact) {
+    $Artifact = [IO.Path]::GetFullPath($Artifact)
+    $manifest = Get-Content -LiteralPath (Join-Path $Artifact 'depot-release.json') -Raw | ConvertFrom-Json
+    if ($manifest.version -notmatch '^(0|[1-9][0-9]{0,5})\.(0|[1-9][0-9]{0,5})\.(0|[1-9][0-9]{0,5})$') { throw 'Invalid artifact version' }
+    $setup = Join-Path $Artifact 'depot-setup.mjs'
+    if ((Get-FileHash $setup -Algorithm SHA256).Hash -ne $manifest.setupSha256) { throw 'Installer checksum mismatch' }
+} else {
 # Use HttpClient with redirects disabled so a private GitHub token cannot leak to a CDN.
 Add-Type -AssemblyName System.Net.Http
 $handler = [Net.Http.HttpClientHandler]::new()
@@ -66,7 +73,9 @@ if ($release.tag_name -ne ('v' + $manifest.version)) { throw 'Tag mismatch' }
 $setup = Join-Path $work 'depot-setup.mjs'
 [IO.File]::WriteAllBytes($setup,(Get-Asset (($release.assets | Where-Object name -eq 'depot-setup.mjs').url) $true))
 if ((Get-FileHash $setup -Algorithm SHA256).Hash -ne $manifest.setupSha256) { throw 'Installer checksum mismatch' }
+}
 $options = @('--mode', $Mode, '--engine', $Engine)
+if ($Artifact) { $options += @('--artifact', $Artifact) }
 if ($Version) { $options += @('--version', $Version) }
 if ($AutomaticUpdates) { $options += '--automatic' }
 if ($Pin) { $options += '--pin' }

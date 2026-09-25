@@ -301,4 +301,6 @@ Automatic retention keeps the last N registered UPack builds per package/channel
 
 ### Installation and stable updates
 
+The **Depot-Windows.zip** and **Depot-Linux.tar.gz** bundles include Depot and launchers: double-click on Windows/Linux desktops, a separate Docker launcher, or one command on headless Linux. Setup requests OS privileges and required configuration; launching a newer bundle updates the installation. Initial bundle installation needs no GitHub token; Node.js/WinSW are downloaded separately. Release artifacts are accepted on four operating systems and published without rebuilding.
+
 Release-based installers support Linux/systemd, Windows desktop/Server and Docker Compose with bundled PostgreSQL. They keep configuration and data outside versioned code, supervise API/worker restarts and offer opt-in stable GitHub Release updates, pinning, checksum verification and same-schema rollback. Native database provisioning and external HTTPS remain operator-managed. The release workflow prepares a draft after all release gates; a published release is required for network installation. [Installation, recovery and platform requirements](deploy/README.md).

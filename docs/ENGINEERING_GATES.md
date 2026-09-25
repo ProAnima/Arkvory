@@ -42,7 +42,7 @@ Node.js 24, npm 11. Установка: npm ci --ignore-scripts.
 
 ## CI и merge
 
-Required check для main: Depot merge gate. Он проверяет quality на двух ОС, integration, browser, security; large допускает skipped только вне релизной проверки. Публикация v-тега не является публикацией релиза/артефакта: выпуск допустим только после зелёного release verdict на том же commit. Настройки branch protection живут в GitHub и проверяются отдельно от YAML.
+Required check для main: Depot merge gate. Он проверяет quality на Ubuntu 22.04/24.04 и Windows Server 2022/2025, integration, browser, security и deployment-containers. Missing/failed/cancelled/skipped любого обязательного задания блокирует итог, включая отсутствие контейнерной lane. Большие передачи обязательны для main push, v-тегов, merge queue и еженедельной проверки (понедельник 02:20 UTC); ручной запуск поддерживает large_transfers. Обычный PR может пропустить только large. Публикация v-тега не является публикацией релиза/артефакта. Настройки branch protection живут в GitHub и проверяются отдельно от YAML.
 
 На 2026-09-25 API GitHub для закрытого ProAnima/Depot возвращает 403 на branch protection и rulesets с требованием GitHub Pro. Поэтому запрет merge через настройки сервера пока недоступен; зелёный Depot merge gate — обязательное правило процесса. После включения подходящего тарифа назначить его required status для main и требовать актуальную ветку. Публичность проприетарного репозитория ради обхода ограничения менять нельзя.
 
@@ -51,3 +51,7 @@ Required check для main: Depot merge gate. Он проверяет quality н
 ## Проверки поставки и служб
 
 В verify/release обязательны deployment (переносимый production artifact), deployment-services (реальный restart двух изолированных служб после crash, Linux/systemd + sudo либо Windows Administrator) и deployment-containers (настоящий Docker install/update с сохранением volume). Quality CI запускает упаковку и службы на Windows/Linux, отдельная обязательная lane проверяет контейнеры. Локально отсутствующие права/движок — непройденный gate; нельзя выдавать quick за полный verify. Подробности и ограничения: [развёртывание](../deploy/README.md).
+
+Quality вызывается одной командой `npm run gate -- quick deployment deployment-services`: общие зависимости выполняются один раз, отчёт охватывает весь набор. Deployment проверяет также целостность содержимого двух установочных комплектов, синтаксис PowerShell/Bash и Linux desktop launchers с пробелами/URI в пути. Для проверки пакетов нужны tar, Bash и PowerShell (pwsh на Linux; Windows PowerShell 5 и Git Bash на Windows); они установлены на указанных CI runners. Контейнерная приёмка запускает install.sh из распакованного комплекта, включая загрузку проверенного Node.js.
+
+Release workflow разделён на read-only build, read-only acceptance четырёх ОС и отдельный publish с contents:write. Candidate собирается один раз; `DEPOT_RELEASE_ARTIFACT` указывает гейтам проверять переданный артефакт вместо новой сборки. Publisher проверяет полный manifest хешей и тот же commit, не устанавливает зависимости и не исполняет candidate. Квота Actions artifacts необходима для передачи между jobs: при её исчерпании выпуск блокируется. Обычные диагностические архивы CI по-прежнему включаются через DEPOT_UPLOAD_ARTIFACTS; отчёты всегда остаются в логах/summary. [ADR 0032](adr/0032-tested-release-bundles.md).

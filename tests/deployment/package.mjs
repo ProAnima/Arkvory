@@ -5,20 +5,31 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { source, stage } from '../../apps/deploy/dist/staging.js';
+import { verifyReleaseFiles } from '../../scripts/release-files.mjs';
+import { verifyInstallers } from '../../scripts/verify-installers.mjs';
+import { extractArchive } from '../../apps/deploy/dist/archive.js';
 
 const root = await mkdtemp(join(tmpdir(), 'depot-package-gate-'));
-const output = join(root, 'artifact');
+const output = process.env.DEPOT_RELEASE_ARTIFACT ?? join(root, 'artifact');
 assert.ok(process.env.npm_execpath, 'Run through npm gate');
-execFileSync(
-  process.execPath,
-  [process.env.npm_execpath, 'run', 'release:package', '--', '0.0.1', output],
-  { stdio: 'inherit' },
+if (!process.env.DEPOT_RELEASE_ARTIFACT)
+  execFileSync(
+    process.execPath,
+    [process.env.npm_execpath, 'run', 'release:package', '--', '0.0.1', output],
+    { stdio: 'inherit' },
+  );
+const release = JSON.parse(await readFile(join(output, 'depot-release.json'), 'utf8'));
+await verifyReleaseFiles(
+  output,
+  release.version,
+  execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),
 );
+await verifyInstallers(output, root, extractArchive);
 const target = join(root, 'installation');
 const selected = await source(target, null, output);
 await stage(target, selected);
 await stage(target, selected);
-const runtime = join(target, 'releases/0.0.1');
+const runtime = join(target, 'releases', release.version);
 // Import in a separate process so resolution cannot reuse any workspace dependencies from the test process.
 const server = pathToFileURL(join(runtime, 'apps/api/dist/server.js')).href;
 const code = `const module=await import(${JSON.stringify(server)}); if(typeof module.createServer!=='function') throw Error('Missing server');`;
@@ -42,7 +53,10 @@ execFileSync(process.execPath, [join(output, 'depot-setup.mjs'), 'status', '--ro
   cwd: root,
   stdio: 'inherit',
 });
-assert.equal(JSON.parse(await readFile(join(runtime, 'release.json'), 'utf8')).version, '0.0.1');
+assert.equal(
+  JSON.parse(await readFile(join(runtime, 'release.json'), 'utf8')).version,
+  release.version,
+);
 console.log(
   'Portable release packaging, extraction, standalone bootstrap and production dependency resolution passed',
 );

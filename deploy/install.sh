@@ -22,6 +22,16 @@ if [[ -z "$node" ]]; then
   node="$root/runtime/node-v24.21.0-linux-$arch/bin/node"
   chmod -R a+rX "$root/runtime"
 fi
+if [[ -n "${DEPOT_ARTIFACT_DIR:-}" ]]; then
+  python3 - "$DEPOT_ARTIFACT_DIR" "$work" <<'PY'
+import hashlib, json, pathlib, sys
+artifact, work = map(pathlib.Path, sys.argv[1:])
+manifest = json.loads((artifact/'depot-release.json').read_text())
+setup = (artifact/'depot-setup.mjs').read_bytes()
+if hashlib.sha256(setup).hexdigest() != manifest['setupSha256']: raise RuntimeError('Installer checksum mismatch')
+(work/'depot-setup.mjs').write_bytes(setup)
+PY
+else
 # urllib deliberately removes Authorization when GitHub redirects a private asset to another origin.
 python3 - "$root" "$work" "${DEPOT_RELEASE_VERSION:-}" <<'PY'
 import hashlib, json, pathlib, re, sys, urllib.request
@@ -55,7 +65,9 @@ setup=get(assets['depot-setup.mjs'],True)
 if hashlib.sha256(setup).hexdigest()!=manifest['setupSha256']: raise RuntimeError('Installer checksum mismatch')
 (work/'depot-setup.mjs').write_bytes(setup)
 PY
+fi
 options=("$@")
+[[ -n "${DEPOT_ARTIFACT_DIR:-}" ]] && options+=(--artifact "$DEPOT_ARTIFACT_DIR")
 needs_database=true
 for option in "$@"; do
   [[ "$option" == compose || "$option" == --config ]] && needs_database=false

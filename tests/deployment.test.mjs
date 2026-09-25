@@ -218,13 +218,20 @@ test('stale lock fails closed without taking ownership from another updater', as
 test('release publishing stays manual, trusted-main-only and behind all release gates', async () => {
   const workflow = parse(await readFile('.github/workflows/release.yml', 'utf8'));
   assert.deepEqual(Object.keys(workflow.on), ['workflow_dispatch']);
-  assert.equal(workflow.jobs.release.if, "github.ref == 'refs/heads/main'");
-  const steps = workflow.jobs.release.steps;
+  assert.equal(workflow.jobs.build.if, "github.ref == 'refs/heads/main'");
+  assert.equal(workflow.permissions.contents, 'read');
+  assert.equal(workflow.jobs.build.permissions, undefined);
+  assert.equal(workflow.jobs.acceptance.permissions, undefined);
+  assert.deepEqual(workflow.jobs.publish.needs, ['build', 'acceptance']);
+  assert.equal(workflow.jobs.publish.permissions.contents, 'write');
+  const steps = workflow.jobs.build.steps;
   const gate = steps.findIndex((step) => step.run === 'npm run gate -- release');
-  const publish = steps.findIndex((step) => step.run === 'node scripts/publish-release.mjs');
-  assert.ok(gate >= 0 && publish > gate);
+  const upload = steps.findIndex((step) => step.uses?.startsWith('actions/upload-artifact@'));
+  assert.ok(gate >= 0 && upload > gate);
   assert.ok(steps.every((step) => !step['continue-on-error']));
   const publisher = await readFile('scripts/publish-release.mjs', 'utf8');
   assert.ok(publisher.includes('draft: true'));
   assert.ok(publisher.includes('run.head_sha === sha'));
+  assert.ok(publisher.includes('verifyReleaseFiles(output, version, sha)'));
+  assert.ok(!publisher.includes('release:package'));
 });

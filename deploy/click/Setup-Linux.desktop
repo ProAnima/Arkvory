@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Install ProAnima Depot
+Name[ru]=Установить ProAnima Depot
+Comment=Native Linux installation or update
+Exec=python3 -c "import os,sys,urllib.parse; p=urllib.parse.urlparse(sys.argv[1]); f=urllib.parse.unquote(p.path) if p.scheme == 'file' else sys.argv[1]; os.execlp('bash','bash',os.path.join(os.path.dirname(os.path.abspath(f)),'setup.sh'),sys.argv[2])" %k systemd
+Terminal=true
+Icon=system-software-install
+Categories=System;

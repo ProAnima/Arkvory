@@ -12,13 +12,10 @@ concurrency:
   group: depot-release
   cancel-in-progress: false
 jobs:
-  release:
+  build:
     if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
-    permissions:
-      contents: write
-      actions: read
     services:
       postgres:
         image: postgres:18.4
@@ -26,28 +23,92 @@ jobs:
           POSTGRES_USER: depot_test
           POSTGRES_PASSWORD: depot_test
           POSTGRES_DB: depot_test
-        ports: ['5432:5432']
-        options: >-
-          --health-cmd "pg_isready -U depot_test -d depot_test"
-          --health-interval 3s --health-timeout 3s --health-retries 20
+        ports:
+          - 5432:5432
+        options: --health-cmd "pg_isready -U depot_test -d depot_test" --health-interval 3s --health-timeout 3s --health-retries 20
     env:
       DEPOT_TEST_DATABASE_URL: postgresql://depot_test:depot_test@127.0.0.1:5432/depot_test
       DEPOT_RELEASE_VERSION: ${{ inputs.version }}
     steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
         with:
           persist-credentials: false
-      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
         with:
           node-version: '24'
           cache: npm
       - run: npm ci --ignore-scripts
       - run: npm run test:browser:install
       - run: npm run gate -- release
-      - name: Build and upload draft after all gates
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: node scripts/publish-release.mjs
+      - name: Package once after all release gates
+        run: npm run release:package -- "$DEPOT_RELEASE_VERSION"
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: release-candidate
+          path: artifacts/${{ inputs.version }}/
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 0
       - name: Publish gate report
         if: ${{ always() }}
         run: node scripts/ci-report.mjs
+  acceptance:
+    needs: build
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-22.04
+          - ubuntu-24.04
+          - windows-2022
+          - windows-2025
+    env:
+      DEPOT_RELEASE_ARTIFACT: ${{ github.workspace }}/candidate
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: '24'
+          cache: npm
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          name: release-candidate
+          path: candidate
+      - run: npm ci --ignore-scripts
+      - run: npm run gate -- deployment deployment-services
+      - if: runner.os == 'Linux'
+        run: npm run gate -- deployment-containers
+      - name: Publish gate report
+        if: ${{ always() }}
+        run: node scripts/ci-report.mjs
+  publish:
+    needs:
+      - build
+      - acceptance
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      actions: read
+    env:
+      DEPOT_RELEASE_VERSION: ${{ inputs.version }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: '24'
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          name: release-candidate
+          path: artifacts/${{ inputs.version }}
+      - name: Verify and publish the tested bytes as a draft
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/publish-release.mjs
