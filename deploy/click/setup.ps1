@@ -15,8 +15,8 @@ try {
     }
     Write-Host (Say 'ProAnima Depot setup' 'Установка ProAnima Depot')
     if ($Mode -eq 'compose') {
-        & docker info --format '{{.OSType}}' | Out-Null
-        if ($LASTEXITCODE -ne 0) { throw (Say 'Start Docker with Linux containers, then launch setup again.' 'Запустите Docker с Linux-контейнерами и повторите установку.') }
+        $containerOS = & docker info --format '{{.OSType}}'
+        if ($LASTEXITCODE -ne 0 -or $containerOS -ne 'linux') { throw (Say 'Start Docker with Linux containers, then launch setup again.' 'Запустите Docker с Linux-контейнерами и повторите установку.') }
         & docker compose version | Out-Null
         if ($LASTEXITCODE -ne 0) { throw 'Docker Compose v2 is required' }
     }
