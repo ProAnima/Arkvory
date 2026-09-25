@@ -62,6 +62,8 @@ en.InstallFailed=Depot configuration did not finish. Your data has been preserve
 ru.InstallFailed=Настройка Depot не завершена. Данные сохранены. Проверьте журнал установки и журналы службы базы перед повтором.
 en.Configuring=Preparing the database, services and owner account…
 ru.Configuring=Подготовка базы, служб и учётной записи владельца…
+en.RuntimeReboot=Microsoft runtime requires a restart. Restart Windows and run Setup again; your existing Depot data has been preserved.
+ru.RuntimeReboot=Компонент Microsoft требует перезагрузки. Перезагрузите Windows и запустите установщик снова; существующие данные Depot сохранены.
 
 [Files]
 Source: "{#Payload}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
@@ -126,7 +128,9 @@ procedure CurStepChanged(CurStep: TSetupStep);
 var Code: Integer; Args, OwnerFile: String;
 begin
   if CurStep <> ssPostInstall then Exit;
-  if not Exec(ExpandConstant('{sys}\WindowsPowerShell\v1.0\powershell.exe'), '-NoProfile -NonInteractive -ExecutionPolicy Bypass -File "' + ExpandConstant('{app}\prepare.ps1') + '" -Root "' + DataRoot + '" -Payload "' + ExpandConstant('{app}') + '"', '', SW_HIDE, ewWaitUntilTerminated, Code) or (Code <> 0) then RaiseException(CustomMessage('InstallFailed'));
+  if not Exec(ExpandConstant('{sys}\WindowsPowerShell\v1.0\powershell.exe'), '-NoProfile -NonInteractive -ExecutionPolicy Bypass -File "' + ExpandConstant('{app}\prepare.ps1') + '" -Root "' + DataRoot + '" -Payload "' + ExpandConstant('{app}') + '"', '', SW_HIDE, ewWaitUntilTerminated, Code) then RaiseException(CustomMessage('InstallFailed'));
+  if Code = 3010 then RaiseException(CustomMessage('RuntimeReboot'));
+  if Code <> 0 then RaiseException(CustomMessage('InstallFailed'));
   Args := '-NoProfile -NonInteractive -ExecutionPolicy Bypass -File "' + ExpandConstant('{app}\apply.ps1') + '" -Root "' + DataRoot + '" -Payload "' + ExpandConstant('{app}') + '"';
   if not FileExists(DataRoot + '\installation.json') then begin
     // Silent deployment supplies an ACL-protected JSON file, never a password argument.

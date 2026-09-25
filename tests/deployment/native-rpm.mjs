@@ -27,7 +27,8 @@ export async function exerciseRpm(output) {
       '--name',
       name,
       '--privileged',
-      '--cgroupns=private',
+      // A host cgroup mount must use the matching namespace for systemd's unit hierarchy.
+      '--cgroupns=host',
       '--tmpfs',
       '/run',
       '--tmpfs',
@@ -82,21 +83,24 @@ export async function exerciseRpm(output) {
       'Fedora 44 RPM: dependency installation, readiness, reinstall and retained data passed',
     );
   } catch (error) {
-    if (created)
-      console.error(
-        run([
-          'exec',
-          name,
-          'journalctl',
-          '-u',
-          'depot-database',
-          '-u',
-          'depot-api',
-          '-n',
-          '60',
-          '--no-pager',
-        ]),
-      );
+    if (created) {
+      console.error(run(['logs', name]));
+      if (run(['inspect', '--format', '{{.State.Running}}', name]) === 'true')
+        console.error(
+          run([
+            'exec',
+            name,
+            'journalctl',
+            '-u',
+            'depot-database',
+            '-u',
+            'depot-api',
+            '-n',
+            '60',
+            '--no-pager',
+          ]),
+        );
+    }
     throw error;
   } finally {
     if (created) run(['rm', '-f', name]);

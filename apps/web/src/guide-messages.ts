@@ -1,4 +1,6 @@
 export const guideEnglish = {
+  welcomePartial:
+    'The owner account exists. Sign in and finish repository permissions in Access groups; account creation must not be repeated.',
   onboarding: 'Welcome to Depot',
   onboardingSubtitle: 'A clear path from installation to your first delivery.',
   help: 'API & CLI',
@@ -42,6 +44,8 @@ export const guideEnglish = {
     'Read capabilities → discover repositories → create upload with an idempotency key → resume parts → complete → poll readiness → download using Range and ETag. Never blindly retry a non-idempotent write.',
 };
 export const guideRussian: Record<keyof typeof guideEnglish, string> = {
+  welcomePartial:
+    'Владелец создан. Войдите и завершите выдачу прав в группах доступа; повторно создавать владельца не нужно.',
   onboarding: 'Добро пожаловать в Depot',
   onboardingSubtitle: 'От установки до первой раздачи — по понятным шагам.',
   help: 'API и CLI',

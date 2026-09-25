@@ -3,7 +3,7 @@ set -eu
 root=/opt/proanima-depot
 payload=/usr/lib/proanima-depot
 mkdir -p "$root/runtime"
-chmod 0700 "$root"
+if [ ! -f "$root/installation.json" ]; then chmod 0700 "$root"; fi
 if [ ! -f "$root/runtime/node" ]; then install -m 0755 "$payload/node" "$root/runtime/node"; fi
 if [ -f "$root/installation.json" ]; then
   "$root/runtime/node" "$payload/depot-setup.mjs" apply-installer --root "$root" --artifact "$payload"

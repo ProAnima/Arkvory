@@ -40,6 +40,37 @@ export async function createOwner(root: string, path: string): Promise<void> {
     throw new Error(
       `Owner creation failed (${String(response.status)}); use the recovery credential`,
     );
+  const owner = record(await response.json());
+  if (typeof owner['id'] !== 'string') throw new Error('Invalid owner response');
+  await grantInitialRepository(base, options.headers, owner['id']);
   // The bootstrap key remains an offline recovery credential; never hand it to the browser automatically.
   await unlink(path);
+}
+
+async function grantInitialRepository(
+  base: string,
+  headers: Record<string, string>,
+  userId: string,
+): Promise<void> {
+  const call = async (path: string, method: string, body?: unknown): Promise<Response> => {
+    const response = await fetch(base + path, {
+      method,
+      headers,
+      redirect: 'error',
+      signal: AbortSignal.timeout(15000),
+      ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+    });
+    if (!response.ok)
+      throw new Error(
+        'Owner exists, but initial repository access needs recovery through Access groups',
+      );
+    return response;
+  };
+  const group = record(
+    await (await call('access-groups', 'POST', { name: 'depot-owners' })).json(),
+  );
+  if (typeof group['id'] !== 'string') throw new Error('Invalid owner group response');
+  const path = `access-groups/${encodeURIComponent(group['id'])}`;
+  await call(`${path}/grants/releases`, 'PUT', { access: 'write' });
+  await call(`${path}/members/${encodeURIComponent(userId)}`, 'PUT', {});
 }

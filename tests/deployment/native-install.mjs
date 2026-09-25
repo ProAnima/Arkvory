@@ -33,7 +33,8 @@ await assert.rejects(
 const env = Object.fromEntries(
   Object.entries(process.env).filter(([key]) => key.toLowerCase() !== 'psmodulepath'),
 );
-const run = (file, args) => execFileSync(file, args, { env, stdio: 'inherit', windowsHide: true });
+const run = (file, args) =>
+  execFileSync(file, args, { env, stdio: 'inherit', windowsHide: true, timeout: 300000 });
 const read = (path) =>
   windows
     ? readFile(path, 'utf8')
@@ -68,6 +69,14 @@ try {
       body: JSON.stringify({ name: 'native-owner', password }),
     });
     assert.equal(login.status, 200);
+    const session = await login.json();
+    const identity = await fetch('http://127.0.0.1:8080/api/v1/auth/me', {
+      headers: { Authorization: `Bearer ${session.token}` },
+    });
+    assert.equal(identity.status, 200);
+    assert.deepEqual((await identity.json()).grants, [
+      { repository: 'releases', permissions: ['read', 'write'] },
+    ]);
     await assert.rejects(access(ownerFile), /ENOENT/, 'Consumed password file must be deleted');
   }
   const configuration = JSON.parse(await read(join(root, 'config/runtime.json')));
@@ -101,6 +110,11 @@ try {
   console.log(`Native installation ready in ${Math.round((Date.now() - started) / 1000)} seconds`);
 } catch (error) {
   if (windows) {
+    try {
+      console.error((await readFile(join(temporary, 'setup.log'), 'utf8')).slice(-12000));
+    } catch (failure) {
+      if (failure.code !== 'ENOENT') console.error('Cannot read setup diagnostic');
+    }
     for (const name of [
       'bootstrap.log',
       'database/depot-database.err.log',

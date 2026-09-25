@@ -29,6 +29,10 @@ test('installer creates a real owner, consumes the private password file and ref
   const client = new DepotClient(base, () => '');
   const session = await client.login('installer-owner', 'test-owner-password-123');
   assert.equal(session.account.administrator, true);
+  const owned = new DepotClient(base, () => session.token);
+  assert.deepEqual((await owned.me()).grants, [
+    { repository: 'releases', permissions: ['read', 'write'] },
+  ]);
   await writeFile(
     passwordFile,
     JSON.stringify({ name: 'replacement', password: 'other-password-123' }),

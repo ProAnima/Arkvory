@@ -9,4 +9,4 @@ if (-not (Test-Path -LiteralPath (Join-Path $Root 'installation.json'))) {
 }
 $vc = Start-Process -FilePath (Join-Path $Payload 'vc_redist.x64.exe') -ArgumentList '/install','/quiet','/norestart' -WindowStyle Hidden -Wait -PassThru
 if ($vc.ExitCode -notin @(0,1638,3010)) { throw 'Microsoft runtime installation failed' }
-if ($vc.ExitCode -eq 3010) { throw 'Microsoft runtime requires a reboot. Restart Windows and run Setup again.' }
+if ($vc.ExitCode -eq 3010) { exit 3010 }

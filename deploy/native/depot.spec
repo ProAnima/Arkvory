@@ -8,6 +8,9 @@ Requires: postgresql-server >= 16
 Requires: systemd
 Requires: python3
 Requires: ca-certificates
+Requires: glibc >= 2.28
+Requires: libstdc++
+Requires: libatomic
 AutoReqProv: no
 %global debug_package %{nil}
 

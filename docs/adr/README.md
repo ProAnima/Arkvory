@@ -35,3 +35,12 @@ ADR нужен для изменения границ, публичных кон
 - [0023 — Области API и каталог применимых операций](0023-api-surfaces-and-operation-discovery.md)
 
 - [0024 — Именованные вложения к опубликованной сборке](0024-build-attachments.md)
+- [0025 — Удаление артефактов и удержание](0025-artifact-retention.md)
+- [0026 — Автоочистка, квоты и диагностика](0026-storage-retention-quotas-diagnostics.md)
+- [0027 — Исполняемые инженерные гейты](0027-executable-engineering-gates.md)
+- [0028 — Композиция SDK](0028-sdk-composition.md)
+- [0029 — Время жизни загрузок и точное чтение](0029-upload-lifetime-and-exact-reads.md)
+- [0030 — Композиция API-сервера](0030-api-server-composition.md)
+- [0031 — Установка релизов и службы](0031-release-installation-and-supervision.md)
+- [0032 — Проверенные релизные комплекты](0032-tested-release-bundles.md)
+- [0033 — Нативные установщики и знакомство с Depot](0033-native-installers-and-guided-setup.md)

@@ -141,6 +141,8 @@ try {
   releaseUpload();
   await page.locator('#transfer-status[data-tone=success]').waitFor();
   await page.unroute('**/uploads/*/parts/0');
+  // Publication succeeds before the catalog refresh releases the connection controls.
+  await page.waitForFunction(() => !document.querySelector('#login-name').disabled);
   assert.equal(await page.locator('#login-name').isEnabled(), true);
   // Appearance changes and navigation must preserve unsaved form fields.
   await go('metadata');

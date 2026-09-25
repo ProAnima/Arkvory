@@ -123,7 +123,14 @@ function installOwnerForm(base: string) {
     const client = new DepotClient(base, () => credential);
     void (async () => {
       if ((await client.users()).length > 0) throw new UiError('errorConflict');
-      await client.createUser(desiredName, desiredPassword, true);
+      const owner = await client.createUser(desiredName, desiredPassword, true);
+      try {
+        const group = await client.createAccessGroup('depot-owners');
+        await client.setGroupGrant(group.id, 'releases', 'write');
+        await client.setGroupMember(group.id, owner.id, true);
+      } catch {
+        throw new UiError('welcomePartial');
+      }
       message(status, 'welcomeCreated');
       element('login-name', HTMLInputElement).value = desiredName;
     })()

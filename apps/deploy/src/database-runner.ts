@@ -4,6 +4,7 @@ import { spawn } from 'node:child_process';
 import { setTimeout as delay } from 'node:timers/promises';
 import { databaseSettings, ownerPassword } from './managed-database.js';
 import { command } from './process.js';
+import { syncDirectory } from './files.js';
 
 async function exists(path: string): Promise<boolean> {
   try {
@@ -13,6 +14,12 @@ async function exists(path: string): Promise<boolean> {
     if (error instanceof Error && 'code' in error && error.code === 'ENOENT') return false;
     throw error;
   }
+}
+
+async function durableMarker(directory: string, name: string, value: string): Promise<void> {
+  // Persist the journal before SQL, and completion before removing bootstrap material.
+  await writeFile(join(directory, name), value, { flag: 'wx', mode: 0o600, flush: true });
+  await syncDirectory(directory);
 }
 
 async function initializeCluster(
@@ -118,14 +125,14 @@ export async function runDatabase(root: string): Promise<void> {
       // after interruption instead of replaying ambiguous SQL or dropping an existing database.
       if (await exists(join(directory, 'bootstrap-started')))
         throw new Error('Interrupted database bootstrap requires inspection');
-      await writeFile(join(directory, 'bootstrap-started'), '1', { flag: 'wx', mode: 0o600 });
+      await durableMarker(directory, 'bootstrap-started', '1');
       await command(
         executable('psql'),
         [...args, '-X', '-v', 'ON_ERROR_STOP=1', '-f', join(directory, 'bootstrap.sql')],
         undefined,
         environment,
       );
-      await writeFile(join(directory, 'initialized'), major, { flag: 'wx', mode: 0o600 });
+      await durableMarker(directory, 'initialized', major);
       await unlink(join(directory, 'bootstrap.sql'));
     }
   } catch (error) {
