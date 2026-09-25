@@ -1,7 +1,7 @@
 import { execFileSync } from 'node:child_process';
 import { mkdtemp, readFile, writeFile, mkdir, copyFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join, resolve } from 'node:path';
+import { join } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import assert from 'node:assert/strict';
 const run = (args) =>
@@ -22,9 +22,17 @@ execFileSync(
   [process.env.npm_execpath, 'run', 'release:package', '--', '0.0.1', artifact],
   { stdio: 'inherit' },
 );
-const cli = resolve('apps/deploy/dist/main.js');
 const manage = (args) =>
-  execFileSync(process.execPath, [cli, ...args, '--root', root], { stdio: 'inherit' });
+  execFileSync(
+    process.execPath,
+    [
+      args[0] === 'install' ? join(artifact, 'depot-setup.mjs') : join(root, 'manage.mjs'),
+      ...args,
+      '--root',
+      root,
+    ],
+    { stdio: 'inherit' },
+  );
 const compose = [
   'compose',
   '--project-name',

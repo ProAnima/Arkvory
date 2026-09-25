@@ -31,6 +31,7 @@ foreach ($role in @('api','worker')) {
     $xml = @"
 <service>
   <id>$name</id><name>ProAnima Depot $role</name>
+  <description>ProAnima Depot $role service with automatic crash recovery.</description>
   <executable>$(Xml $Node)</executable>
   <arguments>&quot;$(Xml (Join-Path $Root 'launcher.mjs'))&quot; &quot;$(Xml $Root)&quot; $role</arguments>
   <workingdirectory>$(Xml $Root)</workingdirectory>

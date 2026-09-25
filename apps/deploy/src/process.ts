@@ -7,9 +7,13 @@ export async function command(
   environment?: Record<string, string>,
 ): Promise<void> {
   await new Promise<void>((resolve, reject) => {
-    const childEnvironment = { ...process.env, ...environment };
     // Windows PowerShell 5 must not inherit PowerShell 7's incompatible module search path.
-    if (executable.toLowerCase() === 'powershell.exe') delete childEnvironment['PSModulePath'];
+    const childEnvironment = Object.fromEntries(
+      Object.entries({ ...process.env, ...environment }).filter(
+        ([key]) =>
+          executable.toLowerCase() !== 'powershell.exe' || key.toLowerCase() !== 'psmodulepath',
+      ),
+    );
     const child = spawn(executable, args, {
       cwd,
       env: childEnvironment,

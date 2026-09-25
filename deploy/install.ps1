@@ -36,6 +36,7 @@ $client.Timeout = [TimeSpan]::FromMinutes(2)
 $client.MaxResponseContentBufferSize = 8MB
 $tokenFile = Join-Path $Root 'github-token.txt'
 $token = if (Test-Path -LiteralPath $tokenFile) { [IO.File]::ReadAllText($tokenFile).Trim() } else { '' }
+if ($token -notmatch '^[A-Za-z0-9_-]{0,512}$') { throw 'Invalid GitHub token file' }
 $base = 'https://api.github.com/repos/ProAnima/Depot/releases/'
 function Get-Asset([string]$url, [bool]$binary = $false) {
     if (-not $url.StartsWith($base)) { throw 'Invalid asset origin' }

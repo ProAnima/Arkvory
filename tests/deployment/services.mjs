@@ -16,12 +16,15 @@ if (!windows && process.platform !== 'linux')
   throw Error('Service gate requires Linux systemd or Windows');
 const prefix = `depotgate${process.pid}`;
 const environment = { ...process.env };
-if (windows) delete environment.PSModulePath;
+if (windows)
+  for (const key of Object.keys(environment))
+    if (key.toLowerCase() === 'psmodulepath') delete environment[key];
 const run = (file, args) =>
   execFileSync(file, args, { env: environment, stdio: 'inherit', windowsHide: true });
 for (const name of ['data', 'logs', 'config', 'service']) await mkdir(join(root, name));
 for (const name of ['runtime.json', 'keys.json', 'bootstrap-token.txt', 'postgres.env'])
   await writeFile(join(root, 'config', name), '{}');
+await writeFile(join(root, 'github-token.txt'), 'test-only-not-a-real-token');
 await copyFile('tests/deployment/service-child.mjs', join(root, 'launcher.mjs'));
 try {
   if (windows)

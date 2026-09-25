@@ -29,6 +29,7 @@ root, work, version = pathlib.Path(sys.argv[1]), pathlib.Path(sys.argv[2]), sys.
 if version and not re.fullmatch(r'(0|[1-9][0-9]{0,5})\.(0|[1-9][0-9]{0,5})\.(0|[1-9][0-9]{0,5})',version): raise RuntimeError('Invalid stable version')
 token_file=root/'github-token.txt'
 token=token_file.read_text().strip() if token_file.exists() else ''
+if not re.fullmatch(r'[A-Za-z0-9_-]{0,512}',token): raise RuntimeError('Invalid GitHub token file')
 class Redirect(urllib.request.HTTPRedirectHandler):
     def redirect_request(self, req, fp, code, msg, headers, newurl):
         if not newurl.startswith('https://'): raise RuntimeError('Unsafe redirect')

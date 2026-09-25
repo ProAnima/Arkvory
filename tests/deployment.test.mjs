@@ -191,6 +191,10 @@ test('private GitHub asset redirect strips authorization and verifies checksum',
   await assert.rejects(lstat(join(root, 'bad.zip')), /ENOENT/);
 });
 test('runtime configuration cannot inject Node process options or multiline values', () => {
+  assert.throws(
+    () => new GitHubReleases('secret\nsecond-line'),
+    /^Error: Invalid GitHub token file$/,
+  );
   assert.throws(() => runtimeEnvironment({ NODE_OPTIONS: '--inspect=0.0.0.0' }), /Invalid/);
   assert.throws(() => runtimeEnvironment({ DEPOT_HOST: 'x\nDEPOT_KEYS_FILE=x' }), /Invalid/);
 });

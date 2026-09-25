@@ -8,6 +8,10 @@ prefix=${3:-depot}
 command -v systemctl >/dev/null
 [[ "$root" != *$'\n'* && "$root" != *'%'* && "$node" != *'"'* ]] || exit 1
 getent passwd depot >/dev/null || useradd --system --home-dir "$root/data" --shell /usr/sbin/nologin depot
+if [[ -f "$root/github-token.txt" ]]; then
+  chown root:root "$root/github-token.txt"
+  chmod 0600 "$root/github-token.txt"
+fi
 chown root:depot "$root" "$root/config"
 chmod 0750 "$root" "$root/config"
 chown -R depot:depot "$root/data" "$root/logs"

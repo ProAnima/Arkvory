@@ -9,7 +9,9 @@ export interface ReleaseAssets {
   archiveUrl: string;
 }
 export class GitHubReleases {
-  constructor(private readonly token: string) {}
+  constructor(private readonly token: string) {
+    if (!/^[A-Za-z0-9_-]{0,512}$/.test(token)) throw new Error('Invalid GitHub token file');
+  }
   static async fromTokenFile(path: string): Promise<GitHubReleases> {
     const token = await readFile(path, 'utf8').catch((error: unknown) => {
       if (error instanceof Error && 'code' in error && error.code === 'ENOENT') return '';
