@@ -1,9 +1,8 @@
-import { Readable } from 'node:stream';
-import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { DepotError, PART_BYTES } from '@proanima/depot-domain';
+import type { FastifyInstance, FastifyRequest } from 'fastify';
+import { DepotError } from '@proanima/depot-domain';
 import { organizePackages, parsePackageListOptions } from '@proanima/depot-application';
 import type { Principal } from '@proanima/depot-domain';
-import type { StorageService, ArtifactCatalog, CompletionQueue } from '@proanima/depot-application';
+import type { ArtifactCatalog } from '@proanima/depot-application';
 
 function object(value: unknown): Record<string, unknown> {
   if (typeof value !== 'object' || value === null || Array.isArray(value))
@@ -30,56 +29,14 @@ function queryRevision(value: unknown): number {
 export function registerCatalogRoutes(
   app: FastifyInstance,
   services: {
-    storage: StorageService;
     browse: ArtifactCatalog;
-    queue: CompletionQueue;
     principal: (request: FastifyRequest) => Principal;
-    signal: (request: FastifyRequest, reply: FastifyReply) => AbortSignal;
     modifying: <T>(request: FastifyRequest, action: () => Promise<T>) => Promise<T>;
-    uploadStream: (
-      request: FastifyRequest,
-      reply: FastifyReply,
-      stream: Readable,
-    ) => AsyncIterable<Uint8Array>;
   },
 ) {
-  const { storage, browse, queue, principal, signal, modifying, uploadStream } = services;
+  const { browse, principal, modifying } = services;
   type Params = { repository: string; id: string; index: string };
   const base = '/api/v1/repositories/:repository';
-  app.get<{ Params: Params }>(`${base}/uploads/:id/parts`, async (request) => ({
-    partBytes: PART_BYTES,
-    items: await storage.parts(principal(request), request.params.repository, request.params.id),
-  }));
-  app.put<{ Params: Params }>(`${base}/uploads/:id/parts/:index`, async (request, reply) => {
-    if (!(request.body instanceof Readable) || !/^\d{1,3}$/.test(request.params.index))
-      throw new DepotError('invalid_input', 'Invalid part request');
-    const stream = request.body;
-    try {
-      await modifying(request, () =>
-        storage.uploadPart(
-          principal(request),
-          request.params.repository,
-          request.params.id,
-          Number(request.params.index),
-          string(request.headers['x-content-sha256']),
-          uploadStream(request, reply, stream),
-          signal(request, reply),
-        ),
-      );
-      return await reply.code(204).send();
-    } catch (error) {
-      reply.header('Connection', 'close');
-      throw error;
-    }
-  });
-  app.post<{ Params: Params }>(`${base}/uploads/:id/complete-async`, async (request, reply) =>
-    reply
-      .code(202)
-      .send(await queue.enqueue(principal(request), request.params.repository, request.params.id)),
-  );
-  app.get<{ Params: { id: string } }>('/api/v1/jobs/:id', async (request) =>
-    queue.get(principal(request), request.params.id),
-  );
   app.get<{ Params: Params }>(`${base}/artifacts/:id/annotations`, async (request) =>
     browse.annotation(principal(request), request.params.repository, request.params.id),
   );

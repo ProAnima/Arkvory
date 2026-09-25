@@ -29,7 +29,7 @@ const memorySample = setInterval(() => {
 }, 100);
 async function start() {
   child = fork('tests/integration/api-child.mjs', [], {
-    stdio: ['ignore', 'ignore', 'inherit', 'ipc'],
+    stdio: ['ignore', 'inherit', 'inherit', 'ipc'],
     windowsHide: true,
   });
   child.on('message', (message) => {

@@ -219,11 +219,16 @@ export class LocalBlobStore implements BlobStore {
       end: range?.end ?? size - 1,
       highWaterMark: 64 * 1024,
     });
+    let remaining = range ? range.end - range.start + 1 : size;
     for await (const chunk of stream) {
       if (!(chunk instanceof Uint8Array))
         throw new DepotError('unavailable', 'Invalid content stream');
+      remaining -= chunk.byteLength;
       yield chunk;
     }
+    // A file can be truncated after the metadata/stat check. Never report a successful short EOF.
+    if (remaining !== 0)
+      throw new DepotError('integrity_mismatch', 'Stored content ended before its declared size');
   }
 
   private partPath(id: string, part: UploadPart): string {

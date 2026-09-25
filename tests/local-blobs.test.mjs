@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID, createHash } from 'node:crypto';
-import { mkdtemp, readFile, writeFile } from 'node:fs/promises';
+import { mkdtemp, readFile, writeFile, truncate } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { removeTestDirectory } from './helpers.mjs';
@@ -79,4 +79,26 @@ test('blob IDs cannot escape storage and zero-byte objects are valid', async (t)
   await store.put(id, descriptor(data), chunks(data), cancellation);
   await store.verify(id, descriptor(data), cancellation);
   await assert.rejects(store.exists('../../x', 0), { code: 'invalid_input' });
+});
+
+test('short blob reads fail for full content, Range and multipart assembly', async (t) => {
+  const { root, store } = await fixture(t);
+  const bytes = Buffer.from('complete content');
+  const id = randomUUID();
+  await store.put(id, descriptor(bytes), chunks(bytes), cancellation);
+  await store.exists(id, bytes.length);
+  await truncate(join(root, 'blobs', id), 4);
+  const consume = async (source) => {
+    for await (const _chunk of source) {
+      /* Drain to EOF. */
+    }
+  };
+  await assert.rejects(consume(store.read(id, bytes.length)), { code: 'integrity_mismatch' });
+  await assert.rejects(consume(store.read(id, bytes.length, { start: 2, end: 10 })), {
+    code: 'integrity_mismatch',
+  });
+  const part = { index: 0, size: bytes.length, sha256: descriptor(bytes).sha256 };
+  await store.putPart(id, part, chunks(bytes), cancellation);
+  await truncate(join(root, 'parts', id, `0-${part.sha256}`), 4);
+  await assert.rejects(consume(store.readParts(id, [part])), { code: 'integrity_mismatch' });
 });

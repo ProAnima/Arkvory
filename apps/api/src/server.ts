@@ -12,11 +12,11 @@ import { PostgresAttachments } from '@proanima/depot-infrastructure';
 import { registerRepositoryRoutes } from './repository-routes.js';
 import { registerOperationRoutes } from './operation-routes.js';
 import { createHash, randomUUID, timingSafeEqual } from 'node:crypto';
-import { Readable } from 'node:stream';
+import { downloadStream } from './download-stream.js';
 import Fastify from 'fastify';
 import type { FastifyRequest, FastifyReply } from 'fastify';
 import { DepotError } from '@proanima/depot-domain';
-import type { Principal, Upload } from '@proanima/depot-domain';
+import type { Principal } from '@proanima/depot-domain';
 import {
   StorageService,
   ArtifactCatalog,
@@ -43,25 +43,17 @@ import { registerIdentityRoutes } from './identity-routes.js';
 import { registerServiceRoutes } from './service-routes.js';
 import { registerContractGuard } from './contract-guard.js';
 import { ProGetDownloads } from '@proanima/depot-proget-compat';
-import { descriptorSchema, uploadSchema, readinessSchema } from '@proanima/depot-contracts';
-import type { UploadResponse } from '@proanima/depot-contracts';
+import { readinessSchema, uploadSchema } from '@proanima/depot-contracts';
+import { wireUpload as wire } from './upload-response.js';
+import { registerUploadRoutes } from './upload-routes.js';
+import { resolveUploadTimeouts } from './upload-policy.js';
 import type { ServerConfig } from './config.js';
 import { matchesEtag, parseRange } from './range.js';
 import { registerCors } from './cors.js';
 
-function wire(upload: Upload): UploadResponse {
-  return {
-    id: upload.id,
-    repository: upload.repository,
-    status: upload.status,
-    createdAt: upload.createdAt,
-    expiresAt: upload.expiresAt,
-    descriptor: { ...upload.descriptor, size: String(upload.descriptor.size) },
-  };
-}
-
 // depot-exception ARCH-017 -- Existing composition root combines authentication, transfer routes and process lifecycle; freeze until those responsibilities are extracted under HTTP regression tests.
 export async function createServer(config: ServerConfig) {
+  const uploadPolicy = resolveUploadTimeouts(config);
   const role: unknown = config.role ?? 'api';
   if (role !== 'api' && role !== 'reader') throw new Error('Invalid gateway role');
   if (
@@ -465,7 +457,6 @@ export async function createServer(config: ServerConfig) {
   registerRepositoryRoutes(app, principal);
   type Params = { repository: string; id: string };
   const base = '/api/v1/repositories/:repository';
-  const response = { 200: uploadSchema };
   const modifying = async <T>(request: FastifyRequest, action: () => Promise<T>): Promise<T> => {
     const abort = new AbortController();
     const cancel = () => {
@@ -486,93 +477,13 @@ export async function createServer(config: ServerConfig) {
       request.raw.removeListener('aborted', cancel);
     }
   };
-  const uploadStream = (request: FastifyRequest, reply: FastifyReply, stream: Readable) => {
-    async function* chunks(): AsyncIterable<Uint8Array> {
-      for await (const chunk of stream.iterator({ destroyOnReturn: false })) {
-        if (!(chunk instanceof Uint8Array))
-          throw new DepotError('invalid_input', 'Invalid request bytes');
-        yield chunk;
-      }
-    }
-    return uploadBandwidth.stream(chunks(), principal(request).id, signal(request, reply));
-  };
-  app.post<{ Params: Params; Body: unknown }>(
-    `${base}/uploads`,
-    { schema: { body: descriptorSchema, response: { 201: uploadSchema } } },
-    async (request, reply) => {
-      const key = request.headers['idempotency-key'];
-      if (typeof key !== 'string')
-        throw new DepotError('invalid_input', 'Idempotency-Key is required');
-      const result = await service.create(
-        principal(request),
-        request.params.repository,
-        key,
-        request.body,
-      );
-      return reply
-        .code(201)
-        .header(
-          'Location',
-          `${base.replace(':repository', request.params.repository)}/uploads/${result.id}`,
-        )
-        .send(wire(result));
-    },
-  );
-  app.get<{ Params: Params }>(`${base}/uploads/:id`, { schema: { response } }, async (request) =>
-    wire(await service.status(principal(request), request.params.repository, request.params.id)),
-  );
-  app.delete<{ Params: Params }>(`${base}/uploads/:id`, { schema: { response } }, async (request) =>
-    modifying(request, async () =>
-      wire(await service.cancel(principal(request), request.params.repository, request.params.id)),
-    ),
-  );
-  app.put<{ Params: Params }>(
-    `${base}/uploads/:id/content`,
-    { schema: { response } },
-    async (request, reply) => {
-      if (!(request.body instanceof Readable))
-        throw new DepotError('invalid_input', 'Content-Type must be application/octet-stream');
-      const stream = request.body;
-      const cancellation = signal(request, reply);
-      try {
-        return wire(
-          await modifying(request, () =>
-            service.upload(
-              principal(request),
-              request.params.repository,
-              request.params.id,
-              uploadStream(request, reply, stream),
-              cancellation,
-            ),
-          ),
-        );
-      } catch (error) {
-        reply.header('Connection', 'close');
-        throw error;
-      }
-    },
-  );
-  app.post<{ Params: Params }>(
-    `${base}/uploads/:id/complete`,
-    { schema: { response } },
-    async (request, reply) =>
-      modifying(request, async () => {
-        // Assembly may run without socket traffic for minutes. Admission remains bounded.
-        reply.raw.setTimeout(30 * 60 * 1000, () => {
-          reply.raw.destroy();
-        });
-        return wire(
-          await service.complete(
-            principal(request),
-            request.params.repository,
-            request.params.id,
-            signal(request, reply),
-          ),
-        );
-      }),
-  );
-  app.get<{ Params: Params }>(`${base}/artifacts/:id`, { schema: { response } }, async (request) =>
-    wire(await service.artifact(principal(request), request.params.repository, request.params.id)),
+  app.get<{ Params: Params }>(
+    `${base}/artifacts/:id`,
+    { schema: { response: { 200: uploadSchema } } },
+    async (request) =>
+      wire(
+        await service.artifact(principal(request), request.params.repository, request.params.id),
+      ),
   );
   app.get<{ Params: Params; Querystring: { after?: string; limit?: string } }>(
     `${base}/artifacts`,
@@ -646,16 +557,15 @@ export async function createServer(config: ServerConfig) {
       else reply.header('Content-Length', String(size));
       if (request.method === 'HEAD') return await reply.send();
       return await reply.send(
-        Readable.from(
+        downloadStream(
           downloadBandwidth.stream(
             result.read(range.kind === 'partial' ? range : undefined),
             principal(request).id,
             signal(request, reply),
           ),
-          {
-            objectMode: false,
-            highWaterMark: 64 * 1024,
-          },
+          request,
+          signal(request, reply),
+          diagnostics,
         ),
       );
     } catch (error) {
@@ -729,15 +639,17 @@ export async function createServer(config: ServerConfig) {
     new BuildAttachments(service, new PostgresAttachments(catalog.pool)),
     principal,
   );
-  registerCatalogRoutes(app, {
+  registerUploadRoutes(app, {
     storage: service,
-    browse,
     queue: new CompletionQueue(new PostgresJobs(catalog.pool), randomUUID),
     principal,
     signal,
     modifying,
-    uploadStream,
+    bandwidth: uploadBandwidth,
+    policy: uploadPolicy,
+    diagnostics,
   });
+  registerCatalogRoutes(app, { browse, principal, modifying });
   if (role === 'api') registerConsole(app, process.env['DEPOT_WEB_DIR'] ?? 'apps/web/public');
   return app;
 }

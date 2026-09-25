@@ -4,10 +4,12 @@ import { parseKeys, downloadShare } from '@proanima/depot-infrastructure';
 import type { SharedDownloadPolicy } from '@proanima/depot-infrastructure';
 import type { ServiceKey } from '@proanima/depot-infrastructure';
 import { parseCorsOrigins } from './cors.js';
+import { readUploadTimeouts } from './upload-policy.js';
+import type { UploadTimeoutOptions } from './upload-policy.js';
 export { parseKeys } from '@proanima/depot-infrastructure';
 export type { ServiceKey } from '@proanima/depot-infrastructure';
 
-export interface ServerConfig {
+export interface ServerConfig extends UploadTimeoutOptions {
   readonly role?: 'api' | 'reader';
   readonly sharedDownloads?: SharedDownloadPolicy;
   readonly databaseUrl: string;
@@ -88,6 +90,7 @@ export async function loadConfig(env: NodeJS.ProcessEnv): Promise<ServerConfig> 
   if (role === 'reader' && !sharedDownloads)
     throw new Error('Read gateway requires shared download configuration');
   return {
+    ...readUploadTimeouts(env),
     role,
     ...(sharedDownloads ? { sharedDownloads } : {}),
     databaseUrl,
