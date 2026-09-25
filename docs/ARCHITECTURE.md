@@ -53,6 +53,8 @@ LocalBlobStore — профиль одного сервера. HA использ
 
 ## Текущее состояние
 
+Проект backup/recovery: единая точка БД/blobs, durable backup pins для GC, отдельный локальный агент и независимый recovery entrypoint. Границы, failure semantics и будущие API — в [ADR 0037](adr/0037-consistent-backup-and-recovery.md) и [BACKUP_RECOVERY](BACKUP_RECOVERY.md). Это не реализованный runtime; текущие reader pins не защищают резервные копии.
+
 Фоновая физическая очистка реализована отдельными domain/application/SQL модулями, API/SDK и UI. Неблокирующие per-object guards защищают активные uploads и shared content readers; writer запускает ограниченные порции. Миграции 16/17, динамическая политика и отсутствие SQL-транзакций вокруг filesystem I/O: [ADR 0035](adr/0035-online-cleanup.md), [эксплуатация](ONLINE_CLEANUP.md).
 
 В infrastructure добавлен BandwidthGovernor — локальный исполнитель upload/download бюджета и квоты принципала. API подключает его к HTTP-потокам; application/storage и worker не зависят от HTTP pacing. AdmissionQueue ограничивает также активные операции принципала. Контракт и граница одного процесса: [ADR 0008](adr/0008-gateway-bandwidth-budgets.md).
