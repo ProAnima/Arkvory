@@ -10,9 +10,12 @@ export async function exerciseClient(output, version) {
   const directory = await mkdtemp(join(tmpdir(), 'depot-client-install-'));
   const installation = join(directory, 'Depot CLI');
   const env = {
-    ...process.env,
+    ...Object.fromEntries(
+      Object.entries(process.env).filter(([key]) => key.toLowerCase() !== 'psmodulepath'),
+    ),
     DEPOT_CLI_HOME: join(directory, 'profile'),
     DEPOT_CLIENT_SHIM: join(installation, 'depotctl.cmd'),
+    DEPOT_CLIENT_UNINSTALL: join(installation, 'unins000.exe'),
   };
   const run = (file, args) =>
     execFileSync(file, args, { env, encoding: 'utf8', windowsHide: true, timeout: 180000 });
@@ -59,7 +62,14 @@ export async function exerciseClient(output, version) {
       path.split(';').filter((p) => p.trim().toLowerCase() === installation.toLowerCase()).length,
       1,
     );
-    run(join(installation, 'unins000.exe'), ['/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART']);
+    // Inno 6.7.3 terminates its first phase before usPostUninstall runs in the clone.
+    // Wait for the process tree, then assert real removal; a parent exit code is insufficient.
+    run('powershell.exe', [
+      '-NoProfile',
+      '-NonInteractive',
+      '-Command',
+      "$operation = Start-Process -FilePath $env:DEPOT_CLIENT_UNINSTALL -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART' -WindowStyle Hidden -Wait -PassThru; exit $operation.ExitCode",
+    ]);
     const after = run('powershell.exe', [
       '-NoProfile',
       '-NonInteractive',
