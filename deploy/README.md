@@ -20,7 +20,7 @@ Windows x64, PowerShell от администратора (Windows desktop с п
 .\install.ps1 -AutomaticUpdates
 ```
 
-Путь — `C:\ProgramData\ProAnima\Depot`; доступны `-Root`, `-Config`, `-Version` и `-Pin`. PostgreSQL URL запрашивается скрыто. Службы `Depotapi` и `Depotworker` используют LocalService; WinSW 2.12.0 проверяется по закреплённому SHA-256. Пользовательский сеанс для нативных служб не нужен.
+Путь — `C:\ProgramData\ProAnima\Depot`; доступны `-Root`, `-Config`, `-Version` и `-Pin`. Для другого Root используйте машинный каталог вне пользовательского профиля/AppData: LocalService должен проходить по родительским каталогам при разрешении пути Node.js. PostgreSQL URL запрашивается скрыто. Службы `Depotapi` и `Depotworker` используют LocalService; WinSW 2.12.0 проверяется по закреплённому SHA-256. Пользовательский сеанс для нативных служб не нужен.
 
 Docker, Linux:
 

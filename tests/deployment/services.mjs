@@ -1,13 +1,14 @@
 import { execFileSync } from 'node:child_process';
 import { mkdtemp, mkdir, writeFile, copyFile, readFile, readdir } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
 const windows = process.platform === 'win32';
+// LocalService cannot resolve Node entrypoints through another user's private AppData.
+// Match the production installer's machine-wide location instead of the runner's TEMP.
 const root = windows
-  ? await mkdtemp(join(tmpdir(), 'depot-service-gate-'))
+  ? await mkdtemp(join(process.env.ProgramData ?? 'C:\\ProgramData', 'depot-service-gate-'))
   : execFileSync('sudo', ['mktemp', '-d', '/opt/depot-service-gate-XXXXXX'], {
       encoding: 'utf8',
     }).trim();
