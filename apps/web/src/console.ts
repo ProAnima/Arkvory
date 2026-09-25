@@ -1,3 +1,4 @@
+import { installStoragePolicy } from './storage-policy.js';
 import { DepotClient, DepotHttpError } from '@proanima/depot-sdk';
 import { text } from '@proanima/depot-contracts';
 import { element } from './dom.js';
@@ -29,6 +30,7 @@ try {
   feedback(output, 'apiAddressError', {}, 'error');
   throw new Error('Invalid Depot API base URL');
 }
+const repositoryStorage = installStoragePolicy(client);
 const downloads = installDownloads(apiBaseUrl, token);
 const annotationEditor = installAnnotationEditor();
 const attachments = installBuildAttachments(client, (repo, id, name) =>
@@ -100,6 +102,8 @@ function connection(connected: boolean) {
   if (connected && !wasConnected) details.open = false;
   if (!connected) details.open = true;
   wasConnected = connected;
+  if (connected) void repositoryStorage.connect(repository.value);
+  else repositoryStorage.clear();
 }
 async function openArtifact(repo: string, id: string, name: string) {
   clearSelection();

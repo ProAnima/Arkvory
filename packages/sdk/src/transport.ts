@@ -1,4 +1,12 @@
 import {
+  readStoragePolicySnapshot,
+  readStorageUsage,
+  readStoragePreview,
+  readStorageRun,
+  readStorageEvents,
+} from '@proanima/depot-contracts';
+import type { StoragePolicyRequest } from '@proanima/depot-contracts';
+import {
   readDeletionCandidate,
   readDeletionResult,
   readRetentionPreview,
@@ -78,6 +86,53 @@ export class DepotTransport {
         { expectedAnnotationRevision },
         signal,
       ),
+    );
+  }
+  async storagePolicy(repository: string, signal?: AbortSignal) {
+    return readStoragePolicySnapshot(
+      await this.call(this.path(repository, 'storage/policy'), 'GET', undefined, signal),
+    );
+  }
+  async setStoragePolicy(
+    repository: string,
+    expectedRevision: number,
+    policy: StoragePolicyRequest,
+    signal?: AbortSignal,
+  ) {
+    return readStoragePolicySnapshot(
+      await this.call(
+        this.path(repository, 'storage/policy'),
+        'PUT',
+        { expectedRevision, policy },
+        signal,
+      ),
+    );
+  }
+  async storageUsage(repository: string, signal?: AbortSignal) {
+    return readStorageUsage(
+      await this.call(this.path(repository, 'storage/usage'), 'GET', undefined, signal),
+    );
+  }
+  async previewStoragePolicy(repository: string, signal?: AbortSignal) {
+    return readStoragePreview(
+      await this.call(this.path(repository, 'storage/preview'), 'GET', undefined, signal),
+    );
+  }
+  async runStoragePolicy(repository: string, expectedRevision: number, signal?: AbortSignal) {
+    return readStorageRun(
+      await this.call(this.path(repository, 'storage/run'), 'POST', { expectedRevision }, signal),
+    );
+  }
+  async storageEvents(
+    repository: string,
+    options: { after?: string; level?: 'info' | 'warning' | 'error' } = {},
+    signal?: AbortSignal,
+  ) {
+    const query = new URLSearchParams();
+    if (options.after !== undefined) query.set('after', options.after);
+    if (options.level !== undefined) query.set('level', options.level);
+    return readStorageEvents(
+      await this.call(this.path(repository, `storage/events?${query}`), 'GET', undefined, signal),
     );
   }
   async previewRetention(repository: string, input: RetentionPreviewRequest, signal?: AbortSignal) {

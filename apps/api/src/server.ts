@@ -1,3 +1,7 @@
+import { registerStoragePolicyRoutes } from './storage-policy-routes.js';
+import { maintainStorage } from './storage-maintenance.js';
+import { RepositoryStorage } from '@proanima/depot-application';
+import { PostgresStoragePolicy, DiagnosticLogger } from '@proanima/depot-infrastructure';
 import { registerRetentionRoutes } from './retention-routes.js';
 import { ArtifactRetention } from '@proanima/depot-application';
 import { PostgresRetention } from '@proanima/depot-infrastructure';
@@ -141,10 +145,128 @@ export async function createServer(config: ServerConfig) {
     requestIdHeader: false,
     ajv: { customOptions: { coerceTypes: false, removeAdditional: false } },
   });
+  const storagePolicies = new PostgresStoragePolicy(catalog.pool);
+  const diagnostics = new DiagnosticLogger(process.stdout, () => new Date().toISOString());
+  const diagnosticQueue: {
+    repository: string;
+    level: 'warning' | 'error';
+    code: string;
+    details: Record<string, string | number>;
+  }[] = [];
+  let diagnosticDropped = 0;
+  let maintenance: Promise<void> | undefined;
+  let flushing: Promise<void> | undefined;
+  let timer: ReturnType<typeof setInterval> | undefined;
+  let flushTimer: ReturnType<typeof setInterval> | undefined;
+  const flush = async () => {
+    for (let i = 0; i < 10; i++) {
+      const event = diagnosticQueue.shift();
+      if (!event) break;
+      try {
+        await storagePolicies.recordEvent(event.repository, event.level, event.code, event.details);
+      } catch {
+        diagnostics.write({
+          level: 'error',
+          component: 'storage',
+          code: 'diagnostics.persist_failed',
+        });
+        break;
+      }
+    }
+    if (diagnosticDropped) {
+      diagnostics.write({
+        level: 'warning',
+        component: 'storage',
+        code: `diagnostics.queue_dropped.${String(diagnosticDropped)}`,
+      });
+      diagnosticDropped = 0;
+    }
+  };
+  app.addHook('onReady', () => {
+    if (role === 'api')
+      timer = setInterval(() => {
+        if (maintenance || !available()) return;
+        maintenance = maintainStorage(storagePolicies, serviceAccounts, available)
+          .catch(() => {
+            diagnostics.write({
+              level: 'error',
+              component: 'storage',
+              code: 'maintenance.unavailable',
+            });
+          })
+          .finally(() => {
+            maintenance = undefined;
+          });
+      }, 60000);
+    flushTimer = setInterval(() => {
+      if (!flushing)
+        flushing = flush().finally(() => {
+          flushing = undefined;
+        });
+    }, 1000);
+    timer?.unref();
+    flushTimer.unref();
+    return Promise.resolve();
+  });
+  app.addHook('preClose', async () => {
+    clearInterval(timer);
+    clearInterval(flushTimer);
+    await maintenance;
+    await flushing;
+    // Bound shutdown flushing; stdout already records every accepted diagnostic.
+    await flush();
+    diagnosticQueue.length = 0;
+    diagnostics.close();
+  });
   registerContractGuard(app);
   registerCors(app, config.corsOrigins ?? []);
   const principals = new WeakMap<FastifyRequest, Principal>();
   const requestSignals = new WeakMap<FastifyRequest, AbortSignal>();
+  const errorCodes = new WeakMap<FastifyRequest, string>();
+  app.addHook('onResponse', async (request, reply) => {
+    if (reply.statusCode < 400) return;
+    const level = reply.statusCode >= 500 ? 'error' : 'warning';
+    const code = errorCodes.get(request) ?? `http.${String(reply.statusCode)}`;
+    const route = request.routeOptions.url ?? 'unmatched';
+    const params: unknown = request.params;
+    const repository =
+      params &&
+      typeof params === 'object' &&
+      'repository' in params &&
+      typeof params.repository === 'string' &&
+      /^[a-z0-9][a-z0-9_-]{0,63}$/.test(params.repository)
+        ? params.repository
+        : undefined;
+    diagnostics.write({
+      level,
+      component: 'api',
+      code,
+      requestId: request.id,
+      route,
+      method: request.method,
+      status: reply.statusCode,
+    });
+    // Unknown/unauthenticated repository names cannot poison another repository's event stream.
+    const p = principals.get(request);
+    if (
+      repository &&
+      p?.managed?.bindings.some((b) => b.resource.id === repository && b.actions.length > 0)
+    ) {
+      if (diagnosticQueue.length < 128)
+        diagnosticQueue.push({
+          repository,
+          level,
+          code,
+          details: {
+            requestId: request.id,
+            route,
+            method: request.method,
+            status: reply.statusCode,
+          },
+        });
+      else diagnosticDropped++;
+    }
+  });
   let requests = 0;
   const principal = (request: FastifyRequest): Principal => {
     const result = principals.get(request);
@@ -282,6 +404,7 @@ export async function createServer(config: ServerConfig) {
       unavailable: 503,
     } as const;
     if (error instanceof DepotError) {
+      errorCodes.set(request, error.code);
       if (error.code === 'busy' || error.code === 'unavailable') reply.header('Retry-After', '2');
       void reply
         .code(codes[error.code])
@@ -294,6 +417,7 @@ export async function createServer(config: ServerConfig) {
         typeof error.statusCode === 'number' &&
         error.statusCode >= 400 &&
         error.statusCode < 500;
+      errorCodes.set(request, clientError ? 'invalid_input' : 'unavailable');
       void reply
         .code(clientError ? 400 : 503)
         .header('Retry-After', '2')
@@ -587,6 +711,12 @@ export async function createServer(config: ServerConfig) {
         await legacy.asset(principal(request), request.params.repository, request.params['*']),
       ),
   });
+  registerStoragePolicyRoutes(
+    app,
+    new RepositoryStorage(storagePolicies),
+    storagePolicies,
+    principal,
+  );
   registerRetentionRoutes(
     app,
     new ArtifactRetention(new PostgresRetention(catalog.pool), () => new Date().toISOString()),

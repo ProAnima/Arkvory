@@ -1,6 +1,6 @@
 # Карта API Depot
 
-Области ответственности, уровни видимости, каталог операций текущего credential и SDK для удалённых клиентов реализованы: [API_SURFACES](API_SURFACES.md). `GET/HEAD /api/v1/operations` — authenticated, контекст repository необязателен, pagination до 100, advisory conditions. `GET/HEAD /api/v1/openapi.json?surface=…` — документационное представление. OpenAPI document 0.9.0, 113 операций; актуальная схема БД — 14.
+Области ответственности, уровни видимости, каталог операций текущего credential и SDK для удалённых клиентов реализованы: [API_SURFACES](API_SURFACES.md). `GET/HEAD /api/v1/operations` — authenticated, контекст repository необязателен, pagination до 100, advisory conditions. `GET/HEAD /api/v1/openapi.json?surface=…` — документационное представление. OpenAPI document 0.10.0, 123 операций; актуальная схема БД — 14.
 
 Дата сверки: 2026-09-25, runtime с миграциями 13/14. Это точка входа для интеграторов: **реализованные маршруты** ниже отделены от **проектируемых расширений**. Детальные JSON-схемы текущего сервера: `GET /api/v1/openapi.json` с действующим Bearer. OpenAPI сейчас 3.0.3; новую модель доступа описывает [API_ACCESS](API_ACCESS.md), порядок внедрения — [API_EVOLUTION](API_EVOLUTION.md).
 
@@ -131,10 +131,12 @@ OAuth/OIDC federation, S3/NuGet/npm/OCI adapters — потенциальные 
 
 При добавлении операции обновлять use case, runtime-схему, OpenAPI, SDK, право/ресурс в карте, негативные ACL-тесты и описание retry. HTTP method не определяет permission: GET jobs сегодня требует write, PUT annotations — read+write. Нельзя заменить эти проверки одним middleware «GET = read».
 
-Экспортируемая OpenAPI содержит 113 операций, включая HEAD, liveness, сам endpoint спецификации и legacy downloads. Все имеют operationId, описание авторизации, retry и роли шлюза. Сервер при onReady и CI сверяют фактические маршруты со схемой; исключения ограничены точными static GET/HEAD. При сборке создаётся `packages/contracts/dist/openapi.json`. Правила и границы проверок: [API_CONTRACT_GUARD](API_CONTRACT_GUARD.md), [ADR 0018](adr/0018-executable-api-inventory.md).
+Экспортируемая OpenAPI содержит 123 операций, включая HEAD, liveness, сам endpoint спецификации и legacy downloads. Все имеют operationId, описание авторизации, retry и роли шлюза. Сервер при onReady и CI сверяют фактические маршруты со схемой; исключения ограничены точными static GET/HEAD. При сборке создаётся `packages/contracts/dist/openapi.json`. Правила и границы проверок: [API_CONTRACT_GUARD](API_CONTRACT_GUARD.md), [ADR 0018](adr/0018-executable-api-inventory.md).
 
 Discovery: GET/HEAD `/api/v1/repositories` возвращает items/next (до 100), GET/HEAD `/api/v1/repositories/{repository}` — собственную карточку или 404. Это projection прав, не глобальный реестр storage и не право читать bytes. [Точные правила и SDK](REPOSITORY_DISCOVERY.md).
 
 Ревизионные вложения сборки: GET/HEAD/PUT `/api/v1/repositories/{repository}/artifacts/{id}/attachments` и GET/HEAD `/attachments/history`. Метаданные и произвольные метки используют существующий annotations API. [Права, SDK и сценарии](BUILD_DETAILS.md).
 
-Логическое удаление и retention preview/apply реализованы в [ARTIFACT_RETENTION](ARTIFACT_RETENTION.md): managed-only artifact.delete, CAS аннотаций, пины истории и receipts. OpenAPI 0.9.0, 113 операций, миграции 13/14. Реестр/настройки/квоты репозиториев, SDK distribution, identity delegation/SSO, retention scheduler, online GC и глобальное управление очередями остаются отдельными этапами.
+Логическое удаление и retention preview/apply реализованы в [ARTIFACT_RETENTION](ARTIFACT_RETENTION.md): managed-only artifact.delete, CAS аннотаций, пины истории и receipts. OpenAPI 0.10.0, 123 операций, миграции 13/14. Реестр/настройки/квоты репозиториев, SDK distribution, identity delegation/SSO, online GC и глобальное управление очередями остаются отдельными этапами.
+
+Настройки хранения: `GET/PUT repositories/{repository}/storage/policy`, `GET storage/usage`, `GET storage/preview`, `POST storage/run`, `GET storage/events`. Surface catalog, права storage.read/manage, artifact.delete и diagnostics.read по операции. [Контракт](STORAGE_POLICIES.md).

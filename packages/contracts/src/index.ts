@@ -17,3 +17,5 @@ export type { ApiSurface, ApiVisibility } from './api-surfaces.js';
 export * from './attachments.js';
 
 export * from './retention.js';
+
+export * from './storage-policy.js';

@@ -2,6 +2,9 @@ import { record, text, integer, items } from './wire-values.js';
 
 export const servicePermissionNames = [
   'repository.read',
+  'storage.read',
+  'storage.manage',
+  'diagnostics.read',
   'artifact.read',
   'artifact.list',
   'artifact.delete',

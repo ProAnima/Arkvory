@@ -3,6 +3,12 @@ import type { OperationQuery } from '@proanima/depot-contracts';
 
 type RepositoryTransport = Pick<
   DepotTransport,
+  | 'storagePolicy'
+  | 'setStoragePolicy'
+  | 'storageUsage'
+  | 'previewStoragePolicy'
+  | 'runStoragePolicy'
+  | 'storageEvents'
   | 'repository'
   | 'inspectDeletion'
   | 'deleteArtifact'
@@ -61,6 +67,14 @@ export function repositoryClient(client: RepositoryTransport, repository: string
       get: bind(client.attachments),
       replace: bind(client.replaceAttachments),
       history: bind(client.attachmentHistory),
+    }),
+    storage: Object.freeze({
+      policy: bind(client.storagePolicy),
+      configure: bind(client.setStoragePolicy),
+      usage: bind(client.storageUsage),
+      preview: bind(client.previewStoragePolicy),
+      run: bind(client.runStoragePolicy),
+      events: bind(client.storageEvents),
     }),
     retention: Object.freeze({
       preview: bind(client.previewRetention),

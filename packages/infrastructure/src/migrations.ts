@@ -1,3 +1,4 @@
+import { migrateStoragePolicy } from './storage-policy-schema.js';
 import { migrateAttachments } from './attachment-schema.js';
 import { migrateRetention } from './retention-migration.js';
 import { Pool } from 'pg';
@@ -289,6 +290,7 @@ export async function migrate(pool: Pool): Promise<void> {
     await migrateDelegations(client);
     await migrateAttachments(client);
     await migrateRetention(client);
+    await migrateStoragePolicy(client);
     await client.query('COMMIT');
   } catch (error) {
     try {

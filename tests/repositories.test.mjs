@@ -23,7 +23,14 @@ test('repository discovery preserves coarse permission mapping and explicit grou
   const bindings = effectivePermissions(principal);
   assert.deepEqual(
     bindings.find((b) => b.resource.id === 'alpha').actions,
-    serviceActions.filter((a) => a !== 'repository.read' && a !== 'artifact.delete'),
+    serviceActions.filter(
+      (a) =>
+        a !== 'repository.read' &&
+        a !== 'artifact.delete' &&
+        a !== 'storage.read' &&
+        a !== 'storage.manage' &&
+        a !== 'diagnostics.read',
+    ),
   );
   assert.deepEqual(bindings.find((b) => b.resource.id === 'beta').actions, [
     'upload.create',

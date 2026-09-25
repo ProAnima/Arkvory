@@ -10,3 +10,5 @@ export * from './service-delegation.js';
 export * from './attachments.js';
 
 export * from './retention.js';
+
+export * from './storage-policy.js';

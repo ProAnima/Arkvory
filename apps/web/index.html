@@ -230,6 +230,92 @@
               >Неизменяемые файлы · Редактируемые метаданные</span
             >
           </div>
+          <details id="storage-panel" hidden>
+            <summary data-i18n="storageTitle">Хранение и автоочистка</summary>
+            <p class="hint" data-i18n="storageHelp"></p>
+            <button type="button" id="storage-refresh" class="secondary" data-i18n="storageRefresh">
+              Обновить
+            </button>
+            <p id="storage-usage" class="hint"></p>
+            <p id="storage-capacity"></p>
+            <form id="storage-form" hidden>
+              <fieldset id="storage-fields" disabled>
+                <legend data-i18n="storagePolicy">Политика хранения</legend>
+                <div class="form-grid">
+                  <label
+                    ><span data-i18n="storageGrouping"></span
+                    ><select id="storage-grouping">
+                      <option value="package-channel" data-i18n="storagePerChannel"></option>
+                      <option value="package" data-i18n="storagePerPackage"></option>
+                      <option value="repository" data-i18n="storageGlobal"></option></select
+                  ></label>
+                  <label
+                    ><span data-i18n="storageKeep"></span
+                    ><input id="storage-keep" type="number" min="1" max="100000" required
+                  /></label>
+                  <label
+                    ><span data-i18n="storageAge"></span
+                    ><input id="storage-age" type="number" min="0" max="87600" required
+                  /></label>
+                  <label
+                    ><span data-i18n="storageInterval"></span
+                    ><input id="storage-interval" type="number" min="1" max="10080" required
+                  /></label>
+                  <label
+                    ><span data-i18n="storageQuota"></span
+                    ><input id="storage-quota" inputmode="numeric" pattern="[1-9][0-9]{0,15}"
+                  /></label>
+                  <label
+                    ><span data-i18n="storageProtected"></span
+                    ><input id="storage-protected" maxlength="2100"
+                  /></label>
+                  <label
+                    ><span data-i18n="storageWarningPercent"></span
+                    ><input id="storage-warning" type="number" min="1" max="98" required
+                  /></label>
+                  <label
+                    ><span data-i18n="storageCriticalPercent"></span
+                    ><input id="storage-critical" type="number" min="2" max="99" required
+                  /></label>
+                </div>
+                <label
+                  ><span data-i18n="storageChannels"></span
+                  ><textarea id="storage-channels" rows="4" maxlength="2400"></textarea>
+                </label>
+                <label class="inline"
+                  ><input id="storage-enabled" type="checkbox" /><span
+                    data-i18n="storageEnabled"
+                  ></span
+                ></label>
+                <label class="inline"
+                  ><input id="storage-ack" type="checkbox" /><span
+                    data-i18n="storageAcknowledge"
+                  ></span
+                ></label>
+              </fieldset>
+              <button id="storage-save" data-i18n="storageSave" disabled>Сохранить</button>
+            </form>
+            <button
+              type="button"
+              id="storage-preview"
+              class="secondary"
+              data-i18n="storagePreview"
+              disabled
+            ></button>
+            <output id="storage-status" aria-live="polite"></output>
+            <ul id="storage-preview-list" class="storage-list"></ul>
+            <details id="storage-events-section" hidden>
+              <summary data-i18n="storageEvents"></summary>
+              <ul id="storage-events" class="storage-list"></ul>
+              <button
+                type="button"
+                id="storage-events-more"
+                class="secondary"
+                data-i18n="storageMore"
+                disabled
+              ></button>
+            </details>
+          </details>
           <form id="search" class="search-form">
             <label class="grow"
               ><span class="sr-only" data-i18n="name">Имя файла</span

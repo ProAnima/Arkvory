@@ -1,3 +1,4 @@
+import { exerciseStoragePolicy } from './storage-policy.mjs';
 // Optional acceptance against a real API/database. Only the OS save picker is substituted.
 import assert from 'node:assert/strict';
 import { mkdir } from 'node:fs/promises';
@@ -193,6 +194,7 @@ try {
   await page.waitForFunction(() => document.querySelector('#token').value === '');
   assert.equal(await page.locator('#selected-name').isVisible(), false);
   await exerciseDeletion(page, f);
+  await exerciseStoragePolicy(page, f);
   assert.deepEqual(errors, []);
   console.log(
     'PASS console: API upload/download, metadata, history, users, search/reset, keyboard menu, 7 views × 3 widths × RU/EN × light/dark',

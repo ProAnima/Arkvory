@@ -1,4 +1,43 @@
 export const en = {
+  storageTitle: 'Storage & automatic cleanup',
+  storageHelp:
+    'Retention applies to registered UPack builds. Pinned builds, file history and protected labels survive. Save a disabled policy first to preview it; enabling starts automatic deletion. Physical disk cleanup remains a separate offline maintenance operation.',
+  storageRefresh: 'Reload settings & usage',
+  storagePolicy: 'Retention policy',
+  storageGrouping: 'Count last N by',
+  storagePerChannel: 'Package and channel',
+  storagePerPackage: 'Package',
+  storageGlobal: 'Whole repository',
+  storageKeep: 'Last N builds (default)',
+  storageAge: 'Minimum age before deletion (hours)',
+  storageInterval: 'Cleanup interval (minutes)',
+  storageQuota: 'Quota in bytes (empty = no repository limit)',
+  storageProtected: 'Protected labels (comma separated)',
+  storageWarningPercent: 'Warning threshold (%)',
+  storageCriticalPercent: 'Critical threshold (%)',
+  storageChannels: 'Channel overrides: label=N, one per line',
+  storageEnabled: 'Enable automatic cleanup',
+  storageAcknowledge: 'I understand that saving an enabled policy authorizes automatic deletion.',
+  storageSave: 'Save policy',
+  storagePreview: 'Preview saved policy',
+  storageEvents: 'Warnings, errors & storage events',
+  storageMore: 'Load next events',
+  storageRevision: 'Policy revision {revision} · Last run deleted {count} builds',
+  storageRunFailed:
+    'Automatic cleanup stopped: {code}. Check its authorizing key and storage health.',
+  storageUsage:
+    'Bytes: published {published} · uploads {pending} · awaiting GC {retired} · reserved {total} / {quota}',
+  storageNormal: 'Capacity is below warning thresholds, or no repository quota is set.',
+  storageWarning:
+    'Storage is approaching its quota. Review retention and schedule physical cleanup.',
+  storageCritical:
+    'Storage is near or at its quota. New reservations that exceed the quota are rejected.',
+  storageConfirmRequired:
+    'Automatic cleanup requires deletion permission and explicit acknowledgement.',
+  storageSaved: 'Policy saved. An enabled policy will run automatically.',
+  storagePreviewCount: 'Saved policy: {count} deletion candidates in this batch.',
+  storagePreviewMore: 'Saved policy: {count} candidates shown; more remain.',
+
   deletionTitle: 'Delete artifact',
   deletionHelp:
     'Deletion removes this artifact from the catalog and prevents new downloads. It cannot be undone here. Existing file history, attachments and external references are protected. Disk space is reclaimed separately during maintenance.',
@@ -294,6 +333,45 @@ export const en = {
 } as const;
 export type MessageKey = keyof typeof en;
 export const ru: Record<MessageKey, string> = {
+  storageTitle: 'Хранение и автоочистка',
+  storageHelp:
+    'Очистка применяется к зарегистрированным UPack-билдам. Ссылки, история файлов и защищённые метки сохраняют билды. Сначала сохраните выключенную политику и проверьте кандидатов; включение запускает автоудаление. Физическая очистка диска пока выполняется отдельно, с остановкой сервисов.',
+  storageRefresh: 'Обновить настройки и место',
+  storagePolicy: 'Политика хранения',
+  storageGrouping: 'Считать последние N по',
+  storagePerChannel: 'Пакету и каналу',
+  storagePerPackage: 'Пакету',
+  storageGlobal: 'Всему репозиторию',
+  storageKeep: 'Последних N билдов по умолчанию',
+  storageAge: 'Минимальный возраст для удаления (часы)',
+  storageInterval: 'Интервал очистки (минуты)',
+  storageQuota: 'Квота в байтах (пусто — без лимита репозитория)',
+  storageProtected: 'Защищённые метки через запятую',
+  storageWarningPercent: 'Порог предупреждения (%)',
+  storageCriticalPercent: 'Критический порог (%)',
+  storageChannels: 'Настройки каналов: метка=N, каждая с новой строки',
+  storageEnabled: 'Включить автоочистку',
+  storageAcknowledge:
+    'Понимаю, что сохранение включённой политики разрешает автоматическое удаление.',
+  storageSave: 'Сохранить политику',
+  storagePreview: 'Проверить сохранённую политику',
+  storageEvents: 'Предупреждения, ошибки и события хранилища',
+  storageMore: 'Следующие события',
+  storageRevision: 'Ревизия политики {revision} · Последний запуск удалил {count} билдов',
+  storageRunFailed:
+    'Автоочистка остановлена: {code}. Проверьте ключ, которым её включили, и доступность хранилища.',
+  storageUsage:
+    'Байты: опубликовано {published} · загрузки {pending} · ожидают GC {retired} · зарезервировано {total} / {quota}',
+  storageNormal: 'Ёмкость ниже порогов предупреждений или квота репозитория не задана.',
+  storageWarning:
+    'Хранилище приближается к квоте. Проверьте политику и запланируйте физическую очистку.',
+  storageCritical:
+    'Хранилище близко к квоте или достигло её. Новые резервирования сверх квоты отклоняются.',
+  storageConfirmRequired: 'Для автоочистки нужны право удаления и явное подтверждение.',
+  storageSaved: 'Политика сохранена. Если включена — будет выполняться автоматически.',
+  storagePreviewCount: 'Сохранённая политика: кандидатов на удаление в этой порции — {count}.',
+  storagePreviewMore: 'Сохранённая политика: показано {count} кандидатов; есть ещё.',
+
   deletionTitle: 'Удаление артефакта',
   deletionHelp:
     'Удаление скрывает артефакт из каталога и запрещает новые скачивания. Отменить его здесь нельзя. История файлов, вложения и внешние ссылки защищены. Место на диске освобождается отдельно при обслуживании.',

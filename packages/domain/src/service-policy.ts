@@ -1,5 +1,8 @@
 export const serviceActions = [
   'repository.read',
+  'storage.read',
+  'storage.manage',
+  'diagnostics.read',
   'artifact.read',
   'artifact.list',
   'artifact.delete',

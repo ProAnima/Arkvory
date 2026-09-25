@@ -4,7 +4,10 @@ import { serviceActions } from '@proanima/depot-domain';
 // Frozen mapping of existing coarse permissions. New actions require explicit opt-in.
 const legacyActions: Readonly<
   Record<
-    Exclude<ServiceAction, 'repository.read' | 'artifact.delete'>,
+    Exclude<
+      ServiceAction,
+      'repository.read' | 'artifact.delete' | 'storage.read' | 'storage.manage' | 'diagnostics.read'
+    >,
     readonly ('read' | 'write')[]
   >
 > = {
@@ -52,6 +55,9 @@ export function effectivePermissions(principal: Principal): readonly ServiceBind
       (action) =>
         action !== 'repository.read' &&
         action !== 'artifact.delete' &&
+        action !== 'storage.read' &&
+        action !== 'storage.manage' &&
+        action !== 'diagnostics.read' &&
         legacyActions[action].every((permission) => granted.has(permission)),
     );
     if (actions.length) result.push({ resource: { kind: 'repository', id: repository }, actions });

@@ -15,4 +15,8 @@ export { PostgresServices } from './service-accounts.js';
 
 export * from './attachments.js';
 
-export * from './retention.js';
+export { PostgresRetention } from './retention.js';
+
+export * from './storage-policy.js';
+
+export * from './diagnostics.js';

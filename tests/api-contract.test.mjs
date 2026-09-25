@@ -54,7 +54,12 @@ test('published contract has stable IDs, complete parameter/security metadata an
         assert.ok(access.actions.length);
         assert.ok(access.actions.every((a) => serviceActions.includes(a)));
         assert.ok(access.legacy === null || access.legacy.length);
-        if (access.legacy === null) assert.deepEqual(access.actions, ['artifact.delete']);
+        if (access.legacy === null)
+          assert.ok(
+            access.actions.every((a) =>
+              ['artifact.delete', 'storage.read', 'storage.manage', 'diagnostics.read'].includes(a),
+            ),
+          );
         if (access.resource === 'path.repository') assert.ok(variables.includes('repository'));
         else assert.equal(access.owner, 'job');
       }

@@ -31,3 +31,5 @@ SDK имеет совместимые namespaces: `client.identity`, `client.adm
 `client.inRepository(id).attachments.{get,replace,history}` и flat `attachments/replaceAttachments/attachmentHistory` принимают AbortSignal. CAS не повторяется автоматически, bytes используют прежние transfers. [Пример CI](../../docs/BUILD_DETAILS.md).
 
 client.inRepository(id).artifacts.inspectDeletion/delete и retention.preview/apply принимают AbortSignal и проверяют ответы runtime-парсерами. Flat методы: inspectDeletion, deleteArtifact, previewRetention, applyRetention. Mutations не повторяются скрыто; UI должен проверять outcome каждой строки. [Контракт и ограничения](../../docs/ARTIFACT_RETENTION.md).
+
+`client.inRepository(id).storage.{policy,configure,usage,preview,run,events}` поддерживает AbortSignal и runtime-проверку ответов. `configure(expectedRevision, policy)` заменяет настройки; `run(expectedRevision)` выполняет одну порцию. Flat методы: storagePolicy, setStoragePolicy, storageUsage, previewStoragePolicy, runStoragePolicy, storageEvents. [Пример и безопасность](../../docs/STORAGE_POLICIES.md).

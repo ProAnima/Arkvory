@@ -504,4 +504,50 @@ data(
   null,
   'idempotent',
 );
+data(
+  root + '/storage/policy',
+  'get',
+  'getStoragePolicy',
+  'Catalog',
+  ['storage.read'],
+  null,
+  'read',
+);
+data(
+  root + '/storage/policy',
+  'put',
+  'setStoragePolicy',
+  'Catalog',
+  ['storage.manage'],
+  null,
+  'compare-and-swap',
+);
+data(root + '/storage/usage', 'get', 'getStorageUsage', 'Catalog', ['storage.read'], null, 'read');
+data(
+  root + '/storage/preview',
+  'get',
+  'previewStoragePolicy',
+  'Catalog',
+  ['artifact.delete'],
+  null,
+  'read',
+);
+data(
+  root + '/storage/run',
+  'post',
+  'runStoragePolicy',
+  'Catalog',
+  ['storage.manage', 'artifact.delete'],
+  null,
+  'never-automatic',
+);
+data(
+  root + '/storage/events',
+  'get',
+  'getStorageEvents',
+  'Catalog',
+  ['diagnostics.read'],
+  null,
+  'read',
+);
 export const operationPolicies: Readonly<typeof policies> = policies;

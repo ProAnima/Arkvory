@@ -30,7 +30,8 @@
     "worker": "node --env-file-if-exists=.env apps/worker/dist/main.js",
     "gc": "node --env-file-if-exists=.env apps/worker/dist/gc.js",
     "import": "node --env-file-if-exists=.env scripts/import.mjs",
-    "scrub": "node --env-file-if-exists=.env apps/worker/dist/scrub.js"
+    "scrub": "node --env-file-if-exists=.env apps/worker/dist/scrub.js",
+    "upack:manifest": "node scripts/upack-manifest.mjs"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

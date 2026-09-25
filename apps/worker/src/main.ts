@@ -4,6 +4,7 @@ import { setTimeout as delay } from 'node:timers/promises';
 import { StorageService } from '@proanima/depot-application';
 import { DepotError } from '@proanima/depot-domain';
 import {
+  DiagnosticLogger,
   PostgresJobs,
   PostgresIdentity,
   PostgresServices,
@@ -11,6 +12,7 @@ import {
 } from '@proanima/depot-infrastructure';
 import { resources } from './runtime.js';
 
+const diagnostics = new DiagnosticLogger(process.stdout, () => new Date().toISOString());
 const stop = new AbortController();
 for (const event of ['SIGINT', 'SIGTERM'] as const)
   process.once(event, () => {
@@ -81,15 +83,21 @@ try {
         await heartbeat;
       }
       if (!state.lost) await jobs.finish(job.id, job.generation, errorCode);
-      process.stdout.write(
-        JSON.stringify({ event: 'completion_attempt', jobId: job.id, errorCode }) + '\n',
-      );
+      diagnostics.write({
+        level: errorCode || state.lost ? 'error' : 'info',
+        component: 'worker',
+        code: state.lost ? 'completion.lease_lost' : (errorCode ?? 'completion.completed'),
+        jobId: job.id,
+        repository: job.repository,
+      });
       if (process.argv.includes('--once')) break;
     }
   } finally {
     await catalog.close();
   }
 } catch {
-  process.stderr.write('Worker failed. Check database, storage identity and key configuration.\n');
+  diagnostics.write({ level: 'error', component: 'worker', code: 'worker.unavailable' });
   process.exitCode = 1;
 }
+
+diagnostics.close();

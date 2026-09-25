@@ -197,6 +197,17 @@ export class PostgresCatalog implements Catalog {
         Number(total.entries) >= 100000
       )
         throw new DepotError('capacity_exceeded', 'Catalog capacity exceeded');
+      const quota = (
+        await client.query<{ quota: string | null; used: string }>(
+          `
+        SELECT p.policy->>'quotaBytes' AS quota,
+        (SELECT COALESCE(sum(size),0)::text FROM depot_uploads WHERE repository=$1 AND NOT reclaimed) AS used
+        FROM depot_storage_policies p WHERE p.repository=$1`,
+          [input.repository],
+        )
+      ).rows[0];
+      if (quota?.quota && BigInt(quota.used) + BigInt(input.descriptor.size) > BigInt(quota.quota))
+        throw new DepotError('capacity_exceeded', 'Repository storage quota exceeded');
       const inserted = await client.query<Record<string, unknown>>(
         'INSERT INTO depot_uploads(id,repository,owner,idempotency_key,descriptor,size,created_at) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING *',
         [
@@ -343,10 +354,10 @@ export class PostgresCatalog implements Catalog {
 
   async ready(): Promise<void> {
     const result = await this.pool.query(
-      'SELECT version FROM depot_migrations WHERE version IN (8,9,10,11,12,13,14)',
+      'SELECT version FROM depot_migrations WHERE version IN (8,9,10,11,12,13,14,15)',
     );
-    if (result.rowCount !== 7)
-      throw new DepotError('unavailable', 'Database migrations 8 through 14 are required');
+    if (result.rowCount !== 8)
+      throw new DepotError('unavailable', 'Database migrations 8 through 15 are required');
     await this.pool.query('SELECT id,expires_at FROM depot_uploads LIMIT 0');
   }
   async close(): Promise<void> {

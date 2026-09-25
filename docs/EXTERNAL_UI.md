@@ -60,6 +60,8 @@ if (page.next) {
 
 Публичный контракт CORS, методов и заголовков: [API_CONTRACTS](API_CONTRACTS.md). Стадия продукта и границы отказоустойчивости: [README](../README.ru.md).
 
-Логическое удаление и retention preview/apply реализованы в [ARTIFACT_RETENTION](ARTIFACT_RETENTION.md): managed-only artifact.delete, CAS аннотаций, пины истории и receipts. OpenAPI 0.9.0, 113 операций, миграции 13/14. Реестр/настройки/квоты репозиториев, SDK distribution, identity delegation/SSO, retention scheduler, online GC и глобальное управление очередями остаются отдельными этапами.
+Логическое удаление и retention preview/apply реализованы в [ARTIFACT_RETENTION](ARTIFACT_RETENTION.md): managed-only artifact.delete, CAS аннотаций, пины истории и receipts. OpenAPI 0.10.0, 123 операций, миграции 13/14. Реестр репозиториев, SDK distribution, identity delegation/SSO, online GC и глобальное управление очередями остаются отдельными этапами.
 
 Встроенная консоль выбирает доступные репозитории через repository discovery с пагинацией и artifact.list; managed key требует repository.read для показа области. Это не преобразование granular permissions в старые read/write grants.
+
+Настройки last-N retention и квот, предупреждения и журнал диагностики доступны через API/SDK/консоль: [STORAGE_POLICIES](STORAGE_POLICIES.md).
