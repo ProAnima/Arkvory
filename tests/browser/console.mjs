@@ -74,6 +74,11 @@ try {
   await page.getByRole('cell', { name: 'Verified and saved', exact: true }).waitFor();
   await page.locator('#downloads-clear-finished').click();
   await page.locator('#download-empty').waitFor();
+  await page.locator('#downloads-pause').focus();
+  await page.keyboard.press('Enter');
+  await page.waitForFunction(() => document.activeElement?.id === 'downloads-resume');
+  await page.keyboard.press('Enter');
+  await page.waitForFunction(() => document.activeElement?.id === 'downloads-pause');
   assert.equal(await page.locator('#downloads-cancel').isDisabled(), true);
   assert.equal(await page.locator('#download-policy').isVisible(), false);
   await page.locator('.queue-settings summary').click();

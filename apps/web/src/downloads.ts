@@ -61,6 +61,7 @@ export function installDownloads(baseUrl: string, token: HTMLInputElement) {
     return result;
   };
   function render() {
+    const focused = document.activeElement;
     const snapshots = queue.snapshot;
     const present = new Set(snapshots.map((item) => item.id));
     for (const [id, view] of rendered)
@@ -140,6 +141,16 @@ export function installDownloads(baseUrl: string, token: HTMLInputElement) {
     element('downloads-pause', HTMLButtonElement).hidden = queue.paused;
     element('downloads-resume', HTMLButtonElement).hidden =
       !queue.paused && !hasState('paused', 'pausing');
+    if (
+      focused instanceof HTMLButtonElement &&
+      focused.closest('.download-toolbar') &&
+      focused.hidden
+    ) {
+      // A completed action may disappear; keep keyboard users in the same toolbar.
+      element(queue.paused ? 'downloads-resume' : 'downloads-pause', HTMLButtonElement).focus({
+        preventScroll: true,
+      });
+    }
     message(element('download-summary', HTMLElement), 'downloadSummary', {
       active: snapshots.filter((item) =>
         ['running', 'retrying', 'pausing', 'saving', 'cancelling'].includes(item.state),
