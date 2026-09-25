@@ -178,32 +178,6 @@
     "tests": ["tests/integration/identity.test.mjs"]
   },
   {
-    "id": "ARCH-016",
-    "file": "apps/api/src/server.ts",
-    "metric": "file",
-    "symbol": "<file>",
-    "ceiling": 649,
-    "reason": "Existing composition root combines authentication, transfer routes and process lifecycle; freeze until those responsibilities are extracted under HTTP regression tests.",
-    "owner": "Depot maintainers",
-    "recordedAt": "2026-09-25",
-    "reviewBy": "2026-12-20",
-    "decision": "docs/adr/0027-executable-engineering-gates.md",
-    "tests": ["tests/integration/api-contract.test.mjs", "tests/integration/storage.test.mjs"]
-  },
-  {
-    "id": "ARCH-017",
-    "file": "apps/api/src/server.ts",
-    "metric": "function",
-    "symbol": "createServer",
-    "ceiling": 598,
-    "reason": "Existing composition root combines authentication, transfer routes and process lifecycle; freeze until those responsibilities are extracted under HTTP regression tests.",
-    "owner": "Depot maintainers",
-    "recordedAt": "2026-09-25",
-    "reviewBy": "2026-12-20",
-    "decision": "docs/adr/0027-executable-engineering-gates.md",
-    "tests": ["tests/integration/api-contract.test.mjs", "tests/integration/storage.test.mjs"]
-  },
-  {
     "id": "ARCH-018",
     "file": "apps/api/src/service-routes.ts",
     "metric": "function",

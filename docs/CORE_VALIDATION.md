@@ -158,3 +158,16 @@ Windows, Node 24.13.0, PostgreSQL 18.4, Edge: окончательный `npm ru
 Размер каждого файла — 5 368 709 120 bytes; SHA-256 — b23228f170c6e7ab93aeee2c5711299da5d561470be1c6842ef063f17bfed415. Multipart включает остановку API после части 319, продолжение с части 320, restart после публикации, принудительный обрыв скачивания и SDK verified download. Лимиты трафика — 64 MiB/s на шлюз и 48 MiB/s на principal в каждом направлении; RSS обоих процессов ниже assertion 384 MiB. Значения получены для одного потока на локальном filesystem и не являются SLA/HA.
 
 Отчёты: игнорируемые `test-results/large-transfer.json`, `large-traffic.json` и `gates/*.json`. Приёмка выполнена до commit; последующая правка документации не меняет исполняемый код. Реальные ProGet-клиенты, репликация двух физических серверов, внешний балансировщик и online GC этим инкрементом не подтверждаются.
+
+## Завершение декомпозиции API, 2026-09-25
+
+Windows, Node 24.13.0, PostgreSQL 18.4, Edge: `npm run gate -- quick release` завершился успешно в 13:45 UTC. Прошли policy/static/build, 105 unit/fault/governance тестов, 115 PostgreSQL/HTTP тестов, оба браузерных сценария, аудит зависимостей (0 уязвимостей) и обе передачи 5 GiB. Новые регрессии проверяют rollback после захвата ownership при ошибке HTTP wiring/частичного startup, отсутствие потерянных stdout listeners, повторный close/restart и явную конфигурацию webDirectory. Полный HTTP inventory остаётся 123 операции, OpenAPI и схема БД не изменены.
+
+AST: server.ts 649 → 84 строки кода, createServer 598 → 67. ARCH-016/017 удалены, осталось 24 других исключения; новые модули проходят 500/300/100 без послаблений. Направление зависимостей проверено: 173 модуля, 598 связей. [ADR 0030](adr/0030-api-server-composition.md).
+
+| Сценарий 5 GiB                    | Upload, ms | Download, ms | Peak RSS API, bytes | Peak RSS клиента, bytes |
+| --------------------------------- | ---------- | ------------ | ------------------- | ----------------------- |
+| Full, restart, Range              | 22 612     | 12 082       | 148 099 072         | 225 304 576             |
+| Multipart, managed key, throttled | 173 838    | 129 213      | 139 120 640         | 172 961 792             |
+
+Каждый файл — 5 368 709 120 bytes; SHA-256 — b23228f170c6e7ab93aeee2c5711299da5d561470be1c6842ef063f17bfed415. Подтверждены kill/restart на части 320, restart после публикации, искусственный обрыв download и verified resume; оба процесса ниже RSS assertion 384 MiB. Квоты: 64 MiB/s на шлюз, 48 MiB/s на principal. Отчёты в ignored test-results; рабочее дерево при проверке ещё не было закоммичено. Это локальный regression одного потока, не измерение SLA или подтверждение двухсерверного HA.

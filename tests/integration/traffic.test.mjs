@@ -209,6 +209,11 @@ test('traffic environment configuration rejects invalid rates and active caps', 
   assert.equal(defaults.transferQueueTimeoutMs, 20000);
   assert.equal(defaults.uploadIdleTimeoutMs, 30000);
   assert.equal(defaults.uploadDeadlineMs, 1800000);
+  assert.equal(defaults.webDirectory, 'apps/web/public');
+  assert.equal(
+    (await loadConfig({ ...env, DEPOT_WEB_DIR: 'custom-console' })).webDirectory,
+    'custom-console',
+  );
   for (const value of ['0', '-1', '1e3', '1.5', 'Infinity', ' 1000', '1800001', '']) {
     await assert.rejects(loadConfig({ ...env, DEPOT_UPLOAD_IDLE_TIMEOUT_MS: value }));
     await assert.rejects(loadConfig({ ...env, DEPOT_UPLOAD_DEADLINE_MS: value }));

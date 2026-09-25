@@ -34,6 +34,8 @@ AST-аудит выявил 28 превышений: 7 файлов, 5 клас�
 
 Второй приоритет начат: upload routes/lifetime и download stream отделены от server/catalog-routes. Server: файл 735 → 649, createServer 676 → 598 строк кода; catalog registrar 197 → 155. Потолки уменьшены до новых фактических размеров; оставшиеся исключения не сняты преждевременно. Воспроизводимые transfer-регрессии и решение: [ADR 0029](adr/0029-upload-lifetime-and-exact-reads.md).
 
+Второй приоритет завершён: server.ts 649 → 84, createServer 598 → 67 строк кода. Runtime, HTTP security/context, diagnostics/background, transfer admission и routes разделены; добавлен rollback ошибок сборки после захвата БД. ARCH-016/017 удалены; осталось 24 исключения в других модулях. Регрессии и порядок shutdown: [ADR 0030](adr/0030-api-server-composition.md). Следующий приоритет — PostgreSQL-адаптеры из пункта 3; существующий catalog registrar остаётся отдельным ограниченным долгом.
+
 ## Локальная проверка
 
 Windows, Node 24.13.0, PostgreSQL 18.4, Edge через pinned Playwright 1.63.0. Выполнен release-профиль: политика/формат/TS/lint/границы, unit, npm audit (0 уязвимостей), 105 PostgreSQL/HTTP тестов, оба браузерных сценария и оба сценария 5 GiB. После дополнения governance-проверок повторён quick: 100 тестов, без пропусков; после исправления нагрузочного клиента повторён large-full.
