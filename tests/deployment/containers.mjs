@@ -40,6 +40,9 @@ async function ready() {
   for (let attempt = 0; attempt < 60; attempt++) {
     try {
       const response = await fetch('http://127.0.0.1:8080/health/ready', {
+        headers: {
+          Authorization: `Bearer ${(await readFile(join(root, 'config/health-token.txt'), 'utf8')).trim()}`,
+        },
         signal: AbortSignal.timeout(2000),
       });
       await response.body?.cancel();

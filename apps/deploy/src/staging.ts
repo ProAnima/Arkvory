@@ -2,7 +2,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { createReadStream } from 'node:fs';
 import { mkdir, rename, chmod, access, readdir } from 'node:fs/promises';
 import { join } from 'node:path';
-import { atomicJson, jsonFile, inside } from './files.js';
+import { atomicJson, jsonFile, inside, syncDirectory } from './files.js';
 import { parseRelease } from './model.js';
 import type { Release } from './model.js';
 import { GitHubReleases } from './github.js';
@@ -72,12 +72,13 @@ export async function stage(root: string, source: Source): Promise<void> {
   await atomicJson(join(temporary, 'release.json'), source.release);
   await readableTree(temporary);
   await rename(temporary, destination);
+  await syncDirectory(join(root, 'releases'));
 }
 async function readableTree(directory: string): Promise<void> {
   await chmod(directory, 0o755);
   for (const entry of await readdir(directory, { withFileTypes: true })) {
     const path = join(directory, entry.name);
     if (entry.isDirectory()) await readableTree(path);
-    else await chmod(path, 0o644);
   }
+  await syncDirectory(directory);
 }

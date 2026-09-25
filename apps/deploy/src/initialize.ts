@@ -11,6 +11,7 @@ export async function initialize(
   input: string | undefined,
 ): Promise<void> {
   const token = randomBytes(32).toString('hex');
+  const healthToken = randomBytes(32).toString('hex');
   const password = randomBytes(32).toString('hex');
   const container = state.mode === 'compose';
   const supplied = input ? runtimeEnvironment(await jsonFile(input)) : {};
@@ -49,6 +50,12 @@ export async function initialize(
           administrator: true,
           serviceAdministrator: true,
         },
+        {
+          id: 'deployment-health',
+          sha256: createHash('sha256').update(healthToken).digest('hex'),
+          repositories: [],
+          permissions: [],
+        },
       ],
       null,
       2,
@@ -56,6 +63,7 @@ export async function initialize(
     { flag: 'wx', mode: 0o600 },
   );
   await writeFile(join(root, 'config/bootstrap-token.txt'), token, { flag: 'wx', mode: 0o600 });
+  await writeFile(join(root, 'config/health-token.txt'), healthToken, { flag: 'wx', mode: 0o600 });
   await writeFile(
     join(root, 'config/postgres.env'),
     `POSTGRES_USER=depot\nPOSTGRES_DB=depot\nPOSTGRES_PASSWORD=${password}\n`,
@@ -68,6 +76,6 @@ export async function initialize(
   );
   // Bind-mounted runtime files are readable inside an unprivileged container. Host config directory stays private.
   if (container)
-    for (const name of ['runtime.json', 'keys.json'])
+    for (const name of ['runtime.json', 'keys.json', 'health-token.txt'])
       await chmod(join(root, 'config', name), 0o644);
 }

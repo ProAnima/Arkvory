@@ -4,6 +4,7 @@ import type { Installation, Release } from './model.js';
 import { jsonFile } from './files.js';
 import { runtimeEnvironment } from './runtime.js';
 import { setTimeout as delay } from 'node:timers/promises';
+import { healthReady } from './health.js';
 
 export class Services {
   constructor(
@@ -73,11 +74,9 @@ export class Services {
     let consecutive = 0;
     for (let attempt = 0; attempt < 60; attempt++) {
       try {
-        const response = await fetch(`http://127.0.0.1:${port}/health/ready`, {
-          signal: AbortSignal.timeout(2000),
-        });
-        await response.body?.cancel();
-        consecutive = response.ok ? consecutive + 1 : 0;
+        consecutive = (await healthReady(port, join(this.root, 'config/health-token.txt')))
+          ? consecutive + 1
+          : 0;
         if (consecutive >= 3) {
           await this.workerRunning();
           return;

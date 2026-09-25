@@ -23,7 +23,7 @@ export function archivePath(root: string, name: string, attributes: number): str
           /[:<>"|?*]/.test(part) ||
           /\p{Cc}/u.test(part) ||
           /[. ]$/.test(part) ||
-          /^(con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/i.test(part),
+          /^(con|prn|aux|nul|com[1-9¹²³]|lpt[1-9¹²³])(?:\.|$)/i.test(part),
       )
   )
     throw new Error('Unsafe archive path');
@@ -56,6 +56,7 @@ async function extractEntry(zip: ZipFile, entry: Entry, root: string): Promise<v
       await file.writeFile(chunk);
     }
     if (size !== entry.uncompressedSize) throw new Error('Truncated archive entry');
+    await file.chmod(0o644);
     await file.sync();
   } finally {
     stream.destroy();

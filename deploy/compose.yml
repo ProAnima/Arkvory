@@ -12,6 +12,7 @@ x-runtime: &runtime
     - storage:/var/lib/depot
     - ./config/runtime.json:/run/depot/runtime.json:ro
     - ./config/keys.json:/run/depot/keys.json:ro
+    - ./config/health-token.txt:/run/depot/health-token.txt:ro
   logging:
     driver: json-file
     options: { max-size: 20m, max-file: '5' }
@@ -48,13 +49,7 @@ services:
     depends_on:
       database: { condition: service_healthy }
     healthcheck:
-      test:
-        [
-          CMD,
-          node,
-          -e,
-          "fetch('http://127.0.0.1:8080/health/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
-        ]
+      test: [CMD, node, apps/deploy/dist/probe.js]
       interval: 10s
       timeout: 4s
       retries: 18

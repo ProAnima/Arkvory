@@ -38,6 +38,8 @@ Docker, Windows с работающим Docker Desktop в режиме Linux con
 
 HTTP по умолчанию доступен только через `http://127.0.0.1:8080`. Первичный ключ — в `config/bootstrap-token.txt`, в вывод установки он не попадает. После первого входа создайте ограниченные учётные записи/ключи и замените bootstrap credential. Для удалённого доступа настройте HTTPS reverse proxy: [nginx.conf.example](nginx.conf.example) не буферизует большие загрузки. Сертификаты, домен и firewall настраивает оператор.
 
+Readiness проверяется отдельным `config/health-token.txt`: его запись `deployment-health` в keys.json не имеет repository grants и административных прав. Сохраняйте эту запись при ротации bootstrap; при замене health credential синхронно меняйте токен и его SHA-256 и перезапускайте API. Healthcheck не использует административный ключ и не снимает авторизацию с `/health/ready`.
+
 ## Приватный репозиторий
 
 Перед сетевой установкой создайте **в выделенном каталоге установки** `github-token.txt` с токеном чтения Contents этого репозитория. Не передавайте его аргументом CLI. Linux: owner root, mode 0600, каталог 0700; Windows: только Administrators/SYSTEM. Тот же файл использует updater. Служба Depot не должна читать его. Токен, скопированный после установки, нужно защитить теми же правами. Для публичных releases он не нужен.

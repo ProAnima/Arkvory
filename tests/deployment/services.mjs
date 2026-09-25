@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import assert from 'node:assert/strict';
+import { existsSync } from 'node:fs';
 const windows = process.platform === 'win32';
 const root = windows
   ? await mkdtemp(join(tmpdir(), 'depot-service-gate-'))
@@ -14,7 +15,10 @@ if (!windows) execFileSync('sudo', ['chown', `${process.getuid()}:${process.getg
 if (!windows && process.platform !== 'linux')
   throw Error('Service gate requires Linux systemd or Windows');
 const prefix = `depotgate${process.pid}`;
-const run = (file, args) => execFileSync(file, args, { stdio: 'inherit', windowsHide: true });
+const environment = { ...process.env };
+if (windows) delete environment.PSModulePath;
+const run = (file, args) =>
+  execFileSync(file, args, { env: environment, stdio: 'inherit', windowsHide: true });
 for (const name of ['data', 'logs', 'config', 'service']) await mkdir(join(root, name));
 for (const name of ['runtime.json', 'keys.json', 'bootstrap-token.txt', 'postgres.env'])
   await writeFile(join(root, 'config', name), '{}');
@@ -80,8 +84,10 @@ try {
   for (const role of ['api', 'worker']) {
     if (windows) {
       const exe = join(root, `service/depot-${role}.exe`);
-      run(exe, ['stop']);
-      run(exe, ['uninstall']);
+      if (existsSync(exe)) {
+        run(exe, ['stop']);
+        run(exe, ['uninstall']);
+      }
     } else {
       run('sudo', ['systemctl', 'disable', '--now', `${prefix}-${role}`]);
       // Exact, generated unit name; never recursively delete an administrator-provided path.

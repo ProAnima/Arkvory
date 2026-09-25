@@ -28,9 +28,12 @@ export async function atomicText(path: string, value: string, mode = 0o644): Pro
     await file.close();
   }
   await rename(temporary, path);
+  await syncDirectory(dirname(path));
+}
+export async function syncDirectory(path: string): Promise<void> {
   // POSIX directory fsync makes pointer replacement durable. Windows does not expose directory fsync.
   if (process.platform !== 'win32') {
-    const directory = await open(dirname(path), 'r');
+    const directory = await open(path, 'r');
     try {
       await directory.sync();
     } finally {
