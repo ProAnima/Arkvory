@@ -12,6 +12,7 @@
   "license": "UNLICENSED",
   "author": "Ian Panaev",
   "dependencies": {
+    "ssh2": "1.17.0",
     "yauzl": "3.4.0"
   }
 }

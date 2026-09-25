@@ -44,6 +44,10 @@ export async function exerciseClient(output, version) {
         ])
       : run('depotctl', args.split(' '));
   install();
+  const remoteHelp = windows
+    ? run(join(installation, 'node.exe'), [join(installation, 'depot-remote.mjs'), '--help'])
+    : run('/usr/bin/depot-remote', ['--help']);
+  assert.match(remoteHelp, /Remote Setup/);
   assert.equal(JSON.parse(cli('--version')).version, version);
   cli('profile add acceptance --server https://depot.example');
   const profile = join(env.DEPOT_CLI_HOME, 'profiles.json');

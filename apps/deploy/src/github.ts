@@ -9,7 +9,10 @@ export interface ReleaseAssets {
   archiveUrl: string;
 }
 export class GitHubReleases {
-  constructor(private readonly token: string) {
+  constructor(
+    private readonly token: string,
+    private readonly signal?: AbortSignal,
+  ) {
     if (!/^[A-Za-z0-9_-]{0,512}$/.test(token)) throw new Error('Invalid GitHub token file');
   }
   static async fromTokenFile(path: string): Promise<GitHubReleases> {
@@ -35,7 +38,9 @@ export class GitHubReleases {
       const response = await fetch(target, {
         headers,
         redirect: 'manual',
-        signal: AbortSignal.timeout(600000),
+        signal: this.signal
+          ? AbortSignal.any([this.signal, AbortSignal.timeout(600000)])
+          : AbortSignal.timeout(600000),
       });
       if ([301, 302, 303, 307, 308].includes(response.status)) {
         await response.body?.cancel();
@@ -114,5 +119,39 @@ export class GitHubReleases {
       throw error;
     }
     await file.close();
+  }
+  async native(platform: 'linux' | 'windows', name: string) {
+    if (!['Depot-amd64.deb', 'Depot-x86_64.rpm', 'Depot-Setup-x64.exe'].includes(name))
+      throw new Error('Invalid native installer');
+    const data = record(await this.json(`${api}/releases/latest`));
+    if (data['draft'] !== false || data['prerelease'] !== false || !Array.isArray(data['assets']))
+      throw new Error('Stable published release required');
+    const assets: unknown[] = data['assets'];
+    const asset = (file: string) => {
+      const matches = assets.map(record).filter((item) => item['name'] === file);
+      const url = matches[0]?.['url'];
+      if (
+        matches.length !== 1 ||
+        typeof url !== 'string' ||
+        !url.startsWith(`${api}/releases/assets/`)
+      )
+        throw new Error('Missing release asset');
+      return url;
+    };
+    const manifest = record(
+      await this.json(asset(`native-${platform === 'windows' ? 'win32' : 'linux'}.json`), true),
+    );
+    const files = record(manifest['files']),
+      hash = files[name];
+    const selected = version(String(manifest['version']));
+    if (
+      data['tag_name'] !== `v${selected}` ||
+      typeof hash !== 'string' ||
+      !/^[a-f0-9]{64}$/.test(hash) ||
+      typeof manifest['commit'] !== 'string' ||
+      !/^[a-f0-9]{40}$/.test(manifest['commit'])
+    )
+      throw new Error('Native release identity mismatch');
+    return { version: selected, hash, url: asset(name) };
   }
 }

@@ -7,6 +7,7 @@ export const releaseFiles = [
   'depot-runtime.zip',
   'depot-setup.mjs',
   'depotctl.mjs',
+  'depot-remote.mjs',
   'depot-release.json',
   'install.sh',
   'install.ps1',

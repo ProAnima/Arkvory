@@ -5,10 +5,13 @@ import { execFileSync } from 'node:child_process';
 async function clientFiles(source, destination, node, license) {
   await mkdir(destination, { recursive: true });
   await copyFile(join(source, 'depotctl.mjs'), join(destination, 'depotctl.mjs'));
+  await copyFile(join(source, 'depot-remote.mjs'), join(destination, 'depot-remote.mjs'));
+  await copyFile('node_modules/ssh2/LICENSE', join(destination, 'SSH2-LICENSE.txt'));
   await copyFile(node, join(destination, process.platform === 'win32' ? 'node.exe' : 'node'));
   await copyFile(license, join(destination, 'NODE-LICENSE.txt'));
   await copyFile('LICENSE.md', join(destination, 'LICENSE.md'));
   await copyFile('docs/CLI.md', join(destination, 'CLI.md'));
+  await copyFile('docs/REMOTE_DEPLOYMENT.md', join(destination, 'REMOTE_DEPLOYMENT.md'));
 }
 export async function windowsClient(source, stage, output, release, compiler, runtime, artwork) {
   const payload = join(stage, 'client');
@@ -18,6 +21,7 @@ export async function windowsClient(source, stage, output, release, compiler, ru
     (await readFile('deploy/client/depotctl.cmd', 'utf8')).replace(/\r?\n/g, '\r\n'),
   );
   await copyFile(artwork, join(payload, 'wizard.png'));
+  await copyFile('deploy/client/remote-setup.ps1', join(payload, 'remote-setup.ps1'));
   execFileSync(
     compiler,
     [
@@ -37,12 +41,19 @@ export async function linuxClient(source, stage, output, release) {
   await clientFiles(source, destination, join(stage, 'node/bin/node'), join(stage, 'node/LICENSE'));
   await chmod(join(destination, 'node'), 0o755);
   await mkdir(join(tree, 'usr/bin'), { recursive: true });
+  await mkdir(join(tree, 'usr/share/applications'), { recursive: true });
+  await copyFile('deploy/client/depot-remote', join(tree, 'usr/bin/depot-remote'));
+  await chmod(join(tree, 'usr/bin/depot-remote'), 0o755);
+  await copyFile(
+    'deploy/client/depot-remote.desktop',
+    join(tree, 'usr/share/applications/depot-remote.desktop'),
+  );
   await copyFile('deploy/client/depotctl', join(tree, 'usr/bin/depotctl'));
   await chmod(join(tree, 'usr/bin/depotctl'), 0o755);
   await mkdir(join(tree, 'DEBIAN'));
   await writeFile(
     join(tree, 'DEBIAN/control'),
-    `Package: proanima-depot-cli\nVersion: ${release.version}\nArchitecture: amd64\nMaintainer: Ian Panaev\nSection: net\nPriority: optional\nDepends: ca-certificates, libc6 (>= 2.28), libstdc++6, libgcc-s1, libatomic1\nDescription: ProAnima Depot remote client\n Resumable verified transfers and repository management.\n`,
+    `Package: proanima-depot-cli\nVersion: ${release.version}\nArchitecture: amd64\nMaintainer: Ian Panaev\nSection: net\nPriority: optional\nDepends: ca-certificates, xdg-utils, libc6 (>= 2.28), libstdc++6, libgcc-s1, libatomic1\nDescription: ProAnima Depot remote client\n Resumable verified transfers, remote setup and repository management.\n`,
   );
   execFileSync(
     'dpkg-deb',

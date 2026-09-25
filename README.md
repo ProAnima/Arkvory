@@ -307,4 +307,6 @@ Stable updates use verified GitHub Releases, optional automatic updates, version
 
 ### Remote CLI
 
+**Depot Remote Setup** is included in the client installers. Its RU/EN browser wizard checks an SSH host, installs a stable native release with dependencies and services, creates the owner, verifies readiness and forwards the console to a local address. Existing installations can be connected without reinstalling. This profile provides private SSH access from the administrator’s computer; permanent LAN/HTTPS publication and remote Compose orchestration are not implemented in the wizard. [Remote setup and requirements](docs/REMOTE_DEPLOYMENT.md).
+
 `depotctl` is a separate remote client: server profiles, resumable uploads/downloads with SHA-256 verification, metadata and labels, revisioned attachments, package registration, storage usage and API discovery. `--json` supports CI/CD; help is available in English and Russian. Keys come from environment variables or private files, never command arguments. Client-only Windows per-user EXE and Linux DEB/RPM bundle Node.js without installing server services or PostgreSQL. A standalone `depotctl.mjs` supports CI with Node.js 24. [Installation, examples, recovery and command reference](docs/CLI.md).

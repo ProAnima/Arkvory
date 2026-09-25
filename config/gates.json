@@ -77,7 +77,11 @@
     "browser": {
       "needs": ["build"],
       "timeoutSeconds": 600,
-      "entries": ["tests/browser/console.mjs", "tests/browser/downloads.mjs"],
+      "entries": [
+        "tests/browser/console.mjs",
+        "tests/browser/downloads.mjs",
+        "tests/browser/remote-wizard.mjs"
+      ],
       "kind": "scenario",
       "database": true,
       "browser": true

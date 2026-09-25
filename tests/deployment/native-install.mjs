@@ -7,6 +7,7 @@ import assert from 'node:assert/strict';
 import { verifyNativeFiles } from '../../scripts/native-files.mjs';
 import { exerciseRpm } from './native-rpm.mjs';
 import { exerciseClient } from './client-install.mjs';
+import { exerciseRemoteAccess } from './remote-access.mjs';
 
 // This gate uses production service names only on disposable CI machines, never a developer workstation.
 assert.equal(
@@ -87,6 +88,7 @@ try {
     await assert.rejects(access(ownerFile), /ENOENT/, 'Consumed password file must be deleted');
   }
   const configuration = JSON.parse(await read(join(root, 'config/runtime.json')));
+  await exerciseRemoteAccess();
   assert.ok(configuration.DEPOT_DATABASE_URL.includes('127.0.0.1:54329/depot'));
   const pg = windows ? join(root, 'runtime/postgres/bin/psql.exe') : 'psql';
   const restricted = execFileSync(

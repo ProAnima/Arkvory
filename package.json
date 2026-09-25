@@ -45,6 +45,7 @@
     "@eslint/js": "10.0.1",
     "@types/node": "24.13.6",
     "@types/pg": "8.23.1",
+    "@types/ssh2": "1.15.6",
     "@types/yauzl": "3.4.0",
     "ajv": "8.20.0",
     "ajv-formats": "3.0.1",

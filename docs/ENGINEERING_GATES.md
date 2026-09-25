@@ -31,6 +31,8 @@ Native jobs в check/release кэшируют только `.cache/native-downlo
 
 Для локальной БД: npm run test:db:up, скопировать .env.test.example в .env.test, затем npm run test:browser:install и npm run gate -- verify. Docker Compose открывает отдельную БД только на 127.0.0.1:54329. Остановка: npm run test:db:stop; том сохраняется. Никогда не направлять тесты на production. Гейты читают .env.test, существующие переменные окружения имеют приоритет. DEPOT_BROWSER_CHANNEL=msedge допускается для явной локальной проверки Edge; CI использует Chromium из зафиксированной версии Playwright.
 
+Мастер Remote Setup проверяется существующими unit/browser/deployment/native-install gates. В browser добавлен отдельный сценарий форм и обеих тем; native-install проверяет реальный shell/stdin, готовность служб и консоль через loopback SSH на одноразовых Windows/Linux runner’ах. Это не заменяет приёмку с настоящим OpenSSH и сетевой инфраструктурой площадки.
+
 Для large нужно не менее 11 GiB свободного temp. Suites с одной БД не запускать одновременно даже из разных checkout: standalone advisory lock действует на всю БД. Локальный lock .cache/gates.lock содержит PID; после аварии сначала убедиться, что процесс завершён, затем удалить только этот файл. При ошибке гейт останавливается; не делает retry, skip или карантин.
 
 ## Расширение

@@ -42,6 +42,13 @@ assert.match(
   /Удалённый клиент/,
 );
 const target = join(root, 'installation');
+assert.match(
+  execFileSync(process.execPath, [join(output, 'depot-remote.mjs'), '--help'], {
+    cwd: root,
+    encoding: 'utf8',
+  }),
+  /Remote Setup/,
+);
 const selected = await source(target, null, output);
 await stage(target, selected);
 await stage(target, selected);

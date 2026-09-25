@@ -75,6 +75,28 @@ await build({
   },
 });
 await copyFile(join(output, 'depot-setup.mjs'), join(staging, 'deploy/depot-setup.mjs'));
+const sshLicenses = await Promise.all(
+  ['ssh2', 'asn1', 'safer-buffer', 'bcrypt-pbkdf', 'tweetnacl'].map(
+    async (name) => `${name}\n${await readFile(`node_modules/${name}/LICENSE`, 'utf8')}`,
+  ),
+);
+await build({
+  entryPoints: ['apps/deploy/src/remote-main.ts'],
+  outfile: join(output, 'depot-remote.mjs'),
+  bundle: true,
+  format: 'esm',
+  platform: 'node',
+  target: 'node24',
+  external: ['cpu-features'],
+  banner: {
+    // ssh2 initializes optional agent helpers on import. Agent authentication is not exposed by the wizard.
+    js:
+      '/* Bundled dependency licenses\n' +
+      sshLicenses.join('\n\n').replaceAll('*/', '* /') +
+      '\n*/\n' +
+      "import { createRequire } from 'node:module'; const require = createRequire(import.meta.url); const __dirname = import.meta.dirname; const __filename = import.meta.filename;",
+  },
+});
 await build({
   entryPoints: ['apps/cli/src/main.ts'],
   outfile: join(output, 'depotctl.mjs'),

@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Depot Remote Setup
+Name[ru]=Удалённая установка Depot
+Comment=Install Depot on a remote server
+Comment[ru]=Установить Depot на удалённый сервер
+Exec=/usr/bin/depot-remote
+Terminal=false
+Categories=Network;System;

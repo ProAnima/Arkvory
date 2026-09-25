@@ -35,9 +35,17 @@ Name: "ru"; MessagesFile: "compiler:Languages\Russian.isl"
 [CustomMessages]
 en.WelcomeLabel2=Your storage, from your terminal.%n%nInstall depotctl for this user. Node.js is included; no administrator account, database or server services are needed.%n%nAfter setup, open a new terminal and run depotctl --help. Connect to your server with a profile and a private key file.
 ru.WelcomeLabel2=Ваше хранилище — в вашем терминале.%n%nУстановка depotctl для текущего пользователя. Node.js включён; права администратора, база данных и службы сервера не нужны.%n%nПосле установки откройте новый терминал и выполните depotctl --help --lang ru. Подключитесь к серверу через профиль и файл ключа.
+en.OpenRemote=Open Depot Remote Setup
+ru.OpenRemote=Открыть мастер удалённой установки Depot
 
 [Files]
 Source: "{#Payload}\*"; DestDir: "{app}"; Flags: ignoreversion; Excludes: "wizard.png"
+
+[Icons]
+Name: "{autoprograms}\Depot Remote Setup"; Filename: "{sys}\WindowsPowerShell\v1.0\powershell.exe"; Parameters: "-NoProfile -NonInteractive -ExecutionPolicy Bypass -WindowStyle Hidden -File ""{app}\remote-setup.ps1"""; Flags: runminimized
+
+[Run]
+Filename: "{sys}\WindowsPowerShell\v1.0\powershell.exe"; Parameters: "-NoProfile -NonInteractive -ExecutionPolicy Bypass -WindowStyle Hidden -File ""{app}\remote-setup.ps1"""; Description: "{cm:OpenRemote}"; Flags: nowait postinstall skipifsilent runhidden
 
 [Code]
 procedure UpdatePath(Remove: Boolean);
