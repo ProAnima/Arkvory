@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { readFile, writeFile, access, mkdtemp } from 'node:fs/promises';
+import { readFile, writeFile, access, mkdtemp, unlink } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { randomBytes } from 'node:crypto';
@@ -35,10 +35,14 @@ const env = Object.fromEntries(
 );
 const run = (file, args) =>
   execFileSync(file, args, { env, stdio: 'inherit', windowsHide: true, timeout: 300000 });
-const read = (path) =>
-  windows
-    ? readFile(path, 'utf8')
-    : Promise.resolve(execFileSync('sudo', ['cat', path], { encoding: 'utf8' }));
+const read = async (path) => {
+  if (!windows) return execFileSync('sudo', ['cat', path], { encoding: 'utf8' });
+  const bytes = await readFile(path);
+  // Windows PowerShell 5 redirects to UTF-16; decode before redacting diagnostics.
+  return bytes[0] === 0xff && bytes[1] === 0xfe
+    ? bytes.subarray(2).toString('utf16le')
+    : bytes.toString('utf8');
+};
 const temporary = await mkdtemp(join(tmpdir(), 'depot-owner-gate-'));
 const password = randomBytes(24).toString('hex');
 const ownerFile = join(temporary, 'owner.json');
@@ -107,6 +111,32 @@ try {
   else run('sudo', ['apt-get', 'install', '--reinstall', '-y', join(output, 'Depot-amd64.deb')]);
   assert.equal(await read(join(root, 'config/runtime.json')), before);
   assert.equal(await read(join(root, 'database/owner-password')), ownerBefore);
+  if (windows) {
+    // Simulate a concurrent updater: the EXE must return failure without stopping healthy services.
+    const lock = join(root, 'operation.lock');
+    await writeFile(lock, 'native acceptance conflict', { flag: 'wx' });
+    try {
+      assert.throws(
+        () =>
+          run(join(output, 'Depot-Setup-x64.exe'), [
+            '/VERYSILENT',
+            '/SUPPRESSMSGBOXES',
+            '/NORESTART',
+          ]),
+        (error) => error.status === 1,
+      );
+    } finally {
+      await unlink(lock);
+    }
+    assert.equal(
+      (
+        await fetch('http://127.0.0.1:8080/health/ready', {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+      ).status,
+      200,
+    );
+  }
   console.log(`Native installation ready in ${Math.round((Date.now() - started) / 1000)} seconds`);
 } catch (error) {
   if (windows) {

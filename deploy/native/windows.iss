@@ -73,10 +73,27 @@ Name: "{group}\Depot"; Filename: "http://127.0.0.1:8080/console/"
 Name: "{group}\API and CLI"; Filename: "http://127.0.0.1:8080/console/#help"
 
 [Run]
-Filename: "http://127.0.0.1:8080/console/#onboarding"; Description: "{cm:OpenDepot}"; Flags: shellexec postinstall skipifsilent runasoriginaluser
+Filename: "http://127.0.0.1:8080/console/#onboarding"; Description: "{cm:OpenDepot}"; Flags: shellexec postinstall skipifsilent runasoriginaluser; Check: ConfigurationReady
 
 [Code]
-var OwnerPage: TInputQueryWizardPage;
+var OwnerPage: TInputQueryWizardPage; Configured: Boolean;
+
+function ConfigurationReady: Boolean;
+begin
+  Result := Configured;
+end;
+
+function GetCustomSetupExitCode: Integer;
+begin
+  // ssPostInstall exceptions alone do not change Inno's successful exit code.
+  if Configured then Result := 0 else Result := 1;
+end;
+
+procedure CurPageChanged(CurPageID: Integer);
+begin
+  if (CurPageID = wpFinished) and (not Configured) then
+    WizardForm.FinishedLabel.Caption := CustomMessage('InstallFailed');
+end;
 
 function DataRoot: String;
 begin
@@ -145,6 +162,7 @@ begin
   end;
   WizardForm.StatusLabel.Caption := CustomMessage('Configuring');
   if not Exec(ExpandConstant('{sys}\WindowsPowerShell\v1.0\powershell.exe'), Args, '', SW_HIDE, ewWaitUntilTerminated, Code) or (Code <> 0) then RaiseException(CustomMessage('InstallFailed'));
+  Configured := True;
   OwnerPage.Values[1] := ''; OwnerPage.Values[2] := '';
 end;
 

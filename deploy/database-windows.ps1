@@ -6,7 +6,9 @@ if ((Get-FileHash -LiteralPath $wrapper -Algorithm SHA256).Hash -ne '05B82D46AD3
 # NetworkService owns the database; the API's LocalService identity has no access to it.
 & icacls.exe $Root /grant:r '*S-1-5-20:(RX)' | Out-Null
 if ($LASTEXITCODE -ne 0) { throw 'Cannot grant database traversal' }
-& icacls.exe $directory /inheritance:r /grant:r '*S-1-5-18:(OI)(CI)F' '*S-1-5-32-544:(OI)(CI)F' '*S-1-5-20:(OI)(CI)M' /T | Out-Null
+# Protect the directory boundary; children inherit these grants. Recursive inheritance removal
+# would strip the grants again from files after applying them to their parent.
+& icacls.exe $directory /inheritance:r /grant:r '*S-1-5-18:(OI)(CI)F' '*S-1-5-32-544:(OI)(CI)F' '*S-1-5-20:(OI)(CI)M' | Out-Null
 if ($LASTEXITCODE -ne 0) { throw 'Cannot protect database directory' }
 foreach ($path in @((Join-Path $Root 'runtime'), (Join-Path $Root 'launcher.mjs'))) {
   & icacls.exe $path /grant:r '*S-1-5-20:(RX)' | Out-Null
