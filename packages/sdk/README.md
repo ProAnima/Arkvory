@@ -27,3 +27,5 @@ serviceDelegations/setServiceDelegation/removeServiceDelegation и servicePolicy
 
 DownloadQueue и checkpointedDownload дают bounded очередь скачиваний с паузой, продолжением, отменой и приватным DownloadStorage. [API и требования к адаптеру](../../docs/DOWNLOAD_QUEUE.md).
 SDK имеет совместимые namespaces: `client.identity`, `client.administration.{users,groups,services,credentials}` и `client.inRepository(id).{artifacts,annotations,uploads,packages,assets}`. `client.operations(query, signal)` читает строгую bounded страницу применимых операций; это advisory-данные, не разрешение на произвольный объект. Прежний `client.repository(id)` по-прежнему возвращает карточку; flat API не изменён. [Примеры и матрица методов](../../docs/API_SURFACES.md).
+
+`client.inRepository(id).attachments.{get,replace,history}` и flat `attachments/replaceAttachments/attachmentHistory` принимают AbortSignal. CAS не повторяется автоматически, bytes используют прежние transfers. [Пример CI](../../docs/BUILD_DETAILS.md).

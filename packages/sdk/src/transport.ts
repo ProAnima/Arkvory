@@ -1,4 +1,6 @@
 import {
+  readAttachmentRevision,
+  readAttachmentHistory,
   readUpload,
   readAnnotations,
   readJob,
@@ -27,6 +29,7 @@ import {
   readOperationPage,
 } from '@proanima/depot-contracts';
 import type {
+  BuildAttachmentResponse,
   UploadResponse,
   AnnotationsResponse,
   ServiceBindingResponse,
@@ -584,6 +587,44 @@ export class DepotTransport {
       }),
       next: r['next'] === null ? null : text(r['next']),
     };
+  }
+  async attachments(repository: string, id: string, signal?: AbortSignal) {
+    return readAttachmentRevision(
+      await this.call(
+        this.path(repository, 'artifacts/' + encodeURIComponent(id) + '/attachments'),
+        'GET',
+        undefined,
+        signal,
+      ),
+    );
+  }
+  async replaceAttachments(
+    repository: string,
+    id: string,
+    expectedRevision: number,
+    items: readonly BuildAttachmentResponse[],
+    signal?: AbortSignal,
+  ) {
+    return readAttachmentRevision(
+      await this.call(
+        this.path(repository, 'artifacts/' + encodeURIComponent(id) + '/attachments'),
+        'PUT',
+        { expectedRevision, items },
+        signal,
+      ),
+    );
+  }
+  async attachmentHistory(repository: string, id: string, before?: number, signal?: AbortSignal) {
+    const query = before === undefined ? '' : '?before=' + encodeURIComponent(before);
+    return readAttachmentHistory(
+      await this.call(
+        this.path(repository, 'artifacts/' + encodeURIComponent(id) + '/attachments/history') +
+          query,
+        'GET',
+        undefined,
+        signal,
+      ),
+    );
   }
   async annotations(repository: string, id: string) {
     return readAnnotations(

@@ -31,6 +31,7 @@ export function registerServiceRoutes(
         delegatedServiceAdministration: true,
         assetPagination: true,
         repositoryDiscovery: true,
+        buildAttachments: true,
         operationDiscovery: true,
         apiSurfaces: true,
         repositoryPermissions: true,

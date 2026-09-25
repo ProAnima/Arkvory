@@ -1,3 +1,4 @@
+import { migrateAttachments } from './attachment-schema.js';
 import { Pool } from 'pg';
 import type { PoolClient } from 'pg';
 import { migrateServices } from './service-schema.js';
@@ -278,6 +279,7 @@ export async function migrate(pool: Pool): Promise<void> {
     }
     await migrateServices(client);
     await migrateDelegations(client);
+    await migrateAttachments(client);
     await client.query('COMMIT');
   } catch (error) {
     try {

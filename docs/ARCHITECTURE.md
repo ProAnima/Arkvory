@@ -71,3 +71,5 @@ Discovery репозиториев — чистая application projection ак�
 
 Клиентская очередь скачиваний живёт в SDK: DownloadQueue управляет расписанием, checkpointedDownload использует узкий DownloadStorage и существующий HTTP-клиент. OPFS/выбор конечного файла принадлежат web; domain/application/server не зависят от браузерного storage. [ADR 0022](adr/0022-client-download-queue.md).
 Области и видимость API описываются contracts registry; application `operationVisible` проецирует применимость по действующим правам без HTTP/БД. API объединяет её с ролью шлюза и выдаёт advisory-каталог. SDK namespaces делегируют существующему транспорту. [ADR 0023](adr/0023-api-surfaces-and-operation-discovery.md), [контракт](API_SURFACES.md).
+
+Именованные вложения используют отдельные domain rules, application AttachmentStore/BuildAttachments и PostgreSQL-адаптер. Байты проходят прежний transfer stack. Migration 12 хранит append-only snapshots и FK-пины targets. Web разделяет annotation editor, attachments controller и общий worker hash. [ADR 0024](adr/0024-build-attachments.md).

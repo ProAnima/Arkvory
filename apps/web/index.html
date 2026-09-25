@@ -637,12 +637,34 @@
                       placeholder="Разделяйте запятыми"
                   /></label>
                 </div>
-                <label
-                  ><span data-i18n="metadataJson">Метаданные (JSON)</span
-                  ><textarea id="metadata" rows="7" spellcheck="false">{}</textarea>
-                </label>
+                <div
+                  id="label-presets"
+                  class="button-row label-presets"
+                  role="group"
+                  data-i18n-label="labelPresets"
+                ></div>
+                <p class="hint" data-i18n="labelsHelp"></p>
+                <div class="section-heading">
+                  <h3 data-i18n="metadataFields"></h3>
+                  <button
+                    type="button"
+                    id="metadata-add"
+                    class="secondary small"
+                    data-i18n="metadataAdd"
+                  ></button>
+                </div>
+                <div id="metadata-fields" class="stack"></div>
+                <p class="hint" data-i18n="metadataHelp"></p>
+                <details id="metadata-advanced" class="disclosure">
+                  <summary data-i18n="metadataJson"></summary>
+                  <label
+                    ><span class="visually-hidden" data-i18n="metadataJson"></span
+                    ><textarea id="metadata" rows="7" spellcheck="false">{}</textarea>
+                  </label>
+                </details>
                 <div class="button-row">
-                  <button class="primary" data-i18n="save">Сохранить изменения</button
+                  <button id="annotation-save" class="primary" data-i18n="save">
+                    Сохранить изменения</button
                   ><button id="download" type="button" class="secondary" data-i18n="download">
                     Скачать</button
                   ><button id="register-package" type="button" class="ghost" data-i18n="register">
@@ -673,6 +695,114 @@
               </form>
             </aside>
           </div>
+          <section
+            id="build-attachments"
+            class="card padded build-attachments"
+            hidden
+            aria-labelledby="attachments-title"
+          >
+            <div class="section-heading">
+              <h2 id="attachments-title" data-i18n="attachmentsTitle"></h2>
+              <span id="attachment-count"></span>
+            </div>
+            <p class="hint" data-i18n="attachmentsHelp"></p>
+            <p id="attachment-empty" class="hint" data-i18n="attachmentsEmpty"></p>
+            <div id="attachment-list" class="stack"></div>
+            <div class="button-row">
+              <button
+                id="attachment-reload"
+                class="secondary small"
+                type="button"
+                data-i18n="attachmentReload"
+              ></button>
+            </div>
+            <form id="attachment-form" class="stack">
+              <fieldset id="attachment-fields" class="stack">
+                <legend data-i18n="attachmentAdd"></legend>
+                <div class="form-grid">
+                  <label
+                    ><span data-i18n="attachmentSource"></span
+                    ><select id="attachment-source">
+                      <option value="upload" data-i18n="attachmentUpload"></option>
+                      <option value="existing" data-i18n="attachmentExisting"></option></select
+                  ></label>
+                  <label
+                    ><span data-i18n="attachmentKind"></span
+                    ><select id="attachment-kind">
+                      <option value="manifest" data-i18n="attachmentManifest"></option>
+                      <option value="sbom" data-i18n="attachmentSbom"></option>
+                      <option value="signature" data-i18n="attachmentSignature"></option>
+                      <option value="report" data-i18n="attachmentReport"></option>
+                      <option value="file" data-i18n="attachmentFile"></option></select
+                  ></label>
+                </div>
+                <label id="attachment-file-label"
+                  ><span data-i18n="attachmentChoose"></span
+                  ><input id="attachment-file" type="file" required
+                /></label>
+                <label id="attachment-id-label" hidden
+                  ><span data-i18n="selected"></span><input id="attachment-id" spellcheck="false"
+                /></label>
+                <div class="form-grid">
+                  <label
+                    ><span data-i18n="attachmentName"></span
+                    ><input id="attachment-name" maxlength="240" required /></label
+                  ><label
+                    ><span data-i18n="attachmentDescription"></span
+                    ><input id="attachment-description" maxlength="512"
+                  /></label>
+                </div>
+              </fieldset>
+              <div class="button-row">
+                <button id="attachment-submit" class="primary" data-i18n="attachmentAdd"></button
+                ><button
+                  id="attachment-pause"
+                  type="button"
+                  class="secondary"
+                  data-i18n="pause"
+                  disabled
+                ></button
+                ><button
+                  id="attachment-reset"
+                  type="button"
+                  class="ghost"
+                  data-i18n="attachmentNew"
+                ></button>
+              </div>
+              <progress
+                id="attachment-progress"
+                max="1"
+                value="0"
+                data-i18n-label="attachmentProgress"
+              ></progress>
+              <details class="disclosure">
+                <summary data-i18n="attachmentRecovery"></summary>
+                <label
+                  ><span data-i18n="uploadId"></span
+                  ><input id="attachment-upload-id" readonly class="mono"
+                /></label>
+                <p class="hint" data-i18n="attachmentRecoveryHelp"></p>
+              </details>
+            </form>
+            <output id="attachment-status" aria-live="polite"></output>
+            <details class="disclosure">
+              <summary data-i18n="attachmentHistory"></summary>
+              <button
+                type="button"
+                id="attachment-history-load"
+                class="secondary small"
+                data-i18n="historyLoad"
+              ></button>
+              <div id="attachment-history-rows" class="stack"></div>
+              <button
+                type="button"
+                id="attachment-history-more"
+                class="secondary small"
+                data-i18n="historyMore"
+                disabled
+              ></button>
+            </details>
+          </section>
         </section>
         <section
           id="history-panel"

@@ -46,3 +46,5 @@ node --env-file=.cache/test-db.env tests/browser/downloads.mjs
 ```
 
 Браузерные сценарии запускаются последовательно: fixture использует эксклюзивный профиль API на тестовой БД. Проверено локально на Windows, Node 24.13, PostgreSQL 18.4, headless Edge. Основные проверки дополнены тестами полноты RU/EN и контраста текстовых пар. Это не сертификация WCAG: проверка screen reader, Safari/Firefox и пользовательское исследование ещё не проводились. Ограничения save picker/OPFS и времени жизни очереди описаны в [DOWNLOAD_QUEUE](DOWNLOAD_QUEUE.md).
+
+Карточка сборки дополнена редактором metadata ключ/значение (JSON в disclosure), свободными метками с переключаемыми подсказками и блоком вложений. Права приходят через operation discovery; read-only скрывает mutations. Реальные сценарии паузы/продолжения, конфликта, unlink/restore и просмотра reader проверяются `tests/browser/build-details.mjs`. [Подробности](BUILD_DETAILS.md).

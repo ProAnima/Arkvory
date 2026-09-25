@@ -1,6 +1,6 @@
 # API: ответственность, видимость и интеграции
 
-Статус: реализовано в native v1, OpenAPI document **0.7.0**, схема БД **11**. Контракт содержит **103 операции**, включая HEAD и текущий legacy-поднабор. Потребители: CI/CD, интеграции и отдельный удалённый интерфейс. Они используют один серверный контракт; встроенная консоль не имеет привилегированного канала.
+Статус: реализовано в native v1, OpenAPI document **0.8.0**, схема БД **12**. Контракт содержит **108 операций**, включая HEAD и текущий legacy-поднабор. Потребители: CI/CD, интеграции и отдельный удалённый интерфейс. Они используют один серверный контракт; встроенная консоль не имеет привилегированного канала.
 
 ## Независимые области ответственности
 
@@ -125,3 +125,5 @@ const verifiedBytes = await repository.artifacts.downloadVerified(artifactId, {
 ## Проверка
 
 Unit: ответственность всех операций, разделение областей OpenAPI, отсутствие перемножения bindings, независимость bootstrap/admin/delegation, exact repository после 100-й записи, строгий parser страниц. Integration: реальный HTTP/PostgreSQL, schema validation, HEAD, paging, узкие managed keys, отзыв policy/key/delegation, reader-фильтрация, пользовательская сессия/группы и SDK upload/download/metadata/assets. Новая версия не требует миграции БД и не объявляет HA или полную ProGet compatibility.
+
+Для манифестов и дополнительных файлов добавлена группа `repository.attachments.{get,replace,history}`. Операции `getBuildAttachments`, `replaceBuildAttachments`, `getBuildAttachmentHistory` относятся к catalog/repository. [Контракт и UI](BUILD_DETAILS.md).

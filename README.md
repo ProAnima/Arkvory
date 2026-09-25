@@ -143,7 +143,7 @@ Large file catalogs can be traversed with the new cursor-based `assets/page` API
 
 Repository discovery exposes only the caller’s logical repository scopes, including empty ones, with a paginated directory and cards showing supported formats and effective permissions. Managed credentials opt in with `repository.read`; content and administration remain separate. API and SDK are available. See the [discovery contract](docs/REPOSITORY_DISCOVERY.md).
 
-The native API under `/api/v1` covers multipart uploads, completion jobs, content delivery, mutable annotations, package/asset catalogs, asset history and restoration, external references and catalog audit. OpenAPI is served at `/api/v1/openapi.json`; the build also exports `packages/contracts/dist/openapi.json`. All 103 registered API operations, including HEAD and legacy downloads, have stable operation IDs and explicit access/retry metadata, checked against runtime routes at startup and in CI. See the [contract guard](docs/API_CONTRACT_GUARD.md). User and group administration is implemented; distributed transfers, events/webhooks and extended service administration remain planned. Runtime response validation, OpenAPI and the TypeScript SDK are maintained together.
+The native API under `/api/v1` covers multipart uploads, completion jobs, content delivery, mutable annotations, package/asset catalogs, asset history and restoration, external references and catalog audit. OpenAPI is served at `/api/v1/openapi.json`; the build also exports `packages/contracts/dist/openapi.json`. All 108 registered API operations, including HEAD and legacy downloads, have stable operation IDs and explicit access/retry metadata, checked against runtime routes at startup and in CI. See the [contract guard](docs/API_CONTRACT_GUARD.md). User and group administration is implemented; distributed transfers, events/webhooks and extended service administration remain planned. Runtime response validation, OpenAPI and the TypeScript SDK are maintained together.
 
 Planned ProGet adapters target the operations used by clients across three API families:
 
@@ -221,7 +221,7 @@ For an existing database, edit `DEPOT_DATABASE_URL` in `.env` instead of startin
 | `npm run test:large`       | 5 GiB HTTP upload/download, process restart, hash and RSS checks   |
 | `npm run format`           | Apply formatting                                                   |
 
-Multipart uploads resume from recorded 8 MiB parts; whole-file PUT retries restart from byte zero. Offline GC releases cancelled reservations after deleting their content and the grace period. One API process owns a standalone database; this profile provides no node failover. Keep the database and the entire storage directory, including `storage-id`, together in backup/restore procedures. Before updating, stop API/worker, back up both, run `npm run migrate` (schema 11), then start the new code. See [asset history and restore](docs/LIFECYCLE_AND_CATALOG.md#история-и-восстановление-файлов) and [online catalog indexes](docs/adr/0014-online-package-page-indexes.md).
+Multipart uploads resume from recorded 8 MiB parts; whole-file PUT retries restart from byte zero. Offline GC releases cancelled reservations after deleting their content and the grace period. One API process owns a standalone database; this profile provides no node failover. Keep the database and the entire storage directory, including `storage-id`, together in backup/restore procedures. Before updating, stop API/worker, back up both, run `npm run migrate` (schema 12), then start the new code. See [asset history and restore](docs/LIFECYCLE_AND_CATALOG.md#история-и-восстановление-файлов) and [online catalog indexes](docs/adr/0014-online-package-page-indexes.md).
 
 ## Development rules
 
@@ -282,3 +282,7 @@ Repository access does not replace such an agreement. Permission scope, ownershi
 Repository terms: [LICENSE.md](LICENSE.md). Attribution: [NOTICE.md](NOTICE.md). Third-party components retain their own licenses.
 
 Downloads now have a bounded client queue in the SDK and console: pause/resume from private disk staging, cancellation, waiting-queue cleanup, concurrency and start-delay controls. The final destination is saved only after checksum verification. Browser queues last for the current tab; they are not distributed server jobs. [Download queue and limits](docs/DOWNLOAD_QUEUE.md).
+
+### Build metadata and attachments
+
+Published artifacts support editable labels, text metadata and collections, plus versioned links to manifests, SBOMs, signatures, reports and additional files in the same repository. The console offers metadata fields, label presets, direct resumable attachment uploads and history/restore. Concurrent edits use revision checks; unlinking preserves original files. APIs are grouped under catalog, with the same repository authorization and SDK support. Requires database migration 12. [Contract, limits and examples](docs/BUILD_DETAILS.md).

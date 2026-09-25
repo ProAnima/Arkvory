@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdir } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
 import { setup, create, base } from '../integration/fixture.mjs';
+import { exerciseBuildDetails } from './build-details.mjs';
 const { chromium } = await import(
   process.env.DEPOT_PLAYWRIGHT_MODULE
     ? pathToFileURL(process.env.DEPOT_PLAYWRIGHT_MODULE).href
@@ -90,6 +91,7 @@ try {
   await page.locator('#artifacts button').first().click();
   await page.locator('#selected-name').waitFor();
   assert.equal(await page.locator('#selected-name').textContent(), 'artifact.upack');
+  await page.locator('#metadata-advanced summary').click();
   await page.locator('#metadata').fill('{invalid');
   await page.locator('#edit button.primary').click();
   await page.locator('#status[data-tone=error]').waitFor();
@@ -97,6 +99,7 @@ try {
   await page.locator('#labels').fill('reviewed, stable');
   await page.locator('#edit button.primary').click();
   await page.locator('#status[data-tone=success]').waitFor();
+  await exerciseBuildDetails(page, f, id);
   await page.locator('#asset-path').fill('releases/latest.upack');
   await page.locator('#asset button').click();
   await page.waitForFunction(() => document.querySelector('#asset-revision').value === '1');

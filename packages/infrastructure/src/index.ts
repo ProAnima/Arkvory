@@ -12,3 +12,5 @@ export * from './bandwidth.js';
 export * from './download-lease.js';
 export * from './identity.js';
 export { PostgresServices } from './service-accounts.js';
+
+export * from './attachments.js';

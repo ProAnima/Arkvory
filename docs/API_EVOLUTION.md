@@ -1,6 +1,6 @@
 # Расширение API и интеграции сервисов
 
-Статус: план развития, 2026-09-25. Реализованы discovery, managed keys и ограниченное делегирование B на точные аккаунты: [SERVICE_KEYS](SERVICE_KEYS.md), [SERVICE_DELEGATION](SERVICE_DELEGATION.md). Инвентаризация **103 операции**, operationId, auth/retry metadata и drift guard runtime/CI: [API_CONTRACT_GUARD](API_CONTRACT_GUARD.md). В этапе C добавлены файловые cursor pages и карточки доступных репозиториев. Импорт старых identities, рекурсивные роли, остальные подэтапы C и этапы D–E остаются планом. Навигация: [карта](API_MAP.md), [модель прав](API_ACCESS.md), [ADR 0016](adr/0016-service-access-and-api-evolution.md).
+Статус: план развития, 2026-09-25. Реализованы discovery, managed keys и ограниченное делегирование B на точные аккаунты: [SERVICE_KEYS](SERVICE_KEYS.md), [SERVICE_DELEGATION](SERVICE_DELEGATION.md). Инвентаризация **108 операций**, operationId, auth/retry metadata и drift guard runtime/CI: [API_CONTRACT_GUARD](API_CONTRACT_GUARD.md). В этапе C добавлены файловые cursor pages и карточки доступных репозиториев. Импорт старых identities, рекурсивные роли, остальные подэтапы C и этапы D–E остаются планом. Навигация: [карта](API_MAP.md), [модель прав](API_ACCESS.md), [ADR 0016](adr/0016-service-access-and-api-evolution.md).
 
 ## Архитектура подключения
 
@@ -85,7 +85,7 @@ Transfer tickets — отдельный последующий контракт:
 
 ## План вертикальных инкрементов
 
-Исходная карта охватывала 41 операцию. Сейчас полный inventory включает 103 операцию с HEAD/legacy, service access/discovery и delegation. Поднабор B позволяет root назначать конкретному key ID управление конкретным account ID с actions/ceiling, без цепочек и самоуправления. Новый account получает новый owner; импорт старого ownership пока отсутствует. Контрактная часть A проверяет весь зарегистрированный inventory: [приёмка](API_CONTRACT_GUARD.md). Рабочие поднаборы B: [ключи](SERVICE_KEYS.md), [делегирование](SERVICE_DELEGATION.md); полная исходная модель B ещё не объявляется завершённой.
+Исходная карта охватывала 41 операцию. Сейчас полный inventory включает 108 операций с HEAD/legacy, service access/discovery и delegation. Поднабор B позволяет root назначать конкретному key ID управление конкретным account ID с actions/ceiling, без цепочек и самоуправления. Новый account получает новый owner; импорт старого ownership пока отсутствует. Контрактная часть A проверяет весь зарегистрированный inventory: [приёмка](API_CONTRACT_GUARD.md). Рабочие поднаборы B: [ключи](SERVICE_KEYS.md), [делегирование](SERVICE_DELEGATION.md); полная исходная модель B ещё не объявляется завершённой.
 
 | Этап                              | Состав                                                                                                                                        | Условие готовности                                                                                                                                                      |
 | --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

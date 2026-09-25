@@ -19,3 +19,5 @@ PostgresServices реализует lifecycle ключей, CAS policy и огр
 Миграция 10 добавляет grants и issuer key reference. delegation-authorization разрешает действующий credential и exact grant; service-delegations отвечает за CAS/tombstones, пределы и запрет цепочек. PostgresServices удерживает короткий control lock для mutations и атомарного audit, использует repeatable-read snapshot для чтения и повторно проверяет issuer при pending activation. [Контракт](../../docs/SERVICE_DELEGATION.md).
 
 Asset-page выполняет ограниченный SQL seek по repository/path COLLATE C, валидирует cursor scope и возвращает limit+1 lookahead. Миграция 11 строит C index concurrently через тот же механизм восстановления, что package indexes. [Контракт](../../docs/ASSET_PAGINATION.md).
+
+PostgresAttachments и migration 12 хранят историю вложений и FK-пины исходных файлов. CAS сериализуется на строке основного артефакта, targets проверяются в том же репозитории, audit входит в транзакцию. [Контракт](../../docs/BUILD_DETAILS.md).

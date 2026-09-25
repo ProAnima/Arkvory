@@ -1,3 +1,6 @@
+import { registerAttachmentRoutes } from './attachment-routes.js';
+import { BuildAttachments } from '@proanima/depot-application';
+import { PostgresAttachments } from '@proanima/depot-infrastructure';
 import { registerRepositoryRoutes } from './repository-routes.js';
 import { registerOperationRoutes } from './operation-routes.js';
 import { createHash, randomUUID, timingSafeEqual } from 'node:crypto';
@@ -581,6 +584,11 @@ export async function createServer(config: ServerConfig) {
         await legacy.asset(principal(request), request.params.repository, request.params['*']),
       ),
   });
+  registerAttachmentRoutes(
+    app,
+    new BuildAttachments(service, new PostgresAttachments(catalog.pool)),
+    principal,
+  );
   registerCatalogRoutes(app, {
     storage: service,
     browse,

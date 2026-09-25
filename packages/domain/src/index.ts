@@ -6,3 +6,5 @@ export * from './service-access.js';
 
 export * from './service-policy.js';
 export * from './service-delegation.js';
+
+export * from './attachments.js';

@@ -343,10 +343,10 @@ export class PostgresCatalog implements Catalog {
 
   async ready(): Promise<void> {
     const result = await this.pool.query(
-      'SELECT version FROM depot_migrations WHERE version IN (8,9,10,11)',
+      'SELECT version FROM depot_migrations WHERE version IN (8,9,10,11,12)',
     );
-    if (result.rowCount !== 4)
-      throw new DepotError('unavailable', 'Database migrations 8, 9, 10 and 11 are required');
+    if (result.rowCount !== 5)
+      throw new DepotError('unavailable', 'Database migrations 8, 9, 10, 11 and 12 are required');
     await this.pool.query('SELECT id,expires_at FROM depot_uploads LIMIT 0');
   }
   async close(): Promise<void> {

@@ -67,7 +67,7 @@ DownloadQueue управляет состояниями и расписание�
 | DEPOT_TRANSFER_QUEUE_PER_PRINCIPAL | min(8, limit) | 1–limit ожидающих одного клиента |
 | DEPOT_TRANSFER_QUEUE_TIMEOUT_MS    | 20000         | 1–120000 мс                      |
 
-Существующие maxUploads/maxDownloads, per-principal active caps и bytes/s сохраняются. Настройки применяются при запуске; общий HTTP admission в 128 запросов также продолжает действовать, поэтому увеличение waiting limit не создаёт гарантированную дополнительную ёмкость. Readiness показывает waitingCapacity, perPrincipalWaitingCapacity и timeoutMs. HTTP timeout/full queue сохраняют прежние 503/Retry-After. OpenAPI document 0.7.0, inventory по-прежнему 103 операция.
+Существующие maxUploads/maxDownloads, per-principal active caps и bytes/s сохраняются. Настройки применяются при запуске; общий HTTP admission в 128 запросов также продолжает действовать, поэтому увеличение waiting limit не создаёт гарантированную дополнительную ёмкость. Readiness показывает waitingCapacity, perPrincipalWaitingCapacity и timeoutMs. HTTP timeout/full queue сохраняют прежние 503/Retry-After. OpenAPI document 0.8.0, inventory по-прежнему 108 операций.
 
 Это очередь клиента и допуски конкретного шлюза. Durable cluster-wide download jobs, динамическое перераспределение полосы, server-side operator cancellation чужих передач и HA остаются отдельными задачами; app/scheduler не объявляется реализованным благодаря клиентской очереди.
 

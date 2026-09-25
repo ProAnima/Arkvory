@@ -10,6 +10,9 @@ type RepositoryTransport = Pick<
   | 'artifact'
   | 'download'
   | 'downloadVerified'
+  | 'attachments'
+  | 'replaceAttachments'
+  | 'attachmentHistory'
   | 'annotations'
   | 'annotate'
   | 'create'
@@ -47,6 +50,11 @@ export function repositoryClient(client: RepositoryTransport, repository: string
       get: bind(client.artifact),
       download: bind(client.download),
       downloadVerified: bind(client.downloadVerified),
+    }),
+    attachments: Object.freeze({
+      get: bind(client.attachments),
+      replace: bind(client.replaceAttachments),
+      history: bind(client.attachmentHistory),
     }),
     annotations: Object.freeze({ get: bind(client.annotations), update: bind(client.annotate) }),
     uploads: Object.freeze({

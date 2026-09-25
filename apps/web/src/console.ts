@@ -1,5 +1,5 @@
 import { DepotClient, DepotHttpError } from '@proanima/depot-sdk';
-import { record, text, stringMap } from '@proanima/depot-contracts';
+import { text } from '@proanima/depot-contracts';
 import type { PrincipalResponse } from '@proanima/depot-contracts';
 import { element } from './dom.js';
 import { installAssetHistory } from './asset-history.js';
@@ -8,6 +8,9 @@ import { feedback, UiError, errorKey } from './feedback.js';
 import { initializeShell, showView } from './shell.js';
 import { installPackageView } from './packages.js';
 import { installAdministration } from './administration.js';
+import { hashFile } from './file-hash.js';
+import { installAnnotationEditor } from './annotation-editor.js';
+import { installBuildAttachments } from './build-attachments.js';
 import { installDownloads } from './downloads.js';
 const token = element('token', HTMLInputElement),
   repository = element('repository', HTMLInputElement),
@@ -27,6 +30,10 @@ try {
   throw new Error('Invalid Depot API base URL');
 }
 const downloads = installDownloads(apiBaseUrl, token);
+const annotationEditor = installAnnotationEditor();
+const attachments = installBuildAttachments(client, (repo, id, name) =>
+  downloads.enqueue(repo, id, name),
+);
 let stop: AbortController | undefined;
 let selected: { repository: string; id: string; revision: number; name: string } | undefined;
 let selectionGeneration = 0;
@@ -74,8 +81,19 @@ function connection(connected: boolean) {
   wasConnected = connected;
 }
 async function openArtifact(repo: string, id: string, name: string) {
+  clearSelection();
   const generation = ++selectionGeneration;
-  const a = await client.annotations(repo, id);
+  const [a, page] = await Promise.all([
+    client.annotations(repo, id),
+    client.operations({ repository: repo, limit: 100 }),
+  ]);
+  const operations = new Set(page.items.map((operation) => operation.operationId));
+  let after = page.next;
+  while (after) {
+    const next = await client.operations({ repository: repo, limit: 100, after });
+    for (const operation of next.items) operations.add(operation.operationId);
+    after = next.next;
+  }
   if (generation !== selectionGeneration || repo !== repository.value) return;
   selected = { repository: repo, id, revision: a.revision, name };
   element('selected-name', HTMLParagraphElement).textContent = name;
@@ -83,13 +101,22 @@ async function openArtifact(repo: string, id: string, name: string) {
   element('selected', HTMLInputElement).value = id;
   element('labels', HTMLInputElement).value = a.labels.join(', ');
   element('collections', HTMLInputElement).value = a.collections.join(', ');
-  element('metadata', HTMLTextAreaElement).value = JSON.stringify(a.metadata, null, 2);
+  annotationEditor.set(a.metadata, operations.has('setAnnotations'));
+  for (const id of ['labels', 'collections'])
+    element(id, HTMLInputElement).disabled = !operations.has('setAnnotations');
+  element('annotation-save', HTMLButtonElement).disabled = !operations.has('setAnnotations');
+  element('download', HTMLButtonElement).hidden = !operations.has('downloadArtifact');
+  element('register-package', HTMLButtonElement).hidden = !operations.has('registerPackage');
+  element('asset', HTMLFormElement).hidden = !operations.has('setAsset');
   element('editor', HTMLDivElement).hidden = false;
   element('editor-empty', HTMLDivElement).hidden = true;
   showView('metadata');
   feedback(output, 'revisionStatus', { revision: a.revision });
+  await attachments.open(repo, id, operations);
 }
 function clearSelection() {
+  attachments.clear();
+  annotationEditor.set({}, false);
   selectionGeneration++;
   selected = undefined;
   element('selected-name', HTMLParagraphElement).textContent = '';
@@ -138,47 +165,6 @@ const administration = installAdministration(client, run);
 element('admin-nav', HTMLButtonElement).addEventListener('click', () => {
   run(() => administration.refresh());
 });
-function hashFile(file: File, signal: AbortSignal): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const worker = new Worker('/console/hash-worker.js', { type: 'module' });
-    const done = () => {
-      worker.terminate();
-      signal.removeEventListener('abort', cancel);
-    };
-    const cancel = () => {
-      done();
-      reject(new UiError('paused'));
-    };
-    signal.addEventListener('abort', cancel, { once: true });
-    if (signal.aborted) {
-      cancel();
-      return;
-    }
-    worker.onerror = () => {
-      done();
-      reject(new UiError('hashError'));
-    };
-    worker.onmessage = (event: MessageEvent<unknown>) => {
-      try {
-        const value = record(event.data);
-        if (typeof value['sha256'] === 'string') {
-          done();
-          resolve(value['sha256']);
-        } else if (typeof value['bytes'] === 'number') {
-          progress.value = value['bytes'];
-          feedback(transferStatus, 'hashing');
-        } else if (value['error']) {
-          done();
-          reject(new UiError('hashError'));
-        }
-      } catch (error) {
-        done();
-        reject(error instanceof UiError ? error : new UiError('hashError'));
-      }
-    };
-    worker.postMessage(file);
-  });
-}
 async function list(after?: string) {
   const generation = ++listGeneration;
   const repo = repository.value;
@@ -393,7 +379,10 @@ element('upload', HTMLFormElement).onsubmit = (event) => {
     progress.value = 0;
     try {
       if (!uploadId.value) {
-        const sha256 = await hashFile(file, stop.signal);
+        const sha256 = await hashFile(file, stop.signal, (bytes) => {
+          progress.value = bytes;
+          feedback(transferStatus, 'hashing');
+        });
         const key = element('idempotency', HTMLInputElement);
         if (!key.value) key.value = crypto.randomUUID();
         const upload = await client.create(
@@ -457,21 +446,23 @@ element('edit', HTMLFormElement).onsubmit = (event) => {
         .value.split(',')
         .map((s) => s.trim())
         .filter(Boolean);
-    let metadata: Readonly<Record<string, string>>;
+    const metadata = annotationEditor.read();
+    const save = element('annotation-save', HTMLButtonElement);
+    if (save.disabled) return;
+    save.disabled = true;
     try {
-      const raw: unknown = JSON.parse(element('metadata', HTMLTextAreaElement).value);
-      metadata = stringMap(raw);
-    } catch {
-      throw new UiError('jsonError');
+      const next = await client.annotate(artifact.repository, artifact.id, artifact.revision, {
+        labels: split('labels'),
+        collections: split('collections'),
+        metadata,
+      });
+      if (selected !== artifact) return;
+      artifact.revision = next.revision;
+      // Keep any new text entered while the request was in flight.
+      feedback(output, 'saved', { revision: next.revision }, 'success');
+    } finally {
+      if (selected === artifact) save.disabled = false;
     }
-    const next = await client.annotate(artifact.repository, artifact.id, artifact.revision, {
-      labels: split('labels'),
-      collections: split('collections'),
-      metadata,
-    });
-    if (selected !== artifact) return;
-    artifact.revision = next.revision;
-    feedback(output, 'saved', { revision: next.revision }, 'success');
   });
 };
 element('register-package', HTMLButtonElement).onclick = () => {

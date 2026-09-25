@@ -1,3 +1,4 @@
+import { attachmentPaths } from './attachments.js';
 import { catalogPaths } from './catalog-api.js';
 import { identityPaths } from './identity-api.js';
 import { readinessSchema } from './health.js';
@@ -230,11 +231,12 @@ const composed = composeApiPaths({
   ...delegationPaths,
   ...repositoryPaths,
   ...operationPaths,
+  ...attachmentPaths,
 });
 export const apiOperations = composed.operations;
 export const openApiDocument = {
   ...baseDocument,
-  info: { ...baseDocument.info, title: 'ProAnima Depot API', version: '0.7.0' },
+  info: { ...baseDocument.info, title: 'ProAnima Depot API', version: '0.8.0' },
   components: {
     ...baseDocument.components,
     schemas: { NativeError: nativeErrorSchema },

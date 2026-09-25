@@ -446,4 +446,26 @@ for (const [path, id] of [
   ['/endpoints/{repository}/content/{assetPath}', 'downloadLegacyAsset'],
 ] as const)
   data(path, 'get', id, 'Legacy', ['content.read'], ['read'], 'read');
+
+for (const [suffix, method, id, actions, legacy, retry] of [
+  ['', 'get', 'getBuildAttachments', ['annotation.read'], ['read'], 'read'],
+  [
+    '',
+    'put',
+    'replaceBuildAttachments',
+    ['annotation.write', 'artifact.read'],
+    ['read', 'write'],
+    'compare-and-swap',
+  ],
+  ['/history', 'get', 'getBuildAttachmentHistory', ['annotation.read'], ['read'], 'read'],
+] as const)
+  data(
+    root + '/artifacts/{id}/attachments' + suffix,
+    method,
+    id,
+    'Catalog',
+    actions,
+    legacy,
+    retry,
+  );
 export const operationPolicies: Readonly<typeof policies> = policies;

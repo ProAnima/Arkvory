@@ -13,3 +13,5 @@ export type { ApiMethod, OperationPolicy } from './operation-policy.js';
 export * from './operations.js';
 export { apiSurfaces, apiVisibilities } from './api-surfaces.js';
 export type { ApiSurface, ApiVisibility } from './api-surfaces.js';
+
+export * from './attachments.js';
