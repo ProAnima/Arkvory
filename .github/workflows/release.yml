@@ -39,6 +39,13 @@ jobs:
           cache: npm
       - run: npm ci --ignore-scripts
       - run: npm run test:browser:install
+      - name: Cache verified native dependency archives
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: .cache/native-downloads
+          key: native-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/native-dependencies.mjs') }}
+        env:
+          SEGMENT_DOWNLOAD_TIMEOUT_MINS: '2'
       - run: sudo apt-get update && sudo apt-get install -y rpm postgresql
       - run: npm run gate -- release
       - name: Package once after all release gates
@@ -110,6 +117,13 @@ jobs:
           name: release-candidate
           path: candidate
       - run: npm ci --ignore-scripts
+      - name: Cache verified native dependency archives
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: .cache/native-downloads
+          key: native-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/native-dependencies.mjs') }}
+        env:
+          SEGMENT_DOWNLOAD_TIMEOUT_MINS: '2'
       - if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y rpm postgresql
       - run: npm run gate -- native-install

@@ -34,6 +34,16 @@ export function planGates(registry, selected) {
       task.timeoutSeconds > 1800
     )
       throw new Error(`Invalid gate timeout: ${name}`);
+    // Suites sharing a standalone database must retain exclusive execution.
+    if (
+      task.concurrency !== undefined &&
+      (task.kind !== 'node-test' ||
+        !Number.isInteger(task.concurrency) ||
+        task.concurrency < 1 ||
+        task.concurrency > 4 ||
+        (task.database && task.concurrency !== 1))
+    )
+      throw new Error(`Invalid gate concurrency: ${name}`);
     active.add(name);
     task.needs.forEach(visit);
     active.delete(name);

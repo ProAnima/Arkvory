@@ -62,13 +62,14 @@ export function inspectWorkflow(text, registry) {
     ['integration', 'integration'],
     ['browser', 'browser'],
     ['security', 'security'],
-    ['large', 'large'],
+    ['large', '${{ matrix.gate }}'],
   ]) {
     if (
       !jobs[name]?.steps?.some(
         (s) =>
           s.run?.startsWith('npm run gate -- ') &&
-          s.run.slice(16).split(' ').includes(profile) &&
+          (s.run === `npm run gate -- ${profile}` ||
+            s.run.slice(16).split(' ').includes(profile)) &&
           !Object.hasOwn(s, 'if'),
       )
     )
@@ -87,6 +88,7 @@ export function inspectWorkflow(text, registry) {
     if (workflow.on[trigger]?.paths || workflow.on[trigger]?.['paths-ignore'])
       errors.push('Required workflows must not silently skip changed paths');
   errors.push(...inspectVerdictWiring(jobs));
+  errors.push(...inspectLargeMatrix(jobs.large));
   if (registry) errors.push(...inspectCoverage(jobs, registry));
   return errors;
 }
@@ -98,8 +100,14 @@ function inspectCoverage(jobs, registry) {
   for (const [name, job] of Object.entries(jobs))
     for (const step of job.steps ?? []) {
       const match = /^npm run gate -- ([a-z-]+(?: [a-z-]+)*)$/.exec(step.run ?? '');
-      if (!match || Object.hasOwn(step, 'if')) continue;
-      for (const task of planGates(registry, match[1].split(' '))) {
+      const selected =
+        name === 'large' &&
+        step.run === 'npm run gate -- ${{ matrix.gate }}' &&
+        inspectLargeMatrix(job).length === 0
+          ? job.strategy.matrix.gate
+          : match?.[1].split(' ');
+      if (!selected || Object.hasOwn(step, 'if')) continue;
+      for (const task of planGates(registry, selected)) {
         executed.add(task);
         if (name !== 'large' && !merge.has(task))
           errors.push(`Mandatory CI gate missing from verify: ${task}`);
@@ -108,6 +116,18 @@ function inspectCoverage(jobs, registry) {
   for (const task of Object.keys(registry.tasks))
     if (!executed.has(task)) errors.push(`Gate absent from CI: ${task}`);
   return errors;
+}
+
+function inspectLargeMatrix(job) {
+  // Exact coverage prevents include/exclude or an extra axis from silently removing a scenario.
+  if (
+    JSON.stringify(job?.strategy?.matrix) !==
+      JSON.stringify({ gate: ['large-full', 'large-multipart'] }) ||
+    job?.strategy?.['fail-fast'] !== false ||
+    job?.strategy?.['max-parallel'] !== 2
+  )
+    return ['Large transfer matrix must execute both scenarios on independent runners'];
+  return [];
 }
 
 function inspectVerdictWiring(jobs) {

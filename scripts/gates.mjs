@@ -28,7 +28,7 @@ function commandsFor(name, task, files) {
         script: null,
         args: [
           '--test',
-          '--test-concurrency=1',
+          `--test-concurrency=${task.concurrency ?? 1}`,
           '--test-timeout=180000',
           '--test-reporter=spec',
           '--test-reporter=junit',

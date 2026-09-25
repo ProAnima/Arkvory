@@ -64,6 +64,7 @@
       "needs": ["build"],
       "timeoutSeconds": 300,
       "pattern": "tests/*.test.mjs",
+      "concurrency": 2,
       "kind": "node-test"
     },
     "integration": {

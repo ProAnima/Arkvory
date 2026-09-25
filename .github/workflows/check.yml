@@ -41,6 +41,13 @@ jobs:
           node-version: '24'
           cache: npm
       - run: npm ci --ignore-scripts
+      - name: Cache verified native dependency archives
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: .cache/native-downloads
+          key: native-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/native-dependencies.mjs') }}
+        env:
+          SEGMENT_DOWNLOAD_TIMEOUT_MINS: '2'
       - if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y rpm postgresql
       - run: npm run gate -- native-install
@@ -156,10 +163,15 @@ jobs:
           if-no-files-found: warn
 
   large:
-    name: Release 5 GiB transfers
+    name: Release 5 GiB (${{ matrix.gate }})
     if: ${{ github.event_name == 'push' || github.event_name == 'merge_group' || github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.large_transfers) }}
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        gate: [large-full, large-multipart]
     services:
       postgres:
         image: postgres:18.4
@@ -183,14 +195,14 @@ jobs:
           node-version: '24'
           cache: npm
       - run: npm ci --ignore-scripts
-      - run: npm run gate -- large
+      - run: npm run gate -- ${{ matrix.gate }}
       - name: Publish gate report to logs and job summary
         if: ${{ always() }}
         run: node scripts/ci-report.mjs
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         if: ${{ always() && vars.DEPOT_UPLOAD_ARTIFACTS == 'true' }}
         with:
-          name: large
+          name: ${{ matrix.gate }}
           path: test-results/
           retention-days: 7
           if-no-files-found: warn
