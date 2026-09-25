@@ -1,7 +1,16 @@
 {
   "profiles": {
     "quick": ["static", "unit"],
-    "verify": ["static", "unit", "security", "integration", "browser"],
+    "verify": [
+      "static",
+      "unit",
+      "security",
+      "integration",
+      "browser",
+      "deployment",
+      "deployment-services",
+      "deployment-containers"
+    ],
     "release": [
       "static",
       "unit",
@@ -9,7 +18,10 @@
       "integration",
       "browser",
       "large-full",
-      "large-multipart"
+      "large-multipart",
+      "deployment",
+      "deployment-services",
+      "deployment-containers"
     ],
     "large": ["large-full", "large-multipart"]
   },
@@ -101,9 +113,36 @@
           "args": []
         }
       ]
+    },
+    "deployment": {
+      "needs": ["build"],
+      "timeoutSeconds": 600,
+      "entries": ["tests/deployment/package.mjs"],
+      "kind": "scenario"
+    },
+    "deployment-services": {
+      "needs": ["build"],
+      "timeoutSeconds": 300,
+      "entries": ["tests/deployment/services.mjs"],
+      "kind": "scenario"
+    },
+    "deployment-containers": {
+      "needs": ["build"],
+      "timeoutSeconds": 900,
+      "entries": ["tests/deployment/containers.mjs"],
+      "kind": "scenario"
     }
   },
-  "spawnedHelpers": ["tests/integration/api-child.mjs"],
-  "mergeTasks": ["static", "unit", "security", "integration", "browser"],
+  "spawnedHelpers": ["tests/integration/api-child.mjs", "tests/deployment/service-child.mjs"],
+  "mergeTasks": [
+    "static",
+    "unit",
+    "security",
+    "integration",
+    "browser",
+    "deployment",
+    "deployment-services",
+    "deployment-containers"
+  ],
   "releaseTasks": ["large-full", "large-multipart"]
 }

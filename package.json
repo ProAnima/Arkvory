@@ -13,6 +13,7 @@
     "npm": ">=11 <12"
   },
   "scripts": {
+    "release:package": "node scripts/package-release.mjs",
     "check": "node scripts/gates.mjs static",
     "typecheck": "node scripts/check-types.mjs",
     "lint": "eslint apps packages --max-warnings=0",

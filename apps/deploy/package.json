@@ -1,0 +1,17 @@
+{
+  "name": "@proanima/depot-deploy",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Installation, release staging and supervised lifecycle",
+  "exports": {
+    "depot-source": "./src/index.ts",
+    "types": "./dist/index.d.ts",
+    "import": "./dist/index.js"
+  },
+  "license": "UNLICENSED",
+  "author": "Ian Panaev",
+  "dependencies": {
+    "yauzl": "3.4.0"
+  }
+}

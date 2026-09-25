@@ -40,6 +40,8 @@ jobs:
           cache: npm
       - run: npm ci --ignore-scripts
       - run: npm run gate -- quick
+      - run: npm run gate -- deployment
+      - run: npm run gate -- deployment-services
       - name: Publish gate report to logs and job summary
         if: ${{ always() }}
         run: node scripts/ci-report.mjs
@@ -195,10 +197,28 @@ jobs:
           retention-days: 7
           if-no-files-found: warn
 
+  deployment-containers:
+    name: Container deployment and update
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run gate -- deployment-containers
+      - name: Publish gate report
+        if: ${{ always() }}
+        run: node scripts/ci-report.mjs
+
   verdict:
     name: Depot merge gate
     if: ${{ always() }}
-    needs: [check, integration, browser, security, large]
+    needs: [check, integration, browser, security, large, deployment-containers]
     runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:

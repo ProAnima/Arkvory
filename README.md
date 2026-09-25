@@ -298,3 +298,7 @@ Automatic retention keeps the last N registered UPack builds per package/channel
 ### Engineering gates
 
 `npm run gate -- quick` checks architecture, formatting, strict types, lint, build and unit tests. `verify` also requires PostgreSQL, browser acceptance and dependency audit; `release` adds both real 5 GiB failure/recovery scenarios. CI runs quality checks on Windows/Linux and requires database/browser/security lanes. Limits are 500 code lines per file, 300 per class and 100 per function; existing exceptions are explicit, frozen and expire. [Setup, extension and reports](docs/ENGINEERING_GATES.md), [architecture audit](docs/ARCHITECTURE_AUDIT_2026-09-25.md).
+
+### Installation and stable updates
+
+Release-based installers support Linux/systemd, Windows desktop/Server and Docker Compose with bundled PostgreSQL. They keep configuration and data outside versioned code, supervise API/worker restarts and offer opt-in stable GitHub Release updates, pinning, checksum verification and same-schema rollback. Native database provisioning and external HTTPS remain operator-managed. The release workflow prepares a draft after all release gates; a published release is required for network installation. [Installation, recovery and platform requirements](deploy/README.md).

@@ -1,0 +1,108 @@
+import { execFileSync } from 'node:child_process';
+import { mkdtemp, readFile, writeFile, mkdir, copyFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
+import { setTimeout as delay } from 'node:timers/promises';
+import assert from 'node:assert/strict';
+const run = (args) =>
+  execFileSync('docker', args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'inherit'] }).trim();
+run(['info']);
+for (const args of [
+  ['ps', '-aq'],
+  ['volume', 'ls', '-q'],
+]) {
+  if (run([...args, '--filter', 'label=com.docker.compose.project=proanima-depot']))
+    throw Error('Deployment container gate requires an unused proanima-depot project');
+}
+const temporary = await mkdtemp(join(tmpdir(), 'depot-container-gate-'));
+const artifact = join(temporary, 'artifact');
+const root = join(temporary, 'install');
+execFileSync(
+  process.execPath,
+  [process.env.npm_execpath, 'run', 'release:package', '--', '0.0.1', artifact],
+  { stdio: 'inherit' },
+);
+const cli = resolve('apps/deploy/dist/main.js');
+const manage = (args) =>
+  execFileSync(process.execPath, [cli, ...args, '--root', root], { stdio: 'inherit' });
+const compose = [
+  'compose',
+  '--project-name',
+  'proanima-depot',
+  '--project-directory',
+  root,
+  '--env-file',
+  join(root, 'config/compose.env'),
+  '-f',
+  join(root, 'releases/0.0.1/deploy/compose.yml'),
+];
+async function ready() {
+  for (let attempt = 0; attempt < 60; attempt++) {
+    try {
+      const response = await fetch('http://127.0.0.1:8080/health/ready', {
+        signal: AbortSignal.timeout(2000),
+      });
+      await response.body?.cancel();
+      if (response.ok) return;
+    } catch {}
+    await delay(1000);
+  }
+  throw Error('Container API readiness timed out');
+}
+try {
+  manage(['install', '--mode', 'compose', '--artifact', artifact]);
+  run([
+    ...compose,
+    'exec',
+    '-T',
+    'api',
+    'node',
+    '-e',
+    "require('fs').writeFileSync('/var/lib/depot/deployment-sentinel','preserved')",
+  ]);
+  const before = run(['inspect', '--format', '{{.RestartCount}}', 'proanima-depot-api-1']);
+  run([
+    ...compose,
+    'exec',
+    '-T',
+    'api',
+    'node',
+    '-e',
+    "const fs=require('fs');for(const p of fs.readdirSync('/proc').filter(p=>/^\\d+$/.test(p))){try{const c=fs.readFileSync('/proc/'+p+'/cmdline','utf8');if(c.split('\\0')[1]==='apps/deploy/dist/container.js')process.kill(Number(p),'SIGKILL');}catch{}}",
+  ]);
+  await delay(3000);
+  await ready();
+  assert.ok(
+    Number(run(['inspect', '--format', '{{.RestartCount}}', 'proanima-depot-api-1'])) >
+      Number(before),
+    'Container must restart after process crash',
+  );
+  const next = join(temporary, 'next');
+  await mkdir(next);
+  await copyFile(join(artifact, 'depot-runtime.zip'), join(next, 'depot-runtime.zip'));
+  const manifest = JSON.parse(await readFile(join(artifact, 'depot-release.json'), 'utf8'));
+  await writeFile(
+    join(next, 'depot-release.json'),
+    JSON.stringify({ ...manifest, version: '0.0.2' }),
+  );
+  manage(['update', '--artifact', next]);
+  assert.equal(
+    run([
+      ...compose,
+      'exec',
+      '-T',
+      'api',
+      'node',
+      '-e',
+      "process.stdout.write(require('fs').readFileSync('/var/lib/depot/deployment-sentinel','utf8'))",
+    ]),
+    'preserved',
+  );
+  assert.equal(
+    JSON.parse(await readFile(join(root, 'installation.json'), 'utf8')).current.version,
+    '0.0.2',
+  );
+  console.log('Container install, migrations, crash restart and persistent-volume update passed');
+} finally {
+  run([...compose, 'down', '--volumes', '--remove-orphans']);
+}

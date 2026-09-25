@@ -1,0 +1,155 @@
+import { join } from 'node:path';
+import { command } from './process.js';
+import type { Installation, Release } from './model.js';
+import { jsonFile } from './files.js';
+import { runtimeEnvironment } from './runtime.js';
+import { setTimeout as delay } from 'node:timers/promises';
+
+export class Services {
+  constructor(
+    private readonly root: string,
+    private readonly state: Installation,
+  ) {}
+  private compose(release: Release, args: string[]): Promise<void> {
+    return command(this.state.engine, [
+      'compose',
+      '--project-name',
+      'proanima-depot',
+      '--project-directory',
+      this.root,
+      '--env-file',
+      join(this.root, 'config/compose.env'),
+      '-f',
+      join(this.root, 'releases', release.version, 'deploy/compose.yml'),
+      ...args,
+    ]);
+  }
+  async prepare(release: Release): Promise<void> {
+    if (this.state.mode === 'compose') {
+      await command(this.state.engine, [
+        'build',
+        '--tag',
+        `proanima-depot:${release.version}`,
+        '--file',
+        join(this.root, 'releases', release.version, 'deploy/Dockerfile'),
+        join(this.root, 'releases', release.version),
+      ]);
+    }
+  }
+  async migrate(release: Release): Promise<void> {
+    if (this.state.mode === 'compose') {
+      await this.compose(release, ['up', '-d', '--wait', 'database']);
+      await this.compose(release, ['run', '--rm', 'initialize']);
+      await this.compose(release, ['run', '--rm', 'migrate']);
+    } else await command(process.execPath, [join(this.root, 'launcher.mjs'), this.root, 'migrate']);
+  }
+  async stop(): Promise<void> {
+    if (this.state.mode === 'compose')
+      await this.compose(this.state.current, ['stop', '--timeout', '120', 'worker', 'api']);
+    else if (this.state.mode === 'systemd')
+      await command('systemctl', ['stop', 'depot-worker', 'depot-api']);
+    else
+      for (const role of ['worker', 'api'])
+        await command(join(this.root, `service/depot-${role}.exe`), ['stop']);
+  }
+  async start(release: Release): Promise<void> {
+    if (this.state.mode === 'compose') {
+      await this.compose(release, ['up', '-d', '--wait', '--wait-timeout', '180', 'api', 'worker']);
+    } else if (this.state.mode === 'systemd')
+      await command('systemctl', ['start', 'depot-api', 'depot-worker']);
+    else
+      for (const role of ['api', 'worker'])
+        await command(join(this.root, `service/depot-${role}.exe`), ['start']);
+  }
+  async healthy(): Promise<void> {
+    const env = runtimeEnvironment(await jsonFile(join(this.root, 'config/runtime.json')));
+    const port = this.state.mode === 'compose' ? '8080' : (env['DEPOT_PORT'] ?? '8080');
+    if (!/^[0-9]{1,5}$/.test(port)) throw new Error('Invalid health port');
+    let consecutive = 0;
+    for (let attempt = 0; attempt < 60; attempt++) {
+      try {
+        const response = await fetch(`http://127.0.0.1:${port}/health/ready`, {
+          signal: AbortSignal.timeout(2000),
+        });
+        await response.body?.cancel();
+        consecutive = response.ok ? consecutive + 1 : 0;
+        if (consecutive >= 3) {
+          await this.workerRunning();
+          return;
+        }
+      } catch {
+        consecutive = 0;
+      }
+      await delay(2000);
+    }
+    throw new Error('Depot did not become ready');
+  }
+  async provision(release: Release): Promise<void> {
+    if (this.state.mode === 'compose') return;
+    const script = join(
+      this.root,
+      'releases',
+      release.version,
+      'deploy',
+      this.state.mode === 'windows' ? 'register-windows.ps1' : 'register-linux.sh',
+    );
+    if (this.state.mode === 'windows')
+      await command('powershell.exe', [
+        '-NoProfile',
+        '-NonInteractive',
+        '-ExecutionPolicy',
+        'Bypass',
+        '-File',
+        script,
+        '-Root',
+        this.root,
+        '-Node',
+        process.execPath,
+      ]);
+    else await command('bash', [script, this.root, process.execPath]);
+  }
+  private async workerRunning(): Promise<void> {
+    if (this.state.mode === 'systemd')
+      await command('systemctl', ['is-active', '--quiet', 'depot-worker']);
+    else if (this.state.mode === 'windows')
+      await command('powershell.exe', [
+        '-NoProfile',
+        '-NonInteractive',
+        '-Command',
+        "if ((Get-Service Depotworker).Status -ne 'Running') { exit 1 }",
+      ]);
+    else
+      await this.compose(this.state.current, [
+        'exec',
+        '-T',
+        'worker',
+        'node',
+        '-e',
+        'process.exit(0)',
+      ]);
+  }
+  async schedule(release: Release): Promise<void> {
+    const windows = process.platform === 'win32';
+    const script = join(
+      this.root,
+      'releases',
+      release.version,
+      'deploy',
+      windows ? 'schedule-windows.ps1' : 'schedule-linux.sh',
+    );
+    if (windows)
+      await command('powershell.exe', [
+        '-NoProfile',
+        '-NonInteractive',
+        '-ExecutionPolicy',
+        'Bypass',
+        '-File',
+        script,
+        '-Root',
+        this.root,
+        '-Node',
+        process.execPath,
+      ]);
+    else await command('bash', [script, this.root, process.execPath]);
+  }
+}

@@ -47,3 +47,7 @@ Required check для main: Depot merge gate. Он проверяет quality н
 На 2026-09-25 API GitHub для закрытого ProAnima/Depot возвращает 403 на branch protection и rulesets с требованием GitHub Pro. Поэтому запрет merge через настройки сервера пока недоступен; зелёный Depot merge gate — обязательное правило процесса. После включения подходящего тарифа назначить его required status для main и требовать актуальную ветку. Публичность проприетарного репозитория ради обхода ограничения менять нельзя.
 
 Изменения config, CI, policy scripts и исключений должны получать архитектурный review. PR описывает поведение, инварианты, фактически выполненные гейты и невыполненные проверки. Система не заменяет review и не гарантирует отсутствие будущего рефакторинга.
+
+## Проверки поставки и служб
+
+В verify/release обязательны deployment (переносимый production artifact), deployment-services (реальный restart двух изолированных служб после crash, Linux/systemd + sudo либо Windows Administrator) и deployment-containers (настоящий Docker install/update с сохранением volume). Quality CI запускает упаковку и службы на Windows/Linux, отдельная обязательная lane проверяет контейнеры. Локально отсутствующие права/движок — непройденный gate; нельзя выдавать quick за полный verify. Подробности и ограничения: [развёртывание](../deploy/README.md).

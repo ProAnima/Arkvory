@@ -1,0 +1,69 @@
+name: proanima-depot
+x-runtime: &runtime
+  image: ${DEPOT_IMAGE:?Installer must select a release image}
+  restart: unless-stopped
+  init: true
+  read_only: true
+  security_opt: [no-new-privileges:true]
+  cap_drop: [ALL]
+  stop_grace_period: 120s
+  tmpfs: [/tmp:size=64m, mode=1777]
+  volumes:
+    - storage:/var/lib/depot
+    - ./config/runtime.json:/run/depot/runtime.json:ro
+    - ./config/keys.json:/run/depot/keys.json:ro
+  logging:
+    driver: json-file
+    options: { max-size: 20m, max-file: '5' }
+services:
+  database:
+    image: postgres:18.4
+    restart: unless-stopped
+    env_file: ./config/postgres.env
+    volumes: [catalog:/var/lib/postgresql]
+    healthcheck:
+      test: [CMD-SHELL, pg_isready -U depot -d depot]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+    logging:
+      driver: json-file
+      options: { max-size: 20m, max-file: '5' }
+  initialize:
+    image: ${DEPOT_IMAGE}
+    user: '0:0'
+    entrypoint: [chown, '1000:1000', /var/lib/depot]
+    volumes: [storage:/var/lib/depot]
+    restart: 'no'
+  migrate:
+    <<: *runtime
+    command: [migrate]
+    restart: 'no'
+    depends_on:
+      database: { condition: service_healthy }
+  api:
+    <<: *runtime
+    command: [api]
+    ports: ['127.0.0.1:8080:8080']
+    depends_on:
+      database: { condition: service_healthy }
+    healthcheck:
+      test:
+        [
+          CMD,
+          node,
+          -e,
+          "fetch('http://127.0.0.1:8080/health/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 4s
+      retries: 18
+      start_period: 20s
+  worker:
+    <<: *runtime
+    command: [worker]
+    depends_on:
+      api: { condition: service_healthy }
+volumes:
+  catalog:
+  storage:
