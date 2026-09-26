@@ -71,19 +71,6 @@
     "tests": ["tests/integration/api-contract.test.mjs", "tests/integration/storage.test.mjs"]
   },
   {
-    "id": "ARCH-008",
-    "file": "packages/infrastructure/src/postgres-catalog.ts",
-    "metric": "class",
-    "symbol": "PostgresCatalog",
-    "ceiling": 304,
-    "reason": "Existing adapter or contract implementation combines related operations; freeze growth and extract cohesive responsibilities while preserving transactional and authorization invariants.",
-    "owner": "Arkvory maintainers",
-    "recordedAt": "2026-09-25",
-    "reviewBy": "2026-12-20",
-    "decision": "docs/adr/0027-executable-engineering-gates.md",
-    "tests": ["tests/integration/api-contract.test.mjs", "tests/integration/storage.test.mjs"]
-  },
-  {
     "id": "ARCH-009",
     "file": "packages/infrastructure/src/service-accounts.ts",
     "metric": "file",

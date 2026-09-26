@@ -16,12 +16,15 @@ const policy = {
   bytesPerSecond: 3 * 65536,
   perPrincipalBytesPerSecond: 3 * 65536,
 };
-async function fixture(t) {
+async function fixture(t, shared = true) {
   const cleanup = [];
   t.after(async () => {
     for (const action of cleanup.reverse()) await action();
   });
-  const f = await setup({ after: (action) => cleanup.push(action) }, { sharedDownloads: policy });
+  const f = await setup(
+    { after: (action) => cleanup.push(action) },
+    shared ? { sharedDownloads: policy } : {},
+  );
   return { ...f, cleanup };
 }
 const readerConfig = (f, slot) => ({
@@ -270,4 +273,53 @@ test('a stalled database link expires delivery locally; restored connectivity ca
   });
   assert.equal(restored.statusCode, 206);
   assert.deepEqual(restored.rawPayload, bytes.subarray(0, 16));
+});
+
+test('standalone writer loses ownership on a silent database partition and cannot revive', async (t) => {
+  const f = await fixture(t, false);
+  const bytes = Buffer.from('writer handover content');
+  const id = await publish(f, bytes);
+  await f.app.close();
+  const proxy = await databaseProxy(f);
+  const old = await createServer({ ...f.config, databaseUrl: proxy.url });
+  f.cleanup.push(async () => {
+    proxy.resume();
+    await old.close();
+  });
+  assert.equal((await old.inject({ url: '/health/ready', headers: f.headers })).statusCode, 200);
+  proxy.stall();
+  await new Promise((resolve) => setTimeout(resolve, 8100));
+  // This is local readiness: a silent TCP link must not keep the writer healthy indefinitely.
+  assert.equal((await old.inject({ url: '/health/ready', headers: f.headers })).statusCode, 503);
+  proxy.resume();
+  await new Promise((resolve) => setTimeout(resolve, 100));
+  assert.equal((await old.inject({ url: '/health/ready', headers: f.headers })).statusCode, 503);
+  const next = await createServer(f.config);
+  f.cleanup.push(() => next.close());
+  const recovered = await next.inject({
+    url: `${base}/artifacts/${id}/content`,
+    headers: f.headers,
+  });
+  assert.equal(recovered.statusCode, 200);
+  assert.deepEqual(recovered.rawPayload, bytes);
+  const rejected = await old.inject({ method: 'POST', url: `${base}/uploads`, headers: f.headers });
+  assert.equal(rejected.statusCode, 503);
+});
+
+test('terminated writer session permits a fresh owner and unsuccessful startup can be retried', async (t) => {
+  const f = await fixture(t, false);
+  const storageId = (await f.catalog.pool.query('SELECT storage_id FROM arkvory_storage_identity'))
+    .rows[0].storage_id;
+  const contender = new PostgresCatalog(f.config.databaseUrl, f.config.capacityBytes, 1);
+  f.cleanup.push(() => contender.close());
+  await assert.rejects(contender.claimStorage(storageId), { code: 'busy' });
+  await assert.rejects(contender.claimStorage(storageId), { code: 'busy' });
+  await f.catalog.pool.query(`SELECT pg_terminate_backend(pid) FROM pg_locks
+    WHERE locktype='advisory' AND classid=18471 AND objid=3 AND objsubid=2 AND granted
+    AND database=(SELECT oid FROM pg_database WHERE datname=current_database())`);
+  await new Promise((resolve) => setTimeout(resolve, 100));
+  assert.equal((await f.app.inject({ url: '/health/ready', headers: f.headers })).statusCode, 503);
+  const next = await createServer(f.config);
+  f.cleanup.push(() => next.close());
+  assert.equal((await next.inject({ url: '/health/ready', headers: f.headers })).statusCode, 200);
 });

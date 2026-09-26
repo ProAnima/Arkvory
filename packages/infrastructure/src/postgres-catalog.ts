@@ -9,6 +9,9 @@ import {
   sameDescriptor,
 } from '@proanima/arkvory-domain';
 import type { Upload, MutationAccess } from '@proanima/arkvory-domain';
+import { claimStorageSession } from './storage-claim.js';
+import type { StorageRole } from './storage-claim.js';
+import type { StorageOwnership } from './storage-ownership.js';
 import { lockServiceAccess } from './service-authorization.js';
 import type { Catalog, UploadMutation } from '@proanima/arkvory-application';
 
@@ -56,12 +59,12 @@ function catalogPool(connectionString: string, max: number): Pool {
   return pool;
 }
 
-// arkvory-exception ARCH-008 -- Existing adapter or contract implementation combines related operations; freeze growth and extract cohesive responsibilities while preserving transactional and authorization invariants.
 export class PostgresCatalog implements Catalog {
   readonly pool: Pool;
   private readonly locks: Pool;
-  private releaseClaim: (() => Promise<void>) | undefined;
-  private claimed = false;
+  private claim: StorageOwnership | undefined;
+  private claimAttempted = false;
+  private claiming = false;
   constructor(
     connectionString: string,
     private readonly capacityBytes: number,
@@ -72,106 +75,32 @@ export class PostgresCatalog implements Catalog {
   }
 
   get active(): boolean {
-    return this.claimed;
+    return this.claim?.active ?? false;
   }
 
   async claimStorage(
     storageId: string,
-    role: 'api' | 'reader' | 'worker' | 'maintenance' = 'api',
+    role: StorageRole = 'api',
     sharedDownloads = false,
   ): Promise<void> {
-    const client = await this.pool.connect();
-    const state = { lost: false };
-    const failed = (): void => {
-      state.lost = true;
-      this.claimed = false;
-    };
-    client.on('error', failed);
+    if (this.claiming || this.claim)
+      throw new ArkvoryError('conflict', 'Storage claim cannot be restarted');
+    this.claimAttempted = true;
+    this.claiming = true;
     try {
-      if (role === 'reader' && !sharedDownloads)
-        throw new ArkvoryError('invalid_input', 'Reader requires shared download policy');
-      if (role === 'api' || role === 'reader') {
-        const mode = await client.query<{ acquired: boolean }>(
-          sharedDownloads
-            ? 'SELECT pg_try_advisory_lock_shared(18471,7) AS acquired'
-            : 'SELECT pg_try_advisory_lock(18471,7) AS acquired',
-        );
-        if (!mode.rows[0]?.acquired)
-          throw new ArkvoryError('busy', 'Conflicting gateway profile is active');
-        if (!sharedDownloads) {
-          const policy = await client.query('SELECT 1 FROM arkvory_download_policy');
-          if (policy.rowCount)
-            throw new ArkvoryError('conflict', 'Database requires shared download configuration');
-        }
-      }
-      // One writer per database, including the shared-download profile. This is not HA.
-      if (role === 'worker') {
-        const worker = await client.query<{ acquired: boolean }>(
-          'SELECT pg_try_advisory_lock(18471,6) AS acquired',
-        );
-        if (!worker.rows[0]?.acquired)
-          throw new ArkvoryError('busy', 'Standalone supports one completion worker');
-      }
-      if (role !== 'worker' && role !== 'reader') {
-        const lock = await client.query<{ acquired: boolean }>(
-          'SELECT pg_try_advisory_lock(18471,3) AS acquired',
-        );
-        if (!lock.rows[0]?.acquired)
-          throw new ArkvoryError(
-            'busy',
-            'Another writer or maintenance process owns this database',
-          );
-      }
-      const barrier = await client.query<{ acquired: boolean }>(
-        role === 'maintenance'
-          ? 'SELECT pg_try_advisory_lock(18471,4) AS acquired'
-          : 'SELECT pg_try_advisory_lock_shared(18471,4) AS acquired',
-      );
-      if (!barrier.rows[0]?.acquired)
-        throw new ArkvoryError(
-          'busy',
-          'Maintenance requires all gateways and workers to be stopped',
-        );
-      if (role === 'reader') {
-        const legacy = await client.query(`SELECT 1 FROM pg_locks writer
-          WHERE writer.locktype='advisory' AND writer.classid=18471 AND writer.objid=3 AND writer.objsubid=2 AND writer.granted
-          AND writer.database=(SELECT oid FROM pg_database WHERE datname=current_database())
-          AND NOT EXISTS(SELECT 1 FROM pg_locks mode WHERE mode.pid=writer.pid AND mode.locktype='advisory'
-            AND mode.classid=18471 AND mode.objid=7 AND mode.objsubid=2 AND mode.granted)`);
-        if (legacy.rowCount)
-          throw new ArkvoryError('busy', 'Upgrade the writer before starting read gateways');
-      }
-      if (role !== 'reader')
-        await client.query(
-          'INSERT INTO arkvory_storage_identity(singleton,storage_id) VALUES(true,$1) ON CONFLICT DO NOTHING',
-          [requireId(storageId)],
-        );
-      const identity = await client.query<{ storage_id: string }>(
-        'SELECT storage_id,pg_advisory_lock_shared(18471,17) FROM arkvory_storage_identity WHERE singleton=true',
-      );
-      if (identity.rows[0]?.storage_id !== storageId)
-        throw new ArkvoryError('conflict', 'Database belongs to a different storage directory');
-      this.claimed = true;
-      this.releaseClaim = async () => {
-        this.claimed = false;
-        if (!state.lost) {
-          try {
-            await client.query('SELECT pg_advisory_unlock_all()');
-          } catch {
-            state.lost = true;
-          }
-        }
-        client.removeListener('error', failed);
-        client.release(state.lost);
-      };
-    } catch (error) {
-      client.removeListener('error', failed);
-      client.release(true);
-      throw error;
+      this.claim = await claimStorageSession(this.pool, storageId, role, sharedDownloads);
+    } finally {
+      this.claiming = false;
     }
   }
 
+  private checkOwnership(): void {
+    if (this.claimAttempted && !this.active)
+      throw new ArkvoryError('unavailable', 'Storage ownership lost; restart the process');
+  }
+
   async create(input: Parameters<Catalog['create']>[0]): Promise<Upload> {
+    this.checkOwnership();
     const client = await this.pool.connect();
     let unusable = false;
     try {
@@ -187,6 +116,7 @@ export class PostgresCatalog implements Catalog {
         const upload = decode(existing.rows[0]);
         if (!sameDescriptor(upload.descriptor, input.descriptor))
           throw new ArkvoryError('conflict', 'Idempotency key has a different descriptor');
+        this.checkOwnership();
         await client.query('COMMIT');
         return upload;
       }
@@ -223,6 +153,7 @@ export class PostgresCatalog implements Catalog {
           input.createdAt,
         ],
       );
+      this.checkOwnership();
       await client.query('COMMIT');
       return decode(inserted.rows[0]);
     } catch (error) {
@@ -289,6 +220,7 @@ export class PostgresCatalog implements Catalog {
       if (!result.rows[0]?.acquired)
         throw new ArkvoryError('busy', 'Upload is already being modified');
       const check = (): void => {
+        this.checkOwnership();
         if (state.lost) throw new ArkvoryError('unavailable', 'Upload lock was lost');
       };
       const guarded = async <R>(work: () => Promise<R>): Promise<R> => {
@@ -297,6 +229,7 @@ export class PostgresCatalog implements Catalog {
         try {
           await lockServiceAccess(client, access);
           const result = await work();
+          check();
           await client.query('COMMIT');
           return result;
         } catch (error) {
@@ -368,8 +301,7 @@ export class PostgresCatalog implements Catalog {
     await this.pool.query('SELECT id,expires_at FROM arkvory_uploads LIMIT 0');
   }
   async close(): Promise<void> {
-    await this.releaseClaim?.();
-    this.releaseClaim = undefined;
+    await this.claim?.close();
     await Promise.all([this.pool.end(), this.locks.end()]);
   }
 }

@@ -97,3 +97,5 @@ SDK использует композицию: публичный ArkvoryClient 
 Единая идентичность Arkvory и чистая дорелизная установка описаны в [ADR 0040](adr/0040-arkvory-identity.md). Все имена конфигурации, SQL, сервисных ключей и локального состояния используют Arkvory; нормализатор альтернативных имён и зависимость worker от contracts удалены.
 
 Восстановление download intents остаётся в web (OPFS/sessionStorage/Web Locks); SDK принимает paused jobs через явный restore. Staging сегментирован по 8 MiB. CLI packages publish оркестрирует upload/register с прежним receipt; metadata search реализован отдельным SQL-модулем через BrowseStore. [ADR 0041](adr/0041-client-recovery-search-and-publication.md).
+
+Владение PostgreSQL-сессией выделено из каталога: StorageOwnership ограничивает период подтверждения locks, необратимо закрывает потерянное соединение и не допускает повторный claim. Это не межсерверный fencing и не репликация: [ADR 0042](adr/0042-bounded-storage-ownership.md).
