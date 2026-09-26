@@ -74,7 +74,14 @@ export class CatalogApi {
   }
   async search(
     repository: string,
-    query: { q?: string; label?: string; collection?: string; after?: string } = {},
+    query: {
+      q?: string;
+      label?: string;
+      collection?: string;
+      after?: string;
+      metadataKey?: string;
+      metadataValue?: string;
+    } = {},
   ) {
     const q = new URLSearchParams();
     for (const [key, value] of Object.entries(query)) q.set(key, value);
@@ -146,11 +153,13 @@ export class CatalogApi {
       ),
     );
   }
-  async registerPackage(repository: string, id: string) {
+  async registerPackage(repository: string, id: string, signal?: AbortSignal) {
     return record(
       await this.http.call(
         repositoryPath(repository, `artifacts/${encodeURIComponent(id)}/package`),
         'POST',
+        undefined,
+        signal,
       ),
     );
   }

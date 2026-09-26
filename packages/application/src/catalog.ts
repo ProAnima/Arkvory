@@ -93,6 +93,7 @@ export interface BrowseStore {
     label: string,
     collection: string,
     after: string | undefined,
+    metadata?: { key: string; value: string },
   ): Promise<readonly { id: string; name: string }[]>;
   audit(
     repository: string,
@@ -268,12 +269,22 @@ export class ArtifactCatalog {
     label: string,
     collection: string,
     after?: string,
+    metadata?: { key: string; value: string },
   ) {
     authorizeAction(p, repo, 'artifact.list', ['read']);
     if (query.length > 240 || label.length > 64 || collection.length > 64)
       throw new ArkvoryError('invalid_input', 'Search filter too long');
     if (after !== undefined) requireId(after);
-    return this.store.search(repo, query, label, collection, after);
+    if (
+      metadata &&
+      (!/^[a-zA-Z][a-zA-Z0-9_.-]{0,63}$/.test(metadata.key) ||
+        ['__proto__', 'constructor', 'prototype'].includes(metadata.key) ||
+        metadata.value.length > 1024 ||
+        metadata.value.includes('\0') ||
+        /[\uD800-\uDFFF]/u.test(metadata.value))
+    )
+      throw new ArkvoryError('invalid_input', 'Invalid metadata filter');
+    return this.store.search(repo, query, label, collection, after, metadata);
   }
   async audit(p: Principal, repo: string, after: string) {
     authorizeAction(p, repo, 'audit.read', ['write']);

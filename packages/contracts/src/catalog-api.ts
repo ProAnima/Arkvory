@@ -339,7 +339,7 @@ const paths: Record<string, Record<string, unknown>> = {
   },
   [`${root}/search`]: {
     get: operation(
-      'Search names, exact label and collection; pages of 100',
+      'Search names and metadata values (case-insensitive substring); exact label, collection and metadataKey/metadataValue pair; pages of 100',
       {
         ...page({
           type: 'object',
@@ -350,7 +350,23 @@ const paths: Record<string, Record<string, unknown>> = {
           next: { type: 'string', nullable: true },
         },
       },
-      { parameters: ['q', 'label', 'collection', 'after'].map(query) },
+      {
+        parameters: [
+          ...['q', 'label', 'collection', 'after'].map(query),
+          {
+            ...query('metadataKey'),
+            description: 'Exact metadata key; requires metadataValue.',
+            schema: { type: 'string', maxLength: 64, pattern: '^[a-zA-Z][a-zA-Z0-9_.-]{0,63}$' },
+          },
+          {
+            ...query('metadataValue'),
+            description:
+              'Exact case-sensitive value; requires metadataKey. Empty string is allowed.',
+            allowEmptyValue: true,
+            schema: { type: 'string', maxLength: 1024 },
+          },
+        ],
+      },
     ),
   },
   [`${root}/audit`]: {

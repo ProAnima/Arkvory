@@ -532,12 +532,12 @@
           </details>
           <form id="search" class="search-form">
             <label class="grow"
-              ><span class="sr-only" data-i18n="name">Имя файла</span
+              ><span class="sr-only" data-i18n="searchPlaceholder">Поиск</span
               ><input
                 id="query"
                 type="search"
                 data-i18n-placeholder="searchPlaceholder"
-                placeholder="Поиск артефактов по имени…" /></label
+                placeholder="Имя или значение метаданных…" /></label
             ><label
               ><span class="sr-only" data-i18n="labelFilter">Фильтр по метке</span
               ><input
@@ -555,6 +555,24 @@
               Сбросить
             </button>
           </form>
+          <details class="disclosure catalog-filter">
+            <summary data-i18n="metadataFilter">Точные метаданные</summary>
+            <div class="search-form">
+              <label
+                ><span data-i18n="metadataKey">Ключ</span
+                ><input
+                  id="filter-metadata-key"
+                  form="search"
+                  maxlength="64"
+                  pattern="[a-zA-Z][a-zA-Z0-9_.-]{0,63}"
+              /></label>
+              <label class="grow"
+                ><span data-i18n="metadataValue">Значение</span
+                ><input id="filter-metadata-value" form="search" maxlength="1024"
+              /></label>
+            </div>
+            <p class="hint" data-i18n="metadataFilterHint"></p>
+          </details>
           <div class="table catalog-table" tabindex="0" role="region" data-i18n-label="tableRegion">
             <table>
               <thead>
@@ -758,6 +776,14 @@
             Очередь на паузе. Новые скачивания будут ждать.
           </p>
           <div class="download-toolbar">
+            <button
+              id="downloads-restore"
+              type="button"
+              class="secondary"
+              data-i18n="downloadRestore"
+            >
+              Восстановить очередь
+            </button>
             <button id="downloads-pause" type="button" class="secondary" data-i18n="downloadsPause">
               Приостановить все
             </button>
@@ -932,7 +958,7 @@
               <pre><code>arkvoryctl --help
 arkvoryctl profile add production --server https://arkvory.example --token-file /private/arkvory.key
 arkvoryctl doctor
-arkvoryctl upload build.upack --label test
+arkvoryctl packages publish build.upack --label test
 arkvoryctl download ARTIFACT_ID ./build.upack</code></pre>
             </article>
             <article class="card">

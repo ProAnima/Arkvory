@@ -6,7 +6,7 @@ import type { ArkvoryClient } from '@proanima/arkvory-sdk';
 import { exists, exclusive, readJson, saveJson } from './local-files.js';
 import { CliError } from './errors.js';
 
-interface UploadInput {
+export interface UploadInput {
   client: ArkvoryClient;
   server: string;
   repository: string;

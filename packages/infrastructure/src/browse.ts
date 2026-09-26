@@ -1,3 +1,4 @@
+import { searchArtifacts } from './artifact-search.js';
 import { readAsset, readAssets } from './asset-list.js';
 import type { Pool, PoolClient } from 'pg';
 import { ArkvoryError, parseDescriptor, parseManifest, requireId } from '@proanima/arkvory-domain';
@@ -442,18 +443,8 @@ export class PostgresBrowse implements BrowseStore {
       access,
     );
   }
-  async search(
-    repository: string,
-    query: string,
-    label: string,
-    collection: string,
-    after: string | undefined,
-  ) {
-    const result = await this.pool.query<{ id: string; name: string }>(
-      `SELECT u.id,u.descriptor->>'name' AS name FROM arkvory_uploads u LEFT JOIN arkvory_annotations a ON a.artifact_id=u.id WHERE u.repository=$1 AND u.status='available' AND ($2::uuid IS NULL OR u.id>$2) AND strpos(lower(u.descriptor->>'name'),lower($3))>0 AND ($4='' OR COALESCE(a.labels,u.descriptor->'labels') ? $4) AND ($5='' OR a.collections ? $5) ORDER BY u.id LIMIT 100`,
-      [repository, after ?? null, query, label, collection],
-    );
-    return result.rows;
+  search(...args: Parameters<BrowseStore['search']>) {
+    return searchArtifacts(this.pool, ...args);
   }
   async audit(repository: string, after: string) {
     const result = await this.pool.query<{

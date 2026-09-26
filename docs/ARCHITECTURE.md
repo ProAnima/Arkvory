@@ -95,3 +95,5 @@ SDK использует композицию: публичный ArkvoryClient 
 Удалённый `arkvoryctl` находится в `apps/cli`, зависит только от SDK/contracts и не имеет доступа к внутренним слоям сервера. CLI владеет профилями и локальными чекпойнтами; протокол, авторизация и сетевые повторы остаются в SDK. Устанавливается отдельными клиентскими пакетами с private runtime. [ADR 0034](adr/0034-remote-client-cli.md), [справка](CLI.md).
 
 Единая идентичность Arkvory и чистая дорелизная установка описаны в [ADR 0040](adr/0040-arkvory-identity.md). Все имена конфигурации, SQL, сервисных ключей и локального состояния используют Arkvory; нормализатор альтернативных имён и зависимость worker от contracts удалены.
+
+Восстановление download intents остаётся в web (OPFS/sessionStorage/Web Locks); SDK принимает paused jobs через явный restore. Staging сегментирован по 8 MiB. CLI packages publish оркестрирует upload/register с прежним receipt; metadata search реализован отдельным SQL-модулем через BrowseStore. [ADR 0041](adr/0041-client-recovery-search-and-publication.md).

@@ -147,18 +147,7 @@ export function registerCatalogRoutes(
       revision(body['expectedRevision']),
     );
   });
-  app.get<{ Params: Params; Querystring: unknown }>(`${base}/search`, async (request) => {
-    const q = object(request.query);
-    const items = await browse.search(
-      principal(request),
-      request.params.repository,
-      string(q['q'], ''),
-      string(q['label'], ''),
-      string(q['collection'], ''),
-      q['after'] === undefined ? undefined : string(q['after']),
-    );
-    return { items, next: items.length === 100 ? (items.at(-1)?.id ?? null) : null };
-  });
+  registerSearchRoute(app, browse, principal);
   app.get<{ Params: Params; Querystring: unknown }>(`${base}/audit`, async (request) => ({
     items: await browse.audit(
       principal(request),
@@ -179,5 +168,31 @@ export function registerCatalogRoutes(
       );
       return reply.code(204).send();
     },
+  });
+}
+
+function registerSearchRoute(
+  app: FastifyInstance,
+  browse: ArtifactCatalog,
+  principal: (request: FastifyRequest) => Principal,
+) {
+  type Params = { repository: string };
+  const base = '/api/v1/repositories/:repository';
+  app.get<{ Params: Params; Querystring: unknown }>(`${base}/search`, async (request) => {
+    const q = object(request.query);
+    if ((q['metadataKey'] === undefined) !== (q['metadataValue'] === undefined))
+      throw new ArkvoryError('invalid_input', 'Metadata key and value must be supplied together');
+    const items = await browse.search(
+      principal(request),
+      request.params.repository,
+      string(q['q'], ''),
+      string(q['label'], ''),
+      string(q['collection'], ''),
+      q['after'] === undefined ? undefined : string(q['after']),
+      q['metadataKey'] === undefined
+        ? undefined
+        : { key: string(q['metadataKey']), value: string(q['metadataValue']) },
+    );
+    return { items, next: items.length === 100 ? (items.at(-1)?.id ?? null) : null };
   });
 }

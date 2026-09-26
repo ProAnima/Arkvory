@@ -1,4 +1,4 @@
-import { installCatalogFilter } from './catalog-filter.js';
+import { installCatalogFilter, catalogFilter } from './catalog-filter.js';
 import { consoleRunner } from './console-runner.js';
 import { ManagementConsole } from './management.js';
 import { offerRepositoryOptions } from './repository-options.js';
@@ -199,8 +199,7 @@ async function list(after?: string) {
   feedback(output, 'searching');
   try {
     const page = await client.search(repo, {
-      q: element('query', HTMLInputElement).value,
-      label: element('filter-label', HTMLInputElement).value,
+      ...catalogFilter(),
       ...(after ? { after } : {}),
     });
     if (generation !== listGeneration) return;
@@ -246,9 +245,7 @@ async function list(after?: string) {
       if (page.next) run(() => list(page.next ?? undefined));
     };
     element('catalog-empty', HTMLDivElement).hidden = rows.rows.length > 0;
-    const filtered = Boolean(
-      element('query', HTMLInputElement).value || element('filter-label', HTMLInputElement).value,
-    );
+    const filtered = Object.values(catalogFilter()).some(Boolean);
     message(
       element('empty-title', HTMLHeadingElement),
       filtered ? 'noResultsTitle' : 'searchEmptyTitle',

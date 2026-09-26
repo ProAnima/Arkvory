@@ -1,3 +1,5 @@
+import { ZipFile } from 'yazl';
+import { publishPackage } from '../../apps/cli/dist/publish-package.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
@@ -114,5 +116,58 @@ test('remote CLI profiles, transfers across process restarts, metadata CAS and c
     409,
   );
   assert.equal((await run(['search', '--label', 'test'])).items[0].id, receipt.id);
+  assert.equal((await run(['search', '--query', 'REVISION-A'])).items[0].id, receipt.id);
+  assert.equal(
+    (await run(['search', '--metadata-key', 'commit', '--metadata-value', 'revision-a'])).items[0]
+      .id,
+    receipt.id,
+  );
+  assert.equal(
+    (await run(['search', '--metadata-key', 'commit', '--metadata-value', 'REVISION-A'])).items
+      .length,
+    0,
+  );
+  assert.equal(
+    (await run(['search', '--metadata-key', 'commit'], {}, 2)).error.code,
+    'metadata_pair_required',
+  );
+  const archive = new ZipFile();
+  archive.addBuffer(
+    Buffer.from(JSON.stringify({ name: 'cli-package', version: '1.0.0' })),
+    'upack.json',
+  );
+  archive.addBuffer(Buffer.from('build'), 'package/build.txt');
+  archive.end();
+  const chunks = [];
+  for await (const chunk of archive.outputStream) chunks.push(chunk);
+  const packagePath = join(f.directory, 'build.upack');
+  await writeFile(packagePath, Buffer.concat(chunks));
+  // Commit registration, then lose the response: retry must reuse both artifact and version.
+  const register = client.registerPackage.bind(client);
+  let registeredId;
+  client.registerPackage = async (...args) => {
+    await register(...args);
+    registeredId = args[1];
+    throw new Error('lost response');
+  };
+  await assert.rejects(
+    publishPackage({
+      client,
+      server,
+      repository: 'releases',
+      path: packagePath,
+      signal: new AbortController().signal,
+      progress() {},
+    }),
+    (error) => error.artifactId === registeredId,
+  );
+  const published = await run(['packages', 'publish', packagePath]);
+  assert.equal(published.artifactId, registeredId);
+  assert.equal(published.package.name, 'cli-package');
+  assert.equal((await run(['packages', 'publish', packagePath])).artifactId, published.artifactId);
+  assert.equal((await run(['packages', 'list'])).items.length, 1);
+  const invalid = await run(['packages', 'publish', path], {}, 4);
+  assert.equal(invalid.error.stage, 'register');
+  assert.equal(invalid.error.artifactId, receipt.id);
   assert.equal((await run(['list'], { ARKVORY_TOKEN: 'invalid-credential' }, 3)).error.status, 401);
 });

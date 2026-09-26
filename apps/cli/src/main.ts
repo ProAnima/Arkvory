@@ -39,7 +39,7 @@ try {
   console.error(
     json
       ? JSON.stringify({ error: result })
-      : `Arkvory: ${result.code}${'status' in result ? ' HTTP ' + String(result.status) : ''}. ${explanation(result.code, language)}`,
+      : `Arkvory: ${result.code}${'status' in result ? ' HTTP ' + String(result.status) : ''}. ${explanation(result.code, language)}${result.stage === 'register' ? (language === 'ru' ? ' Файл загружен; регистрация UPack не подтверждена. Повторите packages publish с теми же параметрами.' : ' File uploaded; UPack registration is unconfirmed. Repeat packages publish with the same options.') : ''}`,
   );
   process.exitCode = result.exitCode;
 } finally {

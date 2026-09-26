@@ -13,8 +13,10 @@ type ChangedMethods = {
     : K;
 }[keyof LegacyClient];
 
+// ADR 0041 adds an optional AbortSignal to registerPackage; existing invocations remain assignable.
+export type ExistingCallsRemainValid = Assert<ArkvoryClient extends LegacyClient ? true : false>;
 // Compile against built package exports, as an external strict TypeScript consumer does.
-export type UnchangedMethods = Assert<Equal<ChangedMethods, never>>;
+export type UnchangedMethods = Assert<Equal<ChangedMethods, 'registerPackage'>>;
 export type UnchangedKeys = Assert<
   Equal<
     Exclude<
@@ -33,3 +35,8 @@ export type UnchangedKeys = Assert<
 export type UnchangedConstructor = Assert<
   Equal<ConstructorParameters<typeof ArkvoryClient>, ConstructorParameters<LegacyConstructor>>
 >;
+
+export function metadataSearch(client: ArkvoryClient, signal: AbortSignal) {
+  void client.search('releases', { metadataKey: 'commit', metadataValue: 'abc' });
+  void client.registerPackage('releases', 'artifact', signal);
+}

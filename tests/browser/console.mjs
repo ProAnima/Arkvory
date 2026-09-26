@@ -107,6 +107,34 @@ try {
   await page.locator('#labels').fill('reviewed, stable');
   await page.locator('#edit button.primary').click();
   await page.locator('#status[data-tone=success]').waitFor();
+  await go('catalog');
+  await page.locator('#query').fill('CANDIDATE');
+  await page.locator('#search button').first().click();
+  await page.waitForFunction(
+    () =>
+      document.querySelector('#artifacts').rows.length === 1 &&
+      !document.querySelector('#catalog-panel').hasAttribute('aria-busy'),
+  );
+  await page
+    .locator('#filter-metadata-key')
+    .evaluate((node) => (node.closest('details').open = true));
+  await page.locator('#filter-metadata-key').fill('release');
+  await page.locator('#filter-metadata-value').fill('missing');
+  await page.locator('#search button').first().click();
+  await page.waitForFunction(
+    () =>
+      document.querySelector('#artifacts').rows.length === 0 &&
+      !document.querySelector('#catalog-panel').hasAttribute('aria-busy'),
+  );
+  await page.locator('#search-clear').click();
+  await page.waitForFunction(
+    () =>
+      document.querySelector('#artifacts').rows.length > 0 &&
+      !document.querySelector('#catalog-panel').hasAttribute('aria-busy'),
+  );
+  assert.equal(await page.locator('#filter-metadata-key').inputValue(), '');
+  assert.equal(await page.locator('#filter-metadata-value').inputValue(), '');
+  await go('metadata');
   await exerciseBuildDetails(page, f, id);
   await page.locator('#asset-path').fill('releases/latest.upack');
   await page.locator('#asset button').click();

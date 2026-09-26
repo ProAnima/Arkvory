@@ -26,18 +26,18 @@ HTTP upload/download имеют отдельные очереди допуска
 
 Все адреса ниже относительны `/api/v1/repositories/{repository}`. Читать каталог можно с read scope; изменение требует write и read доступ к артефакту. Аннотации не меняют исходный descriptor или байты.
 
-| Метод/адрес                                           | Действие                                                                                                     |
-| ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| GET `artifacts/{id}/annotations`                      | `{revision,labels,metadata,collections}`; revision 0 наследует descriptor                                    |
-| PUT `artifacts/{id}/annotations`                      | `{expectedRevision,value:{labels,metadata,collections}}`; полная замена, пропущенные поля становятся пустыми |
-| POST `artifacts/{id}/package`                         | Проверка UPack ZIP и регистрация group/name/version                                                          |
-| GET `packages?group=...&name=...`                     | Курсорные страницы до 100 версий; сортировка по SemVer и группировка внутри страницы                         |
-| PUT `asset`                                           | `{path,artifactId,expectedRevision}`; 0 создаёт путь, последующие ревизии меняют указатель                   |
-| GET `asset?path=...`                                  | Текущий artifactId/revision                                                                                  |
-| GET `assets?prefix=...`                               | Пути, до 1000; история ревизий сохраняется в БД                                                              |
-| GET `search?q=...&label=...&collection=...&after=...` | Поиск по имени, точной метке/коллекции; до 100, `next` для следующей страницы                                |
-| GET `audit?after=0`                                   | Аудит изменений каталога, write scope; до 100, cursor — последний sequence                                   |
-| POST/DELETE `artifacts/{id}/references`               | `{key}`: добавить/удалить свою внешнюю ссылку                                                                |
+| Метод/адрес                                           | Действие                                                                                                                         |
+| ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| GET `artifacts/{id}/annotations`                      | `{revision,labels,metadata,collections}`; revision 0 наследует descriptor                                                        |
+| PUT `artifacts/{id}/annotations`                      | `{expectedRevision,value:{labels,metadata,collections}}`; полная замена, пропущенные поля становятся пустыми                     |
+| POST `artifacts/{id}/package`                         | Проверка UPack ZIP и регистрация group/name/version                                                                              |
+| GET `packages?group=...&name=...`                     | Курсорные страницы до 100 версий; сортировка по SemVer и группировка внутри страницы                                             |
+| PUT `asset`                                           | `{path,artifactId,expectedRevision}`; 0 создаёт путь, последующие ревизии меняют указатель                                       |
+| GET `asset?path=...`                                  | Текущий artifactId/revision                                                                                                      |
+| GET `assets?prefix=...`                               | Пути, до 1000; история ревизий сохраняется в БД                                                                                  |
+| GET `search?q=...&label=...&collection=...&after=...` | Поиск по имени/значениям metadata, точной паре metadataKey/metadataValue, метке/коллекции; до 100, `next` для следующей страницы |
+| GET `audit?after=0`                                   | Аудит изменений каталога, write scope; до 100, cursor — последний sequence                                                       |
+| POST/DELETE `artifacts/{id}/references`               | `{key}`: добавить/удалить свою внешнюю ссылку                                                                                    |
 
 Конкурентная правка с устаревшей ревизией — 409, без потери чужих изменений. Аудит записывается в той же транзакции, что изменение. Включает аннотации, регистрацию пакета, asset pointer, восстановление ревизий и references; аудит скачиваний/всех auth-событий ещё не добавлен. Удаление опубликованных файлов и retention не включены; поэтому ссылки пока не участвуют в автоматическом удалении.
 
@@ -76,3 +76,5 @@ UPack: root `upack.json` до 64 KiB, name/group и SemVer, сохранение
 Статическая страница публична; все данные защищены ключом. CSP запрещает сторонние scripts и frames. Разметка данных создаётся через textContent. SHA-реализация @noble/hashes поставляется со своей лицензией в `/console/THIRD-PARTY.txt`; права на Arkvory определяет LICENSE.md.
 
 Для полного обхода файлового каталога используйте [GET /assets/page](ASSET_PAGINATION.md): до 100 текущих pointers и next. Прежний GET /assets с пределом 1000 остаётся совместимым.
+
+Поиск `GET search`: `q` — literal substring имени или значения актуальной metadata без учёта регистра; `metadataKey` + `metadataValue` — точная пара с учётом регистра, задаются вместе. Значение может быть пустой строкой. Фильтры объединяются через AND, доступ и cursor/100 сохраняются. SQL параметризован; regex/wildcards не поддерживаются. См. [CLI](CLI.md#поиск--search).

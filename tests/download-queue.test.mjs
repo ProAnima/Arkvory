@@ -414,3 +414,33 @@ test('integrity rejection removes the checkpoint and never commits a file', asyn
   assert.equal(disk.committed, undefined);
   await queue.close();
 });
+
+test('restored downloads remain paused, preserve sealed bytes and respect admission limits', async () => {
+  const queue = new DownloadQueue({ maxEntries: 1, startIntervalMs: 0 });
+  const started = [];
+  queue.restore(job('restored', started), 8388608);
+  await tick();
+  assert.deepEqual(started, []);
+  assert.equal(queue.snapshot[0].state, 'paused');
+  assert.equal(queue.snapshot[0].bytes, 8388608);
+  assert.throws(() => queue.restore(job('extra')), /queue_full/);
+  assert.throws(() => queue.restore(job('bad'), -1), /invalid_policy/);
+  queue.resume('restored');
+  await tick();
+  assert.deepEqual(started, ['restored']);
+  await queue.close();
+});
+
+test('resume-all leaves restored jobs awaiting a destination paused while releasing eligible work', async () => {
+  const queue = new DownloadQueue({ startIntervalMs: 0 });
+  const started = [];
+  queue.restore(job('needs-destination', started));
+  queue.restore(job('ready', started));
+  queue.pauseAll();
+  queue.resumeAll(new Set(['ready']));
+  await tick();
+  assert.deepEqual(started, ['ready']);
+  assert.equal(queue.snapshot.find((item) => item.id === 'needs-destination').state, 'paused');
+  assert.equal(queue.paused, false);
+  await queue.close();
+});

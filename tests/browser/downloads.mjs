@@ -75,6 +75,48 @@ try {
     ),
     'previous destination',
   );
+  const savedSession = await page.evaluate(() =>
+    sessionStorage.getItem('arkvory.download.session'),
+  );
+  const receipts = await page.evaluate(async (session) => {
+    const folder = await (
+      await (
+        await navigator.storage.getDirectory()
+      ).getDirectoryHandle('arkvory-download-staging-v1')
+    ).getDirectoryHandle(session);
+    const values = [];
+    for await (const [name, handle] of folder.entries())
+      if (handle.kind === 'file' && name.endsWith('.json'))
+        values.push(await (await handle.getFile()).text());
+    return values.join('');
+  }, savedSession);
+  assert.equal(receipts.includes(f.headers.authorization.slice(7)), false);
+  const ranges = [];
+  page.on('request', (request) => {
+    if (request.method() === 'GET' && request.url().includes('/content'))
+      ranges.push(request.headers().range);
+  });
+  await page.reload();
+  // Same browser storage must not disclose another principal's saved queue.
+  await page.locator('#token').fill(f.readerHeaders.authorization.slice(7));
+  await page.locator('#connect button.primary').click();
+  await page.locator('[data-nav=downloads]').click();
+  await page.locator('#downloads-restore').click();
+  await page.locator('#download-status[data-i18n=downloadRestoreEmpty]').waitFor();
+  assert.equal(await page.locator('#download-rows tr').count(), 0);
+  await page.locator('#connection-card > summary').click();
+  await page.locator('#token').fill(f.headers.authorization.slice(7));
+  await page.locator('#connect button.primary').click();
+  await page.locator('[data-nav=downloads]').click();
+  await page.locator('#downloads-restore').click();
+  await page.locator('#download-status[data-i18n=downloadRestoreReady]').waitFor();
+  assert.equal(
+    await page.evaluate(() => sessionStorage.getItem('arkvory.download.session')),
+    savedSession,
+  );
+  assert.equal(await page.locator('#download-rows tr').count(), 1);
+  await page.getByRole('cell', { name: '8388608 bytes written', exact: true }).waitFor();
+  assert.equal(await page.locator('#downloads-resume').isDisabled(), true);
   await page
     .locator('#download-rows tr')
     .first()
@@ -94,10 +136,47 @@ try {
         .join(''),
     };
   });
+  assert.ok(ranges.some((range) => range === 'bytes=8388608-16777215'));
   assert.equal(actual.size, bytes.length);
   assert.equal(actual.hash, createHash('sha256').update(bytes).digest('hex'));
   await page.locator('#downloads-clear-finished').click();
   await page.locator('#download-empty').waitFor();
+  // Reload an active transfer without pausing: only closed segments may be recovered.
+  await page.locator('[data-nav=catalog]').click();
+  await page.locator('#artifacts button').first().click();
+  await page.locator('#download').click();
+  await page
+    .getByRole('cell', { name: '8388608 bytes written', exact: true })
+    .waitFor({ timeout: 15000 });
+  await page.reload();
+  await page.locator('#token').fill(f.headers.authorization.slice(7));
+  await page.locator('#connect button.primary').click();
+  await page.locator('[data-nav=downloads]').click();
+  await page.locator('#downloads-restore').click();
+  await page.locator('#download-status[data-i18n=downloadRestoreReady]').waitFor();
+  await page.getByRole('cell', { name: '8388608 bytes written', exact: true }).waitFor();
+  await page
+    .locator('#download-rows tr')
+    .first()
+    .getByRole('button', { name: 'Resume / retry', exact: true })
+    .click();
+  await page
+    .getByRole('cell', { name: 'Verified and saved', exact: true })
+    .waitFor({ timeout: 20000 });
+  const recoveredHash = await page.evaluate(async () => {
+    const file = await (
+      await (await navigator.storage.getDirectory()).getFileHandle('test-destination-0')
+    ).getFile();
+    return [...new Uint8Array(await crypto.subtle.digest('SHA-256', await file.arrayBuffer()))]
+      .map((byte) => byte.toString(16).padStart(2, '0'))
+      .join('');
+  });
+  assert.equal(recoveredHash, createHash('sha256').update(bytes).digest('hex'));
+  await page.locator('#downloads-clear-finished').click();
+  await page.locator('#download-empty').waitFor();
+  await page.locator('[data-nav=catalog]').click();
+  await page.locator('#artifacts button').first().click();
+  await page.locator('[data-nav=downloads]').click();
   // Hold an empty queue, enqueue two selected files, then cancel only waiting entries.
   await page.locator('#downloads-pause').click();
   for (let i = 0; i < 2; i++) {
@@ -185,13 +264,13 @@ try {
   await other.close();
   const next = await openOther(),
     reclaimed = await sessions();
-  assert.equal(reclaimed.length, 2);
+  assert.equal(reclaimed.length, 3);
   assert.ok(reclaimed.includes(originalSession));
-  assert.ok(!reclaimed.includes(abandoned));
+  assert.ok(reclaimed.includes(abandoned)); // Recent recoverable receipts survive the document/lock gap.
   await next.close();
   assert.deepEqual(errors, []);
   console.log(
-    'PASS browser download: real HTTP/OPFS, pause/resume, verified commit, clearing waiting, RU/EN, light/dark, 390px/1440px',
+    'PASS browser download: real HTTP/OPFS, pause/reload, identity-isolated recovery, Range resume, verified commit, clearing waiting, RU/EN, light/dark, 390px/1440px',
   );
 } finally {
   await browser.close();

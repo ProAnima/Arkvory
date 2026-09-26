@@ -6,7 +6,7 @@ ${ru ? 'Удалённый клиент хранилища для людей и 
 ${ru ? 'НАЧАЛО РАБОТЫ' : 'GET STARTED'}
   arkvoryctl profile add production --server https://arkvory.example --token-file /private/arkvory.key
   arkvoryctl doctor
-  arkvoryctl upload build.upack --label test --json
+  arkvoryctl packages publish build.upack --label test --json
   arkvoryctl download ARTIFACT_ID ./build.upack
 
 ${ru ? 'КОМАНДЫ' : 'COMMANDS'}
@@ -17,11 +17,13 @@ ${ru ? 'КОМАНДЫ' : 'COMMANDS'}
   operations [--after CURSOR]                  ${ru ? 'Доступные операции API' : 'Available API operations'}
   list [--after CURSOR]
   search [--query TEXT] [--label TAG] [--collection NAME] [--after CURSOR]
+  search --metadata-key KEY --metadata-value VALUE
   inspect ID
   upload FILE [--label TAG] [--file METADATA.json] [--state CHECKPOINT.json]
   download ID OUTPUT
   uploads status ID | cancel ID
   packages list [--group GROUP] [--name NAME] [--after CURSOR]
+  packages publish FILE [--label TAG] [--file METADATA.json] [--state CHECKPOINT.json]
   packages register ID                        ${ru ? 'Индексировать загруженный UPack' : 'Index an uploaded UPack'}
   annotations get ID
   annotations set ID --revision N --file ANNOTATIONS.json

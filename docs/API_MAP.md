@@ -144,3 +144,5 @@ Discovery: GET/HEAD `/api/v1/repositories` возвращает items/next (до
 Логическое удаление и retention preview/apply реализованы в [ARTIFACT_RETENTION](ARTIFACT_RETENTION.md): managed-only artifact.delete, CAS аннотаций, пины истории и receipts. OpenAPI 0.12.0, 130 операций, миграции 13/14. Реестр/настройки/квоты репозиториев, SDK distribution, identity delegation/SSO и глобальное управление очередями остаются отдельными этапами.
 
 Настройки хранения: `GET/PUT repositories/{repository}/storage/policy`, `GET storage/usage`, `GET storage/preview`, `POST storage/run`, `GET storage/events`. Surface catalog, права storage.read/manage, artifact.delete и diagnostics.read по операции. [Контракт](STORAGE_POLICIES.md).
+
+Поиск `GET search`: `q` — literal substring имени или значения актуальной metadata без учёта регистра; `metadataKey` + `metadataValue` — точная пара с учётом регистра, задаются вместе. Значение может быть пустой строкой. Фильтры объединяются через AND, доступ и cursor/100 сохраняются. SQL параметризован; regex/wildcards не поддерживаются. См. [CLI](CLI.md#поиск--search).

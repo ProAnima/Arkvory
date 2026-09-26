@@ -17,6 +17,8 @@ const values = new Set([
   'query',
   'label',
   'collection',
+  'metadata-key',
+  'metadata-value',
   'group',
   'name',
   'file',
@@ -47,7 +49,12 @@ export function parseArguments(argv: readonly string[]): Arguments {
     if (flags.has(option)) options.set(option, 'true');
     else if (values.has(option)) {
       const value = argv[++index];
-      if (!value || value.startsWith('--')) throw new CliError('missing_option_value');
+      if (
+        value === undefined ||
+        (value === '' && option !== 'metadata-value') ||
+        value.startsWith('--')
+      )
+        throw new CliError('missing_option_value');
       options.set(option, value);
     } else throw new CliError('unknown_option');
   }

@@ -13,8 +13,22 @@ export class CliError extends Error {
   }
 }
 
+export class PublicationError extends Error {
+  constructor(
+    readonly artifactId: string,
+    readonly reason: unknown,
+  ) {
+    super('publication_registration_failed');
+  }
+}
+
 /** Never reflect server responses, local paths, argv or credentials in diagnostics. */
-export function failure(error: unknown, cancelled: boolean) {
+export function failure(
+  error: unknown,
+  cancelled: boolean,
+): { code: string; exitCode: number; status?: number; stage?: string; artifactId?: string } {
+  if (error instanceof PublicationError)
+    return { ...failure(error.reason, cancelled), stage: 'register', artifactId: error.artifactId };
   if (cancelled) return { code: 'interrupted', exitCode: 130 };
   if (error instanceof CliError) return { code: error.code, exitCode: error.exitCode };
   if (error instanceof ArkvoryIntegrityError) return { code: 'integrity_failed', exitCode: 5 };

@@ -143,14 +143,22 @@ export class DownloadQueue {
     this.pump();
   }
   enqueue(job: DownloadJob): void {
+    this.insert(job, false, 0);
+  }
+  /** Restored jobs never start until explicitly resumed with current credentials/destination. */
+  restore(job: DownloadJob, bytes = 0): void {
+    if (!Number.isSafeInteger(bytes) || bytes < 0) throw new DownloadQueueError('invalid_policy');
+    this.insert(job, true, bytes);
+  }
+  private insert(job: DownloadJob, paused: boolean, bytes: number): void {
     if (this.closed) throw new DownloadQueueError('closed');
     if (!job.id || this.entries.has(job.id)) throw new DownloadQueueError('duplicate');
     if (this.entries.size >= this.policy.maxEntries) throw new DownloadQueueError('queue_full');
     this.entries.set(job.id, {
       job,
-      state: 'queued',
+      state: paused ? 'paused' : 'queued',
       readyAt: this.time.now(),
-      bytes: 0,
+      bytes,
       retry: null,
       error: undefined,
     });
@@ -188,10 +196,11 @@ export class DownloadQueue {
     for (const id of this.entries.keys()) this.pause(id);
     this.pump();
   }
-  resumeAll(): void {
+  resumeAll(eligibleIds?: ReadonlySet<string>): void {
     if (this.closed) return;
     this.held = false;
     for (const e of [...this.entries.values()]) {
+      if (eligibleIds && !eligibleIds.has(e.job.id)) continue;
       if (e.state === 'paused') this.resume(e.job.id);
       else if (e.state === 'pausing') e.resumeRequested = true;
     }
