@@ -6,6 +6,7 @@ import { ArkvoryError } from '@proanima/arkvory-domain';
 import {
   DiagnosticLogger,
   PostgresJobs,
+  PostgresJobLease,
   PostgresIdentity,
   PostgresServices,
   parseKeys,
@@ -14,14 +15,28 @@ import { resources } from './runtime.js';
 
 const diagnostics = new DiagnosticLogger(process.stdout, () => new Date().toISOString());
 const stop = new AbortController();
+let shutdownDeadline: ReturnType<typeof setTimeout> | undefined;
+const stopWorker = () => {
+  stop.abort();
+  shutdownDeadline ??= setTimeout(() => process.exit(1), 120000);
+  shutdownDeadline.unref();
+};
 for (const event of ['SIGINT', 'SIGTERM'] as const)
   process.once(event, () => {
-    stop.abort();
+    stopWorker();
   });
 try {
   const keyFile = process.env['ARKVORY_KEYS_FILE'];
   if (!keyFile) throw new Error('ARKVORY_KEYS_FILE is required');
   const { catalog, blobs } = await resources('worker');
+  let currentLease: PostgresJobLease | undefined;
+  const recovery = setInterval(() => {
+    if (stop.signal.aborted || (catalog.active && (!currentLease || currentLease.active))) return;
+    process.exitCode = 1;
+    diagnostics.write({ level: 'error', component: 'worker', code: 'worker.ownership_lost' });
+    stopWorker();
+  }, 1000);
+  recovery.unref();
   const jobs = new PostgresJobs(catalog.pool);
   const identity = new PostgresIdentity(catalog.pool);
   const services = new PostgresServices(catalog.pool);
@@ -37,19 +52,11 @@ try {
         await delay(1000, undefined, { signal: stop.signal }).catch(() => undefined);
         continue;
       }
-      const state = { lost: false };
-      let heartbeat: Promise<void> = Promise.resolve();
-      const timer = setInterval(() => {
-        heartbeat = heartbeat.then(async () => {
-          try {
-            if (!(await jobs.heartbeat(job.id, job.generation))) state.lost = true;
-          } catch {
-            state.lost = true;
-          }
-        });
-      }, 10000);
+      const lease = new PostgresJobLease(jobs, job.id, job.generation, () => catalog.active);
       let errorCode: string | null = null;
       try {
+        await lease.start();
+        currentLease = lease;
         let principal;
         if (job.owner.startsWith('service:')) {
           principal = job.credentialId ? await services.principalForKey(job.credentialId) : null;
@@ -72,27 +79,32 @@ try {
         await service.complete(principal, job.repository, job.uploadId, {
           throwIfAborted() {
             stop.signal.throwIfAborted();
-            if (state.lost || !catalog.active)
-              throw new ArkvoryError('unavailable', 'Worker lease lost');
+            lease.check();
           },
         });
       } catch (error) {
         errorCode = error instanceof ArkvoryError ? error.code : 'unavailable';
-      } finally {
-        clearInterval(timer);
-        await heartbeat;
       }
-      if (!state.lost) await jobs.finish(job.id, job.generation, errorCode);
+      let recorded = false;
+      currentLease = undefined;
+      try {
+        recorded = await lease.finish(errorCode);
+      } finally {
+        await lease.close();
+      }
       diagnostics.write({
-        level: errorCode || state.lost ? 'error' : 'info',
+        level: errorCode || !recorded ? 'error' : 'info',
         component: 'worker',
-        code: state.lost ? 'completion.lease_lost' : (errorCode ?? 'completion.completed'),
+        code: !recorded ? 'completion.lease_lost' : (errorCode ?? 'completion.completed'),
         jobId: job.id,
         repository: job.repository,
       });
       if (process.argv.includes('--once')) break;
     }
+    if (!catalog.active && !stop.signal.aborted)
+      throw new ArkvoryError('unavailable', 'Worker ownership lost');
   } finally {
+    clearInterval(recovery);
     await catalog.close();
   }
 } catch {
@@ -100,4 +112,5 @@ try {
   process.exitCode = 1;
 }
 
+clearTimeout(shutdownDeadline);
 diagnostics.close();

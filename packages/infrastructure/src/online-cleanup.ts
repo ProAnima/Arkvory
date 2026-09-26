@@ -2,6 +2,7 @@ import type { Pool, PoolClient } from 'pg';
 import { setTimeout as delay } from 'node:timers/promises';
 import { ArkvoryError, parseCleanupPolicy } from '@proanima/arkvory-domain';
 import type { CleanupBlobs } from '@proanima/arkvory-application';
+import { StorageOwnership } from './storage-ownership.js';
 import { contentLockKey, uploadLockKey } from './content-pins.js';
 import { recordStorageEvent } from './storage-events.js';
 
@@ -31,19 +32,17 @@ export class PostgresOnlineCleanup {
   async tick(active: () => boolean) {
     if (!active()) return;
     const c = await this.pool.connect();
-    const state = { lost: false };
-    const failed = () => {
-      state.lost = true;
-    };
-    c.on('error', failed);
+    const ownership = new StorageOwnership(c);
     const check = () => {
-      if (state.lost || !active()) throw new ArkvoryError('unavailable', 'Cleanup ownership lost');
+      if (!ownership.active || !active())
+        throw new ArkvoryError('unavailable', 'Cleanup ownership lost');
     };
     try {
       const lock = await c.query<{ acquired: boolean }>(
         'SELECT pg_try_advisory_lock(18471,16) AS acquired',
       );
       if (!lock.rows[0]?.acquired) return;
+      await ownership.start([16]);
       // Older gateways have no content pins. Defer collection until all active processes support them.
       const legacy = await c.query(`SELECT 1 FROM pg_locks p WHERE p.locktype='advisory'
         AND p.classid=18471 AND p.objid=4 AND p.objsubid=2 AND p.granted
@@ -64,17 +63,10 @@ export class PostgresOnlineCleanup {
       }
       await this.batch(c, due.repository, check);
     } finally {
-      if (!state.lost) {
-        try {
-          await c.query('SELECT pg_advisory_unlock_all()');
-        } catch {
-          state.lost = true;
-        }
-      }
-      c.removeListener('error', failed);
-      c.release(state.lost);
+      await ownership.close();
     }
   }
+
   private async batch(c: PoolClient, repository: string, check: () => void) {
     const row = (
       await c.query<{ policy: unknown; revision: number }>(

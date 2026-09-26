@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import type { Pool, PoolClient } from 'pg';
+import { StorageOwnership } from './storage-ownership.js';
 import { ArkvoryError, requireId } from '@proanima/arkvory-domain';
 
 export const contentLockKey = (id: string) =>
@@ -14,14 +15,12 @@ export const uploadLockKey = (id: string) =>
 /** One session per gateway, reference-counted shared locks; never one connection per stream. */
 export class PostgresContentPins {
   private client: PoolClient | undefined;
+  private ownership: StorageOwnership | undefined;
   private tail: Promise<unknown> = Promise.resolve();
   private readonly counts = new Map<string, number>();
   private lost = false;
   private closed = false;
   constructor(private readonly pool: Pool) {}
-  private readonly failed = () => {
-    this.lost = true;
-  };
   private serial<T>(action: () => Promise<T> | T): Promise<T> {
     const next = this.tail.then(action);
     this.tail = next.catch(() => undefined);
@@ -29,17 +28,26 @@ export class PostgresContentPins {
   }
   acquire(id: string) {
     return this.serial(async () => {
+      if (this.ownership && !this.ownership.active) this.lost = true;
       if (this.lost && this.counts.size === 0 && !this.closed) {
-        this.client?.removeListener('error', this.failed);
-        this.client?.release(true);
+        await this.ownership?.close();
+        this.ownership = undefined;
         this.client = undefined;
         this.lost = false;
       }
       if (this.closed || this.lost)
         throw new ArkvoryError('unavailable', 'Content protection unavailable');
-      this.client ??= await this.pool.connect();
-      this.client.removeListener('error', this.failed);
-      this.client.on('error', this.failed);
+      if (!this.client) {
+        this.client = await this.pool.connect();
+        this.ownership = new StorageOwnership(this.client);
+        try {
+          await this.ownership.startConnection();
+        } catch (error) {
+          this.lost = true;
+          await this.ownership.close();
+          throw error;
+        }
+      }
       const key = contentLockKey(id),
         count = this.counts.get(key) ?? 0;
       if (count === 0) {
@@ -59,7 +67,7 @@ export class PostgresContentPins {
       let released = false;
       return {
         check: () => {
-          if (released || this.lost || this.closed)
+          if (released || this.lost || this.closed || !this.ownership?.active)
             throw new ArkvoryError('unavailable', 'Content protection lost');
         },
         release: () =>
@@ -85,12 +93,10 @@ export class PostgresContentPins {
   }
   close() {
     this.closed = true;
-    return this.serial(() => {
-      if (this.client) {
-        this.client.removeListener('error', this.failed);
-        this.client.release(true);
-        this.client = undefined;
-      }
+    return this.serial(async () => {
+      await this.ownership?.close();
+      this.client = undefined;
+      this.ownership = undefined;
       this.counts.clear();
     });
   }

@@ -3,6 +3,7 @@ export * from './local-blobs.js';
 export * from './postgres-catalog.js';
 export * from './migrations.js';
 export * from './operations.js';
+export { PostgresJobLease } from './job-lease.js';
 
 export * from './service-keys.js';
 export * from './browse.js';

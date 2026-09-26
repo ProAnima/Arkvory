@@ -99,3 +99,5 @@ SDK использует композицию: публичный ArkvoryClient 
 Восстановление download intents остаётся в web (OPFS/sessionStorage/Web Locks); SDK принимает paused jobs через явный restore. Staging сегментирован по 8 MiB. CLI packages publish оркестрирует upload/register с прежним receipt; metadata search реализован отдельным SQL-модулем через BrowseStore. [ADR 0041](adr/0041-client-recovery-search-and-publication.md).
 
 Владение PostgreSQL-сессией выделено из каталога: StorageOwnership ограничивает период подтверждения locks, необратимо закрывает потерянное соединение и не допускает повторный claim. Это не межсерверный fencing и не репликация: [ADR 0042](adr/0042-bounded-storage-ownership.md).
+
+Объектные locks uploads/GC и динамические content pins используют тот же инфраструктурный монитор SQL-сессии. PostgresJobLease отдельно связывает heartbeat/finish reservation с конечным локальным окном; worker отслеживает потери и ограничивает shutdown. [ADR 0043](adr/0043-operation-session-protection.md).

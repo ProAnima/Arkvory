@@ -11,7 +11,7 @@ import {
 import type { Upload, MutationAccess } from '@proanima/arkvory-domain';
 import { claimStorageSession } from './storage-claim.js';
 import type { StorageRole } from './storage-claim.js';
-import type { StorageOwnership } from './storage-ownership.js';
+import { StorageOwnership } from './storage-ownership.js';
 import { lockServiceAccess } from './service-authorization.js';
 import type { Catalog, UploadMutation } from '@proanima/arkvory-application';
 
@@ -207,11 +207,7 @@ export class PostgresCatalog implements Catalog {
   ): Promise<T> {
     const client = await this.locks.connect();
     const key = createHash('sha256').update(id).digest().readBigInt64BE().toString();
-    const state = { lost: false };
-    const onError = (): void => {
-      state.lost = true;
-    };
-    client.on('error', onError);
+    const ownership = new StorageOwnership(client);
     try {
       const result = await client.query<{ acquired: boolean }>(
         'SELECT pg_try_advisory_lock($1::bigint) AS acquired',
@@ -219,9 +215,10 @@ export class PostgresCatalog implements Catalog {
       );
       if (!result.rows[0]?.acquired)
         throw new ArkvoryError('busy', 'Upload is already being modified');
+      await ownership.startObjects([key]);
       const check = (): void => {
         this.checkOwnership();
-        if (state.lost) throw new ArkvoryError('unavailable', 'Upload lock was lost');
+        if (!ownership.active) throw new ArkvoryError('unavailable', 'Upload lock was lost');
       };
       const guarded = async <R>(work: () => Promise<R>): Promise<R> => {
         check();
@@ -236,7 +233,7 @@ export class PostgresCatalog implements Catalog {
           try {
             await client.query('ROLLBACK');
           } catch {
-            state.lost = true;
+            await ownership.close();
           }
           throw error;
         }
@@ -273,22 +270,10 @@ export class PostgresCatalog implements Catalog {
         publish: (repository) => transition(repository, 'available'),
         cancel: (repository) => transition(repository, 'cancelled'),
       });
-      if (state.lost)
-        throw new ArkvoryError(
-          'unavailable',
-          'Upload lock connection was lost; query upload status',
-        );
+      check();
       return value;
     } finally {
-      if (!state.lost) {
-        try {
-          await client.query('SELECT pg_advisory_unlock($1::bigint)', [key]);
-        } catch {
-          state.lost = true;
-        }
-      }
-      client.removeListener('error', onError);
-      client.release(state.lost);
+      await ownership.close();
     }
   }
 
