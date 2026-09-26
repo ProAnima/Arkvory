@@ -8,7 +8,7 @@ export async function exerciseGuides(page, fixture) {
   });
   await page.locator('#token').fill(fixture.headers.authorization.slice(7));
   await page.locator('#repository').fill('releases');
-  await page.locator('[data-go=help]').first().click();
+  await page.locator('[data-nav=help]').first().click();
   await page.locator('#help-load').click();
   await page.locator('#help-operations details').first().waitFor();
   await page.locator('#help-search').fill('GET /api/v1');
@@ -26,7 +26,7 @@ export async function exerciseGuides(page, fixture) {
       document.querySelector('#help-status').textContent.length > 0,
   );
   assert.equal(await page.locator('#help-operations details').count(), 0);
-  await page.locator('[data-go=onboarding]').click();
+  await page.locator('[data-nav=onboarding]').click();
   await page.locator('#onboarding-panel details summary').click();
   await page.locator('#welcome-name').fill('unsaved-owner');
   await page.locator('#connection-card').evaluate((node) => {

@@ -1,11 +1,7 @@
-.guide-navigation,
 .guide-form,
 .guide-operations {
   display: grid;
   gap: var(--space-4);
-}
-.guide-navigation {
-  padding: var(--space-4);
 }
 .guide-grid {
   display: grid;

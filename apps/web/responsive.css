@@ -1,0 +1,117 @@
+@media (max-width: 1100px) {
+  .split-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .page-heading {
+    align-items: start;
+  }
+  .heading-action {
+    font-size: var(--text-sm);
+  }
+  .connection-fields > label:first-child {
+    flex-basis: 30%;
+  }
+}
+@media (max-width: 760px) {
+  .sidebar {
+    position: static;
+    width: 100%;
+    padding: var(--space-4);
+    border-right: 0;
+    border-bottom: var(--border-width) solid var(--color-border);
+    gap: var(--space-4);
+  }
+  .brand {
+    padding: 0;
+  }
+  .brand small,
+  .sidebar-bottom,
+  .nav-group-label {
+    display: none;
+  }
+  nav {
+    display: flex;
+    gap: var(--space-1);
+    overflow-x: auto;
+  }
+  nav button {
+    flex: 0 0 auto;
+    min-height: var(--control-height);
+    padding: var(--space-2) var(--space-3);
+    font-size: var(--text-sm);
+  }
+  .workspace {
+    margin-left: 0;
+    min-height: auto;
+  }
+  .topbar {
+    flex-wrap: wrap;
+  }
+  .breadcrumb {
+    font-size: var(--text-xs);
+  }
+  .preferences {
+    margin-left: auto;
+  }
+  .preferences label > span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+  main {
+    padding-top: var(--space-6);
+  }
+  .page-heading {
+    flex-direction: column;
+    gap: var(--space-4);
+    margin-bottom: var(--space-6);
+  }
+  .eyebrow {
+    display: none;
+  }
+  .connection > summary {
+    align-items: start;
+  }
+  .connection-heading {
+    align-items: start;
+  }
+  .connection-fields > label:first-child,
+  .connection-fields > .grow {
+    flex: 1 1 100%;
+  }
+  .connection-fields > button {
+    flex: 1;
+  }
+  .connection .badge {
+    white-space: normal;
+    text-align: center;
+  }
+  .search-form {
+    flex-wrap: wrap;
+  }
+  .search-form > .grow {
+    flex: 1 1 100%;
+  }
+  .search-form > label:not(.grow) {
+    flex: 1;
+  }
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+  .table-footer {
+    align-items: start;
+  }
+  .file-picker {
+    padding: var(--space-4);
+  }
+}
+@media (forced-colors: active) {
+  .brand-mark,
+  .empty-visual,
+  button.primary,
+  nav button[aria-current='page'] {
+    border: var(--border-width) solid ButtonText;
+  }
+}

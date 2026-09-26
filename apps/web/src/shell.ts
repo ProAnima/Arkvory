@@ -1,3 +1,5 @@
+import { initializeTooltips } from './tooltips.js';
+import { initializeFileInputs } from './file-inputs.js';
 import { element } from './dom.js';
 import { initializeLanguage, message, setLanguage } from './i18n.js';
 import { themePreference, readPreference, savePreference, applyTheme } from './preferences.js';
@@ -39,6 +41,8 @@ export function showView(view: View) {
 }
 export function initializeShell() {
   initializeGuides();
+  initializeTooltips();
+  initializeFileInputs();
   const toggle = element('navigation-toggle', HTMLButtonElement);
   const navigation = element('workspace-navigation', HTMLElement);
   toggle.onclick = () => {

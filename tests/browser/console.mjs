@@ -1,5 +1,6 @@
 import { exerciseStoragePolicy } from './storage-policy.mjs';
 import { exerciseGuides } from './guides.mjs';
+import { exerciseAppearance } from './appearance.mjs';
 // Browser gate against real API/database. Only the OS save picker is substituted.
 import assert from 'node:assert/strict';
 import { mkdir } from 'node:fs/promises';
@@ -34,6 +35,7 @@ try {
   const page = await browser.newPage({
     viewport: { width: 1440, height: 1000 },
     reducedMotion: 'reduce',
+    hasTouch: true,
   });
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));
@@ -54,6 +56,7 @@ try {
   };
   await page.goto(`${await f.listen()}/console/`);
   await page.locator('#language').selectOption('en');
+  await exerciseAppearance(page);
   assert.equal(await page.locator('#login-name').isVisible(), false);
   await page.locator('#password-login summary').click();
   assert.equal(await page.locator('#login-name').isVisible(), true);
@@ -148,7 +151,7 @@ try {
   await go('metadata');
   await page.locator('#labels').fill('unsaved-label');
   await mkdir('test-results', { recursive: true });
-  for (const width of [390, 768, 1440])
+  for (const width of [320, 390, 768, 1440])
     for (const theme of ['light', 'dark'])
       for (const language of ['ru', 'en']) {
         await page.setViewportSize({ width, height: 1000 });
@@ -196,7 +199,7 @@ try {
   await exerciseGuides(page, f);
   assert.deepEqual(errors, []);
   console.log(
-    'PASS console: API upload/download, metadata, history, users, search/reset, keyboard menu, 7 views × 3 widths × RU/EN × light/dark',
+    'PASS console: API upload/download, metadata, history, users, search/reset, keyboard menu, 7 views × 4 widths × RU/EN × light/dark',
   );
 } finally {
   await browser.close();

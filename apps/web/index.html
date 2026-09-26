@@ -23,7 +23,6 @@
           ><small>PROANIMA STUDIO</small></span
         ></a
       >
-      <p class="nav-caption" data-i18n="workspace">Рабочее пространство</p>
       <button
         id="navigation-toggle"
         class="secondary mobile-menu"
@@ -38,6 +37,7 @@
         data-i18n-label="navigation"
         aria-label="Навигация по хранилищу"
       >
+        <p class="nav-group-label" data-i18n="navLibrary">Библиотека</p>
         <button type="button" data-nav="catalog" aria-current="page" aria-controls="catalog-panel">
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <rect x="3" y="3" width="7" height="7" rx="1.5" />
@@ -45,16 +45,6 @@
             <rect x="3" y="14" width="7" height="7" rx="1.5" />
             <rect x="14" y="14" width="7" height="7" rx="1.5" /></svg
           ><span data-i18n="catalog">Артефакты</span>
-        </button>
-        <button type="button" data-nav="upload" aria-controls="upload-panel">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M12 16V3m-5 5 5-5 5 5M4 15v5h16v-5" /></svg
-          ><span data-i18n="upload">Загрузка</span>
-        </button>
-        <button type="button" data-nav="downloads" aria-controls="downloads-panel">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M12 3v13m-5-5 5 5 5-5M4 17v4h16v-4" /></svg
-          ><span data-i18n="downloads">Скачивания</span>
         </button>
         <button type="button" data-nav="packages" aria-controls="packages-panel">
           <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -72,6 +62,18 @@
             <path d="M4 6h16M4 12h16M4 18h16M8 3v6m8 0v6m-8 0v6" /></svg
           ><span data-i18n="metadata">Свойства артефакта</span>
         </button>
+        <p class="nav-group-label" data-i18n="navTransfers">Передачи</p>
+        <button type="button" data-nav="upload" aria-controls="upload-panel">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 16V3m-5 5 5-5 5 5M4 15v5h16v-5" /></svg
+          ><span data-i18n="upload">Загрузка</span>
+        </button>
+        <button type="button" data-nav="downloads" aria-controls="downloads-panel">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 3v13m-5-5 5 5 5-5M4 17v4h16v-4" /></svg
+          ><span data-i18n="downloads">Скачивания</span>
+        </button>
+        <p class="nav-group-label" data-i18n="navResources">Ресурсы</p>
         <button
           type="button"
           data-nav="administration"
@@ -85,12 +87,6 @@
           </svg>
           <span data-i18n="administration">Пользователи и доступ</span>
         </button>
-        <div class="guide-navigation">
-          <button type="button" class="secondary" data-go="onboarding" data-i18n="onboarding">
-            Добро пожаловать в Depot
-          </button>
-          <button type="button" class="secondary" data-go="help" data-i18n="help">API и CLI</button>
-        </div>
         <button
           type="button"
           data-nav="updates"
@@ -102,6 +98,19 @@
             <path d="M20 7v5h-5M4 17v-5h5M6 6a8 8 0 0 1 14 6M18 18a8 8 0 0 1-14-6" />
           </svg>
           <span data-i18n="updates">Обновления</span>
+        </button>
+        <button type="button" data-nav="onboarding" aria-controls="onboarding-panel">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 8v4l3 2" />
+            <circle cx="12" cy="12" r="9" />
+          </svg>
+          <span data-i18n="navStart">Начало работы</span>
+        </button>
+        <button type="button" data-nav="help" aria-controls="help-panel">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="m8 6-6 6 6 6m8-12 6 6-6 6m-3-14-2 16" />
+          </svg>
+          <span data-i18n="help">API и CLI</span>
         </button>
       </nav>
       <div class="sidebar-bottom">
@@ -135,7 +144,6 @@
       <main id="main" tabindex="-1">
         <div class="page-heading">
           <div>
-            <p class="eyebrow">PROANIMA DEPOT</p>
             <h1 id="page-title" tabindex="-1" data-i18n="catalog">Артефакты</h1>
             <p id="page-description" data-i18n="catalogSubtitle">
               Файлы, метки и коллекции репозитория.
@@ -155,6 +163,7 @@
               >Нет подключения</span
             >
           </summary>
+
           <form id="connect">
             <fieldset id="connection-fields" class="connection-fields">
               <label
@@ -180,11 +189,14 @@
               ><button id="logout" type="button" class="secondary" data-i18n="disconnect">
                 Отключиться
               </button>
+              <div class="connection-help">
+                <p class="hint" data-i18n="keyHint" data-help="keyHelpLabel">
+                  Токен остаётся в этой вкладке и не сохраняется в хранилище браузера.
+                </p>
+              </div>
             </fieldset>
           </form>
-          <p class="hint" data-i18n="keyHint">
-            Токен остаётся в этой вкладке и не сохраняется в хранилище браузера.
-          </p>
+
           <details class="disclosure" id="password-login">
             <summary data-i18n="passwordSignIn">Войти по имени и паролю</summary>
             <form id="login" class="search-form">
@@ -325,7 +337,7 @@
                 >Загружено: 0</span
               >
             </div>
-            <span class="hint" data-i18n="catalogHint"
+            <span class="hint" data-i18n="catalogHint" data-help="catalogHelpLabel"
               >Неизменяемые файлы · Редактируемые метаданные</span
             >
           </div>
@@ -554,7 +566,12 @@
           class="card padded"
           hidden
         >
-          <h2 id="packages-title" data-i18n="packages">Пакеты</h2>
+          <div class="section-heading">
+            <h2 id="packages-title" data-i18n="packages">Пакеты</h2>
+            <p class="hint" data-i18n="packageFilterHint" data-help="packageHelpLabel">
+              Группа и имя ищутся точно, без учёта регистра.
+            </p>
+          </div>
           <form id="package-filter" class="search-form">
             <label
               ><span data-i18n="packageGroup">Группа UPack</span><input id="package-group"
@@ -590,9 +607,7 @@
               Сбросить
             </button>
           </form>
-          <p class="hint" data-i18n="packageFilterHint">
-            Группа и имя ищутся точно, без учёта регистра.
-          </p>
+
           <div
             class="table-footer package-toolbar"
             tabindex="0"
@@ -1023,15 +1038,21 @@ GET /api/v1/operations?repository=releases</code></pre>
                       placeholder="Разделяйте запятыми"
                   /></label>
                 </div>
-                <div
-                  id="label-presets"
-                  class="button-row label-presets"
-                  role="group"
-                  data-i18n-label="labelPresets"
-                ></div>
-                <p class="hint" data-i18n="labelsHelp"></p>
+                <div class="inline">
+                  <p class="hint" data-i18n="labelsHelp" data-help="labelHelpLabel"></p>
+                  <div
+                    id="label-presets"
+                    class="button-row label-presets"
+                    role="group"
+                    data-i18n-label="labelPresets"
+                  ></div>
+                </div>
+
                 <div class="section-heading">
-                  <h3 data-i18n="metadataFields"></h3>
+                  <div class="inline">
+                    <h3 data-i18n="metadataFields"></h3>
+                    <p class="hint" data-i18n="metadataHelp" data-help="metadataHelpLabel"></p>
+                  </div>
                   <button
                     type="button"
                     id="metadata-add"
@@ -1040,11 +1061,11 @@ GET /api/v1/operations?repository=releases</code></pre>
                   ></button>
                 </div>
                 <div id="metadata-fields" class="stack"></div>
-                <p class="hint" data-i18n="metadataHelp"></p>
+
                 <details id="metadata-advanced" class="disclosure">
                   <summary data-i18n="metadataJson"></summary>
                   <label
-                    ><span class="visually-hidden" data-i18n="metadataJson"></span
+                    ><span class="sr-only" data-i18n="metadataJson"></span
                     ><textarea id="metadata" rows="7" spellcheck="false">{}</textarea>
                   </label>
                 </details>
@@ -1060,10 +1081,13 @@ GET /api/v1/operations?repository=releases</code></pre>
               </form>
             </div>
             <aside class="card padded">
-              <h2 data-i18n="assetTitle">Ссылка на файл</h2>
-              <p class="hint" data-i18n="assetHint">
-                Привяжите артефакт к пути. Ревизия 0 создаёт новую ссылку.
-              </p>
+              <div class="section-heading">
+                <h2 data-i18n="assetTitle">Ссылка на файл</h2>
+                <p class="hint" data-i18n="assetHint" data-help="assetHelpLabel">
+                  Привяжите артефакт к пути. Ревизия 0 создаёт новую ссылку.
+                </p>
+              </div>
+
               <form id="asset" class="stack">
                 <label
                   ><span data-i18n="assetPath">Путь файла</span
@@ -1113,10 +1137,13 @@ GET /api/v1/operations?repository=releases</code></pre>
             aria-labelledby="attachments-title"
           >
             <div class="section-heading">
-              <h2 id="attachments-title" data-i18n="attachmentsTitle"></h2>
+              <div class="inline">
+                <h2 id="attachments-title" data-i18n="attachmentsTitle"></h2>
+                <p class="hint" data-i18n="attachmentsHelp" data-help="attachmentHelpLabel"></p>
+              </div>
               <span id="attachment-count"></span>
             </div>
-            <p class="hint" data-i18n="attachmentsHelp"></p>
+
             <p id="attachment-empty" class="hint" data-i18n="attachmentsEmpty"></p>
             <div id="attachment-list" class="stack"></div>
             <div class="button-row">
@@ -1222,11 +1249,14 @@ GET /api/v1/operations?repository=releases</code></pre>
           class="card padded"
           hidden
         >
-          <h2 id="history-title" data-i18n="history">История файлов</h2>
-          <p class="hint" data-i18n="historyHint">
-            Восстановление создаёт новую ревизию. Откройте любую ревизию, чтобы скачать исходный
-            файл.
-          </p>
+          <div class="section-heading">
+            <h2 id="history-title" data-i18n="history">История файлов</h2>
+            <p class="hint" data-i18n="historyHint" data-help="historyHelpLabel">
+              Восстановление создаёт новую ревизию. Откройте любую ревизию, чтобы скачать исходный
+              файл.
+            </p>
+          </div>
+
           <form id="history" class="search-form">
             <label class="grow"
               ><span data-i18n="assetPath">Путь файла</span
@@ -1262,10 +1292,13 @@ GET /api/v1/operations?repository=releases</code></pre>
           class="card padded"
           hidden
         >
-          <h2 id="administration-title" data-i18n="administration">Пользователи и доступ</h2>
-          <p class="hint" data-i18n="adminHint">
-            Создавайте учётные записи и выдавайте доступ через группы.
-          </p>
+          <div class="section-heading">
+            <h2 id="administration-title" data-i18n="administration">Пользователи и доступ</h2>
+            <p class="hint" data-i18n="adminHint" data-help="adminHelpLabel">
+              Создавайте учётные записи и выдавайте доступ через группы.
+            </p>
+          </div>
+
           <h3 class="subheading" data-i18n="accountsHeading">Учётные записи</h3>
           <details class="disclosure admin-operation">
             <summary data-i18n="createUser"></summary>

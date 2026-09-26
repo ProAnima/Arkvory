@@ -1,8 +1,10 @@
+import { interfaceEnglish } from './interface-messages.js';
 import { guideEnglish } from './guide-messages.js';
 import { cleanupEnglish } from './cleanup-messages.js';
 import { updateEnglish } from './update-messages.js';
 export const en = {
   ...guideEnglish,
+  ...interfaceEnglish,
   ...cleanupEnglish,
   ...updateEnglish,
   storageTitle: 'Storage & automatic cleanup',

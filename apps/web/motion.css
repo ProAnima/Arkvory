@@ -1,0 +1,28 @@
+/* Transitions use one shared curve. No perpetual motion around live transfer data. */
+[data-view]:not([hidden]),
+dialog[open] {
+  animation: surface-enter var(--motion-normal) var(--motion-ease);
+}
+@keyframes surface-enter {
+  from {
+    opacity: 0;
+    transform: translateY(var(--motion-distance));
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+button:active:not(:disabled) {
+  transform: scale(var(--motion-press));
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-view],
+  dialog[open],
+  .help-tooltip .help-content {
+    animation: none;
+  }
+  button:active:not(:disabled) {
+    transform: none;
+  }
+}

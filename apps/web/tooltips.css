@@ -1,0 +1,74 @@
+.help-tooltip {
+  position: relative;
+  display: inline-flex;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+button.help-trigger {
+  min-height: var(--help-target);
+  width: var(--help-target);
+  padding: 0;
+  background: transparent;
+  color: var(--color-muted);
+  border-radius: var(--radius-pill);
+}
+.help-trigger span {
+  display: grid;
+  place-items: center;
+  width: var(--help-icon);
+  height: var(--help-icon);
+  border: var(--border-width) solid currentColor;
+  border-radius: var(--radius-pill);
+  font-size: var(--text-xs);
+}
+button.help-trigger:hover,
+button.help-trigger:focus-visible {
+  background: var(--color-info-bg);
+  color: var(--color-accent);
+}
+.help-tooltip .help-content {
+  position: absolute;
+  inset: 100% auto auto 0;
+  width: var(--help-width);
+  max-width: calc(100vw - var(--space-8));
+  margin: 0;
+  padding: var(--space-4);
+  border: var(--border-width) solid var(--color-border-strong);
+  border-radius: var(--radius-control);
+  background: var(--color-tooltip);
+  color: var(--color-text);
+  box-shadow: var(--shadow-float);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-normal);
+  line-height: var(--leading-relaxed);
+  letter-spacing: var(--tracking-normal);
+  text-align: start;
+  overflow-wrap: anywhere;
+  z-index: var(--z-tooltip);
+  animation: surface-enter var(--motion-fast) var(--motion-ease);
+}
+.help-tooltip[data-align='end'] .help-content {
+  inset-inline: auto 0;
+}
+.help-tooltip[data-edge='top'] .help-content {
+  inset-block: auto 100%;
+}
+@media (max-width: 760px) {
+  .help-tooltip .help-content {
+    position: fixed;
+    inset: auto var(--space-4) var(--space-4);
+    width: auto;
+    max-height: var(--help-max-height);
+    overflow-y: auto;
+  }
+  .help-tooltip[data-align='end'] .help-content {
+    inset-inline: var(--space-4);
+  }
+  .help-tooltip[data-edge='top'] .help-content {
+    inset-block: var(--space-4) auto;
+  }
+  button.help-trigger {
+    min-height: var(--control-height);
+    width: var(--control-height);
+  }
+}

@@ -1,0 +1,54 @@
+.file-control {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  padding: var(--space-2);
+  border-radius: var(--radius-control);
+  min-width: 0;
+  max-width: 100%;
+}
+.file-control input[type='file'] {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+.file-control:has(input:focus-visible) {
+  outline: var(--focus-width) solid var(--color-focus);
+  outline-offset: var(--focus-offset);
+}
+.file-control-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--control-height);
+  padding: var(--space-2) var(--space-4);
+  background: var(--color-surface);
+  border: var(--border-width) solid var(--color-border-strong);
+  border-radius: var(--radius-control);
+  font-weight: var(--weight-semibold);
+  flex-shrink: 0;
+}
+.file-control-selection {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--color-muted);
+  font-weight: var(--weight-normal);
+}
+.file-control:has(input:hover) .file-control-action {
+  background: var(--color-nav-hover);
+}
+.file-control:has(input:disabled) {
+  opacity: var(--opacity-disabled);
+}
+.file-control input:disabled {
+  cursor: not-allowed;
+}
+#attachment-file-label .file-control {
+  justify-content: start;
+}

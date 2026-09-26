@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { readFile, readdir } from 'node:fs/promises';
 import { en, ru, translate } from '../apps/web/dist/messages.js';
 import {
   themePreference,
@@ -18,6 +18,8 @@ test('localization covers every UI key and keeps interpolation parameters consis
   }
   const html = await readFile('apps/web/index.html', 'utf8');
   for (const match of html.matchAll(/data-i18n(?:-label|-placeholder)?="([^"]+)"/g))
+    assert(Object.hasOwn(en, match[1]), match[1]);
+  for (const match of html.matchAll(/data-help="([^"]+)"/g))
     assert(Object.hasOwn(en, match[1]), match[1]);
   assert.equal(
     translate('en', 'historyCount', { count: 50, revision: 101 }),
@@ -79,15 +81,33 @@ test('both themes meet text contrast requirements and components use centralized
       ['error', 'bg'],
       ['success', 'surface'],
       ['nav-text', 'nav-active'],
+      ['text', 'tooltip'],
+      ['muted', 'raised'],
+      ['muted', 'sidebar'],
+      ['muted', 'info-bg'],
+      ['text', 'input'],
+      ['on-accent', 'accent-hover'],
     ]) {
       const a = luminance(value(`--color-${fg}`)),
         b = luminance(value(`--color-${bg}`));
       assert((Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05) >= 4.5, `${fg} on ${bg}`);
     }
+    for (const [fg, bg] of [
+      ['border-strong', 'input'],
+      ['focus', 'surface'],
+      ['focus', 'bg'],
+    ]) {
+      const a = luminance(value(`--color-${fg}`)),
+        b = luminance(value(`--color-${bg}`));
+      assert((Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05) >= 3, `${fg} on ${bg}`);
+    }
   }
-  const components =
-    (await readFile('apps/web/style.css', 'utf8')) +
-    (await readFile('apps/web/guides.css', 'utf8'));
+  const componentFiles = (await readdir('apps/web')).filter(
+    (file) => file.endsWith('.css') && file !== 'tokens.css',
+  );
+  const components = (
+    await Promise.all(componentFiles.map((file) => readFile(`apps/web/${file}`, 'utf8')))
+  ).join('\n');
   assert.doesNotMatch(components, /#[a-f\d]{3,8}\b|\b(?:rgb|hsl|oklch)\(/i);
   for (const match of components.matchAll(/var\((--[\w-]+)\)/g))
     assert(Object.hasOwn(light, match[1]), match[1]);
