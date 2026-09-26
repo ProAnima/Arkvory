@@ -87,6 +87,7 @@ test('both themes meet text contrast requirements and components use centralized
       ['muted', 'info-bg'],
       ['text', 'input'],
       ['on-accent', 'accent-hover'],
+      ['on-selection', 'selection'],
     ]) {
       const a = luminance(value(`--color-${fg}`)),
         b = luminance(value(`--color-${bg}`));

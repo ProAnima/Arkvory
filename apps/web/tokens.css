@@ -124,6 +124,7 @@
   --color-error: var(--palette-red);
   --color-info-bg: #eaf2ff;
   --color-selection: #c9e1ff;
+  --color-on-selection: var(--color-text);
   --color-brand: var(--palette-blue);
   --color-on-brand: var(--palette-white);
   --color-tooltip: var(--palette-white);

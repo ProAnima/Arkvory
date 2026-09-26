@@ -47,9 +47,13 @@
 .disclosure[open] > summary::before {
   transform: rotate(var(--disclosure-open));
 }
-.disclosure > summary:hover,
 .disclosure[open] > summary {
   color: var(--color-text);
+}
+@media (hover: hover) and (pointer: fine) {
+  .disclosure > summary:hover {
+    color: var(--color-text);
+  }
 }
 .disclosure > .hint,
 .disclosure > .download-policy {

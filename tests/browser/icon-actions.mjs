@@ -15,6 +15,46 @@ export async function exerciseIconActions(page) {
   await page.keyboard.press('Escape');
   assert.equal(await tip.isVisible(), false);
   assert.equal(await search.evaluate((node) => node === document.activeElement), true);
+  await search.locator('svg').dispatchEvent('pointerover', { pointerType: 'mouse' });
+  await tip.waitFor({ state: 'visible' });
+  await page.keyboard.press('Escape');
+  await search.evaluate((node) => {
+    node.querySelector('path').dispatchEvent(
+      new PointerEvent('pointerover', {
+        bubbles: true,
+        pointerType: 'mouse',
+        relatedTarget: node.querySelector('svg'),
+      }),
+    );
+  });
+  assert.equal(
+    await tip.isVisible(),
+    false,
+    'Escape remains dismissed while moving inside an icon',
+  );
+  await page.locator('#query').focus();
+  await page.keyboard.press('Tab');
+  await search.focus();
+  await tip.waitFor({ state: 'visible' });
+  await search.dispatchEvent('pointerout', { pointerType: 'mouse' });
+  await page.waitForTimeout(200);
+  assert.equal(await tip.isVisible(), true, 'Mouse departure preserves keyboard help');
+  await search.evaluate((node) => {
+    node.disabled = true;
+  });
+  await tip.waitFor({ state: 'hidden' });
+  await search.evaluate((node) => {
+    node.disabled = false;
+  });
+  await search.focus();
+  await tip.waitFor({ state: 'visible' });
+  await page.locator('#catalog-panel').evaluate((node) => {
+    node.hidden = true;
+  });
+  await tip.waitFor({ state: 'hidden' });
+  await page.locator('#catalog-panel').evaluate((node) => {
+    node.hidden = false;
+  });
   await page.locator('#query').fill('preserved icon draft');
   await page.locator('#language').selectOption('ru');
   const localized = page.getByRole('button', { name: 'Найти', exact: true });
@@ -49,6 +89,6 @@ export async function exerciseIconActions(page) {
   await page.locator('#theme').selectOption('system');
   await page.locator('#query').fill('');
   console.log(
-    'PASS icon actions: accessible names, 44px targets, theme symbols, rail navigation, tooltips/Escape, localization and drafts',
+    'PASS icon actions: accessible names, 44px targets, themes, rail, stable Escape/focus, disabled/hidden tooltip cleanup, localization and drafts',
   );
 }

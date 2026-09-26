@@ -54,8 +54,25 @@ export class DownloadView {
     return result;
   }
   render() {
+    const focused = document.activeElement;
+    const row = focused?.closest('#download-rows tr');
     this.renderRows(this.queue.snapshot);
-    this.renderToolbar(this.queue.snapshot);
+    this.renderToolbar(this.queue.snapshot, focused);
+    if (
+      row &&
+      focused instanceof HTMLButtonElement &&
+      (focused.disabled || !focused.isConnected) &&
+      !element('downloads-panel', HTMLElement).hidden
+    ) {
+      // Progress can disable or remove a focused action. Stay in this row or its toolbar.
+      const next = row.isConnected
+        ? row.querySelector<HTMLButtonElement>('button:not(:disabled)')
+        : null;
+      (
+        next ??
+        element(this.queue.paused ? 'downloads-resume' : 'downloads-pause', HTMLButtonElement)
+      ).focus({ preventScroll: true });
+    }
   }
   private renderRows(snapshots: readonly DownloadSnapshot[]) {
     const present = new Set(snapshots.map((item) => item.id));
@@ -110,8 +127,7 @@ export class DownloadView {
       );
     }
   }
-  private renderToolbar(snapshots: readonly DownloadSnapshot[]) {
-    const focused = document.activeElement;
+  private renderToolbar(snapshots: readonly DownloadSnapshot[], focused: Element | null) {
     element('download-empty', HTMLElement).hidden = snapshots.length > 0;
     element('download-table', HTMLElement).hidden = snapshots.length === 0;
     element('download-held', HTMLElement).hidden = !this.queue.paused;

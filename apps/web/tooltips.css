@@ -21,10 +21,15 @@ button.help-trigger {
   border-radius: var(--radius-pill);
   font-size: var(--text-xs);
 }
-button.help-trigger:hover,
 button.help-trigger:focus-visible {
   background: var(--color-info-bg);
   color: var(--color-accent);
+}
+@media (hover: hover) and (pointer: fine) {
+  button.help-trigger:hover:where(:not(:disabled)) {
+    background: var(--color-info-bg);
+    color: var(--color-accent);
+  }
 }
 .help-tooltip .help-content {
   position: absolute;

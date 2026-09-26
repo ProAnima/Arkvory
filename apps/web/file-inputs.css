@@ -33,6 +33,7 @@
   border-radius: var(--radius-control);
   font-weight: var(--weight-semibold);
   flex-shrink: 0;
+  transition: background-color var(--motion-fast) var(--motion-ease);
 }
 .file-control-selection {
   min-width: 0;
@@ -40,8 +41,10 @@
   color: var(--color-muted);
   font-weight: var(--weight-normal);
 }
-.file-control:has(input:hover) .file-control-action {
-  background: var(--color-nav-hover);
+@media (hover: hover) and (pointer: fine) {
+  .file-control:has(input:hover:not(:disabled)) .file-control-action {
+    background: var(--color-nav-hover);
+  }
 }
 .file-control:has(input:disabled) {
   opacity: var(--opacity-disabled);

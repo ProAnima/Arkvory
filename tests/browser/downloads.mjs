@@ -65,6 +65,13 @@ try {
     .click();
   await page.getByRole('cell', { name: 'Paused', exact: true }).waitFor();
   assert.equal(
+    await page.evaluate(() =>
+      document.activeElement.matches('#download-rows button:not(:disabled)'),
+    ),
+    true,
+    'Pausing a row preserves focus on an available action',
+  );
+  assert.equal(
     await page.evaluate(
       async () =>
         await (
@@ -141,6 +148,11 @@ try {
   assert.equal(actual.hash, createHash('sha256').update(bytes).digest('hex'));
   await page.locator('#downloads-clear-finished').click();
   await page.locator('#download-empty').waitFor();
+  assert.equal(
+    await page.locator('#downloads-pause').evaluate((node) => node === document.activeElement),
+    true,
+    'Clearing completed rows keeps focus in the queue toolbar',
+  );
   // Reload an active transfer without pausing: only closed segments may be recovered.
   await page.locator('[data-nav=catalog]').click();
   await page.locator('#artifacts button').first().click();

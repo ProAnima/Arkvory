@@ -19,6 +19,8 @@ body {
 }
 ::selection {
   background: var(--color-selection);
+  color: var(--color-on-selection);
+  text-shadow: none;
 }
 button,
 input,
@@ -63,33 +65,36 @@ button {
   background: var(--color-raised);
   font-weight: var(--weight-semibold);
   cursor: pointer;
-}
-button:hover:where(:not(:disabled)) {
-  background: var(--color-nav-hover);
+  user-select: none;
 }
 button.primary {
   background: var(--color-accent);
   color: var(--color-on-accent);
   box-shadow: var(--shadow-accent);
 }
-button.primary:hover:where(:not(:disabled)) {
-  background: var(--color-accent-hover);
-}
 button.secondary {
   background: var(--color-surface);
   border-color: var(--color-border);
-}
-button.secondary:hover:where(:not(:disabled)) {
-  background: var(--color-raised);
-  border-color: var(--color-border-strong);
 }
 button.ghost {
   background: transparent;
   color: var(--color-muted);
 }
-button.ghost:hover:where(:not(:disabled)) {
-  background: var(--color-raised);
-  color: var(--color-text);
+@media (hover: hover) and (pointer: fine) {
+  button:hover:where(:not(:disabled)) {
+    background: var(--color-nav-hover);
+  }
+  button.primary:hover:where(:not(:disabled)) {
+    background: var(--color-accent-hover);
+  }
+  button.secondary:hover:where(:not(:disabled)) {
+    background: var(--color-raised);
+    border-color: var(--color-border-strong);
+  }
+  button.ghost:hover:where(:not(:disabled)) {
+    background: var(--color-raised);
+    color: var(--color-text);
+  }
 }
 button.small {
   min-height: var(--control-small-height);

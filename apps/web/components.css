@@ -297,8 +297,10 @@ td button {
   padding: var(--space-6);
   cursor: pointer;
 }
-.file-picker:hover {
-  border-color: var(--color-accent);
+@media (hover: hover) and (pointer: fine) {
+  .file-picker:hover {
+    border-color: var(--color-accent);
+  }
 }
 .upload-symbol {
   font-size: var(--upload-symbol-size);
