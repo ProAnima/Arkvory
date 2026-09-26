@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { DepotClient } from '@proanima/depot-sdk';
-import { migrate } from '@proanima/depot-infrastructure';
+import { ArkvoryClient } from '@proanima/arkvory-sdk';
+import { migrate } from '@proanima/arkvory-infrastructure';
 import { setup, create, base } from './fixture.mjs';
 
 const path = 'releases/файл & current.bin';
@@ -316,7 +316,7 @@ test('SDK resolves and restores history over HTTP and streams an old revision ra
   const f = await setup(t);
   const first = await publish(f, Buffer.from('old content')),
     second = await publish(f, Buffer.from('new content'));
-  const client = new DepotClient(await f.listen(), () => f.headers.authorization.slice(7));
+  const client = new ArkvoryClient(await f.listen(), () => f.headers.authorization.slice(7));
   assert.deepEqual(await client.setAsset('releases', path, first, 0), {
     path,
     artifactId: first,

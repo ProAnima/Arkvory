@@ -1,4 +1,4 @@
-import { record } from '@proanima/depot-contracts';
+import { record } from '@proanima/arkvory-contracts';
 import { UiError } from './feedback.js';
 
 export function hashFile(

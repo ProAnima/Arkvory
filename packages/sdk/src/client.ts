@@ -28,7 +28,7 @@ export interface ClientOptions extends TransferPolicy {
 }
 
 /** Compatible public facade. Each operation delegates to its responsible API module. */
-export class DepotClient {
+export class ArkvoryClient {
   private readonly discovery: DiscoveryApi;
   private readonly authentication: IdentityApi;
   private readonly usersApi: UsersApi;

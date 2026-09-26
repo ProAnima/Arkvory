@@ -5,15 +5,15 @@ import {
   readStorageRun,
   readStorageEvents,
   readCleanupSnapshot,
-} from '@proanima/depot-contracts';
-import type { StoragePolicyRequest, CleanupPolicyRequest } from '@proanima/depot-contracts';
+} from '@proanima/arkvory-contracts';
+import type { StoragePolicyRequest, CleanupPolicyRequest } from '@proanima/arkvory-contracts';
 import {
   readDeletionCandidate,
   readDeletionResult,
   readRetentionPreview,
   readRetentionResult,
-} from '@proanima/depot-contracts';
-import type { RetentionPreviewRequest, RetentionApplyRequest } from '@proanima/depot-contracts';
+} from '@proanima/arkvory-contracts';
+import type { RetentionPreviewRequest, RetentionApplyRequest } from '@proanima/arkvory-contracts';
 import type { HttpPort } from './http-transport.js';
 import { repositoryPath } from './http-transport.js';
 

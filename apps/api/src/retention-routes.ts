@@ -1,7 +1,7 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
-import type { ArtifactRetention } from '@proanima/depot-application';
-import { DepotError } from '@proanima/depot-domain';
-import type { Principal } from '@proanima/depot-domain';
+import type { ArtifactRetention } from '@proanima/arkvory-application';
+import { ArkvoryError } from '@proanima/arkvory-domain';
+import type { Principal } from '@proanima/arkvory-domain';
 
 export function registerRetentionRoutes(
   app: FastifyInstance,
@@ -13,7 +13,7 @@ export function registerRetentionRoutes(
   // Explicit query rejection avoids silently ignoring a caller's proposed safety filter.
   const noQuery = (request: FastifyRequest) => {
     if (request.query && typeof request.query === 'object' && Object.keys(request.query).length)
-      throw new DepotError('invalid_input', 'Retention does not accept query parameters');
+      throw new ArkvoryError('invalid_input', 'Retention does not accept query parameters');
   };
   app.get<{ Params: Params }>(root + '/artifacts/:id/deletion', (request) => {
     noQuery(request);

@@ -2,9 +2,9 @@ import { open, link, unlink } from 'node:fs/promises';
 import { constants } from 'node:fs';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
-import { readUpdateRequest, readUpdateSnapshot } from '@proanima/depot-contracts';
-import type { UpdateRequest } from '@proanima/depot-contracts';
-import { DepotError } from '@proanima/depot-domain';
+import { readUpdateRequest, readUpdateSnapshot } from '@proanima/arkvory-contracts';
+import type { UpdateRequest } from '@proanima/arkvory-contracts';
+import { ArkvoryError } from '@proanima/arkvory-domain';
 
 const missing = (error: unknown) =>
   error instanceof Error && 'code' in error && error.code === 'ENOENT';
@@ -42,18 +42,18 @@ export class UpdateControl {
   async request(request: UpdateRequest) {
     const { snapshot, pending } = await this.status();
     if (!this.directory || !snapshot)
-      throw new DepotError('unavailable', 'Host updater is not connected');
+      throw new ArkvoryError('unavailable', 'Host updater is not connected');
     if (pending?.id === request.id && JSON.stringify(pending) !== JSON.stringify(request))
-      throw new DepotError('conflict', 'Request identity was reused with different fields');
+      throw new ArkvoryError('conflict', 'Request identity was reused with different fields');
     if (pending?.id === request.id || snapshot.lastRequestId === request.id)
       return { id: request.id };
-    if (pending) throw new DepotError('busy', 'An update request is pending');
+    if (pending) throw new ArkvoryError('busy', 'An update request is pending');
     if (snapshot.revision !== request.expectedRevision)
-      throw new DepotError('conflict', 'Update settings changed');
+      throw new ArkvoryError('conflict', 'Update settings changed');
     if (snapshot.phase === 'updating' || snapshot.phase === 'checking')
-      throw new DepotError('busy', 'Updater is working');
+      throw new ArkvoryError('busy', 'Updater is working');
     if (Date.now() - Date.parse(snapshot.heartbeatAt) > 5 * 60000)
-      throw new DepotError('unavailable', 'Host updater heartbeat is stale');
+      throw new ArkvoryError('unavailable', 'Host updater heartbeat is stale');
     const directory = join(this.directory, 'inbox'),
       temporary = join(directory, `.${randomUUID()}.tmp`);
     const file = await open(temporary, 'wx', 0o644);
@@ -68,7 +68,7 @@ export class UpdateControl {
         await link(temporary, join(directory, 'request.json'));
       } catch (error) {
         if (error instanceof Error && 'code' in error && error.code === 'EEXIST')
-          throw new DepotError('busy', 'An update request is pending');
+          throw new ArkvoryError('busy', 'An update request is pending');
         throw error;
       }
       // Publish complete bytes with exclusive creation, then make the directory entry durable.

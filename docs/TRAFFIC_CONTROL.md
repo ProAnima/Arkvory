@@ -4,24 +4,24 @@
 
 ## Настройка
 
-| Переменная                                    | По умолчанию         | Значение                                   |
-| --------------------------------------------- | -------------------- | ------------------------------------------ |
-| DEPOT_MAX_UPLOADS                             | 2                    | Активные изменяющие upload-сценарии, 1..32 |
-| DEPOT_MAX_DOWNLOADS                           | 16                   | Активные downloads, 1..256                 |
-| DEPOT_MAX_UPLOADS_PER_PRINCIPAL               | 1                    | Не больше DEPOT_MAX_UPLOADS                |
-| DEPOT_MAX_DOWNLOADS_PER_PRINCIPAL             | min(4, maxDownloads) | Не больше DEPOT_MAX_DOWNLOADS              |
-| DEPOT_UPLOAD_BYTES_PER_SECOND                 | 0                    | Общая скорость приёма payload              |
-| DEPOT_DOWNLOAD_BYTES_PER_SECOND               | 0                    | Общая скорость выдачи payload              |
-| DEPOT_UPLOAD_BYTES_PER_SECOND_PER_PRINCIPAL   | 0                    | Приём от одного клиента суммарно           |
-| DEPOT_DOWNLOAD_BYTES_PER_SECOND_PER_PRINCIPAL | 0                    | Выдача одному клиенту суммарно             |
+| Переменная                                      | По умолчанию         | Значение                                   |
+| ----------------------------------------------- | -------------------- | ------------------------------------------ |
+| ARKVORY_MAX_UPLOADS                             | 2                    | Активные изменяющие upload-сценарии, 1..32 |
+| ARKVORY_MAX_DOWNLOADS                           | 16                   | Активные downloads, 1..256                 |
+| ARKVORY_MAX_UPLOADS_PER_PRINCIPAL               | 1                    | Не больше ARKVORY_MAX_UPLOADS              |
+| ARKVORY_MAX_DOWNLOADS_PER_PRINCIPAL             | min(4, maxDownloads) | Не больше ARKVORY_MAX_DOWNLOADS            |
+| ARKVORY_UPLOAD_BYTES_PER_SECOND                 | 0                    | Общая скорость приёма payload              |
+| ARKVORY_DOWNLOAD_BYTES_PER_SECOND               | 0                    | Общая скорость выдачи payload              |
+| ARKVORY_UPLOAD_BYTES_PER_SECOND_PER_PRINCIPAL   | 0                    | Приём от одного клиента суммарно           |
+| ARKVORY_DOWNLOAD_BYTES_PER_SECOND_PER_PRINCIPAL | 0                    | Выдача одному клиенту суммарно             |
 
 Rate задаётся целым числом bytes/s: 0 отключает соответствующий ceiling, иначе допустимы 65 536..1 099 511 627 776. Ошибочная конфигурация отклоняется при старте. Пример ограничения шлюза 64 MiB/s и каждого клиента 16 MiB/s в каждом направлении:
 
 ```dotenv
-DEPOT_UPLOAD_BYTES_PER_SECOND=67108864
-DEPOT_DOWNLOAD_BYTES_PER_SECOND=67108864
-DEPOT_UPLOAD_BYTES_PER_SECOND_PER_PRINCIPAL=16777216
-DEPOT_DOWNLOAD_BYTES_PER_SECOND_PER_PRINCIPAL=16777216
+ARKVORY_UPLOAD_BYTES_PER_SECOND=67108864
+ARKVORY_DOWNLOAD_BYTES_PER_SECOND=67108864
+ARKVORY_UPLOAD_BYTES_PER_SECOND_PER_PRINCIPAL=16777216
+ARKVORY_DOWNLOAD_BYTES_PER_SECOND_PER_PRINCIPAL=16777216
 ```
 
 Это пример, а не рекомендуемая ёмкость вашей сети. Общая полоса загрузки и скачивания независима; если uplink/диск разделяются, выбирайте оба бюджета с учётом суммарной нагрузки и резерва replication/служебного трафика. Изменение конфигурации требует перезапуска. Старые установки без rate variables остаются без ограничения bytes/s; новый default активных передач одного принципала применяется после обновления.
@@ -57,6 +57,6 @@ Unit tests с виртуальным монотонным временем пр�
 
 Большой профиль: `npm run gate -- large-multipart`, отдельная тестовая БД и ≥11 GiB свободного места. Он включает реальные 5 GiB, рестарты API, обрыв download, контроль hash/RSS и квоты 64 MiB/s на шлюз, 48 MiB/s на принципала. Отчёт сохраняется в ignored `test-results/large-traffic.json`. Межсерверная координация и HA этим тестом не проверяются.
 
-Размер ожидающей очереди и timeout теперь настраиваются через DEPOT_TRANSFER_QUEUE_LIMIT, DEPOT_TRANSFER_QUEUE_PER_PRINCIPAL, DEPOT_TRANSFER_QUEUE_TIMEOUT_MS. Defaults прежние: 64/8/20000. Readiness дополнен waitingCapacity/perPrincipalWaitingCapacity/timeoutMs. Это пределы шлюза, отдельные от [клиентской очереди скачиваний](DOWNLOAD_QUEUE.md).
+Размер ожидающей очереди и timeout теперь настраиваются через ARKVORY_TRANSFER_QUEUE_LIMIT, ARKVORY_TRANSFER_QUEUE_PER_PRINCIPAL, ARKVORY_TRANSFER_QUEUE_TIMEOUT_MS. Defaults прежние: 64/8/20000. Readiness дополнен waitingCapacity/perPrincipalWaitingCapacity/timeoutMs. Это пределы шлюза, отдельные от [клиентской очереди скачиваний](DOWNLOAD_QUEUE.md).
 
-После допуска upload действует отдельное время ожидания данных отправителя: `DEPOT_UPLOAD_IDLE_TIMEOUT_MS=30000`. Оно не учитывает паузы bandwidth governor и backend. `DEPOT_UPLOAD_DEADLINE_MS=1800000` ограничивает всю принятую операцию PUT/complete, включая обработку и публикацию; это не лимит всей multipart-сессии. Оба значения — целые 1..1800000, idle ≤ deadline. До допуска продолжают действовать обычные HTTP/queue ограничения. [Решение](adr/0029-upload-lifetime-and-exact-reads.md).
+После допуска upload действует отдельное время ожидания данных отправителя: `ARKVORY_UPLOAD_IDLE_TIMEOUT_MS=30000`. Оно не учитывает паузы bandwidth governor и backend. `ARKVORY_UPLOAD_DEADLINE_MS=1800000` ограничивает всю принятую операцию PUT/complete, включая обработку и публикацию; это не лимит всей multipart-сессии. Оба значения — целые 1..1800000, idle ≤ deadline. До допуска продолжают действовать обычные HTTP/queue ограничения. [Решение](adr/0029-upload-lifetime-and-exact-reads.md).

@@ -5,14 +5,14 @@ import {
   parseRetentionCriteria,
   parseDeletionSelection,
   annotationRevision,
-  DepotError,
-} from '@proanima/depot-domain';
+  ArkvoryError,
+} from '@proanima/arkvory-domain';
 import type {
   Principal,
   MutationAccess,
   RetentionCriteria,
   DeletionSelection,
-} from '@proanima/depot-domain';
+} from '@proanima/arkvory-domain';
 
 export type DeletionBlocker =
   'reference' | 'asset_history' | 'attachment_history' | 'protected_label';
@@ -66,10 +66,10 @@ export class ArtifactRetention {
     const criteria = parseRetentionCriteria(row['criteria'], this.now());
     const limit = row['limit'] ?? 50;
     if (typeof limit !== 'number' || !Number.isSafeInteger(limit) || limit < 1 || limit > 100)
-      throw new DepotError('invalid_input', 'Page limit must be between 1 and 100');
+      throw new ArkvoryError('invalid_input', 'Page limit must be between 1 and 100');
     const after = row['after'];
     if (after !== undefined && typeof after !== 'string')
-      throw new DepotError('invalid_input', 'Invalid cursor');
+      throw new ArkvoryError('invalid_input', 'Invalid cursor');
     return this.store.preview(
       repository,
       criteria,
@@ -87,7 +87,7 @@ export class ArtifactRetention {
       },
     ]);
     const result = results[0];
-    if (!result) throw new DepotError('unavailable', 'Missing deletion result');
+    if (!result) throw new ArkvoryError('unavailable', 'Missing deletion result');
     return result;
   }
   async apply(principal: Principal, repository: string, value: unknown) {

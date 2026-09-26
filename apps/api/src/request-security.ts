@@ -1,8 +1,8 @@
 import { createHash, timingSafeEqual } from 'node:crypto';
 import type { FastifyInstance } from 'fastify';
-import { DepotError } from '@proanima/depot-domain';
-import type { IdentityService } from '@proanima/depot-application';
-import type { PostgresServices } from '@proanima/depot-infrastructure';
+import { ArkvoryError } from '@proanima/arkvory-domain';
+import type { IdentityService } from '@proanima/arkvory-application';
+import type { PostgresServices } from '@proanima/arkvory-infrastructure';
 import type { ServerConfig } from './config.js';
 import type { RequestContext } from './request-context.js';
 import { LoginAdmission } from './login-admission.js';
@@ -35,7 +35,7 @@ export function registerRequestSecurity(app: FastifyInstance, dependencies: Secu
     )
       return;
     if (!available())
-      throw new DepotError(
+      throw new ArkvoryError(
         'unavailable',
         'Gateway ownership or download lease lost; restart the service',
       );

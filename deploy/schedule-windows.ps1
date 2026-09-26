@@ -1,6 +1,6 @@
 param([Parameter(Mandatory)][string]$Root, [Parameter(Mandatory)][string]$Node)
 $ErrorActionPreference = 'Stop'
-$taskName = 'ProAnimaDepotUpdate'
+$taskName = 'ProAnimaArkvoryUpdate'
 $arguments = '"' + (Join-Path $Root 'manage.mjs') + '" updates-poll --root "' + $Root + '"'
 $legacyArguments = '"' + (Join-Path $Root 'manage.mjs') + '" update --root "' + $Root + '" --scheduled'
 $existing = Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue

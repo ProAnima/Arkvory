@@ -3,7 +3,7 @@ import { open, readFile, unlink } from 'node:fs/promises';
 import { record, parseRelease, version } from './model.js';
 import type { Release } from './model.js';
 
-const api = 'https://api.github.com/repos/ProAnima/Depot';
+const api = 'https://api.github.com/repos/ProAnima/Arkvory';
 export interface ReleaseAssets {
   release: Release;
   archiveUrl: string;
@@ -29,7 +29,7 @@ export class GitHubReleases {
         throw new Error('Unsafe release URL');
       const headers: Record<string, string> = {
         Accept: accept,
-        'User-Agent': 'ProAnima-Depot-Installer',
+        'User-Agent': 'ProAnima-Arkvory-Installer',
         'X-GitHub-Api-Version': '2022-11-28',
       };
       // Private asset redirects must never forward the GitHub credential to a storage host.
@@ -91,10 +91,10 @@ export class GitHubReleases {
         throw new Error(`Missing release asset: ${name}`);
       return match['url'];
     };
-    const release = parseRelease(await this.json(asset('depot-release.json'), true));
+    const release = parseRelease(await this.json(asset('arkvory-release.json'), true));
     if (data['tag_name'] !== `v${release.version}` || (pin !== null && pin !== release.version))
       throw new Error('Release tag mismatch');
-    return { release, archiveUrl: asset('depot-runtime.zip') };
+    return { release, archiveUrl: asset('arkvory-runtime.zip') };
   }
   async download(url: string, destination: string, sha256: string): Promise<void> {
     const file = await open(destination, 'wx', 0o600);
@@ -121,7 +121,7 @@ export class GitHubReleases {
     await file.close();
   }
   async native(platform: 'linux' | 'windows', name: string) {
-    if (!['Depot-amd64.deb', 'Depot-x86_64.rpm', 'Depot-Setup-x64.exe'].includes(name))
+    if (!['Arkvory-amd64.deb', 'Arkvory-x86_64.rpm', 'Arkvory-Setup-x64.exe'].includes(name))
       throw new Error('Invalid native installer');
     const data = record(await this.json(`${api}/releases/latest`));
     if (data['draft'] !== false || data['prerelease'] !== false || !Array.isArray(data['assets']))

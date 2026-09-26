@@ -1,6 +1,6 @@
 import { rename, unlink, access } from 'node:fs/promises';
 import { join } from 'node:path';
-import { readUpdateSnapshot, readUpdateRequest } from '@proanima/depot-contracts';
+import { readUpdateSnapshot, readUpdateRequest } from '@proanima/arkvory-contracts';
 import { atomicJson, jsonFile } from './files.js';
 import { parseInstallation } from './model.js';
 import { GitHubReleases } from './github.js';

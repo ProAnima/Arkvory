@@ -1,14 +1,15 @@
+import { compatiblePath } from './legacy-files.js';
 import { openAsBlob } from 'node:fs';
 import { open, link, unlink, lstat } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
-import { DepotIntegrityError } from '@proanima/depot-sdk';
-import type { DepotClient } from '@proanima/depot-sdk';
-import { record } from '@proanima/depot-contracts';
+import { ArkvoryIntegrityError } from '@proanima/arkvory-sdk';
+import type { ArkvoryClient } from '@proanima/arkvory-sdk';
+import { record } from '@proanima/arkvory-contracts';
 import { exists, exclusive, readJson, saveJson, syncDirectory } from './local-files.js';
 import { CliError } from './errors.js';
 
 interface DownloadInput {
-  client: DepotClient;
+  client: ArkvoryClient;
   server: string;
   repository: string;
   id: string;
@@ -19,10 +20,11 @@ interface DownloadInput {
 }
 export async function download(input: DownloadInput) {
   const output = resolve(input.output),
-    state = output + '.depot-download.json';
+    state = compatiblePath(output + '.arkvory-download.json', output + '.depot-download.json');
   return exclusive(state, async () => {
     if (await exists(output)) throw new CliError('destination_exists', 6);
-    const partial = output + '.depot-part';
+    const partial =
+      output + (state.endsWith('.depot-download.json') ? '.depot-part' : '.arkvory-part');
     const checkpoint = {
       format: 1,
       kind: 'download',
@@ -58,7 +60,7 @@ export async function download(input: DownloadInput) {
       } finally {
         await invalid.close();
       }
-      throw new DepotIntegrityError();
+      throw new ArkvoryIntegrityError();
     }
     // The SDK hashes the entire immutable prefix before append opens, then verifies final SHA-256.
     const stream = await input.client.downloadVerified(input.repository, input.id, {
@@ -119,7 +121,7 @@ async function appendVerified(
     await file.sync();
   } catch (error) {
     // A corrupt prefix cannot be retried forever. Disk errors retain only the last flushed prefix.
-    if (error instanceof DepotIntegrityError) await file.truncate(0);
+    if (error instanceof ArkvoryIntegrityError) await file.truncate(0);
     else await file.truncate(durable);
     await file.sync();
     throw error;

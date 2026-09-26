@@ -1,0 +1,5 @@
+#!/bin/sh
+set -eu
+root=/opt/proanima-arkvory
+case "${1:-help}" in help|--help|-h) exec /usr/lib/proanima-arkvory/node /usr/lib/proanima-arkvory/arkvory-setup.mjs help ;; esac
+exec "$root/runtime/node" "$root/manage.mjs" "$@"

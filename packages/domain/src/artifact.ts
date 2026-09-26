@@ -11,13 +11,13 @@ export type ErrorCode =
   | 'busy'
   | 'unavailable';
 
-export class DepotError extends Error {
+export class ArkvoryError extends Error {
   constructor(
     readonly code: ErrorCode,
     message: string,
   ) {
     super(message);
-    this.name = 'DepotError';
+    this.name = 'ArkvoryError';
   }
 }
 
@@ -45,26 +45,26 @@ export const idPattern = '^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3
 
 export function requireRepository(value: string): string {
   if (!new RegExp(repositoryPattern).test(value))
-    throw new DepotError('invalid_input', 'Invalid repository');
+    throw new ArkvoryError('invalid_input', 'Invalid repository');
   return value;
 }
 
 export function requireId(value: string): string {
   if (!new RegExp(idPattern).test(value))
-    throw new DepotError('invalid_input', 'Invalid upload identifier');
+    throw new ArkvoryError('invalid_input', 'Invalid upload identifier');
   return value;
 }
 
 function record(value: unknown): Record<string, unknown> {
   if (typeof value !== 'object' || value === null || Array.isArray(value))
-    throw new DepotError('invalid_input', 'Expected an object');
+    throw new ArkvoryError('invalid_input', 'Expected an object');
   return Object.fromEntries(Object.entries(value));
 }
 
 export function parseDescriptor(value: unknown): ArtifactDescriptor {
   const input = record(value);
   if (Object.keys(input).some((k) => !['name', 'size', 'sha256', 'labels', 'metadata'].includes(k)))
-    throw new DepotError('invalid_input', 'Unknown artifact property');
+    throw new ArkvoryError('invalid_input', 'Unknown artifact property');
   const { name, size, sha256 } = input;
   if (
     typeof name !== 'string' ||
@@ -79,27 +79,30 @@ export function parseDescriptor(value: unknown): ArtifactDescriptor {
     name === '.' ||
     name === '..'
   )
-    throw new DepotError('invalid_input', 'Invalid file name');
+    throw new ArkvoryError('invalid_input', 'Invalid file name');
   if (
     typeof size !== 'string' ||
     !/^(0|[1-9][0-9]{0,15})$/.test(size) ||
     Number(size) > MAX_OBJECT_BYTES
   )
-    throw new DepotError('invalid_input', 'Size must be a decimal string between 0 and 5368709120');
+    throw new ArkvoryError(
+      'invalid_input',
+      'Size must be a decimal string between 0 and 5368709120',
+    );
   if (typeof sha256 !== 'string' || !/^[a-f0-9]{64}$/.test(sha256))
-    throw new DepotError('invalid_input', 'Invalid SHA-256');
+    throw new ArkvoryError('invalid_input', 'Invalid SHA-256');
   const labels: unknown = input['labels'] ?? [];
   if (!Array.isArray(labels) || labels.length > 32)
-    throw new DepotError('invalid_input', 'At most 32 labels allowed');
+    throw new ArkvoryError('invalid_input', 'At most 32 labels allowed');
   const checkedLabels: string[] = [];
   for (const label of labels) {
     if (typeof label !== 'string' || !/^[\p{L}\p{N}_.:-]{1,64}$/u.test(label))
-      throw new DepotError('invalid_input', 'Invalid label');
+      throw new ArkvoryError('invalid_input', 'Invalid label');
     checkedLabels.push(label);
   }
   const metadata = record(input['metadata'] ?? {});
   if (Object.keys(metadata).length > 32)
-    throw new DepotError('invalid_input', 'At most 32 metadata fields allowed');
+    throw new ArkvoryError('invalid_input', 'At most 32 metadata fields allowed');
   const checkedMetadata: Record<string, string> = {};
   for (const key of Object.keys(metadata).sort()) {
     const entry = metadata[key];
@@ -112,7 +115,7 @@ export function parseDescriptor(value: unknown): ArtifactDescriptor {
       // Unicode mode matches unpaired surrogates only; valid supplementary characters survive.
       /[\uD800-\uDFFF]/u.test(entry)
     )
-      throw new DepotError('invalid_input', 'Invalid metadata field');
+      throw new ArkvoryError('invalid_input', 'Invalid metadata field');
     checkedMetadata[key] = entry;
   }
   return {
@@ -150,14 +153,14 @@ export function authorize(
   repository: string,
   permission: 'read' | 'write',
 ): void {
-  if (principal.managed) throw new DepotError('forbidden', 'Explicit service action required');
+  if (principal.managed) throw new ArkvoryError('forbidden', 'Explicit service action required');
   requireRepository(repository);
   const allowed = principal.grants
     ? principal.grants.some(
         (grant) => grant.repository === repository && grant.permissions.includes(permission),
       )
     : principal.repositories.includes(repository) && principal.permissions.includes(permission);
-  if (!allowed) throw new DepotError('forbidden', 'Repository access denied');
+  if (!allowed) throw new ArkvoryError('forbidden', 'Repository access denied');
 }
 
 export interface MutationAccess {

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { PostgresCatalog } from '@proanima/depot-infrastructure';
+import { PostgresCatalog } from '@proanima/arkvory-infrastructure';
 import { createServer } from '../../apps/api/dist/index.js';
 import { setup } from './fixture.mjs';
 
@@ -59,11 +59,11 @@ test('console directory belongs to explicit server configuration and does not re
     join(directory, 'index.html'),
     '<!doctype html><title>Configured console</title>',
   );
-  const previous = process.env.DEPOT_WEB_DIR;
-  process.env.DEPOT_WEB_DIR = join(f.directory, 'absent-console');
+  const previous = process.env.ARKVORY_WEB_DIR;
+  process.env.ARKVORY_WEB_DIR = join(f.directory, 'absent-console');
   t.after(() => {
-    if (previous === undefined) delete process.env.DEPOT_WEB_DIR;
-    else process.env.DEPOT_WEB_DIR = previous;
+    if (previous === undefined) delete process.env.ARKVORY_WEB_DIR;
+    else process.env.ARKVORY_WEB_DIR = previous;
   });
   f.config.webDirectory = directory;
   await f.restart();

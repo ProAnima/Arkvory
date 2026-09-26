@@ -18,7 +18,7 @@ import { removeTestDirectory } from './helpers.mjs';
 const now = Date.parse('2026-09-25');
 const policy = { limits: { file: 500, class: 300, function: 2 }, maxExceptionDays: 90 };
 const source =
-  '// depot-exception ARCH-001 -- Keep the transaction intact until a reviewed extraction.\nfunction save() {\n  return 1;\n}\n';
+  '// arkvory-exception ARCH-001 -- Keep the transaction intact until a reviewed extraction.\nfunction save() {\n  return 1;\n}\n';
 const analysis = () =>
   new Map([
     ['packages/application/src/save.ts', analyzeSource('packages/application/src/save.ts', source)],
@@ -30,7 +30,7 @@ const exception = () => ({
   symbol: 'save',
   ceiling: 3,
   reason: 'Keep the transaction intact until a reviewed extraction with concurrency tests.',
-  owner: 'Depot maintainers',
+  owner: 'Arkvory maintainers',
   recordedAt: '2026-09-25',
   reviewBy: '2026-12-20',
   decision: 'docs/adr/0027-executable-engineering-gates.md',
@@ -215,7 +215,7 @@ test('workflow guard catches bypasses and mutable actions', async () => {
     (w) => {
       w.jobs.verdict.steps.find(
         (s) => s.run === 'node scripts/ci-verdict.mjs',
-      ).env.DEPOT_RELEASE_REQUIRED = 'false';
+      ).env.ARKVORY_RELEASE_REQUIRED = 'false';
     },
     (w) => {
       w.jobs.browser.steps.push({ run: 'node tests/browser/console.mjs' });
@@ -298,7 +298,7 @@ test('gate process propagates nonzero exit, enforces timeout and cancellation', 
 });
 
 test('exclusive gate lock rejects overlap and refuses to unlink another owner', async () => {
-  const root = await mkdtemp(join(tmpdir(), 'depot-gates-'));
+  const root = await mkdtemp(join(tmpdir(), 'arkvory-gates-'));
   try {
     const release = await lockGates(root);
     await assert.rejects(lockGates(root), /Another gate run/);
@@ -314,7 +314,7 @@ test('exclusive gate lock rejects overlap and refuses to unlink another owner', 
 });
 
 test('clean build removes only generated outputs and rejects traversal and junctions', async () => {
-  const root = await mkdtemp(join(tmpdir(), 'depot-build-'));
+  const root = await mkdtemp(join(tmpdir(), 'arkvory-build-'));
   try {
     const src = join(root, 'packages/core/src'),
       dist = join(root, 'packages/core/dist');
@@ -336,7 +336,7 @@ test('clean build removes only generated outputs and rejects traversal and junct
 });
 
 test('CI summary preserves failed and unexecuted gates and rejects missing/malformed reports', async () => {
-  const root = await mkdtemp(join(tmpdir(), 'depot-report-'));
+  const root = await mkdtemp(join(tmpdir(), 'arkvory-report-'));
   try {
     const folder = join(root, 'test-results/gates');
     await mkdir(folder, { recursive: true });

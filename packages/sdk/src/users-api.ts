@@ -1,4 +1,4 @@
-import { record, items, readAccount, readGroup } from '@proanima/depot-contracts';
+import { record, items, readAccount, readGroup } from '@proanima/arkvory-contracts';
 import type { HttpPort } from './http-transport.js';
 
 export class UsersApi {

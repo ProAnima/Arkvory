@@ -1,12 +1,12 @@
 import {
   authorizeAction,
-  DepotError,
+  ArkvoryError,
   parseDescriptor,
   requireId,
   partSize,
   checkParts,
-} from '@proanima/depot-domain';
-import type { Principal, Upload } from '@proanima/depot-domain';
+} from '@proanima/arkvory-domain';
+import type { Principal, Upload } from '@proanima/arkvory-domain';
 import type { BlobStore, Cancellation, Catalog, IdentitySource } from './ports.js';
 
 export class StorageService {
@@ -24,7 +24,7 @@ export class StorageService {
   ): Promise<Upload> {
     authorizeAction(principal, repository, 'upload.create', ['write']);
     if (!/^[a-zA-Z0-9_.:-]{1,128}$/.test(key))
-      throw new DepotError('invalid_input', 'Invalid Idempotency-Key');
+      throw new ArkvoryError('invalid_input', 'Invalid Idempotency-Key');
     return this.catalog.create({
       id: this.identity.next(),
       repository,
@@ -52,7 +52,7 @@ export class StorageService {
         const upload = await this.owned(principal, repository, id);
         this.pending(upload);
         if ((await this.catalog.parts(id)).length > 0)
-          throw new DepotError('conflict', 'Multipart upload must be completed using its parts');
+          throw new ArkvoryError('conflict', 'Multipart upload must be completed using its parts');
         await this.blobs.put(id, upload.descriptor, source, {
           throwIfAborted() {
             cancellation.throwIfAborted();
@@ -79,7 +79,8 @@ export class StorageService {
       async (mutation) => {
         const upload = await this.owned(principal, repository, id);
         if (upload.status === 'available') return upload;
-        if (upload.status === 'cancelled') throw new DepotError('conflict', 'Upload is cancelled');
+        if (upload.status === 'cancelled')
+          throw new ArkvoryError('conflict', 'Upload is cancelled');
         this.pending(upload);
         const parts = await this.catalog.parts(id);
         if (parts.length > 0) {
@@ -113,7 +114,7 @@ export class StorageService {
       async (mutation) => {
         const upload = await this.owned(principal, repository, id);
         if (upload.status === 'available')
-          throw new DepotError('conflict', 'Published artifacts cannot be cancelled');
+          throw new ArkvoryError('conflict', 'Published artifacts cannot be cancelled');
         // Cancellation hides content. Physical reclamation needs a separately fenced GC.
         return mutation.cancel(repository);
       },
@@ -138,7 +139,7 @@ export class StorageService {
     authorizeAction(principal, repository, 'upload.write', ['write']);
     requireId(id);
     if (!/^[a-f0-9]{64}$/.test(sha256))
-      throw new DepotError('invalid_input', 'Invalid part checksum');
+      throw new ArkvoryError('invalid_input', 'Invalid part checksum');
     await this.catalog.exclusive(
       id,
       async (mutation) => {
@@ -147,7 +148,7 @@ export class StorageService {
         const part = { index, size: partSize(upload.descriptor.size, index), sha256 };
         const existing = (await this.catalog.parts(id)).find((value) => value.index === index);
         if (existing && existing.sha256 !== sha256)
-          throw new DepotError('conflict', 'Part already has different content');
+          throw new ArkvoryError('conflict', 'Part already has different content');
         await this.blobs.putPart(id, part, source, {
           throwIfAborted() {
             cancellation.throwIfAborted();
@@ -161,9 +162,9 @@ export class StorageService {
   }
 
   private pending(upload: Upload): void {
-    if (upload.status !== 'pending') throw new DepotError('conflict', 'Upload is not pending');
+    if (upload.status !== 'pending') throw new ArkvoryError('conflict', 'Upload is not pending');
     if (upload.expiresAt <= this.identity.now())
-      throw new DepotError('conflict', 'Upload has expired');
+      throw new ArkvoryError('conflict', 'Upload has expired');
   }
 
   async status(principal: Principal, repository: string, id: string): Promise<Upload> {
@@ -179,7 +180,7 @@ export class StorageService {
   ): Promise<Upload> {
     authorizeAction(principal, repository, permission, ['read']);
     const upload = await this.catalog.get(repository, requireId(id));
-    if (upload.status !== 'available') throw new DepotError('not_found', 'Artifact not found');
+    if (upload.status !== 'available') throw new ArkvoryError('not_found', 'Artifact not found');
     return upload;
   }
 
@@ -191,7 +192,7 @@ export class StorageService {
   ): Promise<readonly Upload[]> {
     authorizeAction(principal, repository, 'artifact.list', ['read']);
     if (!Number.isSafeInteger(limit) || limit < 1 || limit > 100)
-      throw new DepotError('invalid_input', 'Invalid page limit');
+      throw new ArkvoryError('invalid_input', 'Invalid page limit');
     if (after !== undefined) requireId(after);
     return this.catalog.list(repository, after, limit);
   }
@@ -211,7 +212,7 @@ export class StorageService {
 
   private async owned(principal: Principal, repository: string, id: string): Promise<Upload> {
     const upload = await this.catalog.get(repository, id);
-    if (upload.owner !== principal.id) throw new DepotError('not_found', 'Upload not found');
+    if (upload.owner !== principal.id) throw new ArkvoryError('not_found', 'Upload not found');
     return upload;
   }
 }

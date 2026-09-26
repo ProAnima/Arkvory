@@ -1,13 +1,14 @@
+import { normalizeRuntimeSettings } from '@proanima/arkvory-contracts';
 import { readFile } from 'node:fs/promises';
-import { DepotError } from '@proanima/depot-domain';
-import { parseKeys, downloadShare } from '@proanima/depot-infrastructure';
-import type { SharedDownloadPolicy } from '@proanima/depot-infrastructure';
-import type { ServiceKey } from '@proanima/depot-infrastructure';
+import { ArkvoryError } from '@proanima/arkvory-domain';
+import { parseKeys, downloadShare } from '@proanima/arkvory-infrastructure';
+import type { SharedDownloadPolicy } from '@proanima/arkvory-infrastructure';
+import type { ServiceKey } from '@proanima/arkvory-infrastructure';
 import { parseCorsOrigins } from './cors.js';
 import { readUploadTimeouts } from './upload-policy.js';
 import type { UploadTimeoutOptions } from './upload-policy.js';
-export { parseKeys } from '@proanima/depot-infrastructure';
-export type { ServiceKey } from '@proanima/depot-infrastructure';
+export { parseKeys } from '@proanima/arkvory-infrastructure';
+export type { ServiceKey } from '@proanima/arkvory-infrastructure';
 
 export interface ServerConfig extends UploadTimeoutOptions {
   readonly role?: 'api' | 'reader';
@@ -35,6 +36,7 @@ export interface ServerConfig extends UploadTimeoutOptions {
 }
 
 export async function loadConfig(env: NodeJS.ProcessEnv): Promise<ServerConfig> {
+  env = normalizeRuntimeSettings(env);
   const required = (name: string): string => {
     const value = env[name];
     if (!value) throw new Error(`Missing ${name}`);
@@ -47,15 +49,18 @@ export async function loadConfig(env: NodeJS.ProcessEnv): Promise<ServerConfig> 
       throw new Error(`Invalid ${name}`);
     return result;
   };
-  const databaseUrl = required('DEPOT_DATABASE_URL');
+  const databaseUrl = required('ARKVORY_DATABASE_URL');
   if (!/^postgres(?:ql)?:\/\//.test(databaseUrl))
-    throw new DepotError('invalid_input', 'DEPOT_DATABASE_URL must be a PostgreSQL connection URL');
-  const keyFile = await readFile(required('DEPOT_KEYS_FILE'), 'utf8');
+    throw new ArkvoryError(
+      'invalid_input',
+      'ARKVORY_DATABASE_URL must be a PostgreSQL connection URL',
+    );
+  const keyFile = await readFile(required('ARKVORY_KEYS_FILE'), 'utf8');
   if (keyFile.length > 1024 * 1024) throw new Error('Key file is too large');
   const keys: unknown = JSON.parse(keyFile);
-  const maxUploads = number('DEPOT_MAX_UPLOADS', 2, 32);
-  const maxDownloads = number('DEPOT_MAX_DOWNLOADS', 16, 256);
-  const transferQueueLimit = number('DEPOT_TRANSFER_QUEUE_LIMIT', 64, 1024);
+  const maxUploads = number('ARKVORY_MAX_UPLOADS', 2, 32);
+  const maxDownloads = number('ARKVORY_MAX_DOWNLOADS', 16, 256);
+  const transferQueueLimit = number('ARKVORY_TRANSFER_QUEUE_LIMIT', 64, 1024);
   const rate = (name: string): number => {
     const raw = env[name] ?? '0';
     const value = Number(raw);
@@ -67,23 +72,23 @@ export async function loadConfig(env: NodeJS.ProcessEnv): Promise<ServerConfig> 
       throw new Error(`Invalid ${name}`);
     return value;
   };
-  const role = env['DEPOT_ROLE'] ?? 'api';
-  if (role !== 'api' && role !== 'reader') throw new Error('Invalid DEPOT_ROLE');
+  const role = env['ARKVORY_ROLE'] ?? 'api';
+  if (role !== 'api' && role !== 'reader') throw new Error('Invalid ARKVORY_ROLE');
   let sharedDownloads: SharedDownloadPolicy | undefined;
   const clusterFields = [
-    'DEPOT_GATEWAY_SLOTS',
-    'DEPOT_GATEWAY_SLOT',
-    'DEPOT_SHARED_DOWNLOAD_BYTES_PER_SECOND',
-    'DEPOT_SHARED_DOWNLOAD_BYTES_PER_SECOND_PER_PRINCIPAL',
+    'ARKVORY_GATEWAY_SLOTS',
+    'ARKVORY_GATEWAY_SLOT',
+    'ARKVORY_SHARED_DOWNLOAD_BYTES_PER_SECOND',
+    'ARKVORY_SHARED_DOWNLOAD_BYTES_PER_SECOND_PER_PRINCIPAL',
   ];
   if (clusterFields.some((name) => env[name] !== undefined)) {
-    const slot = required('DEPOT_GATEWAY_SLOT');
-    if (!/^(0|[1-9][0-9]?)$/.test(slot)) throw new Error('Invalid DEPOT_GATEWAY_SLOT');
+    const slot = required('ARKVORY_GATEWAY_SLOT');
+    if (!/^(0|[1-9][0-9]?)$/.test(slot)) throw new Error('Invalid ARKVORY_GATEWAY_SLOT');
     sharedDownloads = {
       slot: Number(slot),
-      slots: number('DEPOT_GATEWAY_SLOTS', 0, 16),
-      bytesPerSecond: rate('DEPOT_SHARED_DOWNLOAD_BYTES_PER_SECOND'),
-      perPrincipalBytesPerSecond: rate('DEPOT_SHARED_DOWNLOAD_BYTES_PER_SECOND_PER_PRINCIPAL'),
+      slots: number('ARKVORY_GATEWAY_SLOTS', 0, 16),
+      bytesPerSecond: rate('ARKVORY_SHARED_DOWNLOAD_BYTES_PER_SECOND'),
+      perPrincipalBytesPerSecond: rate('ARKVORY_SHARED_DOWNLOAD_BYTES_PER_SECOND_PER_PRINCIPAL'),
     };
     downloadShare(sharedDownloads);
     if ((role === 'api') !== (sharedDownloads.slot === 0))
@@ -96,34 +101,34 @@ export async function loadConfig(env: NodeJS.ProcessEnv): Promise<ServerConfig> 
     role,
     ...(sharedDownloads ? { sharedDownloads } : {}),
     databaseUrl,
-    dataDirectory: required('DEPOT_DATA_DIR'),
+    dataDirectory: required('ARKVORY_DATA_DIR'),
     keys: parseKeys(keys),
-    corsOrigins: parseCorsOrigins(env['DEPOT_CORS_ORIGINS']),
-    webDirectory: env['DEPOT_WEB_DIR'] ?? 'apps/web/public',
-    ...(env['DEPOT_UPDATE_CONTROL_DIR']
-      ? { updateControlDirectory: env['DEPOT_UPDATE_CONTROL_DIR'] }
+    corsOrigins: parseCorsOrigins(env['ARKVORY_CORS_ORIGINS']),
+    webDirectory: env['ARKVORY_WEB_DIR'] ?? 'apps/web/public',
+    ...(env['ARKVORY_UPDATE_CONTROL_DIR']
+      ? { updateControlDirectory: env['ARKVORY_UPDATE_CONTROL_DIR'] }
       : {}),
-    host: env['DEPOT_HOST'] ?? '127.0.0.1',
-    port: number('DEPOT_PORT', 8080, 65535),
-    capacityBytes: number('DEPOT_CAPACITY_BYTES', 10 * 1024 ** 4, Number.MAX_SAFE_INTEGER),
+    host: env['ARKVORY_HOST'] ?? '127.0.0.1',
+    port: number('ARKVORY_PORT', 8080, 65535),
+    capacityBytes: number('ARKVORY_CAPACITY_BYTES', 10 * 1024 ** 4, Number.MAX_SAFE_INTEGER),
     maxUploads,
     maxDownloads,
     transferQueueLimit,
     transferQueuePerPrincipal: number(
-      'DEPOT_TRANSFER_QUEUE_PER_PRINCIPAL',
+      'ARKVORY_TRANSFER_QUEUE_PER_PRINCIPAL',
       Math.min(8, transferQueueLimit),
       transferQueueLimit,
     ),
-    transferQueueTimeoutMs: number('DEPOT_TRANSFER_QUEUE_TIMEOUT_MS', 20000, 120000),
-    maxUploadsPerPrincipal: number('DEPOT_MAX_UPLOADS_PER_PRINCIPAL', 1, maxUploads),
+    transferQueueTimeoutMs: number('ARKVORY_TRANSFER_QUEUE_TIMEOUT_MS', 20000, 120000),
+    maxUploadsPerPrincipal: number('ARKVORY_MAX_UPLOADS_PER_PRINCIPAL', 1, maxUploads),
     maxDownloadsPerPrincipal: number(
-      'DEPOT_MAX_DOWNLOADS_PER_PRINCIPAL',
+      'ARKVORY_MAX_DOWNLOADS_PER_PRINCIPAL',
       Math.min(4, maxDownloads),
       maxDownloads,
     ),
-    uploadBytesPerSecond: rate('DEPOT_UPLOAD_BYTES_PER_SECOND'),
-    downloadBytesPerSecond: rate('DEPOT_DOWNLOAD_BYTES_PER_SECOND'),
-    uploadBytesPerSecondPerPrincipal: rate('DEPOT_UPLOAD_BYTES_PER_SECOND_PER_PRINCIPAL'),
-    downloadBytesPerSecondPerPrincipal: rate('DEPOT_DOWNLOAD_BYTES_PER_SECOND_PER_PRINCIPAL'),
+    uploadBytesPerSecond: rate('ARKVORY_UPLOAD_BYTES_PER_SECOND'),
+    downloadBytesPerSecond: rate('ARKVORY_DOWNLOAD_BYTES_PER_SECOND'),
+    uploadBytesPerSecondPerPrincipal: rate('ARKVORY_UPLOAD_BYTES_PER_SECOND_PER_PRINCIPAL'),
+    downloadBytesPerSecondPerPrincipal: rate('ARKVORY_DOWNLOAD_BYTES_PER_SECOND_PER_PRINCIPAL'),
   };
 }

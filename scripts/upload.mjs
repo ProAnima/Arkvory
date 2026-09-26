@@ -2,15 +2,18 @@ import { openAsBlob, createReadStream } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { createHash, randomUUID } from 'node:crypto';
 import { basename } from 'node:path';
-import { DepotClient } from '@proanima/depot-sdk';
+import { ArkvoryClient } from '@proanima/arkvory-sdk';
 
 const file = process.argv[2];
 const repository = process.argv[3] ?? 'releases';
 const uploadId = process.argv[4];
 if (!file) throw new Error('Usage: npm run upload -- <file> [repository] [uploadId to resume]');
 const token =
-  process.env.DEPOT_TOKEN || (await readFile(process.env.DEPOT_TOKEN_FILE, 'utf8')).trim();
-const client = new DepotClient(process.env.DEPOT_BASE_URL ?? 'http://127.0.0.1:8080', () => token);
+  process.env.ARKVORY_TOKEN || (await readFile(process.env.ARKVORY_TOKEN_FILE, 'utf8')).trim();
+const client = new ArkvoryClient(
+  process.env.ARKVORY_BASE_URL ?? 'http://127.0.0.1:8080',
+  () => token,
+);
 const stop = new AbortController();
 process.once('SIGINT', () => stop.abort());
 process.once('SIGTERM', () => stop.abort());
@@ -18,7 +21,7 @@ const blob = await openAsBlob(file);
 const hash = createHash('sha256');
 for await (const chunk of createReadStream(file, { signal: stop.signal })) hash.update(chunk);
 const sha256 = hash.digest('hex');
-const key = process.env.DEPOT_IDEMPOTENCY_KEY ?? randomUUID();
+const key = process.env.ARKVORY_IDEMPOTENCY_KEY ?? randomUUID();
 if (!uploadId) console.log(`Idempotency key: ${key}`);
 const upload = uploadId
   ? await client.status(repository, uploadId, stop.signal)

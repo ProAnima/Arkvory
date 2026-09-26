@@ -1,5 +1,5 @@
-import type { Principal, ServiceAction, ServiceBinding } from '@proanima/depot-domain';
-import { serviceActions } from '@proanima/depot-domain';
+import type { Principal, ServiceAction, ServiceBinding } from '@proanima/arkvory-domain';
+import { serviceActions } from '@proanima/arkvory-domain';
 
 // Frozen mapping of existing coarse permissions. New actions require explicit opt-in.
 const legacyActions: Readonly<

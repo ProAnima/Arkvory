@@ -9,15 +9,15 @@ import {
   serviceActions,
   administrationActions,
   parseAdministrationActions,
-} from '@proanima/depot-domain';
+} from '@proanima/arkvory-domain';
 import {
   servicePermissionNames,
   administrationPermissionNames,
   readApiKey,
   readDelegation,
-} from '@proanima/depot-contracts';
-import { parseKeys } from '@proanima/depot-infrastructure';
-import { ServiceAccess } from '@proanima/depot-application';
+} from '@proanima/arkvory-contracts';
+import { parseKeys } from '@proanima/arkvory-infrastructure';
+import { ServiceAccess } from '@proanima/arkvory-application';
 
 const binding = (id, actions) => ({ resource: { kind: 'repository', id }, actions });
 test('managed action and resource bindings never form a cross product or fall back to coarse grants', () => {

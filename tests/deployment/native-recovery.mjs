@@ -20,7 +20,7 @@ export async function exerciseNativeRecovery(root, token, read) {
     run('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', script]);
   const settings = JSON.parse(await read(join(root, 'database/settings.json')));
   for (const role of ['api', 'worker', 'database']) {
-    const name = windows ? `Depot${role}` : `depot-${role}`;
+    const name = windows ? `Arkvory${role}` : `arkvory-${role}`;
     const state = () =>
       windows
         ? JSON.parse(
@@ -49,11 +49,11 @@ export async function exerciseNativeRecovery(root, token, read) {
         '30',
       ];
       if (windows) run(join(settings.bin, 'pg_ctl.exe'), args);
-      else run('sudo', ['-u', 'depot-db', join(settings.bin, 'pg_ctl'), ...args]);
+      else run('sudo', ['-u', 'arkvory-db', join(settings.bin, 'pg_ctl'), ...args]);
     } else if (windows) {
       // Kill only the app child of this exact service wrapper, never unrelated Node processes.
       ps(
-        `$children = @(Get-CimInstance Win32_Process -Filter "ParentProcessId=${before.ProcessId}" | Where-Object { $_.Name -eq 'node.exe' -and $_.CommandLine -like '*launcher.mjs*' }); if ($children.Count -ne 1) { throw 'Expected one Depot application child' }; Stop-Process -Id $children[0].ProcessId -Force`,
+        `$children = @(Get-CimInstance Win32_Process -Filter "ParentProcessId=${before.ProcessId}" | Where-Object { $_.Name -eq 'node.exe' -and $_.CommandLine -like '*launcher.mjs*' }); if ($children.Count -ne 1) { throw 'Expected one Arkvory application child' }; Stop-Process -Id $children[0].ProcessId -Force`,
       );
     } else run('sudo', ['systemctl', 'kill', '--kill-whom=main', '--signal=SIGKILL', name]);
     let recovered = false;

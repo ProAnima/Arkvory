@@ -5,7 +5,7 @@ import { randomUUID } from 'node:crypto';
 import { writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { spawn } from 'node:child_process';
-import { DepotClient } from '@proanima/depot-sdk';
+import { ArkvoryClient } from '@proanima/arkvory-sdk';
 import { setup, descriptor } from './fixture.mjs';
 
 test('SDK recovers upload socket loss and lost create/part/publication responses against PostgreSQL', async (t) => {
@@ -55,7 +55,7 @@ test('SDK recovers upload socket loss and lost create/part/publication responses
         proxy.closeAllConnections();
       }),
   );
-  const client = new DepotClient(
+  const client = new ArkvoryClient(
     `http://127.0.0.1:${proxy.address().port}`,
     () => f.headers.authorization.slice(7),
     {
@@ -93,7 +93,7 @@ test('SDK recovers upload socket loss and lost create/part/publication responses
 test('upload CLI resumes saved parts and refuses a changed source file', async (t) => {
   const f = await setup(t),
     address = await f.listen();
-  const client = new DepotClient(address, () => f.headers.authorization.slice(7));
+  const client = new ArkvoryClient(address, () => f.headers.authorization.slice(7));
   const bytes = Buffer.alloc(8 * 1024 ** 2 + 17, 0x63);
   const file = join(f.directory, 'cli-source.bin');
   const tokenFile = join(f.directory, 'cli-token');
@@ -118,9 +118,9 @@ test('upload CLI resumes saved parts and refuses a changed source file', async (
         stdio: ['ignore', 'pipe', 'pipe'],
         env: {
           ...process.env,
-          DEPOT_BASE_URL: address,
-          DEPOT_TOKEN_FILE: tokenFile,
-          DEPOT_TOKEN: '',
+          ARKVORY_BASE_URL: address,
+          ARKVORY_TOKEN_FILE: tokenFile,
+          ARKVORY_TOKEN: '',
         },
       });
       let output = '';

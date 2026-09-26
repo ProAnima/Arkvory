@@ -1,10 +1,10 @@
-import { authorizeAction, DepotError } from '@proanima/depot-domain';
+import { authorizeAction, ArkvoryError } from '@proanima/arkvory-domain';
 import type {
   Principal,
   ServiceAction,
   ServiceDelegation,
   AdministrationAction,
-} from '@proanima/depot-domain';
+} from '@proanima/arkvory-domain';
 import { repositoryCard } from './repositories.js';
 
 /** Minimum facts required to project a catalog of callable operations. Not an authorization port. */
@@ -65,7 +65,7 @@ export function operationVisible(
         repositoryCard(principal, repository);
         return true;
       } catch (error) {
-        if (error instanceof DepotError && error.code === 'not_found') return false;
+        if (error instanceof ArkvoryError && error.code === 'not_found') return false;
         throw error;
       }
     case 'repository':
@@ -75,7 +75,7 @@ export function operationVisible(
           authorizeAction(principal, repository, action, requirement.legacy);
         return true;
       } catch (error) {
-        if (error instanceof DepotError && error.code === 'forbidden') return false;
+        if (error instanceof ArkvoryError && error.code === 'forbidden') return false;
         throw error;
       }
   }

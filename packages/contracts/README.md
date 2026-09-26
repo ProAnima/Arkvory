@@ -17,7 +17,7 @@ delegation-api содержит wire actions, ограниченные runtime-�
 Assets содержит независимый AssetPageResponse и readAssetPage: размер, строгий порядок Unicode scalar values и cursor валидируются до использования ответа. GET/HEAD assets/page добавлены в OpenAPI с явным asset.read.
 
 Repositories содержит wire parser и OpenAPI directory/card. Repository-discovery metadata явно описывает repository.read, legacy own scopes и omit/404. Новый permission расширяет enum до 19 без расширения прежних bindings.
-`api-surfaces` классифицирует responsibility/visibility, `operations` задаёт bounded wire page/parser. Все операции OpenAPI содержат `x-depot-surface` и `x-depot-visibility`; `openApiSurface()` формирует документационное представление, не ACL-фильтр. [API_SURFACES](../../docs/API_SURFACES.md).
+`api-surfaces` классифицирует responsibility/visibility, `operations` задаёт bounded wire page/parser. Все операции OpenAPI содержат `x-arkvory-surface` и `x-arkvory-visibility`; `openApiSurface()` формирует документационное представление, не ACL-фильтр. [API_SURFACES](../../docs/API_SURFACES.md).
 
 AttachmentRevisionResponse/AttachmentHistoryResponse, строгие bounded parsers и attachmentPaths описывают именованные вложения. OpenAPI 0.9.0, 113 операций. [Контракт](../../docs/BUILD_DETAILS.md).
 

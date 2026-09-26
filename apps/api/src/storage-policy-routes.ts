@@ -1,7 +1,7 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
-import { authorizeAction, DepotError, retentionObject } from '@proanima/depot-domain';
-import type { Principal } from '@proanima/depot-domain';
-import type { RepositoryStorage, StoragePolicyStore } from '@proanima/depot-application';
+import { authorizeAction, ArkvoryError, retentionObject } from '@proanima/arkvory-domain';
+import type { Principal } from '@proanima/arkvory-domain';
+import type { RepositoryStorage, StoragePolicyStore } from '@proanima/arkvory-application';
 
 export function registerStoragePolicyRoutes(
   app: FastifyInstance,
@@ -45,7 +45,7 @@ export function registerStoragePolicyRoutes(
       BigInt(after) > 9223372036854775807n ||
       (level !== undefined && level !== 'info' && level !== 'warning' && level !== 'error')
     )
-      throw new DepotError('invalid_input', 'Invalid event cursor or level');
+      throw new ArkvoryError('invalid_input', 'Invalid event cursor or level');
     return store.events(r.params.repository, after, level);
   });
 }

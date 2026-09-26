@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { DepotClient } from '@proanima/depot-sdk';
+import { ArkvoryClient } from '@proanima/arkvory-sdk';
 import { setup, base, descriptor } from './fixture.mjs';
 
 test('principal grants are unique, sorted and omit empty service-key scopes', async (t) => {
@@ -18,12 +18,12 @@ test('principal grants are unique, sorted and omit empty service-key scopes', as
     ],
   });
   const address = await f.listen();
-  const grants = (await new DepotClient(address, () => token).me()).grants;
+  const grants = (await new ArkvoryClient(address, () => token).me()).grants;
   assert.deepEqual(grants, [
     { repository: 'alpha', permissions: ['read'] },
     { repository: 'beta', permissions: ['read'] },
   ]);
-  assert.deepEqual((await new DepotClient(address, () => noScope).me()).grants, []);
+  assert.deepEqual((await new ArkvoryClient(address, () => noScope).me()).grants, []);
 });
 
 test('registered accounts inherit and lose repository access through groups', async (t) => {

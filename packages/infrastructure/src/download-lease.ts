@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import type { Pool } from 'pg';
-import { DepotError } from '@proanima/depot-domain';
+import { ArkvoryError } from '@proanima/arkvory-domain';
 
 export interface SharedDownloadPolicy {
   readonly slots: number;
@@ -57,7 +57,7 @@ export class DownloadLeaseWindow {
       this.wall() >= start.wall + 8000
     ) {
       this.stop();
-      throw new DepotError('unavailable', 'Download budget lease expired; restart the gateway');
+      throw new ArkvoryError('unavailable', 'Download budget lease expired; restart the gateway');
     }
     this.monotonicDeadline = start.monotonic + 8000;
     this.wallDeadline = start.wall + 8000;
@@ -122,7 +122,7 @@ export class PostgresDownloadLease {
         [this.policy.slots, this.policy.bytesPerSecond, this.policy.perPrincipalBytesPerSecond],
       );
       if (match.rowCount !== 1)
-        throw new DepotError(
+        throw new ArkvoryError(
           'conflict',
           'Shared download policy is absent or differs; start the configured writer first',
         );
@@ -134,7 +134,7 @@ export class PostgresDownloadLease {
         [this.policy.slot, this.instance],
       );
       const row = acquired.rows[0];
-      if (!row) throw new DepotError('busy', 'Download slot lease is still reserved');
+      if (!row) throw new ArkvoryError('busy', 'Download slot lease is still reserved');
       this.generation = row.generation;
       await client.query('COMMIT');
       this.window.accept(start, true);
@@ -169,7 +169,7 @@ export class PostgresDownloadLease {
 
   async renew() {
     if (!this.active || this.renewing)
-      throw new DepotError('unavailable', 'Download budget lease is unavailable');
+      throw new ArkvoryError('unavailable', 'Download budget lease is unavailable');
     this.renewing = true;
     const start = this.window.begin();
     const client = await this.pool.connect().catch((error: unknown) => {
@@ -187,7 +187,7 @@ export class PostgresDownloadLease {
         values: [this.policy.slot, this.instance, this.generation],
       });
       if (renewed.rowCount !== 1)
-        throw new DepotError('unavailable', 'Download budget lease was lost');
+        throw new ArkvoryError('unavailable', 'Download budget lease was lost');
       await client.query('COMMIT');
       this.window.accept(start);
     } catch (error) {

@@ -1,13 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { GarbageCollector } from '@proanima/depot-application';
+import { GarbageCollector } from '@proanima/arkvory-application';
 import {
   parseManifest,
   compareVersions,
   partSize,
   checkParts,
   requireAssetPath,
-} from '@proanima/depot-domain';
+} from '@proanima/arkvory-domain';
 
 test('asset paths preserve valid Unicode and reject unpaired surrogates before encoding', () => {
   assert.equal(requireAssetPath('builds/🚀/данные.zip'), 'builds/🚀/данные.zip');

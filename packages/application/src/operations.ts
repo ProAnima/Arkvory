@@ -1,5 +1,5 @@
-import { authorizeAction, DepotError, requireId } from '@proanima/depot-domain';
-import type { Principal, MutationAccess } from '@proanima/depot-domain';
+import { authorizeAction, ArkvoryError, requireId } from '@proanima/arkvory-domain';
+import type { Principal, MutationAccess } from '@proanima/arkvory-domain';
 import type { Cancellation } from './ports.js';
 
 export interface CleanupRecord {
@@ -40,7 +40,7 @@ export class GarbageCollector {
       !Number.isSafeInteger(graceMilliseconds) ||
       graceMilliseconds < 0
     )
-      throw new DepotError('invalid_input', 'Invalid cleanup policy');
+      throw new ArkvoryError('invalid_input', 'Invalid cleanup policy');
     let after: string | undefined;
     let visited = 0;
     let collected = 0;
@@ -135,7 +135,7 @@ export class CompletionQueue {
   async get(principal: Principal, id: string): Promise<CompletionJob> {
     const job = await this.jobs.get(requireId(id));
     authorizeAction(principal, job.repository, 'job.read', ['write']);
-    if (job.owner !== principal.id) throw new DepotError('not_found', 'Job not found');
+    if (job.owner !== principal.id) throw new ArkvoryError('not_found', 'Job not found');
     return job;
   }
 }

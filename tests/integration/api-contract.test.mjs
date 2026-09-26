@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
-import { apiOperations, openApiDocument } from '@proanima/depot-contracts';
+import { apiOperations, openApiDocument } from '@proanima/arkvory-contracts';
 import { validateResponse } from '../api-schema.mjs';
 import { setup, base, create } from './fixture.mjs';
 import { createServer } from '../../apps/api/dist/index.js';

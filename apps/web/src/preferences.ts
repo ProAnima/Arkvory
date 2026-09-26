@@ -12,14 +12,14 @@ export function languagePreference(value: string | null, browserLanguage: string
 }
 export function readPreference(key: 'theme' | 'language'): string | null {
   try {
-    return localStorage.getItem(`depot.ui.${key}`);
+    return localStorage.getItem(`arkvory.ui.${key}`) ?? localStorage.getItem(`depot.ui.${key}`);
   } catch {
     return null;
   }
 }
 export function savePreference(key: 'theme' | 'language', value: string) {
   try {
-    localStorage.setItem(`depot.ui.${key}`, value);
+    localStorage.setItem(`arkvory.ui.${key}`, value);
   } catch {
     /* Preferences are optional in restricted browsers. */
   }

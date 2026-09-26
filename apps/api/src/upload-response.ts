@@ -1,5 +1,5 @@
-import type { Upload } from '@proanima/depot-domain';
-import type { UploadResponse } from '@proanima/depot-contracts';
+import type { Upload } from '@proanima/arkvory-domain';
+import type { UploadResponse } from '@proanima/arkvory-contracts';
 
 export function wireUpload(upload: Upload): UploadResponse {
   return {

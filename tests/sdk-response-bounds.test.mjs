@@ -2,8 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
 import { randomUUID } from 'node:crypto';
-import { DepotClient } from '@proanima/depot-sdk';
-import { parseDescriptor } from '@proanima/depot-domain';
+import { ArkvoryClient } from '@proanima/arkvory-sdk';
+import { parseDescriptor } from '@proanima/arkvory-domain';
 
 async function clientFor(t, payload) {
   const server = createServer((_request, response) => {
@@ -19,7 +19,7 @@ async function clientFor(t, payload) {
         server.closeAllConnections();
       }),
   );
-  return new DepotClient(`http://127.0.0.1:${server.address().port}`, () => 'test-key');
+  return new ArkvoryClient(`http://127.0.0.1:${server.address().port}`, () => 'test-key');
 }
 
 function artifact(value, fields = 32) {

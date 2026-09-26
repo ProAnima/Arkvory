@@ -8,7 +8,7 @@
 | GET/HEAD `/upack/{feed}/download/{group}/{name}?latest`                             | Самая старшая SemVer-версия, включая prerelease                       |
 | GET/HEAD `/api/packages/{feed}/download?group=…&name=…&version=…`                   | Исходный UPack для однозначной версии; пустая группа по умолчанию     |
 | GET/HEAD `/endpoints/{feed}/content/{path}`                                         | Текущий asset pointer → неизменяемые bytes                            |
-| X-ApiKey; Basic `api:KEY`; Bearer                                                   | Ключи Depot, scope репозитория                                        |
+| X-ApiKey; Basic `api:KEY`; Bearer                                                   | Ключи Arkvory, scope репозитория                                      |
 | Range/If-Range/If-None-Match                                                        | Тот же потоковый транспорт, что native API                            |
 | `contentOnly`, ZIP/TGZ transformations                                              | Отклоняются 400                                                       |
 | Query-string keys, пользовательский Basic, anonymous                                | Не поддерживаются                                                     |

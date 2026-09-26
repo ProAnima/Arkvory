@@ -1,9 +1,9 @@
-// depot-exception ARCH-009 -- Existing adapter or contract implementation combines related operations; freeze growth and extract cohesive responsibilities while preserving transactional and authorization invariants.
+// arkvory-exception ARCH-009 -- Existing adapter or contract implementation combines related operations; freeze growth and extract cohesive responsibilities while preserving transactional and authorization invariants.
 import { createHash, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
 import type { Pool, PoolClient } from 'pg';
-import { DepotError, parseBindings, requireSubset } from '@proanima/depot-domain';
-import type { ServiceBinding, Principal, AdministrationAction } from '@proanima/depot-domain';
-import type { ApiKey, ServiceAccount, ServiceStore } from '@proanima/depot-application';
+import { ArkvoryError, parseBindings, requireSubset } from '@proanima/arkvory-domain';
+import type { ServiceBinding, Principal, AdministrationAction } from '@proanima/arkvory-domain';
+import type { ApiKey, ServiceAccount, ServiceStore } from '@proanima/arkvory-application';
 import { managedPrincipal } from './service-authorization.js';
 import type { CredentialRow } from './service-authorization.js';
 
@@ -32,7 +32,7 @@ interface KeyRow {
   issued_via_key_id: string | null;
 }
 function account(row: AccountRow | undefined): ServiceAccount {
-  if (!row) throw new DepotError('not_found', 'Service resource not found');
+  if (!row) throw new ArkvoryError('not_found', 'Service resource not found');
   return {
     id: row.id,
     name: row.name,
@@ -43,7 +43,7 @@ function account(row: AccountRow | undefined): ServiceAccount {
   };
 }
 function key(row: KeyRow | undefined): ApiKey {
-  if (!row) throw new DepotError('not_found', 'Service resource not found');
+  if (!row) throw new ArkvoryError('not_found', 'Service resource not found');
   return {
     id: row.id,
     accountId: row.account_id,
@@ -67,7 +67,7 @@ function page<T>(rows: readonly T[], id: (row: T) => string) {
   const last = items.at(-1);
   return { items, next: rows.length > 50 && last ? id(last) : null };
 }
-// depot-exception ARCH-010 -- Existing adapter or contract implementation combines related operations; freeze growth and extract cohesive responsibilities while preserving transactional and authorization invariants.
+// arkvory-exception ARCH-010 -- Existing adapter or contract implementation combines related operations; freeze growth and extract cohesive responsibilities while preserving transactional and authorization invariants.
 export class PostgresServices implements ServiceStore {
   constructor(private readonly pool: Pool) {}
   private async change<T>(work: (client: PoolClient) => Promise<T>, mutation = true): Promise<T> {
@@ -86,7 +86,7 @@ export class PostgresServices implements ServiceStore {
         broken = true;
       }
       if (typeof error === 'object' && error !== null && 'code' in error && error.code === '23505')
-        throw new DepotError('conflict', 'Service name or credential already exists');
+        throw new ArkvoryError('conflict', 'Service name or credential already exists');
       throw error;
     } finally {
       client.release(broken);
@@ -134,14 +134,14 @@ export class PostgresServices implements ServiceStore {
   async create(actor: Principal, name: string, bindings: readonly ServiceBinding[]) {
     return this.change(async (c) => {
       if (!(await administrationContext(c, actor)).bootstrap)
-        throw new DepotError('forbidden', 'Only bootstrap creates accounts');
+        throw new ArkvoryError('forbidden', 'Only bootstrap creates accounts');
       if (
         Number(
           (await c.query<{ count: string }>('SELECT count(*) FROM depot_service_accounts')).rows[0]
             ?.count,
         ) >= 1000
       )
-        throw new DepotError('capacity_exceeded', 'Service account limit reached');
+        throw new ArkvoryError('capacity_exceeded', 'Service account limit reached');
       const a = account(
         (
           await c.query<AccountRow>(
@@ -166,7 +166,7 @@ export class PostgresServices implements ServiceStore {
         ).rows[0],
       );
       await authorizeAdministration(c, ctx, id, 'service-account.manage', row.bindings);
-      if (row.revision !== expected) throw new DepotError('conflict', 'Service revision changed');
+      if (row.revision !== expected) throw new ArkvoryError('conflict', 'Service revision changed');
       const result = account(
         (
           await c.query<AccountRow>(
@@ -196,7 +196,7 @@ export class PostgresServices implements ServiceStore {
         ).rows[0],
       );
       await authorizeAdministration(c, ctx, id, 'policy.manage', row.bindings);
-      if (row.revision !== expected) throw new DepotError('conflict', 'Service revision changed');
+      if (row.revision !== expected) throw new ArkvoryError('conflict', 'Service revision changed');
       const result = account(
         (
           await c.query<AccountRow>(
@@ -238,7 +238,7 @@ export class PostgresServices implements ServiceStore {
       return row;
     }, false);
   }
-  // depot-exception ARCH-011 -- Existing adapter or contract implementation combines related operations; freeze growth and extract cohesive responsibilities while preserving transactional and authorization invariants.
+  // arkvory-exception ARCH-011 -- Existing adapter or contract implementation combines related operations; freeze growth and extract cohesive responsibilities while preserving transactional and authorization invariants.
   async issue(
     actor: Principal,
     accountId: string,
@@ -273,7 +273,7 @@ export class PostgresServices implements ServiceStore {
           ])
         ).rows[0],
       );
-      if (!a.enabled) throw new DepotError('forbidden', 'Service account disabled');
+      if (!a.enabled) throw new ArkvoryError('forbidden', 'Service account disabled');
       const existing = (
         await c.query<KeyRow>(
           'SELECT * FROM depot_api_keys WHERE account_id=$1 AND issued_by=$2 AND idempotency_key=$3',
@@ -282,12 +282,12 @@ export class PostgresServices implements ServiceStore {
       ).rows[0];
       if (existing) {
         if (existing.fingerprint !== fingerprint)
-          throw new DepotError('conflict', 'Idempotency key has different parameters');
+          throw new ArkvoryError('conflict', 'Idempotency key has different parameters');
         return { key: key(existing) };
       }
       requireSubset(bindings, a.bindings);
       const now = (await c.query<{ now: Date }>('SELECT clock_timestamp() AS now')).rows[0]?.now;
-      if (!now) throw new DepotError('unavailable', 'Database time unavailable');
+      if (!now) throw new ArkvoryError('unavailable', 'Database time unavailable');
       const expires =
         expiresAt === undefined
           ? new Date(
@@ -302,9 +302,9 @@ export class PostgresServices implements ServiceStore {
         expires <= now ||
         expires.getTime() > now.getTime() + 365 * 86400000
       )
-        throw new DepotError('invalid_input', 'Key expiry must be within 365 days');
+        throw new ArkvoryError('invalid_input', 'Key expiry must be within 365 days');
       if (!ctx.bootstrap && expires > ctx.expiresAt)
-        throw new DepotError('forbidden', 'Issued key cannot outlive operator credential');
+        throw new ArkvoryError('forbidden', 'Issued key cannot outlive operator credential');
       if (rotatedFrom) {
         const old = key(
           (
@@ -315,7 +315,7 @@ export class PostgresServices implements ServiceStore {
           ).rows[0],
         );
         if (old.state !== 'active' || Date.parse(old.expiresAt) <= now.getTime())
-          throw new DepotError('conflict', 'Rotation requires an active key');
+          throw new ArkvoryError('conflict', 'Rotation requires an active key');
         await authorizeAdministration(c, ctx, targetId, 'credential.manage', old.bindings);
         requireSubset(bindings, old.bindings);
       }
@@ -328,7 +328,7 @@ export class PostgresServices implements ServiceStore {
         )
       ).rows[0];
       if (!counts || Number(counts.pending) >= 2 || Number(counts.total) >= 10000)
-        throw new DepotError('capacity_exceeded', 'API key capacity reached');
+        throw new ArkvoryError('capacity_exceeded', 'API key capacity reached');
       const id = randomUUID();
       const secret = `dpk_${id}.${randomBytes(32).toString('base64url')}`;
       const issued = key(
@@ -371,7 +371,7 @@ export class PostgresServices implements ServiceStore {
   }
   async activate(token: string): Promise<void> {
     const id = tokenId(token);
-    if (!id) throw new DepotError('unauthorized', 'Invalid credential');
+    if (!id) throw new ArkvoryError('unauthorized', 'Invalid credential');
     await this.change(async (c) => {
       const row = (
         await c.query<
@@ -388,7 +388,7 @@ export class PostgresServices implements ServiceStore {
         !row.enabled ||
         !timingSafeEqual(Buffer.from(row.secret_hash, 'hex'), Buffer.from(digest(token), 'hex'))
       )
-        throw new DepotError('unauthorized', 'Invalid credential');
+        throw new ArkvoryError('unauthorized', 'Invalid credential');
       if (row.state === 'active') return;
       let issuerContext: AdministrationContext | undefined;
       if (row.issued_via_key_id) {
@@ -398,7 +398,7 @@ export class PostgresServices implements ServiceStore {
             [row.issued_via_key_id],
           )
         ).rows[0];
-        if (!issuer) throw new DepotError('forbidden', 'Issuing operator unavailable');
+        if (!issuer) throw new ArkvoryError('forbidden', 'Issuing operator unavailable');
         const ctx = await administrationContext(c, {
           id: 'service:' + issuer.account_id,
           repositories: [],
@@ -420,7 +420,7 @@ export class PostgresServices implements ServiceStore {
         [row.account_id],
       );
       if (Number(count.rows[0]?.count) >= 3)
-        throw new DepotError('capacity_exceeded', 'Active key limit reached');
+        throw new ArkvoryError('capacity_exceeded', 'Active key limit reached');
       if (row.rotated_from) {
         const old = (
           await c.query<KeyRow>(
@@ -428,7 +428,7 @@ export class PostgresServices implements ServiceStore {
             [row.rotated_from],
           )
         ).rows[0];
-        if (!old) throw new DepotError('conflict', 'Source key no longer active');
+        if (!old) throw new ArkvoryError('conflict', 'Source key no longer active');
         if (issuerContext)
           await authorizeAdministration(
             c,

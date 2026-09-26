@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { setTimeout as delay } from 'node:timers/promises';
-import { PostgresIdentity, migrate } from '@proanima/depot-infrastructure';
-import { DepotClient } from '@proanima/depot-sdk';
+import { PostgresIdentity, migrate } from '@proanima/arkvory-infrastructure';
+import { ArkvoryClient } from '@proanima/arkvory-sdk';
 import { setup } from './fixture.mjs';
 
 test('external administrators can preflight PATCH and disable an account', async (t) => {
@@ -174,7 +174,7 @@ test('SDK accepts a bounded page of large manifests and preserves an explicit ro
         'version','1.0.'||i,'description',repeat('x',60000))
     FROM source JOIN uploaded USING(id)
   `);
-  const sdk = new DepotClient(await f.listen(), () => f.headers.authorization.slice(7));
+  const sdk = new ArkvoryClient(await f.listen(), () => f.headers.authorization.slice(7));
   assert.equal((await sdk.packages('releases', { limit: 100 })).items.length, 100);
   const root = await sdk.packages('releases', { group: '', limit: 100 });
   assert.equal(root.items.length, 50);

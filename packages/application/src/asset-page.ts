@@ -1,4 +1,4 @@
-import { DepotError } from '@proanima/depot-domain';
+import { ArkvoryError } from '@proanima/arkvory-domain';
 
 export interface AssetEntry {
   path: string;
@@ -17,11 +17,11 @@ export interface AssetPageOptions {
 }
 export function validateAssetPage(options: AssetPageOptions): void {
   if (options.prefix.length > 1024 || /[\p{Cc}\uD800-\uDFFF]/u.test(options.prefix))
-    throw new DepotError('invalid_input', 'Invalid asset prefix');
+    throw new ArkvoryError('invalid_input', 'Invalid asset prefix');
   if (!Number.isSafeInteger(options.limit) || options.limit < 1 || options.limit > 100)
-    throw new DepotError('invalid_input', 'Asset page limit must be between 1 and 100');
+    throw new ArkvoryError('invalid_input', 'Asset page limit must be between 1 and 100');
   if (options.after !== undefined && !/^[A-Za-z0-9_-]{1,8192}$/.test(options.after))
-    throw new DepotError('invalid_input', 'Invalid asset cursor');
+    throw new ArkvoryError('invalid_input', 'Invalid asset cursor');
 }
 // Exclusive upper bound in Unicode scalar / UTF-8 byte order (PostgreSQL COLLATE C).
 // A maximal suffix is truncated; an all-maximal prefix has no finite upper bound.

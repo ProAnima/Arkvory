@@ -8,7 +8,7 @@
 
 ## Решение
 
-`DepotClient` — явный facade с композицией вместо наследования от универсального транспорта. Его 68 прежних методов остаются доступны; `identity`, `administration` и `inRepository()` сохраняют свои имена и типы. Forwarders используют `Parameters` ответственного модуля, чтобы не дублировать сигнатуры реализации.
+`ArkvoryClient` — явный facade с композицией вместо наследования от универсального транспорта. Его 68 прежних методов остаются доступны; `identity`, `administration` и `inRepository()` сохраняют свои имена и типы. Forwarders используют `Parameters` ответственного модуля, чтобы не дублировать сигнатуры реализации.
 
 Внутри одного workspace выделены discovery, identity, users/groups, service accounts/policies, credentials/delegations, catalog, assets, storage/retention, upload operations, upload workflow и download workflow. Эти модули не становятся самостоятельными пакетами или публичными точками импорта. SDK по-прежнему зависит только от contracts и стандартных браузерных API.
 

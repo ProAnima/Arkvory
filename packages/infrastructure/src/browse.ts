@@ -1,11 +1,11 @@
-// depot-exception ARCH-003 -- Existing adapter or contract implementation combines related operations; freeze growth and extract cohesive responsibilities while preserving transactional and authorization invariants.
+import { readAsset, readAssets } from './asset-list.js';
 import type { Pool, PoolClient } from 'pg';
-import { DepotError, parseDescriptor, parseManifest, requireId } from '@proanima/depot-domain';
+import { ArkvoryError, parseDescriptor, parseManifest, requireId } from '@proanima/arkvory-domain';
 import { lockCatalogMutation, requirePublished } from './catalog-mutation.js';
 import { lockServiceAccess } from './service-authorization.js';
 import { readAssetPage } from './asset-page.js';
-import type { AssetPageOptions } from '@proanima/depot-application';
-import type { PackageManifest, MutationAccess } from '@proanima/depot-domain';
+import type { AssetPageOptions } from '@proanima/arkvory-application';
+import type { PackageManifest, MutationAccess } from '@proanima/arkvory-domain';
 import type {
   Annotation,
   AssetEntry,
@@ -15,7 +15,7 @@ import type {
   PackageEntry,
   PackagePage,
   PackageListOptions,
-} from '@proanima/depot-application';
+} from '@proanima/arkvory-application';
 
 interface PackageCursor {
   groupKey: string;
@@ -32,18 +32,18 @@ function readPackageCursor(
   options: PackageListOptions,
 ): PackageCursor {
   if (!/^[A-Za-z0-9_-]{1,2048}$/.test(encoded))
-    throw new DepotError('invalid_input', 'Invalid package cursor');
+    throw new ArkvoryError('invalid_input', 'Invalid package cursor');
   let value: unknown;
   try {
     const data = Buffer.from(encoded, 'base64url');
     if (data.toString('base64url') !== encoded)
-      throw new DepotError('invalid_input', 'Invalid package cursor');
+      throw new ArkvoryError('invalid_input', 'Invalid package cursor');
     value = JSON.parse(data.toString('utf8'));
   } catch {
-    throw new DepotError('invalid_input', 'Invalid package cursor');
+    throw new ArkvoryError('invalid_input', 'Invalid package cursor');
   }
   if (typeof value !== 'object' || value === null || Array.isArray(value))
-    throw new DepotError('invalid_input', 'Invalid package cursor');
+    throw new ArkvoryError('invalid_input', 'Invalid package cursor');
   const row: Record<string, unknown> = Object.fromEntries(Object.entries(value));
   if (
     row['repository'] !== repository ||
@@ -61,7 +61,7 @@ function readPackageCursor(
     row['versionText'].length > 128 ||
     typeof row['artifactId'] !== 'string'
   )
-    throw new DepotError('invalid_input', 'Package cursor does not match the query');
+    throw new ArkvoryError('invalid_input', 'Package cursor does not match the query');
   return {
     groupKey: row['groupKey'],
     nameKey: row['nameKey'],
@@ -90,7 +90,7 @@ function assetRevision(row: AssetRevisionRow): AssetRevision {
   };
 }
 
-// depot-exception ARCH-004 -- Existing adapter or contract implementation combines related operations; freeze growth and extract cohesive responsibilities while preserving transactional and authorization invariants.
+// arkvory-exception ARCH-004 -- Existing adapter or contract implementation combines related operations; freeze growth and extract cohesive responsibilities while preserving transactional and authorization invariants.
 export class PostgresBrowse implements BrowseStore {
   constructor(private readonly pool: Pool) {}
   private async change<T>(
@@ -138,7 +138,7 @@ export class PostgresBrowse implements BrowseStore {
       [repository, id],
     );
     const row = result.rows[0];
-    if (!row) throw new DepotError('not_found', 'Artifact not found');
+    if (!row) throw new ArkvoryError('not_found', 'Artifact not found');
     const original = parseDescriptor(row.descriptor);
     if (row.revision === null)
       return { revision: 0, labels: original.labels, metadata: original.metadata, collections: [] };
@@ -197,9 +197,9 @@ export class PostgresBrowse implements BrowseStore {
             ],
           );
           if (updated.rowCount !== 1)
-            throw new DepotError('conflict', 'Annotation revision changed');
+            throw new ArkvoryError('conflict', 'Annotation revision changed');
         } else if (result.rowCount !== 1)
-          throw new DepotError('conflict', 'Annotation revision changed');
+          throw new ArkvoryError('conflict', 'Annotation revision changed');
         return { revision: expected + 1, ...value };
       },
       access,
@@ -230,7 +230,7 @@ export class PostgresBrowse implements BrowseStore {
           ],
         );
         if (result.rows[0]?.artifact_id !== id)
-          throw new DepotError('conflict', 'Package version is immutable');
+          throw new ArkvoryError('conflict', 'Package version is immutable');
         return {
           group: manifest.group,
           name: manifest.name,
@@ -262,7 +262,7 @@ export class PostgresBrowse implements BrowseStore {
     );
     return result.rows[0]?.artifact_id ?? null;
   }
-  // depot-exception ARCH-005 -- Existing adapter or contract implementation combines related operations; freeze growth and extract cohesive responsibilities while preserving transactional and authorization invariants.
+  // arkvory-exception ARCH-005 -- Existing adapter or contract implementation combines related operations; freeze growth and extract cohesive responsibilities while preserving transactional and authorization invariants.
   async packagePage(
     repository: string,
     group: string | undefined,
@@ -372,27 +372,11 @@ export class PostgresBrowse implements BrowseStore {
         : null;
     return { items, next };
   }
-  async asset(repository: string, path: string): Promise<AssetEntry> {
-    const result = await this.pool.query<{ path: string; revision: number; artifact_id: string }>(
-      'SELECT * FROM depot_assets WHERE repository=$1 AND path=$2',
-      [repository, path],
-    );
-    const row = result.rows[0];
-    if (!row) throw new DepotError('not_found', 'Asset not found');
-    return { path: row.path, revision: row.revision, artifactId: row.artifact_id };
+  asset(repository: string, path: string): Promise<AssetEntry> {
+    return readAsset(this.pool, repository, path);
   }
-  async assets(repository: string, prefix: string): Promise<readonly AssetEntry[]> {
-    const result = await this.pool.query<{ path: string; revision: number; artifact_id: string }>(
-      'SELECT * FROM depot_assets WHERE repository=$1 AND starts_with(path,$2) ORDER BY path LIMIT 1001',
-      [repository, prefix],
-    );
-    if (result.rows.length > 1000)
-      throw new DepotError('invalid_input', 'Narrow the asset prefix (maximum 1000 results)');
-    return result.rows.map((row) => ({
-      path: row.path,
-      revision: row.revision,
-      artifactId: row.artifact_id,
-    }));
+  assets(repository: string, prefix: string): Promise<readonly AssetEntry[]> {
+    return readAssets(this.pool, repository, prefix);
   }
   assetPage(repository: string, options: AssetPageOptions) {
     return readAssetPage(this.pool, repository, options);
@@ -403,7 +387,7 @@ export class PostgresBrowse implements BrowseStore {
       [repository, path, revision],
     );
     const row = result.rows[0];
-    if (!row) throw new DepotError('not_found', 'Asset revision not found');
+    if (!row) throw new ArkvoryError('not_found', 'Asset revision not found');
     return assetRevision(row);
   }
   async assetHistory(repository: string, path: string, before?: number): Promise<AssetHistoryPage> {
@@ -435,7 +419,8 @@ export class PostgresBrowse implements BrowseStore {
             'SELECT 1 FROM depot_asset_revisions WHERE repository=$1 AND path=$2 AND revision=$3 AND artifact_id=$4',
             [repository, path, sourceRevision, id],
           );
-          if (source.rowCount !== 1) throw new DepotError('not_found', 'Asset revision not found');
+          if (source.rowCount !== 1)
+            throw new ArkvoryError('not_found', 'Asset revision not found');
         }
         const result =
           expected === 0
@@ -447,7 +432,7 @@ export class PostgresBrowse implements BrowseStore {
                 'UPDATE depot_assets SET revision=revision+1,artifact_id=$3 WHERE repository=$1 AND path=$2 AND revision=$4',
                 [repository, path, id, expected],
               );
-        if (result.rowCount !== 1) throw new DepotError('conflict', 'Asset revision changed');
+        if (result.rowCount !== 1) throw new ArkvoryError('conflict', 'Asset revision changed');
         await client.query(
           'INSERT INTO depot_asset_revisions(repository,path,revision,artifact_id,actor,source_revision) VALUES($1,$2,$3,$4,$5,$6)',
           [repository, path, expected + 1, id, actor, sourceRevision ?? null],

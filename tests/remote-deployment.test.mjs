@@ -132,7 +132,7 @@ test('SSH discovery never authenticates; a mismatched host key cannot receive cr
   assert.equal(await ssh.exec('echo-input', 'secret over stdin'), 'secret over stdin');
   assert.ok(f.requests.every((r) => typeof r !== 'string' || !r.includes('secret over stdin')));
   await assert.rejects(ssh.exec('huge'), { code: 'command' });
-  const directory = await mkdtemp(join(tmpdir(), 'depot-ssh-test-'));
+  const directory = await mkdtemp(join(tmpdir(), 'arkvory-ssh-test-'));
   t.after(() => rm(directory, { recursive: true, force: true }));
   const data = Buffer.from('verified installer bytes');
   await writeFile(join(directory, 'installer'), data);
@@ -162,41 +162,41 @@ test('closing during installation preparation is terminal and clears credentials
 });
 
 test('native release selection rejects prereleases, tag drift, duplicate assets and malformed hashes', async (t) => {
-  const api = 'https://api.github.com/repos/ProAnima/Depot/releases';
+  const api = 'https://api.github.com/repos/ProAnima/Arkvory/releases';
   const release = {
     draft: false,
     prerelease: false,
     tag_name: 'v1.2.3',
     assets: [
       { name: 'native-linux.json', url: `${api}/assets/1` },
-      { name: 'Depot-amd64.deb', url: `${api}/assets/2` },
+      { name: 'Arkvory-amd64.deb', url: `${api}/assets/2` },
     ],
   };
   const manifest = {
     version: '1.2.3',
     commit: 'a'.repeat(40),
-    files: { 'Depot-amd64.deb': 'b'.repeat(64) },
+    files: { 'Arkvory-amd64.deb': 'b'.repeat(64) },
   };
   t.mock.method(globalThis, 'fetch', async (url) =>
     Response.json(String(url).endsWith('/latest') ? release : manifest),
   );
   const github = new GitHubReleases('');
-  assert.equal((await github.native('linux', 'Depot-amd64.deb')).version, '1.2.3');
+  assert.equal((await github.native('linux', 'Arkvory-amd64.deb')).version, '1.2.3');
   release.prerelease = true;
-  await assert.rejects(github.native('linux', 'Depot-amd64.deb'), /stable/i);
+  await assert.rejects(github.native('linux', 'Arkvory-amd64.deb'), /stable/i);
   release.prerelease = false;
   release.tag_name = 'v1.2.4';
-  await assert.rejects(github.native('linux', 'Depot-amd64.deb'), /identity/);
+  await assert.rejects(github.native('linux', 'Arkvory-amd64.deb'), /identity/);
   release.tag_name = 'v1.2.3';
-  manifest.files['Depot-amd64.deb'] = 'broken';
-  await assert.rejects(github.native('linux', 'Depot-amd64.deb'), /identity/);
-  manifest.files['Depot-amd64.deb'] = 'b'.repeat(64);
+  manifest.files['Arkvory-amd64.deb'] = 'broken';
+  await assert.rejects(github.native('linux', 'Arkvory-amd64.deb'), /identity/);
+  manifest.files['Arkvory-amd64.deb'] = 'b'.repeat(64);
   release.assets.push(release.assets[1]);
-  await assert.rejects(github.native('linux', 'Depot-amd64.deb'), /asset/);
+  await assert.rejects(github.native('linux', 'Arkvory-amd64.deb'), /asset/);
 });
 
 test('closing release download aborts its stream and removes partial bytes', async (t) => {
-  const directory = await mkdtemp(join(tmpdir(), 'depot-release-abort-'));
+  const directory = await mkdtemp(join(tmpdir(), 'arkvory-release-abort-'));
   t.after(() => rm(directory, { recursive: true, force: true }));
   const controller = new AbortController();
   t.mock.method(globalThis, 'fetch', async (url, options) => {
@@ -261,7 +261,7 @@ test('remote inputs and command boundaries reject unsafe controls and preserve l
     remoteNode('windows', 'console.log(1)').split(' ').at(-1),
     'base64',
   ).toString('utf16le');
-  assert.match(node, /C:\/ProgramData\/ProAnima\/Depot\/runtime\/node.exe/);
+  assert.match(node, /C:\/ProgramData\/ProAnima\/Arkvory\/runtime\/node.exe/);
 });
 
 test('wizard requires one-time entry, exact origin, session cookie and CSRF; secrets are not reflected', async (t) => {

@@ -9,18 +9,18 @@ import { windowsClient, linuxClient } from './package-client.mjs';
 
 const source = resolve(process.argv[2] ?? ''),
   output = resolve(process.argv[3] ?? 'artifacts/native');
-const release = JSON.parse(await readFile(join(source, 'depot-release.json'), 'utf8'));
+const release = JSON.parse(await readFile(join(source, 'arkvory-release.json'), 'utf8'));
 await verifyReleaseFiles(
   source,
   release.version,
   execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),
 );
 await mkdir(output, { recursive: true });
-const stage = await mkdtemp(join(tmpdir(), 'depot-native-'));
+const stage = await mkdtemp(join(tmpdir(), 'arkvory-native-'));
 const payload = join(stage, 'payload');
 await mkdir(payload);
 const cache = resolve('.cache/native-downloads');
-for (const name of ['depot-runtime.zip', 'depot-release.json', 'depot-setup.mjs'])
+for (const name of ['arkvory-runtime.zip', 'arkvory-release.json', 'arkvory-setup.mjs'])
   await copyFile(join(source, name), join(payload, name));
 await copyFile('LICENSE.md', join(payload, 'LICENSE.md'));
 let files;
@@ -61,8 +61,8 @@ function powershell(script, environment = {}) {
 }
 async function expand(archive, destination) {
   powershell(
-    'Expand-Archive -LiteralPath $env:DEPOT_ARCHIVE -DestinationPath $env:DEPOT_DESTINATION',
-    { DEPOT_ARCHIVE: archive, DEPOT_DESTINATION: destination },
+    'Expand-Archive -LiteralPath $env:ARKVORY_ARCHIVE -DestinationPath $env:ARKVORY_DESTINATION',
+    { ARKVORY_ARCHIVE: archive, ARKVORY_DESTINATION: destination },
   );
 }
 async function windowsPackage() {
@@ -79,7 +79,7 @@ async function windowsPackage() {
   const pgArchive = join(stage, 'pg.zip');
   await copyFile(await dependency('postgres', cache), pgArchive);
   await mkdir(join(stage, 'pg'));
-  // Do not unpack pgAdmin/StackBuilder: they are not runtime dependencies of Depot.
+  // Do not unpack pgAdmin/StackBuilder: they are not runtime dependencies of Arkvory.
   execFileSync(
     'tar.exe',
     [
@@ -109,15 +109,17 @@ async function windowsPackage() {
     await cp(join(stage, 'pg/pgsql', name), join(postgres, name), { recursive: true });
   await copyFile(await dependency('winsw', cache), join(runtime, 'WinSW-x64.exe'));
   await copyFile(await dependency('visualCpp', cache), join(payload, 'vc_redist.x64.exe'));
-  for (const name of ['prepare.ps1', 'remove.ps1', 'depot.ps1', 'apply.ps1'])
+  for (const name of ['prepare.ps1', 'remove.ps1', 'arkvory.ps1', 'apply.ps1'])
     await copyFile(join('deploy/native', name), join(payload, name));
+  await copyFile('branding/icons/arkvory.ico', join(payload, 'arkvory.ico'));
+  await copyFile('branding/icons/arkvory-cli.ico', join(payload, 'arkvory-cli.ico'));
   await copyFile('deploy/native/THIRD-PARTY.md', join(payload, 'THIRD-PARTY.md'));
   await copyFile('deploy/native/WINSW-LICENSE.txt', join(runtime, 'WINSW-LICENSE.txt'));
-  powershell('& $env:DEPOT_BRAND -Output $env:DEPOT_PAYLOAD', {
-    DEPOT_BRAND: resolve('deploy/native/brand.ps1'),
-    DEPOT_PAYLOAD: payload,
+  powershell('& $env:ARKVORY_BRAND -Output $env:ARKVORY_PAYLOAD', {
+    ARKVORY_BRAND: resolve('deploy/native/brand.ps1'),
+    ARKVORY_PAYLOAD: payload,
   });
-  let compiler = process.env.DEPOT_ISCC;
+  let compiler = process.env.ARKVORY_ISCC;
   if (!compiler) {
     const installer = await dependency('compiler', cache);
     const directory = join(stage, 'inno');
@@ -133,14 +135,14 @@ async function windowsPackage() {
     [
       '/Qp',
       `/DPayload=${payload}`,
-      `/DDepotVersion=${release.version}`,
+      `/DArkvoryVersion=${release.version}`,
       `/DOutput=${output}`,
       resolve('deploy/native/windows.iss'),
     ],
     { stdio: 'inherit', windowsHide: true },
   );
   return [
-    'Depot-Setup-x64.exe',
+    'Arkvory-Setup-x64.exe',
     ...(await windowsClient(
       source,
       stage,

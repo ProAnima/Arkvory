@@ -35,7 +35,7 @@ Upload/session/completion сохраняют отдельные модули и�
 
 Ошибки регистрации после старта runtime также проходят cleanup. Сохранены request cancellation, безопасные request IDs, private/no-store, точные repository ACL, pending-key activation, reader 405, native/legacy GET/HEAD, Range/ETag/304/416, byte/admission limits и upload deadline. Схема БД, 123 API operationId и SDK-контракты не меняются.
 
-DEPOT_WEB_DIR теперь читается только loadConfig и передаётся как ServerConfig.webDirectory. Программный createServer использует явное поле либо apps/web/public; скрытого чтения глобального окружения в сервере нет. CLI сохраняет прежнюю настройку окружения.
+ARKVORY_WEB_DIR теперь читается только loadConfig и передаётся как ServerConfig.webDirectory. Программный createServer использует явное поле либо apps/web/public; скрытого чтения глобального окружения в сервере нет. CLI сохраняет прежнюю настройку окружения.
 
 ## Проверка и границы
 

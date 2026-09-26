@@ -1,7 +1,8 @@
+import { compatiblePath } from './legacy-files.js';
 import { homedir } from 'node:os';
 import { join, resolve, dirname } from 'node:path';
-import { DepotClient } from '@proanima/depot-sdk';
-import { record, text } from '@proanima/depot-contracts';
+import { ArkvoryClient } from '@proanima/arkvory-sdk';
+import { record, text } from '@proanima/arkvory-contracts';
 import { CliError } from './errors.js';
 import {
   exclusive,
@@ -25,14 +26,15 @@ interface Configuration {
 }
 function configPath() {
   return join(
-    process.env['DEPOT_CLI_HOME'] ?? join(homedir(), '.config', 'depot'),
+    process.env['ARKVORY_CLI_HOME'] ??
+      compatiblePath(join(homedir(), '.config', 'arkvory'), join(homedir(), '.config', 'depot')),
     'profiles.json',
   );
 }
 export function serverUrl(value: string): string {
   try {
     // Reuse the SDK trust boundary: HTTPS, no URL credentials/query, no redirects.
-    new DepotClient(value, () => '');
+    new ArkvoryClient(value, () => '');
     const url = new URL(value);
     return url.href.endsWith('/') ? url.href : url.href + '/';
   } catch {
@@ -110,20 +112,21 @@ export async function connection(args: Arguments, signal: AbortSignal) {
   const name = args.options.get('profile') ?? config.active;
   const profile = Object.hasOwn(config.profiles, name) ? config.profiles[name] : undefined;
   if (args.options.has('profile') && !profile) throw new CliError('profile_not_found');
-  const override = process.env['DEPOT_BASE_URL'];
+  const override = process.env['ARKVORY_BASE_URL'];
   const server = serverUrl(override ?? profile?.server ?? 'http://127.0.0.1:8080');
   const repository = repositoryName(
     args.options.get('repository') ?? profile?.repository ?? 'releases',
   );
   // A CI endpoint override never borrows a saved profile's credential file.
-  const tokenFile = process.env['DEPOT_TOKEN_FILE'] ?? (override ? undefined : profile?.tokenFile);
+  const tokenFile =
+    process.env['ARKVORY_TOKEN_FILE'] ?? (override ? undefined : profile?.tokenFile);
   const token = (
-    process.env['DEPOT_TOKEN'] ?? (tokenFile ? await readSmall(tokenFile, 16384) : '')
+    process.env['ARKVORY_TOKEN'] ?? (tokenFile ? await readSmall(tokenFile, 16384) : '')
   ).trim();
   if (!token || Array.from(token).some((character) => character.charCodeAt(0) < 32))
     throw new CliError('credential_required', 3);
   return {
-    client: new DepotClient(server, () => token, {
+    client: new ArkvoryClient(server, () => token, {
       signal,
       requestTimeoutMs: numericOption(args, 'timeout', 60000, 1, 3600000),
       attemptTimeoutMs: numericOption(args, 'attempt-timeout', 120000, 1, 1800000),

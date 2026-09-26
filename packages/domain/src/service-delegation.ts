@@ -1,4 +1,4 @@
-import { DepotError } from './artifact.js';
+import { ArkvoryError } from './artifact.js';
 import type { ServiceBinding } from './service-policy.js';
 export const administrationActions = [
   'service-account.read',
@@ -20,13 +20,13 @@ export interface ServiceDelegation {
 }
 export function parseAdministrationActions(value: unknown): readonly AdministrationAction[] {
   if (!Array.isArray(value) || value.length < 1 || value.length > administrationActions.length)
-    throw new DepotError('invalid_input', 'Invalid administration actions');
+    throw new ArkvoryError('invalid_input', 'Invalid administration actions');
   const values: readonly unknown[] = value;
   return [
     ...new Set(
       values.map((entry) => {
         const action = administrationActions.find((a) => a === entry);
-        if (!action) throw new DepotError('invalid_input', 'Unknown administration action');
+        if (!action) throw new ArkvoryError('invalid_input', 'Unknown administration action');
         return action;
       }),
     ),

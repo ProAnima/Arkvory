@@ -1,5 +1,5 @@
-import { DepotError, requireRepository } from '@proanima/depot-domain';
-import type { Principal, ServiceAction } from '@proanima/depot-domain';
+import { ArkvoryError, requireRepository } from '@proanima/arkvory-domain';
+import type { Principal, ServiceAction } from '@proanima/arkvory-domain';
 import { effectivePermissions } from './effective-permissions.js';
 
 export interface RepositoryCard {
@@ -32,7 +32,7 @@ function visible(principal: Principal): readonly RepositoryCard[] {
 }
 export function listRepositories(principal: Principal, limit = 50, after?: string): RepositoryPage {
   if (!Number.isSafeInteger(limit) || limit < 1 || limit > 100)
-    throw new DepotError('invalid_input', 'Repository page limit must be between 1 and 100');
+    throw new ArkvoryError('invalid_input', 'Repository page limit must be between 1 and 100');
   if (after !== undefined) requireRepository(after);
   const candidates = visible(principal).filter((card) => after === undefined || card.id > after);
   const items = candidates.slice(0, limit);
@@ -41,6 +41,6 @@ export function listRepositories(principal: Principal, limit = 50, after?: strin
 export function repositoryCard(principal: Principal, id: string): RepositoryCard {
   requireRepository(id);
   const card = visible(principal).find((item) => item.id === id);
-  if (!card) throw new DepotError('not_found', 'Repository not found');
+  if (!card) throw new ArkvoryError('not_found', 'Repository not found');
   return card;
 }

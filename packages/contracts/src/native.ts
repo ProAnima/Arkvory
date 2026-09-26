@@ -106,7 +106,7 @@ const byteResponses = {
 const baseDocument = {
   openapi: '3.0.3',
   info: {
-    title: 'ProAnima Depot Native Core',
+    title: 'ProAnima Arkvory Native Core',
     version: '0.2.0',
     description:
       'Writer API. Read gateways support GET/HEAD only; authenticated mutation requests receive 405 with Allow: GET, HEAD and code read_only. Readiness reports role and shared download lease status.',
@@ -248,7 +248,7 @@ const composed = composeApiPaths({
 export const apiOperations = composed.operations;
 export const openApiDocument = {
   ...baseDocument,
-  info: { ...baseDocument.info, title: 'ProAnima Depot API', version: '0.12.0' },
+  info: { ...baseDocument.info, title: 'ProAnima Arkvory API', version: '0.12.0' },
   components: {
     ...baseDocument.components,
     schemas: { NativeError: nativeErrorSchema },
@@ -283,5 +283,5 @@ export function openApiSurface(surface: ApiSurface) {
     target[operation.method] = source[operation.method];
     paths[operation.path] = target;
   }
-  return { ...openApiDocument, paths, 'x-depot-document-surface': surface };
+  return { ...openApiDocument, paths, 'x-arkvory-document-surface': surface };
 }

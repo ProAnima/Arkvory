@@ -8,12 +8,12 @@ import { pipeline } from 'node:stream/promises';
 import { promisify } from 'node:util';
 import { execFile } from 'node:child_process';
 import yazl from 'yazl';
-import { LocalBlobStore, ZipManifestReader } from '@proanima/depot-infrastructure';
+import { LocalBlobStore, ZipManifestReader } from '@proanima/arkvory-infrastructure';
 import { randomUUID } from 'node:crypto';
 import { removeTestDirectory } from './helpers.mjs';
 
 test('prepared UPack manifest preserves nested custom metadata inside the immutable archive', async (t) => {
-  const directory = await mkdtemp(join(tmpdir(), 'depot-upack-meta-'));
+  const directory = await mkdtemp(join(tmpdir(), 'arkvory-upack-meta-'));
   t.after(() => removeTestDirectory(directory));
   const input = join(directory, 'input.json'),
     metadata = join(directory, 'custom.json'),
@@ -61,7 +61,7 @@ test('prepared UPack manifest preserves nested custom metadata inside the immuta
 });
 
 test('UPack manifest decoding rejects invalid UTF-8 instead of changing metadata bytes', async (t) => {
-  const directory = await mkdtemp(join(tmpdir(), 'depot-upack-utf8-'));
+  const directory = await mkdtemp(join(tmpdir(), 'arkvory-upack-utf8-'));
   t.after(() => removeTestDirectory(directory));
   const blobs = new LocalBlobStore(join(directory, 'storage'));
   await blobs.initialize();

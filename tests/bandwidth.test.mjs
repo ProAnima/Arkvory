@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { BandwidthGovernor } from '@proanima/depot-infrastructure';
+import { BandwidthGovernor } from '@proanima/arkvory-infrastructure';
 
 function virtualClock() {
   let now = 0,

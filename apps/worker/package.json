@@ -1,11 +1,11 @@
 {
-  "name": "@proanima/depot-worker",
+  "name": "@proanima/arkvory-worker",
   "version": "0.0.0",
   "private": true,
   "type": "module",
   "description": "Фоновые обработчики и composition root",
   "exports": {
-    "depot-source": "./src/index.ts",
+    "arkvory-source": "./src/index.ts",
     "types": "./dist/index.d.ts",
     "import": "./dist/index.js"
   },
@@ -13,11 +13,12 @@
   "author": "Ian Panaev",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ProAnima/Depot.git"
+    "url": "git+https://github.com/ProAnima/Arkvory.git"
   },
   "dependencies": {
-    "@proanima/depot-domain": "0.0.0",
-    "@proanima/depot-application": "0.0.0",
-    "@proanima/depot-infrastructure": "0.0.0"
+    "@proanima/arkvory-domain": "0.0.0",
+    "@proanima/arkvory-application": "0.0.0",
+    "@proanima/arkvory-infrastructure": "0.0.0",
+    "@proanima/arkvory-contracts": "0.0.0"
   }
 }

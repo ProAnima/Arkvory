@@ -1,7 +1,7 @@
-// depot-exception ARCH-024 -- Existing UI controller contains event wiring and view state; freeze its size and extract cohesive controllers only with browser state/reset acceptance.
+// arkvory-exception ARCH-024 -- Existing UI controller contains event wiring and view state; freeze its size and extract cohesive controllers only with browser state/reset acceptance.
 import { installRepositoryStorage } from './repository-storage.js';
-import { DepotClient, DepotHttpError } from '@proanima/depot-sdk';
-import { text } from '@proanima/depot-contracts';
+import { ArkvoryClient, ArkvoryHttpError } from '@proanima/arkvory-sdk';
+import { text } from '@proanima/arkvory-contracts';
 import { element } from './dom.js';
 import { installAssetHistory } from './asset-history.js';
 import { message } from './i18n.js';
@@ -23,15 +23,15 @@ const token = element('token', HTMLInputElement),
   uploadId = element('upload-id', HTMLInputElement),
   progress = element('progress', HTMLProgressElement);
 const apiBaseUrl =
-  document.querySelector<HTMLMetaElement>('meta[name="depot-api-base-url"]')?.content.trim() ||
+  document.querySelector<HTMLMetaElement>('meta[name="arkvory-api-base-url"]')?.content.trim() ||
   location.origin;
 initializeShell();
-let client: DepotClient;
+let client: ArkvoryClient;
 try {
-  client = new DepotClient(apiBaseUrl, () => token.value);
+  client = new ArkvoryClient(apiBaseUrl, () => token.value);
 } catch {
   feedback(output, 'apiAddressError', {}, 'error');
-  throw new Error('Invalid Depot API base URL');
+  throw new Error('Invalid Arkvory API base URL');
 }
 const repositoryStorage = installRepositoryStorage(client);
 const updates = installUpdates(client);
@@ -76,7 +76,7 @@ const run = (action: () => Promise<void>) => {
   delete requestId.dataset['i18n'];
   void action().catch((error: unknown) => {
     feedback(output, errorKey(error), {}, 'error');
-    if (error instanceof DepotHttpError && error.requestId)
+    if (error instanceof ArkvoryHttpError && error.requestId)
       message(requestId, 'requestId', { id: error.requestId });
   });
 };
@@ -291,7 +291,7 @@ element('login', HTMLFormElement).onsubmit = (event) => {
     const session = await client.login(name, element('login-password', HTMLInputElement).value);
     if (generation !== authenticationGeneration) {
       // A cancelled login must not reconnect a signed-out tab. Revoke the unused session.
-      await new DepotClient(apiBaseUrl, () => session.token).logout().catch(() => undefined);
+      await new ArkvoryClient(apiBaseUrl, () => session.token).logout().catch(() => undefined);
       return;
     }
     downloads.reset();

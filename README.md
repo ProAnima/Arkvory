@@ -1,4 +1,6 @@
-# ProAnima Depot
+# ProAnima Arkvory
+
+<img src="branding/icons/arkvory.svg" alt="Arkvory" width="72" height="72">
 
 **English** | [Русский](README.ru.md)
 
@@ -6,7 +8,9 @@
 
 UPack packages, metadata, tagging, collections, transfer queues, and ProGet-compatible APIs.
 
-A **ProAnimaStudio** project. **Ian Panaev** is the author, copyright holder, and owner of the ProAnimaStudio brand.
+A **ProAnimaStudio** project. **Ian Panaev** is the author, copyright holder, and owner of the Arkvory and ProAnimaStudio brands.
+
+[Brand assets](branding/README.md) · [Moving existing installations to Arkvory](docs/RENAMING.md)
 
 > **Stage: standalone 0.2, under development.** Native API, multipart/resume, UPack/assets catalog, metadata, worker, admission queues, online physical cleanup, offline repair/scrub, SDK and web console are implemented. Legacy download support is partial. Read gateways with leased shares of a common download budget are implemented for shared storage. Two-server replication and full ProGet replacement are not ready.
 
@@ -14,11 +18,11 @@ Logical artifact deletion is available through API, SDK and the RU/EN console wi
 
 ## Purpose
 
-ProAnima Depot is being designed as an independent service for storing original artifacts, managing their catalog, and delivering them reliably to consumers. Metadata, versions, labels, permissions, and activity history are managed through its own interface and APIs.
+ProAnima Arkvory is being designed as an independent service for storing original artifacts, managing their catalog, and delivering them reliably to consumers. Metadata, versions, labels, permissions, and activity history are managed through its own interface and APIs.
 
-The service targets application and content delivery infrastructure: deployment agents, CI/CD pipelines, artifact catalogs, internal tools, and other systems. Depot is deployed and upgraded independently of connected applications.
+The service targets application and content delivery infrastructure: deployment agents, CI/CD pipelines, artifact catalogs, internal tools, and other systems. Arkvory is deployed and upgraded independently of connected applications.
 
-An initial use case is replacing ProGet for Universal Packages and ordinary files while preserving the HTTP contracts used by existing clients. External applications connect over the network. Their availability must not determine whether Depot can serve packages directly.
+An initial use case is replacing ProGet for Universal Packages and ordinary files while preserving the HTTP contracts used by existing clients. External applications connect over the network. Their availability must not determine whether Arkvory can serve packages directly.
 
 ## Current status
 
@@ -57,7 +61,7 @@ An optional shared-storage profile runs one writer and additional read gateways.
 
 The console has light, dark and system themes, live English/Russian switching, and responsive catalog, upload, history and artifact screens. Colors, typography, spacing, radii, controls and motion use centralized design tokens. Only appearance and language preferences are stored in the browser. See the [design system](docs/DESIGN_SYSTEM.md).
 
-A UI hosted on another HTTPS origin can use the native API with Bearer tokens and a server configured origin allowlist. The bundled console also accepts a configured Depot API address. See the [external UI guide](docs/EXTERNAL_UI.md).
+A UI hosted on another HTTPS origin can use the native API with Bearer tokens and a server configured origin allowlist. The bundled console also accepts a configured Arkvory API address. See the [external UI guide](docs/EXTERNAL_UI.md).
 
 Administrators can create accounts and repository access groups. Users sign in with 12-hour sessions and can change their own password; the console keeps session tokens only in the current tab and suggests readable repositories after sign-in. The package screen sorts by group, name or SemVer version and groups by UPack group or package. See the [runbook](docs/CORE_RUNBOOK.md).
 
@@ -99,7 +103,7 @@ Administrators can create accounts and repository access groups. Users sign in w
 ```mermaid
 flowchart TD
     EXT[External applications] --> API[Native API and authorization]
-    UI[Depot Web UI / CI/CD / SDK] --> API
+    UI[Arkvory Web UI / CI/CD / SDK] --> API
     LEGACY[ProGet-compatible clients] --> COMPAT[ProGet compatibility adapters]
     COMPAT --> APP[Application use cases]
     API --> APP
@@ -159,7 +163,7 @@ Compatibility includes response shapes, authentication, error codes, groups, ver
 
 Native clients will be able to create queued jobs, wait for admission, and resume transfers. A legacy client cannot transparently receive `202 + JSON` instead of file bytes: its validated synchronous contract, timeouts, and retry behavior must be respected.
 
-External applications use the public API and the portable TypeScript SDK in this workspace. They do not need shared database access or imports of Depot internals. Webhooks are planned with signatures, retries, and deduplication.
+External applications use the public API and the portable TypeScript SDK in this workspace. They do not need shared database access or imports of Arkvory internals. Webhooks are planned with signatures, retries, and deduplication.
 
 ## Reliability and scale
 
@@ -178,7 +182,7 @@ apps/
   api/              HTTP API and dependency composition
   worker/           background processing
   scheduler/        transfer scheduling process
-  web/              independent Depot interface
+  web/              independent Arkvory interface
 packages/
   domain/           pure domain rules and states
   application/      use cases and dependency ports
@@ -200,8 +204,8 @@ scripts/            project verification tools
 For authorized developers under the proprietary license. Requires Node.js 24 LTS, npm 11, PostgreSQL 18, and a local filesystem supporting hard links. Docker is optional if PostgreSQL is already available.
 
 ```sh
-git clone https://github.com/ProAnima/Depot.git
-cd Depot
+git clone https://github.com/ProAnima/Arkvory.git
+cd Arkvory
 npm ci
 npm run build
 npm run init:local
@@ -212,16 +216,16 @@ npm start
 
 Local initialization generates private credentials under ignored `data/` and `.env`; it refuses to overwrite an existing configuration. The API binds to `127.0.0.1:8080`. Upload from another terminal with `npm run upload -- ./example.upack releases`. The CLI prints an artifact URL; requests require the generated Bearer key.
 
-For an existing database, edit `DEPOT_DATABASE_URL` in `.env` instead of starting Compose. See the [runbook](docs/CORE_RUNBOOK.md) for configuration, permissions, recovery, and network access with TLS.
+For an existing database, edit `ARKVORY_DATABASE_URL` in `.env` instead of starting Compose. See the [runbook](docs/CORE_RUNBOOK.md) for configuration, permissions, recovery, and network access with TLS.
 
-| Command                    | Purpose                                                            |
-| -------------------------- | ------------------------------------------------------------------ |
-| `npm run check`            | Formatting, types, ESLint, architecture boundaries                 |
-| `npm run build`            | Compile all workspaces to JavaScript and declarations              |
-| `npm test`                 | Build and run domain/range/local-storage tests                     |
-| `npm run test:integration` | Real PostgreSQL and HTTP tests; requires `DEPOT_TEST_DATABASE_URL` |
-| `npm run test:large`       | 5 GiB HTTP upload/download, process restart, hash and RSS checks   |
-| `npm run format`           | Apply formatting                                                   |
+| Command                    | Purpose                                                              |
+| -------------------------- | -------------------------------------------------------------------- |
+| `npm run check`            | Formatting, types, ESLint, architecture boundaries                   |
+| `npm run build`            | Compile all workspaces to JavaScript and declarations                |
+| `npm test`                 | Build and run domain/range/local-storage tests                       |
+| `npm run test:integration` | Real PostgreSQL and HTTP tests; requires `ARKVORY_TEST_DATABASE_URL` |
+| `npm run test:large`       | 5 GiB HTTP upload/download, process restart, hash and RSS checks     |
+| `npm run format`           | Apply formatting                                                     |
 
 Multipart uploads resume from recorded 8 MiB parts; whole-file PUT retries restart from byte zero. Online cleanup releases cancelled reservations after deleting their content and the grace period. One API process owns a standalone database; this profile provides no node failover. Keep the database and the entire storage directory, including `storage-id`, together in backup/restore procedures. Before updating, stop API/worker, back up both, run `npm run migrate` (schema 17), then start the new code. See [asset history and restore](docs/LIFECYCLE_AND_CATALOG.md#история-и-восстановление-файлов) and [online catalog indexes](docs/adr/0014-online-package-page-indexes.md).
 
@@ -231,7 +235,7 @@ The main contributor instructions are in [AGENTS.md](AGENTS.md) and [CONTRIBUTIN
 
 - Domain rules do not depend on HTTP, databases, Node globals, or the UI.
 - The application layer owns dependency interfaces; adapters provide implementations.
-- Cross-package imports use public entries such as `@proanima/depot-domain`.
+- Cross-package imports use public entries such as `@proanima/arkvory-domain`.
 - External data is validated at runtime; a type assertion is not validation.
 - Strict checking must not be weakened, and `any` must not be used to bypass errors.
 - Prefer composition and focused use cases; introduce abstractions for concrete needs.
@@ -277,7 +281,7 @@ The English and Russian READMEs describe the same product scope. Detailed engine
 
 **Copyright © 2026 Ian Panaev. All rights reserved.**
 
-ProAnima Depot is proprietary software. Ian Panaev is its author, copyright holder, and owner of the ProAnimaStudio brand. Rights to use, modify, distribute, or maintain private forks are granted to specifically authorized organizations only through separate written agreements with the rights holder, subject to applicable law and other validly granted rights.
+ProAnima Arkvory is proprietary software. Ian Panaev is its author, copyright holder, and owner of the ProAnimaStudio brand. Rights to use, modify, distribute, or maintain private forks are granted to specifically authorized organizations only through separate written agreements with the rights holder, subject to applicable law and other validly granted rights.
 
 Repository access does not replace such an agreement. Permission scope, ownership of modifications, binary distribution, and use of branding are agreed separately. The original source code is not released under MIT, Apache, GPL, or another open-source license.
 
@@ -303,12 +307,12 @@ Automatic retention keeps the last N registered UPack builds per package/channel
 
 The administrator console announces new stable releases and provides manual installation with confirmation, automatic installation settings and a UTC maintenance hour. Release checks continue when automatic installation is off. A separate host updater executes bounded requests; the API has no shell access or GitHub credential. [Update controls, API and recovery](docs/UPDATES.md).
 
-Native installers: **Depot-Setup-x64.exe** (RU/EN wizard, bundled Node.js/PostgreSQL/WinSW/VC++ runtime, owner account and onboarding), **Depot-amd64.deb** and **Depot-x86_64.rpm** (bundled Node.js; database dependencies resolved by the package manager). Windows setup works offline. Native packages and data-preserving uninstall have dedicated CI gates. RPM distribution acceptance and publisher signing remain release prerequisites. The console includes guided setup and a permission-aware API catalogue with CLI help.
+Native installers: **Arkvory-Setup-x64.exe** (RU/EN wizard, bundled Node.js/PostgreSQL/WinSW/VC++ runtime, owner account and onboarding), **Arkvory-amd64.deb** and **Arkvory-x86_64.rpm** (bundled Node.js; database dependencies resolved by the package manager). Windows setup works offline. Native packages and data-preserving uninstall have dedicated CI gates. RPM distribution acceptance and publisher signing remain release prerequisites. The console includes guided setup and a permission-aware API catalogue with CLI help.
 
 Stable updates use verified GitHub Releases, optional automatic updates, version pinning and same-schema rollback. Data and configuration remain separate from code; the database has its own supervised service. PostgreSQL major upgrades and installed runtime maintenance are separate operator actions. Advanced script/Compose installation remains available; CMD launchers have been removed. [Installation and platform requirements](deploy/README.md).
 
 ### Remote CLI
 
-**Depot Remote Setup** is included in the client installers. Its RU/EN browser wizard checks an SSH host, installs a stable native release with dependencies and services, creates the owner, verifies readiness and forwards the console to a local address. Existing installations can be connected without reinstalling. This profile provides private SSH access from the administrator’s computer; permanent LAN/HTTPS publication and remote Compose orchestration are not implemented in the wizard. [Remote setup and requirements](docs/REMOTE_DEPLOYMENT.md).
+**Arkvory Remote Setup** is included in the client installers. Its RU/EN browser wizard checks an SSH host, installs a stable native release with dependencies and services, creates the owner, verifies readiness and forwards the console to a local address. Existing installations can be connected without reinstalling. This profile provides private SSH access from the administrator’s computer; permanent LAN/HTTPS publication and remote Compose orchestration are not implemented in the wizard. [Remote setup and requirements](docs/REMOTE_DEPLOYMENT.md).
 
-`depotctl` is a separate remote client: server profiles, resumable uploads/downloads with SHA-256 verification, metadata and labels, revisioned attachments, package registration, storage usage and API discovery. `--json` supports CI/CD; help is available in English and Russian. Keys come from environment variables or private files, never command arguments. Client-only Windows per-user EXE and Linux DEB/RPM bundle Node.js without installing server services or PostgreSQL. A standalone `depotctl.mjs` supports CI with Node.js 24. [Installation, examples, recovery and command reference](docs/CLI.md).
+`arkvoryctl` is a separate remote client: server profiles, resumable uploads/downloads with SHA-256 verification, metadata and labels, revisioned attachments, package registration, storage usage and API discovery. `--json` supports CI/CD; help is available in English and Russian. Keys come from environment variables or private files, never command arguments. Client-only Windows per-user EXE and Linux DEB/RPM bundle Node.js without installing server services or PostgreSQL. A standalone `arkvoryctl.mjs` supports CI with Node.js 24. [Installation, examples, recovery and command reference](docs/CLI.md).

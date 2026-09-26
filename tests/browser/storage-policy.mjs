@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
-import { DepotClient } from '@proanima/depot-sdk';
+import { ArkvoryClient } from '@proanima/arkvory-sdk';
 
 export async function exerciseStoragePolicy(page, f) {
   f.config.keys[0].principal.serviceAdministrator = true;
   const url = new URL(page.url()).origin,
-    root = new DepotClient(url, () => f.headers.authorization.slice(7));
+    root = new ArkvoryClient(url, () => f.headers.authorization.slice(7));
   const bindings = [
     {
       resource: { kind: 'repository', id: 'releases' },
@@ -20,7 +20,7 @@ export async function exerciseStoragePolicy(page, f) {
   ];
   const account = await root.createServiceAccount('ui-storage', bindings),
     issued = await root.issueServiceKey(account.id, 'ui-storage', { name: 'ui-storage', bindings });
-  const client = new DepotClient(url, () => issued.secret);
+  const client = new ArkvoryClient(url, () => issued.secret);
   await client.activateServiceKey();
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.locator('#language').selectOption('en');

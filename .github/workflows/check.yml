@@ -1,4 +1,4 @@
-name: Depot gates
+name: Arkvory gates
 
 on:
   push:
@@ -20,7 +20,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: depot-${{ github.workflow }}-${{ github.ref }}
+  group: arkvory-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -76,7 +76,7 @@ jobs:
         if: ${{ always() }}
         run: node scripts/ci-report.mjs
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
-        if: ${{ always() && vars.DEPOT_UPLOAD_ARTIFACTS == 'true' }}
+        if: ${{ always() && vars.ARKVORY_UPLOAD_ARTIFACTS == 'true' }}
         with:
           name: quality-${{ matrix.os }}
           path: test-results/
@@ -100,7 +100,7 @@ jobs:
           --health-cmd "pg_isready -U depot_test -d depot_test"
           --health-interval 3s --health-timeout 3s --health-retries 20
     env:
-      DEPOT_TEST_DATABASE_URL: postgresql://depot_test:depot_test@127.0.0.1:5432/depot_test
+      ARKVORY_TEST_DATABASE_URL: postgresql://depot_test:depot_test@127.0.0.1:5432/depot_test
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
@@ -115,7 +115,7 @@ jobs:
         if: ${{ always() }}
         run: node scripts/ci-report.mjs
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
-        if: ${{ always() && vars.DEPOT_UPLOAD_ARTIFACTS == 'true' }}
+        if: ${{ always() && vars.ARKVORY_UPLOAD_ARTIFACTS == 'true' }}
         with:
           name: integration
           path: test-results/
@@ -139,7 +139,7 @@ jobs:
           --health-cmd "pg_isready -U depot_test -d depot_test"
           --health-interval 3s --health-timeout 3s --health-retries 20
     env:
-      DEPOT_TEST_DATABASE_URL: postgresql://depot_test:depot_test@127.0.0.1:5432/depot_test
+      ARKVORY_TEST_DATABASE_URL: postgresql://depot_test:depot_test@127.0.0.1:5432/depot_test
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
@@ -155,7 +155,7 @@ jobs:
         if: ${{ always() }}
         run: node scripts/ci-report.mjs
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
-        if: ${{ always() && vars.DEPOT_UPLOAD_ARTIFACTS == 'true' }}
+        if: ${{ always() && vars.ARKVORY_UPLOAD_ARTIFACTS == 'true' }}
         with:
           name: browser
           path: test-results/
@@ -185,7 +185,7 @@ jobs:
           --health-cmd "pg_isready -U depot_test -d depot_test"
           --health-interval 3s --health-timeout 3s --health-retries 20
     env:
-      DEPOT_TEST_DATABASE_URL: postgresql://depot_test:depot_test@127.0.0.1:5432/depot_test
+      ARKVORY_TEST_DATABASE_URL: postgresql://depot_test:depot_test@127.0.0.1:5432/depot_test
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
@@ -200,7 +200,7 @@ jobs:
         if: ${{ always() }}
         run: node scripts/ci-report.mjs
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
-        if: ${{ always() && vars.DEPOT_UPLOAD_ARTIFACTS == 'true' }}
+        if: ${{ always() && vars.ARKVORY_UPLOAD_ARTIFACTS == 'true' }}
         with:
           name: ${{ matrix.gate }}
           path: test-results/
@@ -225,7 +225,7 @@ jobs:
         if: ${{ always() }}
         run: node scripts/ci-report.mjs
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
-        if: ${{ always() && vars.DEPOT_UPLOAD_ARTIFACTS == 'true' }}
+        if: ${{ always() && vars.ARKVORY_UPLOAD_ARTIFACTS == 'true' }}
         with:
           name: security
           path: test-results/
@@ -251,7 +251,7 @@ jobs:
         run: node scripts/ci-report.mjs
 
   verdict:
-    name: Depot merge gate
+    name: Arkvory merge gate
     if: ${{ always() }}
     needs: [check, integration, browser, security, large, deployment-containers, native]
     runs-on: ubuntu-latest
@@ -265,6 +265,6 @@ jobs:
           node-version: '24'
       - name: Require every applicable gate to pass
         env:
-          DEPOT_CI_NEEDS: ${{ toJSON(needs) }}
-          DEPOT_RELEASE_REQUIRED: ${{ github.event_name == 'push' || github.event_name == 'merge_group' || github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.large_transfers) }}
+          ARKVORY_CI_NEEDS: ${{ toJSON(needs) }}
+          ARKVORY_RELEASE_REQUIRED: ${{ github.event_name == 'push' || github.event_name == 'merge_group' || github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.large_transfers) }}
         run: node scripts/ci-verdict.mjs

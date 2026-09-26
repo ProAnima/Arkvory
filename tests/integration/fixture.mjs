@@ -5,18 +5,18 @@ import { mkdtemp } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createServer } from '../../apps/api/dist/index.js';
-import { PostgresCatalog, migrate } from '@proanima/depot-infrastructure';
+import { PostgresCatalog, migrate } from '@proanima/arkvory-infrastructure';
 
 export async function setup(t, overrides = {}, lifecycle = {}) {
-  const connectionString = process.env.DEPOT_TEST_DATABASE_URL;
+  const connectionString = process.env.ARKVORY_TEST_DATABASE_URL;
   if (!connectionString)
-    throw new Error('DEPOT_TEST_DATABASE_URL is required; use a dedicated test database');
+    throw new Error('ARKVORY_TEST_DATABASE_URL is required; use a dedicated test database');
   const admin = new Pool({ connectionString, connectionTimeoutMillis: 5000 });
   const schema = 'depot_test_' + randomUUID().replaceAll('-', '');
   await admin.query(`CREATE SCHEMA ${schema}`);
   const url = new URL(connectionString);
   url.searchParams.set('options', `-c search_path=${schema}`);
-  const directory = await mkdtemp(join(tmpdir(), 'depot-http-'));
+  const directory = await mkdtemp(join(tmpdir(), 'arkvory-http-'));
   const token = 'test-' + randomUUID() + randomUUID();
   const reader = 'read-' + randomUUID() + randomUUID();
   const config = {

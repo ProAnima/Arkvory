@@ -1,12 +1,12 @@
 {
-  "name": "@proanima/depot-contracts",
+  "name": "@proanima/arkvory-contracts",
   "version": "0.0.0",
   "private": true,
   "type": "module",
   "sideEffects": false,
   "description": "Публичные wire-схемы и типы API",
   "exports": {
-    "depot-source": "./src/index.ts",
+    "arkvory-source": "./src/index.ts",
     "types": "./dist/index.d.ts",
     "import": "./dist/index.js"
   },
@@ -14,6 +14,6 @@
   "author": "Ian Panaev",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ProAnima/Depot.git"
+    "url": "git+https://github.com/ProAnima/Arkvory.git"
   }
 }

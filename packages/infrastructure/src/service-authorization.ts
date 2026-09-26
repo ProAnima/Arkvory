@@ -1,5 +1,5 @@
-import { DepotError, intersectBindings, parseBindings, allows } from '@proanima/depot-domain';
-import type { MutationAccess, Principal } from '@proanima/depot-domain';
+import { ArkvoryError, intersectBindings, parseBindings, allows } from '@proanima/arkvory-domain';
+import type { MutationAccess, Principal } from '@proanima/arkvory-domain';
 import type { PoolClient } from 'pg';
 
 export interface CredentialRow {
@@ -37,11 +37,11 @@ export async function lockServiceAccess(
   );
   const row = result.rows[0];
   if (!row || access.principal.id !== `service:${row.account_id}`)
-    throw new DepotError('forbidden', 'Service credential revoked or expired');
+    throw new ArkvoryError('forbidden', 'Service credential revoked or expired');
   const bindings = intersectBindings(
     parseBindings(row.account_bindings),
     parseBindings(row.bindings),
   );
   if (access.actions.some((action) => !allows(bindings, access.repository, action)))
-    throw new DepotError('forbidden', 'Service policy changed');
+    throw new ArkvoryError('forbidden', 'Service policy changed');
 }

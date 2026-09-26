@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify';
-import type { StorageService } from '@proanima/depot-application';
-import { DepotError } from '@proanima/depot-domain';
-import { uploadSchema } from '@proanima/depot-contracts';
+import type { StorageService } from '@proanima/arkvory-application';
+import { ArkvoryError } from '@proanima/arkvory-domain';
+import { uploadSchema } from '@proanima/arkvory-contracts';
 import { wireUpload as wire } from './upload-response.js';
 import type { RequestContext } from './request-context.js';
 
@@ -28,7 +28,7 @@ export function registerArtifactRoutes(
         (after !== undefined && typeof after !== 'string') ||
         (limit !== undefined && (typeof limit !== 'string' || !/^[0-9]{1,3}$/.test(limit)))
       )
-        throw new DepotError('invalid_input', 'Invalid pagination');
+        throw new ArkvoryError('invalid_input', 'Invalid pagination');
       const pageSize = limit === undefined ? 50 : Number(limit);
       const items = await service.list(
         principal(request),

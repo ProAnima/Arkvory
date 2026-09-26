@@ -1,5 +1,5 @@
 import type { FastifyRequest, FastifyReply } from 'fastify';
-import { DepotError } from '@proanima/depot-domain';
+import { ArkvoryError } from '@proanima/arkvory-domain';
 
 /** Public login bodies have their own budget, before parsing and password work. */
 export class LoginAdmission {
@@ -10,7 +10,7 @@ export class LoginAdmission {
     if (this.active >= 16) {
       // An unread body must not keep a rejected connection alive.
       reply.header('Connection', 'close');
-      throw new DepotError('busy', 'Login request capacity exceeded');
+      throw new ArkvoryError('busy', 'Login request capacity exceeded');
     }
     this.active++;
     // Absolute, not idle: trickling bytes cannot extend a login body's lifetime.

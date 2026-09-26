@@ -1,6 +1,6 @@
-import type { DepotClient } from '@proanima/depot-sdk';
-import { DepotHttpError } from '@proanima/depot-sdk';
-import type { UpdateSnapshot, UpdateRequest } from '@proanima/depot-contracts';
+import type { ArkvoryClient } from '@proanima/arkvory-sdk';
+import { ArkvoryHttpError } from '@proanima/arkvory-sdk';
+import type { UpdateSnapshot, UpdateRequest } from '@proanima/arkvory-contracts';
 import { element } from './dom.js';
 import { message } from './i18n.js';
 import { showView } from './shell.js';
@@ -17,7 +17,7 @@ class UpdateConsole {
   private dirty = false;
   private busy = false;
   private timer: ReturnType<typeof setTimeout> | undefined;
-  constructor(private readonly client: DepotClient) {
+  constructor(private readonly client: ArkvoryClient) {
     const v = this.view;
     v.form.addEventListener('input', () => {
       this.dirty = true;
@@ -99,7 +99,7 @@ class UpdateConsole {
       message(this.view.output, 'updatePending');
     } catch (error) {
       failure =
-        error instanceof DepotHttpError
+        error instanceof ArkvoryHttpError
           ? error.status === 409
             ? 'updateConflict'
             : errorKey(error)
@@ -137,6 +137,6 @@ class UpdateConsole {
     }
   }
 }
-export function installUpdates(client: DepotClient) {
+export function installUpdates(client: ArkvoryClient) {
   return new UpdateConsole(client);
 }

@@ -23,7 +23,7 @@ export function readUploadTimeouts(env: NodeJS.ProcessEnv) {
     return Number(raw);
   };
   return resolveUploadTimeouts({
-    uploadIdleTimeoutMs: value('DEPOT_UPLOAD_IDLE_TIMEOUT_MS', 30_000),
-    uploadDeadlineMs: value('DEPOT_UPLOAD_DEADLINE_MS', 1_800_000),
+    uploadIdleTimeoutMs: value('ARKVORY_UPLOAD_IDLE_TIMEOUT_MS', 30_000),
+    uploadDeadlineMs: value('ARKVORY_UPLOAD_DEADLINE_MS', 1_800_000),
   });
 }

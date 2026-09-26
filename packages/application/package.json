@@ -1,11 +1,11 @@
 {
-  "name": "@proanima/depot-application",
+  "name": "@proanima/arkvory-application",
   "version": "0.0.0",
   "private": true,
   "type": "module",
   "description": "Сценарии приложения и порты зависимостей",
   "exports": {
-    "depot-source": "./src/index.ts",
+    "arkvory-source": "./src/index.ts",
     "types": "./dist/index.d.ts",
     "import": "./dist/index.js"
   },
@@ -13,9 +13,9 @@
   "author": "Ian Panaev",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ProAnima/Depot.git"
+    "url": "git+https://github.com/ProAnima/Arkvory.git"
   },
   "dependencies": {
-    "@proanima/depot-domain": "0.0.0"
+    "@proanima/arkvory-domain": "0.0.0"
   }
 }

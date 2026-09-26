@@ -3,8 +3,8 @@ import {
   readKeyIssue,
   readDelegation,
   readDelegations,
-} from '@proanima/depot-contracts';
-import type { ServiceBindingResponse, AdministrationPermission } from '@proanima/depot-contracts';
+} from '@proanima/arkvory-contracts';
+import type { ServiceBindingResponse, AdministrationPermission } from '@proanima/arkvory-contracts';
 import type { HttpPort } from './http-transport.js';
 
 export class CredentialsApi {

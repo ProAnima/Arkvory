@@ -1,13 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
-import { DepotClient } from '@proanima/depot-sdk';
+import { ArkvoryClient } from '@proanima/arkvory-sdk';
 import { setup, descriptor, base } from './fixture.mjs';
 
 test('portable SDK uploads parts, edits annotations and streams HTTP ranges', async (t) => {
   const f = await setup(t);
   const address = await f.listen();
-  const client = new DepotClient(address, () => f.headers.authorization.slice(7));
+  const client = new ArkvoryClient(address, () => f.headers.authorization.slice(7));
   const bytes = Buffer.from('sdk test data');
   const upload = await client.create('releases', randomUUID(), descriptor(bytes));
   assert.equal((await client.resume('releases', upload.id, new Blob([bytes]))).status, 'available');
@@ -33,10 +33,13 @@ test('portable SDK uploads parts, edits annotations and streams HTTP ranges', as
   const page = await fetch(address + '/console/');
   assert.equal(page.status, 200);
   assert.match(page.headers.get('content-security-policy'), /frame-ancestors 'none'/);
-  assert.match(await page.text(), /ProAnima Depot/);
+  assert.match(await page.text(), /ProAnima Arkvory/);
   for (const [file, type] of [
     ['tokens.css', 'text/css'],
     ['appearance-init.js', 'text/javascript'],
+    ['arkvory.svg', 'image/svg\\+xml'],
+    ['arkvory.ico', 'image/x-icon'],
+    ['arkvory.png', 'image/png'],
   ]) {
     const asset = await fetch(address + '/console/' + file);
     assert.equal(asset.status, 200);

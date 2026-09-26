@@ -16,7 +16,7 @@ export async function gateSummary(root) {
   }
   // JSON escapes line breaks in messages; stdout cannot become an injected workflow command.
   return (
-    '## Depot gate results\n\n' +
+    '## Arkvory gate results\n\n' +
     reports.map((report) => '```json\n' + JSON.stringify(report, null, 2) + '\n```').join('\n\n') +
     '\n'
   );

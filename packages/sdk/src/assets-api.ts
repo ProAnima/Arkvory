@@ -3,7 +3,7 @@ import {
   readAssetPage,
   readAssetRevision,
   readAssetHistory,
-} from '@proanima/depot-contracts';
+} from '@proanima/arkvory-contracts';
 import type { HttpPort } from './http-transport.js';
 import { repositoryPath } from './http-transport.js';
 

@@ -17,7 +17,7 @@ export async function createOwner(root: string, path: string): Promise<void> {
   )
     throw new Error('Owner name and password (at least 12 characters) are required');
   const runtime = runtimeEnvironment(await jsonFile(join(root, 'config/runtime.json')));
-  const port = runtime['DEPOT_PORT'] ?? '8080';
+  const port = runtime['ARKVORY_PORT'] ?? '8080';
   if (!/^[0-9]{1,5}$/.test(port)) throw new Error('Invalid API port');
   const token = await readFile(join(root, 'config/bootstrap-token.txt'), 'utf8');
   const base = `http://127.0.0.1:${port}/api/v1/`;
@@ -67,7 +67,7 @@ async function grantInitialRepository(
     return response;
   };
   const group = record(
-    await (await call('access-groups', 'POST', { name: 'depot-owners' })).json(),
+    await (await call('access-groups', 'POST', { name: 'arkvory-owners' })).json(),
   );
   if (typeof group['id'] !== 'string') throw new Error('Invalid owner group response');
   const path = `access-groups/${encodeURIComponent(group['id'])}`;

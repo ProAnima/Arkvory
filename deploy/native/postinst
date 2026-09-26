@@ -1,12 +1,12 @@
 #!/bin/sh
 set -eu
-root=/opt/proanima-depot
-payload=/usr/lib/proanima-depot
+root=/opt/proanima-arkvory
+payload=/usr/lib/proanima-arkvory
 mkdir -p "$root/runtime"
 if [ ! -f "$root/installation.json" ]; then chmod 0700 "$root"; fi
 if [ ! -f "$root/runtime/node" ]; then install -m 0755 "$payload/node" "$root/runtime/node"; fi
 if [ -f "$root/installation.json" ]; then
-  "$root/runtime/node" "$payload/depot-setup.mjs" apply-installer --root "$root" --artifact "$payload"
+  "$root/runtime/node" "$payload/arkvory-setup.mjs" apply-installer --root "$root" --artifact "$payload"
 else
   pg_bin=$(python3 - <<'PY'
 import glob, os, subprocess
@@ -23,7 +23,7 @@ if not candidates:
 print(max(candidates)[1])
 PY
 )
-  "$root/runtime/node" "$payload/depot-setup.mjs" install --root "$root" --mode systemd --artifact "$payload" --database-bin "$pg_bin"
+  "$root/runtime/node" "$payload/arkvory-setup.mjs" install --root "$root" --mode systemd --artifact "$payload" --database-bin "$pg_bin"
 fi
-echo 'Depot: http://127.0.0.1:8080/console/#onboarding'
-echo 'Recovery credential (administrator only): /opt/proanima-depot/config/bootstrap-token.txt'
+echo 'Arkvory: http://127.0.0.1:8080/console/#onboarding'
+echo 'Recovery credential (administrator only): /opt/proanima-arkvory/config/bootstrap-token.txt'

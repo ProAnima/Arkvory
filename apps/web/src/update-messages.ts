@@ -1,7 +1,7 @@
 export const updateEnglish = {
   updates: 'Updates',
   updatesSubtitle: 'Stable releases and installation health',
-  updateAvailable: 'Depot {version} is available',
+  updateAvailable: 'Arkvory {version} is available',
   updateOpen: 'View update',
   updateCurrent: 'Installed version',
   updateLatest: 'Latest stable release',
@@ -34,18 +34,18 @@ export const updateEnglish = {
   updateRecovery:
     'Manual recovery is required. Inspect processes, installation lock and journal on the server.',
   updateConflict: 'Settings changed while the request was waiting. Refresh and submit again.',
-  updateConfirm: 'Install Depot {version}?',
+  updateConfirm: 'Install Arkvory {version}?',
   updateConfirmHelp:
     'Active transfers may be interrupted and need to resume. The installer verifies the release and attempts rollback if startup fails. Schedule this action during a maintenance window.',
   updateCancel: 'Cancel',
   updateConfirmButton: 'Install this release',
   updateConnection:
-    'Cannot contact Depot. Retrying automatically; do not submit another installation request.',
+    'Cannot contact Arkvory. Retrying automatically; do not submit another installation request.',
 };
 export const updateRussian: Record<keyof typeof updateEnglish, string> = {
   updates: 'Обновления',
   updatesSubtitle: 'Стабильные релизы и состояние установки',
-  updateAvailable: 'Доступен Depot {version}',
+  updateAvailable: 'Доступен Arkvory {version}',
   updateOpen: 'Посмотреть обновление',
   updateCurrent: 'Установленная версия',
   updateLatest: 'Последний стабильный релиз',
@@ -79,11 +79,11 @@ export const updateRussian: Record<keyof typeof updateEnglish, string> = {
     'Нужно ручное восстановление. Проверьте процессы, блокировку установки и журнал на сервере.',
   updateConflict:
     'Настройки изменились, пока запрос ожидал выполнения. Обновите сведения и повторите действие.',
-  updateConfirm: 'Установить Depot {version}?',
+  updateConfirm: 'Установить Arkvory {version}?',
   updateConfirmHelp:
     'Активные передачи могут прерваться и потребовать продолжения. Установщик проверит релиз и попытается выполнить откат при ошибке запуска. Выполняйте действие в окно обслуживания.',
   updateCancel: 'Отмена',
   updateConfirmButton: 'Установить этот релиз',
   updateConnection:
-    'Нет связи с Depot. Подключение повторяется автоматически; не отправляйте запрос установки повторно.',
+    'Нет связи с Arkvory. Подключение повторяется автоматически; не отправляйте запрос установки повторно.',
 };

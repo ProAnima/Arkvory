@@ -6,8 +6,8 @@ import {
   apiOperations,
   assertRouteInventory,
   openApiDocument,
-} from '@proanima/depot-contracts';
-import { serviceActions } from '@proanima/depot-domain';
+} from '@proanima/arkvory-contracts';
+import { serviceActions } from '@proanima/arkvory-domain';
 import { ajv } from './api-schema.mjs';
 
 test('published contract has stable IDs, complete parameter/security metadata and compilable schemas', async () => {
@@ -26,9 +26,9 @@ test('published contract has stable IDs, complete parameter/security metadata an
       if (!operation) continue;
       assert.ok(operation.operationId);
       assert.ok(operation.tags.length);
-      assert.ok(operation['x-depot-retry']);
+      assert.ok(operation['x-arkvory-retry']);
       assert.equal(
-        operation['x-depot-gateway'],
+        operation['x-arkvory-gateway'],
         ['get', 'head'].includes(method) ? 'writer-or-reader' : 'writer',
       );
       const parameters = [...(item.parameters ?? []), ...(operation.parameters ?? [])];
@@ -48,7 +48,7 @@ test('published contract has stable IDs, complete parameter/security metadata an
           assert.ok(openApiDocument.components.securitySchemes[scheme]);
           assert.deepEqual(scopes, []);
         }
-      const access = operation['x-depot-authorization'];
+      const access = operation['x-arkvory-authorization'];
       assert.equal(operation.security.length === 0, access.kind === 'public');
       if (access.kind === 'repository') {
         assert.ok(access.actions.length);
@@ -112,7 +112,7 @@ test('streaming contract separates full, range and HEAD semantics and scopes eve
   for (const op of apiOperations.filter((o) => ['Content', 'Legacy'].includes(o.tag))) {
     const contract = openApiDocument.paths[op.path][op.method];
     assert.deepEqual(op.access.actions, ['content.read']);
-    assert.equal(contract['x-depot-streaming'].maxObjectBytes, '5368709120');
+    assert.equal(contract['x-arkvory-streaming'].maxObjectBytes, '5368709120');
     if (op.method === 'head') {
       assert.equal(contract.responses['206'], undefined);
       assert.equal(contract.responses['416'], undefined);

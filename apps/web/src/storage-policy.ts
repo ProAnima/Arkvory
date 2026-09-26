@@ -1,11 +1,11 @@
-import type { DepotClient } from '@proanima/depot-sdk';
-import { readStoragePolicy } from '@proanima/depot-contracts';
+import type { ArkvoryClient } from '@proanima/arkvory-sdk';
+import { readStoragePolicy } from '@proanima/arkvory-contracts';
 import { element } from './dom.js';
 import { message, dateMessage } from './i18n.js';
 import { feedback, errorKey, UiError } from './feedback.js';
 
-// depot-exception ARCH-028 -- Existing UI controller contains event wiring and view state; freeze its size and extract cohesive controllers only with browser state/reset acceptance.
-export function installStoragePolicy(client: DepotClient) {
+// arkvory-exception ARCH-028 -- Existing UI controller contains event wiring and view state; freeze its size and extract cohesive controllers only with browser state/reset acceptance.
+export function installStoragePolicy(client: ArkvoryClient) {
   const panel = element('storage-panel', HTMLDetailsElement),
     form = element('storage-form', HTMLFormElement),
     fields = element('storage-fields', HTMLFieldSetElement),
@@ -92,7 +92,7 @@ export function installStoragePolicy(client: DepotClient) {
       }
     }
   }
-  function showEvents(items: Awaited<ReturnType<DepotClient['storageEvents']>>['items']) {
+  function showEvents(items: Awaited<ReturnType<ArkvoryClient['storageEvents']>>['items']) {
     for (const e of items) {
       const li = document.createElement('li'),
         time = document.createElement('span'),

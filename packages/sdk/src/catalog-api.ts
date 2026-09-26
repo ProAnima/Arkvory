@@ -7,8 +7,8 @@ import {
   text,
   items,
   readPackageList,
-} from '@proanima/depot-contracts';
-import type { BuildAttachmentResponse, AnnotationsResponse } from '@proanima/depot-contracts';
+} from '@proanima/arkvory-contracts';
+import type { BuildAttachmentResponse, AnnotationsResponse } from '@proanima/arkvory-contracts';
 import type { HttpPort } from './http-transport.js';
 import { repositoryPath } from './http-transport.js';
 

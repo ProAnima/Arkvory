@@ -4,7 +4,7 @@ import { createServer } from 'node:http';
 import { createHash } from 'node:crypto';
 import { resolve } from 'node:path';
 import ts from 'typescript';
-import { DepotClient, DepotNetworkError, DepotHttpError } from '@proanima/depot-sdk';
+import { ArkvoryClient, ArkvoryNetworkError, ArkvoryHttpError } from '@proanima/arkvory-sdk';
 
 test('SDK public declarations preserve the strict consumer contract from 81703c5', () => {
   const config = ts.readConfigFile(resolve('tsconfig.base.json'), ts.sys.readFile);
@@ -56,11 +56,11 @@ test('shared HTTP transport preserves deployment prefix, path encoding and fresh
     res.writeHead(403, { 'content-type': 'application/json' });
     res.end(JSON.stringify({ code: 'forbidden', requestId: 'test-request' }));
   });
-  for (const suffix of ['/depot', '/depot/']) {
+  for (const suffix of ['/arkvory', '/arkvory/']) {
     let token = 'first-test-credential';
-    const client = new DepotClient(url + suffix, () => token);
+    const client = new ArkvoryClient(url + suffix, () => token);
     const scoped = client.inRepository('releases');
-    const expectForbidden = (error) => error instanceof DepotHttpError && error.status === 403;
+    const expectForbidden = (error) => error instanceof ArkvoryHttpError && error.status === 403;
     await assert.rejects(scoped.artifacts.get('group/id?x'), expectForbidden);
     token = 'next-test-credential';
     await assert.rejects(client.administration.users.list(), expectForbidden);
@@ -71,11 +71,11 @@ test('shared HTTP transport preserves deployment prefix, path encoding and fresh
     Array.from({ length: 2 }, () => [
       [
         'GET',
-        '/depot/api/v1/repositories/releases/artifacts/group%2Fid%3Fx',
+        '/arkvory/api/v1/repositories/releases/artifacts/group%2Fid%3Fx',
         'Bearer first-test-credential',
       ],
-      ['GET', '/depot/api/v1/users', 'Bearer next-test-credential'],
-      ['GET', '/depot/api/v1/auth/me', 'Bearer next-test-credential'],
+      ['GET', '/arkvory/api/v1/users', 'Bearer next-test-credential'],
+      ['GET', '/arkvory/api/v1/auth/me', 'Bearer next-test-credential'],
     ]).flat(),
   );
 });
@@ -96,12 +96,12 @@ test('redirects never forward credentials and proxy errors remain sanitized', as
       res.end('<html>private proxy diagnostics</html>');
     }
   });
-  const client = new DepotClient(source, () => 'test-credential');
-  await assert.rejects(client.repositories(), DepotNetworkError);
+  const client = new ArkvoryClient(source, () => 'test-credential');
+  await assert.rejects(client.repositories(), ArkvoryNetworkError);
   assert.equal(destinationCalls, 0);
   redirect = false;
   await assert.rejects(client.repositories(), (error) => {
-    assert(error instanceof DepotHttpError);
+    assert(error instanceof ArkvoryHttpError);
     assert.equal(error.status, 502);
     assert.equal(error.code, 'http_error');
     assert(!String(error).includes('private proxy'));
@@ -121,7 +121,7 @@ test('transfer workflows retain public override hooks after composition', async 
     descriptor: { name: 'test', size: String(bytes.length), sha256, labels: [], metadata: {} },
   };
   const calls = [];
-  class CustomizedClient extends DepotClient {
+  class CustomizedClient extends ArkvoryClient {
     async status(repository, id) {
       calls.push(['status', repository, id]);
       return upload;

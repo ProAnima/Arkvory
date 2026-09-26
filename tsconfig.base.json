@@ -20,6 +20,6 @@
     "noEmit": true,
     "noEmitOnError": true,
     "skipLibCheck": false,
-    "customConditions": ["depot-source"]
+    "customConditions": ["arkvory-source"]
   }
 }

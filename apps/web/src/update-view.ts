@@ -1,4 +1,4 @@
-import type { UpdateSnapshot } from '@proanima/depot-contracts';
+import type { UpdateSnapshot } from '@proanima/arkvory-contracts';
 import { element } from './dom.js';
 import { message, dateMessage } from './i18n.js';
 import type { MessageKey } from './messages.js';

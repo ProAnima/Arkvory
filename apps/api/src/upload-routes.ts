@@ -1,11 +1,11 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
-import type { StorageService, CompletionQueue } from '@proanima/depot-application';
-import type { Principal } from '@proanima/depot-domain';
-import { DepotError, PART_BYTES } from '@proanima/depot-domain';
-import { descriptorSchema, uploadSchema } from '@proanima/depot-contracts';
+import type { StorageService, CompletionQueue } from '@proanima/arkvory-application';
+import type { Principal } from '@proanima/arkvory-domain';
+import { ArkvoryError, PART_BYTES } from '@proanima/arkvory-domain';
+import { descriptorSchema, uploadSchema } from '@proanima/arkvory-contracts';
 import { wireUpload } from './upload-response.js';
 import { UploadReceiver, withUploadDeadline } from './upload-lifetime.js';
-import type { BandwidthGovernor, DiagnosticLogger } from '@proanima/depot-infrastructure';
+import type { BandwidthGovernor, DiagnosticLogger } from '@proanima/arkvory-infrastructure';
 import type { resolveUploadTimeouts } from './upload-policy.js';
 
 interface Services {
@@ -36,7 +36,7 @@ function registerSessions(app: FastifyInstance, s: Services) {
     async (request, reply) => {
       const key = request.headers['idempotency-key'];
       if (typeof key !== 'string')
-        throw new DepotError('invalid_input', 'Idempotency-Key is required');
+        throw new ArkvoryError('invalid_input', 'Idempotency-Key is required');
       const result = await s.storage.create(
         s.principal(request),
         request.params.repository,
@@ -131,7 +131,7 @@ function registerContent(app: FastifyInstance, s: Services) {
     const hash = request.headers['x-content-sha256'];
     if (!/^\d{1,3}$/.test(request.params.index) || typeof hash !== 'string') {
       reply.header('Connection', 'close');
-      throw new DepotError('invalid_input', 'Invalid part request');
+      throw new ArkvoryError('invalid_input', 'Invalid part request');
     }
     await receive(request, reply, (source, signal) =>
       s.storage.uploadPart(

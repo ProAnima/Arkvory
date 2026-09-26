@@ -1,11 +1,11 @@
 import {
-  DepotError,
+  ArkvoryError,
   requireAccountName,
   requireGroupName,
   requirePassword,
   requireGrant,
-} from '@proanima/depot-domain';
-import type { Principal } from '@proanima/depot-domain';
+} from '@proanima/arkvory-domain';
+import type { Principal } from '@proanima/arkvory-domain';
 
 export interface Account {
   id: string;
@@ -46,12 +46,12 @@ export class IdentityService {
   constructor(private readonly store: IdentityStore) {}
   private admin(principal: Principal): void {
     if (!principal.administrator)
-      throw new DepotError('forbidden', 'Administrator access required');
+      throw new ArkvoryError('forbidden', 'Administrator access required');
   }
   createUser(principal: Principal, name: unknown, password: unknown, administrator: unknown) {
     this.admin(principal);
     if (typeof administrator !== 'boolean')
-      throw new DepotError('invalid_input', 'Administrator flag is required');
+      throw new ArkvoryError('invalid_input', 'Administrator flag is required');
     return this.store.createUser(
       requireAccountName(name),
       requirePassword(password),
@@ -61,14 +61,14 @@ export class IdentityService {
   updateUser(principal: Principal, id: string, value: unknown) {
     this.admin(principal);
     if (typeof value !== 'object' || value === null || Array.isArray(value))
-      throw new DepotError('invalid_input', 'Invalid account update');
+      throw new ArkvoryError('invalid_input', 'Invalid account update');
     const body: Record<string, unknown> = Object.fromEntries(Object.entries(value));
     if (
       Object.keys(body).length === 0 ||
       Object.keys(body).some((key) => !['enabled', 'password'].includes(key)) ||
       (body['enabled'] !== undefined && typeof body['enabled'] !== 'boolean')
     )
-      throw new DepotError('invalid_input', 'Invalid account update');
+      throw new ArkvoryError('invalid_input', 'Invalid account update');
     return this.store.updateUser(
       id,
       body['enabled'] === undefined ? undefined : body['enabled'],
@@ -95,7 +95,7 @@ export class IdentityService {
     this.admin(principal);
     if (access === null) {
       if (typeof repository !== 'string')
-        throw new DepotError('invalid_input', 'Invalid repository');
+        throw new ArkvoryError('invalid_input', 'Invalid repository');
       return this.store.grant(groupId, requireGrant(repository, 'read').repository, null);
     }
     const value = requireGrant(repository, access);
@@ -112,7 +112,7 @@ export class IdentityService {
   }
   changePassword(principal: Principal, currentPassword: unknown, newPassword: unknown) {
     if (!principal.id.startsWith('user:'))
-      throw new DepotError('forbidden', 'Account session required');
+      throw new ArkvoryError('forbidden', 'Account session required');
     return this.store.changePassword(
       principal.id.slice(5),
       requirePassword(currentPassword),

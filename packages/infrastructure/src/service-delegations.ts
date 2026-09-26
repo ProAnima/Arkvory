@@ -1,9 +1,9 @@
-import { DepotError, parseBindings, parseAdministrationActions } from '@proanima/depot-domain';
+import { ArkvoryError, parseBindings, parseAdministrationActions } from '@proanima/arkvory-domain';
 import type {
   AdministrationAction,
   ServiceBinding,
   ServiceDelegation,
-} from '@proanima/depot-domain';
+} from '@proanima/arkvory-domain';
 import type { PoolClient } from 'pg';
 import type { AdministrationContext } from './delegation-authorization.js';
 interface GrantRow {
@@ -24,9 +24,9 @@ const decode = (r: GrantRow): ServiceDelegation => ({
 });
 export async function listDelegations(c: PoolClient, ctx: AdministrationContext, keyId: string) {
   if (!ctx.bootstrap && ctx.keyId !== keyId)
-    throw new DepotError('forbidden', 'Only own delegations may be read');
+    throw new ArkvoryError('forbidden', 'Only own delegations may be read');
   if (!(await c.query('SELECT 1 FROM depot_api_keys WHERE id=$1', [keyId])).rowCount)
-    throw new DepotError('not_found', 'API key not found');
+    throw new ArkvoryError('not_found', 'API key not found');
   return (
     await c.query<GrantRow>(
       'SELECT * FROM depot_service_delegations WHERE key_id=$1 ORDER BY target_account_id LIMIT 64',
@@ -42,7 +42,7 @@ export async function writeDelegation(
   expected: number,
   value?: { actions: readonly AdministrationAction[]; ceiling: readonly ServiceBinding[] },
 ) {
-  if (!ctx.bootstrap) throw new DepotError('forbidden', 'Only bootstrap may delegate');
+  if (!ctx.bootstrap) throw new ArkvoryError('forbidden', 'Only bootstrap may delegate');
   const existing = (
     await c.query<GrantRow>(
       'SELECT * FROM depot_service_delegations WHERE key_id=$1 AND target_account_id=$2',
@@ -50,8 +50,8 @@ export async function writeDelegation(
     )
   ).rows[0];
   if ((existing?.revision ?? 0) !== expected)
-    throw new DepotError('conflict', 'Delegation revision changed');
-  if (!value && !existing) throw new DepotError('not_found', 'Delegation not found');
+    throw new ArkvoryError('conflict', 'Delegation revision changed');
+  if (!value && !existing) throw new ArkvoryError('not_found', 'Delegation not found');
   if (value) {
     const operator = (
       await c.query<{ account_id: string }>(
@@ -61,11 +61,11 @@ export async function writeDelegation(
       )
     ).rows[0];
     if (!operator)
-      throw new DepotError('conflict', 'Delegate requires an active bootstrap-issued credential');
+      throw new ArkvoryError('conflict', 'Delegate requires an active bootstrap-issued credential');
     if (operator.account_id === target)
-      throw new DepotError('forbidden', 'Self administration is not delegated');
+      throw new ArkvoryError('forbidden', 'Self administration is not delegated');
     if (!(await c.query('SELECT 1 FROM depot_service_accounts WHERE id=$1', [target])).rowCount)
-      throw new DepotError('not_found', 'Target account not found');
+      throw new ArkvoryError('not_found', 'Target account not found');
     // No chains: an account cannot simultaneously be a delegated target and an operator.
     if (
       (
@@ -76,7 +76,7 @@ export async function writeDelegation(
         )
       ).rowCount
     )
-      throw new DepotError('conflict', 'Operator accounts cannot be delegated targets');
+      throw new ArkvoryError('conflict', 'Operator accounts cannot be delegated targets');
   }
   if (!existing) {
     const counts = (
@@ -86,7 +86,7 @@ export async function writeDelegation(
       )
     ).rows[0];
     if (!counts || Number(counts.total) >= 10000 || Number(counts.owned) >= 64)
-      throw new DepotError('capacity_exceeded', 'Delegation capacity reached');
+      throw new ArkvoryError('capacity_exceeded', 'Delegation capacity reached');
   }
   const row = (
     await c.query<GrantRow>(
@@ -102,6 +102,6 @@ export async function writeDelegation(
       ],
     )
   ).rows[0];
-  if (!row) throw new DepotError('unavailable', 'Delegation update failed');
+  if (!row) throw new ArkvoryError('unavailable', 'Delegation update failed');
   return decode(row);
 }

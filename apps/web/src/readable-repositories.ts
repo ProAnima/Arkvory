@@ -1,6 +1,6 @@
-import type { DepotClient } from '@proanima/depot-sdk';
+import type { ArkvoryClient } from '@proanima/arkvory-sdk';
 
-export async function readableRepositories(client: DepotClient): Promise<readonly string[]> {
+export async function readableRepositories(client: ArkvoryClient): Promise<readonly string[]> {
   const readable: string[] = [];
   let after: string | undefined;
   let count = 0;

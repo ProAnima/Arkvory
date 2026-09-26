@@ -1,11 +1,11 @@
 import {
   authorizeAction,
-  DepotError,
+  ArkvoryError,
   parseDescriptor,
   requireId,
   requireAssetPath,
-} from '@proanima/depot-domain';
-import type { Principal, PackageManifest, MutationAccess } from '@proanima/depot-domain';
+} from '@proanima/arkvory-domain';
+import type { Principal, PackageManifest, MutationAccess } from '@proanima/arkvory-domain';
 import type { StorageService } from './storage.js';
 import { validateAssetPage } from './asset-page.js';
 import type { AssetEntry, AssetPage, AssetPageOptions } from './asset-page.js';
@@ -133,10 +133,10 @@ export class ArtifactCatalog {
     authorizeAction(p, repo, 'annotation.write', ['write']);
     const upload = await this.storage.artifact(p, repo, id);
     if (typeof value !== 'object' || value === null || Array.isArray(value))
-      throw new DepotError('invalid_input', 'Invalid annotations');
+      throw new ArkvoryError('invalid_input', 'Invalid annotations');
     const input: Record<string, unknown> = Object.fromEntries(Object.entries(value));
     if (Object.keys(input).some((key) => !['labels', 'metadata', 'collections'].includes(key)))
-      throw new DepotError('invalid_input', 'Unknown annotation field');
+      throw new ArkvoryError('invalid_input', 'Unknown annotation field');
     this.revision(expected);
     const fields = parseDescriptor({
       name: upload.descriptor.name,
@@ -177,7 +177,7 @@ export class ArtifactCatalog {
       name.length > 128 ||
       (version?.length ?? 0) > 128
     )
-      throw new DepotError('invalid_input', 'Invalid package filter');
+      throw new ArkvoryError('invalid_input', 'Invalid package filter');
     return this.store.resolvePackage(repo, group, name, version);
   }
   async packagePage(
@@ -197,7 +197,7 @@ export class ArtifactCatalog {
       limit < 1 ||
       limit > 100
     )
-      throw new DepotError('invalid_input', 'Invalid package page');
+      throw new ArkvoryError('invalid_input', 'Invalid package page');
     return this.store.packagePage(repo, group, name, options, after, limit);
   }
   async resolveAssetContent(p: Principal, repo: string, path: string) {
@@ -210,7 +210,7 @@ export class ArtifactCatalog {
   }
   async assets(p: Principal, repo: string, prefix: string) {
     authorizeAction(p, repo, 'asset.read', ['read']);
-    if (prefix.length > 1024) throw new DepotError('invalid_input', 'Invalid prefix');
+    if (prefix.length > 1024) throw new ArkvoryError('invalid_input', 'Invalid prefix');
     return this.store.assets(repo, prefix);
   }
   async assetPage(p: Principal, repo: string, options: AssetPageOptions): Promise<AssetPage> {
@@ -237,7 +237,8 @@ export class ArtifactCatalog {
   ) {
     authorizeAction(p, repo, 'asset.restore', ['write']);
     this.revision(expected);
-    if (expected === 0) throw new DepotError('invalid_input', 'Restore requires an existing asset');
+    if (expected === 0)
+      throw new ArkvoryError('invalid_input', 'Restore requires an existing asset');
     const source = await this.assetRevision(p, repo, path, sourceRevision);
     await this.storage.artifact(p, repo, source.artifactId);
     return this.store.setAsset(
@@ -270,20 +271,21 @@ export class ArtifactCatalog {
   ) {
     authorizeAction(p, repo, 'artifact.list', ['read']);
     if (query.length > 240 || label.length > 64 || collection.length > 64)
-      throw new DepotError('invalid_input', 'Search filter too long');
+      throw new ArkvoryError('invalid_input', 'Search filter too long');
     if (after !== undefined) requireId(after);
     return this.store.search(repo, query, label, collection, after);
   }
   async audit(p: Principal, repo: string, after: string) {
     authorizeAction(p, repo, 'audit.read', ['write']);
-    if (!/^[0-9]{1,18}$/.test(after)) throw new DepotError('invalid_input', 'Invalid audit cursor');
+    if (!/^[0-9]{1,18}$/.test(after))
+      throw new ArkvoryError('invalid_input', 'Invalid audit cursor');
     return this.store.audit(repo, after);
   }
   async reference(p: Principal, repo: string, id: string, key: string, remove: boolean) {
     authorizeAction(p, repo, 'reference.write', ['write']);
     await this.storage.artifact(p, repo, id);
     if (!/^[a-zA-Z0-9_.:/-]{1,256}$/.test(key))
-      throw new DepotError('invalid_input', 'Invalid reference');
+      throw new ArkvoryError('invalid_input', 'Invalid reference');
     await this.store.reference(
       repo,
       id,
@@ -295,10 +297,10 @@ export class ArtifactCatalog {
   }
   private revision(value: number) {
     if (!Number.isSafeInteger(value) || value < 0 || value > 2147483646)
-      throw new DepotError('invalid_input', 'Invalid expected revision');
+      throw new ArkvoryError('invalid_input', 'Invalid expected revision');
   }
   private existingRevision(value: number) {
     if (!Number.isSafeInteger(value) || value < 1 || value > 2147483647)
-      throw new DepotError('invalid_input', 'Invalid asset revision');
+      throw new ArkvoryError('invalid_input', 'Invalid asset revision');
   }
 }

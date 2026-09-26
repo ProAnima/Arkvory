@@ -7,7 +7,7 @@ import { ZipFile } from 'yazl';
 import { releaseFiles, sha256 } from './release-files.mjs';
 
 export async function packageInstallers(output, staging, release) {
-  const common = ['depot-runtime.zip', 'depot-setup.mjs', 'depot-release.json'];
+  const common = ['arkvory-runtime.zip', 'arkvory-setup.mjs', 'arkvory-release.json'];
   for (const platform of ['Windows', 'Linux']) {
     const directory = join(staging, `installer-${platform}`);
     await mkdir(directory);
@@ -32,15 +32,19 @@ export async function packageInstallers(output, staging, release) {
       const zip = new ZipFile();
       const done = pipeline(
         zip.outputStream,
-        createWriteStream(join(output, 'Depot-Windows.zip'), { flags: 'wx' }),
+        createWriteStream(join(output, 'Arkvory-Windows.zip'), { flags: 'wx' }),
       );
       for (const name of files) zip.addFile(join(directory, name), name);
       zip.end();
       await done;
     } else
-      execFileSync('tar', ['-czf', join(output, 'Depot-Linux.tar.gz'), '-C', directory, ...files], {
-        stdio: 'inherit',
-      });
+      execFileSync(
+        'tar',
+        ['-czf', join(output, 'Arkvory-Linux.tar.gz'), '-C', directory, ...files],
+        {
+          stdio: 'inherit',
+        },
+      );
   }
   const files = {};
   for (const name of releaseFiles) files[name] = await sha256(join(output, name));

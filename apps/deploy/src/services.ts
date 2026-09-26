@@ -19,7 +19,7 @@ export class Services {
       [
         'compose',
         '--project-name',
-        'proanima-depot',
+        'proanima-arkvory',
         '--project-directory',
         this.root,
         '--env-file',
@@ -29,7 +29,7 @@ export class Services {
         ...args,
       ],
       undefined,
-      { DEPOT_IMAGE: `proanima-depot:${release.version}` },
+      { ARKVORY_IMAGE: `proanima-arkvory:${release.version}` },
     );
   }
   async prepare(release: Release): Promise<void> {
@@ -52,7 +52,7 @@ export class Services {
       await command(this.state.engine, [
         'build',
         '--tag',
-        `proanima-depot:${release.version}`,
+        `proanima-arkvory:${release.version}`,
         '--file',
         join(this.root, 'releases', release.version, 'deploy/Dockerfile'),
         join(this.root, 'releases', release.version),
@@ -70,24 +70,24 @@ export class Services {
     if (this.state.mode === 'compose')
       await this.compose(this.state.current, ['stop', '--timeout', '120', 'worker', 'api']);
     else if (this.state.mode === 'systemd')
-      await command('systemctl', ['stop', 'depot-worker', 'depot-api']);
+      await command('systemctl', ['stop', 'arkvory-worker', 'arkvory-api']);
     else
       for (const role of ['worker', 'api'])
         // WinSW stop returns before shutdown; wait before switching the release pointer.
-        await command(join(this.root, `service/depot-${role}.exe`), ['stopwait']);
+        await command(join(this.root, `service/arkvory-${role}.exe`), ['stopwait']);
   }
   async start(release: Release): Promise<void> {
     if (this.state.mode === 'compose') {
       await this.compose(release, ['up', '-d', '--wait', '--wait-timeout', '180', 'api', 'worker']);
     } else if (this.state.mode === 'systemd')
-      await command('systemctl', ['start', 'depot-api', 'depot-worker']);
+      await command('systemctl', ['start', 'arkvory-api', 'arkvory-worker']);
     else
       for (const role of ['api', 'worker'])
-        await command(join(this.root, `service/depot-${role}.exe`), ['start']);
+        await command(join(this.root, `service/arkvory-${role}.exe`), ['start']);
   }
   async healthy(): Promise<void> {
     const env = runtimeEnvironment(await jsonFile(join(this.root, 'config/runtime.json')));
-    const port = this.state.mode === 'compose' ? '8080' : (env['DEPOT_PORT'] ?? '8080');
+    const port = this.state.mode === 'compose' ? '8080' : (env['ARKVORY_PORT'] ?? '8080');
     if (!/^[0-9]{1,5}$/.test(port)) throw new Error('Invalid health port');
     let consecutive = 0;
     for (let attempt = 0; attempt < 60; attempt++) {
@@ -106,7 +106,7 @@ export class Services {
       }
       await delay(2000);
     }
-    throw new Error('Depot did not become ready');
+    throw new Error('Arkvory did not become ready');
   }
   async provision(release: Release): Promise<void> {
     if (this.state.mode === 'compose') return;
@@ -134,13 +134,13 @@ export class Services {
   }
   private async workerRunning(): Promise<void> {
     if (this.state.mode === 'systemd')
-      await command('systemctl', ['is-active', '--quiet', 'depot-worker']);
+      await command('systemctl', ['is-active', '--quiet', 'arkvory-worker']);
     else if (this.state.mode === 'windows')
       await command('powershell.exe', [
         '-NoProfile',
         '-NonInteractive',
         '-Command',
-        "if ((Get-Service Depotworker).Status -ne 'Running') { exit 1 }",
+        "if ((Get-Service Arkvoryworker).Status -ne 'Running') { exit 1 }",
       ]);
     else
       await this.compose(this.state.current, [

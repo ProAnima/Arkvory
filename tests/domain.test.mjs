@@ -6,7 +6,7 @@ import {
   authorize,
   requireId,
   MAX_OBJECT_BYTES,
-} from '@proanima/depot-domain';
+} from '@proanima/arkvory-domain';
 import { parseRange, matchesEtag, parseKeys } from '../apps/api/dist/index.js';
 const valid = {
   name: 'archive.upack',

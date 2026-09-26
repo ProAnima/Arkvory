@@ -29,7 +29,7 @@
 | `bootstrap`      | Локально настроенное управление сервисными identities/delegations.                                                         |
 | `administrator`  | Управление пользовательскими учётными записями и группами.                                                                 |
 
-Administrator не наследует download, bootstrap не становится пользовательским administrator, Publisher не наследует Reader. Managed account/key bindings пересекаются по **действию и тому же репозиторию**. Новые actions не включаются в старые read/write автоматически. Runtime use cases остаются источником решений; `x-depot-surface` и `x-depot-visibility` являются описанием, а не middleware авторизации.
+Administrator не наследует download, bootstrap не становится пользовательским administrator, Publisher не наследует Reader. Managed account/key bindings пересекаются по **действию и тому же репозиторию**. Новые actions не включаются в старые read/write автоматически. Runtime use cases остаются источником решений; `x-arkvory-surface` и `x-arkvory-visibility` являются описанием, а не middleware авторизации.
 
 ## Каталог операций для текущего клиента
 
@@ -63,12 +63,12 @@ GET /api/v1/openapi.json?surface=administration
 
 Первый URL сохраняет полную спецификацию. Второй и третий — документационные представления, с параметрами путей, схемами, security, retry и gateway metadata исходного контракта. Они **не фильтруются по правам пользователя**: документация административного метода не открывает доступ к нему. Для построения меню удалённого UI применяется `/operations`, а не факт наличия пути в OpenAPI.
 
-В каждой операции OpenAPI присутствуют `x-depot-surface` и `x-depot-visibility` наряду с прежними `x-depot-authorization`, `x-depot-gateway` и `x-depot-retry`. Неизвестная responsibility или операция без описания останавливает сборку/запуск. Registry/route guard проверяет весь inventory, в том числе новые GET/HEAD.
+В каждой операции OpenAPI присутствуют `x-arkvory-surface` и `x-arkvory-visibility` наряду с прежними `x-arkvory-authorization`, `x-arkvory-gateway` и `x-arkvory-retry`. Неизвестная responsibility или операция без описания останавливает сборку/запуск. Registry/route guard проверяет весь inventory, в том числе новые GET/HEAD.
 
 ## SDK по зонам ответственности
 
 ```typescript
-const client = new DepotClient('https://depot.example.com/', () => currentToken);
+const client = new ArkvoryClient('https://arkvory.example.com/', () => currentToken);
 const repository = client.inRepository('releases');
 
 const visible = await repository.operations({ surface: 'transfers' });

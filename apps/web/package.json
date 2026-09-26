@@ -1,11 +1,11 @@
 {
-  "name": "@proanima/depot-web",
+  "name": "@proanima/arkvory-web",
   "version": "0.0.0",
   "private": true,
   "type": "module",
   "description": "Автономный web UI",
   "exports": {
-    "depot-source": "./src/index.ts",
+    "arkvory-source": "./src/index.ts",
     "types": "./dist/index.d.ts",
     "import": "./dist/index.js"
   },
@@ -13,11 +13,11 @@
   "author": "Ian Panaev",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ProAnima/Depot.git"
+    "url": "git+https://github.com/ProAnima/Arkvory.git"
   },
   "dependencies": {
     "@noble/hashes": "2.4.0",
-    "@proanima/depot-contracts": "0.0.0",
-    "@proanima/depot-sdk": "0.0.0"
+    "@proanima/arkvory-contracts": "0.0.0",
+    "@proanima/arkvory-sdk": "0.0.0"
   }
 }

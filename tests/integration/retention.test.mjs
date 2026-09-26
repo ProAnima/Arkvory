@@ -1,15 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
-import { DepotClient } from '@proanima/depot-sdk';
+import { ArkvoryClient } from '@proanima/arkvory-sdk';
 import {
   PostgresRetention,
   PostgresBrowse,
   LocalBlobStore,
   PostgresCatalog,
   PostgresCleanup,
-} from '@proanima/depot-infrastructure';
-import { GarbageCollector } from '@proanima/depot-application';
+} from '@proanima/arkvory-infrastructure';
+import { GarbageCollector } from '@proanima/arkvory-application';
 import { setup, create, base } from './fixture.mjs';
 import { validateResponse } from '../api-schema.mjs';
 const path = '/api/v1/repositories/{repository}';
@@ -28,7 +28,7 @@ async function publish(f) {
 }
 async function cleaner(f) {
   f.config.keys[0].principal.serviceAdministrator = true;
-  const root = new DepotClient(await f.listen(), () => f.headers.authorization.slice(7));
+  const root = new ArkvoryClient(await f.listen(), () => f.headers.authorization.slice(7));
   const bindings = [
     { resource: { kind: 'repository', id: 'releases' }, actions: ['artifact.delete'] },
   ];
@@ -37,7 +37,7 @@ async function cleaner(f) {
     name: 'cleaner',
     bindings,
   });
-  const client = new DepotClient(rootUrl(f), () => key.secret);
+  const client = new ArkvoryClient(rootUrl(f), () => key.secret);
   await client.activateServiceKey();
   return {
     root,

@@ -2,8 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { setTimeout as delay } from 'node:timers/promises';
-import { DepotClient } from '@proanima/depot-sdk';
-import { migrate, PostgresBrowse } from '@proanima/depot-infrastructure';
+import { ArkvoryClient } from '@proanima/arkvory-sdk';
+import { migrate, PostgresBrowse } from '@proanima/arkvory-infrastructure';
 import { validateResponse } from '../api-schema.mjs';
 import { setup, base } from './fixture.mjs';
 
@@ -38,7 +38,7 @@ test('asset cursor pages traverse beyond 1000 through HTTP and SDK while the ori
   const paths = Array.from({ length: 1105 }, (_, i) => `build/${String(i).padStart(5, '0')}.zip`);
   await seed(f, paths);
   const url = await f.listen(),
-    client = new DepotClient(url, () => f.headers.authorization.slice(7));
+    client = new ArkvoryClient(url, () => f.headers.authorization.slice(7));
   assert.equal((await client.capabilities()).features.assetPagination, true);
   assert.equal((await client.assetPage('releases')).items.length, 50);
   const seen = [];
@@ -185,14 +185,14 @@ test('asset cursors grant no authority; managed permissions and revocation are c
   f.config.keys[0].principal.serviceAdministrator = true;
   await seed(f, ['a', 'b']);
   const url = await f.listen(),
-    root = new DepotClient(url, () => f.headers.authorization.slice(7));
+    root = new ArkvoryClient(url, () => f.headers.authorization.slice(7));
   const bindings = [{ resource: { kind: 'repository', id: 'releases' }, actions: ['asset.read'] }];
   const account = await root.createServiceAccount('asset-reader', bindings);
   const issued = await root.issueServiceKey(account.id, 'asset-reader', {
     name: 'reader-key',
     bindings,
   });
-  const client = new DepotClient(url, () => issued.secret);
+  const client = new ArkvoryClient(url, () => issued.secret);
   await client.activateServiceKey();
   const first = await client.assetPage('releases', { limit: 1 });
   await root.setServicePolicy(account.id, 1, []);

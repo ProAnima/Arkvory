@@ -4,8 +4,8 @@ import {
   authorizeAction,
   parseDeletionSelection,
   parseRetentionCriteria,
-} from '@proanima/depot-domain';
-import { readDeletionResult, readRetentionPreview } from '@proanima/depot-contracts';
+} from '@proanima/arkvory-domain';
+import { readDeletionResult, readRetentionPreview } from '@proanima/arkvory-contracts';
 const id = '00000000-0000-4000-8000-000000000001';
 const now = '2026-09-25T10:00:00.000Z';
 test('retention requires explicit bounded filters and selection; coarse grants never acquire deletion', () => {

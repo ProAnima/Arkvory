@@ -10,7 +10,7 @@ Online GC может уничтожить blob, ещё необходимый к
 
 Согласованная точка T: PostgreSQL exported snapshot для dump/inventory, короткий durable barrier допуска unlink, постоянные pins всего набора T, затем копирование immutable blobs вне SQL snapshot. GC и offline repair должны соблюдать единый backup protocol. Expiry lease не освобождает pins без fencing/reconciliation. Версионированный manifest хранится в backup vault и позволяет найти/проверить точку без source DB.
 
-Предлагается mature engine restic для encrypted/deduplicated vault за узким адаптером; Depot отвечает за согласованность, доступ, жизненный цикл и UX. Не обещать WORM у каждого S3 backend или byte-exact resume движка. Engine/version/license/provenance и backend compatibility проверяются в B0.
+Предлагается mature engine restic для encrypted/deduplicated vault за узким адаптером; Arkvory отвечает за согласованность, доступ, жизненный цикл и UX. Не обещать WORM у каждого S3 backend или byte-exact resume движка. Engine/version/license/provenance и backend compatibility проверяются в B0.
 
 Исполнение отделяется от HTTP и transfer worker в локальный supervised backup agent. Новый composition root добавляется вместе с первым use case и allowlist; приложение deploy устанавливает его, но не импортирует другие apps. Web/CLI используют SDK. Public API получает типизированные команды и opaque secret refs, не shell, произвольные paths или plaintext credentials в ответах.
 

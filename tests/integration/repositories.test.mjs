@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
-import { DepotClient } from '@proanima/depot-sdk';
+import { ArkvoryClient } from '@proanima/arkvory-sdk';
 import { createServer } from '../../apps/api/dist/index.js';
 import { validateResponse } from '../api-schema.mjs';
 import { setup, base, create } from './fixture.mjs';
@@ -9,13 +9,13 @@ const binding = (id, actions) => ({ resource: { kind: 'repository', id }, action
 async function managed(f, bindings) {
   f.config.keys[0].principal.serviceAdministrator = true;
   const address = await f.listen(),
-    root = new DepotClient(address, () => f.headers.authorization.slice(7));
+    root = new ArkvoryClient(address, () => f.headers.authorization.slice(7));
   const account = await root.createServiceAccount('discovery', bindings);
   const key = await root.issueServiceKey(account.id, 'discovery', {
     name: 'discovery-key',
     bindings,
   });
-  const client = new DepotClient(address, () => key.secret);
+  const client = new ArkvoryClient(address, () => key.secret);
   await client.activateServiceKey();
   return { address, root, account, key, client };
 }
@@ -23,7 +23,7 @@ test('repository discovery exposes own logical scopes with schemas, paging and u
   const f = await setup(t);
   f.config.keys[0].principal.repositories = ['zulu', 'alpha', 'alpha', 'releases'];
   const address = await f.listen(),
-    client = new DepotClient(address, () => f.headers.authorization.slice(7));
+    client = new ArkvoryClient(address, () => f.headers.authorization.slice(7));
   assert.equal((await client.capabilities()).features.repositoryDiscovery, true);
   const first = await client.repositories({ limit: 2 });
   assert.deepEqual(
@@ -101,7 +101,7 @@ test('managed discovery is opt-in, filters before LIMIT and never grants bytes, 
     name: 'content-only',
     bindings: [binding('aaa-hidden', ['content.read'])],
   });
-  const narrow = new DepotClient(m.address, () => content.secret);
+  const narrow = new ArkvoryClient(m.address, () => content.secret);
   await narrow.activateServiceKey();
   assert.deepEqual(await narrow.repositories(), { items: [], next: null });
   const absent = await f.app.inject({
@@ -131,7 +131,7 @@ test('repository pages recheck policy, expiry, disable and revoke and preserve a
     name: 'new-discovery',
     bindings,
   });
-  const newClient = new DepotClient(m.address, () => rotated.secret);
+  const newClient = new ArkvoryClient(m.address, () => rotated.secret);
   await newClient.activateServiceKey();
   assert.deepEqual(
     (await newClient.repositories({ after: first.next })).items.map((c) => c.id),
@@ -210,7 +210,7 @@ test('user group grants and the read gateway preserve group write semantics and 
   });
   cleanup.push(() => reader.close());
   const address = await f.listen(),
-    root = new DepotClient(address, () => f.headers.authorization.slice(7));
+    root = new ArkvoryClient(address, () => f.headers.authorization.slice(7));
   const user = await root.createUser('repository-user', 'long-private-test-password');
   const group = await root.createAccessGroup('repository-group');
   await root.setGroupMember(group.id, user.id, true);

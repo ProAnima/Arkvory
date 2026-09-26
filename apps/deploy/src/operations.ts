@@ -15,7 +15,7 @@ export async function save(root: string, state: Installation): Promise<void> {
   if (state.mode === 'compose')
     await atomicText(
       join(root, 'config/compose.env'),
-      `DEPOT_IMAGE=proanima-depot:${state.current.version}\n`,
+      `ARKVORY_IMAGE=proanima-arkvory:${state.current.version}\n`,
       0o600,
     );
   await atomicJson(join(root, 'installation.json'), state);
@@ -62,7 +62,7 @@ export async function install(root: string, options: Map<string, string>): Promi
   await services.healthy();
   await services.schedule(state.current);
   console.log(
-    'Depot installed. Bootstrap credential: config/bootstrap-token.txt. Keep it private and rotate after setup.',
+    'Arkvory installed. Bootstrap credential: config/bootstrap-token.txt. Keep it private and rotate after setup.',
   );
 }
 export async function finishInstall(root: string): Promise<void> {

@@ -5,8 +5,8 @@ import {
   readServiceAccount,
   readApiKey,
   readServicePage,
-} from '@proanima/depot-contracts';
-import type { ServiceBindingResponse } from '@proanima/depot-contracts';
+} from '@proanima/arkvory-contracts';
+import type { ServiceBindingResponse } from '@proanima/arkvory-contracts';
 import type { HttpPort } from './http-transport.js';
 
 export class ServiceAccountsApi {

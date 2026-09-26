@@ -7,7 +7,7 @@ import { chromium } from 'playwright';
 const cleanup = [];
 const browser = await chromium.launch({
   headless: true,
-  ...(process.env.DEPOT_BROWSER_CHANNEL ? { channel: process.env.DEPOT_BROWSER_CHANNEL } : {}),
+  ...(process.env.ARKVORY_BROWSER_CHANNEL ? { channel: process.env.ARKVORY_BROWSER_CHANNEL } : {}),
 });
 try {
   const f = await setup(

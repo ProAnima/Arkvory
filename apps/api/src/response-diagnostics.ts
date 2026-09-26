@@ -1,5 +1,5 @@
 import type { FastifyRequest, FastifyReply } from 'fastify';
-import type { DiagnosticLogger, PostgresStoragePolicy } from '@proanima/depot-infrastructure';
+import type { DiagnosticLogger, PostgresStoragePolicy } from '@proanima/arkvory-infrastructure';
 import type { RequestContext } from './request-context.js';
 
 /** A bounded, best-effort queue; transfers never await database logging. */

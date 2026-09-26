@@ -18,28 +18,28 @@ export async function initialize(
   const container = state.mode === 'compose';
   const supplied = input ? runtimeEnvironment(await jsonFile(input)) : {};
   if (databaseBin) {
-    if (container || supplied['DEPOT_DATABASE_URL'])
+    if (container || supplied['ARKVORY_DATABASE_URL'])
       throw new Error('Managed database cannot replace an external database');
-    supplied['DEPOT_DATABASE_URL'] = await configureDatabase(root, databaseBin);
+    supplied['ARKVORY_DATABASE_URL'] = await configureDatabase(root, databaseBin);
   }
-  if (!container && !supplied['DEPOT_DATABASE_URL'])
-    throw new Error('Native installation requires --config with DEPOT_DATABASE_URL');
+  if (!container && !supplied['ARKVORY_DATABASE_URL'])
+    throw new Error('Native installation requires --config with ARKVORY_DATABASE_URL');
   for (const name of ['config', 'data', 'logs', 'service'])
     await mkdir(join(root, name), { mode: 0o700 });
   const config = {
-    DEPOT_HOST: container ? '0.0.0.0' : '127.0.0.1',
-    DEPOT_PORT: '8080',
-    DEPOT_CAPACITY_BYTES: String(10 * 1024 ** 4),
+    ARKVORY_HOST: container ? '0.0.0.0' : '127.0.0.1',
+    ARKVORY_PORT: '8080',
+    ARKVORY_CAPACITY_BYTES: String(10 * 1024 ** 4),
     ...supplied,
     ...(container
       ? {
-          DEPOT_DATABASE_URL: `postgresql://depot:${password}@database:5432/depot`,
-          DEPOT_HOST: '0.0.0.0',
-          DEPOT_PORT: '8080',
+          ARKVORY_DATABASE_URL: `postgresql://arkvory:${password}@database:5432/arkvory`,
+          ARKVORY_HOST: '0.0.0.0',
+          ARKVORY_PORT: '8080',
         }
       : {}),
-    DEPOT_DATA_DIR: container ? '/var/lib/depot' : join(root, 'data'),
-    DEPOT_KEYS_FILE: container ? '/run/depot/keys.json' : join(root, 'config/keys.json'),
+    ARKVORY_DATA_DIR: container ? '/var/lib/arkvory' : join(root, 'data'),
+    ARKVORY_KEYS_FILE: container ? '/run/arkvory/keys.json' : join(root, 'config/keys.json'),
   };
   await writeFile(join(root, 'config/runtime.json'), JSON.stringify(config, null, 2), {
     flag: 'wx',
@@ -73,12 +73,12 @@ export async function initialize(
   await writeFile(join(root, 'config/health-token.txt'), healthToken, { flag: 'wx', mode: 0o600 });
   await writeFile(
     join(root, 'config/postgres.env'),
-    `POSTGRES_USER=depot\nPOSTGRES_DB=depot\nPOSTGRES_PASSWORD=${password}\n`,
+    `POSTGRES_USER=arkvory\nPOSTGRES_DB=arkvory\nPOSTGRES_PASSWORD=${password}\n`,
     { flag: 'wx', mode: 0o600 },
   );
   await writeFile(
     join(root, 'config/compose.env'),
-    `DEPOT_IMAGE=proanima-depot:${state.current.version}\n`,
+    `ARKVORY_IMAGE=proanima-arkvory:${state.current.version}\n`,
     { flag: 'wx', mode: 0o600 },
   );
   // Bind-mounted runtime files are readable inside an unprivileged container. Host config directory stays private.

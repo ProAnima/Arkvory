@@ -16,17 +16,17 @@ foreach ($path in @((Join-Path $Root 'runtime'), (Join-Path $Root 'launcher.mjs'
 }
 & icacls.exe (Join-Path $Root 'runtime') /grant:r '*S-1-5-20:(OI)(CI)RX' /T | Out-Null
 if ($LASTEXITCODE -ne 0) { throw 'Cannot grant database binary access' }
-$exe = Join-Path $directory 'depot-database.exe'
-$existing = Get-CimInstance Win32_Service -Filter "Name='Depotdatabase'"
-if ($existing -and $existing.PathName.Trim('"') -ne $exe) { throw 'Another installation owns Depotdatabase' }
+$exe = Join-Path $directory 'arkvory-database.exe'
+$existing = Get-CimInstance Win32_Service -Filter "Name='Arkvorydatabase'"
+if ($existing -and $existing.PathName.Trim('"') -ne $exe) { throw 'Another installation owns Arkvorydatabase' }
 if (-not $existing) {
   Copy-Item -LiteralPath $wrapper -Destination $exe
   function Xml([string]$value) { [Security.SecurityElement]::Escape($value) }
   $settings = Get-Content -LiteralPath (Join-Path $directory 'settings.json') -Raw | ConvertFrom-Json
   $xml = @"
 <service>
-  <id>Depotdatabase</id><name>ProAnima Depot database</name>
-  <description>Dedicated PostgreSQL database for ProAnima Depot.</description>
+  <id>Arkvorydatabase</id><name>ProAnima Arkvory database</name>
+  <description>Dedicated PostgreSQL database for ProAnima Arkvory.</description>
   <executable>$(Xml $Node)</executable>
   <startarguments>&quot;$(Xml (Join-Path $Root 'launcher.mjs'))&quot; &quot;$(Xml $Root)&quot; database</startarguments>
   <workingdirectory>$(Xml $directory)</workingdirectory>
@@ -39,12 +39,12 @@ if (-not $existing) {
   <log mode="roll-by-size"><sizeThreshold>20480</sizeThreshold><keepFiles>5</keepFiles></log>
 </service>
 "@
-  [IO.File]::WriteAllText((Join-Path $directory 'depot-database.xml'), $xml)
+  [IO.File]::WriteAllText((Join-Path $directory 'arkvory-database.xml'), $xml)
   & $exe install
   if ($LASTEXITCODE -ne 0) { throw 'Cannot register database service' }
 }
-& (Join-Path $PSScriptRoot 'configure-recovery.ps1') -Name Depotdatabase
-if ((Get-Service Depotdatabase).Status -ne 'Running') {
+& (Join-Path $PSScriptRoot 'configure-recovery.ps1') -Name Arkvorydatabase
+if ((Get-Service Arkvorydatabase).Status -ne 'Running') {
   & $exe start
   if ($LASTEXITCODE -ne 0) { throw 'Cannot start database service' }
 }

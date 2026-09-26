@@ -22,14 +22,14 @@ test "$(id -u)" = 0
 test "$(uname -m)" = x86_64
 test -d /run/systemd/system
 if command -v apt-get >/dev/null; then echo deb; elif command -v dnf >/dev/null; then echo rpm; else exit 1; fi
-if test -f /opt/proanima-depot/installation.json; then echo installed; else echo new; fi`),
+if test -f /opt/proanima-arkvory/installation.json; then echo installed; else echo new; fi`),
         )
       : await ssh.exec(
           powershell(`$ErrorActionPreference='Stop'
 $p=[Security.Principal.WindowsPrincipal]::new([Security.Principal.WindowsIdentity]::GetCurrent())
 if (-not $p.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator) -or $env:PROCESSOR_ARCHITECTURE -ne 'AMD64') { exit 1 }
 'exe'
-if (Test-Path -LiteralPath 'C:/ProgramData/ProAnima/Depot/installation.json') { 'installed' } else { 'new' }`),
+if (Test-Path -LiteralPath 'C:/ProgramData/ProAnima/Arkvory/installation.json') { 'installed' } else { 'new' }`),
         );
   const [packaging, state, extra] = output.split(/\r?\n/);
   if (
@@ -44,17 +44,17 @@ if (Test-Path -LiteralPath 'C:/ProgramData/ProAnima/Depot/installation.json') { 
   return { platform, packaging, installed: state === 'installed' };
 }
 export const nativeAsset = (target: RemoteTarget) =>
-  ({ deb: 'Depot-amd64.deb', rpm: 'Depot-x86_64.rpm', exe: 'Depot-Setup-x64.exe' })[
+  ({ deb: 'Arkvory-amd64.deb', rpm: 'Arkvory-x86_64.rpm', exe: 'Arkvory-Setup-x64.exe' })[
     target.packaging
   ];
 export async function makeRemoteStage(ssh: RemoteCommands, target: RemoteTarget): Promise<string> {
   const id = randomUUID();
   if (target.platform === 'linux') {
-    const path = '/var/tmp/depot-remote-' + id;
+    const path = '/var/tmp/arkvory-remote-' + id;
     await ssh.exec(`umask 077; mkdir ${sh(path)}`);
     return path;
   }
-  const path = 'C:/ProgramData/DepotRemote-' + id;
+  const path = 'C:/ProgramData/ArkvoryRemote-' + id;
   await ssh.exec(
     powershell(`$ErrorActionPreference='Stop'; New-Item -ItemType Directory -Path ${ps(path)} | Out-Null
 & icacls.exe ${ps(path)} /inheritance:r /grant:r '*S-1-5-18:(OI)(CI)F' '*S-1-5-32-544:(OI)(CI)F' | Out-Null
@@ -76,9 +76,9 @@ exit $p.ExitCode`);
 export function remoteNode(platform: RemotePlatform, code: string) {
   const script = `eval(Buffer.from('${Buffer.from(code).toString('base64')}','base64').toString())`;
   return platform === 'linux'
-    ? linuxRootCommand(`/opt/proanima-depot/runtime/node -e ${sh(script)}`)
+    ? linuxRootCommand(`/opt/proanima-arkvory/runtime/node -e ${sh(script)}`)
     : powershell(
-        `& 'C:/ProgramData/ProAnima/Depot/runtime/node.exe' -e ${ps(script)}; exit $LASTEXITCODE`,
+        `& 'C:/ProgramData/ProAnima/Arkvory/runtime/node.exe' -e ${ps(script)}; exit $LASTEXITCODE`,
       );
 }
 export async function removeRemoteStage(
@@ -87,7 +87,7 @@ export async function removeRemoteStage(
   directory: string,
 ) {
   const prefix =
-    target.platform === 'linux' ? '/var/tmp/depot-remote-' : 'C:/ProgramData/DepotRemote-';
+    target.platform === 'linux' ? '/var/tmp/arkvory-remote-' : 'C:/ProgramData/ArkvoryRemote-';
   if (!directory.startsWith(prefix) || !/^[a-f0-9-]{36}$/.test(directory.slice(prefix.length)))
     throw new RemoteError('target');
   const file = directory + '/' + nativeAsset(target);

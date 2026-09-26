@@ -9,16 +9,16 @@ import { verifyReleaseFiles } from '../../scripts/release-files.mjs';
 import { verifyInstallers } from '../../scripts/verify-installers.mjs';
 import { extractArchive } from '../../apps/deploy/dist/archive.js';
 
-const root = await mkdtemp(join(tmpdir(), 'depot-package-gate-'));
-const output = process.env.DEPOT_RELEASE_ARTIFACT ?? join(root, 'artifact');
+const root = await mkdtemp(join(tmpdir(), 'arkvory-package-gate-'));
+const output = process.env.ARKVORY_RELEASE_ARTIFACT ?? join(root, 'artifact');
 assert.ok(process.env.npm_execpath, 'Run through npm gate');
-if (!process.env.DEPOT_RELEASE_ARTIFACT)
+if (!process.env.ARKVORY_RELEASE_ARTIFACT)
   execFileSync(
     process.execPath,
     [process.env.npm_execpath, 'run', 'release:package', '--', '0.0.1', output],
     { stdio: 'inherit' },
   );
-const release = JSON.parse(await readFile(join(output, 'depot-release.json'), 'utf8'));
+const release = JSON.parse(await readFile(join(output, 'arkvory-release.json'), 'utf8'));
 await verifyReleaseFiles(
   output,
   release.version,
@@ -27,7 +27,7 @@ await verifyReleaseFiles(
 await verifyInstallers(output, root, extractArchive);
 assert.equal(
   JSON.parse(
-    execFileSync(process.execPath, [join(output, 'depotctl.mjs'), '--version'], {
+    execFileSync(process.execPath, [join(output, 'arkvoryctl.mjs'), '--version'], {
       cwd: root,
       encoding: 'utf8',
     }),
@@ -35,7 +35,7 @@ assert.equal(
   release.version,
 );
 assert.match(
-  execFileSync(process.execPath, [join(output, 'depotctl.mjs'), '--help', '--lang', 'ru'], {
+  execFileSync(process.execPath, [join(output, 'arkvoryctl.mjs'), '--help', '--lang', 'ru'], {
     cwd: root,
     encoding: 'utf8',
   }),
@@ -43,7 +43,7 @@ assert.match(
 );
 const target = join(root, 'installation');
 assert.match(
-  execFileSync(process.execPath, [join(output, 'depot-remote.mjs'), '--help'], {
+  execFileSync(process.execPath, [join(output, 'arkvory-remote.mjs'), '--help'], {
     cwd: root,
     encoding: 'utf8',
   }),
@@ -72,7 +72,7 @@ const state = {
 };
 const { writeFile } = await import('node:fs/promises');
 await writeFile(join(target, 'installation.json'), JSON.stringify(state));
-execFileSync(process.execPath, [join(output, 'depot-setup.mjs'), 'status', '--root', target], {
+execFileSync(process.execPath, [join(output, 'arkvory-setup.mjs'), 'status', '--root', target], {
   cwd: root,
   stdio: 'inherit',
 });

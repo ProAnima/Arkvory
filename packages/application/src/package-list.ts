@@ -1,4 +1,4 @@
-import { compareVersions, DepotError } from '@proanima/depot-domain';
+import { compareVersions, ArkvoryError } from '@proanima/arkvory-domain';
 import type { PackageEntry, PackageListOptions } from './catalog.js';
 
 export function parsePackageListOptions(value: Record<string, unknown>): PackageListOptions {
@@ -7,7 +7,7 @@ export function parsePackageListOptions(value: Record<string, unknown>): Package
       (key) => !['group', 'name', 'sort', 'direction', 'groupBy', 'after', 'limit'].includes(key),
     )
   )
-    throw new DepotError('invalid_input', 'Unknown package list option');
+    throw new ArkvoryError('invalid_input', 'Unknown package list option');
   const sort = value['sort'] ?? 'group';
   const direction = value['direction'] ?? 'asc';
   const groupBy = value['groupBy'] ?? 'none';
@@ -16,7 +16,7 @@ export function parsePackageListOptions(value: Record<string, unknown>): Package
     (direction !== 'asc' && direction !== 'desc') ||
     (groupBy !== 'none' && groupBy !== 'group' && groupBy !== 'package')
   )
-    throw new DepotError('invalid_input', 'Invalid package list option');
+    throw new ArkvoryError('invalid_input', 'Invalid package list option');
   return { sort, direction, groupBy };
 }
 

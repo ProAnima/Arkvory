@@ -1,6 +1,6 @@
-import type { DepotClient } from './client.js';
+import type { ArkvoryClient } from './client.js';
 import type { DownloadJob } from './download-queue.js';
-import { DepotIntegrityError, releaseReader } from './transfer.js';
+import { ArkvoryIntegrityError, releaseReader } from './transfer.js';
 
 /** Per-job private staging. A checkpoint becomes readable only after writer.close(). */
 export interface DownloadStorage {
@@ -14,7 +14,7 @@ export interface DownloadStorage {
 }
 
 export function checkpointedDownload(
-  client: Pick<DepotClient, 'downloadVerified'>,
+  client: Pick<ArkvoryClient, 'downloadVerified'>,
   id: string,
   repository: string,
   artifactId: string,
@@ -37,7 +37,7 @@ export function checkpointedDownload(
           },
         })
         .catch(async (error: unknown) => {
-          if (error instanceof DepotIntegrityError) await storage.discard();
+          if (error instanceof ArkvoryIntegrityError) await storage.discard();
           throw error;
         });
       const reader = stream.getReader();
@@ -67,13 +67,13 @@ export function checkpointedDownload(
         if (writer) {
           try {
             // Only completed writes may be checkpointed. A failed disk write is rolled back.
-            if (writing || error instanceof DepotIntegrityError) await writer.abort(error);
+            if (writing || error instanceof ArkvoryIntegrityError) await writer.abort(error);
             else await writer.close();
           } finally {
             writer.releaseLock();
           }
         }
-        if (error instanceof DepotIntegrityError) await storage.discard();
+        if (error instanceof ArkvoryIntegrityError) await storage.discard();
         throw error;
       } finally {
         await releaseReader(reader);

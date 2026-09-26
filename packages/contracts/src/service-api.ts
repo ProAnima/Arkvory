@@ -273,7 +273,7 @@ function operation(
     operationId,
     summary: operationId.replace(/([a-z])([A-Z])/g, '$1 $2'),
     tags: ['Service access'],
-    'x-depot-authority': authority,
+    'x-arkvory-authority': authority,
     ...(body
       ? { requestBody: { required: true, content: { 'application/json': { schema: body } } } }
       : {}),

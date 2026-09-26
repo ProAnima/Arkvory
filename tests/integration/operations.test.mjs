@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash, randomUUID } from 'node:crypto';
-import { DepotClient } from '@proanima/depot-sdk';
+import { ArkvoryClient } from '@proanima/arkvory-sdk';
 import { createServer } from '../../apps/api/dist/index.js';
 import { setup } from './fixture.mjs';
 import { validateResponse } from '../api-schema.mjs';
@@ -20,7 +20,7 @@ async function all(client, query = {}) {
 test('operation discovery is authenticated, paginated after visibility filtering and validates all query/HEAD responses', async (t) => {
   const f = await setup(t),
     address = await f.listen(),
-    reader = new DepotClient(address, () => f.readerHeaders.authorization.slice(7));
+    reader = new ArkvoryClient(address, () => f.readerHeaders.authorization.slice(7));
   assert.equal((await f.app.inject({ url: '/api/v1/operations' })).statusCode, 401);
   assert.equal((await reader.capabilities()).features.operationDiscovery, true);
   const operations = await all(reader, { repository: 'releases' });
@@ -74,7 +74,7 @@ test('operation discovery is authenticated, paginated after visibility filtering
     Object.values(spec.json().paths)
       .flatMap((item) => Object.values(item))
       .filter((o) => o.operationId)
-      .every((o) => o['x-depot-surface'] === 'transfers'),
+      .every((o) => o['x-arkvory-surface'] === 'transfers'),
   );
   assert.equal(
     (await f.app.inject({ url: '/api/v1/openapi.json?surface=bad', headers: f.readerHeaders }))
@@ -89,11 +89,11 @@ test('managed operations intersect permissions per repository, recheck revocatio
   const f = await setup(t);
   f.config.keys[0].principal.serviceAdministrator = true;
   const address = await f.listen(),
-    root = new DepotClient(address, () => f.headers.authorization.slice(7));
+    root = new ArkvoryClient(address, () => f.headers.authorization.slice(7));
   const bindings = [binding('alpha', ['upload.write']), binding('beta', ['upload.complete'])];
   const account = await root.createServiceAccount('operator', bindings);
   const issued = await root.issueServiceKey(account.id, 'operator', { name: 'operator', bindings });
-  const client = new DepotClient(address, () => issued.secret);
+  const client = new ArkvoryClient(address, () => issued.secret);
   await client.activateServiceKey();
   const first = await all(client, { repository: 'alpha' });
   assert.ok(first.some((o) => o.operationId === 'putUploadPart'));
@@ -133,7 +133,7 @@ test('managed operations intersect permissions per repository, recheck revocatio
 test('repository SDK scopes share real upload, catalog, annotation, assets and verified download behavior', async (t) => {
   const f = await setup(t),
     address = await f.listen(),
-    client = new DepotClient(address, () => f.headers.authorization.slice(7));
+    client = new ArkvoryClient(address, () => f.headers.authorization.slice(7));
   const repo = client.inRepository('releases');
   assert.throws(() => client.inRepository('../other'));
   assert.equal(Object.isFrozen(repo.uploads), true);
@@ -196,13 +196,13 @@ test('reader gateway lists only read operations even for a writer credential', a
 test('remote interface uses account identity and current group permissions without acquiring administration', async (t) => {
   const f = await setup(t),
     address = await f.listen(),
-    root = new DepotClient(address, () => f.headers.authorization.slice(7));
+    root = new ArkvoryClient(address, () => f.headers.authorization.slice(7));
   const user = await root.administration.users.create('remote-ui', 'remote-ui-test-password');
   const group = await root.administration.groups.create('remote-ui-group');
   await root.administration.groups.setMember(group.id, user.id, true);
   await root.administration.groups.setGrant(group.id, 'releases', 'read');
   const session = await root.identity.login('remote-ui', 'remote-ui-test-password');
-  const ui = new DepotClient(address, () => session.token);
+  const ui = new ArkvoryClient(address, () => session.token);
   assert.equal((await ui.identity.me()).id, `user:${user.id}`);
   const operations = await all(ui, { repository: 'releases' });
   assert.ok(operations.some((o) => o.operationId === 'changeOwnPassword'));

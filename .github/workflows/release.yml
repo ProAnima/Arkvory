@@ -9,7 +9,7 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: depot-release
+  group: arkvory-release
   cancel-in-progress: false
 jobs:
   build:
@@ -27,8 +27,8 @@ jobs:
           - 5432:5432
         options: --health-cmd "pg_isready -U depot_test -d depot_test" --health-interval 3s --health-timeout 3s --health-retries 20
     env:
-      DEPOT_TEST_DATABASE_URL: postgresql://depot_test:depot_test@127.0.0.1:5432/depot_test
-      DEPOT_RELEASE_VERSION: ${{ inputs.version }}
+      ARKVORY_TEST_DATABASE_URL: postgresql://depot_test:depot_test@127.0.0.1:5432/depot_test
+      ARKVORY_RELEASE_VERSION: ${{ inputs.version }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
         with:
@@ -49,7 +49,7 @@ jobs:
       - run: sudo apt-get update && sudo apt-get install -y rpm postgresql
       - run: npm run gate -- release
       - name: Package once after all release gates
-        run: npm run release:package -- "$DEPOT_RELEASE_VERSION"
+        run: npm run release:package -- "$ARKVORY_RELEASE_VERSION"
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
           name: release-candidate
@@ -73,7 +73,7 @@ jobs:
           - windows-2022
           - windows-2025
     env:
-      DEPOT_RELEASE_ARTIFACT: ${{ github.workspace }}/candidate
+      ARKVORY_RELEASE_ARTIFACT: ${{ github.workspace }}/candidate
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
         with:
@@ -102,8 +102,8 @@ jobs:
       matrix:
         os: [ubuntu-24.04, windows-2022]
     env:
-      DEPOT_RELEASE_ARTIFACT: ${{ github.workspace }}/candidate
-      DEPOT_NATIVE_ARTIFACT: ${{ github.workspace }}/native-candidate
+      ARKVORY_RELEASE_ARTIFACT: ${{ github.workspace }}/candidate
+      ARKVORY_NATIVE_ARTIFACT: ${{ github.workspace }}/native-candidate
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
         with:
@@ -149,7 +149,7 @@ jobs:
       contents: write
       actions: read
     env:
-      DEPOT_RELEASE_VERSION: ${{ inputs.version }}
+      ARKVORY_RELEASE_VERSION: ${{ inputs.version }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
         with:

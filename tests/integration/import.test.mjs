@@ -23,17 +23,17 @@ const run = (args, env) =>
 test('directory import dry run, verified transfer and repeat are idempotent', async (t) => {
   const f = await setup(t);
   const address = await f.listen();
-  const source = await mkdtemp(join(tmpdir(), 'depot-import-'));
+  const source = await mkdtemp(join(tmpdir(), 'arkvory-import-'));
   t.after(() => removeTestDirectory(source));
   await writeFile(join(source, 'hello.bin'), 'imported bytes');
   const token = join(f.directory, 'token');
   const journal = join(f.directory, 'import.jsonl');
   await writeFile(token, f.headers.authorization.slice(7));
   const env = {
-    DEPOT_BASE_URL: address,
-    DEPOT_REPOSITORY: 'releases',
-    DEPOT_TOKEN_FILE: token,
-    DEPOT_IMPORT_JOURNAL: journal,
+    ARKVORY_BASE_URL: address,
+    ARKVORY_REPOSITORY: 'releases',
+    ARKVORY_TOKEN_FILE: token,
+    ARKVORY_IMPORT_JOURNAL: journal,
   };
   const dry = await run(['scripts/import.mjs', source], env);
   assert.equal(dry.code, 0, dry.output);
@@ -49,8 +49,8 @@ test('directory import dry run, verified transfer and repeat are idempotent', as
   assert.equal(entries[0].id, entries[1].id);
   await f.app.close();
   const scrub = await run(['apps/worker/dist/scrub.js'], {
-    DEPOT_DATABASE_URL: f.config.databaseUrl,
-    DEPOT_DATA_DIR: f.directory,
+    ARKVORY_DATABASE_URL: f.config.databaseUrl,
+    ARKVORY_DATA_DIR: f.directory,
   });
   assert.equal(scrub.code, 0, scrub.output);
   assert.equal(JSON.parse(scrub.output).checked, 1);

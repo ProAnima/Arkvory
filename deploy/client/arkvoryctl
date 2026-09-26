@@ -1,0 +1,2 @@
+#!/bin/sh
+exec /usr/lib/proanima-arkvory-cli/node /usr/lib/proanima-arkvory-cli/arkvoryctl.mjs "$@"

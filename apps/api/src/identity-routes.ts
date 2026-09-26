@@ -1,22 +1,22 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
-import { DepotError, requireId } from '@proanima/depot-domain';
-import type { Principal } from '@proanima/depot-domain';
-import type { IdentityService } from '@proanima/depot-application';
-import type { AdmissionQueue } from '@proanima/depot-infrastructure';
+import { ArkvoryError, requireId } from '@proanima/arkvory-domain';
+import type { Principal } from '@proanima/arkvory-domain';
+import type { IdentityService } from '@proanima/arkvory-application';
+import type { AdmissionQueue } from '@proanima/arkvory-infrastructure';
 
 function object(value: unknown): Record<string, unknown> {
   if (typeof value !== 'object' || value === null || Array.isArray(value))
-    throw new DepotError('invalid_input', 'Expected an object');
+    throw new ArkvoryError('invalid_input', 'Expected an object');
   return Object.fromEntries(Object.entries(value));
 }
 function fields(value: unknown, names: readonly string[]): Record<string, unknown> {
   const body = object(value);
   if (Object.keys(body).some((key) => !names.includes(key)))
-    throw new DepotError('invalid_input', 'Unknown field');
+    throw new ArkvoryError('invalid_input', 'Unknown field');
   return body;
 }
 
-// depot-exception ARCH-015 -- Existing route registrar groups endpoints with shared authorizer dependencies; separate by responsibility with the complete operation inventory unchanged.
+// arkvory-exception ARCH-015 -- Existing route registrar groups endpoints with shared authorizer dependencies; separate by responsibility with the complete operation inventory unchanged.
 export function registerIdentityRoutes(
   app: FastifyInstance,
   service: IdentityService,

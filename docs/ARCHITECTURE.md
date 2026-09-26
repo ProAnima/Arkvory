@@ -17,7 +17,7 @@
 | proget-compat  | application, domain, contracts                                | Конкретная БД/blob-store, SDK, apps                         |
 | sdk            | contracts                                                     | Серверные пакеты и Node-only API                            |
 | apps/api       | application, domain, contracts, infrastructure, proget-compat | Другие apps и SDK                                           |
-| apps/worker    | application, domain, infrastructure                           | HTTP/ProGet/Web/SDK                                         |
+| apps/worker    | application, domain, contracts, infrastructure                | HTTP/ProGet/Web/SDK                                         |
 | apps/scheduler | application, domain, infrastructure                           | HTTP/ProGet/Web/SDK                                         |
 | apps/web       | sdk, contracts                                                | Все серверные пакеты и другие apps                          |
 
@@ -80,7 +80,7 @@ Discovery репозиториев — чистая application projection ак�
 
 Границы и топологический порядок сборки теперь задаёт config/architecture.json. Проверяемые лимиты 500/300/100 и временные исключения описаны в [ADR 0027](adr/0027-executable-engineering-gates.md); команды, расширение и требования к комментариям — в [ENGINEERING_GATES](ENGINEERING_GATES.md). Существующий долг и порядок декомпозиции: [аудит 2026-09-25](ARCHITECTURE_AUDIT_2026-09-25.md).
 
-SDK использует композицию: публичный DepotClient делегирует группам операций, которые используют общий узкий HttpPort. HTTP-авторизация, ошибки и bounded parsing централизованы; transfer workflows сохраняют отдельные retry/checksum/abort-инварианты. Прежние flat methods и namespaces защищены проверкой строгого внешнего TS consumer. [ADR 0028](adr/0028-sdk-composition.md).
+SDK использует композицию: публичный ArkvoryClient делегирует группам операций, которые используют общий узкий HttpPort. HTTP-авторизация, ошибки и bounded parsing централизованы; transfer workflows сохраняют отдельные retry/checksum/abort-инварианты. Прежние flat methods и namespaces защищены проверкой строгого внешнего TS consumer. [ADR 0028](adr/0028-sdk-composition.md).
 
 Маршруты upload/session/parts/completion выделены в upload-routes; UploadReceiver владеет ожиданием входящих bytes и deadline, получая bandwidth governor и диагностику через узкие порты. Эти механизмы остаются в HTTP-адаптере. LocalBlobStore отдельно обеспечивает точную длину завершённого чтения, включая Range и части. [ADR 0029](adr/0029-upload-lifetime-and-exact-reads.md).
 
@@ -92,4 +92,6 @@ SDK использует композицию: публичный DepotClient д
 
 Комплекты запуска делегируют тому же deploy CLI. Релизный pipeline разделяет read-only сборку/приёмку и привилегированную публикацию уже проверенных байтов; состав и хеши assets проверяются перед публикацией. [ADR 0032](adr/0032-tested-release-bundles.md).
 
-Удалённый `depotctl` находится в `apps/cli`, зависит только от SDK/contracts и не имеет доступа к внутренним слоям сервера. CLI владеет профилями и локальными чекпойнтами; протокол, авторизация и сетевые повторы остаются в SDK. Устанавливается отдельными клиентскими пакетами с private runtime. [ADR 0034](adr/0034-remote-client-cli.md), [справка](CLI.md).
+Удалённый `arkvoryctl` находится в `apps/cli`, зависит только от SDK/contracts и не имеет доступа к внутренним слоям сервера. CLI владеет профилями и локальными чекпойнтами; протокол, авторизация и сетевые повторы остаются в SDK. Устанавливается отдельными клиентскими пакетами с private runtime. [ADR 0034](adr/0034-remote-client-cli.md), [справка](CLI.md).
+
+Идентичность Arkvory и совместимость сохранённых данных описаны в [ADR 0040](adr/0040-arkvory-brand-and-persistent-identity.md). Общий переносимый контракт runtime settings используется composition roots API/worker/CLI/deploy; внутренние SQL и OPFS идентификаторы остаются стабильными.

@@ -3,8 +3,8 @@ import {
   annotationRevision,
   parseCleanupPolicy,
   retentionObject,
-} from '@proanima/depot-domain';
-import type { CleanupPolicy, MutationAccess, Principal } from '@proanima/depot-domain';
+} from '@proanima/arkvory-domain';
+import type { CleanupPolicy, MutationAccess, Principal } from '@proanima/arkvory-domain';
 
 export interface CleanupSnapshot {
   revision: number;

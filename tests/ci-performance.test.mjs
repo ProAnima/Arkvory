@@ -61,7 +61,7 @@ test('CI matrix cannot omit, conditionally bypass or replace a large transfer sc
 });
 
 test('native archive cache never bypasses the pinned checksum', async () => {
-  const directory = await mkdtemp(join(tmpdir(), 'depot-native-cache-'));
+  const directory = await mkdtemp(join(tmpdir(), 'arkvory-native-cache-'));
   try {
     await writeFile(join(directory, dependencies.nodeWindows[1] + '.archive'), 'tampered cache');
     await assert.rejects(dependency('nodeWindows', directory), /checksum mismatch/);

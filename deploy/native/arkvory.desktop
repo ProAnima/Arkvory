@@ -1,8 +1,8 @@
 [Desktop Entry]
 Type=Link
-Name=ProAnima Depot
+Name=ProAnima Arkvory
 Comment=Open storage console and onboarding
-Comment[ru]=Открыть хранилище и знакомство с Depot
+Comment[ru]=Открыть хранилище и знакомство с Arkvory
 URL=http://127.0.0.1:8080/console/#onboarding
-Icon=folder-remote
+Icon=arkvory
 Categories=Network;

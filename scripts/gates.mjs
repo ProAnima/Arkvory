@@ -45,18 +45,18 @@ function commandsFor(name, task, files) {
   throw new Error(`Invalid gate kind: ${name}`);
 }
 async function prerequisite(task) {
-  if (task.database && !process.env.DEPOT_TEST_DATABASE_URL)
+  if (task.database && !process.env.ARKVORY_TEST_DATABASE_URL)
     throw new Error(
-      'DEPOT_TEST_DATABASE_URL must point to a dedicated test database; configure .env.test (see .env.test.example).',
+      'ARKVORY_TEST_DATABASE_URL must point to a dedicated test database; configure .env.test (see .env.test.example).',
     );
   if (task.browser) {
     const { chromium } = await import('playwright');
-    if (!process.env.DEPOT_BROWSER_CHANNEL) {
+    if (!process.env.ARKVORY_BROWSER_CHANNEL) {
       try {
         await access(chromium.executablePath());
       } catch {
         throw new Error(
-          'Pinned Chromium is missing. Run npm run test:browser:install, or explicitly select an installed DEPOT_BROWSER_CHANNEL.',
+          'Pinned Chromium is missing. Run npm run test:browser:install, or explicitly select an installed ARKVORY_BROWSER_CHANNEL.',
         );
       }
     }

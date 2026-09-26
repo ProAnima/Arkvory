@@ -10,7 +10,7 @@ import { exerciseDeletion } from './deletion.mjs';
 import { chromium } from 'playwright';
 const browser = await chromium.launch({
   headless: true,
-  ...(process.env.DEPOT_BROWSER_CHANNEL ? { channel: process.env.DEPOT_BROWSER_CHANNEL } : {}),
+  ...(process.env.ARKVORY_BROWSER_CHANNEL ? { channel: process.env.ARKVORY_BROWSER_CHANNEL } : {}),
 });
 const cleanup = [];
 try {
@@ -19,7 +19,7 @@ try {
       cleanup.push(fn);
     },
   });
-  const bytes = Buffer.from('Depot UI acceptance');
+  const bytes = Buffer.from('Arkvory UI acceptance');
   const id = (await create(f, bytes)).json().id;
   assert.equal(
     (

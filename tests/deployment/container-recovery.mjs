@@ -3,7 +3,7 @@ import { setTimeout as delay } from 'node:timers/promises';
 
 export async function exerciseContainerRecovery(run, compose, ready) {
   for (const role of ['api', 'worker', 'database']) {
-    const name = `proanima-depot-${role}-1`;
+    const name = `proanima-arkvory-${role}-1`;
     const inspect = () => JSON.parse(run(['inspect', name]))[0];
     assert.equal(inspect().HostConfig.RestartPolicy.Name, 'unless-stopped');
     const before = inspect().RestartCount;

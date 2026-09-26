@@ -1,10 +1,10 @@
-import type { DepotClient } from '@proanima/depot-sdk';
-import { readCleanupPolicy } from '@proanima/depot-contracts';
+import type { ArkvoryClient } from '@proanima/arkvory-sdk';
+import { readCleanupPolicy } from '@proanima/arkvory-contracts';
 import { element } from './dom.js';
 import { message, dateMessage } from './i18n.js';
 import { feedback, errorKey } from './feedback.js';
 
-export function installCleanup(client: DepotClient) {
+export function installCleanup(client: ArkvoryClient) {
   return new CleanupPanel(client);
 }
 class CleanupPanel {
@@ -21,7 +21,7 @@ class CleanupPanel {
   private manage = false;
   private enabled = false;
   private busy = false;
-  constructor(private readonly client: DepotClient) {
+  constructor(private readonly client: ArkvoryClient) {
     this.refresh.onclick = () => {
       void this.perform('load');
     };

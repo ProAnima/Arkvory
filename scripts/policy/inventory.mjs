@@ -107,7 +107,7 @@ export async function inspectWorkspaces(root, architecture) {
     names.set(manifest.name, unit.path);
     if (
       Object.keys(manifest.exports ?? {}).some((k) => k.startsWith('.')) ||
-      manifest.exports?.['depot-source'] !== './src/index.ts' ||
+      manifest.exports?.['arkvory-source'] !== './src/index.ts' ||
       manifest.exports?.import !== './dist/index.js'
     )
       problems.push(`${unit.path}: only the public index may be exported`);

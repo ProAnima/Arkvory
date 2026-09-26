@@ -1,9 +1,9 @@
 import type { Pool } from 'pg';
-import { DepotError } from '@proanima/depot-domain';
-import type { MutationAccess } from '@proanima/depot-domain';
+import { ArkvoryError } from '@proanima/arkvory-domain';
+import type { MutationAccess } from '@proanima/arkvory-domain';
 import { lockServiceAccess } from './service-authorization.js';
-import type { CleanupCatalog, CompletionJob, JobStore } from '@proanima/depot-application';
-import type { Cancellation } from '@proanima/depot-application';
+import type { CleanupCatalog, CompletionJob, JobStore } from '@proanima/arkvory-application';
+import type { Cancellation } from '@proanima/arkvory-application';
 import { contentLockKey, uploadLockKey } from './content-pins.js';
 
 export class PostgresCleanup implements CleanupCatalog {
@@ -29,12 +29,12 @@ export class PostgresCleanup implements CleanupCatalog {
           'SELECT pg_try_advisory_lock($1::bigint) AS acquired',
           [key],
         );
-        if (!result.rows[0]?.acquired) throw new DepotError('busy', 'Cleanup object is in use');
+        if (!result.rows[0]?.acquired) throw new ArkvoryError('busy', 'Cleanup object is in use');
         acquired.push(key);
       }
       const cancellation = {
         throwIfAborted() {
-          if (state.lost) throw new DepotError('unavailable', 'Cleanup object protection lost');
+          if (state.lost) throw new ArkvoryError('unavailable', 'Cleanup object protection lost');
         },
       };
       cancellation.throwIfAborted();
@@ -85,12 +85,12 @@ export class PostgresCleanup implements CleanupCatalog {
       [id],
     );
     if (result.rowCount !== 1)
-      throw new DepotError('conflict', 'Only cancelled data may be reclaimed');
+      throw new ArkvoryError('conflict', 'Only cancelled data may be reclaimed');
   }
 }
 
 function job(row: Record<string, unknown> | undefined): CompletionJob {
-  if (!row) throw new DepotError('not_found', 'Job not found');
+  if (!row) throw new ArkvoryError('not_found', 'Job not found');
   const {
     id,
     repository,
@@ -111,12 +111,12 @@ function job(row: Record<string, unknown> | undefined): CompletionJob {
     typeof attempts !== 'number' ||
     (errorCode !== null && typeof errorCode !== 'string')
   )
-    throw new DepotError('unavailable', 'Invalid job record');
+    throw new ArkvoryError('unavailable', 'Invalid job record');
   if (status !== 'queued' && status !== 'running' && status !== 'completed' && status !== 'failed')
-    throw new DepotError('unavailable', 'Invalid job state');
+    throw new ArkvoryError('unavailable', 'Invalid job state');
   const credential = row['credential_id'];
   if (credential !== undefined && credential !== null && typeof credential !== 'string')
-    throw new DepotError('unavailable', 'Invalid job credential');
+    throw new ArkvoryError('unavailable', 'Invalid job credential');
   return {
     id,
     repository,
@@ -154,7 +154,7 @@ export class PostgresJobs implements JobStore {
         const credential = access?.principal.managed?.keyId;
         if (credential && previous.credentialId !== credential && previous.status !== 'completed') {
           if (previous.status === 'running')
-            throw new DepotError('busy', 'Wait for the running job before reauthorizing');
+            throw new ArkvoryError('busy', 'Wait for the running job before reauthorizing');
           const limits = (
             await client.query<{ total: string; owned: string }>(
               "SELECT count(*)::text AS total,count(*) FILTER(WHERE owner=$1)::text AS owned FROM depot_jobs WHERE status IN ('queued','running')",
@@ -165,7 +165,7 @@ export class PostgresJobs implements JobStore {
             previous.status === 'failed' &&
             (!limits || Number(limits.total) >= 10000 || Number(limits.owned) >= 100)
           )
-            throw new DepotError('capacity_exceeded', 'Completion queue is full');
+            throw new ArkvoryError('capacity_exceeded', 'Completion queue is full');
           const updated = await client.query<Record<string, unknown>>(
             "UPDATE depot_jobs SET credential_id=$2,status='queued',attempts=0,generation=generation+1,error_code=NULL,available_at=now() WHERE id=$1 RETURNING *",
             [previous.id, credential],
@@ -181,13 +181,13 @@ export class PostgresJobs implements JobStore {
         [owner],
       );
       if (Number(count.rows[0]?.total) >= 10000 || Number(count.rows[0]?.owned) >= 100)
-        throw new DepotError('capacity_exceeded', 'Completion queue is full');
+        throw new ArkvoryError('capacity_exceeded', 'Completion queue is full');
       const inserted = await client.query<Record<string, unknown>>(
         `INSERT INTO depot_jobs(id,repository,upload_id,owner,credential_id) SELECT $1,repository,id,owner,$5 FROM depot_uploads WHERE id=$2 AND repository=$3 AND owner=$4 AND status='pending' AND expires_at>now() RETURNING *`,
         [id, uploadId, repository, owner, access?.principal.managed?.keyId ?? null],
       );
       if (!inserted.rows[0])
-        throw new DepotError('conflict', 'Upload is not eligible for completion');
+        throw new ArkvoryError('conflict', 'Upload is not eligible for completion');
       await client.query('COMMIT');
       return job(inserted.rows[0]);
     } catch (error) {

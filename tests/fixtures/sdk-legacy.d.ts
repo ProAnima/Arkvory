@@ -1,5 +1,5 @@
 // Public flat SDK contract before decomposition (81703c5); update only for reviewed API changes.
-import type { StoragePolicyRequest } from '@proanima/depot-contracts';
+import type { StoragePolicyRequest } from '@proanima/arkvory-contracts';
 import type {
   RetentionPreviewRequest,
   RetentionApplyRequest,
@@ -9,8 +9,8 @@ import type {
   ServiceBindingResponse,
   AdministrationPermission,
   OperationQuery,
-} from '@proanima/depot-contracts';
-import type { TransferOptions, TransferPolicy } from '@proanima/depot-sdk';
+} from '@proanima/arkvory-contracts';
+import type { TransferOptions, TransferPolicy } from '@proanima/arkvory-sdk';
 export interface LegacyConstructor {
   new (baseUrl: string, token: () => string, policy?: TransferPolicy): LegacyClient;
 }
@@ -174,8 +174,11 @@ export interface LegacyClient {
   operations(
     query?: OperationQuery,
     signal?: AbortSignal,
-  ): Promise<import('@proanima/depot-contracts').OperationPage>;
-  login(name: string, password: string): Promise<import('@proanima/depot-contracts').LoginResponse>;
+  ): Promise<import('@proanima/arkvory-contracts').OperationPage>;
+  login(
+    name: string,
+    password: string,
+  ): Promise<import('@proanima/arkvory-contracts').LoginResponse>;
   capabilities(signal?: AbortSignal): Promise<{
     apiVersions: string[];
     gatewayRole: string;
@@ -269,7 +272,7 @@ export interface LegacyClient {
     after?: string,
     signal?: AbortSignal,
   ): Promise<{
-    items: import('@proanima/depot-contracts').ServiceAccountResponse[];
+    items: import('@proanima/arkvory-contracts').ServiceAccountResponse[];
     next: string | null;
   }>;
   serviceDelegations(
@@ -296,7 +299,7 @@ export interface LegacyClient {
   servicePolicy(
     accountId: string,
     signal?: AbortSignal,
-  ): Promise<import('@proanima/depot-contracts').ServiceAccountResponse>;
+  ): Promise<import('@proanima/arkvory-contracts').ServiceAccountResponse>;
   setServiceDelegation(
     keyId: string,
     accountId: string,
@@ -344,36 +347,36 @@ export interface LegacyClient {
   serviceAccount(
     id: string,
     signal?: AbortSignal,
-  ): Promise<import('@proanima/depot-contracts').ServiceAccountResponse>;
+  ): Promise<import('@proanima/arkvory-contracts').ServiceAccountResponse>;
   createServiceAccount(
     name: string,
     bindings: readonly ServiceBindingResponse[],
     signal?: AbortSignal,
-  ): Promise<import('@proanima/depot-contracts').ServiceAccountResponse>;
+  ): Promise<import('@proanima/arkvory-contracts').ServiceAccountResponse>;
   updateServiceAccount(
     id: string,
     expectedRevision: number,
     enabled: boolean,
     signal?: AbortSignal,
-  ): Promise<import('@proanima/depot-contracts').ServiceAccountResponse>;
+  ): Promise<import('@proanima/arkvory-contracts').ServiceAccountResponse>;
   setServicePolicy(
     id: string,
     expectedRevision: number,
     bindings: readonly ServiceBindingResponse[],
     signal?: AbortSignal,
-  ): Promise<import('@proanima/depot-contracts').ServiceAccountResponse>;
+  ): Promise<import('@proanima/arkvory-contracts').ServiceAccountResponse>;
   serviceKeys(
     id: string,
     after?: string,
     signal?: AbortSignal,
   ): Promise<{
-    items: import('@proanima/depot-contracts').ApiKeyResponse[];
+    items: import('@proanima/arkvory-contracts').ApiKeyResponse[];
     next: string | null;
   }>;
   serviceKey(
     id: string,
     signal?: AbortSignal,
-  ): Promise<import('@proanima/depot-contracts').ApiKeyResponse>;
+  ): Promise<import('@proanima/arkvory-contracts').ApiKeyResponse>;
   issueServiceKey(
     id: string,
     idempotencyKey: string,
@@ -385,7 +388,7 @@ export interface LegacyClient {
     signal?: AbortSignal,
   ): Promise<{
     secret?: string;
-    key: import('@proanima/depot-contracts').ApiKeyResponse;
+    key: import('@proanima/arkvory-contracts').ApiKeyResponse;
   }>;
   rotateServiceKey(
     id: string,
@@ -398,7 +401,7 @@ export interface LegacyClient {
     signal?: AbortSignal,
   ): Promise<{
     secret?: string;
-    key: import('@proanima/depot-contracts').ApiKeyResponse;
+    key: import('@proanima/arkvory-contracts').ApiKeyResponse;
   }>;
   revokeServiceKey(id: string, signal?: AbortSignal): Promise<void>;
   activateServiceKey(signal?: AbortSignal): Promise<void>;
@@ -416,24 +419,24 @@ export interface LegacyClient {
       occurredAt: string;
     }[]
   >;
-  me(): Promise<import('@proanima/depot-contracts').PrincipalResponse>;
+  me(): Promise<import('@proanima/arkvory-contracts').PrincipalResponse>;
   logout(): Promise<void>;
   changePassword(currentPassword: string, newPassword: string): Promise<void>;
-  users(): Promise<import('@proanima/depot-contracts').AccountResponse[]>;
+  users(): Promise<import('@proanima/arkvory-contracts').AccountResponse[]>;
   createUser(
     name: string,
     password: string,
     administrator?: boolean,
-  ): Promise<import('@proanima/depot-contracts').AccountResponse>;
+  ): Promise<import('@proanima/arkvory-contracts').AccountResponse>;
   updateUser(
     id: string,
     update: {
       enabled?: boolean;
       password?: string;
     },
-  ): Promise<import('@proanima/depot-contracts').AccountResponse>;
-  accessGroups(): Promise<import('@proanima/depot-contracts').GroupResponse[]>;
-  createAccessGroup(name: string): Promise<import('@proanima/depot-contracts').GroupResponse>;
+  ): Promise<import('@proanima/arkvory-contracts').AccountResponse>;
+  accessGroups(): Promise<import('@proanima/arkvory-contracts').GroupResponse[]>;
+  createAccessGroup(name: string): Promise<import('@proanima/arkvory-contracts').GroupResponse>;
   setGroupMember(groupId: string, userId: string, present: boolean): Promise<void>;
   setGroupGrant(
     groupId: string,
@@ -452,8 +455,8 @@ export interface LegacyClient {
       limit?: number;
     },
   ): Promise<{
-    items: readonly import('@proanima/depot-contracts').PackageResponse[];
-    groups: readonly import('@proanima/depot-contracts').PackageGroupResponse[];
+    items: readonly import('@proanima/arkvory-contracts').PackageResponse[];
+    groups: readonly import('@proanima/arkvory-contracts').PackageGroupResponse[];
     next: string | null;
   }>;
   create(
@@ -490,20 +493,20 @@ export interface LegacyClient {
     repository: string,
     id: string,
     signal?: AbortSignal,
-  ): Promise<import('@proanima/depot-contracts').AttachmentRevisionResponse>;
+  ): Promise<import('@proanima/arkvory-contracts').AttachmentRevisionResponse>;
   replaceAttachments(
     repository: string,
     id: string,
     expectedRevision: number,
     items: readonly BuildAttachmentResponse[],
     signal?: AbortSignal,
-  ): Promise<import('@proanima/depot-contracts').AttachmentRevisionResponse>;
+  ): Promise<import('@proanima/arkvory-contracts').AttachmentRevisionResponse>;
   attachmentHistory(
     repository: string,
     id: string,
     before?: number,
     signal?: AbortSignal,
-  ): Promise<import('@proanima/depot-contracts').AttachmentHistoryResponse>;
+  ): Promise<import('@proanima/arkvory-contracts').AttachmentHistoryResponse>;
   annotations(repository: string, id: string): Promise<AnnotationsResponse>;
   annotate(
     repository: string,
@@ -524,19 +527,22 @@ export interface LegacyClient {
     }[];
   }>;
   complete(repository: string, id: string, signal?: AbortSignal): Promise<UploadResponse>;
-  enqueue(repository: string, id: string): Promise<import('@proanima/depot-contracts').JobResponse>;
-  job(id: string): Promise<import('@proanima/depot-contracts').JobResponse>;
+  enqueue(
+    repository: string,
+    id: string,
+  ): Promise<import('@proanima/arkvory-contracts').JobResponse>;
+  job(id: string): Promise<import('@proanima/arkvory-contracts').JobResponse>;
   registerPackage(repository: string, id: string): Promise<Record<string, unknown>>;
   setAsset(
     repository: string,
     path: string,
     artifactId: string,
     expectedRevision: number,
-  ): Promise<import('@proanima/depot-contracts').AssetResponse>;
+  ): Promise<import('@proanima/arkvory-contracts').AssetResponse>;
   asset(
     repository: string,
     path: string,
-  ): Promise<import('@proanima/depot-contracts').AssetResponse>;
+  ): Promise<import('@proanima/arkvory-contracts').AssetResponse>;
   assetPage(
     repository: string,
     options?: {
@@ -545,26 +551,26 @@ export interface LegacyClient {
       limit?: number;
     },
     signal?: AbortSignal,
-  ): Promise<import('@proanima/depot-contracts').AssetPageResponse>;
+  ): Promise<import('@proanima/arkvory-contracts').AssetPageResponse>;
   assetHistory(
     repository: string,
     path: string,
     before?: number,
     signal?: AbortSignal,
-  ): Promise<import('@proanima/depot-contracts').AssetHistoryResponse>;
+  ): Promise<import('@proanima/arkvory-contracts').AssetHistoryResponse>;
   assetRevision(
     repository: string,
     path: string,
     revision: number,
     signal?: AbortSignal,
-  ): Promise<import('@proanima/depot-contracts').AssetRevisionResponse>;
+  ): Promise<import('@proanima/arkvory-contracts').AssetRevisionResponse>;
   restoreAsset(
     repository: string,
     path: string,
     sourceRevision: number,
     expectedRevision: number,
     signal?: AbortSignal,
-  ): Promise<import('@proanima/depot-contracts').AssetResponse>;
+  ): Promise<import('@proanima/arkvory-contracts').AssetResponse>;
   cancel(repository: string, id: string): Promise<UploadResponse>;
   download(
     repository: string,

@@ -1,4 +1,4 @@
-param([Parameter(Mandatory)][string]$Root, [Parameter(Mandatory)][string]$Node, [ValidatePattern('^[a-zA-Z][a-zA-Z0-9]{0,40}$')][string]$Prefix = 'Depot')
+param([Parameter(Mandatory)][string]$Root, [Parameter(Mandatory)][string]$Node, [ValidatePattern('^[a-zA-Z][a-zA-Z0-9]{0,40}$')][string]$Prefix = 'Arkvory')
 $ErrorActionPreference = 'Stop'
 $admin = [Security.Principal.WindowsPrincipal]::new([Security.Principal.WindowsIdentity]::GetCurrent())
 if (-not $admin.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) { throw 'Run installer as Administrator' }
@@ -27,15 +27,15 @@ if ((Get-FileHash $wrapper -Algorithm SHA256).Hash -ne '05B82D46AD331CC16BDC00DE
 function Xml([string]$value) { [Security.SecurityElement]::Escape($value) }
 foreach ($role in @('api','worker')) {
     $name = "$Prefix$role"
-    $exe = Join-Path $Root "service/depot-$role.exe"
+    $exe = Join-Path $Root "service/arkvory-$role.exe"
     $existing = Get-CimInstance Win32_Service -Filter "Name='$name'"
     if ($existing -and $existing.PathName.Trim('"') -ne $exe) { throw 'Another installation owns this service' }
     if (-not $existing) { Copy-Item -LiteralPath $wrapper -Destination $exe -Force }
     elseif ((Get-FileHash -LiteralPath $exe -Algorithm SHA256).Hash -ne (Get-FileHash -LiteralPath $wrapper -Algorithm SHA256).Hash) { throw 'Service wrapper replacement requires stopped-service maintenance' }
     $xml = @"
 <service>
-  <id>$name</id><name>ProAnima Depot $role</name>
-  <description>ProAnima Depot $role service with automatic crash recovery.</description>
+  <id>$name</id><name>ProAnima Arkvory $role</name>
+  <description>ProAnima Arkvory $role service with automatic crash recovery.</description>
   <executable>$(Xml $Node)</executable>
   <arguments>&quot;$(Xml (Join-Path $Root 'launcher.mjs'))&quot; &quot;$(Xml $Root)&quot; $role</arguments>
   <workingdirectory>$(Xml $Root)</workingdirectory>
@@ -47,7 +47,7 @@ foreach ($role in @('api','worker')) {
   <log mode="roll-by-size"><sizeThreshold>20480</sizeThreshold><keepFiles>5</keepFiles></log>
 </service>
 "@
-    [IO.File]::WriteAllText((Join-Path $Root "service/depot-$role.xml"), $xml)
+    [IO.File]::WriteAllText((Join-Path $Root "service/arkvory-$role.xml"), $xml)
     if (-not $existing) { & $exe install; if ($LASTEXITCODE -ne 0) { throw 'Service installation failed' } }
     & (Join-Path $PSScriptRoot 'configure-recovery.ps1') -Name $name -Delayed
 }

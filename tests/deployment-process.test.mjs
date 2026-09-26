@@ -16,7 +16,7 @@ import { removeTestDirectory } from './helpers.mjs';
 const helper = fileURLToPath(new URL('./deployment/process-child.mjs', import.meta.url));
 
 test('deployment timeout terminates descendants before returning to the caller', async (t) => {
-  const directory = await mkdtemp(join(tmpdir(), 'depot-process-'));
+  const directory = await mkdtemp(join(tmpdir(), 'arkvory-process-'));
   t.after(async () => {
     // Keep this regression's own cleanup effective even when the implementation is broken.
     for (const role of ['descendant', 'parent']) {
@@ -56,7 +56,7 @@ test('deployment timeout terminates descendants before returning to the caller',
 });
 
 test('unconfirmed termination preserves operation lock through a bounded cause chain', async (t) => {
-  const directory = await mkdtemp(join(tmpdir(), 'depot-process-lock-'));
+  const directory = await mkdtemp(join(tmpdir(), 'arkvory-process-lock-'));
   t.after(() => removeTestDirectory(directory));
   const failure = new Error('Outer operation failed', {
     cause: new DeploymentCommandTimeout(false),
@@ -75,7 +75,7 @@ test('unconfirmed termination preserves operation lock through a bounded cause c
 });
 
 test('confirmed timeout releases operation lock and normal commands still work', async (t) => {
-  const directory = await mkdtemp(join(tmpdir(), 'depot-process-safe-'));
+  const directory = await mkdtemp(join(tmpdir(), 'arkvory-process-safe-'));
   t.after(() => removeTestDirectory(directory));
   await assert.rejects(
     exclusive(directory, async () => {

@@ -4,7 +4,7 @@
 
 ## Что представляет карточка
 
-Репозиторий в текущем Depot — логическая область с точным ID, используемая в grants и storage/catalog API. Отдельного глобального реестра с display name, настройками feed и lifecycle пока нет. Новый API показывает доступные клиенту области из его актуальных прав, включая ещё пустые. Публикация первого файла не является условием появления карточки; наличие чужих bytes не раскрывает репозиторий.
+Репозиторий в текущем Arkvory — логическая область с точным ID, используемая в grants и storage/catalog API. Отдельного глобального реестра с display name, настройками feed и lifecycle пока нет. Новый API показывает доступные клиенту области из его актуальных прав, включая ещё пустые. Публикация первого файла не является условием появления карточки; наличие чужих bytes не раскрывает репозиторий.
 
 Карточка: `{id, formats: ["upack","assets"], permissions: [...]}`. Formats описывает поддерживаемые движком виды каталога, а permissions — права **этого клиента**, без чужих policies, владельцев или ключей. Не возвращаются физические пути, URLs backend, учётные данные, объёмы, counts и сведения о других клиентах. Имя/описание репозитория, его создание, удаление и конфигурация не имитируются временными полями.
 
@@ -35,9 +35,9 @@ Managed key требует **`repository.read`** в пересечении accou
 ## SDK и выдача
 
 ```typescript
-import { DepotClient } from '@proanima/depot-sdk';
+import { ArkvoryClient } from '@proanima/arkvory-sdk';
 
-const client = new DepotClient(depotUrl, () => serviceSecret);
+const client = new ArkvoryClient(arkvoryUrl, () => serviceSecret);
 const page = await client.repositories({ limit: 50 }, signal);
 for (const card of page.items) {
   showRepository(card.id, card.formats, card.permissions);

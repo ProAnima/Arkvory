@@ -67,7 +67,7 @@ export async function exerciseRemoteAccess() {
   const input = {
     host: '127.0.0.1',
     port: server.address().port,
-    username: 'depot-acceptance',
+    username: 'arkvory-acceptance',
     password,
     privateKey: '',
     passphrase: '',

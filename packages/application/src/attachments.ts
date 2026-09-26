@@ -1,5 +1,5 @@
-import { authorizeAction, DepotError, parseAttachments } from '@proanima/depot-domain';
-import type { BuildAttachment, MutationAccess, Principal } from '@proanima/depot-domain';
+import { authorizeAction, ArkvoryError, parseAttachments } from '@proanima/arkvory-domain';
+import type { BuildAttachment, MutationAccess, Principal } from '@proanima/arkvory-domain';
 import type { StorageService } from './storage.js';
 
 export interface AttachmentRevision {
@@ -38,14 +38,14 @@ export class BuildAttachments {
       before !== undefined &&
       (!Number.isSafeInteger(before) || before < 1 || before > 2147483647)
     )
-      throw new DepotError('invalid_input', 'Invalid attachment history cursor');
+      throw new ArkvoryError('invalid_input', 'Invalid attachment history cursor');
     return this.store.history(repository, id, before);
   }
   async replace(p: Principal, repository: string, id: string, expected: number, value: unknown) {
     authorizeAction(p, repository, 'annotation.write', ['write']);
     await this.storage.artifact(p, repository, id);
     if (!Number.isSafeInteger(expected) || expected < 0 || expected > 2147483646)
-      throw new DepotError('invalid_input', 'Invalid attachment revision');
+      throw new ArkvoryError('invalid_input', 'Invalid attachment revision');
     const items = parseAttachments(value, id);
     return this.store.replace(repository, id, expected, items, {
       principal: p,

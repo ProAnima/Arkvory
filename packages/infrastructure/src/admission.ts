@@ -1,4 +1,4 @@
-import { DepotError } from '@proanima/depot-domain';
+import { ArkvoryError } from '@proanima/arkvory-domain';
 
 interface Waiter {
   owner: string;
@@ -50,7 +50,7 @@ export class AdmissionQueue {
   }
   async acquire(owner: string, signal?: AbortSignal): Promise<() => void> {
     signal?.throwIfAborted();
-    if (this.closed) throw new DepotError('unavailable', 'Gateway is closing');
+    if (this.closed) throw new ArkvoryError('unavailable', 'Gateway is closing');
     if (this.active < this.slots && this.waiting.length === 0 && this.ownerAvailable(owner)) {
       this.activate(owner);
       this.lastOwner = owner;
@@ -61,7 +61,7 @@ export class AdmissionQueue {
       this.waiting.filter((item) => item.owner === owner).length >= this.perOwner
     ) {
       this.rejected++;
-      throw new DepotError('busy', 'Transfer queue is full');
+      throw new ArkvoryError('busy', 'Transfer queue is full');
     }
     return new Promise((resolve, reject) => {
       const remove = (error: Error) => {
@@ -72,11 +72,11 @@ export class AdmissionQueue {
       };
       const abort = () => {
         this.cancelled++;
-        remove(new DepotError('busy', 'Transfer request aborted'));
+        remove(new ArkvoryError('busy', 'Transfer request aborted'));
       };
       const timer = setTimeout(() => {
         this.timedOut++;
-        remove(new DepotError('busy', 'Transfer admission timed out'));
+        remove(new ArkvoryError('busy', 'Transfer admission timed out'));
       }, this.timeoutMs);
       const waiter: Waiter = {
         owner,
@@ -131,7 +131,7 @@ export class AdmissionQueue {
     this.closed = true;
     for (const waiter of this.waiting.splice(0)) {
       waiter.cleanup();
-      waiter.reject(new DepotError('unavailable', 'Gateway is closing'));
+      waiter.reject(new ArkvoryError('unavailable', 'Gateway is closing'));
     }
   }
 }

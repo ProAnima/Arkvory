@@ -49,11 +49,11 @@ test('production API exits with failure after fencing and a new process becomes 
   );
   const env = {
     ...process.env,
-    DEPOT_DATABASE_URL: f.config.databaseUrl,
-    DEPOT_DATA_DIR: f.directory,
-    DEPOT_KEYS_FILE: keys,
-    DEPOT_HOST: '127.0.0.1',
-    DEPOT_PORT: new URL(address).port,
+    ARKVORY_DATABASE_URL: f.config.databaseUrl,
+    ARKVORY_DATA_DIR: f.directory,
+    ARKVORY_KEYS_FILE: keys,
+    ARKVORY_HOST: '127.0.0.1',
+    ARKVORY_PORT: new URL(address).port,
   };
   const start = () =>
     spawn(process.execPath, ['apps/api/dist/main.js'], {

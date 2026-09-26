@@ -21,14 +21,14 @@ export async function configureDatabase(root: string, bin: string): Promise<stri
   // Only generated hexadecimal literals enter SQL. The app role never receives cluster administration.
   await writeFile(
     join(directory, 'bootstrap.sql'),
-    `CREATE ROLE depot LOGIN PASSWORD '${password}' NOSUPERUSER NOCREATEDB NOCREATEROLE;\nCREATE DATABASE depot OWNER depot;\n`,
+    `CREATE ROLE arkvory LOGIN PASSWORD '${password}' NOSUPERUSER NOCREATEDB NOCREATEROLE;\nCREATE DATABASE arkvory OWNER arkvory;\n`,
     { flag: 'wx', mode: 0o600 },
   );
   await writeFile(join(directory, 'settings.json'), JSON.stringify({ bin, port: databasePort }), {
     flag: 'wx',
     mode: 0o600,
   });
-  return `postgresql://depot:${password}@127.0.0.1:${String(databasePort)}/depot`;
+  return `postgresql://arkvory:${password}@127.0.0.1:${String(databasePort)}/arkvory`;
 }
 
 export async function databaseSettings(

@@ -1,31 +1,31 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
-import { DepotError } from '@proanima/depot-domain';
-import { organizePackages, parsePackageListOptions } from '@proanima/depot-application';
-import type { Principal } from '@proanima/depot-domain';
-import type { ArtifactCatalog } from '@proanima/depot-application';
+import { ArkvoryError } from '@proanima/arkvory-domain';
+import { organizePackages, parsePackageListOptions } from '@proanima/arkvory-application';
+import type { Principal } from '@proanima/arkvory-domain';
+import type { ArtifactCatalog } from '@proanima/arkvory-application';
 
 function object(value: unknown): Record<string, unknown> {
   if (typeof value !== 'object' || value === null || Array.isArray(value))
-    throw new DepotError('invalid_input', 'Object required');
+    throw new ArkvoryError('invalid_input', 'Object required');
   return Object.fromEntries(Object.entries(value));
 }
 function string(value: unknown, fallback?: string): string {
   if (value === undefined && fallback !== undefined) return fallback;
-  if (typeof value !== 'string') throw new DepotError('invalid_input', 'String required');
+  if (typeof value !== 'string') throw new ArkvoryError('invalid_input', 'String required');
   return value;
 }
 function revision(value: unknown): number {
   if (typeof value !== 'number')
-    throw new DepotError('invalid_input', 'Numeric expectedRevision required');
+    throw new ArkvoryError('invalid_input', 'Numeric expectedRevision required');
   return value;
 }
 function queryRevision(value: unknown): number {
   if (typeof value !== 'string' || !/^[1-9][0-9]{0,9}$/.test(value))
-    throw new DepotError('invalid_input', 'Positive asset revision required');
+    throw new ArkvoryError('invalid_input', 'Positive asset revision required');
   return Number(value);
 }
 
-// depot-exception ARCH-014 -- Existing route registrar groups endpoints with shared authorizer dependencies; separate by responsibility with the complete operation inventory unchanged.
+// arkvory-exception ARCH-014 -- Existing route registrar groups endpoints with shared authorizer dependencies; separate by responsibility with the complete operation inventory unchanged.
 export function registerCatalogRoutes(
   app: FastifyInstance,
   services: {
@@ -66,7 +66,7 @@ export function registerCatalogRoutes(
       rawLimit !== undefined &&
       (typeof rawLimit !== 'string' || !/^[1-9][0-9]{0,2}$/.test(rawLimit))
     )
-      throw new DepotError('invalid_input', 'Invalid package page size');
+      throw new ArkvoryError('invalid_input', 'Invalid package page size');
     const page = await browse.packagePage(
       principal(request),
       request.params.repository,
@@ -88,10 +88,10 @@ export function registerCatalogRoutes(
   app.get<{ Params: Params; Querystring: unknown }>(`${base}/assets/page`, (request) => {
     const q = object(request.query);
     if (Object.keys(q).some((key) => !['prefix', 'after', 'limit'].includes(key)))
-      throw new DepotError('invalid_input', 'Unknown asset page option');
+      throw new ArkvoryError('invalid_input', 'Unknown asset page option');
     const limit = q['limit'];
     if (limit !== undefined && (typeof limit !== 'string' || !/^[1-9][0-9]{0,2}$/.test(limit)))
-      throw new DepotError('invalid_input', 'Invalid asset page size');
+      throw new ArkvoryError('invalid_input', 'Invalid asset page size');
     return browse.assetPage(principal(request), request.params.repository, {
       prefix: string(q['prefix'], ''),
       limit: limit === undefined ? 50 : Number(limit),
@@ -138,7 +138,7 @@ export function registerCatalogRoutes(
     if (
       Object.keys(body).some((key) => !['path', 'sourceRevision', 'expectedRevision'].includes(key))
     )
-      throw new DepotError('invalid_input', 'Unknown restore field');
+      throw new ArkvoryError('invalid_input', 'Unknown restore field');
     return browse.restoreAsset(
       principal(request),
       request.params.repository,

@@ -1,13 +1,13 @@
 param([Parameter(Mandatory)][string]$Root)
 $ErrorActionPreference = 'Stop'
-$task = Get-ScheduledTask -TaskName 'ProAnimaDepotUpdate' -ErrorAction SilentlyContinue
+$task = Get-ScheduledTask -TaskName 'ProAnimaArkvoryUpdate' -ErrorAction SilentlyContinue
 if ($task) {
   $expected = '"' + (Join-Path $Root 'manage.mjs') + '" update --root "' + $Root + '" --scheduled'
   $monitor = '"' + (Join-Path $Root 'manage.mjs') + '" updates-poll --root "' + $Root + '"'
   if (($task.Actions.Arguments -ne $expected) -and ($task.Actions.Arguments -ne $monitor)) { throw 'Another installation owns the updater task' }
-  Unregister-ScheduledTask -TaskName 'ProAnimaDepotUpdate' -Confirm:$false
+  Unregister-ScheduledTask -TaskName 'ProAnimaArkvoryUpdate' -Confirm:$false
 }
-foreach ($entry in @(@('Depotworker','service/depot-worker.exe'),@('Depotapi','service/depot-api.exe'),@('Depotdatabase','database/depot-database.exe'))) {
+foreach ($entry in @(@('Arkvoryworker','service/arkvory-worker.exe'),@('Arkvoryapi','service/arkvory-api.exe'),@('Arkvorydatabase','database/arkvory-database.exe'))) {
   $service = Get-CimInstance Win32_Service -Filter "Name='$($entry[0])'"
   $exe = Join-Path $Root $entry[1]
   if ($service) {

@@ -1,4 +1,4 @@
-import { DiagnosticLogger } from '@proanima/depot-infrastructure';
+import { DiagnosticLogger } from '@proanima/arkvory-infrastructure';
 import type { ServerConfig } from './config.js';
 import { ApiRuntime } from './api-runtime.js';
 import { createApiServices } from './api-services.js';

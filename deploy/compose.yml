@@ -1,6 +1,6 @@
-name: proanima-depot
+name: proanima-arkvory
 x-runtime: &runtime
-  image: ${DEPOT_IMAGE:?Installer must select a release image}
+  image: ${ARKVORY_IMAGE:?Installer must select a release image}
   restart: unless-stopped
   init: true
   read_only: true
@@ -9,12 +9,12 @@ x-runtime: &runtime
   stop_grace_period: 120s
   tmpfs: ['/tmp:size=64m,mode=1777']
   volumes:
-    - storage:/var/lib/depot
-    - ./config/runtime.json:/run/depot/runtime.json:ro
-    - ./config/keys.json:/run/depot/keys.json:ro
-    - ./config/health-token.txt:/run/depot/health-token.txt:ro
-    - ./updates/status:/run/depot-updates/status:ro
-    - ./updates/inbox:/run/depot-updates/inbox
+    - storage:/var/lib/arkvory
+    - ./config/runtime.json:/run/arkvory/runtime.json:ro
+    - ./config/keys.json:/run/arkvory/keys.json:ro
+    - ./config/health-token.txt:/run/arkvory/health-token.txt:ro
+    - ./updates/status:/run/arkvory-updates/status:ro
+    - ./updates/inbox:/run/arkvory-updates/inbox
   logging:
     driver: json-file
     options: { max-size: 20m, max-file: '5' }
@@ -25,7 +25,7 @@ services:
     env_file: ./config/postgres.env
     volumes: [catalog:/var/lib/postgresql]
     healthcheck:
-      test: [CMD-SHELL, pg_isready -U depot -d depot]
+      test: [CMD-SHELL, pg_isready -U arkvory -d arkvory]
       interval: 5s
       timeout: 3s
       retries: 30
@@ -33,10 +33,10 @@ services:
       driver: json-file
       options: { max-size: 20m, max-file: '5' }
   initialize:
-    image: ${DEPOT_IMAGE}
+    image: ${ARKVORY_IMAGE}
     user: '0:0'
-    entrypoint: [chown, '1000:1000', /var/lib/depot]
-    volumes: [storage:/var/lib/depot]
+    entrypoint: [chown, '1000:1000', /var/lib/arkvory]
+    volumes: [storage:/var/lib/arkvory]
     restart: 'no'
   migrate:
     <<: *runtime

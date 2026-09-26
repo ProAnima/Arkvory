@@ -9,7 +9,7 @@ import {
   ArtifactRetention,
   BuildAttachments,
   RepositoryCleanup,
-} from '@proanima/depot-application';
+} from '@proanima/arkvory-application';
 import {
   PostgresIdentity,
   PostgresServices,
@@ -21,13 +21,13 @@ import {
   PostgresAttachments,
   PostgresCleanupSettings,
   PostgresOnlineCleanup,
-} from '@proanima/depot-infrastructure';
+} from '@proanima/arkvory-infrastructure';
 import type {
   LocalBlobStore,
   PostgresCatalog,
   PostgresContentPins,
-} from '@proanima/depot-infrastructure';
-import { ProGetDownloads } from '@proanima/depot-proget-compat';
+} from '@proanima/arkvory-infrastructure';
+import { ProGetDownloads } from '@proanima/arkvory-proget-compat';
 
 /** Composition only: each registrar receives just the services it consumes. */
 export function createApiServices(

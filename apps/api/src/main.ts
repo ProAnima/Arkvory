@@ -5,7 +5,7 @@ try {
   const config = await loadConfig(process.env);
   const app = await createServer(config, {
     onOwnershipLost: () => {
-      process.stderr.write('Depot gateway ownership lost; stopping for supervisor recovery.\n');
+      process.stderr.write('Arkvory gateway ownership lost; stopping for supervisor recovery.\n');
       shutdown(true);
     },
   });
@@ -37,10 +37,10 @@ try {
     await app.close();
     throw error;
   }
-  process.stdout.write(`Depot API listening on ${config.host}:${String(config.port)}\n`);
+  process.stdout.write(`Arkvory API listening on ${config.host}:${String(config.port)}\n`);
 } catch {
   process.stderr.write(
-    'Depot startup failed. Check configuration, database migration, and storage access.\n',
+    'Arkvory startup failed. Check configuration, database migration, and storage access.\n',
   );
   process.exitCode = 1;
 }

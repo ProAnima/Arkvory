@@ -59,15 +59,15 @@ test('release workflow rejects privilege escalation, unchecked bytes and accepta
   }
 });
 test('release inventory binds all launchers and runtime bytes to the tested commit', async () => {
-  const directory = await mkdtemp(join(tmpdir(), 'depot-release-policy-'));
+  const directory = await mkdtemp(join(tmpdir(), 'arkvory-release-policy-'));
   for (const name of releaseFiles) await writeFile(join(directory, name), 'test fixture');
   const manifest = {
     version: '1.2.3',
     commit: 'a'.repeat(40),
-    archiveSha256: await sha256(join(directory, 'depot-runtime.zip')),
-    setupSha256: await sha256(join(directory, 'depot-setup.mjs')),
+    archiveSha256: await sha256(join(directory, 'arkvory-runtime.zip')),
+    setupSha256: await sha256(join(directory, 'arkvory-setup.mjs')),
   };
-  await writeFile(join(directory, 'depot-release.json'), JSON.stringify(manifest));
+  await writeFile(join(directory, 'arkvory-release.json'), JSON.stringify(manifest));
   const files = {};
   for (const name of releaseFiles) files[name] = await sha256(join(directory, name));
   await writeFile(
@@ -76,7 +76,7 @@ test('release inventory binds all launchers and runtime bytes to the tested comm
   );
   await verifyReleaseFiles(directory, manifest.version, manifest.commit);
   await assert.rejects(verifyReleaseFiles(directory, manifest.version, 'b'.repeat(40)), /identity/);
-  await writeFile(join(directory, 'Depot-Windows.zip'), 'tampered launcher');
+  await writeFile(join(directory, 'Arkvory-Windows.zip'), 'tampered launcher');
   await assert.rejects(
     verifyReleaseFiles(directory, manifest.version, manifest.commit),
     /Checksum/,

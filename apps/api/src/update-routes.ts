@@ -1,7 +1,7 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
-import { DepotError, retentionObject } from '@proanima/depot-domain';
-import type { Principal } from '@proanima/depot-domain';
-import { readUpdateRequest } from '@proanima/depot-contracts';
+import { ArkvoryError, retentionObject } from '@proanima/arkvory-domain';
+import type { Principal } from '@proanima/arkvory-domain';
+import { readUpdateRequest } from '@proanima/arkvory-contracts';
 import { UpdateControl } from './update-control.js';
 
 export function registerUpdateRoutes(
@@ -13,7 +13,7 @@ export function registerUpdateRoutes(
   const authorize = (r: FastifyRequest) => {
     const actor = principal(r);
     if (actor.managed || actor.administrator !== true)
-      throw new DepotError('forbidden', 'Administrator required');
+      throw new ArkvoryError('forbidden', 'Administrator required');
     retentionObject(r.query, []);
   };
   app.get('/api/v1/system/updates', async (r) => {
@@ -26,7 +26,7 @@ export function registerUpdateRoutes(
     try {
       request = readUpdateRequest(r.body);
     } catch {
-      throw new DepotError('invalid_input', 'Invalid update request');
+      throw new ArkvoryError('invalid_input', 'Invalid update request');
     }
     const receipt = await control.request(request);
     return reply.code(202).send(receipt);

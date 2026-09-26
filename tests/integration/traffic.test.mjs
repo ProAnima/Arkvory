@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { createHash, randomUUID } from 'node:crypto';
 import { writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { DepotClient } from '@proanima/depot-sdk';
+import { ArkvoryClient } from '@proanima/arkvory-sdk';
 import { loadConfig } from '../../apps/api/dist/index.js';
 import { setup, create, base } from './fixture.mjs';
 
@@ -42,7 +42,7 @@ test('parallel downloads share principal quota across keys; native, Range and le
   const bytes = Buffer.alloc(128 * 1024, 0x5b),
     id = await publish(f, bytes);
   const address = await f.listen();
-  const client = new DepotClient(address, () => f.headers.authorization.slice(7));
+  const client = new ArkvoryClient(address, () => f.headers.authorization.slice(7));
   await client.setAsset('releases', 'release.bin', id, 0);
   let otherFinished = 0;
   const start = performance.now();
@@ -172,19 +172,19 @@ test('traffic environment configuration rejects invalid rates and active caps', 
     JSON.stringify(f.config.keys.map((k) => ({ ...k.principal, sha256: k.sha256 }))),
   );
   const env = {
-    DEPOT_DATABASE_URL: f.config.databaseUrl,
-    DEPOT_DATA_DIR: f.directory,
-    DEPOT_KEYS_FILE: path,
+    ARKVORY_DATABASE_URL: f.config.databaseUrl,
+    ARKVORY_DATA_DIR: f.directory,
+    ARKVORY_KEYS_FILE: path,
   };
   const defaults = await loadConfig(env);
   assert.equal(defaults.role, 'api');
   assert.equal(defaults.sharedDownloads, undefined);
   const shared = {
     ...env,
-    DEPOT_ROLE: 'reader',
-    DEPOT_GATEWAY_SLOT: '1',
-    DEPOT_GATEWAY_SLOTS: '2',
-    DEPOT_SHARED_DOWNLOAD_BYTES_PER_SECOND: '131072',
+    ARKVORY_ROLE: 'reader',
+    ARKVORY_GATEWAY_SLOT: '1',
+    ARKVORY_GATEWAY_SLOTS: '2',
+    ARKVORY_SHARED_DOWNLOAD_BYTES_PER_SECOND: '131072',
   };
   assert.deepEqual((await loadConfig(shared)).sharedDownloads, {
     slots: 2,
@@ -193,17 +193,17 @@ test('traffic environment configuration rejects invalid rates and active caps', 
     perPrincipalBytesPerSecond: 0,
   });
   for (const invalid of [
-    { DEPOT_ROLE: 'replica' },
-    { DEPOT_GATEWAY_SLOT: '0' },
-    { DEPOT_GATEWAY_SLOT: '2' },
-    { DEPOT_GATEWAY_SLOTS: '1' },
-    { DEPOT_SHARED_DOWNLOAD_BYTES_PER_SECOND: '65536' },
-    { DEPOT_SHARED_DOWNLOAD_BYTES_PER_SECOND_PER_PRINCIPAL: '65536' },
-    { DEPOT_ROLE: 'api' },
+    { ARKVORY_ROLE: 'replica' },
+    { ARKVORY_GATEWAY_SLOT: '0' },
+    { ARKVORY_GATEWAY_SLOT: '2' },
+    { ARKVORY_GATEWAY_SLOTS: '1' },
+    { ARKVORY_SHARED_DOWNLOAD_BYTES_PER_SECOND: '65536' },
+    { ARKVORY_SHARED_DOWNLOAD_BYTES_PER_SECOND_PER_PRINCIPAL: '65536' },
+    { ARKVORY_ROLE: 'api' },
   ])
     await assert.rejects(loadConfig({ ...shared, ...invalid }));
-  await assert.rejects(loadConfig({ ...env, DEPOT_ROLE: 'reader' }));
-  await assert.rejects(loadConfig({ ...env, DEPOT_GATEWAY_SLOT: '0' }));
+  await assert.rejects(loadConfig({ ...env, ARKVORY_ROLE: 'reader' }));
+  await assert.rejects(loadConfig({ ...env, ARKVORY_GATEWAY_SLOT: '0' }));
   assert.equal(defaults.downloadBytesPerSecond, 0);
   assert.equal(defaults.transferQueueLimit, 64);
   assert.equal(defaults.transferQueueTimeoutMs, 20000);
@@ -211,33 +211,38 @@ test('traffic environment configuration rejects invalid rates and active caps', 
   assert.equal(defaults.uploadDeadlineMs, 1800000);
   assert.equal(defaults.webDirectory, 'apps/web/public');
   assert.equal(
-    (await loadConfig({ ...env, DEPOT_WEB_DIR: 'custom-console' })).webDirectory,
+    (await loadConfig({ ...env, ARKVORY_WEB_DIR: 'custom-console' })).webDirectory,
     'custom-console',
   );
   for (const value of ['0', '-1', '1e3', '1.5', 'Infinity', ' 1000', '1800001', '']) {
-    await assert.rejects(loadConfig({ ...env, DEPOT_UPLOAD_IDLE_TIMEOUT_MS: value }));
-    await assert.rejects(loadConfig({ ...env, DEPOT_UPLOAD_DEADLINE_MS: value }));
+    await assert.rejects(loadConfig({ ...env, ARKVORY_UPLOAD_IDLE_TIMEOUT_MS: value }));
+    await assert.rejects(loadConfig({ ...env, ARKVORY_UPLOAD_DEADLINE_MS: value }));
   }
   await assert.rejects(
-    loadConfig({ ...env, DEPOT_UPLOAD_IDLE_TIMEOUT_MS: '2000', DEPOT_UPLOAD_DEADLINE_MS: '1000' }),
+    loadConfig({
+      ...env,
+      ARKVORY_UPLOAD_IDLE_TIMEOUT_MS: '2000',
+      ARKVORY_UPLOAD_DEADLINE_MS: '1000',
+    }),
   );
   assert.equal(
-    (await loadConfig({ ...env, DEPOT_UPLOAD_IDLE_TIMEOUT_MS: '15000' })).uploadIdleTimeoutMs,
+    (await loadConfig({ ...env, ARKVORY_UPLOAD_IDLE_TIMEOUT_MS: '15000' })).uploadIdleTimeoutMs,
     15000,
   );
   for (const invalid of [
-    { DEPOT_TRANSFER_QUEUE_LIMIT: '1025' },
-    { DEPOT_TRANSFER_QUEUE_LIMIT: '1', DEPOT_TRANSFER_QUEUE_PER_PRINCIPAL: '2' },
-    { DEPOT_TRANSFER_QUEUE_TIMEOUT_MS: '120001' },
-    { DEPOT_TRANSFER_QUEUE_TIMEOUT_MS: '0' },
+    { ARKVORY_TRANSFER_QUEUE_LIMIT: '1025' },
+    { ARKVORY_TRANSFER_QUEUE_LIMIT: '1', ARKVORY_TRANSFER_QUEUE_PER_PRINCIPAL: '2' },
+    { ARKVORY_TRANSFER_QUEUE_TIMEOUT_MS: '120001' },
+    { ARKVORY_TRANSFER_QUEUE_TIMEOUT_MS: '0' },
   ])
     await assert.rejects(loadConfig({ ...env, ...invalid }));
   assert.equal(defaults.maxDownloadsPerPrincipal, 4);
   for (const value of ['-1', '1', '65535', '1e6', 'Infinity', '1.5', ' 65536', '1099511627777'])
-    await assert.rejects(loadConfig({ ...env, DEPOT_DOWNLOAD_BYTES_PER_SECOND: value }));
-  await assert.rejects(loadConfig({ ...env, DEPOT_MAX_DOWNLOADS_PER_PRINCIPAL: '17' }));
+    await assert.rejects(loadConfig({ ...env, ARKVORY_DOWNLOAD_BYTES_PER_SECOND: value }));
+  await assert.rejects(loadConfig({ ...env, ARKVORY_MAX_DOWNLOADS_PER_PRINCIPAL: '17' }));
   assert.equal(
-    (await loadConfig({ ...env, DEPOT_DOWNLOAD_BYTES_PER_SECOND: '65536' })).downloadBytesPerSecond,
+    (await loadConfig({ ...env, ARKVORY_DOWNLOAD_BYTES_PER_SECOND: '65536' }))
+      .downloadBytesPerSecond,
     65536,
   );
 });

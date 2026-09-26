@@ -1,13 +1,13 @@
-import { DepotHttpError } from '@proanima/depot-sdk';
-import type { DepotClient } from '@proanima/depot-sdk';
-import type { AssetRevisionResponse } from '@proanima/depot-contracts';
+import { ArkvoryHttpError } from '@proanima/arkvory-sdk';
+import type { ArkvoryClient } from '@proanima/arkvory-sdk';
+import type { AssetRevisionResponse } from '@proanima/arkvory-contracts';
 import { element } from './dom.js';
 import { message, dateMessage } from './i18n.js';
 import { feedback } from './feedback.js';
 
-// depot-exception ARCH-022 -- Existing UI controller contains event wiring and view state; freeze its size and extract cohesive controllers only with browser state/reset acceptance.
+// arkvory-exception ARCH-022 -- Existing UI controller contains event wiring and view state; freeze its size and extract cohesive controllers only with browser state/reset acceptance.
 export function installAssetHistory(
-  client: DepotClient,
+  client: ArkvoryClient,
   repository: HTMLInputElement,
   token: HTMLInputElement,
   open: (repository: string, id: string, name: string) => Promise<void>,
@@ -109,7 +109,7 @@ export function installAssetHistory(
           restored(snapshot.repository, snapshot.path, result.revision);
         } catch (error) {
           if (controller.signal.aborted) return;
-          if (error instanceof DepotHttpError && error.status === 409)
+          if (error instanceof ArkvoryHttpError && error.status === 409)
             feedback(status, 'historyConflict', {}, 'error');
           else throw error;
         } finally {

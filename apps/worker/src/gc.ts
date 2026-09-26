@@ -1,13 +1,13 @@
-import { GarbageCollector } from '@proanima/depot-application';
-import { PostgresCleanup } from '@proanima/depot-infrastructure';
-import { DepotError } from '@proanima/depot-domain';
+import { GarbageCollector } from '@proanima/arkvory-application';
+import { PostgresCleanup } from '@proanima/arkvory-infrastructure';
+import { ArkvoryError } from '@proanima/arkvory-domain';
 import { resources } from './runtime.js';
 try {
   const { catalog, blobs } = await resources('maintenance');
   try {
     const result = await new GarbageCollector(new PostgresCleanup(catalog.pool), blobs, {
       throwIfAborted() {
-        if (!catalog.active) throw new DepotError('unavailable', 'Maintenance claim lost');
+        if (!catalog.active) throw new ArkvoryError('unavailable', 'Maintenance claim lost');
       },
     }).run(new Date().toISOString());
     process.stdout.write(JSON.stringify(result) + '\n');

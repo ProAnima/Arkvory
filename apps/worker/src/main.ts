@@ -1,15 +1,16 @@
+import { normalizeRuntimeSettings } from '@proanima/arkvory-contracts';
 import { readFile } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import { setTimeout as delay } from 'node:timers/promises';
-import { StorageService } from '@proanima/depot-application';
-import { DepotError } from '@proanima/depot-domain';
+import { StorageService } from '@proanima/arkvory-application';
+import { ArkvoryError } from '@proanima/arkvory-domain';
 import {
   DiagnosticLogger,
   PostgresJobs,
   PostgresIdentity,
   PostgresServices,
   parseKeys,
-} from '@proanima/depot-infrastructure';
+} from '@proanima/arkvory-infrastructure';
 import { resources } from './runtime.js';
 
 const diagnostics = new DiagnosticLogger(process.stdout, () => new Date().toISOString());
@@ -19,8 +20,9 @@ for (const event of ['SIGINT', 'SIGTERM'] as const)
     stop.abort();
   });
 try {
-  const keyFile = process.env['DEPOT_KEYS_FILE'];
-  if (!keyFile) throw new Error('DEPOT_KEYS_FILE is required');
+  Object.assign(process.env, normalizeRuntimeSettings(process.env));
+  const keyFile = process.env['ARKVORY_KEYS_FILE'];
+  if (!keyFile) throw new Error('ARKVORY_KEYS_FILE is required');
   const { catalog, blobs } = await resources('worker');
   const jobs = new PostgresJobs(catalog.pool);
   const identity = new PostgresIdentity(catalog.pool);
@@ -59,7 +61,7 @@ try {
         } else {
           const raw = await readFile(keyFile, 'utf8');
           if (raw.length > 1024 * 1024)
-            throw new DepotError('forbidden', 'Key configuration too large');
+            throw new ArkvoryError('forbidden', 'Key configuration too large');
           const value: unknown = JSON.parse(raw);
           principal = parseKeys(value).find(
             (key) =>
@@ -68,16 +70,16 @@ try {
               key.principal.permissions.includes('write'),
           )?.principal;
         }
-        if (!principal) throw new DepotError('forbidden', 'Job authorization revoked');
+        if (!principal) throw new ArkvoryError('forbidden', 'Job authorization revoked');
         await service.complete(principal, job.repository, job.uploadId, {
           throwIfAborted() {
             stop.signal.throwIfAborted();
             if (state.lost || !catalog.active)
-              throw new DepotError('unavailable', 'Worker lease lost');
+              throw new ArkvoryError('unavailable', 'Worker lease lost');
           },
         });
       } catch (error) {
-        errorCode = error instanceof DepotError ? error.code : 'unavailable';
+        errorCode = error instanceof ArkvoryError ? error.code : 'unavailable';
       } finally {
         clearInterval(timer);
         await heartbeat;

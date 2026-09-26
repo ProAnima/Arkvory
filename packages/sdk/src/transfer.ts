@@ -1,21 +1,21 @@
-export class DepotHttpError extends Error {
+export class ArkvoryHttpError extends Error {
   constructor(
     readonly status: number,
     readonly code: string,
     readonly requestId: string,
     readonly retryAfterMs?: number,
   ) {
-    super(`Depot request failed (${String(status)}, ${code})`);
+    super(`Arkvory request failed (${String(status)}, ${code})`);
   }
 }
 
-export class DepotNetworkError extends Error {
+export class ArkvoryNetworkError extends Error {
   constructor() {
-    super('Depot connection interrupted');
+    super('Arkvory connection interrupted');
   }
 }
 
-export class DepotIntegrityError extends Error {
+export class ArkvoryIntegrityError extends Error {
   constructor() {
     super('Downloaded content does not match the artifact');
   }
@@ -94,7 +94,7 @@ export class TransferAttempts {
       this.options.signal?.throwIfAborted();
       const timeout = new AbortController();
       const timer = setTimeout(() => {
-        timeout.abort(new DepotNetworkError());
+        timeout.abort(new ArkvoryNetworkError());
       }, timeoutMs);
       const signal = this.options.signal
         ? AbortSignal.any([this.options.signal, timeout.signal])
@@ -109,8 +109,8 @@ export class TransferAttempts {
       }
       this.options.signal?.throwIfAborted();
       const retryable =
-        failure instanceof DepotNetworkError ||
-        (failure instanceof DepotHttpError && [408, 429, 502, 503, 504].includes(failure.status));
+        failure instanceof ArkvoryNetworkError ||
+        (failure instanceof ArkvoryHttpError && [408, 429, 502, 503, 504].includes(failure.status));
       if (
         !retryable ||
         attempt >= this.policy.maxAttempts ||
@@ -123,7 +123,7 @@ export class TransferAttempts {
       );
       const wait = Math.max(
         Math.floor(backoff / 2 + (Math.random() * backoff) / 2),
-        failure instanceof DepotHttpError ? (failure.retryAfterMs ?? 0) : 0,
+        failure instanceof ArkvoryHttpError ? (failure.retryAfterMs ?? 0) : 0,
       );
       // Never retry earlier than Retry-After to fit our local budget.
       if (wait > this.policy.maxDelayMs) throw failure;
@@ -142,7 +142,7 @@ export async function readNetwork(
     return await reader.read();
   } catch {
     signal?.throwIfAborted();
-    throw new DepotNetworkError();
+    throw new ArkvoryNetworkError();
   }
 }
 

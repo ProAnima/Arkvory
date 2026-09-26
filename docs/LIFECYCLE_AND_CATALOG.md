@@ -14,7 +14,7 @@
 
 ## Очереди
 
-HTTP upload/download имеют отдельные очереди допуска: лимит активных задают `DEPOT_MAX_UPLOADS`/`DEPOT_MAX_DOWNLOADS`; ожидание максимум 64 запроса на направление, 8 на principal, 20 секунд. При выборе следующего запроса чередуются principal. Отмена/тайм-аут освобождают ожидание; переполнение — 503 + Retry-After. Очередь находится в памяти шлюза, после перезапуска клиент повторяет запрос. До получения слота поток upload не вычитывается приложением. Общий предел API — 128 запросов.
+HTTP upload/download имеют отдельные очереди допуска: лимит активных задают `ARKVORY_MAX_UPLOADS`/`ARKVORY_MAX_DOWNLOADS`; ожидание максимум 64 запроса на направление, 8 на principal, 20 секунд. При выборе следующего запроса чередуются principal. Отмена/тайм-аут освобождают ожидание; переполнение — 503 + Retry-After. Очередь находится в памяти шлюза, после перезапуска клиент повторяет запрос. До получения слота поток upload не вычитывается приложением. Общий предел API — 128 запросов.
 
 `POST uploads/{id}/complete-async` возвращает **202** с заданием. `GET /api/v1/jobs/{id}` доступен владельцу. Повтор enqueue возвращает существующее задание. Для исполнения запустить `npm run worker`; `npm run worker -- --once` делает одну попытку. API не исполняет очередь самостоятельно.
 
@@ -69,10 +69,10 @@ UPack: root `upack.json` до 64 KiB, name/group и SemVer, сохранение
 
 ## SDK и консоль
 
-`@proanima/depot-sdk`: create/status/list/search, части/resume, complete/queue/job, annotations, registerPackage, assets, cancel и потоковый download. Ответы проходят runtime validation. HTTPS обязателен, кроме loopback HTTP. Ключ получается callback, не сохраняется в localStorage. SDK не делает неограниченных скрытых retries; ошибки имеют status/code/requestId. Страницы пакетов допускают JSON до 8 MiB, остальные JSON-ответы — до 2 MiB.
+`@proanima/arkvory-sdk`: create/status/list/search, части/resume, complete/queue/job, annotations, registerPackage, assets, cancel и потоковый download. Ответы проходят runtime validation. HTTPS обязателен, кроме loopback HTTP. Ключ получается callback, не сохраняется в localStorage. SDK не делает неограниченных скрытых retries; ошибки имеют status/code/requestId. Страницы пакетов допускают JSON до 8 MiB, остальные JSON-ответы — до 2 MiB.
 
-`/console/` после `npm run build` доступна с того же origin, статические файлы задаются `DEPOT_WEB_DIR` (по умолчанию apps/web/public относительно cwd). Подключение, поиск, аннотации, UPack-регистрация, asset pointer, upload/resume. SHA-256 файла вычисляет Web Worker потоково; SDK удерживает до 8 MiB части. Кнопка «Пауза» прерывает текущую передачу, не отменяет сессию. Сохранить ID перед закрытием страницы. «Новая» сбрасывает поля для следующей загрузки. Скачать большой файл в браузере можно через File System Access API в Chrome/Edge; другие клиенты используют SDK/HTTP. Полный browser upload/download сценарий пока не автоматизирован.
+`/console/` после `npm run build` доступна с того же origin, статические файлы задаются `ARKVORY_WEB_DIR` (по умолчанию apps/web/public относительно cwd). Подключение, поиск, аннотации, UPack-регистрация, asset pointer, upload/resume. SHA-256 файла вычисляет Web Worker потоково; SDK удерживает до 8 MiB части. Кнопка «Пауза» прерывает текущую передачу, не отменяет сессию. Сохранить ID перед закрытием страницы. «Новая» сбрасывает поля для следующей загрузки. Скачать большой файл в браузере можно через File System Access API в Chrome/Edge; другие клиенты используют SDK/HTTP. Полный browser upload/download сценарий пока не автоматизирован.
 
-Статическая страница публична; все данные защищены ключом. CSP запрещает сторонние scripts и frames. Разметка данных создаётся через textContent. SHA-реализация @noble/hashes поставляется со своей лицензией в `/console/THIRD-PARTY.txt`; права на Depot определяет LICENSE.md.
+Статическая страница публична; все данные защищены ключом. CSP запрещает сторонние scripts и frames. Разметка данных создаётся через textContent. SHA-реализация @noble/hashes поставляется со своей лицензией в `/console/THIRD-PARTY.txt`; права на Arkvory определяет LICENSE.md.
 
 Для полного обхода файлового каталога используйте [GET /assets/page](ASSET_PAGINATION.md): до 100 текущих pointers и next. Прежний GET /assets с пределом 1000 остаётся совместимым.

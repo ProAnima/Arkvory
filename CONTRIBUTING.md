@@ -6,7 +6,7 @@ Node.js 24 LTS, npm 11; устанавливайте актуальный без
 
 TypeScript 5.9.3 выбран как проверяемая совместимая базовая версия с текущими инструментами lint. Обновление major TypeScript выполняется отдельно с проверкой совместимости parser, линтера и сборки, а не автоматически по `latest`.
 
-`npm run gate -- quick` выполняется локально и в GitHub Actions на Linux и Windows. PostgreSQL, браузер и аудит зависимостей — обязательные отдельные задания CI. Основной репозиторий — [ProAnima/Depot](https://github.com/ProAnima/Depot). Workflow: `.github/workflows/check.yml`; общий реестр: `config/gates.json`.
+`npm run gate -- quick` выполняется локально и в GitHub Actions на Linux и Windows. PostgreSQL, браузер и аудит зависимостей — обязательные отдельные задания CI. Основной репозиторий — [ProAnima/Arkvory](https://github.com/ProAnima/Arkvory). Workflow: `.github/workflows/check.yml`; общий реестр: `config/gates.json`.
 
 Это проприетарный проект Ian Panaev под брендом ProAnimaStudio. Работа с кодом и передачей изменений выполняется в пределах отдельно предоставленных прав; см. [LICENSE.md](LICENSE.md) и [модель лицензирования](docs/LICENSING.md). Публичный fork или отправка PR не заменяют согласование прав на вклад.
 
@@ -14,7 +14,7 @@ TypeScript 5.9.3 выбран как проверяемая совместима
 
 Работа начинается с небольшого вертикального сценария из roadmap. Не реализуйте все будущие интерфейсы и классы заранее. Пустой `index.ts` заменяется реальными публичными экспортами при появлении кода. Порты размещаются в `application`, предметные инварианты — в `domain`, I/O — в адаптерах.
 
-Между пакетами используйте имя `@proanima/depot-<package>` и публичный экспорт. В manifests объявляйте реальные workspace-зависимости. Runtime exports указывают на `dist/index.js` и `.d.ts`; условие `depot-source` используется только tooling. `npm run build` собирает workspaces в порядке зависимостей. CI проверяет сборку и тесты из чистого checkout.
+Между пакетами используйте имя `@proanima/arkvory-<package>` и публичный экспорт. В manifests объявляйте реальные workspace-зависимости. Runtime exports указывают на `dist/index.js` и `.d.ts`; условие `arkvory-source` используется только tooling. `npm run build` собирает workspaces в порядке зависимостей. CI проверяет сборку и тесты из чистого checkout.
 
 Для Node.js используется ESM/NodeNext; относительные импорты исходников указывают ожидаемое расширение `.js`. Browser SDK/UI получают отдельное DOM-окружение. Domain/application/contracts не получают Node.js globals.
 

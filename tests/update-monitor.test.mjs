@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { initialUpdateSnapshot, monitorUpdates } from '../apps/deploy/dist/update-monitor.js';
 import { DeploymentCommandTimeout } from '../apps/deploy/dist/process.js';
-import { readUpdateRequest, readUpdateSnapshot } from '@proanima/depot-contracts';
+import { readUpdateRequest, readUpdateSnapshot } from '@proanima/arkvory-contracts';
 
 const now = '2026-09-26T03:05:00.000Z';
 const release = {

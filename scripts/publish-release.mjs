@@ -5,12 +5,12 @@ import { resolve, join } from 'node:path';
 import { releaseFiles, verifyReleaseFiles } from './release-files.mjs';
 import { nativeFiles, verifyNativeFiles } from './native-files.mjs';
 
-const version = process.env.DEPOT_RELEASE_VERSION;
+const version = process.env.ARKVORY_RELEASE_VERSION;
 if (!/^(0|[1-9][0-9]{0,5})\.(0|[1-9][0-9]{0,5})\.(0|[1-9][0-9]{0,5})$/.test(version ?? ''))
   throw Error('Invalid stable version');
 if (
   process.env.GITHUB_REF !== 'refs/heads/main' ||
-  process.env.GITHUB_REPOSITORY !== 'ProAnima/Depot'
+  process.env.GITHUB_REPOSITORY !== 'ProAnima/Arkvory'
 )
   throw Error('Only the trusted main workflow may prepare a release');
 const sha = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
@@ -36,7 +36,7 @@ async function request(url, options = {}) {
   if (!response.ok) throw Error(`Release API failed: ${response.status}`);
   return response.json();
 }
-const base = 'https://api.github.com/repos/ProAnima/Depot';
+const base = 'https://api.github.com/repos/ProAnima/Arkvory';
 const checks = await request(
   `${base}/actions/workflows/check.yml/runs?head_sha=${sha}&per_page=30`,
 );
@@ -61,7 +61,7 @@ const release = await request(`${base}/releases`, {
   body: JSON.stringify({
     tag_name: `v${version}`,
     target_commitish: sha,
-    name: `Depot ${version}`,
+    name: `Arkvory ${version}`,
     draft: true,
     prerelease: false,
     body: 'All release gates passed for this commit. Review deployment notes and platform smoke evidence before publishing. Publishing makes this version eligible for opt-in automatic updates.\n\nВсе release-гейты пройдены. Перед публикацией проверьте инструкции развёртывания и результаты проверок платформ. Публикация разрешает установкам с включённым автообновлением перейти на эту версию.',
@@ -69,7 +69,7 @@ const release = await request(`${base}/releases`, {
 });
 if (
   typeof release.upload_url !== 'string' ||
-  !release.upload_url.startsWith('https://uploads.github.com/repos/ProAnima/Depot/')
+  !release.upload_url.startsWith('https://uploads.github.com/repos/ProAnima/Arkvory/')
 )
   throw Error('Invalid asset upload URL');
 for (const name of [...releaseFiles, 'release-checksums.json', ...nativeFiles]) {

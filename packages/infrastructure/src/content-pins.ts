@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import type { Pool, PoolClient } from 'pg';
-import { DepotError, requireId } from '@proanima/depot-domain';
+import { ArkvoryError, requireId } from '@proanima/arkvory-domain';
 
 export const contentLockKey = (id: string) =>
   createHash('sha256')
@@ -36,7 +36,7 @@ export class PostgresContentPins {
         this.lost = false;
       }
       if (this.closed || this.lost)
-        throw new DepotError('unavailable', 'Content protection unavailable');
+        throw new ArkvoryError('unavailable', 'Content protection unavailable');
       this.client ??= await this.pool.connect();
       this.client.removeListener('error', this.failed);
       this.client.on('error', this.failed);
@@ -48,9 +48,10 @@ export class PostgresContentPins {
             'SELECT pg_try_advisory_lock_shared($1::bigint) AS acquired',
             [key],
           );
-          if (!result.rows[0]?.acquired) throw new DepotError('busy', 'Content is being reclaimed');
+          if (!result.rows[0]?.acquired)
+            throw new ArkvoryError('busy', 'Content is being reclaimed');
         } catch (error) {
-          if (!(error instanceof DepotError)) this.lost = true;
+          if (!(error instanceof ArkvoryError)) this.lost = true;
           throw error;
         }
       }
@@ -59,7 +60,7 @@ export class PostgresContentPins {
       return {
         check: () => {
           if (released || this.lost || this.closed)
-            throw new DepotError('unavailable', 'Content protection lost');
+            throw new ArkvoryError('unavailable', 'Content protection lost');
         },
         release: () =>
           this.serial(async () => {

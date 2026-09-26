@@ -27,8 +27,8 @@ export async function prepareUpdateControl(root: string): Promise<void> {
   }
   const config = join(root, 'config/runtime.json');
   const env = runtimeEnvironment(await jsonFile(config));
-  env['DEPOT_UPDATE_CONTROL_DIR'] =
-    state.mode === 'compose' ? '/run/depot-updates' : join(root, 'updates');
+  env['ARKVORY_UPDATE_CONTROL_DIR'] =
+    state.mode === 'compose' ? '/run/arkvory-updates' : join(root, 'updates');
   await atomicJson(config, env);
   await chmod(config, state.mode === 'compose' ? 0o644 : 0o640);
 }

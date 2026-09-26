@@ -1,7 +1,7 @@
 export const cleanupEnglish = {
   cleanupTitle: 'Physical cleanup',
   cleanupHelp:
-    'Reclaim retired files without stopping Depot. Active transfers and pinned files are deferred. Enable only after upgrading every gateway and worker. Pausing finishes the current file. A grace period is not a recycle bin.',
+    'Reclaim retired files without stopping Arkvory. Active transfers and pinned files are deferred. Enable only after upgrading every gateway and worker. Pausing finishes the current file. A grace period is not a recycle bin.',
   cleanupEnabled: 'Enable background cleanup',
   cleanupGrace: 'Grace period after deletion (hours)',
   cleanupBatch: 'Files per batch',
@@ -21,7 +21,7 @@ export const cleanupEnglish = {
 export const cleanupRussian: Record<keyof typeof cleanupEnglish, string> = {
   cleanupTitle: 'Физическая очистка',
   cleanupHelp:
-    'Освобождает место без остановки Depot. Активные передачи и закреплённые файлы откладываются. Включайте после обновления всех gateways и workers. Пауза завершает текущий файл. Защитный срок не является корзиной восстановления.',
+    'Освобождает место без остановки Arkvory. Активные передачи и закреплённые файлы откладываются. Включайте после обновления всех gateways и workers. Пауза завершает текущий файл. Защитный срок не является корзиной восстановления.',
   cleanupEnabled: 'Включить фоновую очистку',
   cleanupGrace: 'Защитный срок после удаления (часы)',
   cleanupBatch: 'Файлов за проход',

@@ -1,5 +1,5 @@
-import { PostgresCleanup } from '@proanima/depot-infrastructure';
-import { DepotError } from '@proanima/depot-domain';
+import { PostgresCleanup } from '@proanima/arkvory-infrastructure';
+import { ArkvoryError } from '@proanima/arkvory-domain';
 import { resources } from './runtime.js';
 try {
   const { catalog, blobs } = await resources('maintenance');
@@ -13,13 +13,13 @@ try {
       if (!rows.length) break;
       for (const row of rows) {
         after = row.id;
-        if (!catalog.active) throw new DepotError('unavailable', 'Maintenance claim lost');
+        if (!catalog.active) throw new ArkvoryError('unavailable', 'Maintenance claim lost');
         if (row.status !== 'available') continue;
         const upload = await catalog.get(row.repository, row.id);
         try {
           await blobs.verify(row.id, upload.descriptor, {
             throwIfAborted() {
-              if (!catalog.active) throw new DepotError('unavailable', 'Maintenance claim lost');
+              if (!catalog.active) throw new ArkvoryError('unavailable', 'Maintenance claim lost');
             },
           });
           checked++;

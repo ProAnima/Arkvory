@@ -4,7 +4,7 @@ import { mkdtemp, writeFile, readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
-import { parseKeys } from '@proanima/depot-infrastructure';
+import { parseKeys } from '@proanima/arkvory-infrastructure';
 import { initialize } from '../../apps/deploy/dist/initialize.js';
 import { healthReady } from '../../apps/deploy/dist/health.js';
 import { removeTestDirectory } from '../helpers.mjs';
@@ -12,10 +12,10 @@ import { setup, descriptor, base } from './fixture.mjs';
 
 test('generated deployment health credential authenticates readiness without artifact or administrator access', async (t) => {
   const f = await setup(t);
-  const root = await mkdtemp(join(tmpdir(), 'depot-deploy-health-'));
+  const root = await mkdtemp(join(tmpdir(), 'arkvory-deploy-health-'));
   t.after(() => removeTestDirectory(root));
   const input = join(root, 'input.json');
-  await writeFile(input, JSON.stringify({ DEPOT_DATABASE_URL: f.config.databaseUrl }), {
+  await writeFile(input, JSON.stringify({ ARKVORY_DATABASE_URL: f.config.databaseUrl }), {
     mode: 0o600,
   });
   await initialize(root, { mode: 'systemd', current: { version: '1.0.0' } }, input);

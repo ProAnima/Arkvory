@@ -1,8 +1,8 @@
 import { createHash } from 'node:crypto';
 import type { Pool } from 'pg';
-import { DepotError, requireAssetPath } from '@proanima/depot-domain';
-import { assetPrefixEnd, validateAssetPage } from '@proanima/depot-application';
-import type { AssetPage, AssetPageOptions } from '@proanima/depot-application';
+import { ArkvoryError, requireAssetPath } from '@proanima/arkvory-domain';
+import { assetPrefixEnd, validateAssetPage } from '@proanima/arkvory-application';
+import type { AssetPage, AssetPageOptions } from '@proanima/arkvory-application';
 
 function scope(repository: string, prefix: string): string {
   return createHash('sha256')
@@ -16,10 +16,10 @@ function cursor(encoded: string, expectedScope: string, prefix: string): string 
     if (data.toString('base64url') !== encoded) throw new Error('Noncanonical encoding');
     value = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(data));
   } catch {
-    throw new DepotError('invalid_input', 'Invalid asset cursor');
+    throw new ArkvoryError('invalid_input', 'Invalid asset cursor');
   }
   if (typeof value !== 'object' || value === null || Array.isArray(value))
-    throw new DepotError('invalid_input', 'Invalid asset cursor');
+    throw new ArkvoryError('invalid_input', 'Invalid asset cursor');
   const row: Record<string, unknown> = Object.fromEntries(Object.entries(value));
   if (
     Object.keys(row).length !== 3 ||
@@ -29,7 +29,7 @@ function cursor(encoded: string, expectedScope: string, prefix: string): string 
     !row['path'].startsWith(prefix) ||
     /[\uD800-\uDFFF]/u.test(row['path'])
   )
-    throw new DepotError('invalid_input', 'Asset cursor does not match the query');
+    throw new ArkvoryError('invalid_input', 'Asset cursor does not match the query');
   return requireAssetPath(row['path']);
 }
 export async function readAssetPage(

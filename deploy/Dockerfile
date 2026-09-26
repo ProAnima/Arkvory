@@ -1,5 +1,5 @@
 FROM node:24.21.0-bookworm-slim
-WORKDIR /opt/depot
+WORKDIR /opt/arkvory
 COPY --chown=root:root . .
 USER node
 EXPOSE 8080

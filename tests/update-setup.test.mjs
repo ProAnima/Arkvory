@@ -8,7 +8,7 @@ import { removeTestDirectory } from './helpers.mjs';
 
 test('update bridge preparation overrides private installer umask without opening the host root', async (t) => {
   for (const mode of ['systemd', 'compose']) {
-    const root = await mkdtemp(join(tmpdir(), 'depot-update-setup-'));
+    const root = await mkdtemp(join(tmpdir(), 'arkvory-update-setup-'));
     t.after(() => removeTestDirectory(root));
     await mkdir(join(root, 'config'));
     await writeFile(join(root, 'config/runtime.json'), '{}');
@@ -41,8 +41,8 @@ test('update bridge preparation overrides private installer umask without openin
     assert.equal(snapshot.automatic, false);
     const runtime = JSON.parse(await readFile(join(root, 'config/runtime.json'), 'utf8'));
     assert.equal(
-      runtime.DEPOT_UPDATE_CONTROL_DIR,
-      mode === 'compose' ? '/run/depot-updates' : join(root, 'updates'),
+      runtime.ARKVORY_UPDATE_CONTROL_DIR,
+      mode === 'compose' ? '/run/arkvory-updates' : join(root, 'updates'),
     );
     if (process.platform !== 'win32') {
       assert.equal((await stat(root)).mode & 0o777, 0o700);

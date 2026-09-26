@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Arkvory Remote Setup
+Name[ru]=Удалённая установка Arkvory
+Comment=Install Arkvory on a remote server
+Comment[ru]=Установить Arkvory на удалённый сервер
+Exec=/usr/bin/arkvory-remote
+Terminal=false
+Categories=Network;System;

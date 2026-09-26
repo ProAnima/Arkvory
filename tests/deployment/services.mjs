@@ -13,14 +13,14 @@ assert.equal(
 // LocalService cannot resolve Node entrypoints through another user's private AppData.
 // Match the production installer's machine-wide location instead of the runner's TEMP.
 const root = windows
-  ? await mkdtemp(join(process.env.ProgramData ?? 'C:\\ProgramData', 'depot-service-gate-'))
-  : execFileSync('sudo', ['mktemp', '-d', '/opt/depot-service-gate-XXXXXX'], {
+  ? await mkdtemp(join(process.env.ProgramData ?? 'C:\\ProgramData', 'arkvory-service-gate-'))
+  : execFileSync('sudo', ['mktemp', '-d', '/opt/arkvory-service-gate-XXXXXX'], {
       encoding: 'utf8',
     }).trim();
 if (!windows) execFileSync('sudo', ['chown', `${process.getuid()}:${process.getgid()}`, root]);
 if (!windows && process.platform !== 'linux')
   throw Error('Service gate requires Linux systemd or Windows');
-const prefix = `depotgate${process.pid}`;
+const prefix = `arkvorygate${process.pid}`;
 const environment = { ...process.env };
 if (windows)
   for (const key of Object.keys(environment))
@@ -67,7 +67,7 @@ try {
         `if ((Get-CimInstance Win32_Service -Filter "Name='${prefix}${role}'").StartMode -ne 'Auto') { throw 'Service must start at boot' }`,
       ]);
     else run('sudo', ['systemctl', 'is-enabled', `${prefix}-${role}`]);
-    if (windows) run(join(root, `service/depot-${role}.exe`), ['start']);
+    if (windows) run(join(root, `service/arkvory-${role}.exe`), ['start']);
     else run('sudo', ['systemctl', 'start', `${prefix}-${role}`]);
   }
   let recovered = false;
@@ -96,7 +96,7 @@ try {
   }
   assert.ok(recovered, 'Both service processes must recover after three consecutive crashes');
   for (const role of ['api', 'worker']) {
-    if (windows) run(join(root, `service/depot-${role}.exe`), ['stopwait']);
+    if (windows) run(join(root, `service/arkvory-${role}.exe`), ['stopwait']);
     else run('sudo', ['systemctl', 'stop', `${prefix}-${role}`]);
   }
   await delay(12000);
@@ -133,7 +133,7 @@ try {
     ]);
   for (const role of ['api', 'worker']) {
     if (windows) {
-      const exe = join(root, `service/depot-${role}.exe`);
+      const exe = join(root, `service/arkvory-${role}.exe`);
       if (existsSync(exe)) {
         run('powershell.exe', [
           '-NoProfile',

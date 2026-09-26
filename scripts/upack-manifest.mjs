@@ -2,7 +2,7 @@ import { createReadStream } from 'node:fs';
 import { writeFile, stat } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { parseArgs } from 'node:util';
-import { parseManifest } from '@proanima/depot-domain';
+import { parseManifest } from '@proanima/arkvory-domain';
 
 // Prepares root upack.json before packaging. Published archives are immutable.
 const { values } = parseArgs({

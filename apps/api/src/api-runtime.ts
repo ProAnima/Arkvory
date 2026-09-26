@@ -3,7 +3,7 @@ import {
   PostgresCatalog,
   PostgresDownloadLease,
   PostgresContentPins,
-} from '@proanima/depot-infrastructure';
+} from '@proanima/arkvory-infrastructure';
 import type { ServerConfig } from './config.js';
 import { createTransferControls } from './transfer-controls.js';
 

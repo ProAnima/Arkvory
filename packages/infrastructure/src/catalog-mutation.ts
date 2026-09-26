@@ -1,5 +1,5 @@
 import type { PoolClient } from 'pg';
-import { DepotError } from '@proanima/depot-domain';
+import { ArkvoryError } from '@proanima/arkvory-domain';
 
 /** Short metadata transactions only. Shared ordering with retirement prevents late pins/edits. */
 export async function lockCatalogMutation(client: PoolClient, repository: string): Promise<void> {
@@ -14,5 +14,5 @@ export async function requirePublished(
     "SELECT id FROM depot_uploads WHERE repository=$1 AND id=$2 AND status='available'",
     [repository, id],
   );
-  if (row.rowCount !== 1) throw new DepotError('not_found', 'Artifact not found');
+  if (row.rowCount !== 1) throw new ArkvoryError('not_found', 'Artifact not found');
 }

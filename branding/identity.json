@@ -1,0 +1,34 @@
+{
+  "name": "Arkvory",
+  "owner": "Ian Panaev",
+  "studio": "ProAnimaStudio",
+  "background": "#0e1426",
+  "surface": "#202b44",
+  "border": "#2b3853",
+  "accent": "#68def1",
+  "gradientStart": "#8ab8ff",
+  "ink": "#102237",
+  "text": "#f0f4ff",
+  "muted": "#abb9d2",
+  "font": "Segoe UI",
+  "radius": 15,
+  "polygons": [
+    [
+      [11, 50],
+      [25, 15],
+      [39, 15],
+      [53, 50],
+      [42, 50],
+      [38, 40],
+      [26, 40],
+      [22, 50]
+    ],
+    [
+      [29, 31],
+      [35, 31],
+      [32, 23]
+    ]
+  ],
+  "width": 492,
+  "height": 942
+}

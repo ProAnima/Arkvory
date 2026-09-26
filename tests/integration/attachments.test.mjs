@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
-import { DepotClient } from '@proanima/depot-sdk';
-import { PostgresAttachments } from '@proanima/depot-infrastructure';
+import { ArkvoryClient } from '@proanima/arkvory-sdk';
+import { PostgresAttachments } from '@proanima/arkvory-infrastructure';
 import { setup, create, base, descriptor } from './fixture.mjs';
 import { validateResponse } from '../api-schema.mjs';
 const path = '/api/v1/repositories/{repository}/artifacts/{id}/attachments';
@@ -103,7 +103,7 @@ test('attachments preserve immutable bytes, CAS history and reference integrity 
     ).rows[0].count,
     '3',
   );
-  const client = new DepotClient(await f.listen(), () => f.headers.authorization.slice(7)),
+  const client = new ArkvoryClient(await f.listen(), () => f.headers.authorization.slice(7)),
     repo = client.inRepository('releases');
   await repo.attachments.replace(build, 3, history.json().items[2].items);
   assert.equal((await repo.attachments.get(build)).revision, 4);
@@ -177,7 +177,7 @@ test('attachment SDK paginates history without loss and handles revoked managed 
   const build = await publish(f),
     target = await publish(f),
     address = await f.listen(),
-    root = new DepotClient(address, () => f.headers.authorization.slice(7));
+    root = new ArkvoryClient(address, () => f.headers.authorization.slice(7));
   const bindings = [
     {
       resource: { kind: 'repository', id: 'releases' },
@@ -189,7 +189,7 @@ test('attachment SDK paginates history without loss and handles revoked managed 
       name: 'build-editor',
       bindings,
     });
-  const client = new DepotClient(address, () => issued.secret);
+  const client = new ArkvoryClient(address, () => issued.secret);
   await client.activateServiceKey();
   for (let revision = 0; revision < 23; revision++)
     await client.replaceAttachments(

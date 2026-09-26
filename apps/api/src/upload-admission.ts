@@ -1,6 +1,6 @@
 import type { FastifyRequest } from 'fastify';
-import { DepotError } from '@proanima/depot-domain';
-import type { AdmissionQueue } from '@proanima/depot-infrastructure';
+import { ArkvoryError } from '@proanima/arkvory-domain';
+import type { AdmissionQueue } from '@proanima/arkvory-infrastructure';
 import type { RequestContext } from './request-context.js';
 
 export function createUploadAdmission(
@@ -22,7 +22,7 @@ export function createUploadAdmission(
         principal(request).id,
         requestSignal ? AbortSignal.any([abort.signal, requestSignal]) : abort.signal,
       );
-      if (!available()) throw new DepotError('unavailable', 'Gateway ownership lost');
+      if (!available()) throw new ArkvoryError('unavailable', 'Gateway ownership lost');
       return await action();
     } finally {
       release?.();

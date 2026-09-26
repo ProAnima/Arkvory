@@ -1,10 +1,22 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
-import { DepotError, MAX_OBJECT_BYTES, PART_BYTES } from '@proanima/depot-domain';
-import type { Principal } from '@proanima/depot-domain';
-import { effectivePermissions } from '@proanima/depot-application';
-import type { ServiceAccess } from '@proanima/depot-application';
+import { ArkvoryError, MAX_OBJECT_BYTES, PART_BYTES } from '@proanima/arkvory-domain';
+import type { Principal } from '@proanima/arkvory-domain';
+import { effectivePermissions } from '@proanima/arkvory-application';
+import type { ServiceAccess } from '@proanima/arkvory-application';
 
-// depot-exception ARCH-018 -- Existing route registrar groups endpoints with shared authorizer dependencies; separate by responsibility with the complete operation inventory unchanged.
+function after(request: FastifyRequest) {
+  const q = request.query;
+  if (typeof q !== 'object' || q === null) throw new ArkvoryError('invalid_input', 'Invalid query');
+  const values: Record<string, unknown> = Object.fromEntries(Object.entries(q));
+  if (
+    Object.keys(values).some((k) => k !== 'after') ||
+    (values['after'] !== undefined && typeof values['after'] !== 'string')
+  )
+    throw new ArkvoryError('invalid_input', 'Invalid cursor');
+  return values['after'];
+}
+
+// arkvory-exception ARCH-018 -- Existing route registrar groups endpoints with shared authorizer dependencies; separate by responsibility with the complete operation inventory unchanged.
 export function registerServiceRoutes(
   app: FastifyInstance,
   service: ServiceAccess,
@@ -12,17 +24,6 @@ export function registerServiceRoutes(
   role: 'api' | 'reader',
 ): void {
   type Params = { id: string };
-  const after = (request: FastifyRequest) => {
-    const q = request.query;
-    if (typeof q !== 'object' || q === null) throw new DepotError('invalid_input', 'Invalid query');
-    const values: Record<string, unknown> = Object.fromEntries(Object.entries(q));
-    if (
-      Object.keys(values).some((k) => k !== 'after') ||
-      (values['after'] !== undefined && typeof values['after'] !== 'string')
-    )
-      throw new DepotError('invalid_input', 'Invalid cursor');
-    return values['after'];
-  };
   app.get('/api/v1/capabilities', () =>
     Promise.resolve({
       apiVersions: ['v1'],
@@ -104,7 +105,7 @@ export function registerServiceRoutes(
   app.post('/api/v1/auth/activate-key', async (r, reply) => {
     const auth = r.headers.authorization;
     if (!auth?.startsWith('Bearer dpk_'))
-      throw new DepotError('unauthorized', 'Managed Bearer key required');
+      throw new ArkvoryError('unauthorized', 'Managed Bearer key required');
     await service.activate(auth.slice(7));
     return reply.code(204).send();
   });

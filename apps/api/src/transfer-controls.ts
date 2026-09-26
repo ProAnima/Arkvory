@@ -1,4 +1,4 @@
-import { AdmissionQueue, BandwidthGovernor, downloadShare } from '@proanima/depot-infrastructure';
+import { AdmissionQueue, BandwidthGovernor, downloadShare } from '@proanima/arkvory-infrastructure';
 import type { ServerConfig } from './config.js';
 
 export function createTransferControls(config: ServerConfig, available: () => boolean) {

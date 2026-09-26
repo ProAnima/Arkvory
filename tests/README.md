@@ -1,7 +1,7 @@
 # Тесты ядра
 
 - `npm test`: сборка, Node.js test runner, домен/Range и реальная локальная файловая система.
-- `npm run test:integration`: PostgreSQL/HTTP, требует `DEPOT_TEST_DATABASE_URL` на отдельную тестовую БД. Создаёт уникальные schema; удаляет только свои данные.
+- `npm run test:integration`: PostgreSQL/HTTP, требует `ARKVORY_TEST_DATABASE_URL` на отдельную тестовую БД. Создаёт уникальные schema; удаляет только свои данные.
 - `npm run gate -- browser`: оба браузерных сценария, настоящие API/БД, pinned Playwright Chromium; обязательный CI-гейт.
 - `npm run test:large`: оба сценария 5 GiB, настоящий HTTP, отдельный серверный процесс, restart, Range, SHA-256 и RSS, multipart kill/resume с managed credential и traffic limits. Требует ту же тестовую БД и не менее 11 GiB свободного места в системном temp.
 - `npm run gate -- quick|verify|release`: единые профили; имена передаются отдельно, например `npm run gate -- verify`. Реестр, добавление проверок и отчёты: [ENGINEERING_GATES](../docs/ENGINEERING_GATES.md).
@@ -22,7 +22,7 @@ SDK fault tests входят в `npm test`: настоящие HTTP-сокеты
 
 Большой transfer-гейт сохраняет stdout дочернего API, включая безопасные phase-коды upload/download. Поэтому обрыв после отправки заголовков или срабатывание idle/deadline доступны в CI-логе, даже если итоговый отчёт не был сформирован.
 
-`tests/integration/identity.test.mjs` проверяет регистрацию администратором, группы, чтение байтов по праву группы, изменение и отзыв прав, блокировку входа, смену пароля и ограничение числа сессий в PostgreSQL. Для запуска нужен `DEPOT_TEST_DATABASE_URL`; локальные unit-тесты не заменяют эту проверку.
+`tests/integration/identity.test.mjs` проверяет регистрацию администратором, группы, чтение байтов по праву группы, изменение и отзыв прав, блокировку входа, смену пароля и ограничение числа сессий в PostgreSQL. Для запуска нужен `ARKVORY_TEST_DATABASE_URL`; локальные unit-тесты не заменяют эту проверку.
 
 `tests/integration/package-pagination.test.mjs` сравнивает SQL-порядок SemVer с доменным правилом и проходит курсором более 1000 версий без повторов и пропусков; также проверяет направления сортировки, привязку курсора к запросу, готовность шести индексов и восстановление прерванной миграции.
 

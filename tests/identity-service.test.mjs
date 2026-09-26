@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { IdentityService } from '@proanima/depot-application';
+import { IdentityService } from '@proanima/arkvory-application';
 
 test('only administrators can register accounts and repository grants are validated', async () => {
   const calls = [];

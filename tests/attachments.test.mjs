@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
-import { parseAttachments } from '@proanima/depot-domain';
-import { readAttachmentRevision, readAttachmentHistory } from '@proanima/depot-contracts';
+import { parseAttachments } from '@proanima/arkvory-domain';
+import { readAttachmentRevision, readAttachmentHistory } from '@proanima/arkvory-contracts';
 
 test('build attachment rules reject ambiguous names, unsafe paths, self links and unbounded input', () => {
   const parent = randomUUID(),

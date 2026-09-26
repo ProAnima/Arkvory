@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import { mkdtemp, mkdir, writeFile, readFile, access } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { GarbageCollector } from '@proanima/depot-application';
-import { LocalBlobStore } from '@proanima/depot-infrastructure';
+import { GarbageCollector } from '@proanima/arkvory-application';
+import { LocalBlobStore } from '@proanima/arkvory-infrastructure';
 import { removeTestDirectory } from './helpers.mjs';
 
 const row = {
@@ -60,7 +60,7 @@ for (const interruptedAt of ['page', 'lock', 'delete']) {
 }
 
 test('local reclamation stops between filesystem phases after protection loss', async (t) => {
-  const root = await mkdtemp(join(tmpdir(), 'depot-cleanup-ownership-'));
+  const root = await mkdtemp(join(tmpdir(), 'arkvory-cleanup-ownership-'));
   t.after(() => removeTestDirectory(root));
   const blobs = new LocalBlobStore(root);
   await blobs.initialize();

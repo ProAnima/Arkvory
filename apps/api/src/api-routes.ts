@@ -1,5 +1,5 @@
 import type { FastifyInstance } from 'fastify';
-import type { DiagnosticLogger } from '@proanima/depot-infrastructure';
+import type { DiagnosticLogger } from '@proanima/arkvory-infrastructure';
 import type { createApiServices } from './api-services.js';
 import type { RequestContext } from './request-context.js';
 import type { TransferControls } from './transfer-controls.js';

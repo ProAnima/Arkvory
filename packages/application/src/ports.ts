@@ -3,7 +3,7 @@ import type {
   Upload,
   UploadPart,
   MutationAccess,
-} from '@proanima/depot-domain';
+} from '@proanima/arkvory-domain';
 
 // Portable cancellation contract: core does not depend on DOM or Node globals.
 export interface Cancellation {

@@ -1,11 +1,11 @@
 {
-  "name": "@proanima/depot-domain",
+  "name": "@proanima/arkvory-domain",
   "version": "0.0.0",
   "private": true,
   "type": "module",
   "description": "Чистые предметные правила и состояния",
   "exports": {
-    "depot-source": "./src/index.ts",
+    "arkvory-source": "./src/index.ts",
     "types": "./dist/index.d.ts",
     "import": "./dist/index.js"
   },
@@ -13,6 +13,6 @@
   "author": "Ian Panaev",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ProAnima/Depot.git"
+    "url": "git+https://github.com/ProAnima/Arkvory.git"
   }
 }

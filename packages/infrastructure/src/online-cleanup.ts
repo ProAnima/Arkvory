@@ -1,7 +1,7 @@
 import type { Pool, PoolClient } from 'pg';
 import { setTimeout as delay } from 'node:timers/promises';
-import { DepotError, parseCleanupPolicy } from '@proanima/depot-domain';
-import type { CleanupBlobs } from '@proanima/depot-application';
+import { ArkvoryError, parseCleanupPolicy } from '@proanima/arkvory-domain';
+import type { CleanupBlobs } from '@proanima/arkvory-application';
 import { contentLockKey, uploadLockKey } from './content-pins.js';
 import { recordStorageEvent } from './storage-events.js';
 
@@ -37,7 +37,7 @@ export class PostgresOnlineCleanup {
     };
     c.on('error', failed);
     const check = () => {
-      if (state.lost || !active()) throw new DepotError('unavailable', 'Cleanup ownership lost');
+      if (state.lost || !active()) throw new ArkvoryError('unavailable', 'Cleanup ownership lost');
     };
     try {
       const lock = await c.query<{ acquired: boolean }>(
@@ -107,7 +107,7 @@ export class PostgresOnlineCleanup {
       } catch (error) {
         check();
         result.failed++;
-        result.error = error instanceof DepotError ? error.code : 'unavailable';
+        result.error = error instanceof ArkvoryError ? error.code : 'unavailable';
       }
       await delay(policy.delayMilliseconds);
     }

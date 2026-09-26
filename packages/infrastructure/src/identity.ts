@@ -1,8 +1,13 @@
 import { createHash, randomBytes, randomUUID, scrypt, timingSafeEqual } from 'node:crypto';
 import type { Pool, PoolClient } from 'pg';
-import { DepotError } from '@proanima/depot-domain';
-import type { Principal } from '@proanima/depot-domain';
-import type { AccessGroup, Account, IdentityStore, LoginResult } from '@proanima/depot-application';
+import { ArkvoryError } from '@proanima/arkvory-domain';
+import type { Principal } from '@proanima/arkvory-domain';
+import type {
+  AccessGroup,
+  Account,
+  IdentityStore,
+  LoginResult,
+} from '@proanima/arkvory-application';
 
 const dummySalt = '0'.repeat(32);
 function digest(token: string): string {
@@ -24,7 +29,7 @@ function passwordHash(password: string, salt: string): Promise<Buffer> {
 }
 function conflict(error: unknown): never {
   if (typeof error === 'object' && error !== null && 'code' in error && error.code === '23505')
-    throw new DepotError('conflict', 'Account or group already exists');
+    throw new ArkvoryError('conflict', 'Account or group already exists');
   throw error;
 }
 
@@ -38,7 +43,7 @@ interface UserRow {
   locked: boolean;
 }
 
-// depot-exception ARCH-006 -- Existing adapter or contract implementation combines related operations; freeze growth and extract cohesive responsibilities while preserving transactional and authorization invariants.
+// arkvory-exception ARCH-006 -- Existing adapter or contract implementation combines related operations; freeze growth and extract cohesive responsibilities while preserving transactional and authorization invariants.
 export class PostgresIdentity implements IdentityStore {
   constructor(private readonly pool: Pool) {}
 
@@ -76,7 +81,7 @@ export class PostgresIdentity implements IdentityStore {
           [id, name, salt, hash, administrator],
         ),
       );
-      if (!inserted.rowCount) throw new DepotError('capacity_exceeded', 'Account limit reached');
+      if (!inserted.rowCount) throw new ArkvoryError('capacity_exceeded', 'Account limit reached');
     } catch (error) {
       conflict(error);
     }
@@ -106,7 +111,7 @@ export class PostgresIdentity implements IdentityStore {
         [id, enabled ?? null, salt, hash],
       );
       const user = result.rows[0];
-      if (!user) throw new DepotError('not_found', 'Account not found');
+      if (!user) throw new ArkvoryError('not_found', 'Account not found');
       if (enabled === false || password !== undefined)
         await client.query('DELETE FROM depot_user_sessions WHERE user_id=$1', [id]);
       await client.query('COMMIT');
@@ -128,7 +133,7 @@ export class PostgresIdentity implements IdentityStore {
       'SELECT id,name,administrator,enabled FROM depot_users ORDER BY lower(name),id LIMIT 1001',
     );
     if (result.rows.length > 1000)
-      throw new DepotError('invalid_input', 'User list exceeds 1000 accounts');
+      throw new ArkvoryError('invalid_input', 'User list exceeds 1000 accounts');
     return result.rows;
   }
 
@@ -142,7 +147,7 @@ export class PostgresIdentity implements IdentityStore {
           [id, name],
         ),
       );
-      if (!inserted.rowCount) throw new DepotError('capacity_exceeded', 'Group limit reached');
+      if (!inserted.rowCount) throw new ArkvoryError('capacity_exceeded', 'Group limit reached');
     } catch (error) {
       conflict(error);
     }
@@ -154,7 +159,7 @@ export class PostgresIdentity implements IdentityStore {
       'SELECT id,name FROM depot_access_groups ORDER BY lower(name),id LIMIT 101',
     );
     if (groups.rows.length > 100)
-      throw new DepotError('invalid_input', 'Group list exceeds 100 groups');
+      throw new ArkvoryError('invalid_input', 'Group list exceeds 100 groups');
     const [members, grants] = await Promise.all([
       this.pool.query<{ group_id: string; user_id: string }>(
         'SELECT group_id,user_id FROM depot_group_members ORDER BY group_id,user_id LIMIT 10001',
@@ -164,7 +169,7 @@ export class PostgresIdentity implements IdentityStore {
       ),
     ]);
     if (members.rows.length > 10000 || grants.rows.length > 10000)
-      throw new DepotError('capacity_exceeded', 'Access group listing limit reached');
+      throw new ArkvoryError('capacity_exceeded', 'Access group listing limit reached');
     return groups.rows.map((group) => ({
       ...group,
       members: members.rows.filter((row) => row.group_id === group.id).map((row) => row.user_id),
@@ -194,8 +199,8 @@ export class PostgresIdentity implements IdentityStore {
               'SELECT 1 FROM depot_access_groups g CROSS JOIN depot_users u WHERE g.id=$1 AND u.id=$2',
               [groupId, userId],
             );
-            if (!valid.rowCount) throw new DepotError('not_found', 'User or group not found');
-            throw new DepotError('capacity_exceeded', 'Membership limit reached');
+            if (!valid.rowCount) throw new ArkvoryError('not_found', 'User or group not found');
+            throw new ArkvoryError('capacity_exceeded', 'Membership limit reached');
           }
         }
       });
@@ -228,8 +233,8 @@ export class PostgresIdentity implements IdentityStore {
         const valid = await client.query('SELECT 1 FROM depot_access_groups WHERE id=$1', [
           groupId,
         ]);
-        if (!valid.rowCount) throw new DepotError('not_found', 'Group not found');
-        throw new DepotError('capacity_exceeded', 'Grant limit reached');
+        if (!valid.rowCount) throw new ArkvoryError('not_found', 'Group not found');
+        throw new ArkvoryError('capacity_exceeded', 'Grant limit reached');
       }
     });
   }
@@ -260,7 +265,7 @@ export class PostgresIdentity implements IdentityStore {
           );
         }
         await client.query('COMMIT');
-        throw new DepotError('unauthorized', 'Invalid credentials');
+        throw new ArkvoryError('unauthorized', 'Invalid credentials');
       }
       await client.query('UPDATE depot_users SET failed_logins=0,locked_until=NULL WHERE id=$1', [
         user.id,
@@ -281,7 +286,7 @@ export class PostgresIdentity implements IdentityStore {
       );
       await client.query('COMMIT');
       const expiresAt = session.rows[0]?.expires_at;
-      if (!expiresAt) throw new DepotError('unavailable', 'Session creation failed');
+      if (!expiresAt) throw new ArkvoryError('unavailable', 'Session creation failed');
       return {
         token,
         expiresAt: expiresAt.toISOString(),
@@ -369,7 +374,7 @@ export class PostgresIdentity implements IdentityStore {
         stored.length !== candidate.length ||
         !timingSafeEqual(candidate, stored)
       )
-        throw new DepotError('unauthorized', 'Invalid credentials');
+        throw new ArkvoryError('unauthorized', 'Invalid credentials');
       const salt = randomBytes(16).toString('hex');
       const hash = (await passwordHash(newPassword, salt)).toString('hex');
       await client.query(

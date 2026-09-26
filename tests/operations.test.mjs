@@ -7,8 +7,8 @@ import {
   openApiSurface,
   openApiDocument,
   readOperationPage,
-} from '@proanima/depot-contracts';
-import { operationVisible } from '@proanima/depot-application';
+} from '@proanima/arkvory-contracts';
+import { operationVisible } from '@proanima/arkvory-application';
 const binding = (id, actions) => ({ resource: { kind: 'repository', id }, actions });
 const managed = {
   id: 'service:a',
@@ -23,13 +23,13 @@ test('all operations have one explicit responsibility and visibility; documentat
   const found = [];
   for (const surface of apiSurfaces) {
     const document = openApiSurface(surface);
-    assert.equal(document['x-depot-document-surface'], surface);
+    assert.equal(document['x-arkvory-document-surface'], surface);
     for (const item of Object.values(document.paths))
       for (const method of ['get', 'head', 'post', 'put', 'patch', 'delete'])
         if (item[method]) {
           const operation = item[method];
-          assert.equal(operation['x-depot-surface'], surface);
-          assert.ok(apiVisibilities.includes(operation['x-depot-visibility']));
+          assert.equal(operation['x-arkvory-surface'], surface);
+          assert.ok(apiVisibilities.includes(operation['x-arkvory-visibility']));
           found.push(operation.operationId);
         }
   }

@@ -1,5 +1,5 @@
 import type { PoolClient } from 'pg';
-import type { StorageEvent } from '@proanima/depot-application';
+import type { StorageEvent } from '@proanima/arkvory-application';
 
 /** Call within a short transaction: serializes the bounded diagnostic history. */
 export async function recordStorageEvent(

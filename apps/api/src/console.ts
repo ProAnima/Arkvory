@@ -4,6 +4,9 @@ import type { FastifyInstance } from 'fastify';
 
 export function registerConsole(app: FastifyInstance, directory: string) {
   const files = [
+    ['/console/arkvory.svg', 'arkvory.svg', 'image/svg+xml'],
+    ['/console/arkvory.ico', 'arkvory.ico', 'image/x-icon'],
+    ['/console/arkvory.png', 'arkvory.png', 'image/png'],
     ['/console/THIRD-PARTY.txt', 'THIRD-PARTY.txt', 'text/plain; charset=utf-8'],
     ['/console/', 'index.html', 'text/html; charset=utf-8'],
     ['/console/console.js', 'console.js', 'text/javascript; charset=utf-8'],
@@ -18,7 +21,7 @@ export function registerConsole(app: FastifyInstance, directory: string) {
         .header('Content-Type', type)
         .header(
           'Content-Security-Policy',
-          "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'",
+          "default-src 'none'; img-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'",
         )
         .header('Referrer-Policy', 'no-referrer')
         .send(await readFile(resolve(directory, file))),

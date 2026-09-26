@@ -27,7 +27,7 @@ await mkdir(output, { recursive: true });
 if ((await readdir(output)).length !== 0)
   throw new Error('Release output must be empty; refusing to replace existing artifacts');
 // Windows TEMP may use an 8.3 alias. Compare canonical paths on both sides of the containment check.
-const staging = await realpath(await mkdtemp(join(tmpdir(), 'depot-release-')));
+const staging = await realpath(await mkdtemp(join(tmpdir(), 'arkvory-release-')));
 const { units } = JSON.parse(await readFile('config/architecture.json', 'utf8'));
 for (const name of ['package.json', 'package-lock.json', 'LICENSE.md'])
   await copyFile(name, join(staging, name));
@@ -65,7 +65,7 @@ await build({
 });
 await build({
   entryPoints: ['apps/deploy/src/main.ts'],
-  outfile: join(output, 'depot-setup.mjs'),
+  outfile: join(output, 'arkvory-setup.mjs'),
   bundle: true,
   format: 'esm',
   platform: 'node',
@@ -74,7 +74,7 @@ await build({
     js: "import { createRequire } from 'node:module'; const require = createRequire(import.meta.url);",
   },
 });
-await copyFile(join(output, 'depot-setup.mjs'), join(staging, 'deploy/depot-setup.mjs'));
+await copyFile(join(output, 'arkvory-setup.mjs'), join(staging, 'deploy/arkvory-setup.mjs'));
 const sshLicenses = await Promise.all(
   ['ssh2', 'asn1', 'safer-buffer', 'bcrypt-pbkdf', 'tweetnacl'].map(
     async (name) => `${name}\n${await readFile(`node_modules/${name}/LICENSE`, 'utf8')}`,
@@ -82,7 +82,7 @@ const sshLicenses = await Promise.all(
 );
 await build({
   entryPoints: ['apps/deploy/src/remote-main.ts'],
-  outfile: join(output, 'depot-remote.mjs'),
+  outfile: join(output, 'arkvory-remote.mjs'),
   bundle: true,
   format: 'esm',
   platform: 'node',
@@ -99,12 +99,12 @@ await build({
 });
 await build({
   entryPoints: ['apps/cli/src/main.ts'],
-  outfile: join(output, 'depotctl.mjs'),
+  outfile: join(output, 'arkvoryctl.mjs'),
   bundle: true,
   format: 'esm',
   platform: 'node',
   target: 'node24',
-  define: { 'process.env.DEPOT_CLI_VERSION': JSON.stringify(version) },
+  define: { 'process.env.ARKVORY_CLI_VERSION': JSON.stringify(version) },
   banner: {
     js:
       '/* Bundled SHA-256 implementation: @noble/hashes, MIT License.\n' +
@@ -113,7 +113,7 @@ await build({
   },
 });
 const zip = new ZipFile();
-const archive = join(output, 'depot-runtime.zip');
+const archive = join(output, 'arkvory-runtime.zip');
 const completed = pipeline(zip.outputStream, createWriteStream(archive, { flags: 'wx' }));
 async function addDirectory(directory, prefix = '') {
   for (const entry of await readdir(directory, { withFileTypes: true })) {
@@ -147,9 +147,9 @@ const release = {
   commit: execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),
   schema: 17,
   archiveSha256: await digest(archive),
-  setupSha256: await digest(join(output, 'depot-setup.mjs')),
+  setupSha256: await digest(join(output, 'arkvory-setup.mjs')),
 };
-await writeFile(join(output, 'depot-release.json'), JSON.stringify(release, null, 2) + '\n', {
+await writeFile(join(output, 'arkvory-release.json'), JSON.stringify(release, null, 2) + '\n', {
   flag: 'wx',
 });
 for (const name of ['install.sh', 'install.ps1'])

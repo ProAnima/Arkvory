@@ -1,5 +1,5 @@
-import { requireRepository } from '@proanima/depot-domain';
-import type { Principal } from '@proanima/depot-domain';
+import { requireRepository } from '@proanima/arkvory-domain';
+import type { Principal } from '@proanima/arkvory-domain';
 export interface ServiceKey {
   readonly sha256: string;
   readonly principal: Principal;

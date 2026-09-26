@@ -1,14 +1,14 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
-import { DepotError } from '@proanima/depot-domain';
-import type { Principal } from '@proanima/depot-domain';
-import { listRepositories, repositoryCard } from '@proanima/depot-application';
+import { ArkvoryError } from '@proanima/arkvory-domain';
+import type { Principal } from '@proanima/arkvory-domain';
+import { listRepositories, repositoryCard } from '@proanima/arkvory-application';
 
 function query(value: unknown, allowed: readonly string[]): Record<string, unknown> {
   if (typeof value !== 'object' || value === null || Array.isArray(value))
-    throw new DepotError('invalid_input', 'Invalid repository query');
+    throw new ArkvoryError('invalid_input', 'Invalid repository query');
   const q: Record<string, unknown> = Object.fromEntries(Object.entries(value));
   if (Object.keys(q).some((key) => !allowed.includes(key)))
-    throw new DepotError('invalid_input', 'Unknown repository option');
+    throw new ArkvoryError('invalid_input', 'Unknown repository option');
   return q;
 }
 export function registerRepositoryRoutes(
@@ -23,7 +23,7 @@ export function registerRepositoryRoutes(
       (limit !== undefined && (typeof limit !== 'string' || !/^[1-9][0-9]{0,2}$/.test(limit))) ||
       (after !== undefined && typeof after !== 'string')
     )
-      throw new DepotError('invalid_input', 'Invalid repository page');
+      throw new ArkvoryError('invalid_input', 'Invalid repository page');
     return Promise.resolve(
       listRepositories(principal(request), limit === undefined ? 50 : Number(limit), after),
     );

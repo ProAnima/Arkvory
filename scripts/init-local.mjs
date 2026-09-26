@@ -35,9 +35,9 @@ await writeFile('data/local-token.txt', token, { flag: 'wx', mode: 0o600 });
 const directory = resolve('data').replaceAll('\\', '/');
 await writeFile(
   '.env',
-  `DEPOT_POSTGRES_PASSWORD=${password}\nDEPOT_DATABASE_URL=postgresql://depot:${password}@127.0.0.1:55432/depot\nDEPOT_DATA_DIR="${directory}/storage"\nDEPOT_KEYS_FILE="${directory}/service-keys.json"\nDEPOT_TOKEN_FILE="${directory}/local-token.txt"\nDEPOT_BASE_URL=http://127.0.0.1:8080\nDEPOT_HOST=127.0.0.1\nDEPOT_PORT=8080\n`,
+  `ARKVORY_POSTGRES_PASSWORD=${password}\nARKVORY_DATABASE_URL=postgresql://arkvory:${password}@127.0.0.1:55432/arkvory\nARKVORY_DATA_DIR="${directory}/storage"\nARKVORY_KEYS_FILE="${directory}/service-keys.json"\nARKVORY_TOKEN_FILE="${directory}/local-token.txt"\nARKVORY_BASE_URL=http://127.0.0.1:8080\nARKVORY_HOST=127.0.0.1\nARKVORY_PORT=8080\n`,
   { flag: 'wx', mode: 0o600 },
 );
 console.log(
-  'Created .env and private files in data/. Start the database, migrate, then start Depot.',
+  'Created .env and private files in data/. Start the database, migrate, then start Arkvory.',
 );

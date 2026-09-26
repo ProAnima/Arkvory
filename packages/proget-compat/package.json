@@ -1,11 +1,11 @@
 {
-  "name": "@proanima/depot-proget-compat",
+  "name": "@proanima/arkvory-proget-compat",
   "version": "0.0.0",
   "private": true,
   "type": "module",
   "description": "Адаптеры протоколов ProGet",
   "exports": {
-    "depot-source": "./src/index.ts",
+    "arkvory-source": "./src/index.ts",
     "types": "./dist/index.d.ts",
     "import": "./dist/index.js"
   },
@@ -13,10 +13,10 @@
   "author": "Ian Panaev",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ProAnima/Depot.git"
+    "url": "git+https://github.com/ProAnima/Arkvory.git"
   },
   "dependencies": {
-    "@proanima/depot-application": "0.0.0",
-    "@proanima/depot-domain": "0.0.0"
+    "@proanima/arkvory-application": "0.0.0",
+    "@proanima/arkvory-domain": "0.0.0"
   }
 }

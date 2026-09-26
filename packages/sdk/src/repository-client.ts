@@ -5,7 +5,7 @@ import type { DownloadApi } from './download-api.js';
 import type { UploadsApi } from './uploads-api.js';
 import type { UploadTransfer } from './upload-transfer.js';
 import type { AssetsApi } from './assets-api.js';
-import type { OperationQuery } from '@proanima/depot-contracts';
+import type { OperationQuery } from '@proanima/arkvory-contracts';
 
 type RepositoryTransport = Pick<
   StorageApi,

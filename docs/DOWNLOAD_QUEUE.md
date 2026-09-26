@@ -24,7 +24,7 @@
 
 В UI настраиваются concurrency, startIntervalMs и queueTimeoutMs (последний в секундах, 1–1800). Снижение concurrency не обрывает активные задания, но задерживает запуск следующих. Paused задания не истекают; явное продолжение задаёт новое окно ожидания. Переполнение очереди отклоняется до начала передачи. Историю нужно очищать; отмена сама по себе сохраняет строку результата.
 
-Это три разных уровня задержек: интервал запуска файлов; ограниченный backoff/Retry-After отдельных HTTP-запросов; серверное ожидание допуска и доступной полосы. Клиентская настройка не может увеличить серверную квоту. Retry policy по-прежнему передаётся в DepotClient; её границы и timeout каждого Range описаны в [TRANSFER_RECOVERY](TRANSFER_RECOVERY.md).
+Это три разных уровня задержек: интервал запуска файлов; ограниченный backoff/Retry-After отдельных HTTP-запросов; серверное ожидание допуска и доступной полосы. Клиентская настройка не может увеличить серверную квоту. Retry policy по-прежнему передаётся в ArkvoryClient; её границы и timeout каждого Range описаны в [TRANSFER_RECOVERY](TRANSFER_RECOVERY.md).
 
 ## Временное хранилище браузера
 
@@ -39,7 +39,7 @@ BrowserDownloadStorage пишет в приватное OPFS-хранилище 
 ## SDK и адаптеры
 
 ```typescript
-import { DownloadQueue, checkpointedDownload } from '@proanima/depot-sdk';
+import { DownloadQueue, checkpointedDownload } from '@proanima/arkvory-sdk';
 
 const queue = new DownloadQueue({ concurrency: 2, startIntervalMs: 250 });
 queue.enqueue(checkpointedDownload(client, jobId, repository, artifactId, storage));
@@ -55,17 +55,17 @@ unsubscribe();
 
 DownloadStorage — узкий клиентский интерфейс: prefix, append, commit, discard. Адаптер должен изолировать staging каждого задания, возвращать стабильный Blob prefix, записывать строго с заданного offset, поддерживать abort writer без порчи предыдущего checkpoint и атомарно публиковать конечный файл. Для Node-приложения нужен файловый адаптер с временным файлом и rename; браузерная реализация находится в web, а SDK не зависит от DOM-элементов или OPFS. Commit/discard не повторяются автоматически. Нельзя подставлять необратимый поток deployment вместо staging.
 
-DownloadQueue управляет состояниями и расписанием, checkpointedDownload — проверяемым переносом в клиентский storage, DepotClient — HTTP/Range/retry, BrowserDownloadStorage — браузерным диском. Сервер продолжает авторизовывать каждый запрос и применять общие/per-principal ограничения. Новых серверных маршрутов и прав доступа не добавлено.
+DownloadQueue управляет состояниями и расписанием, checkpointedDownload — проверяемым переносом в клиентский storage, ArkvoryClient — HTTP/Range/retry, BrowserDownloadStorage — браузерным диском. Сервер продолжает авторизовывать каждый запрос и применять общие/per-principal ограничения. Новых серверных маршрутов и прав доступа не добавлено.
 
 ## Серверная очередь
 
 Дополнены параметры запуска для обоих направлений, с отдельным состоянием upload/download:
 
-| Environment                        | Default       | Граница                          |
-| ---------------------------------- | ------------- | -------------------------------- |
-| DEPOT_TRANSFER_QUEUE_LIMIT         | 64            | 1–1024 ожидающих на направление  |
-| DEPOT_TRANSFER_QUEUE_PER_PRINCIPAL | min(8, limit) | 1–limit ожидающих одного клиента |
-| DEPOT_TRANSFER_QUEUE_TIMEOUT_MS    | 20000         | 1–120000 мс                      |
+| Environment                          | Default       | Граница                          |
+| ------------------------------------ | ------------- | -------------------------------- |
+| ARKVORY_TRANSFER_QUEUE_LIMIT         | 64            | 1–1024 ожидающих на направление  |
+| ARKVORY_TRANSFER_QUEUE_PER_PRINCIPAL | min(8, limit) | 1–limit ожидающих одного клиента |
+| ARKVORY_TRANSFER_QUEUE_TIMEOUT_MS    | 20000         | 1–120000 мс                      |
 
 Существующие maxUploads/maxDownloads, per-principal active caps и bytes/s сохраняются. Настройки применяются при запуске; общий HTTP admission в 128 запросов также продолжает действовать, поэтому увеличение waiting limit не создаёт гарантированную дополнительную ёмкость. Readiness показывает waitingCapacity, perPrincipalWaitingCapacity и timeoutMs. HTTP timeout/full queue сохраняют прежние 503/Retry-After. OpenAPI document 0.8.0, inventory по-прежнему 108 операций.
 
@@ -77,6 +77,6 @@ DownloadQueue управляет состояниями и расписание�
 - PostgreSQL + HTTP + диск: pause после 8 MiB, сохранение прежнего destination, Range с точного offset, проверенная публикация и удаление staging, серверный timeout и диагностика очереди.
 - Browser: `tests/browser/downloads.mjs`, отдельная тестовая БД и установленный Playwright Chromium/Edge. Обходит только нативный диалог выбора: вместо него выдаёт реальные OPFS FileSystemFileHandle. Проверяет HTTP/OPFS/хеш, pause/resume, очистку, RU/EN, светлую/тёмную темы и ширины 390/1440 px. Нативный диалог ОС и квоты на 5 GiB этим тестом не проверяются.
 
-Запуск: `npm run gate -- browser` с DEPOT_TEST_DATABASE_URL в .env.test или окружении. Playwright зафиксирован в devDependencies, Chromium устанавливается через `npm run test:browser:install`; DEPOT_BROWSER_CHANNEL=msedge явно выбирает установленный Edge. Browser suite требует эксклюзивной тестовой БД, не запускается одновременно с integration suite. Браузерная приёмка обязательна в verify и CI; см. [гейты](ENGINEERING_GATES.md).
+Запуск: `npm run gate -- browser` с ARKVORY_TEST_DATABASE_URL в .env.test или окружении. Playwright зафиксирован в devDependencies, Chromium устанавливается через `npm run test:browser:install`; ARKVORY_BROWSER_CHANNEL=msedge явно выбирает установленный Edge. Browser suite требует эксклюзивной тестовой БД, не запускается одновременно с integration suite. Браузерная приёмка обязательна в verify и CI; см. [гейты](ENGINEERING_GATES.md).
 
 Локальный прогон 2026-09-24: Windows, Node.js 24.13.0, PostgreSQL 18.4 — check/сборка, 76 unit tests и 83 integration tests прошли. Browser suite прошёл в headless Edge с 17 MiB, паузой после 8 MiB, проверкой итогового SHA-256 и очисткой abandoned sessions при сохранении живой соседней вкладки. Проверены обе темы/RU/EN/390–1440 px. Это не проверка браузерной квоты 5 GiB и не стендовая приёмка двух серверов.

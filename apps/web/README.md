@@ -6,7 +6,7 @@
 
 Рабочая RU/EN консоль через SDK: каталог, правки, загрузка частями, потоковый hash в Web Worker. Собирается esbuild, выдаётся API по /console/. См. [runbook](../../docs/LIFECYCLE_AND_CATALOG.md).
 
-Консоль можно разместить отдельно, сохранив её файлы под `/console/`: в `index.html` укажите `<meta name="depot-api-base-url" content="https://depot.example.com/">`, на API разрешите точный origin сайта через `DEPOT_CORS_ORIGINS`. Пустое значение meta использует origin текущей страницы. [Порядок развёртывания и ограничения](../../docs/EXTERNAL_UI.md).
+Консоль можно разместить отдельно, сохранив её файлы под `/console/`: в `index.html` укажите `<meta name="arkvory-api-base-url" content="https://arkvory.example.com/">`, на API разрешите точный origin сайта через `ARKVORY_CORS_ORIGINS`. Пустое значение meta использует origin текущей страницы. [Порядок развёртывания и ограничения](../../docs/EXTERNAL_UI.md).
 
 Светлая/тёмная/системная темы, отдельные экраны и переключение языка без перезагрузки. Токены оформления — `tokens.css`; `style.css` собирает небольшие CSS-модули каркаса, компонентов и экранов. Словари — `src/messages.ts`. Контекстная помощь поддерживает клавиатуру, наведение и касание; анимации учитывают reduced motion. Кнопки выбора файла внутри страницы локализованы, сам диалог остаётся нативным. Подробные правила и расширение: [DESIGN_SYSTEM](../../docs/DESIGN_SYSTEM.md).
 

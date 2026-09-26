@@ -1,4 +1,4 @@
-import { DepotHttpError, DepotIntegrityError, DownloadQueueError } from '@proanima/depot-sdk';
+import { ArkvoryHttpError, ArkvoryIntegrityError, DownloadQueueError } from '@proanima/arkvory-sdk';
 import type { MessageKey } from './messages.js';
 import { message } from './i18n.js';
 export class UiError extends Error {
@@ -16,9 +16,9 @@ export function errorKey(error: unknown): MessageKey {
   if (error instanceof DOMException && error.name === 'QuotaExceededError')
     return 'downloadDiskFull';
   if (error instanceof UiError) return error.key;
-  if (error instanceof DepotIntegrityError) return 'errorIntegrity';
+  if (error instanceof ArkvoryIntegrityError) return 'errorIntegrity';
   if (error instanceof DOMException && error.name === 'AbortError') return 'cancelled';
-  if (error instanceof DepotHttpError) {
+  if (error instanceof ArkvoryHttpError) {
     if (error.status === 401) return 'errorUnauthorized';
     if (error.status === 403) return 'errorForbidden';
     if (error.status === 404) return 'errorNotFound';

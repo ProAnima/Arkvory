@@ -28,7 +28,7 @@ const same = (a: string, b: string) => {
 class WizardSession {
   readonly entry = random();
   private readonly cookie = random();
-  private readonly cookieName = 'depot-wizard-' + random().slice(0, 16);
+  private readonly cookieName = 'arkvory-wizard-' + random().slice(0, 16);
   private readonly csrf = random();
   private redeemed = false;
   private job: WizardJob | undefined;

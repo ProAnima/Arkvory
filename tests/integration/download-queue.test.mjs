@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { openAsBlob } from 'node:fs';
 import { writeFile, appendFile, readFile, copyFile, rename, rm, stat } from 'node:fs/promises';
 import { join } from 'node:path';
-import { DepotClient, DownloadQueue, checkpointedDownload } from '@proanima/depot-sdk';
+import { ArkvoryClient, DownloadQueue, checkpointedDownload } from '@proanima/arkvory-sdk';
 import { setup, create, base } from './fixture.mjs';
 
 async function until(queue, id, state) {
@@ -43,7 +43,7 @@ test('queued verified HTTP download pauses to disk, resumes with Range and clean
     200,
   );
   const address = await f.listen(),
-    client = new DepotClient(address, () => f.headers.authorization.slice(7));
+    client = new ArkvoryClient(address, () => f.headers.authorization.slice(7));
   const queue = new DownloadQueue({ concurrency: 1, startIntervalMs: 0 });
   t.after(() => queue.close());
   const checkpoint = join(f.directory, 'download.part'),

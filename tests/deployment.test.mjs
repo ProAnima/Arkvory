@@ -174,7 +174,7 @@ test('unconfirmed rollback termination is preserved for the outer installation l
   assert.equal(fake.events.at(-1), 'recovery-required');
 });
 test('filesystem lock rejects a concurrent writer and preserves configuration atomically', async () => {
-  const root = await mkdtemp(join(tmpdir(), 'depot-lock-'));
+  const root = await mkdtemp(join(tmpdir(), 'arkvory-lock-'));
   await exclusive(root, async () => {
     await assert.rejects(
       exclusive(root, async () => {}),
@@ -206,7 +206,7 @@ test('release archive rejects traversal, links and Windows alternate streams on 
   assert.throws(() => archivePath('/release', 'link', 0o120777 * 65536), /special/);
 });
 test('extractor refuses existing destinations and duplicate archive files', async () => {
-  const root = await mkdtemp(join(tmpdir(), 'depot-zip-'));
+  const root = await mkdtemp(join(tmpdir(), 'arkvory-zip-'));
   const archive = join(root, 'archive.zip');
   const zip = new ZipFile();
   zip.addBuffer(Buffer.from('first'), 'file');
@@ -219,7 +219,7 @@ test('extractor refuses existing destinations and duplicate archive files', asyn
   assert.equal(await readFile(join(root, 'new/file'), 'utf8'), 'first');
 });
 test('private GitHub asset redirect strips authorization and verifies checksum', async (t) => {
-  const root = await mkdtemp(join(tmpdir(), 'depot-download-'));
+  const root = await mkdtemp(join(tmpdir(), 'arkvory-download-'));
   let calls = 0;
   t.mock.method(globalThis, 'fetch', async (url, options) => {
     calls++;
@@ -250,18 +250,18 @@ test('runtime configuration cannot inject Node process options or multiline valu
     /^Error: Invalid GitHub token file$/,
   );
   assert.throws(() => runtimeEnvironment({ NODE_OPTIONS: '--inspect=0.0.0.0' }), /Invalid/);
-  assert.throws(() => runtimeEnvironment({ DEPOT_HOST: 'x\nDEPOT_KEYS_FILE=x' }), /Invalid/);
+  assert.throws(() => runtimeEnvironment({ ARKVORY_HOST: 'x\nARKVORY_KEYS_FILE=x' }), /Invalid/);
 });
 test('Compose runtime keeps tmpfs options in one mount and persists data separately', async () => {
   const compose = parse(await readFile('deploy/compose.yml', 'utf8'), { merge: true });
   assert.deepEqual(compose.services.api.tmpfs, ['/tmp:size=64m,mode=1777']);
   assert.equal(compose.services.api.read_only, true);
   assert.equal(compose.services.api.restart, 'unless-stopped');
-  assert.ok(compose.services.api.volumes.includes('storage:/var/lib/depot'));
+  assert.ok(compose.services.api.volumes.includes('storage:/var/lib/arkvory'));
   assert.deepEqual(compose.services.api.ports, ['127.0.0.1:8080:8080']);
 });
 test('stale lock fails closed without taking ownership from another updater', async () => {
-  const root = await mkdtemp(join(tmpdir(), 'depot-stale-'));
+  const root = await mkdtemp(join(tmpdir(), 'arkvory-stale-'));
   await writeFile(join(root, 'operation.lock'), 'interrupted');
   await assert.rejects(
     exclusive(root, async () => {}),

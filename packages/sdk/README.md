@@ -13,11 +13,11 @@ SDK поддерживает вход/выход и смену собствен�
 
 `me()` валидирует и возвращает эффективные права текущего токена по репозиториям. Их можно показывать в UI, но каждую операцию сервер авторизует заново.
 
-Для браузерного приложения на другом origin используйте `DepotClient` с HTTPS адресом Depot, передавайте Bearer через функцию токена и настройте `DEPOT_CORS_ORIGINS` на сервере. [Пример и требования к хранению токена](../../docs/EXTERNAL_UI.md).
+Для браузерного приложения на другом origin используйте `ArkvoryClient` с HTTPS адресом Arkvory, передавайте Bearer через функцию токена и настройте `ARKVORY_CORS_ORIGINS` на сервере. [Пример и требования к хранению токена](../../docs/EXTERNAL_UI.md).
 
 Страницы пакетов допускают JSON до 8 MiB для 100 манифестов до 64 KiB с метаданными страницы; остальные JSON-ответы сохраняют предел 2 MiB. `packages(repository, { group: "" })` выбирает только корневую группу; отсутствие group означает все группы. Пустой фильтр в консоли по-прежнему означает все группы.
 
-DepotClient предоставляет capabilities/permissions, service accounts/policy, выдачу/активацию/ротацию/отзыв ключей и service audit. Ответ выдачи содержит secret только при первом успешном запросе; replay возвращает metadata. Control calls принимают AbortSignal без скрытого повтора mutations. [Контракт и эксплуатация](../../docs/SERVICE_KEYS.md).
+ArkvoryClient предоставляет capabilities/permissions, service accounts/policy, выдачу/активацию/ротацию/отзыв ключей и service audit. Ответ выдачи содержит secret только при первом успешном запросе; replay возвращает metadata. Control calls принимают AbortSignal без скрытого повтора mutations. [Контракт и эксплуатация](../../docs/SERVICE_KEYS.md).
 
 serviceDelegations/setServiceDelegation/removeServiceDelegation и servicePolicy реализуют [делегированное управление](../../docs/SERVICE_DELEGATION.md). permissions возвращает credentialId, discovery — delegatedServiceAdministration. CAS/tombstone и one-time secret не допускают скрытого mutation retry.
 

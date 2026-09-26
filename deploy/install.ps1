@@ -1,8 +1,9 @@
-param([string]$Root = 'C:\ProgramData\ProAnima\Depot', [string]$Version = '',
+param([string]$Root = 'C:\ProgramData\ProAnima\Arkvory', [string]$Version = '',
     [ValidateSet('windows','compose')][string]$Mode = 'windows',
     [ValidateSet('docker','podman')][string]$Engine = 'docker',
     [string]$Config = '', [string]$Artifact = '', [switch]$AutomaticUpdates, [switch]$Pin)
 $ErrorActionPreference = 'Stop'
+if (Test-Path -LiteralPath (Join-Path $env:ProgramData 'ProAnima/Depot/installation.json')) { throw 'Existing Depot installation detected. Follow docs/RENAMING.md before installing Arkvory.' }
 $admin = [Security.Principal.WindowsPrincipal]::new([Security.Principal.WindowsIdentity]::GetCurrent())
 if (-not $admin.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) { throw 'Run installer as Administrator' }
 $Root = [IO.Path]::GetFullPath($Root)
@@ -29,9 +30,9 @@ if (-not (Test-Path -LiteralPath $node)) {
 if ($Version -and $Version -notmatch '^(0|[1-9][0-9]{0,5})\.(0|[1-9][0-9]{0,5})\.(0|[1-9][0-9]{0,5})$') { throw 'Invalid stable version' }
 if ($Artifact) {
     $Artifact = [IO.Path]::GetFullPath($Artifact)
-    $manifest = Get-Content -LiteralPath (Join-Path $Artifact 'depot-release.json') -Raw | ConvertFrom-Json
+    $manifest = Get-Content -LiteralPath (Join-Path $Artifact 'arkvory-release.json') -Raw | ConvertFrom-Json
     if ($manifest.version -notmatch '^(0|[1-9][0-9]{0,5})\.(0|[1-9][0-9]{0,5})\.(0|[1-9][0-9]{0,5})$') { throw 'Invalid artifact version' }
-    $setup = Join-Path $Artifact 'depot-setup.mjs'
+    $setup = Join-Path $Artifact 'arkvory-setup.mjs'
     if ((Get-FileHash $setup -Algorithm SHA256).Hash -ne $manifest.setupSha256) { throw 'Installer checksum mismatch' }
 } else {
 # Use HttpClient with redirects disabled so a private GitHub token cannot leak to a CDN.
@@ -44,14 +45,14 @@ $client.MaxResponseContentBufferSize = 8MB
 $tokenFile = Join-Path $Root 'github-token.txt'
 $token = if (Test-Path -LiteralPath $tokenFile) { [IO.File]::ReadAllText($tokenFile).Trim() } else { '' }
 if ($token -notmatch '^[A-Za-z0-9_-]{0,512}$') { throw 'Invalid GitHub token file' }
-$base = 'https://api.github.com/repos/ProAnima/Depot/releases/'
+$base = 'https://api.github.com/repos/ProAnima/Arkvory/releases/'
 function Get-Asset([string]$url, [bool]$binary = $false) {
     if (-not $url.StartsWith($base)) { throw 'Invalid asset origin' }
     for ($redirect = 0; $redirect -lt 6; $redirect++) {
         $uri = [uri]$url
         if ($uri.Scheme -ne 'https') { throw 'Unsafe redirect' }
         $request = [Net.Http.HttpRequestMessage]::new([Net.Http.HttpMethod]::Get,$uri)
-        $request.Headers.Add('User-Agent','Depot-Installer')
+        $request.Headers.Add('User-Agent','Arkvory-Installer')
         $request.Headers.Add('Accept',$(if ($binary) { 'application/octet-stream' } else { 'application/vnd.github+json' }))
         if ($token -and $uri.Host -eq 'api.github.com') { $request.Headers.Add('Authorization',"Bearer $token") }
         $response = $client.SendAsync($request).GetAwaiter().GetResult()
@@ -67,11 +68,11 @@ function Get-Asset([string]$url, [bool]$binary = $false) {
 $endpoint = if ($Version) { 'tags/v' + $Version } else { 'latest' }
 $release = [Text.Encoding]::UTF8.GetString((Get-Asset ($base + $endpoint))) | ConvertFrom-Json
 if ($release.draft -or $release.prerelease) { throw 'Stable release required' }
-$manifestUrl = ($release.assets | Where-Object name -eq 'depot-release.json').url
+$manifestUrl = ($release.assets | Where-Object name -eq 'arkvory-release.json').url
 $manifest = [Text.Encoding]::UTF8.GetString((Get-Asset $manifestUrl $true)) | ConvertFrom-Json
 if ($release.tag_name -ne ('v' + $manifest.version)) { throw 'Tag mismatch' }
-$setup = Join-Path $work 'depot-setup.mjs'
-[IO.File]::WriteAllBytes($setup,(Get-Asset (($release.assets | Where-Object name -eq 'depot-setup.mjs').url) $true))
+$setup = Join-Path $work 'arkvory-setup.mjs'
+[IO.File]::WriteAllBytes($setup,(Get-Asset (($release.assets | Where-Object name -eq 'arkvory-setup.mjs').url) $true))
 if ((Get-FileHash $setup -Algorithm SHA256).Hash -ne $manifest.setupSha256) { throw 'Installer checksum mismatch' }
 }
 $options = @('--mode', $Mode, '--engine', $Engine)
@@ -85,7 +86,7 @@ if ($Mode -eq 'windows' -and -not $Config) {
     try {
         $Config = Join-Path $work 'native.json'
         $value = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($pointer)
-        [IO.File]::WriteAllText($Config, (@{ DEPOT_DATABASE_URL = $value } | ConvertTo-Json))
+        [IO.File]::WriteAllText($Config, (@{ ARKVORY_DATABASE_URL = $value } | ConvertTo-Json))
     } finally { [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($pointer); $value = $null; $secret.Dispose() }
 }
 if ($Config) { $options += @('--config', $Config) }

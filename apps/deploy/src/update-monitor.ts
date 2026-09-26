@@ -1,4 +1,4 @@
-import type { UpdateSnapshot, UpdateRequest } from '@proanima/depot-contracts';
+import type { UpdateSnapshot, UpdateRequest } from '@proanima/arkvory-contracts';
 import type { Installation, Release } from './model.js';
 import { newer } from './model.js';
 import { isUnconfirmedTermination } from './process.js';

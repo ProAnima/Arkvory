@@ -6,8 +6,8 @@ import { createServer as tcpServer, connect } from 'node:net';
 import { mkdir, readdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { createServer } from '../../apps/api/dist/index.js';
-import { PostgresCatalog, PostgresDownloadLease } from '@proanima/depot-infrastructure';
-import { DepotClient } from '@proanima/depot-sdk';
+import { PostgresCatalog, PostgresDownloadLease } from '@proanima/arkvory-infrastructure';
+import { ArkvoryClient } from '@proanima/arkvory-sdk';
 import { setup, create, base } from './fixture.mjs';
 
 const policy = {
@@ -67,7 +67,7 @@ test('writer and two independent read processes share bandwidth, ACL and immutab
   const primary = await f.listen(),
     one = await childReader(f, 1),
     two = await childReader(f, 2);
-  const client = new DepotClient(primary, () => f.headers.authorization.slice(7));
+  const client = new ArkvoryClient(primary, () => f.headers.authorization.slice(7));
   await client.setAsset('releases', 'shared.bin', id, 0);
   const started = performance.now();
   const bodies = await Promise.all(

@@ -1,5 +1,5 @@
 import type { FastifyInstance } from 'fastify';
-import type { DiagnosticLogger } from '@proanima/depot-infrastructure';
+import type { DiagnosticLogger } from '@proanima/arkvory-infrastructure';
 
 interface Tasks {
   role: 'api' | 'reader';

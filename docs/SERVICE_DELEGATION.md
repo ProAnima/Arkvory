@@ -52,10 +52,10 @@ Accounts list фильтрует доступ по `service-account.read` в SQL
 ## Пример SDK
 
 ```typescript
-import { DepotClient } from '@proanima/depot-sdk';
+import { ArkvoryClient } from '@proanima/arkvory-sdk';
 
 // Секреты и issuanceRequestId приходят из secret store / durable workflow клиента.
-const root = new DepotClient(depotUrl, () => bootstrapSecret);
+const root = new ArkvoryClient(arkvoryUrl, () => bootstrapSecret);
 const ceiling = [
   { resource: { kind: 'repository', id: 'releases' }, actions: ['content.read'] },
 ] as const;
@@ -66,7 +66,7 @@ const issued = await root.issueServiceKey(operatorAccount.id, issuanceRequestId,
   bindings: [],
 });
 if (!issued.secret) throw new Error('Recover issuance; metadata is not a secret');
-const operator = new DepotClient(depotUrl, () => issued.secret ?? '');
+const operator = new ArkvoryClient(arkvoryUrl, () => issued.secret ?? '');
 await secretStore.save(issued.secret);
 await operator.activateServiceKey();
 const grant = await root.setServiceDelegation(

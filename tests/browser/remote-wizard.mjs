@@ -30,7 +30,7 @@ const job = {
 const wizard = await createRemoteWizard({ factory: () => job });
 const browser = await chromium.launch({
   headless: true,
-  ...(process.env.DEPOT_BROWSER_CHANNEL ? { channel: process.env.DEPOT_BROWSER_CHANNEL } : {}),
+  ...(process.env.ARKVORY_BROWSER_CHANNEL ? { channel: process.env.ARKVORY_BROWSER_CHANNEL } : {}),
 });
 try {
   await mkdir('test-results', { recursive: true });

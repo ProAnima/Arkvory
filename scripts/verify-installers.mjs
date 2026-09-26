@@ -7,11 +7,11 @@ import { sha256 } from './release-files.mjs';
 export async function verifyInstallers(output, root, extract) {
   const windows = join(root, 'bundle Windows'),
     linux = join(root, 'bundle Linux');
-  await extract(join(output, 'Depot-Windows.zip'), windows);
+  await extract(join(output, 'Arkvory-Windows.zip'), windows);
   await mkdir(linux);
-  execFileSync('tar', ['-xzf', join(output, 'Depot-Linux.tar.gz'), '-C', linux]);
+  execFileSync('tar', ['-xzf', join(output, 'Arkvory-Linux.tar.gz'), '-C', linux]);
   for (const directory of [windows, linux]) {
-    for (const name of ['depot-runtime.zip', 'depot-setup.mjs', 'depot-release.json'])
+    for (const name of ['arkvory-runtime.zip', 'arkvory-setup.mjs', 'arkvory-release.json'])
       assert.equal(
         await sha256(join(directory, name)),
         await sha256(join(output, name)),
@@ -31,9 +31,9 @@ export async function verifyInstallers(output, root, extract) {
         '-NoProfile',
         '-NonInteractive',
         '-Command',
-        '$tokens=$null; $errors=$null; [System.Management.Automation.Language.Parser]::ParseFile($env:DEPOT_PARSE_PATH,[ref]$tokens,[ref]$errors) | Out-Null; if ($errors.Count) { $errors | Out-String | Write-Error; exit 1 }',
+        '$tokens=$null; $errors=$null; [System.Management.Automation.Language.Parser]::ParseFile($env:ARKVORY_PARSE_PATH,[ref]$tokens,[ref]$errors) | Out-Null; if ($errors.Count) { $errors | Out-String | Write-Error; exit 1 }',
       ],
-      { env: { ...environment, DEPOT_PARSE_PATH: path }, stdio: 'inherit', windowsHide: true },
+      { env: { ...environment, ARKVORY_PARSE_PATH: path }, stdio: 'inherit', windowsHide: true },
     );
   }
   const bash =

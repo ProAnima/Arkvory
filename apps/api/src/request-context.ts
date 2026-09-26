@@ -1,6 +1,6 @@
 import type { FastifyRequest, FastifyReply } from 'fastify';
-import { DepotError } from '@proanima/depot-domain';
-import type { Principal } from '@proanima/depot-domain';
+import { ArkvoryError } from '@proanima/arkvory-domain';
+import type { Principal } from '@proanima/arkvory-domain';
 
 /** Request-local authority and cancellation; no process-global request state. */
 export function createRequestContext() {
@@ -10,7 +10,7 @@ export function createRequestContext() {
   let requests = 0;
   const principal = (request: FastifyRequest): Principal => {
     const result = principals.get(request);
-    if (!result) throw new DepotError('forbidden', 'Authentication required');
+    if (!result) throw new ArkvoryError('forbidden', 'Authentication required');
     return result;
   };
   const signal = (request: FastifyRequest, reply: FastifyReply): AbortSignal => {
@@ -30,7 +30,7 @@ export function createRequestContext() {
     return controller.signal;
   };
   const countRequest = (reply: FastifyReply) => {
-    if (requests >= 128) throw new DepotError('busy', 'Request capacity exceeded');
+    if (requests >= 128) throw new ArkvoryError('busy', 'Request capacity exceeded');
     requests++;
     let released = false;
     reply.raw.once('close', () => {

@@ -6,7 +6,7 @@ async function main() {
   const args = process.argv.slice(2);
   if (args.includes('--help')) {
     console.log(
-      'Depot Remote Setup · Ian Panaev / ProAnimaStudio\nLaunch without arguments to open the secure remote installation wizard.\n--artifact <directory> uses a reviewed local native release instead of GitHub.',
+      'Arkvory Remote Setup · Ian Panaev / ProAnimaStudio\nLaunch without arguments to open the secure remote installation wizard.\n--artifact <directory> uses a reviewed local native release instead of GitHub.',
     );
     return;
   }
@@ -34,6 +34,6 @@ async function main() {
   for (const event of ['SIGINT', 'SIGTERM'] as const) process.once(event, wizard.close);
 }
 main().catch(() => {
-  console.error('Cannot start Depot Remote Setup');
+  console.error('Cannot start Arkvory Remote Setup');
   process.exitCode = 1;
 });

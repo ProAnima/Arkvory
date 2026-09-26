@@ -72,7 +72,7 @@ module.exports = {
     tsConfig: { fileName: 'tsconfig.json' },
     enhancedResolveOptions: {
       exportsFields: ['exports'],
-      conditionNames: ['depot-source', 'types', 'import', 'node', 'default'],
+      conditionNames: ['arkvory-source', 'types', 'import', 'node', 'default'],
     },
     reporterOptions: { text: { highlightFocused: true } },
   },

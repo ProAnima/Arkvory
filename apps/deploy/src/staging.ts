@@ -18,10 +18,10 @@ export async function source(
   local: string | undefined,
 ): Promise<Source> {
   if (local) {
-    const release = parseRelease(await jsonFile(join(local, 'depot-release.json')));
+    const release = parseRelease(await jsonFile(join(local, 'arkvory-release.json')));
     if (pin !== null && pin !== release.version)
       throw new Error('Artifact version does not match pin');
-    return { release, archive: () => Promise.resolve(join(local, 'depot-runtime.zip')) };
+    return { release, archive: () => Promise.resolve(join(local, 'arkvory-runtime.zip')) };
   }
   const github = await GitHubReleases.fromTokenFile(join(root, 'github-token.txt'));
   const selected = await github.resolve(pin);

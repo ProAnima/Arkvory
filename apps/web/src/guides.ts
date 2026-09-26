@@ -1,5 +1,5 @@
-import { DepotClient } from '@proanima/depot-sdk';
-import type { OperationDescriptor } from '@proanima/depot-contracts';
+import { ArkvoryClient } from '@proanima/arkvory-sdk';
+import type { OperationDescriptor } from '@proanima/arkvory-contracts';
 import { element } from './dom.js';
 import { message } from './i18n.js';
 import { feedback, errorKey, UiError } from './feedback.js';
@@ -8,9 +8,9 @@ export function initializeGuides() {
   const token = element('token', HTMLInputElement);
   const repository = element('repository', HTMLInputElement);
   const base =
-    document.querySelector<HTMLMetaElement>('meta[name="depot-api-base-url"]')?.content.trim() ||
+    document.querySelector<HTMLMetaElement>('meta[name="arkvory-api-base-url"]')?.content.trim() ||
     location.origin;
-  const client = new DepotClient(base, () => token.value);
+  const client = new ArkvoryClient(base, () => token.value);
   const list = element('help-operations', HTMLDivElement);
   const search = element('help-search', HTMLInputElement);
   const status = element('help-status', HTMLOutputElement);
@@ -120,12 +120,12 @@ function installOwnerForm(base: string) {
     secret.value = '';
     password.value = '';
     submit.disabled = true;
-    const client = new DepotClient(base, () => credential);
+    const client = new ArkvoryClient(base, () => credential);
     void (async () => {
       if ((await client.users()).length > 0) throw new UiError('errorConflict');
       const owner = await client.createUser(desiredName, desiredPassword, true);
       try {
-        const group = await client.createAccessGroup('depot-owners');
+        const group = await client.createAccessGroup('arkvory-owners');
         await client.setGroupGrant(group.id, 'releases', 'write');
         await client.setGroupMember(group.id, owner.id, true);
       } catch {

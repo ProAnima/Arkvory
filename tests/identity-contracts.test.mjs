@@ -1,6 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readAccount, readLogin, readPackageList, readPrincipal } from '@proanima/depot-contracts';
+import {
+  readAccount,
+  readLogin,
+  readPackageList,
+  readPrincipal,
+} from '@proanima/arkvory-contracts';
 
 test('account and package responses reject malformed identities and group references', () => {
   assert.deepEqual(

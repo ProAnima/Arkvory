@@ -5,7 +5,7 @@ import { mkdtemp, readFile, writeFile, truncate } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { removeTestDirectory } from './helpers.mjs';
-import { LocalBlobStore } from '@proanima/depot-infrastructure';
+import { LocalBlobStore } from '@proanima/arkvory-infrastructure';
 
 const cancellation = { throwIfAborted() {} };
 const descriptor = (data) => ({
@@ -19,7 +19,7 @@ async function* chunks(data) {
   for (let start = 0; start < data.length; start += 3) yield data.subarray(start, start + 3);
 }
 async function fixture(t) {
-  const root = await mkdtemp(join(tmpdir(), 'depot-blob-'));
+  const root = await mkdtemp(join(tmpdir(), 'arkvory-blob-'));
   t.after(() => removeTestDirectory(root));
   const store = new LocalBlobStore(root, 0);
   await store.initialize();

@@ -1,8 +1,8 @@
 import { open } from 'yauzl';
 import type { Entry, ZipFile } from 'yauzl';
-import { DepotError, parseManifest, requireAssetPath } from '@proanima/depot-domain';
-import type { PackageManifest } from '@proanima/depot-domain';
-import type { ManifestReader } from '@proanima/depot-application';
+import { ArkvoryError, parseManifest, requireAssetPath } from '@proanima/arkvory-domain';
+import type { PackageManifest } from '@proanima/arkvory-domain';
+import type { ManifestReader } from '@proanima/arkvory-application';
 import type { LocalBlobStore } from './local-blobs.js';
 import type { PostgresContentPins } from './content-pins.js';
 
@@ -27,7 +27,7 @@ export class ZipManifestReader implements ManifestReader {
         this.blobs.contentPath(id),
         { lazyEntries: true, autoClose: true, strictFileNames: true, validateEntrySizes: true },
         (error, value) => {
-          if (error) reject(new DepotError('invalid_input', 'Invalid UPack ZIP'));
+          if (error) reject(new ArkvoryError('invalid_input', 'Invalid UPack ZIP'));
           else resolve(value);
         },
       );
@@ -42,7 +42,7 @@ export class ZipManifestReader implements ManifestReader {
         if (!settled) {
           settled = true;
           zip.close();
-          reject(new DepotError('invalid_input', 'Unsafe or invalid UPack archive'));
+          reject(new ArkvoryError('invalid_input', 'Unsafe or invalid UPack archive'));
         }
       };
       zip.on('error', fail);
@@ -50,7 +50,7 @@ export class ZipManifestReader implements ManifestReader {
         if (!settled) {
           settled = true;
           if (manifest) resolve(manifest);
-          else reject(new DepotError('invalid_input', 'Root upack.json is required'));
+          else reject(new ArkvoryError('invalid_input', 'Root upack.json is required'));
         }
       });
       zip.on('entry', (entry: Entry) => {

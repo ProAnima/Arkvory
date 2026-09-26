@@ -7,7 +7,7 @@ import { mkdtemp } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { createServer } from '../../apps/api/dist/index.js';
-import { LocalBlobStore } from '@proanima/depot-infrastructure';
+import { LocalBlobStore } from '@proanima/arkvory-infrastructure';
 import { setup, create, descriptor, base } from './fixture.mjs';
 
 test('HTTP publication, auth, idempotency, Range and restart against real PostgreSQL', async (t) => {
@@ -207,7 +207,7 @@ test('standalone rejects a second API and a database attached to a different dir
   const f = await setup(t);
   await assert.rejects(createServer(f.config), { code: 'busy' });
   await f.app.close();
-  const other = await mkdtemp(join(tmpdir(), 'depot-wrong-root-'));
+  const other = await mkdtemp(join(tmpdir(), 'arkvory-wrong-root-'));
   t.after(() => removeTestDirectory(other));
   await assert.rejects(createServer({ ...f.config, dataDirectory: other }), { code: 'conflict' });
   await f.restart();

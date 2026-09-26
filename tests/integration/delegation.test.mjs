@@ -2,10 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { setTimeout as delay } from 'node:timers/promises';
-import { DepotClient } from '@proanima/depot-sdk';
-import { ServiceAccess } from '@proanima/depot-application';
-import { PostgresServices } from '@proanima/depot-infrastructure';
-import { administrationActions } from '@proanima/depot-domain';
+import { ArkvoryClient } from '@proanima/arkvory-sdk';
+import { ServiceAccess } from '@proanima/arkvory-application';
+import { PostgresServices } from '@proanima/arkvory-infrastructure';
+import { administrationActions } from '@proanima/arkvory-domain';
 import { validateResponse } from '../api-schema.mjs';
 import { setup } from './fixture.mjs';
 const binding = (actions, id = 'releases') => [{ resource: { kind: 'repository', id }, actions }];
@@ -14,13 +14,13 @@ async function fixture(t) {
   const f = await setup(t);
   f.config.keys[0].principal.serviceAdministrator = true;
   const address = await f.listen();
-  const root = new DepotClient(address, () => f.headers.authorization.slice(7));
+  const root = new ArkvoryClient(address, () => f.headers.authorization.slice(7));
   const operator = await root.createServiceAccount('operator', []);
   const operatorKey = await root.issueServiceKey(operator.id, randomUUID(), {
     name: 'operator-key',
     bindings: [],
   });
-  const client = new DepotClient(address, () => operatorKey.secret);
+  const client = new ArkvoryClient(address, () => operatorKey.secret);
   await client.activateServiceKey();
   const target = await root.createServiceAccount('consumer', read);
   const grant = (
@@ -34,7 +34,7 @@ async function fixture(t) {
 }
 const issue = (client, id, bindings = read, extra = {}) =>
   client.issueServiceKey(id, randomUUID(), { name: 'consumer-key', bindings, ...extra });
-const activate = (f, key) => new DepotClient(f.address, () => key.secret).activateServiceKey();
+const activate = (f, key) => new ArkvoryClient(f.address, () => key.secret).activateServiceKey();
 
 test('bootstrap delegates an exact target; SDK lifecycle respects actions, discovery, isolation and audit', async (t) => {
   const f = await fixture(t);
@@ -109,16 +109,18 @@ test('bootstrap delegates an exact target; SDK lifecycle respects actions, disco
   });
   await activate(f, next);
   await f.client.revokeServiceKey(key.key.id);
-  await assert.rejects(new DepotClient(f.address, () => key.secret).permissions(), { status: 401 });
+  await assert.rejects(new ArkvoryClient(f.address, () => key.secret).permissions(), {
+    status: 401,
+  });
   const policy = await f.client.setServicePolicy(f.target.id, 1, read);
   await assert.rejects(f.client.setServicePolicy(f.target.id, 1, []), { status: 409 });
   const disabled = await f.client.updateServiceAccount(f.target.id, policy.revision, false);
-  await assert.rejects(new DepotClient(f.address, () => next.secret).permissions(), {
+  await assert.rejects(new ArkvoryClient(f.address, () => next.secret).permissions(), {
     status: 401,
   });
   await f.client.updateServiceAccount(f.target.id, disabled.revision, true);
   assert.equal(
-    (await new DepotClient(f.address, () => next.secret).permissions()).profile,
+    (await new ArkvoryClient(f.address, () => next.secret).permissions()).profile,
     'managed',
   );
   const audit = await f.client.serviceAudit(f.target.id);
@@ -201,7 +203,7 @@ test('pending activation revalidates the issuer; active credentials remain indep
   assert.equal(tombstone.enabled, false);
   await assert.rejects(activate(f, pending), { status: 404 });
   assert.equal(
-    (await new DepotClient(f.address, () => active.secret).permissions()).profile,
+    (await new ArkvoryClient(f.address, () => active.secret).permissions()).profile,
     'managed',
   );
   await assert.rejects(f.grant(undefined, undefined, 0), { status: 409 });
@@ -211,7 +213,7 @@ test('pending activation revalidates the issuer; active credentials remain indep
     bindings: [],
   });
   await activate(f, rotated);
-  const fresh = new DepotClient(f.address, () => rotated.secret);
+  const fresh = new ArkvoryClient(f.address, () => rotated.secret);
   assert.deepEqual((await fresh.serviceAccounts()).items, []);
   await activate(f, pending);
   const oldOperator = await f.root.serviceKey(f.operatorKey.key.id);
@@ -222,7 +224,7 @@ test('pending activation revalidates the issuer; active credentials remain indep
   await f.root.revokeServiceKey(f.operatorKey.key.id);
   await assert.rejects(f.client.serviceAccounts(), { status: 401 });
   assert.equal(
-    (await new DepotClient(f.address, () => pending.secret).permissions()).profile,
+    (await new ArkvoryClient(f.address, () => pending.secret).permissions()).profile,
     'managed',
   );
 });

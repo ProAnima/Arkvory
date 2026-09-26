@@ -30,7 +30,7 @@ export default [
         'error',
         {
           patterns: [
-            { group: ['@proanima/depot-*/*'], message: 'Use the public workspace entry.' },
+            { group: ['@proanima/arkvory-*/*'], message: 'Use the public workspace entry.' },
           ],
         },
       ],
@@ -49,7 +49,7 @@ export default [
         'error',
         {
           patterns: [
-            { group: ['@proanima/depot-*/*'], message: 'Use the public workspace entry.' },
+            { group: ['@proanima/arkvory-*/*'], message: 'Use the public workspace entry.' },
             { group: ['node:*'], message: 'This layer must not depend on Node.js APIs.' },
           ],
         },

@@ -2,9 +2,9 @@ import { createHash, randomUUID } from 'node:crypto';
 import { createReadStream } from 'node:fs';
 import { mkdir, open, link, unlink, stat, statfs, readFile, rm } from 'node:fs/promises';
 import { join, resolve, dirname, relative } from 'node:path';
-import { DepotError, requireId } from '@proanima/depot-domain';
-import type { ArtifactDescriptor, UploadPart } from '@proanima/depot-domain';
-import type { BlobStore, Cancellation } from '@proanima/depot-application';
+import { ArkvoryError, requireId } from '@proanima/arkvory-domain';
+import type { ArtifactDescriptor, UploadPart } from '@proanima/arkvory-domain';
+import type { BlobStore, Cancellation } from '@proanima/arkvory-application';
 
 function hasCode(error: unknown, code: string): boolean {
   return error instanceof Error && 'code' in error && error.code === code;
@@ -77,7 +77,7 @@ export class LocalBlobStore implements BlobStore {
   async checkSpace(required: number): Promise<void> {
     const volume = await statfs(this.root, { bigint: true });
     if (volume.bavail * volume.bsize < BigInt(required) + BigInt(this.reserveBytes))
-      throw new DepotError('capacity_exceeded', 'Insufficient storage capacity');
+      throw new ArkvoryError('capacity_exceeded', 'Insufficient storage capacity');
   }
 
   async put(
@@ -114,7 +114,7 @@ export class LocalBlobStore implements BlobStore {
       for await (const chunk of source) {
         cancellation.throwIfAborted();
         if (size + chunk.byteLength > expected.size)
-          throw new DepotError('integrity_mismatch', 'Uploaded size exceeds declaration');
+          throw new ArkvoryError('integrity_mismatch', 'Uploaded size exceeds declaration');
         let offset = 0;
         while (offset < chunk.byteLength) {
           cancellation.throwIfAborted();
@@ -123,7 +123,7 @@ export class LocalBlobStore implements BlobStore {
             offset,
             Math.min(chunk.byteLength - offset, 1024 * 1024),
           );
-          if (bytesWritten === 0) throw new DepotError('unavailable', 'Storage write failed');
+          if (bytesWritten === 0) throw new ArkvoryError('unavailable', 'Storage write failed');
           offset += bytesWritten;
         }
         hash.update(chunk);
@@ -135,7 +135,7 @@ export class LocalBlobStore implements BlobStore {
       }
       cancellation.throwIfAborted();
       if (size !== expected.size || hash.digest('hex') !== expected.sha256)
-        throw new DepotError(
+        throw new ArkvoryError(
           'integrity_mismatch',
           'Uploaded size or SHA-256 differs from declaration',
         );
@@ -164,10 +164,10 @@ export class LocalBlobStore implements BlobStore {
     try {
       const info = await stat(this.blob(id));
       if (!info.isFile() || info.size !== size)
-        throw new DepotError('unavailable', 'Artifact content is unavailable');
+        throw new ArkvoryError('unavailable', 'Artifact content is unavailable');
     } catch (error) {
       if (hasCode(error, 'ENOENT'))
-        throw new DepotError('unavailable', 'Artifact content is unavailable');
+        throw new ArkvoryError('unavailable', 'Artifact content is unavailable');
       throw error;
     }
   }
@@ -188,7 +188,7 @@ export class LocalBlobStore implements BlobStore {
   ): Promise<void> {
     const info = await stat(path);
     if (info.size !== expected.size)
-      throw new DepotError('integrity_mismatch', 'Stored size mismatch');
+      throw new ArkvoryError('integrity_mismatch', 'Stored size mismatch');
     const hash = createHash('sha256');
     for await (const chunk of this.streamFile(path, expected.size)) {
       cancellation.throwIfAborted();
@@ -196,7 +196,7 @@ export class LocalBlobStore implements BlobStore {
     }
     cancellation.throwIfAborted();
     if (hash.digest('hex') !== expected.sha256)
-      throw new DepotError('integrity_mismatch', 'Stored content failed integrity verification');
+      throw new ArkvoryError('integrity_mismatch', 'Stored content failed integrity verification');
     await syncDirectory(dirname(path));
   }
 
@@ -222,13 +222,13 @@ export class LocalBlobStore implements BlobStore {
     let remaining = range ? range.end - range.start + 1 : size;
     for await (const chunk of stream) {
       if (!(chunk instanceof Uint8Array))
-        throw new DepotError('unavailable', 'Invalid content stream');
+        throw new ArkvoryError('unavailable', 'Invalid content stream');
       remaining -= chunk.byteLength;
       yield chunk;
     }
     // A file can be truncated after the metadata/stat check. Never report a successful short EOF.
     if (remaining !== 0)
-      throw new DepotError('integrity_mismatch', 'Stored content ended before its declared size');
+      throw new ArkvoryError('integrity_mismatch', 'Stored content ended before its declared size');
   }
 
   private partPath(id: string, part: UploadPart): string {
@@ -238,7 +238,7 @@ export class LocalBlobStore implements BlobStore {
       part.index >= 640 ||
       !/^[a-f0-9]{64}$/.test(part.sha256)
     )
-      throw new DepotError('invalid_input', 'Invalid part');
+      throw new ArkvoryError('invalid_input', 'Invalid part');
     return join(this.root, 'parts', requireId(id), `${String(part.index)}-${part.sha256}`);
   }
 
@@ -277,7 +277,7 @@ export class LocalBlobStore implements BlobStore {
       cancellation.throwIfAborted();
       const target = resolve(this.root, folder, id);
       if (relative(resolve(this.root, folder), target) !== id)
-        throw new DepotError('invalid_input', 'Unsafe cleanup target');
+        throw new ArkvoryError('invalid_input', 'Unsafe cleanup target');
       await rm(target, { recursive: true, force: true });
       cancellation.throwIfAborted();
       await syncDirectory(join(this.root, folder));

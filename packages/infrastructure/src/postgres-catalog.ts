@@ -1,19 +1,19 @@
 import { createHash } from 'node:crypto';
 import { Pool } from 'pg';
 import {
-  DepotError,
+  ArkvoryError,
   descriptorWire,
   parseDescriptor,
   requireId,
   requireRepository,
   sameDescriptor,
-} from '@proanima/depot-domain';
-import type { Upload, MutationAccess } from '@proanima/depot-domain';
+} from '@proanima/arkvory-domain';
+import type { Upload, MutationAccess } from '@proanima/arkvory-domain';
 import { lockServiceAccess } from './service-authorization.js';
-import type { Catalog, UploadMutation } from '@proanima/depot-application';
+import type { Catalog, UploadMutation } from '@proanima/arkvory-application';
 
 export function decode(row: Record<string, unknown> | undefined): Upload {
-  if (!row) throw new DepotError('not_found', 'Artifact or upload not found');
+  if (!row) throw new ArkvoryError('not_found', 'Artifact or upload not found');
   const { id, repository, owner, descriptor, status, created_at: createdAt } = row;
   if (
     typeof id !== 'string' ||
@@ -22,9 +22,9 @@ export function decode(row: Record<string, unknown> | undefined): Upload {
     !(createdAt instanceof Date) ||
     !['pending', 'available', 'cancelled'].includes(String(status))
   )
-    throw new DepotError('unavailable', 'Invalid catalog record');
+    throw new ArkvoryError('unavailable', 'Invalid catalog record');
   if (status !== 'pending' && status !== 'available' && status !== 'cancelled')
-    throw new DepotError('unavailable', 'Invalid upload state');
+    throw new ArkvoryError('unavailable', 'Invalid upload state');
   return {
     id: requireId(id),
     repository: requireRepository(repository),
@@ -36,12 +36,27 @@ export function decode(row: Record<string, unknown> | undefined): Upload {
       row['expires_at'] instanceof Date
         ? row['expires_at'].toISOString()
         : (() => {
-            throw new DepotError('unavailable', 'Invalid expiry');
+            throw new ArkvoryError('unavailable', 'Invalid expiry');
           })(),
   };
 }
 
-// depot-exception ARCH-008 -- Existing adapter or contract implementation combines related operations; freeze growth and extract cohesive responsibilities while preserving transactional and authorization invariants.
+function catalogPool(connectionString: string, max: number): Pool {
+  const pool = new Pool({
+    connectionString,
+    max,
+    connectionTimeoutMillis: 5000,
+    statement_timeout: 10000,
+    query_timeout: 15000,
+    keepAlive: true,
+    keepAliveInitialDelayMillis: 10000,
+  });
+  // Idle failures are retried by the pool; credentials must never reach logs.
+  pool.on('error', () => undefined);
+  return pool;
+}
+
+// arkvory-exception ARCH-008 -- Existing adapter or contract implementation combines related operations; freeze growth and extract cohesive responsibilities while preserving transactional and authorization invariants.
 export class PostgresCatalog implements Catalog {
   readonly pool: Pool;
   private readonly locks: Pool;
@@ -52,27 +67,8 @@ export class PostgresCatalog implements Catalog {
     private readonly capacityBytes: number,
     maxWriters: number,
   ) {
-    this.pool = new Pool({
-      connectionString,
-      max: 5,
-      connectionTimeoutMillis: 5000,
-      statement_timeout: 10000,
-      query_timeout: 15000,
-      keepAlive: true,
-      keepAliveInitialDelayMillis: 10000,
-    });
-    this.locks = new Pool({
-      connectionString,
-      max: maxWriters,
-      connectionTimeoutMillis: 5000,
-      statement_timeout: 10000,
-      query_timeout: 15000,
-      keepAlive: true,
-      keepAliveInitialDelayMillis: 10000,
-    });
-    // Idle connection failures are retried by the pool; never leak connection strings in logs.
-    this.pool.on('error', () => undefined);
-    this.locks.on('error', () => undefined);
+    this.pool = catalogPool(connectionString, 5);
+    this.locks = catalogPool(connectionString, maxWriters);
   }
 
   get active(): boolean {
@@ -93,7 +89,7 @@ export class PostgresCatalog implements Catalog {
     client.on('error', failed);
     try {
       if (role === 'reader' && !sharedDownloads)
-        throw new DepotError('invalid_input', 'Reader requires shared download policy');
+        throw new ArkvoryError('invalid_input', 'Reader requires shared download policy');
       if (role === 'api' || role === 'reader') {
         const mode = await client.query<{ acquired: boolean }>(
           sharedDownloads
@@ -101,11 +97,11 @@ export class PostgresCatalog implements Catalog {
             : 'SELECT pg_try_advisory_lock(18471,7) AS acquired',
         );
         if (!mode.rows[0]?.acquired)
-          throw new DepotError('busy', 'Conflicting gateway profile is active');
+          throw new ArkvoryError('busy', 'Conflicting gateway profile is active');
         if (!sharedDownloads) {
           const policy = await client.query('SELECT 1 FROM depot_download_policy');
           if (policy.rowCount)
-            throw new DepotError('conflict', 'Database requires shared download configuration');
+            throw new ArkvoryError('conflict', 'Database requires shared download configuration');
         }
       }
       // One writer per database, including the shared-download profile. This is not HA.
@@ -114,14 +110,17 @@ export class PostgresCatalog implements Catalog {
           'SELECT pg_try_advisory_lock(18471,6) AS acquired',
         );
         if (!worker.rows[0]?.acquired)
-          throw new DepotError('busy', 'Standalone supports one completion worker');
+          throw new ArkvoryError('busy', 'Standalone supports one completion worker');
       }
       if (role !== 'worker' && role !== 'reader') {
         const lock = await client.query<{ acquired: boolean }>(
           'SELECT pg_try_advisory_lock(18471,3) AS acquired',
         );
         if (!lock.rows[0]?.acquired)
-          throw new DepotError('busy', 'Another writer or maintenance process owns this database');
+          throw new ArkvoryError(
+            'busy',
+            'Another writer or maintenance process owns this database',
+          );
       }
       const barrier = await client.query<{ acquired: boolean }>(
         role === 'maintenance'
@@ -129,7 +128,10 @@ export class PostgresCatalog implements Catalog {
           : 'SELECT pg_try_advisory_lock_shared(18471,4) AS acquired',
       );
       if (!barrier.rows[0]?.acquired)
-        throw new DepotError('busy', 'Maintenance requires all gateways and workers to be stopped');
+        throw new ArkvoryError(
+          'busy',
+          'Maintenance requires all gateways and workers to be stopped',
+        );
       if (role === 'reader') {
         const legacy = await client.query(`SELECT 1 FROM pg_locks writer
           WHERE writer.locktype='advisory' AND writer.classid=18471 AND writer.objid=3 AND writer.objsubid=2 AND writer.granted
@@ -137,7 +139,7 @@ export class PostgresCatalog implements Catalog {
           AND NOT EXISTS(SELECT 1 FROM pg_locks mode WHERE mode.pid=writer.pid AND mode.locktype='advisory'
             AND mode.classid=18471 AND mode.objid=7 AND mode.objsubid=2 AND mode.granted)`);
         if (legacy.rowCount)
-          throw new DepotError('busy', 'Upgrade the writer before starting read gateways');
+          throw new ArkvoryError('busy', 'Upgrade the writer before starting read gateways');
       }
       if (role !== 'reader')
         await client.query(
@@ -148,7 +150,7 @@ export class PostgresCatalog implements Catalog {
         'SELECT storage_id,pg_advisory_lock_shared(18471,17) FROM depot_storage_identity WHERE singleton=true',
       );
       if (identity.rows[0]?.storage_id !== storageId)
-        throw new DepotError('conflict', 'Database belongs to a different storage directory');
+        throw new ArkvoryError('conflict', 'Database belongs to a different storage directory');
       this.claimed = true;
       this.releaseClaim = async () => {
         this.claimed = false;
@@ -184,7 +186,7 @@ export class PostgresCatalog implements Catalog {
       if (existing.rows[0]) {
         const upload = decode(existing.rows[0]);
         if (!sameDescriptor(upload.descriptor, input.descriptor))
-          throw new DepotError('conflict', 'Idempotency key has a different descriptor');
+          throw new ArkvoryError('conflict', 'Idempotency key has a different descriptor');
         await client.query('COMMIT');
         return upload;
       }
@@ -197,7 +199,7 @@ export class PostgresCatalog implements Catalog {
         BigInt(total.bytes) + BigInt(input.descriptor.size) > BigInt(this.capacityBytes) ||
         Number(total.entries) >= 100000
       )
-        throw new DepotError('capacity_exceeded', 'Catalog capacity exceeded');
+        throw new ArkvoryError('capacity_exceeded', 'Catalog capacity exceeded');
       const quota = (
         await client.query<{ quota: string | null; used: string }>(
           `
@@ -208,7 +210,7 @@ export class PostgresCatalog implements Catalog {
         )
       ).rows[0];
       if (quota?.quota && BigInt(quota.used) + BigInt(input.descriptor.size) > BigInt(quota.quota))
-        throw new DepotError('capacity_exceeded', 'Repository storage quota exceeded');
+        throw new ArkvoryError('capacity_exceeded', 'Repository storage quota exceeded');
       const inserted = await client.query<Record<string, unknown>>(
         'INSERT INTO depot_uploads(id,repository,owner,idempotency_key,descriptor,size,created_at) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING *',
         [
@@ -285,9 +287,9 @@ export class PostgresCatalog implements Catalog {
         [key],
       );
       if (!result.rows[0]?.acquired)
-        throw new DepotError('busy', 'Upload is already being modified');
+        throw new ArkvoryError('busy', 'Upload is already being modified');
       const check = (): void => {
-        if (state.lost) throw new DepotError('unavailable', 'Upload lock was lost');
+        if (state.lost) throw new ArkvoryError('unavailable', 'Upload lock was lost');
       };
       const guarded = async <R>(work: () => Promise<R>): Promise<R> => {
         check();
@@ -319,7 +321,7 @@ export class PostgresCatalog implements Catalog {
             [repository, id, target],
           );
           if (!updated.rows[0])
-            throw new DepotError('conflict', 'Upload state prevents this operation');
+            throw new ArkvoryError('conflict', 'Upload state prevents this operation');
           return decode(updated.rows[0]);
         });
       };
@@ -331,14 +333,18 @@ export class PostgresCatalog implements Catalog {
               `INSERT INTO depot_parts(upload_id,part_index,size,sha256) SELECT id,$2,$3,$4 FROM depot_uploads WHERE id=$1 AND status='pending' AND expires_at>now() ON CONFLICT(upload_id,part_index) DO UPDATE SET sha256=excluded.sha256 WHERE depot_parts.sha256=excluded.sha256 AND depot_parts.size=excluded.size RETURNING upload_id`,
               [id, part.index, part.size, part.sha256],
             );
-            if (result.rowCount !== 1) throw new DepotError('conflict', 'Part cannot be recorded');
+            if (result.rowCount !== 1)
+              throw new ArkvoryError('conflict', 'Part cannot be recorded');
           }),
         throwIfAborted: check,
         publish: (repository) => transition(repository, 'available'),
         cancel: (repository) => transition(repository, 'cancelled'),
       });
       if (state.lost)
-        throw new DepotError('unavailable', 'Upload lock connection was lost; query upload status');
+        throw new ArkvoryError(
+          'unavailable',
+          'Upload lock connection was lost; query upload status',
+        );
       return value;
     } finally {
       if (!state.lost) {
@@ -358,7 +364,7 @@ export class PostgresCatalog implements Catalog {
       'SELECT version FROM depot_migrations WHERE version IN (8,9,10,11,12,13,14,15,16,17)',
     );
     if (result.rowCount !== 10)
-      throw new DepotError('unavailable', 'Database migrations 8 through 17 are required');
+      throw new ArkvoryError('unavailable', 'Database migrations 8 through 17 are required');
     await this.pool.query('SELECT id,expires_at FROM depot_uploads LIMIT 0');
   }
   async close(): Promise<void> {

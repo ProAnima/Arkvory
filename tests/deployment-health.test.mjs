@@ -9,7 +9,7 @@ import { exclusive } from '../apps/deploy/dist/files.js';
 import { removeTestDirectory } from './helpers.mjs';
 
 async function fixture(t, failure) {
-  const directory = await mkdtemp(join(tmpdir(), 'depot-health-'));
+  const directory = await mkdtemp(join(tmpdir(), 'arkvory-health-'));
   t.after(() => removeTestDirectory(directory));
   await mkdir(join(directory, 'config'));
   await writeFile(join(directory, 'config/runtime.json'), '{}');

@@ -8,7 +8,7 @@ import { parseArguments } from '../apps/cli/dist/arguments.js';
 import { upload } from '../apps/cli/dist/upload.js';
 import { download } from '../apps/cli/dist/download.js';
 import { exclusive, readSmall } from '../apps/cli/dist/local-files.js';
-import { DepotClient, DepotIntegrityError } from '@proanima/depot-sdk';
+import { ArkvoryClient, ArkvoryIntegrityError } from '@proanima/arkvory-sdk';
 import { createServer } from 'node:http';
 import { removeTestDirectory } from './helpers.mjs';
 
@@ -23,7 +23,7 @@ test('CLI rejects ambiguous options and preserves literal filenames', () => {
 });
 
 test('CLI upload persists idempotency before create and refuses a changed source', async (t) => {
-  const directory = await mkdtemp(join(tmpdir(), 'depot-cli-'));
+  const directory = await mkdtemp(join(tmpdir(), 'arkvory-cli-'));
   t.after(() => removeTestDirectory(directory));
   const path = join(directory, 'build.bin');
   await writeFile(path, 'build');
@@ -58,24 +58,24 @@ test('CLI upload persists idempotency before create and refuses a changed source
   const input = {
     client,
     path,
-    server: 'https://depot.example/',
+    server: 'https://arkvory.example/',
     repository: 'releases',
     signal: new AbortController().signal,
     progress() {},
   };
   await assert.rejects(upload(input), /lost response/);
-  const checkpoint = JSON.parse(await readFile(path + '.depot-upload.json', 'utf8'));
+  const checkpoint = JSON.parse(await readFile(path + '.arkvory-upload.json', 'utf8'));
   assert.equal(checkpoint.key, key);
   assert.equal(checkpoint.id, undefined);
   assert.equal((await upload(input)).status, 'available');
   assert.equal((await upload(input)).id, 'test-id');
   await writeFile(path, 'other');
   await assert.rejects(upload(input), { code: 'checkpoint_mismatch' });
-  await assert.rejects(access(path + '.depot-upload.json.lock'), /ENOENT/);
+  await assert.rejects(access(path + '.arkvory-upload.json.lock'), /ENOENT/);
 });
 
 test('CLI download publishes only a verified stream and never replaces a destination', async (t) => {
-  const directory = await mkdtemp(join(tmpdir(), 'depot-cli-'));
+  const directory = await mkdtemp(join(tmpdir(), 'arkvory-cli-'));
   t.after(() => removeTestDirectory(directory));
   const output = join(directory, 'result.bin');
   const bytes = Buffer.from('verified payload');
@@ -96,7 +96,7 @@ test('CLI download publishes only a verified stream and never replaces a destina
           if (!sent) {
             sent = true;
             controller.enqueue(bytes);
-          } else if (corrupt) controller.error(new DepotIntegrityError());
+          } else if (corrupt) controller.error(new ArkvoryIntegrityError());
           else controller.close();
         },
       });
@@ -105,15 +105,15 @@ test('CLI download publishes only a verified stream and never replaces a destina
   const input = {
     client,
     output,
-    server: 'https://depot.example/',
+    server: 'https://arkvory.example/',
     repository: 'releases',
     id: 'artifact',
     signal: new AbortController().signal,
     progress() {},
   };
-  await assert.rejects(download(input), DepotIntegrityError);
+  await assert.rejects(download(input), ArkvoryIntegrityError);
   await assert.rejects(access(output), /ENOENT/);
-  assert.equal((await readFile(output + '.depot-part')).length, 0);
+  assert.equal((await readFile(output + '.arkvory-part')).length, 0);
   corrupt = false;
   await download(input);
   assert.deepEqual(await readFile(output), bytes);
@@ -121,7 +121,7 @@ test('CLI download publishes only a verified stream and never replaces a destina
 });
 
 test('CLI bounded local reads and concurrent checkpoint ownership fail closed', async (t) => {
-  const directory = await mkdtemp(join(tmpdir(), 'depot-cli-'));
+  const directory = await mkdtemp(join(tmpdir(), 'arkvory-cli-'));
   t.after(() => removeTestDirectory(directory));
   const state = join(directory, 'state');
   await writeFile(state, '12345');
@@ -145,10 +145,10 @@ test('SDK client cancellation and deadlines include management response bodies',
     server.close();
   });
   const url = `http://127.0.0.1:${server.address().port}`;
-  const timed = new DepotClient(url, () => 'test', { requestTimeoutMs: 100 });
+  const timed = new ArkvoryClient(url, () => 'test', { requestTimeoutMs: 100 });
   await assert.rejects(timed.list('releases'), { name: 'TimeoutError' });
   const abort = new AbortController();
-  const client = new DepotClient(url, () => 'test', { signal: abort.signal });
+  const client = new ArkvoryClient(url, () => 'test', { signal: abort.signal });
   const pending = client.list('releases');
   abort.abort();
   await assert.rejects(pending, { name: 'AbortError' });

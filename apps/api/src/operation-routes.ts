@@ -1,28 +1,28 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
-import { DepotError, requireRepository } from '@proanima/depot-domain';
-import type { Principal } from '@proanima/depot-domain';
-import { effectivePermissions, operationVisible } from '@proanima/depot-application';
-import type { ServiceAccess } from '@proanima/depot-application';
+import { ArkvoryError, requireRepository } from '@proanima/arkvory-domain';
+import type { Principal } from '@proanima/arkvory-domain';
+import { effectivePermissions, operationVisible } from '@proanima/arkvory-application';
+import type { ServiceAccess } from '@proanima/arkvory-application';
 import {
   apiOperations,
   apiSurfaces,
   openApiDocument,
   openApiSurface,
-} from '@proanima/depot-contracts';
+} from '@proanima/arkvory-contracts';
 import type {
   OperationDescriptor,
   OperationPage,
   OperationCondition,
   ApiSurface,
-} from '@proanima/depot-contracts';
+} from '@proanima/arkvory-contracts';
 
 function query(input: unknown, allowed: readonly string[]): Record<string, string> {
   if (!input || typeof input !== 'object' || Array.isArray(input))
-    throw new DepotError('invalid_input', 'Invalid API discovery query');
+    throw new ArkvoryError('invalid_input', 'Invalid API discovery query');
   const values: Record<string, string> = {};
   for (const [key, value] of Object.entries(input)) {
     if (!allowed.includes(key) || typeof value !== 'string')
-      throw new DepotError('invalid_input', 'Unknown or repeated API discovery option');
+      throw new ArkvoryError('invalid_input', 'Unknown or repeated API discovery option');
     values[key] = value;
   }
   return values;
@@ -30,7 +30,7 @@ function query(input: unknown, allowed: readonly string[]): Record<string, strin
 function surface(input: unknown): ApiSurface | undefined {
   if (input === undefined) return undefined;
   const found = apiSurfaces.find((value) => value === input);
-  if (!found) throw new DepotError('invalid_input', 'Unknown API surface');
+  if (!found) throw new ArkvoryError('invalid_input', 'Unknown API surface');
   return found;
 }
 export function registerOperationRoutes(
@@ -56,7 +56,7 @@ export function registerOperationRoutes(
       after !== undefined &&
       (typeof after !== 'string' || !/^[A-Za-z][A-Za-z0-9]{0,95}$/.test(after))
     )
-      throw new DepotError('invalid_input', 'Invalid operation cursor');
+      throw new ArkvoryError('invalid_input', 'Invalid operation cursor');
     const rawLimit = q['limit'];
     if (
       rawLimit !== undefined &&
@@ -64,7 +64,7 @@ export function registerOperationRoutes(
         !/^[1-9][0-9]{0,2}$/.test(rawLimit) ||
         Number(rawLimit) > 100)
     )
-      throw new DepotError('invalid_input', 'Invalid page limit');
+      throw new ArkvoryError('invalid_input', 'Invalid page limit');
     const limit = rawLimit === undefined ? 50 : Number(rawLimit);
     const actor = principal(request);
     if (
@@ -73,7 +73,7 @@ export function registerOperationRoutes(
         (binding) => binding.resource.id === repository && binding.actions.length,
       )
     )
-      throw new DepotError('not_found', 'Repository scope not found');
+      throw new ArkvoryError('not_found', 'Repository scope not found');
     const delegations = actor.managed ? await service.delegations(actor, actor.managed.keyId) : [];
     const bootstrap = !actor.managed && actor.serviceAdministrator === true;
     const items: OperationDescriptor[] = [];

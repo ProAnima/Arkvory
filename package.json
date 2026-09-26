@@ -1,5 +1,5 @@
 {
-  "name": "@proanima/depot",
+  "name": "@proanima/arkvory",
   "version": "0.0.0",
   "private": true,
   "description": "Автономное хранилище UPack и файлов: метаданные, метки, очереди и API ProGet. / Self-hosted UPack and file storage with metadata, tagging, transfer queues, and ProGet-compatible APIs.",
@@ -39,7 +39,8 @@
     "test:browser:install": "node node_modules/playwright/cli.js install --with-deps chromium",
     "policy:check": "node scripts/check-policy.mjs",
     "test:db:up": "docker compose -f compose.test.yml up -d --wait",
-    "test:db:stop": "docker compose -f compose.test.yml stop"
+    "test:db:stop": "docker compose -f compose.test.yml stop",
+    "brand:generate": "node scripts/build-brand.mjs"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
@@ -59,11 +60,11 @@
     "yaml": "2.9.1",
     "yazl": "3.3.1"
   },
-  "homepage": "https://github.com/ProAnima/Depot",
+  "homepage": "https://github.com/ProAnima/Arkvory",
   "license": "UNLICENSED",
   "author": "Ian Panaev",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ProAnima/Depot.git"
+    "url": "git+https://github.com/ProAnima/Arkvory.git"
   }
 }

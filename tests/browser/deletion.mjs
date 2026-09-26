@@ -1,10 +1,12 @@
 import assert from 'node:assert/strict';
-import { DepotClient } from '@proanima/depot-sdk';
+import { ArkvoryClient } from '@proanima/arkvory-sdk';
 import { create, base } from '../integration/fixture.mjs';
 
 export async function exerciseDeletion(page, f) {
   f.config.keys[0].principal.serviceAdministrator = true;
-  const root = new DepotClient(new URL(page.url()).origin, () => f.headers.authorization.slice(7));
+  const root = new ArkvoryClient(new URL(page.url()).origin, () =>
+    f.headers.authorization.slice(7),
+  );
   const bindings = [
     {
       resource: { kind: 'repository', id: 'releases' },
@@ -22,7 +24,7 @@ export async function exerciseDeletion(page, f) {
     name: 'ui-cleaner',
     bindings,
   });
-  await new DepotClient(new URL(page.url()).origin, () => issued.secret).activateServiceKey();
+  await new ArkvoryClient(new URL(page.url()).origin, () => issued.secret).activateServiceKey();
   const bytes = Buffer.from('UI deletion acceptance');
   const id = (await create(f, bytes)).json().id;
   assert.equal(

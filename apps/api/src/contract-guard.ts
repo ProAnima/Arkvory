@@ -1,9 +1,12 @@
 import type { FastifyInstance } from 'fastify';
-import { apiOperations, assertRouteInventory } from '@proanima/depot-contracts';
-import type { RuntimeRoute } from '@proanima/depot-contracts';
+import { apiOperations, assertRouteInventory } from '@proanima/arkvory-contracts';
+import type { RuntimeRoute } from '@proanima/arkvory-contracts';
 
 // Exact static exclusions. A new API beneath /console/ must not silently escape inventory.
 const staticPaths = [
+  '/console/arkvory.svg',
+  '/console/arkvory.ico',
+  '/console/arkvory.png',
   '/console/',
   '/console/THIRD-PARTY.txt',
   '/console/console.js',

@@ -1,4 +1,4 @@
-import { DepotError } from './artifact.js';
+import { ArkvoryError } from './artifact.js';
 import { retentionObject, annotationRevision } from './retention.js';
 
 export interface StoragePolicy {
@@ -33,7 +33,7 @@ export function defaultStoragePolicy(): StoragePolicy {
 }
 function number(value: unknown, min: number, max: number): number {
   if (typeof value !== 'number' || !Number.isSafeInteger(value) || value < min || value > max)
-    throw new DepotError(
+    throw new ArkvoryError(
       'invalid_input',
       `Integer between ${String(min)} and ${String(max)} required`,
     );
@@ -41,7 +41,7 @@ function number(value: unknown, min: number, max: number): number {
 }
 function label(value: unknown): string {
   if (typeof value !== 'string' || !/^[\p{L}\p{N}_.:-]{1,64}$/u.test(value))
-    throw new DepotError('invalid_input', 'Invalid policy label');
+    throw new ArkvoryError('invalid_input', 'Invalid policy label');
   return value;
 }
 export function parseStoragePolicy(value: unknown): StoragePolicy {
@@ -53,14 +53,14 @@ export function parseStoragePolicy(value: unknown): StoragePolicy {
     typeof enabled !== 'boolean' ||
     (grouping !== 'package-channel' && grouping !== 'package' && grouping !== 'repository')
   )
-    throw new DepotError('invalid_input', 'Invalid storage policy mode');
+    throw new ArkvoryError('invalid_input', 'Invalid storage policy mode');
   if (
     quotaBytes !== null &&
     (typeof quotaBytes !== 'string' ||
       !/^[1-9][0-9]{0,15}$/.test(quotaBytes) ||
       BigInt(quotaBytes) > 9007199254740991n)
   )
-    throw new DepotError('invalid_input', 'Invalid decimal quotaBytes');
+    throw new ArkvoryError('invalid_input', 'Invalid decimal quotaBytes');
   const rawChannels: unknown = r['channels'],
     rawLabels: unknown = r['protectedLabels'];
   if (
@@ -69,7 +69,7 @@ export function parseStoragePolicy(value: unknown): StoragePolicy {
     !Array.isArray(rawLabels) ||
     rawLabels.length > 32
   )
-    throw new DepotError('invalid_input', 'At most 32 channels and protected labels allowed');
+    throw new ArkvoryError('invalid_input', 'At most 32 channels and protected labels allowed');
   const channels = rawChannels.map((v: unknown) => {
     const c = retentionObject(v, ['label', 'keepLast']);
     return { label: label(c['label']), keepLast: number(c['keepLast'], 1, 100000) };
@@ -79,11 +79,11 @@ export function parseStoragePolicy(value: unknown): StoragePolicy {
     new Set(channels.map((c) => c.label)).size !== channels.length ||
     new Set(protectedLabels).size !== protectedLabels.length
   )
-    throw new DepotError('invalid_input', 'Duplicate policy labels');
+    throw new ArkvoryError('invalid_input', 'Duplicate policy labels');
   const warningPercent = number(r['warningPercent'], 1, 98),
     criticalPercent = number(r['criticalPercent'], 2, 99);
   if (warningPercent >= criticalPercent)
-    throw new DepotError('invalid_input', 'Warning must precede critical threshold');
+    throw new ArkvoryError('invalid_input', 'Warning must precede critical threshold');
   return {
     enabled,
     grouping,

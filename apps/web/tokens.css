@@ -169,6 +169,8 @@
 }
 @media (max-width: 760px) {
   :root {
+    --brand-type: 1.375rem;
+    --brand-size: 2.25rem;
     --page-gutter: 1rem;
     --panel-padding: 1rem;
     --empty-height: 16rem;

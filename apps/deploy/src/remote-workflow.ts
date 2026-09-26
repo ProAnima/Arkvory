@@ -108,7 +108,7 @@ export class RemoteWorkflow {
     });
   }
   private async installNew(target: RemoteTarget) {
-    const directory = await mkdtemp(join(tmpdir(), 'depot-remote-'));
+    const directory = await mkdtemp(join(tmpdir(), 'arkvory-remote-'));
     let remoteStage: string | undefined;
     try {
       this.lifecycle.signal.throwIfAborted();
@@ -211,7 +211,7 @@ export class RemoteWorkflow {
 // Health credentials stay on the server; the client only observes readiness success/failure.
 const readinessScript = `(async()=>{
  const fs=require('node:fs/promises'), path=require('node:path'), {pathToFileURL}=require('node:url');
- const root=process.platform==='win32'?'C:/ProgramData/ProAnima/Depot':'/opt/proanima-depot';
+ const root=process.platform==='win32'?'C:/ProgramData/ProAnima/Arkvory':'/opt/proanima-arkvory';
  const state=JSON.parse(await fs.readFile(path.join(root,'installation.json'),'utf8'));
  if(!/^[0-9]+\\.[0-9]+\\.[0-9]+$/.test(state.current.version))throw Error('version');
  const {Services}=await import(pathToFileURL(path.join(root,'releases',state.current.version,'apps/deploy/dist/services.js')).href);
@@ -219,7 +219,7 @@ const readinessScript = `(async()=>{
 })().catch(()=>{process.exitCode=1;});`;
 const ownerScript = `(async()=>{
  const fs=require('node:fs/promises'), path=require('node:path');
- const root=process.platform==='win32'?'C:/ProgramData/ProAnima/Depot':'/opt/proanima-depot';
+ const root=process.platform==='win32'?'C:/ProgramData/ProAnima/Arkvory':'/opt/proanima-arkvory';
  let input=''; for await(const chunk of process.stdin){input+=chunk;if(input.length>8192)throw Error('input');}
  const state=JSON.parse(await fs.readFile(path.join(root,'installation.json'),'utf8'));
  if(!/^[0-9]+\\.[0-9]+\\.[0-9]+$/.test(state.current.version))throw Error('version');

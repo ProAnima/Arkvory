@@ -1,7 +1,7 @@
 import type { Pool, PoolClient } from 'pg';
-import { defaultCleanupPolicy, parseCleanupPolicy, DepotError } from '@proanima/depot-domain';
-import type { CleanupPolicy, MutationAccess } from '@proanima/depot-domain';
-import type { CleanupSettings, CleanupSnapshot } from '@proanima/depot-application';
+import { defaultCleanupPolicy, parseCleanupPolicy, ArkvoryError } from '@proanima/arkvory-domain';
+import type { CleanupPolicy, MutationAccess } from '@proanima/arkvory-domain';
+import type { CleanupSettings, CleanupSnapshot } from '@proanima/arkvory-application';
 import { lockServiceAccess } from './service-authorization.js';
 import { lockCatalogMutation } from './catalog-mutation.js';
 import { recordStorageEvent } from './storage-events.js';
@@ -56,7 +56,7 @@ export class PostgresCleanupSettings implements CleanupSettings {
         )
       ).rows[0];
       if ((row?.revision ?? 0) !== revision || revision === 2147483647)
-        throw new DepotError('conflict', 'Cleanup configuration changed');
+        throw new ArkvoryError('conflict', 'Cleanup configuration changed');
       await action(c);
       await c.query('COMMIT');
     } catch (error) {
@@ -92,7 +92,7 @@ export class PostgresCleanupSettings implements CleanupSettings {
         [access.repository],
       );
       if (!updated.rowCount)
-        throw new DepotError('conflict', 'Enable cleanup before requesting a batch');
+        throw new ArkvoryError('conflict', 'Enable cleanup before requesting a batch');
     });
   }
 }

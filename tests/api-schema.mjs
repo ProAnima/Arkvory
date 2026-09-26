@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import Ajv from 'ajv';
 import addFormats from 'ajv-formats';
-import { openApiDocument } from '@proanima/depot-contracts';
+import { openApiDocument } from '@proanima/arkvory-contracts';
 
 export const ajv = new Ajv({ strict: false, allErrors: true, coerceTypes: false });
 addFormats(ajv);

@@ -1,6 +1,6 @@
 param([Parameter(Mandatory)][string]$Root, [Parameter(Mandatory)][string]$Payload, [string]$OwnerFile)
 $ErrorActionPreference = 'Stop'
-$arguments = @((Join-Path $Payload 'depot-setup.mjs'))
+$arguments = @((Join-Path $Payload 'arkvory-setup.mjs'))
 if (Test-Path -LiteralPath (Join-Path $Root 'installation.json')) {
   $arguments += @('apply-installer','--artifact',$Payload)
 } else {

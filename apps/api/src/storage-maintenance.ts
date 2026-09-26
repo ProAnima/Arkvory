@@ -1,5 +1,5 @@
-import { DepotError, authorizeAction } from '@proanima/depot-domain';
-import type { PostgresStoragePolicy, PostgresServices } from '@proanima/depot-infrastructure';
+import { ArkvoryError, authorizeAction } from '@proanima/arkvory-domain';
+import type { PostgresStoragePolicy, PostgresServices } from '@proanima/arkvory-infrastructure';
 
 /** One bounded batch on the writer; database gates and due times fence overlapping runs. */
 export async function maintainStorage(
@@ -12,7 +12,7 @@ export async function maintainStorage(
     if (!active()) return;
     try {
       const principal = await services.principalForKey(due.authorizer_key_id);
-      if (!principal) throw new DepotError('forbidden', 'Policy credential unavailable');
+      if (!principal) throw new ArkvoryError('forbidden', 'Policy credential unavailable');
       authorizeAction(principal, due.repository, 'storage.manage', null);
       authorizeAction(principal, due.repository, 'artifact.delete', null);
       await store.run(
@@ -25,7 +25,7 @@ export async function maintainStorage(
       await store.monitor(
         due.repository,
         due.revision,
-        error instanceof DepotError ? error.code : 'unavailable',
+        error instanceof ArkvoryError ? error.code : 'unavailable',
       );
     }
   }

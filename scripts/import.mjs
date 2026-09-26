@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import { createReadStream, openAsBlob } from 'node:fs';
 import { readdir, lstat, readFile, open, realpath } from 'node:fs/promises';
 import { resolve, relative, join, basename, isAbsolute, sep } from 'node:path';
-import { DepotClient, DepotHttpError } from '@proanima/depot-sdk';
+import { ArkvoryClient, ArkvoryHttpError } from '@proanima/arkvory-sdk';
 
 const args = process.argv.slice(2);
 const source = args.find((value) => !value.startsWith('--'));
@@ -17,26 +17,26 @@ if (!(await lstat(root)).isDirectory() || (await lstat(resolve(source))).isSymbo
   throw new Error('Source must be a real directory');
 const apply = args.includes('--apply');
 const replace = args.includes('--replace-assets');
-const repository = process.env.DEPOT_REPOSITORY ?? 'releases';
+const repository = process.env.ARKVORY_REPOSITORY ?? 'releases';
 if (!/^[a-z0-9][a-z0-9_-]{0,63}$/.test(repository)) throw new Error('Invalid repository');
 const client = apply
-  ? new DepotClient(process.env.DEPOT_BASE_URL ?? 'http://127.0.0.1:8080', () => token)
+  ? new ArkvoryClient(process.env.ARKVORY_BASE_URL ?? 'http://127.0.0.1:8080', () => token)
   : undefined;
 let token = '';
 if (apply) {
-  if (!process.env.DEPOT_TOKEN_FILE || !process.env.DEPOT_IMPORT_JOURNAL)
-    throw new Error('DEPOT_TOKEN_FILE and DEPOT_IMPORT_JOURNAL are required for --apply');
+  if (!process.env.ARKVORY_TOKEN_FILE || !process.env.ARKVORY_IMPORT_JOURNAL)
+    throw new Error('ARKVORY_TOKEN_FILE and ARKVORY_IMPORT_JOURNAL are required for --apply');
   for (const filename of [
-    await realpath(process.env.DEPOT_TOKEN_FILE),
-    resolve(process.env.DEPOT_IMPORT_JOURNAL),
+    await realpath(process.env.ARKVORY_TOKEN_FILE),
+    resolve(process.env.ARKVORY_IMPORT_JOURNAL),
   ]) {
     const path = relative(root, filename);
     if (path === '' || (!isAbsolute(path) && path !== '..' && !path.startsWith('..' + sep)))
       throw new Error('Token and journal must be outside the source directory');
   }
-  token = (await readFile(process.env.DEPOT_TOKEN_FILE, 'utf8')).trim();
+  token = (await readFile(process.env.ARKVORY_TOKEN_FILE, 'utf8')).trim();
 }
-const journal = apply ? await open(process.env.DEPOT_IMPORT_JOURNAL, 'a', 0o600) : undefined;
+const journal = apply ? await open(process.env.ARKVORY_IMPORT_JOURNAL, 'a', 0o600) : undefined;
 let count = 0;
 async function* files(directory) {
   for (const entry of await readdir(directory, { withFileTypes: true })) {
@@ -92,7 +92,7 @@ try {
       try {
         prior = await client.asset(repository, path);
       } catch (error) {
-        if (!(error instanceof DepotHttpError && error.status === 404)) throw error;
+        if (!(error instanceof ArkvoryHttpError && error.status === 404)) throw error;
       }
       if (prior && prior.artifactId !== ready.id && !replace)
         throw new Error('Asset already exists; inspect before using --replace-assets');

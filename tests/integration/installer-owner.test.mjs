@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtemp, mkdir, writeFile, access } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { DepotClient } from '@proanima/depot-sdk';
+import { ArkvoryClient } from '@proanima/arkvory-sdk';
 import { createOwner } from '../../apps/deploy/dist/owner.js';
 import { setup } from './fixture.mjs';
 import { removeTestDirectory } from '../helpers.mjs';
@@ -11,12 +11,12 @@ import { removeTestDirectory } from '../helpers.mjs';
 test('installer creates a real owner, consumes the private password file and refuses account replacement', async (t) => {
   const fixture = await setup(t);
   const base = await fixture.listen();
-  const root = await mkdtemp(join(tmpdir(), 'depot-owner-'));
+  const root = await mkdtemp(join(tmpdir(), 'arkvory-owner-'));
   t.after(() => removeTestDirectory(root));
   await mkdir(join(root, 'config'));
   await writeFile(
     join(root, 'config/runtime.json'),
-    JSON.stringify({ DEPOT_PORT: new URL(base).port }),
+    JSON.stringify({ ARKVORY_PORT: new URL(base).port }),
   );
   await writeFile(join(root, 'config/bootstrap-token.txt'), fixture.headers.authorization.slice(7));
   const passwordFile = join(root, 'owner.json');
@@ -26,10 +26,10 @@ test('installer creates a real owner, consumes the private password file and ref
   );
   await createOwner(root, passwordFile);
   await assert.rejects(access(passwordFile), /ENOENT/);
-  const client = new DepotClient(base, () => '');
+  const client = new ArkvoryClient(base, () => '');
   const session = await client.login('installer-owner', 'test-owner-password-123');
   assert.equal(session.account.administrator, true);
-  const owned = new DepotClient(base, () => session.token);
+  const owned = new ArkvoryClient(base, () => session.token);
   assert.deepEqual((await owned.me()).grants, [
     { repository: 'releases', permissions: ['read', 'write'] },
   ]);
@@ -40,7 +40,7 @@ test('installer creates a real owner, consumes the private password file and ref
   await assert.rejects(createOwner(root, passwordFile), /already exists/);
   await access(passwordFile);
   assert.equal(
-    (await new DepotClient(base, () => fixture.headers.authorization.slice(7)).users()).length,
+    (await new ArkvoryClient(base, () => fixture.headers.authorization.slice(7)).users()).length,
     1,
   );
 });

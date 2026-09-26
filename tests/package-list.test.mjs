@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { organizePackages, parsePackageListOptions } from '@proanima/depot-application';
+import { organizePackages, parsePackageListOptions } from '@proanima/arkvory-application';
 
 const entries = [
   { group: 'Tools', name: 'Example', version: '1.9.0', artifactId: 'a', manifest: {} },

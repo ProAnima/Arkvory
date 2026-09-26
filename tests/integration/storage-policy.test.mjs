@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
-import { DepotClient } from '@proanima/depot-sdk';
-import { defaultStoragePolicy, serviceActions } from '@proanima/depot-domain';
-import { PostgresStoragePolicy, PostgresServices } from '@proanima/depot-infrastructure';
+import { ArkvoryClient } from '@proanima/arkvory-sdk';
+import { defaultStoragePolicy, serviceActions } from '@proanima/arkvory-domain';
+import { PostgresStoragePolicy, PostgresServices } from '@proanima/arkvory-infrastructure';
 import { maintainStorage } from '../../apps/api/dist/storage-maintenance.js';
 import { setup, create, base } from './fixture.mjs';
 import { validateResponse } from '../api-schema.mjs';
@@ -53,14 +53,14 @@ test('bounded cleanup skips pinned rows without starving old builds and diagnost
 async function access(f, actions = serviceActions) {
   f.config.keys[0].principal.serviceAdministrator = true;
   const url = await f.listen(),
-    root = new DepotClient(url, () => f.headers.authorization.slice(7));
+    root = new ArkvoryClient(url, () => f.headers.authorization.slice(7));
   const bindings = [{ resource: { kind: 'repository', id: 'releases' }, actions }];
   const account = await root.createServiceAccount('storage-manager', bindings);
   const key = await root.issueServiceKey(account.id, randomUUID(), {
     name: 'storage-policy',
     bindings,
   });
-  const client = new DepotClient(url, () => key.secret);
+  const client = new ArkvoryClient(url, () => key.secret);
   await client.activateServiceKey();
   return { root, client, key, headers: { authorization: 'Bearer ' + key.secret } };
 }
@@ -224,7 +224,7 @@ test('automatic runs survive restart, reauthorize keys, respect due time and nev
   assert.equal((await f.catalog.get('releases', later)).status, 'available');
   // Revoke through the public administrative API after restarting its URL.
   const url = await f.listen(),
-    root = new DepotClient(url, () => f.headers.authorization.slice(7));
+    root = new ArkvoryClient(url, () => f.headers.authorization.slice(7));
   await root.revokeServiceKey(a.key.key.id);
   await f.catalog.pool.query(
     "UPDATE depot_storage_policies SET next_run_at=now()-interval '1 minute'",

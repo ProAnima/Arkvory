@@ -1,18 +1,20 @@
 #ifndef Payload
   #error Payload is required
 #endif
-#ifndef DepotVersion
-  #error DepotVersion is required
+#ifndef ArkvoryVersion
+  #error ArkvoryVersion is required
 #endif
 [Setup]
+SetupIconFile={#Payload}\arkvory.ico
+UninstallDisplayIcon={app}\arkvory.ico
 AppId={{CF8CBDDB-177C-493F-A223-C433AA84EFB6}
-AppName=ProAnima Depot
-AppVersion={#DepotVersion}
+AppName=ProAnima Arkvory
+AppVersion={#ArkvoryVersion}
 AppPublisher=Ian Panaev · ProAnimaStudio
-AppPublisherURL=https://github.com/ProAnima/Depot
+AppPublisherURL=https://github.com/ProAnima/Arkvory
 AppCopyright=Copyright © Ian Panaev. All rights reserved.
-DefaultDirName={autopf}\ProAnima\Depot
-DefaultGroupName=ProAnima Depot
+DefaultDirName={autopf}\ProAnima\Arkvory
+DefaultGroupName=ProAnima Arkvory
 DisableProgramGroupPage=yes
 DisableDirPage=yes
 PrivilegesRequired=admin
@@ -27,9 +29,9 @@ LicenseFile=..\..\LICENSE.md
 Compression=lzma2/fast
 SolidCompression=yes
 LZMAUseSeparateProcess=yes
-OutputBaseFilename=Depot-Setup-x64
+OutputBaseFilename=Arkvory-Setup-x64
 OutputDir={#Output}
-UninstallDisplayName=ProAnima Depot
+UninstallDisplayName=ProAnima Arkvory
 SetupLogging=yes
 CloseApplications=no
 RestartApplications=no
@@ -44,8 +46,8 @@ en.WelcomeLabel2=Your storage. Your infrastructure.%n%nSetup includes Node.js, P
 ru.WelcomeLabel2=Ваше хранилище. Ваша инфраструктура.%n%nВ комплекте Node.js, PostgreSQL и службы восстановления. Инструменты разработчика и интернет не требуются.%n%nФайлы и база остаются на этом компьютере. Автообновления по умолчанию отключены.
 en.OwnerTitle=Your owner account
 ru.OwnerTitle=Учётная запись владельца
-en.OwnerDescription=Sign in to Depot with these credentials after installation.
-ru.OwnerDescription=После установки войдите в Depot с этими данными.
+en.OwnerDescription=Sign in to Arkvory with these credentials after installation.
+ru.OwnerDescription=После установки войдите в Arkvory с этими данными.
 en.OwnerPrompt=Choose a strong password. The recovery key remains in the protected data directory.
 ru.OwnerPrompt=Задайте надёжный пароль. Ключ восстановления останется в защищённой папке данных.
 en.Name=Name (3-64 letters, digits, dot, dash or underscore):
@@ -56,26 +58,32 @@ en.Confirm=Confirm password:
 ru.Confirm=Повторите пароль:
 en.InvalidOwner=Use a name of 3-64 Latin letters, digits, dots, dashes or underscores, and matching passwords of 12-128 characters.
 ru.InvalidOwner=Имя: 3-64 латинских символа, цифры, точка, дефис или подчёркивание. Совпадающие пароли: 12-128 символов.
-en.OpenDepot=Open Depot and finish onboarding
-ru.OpenDepot=Открыть Depot и пройти знакомство
-en.InstallFailed=Depot configuration did not finish. Your data has been preserved. Inspect the setup log and database service logs before retrying.
-ru.InstallFailed=Настройка Depot не завершена. Данные сохранены. Проверьте журнал установки и журналы службы базы перед повтором.
+en.OpenArkvory=Open Arkvory and finish onboarding
+ru.OpenArkvory=Открыть Arkvory и пройти знакомство
+en.InstallFailed=Arkvory configuration did not finish. Your data has been preserved. Inspect the setup log and database service logs before retrying.
+ru.InstallFailed=Настройка Arkvory не завершена. Данные сохранены. Проверьте журнал установки и журналы службы базы перед повтором.
 en.Configuring=Preparing the database, services and owner account…
 ru.Configuring=Подготовка базы, служб и учётной записи владельца…
-en.RuntimeReboot=Microsoft runtime requires a restart. Restart Windows and run Setup again; your existing Depot data has been preserved.
-ru.RuntimeReboot=Компонент Microsoft требует перезагрузки. Перезагрузите Windows и запустите установщик снова; существующие данные Depot сохранены.
+en.RuntimeReboot=Microsoft runtime requires a restart. Restart Windows and run Setup again; your existing Arkvory data has been preserved.
+ru.RuntimeReboot=Компонент Microsoft требует перезагрузки. Перезагрузите Windows и запустите установщик снова; существующие данные Arkvory сохранены.
 
 [Files]
 Source: "{#Payload}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
-Name: "{group}\Depot"; Filename: "http://127.0.0.1:8080/console/"
-Name: "{group}\API and CLI"; Filename: "http://127.0.0.1:8080/console/#help"
+Name: "{group}\Arkvory"; Filename: "http://127.0.0.1:8080/console/"; IconFilename: "{app}\arkvory.ico"
+Name: "{group}\API and CLI"; Filename: "http://127.0.0.1:8080/console/#help"; IconFilename: "{app}\arkvory.ico"
 
 [Run]
-Filename: "http://127.0.0.1:8080/console/#onboarding"; Description: "{cm:OpenDepot}"; Flags: shellexec postinstall skipifsilent runasoriginaluser; Check: ConfigurationReady
+Filename: "http://127.0.0.1:8080/console/#onboarding"; Description: "{cm:OpenArkvory}"; Flags: shellexec postinstall skipifsilent runasoriginaluser; Check: ConfigurationReady
 
 [Code]
+function InitializeSetup: Boolean;
+begin
+  Result := not FileExists(ExpandConstant('{commonappdata}\ProAnima\Depot\installation.json'));
+  if not Result then MsgBox('Existing Depot installation detected. Follow docs/RENAMING.md before installing Arkvory. Data has not been changed.', mbError, MB_OK);
+end;
+
 var OwnerPage: TInputQueryWizardPage; Configured: Boolean;
 
 function ConfigurationReady: Boolean;
@@ -97,7 +105,7 @@ end;
 
 function DataRoot: String;
 begin
-  Result := ExpandConstant('{commonappdata}\ProAnima\Depot');
+  Result := ExpandConstant('{commonappdata}\ProAnima\Arkvory');
 end;
 
 procedure InitializeWizard;

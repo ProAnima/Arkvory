@@ -6,7 +6,7 @@
 
 Остановить writer, readers и worker, сделать согласованный backup БД и storage, обновить сборку, выполнить `npm run migrate`, затем запустить процессы одной версии. Readiness требует markers 8, 9, 10 и 11: package indexes, service accounts/keys, delegation и asset index соответственно. Смешанный runtime не поддерживается: старый activation не проверяет issuer. Ограничения отката: [обновление delegation](SERVICE_DELEGATION.md#транзакции-лимиты-и-обновление).
 
-Для управления сервисными аккаунтами включить **`serviceAdministrator: true` у отдельного доверенного ключа в `DEPOT_KEYS_FILE`** и согласованно перезапустить процессы. У существующих ключей этот флаг по умолчанию false; `administrator: true` продолжает управлять пользователями/группами и не даёт новых полномочий. `npm run init:local` для новой установки создаёт bootstrap key с обоими флагами. Не перезапускайте init поверх существующих секретов и не копируйте bootstrap secret в CI, браузер или приложение-потребитель.
+Для управления сервисными аккаунтами включить **`serviceAdministrator: true` у отдельного доверенного ключа в `ARKVORY_KEYS_FILE`** и согласованно перезапустить процессы. У существующих ключей этот флаг по умолчанию false; `administrator: true` продолжает управлять пользователями/группами и не даёт новых полномочий. `npm run init:local` для новой установки создаёт bootstrap key с обоими флагами. Не перезапускайте init поверх существующих секретов и не копируйте bootstrap secret в CI, браузер или приложение-потребитель.
 
 Bootstrap может назначать любые реализованные repo permissions, создавать аккаунты и выдавать grants конкретным managed keys. Делегат управляет только назначенными чужими аккаунтами и в пределах actions/ceiling. Пользовательские сессии и обычный administrator новых полномочий не получают; HTTP API изменения bootstrap флага нет. Подробные правила и отсутствие каскадного отзыва активных ключей: [SERVICE_DELEGATION](SERVICE_DELEGATION.md).
 
@@ -41,10 +41,10 @@ Bootstrap может назначать любые реализованные re
 ## Пример SDK
 
 ```typescript
-import { DepotClient } from '@proanima/depot-sdk';
+import { ArkvoryClient } from '@proanima/arkvory-sdk';
 
 // Секреты передаются из вашего secret store, не из исходного кода.
-const operator = new DepotClient(depotUrl, () => bootstrapSecret);
+const operator = new ArkvoryClient(arkvoryUrl, () => bootstrapSecret);
 const bindings = [
   {
     resource: { kind: 'repository', id: 'releases' },
@@ -70,7 +70,7 @@ if (!issued.secret) {
   throw new Error('Recover issuance by revoking this key and issuing a new one');
 }
 await secretStore.save(issued.secret);
-const client = new DepotClient(depotUrl, () => issued.secret ?? '');
+const client = new ArkvoryClient(arkvoryUrl, () => issued.secret ?? '');
 await client.activateServiceKey();
 const permissions = await client.permissions();
 ```

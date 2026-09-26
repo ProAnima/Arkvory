@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { AdmissionQueue } from '@proanima/depot-infrastructure';
+import { AdmissionQueue } from '@proanima/arkvory-infrastructure';
 
 test('gateway admission is bounded, rotates clients, cancels waiters and releases exactly once', async () => {
   const gate = new AdmissionQueue(1, 3, 2, 1000);

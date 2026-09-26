@@ -1,7 +1,7 @@
 export function deploymentHelp(): string {
-  return `ProAnima Depot · Installation & lifecycle / Установка и обслуживание
+  return `ProAnima Arkvory · Installation & lifecycle / Установка и обслуживание
 
-depot <command> --root <absolute-directory> [options]
+arkvory <command> --root <absolute-directory> [options]
 
 install        Install a verified stable release / Установить проверенный релиз
 finish-install Resume saved installation / Продолжить сохранённую установку
@@ -23,9 +23,9 @@ Installation options:
   --automatic            Opt in to stable automatic updates
 
 Examples:
-  depot status --root /opt/proanima-depot
-  depot update --root /opt/proanima-depot --artifact /media/release
-  depot configure --root /opt/proanima-depot --disable-updates
+  arkvory status --root /opt/proanima-arkvory
+  arkvory update --root /opt/proanima-arkvory --artifact /media/release
+  arkvory configure --root /opt/proanima-arkvory --disable-updates
 
 Console / Консоль: http://127.0.0.1:8080/console/#onboarding
 API: /api/v1/capabilities, /api/v1/operations (authenticated / с авторизацией)

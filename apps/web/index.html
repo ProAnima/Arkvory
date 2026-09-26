@@ -4,9 +4,12 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <meta name="color-scheme" content="light dark" />
-    <meta name="depot-api-base-url" content="" />
-    <title>ProAnima Depot</title>
+    <meta name="arkvory-api-base-url" content="" />
+    <title>ProAnima Arkvory</title>
     <script src="/console/appearance-init.js"></script>
+    <link rel="icon" href="/console/arkvory.svg" type="image/svg+xml" />
+    <link rel="alternate icon" href="/console/arkvory.ico" />
+    <link rel="apple-touch-icon" href="/console/arkvory.png" />
     <link rel="stylesheet" href="/console/tokens.css" />
     <link rel="stylesheet" href="/console/style.css" />
     <script type="module" src="/console/console.js"></script>
@@ -14,12 +17,16 @@
   <body>
     <a class="skip" href="#main" data-i18n="skip">Перейти к содержимому</a>
     <aside class="sidebar">
-      <a class="brand" href="/console/" aria-label="ProAnima Depot"
-        ><span class="brand-mark" aria-hidden="true"
-          ><svg viewBox="0 0 32 32">
-            <path d="m16 3 12 7-12 7L4 10 16 3Zm-12 13 12 7 12-7M4 22l12 7 12-7" /></svg></span
-        ><span
-          ><strong>Depot<span class="brand-dot">.</span></strong
+      <a class="brand" href="/console/" aria-label="ProAnima Arkvory"
+        ><img
+          class="brand-mark"
+          src="/console/arkvory.svg"
+          width="64"
+          height="64"
+          alt=""
+          aria-hidden="true"
+        /><span
+          ><strong>Arkvory<span class="brand-dot">.</span></strong
           ><small>PROANIMA STUDIO</small></span
         ></a
       >
@@ -121,7 +128,7 @@
     <div class="workspace">
       <header class="topbar">
         <div class="breadcrumb">
-          <strong>Depot</strong><span aria-hidden="true">/</span
+          <strong>Arkvory</strong><span aria-hidden="true">/</span
           ><span data-i18n="console">Консоль хранилища</span>
         </div>
         <div class="preferences">
@@ -806,7 +813,7 @@
           hidden
         >
           <div class="card guide-hero">
-            <p class="eyebrow">PROANIMA DEPOT</p>
+            <p class="eyebrow">PROANIMA ARKVORY</p>
             <h2 id="welcome-title" data-i18n="welcomeLead">Ваше хранилище. Готово к работе.</h2>
             <p data-i18n="welcomeBody"></p>
           </div>
@@ -901,20 +908,20 @@
             <article class="card">
               <h3 data-i18n="helpRemoteCli"></h3>
               <p data-i18n="helpRemoteCliBody"></p>
-              <pre><code>depotctl --help
-depotctl profile add production --server https://depot.example --token-file /private/depot.key
-depotctl doctor
-depotctl upload build.upack --label test
-depotctl download ARTIFACT_ID ./build.upack</code></pre>
+              <pre><code>arkvoryctl --help
+arkvoryctl profile add production --server https://arkvory.example --token-file /private/arkvory.key
+arkvoryctl doctor
+arkvoryctl upload build.upack --label test
+arkvoryctl download ARTIFACT_ID ./build.upack</code></pre>
             </article>
             <article class="card">
               <h3 data-i18n="helpCli"></h3>
               <p data-i18n="helpCliBody"></p>
-              <pre><code>depot help
-depot status --root ROOT
-depot update --root ROOT
-depot configure --root ROOT --disable-updates
-depot configure --root ROOT --pin --version 1.2.3</code></pre>
+              <pre><code>arkvory help
+arkvory status --root ROOT
+arkvory update --root ROOT
+arkvory configure --root ROOT --disable-updates
+arkvory configure --root ROOT --pin --version 1.2.3</code></pre>
             </article>
             <article class="card">
               <h3 data-i18n="helpRecipes"></h3>
@@ -1424,7 +1431,7 @@ GET /api/v1/operations?repository=releases</code></pre>
 
         <noscript>Включите JavaScript / Enable JavaScript.</noscript>
       </main>
-      <footer><span>ProAnima Depot</span><span>© Ian Panaev · ProAnimaStudio</span></footer>
+      <footer><span>ProAnima Arkvory</span><span>© Ian Panaev · ProAnimaStudio</span></footer>
     </div>
   </body>
 </html>

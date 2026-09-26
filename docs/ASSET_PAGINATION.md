@@ -27,9 +27,9 @@ Cursor связывает последний путь, версию формат
 ## SDK
 
 ```typescript
-import { DepotClient } from '@proanima/depot-sdk';
+import { ArkvoryClient } from '@proanima/arkvory-sdk';
 
-const client = new DepotClient(depotUrl, () => serviceSecret);
+const client = new ArkvoryClient(arkvoryUrl, () => serviceSecret);
 let after: string | undefined;
 do {
   const page = await client.assetPage(

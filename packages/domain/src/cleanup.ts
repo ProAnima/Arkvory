@@ -1,4 +1,4 @@
-import { DepotError } from './artifact.js';
+import { ArkvoryError } from './artifact.js';
 import { retentionObject } from './retention.js';
 
 export interface CleanupPolicy {
@@ -20,11 +20,11 @@ export function parseCleanupPolicy(value: unknown): CleanupPolicy {
   const bounded = (key: string, min: number, max: number): number => {
     const n = r[key];
     if (typeof n !== 'number' || !Number.isSafeInteger(n) || n < min || n > max)
-      throw new DepotError('invalid_input', 'Invalid cleanup policy');
+      throw new ArkvoryError('invalid_input', 'Invalid cleanup policy');
     return n;
   };
   if (typeof r['enabled'] !== 'boolean')
-    throw new DepotError('invalid_input', 'Invalid cleanup switch');
+    throw new ArkvoryError('invalid_input', 'Invalid cleanup switch');
   return {
     enabled: r['enabled'],
     graceHours: bounded('graceHours', 0, 8760),

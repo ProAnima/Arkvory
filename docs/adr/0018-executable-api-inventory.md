@@ -8,7 +8,7 @@
 
 ## Решение
 
-В contracts хранится metadata каждой операции; composer связывает её с wire-схемами и формирует полную OpenAPI 3.0.3. operationId стабильны, permission names являются расширением `x-depot-authorization`, а не OAuth scopes. Авторизацию продолжают выполнять application и infrastructure; registry не становится вторым policy engine.
+В contracts хранится metadata каждой операции; composer связывает её с wire-схемами и формирует полную OpenAPI 3.0.3. operationId стабильны, permission names являются расширением `x-arkvory-authorization`, а не OAuth scopes. Авторизацию продолжают выполнять application и infrastructure; registry не становится вторым policy engine.
 
 Fastify composition root собирает фактический inventory через onRoute и сверяет его с contracts в onReady. Проверка учитывает методы, path params, HEAD и legacy wildcards. Разрешены только точные исключения статической консоли. Новые маршруты обязаны обновлять контракт; готовность сервера при рассогласовании завершается ошибкой.
 

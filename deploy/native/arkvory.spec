@@ -1,7 +1,7 @@
-Name: proanima-depot
+Name: proanima-arkvory
 Version: @VERSION@
 Release: 1
-Summary: ProAnima Depot UPack and file storage
+Summary: ProAnima Arkvory UPack and file storage
 License: Proprietary
 BuildArch: x86_64
 Requires: postgresql-server >= 16
@@ -22,6 +22,9 @@ Copyright Ian Panaev. All rights reserved.
 mkdir -p %{buildroot}/usr
 cp -a "@TREE@/usr/." %{buildroot}/usr/
 
+%pre
+%include @TREE@/DEBIAN/preinst
+
 %post
 %include @TREE@/DEBIAN/postinst
 
@@ -29,6 +32,8 @@ cp -a "@TREE@/usr/." %{buildroot}/usr/
 %include @TREE@/DEBIAN/prerm
 
 %files
-/usr/lib/proanima-depot
-/usr/bin/depot
-/usr/share/applications/depot.desktop
+/usr/lib/proanima-arkvory
+/usr/bin/arkvory
+/usr/share/applications/arkvory.desktop
+
+/usr/share/icons/hicolor/scalable/apps/arkvory.svg

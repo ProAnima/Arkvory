@@ -4,7 +4,7 @@ import { once } from 'node:events';
 import { createHash, randomUUID } from 'node:crypto';
 import { writeFile, mkdir } from 'node:fs/promises';
 import { setup, base } from './integration/fixture.mjs';
-import { DepotClient } from '@proanima/depot-sdk';
+import { ArkvoryClient } from '@proanima/arkvory-sdk';
 import { createServer, request } from 'node:http';
 
 const cleanups = [];
@@ -227,7 +227,7 @@ try {
           proxy.closeAllConnections();
         }),
     );
-    const client = new DepotClient(`http://127.0.0.1:${proxy.address().port}`, () =>
+    const client = new ArkvoryClient(`http://127.0.0.1:${proxy.address().port}`, () =>
       f.headers.authorization.slice(7),
     );
     downloadBody = await client.downloadVerified('releases', id);

@@ -1,11 +1,11 @@
 {
-  "name": "@proanima/depot-infrastructure",
+  "name": "@proanima/arkvory-infrastructure",
   "version": "0.0.0",
   "private": true,
   "type": "module",
   "description": "Адаптеры БД, blob-store и внешних систем",
   "exports": {
-    "depot-source": "./src/index.ts",
+    "arkvory-source": "./src/index.ts",
     "types": "./dist/index.d.ts",
     "import": "./dist/index.js"
   },
@@ -13,11 +13,11 @@
   "author": "Ian Panaev",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ProAnima/Depot.git"
+    "url": "git+https://github.com/ProAnima/Arkvory.git"
   },
   "dependencies": {
-    "@proanima/depot-application": "0.0.0",
-    "@proanima/depot-domain": "0.0.0",
+    "@proanima/arkvory-application": "0.0.0",
+    "@proanima/arkvory-domain": "0.0.0",
     "pg": "8.23.0",
     "yauzl": "3.4.0"
   }

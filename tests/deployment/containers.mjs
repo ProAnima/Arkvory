@@ -14,19 +14,19 @@ for (const args of [
   ['ps', '-aq'],
   ['volume', 'ls', '-q'],
 ]) {
-  if (run([...args, '--filter', 'label=com.docker.compose.project=proanima-depot']))
-    throw Error('Deployment container gate requires an unused proanima-depot project');
+  if (run([...args, '--filter', 'label=com.docker.compose.project=proanima-arkvory']))
+    throw Error('Deployment container gate requires an unused proanima-arkvory project');
 }
-const temporary = await mkdtemp(join(tmpdir(), 'depot-container-gate-'));
-const artifact = process.env.DEPOT_RELEASE_ARTIFACT ?? join(temporary, 'artifact');
+const temporary = await mkdtemp(join(tmpdir(), 'arkvory-container-gate-'));
+const artifact = process.env.ARKVORY_RELEASE_ARTIFACT ?? join(temporary, 'artifact');
 const root = join(temporary, 'install');
-if (!process.env.DEPOT_RELEASE_ARTIFACT)
+if (!process.env.ARKVORY_RELEASE_ARTIFACT)
   execFileSync(
     process.execPath,
     [process.env.npm_execpath, 'run', 'release:package', '--', '0.0.1', artifact],
     { stdio: 'inherit' },
   );
-const manifest = JSON.parse(await readFile(join(artifact, 'depot-release.json'), 'utf8'));
+const manifest = JSON.parse(await readFile(join(artifact, 'arkvory-release.json'), 'utf8'));
 await verifyReleaseFiles(
   artifact,
   manifest.version,
@@ -35,11 +35,11 @@ await verifyReleaseFiles(
 const nextVersion = manifest.version.replace(/\d+$/, (patch) => String(Number(patch) + 1));
 const bundle = join(temporary, 'Linux installer with spaces');
 await mkdir(bundle);
-execFileSync('tar', ['-xzf', join(artifact, 'Depot-Linux.tar.gz'), '-C', bundle]);
+execFileSync('tar', ['-xzf', join(artifact, 'Arkvory-Linux.tar.gz'), '-C', bundle]);
 const manage = (args) =>
   args[0] === 'install'
     ? execFileSync('bash', [join(bundle, 'install.sh'), '--mode', 'compose'], {
-        env: { ...process.env, DEPOT_INSTALL_ROOT: root, DEPOT_ARTIFACT_DIR: bundle },
+        env: { ...process.env, ARKVORY_INSTALL_ROOT: root, ARKVORY_ARTIFACT_DIR: bundle },
         stdio: 'inherit',
       })
     : execFileSync(process.execPath, [join(root, 'manage.mjs'), ...args, '--root', root], {
@@ -48,7 +48,7 @@ const manage = (args) =>
 const compose = [
   'compose',
   '--project-name',
-  'proanima-depot',
+  'proanima-arkvory',
   '--project-directory',
   root,
   '--env-file',
@@ -87,14 +87,14 @@ try {
     'api',
     'node',
     '-e',
-    "require('fs').writeFileSync('/var/lib/depot/deployment-sentinel','preserved')",
+    "require('fs').writeFileSync('/var/lib/arkvory/deployment-sentinel','preserved')",
   ]);
   await exerciseContainerRecovery(run, compose, ready);
   const next = join(temporary, 'next');
   await mkdir(next);
-  await copyFile(join(artifact, 'depot-runtime.zip'), join(next, 'depot-runtime.zip'));
+  await copyFile(join(artifact, 'arkvory-runtime.zip'), join(next, 'arkvory-runtime.zip'));
   await writeFile(
-    join(next, 'depot-release.json'),
+    join(next, 'arkvory-release.json'),
     JSON.stringify({ ...manifest, version: nextVersion }),
   );
   manage(['update', '--artifact', next]);
@@ -106,7 +106,7 @@ try {
       'api',
       'node',
       '-e',
-      "process.stdout.write(require('fs').readFileSync('/var/lib/depot/deployment-sentinel','utf8'))",
+      "process.stdout.write(require('fs').readFileSync('/var/lib/arkvory/deployment-sentinel','utf8'))",
     ]),
     'preserved',
   );
@@ -119,7 +119,7 @@ try {
   console.error(run([...compose, 'logs', '--no-color', '--tail', '40', 'api', 'worker']));
   run([...compose, 'stop', '--timeout', '10', 'api', 'worker']);
   const diagnostic =
-    "import {readFile} from 'node:fs/promises';Object.assign(process.env,JSON.parse(await readFile('/run/depot/runtime.json','utf8')));process.env.DEPOT_WEB_DIR='/opt/depot/apps/web/public';try{const {loadConfig}=await import('./apps/api/dist/config.js');const {createServer}=await import('./apps/api/dist/server.js');const app=await createServer(await loadConfig(process.env));await app.close();}catch(e){console.error('Startup diagnostic: '+String(e.message).replace(/postgres(?:ql)?:\\/\\/\\S+/g,'[database URL redacted]'));process.exitCode=1;}";
+    "import {readFile} from 'node:fs/promises';Object.assign(process.env,JSON.parse(await readFile('/run/arkvory/runtime.json','utf8')));process.env.ARKVORY_WEB_DIR='/opt/arkvory/apps/web/public';try{const {loadConfig}=await import('./apps/api/dist/config.js');const {createServer}=await import('./apps/api/dist/server.js');const app=await createServer(await loadConfig(process.env));await app.close();}catch(e){console.error('Startup diagnostic: '+String(e.message).replace(/postgres(?:ql)?:\\/\\/\\S+/g,'[database URL redacted]'));process.exitCode=1;}";
   try {
     run([
       ...compose,

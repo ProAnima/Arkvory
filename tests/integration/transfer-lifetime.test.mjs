@@ -5,8 +5,8 @@ import { request } from 'node:http';
 import { createHash } from 'node:crypto';
 import { truncate, readdir } from 'node:fs/promises';
 import { join } from 'node:path';
-import { DepotClient } from '@proanima/depot-sdk';
-import { LocalBlobStore, DiagnosticLogger } from '@proanima/depot-infrastructure';
+import { ArkvoryClient } from '@proanima/arkvory-sdk';
+import { LocalBlobStore, DiagnosticLogger } from '@proanima/arkvory-infrastructure';
 import { setup, create, base } from './fixture.mjs';
 
 function observeTimeouts(t, prefix = 'upload.') {
@@ -328,7 +328,7 @@ test('a truncated blob aborts native full/Range and legacy responses and release
   const records = observeTimeouts(t, 'download.');
   const f = await setup(t);
   const address = await f.listen();
-  const client = new DepotClient(address, () => f.headers.authorization.slice(7));
+  const client = new ArkvoryClient(address, () => f.headers.authorization.slice(7));
   const bytes = Buffer.alloc(2 * 1024 ** 2, 0x5c);
   const original = LocalBlobStore.prototype.read;
   LocalBlobStore.prototype.read = async function* (id, size, range) {

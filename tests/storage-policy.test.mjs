@@ -1,9 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Writable } from 'node:stream';
-import { defaultStoragePolicy, parseStoragePolicy, capacityState } from '@proanima/depot-domain';
-import { readStoragePolicy, readStorageUsage, readStorageEvents } from '@proanima/depot-contracts';
-import { DiagnosticLogger } from '@proanima/depot-infrastructure';
+import { defaultStoragePolicy, parseStoragePolicy, capacityState } from '@proanima/arkvory-domain';
+import {
+  readStoragePolicy,
+  readStorageUsage,
+  readStorageEvents,
+} from '@proanima/arkvory-contracts';
+import { DiagnosticLogger } from '@proanima/arkvory-infrastructure';
 
 test('policy validation bounds quotas and rejects ambiguity; capacity thresholds use exact integers', () => {
   const base = defaultStoragePolicy();

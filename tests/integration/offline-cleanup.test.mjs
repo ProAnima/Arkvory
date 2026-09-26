@@ -2,14 +2,14 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { setTimeout as delay } from 'node:timers/promises';
-import { GarbageCollector } from '@proanima/depot-application';
-import { DepotError } from '@proanima/depot-domain';
+import { GarbageCollector } from '@proanima/arkvory-application';
+import { ArkvoryError } from '@proanima/arkvory-domain';
 import {
   LocalBlobStore,
   PostgresCatalog,
   PostgresCleanup,
   PostgresContentPins,
-} from '@proanima/depot-infrastructure';
+} from '@proanima/arkvory-infrastructure';
 import { setup, create, base } from './fixture.mjs';
 
 test('offline GC keeps per-object protection when its maintenance session dies and refuses further unlink', async (t) => {
@@ -47,7 +47,7 @@ test('offline GC keeps per-object protection when its maintenance session dies a
       },
       {
         throwIfAborted() {
-          if (!maintenance.active) throw new DepotError('unavailable', 'Maintenance claim lost');
+          if (!maintenance.active) throw new ArkvoryError('unavailable', 'Maintenance claim lost');
         },
       },
     );

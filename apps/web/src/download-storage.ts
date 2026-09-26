@@ -1,4 +1,4 @@
-import type { DownloadStorage } from '@proanima/depot-sdk';
+import type { DownloadStorage } from '@proanima/arkvory-sdk';
 
 /** A live tab holds a Web Lock. Only abandoned staging directories are reclaimed. */
 export async function openDownloadWorkspace(): Promise<FileSystemDirectoryHandle> {

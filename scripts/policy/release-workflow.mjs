@@ -60,7 +60,7 @@ export function inspectReleaseWorkflow(text) {
   );
   const packaging = steps.findIndex(
     (s) =>
-      s.run === 'npm run release:package -- "$DEPOT_RELEASE_VERSION"' && !Object.hasOwn(s, 'if'),
+      s.run === 'npm run release:package -- "$ARKVORY_RELEASE_VERSION"' && !Object.hasOwn(s, 'if'),
   );
   const upload = steps.findIndex(
     (s) =>
@@ -79,7 +79,7 @@ export function inspectReleaseWorkflow(text) {
     )
   )
     errors.push('Release artifact acceptance cannot be removed');
-  if (acceptance?.env?.DEPOT_RELEASE_ARTIFACT !== '${{ github.workspace }}/candidate')
+  if (acceptance?.env?.ARKVORY_RELEASE_ARTIFACT !== '${{ github.workspace }}/candidate')
     errors.push('Acceptance must use the supplied artifact');
   for (const [name, path] of [
     ['acceptance', 'candidate'],
@@ -106,8 +106,8 @@ function inspectNative(workflow) {
   const { native, publish } = workflow.jobs ?? {};
   if (
     native?.needs !== 'build' ||
-    native?.env?.DEPOT_RELEASE_ARTIFACT !== '${{ github.workspace }}/candidate' ||
-    native?.env?.DEPOT_NATIVE_ARTIFACT !== '${{ github.workspace }}/native-candidate' ||
+    native?.env?.ARKVORY_RELEASE_ARTIFACT !== '${{ github.workspace }}/candidate' ||
+    native?.env?.ARKVORY_NATIVE_ARTIFACT !== '${{ github.workspace }}/native-candidate' ||
     Object.hasOwn(native ?? {}, 'if') ||
     JSON.stringify(native?.strategy?.matrix?.os) !==
       JSON.stringify(['ubuntu-24.04', 'windows-2022']) ||

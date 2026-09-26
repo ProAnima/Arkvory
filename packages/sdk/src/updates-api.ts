@@ -1,5 +1,5 @@
-import { readUpdateSnapshot, readUpdateRequest, record, text } from '@proanima/depot-contracts';
-import type { UpdateRequest } from '@proanima/depot-contracts';
+import { readUpdateSnapshot, readUpdateRequest, record, text } from '@proanima/arkvory-contracts';
+import type { UpdateRequest } from '@proanima/arkvory-contracts';
 import type { HttpPort } from './http-transport.js';
 
 export class UpdatesApi {

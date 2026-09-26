@@ -8,7 +8,7 @@ import { setup } from '../integration/fixture.mjs';
 import { removeTestDirectory } from '../helpers.mjs';
 import { initialUpdateSnapshot } from '../../apps/deploy/dist/update-monitor.js';
 
-const directory = await mkdtemp(join(tmpdir(), 'depot-update-browser-'));
+const directory = await mkdtemp(join(tmpdir(), 'arkvory-update-browser-'));
 const cleanup = [];
 let browser;
 try {
@@ -25,7 +25,9 @@ try {
   const f = await setup({ after: (fn) => cleanup.push(fn) }, { updateControlDirectory: directory });
   browser = await chromium.launch({
     headless: true,
-    ...(process.env.DEPOT_BROWSER_CHANNEL ? { channel: process.env.DEPOT_BROWSER_CHANNEL } : {}),
+    ...(process.env.ARKVORY_BROWSER_CHANNEL
+      ? { channel: process.env.ARKVORY_BROWSER_CHANNEL }
+      : {}),
   });
   const page = await browser.newPage({
     viewport: { width: 1440, height: 1000 },

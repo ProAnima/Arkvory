@@ -1,12 +1,16 @@
 import type { Pool, PoolClient } from 'pg';
-import { DepotError } from '@proanima/depot-domain';
-import type { MutationAccess, RetentionCriteria, DeletionSelection } from '@proanima/depot-domain';
+import { ArkvoryError } from '@proanima/arkvory-domain';
+import type {
+  MutationAccess,
+  RetentionCriteria,
+  DeletionSelection,
+} from '@proanima/arkvory-domain';
 import type {
   RetentionStore,
   DeletionCandidate,
   DeletionBlocker,
   DeletionResult,
-} from '@proanima/depot-application';
+} from '@proanima/arkvory-application';
 import { lockServiceAccess } from './service-authorization.js';
 import { lockCatalogMutation } from './catalog-mutation.js';
 
@@ -51,7 +55,7 @@ export class PostgresRetention implements RetentionStore {
     const row = (
       await this.pool.query<CandidateRow>(candidateSql + ' AND u.id=$2', [repository, id, []])
     ).rows[0];
-    if (!row) throw new DepotError('not_found', 'Artifact not found');
+    if (!row) throw new ArkvoryError('not_found', 'Artifact not found');
     return candidate(row);
   }
   async preview(repository: string, criteria: RetentionCriteria, limit: number, after?: string) {

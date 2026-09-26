@@ -1,5 +1,5 @@
 import type { FastifyInstance } from 'fastify';
-import { DepotError } from '@proanima/depot-domain';
+import { ArkvoryError } from '@proanima/arkvory-domain';
 import type { RequestContext } from './request-context.js';
 
 export function registerHttpErrors(
@@ -18,7 +18,7 @@ export function registerHttpErrors(
       busy: 503,
       unavailable: 503,
     } as const;
-    if (error instanceof DepotError) {
+    if (error instanceof ArkvoryError) {
       context.recordError(request, error.code);
       if (error.code === 'busy' || error.code === 'unavailable') reply.header('Retry-After', '2');
       void reply

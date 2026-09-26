@@ -1,4 +1,4 @@
-name: depot-tests
+name: arkvory-tests
 services:
   postgres:
     image: postgres:18.4

@@ -12,7 +12,7 @@ import { initialize } from '../apps/deploy/dist/initialize.js';
 import { deploymentHelp } from '../apps/deploy/dist/help.js';
 
 test('managed database credentials isolate cluster ownership, use SCRAM bootstrap and refuse replacement', async () => {
-  const root = await mkdtemp(join(tmpdir(), 'depot-managed-'));
+  const root = await mkdtemp(join(tmpdir(), 'arkvory-managed-'));
   const bin = join(root, 'bin');
   await mkdir(bin);
   for (const name of ['initdb', 'postgres', 'pg_ctl', 'psql', 'pg_isready'])
@@ -21,7 +21,7 @@ test('managed database credentials isolate cluster ownership, use SCRAM bootstra
   const url = new URL(await configureDatabase(root, bin));
   assert.equal(url.hostname, '127.0.0.1');
   assert.equal(url.port, '54329');
-  assert.equal(url.username, 'depot');
+  assert.equal(url.username, 'arkvory');
   assert.match(url.password, /^[a-f0-9]{64}$/);
   assert.notEqual(await ownerPassword(root), url.password);
   assert.match(
@@ -36,9 +36,12 @@ test('managed database credentials isolate cluster ownership, use SCRAM bootstra
 });
 
 test('managed database selection cannot replace an external URL or Compose database', async () => {
-  const root = await mkdtemp(join(tmpdir(), 'depot-managed-conflict-'));
+  const root = await mkdtemp(join(tmpdir(), 'arkvory-managed-conflict-'));
   const config = join(root, 'config.json');
-  await writeFile(config, JSON.stringify({ DEPOT_DATABASE_URL: 'postgresql://external/depot' }));
+  await writeFile(
+    config,
+    JSON.stringify({ ARKVORY_DATABASE_URL: 'postgresql://external/arkvory' }),
+  );
   await assert.rejects(initialize(root, { mode: 'windows' }, config, root), /cannot replace/);
   await assert.rejects(initialize(root, { mode: 'compose' }, undefined, root), /cannot replace/);
   assert.match(deploymentHelp(), /--database-bin/);

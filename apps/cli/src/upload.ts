@@ -1,13 +1,14 @@
+import { compatiblePath } from './legacy-files.js';
 import { openAsBlob } from 'node:fs';
 import { basename, resolve } from 'node:path';
 import { createHash, randomUUID } from 'node:crypto';
-import { record, text, readUpload, readAnnotations } from '@proanima/depot-contracts';
-import type { DepotClient } from '@proanima/depot-sdk';
+import { record, text, readUpload, readAnnotations } from '@proanima/arkvory-contracts';
+import type { ArkvoryClient } from '@proanima/arkvory-sdk';
 import { exists, exclusive, readJson, saveJson } from './local-files.js';
 import { CliError } from './errors.js';
 
 interface UploadInput {
-  client: DepotClient;
+  client: ArkvoryClient;
   server: string;
   repository: string;
   path: string;
@@ -37,7 +38,9 @@ async function digest(blob: Blob, signal: AbortSignal) {
 }
 export async function upload(input: UploadInput) {
   const path = resolve(input.path),
-    state = resolve(input.state ?? path + '.depot-upload.json');
+    state = resolve(
+      input.state ?? compatiblePath(path + '.arkvory-upload.json', path + '.depot-upload.json'),
+    );
   if (state === path) throw new CliError('invalid_state_path');
   return exclusive(state, async () => {
     const blob = await openAsBlob(path);

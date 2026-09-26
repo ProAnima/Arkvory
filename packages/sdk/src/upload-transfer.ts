@@ -1,4 +1,4 @@
-import { readUpload } from '@proanima/depot-contracts';
+import { readUpload } from '@proanima/arkvory-contracts';
 import { TransferAttempts } from './transfer.js';
 import type { TransferOptions } from './transfer.js';
 import type { HttpPort } from './http-transport.js';

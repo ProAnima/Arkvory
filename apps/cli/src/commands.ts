@@ -1,8 +1,8 @@
-import { record, readAnnotations, readAttachmentRevision } from '@proanima/depot-contracts';
+import { record, readAnnotations, readAttachmentRevision } from '@proanima/arkvory-contracts';
 import { connection, profiles } from './profiles.js';
 import { option, word, revision, validateCommand, numericOption } from './arguments.js';
 import type { Arguments } from './arguments.js';
-import type { RepositoryClient } from '@proanima/depot-sdk';
+import type { RepositoryClient } from '@proanima/arkvory-sdk';
 import { readJson } from './local-files.js';
 import { upload } from './upload.js';
 import { download } from './download.js';

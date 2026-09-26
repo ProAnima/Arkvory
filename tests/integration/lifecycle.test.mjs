@@ -10,8 +10,8 @@ import {
   PostgresJobs,
   PostgresCleanup,
   PostgresCatalog,
-} from '@proanima/depot-infrastructure';
-import { GarbageCollector } from '@proanima/depot-application';
+} from '@proanima/arkvory-infrastructure';
+import { GarbageCollector } from '@proanima/arkvory-application';
 import { setup, create, base } from './fixture.mjs';
 
 const sha = (bytes) => createHash('sha256').update(bytes).digest('hex');
@@ -60,9 +60,9 @@ test('expired sessions cannot accept parts and revoked worker permissions preven
   const result = await child(
     'apps/worker/dist/main.js',
     {
-      DEPOT_DATABASE_URL: f.config.databaseUrl,
-      DEPOT_DATA_DIR: f.directory,
-      DEPOT_KEYS_FILE: keys,
+      ARKVORY_DATABASE_URL: f.config.databaseUrl,
+      ARKVORY_DATA_DIR: f.directory,
+      ARKVORY_KEYS_FILE: keys,
     },
     ['--once'],
   );
@@ -237,9 +237,9 @@ test('leased completion jobs fence stale workers and real worker publishes with 
   const result = await child(
     'apps/worker/dist/main.js',
     {
-      DEPOT_DATABASE_URL: f.config.databaseUrl,
-      DEPOT_DATA_DIR: f.directory,
-      DEPOT_KEYS_FILE: keys,
+      ARKVORY_DATABASE_URL: f.config.databaseUrl,
+      ARKVORY_DATA_DIR: f.directory,
+      ARKVORY_KEYS_FILE: keys,
     },
     ['--once'],
   );

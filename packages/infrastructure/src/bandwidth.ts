@@ -1,4 +1,4 @@
-import { DepotError } from '@proanima/depot-domain';
+import { ArkvoryError } from '@proanima/arkvory-domain';
 
 export interface BandwidthPolicy {
   readonly bytesPerSecond: number;
@@ -76,7 +76,7 @@ export class BandwidthGovernor {
   register(owner: string): void {
     if (this.principals.has(owner)) return;
     if (this.principals.size >= 3000)
-      throw new DepotError('capacity_exceeded', 'Too many bandwidth principals');
+      throw new ArkvoryError('capacity_exceeded', 'Too many bandwidth principals');
     this.principals.set(owner, {
       tokens: burst(this.policy.perPrincipalBytesPerSecond),
       updated: this.time.now(),
@@ -109,7 +109,7 @@ export class BandwidthGovernor {
         const bytes = chunk.subarray(offset, Math.min(chunk.byteLength, offset + this.quantum));
         await this.acquire(owner, bytes.byteLength, signal);
         signal.throwIfAborted();
-        if (!this.available()) throw new DepotError('unavailable', 'Gateway ownership lost');
+        if (!this.available()) throw new ArkvoryError('unavailable', 'Gateway ownership lost');
         yield bytes;
       }
     }
@@ -118,12 +118,12 @@ export class BandwidthGovernor {
   async acquire(owner: string, bytes: number, signal?: AbortSignal): Promise<void> {
     signal?.throwIfAborted();
     if (this.closed || !this.available())
-      throw new DepotError('unavailable', 'Gateway is unavailable');
+      throw new ArkvoryError('unavailable', 'Gateway is unavailable');
     if (!this.principals.has(owner))
-      throw new DepotError('forbidden', 'Unknown bandwidth principal');
+      throw new ArkvoryError('forbidden', 'Unknown bandwidth principal');
     if (!Number.isSafeInteger(bytes) || bytes < 1 || bytes > this.quantum)
       throw new Error('Invalid byte quantum');
-    if (this.pending >= 256) throw new DepotError('busy', 'Bandwidth queue is full');
+    if (this.pending >= 256) throw new ArkvoryError('busy', 'Bandwidth queue is full');
     return new Promise<void>((resolve, reject) => {
       const abort = () => {
         const queue = this.queues.get(owner);
@@ -132,7 +132,7 @@ export class BandwidthGovernor {
           queue.splice(index, 1);
           this.pending--;
           waiter.cleanup();
-          reject(new DepotError('busy', 'Transfer request aborted'));
+          reject(new ArkvoryError('busy', 'Transfer request aborted'));
           this.pump();
         }
       };
@@ -239,7 +239,7 @@ export class BandwidthGovernor {
     for (const queue of this.queues.values())
       for (const waiter of queue) {
         waiter.cleanup();
-        waiter.reject(new DepotError('unavailable', 'Gateway is unavailable'));
+        waiter.reject(new ArkvoryError('unavailable', 'Gateway is unavailable'));
       }
     this.queues.clear();
     this.rotation.length = 0;

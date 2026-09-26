@@ -1,5 +1,5 @@
-import { DepotClient, DownloadQueue, checkpointedDownload } from '@proanima/depot-sdk';
-import type { DownloadState } from '@proanima/depot-sdk';
+import { ArkvoryClient, DownloadQueue, checkpointedDownload } from '@proanima/arkvory-sdk';
+import type { DownloadState } from '@proanima/arkvory-sdk';
 import { BrowserDownloadStorage, openDownloadWorkspace } from './download-storage.js';
 import { element } from './dom.js';
 import { message } from './i18n.js';
@@ -25,7 +25,7 @@ const states: Record<DownloadState, MessageKey> = {
   failed: 'downloadFailed',
 };
 
-// depot-exception ARCH-025 -- Existing UI controller contains event wiring and view state; freeze its size and extract cohesive controllers only with browser state/reset acceptance.
+// arkvory-exception ARCH-025 -- Existing UI controller contains event wiring and view state; freeze its size and extract cohesive controllers only with browser state/reset acceptance.
 export function installDownloads(baseUrl: string, token: HTMLInputElement) {
   const queue = new DownloadQueue();
   const rows = element('download-rows', HTMLTableSectionElement);
@@ -233,7 +233,7 @@ export function installDownloads(baseUrl: string, token: HTMLInputElement) {
         const directory = await workspace;
         if (current !== generation || secret !== token.value) return;
         const id = crypto.randomUUID();
-        const client = new DepotClient(baseUrl, () => secret);
+        const client = new ArkvoryClient(baseUrl, () => secret);
         files.set(id, { name, destination });
         try {
           queue.enqueue(

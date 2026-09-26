@@ -1,7 +1,7 @@
-import { record, text } from '@proanima/depot-contracts';
+import { record, text } from '@proanima/arkvory-contracts';
 import {
-  DepotHttpError,
-  DepotNetworkError,
+  ArkvoryHttpError,
+  ArkvoryNetworkError,
   retryAfter,
   readNetwork,
   releaseReader,
@@ -68,7 +68,7 @@ export class HttpTransport implements HttpPort {
       },
     ).catch(() => {
       signal?.throwIfAborted();
-      throw new DepotNetworkError();
+      throw new ArkvoryNetworkError();
     });
     if (signal) this.responseSignals.set(response, signal);
     if (!response.ok) {
@@ -82,7 +82,7 @@ export class HttpTransport implements HttpPort {
         /* Non-JSON proxies are reported without reflecting their response. */
       }
       signal?.throwIfAborted();
-      throw new DepotHttpError(
+      throw new ArkvoryHttpError(
         response.status,
         code,
         requestId,

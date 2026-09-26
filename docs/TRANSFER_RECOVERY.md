@@ -1,13 +1,13 @@
 # Возобновление сетевых передач
 
-Для конечных клиентов доступен [depotctl](CLI.md): самостоятельная установка, сохранение upload idempotency/checkpoints, продолжение download и проверка SHA-256. Приведённые ниже SDK-примеры и прежний `npm run upload` остаются доступны для интеграций.
+Для конечных клиентов доступен [arkvoryctl](CLI.md): самостоятельная установка, сохранение upload idempotency/checkpoints, продолжение download и проверка SHA-256. Приведённые ниже SDK-примеры и прежний `npm run upload` остаются доступны для интеграций.
 
 Реализованный профиль: standalone API + portable TypeScript SDK. Дополнительно работают [read gateways с фиксированными общими квотами](READ_GATEWAYS.md); два физических сервера и replication/fencing остаются отдельным этапом. Решение: [ADR 0007](adr/0007-client-transfer-recovery.md).
 
 ## Ограниченные повторы
 
 ```ts
-const client = new DepotClient(baseUrl, () => token, {
+const client = new ArkvoryClient(baseUrl, () => token, {
   maxAttempts: 5, // включая первую попытку одного запроса, диапазон 1..10
   maxRetries: 20, // общий бюджет повторов create/resume/downloadVerified, 0..100
   attemptTimeoutMs: 120_000, // запрос + чтение ответа, 1..1_800_000
@@ -42,9 +42,9 @@ npm run upload -- C:\packages\large.upack releases
 npm run upload -- C:\packages\large.upack releases <saved-upload-id>
 ```
 
-CLI использует multipart SDK, выводит ID, поддерживает Ctrl+C и проверяет хеш выбранного файла даже при уже опубликованной сессии. Токен передаётся через DEPOT_TOKEN_FILE или DEPOT_TOKEN; адрес через DEPOT_BASE_URL. Чтобы восстановить резервирование после полной потери ответа, задайте DEPOT_IDEMPOTENCY_KEY равным выведенному ключу. Повтор ключа с другим descriptor запрещён. Истёкшую/отменённую сессию заменяют новой с новым ключом.
+CLI использует multipart SDK, выводит ID, поддерживает Ctrl+C и проверяет хеш выбранного файла даже при уже опубликованной сессии. Токен передаётся через ARKVORY_TOKEN_FILE или ARKVORY_TOKEN; адрес через ARKVORY_BASE_URL. Чтобы восстановить резервирование после полной потери ответа, задайте ARKVORY_IDEMPOTENCY_KEY равным выведенному ключу. Повтор ключа с другим descriptor запрещён. Истёкшую/отменённую сессию заменяют новой с новым ключом.
 
-Сервер разделяет ожидание отправителя (`DEPOT_UPLOAD_IDLE_TIMEOUT_MS`, 30 секунд) и общий срок принятого PUT/complete (`DEPOT_UPLOAD_DEADLINE_MS`, 30 минут). Паузы записи и ограничения скорости не расходуют idle-бюджет. После timeout клиент сверяет статус и повторяет безопасный шаг; сессия автоматически не удаляется. Короткое чтение blob/Range прерывает ответ, поэтому скачивание нельзя считать успешным до проверки длины и SHA-256. [Гарантии, диагностика и ограничения](adr/0029-upload-lifetime-and-exact-reads.md).
+Сервер разделяет ожидание отправителя (`ARKVORY_UPLOAD_IDLE_TIMEOUT_MS`, 30 секунд) и общий срок принятого PUT/complete (`ARKVORY_UPLOAD_DEADLINE_MS`, 30 минут). Паузы записи и ограничения скорости не расходуют idle-бюджет. После timeout клиент сверяет статус и повторяет безопасный шаг; сессия автоматически не удаляется. Короткое чтение blob/Range прерывает ответ, поэтому скачивание нельзя считать успешным до проверки длины и SHA-256. [Гарантии, диагностика и ограничения](adr/0029-upload-lifetime-and-exact-reads.md).
 
 ## Verified download
 
@@ -54,7 +54,7 @@ await stream.pipeTo(stagingWritable, { signal });
 // Только успешный pipeTo разрешает commit/переименование локального файла.
 ```
 
-Web-консоль уже использует этот путь. Размер, диапазон, ETag и отсутствие преобразования содержимого проверяются до выдачи блока; SHA-256 всего файла — перед успешным завершением. Нельзя передавать поток непосредственно в необратимый deployment: используйте временный файл и commit после проверки. `DepotIntegrityError` означает отказ проверки, `DepotNetworkError` — сетевой сбой/тайм-аут после исчерпания повторов. DepotHttpError сохраняет status/code/requestId и retryAfterMs; ответы proxy и секреты не отражаются в сообщениях.
+Web-консоль уже использует этот путь. Размер, диапазон, ETag и отсутствие преобразования содержимого проверяются до выдачи блока; SHA-256 всего файла — перед успешным завершением. Нельзя передавать поток непосредственно в необратимый deployment: используйте временный файл и commit после проверки. `ArkvoryIntegrityError` означает отказ проверки, `ArkvoryNetworkError` — сетевой сбой/тайм-аут после исчерпания повторов. ArkvoryHttpError сохраняет status/code/requestId и retryAfterMs; ответы proxy и секреты не отражаются в сообщениях.
 
 Чтобы продолжить после перезапуска своего клиента, передайте сохранённый префикс:
 
@@ -72,6 +72,6 @@ await suffix.pipeTo(stagingWritableAtPrefixEnd, { signal });
 
 `tests/sdk-transfer.test.mjs`: реальные локальные HTTP-сокеты, разрыв внутри блока, восстановление новым клиентом с prefix, неверные ETag/Range/размер/encoding/hash, отмена, stalled body, Retry-After и общий бюджет. `tests/integration/transfer-recovery.test.mjs`: fault proxy перед настоящими API/PostgreSQL/local storage, потеря ответа после create/part/complete, разрыв отправки, отсутствие дубликатов и пустой файл.
 
-Большой профиль: `npm run gate -- large-multipart`, требует DEPOT_TEST_DATABASE_URL и отдельную тестовую БД. Передаёт 5 GiB, убивает API на середине multipart и после публикации, рвёт download socket и проверяет SHA-256/RSS клиента и сервера. Не запускайте одновременно другие интеграционные тесты на этой БД.
+Большой профиль: `npm run gate -- large-multipart`, требует ARKVORY_TEST_DATABASE_URL и отдельную тестовую БД. Передаёт 5 GiB, убивает API на середине multipart и после публикации, рвёт download socket и проверяет SHA-256/RSS клиента и сервера. Не запускайте одновременно другие интеграционные тесты на этой БД.
 
 Консоль использует [DownloadQueue и приватные OPFS checkpoints](DOWNLOAD_QUEUE.md) для паузы и продолжения скачиваний в пределах вкладки. Закрытие/reload сбрасывает очередь; CLI-адаптер постоянного download journal по-прежнему не реализован.

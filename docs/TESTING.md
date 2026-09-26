@@ -13,7 +13,7 @@
 | Adapter contract | Одинаковые гарантии Local/Object backend, ошибки и отмена                     |
 | Integration      | Реальная PostgreSQL, выбранный blob backend, leases/outbox/reconciliation     |
 | HTTP/SDK         | Схемы, авторизация, коды, пагинация, abort, безопасные retry                  |
-| ProGet           | Одинаковые сценарии на тестовом ProGet и ProAnima Depot, реальные клиенты     |
+| ProGet           | Одинаковые сценарии на тестовом ProGet и ProAnima Arkvory, реальные клиенты   |
 | Transfer         | 5 ГБ, bounded memory, Range, backpressure, повтор частей, совместная нагрузка |
 | Failure/restore  | Отключение узла, потеря ответа, разделение сети, чистое восстановление        |
 

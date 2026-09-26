@@ -18,7 +18,7 @@ assert.equal(
   'Native installation acceptance requires a disposable Actions runner',
 );
 const windows = process.platform === 'win32';
-const output = resolve(process.env.DEPOT_NATIVE_ARTIFACT ?? 'test-results/native-candidate');
+const output = resolve(process.env.ARKVORY_NATIVE_ARTIFACT ?? 'test-results/native-candidate');
 const manifest = JSON.parse(
   await readFile(join(output, `native-${process.platform}.json`), 'utf8'),
 );
@@ -28,12 +28,12 @@ await verifyNativeFiles(
   execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),
   [process.platform],
 );
-const root = windows ? join(process.env.ProgramData, 'ProAnima/Depot') : '/opt/proanima-depot';
+const root = windows ? join(process.env.ProgramData, 'ProAnima/Arkvory') : '/opt/proanima-arkvory';
 await exerciseClient(output, manifest.version);
 await assert.rejects(
   access(join(root, 'installation.json')),
   /ENOENT/,
-  'Never overwrite an installed Depot',
+  'Never overwrite an installed Arkvory',
 );
 const env = Object.fromEntries(
   Object.entries(process.env).filter(([key]) => key.toLowerCase() !== 'psmodulepath'),
@@ -48,7 +48,7 @@ const read = async (path) => {
     ? bytes.subarray(2).toString('utf16le')
     : bytes.toString('utf8');
 };
-const temporary = await mkdtemp(join(tmpdir(), 'depot-owner-gate-'));
+const temporary = await mkdtemp(join(tmpdir(), 'arkvory-owner-gate-'));
 const password = randomBytes(24).toString('hex');
 const ownerFile = join(temporary, 'owner.json');
 await writeFile(ownerFile, JSON.stringify({ name: 'native-owner', password }), { mode: 0o600 });
@@ -56,14 +56,14 @@ const started = Date.now();
 try {
   if (windows) {
     run('icacls.exe', [ownerFile, '/inheritance:r', '/grant:r', '*S-1-5-18:F', '*S-1-5-32-544:F']);
-    run(join(output, 'Depot-Setup-x64.exe'), [
+    run(join(output, 'Arkvory-Setup-x64.exe'), [
       '/VERYSILENT',
       '/SUPPRESSMSGBOXES',
       '/NORESTART',
       `/OWNERFILE=${ownerFile}`,
       `/LOG=${join(temporary, 'setup.log')}`,
     ]);
-  } else run('sudo', ['apt-get', 'install', '-y', join(output, 'Depot-amd64.deb')]);
+  } else run('sudo', ['apt-get', 'install', '-y', join(output, 'Arkvory-amd64.deb')]);
   const token = await read(join(root, 'config/bootstrap-token.txt'));
   const response = await fetch('http://127.0.0.1:8080/health/ready', {
     headers: { Authorization: `Bearer ${token}` },
@@ -78,9 +78,9 @@ try {
         '-NoProfile',
         '-NonInteractive',
         '-Command',
-        'Start-ScheduledTask -TaskName ProAnimaDepotUpdate',
+        'Start-ScheduledTask -TaskName ProAnimaArkvoryUpdate',
       ]);
-    else run('sudo', ['systemctl', 'start', 'depot-update.service']);
+    else run('sudo', ['systemctl', 'start', 'arkvory-update.service']);
   });
   // Subsequent installer-conflict tests own the lock deliberately; keep the periodic job idle.
   if (windows)
@@ -88,9 +88,9 @@ try {
       '-NoProfile',
       '-NonInteractive',
       '-Command',
-      'Disable-ScheduledTask -TaskName ProAnimaDepotUpdate | Out-Null',
+      'Disable-ScheduledTask -TaskName ProAnimaArkvoryUpdate | Out-Null',
     ]);
-  else run('sudo', ['systemctl', 'stop', 'depot-update.timer']);
+  else run('sudo', ['systemctl', 'stop', 'arkvory-update.timer']);
   await exerciseNativeRecovery(root, token, read);
   if (windows) {
     const login = await fetch('http://127.0.0.1:8080/api/v1/auth/login', {
@@ -111,7 +111,7 @@ try {
   }
   const configuration = JSON.parse(await read(join(root, 'config/runtime.json')));
   await exerciseRemoteAccess();
-  assert.ok(configuration.DEPOT_DATABASE_URL.includes('127.0.0.1:54329/depot'));
+  assert.ok(configuration.ARKVORY_DATABASE_URL.includes('127.0.0.1:54329/arkvory'));
   const pg = windows ? join(root, 'runtime/postgres/bin/psql.exe') : 'psql';
   const restricted = execFileSync(
     pg,
@@ -121,9 +121,9 @@ try {
         ...env,
         PGHOST: '127.0.0.1',
         PGPORT: '54329',
-        PGUSER: 'depot',
-        PGDATABASE: 'depot',
-        PGPASSWORD: new URL(configuration.DEPOT_DATABASE_URL).password,
+        PGUSER: 'arkvory',
+        PGDATABASE: 'arkvory',
+        PGPASSWORD: new URL(configuration.ARKVORY_DATABASE_URL).password,
       },
       encoding: 'utf8',
       windowsHide: true,
@@ -134,8 +134,8 @@ try {
   const ownerBefore = await read(join(root, 'database/owner-password'));
   // Re-running the same installer is repair, not credential/data replacement.
   if (windows)
-    run(join(output, 'Depot-Setup-x64.exe'), ['/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART']);
-  else run('sudo', ['apt-get', 'install', '--reinstall', '-y', join(output, 'Depot-amd64.deb')]);
+    run(join(output, 'Arkvory-Setup-x64.exe'), ['/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART']);
+  else run('sudo', ['apt-get', 'install', '--reinstall', '-y', join(output, 'Arkvory-amd64.deb')]);
   assert.equal(await read(join(root, 'config/runtime.json')), before);
   assert.equal(await read(join(root, 'database/owner-password')), ownerBefore);
   if (windows) {
@@ -145,7 +145,7 @@ try {
     try {
       assert.throws(
         () =>
-          run(join(output, 'Depot-Setup-x64.exe'), [
+          run(join(output, 'Arkvory-Setup-x64.exe'), [
             '/VERYSILENT',
             '/SUPPRESSMSGBOXES',
             '/NORESTART',
@@ -176,8 +176,8 @@ try {
     }
     for (const name of [
       'bootstrap.log',
-      'database/depot-database.err.log',
-      'database/depot-database.wrapper.log',
+      'database/arkvory-database.err.log',
+      'database/arkvory-database.wrapper.log',
     ]) {
       try {
         console.error(
@@ -193,7 +193,7 @@ try {
   } else
     execFileSync(
       'sudo',
-      ['journalctl', '-u', 'depot-database', '-u', 'depot-api', '-n', '80', '--no-pager'],
+      ['journalctl', '-u', 'arkvory-database', '-u', 'arkvory-api', '-n', '80', '--no-pager'],
       { stdio: 'inherit' },
     );
   throw error;
@@ -201,7 +201,7 @@ try {
   if (windows) {
     const uninstaller = join(
       process.env.ProgramW6432 ?? process.env.ProgramFiles,
-      'ProAnima/Depot/unins000.exe',
+      'ProAnima/Arkvory/unins000.exe',
     );
     try {
       await access(uninstaller);
@@ -209,7 +209,7 @@ try {
     } catch (error) {
       if (error.code !== 'ENOENT') throw error;
     }
-  } else run('sudo', ['apt-get', 'remove', '-y', 'proanima-depot']);
+  } else run('sudo', ['apt-get', 'remove', '-y', 'proanima-arkvory']);
 }
 await read(join(root, 'database/cluster/PG_VERSION'));
 await read(join(root, 'config/runtime.json'));

@@ -1,7 +1,12 @@
 import { sha256 } from '@noble/hashes/sha2.js';
 import { bytesToHex } from '@noble/hashes/utils.js';
-import type { UploadResponse } from '@proanima/depot-contracts';
-import { DepotIntegrityError, DepotNetworkError, readNetwork, releaseReader } from './transfer.js';
+import type { UploadResponse } from '@proanima/arkvory-contracts';
+import {
+  ArkvoryIntegrityError,
+  ArkvoryNetworkError,
+  readNetwork,
+  releaseReader,
+} from './transfer.js';
 import type { TransferAttempts } from './transfer.js';
 
 const chunkBytes = 8 * 1024 ** 2;
@@ -26,7 +31,7 @@ async function readRange(
     !response.body
   ) {
     await response.body?.cancel().catch(() => undefined);
-    throw new DepotIntegrityError();
+    throw new ArkvoryIntegrityError();
   }
   const bytes = new Uint8Array(length);
   const reader = response.body.getReader();
@@ -36,11 +41,11 @@ async function readRange(
       signal.throwIfAborted();
       const result = await readNetwork(reader, signal);
       if (result.done) break;
-      if (received + result.value.length > length) throw new DepotIntegrityError();
+      if (received + result.value.length > length) throw new ArkvoryIntegrityError();
       bytes.set(result.value, received);
       received += result.value.length;
     }
-    if (received !== length) throw new DepotNetworkError();
+    if (received !== length) throw new ArkvoryNetworkError();
     return bytes;
   } finally {
     await releaseReader(reader);
@@ -63,9 +68,9 @@ export async function verifiedDownload(
     size > 5 * 1024 ** 3 ||
     !/^[a-f0-9]{64}$/.test(artifact.descriptor.sha256)
   )
-    throw new DepotIntegrityError();
+    throw new ArkvoryIntegrityError();
   let offset = prefix?.size ?? 0;
-  if (offset > size) throw new DepotIntegrityError();
+  if (offset > size) throw new ArkvoryIntegrityError();
   const hash = sha256.create();
   // Rehash saved bytes instead of trusting a persisted hash state or offset journal.
   if (prefix) {
@@ -75,7 +80,7 @@ export async function verifiedDownload(
     }
   }
   const verify = () => {
-    if (bytesToHex(hash.digest()) !== artifact.descriptor.sha256) throw new DepotIntegrityError();
+    if (bytesToHex(hash.digest()) !== artifact.descriptor.sha256) throw new ArkvoryIntegrityError();
   };
   return new ReadableStream<Uint8Array>(
     {

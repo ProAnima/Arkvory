@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { parseCleanupPolicy, defaultCleanupPolicy } from '@proanima/depot-domain';
-import { readCleanupPolicy, readCleanupSnapshot } from '@proanima/depot-contracts';
+import { parseCleanupPolicy, defaultCleanupPolicy } from '@proanima/arkvory-domain';
+import { readCleanupPolicy, readCleanupSnapshot } from '@proanima/arkvory-contracts';
 
 test('cleanup bounds are enforced at both domain and wire boundaries', () => {
   assert.deepEqual(

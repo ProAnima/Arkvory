@@ -1,13 +1,13 @@
 export function help(language: 'en' | 'ru'): string {
   const ru = language === 'ru';
-  return `ProAnima Depot · depotctl
+  return `ProAnima Arkvory · arkvoryctl
 ${ru ? 'Удалённый клиент хранилища для людей и CI/CD.' : 'Remote storage client for people and CI/CD.'}
 
 ${ru ? 'НАЧАЛО РАБОТЫ' : 'GET STARTED'}
-  depotctl profile add production --server https://depot.example --token-file /private/depot.key
-  depotctl doctor
-  depotctl upload build.upack --label test --json
-  depotctl download ARTIFACT_ID ./build.upack
+  arkvoryctl profile add production --server https://arkvory.example --token-file /private/arkvory.key
+  arkvoryctl doctor
+  arkvoryctl upload build.upack --label test --json
+  arkvoryctl download ARTIFACT_ID ./build.upack
 
 ${ru ? 'КОМАНДЫ' : 'COMMANDS'}
   profile add NAME --server URL [--token-file PATH] [--repository NAME]
@@ -35,9 +35,9 @@ ${ru ? 'ОБЩИЕ ПАРАМЕТРЫ' : 'GLOBAL OPTIONS'}
   -- ${ru ? 'завершает разбор параметров (для имён файлов с дефисом)' : 'ends option parsing (for filenames starting with a dash)'}
 
 ${ru ? 'АВТОРИЗАЦИЯ' : 'AUTHENTICATION'}
-  DEPOT_TOKEN / DEPOT_TOKEN_FILE; DEPOT_BASE_URL; DEPOT_CLI_HOME
+  ARKVORY_TOKEN / ARKVORY_TOKEN_FILE; ARKVORY_BASE_URL; ARKVORY_CLI_HOME
   ${ru ? 'Ключ не передаётся аргументом. Профили хранят только путь к ключу.' : 'Keys are never command arguments. Profiles store only the credential file path.'}
-  ${ru ? 'При DEPOT_BASE_URL нужен ключ из окружения; ключ профиля не используется.' : 'DEPOT_BASE_URL requires an environment credential; profile credentials are not reused.'}
+  ${ru ? 'При ARKVORY_BASE_URL нужен ключ из окружения; ключ профиля не используется.' : 'ARKVORY_BASE_URL requires an environment credential; profile credentials are not reused.'}
 
 ${ru ? 'ПРОДОЛЖЕНИЕ ПЕРЕДАЧИ' : 'RESUMING TRANSFERS'}
   ${ru ? 'После Ctrl+C или обрыва повторите ту же команду с теми же параметрами.' : 'After Ctrl+C or a network failure, repeat the same command with the same options.'}
@@ -50,6 +50,6 @@ ${ru ? 'КОДЫ ВЫХОДА' : 'EXIT CODES'}
   5 SHA-256; 6 ${ru ? 'конфликт' : 'conflict'}; 7 ${ru ? 'локальная ошибка/протокол' : 'local/protocol error'}; 130 Ctrl+C
   ${ru ? 'JSON: результат — stdout, ошибки — stderr. Страницы возвращают next; используйте --after.' : 'JSON: result on stdout, errors on stderr. Pages return next; pass it using --after.'}
 
-${ru ? 'Полная справка и форматы JSON: docs/CLI.md в репозитории ProAnima/Depot.' : 'Full reference and JSON formats: docs/CLI.md in ProAnima/Depot.'}
+${ru ? 'Полная справка и форматы JSON: docs/CLI.md в репозитории ProAnima/Arkvory.' : 'Full reference and JSON formats: docs/CLI.md in ProAnima/Arkvory.'}
 `;
 }

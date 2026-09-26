@@ -7,10 +7,10 @@ import { tmpdir } from 'node:os';
 import { setup } from './fixture.mjs';
 import { removeTestDirectory } from '../helpers.mjs';
 import { initialUpdateSnapshot } from '../../apps/deploy/dist/update-monitor.js';
-import { DepotClient } from '@proanima/depot-sdk';
+import { ArkvoryClient } from '@proanima/arkvory-sdk';
 
 test('system update API protects the host mailbox and round-trips through SDK', async (t) => {
-  const directory = await mkdtemp(join(tmpdir(), 'depot-updates-'));
+  const directory = await mkdtemp(join(tmpdir(), 'arkvory-updates-'));
   t.after(() => removeTestDirectory(directory));
   await mkdir(join(directory, 'status'));
   await mkdir(join(directory, 'inbox'));
@@ -23,7 +23,7 @@ test('system update API protects the host mailbox and round-trips through SDK', 
   const url = '/api/v1/system/updates';
   assert.equal((await f.app.inject({ url, headers: f.readerHeaders })).statusCode, 403);
   assert.equal((await f.app.inject({ url })).statusCode, 401);
-  const client = new DepotClient(await f.listen(), () => f.headers.authorization.slice(7));
+  const client = new ArkvoryClient(await f.listen(), () => f.headers.authorization.slice(7));
   assert.equal((await client.updates.status()).snapshot.currentVersion, '1.0.0');
   const request = { id: randomUUID(), kind: 'check', expectedRevision: 0 };
   assert.deepEqual(await client.updates.request(request), { id: request.id });

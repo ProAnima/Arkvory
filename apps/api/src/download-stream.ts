@@ -1,7 +1,7 @@
 import { Readable } from 'node:stream';
 import type { FastifyRequest } from 'fastify';
-import { DepotError } from '@proanima/depot-domain';
-import type { DiagnosticLogger } from '@proanima/depot-infrastructure';
+import { ArkvoryError } from '@proanima/arkvory-domain';
+import type { DiagnosticLogger } from '@proanima/arkvory-infrastructure';
 
 export function downloadStream(
   source: AsyncIterable<Uint8Array>,
@@ -17,7 +17,7 @@ export function downloadStream(
       level: 'error',
       component: 'api',
       code:
-        error instanceof DepotError && error.code === 'integrity_mismatch'
+        error instanceof ArkvoryError && error.code === 'integrity_mismatch'
           ? 'download.integrity_mismatch'
           : 'download.read_failed',
       requestId: request.id,

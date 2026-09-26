@@ -1,7 +1,7 @@
 export const guideEnglish = {
   welcomePartial:
     'The owner account exists. Sign in and finish repository permissions in Access groups; account creation must not be repeated.',
-  onboarding: 'Welcome to Depot',
+  onboarding: 'Welcome to Arkvory',
   onboardingSubtitle: 'A clear path from installation to your first delivery.',
   help: 'API & CLI',
   helpSubtitle: 'Discover permitted operations and connect your tools.',
@@ -37,9 +37,9 @@ export const guideEnglish = {
   helpRetry: 'Retry policy',
   helpActions: 'Required actions',
   helpCli: 'Server lifecycle CLI',
-  helpRemoteCli: 'Remote client · depotctl',
+  helpRemoteCli: 'Remote client · arkvoryctl',
   helpRemoteCliBody:
-    'Install the separate Depot CLI package on your computer. It includes Node.js and needs no server services. Store your key in a private file. Repeat the same transfer command after interruption; use --json for CI/CD.',
+    'Install the separate Arkvory CLI package on your computer. It includes Node.js and needs no server services. Store your key in a private file. Repeat the same transfer command after interruption; use --json for CI/CD.',
   helpCliBody:
     'Run from an elevated terminal on the server. These commands manage deployment; integrations use the HTTP API and SDK. Replace ROOT with the installation directory.',
   helpRecipes: 'Integration checklist',
@@ -49,7 +49,7 @@ export const guideEnglish = {
 export const guideRussian: Record<keyof typeof guideEnglish, string> = {
   welcomePartial:
     'Владелец создан. Войдите и завершите выдачу прав в группах доступа; повторно создавать владельца не нужно.',
-  onboarding: 'Добро пожаловать в Depot',
+  onboarding: 'Добро пожаловать в Arkvory',
   onboardingSubtitle: 'От установки до первой раздачи — по понятным шагам.',
   help: 'API и CLI',
   helpSubtitle: 'Доступные операции и подключение ваших инструментов.',
@@ -85,9 +85,9 @@ export const guideRussian: Record<keyof typeof guideEnglish, string> = {
   helpRetry: 'Политика повторов',
   helpActions: 'Необходимые права',
   helpCli: 'CLI обслуживания сервера',
-  helpRemoteCli: 'Удалённый клиент · depotctl',
+  helpRemoteCli: 'Удалённый клиент · arkvoryctl',
   helpRemoteCliBody:
-    'Установите отдельный пакет Depot CLI на свой компьютер. Node.js включён, службы сервера не нужны. Храните ключ в приватном файле. После обрыва повторите ту же команду передачи; для CI/CD используйте --json.',
+    'Установите отдельный пакет Arkvory CLI на свой компьютер. Node.js включён, службы сервера не нужны. Храните ключ в приватном файле. После обрыва повторите ту же команду передачи; для CI/CD используйте --json.',
   helpCliBody:
     'Запускайте в терминале администратора на сервере. Эти команды управляют развёртыванием; интеграции используют HTTP API и SDK. Вместо ROOT укажите папку установки.',
   helpRecipes: 'Порядок интеграции',

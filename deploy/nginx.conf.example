@@ -1,9 +1,9 @@
 # Put this server in an existing Nginx http context; replace hostname and certificate paths.
 server {
     listen 443 ssl;
-    server_name depot.example.com;
-    ssl_certificate /etc/depot/tls/fullchain.pem;
-    ssl_certificate_key /etc/depot/tls/privkey.pem;
+    server_name arkvory.example.com;
+    ssl_certificate /etc/arkvory/tls/fullchain.pem;
+    ssl_certificate_key /etc/arkvory/tls/privkey.pem;
     client_max_body_size 0;
     client_body_timeout 60s;
     location / {

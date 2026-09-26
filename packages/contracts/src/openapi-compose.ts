@@ -29,7 +29,7 @@ function route(path: string): string {
     name === 'packagePath' || name === 'assetPath' ? '*' : `:${name}`,
   );
 }
-// depot-exception ARCH-001 -- Existing adapter or contract implementation combines related operations; freeze growth and extract cohesive responsibilities while preserving transactional and authorization invariants.
+// arkvory-exception ARCH-001 -- Existing adapter or contract implementation combines related operations; freeze growth and extract cohesive responsibilities while preserving transactional and authorization invariants.
 export function composeApiPaths(source: Record<string, ObjectValue>) {
   const paths: Record<string, ObjectValue> = {};
   const operations: ApiOperation[] = [];
@@ -119,16 +119,16 @@ export function composeApiPaths(source: Record<string, ObjectValue>) {
         operationId: policy.operationId,
         tags: [policy.tag],
         security,
-        'x-depot-authorization': policy.access,
-        'x-depot-authority': policy.access.kind,
-        'x-depot-surface': classification.surface,
-        'x-depot-visibility': classification.visibility,
-        'x-depot-retry': policy.retry,
-        'x-depot-route': route(path),
-        'x-depot-gateway': method === 'get' || method === 'head' ? 'writer-or-reader' : 'writer',
+        'x-arkvory-authorization': policy.access,
+        'x-arkvory-authority': policy.access.kind,
+        'x-arkvory-surface': classification.surface,
+        'x-arkvory-visibility': classification.visibility,
+        'x-arkvory-retry': policy.retry,
+        'x-arkvory-route': route(path),
+        'x-arkvory-gateway': method === 'get' || method === 'head' ? 'writer-or-reader' : 'writer',
         ...(content
           ? {
-              'x-depot-streaming': {
+              'x-arkvory-streaming': {
                 maxObjectBytes: '5368709120',
                 range: method === 'head' ? 'ignored' : 'single',
                 immutableBytes: true,
@@ -138,7 +138,7 @@ export function composeApiPaths(source: Record<string, ObjectValue>) {
           : {}),
         ...(upload
           ? {
-              'x-depot-streaming': {
+              'x-arkvory-streaming': {
                 maxObjectBytes: '5368709120',
                 maxRequestBytes: policy.operationId === 'putUploadPart' ? '8388608' : '5368709120',
                 checksum: 'sha256',

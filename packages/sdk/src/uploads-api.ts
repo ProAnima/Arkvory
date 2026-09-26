@@ -1,5 +1,5 @@
-import { readUpload, readJob, record, text, integer, items } from '@proanima/depot-contracts';
-import type { UploadResponse } from '@proanima/depot-contracts';
+import { readUpload, readJob, record, text, integer, items } from '@proanima/arkvory-contracts';
+import type { UploadResponse } from '@proanima/arkvory-contracts';
 import { TransferAttempts } from './transfer.js';
 import type { HttpPort } from './http-transport.js';
 import { repositoryPath } from './http-transport.js';

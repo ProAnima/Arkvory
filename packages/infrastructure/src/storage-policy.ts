@@ -1,19 +1,19 @@
 import type { Pool, PoolClient } from 'pg';
 import { recordStorageEvent } from './storage-events.js';
 import {
-  DepotError,
+  ArkvoryError,
   defaultStoragePolicy,
   parseStoragePolicy,
   capacityState,
-} from '@proanima/depot-domain';
-import type { MutationAccess, StoragePolicy } from '@proanima/depot-domain';
+} from '@proanima/arkvory-domain';
+import type { MutationAccess, StoragePolicy } from '@proanima/arkvory-domain';
 import type {
   StoragePolicyStore,
   StoragePolicySnapshot,
   StorageUsage,
   StorageEvent,
   DeletionResult,
-} from '@proanima/depot-application';
+} from '@proanima/arkvory-application';
 import { lockCatalogMutation } from './catalog-mutation.js';
 import { lockServiceAccess } from './service-authorization.js';
 import { candidateSql, candidate, removeArtifactInTransaction } from './retention.js';
@@ -102,7 +102,7 @@ export class PostgresStoragePolicy implements StoragePolicyStore {
   }
   async save(access: MutationAccess, revision: number, policy: StoragePolicy) {
     const key = access.principal.managed?.keyId;
-    if (!key) throw new DepotError('forbidden', 'Managed storage permission required');
+    if (!key) throw new ArkvoryError('forbidden', 'Managed storage permission required');
     return this.transaction(async (c) => {
       // Same order as upload reservations: quota changes cannot race create().
       await c.query('SELECT pg_advisory_xact_lock(18471,2)');
@@ -110,7 +110,7 @@ export class PostgresStoragePolicy implements StoragePolicyStore {
       await lockCatalogMutation(c, access.repository);
       const current = await this.row(c, access.repository);
       if ((current?.revision ?? 0) !== revision || revision === 2147483647)
-        throw new DepotError('conflict', 'Storage policy revision changed');
+        throw new ArkvoryError('conflict', 'Storage policy revision changed');
       const result = await c.query<PolicyRow>(
         `INSERT INTO depot_storage_policies(repository,revision,policy,authorizer_key_id)
         VALUES($1,1,$2,$3) ON CONFLICT(repository) DO UPDATE SET revision=depot_storage_policies.revision+1,
@@ -141,7 +141,7 @@ export class PostgresStoragePolicy implements StoragePolicyStore {
         [repository],
       )
     ).rows[0];
-    if (!row) throw new DepotError('unavailable', 'Storage usage unavailable');
+    if (!row) throw new ArkvoryError('unavailable', 'Storage usage unavailable');
     return {
       publishedBytes: row.published,
       pendingBytes: row.pending,
@@ -161,7 +161,7 @@ export class PostgresStoragePolicy implements StoragePolicyStore {
         [policy.minAgeHours],
       )
     ).rows[0];
-    if (!clock) throw new DepotError('unavailable', 'Storage clock unavailable');
+    if (!clock) throw new ArkvoryError('unavailable', 'Storage clock unavailable');
     const rows = (
       await c.query<CandidateRow>(rankedSql, [
         repository,
@@ -191,10 +191,10 @@ export class PostgresStoragePolicy implements StoragePolicyStore {
       const row = await this.row(c, access.repository),
         current = snapshot(row);
       if (!row || current.revision !== revision || !current.policy.enabled)
-        throw new DepotError('conflict', 'Enabled storage policy revision required');
+        throw new ArkvoryError('conflict', 'Enabled storage policy revision required');
       if (automatic) {
         if (row.authorizer_key_id !== access.principal.managed?.keyId)
-          throw new DepotError('conflict', 'Policy authorizer changed');
+          throw new ArkvoryError('conflict', 'Policy authorizer changed');
         const due = (
           await c.query<{ due: boolean }>('SELECT $1::timestamptz<=clock_timestamp() AS due', [
             row.next_run_at,

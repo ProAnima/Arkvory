@@ -1,3 +1,4 @@
+import { assertArkvoryInstallation, assertNoLegacyDefault } from './brand-transition.js';
 import { resolve, join } from 'node:path';
 import { exclusive, jsonFile } from './files.js';
 import { parseInstallation, version } from './model.js';
@@ -45,7 +46,7 @@ function argumentsOf(args: string[]): Map<string, string> {
 }
 async function main(): Promise<void> {
   if (Number(process.versions.node.split('.')[0]) !== 24)
-    throw new Error('Depot requires Node.js 24 LTS');
+    throw new Error('Arkvory requires Node.js 24 LTS');
   const operation = process.argv[2] ?? '';
   if (['', '--help', '-h', 'help'].includes(operation)) {
     console.log(deploymentHelp());
@@ -60,6 +61,8 @@ async function main(): Promise<void> {
     console.log(parseInstallation(await jsonFile(join(root, 'installation.json'))));
     return;
   }
+  await assertArkvoryInstallation(root);
+  if (operation === 'install') await assertNoLegacyDefault();
   await exclusive(root, async () => {
     switch (operation) {
       case 'updates-poll':
@@ -94,7 +97,7 @@ async function main(): Promise<void> {
           throw new Error('Native installer cannot change deployment mode');
         const artifact = options.get('artifact');
         if (!artifact) throw new Error('Installer requires local release artifact');
-        const candidate = await jsonFile(join(artifact, 'depot-release.json'));
+        const candidate = await jsonFile(join(artifact, 'arkvory-release.json'));
         const { parseRelease } = await import('./model.js');
         const next = parseRelease(candidate);
         if (next.version === state.current.version) {

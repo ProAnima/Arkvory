@@ -2,7 +2,7 @@ import type { RemoteState } from './remote-workflow.js';
 export type WizardLanguage = 'ru' | 'en';
 const copy = {
   ru: {
-    title: 'Ваш Depot. На вашем сервере.',
+    title: 'Ваш Arkvory. На вашем сервере.',
     intro: 'Подключите сервер, проверьте настройки и запустите установку одной кнопкой.',
     connection: '1 · Сервер',
     host: 'Адрес сервера',
@@ -13,12 +13,12 @@ const copy = {
     linux: 'Linux · Debian/Ubuntu или RPM · x64',
     windows: 'Windows · Desktop / Server · x64',
     prerequisites:
-      'На сервере нужен SSH. Linux: systemd, root или sudo без пароля. Windows: OpenSSH Server и учётная запись администратора. Зависимости Depot установит нативный пакет.',
+      'На сервере нужен SSH. Linux: systemd, root или sudo без пароля. Windows: OpenSSH Server и учётная запись администратора. Зависимости Arkvory установит нативный пакет.',
     advanced: 'Вход по ключу и приватный GitHub',
     privateKey: 'Приватный SSH-ключ (вместо пароля)',
     passphrase: 'Пароль ключа',
     githubToken: 'GitHub token для чтения релизов приватного репозитория',
-    ownerTitle: 'Владелец нового Depot',
+    ownerTitle: 'Владелец нового Arkvory',
     owner: 'Имя владельца',
     ownerPassword: 'Пароль владельца · от 12 символов',
     discover: 'Проверить сервер',
@@ -29,20 +29,20 @@ const copy = {
     inspect: 'Подключиться и проверить',
     reviewTitle: '3 · Всё готово к запуску',
     install: 'Установить и открыть доступ',
-    connect: 'Открыть существующий Depot',
-    existing: 'Depot уже установлен. Переустановка и изменение владельца выполняться не будут.',
+    connect: 'Открыть существующий Arkvory',
+    existing: 'Arkvory уже установлен. Переустановка и изменение владельца выполняться не будут.',
     plan: 'Проверенный стабильный релиз → передача на сервер → нативный установщик → база и службы → владелец → проверка доступа.',
     tunnel:
       'Режим: защищённый SSH-доступ с этого компьютера. Мастер сам пробросит API на локальный адрес. Не закрывайте мастер, пока пользуетесь этим адресом. Для других клиентов нужны отдельные подключения или HTTPS-публикация сервера.',
     cancel: 'Завершить сеанс',
     progress: 'Выполняется',
-    ready: 'Depot доступен',
-    open: 'Открыть Depot',
+    ready: 'Arkvory доступен',
+    open: 'Открыть Arkvory',
     failed: 'Не удалось завершить шаг',
     preserved:
       'Данные сервера не удаляются. При разрыве во время установки её результат может быть неизвестен: проверьте службу и журнал установщика перед повтором.',
     disconnected: 'SSH-соединение закрыто. Адрес туннеля больше недоступен.',
-    closed: 'Сеанс завершён. Depot продолжает работать на сервере.',
+    closed: 'Сеанс завершён. Arkvory продолжает работать на сервере.',
     retry: 'Новый сеанс',
     waiting: 'Проверяем ключ…',
     security: 'Секреты не сохраняются в браузере и не выводятся в журнал мастера.',
@@ -80,7 +80,7 @@ const copy = {
     },
   },
   en: {
-    title: 'Your Depot. On your server.',
+    title: 'Your Arkvory. On your server.',
     intro: 'Connect a server, review the settings and start installation with one button.',
     connection: '1 · Server',
     host: 'Server address',
@@ -91,12 +91,12 @@ const copy = {
     linux: 'Linux · Debian/Ubuntu or RPM · x64',
     windows: 'Windows · Desktop / Server · x64',
     prerequisites:
-      'SSH must be available. Linux: systemd, root or passwordless sudo. Windows: OpenSSH Server and an administrator account. The native package installs Depot dependencies.',
+      'SSH must be available. Linux: systemd, root or passwordless sudo. Windows: OpenSSH Server and an administrator account. The native package installs Arkvory dependencies.',
     advanced: 'Key authentication and private GitHub',
     privateKey: 'Private SSH key (instead of password)',
     passphrase: 'Key passphrase',
     githubToken: 'GitHub token for reading private repository releases',
-    ownerTitle: 'New Depot owner',
+    ownerTitle: 'New Arkvory owner',
     owner: 'Owner name',
     ownerPassword: 'Owner password · at least 12 characters',
     discover: 'Check server',
@@ -107,20 +107,20 @@ const copy = {
     inspect: 'Connect and inspect',
     reviewTitle: '3 · Ready to deploy',
     install: 'Install and connect',
-    connect: 'Open existing Depot',
-    existing: 'Depot is already installed. The installation and owner will remain unchanged.',
+    connect: 'Open existing Arkvory',
+    existing: 'Arkvory is already installed. The installation and owner will remain unchanged.',
     plan: 'Verified stable release → transfer to server → native installer → database and services → owner → access check.',
     tunnel:
       'Mode: secure SSH access from this computer. The wizard forwards the API to a local address. Keep the wizard open while using this address. Other clients need their own connection or server HTTPS publication.',
     cancel: 'End session',
     progress: 'In progress',
-    ready: 'Depot is available',
-    open: 'Open Depot',
+    ready: 'Arkvory is available',
+    open: 'Open Arkvory',
     failed: 'Could not complete this step',
     preserved:
       'Server data is preserved. A disconnect during installation may leave its outcome unknown: inspect services and installer logs before retrying.',
     disconnected: 'The SSH connection is closed. The tunnel address is no longer available.',
-    closed: 'Session ended. Depot keeps running on the server.',
+    closed: 'Session ended. Arkvory keeps running on the server.',
     retry: 'New session',
     waiting: 'Checking server key…',
     security: 'Secrets are not stored in the browser or printed in wizard logs.',
@@ -218,8 +218,8 @@ export function wizardView(
       'reset',
       `<button class="secondary">${state.phase === 'closed' || state.phase === 'failed' ? t.retry : t.cancel}</button>`,
     );
-  return `<!doctype html><html lang="${language}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Depot · Remote Setup</title><link rel="stylesheet" href="/style.css"></head><body><header><a href="/?lang=${language}" class="brand">▱ Depot<span>REMOTE SETUP</span></a><nav><a href="/?lang=ru" lang="ru">Русский</a><a href="/?lang=en" lang="en">English</a></nav></header><main><p class="eyebrow">PROANIMA STUDIO</p><h1>${t.title}</h1><p class="intro">${t.intro}</p><section>${error ? `<p role="alert" class="note">${t.error}</p>` : ''}${body}</section></main><footer>© Ian Panaev · ProAnimaStudio</footer></body></html>`;
+  return `<!doctype html><html lang="${language}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Arkvory · Remote Setup</title><link rel="stylesheet" href="/style.css"></head><body><header><a href="/?lang=${language}" class="brand"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><defs><linearGradient id="accent" x2="1" y2="1"><stop stop-color="#8ab8ff"/><stop offset="1" stop-color="#68def1"/></linearGradient></defs><rect width="64" height="64" rx="15" fill="url(#accent)"/><path fill="#102237" fill-rule="evenodd" d="M11 50L25 15L39 15L53 50L42 50L38 40L26 40L22 50ZM29 31L35 31L32 23Z"/><rect x="38" y="37" width="24" height="23" rx="7" fill="#102237"/><path d="M44 48h12m-4-4 4 4-4 4" fill="none" stroke="#68def1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Arkvory<span>REMOTE SETUP</span></a><nav><a href="/?lang=ru" lang="ru">Русский</a><a href="/?lang=en" lang="en">English</a></nav></header><main><p class="eyebrow">PROANIMA STUDIO</p><h1>${t.title}</h1><p class="intro">${t.intro}</p><section>${error ? `<p role="alert" class="note">${t.error}</p>` : ''}${body}</section></main><footer>© Ian Panaev · ProAnimaStudio</footer></body></html>`;
 }
-export const wizardStyle = `:root{color-scheme:light dark;--bg:#101712;--panel:#19221c;--fg:#e7eee5;--muted:#a6b2a5;--line:#344238;--accent:#c9ec8a;--button-text:#17240e;--radius:18px;--control-radius:10px;--space:24px;--max-width:880px;--font:system-ui,sans-serif;--shadow:0 18px 80px #0002}
-@media(prefers-color-scheme:light){:root{--bg:#f4f7f2;--panel:#fff;--fg:#21352b;--muted:#66796b;--line:#dce4da;--accent:#254f3e;--button-text:#fff}}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.6 var(--font)}header,main,footer{max-width:var(--max-width);margin:auto;padding:var(--space)}header{display:flex;justify-content:space-between;gap:var(--space);align-items:center}.brand{font-size:26px;font-weight:750;text-decoration:none}.brand span{display:block;font-size:10px;letter-spacing:.18em;color:var(--muted)}a{color:inherit}nav{display:flex;gap:16px}h1{font-size:clamp(30px,5vw,46px);line-height:1.15;letter-spacing:-.04em;margin:8px 0}h2{font-size:24px;margin-top:0}h3{font-size:18px}p{margin:12px 0}.eyebrow{font-size:11px;letter-spacing:.16em;color:var(--muted)}.intro,.muted,footer{color:var(--muted)}section{margin-top:32px;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:32px;box-shadow:var(--shadow)}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}label{display:grid;gap:8px;font-size:14px;font-weight:600;margin-block:12px}input,textarea,select{font:inherit;color:var(--fg);background:var(--bg);width:100%;min-width:0;border:1px solid var(--line);border-radius:var(--control-radius);padding:12px}input:focus-visible,textarea:focus-visible,select:focus-visible,button:focus-visible,a:focus-visible{outline:3px solid var(--accent);outline-offset:3px}button,.button{display:inline-block;border:0;border-radius:var(--control-radius);background:var(--accent);color:var(--button-text);padding:13px 22px;font:600 15px var(--font);text-decoration:none;cursor:pointer;margin-top:18px}.secondary{background:transparent;border:1px solid var(--line);color:var(--fg)}.note{padding:16px;border:1px solid var(--line);border-radius:var(--control-radius);font-size:14px}code{display:block;overflow-wrap:anywhere;padding:14px;background:var(--bg);border-radius:var(--control-radius);font-size:13px}details{margin-top:20px}summary{cursor:pointer}.check{display:flex;align-items:center}.check input{width:auto}.badge{color:var(--accent);font-size:13px}.progress{height:4px;background:var(--accent);border-radius:var(--control-radius)}footer{font-size:12px}@media(max-width:600px){:root{--space:18px}.grid{grid-template-columns:1fr;gap:0}section{padding:20px}header{align-items:flex-start}nav{gap:10px;font-size:13px}button,.button{width:100%;text-align:center}}`;
+export const wizardStyle = `:root{color-scheme:light dark;--bg:#0e1426;--panel:#171f35;--fg:#f0f4ff;--muted:#abb9d2;--line:#637493;--accent:#68def1;--button-text:#102237;--radius:18px;--control-radius:10px;--space:24px;--max-width:880px;--font:system-ui,sans-serif;--shadow:0 18px 80px #0002}
+@media(prefers-color-scheme:light){:root{--bg:#f3f6fc;--panel:#fff;--fg:#17233b;--muted:#53627a;--line:#7f8fa8;--accent:#215bcc;--button-text:#fff}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.6 var(--font)}header,main,footer{max-width:var(--max-width);margin:auto;padding:var(--space)}header{display:flex;justify-content:space-between;gap:var(--space);align-items:center}.brand svg{width:40px;height:40px;vertical-align:middle;margin-right:8px}.brand{font-size:26px;font-weight:750;text-decoration:none}.brand span{display:block;font-size:10px;letter-spacing:.18em;color:var(--muted)}a{color:inherit}nav{display:flex;gap:16px}h1{font-size:clamp(30px,5vw,46px);line-height:1.15;letter-spacing:-.04em;margin:8px 0}h2{font-size:24px;margin-top:0}h3{font-size:18px}p{margin:12px 0}.eyebrow{font-size:11px;letter-spacing:.16em;color:var(--muted)}.intro,.muted,footer{color:var(--muted)}section{margin-top:32px;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:32px;box-shadow:var(--shadow)}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}label{display:grid;gap:8px;font-size:14px;font-weight:600;margin-block:12px}input,textarea,select{font:inherit;color:var(--fg);background:var(--bg);width:100%;min-width:0;border:1px solid var(--line);border-radius:var(--control-radius);padding:12px}input:focus-visible,textarea:focus-visible,select:focus-visible,button:focus-visible,a:focus-visible{outline:3px solid var(--accent);outline-offset:3px}button,.button{display:inline-block;border:0;border-radius:var(--control-radius);background:var(--accent);color:var(--button-text);padding:13px 22px;font:600 15px var(--font);text-decoration:none;cursor:pointer;margin-top:18px}.secondary{background:transparent;border:1px solid var(--line);color:var(--fg)}.note{padding:16px;border:1px solid var(--line);border-radius:var(--control-radius);font-size:14px}code{display:block;overflow-wrap:anywhere;padding:14px;background:var(--bg);border-radius:var(--control-radius);font-size:13px}details{margin-top:20px}summary{cursor:pointer}.check{display:flex;align-items:center}.check input{width:auto}.badge{color:var(--accent);font-size:13px}.progress{height:4px;background:var(--accent);border-radius:var(--control-radius)}footer{font-size:12px}@media(max-width:600px){:root{--space:18px}.grid{grid-template-columns:1fr;gap:0}section{padding:20px}header{align-items:flex-start}nav{gap:10px;font-size:13px}button,.button{width:100%;text-align:center}}`;

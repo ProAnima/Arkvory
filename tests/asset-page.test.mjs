@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { assetPrefixEnd, validateAssetPage } from '@proanima/depot-application';
-import { readAssetPage } from '@proanima/depot-contracts';
+import { assetPrefixEnd, validateAssetPage } from '@proanima/arkvory-application';
+import { readAssetPage } from '@proanima/arkvory-contracts';
 
 test('asset prefix ranges preserve literal UTF-8 order including maximal Unicode suffixes', () => {
   for (const [prefix, expected] of [

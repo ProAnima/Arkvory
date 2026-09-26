@@ -1,4 +1,8 @@
-import { DepotHttpError, DepotIntegrityError, DepotNetworkError } from '@proanima/depot-sdk';
+import {
+  ArkvoryHttpError,
+  ArkvoryIntegrityError,
+  ArkvoryNetworkError,
+} from '@proanima/arkvory-sdk';
 
 export class CliError extends Error {
   constructor(
@@ -13,11 +17,11 @@ export class CliError extends Error {
 export function failure(error: unknown, cancelled: boolean) {
   if (cancelled) return { code: 'interrupted', exitCode: 130 };
   if (error instanceof CliError) return { code: error.code, exitCode: error.exitCode };
-  if (error instanceof DepotIntegrityError) return { code: 'integrity_failed', exitCode: 5 };
-  if (error instanceof DepotNetworkError) return { code: 'network_failed', exitCode: 4 };
+  if (error instanceof ArkvoryIntegrityError) return { code: 'integrity_failed', exitCode: 5 };
+  if (error instanceof ArkvoryNetworkError) return { code: 'network_failed', exitCode: 4 };
   if (error instanceof Error && error.name === 'TimeoutError')
     return { code: 'request_timeout', exitCode: 4 };
-  if (error instanceof DepotHttpError) {
+  if (error instanceof ArkvoryHttpError) {
     return {
       code: 'http_error',
       status: error.status,
@@ -35,8 +39,8 @@ export function failure(error: unknown, cancelled: boolean) {
 
 const explanations: Readonly<Record<string, readonly [string, string]>> = {
   credential_required: [
-    'Set DEPOT_TOKEN_FILE or add a profile with --token-file.',
-    'Задайте DEPOT_TOKEN_FILE или добавьте профиль с --token-file.',
+    'Set ARKVORY_TOKEN_FILE or add a profile with --token-file.',
+    'Задайте ARKVORY_TOKEN_FILE или добавьте профиль с --token-file.',
   ],
   checkpoint_mismatch: [
     'The source, server or publication options differ from the checkpoint. Use the original values or a new --state.',
@@ -76,5 +80,5 @@ const explanations: Readonly<Record<string, readonly [string, string]>> = {
   ],
 };
 export function explanation(code: string, language: 'en' | 'ru'): string {
-  return explanations[code]?.[language === 'ru' ? 1 : 0] ?? 'depotctl --help';
+  return explanations[code]?.[language === 'ru' ? 1 : 0] ?? 'arkvoryctl --help';
 }

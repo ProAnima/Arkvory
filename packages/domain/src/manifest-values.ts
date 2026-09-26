@@ -1,4 +1,4 @@
-import { DepotError } from './artifact.js';
+import { ArkvoryError } from './artifact.js';
 
 /** Validate persisted JSON without recursion or silently repairing the original manifest. */
 export function validateManifestValues(value: unknown): void {
@@ -6,7 +6,7 @@ export function validateManifestValues(value: unknown): void {
   const seen = new Set<object>();
   let remaining = 65536;
   const invalid = () => {
-    throw new DepotError('invalid_input', 'Invalid or excessively nested UPack manifest value');
+    throw new ArkvoryError('invalid_input', 'Invalid or excessively nested UPack manifest value');
   };
   while (pending.length) {
     const entry = pending.pop();

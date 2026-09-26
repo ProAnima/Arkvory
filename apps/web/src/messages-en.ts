@@ -9,7 +9,7 @@ export const en = {
   ...updateEnglish,
   storageTitle: 'Storage & automatic cleanup',
   storageHelp:
-    'Retention applies to registered UPack builds. Pinned builds, file history and protected labels survive. Save a disabled policy first to preview it; enabling starts automatic deletion. Configure physical reclamation below without stopping Depot.',
+    'Retention applies to registered UPack builds. Pinned builds, file history and protected labels survive. Save a disabled policy first to preview it; enabling starts automatic deletion. Configure physical reclamation below without stopping Arkvory.',
   storageRefresh: 'Reload settings & usage',
   storagePolicy: 'Retention policy',
   storageGrouping: 'Count last N by',
@@ -216,7 +216,7 @@ export const en = {
   clearFilters: 'Reset',
   packageFilterHint: 'Group and name are exact matches, ignoring letter case.',
   applyFilters: 'Apply the filters to see packages.',
-  apiAddressError: 'The Depot API address is invalid. Contact the UI administrator.',
+  apiAddressError: 'The Arkvory API address is invalid. Contact the UI administrator.',
   noRepositoryAccess: 'This token cannot read any repositories. Ask an administrator for access.',
   noPackages: 'No registered packages match these filters.',
   packageCount: '{count} packages on this page',

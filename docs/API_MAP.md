@@ -1,4 +1,4 @@
-# Карта API Depot
+# Карта API Arkvory
 
 Управление установленным кодом: `GET/HEAD /api/v1/system/updates` и `POST /api/v1/system/updates/requests`. Surface administration, глобальный administrator, команды check/configure/apply с revision и UUID. SDK: `client.updates`. [Контракт, права и восстановление](UPDATES.md).
 

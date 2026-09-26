@@ -41,6 +41,8 @@ await build({
 });
 for (const file of ['index.html', 'tokens.css'])
   await copyFile(`apps/web/${file}`, `apps/web/public/${file}`);
+for (const name of ['arkvory.svg', 'arkvory.ico', 'arkvory.png'])
+  await copyFile(`branding/icons/${name}`, `apps/web/public/${name}`);
 await build({
   entryPoints: ['apps/web/style.css'],
   outfile: 'apps/web/public/style.css',

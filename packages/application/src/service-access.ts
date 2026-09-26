@@ -1,16 +1,16 @@
 import {
-  DepotError,
+  ArkvoryError,
   parseBindings,
   requireAccountName,
   requireId,
   parseAdministrationActions,
-} from '@proanima/depot-domain';
+} from '@proanima/arkvory-domain';
 import type {
   Principal,
   ServiceBinding,
   ServiceDelegation,
   AdministrationAction,
-} from '@proanima/depot-domain';
+} from '@proanima/arkvory-domain';
 
 export interface ServiceAccount {
   id: string;
@@ -100,31 +100,31 @@ export interface ServiceStore {
 }
 function fields(value: unknown, names: readonly string[]): Record<string, unknown> {
   if (typeof value !== 'object' || value === null || Array.isArray(value))
-    throw new DepotError('invalid_input', 'Object required');
+    throw new ArkvoryError('invalid_input', 'Object required');
   const row: Record<string, unknown> = Object.fromEntries(Object.entries(value));
   if (Object.keys(row).some((key) => !names.includes(key)))
-    throw new DepotError('invalid_input', 'Unknown service field');
+    throw new ArkvoryError('invalid_input', 'Unknown service field');
   return row;
 }
 function revision(value: unknown): number {
   if (typeof value !== 'number' || !Number.isSafeInteger(value) || value < 1 || value >= 2147483647)
-    throw new DepotError('invalid_input', 'Valid expectedRevision required');
+    throw new ArkvoryError('invalid_input', 'Valid expectedRevision required');
   return value;
 }
 export class ServiceAccess {
   constructor(private readonly store: ServiceStore) {}
   private admin(p: Principal): void {
     if (!p.managed && p.serviceAdministrator !== true)
-      throw new DepotError('forbidden', 'Bootstrap or delegated managed credential required');
+      throw new ArkvoryError('forbidden', 'Bootstrap or delegated managed credential required');
   }
   private bootstrap(p: Principal): void {
     if (p.managed || p.serviceAdministrator !== true)
-      throw new DepotError('forbidden', 'Local service bootstrap authority required');
+      throw new ArkvoryError('forbidden', 'Local service bootstrap authority required');
   }
   delegations(p: Principal, keyId: string) {
     this.admin(p);
     if (p.managed && p.managed.keyId !== keyId)
-      throw new DepotError('forbidden', 'Only own delegations may be read');
+      throw new ArkvoryError('forbidden', 'Only own delegations may be read');
     return this.store.delegations(p, requireId(keyId));
   }
   setDelegation(p: Principal, keyId: string, target: string, value: unknown) {
@@ -133,7 +133,7 @@ export class ServiceAccess {
     const expected = body['expectedRevision'] === 0 ? 0 : revision(body['expectedRevision']);
     const ceiling = parseBindings(body['ceiling']);
     if (ceiling.length > 16)
-      throw new DepotError('invalid_input', 'At most 16 delegation ceiling bindings');
+      throw new ArkvoryError('invalid_input', 'At most 16 delegation ceiling bindings');
     return this.store.setDelegation(
       p,
       requireId(keyId),
@@ -170,7 +170,7 @@ export class ServiceAccess {
     this.admin(p);
     const body = fields(value, ['expectedRevision', 'enabled']);
     if (typeof body['enabled'] !== 'boolean')
-      throw new DepotError('invalid_input', 'Enabled is required');
+      throw new ArkvoryError('invalid_input', 'Enabled is required');
     return this.store.update(p, requireId(id), revision(body['expectedRevision']), body['enabled']);
   }
   policy(p: Principal, id: string, value: unknown) {
@@ -194,7 +194,7 @@ export class ServiceAccess {
   issue(p: Principal, id: string, key: unknown, value: unknown, rotate = false) {
     this.admin(p);
     if (typeof key !== 'string' || !/^[a-zA-Z0-9_.:-]{1,128}$/.test(key))
-      throw new DepotError('invalid_input', 'Valid Idempotency-Key required');
+      throw new ArkvoryError('invalid_input', 'Valid Idempotency-Key required');
     const body = fields(value, ['name', 'bindings', 'expiresAt']);
     const expires = body['expiresAt'];
     if (
@@ -203,7 +203,7 @@ export class ServiceAccess {
         !/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d{3})?Z$/.test(expires) ||
         !Number.isFinite(Date.parse(expires)))
     )
-      throw new DepotError('invalid_input', 'UTC expiresAt required');
+      throw new ArkvoryError('invalid_input', 'UTC expiresAt required');
     return this.store.issue(
       p,
       requireId(id),
@@ -224,7 +224,7 @@ export class ServiceAccess {
   audit(p: Principal, id: string, after = '0') {
     this.admin(p);
     if (!/^(0|[1-9][0-9]{0,17})$/.test(after))
-      throw new DepotError('invalid_input', 'Invalid audit cursor');
+      throw new ArkvoryError('invalid_input', 'Invalid audit cursor');
     return this.store.audit(p, requireId(id), after);
   }
 }

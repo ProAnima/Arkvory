@@ -1,4 +1,4 @@
-import { DepotError } from './artifact.js';
+import { ArkvoryError } from './artifact.js';
 import { validateManifestValues } from './manifest-values.js';
 
 export const PART_BYTES = 8 * 1024 ** 2;
@@ -10,16 +10,16 @@ export interface UploadPart {
 
 export function partSize(total: number, index: number): number {
   if (!Number.isSafeInteger(index) || index < 0 || index >= Math.ceil(total / PART_BYTES))
-    throw new DepotError('invalid_input', 'Invalid part index');
+    throw new ArkvoryError('invalid_input', 'Invalid part index');
   return Math.min(PART_BYTES, total - index * PART_BYTES);
 }
 
 export function checkParts(total: number, parts: readonly UploadPart[]): void {
   if (parts.length !== Math.ceil(total / PART_BYTES))
-    throw new DepotError('conflict', 'Upload is missing parts');
+    throw new ArkvoryError('conflict', 'Upload is missing parts');
   parts.forEach((part, index) => {
     if (part.index !== index || part.size !== partSize(total, index))
-      throw new DepotError('conflict', 'Invalid part coverage');
+      throw new ArkvoryError('conflict', 'Invalid part coverage');
   });
 }
 
@@ -37,7 +37,7 @@ export function requireAssetPath(path: string): string {
           segment === '' || segment === '.' || segment === '..' || /[\p{Cc}]/u.test(segment),
       )
   )
-    throw new DepotError('invalid_input', 'Invalid asset path');
+    throw new ArkvoryError('invalid_input', 'Invalid asset path');
   return path;
 }
 
@@ -49,7 +49,7 @@ export interface PackageManifest {
 }
 export function parseManifest(value: unknown): PackageManifest {
   if (typeof value !== 'object' || value === null || Array.isArray(value))
-    throw new DepotError('invalid_input', 'Invalid UPack manifest');
+    throw new ArkvoryError('invalid_input', 'Invalid UPack manifest');
   validateManifestValues(value);
   const original: Record<string, unknown> = Object.fromEntries(Object.entries(value));
   const name = original['name'];
@@ -67,7 +67,7 @@ export function parseManifest(value: unknown): PackageManifest {
       version,
     )
   )
-    throw new DepotError('invalid_input', 'Invalid UPack identity or semantic version');
+    throw new ArkvoryError('invalid_input', 'Invalid UPack identity or semantic version');
   const prerelease = version.split('+')[0]?.split('-').slice(1).join('-');
   requireAssetPath(name);
   if (group) requireAssetPath(group);
@@ -76,7 +76,7 @@ export function parseManifest(value: unknown): PackageManifest {
       ?.split('.')
       .some((value) => /^[0-9]+$/.test(value) && value.length > 1 && value.startsWith('0'))
   )
-    throw new DepotError('invalid_input', 'Invalid numeric prerelease');
+    throw new ArkvoryError('invalid_input', 'Invalid numeric prerelease');
   return { name, group, version, original };
 }
 

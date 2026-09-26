@@ -1,7 +1,7 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
-import { DepotError } from '@proanima/depot-domain';
-import type { Principal } from '@proanima/depot-domain';
-import type { BuildAttachments } from '@proanima/depot-application';
+import { ArkvoryError } from '@proanima/arkvory-domain';
+import type { Principal } from '@proanima/arkvory-domain';
+import type { BuildAttachments } from '@proanima/arkvory-application';
 
 export function registerAttachmentRoutes(
   app: FastifyInstance,
@@ -17,13 +17,13 @@ export function registerAttachmentRoutes(
   app.put<{ Params: Params; Body: unknown }>(root, (request) => {
     const body = request.body;
     if (typeof body !== 'object' || body === null || Array.isArray(body))
-      throw new DepotError('invalid_input', 'Object required');
+      throw new ArkvoryError('invalid_input', 'Object required');
     const input: Record<string, unknown> = Object.fromEntries(Object.entries(body));
     if (
       Object.keys(input).some((key) => !['expectedRevision', 'items'].includes(key)) ||
       typeof input['expectedRevision'] !== 'number'
     )
-      throw new DepotError('invalid_input', 'Invalid attachment update');
+      throw new ArkvoryError('invalid_input', 'Invalid attachment update');
     return attachments.replace(
       principal(request),
       request.params.repository,
@@ -41,7 +41,7 @@ export function registerAttachmentRoutes(
         Object.keys(request.query).some((key) => key !== 'before') ||
         (before !== undefined && (typeof before !== 'string' || !/^[1-9][0-9]{0,9}$/.test(before)))
       )
-        throw new DepotError('invalid_input', 'Invalid history cursor');
+        throw new ArkvoryError('invalid_input', 'Invalid history cursor');
       return attachments.history(
         principal(request),
         request.params.repository,

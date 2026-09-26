@@ -8,7 +8,7 @@
 
 ## Решение
 
-- Node.js 24, TypeScript strict, ESM-сборка каждого workspace в `dist` с declarations. Условия `depot-source` используются только для разработки; runtime импортирует JS. Fastify и node-postgres добавлены с реальным сценарием.
+- Node.js 24, TypeScript strict, ESM-сборка каждого workspace в `dist` с declarations. Условия `arkvory-source` используются только для разработки; runtime импортирует JS. Fastify и node-postgres добавлены с реальным сценарием.
 - PostgreSQL хранит миграции, descriptor, владельца, ключ идемпотентности, размер и `pending | available | cancelled`. UUID загрузки становится ID неизменяемого артефакта. Имя — свойство каталога, не физический путь. UPack пока сохраняется как исходный файл, без интерпретации архива.
 - `POST uploads` резервирует логическую ёмкость. Ключ идемпотентности ограничен repository + principal; другой descriptor с тем же ключом даёт конфликт. Поля descriptor канонизируются. Размеры в JSON — десятичные строки; текущий предел 5 GiB.
 - `PUT content` передаёт весь файл потоково. Размер и SHA-256 обязательны заранее. Сначала уникальный staging-файл, затем fsync файла, hard link в immutable namespace, fsync каталога на POSIX, после этого публикация в БД. Существующий blob нельзя перезаписать. Staging и blobs обязаны находиться на одной локальной файловой системе с hard links.

@@ -8,7 +8,7 @@ import { createHash } from 'node:crypto';
 import { removeTestDirectory } from './helpers.mjs';
 
 test('local bootstrap generates private credentials and refuses to replace them', async (t) => {
-  const directory = await mkdtemp(join(tmpdir(), 'depot-bootstrap-'));
+  const directory = await mkdtemp(join(tmpdir(), 'arkvory-bootstrap-'));
   t.after(() => removeTestDirectory(directory));
   const script = resolve('scripts/init-local.mjs');
   execFileSync(process.execPath, [script], { cwd: directory, stdio: 'pipe', windowsHide: true });

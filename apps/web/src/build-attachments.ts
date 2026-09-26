@@ -1,8 +1,8 @@
-import type { DepotClient } from '@proanima/depot-sdk';
+import type { ArkvoryClient } from '@proanima/arkvory-sdk';
 import type {
   AttachmentRevisionResponse,
   BuildAttachmentResponse,
-} from '@proanima/depot-contracts';
+} from '@proanima/arkvory-contracts';
 import { element } from './dom.js';
 import { message, dateMessage } from './i18n.js';
 import { feedback, errorKey, UiError } from './feedback.js';
@@ -24,9 +24,9 @@ interface Selection {
   canUpload: boolean;
   canDownload: boolean;
 }
-// depot-exception ARCH-023 -- Existing UI controller contains event wiring and view state; freeze its size and extract cohesive controllers only with browser state/reset acceptance.
+// arkvory-exception ARCH-023 -- Existing UI controller contains event wiring and view state; freeze its size and extract cohesive controllers only with browser state/reset acceptance.
 export function installBuildAttachments(
-  client: DepotClient,
+  client: ArkvoryClient,
   download: (repo: string, id: string, name: string) => Promise<void>,
 ) {
   const panel = element('build-attachments', HTMLElement),

@@ -37,9 +37,9 @@
 Запуск на выделенной тестовой БД:
 
 ```powershell
-# DEPOT_TEST_DATABASE_URL — из .env.test или окружения, не production.
+# ARKVORY_TEST_DATABASE_URL — из .env.test или окружения, не production.
 # Playwright зафиксирован в devDependencies; по умолчанию используется pinned Chromium.
-$env:DEPOT_BROWSER_CHANNEL = 'msedge'
+$env:ARKVORY_BROWSER_CHANNEL = 'msedge'
 npm run gate -- browser
 ```
 

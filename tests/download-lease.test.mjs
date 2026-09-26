@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { DownloadLeaseWindow, downloadShare } from '@proanima/depot-infrastructure';
+import { DownloadLeaseWindow, downloadShare } from '@proanima/arkvory-infrastructure';
 
 test('lease deadlines include request latency and expire before the server reservation', () => {
   let mono = 1000,

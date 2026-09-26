@@ -24,7 +24,7 @@ export function discoverHost(input: Pick<RemoteInput, 'host' | 'port'>): Promise
     client.connect({
       host: input.host,
       port: input.port,
-      username: 'depot-host-check',
+      username: 'arkvory-host-check',
       readyTimeout: 10000,
       hostVerifier: (key: Buffer) => {
         seen = fingerprint(key);

@@ -1,13 +1,13 @@
 import type { FastifyInstance } from 'fastify';
-import { DepotError } from '@proanima/depot-domain';
-import { readinessSchema } from '@proanima/depot-contracts';
+import { ArkvoryError } from '@proanima/arkvory-domain';
+import { readinessSchema } from '@proanima/arkvory-contracts';
 import type {
   LocalBlobStore,
   PostgresCatalog,
   PostgresDownloadLease,
   AdmissionQueue,
   BandwidthGovernor,
-} from '@proanima/depot-infrastructure';
+} from '@proanima/arkvory-infrastructure';
 
 interface Health {
   catalog: Pick<PostgresCatalog, 'ready'>;
@@ -33,11 +33,11 @@ export function registerHealthRoutes(app: FastifyInstance, dependencies: Health)
     try {
       if (writable) await blobs.checkSpace(0);
     } catch (error) {
-      if (error instanceof DepotError && error.code === 'capacity_exceeded') writable = false;
+      if (error instanceof ArkvoryError && error.code === 'capacity_exceeded') writable = false;
       else throw error;
     }
     if (!available())
-      throw new DepotError('unavailable', 'Gateway ownership or download lease lost');
+      throw new ArkvoryError('unavailable', 'Gateway ownership or download lease lost');
     return {
       status: 'ready',
       writable,

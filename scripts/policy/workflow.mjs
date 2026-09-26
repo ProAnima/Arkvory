@@ -1,7 +1,7 @@
 import { parse } from 'yaml';
 import { planGates } from './inventory.mjs';
 
-const archiveCondition = "${{ always() && vars.DEPOT_UPLOAD_ARTIFACTS == 'true' }}";
+const archiveCondition = "${{ always() && vars.ARKVORY_UPLOAD_ARTIFACTS == 'true' }}";
 
 export function inspectWorkflow(text, registry) {
   const errors = [],
@@ -140,8 +140,8 @@ function inspectVerdictWiring(jobs) {
   if (
     !step ||
     Object.hasOwn(step, 'if') ||
-    step.env?.DEPOT_CI_NEEDS !== '${{ toJSON(needs) }}' ||
-    step.env?.DEPOT_RELEASE_REQUIRED !== release
+    step.env?.ARKVORY_CI_NEEDS !== '${{ toJSON(needs) }}' ||
+    step.env?.ARKVORY_RELEASE_REQUIRED !== release
   )
     errors.push('Aggregate verdict must receive actual job results and release requirement');
   return errors;

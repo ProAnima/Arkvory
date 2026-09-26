@@ -1,3 +1,4 @@
+import { normalizeRuntimeSettings } from '@proanima/arkvory-contracts';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { jsonFile, inside } from './files.js';
@@ -8,11 +9,15 @@ export function runtimeEnvironment(value: unknown): Record<string, string> {
   const values = record(value);
   const env: Record<string, string> = {};
   for (const [key, value] of Object.entries(values)) {
-    if (!/^DEPOT_[A-Z0-9_]+$/.test(key) || typeof value !== 'string' || /[\r\n\0]/.test(value))
+    if (
+      !/^(?:ARKVORY|DEPOT)_[A-Z0-9_]+$/.test(key) ||
+      typeof value !== 'string' ||
+      /[\r\n\0]/.test(value)
+    )
       throw new Error('Invalid runtime configuration');
     env[key] = value;
   }
-  return env;
+  return normalizeRuntimeSettings(env);
 }
 export async function runRole(
   directory: string,
@@ -27,7 +32,7 @@ export async function runRole(
   const entry = entries[role];
   if (!entry) throw new Error('Invalid service role');
   Object.assign(process.env, runtimeEnvironment(await jsonFile(configuration)));
-  process.env['DEPOT_WEB_DIR'] = join(directory, 'apps/web/public');
+  process.env['ARKVORY_WEB_DIR'] = join(directory, 'apps/web/public');
   process.chdir(directory);
   // A lost worker lease can finish normally. Treat unexpected service exit as failure for Windows SCM.
   if (role !== 'migrate')

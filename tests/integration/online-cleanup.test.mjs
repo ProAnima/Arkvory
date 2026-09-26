@@ -6,26 +6,26 @@ import { once } from 'node:events';
 import { access, mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
-import { DepotClient } from '@proanima/depot-sdk';
-import { defaultCleanupPolicy, serviceActions } from '@proanima/depot-domain';
+import { ArkvoryClient } from '@proanima/arkvory-sdk';
+import { defaultCleanupPolicy, serviceActions } from '@proanima/arkvory-domain';
 import {
   LocalBlobStore,
   PostgresOnlineCleanup,
   PostgresContentPins,
-} from '@proanima/depot-infrastructure';
+} from '@proanima/arkvory-infrastructure';
 import { setup, create, base } from './fixture.mjs';
 import { validateResponse } from '../api-schema.mjs';
 
 async function manager(f) {
   f.config.keys[0].principal.serviceAdministrator = true;
-  const root = new DepotClient(await f.listen(), () => f.headers.authorization.slice(7));
+  const root = new ArkvoryClient(await f.listen(), () => f.headers.authorization.slice(7));
   const bindings = [{ resource: { kind: 'repository', id: 'releases' }, actions: serviceActions }];
   const account = await root.createServiceAccount('cleanup-manager', bindings);
   const key = await root.issueServiceKey(account.id, randomUUID(), {
     name: 'cleanup-manager',
     bindings,
   });
-  const client = new DepotClient(
+  const client = new ArkvoryClient(
     'http://127.0.0.1:' + f.app.server.address().port,
     () => key.secret,
   );

@@ -1,6 +1,6 @@
 # Attribution and ownership
 
-- **Project:** ProAnima Depot
+- **Project:** ProAnima Arkvory
 - **Brand:** ProAnimaStudio
 - **Author, copyright holder and brand owner:** Ian Panaev
 

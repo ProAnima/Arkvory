@@ -1,8 +1,8 @@
 import { Readable } from 'node:stream';
 import { Socket } from 'node:net';
 import type { FastifyRequest, FastifyReply } from 'fastify';
-import { DepotError } from '@proanima/depot-domain';
-import type { BandwidthGovernor } from '@proanima/depot-infrastructure';
+import { ArkvoryError } from '@proanima/arkvory-domain';
+import type { BandwidthGovernor } from '@proanima/arkvory-infrastructure';
 import type { resolveUploadTimeouts } from './upload-policy.js';
 
 type TimeoutObserver = (
@@ -30,7 +30,7 @@ export async function withUploadDeadline<T>(
   const timer = setTimeout(() => {
     if (signal.aborted) return;
     onDeadline();
-    deadline.abort(new DepotError('unavailable', 'Upload operation deadline exceeded'));
+    deadline.abort(new ArkvoryError('unavailable', 'Upload operation deadline exceeded'));
   }, deadlineMs);
   timer.unref();
   const socket = reply.raw.socket;
@@ -63,7 +63,7 @@ async function* inputChunks(
       const timer = setTimeout(() => {
         if (signal.aborted) return;
         onIdle();
-        stream.destroy(new DepotError('unavailable', 'Upload input idle timeout'));
+        stream.destroy(new ArkvoryError('unavailable', 'Upload input idle timeout'));
       }, idleMs);
       timer.unref();
       let item: IteratorResult<unknown>;
@@ -75,7 +75,7 @@ async function* inputChunks(
       signal.throwIfAborted();
       if (item.done) return;
       if (!(item.value instanceof Uint8Array))
-        throw new DepotError('invalid_input', 'Invalid request bytes');
+        throw new ArkvoryError('invalid_input', 'Invalid request bytes');
       yield item.value;
     }
   } finally {
@@ -99,7 +99,7 @@ export class UploadReceiver {
   ): Promise<T> {
     const stream = request.body;
     if (!(stream instanceof Readable))
-      throw new DepotError('invalid_input', 'Content-Type must be application/octet-stream');
+      throw new ArkvoryError('invalid_input', 'Content-Type must be application/octet-stream');
     return withUploadDeadline(
       request,
       reply,

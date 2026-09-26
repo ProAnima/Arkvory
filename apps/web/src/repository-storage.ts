@@ -1,8 +1,8 @@
-import type { DepotClient } from '@proanima/depot-sdk';
+import type { ArkvoryClient } from '@proanima/arkvory-sdk';
 import { installStoragePolicy } from './storage-policy.js';
 import { installCleanup } from './cleanup.js';
 
-export function installRepositoryStorage(client: DepotClient) {
+export function installRepositoryStorage(client: ArkvoryClient) {
   const policies = installStoragePolicy(client),
     cleanup = installCleanup(client);
   return {

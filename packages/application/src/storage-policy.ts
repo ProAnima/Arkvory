@@ -3,13 +3,13 @@ import {
   parseStoragePolicyUpdate,
   annotationRevision,
   retentionObject,
-} from '@proanima/depot-domain';
+} from '@proanima/arkvory-domain';
 import type {
   Principal,
   MutationAccess,
   StoragePolicy,
   CapacityState,
-} from '@proanima/depot-domain';
+} from '@proanima/arkvory-domain';
 import type { DeletionCandidate, DeletionResult } from './retention.js';
 
 export interface StoragePolicySnapshot {

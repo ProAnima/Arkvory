@@ -3,11 +3,11 @@ import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
 import { createHash } from 'node:crypto';
 import {
-  DepotClient,
-  DepotIntegrityError,
-  DepotHttpError,
-  DepotNetworkError,
-} from '@proanima/depot-sdk';
+  ArkvoryClient,
+  ArkvoryIntegrityError,
+  ArkvoryHttpError,
+  ArkvoryNetworkError,
+} from '@proanima/arkvory-sdk';
 
 const partBytes = 8 * 1024 ** 2;
 const policy = { baseDelayMs: 1, maxDelayMs: 5, maxAttempts: 3, attemptTimeoutMs: 1000 };
@@ -46,7 +46,7 @@ async function serve(t, handler, settings = policy) {
       }),
   );
   const address = `http://127.0.0.1:${server.address().port}`;
-  return { client: new DepotClient(address, () => 'test-token', settings), address };
+  return { client: new ArkvoryClient(address, () => 'test-token', settings), address };
 }
 function range(req, res, bytes, meta, alter = {}) {
   const match = /^bytes=(\d+)-(\d+)$/.exec(req.headers.range);
@@ -98,11 +98,11 @@ test('a new client resumes from a saved prefix and checks the hash of the whole 
     ranges.push(req.headers.range);
     res.end(range(req, res, bytes, meta));
   });
-  const first = new DepotClient(address, () => 'test', policy);
+  const first = new ArkvoryClient(address, () => 'test', policy);
   const reader = (await first.downloadVerified('releases', meta.id)).getReader();
   const { value } = await reader.read();
   await reader.cancel();
-  const second = new DepotClient(address, () => 'test', policy);
+  const second = new ArkvoryClient(address, () => 'test', policy);
   const suffix = await contents(
     await second.downloadVerified('releases', meta.id, { prefix: new Blob([value]) }),
   );
@@ -114,7 +114,7 @@ test('a new client resumes from a saved prefix and checks the hash of the whole 
         prefix: new Blob([Buffer.alloc(partBytes)]),
       }),
     ),
-    DepotIntegrityError,
+    ArkvoryIntegrityError,
   );
   const complete = await contents(
     await second.downloadVerified('releases', meta.id, { prefix: new Blob([bytes]) }),
@@ -129,7 +129,7 @@ test('empty files close only after checksum validation', async (t) => {
   meta.descriptor.sha256 = 'a'.repeat(64);
   await assert.rejects(
     contents(await client.downloadVerified('releases', meta.id)),
-    DepotIntegrityError,
+    ArkvoryIntegrityError,
   );
 });
 
@@ -169,7 +169,7 @@ test('range, validator, encoding and checksum violations abort the destination w
             },
           }),
         ),
-        DepotIntegrityError,
+        ArkvoryIntegrityError,
       );
       assert.equal(requests, 1);
       assert.equal(closed, false);
@@ -185,7 +185,7 @@ test('bounded retries, Retry-After, cancellation and attempt deadlines', async (
       count++;
       res.destroy();
     });
-    await assert.rejects(client.downloadVerified('releases', 'id'), DepotNetworkError);
+    await assert.rejects(client.downloadVerified('releases', 'id'), ArkvoryNetworkError);
     assert.equal(count, 3);
   });
   await t.test(
@@ -198,7 +198,7 @@ test('bounded retries, Retry-After, cancellation and attempt deadlines', async (
           res.writeHead(status, { 'Retry-After': '120' });
           res.end('{}');
         });
-        await assert.rejects(client.downloadVerified('releases', 'id'), DepotHttpError);
+        await assert.rejects(client.downloadVerified('releases', 'id'), ArkvoryHttpError);
         assert.equal(count, 1);
       }
     },
@@ -233,7 +233,7 @@ test('bounded retries, Retry-After, cancellation and attempt deadlines', async (
       },
       { ...policy, attemptTimeoutMs: 50, maxAttempts: 2 },
     );
-    await assert.rejects(client.downloadVerified('releases', 'id'), DepotNetworkError);
+    await assert.rejects(client.downloadVerified('releases', 'id'), ArkvoryNetworkError);
     assert.equal(count, 2);
   });
   await t.test('CAS metadata is never retried automatically', async (t) => {
@@ -244,7 +244,7 @@ test('bounded retries, Retry-After, cancellation and attempt deadlines', async (
     });
     await assert.rejects(
       client.annotate('releases', 'id', 0, { labels: [], metadata: {}, collections: [] }),
-      DepotNetworkError,
+      ArkvoryNetworkError,
     );
     assert.equal(count, 1);
   });
@@ -276,7 +276,7 @@ test('one download shares the retry budget across all ranges', async (t) => {
         },
       }),
     ),
-    DepotNetworkError,
+    ArkvoryNetworkError,
   );
   assert.equal(retries, 1);
 });

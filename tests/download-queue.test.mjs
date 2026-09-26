@@ -4,8 +4,8 @@ import {
   DownloadQueue,
   DownloadQueueError,
   checkpointedDownload,
-  DepotIntegrityError,
-} from '@proanima/depot-sdk';
+  ArkvoryIntegrityError,
+} from '@proanima/arkvory-sdk';
 
 test('overlapping cancel-all calls preserve admission state and do not start newly queued work during cleanup', async () => {
   const queue = new DownloadQueue({ concurrency: 2, startIntervalMs: 0 });
@@ -402,7 +402,7 @@ test('integrity rejection removes the checkpoint and never commits a file', asyn
     async downloadVerified() {
       return new ReadableStream({
         pull(c) {
-          c.error(new DepotIntegrityError());
+          c.error(new ArkvoryIntegrityError());
         },
       });
     },

@@ -1,18 +1,18 @@
 {
-  "name": "@proanima/depot-deploy",
+  "name": "@proanima/arkvory-deploy",
   "version": "0.0.0",
   "private": true,
   "type": "module",
   "description": "Installation, release staging and supervised lifecycle",
   "exports": {
-    "depot-source": "./src/index.ts",
+    "arkvory-source": "./src/index.ts",
     "types": "./dist/index.d.ts",
     "import": "./dist/index.js"
   },
   "license": "UNLICENSED",
   "author": "Ian Panaev",
   "dependencies": {
-    "@proanima/depot-contracts": "0.0.0",
+    "@proanima/arkvory-contracts": "0.0.0",
     "ssh2": "1.17.0",
     "yauzl": "3.4.0"
   }

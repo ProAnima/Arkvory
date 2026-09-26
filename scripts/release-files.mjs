@@ -4,15 +4,15 @@ import { createHash } from 'node:crypto';
 import { join } from 'node:path';
 
 export const releaseFiles = [
-  'depot-runtime.zip',
-  'depot-setup.mjs',
-  'depotctl.mjs',
-  'depot-remote.mjs',
-  'depot-release.json',
+  'arkvory-runtime.zip',
+  'arkvory-setup.mjs',
+  'arkvoryctl.mjs',
+  'arkvory-remote.mjs',
+  'arkvory-release.json',
   'install.sh',
   'install.ps1',
-  'Depot-Windows.zip',
-  'Depot-Linux.tar.gz',
+  'Arkvory-Windows.zip',
+  'Arkvory-Linux.tar.gz',
 ];
 export async function sha256(path) {
   const hash = createHash('sha256');
@@ -41,12 +41,12 @@ export async function verifyReleaseFiles(directory, version, commit, additional 
     if ((await sha256(join(directory, name))) !== inventory.files[name])
       throw Error(`Checksum mismatch: ${name}`);
   }
-  const manifest = JSON.parse(await readFile(join(directory, 'depot-release.json'), 'utf8'));
+  const manifest = JSON.parse(await readFile(join(directory, 'arkvory-release.json'), 'utf8'));
   if (
     manifest.version !== version ||
     manifest.commit !== commit ||
-    manifest.archiveSha256 !== inventory.files['depot-runtime.zip'] ||
-    manifest.setupSha256 !== inventory.files['depot-setup.mjs']
+    manifest.archiveSha256 !== inventory.files['arkvory-runtime.zip'] ||
+    manifest.setupSha256 !== inventory.files['arkvory-setup.mjs']
   )
     throw Error('Release manifest mismatch');
 }

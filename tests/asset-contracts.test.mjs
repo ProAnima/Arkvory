@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readAsset, readAssetRevision, readAssetHistory } from '@proanima/depot-contracts';
+import { readAsset, readAssetRevision, readAssetHistory } from '@proanima/arkvory-contracts';
 
 test('asset response parsers reject malformed revisions, history order and cursors', () => {
   const row = {

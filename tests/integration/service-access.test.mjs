@@ -6,9 +6,9 @@ import { join } from 'node:path';
 import { spawn } from 'node:child_process';
 import { createServer } from '../../apps/api/dist/index.js';
 import { ZipFile } from 'yazl';
-import { DepotClient } from '@proanima/depot-sdk';
-import { servicePaths } from '@proanima/depot-contracts';
-import { LocalBlobStore, PostgresBrowse } from '@proanima/depot-infrastructure';
+import { ArkvoryClient } from '@proanima/arkvory-sdk';
+import { servicePaths } from '@proanima/arkvory-contracts';
+import { LocalBlobStore, PostgresBrowse } from '@proanima/arkvory-infrastructure';
 import { setup, base, descriptor } from './fixture.mjs';
 
 const binding = (actions, id = 'releases') => [{ resource: { kind: 'repository', id }, actions }];
@@ -34,7 +34,7 @@ async function fixture(t, overrides = {}) {
   const f = await setup({ after: (close) => cleanup.push(close) }, overrides);
   f.config.keys[0].principal.serviceAdministrator = true;
   const address = await f.listen();
-  const root = new DepotClient(address, () => f.headers.authorization.slice(7));
+  const root = new ArkvoryClient(address, () => f.headers.authorization.slice(7));
   return Object.assign(f, { root, address, cleanup });
 }
 async function service(f, actions, name = 'service-' + randomUUID()) {
@@ -44,7 +44,7 @@ async function service(f, actions, name = 'service-' + randomUUID()) {
     name: 'primary',
     bindings: grants,
   });
-  const client = new DepotClient(f.address, () => issue.secret);
+  const client = new ArkvoryClient(f.address, () => issue.secret);
   await client.activateServiceKey();
   return { account, issue, client, headers: { authorization: `Bearer ${issue.secret}` } };
 }
@@ -97,7 +97,7 @@ test('managed issuance activates once, replays without secret, and does not wide
     bindings: grants,
   });
   assert.match(first.secret, /^dpk_/);
-  const client = new DepotClient(f.address, () => first.secret);
+  const client = new ArkvoryClient(f.address, () => first.secret);
   await assert.rejects(client.me(), { status: 401 });
   const replay = await f.root.issueServiceKey(account.id, 'issue-first', {
     name: 'primary',
@@ -229,7 +229,7 @@ test('rotation preserves upload ownership, narrows rights and enforces revocatio
     name: 'replacement',
     bindings: binding(['upload.read', 'upload.complete']),
   });
-  const client = new DepotClient(f.address, () => rotated.secret);
+  const client = new ArkvoryClient(f.address, () => rotated.secret);
   await client.activateServiceKey();
   assert.equal((await client.me()).id, (await old.client.me()).id);
   assert(
@@ -288,7 +288,7 @@ test('account CAS and disable take effect immediately; pending expiry and key ca
     "UPDATE depot_api_keys SET activation_expires_at=now()-interval '1 second' WHERE id=$1",
     [issued[0].key.id],
   );
-  await assert.rejects(new DepotClient(f.address, () => issued[0].secret).activateServiceKey(), {
+  await assert.rejects(new ArkvoryClient(f.address, () => issued[0].secret).activateServiceKey(), {
     status: 401,
   });
   const active = [];
@@ -297,10 +297,10 @@ test('account CAS and disable take effect immediately; pending expiry and key ca
       name: 'active-' + i,
       bindings: [],
     });
-    await new DepotClient(f.address, () => k.secret).activateServiceKey();
+    await new ArkvoryClient(f.address, () => k.secret).activateServiceKey();
     active.push(k);
   }
-  const pendingClient = new DepotClient(f.address, () => issued[1].secret);
+  const pendingClient = new ArkvoryClient(f.address, () => issued[1].secret);
   await assert.rejects(pendingClient.activateServiceKey(), { status: 507 });
   await f.root.revokeServiceKey(active[0].key.id);
   await pendingClient.activateServiceKey();
@@ -331,7 +331,7 @@ test('revocation before durable publication and policy change before annotations
     name: 'resume',
     bindings: binding(publisher),
   });
-  const client = new DepotClient(f.address, () => next.secret);
+  const client = new ArkvoryClient(f.address, () => next.secret);
   await client.activateServiceKey();
   const finished = await f.app.inject({
     method: 'POST',
@@ -373,9 +373,9 @@ async function worker(f) {
       windowsHide: true,
       env: {
         ...process.env,
-        DEPOT_DATABASE_URL: f.config.databaseUrl,
-        DEPOT_DATA_DIR: f.directory,
-        DEPOT_KEYS_FILE: file,
+        ARKVORY_DATABASE_URL: f.config.databaseUrl,
+        ARKVORY_DATA_DIR: f.directory,
+        ARKVORY_KEYS_FILE: file,
       },
       stdio: ['ignore', 'pipe', 'pipe'],
     });
@@ -407,7 +407,7 @@ test('worker refuses initiating revoked key and explicit reauthorization retains
     name: 'new-worker',
     bindings: binding(publisher),
   });
-  await new DepotClient(f.address, () => fresh.secret).activateServiceKey();
+  await new ArkvoryClient(f.address, () => fresh.secret).activateServiceKey();
   await f.root.revokeServiceKey(s.issue.key.id);
   await worker(f);
   const row = (

@@ -4,9 +4,13 @@ import {
   effectivePermissions,
   listRepositories,
   repositoryCard,
-} from '@proanima/depot-application';
-import { authorize, serviceActions } from '@proanima/depot-domain';
-import { readRepositoryCard, readRepositoryPage, openApiDocument } from '@proanima/depot-contracts';
+} from '@proanima/arkvory-application';
+import { authorize, serviceActions } from '@proanima/arkvory-domain';
+import {
+  readRepositoryCard,
+  readRepositoryPage,
+  openApiDocument,
+} from '@proanima/arkvory-contracts';
 const base = { id: 'test', repositories: ['ignored'], permissions: ['read', 'write'] };
 const binding = (id, actions) => ({ resource: { kind: 'repository', id }, actions });
 
@@ -137,7 +141,7 @@ test('repository wire parsers and access metadata reject malformed or ambiguous 
   ])
     assert.throws(() => readRepositoryPage(value, 1));
   for (const path of ['/api/v1/repositories', '/api/v1/repositories/{repository}']) {
-    const access = openApiDocument.paths[path].get['x-depot-authorization'];
+    const access = openApiDocument.paths[path].get['x-arkvory-authorization'];
     assert.equal(access.action, 'repository.read');
     assert.equal(access.legacy, 'own-nonempty-grants');
   }

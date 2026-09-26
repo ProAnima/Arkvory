@@ -61,7 +61,7 @@ const query = (name: string, required = false) => ({
 const legacyGet = (summary: string, parameters: readonly object[] = []) => ({
   summary,
   description:
-    'Implemented original-byte download subset. Errors use the Depot native envelope; complete ProGet compatibility is not claimed. Query-string keys do not authenticate.',
+    'Implemented original-byte download subset. Errors use the Arkvory native envelope; complete ProGet compatibility is not claimed. Query-string keys do not authenticate.',
   parameters: [...downloadHeaders, ...parameters],
   responses: contentResponses,
 });
@@ -134,7 +134,7 @@ export const supplementalPaths = {
         description:
           'Catch-all path: [group/]name/version; with latest present: [group/]name. Encode each segment separately and preserve / separators; ordinary single-segment SDK generation is insufficient.',
         schema: { type: 'string', minLength: 1 },
-        'x-depot-catch-all': true,
+        'x-arkvory-catch-all': true,
       },
     ],
     get: legacyGet('Download an exact or latest Universal Package.', [
@@ -155,7 +155,7 @@ export const supplementalPaths = {
         description:
           'Catch-all logical asset path. Encode each segment separately and preserve / separators.',
         schema: { type: 'string', minLength: 1 },
-        'x-depot-catch-all': true,
+        'x-arkvory-catch-all': true,
       },
     ],
     get: legacyGet('Download current asset bytes.'),

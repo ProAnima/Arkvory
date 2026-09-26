@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { compareVersions } from '@proanima/depot-domain';
-import { migrate } from '@proanima/depot-infrastructure';
+import { compareVersions } from '@proanima/arkvory-domain';
+import { migrate } from '@proanima/arkvory-infrastructure';
 import { setup, base } from './fixture.mjs';
 
 test('PostgreSQL SemVer order matches the domain rule and pages past 1000 versions', async (t) => {

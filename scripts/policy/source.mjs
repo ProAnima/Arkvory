@@ -150,7 +150,7 @@ export function inspectExceptions(analyses, policy, exceptions, now) {
   }
   for (const [file, a] of analyses) {
     for (const c of a.comments)
-      for (const match of c.text.matchAll(/depot-exception\s+(ARCH-\d{3})/g)) {
+      for (const match of c.text.matchAll(/arkvory-exception\s+(ARCH-\d{3})/g)) {
         const e = exceptions.find((e) => e.id === match[1] && e.file === file);
         if (!e) problems.push(`${file}: unregistered exception marker ${match[1]}`);
       }
@@ -176,13 +176,14 @@ export function inspectExceptions(analyses, policy, exceptions, now) {
         );
       const comment = a.comments.find(
         (c) =>
-          c.text.includes(`depot-exception ${e.id} -- `) &&
+          c.text.includes(`arkvory-exception ${e.id} -- `) &&
           c.text.split(' -- ')[1]?.replace(/\*\/$/, '').trim().length >= 20 &&
           (m.metric === 'file'
             ? !a.text.slice(0, c.start).trim()
             : c.end <= m.start && !a.text.slice(c.end, m.start).trim()),
       );
-      if (!comment) problems.push(`${e.id}: adjacent explanatory depot-exception comment required`);
+      if (!comment)
+        problems.push(`${e.id}: adjacent explanatory arkvory-exception comment required`);
     }
   }
   for (const e of exceptions) if (!used.has(e.id)) problems.push(`${e.id}: stale exception target`);

@@ -1,4 +1,4 @@
-import type { DepotClient } from '@proanima/depot-sdk';
+import type { ArkvoryClient } from '@proanima/arkvory-sdk';
 import type { LegacyClient, LegacyConstructor } from './sdk-legacy.js';
 
 type Assert<T extends true> = T;
@@ -7,7 +7,7 @@ type Signature<T> = T extends (...args: infer P) => infer R ? [P, R] : never;
 type ChangedMethods = {
   [K in keyof LegacyClient]: Equal<
     Signature<LegacyClient[K]>,
-    Signature<DepotClient[K]>
+    Signature<ArkvoryClient[K]>
   > extends true
     ? never
     : K;
@@ -18,7 +18,7 @@ export type UnchangedMethods = Assert<Equal<ChangedMethods, never>>;
 export type UnchangedKeys = Assert<
   Equal<
     Exclude<
-      keyof DepotClient,
+      keyof ArkvoryClient,
       | 'identity'
       | 'administration'
       | 'updates'
@@ -31,5 +31,5 @@ export type UnchangedKeys = Assert<
   >
 >;
 export type UnchangedConstructor = Assert<
-  Equal<ConstructorParameters<typeof DepotClient>, ConstructorParameters<LegacyConstructor>>
+  Equal<ConstructorParameters<typeof ArkvoryClient>, ConstructorParameters<LegacyConstructor>>
 >;

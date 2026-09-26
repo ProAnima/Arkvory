@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { ProGetDownloads } from '@proanima/depot-proget-compat';
+import { ProGetDownloads } from '@proanima/arkvory-proget-compat';
 
 test('Common Packages download resolves only an explicit UPack version', async () => {
   const calls = [];

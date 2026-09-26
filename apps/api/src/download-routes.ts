@@ -1,12 +1,12 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import type { StorageService } from '@proanima/depot-application';
+import type { StorageService } from '@proanima/arkvory-application';
 import type {
   AdmissionQueue,
   BandwidthGovernor,
   DiagnosticLogger,
   PostgresContentPins,
-} from '@proanima/depot-infrastructure';
-import type { ProGetDownloads } from '@proanima/depot-proget-compat';
+} from '@proanima/arkvory-infrastructure';
+import type { ProGetDownloads } from '@proanima/arkvory-proget-compat';
 import type { RequestContext } from './request-context.js';
 import { downloadStream } from './download-stream.js';
 import { matchesEtag, parseRange } from './range.js';

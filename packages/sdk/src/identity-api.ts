@@ -4,7 +4,7 @@ import {
   readLogin,
   readPrincipal,
   readServiceBindings,
-} from '@proanima/depot-contracts';
+} from '@proanima/arkvory-contracts';
 import type { HttpPort } from './http-transport.js';
 
 export class IdentityApi {

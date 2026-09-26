@@ -1,7 +1,7 @@
 import type { Pool } from 'pg';
-import { DepotError, parseAttachments } from '@proanima/depot-domain';
-import type { BuildAttachment, MutationAccess } from '@proanima/depot-domain';
-import type { AttachmentRevision, AttachmentStore } from '@proanima/depot-application';
+import { ArkvoryError, parseAttachments } from '@proanima/arkvory-domain';
+import type { BuildAttachment, MutationAccess } from '@proanima/arkvory-domain';
+import type { AttachmentRevision, AttachmentStore } from '@proanima/arkvory-application';
 import { lockCatalogMutation, requirePublished } from './catalog-mutation.js';
 import { lockServiceAccess } from './service-authorization.js';
 
@@ -57,20 +57,20 @@ export class PostgresAttachments implements AttachmentStore {
         "SELECT id FROM depot_uploads WHERE id=$1 AND repository=$2 AND status='available' FOR NO KEY UPDATE",
         [id, repository],
       );
-      if (parent.rowCount !== 1) throw new DepotError('not_found', 'Build not found');
+      if (parent.rowCount !== 1) throw new ArkvoryError('not_found', 'Build not found');
       const current = await client.query<{ revision: number }>(
         'SELECT revision FROM depot_attachment_revisions WHERE artifact_id=$1 ORDER BY revision DESC LIMIT 1',
         [id],
       );
       if ((current.rows[0]?.revision ?? 0) !== expected)
-        throw new DepotError('conflict', 'Attachments changed; reload before saving');
+        throw new ArkvoryError('conflict', 'Attachments changed; reload before saving');
       const ids = [...new Set(items.map((item) => item.artifactId))];
       const targets = await client.query(
         "SELECT id FROM depot_uploads WHERE id=ANY($1::uuid[]) AND repository=$2 AND status='available'",
         [ids, repository],
       );
       if (targets.rowCount !== ids.length)
-        throw new DepotError('not_found', 'Attachment target not found');
+        throw new ArkvoryError('not_found', 'Attachment target not found');
       const inserted = await client.query<RevisionRow>(
         'INSERT INTO depot_attachment_revisions(artifact_id,revision,items,actor) VALUES($1,$2,$3,$4) RETURNING *',
         [id, expected + 1, JSON.stringify(items), access.principal.id],
@@ -84,7 +84,7 @@ export class PostgresAttachments implements AttachmentStore {
         [repository, id, access.principal.id, 'attachments.replace'],
       );
       const row = inserted.rows[0];
-      if (!row) throw new DepotError('unavailable', 'Attachment revision missing');
+      if (!row) throw new ArkvoryError('unavailable', 'Attachment revision missing');
       await client.query('COMMIT');
       return read(row, id);
     } catch (error) {

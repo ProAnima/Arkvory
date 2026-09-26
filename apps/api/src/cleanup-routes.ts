@@ -1,7 +1,7 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
-import type { RepositoryCleanup } from '@proanima/depot-application';
-import { retentionObject } from '@proanima/depot-domain';
-import type { Principal } from '@proanima/depot-domain';
+import type { RepositoryCleanup } from '@proanima/arkvory-application';
+import { retentionObject } from '@proanima/arkvory-domain';
+import type { Principal } from '@proanima/arkvory-domain';
 
 export function registerCleanupRoutes(
   app: FastifyInstance,
