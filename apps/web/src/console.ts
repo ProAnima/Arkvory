@@ -1,10 +1,9 @@
-// arkvory-exception ARCH-024 -- Existing UI controller contains event wiring and view state; freeze its size and extract cohesive controllers only with browser state/reset acceptance.
 import { installRepositoryStorage } from './repository-storage.js';
 import { ArkvoryClient, ArkvoryHttpError } from '@proanima/arkvory-sdk';
 import { text } from '@proanima/arkvory-contracts';
 import { element } from './dom.js';
 import { installAssetHistory } from './asset-history.js';
-import { message } from './i18n.js';
+import { clearMessage, message } from './i18n.js';
 import { feedback, UiError, errorKey } from './feedback.js';
 import { initializeShell, showView } from './shell.js';
 import { installPackageView } from './packages.js';
@@ -16,6 +15,7 @@ import { installArtifactDeletion } from './artifact-deletion.js';
 import { installDownloads } from './downloads.js';
 import { installUpdates } from './updates.js';
 import { readableRepositories } from './readable-repositories.js';
+import { installUploadControls } from './upload-controls.js';
 const token = element('token', HTMLInputElement),
   repository = element('repository', HTMLInputElement),
   output = element('status', HTMLOutputElement),
@@ -51,6 +51,7 @@ const deletion = installArtifactDeletion(client, async () => {
   }
 });
 let stop: AbortController | undefined;
+const uploadBusy = installUploadControls(() => stop !== undefined || attachments.isUploading());
 let selected: { repository: string; id: string; revision: number; name: string } | undefined;
 let selectionGeneration = 0;
 let listGeneration = 0;
@@ -72,8 +73,7 @@ function offerRepositories(readable: readonly string[]): boolean {
 }
 const run = (action: () => Promise<void>) => {
   const requestId = element('request-id', HTMLSpanElement);
-  requestId.textContent = '';
-  delete requestId.dataset['i18n'];
+  clearMessage(requestId);
   void action().catch((error: unknown) => {
     feedback(output, errorKey(error), {}, 'error');
     if (error instanceof ArkvoryHttpError && error.requestId)
@@ -179,9 +179,6 @@ const clearPackages = installPackageView(client, repository, token, run, async (
   await openArtifact(repo, id, artifact.descriptor.name);
 });
 const administration = installAdministration(client, run);
-element('admin-nav', HTMLButtonElement).addEventListener('click', () => {
-  run(() => administration.refresh());
-});
 async function list(after?: string) {
   const generation = ++listGeneration;
   const repo = repository.value;
@@ -258,7 +255,8 @@ async function list(after?: string) {
     message(element('catalog-count', HTMLSpanElement), 'loaded', { count: rows.rows.length });
     feedback(output, 'loaded', { count: rows.rows.length });
   } catch (error) {
-    if (generation === listGeneration) moreButton.disabled = wasDisabled;
+    if (generation !== listGeneration) return;
+    moreButton.disabled = wasDisabled;
     throw error;
   } finally {
     if (generation === listGeneration) {
@@ -383,17 +381,7 @@ element('upload', HTMLFormElement).onsubmit = (event) => {
     if (file.size > 5 * 1024 ** 3) throw new UiError('fileTooLarge');
     const repo = repository.value;
     stop = new AbortController();
-    element('connection-fields', HTMLFieldSetElement).disabled = true;
-    for (const formId of ['login', 'change-password'])
-      for (const input of element(formId, HTMLFormElement).querySelectorAll<
-        HTMLInputElement | HTMLButtonElement
-      >('input, button'))
-        input.disabled = true;
-    element('upload-submit', HTMLButtonElement).disabled = true;
-    element('cancel', HTMLButtonElement).disabled = false;
-    for (const id of ['file', 'upload-id', 'idempotency'])
-      element(id, HTMLInputElement).disabled = true;
-    element('new-upload', HTMLButtonElement).disabled = true;
+    uploadBusy(true);
     progress.max = Math.max(1, file.size);
     progress.value = 0;
     try {
@@ -428,22 +416,15 @@ element('upload', HTMLFormElement).onsubmit = (event) => {
         feedback(output, 'publishedRefresh');
       }
     } catch (error) {
-      const failure = stop.signal.aborted ? new UiError('paused') : error;
-      feedback(transferStatus, errorKey(failure), {}, 'error');
-      throw failure;
+      if (stop.signal.aborted) {
+        feedback(transferStatus, 'paused');
+        return;
+      }
+      feedback(transferStatus, errorKey(error), {}, 'error');
+      throw error;
     } finally {
       stop = undefined;
-      element('connection-fields', HTMLFieldSetElement).disabled = false;
-      for (const formId of ['login', 'change-password'])
-        for (const input of element(formId, HTMLFormElement).querySelectorAll<
-          HTMLInputElement | HTMLButtonElement
-        >('input, button'))
-          input.disabled = false;
-      element('upload-submit', HTMLButtonElement).disabled = false;
-      element('cancel', HTMLButtonElement).disabled = true;
-      for (const id of ['file', 'upload-id', 'idempotency'])
-        element(id, HTMLInputElement).disabled = false;
-      element('new-upload', HTMLButtonElement).disabled = false;
+      uploadBusy(false);
     }
   });
 };

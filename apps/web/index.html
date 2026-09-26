@@ -17,7 +17,7 @@
   <body>
     <a class="skip" href="#main" data-i18n="skip">Перейти к содержимому</a>
     <aside class="sidebar">
-      <a class="brand" href="/console/" aria-label="ProAnima Arkvory"
+      <a class="brand" href="/console/" data-go="catalog" aria-label="ProAnima Arkvory"
         ><img
           class="brand-mark"
           src="/console/arkvory.svg"
@@ -1343,6 +1343,7 @@ GET /api/v1/operations?repository=releases</code></pre>
               <tbody id="user-rows"></tbody>
             </table>
           </div>
+          <p id="user-rows-empty" class="hint" data-i18n="noUsers" hidden></p>
           <details class="disclosure admin-operation">
             <summary data-i18n="resetPassword"></summary>
             <form id="reset-password" class="search-form">
@@ -1426,6 +1427,7 @@ GET /api/v1/operations?repository=releases</code></pre>
               <tbody id="group-rows"></tbody>
             </table>
           </div>
+          <p id="group-rows-empty" class="hint" data-i18n="noAccessGroups" hidden></p>
           <output id="admin-status" aria-live="polite"></output>
         </section>
 

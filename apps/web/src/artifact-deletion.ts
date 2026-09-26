@@ -2,7 +2,7 @@ import type { ArkvoryClient } from '@proanima/arkvory-sdk';
 import type { DeletionCandidateResponse } from '@proanima/arkvory-contracts';
 import type { MessageKey } from './messages.js';
 import { element } from './dom.js';
-import { message } from './i18n.js';
+import { clearMessage, message } from './i18n.js';
 import { feedback, errorKey } from './feedback.js';
 
 // arkvory-exception ARCH-021 -- Existing UI controller contains event wiring and view state; freeze its size and extract cohesive controllers only with browser state/reset acceptance.
@@ -36,8 +36,7 @@ export function installArtifactDeletion(client: ArkvoryClient, deleted: () => Pr
     confirm.value = '';
     form.hidden = true;
     reasons.replaceChildren();
-    status.textContent = '';
-    delete status.dataset['i18n'];
+    clearMessage(status);
     update();
   };
   confirm.oninput = update;

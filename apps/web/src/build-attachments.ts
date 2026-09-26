@@ -4,7 +4,7 @@ import type {
   BuildAttachmentResponse,
 } from '@proanima/arkvory-contracts';
 import { element } from './dom.js';
-import { message, dateMessage } from './i18n.js';
+import { clearMessage, message, dateMessage } from './i18n.js';
 import { feedback, errorKey, UiError } from './feedback.js';
 import { hashFile } from './file-hash.js';
 import type { MessageKey } from './messages.js';
@@ -326,6 +326,7 @@ export function installBuildAttachments(
     });
   };
   return {
+    isUploading: () => controller !== undefined,
     clear() {
       generation++;
       controller?.abort();
@@ -336,8 +337,7 @@ export function installBuildAttachments(
       list.replaceChildren();
       history.replaceChildren();
       resetDraft();
-      status.textContent = '';
-      delete status.dataset['i18n'];
+      clearMessage(status);
       controls();
     },
     async open(repository: string, id: string, operations: ReadonlySet<string>) {

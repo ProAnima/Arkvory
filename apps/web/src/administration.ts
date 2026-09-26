@@ -1,7 +1,33 @@
 import type { ArkvoryClient } from '@proanima/arkvory-sdk';
 import type { AccountResponse, GroupResponse } from '@proanima/arkvory-contracts';
 import { element } from './dom.js';
-import { message } from './i18n.js';
+import { clearMessage, message } from './i18n.js';
+
+function tableState(rows: HTMLTableSectionElement) {
+  const empty = element(`${rows.id}-empty`, HTMLParagraphElement);
+  empty.hidden = rows.rows.length > 0;
+  const table = rows.closest<HTMLElement>('.table');
+  if (table) table.hidden = !empty.hidden;
+}
+
+function options(id: string, values: readonly { id: string; name: string }[]) {
+  const select = element(id, HTMLSelectElement);
+  const before = select.value;
+  select.replaceChildren();
+  for (const value of values) {
+    const option = document.createElement('option');
+    option.value = value.id;
+    option.textContent = value.name;
+    select.append(option);
+  }
+  if (values.some((value) => value.id === before)) select.value = before;
+  select.disabled = values.length === 0;
+  const form = select.closest('form');
+  if (form) {
+    const unavailable = [...form.querySelectorAll('select')].some((field) => !field.options.length);
+    for (const button of form.querySelectorAll('button')) button.disabled = unavailable;
+  }
+}
 
 // arkvory-exception ARCH-019 -- Existing UI controller contains event wiring and view state; freeze its size and extract cohesive controllers only with browser state/reset acceptance.
 export function installAdministration(
@@ -22,19 +48,8 @@ export function installAdministration(
     nav.hidden = true;
     rows.replaceChildren();
     userRows.replaceChildren();
-    status.textContent = '';
-  };
-  const options = (id: string, values: readonly { id: string; name: string }[]) => {
-    const select = element(id, HTMLSelectElement);
-    const before = select.value;
-    select.replaceChildren();
-    for (const value of values) {
-      const option = document.createElement('option');
-      option.value = value.id;
-      option.textContent = value.name;
-      select.append(option);
-    }
-    if (values.some((value) => value.id === before)) select.value = before;
+    clearMessage(status);
+    for (const id of ['member-group', 'grant-group', 'member-user', 'reset-user']) options(id, []);
   };
   const refresh = async () => {
     const current = ++generation;
@@ -93,6 +108,8 @@ export function installAdministration(
       row.append(name, members, grants);
       rows.append(row);
     }
+    tableState(userRows);
+    tableState(rows);
   };
   nav.addEventListener('click', () => {
     run(refresh);

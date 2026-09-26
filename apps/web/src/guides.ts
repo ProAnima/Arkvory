@@ -1,7 +1,7 @@
 import { ArkvoryClient } from '@proanima/arkvory-sdk';
 import type { OperationDescriptor } from '@proanima/arkvory-contracts';
 import { element } from './dom.js';
-import { message } from './i18n.js';
+import { clearMessage, message } from './i18n.js';
 import { feedback, errorKey, UiError } from './feedback.js';
 
 export function initializeGuides() {
@@ -23,8 +23,7 @@ export function initializeGuides() {
     pending?.abort();
     operations = [];
     list.replaceChildren();
-    status.textContent = '';
-    delete status.dataset['i18n'];
+    clearMessage(status);
     load.disabled = false;
   };
   const render = () => {

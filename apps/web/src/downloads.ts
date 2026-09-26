@@ -25,6 +25,23 @@ const states: Record<DownloadState, MessageKey> = {
   failed: 'downloadFailed',
 };
 
+async function chooseDestination(name: string) {
+  const browser: { storage?: { getDirectory?: unknown }; locks?: unknown } = navigator;
+  if (
+    !window.showSaveFilePicker ||
+    typeof browser.storage?.getDirectory !== 'function' ||
+    !browser.locks
+  )
+    throw new UiError('saveUnsupported');
+  try {
+    // Keep the picker in the user's gesture; cancellation is not a failed download.
+    return await window.showSaveFilePicker({ suggestedName: name });
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') return undefined;
+    throw error;
+  }
+}
+
 // arkvory-exception ARCH-025 -- Existing UI controller contains event wiring and view state; freeze its size and extract cohesive controllers only with browser state/reset acceptance.
 export function installDownloads(baseUrl: string, token: HTMLInputElement) {
   const queue = new DownloadQueue();
@@ -209,19 +226,13 @@ export function installDownloads(baseUrl: string, token: HTMLInputElement) {
     reset,
     async enqueue(repository: string, artifactId: string, name: string) {
       if (adding) return;
-      const browser: { storage?: { getDirectory?: unknown }; locks?: unknown } = navigator;
-      if (
-        !window.showSaveFilePicker ||
-        typeof browser.storage?.getDirectory !== 'function' ||
-        !browser.locks
-      )
-        throw new UiError('saveUnsupported');
       const current = generation,
         secret = token.value;
       adding = true;
       try {
         // Picker must run directly under the user's gesture, before any network await.
-        const destination = await window.showSaveFilePicker({ suggestedName: name });
+        const destination = await chooseDestination(name);
+        if (!destination) return;
         await resetting;
         for (const file of files.values())
           if (await destination.isSameEntry(file.destination))

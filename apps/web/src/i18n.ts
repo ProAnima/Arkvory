@@ -59,6 +59,13 @@ export function dateMessage(node: HTMLElement, date: string) {
   attribute(node, 'data-date', date);
   render(node);
 }
+export function clearMessage(node: HTMLElement) {
+  // Remove translation state too, so a language change cannot resurrect a cleared result.
+  for (const name of Object.keys(node.dataset))
+    if (name === 'i18n' || name === 'date' || name === 'tone' || name.startsWith('param'))
+      Reflect.deleteProperty(node.dataset, name);
+  text(node, '');
+}
 export function setLanguage(value: Language) {
   language = value;
   document.documentElement.lang = language;

@@ -74,10 +74,14 @@ export function initializeShell() {
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
     if (theme.value === 'system') applyTheme('system');
   });
-  for (const button of document.querySelectorAll<HTMLButtonElement>('[data-nav], [data-go]'))
-    button.onclick = () => {
+  for (const button of document.querySelectorAll<HTMLElement>('[data-nav], [data-go]'))
+    button.onclick = (event) => {
+      if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
       const value = button.dataset['nav'] ?? button.dataset['go'];
-      if (value && isView(value)) showView(value);
+      if (value && isView(value)) {
+        event.preventDefault();
+        showView(value);
+      }
     };
   if (location.hash === '#onboarding') showView('onboarding');
   if (location.hash === '#help') showView('help');

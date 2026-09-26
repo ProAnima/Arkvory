@@ -1,4 +1,6 @@
 export const interfaceEnglish = {
+  noUsers: 'No user accounts yet. Create an account to grant access.',
+  noAccessGroups: 'No access groups yet. Create a group to assign repository permissions.',
   fileBrowse: 'Choose file',
   fileNotSelected: 'No file selected',
   navLibrary: 'Library',
@@ -16,6 +18,8 @@ export const interfaceEnglish = {
   adminHelpLabel: 'About access management',
 };
 export const interfaceRussian: Record<keyof typeof interfaceEnglish, string> = {
+  noUsers: 'Учётных записей пока нет. Создайте пользователя, чтобы предоставить доступ.',
+  noAccessGroups: 'Групп пока нет. Создайте группу для назначения прав на репозитории.',
   fileBrowse: 'Выбрать файл',
   fileNotSelected: 'Файл не выбран',
   navLibrary: 'Библиотека',

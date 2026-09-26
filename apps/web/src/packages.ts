@@ -1,7 +1,7 @@
 import type { ArkvoryClient } from '@proanima/arkvory-sdk';
 import type { PackageResponse } from '@proanima/arkvory-contracts';
 import { element } from './dom.js';
-import { message } from './i18n.js';
+import { clearMessage, message } from './i18n.js';
 
 // arkvory-exception ARCH-027 -- Existing UI controller contains event wiring and view state; freeze its size and extract cohesive controllers only with browser state/reset acceptance.
 export function installPackageView(
@@ -41,8 +41,8 @@ export function installPackageView(
   const clear = () => {
     resetPage();
     rows.replaceChildren();
-    status.textContent = '';
-    for (const page of pages) page.textContent = '';
+    clearMessage(status);
+    for (const page of pages) clearMessage(page);
   };
   for (const field of [repository, token]) field.addEventListener('input', clear);
   const select = <T extends string>(id: string, allowed: readonly T[], fallback: T): T => {
@@ -85,9 +85,8 @@ export function installPackageView(
         ...(after ? { after } : {}),
       });
     } catch (error) {
-      if (current === generation) {
-        controls(false);
-      }
+      if (current !== generation) return;
+      controls(false);
       throw error;
     }
     if (current !== generation || repo !== repository.value) return;
@@ -130,7 +129,7 @@ export function installPackageView(
     element(id, HTMLElement).addEventListener('change', () => {
       resetPage();
       rows.replaceChildren();
-      for (const page of pages) page.textContent = '';
+      for (const page of pages) clearMessage(page);
       message(status, 'applyFilters');
     });
   element('package-clear', HTMLButtonElement).onclick = () => {
@@ -149,8 +148,9 @@ export function installPackageView(
     if (cursor) cursors[target] = cursor;
     run(async () => {
       try {
+        const current = generation + 1;
         await refresh();
-        if (pageIndex === target) pageTop.focus({ preventScroll: false });
+        if (current === generation) pageTop.focus({ preventScroll: false });
       } catch (error) {
         if (pageIndex === target) {
           pageIndex = before;

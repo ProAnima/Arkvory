@@ -39,6 +39,15 @@ export async function exerciseBuildDetails(page, f, buildId) {
     page.locator('#attachment-submit').click(),
   ]);
   assert.equal(await page.locator('#attachment-file').isDisabled(), true);
+  assert.equal(
+    await page.evaluate(() => {
+      const event = new Event('beforeunload', { cancelable: true });
+      window.dispatchEvent(event);
+      return event.defaultPrevented;
+    }),
+    true,
+    'Active attachment upload protects against leaving the page',
+  );
   await page.locator('#attachment-pause').click();
   unblock();
   await page.waitForFunction(() => !document.querySelector('#attachment-submit').disabled);

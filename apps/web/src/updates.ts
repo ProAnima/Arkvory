@@ -2,7 +2,7 @@ import type { ArkvoryClient } from '@proanima/arkvory-sdk';
 import { ArkvoryHttpError } from '@proanima/arkvory-sdk';
 import type { UpdateSnapshot, UpdateRequest } from '@proanima/arkvory-contracts';
 import { element } from './dom.js';
-import { message } from './i18n.js';
+import { clearMessage, message } from './i18n.js';
 import { showView } from './shell.js';
 import { UpdateView } from './update-view.js';
 import type { MessageKey } from './messages.js';
@@ -123,7 +123,7 @@ class UpdateConsole {
     this.busy = false;
     this.view.nav.hidden = true;
     this.view.banner.hidden = true;
-    this.view.output.textContent = '';
+    clearMessage(this.view.output);
     this.view.clear();
     this.view.dialog.close();
     if (!element('updates-panel', HTMLElement).hidden) showView('catalog');

@@ -1,6 +1,11 @@
 import { exerciseStoragePolicy } from './storage-policy.mjs';
 import { exerciseGuides } from './guides.mjs';
 import { exerciseAppearance } from './appearance.mjs';
+import {
+  exerciseCatalogUsability,
+  exerciseAdministrationLoading,
+  exerciseClearedMessages,
+} from './usability.mjs';
 // Browser gate against real API/database. Only the OS save picker is substituted.
 import assert from 'node:assert/strict';
 import { mkdir } from 'node:fs/promises';
@@ -71,6 +76,7 @@ try {
   assert.equal(await page.locator('#empty-title').getAttribute('data-i18n'), 'noResultsTitle');
   await page.locator('#search-clear').click();
   await page.locator('#artifacts tr').waitFor();
+  await exerciseCatalogUsability(page, go);
   // Direct download does not require opening the metadata editor.
   await page.locator('#artifacts button').nth(1).click();
   await page.getByRole('cell', { name: 'Verified and saved', exact: true }).waitFor();
@@ -109,7 +115,7 @@ try {
   await page.locator('#history-path').fill('releases/latest.upack');
   await page.locator('#history button').click();
   await page.locator('#asset-history tr').waitFor();
-  await go('administration');
+  await exerciseAdministrationLoading(page, go);
   await page.locator('summary[data-i18n=createUser]').click();
   await page.locator('#new-user-name').fill('ui-reviewer');
   await page.locator('#new-user-password').fill('acceptance-fixture-password');
@@ -128,9 +134,14 @@ try {
   const uploadGate = new Promise((resolve) => {
     releaseUpload = resolve;
   });
+  let finishInterception;
+  const interceptionFinished = new Promise((resolve) => {
+    finishInterception = resolve;
+  });
   await page.route('**/uploads/*/parts/0', async (route) => {
     await uploadGate;
-    await route.continue();
+    await route.abort('aborted');
+    finishInterception();
   });
   await Promise.all([
     page.waitForRequest(
@@ -141,12 +152,37 @@ try {
   assert.equal(await page.locator('#login-name').isDisabled(), true);
   assert.equal(await page.locator('#login button').isDisabled(), true);
   assert.equal(await page.locator('#cancel').isEnabled(), true);
+  assert.equal(
+    await page.evaluate(() => {
+      const event = new Event('beforeunload', { cancelable: true });
+      window.dispatchEvent(event);
+      return event.defaultPrevented;
+    }),
+    true,
+    'Active upload protects against accidentally leaving the page',
+  );
+  const pausedUpload = await page.locator('#upload-id').inputValue();
+  await page.locator('#cancel').click();
+  await page.locator('#transfer-status[data-i18n=paused][data-tone=info]').waitFor();
+  assert.equal(await page.locator('#upload-id').inputValue(), pausedUpload);
+  assert.notEqual(pausedUpload, '');
   releaseUpload();
-  await page.locator('#transfer-status[data-tone=success]').waitFor();
+  await interceptionFinished;
   await page.unroute('**/uploads/*/parts/0');
+  await page.locator('#upload-submit').click();
+  await page.locator('#transfer-status[data-tone=success]').waitFor();
   // Publication succeeds before the catalog refresh releases the connection controls.
   await page.waitForFunction(() => !document.querySelector('#login-name').disabled);
   assert.equal(await page.locator('#login-name').isEnabled(), true);
+  assert.equal(
+    await page.evaluate(() => {
+      const event = new Event('beforeunload', { cancelable: true });
+      window.dispatchEvent(event);
+      return event.defaultPrevented;
+    }),
+    false,
+    'Completed transfers do not trap navigation',
+  );
   // Appearance changes and navigation must preserve unsaved form fields.
   await go('metadata');
   await page.locator('#labels').fill('unsaved-label');
@@ -194,6 +230,7 @@ try {
   await page.locator('#logout').click();
   await page.waitForFunction(() => document.querySelector('#token').value === '');
   assert.equal(await page.locator('#selected-name').isVisible(), false);
+  await exerciseClearedMessages(page);
   await exerciseDeletion(page, f);
   await exerciseStoragePolicy(page, f);
   await exerciseGuides(page, f);
