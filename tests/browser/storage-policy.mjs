@@ -112,7 +112,9 @@ export async function exerciseStoragePolicy(page, f) {
   assert.equal(await page.locator('#storage-panel').isVisible(), false);
   await page.locator('#connect button.primary').click();
   await page.waitForFunction(
-    () => document.querySelector('#catalog-panel').getAttribute('aria-busy') !== 'true',
+    () =>
+      document.querySelector('#connection-state').dataset.connected === 'true' &&
+      document.querySelector('#catalog-panel').getAttribute('aria-busy') !== 'true',
   );
   assert.equal(await page.locator('#storage-panel').isVisible(), false);
   console.log(

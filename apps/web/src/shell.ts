@@ -4,6 +4,9 @@ import { element } from './dom.js';
 import { initializeLanguage, message, setLanguage } from './i18n.js';
 import { themePreference, readPreference, savePreference, applyTheme } from './preferences.js';
 import { initializeGuides } from './guides.js';
+import { initializeActionTooltips } from './action-tooltips.js';
+import { initializeAppearanceControls } from './appearance-controls.js';
+import { initializeStaticIcons } from './icons.js';
 const views = [
   'catalog',
   'repositories',
@@ -43,6 +46,7 @@ export function showView(view: View) {
   element('page-title', HTMLHeadingElement).scrollIntoView({ block: 'nearest' });
 }
 export function initializeShell() {
+  initializeStaticIcons();
   initializeGuides();
   initializeTooltips();
   initializeFileInputs();
@@ -75,6 +79,8 @@ export function initializeShell() {
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
     if (theme.value === 'system') applyTheme('system');
   });
+  initializeAppearanceControls();
+  initializeActionTooltips();
   for (const button of document.querySelectorAll<HTMLElement>('[data-nav], [data-go]'))
     button.onclick = (event) => {
       if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;

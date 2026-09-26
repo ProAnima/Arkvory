@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="ru">
+<html lang="ru" data-navigation="compact">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
@@ -37,7 +37,8 @@
         aria-expanded="false"
         aria-controls="workspace-navigation"
       >
-        <span data-i18n="navigationMenu">Разделы</span><span aria-hidden="true">☰</span>
+        <span data-i18n="navigationMenu">Разделы</span
+        ><span data-icon="menu" aria-hidden="true"></span>
       </button>
       <nav
         id="workspace-navigation"
@@ -142,7 +143,15 @@
         </button>
       </nav>
       <div class="sidebar-bottom">
-        <small>© Ian Panaev</small>
+        <button
+          id="sidebar-toggle"
+          class="secondary"
+          type="button"
+          aria-controls="workspace-navigation"
+          data-i18n="navigationCollapse"
+        >
+          Свернуть меню
+        </button>
       </div>
     </aside>
     <div class="workspace">
@@ -152,18 +161,20 @@
           ><span data-i18n="console">Консоль хранилища</span>
         </div>
         <div class="preferences">
-          <label
-            ><span data-i18n="theme">Оформление</span
+          <label class="theme-control"
+            ><span class="sr-only" data-i18n="theme">Оформление</span
+            ><span id="theme-icon" class="preference-icon" aria-hidden="true"></span
             ><select id="theme">
               <option value="system" data-i18n="system">Системная</option>
               <option value="light" data-i18n="light">Светлая</option>
               <option value="dark" data-i18n="dark">Тёмная</option>
             </select></label
-          ><label
-            ><span data-i18n="language">Язык</span
+          ><label class="language-control"
+            ><span class="sr-only" data-i18n="language">Язык</span
+            ><span id="language-icon" class="preference-icon" aria-hidden="true"></span
             ><select id="language">
-              <option value="ru">Русский</option>
-              <option value="en">English</option>
+              <option value="ru" lang="ru" aria-label="Русский">RU</option>
+              <option value="en" lang="en" aria-label="English">EN</option>
             </select></label
           >
         </div>
@@ -173,14 +184,20 @@
           <div>
             <h1 id="page-title" tabindex="-1" data-i18n="catalog">Артефакты</h1>
           </div>
-          <button id="heading-upload" class="primary heading-action" type="button" data-go="upload">
-            <span aria-hidden="true">＋</span><span data-i18n="uploadFile">Загрузить файл</span>
+          <button
+            id="heading-upload"
+            class="primary heading-action"
+            type="button"
+            data-go="upload"
+            data-i18n="uploadFile"
+          >
+            Загрузить файл
           </button>
         </div>
         <details id="connection-card" class="connection card" open>
           <summary>
             <span class="connection-heading"
-              ><span class="connection-icon" aria-hidden="true">↗</span
+              ><span class="connection-icon" data-icon="link" aria-hidden="true"></span
               ><span data-i18n="connection">Подключение к репозиторию</span
               ><span id="connection-repository" class="hint" hidden></span></span
             ><span id="connection-state" class="badge" data-i18n="disconnected"
@@ -972,7 +989,7 @@ GET /api/v1/operations?repository=releases</code></pre>
               <h2 id="upload-title" data-i18n="uploadFile">Загрузить файл</h2>
               <form id="upload" class="stack">
                 <label class="file-picker"
-                  ><span class="upload-symbol" aria-hidden="true">↥</span
+                  ><span class="upload-symbol" data-icon="upload" aria-hidden="true"></span
                   ><strong data-i18n="chooseFile">Файл для загрузки</strong
                   ><span class="hint" data-i18n="fileHint"
                     >Архивы UPack и обычные файлы · До 5 GiB</span

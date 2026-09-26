@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict';
 import { mkdir } from 'node:fs/promises';
+import { exerciseIconActions } from './icon-actions.mjs';
 
 export async function exerciseAppearance(page) {
+  await exerciseIconActions(page);
   const trigger = page.getByRole('button', { name: 'About artifacts', exact: true });
   const tip = page.locator('[role=tooltip][data-i18n=catalogHint]');
   await trigger.focus();

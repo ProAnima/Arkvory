@@ -44,6 +44,8 @@
   --brand-type: 1.625rem;
   --brand-icon: 1.75rem;
   --sidebar-width: 15.5rem;
+  --sidebar-rail-width: 5rem;
+  --language-control-width: 6.5rem;
   --content-max: 92rem;
   --page-gutter: clamp(1.25rem, 3.2vw, 3.5rem);
   --panel-padding: 1.5rem;

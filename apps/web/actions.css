@@ -1,0 +1,151 @@
+.action-icon {
+  width: var(--icon-size);
+  height: var(--icon-size);
+  flex: 0 0 auto;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: var(--icon-stroke);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.upload-symbol .action-icon {
+  width: var(--upload-symbol-size);
+  height: var(--upload-symbol-size);
+}
+button[data-action-icon] {
+  max-width: 100%;
+}
+.action-label {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.table-footer > output {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+button[data-icon-only] {
+  position: relative;
+  width: var(--control-height);
+  min-width: var(--control-height);
+  min-height: var(--control-height);
+  padding: 0;
+  flex: 0 0 auto;
+}
+button[data-icon-only] > .action-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.preferences label {
+  position: relative;
+  display: block;
+  flex: 0 0 auto;
+}
+.preferences {
+  display: flex;
+  width: auto;
+  justify-content: flex-end;
+  margin-inline-start: auto;
+}
+.preferences select {
+  min-height: var(--control-height);
+}
+.preferences .preference-icon {
+  position: absolute;
+  inset: 0 auto 0 var(--space-3);
+  display: flex;
+  align-items: center;
+  pointer-events: none;
+  color: var(--color-muted);
+  width: auto;
+  height: auto;
+  overflow: visible;
+  clip-path: none;
+}
+.preferences .theme-control select {
+  width: var(--control-height);
+  appearance: none;
+  color: transparent;
+  padding: 0;
+}
+.theme-control option {
+  color: var(--color-text);
+  background: var(--color-surface);
+}
+.preferences .language-control select {
+  width: var(--language-control-width);
+  padding-inline-start: var(--space-10);
+}
+[data-action-anchor] {
+  anchor-name: --action-anchor;
+}
+#action-tooltip {
+  position: fixed;
+  inset: auto var(--space-4) var(--space-4) auto;
+  margin: 0;
+  width: max-content;
+  max-width: min(var(--help-width), calc(100vw - var(--space-8)));
+  padding: var(--space-2) var(--space-3);
+  border: var(--border-width) solid var(--color-border-strong);
+  border-radius: var(--radius-control);
+  box-shadow: var(--shadow-float);
+  background: var(--color-tooltip);
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--text-sm);
+  overflow-wrap: anywhere;
+}
+@supports (position-area: top) {
+  #action-tooltip {
+    position-anchor: --action-anchor;
+    position-area: top;
+    position-try-fallbacks: flip-block, right, left;
+    inset: auto;
+    margin: var(--space-2);
+  }
+  #action-tooltip[data-side='rail'] {
+    position-area: right;
+  }
+}
+#action-tooltip:popover-open {
+  animation: content-enter var(--motion-fast) var(--motion-ease);
+}
+@media (min-width: 761px) {
+  :root[data-navigation='compact'] {
+    --sidebar-width: var(--sidebar-rail-width);
+  }
+  [data-navigation='compact'] .sidebar {
+    padding-inline: var(--space-3);
+  }
+  [data-navigation='compact'] .brand {
+    padding: 0;
+    justify-content: center;
+  }
+  [data-navigation='compact'] .brand > span,
+  [data-navigation='compact'] .nav-group-label {
+    display: none;
+  }
+  [data-navigation='compact'] nav button {
+    justify-content: center;
+    padding-inline: 0;
+  }
+  [data-navigation='compact'] nav button span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+  [data-navigation='compact'] .sidebar-bottom {
+    padding-inline: 0;
+    align-self: center;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  #action-tooltip:popover-open {
+    animation: none;
+  }
+}

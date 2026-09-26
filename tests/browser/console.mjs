@@ -231,11 +231,26 @@ try {
           'administration',
         ]) {
           await go(view);
-          assert.equal(
-            await page.evaluate(() => document.documentElement.scrollWidth > innerWidth),
-            false,
-            `${width}/${theme}/${language}/${view}`,
+          const overflow = await page.evaluate(
+            () => document.documentElement.scrollWidth > innerWidth,
           );
+          if (overflow) {
+            await page.screenshot({ path: 'test-results/console-overflow.png', fullPage: true });
+            console.log(
+              await page.evaluate(() =>
+                [...document.querySelectorAll('body *')]
+                  .filter((node) => node.getBoundingClientRect().right > innerWidth)
+                  .slice(0, 16)
+                  .map((node) => ({
+                    tag: node.tagName,
+                    id: node.id,
+                    className: node.getAttribute('class'),
+                    right: node.getBoundingClientRect().right,
+                  })),
+              ),
+            );
+          }
+          assert.equal(overflow, false, `${width}/${theme}/${language}/${view}`);
           if (width !== 768 && language === (width === 390 ? 'ru' : 'en'))
             await page.screenshot({
               path: `test-results/console-${view}-${width}-${theme}.png`,

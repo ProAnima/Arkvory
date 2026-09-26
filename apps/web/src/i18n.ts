@@ -1,6 +1,7 @@
 import { isMessageKey, translate } from './messages.js';
 import type { MessageKey, Language } from './messages.js';
 import { languagePreference, readPreference, savePreference } from './preferences.js';
+import { presentAction } from './action-presentation.js';
 let language: Language = languagePreference(readPreference('language'), navigator.language);
 function text(node: HTMLElement, value: string) {
   // Progress updates must not replace unchanged live-region text or disturb text selection.
@@ -19,7 +20,8 @@ function render(node: HTMLElement) {
     for (const [name, value] of Object.entries(node.dataset))
       if (name.startsWith('param') && value !== undefined)
         params[name.slice(5).toLowerCase()] = value;
-    text(node, t(key, params));
+    const value = t(key, params);
+    if (!presentAction(node, key, value)) text(node, value);
   }
   for (const [data, name] of [
     ['i18nPlaceholder', 'placeholder'],

@@ -1,4 +1,6 @@
 export const interfaceEnglish = {
+  navigationExpand: 'Expand sidebar',
+  navigationCollapse: 'Collapse sidebar',
   noUsers: 'No user accounts yet.',
   noAccessGroups: 'No access groups yet.',
   fileBrowse: 'Choose file',
@@ -18,6 +20,8 @@ export const interfaceEnglish = {
   adminHelpLabel: 'About access management',
 };
 export const interfaceRussian: Record<keyof typeof interfaceEnglish, string> = {
+  navigationExpand: 'Развернуть меню',
+  navigationCollapse: 'Свернуть меню',
   noUsers: 'Учётных записей пока нет.',
   noAccessGroups: 'Групп пока нет.',
   fileBrowse: 'Выбрать файл',
