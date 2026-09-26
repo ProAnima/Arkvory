@@ -38,6 +38,8 @@ export function showView(view: View) {
   element('workspace-navigation', HTMLElement).dataset['expanded'] = 'false';
   element('navigation-toggle', HTMLButtonElement).setAttribute('aria-expanded', 'false');
   element('page-title', HTMLHeadingElement).focus({ preventScroll: true });
+  // A shorter destination must not leave the user below its heading after a long form.
+  element('page-title', HTMLHeadingElement).scrollIntoView({ block: 'nearest' });
 }
 export function initializeShell() {
   initializeGuides();
@@ -79,4 +81,5 @@ export function initializeShell() {
     };
   if (location.hash === '#onboarding') showView('onboarding');
   if (location.hash === '#help') showView('help');
+  document.documentElement.dataset['appearanceReady'] = 'true';
 }

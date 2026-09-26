@@ -51,7 +51,46 @@ export async function exerciseAppearance(page) {
   await trigger.focus();
   assert.equal(await tip.evaluate((n) => getComputedStyle(n).animationName), 'surface-enter');
   await page.keyboard.press('Escape');
+  await page.locator('[data-nav=upload]').click();
+  const upload = page.locator('#upload-panel');
+  assert.equal(
+    await upload.evaluate((node) => getComputedStyle(node).animationName),
+    'surface-enter',
+  );
+  // Repeated selection must not replace translated text or its live-region attributes.
+  assert.equal(
+    await page.evaluate(() => {
+      const title = document.querySelector('#page-title');
+      const observer = new MutationObserver(() => {});
+      observer.observe(title, { childList: true, attributes: true, subtree: true });
+      document.querySelector('[data-nav=upload]').click();
+      const count = observer.takeRecords().length;
+      observer.disconnect();
+      return count;
+    }),
+    0,
+  );
+  await page.locator('#labels').evaluate((node) => {
+    node.value = 'motion-draft';
+  });
+  await page.evaluate(() => {
+    for (const name of ['metadata', 'downloads', 'catalog', 'upload'])
+      document.querySelector(`[data-nav=${name}]`).click();
+  });
+  assert.equal(await page.locator('[data-view]:visible').count(), 1);
+  assert.equal(await page.locator('#labels').inputValue(), 'motion-draft');
+  await page.waitForFunction(() =>
+    document.getAnimations().every((a) => a.playState !== 'running'),
+  );
+  await page.locator('#labels').evaluate((node) => {
+    node.value = '';
+  });
   await page.emulateMedia({ reducedMotion: 'reduce' });
+  assert.equal(await upload.evaluate((node) => getComputedStyle(node).animationName), 'none');
+  assert.equal(
+    await page.evaluate(() => getComputedStyle(document.documentElement).transitionDuration),
+    '0s, 0s, 0s',
+  );
   await page.locator('[data-nav=upload]').click();
   const file = page.locator('#file');
   await file.focus();
@@ -75,6 +114,6 @@ export async function exerciseAppearance(page) {
   assert.equal(await selection.textContent(), 'No file selected');
   await page.locator('[data-nav=catalog]').click();
   console.log(
-    'PASS appearance: keyboard/hover/touch help, live RU/EN, native file picker/reset, viewport and reduced motion',
+    'PASS appearance: keyboard/hover/touch help, idempotent text, rapid navigation/draft preservation, finite motion, live reduced motion, RU/EN and file picker',
   );
 }

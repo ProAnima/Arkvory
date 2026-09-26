@@ -5,6 +5,8 @@
   display: none !important;
 }
 html {
+  scrollbar-gutter: stable;
+  scroll-padding-block: var(--space-6);
   font-family: var(--font-sans);
   line-height: var(--leading-normal);
   background: var(--color-bg);
@@ -62,7 +64,7 @@ button {
   font-weight: var(--weight-semibold);
   cursor: pointer;
 }
-button:hover {
+button:hover:where(:not(:disabled)) {
   background: var(--color-nav-hover);
 }
 button.primary {
@@ -70,14 +72,14 @@ button.primary {
   color: var(--color-on-accent);
   box-shadow: var(--shadow-accent);
 }
-button.primary:hover {
+button.primary:hover:where(:not(:disabled)) {
   background: var(--color-accent-hover);
 }
 button.secondary {
   background: var(--color-surface);
   border-color: var(--color-border);
 }
-button.secondary:hover {
+button.secondary:hover:where(:not(:disabled)) {
   background: var(--color-raised);
   border-color: var(--color-border-strong);
 }
@@ -85,7 +87,7 @@ button.ghost {
   background: transparent;
   color: var(--color-muted);
 }
-button.ghost:hover {
+button.ghost:hover:where(:not(:disabled)) {
   background: var(--color-raised);
   color: var(--color-text);
 }

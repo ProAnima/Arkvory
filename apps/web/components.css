@@ -189,8 +189,22 @@ td {
   border-bottom: var(--border-width) solid var(--color-border);
   overflow-wrap: anywhere;
 }
-tbody tr:hover {
+tbody tr:focus-within {
   background: var(--color-raised);
+}
+@media (hover: hover) and (pointer: fine) {
+  tbody tr:hover {
+    background: var(--color-raised);
+  }
+}
+tbody tr {
+  transition: background-color var(--motion-fast) var(--motion-ease);
+}
+td,
+progress,
+.badge,
+#download-summary {
+  font-variant-numeric: tabular-nums;
 }
 .artifact-id,
 .mono {

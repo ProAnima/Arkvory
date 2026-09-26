@@ -21,11 +21,31 @@
   border-top: var(--border-width) solid var(--color-border);
 }
 .disclosure > summary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  list-style: none;
   color: var(--color-muted);
   font-size: var(--text-sm);
   font-weight: var(--weight-medium);
   min-height: var(--control-small-height);
   align-content: center;
+}
+.disclosure > summary::-webkit-details-marker {
+  display: none;
+}
+.disclosure > summary::before {
+  content: '';
+  width: var(--disclosure-size);
+  height: var(--disclosure-size);
+  border-right: var(--disclosure-stroke) solid currentColor;
+  border-bottom: var(--disclosure-stroke) solid currentColor;
+  transform: rotate(var(--disclosure-closed));
+  transition: transform var(--motion-fast) var(--motion-ease);
+  flex-shrink: 0;
+}
+.disclosure[open] > summary::before {
+  transform: rotate(var(--disclosure-open));
 }
 .disclosure > summary:hover,
 .disclosure[open] > summary {

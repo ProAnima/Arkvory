@@ -3,6 +3,30 @@
 dialog[open] {
   animation: surface-enter var(--motion-normal) var(--motion-ease);
 }
+/* Only shell surfaces crossfade. Avoid per-cell layers and first-paint theme transitions. */
+html[data-appearance-ready],
+[data-appearance-ready] :where(.sidebar, .topbar, .card, .guide-hero, .status-bar, th) {
+  transition:
+    background-color var(--motion-theme) var(--motion-ease),
+    border-color var(--motion-theme) var(--motion-ease),
+    color var(--motion-theme) var(--motion-ease);
+}
+.disclosure[open] > :not(summary) {
+  animation: content-enter var(--motion-fast) var(--motion-ease);
+}
+@keyframes content-enter {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@media (max-width: 760px) {
+  #workspace-navigation[data-expanded='true'] {
+    animation: surface-enter var(--motion-normal) var(--motion-ease);
+  }
+}
 @keyframes surface-enter {
   from {
     opacity: 0;
@@ -17,9 +41,11 @@ button:active:not(:disabled) {
   transform: scale(var(--motion-press));
 }
 @media (prefers-reduced-motion: reduce) {
-  [data-view],
+  [data-view]:not([hidden]),
   dialog[open],
-  .help-tooltip .help-content {
+  .help-tooltip .help-content,
+  .disclosure[open] > :not(summary),
+  #workspace-navigation[data-expanded='true'] {
     animation: none;
   }
   button:active:not(:disabled) {

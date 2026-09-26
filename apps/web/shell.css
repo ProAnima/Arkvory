@@ -26,6 +26,7 @@
   background: var(--gradient-brand);
   box-shadow: var(--shadow-accent);
   color: var(--color-on-brand);
+  flex-shrink: 0;
 }
 .brand-mark svg {
   width: var(--brand-icon);
@@ -80,6 +81,10 @@ nav button[aria-current='page'] {
 }
 nav button span {
   min-width: 0;
+}
+nav button[aria-current='page']:hover {
+  background: var(--color-nav-active);
+  color: var(--color-nav-text);
 }
 .sidebar-bottom {
   margin-top: auto;

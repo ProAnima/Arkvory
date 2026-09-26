@@ -7,7 +7,7 @@
   --text-md: 0.9375rem;
   --text-base: 1rem;
   --text-lg: 1.125rem;
-  --text-display: clamp(1.75rem, 2.8vw, 2.375rem);
+  --text-display: clamp(1.625rem, 2.6vw, 2.125rem);
   --weight-normal: 400;
   --weight-medium: 500;
   --weight-semibold: 600;
@@ -42,7 +42,7 @@
   --brand-size: 2.5rem;
   --brand-type: 1.625rem;
   --brand-icon: 1.75rem;
-  --sidebar-width: 16.5rem;
+  --sidebar-width: 15.5rem;
   --content-max: 92rem;
   --page-gutter: clamp(1.25rem, 3.2vw, 3.5rem);
   --panel-padding: 1.5rem;
@@ -63,8 +63,9 @@
   --table-min: 36rem;
   --label-min: 9rem;
   --nav-height: 2.875rem;
-  --motion-fast: 140ms;
-  --motion-normal: 260ms;
+  --motion-fast: 160ms;
+  --motion-normal: 220ms;
+  --motion-theme: 180ms;
   --motion-ease: cubic-bezier(0.2, 0, 0, 1);
   --motion-none: 0ms;
   --opacity-disabled: 0.45;
@@ -75,8 +76,12 @@
   --help-width: 20rem;
   --help-max-height: 40dvh;
   --z-tooltip: 40;
-  --motion-distance: 0.375rem;
-  --motion-press: 0.985;
+  --motion-distance: 0.25rem;
+  --motion-press: 0.99;
+  --disclosure-size: 0.375rem;
+  --disclosure-stroke: 1.5px;
+  --disclosure-closed: -45deg;
+  --disclosure-open: 45deg;
   --indicator-width: 3px;
   --fact-min: 12rem;
   --palette-white: #ffffff;
@@ -180,5 +185,6 @@
   :root {
     --motion-fast: var(--motion-none);
     --motion-normal: var(--motion-none);
+    --motion-theme: var(--motion-none);
   }
 }
