@@ -175,6 +175,8 @@ The initial design scenario is approximately **4 TB of data** with files **up to
 
 Request balancing does not replace data redundancy. Replication does not replace backups. An active TCP connection breaks if its gateway fails; resumption requires client support. Availability guarantees will be stated only after testing the selected topology.
 
+Independent replication is now specified as two separate planned profiles: portable asynchronous mirrors and infrastructure-backed synchronous HA. Durable copy acknowledgements, GC protection, administration APIs and UI flows are documented; no replication runtime or writer failover is implemented yet. [Replication design and delivery stages](docs/REPLICATION.md), [administration API](docs/REPLICATION_API.md), [UI/UX](docs/REPLICATION_UX.md).
+
 ## Repository layout
 
 ```text

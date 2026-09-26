@@ -101,3 +101,5 @@ SDK использует композицию: публичный ArkvoryClient 
 Владение PostgreSQL-сессией выделено из каталога: StorageOwnership ограничивает период подтверждения locks, необратимо закрывает потерянное соединение и не допускает повторный claim. Это не межсерверный fencing и не репликация: [ADR 0042](adr/0042-bounded-storage-ownership.md).
 
 Объектные locks uploads/GC и динамические content pins используют тот же инфраструктурный монитор SQL-сессии. PostgresJobLease отдельно связывает heartbeat/finish reservation с конечным локальным окном; worker отслеживает потери и ограничивает shutdown. [ADR 0043](adr/0043-operation-session-protection.md).
+
+Проект независимой репликации отделяет переносимое mirror с авторитетным primary от синхронного HA с внешним fencing. Ordered outbox, durable pins/receipts, bounded transfer, новый worker и отдельная gateway composition добавляются только вместе с первым рабочим сценарием. Пока это проект, без новых runtime ролей или HTTP маршрутов: [ADR 0044](adr/0044-replication-profiles-and-control.md), [протокол](REPLICATION.md), [API](REPLICATION_API.md), [UI](REPLICATION_UX.md).
