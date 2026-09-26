@@ -271,3 +271,29 @@ test('loss of database ownership interrupts active throttled delivery and requir
   assert.equal(restored.statusCode, 206);
   assert.deepEqual(restored.rawPayload, bytes.subarray(0, 16));
 });
+
+test('loss of the reader pin interrupts delivery while healthy writer admits a fresh protected Range', async (t) => {
+  const f = await setup(t, { downloadBytesPerSecond: 65536 });
+  const bytes = Buffer.alloc(512 * 1024, 0x37);
+  const id = await publish(f, bytes);
+  const address = await f.listen();
+  const response = await fetch(`${address}${base}/artifacts/${id}/content`, { headers: f.headers });
+  assert.equal(response.status, 200);
+  const interrupted = assert.rejects(response.arrayBuffer());
+  const killed = await f.catalog.pool.query(`SELECT pg_terminate_backend(pid) AS killed
+    FROM pg_locks WHERE locktype='advisory' AND objsubid=1 AND mode='ShareLock' AND granted
+    AND database=(SELECT oid FROM pg_database WHERE datname=current_database())`);
+  assert.equal(killed.rows.length, 1);
+  assert.equal(killed.rows[0].killed, true);
+  await interrupted;
+  await eventually(async () => {
+    const ready = await f.app.inject({ url: '/health/ready', headers: f.headers });
+    assert.equal(ready.statusCode, 200);
+    return ready.json().transfers.downloads.admission.active === 0;
+  });
+  const fresh = await fetch(`${address}${base}/artifacts/${id}/content`, {
+    headers: { ...f.headers, range: 'bytes=0-15' },
+  });
+  assert.equal(fresh.status, 206);
+  assert.deepEqual(Buffer.from(await fresh.arrayBuffer()), bytes.subarray(0, 16));
+});

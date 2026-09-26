@@ -205,3 +205,48 @@ test('tiny chunks cannot drain refills reserved for an eligible larger quantum',
   time.advance(200);
   await Promise.all(tiny);
 });
+
+test('closing the governor after granting a quantum prevents its delivery and closes the source', async () => {
+  const gate = new BandwidthGovernor({ bytesPerSecond: 0, perPrincipalBytesPerSecond: 0 }, ['a']);
+  let returned = false;
+  async function* source() {
+    try {
+      yield Buffer.alloc(16);
+    } finally {
+      returned = true;
+    }
+  }
+  const stream = gate.stream(source(), 'a', new AbortController().signal);
+  const next = stream.next();
+  // Interleave shutdown with the already fulfilled admission promise, before its consumer runs.
+  for (let turn = 0; turn < 16 && gate.snapshot.grantedBytes === '0'; turn++)
+    await Promise.resolve();
+  assert.equal(gate.snapshot.grantedBytes, '16');
+  gate.close();
+  await assert.rejects(next, { code: 'unavailable' });
+  assert.equal(returned, true);
+  assert.equal(gate.snapshot.waiting, 0);
+});
+
+test('empty and exhausted sources cannot report success after shutdown or cancellation', async () => {
+  for (const reason of ['close', 'ownership', 'abort']) {
+    let active = true;
+    const gate = new BandwidthGovernor(
+      { bytesPerSecond: 0, perPrincipalBytesPerSecond: 0 },
+      ['a'],
+      () => active,
+    );
+    const stop = new AbortController();
+    async function* source() {
+      if (reason === 'close') gate.close();
+      if (reason === 'ownership') active = false;
+      if (reason === 'abort') stop.abort();
+    }
+    const stream = gate.stream(source(), 'a', stop.signal);
+    await assert.rejects(
+      stream.next(),
+      reason === 'abort' ? { name: 'AbortError' } : { code: 'unavailable' },
+    );
+    gate.close();
+  }
+});

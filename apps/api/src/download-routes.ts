@@ -44,6 +44,9 @@ export function createContentSender(dependencies: ContentServices) {
       pin = await pins.acquire(id);
       signal(request, reply).throwIfAborted();
       const result = await service.download(principal(request), repository, id);
+      // Metadata resolution can outlive cancellation or the session protecting this blob.
+      signal(request, reply).throwIfAborted();
+      pin.check();
       const { size, sha256, name } = result.upload.descriptor;
       const etag = `"sha256:${sha256}"`;
       reply
@@ -77,10 +80,14 @@ export function createContentSender(dependencies: ContentServices) {
       else reply.header('Content-Length', String(size));
       if (request.method === 'HEAD') return await reply.send();
       const stream = downloadStream(
-        downloadBandwidth.stream(
-          protectedContent(result.read(range.kind === 'partial' ? range : undefined), pin.check),
-          principal(request).id,
-          signal(request, reply),
+        protectedContent(
+          downloadBandwidth.stream(
+            protectedContent(result.read(range.kind === 'partial' ? range : undefined), pin.check),
+            principal(request).id,
+            signal(request, reply),
+          ),
+          // Pacing may hold a chunk after its disk read; recheck before each emitted quantum.
+          pin.check,
         ),
         request,
         signal(request, reply),

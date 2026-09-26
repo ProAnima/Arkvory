@@ -103,22 +103,29 @@ export class BandwidthGovernor {
     signal: AbortSignal,
   ): AsyncIterable<Uint8Array> {
     signal.throwIfAborted();
+    this.checkAvailable();
     for await (const chunk of source) {
       for (let offset = 0; offset < chunk.byteLength; offset += this.quantum) {
         signal.throwIfAborted();
         const bytes = chunk.subarray(offset, Math.min(chunk.byteLength, offset + this.quantum));
         await this.acquire(owner, bytes.byteLength, signal);
         signal.throwIfAborted();
-        if (!this.available()) throw new ArkvoryError('unavailable', 'Gateway ownership lost');
+        this.checkAvailable();
         yield bytes;
       }
     }
+    signal.throwIfAborted();
+    this.checkAvailable();
+  }
+
+  private checkAvailable(): void {
+    if (this.closed || !this.available())
+      throw new ArkvoryError('unavailable', 'Gateway is unavailable');
   }
 
   async acquire(owner: string, bytes: number, signal?: AbortSignal): Promise<void> {
     signal?.throwIfAborted();
-    if (this.closed || !this.available())
-      throw new ArkvoryError('unavailable', 'Gateway is unavailable');
+    this.checkAvailable();
     if (!this.principals.has(owner))
       throw new ArkvoryError('forbidden', 'Unknown bandwidth principal');
     if (!Number.isSafeInteger(bytes) || bytes < 1 || bytes > this.quantum)

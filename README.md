@@ -59,7 +59,7 @@ The standalone gateway now supports aggregate upload/download rate ceilings, a s
 
 An optional shared-storage profile runs one writer and additional read gateways. Fixed download shares are reserved through finite PostgreSQL leases; a lost lease stops delivery until restart. Idle shares are not redistributed. See [read gateways](docs/READ_GATEWAYS.md).
 
-The console has light, dark and system themes, live English/Russian switching, and responsive catalog, upload, history and artifact screens. Colors, typography, spacing, radii, controls and motion use centralized design tokens. Only appearance and language preferences are stored in the browser. See the [design system](docs/DESIGN_SYSTEM.md).
+The console has light, dark and system themes, live English/Russian switching, and responsive catalog, upload, history and artifact screens. Colors, typography, spacing, radii, controls and motion use centralized design tokens. The browser stores appearance/language preferences and private download checkpoints with a recovery journal; credentials remain in memory. See the [design system](docs/DESIGN_SYSTEM.md) and [download recovery and storage limits](docs/DOWNLOAD_QUEUE.md).
 
 A UI hosted on another HTTPS origin can use the native API with Bearer tokens and a server configured origin allowlist. The bundled console also accepts a configured Arkvory API address. See the [external UI guide](docs/EXTERNAL_UI.md).
 
