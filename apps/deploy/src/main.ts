@@ -75,7 +75,6 @@ async function main(): Promise<void> {
         const services = new Services(root, state);
         await services.stop();
         await services.provision(state.current);
-        await services.prepareUpdateInbox(state.current);
         await services.start(state.current);
         await services.healthy();
         await services.schedule(state.current);

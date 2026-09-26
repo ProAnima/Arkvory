@@ -66,9 +66,6 @@ export class Services {
       await this.compose(release, ['run', '--rm', 'migrate']);
     } else await command(process.execPath, [join(this.root, 'launcher.mjs'), this.root, 'migrate']);
   }
-  async prepareUpdateInbox(release: Release): Promise<void> {
-    if (this.state.mode === 'compose') await this.compose(release, ['run', '--rm', 'initialize']);
-  }
   async stop(): Promise<void> {
     if (this.state.mode === 'compose')
       await this.compose(this.state.current, ['stop', '--timeout', '120', 'worker', 'api']);

@@ -105,6 +105,8 @@ try {
   await page.locator('#logout').click();
   assert.equal(await page.locator('#updates-nav').isVisible(), false);
   assert.equal(await page.locator('#update-banner').isVisible(), false);
+  assert.equal(await page.locator('#update-current').textContent(), '—');
+  assert.equal(await page.locator('#update-automatic').isChecked(), false);
   await page.locator('#token').fill(f.readerHeaders.authorization.slice(7));
   await page.locator('#connect button.primary').click();
   await page.waitForFunction(

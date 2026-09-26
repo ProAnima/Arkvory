@@ -124,6 +124,7 @@ class UpdateConsole {
     this.view.nav.hidden = true;
     this.view.banner.hidden = true;
     this.view.output.textContent = '';
+    this.view.clear();
     this.view.dialog.close();
     if (!element('updates-panel', HTMLElement).hidden) showView('catalog');
   }

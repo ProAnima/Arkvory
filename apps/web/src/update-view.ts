@@ -39,6 +39,16 @@ export class UpdateView {
     this.install.disabled = true;
     this.controls(true);
   }
+  clear() {
+    this.disable();
+    this.form.reset();
+    for (const id of ['update-current', 'update-latest', 'update-checked', 'update-notice']) {
+      const node = element(id, HTMLElement);
+      node.textContent = '—';
+      delete node.dataset['date'];
+      delete node.dataset['i18n'];
+    }
+  }
   private controls(disabled: boolean) {
     this.form
       .querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLButtonElement>(
