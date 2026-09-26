@@ -1,5 +1,7 @@
 # Делегированное управление сервисными аккаунтами
 
+Веб-интерфейс репозиториев и сервисного доступа: [WEB_ADMINISTRATION](WEB_ADMINISTRATION.md).
+
 Реализованный профиль, 2026-09-24: делегирование добавлено миграцией **10**; текущая схема **12**, OpenAPI 3.0.3 / документ **0.8.0**. Дополняет [жизненный цикл ключей](SERVICE_KEYS.md); решение — [ADR 0019](adr/0019-scoped-service-administration.md). Это управление заранее созданными сервисными аккаунтами, без рекурсивного делегирования, wildcard selectors и управления пользователями/группами.
 
 ## Полномочия оператора
@@ -95,6 +97,6 @@ Control mutations используют существующую короткую
 
 Обновление: остановить writer/readers/worker, сделать согласованный backup БД и storage, обновить сборку, выполнить `npm run migrate`, запустить одинаковую версию процессов. Миграция 10 добавляет таблицу grants и `issued_via_key_id`; прежние ключи имеют null issuer. Текущая readiness требует markers **8, 9, 10, 11**; миграция 11 добавляет [индекс файловых страниц](ASSET_PAGINATION.md). Схема additive, но смешанный runtime не поддерживается: старый код не проверяет issuer при pending activation. Откат к старой версии после включения делегирования требует отдельного плана: остановить все процессы, отозвать все выданные делегатами pending keys и административные grants, проверить активные credentials и сохранить уже сделанные отзывы. Простой restore старого backup может воскресить отозванные ключи и не является безопасным auth rollback.
 
-Проверки: `tests/integration/delegation.test.mjs` — SDK/HTTP lifecycle, schema ответов, точные цели и actions, ceiling/expiry, запрет цепочек, tombstone/CAS, гонки caps, filtering до LIMIT, stale authority после ожидания lock, rollback при отказе audit, повторная проверка pending activation и отсутствие каскадного отзыва active keys. Стенд ProGet/двухсерверного HA остаётся отдельной отложенной приёмкой. UI администрирования, импорт legacy ownership, рекурсивные роли и namespace selectors здесь не реализованы.
+Проверки: `tests/integration/delegation.test.mjs` — SDK/HTTP lifecycle, schema ответов, точные цели и actions, ceiling/expiry, запрет цепочек, tombstone/CAS, гонки caps, filtering до LIMIT, stale authority после ожидания lock, rollback при отказе audit, повторная проверка pending activation и отсутствие каскадного отзыва active keys. Стенд ProGet/двухсерверного HA остаётся отдельной отложенной приёмкой. Веб-администрирование описано в WEB_ADMINISTRATION; импорт legacy ownership, рекурсивные роли и namespace selectors не реализованы.
 
 Локальная приёмка 2026-09-24: `npm run check`, `npm test` (61 тест), полный последовательный PostgreSQL/HTTP прогон (69 тестов) прошли. Среда: Windows, Node 24.13.0, PostgreSQL 18.4. Новый прогон 5 GiB не выполнялся: путь bytes не изменён; прежний результат managed upload/resume зафиксирован в SERVICE_KEYS. Это проверка control API и регрессий, не промышленная HA-приёмка.

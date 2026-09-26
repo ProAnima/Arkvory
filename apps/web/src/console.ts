@@ -1,9 +1,13 @@
+import { installCatalogFilter } from './catalog-filter.js';
+import { consoleRunner } from './console-runner.js';
+import { ManagementConsole } from './management.js';
+import { offerRepositoryOptions } from './repository-options.js';
 import { installRepositoryStorage } from './repository-storage.js';
-import { ArkvoryClient, ArkvoryHttpError } from '@proanima/arkvory-sdk';
+import { ArkvoryClient } from '@proanima/arkvory-sdk';
 import { text } from '@proanima/arkvory-contracts';
 import { element } from './dom.js';
 import { installAssetHistory } from './asset-history.js';
-import { clearMessage, message } from './i18n.js';
+import { message } from './i18n.js';
 import { feedback, UiError, errorKey } from './feedback.js';
 import { initializeShell, showView } from './shell.js';
 import { installPackageView } from './packages.js';
@@ -33,6 +37,25 @@ try {
   feedback(output, 'apiAddressError', {}, 'error');
   throw new Error('Invalid Arkvory API base URL');
 }
+const management = new ManagementConsole(apiBaseUrl, token, (id, storage) => {
+  if (stop) return;
+  run(async () => {
+    const administrator = !element('admin-nav', HTMLButtonElement).hidden;
+    const identity = token.value;
+    repository.value = id;
+    repository.dispatchEvent(new Event('input', { bubbles: true }));
+    await repositoryStorage.connect(id);
+    if (token.value !== identity || repository.value !== id) return;
+    connection(true);
+    showView('catalog');
+    if (storage) element('storage-panel', HTMLDetailsElement).open = true;
+    else await list();
+    if (token.value !== identity || repository.value !== id) return;
+    if (administrator) administration.show();
+    updates.connect(administrator);
+    void management.connect();
+  });
+});
 const repositoryStorage = installRepositoryStorage(client);
 const updates = installUpdates(client);
 const downloads = installDownloads(apiBaseUrl, token);
@@ -60,26 +83,7 @@ let wasConnected = false;
 let repositoryEdited = false;
 let authenticationGeneration = 0;
 const repositoryOptions = element('repository-options', HTMLElement);
-function offerRepositories(readable: readonly string[]): boolean {
-  repositoryOptions.replaceChildren();
-  for (const name of readable) {
-    const option = document.createElement('option');
-    option.value = name;
-    repositoryOptions.append(option);
-  }
-  if (readable.length && !readable.includes(repository.value) && !repositoryEdited)
-    repository.value = readable[0] ?? '';
-  return readable.length > 0;
-}
-const run = (action: () => Promise<void>) => {
-  const requestId = element('request-id', HTMLSpanElement);
-  clearMessage(requestId);
-  void action().catch((error: unknown) => {
-    feedback(output, errorKey(error), {}, 'error');
-    if (error instanceof ArkvoryHttpError && error.requestId)
-      message(requestId, 'requestId', { id: error.requestId });
-  });
-};
+const run = consoleRunner(output);
 function connection(connected: boolean) {
   const state = element('connection-state', HTMLSpanElement);
   const details = element('connection-card', HTMLDetailsElement);
@@ -160,6 +164,7 @@ function clearCatalog() {
   clearPackages();
   administration.clear();
   updates.clear();
+  management.clear();
   element('change-password', HTMLFormElement).hidden = true;
   if (!element('administration-panel', HTMLElement).hidden) showView('catalog');
 }
@@ -273,8 +278,10 @@ element('connect', HTMLFormElement).onsubmit = (event) => {
     if (generation !== authenticationGeneration) return;
     if (me.administrator) administration.show();
     updates.connect(me.administrator);
+    void management.connect();
     element('change-password', HTMLFormElement).hidden = !me.id.startsWith('user:');
-    if (offerRepositories(readable)) await list();
+    if (offerRepositoryOptions(readable, repository, repositoryOptions, repositoryEdited))
+      await list();
     else if (me.administrator) {
       showView('administration');
       await administration.refresh();
@@ -298,8 +305,14 @@ element('login', HTMLFormElement).onsubmit = (event) => {
     clearCatalog();
     const [me, readable] = await Promise.all([client.me(), readableRepositories(client)]);
     if (generation !== authenticationGeneration) return;
-    const hasRepository = offerRepositories(readable);
+    const hasRepository = offerRepositoryOptions(
+      readable,
+      repository,
+      repositoryOptions,
+      repositoryEdited,
+    );
     updates.connect(me.administrator);
+    void management.connect();
     element('change-password', HTMLFormElement).hidden = false;
     if (session.account.administrator) {
       administration.show();
@@ -339,19 +352,9 @@ element('search', HTMLFormElement).onsubmit = (event) => {
   event.preventDefault();
   run(() => list());
 };
-const clearSearch = element('search-clear', HTMLButtonElement);
-const updateSearch = () => {
-  clearSearch.disabled =
-    !element('query', HTMLInputElement).value && !element('filter-label', HTMLInputElement).value;
-};
-for (const id of ['query', 'filter-label'])
-  element(id, HTMLInputElement).addEventListener('input', updateSearch);
-clearSearch.onclick = () => {
-  element('query', HTMLInputElement).value = '';
-  element('filter-label', HTMLInputElement).value = '';
-  updateSearch();
+installCatalogFilter(() => {
   run(() => list());
-};
+});
 element('logout', HTMLButtonElement).onclick = () => {
   downloads.reset();
   stop?.abort();

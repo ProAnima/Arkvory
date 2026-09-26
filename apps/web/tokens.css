@@ -1,5 +1,6 @@
 /* Primitives and semantic roles. Component CSS contains no palette values. */
 :root {
+  --management-card-min: 20rem;
   --font-sans: 'Inter', 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif;
   --font-mono: 'Cascadia Code', 'SFMono-Regular', Consolas, monospace;
   --text-xs: 0.75rem;

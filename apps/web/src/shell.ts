@@ -6,6 +6,8 @@ import { themePreference, readPreference, savePreference, applyTheme } from './p
 import { initializeGuides } from './guides.js';
 const views = {
   catalog: 'catalogSubtitle',
+  repositories: 'repositoriesSubtitle',
+  services: 'servicesSubtitle',
   packages: 'packagesSubtitle',
   administration: 'administrationSubtitle',
   updates: 'updatesSubtitle',

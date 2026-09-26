@@ -1,0 +1,78 @@
+.management-stack {
+  display: grid;
+  gap: var(--space-4);
+  min-width: 0;
+}
+.management-stack > button,
+.binding-editor > button {
+  justify-self: start;
+}
+.management-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--management-card-min)), 1fr));
+  align-items: start;
+  gap: var(--space-4);
+}
+fieldset.management-stack {
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+.management-actions,
+.management-account {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+.management-account {
+  padding: var(--space-4);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-control);
+}
+.management-account strong {
+  flex: 1;
+  overflow-wrap: anywhere;
+}
+.binding-row {
+  display: grid;
+  gap: var(--space-3);
+  min-width: 0;
+  padding: var(--space-4);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-control);
+  overflow-wrap: anywhere;
+}
+.binding-editor {
+  display: grid;
+  gap: var(--space-3);
+}
+.permission-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--fact-min)), 1fr));
+  gap: var(--space-3);
+  min-width: 0;
+  padding: var(--space-3);
+}
+.permission-choice {
+  flex-direction: row;
+  align-items: center;
+}
+.management-dialog {
+  max-width: min(var(--update-dialog-width), calc(100vw - var(--space-8)));
+  padding: var(--panel-padding);
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+}
+.management-dialog > * + * {
+  margin-top: var(--space-4);
+}
+.management-dialog::backdrop {
+  background: var(--color-update-backdrop);
+}
+.management-dialog strong {
+  overflow-wrap: anywhere;
+}

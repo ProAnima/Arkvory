@@ -1,9 +1,13 @@
+import { managementRussian } from './management-messages.js';
+import { permissionRussian } from './permission-messages.js';
 import { interfaceRussian } from './interface-messages.js';
 import { guideRussian } from './guide-messages.js';
 import { cleanupRussian } from './cleanup-messages.js';
 import { updateRussian } from './update-messages.js';
 import type { en } from './messages-en.js';
 export const ru: Record<keyof typeof en, string> = {
+  ...managementRussian,
+  ...permissionRussian,
   ...guideRussian,
   ...interfaceRussian,
   ...cleanupRussian,

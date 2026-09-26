@@ -1,12 +1,14 @@
 # Управляемые сервисные ключи: запуск и эксплуатация
 
+Веб-интерфейс репозиториев и сервисного доступа: [WEB_ADMINISTRATION](WEB_ADMINISTRATION.md).
+
 Первый профиль реализован 2026-09-24 в миграции 9; текущая схема — **12**. Machine identities, 19 permissions на точные репозитории, lifecycle, SDK и API/worker/reader enforcement дополнены [делегированным управлением](SERVICE_DELEGATION.md): семь admin actions, точные цели и ceiling. Selectors папок/групп, federation, transfer tickets и webhooks не включены. Решения: [ADR 0017](adr/0017-managed-service-keys.md), [ADR 0019](adr/0019-scoped-service-administration.md).
 
 ## Обновление и bootstrap
 
 Остановить writer, readers и worker, сделать согласованный backup БД и storage, обновить сборку, выполнить `npm run migrate`, затем запустить процессы одной версии. Readiness требует markers 8, 9, 10 и 11: package indexes, service accounts/keys, delegation и asset index соответственно. Смешанный runtime не поддерживается: старый activation не проверяет issuer. Ограничения отката: [обновление delegation](SERVICE_DELEGATION.md#транзакции-лимиты-и-обновление).
 
-Для управления сервисными аккаунтами включить **`serviceAdministrator: true` у отдельного доверенного ключа в `ARKVORY_KEYS_FILE`** и согласованно перезапустить процессы. У существующих ключей этот флаг по умолчанию false; `administrator: true` продолжает управлять пользователями/группами и не даёт новых полномочий. `npm run init:local` для новой установки создаёт bootstrap key с обоими флагами. Не перезапускайте init поверх существующих секретов и не копируйте bootstrap secret в CI, браузер или приложение-потребитель.
+Для управления сервисными аккаунтами включить **`serviceAdministrator: true` у отдельного доверенного ключа в `ARKVORY_KEYS_FILE`** и согласованно перезапустить процессы. У существующих ключей этот флаг по умолчанию false; `administrator: true` продолжает управлять пользователями/группами и не даёт новых полномочий. `npm run init:local` для новой установки создаёт bootstrap key с обоими флагами. Не перезапускайте init поверх существующих секретов. Bootstrap не предназначен для CI или приложений-потребителей; в доверенной веб-консоли он используется для начальной настройки. Для повседневного управления выдавайте отдельный делегированный ключ оператора.
 
 Bootstrap может назначать любые реализованные repo permissions, создавать аккаунты и выдавать grants конкретным managed keys. Делегат управляет только назначенными чужими аккаунтами и в пределах actions/ceiling. Пользовательские сессии и обычный administrator новых полномочий не получают; HTTP API изменения bootstrap флага нет. Подробные правила и отсутствие каскадного отзыва активных ключей: [SERVICE_DELEGATION](SERVICE_DELEGATION.md).
 
@@ -97,7 +99,7 @@ Completion job хранит initiating key ID, worker заново разреш�
 - Один бюджет и admission owner на service account, независимо от числа ключей. Governor хранит не более 3000 principals: до 1000 file owners, 1000 users и 1000 service accounts.
 - Service audit атомарен с изменением; хранит actor/action/accountId/keyId/occurredAt, не secret/hash. Сохраняются последние **100 000 событий глобально**, более старые удаляются при mutations. Это ограниченная операционная история, не бессрочный compliance archive или гарантированный event replay; долговременный экспорт пока внешний.
 
-Существующий пользовательский auth сохраняет прежние права; readiness проверяет текущую схему. `/auth/me` возвращает для managed identity ID без coarse grants; подробные permissions находятся в новом endpoint. UI управления сервисными аккаунтами пока не добавлен: использовать API/SDK. Полную tenant isolation и HA эта реализация не объявляет.
+Существующий пользовательский auth сохраняет прежние права; readiness проверяет текущую схему. `/auth/me` возвращает для managed identity ID без coarse grants; подробные permissions находятся в новом endpoint. Сервисными аккаунтами можно управлять через API/SDK и [веб-консоль](WEB_ADMINISTRATION.md). Полную tenant isolation и HA эта реализация не объявляет.
 
 ## Проверки
 

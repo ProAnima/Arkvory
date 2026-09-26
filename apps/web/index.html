@@ -96,6 +96,27 @@
         </button>
         <button
           type="button"
+          id="repositories-nav"
+          data-nav="repositories"
+          aria-controls="repositories-panel"
+          hidden
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h18v14H3zM3 7V3h7l3 4" /></svg
+          ><span data-i18n="repositories">Репозитории</span>
+        </button>
+        <button
+          type="button"
+          id="services-nav"
+          data-nav="services"
+          aria-controls="services-panel"
+          hidden
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M14 8a5 5 0 1 0-4 4l4 4h3v3h4v-4l-7-7" /></svg
+          ><span data-i18n="services">Сервисный доступ</span>
+        </button>
+        <button
+          type="button"
           data-nav="updates"
           aria-controls="updates-panel"
           id="updates-nav"
@@ -1431,6 +1452,28 @@ GET /api/v1/operations?repository=releases</code></pre>
           <output id="admin-status" aria-live="polite"></output>
         </section>
 
+        <section
+          id="repositories-panel"
+          class="card padded management-stack"
+          data-view="repositories"
+          aria-labelledby="repositories-title"
+          hidden
+        >
+          <h2 id="repositories-title" data-i18n="repositories"></h2>
+          <fieldset id="repositories-controls" class="management-stack"></fieldset>
+          <output id="repositories-status" aria-live="polite"></output>
+        </section>
+        <section
+          id="services-panel"
+          class="card padded management-stack"
+          data-view="services"
+          aria-labelledby="services-title"
+          hidden
+        >
+          <h2 id="services-title" data-i18n="services"></h2>
+          <fieldset id="services-controls" class="management-stack"></fieldset>
+          <output id="services-status" aria-live="polite"></output>
+        </section>
         <noscript>Включите JavaScript / Enable JavaScript.</noscript>
       </main>
       <footer><span>ProAnima Arkvory</span><span>© Ian Panaev · ProAnimaStudio</span></footer>

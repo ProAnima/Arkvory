@@ -1,8 +1,12 @@
+import { managementEnglish } from './management-messages.js';
+import { permissionEnglish } from './permission-messages.js';
 import { interfaceEnglish } from './interface-messages.js';
 import { guideEnglish } from './guide-messages.js';
 import { cleanupEnglish } from './cleanup-messages.js';
 import { updateEnglish } from './update-messages.js';
 export const en = {
+  ...managementEnglish,
+  ...permissionEnglish,
   ...guideEnglish,
   ...interfaceEnglish,
   ...cleanupEnglish,
