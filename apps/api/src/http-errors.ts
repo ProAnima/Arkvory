@@ -7,6 +7,19 @@ export function registerHttpErrors(
   context: Pick<RequestContext, 'recordError'>,
 ) {
   app.setErrorHandler((error, request, reply) => {
+    // A stream can fail before its first byte after Fastify has staged headers on raw.
+    // Clear both header stores so JSON errors cannot inherit the file's type or validators.
+    for (const header of [
+      'content-type',
+      'content-length',
+      'content-encoding',
+      'content-range',
+      'content-disposition',
+      'accept-ranges',
+      'etag',
+      'last-modified',
+    ])
+      reply.removeHeader(header);
     const codes = {
       invalid_input: 400,
       not_found: 404,

@@ -5,8 +5,9 @@ import { ArkvoryError } from '@proanima/arkvory-domain';
 import { BandwidthGovernor } from '@proanima/arkvory-infrastructure';
 import { createContentSender, registerDownloadRoutes } from '../apps/api/dist/download-routes.js';
 import { createRequestContext } from '../apps/api/dist/request-context.js';
+import { registerHttpErrors } from '../apps/api/dist/http-errors.js';
 
-async function fixture(t, { download, bandwidth, check, signal } = {}) {
+async function fixture(t, { download, bandwidth, check, signal, read } = {}) {
   const app = Fastify();
   const context = createRequestContext();
   const owner = { id: 'reader', repositories: ['releases'], permissions: ['read'] };
@@ -29,6 +30,7 @@ async function fixture(t, { download, bandwidth, check, signal } = {}) {
           async *read() {
             reads++;
             try {
+              await read?.();
               yield bytes;
             } finally {
               returned++;
@@ -66,9 +68,7 @@ async function fixture(t, { download, bandwidth, check, signal } = {}) {
       },
     },
   });
-  app.setErrorHandler((error, _request, reply) => {
-    void reply.code(503).send({ code: error.code ?? 'unavailable' });
-  });
+  registerHttpErrors(app, context);
   registerDownloadRoutes(
     app,
     {
@@ -131,6 +131,33 @@ test('cancellation while resolving metadata does not return a successful empty r
   });
   assert.equal(response.statusCode, 503);
   assert.deepEqual(f.state(), { slots: 0, pins: 0, reads: 0, returned: 0 });
+});
+
+test('a failure before the first byte returns JSON without the file representation headers', async (t) => {
+  const f = await fixture(t, {
+    read() {
+      throw new ArkvoryError('unavailable', 'Content protection lost');
+    },
+  });
+  const response = await f.app.inject({
+    url: '/api/v1/repositories/releases/artifacts/artifact/content',
+    headers: { range: 'bytes=0-31' },
+  });
+  assert.equal(response.statusCode, 503, response.body);
+  assert.equal(response.json().code, 'unavailable');
+  assert.equal(response.headers['retry-after'], '2');
+  assert.match(response.headers['content-type'], /^application\/json/);
+  assert.equal(Number(response.headers['content-length']), response.rawPayload.length);
+  for (const header of [
+    'etag',
+    'last-modified',
+    'content-range',
+    'accept-ranges',
+    'content-disposition',
+  ])
+    assert.equal(response.headers[header], undefined, header);
+  await f.slotReleased;
+  assert.deepEqual(f.state(), { slots: 0, pins: 0, reads: 1, returned: 1 });
 });
 
 test('native and legacy delivery discard a buffered quantum when its pin is lost during pacing', async (t) => {
