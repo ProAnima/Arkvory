@@ -103,6 +103,8 @@ try {
   assert.equal(policy.hourUTC, 22);
   await page.locator('#connection-card > summary').click();
   await page.locator('#logout').click();
+  // Logout clears local state after the server has acknowledged session revocation.
+  await page.waitForFunction(() => document.querySelector('#token').value === '');
   assert.equal(await page.locator('#updates-nav').isVisible(), false);
   assert.equal(await page.locator('#update-banner').isVisible(), false);
   assert.equal(await page.locator('#update-current').textContent(), '—');
