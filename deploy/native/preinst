@@ -1,6 +1,0 @@
-#!/bin/sh
-set -eu
-if [ -f /opt/proanima-depot/installation.json ]; then
-  echo 'Existing Depot installation detected. Follow docs/RENAMING.md before installing Arkvory. Data has not been changed.' >&2
-  exit 1
-fi

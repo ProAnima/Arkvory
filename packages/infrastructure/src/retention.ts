@@ -27,12 +27,12 @@ export interface CandidateRow {
 }
 export const candidateSql = `SELECT u.id,u.descriptor->>'name' AS name,u.size::text,u.published_at,
   COALESCE(a.revision,0) AS revision,
-  EXISTS(SELECT 1 FROM depot_references r WHERE r.repository=u.repository AND r.artifact_id=u.id) AS referenced,
-  (EXISTS(SELECT 1 FROM depot_asset_revisions r WHERE r.artifact_id=u.id) OR
-   EXISTS(SELECT 1 FROM depot_assets r WHERE r.artifact_id=u.id)) AS asset,
-  EXISTS(SELECT 1 FROM depot_attachment_targets t WHERE t.target_id=u.id) AS attached,
+  EXISTS(SELECT 1 FROM arkvory_references r WHERE r.repository=u.repository AND r.artifact_id=u.id) AS referenced,
+  (EXISTS(SELECT 1 FROM arkvory_asset_revisions r WHERE r.artifact_id=u.id) OR
+   EXISTS(SELECT 1 FROM arkvory_assets r WHERE r.artifact_id=u.id)) AS asset,
+  EXISTS(SELECT 1 FROM arkvory_attachment_targets t WHERE t.target_id=u.id) AS attached,
   COALESCE(a.labels,u.descriptor->'labels','[]'::jsonb) ?| $3::text[] AS labelled
-  FROM depot_uploads u LEFT JOIN depot_annotations a ON a.artifact_id=u.id
+  FROM arkvory_uploads u LEFT JOIN arkvory_annotations a ON a.artifact_id=u.id
   WHERE u.repository=$1 AND u.status='available'`;
 export function candidate(row: CandidateRow): DeletionCandidate {
   const blockers: DeletionBlocker[] = [];
@@ -108,7 +108,7 @@ export async function removeArtifactInTransaction(
     blockers: readonly DeletionBlocker[] = [],
   ): DeletionResult => ({ id: item.id, outcome, blockers });
   const previous = await client.query(
-    'SELECT d.artifact_id FROM depot_artifact_deletions d JOIN depot_uploads u ON u.id=d.artifact_id WHERE u.repository=$1 AND u.id=$2',
+    'SELECT d.artifact_id FROM arkvory_artifact_deletions d JOIN arkvory_uploads u ON u.id=d.artifact_id WHERE u.repository=$1 AND u.id=$2',
     [repository, item.id],
   );
   if (previous.rowCount) return result('already_deleted');
@@ -126,15 +126,15 @@ export async function removeArtifactInTransaction(
   if (current.blockers.length) return result('protected', current.blockers);
   // This transition never unlinks bytes. Offline maintenance reclaims them after its grace period.
   await client.query(
-    "UPDATE depot_uploads SET status='cancelled',cancelled_at=now() WHERE id=$1 AND repository=$2 AND status='available'",
+    "UPDATE arkvory_uploads SET status='cancelled',cancelled_at=now() WHERE id=$1 AND repository=$2 AND status='available'",
     [item.id, repository],
   );
-  await client.query('INSERT INTO depot_artifact_deletions(artifact_id,actor) VALUES($1,$2)', [
+  await client.query('INSERT INTO arkvory_artifact_deletions(artifact_id,actor) VALUES($1,$2)', [
     item.id,
     principal.id,
   ]);
   await client.query(
-    "INSERT INTO depot_audit(repository,artifact_id,actor,action) VALUES($1,$2,$3,'artifact.delete')",
+    "INSERT INTO arkvory_audit(repository,artifact_id,actor,action) VALUES($1,$2,$3,'artifact.delete')",
     [repository, item.id, principal.id],
   );
   return result('deleted');

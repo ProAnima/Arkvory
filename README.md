@@ -10,7 +10,7 @@ UPack packages, metadata, tagging, collections, transfer queues, and ProGet-comp
 
 A **ProAnimaStudio** project. **Ian Panaev** is the author, copyright holder, and owner of the Arkvory and ProAnimaStudio brands.
 
-[Brand assets](branding/README.md) · [Moving existing installations to Arkvory](docs/RENAMING.md)
+[Brand assets](branding/README.md) · [Product identity](docs/PRODUCT_IDENTITY.md)
 
 > **Stage: standalone 0.2, under development.** Native API, multipart/resume, UPack/assets catalog, metadata, worker, admission queues, online physical cleanup, offline repair/scrub, SDK and web console are implemented. Legacy download support is partial. Read gateways with leased shares of a common download budget are implemented for shared storage. Two-server replication and full ProGet replacement are not ready.
 

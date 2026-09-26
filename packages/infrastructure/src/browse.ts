@@ -110,7 +110,7 @@ export class PostgresBrowse implements BrowseStore {
       await requirePublished(client, repository, id);
       const result = await work(client);
       await client.query(
-        'INSERT INTO depot_audit(repository,artifact_id,actor,action) VALUES($1,$2,$3,$4)',
+        'INSERT INTO arkvory_audit(repository,artifact_id,actor,action) VALUES($1,$2,$3,$4)',
         [repository, id, actor, action],
       );
       await client.query('COMMIT');
@@ -134,7 +134,7 @@ export class PostgresBrowse implements BrowseStore {
       collections: unknown;
       descriptor: unknown;
     }>(
-      `SELECT a.revision,a.labels,a.metadata,a.collections,u.descriptor FROM depot_uploads u LEFT JOIN depot_annotations a ON a.artifact_id=u.id WHERE u.repository=$1 AND u.id=$2 AND u.status='available'`,
+      `SELECT a.revision,a.labels,a.metadata,a.collections,u.descriptor FROM arkvory_uploads u LEFT JOIN arkvory_annotations a ON a.artifact_id=u.id WHERE u.repository=$1 AND u.id=$2 AND u.status='available'`,
       [repository, id],
     );
     const row = result.rows[0];
@@ -175,7 +175,7 @@ export class PostgresBrowse implements BrowseStore {
       'annotations.replace',
       async (client) => {
         const result = await client.query(
-          `INSERT INTO depot_annotations(artifact_id,revision,labels,metadata,collections) SELECT id,1,$3,$4,$5 FROM depot_uploads WHERE id=$1 AND repository=$2 AND status='available' AND $6::integer=0 ON CONFLICT(artifact_id) DO NOTHING`,
+          `INSERT INTO arkvory_annotations(artifact_id,revision,labels,metadata,collections) SELECT id,1,$3,$4,$5 FROM arkvory_uploads WHERE id=$1 AND repository=$2 AND status='available' AND $6::integer=0 ON CONFLICT(artifact_id) DO NOTHING`,
           [
             id,
             repository,
@@ -187,7 +187,7 @@ export class PostgresBrowse implements BrowseStore {
         );
         if (expected > 0) {
           const updated = await client.query(
-            'UPDATE depot_annotations SET revision=revision+1,labels=$3,metadata=$4,collections=$5 WHERE artifact_id=$1 AND revision=$2',
+            'UPDATE arkvory_annotations SET revision=revision+1,labels=$3,metadata=$4,collections=$5 WHERE artifact_id=$1 AND revision=$2',
             [
               id,
               expected,
@@ -219,7 +219,7 @@ export class PostgresBrowse implements BrowseStore {
       'package.register',
       async (client) => {
         const result = await client.query<{ artifact_id: string }>(
-          `INSERT INTO depot_packages(repository,package_group,name,version,artifact_id,manifest) VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT(repository,lower(package_group),lower(name),lower(version)) DO UPDATE SET artifact_id=depot_packages.artifact_id RETURNING artifact_id`,
+          `INSERT INTO arkvory_packages(repository,package_group,name,version,artifact_id,manifest) VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT(repository,lower(package_group),lower(name),lower(version)) DO UPDATE SET artifact_id=arkvory_packages.artifact_id RETURNING artifact_id`,
           [
             repository,
             manifest.group,
@@ -250,12 +250,12 @@ export class PostgresBrowse implements BrowseStore {
   ): Promise<string | null> {
     const result = await this.pool.query<{ artifact_id: string }>(
       version === undefined
-        ? `SELECT artifact_id FROM depot_packages WHERE repository=$1 AND EXISTS(SELECT 1 FROM depot_uploads u WHERE u.id=depot_packages.artifact_id AND u.status='available')
+        ? `SELECT artifact_id FROM arkvory_packages WHERE repository=$1 AND EXISTS(SELECT 1 FROM arkvory_uploads u WHERE u.id=arkvory_packages.artifact_id AND u.status='available')
            AND lower(package_group COLLATE "C")=lower($2 COLLATE "C")
            AND lower(name COLLATE "C")=lower($3 COLLATE "C")
-           ORDER BY depot_semver_key(version) COLLATE "C" DESC,
+           ORDER BY arkvory_semver_key(version) COLLATE "C" DESC,
                     version COLLATE "C" ASC, artifact_id::text COLLATE "C" ASC LIMIT 1`
-        : `SELECT artifact_id FROM depot_packages WHERE repository=$1 AND EXISTS(SELECT 1 FROM depot_uploads u WHERE u.id=depot_packages.artifact_id AND u.status='available')
+        : `SELECT artifact_id FROM arkvory_packages WHERE repository=$1 AND EXISTS(SELECT 1 FROM arkvory_uploads u WHERE u.id=arkvory_packages.artifact_id AND u.status='available')
            AND lower(package_group)=lower($2) AND lower(name)=lower($3)
            AND lower(version)=lower($4) LIMIT 1`,
       version === undefined ? [repository, group, name] : [repository, group, name, version],
@@ -284,7 +284,7 @@ export class PostgresBrowse implements BrowseStore {
       direction: options.sort === 'version' || options.direction === 'asc' ? 'ASC' : 'DESC',
     } as const;
     const versionField = {
-      expr: 'depot_semver_key(version) COLLATE "C"',
+      expr: 'arkvory_semver_key(version) COLLATE "C"',
       value: cursor?.versionKey ?? '',
       direction: options.sort === 'version' && options.direction === 'asc' ? 'ASC' : 'DESC',
     } as const;
@@ -333,8 +333,8 @@ export class PostgresBrowse implements BrowseStore {
     }>(
       `SELECT artifact_id,manifest,version,lower(package_group COLLATE "C") COLLATE "C" AS group_key,
               lower(name COLLATE "C") COLLATE "C" AS name_key,
-              depot_semver_key(version) COLLATE "C" AS version_key
-       FROM depot_packages WHERE repository=$1 AND EXISTS(SELECT 1 FROM depot_uploads u WHERE u.id=depot_packages.artifact_id AND u.status='available')
+              arkvory_semver_key(version) COLLATE "C" AS version_key
+       FROM arkvory_packages WHERE repository=$1 AND EXISTS(SELECT 1 FROM arkvory_uploads u WHERE u.id=arkvory_packages.artifact_id AND u.status='available')
          AND ($2::text IS NULL OR lower(package_group COLLATE "C")=lower($2 COLLATE "C"))
          AND ($3::text IS NULL OR lower(name COLLATE "C")=lower($3 COLLATE "C"))${seek}
        ORDER BY ${fields.map((field) => `${field.expr} ${field.direction}`).join(',')}
@@ -383,7 +383,7 @@ export class PostgresBrowse implements BrowseStore {
   }
   async assetRevision(repository: string, path: string, revision: number): Promise<AssetRevision> {
     const result = await this.pool.query<AssetRevisionRow>(
-      'SELECT path,revision,artifact_id,actor,created_at,source_revision FROM depot_asset_revisions WHERE repository=$1 AND path=$2 AND revision=$3',
+      'SELECT path,revision,artifact_id,actor,created_at,source_revision FROM arkvory_asset_revisions WHERE repository=$1 AND path=$2 AND revision=$3',
       [repository, path, revision],
     );
     const row = result.rows[0];
@@ -393,7 +393,7 @@ export class PostgresBrowse implements BrowseStore {
   async assetHistory(repository: string, path: string, before?: number): Promise<AssetHistoryPage> {
     await this.asset(repository, path);
     const result = await this.pool.query<AssetRevisionRow>(
-      'SELECT path,revision,artifact_id,actor,created_at,source_revision FROM depot_asset_revisions WHERE repository=$1 AND path=$2 AND ($3::integer IS NULL OR revision<$3) ORDER BY revision DESC LIMIT 51',
+      'SELECT path,revision,artifact_id,actor,created_at,source_revision FROM arkvory_asset_revisions WHERE repository=$1 AND path=$2 AND ($3::integer IS NULL OR revision<$3) ORDER BY revision DESC LIMIT 51',
       [repository, path, before ?? null],
     );
     const items = result.rows.slice(0, 50).map(assetRevision);
@@ -416,7 +416,7 @@ export class PostgresBrowse implements BrowseStore {
       async (client) => {
         if (sourceRevision !== undefined) {
           const source = await client.query(
-            'SELECT 1 FROM depot_asset_revisions WHERE repository=$1 AND path=$2 AND revision=$3 AND artifact_id=$4',
+            'SELECT 1 FROM arkvory_asset_revisions WHERE repository=$1 AND path=$2 AND revision=$3 AND artifact_id=$4',
             [repository, path, sourceRevision, id],
           );
           if (source.rowCount !== 1)
@@ -425,16 +425,16 @@ export class PostgresBrowse implements BrowseStore {
         const result =
           expected === 0
             ? await client.query(
-                'INSERT INTO depot_assets(repository,path,revision,artifact_id) VALUES($1,$2,1,$3) ON CONFLICT DO NOTHING',
+                'INSERT INTO arkvory_assets(repository,path,revision,artifact_id) VALUES($1,$2,1,$3) ON CONFLICT DO NOTHING',
                 [repository, path, id],
               )
             : await client.query(
-                'UPDATE depot_assets SET revision=revision+1,artifact_id=$3 WHERE repository=$1 AND path=$2 AND revision=$4',
+                'UPDATE arkvory_assets SET revision=revision+1,artifact_id=$3 WHERE repository=$1 AND path=$2 AND revision=$4',
                 [repository, path, id, expected],
               );
         if (result.rowCount !== 1) throw new ArkvoryError('conflict', 'Asset revision changed');
         await client.query(
-          'INSERT INTO depot_asset_revisions(repository,path,revision,artifact_id,actor,source_revision) VALUES($1,$2,$3,$4,$5,$6)',
+          'INSERT INTO arkvory_asset_revisions(repository,path,revision,artifact_id,actor,source_revision) VALUES($1,$2,$3,$4,$5,$6)',
           [repository, path, expected + 1, id, actor, sourceRevision ?? null],
         );
         return { path, revision: expected + 1, artifactId: id };
@@ -450,7 +450,7 @@ export class PostgresBrowse implements BrowseStore {
     after: string | undefined,
   ) {
     const result = await this.pool.query<{ id: string; name: string }>(
-      `SELECT u.id,u.descriptor->>'name' AS name FROM depot_uploads u LEFT JOIN depot_annotations a ON a.artifact_id=u.id WHERE u.repository=$1 AND u.status='available' AND ($2::uuid IS NULL OR u.id>$2) AND strpos(lower(u.descriptor->>'name'),lower($3))>0 AND ($4='' OR COALESCE(a.labels,u.descriptor->'labels') ? $4) AND ($5='' OR a.collections ? $5) ORDER BY u.id LIMIT 100`,
+      `SELECT u.id,u.descriptor->>'name' AS name FROM arkvory_uploads u LEFT JOIN arkvory_annotations a ON a.artifact_id=u.id WHERE u.repository=$1 AND u.status='available' AND ($2::uuid IS NULL OR u.id>$2) AND strpos(lower(u.descriptor->>'name'),lower($3))>0 AND ($4='' OR COALESCE(a.labels,u.descriptor->'labels') ? $4) AND ($5='' OR a.collections ? $5) ORDER BY u.id LIMIT 100`,
       [repository, after ?? null, query, label, collection],
     );
     return result.rows;
@@ -463,7 +463,7 @@ export class PostgresBrowse implements BrowseStore {
       artifact_id: string;
       occurred_at: Date;
     }>(
-      'SELECT sequence::text,actor,action,artifact_id,occurred_at FROM depot_audit WHERE repository=$1 AND sequence>$2::bigint ORDER BY sequence LIMIT 100',
+      'SELECT sequence::text,actor,action,artifact_id,occurred_at FROM arkvory_audit WHERE repository=$1 AND sequence>$2::bigint ORDER BY sequence LIMIT 100',
       [repository, after],
     );
     return result.rows.map((row) => ({
@@ -490,12 +490,12 @@ export class PostgresBrowse implements BrowseStore {
       async (client) => {
         if (remove)
           await client.query(
-            'DELETE FROM depot_references WHERE repository=$1 AND artifact_id=$2 AND owner=$3 AND reference=$4',
+            'DELETE FROM arkvory_references WHERE repository=$1 AND artifact_id=$2 AND owner=$3 AND reference=$4',
             [repository, id, owner, key],
           );
         else
           await client.query(
-            'INSERT INTO depot_references(repository,artifact_id,owner,reference) VALUES($1,$2,$3,$4) ON CONFLICT DO NOTHING',
+            'INSERT INTO arkvory_references(repository,artifact_id,owner,reference) VALUES($1,$2,$3,$4) ON CONFLICT DO NOTHING',
             [repository, id, owner, key],
           );
       },

@@ -4,11 +4,11 @@ import type { DownloadStorage } from '@proanima/arkvory-sdk';
 export async function openDownloadWorkspace(): Promise<FileSystemDirectoryHandle> {
   const root = await (
     await navigator.storage.getDirectory()
-  ).getDirectoryHandle('depot-download-staging-v1', { create: true });
+  ).getDirectoryHandle('arkvory-download-staging-v1', { create: true });
   const name = `session-${crypto.randomUUID()}`;
   return new Promise((resolve, reject) => {
     void navigator.locks
-      .request(`depot-download:${name}`, async () => {
+      .request(`arkvory-download:${name}`, async () => {
         try {
           const directory = await root.getDirectoryHandle(name, { create: true });
           for await (const [entry, handle] of root.entries()) {
@@ -19,7 +19,7 @@ export async function openDownloadWorkspace(): Promise<FileSystemDirectoryHandle
             )
               continue;
             await navigator.locks.request(
-              `depot-download:${entry}`,
+              `arkvory-download:${entry}`,
               { ifAvailable: true },
               async (lock) => {
                 if (lock) await root.removeEntry(entry, { recursive: true });

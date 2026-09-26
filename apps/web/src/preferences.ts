@@ -12,7 +12,7 @@ export function languagePreference(value: string | null, browserLanguage: string
 }
 export function readPreference(key: 'theme' | 'language'): string | null {
   try {
-    return localStorage.getItem(`arkvory.ui.${key}`) ?? localStorage.getItem(`depot.ui.${key}`);
+    return localStorage.getItem(`arkvory.ui.${key}`);
   } catch {
     return null;
   }

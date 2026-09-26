@@ -2,9 +2,6 @@
 # Download this script from a reviewed release. Never pipe an unreviewed network response into a root shell.
 set -euo pipefail
 umask 077
-if [[ -f /opt/proanima-depot/installation.json ]]; then
-  echo 'Existing Depot installation detected. Follow docs/RENAMING.md before installing Arkvory.' >&2; exit 1
-fi
 root=${ARKVORY_INSTALL_ROOT:-/opt/proanima-arkvory}
 mkdir -p "$root"
 work=$(mktemp -d "$root/bootstrap.XXXXXX")

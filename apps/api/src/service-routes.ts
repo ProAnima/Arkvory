@@ -104,7 +104,7 @@ export function registerServiceRoutes(
   });
   app.post('/api/v1/auth/activate-key', async (r, reply) => {
     const auth = r.headers.authorization;
-    if (!auth?.startsWith('Bearer dpk_'))
+    if (!auth?.startsWith('Bearer arkvory_'))
       throw new ArkvoryError('unauthorized', 'Managed Bearer key required');
     await service.activate(auth.slice(7));
     return reply.code(204).send();

@@ -65,14 +65,14 @@ export function registerRequestSecurity(app: FastifyInstance, dependencies: Secu
       if (basic.startsWith('api:')) token = basic.slice(4);
     }
     const digest = createHash('sha256').update(token).digest();
-    const key = token.startsWith('dpk_')
+    const key = token.startsWith('arkvory_')
       ? undefined
       : config.keys.find((candidate) =>
           timingSafeEqual(digest, Buffer.from(candidate.sha256, 'hex')),
         );
     const authenticated =
       token.length >= 32 && token.length <= 512
-        ? token.startsWith('dpk_')
+        ? token.startsWith('arkvory_')
           ? await serviceAccounts.resolve(
               token,
               request.routeOptions.url === '/api/v1/auth/activate-key',

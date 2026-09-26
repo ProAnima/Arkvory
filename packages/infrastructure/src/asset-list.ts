@@ -3,7 +3,7 @@ import { ArkvoryError } from '@proanima/arkvory-domain';
 import type { AssetEntry } from '@proanima/arkvory-application';
 export async function readAsset(pool: Pool, repository: string, path: string): Promise<AssetEntry> {
   const result = await pool.query<{ path: string; revision: number; artifact_id: string }>(
-    'SELECT * FROM depot_assets WHERE repository=$1 AND path=$2',
+    'SELECT * FROM arkvory_assets WHERE repository=$1 AND path=$2',
     [repository, path],
   );
   const row = result.rows[0];
@@ -16,7 +16,7 @@ export async function readAssets(
   prefix: string,
 ): Promise<readonly AssetEntry[]> {
   const result = await pool.query<{ path: string; revision: number; artifact_id: string }>(
-    'SELECT * FROM depot_assets WHERE repository=$1 AND starts_with(path,$2) ORDER BY path LIMIT 1001',
+    'SELECT * FROM arkvory_assets WHERE repository=$1 AND starts_with(path,$2) ORDER BY path LIMIT 1001',
     [repository, prefix],
   );
   if (result.rows.length > 1000)

@@ -1,4 +1,3 @@
-import { normalizeRuntimeSettings } from '@proanima/arkvory-contracts';
 import { readFile } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import { setTimeout as delay } from 'node:timers/promises';
@@ -20,7 +19,6 @@ for (const event of ['SIGINT', 'SIGTERM'] as const)
     stop.abort();
   });
 try {
-  Object.assign(process.env, normalizeRuntimeSettings(process.env));
   const keyFile = process.env['ARKVORY_KEYS_FILE'];
   if (!keyFile) throw new Error('ARKVORY_KEYS_FILE is required');
   const { catalog, blobs } = await resources('worker');

@@ -10,7 +10,7 @@ test('PostgreSQL SemVer order matches the domain rule and pages past 1000 versio
     `SELECT name.relname, index.indisvalid
      FROM pg_index AS index JOIN pg_class AS name ON name.oid=index.indexrelid
      JOIN pg_namespace AS namespace ON namespace.oid=name.relnamespace
-     WHERE namespace.nspname=current_schema() AND name.relname LIKE 'depot_package_page_%'
+     WHERE namespace.nspname=current_schema() AND name.relname LIKE 'arkvory_package_page_%'
      ORDER BY name.relname`,
   );
   assert.equal(indexes.rowCount, 6);
@@ -18,7 +18,7 @@ test('PostgreSQL SemVer order matches the domain rule and pages past 1000 versio
   assert.equal(
     (
       await f.catalog.pool.query(
-        'SELECT count(*)::integer AS count FROM depot_migrations WHERE version=8',
+        'SELECT count(*)::integer AS count FROM arkvory_migrations WHERE version=8',
       )
     ).rows[0].count,
     1,
@@ -35,7 +35,7 @@ test('PostgreSQL SemVer order matches the domain rule and pages past 1000 versio
     '999999999999999999999999.0.0',
   ];
   const ordered = await f.catalog.pool.query(
-    'SELECT value FROM unnest($1::text[]) AS value ORDER BY depot_semver_key(value) COLLATE "C", value COLLATE "C"',
+    'SELECT value FROM unnest($1::text[]) AS value ORDER BY arkvory_semver_key(value) COLLATE "C", value COLLATE "C"',
     [versions],
   );
   assert.deepEqual(
@@ -46,13 +46,13 @@ test('PostgreSQL SemVer order matches the domain rule and pages past 1000 versio
   await f.catalog.pool.query(
     `WITH source AS (SELECT i,gen_random_uuid() AS id FROM generate_series(0,1004) AS i),
      inserted AS (
-       INSERT INTO depot_uploads(id,repository,owner,idempotency_key,descriptor,size,status,created_at)
+       INSERT INTO arkvory_uploads(id,repository,owner,idempotency_key,descriptor,size,status,created_at)
        SELECT id,'releases','pagination-test','seed-'||i,
               jsonb_build_object('name','seed-'||i||'.upack','size','0','sha256',$1::text,
                                  'labels',jsonb_build_array(),'metadata',jsonb_build_object()),
               0,'available',now() FROM source RETURNING id,idempotency_key
      )
-     INSERT INTO depot_packages(repository,package_group,name,version,artifact_id,manifest)
+     INSERT INTO arkvory_packages(repository,package_group,name,version,artifact_id,manifest)
      SELECT 'releases','Tools','Example','1.0.'||split_part(idempotency_key,'-',2),id,
             jsonb_build_object('group','Tools','name','Example',
                                'version','1.0.'||split_part(idempotency_key,'-',2))
@@ -111,13 +111,13 @@ test('PostgreSQL SemVer order matches the domain rule and pages past 1000 versio
        SELECT package_group,name,version,gen_random_uuid() AS id
        FROM (VALUES ('Alpha','A','1.0.0'),('Zeta','Z','2.0.0')) AS entry(package_group,name,version)
      ), inserted AS (
-       INSERT INTO depot_uploads(id,repository,owner,idempotency_key,descriptor,size,status,created_at)
+       INSERT INTO arkvory_uploads(id,repository,owner,idempotency_key,descriptor,size,status,created_at)
        SELECT id,'releases','pagination-test','extra-'||package_group,
               jsonb_build_object('name',name||'.upack','size','0','sha256',$1::text,
                                  'labels',jsonb_build_array(),'metadata',jsonb_build_object()),
               0,'available',now() FROM source RETURNING id,idempotency_key
      )
-     INSERT INTO depot_packages(repository,package_group,name,version,artifact_id,manifest)
+     INSERT INTO arkvory_packages(repository,package_group,name,version,artifact_id,manifest)
      SELECT 'releases',source.package_group,source.name,source.version,source.id,
             jsonb_build_object('group',source.package_group,'name',source.name,'version',source.version)
      FROM source JOIN inserted USING (id)`,
@@ -152,21 +152,21 @@ test('PostgreSQL SemVer order matches the domain rule and pages past 1000 versio
   assert.equal(filtered.json().next, null);
   assert.equal(filtered.json().items[0].name, 'A');
 
-  await f.catalog.pool.query('DELETE FROM depot_migrations WHERE version=8');
-  await f.catalog.pool.query('DROP INDEX CONCURRENTLY depot_package_page_group_asc');
+  await f.catalog.pool.query('DELETE FROM arkvory_migrations WHERE version=8');
+  await f.catalog.pool.query('DROP INDEX CONCURRENTLY arkvory_package_page_group_asc');
   await assert.rejects(
     f.catalog.pool.query(
-      'CREATE UNIQUE INDEX CONCURRENTLY depot_package_page_group_asc ON depot_packages(repository)',
+      'CREATE UNIQUE INDEX CONCURRENTLY arkvory_package_page_group_asc ON arkvory_packages(repository)',
     ),
     { code: '23505' },
   );
   const invalid = await f.catalog.pool.query(
-    `SELECT indisvalid FROM pg_index WHERE indexrelid=to_regclass('depot_package_page_group_asc')`,
+    `SELECT indisvalid FROM pg_index WHERE indexrelid=to_regclass('arkvory_package_page_group_asc')`,
   );
   assert.equal(invalid.rows[0].indisvalid, false);
   await Promise.all([migrate(f.catalog.pool), migrate(f.catalog.pool)]);
   const repaired = await f.catalog.pool.query(
-    `SELECT indisvalid FROM pg_index WHERE indexrelid=to_regclass('depot_package_page_group_asc')`,
+    `SELECT indisvalid FROM pg_index WHERE indexrelid=to_regclass('arkvory_package_page_group_asc')`,
   );
   assert.equal(repaired.rows[0].indisvalid, true);
 });

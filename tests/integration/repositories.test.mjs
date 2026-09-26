@@ -56,7 +56,7 @@ test('repository discovery exposes own logical scopes with schemas, paging and u
   assert.equal(missing.statusCode, 404);
   validateResponse('/api/v1/repositories/{repository}', 'get', missing);
   assert.equal(
-    (await f.catalog.pool.query('SELECT count(*)::integer AS count FROM depot_uploads')).rows[0]
+    (await f.catalog.pool.query('SELECT count(*)::integer AS count FROM arkvory_uploads')).rows[0]
       .count,
     0,
   );
@@ -140,7 +140,7 @@ test('repository pages recheck policy, expiry, disable and revoke and preserve a
   await m.root.revokeServiceKey(m.key.key.id);
   await assert.rejects(m.client.repositories(), { status: 401 });
   await f.catalog.pool.query(
-    "UPDATE depot_api_keys SET expires_at=clock_timestamp()-interval '1 second' WHERE id=$1",
+    "UPDATE arkvory_api_keys SET expires_at=clock_timestamp()-interval '1 second' WHERE id=$1",
     [rotated.key.id],
   );
   await assert.rejects(newClient.repository('alpha'), { status: 401 });

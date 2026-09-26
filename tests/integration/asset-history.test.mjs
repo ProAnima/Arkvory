@@ -128,7 +128,7 @@ test('competing restores commit one revision; history or audit failure rolls bac
   await assign(f, second, 1);
   const results = await Promise.all([restore(f, 1, 2), restore(f, 1, 2)]);
   assert.deepEqual(results.map((r) => r.statusCode).sort(), [200, 409]);
-  for (const table of ['depot_asset_revisions', 'depot_audit']) {
+  for (const table of ['arkvory_asset_revisions', 'arkvory_audit']) {
     await f.catalog.pool.query(
       `CREATE FUNCTION reject_change() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'injected write failure'; END $$; CREATE TRIGGER reject_change BEFORE INSERT ON ${table} FOR EACH ROW EXECUTE FUNCTION reject_change()`,
     );
@@ -260,11 +260,11 @@ test('asset revisions cannot cross repositories or overflow the database integer
     404,
   );
   await f.catalog.pool.query(
-    'UPDATE depot_asset_revisions SET revision=2147483646 WHERE repository=$1 AND path=$2; ',
+    'UPDATE arkvory_asset_revisions SET revision=2147483646 WHERE repository=$1 AND path=$2; ',
     ['releases', path],
   );
   await f.catalog.pool.query(
-    'UPDATE depot_assets SET revision=2147483646 WHERE repository=$1 AND path=$2',
+    'UPDATE arkvory_assets SET revision=2147483646 WHERE repository=$1 AND path=$2',
     ['releases', path],
   );
   const response = await restore(f, 2147483646, 2147483646);
@@ -281,24 +281,24 @@ test('migration preserves old asset history without inventing authors or timesta
   await assign(f, id, 0);
   await f.app.close();
   await f.catalog.pool.query(
-    `ALTER TABLE depot_asset_revisions DROP COLUMN actor, DROP COLUMN created_at, DROP COLUMN source_revision;
-     ALTER TABLE depot_asset_revisions DROP CONSTRAINT depot_asset_revision_positive;
-     DROP TABLE depot_gateway_leases, depot_download_policy;
-     DROP TABLE depot_user_sessions, depot_group_members, depot_group_grants,
-                depot_users, depot_access_groups;
-     DROP FUNCTION depot_semver_key(text) CASCADE;
-     ALTER TABLE depot_jobs DROP COLUMN credential_id;
-     DROP TABLE depot_storage_policies, depot_storage_events;
-     DROP TABLE depot_cleanup_settings;
-     ALTER TABLE depot_uploads DROP COLUMN temp_cleaned, DROP COLUMN gc_checked_at;
-     DROP TABLE depot_service_delegations, depot_service_audit, depot_api_keys, depot_service_accounts;
-     DROP TABLE depot_attachment_targets, depot_attachment_revisions;
-     DROP TABLE depot_artifact_deletions;
-     DROP TRIGGER depot_record_publication ON depot_uploads;
-     DROP FUNCTION depot_record_publication();
-     ALTER TABLE depot_uploads DROP COLUMN published_at;
-     DROP INDEX depot_asset_history_artifact, depot_asset_current_artifact;
-     DELETE FROM depot_migrations WHERE version>=4`,
+    `ALTER TABLE arkvory_asset_revisions DROP COLUMN actor, DROP COLUMN created_at, DROP COLUMN source_revision;
+     ALTER TABLE arkvory_asset_revisions DROP CONSTRAINT arkvory_asset_revision_positive;
+     DROP TABLE arkvory_gateway_leases, arkvory_download_policy;
+     DROP TABLE arkvory_user_sessions, arkvory_group_members, arkvory_group_grants,
+                arkvory_users, arkvory_access_groups;
+     DROP FUNCTION arkvory_semver_key(text) CASCADE;
+     ALTER TABLE arkvory_jobs DROP COLUMN credential_id;
+     DROP TABLE arkvory_storage_policies, arkvory_storage_events;
+     DROP TABLE arkvory_cleanup_settings;
+     ALTER TABLE arkvory_uploads DROP COLUMN temp_cleaned, DROP COLUMN gc_checked_at;
+     DROP TABLE arkvory_service_delegations, arkvory_service_audit, arkvory_api_keys, arkvory_service_accounts;
+     DROP TABLE arkvory_attachment_targets, arkvory_attachment_revisions;
+     DROP TABLE arkvory_artifact_deletions;
+     DROP TRIGGER arkvory_record_publication ON arkvory_uploads;
+     DROP FUNCTION arkvory_record_publication();
+     ALTER TABLE arkvory_uploads DROP COLUMN published_at;
+     DROP INDEX arkvory_asset_history_artifact, arkvory_asset_current_artifact;
+     DELETE FROM arkvory_migrations WHERE version>=4`,
   );
   await assert.rejects(f.catalog.ready(), { code: 'unavailable' });
   await migrate(f.catalog.pool);

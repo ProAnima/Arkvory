@@ -8,7 +8,7 @@
 
 Проект **ProAnimaStudio**. Автор, правообладатель и владелец брендов Arkvory и ProAnimaStudio — **Ian Panaev**.
 
-[Фирменные материалы](branding/README.md) · [Переход существующих установок на Arkvory](docs/RENAMING.md)
+[Фирменные материалы](branding/README.md) · [Идентификаторы продукта](docs/PRODUCT_IDENTITY.md)
 
 > **Стадия: standalone 0.2, разработка продолжается.** Работают native API, multipart/resume, каталог UPack/assets, метаданные, worker, очереди допуска, фоновая физическая очистка, offline repair/scrub, SDK и веб-консоль. Legacy download поддерживается частично. Реализованы шлюзы чтения с арендой долей общего download-бюджета для общего хранилища. Репликация двух серверов и полная замена ProGet ещё не готовы.
 

@@ -1,4 +1,3 @@
-import { assertArkvoryInstallation, assertNoLegacyDefault } from './brand-transition.js';
 import { resolve, join } from 'node:path';
 import { exclusive, jsonFile } from './files.js';
 import { parseInstallation, version } from './model.js';
@@ -61,8 +60,6 @@ async function main(): Promise<void> {
     console.log(parseInstallation(await jsonFile(join(root, 'installation.json'))));
     return;
   }
-  await assertArkvoryInstallation(root);
-  if (operation === 'install') await assertNoLegacyDefault();
   await exclusive(root, async () => {
     switch (operation) {
       case 'updates-poll':

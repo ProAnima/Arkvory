@@ -47,8 +47,8 @@ const rankedSql =
   SELECT DISTINCT u.id,u.published_at,
     CASE WHEN $2::jsonb->>'grouping'='repository' THEN '' ELSE lower(p.package_group)||'/'||lower(p.name) END AS identity,
     COALESCE(a.labels,u.descriptor->'labels','[]'::jsonb) AS labels
-  FROM depot_packages p JOIN depot_uploads u ON u.id=p.artifact_id AND u.repository=p.repository
-  LEFT JOIN depot_annotations a ON a.artifact_id=u.id
+  FROM arkvory_packages p JOIN arkvory_uploads u ON u.id=p.artifact_id AND u.repository=p.repository
+  LEFT JOIN arkvory_annotations a ON a.artifact_id=u.id
   WHERE u.repository=$1 AND u.status='available'
 ), buckets AS (
   SELECT i.id,i.published_at,i.identity,COALESCE(c.label,'') AS channel,
@@ -92,7 +92,7 @@ export class PostgresStoragePolicy implements StoragePolicyStore {
   }
   private async row(c: Pool | PoolClient, repository: string) {
     return (
-      await c.query<PolicyRow>('SELECT * FROM depot_storage_policies WHERE repository=$1', [
+      await c.query<PolicyRow>('SELECT * FROM arkvory_storage_policies WHERE repository=$1', [
         repository,
       ])
     ).rows[0];
@@ -112,8 +112,8 @@ export class PostgresStoragePolicy implements StoragePolicyStore {
       if ((current?.revision ?? 0) !== revision || revision === 2147483647)
         throw new ArkvoryError('conflict', 'Storage policy revision changed');
       const result = await c.query<PolicyRow>(
-        `INSERT INTO depot_storage_policies(repository,revision,policy,authorizer_key_id)
-        VALUES($1,1,$2,$3) ON CONFLICT(repository) DO UPDATE SET revision=depot_storage_policies.revision+1,
+        `INSERT INTO arkvory_storage_policies(repository,revision,policy,authorizer_key_id)
+        VALUES($1,1,$2,$3) ON CONFLICT(repository) DO UPDATE SET revision=arkvory_storage_policies.revision+1,
         policy=EXCLUDED.policy,authorizer_key_id=EXCLUDED.authorizer_key_id,next_run_at=now(),last_error=NULL
         RETURNING *`,
         [access.repository, JSON.stringify(policy), key],
@@ -137,7 +137,7 @@ export class PostgresStoragePolicy implements StoragePolicyStore {
       COALESCE(sum(size) FILTER(WHERE status='available' AND NOT reclaimed),0)::text AS published,
       COALESCE(sum(size) FILTER(WHERE status='pending' AND NOT reclaimed),0)::text AS pending,
       COALESCE(sum(size) FILTER(WHERE status='cancelled' AND NOT reclaimed),0)::text AS retired,
-      COALESCE(sum(size) FILTER(WHERE NOT reclaimed),0)::text AS reserved FROM depot_uploads WHERE repository=$1`,
+      COALESCE(sum(size) FILTER(WHERE NOT reclaimed),0)::text AS reserved FROM arkvory_uploads WHERE repository=$1`,
         [repository],
       )
     ).rows[0];
@@ -215,7 +215,7 @@ export class PostgresStoragePolicy implements StoragePolicyStore {
         );
       const deleted = items.filter((i) => i.outcome === 'deleted').length;
       await c.query(
-        `UPDATE depot_storage_policies SET last_run_at=clock_timestamp(),last_deleted=$2,last_error=NULL,
+        `UPDATE arkvory_storage_policies SET last_run_at=clock_timestamp(),last_deleted=$2,last_error=NULL,
         next_run_at=clock_timestamp()+($3::integer * interval '1 minute') WHERE repository=$1`,
         [access.repository, deleted, chosen.hasMore ? 1 : current.policy.intervalMinutes],
       );
@@ -237,13 +237,13 @@ export class PostgresStoragePolicy implements StoragePolicyStore {
         authorizer_key_id: string;
         enabled: boolean;
       }>(`SELECT repository,revision,authorizer_key_id,(policy->>'enabled')::boolean AS enabled
-      FROM depot_storage_policies WHERE (policy->>'enabled')::boolean AND next_run_at<=clock_timestamp() ORDER BY next_run_at,repository LIMIT 20`)
+      FROM arkvory_storage_policies WHERE (policy->>'enabled')::boolean AND next_run_at<=clock_timestamp() ORDER BY next_run_at,repository LIMIT 20`)
     ).rows;
   }
   async monitorCapacities(active: () => boolean) {
     const due = (
       await this.pool.query<{ repository: string }>(
-        "SELECT repository FROM depot_storage_policies WHERE capacity_checked_at<clock_timestamp()-interval '1 minute' ORDER BY capacity_checked_at,repository LIMIT 20",
+        "SELECT repository FROM arkvory_storage_policies WHERE capacity_checked_at<clock_timestamp()-interval '1 minute' ORDER BY capacity_checked_at,repository LIMIT 20",
       )
     ).rows;
     for (const { repository } of due) {
@@ -254,7 +254,7 @@ export class PostgresStoragePolicy implements StoragePolicyStore {
         if (!row) return;
         await this.checkCapacity(c, repository, parseStoragePolicy(row.policy), row.capacity_state);
         await c.query(
-          'UPDATE depot_storage_policies SET capacity_checked_at=clock_timestamp() WHERE repository=$1',
+          'UPDATE arkvory_storage_policies SET capacity_checked_at=clock_timestamp() WHERE repository=$1',
           [repository],
         );
       });
@@ -270,7 +270,7 @@ export class PostgresStoragePolicy implements StoragePolicyStore {
       if (error && row.last_error !== error)
         await this.record(c, repository, 'error', 'retention.failed', { reason: error, revision });
       await c.query(
-        `UPDATE depot_storage_policies SET last_error=$2,next_run_at=clock_timestamp()+interval '1 minute' WHERE repository=$1`,
+        `UPDATE arkvory_storage_policies SET last_error=$2,next_run_at=clock_timestamp()+interval '1 minute' WHERE repository=$1`,
         [repository, error ?? null],
       );
     });
@@ -298,7 +298,7 @@ export class PostgresStoragePolicy implements StoragePolicyStore {
           quotaBytes: usage.quotaBytes ?? 'unlimited',
         },
       );
-      await c.query('UPDATE depot_storage_policies SET capacity_state=$2 WHERE repository=$1', [
+      await c.query('UPDATE arkvory_storage_policies SET capacity_state=$2 WHERE repository=$1', [
         repository,
         usage.state,
       ]);
@@ -331,7 +331,7 @@ export class PostgresStoragePolicy implements StoragePolicyStore {
         code: string;
         details: StorageEvent['details'];
       }>(
-        `SELECT * FROM depot_storage_events WHERE repository=$1 AND sequence>$2::bigint
+        `SELECT * FROM arkvory_storage_events WHERE repository=$1 AND sequence>$2::bigint
       AND ($3::text IS NULL OR level=$3) ORDER BY sequence LIMIT 101`,
         [repository, after, level ?? null],
       )

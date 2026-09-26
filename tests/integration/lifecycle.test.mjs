@@ -20,7 +20,7 @@ test('expired sessions cannot accept parts and revoked worker permissions preven
   const bytes = Buffer.from('revocation');
   const id = (await create(f, bytes)).json().id;
   await f.catalog.pool.query(
-    "UPDATE depot_uploads SET expires_at=now()-interval '1 second' WHERE id=$1",
+    "UPDATE arkvory_uploads SET expires_at=now()-interval '1 second' WHERE id=$1",
     [id],
   );
   const put = await f.app.inject({
@@ -219,14 +219,14 @@ test('leased completion jobs fence stale workers and real worker publishes with 
   const old = await jobs.take();
   assert.equal(old.id, job.id);
   await f.catalog.pool.query(
-    "UPDATE depot_jobs SET lease_until=now()-interval '1 second' WHERE id=$1",
+    "UPDATE arkvory_jobs SET lease_until=now()-interval '1 second' WHERE id=$1",
     [job.id],
   );
   const next = await jobs.take();
   assert.equal(next.generation, old.generation + 1);
   assert.equal(await jobs.finish(old.id, old.generation, null), false);
   await f.catalog.pool.query(
-    "UPDATE depot_jobs SET lease_until=now()-interval '1 second' WHERE id=$1",
+    "UPDATE arkvory_jobs SET lease_until=now()-interval '1 second' WHERE id=$1",
     [job.id],
   );
   const keys = join(f.directory, 'keys.json');

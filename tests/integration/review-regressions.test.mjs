@@ -38,9 +38,9 @@ test('external administrators can preflight PATCH and disable an account', async
 
 test('API readiness rejects a database without the package and identity migrations', async (t) => {
   const f = await setup(t);
-  await f.catalog.pool.query('DELETE FROM depot_migrations WHERE version=8');
+  await f.catalog.pool.query('DELETE FROM arkvory_migrations WHERE version=8');
   await assert.rejects(f.catalog.ready(), { code: 'unavailable' });
-  await f.catalog.pool.query('DELETE FROM depot_migrations WHERE version>=6');
+  await f.catalog.pool.query('DELETE FROM arkvory_migrations WHERE version>=6');
   await assert.rejects(f.catalog.ready(), { code: 'unavailable' });
   assert.equal((await f.app.inject({ url: '/health/ready', headers: f.headers })).statusCode, 503);
 });
@@ -131,19 +131,19 @@ test('administrative password work shares the bounded password gate', async (t) 
 test('concurrent account and group creation cannot overbook catalog capacity', async (t) => {
   const f = await setup(t);
   await f.catalog.pool.query(`
-    INSERT INTO depot_users(id,name,password_salt,password_hash)
+    INSERT INTO arkvory_users(id,name,password_salt,password_hash)
     SELECT gen_random_uuid(),'seed-'||i,repeat('0',32),repeat('0',128) FROM generate_series(1,999) i;
-    INSERT INTO depot_access_groups(id,name)
+    INSERT INTO arkvory_access_groups(id,name)
     SELECT gen_random_uuid(),'seed-'||i FROM generate_series(1,99) i;
     CREATE FUNCTION slow_identity_insert() RETURNS trigger LANGUAGE plpgsql AS $$
     BEGIN PERFORM pg_sleep(0.2); RETURN NEW; END $$;
-    CREATE TRIGGER slow_user BEFORE INSERT ON depot_users FOR EACH ROW EXECUTE FUNCTION slow_identity_insert();
-    CREATE TRIGGER slow_group BEFORE INSERT ON depot_access_groups FOR EACH ROW EXECUTE FUNCTION slow_identity_insert();
+    CREATE TRIGGER slow_user BEFORE INSERT ON arkvory_users FOR EACH ROW EXECUTE FUNCTION slow_identity_insert();
+    CREATE TRIGGER slow_group BEFORE INSERT ON arkvory_access_groups FOR EACH ROW EXECUTE FUNCTION slow_identity_insert();
   `);
   const store = new PostgresIdentity(f.catalog.pool);
   for (const [create, table, limit] of [
-    [(name) => store.createUser(name, 'private-test-password', false), 'depot_users', 1000],
-    [(name) => store.createGroup(name), 'depot_access_groups', 100],
+    [(name) => store.createUser(name, 'private-test-password', false), 'arkvory_users', 1000],
+    [(name) => store.createGroup(name), 'arkvory_access_groups', 100],
   ]) {
     const results = await Promise.allSettled([create('final-one'), create('final-two')]);
     assert.equal(results.filter((result) => result.status === 'fulfilled').length, 1);
@@ -163,12 +163,12 @@ test('SDK accepts a bounded page of large manifests and preserves an explicit ro
   await f.catalog.pool.query(`
     WITH source AS (SELECT i, gen_random_uuid() AS id FROM generate_series(1,100) i),
     uploaded AS (
-      INSERT INTO depot_uploads(id,repository,owner,idempotency_key,descriptor,size,status,created_at)
+      INSERT INTO arkvory_uploads(id,repository,owner,idempotency_key,descriptor,size,status,created_at)
       SELECT id,'releases','test','large-'||i,
         jsonb_build_object('name','large.upack','size','0','sha256',repeat('0',64),'labels','[]'::jsonb,'metadata','{}'::jsonb),
         0,'available',now() FROM source RETURNING id
     )
-    INSERT INTO depot_packages(repository,package_group,name,version,artifact_id,manifest)
+    INSERT INTO arkvory_packages(repository,package_group,name,version,artifact_id,manifest)
     SELECT 'releases',CASE WHEN i<=50 THEN '' ELSE 'Tools' END,'Example','1.0.'||i,id,
       jsonb_build_object('group',CASE WHEN i<=50 THEN '' ELSE 'Tools' END,'name','Example',
         'version','1.0.'||i,'description',repeat('x',60000))
@@ -184,20 +184,20 @@ test('SDK accepts a bounded page of large manifests and preserves an explicit ro
 test('membership and grant budgets keep group listings usable at capacity', async (t) => {
   const f = await setup(t);
   await f.catalog.pool.query(`
-    INSERT INTO depot_users(id,name,password_salt,password_hash)
+    INSERT INTO arkvory_users(id,name,password_salt,password_hash)
     SELECT gen_random_uuid(),'seed-'||i,repeat('0',32),repeat('0',128) FROM generate_series(1,101) i;
-    INSERT INTO depot_access_groups(id,name)
+    INSERT INTO arkvory_access_groups(id,name)
     SELECT gen_random_uuid(),'seed-'||i FROM generate_series(1,100) i;
-    INSERT INTO depot_group_members(group_id,user_id)
-    SELECT g.id,u.id FROM depot_access_groups g CROSS JOIN depot_users u WHERE u.name<>'seed-101';
-    INSERT INTO depot_group_grants(group_id,repository,access)
-    SELECT g.id,'repository-'||i,'read' FROM depot_access_groups g CROSS JOIN generate_series(1,100) i;
+    INSERT INTO arkvory_group_members(group_id,user_id)
+    SELECT g.id,u.id FROM arkvory_access_groups g CROSS JOIN arkvory_users u WHERE u.name<>'seed-101';
+    INSERT INTO arkvory_group_grants(group_id,repository,access)
+    SELECT g.id,'repository-'||i,'read' FROM arkvory_access_groups g CROSS JOIN generate_series(1,100) i;
   `);
-  const group = (await f.catalog.pool.query('SELECT id FROM depot_access_groups LIMIT 1')).rows[0]
+  const group = (await f.catalog.pool.query('SELECT id FROM arkvory_access_groups LIMIT 1')).rows[0]
     .id;
-  const extra = (await f.catalog.pool.query("SELECT id FROM depot_users WHERE name='seed-101'"))
+  const extra = (await f.catalog.pool.query("SELECT id FROM arkvory_users WHERE name='seed-101'"))
     .rows[0].id;
-  const existing = (await f.catalog.pool.query("SELECT id FROM depot_users WHERE name='seed-1'"))
+  const existing = (await f.catalog.pool.query("SELECT id FROM arkvory_users WHERE name='seed-1'"))
     .rows[0].id;
   const store = new PostgresIdentity(f.catalog.pool);
   await assert.rejects(store.membership(group, extra, true), { code: 'capacity_exceeded' });

@@ -1,4 +1,3 @@
-import { normalizeRuntimeSettings } from '@proanima/arkvory-contracts';
 import { readFile } from 'node:fs/promises';
 import { ArkvoryError } from '@proanima/arkvory-domain';
 import { parseKeys, downloadShare } from '@proanima/arkvory-infrastructure';
@@ -36,7 +35,6 @@ export interface ServerConfig extends UploadTimeoutOptions {
 }
 
 export async function loadConfig(env: NodeJS.ProcessEnv): Promise<ServerConfig> {
-  env = normalizeRuntimeSettings(env);
   const required = (name: string): string => {
     const value = env[name];
     if (!value) throw new Error(`Missing ${name}`);

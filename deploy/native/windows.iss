@@ -78,12 +78,6 @@ Name: "{group}\API and CLI"; Filename: "http://127.0.0.1:8080/console/#help"; Ic
 Filename: "http://127.0.0.1:8080/console/#onboarding"; Description: "{cm:OpenArkvory}"; Flags: shellexec postinstall skipifsilent runasoriginaluser; Check: ConfigurationReady
 
 [Code]
-function InitializeSetup: Boolean;
-begin
-  Result := not FileExists(ExpandConstant('{commonappdata}\ProAnima\Depot\installation.json'));
-  if not Result then MsgBox('Existing Depot installation detected. Follow docs/RENAMING.md before installing Arkvory. Data has not been changed.', mbError, MB_OK);
-end;
-
 var OwnerPage: TInputQueryWizardPage; Configured: Boolean;
 
 function ConfigurationReady: Boolean;

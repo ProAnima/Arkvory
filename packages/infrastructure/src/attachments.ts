@@ -21,7 +21,7 @@ export class PostgresAttachments implements AttachmentStore {
   constructor(private readonly pool: Pool) {}
   async get(repository: string, id: string): Promise<AttachmentRevision> {
     const result = await this.pool.query<RevisionRow>(
-      `SELECT a.* FROM depot_attachment_revisions a JOIN depot_uploads u ON u.id=a.artifact_id
+      `SELECT a.* FROM arkvory_attachment_revisions a JOIN arkvory_uploads u ON u.id=a.artifact_id
        WHERE u.repository=$1 AND u.id=$2 AND u.status='available' ORDER BY a.revision DESC LIMIT 1`,
       [repository, id],
     );
@@ -30,7 +30,7 @@ export class PostgresAttachments implements AttachmentStore {
   }
   async history(repository: string, id: string, before?: number) {
     const result = await this.pool.query<RevisionRow>(
-      `SELECT a.* FROM depot_attachment_revisions a JOIN depot_uploads u ON u.id=a.artifact_id
+      `SELECT a.* FROM arkvory_attachment_revisions a JOIN arkvory_uploads u ON u.id=a.artifact_id
        WHERE u.repository=$1 AND u.id=$2 AND u.status='available' AND ($3::integer IS NULL OR a.revision<$3)
        ORDER BY a.revision DESC LIMIT 21`,
       [repository, id, before ?? null],
@@ -54,33 +54,33 @@ export class PostgresAttachments implements AttachmentStore {
       await requirePublished(client, repository, id);
       // Keep the parent revision lock after the repository gate. No byte I/O in this transaction.
       const parent = await client.query(
-        "SELECT id FROM depot_uploads WHERE id=$1 AND repository=$2 AND status='available' FOR NO KEY UPDATE",
+        "SELECT id FROM arkvory_uploads WHERE id=$1 AND repository=$2 AND status='available' FOR NO KEY UPDATE",
         [id, repository],
       );
       if (parent.rowCount !== 1) throw new ArkvoryError('not_found', 'Build not found');
       const current = await client.query<{ revision: number }>(
-        'SELECT revision FROM depot_attachment_revisions WHERE artifact_id=$1 ORDER BY revision DESC LIMIT 1',
+        'SELECT revision FROM arkvory_attachment_revisions WHERE artifact_id=$1 ORDER BY revision DESC LIMIT 1',
         [id],
       );
       if ((current.rows[0]?.revision ?? 0) !== expected)
         throw new ArkvoryError('conflict', 'Attachments changed; reload before saving');
       const ids = [...new Set(items.map((item) => item.artifactId))];
       const targets = await client.query(
-        "SELECT id FROM depot_uploads WHERE id=ANY($1::uuid[]) AND repository=$2 AND status='available'",
+        "SELECT id FROM arkvory_uploads WHERE id=ANY($1::uuid[]) AND repository=$2 AND status='available'",
         [ids, repository],
       );
       if (targets.rowCount !== ids.length)
         throw new ArkvoryError('not_found', 'Attachment target not found');
       const inserted = await client.query<RevisionRow>(
-        'INSERT INTO depot_attachment_revisions(artifact_id,revision,items,actor) VALUES($1,$2,$3,$4) RETURNING *',
+        'INSERT INTO arkvory_attachment_revisions(artifact_id,revision,items,actor) VALUES($1,$2,$3,$4) RETURNING *',
         [id, expected + 1, JSON.stringify(items), access.principal.id],
       );
       await client.query(
-        'INSERT INTO depot_attachment_targets(parent_id,revision,target_id) SELECT $1,$2,unnest($3::uuid[])',
+        'INSERT INTO arkvory_attachment_targets(parent_id,revision,target_id) SELECT $1,$2,unnest($3::uuid[])',
         [id, expected + 1, ids],
       );
       await client.query(
-        'INSERT INTO depot_audit(repository,artifact_id,actor,action) VALUES($1,$2,$3,$4)',
+        'INSERT INTO arkvory_audit(repository,artifact_id,actor,action) VALUES($1,$2,$3,$4)',
         [repository, id, access.principal.id, 'attachments.replace'],
       );
       const row = inserted.rows[0];

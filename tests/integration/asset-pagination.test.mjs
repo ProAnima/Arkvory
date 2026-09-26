@@ -10,7 +10,7 @@ import { setup, base } from './fixture.mjs';
 async function seed(f, paths, repository = 'releases') {
   const id = randomUUID();
   await f.catalog.pool.query(
-    `INSERT INTO depot_uploads(id,repository,owner,idempotency_key,descriptor,size,status,created_at)
+    `INSERT INTO arkvory_uploads(id,repository,owner,idempotency_key,descriptor,size,status,created_at)
     VALUES($1::uuid,$2,'asset-page-test',$1::text,$3,0,'available',now())`,
     [
       id,
@@ -19,7 +19,7 @@ async function seed(f, paths, repository = 'releases') {
     ],
   );
   await f.catalog.pool.query(
-    'INSERT INTO depot_assets(repository,path,revision,artifact_id) SELECT $1,path,1,$2 FROM unnest($3::text[]) AS path',
+    'INSERT INTO arkvory_assets(repository,path,revision,artifact_id) SELECT $1,path,1,$2 FROM unnest($3::text[]) AS path',
     [repository, id, paths],
   );
   return id;
@@ -215,13 +215,13 @@ test('asset cursor survives restart and mutable pointers without offset duplicat
   const id = await seed(f, ['b', 'd', 'f']);
   const first = value(await page(f, { limit: '1' }));
   await f.catalog.pool.query(
-    'INSERT INTO depot_assets(repository,path,revision,artifact_id) VALUES($1,$2,1,$4),($1,$3,1,$4)',
+    'INSERT INTO arkvory_assets(repository,path,revision,artifact_id) VALUES($1,$2,1,$4),($1,$3,1,$4)',
     ['releases', 'a', 'c', id],
   );
-  await f.catalog.pool.query('UPDATE depot_assets SET revision=2 WHERE repository=$1 AND path=$2', [
-    'releases',
-    'd',
-  ]);
+  await f.catalog.pool.query(
+    'UPDATE arkvory_assets SET revision=2 WHERE repository=$1 AND path=$2',
+    ['releases', 'd'],
+  );
   await f.restart();
   const second = value(await page(f, { limit: '2', after: first.next }));
   assert.deepEqual(
@@ -231,7 +231,7 @@ test('asset cursor survives restart and mutable pointers without offset duplicat
       ['d', 2],
     ],
   );
-  await f.catalog.pool.query('DELETE FROM depot_assets WHERE repository=$1 AND path=$2', [
+  await f.catalog.pool.query('DELETE FROM arkvory_assets WHERE repository=$1 AND path=$2', [
     'releases',
     'd',
   ]);
@@ -247,7 +247,7 @@ test('asset page uses a bounded index seek even for a narrow prefix near the end
     f,
     Array.from({ length: 20000 }, (_, i) => `folder/${String(i).padStart(6, '0')}`),
   );
-  await f.catalog.pool.query('ANALYZE depot_assets');
+  await f.catalog.pool.query('ANALYZE arkvory_assets');
   let query, params;
   const browse = new PostgresBrowse({
     query: async (sql, values) => {
@@ -272,7 +272,7 @@ test('asset page uses a bounded index seek even for a narrow prefix near the end
   };
   visit(plan);
   assert.ok(
-    nodes.some((n) => n['Index Name'] === 'depot_asset_page_path'),
+    nodes.some((n) => n['Index Name'] === 'arkvory_asset_page_path'),
     JSON.stringify(plan),
   );
   assert.equal(
@@ -293,8 +293,8 @@ test('asset page uses a bounded index seek even for a narrow prefix near the end
 test('asset index migration upgrades an existing catalog, resumes a completed index and keeps readiness closed until marked', async (t) => {
   const f = await setup(t);
   const id = await seed(f, ['existing/file']);
-  await f.catalog.pool.query('DELETE FROM depot_migrations WHERE version=11');
-  await f.catalog.pool.query('DROP INDEX depot_asset_page_path');
+  await f.catalog.pool.query('DELETE FROM arkvory_migrations WHERE version=11');
+  await f.catalog.pool.query('DROP INDEX arkvory_asset_page_path');
   await assert.rejects(f.catalog.ready(), { code: 'unavailable' });
   const held = await f.catalog.pool.connect();
   await held.query('SELECT pg_advisory_lock(18471,2)');
@@ -310,37 +310,39 @@ test('asset index migration upgrades an existing catalog, resumes a completed in
   assert.equal(completed, true, 'Index migration waited for the upload reservation lock');
   await f.catalog.ready();
   assert.equal(value(await page(f)).items[0].artifactId, id);
-  const before = (await f.catalog.pool.query("SELECT 'depot_asset_page_path'::regclass::oid AS id"))
-    .rows[0].id;
-  await f.catalog.pool.query('DELETE FROM depot_migrations WHERE version=11');
+  const before = (
+    await f.catalog.pool.query("SELECT 'arkvory_asset_page_path'::regclass::oid AS id")
+  ).rows[0].id;
+  await f.catalog.pool.query('DELETE FROM arkvory_migrations WHERE version=11');
   await migrate(f.catalog.pool);
   await migrate(f.catalog.pool);
   assert.equal(
-    (await f.catalog.pool.query("SELECT 'depot_asset_page_path'::regclass::oid AS id")).rows[0].id,
+    (await f.catalog.pool.query("SELECT 'arkvory_asset_page_path'::regclass::oid AS id")).rows[0]
+      .id,
     before,
   );
   assert.equal(
     (
       await f.catalog.pool.query(
-        'SELECT count(*)::integer AS count FROM depot_migrations WHERE version=11',
+        'SELECT count(*)::integer AS count FROM arkvory_migrations WHERE version=11',
       )
     ).rows[0].count,
     1,
   );
   // A failed concurrent build leaves an invalid index: the migration must replace it.
   await seed(f, ['existing/file'], 'other');
-  await f.catalog.pool.query('DELETE FROM depot_migrations WHERE version=11');
-  await f.catalog.pool.query('DROP INDEX depot_asset_page_path');
+  await f.catalog.pool.query('DELETE FROM arkvory_migrations WHERE version=11');
+  await f.catalog.pool.query('DROP INDEX arkvory_asset_page_path');
   await assert.rejects(
     f.catalog.pool.query(
-      'CREATE UNIQUE INDEX CONCURRENTLY depot_asset_page_path ON depot_assets(path)',
+      'CREATE UNIQUE INDEX CONCURRENTLY arkvory_asset_page_path ON arkvory_assets(path)',
     ),
     { code: '23505' },
   );
   assert.equal(
     (
       await f.catalog.pool.query(
-        "SELECT indisvalid FROM pg_index WHERE indexrelid='depot_asset_page_path'::regclass",
+        "SELECT indisvalid FROM pg_index WHERE indexrelid='arkvory_asset_page_path'::regclass",
       )
     ).rows[0].indisvalid,
     false,
@@ -349,7 +351,7 @@ test('asset index migration upgrades an existing catalog, resumes a completed in
   assert.equal(
     (
       await f.catalog.pool.query(
-        "SELECT indisvalid FROM pg_index WHERE indexrelid='depot_asset_page_path'::regclass",
+        "SELECT indisvalid FROM pg_index WHERE indexrelid='arkvory_asset_page_path'::regclass",
       )
     ).rows[0].indisvalid,
     true,

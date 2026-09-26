@@ -134,7 +134,7 @@ try {
   const originalSession = await page.evaluate(async () => {
     const root = await (
       await navigator.storage.getDirectory()
-    ).getDirectoryHandle('depot-download-staging-v1');
+    ).getDirectoryHandle('arkvory-download-staging-v1');
     const names = [];
     for await (const [name] of root.entries()) names.push(name);
     const own = names[0],
@@ -171,7 +171,7 @@ try {
     page.evaluate(async () => {
       const root = await (
         await navigator.storage.getDirectory()
-      ).getDirectoryHandle('depot-download-staging-v1');
+      ).getDirectoryHandle('arkvory-download-staging-v1');
       const names = [];
       for await (const [name] of root.entries()) names.push(name);
       return names;

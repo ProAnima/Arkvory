@@ -17,10 +17,10 @@ interface Result {
   bytes: bigint;
   error: string | null;
 }
-const unpinned = `NOT EXISTS(SELECT 1 FROM depot_references WHERE artifact_id=u.id)
-  AND NOT EXISTS(SELECT 1 FROM depot_assets WHERE artifact_id=u.id)
-  AND NOT EXISTS(SELECT 1 FROM depot_asset_revisions WHERE artifact_id=u.id)
-  AND NOT EXISTS(SELECT 1 FROM depot_attachment_targets WHERE target_id=u.id)`;
+const unpinned = `NOT EXISTS(SELECT 1 FROM arkvory_references WHERE artifact_id=u.id)
+  AND NOT EXISTS(SELECT 1 FROM arkvory_assets WHERE artifact_id=u.id)
+  AND NOT EXISTS(SELECT 1 FROM arkvory_asset_revisions WHERE artifact_id=u.id)
+  AND NOT EXISTS(SELECT 1 FROM arkvory_attachment_targets WHERE target_id=u.id)`;
 
 /** Bounded physical maintenance. SQL transactions never span filesystem work. */
 export class PostgresOnlineCleanup {
@@ -51,13 +51,13 @@ export class PostgresOnlineCleanup {
         AND NOT EXISTS(SELECT 1 FROM pg_locks n WHERE n.pid=p.pid AND n.locktype='advisory'
           AND n.classid=18471 AND n.objid=17 AND n.objsubid=2 AND n.granted)`);
       const due = (
-        await c.query<{ repository: string }>(`SELECT repository FROM depot_cleanup_settings
+        await c.query<{ repository: string }>(`SELECT repository FROM arkvory_cleanup_settings
         WHERE policy->>'enabled'='true' AND next_run_at<=now() ORDER BY next_run_at,repository LIMIT 1`)
       ).rows[0];
       if (!due) return;
       if (legacy.rowCount) {
         await c.query(
-          `UPDATE depot_cleanup_settings SET last_error='upgrade_required',next_run_at=now()+interval '1 minute' WHERE repository=$1`,
+          `UPDATE arkvory_cleanup_settings SET last_error='upgrade_required',next_run_at=now()+interval '1 minute' WHERE repository=$1`,
           [due.repository],
         );
         return;
@@ -78,7 +78,7 @@ export class PostgresOnlineCleanup {
   private async batch(c: PoolClient, repository: string, check: () => void) {
     const row = (
       await c.query<{ policy: unknown; revision: number }>(
-        'SELECT policy,revision FROM depot_cleanup_settings WHERE repository=$1',
+        'SELECT policy,revision FROM arkvory_cleanup_settings WHERE repository=$1',
         [repository],
       )
     ).rows[0];
@@ -87,7 +87,7 @@ export class PostgresOnlineCleanup {
     if (!policy.enabled) return;
     const result: Result = { collected: 0, deferred: 0, failed: 0, bytes: 0n, error: null };
     const rows = await c.query<Candidate>(
-      `SELECT id,status,size::text FROM depot_uploads WHERE repository=$1
+      `SELECT id,status,size::text FROM arkvory_uploads WHERE repository=$1
       AND NOT reclaimed AND (status<>'available' OR NOT temp_cleaned)
       AND ((status='pending' AND expires_at<=now()) OR (status='available' AND NOT temp_cleaned)
         OR (status='cancelled' AND NOT reclaimed AND cancelled_at<=now()-make_interval(hours=>$2)))
@@ -98,7 +98,7 @@ export class PostgresOnlineCleanup {
       check();
       // A pause or changed policy takes effect between objects, never halfway through unlink/accounting.
       const current = await c.query(
-        `SELECT 1 FROM depot_cleanup_settings WHERE repository=$1 AND revision=$2 AND policy->>'enabled'='true'`,
+        `SELECT 1 FROM arkvory_cleanup_settings WHERE repository=$1 AND revision=$2 AND policy->>'enabled'='true'`,
         [repository, row.revision],
       );
       if (!current.rowCount) break;
@@ -115,7 +115,7 @@ export class PostgresOnlineCleanup {
     await c.query('BEGIN');
     try {
       await c.query(
-        `UPDATE depot_cleanup_settings SET last_run_at=now(),last_collected=$3,last_deferred=$4,
+        `UPDATE arkvory_cleanup_settings SET last_run_at=now(),last_collected=$3,last_deferred=$4,
       last_failed=$5,last_reclaimed_bytes=$6,last_error=$7,
       next_run_at=CASE WHEN revision=$2 THEN now()+make_interval(secs=>$8) ELSE next_run_at END WHERE repository=$1`,
         [
@@ -179,7 +179,7 @@ export class PostgresOnlineCleanup {
           )
         ).rows[0]?.acquired ??
           false);
-      await c.query('UPDATE depot_uploads SET gc_checked_at=now() WHERE id=$1', [item.id]);
+      await c.query('UPDATE arkvory_uploads SET gc_checked_at=now() WHERE id=$1', [item.id]);
       // Temporary parts are disjoint from published content: their cleanup must not gate downloads.
       if (!upload || (item.status === 'cancelled' && !content)) {
         result.deferred++;
@@ -188,13 +188,13 @@ export class PostgresOnlineCleanup {
       check();
       if (item.status === 'pending') {
         await c.query(
-          `UPDATE depot_uploads SET status='cancelled',cancelled_at=now() WHERE id=$1 AND status='pending' AND expires_at<=now()`,
+          `UPDATE arkvory_uploads SET status='cancelled',cancelled_at=now() WHERE id=$1 AND status='pending' AND expires_at<=now()`,
           [item.id],
         );
         return;
       }
       const eligible = await c.query(
-        `SELECT 1 FROM depot_uploads u WHERE id=$1 AND repository=$2 AND status=$4 AND
+        `SELECT 1 FROM arkvory_uploads u WHERE id=$1 AND repository=$2 AND status=$4 AND
         ((status='available' AND NOT temp_cleaned) OR
         (status='cancelled' AND NOT reclaimed AND cancelled_at<=now()-make_interval(hours=>$3) AND ${unpinned}))`,
         [item.id, repository, grace, item.status],
@@ -208,7 +208,7 @@ export class PostgresOnlineCleanup {
       check();
       // Retry after crash is safe: unlink is idempotent; quota is released only after durable deletion.
       const reclaimed = await c.query(
-        `UPDATE depot_uploads SET temp_cleaned=true,
+        `UPDATE arkvory_uploads SET temp_cleaned=true,
         reclaimed=CASE WHEN status='cancelled' THEN true ELSE reclaimed END WHERE id=$1 AND status=$2 RETURNING size::text`,
         [item.id, item.status],
       );

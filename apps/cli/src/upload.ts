@@ -1,4 +1,3 @@
-import { compatiblePath } from './legacy-files.js';
 import { openAsBlob } from 'node:fs';
 import { basename, resolve } from 'node:path';
 import { createHash, randomUUID } from 'node:crypto';
@@ -38,9 +37,7 @@ async function digest(blob: Blob, signal: AbortSignal) {
 }
 export async function upload(input: UploadInput) {
   const path = resolve(input.path),
-    state = resolve(
-      input.state ?? compatiblePath(path + '.arkvory-upload.json', path + '.depot-upload.json'),
-    );
+    state = resolve(input.state ?? path + '.arkvory-upload.json');
   if (state === path) throw new CliError('invalid_state_path');
   return exclusive(state, async () => {
     const blob = await openAsBlob(path);

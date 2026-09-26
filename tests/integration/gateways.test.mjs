@@ -146,7 +146,7 @@ test('duplicate slots, policy mismatch, standalone bypass and maintenance are re
   await assert.rejects(createServer(standalone), { code: 'busy' });
   const maintenance = new PostgresCatalog(f.config.databaseUrl, f.config.capacityBytes, 1);
   try {
-    const identity = (await f.catalog.pool.query('SELECT storage_id FROM depot_storage_identity'))
+    const identity = (await f.catalog.pool.query('SELECT storage_id FROM arkvory_storage_identity'))
       .rows[0].storage_id;
     await assert.rejects(maintenance.claimStorage(identity, 'maintenance'), { code: 'busy' });
   } finally {
@@ -163,7 +163,7 @@ test('lease close keeps the slot reserved; expiry increments generation and old 
   await lease.start();
   const before = (
     await f.catalog.pool.query(
-      'SELECT generation::text,expires_at FROM depot_gateway_leases WHERE slot=1',
+      'SELECT generation::text,expires_at FROM arkvory_gateway_leases WHERE slot=1',
     )
   ).rows[0];
   lease.close();
@@ -177,7 +177,7 @@ test('lease close keeps the slot reserved; expiry increments generation and old 
   f.cleanup.push(() => next.close());
   await next.start();
   assert.equal(
-    (await f.catalog.pool.query('SELECT generation::text FROM depot_gateway_leases WHERE slot=1'))
+    (await f.catalog.pool.query('SELECT generation::text FROM arkvory_gateway_leases WHERE slot=1'))
       .rows[0].generation,
     String(BigInt(before.generation) + 1n),
   );
@@ -255,7 +255,7 @@ test('a stalled database link expires delivery locally; restored connectivity ca
   await assert.rejects(createServer(readerConfig(f, 1)), { code: 'busy' });
   const remaining = (
     await f.catalog.pool.query(
-      'SELECT GREATEST(0,EXTRACT(EPOCH FROM (expires_at-clock_timestamp()))*1000)::float AS ms FROM depot_gateway_leases WHERE slot=1',
+      'SELECT GREATEST(0,EXTRACT(EPOCH FROM (expires_at-clock_timestamp()))*1000)::float AS ms FROM arkvory_gateway_leases WHERE slot=1',
     )
   ).rows[0].ms;
   await new Promise((resolve) => setTimeout(resolve, remaining + 100));

@@ -1,7 +1,6 @@
 import { PostgresCatalog, migrate } from '@proanima/arkvory-infrastructure';
-import { normalizeRuntimeSettings } from '@proanima/arkvory-contracts';
 
-const url = normalizeRuntimeSettings(process.env)['ARKVORY_DATABASE_URL'];
+const url = process.env['ARKVORY_DATABASE_URL'];
 if (!url) throw new Error('ARKVORY_DATABASE_URL is required');
 const catalog = new PostgresCatalog(url, 0, 1);
 try {

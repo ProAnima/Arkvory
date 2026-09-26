@@ -54,7 +54,7 @@ export async function readAssetPage(
   }
   values.push(options.limit + 1);
   const result = await pool.query<{ path: string; revision: number; artifact_id: string }>(
-    `SELECT path,revision,artifact_id FROM depot_assets WHERE ${where.join(' AND ')} ORDER BY path COLLATE "C" LIMIT $${String(values.length)}`,
+    `SELECT path,revision,artifact_id FROM arkvory_assets WHERE ${where.join(' AND ')} ORDER BY path COLLATE "C" LIMIT $${String(values.length)}`,
     values,
   );
   const items = result.rows

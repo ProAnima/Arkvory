@@ -13,15 +13,15 @@ test('bounded cleanup skips pinned rows without starving old builds and diagnost
     a = await access(f),
     store = new PostgresStoragePolicy(f.catalog.pool);
   await f.catalog.pool
-    .query(`INSERT INTO depot_uploads(id,repository,owner,idempotency_key,descriptor,size,status,created_at,published_at)
+    .query(`INSERT INTO arkvory_uploads(id,repository,owner,idempotency_key,descriptor,size,status,created_at,published_at)
     SELECT gen_random_uuid(),'releases','seed',i::text,
       jsonb_build_object('name','seed.upack','size','0','sha256',repeat('0',64),'labels','[]'::jsonb,'metadata','{}'::jsonb),
       0,'available',now()-interval '3 days',now()-(i*interval '1 hour') FROM generate_series(1,226) i`);
   await f.catalog.pool
-    .query(`INSERT INTO depot_packages(repository,package_group,name,version,artifact_id,manifest)
-    SELECT repository,'','seed','1.0.'||idempotency_key,id,'{"name":"seed","version":"1.0.0"}'::jsonb FROM depot_uploads`);
-  await f.catalog.pool.query(`INSERT INTO depot_references(repository,artifact_id,owner,reference)
-    SELECT repository,id,'external','pinned' FROM depot_uploads WHERE idempotency_key::integer>106`);
+    .query(`INSERT INTO arkvory_packages(repository,package_group,name,version,artifact_id,manifest)
+    SELECT repository,'','seed','1.0.'||idempotency_key,id,'{"name":"seed","version":"1.0.0"}'::jsonb FROM arkvory_uploads`);
+  await f.catalog.pool.query(`INSERT INTO arkvory_references(repository,artifact_id,owner,reference)
+    SELECT repository,id,'external','pinned' FROM arkvory_uploads WHERE idempotency_key::integer>106`);
   await a.client.setStoragePolicy('releases', 0, policy({ grouping: 'repository' }));
   const preview = await a.client.previewStoragePolicy('releases');
   assert.equal(preview.items.length, 100);
@@ -31,16 +31,19 @@ test('bounded cleanup skips pinned rows without starving old builds and diagnost
   assert.equal((await a.client.runStoragePolicy('releases', 1)).items.length, 5);
   assert.equal((await a.client.runStoragePolicy('releases', 1)).items.length, 0);
   await f.catalog.pool.query(
-    `INSERT INTO depot_storage_events(repository,level,code,details) SELECT 'releases','warning','test.bounded','{}'::jsonb FROM generate_series(1,1100)`,
+    `INSERT INTO arkvory_storage_events(repository,level,code,details) SELECT 'releases','warning','test.bounded','{}'::jsonb FROM generate_series(1,1100)`,
   );
   await store.recordEvent('releases', 'info', 'test.latest', {});
   assert.equal(
-    (await f.catalog.pool.query('SELECT count(*) FROM depot_storage_events')).rows[0].count,
+    (await f.catalog.pool.query('SELECT count(*) FROM arkvory_storage_events')).rows[0].count,
     '1000',
   );
   assert.equal(
-    (await f.catalog.pool.query("SELECT count(*) FROM depot_audit WHERE action='artifact.delete'"))
-      .rows[0].count,
+    (
+      await f.catalog.pool.query(
+        "SELECT count(*) FROM arkvory_audit WHERE action='artifact.delete'",
+      )
+    ).rows[0].count,
     '105',
   );
   const first = await a.client.storageEvents('releases', { level: 'warning' });
@@ -77,12 +80,12 @@ async function build(f, name, age, labels = ['test']) {
   });
   assert.equal(done.statusCode, 200, done.body);
   await f.catalog.pool.query(
-    "UPDATE depot_uploads SET published_at=now()-($2::integer * interval '1 hour'),descriptor=jsonb_set(descriptor,'{labels}',$3::jsonb) WHERE id=$1",
+    "UPDATE arkvory_uploads SET published_at=now()-($2::integer * interval '1 hour'),descriptor=jsonb_set(descriptor,'{labels}',$3::jsonb) WHERE id=$1",
     [id, age, JSON.stringify(labels)],
   );
   if (name)
     await f.catalog.pool.query(
-      'INSERT INTO depot_packages(repository,package_group,name,version,artifact_id,manifest) VALUES($1,$2,$3,$4,$5,$6)',
+      'INSERT INTO arkvory_packages(repository,package_group,name,version,artifact_id,manifest) VALUES($1,$2,$3,$4,$5,$6)',
       [
         'releases',
         'team',
@@ -118,7 +121,7 @@ test('last N per package/channel preserves multi-channel, protected, pinned and 
     pinned = await build(f, 'one', 25),
     raw = await build(f, null, 40);
   await f.catalog.pool.query(
-    'INSERT INTO depot_references(repository,artifact_id,owner,reference) VALUES($1,$2,$3,$4)',
+    'INSERT INTO arkvory_references(repository,artifact_id,owner,reference) VALUES($1,$2,$3,$4)',
     ['releases', pinned, 'external', 'production'],
   );
   assert.equal((await a.client.storagePolicy('releases')).policy.enabled, false);
@@ -156,8 +159,11 @@ test('last N per package/channel preserves multi-channel, protected, pinned and 
   const events = await store.events('releases', '0');
   assert.ok(events.items.some((e) => e.code === 'retention.completed'));
   assert.equal(
-    (await f.catalog.pool.query("SELECT count(*) FROM depot_audit WHERE action='artifact.delete'"))
-      .rows[0].count,
+    (
+      await f.catalog.pool.query(
+        "SELECT count(*) FROM arkvory_audit WHERE action='artifact.delete'",
+      )
+    ).rows[0].count,
     '1',
   );
 });
@@ -227,7 +233,7 @@ test('automatic runs survive restart, reauthorize keys, respect due time and nev
     root = new ArkvoryClient(url, () => f.headers.authorization.slice(7));
   await root.revokeServiceKey(a.key.key.id);
   await f.catalog.pool.query(
-    "UPDATE depot_storage_policies SET next_run_at=now()-interval '1 minute'",
+    "UPDATE arkvory_storage_policies SET next_run_at=now()-interval '1 minute'",
   );
   await maintainStorage(store, services, () => true);
   assert.equal((await f.catalog.get('releases', later)).status, 'available');

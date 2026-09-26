@@ -91,16 +91,16 @@ jobs:
       postgres:
         image: postgres:18.4
         env:
-          POSTGRES_USER: depot_test
-          POSTGRES_PASSWORD: depot_test
-          POSTGRES_DB: depot_test
+          POSTGRES_USER: arkvory_test
+          POSTGRES_PASSWORD: arkvory_test
+          POSTGRES_DB: arkvory_test
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U depot_test -d depot_test"
+          --health-cmd "pg_isready -U arkvory_test -d arkvory_test"
           --health-interval 3s --health-timeout 3s --health-retries 20
     env:
-      ARKVORY_TEST_DATABASE_URL: postgresql://depot_test:depot_test@127.0.0.1:5432/depot_test
+      ARKVORY_TEST_DATABASE_URL: postgresql://arkvory_test:arkvory_test@127.0.0.1:5432/arkvory_test
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
@@ -130,16 +130,16 @@ jobs:
       postgres:
         image: postgres:18.4
         env:
-          POSTGRES_USER: depot_test
-          POSTGRES_PASSWORD: depot_test
-          POSTGRES_DB: depot_test
+          POSTGRES_USER: arkvory_test
+          POSTGRES_PASSWORD: arkvory_test
+          POSTGRES_DB: arkvory_test
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U depot_test -d depot_test"
+          --health-cmd "pg_isready -U arkvory_test -d arkvory_test"
           --health-interval 3s --health-timeout 3s --health-retries 20
     env:
-      ARKVORY_TEST_DATABASE_URL: postgresql://depot_test:depot_test@127.0.0.1:5432/depot_test
+      ARKVORY_TEST_DATABASE_URL: postgresql://arkvory_test:arkvory_test@127.0.0.1:5432/arkvory_test
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
@@ -176,16 +176,16 @@ jobs:
       postgres:
         image: postgres:18.4
         env:
-          POSTGRES_USER: depot_test
-          POSTGRES_PASSWORD: depot_test
-          POSTGRES_DB: depot_test
+          POSTGRES_USER: arkvory_test
+          POSTGRES_PASSWORD: arkvory_test
+          POSTGRES_DB: arkvory_test
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U depot_test -d depot_test"
+          --health-cmd "pg_isready -U arkvory_test -d arkvory_test"
           --health-interval 3s --health-timeout 3s --health-retries 20
     env:
-      ARKVORY_TEST_DATABASE_URL: postgresql://depot_test:depot_test@127.0.0.1:5432/depot_test
+      ARKVORY_TEST_DATABASE_URL: postgresql://arkvory_test:arkvory_test@127.0.0.1:5432/arkvory_test
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:

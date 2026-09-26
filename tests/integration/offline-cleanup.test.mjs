@@ -24,7 +24,7 @@ test('offline GC keeps per-object protection when its maintenance session dies a
   });
   assert.equal(published.statusCode, 200, published.body);
   await f.catalog.pool.query(
-    "UPDATE depot_uploads SET status='cancelled',cancelled_at=now()-interval '2 days' WHERE id=$1",
+    "UPDATE arkvory_uploads SET status='cancelled',cancelled_at=now()-interval '2 days' WHERE id=$1",
     [id],
   );
   await f.app.close();
@@ -74,8 +74,8 @@ test('offline GC keeps per-object protection when its maintenance session dies a
     assert.equal((await running).code, 'unavailable');
     assert.deepEqual(await readFile(blobs.contentPath(id)), bytes);
     assert.equal(
-      (await f.catalog.pool.query('SELECT reclaimed FROM depot_uploads WHERE id=$1', [id])).rows[0]
-        .reclaimed,
+      (await f.catalog.pool.query('SELECT reclaimed FROM arkvory_uploads WHERE id=$1', [id]))
+        .rows[0].reclaimed,
       false,
     );
     const released = await pins.acquire(id);

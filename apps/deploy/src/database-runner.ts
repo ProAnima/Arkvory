@@ -32,7 +32,7 @@ async function initializeCluster(
       '-D',
       data,
       '-U',
-      'depot_owner',
+      'arkvory_owner',
       '--pwfile',
       join(directory, 'owner-password'),
       '--auth=scram-sha-256',
@@ -104,7 +104,7 @@ export async function runDatabase(root: string): Promise<void> {
       '-p',
       String(settings.port),
       '-U',
-      'depot_owner',
+      'arkvory_owner',
       '-d',
       'postgres',
     ];

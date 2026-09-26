@@ -19,7 +19,7 @@ export async function administrationContext(
   if (!p.managed) throw new ArkvoryError('forbidden', 'Service administration denied');
   const row = (
     await c.query<{ account_id: string; expires_at: Date }>(
-      `SELECT k.account_id,k.expires_at FROM depot_api_keys k JOIN depot_service_accounts a ON a.id=k.account_id
+      `SELECT k.account_id,k.expires_at FROM arkvory_api_keys k JOIN arkvory_service_accounts a ON a.id=k.account_id
      WHERE k.id=$1 AND k.account_id=$2 AND k.state='active' AND a.enabled AND k.expires_at>clock_timestamp()`,
       [p.managed.keyId, p.managed.accountId],
     )
@@ -45,7 +45,7 @@ export async function authorizeAdministration(
     throw new ArkvoryError('forbidden', 'Self administration is not delegated');
   const grant = (
     await c.query<{ actions: string[]; ceiling: unknown }>(
-      'SELECT actions,ceiling FROM depot_service_delegations WHERE key_id=$1 AND target_account_id=$2 AND enabled',
+      'SELECT actions,ceiling FROM arkvory_service_delegations WHERE key_id=$1 AND target_account_id=$2 AND enabled',
       [context.keyId, target],
     )
   ).rows[0];

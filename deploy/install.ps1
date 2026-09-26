@@ -3,7 +3,6 @@ param([string]$Root = 'C:\ProgramData\ProAnima\Arkvory', [string]$Version = '',
     [ValidateSet('docker','podman')][string]$Engine = 'docker',
     [string]$Config = '', [string]$Artifact = '', [switch]$AutomaticUpdates, [switch]$Pin)
 $ErrorActionPreference = 'Stop'
-if (Test-Path -LiteralPath (Join-Path $env:ProgramData 'ProAnima/Depot/installation.json')) { throw 'Existing Depot installation detected. Follow docs/RENAMING.md before installing Arkvory.' }
 $admin = [Security.Principal.WindowsPrincipal]::new([Security.Principal.WindowsIdentity]::GetCurrent())
 if (-not $admin.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) { throw 'Run installer as Administrator' }
 $Root = [IO.Path]::GetFullPath($Root)

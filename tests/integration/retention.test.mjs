@@ -94,8 +94,11 @@ test('deletion is explicitly scoped, idempotent, persistent, and does not unlink
   // The HTTP operation must not remove bytes; GC is a distinct fenced maintenance task.
   await blobs.exists(id, 36);
   assert.equal(
-    (await f.catalog.pool.query("SELECT count(*) FROM depot_audit WHERE action='artifact.delete'"))
-      .rows[0].count,
+    (
+      await f.catalog.pool.query(
+        "SELECT count(*) FROM arkvory_audit WHERE action='artifact.delete'",
+      )
+    ).rows[0].count,
     '1',
   );
   await f.restart();
@@ -132,21 +135,21 @@ test('deletion is explicitly scoped, idempotent, persistent, and does not unlink
     await gc.run(new Date().toISOString());
     await blobs.exists(id, 36);
     assert.equal(
-      (await f.catalog.pool.query('SELECT reclaimed FROM depot_uploads WHERE id=$1', [id])).rows[0]
-        .reclaimed,
+      (await f.catalog.pool.query('SELECT reclaimed FROM arkvory_uploads WHERE id=$1', [id]))
+        .rows[0].reclaimed,
       false,
     );
     await gc.run(new Date(Date.now() + 2 * 86400000).toISOString());
     await assert.rejects(blobs.exists(id, 36), { code: 'unavailable' });
     assert.equal(
-      (await f.catalog.pool.query('SELECT reclaimed FROM depot_uploads WHERE id=$1', [id])).rows[0]
-        .reclaimed,
+      (await f.catalog.pool.query('SELECT reclaimed FROM arkvory_uploads WHERE id=$1', [id]))
+        .rows[0].reclaimed,
       true,
     );
     assert.equal(
       (
         await f.catalog.pool.query(
-          'SELECT count(*) FROM depot_artifact_deletions WHERE artifact_id=$1',
+          'SELECT count(*) FROM arkvory_artifact_deletions WHERE artifact_id=$1',
           [id],
         )
       ).rows[0].count,
@@ -267,7 +270,7 @@ test('delete and pin races cannot commit dangling references; revoked credential
     if (retired) assert.equal(outcomes[1].reason.code, 'not_found');
     assert.equal(
       (
-        await f.catalog.pool.query('SELECT count(*) FROM depot_references WHERE artifact_id=$1', [
+        await f.catalog.pool.query('SELECT count(*) FROM arkvory_references WHERE artifact_id=$1', [
           id,
         ])
       ).rows[0].count,
@@ -278,7 +281,7 @@ test('delete and pin races cannot commit dangling references; revoked credential
     second = await publish(f);
   await f.catalog.pool
     .query(`CREATE FUNCTION reject_delete_audit() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.action='artifact.delete' THEN RAISE EXCEPTION 'audit failure'; END IF; RETURN NEW; END $$;
-    CREATE TRIGGER reject_delete_audit BEFORE INSERT ON depot_audit FOR EACH ROW EXECUTE FUNCTION reject_delete_audit()`);
+    CREATE TRIGGER reject_delete_audit BEFORE INSERT ON arkvory_audit FOR EACH ROW EXECUTE FUNCTION reject_delete_audit()`);
   await assert.rejects(
     c.client.applyRetention('releases', {
       criteria: criteria(),
@@ -289,7 +292,7 @@ test('delete and pin races cannot commit dangling references; revoked credential
   assert.equal(
     (
       await f.catalog.pool.query(
-        "SELECT count(*) FROM depot_uploads WHERE id=ANY($1::uuid[]) AND status='available'",
+        "SELECT count(*) FROM arkvory_uploads WHERE id=ANY($1::uuid[]) AND status='available'",
         [[first, second]],
       )
     ).rows[0].count,
@@ -298,7 +301,7 @@ test('delete and pin races cannot commit dangling references; revoked credential
   assert.equal(
     (
       await f.catalog.pool.query(
-        'SELECT count(*) FROM depot_artifact_deletions WHERE artifact_id=ANY($1::uuid[])',
+        'SELECT count(*) FROM arkvory_artifact_deletions WHERE artifact_id=ANY($1::uuid[])',
         [[first, second]],
       )
     ).rows[0].count,
@@ -372,6 +375,6 @@ test('retention bounds, malformed filters, schema responses and operation visibi
   assert.ok(managed.some((x) => x.operationId === 'deleteArtifact'));
   const legacy = (await c.root.operations({ repository: 'releases', limit: 100 })).items;
   assert.ok(!legacy.some((x) => x.operationId === 'deleteArtifact'));
-  await f.catalog.pool.query('DELETE FROM depot_migrations WHERE version=13');
+  await f.catalog.pool.query('DELETE FROM arkvory_migrations WHERE version=13');
   await assert.rejects(f.catalog.ready(), { code: 'unavailable' });
 });

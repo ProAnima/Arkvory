@@ -1,4 +1,3 @@
-import { compatiblePath } from './legacy-files.js';
 import { homedir } from 'node:os';
 import { join, resolve, dirname } from 'node:path';
 import { ArkvoryClient } from '@proanima/arkvory-sdk';
@@ -26,8 +25,7 @@ interface Configuration {
 }
 function configPath() {
   return join(
-    process.env['ARKVORY_CLI_HOME'] ??
-      compatiblePath(join(homedir(), '.config', 'arkvory'), join(homedir(), '.config', 'depot')),
+    process.env['ARKVORY_CLI_HOME'] ?? join(homedir(), '.config', 'arkvory'),
     'profiles.json',
   );
 }

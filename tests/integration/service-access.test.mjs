@@ -96,7 +96,7 @@ test('managed issuance activates once, replays without secret, and does not wide
     name: 'primary',
     bindings: grants,
   });
-  assert.match(first.secret, /^dpk_/);
+  assert.match(first.secret, /^arkvory_/);
   const client = new ArkvoryClient(f.address, () => first.secret);
   await assert.rejects(client.me(), { status: 401 });
   const replay = await f.root.issueServiceKey(account.id, 'issue-first', {
@@ -252,7 +252,7 @@ test('rotation preserves upload ownership, narrows rights and enforces revocatio
     401,
   );
   await f.catalog.pool.query(
-    "UPDATE depot_api_keys SET expires_at=now()-interval '1 second' WHERE id=$1",
+    "UPDATE arkvory_api_keys SET expires_at=now()-interval '1 second' WHERE id=$1",
     [rotated.key.id],
   );
   assert.equal(
@@ -285,7 +285,7 @@ test('account CAS and disable take effect immediately; pending expiry and key ca
   assert.equal(issued.length, 2);
   assert(issues.filter((r) => r.status === 'rejected').every((r) => r.reason.status === 507));
   await f.catalog.pool.query(
-    "UPDATE depot_api_keys SET activation_expires_at=now()-interval '1 second' WHERE id=$1",
+    "UPDATE arkvory_api_keys SET activation_expires_at=now()-interval '1 second' WHERE id=$1",
     [issued[0].key.id],
   );
   await assert.rejects(new ArkvoryClient(f.address, () => issued[0].secret).activateServiceKey(), {
@@ -355,7 +355,7 @@ test('revocation before durable publication and policy change before annotations
   assert.equal(
     (
       await f.catalog.pool.query(
-        'SELECT count(*)::int AS n FROM depot_annotations WHERE artifact_id=$1',
+        'SELECT count(*)::int AS n FROM arkvory_annotations WHERE artifact_id=$1',
         [upload],
       )
     ).rows[0].n,
@@ -411,7 +411,7 @@ test('worker refuses initiating revoked key and explicit reauthorization retains
   await f.root.revokeServiceKey(s.issue.key.id);
   await worker(f);
   const row = (
-    await f.catalog.pool.query('SELECT * FROM depot_jobs WHERE id=$1', [queued.json().id])
+    await f.catalog.pool.query('SELECT * FROM arkvory_jobs WHERE id=$1', [queued.json().id])
   ).rows[0];
   assert.equal(row.status, 'failed');
   assert.equal(row.error_code, 'forbidden');
@@ -466,7 +466,7 @@ test('independent reader resolves managed keys and applies policy changes and re
 test('managed key metadata is paginated and dpk credentials never fall back to file authorization', async (t) => {
   const f = await fixture(t),
     s = await service(f, ['content.read']);
-  await f.catalog.pool.query(`INSERT INTO depot_service_accounts(id,name,bindings)
+  await f.catalog.pool.query(`INSERT INTO arkvory_service_accounts(id,name,bindings)
     SELECT gen_random_uuid(),'page-'||i,'[]'::jsonb FROM generate_series(1,70) i`);
   const one = await f.root.serviceAccounts();
   assert.equal(one.items.length, 50);
@@ -484,6 +484,6 @@ test('managed key metadata is paginated and dpk credentials never fall back to f
     (await f.app.inject({ url: '/api/v1/auth/me', headers: s.headers })).statusCode,
     401,
   );
-  await f.catalog.pool.query('DELETE FROM depot_migrations WHERE version=9');
+  await f.catalog.pool.query('DELETE FROM arkvory_migrations WHERE version=9');
   await assert.rejects(f.catalog.ready(), { code: 'unavailable' });
 });

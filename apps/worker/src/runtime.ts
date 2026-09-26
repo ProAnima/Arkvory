@@ -1,7 +1,5 @@
-import { normalizeRuntimeSettings } from '@proanima/arkvory-contracts';
 import { LocalBlobStore, PostgresCatalog } from '@proanima/arkvory-infrastructure';
 export async function resources(role: 'worker' | 'maintenance') {
-  Object.assign(process.env, normalizeRuntimeSettings(process.env));
   const databaseUrl = process.env['ARKVORY_DATABASE_URL'];
   const root = process.env['ARKVORY_DATA_DIR'];
   if (!databaseUrl || !root)

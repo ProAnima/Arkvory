@@ -113,12 +113,12 @@ export class PostgresDownloadLease {
       await client.query('SELECT pg_advisory_xact_lock(18471,8)');
       if (this.policy.slot === 0)
         await client.query(
-          `INSERT INTO depot_download_policy(singleton,slots,bytes_per_second,principal_bytes_per_second)
+          `INSERT INTO arkvory_download_policy(singleton,slots,bytes_per_second,principal_bytes_per_second)
         VALUES(true,$1,$2,$3) ON CONFLICT DO NOTHING`,
           [this.policy.slots, this.policy.bytesPerSecond, this.policy.perPrincipalBytesPerSecond],
         );
       const match = await client.query(
-        `SELECT 1 FROM depot_download_policy WHERE singleton=true AND slots=$1 AND bytes_per_second=$2 AND principal_bytes_per_second=$3`,
+        `SELECT 1 FROM arkvory_download_policy WHERE singleton=true AND slots=$1 AND bytes_per_second=$2 AND principal_bytes_per_second=$3`,
         [this.policy.slots, this.policy.bytesPerSecond, this.policy.perPrincipalBytesPerSecond],
       );
       if (match.rowCount !== 1)
@@ -127,10 +127,10 @@ export class PostgresDownloadLease {
           'Shared download policy is absent or differs; start the configured writer first',
         );
       const acquired = await client.query<{ generation: string }>(
-        `INSERT INTO depot_gateway_leases(slot,instance,generation,expires_at)
+        `INSERT INTO arkvory_gateway_leases(slot,instance,generation,expires_at)
         VALUES($1,$2,1,clock_timestamp()+interval '10 seconds')
-        ON CONFLICT(slot) DO UPDATE SET instance=excluded.instance,generation=depot_gateway_leases.generation+1,expires_at=excluded.expires_at
-        WHERE depot_gateway_leases.expires_at<=clock_timestamp() RETURNING generation::text`,
+        ON CONFLICT(slot) DO UPDATE SET instance=excluded.instance,generation=arkvory_gateway_leases.generation+1,expires_at=excluded.expires_at
+        WHERE arkvory_gateway_leases.expires_at<=clock_timestamp() RETURNING generation::text`,
         [this.policy.slot, this.instance],
       );
       const row = acquired.rows[0];
@@ -182,7 +182,7 @@ export class PostgresDownloadLease {
       await client.query('BEGIN');
       await client.query("SET LOCAL statement_timeout='2s'");
       const renewed = await client.query({
-        text: `UPDATE depot_gateway_leases SET expires_at=clock_timestamp()+interval '10 seconds'
+        text: `UPDATE arkvory_gateway_leases SET expires_at=clock_timestamp()+interval '10 seconds'
         WHERE slot=$1 AND instance=$2 AND generation=$3 AND expires_at>clock_timestamp() RETURNING slot`,
         values: [this.policy.slot, this.instance, this.generation],
       });

@@ -288,7 +288,7 @@ test('administrative mutation rechecks a stale principal after delegation or cre
       await delay(10);
     }
     await blocker.query(
-      'UPDATE depot_service_delegations SET enabled=false,revision=revision+1 WHERE key_id=$1',
+      'UPDATE arkvory_service_delegations SET enabled=false,revision=revision+1 WHERE key_id=$1',
       [f.operatorKey.key.id],
     );
     await blocker.query('COMMIT');
@@ -305,7 +305,7 @@ test('administrative mutation rechecks a stale principal after delegation or cre
   });
   const root = f.config.keys[0].principal;
   await f.catalog.pool.query(
-    "CREATE FUNCTION reject_delegation_audit() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'audit failure'; END $$; CREATE TRIGGER reject_delegation_audit BEFORE INSERT ON depot_service_audit FOR EACH ROW EXECUTE FUNCTION reject_delegation_audit()",
+    "CREATE FUNCTION reject_delegation_audit() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'audit failure'; END $$; CREATE TRIGGER reject_delegation_audit BEFORE INSERT ON arkvory_service_audit FOR EACH ROW EXECUTE FUNCTION reject_delegation_audit()",
   );
   await assert.rejects(
     app.removeDelegation(root, f.operatorKey.key.id, f.target.id, { expectedRevision: 3 }),
@@ -333,7 +333,7 @@ test('delegation CAS preserves tombstones, concurrent writers cannot overwrite a
   });
   assert.equal(invalid.statusCode, 400);
   assert.equal((await f.root.serviceDelegations(f.operatorKey.key.id))[0].revision, 3);
-  await f.catalog.pool.query('DELETE FROM depot_migrations WHERE version=10');
+  await f.catalog.pool.query('DELETE FROM arkvory_migrations WHERE version=10');
   await assert.rejects(f.catalog.ready(), { code: 'unavailable' });
 });
 
@@ -341,7 +341,7 @@ test('account pages filter delegation before LIMIT and concurrent grants cannot 
   const f = await fixture(t);
   for (let i = 0; i < 80; i++)
     await f.catalog.pool.query(
-      'INSERT INTO depot_service_accounts(id,name,bindings) VALUES($1,$2,$3)',
+      'INSERT INTO arkvory_service_accounts(id,name,bindings) VALUES($1,$2,$3)',
       [randomUUID(), 'hidden-' + i, '[]'],
     );
   const visible = [];
@@ -400,7 +400,7 @@ test('pending rotation rechecks old rights and disabling or expiring the operato
   await f.root.revokeServiceKey(pending.key.id);
   const fresh = await issue(f.client, f.target.id, read);
   await f.catalog.pool.query(
-    "UPDATE depot_api_keys SET expires_at=clock_timestamp()-interval '1 second' WHERE id=$1",
+    "UPDATE arkvory_api_keys SET expires_at=clock_timestamp()-interval '1 second' WHERE id=$1",
     [f.operatorKey.key.id],
   );
   await assert.rejects(activate(f, fresh), { status: 403 });

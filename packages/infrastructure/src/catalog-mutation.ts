@@ -11,7 +11,7 @@ export async function requirePublished(
   id: string,
 ): Promise<void> {
   const row = await client.query(
-    "SELECT id FROM depot_uploads WHERE repository=$1 AND id=$2 AND status='available'",
+    "SELECT id FROM arkvory_uploads WHERE repository=$1 AND id=$2 AND status='available'",
     [repository, id],
   );
   if (row.rowCount !== 1) throw new ArkvoryError('not_found', 'Artifact not found');

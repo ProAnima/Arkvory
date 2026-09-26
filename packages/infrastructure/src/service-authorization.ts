@@ -30,7 +30,7 @@ export async function lockServiceAccess(
   if (!credential) return;
   const result = await client.query<CredentialRow>(
     `SELECT k.id,k.account_id,k.secret_hash,k.bindings,a.bindings AS account_bindings
-     FROM depot_service_accounts a JOIN depot_api_keys k ON k.account_id=a.id
+     FROM arkvory_service_accounts a JOIN arkvory_api_keys k ON k.account_id=a.id
      WHERE a.id=$1 AND k.id=$2 AND a.enabled AND k.state='active'
        AND k.expires_at>clock_timestamp() FOR SHARE OF a,k`,
     [credential.accountId, credential.keyId],

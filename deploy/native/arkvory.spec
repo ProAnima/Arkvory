@@ -22,9 +22,6 @@ Copyright Ian Panaev. All rights reserved.
 mkdir -p %{buildroot}/usr
 cp -a "@TREE@/usr/." %{buildroot}/usr/
 
-%pre
-%include @TREE@/DEBIAN/preinst
-
 %post
 %include @TREE@/DEBIAN/postinst
 

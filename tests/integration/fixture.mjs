@@ -12,7 +12,7 @@ export async function setup(t, overrides = {}, lifecycle = {}) {
   if (!connectionString)
     throw new Error('ARKVORY_TEST_DATABASE_URL is required; use a dedicated test database');
   const admin = new Pool({ connectionString, connectionTimeoutMillis: 5000 });
-  const schema = 'depot_test_' + randomUUID().replaceAll('-', '');
+  const schema = 'arkvory_test_' + randomUUID().replaceAll('-', '');
   await admin.query(`CREATE SCHEMA ${schema}`);
   const url = new URL(connectionString);
   url.searchParams.set('options', `-c search_path=${schema}`);

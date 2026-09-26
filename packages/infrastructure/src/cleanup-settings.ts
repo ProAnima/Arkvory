@@ -21,7 +21,7 @@ export class PostgresCleanupSettings implements CleanupSettings {
   constructor(private readonly pool: Pool) {}
   async get(repository: string): Promise<CleanupSnapshot> {
     const row = (
-      await this.pool.query<Row>('SELECT * FROM depot_cleanup_settings WHERE repository=$1', [
+      await this.pool.query<Row>('SELECT * FROM arkvory_cleanup_settings WHERE repository=$1', [
         repository,
       ])
     ).rows[0];
@@ -51,7 +51,7 @@ export class PostgresCleanupSettings implements CleanupSettings {
       await lockCatalogMutation(c, access.repository);
       const row = (
         await c.query<{ revision: number }>(
-          'SELECT revision FROM depot_cleanup_settings WHERE repository=$1 FOR UPDATE',
+          'SELECT revision FROM arkvory_cleanup_settings WHERE repository=$1 FOR UPDATE',
           [access.repository],
         )
       ).rows[0];
@@ -74,8 +74,8 @@ export class PostgresCleanupSettings implements CleanupSettings {
   save(access: MutationAccess, revision: number, policy: CleanupPolicy) {
     return this.mutate(access, revision, async (c) => {
       await c.query(
-        `INSERT INTO depot_cleanup_settings(repository,revision,policy) VALUES($1,1,$2)
-        ON CONFLICT(repository) DO UPDATE SET revision=depot_cleanup_settings.revision+1,policy=$2,next_run_at=now()`,
+        `INSERT INTO arkvory_cleanup_settings(repository,revision,policy) VALUES($1,1,$2)
+        ON CONFLICT(repository) DO UPDATE SET revision=arkvory_cleanup_settings.revision+1,policy=$2,next_run_at=now()`,
         [access.repository, policy],
       );
       await recordStorageEvent(c, access.repository, 'info', 'cleanup.configured', {
@@ -88,7 +88,7 @@ export class PostgresCleanupSettings implements CleanupSettings {
   request(access: MutationAccess, revision: number) {
     return this.mutate(access, revision, async (c) => {
       const updated = await c.query(
-        `UPDATE depot_cleanup_settings SET next_run_at=now() WHERE repository=$1 AND policy->>'enabled'='true'`,
+        `UPDATE arkvory_cleanup_settings SET next_run_at=now() WHERE repository=$1 AND policy->>'enabled'='true'`,
         [access.repository],
       );
       if (!updated.rowCount)

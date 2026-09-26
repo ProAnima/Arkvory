@@ -57,18 +57,18 @@ async function enable(f, client, changes = {}) {
   });
   // Keep the automatic timer away while exercising the same collector deterministically.
   await f.catalog.pool.query(
-    "UPDATE depot_cleanup_settings SET next_run_at=now()+interval '1 day'",
+    "UPDATE arkvory_cleanup_settings SET next_run_at=now()+interval '1 day'",
   );
 }
 async function sweep(f, blobs = new LocalBlobStore(f.directory), active = () => true) {
   await f.catalog.pool.query(
-    'UPDATE depot_cleanup_settings SET next_run_at=now(),last_run_at=NULL',
+    'UPDATE arkvory_cleanup_settings SET next_run_at=now(),last_run_at=NULL',
   );
-  await f.catalog.pool.query("UPDATE depot_uploads SET gc_checked_at='1970-01-01'");
+  await f.catalog.pool.query("UPDATE arkvory_uploads SET gc_checked_at='1970-01-01'");
   await new PostgresOnlineCleanup(f.catalog.pool, blobs).tick(active);
 }
 async function row(f, id) {
-  return (await f.catalog.pool.query('SELECT * FROM depot_uploads WHERE id=$1', [id])).rows[0];
+  return (await f.catalog.pool.query('SELECT * FROM arkvory_uploads WHERE id=$1', [id])).rows[0];
 }
 
 test('online cleanup API validates policies, scopes and CAS while reads remain available', async (t) => {
@@ -221,7 +221,7 @@ test('independent-session content pins are counted and cancelled, failed and exp
     await mkdir(join(f.directory, 'staging', pending), { recursive: true });
     await writeFile(join(f.directory, 'staging', pending, 'unfinished'), 'partial');
     await f.catalog.pool.query(
-      "UPDATE depot_uploads SET expires_at=now()-interval '1 hour' WHERE id=$1",
+      "UPDATE arkvory_uploads SET expires_at=now()-interval '1 hour' WHERE id=$1",
       [pending],
     );
     let entered;
@@ -286,14 +286,14 @@ test('grace, historical references and a live pause prevent physical deletion', 
   assert.equal((await row(f, first)).reclaimed, false);
   // Defensive check even for inconsistent old imports with a cancelled, pinned row.
   await f.catalog.pool.query(
-    "INSERT INTO depot_references(repository,artifact_id,owner,reference) VALUES('releases',$1,'legacy','pin')",
+    "INSERT INTO arkvory_references(repository,artifact_id,owner,reference) VALUES('releases',$1,'legacy','pin')",
     [first],
   );
   await enable(f, client);
   await sweep(f);
   assert.equal((await row(f, first)).reclaimed, false);
   assert.equal((await row(f, second)).reclaimed, true);
-  await f.catalog.pool.query('DELETE FROM depot_references WHERE artifact_id=$1', [first]);
+  await f.catalog.pool.query('DELETE FROM arkvory_references WHERE artifact_id=$1', [first]);
   const third = await published(f);
   await client.deleteArtifact('releases', third, 0);
   let calls = 0;
@@ -322,7 +322,7 @@ test('background cleanup persists across restart and requires no maintenance own
   await enable(f, client);
   await f.restart();
   await f.listen();
-  await f.catalog.pool.query('UPDATE depot_cleanup_settings SET next_run_at=now()');
+  await f.catalog.pool.query('UPDATE arkvory_cleanup_settings SET next_run_at=now()');
   const deadline = Date.now() + 12000;
   while (!(await row(f, id)).reclaimed && Date.now() < deadline) await delay(100);
   assert.equal((await row(f, id)).reclaimed, true);

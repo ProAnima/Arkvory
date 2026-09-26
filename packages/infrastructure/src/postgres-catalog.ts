@@ -99,7 +99,7 @@ export class PostgresCatalog implements Catalog {
         if (!mode.rows[0]?.acquired)
           throw new ArkvoryError('busy', 'Conflicting gateway profile is active');
         if (!sharedDownloads) {
-          const policy = await client.query('SELECT 1 FROM depot_download_policy');
+          const policy = await client.query('SELECT 1 FROM arkvory_download_policy');
           if (policy.rowCount)
             throw new ArkvoryError('conflict', 'Database requires shared download configuration');
         }
@@ -143,11 +143,11 @@ export class PostgresCatalog implements Catalog {
       }
       if (role !== 'reader')
         await client.query(
-          'INSERT INTO depot_storage_identity(singleton,storage_id) VALUES(true,$1) ON CONFLICT DO NOTHING',
+          'INSERT INTO arkvory_storage_identity(singleton,storage_id) VALUES(true,$1) ON CONFLICT DO NOTHING',
           [requireId(storageId)],
         );
       const identity = await client.query<{ storage_id: string }>(
-        'SELECT storage_id,pg_advisory_lock_shared(18471,17) FROM depot_storage_identity WHERE singleton=true',
+        'SELECT storage_id,pg_advisory_lock_shared(18471,17) FROM arkvory_storage_identity WHERE singleton=true',
       );
       if (identity.rows[0]?.storage_id !== storageId)
         throw new ArkvoryError('conflict', 'Database belongs to a different storage directory');
@@ -180,7 +180,7 @@ export class PostgresCatalog implements Catalog {
       await client.query('SELECT pg_advisory_xact_lock(18471, 2)');
       await lockServiceAccess(client, input.access);
       const existing = await client.query<Record<string, unknown>>(
-        'SELECT * FROM depot_uploads WHERE repository=$1 AND owner=$2 AND idempotency_key=$3',
+        'SELECT * FROM arkvory_uploads WHERE repository=$1 AND owner=$2 AND idempotency_key=$3',
         [input.repository, input.owner, input.key],
       );
       if (existing.rows[0]) {
@@ -191,7 +191,7 @@ export class PostgresCatalog implements Catalog {
         return upload;
       }
       const totals = await client.query<{ bytes: string; entries: string }>(
-        `SELECT COALESCE(SUM(size) FILTER(WHERE NOT reclaimed), 0)::text AS bytes, COUNT(*)::text AS entries FROM depot_uploads`,
+        `SELECT COALESCE(SUM(size) FILTER(WHERE NOT reclaimed), 0)::text AS bytes, COUNT(*)::text AS entries FROM arkvory_uploads`,
       );
       const total = totals.rows[0];
       if (
@@ -204,15 +204,15 @@ export class PostgresCatalog implements Catalog {
         await client.query<{ quota: string | null; used: string }>(
           `
         SELECT p.policy->>'quotaBytes' AS quota,
-        (SELECT COALESCE(sum(size),0)::text FROM depot_uploads WHERE repository=$1 AND NOT reclaimed) AS used
-        FROM depot_storage_policies p WHERE p.repository=$1`,
+        (SELECT COALESCE(sum(size),0)::text FROM arkvory_uploads WHERE repository=$1 AND NOT reclaimed) AS used
+        FROM arkvory_storage_policies p WHERE p.repository=$1`,
           [input.repository],
         )
       ).rows[0];
       if (quota?.quota && BigInt(quota.used) + BigInt(input.descriptor.size) > BigInt(quota.quota))
         throw new ArkvoryError('capacity_exceeded', 'Repository storage quota exceeded');
       const inserted = await client.query<Record<string, unknown>>(
-        'INSERT INTO depot_uploads(id,repository,owner,idempotency_key,descriptor,size,created_at) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING *',
+        'INSERT INTO arkvory_uploads(id,repository,owner,idempotency_key,descriptor,size,created_at) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING *',
         [
           input.id,
           input.repository,
@@ -239,7 +239,7 @@ export class PostgresCatalog implements Catalog {
 
   async get(repository: string, id: string): Promise<Upload> {
     const result = await this.pool.query<Record<string, unknown>>(
-      'SELECT * FROM depot_uploads WHERE repository=$1 AND id=$2',
+      'SELECT * FROM arkvory_uploads WHERE repository=$1 AND id=$2',
       [repository, id],
     );
     return decode(result.rows[0]);
@@ -247,7 +247,7 @@ export class PostgresCatalog implements Catalog {
 
   async parts(id: string) {
     const result = await this.pool.query<{ part_index: number; size: number; sha256: string }>(
-      'SELECT part_index,size,sha256 FROM depot_parts WHERE upload_id=$1 ORDER BY part_index',
+      'SELECT part_index,size,sha256 FROM arkvory_parts WHERE upload_id=$1 ORDER BY part_index',
       [id],
     );
     return result.rows.map((row) => ({
@@ -263,7 +263,7 @@ export class PostgresCatalog implements Catalog {
     limit: number,
   ): Promise<readonly Upload[]> {
     const result = await this.pool.query<Record<string, unknown>>(
-      `SELECT * FROM depot_uploads WHERE repository=$1 AND status='available' AND ($2::uuid IS NULL OR id > $2::uuid) ORDER BY id LIMIT $3`,
+      `SELECT * FROM arkvory_uploads WHERE repository=$1 AND status='available' AND ($2::uuid IS NULL OR id > $2::uuid) ORDER BY id LIMIT $3`,
       [repository, after ?? null, limit],
     );
     return result.rows.map(decode);
@@ -317,7 +317,7 @@ export class PostgresCatalog implements Catalog {
         // cannot commit a stale publication through the general-purpose pool.
         return guarded(async () => {
           const updated = await client.query<Record<string, unknown>>(
-            `UPDATE depot_uploads SET status=$3, cancelled_at=CASE WHEN $3='cancelled' THEN COALESCE(cancelled_at,now()) ELSE cancelled_at END WHERE repository=$1 AND id=$2 AND status IN ('pending',$3) AND (status='available' OR $3='cancelled' OR expires_at>now()) RETURNING *`,
+            `UPDATE arkvory_uploads SET status=$3, cancelled_at=CASE WHEN $3='cancelled' THEN COALESCE(cancelled_at,now()) ELSE cancelled_at END WHERE repository=$1 AND id=$2 AND status IN ('pending',$3) AND (status='available' OR $3='cancelled' OR expires_at>now()) RETURNING *`,
             [repository, id, target],
           );
           if (!updated.rows[0])
@@ -330,7 +330,7 @@ export class PostgresCatalog implements Catalog {
           guarded(async () => {
             check();
             const result = await client.query(
-              `INSERT INTO depot_parts(upload_id,part_index,size,sha256) SELECT id,$2,$3,$4 FROM depot_uploads WHERE id=$1 AND status='pending' AND expires_at>now() ON CONFLICT(upload_id,part_index) DO UPDATE SET sha256=excluded.sha256 WHERE depot_parts.sha256=excluded.sha256 AND depot_parts.size=excluded.size RETURNING upload_id`,
+              `INSERT INTO arkvory_parts(upload_id,part_index,size,sha256) SELECT id,$2,$3,$4 FROM arkvory_uploads WHERE id=$1 AND status='pending' AND expires_at>now() ON CONFLICT(upload_id,part_index) DO UPDATE SET sha256=excluded.sha256 WHERE arkvory_parts.sha256=excluded.sha256 AND arkvory_parts.size=excluded.size RETURNING upload_id`,
               [id, part.index, part.size, part.sha256],
             );
             if (result.rowCount !== 1)
@@ -361,11 +361,11 @@ export class PostgresCatalog implements Catalog {
 
   async ready(): Promise<void> {
     const result = await this.pool.query(
-      'SELECT version FROM depot_migrations WHERE version IN (8,9,10,11,12,13,14,15,16,17)',
+      'SELECT version FROM arkvory_migrations WHERE version IN (8,9,10,11,12,13,14,15,16,17)',
     );
     if (result.rowCount !== 10)
       throw new ArkvoryError('unavailable', 'Database migrations 8 through 17 are required');
-    await this.pool.query('SELECT id,expires_at FROM depot_uploads LIMIT 0');
+    await this.pool.query('SELECT id,expires_at FROM arkvory_uploads LIMIT 0');
   }
   async close(): Promise<void> {
     await this.releaseClaim?.();

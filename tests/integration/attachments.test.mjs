@@ -92,13 +92,13 @@ test('attachments preserve immutable bytes, CAS history and reference integrity 
     bytes.toString(),
   );
   // Historical targets remain foreign-key protected even after unlinking.
-  await assert.rejects(f.catalog.pool.query('DELETE FROM depot_uploads WHERE id=$1', [target]), {
+  await assert.rejects(f.catalog.pool.query('DELETE FROM arkvory_uploads WHERE id=$1', [target]), {
     code: '23503',
   });
   assert.equal(
     (
       await f.catalog.pool.query(
-        "SELECT count(*) FROM depot_audit WHERE action='attachments.replace'",
+        "SELECT count(*) FROM arkvory_audit WHERE action='attachments.replace'",
       )
     ).rows[0].count,
     '3',
@@ -239,7 +239,7 @@ test('attachment history, target pins and audit roll back together; migration 12
   const url = `${base}/artifacts/${build}/attachments`;
   await f.catalog.pool
     .query(`CREATE FUNCTION reject_attachment_audit() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'injected audit failure'; END $$;
-    CREATE TRIGGER reject_attachment_audit BEFORE INSERT ON depot_audit FOR EACH ROW EXECUTE FUNCTION reject_attachment_audit()`);
+    CREATE TRIGGER reject_attachment_audit BEFORE INSERT ON arkvory_audit FOR EACH ROW EXECUTE FUNCTION reject_attachment_audit()`);
   const response = await f.app.inject({
     method: 'PUT',
     url,
@@ -249,11 +249,11 @@ test('attachment history, target pins and audit roll back together; migration 12
   assert.equal(response.statusCode, 503);
   assert.equal((await f.app.inject({ url, headers: f.headers })).json().revision, 0);
   assert.equal(
-    (await f.catalog.pool.query('SELECT count(*) FROM depot_attachment_targets')).rows[0].count,
+    (await f.catalog.pool.query('SELECT count(*) FROM arkvory_attachment_targets')).rows[0].count,
     '0',
   );
   await f.catalog.pool.query(
-    'DROP TRIGGER reject_attachment_audit ON depot_audit; DROP FUNCTION reject_attachment_audit()',
+    'DROP TRIGGER reject_attachment_audit ON arkvory_audit; DROP FUNCTION reject_attachment_audit()',
   );
   assert.equal(
     (
@@ -266,7 +266,7 @@ test('attachment history, target pins and audit roll back together; migration 12
     ).statusCode,
     200,
   );
-  await f.catalog.pool.query('DELETE FROM depot_migrations WHERE version=12');
+  await f.catalog.pool.query('DELETE FROM arkvory_migrations WHERE version=12');
   await assert.rejects(f.catalog.ready(), { code: 'unavailable' });
 });
 

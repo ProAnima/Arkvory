@@ -29,7 +29,7 @@ test('invalid descriptor text is rejected before reserving quota or consuming it
     }
   }
   assert.equal(
-    (await f.catalog.pool.query('SELECT count(*) FROM depot_uploads')).rows[0].count,
+    (await f.catalog.pool.query('SELECT count(*) FROM arkvory_uploads')).rows[0].count,
     '0',
   );
   const created = await f.app.inject({
@@ -49,7 +49,7 @@ test('invalid descriptor text is rejected before reserving quota or consuming it
   assert.equal(repeated.statusCode, 201, repeated.body);
   assert.equal(repeated.json().id, created.json().id);
   const totals = await f.catalog.pool.query(
-    'SELECT count(*), sum(size)::text AS bytes FROM depot_uploads',
+    'SELECT count(*), sum(size)::text AS bytes FROM arkvory_uploads',
   );
   assert.deepEqual(totals.rows[0], { count: '1', bytes: String(bytes.length) });
 

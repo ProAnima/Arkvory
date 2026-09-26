@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-import { normalizeRuntimeSettings } from '@proanima/arkvory-contracts';
 import { parseArguments } from './arguments.js';
 import { execute } from './commands.js';
 import { failure, explanation } from './errors.js';
@@ -14,7 +13,6 @@ process.once('SIGTERM', interrupt);
 let json = process.argv.includes('--json');
 let language: 'en' | 'ru' = 'en';
 try {
-  Object.assign(process.env, normalizeRuntimeSettings(process.env));
   const args = parseArguments(process.argv.slice(2));
   json = args.json;
   language = args.language;

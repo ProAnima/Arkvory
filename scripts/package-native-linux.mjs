@@ -32,7 +32,7 @@ export async function linuxPackages(payload, stage, output, release, nodeArchive
     join(tree, 'DEBIAN/control'),
     `Package: proanima-arkvory\nVersion: ${release.version}\nArchitecture: amd64\nMaintainer: Ian Panaev\nSection: net\nPriority: optional\nDepends: postgresql (>= 16), systemd, python3, ca-certificates, libc6 (>= 2.28), libstdc++6, libgcc-s1, libatomic1\nDescription: ProAnima Arkvory UPack and file storage\n Dedicated database, supervised services and a browser console.\n`,
   );
-  for (const name of ['preinst', 'postinst', 'prerm']) {
+  for (const name of ['postinst', 'prerm']) {
     await copyFile(`deploy/native/${name}`, join(tree, 'DEBIAN', name));
     await chmod(join(tree, 'DEBIAN', name), 0o755);
   }

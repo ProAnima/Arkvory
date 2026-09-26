@@ -1,4 +1,3 @@
-import { compatiblePath } from './legacy-files.js';
 import { openAsBlob } from 'node:fs';
 import { open, link, unlink, lstat } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
@@ -20,11 +19,10 @@ interface DownloadInput {
 }
 export async function download(input: DownloadInput) {
   const output = resolve(input.output),
-    state = compatiblePath(output + '.arkvory-download.json', output + '.depot-download.json');
+    state = output + '.arkvory-download.json';
   return exclusive(state, async () => {
     if (await exists(output)) throw new CliError('destination_exists', 6);
-    const partial =
-      output + (state.endsWith('.depot-download.json') ? '.depot-part' : '.arkvory-part');
+    const partial = output + '.arkvory-part';
     const checkpoint = {
       format: 1,
       kind: 'download',
