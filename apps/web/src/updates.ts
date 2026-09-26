@@ -1,9 +1,12 @@
 import type { DepotClient } from '@proanima/depot-sdk';
+import { DepotHttpError } from '@proanima/depot-sdk';
 import type { UpdateSnapshot, UpdateRequest } from '@proanima/depot-contracts';
 import { element } from './dom.js';
 import { message } from './i18n.js';
 import { showView } from './shell.js';
 import { UpdateView } from './update-view.js';
+import type { MessageKey } from './messages.js';
+import { errorKey } from './feedback.js';
 
 class UpdateConsole {
   private readonly view = new UpdateView();
@@ -86,6 +89,7 @@ class UpdateConsole {
   }
   private async send(request: UpdateRequest) {
     const generation = this.generation;
+    let failure: MessageKey | undefined;
     this.busy = true;
     this.view.disable();
     try {
@@ -93,12 +97,19 @@ class UpdateConsole {
       if (generation !== this.generation) return;
       this.dirty = false;
       message(this.view.output, 'updatePending');
-    } catch {
-      if (generation === this.generation) message(this.view.output, 'updateConnection');
+    } catch (error) {
+      failure =
+        error instanceof DepotHttpError
+          ? error.status === 409
+            ? 'updateConflict'
+            : errorKey(error)
+          : 'updateConnection';
     } finally {
       if (generation === this.generation) {
         this.busy = false;
         await this.refresh();
+        // Reconciliation must not erase why the requested action was refused.
+        if (failure && generation === this.generation) message(this.view.output, failure);
       }
     }
   }

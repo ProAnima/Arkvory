@@ -56,9 +56,12 @@ export class UpdateControl {
       throw new DepotError('unavailable', 'Host updater heartbeat is stale');
     const directory = join(this.directory, 'inbox'),
       temporary = join(directory, `.${randomUUID()}.tmp`);
-    const file = await open(temporary, 'wx', 0o600);
+    const file = await open(temporary, 'wx', 0o644);
     try {
       await file.writeFile(JSON.stringify(request));
+      // Commands contain no credentials. A host updater with a different UID must read them;
+      // the protected mailbox ancestry controls who can reach these files.
+      await file.chmod(0o644);
       await file.sync();
       await file.close();
       try {

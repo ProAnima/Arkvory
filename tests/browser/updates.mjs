@@ -60,6 +60,13 @@ try {
     }
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.locator('#language').selectOption('en');
+  snapshot.revision++;
+  await save();
+  await page.locator('#update-check').click();
+  await page.waitForFunction(
+    () => document.querySelector('#updates-status').dataset.i18n === 'updateConflict',
+  );
+  await assert.rejects(readFile(join(directory, 'inbox/request.json')), { code: 'ENOENT' });
   await page.locator('#update-install').click();
   await page.locator('#update-confirm').waitFor();
   assert.match(await page.locator('#update-confirm-title').innerText(), /1.1.0/);
@@ -94,7 +101,7 @@ try {
   assert.equal(policy.kind, 'configure');
   assert.equal(policy.automatic, true);
   assert.equal(policy.hourUTC, 22);
-  await page.locator('#connection-card summary').click();
+  await page.locator('#connection-card > summary').click();
   await page.locator('#logout').click();
   assert.equal(await page.locator('#updates-nav').isVisible(), false);
   assert.equal(await page.locator('#update-banner').isVisible(), false);

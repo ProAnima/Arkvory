@@ -133,87 +133,6 @@
         </div>
       </header>
       <main id="main" tabindex="-1">
-        <aside id="update-banner" class="update-banner" aria-live="polite" hidden>
-          <strong id="update-notice"></strong>
-          <button type="button" class="secondary" data-go="updates" data-i18n="updateOpen">
-            Посмотреть обновление
-          </button>
-        </aside>
-        <section id="updates-panel" data-view="updates" aria-labelledby="updates-title" hidden>
-          <div class="card padded">
-            <div class="section-heading">
-              <h2 id="updates-title" data-i18n="updates">Обновления</h2>
-              <button
-                id="update-check"
-                class="secondary"
-                type="button"
-                data-i18n="updateCheck"
-                disabled
-              >
-                Проверить сейчас
-              </button>
-            </div>
-            <dl class="update-facts">
-              <div>
-                <dt data-i18n="updateCurrent">Установленная версия</dt>
-                <dd id="update-current">—</dd>
-              </div>
-              <div>
-                <dt data-i18n="updateLatest">Последний стабильный релиз</dt>
-                <dd id="update-latest">—</dd>
-              </div>
-              <div>
-                <dt data-i18n="updateChecked">Последняя проверка</dt>
-                <dd id="update-checked">—</dd>
-              </div>
-            </dl>
-            <output id="updates-status" class="hint" aria-live="polite"></output>
-            <p>
-              <button
-                id="update-install"
-                type="button"
-                class="primary"
-                data-i18n="updateInstall"
-                disabled
-              >
-                Установить обновление
-              </button>
-            </p>
-          </div>
-          <div class="card padded">
-            <h2 data-i18n="updateSettings">Автообновление</h2>
-            <p class="hint" data-i18n="updatePolicyHelp"></p>
-            <form id="update-settings" class="update-settings">
-              <label class="check"
-                ><input id="update-automatic" type="checkbox" disabled /><span
-                  data-i18n="updateAutomatic"
-                  >Автоматически устанавливать совместимые стабильные релизы</span
-                ></label
-              >
-              <label
-                ><span data-i18n="updateHour">Час обслуживания (UTC)</span
-                ><select id="update-hour" disabled></select
-              ></label>
-              <button class="secondary" data-i18n="updateSave" disabled>Сохранить настройки</button>
-            </form>
-          </div>
-        </section>
-        <dialog id="update-confirm" aria-labelledby="update-confirm-title">
-          <h2 id="update-confirm-title"></h2>
-          <p data-i18n="updateConfirmHelp"></p>
-          <div class="form-actions">
-            <button id="update-cancel" type="button" class="secondary" data-i18n="updateCancel">
-              Отмена</button
-            ><button
-              id="update-proceed"
-              type="button"
-              class="primary"
-              data-i18n="updateConfirmButton"
-            >
-              Установить этот релиз
-            </button>
-          </div>
-        </dialog>
         <div class="page-heading">
           <div>
             <p class="eyebrow">PROANIMA DEPOT</p>
@@ -312,6 +231,87 @@
             >Подключите репозиторий, чтобы начать.</output
           ><span id="request-id" class="mono"></span>
         </div>
+        <aside id="update-banner" class="update-banner" aria-live="polite" hidden>
+          <strong id="update-notice"></strong>
+          <button type="button" class="secondary" data-go="updates" data-i18n="updateOpen">
+            Посмотреть обновление
+          </button>
+        </aside>
+        <section id="updates-panel" data-view="updates" aria-labelledby="updates-title" hidden>
+          <div class="card padded">
+            <div class="section-heading">
+              <h2 id="updates-title" data-i18n="updates">Обновления</h2>
+              <button
+                id="update-check"
+                class="secondary"
+                type="button"
+                data-i18n="updateCheck"
+                disabled
+              >
+                Проверить сейчас
+              </button>
+            </div>
+            <dl class="update-facts">
+              <div>
+                <dt data-i18n="updateCurrent">Установленная версия</dt>
+                <dd id="update-current">—</dd>
+              </div>
+              <div>
+                <dt data-i18n="updateLatest">Последний стабильный релиз</dt>
+                <dd id="update-latest">—</dd>
+              </div>
+              <div>
+                <dt data-i18n="updateChecked">Последняя проверка</dt>
+                <dd id="update-checked">—</dd>
+              </div>
+            </dl>
+            <output id="updates-status" class="hint" aria-live="polite"></output>
+            <p>
+              <button
+                id="update-install"
+                type="button"
+                class="primary"
+                data-i18n="updateInstall"
+                disabled
+              >
+                Установить обновление
+              </button>
+            </p>
+          </div>
+          <div class="card padded">
+            <h2 data-i18n="updateSettings">Автообновление</h2>
+            <p class="hint" data-i18n="updatePolicyHelp"></p>
+            <form id="update-settings" class="update-settings">
+              <label class="check"
+                ><input id="update-automatic" type="checkbox" disabled /><span
+                  data-i18n="updateAutomatic"
+                  >Автоматически устанавливать совместимые стабильные релизы</span
+                ></label
+              >
+              <label
+                ><span data-i18n="updateHour">Час обслуживания (UTC)</span
+                ><select id="update-hour" disabled></select
+              ></label>
+              <button class="secondary" data-i18n="updateSave" disabled>Сохранить настройки</button>
+            </form>
+          </div>
+        </section>
+        <dialog id="update-confirm" aria-labelledby="update-confirm-title">
+          <h2 id="update-confirm-title"></h2>
+          <p data-i18n="updateConfirmHelp"></p>
+          <div class="form-actions">
+            <button id="update-cancel" type="button" class="secondary" data-i18n="updateCancel">
+              Отмена</button
+            ><button
+              id="update-proceed"
+              type="button"
+              class="primary"
+              data-i18n="updateConfirmButton"
+            >
+              Установить этот релиз
+            </button>
+          </div>
+        </dialog>
         <section
           id="catalog-panel"
           data-view="catalog"

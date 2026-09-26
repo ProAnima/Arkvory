@@ -35,8 +35,8 @@ services:
   initialize:
     image: ${DEPOT_IMAGE}
     user: '0:0'
-    entrypoint: [chown, '1000:1000', /var/lib/depot, /run/depot-updates/inbox]
-    volumes: [storage:/var/lib/depot, './updates/inbox:/run/depot-updates/inbox']
+    entrypoint: [chown, '1000:1000', /var/lib/depot]
+    volumes: [storage:/var/lib/depot]
     restart: 'no'
   migrate:
     <<: *runtime
