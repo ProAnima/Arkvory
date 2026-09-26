@@ -179,11 +179,6 @@ main {
   color: var(--color-muted);
   margin-bottom: var(--space-3);
 }
-#page-description {
-  color: var(--color-muted);
-  margin-top: var(--space-2);
-  max-width: var(--empty-copy-width);
-}
 .heading-action {
   flex-shrink: 0;
 }

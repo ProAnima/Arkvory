@@ -1,6 +1,5 @@
 export const updateEnglish = {
   updates: 'Updates',
-  updatesSubtitle: 'Stable releases and installation health',
   updateAvailable: 'Arkvory {version} is available',
   updateOpen: 'View update',
   updateCurrent: 'Installed version',
@@ -44,7 +43,6 @@ export const updateEnglish = {
 };
 export const updateRussian: Record<keyof typeof updateEnglish, string> = {
   updates: 'Обновления',
-  updatesSubtitle: 'Стабильные релизы и состояние установки',
   updateAvailable: 'Доступен Arkvory {version}',
   updateOpen: 'Посмотреть обновление',
   updateCurrent: 'Установленная версия',

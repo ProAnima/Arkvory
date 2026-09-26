@@ -4,23 +4,23 @@ import { element } from './dom.js';
 import { initializeLanguage, message, setLanguage } from './i18n.js';
 import { themePreference, readPreference, savePreference, applyTheme } from './preferences.js';
 import { initializeGuides } from './guides.js';
-const views = {
-  catalog: 'catalogSubtitle',
-  repositories: 'repositoriesSubtitle',
-  services: 'servicesSubtitle',
-  packages: 'packagesSubtitle',
-  administration: 'administrationSubtitle',
-  updates: 'updatesSubtitle',
-  upload: 'uploadSubtitle',
-  downloads: 'downloadsSubtitle',
-  history: 'historySubtitle',
-  metadata: 'metadataSubtitle',
-  onboarding: 'onboardingSubtitle',
-  help: 'helpSubtitle',
-} as const;
-type View = keyof typeof views;
+const views = [
+  'catalog',
+  'repositories',
+  'services',
+  'packages',
+  'administration',
+  'updates',
+  'upload',
+  'downloads',
+  'history',
+  'metadata',
+  'onboarding',
+  'help',
+] as const;
+type View = (typeof views)[number];
 function isView(value: string): value is View {
-  return Object.hasOwn(views, value);
+  return views.some((view) => view === value);
 }
 export function showView(view: View) {
   element('global-feedback', HTMLDivElement).hidden = true;
@@ -31,7 +31,6 @@ export function showView(view: View) {
     button.setAttribute('aria-current', selected ? 'page' : 'false');
   }
   message(element('page-title', HTMLHeadingElement), view);
-  message(element('page-description', HTMLParagraphElement), views[view]);
   element('heading-upload', HTMLButtonElement).hidden = ![
     'catalog',
     'packages',

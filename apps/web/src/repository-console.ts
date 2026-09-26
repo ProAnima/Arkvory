@@ -50,7 +50,6 @@ export class RepositoryConsole {
         card.dataset['repositoryId'] = repository.id;
         const title = node('h3');
         title.textContent = repository.id;
-        const formats = node('p', 'repositoryFormats', 'hint');
         const rights = disclosure('repositoryRights');
         for (const permission of repository.permissions)
           rights.append(node('p', `permission.${permission}`));
@@ -67,7 +66,7 @@ export class RepositoryConsole {
               this.select(repository.id, true);
             }),
           );
-        card.append(title, formats, rights, actions);
+        card.append(title, rights, actions);
         this.list.append(card);
       }
       if (!page.items.length) this.list.append(node('p', 'managementEmpty', 'hint'));

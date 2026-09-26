@@ -1,8 +1,6 @@
 export const managementEnglish = {
   repositories: 'Repositories',
-  repositoriesSubtitle: 'Available storage, permissions and policies',
   services: 'Service access',
-  servicesSubtitle: 'Accounts, keys and delegated administration',
   managementReload: 'Reload',
   managementMore: 'Next page',
   managementBack: 'First page',
@@ -13,7 +11,6 @@ export const managementEnglish = {
   managementClose: 'Close',
   repositoryModel:
     'Repositories are logical scopes created by assigning access. This server has no separate repository rename or deletion operation.',
-  repositoryFormats: 'UPack · Files',
   managementAccountInfo: 'ID {id} · Revision {revision}',
   repositoryOpen: 'Open files',
   repositoryStorage: 'Storage & cleanup',
@@ -32,8 +29,7 @@ export const managementEnglish = {
   serviceKeys: 'Service keys',
   serviceAudit: 'Activity log',
   serviceRefresh: 'Reload account',
-  serviceDelegated:
-    'Delegated access: only permitted targets and actions are available. The server also checks your permission ceiling.',
+  serviceDelegated: 'Access is limited to assigned accounts and actions.',
   bindingAdd: 'Add repository',
   bindingPermissions: 'Individual permissions',
   bindingRead: 'Read preset',
@@ -60,8 +56,7 @@ export const managementEnglish = {
   keyRevokeHint:
     'Revocation is permanent. Existing transfers may finish; new requests will be rejected.',
   keySecret: 'Save the new secret',
-  keySecretHint:
-    'Shown once. Store it securely before closing this dialog. It is never saved in browser preferences.',
+  keySecretHint: 'Shown once. Save the secret securely before closing.',
   keySecretMissing:
     'The key was already issued; its secret cannot be shown again. Find it in the list, revoke it and issue another key if needed.',
   keyCopy: 'Copy secret',
@@ -92,9 +87,7 @@ export const managementEnglish = {
 };
 export const managementRussian: Record<keyof typeof managementEnglish, string> = {
   repositories: 'Репозитории',
-  repositoriesSubtitle: 'Доступные хранилища, права и политики',
   services: 'Сервисный доступ',
-  servicesSubtitle: 'Аккаунты, ключи и делегирование управления',
   managementReload: 'Обновить',
   managementMore: 'Следующая страница',
   managementBack: 'Первая страница',
@@ -105,7 +98,6 @@ export const managementRussian: Record<keyof typeof managementEnglish, string> =
   managementClose: 'Закрыть',
   repositoryModel:
     'Репозитории — логические области, создаваемые назначением доступа. Отдельных операций переименования и удаления репозитория на сервере нет.',
-  repositoryFormats: 'UPack · Файлы',
   managementAccountInfo: 'ID {id} · Ревизия {revision}',
   repositoryOpen: 'Открыть файлы',
   repositoryStorage: 'Хранение и очистка',
@@ -125,8 +117,7 @@ export const managementRussian: Record<keyof typeof managementEnglish, string> =
   serviceKeys: 'Сервисные ключи',
   serviceAudit: 'Журнал действий',
   serviceRefresh: 'Обновить аккаунт',
-  serviceDelegated:
-    'Делегированный доступ: доступны только назначенные аккаунты и действия. Сервер также проверяет пределы ваших прав.',
+  serviceDelegated: 'Доступ ограничен назначенными аккаунтами и действиями.',
   bindingAdd: 'Добавить репозиторий',
   bindingPermissions: 'Отдельные права',
   bindingRead: 'Набор для чтения',
@@ -152,8 +143,7 @@ export const managementRussian: Record<keyof typeof managementEnglish, string> =
   keyRevokeHint:
     'Отзыв необратим. Начатые передачи могут завершиться; новые запросы будут отклонены.',
   keySecret: 'Сохраните новый секрет',
-  keySecretHint:
-    'Показывается один раз. Сохраните его в безопасном месте перед закрытием. В настройках браузера он не сохраняется.',
+  keySecretHint: 'Показывается один раз. Сохраните секрет в безопасном месте перед закрытием.',
   keySecretMissing:
     'Ключ уже выпущен; повторно показать секрет нельзя. Найдите ключ в списке, отзовите и выпустите новый, если секрет утрачен.',
   keyCopy: 'Скопировать секрет',

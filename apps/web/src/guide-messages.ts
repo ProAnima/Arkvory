@@ -2,12 +2,9 @@ export const guideEnglish = {
   welcomePartial:
     'The owner account exists. Sign in and finish repository permissions in Access groups; account creation must not be repeated.',
   onboarding: 'Welcome to Arkvory',
-  onboardingSubtitle: 'A clear path from installation to your first delivery.',
   help: 'API & CLI',
-  helpSubtitle: 'Discover permitted operations and connect your tools.',
-  welcomeLead: 'Your storage. Ready for work.',
-  welcomeBody:
-    'The installer prepares the service and database. Finish access setup, publish a small file, then connect your integrations.',
+  welcomeLead: 'Initial setup',
+  welcomeBody: 'Set up access, publish a file and connect your tools.',
   welcomeAccess: '01 · Sign in',
   welcomeAccessBody:
     'On Windows, use the owner account you created in Setup. For a headless installation, create an owner using the private recovery key on the server.',
@@ -30,8 +27,7 @@ export const guideEnglish = {
     'Before remote access: configure HTTPS, backups and disk alerts. Updates are opt-in. Local storage is a single-server profile.',
   helpLoad: 'Load permitted API operations',
   helpSearch: 'Search method, path or operation',
-  helpHint:
-    'Sign in first. The catalogue reflects your current key and repository; the server checks authorization again for each request.',
+  helpHint: 'Sign in to see API operations available to your account.',
   helpEmpty: 'No matching operations.',
   helpLoaded: 'Loaded {count} operations.',
   helpRetry: 'Retry policy',
@@ -50,12 +46,9 @@ export const guideRussian: Record<keyof typeof guideEnglish, string> = {
   welcomePartial:
     'Владелец создан. Войдите и завершите выдачу прав в группах доступа; повторно создавать владельца не нужно.',
   onboarding: 'Добро пожаловать в Arkvory',
-  onboardingSubtitle: 'От установки до первой раздачи — по понятным шагам.',
   help: 'API и CLI',
-  helpSubtitle: 'Доступные операции и подключение ваших инструментов.',
-  welcomeLead: 'Ваше хранилище. Готово к работе.',
-  welcomeBody:
-    'Установщик подготовит сервис и базу. Настройте доступ, опубликуйте небольшой файл и подключите интеграции.',
+  welcomeLead: 'Первоначальная настройка',
+  welcomeBody: 'Настройте доступ, опубликуйте файл и подключите инструменты.',
   welcomeAccess: '01 · Войдите',
   welcomeAccessBody:
     'В Windows используйте владельца, созданного в установщике. После серверной установки создайте владельца с помощью закрытого ключа восстановления на сервере.',
@@ -78,8 +71,7 @@ export const guideRussian: Record<keyof typeof guideEnglish, string> = {
     'Перед удалённым доступом настройте HTTPS, резервные копии и предупреждения о месте. Автообновления включаются отдельно. Локальное хранилище рассчитано на один сервер.',
   helpLoad: 'Загрузить доступные операции API',
   helpSearch: 'Поиск по методу, пути или операции',
-  helpHint:
-    'Сначала войдите. Каталог учитывает текущий ключ и репозиторий; сервер повторно проверяет права при каждом запросе.',
+  helpHint: 'Войдите, чтобы увидеть доступные вашей учётной записи операции API.',
   helpEmpty: 'Подходящих операций нет.',
   helpLoaded: 'Загружено операций: {count}.',
   helpRetry: 'Политика повторов',

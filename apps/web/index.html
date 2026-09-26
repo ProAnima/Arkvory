@@ -142,7 +142,6 @@
         </button>
       </nav>
       <div class="sidebar-bottom">
-        <p data-i18n="privateStorage">Ваши файлы. Ваша инфраструктура.</p>
         <small>© Ian Panaev</small>
       </div>
     </aside>
@@ -173,9 +172,6 @@
         <div class="page-heading">
           <div>
             <h1 id="page-title" tabindex="-1" data-i18n="catalog">Артефакты</h1>
-            <p id="page-description" data-i18n="catalogSubtitle">
-              Файлы, метки и коллекции репозитория.
-            </p>
           </div>
           <button id="heading-upload" class="primary heading-action" type="button" data-go="upload">
             <span aria-hidden="true">＋</span><span data-i18n="uploadFile">Загрузить файл</span>
@@ -265,7 +261,7 @@
             <button class="secondary" data-i18n="changeOwnPassword">Сменить свой пароль</button>
           </form>
         </details>
-        <div id="global-feedback" class="status-bar">
+        <div id="global-feedback" class="status-bar" hidden>
           <span class="dot" aria-hidden="true"></span
           ><output id="status" aria-live="polite" data-i18n="ready"
             >Подключите репозиторий, чтобы начать.</output
@@ -277,10 +273,9 @@
             Посмотреть обновление
           </button>
         </aside>
-        <section id="updates-panel" data-view="updates" aria-labelledby="updates-title" hidden>
+        <section id="updates-panel" data-view="updates" aria-labelledby="page-title" hidden>
           <div class="card padded">
             <div class="section-heading">
-              <h2 id="updates-title" data-i18n="updates">Обновления</h2>
               <button
                 id="update-check"
                 class="secondary"
@@ -355,12 +350,11 @@
         <section
           id="catalog-panel"
           data-view="catalog"
-          aria-labelledby="catalog-title"
+          aria-labelledby="page-title"
           class="card catalog-card"
         >
           <div class="section-heading">
             <div class="inline">
-              <h2 id="catalog-title" data-i18n="catalog">Артефакты</h2>
               <span id="catalog-count" class="badge" data-i18n="loaded" data-param-count="0"
                 >Загружено: 0</span
               >
@@ -592,15 +586,13 @@
                 />
               </svg>
             </div>
-            <h3 id="empty-title" data-i18n="emptyTitle">Место для ваших артефактов</h3>
+            <h3 id="empty-title" data-i18n="emptyTitle">Нет подключения</h3>
             <p id="empty-description" data-i18n="emptyDescription">
-              Подключите репозиторий, чтобы просматривать файлы, изменять метаданные и управлять
-              версиями.
+              Введите токен или войдите по паролю.
             </p>
           </div>
           <div class="table-footer" tabindex="0" role="region" data-i18n-label="tableRegion">
-            <span class="hint" data-i18n="fileTypes">UPack · Файлы</span
-            ><button id="more" class="secondary small" disabled data-i18n="more">
+            <button id="more" class="secondary small" disabled data-i18n="more">
               Загрузить ещё
             </button>
           </div>
@@ -608,12 +600,11 @@
         <section
           id="packages-panel"
           data-view="packages"
-          aria-labelledby="packages-title"
+          aria-labelledby="page-title"
           class="card padded"
           hidden
         >
           <div class="section-heading">
-            <h2 id="packages-title" data-i18n="packages">Пакеты</h2>
             <p class="hint" data-i18n="packageFilterHint" data-help="packageHelpLabel">
               Группа и имя ищутся точно, без учёта регистра.
             </p>
@@ -724,11 +715,10 @@
           id="downloads-panel"
           class="card padded"
           data-view="downloads"
-          aria-labelledby="downloads-title"
+          aria-labelledby="page-title"
           hidden
         >
           <div class="section-heading">
-            <h2 id="downloads-title" data-i18n="downloads">Скачивания</h2>
             <span id="download-summary" aria-live="polite"></span>
           </div>
           <details class="disclosure queue-settings">
@@ -846,7 +836,6 @@
               Вернуться к артефактам
             </button>
           </div>
-          <p class="hint queue-help" data-i18n="downloadShortNote"></p>
           <details class="disclosure queue-help">
             <summary data-i18n="downloadHow">Как сохраняется прогресс</summary>
             <p class="hint" data-i18n="downloadNote"></p>
@@ -860,8 +849,7 @@
           hidden
         >
           <div class="card guide-hero">
-            <p class="eyebrow">PROANIMA ARKVORY</p>
-            <h2 id="welcome-title" data-i18n="welcomeLead">Ваше хранилище. Готово к работе.</h2>
+            <h2 id="welcome-title" data-i18n="welcomeLead">Первоначальная настройка</h2>
             <p data-i18n="welcomeBody"></p>
           </div>
           <div class="guide-grid">
@@ -937,9 +925,8 @@
             </article>
           </div>
         </section>
-        <section id="help-panel" data-view="help" aria-labelledby="help-title" hidden>
+        <section id="help-panel" data-view="help" aria-labelledby="page-title" hidden>
           <article class="card">
-            <h2 id="help-title" data-i18n="help"></h2>
             <p data-i18n="helpHint"></p>
             <div class="guide-form">
               <button type="button" id="help-load" class="primary" data-i18n="helpLoad"></button>
@@ -986,7 +973,7 @@ GET /api/v1/operations?repository=releases</code></pre>
               <form id="upload" class="stack">
                 <label class="file-picker"
                   ><span class="upload-symbol" aria-hidden="true">↥</span
-                  ><strong data-i18n="chooseFile">Выберите файл, чтобы начать</strong
+                  ><strong data-i18n="chooseFile">Файл для загрузки</strong
                   ><span class="hint" data-i18n="fileHint"
                     >Архивы UPack и обычные файлы · До 5 GiB</span
                   ><input
@@ -1033,7 +1020,7 @@ GET /api/v1/operations?repository=releases</code></pre>
             <aside class="card padded transfer-card">
               <h2 data-i18n="transferTitle">Состояние передачи</h2>
               <output id="transfer-status" data-i18n="transferIdle" aria-live="polite"
-                >Всё готово к загрузке</output
+                >Ожидание файла</output
               ><progress
                 id="progress"
                 max="1"
@@ -1041,9 +1028,6 @@ GET /api/v1/operations?repository=releases</code></pre>
                 data-i18n-label="transferTitle"
                 aria-label="Состояние передачи"
               ></progress>
-              <p class="hint" data-i18n="transferHint">
-                Файл станет доступен после полной проверки содержимого.
-              </p>
               <div class="notice">
                 <span aria-hidden="true">↻</span>
                 <p data-i18n="uploadHint">
@@ -1062,9 +1046,7 @@ GET /api/v1/operations?repository=releases</code></pre>
           </div>
           <div id="editor-empty" class="card empty-state">
             <h3 data-i18n="selectArtifact">Выберите артефакт</h3>
-            <p data-i18n="selectHint">
-              Откройте файл в каталоге или истории, чтобы изменить его свойства.
-            </p>
+            <p data-i18n="selectHint">Откройте файл в каталоге или истории.</p>
           </div>
           <p id="selected-name" class="selected-name" hidden></p>
           <div id="editor" class="split-layout" hidden>
@@ -1299,12 +1281,11 @@ GET /api/v1/operations?repository=releases</code></pre>
         <section
           id="history-panel"
           data-view="history"
-          aria-labelledby="history-title"
+          aria-labelledby="page-title"
           class="card padded"
           hidden
         >
           <div class="section-heading">
-            <h2 id="history-title" data-i18n="history">История файлов</h2>
             <p class="hint" data-i18n="historyHint" data-help="historyHelpLabel">
               Восстановление создаёт новую ревизию. Откройте любую ревизию, чтобы скачать исходный
               файл.
@@ -1342,12 +1323,11 @@ GET /api/v1/operations?repository=releases</code></pre>
         <section
           id="administration-panel"
           data-view="administration"
-          aria-labelledby="administration-title"
+          aria-labelledby="page-title"
           class="card padded"
           hidden
         >
           <div class="section-heading">
-            <h2 id="administration-title" data-i18n="administration">Пользователи и доступ</h2>
             <p class="hint" data-i18n="adminHint" data-help="adminHelpLabel">
               Создавайте учётные записи и выдавайте доступ через группы.
             </p>
@@ -1482,10 +1462,9 @@ GET /api/v1/operations?repository=releases</code></pre>
           id="repositories-panel"
           class="card padded management-stack"
           data-view="repositories"
-          aria-labelledby="repositories-title"
+          aria-labelledby="page-title"
           hidden
         >
-          <h2 id="repositories-title" data-i18n="repositories"></h2>
           <fieldset id="repositories-controls" class="management-stack"></fieldset>
           <output id="repositories-status" aria-live="polite"></output>
         </section>
@@ -1493,10 +1472,9 @@ GET /api/v1/operations?repository=releases</code></pre>
           id="services-panel"
           class="card padded management-stack"
           data-view="services"
-          aria-labelledby="services-title"
+          aria-labelledby="page-title"
           hidden
         >
-          <h2 id="services-title" data-i18n="services"></h2>
           <fieldset id="services-controls" class="management-stack"></fieldset>
           <output id="services-status" aria-live="polite"></output>
         </section>
