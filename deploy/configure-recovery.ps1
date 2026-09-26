@@ -1,4 +1,4 @@
-param([Parameter(Mandatory)][ValidatePattern('^[a-zA-Z][a-zA-Z0-9]{0,40}$')][string]$Name, [switch]$Delayed)
+param([Parameter(Mandatory)][ValidatePattern('^[a-zA-Z][a-zA-Z0-9]{0,63}$')][string]$Name, [switch]$Delayed)
 $ErrorActionPreference = 'Stop'
 # SCM persists these settings independently of WinSW XML. Reapply them during repair too.
 $mode = if ($Delayed) { 'delayed-auto' } else { 'auto' }
