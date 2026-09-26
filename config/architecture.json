@@ -31,6 +31,6 @@
       "allowed": ["packages/application", "packages/domain", "packages/infrastructure"]
     },
     { "path": "apps/web", "allowed": ["packages/sdk", "packages/contracts"] },
-    { "path": "apps/deploy", "allowed": [] }
+    { "path": "apps/deploy", "allowed": ["packages/contracts"] }
   ]
 }

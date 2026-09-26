@@ -50,6 +50,8 @@
   --empty-height: 14rem;
   --compact-empty-height: 12rem;
   --checkbox-size: 1.125rem;
+  --update-dialog-width: 36rem;
+  --color-update-backdrop: rgb(0 0 0 / 55%);
   --table-actions-width: 16rem;
   --z-status: 10;
   --empty-copy-width: 26rem;

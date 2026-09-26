@@ -59,6 +59,9 @@ export function apiClassification(policy: OperationPolicy): {
   }
   let surface: ApiSurface;
   switch (policy.tag) {
+    case 'Updates':
+      surface = 'administration';
+      break;
     case 'System':
       surface =
         policy.operationId.startsWith('getReadiness') ||

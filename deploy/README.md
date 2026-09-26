@@ -82,7 +82,7 @@ node /opt/proanima-depot/manage.mjs configure --root /opt/proanima-depot --pin
 node /opt/proanima-depot/manage.mjs configure --root /opt/proanima-depot --unpin --enable-updates
 ```
 
-`--automatic` / `-AutomaticUpdates` включает ежедневную проверку: Linux около 03:00 UTC, Windows около 03:00 локального времени, задержка до 30 минут. Без флага автоматических скачиваний нет. `configure --enable-updates` регистрирует расписание; отключённая задача завершается до обращения к GitHub. Pin запрещает плановую смену версии. Ручной выбор: `update --version 1.2.3`; downgrade запрещён.
+Новые установки подключают уведомления и минутный обработчик команд. Проверка stable GitHub Releases выполняется каждые 6 часов, даже при выключенной автоустановке. `--automatic` / `-AutomaticUpdates` включает установку в окно 03:00–03:59 UTC на всех платформах; час меняется в консоли → Обновления. Не более одной попытки за сутки UTC, без догоняющего запуска вне окна. Pin запрещает плановую смену версии. Ручной выбор: `update --version 1.2.3`; downgrade запрещён. На хостах без системного планировщика его подключает оператор. [Уведомления, подключение существующих установок, API и восстановление](../docs/UPDATES.md).
 
 Linux: `systemctl status depot-api depot-worker`, `journalctl -u depot-api -u depot-worker`; лимиты journald задаются в ОС. Windows: Services и logs с ротацией по 20 MiB, пять архивов. Docker: Compose logs, JSON logs ограничены 20 MiB × 5. Сбой процесса вызывает restart через 10 секунд у нативных служб, у Docker — по политике движка. Неуспешная readiness сама по себе не вызывает restart: мониторинг отдельно сообщает о недоступной БД, потере ownership и дисковых ошибках.
 

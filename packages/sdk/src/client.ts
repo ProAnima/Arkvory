@@ -1,4 +1,5 @@
 import { DiscoveryApi } from './discovery-api.js';
+import { UpdatesApi } from './updates-api.js';
 import { IdentityApi } from './identity-api.js';
 import { UsersApi } from './users-api.js';
 import { ServiceAccountsApi } from './service-accounts-api.js';
@@ -41,9 +42,11 @@ export class DepotClient {
   private readonly downloads: DownloadApi;
   readonly identity: IdentityClient;
   readonly administration: AdministrationClient;
+  readonly updates: UpdatesApi;
   constructor(baseUrl: string, token: () => string, policy: ClientOptions = {}) {
     const normalized = transferPolicy(policy);
     const http = new HttpTransport(baseUrl, token, policy);
+    this.updates = new UpdatesApi(http);
     this.discovery = new DiscoveryApi(http);
     this.authentication = new IdentityApi(http);
     this.usersApi = new UsersApi(http);

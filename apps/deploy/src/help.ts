@@ -6,6 +6,9 @@ depot <command> --root <absolute-directory> [options]
 install        Install a verified stable release / Установить проверенный релиз
 finish-install Resume saved installation / Продолжить сохранённую установку
 status         Show installed version and update policy / Состояние
+updates-connect Connect console notifications and host scheduler / Подключить обновления в UI
+updates-poll    Process one update-control tick / Проверка и обработка очереди
+updates-reset   Clear an interrupted request after reconciliation / Снять запрос после проверки
 update         Update within the same database schema / Обновить код
 upgrade        Schema maintenance; --backup-record required / Обновить схему
 recover        Recover interrupted code switch / Восстановить переключение

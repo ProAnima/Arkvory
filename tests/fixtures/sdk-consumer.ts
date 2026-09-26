@@ -21,6 +21,7 @@ export type UnchangedKeys = Assert<
       keyof DepotClient,
       | 'identity'
       | 'administration'
+      | 'updates'
       | 'inRepository'
       | 'cleanup'
       | 'configureCleanup'

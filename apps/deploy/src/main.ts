@@ -1,10 +1,20 @@
 import { resolve, join } from 'node:path';
 import { exclusive, jsonFile } from './files.js';
 import { parseInstallation, version } from './model.js';
-import { install, update, recover, upgrade, save, finishInstall } from './operations.js';
+import {
+  install,
+  update,
+  recover,
+  upgrade,
+  save,
+  finishInstall,
+  checkJournal,
+} from './operations.js';
 import { Services } from './services.js';
 import { deploymentHelp } from './help.js';
 import { createOwner } from './owner.js';
+import { pollUpdates, resetUpdateRequest } from './update-control.js';
+import { prepareUpdateControl } from './update-setup.js';
 
 function argumentsOf(args: string[]): Map<string, string> {
   const options = new Map<string, string>();
@@ -52,6 +62,25 @@ async function main(): Promise<void> {
   }
   await exclusive(root, async () => {
     switch (operation) {
+      case 'updates-poll':
+        await pollUpdates(root);
+        break;
+      case 'updates-reset':
+        await resetUpdateRequest(root);
+        break;
+      case 'updates-connect': {
+        await checkJournal(root);
+        await prepareUpdateControl(root);
+        const state = parseInstallation(await jsonFile(join(root, 'installation.json')));
+        const services = new Services(root, state);
+        await services.stop();
+        await services.provision(state.current);
+        await services.prepareUpdateInbox(state.current);
+        await services.start(state.current);
+        await services.healthy();
+        await services.schedule(state.current);
+        break;
+      }
       case 'install':
         await install(root, options);
         if (options.get('owner-file')) await createOwner(root, options.get('owner-file') ?? '');

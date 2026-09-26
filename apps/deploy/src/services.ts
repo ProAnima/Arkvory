@@ -66,6 +66,9 @@ export class Services {
       await this.compose(release, ['run', '--rm', 'migrate']);
     } else await command(process.execPath, [join(this.root, 'launcher.mjs'), this.root, 'migrate']);
   }
+  async prepareUpdateInbox(release: Release): Promise<void> {
+    if (this.state.mode === 'compose') await this.compose(release, ['run', '--rm', 'initialize']);
+  }
   async stop(): Promise<void> {
     if (this.state.mode === 'compose')
       await this.compose(this.state.current, ['stop', '--timeout', '120', 'worker', 'api']);
@@ -154,6 +157,20 @@ export class Services {
   }
   async schedule(release: Release): Promise<void> {
     const windows = process.platform === 'win32';
+    if (!windows) {
+      try {
+        await access('/run/systemd/system');
+      } catch {
+        console.log('Host updater needs an external scheduler: run updates-poll every minute.');
+        return;
+      }
+      if (process.getuid?.() !== 0) {
+        console.log(
+          'Register the host updater as administrator, or schedule updates-poll under the container engine owner.',
+        );
+        return;
+      }
+    }
     const script = join(
       this.root,
       'releases',

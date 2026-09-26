@@ -1,8 +1,10 @@
 import { guideEnglish } from './guide-messages.js';
 import { cleanupEnglish } from './cleanup-messages.js';
+import { updateEnglish } from './update-messages.js';
 export const en = {
   ...guideEnglish,
   ...cleanupEnglish,
+  ...updateEnglish,
   storageTitle: 'Storage & automatic cleanup',
   storageHelp:
     'Retention applies to registered UPack builds. Pinned builds, file history and protected labels survive. Save a disabled policy first to preview it; enabling starts automatic deletion. Configure physical reclamation below without stopping Depot.',

@@ -6,6 +6,7 @@ const views = {
   catalog: 'catalogSubtitle',
   packages: 'packagesSubtitle',
   administration: 'administrationSubtitle',
+  updates: 'updatesSubtitle',
   upload: 'uploadSubtitle',
   downloads: 'downloadsSubtitle',
   history: 'historySubtitle',

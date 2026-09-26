@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import assert from 'node:assert/strict';
 import { verifyReleaseFiles } from '../../scripts/release-files.mjs';
+import { exerciseUpdateControl } from './update-control.mjs';
 const run = (args) =>
   execFileSync('docker', args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'inherit'] }).trim();
 run(['info']);
@@ -72,6 +73,12 @@ async function ready() {
 }
 try {
   manage(['install', '--mode', 'compose', '--artifact', artifact]);
+  await exerciseUpdateControl(
+    (await readFile(join(root, 'config/bootstrap-token.txt'), 'utf8')).trim(),
+    async () => {
+      manage(['updates-poll']);
+    },
+  );
   run([
     ...compose,
     'exec',

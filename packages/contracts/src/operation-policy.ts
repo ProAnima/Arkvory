@@ -87,6 +87,22 @@ function data(
 }
 add('/health/live', 'get', 'getLiveness', 'System', { kind: 'public' }, 'read');
 add(
+  '/api/v1/system/updates',
+  'get',
+  'getSystemUpdates',
+  'Updates',
+  { kind: 'administrator' },
+  'read',
+);
+add(
+  '/api/v1/system/updates/requests',
+  'post',
+  'requestSystemUpdate',
+  'Updates',
+  { kind: 'administrator' },
+  'compare-and-swap',
+);
+add(
   '/api/v1/repositories',
   'get',
   'listRepositories',

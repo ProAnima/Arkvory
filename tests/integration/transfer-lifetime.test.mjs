@@ -112,6 +112,9 @@ test('server backpressure does not spend the client input idle budget', async (t
   const result = await response;
   assert.equal(result.error, undefined);
   assert.equal(result.value.status, 200, await result.value.text());
+  // The 60 ms socket budget belongs to the controlled upload experiment. Restore a normal
+  // deadline before the independent readback, whose DB lookup can exceed 60 ms on busy hosts.
+  f.app.server.setTimeout(5000);
   const download = await fetch(`${address}${base}/artifacts/${id}/content`, { headers: f.headers });
   assert.deepEqual(Buffer.from(await download.arrayBuffer()), bytes);
 });

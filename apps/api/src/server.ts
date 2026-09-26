@@ -15,6 +15,7 @@ import { registerCors } from './cors.js';
 import { registerConsole } from './console.js';
 import { maintainStorage } from './storage-maintenance.js';
 import { resolveUploadTimeouts } from './upload-policy.js';
+import { registerUpdateRoutes } from './update-routes.js';
 
 export async function createServer(config: ServerConfig) {
   const policy = resolveUploadTimeouts(config);
@@ -65,6 +66,7 @@ export async function createServer(config: ServerConfig) {
     });
     registerHttpErrors(app, context);
     registerHealthRoutes(app, runtime);
+    registerUpdateRoutes(app, context.principal, config.updateControlDirectory);
     registerApiRoutes(app, {
       services,
       context,

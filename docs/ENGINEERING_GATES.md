@@ -11,7 +11,7 @@ Node.js 24, npm 11. Установка: npm ci --ignore-scripts.
 | npm run gate -- verify      | quick + audit + PostgreSQL/HTTP + браузер + упаковка/службы/контейнеры/native install |
 | npm run gate -- release     | verify + full и multipart передача 5 GiB с отказами                                   |
 | npm run gate -- integration | Политики, сборка, PostgreSQL/HTTP                                                     |
-| npm run gate -- browser     | Политики, сборка, консоль, скачивания и Remote Setup                                  |
+| npm run gate -- browser     | Политики, сборка, консоль, скачивания, обновления и Remote Setup                      |
 | npm run gate -- large       | Политики, сборка, оба сценария 5 GiB                                                  |
 | npm run gate -- security    | npm audit, high/critical блокируют                                                    |
 

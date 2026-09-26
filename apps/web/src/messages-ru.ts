@@ -1,9 +1,11 @@
 import { guideRussian } from './guide-messages.js';
 import { cleanupRussian } from './cleanup-messages.js';
+import { updateRussian } from './update-messages.js';
 import type { en } from './messages-en.js';
 export const ru: Record<keyof typeof en, string> = {
   ...guideRussian,
   ...cleanupRussian,
+  ...updateRussian,
   storageTitle: 'Хранение и автоочистка',
   storageHelp:
     'Очистка применяется к зарегистрированным UPack-билдам. Ссылки, история файлов и защищённые метки сохраняют билды. Сначала сохраните выключенную политику и проверьте кандидатов; включение запускает автоудаление. Физическое освобождение места настраивается ниже без остановки Depot.',

@@ -247,7 +247,7 @@
     "file": "apps/web/src/console.ts",
     "metric": "file",
     "symbol": "<file>",
-    "ceiling": 524,
+    "ceiling": 515,
     "reason": "Existing UI controller contains event wiring and view state; freeze its size and extract cohesive controllers only with browser state/reset acceptance.",
     "owner": "Depot maintainers",
     "recordedAt": "2026-09-25",

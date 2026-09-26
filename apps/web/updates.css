@@ -1,0 +1,63 @@
+.update-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  margin-bottom: var(--space-4);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+}
+.update-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: var(--space-4);
+}
+.update-facts dt {
+  color: var(--color-muted);
+}
+.update-facts dd {
+  margin: var(--space-2) 0 var(--space-4);
+  font-weight: var(--weight-semibold);
+}
+.update-settings {
+  display: grid;
+  gap: var(--space-4);
+  justify-items: start;
+}
+.update-settings .check {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-direction: row;
+}
+#updates-panel {
+  display: grid;
+  gap: var(--space-6);
+}
+#update-confirm {
+  max-width: min(var(--update-dialog-width), calc(100vw - var(--space-8)));
+  padding: var(--panel-padding);
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+}
+#update-confirm::backdrop {
+  background: var(--color-update-backdrop);
+}
+#update-confirm .form-actions {
+  display: flex;
+  justify-content: end;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-6);
+}
+@media (max-width: 40rem) {
+  .update-banner {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}

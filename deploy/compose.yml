@@ -13,6 +13,8 @@ x-runtime: &runtime
     - ./config/runtime.json:/run/depot/runtime.json:ro
     - ./config/keys.json:/run/depot/keys.json:ro
     - ./config/health-token.txt:/run/depot/health-token.txt:ro
+    - ./updates/status:/run/depot-updates/status:ro
+    - ./updates/inbox:/run/depot-updates/inbox
   logging:
     driver: json-file
     options: { max-size: 20m, max-file: '5' }
@@ -33,8 +35,8 @@ services:
   initialize:
     image: ${DEPOT_IMAGE}
     user: '0:0'
-    entrypoint: [chown, '1000:1000', /var/lib/depot]
-    volumes: [storage:/var/lib/depot]
+    entrypoint: [chown, '1000:1000', /var/lib/depot, /run/depot-updates/inbox]
+    volumes: [storage:/var/lib/depot, './updates/inbox:/run/depot-updates/inbox']
     restart: 'no'
   migrate:
     <<: *runtime

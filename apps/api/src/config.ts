@@ -31,6 +31,7 @@ export interface ServerConfig extends UploadTimeoutOptions {
   readonly keys: readonly ServiceKey[];
   readonly corsOrigins?: readonly string[];
   readonly webDirectory?: string;
+  readonly updateControlDirectory?: string;
 }
 
 export async function loadConfig(env: NodeJS.ProcessEnv): Promise<ServerConfig> {
@@ -99,6 +100,9 @@ export async function loadConfig(env: NodeJS.ProcessEnv): Promise<ServerConfig> 
     keys: parseKeys(keys),
     corsOrigins: parseCorsOrigins(env['DEPOT_CORS_ORIGINS']),
     webDirectory: env['DEPOT_WEB_DIR'] ?? 'apps/web/public',
+    ...(env['DEPOT_UPDATE_CONTROL_DIR']
+      ? { updateControlDirectory: env['DEPOT_UPDATE_CONTROL_DIR'] }
+      : {}),
     host: env['DEPOT_HOST'] ?? '127.0.0.1',
     port: number('DEPOT_PORT', 8080, 65535),
     capacityBytes: number('DEPOT_CAPACITY_BYTES', 10 * 1024 ** 4, Number.MAX_SAFE_INTEGER),

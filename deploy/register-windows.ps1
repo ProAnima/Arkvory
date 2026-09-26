@@ -5,7 +5,8 @@ if (-not $admin.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 # SIDs are independent of the Windows display language. Application identity cannot modify releases or updater credentials.
 & icacls.exe $Root /inheritance:r /grant:r '*S-1-5-18:(OI)(CI)F' '*S-1-5-32-544:(OI)(CI)F' '*S-1-5-19:(OI)(CI)RX' | Out-Null
 if ($LASTEXITCODE -ne 0) { throw 'Cannot secure installation directory' }
-foreach ($name in @('data','logs')) {
+foreach ($name in @('data','logs','updates/inbox')) {
+    if (-not (Test-Path -LiteralPath (Join-Path $Root $name))) { continue }
     & icacls.exe (Join-Path $Root $name) /grant:r '*S-1-5-19:(OI)(CI)M' | Out-Null
     if ($LASTEXITCODE -ne 0) { throw 'Cannot grant runtime directory access' }
 }

@@ -10,21 +10,21 @@ fi
 cat > "$unit" <<EOF
 # Depot installation: $root
 [Unit]
-Description=ProAnima Depot stable release update
+Description=ProAnima Depot release checks and queued updates
 Wants=network-online.target
 After=network-online.target
 [Service]
 Type=oneshot
-ExecStart="$node" "$root/manage.mjs" update --root "$root" --scheduled
+ExecStart="$node" "$root/manage.mjs" updates-poll --root "$root"
 TimeoutStartSec=1800
 UMask=0077
 EOF
 cat > /etc/systemd/system/depot-update.timer <<'EOF'
 [Unit]
-Description=Check Depot stable releases daily
+Description=Process Depot update requests and release notifications
 [Timer]
-OnCalendar=*-*-* 03:00:00 UTC
-RandomizedDelaySec=1800
+OnCalendar=*-*-* *:*:00
+RandomizedDelaySec=10
 Persistent=true
 [Install]
 WantedBy=timers.target

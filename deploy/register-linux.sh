@@ -18,6 +18,10 @@ if [[ -d "$root/database" ]]; then chmod 0711 "$root"; fi
 chown -R depot:depot "$root/data" "$root/logs"
 chmod 0750 "$root/data" "$root/logs"
 chown root:depot "$root/config/runtime.json" "$root/config/keys.json"
+if [[ -d "$root/updates/inbox" ]]; then
+  chown depot:depot "$root/updates/inbox"
+  chmod 0700 "$root/updates/inbox"
+fi
 chmod 0640 "$root/config/runtime.json" "$root/config/keys.json"
 chmod 0600 "$root/config/bootstrap-token.txt" "$root/config/postgres.env"
 for role in api worker; do
@@ -47,6 +51,7 @@ PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=true
 ReadWritePaths="$root/data" "$root/logs"
+ReadWritePaths="-$root/updates/inbox"
 UMask=0027
 StandardOutput=journal
 StandardError=journal

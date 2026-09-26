@@ -15,12 +15,12 @@ export class GitHubReleases {
   ) {
     if (!/^[A-Za-z0-9_-]{0,512}$/.test(token)) throw new Error('Invalid GitHub token file');
   }
-  static async fromTokenFile(path: string): Promise<GitHubReleases> {
+  static async fromTokenFile(path: string, signal?: AbortSignal): Promise<GitHubReleases> {
     const token = await readFile(path, 'utf8').catch((error: unknown) => {
       if (error instanceof Error && 'code' in error && error.code === 'ENOENT') return '';
       throw new Error('Cannot read GitHub token file');
     });
-    return new GitHubReleases(token.trim());
+    return new GitHubReleases(token.trim(), signal);
   }
   private async response(url: string, accept: string): Promise<Response> {
     let target = new URL(url);

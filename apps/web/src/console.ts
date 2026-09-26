@@ -14,6 +14,8 @@ import { installAnnotationEditor } from './annotation-editor.js';
 import { installBuildAttachments } from './build-attachments.js';
 import { installArtifactDeletion } from './artifact-deletion.js';
 import { installDownloads } from './downloads.js';
+import { installUpdates } from './updates.js';
+import { readableRepositories } from './readable-repositories.js';
 const token = element('token', HTMLInputElement),
   repository = element('repository', HTMLInputElement),
   output = element('status', HTMLOutputElement),
@@ -32,6 +34,7 @@ try {
   throw new Error('Invalid Depot API base URL');
 }
 const repositoryStorage = installRepositoryStorage(client);
+const updates = installUpdates(client);
 const downloads = installDownloads(apiBaseUrl, token);
 const annotationEditor = installAnnotationEditor();
 const attachments = installBuildAttachments(client, (repo, id, name) =>
@@ -56,21 +59,6 @@ let wasConnected = false;
 let repositoryEdited = false;
 let authenticationGeneration = 0;
 const repositoryOptions = element('repository-options', HTMLElement);
-async function readableRepositories(): Promise<readonly string[]> {
-  const readable: string[] = [];
-  let after: string | undefined;
-  let count = 0;
-  do {
-    const page = await client.repositories({ limit: 100, ...(after ? { after } : {}) });
-    count += page.items.length;
-    if (count > 10000 || (page.next && after && page.next <= after))
-      throw new Error('Invalid repository pagination');
-    for (const card of page.items)
-      if (card.permissions.includes('artifact.list')) readable.push(card.id);
-    after = page.next ?? undefined;
-  } while (after);
-  return readable.sort((left, right) => left.localeCompare(right));
-}
 function offerRepositories(readable: readonly string[]): boolean {
   repositoryOptions.replaceChildren();
   for (const name of readable) {
@@ -171,6 +159,7 @@ function clearCatalog() {
   clearSelection();
   clearPackages();
   administration.clear();
+  updates.clear();
   element('change-password', HTMLFormElement).hidden = true;
   if (!element('administration-panel', HTMLElement).hidden) showView('catalog');
 }
@@ -282,9 +271,10 @@ element('connect', HTMLFormElement).onsubmit = (event) => {
   event.preventDefault();
   const generation = ++authenticationGeneration;
   run(async () => {
-    const [me, readable] = await Promise.all([client.me(), readableRepositories()]);
+    const [me, readable] = await Promise.all([client.me(), readableRepositories(client)]);
     if (generation !== authenticationGeneration) return;
     if (me.administrator) administration.show();
+    updates.connect(me.administrator);
     element('change-password', HTMLFormElement).hidden = !me.id.startsWith('user:');
     if (offerRepositories(readable)) await list();
     else if (me.administrator) {
@@ -308,9 +298,10 @@ element('login', HTMLFormElement).onsubmit = (event) => {
     token.value = session.token;
     element('login-password', HTMLInputElement).value = '';
     clearCatalog();
-    const [me, readable] = await Promise.all([client.me(), readableRepositories()]);
+    const [me, readable] = await Promise.all([client.me(), readableRepositories(client)]);
     if (generation !== authenticationGeneration) return;
     const hasRepository = offerRepositories(readable);
+    updates.connect(me.administrator);
     element('change-password', HTMLFormElement).hidden = false;
     if (session.account.administrator) {
       administration.show();

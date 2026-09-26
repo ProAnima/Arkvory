@@ -1,5 +1,7 @@
 # Контракты API
 
+Уведомления и управление обновлением: `GET/HEAD /api/v1/system/updates`, `POST /api/v1/system/updates/requests`, только глобальный administrator. API публикует ограниченный запрос для привилегированного планировщика; `202` не означает завершённую установку. [UPDATES](UPDATES.md), [ADR 0038](adr/0038-update-notifications-and-control.md).
+
 Документ задаёт целевые правила API. Реализованные native сценарии и ограничения: [CORE_RUNBOOK](CORE_RUNBOOK.md), [LIFECYCLE_AND_CATALOG](LIFECYCLE_AND_CATALOG.md). OpenAPI доступна по `/api/v1/openapi.json`; схемы и проверка ответов SDK находятся в contracts. Управление пользователями, группами и сервисными ключами реализовано. Первый профиль сервисов включает 18 repository permissions и отдельного bootstrap-оператора: [SERVICE_KEYS](SERVICE_KEYS.md). Делегирование на точные аккаунты уже реализовано: [контракт](SERVICE_DELEGATION.md). Распределённые transfers, schemas и events/webhooks остаются запланированными. Файловый каталог дополнен [отдельным cursor API](ASSET_PAGINATION.md).
 
 Полная [карта API](API_MAP.md) связывает текущие методы, права, ответы и ограничения. Проект расширения: [сервисные аккаунты, permissions и ключи](API_ACCESS.md), [масштабирование и этапы внедрения](API_EVOLUTION.md). Проектные маршруты и policies не входят в работающую OpenAPI до реализации.
@@ -68,15 +70,15 @@ Webhooks подписываются, могут дублироваться и п
 
 Пустой `group=` фильтрует корневые пакеты; отсутствие group выбирает все группы. SDK сохраняет это различие. Все изменения паролей разделяют ограниченный допуск с login; заполнение очереди даёт 503/Retry-After. Identity-каталог ограничен 1000 пользователями, 100 группами и по 10 000 memberships/grants, превышение при добавлении — 507/capacity_exceeded.
 
-Текущая OpenAPI содержит 127 операций со стабильными operationId, явными правами, retry и gateway metadata, включая [делегированное service administration](SERVICE_DELEGATION.md). Native/legacy/HEAD inventory сверяется при startup и в CI; сборка сохраняет `packages/contracts/dist/openapi.json`. Правила расширения и границы: [API_CONTRACT_GUARD](API_CONTRACT_GUARD.md).
+Текущая OpenAPI содержит 130 операций со стабильными operationId, явными правами, retry и gateway metadata, включая [делегированное service administration](SERVICE_DELEGATION.md). Native/legacy/HEAD inventory сверяется при startup и в CI; сборка сохраняет `packages/contracts/dist/openapi.json`. Правила расширения и границы: [API_CONTRACT_GUARD](API_CONTRACT_GUARD.md).
 
 GET/HEAD списка и карточки репозитория реализованы в [REPOSITORY_DISCOVERY](REPOSITORY_DISCOVERY.md): отдельный managed action repository.read, legacy own scopes, bounded pagination и отсутствие data/admin escalation. Никакого SQL inventory всей площадки или автоматического импорта прав.
 
-Readiness дополнен параметрами admission waitingCapacity, perPrincipalWaitingCapacity и timeoutMs; OpenAPI document 0.11.0 сохраняет 127 операций. Управление [клиентской очередью скачиваний](DOWNLOAD_QUEUE.md) не добавляет HTTP routes и не меняет права ProGet-adapter.
+Readiness дополнен параметрами admission waitingCapacity, perPrincipalWaitingCapacity и timeoutMs; OpenAPI document 0.12.0 сохраняет 130 операций. Управление [клиентской очередью скачиваний](DOWNLOAD_QUEUE.md) не добавляет HTTP routes и не меняет права ProGet-adapter.
 Каталог применимых операций и представления спецификации по областям реализованы в [API_SURFACES](API_SURFACES.md). `operations` фильтруется текущим credential и gateway, возвращает remaining conditions и не заменяет авторизацию рабочих запросов. Native URL/operationId и legacy права сохранены.
 
-Вложения сборки расширяют surface catalog; OpenAPI 0.11.0, 127 операций; данные вложений добавлены миграцией 12. До 32 ссылок на published artifacts того же репозитория, CAS и постраничная история. Annotation/read-write и content права разделены. [BUILD_DETAILS](BUILD_DETAILS.md), [ADR 0024](adr/0024-build-attachments.md).
+Вложения сборки расширяют surface catalog; OpenAPI 0.12.0, 130 операций; данные вложений добавлены миграцией 12. До 32 ссылок на published artifacts того же репозитория, CAS и постраничная история. Annotation/read-write и content права разделены. [BUILD_DETAILS](BUILD_DETAILS.md), [ADR 0024](adr/0024-build-attachments.md).
 
-Логическое удаление и retention preview/apply реализованы в [ARTIFACT_RETENTION](ARTIFACT_RETENTION.md): managed-only artifact.delete, CAS аннотаций, пины истории и receipts. OpenAPI 0.11.0, 127 операций, миграции 13/14. Реестр репозиториев, SDK distribution, identity delegation/SSO и глобальное управление очередями остаются отдельными этапами.
+Логическое удаление и retention preview/apply реализованы в [ARTIFACT_RETENTION](ARTIFACT_RETENTION.md): managed-only artifact.delete, CAS аннотаций, пины истории и receipts. OpenAPI 0.12.0, 130 операций, миграции 13/14. Реестр репозиториев, SDK distribution, identity delegation/SSO и глобальное управление очередями остаются отдельными этапами.
 
-Хранение расширено `/storage/{policy,usage,preview,run,events}`: last-N scheduler, квоты резервирования, CAS и diagnostics. OpenAPI 0.11.0, 127 операции, миграция 15; явные managed storage/diagnostics actions. [STORAGE_POLICIES](STORAGE_POLICIES.md).
+Хранение расширено `/storage/{policy,usage,preview,run,events}`: last-N scheduler, квоты резервирования, CAS и diagnostics. OpenAPI 0.12.0, 130 операции, миграция 15; явные managed storage/diagnostics actions. [STORAGE_POLICIES](STORAGE_POLICIES.md).

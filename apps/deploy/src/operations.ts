@@ -8,6 +8,7 @@ import { Services } from './services.js';
 import { initialize } from './initialize.js';
 import { applyUpdate } from './update.js';
 import { protectInstallation } from './preflight.js';
+import { prepareUpdateControl } from './update-setup.js';
 
 export async function save(root: string, state: Installation): Promise<void> {
   // Compose image follows the same journalled switch; data volumes never depend on a release directory.
@@ -52,13 +53,14 @@ export async function install(root: string, options: Map<string, string>): Promi
   );
   await chmod(join(root, 'launcher.mjs'), 0o644);
   await save(root, state);
+  await prepareUpdateControl(root);
   const services = new Services(root, state);
   await services.prepare(state.current);
   await services.migrate(state.current);
   await services.provision(state.current);
   await services.start(state.current);
   await services.healthy();
-  if (state.automatic) await services.schedule(state.current);
+  await services.schedule(state.current);
   console.log(
     'Depot installed. Bootstrap credential: config/bootstrap-token.txt. Keep it private and rotate after setup.',
   );
@@ -66,13 +68,14 @@ export async function install(root: string, options: Map<string, string>): Promi
 export async function finishInstall(root: string): Promise<void> {
   await checkJournal(root);
   const state = parseInstallation(await jsonFile(join(root, 'installation.json')));
+  await prepareUpdateControl(root);
   const services = new Services(root, state);
   await services.prepare(state.current);
   await services.migrate(state.current);
   await services.provision(state.current);
   await services.start(state.current);
   await services.healthy();
-  if (state.automatic) await services.schedule(state.current);
+  await services.schedule(state.current);
 }
 export async function checkJournal(root: string): Promise<void> {
   let journal: Record<string, unknown>;
@@ -85,7 +88,11 @@ export async function checkJournal(root: string): Promise<void> {
   if (!['committed', 'rolled-back', 'recovered'].includes(String(journal['phase'])))
     throw new Error('Interrupted deployment; use recover after inspecting journal.json');
 }
-export async function update(root: string, options: Map<string, string>): Promise<void> {
+export async function update(
+  root: string,
+  options: Map<string, string>,
+  expectedDigest?: string,
+): Promise<void> {
   const state = parseInstallation(await jsonFile(join(root, 'installation.json')));
   if (options.has('scheduled') && (!state.automatic || state.pin !== null)) {
     console.log('Automatic updates disabled or version pinned');
@@ -93,6 +100,8 @@ export async function update(root: string, options: Map<string, string>): Promis
   }
   await checkJournal(root);
   const selected = await source(root, options.get('version') ?? state.pin, options.get('artifact'));
+  if (expectedDigest !== undefined && selected.release.archiveSha256 !== expectedDigest)
+    throw new Error('Selected release bytes changed; check releases again');
   const services = new Services(root, state);
   const changed = await applyUpdate(state, selected.release, options.has('scheduled'), {
     stage: async () => {

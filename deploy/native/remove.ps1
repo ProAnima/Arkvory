@@ -3,7 +3,8 @@ $ErrorActionPreference = 'Stop'
 $task = Get-ScheduledTask -TaskName 'ProAnimaDepotUpdate' -ErrorAction SilentlyContinue
 if ($task) {
   $expected = '"' + (Join-Path $Root 'manage.mjs') + '" update --root "' + $Root + '" --scheduled'
-  if ($task.Actions.Arguments -ne $expected) { throw 'Another installation owns the updater task' }
+  $monitor = '"' + (Join-Path $Root 'manage.mjs') + '" updates-poll --root "' + $Root + '"'
+  if (($task.Actions.Arguments -ne $expected) -and ($task.Actions.Arguments -ne $monitor)) { throw 'Another installation owns the updater task' }
   Unregister-ScheduledTask -TaskName 'ProAnimaDepotUpdate' -Confirm:$false
 }
 foreach ($entry in @(@('Depotworker','service/depot-worker.exe'),@('Depotapi','service/depot-api.exe'),@('Depotdatabase','database/depot-database.exe'))) {
