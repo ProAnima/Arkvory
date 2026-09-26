@@ -3,12 +3,32 @@ import { loadConfig } from './config.js';
 
 try {
   const config = await loadConfig(process.env);
-  const app = await createServer(config);
+  const app = await createServer(config, {
+    onOwnershipLost: () => {
+      process.stderr.write('Depot gateway ownership lost; stopping for supervisor recovery.\n');
+      shutdown(true);
+    },
+  });
+  let stopping = false;
+  function shutdown(failed = false) {
+    if (failed) process.exitCode = 1;
+    if (stopping) return;
+    stopping = true;
+    // Drain transfers first, but do not strand a fenced process forever on broken I/O.
+    const deadline = setTimeout(() => process.exit(1), 120000);
+    deadline.unref();
+    void app.close().then(
+      () => {
+        clearTimeout(deadline);
+      },
+      () => {
+        process.exit(1);
+      },
+    );
+  }
   for (const event of ['SIGINT', 'SIGTERM'] as const) {
     process.once(event, () => {
-      void app.close().catch(() => {
-        process.exitCode = 1;
-      });
+      shutdown();
     });
   }
   try {

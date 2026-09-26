@@ -16,11 +16,17 @@ import { registerConsole } from './console.js';
 import { maintainStorage } from './storage-maintenance.js';
 import { resolveUploadTimeouts } from './upload-policy.js';
 import { registerUpdateRoutes } from './update-routes.js';
+import { registerOwnershipRecovery } from './ownership-recovery.js';
 
-export async function createServer(config: ServerConfig) {
+export async function createServer(
+  config: ServerConfig,
+  lifecycle: { onOwnershipLost?: () => void } = {},
+) {
   const policy = resolveUploadTimeouts(config);
   const app = createHttpServer();
   const runtime = new ApiRuntime(config);
+  if (lifecycle.onOwnershipLost)
+    registerOwnershipRecovery(app, runtime.available, lifecycle.onOwnershipLost);
   const diagnostics = new DiagnosticLogger(process.stdout, () => new Date().toISOString());
   let background: ReturnType<typeof registerBackgroundTasks> | undefined;
   app.addHook('preClose', async () => {

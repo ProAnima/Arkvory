@@ -7,7 +7,7 @@ import { join } from 'node:path';
 import { createServer } from '../../apps/api/dist/index.js';
 import { PostgresCatalog, migrate } from '@proanima/depot-infrastructure';
 
-export async function setup(t, overrides = {}) {
+export async function setup(t, overrides = {}, lifecycle = {}) {
   const connectionString = process.env.DEPOT_TEST_DATABASE_URL;
   if (!connectionString)
     throw new Error('DEPOT_TEST_DATABASE_URL is required; use a dedicated test database');
@@ -55,7 +55,7 @@ export async function setup(t, overrides = {}) {
   });
   await migrate(catalog.pool);
   await migrate(catalog.pool);
-  app = await createServer(config);
+  app = await createServer(config, lifecycle);
   const headers = { authorization: `Bearer ${token}` };
   return {
     get app() {
@@ -68,7 +68,7 @@ export async function setup(t, overrides = {}) {
     directory,
     async restart() {
       await app.close();
-      app = await createServer(config);
+      app = await createServer(config, lifecycle);
       return app;
     },
     async listen() {
