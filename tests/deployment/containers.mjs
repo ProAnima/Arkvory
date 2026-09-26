@@ -6,6 +6,7 @@ import { setTimeout as delay } from 'node:timers/promises';
 import assert from 'node:assert/strict';
 import { verifyReleaseFiles } from '../../scripts/release-files.mjs';
 import { exerciseUpdateControl } from './update-control.mjs';
+import { exerciseContainerRecovery } from './container-recovery.mjs';
 const run = (args) =>
   execFileSync('docker', args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'inherit'] }).trim();
 run(['info']);
@@ -88,29 +89,7 @@ try {
     '-e',
     "require('fs').writeFileSync('/var/lib/depot/deployment-sentinel','preserved')",
   ]);
-  const before = run(['inspect', '--format', '{{.RestartCount}}', 'proanima-depot-api-1']);
-  try {
-    run([
-      ...compose,
-      'exec',
-      '-T',
-      'api',
-      'node',
-      '-e',
-      "const fs=require('fs');for(const p of fs.readdirSync('/proc').filter(p=>/^\\d+$/.test(p))){try{const c=fs.readFileSync('/proc/'+p+'/cmdline','utf8');if(c.split('\\0')[1]==='apps/deploy/dist/container.js')process.kill(Number(p),'SIGKILL');}catch{}}",
-    ]);
-  } catch (error) {
-    // Killing the container's main process can also kill docker exec before it returns.
-    // Readiness and RestartCount below still must prove automatic recovery.
-    if (error.status !== 137) throw error;
-  }
-  await delay(3000);
-  await ready();
-  assert.ok(
-    Number(run(['inspect', '--format', '{{.RestartCount}}', 'proanima-depot-api-1'])) >
-      Number(before),
-    'Container must restart after process crash',
-  );
+  await exerciseContainerRecovery(run, compose, ready);
   const next = join(temporary, 'next');
   await mkdir(next);
   await copyFile(join(artifact, 'depot-runtime.zip'), join(next, 'depot-runtime.zip'));

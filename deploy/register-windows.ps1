@@ -49,4 +49,5 @@ foreach ($role in @('api','worker')) {
 "@
     [IO.File]::WriteAllText((Join-Path $Root "service/depot-$role.xml"), $xml)
     if (-not $existing) { & $exe install; if ($LASTEXITCODE -ne 0) { throw 'Service installation failed' } }
+    & (Join-Path $PSScriptRoot 'configure-recovery.ps1') -Name $name -Delayed
 }

@@ -9,6 +9,7 @@ import { exerciseRpm } from './native-rpm.mjs';
 import { exerciseClient } from './client-install.mjs';
 import { exerciseRemoteAccess } from './remote-access.mjs';
 import { exerciseUpdateControl } from './update-control.mjs';
+import { exerciseNativeRecovery } from './native-recovery.mjs';
 
 // This gate uses production service names only on disposable CI machines, never a developer workstation.
 assert.equal(
@@ -90,6 +91,7 @@ try {
       'Disable-ScheduledTask -TaskName ProAnimaDepotUpdate | Out-Null',
     ]);
   else run('sudo', ['systemctl', 'stop', 'depot-update.timer']);
+  await exerciseNativeRecovery(root, token, read);
   if (windows) {
     const login = await fetch('http://127.0.0.1:8080/api/v1/auth/login', {
       method: 'POST',

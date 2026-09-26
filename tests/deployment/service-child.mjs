@@ -29,7 +29,7 @@ try {
   if (error.code !== 'ENOENT') throw error;
 }
 await writeFile(path, String(starts + 1));
-if (starts === 0) throw Error('Intentional first-start crash for service recovery gate');
+if (starts < 3) throw Error('Intentional repeated crash for service recovery gate');
 const timer = setInterval(() => {}, 1000);
 for (const signal of ['SIGINT', 'SIGTERM'])
   process.on(signal, () => {

@@ -43,6 +43,7 @@ if (-not $existing) {
   & $exe install
   if ($LASTEXITCODE -ne 0) { throw 'Cannot register database service' }
 }
+& (Join-Path $PSScriptRoot 'configure-recovery.ps1') -Name Depotdatabase
 if ((Get-Service Depotdatabase).Status -ne 'Running') {
   & $exe start
   if ($LASTEXITCODE -ne 0) { throw 'Cannot start database service' }

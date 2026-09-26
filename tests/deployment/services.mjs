@@ -5,6 +5,11 @@ import { setTimeout as delay } from 'node:timers/promises';
 import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
 const windows = process.platform === 'win32';
+assert.equal(
+  process.env.GITHUB_ACTIONS,
+  'true',
+  'Service acceptance requires a disposable Actions runner',
+);
 // LocalService cannot resolve Node entrypoints through another user's private AppData.
 // Match the production installer's machine-wide location instead of the runner's TEMP.
 const root = windows
@@ -27,7 +32,7 @@ for (const name of ['runtime.json', 'keys.json', 'bootstrap-token.txt', 'postgre
   await writeFile(join(root, 'config', name), '{}');
 await writeFile(join(root, 'github-token.txt'), 'test-only-not-a-real-token');
 await copyFile('tests/deployment/service-child.mjs', join(root, 'launcher.mjs'));
-try {
+function register() {
   if (windows)
     run('powershell.exe', [
       '-NoProfile',
@@ -43,7 +48,25 @@ try {
       prefix,
     ]);
   else run('sudo', ['bash', resolve('deploy/register-linux.sh'), root, process.execPath, prefix]);
+}
+try {
+  register();
+  // Repair must restore persisted boot/recovery settings, not merely rewrite configuration files.
   for (const role of ['api', 'worker']) {
+    if (windows) {
+      run('sc.exe', ['config', `${prefix}${role}`, 'start=', 'demand']);
+      run('sc.exe', ['failure', `${prefix}${role}`, 'reset=', '0', 'actions=', 'none/0']);
+    } else run('sudo', ['systemctl', 'disable', `${prefix}-${role}`]);
+  }
+  register();
+  for (const role of ['api', 'worker']) {
+    if (windows)
+      run('powershell.exe', [
+        '-NoProfile',
+        '-Command',
+        `if ((Get-CimInstance Win32_Service -Filter "Name='${prefix}${role}'").StartMode -ne 'Auto') { throw 'Service must start at boot' }`,
+      ]);
+    else run('sudo', ['systemctl', 'is-enabled', `${prefix}-${role}`]);
     if (windows) run(join(root, `service/depot-${role}.exe`), ['start']);
     else run('sudo', ['systemctl', 'start', `${prefix}-${role}`]);
   }
@@ -63,7 +86,7 @@ try {
               ),
         ),
       );
-      if (counts.every((value) => Number(value) >= 2)) {
+      if (counts.every((value) => Number(value) >= 4)) {
         recovered = true;
         break;
       }
@@ -71,8 +94,19 @@ try {
       if (error.code !== 'ENOENT' && error.status !== 1) throw error;
     }
   }
-  assert.ok(recovered, 'Both service processes must restart after an actual crash');
-  console.log('Native supervisor restarted both crashed processes');
+  assert.ok(recovered, 'Both service processes must recover after three consecutive crashes');
+  for (const role of ['api', 'worker']) {
+    if (windows) run(join(root, `service/depot-${role}.exe`), ['stopwait']);
+    else run('sudo', ['systemctl', 'stop', `${prefix}-${role}`]);
+  }
+  await delay(12000);
+  for (const role of ['api', 'worker']) {
+    const count = windows
+      ? await readFile(join(root, 'data', `${role}.starts`), 'utf8')
+      : execFileSync('sudo', ['cat', join(root, 'data', `${role}.starts`)], { encoding: 'utf8' });
+    assert.equal(Number(count), 4, 'Explicit maintenance stop must suppress recovery');
+  }
+  console.log('Native autostart repair, three consecutive crashes and deliberate stop passed');
 } finally {
   if (windows) {
     for (const directory of ['logs', 'service'])
@@ -101,7 +135,11 @@ try {
     if (windows) {
       const exe = join(root, `service/depot-${role}.exe`);
       if (existsSync(exe)) {
-        run(exe, ['stopwait']);
+        run('powershell.exe', [
+          '-NoProfile',
+          '-Command',
+          `if ((Get-Service '${prefix}${role}').Status -ne 'Stopped') { & '${exe.replaceAll("'", "''")}' stopwait; if ($LASTEXITCODE -ne 0) { throw 'Cannot stop test service' } }`,
+        ]);
         run(exe, ['uninstall']);
       }
     } else {
