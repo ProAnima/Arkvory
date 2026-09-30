@@ -395,8 +395,10 @@ export const servicePaths = {
           limits: {
             type: 'object',
             properties: {
-              maxObjectBytes: { type: 'string' },
-              partBytes: { type: 'integer' },
+              maxObjectBytes: { type: 'string', pattern: '^(0|[1-9][0-9]{0,15})$' },
+              partBytes: { type: 'integer', description: 'Smallest multipart segment.' },
+              maxPartBytes: { type: 'integer' },
+              maxParts: { type: 'integer' },
               maxPageSize: { type: 'integer' },
             },
           },

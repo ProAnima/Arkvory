@@ -35,7 +35,7 @@ export function registerApiRoutes(app: FastifyInstance, dependencies: Compositio
   const modifying = createUploadAdmission(transfers.uploadGate, context, available);
   registerOperationRoutes(app, s.access, principal, role);
   registerIdentityRoutes(app, s.identity, principal, transfers.loginGate, signal);
-  registerServiceRoutes(app, s.access, principal, role);
+  registerServiceRoutes(app, s.access, principal, role, s.service.maxObjectBytes);
   registerRepositoryRoutes(app, principal);
   registerArtifactRoutes(app, s.service, principal);
   registerDownloadRoutes(

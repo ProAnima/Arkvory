@@ -8,6 +8,7 @@ export async function migrateStorageSchemas(client: PoolClient) {
   await migrateLargeObjects(client);
   await migrateUserTokens(client);
   await migrateStorageRouting(client);
+  await migrateAdaptiveParts(client);
 }
 
 export async function migrateLargeObjects(client: PoolClient): Promise<void> {
@@ -65,5 +66,39 @@ export async function migrateStorageRouting(client: PoolClient): Promise<void> {
   await client.query(`
     ALTER TABLE arkvory_uploads ADD COLUMN IF NOT EXISTS storage_backend varchar(64) NOT NULL DEFAULT 'default';
     INSERT INTO arkvory_migrations(version) VALUES(20);
+  `);
+}
+
+export async function migrateAdaptiveParts(client: PoolClient): Promise<void> {
+  if ((await client.query('SELECT version FROM arkvory_migrations WHERE version=21')).rowCount)
+    return;
+  // Relaxing CHECKs: NOT VALID adds the new bound without a rewrite; VALIDATE only reads rows.
+  await client.query(`
+    ALTER TABLE arkvory_uploads ADD COLUMN IF NOT EXISTS part_bytes integer NOT NULL DEFAULT 8388608;
+    ALTER TABLE arkvory_uploads DROP CONSTRAINT IF EXISTS arkvory_uploads_part_bytes_check;
+    ALTER TABLE arkvory_uploads ADD CONSTRAINT arkvory_uploads_part_bytes_check
+      CHECK (part_bytes >= 8388608 AND part_bytes <= 1073741824 AND part_bytes % 8388608 = 0) NOT VALID;
+    ALTER TABLE arkvory_uploads VALIDATE CONSTRAINT arkvory_uploads_part_bytes_check;
+    ALTER TABLE arkvory_uploads DROP CONSTRAINT IF EXISTS arkvory_uploads_size_check;
+    ALTER TABLE arkvory_uploads ADD CONSTRAINT arkvory_uploads_size_check
+      CHECK (size >= 0 AND size <= 10737418240000) NOT VALID;
+    ALTER TABLE arkvory_uploads VALIDATE CONSTRAINT arkvory_uploads_size_check;
+    DO $$
+    DECLARE
+      c RECORD;
+    BEGIN
+      FOR c IN (
+        SELECT conname FROM pg_constraint
+        WHERE conrelid = 'arkvory_parts'::regclass AND contype = 'c'
+          AND pg_get_constraintdef(oid) LIKE '%8388608%'
+      ) LOOP
+        EXECUTE 'ALTER TABLE arkvory_parts DROP CONSTRAINT ' || quote_ident(c.conname);
+      END LOOP;
+    END $$;
+    ALTER TABLE arkvory_parts DROP CONSTRAINT IF EXISTS arkvory_parts_size_check;
+    ALTER TABLE arkvory_parts ADD CONSTRAINT arkvory_parts_size_check
+      CHECK (size > 0 AND size <= 1073741824) NOT VALID;
+    ALTER TABLE arkvory_parts VALIDATE CONSTRAINT arkvory_parts_size_check;
+    INSERT INTO arkvory_migrations(version) VALUES(21);
   `);
 }

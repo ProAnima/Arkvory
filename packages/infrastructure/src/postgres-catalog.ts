@@ -5,6 +5,7 @@ import {
   descriptorWire,
   parseDescriptor,
   requireId,
+  PART_BYTES,
   requireRepository,
   sameDescriptor,
 } from '@proanima/arkvory-domain';
@@ -43,6 +44,7 @@ export function decode(row: Record<string, unknown> | undefined): Upload {
             throw new ArkvoryError('unavailable', 'Invalid expiry');
           })(),
     storageBackend: typeof row['storage_backend'] === 'string' ? row['storage_backend'] : 'default',
+    partBytes: typeof row['part_bytes'] === 'number' ? row['part_bytes'] : PART_BYTES,
   };
 }
 
@@ -122,14 +124,14 @@ export class PostgresCatalog implements Catalog {
         await client.query('COMMIT');
         return upload;
       }
-      const totals = await client.query<{ bytes: string; entries: string }>(
-        `SELECT COALESCE(SUM(size) FILTER(WHERE NOT reclaimed), 0)::text AS bytes, COUNT(*)::text AS entries FROM arkvory_uploads`,
+      // Capacity counts retained bytes only; catalog entries have no fixed count ceiling.
+      const totals = await client.query<{ bytes: string }>(
+        'SELECT COALESCE(SUM(size), 0)::text AS bytes FROM arkvory_uploads WHERE NOT reclaimed',
       );
       const total = totals.rows[0];
       if (
         !total ||
-        BigInt(total.bytes) + BigInt(input.descriptor.size) > BigInt(this.capacityBytes) ||
-        Number(total.entries) >= 100000
+        BigInt(total.bytes) + BigInt(input.descriptor.size) > BigInt(this.capacityBytes)
       )
         throw new ArkvoryError('capacity_exceeded', 'Catalog capacity exceeded');
       const quota = (
@@ -144,7 +146,7 @@ export class PostgresCatalog implements Catalog {
       if (quota?.quota && BigInt(quota.used) + BigInt(input.descriptor.size) > BigInt(quota.quota))
         throw new ArkvoryError('capacity_exceeded', 'Repository storage quota exceeded');
       const inserted = await client.query<Record<string, unknown>>(
-        'INSERT INTO arkvory_uploads(id,repository,owner,idempotency_key,descriptor,size,created_at,storage_backend) VALUES($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *',
+        'INSERT INTO arkvory_uploads(id,repository,owner,idempotency_key,descriptor,size,created_at,storage_backend,part_bytes) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *',
         [
           input.id,
           input.repository,
@@ -154,6 +156,7 @@ export class PostgresCatalog implements Catalog {
           input.descriptor.size,
           input.createdAt,
           input.storageBackend ?? 'default',
+          input.partBytes,
         ],
       );
       this.checkOwnership();
@@ -189,6 +192,15 @@ export class PostgresCatalog implements Catalog {
       size: row.size,
       sha256: row.sha256,
     }));
+  }
+
+  async part(id: string, index: number) {
+    const result = await this.pool.query<{ part_index: number; size: number; sha256: string }>(
+      'SELECT part_index,size,sha256 FROM arkvory_parts WHERE upload_id=$1 AND part_index=$2',
+      [id, index],
+    );
+    const row = result.rows[0];
+    return row ? { index: row.part_index, size: row.size, sha256: row.sha256 } : null;
   }
 
   async list(

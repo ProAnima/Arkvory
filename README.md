@@ -34,7 +34,7 @@ The RU/EN console includes direct catalog downloads, compact mobile navigation, 
 | -------------------------------------------------------------------- | -------------------------------------------------------- |
 | Strict TypeScript, clean boundaries, runtime builds                  | Implemented                                              |
 | Streaming transfers, SHA-256, GET/HEAD/Range/ETag                    | Implemented                                              |
-| 8 MiB parts, resume, TTL, idempotent completion                      | Implemented                                              |
+| Adaptive parts (8 MiB–1 GiB), resume, TTL, idempotent completion     | Implemented                                              |
 | Bounded SDK retries, verified Range downloads, saved-prefix resume   | Implemented; [recovery guide](docs/TRANSFER_RECOVERY.md) |
 | Metadata/labels/collections, CAS, search, catalog audit              | Implemented                                              |
 | UPack manifest/group/SemVer, immutable versions, asset revisions     | Implemented with validator limits                        |
@@ -167,7 +167,7 @@ External applications use the public API and the portable TypeScript SDK in this
 
 ## Reliability and scale
 
-The initial design scenario is approximately **4 TB of data** with objects **up to 64 GB** (including large 10–20+ GB files). Streaming transfers and multipart uploads do not depend on object size for memory usage. A single 5 GiB transfer and restart have been tested locally; see the validation report. Client concurrency, network capacity, hardware, and recovery objectives still need to be specified.
+The initial design scenario is approximately **4 TB of data** with objects of **tens of gigabytes and more**. There is no fixed object size limit: the multipart layout addresses up to 10 000 parts of up to 1 GiB (about 10 TiB), and operators may set a lower `ARKVORY_MAX_OBJECT_BYTES`; quotas and free space are the practical bounds. Streaming transfers and multipart uploads do not depend on object size for memory usage. A single 5 GiB transfer and restart have been tested locally; see the validation report. Client concurrency, network capacity, hardware, and recovery objectives still need to be specified.
 
 - **Standalone:** one machine, local storage, and backups; no availability guarantee if that machine fails.
 - **Single-site HA:** multiple APIs/gateways, a resilient entry point, HA PostgreSQL, and durable content storage with an agreed write-acknowledgment policy.
@@ -228,7 +228,7 @@ For an existing database, edit `ARKVORY_DATABASE_URL` in `.env` instead of start
 | `npm run test:large`       | 5 GiB HTTP upload/download, process restart, hash and RSS checks     |
 | `npm run format`           | Apply formatting                                                     |
 
-Multipart uploads resume from recorded 8 MiB parts; whole-file PUT retries restart from byte zero. Online cleanup releases cancelled reservations after deleting their content and the grace period. One API process owns a standalone database; this profile provides no node failover. Keep the database and the entire storage directory, including `storage-id`, together in backup/restore procedures. Before updating, stop API/worker, back up both, run `npm run migrate` (schema 17), then start the new code. See [asset history and restore](docs/LIFECYCLE_AND_CATALOG.md#история-и-восстановление-файлов) and [online catalog indexes](docs/adr/0014-online-package-page-indexes.md).
+Multipart uploads resume from recorded parts (the session fixes the part size; clients over 16 GiB complete through the worker); whole-file PUT retries restart from byte zero. Online cleanup releases cancelled reservations after deleting their content and the grace period. One API process owns a standalone database; this profile provides no node failover. Keep the database and the entire storage directory, including `storage-id`, together in backup/restore procedures. Before updating, stop API/worker, back up both, run `npm run migrate` (schema 21), then start the new code. See [asset history and restore](docs/LIFECYCLE_AND_CATALOG.md#история-и-восстановление-файлов) and [online catalog indexes](docs/adr/0014-online-package-page-indexes.md).
 
 ## Development rules
 

@@ -1,24 +1,50 @@
 import { ArkvoryError } from './artifact.js';
 import { validateManifestValues } from './manifest-values.js';
+import { MAX_OBJECT_BYTES, MAX_PART_BYTES, MAX_PARTS, PART_BYTES } from './object-size.js';
 
-export const PART_BYTES = 8 * 1024 ** 2;
 export interface UploadPart {
   readonly index: number;
   readonly size: number;
   readonly sha256: string;
 }
 
-export function partSize(total: number, index: number): number {
-  if (!Number.isSafeInteger(index) || index < 0 || index >= Math.ceil(total / PART_BYTES))
-    throw new ArkvoryError('invalid_input', 'Invalid part index');
-  return Math.min(PART_BYTES, total - index * PART_BYTES);
+/** Fixed at upload creation and stored with the session; clients read it back before resuming. */
+export function partBytesFor(total: number): number {
+  if (!Number.isSafeInteger(total) || total < 0 || total > MAX_OBJECT_BYTES)
+    throw new ArkvoryError('invalid_input', 'Invalid object size');
+  let bytes = PART_BYTES;
+  while (Math.ceil(total / bytes) > MAX_PARTS) bytes *= 2;
+  return bytes;
 }
 
-export function checkParts(total: number, parts: readonly UploadPart[]): void {
-  if (parts.length !== Math.ceil(total / PART_BYTES))
+export function requirePartBytes(value: number): number {
+  if (
+    !Number.isSafeInteger(value) ||
+    value < PART_BYTES ||
+    value > MAX_PART_BYTES ||
+    value % PART_BYTES !== 0 ||
+    !Number.isInteger(Math.log2(value / PART_BYTES))
+  )
+    throw new ArkvoryError('invalid_input', 'Invalid part size');
+  return value;
+}
+
+export function partSize(total: number, index: number, partBytes = PART_BYTES): number {
+  requirePartBytes(partBytes);
+  if (!Number.isSafeInteger(index) || index < 0 || index >= Math.ceil(total / partBytes))
+    throw new ArkvoryError('invalid_input', 'Invalid part index');
+  return Math.min(partBytes, total - index * partBytes);
+}
+
+export function checkParts(
+  total: number,
+  parts: readonly UploadPart[],
+  partBytes = PART_BYTES,
+): void {
+  if (parts.length !== Math.ceil(total / partBytes))
     throw new ArkvoryError('conflict', 'Upload is missing parts');
   parts.forEach((part, index) => {
-    if (part.index !== index || part.size !== partSize(total, index))
+    if (part.index !== index || part.size !== partSize(total, index, partBytes))
       throw new ArkvoryError('conflict', 'Invalid part coverage');
   });
 }

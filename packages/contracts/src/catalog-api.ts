@@ -115,10 +115,16 @@ const query = (name: string) => ({ name, in: 'query', schema: str });
 const root = '/api/v1/repositories/{repository}';
 const paths: Record<string, Record<string, unknown>> = {
   [`${root}/uploads/{id}/parts`]: {
-    get: operation('Recorded parts; fixed 8 MiB except last', {
+    get: operation('Recorded parts and the segment size chosen for this upload', {
       type: 'object',
       properties: {
-        partBytes: { type: 'integer', enum: [8388608] },
+        partBytes: {
+          type: 'integer',
+          minimum: 8388608,
+          maximum: 1073741824,
+          multipleOf: 8388608,
+          description: 'Every part has this size except the last one.',
+        },
         items: { type: 'array', items: part },
       },
     }),

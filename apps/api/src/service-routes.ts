@@ -1,5 +1,5 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
-import { ArkvoryError, MAX_OBJECT_BYTES, PART_BYTES } from '@proanima/arkvory-domain';
+import { ArkvoryError, MAX_PARTS, MAX_PART_BYTES, PART_BYTES } from '@proanima/arkvory-domain';
 import type { Principal } from '@proanima/arkvory-domain';
 import { effectivePermissions } from '@proanima/arkvory-application';
 import type { ServiceAccess } from '@proanima/arkvory-application';
@@ -20,6 +20,7 @@ export function registerServiceRoutes(
   service: ServiceAccess,
   principal: (request: FastifyRequest) => Principal,
   role: 'api' | 'reader',
+  maxObjectBytes: number,
 ): void {
   app.get('/api/v1/capabilities', () =>
     Promise.resolve({
@@ -42,7 +43,13 @@ export function registerServiceRoutes(
         webhooks: false,
         replicatedStorage: false,
       },
-      limits: { maxObjectBytes: String(MAX_OBJECT_BYTES), partBytes: PART_BYTES, maxPageSize: 100 },
+      limits: {
+        maxObjectBytes: String(maxObjectBytes),
+        partBytes: PART_BYTES,
+        maxPartBytes: MAX_PART_BYTES,
+        maxParts: MAX_PARTS,
+        maxPageSize: 100,
+      },
     }),
   );
   app.get('/api/v1/auth/permissions', (request) => {

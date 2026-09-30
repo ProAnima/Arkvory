@@ -65,7 +65,6 @@ export async function verifiedDownload(
     artifact.status !== 'available' ||
     !/^(0|[1-9]\d*)$/.test(artifact.descriptor.size) ||
     !Number.isSafeInteger(size) ||
-    size > 5 * 1024 ** 3 ||
     !/^[a-f0-9]{64}$/.test(artifact.descriptor.sha256)
   )
     throw new ArkvoryIntegrityError();

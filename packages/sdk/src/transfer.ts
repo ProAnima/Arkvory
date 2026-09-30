@@ -60,7 +60,7 @@ export function retryAfter(value: string | null): number | undefined {
   return Number.isFinite(date) ? Math.max(0, date - Date.now()) : undefined;
 }
 
-async function delay(ms: number, signal?: AbortSignal) {
+export async function delay(ms: number, signal?: AbortSignal) {
   signal?.throwIfAborted();
   await new Promise<void>((resolve, reject) => {
     const abort = () => {

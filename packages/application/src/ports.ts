@@ -18,10 +18,12 @@ export interface Catalog {
     descriptor: ArtifactDescriptor;
     createdAt: string;
     storageBackend?: string;
+    partBytes: number;
     access?: MutationAccess;
   }): Promise<Upload>;
   get(repository: string, id: string): Promise<Upload>;
   parts(id: string): Promise<readonly UploadPart[]>;
+  part(id: string, index: number): Promise<UploadPart | null>;
   list(repository: string, after: string | undefined, limit: number): Promise<readonly Upload[]>;
   exclusive<T>(
     id: string,

@@ -1,6 +1,7 @@
 import type { DownloadStorage } from '@proanima/arkvory-sdk';
 export { openDownloadWorkspace } from './download-workspace.js';
 const segmentBytes = 8 * 1024 ** 2;
+const maxSegments = 1_250_000;
 
 /** Bounded OPFS segments avoid rewriting a growing multi-GiB file at every checkpoint. */
 export class BrowserDownloadStorage implements DownloadStorage {
@@ -16,12 +17,13 @@ export class BrowserDownloadStorage implements DownloadStorage {
     const folder = await this.folder();
     const names: string[] = [];
     for await (const [name, handle] of folder.entries()) {
-      if (handle.kind !== 'file' || !/^part-[0-9]{4}$/.test(name))
+      if (handle.kind !== 'file' || !/^part-[0-9]{4,7}$/.test(name))
         throw new Error('Invalid download staging');
       names.push(name);
-      if (names.length > 10000) throw new Error('Download staging limit exceeded');
+      if (names.length > maxSegments) throw new Error('Download staging limit exceeded');
     }
-    names.sort();
+    // Names widen past 9999 segments; numeric order keeps older four-digit journals valid.
+    names.sort((a, b) => Number(a.slice(5)) - Number(b.slice(5)));
     const parts: File[] = [];
     for (const [index, name] of names.entries()) {
       if (name !== this.partName(index)) throw new Error('Download staging gap');
@@ -41,7 +43,9 @@ export class BrowserDownloadStorage implements DownloadStorage {
     let writer: FileSystemWritableFileStream | undefined;
     let position = offset;
     const open = async () => {
-      if (position >= 5 * 1024 ** 3) throw new Error('Download staging limit exceeded');
+      // Browser storage quota, not a fixed size, bounds staging; QuotaExceededError is reported.
+      if (position >= segmentBytes * maxSegments)
+        throw new Error('Download staging limit exceeded');
       const file = await folder.getFileHandle(this.partName(Math.floor(position / segmentBytes)), {
         create: true,
       });

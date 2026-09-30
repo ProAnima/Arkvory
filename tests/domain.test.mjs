@@ -9,19 +9,23 @@ import {
   partSize,
   checkParts,
   PART_BYTES,
+  MAX_PART_BYTES,
+  MAX_PARTS,
+  partBytesFor,
+  requirePartBytes,
   matchRoutingRule,
   resolveStorageBackend,
 } from '@proanima/arkvory-domain';
 import { parseRange, matchesEtag, parseKeys } from '../apps/api/dist/index.js';
 const valid = {
   name: 'archive.upack',
-  size: '68719476736',
+  size: String(MAX_OBJECT_BYTES),
   sha256: 'a'.repeat(64),
   labels: ['release', 'release', 'linux'],
   metadata: { version: '1.0', platform: 'linux' },
 };
 
-test('descriptor enforces 64 GiB, flat metadata and canonical identity', () => {
+test('descriptor accepts the full multipart layout, flat metadata and canonical identity', () => {
   const a = parseDescriptor(valid);
   assert.equal(a.size, MAX_OBJECT_BYTES);
   assert.deepEqual(a.labels, ['linux', 'release']);
@@ -36,7 +40,7 @@ test('descriptor enforces 64 GiB, flat metadata and canonical identity', () => {
     ),
   );
   for (const patch of [
-    { size: '68719476737' },
+    { size: String(MAX_OBJECT_BYTES + 1) },
     { size: 2 },
     { size: '-1' },
     { size: '01' },
@@ -134,6 +138,38 @@ test('multipart partSize supports 10 GiB, 20 GiB and 64 GiB boundaries', () => {
   const partsCount = Math.ceil(uneven / PART_BYTES);
   assert.equal(partsCount, 2561);
   assert.equal(partSize(uneven, 2560), 123456);
+});
+
+test('part layout grows by powers of two so any size up to the layout limit fits 10000 parts', () => {
+  assert.equal(MAX_OBJECT_BYTES, MAX_PARTS * MAX_PART_BYTES);
+  assert.equal(partBytesFor(0), PART_BYTES);
+  assert.equal(partBytesFor(20 * 1024 ** 3), PART_BYTES);
+  assert.equal(partBytesFor(MAX_PARTS * PART_BYTES), PART_BYTES);
+  assert.equal(partBytesFor(MAX_PARTS * PART_BYTES + 1), 2 * PART_BYTES);
+  assert.equal(partBytesFor(200 * 1024 ** 3), 32 * 1024 ** 2);
+  assert.equal(partBytesFor(4 * 1024 ** 4), 512 * 1024 ** 2);
+  assert.equal(partBytesFor(MAX_OBJECT_BYTES), MAX_PART_BYTES);
+  for (const size of [1, 5 * 1024 ** 3, 100 * 1024 ** 3 + 7, 3 * 1024 ** 4 + 1, MAX_OBJECT_BYTES]) {
+    const bytes = partBytesFor(size);
+    assert.ok(Math.ceil(size / bytes) <= MAX_PARTS, String(size));
+    assert.equal(requirePartBytes(bytes), bytes);
+    const last = Math.ceil(size / bytes) - 1;
+    assert.equal(partSize(size, last, bytes), size - last * bytes);
+    assert.throws(() => partSize(size, last + 1, bytes), { code: 'invalid_input' });
+  }
+  for (const size of [-1, 1.5, MAX_OBJECT_BYTES + 1])
+    assert.throws(() => partBytesFor(size), { code: 'invalid_input' });
+  for (const bytes of [0, PART_BYTES - 1, 3 * PART_BYTES, 2 * MAX_PART_BYTES, PART_BYTES + 0.5])
+    assert.throws(() => requirePartBytes(bytes), { code: 'invalid_input' });
+  const sixteen = 2 * PART_BYTES;
+  const size = 100 * 1024 ** 3;
+  const parts = Array.from({ length: Math.ceil(size / sixteen) }, (_, index) => ({
+    index,
+    size: partSize(size, index, sixteen),
+    sha256: '0'.repeat(64),
+  }));
+  checkParts(size, parts, sixteen);
+  assert.throws(() => checkParts(size, parts, PART_BYTES), { code: 'conflict' });
 });
 
 test('storage routing rules match repository, package group and size thresholds', () => {

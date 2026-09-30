@@ -325,3 +325,50 @@ test('Retry-After is respected and cancelling a pending range releases its socke
     await socketClosed;
   });
 });
+
+test('large uploads complete through the worker and surface a failed job', async () => {
+  const { completeWithWorker } = await import('../packages/sdk/dist/upload-transfer.js');
+  const attempts = { run: (operation) => operation(new AbortController().signal) };
+  const states = ['queued', 'running', 'completed'];
+  const calls = [];
+  const uploads = {
+    enqueue: async (repository, id) => {
+      calls.push(`enqueue ${repository} ${id}`);
+      return { id: 'job-1', uploadId: id, status: 'queued', attempts: 0, errorCode: null };
+    },
+    job: async (id) => {
+      calls.push(`job ${id}`);
+      return { id, uploadId: 'u', status: states.shift(), attempts: 1, errorCode: null };
+    },
+    status: async (repository, id) => {
+      calls.push(`status ${id}`);
+      return { id, status: 'available' };
+    },
+  };
+  const done = await completeWithWorker(uploads, attempts, 'releases', 'u', undefined, 1);
+  assert.equal(done.status, 'available');
+  assert.deepEqual(calls, [
+    'enqueue releases u',
+    'job job-1',
+    'job job-1',
+    'job job-1',
+    'status u',
+  ]);
+  const failing = {
+    ...uploads,
+    job: async (id) => ({ id, uploadId: 'u', status: 'failed', attempts: 5, errorCode: 'busy' }),
+  };
+  await assert.rejects(
+    completeWithWorker(failing, attempts, 'releases', 'u', undefined, 1),
+    /completion failed: busy/,
+  );
+  const stop = new AbortController();
+  const waiting = {
+    ...uploads,
+    job: async (id) => {
+      stop.abort();
+      return { id, uploadId: 'u', status: 'queued', attempts: 0, errorCode: null };
+    },
+  };
+  await assert.rejects(completeWithWorker(waiting, attempts, 'releases', 'u', stop.signal, 1));
+});

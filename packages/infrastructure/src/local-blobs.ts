@@ -2,7 +2,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { createReadStream } from 'node:fs';
 import { mkdir, open, link, unlink, stat, statfs, readFile, rm } from 'node:fs/promises';
 import { join, resolve, dirname, relative } from 'node:path';
-import { ArkvoryError, requireId } from '@proanima/arkvory-domain';
+import { ArkvoryError, MAX_PARTS, requireId } from '@proanima/arkvory-domain';
 import type { ArtifactDescriptor, UploadPart } from '@proanima/arkvory-domain';
 import type { BlobStore, Cancellation } from '@proanima/arkvory-application';
 
@@ -235,7 +235,7 @@ export class LocalBlobStore implements BlobStore {
     if (
       !Number.isSafeInteger(part.index) ||
       part.index < 0 ||
-      part.index >= 10000 ||
+      part.index >= MAX_PARTS ||
       !/^[a-f0-9]{64}$/.test(part.sha256)
     )
       throw new ArkvoryError('invalid_input', 'Invalid part');

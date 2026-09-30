@@ -33,10 +33,16 @@ export function createApiServices(
   catalog: PostgresCatalog,
   blobs: LocalBlobStore,
   pins: PostgresContentPins,
-  allowRegistration = false,
+  options: { allowRegistration?: boolean; maxObjectBytes?: number } = {},
 ) {
+  const { allowRegistration = false, maxObjectBytes } = options;
   const now = () => new Date().toISOString();
-  const service = new StorageService(catalog, blobs, { next: randomUUID, now });
+  const service = new StorageService(
+    catalog,
+    blobs,
+    { next: randomUUID, now },
+    maxObjectBytes === undefined ? {} : { maxObjectBytes },
+  );
   const serviceAccounts = new PostgresServices(catalog.pool);
   const storagePolicies = new PostgresStoragePolicy(catalog.pool);
   const browse = new ArtifactCatalog(

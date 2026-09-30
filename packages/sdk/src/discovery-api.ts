@@ -41,6 +41,8 @@ export class DiscoveryApi {
       limits: {
         maxObjectBytes: text(limits['maxObjectBytes']),
         partBytes: integer(limits['partBytes']),
+        maxPartBytes: integer(limits['maxPartBytes']),
+        maxParts: integer(limits['maxParts']),
         maxPageSize: integer(limits['maxPageSize']),
       },
     };

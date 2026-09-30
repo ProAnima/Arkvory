@@ -1,4 +1,5 @@
 import type { ManagedCredential, ServiceAction } from './service-policy.js';
+import { MAX_OBJECT_BYTES } from './object-size.js';
 
 export type ErrorCode =
   | 'invalid_input'
@@ -38,9 +39,10 @@ export interface Upload {
   readonly expiresAt: string;
   readonly status: 'pending' | 'available' | 'cancelled';
   readonly storageBackend?: string;
+  /** Multipart segment size chosen at creation; whole-file uploads ignore it. */
+  readonly partBytes?: number;
 }
 
-export const MAX_OBJECT_BYTES = 64 * 1024 ** 3;
 export const repositoryPattern = '^[a-z0-9][a-z0-9_-]{0,63}$';
 export const idPattern = '^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$';
 

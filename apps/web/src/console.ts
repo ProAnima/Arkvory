@@ -20,6 +20,7 @@ import { installUpdates } from './updates.js';
 import { installUploadControls } from './upload-controls.js';
 import { installUserTokens } from './user-tokens.js';
 import { installAuthConsole } from './auth-console.js';
+import { exceedsServerLimit } from './server-limits.js';
 const token = element('token', HTMLInputElement),
   repository = element('repository', HTMLInputElement),
   output = element('status', HTMLOutputElement),
@@ -306,7 +307,7 @@ element('upload', HTMLFormElement).onsubmit = (event) => {
     if (stop) throw new UiError('uploadRunning');
     const file = element('file', HTMLInputElement).files?.[0];
     if (!file) throw new UiError('chooseFileError');
-    if (file.size > 64 * 1024 ** 3) throw new UiError('fileTooLarge');
+    if (await exceedsServerLimit(client, file.size)) throw new UiError('fileTooLarge');
     const repo = repository.value;
     stop = new AbortController();
     uploadBusy(true);

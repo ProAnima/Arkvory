@@ -55,7 +55,7 @@ export function readDeletionCandidate(value: unknown) {
     revision = integer(r['annotationRevision']);
   if (
     !/^(0|[1-9][0-9]{0,15})$/.test(size) ||
-    Number(size) > 68719476736 ||
+    !Number.isSafeInteger(Number(size)) ||
     !name ||
     name.length > 240 ||
     revision > 2147483647 ||

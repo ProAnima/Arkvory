@@ -78,6 +78,15 @@ export class PostgresCleanup implements CleanupCatalog {
   }
 }
 
+/** Failures the same request would repeat; everything else may be requeued by its owner. */
+const permanentJobErrors = new Set([
+  'forbidden',
+  'invalid_input',
+  'integrity_mismatch',
+  'not_found',
+  'conflict',
+]);
+
 function job(row: Record<string, unknown> | undefined): CompletionJob {
   if (!row) throw new ArkvoryError('not_found', 'Job not found');
   const {
@@ -141,7 +150,13 @@ export class PostgresJobs implements JobStore {
       if (prior.rows[0]) {
         const previous = job(prior.rows[0]);
         const credential = access?.principal.managed?.keyId;
-        if (credential && previous.credentialId !== credential && previous.status !== 'completed') {
+        // Lease loss or a storage/database outage must not force the owner to upload again.
+        const transient =
+          previous.status === 'failed' && !permanentJobErrors.has(previous.errorCode ?? '');
+        if (
+          transient ||
+          (credential && previous.credentialId !== credential && previous.status !== 'completed')
+        ) {
           if (previous.status === 'running')
             throw new ArkvoryError('busy', 'Wait for the running job before reauthorizing');
           const limits = (
@@ -157,7 +172,7 @@ export class PostgresJobs implements JobStore {
             throw new ArkvoryError('capacity_exceeded', 'Completion queue is full');
           const updated = await client.query<Record<string, unknown>>(
             "UPDATE arkvory_jobs SET credential_id=$2,status='queued',attempts=0,generation=generation+1,error_code=NULL,available_at=now() WHERE id=$1 RETURNING *",
-            [previous.id, credential],
+            [previous.id, credential ?? previous.credentialId],
           );
           await client.query('COMMIT');
           return job(updated.rows[0]);

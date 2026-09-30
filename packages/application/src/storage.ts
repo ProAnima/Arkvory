@@ -4,7 +4,10 @@ import {
   parseDescriptor,
   requireId,
   partSize,
+  partBytesFor,
   checkParts,
+  MAX_OBJECT_BYTES,
+  PART_BYTES,
 } from '@proanima/arkvory-domain';
 import type { Principal, Upload } from '@proanima/arkvory-domain';
 import type { BlobStore, Cancellation, Catalog, IdentitySource } from './ports.js';
@@ -17,13 +20,24 @@ export interface StorageRouter {
   }): string;
 }
 
+export interface StorageOptions {
+  readonly router?: StorageRouter;
+  /** Operator ceiling; the multipart layout limit applies when omitted. */
+  readonly maxObjectBytes?: number;
+}
+
 export class StorageService {
+  private readonly router: StorageRouter | undefined;
+  readonly maxObjectBytes: number;
   constructor(
     private readonly catalog: Catalog,
     private readonly blobs: BlobStore,
     private readonly identity: IdentitySource,
-    private readonly router?: StorageRouter,
-  ) {}
+    options: StorageOptions = {},
+  ) {
+    this.router = options.router;
+    this.maxObjectBytes = Math.min(options.maxObjectBytes ?? MAX_OBJECT_BYTES, MAX_OBJECT_BYTES);
+  }
 
   async create(
     principal: Principal,
@@ -36,6 +50,8 @@ export class StorageService {
     if (!/^[a-zA-Z0-9_.:-]{1,128}$/.test(key))
       throw new ArkvoryError('invalid_input', 'Invalid Idempotency-Key');
     const parsed = parseDescriptor(descriptor);
+    if (parsed.size > this.maxObjectBytes)
+      throw new ArkvoryError('invalid_input', 'Object exceeds the configured maximum size');
     const resolvedGroup = group ?? parsed.metadata['upack.group'] ?? parsed.metadata['group'];
     const storageBackend = this.router
       ? this.router.resolveBackend({
@@ -52,6 +68,7 @@ export class StorageService {
       descriptor: parsed,
       createdAt: this.identity.now(),
       storageBackend,
+      partBytes: partBytesFor(parsed.size),
       access: { principal, repository, actions: ['upload.create'] },
     });
   }
@@ -110,7 +127,7 @@ export class StorageService {
         this.pending(upload);
         const parts = await this.catalog.parts(id);
         if (parts.length > 0) {
-          checkParts(upload.descriptor.size, parts);
+          checkParts(upload.descriptor.size, parts, upload.partBytes ?? PART_BYTES);
           await this.blobs.put(
             id,
             upload.descriptor,
@@ -160,8 +177,8 @@ export class StorageService {
   }
 
   async parts(principal: Principal, repository: string, id: string) {
-    await this.status(principal, repository, id);
-    return this.catalog.parts(id);
+    const upload = await this.status(principal, repository, id);
+    return { partBytes: upload.partBytes ?? PART_BYTES, items: await this.catalog.parts(id) };
   }
 
   async uploadPart(
@@ -182,8 +199,13 @@ export class StorageService {
       async (mutation) => {
         const upload = await this.owned(principal, repository, id);
         this.pending(upload);
-        const part = { index, size: partSize(upload.descriptor.size, index), sha256 };
-        const existing = (await this.catalog.parts(id)).find((value) => value.index === index);
+        const part = {
+          index,
+          size: partSize(upload.descriptor.size, index, upload.partBytes ?? PART_BYTES),
+          sha256,
+        };
+        // Point lookup keeps a 10000-part upload linear instead of rereading every part per request.
+        const existing = await this.catalog.part(id, index);
         if (existing && existing.sha256 !== sha256)
           throw new ArkvoryError('conflict', 'Part already has different content');
         await this.blobs.putPart(

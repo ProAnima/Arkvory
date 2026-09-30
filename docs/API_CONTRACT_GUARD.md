@@ -54,7 +54,7 @@ GET bytes описывает 200/206, binary content, ETag, Content-Length, Cont
 
 `immutableBytes` относится к опубликованным bytes. `packages/content` и `asset/content` разрешают каталог заново на каждом запросе: `latest` и путь файла могут указывать на новую версию или ревизию, поэтому сам URL нельзя считать неизменяемым. Для закрепления объекта используйте If-Range с полученным ETag либо скачивание по artifact ID. Идентичность пакета и путь файла передаются query-параметрами, без catch-all сегментов пути.
 
-Загрузка ограничена 5 GiB на объект; часть ≤8 MiB. Незавершённый HTTP request не подтверждает частичную запись. Error schema едина: code/message/requestId; HEAD передаёт только status/headers. Существующие форматы и HTTP-методы не изменены.
+Размер объекта ограничен `capabilities.limits.maxObjectBytes` (по умолчанию предел multipart-раскладки, около 10 TiB); размер части задаётся сессией (`partBytes`, 8 MiB–1 GiB). Незавершённый HTTP request не подтверждает частичную запись. Error schema едина: code/message/requestId; HEAD передаёт только status/headers. Существующие форматы и HTTP-методы не изменены.
 
 ## Добавление операции
 

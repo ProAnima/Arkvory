@@ -1,5 +1,5 @@
 import { readFile } from 'node:fs/promises';
-import { ArkvoryError } from '@proanima/arkvory-domain';
+import { ArkvoryError, MAX_OBJECT_BYTES } from '@proanima/arkvory-domain';
 import { parseKeys, downloadShare } from '@proanima/arkvory-infrastructure';
 import type { SharedDownloadPolicy } from '@proanima/arkvory-infrastructure';
 import type { ServiceKey } from '@proanima/arkvory-infrastructure';
@@ -33,6 +33,8 @@ export interface ServerConfig extends UploadTimeoutOptions {
   readonly webDirectory?: string;
   readonly updateControlDirectory?: string;
   readonly allowRegistration?: boolean;
+  /** Operator ceiling for one object; the multipart layout limit applies when unset. */
+  readonly maxObjectBytes?: number;
 }
 
 export async function loadConfig(env: NodeJS.ProcessEnv): Promise<ServerConfig> {
@@ -101,6 +103,9 @@ export async function loadConfig(env: NodeJS.ProcessEnv): Promise<ServerConfig> 
     ...(sharedDownloads ? { sharedDownloads } : {}),
     databaseUrl,
     allowRegistration: env['ARKVORY_ALLOW_REGISTRATION'] === 'true',
+    ...(env['ARKVORY_MAX_OBJECT_BYTES'] === undefined
+      ? {}
+      : { maxObjectBytes: number('ARKVORY_MAX_OBJECT_BYTES', MAX_OBJECT_BYTES, MAX_OBJECT_BYTES) }),
     dataDirectory: required('ARKVORY_DATA_DIR'),
     keys: parseKeys(keys),
     corsOrigins: parseCorsOrigins(env['ARKVORY_CORS_ORIGINS']),

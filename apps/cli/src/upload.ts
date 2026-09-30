@@ -41,7 +41,6 @@ export async function upload(input: UploadInput) {
   if (state === path) throw new CliError('invalid_state_path');
   return exclusive(state, async () => {
     const blob = await openAsBlob(path);
-    if (blob.size > 5 * 1024 ** 3) throw new CliError('file_too_large');
     const sha256 = await digest(blob, input.signal);
     const annotations = readAnnotations({
       revision: 0,

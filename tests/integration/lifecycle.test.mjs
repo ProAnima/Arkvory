@@ -346,3 +346,31 @@ test('annotations CAS, asset revisions, immutable UPack versions, search and aud
     bytes,
   );
 });
+
+test('owners requeue transiently failed completion jobs but not permanent failures', async (t) => {
+  const f = await setup(t);
+  const bytes = Buffer.from('requeue');
+  const id = (await create(f, bytes)).json().id;
+  const enqueue = () =>
+    f.app.inject({
+      method: 'POST',
+      url: `${base}/uploads/${id}/complete-async`,
+      headers: f.headers,
+    });
+  const job = (await enqueue()).json();
+  for (const [code, status] of [
+    ['attempts_exhausted', 'queued'],
+    ['unavailable', 'queued'],
+    ['integrity_mismatch', 'failed'],
+  ]) {
+    await f.catalog.pool.query(
+      "UPDATE arkvory_jobs SET status='failed',error_code=$2,attempts=5 WHERE id=$1",
+      [job.id, code],
+    );
+    const again = await enqueue();
+    assert.equal(again.statusCode, 202, again.body);
+    assert.equal(again.json().id, job.id);
+    assert.equal(again.json().status, status, code);
+    if (status === 'queued') assert.equal(again.json().attempts, 0);
+  }
+});

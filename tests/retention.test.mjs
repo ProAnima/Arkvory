@@ -63,7 +63,7 @@ test('retention wire parsers reject ambiguous outcomes, oversized pages and unsa
   });
   for (const value of [
     { items: [row, row], next: id },
-    { items: [{ ...row, size: '68719476737' }], next: null },
+    { items: [{ ...row, size: '9007199254740992' }], next: null },
     { items: [{ ...row, publishedAt: 'invalid' }], next: null },
     { items: [{ ...row, blockers: ['unknown'] }], next: null },
     { items: [], next: id },

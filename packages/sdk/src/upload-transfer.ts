@@ -1,16 +1,21 @@
 import { readUpload } from '@proanima/arkvory-contracts';
-import { TransferAttempts } from './transfer.js';
+import { TransferAttempts, delay } from './transfer.js';
 import type { TransferOptions } from './transfer.js';
 import type { HttpPort } from './http-transport.js';
 import { repositoryPath } from './http-transport.js';
 import type { transferPolicy } from './transfer.js';
 import type { UploadsApi } from './uploads-api.js';
 
+const MIN_PART_BYTES = 8 * 1024 ** 2;
+const MAX_PART_BYTES = 1024 ** 3;
+/** Above this size assembly may outlive one request; the worker completes it durably instead. */
+export const ASYNC_COMPLETION_BYTES = 16 * 1024 ** 3;
+
 export class UploadTransfer {
   constructor(
     private readonly http: HttpPort,
     private readonly policy: ReturnType<typeof transferPolicy>,
-    private readonly uploads: Pick<UploadsApi, 'status' | 'parts' | 'complete'>,
+    private readonly uploads: Pick<UploadsApi, 'status' | 'parts' | 'complete' | 'enqueue' | 'job'>,
   ) {}
   async resume(
     repository: string,
@@ -45,7 +50,14 @@ export class UploadTransfer {
         );
       });
     const existing = await attempts.run((signal) => this.uploads.parts(repository, id, signal));
-    if (existing.partBytes !== 8 * 1024 ** 2) throw new Error('Unsupported part size');
+    const { partBytes } = existing;
+    if (
+      !Number.isSafeInteger(partBytes) ||
+      partBytes < MIN_PART_BYTES ||
+      partBytes > MAX_PART_BYTES ||
+      partBytes % MIN_PART_BYTES !== 0
+    )
+      throw new Error('Unsupported part size');
     const indices = new Set<number>();
     if (existing.items.length > Math.ceil(file.size / existing.partBytes))
       throw new Error('Invalid server parts');
@@ -85,6 +97,28 @@ export class UploadTransfer {
       options.onProgress?.(Math.min(file.size, offset + existing.partBytes));
     }
     // Assembly may be substantially slower than one bounded part transfer.
-    return attempts.run((signal) => this.uploads.complete(repository, id, signal), 1_800_000);
+    if (file.size < ASYNC_COMPLETION_BYTES)
+      return attempts.run((signal) => this.uploads.complete(repository, id, signal), 1_800_000);
+    return completeWithWorker(this.uploads, attempts, repository, id, options.signal);
+  }
+}
+
+/** Waits for the worker; the job is keyed by upload, so a repeated enqueue returns the same job. */
+export async function completeWithWorker(
+  uploads: Pick<UploadsApi, 'status' | 'enqueue' | 'job'>,
+  attempts: Pick<TransferAttempts, 'run'>,
+  repository: string,
+  id: string,
+  signal: AbortSignal | undefined,
+  pollMs = 1000,
+) {
+  const job = await attempts.run(() => uploads.enqueue(repository, id));
+  for (let wait = pollMs; ; wait = Math.min(wait * 2, 15 * pollMs)) {
+    const current = await attempts.run(() => uploads.job(job.id));
+    if (current.status === 'completed')
+      return attempts.run((s) => uploads.status(repository, id, s));
+    if (current.status === 'failed')
+      throw new Error(`Upload completion failed: ${current.errorCode ?? 'unknown'}`);
+    await delay(wait, signal);
   }
 }

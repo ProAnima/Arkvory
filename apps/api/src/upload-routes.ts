@@ -1,7 +1,7 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import type { StorageService, CompletionQueue } from '@proanima/arkvory-application';
 import type { Principal } from '@proanima/arkvory-domain';
-import { ArkvoryError, PART_BYTES } from '@proanima/arkvory-domain';
+import { ArkvoryError } from '@proanima/arkvory-domain';
 import { descriptorSchema, uploadSchema } from '@proanima/arkvory-contracts';
 import { wireUpload } from './upload-response.js';
 import { UploadReceiver, withUploadDeadline } from './upload-lifetime.js';
@@ -64,14 +64,9 @@ function registerSessions(app: FastifyInstance, s: Services) {
       ),
     ),
   );
-  app.get<{ Params: Params }>(`${base}/uploads/:id/parts`, async (request) => ({
-    partBytes: PART_BYTES,
-    items: await s.storage.parts(
-      s.principal(request),
-      request.params.repository,
-      request.params.id,
-    ),
-  }));
+  app.get<{ Params: Params }>(`${base}/uploads/:id/parts`, (request) =>
+    s.storage.parts(s.principal(request), request.params.repository, request.params.id),
+  );
   app.post<{ Params: Params }>(`${base}/uploads/:id/complete-async`, async (request, reply) =>
     reply
       .code(202)

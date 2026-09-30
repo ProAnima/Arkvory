@@ -8,6 +8,7 @@ import { clearMessage, message, dateMessage } from './i18n.js';
 import { feedback, errorKey, UiError } from './feedback.js';
 import { hashFile } from './file-hash.js';
 import type { MessageKey } from './messages.js';
+import { exceedsServerLimit } from './server-limits.js';
 
 const kindMessages: Record<BuildAttachmentResponse['kind'], MessageKey> = {
   manifest: 'attachmentManifest',
@@ -261,8 +262,8 @@ export function installBuildAttachments(
       if (mode.value === 'upload') {
         const current = file.files?.[0];
         if (!current) throw new UiError('chooseFileError');
-        if (current.size > 5 * 1024 ** 3) throw new UiError('fileTooLarge');
         if (!selection.canUpload) throw new UiError('errorForbidden');
+        if (await exceedsServerLimit(client, current.size)) throw new UiError('fileTooLarge');
         pending ??= { file: current, key: crypto.randomUUID() };
         const attempt = pending;
         controller = new AbortController();

@@ -285,7 +285,7 @@ test('migration preserves old asset history without inventing authors or timesta
      ALTER TABLE arkvory_asset_revisions DROP CONSTRAINT arkvory_asset_revision_positive;
      DROP TABLE arkvory_gateway_leases, arkvory_download_policy;
      DROP TABLE arkvory_user_tokens;
-     ALTER TABLE arkvory_uploads DROP COLUMN storage_backend;
+     ALTER TABLE arkvory_uploads DROP COLUMN storage_backend, DROP COLUMN part_bytes;
      DROP TABLE arkvory_user_sessions, arkvory_group_members, arkvory_group_grants,
                 arkvory_users, arkvory_access_groups;
      DROP FUNCTION arkvory_semver_key(text) CASCADE;

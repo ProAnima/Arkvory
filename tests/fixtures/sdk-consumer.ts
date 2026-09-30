@@ -13,10 +13,11 @@ type ChangedMethods = {
     : K;
 }[keyof LegacyClient];
 
-// ADR 0041 adds an optional AbortSignal to registerPackage; existing invocations remain assignable.
+// ADR 0041 adds an optional AbortSignal to registerPackage; ADR 0046 adds part layout limits to
+// capabilities. Existing invocations and reads remain assignable.
 export type ExistingCallsRemainValid = Assert<ArkvoryClient extends LegacyClient ? true : false>;
 // Compile against built package exports, as an external strict TypeScript consumer does.
-export type UnchangedMethods = Assert<Equal<ChangedMethods, 'registerPackage'>>;
+export type UnchangedMethods = Assert<Equal<ChangedMethods, 'registerPackage' | 'capabilities'>>;
 export type UnchangedKeys = Assert<
   Equal<
     Exclude<

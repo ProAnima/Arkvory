@@ -44,7 +44,7 @@ async function* files(directory) {
     if (entry.isSymbolicLink()) throw new Error('Symlinks are not supported');
     if (entry.isDirectory()) yield* files(path);
     else if (entry.isFile()) {
-      if (++count > 100000) throw new Error('Import exceeds 100000 files');
+      count++;
       yield path;
     } else throw new Error('Non-regular source entry');
   }
@@ -59,8 +59,8 @@ try {
     )
       throw new Error('Unsafe asset path');
     const info = await lstat(file);
-    if (info.isSymbolicLink() || !info.isFile() || info.size > 5 * 1024 ** 3)
-      throw new Error('Source file must be regular and at most 5 GiB');
+    if (info.isSymbolicLink() || !info.isFile())
+      throw new Error('Source file must be a regular file');
     const hash = createHash('sha256');
     for await (const bytes of createReadStream(file)) hash.update(bytes);
     const sha256 = hash.digest('hex');
