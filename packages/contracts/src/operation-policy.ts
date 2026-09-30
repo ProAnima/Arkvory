@@ -1,4 +1,4 @@
-import { storageOperations } from './storage-operation-policies.js';
+import { storageOperations, attachmentOperations } from './storage-operation-policies.js';
 import type { servicePermissionNames } from './service-api.js';
 import type { AdministrationPermission } from './delegation-api.js';
 type ServicePermission = (typeof servicePermissionNames)[number];
@@ -150,6 +150,24 @@ add(
   'read',
 );
 add('/api/v1/auth/login', 'post', 'login', 'Identity', { kind: 'public' });
+add('/api/v1/auth/register', 'post', 'registerAccount', 'Identity', { kind: 'public' });
+add(
+  '/api/v1/auth/tokens',
+  'get',
+  'listUserTokens',
+  'Identity',
+  { kind: 'account-session' },
+  'read',
+);
+add('/api/v1/auth/tokens', 'post', 'createUserToken', 'Identity', { kind: 'account-session' });
+add(
+  '/api/v1/auth/tokens/{id}',
+  'delete',
+  'revokeUserToken',
+  'Identity',
+  { kind: 'account-session' },
+  'idempotent',
+);
 add('/api/v1/auth/me', 'get', 'getCurrentPrincipal', 'Identity', { kind: 'authenticated' }, 'read');
 add('/api/v1/auth/logout', 'post', 'logout', 'Identity', { kind: 'authenticated' }, 'idempotent');
 add('/api/v1/auth/password', 'post', 'changeOwnPassword', 'Identity', { kind: 'account-session' });
@@ -464,18 +482,7 @@ for (const [path, id] of [
 ] as const)
   data(path, 'get', id, 'Legacy', ['content.read'], ['read'], 'read');
 
-for (const [suffix, method, id, actions, legacy, retry] of [
-  ['', 'get', 'getBuildAttachments', ['annotation.read'], ['read'], 'read'],
-  [
-    '',
-    'put',
-    'replaceBuildAttachments',
-    ['annotation.write', 'artifact.read'],
-    ['read', 'write'],
-    'compare-and-swap',
-  ],
-  ['/history', 'get', 'getBuildAttachmentHistory', ['annotation.read'], ['read'], 'read'],
-] as const)
+for (const [suffix, method, id, actions, legacy, retry] of attachmentOperations)
   data(
     root + '/artifacts/{id}/attachments' + suffix,
     method,

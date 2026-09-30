@@ -81,6 +81,9 @@ export class ArkvoryClient {
   login(...args: Parameters<IdentityApi['login']>) {
     return this.authentication.login(...args);
   }
+  register(...args: Parameters<IdentityApi['register']>) {
+    return this.authentication.register(...args);
+  }
   permissions(...args: Parameters<IdentityApi['permissions']>) {
     return this.authentication.permissions(...args);
   }
@@ -95,6 +98,15 @@ export class ArkvoryClient {
   }
   changePassword(...args: Parameters<IdentityApi['changePassword']>) {
     return this.authentication.changePassword(...args);
+  }
+  tokens(...args: Parameters<IdentityApi['tokens']>) {
+    return this.authentication.tokens(...args);
+  }
+  createToken(...args: Parameters<IdentityApi['createToken']>) {
+    return this.authentication.createToken(...args);
+  }
+  revokeToken(...args: Parameters<IdentityApi['revokeToken']>) {
+    return this.authentication.revokeToken(...args);
   }
   users(...args: Parameters<UsersApi['users']>) {
     return this.usersApi.users(...args);

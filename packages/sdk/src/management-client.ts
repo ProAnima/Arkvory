@@ -4,7 +4,16 @@ import type { ServiceAccountsApi } from './service-accounts-api.js';
 import type { CredentialsApi } from './credentials-api.js';
 type ManagementTransport = Pick<
   IdentityApi,
-  'login' | 'logout' | 'me' | 'permissions' | 'changePassword' | 'activateServiceKey'
+  | 'login'
+  | 'register'
+  | 'logout'
+  | 'me'
+  | 'permissions'
+  | 'changePassword'
+  | 'activateServiceKey'
+  | 'tokens'
+  | 'createToken'
+  | 'revokeToken'
 > &
   Pick<
     UsersApi,
@@ -43,11 +52,15 @@ export function managementClients(client: ManagementTransport) {
   return {
     identity: Object.freeze({
       login: client.login.bind(client),
+      register: client.register.bind(client),
       logout: client.logout.bind(client),
       me: client.me.bind(client),
       permissions: client.permissions.bind(client),
       changePassword: client.changePassword.bind(client),
       activateKey: client.activateServiceKey.bind(client),
+      tokens: client.tokens.bind(client),
+      createToken: client.createToken.bind(client),
+      revokeToken: client.revokeToken.bind(client),
     }),
     administration: Object.freeze({
       users: Object.freeze({

@@ -19,3 +19,16 @@ export const storageOperations = [
   ['/storage/cleanup', 'put', 'setCleanup', ['storage.manage'], 'compare-and-swap'],
   ['/storage/cleanup/run', 'post', 'requestCleanup', ['storage.manage'], 'never-automatic'],
 ] as const;
+
+export const attachmentOperations = [
+  ['', 'get', 'getBuildAttachments', ['annotation.read'], ['read'], 'read'],
+  [
+    '',
+    'put',
+    'replaceBuildAttachments',
+    ['annotation.write', 'artifact.read'],
+    ['read', 'write'],
+    'compare-and-swap',
+  ],
+  ['/history', 'get', 'getBuildAttachmentHistory', ['annotation.read'], ['read'], 'read'],
+] as const;

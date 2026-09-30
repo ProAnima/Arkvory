@@ -20,6 +20,24 @@ const group = {
     grants: { type: 'array', items: grant },
   },
 };
+const userToken = {
+  type: 'object',
+  required: ['id', 'name', 'prefix', 'createdAt', 'revoked'],
+  properties: {
+    id,
+    name: str,
+    prefix: str,
+    createdAt: { type: 'string', format: 'date-time' },
+    expiresAt: { type: 'string', format: 'date-time', nullable: true },
+    lastUsedAt: { type: 'string', format: 'date-time', nullable: true },
+    revoked: { type: 'boolean' },
+  },
+};
+const createdUserToken = {
+  type: 'object',
+  required: [...userToken.required, 'token'],
+  properties: { ...userToken.properties, token: str },
+};
 const body = (schema: unknown) => ({ required: true, content: { 'application/json': { schema } } });
 const response = (schema: unknown) => ({
   description: 'Success',
@@ -51,6 +69,62 @@ export const identityPaths = {
         }),
         default: error,
       },
+    },
+  },
+  '/api/v1/auth/register': {
+    post: {
+      security: [],
+      summary: 'Register a new account and exchange credentials for a 12-hour session',
+      requestBody: body({
+        type: 'object',
+        additionalProperties: false,
+        required: ['name', 'password'],
+        properties: { name: str, password: { type: 'string', format: 'password' } },
+      }),
+      responses: {
+        201: response({
+          type: 'object',
+          required: ['token', 'expiresAt', 'account'],
+          properties: { token: str, expiresAt: { type: 'string', format: 'date-time' }, account },
+        }),
+        default: error,
+      },
+    },
+  },
+  '/api/v1/auth/tokens': {
+    get: {
+      summary: 'List personal access tokens for the signed-in account',
+      responses: {
+        200: response({
+          type: 'object',
+          required: ['items'],
+          properties: { items: { type: 'array', items: userToken } },
+        }),
+        default: error,
+      },
+    },
+    post: {
+      summary: 'Create a personal access token for the signed-in account',
+      requestBody: body({
+        type: 'object',
+        additionalProperties: false,
+        required: ['name'],
+        properties: {
+          name: str,
+          expiresAt: { type: 'string', format: 'date-time' },
+        },
+      }),
+      responses: {
+        201: response(createdUserToken),
+        default: error,
+      },
+    },
+  },
+  '/api/v1/auth/tokens/{id}': {
+    parameters: [path('id')],
+    delete: {
+      summary: 'Revoke a personal access token for the signed-in account',
+      responses: { 204: { description: 'Token revoked' }, default: error },
     },
   },
   '/api/v1/auth/logout': {

@@ -12,6 +12,7 @@ export * from './admission.js';
 export * from './bandwidth.js';
 export * from './download-lease.js';
 export * from './identity.js';
+export { PostgresUserTokens } from './user-tokens.js';
 export { PostgresServices } from './service-accounts.js';
 
 export * from './attachments.js';

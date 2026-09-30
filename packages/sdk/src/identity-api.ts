@@ -1,9 +1,12 @@
 import {
+  items,
   record,
   text,
   readLogin,
   readPrincipal,
   readServiceBindings,
+  readUserToken,
+  readCreatedUserToken,
 } from '@proanima/arkvory-contracts';
 import type { HttpPort } from './http-transport.js';
 
@@ -51,6 +54,26 @@ export class IdentityApi {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ currentPassword, newPassword }),
+    });
+  }
+  async register(name: string, password: string) {
+    return readLogin(await this.http.call('api/v1/auth/register', 'POST', { name, password }));
+  }
+  async tokens() {
+    const result = record(await this.http.call('api/v1/auth/tokens'));
+    return items(result['items']).map(readUserToken);
+  }
+  async createToken(name: string, expiresAt?: string) {
+    return readCreatedUserToken(
+      await this.http.call('api/v1/auth/tokens', 'POST', {
+        name,
+        ...(expiresAt ? { expiresAt } : {}),
+      }),
+    );
+  }
+  async revokeToken(id: string) {
+    await this.http.request(`api/v1/auth/tokens/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
     });
   }
 }

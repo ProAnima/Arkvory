@@ -40,7 +40,10 @@ export function registerRequestSecurity(app: FastifyInstance, dependencies: Secu
         'Gateway ownership or download lease lost; restart the service',
       );
     context.signal(request, reply);
-    if (request.routeOptions.url === '/api/v1/auth/login') {
+    if (
+      request.routeOptions.url === '/api/v1/auth/login' ||
+      request.routeOptions.url === '/api/v1/auth/register'
+    ) {
       if (role === 'reader')
         await reply.code(405).header('Allow', 'GET, HEAD').send({
           code: 'read_only',

@@ -57,3 +57,80 @@ test('only administrators can register accounts and repository grants are valida
     newPassword: 'new-long-password',
   });
 });
+
+test('registration flag controls self-registration and personal access tokens require account session', async () => {
+  const calls = [];
+  const store = {
+    createUser: async (name, password, administrator) => {
+      calls.push({ action: 'create', name, password, administrator });
+      return { id: 'user-bob', name, administrator, enabled: true };
+    },
+    login: async (name, password) => {
+      calls.push({ action: 'login', name, password });
+      return {
+        token: 'dps_session',
+        expiresAt: '2026-09-30T12:00:00.000Z',
+        account: { id: 'user-bob', name, administrator: false, enabled: true },
+      };
+    },
+    createToken: async (userId, name, expiresAt) => {
+      calls.push({ action: 'createToken', userId, name, expiresAt });
+      return {
+        id: 'token-1',
+        userId,
+        name,
+        prefix: 'pat_test...',
+        token: 'pat_full_secret',
+        createdAt: '2026-09-30T12:00:00.000Z',
+        expiresAt: expiresAt ?? null,
+        lastUsedAt: null,
+        revoked: false,
+      };
+    },
+    tokens: async (userId) => {
+      calls.push({ action: 'tokens', userId });
+      return [];
+    },
+    revokeToken: async (userId, tokenId) => {
+      calls.push({ action: 'revokeToken', userId, tokenId });
+    },
+  };
+  const disabledService = new IdentityService(store, false);
+  await assert.rejects(() => disabledService.register('bobuser', 'long-password-123'), {
+    code: 'forbidden',
+  });
+
+  const enabledService = new IdentityService(store, true);
+  const session = await enabledService.register('bobuser', 'long-password-123');
+  assert.equal(session.account.name, 'bobuser');
+  assert.equal(session.token, 'dps_session');
+
+  const userPrincipal = { id: 'user:user-bob', repositories: [], permissions: [] };
+  const keyPrincipal = { id: 'service-key-1', repositories: [], permissions: [] };
+
+  assert.throws(() => enabledService.createToken(keyPrincipal, 'My Token'), {
+    code: 'forbidden',
+  });
+  assert.throws(() => enabledService.tokens(keyPrincipal), {
+    code: 'forbidden',
+  });
+  assert.throws(() => enabledService.revokeToken(keyPrincipal, 'token-1'), {
+    code: 'forbidden',
+  });
+
+  const created = await enabledService.createToken(userPrincipal, 'My Token');
+  assert.equal(created.name, 'My Token');
+  assert.equal(created.token, 'pat_full_secret');
+  assert.deepEqual(calls.at(-1), {
+    action: 'createToken',
+    userId: 'user-bob',
+    name: 'My Token',
+    expiresAt: undefined,
+  });
+
+  await enabledService.tokens(userPrincipal);
+  assert.deepEqual(calls.at(-1), { action: 'tokens', userId: 'user-bob' });
+
+  await enabledService.revokeToken(userPrincipal, 'token-1');
+  assert.deepEqual(calls.at(-1), { action: 'revokeToken', userId: 'user-bob', tokenId: 'token-1' });
+});

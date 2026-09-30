@@ -1,7 +1,6 @@
 import { installCatalogFilter, catalogFilter } from './catalog-filter.js';
 import { consoleRunner } from './console-runner.js';
 import { ManagementConsole } from './management.js';
-import { offerRepositoryOptions } from './repository-options.js';
 import { installRepositoryStorage } from './repository-storage.js';
 import { ArkvoryClient } from '@proanima/arkvory-sdk';
 import { text } from '@proanima/arkvory-contracts';
@@ -18,8 +17,9 @@ import { installBuildAttachments } from './build-attachments.js';
 import { installArtifactDeletion } from './artifact-deletion.js';
 import { installDownloads } from './downloads.js';
 import { installUpdates } from './updates.js';
-import { readableRepositories } from './readable-repositories.js';
 import { installUploadControls } from './upload-controls.js';
+import { installUserTokens } from './user-tokens.js';
+import { installAuthConsole } from './auth-console.js';
 const token = element('token', HTMLInputElement),
   repository = element('repository', HTMLInputElement),
   output = element('status', HTMLOutputElement),
@@ -184,6 +184,7 @@ const clearPackages = installPackageView(client, repository, token, run, async (
   await openArtifact(repo, id, artifact.descriptor.name);
 });
 const administration = installAdministration(client, run);
+const userTokens = installUserTokens(client, run);
 async function list(after?: string) {
   const generation = ++listGeneration;
   const repo = repository.value;
@@ -267,84 +268,30 @@ async function list(after?: string) {
     }
   }
 }
-element('connect', HTMLFormElement).onsubmit = (event) => {
-  event.preventDefault();
-  const generation = ++authenticationGeneration;
-  run(async () => {
-    const [me, readable] = await Promise.all([client.me(), readableRepositories(client)]);
-    if (generation !== authenticationGeneration) return;
-    if (me.administrator) administration.show();
-    updates.connect(me.administrator);
-    void management.connect();
-    element('change-password', HTMLFormElement).hidden = !me.id.startsWith('user:');
-    if (offerRepositoryOptions(readable, repository, repositoryOptions, repositoryEdited))
-      await list();
-    else if (me.administrator) {
-      showView('administration');
-      await administration.refresh();
-    } else feedback(output, 'noRepositoryAccess', {}, 'error');
-  });
-};
-element('login', HTMLFormElement).onsubmit = (event) => {
-  event.preventDefault();
-  const generation = ++authenticationGeneration;
-  run(async () => {
-    const name = element('login-name', HTMLInputElement).value;
-    const session = await client.login(name, element('login-password', HTMLInputElement).value);
-    if (generation !== authenticationGeneration) {
-      // A cancelled login must not reconnect a signed-out tab. Revoke the unused session.
-      await new ArkvoryClient(apiBaseUrl, () => session.token).logout().catch(() => undefined);
-      return;
-    }
-    downloads.reset();
-    token.value = session.token;
-    element('login-password', HTMLInputElement).value = '';
-    clearCatalog();
-    const [me, readable] = await Promise.all([client.me(), readableRepositories(client)]);
-    if (generation !== authenticationGeneration) return;
-    const hasRepository = offerRepositoryOptions(
-      readable,
-      repository,
-      repositoryOptions,
-      repositoryEdited,
-    );
-    updates.connect(me.administrator);
-    void management.connect();
-    element('change-password', HTMLFormElement).hidden = false;
-    if (session.account.administrator) {
-      administration.show();
-      showView('administration');
-      await administration.refresh();
-    } else if (hasRepository) await list();
-    if (generation !== authenticationGeneration) return;
-    feedback(
-      output,
-      hasRepository || me.administrator ? 'signedIn' : 'noRepositoryAccess',
-      { name: session.account.name },
-      hasRepository || me.administrator ? 'success' : 'error',
-    );
-  });
-};
-element('change-password', HTMLFormElement).onsubmit = (event) => {
-  event.preventDefault();
-  const generation = authenticationGeneration;
-  run(async () => {
-    const current = element('current-password', HTMLInputElement);
-    const next = element('own-new-password', HTMLInputElement);
-    await client.changePassword(current.value, next.value);
-    if (generation !== authenticationGeneration) return;
-    authenticationGeneration++;
-    current.value = '';
-    next.value = '';
-    downloads.reset();
-    token.value = '';
-    repositoryEdited = false;
-    repositoryOptions.replaceChildren();
-    clearCatalog();
-    resetHistory();
-    feedback(output, 'passwordChangedSignIn', {}, 'success');
-  });
-};
+installAuthConsole({
+  client,
+  token,
+  repository,
+  repositoryOptions,
+  output,
+  apiBaseUrl,
+  run,
+  list: () => list(),
+  clearCatalog,
+  resetHistory,
+  downloads,
+  administration,
+  updates,
+  management,
+  userTokens,
+  getGeneration: () => authenticationGeneration,
+  nextGeneration: () => ++authenticationGeneration,
+  isRepositoryEdited: () => repositoryEdited,
+  setRepositoryEdited: (val) => {
+    repositoryEdited = val;
+  },
+  getStopSignal: () => stop,
+});
 element('search', HTMLFormElement).onsubmit = (event) => {
   event.preventDefault();
   run(() => list());
@@ -352,25 +299,6 @@ element('search', HTMLFormElement).onsubmit = (event) => {
 installCatalogFilter(() => {
   run(() => list());
 });
-element('logout', HTMLButtonElement).onclick = () => {
-  downloads.reset();
-  stop?.abort();
-  const generation = ++authenticationGeneration;
-  run(async () => {
-    try {
-      if (token.value) await client.logout();
-    } finally {
-      if (generation === authenticationGeneration) {
-        token.value = '';
-        repositoryEdited = false;
-        repositoryOptions.replaceChildren();
-        clearCatalog();
-        resetHistory();
-        feedback(output, 'disconnected');
-      }
-    }
-  });
-};
 element('cancel', HTMLButtonElement).onclick = () => stop?.abort();
 element('upload', HTMLFormElement).onsubmit = (event) => {
   event.preventDefault();
@@ -378,7 +306,7 @@ element('upload', HTMLFormElement).onsubmit = (event) => {
     if (stop) throw new UiError('uploadRunning');
     const file = element('file', HTMLInputElement).files?.[0];
     if (!file) throw new UiError('chooseFileError');
-    if (file.size > 5 * 1024 ** 3) throw new UiError('fileTooLarge');
+    if (file.size > 64 * 1024 ** 3) throw new UiError('fileTooLarge');
     const repo = repository.value;
     stop = new AbortController();
     uploadBusy(true);

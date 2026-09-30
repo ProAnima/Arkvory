@@ -34,6 +34,7 @@ export function createApiServices(
   catalog: PostgresCatalog,
   blobs: LocalBlobStore,
   pins: PostgresContentPins,
+  allowRegistration = false,
 ) {
   const now = () => new Date().toISOString();
   const service = new StorageService(catalog, blobs, { next: randomUUID, now });
@@ -52,7 +53,7 @@ export function createApiServices(
     serviceAccounts,
     storagePolicies,
     browse,
-    identity: new IdentityService(new PostgresIdentity(catalog.pool)),
+    identity: new IdentityService(new PostgresIdentity(catalog.pool), allowRegistration),
     access: new ServiceAccess(serviceAccounts),
     legacy: new ProGetDownloads(browse),
     storage: new RepositoryStorage(storagePolicies),

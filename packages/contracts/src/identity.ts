@@ -77,6 +77,46 @@ export function readLogin(value: unknown): LoginResponse {
   };
 }
 
+export interface UserTokenResponse {
+  id: string;
+  name: string;
+  prefix: string;
+  createdAt: string;
+  expiresAt: string | null;
+  lastUsedAt: string | null;
+  revoked: boolean;
+}
+
+export interface CreatedUserTokenResponse extends UserTokenResponse {
+  token: string;
+}
+
+export function readUserToken(value: unknown): UserTokenResponse {
+  const row = record(value);
+  return {
+    id: text(row['id']),
+    name: text(row['name']),
+    prefix: text(row['prefix']),
+    createdAt: text(row['createdAt']),
+    expiresAt:
+      row['expiresAt'] === null || row['expiresAt'] === undefined ? null : text(row['expiresAt']),
+    lastUsedAt:
+      row['lastUsedAt'] === null || row['lastUsedAt'] === undefined
+        ? null
+        : text(row['lastUsedAt']),
+    revoked: typeof row['revoked'] === 'boolean' ? row['revoked'] : false,
+  };
+}
+
+export function readCreatedUserToken(value: unknown): CreatedUserTokenResponse {
+  const row = record(value);
+  const base = readUserToken(value);
+  return {
+    ...base,
+    token: text(row['token']),
+  };
+}
+
 export interface PackageResponse {
   group: string;
   name: string;

@@ -18,6 +18,12 @@ export function requirePassword(value: unknown): string {
   return value;
 }
 
+export function requireTokenName(value: unknown): string {
+  if (typeof value !== 'string' || value.trim().length < 1 || value.trim().length > 64)
+    throw new ArkvoryError('invalid_input', 'Token name must contain 1 to 64 characters');
+  return value.trim();
+}
+
 export function requireGrant(repository: unknown, access: unknown) {
   if (typeof repository !== 'string') throw new ArkvoryError('invalid_input', 'Invalid repository');
   requireRepository(repository);

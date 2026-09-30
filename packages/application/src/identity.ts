@@ -4,6 +4,7 @@ import {
   requireGroupName,
   requirePassword,
   requireGrant,
+  requireTokenName,
 } from '@proanima/arkvory-domain';
 import type { Principal } from '@proanima/arkvory-domain';
 
@@ -24,6 +25,19 @@ export interface LoginResult {
   expiresAt: string;
   account: Account;
 }
+export interface UserToken {
+  id: string;
+  userId: string;
+  name: string;
+  prefix: string;
+  createdAt: string;
+  expiresAt: string | null;
+  lastUsedAt: string | null;
+  revoked: boolean;
+}
+export interface CreatedUserToken extends UserToken {
+  token: string;
+}
 export interface IdentityStore {
   createUser(name: string, password: string, administrator: boolean): Promise<Account>;
   updateUser(
@@ -40,10 +54,16 @@ export interface IdentityStore {
   resolve(token: string): Promise<Principal | null>;
   logout(token: string): Promise<void>;
   changePassword(userId: string, currentPassword: string, newPassword: string): Promise<void>;
+  createToken(userId: string, name: string, expiresAt?: string): Promise<CreatedUserToken>;
+  tokens(userId: string): Promise<readonly UserToken[]>;
+  revokeToken(userId: string, tokenId: string): Promise<void>;
 }
 
 export class IdentityService {
-  constructor(private readonly store: IdentityStore) {}
+  constructor(
+    private readonly store: IdentityStore,
+    readonly allowRegistration = false,
+  ) {}
   private admin(principal: Principal): void {
     if (!principal.administrator)
       throw new ArkvoryError('forbidden', 'Administrator access required');
@@ -118,5 +138,30 @@ export class IdentityService {
       requirePassword(currentPassword),
       requirePassword(newPassword),
     );
+  }
+  async register(name: unknown, password: unknown) {
+    if (!this.allowRegistration)
+      throw new ArkvoryError('forbidden', 'Account registration is disabled');
+    const validName = requireAccountName(name);
+    const validPassword = requirePassword(password);
+    await this.store.createUser(validName, validPassword, false);
+    return this.store.login(validName, validPassword);
+  }
+  createToken(principal: Principal, name: unknown, expiresAt?: unknown) {
+    if (!principal.id.startsWith('user:'))
+      throw new ArkvoryError('forbidden', 'Account session required');
+    if (expiresAt !== undefined && typeof expiresAt !== 'string')
+      throw new ArkvoryError('invalid_input', 'Invalid expiresAt timestamp');
+    return this.store.createToken(principal.id.slice(5), requireTokenName(name), expiresAt);
+  }
+  tokens(principal: Principal) {
+    if (!principal.id.startsWith('user:'))
+      throw new ArkvoryError('forbidden', 'Account session required');
+    return this.store.tokens(principal.id.slice(5));
+  }
+  revokeToken(principal: Principal, tokenId: string) {
+    if (!principal.id.startsWith('user:'))
+      throw new ArkvoryError('forbidden', 'Account session required');
+    return this.store.revokeToken(principal.id.slice(5), tokenId);
   }
 }

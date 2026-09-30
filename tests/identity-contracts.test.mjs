@@ -5,6 +5,8 @@ import {
   readLogin,
   readPackageList,
   readPrincipal,
+  readUserToken,
+  readCreatedUserToken,
 } from '@proanima/arkvory-contracts';
 
 test('account and package responses reject malformed identities and group references', () => {
@@ -56,4 +58,21 @@ test('account and package responses reject malformed identities and group refere
       groups: [{ group: 'Tools', name: null, artifactIds: ['b'] }],
     }),
   );
+});
+
+test('user token response parsers validate prefix, dates and secret exposure', () => {
+  const base = {
+    id: '123e4567-e89b-12d3-a456-426614174000',
+    name: 'CLI Token',
+    prefix: 'pat_abc123...',
+    createdAt: '2026-09-30T12:00:00.000Z',
+    expiresAt: null,
+    lastUsedAt: null,
+    revoked: false,
+  };
+  assert.deepEqual(readUserToken(base), base);
+  const created = { ...base, token: 'pat_full_secret_token_value' };
+  assert.deepEqual(readCreatedUserToken(created), created);
+  assert.throws(() => readUserToken({ ...base, name: 123 }));
+  assert.throws(() => readCreatedUserToken(base));
 });

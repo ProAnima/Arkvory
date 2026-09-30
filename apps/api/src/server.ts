@@ -40,7 +40,12 @@ export async function createServer(
   });
   try {
     await runtime.start();
-    const services = createApiServices(runtime.catalog, runtime.blobs, runtime.pins);
+    const services = createApiServices(
+      runtime.catalog,
+      runtime.blobs,
+      runtime.pins,
+      config.allowRegistration ?? false,
+    );
     const context = createRequestContext();
     const responses = new ResponseDiagnostics(diagnostics, services.storagePolicies, context);
     // Guard registration precedes feature routes and background startup.

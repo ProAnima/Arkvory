@@ -32,6 +32,7 @@ export interface ServerConfig extends UploadTimeoutOptions {
   readonly corsOrigins?: readonly string[];
   readonly webDirectory?: string;
   readonly updateControlDirectory?: string;
+  readonly allowRegistration?: boolean;
 }
 
 export async function loadConfig(env: NodeJS.ProcessEnv): Promise<ServerConfig> {
@@ -99,6 +100,7 @@ export async function loadConfig(env: NodeJS.ProcessEnv): Promise<ServerConfig> 
     role,
     ...(sharedDownloads ? { sharedDownloads } : {}),
     databaseUrl,
+    allowRegistration: env['ARKVORY_ALLOW_REGISTRATION'] === 'true',
     dataDirectory: required('ARKVORY_DATA_DIR'),
     keys: parseKeys(keys),
     corsOrigins: parseCorsOrigins(env['ARKVORY_CORS_ORIGINS']),

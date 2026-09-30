@@ -2,11 +2,14 @@ import { createHash, randomBytes, randomUUID, scrypt, timingSafeEqual } from 'no
 import type { Pool, PoolClient } from 'pg';
 import { ArkvoryError } from '@proanima/arkvory-domain';
 import type { Principal } from '@proanima/arkvory-domain';
+import { PostgresUserTokens } from './user-tokens.js';
 import type {
   AccessGroup,
   Account,
+  CreatedUserToken,
   IdentityStore,
   LoginResult,
+  UserToken,
 } from '@proanima/arkvory-application';
 
 const dummySalt = '0'.repeat(32);
@@ -45,28 +48,9 @@ interface UserRow {
 
 // arkvory-exception ARCH-006 -- Existing adapter or contract implementation combines related operations; freeze growth and extract cohesive responsibilities while preserving transactional and authorization invariants.
 export class PostgresIdentity implements IdentityStore {
-  constructor(private readonly pool: Pool) {}
-
-  private async capacityMutation<T>(action: (client: PoolClient) => Promise<T>): Promise<T> {
-    const client = await this.pool.connect();
-    let broken = false;
-    try {
-      await client.query('BEGIN');
-      // Count and insertion must see the previous writer's commit, in separate statements.
-      await client.query('SELECT pg_advisory_xact_lock(18471,10)');
-      const result = await action(client);
-      await client.query('COMMIT');
-      return result;
-    } catch (error) {
-      try {
-        await client.query('ROLLBACK');
-      } catch {
-        broken = true;
-      }
-      throw error;
-    } finally {
-      client.release(broken);
-    }
+  private readonly userTokens: PostgresUserTokens;
+  constructor(private readonly pool: Pool) {
+    this.userTokens = new PostgresUserTokens(pool);
   }
 
   async createUser(name: string, password: string, administrator: boolean): Promise<Account> {
@@ -74,7 +58,7 @@ export class PostgresIdentity implements IdentityStore {
     const hash = (await passwordHash(password, salt)).toString('hex');
     const id = randomUUID();
     try {
-      const inserted = await this.capacityMutation((client) =>
+      const inserted = await capacityMutation(this.pool, (client) =>
         client.query(
           `INSERT INTO arkvory_users(id,name,password_salt,password_hash,administrator)
          SELECT $1,$2,$3,$4,$5 WHERE (SELECT count(*) FROM arkvory_users)<1000`,
@@ -135,7 +119,7 @@ export class PostgresIdentity implements IdentityStore {
   async createGroup(name: string): Promise<AccessGroup> {
     const id = randomUUID();
     try {
-      const inserted = await this.capacityMutation((client) =>
+      const inserted = await capacityMutation(this.pool, (client) =>
         client.query(
           `INSERT INTO arkvory_access_groups(id,name)
          SELECT $1,$2 WHERE (SELECT count(*) FROM arkvory_access_groups)<100`,
@@ -176,7 +160,7 @@ export class PostgresIdentity implements IdentityStore {
 
   async membership(groupId: string, userId: string, present: boolean): Promise<void> {
     if (present) {
-      await this.capacityMutation(async (client) => {
+      await capacityMutation(this.pool, async (client) => {
         const result = await client.query(
           `INSERT INTO arkvory_group_members(group_id,user_id)
          SELECT g.id,u.id FROM arkvory_access_groups g CROSS JOIN arkvory_users u
@@ -215,7 +199,7 @@ export class PostgresIdentity implements IdentityStore {
       );
       return;
     }
-    await this.capacityMutation(async (client) => {
+    await capacityMutation(this.pool, async (client) => {
       const result = await client.query(
         `INSERT INTO arkvory_group_grants(group_id,repository,access)
        SELECT id,$2::text,$3 FROM arkvory_access_groups WHERE id=$1 AND
@@ -300,46 +284,21 @@ export class PostgresIdentity implements IdentityStore {
   }
 
   async resolve(token: string): Promise<Principal | null> {
-    if (!/^dps_[A-Za-z0-9_-]{43}$/.test(token)) return null;
-    const result = await this.pool.query<{ id: string; administrator: boolean }>(
-      `SELECT u.id,u.administrator FROM arkvory_user_sessions s JOIN arkvory_users u ON u.id=s.user_id
-       WHERE s.token_hash=$1 AND s.expires_at>now() AND u.enabled`,
-      [digest(token)],
-    );
-    const user = result.rows[0];
-    if (!user) return null;
-    return this.principalForUser(user.id);
-  }
-
-  async principalForUser(userId: string): Promise<Principal | null> {
-    const result = await this.pool.query<{ id: string; administrator: boolean }>(
-      'SELECT id,administrator FROM arkvory_users WHERE id=$1 AND enabled',
-      [userId],
-    );
-    const user = result.rows[0];
-    if (!user) return null;
-    const rights = await this.pool.query<{ repository: string; access: 'read' | 'write' }>(
-      `SELECT gg.repository,gg.access FROM arkvory_group_members gm
-       JOIN arkvory_group_grants gg ON gg.group_id=gm.group_id WHERE gm.user_id=$1`,
-      [user.id],
-    );
-    const grants = new Map<string, Set<'read' | 'write'>>();
-    for (const right of rights.rows) {
-      const permissions = grants.get(right.repository) ?? new Set<'read' | 'write'>();
-      permissions.add('read');
-      if (right.access === 'write') permissions.add('write');
-      grants.set(right.repository, permissions);
+    if (/^dps_[A-Za-z0-9_-]{43}$/.test(token)) {
+      const result = await this.pool.query<{ id: string; administrator: boolean }>(
+        `SELECT u.id,u.administrator FROM arkvory_user_sessions s JOIN arkvory_users u ON u.id=s.user_id
+         WHERE s.token_hash=$1 AND s.expires_at>now() AND u.enabled`,
+        [digest(token)],
+      );
+      const user = result.rows[0];
+      if (!user) return null;
+      return principalForUser(this.pool, user.id);
     }
-    return {
-      id: `user:${user.id}`,
-      repositories: [],
-      permissions: [],
-      grants: [...grants].map(([repository, permissions]) => ({
-        repository,
-        permissions: [...permissions],
-      })),
-      administrator: user.administrator,
-    };
+    if (/^pat_[A-Za-z0-9_-]{43}$/.test(token)) {
+      const userId = await this.userTokens.resolve(token);
+      return userId ? principalForUser(this.pool, userId) : null;
+    }
+    return null;
   }
 
   async logout(token: string): Promise<void> {
@@ -391,6 +350,22 @@ export class PostgresIdentity implements IdentityStore {
       client.release(broken);
     }
   }
+
+  createToken(userId: string, name: string, expiresAt?: string): Promise<CreatedUserToken> {
+    return this.userTokens.createToken(userId, name, expiresAt);
+  }
+
+  tokens(userId: string): Promise<readonly UserToken[]> {
+    return this.userTokens.tokens(userId);
+  }
+
+  revokeToken(userId: string, tokenId: string): Promise<void> {
+    return this.userTokens.revokeToken(userId, tokenId);
+  }
+
+  principalForUser(userId: string): Promise<Principal | null> {
+    return principalForUser(this.pool, userId);
+  }
 }
 
 async function readUsers(pool: Pool): Promise<readonly Account[]> {
@@ -400,4 +375,59 @@ async function readUsers(pool: Pool): Promise<readonly Account[]> {
   if (result.rows.length > 1000)
     throw new ArkvoryError('invalid_input', 'User list exceeds 1000 accounts');
   return result.rows;
+}
+
+async function principalForUser(pool: Pool, userId: string): Promise<Principal | null> {
+  const result = await pool.query<{ id: string; administrator: boolean }>(
+    'SELECT id,administrator FROM arkvory_users WHERE id=$1 AND enabled',
+    [userId],
+  );
+  const user = result.rows[0];
+  if (!user) return null;
+  const rights = await pool.query<{ repository: string; access: 'read' | 'write' }>(
+    `SELECT gg.repository,gg.access FROM arkvory_group_members gm
+     JOIN arkvory_group_grants gg ON gg.group_id=gm.group_id WHERE gm.user_id=$1`,
+    [user.id],
+  );
+  const grants = new Map<string, Set<'read' | 'write'>>();
+  for (const right of rights.rows) {
+    const permissions = grants.get(right.repository) ?? new Set<'read' | 'write'>();
+    permissions.add('read');
+    if (right.access === 'write') permissions.add('write');
+    grants.set(right.repository, permissions);
+  }
+  return {
+    id: `user:${user.id}`,
+    repositories: [],
+    permissions: [],
+    grants: [...grants].map(([repository, permissions]) => ({
+      repository,
+      permissions: [...permissions],
+    })),
+    administrator: user.administrator,
+  };
+}
+
+async function capacityMutation<T>(
+  pool: Pool,
+  action: (client: PoolClient) => Promise<T>,
+): Promise<T> {
+  const client = await pool.connect();
+  let broken = false;
+  try {
+    await client.query('BEGIN');
+    await client.query('SELECT pg_advisory_xact_lock(18471,10)');
+    const result = await action(client);
+    await client.query('COMMIT');
+    return result;
+  } catch (error) {
+    try {
+      await client.query('ROLLBACK');
+    } catch {
+      broken = true;
+    }
+    throw error;
+  } finally {
+    client.release(broken);
+  }
 }

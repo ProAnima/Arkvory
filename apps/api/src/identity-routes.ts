@@ -15,8 +15,6 @@ function fields(value: unknown, names: readonly string[]): Record<string, unknow
     throw new ArkvoryError('invalid_input', 'Unknown field');
   return body;
 }
-
-// arkvory-exception ARCH-015 -- Existing route registrar groups endpoints with shared authorizer dependencies; separate by responsibility with the complete operation inventory unchanged.
 export function registerIdentityRoutes(
   app: FastifyInstance,
   service: IdentityService,
@@ -36,9 +34,45 @@ export function registerIdentityRoutes(
       release();
     }
   };
+  registerAuthRoutes(app, service, principal, passwordWork);
+  registerUserRoutes(app, service, principal, passwordWork);
+  registerGroupRoutes(app, service, principal);
+}
+
+function registerAuthRoutes(
+  app: FastifyInstance,
+  service: IdentityService,
+  principal: (request: FastifyRequest) => Principal,
+  passwordWork: <T>(
+    request: FastifyRequest,
+    reply: FastifyReply,
+    action: () => Promise<T>,
+  ) => Promise<T>,
+): void {
   app.post<{ Body: unknown }>('/api/v1/auth/login', async (request, reply) => {
     const body = fields(request.body, ['name', 'password']);
     return passwordWork(request, reply, () => service.login(body['name'], body['password']));
+  });
+  app.post<{ Body: unknown }>('/api/v1/auth/register', async (request, reply) => {
+    const body = fields(request.body, ['name', 'password']);
+    return reply
+      .code(201)
+      .send(
+        await passwordWork(request, reply, () => service.register(body['name'], body['password'])),
+      );
+  });
+  app.get('/api/v1/auth/tokens', async (request) => ({
+    items: await service.tokens(principal(request)),
+  }));
+  app.post<{ Body: unknown }>('/api/v1/auth/tokens', async (request, reply) => {
+    const body = fields(request.body, ['name', 'expiresAt']);
+    return reply
+      .code(201)
+      .send(await service.createToken(principal(request), body['name'], body['expiresAt']));
+  });
+  app.delete<{ Params: { id: string } }>('/api/v1/auth/tokens/:id', async (request, reply) => {
+    await service.revokeToken(principal(request), requireId(request.params.id));
+    return reply.code(204).send();
   });
   app.post('/api/v1/auth/logout', async (request, reply) => {
     const auth = request.headers.authorization;
@@ -74,6 +108,18 @@ export function registerIdentityRoutes(
         .sort((left, right) => left.repository.localeCompare(right.repository)),
     });
   });
+}
+
+function registerUserRoutes(
+  app: FastifyInstance,
+  service: IdentityService,
+  principal: (request: FastifyRequest) => Principal,
+  passwordWork: <T>(
+    request: FastifyRequest,
+    reply: FastifyReply,
+    action: () => Promise<T>,
+  ) => Promise<T>,
+): void {
   app.post<{ Body: unknown }>('/api/v1/users', async (request, reply) => {
     const body = fields(request.body, ['name', 'password', 'administrator']);
     return reply
@@ -97,6 +143,13 @@ export function registerIdentityRoutes(
         service.updateUser(principal(request), requireId(request.params.id), request.body),
       ),
   );
+}
+
+function registerGroupRoutes(
+  app: FastifyInstance,
+  service: IdentityService,
+  principal: (request: FastifyRequest) => Principal,
+): void {
   app.post<{ Body: unknown }>('/api/v1/access-groups', async (request, reply) => {
     const body = fields(request.body, ['name']);
     return reply.code(201).send(await service.createGroup(principal(request), body['name']));

@@ -15,15 +15,12 @@ function after(request: FastifyRequest) {
     throw new ArkvoryError('invalid_input', 'Invalid cursor');
   return values['after'];
 }
-
-// arkvory-exception ARCH-018 -- Existing route registrar groups endpoints with shared authorizer dependencies; separate by responsibility with the complete operation inventory unchanged.
 export function registerServiceRoutes(
   app: FastifyInstance,
   service: ServiceAccess,
   principal: (request: FastifyRequest) => Principal,
   role: 'api' | 'reader',
 ): void {
-  type Params = { id: string };
   app.get('/api/v1/capabilities', () =>
     Promise.resolve({
       apiVersions: ['v1'],
@@ -40,6 +37,7 @@ export function registerServiceRoutes(
         operationDiscovery: true,
         apiSurfaces: true,
         repositoryPermissions: true,
+        personalAccessTokens: true,
         namespacePermissions: false,
         webhooks: false,
         replicatedStorage: false,
@@ -57,6 +55,17 @@ export function registerServiceRoutes(
       serviceAdministration: p.serviceAdministrator === true && !p.managed,
     });
   });
+  registerServiceAccountRoutes(app, service, principal);
+  registerServiceKeyRoutes(app, service, principal);
+}
+
+type Params = { id: string };
+
+function registerServiceAccountRoutes(
+  app: FastifyInstance,
+  service: ServiceAccess,
+  principal: (request: FastifyRequest) => Principal,
+): void {
   app.get('/api/v1/service-accounts', (r) => service.accounts(principal(r), after(r)));
   app.post('/api/v1/service-accounts', async (r, reply) =>
     reply.code(201).send(await service.create(principal(r), r.body)),
@@ -73,6 +82,16 @@ export function registerServiceRoutes(
   app.put<{ Params: Params }>('/api/v1/service-accounts/:id/policy', (r) =>
     service.policy(principal(r), r.params.id, r.body),
   );
+  app.get<{ Params: Params }>('/api/v1/service-accounts/:id/audit', async (r) => ({
+    items: await service.audit(principal(r), r.params.id, after(r)),
+  }));
+}
+
+function registerServiceKeyRoutes(
+  app: FastifyInstance,
+  service: ServiceAccess,
+  principal: (request: FastifyRequest) => Principal,
+): void {
   app.get<{ Params: Params }>('/api/v1/service-accounts/:id/keys', (r) =>
     service.keys(principal(r), r.params.id, after(r)),
   );
@@ -109,9 +128,6 @@ export function registerServiceRoutes(
     await service.activate(auth.slice(7));
     return reply.code(204).send();
   });
-  app.get<{ Params: Params }>('/api/v1/service-accounts/:id/audit', async (r) => ({
-    items: await service.audit(principal(r), r.params.id, after(r)),
-  }));
   app.get<{ Params: Params }>('/api/v1/api-keys/:id/delegations', async (r) => ({
     items: await service.delegations(principal(r), r.params.id),
   }));
