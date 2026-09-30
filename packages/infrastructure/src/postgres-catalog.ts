@@ -13,6 +13,7 @@ import { claimStorageSession } from './storage-claim.js';
 import type { StorageRole } from './storage-claim.js';
 import { StorageOwnership } from './storage-ownership.js';
 import { lockServiceAccess } from './service-authorization.js';
+import { SCHEMA_VERSION } from './schema-version.js';
 import type { Catalog, UploadMutation } from '@proanima/arkvory-application';
 
 export function decode(row: Record<string, unknown> | undefined): Upload {
@@ -280,11 +281,19 @@ export class PostgresCatalog implements Catalog {
   }
 
   async ready(): Promise<void> {
-    const result = await this.pool.query(
-      'SELECT version FROM arkvory_migrations WHERE version IN (8,9,10,11,12,13,14,15,16,17)',
+    const result = await this.pool.query<{ applied: string; newest: number | null }>(
+      'SELECT count(*) FILTER (WHERE version BETWEEN 1 AND $1)::text AS applied, max(version) AS newest FROM arkvory_migrations',
+      [SCHEMA_VERSION],
     );
-    if (result.rowCount !== 10)
-      throw new ArkvoryError('unavailable', 'Database migrations 8 through 17 are required');
+    const schema = result.rows[0];
+    if (Number(schema?.applied) !== SCHEMA_VERSION)
+      throw new ArkvoryError(
+        'unavailable',
+        `Database migrations 1 through ${String(SCHEMA_VERSION)} are required; run migrate`,
+      );
+    // A newer schema belongs to a newer release; this binary cannot know its invariants.
+    if ((schema?.newest ?? 0) > SCHEMA_VERSION)
+      throw new ArkvoryError('unavailable', 'Database schema is newer than this release');
     await this.pool.query('SELECT id,expires_at FROM arkvory_uploads LIMIT 0');
   }
   async close(): Promise<void> {

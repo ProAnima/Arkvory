@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { setTimeout as delay } from 'node:timers/promises';
-import { PostgresIdentity, migrate } from '@proanima/arkvory-infrastructure';
+import { PostgresIdentity, SCHEMA_VERSION, migrate } from '@proanima/arkvory-infrastructure';
 import { ArkvoryClient } from '@proanima/arkvory-sdk';
 import { setup } from './fixture.mjs';
 
@@ -43,6 +43,25 @@ test('API readiness rejects a database without the package and identity migratio
   await f.catalog.pool.query('DELETE FROM arkvory_migrations WHERE version>=6');
   await assert.rejects(f.catalog.ready(), { code: 'unavailable' });
   assert.equal((await f.app.inject({ url: '/health/ready', headers: f.headers })).statusCode, 503);
+});
+
+test('schema version matches migrations and readiness rejects missing or newer schemas', async (t) => {
+  const f = await setup(t);
+  const newest = await f.catalog.pool.query('SELECT max(version) AS v FROM arkvory_migrations');
+  // Release manifests use SCHEMA_VERSION to decide whether migrations are required.
+  assert.equal(newest.rows[0].v, SCHEMA_VERSION);
+  await f.catalog.ready();
+  await f.catalog.pool.query('DELETE FROM arkvory_migrations WHERE version=$1', [SCHEMA_VERSION]);
+  await assert.rejects(f.catalog.ready(), { code: 'unavailable' });
+  await f.catalog.pool.query('INSERT INTO arkvory_migrations(version) VALUES($1),($2)', [
+    SCHEMA_VERSION,
+    SCHEMA_VERSION + 1,
+  ]);
+  await assert.rejects(f.catalog.ready(), /newer than this release/);
+  await f.catalog.pool.query('DELETE FROM arkvory_migrations WHERE version=$1', [
+    SCHEMA_VERSION + 1,
+  ]);
+  await f.catalog.ready();
 });
 
 test('online index migration does not acquire the upload reservation lock', async (t) => {

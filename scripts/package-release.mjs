@@ -17,6 +17,7 @@ import { pipeline } from 'node:stream/promises';
 import { createHash } from 'node:crypto';
 import { build } from 'esbuild';
 import { ZipFile } from 'yazl';
+import { SCHEMA_VERSION } from '@proanima/arkvory-infrastructure';
 import { packageInstallers } from './package-installers.mjs';
 
 const version = process.argv[2];
@@ -145,7 +146,7 @@ const release = {
   format: 1,
   version,
   commit: execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),
-  schema: 17,
+  schema: SCHEMA_VERSION,
   archiveSha256: await digest(archive),
   setupSha256: await digest(join(output, 'arkvory-setup.mjs')),
 };

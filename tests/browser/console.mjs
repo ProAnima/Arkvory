@@ -178,7 +178,7 @@ try {
     page.locator('#upload-submit').click(),
   ]);
   assert.equal(await page.locator('#login-name').isDisabled(), true);
-  assert.equal(await page.locator('#login button').isDisabled(), true);
+  assert.equal(await page.locator('#login button[data-i18n=signIn]').isDisabled(), true);
   assert.equal(await page.locator('#cancel').isEnabled(), true);
   assert.equal(
     await page.evaluate(() => {

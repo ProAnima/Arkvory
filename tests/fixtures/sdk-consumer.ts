@@ -28,6 +28,10 @@ export type UnchangedKeys = Assert<
       | 'cleanup'
       | 'configureCleanup'
       | 'requestCleanup'
+      | 'register'
+      | 'tokens'
+      | 'createToken'
+      | 'revokeToken'
     >,
     keyof LegacyClient
   >
