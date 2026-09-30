@@ -112,7 +112,7 @@ test('streaming contract separates full, range and HEAD semantics and scopes eve
   for (const op of apiOperations.filter((o) => ['Content', 'Legacy'].includes(o.tag))) {
     const contract = openApiDocument.paths[op.path][op.method];
     assert.deepEqual(op.access.actions, ['content.read']);
-    assert.equal(contract['x-arkvory-streaming'].maxObjectBytes, '5368709120');
+    assert.equal(contract['x-arkvory-streaming'].maxObjectBytes, '68719476736');
     if (op.method === 'head') {
       assert.equal(contract.responses['206'], undefined);
       assert.equal(contract.responses['416'], undefined);

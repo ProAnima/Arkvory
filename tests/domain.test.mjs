@@ -6,17 +6,20 @@ import {
   authorize,
   requireId,
   MAX_OBJECT_BYTES,
+  partSize,
+  checkParts,
+  PART_BYTES,
 } from '@proanima/arkvory-domain';
 import { parseRange, matchesEtag, parseKeys } from '../apps/api/dist/index.js';
 const valid = {
   name: 'archive.upack',
-  size: '5368709120',
+  size: '68719476736',
   sha256: 'a'.repeat(64),
   labels: ['release', 'release', 'linux'],
   metadata: { version: '1.0', platform: 'linux' },
 };
 
-test('descriptor enforces 5 GiB, flat metadata and canonical identity', () => {
+test('descriptor enforces 64 GiB, flat metadata and canonical identity', () => {
   const a = parseDescriptor(valid);
   assert.equal(a.size, MAX_OBJECT_BYTES);
   assert.deepEqual(a.labels, ['linux', 'release']);
@@ -31,7 +34,7 @@ test('descriptor enforces 5 GiB, flat metadata and canonical identity', () => {
     ),
   );
   for (const patch of [
-    { size: '5368709121' },
+    { size: '68719476737' },
     { size: 2 },
     { size: '-1' },
     { size: '01' },
@@ -104,4 +107,29 @@ test('key configuration rejects malformed credentials and permissions', () => {
       .length,
     1,
   );
+});
+
+test('multipart partSize supports 10 GiB, 20 GiB and 64 GiB boundaries', () => {
+  const tenGiB = 10 * 1024 ** 3;
+  const twentyGiB = 20 * 1024 ** 3;
+  const sixtyFourGiB = 64 * 1024 ** 3;
+  assert.equal(Math.ceil(tenGiB / PART_BYTES), 1280);
+  assert.equal(partSize(tenGiB, 0), PART_BYTES);
+  assert.equal(partSize(tenGiB, 1279), PART_BYTES);
+  assert.throws(() => partSize(tenGiB, 1280), { code: 'invalid_input' });
+
+  assert.equal(Math.ceil(twentyGiB / PART_BYTES), 2560);
+  assert.equal(partSize(twentyGiB, 0), PART_BYTES);
+  assert.equal(partSize(twentyGiB, 2559), PART_BYTES);
+  assert.throws(() => partSize(twentyGiB, 2560), { code: 'invalid_input' });
+
+  assert.equal(Math.ceil(sixtyFourGiB / PART_BYTES), 8192);
+  assert.equal(partSize(sixtyFourGiB, 8191), PART_BYTES);
+  assert.throws(() => partSize(sixtyFourGiB, 8192), { code: 'invalid_input' });
+
+  // Verify small non-round size calculation
+  const uneven = twentyGiB + 123456;
+  const partsCount = Math.ceil(uneven / PART_BYTES);
+  assert.equal(partsCount, 2561);
+  assert.equal(partSize(uneven, 2560), 123456);
 });

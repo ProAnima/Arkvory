@@ -54,8 +54,8 @@ export function readDeletionCandidate(value: unknown) {
     name = text(r['name']),
     revision = integer(r['annotationRevision']);
   if (
-    !/^(0|[1-9][0-9]{0,9})$/.test(size) ||
-    Number(size) > 5368709120 ||
+    !/^(0|[1-9][0-9]{0,15})$/.test(size) ||
+    Number(size) > 68719476736 ||
     !name ||
     name.length > 240 ||
     revision > 2147483647 ||

@@ -129,7 +129,7 @@ function registerContent(app: FastifyInstance, s: Services) {
   );
   app.put<{ Params: Params }>(`${base}/uploads/:id/parts/:index`, async (request, reply) => {
     const hash = request.headers['x-content-sha256'];
-    if (!/^\d{1,3}$/.test(request.params.index) || typeof hash !== 'string') {
+    if (!/^\d{1,4}$/.test(request.params.index) || typeof hash !== 'string') {
       reply.header('Connection', 'close');
       throw new ArkvoryError('invalid_input', 'Invalid part request');
     }

@@ -235,7 +235,7 @@ export class LocalBlobStore implements BlobStore {
     if (
       !Number.isSafeInteger(part.index) ||
       part.index < 0 ||
-      part.index >= 640 ||
+      part.index >= 10000 ||
       !/^[a-f0-9]{64}$/.test(part.sha256)
     )
       throw new ArkvoryError('invalid_input', 'Invalid part');

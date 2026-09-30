@@ -129,7 +129,7 @@ export function composeApiPaths(source: Record<string, ObjectValue>) {
         ...(content
           ? {
               'x-arkvory-streaming': {
-                maxObjectBytes: '5368709120',
+                maxObjectBytes: '68719476736',
                 range: method === 'head' ? 'ignored' : 'single',
                 immutableBytes: true,
                 resolution: policy.tag === 'Legacy' ? 'catalog-lookup-per-request' : 'artifact-id',
@@ -139,8 +139,8 @@ export function composeApiPaths(source: Record<string, ObjectValue>) {
         ...(upload
           ? {
               'x-arkvory-streaming': {
-                maxObjectBytes: '5368709120',
-                maxRequestBytes: policy.operationId === 'putUploadPart' ? '8388608' : '5368709120',
+                maxObjectBytes: '68719476736',
+                maxRequestBytes: policy.operationId === 'putUploadPart' ? '8388608' : '68719476736',
                 checksum: 'sha256',
                 partialRequestCommitted: false,
                 recovery:

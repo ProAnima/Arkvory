@@ -15,7 +15,7 @@ const part = {
   type: 'object',
   required: ['index', 'size', 'sha256'],
   properties: {
-    index: { type: 'integer', minimum: 0, maximum: 639 },
+    index: { type: 'integer', minimum: 0, maximum: 9999 },
     size: { type: 'integer', minimum: 1, maximum: 8388608 },
     sha256: { type: 'string', pattern: '^[a-f0-9]{64}$' },
   },
@@ -407,7 +407,7 @@ for (const [path, item] of Object.entries(paths))
     required: true,
     schema:
       match[1] === 'index'
-        ? { type: 'integer', minimum: 0, maximum: 639 }
+        ? { type: 'integer', minimum: 0, maximum: 9999 }
         : match[1] === 'repository'
           ? { type: 'string', pattern: '^[a-z0-9][a-z0-9_-]{0,63}$' }
           : { type: 'string', format: 'uuid' },

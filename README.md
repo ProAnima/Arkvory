@@ -167,7 +167,7 @@ External applications use the public API and the portable TypeScript SDK in this
 
 ## Reliability and scale
 
-The initial design scenario is approximately **4 TB of data** with files **up to 5 GB**. The 4 TB capacity remains a target. A single 5 GiB transfer and restart have been tested locally; see the validation report. Client concurrency, network capacity, hardware, and recovery objectives still need to be specified.
+The initial design scenario is approximately **4 TB of data** with objects **up to 64 GB** (including large 10–20+ GB files). Streaming transfers and multipart uploads do not depend on object size for memory usage. A single 5 GiB transfer and restart have been tested locally; see the validation report. Client concurrency, network capacity, hardware, and recovery objectives still need to be specified.
 
 - **Standalone:** one machine, local storage, and backups; no availability guarantee if that machine fails.
 - **Single-site HA:** multiple APIs/gateways, a resilient entry point, HA PostgreSQL, and durable content storage with an agreed write-acknowledgment policy.

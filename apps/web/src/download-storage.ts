@@ -19,7 +19,7 @@ export class BrowserDownloadStorage implements DownloadStorage {
       if (handle.kind !== 'file' || !/^part-[0-9]{4}$/.test(name))
         throw new Error('Invalid download staging');
       names.push(name);
-      if (names.length > 640) throw new Error('Download staging limit exceeded');
+      if (names.length > 10000) throw new Error('Download staging limit exceeded');
     }
     names.sort();
     const parts: File[] = [];

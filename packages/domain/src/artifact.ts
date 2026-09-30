@@ -39,7 +39,7 @@ export interface Upload {
   readonly status: 'pending' | 'available' | 'cancelled';
 }
 
-export const MAX_OBJECT_BYTES = 5 * 1024 ** 3;
+export const MAX_OBJECT_BYTES = 64 * 1024 ** 3;
 export const repositoryPattern = '^[a-z0-9][a-z0-9_-]{0,63}$';
 export const idPattern = '^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$';
 
@@ -87,7 +87,7 @@ export function parseDescriptor(value: unknown): ArtifactDescriptor {
   )
     throw new ArkvoryError(
       'invalid_input',
-      'Size must be a decimal string between 0 and 5368709120',
+      `Size must be a decimal string between 0 and ${String(MAX_OBJECT_BYTES)}`,
     );
   if (typeof sha256 !== 'string' || !/^[a-f0-9]{64}$/.test(sha256))
     throw new ArkvoryError('invalid_input', 'Invalid SHA-256');
