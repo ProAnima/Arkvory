@@ -8,7 +8,7 @@
 
 ## Решение
 
-Migration 9 добавляет стабильные сервисные аккаунты, hash-only credentials, audit и initiating credential в jobs. Ключи имеют pending activation, срок действия, идемпотентную выдачу без replay secret, ротацию и необратимый отзыв. Действуют 18 точных repository actions; account/key bindings пересекаются, coarse authorize для managed principal запрещён. Native, legacy и worker используют общие application rules.
+Migration 9 добавляет стабильные сервисные аккаунты, hash-only credentials, audit и initiating credential в jobs. Ключи имеют pending activation, срок действия, идемпотентную выдачу без replay secret, ротацию и необратимый отзыв. Действуют 18 точных repository actions; account/key bindings пересекаются, coarse authorize для managed principal запрещён. HTTP API и worker используют общие application rules.
 
 Первое управление разрешено только явно назначенному file bootstrap `serviceAdministrator`, независимо от прежнего administrator. Делегируемые system/credential/policy actions пока не выдаются. Корневой оператор может назначать любые реализованные data permissions; новые ключи могут только сузить account policy, ротация — также права исходного key. Делегированное управление из ADR 0016 остаётся отдельным этапом.
 
@@ -22,6 +22,6 @@ Migration 9 добавляет стабильные сервисные акка�
 
 ## Приёмка
 
-Проверки прав/пересечения, concurrency, expiry/rotation, отказа stale publication, реального worker и reader входят в функциональные тесты. Старые сценарии native/legacy и миграции продолжают проверяться. Standalone/общий root не объявляется репликацией.
+Проверки прав/пересечения, concurrency, expiry/rotation, отказа stale publication, реального worker и reader входят в функциональные тесты. Прежние сценарии HTTP API и миграции продолжают проверяться. Standalone/общий root не объявляется репликацией.
 
 Последующее расширение root-only управления: [ADR 0019](0019-scoped-service-administration.md). Исходное решение выше фиксирует первый профиль; текущий контракт допускает scoped delegates.

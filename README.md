@@ -6,13 +6,13 @@
 
 **Self-hosted artifact and file storage with controlled delivery.**
 
-UPack packages, metadata, tagging, collections, transfer queues, and ProGet-compatible APIs.
+UPack packages and ordinary files, metadata, tagging, collections, transfer queues, and a convenient native API, SDK and CLI.
 
 A **ProAnimaStudio** project. **Ian Panaev** is the author, copyright holder, and owner of the Arkvory and ProAnimaStudio brands.
 
 [Brand assets](branding/README.md) · [Product identity](docs/PRODUCT_IDENTITY.md)
 
-> **Stage: standalone 0.2, under development.** Native API, multipart/resume, UPack/assets catalog, metadata, worker, admission queues, online physical cleanup, offline repair/scrub, SDK and web console are implemented. Legacy download support is partial. Read gateways with leased shares of a common download budget are implemented for shared storage. Two-server replication and full ProGet replacement are not ready.
+> **Stage: standalone 0.2, under development.** Native API, multipart/resume, UPack/assets catalog, metadata, worker, admission queues, online physical cleanup, offline repair/scrub, SDK and web console are implemented. Read gateways with leased shares of a common download budget are implemented for shared storage. Two-server replication is not ready.
 
 Logical artifact deletion is available through API, SDK and the RU/EN console with an explicit scoped permission, dependency checks and revision protection. Retention previews and applies only selected IDs; physical reclamation runs in the background after a configurable grace period, without stopping uploads or downloads. [Online cleanup](docs/ONLINE_CLEANUP.md). [Lifecycle contract](docs/ARTIFACT_RETENTION.md).
 
@@ -22,11 +22,11 @@ ProAnima Arkvory is being designed as an independent service for storing origina
 
 The service targets application and content delivery infrastructure: deployment agents, CI/CD pipelines, artifact catalogs, internal tools, and other systems. Arkvory is deployed and upgraded independently of connected applications.
 
-An initial use case is replacing ProGet for Universal Packages and ordinary files while preserving the HTTP contracts used by existing clients. External applications connect over the network. Their availability must not determine whether Arkvory can serve packages directly.
+Arkvory is a standalone artifact storage with its own convenient HTTP API, TypeScript SDK and `arkvoryctl` CLI; it does not emulate third-party repository protocols. External applications connect over the network. Their availability must not determine whether Arkvory can serve packages directly.
 
 ## Current status
 
-API discovery now exposes credential-scoped operations and seven responsibility areas, with separate visibility metadata and OpenAPI views. The SDK adds identity, administration and repository namespaces while retaining existing methods. [Integration contract](docs/API_SURFACES.md).
+API discovery now exposes credential-scoped operations and six responsibility areas, with separate visibility metadata and OpenAPI views. The SDK adds identity, administration and repository namespaces while retaining existing methods. [Integration contract](docs/API_SURFACES.md).
 
 The RU/EN console includes direct catalog downloads, compact mobile navigation, contextual queue controls and grouped access-management forms. [UI behavior and browser acceptance](docs/CONSOLE_UX.md).
 
@@ -47,11 +47,11 @@ The RU/EN console includes direct catalog downloads, compact mobile navigation, 
 | Asset history, exact revision lookup, atomic restore with audit      | API, SDK and console implemented                         |
 | User accounts and repository access groups                           | Administrator registration, sessions and group grants    |
 | Package catalog sorting, grouping and cursor paging                  | API, SDK and console; up to 100 versions per page        |
-| Legacy UPack/assets download                                         | Subset; not tested against real ProGet                   |
-| Directory import with resume and download/hash verification          | Implemented; ProGet export and ACL mapping separate      |
+| Download by package identity or file path                            | Implemented; same ACL, Range and limits as by ID         |
+| Directory import with resume and download/hash verification          | Implemented; metadata and ACL mapping separate           |
 | Two-server replication, failover, global balancing                   | Design stage; lab validation deferred                    |
 
-Run `npm run migrate`, `npm start` and `npm run worker` separately. Console: `/console/`. This is a development release, not a production HA system. See the [core runbook](docs/CORE_RUNBOOK.md), [0.2 features](docs/LIFECYCLE_AND_CATALOG.md), [ProGet API limits](docs/COMPATIBILITY.md), [migration](docs/MIGRATION.md), [two-server profile](docs/TWO_NODE_PLAN.md) and [validation](docs/CORE_VALIDATION.md) (engineering documents in Russian).
+Run `npm run migrate`, `npm start` and `npm run worker` separately. Console: `/console/`. This is a development release, not a production HA system. See the [core runbook](docs/CORE_RUNBOOK.md), [0.2 features](docs/LIFECYCLE_AND_CATALOG.md), [import and migration](docs/MIGRATION.md), [two-server profile](docs/TWO_NODE_PLAN.md) and [validation](docs/CORE_VALIDATION.md) (engineering documents in Russian).
 
 ## Capabilities and direction
 
@@ -93,6 +93,7 @@ Administrators can create accounts and repository access groups. Users sign in w
 ### Security and operations
 
 - Service accounts, repository and action permissions, key rotation, and auditing.
+- One authentication scheme for service keys and user sessions: `Authorization: Bearer`.
 - Planned: short-lived transfer tokens scoped to an object and an action; current downloads require ordinary API authorization.
 - Archive validation, safe paths, and metadata size limits.
 - Recovery of intermediate operations, idempotent completion, and integrity checks.
@@ -103,10 +104,8 @@ Administrators can create accounts and repository access groups. Users sign in w
 ```mermaid
 flowchart TD
     EXT[External applications] --> API[Native API and authorization]
-    UI[Arkvory Web UI / CI/CD / SDK] --> API
-    LEGACY[ProGet-compatible clients] --> COMPAT[ProGet compatibility adapters]
-    COMPAT --> APP[Application use cases]
-    API --> APP
+    UI[Arkvory Web UI / CLI / CI/CD / SDK] --> API
+    API --> APP[Application use cases]
     APP --> DOMAIN[Domain rules]
     APP --> PORTS[Application ports]
     PORTS --> DB[(PostgreSQL)]
@@ -139,7 +138,7 @@ Large files are transferred directly through delivery gateways and must not accu
 
 Development tool versions are pinned in manifests and the lockfile. Runtime dependencies are introduced alongside actual use cases.
 
-## Compatibility and integrations
+## API and integrations
 
 The [API map](docs/API_MAP.md) documents current routes, permissions and limitations. [Managed service keys](docs/SERVICE_KEYS.md) now support exact repository actions, one-time issuance, activation, rotation, expiry and revocation, with API/worker/reader enforcement and SDK support. The broader [service access model](docs/API_ACCESS.md) and [API evolution plan](docs/API_EVOLUTION.md) retain recursive roles, legacy identity import, namespace selectors and integration scaling as future work. Engineering documents are in Russian.
 
@@ -149,19 +148,20 @@ Large file catalogs can be traversed with the new cursor-based `assets/page` API
 
 Repository discovery exposes only the caller’s logical repository scopes, including empty ones, with a paginated directory and cards showing supported formats and effective permissions. Managed credentials opt in with `repository.read`; content and administration remain separate. API and SDK are available. See the [discovery contract](docs/REPOSITORY_DISCOVERY.md).
 
-The native API under `/api/v1` covers multipart uploads, completion jobs, content delivery, mutable annotations, package/asset catalogs, asset history and restoration, external references and catalog audit. OpenAPI is served at `/api/v1/openapi.json`; the build also exports `packages/contracts/dist/openapi.json`. All 130 registered API operations, including HEAD and legacy downloads, have stable operation IDs and explicit access/retry metadata, checked against runtime routes at startup and in CI. See the [contract guard](docs/API_CONTRACT_GUARD.md). User and group administration is implemented; distributed transfers, events/webhooks and extended service administration remain planned. Runtime response validation, OpenAPI and the TypeScript SDK are maintained together.
+The native API under `/api/v1` covers multipart uploads, completion jobs, content delivery, mutable annotations, package/asset catalogs, asset history and restoration, external references and catalog audit. OpenAPI is served at `/api/v1/openapi.json`; the build also exports `packages/contracts/dist/openapi.json`. All registered API operations, including HEAD, have stable operation IDs and explicit access/retry metadata, checked against runtime routes at startup and in CI. See the [contract guard](docs/API_CONTRACT_GUARD.md). User and group administration is implemented; distributed transfers, events/webhooks and extended service administration remain planned. Runtime response validation, OpenAPI and the TypeScript SDK are maintained together.
 
-Planned ProGet adapters target the operations used by clients across three API families:
+Content can be downloaded by artifact ID or by name:
 
-| API family                   | Purpose                                             |
-| ---------------------------- | --------------------------------------------------- |
-| `/api/packages/{feed}/...`   | Common package operations                           |
-| `/upack/{feed}/...`          | Universal Feed API                                  |
-| `/endpoints/{directory}/...` | Files, directories, metadata, and multipart uploads |
+| Route under `/api/v1/repositories/{repository}`   | Returns                                    |
+| ------------------------------------------------- | ------------------------------------------ |
+| `GET/HEAD artifacts/{id}/content`                 | Immutable bytes of one artifact            |
+| `GET/HEAD packages/content?group=&name=&version=` | Original UPack archive of an exact version |
+| `GET/HEAD packages/content?group=&name=`          | Highest SemVer version of the package      |
+| `GET/HEAD asset/content?path=`                    | Current revision of a file path            |
 
-Compatibility includes response shapes, authentication, error codes, groups, version ordering, overwrite rules, and HTTP behavior—not just URLs. Coverage will be recorded in a real-client matrix and tested against a separate ProGet test instance.
+Name-based routes resolve the target on every request and then follow the same ACL (`content.read`), admission, bandwidth and Range/ETag/If-Range rules as downloads by ID. To resume, send `If-Range` with the returned ETag or pin the artifact ID. Third-party repository protocols are not emulated; see [ADR 0045](docs/adr/0045-native-only-api.md).
 
-Native clients will be able to create queued jobs, wait for admission, and resume transfers. A legacy client cannot transparently receive `202 + JSON` instead of file bytes: its validated synchronous contract, timeouts, and retry behavior must be respected.
+Native clients will be able to create queued transfer jobs, wait for admission, and resume transfers. Synchronous download routes keep returning file bytes rather than `202 + JSON`.
 
 External applications use the public API and the portable TypeScript SDK in this workspace. They do not need shared database access or imports of Arkvory internals. Webhooks are planned with signatures, retries, and deduplication.
 
@@ -190,7 +190,6 @@ packages/
   application/      use cases and dependency ports
   contracts/        public API and event schemas
   infrastructure/   database, storage, and external adapters
-  proget-compat/    ProGet protocol adapters
   sdk/              public HTTP client
 docs/
   adr/              architecture decisions
@@ -248,15 +247,15 @@ The Node.js test runner covers the first working scenarios. Static checks alone 
 
 ## Implementation roadmap
 
-1. Inventory ProGet behavior and clients; define required contracts and infrastructure.
+1. Inventory consumers and scenarios; define required contracts and infrastructure.
 2. Implement a vertical transfer slice: publish, store, verify, and download 5 GB; test restart and Range.
 3. Add catalog metadata, labels/collections, revisions, permissions, audit, and UI.
 4. Implement durable queues, quotas, fairness, and multiple gateways.
-5. Deliver ProGet compatibility, SDK, and network integrations for external clients.
+5. Deliver the native API, SDK, CLI, and network integrations for external clients.
 6. Test HA, backup/restore, and failure scenarios.
 7. Perform resumable migration, a pilot, final synchronization, cutover, and rollback validation.
 
-Full stage criteria are in [ROADMAP](docs/ROADMAP.md). The first standalone transfer scenario is implemented; replicated delivery and full protocol compatibility remain separate milestones. Read gateways, fixed aggregate quotas and the offline upgrade procedure are documented in [READ_GATEWAYS](docs/READ_GATEWAYS.md). Stop all readers as well as the writer and worker before maintenance or changing the shared policy.
+Full stage criteria are in [ROADMAP](docs/ROADMAP.md). The first standalone transfer scenario is implemented; replicated delivery remains a separate milestone. Read gateways, fixed aggregate quotas and the offline upgrade procedure are documented in [READ_GATEWAYS](docs/READ_GATEWAYS.md). Stop all readers as well as the writer and worker before maintenance or changing the shared policy.
 
 ## Documentation
 
@@ -269,7 +268,7 @@ The English and Russian READMEs describe the same product scope. Detailed engine
 | [PROJECT_PLAN](docs/PROJECT_PLAN.md)         | Detailed product and technical plan                   |
 | [ARCHITECTURE](docs/ARCHITECTURE.md)         | Layers and allowed dependencies                       |
 | [DOMAIN_MODEL](docs/DOMAIN_MODEL.md)         | Domain entities and invariants                        |
-| [API_CONTRACTS](docs/API_CONTRACTS.md)       | Native API, SDK, and ProGet compatibility             |
+| [API_CONTRACTS](docs/API_CONTRACTS.md)       | Native API, SDK, and download contracts               |
 | [RELIABILITY](docs/RELIABILITY.md)           | Writes, queues, networking, degradation, and recovery |
 | [TESTING](docs/TESTING.md)                   | Functional and failure-testing strategy               |
 | [CI](docs/CI.md)                             | Current GitHub Actions checks                         |

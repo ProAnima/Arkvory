@@ -248,25 +248,11 @@ const composed = composeApiPaths({
 export const apiOperations = composed.operations;
 export const openApiDocument = {
   ...baseDocument,
-  info: { ...baseDocument.info, title: 'ProAnima Arkvory API', version: '0.12.0' },
+  info: { ...baseDocument.info, title: 'ProAnima Arkvory API', version: '0.13.0' },
   components: {
     ...baseDocument.components,
     schemas: { NativeError: nativeErrorSchema },
-    securitySchemes: {
-      ...baseDocument.components.securitySchemes,
-      legacyApiKey: {
-        type: 'apiKey',
-        in: 'header',
-        name: 'X-ApiKey',
-        description: 'Legacy download routes only.',
-      },
-      legacyBasic: {
-        type: 'http',
-        scheme: 'basic',
-        description:
-          'Legacy downloads: literal username api, password is the API key. User/password authentication is not supported.',
-      },
-    },
+    securitySchemes: baseDocument.components.securitySchemes,
   },
   paths: composed.paths,
 };

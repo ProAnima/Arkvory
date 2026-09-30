@@ -81,12 +81,12 @@ test('asset restore appends history, survives restart and keeps original bytes a
     });
     assert.deepEqual(download.rawPayload, bytes);
   }
-  const legacy = await f.app.inject({
-    url: `/endpoints/releases/content/${path.split('/').map(encodeURIComponent).join('/')}`,
+  const current = await f.app.inject({
+    url: `${base}/asset/content?path=${encodeURIComponent(path)}`,
     headers: f.readerHeaders,
   });
-  assert.equal(legacy.statusCode, 200, legacy.body);
-  assert.deepEqual(legacy.rawPayload, a);
+  assert.equal(current.statusCode, 200, current.body);
+  assert.deepEqual(current.rawPayload, a);
   const audit = (await f.app.inject({ url: `${base}/audit`, headers: f.headers })).json().items;
   assert.equal(audit.filter((r) => r.action === 'asset.restore').length, 1);
   assert.equal(audit.at(-1).artifactId, first);

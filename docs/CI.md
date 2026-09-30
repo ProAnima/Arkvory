@@ -12,4 +12,4 @@ Browser acceptance использует отдельную PostgreSQL и зак�
 
 Каждая job публикует итог в logs и job summary даже после ошибки. Архивы test-results загружаются только при repository variable `ARKVORY_UPLOAD_ARTIFACTS=true`; это дополнительный канал, который требует свободной квоты GitHub. Подробности и локальные эквиваленты: [ENGINEERING_GATES](ENGINEERING_GATES.md).
 
-Окружение — Node.js 24 LTS, npm 11. [Измерения локального стенда](CORE_VALIDATION.md), [запуск](CORE_RUNBOOK.md). Проверяются multipart, каталог, SDK, worker, GC, локальные очереди и документированный поднабор legacy downloads. Реальные ProGet-клиенты, HA и промышленный failover этими jobs не подтверждаются. Ручной large_transfers дополнительно запускает 5 GiB multipart с убийством процесса на середине загрузки.
+Окружение — Node.js 24 LTS, npm 11. [Измерения локального стенда](CORE_VALIDATION.md), [запуск](CORE_RUNBOOK.md). Проверяются multipart, каталог, SDK, worker, GC, локальные очереди и скачивание по ID, пакету и пути файла. HA и промышленный failover этими jobs не подтверждаются. Ручной large_transfers дополнительно запускает 5 GiB multipart с убийством процесса на середине загрузки.

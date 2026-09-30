@@ -65,7 +65,7 @@ Offline GC/scrub требует остановки writer, всех readers и w
 
 ## Внешняя маршрутизация
 
-Балансировщик развёртывается отдельно. Изменяющие методы и `/console/` отправляются только writer. Чтения байтов (`GET/HEAD /api/v1/repositories/{repository}/artifacts/{id}/content`, поддерживаемые `/upack/...` и `/endpoints/...` download paths) могут распределяться между writer и readers. Остальные запросы безопаснее оставлять на writer. Проверяйте authenticated readiness каждого backend; reader `writable: false` является нормальным состоянием. Не вводите redirects с ключом в URL. Сохраняйте Authorization, Range, If-Range, ETag и потоковую передачу без полной proxy-буферизации.
+Балансировщик развёртывается отдельно. Изменяющие методы и `/console/` отправляются только writer. Чтения байтов (`GET/HEAD /api/v1/repositories/{repository}/artifacts/{id}/content`, `.../packages/content` и `.../asset/content`) могут распределяться между writer и readers. Остальные запросы безопаснее оставлять на writer. Проверяйте authenticated readiness каждого backend; reader `writable: false` является нормальным состоянием. Не вводите redirects с ключом в URL. Сохраняйте Authorization, Range, If-Range, ETag и потоковую передачу без полной proxy-буферизации.
 
 SDK может продолжить immutable download через другой здоровый backend за тем же входным адресом. Активное TCP-соединение между серверами не переносится. Конфигурация балансировщика и двухсерверный HA здесь не развёртывались.
 

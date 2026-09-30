@@ -8,13 +8,13 @@
 
 SDK fault tests входят в `npm test`: настоящие HTTP-сокеты без БД, неполные ответы, неправильные validators/Range, ограниченные повторы/тайм-ауты/отмена. Integration suite дополнительно теряет ответы после записи create/part/complete в настоящей БД и обрывает multipart upload.
 
-`integration/transfer-lifetime.test.mjs` проверяет паузу backend, idle full/part, абсолютный deadline и complete, cleanup/retry, закрытие непрочитанного тела при ошибке headers/admission, коды диагностики и обрыв full/Range/legacy при усечении blob после stat. Синхронизация backend управляется promises; короткие реальные интервалы проверяют именно работу socket/deadline timers. `local-blobs.test.mjs` дополняется проверкой короткого EOF полного файла, Range и частей. Все сценарии автоматически входят в unit/integration и verify/release.
+`integration/transfer-lifetime.test.mjs` проверяет паузу backend, idle full/part, абсолютный deadline и complete, cleanup/retry, закрытие непрочитанного тела при ошибке headers/admission, коды диагностики и обрыв full/Range и asset content при усечении blob после stat. Синхронизация backend управляется promises; короткие реальные интервалы проверяют именно работу socket/deadline timers. `local-blobs.test.mjs` дополняется проверкой короткого EOF полного файла, Range и частей. Все сценарии автоматически входят в unit/integration и verify/release.
 
 `integration/api-composition.test.mjs` проверяет освобождение ownership/pools и stdout listeners при ошибках частичного startup и HTTP wiring, повторное закрытие/запуск и изоляцию webDirectory от ambient env. Существующий API inventory/reader/CORS suite сохраняет проверку порядка guards и аутентификации. Все проверки входят в integration/verify/release без отдельного ручного запуска.
 
 `sdk-compatibility.test.mjs` входит в тот же unit-гейт. Компилирует строгого TS consumer против собранного публичного SDK и снимка `fixtures/sdk-legacy.d.ts` с 81703c5 (68 методов до декомпозиции). Fixtures не запускаются отдельно; снимок изменяется только при review публичного API. Проверяются prefix/encoding, свежий credential в namespaces, redirect/error boundaries и переопределения методов в transfer workflows.
 
-`bandwidth.test.mjs` использует виртуальные монотонные часы для проверки верхней границы shared/per-principal bucket, fairness, cancellation и backpressure. `integration/traffic.test.mjs` проверяет скорость параллельных full/multipart и native/legacy потоков по настоящим сокетам, ротацию ключей одного id, отмену и остановку API. Флаг `--traffic` большого теста включает квоты и отдельный отчёт `large-traffic.json`.
+`bandwidth.test.mjs` использует виртуальные монотонные часы для проверки верхней границы shared/per-principal bucket, fairness, cancellation и backpressure. `integration/traffic.test.mjs` проверяет скорость параллельных full/multipart upload и download потоков (artifact, Range, asset content) по настоящим сокетам, ротацию ключей одного id, отмену и остановку API. Флаг `--traffic` большого теста включает квоты и отдельный отчёт `large-traffic.json`.
 
 Не запускайте интеграционные suites одновременно на одной БД: standalone-lock намеренно допускает один API. Unit/blob-тесты не требуют БД. Подробнее: [runbook](../docs/CORE_RUNBOOK.md), [результаты](../docs/CORE_VALIDATION.md).
 
@@ -26,9 +26,9 @@ SDK fault tests входят в `npm test`: настоящие HTTP-сокеты
 
 `tests/integration/package-pagination.test.mjs` сравнивает SQL-порядок SemVer с доменным правилом и проходит курсором более 1000 версий без повторов и пропусков; также проверяет направления сортировки, привязку курсора к запросу, готовность шести индексов и восстановление прерванной миграции.
 
-`tests/integration/compat.test.mjs` проверяет legacy exact/latest UPack download при каталоге более 1000 версий, те же байты, отсутствие версии и прежние ACL/Range.
+Интеграционные тесты native `packages/content` и `asset/content` проверяют exact/latest UPack download при каталоге более 1000 версий, те же байты, отсутствие версии и те же ACL/Range, что у `artifacts/{id}/content`.
 
-`tests/integration/service-access.test.mjs` проверяет managed ключи: точные права native/legacy, one-time issuance, ротацию и ownership, отзыв между записью bytes и commit, policy CAS, caps, worker/reader и отсутствие file fallback. `npm run gate -- large-multipart` выполняет передачу 5 GiB с managed credential, kill/restart/resume и проверкой SHA-256. Standalone БД должна быть свободна от других suites.
+`tests/integration/service-access.test.mjs` проверяет managed ключи: точные права для artifact и package/asset content, one-time issuance, ротацию и ownership, отзыв между записью bytes и commit, policy CAS, caps, worker/reader и отсутствие file fallback. `npm run gate -- large-multipart` выполняет передачу 5 GiB с managed credential, kill/restart/resume и проверкой SHA-256. Standalone БД должна быть свободна от других suites.
 
 `api-contract.test.mjs` проверяет стабильные operationId, схемы, security/path metadata и собранный JSON. `integration/api-contract.test.mjs` проверяет реальный HTTP без credentials для всех операций, запрет всех mutations на reader, отказ startup при неизвестном route и схемы реальных PostgreSQL/HTTP ответов. Снимок `fixtures/api-operations.json` обновляется после review изменений контракта; не расширяйте исключения guard ради зелёного теста.
 

@@ -2,7 +2,7 @@
   "name": "@proanima/arkvory",
   "version": "0.0.0",
   "private": true,
-  "description": "Автономное хранилище UPack и файлов: метаданные, метки, очереди и API ProGet. / Self-hosted UPack and file storage with metadata, tagging, transfer queues, and ProGet-compatible APIs.",
+  "description": "Автономное хранилище артефактов: UPack и файлы, метаданные, метки, очереди передач и native API. / Self-hosted artifact storage: UPack and files, metadata, labels, transfer queues and a native API.",
   "type": "module",
   "workspaces": [
     "apps/*",

@@ -1,6 +1,6 @@
 # Расширение API и интеграции сервисов
 
-Статус: план развития, 2026-09-25. Реализованы discovery, managed keys и ограниченное делегирование B на точные аккаунты: [SERVICE_KEYS](SERVICE_KEYS.md), [SERVICE_DELEGATION](SERVICE_DELEGATION.md). Инвентаризация **127 операций**, operationId, auth/retry metadata и drift guard runtime/CI: [API_CONTRACT_GUARD](API_CONTRACT_GUARD.md). В этапе C добавлены файловые cursor pages и карточки доступных репозиториев. Импорт старых identities, рекурсивные роли, остальные подэтапы C и этапы D–E остаются планом. Навигация: [карта](API_MAP.md), [модель прав](API_ACCESS.md), [ADR 0016](adr/0016-service-access-and-api-evolution.md).
+Статус: план развития, 2026-09-25. Реализованы discovery, managed keys и ограниченное делегирование B на точные аккаунты: [SERVICE_KEYS](SERVICE_KEYS.md), [SERVICE_DELEGATION](SERVICE_DELEGATION.md). Инвентаризация всех операций, operationId, auth/retry metadata и drift guard runtime/CI: [API_CONTRACT_GUARD](API_CONTRACT_GUARD.md). В этапе C добавлены файловые cursor pages и карточки доступных репозиториев. Импорт старых identities, рекурсивные роли, остальные подэтапы C и этапы D–E остаются планом. Навигация: [карта](API_MAP.md), [модель прав](API_ACCESS.md), [ADR 0016](adr/0016-service-access-and-api-evolution.md).
 
 ## Архитектура подключения
 
@@ -8,9 +8,7 @@
 flowchart LR
     CI[CI / агенты / серверные сервисы] --> HTTP[Native HTTP API]
     UI[Браузер / TypeScript SDK] --> HTTP
-    OLD[Legacy клиенты] --> COMPAT[ProGet transport adapter]
     HTTP --> AUTH[Authentication / authorization context]
-    COMPAT --> AUTH
     AUTH --> USE[Application use cases и object authorization]
     USE --> CATALOG[Каталог / policies / jobs в PostgreSQL]
     USE --> BLOBS[Порт blob storage]
@@ -21,7 +19,7 @@ flowchart LR
     DELIVERY --> EXT[Webhook получатель]
 ```
 
-Схема отражает целевые обязанности. Один модуль не означает отдельный микросервис. Native и legacy не должны дублировать ACL или читать БД клиента. Передача байтов независима от работоспособности внешних бизнес-сервисов; сбой webhook не блокирует publish/download.
+Схема отражает целевые обязанности. Один модуль не означает отдельный микросервис. Все маршруты используют общий authorizer, не дублируют ACL и не читают БД клиента. Передача байтов независима от работоспособности внешних бизнес-сервисов; сбой webhook не блокирует publish/download.
 
 ### Границы реализации
 
@@ -29,7 +27,7 @@ flowchart LR
 - `application`: use cases issue/activate/rotate/revoke, authorization на объект, узкие порты CredentialStore/PolicyReader/AuditWriter по фактической потребности. Проверка права сохраняется при вызове из worker, не только из HTTP.
 - `infrastructure`: криптография, SQL-транзакции и индексы, lookup credentials, outbox и delivery; таймауты/лимиты, атомарные mutations и аудит. Секрет не хранится в открытом виде ради повторного ответа.
 - `contracts`: отдельные публичные DTO, runtime validation, metadata операций для OpenAPI. `Principal` и строки БД не становятся wire schema.
-- `apps/api`: транспорт, регистрация маршрутов, admission до дорогого auth, создание context. `proget-compat`: перевод legacy форматов в те же application use cases.
+- `apps/api`: транспорт, регистрация маршрутов, admission до дорогого auth, создание context.
 - `sdk`: portable HTTP + AbortSignal, типизированные ошибки/пагинация/повторы. Будущие клиенты .NET/Go/Python используют тот же OpenAPI; отдельные SDK вводятся по реальной необходимости.
 
 ## Версионирование и адаптация
@@ -76,7 +74,7 @@ Transfer tickets — отдельный последующий контракт:
 
 1. Добавить новые таблицы без удаления старого файла. Миграция данных, runtime activation и переключение клиентов — разные операции. Текущие rolling/HA гарантии не расширяются без испытаний.
 2. Старые ключи получают явный `legacy` credential profile. Его frozen mapping воспроизводит **только нынешние use cases**: `read` для current read routes, `write` для owned uploads/jobs и audit, read+write для annotation/package/asset/reference mutations; administrator для текущего identity API. Они не получают новые deletion, webhook, credential или policy management права автоматически.
-3. `legacy` — метка источника/версии policy, а не поле, которое клиент может прислать. Статические permissions не превращаются в wildcard. Новый managed key использует новые actions даже на существующем native/legacy маршруте; application проверяет операцию, а не присваивает ему общий `read` ради старого helper.
+3. `legacy` — метка источника/версии policy, а не поле, которое клиент может прислать. Статические permissions не превращаются в wildcard. Новый managed key использует новые actions даже на существующем маршруте; application проверяет операцию, а не присваивает ему общий `read` ради старого helper.
 4. Импорт старого ключа из hash требует явного сопоставления старого `id` с service account: это сохраняет ownership uploads/jobs/references и квоты. Не создавать новый случайный owner при каждой ротации. Импорт возможен локальной административной процедурой; secret из hash не восстанавливается.
 5. На переходе у одного credential один authority. Нельзя оставлять hash одновременно в file fallback и managed store после включения DB revoke: это воскресит отозванный ключ. Все gateways/workers получают согласованную конфигурацию. Неизвестный `arkvory_` credential никогда не пробуется как legacy key после неуспешной проверки.
 6. Переводить сервисы по одному: выпуск → активация → негативная/положительная проверка → отзыв/удаление прежнего file entry с согласованным restart. Rollback новой схемы не должен вновь включать уже отозванные ключи; без совместимого credential authority откат к старому runtime запрещён до безопасной переконфигурации.
@@ -85,7 +83,7 @@ Transfer tickets — отдельный последующий контракт:
 
 ## План вертикальных инкрементов
 
-Исходная карта охватывала 41 операцию. Сейчас полный inventory включает 127 операций с HEAD/legacy, service access/discovery и delegation. Поднабор B позволяет root назначать конкретному key ID управление конкретным account ID с actions/ceiling, без цепочек и самоуправления. Новый account получает новый owner; импорт старого ownership пока отсутствует. Контрактная часть A проверяет весь зарегистрированный inventory: [приёмка](API_CONTRACT_GUARD.md). Рабочие поднаборы B: [ключи](SERVICE_KEYS.md), [делегирование](SERVICE_DELEGATION.md); полная исходная модель B ещё не объявляется завершённой.
+Исходная карта охватывала 41 операцию. Сейчас полный inventory включает HEAD, service access/discovery и delegation. Поднабор B позволяет root назначать конкретному key ID управление конкретным account ID с actions/ceiling, без цепочек и самоуправления. Новый account получает новый owner; импорт старого ownership пока отсутствует. Контрактная часть A проверяет весь зарегистрированный inventory: [приёмка](API_CONTRACT_GUARD.md). Рабочие поднаборы B: [ключи](SERVICE_KEYS.md), [делегирование](SERVICE_DELEGATION.md); полная исходная модель B ещё не объявляется завершённой.
 
 | Этап                              | Состав                                                                                                                                        | Условие готовности                                                                                                                                                      |
 | --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -95,15 +93,15 @@ Transfer tickets — отдельный последующий контракт:
 | D. Интеграционные события         | Event cursor → outbox → webhook delivery, retry/replay, подпись/egress                                                                        | Crash после commit не теряет событие; повтор дедуплицируется; отключённый сервис не тормозит bytes; revoke до delivery закрывает отправку                               |
 | E. Эксплуатация и масштабирование | Retention, наблюдаемость, replicated storage barriers, distributed budgets/tickets после выбора инфраструктуры                                | Смешанная нагрузка и отказы двух узлов подтверждают бюджет, сохранность и согласованные RPO/RTO                                                                         |
 
-A и B можно реализовывать локально, сохраняя отказные тесты PostgreSQL. Стенд ProGet и двух серверов остаётся отложенным по решению владельца; локальная приёмка не заменяет эти испытания. Этапы адаптера ProGet выполняются параллельно по roadmap, с общей новой авторизацией и реальными fixtures, когда появится стенд.
+A и B можно реализовывать локально, сохраняя отказные тесты PostgreSQL. Стенд двух серверов остаётся отложенным по решению владельца; локальная приёмка не заменяет эти испытания.
 
 ### Обязательные contract/security сценарии
 
-- Runtime route отсутствует в OpenAPI/permission registry — CI fail, кроме явного списка static/CORS/internal exclusions. HEAD и legacy учтены отдельно.
+- Runtime route отсутствует в OpenAPI/permission registry — CI fail, кроме явного списка static/CORS/internal exclusions. HEAD учтены отдельно.
 - Подмена resource ID, repository, owner, job ID, key ID, sourceRevision; service A не видит и не изменяет объекты B. Administrator без data grant не читает bytes.
 - Контрактные ответы во всех отрицательных случаях проходят schema validation; secrets отсутствуют в list/get/audit/errors, mock примеры не являются рабочими ключами.
 - Переход policy revision во время операции, истечение срока, утрата ответа выдачи/активации/ротации, повтор revoke; старый ключ не оживает через fallback/cache/restart/rollback.
-- Все credentials одного service account суммарно соблюдают лимит; consumer без content.read получает отказ также на HEAD/Range/legacy.
+- Все credentials одного service account суммарно соблюдают лимит; consumer без content.read получает отказ также на HEAD/Range и при скачивании по пакету или пути файла.
 - Публикация 5 GiB с interruption/resume и policy change; worker повторно проверяет права. Никакой зависимости памяти от размера файла.
 - Cursor фильтрует права до page limit, новые объекты/отзыв прав не раскрывают чужие counts/metadata. Изменение policy между страницами не закрепляет старое разрешение.
 
@@ -112,8 +110,8 @@ A и B можно реализовывать локально, сохраняя 
 До production подтвердить количество service accounts/ключей и запросов в секунду; срок/процедуру ротации; нужные реальные клиенты и их auth формы; допустимую задержку отзыва уже начатого stream; ОС/БД/replication/fencing и RPO/RTO. До этих ответов используем безопасный локальный профиль без обещаний производительности, multi-tenant isolation или доступности при потере authority.
 
 В этапе C реализован отдельный файловый cursor API: [ASSET_PAGINATION](ASSET_PAGINATION.md), [ADR 0020](adr/0020-asset-cursor-pagination.md). Он дополняет уже работающие accounts/keys pages; старый assets items-only сохранён. Репозиторные карточки реализованы как [discovery текущих разрешённых областей](REPOSITORY_DISCOVERY.md). Persisted registry/settings, namespace selectors и upload intent остаются следующими подэтапами.
-Уточнение этапа A для интеграций и удалённого UI: [API_SURFACES](API_SURFACES.md) добавляет семь областей ответственности, отдельную видимость, GET/HEAD operations с фильтрацией до LIMIT и immutable SDK namespaces. Дальнейшие namespace selectors, события, реестр репозиториев, online GC и распределённые очереди остаются самостоятельными контрактами; классификация не делает их реализованными.
+Уточнение этапа A для интеграций и удалённого UI: [API_SURFACES](API_SURFACES.md) добавляет области ответственности, отдельную видимость, GET/HEAD operations с фильтрацией до LIMIT и immutable SDK namespaces. Дальнейшие namespace selectors, события, реестр репозиториев, online GC и распределённые очереди остаются самостоятельными контрактами; классификация не делает их реализованными.
 
-Логическое удаление и retention preview/apply реализованы в [ARTIFACT_RETENTION](ARTIFACT_RETENTION.md): managed-only artifact.delete, CAS аннотаций, пины истории и receipts. OpenAPI 0.10.0, 127 операций, миграции 13/14. Реестр репозиториев, SDK distribution, identity delegation/SSO, online GC и глобальное управление очередями остаются отдельными этапами.
+Логическое удаление и retention preview/apply реализованы в [ARTIFACT_RETENTION](ARTIFACT_RETENTION.md): managed-only artifact.delete, CAS аннотаций, пины истории и receipts. Миграции 13/14. Реестр репозиториев, SDK distribution, identity delegation/SSO, online GC и глобальное управление очередями остаются отдельными этапами.
 
 Настройки last-N retention и квот, предупреждения и журнал диагностики доступны через API/SDK/консоль: [STORAGE_POLICIES](STORAGE_POLICIES.md).

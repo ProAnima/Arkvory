@@ -108,8 +108,8 @@ test('route drift rejects unknown methods, missing routes and undocumented conso
   );
 });
 
-test('streaming contract separates full, range and HEAD semantics and scopes every legacy auth scheme', () => {
-  for (const op of apiOperations.filter((o) => ['Content', 'Legacy'].includes(o.tag))) {
+test('streaming contract separates full, range and HEAD semantics and accepts only Bearer credentials', () => {
+  for (const op of apiOperations.filter((o) => o.tag === 'Content')) {
     const contract = openApiDocument.paths[op.path][op.method];
     assert.deepEqual(op.access.actions, ['content.read']);
     assert.equal(contract['x-arkvory-streaming'].maxObjectBytes, '68719476736');
@@ -122,11 +122,18 @@ test('streaming contract separates full, range and HEAD semantics and scopes eve
         contract.responses['206'].content['application/octet-stream'].schema.format,
         'binary',
       );
-    assert.equal(contract.security.length, op.tag === 'Legacy' ? 3 : 1);
+    assert.deepEqual(contract.security, [{ serviceKey: [] }]);
   }
-  const common = openApiDocument.paths['/api/packages/{repository}/download'].head;
+  const named = openApiDocument.paths['/api/v1/repositories/{repository}/packages/content'].head;
   assert.deepEqual(
-    common.parameters.filter((p) => p.required).map((p) => p.name),
-    ['name', 'version'],
+    named.parameters.filter((p) => p.required).map((p) => p.name),
+    ['name'],
   );
+  assert.equal(
+    openApiDocument.paths['/api/v1/repositories/{repository}/asset/content'].get[
+      'x-arkvory-streaming'
+    ].resolution,
+    'catalog-lookup-per-request',
+  );
+  assert.equal(Object.keys(openApiDocument.components.securitySchemes).length, 1);
 });

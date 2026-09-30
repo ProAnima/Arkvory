@@ -122,7 +122,7 @@ Job хранит stable subject ID, initiating credential ID, revision и тре
 - Upload для узкого namespace заранее связывается с publication intent; на complete/register проверяется фактический UPack manifest или конечный asset path. Нельзя загрузить в разрешённую папку и опубликовать в чужую.
 - Copy/pointer/restore проверяют источник и назначение; metadata, search, history, references, счётчики, audit и events фильтруются до лимита/пагинации. Фильтрация в UI или после LIMIT не подходит.
 - Доступ к raw artifacts list/search для namespace-key запрещён, пока запрос не способен доказать все bindings. Никакого fallback к общему repository read.
-- В legacy и native применяется один application authorizer. Адреса и форматы ответа legacy остаются отдельными; не добавляем зависимость ProGet-клиента от native discovery/202 jobs.
+- Скачивание по artifact ID, идентичности пакета и пути файла использует один application authorizer; namespace selector проверяется для разрешённого объекта, а не только для формы URL.
 
 ## 9. Пример будущей выдачи
 
@@ -148,7 +148,7 @@ Content-Type: application/json
 
 ## 10. Приёмка модели
 
-Проверить отказ при отсутствии action, несовпадении repository и при попытке собрать права из двух bindings; межсервисные uploads/jobs/references; истечение/revoke/disable; lost-response issuance; ротацию во время upload; параллельные лимиты ключей; отзыв между enqueue и commit; недоступность БД и stale cache; совпадение legacy/native запретов; отсутствие секретов в logs/audit/OpenAPI; суммарную полосу нескольких ключей одного аккаунта. Для namespace selectors дополнительно матрица alias/artifactId/encoding/search/copy/restore.
+Проверить отказ при отсутствии action, несовпадении repository и при попытке собрать права из двух bindings; межсервисные uploads/jobs/references; истечение/revoke/disable; lost-response issuance; ротацию во время upload; параллельные лимиты ключей; отзыв между enqueue и commit; недоступность БД и stale cache; совпадение запретов для скачивания по ID, пакету и пути файла; отсутствие секретов в logs/audit/OpenAPI; суммарную полосу нескольких ключей одного аккаунта. Для namespace selectors дополнительно матрица alias/artifactId/encoding/search/copy/restore.
 
 Нормативная основа передачи Bearer: [RFC 6750](https://www.rfc-editor.org/rfc/rfc6750.html); используем Authorization и TLS, не query-string secret. Проверки каждого запрашиваемого объекта соответствуют подходу [OWASP API1:2023](https://api-security.owasp.org/editions/2023/en/0xa1-broken-object-level-authorization/). Эти источники не задают наши роли, сроки или лимиты — это проектные решения Arkvory.
 

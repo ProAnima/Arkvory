@@ -40,7 +40,7 @@ export function registerApiRoutes(app: FastifyInstance, dependencies: Compositio
   registerArtifactRoutes(app, s.service, principal);
   registerDownloadRoutes(
     app,
-    s.legacy,
+    s.browse,
     principal,
     createContentSender({
       service: s.service,

@@ -183,9 +183,9 @@ test('real control, upload, range and native error responses conform to the publ
     payload: { path: 'tool.bin', artifactId: id, expectedRevision: 0 },
   });
   for (const method of ['get', 'head']) {
-    const legacy = await call('/endpoints/{repository}/content/{assetPath}', method, {
-      url: '/endpoints/releases/content/tool.bin',
+    const named = await call(`${root}/asset/content`, method, {
+      url: `${base}/asset/content?path=tool.bin`,
     });
-    assert.equal(legacy.statusCode, 200);
+    assert.equal(named.statusCode, 200);
   }
 });

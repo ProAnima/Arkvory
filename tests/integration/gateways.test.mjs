@@ -93,11 +93,11 @@ test('writer and two independent read processes share bandwidth, ACL and immutab
     assert.equal(health.transfers.downloads.bandwidth.bytesPerSecond, 65536);
     assert.equal(health.transfers.downloads.bandwidth.perPrincipalBytesPerSecond, 65536);
     assert.equal(health.sharedDownloads.active, true);
-    const legacy = await fetch(address + '/endpoints/releases/content/shared.bin', {
+    const named = await fetch(`${address}${base}/asset/content?path=shared.bin`, {
       headers: { ...f.readerHeaders, range: 'bytes=13-42' },
     });
-    assert.equal(legacy.status, 206);
-    assert.deepEqual(Buffer.from(await legacy.arrayBuffer()), bytes.subarray(13, 43));
+    assert.equal(named.status, 206);
+    assert.deepEqual(Buffer.from(await named.arrayBuffer()), bytes.subarray(13, 43));
     assert.equal((await fetch(`${address}${base}/artifacts/${id}/content`)).status, 401);
     assert.equal(
       (

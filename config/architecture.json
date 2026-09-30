@@ -23,10 +23,6 @@
       "allowed": ["packages/application", "packages/domain"]
     },
     {
-      "path": "packages/proget-compat",
-      "allowed": ["packages/application", "packages/domain", "packages/contracts"]
-    },
-    {
       "path": "packages/sdk",
       "allowed": ["packages/contracts"]
     },
@@ -40,8 +36,7 @@
         "packages/application",
         "packages/domain",
         "packages/contracts",
-        "packages/infrastructure",
-        "packages/proget-compat"
+        "packages/infrastructure"
       ]
     },
     {

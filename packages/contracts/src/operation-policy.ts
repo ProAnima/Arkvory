@@ -476,11 +476,10 @@ for (const [method, id] of [
     'reference',
   );
 for (const [path, id] of [
-  ['/api/packages/{repository}/download', 'downloadCommonPackage'],
-  ['/upack/{repository}/download/{packagePath}', 'downloadUniversalPackage'],
-  ['/endpoints/{repository}/content/{assetPath}', 'downloadLegacyAsset'],
+  [`${root}/packages/content`, 'downloadPackageContent'],
+  [`${root}/asset/content`, 'downloadAssetContent'],
 ] as const)
-  data(path, 'get', id, 'Legacy', ['content.read'], ['read'], 'read');
+  data(path, 'get', id, 'Content', ['content.read'], ['read'], 'read');
 
 for (const [suffix, method, id, actions, legacy, retry] of attachmentOperations)
   data(

@@ -15,7 +15,7 @@ ADR нужен для изменения границ, публичных кон
 - [0007 — Клиентское восстановление передач](0007-client-transfer-recovery.md)
 - [0008 — Бюджеты полосы и допуск шлюза](0008-gateway-bandwidth-budgets.md)
 - [0009 — Шлюзы чтения и leases долей](0009-leased-read-gateways.md)
-- [0010 — Чтение UPack через Common Packages API](0010-common-package-download.md)
+- [0010 — Чтение UPack по group/name/version (заменено 0045)](0010-common-package-download.md)
 - [0011 — Учётные записи, группы и каталог пакетов](0011-users-groups-and-package-browser.md)
 - [0012 — Самостоятельная смена пароля](0012-account-password-change.md)
 - [0013 — Курсорные страницы каталога UPack](0013-package-cursor-pagination.md)
@@ -48,3 +48,4 @@ ADR нужен для изменения границ, публичных кон
 - [0035 — Физическая очистка при работающем сервисе](0035-online-cleanup.md)
 - [0036 — Локальный мастер удалённой установки](0036-local-remote-setup-wizard.md)
 - [0037 — Согласованные копии и независимое восстановление (проект)](0037-consistent-backup-and-recovery.md)
+- [0045 — Только нативный API без совместимости с внешними протоколами](0045-native-only-api.md)

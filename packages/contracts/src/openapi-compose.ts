@@ -55,7 +55,10 @@ export function composeApiPaths(source: Record<string, ObjectValue>) {
       const summary = originalOperation['summary'];
       if (typeof summary !== 'string' || summary.length > 1024)
         throw new Error(`Missing API summary: ${method} ${path}`);
-      const content = policy.tag === 'Content' || policy.tag === 'Legacy';
+      const content = policy.tag === 'Content';
+      const named =
+        policy.operationId.startsWith('downloadPackageContent') ||
+        policy.operationId.startsWith('downloadAssetContent');
       const upload =
         policy.operationId === 'putUploadContent' || policy.operationId === 'putUploadPart';
       const responses: ObjectValue = {
@@ -100,12 +103,7 @@ export function composeApiPaths(source: Record<string, ObjectValue>) {
         if (method === 'head') delete response['content'];
         normalizedResponses[status] = response;
       }
-      const security =
-        policy.access.kind === 'public'
-          ? []
-          : policy.tag === 'Legacy'
-            ? [{ serviceKey: [] }, { legacyApiKey: [] }, { legacyBasic: [] }]
-            : [{ serviceKey: [] }];
+      const security = policy.access.kind === 'public' ? [] : [{ serviceKey: [] }];
       const parameters = originalOperation['parameters'] ?? downloadHeaders;
       const headParameters = Array.isArray(parameters)
         ? parameters.filter((p: unknown) => {
@@ -132,7 +130,7 @@ export function composeApiPaths(source: Record<string, ObjectValue>) {
                 maxObjectBytes: '68719476736',
                 range: method === 'head' ? 'ignored' : 'single',
                 immutableBytes: true,
-                resolution: policy.tag === 'Legacy' ? 'catalog-lookup-per-request' : 'artifact-id',
+                resolution: named ? 'catalog-lookup-per-request' : 'artifact-id',
               },
             }
           : {}),

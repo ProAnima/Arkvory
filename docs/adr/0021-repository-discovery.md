@@ -8,7 +8,7 @@
 
 ## Решение
 
-Добавить GET/HEAD списка и карточки репозитория. Карточка — projection доступной области из текущего Principal: id, поддерживаемые форматы upack/assets и собственные permissions. Счётчики и чужие настройки отсутствуют. Пустая, но явно разрешённая область видна, чужая существующая — нет. Это не реестр созданных feeds.
+Добавить GET/HEAD списка и карточки репозитория. Карточка — projection доступной области из текущего Principal: id, поддерживаемые форматы upack/assets и собственные permissions. Счётчики и чужие настройки отсутствуют. Пустая, но явно разрешённая область видна, чужая существующая — нет. Это не реестр созданных репозиториев.
 
 Добавить `repository.read` как отдельное exact repository action. Для managed identity discovery требует его в пересечении account/key policies; data actions и admin grants его не подразумевают. Все прежние use cases сохраняют собственные authorize checks. Для legacy identities список повторяет собственные непустые scopes; прежний `/auth/permissions` не расширяет frozen mapping новым именем. Group access=write и file-key write сохраняют прежнее различие.
 

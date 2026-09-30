@@ -7,7 +7,6 @@ export const apiSurfaces = [
   'transfers',
   'administration',
   'operations',
-  'compatibility',
 ] as const;
 export type ApiSurface = (typeof apiSurfaces)[number];
 export const apiVisibilities = [
@@ -84,9 +83,6 @@ export function apiClassification(policy: OperationPolicy): {
     case 'Content':
     case 'Uploads':
       surface = 'transfers';
-      break;
-    case 'Legacy':
-      surface = 'compatibility';
       break;
     default:
       throw new Error(`Unclassified API responsibility: ${policy.tag}`);

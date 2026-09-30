@@ -94,7 +94,7 @@ Live-объект, удалённый до копирования, можно н
 
 Первый delivery-профиль использует общий HTTPS hostname и доверенный reverse proxy. Прямые перенаправления клиентских Bearer на произвольный hostname запрещены; отдельный mirror URL допускается только для явно настроенного доверенного узла и поддерживающего его клиента.
 
-Mirror gateway принимает только чтение и сохраняет native/legacy HEAD, ETag, Range/If-Range. Перед выдачей primary проверяет живой credential, repository scope, публикацию/удаление и выдаёт read grant, привязанный к node, artifact/hash, principal и диапазону. Переданный credential используется в памяти через mTLS, не попадает в receipts, logs или URL. Mirror является доверенным узлом с доступом к копируемым данным, а не изолированным недоверенным CDN.
+Mirror gateway принимает только чтение и сохраняет HEAD, ETag, Range/If-Range для скачивания по ID, пакету и пути файла. Перед выдачей primary проверяет живой credential, repository scope, публикацию/удаление и выдаёт read grant, привязанный к node, artifact/hash, principal и диапазону. Переданный credential используется в памяти через mTLS, не попадает в receipts, logs или URL. Mirror является доверенным узлом с доступом к копируемым данным, а не изолированным недоверенным CDN.
 
 Предлагаемый grant: 5 секунд, renewal не реже 2 секунд, локальное монотонное окно не длиннее grant. До согласования политики отзывов это верхняя проектная задержка остановки уже начатого чтения, не нулевая задержка отзыва. Новый запрос всегда проверяется у primary. При потере связи/истечении grant поток прерывается; раннее восстановление связи не возрождает старый grant. Already buffered socket bytes отозвать нельзя.
 
@@ -124,14 +124,14 @@ Supervisor запускает worker/gateway после reboot, перезапу
 
 ## Этапы и гейты
 
-| Этап | Завершённый результат                                                                                   | Обязательная приёмка                                                                                                                |
-| ---- | ------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| R1   | Membership/generation, outbox, durable pins и GC barrier; внутренний feature flag выключен по умолчанию | Rollback каталога откатывает событие/pin; commit ordering; GC обоих видов; миграции и capacity accounting                           |
-| R2   | Независимый target, bounded copy/resume, verify/receipt/ACK и reconcile                                 | Два процесса/две БД/два root, реальные bytes; kill в каждой фазе, duplicate/out-of-order ACK, смена диска, disk full, hash mismatch |
-| R3   | Полный admin API/SDK и UI подключения, seed, состояния, pause/retry/drain/retire                        | ACL/IDOR, idempotency/CAS, секреты/SSRF/TLS; RU/EN, обе темы, клавиатура, мобильный layout; никакого фиктивного ready               |
-| R4   | Mirror delivery и общий вход                                                                            | HEAD/Range/legacy, revoked ACL, authority loss, отставший artifact, target GC/read races, общие byte budgets                        |
-| R5   | Выбранный синхронный профиль и управление cutover                                                       | Fencing/partition, old writer return, parts+catalog+bytes ACK, потеря ответа операции, drain/upgrade/rollback                       |
-| R6   | Физическая приёмка и эксплуатационный выпуск                                                            | Два сервера, питание/сеть/диски/WAL, 4 ТБ seed/resync, 5 GiB mixed load, backup restore, измеренные RPO/RTO                         |
+| Этап | Завершённый результат                                                                                   | Обязательная приёмка                                                                                                                   |
+| ---- | ------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| R1   | Membership/generation, outbox, durable pins и GC barrier; внутренний feature flag выключен по умолчанию | Rollback каталога откатывает событие/pin; commit ordering; GC обоих видов; миграции и capacity accounting                              |
+| R2   | Независимый target, bounded copy/resume, verify/receipt/ACK и reconcile                                 | Два процесса/две БД/два root, реальные bytes; kill в каждой фазе, duplicate/out-of-order ACK, смена диска, disk full, hash mismatch    |
+| R3   | Полный admin API/SDK и UI подключения, seed, состояния, pause/retry/drain/retire                        | ACL/IDOR, idempotency/CAS, секреты/SSRF/TLS; RU/EN, обе темы, клавиатура, мобильный layout; никакого фиктивного ready                  |
+| R4   | Mirror delivery и общий вход                                                                            | HEAD/Range, скачивание по пакету/пути файла, revoked ACL, authority loss, отставший artifact, target GC/read races, общие byte budgets |
+| R5   | Выбранный синхронный профиль и управление cutover                                                       | Fencing/partition, old writer return, parts+catalog+bytes ACK, потеря ответа операции, drain/upgrade/rollback                          |
+| R6   | Физическая приёмка и эксплуатационный выпуск                                                            | Два сервера, питание/сеть/диски/WAL, 4 ТБ seed/resync, 5 GiB mixed load, backup restore, измеренные RPO/RTO                            |
 
 Каждый этап подключается к общему `config/gates.json`/CI. Unit не заменяет две независимые базы и диска; localhost TCP fault proxy не доказывает power-loss durability. Перед merge — `verify`, перед release — `release` плюс обязательные suites нового профиля. Существующий billing block GitHub CI остаётся блокером merge/release, не поводом обходить gate.
 

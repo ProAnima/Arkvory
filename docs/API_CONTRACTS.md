@@ -38,19 +38,17 @@ Multipart-сессия сохраняет состояние вне памяти
 
 Точный реализованный контракт SDK, лимиты повторов и требования к локальному commit скачивания: [TRANSFER_RECOVERY](TRANSFER_RECOVERY.md). HTTP-схемы и БД этим инкрементом не изменяются.
 
-## ProGet
+## Скачивание по пакету и пути файла
 
-Поверхности: `/api/packages/{feed}/...`, `/upack/{feed}/...`, `/endpoints/{directory}/...` и необходимые методы управления. Точную матрицу строим по реальным версиям Hub, CI/CD и остальных клиентов.
+`GET|HEAD /api/v1/repositories/{repository}/packages/content?group=&name=&version=` выдаёт исходный архив точной версии UPack, без `version` — старшей SemVer-версии. `GET|HEAD /api/v1/repositories/{repository}/asset/content?path=` выдаёт текущую ревизию файла. Операции `downloadPackageContent` и `downloadAssetContent` разрешают один неизменяемый артефакт на момент запроса и далее следуют контракту `artifacts/{id}/content`: право `content.read`, admission, bandwidth, Range/ETag/If-Range, 304/416. Новая версия или ревизия пути не меняет уже выдаваемые байты; ETag принадлежит выбранному содержимому, поэтому докачка через If-Range после смены цели получает полный ответ, а не смешанный файл.
 
-Сохраняем формы JSON, коды/заголовки, группы, регистр, latest/prerelease, авторизацию, правила overwrite и multipart Assets. Не заменяем существующий синхронный download на `202 + job`.
-
-При перегрузке возможны ограниченное ожидание и Retry-After, но поддержку повторов проверяем для каждого клиента. Клиент без retry требует запаса ресурсов/выделенной полосы либо изменения клиента.
+Синхронный download не заменяется на `202 + job`. При перегрузке возможны ограниченное ожидание и Retry-After; клиент без retry требует запаса ресурсов/выделенной полосы.
 
 ## Внешние приложения
 
 Клиенты на любом поддерживаемом языке используют HTTP/OpenAPI. Для TypeScript предоставляется версионированный SDK. Прямой доступ к БД, внутренним файловым путям и shared runtime internals запрещён. Внешние ссылки на версии защищают используемые компоненты от очистки.
 
-Внешний браузерный UI может вызывать тот же `/api/v1` с `Authorization: Bearer <token>`. Серверная опция `ARKVORY_CORS_ORIGINS` разрешает только перечисленные точные HTTPS origins (loopback HTTP для разработки), максимум 16. Для `/api/v1/*` и `/health/ready` разрешён preflight `OPTIONS` без токена; методы: GET, HEAD, POST, PUT, PATCH, DELETE; заголовки: Authorization, Content-Type, Idempotency-Key, X-Content-SHA256, Range, If-Range, If-None-Match. Ответ содержит конкретный `Access-Control-Allow-Origin`, `Vary`, не содержит разрешения credentials и открывает клиенту `X-Request-Id`, ETag, Content-Length, Content-Range, Accept-Ranges, Content-Disposition, Location, Retry-After. Незаявленный origin получает 403, пустая конфигурация закрывает cross-origin запросы. Проверки Bearer и ACL выполняются независимо от CORS. Legacy-маршруты в этот CORS-контракт не входят. [Настройка внешнего UI](EXTERNAL_UI.md), [ADR 0015](adr/0015-external-browser-ui.md).
+Внешний браузерный UI может вызывать тот же `/api/v1` с `Authorization: Bearer <token>`. Серверная опция `ARKVORY_CORS_ORIGINS` разрешает только перечисленные точные HTTPS origins (loopback HTTP для разработки), максимум 16. Для `/api/v1/*` и `/health/ready` разрешён preflight `OPTIONS` без токена; методы: GET, HEAD, POST, PUT, PATCH, DELETE; заголовки: Authorization, Content-Type, Idempotency-Key, X-Content-SHA256, Range, If-Range, If-None-Match. Ответ содержит конкретный `Access-Control-Allow-Origin`, `Vary`, не содержит разрешения credentials и открывает клиенту `X-Request-Id`, ETag, Content-Length, Content-Range, Accept-Ranges, Content-Disposition, Location, Retry-After. Незаявленный origin получает 403, пустая конфигурация закрывает cross-origin запросы. Проверки Bearer и ACL выполняются независимо от CORS. [Настройка внешнего UI](EXTERNAL_UI.md), [ADR 0015](adr/0015-external-browser-ui.md).
 
 Запросы с origin самого API проходят без настройки CORS, поэтому встроенная консоль работает при пустом `ARKVORY_CORS_ORIGINS`. Сравнение собственного origin использует Host запроса; на reverse proxy передавайте исходный Host клиента. Разный порт означает другой origin и требует явного разрешения.
 
@@ -58,10 +56,6 @@ Webhooks подписываются, могут дублироваться и п
 
 ## Эталонные источники
 
-- [ProGet Packages API](https://docs.inedo.com/docs/proget/api/packages)
-- [Universal Feed API](https://docs.inedo.com/docs/proget/api/universal-feed)
-- [Asset Directories API](https://docs.inedo.com/docs/proget/api/assets)
-- [Multipart Assets](https://docs.inedo.com/docs/proget/api/assets/files/upload/multipart)
 - [RFC 9110](https://www.rfc-editor.org/rfc/rfc9110.html)
 
 ## Профиль шлюза чтения
@@ -70,15 +64,15 @@ Webhooks подписываются, могут дублироваться и п
 
 Пустой `group=` фильтрует корневые пакеты; отсутствие group выбирает все группы. SDK сохраняет это различие. Все изменения паролей разделяют ограниченный допуск с login; заполнение очереди даёт 503/Retry-After. Identity-каталог ограничен 1000 пользователями, 100 группами и по 10 000 memberships/grants, превышение при добавлении — 507/capacity_exceeded.
 
-Текущая OpenAPI содержит 130 операций со стабильными operationId, явными правами, retry и gateway metadata, включая [делегированное service administration](SERVICE_DELEGATION.md). Native/legacy/HEAD inventory сверяется при startup и в CI; сборка сохраняет `packages/contracts/dist/openapi.json`. Правила расширения и границы: [API_CONTRACT_GUARD](API_CONTRACT_GUARD.md).
+Текущая OpenAPI описывает все операции со стабильными operationId, явными правами, retry и gateway metadata, включая [делегированное service administration](SERVICE_DELEGATION.md). Inventory маршрутов, включая HEAD, сверяется при startup и в CI; сборка сохраняет `packages/contracts/dist/openapi.json`. Правила расширения и границы: [API_CONTRACT_GUARD](API_CONTRACT_GUARD.md).
 
 GET/HEAD списка и карточки репозитория реализованы в [REPOSITORY_DISCOVERY](REPOSITORY_DISCOVERY.md): отдельный managed action repository.read, legacy own scopes, bounded pagination и отсутствие data/admin escalation. Никакого SQL inventory всей площадки или автоматического импорта прав.
 
-Readiness дополнен параметрами admission waitingCapacity, perPrincipalWaitingCapacity и timeoutMs; OpenAPI document 0.12.0 сохраняет 130 операций. Управление [клиентской очередью скачиваний](DOWNLOAD_QUEUE.md) не добавляет HTTP routes и не меняет права ProGet-adapter.
-Каталог применимых операций и представления спецификации по областям реализованы в [API_SURFACES](API_SURFACES.md). `operations` фильтруется текущим credential и gateway, возвращает remaining conditions и не заменяет авторизацию рабочих запросов. Native URL/operationId и legacy права сохранены.
+Readiness дополнен параметрами admission waitingCapacity, perPrincipalWaitingCapacity и timeoutMs без новых операций. Управление [клиентской очередью скачиваний](DOWNLOAD_QUEUE.md) не добавляет HTTP routes и не меняет права.
+Каталог применимых операций и представления спецификации по областям реализованы в [API_SURFACES](API_SURFACES.md). `operations` фильтруется текущим credential и gateway, возвращает remaining conditions и не заменяет авторизацию рабочих запросов. URL/operationId и права существующих операций сохранены.
 
-Вложения сборки расширяют surface catalog; OpenAPI 0.12.0, 130 операций; данные вложений добавлены миграцией 12. До 32 ссылок на published artifacts того же репозитория, CAS и постраничная история. Annotation/read-write и content права разделены. [BUILD_DETAILS](BUILD_DETAILS.md), [ADR 0024](adr/0024-build-attachments.md).
+Вложения сборки расширяют surface catalog; данные вложений добавлены миграцией 12. До 32 ссылок на published artifacts того же репозитория, CAS и постраничная история. Annotation/read-write и content права разделены. [BUILD_DETAILS](BUILD_DETAILS.md), [ADR 0024](adr/0024-build-attachments.md).
 
-Логическое удаление и retention preview/apply реализованы в [ARTIFACT_RETENTION](ARTIFACT_RETENTION.md): managed-only artifact.delete, CAS аннотаций, пины истории и receipts. OpenAPI 0.12.0, 130 операций, миграции 13/14. Реестр репозиториев, SDK distribution, identity delegation/SSO и глобальное управление очередями остаются отдельными этапами.
+Логическое удаление и retention preview/apply реализованы в [ARTIFACT_RETENTION](ARTIFACT_RETENTION.md): managed-only artifact.delete, CAS аннотаций, пины истории и receipts. Миграции 13/14. Реестр репозиториев, SDK distribution, identity delegation/SSO и глобальное управление очередями остаются отдельными этапами.
 
-Хранение расширено `/storage/{policy,usage,preview,run,events}`: last-N scheduler, квоты резервирования, CAS и diagnostics. OpenAPI 0.12.0, 130 операции, миграция 15; явные managed storage/diagnostics actions. [STORAGE_POLICIES](STORAGE_POLICIES.md).
+Хранение расширено `/storage/{policy,usage,preview,run,events}`: last-N scheduler, квоты резервирования, CAS и diagnostics. Миграция 15; явные managed storage/diagnostics actions. [STORAGE_POLICIES](STORAGE_POLICIES.md).

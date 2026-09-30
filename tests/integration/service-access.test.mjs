@@ -168,9 +168,9 @@ test('publisher cannot read bytes; content key cannot enumerate; legacy download
   await publish.client.setAsset('releases', 'folder/file.upack', upload, 0);
   for (const path of [
     `${base}/artifacts/${upload}/content`,
-    '/upack/releases/download/Example/1.0.0',
-    '/api/packages/releases/download?name=Example&version=1.0.0',
-    '/endpoints/releases/content/folder/file.upack',
+    `${base}/packages/content?name=Example&version=1.0.0`,
+    `${base}/packages/content?name=example`,
+    `${base}/asset/content?path=folder%2Ffile.upack`,
   ]) {
     assert.equal((await f.app.inject({ url: path, headers: publish.headers })).statusCode, 403);
     const got = await f.app.inject({ url: path, headers: read.headers });

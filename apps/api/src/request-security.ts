@@ -56,17 +56,7 @@ export function registerRequestSecurity(app: FastifyInstance, dependencies: Secu
     // Public login cannot consume the protected budget; session lookup remains bounded.
     context.countRequest(reply);
     const auth = request.headers.authorization;
-    const legacy =
-      request.url.startsWith('/upack/') ||
-      request.url.startsWith('/endpoints/') ||
-      request.url.startsWith('/api/packages/');
-    let token = auth?.startsWith('Bearer ') ? auth.slice(7) : '';
-    if (legacy && typeof request.headers['x-apikey'] === 'string')
-      token = request.headers['x-apikey'];
-    if (legacy && auth?.startsWith('Basic ')) {
-      const basic = Buffer.from(auth.slice(6), 'base64').toString('utf8');
-      if (basic.startsWith('api:')) token = basic.slice(4);
-    }
+    const token = auth?.startsWith('Bearer ') ? auth.slice(7) : '';
     const digest = createHash('sha256').update(token).digest();
     const key = token.startsWith('arkvory_')
       ? undefined

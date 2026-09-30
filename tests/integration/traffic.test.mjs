@@ -50,7 +50,7 @@ test('parallel downloads share principal quota across keys; native, Range and le
     fetch(`${address}${base}/artifacts/${id}/content`, { headers: f.headers }).then((r) =>
       r.arrayBuffer(),
     ),
-    fetch(`${address}/endpoints/releases/content/release.bin`, {
+    fetch(`${address}${base}/asset/content?path=release.bin`, {
       headers: { authorization: `Bearer ${alternate}` },
     }).then((r) => r.arrayBuffer()),
     fetch(`${address}${base}/artifacts/${id}/content`, { headers: f.readerHeaders }).then(

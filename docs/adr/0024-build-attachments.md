@@ -12,7 +12,7 @@
 
 Domain валидирует описания ссылок; application владеет отдельным AttachmentStore и сценариями авторизации; PostgreSQL-адаптер проверяет targets, повторно разрешает managed credential и атомарно фиксирует snapshot, FK-ссылки и audit. Короткий row lock основного artifact сериализует CAS этой сборки. HTTP/SDK используют отдельные wire schemas/parsers. UI связывает существующие resumable transfers и новый каталог, не передаёт байты через управление metadata.
 
-Используем annotation.read и annotation.write + artifact.read: это организация свойств сборки, без выдачи content.read или дополнительных административных полномочий. Registry описывает новые операции как catalog/repository. Границы зависимостей и ProGet responses не меняются.
+Используем annotation.read и annotation.write + artifact.read: это организация свойств сборки, без выдачи content.read или дополнительных административных полномочий. Registry описывает новые операции как catalog/repository. Границы зависимостей и ответы download-маршрутов не меняются.
 
 Миграция 12 только добавляет новые таблицы. Старый сервер игнорирует их; новый требует миграцию перед запуском. Старые annotations/bytes не переписываются. При работе со смешанными версиями deployment клиент должен проверять capability до использования нового API.
 

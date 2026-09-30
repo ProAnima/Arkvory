@@ -19,7 +19,7 @@ Arkvory — самостоятельное хранилище ProAnimaStudio. А
 
 Продукт ещё не используется в установках. Все компоненты используют единую идентичность Arkvory с чистой установкой: aliases окружения, поиск альтернативных профилей/checkpoints и автоматический перенос прежних данных отсутствуют. PostgreSQL-миграции создают схему Arkvory; тестовые окружения создаются заново. Сборочные кэши и история Git не являются частью поставляемого продукта.
 
-Контракты `/api/v1`, Universal Feed и Assets, безопасность, проверка целостности и возобновление передач сохраняются. Совместимость с ProGet — отдельная продуктовая функция и не зависит от названия.
+Контракт `/api/v1`, безопасность, проверка целостности и возобновление передач не зависят от названия. Arkvory публикует только собственный API; протоколы сторонних хранилищ не поддерживаются ([ADR 0045](adr/0045-native-only-api.md)).
 
 Фирменные материалы описаны в [branding](../branding/README.md), архитектурное решение — в [ADR 0040](adr/0040-arkvory-identity.md).
 
@@ -29,4 +29,4 @@ Arkvory is a standalone ProAnimaStudio storage product. Ian Panaev personally ow
 
 The product is not deployed yet. All runtime settings, SQL objects, credentials, CLI profiles, browser storage, services and release assets use the Arkvory identity listed above. Fresh installations use this namespace directly; no alternate-name aliases, fallback files or conversion layer are provided. Build caches and Git history are outside the distributed product.
 
-Native HTTP APIs, ProGet-compatible endpoints, integrity checks and resumable transfers remain supported. See the brand assets and architecture decision linked above.
+The native `/api/v1` HTTP API, integrity checks and resumable transfers are independent of the name. Arkvory exposes only its own API; third-party repository protocols are not supported. See the brand assets and architecture decision linked above.

@@ -72,9 +72,8 @@ async function fixture(t, { download, bandwidth, check, signal, read } = {}) {
   registerDownloadRoutes(
     app,
     {
-      common: async () => 'artifact',
-      universal: async () => 'artifact',
-      asset: async () => 'artifact',
+      resolvePackage: async () => 'artifact',
+      resolveAssetContent: async () => ({ path: 'file', revision: 1, artifactId: 'artifact' }),
     },
     () => owner,
     sender,
@@ -160,12 +159,11 @@ test('a failure before the first byte returns JSON without the file representati
   assert.deepEqual(f.state(), { slots: 0, pins: 0, reads: 1, returned: 1 });
 });
 
-test('native and legacy delivery discard a buffered quantum when its pin is lost during pacing', async (t) => {
+test('id and name based delivery discard a buffered quantum when its pin is lost during pacing', async (t) => {
   for (const path of [
     '/api/v1/repositories/releases/artifacts/artifact/content',
-    '/api/packages/releases/download',
-    '/upack/releases/download/file',
-    '/endpoints/releases/content/file',
+    '/api/v1/repositories/releases/packages/content?name=file',
+    '/api/v1/repositories/releases/asset/content?path=file',
   ]) {
     await t.test(path, { timeout: 5000 }, async (t) => {
       let protectedBlob = true,

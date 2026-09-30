@@ -32,7 +32,7 @@ ARKVORY_DOWNLOAD_BYTES_PER_SECOND_PER_PRINCIPAL=16777216
 
 Лимит общий для всех потоков направления и для всех ключей одного id. Burst каждого включённого bucket — min(floor(rate / 10), 1 MiB), квант до 64 KiB. С момента полного bucket выдача ограничена rate × elapsed + burst. Ожидание не загружает весь файл в память. Подтверждение upload, SHA-256 и durable publication остаются в серверном storage-сценарии.
 
-Full upload и multipart делят upload bucket. Native, Range и legacy UPack/assets делят download bucket. HEAD, 304 и отклонённый Range не расходуют byte budget. Metadata/health не ограничиваются байтовой очередью; глобальный предел 128 HTTP-запросов остаётся. Completion/register/cancel используют существующий upload admission, но без расхода сетевых bytes на локальную сборку. Повторно переданные после обрыва байты расходуют квоту повторно.
+Full upload и multipart делят upload bucket. Скачивания по ID, пакету и пути файла, включая Range, делят download bucket. HEAD, 304 и отклонённый Range не расходуют byte budget. Metadata/health не ограничиваются байтовой очередью; глобальный предел 128 HTTP-запросов остаётся. Completion/register/cancel используют существующий upload admission, но без расхода сетевых bytes на локальную сборку. Повторно переданные после обрыва байты расходуют квоту повторно.
 
 Admission ждёт до 20 секунд, держит до 64 ожидающих запросов направления и до 8 ожидающих от клиента; перегрузка возвращает 503/Retry-After. Квота bytes может ожидать дольше допуска: действуют AbortSignal, HTTP timeout и предел активных потоков. Подбирайте SDK attemptTimeoutMs под 8 MiB и худшую долю клиента; при множестве конкурентов стандартных 120 секунд может не хватать. Для медленных каналов используйте multipart; full HTTP upload ограничен 30 минутами серверного request timeout.
 
@@ -53,7 +53,7 @@ Pacing ограничивает выдачу/чтение payload приложе
 
 ## Проверки
 
-Unit tests с виртуальным монотонным временем проверяют математический предел shared/per-principal buckets, burst, чередование, множество соединений, отсутствие обхода через маленькие кванты, отмену, закрытие, bounded queue и backpressure. HTTP/PostgreSQL тесты проверяют одновременные full/multipart uploads, разные ключи одного клиента, независимый клиент, Range/legacy, диагностику, отмену очереди и preClose с активной передачей.
+Unit tests с виртуальным монотонным временем проверяют математический предел shared/per-principal buckets, burst, чередование, множество соединений, отсутствие обхода через маленькие кванты, отмену, закрытие, bounded queue и backpressure. HTTP/PostgreSQL тесты проверяют одновременные full/multipart uploads, разные ключи одного клиента, независимый клиент, Range и asset content, диагностику, отмену очереди и preClose с активной передачей.
 
 Большой профиль: `npm run gate -- large-multipart`, отдельная тестовая БД и ≥11 GiB свободного места. Он включает реальные 5 GiB, рестарты API, обрыв download, контроль hash/RSS и квоты 64 MiB/s на шлюз, 48 MiB/s на принципала. Отчёт сохраняется в ignored `test-results/large-traffic.json`. Межсерверная координация и HA этим тестом не проверяются.
 

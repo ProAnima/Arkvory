@@ -16,9 +16,9 @@
 | api-routes                                        | Явное связывание сценариев с регистраторами; без SQL, авторизации и бизнес-логики            |
 | http-server                                       | Параметры Fastify и потоковый octet-stream parser                                            |
 | request-context                                   | Состояние запроса, Principal, AbortSignal, request admission и код ошибки                    |
-| request-security / http-errors                    | Аутентификация native/legacy и reader boundary; перевод ошибок в HTTP                        |
+| request-security / http-errors                    | Аутентификация и reader boundary; перевод ошибок в HTTP                                      |
 | transfer-controls / upload-admission              | Сборка bounded admission/bandwidth и освобождение допуска mutations                          |
-| artifact-routes / download-routes / health-routes | Каталог артефактов, общий native/legacy sender и live/ready                                  |
+| artifact-routes / download-routes / health-routes | Каталог артефактов, общий sender содержимого и live/ready                                    |
 | response-diagnostics / background-tasks           | Bounded очередь событий, безопасные логи, timers и завершение фоновой работы                 |
 
 Upload/session/completion сохраняют отдельные модули из ADR 0029. Пакеты и направление зависимостей не меняются. Все новые модули относятся к HTTP/composition слою apps/api. Application/domain не получают Fastify, process.env или timers. В регистраторах используются узкие типизированные зависимости. Полная композиция доступна только функциям связывания, не передаётся каждому обработчику и не является глобальным service locator.
@@ -33,7 +33,7 @@ Upload/session/completion сохраняют отдельные модули и�
 6. PreClose сначала закрывает admission/governors и lease, затем дожидается maintenance и текущей записи диагностики, выполняет один последний bounded batch. БД остаётся доступной фоновым операциям до onClose.
 7. OnClose освобождает ownership и pools. Повторное закрытие из startup rollback/onClose возвращает один Promise; pool.end не вызывается повторно.
 
-Ошибки регистрации после старта runtime также проходят cleanup. Сохранены request cancellation, безопасные request IDs, private/no-store, точные repository ACL, pending-key activation, reader 405, native/legacy GET/HEAD, Range/ETag/304/416, byte/admission limits и upload deadline. Схема БД, 123 API operationId и SDK-контракты не меняются.
+Ошибки регистрации после старта runtime также проходят cleanup. Сохранены request cancellation, безопасные request IDs, private/no-store, точные repository ACL, pending-key activation, reader 405, GET/HEAD содержимого, Range/ETag/304/416, byte/admission limits и upload deadline. Схема БД, 123 API operationId и SDK-контракты не меняются.
 
 ARKVORY_WEB_DIR теперь читается только loadConfig и передаётся как ServerConfig.webDirectory. Программный createServer использует явное поле либо apps/web/public; скрытого чтения глобального окружения в сервере нет. CLI сохраняет прежнюю настройку окружения.
 
@@ -41,4 +41,4 @@ ARKVORY_WEB_DIR теперь читается только loadConfig и пер�
 
 ARCH-016/017 удалены: server.ts — 84 строки кода, createServer — 67 (AST, без пустых строк и комментариев). Новые модули укладываются в общие 500/300/100; остаются 24 других ранее зафиксированных исключения. Декомпозиция PostgreSQL-адаптеров и крупных feature registrars — отдельные пункты аудита.
 
-Новые PostgreSQL/HTTP-регрессии проверяют ошибку сборки после ownership, ошибку частичного startup, отсутствие потерянных stdout listeners, повторное закрытие/запуск и явную конфигурацию консоли. Прежние тесты защищают весь route inventory, auth/reader, диагностику, shutdown, отмену и восстановление передач. Приёмка проходит через quick/release и CI, включая 5 GiB; фактические результаты фиксируются в CORE_VALIDATION. Новых гарантий HA или совместимости с непроверенными ProGet-клиентами это решение не даёт.
+Новые PostgreSQL/HTTP-регрессии проверяют ошибку сборки после ownership, ошибку частичного startup, отсутствие потерянных stdout listeners, повторное закрытие/запуск и явную конфигурацию консоли. Прежние тесты защищают весь route inventory, auth/reader, диагностику, shutdown, отмену и восстановление передач. Приёмка проходит через quick/release и CI, включая 5 GiB; фактические результаты фиксируются в CORE_VALIDATION. Новых гарантий HA это решение не даёт.

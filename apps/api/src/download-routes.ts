@@ -1,12 +1,12 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import type { StorageService } from '@proanima/arkvory-application';
+import type { ArtifactCatalog, StorageService } from '@proanima/arkvory-application';
 import type {
   AdmissionQueue,
   BandwidthGovernor,
   DiagnosticLogger,
   PostgresContentPins,
 } from '@proanima/arkvory-infrastructure';
-import type { ProGetDownloads } from '@proanima/arkvory-proget-compat';
+import { ArkvoryError } from '@proanima/arkvory-domain';
 import type { RequestContext } from './request-context.js';
 import { downloadStream } from './download-stream.js';
 import { matchesEtag, parseRange } from './range.js';
@@ -120,9 +120,26 @@ async function* protectedContent(source: AsyncIterable<Uint8Array>, check: () =>
   }
   check();
 }
+const packageQuery = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['name'],
+  properties: {
+    group: { type: 'string', maxLength: 128 },
+    name: { type: 'string', minLength: 1, maxLength: 128 },
+    version: { type: 'string', minLength: 1, maxLength: 128 },
+  },
+} as const;
+const assetQuery = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['path'],
+  properties: { path: { type: 'string', minLength: 1, maxLength: 1024 } },
+} as const;
+
 export function registerDownloadRoutes(
   app: FastifyInstance,
-  legacy: Pick<ProGetDownloads, 'common' | 'universal' | 'asset'>,
+  browse: Pick<ArtifactCatalog, 'resolvePackage' | 'resolveAssetContent'>,
   principal: RequestContext['principal'],
   sendContent: ReturnType<typeof createContentSender>,
 ) {
@@ -134,43 +151,34 @@ export function registerDownloadRoutes(
     handler: (request, reply) =>
       sendContent(request, reply, request.params.repository, request.params.id),
   });
-
-  app.route<{ Params: { repository: string }; Querystring: unknown }>({
+  // Name-based reads resolve per request; clients resuming with Range must pin the returned ETag.
+  app.route<{
+    Params: { repository: string };
+    Querystring: { group?: string; name: string; version?: string };
+  }>({
     method: ['GET', 'HEAD'],
-    url: '/api/packages/:repository/download',
-    handler: async (request, reply) =>
-      sendContent(
-        request,
-        reply,
-        request.params.repository,
-        await legacy.common(principal(request), request.params.repository, request.query),
-      ),
+    url: base + '/packages/content',
+    schema: { querystring: packageQuery },
+    handler: async (request, reply) => {
+      const { repository } = request.params;
+      const { group = '', name, version } = request.query;
+      const id = await browse.resolvePackage(principal(request), repository, group, name, version);
+      if (!id) throw new ArkvoryError('not_found', 'Package not found');
+      return sendContent(request, reply, repository, id);
+    },
   });
-  app.route<{ Params: { repository: string; '*': string }; Querystring: unknown }>({
+  app.route<{ Params: { repository: string }; Querystring: { path: string } }>({
     method: ['GET', 'HEAD'],
-    url: '/upack/:repository/download/*',
-    handler: async (request, reply) =>
-      sendContent(
-        request,
-        reply,
-        request.params.repository,
-        await legacy.universal(
-          principal(request),
-          request.params.repository,
-          request.params['*'],
-          request.query,
-        ),
-      ),
-  });
-  app.route<{ Params: { repository: string; '*': string } }>({
-    method: ['GET', 'HEAD'],
-    url: '/endpoints/:repository/content/*',
-    handler: async (request, reply) =>
-      sendContent(
-        request,
-        reply,
-        request.params.repository,
-        await legacy.asset(principal(request), request.params.repository, request.params['*']),
-      ),
+    url: base + '/asset/content',
+    schema: { querystring: assetQuery },
+    handler: async (request, reply) => {
+      const { repository } = request.params;
+      const entry = await browse.resolveAssetContent(
+        principal(request),
+        repository,
+        request.query.path,
+      );
+      return sendContent(request, reply, repository, entry.artifactId);
+    },
   });
 }

@@ -120,6 +120,6 @@ Flat SDK: `attachments(repository, id, signal?)`, `replaceAttachments(repository
 - Управление скрывается/блокируется по `/operations`; сервер всегда повторно авторизует запрос. Смена подключения/сборки очищает прежнее состояние и прерывает незавершённую передачу вложения.
 - Состояние формы и File остаются только в текущей вкладке. После её закрытия upload восстанавливается по сохранённому ID на обычном экране загрузки; автоматического сохранения очереди вложений между сессиями нет.
 
-Проверки: domain/contract limits, реальный PostgreSQL и HTTP, concurrent CAS, exact repository/права, rollback, restart/history, FK-пины; браузер — поля metadata, метки, частичная загрузка/пауза/продолжение, конфликт/обновление, unlink/restore, read-only и адаптивность RU/EN/light/dark. Проверки двухсерверного HA и реальных ProGet клиентов остаются стендовыми.
+Проверки: domain/contract limits, реальный PostgreSQL и HTTP, concurrent CAS, exact repository/права, rollback, restart/history, FK-пины; браузер — поля metadata, метки, частичная загрузка/пауза/продолжение, конфликт/обновление, unlink/restore, read-only и адаптивность RU/EN/light/dark. Проверки двухсерверного HA остаются стендовыми.
 
 Корневой UPack upack.json также поддерживает nested custom metadata с `_`-именами. Добавлен CLI подготовки манифеста; custom `_labels` не синхронизируются с Arkvory annotations автоматически. [Примеры и границы неизменяемости](STORAGE_POLICIES.md#upack-метаданные-внутри-архива).

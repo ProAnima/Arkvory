@@ -1,20 +1,19 @@
 # API: ответственность, видимость и интеграции
 
-Статус: реализовано в native v1, OpenAPI document **0.11.0**, схема БД **17**. Контракт содержит **127 операций**, включая HEAD и текущий legacy-поднабор. Потребители: CI/CD, интеграции и отдельный удалённый интерфейс. Они используют один серверный контракт; встроенная консоль не имеет привилегированного канала.
+Статус: реализовано в native v1, схема БД **17**. Каждая операция контракта, включая HEAD, относится к одной из шести областей ниже. Потребители: CI/CD, интеграции и отдельный удалённый интерфейс. Они используют один серверный контракт; встроенная консоль не имеет привилегированного канала.
 
 ## Независимые области ответственности
 
-| Surface          | Ответственность                                                   | Примеры                                                                        |
-| ---------------- | ----------------------------------------------------------------- | ------------------------------------------------------------------------------ |
-| `discovery`      | Узнать возможности, разрешённые операции и репозиторные области   | capabilities, operations, OpenAPI, repositories                                |
-| `identity`       | Вход и собственная identity                                       | login/logout, me, permissions, password, активация собственного managed key    |
-| `catalog`        | Описания, организация, версии и ссылки на содержимое              | artifacts, annotations, packages, assets/history, references, repository audit |
-| `transfers`      | Приём и раздача байтов, состояние собственных загрузок/заданий    | upload create/parts/complete/cancel, jobs, download/HEAD/Range                 |
-| `administration` | Учётные записи, группы, сервисы, credentials, policy и delegation | users, access-groups, service-accounts, api-keys                               |
-| `operations`     | Текущее состояние процесса и готовность шлюза                     | health/live, health/ready                                                      |
-| `compatibility`  | Сохранение существующего внешнего протокола                       | поднабор скачиваний UPack/Common Packages/Assets                               |
+| Surface          | Ответственность                                                   | Примеры                                                                                   |
+| ---------------- | ----------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| `discovery`      | Узнать возможности, разрешённые операции и репозиторные области   | capabilities, operations, OpenAPI, repositories                                           |
+| `identity`       | Вход и собственная identity                                       | login/logout, me, permissions, password, активация собственного managed key               |
+| `catalog`        | Описания, организация, версии и ссылки на содержимое              | artifacts, annotations, packages, assets/history, references, repository audit            |
+| `transfers`      | Приём и раздача байтов, состояние собственных загрузок/заданий    | upload create/parts/complete/cancel, jobs, download/HEAD/Range по ID, пакету и пути файла |
+| `administration` | Учётные записи, группы, сервисы, credentials, policy и delegation | users, access-groups, service-accounts, api-keys                                          |
+| `operations`     | Текущее состояние процесса и готовность шлюза                     | health/live, health/ready                                                                 |
 
-Это логические области контракта, не семь новых сервисов. URL существующих клиентов сохраняются. Размещение writer/reader определяется deployment-профилем, а не названием surface. Будущее физическое разделение должно сохранять operationId, авторизацию, ресурсные границы и общий контракт ошибок.
+Это логические области контракта, не шесть новых сервисов. URL существующих операций `/api/v1` сохраняются. Размещение writer/reader определяется deployment-профилем, а не названием surface. Будущее физическое разделение должно сохранять operationId, авторизацию, ресурсные границы и общий контракт ошибок.
 
 ## Уровни видимости — без наследования полномочий
 
@@ -111,20 +110,19 @@ const verifiedBytes = await repository.artifacts.downloadVerified(artifactId, {
 
 ## Дальнейшее расширение — ещё не реализовано
 
-| Область            | Следующий самостоятельный контракт                                                                                        |
-| ------------------ | ------------------------------------------------------------------------------------------------------------------------- |
-| Catalog            | Реестр и настройки репозиториев, native resolve exact/latest, управляемые schemas/labels/collections, namespace selectors |
-| Transfers          | Долговечная общая очередь и её own/admin views, transfer tickets, динамические квоты, подтверждённые replicas             |
-| Integration events | Авторизованный event cursor, затем outbox/webhooks с replay/deduplication и ограничениями egress                          |
-| Administration     | Импорт legacy ownership, делегированное identity administration, готовые версионированные роли                            |
-| Operations         | Отдельное system.observe для подробной диагностики, retention dry-run/apply, проверенный backup/restore                   |
-| Compatibility      | Publication/list/metadata на основе реальных ProGet fixtures                                                              |
+| Область            | Следующий самостоятельный контракт                                                                                              |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
+| Catalog            | Реестр и настройки репозиториев, resolve exact/latest в метаданные, управляемые schemas/labels/collections, namespace selectors |
+| Transfers          | Долговечная общая очередь и её own/admin views, transfer tickets, динамические квоты, подтверждённые replicas                   |
+| Integration events | Авторизованный event cursor, затем outbox/webhooks с replay/deduplication и ограничениями egress                                |
+| Administration     | Импорт legacy ownership, делегированное identity administration, готовые версионированные роли                                  |
+| Operations         | Отдельное system.observe для подробной диагностики, retention dry-run/apply, проверенный backup/restore                         |
 
 Эти расширения не выдаются за работающие API. Текущий health/ready сохраняет прежний доступ любого действующего credential к агрегатам. Добавление новых административных или опасных операций требует отдельного действия, явной видимости, bounds, отрицательных тестов и документации, а не назначения через общий `write`.
 
 ## Проверка
 
-Unit: ответственность всех операций, разделение областей OpenAPI, отсутствие перемножения bindings, независимость bootstrap/admin/delegation, exact repository после 100-й записи, строгий parser страниц. Integration: реальный HTTP/PostgreSQL, schema validation, HEAD, paging, узкие managed keys, отзыв policy/key/delegation, reader-фильтрация, пользовательская сессия/группы и SDK upload/download/metadata/assets. Новая версия не требует миграции БД и не объявляет HA или полную ProGet compatibility.
+Unit: ответственность всех операций, разделение областей OpenAPI, отсутствие перемножения bindings, независимость bootstrap/admin/delegation, exact repository после 100-й записи, строгий parser страниц. Integration: реальный HTTP/PostgreSQL, schema validation, HEAD, paging, узкие managed keys, отзыв policy/key/delegation, reader-фильтрация, пользовательская сессия/группы и SDK upload/download/metadata/assets. Новая версия не требует миграции БД и не объявляет HA.
 
 Для манифестов и дополнительных файлов добавлена группа `repository.attachments.{get,replace,history}`. Операции `getBuildAttachments`, `replaceBuildAttachments`, `getBuildAttachmentHistory` относятся к catalog/repository. [Контракт и UI](BUILD_DETAILS.md).
 

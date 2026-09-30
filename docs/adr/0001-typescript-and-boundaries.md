@@ -4,11 +4,11 @@
 
 ## Контекст
 
-Для автономного хранилища выбран TypeScript strict. Нужны независимые выпуски, совместимость ProGet и надёжная передача больших файлов.
+Для автономного хранилища выбран TypeScript strict. Нужны независимые выпуски, совместимость с внешним протоколом и надёжная передача больших файлов.
 
 ## Решение
 
-Продуктовый код — TypeScript strict. Node.js 24 LTS, ESM, npm workspaces. Контрольные слои: domain, application, contracts, infrastructure, proget-compat, sdk; серверные apps собирают зависимости. Fastify — выбранное направление HTTP backend, добавляется с первым рабочим сценарием.
+Продуктовый код — TypeScript strict. Node.js 24 LTS, ESM, npm workspaces. Контрольные слои: domain, application, contracts, infrastructure, адаптер внешнего протокола (удалён [ADR 0045](0045-native-only-api.md)), sdk; серверные apps собирают зависимости. Fastify — выбранное направление HTTP backend, добавляется с первым рабочим сценарием.
 
 `strict`, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes` и дополнительные проверки задаются общей конфигурацией. Runtime-валидация внешних данных обязательна. Границы проверяет dependency-cruiser, качество исходников — type-aware ESLint.
 

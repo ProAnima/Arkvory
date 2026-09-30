@@ -345,7 +345,7 @@ test('a truncated blob aborts native full/Range and legacy responses and release
   t.after(() => {
     LocalBlobStore.prototype.read = original;
   });
-  for (const mode of ['full', 'range', 'legacy']) {
+  for (const mode of ['full', 'range', 'path']) {
     const id = (await create(f, bytes)).json().id;
     const sent = await fetch(`${address}${base}/uploads/${id}/content`, {
       method: 'PUT',
@@ -353,9 +353,9 @@ test('a truncated blob aborts native full/Range and legacy responses and release
       body: bytes,
     });
     assert.equal(sent.status, 200, await sent.text());
-    if (mode === 'legacy') await client.setAsset('releases', 'cut.bin', id, 0);
+    if (mode === 'path') await client.setAsset('releases', 'cut.bin', id, 0);
     const path =
-      mode === 'legacy' ? '/endpoints/releases/content/cut.bin' : `${base}/artifacts/${id}/content`;
+      mode === 'path' ? `${base}/asset/content?path=cut.bin` : `${base}/artifacts/${id}/content`;
     const started = Date.now();
     const response = await fetch(address + path, {
       headers: {

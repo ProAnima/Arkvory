@@ -27,7 +27,6 @@ import type {
   PostgresCatalog,
   PostgresContentPins,
 } from '@proanima/arkvory-infrastructure';
-import { ProGetDownloads } from '@proanima/arkvory-proget-compat';
 
 /** Composition only: each registrar receives just the services it consumes. */
 export function createApiServices(
@@ -55,7 +54,6 @@ export function createApiServices(
     browse,
     identity: new IdentityService(new PostgresIdentity(catalog.pool), allowRegistration),
     access: new ServiceAccess(serviceAccounts),
-    legacy: new ProGetDownloads(browse),
     storage: new RepositoryStorage(storagePolicies),
     retention: new ArtifactRetention(new PostgresRetention(catalog.pool), now),
     attachments: new BuildAttachments(service, new PostgresAttachments(catalog.pool)),

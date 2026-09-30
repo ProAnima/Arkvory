@@ -58,10 +58,10 @@ const query = (name: string, required = false) => ({
   required,
   schema: { type: 'string' },
 });
-const legacyGet = (summary: string, parameters: readonly object[] = []) => ({
+const contentGet = (summary: string, parameters: readonly object[]) => ({
   summary,
   description:
-    'Implemented original-byte download subset. Errors use the Arkvory native envelope; complete ProGet compatibility is not claimed. Query-string keys do not authenticate.',
+    'Resolves the name on every request, then streams immutable bytes. Resume with Range and If-Range set to the returned ETag, or download by artifact id.',
   parameters: [...downloadHeaders, ...parameters],
   responses: contentResponses,
 });
@@ -116,49 +116,16 @@ export const supplementalPaths = {
       },
     },
   },
-  '/api/packages/{repository}/download': {
+  '/api/v1/repositories/{repository}/packages/content': {
     parameters: [repository],
-    get: legacyGet('Download an exact UPack via Common Packages API.', [
-      query('group'),
-      query('name', true),
-      query('version', true),
-    ]),
+    get: contentGet(
+      'Download a UPack by group, name and version; the highest SemVer when version is omitted.',
+      [query('group'), query('name', true), query('version')],
+    ),
   },
-  '/upack/{repository}/download/{packagePath}': {
-    parameters: [
-      repository,
-      {
-        name: 'packagePath',
-        in: 'path',
-        required: true,
-        description:
-          'Catch-all path: [group/]name/version; with latest present: [group/]name. Encode each segment separately and preserve / separators; ordinary single-segment SDK generation is insufficient.',
-        schema: { type: 'string', minLength: 1 },
-        'x-arkvory-catch-all': true,
-      },
-    ],
-    get: legacyGet('Download an exact or latest Universal Package.', [
-      {
-        ...query('latest'),
-        description:
-          'Presence selects latest SemVer; any string value. Omit version from packagePath.',
-      },
-    ]),
-  },
-  '/endpoints/{repository}/content/{assetPath}': {
-    parameters: [
-      repository,
-      {
-        name: 'assetPath',
-        in: 'path',
-        required: true,
-        description:
-          'Catch-all logical asset path. Encode each segment separately and preserve / separators.',
-        schema: { type: 'string', minLength: 1 },
-        'x-arkvory-catch-all': true,
-      },
-    ],
-    get: legacyGet('Download current asset bytes.'),
+  '/api/v1/repositories/{repository}/asset/content': {
+    parameters: [repository],
+    get: contentGet('Download the current revision of a file path.', [query('path', true)]),
   },
 };
 import { apiSurfaces } from './api-surfaces.js';

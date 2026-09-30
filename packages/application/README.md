@@ -6,7 +6,7 @@ StorageService: резервирование, публикация, заверш
 
 Расширения 0.2: [части, каталог, очереди и обслуживание](../../docs/LIFECYCLE_AND_CATALOG.md).
 
-IdentityService определяет регистрацию администратором, вход и изменение групп через IdentityStore. organizePackages задаёт порядок и группировку страницы UPack; порт BrowseStore получает ограниченные курсорные страницы и отдельно разрешает одну exact/latest версию для legacy download. [ADR 0011](../../docs/adr/0011-users-groups-and-package-browser.md), [ADR 0013](../../docs/adr/0013-package-cursor-pagination.md).
+IdentityService определяет регистрацию администратором, вход и изменение групп через IdentityStore. organizePackages задаёт порядок и группировку страницы UPack; порт BrowseStore получает ограниченные курсорные страницы и отдельно разрешает одну exact/latest версию для скачивания `packages/content`. [ADR 0011](../../docs/adr/0011-users-groups-and-package-browser.md), [ADR 0013](../../docs/adr/0013-package-cursor-pagination.md).
 
 ServiceAccess задаёт порт ServiceStore и валидирует команды bootstrap/delegated управления, передавая Principal в порт для атомарной проверки authority с изменением. Изменяющие data use cases передают MutationAccess адаптерам для повторной проверки перед commit. [Контракт и эксплуатация](../../docs/SERVICE_KEYS.md).
 
