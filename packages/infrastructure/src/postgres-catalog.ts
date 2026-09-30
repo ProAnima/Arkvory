@@ -41,6 +41,7 @@ export function decode(row: Record<string, unknown> | undefined): Upload {
         : (() => {
             throw new ArkvoryError('unavailable', 'Invalid expiry');
           })(),
+    storageBackend: typeof row['storage_backend'] === 'string' ? row['storage_backend'] : 'default',
   };
 }
 
@@ -142,7 +143,7 @@ export class PostgresCatalog implements Catalog {
       if (quota?.quota && BigInt(quota.used) + BigInt(input.descriptor.size) > BigInt(quota.quota))
         throw new ArkvoryError('capacity_exceeded', 'Repository storage quota exceeded');
       const inserted = await client.query<Record<string, unknown>>(
-        'INSERT INTO arkvory_uploads(id,repository,owner,idempotency_key,descriptor,size,created_at) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING *',
+        'INSERT INTO arkvory_uploads(id,repository,owner,idempotency_key,descriptor,size,created_at,storage_backend) VALUES($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *',
         [
           input.id,
           input.repository,
@@ -151,6 +152,7 @@ export class PostgresCatalog implements Catalog {
           descriptorWire(input.descriptor),
           input.descriptor.size,
           input.createdAt,
+          input.storageBackend ?? 'default',
         ],
       );
       this.checkOwnership();

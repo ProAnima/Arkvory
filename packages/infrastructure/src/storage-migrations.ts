@@ -7,6 +7,7 @@ export async function migrateStorageSchemas(client: PoolClient) {
   await migrateCleanup(client);
   await migrateLargeObjects(client);
   await migrateUserTokens(client);
+  await migrateStorageRouting(client);
 }
 
 export async function migrateLargeObjects(client: PoolClient): Promise<void> {
@@ -55,5 +56,14 @@ export async function migrateUserTokens(client: PoolClient): Promise<void> {
     );
     CREATE INDEX arkvory_user_tokens_user ON arkvory_user_tokens(user_id);
     INSERT INTO arkvory_migrations(version) VALUES(19);
+  `);
+}
+
+export async function migrateStorageRouting(client: PoolClient): Promise<void> {
+  if ((await client.query('SELECT version FROM arkvory_migrations WHERE version=20')).rowCount)
+    return;
+  await client.query(`
+    ALTER TABLE arkvory_uploads ADD COLUMN IF NOT EXISTS storage_backend varchar(64) NOT NULL DEFAULT 'default';
+    INSERT INTO arkvory_migrations(version) VALUES(20);
   `);
 }

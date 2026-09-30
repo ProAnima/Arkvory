@@ -37,6 +37,7 @@ export interface Upload {
   readonly createdAt: string;
   readonly expiresAt: string;
   readonly status: 'pending' | 'available' | 'cancelled';
+  readonly storageBackend?: string;
 }
 
 export const MAX_OBJECT_BYTES = 64 * 1024 ** 3;

@@ -17,6 +17,7 @@ export interface Catalog {
     key: string;
     descriptor: ArtifactDescriptor;
     createdAt: string;
+    storageBackend?: string;
     access?: MutationAccess;
   }): Promise<Upload>;
   get(repository: string, id: string): Promise<Upload>;
@@ -41,18 +42,40 @@ export interface BlobStore {
     part: UploadPart,
     source: AsyncIterable<Uint8Array>,
     cancellation: Cancellation,
+    backendId?: string,
   ): Promise<void>;
-  readParts(id: string, parts: readonly UploadPart[]): AsyncIterable<Uint8Array>;
+  readParts(
+    id: string,
+    parts: readonly UploadPart[],
+    backendId?: string,
+  ): AsyncIterable<Uint8Array>;
   // Immutable publication; existing blobs are verified before retry succeeds.
   put(
     id: string,
     expected: ArtifactDescriptor,
     source: AsyncIterable<Uint8Array>,
     cancellation: Cancellation,
+    backendId?: string,
   ): Promise<void>;
-  verify(id: string, expected: ArtifactDescriptor, cancellation: Cancellation): Promise<void>;
-  read(id: string, size: number, range?: { start: number; end: number }): AsyncIterable<Uint8Array>;
-  exists(id: string, size: number): Promise<void>;
+  verify(
+    id: string,
+    expected: ArtifactDescriptor,
+    cancellation: Cancellation,
+    backendId?: string,
+  ): Promise<void>;
+  read(
+    id: string,
+    size: number,
+    range?: { start: number; end: number },
+    backendId?: string,
+  ): AsyncIterable<Uint8Array>;
+  exists(id: string, size: number, backendId?: string): Promise<void>;
+  collect?(
+    id: string,
+    removeContent: boolean,
+    cancellation: Cancellation,
+    backendId?: string,
+  ): Promise<void>;
 }
 
 export interface IdentitySource {

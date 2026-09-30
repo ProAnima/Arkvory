@@ -9,6 +9,8 @@ import {
   partSize,
   checkParts,
   PART_BYTES,
+  matchRoutingRule,
+  resolveStorageBackend,
 } from '@proanima/arkvory-domain';
 import { parseRange, matchesEtag, parseKeys } from '../apps/api/dist/index.js';
 const valid = {
@@ -132,4 +134,66 @@ test('multipart partSize supports 10 GiB, 20 GiB and 64 GiB boundaries', () => {
   const partsCount = Math.ceil(uneven / PART_BYTES);
   assert.equal(partsCount, 2561);
   assert.equal(partSize(uneven, 2560), 123456);
+});
+
+test('storage routing rules match repository, package group and size thresholds', () => {
+  const rules = [
+    {
+      id: 'models-rule',
+      backendId: 'large-hdd',
+      packageGroup: 'models/*',
+    },
+    {
+      id: 'heavy-assets',
+      backendId: 'secondary-disk',
+      repository: 'assets',
+      minSizeBytes: 10 * 1024 ** 3,
+    },
+    {
+      id: 'exact-group',
+      backendId: 'fast-ssd',
+      packageGroup: 'core-tools',
+    },
+  ];
+
+  // Group prefix wildcard matching
+  assert.equal(
+    resolveStorageBackend(rules, { repository: 'releases', packageGroup: 'models/nlp', size: 100 }),
+    'large-hdd',
+  );
+  assert.equal(
+    resolveStorageBackend(rules, { repository: 'releases', packageGroup: 'models', size: 100 }),
+    'large-hdd',
+  );
+  assert.equal(
+    resolveStorageBackend(rules, {
+      repository: 'releases',
+      packageGroup: 'other/models',
+      size: 100,
+    }),
+    'default',
+  );
+
+  // Size threshold on repository
+  assert.equal(
+    resolveStorageBackend(rules, { repository: 'assets', size: 12 * 1024 ** 3 }),
+    'secondary-disk',
+  );
+  assert.equal(
+    resolveStorageBackend(rules, { repository: 'assets', size: 2 * 1024 ** 3 }),
+    'default',
+  );
+
+  // Exact group match
+  assert.equal(
+    resolveStorageBackend(rules, { repository: 'releases', packageGroup: 'core-tools', size: 500 }),
+    'fast-ssd',
+  );
+
+  // Default fallback
+  assert.equal(resolveStorageBackend(rules, { repository: 'random', size: 100 }), 'default');
+  assert.equal(
+    resolveStorageBackend(rules, { repository: 'random', size: 100 }, 'custom-fallback'),
+    'custom-fallback',
+  );
 });
