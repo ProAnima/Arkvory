@@ -13,6 +13,8 @@ export function serviceKeyExpiry(now: Date, requested: string | undefined, issue
   )
     throw new ArkvoryError('invalid_input', 'Key expiry must be within 365 days');
   if (issuer && expires > issuer)
-    throw new ArkvoryError('forbidden', 'Issued key cannot outlive operator credential');
+    throw new ArkvoryError('forbidden', 'Issued key cannot outlive operator credential', {
+      reason: 'permission_missing',
+    });
   return expires;
 }

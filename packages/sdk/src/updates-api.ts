@@ -1,3 +1,4 @@
+import { ArkvoryClientError } from './transfer.js';
 import { readUpdateSnapshot, readUpdateRequest, record, text } from '@proanima/arkvory-contracts';
 import type { UpdateRequest } from '@proanima/arkvory-contracts';
 import type { HttpPort } from './http-transport.js';
@@ -20,7 +21,8 @@ export class UpdatesApi {
         signal,
       ),
     );
-    if (text(r['id']) !== request.id) throw new Error('Update receipt mismatch');
+    if (text(r['id']) !== request.id)
+      throw new ArkvoryClientError('invalid_response', 'Update receipt mismatch');
     return { id: request.id };
   }
 }

@@ -7,8 +7,9 @@ import {
   requireTokenName,
   requireTokenScope,
   tokenExpiry,
+  withField,
 } from '@proanima/arkvory-domain';
-import type { Principal, TokenScope } from '@proanima/arkvory-domain';
+import type { ErrorReasonOf, Principal, TokenScope } from '@proanima/arkvory-domain';
 import { anonymousActor, auditPageRequest, securityActor } from './security-audit.js';
 import type {
   SecurityAction,
@@ -48,6 +49,11 @@ export interface UserToken {
 export interface CreatedUserToken extends UserToken {
   token: string;
 }
+/** Why a well-formed bearer credential was refused; never distinguishes unknown accounts. */
+export type CredentialRejection = Extract<
+  ErrorReasonOf<'unauthorized'>,
+  'credential_invalid' | 'session_expired' | 'token_expired'
+>;
 /** Self-registration may not consume the account capacity reserved for administrators. */
 export type AccountOrigin = 'administrator' | 'self-registration';
 export interface TokenRequest {
@@ -91,6 +97,8 @@ export interface IdentityStore {
   /** Throws ThrottledError during account backoff without verifying the password. */
   login(name: string, password: string, actor: SecurityActor): Promise<LoginResult>;
   resolve(token: string): Promise<Principal | null>;
+  /** Called only after `resolve` refused the token; one indexed lookup, no secret comparison. */
+  rejection(token: string): Promise<CredentialRejection>;
   logout(token: string): Promise<void>;
   /** Also revokes every session and personal token of the account. */
   changePassword(
@@ -125,7 +133,9 @@ export class IdentityService {
   /** Account administration never runs through a personal token or a managed service key. */
   private admin(principal: Principal): void {
     if (!principal.administrator || principal.managed || principal.credential === 'personal-token')
-      throw new ArkvoryError('forbidden', 'Administrator access required');
+      throw new ArkvoryError('forbidden', 'Administrator access required', {
+        reason: 'administrator_required',
+      });
   }
   /** Credentials are managed from an interactive session only; tokens cannot mint tokens. */
   private async session(principal: Principal, clientIp: string | null, action: SecurityAction) {
@@ -137,7 +147,9 @@ export class IdentityService {
       outcome: 'denied',
       code: 'session_required',
     });
-    throw new ArkvoryError('forbidden', 'Account session required');
+    throw new ArkvoryError('forbidden', 'Account session required', {
+      reason: 'session_required',
+    });
   }
   async createUser(
     principal: Principal,
@@ -148,10 +160,13 @@ export class IdentityService {
   ) {
     this.admin(principal);
     if (typeof administrator !== 'boolean')
-      throw new ArkvoryError('invalid_input', 'Administrator flag is required');
+      throw new ArkvoryError('invalid_input', 'Administrator flag is required', {
+        details: [{ field: '/administrator', problem: 'type' }],
+      });
+    // Field locations mirror the request members of the operation (ADR 0051).
     return this.store.createUser(
-      requireAccountName(name),
-      requirePassword(password),
+      withField('/name', () => requireAccountName(name)),
+      withField('/password', () => requirePassword(password)),
       administrator,
       'administrator',
       securityActor(principal, clientIp),
@@ -171,7 +186,9 @@ export class IdentityService {
     return this.store.updateUser(
       id,
       body['enabled'] === undefined ? undefined : body['enabled'],
-      body['password'] === undefined ? undefined : requirePassword(body['password']),
+      body['password'] === undefined
+        ? undefined
+        : withField('/password', () => requirePassword(body['password'])),
       securityActor(principal, clientIp),
     );
   }
@@ -181,7 +198,10 @@ export class IdentityService {
   }
   async createGroup(principal: Principal, name: unknown, clientIp: string | null) {
     this.admin(principal);
-    return this.store.createGroup(requireGroupName(name), securityActor(principal, clientIp));
+    return this.store.createGroup(
+      withField('/name', () => requireGroupName(name)),
+      securityActor(principal, clientIp),
+    );
   }
   async groups(principal: Principal) {
     this.admin(principal);
@@ -217,13 +237,16 @@ export class IdentityService {
   /** requestId correlates the anonymous attempt with the access log; it is not an identity. */
   async login(name: unknown, password: unknown, clientIp: string | null, requestId?: string) {
     return this.store.login(
-      requireAccountName(name),
-      requirePassword(password),
+      withField('/name', () => requireAccountName(name)),
+      withField('/password', () => requirePassword(password)),
       anonymousActor(clientIp, requestId),
     );
   }
   resolve(token: string) {
     return this.store.resolve(token);
+  }
+  rejection(token: string) {
+    return this.store.rejection(token);
   }
   logout(token: string) {
     return this.store.logout(token);
@@ -237,25 +260,29 @@ export class IdentityService {
     const userId = await this.session(principal, clientIp, 'auth.password.change');
     return this.store.changePassword(
       userId,
-      requirePassword(currentPassword),
-      requirePassword(newPassword),
+      withField('/currentPassword', () => requirePassword(currentPassword)),
+      withField('/newPassword', () => requirePassword(newPassword)),
       securityActor(principal, clientIp),
     );
   }
   async register(name: unknown, password: unknown, clientIp: string | null, requestId?: string) {
     if (!this.allowRegistration)
-      throw new ArkvoryError('forbidden', 'Account registration is disabled');
-    const validName = requireAccountName(name);
-    const validPassword = requirePassword(password);
+      throw new ArkvoryError('forbidden', 'Account registration is disabled', {
+        reason: 'registration_disabled',
+      });
+    const validName = withField('/name', () => requireAccountName(name));
+    const validPassword = withField('/password', () => requirePassword(password));
     const actor = anonymousActor(clientIp, requestId);
     await this.store.createUser(validName, validPassword, false, 'self-registration', actor);
     return this.store.login(validName, validPassword, actor);
   }
   async createToken(principal: Principal, request: TokenRequest, clientIp: string | null) {
     const userId = await this.session(principal, clientIp, 'token.create');
-    const name = requireTokenName(request.name);
-    const scope = requireTokenScope(request.scope);
-    const expiresAt = tokenExpiry(request.expiresAt, this.options.now().getTime());
+    const name = withField('/name', () => requireTokenName(request.name));
+    const scope = withField('/scope', () => requireTokenScope(request.scope));
+    const expiresAt = withField('/expiresAt', () =>
+      tokenExpiry(request.expiresAt, this.options.now().getTime()),
+    );
     return this.store.createToken(
       userId,
       name,

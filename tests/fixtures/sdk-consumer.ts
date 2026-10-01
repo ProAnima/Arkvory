@@ -1,4 +1,5 @@
-import type { ArkvoryClient } from '@proanima/arkvory-sdk';
+import { ArkvoryClientError, ArkvoryHttpError } from '@proanima/arkvory-sdk';
+import type { ArkvoryClient, ClientErrorCode, RequestEvent } from '@proanima/arkvory-sdk';
 import type { LegacyClient, LegacyConstructor } from './sdk-legacy.js';
 
 type Assert<T extends true> = T;
@@ -68,9 +69,52 @@ export type UnchangedKeys = Assert<
     keyof LegacyClient
   >
 >;
+// ADR 0051 adds the optional ClientOptions.onRequest observer; options stay mutually assignable.
 export type UnchangedConstructor = Assert<
   Equal<ConstructorParameters<typeof ArkvoryClient>, ConstructorParameters<LegacyConstructor>>
 >;
+export type ObserverIsOptional = Assert<
+  Equal<
+    NonNullable<NonNullable<ConstructorParameters<typeof ArkvoryClient>[2]>['onRequest']>,
+    (event: RequestEvent) => void
+  >
+>;
+
+// ADR 0051: ArkvoryHttpError keeps its constructor and fields and adds serverMessage, reason,
+// details and retryAfterSeconds; local failures become ArkvoryClientError, still an Error with
+// the previous message text. Exhaustive consumers of `code` must tolerate new values.
+interface LegacyHttpError extends Error {
+  readonly status: number;
+  readonly code: string;
+  readonly requestId: string;
+  readonly retryAfterMs?: number | undefined;
+}
+export type HttpErrorStillReadable = Assert<
+  ArkvoryHttpError extends LegacyHttpError ? true : false
+>;
+export type HttpErrorAdditions = Assert<
+  Equal<
+    Exclude<keyof ArkvoryHttpError, keyof LegacyHttpError>,
+    'serverMessage' | 'reason' | 'details' | 'retryAfterSeconds'
+  >
+>;
+export type ClientErrorIsError = Assert<ArkvoryClientError extends Error ? true : false>;
+export type ClientErrorCodes = Assert<
+  Equal<
+    ClientErrorCode,
+    | 'invalid_argument'
+    | 'insecure_url'
+    | 'invalid_response'
+    | 'response_too_large'
+    | 'size_mismatch'
+    | 'file_changed'
+    | 'upload_cancelled'
+    | 'completion_failed'
+  >
+>;
+export function legacyHttpError(): Error {
+  return new ArkvoryHttpError(503, 'busy', 'request', 2000);
+}
 
 export function metadataSearch(client: ArkvoryClient, signal: AbortSignal) {
   void client.search('releases', { metadataKey: 'commit', metadataValue: 'abc' });

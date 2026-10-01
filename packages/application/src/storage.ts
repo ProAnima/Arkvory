@@ -89,7 +89,9 @@ export class StorageService {
         const upload = await this.owned(principal, repository, id);
         this.pending(upload);
         if ((await this.catalog.parts(id)).length > 0)
-          throw new ArkvoryError('conflict', 'Multipart upload must be completed using its parts');
+          throw new ArkvoryError('conflict', 'Multipart upload must be completed using its parts', {
+            reason: 'upload_state',
+          });
         await this.blobs.put(
           id,
           upload.descriptor,
@@ -123,7 +125,7 @@ export class StorageService {
         const upload = await this.owned(principal, repository, id);
         if (upload.status === 'available') return upload;
         if (upload.status === 'cancelled')
-          throw new ArkvoryError('conflict', 'Upload is cancelled');
+          throw new ArkvoryError('conflict', 'Upload is cancelled', { reason: 'upload_state' });
         this.pending(upload);
         const parts = await this.catalog.parts(id);
         if (parts.length > 0) {
@@ -168,7 +170,9 @@ export class StorageService {
       async (mutation) => {
         const upload = await this.owned(principal, repository, id);
         if (upload.status === 'available')
-          throw new ArkvoryError('conflict', 'Published artifacts cannot be cancelled');
+          throw new ArkvoryError('conflict', 'Published artifacts cannot be cancelled', {
+            reason: 'upload_state',
+          });
         // Cancellation hides content. Physical reclamation needs a separately fenced GC.
         return mutation.cancel(repository);
       },
@@ -207,7 +211,9 @@ export class StorageService {
         // Point lookup keeps a 10000-part upload linear instead of rereading every part per request.
         const existing = await this.catalog.part(id, index);
         if (existing && existing.sha256 !== sha256)
-          throw new ArkvoryError('conflict', 'Part already has different content');
+          throw new ArkvoryError('conflict', 'Part already has different content', {
+            reason: 'part_mismatch',
+          });
         await this.blobs.putPart(
           id,
           part,
@@ -227,9 +233,10 @@ export class StorageService {
   }
 
   private pending(upload: Upload): void {
-    if (upload.status !== 'pending') throw new ArkvoryError('conflict', 'Upload is not pending');
+    if (upload.status !== 'pending')
+      throw new ArkvoryError('conflict', 'Upload is not pending', { reason: 'upload_state' });
     if (upload.expiresAt <= this.identity.now())
-      throw new ArkvoryError('conflict', 'Upload has expired');
+      throw new ArkvoryError('conflict', 'Upload has expired', { reason: 'upload_expired' });
   }
 
   async status(principal: Principal, repository: string, id: string): Promise<Upload> {

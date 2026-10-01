@@ -1,3 +1,4 @@
+import { feedback } from './feedback.js';
 import type { ArkvoryClient } from '@proanima/arkvory-sdk';
 import type { UserTokenResponse } from '@proanima/arkvory-contracts';
 import { element } from './dom.js';
@@ -77,11 +78,11 @@ function installCopy(value: HTMLInputElement, copy: HTMLButtonElement, status: H
     if (!value.value) return;
     try {
       await navigator.clipboard.writeText(value.value);
-      message(status, 'tokenCopied');
+      feedback(status, 'tokenCopied', {}, 'success');
     } catch {
       // Clipboard access can be denied; leave the secret selected for a manual copy.
       value.select();
-      message(status, 'tokenCopyFailed');
+      feedback(status, 'tokenCopyFailed', {}, 'error');
     }
   };
 }

@@ -5,7 +5,7 @@ import { ServiceConsole } from './service-console.js';
 import { ServiceAuthority } from './service-authority.js';
 import { ManagementDialogs } from './management-dialogs.js';
 import { onViewOpen, showView } from './shell.js';
-import { feedback, errorKey } from './feedback.js';
+import { showFailure } from './feedback.js';
 
 export class ManagementConsole {
   private controller = new AbortController();
@@ -86,8 +86,7 @@ export class ManagementConsole {
         element('services-nav', HTMLButtonElement).hidden = false;
       }
     } catch (error) {
-      if (!signal.aborted)
-        feedback(element('status', HTMLOutputElement), errorKey(error), {}, 'error');
+      if (!signal.aborted) showFailure(element('status', HTMLOutputElement), error);
     }
   }
 }

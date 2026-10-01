@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { parseArguments } from './arguments.js';
 import { execute } from './commands.js';
-import { failure, explanation } from './errors.js';
+import { failure, failureText } from './errors.js';
 import { help } from './help.js';
 
 const controller = new AbortController();
@@ -36,11 +36,7 @@ try {
   }
 } catch (error) {
   const result = failure(error, controller.signal.aborted);
-  console.error(
-    json
-      ? JSON.stringify({ error: result })
-      : `Arkvory: ${result.code}${'status' in result ? ' HTTP ' + String(result.status) : ''}. ${explanation(result.code, language)}${result.stage === 'register' ? (language === 'ru' ? ' Файл загружен; регистрация UPack не подтверждена. Повторите packages publish с теми же параметрами.' : ' File uploaded; UPack registration is unconfirmed. Repeat packages publish with the same options.') : ''}`,
-  );
+  console.error(json ? JSON.stringify({ error: result }) : failureText(result, language));
   process.exitCode = result.exitCode;
 } finally {
   process.removeListener('SIGINT', interrupt);

@@ -14,6 +14,7 @@ import { setup, create, base } from '../integration/fixture.mjs';
 import { exerciseBuildDetails } from './build-details.mjs';
 import { exerciseDeletion } from './deletion.mjs';
 import { exercisePromotion } from './promotion.mjs';
+import { exerciseErrorFeedback } from './errors.mjs';
 import { chromium } from 'playwright';
 const browser = await chromium.launch({
   headless: true,
@@ -289,6 +290,8 @@ try {
   await exerciseDeletion(page, f);
   await exerciseStoragePolicy(page, f);
   await exerciseGuides(page, f);
+  // Last: it exhausts the sign-in budget of this server's loopback client.
+  await exerciseErrorFeedback(browser, origin, f);
   assert.deepEqual(errors, []);
   console.log(
     'PASS console: API upload/download, metadata, history, users, search/reset, keyboard menu, 7 views × 4 widths × RU/EN × light/dark',

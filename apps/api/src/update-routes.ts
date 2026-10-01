@@ -13,7 +13,9 @@ export function registerUpdateRoutes(
   const authorize = (r: FastifyRequest) => {
     const actor = principal(r);
     if (actor.managed || actor.administrator !== true)
-      throw new ArkvoryError('forbidden', 'Administrator required');
+      throw new ArkvoryError('forbidden', 'Administrator required', {
+        reason: 'administrator_required',
+      });
     retentionObject(r.query, []);
   };
   app.get('/api/v1/system/updates', async (r) => {

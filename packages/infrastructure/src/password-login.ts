@@ -54,10 +54,13 @@ async function verify(row: CredentialRow | undefined, password: string): Promise
     row !== undefined && stored.length === candidate.length && timingSafeEqual(candidate, stored)
   );
 }
-function refuseDuringBackoff(row: CredentialRow | undefined): void {
+function refuseDuringBackoff(
+  row: CredentialRow | undefined,
+  reason: 'login_attempts' | 'password_attempts',
+): void {
   // Checked before hashing: a blocked attempt costs no CPU and adds no debt.
   if (row && row.locked_ms > 0)
-    throw new ThrottledError(Math.max(1, Math.ceil(row.locked_ms / 1000)));
+    throw new ThrottledError(Math.max(1, Math.ceil(row.locked_ms / 1000)), reason);
 }
 async function recordWrongPassword(client: PoolClient, row: CredentialRow): Promise<void> {
   const debt = drainedLoginDebt(row.login_debt, row.elapsed_ms ?? Number.POSITIVE_INFINITY) + 1;
@@ -85,7 +88,7 @@ export async function passwordLogin(
         [name],
       )
     ).rows[0];
-    refuseDuringBackoff(row);
+    refuseDuringBackoff(row, 'login_attempts');
     const matched = await verify(row, password);
     if (!row || !row.enabled || !matched) {
       if (row && !matched) await recordWrongPassword(client, row);
@@ -125,7 +128,11 @@ export async function passwordLogin(
       account: { id: row.id, name: row.name, administrator: row.administrator, enabled: true },
     };
   });
-  if (!result) throw new ArkvoryError('unauthorized', 'Invalid credentials');
+  // One reason for unknown, disabled and wrong-password accounts: names are not disclosed.
+  if (!result)
+    throw new ArkvoryError('unauthorized', 'Invalid credentials', {
+      reason: 'invalid_credentials',
+    });
   return result;
 }
 
@@ -137,14 +144,14 @@ export async function changeOwnPassword(
   newPassword: string,
   actor: SecurityActor,
 ): Promise<void> {
-  const changed = await inTransaction(pool, async (client) => {
+  const outcome = await inTransaction(pool, async (client) => {
     const row = (
       await client.query<CredentialRow>(
         `SELECT ${credentialColumns} FROM arkvory_users WHERE id=$1 FOR UPDATE`,
         [userId],
       )
     ).rows[0];
-    refuseDuringBackoff(row);
+    refuseDuringBackoff(row, 'password_attempts');
     const matched = await verify(row, currentPassword);
     if (!row?.enabled || !matched) {
       if (row && !matched) await recordWrongPassword(client, row);
@@ -154,7 +161,7 @@ export async function changeOwnPassword(
         outcome: 'failure',
         code: matched ? 'account_disabled' : 'invalid_password',
       });
-      return false;
+      return matched ? ('credential_invalid' as const) : ('current_password_invalid' as const);
     }
     const salt = randomBytes(16).toString('hex');
     const hash = (await passwordHash(newPassword, salt)).toString('hex');
@@ -170,7 +177,13 @@ export async function changeOwnPassword(
       outcome: 'success',
       details: { revokedTokens },
     });
-    return true;
+    return 'changed' as const;
   });
-  if (!changed) throw new ArkvoryError('unauthorized', 'Invalid credentials');
+  if (outcome === 'current_password_invalid')
+    throw new ArkvoryError('unauthorized', 'Current password is incorrect', {
+      reason: outcome,
+      details: [{ field: '/currentPassword', problem: 'invalid' }],
+    });
+  if (outcome === 'credential_invalid')
+    throw new ArkvoryError('unauthorized', 'Invalid credentials', { reason: outcome });
 }

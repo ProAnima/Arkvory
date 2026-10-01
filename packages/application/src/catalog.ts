@@ -1,9 +1,11 @@
 import {
   authorizeAction,
   ArkvoryError,
+  fieldError,
   parseDescriptor,
   requireId,
   requireAssetPath,
+  withField,
 } from '@proanima/arkvory-domain';
 import type { Principal, PackageManifest } from '@proanima/arkvory-domain';
 import type { StorageService } from './storage.js';
@@ -30,32 +32,36 @@ export class ArtifactCatalog {
     authorizeAction(p, repo, 'annotation.write', ['write']);
     const upload = await this.storage.artifact(p, repo, id);
     if (typeof value !== 'object' || value === null || Array.isArray(value))
-      throw new ArkvoryError('invalid_input', 'Invalid annotations');
+      throw fieldError('/', 'type', 'Invalid annotations');
     const input: Record<string, unknown> = Object.fromEntries(Object.entries(value));
-    if (Object.keys(input).some((key) => !['labels', 'metadata', 'collections'].includes(key)))
-      throw new ArkvoryError('invalid_input', 'Unknown annotation field');
-    this.revision(expected);
-    const fields = parseDescriptor({
-      name: upload.descriptor.name,
-      size: String(upload.descriptor.size),
-      sha256: upload.descriptor.sha256,
-      labels: input['labels'],
-      metadata: input['metadata'],
-    });
-    const collections = parseDescriptor({
-      name: 'collections',
-      size: '0',
-      sha256: '0'.repeat(64),
-      labels: input['collections'],
-    }).labels;
-    return this.store.annotate(
-      repo,
-      id,
-      expected,
-      { labels: fields.labels, metadata: fields.metadata, collections },
-      p.id,
-      { principal: p, repository: repo, actions: ['annotation.write', 'artifact.read'] },
+    const unknown = Object.keys(input).find(
+      (key) => !['labels', 'metadata', 'collections'].includes(key),
     );
+    if (unknown !== undefined)
+      throw fieldError(`/${unknown.slice(0, 64)}`, 'unknown_field', 'Unknown annotation field');
+    this.revision(expected);
+    // Separate parses name the failing member; pointers are relative to the annotation value.
+    const descriptor = (extra: Record<string, unknown>) =>
+      parseDescriptor({
+        name: upload.descriptor.name,
+        size: String(upload.descriptor.size),
+        sha256: upload.descriptor.sha256,
+        ...extra,
+      });
+    const labels = withField('/labels', () => descriptor({ labels: input['labels'] }).labels);
+    const metadata = withField(
+      '/metadata',
+      () => descriptor({ metadata: input['metadata'] }).metadata,
+    );
+    const collections = withField(
+      '/collections',
+      () => descriptor({ labels: input['collections'] }).labels,
+    );
+    return this.store.annotate(repo, id, expected, { labels, metadata, collections }, p.id, {
+      principal: p,
+      repository: repo,
+      actions: ['annotation.write', 'artifact.read'],
+    });
   }
   async register(p: Principal, repo: string, id: string) {
     authorizeAction(p, repo, 'package.publish', ['write']);

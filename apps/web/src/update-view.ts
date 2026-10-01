@@ -1,3 +1,4 @@
+import { feedback } from './feedback.js';
 import type { UpdateSnapshot } from '@proanima/arkvory-contracts';
 import { element } from './dom.js';
 import { message, dateMessage } from './i18n.js';
@@ -64,7 +65,7 @@ export class UpdateView {
     this.check.disabled = stale || working;
     this.controls(stale || working);
     if (!snapshot) {
-      message(this.output, 'updateUnavailable');
+      feedback(this.output, 'updateUnavailable');
       this.banner.hidden = true;
       this.install.disabled = true;
       return;

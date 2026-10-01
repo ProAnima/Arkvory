@@ -26,7 +26,9 @@ export async function insertPackage(
     ],
   );
   if (result.rows[0]?.artifact_id !== id)
-    throw new ArkvoryError('conflict', 'Package version is immutable');
+    throw new ArkvoryError('conflict', 'Package version is immutable', {
+      reason: 'version_exists',
+    });
   return {
     group: manifest.group,
     name: manifest.name,

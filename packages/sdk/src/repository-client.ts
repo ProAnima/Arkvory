@@ -1,3 +1,4 @@
+import { ArkvoryClientError } from './transfer.js';
 import type { StorageApi } from './storage-api.js';
 import type { DiscoveryApi } from './discovery-api.js';
 import type { CatalogApi } from './catalog-api.js';
@@ -60,7 +61,8 @@ type RepositoryTransport = Pick<
 
 /** Ergonomic scope, not a credential or security boundary. Transport/retry behavior stays shared. */
 export function repositoryClient(client: RepositoryTransport, repository: string) {
-  if (!/^[a-z0-9][a-z0-9_-]{0,63}$/.test(repository)) throw new Error('Invalid repository');
+  if (!/^[a-z0-9][a-z0-9_-]{0,63}$/.test(repository))
+    throw new ArkvoryClientError('invalid_argument', 'Invalid repository');
   const bind =
     <A extends unknown[], R>(method: (repository: string, ...args: A) => R) =>
     (...args: A): R =>

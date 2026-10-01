@@ -1,3 +1,4 @@
+import { ArkvoryClientError } from './transfer.js';
 export type DownloadState =
   | 'queued'
   | 'running'
@@ -335,7 +336,7 @@ export class DownloadQueue {
           signal: controller.signal,
           progress: (bytes) => {
             if (!Number.isSafeInteger(bytes) || bytes < 0)
-              throw new Error('Invalid download progress');
+              throw new ArkvoryClientError('invalid_response', 'Invalid download progress');
             e.bytes = bytes;
             if (e.state === 'retrying') e.state = 'running';
             e.retry = null;

@@ -1,6 +1,7 @@
 import { ArkvoryClient, ArkvoryHttpError } from '@proanima/arkvory-sdk';
 import { element } from './dom.js';
-import { feedback, UiError } from './feedback.js';
+import { errorKey, feedback, showFailure, UiError } from './feedback.js';
+import { withFieldErrors } from './field-errors.js';
 import type { Credential } from './feedback.js';
 import type { MessageKey } from './messages.js';
 import { offerRepositoryOptions } from './repository-options.js';
@@ -39,15 +40,25 @@ type AuthHandler = (
   successKey: 'signedIn' | 'accountRegistered',
 ) => Promise<void>;
 
-/** A 401 from these forms describes the typed password, not the current credential. */
+/**
+ * The reason of a 401 says whether the typed password or the page credential failed (ADR 0051).
+ * Servers without reasons meant the typed password on these forms.
+ */
 async function passwordAttempt<T>(attempt: () => Promise<T>, failure: MessageKey): Promise<T> {
   try {
     return await attempt();
   } catch (error) {
-    if (error instanceof ArkvoryHttpError && error.status === 401) throw new UiError(failure);
+    if (error instanceof ArkvoryHttpError && error.status === 401 && error.reason === undefined)
+      throw new UiError(failure);
     throw error;
   }
 }
+const signInFields = { '/name': 'login-name', '/password': 'login-password' };
+const registerFields = { '/name': 'register-name', '/password': 'register-password' };
+const passwordFields = {
+  '/currentPassword': 'current-password',
+  '/newPassword': 'own-new-password',
+};
 
 function signedOut(ctx: AuthConsoleContext) {
   ctx.downloads.reset();
@@ -80,12 +91,14 @@ export function installAuthConsole(ctx: AuthConsoleContext) {
     applyRegistrationOption(enabled, controls);
   });
   return {
-    /** Ends an expired password session locally and offers the sign-in form again. */
-    expire() {
+    /** Ends an expired or revoked password session locally and offers the sign-in form. */
+    expire(error: unknown) {
+      // Wording depends on the session credential, so it is chosen before signing out.
+      const key = errorKey(error);
       ctx.nextGeneration();
       signedOut(ctx);
       showSignIn();
-      feedback(ctx.output, 'sessionExpired', {}, 'error');
+      showFailure(ctx.output, error, key);
     },
   };
 }
@@ -164,20 +177,22 @@ function bindSessionLifecycle(ctx: AuthConsoleContext): void {
   element('change-password', HTMLFormElement).onsubmit = (event) => {
     event.preventDefault();
     const generation = ctx.getGeneration();
-    run(async () => {
-      const current = element('current-password', HTMLInputElement);
-      const next = element('own-new-password', HTMLInputElement);
-      await passwordAttempt(
-        () => client.changePassword(current.value, next.value),
-        'currentPasswordWrong',
-      );
-      if (generation !== ctx.getGeneration()) return;
-      ctx.nextGeneration();
-      current.value = '';
-      next.value = '';
-      signedOut(ctx);
-      feedback(output, 'passwordChangedSignIn', {}, 'success');
-    });
+    run(
+      withFieldErrors(passwordFields, async () => {
+        const current = element('current-password', HTMLInputElement);
+        const next = element('own-new-password', HTMLInputElement);
+        await passwordAttempt(
+          () => client.changePassword(current.value, next.value),
+          'currentPasswordWrong',
+        );
+        if (generation !== ctx.getGeneration()) return;
+        ctx.nextGeneration();
+        current.value = '';
+        next.value = '';
+        signedOut(ctx);
+        feedback(output, 'passwordChangedSignIn', {}, 'success');
+      }),
+    );
   };
 
   element('logout', HTMLButtonElement).onclick = () => {
@@ -209,24 +224,28 @@ function bindPasswordForms(ctx: AuthConsoleContext, handleAuthSession: AuthHandl
   element('login', HTMLFormElement).onsubmit = (event) => {
     event.preventDefault();
     const generation = ctx.nextGeneration();
-    run(async () => {
-      const name = element('login-name', HTMLInputElement).value;
-      const pwd = element('login-password', HTMLInputElement);
-      const session = await passwordAttempt(() => client.login(name, pwd.value), 'signInFailed');
-      pwd.value = '';
-      await handleAuthSession(session, generation, 'signedIn');
-    });
+    run(
+      withFieldErrors(signInFields, async () => {
+        const name = element('login-name', HTMLInputElement).value;
+        const pwd = element('login-password', HTMLInputElement);
+        const session = await passwordAttempt(() => client.login(name, pwd.value), 'signInFailed');
+        pwd.value = '';
+        await handleAuthSession(session, generation, 'signedIn');
+      }),
+    );
   };
 
   element('register', HTMLFormElement).onsubmit = (event) => {
     event.preventDefault();
     const generation = ctx.nextGeneration();
-    run(async () => {
-      const name = element('register-name', HTMLInputElement).value;
-      const pwd = element('register-password', HTMLInputElement);
-      const session = await client.register(name, pwd.value);
-      pwd.value = '';
-      await handleAuthSession(session, generation, 'accountRegistered');
-    });
+    run(
+      withFieldErrors(registerFields, async () => {
+        const name = element('register-name', HTMLInputElement).value;
+        const pwd = element('register-password', HTMLInputElement);
+        const session = await client.register(name, pwd.value);
+        pwd.value = '';
+        await handleAuthSession(session, generation, 'accountRegistered');
+      }),
+    );
   };
 }

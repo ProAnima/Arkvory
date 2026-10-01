@@ -161,7 +161,7 @@ export function installAnnotationEditor() {
         if (!validMetadata(value)) throw new Error('Invalid metadata');
         return value;
       } catch {
-        throw new UiError('metadataInvalid');
+        throw new UiError('metadataInvalid', [{ field: '/value/metadata', problem: 'format' }]);
       }
     },
   };

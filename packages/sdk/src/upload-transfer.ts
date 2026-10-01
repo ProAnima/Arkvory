@@ -1,5 +1,5 @@
 import { readUpload } from '@proanima/arkvory-contracts';
-import { TransferAttempts, delay } from './transfer.js';
+import { ArkvoryClientError, TransferAttempts, delay } from './transfer.js';
 import type { TransferOptions } from './transfer.js';
 import type { HttpPort } from './http-transport.js';
 import { repositoryPath } from './http-transport.js';
@@ -26,9 +26,10 @@ export class UploadTransfer {
     const attempts = new TransferAttempts(this.policy, options);
     const upload = await attempts.run((signal) => this.uploads.status(repository, id, signal));
     if (Number(upload.descriptor.size) !== file.size)
-      throw new Error('File size differs from upload');
+      throw new ArkvoryClientError('size_mismatch', 'File size differs from upload');
     if (upload.status === 'available') return upload;
-    if (upload.status !== 'pending') throw new Error('Upload is cancelled');
+    if (upload.status !== 'pending')
+      throw new ArkvoryClientError('upload_cancelled', 'Upload is cancelled');
     if (file.size === 0)
       return attempts.run(async (signal) => {
         // PUT /content is not replayed after publication; reconcile a lost response first.
@@ -57,10 +58,10 @@ export class UploadTransfer {
       partBytes > MAX_PART_BYTES ||
       partBytes % MIN_PART_BYTES !== 0
     )
-      throw new Error('Unsupported part size');
+      throw new ArkvoryClientError('invalid_response', 'Unsupported part size');
     const indices = new Set<number>();
     if (existing.items.length > Math.ceil(file.size / existing.partBytes))
-      throw new Error('Invalid server parts');
+      throw new ArkvoryClientError('invalid_response', 'Invalid server parts');
     for (const part of existing.items) {
       if (
         indices.has(part.index) ||
@@ -68,7 +69,7 @@ export class UploadTransfer {
         part.size !== Math.min(existing.partBytes, file.size - part.index * existing.partBytes) ||
         !/^[a-f0-9]{64}$/.test(part.sha256)
       )
-        throw new Error('Invalid server parts');
+        throw new ArkvoryClientError('invalid_response', 'Invalid server parts');
       indices.add(part.index);
     }
     for (let offset = 0, index = 0; offset < file.size; offset += existing.partBytes, index++) {
@@ -80,7 +81,7 @@ export class UploadTransfer {
       ).join('');
       const prior = existing.items.find((value) => value.index === index);
       if (prior && prior.sha256 !== sha256)
-        throw new Error('Selected file does not match uploaded parts');
+        throw new ArkvoryClientError('file_changed', 'Selected file does not match uploaded parts');
       if (!prior)
         await attempts.run(async (signal) => {
           const response = await this.http.request(
@@ -118,7 +119,11 @@ export async function completeWithWorker(
     if (current.status === 'completed')
       return attempts.run((s) => uploads.status(repository, id, s));
     if (current.status === 'failed')
-      throw new Error(`Upload completion failed: ${current.errorCode ?? 'unknown'}`);
+      throw new ArkvoryClientError(
+        'completion_failed',
+        `Upload completion failed: ${current.errorCode ?? 'unknown'}`,
+        current.errorCode ?? undefined,
+      );
     await delay(wait, signal);
   }
 }

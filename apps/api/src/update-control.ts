@@ -44,12 +44,16 @@ export class UpdateControl {
     if (!this.directory || !snapshot)
       throw new ArkvoryError('unavailable', 'Host updater is not connected');
     if (pending?.id === request.id && JSON.stringify(pending) !== JSON.stringify(request))
-      throw new ArkvoryError('conflict', 'Request identity was reused with different fields');
+      throw new ArkvoryError('conflict', 'Request identity was reused with different fields', {
+        reason: 'idempotency_mismatch',
+      });
     if (pending?.id === request.id || snapshot.lastRequestId === request.id)
       return { id: request.id };
     if (pending) throw new ArkvoryError('busy', 'An update request is pending');
     if (snapshot.revision !== request.expectedRevision)
-      throw new ArkvoryError('conflict', 'Update settings changed');
+      throw new ArkvoryError('conflict', 'Update settings changed', {
+        reason: 'revision_mismatch',
+      });
     if (snapshot.phase === 'updating' || snapshot.phase === 'checking')
       throw new ArkvoryError('busy', 'Updater is working');
     if (Date.now() - Date.parse(snapshot.heartbeatAt) > 5 * 60000)

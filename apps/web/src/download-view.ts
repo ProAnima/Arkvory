@@ -2,7 +2,8 @@ import type { DownloadQueue, DownloadState, DownloadSnapshot } from '@proanima/a
 import type { BrowserDownloadStorage } from './download-storage.js';
 import { element } from './dom.js';
 import { message } from './i18n.js';
-import { errorKey } from './feedback.js';
+import { showFailure } from './feedback.js';
+import { clearReference } from './error-reference.js';
 import type { MessageKey } from './messages.js';
 export interface DownloadFile {
   name: string;
@@ -87,9 +88,12 @@ export class DownloadView {
       if (!view) {
         const row = document.createElement('tr');
         const name = document.createElement('td'),
-          state = document.createElement('td'),
+          stateCell = document.createElement('td'),
+          state = document.createElement('span'),
           bytes = document.createElement('td'),
           actions = document.createElement('td');
+        // The state text keeps a sibling for the request reference of a failure.
+        stateCell.append(state);
         name.textContent = this.files.get(item.id)?.name ?? item.id;
         const pause = this.button('pause', () => {
           this.queue.pause(item.id);
@@ -104,21 +108,12 @@ export class DownloadView {
         controls.className = 'download-actions';
         controls.append(pause, resume, cancel);
         actions.append(controls);
-        row.append(name, state, bytes, actions);
+        row.append(name, stateCell, bytes, actions);
         this.rows.append(row);
         view = { row, state, bytes, pause, resume, cancel };
         this.rendered.set(item.id, view);
       }
-      if (item.state === 'retrying' && item.retry)
-        message(view.state, 'downloadRetryDelay', {
-          seconds: Math.ceil(item.retry.delayMs / 1000),
-        });
-      else if (item.state === 'completed' && item.error)
-        message(view.state, 'downloadCleanupFailed');
-      else if (item.state === 'failed') message(view.state, errorKey(item.error));
-      else if (item.state === 'paused' && !this.files.get(item.id)?.storage.destination)
-        message(view.state, 'downloadRestored');
-      else message(view.state, states[item.state]);
+      this.renderState(view.state, item);
       message(view.bytes, 'downloadBytes', { bytes: item.bytes }, ['bytes']);
       view.pause.disabled = !['queued', 'running', 'retrying'].includes(item.state);
       view.resume.disabled = !item.resumable;
@@ -126,6 +121,20 @@ export class DownloadView {
         item.state,
       );
     }
+  }
+  private renderState(node: HTMLElement, item: DownloadSnapshot) {
+    if (item.state === 'failed') {
+      showFailure(node, item.error);
+      return;
+    }
+    delete node.dataset['tone'];
+    clearReference(node);
+    if (item.state === 'retrying' && item.retry)
+      message(node, 'downloadRetryDelay', { seconds: Math.ceil(item.retry.delayMs / 1000) });
+    else if (item.state === 'completed' && item.error) message(node, 'downloadCleanupFailed');
+    else if (item.state === 'paused' && !this.files.get(item.id)?.storage.destination)
+      message(node, 'downloadRestored');
+    else message(node, states[item.state]);
   }
   private renderToolbar(snapshots: readonly DownloadSnapshot[], focused: Element | null) {
     element('download-empty', HTMLElement).hidden = snapshots.length > 0;

@@ -89,7 +89,8 @@ export async function writeAssetPointer(
           'UPDATE arkvory_assets SET revision=revision+1,artifact_id=$3 WHERE repository=$1 AND path=$2 AND revision=$4',
           [repository, path, id, expected],
         );
-  if (result.rowCount !== 1) throw new ArkvoryError('conflict', 'Asset revision changed');
+  if (result.rowCount !== 1)
+    throw new ArkvoryError('conflict', 'Asset revision changed', { reason: 'revision_mismatch' });
   await client.query(
     'INSERT INTO arkvory_asset_revisions(repository,path,revision,artifact_id,actor,source_revision) VALUES($1,$2,$3,$4,$5,$6)',
     [repository, path, expected + 1, id, actor, sourceRevision ?? null],

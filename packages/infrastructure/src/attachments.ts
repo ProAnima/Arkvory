@@ -65,7 +65,9 @@ export class PostgresAttachments implements AttachmentStore {
         [id],
       );
       if ((current.rows[0]?.revision ?? 0) !== expected)
-        throw new ArkvoryError('conflict', 'Attachments changed; reload before saving');
+        throw new ArkvoryError('conflict', 'Attachments changed; reload before saving', {
+          reason: 'revision_mismatch',
+        });
       const ids = [...new Set(items.map((item) => item.artifactId))];
       const targets = await client.query(
         "SELECT id FROM arkvory_uploads WHERE id=ANY($1::uuid[]) AND repository=$2 AND status='available'",

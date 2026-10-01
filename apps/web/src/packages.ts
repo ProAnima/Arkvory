@@ -1,3 +1,4 @@
+import { feedback } from './feedback.js';
 import type { ArkvoryClient } from '@proanima/arkvory-sdk';
 import type { PackageResponse } from '@proanima/arkvory-contracts';
 import { element } from './dom.js';
@@ -171,7 +172,7 @@ export function installPackageView(
     });
     // Stage chips are decorative; a missing artifact.list permission leaves them empty.
     void decorateStages(client, repo, rows).catch(() => undefined);
-    message(status, result.items.length ? 'packageCount' : 'noPackages', {
+    feedback(status, result.items.length ? 'packageCount' : 'noPackages', {
       count: result.items.length,
     });
     state.next = result.next;
@@ -188,7 +189,7 @@ export function installPackageView(
       pager.reset();
       rows.replaceChildren();
       for (const page of pages) clearMessage(page);
-      message(status, 'applyFilters');
+      feedback(status, 'applyFilters');
     });
   element('package-clear', HTMLButtonElement).onclick = () => {
     resetFilterFields();

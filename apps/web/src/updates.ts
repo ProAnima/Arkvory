@@ -6,7 +6,7 @@ import { clearMessage, message } from './i18n.js';
 import { showView } from './shell.js';
 import { UpdateView } from './update-view.js';
 import type { MessageKey } from './messages.js';
-import { errorKey } from './feedback.js';
+import { errorKey, showFailure } from './feedback.js';
 
 class UpdateConsole {
   private readonly view = new UpdateView();
@@ -89,7 +89,7 @@ class UpdateConsole {
   }
   private async send(request: UpdateRequest) {
     const generation = this.generation;
-    let failure: MessageKey | undefined;
+    let failure: { key: MessageKey; error: unknown } | undefined;
     this.busy = true;
     this.view.disable();
     try {
@@ -98,18 +98,20 @@ class UpdateConsole {
       this.dirty = false;
       message(this.view.output, 'updatePending');
     } catch (error) {
-      failure =
+      const key =
         error instanceof ArkvoryHttpError
           ? error.status === 409
             ? 'updateConflict'
             : errorKey(error)
           : 'updateConnection';
+      failure = { key, error };
     } finally {
       if (generation === this.generation) {
         this.busy = false;
         await this.refresh();
         // Reconciliation must not erase why the requested action was refused.
-        if (failure && generation === this.generation) message(this.view.output, failure);
+        if (failure && generation === this.generation)
+          showFailure(this.view.output, failure.error, failure.key);
       }
     }
   }

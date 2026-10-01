@@ -7,7 +7,7 @@ import { text } from '@proanima/arkvory-contracts';
 import { element } from './dom.js';
 import { installAssetHistory } from './asset-history.js';
 import { message } from './i18n.js';
-import { feedback, UiError, errorKey } from './feedback.js';
+import { feedback, UiError, showFailure } from './feedback.js';
 import { initializeShell, setArtifactRoute, showView } from './shell.js';
 import { installConnectionState } from './connection-state.js';
 import { installDeepLinks } from './deep-links.js';
@@ -27,6 +27,7 @@ import { installUserTokens } from './user-tokens.js';
 import { installAuthConsole } from './auth-console.js';
 import { exceedsServerLimit } from './server-limits.js';
 import { artifactRow } from './artifact-row.js';
+import { withFieldErrors } from './field-errors.js';
 const token = element('token', HTMLInputElement),
   repository = element('repository', HTMLInputElement),
   output = element('status', HTMLOutputElement),
@@ -91,8 +92,8 @@ let repositoryEdited = false;
 let authenticationGeneration = 0;
 const repositoryOptions = element('repository-options', HTMLElement);
 // Bound after sign-in handling is installed; only password sessions can expire in place.
-let expireSession = (): boolean => false;
-const run = consoleRunner(output, () => expireSession());
+let expireSession: (error: unknown) => boolean = () => false;
+const run = consoleRunner(output, (error) => expireSession(error));
 const summary = installArtifactSummary(client, output);
 const promotion = installPromotionPanel(client, run, () => {
   clearSelection();
@@ -298,9 +299,9 @@ const auth = installAuthConsole({
   },
   getStopSignal: () => stop,
 });
-expireSession = () => {
+expireSession = (error) => {
   if (state.credential() !== 'session') return false;
-  auth.expire();
+  auth.expire(error);
   return true;
 };
 element('search', HTMLFormElement).onsubmit = (event) => {
@@ -359,7 +360,7 @@ element('upload', HTMLFormElement).onsubmit = (event) => {
         feedback(transferStatus, 'paused');
         return;
       }
-      feedback(transferStatus, errorKey(error), {}, 'error');
+      showFailure(transferStatus, error);
       throw error;
     } finally {
       stop = undefined;
@@ -375,34 +376,41 @@ element('new-upload', HTMLButtonElement).onclick = () => {
     feedback(transferStatus, 'transferIdle');
   }
 };
+const annotationFields = {
+  '/value/labels': 'labels',
+  '/value/metadata': 'metadata',
+  '/value/collections': 'collections',
+};
 element('edit', HTMLFormElement).onsubmit = (event) => {
   event.preventDefault();
-  run(async () => {
-    if (!selected) throw new UiError('selectError');
-    const artifact = selected;
-    const split = (id: string) =>
-      element(id, HTMLInputElement)
-        .value.split(',')
-        .map((s) => s.trim())
-        .filter(Boolean);
-    const metadata = annotationEditor.read();
-    const save = element('annotation-save', HTMLButtonElement);
-    if (save.disabled) return;
-    save.disabled = true;
-    try {
-      const next = await client.annotate(artifact.repository, artifact.id, artifact.revision, {
-        labels: split('labels'),
-        collections: split('collections'),
-        metadata,
-      });
-      if (selected !== artifact) return;
-      artifact.revision = next.revision;
-      // Keep any new text entered while the request was in flight.
-      feedback(output, 'saved', { revision: next.revision }, 'success');
-    } finally {
-      if (selected === artifact) save.disabled = false;
-    }
-  });
+  run(
+    withFieldErrors(annotationFields, async () => {
+      if (!selected) throw new UiError('selectError');
+      const artifact = selected;
+      const split = (id: string) =>
+        element(id, HTMLInputElement)
+          .value.split(',')
+          .map((s) => s.trim())
+          .filter(Boolean);
+      const metadata = annotationEditor.read();
+      const save = element('annotation-save', HTMLButtonElement);
+      if (save.disabled) return;
+      save.disabled = true;
+      try {
+        const next = await client.annotate(artifact.repository, artifact.id, artifact.revision, {
+          labels: split('labels'),
+          collections: split('collections'),
+          metadata,
+        });
+        if (selected !== artifact) return;
+        artifact.revision = next.revision;
+        // Keep any new text entered while the request was in flight.
+        feedback(output, 'saved', { revision: next.revision }, 'success');
+      } finally {
+        if (selected === artifact) save.disabled = false;
+      }
+    }),
+  );
 };
 element('register-package', HTMLButtonElement).onclick = () => {
   run(async () => {

@@ -1,6 +1,7 @@
-import { createHash } from 'node:crypto';
+import { createHash, timingSafeEqual } from 'node:crypto';
+import type { Pool } from 'pg';
 import { ArkvoryError, parseBindings } from '@proanima/arkvory-domain';
-import type { ApiKey, ServiceAccount } from '@proanima/arkvory-application';
+import type { ApiKey, CredentialRejection, ServiceAccount } from '@proanima/arkvory-application';
 
 export interface AccountRow {
   id: string;
@@ -61,4 +62,27 @@ export function page<T>(rows: readonly T[], id: (row: T) => string) {
   const items = rows.slice(0, 50);
   const last = items.at(-1);
   return { items, next: rows.length > 50 && last ? id(last) : null };
+}
+
+/**
+ * token_expired only when the exact secret of an active key of an enabled account matches,
+ * so a guessed key id learns nothing; everything else is credential_invalid.
+ */
+export async function keyRejection(pool: Pool, token: string): Promise<CredentialRejection> {
+  const id = tokenId(token);
+  if (!id) return 'credential_invalid';
+  const row = (
+    await pool.query<{ secret_hash: string; expired: boolean }>(
+      `SELECT k.secret_hash,k.expires_at<=clock_timestamp() AS expired FROM arkvory_api_keys k
+       JOIN arkvory_service_accounts a ON a.id=k.account_id
+       WHERE k.id=$1 AND a.enabled AND k.state='active'`,
+      [id],
+    )
+  ).rows[0];
+  if (!row) return 'credential_invalid';
+  const matches = timingSafeEqual(
+    Buffer.from(row.secret_hash, 'hex'),
+    Buffer.from(digest(token), 'hex'),
+  );
+  return matches && row.expired ? 'token_expired' : 'credential_invalid';
 }

@@ -125,6 +125,7 @@ export class PostgresDownloadLease {
         throw new ArkvoryError(
           'conflict',
           'Shared download policy is absent or differs; start the configured writer first',
+          { reason: 'state_conflict' },
         );
       const acquired = await client.query<{ generation: string }>(
         `INSERT INTO arkvory_gateway_leases(slot,instance,generation,expires_at)

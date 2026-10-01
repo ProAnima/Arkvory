@@ -3,7 +3,7 @@ import type { ArkvoryClient } from '@proanima/arkvory-sdk';
 import type { AssetRevisionResponse } from '@proanima/arkvory-contracts';
 import { element } from './dom.js';
 import { message, dateMessage } from './i18n.js';
-import { feedback } from './feedback.js';
+import { feedback, showFailure } from './feedback.js';
 
 interface HistoryView {
   repository: string;
@@ -105,8 +105,9 @@ export function installAssetHistory(
             feedback(status, 'restored', { revision: result.revision }, 'success');
         } catch (error) {
           if (controller.signal.aborted) return;
-          if (error instanceof ArkvoryHttpError && error.status === 409)
-            feedback(status, 'historyConflict', {}, 'error');
+          // The history view has its own wording for a stale path; the reference still shows.
+          if (error instanceof ArkvoryHttpError && error.code === 'conflict')
+            showFailure(status, error, 'historyConflict');
           else throw error;
         } finally {
           if (state.pending === controller) state.pending = undefined;

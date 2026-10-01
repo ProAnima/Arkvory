@@ -41,6 +41,7 @@ ${ru ? 'КОМАНДЫ' : 'COMMANDS'}
 ${ru ? 'ОБЩИЕ ПАРАМЕТРЫ' : 'GLOBAL OPTIONS'}
   --profile NAME  --repository NAME  --json  --lang en|ru  --help  --version
   --timeout MS (60000)  --attempt-timeout MS (120000)  --retries N (20)
+  --verbose  ${ru ? 'метод, путь, статус, время и ID запроса в stderr (без ключей)' : 'method, path, status, duration and request ID on stderr (no credentials)'}
   -- ${ru ? 'завершает разбор параметров (для имён файлов с дефисом)' : 'ends option parsing (for filenames starting with a dash)'}
 
 ${ru ? 'АВТОРИЗАЦИЯ' : 'AUTHENTICATION'}
@@ -55,8 +56,10 @@ ${ru ? 'ПРОДОЛЖЕНИЕ ПЕРЕДАЧИ' : 'RESUMING TRANSFERS'}
   ${ru ? 'После аварийного завершения .lock снимается вручную только при отсутствии работающего процесса.' : 'After a hard crash, remove .lock manually only after confirming the owning process has stopped.'}
 
 ${ru ? 'КОДЫ ВЫХОДА' : 'EXIT CODES'}
-  0 OK; 2 ${ru ? 'параметры' : 'usage'}; 3 ${ru ? 'доступ' : 'access'}; 4 HTTP/network;
-  5 SHA-256; 6 ${ru ? 'конфликт' : 'conflict'}; 7 ${ru ? 'локальная ошибка/протокол' : 'local/protocol error'}; 130 Ctrl+C
+  0 OK; 2 ${ru ? 'параметры' : 'usage'}; 3 ${ru ? 'доступ' : 'access'}; 4 HTTP/network/${ru ? 'перегрузка' : 'busy'};
+  5 SHA-256/integrity_mismatch; 6 ${ru ? 'конфликт' : 'conflict'}; 7 ${ru ? 'локальная ошибка/протокол' : 'local/protocol error'};
+  8 ${ru ? 'лимит ёмкости (capacity_exceeded)' : 'capacity limit (capacity_exceeded)'}; 130 Ctrl+C
+  ${ru ? 'Ошибки сервера: code/reason, сообщение и ID запроса; --json добавляет details и retryAfterSeconds.' : 'Server errors show code/reason, message and request ID; --json adds details and retryAfterSeconds.'}
   ${ru ? 'JSON: результат — stdout, ошибки — stderr. Страницы возвращают next; используйте --after.' : 'JSON: result on stdout, errors on stderr. Pages return next; pass it using --after.'}
 
 ${ru ? 'Полная справка и форматы JSON: docs/CLI.md в репозитории ProAnima/Arkvory.' : 'Full reference and JSON formats: docs/CLI.md in ProAnima/Arkvory.'}

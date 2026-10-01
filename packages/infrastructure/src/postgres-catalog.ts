@@ -92,7 +92,9 @@ export class PostgresCatalog implements Catalog {
     sharedDownloads = false,
   ): Promise<void> {
     if (this.claiming || this.claim)
-      throw new ArkvoryError('conflict', 'Storage claim cannot be restarted');
+      throw new ArkvoryError('conflict', 'Storage claim cannot be restarted', {
+        reason: 'state_conflict',
+      });
     this.claimAttempted = true;
     this.claiming = true;
     try {
@@ -123,7 +125,9 @@ export class PostgresCatalog implements Catalog {
       if (existing.rows[0]) {
         const upload = decode(existing.rows[0]);
         if (!sameDescriptor(upload.descriptor, input.descriptor))
-          throw new ArkvoryError('conflict', 'Idempotency key has a different descriptor');
+          throw new ArkvoryError('conflict', 'Idempotency key has a different descriptor', {
+            reason: 'idempotency_mismatch',
+          });
         this.checkOwnership();
         await client.query('COMMIT');
         return upload;
@@ -137,7 +141,9 @@ export class PostgresCatalog implements Catalog {
         !total ||
         BigInt(total.bytes) + BigInt(input.descriptor.size) > BigInt(this.capacityBytes)
       )
-        throw new ArkvoryError('capacity_exceeded', 'Catalog capacity exceeded');
+        throw new ArkvoryError('capacity_exceeded', 'Catalog capacity exceeded', {
+          reason: 'catalog_limit',
+        });
       const quota = (
         await client.query<{ quota: string | null; used: string }>(
           `
@@ -148,7 +154,9 @@ export class PostgresCatalog implements Catalog {
         )
       ).rows[0];
       if (quota?.quota && BigInt(quota.used) + BigInt(input.descriptor.size) > BigInt(quota.quota))
-        throw new ArkvoryError('capacity_exceeded', 'Repository storage quota exceeded');
+        throw new ArkvoryError('capacity_exceeded', 'Repository storage quota exceeded', {
+          reason: 'storage_quota',
+        });
       const inserted = await client.query<Record<string, unknown>>(
         'INSERT INTO arkvory_uploads(id,repository,owner,idempotency_key,descriptor,size,created_at,storage_backend,part_bytes) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *',
         [
@@ -270,7 +278,9 @@ export class PostgresCatalog implements Catalog {
             [repository, id, target],
           );
           if (!updated.rows[0])
-            throw new ArkvoryError('conflict', 'Upload state prevents this operation');
+            throw new ArkvoryError('conflict', 'Upload state prevents this operation', {
+              reason: 'upload_state',
+            });
           return decode(updated.rows[0]);
         });
       };
@@ -283,7 +293,9 @@ export class PostgresCatalog implements Catalog {
               [id, part.index, part.size, part.sha256],
             );
             if (result.rowCount !== 1)
-              throw new ArkvoryError('conflict', 'Part cannot be recorded');
+              throw new ArkvoryError('conflict', 'Part cannot be recorded', {
+                reason: 'upload_state',
+              });
           }),
         throwIfAborted: check,
         publish: (repository) => transition(repository, 'available'),

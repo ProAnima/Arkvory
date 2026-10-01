@@ -1,4 +1,5 @@
 import { ArkvoryError } from './artifact.js';
+import { fieldError, nestedFields, withField } from './errors.js';
 import { retentionObject, annotationRevision } from './retention.js';
 
 export interface StoragePolicy {
@@ -60,7 +61,7 @@ export function parseStoragePolicy(value: unknown): StoragePolicy {
       !/^[1-9][0-9]{0,15}$/.test(quotaBytes) ||
       BigInt(quotaBytes) > 9007199254740991n)
   )
-    throw new ArkvoryError('invalid_input', 'Invalid decimal quotaBytes');
+    throw fieldError('/quotaBytes', 'format', 'Invalid decimal quotaBytes');
   const rawChannels: unknown = r['channels'],
     rawLabels: unknown = r['protectedLabels'];
   if (
@@ -80,10 +81,10 @@ export function parseStoragePolicy(value: unknown): StoragePolicy {
     new Set(protectedLabels).size !== protectedLabels.length
   )
     throw new ArkvoryError('invalid_input', 'Duplicate policy labels');
-  const warningPercent = number(r['warningPercent'], 1, 98),
-    criticalPercent = number(r['criticalPercent'], 2, 99);
+  const warningPercent = withField('/warningPercent', () => number(r['warningPercent'], 1, 98)),
+    criticalPercent = withField('/criticalPercent', () => number(r['criticalPercent'], 2, 99));
   if (warningPercent >= criticalPercent)
-    throw new ArkvoryError('invalid_input', 'Warning must precede critical threshold');
+    throw fieldError('/warningPercent', 'range', 'Warning must precede critical threshold');
   return {
     enabled,
     grouping,
@@ -92,16 +93,16 @@ export function parseStoragePolicy(value: unknown): StoragePolicy {
     protectedLabels,
     warningPercent,
     criticalPercent,
-    keepLast: number(r['keepLast'], 1, 100000),
-    minAgeHours: number(r['minAgeHours'], 0, 87600),
-    intervalMinutes: number(r['intervalMinutes'], 1, 10080),
+    keepLast: withField('/keepLast', () => number(r['keepLast'], 1, 100000)),
+    minAgeHours: withField('/minAgeHours', () => number(r['minAgeHours'], 0, 87600)),
+    intervalMinutes: withField('/intervalMinutes', () => number(r['intervalMinutes'], 1, 10080)),
   };
 }
 export function parseStoragePolicyUpdate(value: unknown) {
   const r = retentionObject(value, ['expectedRevision', 'policy']);
   return {
     expectedRevision: annotationRevision(r['expectedRevision']),
-    policy: parseStoragePolicy(r['policy']),
+    policy: nestedFields('/policy', () => parseStoragePolicy(r['policy'])),
   };
 }
 export type CapacityState = 'unlimited' | 'normal' | 'warning' | 'critical' | 'exceeded';

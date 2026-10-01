@@ -1,5 +1,5 @@
 import { clearMessage } from './i18n.js';
-import { errorKey, feedback } from './feedback.js';
+import { showFailure } from './feedback.js';
 
 /** One operation per panel; detached identities cannot update its DOM or unlock a newer task. */
 export class ManagementTask {
@@ -27,7 +27,7 @@ export class ManagementTask {
     clearMessage(this.status);
     void action(signal)
       .catch((error: unknown) => {
-        if (!owner.aborted) feedback(this.status, errorKey(error), {}, 'error');
+        if (!owner.aborted) showFailure(this.status, error);
       })
       .finally(() => {
         if (owner.aborted) return;

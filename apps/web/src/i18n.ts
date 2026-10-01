@@ -101,6 +101,10 @@ export function clearMessage(node: HTMLElement) {
     )
       Reflect.deleteProperty(node.dataset, name);
   text(node, '');
+  // The request reference of a cleared error must not resurface with a later message.
+  const reference = node.nextElementSibling;
+  if (reference instanceof HTMLElement && reference.classList.contains('error-ref'))
+    reference.replaceChildren();
 }
 export function setLanguage(value: Language) {
   language = value;

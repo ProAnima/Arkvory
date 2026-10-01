@@ -20,7 +20,9 @@ export function registerAccountRoutes(
   passwordWork: PasswordWork,
 ): void {
   app.post<{ Body: unknown }>('/api/v1/users', async (request, reply) => {
-    const body = fields(request.body, ['name', 'password', 'administrator']);
+    const body = fields(request.body, ['name', 'password', 'administrator'], {
+      required: ['name', 'password'],
+    });
     const caller = principal(request);
     const account = await passwordWork(request, reply, caller.id, () =>
       service.createUser(
@@ -59,7 +61,7 @@ export function registerAccountRoutes(
     },
   );
   app.get<{ Querystring: unknown }>('/api/v1/security/audit', async (request) => {
-    const query = fields(request.query ?? {}, ['after', 'limit']);
+    const query = fields(request.query ?? {}, ['after', 'limit'], { in: 'query' });
     return service.securityAudit(principal(request), query['after'], query['limit']);
   });
   registerGroupRoutes(app, service, principal);
@@ -71,7 +73,7 @@ function registerGroupRoutes(
   principal: (request: FastifyRequest) => Principal,
 ): void {
   app.post<{ Body: unknown }>('/api/v1/access-groups', async (request, reply) => {
-    const body = fields(request.body, ['name']);
+    const body = fields(request.body, ['name'], { required: ['name'] });
     return reply
       .code(201)
       .send(await service.createGroup(principal(request), body['name'], request.ip));
@@ -98,7 +100,9 @@ function registerGroupRoutes(
     url: '/api/v1/access-groups/:id/grants/:repository',
     handler: async (request, reply) => {
       const access =
-        request.method === 'DELETE' ? null : fields(request.body, ['access'])['access'];
+        request.method === 'DELETE'
+          ? null
+          : fields(request.body, ['access'], { required: ['access'] })['access'];
       await service.grant(
         principal(request),
         requireId(request.params.id),

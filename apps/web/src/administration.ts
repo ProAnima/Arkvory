@@ -1,11 +1,14 @@
+import { feedback } from './feedback.js';
 import type { ArkvoryClient } from '@proanima/arkvory-sdk';
 import type { AccountResponse } from '@proanima/arkvory-contracts';
 import { element } from './dom.js';
-import { clearMessage, message } from './i18n.js';
+import { clearMessage } from './i18n.js';
 import type { MessageKey } from './messages.js';
 import { onViewOpen } from './shell.js';
 import { confirmAction, dismissConfirmation } from './confirm-dialog.js';
 import { options, renderGroups, renderUsers, selectedName, tableState } from './admin-tables.js';
+import { withFieldErrors } from './field-errors.js';
+import type { FieldMap } from './field-errors.js';
 
 const value = (id: string) => element(id, HTMLInputElement).value;
 const choice = (id: string) => element(id, HTMLSelectElement).value;
@@ -15,6 +18,32 @@ function onSubmit(id: string, action: () => void) {
   element(id, HTMLFormElement).onsubmit = (event) => {
     event.preventDefault();
     action();
+  };
+}
+
+type Confirmation = [MessageKey, Record<string, string>, MessageKey];
+type Change = (
+  confirmation: Confirmation | undefined,
+  action: () => Promise<void>,
+  done: MessageKey,
+  fields?: FieldMap,
+) => void;
+
+/** Destructive changes ask first; a declined confirmation leaves the forms untouched. */
+function changeRunner(
+  run: (action: () => Promise<void>) => void,
+  refresh: () => Promise<void>,
+  status: HTMLOutputElement,
+): Change {
+  return (confirmation, action, done, fields = {}) => {
+    run(
+      withFieldErrors(fields, async () => {
+        if (confirmation && !(await confirmAction(...confirmation))) return;
+        await action();
+        await refresh();
+        feedback(status, done, {}, 'success');
+      }),
+    );
   };
 }
 
@@ -49,19 +78,7 @@ export function installAdministration(
     tableState(userRows);
     tableState(rows);
   };
-  /** Destructive changes ask first; a declined confirmation leaves the forms untouched. */
-  const change = (
-    confirmation: [MessageKey, Record<string, string>, MessageKey] | undefined,
-    action: () => Promise<void>,
-    done: MessageKey,
-  ) => {
-    run(async () => {
-      if (confirmation && !(await confirmAction(...confirmation))) return;
-      await action();
-      await refresh();
-      message(status, done);
-    });
-  };
+  const change = changeRunner(run, refresh, status);
   const toggleUser = (account: AccountResponse) => {
     change(
       account.enabled ? ['confirmDisableUser', { name: account.name }, 'disableUser'] : undefined,
@@ -84,6 +101,7 @@ export function installAdministration(
         element('new-user-password', HTMLInputElement).value = '';
       },
       'userCreated',
+      { '/name': 'new-user-name', '/password': 'new-user-password' },
     );
   });
   onSubmit('create-group', () => {
@@ -94,6 +112,7 @@ export function installAdministration(
         element('new-group-name', HTMLInputElement).value = '';
       },
       'groupCreated',
+      { '/name': 'new-group-name' },
     );
   });
   onSubmit('reset-password', () => {
@@ -104,6 +123,7 @@ export function installAdministration(
         element('reset-password-value', HTMLInputElement).value = '';
       },
       'passwordChanged',
+      { '/password': 'reset-password-value' },
     );
   });
   installGroupForms(client, change);
@@ -116,14 +136,7 @@ export function installAdministration(
   };
 }
 
-function installGroupForms(
-  client: ArkvoryClient,
-  change: (
-    confirmation: [MessageKey, Record<string, string>, MessageKey] | undefined,
-    action: () => Promise<void>,
-    done: MessageKey,
-  ) => void,
-) {
+function installGroupForms(client: ArkvoryClient, change: Change) {
   const membership = (present: boolean) => {
     change(
       present

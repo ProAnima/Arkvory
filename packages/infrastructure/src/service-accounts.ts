@@ -2,12 +2,12 @@ import { randomUUID, timingSafeEqual } from 'node:crypto';
 import type { Pool, PoolClient } from 'pg';
 import { ArkvoryError } from '@proanima/arkvory-domain';
 import type { ServiceBinding, Principal, AdministrationAction } from '@proanima/arkvory-domain';
-import type { ServiceStore } from '@proanima/arkvory-application';
+import type { CredentialRejection, ServiceStore } from '@proanima/arkvory-application';
 import { managedPrincipal } from './service-authorization.js';
 import type { CredentialRow } from './service-authorization.js';
 import { administrationContext, authorizeAdministration } from './delegation-authorization.js';
 import { listDelegations, writeDelegation } from './service-delegations.js';
-import { account, digest, key, page, tokenId } from './service-rows.js';
+import { account, digest, key, keyRejection, page, tokenId } from './service-rows.js';
 import type { AccountRow, KeyRow } from './service-rows.js';
 import { recordServiceEvent, serviceTransaction } from './service-transaction.js';
 import { issueServiceKey } from './service-key-issue.js';
@@ -49,14 +49,18 @@ export class PostgresServices implements ServiceStore {
   async create(actor: Principal, name: string, bindings: readonly ServiceBinding[]) {
     return this.change(async (c) => {
       if (!(await administrationContext(c, actor)).bootstrap)
-        throw new ArkvoryError('forbidden', 'Only bootstrap creates accounts');
+        throw new ArkvoryError('forbidden', 'Only bootstrap creates accounts', {
+          reason: 'permission_missing',
+        });
       if (
         Number(
           (await c.query<{ count: string }>('SELECT count(*) FROM arkvory_service_accounts'))
             .rows[0]?.count,
         ) >= 1000
       )
-        throw new ArkvoryError('capacity_exceeded', 'Service account limit reached');
+        throw new ArkvoryError('capacity_exceeded', 'Service account limit reached', {
+          reason: 'account_limit',
+        });
       const a = account(
         (
           await c.query<AccountRow>(
@@ -82,7 +86,10 @@ export class PostgresServices implements ServiceStore {
         ).rows[0],
       );
       await authorizeAdministration(c, ctx, id, 'service-account.manage', row.bindings);
-      if (row.revision !== expected) throw new ArkvoryError('conflict', 'Service revision changed');
+      if (row.revision !== expected)
+        throw new ArkvoryError('conflict', 'Service revision changed', {
+          reason: 'revision_mismatch',
+        });
       const result = account(
         (
           await c.query<AccountRow>(
@@ -113,7 +120,10 @@ export class PostgresServices implements ServiceStore {
         ).rows[0],
       );
       await authorizeAdministration(c, ctx, id, 'policy.manage', row.bindings);
-      if (row.revision !== expected) throw new ArkvoryError('conflict', 'Service revision changed');
+      if (row.revision !== expected)
+        throw new ArkvoryError('conflict', 'Service revision changed', {
+          reason: 'revision_mismatch',
+        });
       const result = account(
         (
           await c.query<AccountRow>(
@@ -185,7 +195,10 @@ export class PostgresServices implements ServiceStore {
   }
   async activate(token: string): Promise<void> {
     const id = tokenId(token);
-    if (!id) throw new ArkvoryError('unauthorized', 'Invalid credential');
+    if (!id)
+      throw new ArkvoryError('unauthorized', 'Invalid credential', {
+        reason: 'credential_invalid',
+      });
     await this.change((c) => activateServiceKey(c, id, token));
   }
   private async credential(id: string, pending = false) {
@@ -209,6 +222,10 @@ export class PostgresServices implements ServiceStore {
     )
       return null;
     return managedPrincipal(row);
+  }
+  /** After resolve refused a key; see keyRejection. */
+  rejection(token: string): Promise<CredentialRejection> {
+    return keyRejection(this.pool, token);
   }
   async principalForKey(id: string) {
     const row = await this.credential(id);

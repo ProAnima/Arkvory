@@ -2,7 +2,7 @@ import type { ArkvoryClient } from '@proanima/arkvory-sdk';
 import { readCleanupPolicy } from '@proanima/arkvory-contracts';
 import { element } from './dom.js';
 import { message, dateMessage } from './i18n.js';
-import { feedback, errorKey } from './feedback.js';
+import { feedback, showFailure } from './feedback.js';
 
 export function installCleanup(client: ArkvoryClient) {
   return new CleanupPanel(client);
@@ -152,7 +152,7 @@ class CleanupPanel {
           'success',
         );
     } catch (error) {
-      if (generation === this.generation) feedback(this.output, errorKey(error), {}, 'error');
+      if (generation === this.generation) showFailure(this.output, error);
     } finally {
       if (generation === this.generation) {
         this.busy = false;

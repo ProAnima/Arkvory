@@ -5,6 +5,7 @@ import {
   requireComment,
   requireId,
   requireStage,
+  withField,
 } from '@proanima/arkvory-domain';
 import type { MutationAccess, Principal, PromotionMode } from '@proanima/arkvory-domain';
 import type { StorageService } from './storage.js';
@@ -141,8 +142,8 @@ export class ArtifactPromotion {
     return this.stageStore.setStage(
       access(p, repository),
       id,
-      requireStage(stage),
-      requireComment(comment),
+      withField('stage', () => requireStage(stage)),
+      withField('/comment', () => requireComment(comment)),
     );
   }
 

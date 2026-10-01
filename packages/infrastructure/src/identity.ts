@@ -10,6 +10,7 @@ import type {
   AccessGroup,
   Account,
   AccountOrigin,
+  CredentialRejection,
   CreatedUserToken,
   IdentityStore,
   LoginResult,
@@ -20,7 +21,9 @@ import type {
 
 function conflict(error: unknown): never {
   if (typeof error === 'object' && error !== null && 'code' in error && error.code === '23505')
-    throw new ArkvoryError('conflict', 'Account or group already exists');
+    throw new ArkvoryError('conflict', 'Account or group already exists', {
+      reason: 'already_exists',
+    });
   throw error;
 }
 // Self-registration stops early so anonymous sign-ups cannot exhaust administrator capacity.
@@ -58,7 +61,9 @@ export class PostgresIdentity implements IdentityStore {
           [id, name, salt, hash, administrator, accountCapacity[origin]],
         );
         if (!inserted.rowCount)
-          throw new ArkvoryError('capacity_exceeded', 'Account limit reached');
+          throw new ArkvoryError('capacity_exceeded', 'Account limit reached', {
+            reason: 'account_limit',
+          });
         const action = origin === 'self-registration' ? 'auth.register' : 'user.create';
         await appendSecurityEvent(
           client,
@@ -129,7 +134,10 @@ export class PostgresIdentity implements IdentityStore {
            SELECT $1,$2 WHERE (SELECT count(*) FROM arkvory_access_groups)<100`,
           [id, name],
         );
-        if (!inserted.rowCount) throw new ArkvoryError('capacity_exceeded', 'Group limit reached');
+        if (!inserted.rowCount)
+          throw new ArkvoryError('capacity_exceeded', 'Group limit reached', {
+            reason: 'group_limit',
+          });
         await appendSecurityEvent(client, actor, success('group.create', `group:${id}`, { name }));
       });
     } catch (error) {
@@ -153,7 +161,9 @@ export class PostgresIdentity implements IdentityStore {
       ),
     ]);
     if (members.rows.length > 10000 || grants.rows.length > 10000)
-      throw new ArkvoryError('capacity_exceeded', 'Access group listing limit reached');
+      throw new ArkvoryError('capacity_exceeded', 'Access group listing limit reached', {
+        reason: 'group_limit',
+      });
     return groups.rows.map((group) => ({
       ...group,
       members: members.rows.filter((row) => row.group_id === group.id).map((row) => row.user_id),
@@ -205,7 +215,9 @@ export class PostgresIdentity implements IdentityStore {
             [groupId, userId],
           );
           if (!valid.rowCount) throw new ArkvoryError('not_found', 'User or group not found');
-          throw new ArkvoryError('capacity_exceeded', 'Membership limit reached');
+          throw new ArkvoryError('capacity_exceeded', 'Membership limit reached', {
+            reason: 'membership_limit',
+          });
         }
       }
       await appendSecurityEvent(client, actor, event);
@@ -246,7 +258,9 @@ export class PostgresIdentity implements IdentityStore {
           groupId,
         ]);
         if (!valid.rowCount) throw new ArkvoryError('not_found', 'Group not found');
-        throw new ArkvoryError('capacity_exceeded', 'Grant limit reached');
+        throw new ArkvoryError('capacity_exceeded', 'Grant limit reached', {
+          reason: 'grant_limit',
+        });
       }
       await appendSecurityEvent(
         client,
@@ -277,6 +291,23 @@ export class PostgresIdentity implements IdentityStore {
         : null;
     }
     return null;
+  }
+
+  /**
+   * Why `resolve` refused a well-formed credential. Same digest lookup as resolve, without the
+   * expiry filter; disabled accounts and unknown digests both read as credential_invalid.
+   */
+  async rejection(token: string): Promise<CredentialRejection> {
+    if (/^dps_[A-Za-z0-9_-]{43}$/.test(token)) {
+      const result = await this.pool.query<{ expired: boolean }>(
+        `SELECT s.expires_at<=now() AS expired FROM arkvory_user_sessions s
+         JOIN arkvory_users u ON u.id=s.user_id WHERE s.token_hash=$1 AND u.enabled`,
+        [sessionDigest(token)],
+      );
+      return result.rows[0]?.expired ? 'session_expired' : 'credential_invalid';
+    }
+    if (/^pat_[A-Za-z0-9_-]{43}$/.test(token)) return this.userTokens.rejection(token);
+    return 'credential_invalid';
   }
 
   async logout(token: string): Promise<void> {

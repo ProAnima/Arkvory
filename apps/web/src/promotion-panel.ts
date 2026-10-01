@@ -5,6 +5,7 @@ import { clearMessage, t } from './i18n.js';
 import { feedback, UiError } from './feedback.js';
 import { historyItem, historyPlaceholder, stageChip } from './promotion-view.js';
 import type { MessageKey } from './messages.js';
+import { withFieldErrors } from './field-errors.js';
 
 interface Selection {
   readonly repository: string;
@@ -13,6 +14,13 @@ interface Selection {
   readonly canPromote: boolean;
 }
 const stagePattern = /^[a-z0-9][a-z0-9_.-]{0,31}$/;
+// The stage name is a path parameter; promotion members are body pointers (ADR 0051).
+const stageFields = { stage: 'stage-name', '/comment': 'stage-comment' };
+const promoteFields = {
+  '/target': 'promote-target',
+  '/stages': 'promote-stages',
+  '/comment': 'promote-comment',
+};
 
 function dom() {
   return {
@@ -52,7 +60,8 @@ function promoteRequest(view: Dom): PromoteRequest {
     .split(',')
     .map((value) => value.trim())
     .filter(Boolean);
-  if (stages.some((value) => !stagePattern.test(value))) throw new UiError('stageInvalid');
+  if (stages.some((value) => !stagePattern.test(value)))
+    throw new UiError('stageInvalid', [{ field: '/stages', problem: 'format' }]);
   return {
     target: view.target.value,
     mode: view.move.checked ? 'move' : 'copy',
@@ -70,7 +79,8 @@ function renderHistory(view: Dom, page: PromotionEventPageResponse, append: bool
 
 async function addStage(view: Dom, client: ArkvoryClient, s: Selection): Promise<string> {
   const name = view.stageName.value.trim();
-  if (!stagePattern.test(name)) throw new UiError('stageInvalid');
+  if (!stagePattern.test(name))
+    throw new UiError('stageInvalid', [{ field: 'stage', problem: 'format' }]);
   await client.promotions.setStage(s.repository, s.id, name, view.stageComment.value || undefined);
   view.stageName.value = view.stageComment.value = '';
   return name;
@@ -130,23 +140,27 @@ export function installPromotionPanel(
   }
   view.stageForm.onsubmit = (event) => {
     event.preventDefault();
-    run(async () => {
-      const s = current();
-      const name = await addStage(view, client, s);
-      feedback(view.status, 'stageAdded', { stage: name });
-      await refresh(s);
-    });
+    run(
+      withFieldErrors(stageFields, async () => {
+        const s = current();
+        const name = await addStage(view, client, s);
+        feedback(view.status, 'stageAdded', { stage: name });
+        await refresh(s);
+      }),
+    );
   };
   view.promoteForm.onsubmit = (event) => {
     event.preventDefault();
-    run(async () => {
-      const s = current();
-      const outcome = await promote(view, client, s);
-      if (!outcome) return;
-      feedback(view.status, outcome.key, { repository: outcome.repository }, 'success');
-      if (outcome.moved) onMoved(s.repository);
-      else await refresh(s);
-    });
+    run(
+      withFieldErrors(promoteFields, async () => {
+        const s = current();
+        const outcome = await promote(view, client, s);
+        if (!outcome) return;
+        feedback(view.status, outcome.key, { repository: outcome.repository }, 'success');
+        if (outcome.moved) onMoved(s.repository);
+        else await refresh(s);
+      }),
+    );
   };
   view.more.onclick = () => {
     run(() => loadHistory(current(), true));

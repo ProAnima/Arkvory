@@ -56,7 +56,9 @@ export class PostgresCleanupSettings implements CleanupSettings {
         )
       ).rows[0];
       if ((row?.revision ?? 0) !== revision || revision === 2147483647)
-        throw new ArkvoryError('conflict', 'Cleanup configuration changed');
+        throw new ArkvoryError('conflict', 'Cleanup configuration changed', {
+          reason: 'revision_mismatch',
+        });
       await action(c);
       await c.query('COMMIT');
     } catch (error) {
@@ -92,7 +94,9 @@ export class PostgresCleanupSettings implements CleanupSettings {
         [access.repository],
       );
       if (!updated.rowCount)
-        throw new ArkvoryError('conflict', 'Enable cleanup before requesting a batch');
+        throw new ArkvoryError('conflict', 'Enable cleanup before requesting a batch', {
+          reason: 'state_conflict',
+        });
     });
   }
 }

@@ -1,7 +1,7 @@
 import type { ArkvoryClient } from '@proanima/arkvory-sdk';
 import type { BuildAttachmentResponse } from '@proanima/arkvory-contracts';
 import { clearMessage, message } from './i18n.js';
-import { feedback, errorKey, UiError } from './feedback.js';
+import { feedback, UiError, showFailure } from './feedback.js';
 import { hashFile } from './file-hash.js';
 import { exceedsServerLimit } from './server-limits.js';
 import { attachmentElements, attachmentKind, fileRow, historyEntry } from './attachment-view.js';
@@ -123,7 +123,7 @@ class BuildAttachments {
   private run(work: () => Promise<void>) {
     const generation = this.generation;
     void work().catch((error: unknown) => {
-      if (generation === this.generation) feedback(this.ui.status, errorKey(error), {}, 'error');
+      if (generation === this.generation) showFailure(this.ui.status, error);
     });
   }
   private source() {

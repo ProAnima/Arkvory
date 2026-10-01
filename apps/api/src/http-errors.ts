@@ -1,9 +1,11 @@
-import type { FastifyInstance } from 'fastify';
+import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { ArkvoryError } from '@proanima/arkvory-domain';
-import type { ErrorCode } from '@proanima/arkvory-domain';
+import type { ErrorCode, ErrorReason } from '@proanima/arkvory-domain';
 import { classifyFailure, failureCause } from '@proanima/arkvory-infrastructure';
-import type { FailureCause } from '@proanima/arkvory-infrastructure';
 import type { RequestContext } from './request-context.js';
+import { frameworkFailure } from './framework-errors.js';
+import type { HttpFailure } from './http-failure.js';
+export type { HttpFailure } from './http-failure.js';
 
 const statuses: Record<ErrorCode, number> = {
   invalid_input: 400,
@@ -15,8 +17,19 @@ const statuses: Record<ErrorCode, number> = {
   integrity_mismatch: 422,
   busy: 503,
   unavailable: 503,
+  rate_limited: 429,
+  read_only: 405,
   internal: 500,
 };
+// Request-shape refinements of invalid_input keep their dedicated HTTP statuses (ADR 0051).
+const inputStatuses: Partial<Record<ErrorReason, number>> = {
+  body_too_large: 413,
+  unsupported_media_type: 415,
+  method_not_allowed: 405,
+  range_not_satisfiable: 416,
+};
+/** Seconds announced for transient states that carry no explicit estimate. */
+const defaultRetrySeconds = 2;
 const stagedHeaders = [
   'content-type',
   'content-length',
@@ -28,26 +41,47 @@ const stagedHeaders = [
   'last-modified',
 ];
 
-interface HttpFailure {
-  readonly code: ErrorCode;
-  readonly message: string;
-  /** Present only for failures that did not originate as a deliberate ArkvoryError. */
-  readonly cause?: FailureCause;
+export function httpStatus(failure: Pick<HttpFailure, 'code' | 'reason'>): number {
+  return (
+    (failure.code === 'invalid_input' && failure.reason
+      ? inputStatuses[failure.reason]
+      : undefined) ?? statuses[failure.code]
+  );
 }
 
 /** Retry-After is promised only for transient states; a defect must not invite retry loops. */
+function retrySeconds(failure: HttpFailure): number | undefined {
+  const transient = ['busy', 'unavailable', 'rate_limited'].includes(failure.code);
+  return transient ? (failure.retryAfterSeconds ?? defaultRetrySeconds) : undefined;
+}
+
+function deliberate(error: ArkvoryError): HttpFailure {
+  // Every input failure is a validation failure unless the thrower refined it further.
+  const reason = error.reason ?? (error.code === 'invalid_input' ? 'validation' : undefined);
+  return {
+    code: error.code,
+    message: error.message,
+    ...(reason ? { reason } : {}),
+    ...(error.details.length ? { details: error.details } : {}),
+    ...(error.retryAfterSeconds === undefined
+      ? {}
+      : { retryAfterSeconds: error.retryAfterSeconds }),
+  };
+}
+
 export function httpFailure(error: unknown): HttpFailure {
-  if (error instanceof ArkvoryError) return { code: error.code, message: error.message };
-  const status =
-    typeof error === 'object' && error !== null && 'statusCode' in error
-      ? error.statusCode
-      : undefined;
-  if (typeof status === 'number' && status >= 400 && status < 500)
-    return { code: 'invalid_input', message: 'Invalid request' };
+  if (error instanceof ArkvoryError) return deliberate(error);
+  const framework = frameworkFailure(error);
+  if (framework) return framework;
   const cause = failureCause(error);
   switch (classifyFailure(error)) {
     case 'storage_full':
-      return { code: 'capacity_exceeded', message: 'Storage capacity exhausted', cause };
+      return {
+        code: 'capacity_exceeded',
+        reason: 'storage_full',
+        message: 'Storage capacity exhausted',
+        cause,
+      };
     case 'cancelled':
       return { code: 'unavailable', message: 'Operation interrupted', cause };
     case 'dependency_unavailable':
@@ -61,6 +95,34 @@ export function httpFailure(error: unknown): HttpFailure {
   }
 }
 
+/**
+ * The single wire form of an error. `{code, message, requestId}` is the original contract;
+ * reason, details and retryAfterSeconds are additive and omitted when unknown.
+ */
+export function errorBody(failure: HttpFailure, requestId: string) {
+  const seconds = retrySeconds(failure);
+  return {
+    code: failure.code,
+    message: failure.message,
+    requestId,
+    ...(failure.reason ? { reason: failure.reason } : {}),
+    ...(failure.details?.length ? { details: failure.details } : {}),
+    ...(seconds === undefined ? {} : { retryAfterSeconds: seconds }),
+  };
+}
+
+/** Sends a failure outside the error handler (hooks, 404/405) with the same envelope. */
+export async function sendFailure(
+  request: FastifyRequest,
+  reply: FastifyReply,
+  failure: HttpFailure,
+): Promise<FastifyReply> {
+  const body = errorBody(failure, request.id);
+  if (body.retryAfterSeconds !== undefined)
+    reply.header('Retry-After', String(body.retryAfterSeconds));
+  return reply.code(httpStatus(failure)).send(body);
+}
+
 export function registerHttpErrors(
   app: FastifyInstance,
   context: Pick<RequestContext, 'recordError'>,
@@ -72,9 +134,6 @@ export function registerHttpErrors(
     const failure = httpFailure(error);
     // The cause is logged by ResponseDiagnostics; the client receives only the fixed message.
     context.recordError(request, failure.code, failure.cause);
-    if (failure.code === 'busy' || failure.code === 'unavailable') reply.header('Retry-After', '2');
-    void reply
-      .code(statuses[failure.code])
-      .send({ code: failure.code, message: failure.message, requestId: request.id });
+    void sendFailure(request, reply, failure);
   });
 }

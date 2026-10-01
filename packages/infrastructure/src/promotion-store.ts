@@ -100,6 +100,7 @@ export class PostgresPromotions implements PromotionStore {
       throw new ArkvoryError(
         'conflict',
         'The target already has this package version with other bytes',
+        { reason: 'version_exists' },
       );
     return match.id;
   }
@@ -168,7 +169,9 @@ export class PostgresPromotions implements PromotionStore {
       [copyId, input.target.repository],
     );
     if (published.rowCount !== 1)
-      throw new ArkvoryError('conflict', 'Promotion reservation is no longer pending');
+      throw new ArkvoryError('conflict', 'Promotion reservation is no longer pending', {
+        reason: 'state_conflict',
+      });
     await client.query(
       `INSERT INTO arkvory_annotations(artifact_id,revision,labels,metadata,collections)
        SELECT $1,1,labels,metadata,collections FROM arkvory_annotations WHERE artifact_id=$2`,
@@ -183,7 +186,9 @@ export class PostgresPromotions implements PromotionStore {
       );
     } catch (error) {
       if (typeof error === 'object' && error !== null && 'code' in error && error.code === '23505')
-        throw new ArkvoryError('conflict', 'The target already has this package version');
+        throw new ArkvoryError('conflict', 'The target already has this package version', {
+          reason: 'version_exists',
+        });
       throw error;
     }
     await client.query(
@@ -292,8 +297,11 @@ export class PostgresPromotions implements PromotionStore {
       throw new ArkvoryError(
         'conflict',
         `The source cannot be moved: ${outcome.blockers.join(', ')}`,
+        { reason: 'state_conflict' },
       );
     if (outcome.outcome !== 'deleted' && outcome.outcome !== 'already_deleted')
-      throw new ArkvoryError('conflict', 'The source changed during promotion');
+      throw new ArkvoryError('conflict', 'The source changed during promotion', {
+        reason: 'state_conflict',
+      });
   }
 }

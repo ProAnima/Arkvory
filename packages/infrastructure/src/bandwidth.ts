@@ -76,7 +76,9 @@ export class BandwidthGovernor {
   register(owner: string): void {
     if (this.principals.has(owner)) return;
     if (this.principals.size >= 3000)
-      throw new ArkvoryError('capacity_exceeded', 'Too many bandwidth principals');
+      throw new ArkvoryError('capacity_exceeded', 'Too many bandwidth principals', {
+        reason: 'transfer_limit',
+      });
     this.principals.set(owner, {
       tokens: burst(this.policy.perPrincipalBytesPerSecond),
       updated: this.time.now(),
@@ -127,7 +129,9 @@ export class BandwidthGovernor {
     signal?.throwIfAborted();
     this.checkAvailable();
     if (!this.principals.has(owner))
-      throw new ArkvoryError('forbidden', 'Unknown bandwidth principal');
+      throw new ArkvoryError('forbidden', 'Unknown bandwidth principal', {
+        reason: 'permission_missing',
+      });
     if (!Number.isSafeInteger(bytes) || bytes < 1 || bytes > this.quantum)
       throw new Error('Invalid byte quantum');
     if (this.pending >= 256) throw new ArkvoryError('busy', 'Bandwidth queue is full');

@@ -1,23 +1,75 @@
+import type { ErrorDetailResponse } from '@proanima/arkvory-contracts';
+
+/** Optional members of the server error envelope (ADR 0051). */
+export interface HttpErrorDetails {
+  readonly serverMessage?: string;
+  readonly reason?: string;
+  readonly details?: readonly ErrorDetailResponse[];
+}
+
+/**
+ * A non-2xx answer. `code`/`reason` are machine values; unknown reasons must be tolerated.
+ * `serverMessage` is the fixed English operator text and is deliberately not Error.message,
+ * so it never reaches a localized UI by accident.
+ */
 export class ArkvoryHttpError extends Error {
+  readonly serverMessage: string;
+  readonly reason: string | undefined;
+  readonly details: readonly ErrorDetailResponse[];
   constructor(
     readonly status: number,
     readonly code: string,
     readonly requestId: string,
     readonly retryAfterMs?: number,
+    extra: HttpErrorDetails = {},
   ) {
     super(`Arkvory request failed (${String(status)}, ${code})`);
+    this.name = 'ArkvoryHttpError';
+    this.serverMessage = extra.serverMessage ?? '';
+    this.reason = extra.reason;
+    this.details = extra.details ?? [];
+  }
+  /** Whole seconds of Retry-After or of the body's retryAfterSeconds, when the server sent one. */
+  get retryAfterSeconds(): number | undefined {
+    return this.retryAfterMs === undefined ? undefined : Math.ceil(this.retryAfterMs / 1000);
   }
 }
 
 export class ArkvoryNetworkError extends Error {
   constructor() {
     super('Arkvory connection interrupted');
+    this.name = 'ArkvoryNetworkError';
   }
 }
 
 export class ArkvoryIntegrityError extends Error {
   constructor() {
     super('Downloaded content does not match the artifact');
+    this.name = 'ArkvoryIntegrityError';
+  }
+}
+
+/** Failures detected by the SDK itself, before or after talking to the server. */
+export type ClientErrorCode =
+  | 'invalid_argument'
+  | 'insecure_url'
+  | 'invalid_response'
+  | 'response_too_large'
+  | 'size_mismatch'
+  | 'file_changed'
+  | 'upload_cancelled'
+  | 'completion_failed';
+
+/** Machine-coded local failure; `message` keeps the previous English text for old callers. */
+export class ArkvoryClientError extends Error {
+  constructor(
+    readonly code: ClientErrorCode,
+    message: string,
+    /** For completion_failed: the server job error code, itself a machine value. */
+    readonly serverCode?: string,
+  ) {
+    super(message);
+    this.name = 'ArkvoryClientError';
   }
 }
 
@@ -38,7 +90,7 @@ export interface TransferOptions {
 function bounded(value: number | undefined, fallback: number, min: number, max: number) {
   const result = value ?? fallback;
   if (!Number.isSafeInteger(result) || result < min || result > max)
-    throw new Error('Invalid transfer policy');
+    throw new ArkvoryClientError('invalid_argument', 'Invalid transfer policy');
   return result;
 }
 

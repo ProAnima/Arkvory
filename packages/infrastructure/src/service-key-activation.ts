@@ -24,7 +24,10 @@ async function issuerContext(
       row.issued_via_key_id,
     ])
   ).rows[0];
-  if (!issuer) throw new ArkvoryError('forbidden', 'Issuing operator unavailable');
+  if (!issuer)
+    throw new ArkvoryError('forbidden', 'Issuing operator unavailable', {
+      reason: 'credential_revoked',
+    });
   const operator = issuerPrincipal(issuer.account_id, row.issued_via_key_id);
   const ctx = await administrationContext(c, operator);
   await authorizeAdministration(
@@ -50,7 +53,8 @@ async function retireRotationSource(
       [rotatedFrom],
     )
   ).rows[0];
-  if (!old) throw new ArkvoryError('conflict', 'Source key no longer active');
+  if (!old)
+    throw new ArkvoryError('conflict', 'Source key no longer active', { reason: 'state_conflict' });
   if (ctx)
     await authorizeAdministration(
       c,
@@ -85,7 +89,7 @@ export async function activateServiceKey(c: PoolClient, id: string, token: strin
     !row.enabled ||
     !timingSafeEqual(Buffer.from(row.secret_hash, 'hex'), Buffer.from(digest(token), 'hex'))
   )
-    throw new ArkvoryError('unauthorized', 'Invalid credential');
+    throw new ArkvoryError('unauthorized', 'Invalid credential', { reason: 'credential_invalid' });
   if (row.state === 'active') return;
   const ctx = await issuerContext(c, row);
   requireSubset(parseBindings(row.bindings), parseBindings(row.account_bindings));
@@ -94,7 +98,9 @@ export async function activateServiceKey(c: PoolClient, id: string, token: strin
     [row.account_id],
   );
   if (Number(count.rows[0]?.count) >= 3)
-    throw new ArkvoryError('capacity_exceeded', 'Active key limit reached');
+    throw new ArkvoryError('capacity_exceeded', 'Active key limit reached', {
+      reason: 'key_limit',
+    });
   if (row.rotated_from) await retireRotationSource(c, row, row.rotated_from, ctx);
   await c.query(
     "UPDATE arkvory_api_keys SET state='active',expires_at=LEAST(expires_at,COALESCE($2::timestamptz,expires_at)) WHERE id=$1",

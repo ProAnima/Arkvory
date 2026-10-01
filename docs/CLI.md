@@ -56,16 +56,27 @@ node ./arkvoryctl.mjs packages publish ./build.upack --state ./job-state/upload.
 
 Для медленных сетей: `--attempt-timeout 300000` задаёт окно одной попытки передачи в миллисекундах (1..1800000); `--retries 20` — общий бюджет сетевых повторов операции (0..100). `--timeout 60000` ограничивает запросы управления (1..3600000 мс). Общего ограничения по времени всего файла нет; синхронное завершение upload имеет отдельное окно SDK до 30 минут. `--retries 0` отключает автоматические сетевые повторы, сохраняя возможность повторить команду вручную.
 
-| Exit code | Значение / Meaning                                                    |
-| --------- | --------------------------------------------------------------------- |
-| 0         | Успех / Success                                                       |
-| 2         | Аргументы или конфигурация / Usage or configuration                   |
-| 3         | Нет ключа, 401/403 / Missing credential or access denied              |
-| 4         | HTTP, сеть, request timeout / HTTP or network failure                 |
-| 5         | Целостность / Integrity failure                                       |
-| 6         | Конфликт ревизии, состояния, блокировки, существующий файл / Conflict |
-| 7         | Локальный I/O или недопустимый протокол / Local I/O or protocol error |
-| 130       | Прерывание / Interrupted                                              |
+### Коды выхода
+
+| Exit code | Значение / Meaning                                                                                                            |
+| --------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| 0         | Успех / Success                                                                                                               |
+| 2         | Аргументы или конфигурация / Usage or configuration                                                                           |
+| 3         | Нет ключа, 401/403 (`unauthorized`, `forbidden`) / Missing credential or access denied                                        |
+| 4         | HTTP, сеть, request timeout, перегрузка (`busy`, `rate_limited`, `unavailable`, `internal`, 404) / HTTP, network or busy      |
+| 5         | Целостность: SHA-256 скачивания или `integrity_mismatch` (422) / Integrity failure                                            |
+| 6         | Конфликт ревизии, состояния, блокировки, существующий файл (`conflict`, 409) / Conflict                                       |
+| 7         | Локальный I/O или недопустимый протокол / Local I/O or protocol error                                                         |
+| 8         | Лимит ёмкости сервера: квота, диск, учётные записи, ключи, очередь (`capacity_exceeded`, 507) / Server capacity limit reached |
+| 130       | Прерывание / Interrupted                                                                                                      |
+
+Код выхода выбирается по `code` ответа сервера, а для ответа без конверта Arkvory (прокси) — по HTTP-статусу. Exit 8 введён в [ADR 0051](adr/0051-error-contract.md); раньше 507 и 422 давали 4. При 429/503 CLI печатает задержку из `Retry-After`; автоматически повторяются только сетевые сбои и 408/429/502/503/504 в пределах `--retries`.
+
+Ошибка без `--json` — одна строка stderr: код CLI, HTTP-статус, `code/reason` и сообщение сервера (без управляющих символов, до 200 знаков), что делать дальше, «Retry after N s» и ID запроса для обращения к администратору. С `--json` stderr содержит `{"error": {...}}`: прежние `code` (`http_error` для ответов сервера), `status`, `exitCode`, `stage`, `artifactId` и добавленные `serverCode`, `reason`, `message`, `requestId`, `details` (`[{field, problem}]`) и `retryAfterSeconds`. Неизвестные будущие `serverCode`/`reason` нужно обрабатывать по `exitCode`.
+
+`--verbose` пишет в stderr строку на каждый HTTP-обмен: `arkvoryctl: GET /api/v1/... 200 12 ms request <id>` (или `network-error`). Заголовки, query, тела и ключи не выводятся.
+
+The error line on stderr carries the server code/reason, its sanitized message, the next step, Retry-After and the request ID; `--json` keeps the previous fields and adds `serverCode`, `reason`, `message`, `requestId`, `details` and `retryAfterSeconds`. Exit code 8 means a server capacity limit (507); 422 integrity mismatches exit with 5. `--verbose` logs method, path, status, duration and request ID per request, never headers or credentials.
 
 CI should inject `ARKVORY_BASE_URL` and `ARKVORY_TOKEN_FILE` (or `ARKVORY_TOKEN`) through its secret store. Never pass a key as a command argument. Preserve the upload checkpoint and source file across retries. JSON output is machine-readable; diagnostics use stderr. Pagination is explicit with `--after`. HTTPS is mandatory except for loopback; TLS verification cannot be disabled.
 

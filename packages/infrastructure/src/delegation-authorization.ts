@@ -16,7 +16,10 @@ export async function administrationContext(
   p: Principal,
 ): Promise<AdministrationContext> {
   if (!p.managed && p.serviceAdministrator === true) return { bootstrap: true };
-  if (!p.managed) throw new ArkvoryError('forbidden', 'Service administration denied');
+  if (!p.managed)
+    throw new ArkvoryError('forbidden', 'Service administration denied', {
+      reason: 'permission_missing',
+    });
   const row = (
     await c.query<{ account_id: string; expires_at: Date }>(
       `SELECT k.account_id,k.expires_at FROM arkvory_api_keys k JOIN arkvory_service_accounts a ON a.id=k.account_id
@@ -25,7 +28,9 @@ export async function administrationContext(
     )
   ).rows[0];
   if (!row || p.id !== `service:${row.account_id}`)
-    throw new ArkvoryError('forbidden', 'Operator credential revoked or expired');
+    throw new ArkvoryError('forbidden', 'Operator credential revoked or expired', {
+      reason: 'credential_revoked',
+    });
   return {
     bootstrap: false,
     keyId: p.managed.keyId,
@@ -42,7 +47,9 @@ export async function authorizeAdministration(
 ): Promise<void> {
   if (context.bootstrap) return;
   if (target === context.accountId)
-    throw new ArkvoryError('forbidden', 'Self administration is not delegated');
+    throw new ArkvoryError('forbidden', 'Self administration is not delegated', {
+      reason: 'permission_missing',
+    });
   const grant = (
     await c.query<{ actions: string[]; ceiling: unknown }>(
       'SELECT actions,ceiling FROM arkvory_service_delegations WHERE key_id=$1 AND target_account_id=$2 AND enabled',
@@ -51,6 +58,8 @@ export async function authorizeAdministration(
   ).rows[0];
   if (!grant) throw new ArkvoryError('not_found', 'Service resource not found');
   if (!grant.actions.includes(action))
-    throw new ArkvoryError('forbidden', 'Administration action denied');
+    throw new ArkvoryError('forbidden', 'Administration action denied', {
+      reason: 'permission_missing',
+    });
   if (bindings) requireSubset(bindings, parseBindings(grant.ceiling));
 }

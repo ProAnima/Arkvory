@@ -6,7 +6,9 @@ import { guideEnglish } from './guide-messages.js';
 import { cleanupEnglish } from './cleanup-messages.js';
 import { updateEnglish } from './update-messages.js';
 import { promotionEnglish } from './promotion-messages.js';
+import { errorEnglish } from './error-messages.js';
 export const en = {
+  ...errorEnglish,
   ...managementEnglish,
   ...permissionEnglish,
   ...guideEnglish,
@@ -358,18 +360,17 @@ export const en = {
   saveUnsupported:
     'Streaming save requires Chrome or Edge over HTTPS. Other clients can download through the SDK.',
   mismatch: 'This file differs from the upload. Select the original file or start a new upload.',
-  errorGeneric: 'The operation could not be completed. Check your connection and try again.',
-  errorUnauthorized: 'The service key is not valid, has expired or was revoked. Enter a valid key.',
-  errorForbidden: 'This token does not have permission for that operation.',
-  errorRateLimited: 'Too many sign-in attempts. Wait a few minutes and try again.',
+  errorGeneric: 'The operation could not be completed. Try again.',
+  errorUnauthorized: 'This key is not valid or was revoked. Enter a valid key.',
+  errorForbidden: 'You do not have permission for this operation.',
+  errorRateLimited: 'Too many sign-in attempts. Wait and try again.',
   errorNotFound: 'The requested file or version was not found.',
   errorConflict:
     'The item has changed or the operation conflicts with its state. Refresh before trying again.',
   errorInput: 'Check the entered values and try again.',
   errorIntegrity: 'The file integrity check failed. Retry with the original file.',
-  errorBusy: 'The service is busy or temporarily unavailable. Try again shortly.',
-  errorCapacity: 'The storage capacity limit has been reached.',
-  requestId: 'Request: {id}',
+  errorBusy: 'The service is busy. Try again shortly.',
+  errorCapacity: 'A capacity limit has been reached.',
   cancelled: 'Operation cancelled.',
   publishedRefresh:
     'File published, but the catalog could not refresh. Open Artifacts to refresh it.',

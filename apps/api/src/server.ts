@@ -12,6 +12,7 @@ import { ResponseDiagnostics } from './response-diagnostics.js';
 import { registerBackgroundTasks } from './background-tasks.js';
 import { registerHealthRoutes } from './health-routes.js';
 import { registerContractGuard } from './contract-guard.js';
+import { registerNotFound } from './not-found.js';
 import { registerCors } from './cors.js';
 import { registerConsole } from './console.js';
 import { maintainStorage } from './storage-maintenance.js';
@@ -101,6 +102,8 @@ export async function createServer(config: ServerConfig, lifecycle: ServerLifecy
     const responses = new ResponseDiagnostics(diagnostics, services.storagePolicies, context);
     // Guard registration precedes feature routes and background startup.
     registerContractGuard(app);
+    // Collects routes like the guard does, for the 405 Allow answer of unmatched requests.
+    registerNotFound(app, context, runtime.role);
     // loadConfig enables it by default; embedded/test servers opt in explicitly.
     if (config.accessLog === true)
       registerAccessLog(app, {

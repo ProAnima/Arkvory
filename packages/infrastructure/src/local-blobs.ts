@@ -89,7 +89,9 @@ export class LocalBlobStore implements BlobStore {
   async checkSpace(required: number): Promise<void> {
     const volume = await statfs(this.root, { bigint: true });
     if (volume.bavail * volume.bsize < BigInt(required) + BigInt(this.reserveBytes))
-      throw new ArkvoryError('capacity_exceeded', 'Insufficient storage capacity');
+      throw new ArkvoryError('capacity_exceeded', 'Insufficient storage capacity', {
+        reason: 'storage_full',
+      });
   }
 
   async put(

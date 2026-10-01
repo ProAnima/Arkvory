@@ -1,22 +1,34 @@
 import { createHash, timingSafeEqual } from 'node:crypto';
 import type { FastifyInstance } from 'fastify';
 import { ArkvoryError } from '@proanima/arkvory-domain';
-import type { IdentityService } from '@proanima/arkvory-application';
+import type { CredentialRejection, IdentityService } from '@proanima/arkvory-application';
 import type { PostgresServices } from '@proanima/arkvory-infrastructure';
 import type { ServerConfig } from './config.js';
 import type { RequestContext } from './request-context.js';
 import { LoginAdmission } from './login-admission.js';
 import type { RequestDrain } from './drain.js';
+import { sendFailure } from './http-errors.js';
 
 interface Security {
   config: Pick<ServerConfig, 'keys'>;
   role: 'api' | 'reader';
   available: () => boolean;
-  identity: Pick<IdentityService, 'resolve'>;
-  serviceAccounts: Pick<PostgresServices, 'resolve'>;
+  identity: Pick<IdentityService, 'resolve' | 'rejection'>;
+  serviceAccounts: Pick<PostgresServices, 'resolve' | 'rejection'>;
   context: Pick<RequestContext, 'signal' | 'countRequest' | 'authenticate'>;
   registerOwner: (id: string) => void;
   drain: Pick<RequestDrain, 'isDraining' | 'track'>;
+}
+/** Expiry is disclosed only to the holder of the exact credential; file keys never expire. */
+async function rejection(
+  { identity, serviceAccounts }: Pick<Security, 'identity' | 'serviceAccounts'>,
+  token: string,
+): Promise<CredentialRejection | 'credential_missing'> {
+  if (!token) return 'credential_missing';
+  if (token.length < 32 || token.length > 512) return 'credential_invalid';
+  return token.startsWith('arkvory_')
+    ? serviceAccounts.rejection(token)
+    : identity.rejection(token);
 }
 // Public probes manage their own availability answer and never touch credentials.
 const publicPaths = new Set(['/health/live', '/health/status']);
@@ -35,6 +47,8 @@ export function registerRequestSecurity(app: FastifyInstance, dependencies: Secu
       .header('Cache-Control', 'private, no-store');
     const route = request.routeOptions.url ?? '';
     if (publicPaths.has(route) || route.startsWith('/console/')) return;
+    // Unmatched URLs reach the not-found handler with the same answer for every caller.
+    if (request.is404) return;
     const health = route.startsWith('/health/');
     if (!health) {
       if (drain.isDraining) {
@@ -87,10 +101,11 @@ export function registerRequestSecurity(app: FastifyInstance, dependencies: Secu
             : await identity.resolve(token)
         : null;
     if (!authenticated) {
-      await reply.code(401).header('WWW-Authenticate', 'Bearer').send({
+      reply.header('WWW-Authenticate', 'Bearer');
+      await sendFailure(request, reply, {
         code: 'unauthorized',
         message: 'Valid service key required',
-        requestId: request.id,
+        reason: await rejection(dependencies, token),
       });
       return;
     }
@@ -113,10 +128,10 @@ export function registerRequestSecurity(app: FastifyInstance, dependencies: Secu
       request.method !== 'HEAD' &&
       request.routeOptions.url !== '/api/v1/auth/logout'
     ) {
-      await reply.code(403).send({
+      await sendFailure(request, reply, {
         code: 'forbidden',
         message: 'Read-only personal access token',
-        requestId: request.id,
+        reason: 'read_only_token',
       });
       return;
     }

@@ -1,4 +1,5 @@
 import { record, text, integer, items } from './wire-values.js';
+import { nativeErrorResponse } from './errors.js';
 
 export const servicePermissionNames = [
   'repository.read',
@@ -239,21 +240,9 @@ const auditSchema = {
   },
 };
 const error = {
+  ...nativeErrorResponse,
   description:
-    'code, message and requestId; 400 invalid input, 401 credential, 403 scope, 404 missing, 409 revision/idempotency, 500 internal without Retry-After, 503 busy/unavailable with Retry-After, 507 capacity',
-  content: {
-    'application/json': {
-      schema: {
-        type: 'object',
-        required: ['code', 'message', 'requestId'],
-        properties: {
-          code: { type: 'string' },
-          message: { type: 'string' },
-          requestId: { type: 'string' },
-        },
-      },
-    },
-  },
+    'Error envelope; 400 invalid input, 401 credential, 403 scope, 404 missing, 409 revision/idempotency, 500 internal without Retry-After, 503 busy/unavailable with Retry-After, 507 capacity',
 };
 const parameter = (name: string) => ({ name, in: 'path', required: true, schema: id });
 const after = { name: 'after', in: 'query', schema: id };

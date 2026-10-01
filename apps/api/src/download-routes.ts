@@ -14,6 +14,7 @@ import { ArkvoryError } from '@proanima/arkvory-domain';
 import type { RequestContext } from './request-context.js';
 import { downloadStream } from './download-stream.js';
 import { matchesEtag, parseRange } from './range.js';
+import { sendFailure } from './http-errors.js';
 
 interface ContentServices {
   service: Pick<StorageService, 'download'>;
@@ -67,12 +68,16 @@ export function createContentSender(dependencies: ContentServices) {
         (request.headers['if-range'] !== undefined && request.headers['if-range'] !== etag)
           ? ({ kind: 'full' } as const)
           : parseRange(request.headers.range, size);
-      if (range.kind === 'unsatisfiable')
-        return await reply
-          .code(416)
-          .header('Content-Range', `bytes */${String(size)}`)
-          .header('Content-Length', '0')
-          .send();
+      if (range.kind === 'unsatisfiable') {
+        // The JSON envelope replaces the staged file representation headers (ADR 0051).
+        reply.removeHeader('Content-Type').removeHeader('Content-Disposition');
+        reply.header('Content-Range', `bytes */${String(size)}`);
+        return await sendFailure(request, reply, {
+          code: 'invalid_input',
+          reason: 'range_not_satisfiable',
+          message: 'Requested range is not satisfiable',
+        });
+      }
       if (range.kind === 'partial')
         reply
           .code(206)

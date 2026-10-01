@@ -2,7 +2,7 @@ import { ArkvoryClient } from '@proanima/arkvory-sdk';
 import type { OperationDescriptor } from '@proanima/arkvory-contracts';
 import { element } from './dom.js';
 import { clearMessage, message } from './i18n.js';
-import { feedback, errorKey, UiError } from './feedback.js';
+import { feedback, UiError, showFailure } from './feedback.js';
 
 function labelledValue(label: 'helpRetry' | 'helpActions', value: string) {
   const line = document.createElement('p');
@@ -102,10 +102,10 @@ export function initializeGuides() {
       } while (after);
       operations = result;
       render();
-      message(status, 'helpLoaded', { count: result.length });
+      feedback(status, 'helpLoaded', { count: result.length });
     })()
       .catch((error: unknown) => {
-        if (current === generation) feedback(status, errorKey(error), {}, 'error');
+        if (current === generation) showFailure(status, error);
       })
       .finally(() => {
         if (current === generation) load.disabled = false;
@@ -150,11 +150,11 @@ function installOwnerForm(base: string) {
       } catch {
         throw new UiError('welcomePartial');
       }
-      message(status, 'welcomeCreated');
+      feedback(status, 'welcomeCreated', {}, 'success');
       element('login-name', HTMLInputElement).value = desiredName;
     })()
       .catch((error: unknown) => {
-        feedback(status, errorKey(error), {}, 'error');
+        showFailure(status, error);
       })
       .finally(() => {
         submit.disabled = false;

@@ -42,10 +42,10 @@ export function checkParts(
   partBytes = PART_BYTES,
 ): void {
   if (parts.length !== Math.ceil(total / partBytes))
-    throw new ArkvoryError('conflict', 'Upload is missing parts');
+    throw new ArkvoryError('conflict', 'Upload is missing parts', { reason: 'parts_incomplete' });
   parts.forEach((part, index) => {
     if (part.index !== index || part.size !== partSize(total, index, partBytes))
-      throw new ArkvoryError('conflict', 'Invalid part coverage');
+      throw new ArkvoryError('conflict', 'Invalid part coverage', { reason: 'part_mismatch' });
   });
 }
 

@@ -69,7 +69,9 @@ export function requireSubset(
       b.actions.some((permission) => !allows(ceiling, b.resource.id, permission)),
     )
   )
-    throw new ArkvoryError('forbidden', 'Key permissions exceed the account or rotation policy');
+    throw new ArkvoryError('forbidden', 'Key permissions exceed the account or rotation policy', {
+      reason: 'permission_missing',
+    });
 }
 export function authorizeAction(
   principal: Principal,
@@ -80,10 +82,14 @@ export function authorizeAction(
   requireRepository(repository);
   if (principal.managed) {
     if (!allows(principal.managed.bindings, repository, permission))
-      throw new ArkvoryError('forbidden', 'Service permission denied');
+      throw new ArkvoryError('forbidden', 'Service permission denied', {
+        reason: 'permission_missing',
+      });
   } else {
     if (legacy === null || legacy.length === 0)
-      throw new ArkvoryError('forbidden', 'Explicit managed permission required');
+      throw new ArkvoryError('forbidden', 'Explicit managed permission required', {
+        reason: 'permission_missing',
+      });
     for (const p of legacy) authorize(principal, repository, p);
   }
 }

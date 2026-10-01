@@ -85,6 +85,7 @@ export function registerCors(app: FastifyInstance, origins: readonly string[]): 
     if (typeof origin !== 'string' || !allowed.has(origin)) {
       await reply.code(403).send({
         code: 'forbidden',
+        reason: 'origin_not_allowed',
         message: 'Origin is not allowed',
         requestId: request.id,
       });
@@ -109,6 +110,7 @@ export function registerCors(app: FastifyInstance, origins: readonly string[]): 
     ) {
       await reply.code(400).send({
         code: 'invalid_input',
+        reason: 'validation',
         message: 'Unsupported CORS preflight',
         requestId: request.id,
       });

@@ -1,4 +1,5 @@
 import { ArkvoryError, requireRepository } from './artifact.js';
+import { fieldError, withField } from './errors.js';
 
 export const MAX_STAGES = 16;
 export type PromotionMode = 'copy' | 'move';
@@ -39,21 +40,26 @@ export function requireStages(value: unknown): readonly string[] {
   return [...new Set(value.map(requireStage))].sort();
 }
 
+/** Parses the request body; failures name its members as JSON Pointers (ADR 0051). */
 export function parsePromotionRequest(value: unknown): PromotionRequest {
   if (typeof value !== 'object' || value === null || Array.isArray(value))
-    throw new ArkvoryError('invalid_input', 'Invalid promotion request');
+    throw fieldError('/', 'type', 'Invalid promotion request');
   const input: Record<string, unknown> = Object.fromEntries(Object.entries(value));
-  if (Object.keys(input).some((key) => !['target', 'mode', 'stages', 'comment'].includes(key)))
-    throw new ArkvoryError('invalid_input', 'Unknown promotion field');
+  const unknown = Object.keys(input).find(
+    (key) => !['target', 'mode', 'stages', 'comment'].includes(key),
+  );
+  if (unknown !== undefined)
+    throw fieldError(`/${unknown.slice(0, 64)}`, 'unknown_field', 'Unknown promotion field');
   const mode = input['mode'] ?? 'copy';
   if (mode !== 'copy' && mode !== 'move')
-    throw new ArkvoryError('invalid_input', 'Promotion mode must be copy or move');
-  if (typeof input['target'] !== 'string')
-    throw new ArkvoryError('invalid_input', 'Promotion target is required');
+    throw fieldError('/mode', 'invalid', 'Promotion mode must be copy or move');
+  const target = input['target'];
+  if (typeof target !== 'string')
+    throw fieldError('/target', 'required', 'Promotion target is required');
   return {
-    target: requireRepository(input['target']),
+    target: withField('/target', () => requireRepository(target)),
     mode,
-    stages: requireStages(input['stages']),
-    comment: requireComment(input['comment']),
+    stages: withField('/stages', () => requireStages(input['stages'])),
+    comment: withField('/comment', () => requireComment(input['comment'])),
   };
 }

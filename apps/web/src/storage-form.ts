@@ -38,7 +38,9 @@ export function installStorageForm() {
     try {
       return quotaBytes(text);
     } catch {
-      throw new UiError('storageQuotaInvalid');
+      throw new UiError('storageQuotaInvalid', [
+        { field: '/policy/quotaBytes', problem: 'format' },
+      ]);
     }
   };
   return {

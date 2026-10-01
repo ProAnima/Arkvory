@@ -115,16 +115,22 @@ export class ServiceAccess {
   constructor(private readonly store: ServiceStore) {}
   private admin(p: Principal): void {
     if (!p.managed && p.serviceAdministrator !== true)
-      throw new ArkvoryError('forbidden', 'Bootstrap or delegated managed credential required');
+      throw new ArkvoryError('forbidden', 'Bootstrap or delegated managed credential required', {
+        reason: 'permission_missing',
+      });
   }
   private bootstrap(p: Principal): void {
     if (p.managed || p.serviceAdministrator !== true)
-      throw new ArkvoryError('forbidden', 'Local service bootstrap authority required');
+      throw new ArkvoryError('forbidden', 'Local service bootstrap authority required', {
+        reason: 'permission_missing',
+      });
   }
   delegations(p: Principal, keyId: string) {
     this.admin(p);
     if (p.managed && p.managed.keyId !== keyId)
-      throw new ArkvoryError('forbidden', 'Only own delegations may be read');
+      throw new ArkvoryError('forbidden', 'Only own delegations may be read', {
+        reason: 'permission_missing',
+      });
     return this.store.delegations(p, requireId(keyId));
   }
   setDelegation(p: Principal, keyId: string, target: string, value: unknown) {

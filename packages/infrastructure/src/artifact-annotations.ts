@@ -75,8 +75,13 @@ export async function writeAnnotation(
         JSON.stringify(value.collections),
       ],
     );
-    if (updated.rowCount !== 1) throw new ArkvoryError('conflict', 'Annotation revision changed');
+    if (updated.rowCount !== 1)
+      throw new ArkvoryError('conflict', 'Annotation revision changed', {
+        reason: 'revision_mismatch',
+      });
   } else if (result.rowCount !== 1)
-    throw new ArkvoryError('conflict', 'Annotation revision changed');
+    throw new ArkvoryError('conflict', 'Annotation revision changed', {
+      reason: 'revision_mismatch',
+    });
   return { revision: expected + 1, ...value };
 }

@@ -102,7 +102,10 @@ export class PostgresStoragePolicy implements StoragePolicyStore {
   }
   async save(access: MutationAccess, revision: number, policy: StoragePolicy) {
     const key = access.principal.managed?.keyId;
-    if (!key) throw new ArkvoryError('forbidden', 'Managed storage permission required');
+    if (!key)
+      throw new ArkvoryError('forbidden', 'Managed storage permission required', {
+        reason: 'permission_missing',
+      });
     return this.transaction(async (c) => {
       // Same order as upload reservations: quota changes cannot race create().
       await c.query('SELECT pg_advisory_xact_lock(18471,2)');
@@ -110,7 +113,9 @@ export class PostgresStoragePolicy implements StoragePolicyStore {
       await lockCatalogMutation(c, access.repository);
       const current = await this.row(c, access.repository);
       if ((current?.revision ?? 0) !== revision || revision === 2147483647)
-        throw new ArkvoryError('conflict', 'Storage policy revision changed');
+        throw new ArkvoryError('conflict', 'Storage policy revision changed', {
+          reason: 'revision_mismatch',
+        });
       const result = await c.query<PolicyRow>(
         `INSERT INTO arkvory_storage_policies(repository,revision,policy,authorizer_key_id)
         VALUES($1,1,$2,$3) ON CONFLICT(repository) DO UPDATE SET revision=arkvory_storage_policies.revision+1,
@@ -191,10 +196,14 @@ export class PostgresStoragePolicy implements StoragePolicyStore {
       const row = await this.row(c, access.repository),
         current = snapshot(row);
       if (!row || current.revision !== revision || !current.policy.enabled)
-        throw new ArkvoryError('conflict', 'Enabled storage policy revision required');
+        throw new ArkvoryError('conflict', 'Enabled storage policy revision required', {
+          reason: 'revision_mismatch',
+        });
       if (automatic) {
         if (row.authorizer_key_id !== access.principal.managed?.keyId)
-          throw new ArkvoryError('conflict', 'Policy authorizer changed');
+          throw new ArkvoryError('conflict', 'Policy authorizer changed', {
+            reason: 'state_conflict',
+          });
         const due = (
           await c.query<{ due: boolean }>('SELECT $1::timestamptz<=clock_timestamp() AS due', [
             row.next_run_at,

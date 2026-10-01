@@ -14,7 +14,10 @@ export function createRequestContext(maxRequests = 128) {
   let requests = 0;
   const principal = (request: FastifyRequest): Principal => {
     const result = principals.get(request);
-    if (!result) throw new ArkvoryError('forbidden', 'Authentication required');
+    if (!result)
+      throw new ArkvoryError('forbidden', 'Authentication required', {
+        reason: 'permission_missing',
+      });
     return result;
   };
   const signal = (request: FastifyRequest, reply: FastifyReply): AbortSignal => {
@@ -34,7 +37,8 @@ export function createRequestContext(maxRequests = 128) {
     return controller.signal;
   };
   const countRequest = (reply: FastifyReply) => {
-    if (requests >= maxRequests) throw new ArkvoryError('busy', 'Request capacity exceeded');
+    if (requests >= maxRequests)
+      throw new ArkvoryError('busy', 'Request capacity exceeded', { reason: 'request_limit' });
     requests++;
     let released = false;
     reply.raw.once('close', () => {

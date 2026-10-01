@@ -117,7 +117,12 @@ try {
   await client.setServicePolicy(account.id, before.revision, before.bindings);
   await page.locator('summary[data-i18n=servicePolicy]').click();
   await page.locator('#service-policy-form button[type=submit]').click();
-  await page.locator('#services-status[data-i18n=errorConflict]').waitFor();
+  // ADR 0051: a stale revision is named as such and the task quotes its request ID.
+  await page.locator('#services-status[data-i18n=errorRevisionMismatch]').waitFor();
+  assert.match(
+    await page.locator('#services-status + .error-ref .request-id-value').textContent(),
+    /^[0-9a-f-]{36}$/,
+  );
   assert.equal(
     await page.locator('#service-policy-form .binding-row input').first().inputValue(),
     'releases',

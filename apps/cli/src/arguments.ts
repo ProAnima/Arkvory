@@ -6,7 +6,7 @@ export interface Arguments {
   readonly json: boolean;
   readonly language: 'en' | 'ru';
 }
-const flags = new Set(['json', 'help', 'version', 'move', 'prerelease']);
+const flags = new Set(['json', 'help', 'version', 'move', 'prerelease', 'verbose']);
 const values = new Set([
   'lang',
   'profile',
@@ -96,6 +96,7 @@ export function validateCommand(args: Arguments, words: number, allowed: readonl
         'timeout',
         'attempt-timeout',
         'retries',
+        'verbose',
         ...allowed,
       ].includes(key)
     )

@@ -6,8 +6,10 @@ import { guideRussian } from './guide-messages.js';
 import { cleanupRussian } from './cleanup-messages.js';
 import { updateRussian } from './update-messages.js';
 import { promotionRussian } from './promotion-messages.js';
+import { errorRussian } from './error-messages.js';
 import type { en } from './messages-en.js';
 export const ru: Record<keyof typeof en, string> = {
+  ...errorRussian,
   ...managementRussian,
   ...permissionRussian,
   ...guideRussian,
@@ -363,18 +365,17 @@ export const ru: Record<keyof typeof en, string> = {
   saveUnsupported:
     'Потоковое сохранение требует Chrome или Edge и HTTPS. В других клиентах можно скачать файл через SDK.',
   mismatch: 'Файл отличается от загружаемого. Выберите исходный файл или начните новую загрузку.',
-  errorGeneric: 'Не удалось выполнить операцию. Проверьте подключение и повторите попытку.',
-  errorUnauthorized: 'Ключ сервиса недействителен, истёк или отозван. Укажите действующий ключ.',
-  errorForbidden: 'У этого токена нет прав на выполнение операции.',
-  errorRateLimited: 'Слишком много попыток входа. Подождите несколько минут и повторите.',
+  errorGeneric: 'Не удалось выполнить операцию. Повторите попытку.',
+  errorUnauthorized: 'Ключ недействителен или отозван. Укажите действующий ключ.',
+  errorForbidden: 'У вас нет прав на эту операцию.',
+  errorRateLimited: 'Слишком много попыток входа. Подождите и повторите.',
   errorNotFound: 'Файл или версия не найдены.',
   errorConflict:
     'Объект изменился или операция несовместима с его состоянием. Обновите данные перед повтором.',
   errorInput: 'Проверьте введённые значения и повторите попытку.',
   errorIntegrity: 'Проверка целостности не пройдена. Повторите с исходным файлом.',
-  errorBusy: 'Сервис занят или временно недоступен. Повторите немного позже.',
-  errorCapacity: 'Достигнут лимит ёмкости хранилища.',
-  requestId: 'Запрос: {id}',
+  errorBusy: 'Сервис занят. Повторите немного позже.',
+  errorCapacity: 'Достигнут лимит ёмкости.',
   cancelled: 'Операция отменена.',
   publishedRefresh:
     'Файл опубликован, но каталог не обновился. Обновите его в разделе «Артефакты».',

@@ -67,8 +67,15 @@ test('published contract has stable IDs, complete parameter/security metadata an
         ajv.compile(content.schema);
       for (const [status, response] of Object.entries(operation.responses)) {
         assert.equal(typeof response.description, 'string');
-        if (method === 'head' || ['204', '304', '416'].includes(status))
+        if (method === 'head' || ['204', '304'].includes(status))
           assert.equal(response.content, undefined);
+        // ADR 0051: every error status, including 416, carries the native JSON envelope.
+        if (method !== 'head' && Number(status) >= 400)
+          assert.equal(
+            response.content?.['application/json']?.schema,
+            openApiDocument.components.schemas.NativeError,
+            `${method} ${path} ${status}`,
+          );
         for (const content of Object.values(response.content ?? {})) ajv.compile(content.schema);
       }
     }

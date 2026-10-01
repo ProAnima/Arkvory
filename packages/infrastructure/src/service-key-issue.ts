@@ -57,7 +57,9 @@ async function requireRotationSource(
     ).rows[0],
   );
   if (old.state !== 'active' || Date.parse(old.expiresAt) <= now.getTime())
-    throw new ArkvoryError('conflict', 'Rotation requires an active key');
+    throw new ArkvoryError('conflict', 'Rotation requires an active key', {
+      reason: 'state_conflict',
+    });
   await authorizeAdministration(c, ctx, targetId, 'credential.manage', old.bindings);
   requireSubset(request.bindings, old.bindings);
 }
@@ -72,7 +74,9 @@ async function requireKeyCapacity(c: PoolClient, targetId: string): Promise<void
     )
   ).rows[0];
   if (!counts || Number(counts.pending) >= 2 || Number(counts.total) >= 10000)
-    throw new ArkvoryError('capacity_exceeded', 'API key capacity reached');
+    throw new ArkvoryError('capacity_exceeded', 'API key capacity reached', {
+      reason: 'key_limit',
+    });
 }
 
 async function insertKey(
@@ -128,7 +132,10 @@ export async function issueServiceKey(
       ])
     ).rows[0],
   );
-  if (!a.enabled) throw new ArkvoryError('forbidden', 'Service account disabled');
+  if (!a.enabled)
+    throw new ArkvoryError('forbidden', 'Service account disabled', {
+      reason: 'credential_revoked',
+    });
   const existing = (
     await c.query<KeyRow>(
       'SELECT * FROM arkvory_api_keys WHERE account_id=$1 AND issued_by=$2 AND idempotency_key=$3',
@@ -137,7 +144,9 @@ export async function issueServiceKey(
   ).rows[0];
   if (existing) {
     if (existing.fingerprint !== fingerprint)
-      throw new ArkvoryError('conflict', 'Idempotency key has different parameters');
+      throw new ArkvoryError('conflict', 'Idempotency key has different parameters', {
+        reason: 'idempotency_mismatch',
+      });
     return { key: key(existing) };
   }
   requireSubset(request.bindings, a.bindings);

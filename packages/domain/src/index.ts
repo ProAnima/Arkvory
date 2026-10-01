@@ -19,3 +19,20 @@ export * from './retention.js';
 export * from './storage-policy.js';
 export * from './cleanup.js';
 export * from './storage-routing.js';
+export {
+  errorCodes,
+  errorReasons,
+  detailProblems,
+  MAX_ERROR_DETAILS,
+  isErrorReason,
+  fieldError,
+  withField,
+  nestedFields,
+} from './errors.js';
+export type {
+  ErrorReason,
+  ErrorReasonOf,
+  ErrorDetail,
+  DetailProblem,
+  ErrorExtra,
+} from './errors.js';

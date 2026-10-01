@@ -1,7 +1,8 @@
 import type { ArkvoryClient } from '@proanima/arkvory-sdk';
 import { element } from './dom.js';
-import { clearMessage, message } from './i18n.js';
-import { feedback, errorKey, UiError } from './feedback.js';
+import { clearMessage } from './i18n.js';
+import { feedback, UiError, showFailure } from './feedback.js';
+import { clearFieldErrors, showFieldErrors } from './field-errors.js';
 import { installStorageForm } from './storage-form.js';
 import { appendEvents, showPreview, showUsage } from './storage-view.js';
 
@@ -77,7 +78,10 @@ async function loadStorage(ctx: StorageContext, ...[repo, signal, current]: Para
   if (policy) {
     state.revision = policy.revision;
     form.fill(policy.policy);
-    message(ui.output, 'storageRevision', { revision: policy.revision, count: policy.lastDeleted });
+    feedback(ui.output, 'storageRevision', {
+      revision: policy.revision,
+      count: policy.lastDeleted,
+    });
     if (policy.lastError)
       feedback(ui.output, 'storageRunFailed', { code: policy.lastError }, 'error');
   }
@@ -88,12 +92,28 @@ async function loadStorage(ctx: StorageContext, ...[repo, signal, current]: Para
   ui.eventsSection.hidden = !state.access.events;
 }
 
+// Policy members as named by the server (ADR 0051) and their inputs in the storage form.
+const storageFields = {
+  '/policy/quotaBytes': 'storage-quota',
+  '/policy/keepLast': 'storage-keep',
+  '/policy/minAgeHours': 'storage-age',
+  '/policy/intervalMinutes': 'storage-interval',
+  '/policy/warningPercent': 'storage-warning',
+  '/policy/criticalPercent': 'storage-critical',
+};
+
 async function saveStorage(ctx: StorageContext, ...[repo, signal, current]: Parameters<Operation>) {
   const { client, ui, form, state } = ctx;
   if (state.revision === undefined || !state.access.manage) return;
   if (form.enabled() && (!state.access.remove || !ui.acknowledge.checked))
     throw new UiError('storageConfirmRequired');
-  await client.setStoragePolicy(repo, state.revision, form.read(), signal);
+  clearFieldErrors(storageFields);
+  try {
+    await client.setStoragePolicy(repo, state.revision, form.read(), signal);
+  } catch (error) {
+    showFieldErrors(storageFields, error);
+    throw error;
+  }
   if (!current()) return;
   await loadStorage(ctx, repo, signal, current);
   if (current()) feedback(ui.output, 'storageSaved', {}, 'success');
@@ -145,7 +165,7 @@ async function operate(ctx: StorageContext, action: Operation) {
   try {
     await action(repo, state.controller.signal, () => version === state.generation);
   } catch (error) {
-    if (version === state.generation) feedback(ui.output, errorKey(error), {}, 'error');
+    if (version === state.generation) showFailure(ui.output, error);
   } finally {
     if (version === state.generation) {
       state.busy = false;
@@ -190,7 +210,7 @@ export function installStoragePolicy(client: ArkvoryClient) {
       const result = await client.previewStoragePolicy(repo, signal);
       if (!current()) return;
       showPreview(ui.preview, result.items);
-      message(ui.output, result.hasMore ? 'storagePreviewMore' : 'storagePreviewCount', {
+      feedback(ui.output, result.hasMore ? 'storagePreviewMore' : 'storagePreviewCount', {
         count: result.items.length,
       });
     });

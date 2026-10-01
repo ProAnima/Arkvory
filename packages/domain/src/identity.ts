@@ -1,5 +1,6 @@
 import { ArkvoryError, requireRepository } from './artifact.js';
 import type { TokenScope } from './credentials.js';
+import type { ErrorReasonOf } from './errors.js';
 
 export function requireAccountName(value: unknown): string {
   if (typeof value !== 'string' || !/^[a-zA-Z0-9_.-]{3,64}$/.test(value))
@@ -65,10 +66,11 @@ export function tokenExpiry(value: unknown, nowMs: number): Date {
 /** Refusal before any password work; `retryAfterSeconds` is safe to disclose to the caller. */
 export class ThrottledError extends ArkvoryError {
   constructor(
-    readonly retryAfterSeconds: number,
+    retryAfterSeconds: number,
+    reason: ErrorReasonOf<'rate_limited'> = 'login_attempts',
     message = 'Too many authentication attempts; retry later',
   ) {
-    super('busy', message);
+    super('rate_limited', message, { reason, retryAfterSeconds });
     this.name = 'ThrottledError';
   }
 }

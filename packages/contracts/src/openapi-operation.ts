@@ -6,6 +6,7 @@ import {
   nativeErrorResponse,
   requestIdHeader,
 } from './http-contract.js';
+import { retryAfterHeader } from './errors.js';
 
 export type ObjectValue = Record<string, unknown>;
 export function object(value: unknown): ObjectValue {
@@ -34,24 +35,38 @@ export function methodPolicy(
   return policy;
 }
 
-/** Declared responses plus the shared error envelope; every response carries X-Request-Id. */
-function operationResponses(
-  declared: unknown,
-  policy: OperationPolicy,
-  method: ApiMethod,
-  content: boolean,
-): ObjectValue {
-  const responses: ObjectValue = {
-    ...object(declared),
-    ...(content ? contentResponses : {}),
-    default: nativeErrorResponse,
-  };
+// Anonymous and password operations are throttled with 429 and Retry-After (ADR 0049, 0051).
+const throttled = new Set(['login', 'registerAccount', 'changeOwnPassword']);
+const retryHeaders = { ...nativeErrorResponse.headers, 'Retry-After': retryAfterHeader };
+
+/** Statuses every operation may answer before or besides its declared outcomes. */
+function errorStatuses(original: ObjectValue, policy: OperationPolicy): readonly string[] {
   // All routes may be rejected by HTTP validation/CORS/admission or authentication.
   const statuses =
     policy.access.kind === 'public'
       ? ['400', '403', '503']
       : ['400', '401', '403', '404', '409', '422', '503', '507'];
-  for (const status of statuses) responses[status] ??= nativeErrorResponse;
+  // A login with wrong credentials is 401 although the operation itself is public.
+  if (policy.operationId === 'login') statuses.push('401');
+  // Only JSON bodies pass the 64 KiB body limit and the media type parsers.
+  const body = original['requestBody'] ? object(original['requestBody']) : undefined;
+  if (body && object(body['content'])['application/json']) statuses.push('413', '415');
+  return statuses;
+}
+
+/** Declared responses plus the shared error envelope; every response carries X-Request-Id. */
+function operationResponses(
+  original: ObjectValue,
+  policy: OperationPolicy,
+  method: ApiMethod,
+  content: boolean,
+): ObjectValue {
+  const responses: ObjectValue = {
+    ...object(original['responses']),
+    ...(content ? contentResponses : {}),
+    default: nativeErrorResponse,
+  };
+  for (const status of errorStatuses(original, policy)) responses[status] ??= nativeErrorResponse;
   if (method !== 'get' && method !== 'head')
     responses['405'] = {
       ...nativeErrorResponse,
@@ -64,11 +79,14 @@ function operationResponses(
   responses['503'] = {
     ...nativeErrorResponse,
     description: 'Unavailable or busy; reconcile mutation state before retry.',
-    headers: {
-      ...nativeErrorResponse.headers,
-      'Retry-After': { schema: { type: 'string' }, description: 'Delay in seconds.' },
-    },
+    headers: retryHeaders,
   };
+  if (throttled.has(policy.operationId))
+    responses['429'] = {
+      ...nativeErrorResponse,
+      description: 'rate_limited: wait retryAfterSeconds; the attempt was not evaluated.',
+      headers: retryHeaders,
+    };
   if (method === 'head' && content) {
     delete responses['206'];
     delete responses['416'];
@@ -155,6 +173,6 @@ export function composeOperation(
     'x-arkvory-route': route(path),
     'x-arkvory-gateway': method === 'get' || method === 'head' ? 'writer-or-reader' : 'writer',
     ...streamingExtension(policy, method, content),
-    responses: operationResponses(original['responses'], policy, method, content),
+    responses: operationResponses(original, policy, method, content),
   };
 }

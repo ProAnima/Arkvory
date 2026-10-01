@@ -80,7 +80,9 @@ export class PostgresCleanup implements CleanupCatalog {
       [id],
     );
     if (result.rowCount !== 1)
-      throw new ArkvoryError('conflict', 'Only cancelled data may be reclaimed');
+      throw new ArkvoryError('conflict', 'Only cancelled data may be reclaimed', {
+        reason: 'state_conflict',
+      });
   }
 }
 
@@ -189,7 +191,9 @@ export class PostgresJobs implements JobStore {
             previous.status === 'failed' &&
             (!limits || Number(limits.total) >= 10000 || Number(limits.owned) >= 100)
           )
-            throw new ArkvoryError('capacity_exceeded', 'Completion queue is full');
+            throw new ArkvoryError('capacity_exceeded', 'Completion queue is full', {
+              reason: 'queue_full',
+            });
           const updated = await client.query<Record<string, unknown>>(
             "UPDATE arkvory_jobs SET credential_id=$2,status='queued',attempts=0,generation=generation+1,error_code=NULL,available_at=now(),request_id=$3 WHERE id=$1 RETURNING *",
             [previous.id, credential ?? previous.credentialId, accessCorrelation(access)],
@@ -205,7 +209,9 @@ export class PostgresJobs implements JobStore {
         [owner],
       );
       if (Number(count.rows[0]?.total) >= 10000 || Number(count.rows[0]?.owned) >= 100)
-        throw new ArkvoryError('capacity_exceeded', 'Completion queue is full');
+        throw new ArkvoryError('capacity_exceeded', 'Completion queue is full', {
+          reason: 'queue_full',
+        });
       const inserted = await client.query<Record<string, unknown>>(
         `INSERT INTO arkvory_jobs(id,repository,upload_id,owner,credential_id,request_id) SELECT $1,repository,id,owner,$5,$6 FROM arkvory_uploads WHERE id=$2 AND repository=$3 AND owner=$4 AND status='pending' AND expires_at>now() RETURNING *`,
         [
@@ -218,7 +224,9 @@ export class PostgresJobs implements JobStore {
         ],
       );
       if (!inserted.rows[0])
-        throw new ArkvoryError('conflict', 'Upload is not eligible for completion');
+        throw new ArkvoryError('conflict', 'Upload is not eligible for completion', {
+          reason: 'upload_state',
+        });
       await client.query('COMMIT');
       return job(inserted.rows[0]);
     } catch (error) {

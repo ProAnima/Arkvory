@@ -3,7 +3,7 @@ import type { DeletionCandidateResponse } from '@proanima/arkvory-contracts';
 import type { MessageKey } from './messages.js';
 import { element } from './dom.js';
 import { clearMessage, message } from './i18n.js';
-import { feedback, errorKey } from './feedback.js';
+import { feedback, showFailure } from './feedback.js';
 
 const blockerMessages: Record<DeletionCandidateResponse['blockers'][number], MessageKey> = {
   reference: 'deletionReference',
@@ -61,7 +61,7 @@ function request<T>(
       if (version === state.generation) await done(result);
     })
     .catch((error: unknown) => {
-      if (version === state.generation) feedback(ui.status, errorKey(error), {}, 'error');
+      if (version === state.generation) showFailure(ui.status, error);
     })
     .finally(() => {
       if (version === state.generation) {

@@ -1,8 +1,9 @@
 import { homedir } from 'node:os';
 import { join, resolve, dirname } from 'node:path';
 import { ArkvoryClient } from '@proanima/arkvory-sdk';
+import type { RequestEvent } from '@proanima/arkvory-sdk';
 import { record, text } from '@proanima/arkvory-contracts';
-import { CliError } from './errors.js';
+import { CliError, sanitize } from './errors.js';
 import {
   exclusive,
   exists,
@@ -105,6 +106,17 @@ export async function profiles(args: Arguments): Promise<unknown> {
     return { profile: name, active: config.active };
   });
 }
+/**
+ * --verbose: one stderr line per HTTP exchange. The SDK event carries no headers, query or
+ * body, so credentials cannot reach the log; the path is the URL path only.
+ */
+export function verboseLine(event: RequestEvent): void {
+  const status = event.status === undefined ? 'network-error' : String(event.status);
+  const id = event.requestId ? ` request ${sanitize(event.requestId, 128)}` : '';
+  process.stderr.write(
+    `arkvoryctl: ${event.method} ${sanitize(event.path, 512)} ${status} ${String(event.durationMs)} ms${id}\n`,
+  );
+}
 export async function connection(args: Arguments, signal: AbortSignal) {
   const config = await configuration();
   const name = args.options.get('profile') ?? config.active;
@@ -129,6 +141,7 @@ export async function connection(args: Arguments, signal: AbortSignal) {
       requestTimeoutMs: numericOption(args, 'timeout', 60000, 1, 3600000),
       attemptTimeoutMs: numericOption(args, 'attempt-timeout', 120000, 1, 1800000),
       maxRetries: numericOption(args, 'retries', 20, 0, 100),
+      ...(args.options.has('verbose') ? { onRequest: verboseLine } : {}),
     }),
     server,
     repository,

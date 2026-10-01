@@ -108,6 +108,8 @@ export async function addStageInTransaction(
   );
   const current = existing.rows[0];
   if (!current)
-    throw new ArkvoryError('conflict', `An artifact has at most ${String(MAX_STAGES)} stages`);
+    throw new ArkvoryError('conflict', `An artifact has at most ${String(MAX_STAGES)} stages`, {
+      reason: 'stage_limit',
+    });
   return stageEntry(current);
 }

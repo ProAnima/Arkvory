@@ -6,7 +6,7 @@ import { DownloadView } from './download-view.js';
 import type { DownloadFile } from './download-view.js';
 import { chooseDestination } from './download-picker.js';
 import { element } from './dom.js';
-import { feedback, UiError, errorKey } from './feedback.js';
+import { feedback, UiError, showFailure } from './feedback.js';
 import { showView } from './shell.js';
 
 class Downloads {
@@ -75,7 +75,7 @@ class Downloads {
     });
   }
   private report(error: unknown) {
-    feedback(this.status, errorKey(error), {}, 'error');
+    showFailure(this.status, error);
   }
   private run(work: () => unknown) {
     void Promise.resolve()

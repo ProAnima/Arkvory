@@ -48,11 +48,13 @@ export async function lockServiceAccess(
   );
   const row = result.rows[0];
   if (!row || access.principal.id !== `service:${row.account_id}`)
-    throw new ArkvoryError('forbidden', 'Service credential revoked or expired');
+    throw new ArkvoryError('forbidden', 'Service credential revoked or expired', {
+      reason: 'credential_revoked',
+    });
   const bindings = intersectBindings(
     parseBindings(row.account_bindings),
     parseBindings(row.bindings),
   );
   if (access.actions.some((action) => !allows(bindings, access.repository, action)))
-    throw new ArkvoryError('forbidden', 'Service policy changed');
+    throw new ArkvoryError('forbidden', 'Service policy changed', { reason: 'permission_missing' });
 }

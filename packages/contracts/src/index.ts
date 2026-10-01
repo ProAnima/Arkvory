@@ -25,3 +25,17 @@ export * from './cleanup.js';
 export * from './updates.js';
 export * from './promotions.js';
 export { promotionOperations, resolvedPackageSchema } from './promotion-api.js';
+export {
+  errorCodes,
+  errorReasons,
+  detailProblems,
+  maxErrorDetails,
+  nativeErrorSchema,
+  readNativeError,
+} from './errors.js';
+export type {
+  ErrorCodeName,
+  ErrorReasonName,
+  ErrorDetailResponse,
+  NativeErrorResponse,
+} from './errors.js';

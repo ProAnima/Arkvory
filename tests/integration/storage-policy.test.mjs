@@ -180,6 +180,8 @@ test('quota reserves concurrently, replays existing upload and retains cancelled
     bytes = Buffer.alloc(36);
   const responses = await Promise.all([create(f, bytes, key), create(f, bytes)]);
   assert.deepEqual(responses.map((r) => r.statusCode).sort(), [201, 507]);
+  // ADR 0051: the refusal names the repository quota, not the server disk.
+  assert.equal(responses.find((r) => r.statusCode === 507).json().reason, 'storage_quota');
   const successful = responses.find((r) => r.statusCode === 201).json();
   if (responses[0].statusCode === 201)
     assert.equal((await create(f, bytes, key)).json().id, successful.id);

@@ -1,29 +1,9 @@
 import type { ManagedCredential, ServiceAction } from './service-policy.js';
 import { MAX_OBJECT_BYTES } from './object-size.js';
 import type { CredentialKind, TokenScope } from './credentials.js';
-
-export type ErrorCode =
-  | 'invalid_input'
-  | 'not_found'
-  | 'conflict'
-  | 'forbidden'
-  | 'unauthorized'
-  | 'capacity_exceeded'
-  | 'integrity_mismatch'
-  | 'busy'
-  | 'unavailable'
-  /** Unclassified server defect: 500 without Retry-After; clients must not retry blindly. */
-  | 'internal';
-
-export class ArkvoryError extends Error {
-  constructor(
-    readonly code: ErrorCode,
-    message: string,
-  ) {
-    super(message);
-    this.name = 'ArkvoryError';
-  }
-}
+import { ArkvoryError } from './errors.js';
+export { ArkvoryError } from './errors.js';
+export type { ErrorCode } from './errors.js';
 
 export interface ArtifactDescriptor {
   readonly name: string;
@@ -168,14 +148,20 @@ export function authorize(
   repository: string,
   permission: 'read' | 'write',
 ): void {
-  if (principal.managed) throw new ArkvoryError('forbidden', 'Explicit service action required');
+  if (principal.managed)
+    throw new ArkvoryError('forbidden', 'Explicit service action required', {
+      reason: 'permission_missing',
+    });
   requireRepository(repository);
   const allowed = principal.grants
     ? principal.grants.some(
         (grant) => grant.repository === repository && grant.permissions.includes(permission),
       )
     : principal.repositories.includes(repository) && principal.permissions.includes(permission);
-  if (!allowed) throw new ArkvoryError('forbidden', 'Repository access denied');
+  if (!allowed)
+    throw new ArkvoryError('forbidden', 'Repository access denied', {
+      reason: 'permission_missing',
+    });
 }
 
 export interface MutationAccess {

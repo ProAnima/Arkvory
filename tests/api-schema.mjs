@@ -23,8 +23,7 @@ export function validateResponse(path, method, response) {
   if (
     method.toLowerCase() === 'head' ||
     response.statusCode === 204 ||
-    response.statusCode === 304 ||
-    response.statusCode === 416
+    response.statusCode === 304
   ) {
     assert.equal(response.body, '');
     assert.equal(description.content, undefined);

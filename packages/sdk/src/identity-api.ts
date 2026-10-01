@@ -1,3 +1,4 @@
+import { ArkvoryClientError } from './transfer.js';
 import {
   items,
   record,
@@ -33,7 +34,7 @@ export class IdentityApi {
       (profile !== 'legacy' && profile !== 'managed') ||
       typeof r['serviceAdministration'] !== 'boolean'
     )
-      throw new Error('Invalid permission profile');
+      throw new ArkvoryClientError('invalid_response', 'Invalid permission profile');
     return {
       id: text(r['id']),
       profile,

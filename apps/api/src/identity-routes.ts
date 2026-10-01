@@ -20,14 +20,6 @@ export interface IdentityRouteDependencies {
   throttle: AuthThrottle;
 }
 
-async function rateLimited(request: FastifyRequest, reply: FastifyReply, seconds: number) {
-  return reply.code(429).header('Retry-After', String(seconds)).send({
-    code: 'rate_limited',
-    message: 'Too many authentication attempts; retry later',
-    requestId: request.id,
-  });
-}
-
 export function registerIdentityRoutes(app: FastifyInstance, routes: IdentityRouteDependencies) {
   const work =
     (gate: AdmissionQueue): PasswordWork =>
@@ -52,29 +44,24 @@ function registerPublicRoutes(
   app.get('/api/v1/auth/options', () =>
     Promise.resolve({ selfRegistration: service.allowRegistration }),
   );
+  // ThrottledError reaches the shared error handler: 429 rate_limited with Retry-After.
   app.post<{ Body: unknown }>('/api/v1/auth/login', async (request, reply) => {
-    const body = fields(request.body, ['name', 'password']);
+    const body = fields(request.body, ['name', 'password'], { required: ['name', 'password'] });
     const address = clientKey(request.ip);
     const wait = throttle.admitLogin(address);
-    if (wait) return rateLimited(request, reply, wait);
-    try {
-      const session = await passwordWork(request, reply, address, () =>
-        service.login(body['name'], body['password'], request.ip, request.id),
-      );
-      throttle.loginSucceeded(address);
-      return session;
-    } catch (error) {
-      if (error instanceof ThrottledError)
-        return rateLimited(request, reply, error.retryAfterSeconds);
-      throw error;
-    }
+    if (wait) throw new ThrottledError(wait, 'login_attempts');
+    const session = await passwordWork(request, reply, address, () =>
+      service.login(body['name'], body['password'], request.ip, request.id),
+    );
+    throttle.loginSucceeded(address);
+    return session;
   });
   app.post<{ Body: unknown }>('/api/v1/auth/register', async (request, reply) => {
-    const body = fields(request.body, ['name', 'password']);
+    const body = fields(request.body, ['name', 'password'], { required: ['name', 'password'] });
     const address = clientKey(request.ip);
     // Disabled registration answers 403 below without spending anyone's budget.
     const wait = service.allowRegistration ? throttle.admitRegistration(address) : 0;
-    if (wait) return rateLimited(request, reply, wait);
+    if (wait) throw new ThrottledError(wait, 'registration_attempts');
     const session = await passwordWork(request, reply, address, () =>
       service.register(body['name'], body['password'], request.ip, request.id),
     );
@@ -109,17 +96,13 @@ function registerSelfRoutes(
     return reply.code(204).send();
   });
   app.post<{ Body: unknown }>('/api/v1/auth/password', async (request, reply) => {
-    const body = fields(request.body, ['currentPassword', 'newPassword']);
+    const body = fields(request.body, ['currentPassword', 'newPassword'], {
+      required: ['currentPassword', 'newPassword'],
+    });
     const caller = principal(request);
-    try {
-      await passwordWork(request, reply, caller.id, () =>
-        service.changePassword(caller, body['currentPassword'], body['newPassword'], request.ip),
-      );
-    } catch (error) {
-      if (error instanceof ThrottledError)
-        return rateLimited(request, reply, error.retryAfterSeconds);
-      throw error;
-    }
+    await passwordWork(request, reply, caller.id, () =>
+      service.changePassword(caller, body['currentPassword'], body['newPassword'], request.ip),
+    );
     return reply.code(204).send();
   });
   app.get('/api/v1/auth/me', (request) => {

@@ -153,7 +153,7 @@ export async function exerciseSignIn(browser, origin, f, artifactId) {
   assert.equal(await page.locator('#administration-panel').isVisible(), false);
   await page.locator('[data-nav=help]').click();
   assert.equal(await page.locator('#help-hint').getAttribute('data-i18n'), 'helpHintConnected');
-  // A revoked session is reported as expired and the sign-in form is offered again.
+  // A revoked session is reported as ended (not expired) and sign-in is offered again.
   const session = await page.locator('#token').inputValue();
   await f.app.inject({
     method: 'POST',
@@ -162,7 +162,7 @@ export async function exerciseSignIn(browser, origin, f, artifactId) {
   });
   await page.locator('[data-nav=catalog]').click();
   await page.locator('#search button').first().click();
-  await page.locator('#status[data-i18n=sessionExpired]').waitFor();
+  await page.locator('#status[data-i18n=sessionEnded]').waitFor();
   assert.equal(await page.locator('#connection-state').getAttribute('data-connected'), 'false');
   assert.equal(await page.locator('#logout').isVisible(), false);
   assert.equal(
@@ -174,7 +174,7 @@ export async function exerciseSignIn(browser, origin, f, artifactId) {
   assert.deepEqual(errors, []);
   await page.close();
   console.log(
-    'PASS sign-in: password first, key collapsed, wrong password, deep link restore, Back, unknown/forbidden routes, expired session, owner services, 375/390 px labels, rail scrollbars',
+    'PASS sign-in: password first, key collapsed, wrong password, deep link restore, Back, unknown/forbidden routes, revoked session, owner services, 375/390 px labels, rail scrollbars',
   );
 }
 

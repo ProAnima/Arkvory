@@ -8,7 +8,7 @@ import { identityPaths } from './identity-api.js';
 import { securityAuditPaths } from './security-audit.js';
 import { readinessSchema } from './health.js';
 import { servicePaths } from './service-api.js';
-import { supplementalPaths, nativeErrorSchema } from './http-contract.js';
+import { supplementalPaths, nativeErrorSchema, nativeErrorResponse } from './http-contract.js';
 import { composeApiPaths } from './openapi-compose.js';
 import { delegationPaths } from './delegation-api.js';
 import { repositoryPaths } from './repositories.js';
@@ -79,21 +79,9 @@ const jsonResponse = {
   content: { 'application/json': { schema: uploadSchema } },
 };
 const errorResponse = {
+  ...nativeErrorResponse,
   description:
-    'Error with code, message, requestId; 503 responses include Retry-After; 500 internal does not',
-  content: {
-    'application/json': {
-      schema: {
-        type: 'object',
-        required: ['code', 'message', 'requestId'],
-        properties: {
-          code: { type: 'string' },
-          message: { type: 'string' },
-          requestId: { type: 'string' },
-        },
-      },
-    },
-  },
+    'Error envelope; 503 responses include Retry-After and retryAfterSeconds; 500 internal does not',
 };
 const responses = { '200': jsonResponse, default: errorResponse };
 const byteResponses = {

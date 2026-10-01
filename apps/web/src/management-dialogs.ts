@@ -1,7 +1,7 @@
 import { ArkvoryClient } from '@proanima/arkvory-sdk';
 import type { MessageKey } from './messages.js';
-import { message, clearMessage } from './i18n.js';
-import { feedback, errorKey } from './feedback.js';
+import { clearMessage } from './i18n.js';
+import { feedback, showFailure } from './feedback.js';
 import { command, field, node } from './management-dom.js';
 
 export class ManagementDialogs {
@@ -95,10 +95,10 @@ export class ManagementDialogs {
     const signal = this.controller.signal;
     try {
       await navigator.clipboard.writeText(this.secret.input.value);
-      if (!signal.aborted) message(this.status, 'keyCopied');
+      if (!signal.aborted) feedback(this.status, 'keyCopied', {}, 'success');
     } catch {
       if (!signal.aborted) {
-        message(this.status, 'keyCopyFailed');
+        feedback(this.status, 'keyCopyFailed', {}, 'error');
         this.secret.input.select();
       }
     }
@@ -117,7 +117,7 @@ export class ManagementDialogs {
       this.refresh?.();
     } catch (error) {
       if (!owner.aborted) {
-        feedback(this.status, errorKey(error), {}, 'error');
+        showFailure(this.status, error);
         this.activate.disabled = false;
       }
     } finally {

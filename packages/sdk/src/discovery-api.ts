@@ -1,3 +1,4 @@
+import { ArkvoryClientError } from './transfer.js';
 import {
   readRepositoryCard,
   readRepositoryPage,
@@ -26,10 +27,12 @@ export class DiscoveryApi {
   async capabilities(signal?: AbortSignal) {
     const r = record(await this.http.call('api/v1/capabilities', 'GET', undefined, signal));
     const gatewayRole = r['gatewayRole'];
-    if (gatewayRole !== 'api' && gatewayRole !== 'reader') throw new Error('Invalid gateway role');
+    if (gatewayRole !== 'api' && gatewayRole !== 'reader')
+      throw new ArkvoryClientError('invalid_response', 'Invalid gateway role');
     const features = Object.fromEntries(
       Object.entries(record(r['features'])).map(([key, value]) => {
-        if (typeof value !== 'boolean') throw new Error('Invalid capability');
+        if (typeof value !== 'boolean')
+          throw new ArkvoryClientError('invalid_response', 'Invalid capability');
         return [key, value] as const;
       }),
     );

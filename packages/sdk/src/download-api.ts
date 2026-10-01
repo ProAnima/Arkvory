@@ -1,4 +1,4 @@
-import { TransferAttempts } from './transfer.js';
+import { ArkvoryClientError, TransferAttempts } from './transfer.js';
 import type { TransferOptions } from './transfer.js';
 import { verifiedDownload } from './verified-download.js';
 import type { HttpPort } from './http-transport.js';
@@ -25,7 +25,7 @@ export class DownloadApi {
         range.start < 0 ||
         range.end < range.start)
     )
-      throw new Error('Invalid range');
+      throw new ArkvoryClientError('invalid_argument', 'Invalid range');
     return this.http.request(
       repositoryPath(repository, `artifacts/${encodeURIComponent(id)}/content`),
       { headers: range ? { Range: `bytes=${String(range.start)}-${String(range.end)}` } : {} },

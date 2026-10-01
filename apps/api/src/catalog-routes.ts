@@ -3,6 +3,7 @@ import { ArkvoryError } from '@proanima/arkvory-domain';
 import { organizePackages, parsePackageListOptions } from '@proanima/arkvory-application';
 import type { Principal } from '@proanima/arkvory-domain';
 import type { ArtifactCatalog } from '@proanima/arkvory-application';
+import { nestedBody } from './body-fields.js';
 
 function object(value: unknown): Record<string, unknown> {
   if (typeof value !== 'object' || value === null || Array.isArray(value))
@@ -14,9 +15,11 @@ function string(value: unknown, fallback?: string): string {
   if (typeof value !== 'string') throw new ArkvoryError('invalid_input', 'String required');
   return value;
 }
-function revision(value: unknown): number {
+function revision(value: unknown, field = '/expectedRevision'): number {
   if (typeof value !== 'number')
-    throw new ArkvoryError('invalid_input', 'Numeric expectedRevision required');
+    throw new ArkvoryError('invalid_input', 'Numeric expectedRevision required', {
+      details: [{ field, problem: 'type' }],
+    });
   return value;
 }
 function queryRevision(value: unknown): number {
@@ -52,12 +55,15 @@ function registerAnnotationRoutes(app: FastifyInstance, services: CatalogRouteSe
     `${base}/artifacts/:id/annotations`,
     async (request) => {
       const body = object(request.body);
-      return browse.annotate(
-        principal(request),
-        request.params.repository,
-        request.params.id,
-        revision(body['expectedRevision']),
-        body['value'],
+      const expected = revision(body['expectedRevision']);
+      return nestedBody('/value', () =>
+        browse.annotate(
+          principal(request),
+          request.params.repository,
+          request.params.id,
+          expected,
+          body['value'],
+        ),
       );
     },
   );
@@ -163,7 +169,7 @@ function registerAssetHistoryRoutes(app: FastifyInstance, services: CatalogRoute
       principal(request),
       request.params.repository,
       string(body['path']),
-      revision(body['sourceRevision']),
+      revision(body['sourceRevision'], '/sourceRevision'),
       revision(body['expectedRevision']),
     );
   });

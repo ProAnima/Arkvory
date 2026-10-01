@@ -12,6 +12,7 @@ import { UploadTransfer } from './upload-transfer.js';
 import { DownloadApi } from './download-api.js';
 import { PromotionsApi } from './promotions-api.js';
 import { HttpTransport } from './http-transport.js';
+import type { RequestEvent } from './http-transport.js';
 import { transferPolicy } from './transfer.js';
 import type { TransferPolicy } from './transfer.js';
 import { managementClients } from './management-client.js';
@@ -26,6 +27,11 @@ export interface ClientOptions extends TransferPolicy {
    * Explicit signals own their deadlines; transfer attempts retain their own deadlines.
    */
   readonly requestTimeoutMs?: number;
+  /**
+   * Called once per HTTP exchange with method, path, status, duration and request ID only
+   * (ADR 0051); for diagnostics such as a CLI --verbose mode. Never receives credentials.
+   */
+  readonly onRequest?: (event: RequestEvent) => void;
 }
 
 /** Compatible public facade. Each operation delegates to its responsible API module. */

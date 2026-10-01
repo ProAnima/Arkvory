@@ -1,19 +1,6 @@
-export const nativeErrorSchema = {
-  type: 'object',
-  required: ['code', 'message', 'requestId'],
-  properties: {
-    code: { type: 'string' },
-    message: { type: 'string' },
-    requestId: { type: 'string' },
-  },
-} as const;
+import { nativeErrorResponse, requestIdHeader } from './errors.js';
+export { nativeErrorSchema, nativeErrorResponse, requestIdHeader } from './errors.js';
 const header = (description: string) => ({ description, schema: { type: 'string' } });
-export const requestIdHeader = header('Server-generated request ID.');
-export const nativeErrorResponse = {
-  description: 'Native error envelope; no stack traces or credentials.',
-  headers: { 'X-Request-Id': requestIdHeader },
-  content: { 'application/json': { schema: nativeErrorSchema } },
-};
 const contentHeaders = {
   'X-Request-Id': requestIdHeader,
   ETag: header('Strong validator: quoted sha256:<lowercase hex>.'),
@@ -31,8 +18,13 @@ export const contentResponses = {
   },
   '304': { description: 'If-None-Match matched. No body.', headers: { ETag: contentHeaders.ETag } },
   '416': {
-    description: 'Unsatisfiable range. Empty body.',
-    headers: { ...contentHeaders, 'Content-Range': header('bytes */size') },
+    ...nativeErrorResponse,
+    description: 'Unsatisfiable range: invalid_input with reason range_not_satisfiable.',
+    headers: {
+      'X-Request-Id': requestIdHeader,
+      ETag: contentHeaders.ETag,
+      'Content-Range': header('bytes */size'),
+    },
   },
 };
 export const downloadHeaders = ['Range', 'If-Range', 'If-None-Match'].map((name) => ({

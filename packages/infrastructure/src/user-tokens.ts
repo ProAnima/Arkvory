@@ -2,7 +2,12 @@ import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import type { Pool, PoolClient } from 'pg';
 import { ArkvoryError } from '@proanima/arkvory-domain';
 import type { TokenScope } from '@proanima/arkvory-domain';
-import type { CreatedUserToken, SecurityActor, UserToken } from '@proanima/arkvory-application';
+import type {
+  CreatedUserToken,
+  CredentialRejection,
+  SecurityActor,
+  UserToken,
+} from '@proanima/arkvory-application';
 import { inTransaction } from './pg-transaction.js';
 import { appendSecurityEvent } from './security-audit.js';
 
@@ -50,6 +55,17 @@ export class PostgresUserTokens {
     return { userId: row.user_id, scope: scope(row.scope) };
   }
 
+  /** Expired (not revoked) tokens of enabled accounts are reported as such; see resolve. */
+  async rejection(token: string): Promise<CredentialRejection> {
+    if (!/^pat_[A-Za-z0-9_-]{43}$/.test(token)) return 'credential_invalid';
+    const result = await this.pool.query<{ expired: boolean }>(
+      `SELECT t.revoked_at IS NULL AND ${expiry}<=now() AS expired FROM arkvory_user_tokens t
+       JOIN arkvory_users u ON u.id=t.user_id WHERE t.token_hash=$1 AND u.enabled`,
+      [digest(token)],
+    );
+    return result.rows[0]?.expired ? 'token_expired' : 'credential_invalid';
+  }
+
   createToken(
     userId: string,
     name: string,
@@ -75,6 +91,7 @@ export class PostgresUserTokens {
         throw new ArkvoryError(
           'capacity_exceeded',
           'User token limit reached (max 50 active tokens)',
+          { reason: 'token_limit' },
         );
       const inserted = await client.query<{ created_at: Date }>(
         `INSERT INTO arkvory_user_tokens(id,user_id,name,token_hash,token_prefix,expires_at,scope)

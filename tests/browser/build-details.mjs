@@ -85,6 +85,15 @@ export async function exerciseBuildDetails(page, f, buildId) {
   assert.equal(external.statusCode, 200);
   await page.locator('#attachment-list button[data-attachment-mutation]').click();
   await page.locator('#attachment-status[data-tone=error]').waitFor();
+  // ADR 0051: the panel names the stale state and quotes the request beside the message.
+  assert.equal(
+    await page.locator('#attachment-status').getAttribute('data-i18n'),
+    'errorRevisionMismatch',
+  );
+  assert.match(
+    await page.locator('#attachment-status + .error-ref .request-id-value').textContent(),
+    /^[0-9a-f-]{36}$/,
+  );
   assert.equal(await page.locator('#attachment-list .attachment-row').count(), 1);
   await page.locator('#attachment-reload').click();
   await page.waitForFunction(() =>

@@ -1,17 +1,19 @@
-import { ArkvoryHttpError } from '@proanima/arkvory-sdk';
-import { element } from './dom.js';
-import { clearMessage, message } from './i18n.js';
-import { feedback, errorKey } from './feedback.js';
-/** `expired` handles a 401 of an expired password session and reports whether it did. */
-export function consoleRunner(output: HTMLOutputElement, expired: () => boolean = () => false) {
+import { credentialRejected } from './error-keys.js';
+import { showFailure } from './feedback.js';
+import type { ArkvoryHttpError } from '@proanima/arkvory-sdk';
+
+/**
+ * Runs a console action and reports its failure in `output` with the request reference.
+ * `expired` takes over a 401 about the page's password session and reports whether it did.
+ */
+export function consoleRunner(
+  output: HTMLOutputElement,
+  expired: (error: ArkvoryHttpError) => boolean = () => false,
+) {
   return (action: () => Promise<void>) => {
-    const requestId = element('request-id', HTMLSpanElement);
-    clearMessage(requestId);
     void action().catch((error: unknown) => {
-      if (error instanceof ArkvoryHttpError && error.status === 401 && expired()) return;
-      feedback(output, errorKey(error), {}, 'error');
-      if (error instanceof ArkvoryHttpError && error.requestId)
-        message(requestId, 'requestId', { id: error.requestId });
+      if (credentialRejected(error) && expired(error)) return;
+      showFailure(output, error);
     });
   };
 }

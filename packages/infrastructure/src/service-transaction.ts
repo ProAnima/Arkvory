@@ -26,7 +26,9 @@ export async function serviceTransaction<T>(
       broken = true;
     }
     if (typeof error === 'object' && error !== null && 'code' in error && error.code === '23505')
-      throw new ArkvoryError('conflict', 'Service name or credential already exists');
+      throw new ArkvoryError('conflict', 'Service name or credential already exists', {
+        reason: 'already_exists',
+      });
     throw error;
   } finally {
     client.release(broken);

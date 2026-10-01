@@ -24,7 +24,9 @@ const decode = (r: GrantRow): ServiceDelegation => ({
 });
 export async function listDelegations(c: PoolClient, ctx: AdministrationContext, keyId: string) {
   if (!ctx.bootstrap && ctx.keyId !== keyId)
-    throw new ArkvoryError('forbidden', 'Only own delegations may be read');
+    throw new ArkvoryError('forbidden', 'Only own delegations may be read', {
+      reason: 'permission_missing',
+    });
   if (!(await c.query('SELECT 1 FROM arkvory_api_keys WHERE id=$1', [keyId])).rowCount)
     throw new ArkvoryError('not_found', 'API key not found');
   return (
@@ -42,7 +44,10 @@ export async function writeDelegation(
   expected: number,
   value?: { actions: readonly AdministrationAction[]; ceiling: readonly ServiceBinding[] },
 ) {
-  if (!ctx.bootstrap) throw new ArkvoryError('forbidden', 'Only bootstrap may delegate');
+  if (!ctx.bootstrap)
+    throw new ArkvoryError('forbidden', 'Only bootstrap may delegate', {
+      reason: 'permission_missing',
+    });
   const existing = (
     await c.query<GrantRow>(
       'SELECT * FROM arkvory_service_delegations WHERE key_id=$1 AND target_account_id=$2',
@@ -50,7 +55,9 @@ export async function writeDelegation(
     )
   ).rows[0];
   if ((existing?.revision ?? 0) !== expected)
-    throw new ArkvoryError('conflict', 'Delegation revision changed');
+    throw new ArkvoryError('conflict', 'Delegation revision changed', {
+      reason: 'revision_mismatch',
+    });
   if (!value && !existing) throw new ArkvoryError('not_found', 'Delegation not found');
   if (value) {
     const operator = (
@@ -61,9 +68,15 @@ export async function writeDelegation(
       )
     ).rows[0];
     if (!operator)
-      throw new ArkvoryError('conflict', 'Delegate requires an active bootstrap-issued credential');
+      throw new ArkvoryError(
+        'conflict',
+        'Delegate requires an active bootstrap-issued credential',
+        { reason: 'state_conflict' },
+      );
     if (operator.account_id === target)
-      throw new ArkvoryError('forbidden', 'Self administration is not delegated');
+      throw new ArkvoryError('forbidden', 'Self administration is not delegated', {
+        reason: 'permission_missing',
+      });
     if (!(await c.query('SELECT 1 FROM arkvory_service_accounts WHERE id=$1', [target])).rowCount)
       throw new ArkvoryError('not_found', 'Target account not found');
     // No chains: an account cannot simultaneously be a delegated target and an operator.
@@ -76,7 +89,9 @@ export async function writeDelegation(
         )
       ).rowCount
     )
-      throw new ArkvoryError('conflict', 'Operator accounts cannot be delegated targets');
+      throw new ArkvoryError('conflict', 'Operator accounts cannot be delegated targets', {
+        reason: 'state_conflict',
+      });
   }
   if (!existing) {
     const counts = (
@@ -86,7 +101,9 @@ export async function writeDelegation(
       )
     ).rows[0];
     if (!counts || Number(counts.total) >= 10000 || Number(counts.owned) >= 64)
-      throw new ArkvoryError('capacity_exceeded', 'Delegation capacity reached');
+      throw new ArkvoryError('capacity_exceeded', 'Delegation capacity reached', {
+        reason: 'delegation_limit',
+      });
   }
   const row = (
     await c.query<GrantRow>(
