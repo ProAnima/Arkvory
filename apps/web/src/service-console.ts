@@ -70,7 +70,10 @@ export class ServiceConsole {
       const own = disclosure('delegationOwn');
       for (const grant of authority.delegations) {
         const row = node('p');
-        row.textContent = `${grant.targetAccountId}: ${grant.actions.join(', ')}`;
+        message(row, 'delegationGrantLine', {
+          target: grant.targetAccountId,
+          actions: grant.actions.join(', '),
+        });
         own.append(row, node('span', grant.enabled ? 'enabled' : 'disabled'));
       }
       controls.append(own);
@@ -173,7 +176,17 @@ export class ServiceConsole {
       row.append(name, node('span', account.enabled ? 'enabled' : 'disabled'), open);
       this.list.append(row);
     }
-    if (!result.items.length) this.list.append(node('p', 'managementEmpty', 'hint'));
+    // The file-based owner key administers access but is not itself a service account.
+    if (!result.items.length)
+      this.list.append(
+        node(
+          'p',
+          this.authority.bootstrap && this.authority.writable
+            ? 'serviceEmptyOwner'
+            : 'serviceEmptyDelegated',
+          'hint',
+        ),
+      );
   }
   private async open(account: ServiceAccountResponse, signal: AbortSignal) {
     this.account = account;
@@ -238,10 +251,14 @@ export class ServiceConsole {
         time = node('time'),
         detail = node('p');
       dateMessage(time, record.occurredAt);
-      detail.textContent = `${record.action} · ${record.actor} · ${record.keyId ?? '—'}`;
+      message(detail, 'serviceAuditLine', {
+        action: record.action,
+        actor: record.actor,
+        key: record.keyId ?? '—',
+      });
       row.append(time, detail);
       this.auditRows.append(row);
     }
-    if (!records.length) this.auditRows.append(node('p', 'managementEmpty', 'hint'));
+    if (!records.length) this.auditRows.append(node('p', 'serviceAuditEmpty', 'hint'));
   }
 }

@@ -1,371 +1,315 @@
 import type { ArkvoryClient } from '@proanima/arkvory-sdk';
-import type {
-  AttachmentRevisionResponse,
-  BuildAttachmentResponse,
-} from '@proanima/arkvory-contracts';
-import { element } from './dom.js';
-import { clearMessage, message, dateMessage } from './i18n.js';
+import type { BuildAttachmentResponse } from '@proanima/arkvory-contracts';
+import { clearMessage, message } from './i18n.js';
 import { feedback, errorKey, UiError } from './feedback.js';
 import { hashFile } from './file-hash.js';
-import type { MessageKey } from './messages.js';
 import { exceedsServerLimit } from './server-limits.js';
+import { attachmentElements, attachmentKind, fileRow, historyEntry } from './attachment-view.js';
+import type { AttachmentElements, RowActions, Selection } from './attachment-view.js';
 
-const kindMessages: Record<BuildAttachmentResponse['kind'], MessageKey> = {
-  manifest: 'attachmentManifest',
-  sbom: 'attachmentSbom',
-  signature: 'attachmentSignature',
-  report: 'attachmentReport',
-  file: 'attachmentFile',
-};
-interface Selection {
-  repository: string;
-  id: string;
-  current: AttachmentRevisionResponse;
-  canWrite: boolean;
-  canUpload: boolean;
-  canDownload: boolean;
+const maximumAttachments = 32;
+const uploadOperations = [
+  'createUpload',
+  'putUploadPart',
+  'completeUpload',
+  'getUpload',
+  'listUploadParts',
+];
+/** A paused upload is resumed with the same idempotency key, upload ID and checksum. */
+interface PendingUpload {
+  file: File;
+  key: string;
+  id?: string;
+  sha256?: string;
 }
-// arkvory-exception ARCH-023 -- Existing UI controller contains event wiring and view state; freeze its size and extract cohesive controllers only with browser state/reset acceptance.
-export function installBuildAttachments(
-  client: ArkvoryClient,
-  download: (repo: string, id: string, name: string) => Promise<void>,
-) {
-  const panel = element('build-attachments', HTMLElement),
-    list = element('attachment-list', HTMLDivElement);
-  const form = element('attachment-form', HTMLFormElement),
-    fields = element('attachment-fields', HTMLFieldSetElement);
-  const file = element('attachment-file', HTMLInputElement),
-    mode = element('attachment-source', HTMLSelectElement);
-  const name = element('attachment-name', HTMLInputElement),
-    target = element('attachment-id', HTMLInputElement);
-  const kind = element('attachment-kind', HTMLSelectElement),
-    description = element('attachment-description', HTMLInputElement);
-  const status = element('attachment-status', HTMLOutputElement),
-    progress = element('attachment-progress', HTMLProgressElement);
-  const pause = element('attachment-pause', HTMLButtonElement),
-    reset = element('attachment-reset', HTMLButtonElement);
-  const history = element('attachment-history-rows', HTMLDivElement),
-    more = element('attachment-history-more', HTMLButtonElement);
-  let selected: Selection | undefined,
-    generation = 0,
-    busy = false,
-    controller: AbortController | undefined;
-  let pending: { file: File; key: string; id?: string; sha256?: string } | undefined;
-  let next: number | null = null;
-  const run = (work: () => Promise<void>) => {
-    const currentGeneration = generation;
-    void work().catch((error: unknown) => {
-      if (currentGeneration === generation) feedback(status, errorKey(error), {}, 'error');
-    });
+
+class BuildAttachments {
+  private readonly ui: AttachmentElements = attachmentElements();
+  private selected: Selection | undefined;
+  private generation = 0;
+  private busy = false;
+  private controller: AbortController | undefined;
+  private pending: PendingUpload | undefined;
+  private next: number | null = null;
+  private readonly actions: RowActions = {
+    download: (selection, item) => {
+      this.run(() => this.download(selection.repository, item.artifactId, item.name));
+    },
+    unlink: (selection, item) => {
+      this.run(async () => {
+        await this.replace(
+          selection,
+          selection.current.items.filter((entry) => entry.name !== item.name),
+        );
+        this.ui.reload.focus();
+      });
+    },
+    restore: (selection, revision) => {
+      this.run(async () => {
+        await this.replace(selection, revision.items);
+        this.ui.historyLoad.focus();
+      });
+    },
   };
-  function source() {
-    const uploading = mode.value === 'upload';
-    element('attachment-file-label', HTMLLabelElement).hidden = !uploading;
-    element('attachment-id-label', HTMLLabelElement).hidden = uploading;
-    file.required = uploading;
-    target.required = !uploading;
+  constructor(
+    private readonly client: ArkvoryClient,
+    private readonly download: (repo: string, id: string, name: string) => Promise<void>,
+  ) {
+    const ui = this.ui;
+    ui.mode.onchange = () => {
+      this.source();
+    };
+    ui.file.onchange = () => {
+      this.pending = undefined;
+      ui.uploadId.value = '';
+      if (ui.file.files?.[0]) ui.name.value = ui.file.files[0].name;
+    };
+    ui.historyLoad.onclick = () => {
+      this.run(() => this.loadHistory());
+    };
+    ui.more.onclick = () => {
+      this.run(() => this.loadHistory(this.next ?? undefined));
+    };
+    ui.reload.onclick = () => {
+      this.run(() => this.reload());
+    };
+    ui.pause.onclick = () => this.controller?.abort();
+    ui.reset.onclick = () => {
+      if (!this.busy) this.resetDraft();
+    };
+    ui.form.onsubmit = (event) => {
+      event.preventDefault();
+      this.run(() => this.submit());
+    };
   }
-  mode.onchange = source;
-  file.onchange = () => {
-    pending = undefined;
-    element('attachment-upload-id', HTMLInputElement).value = '';
-    if (file.files?.[0]) name.value = file.files[0].name;
-  };
-  function controls() {
-    fields.disabled = busy || !selected?.canWrite;
-    element('attachment-submit', HTMLButtonElement).disabled =
-      busy || !selected?.canWrite || selected.current.items.length >= 32;
-    pause.disabled = !controller;
-    reset.disabled = busy;
-    element('attachment-reload', HTMLButtonElement).disabled = busy || !selected;
-    form.hidden = !selected?.canWrite;
-    for (const button of panel.querySelectorAll<HTMLButtonElement>('[data-attachment-mutation]'))
+  isUploading() {
+    return this.controller !== undefined;
+  }
+  clear() {
+    this.generation++;
+    this.controller?.abort();
+    this.controller = undefined;
+    this.busy = false;
+    this.selected = undefined;
+    this.ui.panel.hidden = true;
+    this.ui.list.replaceChildren();
+    this.ui.history.replaceChildren();
+    this.resetDraft();
+    clearMessage(this.ui.status);
+    this.controls();
+  }
+  async open(repository: string, id: string, operations: ReadonlySet<string>) {
+    const request = ++this.generation;
+    this.ui.panel.hidden = true;
+    const current = await this.client.attachments(repository, id);
+    if (request !== this.generation) return;
+    const selection: Selection = {
+      repository,
+      id,
+      current,
+      canWrite: operations.has('replaceBuildAttachments'),
+      canUpload: uploadOperations.every((operation) => operations.has(operation)),
+      canDownload: operations.has('downloadArtifact'),
+    };
+    this.selected = selection;
+    const uploadOption = this.ui.mode.querySelector<HTMLOptionElement>('option[value=upload]');
+    if (uploadOption) uploadOption.disabled = !selection.canUpload;
+    this.ui.mode.value = selection.canUpload ? 'upload' : 'existing';
+    this.source();
+    this.ui.panel.hidden = false;
+    this.render(selection);
+  }
+  /** Errors of a cleared selection are not reported into the next artifact's panel. */
+  private run(work: () => Promise<void>) {
+    const generation = this.generation;
+    void work().catch((error: unknown) => {
+      if (generation === this.generation) feedback(this.ui.status, errorKey(error), {}, 'error');
+    });
+  }
+  private source() {
+    const uploading = this.ui.mode.value === 'upload';
+    this.ui.fileLabel.hidden = !uploading;
+    this.ui.idLabel.hidden = uploading;
+    this.ui.file.required = uploading;
+    this.ui.target.required = !uploading;
+  }
+  private controls() {
+    const { ui, selected, busy } = this;
+    ui.fields.disabled = busy || !selected?.canWrite;
+    ui.submit.disabled =
+      busy || !selected?.canWrite || selected.current.items.length >= maximumAttachments;
+    ui.pause.disabled = !this.controller;
+    ui.reset.disabled = busy;
+    ui.reload.disabled = busy || !selected;
+    ui.form.hidden = !selected?.canWrite;
+    for (const button of ui.panel.querySelectorAll<HTMLButtonElement>('[data-attachment-mutation]'))
       button.disabled = busy || !selected?.canWrite;
   }
-  function fileRow(item: BuildAttachmentResponse, selection: Selection, remove: boolean) {
-    const row = document.createElement('div');
-    row.className = 'attachment-row';
-    const details = document.createElement('div'),
-      title = document.createElement('strong'),
-      badge = document.createElement('span'),
-      hint = document.createElement('p');
-    title.textContent = item.name;
-    title.id = `attachment-name-${crypto.randomUUID()}`;
-    badge.className = 'attachment-kind';
-    message(badge, kindMessages[item.kind]);
-    hint.className = 'hint';
-    hint.textContent = item.description;
-    details.append(title, badge, hint);
-    const actions = document.createElement('div');
-    actions.className = 'button-row';
-    if (selection.canDownload) {
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.className = 'secondary small';
-      message(button, 'download');
-      button.setAttribute('aria-describedby', title.id);
-      button.onclick = () => {
-        run(() => download(selection.repository, item.artifactId, item.name));
-      };
-      actions.append(button);
-    }
-    if (remove && selection.canWrite) {
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.className = 'ghost small';
-      button.dataset['attachmentMutation'] = '';
-      message(button, 'attachmentUnlink');
-      button.setAttribute('aria-describedby', title.id);
-      button.onclick = () => {
-        run(async () => {
-          await replace(
-            selection,
-            selection.current.items.filter((entry) => entry.name !== item.name),
-          );
-          element('attachment-reload', HTMLButtonElement).focus();
-        });
-      };
-      actions.append(button);
-    }
-    row.append(details, actions);
-    return row;
-  }
-  function render(selection: Selection) {
-    list.replaceChildren(...selection.current.items.map((item) => fileRow(item, selection, true)));
-    element('attachment-empty', HTMLParagraphElement).hidden = selection.current.items.length > 0;
-    message(element('attachment-count', HTMLSpanElement), 'attachmentCount', {
+  private render(selection: Selection) {
+    const { ui } = this;
+    ui.list.replaceChildren(
+      ...selection.current.items.map((item) => fileRow(item, selection, this.actions, true)),
+    );
+    ui.empty.hidden = selection.current.items.length > 0;
+    message(ui.count, 'attachmentCount', {
       count: selection.current.items.length,
       revision: selection.current.revision,
     });
-    controls();
+    this.controls();
   }
-  async function replace(selection: Selection, items: readonly BuildAttachmentResponse[]) {
-    if (busy || selected !== selection) return;
-    busy = true;
-    controls();
+  private async replace(selection: Selection, items: readonly BuildAttachmentResponse[]) {
+    if (this.busy || this.selected !== selection) return;
+    this.busy = true;
+    this.controls();
     try {
-      const updated = await client.replaceAttachments(
+      const updated = await this.client.replaceAttachments(
         selection.repository,
         selection.id,
         selection.current.revision,
         items,
       );
-      if (selected !== selection) return;
+      if (this.selected !== selection) return;
       selection.current = updated;
-      render(selection);
-      history.replaceChildren();
-      next = null;
-      more.disabled = true;
-      feedback(status, 'attachmentSaved', { revision: updated.revision }, 'success');
+      this.render(selection);
+      this.ui.history.replaceChildren();
+      this.next = null;
+      this.ui.more.disabled = true;
+      feedback(this.ui.status, 'attachmentSaved', { revision: updated.revision }, 'success');
     } finally {
-      if (selected === selection) {
-        busy = false;
-        controls();
+      if (this.selected === selection) {
+        this.busy = false;
+        this.controls();
       }
     }
   }
-  async function loadHistory(before?: number) {
-    const selection = selected;
+  private async loadHistory(before?: number) {
+    const selection = this.selected;
     if (!selection) return;
-    more.disabled = true;
-    const page = await client.attachmentHistory(selection.repository, selection.id, before);
-    if (selected !== selection) return;
-    if (before === undefined) history.replaceChildren();
-    for (const revision of page.items) {
-      const block = document.createElement('div');
-      block.className = 'attachment-history-entry';
-      const heading = document.createElement('p'),
-        date = document.createElement('time'),
-        actor = document.createElement('span');
-      message(heading, 'revisionStatus', { revision: revision.revision });
-      if (revision.createdAt) dateMessage(date, revision.createdAt);
-      actor.textContent = revision.actor;
-      block.append(heading, date, actor);
-      for (const item of revision.items) block.append(fileRow(item, selection, false));
-      if (selection.canWrite && revision.revision !== selection.current.revision) {
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.className = 'secondary small';
-        button.dataset['attachmentMutation'] = '';
-        message(button, 'attachmentRestore');
-        button.onclick = () => {
-          run(async () => {
-            await replace(selection, revision.items);
-            element('attachment-history-load', HTMLButtonElement).focus();
-          });
-        };
-        block.append(button);
-      }
-      history.append(block);
-    }
+    this.ui.more.disabled = true;
+    const page = await this.client.attachmentHistory(selection.repository, selection.id, before);
+    if (this.selected !== selection) return;
+    if (before === undefined) this.ui.history.replaceChildren();
+    for (const revision of page.items)
+      this.ui.history.append(historyEntry(revision, selection, this.actions));
     if (!page.items.length && before === undefined) {
       const empty = document.createElement('p');
       message(empty, 'attachmentHistoryEmpty');
-      history.append(empty);
+      this.ui.history.append(empty);
     }
-    next = page.next;
-    more.disabled = next === null;
-    controls();
+    this.next = page.next;
+    this.ui.more.disabled = this.next === null;
+    this.controls();
   }
-  element('attachment-history-load', HTMLButtonElement).onclick = () => {
-    run(() => loadHistory());
-  };
-  more.onclick = () => {
-    run(() => loadHistory(next ?? undefined));
-  };
-  element('attachment-reload', HTMLButtonElement).onclick = () => {
-    run(async () => {
-      const selection = selected;
-      if (!selection || busy) return;
-      const current = await client.attachments(selection.repository, selection.id);
-      if (selected === selection) {
-        selection.current = current;
-        render(selection);
-        feedback(status, 'attachmentReloaded');
+  private async reload() {
+    const selection = this.selected;
+    if (!selection || this.busy) return;
+    const current = await this.client.attachments(selection.repository, selection.id);
+    if (this.selected === selection) {
+      selection.current = current;
+      this.render(selection);
+      feedback(this.ui.status, 'attachmentReloaded');
+    }
+  }
+  private resetDraft() {
+    this.pending = undefined;
+    this.ui.form.reset();
+    this.ui.mode.value = this.selected?.canUpload ? 'upload' : 'existing';
+    this.ui.uploadId.value = '';
+    this.ui.progress.value = 0;
+    this.source();
+  }
+  private async submit() {
+    const selection = this.selected;
+    if (!selection || this.busy) return;
+    const { ui } = this;
+    if (!selection.canWrite || selection.current.items.length >= maximumAttachments)
+      throw new UiError('errorInput');
+    const kind = attachmentKind(ui.kind.value);
+    if (!kind) throw new UiError('errorInput');
+    const entryName = ui.name.value.trim();
+    if (selection.current.items.some((item) => item.name.toLowerCase() === entryName.toLowerCase()))
+      throw new UiError('attachmentDuplicate');
+    const artifactId =
+      ui.mode.value === 'upload' ? await this.upload(selection) : ui.target.value.trim();
+    if (this.selected !== selection) return;
+    await this.replace(selection, [
+      ...selection.current.items,
+      { name: entryName, kind, artifactId, description: ui.description.value },
+    ]);
+    if (this.selected === selection) {
+      this.resetDraft();
+      ui.name.focus();
+    }
+  }
+  private async upload(selection: Selection): Promise<string> {
+    const { ui } = this;
+    const current = ui.file.files?.[0];
+    if (!current) throw new UiError('chooseFileError');
+    if (!selection.canUpload) throw new UiError('errorForbidden');
+    if (await exceedsServerLimit(this.client, current.size)) throw new UiError('fileTooLarge');
+    this.pending ??= { file: current, key: crypto.randomUUID() };
+    const attempt = this.pending;
+    this.controller = new AbortController();
+    const signal = this.controller.signal,
+      visible = () => this.selected === selection;
+    this.busy = true;
+    ui.progress.max = Math.max(1, current.size);
+    this.controls();
+    try {
+      if (!attempt.sha256) {
+        feedback(ui.status, 'hashing');
+        attempt.sha256 = await hashFile(attempt.file, signal, (bytes) => {
+          if (visible()) ui.progress.value = bytes;
+        });
       }
-    });
-  };
-  pause.onclick = () => controller?.abort();
-  function resetDraft() {
-    pending = undefined;
-    form.reset();
-    mode.value = selected?.canUpload ? 'upload' : 'existing';
-    element('attachment-upload-id', HTMLInputElement).value = '';
-    progress.value = 0;
-    source();
-  }
-  reset.onclick = () => {
-    if (!busy) resetDraft();
-  };
-  form.onsubmit = (event) => {
-    event.preventDefault();
-    run(async () => {
-      const selection = selected;
-      if (!selection || busy) return;
-      if (!selection.canWrite || selection.current.items.length >= 32)
-        throw new UiError('errorInput');
-      const attachmentKind = kind.value;
-      if (
-        attachmentKind !== 'manifest' &&
-        attachmentKind !== 'sbom' &&
-        attachmentKind !== 'signature' &&
-        attachmentKind !== 'report' &&
-        attachmentKind !== 'file'
-      )
-        throw new UiError('errorInput');
-      const entryName = name.value.trim();
-      if (
-        selection.current.items.some((item) => item.name.toLowerCase() === entryName.toLowerCase())
-      )
-        throw new UiError('attachmentDuplicate');
-      let artifactId = target.value.trim();
-      if (mode.value === 'upload') {
-        const current = file.files?.[0];
-        if (!current) throw new UiError('chooseFileError');
-        if (!selection.canUpload) throw new UiError('errorForbidden');
-        if (await exceedsServerLimit(client, current.size)) throw new UiError('fileTooLarge');
-        pending ??= { file: current, key: crypto.randomUUID() };
-        const attempt = pending;
-        controller = new AbortController();
-        const signal = controller.signal;
-        busy = true;
-        progress.max = Math.max(1, current.size);
-        controls();
-        try {
-          if (!attempt.sha256) {
-            feedback(status, 'hashing');
-            attempt.sha256 = await hashFile(attempt.file, signal, (bytes) => {
-              if (selected === selection) progress.value = bytes;
-            });
-          }
-          if (!attempt.id) {
-            const upload = await client.create(
-              selection.repository,
-              attempt.key,
-              {
-                name: attempt.file.name,
-                size: String(attempt.file.size),
-                sha256: attempt.sha256,
-                labels: [],
-                metadata: {},
-              },
-              signal,
-            );
-            attempt.id = upload.id;
-            if (selected === selection)
-              element('attachment-upload-id', HTMLInputElement).value = upload.id;
-          }
-          await client.resume(selection.repository, attempt.id, attempt.file, {
-            signal,
-            onProgress: (bytes) => {
-              if (selected === selection) {
-                progress.value = bytes;
-                feedback(status, 'uploading', {
-                  percent: Math.round((bytes / Math.max(1, current.size)) * 100),
-                });
-              }
-            },
+      if (!attempt.id) {
+        const created = await this.client.create(
+          selection.repository,
+          attempt.key,
+          {
+            name: attempt.file.name,
+            size: String(attempt.file.size),
+            sha256: attempt.sha256,
+            labels: [],
+            metadata: {},
+          },
+          signal,
+        );
+        attempt.id = created.id;
+        if (visible()) ui.uploadId.value = created.id;
+      }
+      await this.client.resume(selection.repository, attempt.id, attempt.file, {
+        signal,
+        onProgress: (bytes) => {
+          if (!visible()) return;
+          ui.progress.value = bytes;
+          feedback(ui.status, 'uploading', {
+            percent: Math.round((bytes / Math.max(1, current.size)) * 100),
           });
-          artifactId = attempt.id;
-        } finally {
-          if (selected === selection) {
-            busy = false;
-            controller = undefined;
-            controls();
-          }
-        }
+        },
+      });
+      return attempt.id;
+    } finally {
+      if (visible()) {
+        this.busy = false;
+        this.controller = undefined;
+        this.controls();
       }
-      if (selected !== selection) return;
-      await replace(selection, [
-        ...selection.current.items,
-        { name: entryName, kind: attachmentKind, artifactId, description: description.value },
-      ]);
-      if (selected === selection) {
-        resetDraft();
-        name.focus();
-      }
-    });
-  };
+    }
+  }
+}
+
+export function installBuildAttachments(
+  client: ArkvoryClient,
+  download: (repo: string, id: string, name: string) => Promise<void>,
+) {
+  const attachments = new BuildAttachments(client, download);
   return {
-    isUploading: () => controller !== undefined,
-    clear() {
-      generation++;
-      controller?.abort();
-      controller = undefined;
-      busy = false;
-      selected = undefined;
-      panel.hidden = true;
-      list.replaceChildren();
-      history.replaceChildren();
-      resetDraft();
-      clearMessage(status);
-      controls();
+    isUploading: () => attachments.isUploading(),
+    clear: () => {
+      attachments.clear();
     },
-    async open(repository: string, id: string, operations: ReadonlySet<string>) {
-      const request = ++generation;
-      panel.hidden = true;
-      const current = await client.attachments(repository, id);
-      if (request !== generation) return;
-      selected = {
-        repository,
-        id,
-        current,
-        canWrite: operations.has('replaceBuildAttachments'),
-        canUpload: [
-          'createUpload',
-          'putUploadPart',
-          'completeUpload',
-          'getUpload',
-          'listUploadParts',
-        ].every((operation) => operations.has(operation)),
-        canDownload: operations.has('downloadArtifact'),
-      };
-      const uploadOption = mode.querySelector<HTMLOptionElement>('option[value=upload]');
-      if (uploadOption) uploadOption.disabled = !selected.canUpload;
-      mode.value = selected.canUpload ? 'upload' : 'existing';
-      source();
-      panel.hidden = false;
-      render(selected);
-    },
+    open: (repository: string, id: string, operations: ReadonlySet<string>) =>
+      attachments.open(repository, id, operations),
   };
 }

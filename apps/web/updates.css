@@ -55,7 +55,7 @@
   gap: var(--space-3);
   margin-top: var(--space-6);
 }
-@media (max-width: 40rem) {
+@media (max-width: 760px) {
   .update-banner {
     align-items: stretch;
     flex-direction: column;

@@ -4,7 +4,7 @@ import { RepositoryConsole } from './repository-console.js';
 import { ServiceConsole } from './service-console.js';
 import { ServiceAuthority } from './service-authority.js';
 import { ManagementDialogs } from './management-dialogs.js';
-import { showView } from './shell.js';
+import { onViewOpen, showView } from './shell.js';
 import { feedback, errorKey } from './feedback.js';
 
 export class ManagementConsole {
@@ -18,12 +18,8 @@ export class ManagementConsole {
     private readonly select: (id: string, storage: boolean) => void,
   ) {
     this.dialogs = new ManagementDialogs(base);
-    element('repositories-nav', HTMLButtonElement).addEventListener('click', () =>
-      this.repositories?.load(),
-    );
-    element('services-nav', HTMLButtonElement).addEventListener('click', () =>
-      this.services?.reload(),
-    );
+    onViewOpen('repositories', () => this.repositories?.load());
+    onViewOpen('services', () => this.services?.reload());
   }
   clear() {
     this.controller.abort();

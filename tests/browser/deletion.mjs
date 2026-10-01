@@ -1,3 +1,4 @@
+import { fillKey } from './session.mjs';
 import assert from 'node:assert/strict';
 import { ArkvoryClient } from '@proanima/arkvory-sdk';
 import { create, base } from '../integration/fixture.mjs';
@@ -40,11 +41,11 @@ export async function exerciseDeletion(page, f) {
   );
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.locator('#language').selectOption('en');
-  await page.locator('#token').fill(issued.secret);
+  await fillKey(page, issued.secret);
   await page.locator('[data-nav=catalog]').click();
   await page.locator('#query').fill('');
   await page.locator('#filter-label').fill('');
-  await page.locator('#connect button.primary').click();
+  await page.locator('#connect-submit').click();
   const row = page.locator('#artifacts tr').filter({ hasText: id });
   await row.waitFor();
   await row.locator('button').first().click();

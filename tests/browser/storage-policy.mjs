@@ -1,3 +1,4 @@
+import { fillKey, jargon } from './session.mjs';
 import assert from 'node:assert/strict';
 import { ArkvoryClient } from '@proanima/arkvory-sdk';
 
@@ -27,20 +28,34 @@ export async function exerciseStoragePolicy(page, f) {
   await page.locator('#connection-card').evaluate((e) => {
     e.open = true;
   });
-  await page.locator('#token').fill(issued.secret);
+  await fillKey(page, issued.secret);
   await page.locator('[data-nav=catalog]').click();
-  await page.locator('#connect button.primary').click();
+  await page.locator('#connect-submit').click();
   await page.locator('#storage-panel').waitFor();
   await page.locator('#storage-panel > summary').click();
   await page.waitForFunction(() => !document.querySelector('#storage-save').disabled);
   assert.equal(await page.locator('#storage-enabled').isChecked(), false);
   await page.locator('#storage-grouping').selectOption('repository');
   await page.locator('#storage-keep').fill('7');
-  await page.locator('#storage-quota').fill('1000000000');
+  await page.locator('#storage-quota').fill('0.5');
   await page.locator('#storage-protected').fill('bse, release');
   await page.locator('#storage-save').click();
   await page.locator('#storage-status[data-i18n=storageSaved]').waitFor();
   assert.equal((await client.storagePolicy('releases')).policy.keepLast, 7);
+  // The quota is typed in GiB, sent as exact bytes and usage is shown in binary units.
+  assert.equal((await client.storagePolicy('releases')).policy.quotaBytes, '536870912');
+  assert.equal(await page.locator('#storage-quota').inputValue(), '0.5');
+  assert.match(await page.locator('#storage-usage').textContent(), / of 512 MiB$/);
+  assert.equal(await page.locator('#storage-usage').getAttribute('data-param-quota'), '536870912');
+  await page.locator('#storage-quota').fill('12x');
+  assert.equal(
+    await page.locator('#storage-quota').evaluate((node) => node.validity.patternMismatch),
+    true,
+  );
+  await page.locator('#storage-quota').fill('0');
+  await page.locator('#storage-save').click();
+  await page.locator('#storage-status[data-i18n=storageQuotaInvalid]').waitFor();
+  await page.locator('#storage-quota').fill('0.5');
   await page.locator('#storage-preview').click();
   await page.locator('#storage-status[data-i18n=storagePreviewCount]').waitFor();
   await page.locator('#storage-enabled').check();
@@ -76,6 +91,7 @@ export async function exerciseStoragePolicy(page, f) {
     await page.locator('#language').selectOption(language);
     await page.locator('#theme').selectOption(theme);
     assert.equal(await page.locator('#storage-keep').inputValue(), '9');
+    assert.doesNotMatch(await page.locator('#storage-panel').innerText(), jargon, language);
     assert.equal(
       await page.evaluate(() => document.documentElement.scrollWidth > innerWidth),
       false,
@@ -108,9 +124,9 @@ export async function exerciseStoragePolicy(page, f) {
   await page.locator('#connection-card').evaluate((e) => {
     e.open = true;
   });
-  await page.locator('#token').fill(f.headers.authorization.slice(7));
+  await fillKey(page, f.headers.authorization.slice(7));
   assert.equal(await page.locator('#storage-panel').isVisible(), false);
-  await page.locator('#connect button.primary').click();
+  await page.locator('#connect-submit').click();
   await page.waitForFunction(
     () =>
       document.querySelector('#connection-state').dataset.connected === 'true' &&

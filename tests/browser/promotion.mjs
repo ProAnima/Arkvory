@@ -1,3 +1,4 @@
+import { fillKey } from './session.mjs';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { create, base } from '../integration/fixture.mjs';
@@ -16,9 +17,9 @@ export async function exercisePromotion(page, f) {
   assert.equal(put.statusCode, 200, put.body);
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.locator('#language').selectOption('en');
-  await page.locator('#token').fill(f.headers.authorization.slice(7));
+  await fillKey(page, f.headers.authorization.slice(7));
   await page.locator('[data-nav=catalog]').click();
-  await page.locator('#connect button.primary').click();
+  await page.locator('#connect-submit').click();
   const row = page.locator('#artifacts tr').filter({ hasText: id });
   await row.waitFor();
   await row.locator('button').first().click();

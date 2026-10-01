@@ -1,262 +1,226 @@
 import type { ArkvoryClient } from '@proanima/arkvory-sdk';
-import { readStoragePolicy } from '@proanima/arkvory-contracts';
 import { element } from './dom.js';
-import { message, dateMessage } from './i18n.js';
+import { clearMessage, message } from './i18n.js';
 import { feedback, errorKey, UiError } from './feedback.js';
+import { installStorageForm } from './storage-form.js';
+import { appendEvents, showPreview, showUsage } from './storage-view.js';
 
-// arkvory-exception ARCH-028 -- Existing UI controller contains event wiring and view state; freeze its size and extract cohesive controllers only with browser state/reset acceptance.
-export function installStoragePolicy(client: ArkvoryClient) {
-  const panel = element('storage-panel', HTMLDetailsElement),
-    form = element('storage-form', HTMLFormElement),
-    fields = element('storage-fields', HTMLFieldSetElement),
-    output = element('storage-status', HTMLOutputElement),
-    preview = element('storage-preview-list', HTMLUListElement),
-    events = element('storage-events', HTMLUListElement),
-    usage = element('storage-usage', HTMLParagraphElement),
-    refresh = element('storage-refresh', HTMLButtonElement),
-    inspect = element('storage-preview', HTMLButtonElement),
-    save = element('storage-save', HTMLButtonElement),
-    acknowledge = element('storage-ack', HTMLInputElement);
-  const input = (id: string) => element('storage-' + id, HTMLInputElement);
-  const grouping = element('storage-grouping', HTMLSelectElement),
-    channels = element('storage-channels', HTMLTextAreaElement);
-  function channelVisibility() {
-    const label = channels.closest('label');
-    if (label) label.hidden = grouping.value !== 'package-channel';
-  }
-  grouping.addEventListener('change', channelVisibility);
-  let repository = '',
-    generation = 0,
-    revision: number | undefined,
-    loaded = false,
-    busy = false;
-  let mayManage = false,
-    mayDelete = false,
-    mayRead = false,
-    mayEvents = false,
+interface Access {
+  read: boolean;
+  manage: boolean;
+  remove: boolean;
+  events: boolean;
+}
+const noAccess: Access = { read: false, manage: false, remove: false, events: false };
+
+function storageElements() {
+  return {
+    panel: element('storage-panel', HTMLDetailsElement),
+    form: element('storage-form', HTMLFormElement),
+    fields: element('storage-fields', HTMLFieldSetElement),
+    output: element('storage-status', HTMLOutputElement),
+    preview: element('storage-preview-list', HTMLUListElement),
+    events: element('storage-events', HTMLUListElement),
+    eventsSection: element('storage-events-section', HTMLDetailsElement),
+    usage: element('storage-usage', HTMLParagraphElement),
+    capacity: element('storage-capacity', HTMLParagraphElement),
+    refresh: element('storage-refresh', HTMLButtonElement),
+    inspect: element('storage-preview', HTMLButtonElement),
+    save: element('storage-save', HTMLButtonElement),
+    more: element('storage-events-more', HTMLButtonElement),
+    acknowledge: element('storage-ack', HTMLInputElement),
+  };
+}
+
+interface StorageContext {
+  client: ArkvoryClient;
+  ui: ReturnType<typeof storageElements>;
+  form: ReturnType<typeof installStorageForm>;
+  state: {
+    repository: string;
+    generation: number;
+    revision: number | undefined;
+    loaded: boolean;
+    busy: boolean;
+    access: Access;
     next: string | undefined;
-  let controller = new AbortController();
-  const more = element('storage-events-more', HTMLButtonElement);
-  function controls() {
-    fields.disabled = busy || !mayManage || revision === undefined;
-    save.disabled = fields.disabled;
-    save.hidden = !mayManage;
-    inspect.disabled = busy || !mayDelete || revision === undefined;
-    inspect.hidden = !mayDelete;
-    refresh.disabled = busy;
-    more.disabled = busy || !next;
-  }
-  function clear() {
-    generation++;
-    controller.abort();
-    controller = new AbortController();
-    repository = '';
-    revision = undefined;
-    loaded = false;
-    busy = false;
-    next = undefined;
-    mayManage = false;
-    mayDelete = false;
-    mayRead = false;
-    mayEvents = false;
-    panel.hidden = true;
-    panel.open = false;
-    form.hidden = true;
-    form.reset();
-    preview.replaceChildren();
-    events.replaceChildren();
-    for (const node of [usage, output, element('storage-capacity', HTMLParagraphElement)]) {
-      node.textContent = '';
-      for (const attribute of Array.from(node.attributes))
-        if (attribute.name.startsWith('data-')) node.removeAttribute(attribute.name);
-    }
-    element('storage-events-section', HTMLDetailsElement).hidden = true;
-    controls();
-  }
-  async function operate(
-    action: (repo: string, signal: AbortSignal, current: () => boolean) => Promise<void>,
-  ) {
-    if (busy || !repository) return;
-    const version = generation,
-      repo = repository;
-    busy = true;
-    controls();
-    try {
-      await action(repo, controller.signal, () => version === generation);
-    } catch (error) {
-      if (version === generation) feedback(output, errorKey(error), {}, 'error');
-    } finally {
-      if (version === generation) {
-        busy = false;
-        controls();
-      }
-    }
-  }
-  function showEvents(items: Awaited<ReturnType<ArkvoryClient['storageEvents']>>['items']) {
-    for (const e of items) {
-      const li = document.createElement('li'),
-        time = document.createElement('span'),
-        code = document.createElement('span');
-      dateMessage(time, e.occurredAt);
-      code.textContent = ` · ${e.level} · ${e.code}`;
-      const details = document.createElement('pre');
-      details.className = 'mono';
-      details.textContent = JSON.stringify(e.details, null, 2);
-      li.append(time, code, details);
-      events.append(li);
-    }
-  }
-  async function load(repo: string, signal: AbortSignal, current: () => boolean) {
-    const [state, totals, logs] = await Promise.all([
-      mayRead ? client.storagePolicy(repo, signal) : undefined,
-      mayRead ? client.storageUsage(repo, signal) : undefined,
-      mayEvents ? client.storageEvents(repo, {}, signal) : undefined,
-    ]);
-    if (!current()) return;
-    loaded = true;
-    preview.replaceChildren();
-    acknowledge.checked = false;
-    form.hidden = !state;
-    if (state) {
-      revision = state.revision;
-      const p = state.policy;
-      input('enabled').checked = p.enabled;
-      grouping.value = p.grouping;
-      channelVisibility();
-      for (const [id, value] of Object.entries({
-        keep: p.keepLast,
-        age: p.minAgeHours,
-        interval: p.intervalMinutes,
-        quota: p.quotaBytes ?? '',
-        warning: p.warningPercent,
-        critical: p.criticalPercent,
-        protected: p.protectedLabels.join(', '),
-      }))
-        input(id).value = String(value);
-      channels.value = p.channels.map((c) => `${c.label}=${String(c.keepLast)}`).join('\n');
-      message(output, 'storageRevision', { revision: state.revision, count: state.lastDeleted });
-      if (state.lastError) feedback(output, 'storageRunFailed', { code: state.lastError }, 'error');
-    }
-    if (totals) {
-      message(usage, 'storageUsage', {
-        published: totals.publishedBytes,
-        pending: totals.pendingBytes,
-        retired: totals.retiredBytes,
-        total: totals.reservedBytes,
-        quota: totals.quotaBytes ?? '∞',
-      });
-      const stateNode = element('storage-capacity', HTMLParagraphElement);
-      message(
-        stateNode,
-        totals.state === 'critical' || totals.state === 'exceeded'
-          ? 'storageCritical'
-          : totals.state === 'warning'
-            ? 'storageWarning'
-            : 'storageNormal',
-      );
-    }
-    events.replaceChildren();
-    next = logs?.next ?? undefined;
-    if (logs) showEvents(logs.items);
-    element('storage-events-section', HTMLDetailsElement).hidden = !mayEvents;
-  }
-  refresh.onclick = () => {
-    void operate(load);
+    controller: AbortController;
   };
-  panel.addEventListener('toggle', () => {
-    if (panel.open && !loaded) void operate(load);
+}
+type Operation = (repo: string, signal: AbortSignal, current: () => boolean) => Promise<void>;
+
+async function permittedActions(client: ArkvoryClient, repo: string, signal: AbortSignal) {
+  const permissions = await client.permissions(signal);
+  const actions = new Set(
+    permissions.bindings.filter((b) => b.resource.id === repo).flatMap((b) => b.actions),
+  );
+  return {
+    read: actions.has('storage.read'),
+    manage: actions.has('storage.manage'),
+    remove: actions.has('artifact.delete'),
+    events: actions.has('diagnostics.read'),
+  };
+}
+
+async function loadStorage(ctx: StorageContext, ...[repo, signal, current]: Parameters<Operation>) {
+  const { client, ui, form, state } = ctx;
+  const [policy, totals, logs] = await Promise.all([
+    state.access.read ? client.storagePolicy(repo, signal) : undefined,
+    state.access.read ? client.storageUsage(repo, signal) : undefined,
+    state.access.events ? client.storageEvents(repo, {}, signal) : undefined,
+  ]);
+  if (!current()) return;
+  state.loaded = true;
+  ui.preview.replaceChildren();
+  ui.acknowledge.checked = false;
+  ui.form.hidden = !policy;
+  if (policy) {
+    state.revision = policy.revision;
+    form.fill(policy.policy);
+    message(ui.output, 'storageRevision', { revision: policy.revision, count: policy.lastDeleted });
+    if (policy.lastError)
+      feedback(ui.output, 'storageRunFailed', { code: policy.lastError }, 'error');
+  }
+  if (totals) showUsage(ui.usage, ui.capacity, totals);
+  ui.events.replaceChildren();
+  state.next = logs?.next ?? undefined;
+  if (logs) appendEvents(ui.events, logs.items);
+  ui.eventsSection.hidden = !state.access.events;
+}
+
+async function saveStorage(ctx: StorageContext, ...[repo, signal, current]: Parameters<Operation>) {
+  const { client, ui, form, state } = ctx;
+  if (state.revision === undefined || !state.access.manage) return;
+  if (form.enabled() && (!state.access.remove || !ui.acknowledge.checked))
+    throw new UiError('storageConfirmRequired');
+  await client.setStoragePolicy(repo, state.revision, form.read(), signal);
+  if (!current()) return;
+  await loadStorage(ctx, repo, signal, current);
+  if (current()) feedback(ui.output, 'storageSaved', {}, 'success');
+}
+
+function controls({ ui, state }: StorageContext) {
+  ui.fields.disabled = state.busy || !state.access.manage || state.revision === undefined;
+  ui.save.disabled = ui.fields.disabled;
+  ui.save.hidden = !state.access.manage;
+  ui.inspect.disabled = state.busy || !state.access.remove || state.revision === undefined;
+  ui.inspect.hidden = !state.access.remove;
+  ui.refresh.disabled = state.busy;
+  ui.more.disabled = state.busy || !state.next;
+}
+
+function clearStorage(ctx: StorageContext) {
+  const { ui, state } = ctx;
+  state.generation++;
+  state.controller.abort();
+  Object.assign(state, {
+    controller: new AbortController(),
+    repository: '',
+    revision: undefined,
+    loaded: false,
+    busy: false,
+    next: undefined,
+    access: noAccess,
   });
-  form.addEventListener('input', () => {
-    preview.replaceChildren();
+  ui.panel.hidden = true;
+  ui.panel.open = false;
+  ui.form.hidden = true;
+  ui.form.reset();
+  ctx.form.reset();
+  ui.preview.replaceChildren();
+  ui.events.replaceChildren();
+  for (const node of [ui.usage, ui.output, ui.capacity]) clearMessage(node);
+  ui.eventsSection.hidden = true;
+  controls(ctx);
+}
+
+/** One storage request at a time; a newer repository context discards late results. */
+async function operate(ctx: StorageContext, action: Operation) {
+  const { ui, state } = ctx;
+  if (state.busy || !state.repository) return;
+  const version = state.generation,
+    repo = state.repository;
+  state.busy = true;
+  controls(ctx);
+  try {
+    await action(repo, state.controller.signal, () => version === state.generation);
+  } catch (error) {
+    if (version === state.generation) feedback(ui.output, errorKey(error), {}, 'error');
+  } finally {
+    if (version === state.generation) {
+      state.busy = false;
+      controls(ctx);
+    }
+  }
+}
+
+export function installStoragePolicy(client: ArkvoryClient) {
+  const ctx: StorageContext = {
+    client,
+    ui: storageElements(),
+    form: installStorageForm(),
+    state: {
+      repository: '',
+      generation: 0,
+      revision: undefined,
+      loaded: false,
+      busy: false,
+      access: noAccess,
+      next: undefined,
+      controller: new AbortController(),
+    },
+  };
+  const { ui, state } = ctx;
+  const load: Operation = (...args) => loadStorage(ctx, ...args);
+  ui.refresh.onclick = () => {
+    void operate(ctx, load);
+  };
+  ui.panel.addEventListener('toggle', () => {
+    if (ui.panel.open && !state.loaded) void operate(ctx, load);
   });
-  form.onsubmit = (event) => {
+  ui.form.addEventListener('input', () => {
+    ui.preview.replaceChildren();
+  });
+  ui.form.onsubmit = (event) => {
     event.preventDefault();
-    void operate(async (repo, signal, current) => {
-      if (revision === undefined || !mayManage) return;
-      if (input('enabled').checked && (!mayDelete || !acknowledge.checked))
-        throw new UiError('storageConfirmRequired');
-      let policy;
-      try {
-        policy = readStoragePolicy({
-          enabled: input('enabled').checked,
-          grouping: grouping.value,
-          keepLast: Number(input('keep').value),
-          minAgeHours: Number(input('age').value),
-          intervalMinutes: Number(input('interval').value),
-          quotaBytes: input('quota').value.trim() || null,
-          warningPercent: Number(input('warning').value),
-          criticalPercent: Number(input('critical').value),
-          protectedLabels: input('protected')
-            .value.split(',')
-            .map((s) => s.trim())
-            .filter(Boolean),
-          channels: channels.value
-            .split('\n')
-            .map((s) => s.trim())
-            .filter(Boolean)
-            .map((s) => {
-              const [label, count, ...extra] = s.split('=');
-              if (extra.length || !count?.trim()) throw new Error('Invalid channel');
-              return { label, keepLast: Number(count) };
-            }),
-        });
-      } catch {
-        throw new UiError('errorInput');
-      }
-      await client.setStoragePolicy(repo, revision, policy, signal);
-      if (current()) {
-        await load(repo, signal, current);
-        if (current()) feedback(output, 'storageSaved', {}, 'success');
-      }
-    });
+    void operate(ctx, (...args) => saveStorage(ctx, ...args));
   };
-  inspect.onclick = () => {
-    void operate(async (repo, signal, current) => {
+  ui.inspect.onclick = () => {
+    void operate(ctx, async (repo, signal, current) => {
       const result = await client.previewStoragePolicy(repo, signal);
       if (!current()) return;
-      preview.replaceChildren();
-      for (const item of result.items) {
-        const li = document.createElement('li');
-        li.textContent = `${item.name} · ${item.id} · ${item.size} B`;
-        preview.append(li);
-      }
-      message(output, result.hasMore ? 'storagePreviewMore' : 'storagePreviewCount', {
+      showPreview(ui.preview, result.items);
+      message(ui.output, result.hasMore ? 'storagePreviewMore' : 'storagePreviewCount', {
         count: result.items.length,
       });
     });
   };
-  more.onclick = () => {
-    void operate(async (repo, signal, current) => {
-      if (!next) return;
-      const page = await client.storageEvents(repo, { after: next }, signal);
+  ui.more.onclick = () => {
+    void operate(ctx, async (repo, signal, current) => {
+      if (!state.next) return;
+      const page = await client.storageEvents(repo, { after: state.next }, signal);
       if (!current()) return;
-      showEvents(page.items);
-      next = page.next ?? undefined;
-      // Bound DOM memory even when browsing the full diagnostic history.
-      while (events.childElementCount > 300) events.firstElementChild?.remove();
+      appendEvents(ui.events, page.items);
+      state.next = page.next ?? undefined;
     });
   };
   return {
-    clear,
+    clear: () => {
+      clearStorage(ctx);
+    },
     async connect(repo: string) {
-      if (repository === repo) return;
-      clear();
-      repository = repo;
-      const version = generation;
+      if (state.repository === repo) return;
+      clearStorage(ctx);
+      state.repository = repo;
+      const version = state.generation;
       try {
-        const permissions = await client.permissions(controller.signal);
-        if (version !== generation) return;
-        const actions = new Set(
-          permissions.bindings.filter((b) => b.resource.id === repo).flatMap((b) => b.actions),
-        );
-        mayRead = actions.has('storage.read');
-        mayManage = actions.has('storage.manage');
-        mayDelete = actions.has('artifact.delete');
-        mayEvents = actions.has('diagnostics.read');
-        panel.hidden = !mayRead && !mayEvents;
-        controls();
+        const access = await permittedActions(client, repo, state.controller.signal);
+        if (version !== state.generation) return;
+        state.access = access;
+        ui.panel.hidden = !access.read && !access.events;
+        controls(ctx);
       } catch {
-        if (version === generation) panel.hidden = true;
+        if (version === state.generation) ui.panel.hidden = true;
       }
     },
   };

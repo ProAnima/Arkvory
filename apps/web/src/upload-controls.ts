@@ -6,7 +6,9 @@ export function installUploadControls(active: () => boolean) {
     if (active()) event.preventDefault();
   });
   return (busy: boolean) => {
-    element('connection-fields', HTMLFieldSetElement).disabled = busy;
+    for (const id of ['connection-fields', 'key-fields'])
+      element(id, HTMLFieldSetElement).disabled = busy;
+    element('logout', HTMLButtonElement).disabled = busy;
     for (const formId of ['login', 'change-password'])
       for (const input of element(formId, HTMLFormElement).querySelectorAll<
         HTMLInputElement | HTMLButtonElement

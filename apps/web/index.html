@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <meta name="color-scheme" content="light dark" />
     <meta name="arkvory-api-base-url" content="" />
-    <title>ProAnima Arkvory</title>
+    <title data-i18n="productName">ProAnima Arkvory</title>
     <script src="/console/appearance-init.js"></script>
     <link rel="icon" href="/console/arkvory.svg" type="image/svg+xml" />
     <link rel="alternate icon" href="/console/arkvory.ico" />
@@ -17,7 +17,12 @@
   <body>
     <a class="skip" href="#main" data-i18n="skip">Перейти к содержимому</a>
     <aside class="sidebar">
-      <a class="brand" href="/console/" data-go="catalog" aria-label="ProAnima Arkvory"
+      <a
+        class="brand"
+        href="/console/"
+        data-go="catalog"
+        data-i18n-label="productName"
+        aria-label="ProAnima Arkvory"
         ><img
           class="brand-mark"
           src="/console/arkvory.svg"
@@ -26,8 +31,10 @@
           alt=""
           aria-hidden="true"
         /><span
-          ><strong>Arkvory<span class="brand-dot">.</span></strong
-          ><small>PROANIMA STUDIO</small></span
+          ><strong
+            ><span data-i18n="productShortName">Arkvory</span
+            ><span class="brand-dot">.</span></strong
+          ><small data-i18n="studioName">PROANIMA STUDIO</small></span
         ></a
       >
       <button
@@ -157,7 +164,7 @@
     <div class="workspace">
       <header class="topbar">
         <div class="breadcrumb">
-          <strong>Arkvory</strong><span aria-hidden="true">/</span
+          <strong data-i18n="productShortName">Arkvory</strong><span aria-hidden="true">/</span
           ><span data-i18n="console">Консоль хранилища</span>
         </div>
         <div class="preferences">
@@ -173,8 +180,24 @@
             ><span class="sr-only" data-i18n="language">Язык</span
             ><span id="language-icon" class="preference-icon" aria-hidden="true"></span
             ><select id="language">
-              <option value="ru" lang="ru" aria-label="Русский">RU</option>
-              <option value="en" lang="en" aria-label="English">EN</option>
+              <option
+                value="ru"
+                lang="ru"
+                data-i18n="languageCodeRu"
+                data-i18n-label="languageRussian"
+                aria-label="Русский"
+              >
+                RU
+              </option>
+              <option
+                value="en"
+                lang="en"
+                data-i18n="languageCodeEn"
+                data-i18n-label="languageEnglish"
+                aria-label="English"
+              >
+                EN
+              </option>
             </select></label
           >
         </div>
@@ -200,47 +223,17 @@
               ><span class="connection-icon" data-icon="link" aria-hidden="true"></span
               ><span data-i18n="connection">Подключение к репозиторию</span
               ><span id="connection-repository" class="hint" hidden></span></span
-            ><span id="connection-state" class="badge" data-i18n="disconnected"
+            ><span
+              id="connection-state"
+              class="badge"
+              data-connected="false"
+              data-i18n="disconnected"
               >Нет подключения</span
             >
           </summary>
 
-          <form id="connect">
-            <fieldset id="connection-fields" class="connection-fields">
-              <label
-                ><span data-i18n="repository">Репозиторий</span
-                ><input
-                  id="repository"
-                  list="repository-options"
-                  value="releases"
-                  required
-                  autocomplete="off"
-                  spellcheck="false" /><datalist id="repository-options"></datalist></label
-              ><label class="grow"
-                ><span data-i18n="serviceKey">Токен доступа</span
-                ><input
-                  id="token"
-                  type="password"
-                  autocomplete="off"
-                  required
-                  minlength="32"
-                  data-i18n-placeholder="keyPlaceholder"
-                  placeholder="Введите токен доступа" /></label
-              ><button class="primary" data-i18n="connect">Подключиться</button
-              ><button id="logout" type="button" class="secondary" data-i18n="disconnect">
-                Отключиться
-              </button>
-              <div class="connection-help">
-                <p class="hint" data-i18n="keyHint" data-help="keyHelpLabel">
-                  Токен остаётся в этой вкладке и не сохраняется в хранилище браузера.
-                </p>
-              </div>
-            </fieldset>
-          </form>
-
-          <details class="disclosure" id="password-login">
-            <summary data-i18n="passwordSignIn">Войти по имени и паролю</summary>
-            <form id="login" class="search-form">
+          <div class="connection-body">
+            <form id="login" class="sign-in-form">
               <label
                 ><span data-i18n="accountName">Имя пользователя</span
                 ><input id="login-name" autocomplete="username" required
@@ -253,18 +246,14 @@
                   autocomplete="current-password"
                   required
               /></label>
-              <button class="secondary" data-i18n="signIn">Войти</button>
-              <button
-                type="button"
-                id="toggle-register"
-                class="secondary"
-                data-i18n="signUp"
-                hidden
-              >
-                Регистрация
-              </button>
+              <div class="sign-in-actions">
+                <button class="primary" data-i18n="signIn">Войти</button>
+                <button type="button" id="toggle-register" class="ghost" data-i18n="signUp" hidden>
+                  Регистрация
+                </button>
+              </div>
             </form>
-            <form id="register" class="search-form" hidden>
+            <form id="register" class="sign-in-form" hidden>
               <label
                 ><span data-i18n="accountName">Имя пользователя</span
                 ><input id="register-name" autocomplete="username" required
@@ -278,12 +267,58 @@
                   required
                   minlength="12"
               /></label>
-              <button class="secondary" data-i18n="registerAccount">Зарегистрироваться</button>
-              <button type="button" id="toggle-login" class="secondary" data-i18n="signIn">
-                Вход
-              </button>
+              <div class="sign-in-actions">
+                <button class="primary" data-i18n="registerAccount">Зарегистрироваться</button>
+                <button type="button" id="toggle-login" class="ghost" data-i18n="signIn">
+                  Вход
+                </button>
+              </div>
             </form>
-          </details>
+            <fieldset id="connection-fields" class="connection-fields">
+              <label class="connection-repository"
+                ><span data-i18n="repository">Репозиторий</span
+                ><input
+                  id="repository"
+                  form="connect"
+                  list="repository-options"
+                  value="releases"
+                  required
+                  autocomplete="off"
+                  spellcheck="false" /><datalist id="repository-options"></datalist
+              ></label>
+              <p class="hint" data-i18n="repositoryHint">
+                После входа выбирается первый доступный вам репозиторий.
+              </p>
+            </fieldset>
+            <details id="token-login" class="disclosure key-login">
+              <summary data-i18n="keySignIn">Подключиться ключом сервиса или автоматизации</summary>
+              <form id="connect">
+                <fieldset id="key-fields" class="connection-fields">
+                  <label class="grow"
+                    ><span data-i18n="serviceKey">Ключ сервиса</span
+                    ><input
+                      id="token"
+                      type="password"
+                      autocomplete="off"
+                      required
+                      minlength="32"
+                      data-i18n-placeholder="keyPlaceholder"
+                      placeholder="Вставьте ключ сервиса или автоматизации" /></label
+                  ><button id="connect-submit" class="secondary" data-i18n="connect">
+                    Подключиться
+                  </button>
+                </fieldset>
+                <p class="hint" data-i18n="keyHint" data-help="keyHelpLabel">
+                  Ключ остаётся в этой вкладке и не сохраняется в хранилище браузера.
+                </p>
+              </form>
+            </details>
+            <div id="session-actions" class="session-actions" hidden>
+              <button id="logout" type="button" class="secondary" data-i18n="disconnect">
+                Отключиться
+              </button>
+            </div>
+          </div>
           <form id="change-password" class="search-form" hidden>
             <label
               ><span data-i18n="currentPassword">Текущий пароль</span
@@ -447,6 +482,25 @@
             </form>
           </div>
         </section>
+        <dialog
+          id="action-confirm"
+          class="management-dialog"
+          aria-labelledby="action-confirm-title"
+          aria-describedby="action-confirm-text"
+        >
+          <h2 id="action-confirm-title" data-i18n="managementConfirm">Подтверждение действия</h2>
+          <p id="action-confirm-text"></p>
+          <div class="management-actions">
+            <button
+              id="action-confirm-cancel"
+              type="button"
+              class="secondary"
+              data-i18n="confirmCancel"
+            >
+              Отмена</button
+            ><button id="action-confirm-proceed" type="button" class="primary"></button>
+          </div>
+        </dialog>
         <dialog id="update-confirm" aria-labelledby="update-confirm-title">
           <h2 id="update-confirm-title"></h2>
           <p data-i18n="updateConfirmHelp"></p>
@@ -493,7 +547,7 @@
               ></button>
               <p id="cleanup-state"></p>
               <p id="cleanup-stats" aria-live="polite"></p>
-              <p><span data-i18n="cleanupLastRun"></span>: <span id="cleanup-last">—</span></p>
+              <p><span data-i18n="cleanupLastRun"></span> <span id="cleanup-last">—</span></p>
               <p id="cleanup-error" role="status"></p>
               <form id="cleanup-form">
                 <fieldset id="cleanup-fields" disabled>
@@ -560,7 +614,7 @@
             <button type="button" id="storage-refresh" class="secondary" data-i18n="storageRefresh">
               Обновить
             </button>
-            <p id="storage-usage" class="hint"></p>
+            <p id="storage-usage" class="hint" aria-live="polite"></p>
             <p id="storage-capacity"></p>
             <form id="storage-form" hidden>
               <fieldset id="storage-fields" disabled>
@@ -587,7 +641,10 @@
                   /></label>
                   <label
                     ><span data-i18n="storageQuota"></span
-                    ><input id="storage-quota" inputmode="numeric" pattern="[1-9][0-9]{0,15}"
+                    ><input
+                      id="storage-quota"
+                      inputmode="decimal"
+                      pattern="[0-9]{1,7}([.,][0-9]{1,3})?"
                   /></label>
                   <label
                     ><span data-i18n="storageProtected"></span
@@ -1044,7 +1101,7 @@
         </section>
         <section id="help-panel" data-view="help" aria-labelledby="page-title" hidden>
           <article class="card">
-            <p data-i18n="helpHint"></p>
+            <p id="help-hint" data-i18n="helpHint"></p>
             <div class="guide-form">
               <button type="button" id="help-load" class="primary" data-i18n="helpLoad"></button>
               <label
@@ -1059,7 +1116,7 @@
             <article class="card">
               <h3 data-i18n="helpRemoteCli"></h3>
               <p data-i18n="helpRemoteCliBody"></p>
-              <pre><code>arkvoryctl --help
+              <pre><code data-i18n="helpRemoteCliExample">arkvoryctl --help
 arkvoryctl profile add production --server https://arkvory.example --token-file /private/arkvory.key
 arkvoryctl doctor
 arkvoryctl packages publish build.upack --label test
@@ -1068,7 +1125,7 @@ arkvoryctl download ARTIFACT_ID ./build.upack</code></pre>
             <article class="card">
               <h3 data-i18n="helpCli"></h3>
               <p data-i18n="helpCliBody"></p>
-              <pre><code>arkvory help
+              <pre><code data-i18n="helpCliExample">arkvory help
 arkvory status --root ROOT
 arkvory update --root ROOT
 arkvory configure --root ROOT --disable-updates
@@ -1077,7 +1134,7 @@ arkvory configure --root ROOT --pin --version 1.2.3</code></pre>
             <article class="card">
               <h3 data-i18n="helpRecipes"></h3>
               <p data-i18n="helpRecipesBody"></p>
-              <pre><code>GET /api/v1/capabilities
+              <pre><code data-i18n="helpRecipesExample">GET /api/v1/capabilities
 GET /api/v1/repositories
 GET /api/v1/operations?repository=releases</code></pre>
             </article>
@@ -1114,7 +1171,7 @@ GET /api/v1/operations?repository=releases</code></pre>
                         data-i18n-placeholder="automatic"
                         placeholder="Создаётся автоматически" /></label
                     ><label
-                      ><span data-i18n="idempotency">Ключ повторного запроса</span
+                      ><span data-i18n="idempotency">Ключ защиты от повторов</span
                       ><input
                         id="idempotency"
                         spellcheck="false"
@@ -1122,6 +1179,7 @@ GET /api/v1/operations?repository=releases</code></pre>
                         placeholder="Создаётся автоматически"
                     /></label>
                   </div>
+                  <p class="hint" data-i18n="idempotencyHint" data-help="idempotencyHelpLabel"></p>
                 </details>
                 <div class="button-row">
                   <button id="upload-submit" class="primary" data-i18n="startUpload">
@@ -1238,7 +1296,7 @@ GET /api/v1/operations?repository=releases</code></pre>
                   <summary data-i18n="metadataJson"></summary>
                   <label
                     ><span class="sr-only" data-i18n="metadataJson"></span
-                    ><textarea id="metadata" rows="7" spellcheck="false">{}</textarea>
+                    ><textarea id="metadata" rows="7" spellcheck="false"></textarea>
                   </label>
                 </details>
                 <div class="button-row">
@@ -1256,16 +1314,20 @@ GET /api/v1/operations?repository=releases</code></pre>
               <div class="section-heading">
                 <h2 data-i18n="assetTitle">Ссылка на файл</h2>
                 <p class="hint" data-i18n="assetHint" data-help="assetHelpLabel">
-                  Привяжите артефакт к пути. Ревизия 0 создаёт новую ссылку.
+                  Привяжите артефакт к пути. Для нового пути оставьте версию 0.
                 </p>
               </div>
 
               <form id="asset" class="stack">
                 <label
                   ><span data-i18n="assetPath">Путь файла</span
-                  ><input id="asset-path" placeholder="releases/current.upack" required /></label
+                  ><input
+                    id="asset-path"
+                    data-i18n-placeholder="assetPathExample"
+                    placeholder="releases/current.upack"
+                    required /></label
                 ><label
-                  ><span data-i18n="currentRevision">Ожидаемая ревизия</span
+                  ><span data-i18n="currentRevision">Текущая версия ссылки</span
                   ><input
                     id="asset-revision"
                     type="number"
@@ -1302,6 +1364,7 @@ GET /api/v1/operations?repository=releases</code></pre>
                         maxlength="32"
                         autocomplete="off"
                         spellcheck="false"
+                        data-i18n-placeholder="stageExample"
                         placeholder="release" /></label
                     ><label
                       ><span data-i18n="stageComment">Комментарий</span
@@ -1493,7 +1556,7 @@ GET /api/v1/operations?repository=releases</code></pre>
         >
           <div class="section-heading">
             <p class="hint" data-i18n="historyHint" data-help="historyHelpLabel">
-              Восстановление создаёт новую ревизию. Откройте любую ревизию, чтобы скачать исходный
+              Восстановление создаёт новую версию. Откройте любую версию, чтобы скачать исходный
               файл.
             </p>
           </div>
@@ -1501,14 +1564,18 @@ GET /api/v1/operations?repository=releases</code></pre>
           <form id="history" class="search-form">
             <label class="grow"
               ><span data-i18n="assetPath">Путь файла</span
-              ><input id="history-path" placeholder="releases/current.upack" required /></label
+              ><input
+                id="history-path"
+                data-i18n-placeholder="assetPathExample"
+                placeholder="releases/current.upack"
+                required /></label
             ><button class="primary" data-i18n="historyLoad">Загрузить историю</button>
           </form>
           <div class="table" tabindex="0" role="region" data-i18n-label="tableRegion">
             <table>
               <thead>
                 <tr>
-                  <th scope="col" data-i18n="revision">Ревизия</th>
+                  <th scope="col" data-i18n="revision">Версия</th>
                   <th scope="col" data-i18n="date">Создана</th>
                   <th scope="col" data-i18n="actor">Автор</th>
                   <th scope="col" data-i18n="source">Источник</th>
@@ -1522,7 +1589,7 @@ GET /api/v1/operations?repository=releases</code></pre>
             <output id="history-status" aria-live="polite" data-i18n="historyEmpty"
               >Укажите путь файла, чтобы просмотреть историю.</output
             ><button id="history-more" class="secondary" disabled data-i18n="historyMore">
-              Предыдущие ревизии
+              Предыдущие версии
             </button>
           </div>
         </section>
@@ -1684,9 +1751,12 @@ GET /api/v1/operations?repository=releases</code></pre>
           <fieldset id="services-controls" class="management-stack"></fieldset>
           <output id="services-status" aria-live="polite"></output>
         </section>
-        <noscript>Включите JavaScript / Enable JavaScript.</noscript>
+        <noscript data-i18n="noScript">Включите JavaScript / Enable JavaScript.</noscript>
       </main>
-      <footer><span>ProAnima Arkvory</span><span>© Ian Panaev · ProAnimaStudio</span></footer>
+      <footer>
+        <span data-i18n="productName">ProAnima Arkvory</span
+        ><span data-i18n="copyright">© Ian Panaev · ProAnimaStudio</span>
+      </footer>
     </div>
   </body>
 </html>

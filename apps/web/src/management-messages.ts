@@ -3,15 +3,12 @@ export const managementEnglish = {
   services: 'Service access',
   managementReload: 'Reload',
   managementMore: 'Next page',
-  managementBack: 'First page',
   managementEmpty: 'No entries available for this credential.',
-  managementSelect: 'Choose an account to manage its access.',
   managementSaved: 'Changes saved.',
-  managementLoading: 'Loading…',
   managementClose: 'Close',
   repositoryModel:
-    'Repositories are logical scopes created by assigning access. This server has no separate repository rename or deletion operation.',
-  managementAccountInfo: 'ID {id} · Revision {revision}',
+    'A repository appears once access to it is granted. Renaming or deleting repositories is not available here.',
+  managementAccountInfo: 'ID {id} · version {revision}',
   repositoryOpen: 'Open files',
   repositoryStorage: 'Storage & cleanup',
   repositoryAccess: 'Manage access',
@@ -21,7 +18,7 @@ export const managementEnglish = {
   serviceName: 'Account name',
   servicePolicy: 'Repository permissions',
   servicePolicyHint:
-    'Effective key permissions are the intersection of this policy and the key’s own permissions. Empty policy grants no file access.',
+    'A key can do only what both this policy and the key itself allow. An empty policy gives no access to files.',
   serviceEnable: 'Enable account',
   serviceDisable: 'Disable account',
   serviceDisableHint: 'Disabling blocks every key of this account. Active transfers may finish.',
@@ -79,26 +76,21 @@ export const managementEnglish = {
   delegationRemove: 'Remove delegation',
   delegationNew: 'New delegation',
   delegationHint:
-    'Only bootstrap can change grants. Removing a grant does not revoke keys already activated by its holder.',
+    'Only the server owner (the setup account) can change delegations. Removing a delegation does not revoke keys its holder already activated.',
   delegationOwn: 'My administrative grants',
   keyDetails: 'Key details',
-  managementId: 'ID',
-  managementRevision: 'Revision',
 };
 export const managementRussian: Record<keyof typeof managementEnglish, string> = {
   repositories: 'Репозитории',
   services: 'Сервисный доступ',
   managementReload: 'Обновить',
   managementMore: 'Следующая страница',
-  managementBack: 'Первая страница',
   managementEmpty: 'Для текущего ключа нет доступных записей.',
-  managementSelect: 'Выберите аккаунт для управления доступом.',
   managementSaved: 'Изменения сохранены.',
-  managementLoading: 'Загрузка…',
   managementClose: 'Закрыть',
   repositoryModel:
-    'Репозитории — логические области, создаваемые назначением доступа. Отдельных операций переименования и удаления репозитория на сервере нет.',
-  managementAccountInfo: 'ID {id} · Ревизия {revision}',
+    'Репозиторий появляется, когда к нему выдан доступ. Переименование и удаление репозиториев здесь недоступны.',
+  managementAccountInfo: 'ID {id} · версия {revision}',
   repositoryOpen: 'Открыть файлы',
   repositoryStorage: 'Хранение и очистка',
   repositoryAccess: 'Управление доступом',
@@ -108,7 +100,7 @@ export const managementRussian: Record<keyof typeof managementEnglish, string> =
   serviceName: 'Имя аккаунта',
   servicePolicy: 'Права на репозитории',
   servicePolicyHint:
-    'Действующие права ключа — пересечение этой политики и прав самого ключа. Пустая политика не даёт доступа к файлам.',
+    'Ключ может делать только то, что разрешают и эта политика, и сам ключ. Пустая политика не даёт доступа к файлам.',
   serviceEnable: 'Включить аккаунт',
   serviceDisable: 'Отключить аккаунт',
   serviceDisableHint:
@@ -167,9 +159,7 @@ export const managementRussian: Record<keyof typeof managementEnglish, string> =
   delegationRemove: 'Снять делегирование',
   delegationNew: 'Новое делегирование',
   delegationHint:
-    'Изменять назначения может только bootstrap. Снятие назначения не отзывает уже активированные ключи получателя.',
+    'Изменять делегирование может только владелец сервера (учётная запись первичной настройки). Снятие делегирования не отзывает ключи, которые получатель уже активировал.',
   delegationOwn: 'Мои права управления',
   keyDetails: 'Сведения о ключе',
-  managementId: 'ID',
-  managementRevision: 'Ревизия',
 };

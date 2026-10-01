@@ -1,3 +1,4 @@
+import { fillKey } from './session.mjs';
 // Real HTTP/DB/UI acceptance. The privileged updater is represented by its durable mailbox snapshot.
 import assert from 'node:assert/strict';
 import { mkdtemp, mkdir, writeFile, readFile, unlink } from 'node:fs/promises';
@@ -39,8 +40,8 @@ try {
   const connect = async () => {
     await page.goto(base + '/console/');
     await page.locator('#language').selectOption('en');
-    await page.locator('#token').fill(f.headers.authorization.slice(7));
-    await page.locator('#connect button.primary').click();
+    await fillKey(page, f.headers.authorization.slice(7));
+    await page.locator('#connect-submit').click();
     await page.locator('#update-banner').waitFor();
     await page.locator('#update-banner button').click();
     await page.locator('#updates-panel').waitFor();
@@ -111,8 +112,8 @@ try {
   assert.equal(await page.locator('#update-banner').isVisible(), false);
   assert.equal(await page.locator('#update-current').textContent(), '—');
   assert.equal(await page.locator('#update-automatic').isChecked(), false);
-  await page.locator('#token').fill(f.readerHeaders.authorization.slice(7));
-  await page.locator('#connect button.primary').click();
+  await fillKey(page, f.readerHeaders.authorization.slice(7));
+  await page.locator('#connect-submit').click();
   await page.waitForFunction(
     () => document.querySelector('#connection-state').dataset.connected === 'true',
   );

@@ -30,8 +30,8 @@ export const guideEnglish = {
   helpHint: 'Sign in to see API operations available to your account.',
   helpEmpty: 'No matching operations.',
   helpLoaded: 'Loaded {count} operations.',
-  helpRetry: 'Retry policy',
-  helpActions: 'Required actions',
+  helpRetry: 'Retry policy:',
+  helpActions: 'Required actions:',
   helpCli: 'Server lifecycle CLI',
   helpRemoteCli: 'Remote client · arkvoryctl',
   helpRemoteCliBody:
@@ -74,8 +74,8 @@ export const guideRussian: Record<keyof typeof guideEnglish, string> = {
   helpHint: 'Войдите, чтобы увидеть доступные вашей учётной записи операции API.',
   helpEmpty: 'Подходящих операций нет.',
   helpLoaded: 'Загружено операций: {count}.',
-  helpRetry: 'Политика повторов',
-  helpActions: 'Необходимые права',
+  helpRetry: 'Политика повторов:',
+  helpActions: 'Необходимые права:',
   helpCli: 'CLI обслуживания сервера',
   helpRemoteCli: 'Удалённый клиент · arkvoryctl',
   helpRemoteCliBody:

@@ -1,3 +1,4 @@
+import { fillKey } from './session.mjs';
 // Browser gate: dedicated PostgreSQL and pinned Playwright Chromium.
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
@@ -51,13 +52,11 @@ try {
   });
   await page.goto(`${address}/console/`);
   await page.locator('#language').selectOption('en');
-  await page.locator('#token').fill(f.headers.authorization.slice(7));
-  await page.locator('#connect button.primary').click();
+  await fillKey(page, f.headers.authorization.slice(7));
+  await page.locator('#connect-submit').click();
   await page.locator('#artifacts button').first().click();
   await page.locator('#download').click();
-  await page
-    .getByRole('cell', { name: '8388608 bytes written', exact: true })
-    .waitFor({ timeout: 15000 });
+  await page.getByRole('cell', { name: '8 MiB written', exact: true }).waitFor({ timeout: 15000 });
   await page
     .locator('#download-rows tr')
     .first()
@@ -105,15 +104,15 @@ try {
   });
   await page.reload();
   // Same browser storage must not disclose another principal's saved queue.
-  await page.locator('#token').fill(f.readerHeaders.authorization.slice(7));
-  await page.locator('#connect button.primary').click();
+  await fillKey(page, f.readerHeaders.authorization.slice(7));
+  await page.locator('#connect-submit').click();
   await page.locator('[data-nav=downloads]').click();
   await page.locator('#downloads-restore').click();
   await page.locator('#download-status[data-i18n=downloadRestoreEmpty]').waitFor();
   assert.equal(await page.locator('#download-rows tr').count(), 0);
   await page.locator('#connection-card > summary').click();
-  await page.locator('#token').fill(f.headers.authorization.slice(7));
-  await page.locator('#connect button.primary').click();
+  await fillKey(page, f.headers.authorization.slice(7));
+  await page.locator('#connect-submit').click();
   await page.locator('[data-nav=downloads]').click();
   await page.locator('#downloads-restore').click();
   await page.locator('#download-status[data-i18n=downloadRestoreReady]').waitFor();
@@ -122,7 +121,7 @@ try {
     savedSession,
   );
   assert.equal(await page.locator('#download-rows tr').count(), 1);
-  await page.getByRole('cell', { name: '8388608 bytes written', exact: true }).waitFor();
+  await page.getByRole('cell', { name: '8 MiB written', exact: true }).waitFor();
   assert.equal(await page.locator('#downloads-resume').isDisabled(), true);
   await page
     .locator('#download-rows tr')
@@ -157,16 +156,14 @@ try {
   await page.locator('[data-nav=catalog]').click();
   await page.locator('#artifacts button').first().click();
   await page.locator('#download').click();
-  await page
-    .getByRole('cell', { name: '8388608 bytes written', exact: true })
-    .waitFor({ timeout: 15000 });
+  await page.getByRole('cell', { name: '8 MiB written', exact: true }).waitFor({ timeout: 15000 });
   await page.reload();
-  await page.locator('#token').fill(f.headers.authorization.slice(7));
-  await page.locator('#connect button.primary').click();
+  await fillKey(page, f.headers.authorization.slice(7));
+  await page.locator('#connect-submit').click();
   await page.locator('[data-nav=downloads]').click();
   await page.locator('#downloads-restore').click();
   await page.locator('#download-status[data-i18n=downloadRestoreReady]').waitFor();
-  await page.getByRole('cell', { name: '8388608 bytes written', exact: true }).waitFor();
+  await page.getByRole('cell', { name: '8 MiB written', exact: true }).waitFor();
   await page
     .locator('#download-rows tr')
     .first()
@@ -248,8 +245,8 @@ try {
     });
     await other.goto(`${address}/console/`);
     await other.locator('#language').selectOption('en');
-    await other.locator('#token').fill(f.headers.authorization.slice(7));
-    await other.locator('#connect button.primary').click();
+    await fillKey(other, f.headers.authorization.slice(7));
+    await other.locator('#connect-submit').click();
     await other.locator('#artifacts button').first().click();
     await other.locator('[data-nav=downloads]').click();
     await other.locator('#downloads-pause').click();

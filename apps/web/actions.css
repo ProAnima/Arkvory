@@ -17,7 +17,7 @@ button[data-action-icon] {
 }
 .action-label {
   min-width: 0;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 .table-footer > output {
   min-width: 0;
@@ -114,9 +114,6 @@ button[data-icon-only] > .action-label {
   animation: content-enter var(--motion-fast) var(--motion-ease);
 }
 @media (min-width: 761px) {
-  :root[data-navigation='compact'] {
-    --sidebar-width: var(--sidebar-rail-width);
-  }
   [data-navigation='compact'] .sidebar {
     padding-inline: var(--space-3);
   }

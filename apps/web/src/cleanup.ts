@@ -129,12 +129,17 @@ class CleanupPanel {
         element('cleanup-state', HTMLParagraphElement),
         state.policy.enabled ? 'cleanupScheduled' : 'cleanupPaused',
       );
-      message(element('cleanup-stats', HTMLParagraphElement), 'cleanupStats', {
-        bytes: state.lastReclaimedBytes,
-        collected: state.lastCollected,
-        deferred: state.lastDeferred,
-        failed: state.lastFailed,
-      });
+      message(
+        element('cleanup-stats', HTMLParagraphElement),
+        'cleanupStats',
+        {
+          bytes: state.lastReclaimedBytes,
+          collected: state.lastCollected,
+          deferred: state.lastDeferred,
+          failed: state.lastFailed,
+        },
+        ['bytes'],
+      );
       const last = element('cleanup-last', HTMLSpanElement);
       if (state.lastRunAt) dateMessage(last, state.lastRunAt);
       else last.textContent = '—';

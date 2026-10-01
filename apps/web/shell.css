@@ -8,7 +8,8 @@
   display: flex;
   flex-direction: column;
   z-index: var(--z-sidebar);
-  overflow-y: auto;
+  overflow: hidden auto;
+  scrollbar-width: thin;
 }
 .brand {
   display: flex;
@@ -33,7 +34,7 @@
   height: var(--brand-icon);
 }
 .brand strong {
-  font-size: var(--brand-type);
+  font-size: var(--text-brand);
   letter-spacing: var(--tracking-tight);
   font-weight: var(--weight-bold);
   line-height: var(--leading-tight);
@@ -79,8 +80,12 @@ nav button[aria-current='page'] {
   color: var(--color-nav-text);
   font-weight: var(--weight-semibold);
 }
+nav button {
+  min-width: 0;
+}
 nav button span {
   min-width: 0;
+  overflow-wrap: break-word;
 }
 nav button[aria-current='page']:hover {
   background: var(--color-nav-active);

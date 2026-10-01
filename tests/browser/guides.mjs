@@ -1,3 +1,4 @@
+import { fillKey } from './session.mjs';
 import assert from 'node:assert/strict';
 
 export async function exerciseGuides(page, fixture) {
@@ -6,14 +7,14 @@ export async function exerciseGuides(page, fixture) {
   await page.locator('#connection-card').evaluate((node) => {
     node.open = true;
   });
-  await page.locator('#token').fill(fixture.headers.authorization.slice(7));
+  await fillKey(page, fixture.headers.authorization.slice(7));
   await page.locator('#repository').fill('releases');
   await page.locator('[data-nav=help]').first().click();
   await page.locator('#help-load').click();
   await page.locator('#help-operations details').first().waitFor();
   await page.locator('#help-search').fill('GET /api/v1');
   assert.ok((await page.locator('#help-operations details').count()) > 0);
-  await page.locator('#token').fill('x'.repeat(64));
+  await fillKey(page, 'x'.repeat(64));
   assert.equal(
     await page.locator('#help-operations details').count(),
     0,

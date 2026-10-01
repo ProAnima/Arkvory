@@ -4,6 +4,43 @@ import { element } from './dom.js';
 import { clearMessage, message } from './i18n.js';
 import { feedback, errorKey, UiError } from './feedback.js';
 
+function labelledValue(label: 'helpRetry' | 'helpActions', value: string) {
+  const line = document.createElement('p');
+  const caption = document.createElement('strong');
+  const content = document.createElement('span');
+  message(caption, label);
+  content.textContent = value;
+  line.append(caption, ' ', content);
+  return line;
+}
+
+/** The API help changes its hint with the connection instead of asking to sign in again. */
+export function showGuideConnection(connected: boolean) {
+  message(element('help-hint', HTMLParagraphElement), connected ? 'helpHintConnected' : 'helpHint');
+}
+
+function operationCard(operation: OperationDescriptor) {
+  const card = document.createElement('details');
+  card.className = 'guide-operation';
+  const summary = document.createElement('summary');
+  message(summary, 'helpOperationTitle', {
+    method: operation.method.toUpperCase(),
+    path: operation.path,
+  });
+  const description = document.createElement('p');
+  description.textContent = operation.summary;
+  const identity = document.createElement('code');
+  message(identity, 'helpOperationIdentity', {
+    id: operation.operationId,
+    surface: operation.surface,
+    visibility: operation.visibility,
+  });
+  const retry = labelledValue('helpRetry', operation.retry);
+  const actions = labelledValue('helpActions', operation.requiredActions.join(', ') || '—');
+  card.append(summary, description, identity, retry, actions);
+  return card;
+}
+
 export function initializeGuides() {
   const token = element('token', HTMLInputElement);
   const repository = element('repository', HTMLInputElement);
@@ -34,26 +71,8 @@ export function initializeGuides() {
         .join(' ')
         .toLowerCase()
         .includes(query),
-    )) {
-      const card = document.createElement('details');
-      card.className = 'guide-operation';
-      const summary = document.createElement('summary');
-      summary.textContent = `${operation.method.toUpperCase()} ${operation.path}`;
-      const description = document.createElement('p');
-      description.textContent = operation.summary;
-      const identity = document.createElement('code');
-      identity.textContent = `${operation.operationId} · ${operation.surface} · ${operation.visibility}`;
-      const retry = document.createElement('p');
-      const retryLabel = document.createElement('strong');
-      message(retryLabel, 'helpRetry');
-      retry.append(retryLabel, `: ${operation.retry}`);
-      const actions = document.createElement('p');
-      const actionsLabel = document.createElement('strong');
-      message(actionsLabel, 'helpActions');
-      actions.append(actionsLabel, `: ${operation.requiredActions.join(', ') || '—'}`);
-      card.append(summary, description, identity, retry, actions);
-      list.append(card);
-    }
+    ))
+      list.append(operationCard(operation));
     if (!list.childElementCount) {
       const empty = document.createElement('p');
       message(empty, 'helpEmpty');
@@ -98,7 +117,8 @@ export function initializeGuides() {
   element('logout', HTMLButtonElement).addEventListener('click', reset, true);
   element('welcome-sign-in', HTMLButtonElement).onclick = () => {
     element('connection-card', HTMLDetailsElement).open = true;
-    element('password-login', HTMLDetailsElement).open = true;
+    element('register', HTMLFormElement).hidden = true;
+    element('login', HTMLFormElement).hidden = false;
     element('login-name', HTMLInputElement).focus();
   };
   installOwnerForm(base);

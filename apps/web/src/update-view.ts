@@ -30,7 +30,7 @@ export class UpdateView {
     for (let h = 0; h < 24; h++) {
       const option = document.createElement('option');
       option.value = String(h);
-      option.textContent = `${String(h).padStart(2, '0')}:00 UTC`;
+      message(option, 'updateHourOption', { hour: String(h).padStart(2, '0') });
       this.hour.append(option);
     }
   }

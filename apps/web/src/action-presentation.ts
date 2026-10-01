@@ -19,7 +19,6 @@ const compact: Partial<Record<MessageKey, IconName>> = {
   historyMore: 'back',
   managementReload: 'refresh',
   managementMore: 'next',
-  managementBack: 'back',
   serviceRefresh: 'refresh',
   storageRefresh: 'refresh',
   cleanupRefresh: 'refresh',

@@ -34,7 +34,7 @@
 }
 .promotion-layout {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--promotion-column-min)), 1fr));
   gap: var(--space-6);
 }
 .stage-list {

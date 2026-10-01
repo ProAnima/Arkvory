@@ -1,3 +1,4 @@
+import { exerciseAdminConfirmations, exerciseSignIn, fillKey, jargon } from './session.mjs';
 import { exerciseStoragePolicy } from './storage-policy.mjs';
 import { exerciseGuides } from './guides.mjs';
 import { exerciseAppearance } from './appearance.mjs';
@@ -60,15 +61,15 @@ try {
       true,
     );
   };
-  await page.goto(`${await f.listen()}/console/`);
+  const origin = await f.listen();
+  await page.goto(`${origin}/console/`);
   await page.locator('#language').selectOption('en');
   await exerciseAppearance(page);
-  assert.equal(await page.locator('#login-name').isVisible(), false);
-  await page.locator('#password-login summary').click();
   assert.equal(await page.locator('#login-name').isVisible(), true);
-  await page.locator('#password-login summary').click();
-  await page.locator('#token').fill(f.headers.authorization.slice(7));
-  await page.locator('#connect button.primary').click();
+  assert.equal(await page.locator('#token').isVisible(), false);
+  assert.equal(await page.locator('#logout').isVisible(), false);
+  await fillKey(page, f.headers.authorization.slice(7));
+  await page.locator('#connect-submit').click();
   await page.locator('#artifacts tr').waitFor();
   assert.equal(await page.locator('#connection-card').getAttribute('open'), null);
   await page.locator('#query').fill('not-present');
@@ -152,6 +153,7 @@ try {
   await page.getByRole('cell', { name: 'ui-reviewer', exact: true }).waitFor();
   assert.equal(await page.locator('#new-user-password').inputValue(), '');
   await page.locator('summary[data-i18n=createUser]').click();
+  await exerciseAdminConfirmations(page);
   await go('upload');
   await page.locator('#file').setInputFiles({
     name: 'ui-upload.txt',
@@ -252,6 +254,12 @@ try {
             );
           }
           assert.equal(overflow, false, `${width}/${theme}/${language}/${view}`);
+          if (width === 1440 && theme === 'light')
+            assert.doesNotMatch(
+              await page.locator('main').innerText(),
+              jargon,
+              `${language}/${view}`,
+            );
           if (width !== 768 && language === (width === 390 ? 'ru' : 'en'))
             await page.screenshot({
               path: `test-results/console-${view}-${width}-${theme}.png`,
@@ -275,6 +283,8 @@ try {
   await page.waitForFunction(() => document.querySelector('#token').value === '');
   assert.equal(await page.locator('#selected-name').isVisible(), false);
   await exerciseClearedMessages(page);
+  assert.equal(await page.locator('#logout').isVisible(), false);
+  await exerciseSignIn(browser, origin, f, id);
   await exercisePromotion(page, f);
   await exerciseDeletion(page, f);
   await exerciseStoragePolicy(page, f);

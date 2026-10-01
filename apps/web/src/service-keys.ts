@@ -126,7 +126,10 @@ export class ServiceKeys {
     details.append(id);
     for (const binding of key.bindings) {
       const line = node('p');
-      line.textContent = `${binding.resource.id}: ${binding.actions.join(', ')}`;
+      message(line, 'keyBindingLine', {
+        repository: binding.resource.id,
+        actions: binding.actions.join(', '),
+      });
       details.append(line);
     }
     const actions = node('div', undefined, 'management-actions');

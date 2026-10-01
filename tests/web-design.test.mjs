@@ -23,9 +23,9 @@ test('localization covers every UI key and keeps interpolation parameters consis
     assert(Object.hasOwn(en, match[1]), match[1]);
   assert.equal(
     translate('en', 'historyCount', { count: 50, revision: 101 }),
-    '50 revisions loaded · Current r101',
+    '50 versions loaded · current version 101',
   );
-  assert.equal(translate('ru', 'restored', { revision: 3 }), 'Восстановлено как ревизия 3');
+  assert.equal(translate('ru', 'restored', { revision: 3 }), 'Восстановлено как версия 3');
 });
 
 test('preferences fall back safely and denied browser storage is optional', () => {

@@ -119,7 +119,7 @@ export class DownloadView {
       else if (item.state === 'paused' && !this.files.get(item.id)?.storage.destination)
         message(view.state, 'downloadRestored');
       else message(view.state, states[item.state]);
-      message(view.bytes, 'downloadBytes', { bytes: item.bytes });
+      message(view.bytes, 'downloadBytes', { bytes: item.bytes }, ['bytes']);
       view.pause.disabled = !['queued', 'running', 'retrying'].includes(item.state);
       view.resume.disabled = !item.resumable;
       view.cancel.disabled = ['saving', 'completed', 'cancelled', 'cancelling'].includes(

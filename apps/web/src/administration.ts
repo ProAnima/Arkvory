@@ -1,35 +1,23 @@
 import type { ArkvoryClient } from '@proanima/arkvory-sdk';
-import type { AccountResponse, GroupResponse } from '@proanima/arkvory-contracts';
+import type { AccountResponse } from '@proanima/arkvory-contracts';
 import { element } from './dom.js';
 import { clearMessage, message } from './i18n.js';
+import type { MessageKey } from './messages.js';
+import { onViewOpen } from './shell.js';
+import { confirmAction, dismissConfirmation } from './confirm-dialog.js';
+import { options, renderGroups, renderUsers, selectedName, tableState } from './admin-tables.js';
 
-function tableState(rows: HTMLTableSectionElement) {
-  const empty = element(`${rows.id}-empty`, HTMLParagraphElement);
-  empty.hidden = rows.rows.length > 0;
-  const table = rows.closest<HTMLElement>('.table');
-  if (table) table.hidden = !empty.hidden;
+const value = (id: string) => element(id, HTMLInputElement).value;
+const choice = (id: string) => element(id, HTMLSelectElement).value;
+const selects = ['member-group', 'grant-group', 'member-user', 'reset-user'] as const;
+
+function onSubmit(id: string, action: () => void) {
+  element(id, HTMLFormElement).onsubmit = (event) => {
+    event.preventDefault();
+    action();
+  };
 }
 
-function options(id: string, values: readonly { id: string; name: string }[]) {
-  const select = element(id, HTMLSelectElement);
-  const before = select.value;
-  select.replaceChildren();
-  for (const value of values) {
-    const option = document.createElement('option');
-    option.value = value.id;
-    option.textContent = value.name;
-    select.append(option);
-  }
-  if (values.some((value) => value.id === before)) select.value = before;
-  select.disabled = values.length === 0;
-  const form = select.closest('form');
-  if (form) {
-    const unavailable = [...form.querySelectorAll('select')].some((field) => !field.options.length);
-    for (const button of form.querySelectorAll('button')) button.disabled = unavailable;
-  }
-}
-
-// arkvory-exception ARCH-019 -- Existing UI controller contains event wiring and view state; freeze its size and extract cohesive controllers only with browser state/reset acceptance.
 export function installAdministration(
   client: ArkvoryClient,
   run: (action: () => Promise<void>) => void,
@@ -38,158 +26,148 @@ export function installAdministration(
   const rows = element('group-rows', HTMLTableSectionElement);
   const userRows = element('user-rows', HTMLTableSectionElement);
   const status = element('admin-status', HTMLOutputElement);
-  let accounts: readonly AccountResponse[] = [];
-  let groups: readonly GroupResponse[] = [];
   let generation = 0;
   const clear = () => {
     generation++;
-    accounts = [];
-    groups = [];
+    dismissConfirmation();
     nav.hidden = true;
     rows.replaceChildren();
     userRows.replaceChildren();
     clearMessage(status);
-    for (const id of ['member-group', 'grant-group', 'member-user', 'reset-user']) options(id, []);
+    for (const id of selects) options(id, []);
   };
   const refresh = async () => {
     const current = ++generation;
-    const [nextAccounts, nextGroups] = await Promise.all([client.users(), client.accessGroups()]);
+    const [accounts, groups] = await Promise.all([client.users(), client.accessGroups()]);
     if (current !== generation) return;
-    accounts = nextAccounts;
-    groups = nextGroups;
     options('member-group', groups);
     options('grant-group', groups);
     options('member-user', accounts);
     options('reset-user', accounts);
-    userRows.replaceChildren();
-    for (const account of accounts) {
-      const row = document.createElement('tr');
-      const name = document.createElement('td');
-      name.textContent = account.name;
-      const role = document.createElement('td');
-      if (account.administrator) message(role, 'administrator');
-      else role.textContent = '—';
-      const state = document.createElement('td');
-      message(state, account.enabled ? 'enabled' : 'disabled');
-      const action = document.createElement('td');
-      const button = document.createElement('button');
-      button.className = 'secondary small';
-      message(button, account.enabled ? 'disableUser' : 'enableUser');
-      button.onclick = () => {
-        run(async () => {
-          await client.updateUser(account.id, { enabled: !account.enabled });
-          await refresh();
-          message(status, 'accessSaved');
-        });
-      };
-      action.append(button);
-      row.append(name, role, state, action);
-      userRows.append(row);
-    }
-    rows.replaceChildren();
-    for (const group of groups) {
-      const row = document.createElement('tr');
-      const name = document.createElement('td');
-      name.textContent = group.name;
-      const members = document.createElement('td');
-      members.textContent = group.members
-        .map((id) => accounts.find((account) => account.id === id)?.name ?? id)
-        .join(', ');
-      const grants = document.createElement('td');
-      for (const grant of group.grants) {
-        const line = document.createElement('div');
-        const repository = document.createElement('span');
-        repository.textContent = `${grant.repository}: `;
-        const access = document.createElement('span');
-        message(access, grant.access);
-        line.append(repository, access);
-        grants.append(line);
-      }
-      row.append(name, members, grants);
-      rows.append(row);
-    }
+    renderUsers(userRows, accounts, toggleUser);
+    renderGroups(rows, groups, accounts);
     tableState(userRows);
     tableState(rows);
   };
-  nav.addEventListener('click', () => {
+  /** Destructive changes ask first; a declined confirmation leaves the forms untouched. */
+  const change = (
+    confirmation: [MessageKey, Record<string, string>, MessageKey] | undefined,
+    action: () => Promise<void>,
+    done: MessageKey,
+  ) => {
+    run(async () => {
+      if (confirmation && !(await confirmAction(...confirmation))) return;
+      await action();
+      await refresh();
+      message(status, done);
+    });
+  };
+  const toggleUser = (account: AccountResponse) => {
+    change(
+      account.enabled ? ['confirmDisableUser', { name: account.name }, 'disableUser'] : undefined,
+      () => client.updateUser(account.id, { enabled: !account.enabled }).then(() => undefined),
+      'accessSaved',
+    );
+  };
+  onViewOpen('administration', () => {
     run(refresh);
   });
-  element('create-user', HTMLFormElement).onsubmit = (event) => {
-    event.preventDefault();
-    run(async () => {
-      await client.createUser(
-        element('new-user-name', HTMLInputElement).value,
-        element('new-user-password', HTMLInputElement).value,
-        element('new-user-admin', HTMLInputElement).checked,
-      );
-      element('new-user-password', HTMLInputElement).value = '';
-      await refresh();
-      message(status, 'userCreated');
-    });
-  };
-  element('create-group', HTMLFormElement).onsubmit = (event) => {
-    event.preventDefault();
-    run(async () => {
-      await client.createAccessGroup(element('new-group-name', HTMLInputElement).value);
-      element('new-group-name', HTMLInputElement).value = '';
-      await refresh();
-      message(status, 'groupCreated');
-    });
-  };
-  element('reset-password', HTMLFormElement).onsubmit = (event) => {
-    event.preventDefault();
-    run(async () => {
-      await client.updateUser(element('reset-user', HTMLSelectElement).value, {
-        password: element('reset-password-value', HTMLInputElement).value,
-      });
-      element('reset-password-value', HTMLInputElement).value = '';
-      await refresh();
-      message(status, 'passwordChanged');
-    });
-  };
-  const membership = (present: boolean) => {
-    run(async () => {
-      await client.setGroupMember(
-        element('member-group', HTMLSelectElement).value,
-        element('member-user', HTMLSelectElement).value,
-        present,
-      );
-      await refresh();
-      message(status, 'accessSaved');
-    });
-  };
-  element('group-member', HTMLFormElement).onsubmit = (event) => {
-    event.preventDefault();
-    membership(true);
-  };
-  element('remove-member', HTMLButtonElement).onclick = () => {
-    membership(false);
-  };
-  const grant = (present: boolean) => {
-    run(async () => {
-      const access = element('grant-access', HTMLSelectElement).value;
-      if (access !== 'read' && access !== 'write') return;
-      await client.setGroupGrant(
-        element('grant-group', HTMLSelectElement).value,
-        element('grant-repository', HTMLInputElement).value,
-        present ? access : null,
-      );
-      await refresh();
-      message(status, 'accessSaved');
-    });
-  };
-  element('group-grant', HTMLFormElement).onsubmit = (event) => {
-    event.preventDefault();
-    grant(true);
-  };
-  element('remove-grant', HTMLButtonElement).onclick = () => {
-    grant(false);
-  };
+  onSubmit('create-user', () => {
+    change(
+      undefined,
+      async () => {
+        await client.createUser(
+          value('new-user-name'),
+          value('new-user-password'),
+          element('new-user-admin', HTMLInputElement).checked,
+        );
+        element('new-user-password', HTMLInputElement).value = '';
+      },
+      'userCreated',
+    );
+  });
+  onSubmit('create-group', () => {
+    change(
+      undefined,
+      async () => {
+        await client.createAccessGroup(value('new-group-name'));
+        element('new-group-name', HTMLInputElement).value = '';
+      },
+      'groupCreated',
+    );
+  });
+  onSubmit('reset-password', () => {
+    change(
+      undefined,
+      async () => {
+        await client.updateUser(choice('reset-user'), { password: value('reset-password-value') });
+        element('reset-password-value', HTMLInputElement).value = '';
+      },
+      'passwordChanged',
+    );
+  });
+  installGroupForms(client, change);
   return {
     clear,
     refresh,
     show: () => {
       nav.hidden = false;
     },
+  };
+}
+
+function installGroupForms(
+  client: ArkvoryClient,
+  change: (
+    confirmation: [MessageKey, Record<string, string>, MessageKey] | undefined,
+    action: () => Promise<void>,
+    done: MessageKey,
+  ) => void,
+) {
+  const membership = (present: boolean) => {
+    change(
+      present
+        ? undefined
+        : [
+            'confirmRemoveMember',
+            { user: selectedName('member-user'), group: selectedName('member-group') },
+            'removeMember',
+          ],
+      () => client.setGroupMember(choice('member-group'), choice('member-user'), present),
+      'accessSaved',
+    );
+  };
+  onSubmit('group-member', () => {
+    membership(true);
+  });
+  element('remove-member', HTMLButtonElement).onclick = () => {
+    membership(false);
+  };
+  const grant = (present: boolean) => {
+    const access = choice('grant-access');
+    if (access !== 'read' && access !== 'write') return;
+    if (!present && !element('grant-repository', HTMLInputElement).reportValidity()) return;
+    change(
+      present
+        ? undefined
+        : [
+            'confirmRemoveGrant',
+            { group: selectedName('grant-group'), repository: value('grant-repository') },
+            'removeGrant',
+          ],
+      () =>
+        client.setGroupGrant(
+          choice('grant-group'),
+          value('grant-repository'),
+          present ? access : null,
+        ),
+      'accessSaved',
+    );
+  };
+  onSubmit('group-grant', () => {
+    grant(true);
+  });
+  element('remove-grant', HTMLButtonElement).onclick = () => {
+    grant(false);
   };
 }

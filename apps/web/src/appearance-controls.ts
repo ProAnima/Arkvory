@@ -11,7 +11,9 @@ export function initializeAppearanceControls() {
     themeIcon.replaceChildren(icon(name));
     theme.setAttribute(
       'aria-label',
-      `${t('theme')}: ${t(theme.value === 'light' ? 'light' : theme.value === 'dark' ? 'dark' : 'system')}`,
+      t('themeCurrent', {
+        value: t(theme.value === 'light' ? 'light' : theme.value === 'dark' ? 'dark' : 'system'),
+      }),
     );
     const nativeHelp = typeof HTMLElement.prototype.showPopover !== 'function';
     theme.title = nativeHelp ? (theme.getAttribute('aria-label') ?? t('theme')) : '';

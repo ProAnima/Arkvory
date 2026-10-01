@@ -69,7 +69,7 @@ export class RepositoryConsole {
         card.append(title, rights, actions);
         this.list.append(card);
       }
-      if (!page.items.length) this.list.append(node('p', 'managementEmpty', 'hint'));
+      if (!page.items.length) this.list.append(node('p', 'repositoryEmpty', 'hint'));
     });
   }
 }

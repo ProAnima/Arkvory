@@ -1,3 +1,4 @@
+import { fillKey } from './session.mjs';
 import assert from 'node:assert/strict';
 import { createHash, randomUUID } from 'node:crypto';
 import { mkdir } from 'node:fs/promises';
@@ -45,8 +46,8 @@ try {
   };
   await page.goto(base + '/console/');
   await page.locator('#language').selectOption('en');
-  await page.locator('#token').fill(secret);
-  await page.locator('#connect button.primary').click();
+  await fillKey(page, secret);
+  await page.locator('#connect-submit').click();
   await page.locator('#services-nav').waitFor();
   await go('repositories');
   await page.locator('[data-repository-id=releases]').waitFor();
@@ -54,7 +55,7 @@ try {
   await page.locator('#services-nav').waitFor();
   assert.equal(await page.locator('#repository').inputValue(), 'releases');
   await go('services');
-  await page.locator('#service-account-list [data-i18n=managementEmpty]').waitFor();
+  await page.locator('#service-account-list [data-i18n=serviceEmptyOwner]').waitFor();
   await page.locator('summary[data-i18n=serviceCreate]').click();
   await page.locator('#service-create-name').fill('browser-ci');
   const create = page.locator('#service-create-form');
@@ -149,8 +150,8 @@ try {
   const viewer = await browser.newPage();
   await viewer.goto(base + '/console/');
   await viewer.locator('#language').selectOption('en');
-  await viewer.locator('#token').fill(replacementSecret);
-  await viewer.locator('#connect button.primary').click();
+  await fillKey(viewer, replacementSecret);
+  await viewer.locator('#connect-submit').click();
   await viewer.locator('#services-nav').waitFor();
   await viewer.locator('#services-nav').click();
   await viewer.locator(`[data-account-id="${target.id}"]`).waitFor();
@@ -211,7 +212,7 @@ try {
       }
   // Clearing the identity erases dynamic administration forms, including any issued secret.
   await page.locator('#connection-card > summary').click();
-  await page.locator('#token').fill('');
+  await fillKey(page, '');
   await page.locator('#language').selectOption('en');
   assert.equal(await page.locator('#services-controls').textContent(), '');
   assert.equal((await page.locator('#issued-secret').inputValue()).length, 0);

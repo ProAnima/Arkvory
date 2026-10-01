@@ -8,9 +8,6 @@
   .heading-action {
     font-size: var(--text-sm);
   }
-  .connection-fields > label:first-child {
-    flex-basis: 30%;
-  }
 }
 @media (max-width: 760px) {
   .sidebar {
@@ -77,12 +74,18 @@
   .connection-heading {
     align-items: start;
   }
-  .connection-fields > label:first-child,
-  .connection-fields > .grow {
+  /* Phone sign-in stacks fields and gives every button a full row: labels never split. */
+  .sign-in-form > label,
+  .connection-fields > label,
+  .connection-fields > .hint,
+  .sign-in-actions,
+  .session-actions {
     flex: 1 1 100%;
   }
+  .sign-in-actions > button,
+  .session-actions > button,
   .connection-fields > button {
-    flex: 1;
+    flex: 1 1 100%;
   }
   .connection .badge {
     white-space: normal;

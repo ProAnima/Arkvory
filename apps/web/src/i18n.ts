@@ -17,9 +17,13 @@ function render(node: HTMLElement) {
   const key = node.dataset['i18n'];
   if (key && isMessageKey(key)) {
     const params: Record<string, string> = {};
+    // Byte counts stay exact in data attributes and are formatted for the current language.
+    const sizes = new Set((node.dataset['byteParams'] ?? '').split(',').filter(Boolean));
     for (const [name, value] of Object.entries(node.dataset))
-      if (name.startsWith('param') && value !== undefined)
-        params[name.slice(5).toLowerCase()] = value;
+      if (name.startsWith('param') && value !== undefined) {
+        const param = name.slice(5).toLowerCase();
+        params[param] = sizes.has(param) ? formatBytes(language, Number(value)) : value;
+      }
     const value = t(key, params);
     if (!presentAction(node, key, value)) text(node, value);
   }
@@ -46,6 +50,7 @@ export function message(
   node: HTMLElement,
   key: MessageKey,
   params: Readonly<Record<string, string | number>> = {},
+  byteParams: readonly string[] = [],
 ) {
   const parameters = Object.entries(params).map(
     ([name, value]) =>
@@ -55,6 +60,9 @@ export function message(
     if (name.startsWith('param') && !parameters.some(([current]) => current === name))
       Reflect.deleteProperty(node.dataset, name);
   attribute(node, 'data-i18n', key);
+  const sizes = byteParams.map((name) => name.toLowerCase()).join(',');
+  if (sizes) attribute(node, 'data-byte-params', sizes);
+  else node.removeAttribute('data-byte-params');
   for (const [name, value] of parameters)
     if (node.dataset[name] !== value) node.dataset[name] = value;
   render(node);
@@ -88,6 +96,7 @@ export function clearMessage(node: HTMLElement) {
       name === 'date' ||
       name === 'bytes' ||
       name === 'tone' ||
+      name === 'byteParams' ||
       name.startsWith('param')
     )
       Reflect.deleteProperty(node.dataset, name);

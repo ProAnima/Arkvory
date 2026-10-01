@@ -1,6 +1,17 @@
 import { ArkvoryHttpError, ArkvoryIntegrityError, DownloadQueueError } from '@proanima/arkvory-sdk';
 import type { MessageKey } from './messages.js';
 import { message } from './i18n.js';
+export type Credential = 'none' | 'session' | 'key';
+// The page has exactly one active credential; 401 wording depends on how it was obtained.
+let credential: Credential = 'none';
+export function describeCredential(next: Credential) {
+  credential = next;
+}
+const unauthorized = {
+  none: 'errorSignInRequired',
+  session: 'sessionExpired',
+  key: 'errorUnauthorized',
+} as const satisfies Record<Credential, MessageKey>;
 export class UiError extends Error {
   constructor(readonly key: MessageKey) {
     super(key);
@@ -19,7 +30,7 @@ export function errorKey(error: unknown): MessageKey {
   if (error instanceof ArkvoryIntegrityError) return 'errorIntegrity';
   if (error instanceof DOMException && error.name === 'AbortError') return 'cancelled';
   if (error instanceof ArkvoryHttpError) {
-    if (error.status === 401) return 'errorUnauthorized';
+    if (error.status === 401) return unauthorized[credential];
     if (error.status === 403) return 'errorForbidden';
     if (error.status === 404) return 'errorNotFound';
     if (error.status === 409) return 'errorConflict';

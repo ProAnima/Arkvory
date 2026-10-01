@@ -1,3 +1,4 @@
+import { fillKey } from './session.mjs';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 
@@ -87,7 +88,7 @@ export async function exerciseBuildDetails(page, f, buildId) {
   assert.equal(await page.locator('#attachment-list .attachment-row').count(), 1);
   await page.locator('#attachment-reload').click();
   await page.waitForFunction(() =>
-    document.querySelector('#attachment-count').textContent.includes('revision 2'),
+    document.querySelector('#attachment-count').textContent.includes('version 2'),
   );
   assert.equal(await page.locator('#attachment-name').inputValue(), 'draft.json');
   await page.locator('#attachment-list button[data-attachment-mutation]').click();
@@ -107,15 +108,12 @@ export async function exerciseBuildDetails(page, f, buildId) {
   const viewer = await page.context().browser().newPage();
   await viewer.goto(page.url());
   await viewer.locator('#language').selectOption('en');
-  await viewer.locator('#token').fill(f.readerHeaders.authorization.slice(7));
-  await viewer.locator('#connect button.primary').click();
-  await viewer
-    .locator('#artifacts tr')
-    .filter({ hasText: buildId })
-    .locator('button')
-    .first()
-    .click();
+  await fillKey(viewer, f.readerHeaders.authorization.slice(7));
+  await viewer.locator('#connect-submit').click();
+  // The shared artifact link opens the same build once the reader has connected.
+  assert.equal(new URL(page.url()).hash, `#/artifact/releases/${buildId}`);
   await viewer.locator('#attachment-list .attachment-row').waitFor();
+  assert.equal(await viewer.locator('#selected').inputValue(), buildId);
   assert.equal(await viewer.locator('#attachment-form').isVisible(), false);
   assert.equal(await viewer.locator('#annotation-save').isDisabled(), true);
   assert.equal(

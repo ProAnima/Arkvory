@@ -8,7 +8,10 @@ import { element } from './dom.js';
 import { installAssetHistory } from './asset-history.js';
 import { message } from './i18n.js';
 import { feedback, UiError, errorKey } from './feedback.js';
-import { initializeShell, showView } from './shell.js';
+import { initializeShell, setArtifactRoute, showView } from './shell.js';
+import { installConnectionState } from './connection-state.js';
+import { installDeepLinks } from './deep-links.js';
+import { formatRoute } from './routes.js';
 import { installPackageView } from './packages.js';
 import { installAdministration } from './administration.js';
 import { hashFile } from './file-hash.js';
@@ -49,7 +52,7 @@ const management = new ManagementConsole(apiBaseUrl, token, (id, storage) => {
     repository.dispatchEvent(new Event('input', { bubbles: true }));
     await repositoryStorage.connect(id);
     if (token.value !== identity || repository.value !== id) return;
-    connection(true);
+    state.repository(true);
     showView('catalog');
     if (storage) element('storage-panel', HTMLDetailsElement).open = true;
     else await list();
@@ -60,6 +63,7 @@ const management = new ManagementConsole(apiBaseUrl, token, (id, storage) => {
   });
 });
 const repositoryStorage = installRepositoryStorage(client);
+const state = installConnectionState(repositoryStorage, repository);
 const updates = installUpdates(client);
 const downloads = installDownloads(apiBaseUrl, token);
 const annotationEditor = installAnnotationEditor();
@@ -82,31 +86,18 @@ let selected: { repository: string; id: string; revision: number; name: string }
 let selectionGeneration = 0;
 let listGeneration = 0;
 const transferStatus = element('transfer-status', HTMLOutputElement);
-let wasConnected = false;
 let repositoryEdited = false;
 let authenticationGeneration = 0;
 const repositoryOptions = element('repository-options', HTMLElement);
-const run = consoleRunner(output);
+// Bound after sign-in handling is installed; only password sessions can expire in place.
+let expireSession = (): boolean => false;
+const run = consoleRunner(output, () => expireSession());
 const summary = installArtifactSummary(client, output);
 const promotion = installPromotionPanel(client, run, () => {
   clearSelection();
   showView('catalog');
   run(() => list());
 });
-function connection(connected: boolean) {
-  const state = element('connection-state', HTMLSpanElement);
-  const details = element('connection-card', HTMLDetailsElement);
-  const connectedRepository = element('connection-repository', HTMLSpanElement);
-  state.dataset['connected'] = String(connected);
-  message(state, connected ? 'connected' : 'disconnected');
-  connectedRepository.hidden = !connected;
-  connectedRepository.textContent = connected ? repository.value : '';
-  if (connected && !wasConnected) details.open = false;
-  if (!connected) details.open = true;
-  wasConnected = connected;
-  if (connected) void repositoryStorage.connect(repository.value);
-  else repositoryStorage.clear();
-}
 async function openArtifact(repo: string, id: string, name: string) {
   clearSelection();
   const generation = ++selectionGeneration;
@@ -137,7 +128,9 @@ async function openArtifact(repo: string, id: string, name: string) {
   element('asset', HTMLFormElement).hidden = !operations.has('setAsset');
   element('editor', HTMLDivElement).hidden = false;
   element('editor-empty', HTMLDivElement).hidden = true;
-  showView('metadata');
+  const route = formatRoute({ kind: 'artifact', repository: repo, id });
+  setArtifactRoute(route);
+  showView('metadata', { route });
   feedback(output, 'revisionStatus', { revision: a.revision });
   promotion.open(repo, id, operations);
   await summary.open(repo, id);
@@ -152,6 +145,7 @@ function clearSelection() {
   annotationEditor.set({}, false);
   selectionGeneration++;
   selected = undefined;
+  setArtifactRoute(undefined);
   element('selected-name', HTMLParagraphElement).textContent = '';
   element('selected-name', HTMLParagraphElement).hidden = true;
   for (const id of ['selected', 'labels', 'collections']) element(id, HTMLInputElement).value = '';
@@ -172,7 +166,7 @@ function clearCatalog() {
   message(element('catalog-count', HTMLSpanElement), 'loaded', { count: 0 });
   message(element('empty-title', HTMLHeadingElement), 'emptyTitle');
   message(element('empty-description', HTMLParagraphElement), 'emptyDescription');
-  connection(false);
+  state.repository(false);
   clearSelection();
   clearPackages();
   administration.clear();
@@ -187,6 +181,7 @@ repository.addEventListener('input', () => {
 });
 token.addEventListener('input', () => {
   authenticationGeneration++;
+  state.session('none');
   repositoryOptions.replaceChildren();
   clearCatalog();
 });
@@ -217,7 +212,7 @@ async function list(after?: string) {
       ...(after ? { after } : {}),
     });
     if (generation !== listGeneration) return;
-    connection(true);
+    state.repository(true);
     if (!after) rows.replaceChildren();
     for (const item of page.items) {
       const row = document.createElement('tr'),
@@ -281,7 +276,23 @@ async function list(after?: string) {
     }
   }
 }
-installAuthConsole({
+const deepLinks = installDeepLinks({
+  output,
+  repository,
+  run,
+  connected: () => state.credential() !== 'none',
+  isOpen: (repo, id) => selected?.repository === repo && selected.id === id,
+  open: async (repo, id) => {
+    const artifact = await client.artifact(repo, id);
+    await openArtifact(repo, id, artifact.descriptor.name);
+  },
+  reconnect: (repo) => {
+    repository.value = repo;
+    repository.dispatchEvent(new Event('input', { bubbles: true }));
+    element('connect', HTMLFormElement).requestSubmit();
+  },
+});
+const auth = installAuthConsole({
   client,
   token,
   repository,
@@ -297,6 +308,10 @@ installAuthConsole({
   updates,
   management,
   userTokens,
+  session: (credential) => {
+    state.session(credential);
+  },
+  routes: deepLinks,
   getGeneration: () => authenticationGeneration,
   nextGeneration: () => ++authenticationGeneration,
   isRepositoryEdited: () => repositoryEdited,
@@ -305,6 +320,11 @@ installAuthConsole({
   },
   getStopSignal: () => stop,
 });
+expireSession = () => {
+  if (state.credential() !== 'session') return false;
+  auth.expire();
+  return true;
+};
 element('search', HTMLFormElement).onsubmit = (event) => {
   event.preventDefault();
   run(() => list());
@@ -438,3 +458,4 @@ element('asset', HTMLFormElement).onsubmit = (event) => {
     feedback(output, 'assigned', { revision: result.revision }, 'success');
   });
 };
+deepLinks.start();

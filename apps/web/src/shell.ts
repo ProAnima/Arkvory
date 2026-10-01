@@ -7,25 +7,31 @@ import { initializeGuides } from './guides.js';
 import { initializeActionTooltips } from './action-tooltips.js';
 import { initializeAppearanceControls } from './appearance-controls.js';
 import { initializeStaticIcons } from './icons.js';
-const views = [
-  'catalog',
-  'repositories',
-  'services',
-  'packages',
-  'administration',
-  'updates',
-  'upload',
-  'downloads',
-  'history',
-  'metadata',
-  'onboarding',
-  'help',
-] as const;
-type View = (typeof views)[number];
-function isView(value: string): value is View {
-  return views.some((view) => view === value);
+import { formatRoute, isView } from './routes.js';
+import type { View } from './routes.js';
+export type { View } from './routes.js';
+
+type HistoryMode = 'push' | 'replace' | 'keep';
+const openers = new Map<View, (() => void)[]>();
+let artifactRoute: string | undefined;
+
+/** Loads data for a screen the person opened (navigation, link or Back), not for redirects. */
+export function onViewOpen(view: View, open: () => void) {
+  openers.set(view, [...(openers.get(view) ?? []), open]);
 }
-export function showView(view: View) {
+export function openView(view: View, mode: HistoryMode = 'push') {
+  showView(view, { history: mode });
+  for (const open of openers.get(view) ?? []) open();
+}
+/** The details screen links to the selected artifact while one is open. */
+export function setArtifactRoute(route: string | undefined) {
+  artifactRoute = route;
+}
+
+export function showView(
+  view: View,
+  options: { readonly route?: string; readonly history?: HistoryMode } = {},
+) {
   element('global-feedback', HTMLDivElement).hidden = true;
   for (const panel of document.querySelectorAll<HTMLElement>('[data-view]'))
     panel.hidden = panel.dataset['view'] !== view;
@@ -44,6 +50,15 @@ export function showView(view: View) {
   element('page-title', HTMLHeadingElement).focus({ preventScroll: true });
   // A shorter destination must not leave the user below its heading after a long form.
   element('page-title', HTMLHeadingElement).scrollIntoView({ block: 'nearest' });
+  const route =
+    options.route ??
+    (view === 'metadata' ? artifactRoute : undefined) ??
+    formatRoute({ kind: 'view', view });
+  const mode = options.history ?? 'push';
+  if (mode !== 'keep' && location.hash !== route) {
+    if (mode === 'push') history.pushState(null, '', route);
+    else history.replaceState(null, '', route);
+  }
 }
 export function initializeShell() {
   initializeStaticIcons();
@@ -87,10 +102,8 @@ export function initializeShell() {
       const value = button.dataset['nav'] ?? button.dataset['go'];
       if (value && isView(value)) {
         event.preventDefault();
-        showView(value);
+        openView(value);
       }
     };
-  if (location.hash === '#onboarding') showView('onboarding');
-  if (location.hash === '#help') showView('help');
   document.documentElement.dataset['appearanceReady'] = 'true';
 }
