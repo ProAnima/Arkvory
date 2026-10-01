@@ -20,7 +20,7 @@ export function registerServiceRoutes(
   service: ServiceAccess,
   principal: (request: FastifyRequest) => Principal,
   role: 'api' | 'reader',
-  maxObjectBytes: number,
+  { maxObjectBytes, selfRegistration }: { maxObjectBytes: number; selfRegistration: boolean },
 ): void {
   app.get('/api/v1/capabilities', () =>
     Promise.resolve({
@@ -39,6 +39,8 @@ export function registerServiceRoutes(
         apiSurfaces: true,
         repositoryPermissions: true,
         personalAccessTokens: true,
+        selfRegistration,
+        securityAudit: true,
         namespacePermissions: false,
         webhooks: false,
         replicatedStorage: false,

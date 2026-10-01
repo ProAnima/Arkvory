@@ -33,7 +33,7 @@ test('every registered API method has its documented authentication boundary and
       response.statusCode,
       op.access.kind !== 'public'
         ? 401
-        : ['/health/live', '/health/status'].includes(op.path)
+        : ['/health/live', '/health/status', '/api/v1/auth/options'].includes(op.path)
           ? 200
           : 400,
       `${op.method} ${op.path}: ${response.body}`,

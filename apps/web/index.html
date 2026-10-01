@@ -254,7 +254,13 @@
                   required
               /></label>
               <button class="secondary" data-i18n="signIn">Войти</button>
-              <button type="button" id="toggle-register" class="secondary" data-i18n="signUp">
+              <button
+                type="button"
+                id="toggle-register"
+                class="secondary"
+                data-i18n="signUp"
+                hidden
+              >
                 Регистрация
               </button>
             </form>
@@ -301,15 +307,35 @@
           </form>
           <details id="personal-tokens" class="disclosure" hidden>
             <summary data-i18n="personalAccessTokens">Персональные токены доступа</summary>
+            <p class="hint" data-i18n="tokenSessionOnly">
+              Токены создаются и отзываются только из сессии с паролем.
+            </p>
             <form id="create-token-form" class="search-form">
               <label
                 ><span data-i18n="tokenName">Название токена</span
                 ><input
                   id="new-token-name"
                   required
-                  placeholder="e.g. External UI, CLI"
+                  data-i18n-placeholder="tokenNamePlaceholder"
                   maxlength="64"
               /></label>
+              <label
+                ><span data-i18n="tokenExpiry">Срок действия</span
+                ><select id="new-token-expiry">
+                  <option value="30" data-i18n="tokenDays30">30 дней</option>
+                  <option value="90" data-i18n="tokenDays90" selected>90 дней</option>
+                  <option value="365" data-i18n="tokenDays365">365 дней</option>
+                </select></label
+              >
+              <label
+                ><span data-i18n="tokenScope">Доступ</span
+                ><select id="new-token-scope">
+                  <option value="read" data-i18n="tokenScopeRead" selected>Только чтение</option>
+                  <option value="read-write" data-i18n="tokenScopeReadWrite">
+                    Чтение и запись
+                  </option>
+                </select></label
+              >
               <button class="secondary" data-i18n="generateToken">Создать токен</button>
             </form>
             <div id="new-token-result" class="card padded" hidden>
@@ -327,15 +353,19 @@
                   Скопировать токен
                 </button>
               </div>
+              <output id="copy-token-status" class="hint" aria-live="polite"></output>
             </div>
             <div id="user-tokens-list" class="table-container">
               <table class="table">
                 <thead>
                   <tr>
                     <th scope="col" data-i18n="name">Название</th>
-                    <th scope="col">Префикс</th>
-                    <th scope="col">Создан</th>
-                    <th scope="col">Использован</th>
+                    <th scope="col" data-i18n="tokenPrefix">Префикс</th>
+                    <th scope="col" data-i18n="tokenScope">Доступ</th>
+                    <th scope="col" data-i18n="tokenCreated">Создан</th>
+                    <th scope="col" data-i18n="tokenExpires">Истекает</th>
+                    <th scope="col" data-i18n="tokenLastUsed">Использован</th>
+                    <th scope="col" data-i18n="tokenStatus">Состояние</th>
                     <th scope="col" data-i18n="actions">Действия</th>
                   </tr>
                 </thead>

@@ -5,7 +5,7 @@ import { ArkvoryError, parseBindings, requireSubset } from '@proanima/arkvory-do
 import type { ServiceBinding, Principal, AdministrationAction } from '@proanima/arkvory-domain';
 import type { ApiKey, ServiceAccount, ServiceStore } from '@proanima/arkvory-application';
 import { serviceKeyExpiry } from './service-key-expiry.js';
-import { managedPrincipal } from './service-authorization.js';
+import { issuerPrincipal, managedPrincipal } from './service-authorization.js';
 import type { CredentialRow } from './service-authorization.js';
 
 import { administrationContext, authorizeAdministration } from './delegation-authorization.js';
@@ -390,12 +390,8 @@ export class PostgresServices implements ServiceStore {
           )
         ).rows[0];
         if (!issuer) throw new ArkvoryError('forbidden', 'Issuing operator unavailable');
-        const ctx = await administrationContext(c, {
-          id: 'service:' + issuer.account_id,
-          repositories: [],
-          permissions: [],
-          managed: { accountId: issuer.account_id, keyId: row.issued_via_key_id, bindings: [] },
-        });
+        const operator = issuerPrincipal(issuer.account_id, row.issued_via_key_id);
+        const ctx = await administrationContext(c, operator);
         await authorizeAdministration(
           c,
           ctx,

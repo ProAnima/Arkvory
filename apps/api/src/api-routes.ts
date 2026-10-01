@@ -35,8 +35,18 @@ export function registerApiRoutes(app: FastifyInstance, dependencies: Compositio
   const { principal, signal } = context;
   const modifying = createUploadAdmission(transfers.uploadGate, context, available);
   registerOperationRoutes(app, s.access, principal, role);
-  registerIdentityRoutes(app, s.identity, principal, transfers.loginGate, signal);
-  registerServiceRoutes(app, s.access, principal, role, s.service.maxObjectBytes);
+  registerIdentityRoutes(app, {
+    service: s.identity,
+    principal,
+    signal,
+    anonymousGate: transfers.loginGate,
+    accountGate: transfers.accountGate,
+    throttle: s.authThrottle,
+  });
+  registerServiceRoutes(app, s.access, principal, role, {
+    maxObjectBytes: s.service.maxObjectBytes,
+    selfRegistration: s.identity.allowRegistration,
+  });
   registerRepositoryRoutes(app, principal);
   registerArtifactRoutes(app, s.service, principal);
   registerDownloadRoutes(

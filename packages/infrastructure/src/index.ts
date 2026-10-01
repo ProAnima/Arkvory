@@ -14,6 +14,7 @@ export * from './bandwidth.js';
 export * from './download-lease.js';
 export * from './identity.js';
 export { PostgresUserTokens } from './user-tokens.js';
+export { PostgresSecurityAudit, SECURITY_AUDIT_RETENTION } from './security-audit.js';
 export { PostgresServices } from './service-accounts.js';
 
 export * from './attachments.js';

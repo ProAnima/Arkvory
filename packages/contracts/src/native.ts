@@ -5,6 +5,7 @@ import { retentionPaths, deletionOperation } from './retention.js';
 import { attachmentPaths } from './attachments.js';
 import { catalogPaths } from './catalog-api.js';
 import { identityPaths } from './identity-api.js';
+import { securityAuditPaths } from './security-audit.js';
 import { readinessSchema } from './health.js';
 import { servicePaths } from './service-api.js';
 import { supplementalPaths, nativeErrorSchema } from './http-contract.js';
@@ -135,6 +136,7 @@ const baseDocument = {
     },
     ...catalogPaths,
     ...identityPaths,
+    ...securityAuditPaths,
     ...servicePaths,
     '/api/v1/repositories/{repository}/uploads': {
       parameters: [repositoryParameter],

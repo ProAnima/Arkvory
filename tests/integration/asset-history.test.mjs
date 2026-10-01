@@ -283,7 +283,9 @@ test('migration preserves old asset history without inventing authors or timesta
   await assign(f, id, 0);
   await f.app.close();
   await f.catalog.pool.query(
-    `ALTER TABLE arkvory_asset_revisions DROP COLUMN actor, DROP COLUMN created_at, DROP COLUMN source_revision;
+    `DROP TABLE arkvory_security_audit;
+     DROP FUNCTION arkvory_security_audit_append_only();
+     ALTER TABLE arkvory_asset_revisions DROP COLUMN actor, DROP COLUMN created_at, DROP COLUMN source_revision;
      ALTER TABLE arkvory_asset_revisions DROP CONSTRAINT arkvory_asset_revision_positive;
      DROP TABLE arkvory_promotions, arkvory_promotion_events, arkvory_artifact_stages;
      DROP TABLE arkvory_gateway_leases, arkvory_download_policy;

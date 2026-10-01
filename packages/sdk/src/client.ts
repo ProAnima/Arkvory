@@ -112,6 +112,18 @@ export class ArkvoryClient {
   revokeToken(...args: Parameters<IdentityApi['revokeToken']>) {
     return this.authentication.revokeToken(...args);
   }
+  authOptions(...args: Parameters<IdentityApi['authOptions']>) {
+    return this.authentication.authOptions(...args);
+  }
+  accountTokens(...args: Parameters<UsersApi['accountTokens']>) {
+    return this.usersApi.accountTokens(...args);
+  }
+  revokeAccountToken(...args: Parameters<UsersApi['revokeAccountToken']>) {
+    return this.usersApi.revokeAccountToken(...args);
+  }
+  securityAudit(...args: Parameters<UsersApi['securityAudit']>) {
+    return this.usersApi.securityAudit(...args);
+  }
   users(...args: Parameters<UsersApi['users']>) {
     return this.usersApi.users(...args);
   }

@@ -1,4 +1,14 @@
 import { items, record, text } from './responses.js';
+import { credentialKindNames } from './security-audit.js';
+import type { CredentialKindName } from './security-audit.js';
+
+export type UserTokenScope = 'read' | 'read-write';
+function tokenScope(value: unknown): UserTokenScope {
+  // Servers before scoped tokens issued full account tokens.
+  if (value === undefined) return 'read-write';
+  if (value !== 'read' && value !== 'read-write') throw new Error('Invalid token scope');
+  return value;
+}
 
 export interface AccountResponse {
   id: string;
@@ -20,6 +30,9 @@ export interface LoginResponse {
 export interface PrincipalResponse {
   id: string;
   administrator: boolean;
+  /** Absent from servers that predate credential kinds. */
+  credential: CredentialKindName | null;
+  tokenScope: UserTokenScope | null;
   grants: readonly {
     repository: string;
     permissions: readonly ('read' | 'write')[];
@@ -41,7 +54,17 @@ export function readPrincipal(value: unknown): PrincipalResponse {
   });
   if (new Set(grants.map((grant) => grant.repository)).size !== grants.length)
     throw new Error('Duplicate repository grant');
-  return { id: text(row['id']), administrator: row['administrator'], grants };
+  const credential = row['credential'];
+  const kind =
+    credential === undefined ? null : credentialKindNames.find((name) => name === credential);
+  if (kind === undefined) throw new Error('Invalid credential kind');
+  return {
+    id: text(row['id']),
+    administrator: row['administrator'],
+    credential: kind,
+    tokenScope: row['tokenScope'] === undefined ? null : tokenScope(row['tokenScope']),
+    grants,
+  };
 }
 export function readAccount(value: unknown): AccountResponse {
   const row = record(value);
@@ -81,6 +104,7 @@ export interface UserTokenResponse {
   id: string;
   name: string;
   prefix: string;
+  scope: UserTokenScope;
   createdAt: string;
   expiresAt: string | null;
   lastUsedAt: string | null;
@@ -97,6 +121,7 @@ export function readUserToken(value: unknown): UserTokenResponse {
     id: text(row['id']),
     name: text(row['name']),
     prefix: text(row['prefix']),
+    scope: tokenScope(row['scope']),
     createdAt: text(row['createdAt']),
     expiresAt:
       row['expiresAt'] === null || row['expiresAt'] === undefined ? null : text(row['expiresAt']),

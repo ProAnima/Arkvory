@@ -1,4 +1,5 @@
 import { readFile } from 'node:fs/promises';
+import { isIP } from 'node:net';
 import { ArkvoryError, MAX_OBJECT_BYTES } from '@proanima/arkvory-domain';
 import { parseKeys, downloadShare } from '@proanima/arkvory-infrastructure';
 import type { SharedDownloadPolicy } from '@proanima/arkvory-infrastructure';
@@ -35,6 +36,8 @@ export interface ServerConfig extends UploadTimeoutOptions, OperabilityOptions {
   readonly webDirectory?: string;
   readonly updateControlDirectory?: string;
   readonly allowRegistration?: boolean;
+  /** Reverse proxies whose X-Forwarded-For is trusted for the client address (IP or CIDR). */
+  readonly trustedProxies?: readonly string[];
   /** Operator ceiling for one object; the multipart layout limit applies when unset. */
   readonly maxObjectBytes?: number;
 }
@@ -128,7 +131,7 @@ export async function loadConfig(env: NodeJS.ProcessEnv): Promise<ServerConfig> 
     role,
     ...(sharedDownloads ? { sharedDownloads } : {}),
     databaseUrl,
-    allowRegistration: env['ARKVORY_ALLOW_REGISTRATION'] === 'true',
+    ...readIdentityExposure(env),
     ...(env['ARKVORY_MAX_OBJECT_BYTES'] === undefined
       ? {}
       : { maxObjectBytes: number('ARKVORY_MAX_OBJECT_BYTES', MAX_OBJECT_BYTES, MAX_OBJECT_BYTES) }),
@@ -162,4 +165,29 @@ export async function loadConfig(env: NodeJS.ProcessEnv): Promise<ServerConfig> 
     uploadBytesPerSecondPerPrincipal: rate('ARKVORY_UPLOAD_BYTES_PER_SECOND_PER_PRINCIPAL'),
     downloadBytesPerSecondPerPrincipal: rate('ARKVORY_DOWNLOAD_BYTES_PER_SECOND_PER_PRINCIPAL'),
   };
+}
+
+function readIdentityExposure(env: NodeJS.ProcessEnv) {
+  return {
+    allowRegistration: env['ARKVORY_ALLOW_REGISTRATION'] === 'true',
+    trustedProxies: parseTrustedProxies(env['ARKVORY_TRUSTED_PROXIES']),
+  };
+}
+/** Exact proxy addresses or CIDR ranges; hostnames and wildcards are refused. */
+export function parseTrustedProxies(value: string | undefined): readonly string[] {
+  if (!value?.trim()) return [];
+  const entries = value.split(',').map((entry) => entry.trim());
+  if (entries.length > 32) throw new Error('ARKVORY_TRUSTED_PROXIES lists at most 32 entries');
+  for (const entry of entries) {
+    const [address = '', prefix, extra] = entry.split('/');
+    const family = isIP(address);
+    const bits = family === 4 ? 32 : 128;
+    if (
+      family === 0 ||
+      extra !== undefined ||
+      (prefix !== undefined && (!/^[0-9]{1,3}$/.test(prefix) || Number(prefix) > bits))
+    )
+      throw new Error('Invalid ARKVORY_TRUSTED_PROXIES entry');
+  }
+  return entries;
 }

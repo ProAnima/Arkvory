@@ -25,7 +25,7 @@ export async function createServer(
   lifecycle: { onOwnershipLost?: () => void; drain?: RequestDrain } = {},
 ) {
   const policy = resolveUploadTimeouts(config);
-  const app = createHttpServer();
+  const app = createHttpServer({ trustedProxies: config.trustedProxies ?? [] });
   const runtime = new ApiRuntime(config);
   const drain = lifecycle.drain ?? new RequestDrain();
   drain.onBegin(runtime.transfers.drain);
@@ -63,8 +63,18 @@ export async function createServer(
     background = registerBackgroundTasks(app, {
       role: runtime.role,
       available: runtime.available,
-      maintain: () =>
-        maintainStorage(services.storagePolicies, services.serviceAccounts, runtime.available),
+      maintain: async () => {
+        try {
+          await maintainStorage(
+            services.storagePolicies,
+            services.serviceAccounts,
+            runtime.available,
+          );
+        } finally {
+          // Bounded batch; the security journal must not grow without limit under login floods.
+          if (runtime.available()) await services.securityAudit.prune();
+        }
+      },
       collect: () => services.collector.tick(runtime.available),
       flush: () => responses.flush(),
       close: () => {

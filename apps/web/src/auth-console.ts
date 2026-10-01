@@ -4,6 +4,7 @@ import { feedback } from './feedback.js';
 import { offerRepositoryOptions } from './repository-options.js';
 import { readableRepositories } from './readable-repositories.js';
 import { showView } from './shell.js';
+import { applyRegistrationOption, registrationEnabled } from './user-token-model.js';
 
 export interface AuthConsoleContext {
   client: ArkvoryClient;
@@ -38,6 +39,15 @@ export function installAuthConsole(ctx: AuthConsoleContext): void {
   const handleAuthSession = createAuthSessionHandler(ctx);
   bindPasswordForms(ctx, handleAuthSession);
   bindSessionLifecycle(ctx);
+  const controls = {
+    toggle: element('toggle-register', HTMLButtonElement),
+    register: element('register', HTMLFormElement),
+    login: element('login', HTMLFormElement),
+  };
+  applyRegistrationOption(false, controls);
+  void registrationEnabled(() => ctx.client.authOptions()).then((enabled) => {
+    applyRegistrationOption(enabled, controls);
+  });
 }
 
 function createAuthSessionHandler(ctx: AuthConsoleContext): AuthHandler {
@@ -131,8 +141,10 @@ function bindSessionLifecycle(ctx: AuthConsoleContext): void {
       if (me.administrator) administration.show();
       updates.connect(me.administrator);
       void management.connect();
-      element('change-password', HTMLFormElement).hidden = !me.id.startsWith('user:');
-      if (me.id.startsWith('user:')) {
+      // Password and token management need an interactive session, not a pasted token.
+      const session = me.credential === 'session';
+      element('change-password', HTMLFormElement).hidden = !session;
+      if (session) {
         userTokens.show();
         void userTokens.refresh();
       } else userTokens.hide();

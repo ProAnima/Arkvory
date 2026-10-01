@@ -5,6 +5,8 @@ import { PostgresIdentity, SCHEMA_VERSION, migrate } from '@proanima/arkvory-inf
 import { ArkvoryClient } from '@proanima/arkvory-sdk';
 import { setup } from './fixture.mjs';
 
+const actor = { id: 'test-writer', credential: 'file-key', clientIp: null };
+
 test('external administrators can preflight PATCH and disable an account', async (t) => {
   const origin = 'https://ui.example.test';
   const f = await setup(t, { corsOrigins: [origin] });
@@ -114,7 +116,7 @@ test('HTTP request capacity applies before asynchronous session resolution', asy
   assert.equal(entered, 128);
 });
 
-test('administrative password work shares the bounded password gate', async (t) => {
+test('administrative password work is bounded by its own password gate', async (t) => {
   const f = await setup(t);
   let active = 0,
     peak = 0;
@@ -161,8 +163,12 @@ test('concurrent account and group creation cannot overbook catalog capacity', a
   `);
   const store = new PostgresIdentity(f.catalog.pool);
   for (const [create, table, limit] of [
-    [(name) => store.createUser(name, 'private-test-password', false), 'arkvory_users', 1000],
-    [(name) => store.createGroup(name), 'arkvory_access_groups', 100],
+    [
+      (name) => store.createUser(name, 'private-test-password', false, 'administrator', actor),
+      'arkvory_users',
+      1000,
+    ],
+    [(name) => store.createGroup(name, actor), 'arkvory_access_groups', 100],
   ]) {
     const results = await Promise.allSettled([create('final-one'), create('final-two')]);
     assert.equal(results.filter((result) => result.status === 'fulfilled').length, 1);
@@ -219,14 +225,18 @@ test('membership and grant budgets keep group listings usable at capacity', asyn
   const existing = (await f.catalog.pool.query("SELECT id FROM arkvory_users WHERE name='seed-1'"))
     .rows[0].id;
   const store = new PostgresIdentity(f.catalog.pool);
-  await assert.rejects(store.membership(group, extra, true), { code: 'capacity_exceeded' });
-  await assert.rejects(store.grant(group, 'repository-new', 'read'), { code: 'capacity_exceeded' });
-  await store.membership(group, existing, true);
-  await store.grant(group, 'repository-1', 'write');
+  await assert.rejects(store.membership(group, extra, true, actor), {
+    code: 'capacity_exceeded',
+  });
+  await assert.rejects(store.grant(group, 'repository-new', 'read', actor), {
+    code: 'capacity_exceeded',
+  });
+  await store.membership(group, existing, true, actor);
+  await store.grant(group, 'repository-1', 'write', actor);
   assert.equal((await store.groups()).length, 100);
-  await store.membership(group, existing, false);
-  await store.grant(group, 'repository-1', null);
-  await store.membership(group, extra, true);
-  await store.grant(group, 'repository-new', 'read');
+  await store.membership(group, existing, false, actor);
+  await store.grant(group, 'repository-1', null, actor);
+  await store.membership(group, extra, true, actor);
+  await store.grant(group, 'repository-new', 'read', actor);
   assert.equal((await store.groups()).length, 100);
 });

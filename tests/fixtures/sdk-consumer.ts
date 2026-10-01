@@ -57,6 +57,11 @@ export type UnchangedKeys = Assert<
       | 'createToken'
       | 'revokeToken'
       | 'promotions'
+      // ADR 0049: public sign-in options, account token administration and the security journal.
+      | 'authOptions'
+      | 'accountTokens'
+      | 'revokeAccountToken'
+      | 'securityAudit'
     >,
     keyof LegacyClient
   >

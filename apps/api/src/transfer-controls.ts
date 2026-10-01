@@ -21,7 +21,12 @@ export function createTransferControls(config: ServerConfig, available: () => bo
     config.transferQueueTimeoutMs ?? 20000,
     config.maxDownloadsPerPrincipal ?? Math.min(4, config.maxDownloads),
   );
-  const loginGate = new AdmissionQueue(2, 16, 16, 1000, 2);
+  // Anonymous hashing: one active and four queued per client address, so one source cannot
+  // occupy both slots or the whole queue.
+  const loginGate = new AdmissionQueue(2, 16, 4, 1000, 1);
+  // Authenticated password work (own password, administrator create/reset) never waits behind
+  // anonymous logins.
+  const accountGate = new AdmissionQueue(1, 8, 8, 10000, 1);
   const owners = [...new Set(config.keys.map((key) => key.principal.id))];
   const uploadBandwidth = new BandwidthGovernor(
     {
@@ -47,6 +52,7 @@ export function createTransferControls(config: ServerConfig, available: () => bo
     uploadGate,
     downloadGate,
     loginGate,
+    accountGate,
     uploadBandwidth,
     downloadBandwidth,
     registerOwner: (id: string) => {
@@ -62,6 +68,7 @@ export function createTransferControls(config: ServerConfig, available: () => bo
       uploadGate.close();
       downloadGate.close();
       loginGate.close();
+      accountGate.close();
       uploadBandwidth.close();
       downloadBandwidth.close();
     },

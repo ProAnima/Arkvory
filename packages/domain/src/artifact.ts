@@ -1,5 +1,6 @@
 import type { ManagedCredential, ServiceAction } from './service-policy.js';
 import { MAX_OBJECT_BYTES } from './object-size.js';
+import type { CredentialKind, TokenScope } from './credentials.js';
 
 export type ErrorCode =
   | 'invalid_input'
@@ -141,6 +142,10 @@ export function sameDescriptor(left: ArtifactDescriptor, right: ArtifactDescript
 }
 
 export interface Principal {
+  /** Every producer declares how the caller authenticated; policies must not guess from IDs. */
+  readonly credential: CredentialKind;
+  /** Present only for personal tokens; grants are already narrowed to this scope. */
+  readonly tokenScope?: TokenScope;
   readonly managed?: ManagedCredential;
   readonly serviceAdministrator?: boolean;
   readonly id: string;

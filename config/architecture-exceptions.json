@@ -45,19 +45,6 @@
     ]
   },
   {
-    "id": "ARCH-006",
-    "file": "packages/infrastructure/src/identity.ts",
-    "metric": "class",
-    "symbol": "PostgresIdentity",
-    "ceiling": 305,
-    "reason": "Existing adapter or contract implementation combines related operations; freeze growth and extract cohesive responsibilities while preserving transactional and authorization invariants.",
-    "owner": "Arkvory maintainers",
-    "recordedAt": "2026-09-25",
-    "reviewBy": "2026-12-20",
-    "decision": "docs/adr/0027-executable-engineering-gates.md",
-    "tests": ["tests/integration/identity.test.mjs"]
-  },
-  {
     "id": "ARCH-007",
     "file": "packages/infrastructure/src/migrations.ts",
     "metric": "function",
@@ -75,7 +62,7 @@
     "file": "packages/infrastructure/src/service-accounts.ts",
     "metric": "file",
     "symbol": "<file>",
-    "ceiling": 541,
+    "ceiling": 537,
     "reason": "Existing adapter or contract implementation combines related operations; freeze growth and extract cohesive responsibilities while preserving transactional and authorization invariants.",
     "owner": "Arkvory maintainers",
     "recordedAt": "2026-09-25",
@@ -88,7 +75,7 @@
     "file": "packages/infrastructure/src/service-accounts.ts",
     "metric": "class",
     "symbol": "PostgresServices",
-    "ceiling": 473,
+    "ceiling": 469,
     "reason": "Existing adapter or contract implementation combines related operations; freeze growth and extract cohesive responsibilities while preserving transactional and authorization invariants.",
     "owner": "Arkvory maintainers",
     "recordedAt": "2026-09-25",

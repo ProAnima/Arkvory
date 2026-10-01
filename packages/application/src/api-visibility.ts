@@ -39,9 +39,13 @@ export function operationVisible(
     case 'authenticated':
       return true;
     case 'administrator':
-      return !principal.managed && principal.administrator === true;
+      return (
+        !principal.managed &&
+        principal.administrator === true &&
+        principal.credential !== 'personal-token'
+      );
     case 'account-session':
-      return !principal.managed && principal.id.startsWith('user:');
+      return principal.credential === 'session' && principal.id.startsWith('user:');
     case 'service-bootstrap':
       return bootstrap;
     case 'bootstrap-or-own-key':

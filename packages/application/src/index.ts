@@ -5,6 +5,7 @@ export * from './catalog.js';
 export * from './promotion.js';
 export * from './package-resolution.js';
 export * from './identity.js';
+export * from './security-audit.js';
 export * from './package-list.js';
 export * from './service-access.js';
 export * from './asset-page.js';

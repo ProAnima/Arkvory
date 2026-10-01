@@ -1,71 +1,71 @@
-import { createHash, randomBytes, randomUUID, scrypt, timingSafeEqual } from 'node:crypto';
+import { randomBytes, randomUUID } from 'node:crypto';
 import type { Pool, PoolClient } from 'pg';
 import { ArkvoryError } from '@proanima/arkvory-domain';
-import type { Principal } from '@proanima/arkvory-domain';
-import { PostgresUserTokens } from './user-tokens.js';
+import type { CredentialKind, Principal, TokenScope } from '@proanima/arkvory-domain';
+import { PostgresUserTokens, revokeAllUserTokens } from './user-tokens.js';
+import { changeOwnPassword, passwordHash, passwordLogin, sessionDigest } from './password-login.js';
+import { inTransaction } from './pg-transaction.js';
+import { appendSecurityEvent } from './security-audit.js';
 import type {
   AccessGroup,
   Account,
+  AccountOrigin,
   CreatedUserToken,
   IdentityStore,
   LoginResult,
+  SecurityActor,
+  SecurityEvent,
   UserToken,
 } from '@proanima/arkvory-application';
 
-const dummySalt = '0'.repeat(32);
-function digest(token: string): string {
-  return createHash('sha256').update(token).digest('hex');
-}
-function passwordHash(password: string, salt: string): Promise<Buffer> {
-  return new Promise((resolve, reject) => {
-    scrypt(
-      password,
-      Buffer.from(salt, 'hex'),
-      64,
-      { N: 16384, r: 8, p: 1, maxmem: 32 * 1024 ** 2 },
-      (error, derived) => {
-        if (error) reject(error);
-        else resolve(derived);
-      },
-    );
-  });
-}
 function conflict(error: unknown): never {
   if (typeof error === 'object' && error !== null && 'code' in error && error.code === '23505')
     throw new ArkvoryError('conflict', 'Account or group already exists');
   throw error;
 }
+// Self-registration stops early so anonymous sign-ups cannot exhaust administrator capacity.
+const accountCapacity: Record<AccountOrigin, number> = {
+  administrator: 1000,
+  'self-registration': 900,
+};
+const success = (
+  action: SecurityEvent['action'],
+  target: string,
+  details?: SecurityEvent['details'],
+): SecurityEvent => ({ action, target, outcome: 'success', ...(details ? { details } : {}) });
 
-interface UserRow {
-  id: string;
-  name: string;
-  administrator: boolean;
-  password_salt: string;
-  password_hash: string;
-  enabled: boolean;
-  locked: boolean;
-}
-
-// arkvory-exception ARCH-006 -- Existing adapter or contract implementation combines related operations; freeze growth and extract cohesive responsibilities while preserving transactional and authorization invariants.
 export class PostgresIdentity implements IdentityStore {
   private readonly userTokens: PostgresUserTokens;
   constructor(private readonly pool: Pool) {
     this.userTokens = new PostgresUserTokens(pool);
   }
 
-  async createUser(name: string, password: string, administrator: boolean): Promise<Account> {
+  async createUser(
+    name: string,
+    password: string,
+    administrator: boolean,
+    origin: AccountOrigin,
+    actor: SecurityActor,
+  ): Promise<Account> {
     const salt = randomBytes(16).toString('hex');
     const hash = (await passwordHash(password, salt)).toString('hex');
     const id = randomUUID();
     try {
-      const inserted = await capacityMutation(this.pool, (client) =>
-        client.query(
+      await capacityMutation(this.pool, async (client) => {
+        const inserted = await client.query(
           `INSERT INTO arkvory_users(id,name,password_salt,password_hash,administrator)
-         SELECT $1,$2,$3,$4,$5 WHERE (SELECT count(*) FROM arkvory_users)<1000`,
-          [id, name, salt, hash, administrator],
-        ),
-      );
-      if (!inserted.rowCount) throw new ArkvoryError('capacity_exceeded', 'Account limit reached');
+           SELECT $1,$2,$3,$4,$5 WHERE (SELECT count(*) FROM arkvory_users)<$6`,
+          [id, name, salt, hash, administrator, accountCapacity[origin]],
+        );
+        if (!inserted.rowCount)
+          throw new ArkvoryError('capacity_exceeded', 'Account limit reached');
+        const action = origin === 'self-registration' ? 'auth.register' : 'user.create';
+        await appendSecurityEvent(
+          client,
+          actor,
+          success(action, `user:${id}`, { name, administrator }),
+        );
+      });
     } catch (error) {
       conflict(error);
     }
@@ -76,21 +76,20 @@ export class PostgresIdentity implements IdentityStore {
     id: string,
     enabled: boolean | undefined,
     password: string | undefined,
+    actor: SecurityActor,
   ): Promise<Account> {
     const salt = password === undefined ? null : randomBytes(16).toString('hex');
     const hash =
       password === undefined || salt === null
         ? null
         : (await passwordHash(password, salt)).toString('hex');
-    const client = await this.pool.connect();
-    let broken = false;
-    try {
-      await client.query('BEGIN');
+    return inTransaction(this.pool, async (client) => {
       const result = await client.query<Account>(
         `UPDATE arkvory_users SET enabled=COALESCE($2,enabled),
          password_salt=COALESCE($3,password_salt),password_hash=COALESCE($4,password_hash),
          failed_logins=CASE WHEN $4::text IS NULL THEN failed_logins ELSE 0 END,
-         locked_until=CASE WHEN $4::text IS NULL THEN locked_until ELSE NULL END
+         locked_until=CASE WHEN $4::text IS NULL THEN locked_until ELSE NULL END,
+         login_debt=CASE WHEN $4::text IS NULL THEN login_debt ELSE 0 END
          WHERE id=$1 RETURNING id,name,administrator,enabled`,
         [id, enabled ?? null, salt, hash],
       );
@@ -98,35 +97,41 @@ export class PostgresIdentity implements IdentityStore {
       if (!user) throw new ArkvoryError('not_found', 'Account not found');
       if (enabled === false || password !== undefined)
         await client.query('DELETE FROM arkvory_user_sessions WHERE user_id=$1', [id]);
-      await client.query('COMMIT');
-      return user;
-    } catch (error) {
-      try {
-        await client.query('ROLLBACK');
-      } catch {
-        broken = true;
+      if (enabled !== undefined)
+        await appendSecurityEvent(
+          client,
+          actor,
+          success(enabled ? 'user.enable' : 'user.disable', `user:${id}`),
+        );
+      if (password !== undefined) {
+        // A reset password must also end automation that the old password holder created.
+        const revokedTokens = await revokeAllUserTokens(client, id);
+        await appendSecurityEvent(
+          client,
+          actor,
+          success('user.password.reset', `user:${id}`, { revokedTokens }),
+        );
       }
-      throw error;
-    } finally {
-      client.release(broken);
-    }
+      return user;
+    });
   }
 
   users(): Promise<readonly Account[]> {
     return readUsers(this.pool);
   }
 
-  async createGroup(name: string): Promise<AccessGroup> {
+  async createGroup(name: string, actor: SecurityActor): Promise<AccessGroup> {
     const id = randomUUID();
     try {
-      const inserted = await capacityMutation(this.pool, (client) =>
-        client.query(
+      await capacityMutation(this.pool, async (client) => {
+        const inserted = await client.query(
           `INSERT INTO arkvory_access_groups(id,name)
-         SELECT $1,$2 WHERE (SELECT count(*) FROM arkvory_access_groups)<100`,
+           SELECT $1,$2 WHERE (SELECT count(*) FROM arkvory_access_groups)<100`,
           [id, name],
-        ),
-      );
-      if (!inserted.rowCount) throw new ArkvoryError('capacity_exceeded', 'Group limit reached');
+        );
+        if (!inserted.rowCount) throw new ArkvoryError('capacity_exceeded', 'Group limit reached');
+        await appendSecurityEvent(client, actor, success('group.create', `group:${id}`, { name }));
+      });
     } catch (error) {
       conflict(error);
     }
@@ -158,54 +163,82 @@ export class PostgresIdentity implements IdentityStore {
     }));
   }
 
-  async membership(groupId: string, userId: string, present: boolean): Promise<void> {
-    if (present) {
-      await capacityMutation(this.pool, async (client) => {
-        const result = await client.query(
-          `INSERT INTO arkvory_group_members(group_id,user_id)
+  async membership(
+    groupId: string,
+    userId: string,
+    present: boolean,
+    actor: SecurityActor,
+  ): Promise<void> {
+    const event = success(
+      present ? 'group.member.add' : 'group.member.remove',
+      `group:${groupId}`,
+      {
+        userId,
+      },
+    );
+    if (!present) {
+      await inTransaction(this.pool, async (client) => {
+        await client.query('DELETE FROM arkvory_group_members WHERE group_id=$1 AND user_id=$2', [
+          groupId,
+          userId,
+        ]);
+        await appendSecurityEvent(client, actor, event);
+      });
+      return;
+    }
+    await capacityMutation(this.pool, async (client) => {
+      const result = await client.query(
+        `INSERT INTO arkvory_group_members(group_id,user_id)
          SELECT g.id,u.id FROM arkvory_access_groups g CROSS JOIN arkvory_users u
          WHERE g.id=$1 AND u.id=$2 AND (SELECT count(*) FROM arkvory_group_members)<10000
          ON CONFLICT DO NOTHING`,
+        [groupId, userId],
+      );
+      if (result.rowCount === 0) {
+        const existing = await client.query(
+          'SELECT 1 FROM arkvory_group_members WHERE group_id=$1 AND user_id=$2',
           [groupId, userId],
         );
-        if (result.rowCount === 0) {
-          const existing = await client.query(
-            'SELECT 1 FROM arkvory_group_members WHERE group_id=$1 AND user_id=$2',
+        if (!existing.rowCount) {
+          const valid = await client.query(
+            'SELECT 1 FROM arkvory_access_groups g CROSS JOIN arkvory_users u WHERE g.id=$1 AND u.id=$2',
             [groupId, userId],
           );
-          if (!existing.rowCount) {
-            const valid = await client.query(
-              'SELECT 1 FROM arkvory_access_groups g CROSS JOIN arkvory_users u WHERE g.id=$1 AND u.id=$2',
-              [groupId, userId],
-            );
-            if (!valid.rowCount) throw new ArkvoryError('not_found', 'User or group not found');
-            throw new ArkvoryError('capacity_exceeded', 'Membership limit reached');
-          }
+          if (!valid.rowCount) throw new ArkvoryError('not_found', 'User or group not found');
+          throw new ArkvoryError('capacity_exceeded', 'Membership limit reached');
         }
-      });
-    } else {
-      await this.pool.query('DELETE FROM arkvory_group_members WHERE group_id=$1 AND user_id=$2', [
-        groupId,
-        userId,
-      ]);
-    }
+      }
+      await appendSecurityEvent(client, actor, event);
+    });
   }
 
-  async grant(groupId: string, repository: string, access: 'read' | 'write' | null): Promise<void> {
+  async grant(
+    groupId: string,
+    repository: string,
+    access: 'read' | 'write' | null,
+    actor: SecurityActor,
+  ): Promise<void> {
     if (access === null) {
-      await this.pool.query(
-        'DELETE FROM arkvory_group_grants WHERE group_id=$1 AND repository=$2',
-        [groupId, repository],
-      );
+      await inTransaction(this.pool, async (client) => {
+        await client.query('DELETE FROM arkvory_group_grants WHERE group_id=$1 AND repository=$2', [
+          groupId,
+          repository,
+        ]);
+        await appendSecurityEvent(
+          client,
+          actor,
+          success('group.grant.remove', `group:${groupId}`, { repository }),
+        );
+      });
       return;
     }
     await capacityMutation(this.pool, async (client) => {
       const result = await client.query(
         `INSERT INTO arkvory_group_grants(group_id,repository,access)
-       SELECT id,$2::text,$3 FROM arkvory_access_groups WHERE id=$1 AND
-       ((SELECT count(*) FROM arkvory_group_grants)<10000 OR
-        EXISTS(SELECT 1 FROM arkvory_group_grants WHERE group_id=$1 AND repository=$2::text))
-       ON CONFLICT(group_id,repository) DO UPDATE SET access=EXCLUDED.access`,
+         SELECT id,$2::text,$3 FROM arkvory_access_groups WHERE id=$1 AND
+         ((SELECT count(*) FROM arkvory_group_grants)<10000 OR
+          EXISTS(SELECT 1 FROM arkvory_group_grants WHERE group_id=$1 AND repository=$2::text))
+         ON CONFLICT(group_id,repository) DO UPDATE SET access=EXCLUDED.access`,
         [groupId, repository, access],
       );
       if (!result.rowCount) {
@@ -215,88 +248,33 @@ export class PostgresIdentity implements IdentityStore {
         if (!valid.rowCount) throw new ArkvoryError('not_found', 'Group not found');
         throw new ArkvoryError('capacity_exceeded', 'Grant limit reached');
       }
+      await appendSecurityEvent(
+        client,
+        actor,
+        success('group.grant.set', `group:${groupId}`, { repository, access }),
+      );
     });
   }
 
-  async login(name: string, password: string): Promise<LoginResult> {
-    const client = await this.pool.connect();
-    let broken = false;
-    try {
-      await client.query('BEGIN');
-      const result = await client.query<UserRow>(
-        `SELECT id,name,administrator,password_salt,password_hash,enabled,
-                locked_until IS NOT NULL AND locked_until>now() AS locked
-         FROM arkvory_users WHERE lower(name)=lower($1) FOR UPDATE`,
-        [name],
-      );
-      const user = result.rows[0];
-      const candidate = await passwordHash(password, user?.password_salt ?? dummySalt);
-      const stored = user ? Buffer.from(user.password_hash, 'hex') : Buffer.alloc(64);
-      const matched = stored.length === candidate.length && timingSafeEqual(candidate, stored);
-      const valid = user && !user.locked && user.enabled && matched;
-      if (!valid) {
-        if (user && !user.locked) {
-          await client.query(
-            `UPDATE arkvory_users SET failed_logins=failed_logins+1,
-             locked_until=CASE WHEN failed_logins+1>=5 THEN now()+interval '15 minutes' ELSE NULL END
-             WHERE id=$1`,
-            [user.id],
-          );
-        }
-        await client.query('COMMIT');
-        throw new ArkvoryError('unauthorized', 'Invalid credentials');
-      }
-      await client.query('UPDATE arkvory_users SET failed_logins=0,locked_until=NULL WHERE id=$1', [
-        user.id,
-      ]);
-      await client.query(
-        `DELETE FROM arkvory_user_sessions WHERE user_id=$1 AND
-         (expires_at<=now() OR token_hash IN (
-           SELECT token_hash FROM arkvory_user_sessions WHERE user_id=$1 AND expires_at>now()
-           ORDER BY created_at DESC,token_hash DESC OFFSET 31
-         ))`,
-        [user.id],
-      );
-      const token = 'dps_' + randomBytes(32).toString('base64url');
-      const session = await client.query<{ expires_at: Date }>(
-        `INSERT INTO arkvory_user_sessions(token_hash,user_id,expires_at)
-         VALUES($1,$2,now()+interval '12 hours') RETURNING expires_at`,
-        [digest(token), user.id],
-      );
-      await client.query('COMMIT');
-      const expiresAt = session.rows[0]?.expires_at;
-      if (!expiresAt) throw new ArkvoryError('unavailable', 'Session creation failed');
-      return {
-        token,
-        expiresAt: expiresAt.toISOString(),
-        account: { id: user.id, name: user.name, administrator: user.administrator, enabled: true },
-      };
-    } catch (error) {
-      try {
-        await client.query('ROLLBACK');
-      } catch {
-        broken = true;
-      }
-      throw error;
-    } finally {
-      client.release(broken);
-    }
+  login(name: string, password: string, actor: SecurityActor): Promise<LoginResult> {
+    return passwordLogin(this.pool, name, password, actor);
   }
 
   async resolve(token: string): Promise<Principal | null> {
     if (/^dps_[A-Za-z0-9_-]{43}$/.test(token)) {
-      const result = await this.pool.query<{ id: string; administrator: boolean }>(
-        `SELECT u.id,u.administrator FROM arkvory_user_sessions s JOIN arkvory_users u ON u.id=s.user_id
+      const result = await this.pool.query<{ id: string }>(
+        `SELECT u.id FROM arkvory_user_sessions s JOIN arkvory_users u ON u.id=s.user_id
          WHERE s.token_hash=$1 AND s.expires_at>now() AND u.enabled`,
-        [digest(token)],
+        [sessionDigest(token)],
       );
       const user = result.rows[0];
-      if (!user) return null;
-      return principalForUser(this.pool, user.id);
+      return user ? accountPrincipal(this.pool, user.id, 'session') : null;
     }
     if (/^pat_[A-Za-z0-9_-]{43}$/.test(token)) {
-      const userId = await this.userTokens.resolve(token);
-      return userId ? principalForUser(this.pool, userId) : null;
+      const resolved = await this.userTokens.resolve(token);
+      return resolved
+        ? accountPrincipal(this.pool, resolved.userId, 'personal-token', resolved.scope)
+        : null;
     }
     return null;
   }
@@ -304,67 +282,39 @@ export class PostgresIdentity implements IdentityStore {
   async logout(token: string): Promise<void> {
     if (/^dps_[A-Za-z0-9_-]{43}$/.test(token))
       await this.pool.query('DELETE FROM arkvory_user_sessions WHERE token_hash=$1', [
-        digest(token),
+        sessionDigest(token),
       ]);
   }
 
-  async changePassword(
+  changePassword(
     userId: string,
     currentPassword: string,
     newPassword: string,
+    actor: SecurityActor,
   ): Promise<void> {
-    const client = await this.pool.connect();
-    let broken = false;
-    try {
-      await client.query('BEGIN');
-      const result = await client.query<
-        Pick<UserRow, 'password_salt' | 'password_hash' | 'enabled'>
-      >('SELECT password_salt,password_hash,enabled FROM arkvory_users WHERE id=$1 FOR UPDATE', [
-        userId,
-      ]);
-      const user = result.rows[0];
-      const candidate = await passwordHash(currentPassword, user?.password_salt ?? dummySalt);
-      const stored = user ? Buffer.from(user.password_hash, 'hex') : Buffer.alloc(64);
-      if (
-        !user?.enabled ||
-        stored.length !== candidate.length ||
-        !timingSafeEqual(candidate, stored)
-      )
-        throw new ArkvoryError('unauthorized', 'Invalid credentials');
-      const salt = randomBytes(16).toString('hex');
-      const hash = (await passwordHash(newPassword, salt)).toString('hex');
-      await client.query(
-        'UPDATE arkvory_users SET password_salt=$2,password_hash=$3,failed_logins=0,locked_until=NULL WHERE id=$1',
-        [userId, salt, hash],
-      );
-      await client.query('DELETE FROM arkvory_user_sessions WHERE user_id=$1', [userId]);
-      await client.query('COMMIT');
-    } catch (error) {
-      try {
-        await client.query('ROLLBACK');
-      } catch {
-        broken = true;
-      }
-      throw error;
-    } finally {
-      client.release(broken);
-    }
+    return changeOwnPassword(this.pool, userId, currentPassword, newPassword, actor);
   }
 
-  createToken(userId: string, name: string, expiresAt?: string): Promise<CreatedUserToken> {
-    return this.userTokens.createToken(userId, name, expiresAt);
+  createToken(
+    userId: string,
+    name: string,
+    request: { expiresAt: Date; scope: TokenScope },
+    actor: SecurityActor,
+  ): Promise<CreatedUserToken> {
+    return this.userTokens.createToken(userId, name, request, actor);
   }
 
   tokens(userId: string): Promise<readonly UserToken[]> {
     return this.userTokens.tokens(userId);
   }
 
-  revokeToken(userId: string, tokenId: string): Promise<void> {
-    return this.userTokens.revokeToken(userId, tokenId);
+  revokeToken(userId: string, tokenId: string, actor: SecurityActor): Promise<void> {
+    return this.userTokens.revokeToken(userId, tokenId, actor);
   }
 
+  /** Background jobs act as account automation: repository grants only, never administration. */
   principalForUser(userId: string): Promise<Principal | null> {
-    return principalForUser(this.pool, userId);
+    return accountPrincipal(this.pool, userId, 'personal-token', 'read-write');
   }
 }
 
@@ -377,7 +327,16 @@ async function readUsers(pool: Pool): Promise<readonly Account[]> {
   return result.rows;
 }
 
-async function principalForUser(pool: Pool, userId: string): Promise<Principal | null> {
+/**
+ * Sessions carry the full account authority. Personal tokens never inherit the administrator
+ * flag, and a `read` token drops every write grant before any policy sees the principal.
+ */
+async function accountPrincipal(
+  pool: Pool,
+  userId: string,
+  credential: Extract<CredentialKind, 'session' | 'personal-token'>,
+  scope?: TokenScope,
+): Promise<Principal | null> {
   const result = await pool.query<{ id: string; administrator: boolean }>(
     'SELECT id,administrator FROM arkvory_users WHERE id=$1 AND enabled',
     [userId],
@@ -389,45 +348,31 @@ async function principalForUser(pool: Pool, userId: string): Promise<Principal |
      JOIN arkvory_group_grants gg ON gg.group_id=gm.group_id WHERE gm.user_id=$1`,
     [user.id],
   );
+  const writable = credential === 'session' || scope === 'read-write';
   const grants = new Map<string, Set<'read' | 'write'>>();
   for (const right of rights.rows) {
     const permissions = grants.get(right.repository) ?? new Set<'read' | 'write'>();
     permissions.add('read');
-    if (right.access === 'write') permissions.add('write');
+    if (right.access === 'write' && writable) permissions.add('write');
     grants.set(right.repository, permissions);
   }
   return {
     id: `user:${user.id}`,
+    credential,
+    ...(credential === 'personal-token' ? { tokenScope: scope ?? 'read' } : {}),
     repositories: [],
     permissions: [],
     grants: [...grants].map(([repository, permissions]) => ({
       repository,
       permissions: [...permissions],
     })),
-    administrator: user.administrator,
+    administrator: credential === 'session' && user.administrator,
   };
 }
 
-async function capacityMutation<T>(
-  pool: Pool,
-  action: (client: PoolClient) => Promise<T>,
-): Promise<T> {
-  const client = await pool.connect();
-  let broken = false;
-  try {
-    await client.query('BEGIN');
+function capacityMutation<T>(pool: Pool, action: (client: PoolClient) => Promise<T>): Promise<T> {
+  return inTransaction(pool, async (client) => {
     await client.query('SELECT pg_advisory_xact_lock(18471,10)');
-    const result = await action(client);
-    await client.query('COMMIT');
-    return result;
-  } catch (error) {
-    try {
-      await client.query('ROLLBACK');
-    } catch {
-      broken = true;
-    }
-    throw error;
-  } finally {
-    client.release(broken);
-  }
+    return action(client);
+  });
 }

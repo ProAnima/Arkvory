@@ -1,5 +1,6 @@
 import { storageOperations, attachmentOperations } from './storage-operation-policies.js';
 import { promotionOperations } from './promotion-api.js';
+import { accountAdministrationOperations } from './account-operation-policies.js';
 import type { servicePermissionNames } from './service-api.js';
 import type { AdministrationPermission } from './delegation-api.js';
 type ServicePermission = (typeof servicePermissionNames)[number];
@@ -153,6 +154,7 @@ add(
 );
 add('/api/v1/auth/login', 'post', 'login', 'Identity', { kind: 'public' });
 add('/api/v1/auth/register', 'post', 'registerAccount', 'Identity', { kind: 'public' });
+add('/api/v1/auth/options', 'get', 'getAuthOptions', 'Identity', { kind: 'public' }, 'read');
 add(
   '/api/v1/auth/tokens',
   'get',
@@ -173,17 +175,7 @@ add(
 add('/api/v1/auth/me', 'get', 'getCurrentPrincipal', 'Identity', { kind: 'authenticated' }, 'read');
 add('/api/v1/auth/logout', 'post', 'logout', 'Identity', { kind: 'authenticated' }, 'idempotent');
 add('/api/v1/auth/password', 'post', 'changeOwnPassword', 'Identity', { kind: 'account-session' });
-for (const [path, method, id] of [
-  ['/users', 'get', 'listUsers'],
-  ['/users', 'post', 'createUser'],
-  ['/users/{id}', 'patch', 'updateUser'],
-  ['/access-groups', 'get', 'listAccessGroups'],
-  ['/access-groups', 'post', 'createAccessGroup'],
-  ['/access-groups/{id}/members/{userId}', 'put', 'addGroupMember'],
-  ['/access-groups/{id}/members/{userId}', 'delete', 'removeGroupMember'],
-  ['/access-groups/{id}/grants/{repository}', 'put', 'setGroupGrant'],
-  ['/access-groups/{id}/grants/{repository}', 'delete', 'removeGroupGrant'],
-] as const)
+for (const [path, method, id] of accountAdministrationOperations)
   add(
     `/api/v1${path}`,
     method,

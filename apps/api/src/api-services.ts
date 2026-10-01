@@ -14,6 +14,7 @@ import {
 } from '@proanima/arkvory-application';
 import {
   PostgresIdentity,
+  PostgresSecurityAudit,
   PostgresServices,
   PostgresStoragePolicy,
   PostgresBrowse,
@@ -27,6 +28,7 @@ import {
   PostgresPackageCandidates,
   PostgresPromotions,
 } from '@proanima/arkvory-infrastructure';
+import { AuthThrottle } from './auth-throttle.js';
 import type {
   LocalBlobStore,
   PostgresCatalog,
@@ -50,6 +52,7 @@ export function createApiServices(
   );
   const serviceAccounts = new PostgresServices(catalog.pool);
   const storagePolicies = new PostgresStoragePolicy(catalog.pool);
+  const securityAudit = new PostgresSecurityAudit(catalog.pool);
   const browse = new ArtifactCatalog(
     service,
     new PostgresBrowse(catalog.pool),
@@ -71,7 +74,13 @@ export function createApiServices(
     serviceAccounts,
     storagePolicies,
     browse,
-    identity: new IdentityService(new PostgresIdentity(catalog.pool), allowRegistration),
+    securityAudit,
+    authThrottle: new AuthThrottle(() => Date.now()),
+    identity: new IdentityService(new PostgresIdentity(catalog.pool), {
+      allowRegistration,
+      now: () => new Date(),
+      audit: securityAudit,
+    }),
     access: new ServiceAccess(serviceAccounts),
     storage: new RepositoryStorage(storagePolicies),
     retention: new ArtifactRetention(new PostgresRetention(catalog.pool), now),

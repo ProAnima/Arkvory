@@ -49,6 +49,8 @@ export function registerRequestSecurity(app: FastifyInstance, dependencies: Secu
         'Gateway ownership or download lease lost; restart the service',
       );
     context.signal(request, reply);
+    // Public sign-in options let a console decide which forms to show before authentication.
+    if (request.routeOptions.url === '/api/v1/auth/options') return;
     if (
       request.routeOptions.url === '/api/v1/auth/login' ||
       request.routeOptions.url === '/api/v1/auth/register'
@@ -80,7 +82,9 @@ export function registerRequestSecurity(app: FastifyInstance, dependencies: Secu
               token,
               request.routeOptions.url === '/api/v1/auth/activate-key',
             )
-          : (key?.principal ?? (await identity.resolve(token)))
+          : key
+            ? { ...key.principal, credential: 'file-key' as const }
+            : await identity.resolve(token)
         : null;
     if (!authenticated) {
       await reply.code(401).header('WWW-Authenticate', 'Bearer').send({
@@ -98,6 +102,20 @@ export function registerRequestSecurity(app: FastifyInstance, dependencies: Secu
       await reply.code(405).header('Allow', 'GET, HEAD').send({
         code: 'read_only',
         message: 'Read gateway does not accept mutations',
+        requestId: request.id,
+      });
+      return;
+    }
+    // Defence in depth: a read token has no write grants, and no mutation route accepts it.
+    if (
+      authenticated.tokenScope === 'read' &&
+      request.method !== 'GET' &&
+      request.method !== 'HEAD' &&
+      request.routeOptions.url !== '/api/v1/auth/logout'
+    ) {
+      await reply.code(403).send({
+        code: 'forbidden',
+        message: 'Read-only personal access token',
         requestId: request.id,
       });
       return;

@@ -2,6 +2,7 @@ import type { PoolClient } from 'pg';
 import { migrateStoragePolicy } from './storage-policy-schema.js';
 import { migrateCleanup } from './cleanup-schema.js';
 import { migratePromotions } from './promotion-schema.js';
+import { migrateIdentitySecurity } from './identity-security-schema.js';
 
 export async function migrateStorageSchemas(client: PoolClient) {
   await migrateStoragePolicy(client);
@@ -11,6 +12,7 @@ export async function migrateStorageSchemas(client: PoolClient) {
   await migrateStorageRouting(client);
   await migrateAdaptiveParts(client);
   await migratePromotions(client);
+  await migrateIdentitySecurity(client);
 }
 
 export async function migrateLargeObjects(client: PoolClient): Promise<void> {

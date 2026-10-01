@@ -25,6 +25,7 @@ export function errorKey(error: unknown): MessageKey {
     if (error.status === 409) return 'errorConflict';
     if (error.status === 400) return 'errorInput';
     if (error.status === 422) return 'errorIntegrity';
+    if (error.status === 429) return 'errorRateLimited';
     if (error.status === 503) return 'errorBusy';
     if (error.status === 507) return 'errorCapacity';
   }

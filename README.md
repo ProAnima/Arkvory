@@ -63,7 +63,7 @@ The console has light, dark and system themes, live English/Russian switching, a
 
 A UI hosted on another HTTPS origin can use the native API with Bearer tokens and a server configured origin allowlist. The bundled console also accepts a configured Arkvory API address. See the [external UI guide](docs/EXTERNAL_UI.md).
 
-Administrators can create accounts and repository access groups. Users sign in with 12-hour sessions and can change their own password; the console keeps session tokens only in the current tab and suggests readable repositories after sign-in. The package screen sorts by group, name or SemVer version and groups by UPack group or package. See the [runbook](docs/CORE_RUNBOOK.md).
+Administrators can create accounts and repository access groups. Users sign in with 12-hour sessions and can change their own password; the console keeps session tokens only in the current tab and suggests readable repositories after sign-in. Personal access tokens are created from a session only, expire within 365 days (90 by default), are `read` or `read-write`, never carry administrator rights and are revoked by any password change. Sign-in and optional self-registration are throttled per client with a bounded account backoff instead of lockout, and identity changes are recorded in an append-only security journal. See [identity and tokens](docs/IDENTITY.md). The package screen sorts by group, name or SemVer version and groups by UPack group or package. See the [runbook](docs/CORE_RUNBOOK.md).
 
 ### Packages, files, and catalog
 
@@ -228,7 +228,7 @@ For an existing database, edit `ARKVORY_DATABASE_URL` in `.env` instead of start
 | `npm run test:large`       | 5 GiB HTTP upload/download, process restart, hash and RSS checks     |
 | `npm run format`           | Apply formatting                                                     |
 
-Multipart uploads resume from recorded parts (the session fixes the part size; clients over 16 GiB complete through the worker); whole-file PUT retries restart from byte zero. Online cleanup releases cancelled reservations after deleting their content and the grace period. One API process owns a standalone database; this profile provides no node failover. Keep the database and the entire storage directory, including `storage-id`, together in backup/restore procedures. Before updating, stop API/worker, back up both, run `npm run migrate` (schema 22), then start the new code. See [asset history and restore](docs/LIFECYCLE_AND_CATALOG.md#история-и-восстановление-файлов) and [online catalog indexes](docs/adr/0014-online-package-page-indexes.md).
+Multipart uploads resume from recorded parts (the session fixes the part size; clients over 16 GiB complete through the worker); whole-file PUT retries restart from byte zero. Online cleanup releases cancelled reservations after deleting their content and the grace period. One API process owns a standalone database; this profile provides no node failover. Keep the database and the entire storage directory, including `storage-id`, together in backup/restore procedures. Before updating, stop API/worker, back up both, run `npm run migrate` (schema 23), then start the new code. See [asset history and restore](docs/LIFECYCLE_AND_CATALOG.md#история-и-восстановление-файлов) and [online catalog indexes](docs/adr/0014-online-package-page-indexes.md).
 
 ## Development rules
 

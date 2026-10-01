@@ -48,6 +48,7 @@ export function parseKeys(value: unknown): readonly ServiceKey[] {
       sha256,
       principal: {
         id,
+        credential: 'file-key',
         repositories: repos,
         permissions: grants,
         administrator,

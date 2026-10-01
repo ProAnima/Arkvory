@@ -20,13 +20,15 @@ const group = {
     grants: { type: 'array', items: grant },
   },
 };
+const tokenScope = { type: 'string', enum: ['read', 'read-write'] } as const;
 const userToken = {
   type: 'object',
-  required: ['id', 'name', 'prefix', 'createdAt', 'revoked'],
+  required: ['id', 'name', 'prefix', 'scope', 'createdAt', 'revoked'],
   properties: {
     id,
     name: str,
     prefix: str,
+    scope: tokenScope,
     createdAt: { type: 'string', format: 'date-time' },
     expiresAt: { type: 'string', format: 'date-time', nullable: true },
     lastUsedAt: { type: 'string', format: 'date-time', nullable: true },
@@ -44,6 +46,13 @@ const response = (schema: unknown) => ({
   content: { 'application/json': { schema } },
 });
 const error = { description: 'Error with code, message and requestId' };
+const tokenList = response({
+  type: 'object',
+  required: ['items'],
+  properties: { items: { type: 'array', maxItems: 100, items: userToken } },
+});
+const throttled =
+  'Anonymous attempts are throttled per client address and per account; 429 rate_limited carries Retry-After.';
 const path = (name: string) => ({
   name,
   in: 'path',
@@ -55,6 +64,7 @@ export const identityPaths = {
     post: {
       security: [],
       summary: 'Exchange account credentials for a 12-hour bearer session',
+      description: throttled,
       requestBody: body({
         type: 'object',
         additionalProperties: false,
@@ -75,6 +85,7 @@ export const identityPaths = {
     post: {
       security: [],
       summary: 'Register a new account and exchange credentials for a 12-hour session',
+      description: throttled,
       requestBody: body({
         type: 'object',
         additionalProperties: false,
@@ -91,20 +102,29 @@ export const identityPaths = {
       },
     },
   },
-  '/api/v1/auth/tokens': {
+  '/api/v1/auth/options': {
     get: {
-      summary: 'List personal access tokens for the signed-in account',
+      security: [],
+      summary: 'Public sign-in options for a console before authentication',
       responses: {
         200: response({
           type: 'object',
-          required: ['items'],
-          properties: { items: { type: 'array', items: userToken } },
+          required: ['selfRegistration'],
+          properties: { selfRegistration: { type: 'boolean' } },
         }),
         default: error,
       },
     },
+  },
+  '/api/v1/auth/tokens': {
+    get: {
+      summary: 'List personal access tokens of the signed-in account; session only, active first',
+      responses: { 200: tokenList, default: error },
+    },
     post: {
-      summary: 'Create a personal access token for the signed-in account',
+      summary: 'Create a personal access token; requires an interactive session, not a token',
+      description:
+        'expiresAt defaults to 90 days and must be in the future and within 365 days. scope defaults to read-write; read tokens never write. Tokens never carry administrator rights.',
       requestBody: body({
         type: 'object',
         additionalProperties: false,
@@ -112,6 +132,7 @@ export const identityPaths = {
         properties: {
           name: str,
           expiresAt: { type: 'string', format: 'date-time' },
+          scope: tokenScope,
         },
       }),
       responses: {
@@ -135,7 +156,8 @@ export const identityPaths = {
   },
   '/api/v1/auth/password': {
     post: {
-      summary: 'Change own password; requires an account session and revokes all sessions',
+      summary:
+        'Change own password; requires an interactive session and revokes all sessions and personal tokens',
       requestBody: body({
         type: 'object',
         additionalProperties: false,
@@ -158,6 +180,11 @@ export const identityPaths = {
           properties: {
             id: str,
             administrator: { type: 'boolean' },
+            credential: {
+              type: 'string',
+              enum: ['session', 'personal-token', 'service-key', 'file-key'],
+            },
+            tokenScope: tokenScope,
             grants: {
               type: 'array',
               items: {
@@ -205,7 +232,7 @@ export const identityPaths = {
     parameters: [path('id')],
     patch: {
       summary:
-        'Enable, disable or reset an account password; administrator only; revokes sessions when disabled or reset',
+        'Enable, disable or reset an account password; administrator only; revokes sessions when disabled or reset and personal tokens when reset',
       requestBody: body({
         type: 'object',
         additionalProperties: false,
@@ -215,6 +242,20 @@ export const identityPaths = {
         },
       }),
       responses: { 200: response(account), default: error },
+    },
+  },
+  '/api/v1/users/{id}/tokens': {
+    parameters: [path('id')],
+    get: {
+      summary: 'List personal access tokens of an account; administrator session or key only',
+      responses: { 200: tokenList, default: error },
+    },
+  },
+  '/api/v1/users/{id}/tokens/{tokenId}': {
+    parameters: [path('id'), path('tokenId')],
+    delete: {
+      summary: 'Revoke a personal access token of an account; administrator session or key only',
+      responses: { 204: { description: 'Token revoked' }, default: error },
     },
   },
   '/api/v1/access-groups': {

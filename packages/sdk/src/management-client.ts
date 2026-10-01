@@ -14,6 +14,7 @@ type ManagementTransport = Pick<
   | 'tokens'
   | 'createToken'
   | 'revokeToken'
+  | 'authOptions'
 > &
   Pick<
     UsersApi,
@@ -24,6 +25,9 @@ type ManagementTransport = Pick<
     | 'createAccessGroup'
     | 'setGroupMember'
     | 'setGroupGrant'
+    | 'accountTokens'
+    | 'revokeAccountToken'
+    | 'securityAudit'
   > &
   Pick<
     ServiceAccountsApi,
@@ -61,12 +65,18 @@ export function managementClients(client: ManagementTransport) {
       tokens: client.tokens.bind(client),
       createToken: client.createToken.bind(client),
       revokeToken: client.revokeToken.bind(client),
+      options: client.authOptions.bind(client),
     }),
     administration: Object.freeze({
       users: Object.freeze({
         list: client.users.bind(client),
         create: client.createUser.bind(client),
         update: client.updateUser.bind(client),
+        tokens: client.accountTokens.bind(client),
+        revokeToken: client.revokeAccountToken.bind(client),
+      }),
+      security: Object.freeze({
+        audit: client.securityAudit.bind(client),
       }),
       groups: Object.freeze({
         list: client.accessGroups.bind(client),

@@ -7,7 +7,12 @@ import {
   readServiceBindings,
   readUserToken,
   readCreatedUserToken,
+  readAuthOptions,
 } from '@proanima/arkvory-contracts';
+import type { UserTokenScope } from '@proanima/arkvory-contracts';
+
+/** A string keeps the original `createToken(name, expiresAt)` call shape working. */
+export type CreateTokenOptions = string | { expiresAt?: string; scope?: UserTokenScope };
 import type { HttpPort } from './http-transport.js';
 
 export class IdentityApi {
@@ -63,13 +68,21 @@ export class IdentityApi {
     const result = record(await this.http.call('api/v1/auth/tokens'));
     return items(result['items']).map(readUserToken);
   }
-  async createToken(name: string, expiresAt?: string) {
+  /** Requires an interactive session; the server defaults expiry to 90 days. */
+  async createToken(name: string, options?: CreateTokenOptions) {
+    const { expiresAt, scope } =
+      typeof options === 'string' ? { expiresAt: options } : (options ?? {});
     return readCreatedUserToken(
       await this.http.call('api/v1/auth/tokens', 'POST', {
         name,
         ...(expiresAt ? { expiresAt } : {}),
+        ...(scope ? { scope } : {}),
       }),
     );
+  }
+  /** Public; lets a console hide registration before anyone signs in. */
+  async authOptions(signal?: AbortSignal) {
+    return readAuthOptions(await this.http.call('api/v1/auth/options', 'GET', undefined, signal));
   }
   async revokeToken(id: string) {
     await this.http.request(`api/v1/auth/tokens/${encodeURIComponent(id)}`, {

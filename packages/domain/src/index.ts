@@ -4,7 +4,9 @@ export * from './lifecycle.js';
 export * from './object-size.js';
 export * from './promotion.js';
 export * from './version-range.js';
+export * from './credentials.js';
 export * from './identity.js';
+export * from './login-backoff.js';
 export * from './service-access.js';
 
 export * from './service-policy.js';

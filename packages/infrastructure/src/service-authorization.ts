@@ -12,6 +12,7 @@ export interface CredentialRow {
 export function managedPrincipal(row: CredentialRow): Principal {
   return {
     id: `service:${row.account_id}`,
+    credential: 'service-key',
     repositories: [],
     permissions: [],
     managed: {
@@ -19,6 +20,16 @@ export function managedPrincipal(row: CredentialRow): Principal {
       keyId: row.id,
       bindings: intersectBindings(parseBindings(row.account_bindings), parseBindings(row.bindings)),
     },
+  };
+}
+/** Issuing operator for activation checks; its authority comes from delegations, not bindings. */
+export function issuerPrincipal(accountId: string, keyId: string): Principal {
+  return {
+    id: `service:${accountId}`,
+    credential: 'service-key',
+    repositories: [],
+    permissions: [],
+    managed: { accountId, keyId, bindings: [] },
   };
 }
 // Caller MUST have an open, short transaction. Revocation/policy changes conflict with these locks.

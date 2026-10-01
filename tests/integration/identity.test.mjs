@@ -182,6 +182,7 @@ test('registered accounts inherit and lose repository access through groups', as
       ).statusCode,
       401,
     );
+  // ADR 0049: no hard lockout; a few failures from one client never block the real owner.
   assert.equal(
     (
       await f.app.inject({
@@ -190,7 +191,7 @@ test('registered accounts inherit and lose repository access through groups', as
         payload: { name: 'alice', password: 'long-private-password' },
       })
     ).statusCode,
-    401,
+    200,
   );
   assert.equal(
     (
