@@ -213,6 +213,33 @@ test('password change and administrator reset revoke every personal token', asyn
   );
 });
 
+// The console confirmation promises exactly this: sessions end, personal tokens are suspended
+// (not revoked) and work again once the account is re-enabled.
+test('disabling an account ends sessions and suspends personal tokens until re-enabled', async (t) => {
+  const f = await setup(t);
+  const { userId, session } = await account(f);
+  const issued = await personalToken(f, session);
+  assert.equal(issued.statusCode, 201, issued.body);
+  const token = issued.json().token;
+  const me = async (secret) =>
+    (await f.app.inject({ url: '/api/v1/auth/me', headers: bearer(secret) })).statusCode;
+  const toggle = async (enabled) => {
+    const response = await f.app.inject({
+      method: 'PATCH',
+      url: `/api/v1/users/${userId}`,
+      headers: f.headers,
+      payload: { enabled },
+    });
+    assert.equal(response.statusCode, 200, response.body);
+  };
+  await toggle(false);
+  assert.equal(await me(session), 401);
+  assert.equal(await me(token), 401);
+  await toggle(true);
+  assert.equal(await me(session), 401, 'A disabled account session must not come back');
+  assert.equal(await me(token), 200);
+});
+
 test('administrators list and revoke account tokens; active tokens are never hidden', async (t) => {
   const f = await setup(t);
   const { userId, session } = await account(f);

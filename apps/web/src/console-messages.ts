@@ -56,7 +56,8 @@ export const consoleEnglish = {
   routeArtifactMissing: 'The linked artifact was not found or is not available to you.',
   routeSignIn: 'Sign in to open the linked page.',
   confirmCancel: 'Cancel',
-  confirmDisableUser: 'Disable {name}? The account cannot sign in until it is enabled again.',
+  confirmDisableUser:
+    'Disable {name}? Active sessions end immediately and personal tokens stop working until the account is enabled again.',
   confirmRemoveMember:
     'Remove {user} from {group}? They lose the repository access granted through this group.',
   confirmRemoveGrant:
@@ -118,7 +119,8 @@ export const consoleRussian: Record<keyof typeof consoleEnglish, string> = {
   routeArtifactMissing: 'Артефакт по ссылке не найден или недоступен вам.',
   routeSignIn: 'Войдите, чтобы открыть страницу по ссылке.',
   confirmCancel: 'Отмена',
-  confirmDisableUser: 'Отключить {name}? Учётная запись не сможет войти, пока её снова не включат.',
+  confirmDisableUser:
+    'Отключить {name}? Активные сеансы завершатся сразу, а персональные токены перестанут работать, пока учётную запись снова не включат.',
   confirmRemoveMember:
     'Убрать {user} из группы {group}? Пользователь потеряет доступ, выданный через эту группу.',
   confirmRemoveGrant:
