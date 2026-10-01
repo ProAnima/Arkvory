@@ -30,26 +30,29 @@ API discovery now exposes credential-scoped operations and six responsibility ar
 
 The RU/EN console includes direct catalog downloads, compact mobile navigation, contextual queue controls and grouped access-management forms. [UI behavior and browser acceptance](docs/CONSOLE_UX.md).
 
-| Area                                                                 | Status                                                   |
-| -------------------------------------------------------------------- | -------------------------------------------------------- |
-| Strict TypeScript, clean boundaries, runtime builds                  | Implemented                                              |
-| Streaming transfers, SHA-256, GET/HEAD/Range/ETag                    | Implemented                                              |
-| Adaptive parts (8 MiB–1 GiB), resume, TTL, idempotent completion     | Implemented                                              |
-| Bounded SDK retries, verified Range downloads, saved-prefix resume   | Implemented; [recovery guide](docs/TRANSFER_RECOVERY.md) |
-| Metadata/labels/collections, CAS, search, catalog audit              | Implemented                                              |
-| UPack manifest/group/SemVer, immutable versions, asset revisions     | Implemented with validator limits                        |
-| PostgreSQL completion jobs, lease/generation, retries, worker        | Implemented                                              |
-| Bounded upload/download admission with client rotation               | One gateway, in memory                                   |
-| Shared-storage read gateways and fixed aggregate download shares     | Implemented; PostgreSQL leases, no node failover         |
-| GC and scrub                                                         | Online bounded cleanup; offline repair/scrub             |
-| SDK and RU/EN web console                                            | Implemented; details in runbook                          |
-| External browser UI through Bearer API and explicit origin allowlist | Implemented for native API; [setup](docs/EXTERNAL_UI.md) |
-| Asset history, exact revision lookup, atomic restore with audit      | API, SDK and console implemented                         |
-| User accounts and repository access groups                           | Administrator registration, sessions and group grants    |
-| Package catalog sorting, grouping and cursor paging                  | API, SDK and console; up to 100 versions per page        |
-| Download by package identity or file path                            | Implemented; same ACL, Range and limits as by ID         |
-| Directory import with resume and download/hash verification          | Implemented; metadata and ACL mapping separate           |
-| Two-server replication, failover, global balancing                   | Design stage; lab validation deferred                    |
+| Area                                                                 | Status                                                         |
+| -------------------------------------------------------------------- | -------------------------------------------------------------- |
+| Strict TypeScript, clean boundaries, runtime builds                  | Implemented                                                    |
+| Streaming transfers, SHA-256, GET/HEAD/Range/ETag                    | Implemented                                                    |
+| Adaptive parts (8 MiB–1 GiB), resume, TTL, idempotent completion     | Implemented                                                    |
+| Bounded SDK retries, verified Range downloads, saved-prefix resume   | Implemented; [recovery guide](docs/TRANSFER_RECOVERY.md)       |
+| Metadata/labels/collections, CAS, search, catalog audit              | Implemented                                                    |
+| UPack manifest/group/SemVer, immutable versions, asset revisions     | Implemented with validator limits                              |
+| PostgreSQL completion jobs, lease/generation, retries, worker        | Implemented                                                    |
+| Bounded upload/download admission with client rotation               | One gateway, in memory                                         |
+| Shared-storage read gateways and fixed aggregate download shares     | Implemented; PostgreSQL leases, no node failover               |
+| GC and scrub                                                         | Online bounded cleanup; offline repair/scrub                   |
+| SDK and RU/EN web console                                            | Implemented; details in runbook                                |
+| External browser UI through Bearer API and explicit origin allowlist | Implemented for native API; [setup](docs/EXTERNAL_UI.md)       |
+| Asset history, exact revision lookup, atomic restore with audit      | API, SDK and console implemented                               |
+| User accounts and repository access groups                           | Administrator registration, sessions and group grants          |
+| Package catalog sorting, grouping and cursor paging                  | API, SDK and console; up to 100 versions per page              |
+| Download by package identity or file path                            | Implemented; same ACL, Range and limits as by ID               |
+| Directory import with resume and download/hash verification          | Implemented; metadata and ACL mapping separate                 |
+| Structured JSON logs, levels, request→job→audit correlation, metrics | Implemented; [runbook](docs/CORE_RUNBOOK.md), ADR 0052         |
+| Error codes with reasons and field details; request ID in UI and CLI | Implemented; [error contract](docs/API_CONTRACTS.md), ADR 0051 |
+| Local CI lanes (Windows, Linux, systemd) and draft releases          | Implemented; [local pipeline](docs/CI.md), ADR 0053            |
+| Two-server replication, failover, global balancing                   | Design stage; lab validation deferred                          |
 
 Run `npm run migrate`, `npm start` and `npm run worker` separately. Console: `/console/`. This is a development release, not a production HA system. See the [core runbook](docs/CORE_RUNBOOK.md), [0.2 features](docs/LIFECYCLE_AND_CATALOG.md), [import and migration](docs/MIGRATION.md), [two-server profile](docs/TWO_NODE_PLAN.md) and [validation](docs/CORE_VALIDATION.md) (engineering documents in Russian).
 
