@@ -65,9 +65,6 @@
 .queue-settings {
   margin-bottom: var(--space-4);
 }
-.queue-help {
-  margin-bottom: var(--space-4);
-}
 .queue-notice {
   padding: var(--space-3) var(--space-4);
   background: var(--color-info-bg);
@@ -78,8 +75,11 @@
   min-height: var(--compact-empty-height);
 }
 .subheading {
-  margin-top: var(--space-8);
-  margin-bottom: var(--space-4);
+  margin-top: var(--space-5);
+  margin-bottom: var(--space-2);
+}
+.section-heading > .subheading {
+  margin: 0;
 }
 input[type='checkbox'] {
   width: var(--checkbox-size);
@@ -99,16 +99,21 @@ label:has(> input[type='checkbox']) {
   font-size: var(--text-lg);
   font-weight: var(--weight-semibold);
   overflow-wrap: anywhere;
-  margin-bottom: var(--space-5);
+}
+.artifact-heading > button {
+  margin-left: auto;
+}
+.artifact-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-2);
 }
 .artifact-name {
-  display: block;
   font-weight: var(--weight-semibold);
 }
 .artifact-id {
-  display: block;
   color: var(--color-muted);
-  margin-top: var(--space-1);
 }
 .artifact-facts,
 .artifact-tags {
@@ -116,16 +121,19 @@ label:has(> input[type='checkbox']) {
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-1) var(--space-3);
-  margin-top: var(--space-1);
 }
 .artifact-facts {
   color: var(--color-muted);
-  font-size: var(--text-sm);
+  font-size: var(--text-xs);
+  margin-top: var(--space-1);
 }
 .artifact-tags {
   gap: var(--space-1);
 }
-.artifact-tags .artifact-stage {
+.artifact-tags .badge {
+  padding-block: 0;
+}
+.stage-badge {
   border-color: var(--color-accent);
   background: var(--color-info-bg);
   color: var(--color-text);
@@ -197,7 +205,7 @@ label:has(> input[type='checkbox']) {
 }
 output:not(.status-bar output):not(.transfer-card output):not(:empty) {
   display: block;
-  margin-top: var(--space-4);
+  margin-top: var(--space-2);
   overflow-wrap: anywhere;
 }
 .connection-heading {
@@ -230,16 +238,11 @@ output:not(.status-bar output):not(.transfer-card output):not(:empty) {
     min-width: 0;
     min-height: var(--control-height);
   }
-  .heading-action {
-    width: 100%;
+  .topbar h1 {
+    flex-basis: 100%;
+    white-space: normal;
   }
-  .breadcrumb {
-    display: none;
-  }
-  .preferences {
-    width: 100%;
-  }
-  .preferences label {
+  .topbar .heading-action {
     flex: 1;
   }
   .connection > summary {

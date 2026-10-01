@@ -5,7 +5,7 @@ dialog[open] {
 }
 /* Only shell surfaces crossfade. Avoid per-cell layers and first-paint theme transitions. */
 html[data-appearance-ready],
-[data-appearance-ready] :where(.sidebar, .topbar, .card, .guide-hero, .status-bar, th) {
+[data-appearance-ready] :where(.sidebar, .topbar, .card, .status-bar, th) {
   transition:
     background-color var(--motion-theme) var(--motion-ease),
     border-color var(--motion-theme) var(--motion-ease),

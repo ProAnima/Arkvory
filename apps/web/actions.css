@@ -31,6 +31,12 @@ button[data-icon-only] {
   padding: 0;
   flex: 0 0 auto;
 }
+/* Row actions are secondary to the data; touch layouts enlarge the small control height. */
+td button[data-icon-only] {
+  width: var(--control-small-height);
+  min-width: var(--control-small-height);
+  min-height: var(--control-small-height);
+}
 button[data-icon-only] > .action-label {
   position: absolute;
   width: 1px;
@@ -97,6 +103,8 @@ button[data-icon-only] > .action-label {
   font: inherit;
   font-size: var(--text-sm);
   overflow-wrap: anywhere;
+  /* A name label only: it must never take a click meant for a control it overlaps. */
+  pointer-events: none;
 }
 @supports (position-area: top) {
   #action-tooltip {
@@ -114,8 +122,9 @@ button[data-icon-only] > .action-label {
   animation: content-enter var(--motion-fast) var(--motion-ease);
 }
 @media (min-width: 761px) {
+  /* The rail keeps room for a classic scrollbar in short windows without a horizontal one. */
   [data-navigation='compact'] .sidebar {
-    padding-inline: var(--space-3);
+    padding-inline: var(--space-1);
   }
   [data-navigation='compact'] .brand {
     padding: 0;

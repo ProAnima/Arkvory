@@ -1,5 +1,5 @@
 import type { ArkvoryClient } from '@proanima/arkvory-sdk';
-import { command, disclosure, node } from './management-dom.js';
+import { command, disclosure, helpText, node } from './management-dom.js';
 import { ManagementTask } from './management-task.js';
 
 export class RepositoryConsole {
@@ -27,9 +27,8 @@ export class RepositoryConsole {
       this.next,
     );
     if (access) actions.append(command('repositoryAccess', access));
-    const help = disclosure('repositoryChoose');
-    help.append(node('p', 'repositoryModel', 'hint'));
-    controls.replaceChildren(actions, this.list, help);
+    actions.append(helpText('repositoryModel', 'repositoryModelHelpLabel'));
+    controls.replaceChildren(actions, this.list);
   }
   clear() {
     this.task.clear();
@@ -46,13 +45,16 @@ export class RepositoryConsole {
       this.next.disabled = !page.next;
       this.list.replaceChildren();
       for (const repository of page.items) {
-        const card = node('article', undefined, 'binding-row');
+        // One dense row per repository: name, collapsible rights as chips, actions.
+        const card = node('article', undefined, 'repository-row');
         card.dataset['repositoryId'] = repository.id;
         const title = node('h3');
         title.textContent = repository.id;
         const rights = disclosure('repositoryRights');
+        const chips = node('div', undefined, 'permission-chips');
         for (const permission of repository.permissions)
-          rights.append(node('p', `permission.${permission}`));
+          chips.append(node('span', `permission.${permission}`, 'badge'));
+        rights.append(chips);
         const actions = node('div', undefined, 'management-actions');
         if (repository.permissions.includes('artifact.list'))
           actions.append(

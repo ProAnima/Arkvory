@@ -49,7 +49,7 @@ export async function decorateStages(
       list.className = 'package-stage-list';
       for (const stage of byArtifact.get(cell.dataset['artifactId'] ?? '') ?? []) {
         const chip = document.createElement('span');
-        chip.className = 'badge';
+        chip.className = 'badge stage-badge';
         chip.textContent = stage;
         list.append(chip);
       }

@@ -2,7 +2,7 @@
   position: fixed;
   inset: 0 auto 0 0;
   width: var(--sidebar-width);
-  padding: var(--space-8) var(--space-5) var(--space-6);
+  padding: var(--space-4) var(--space-3) var(--space-4);
   background: var(--color-sidebar);
   border-right: var(--border-width) solid var(--color-border);
   display: flex;
@@ -131,22 +131,18 @@ nav button[aria-current='page']:hover {
 }
 .topbar {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: var(--space-4);
-  border-bottom: var(--border-width) solid var(--color-border);
-  padding: var(--space-4) var(--page-gutter);
-}
-.breadcrumb {
-  display: flex;
   align-items: center;
   gap: var(--space-3);
-  color: var(--color-muted);
-  font-size: var(--text-sm);
+  border-bottom: var(--border-width) solid var(--color-border);
+  padding: var(--space-2) var(--page-gutter);
+  min-height: calc(var(--control-height) + 2 * var(--space-2));
 }
-.breadcrumb strong {
-  color: var(--color-text);
-  font-weight: var(--weight-semibold);
+.topbar h1 {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .preferences {
   display: flex;
@@ -163,19 +159,12 @@ nav button[aria-current='page']:hover {
   background: var(--color-surface);
 }
 main {
-  padding: var(--space-8) var(--page-gutter) var(--space-4);
+  padding: var(--space-4) var(--page-gutter) var(--space-4);
   width: 100%;
   max-width: var(--content-max);
   margin-inline: auto;
   flex: 1;
   min-width: 0;
-}
-.page-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-5);
-  margin-bottom: var(--space-6);
 }
 .eyebrow {
   font-size: var(--text-xs);

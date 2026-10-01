@@ -41,7 +41,7 @@ function tags(item: ArtifactSearchItemResponse): HTMLSpanElement | null {
   const line = document.createElement('span');
   line.className = 'artifact-tags';
   for (const [key, values, className] of [
-    ['stagesTitle', item.stages, 'badge artifact-stage'],
+    ['stagesTitle', item.stages, 'badge stage-badge artifact-stage'],
     ['labels', item.labels, 'badge'],
   ] as const) {
     if (!values.length) continue;
@@ -79,8 +79,14 @@ export function artifactRow(
   const id = document.createElement('span');
   id.textContent = item.id;
   id.className = 'artifact-id';
+  // Two dense lines: name with stages/labels, then size, publication time and ID.
+  const line = document.createElement('div');
+  line.className = 'artifact-line';
   const labels = tags(item);
-  name.append(filename, facts(item), ...(labels ? [labels] : []), id);
+  line.append(filename, ...(labels ? [labels] : []));
+  const details = facts(item);
+  details.append(id);
+  name.append(line, details);
   const controls = document.createElement('div');
   controls.className = 'catalog-actions';
   controls.append(

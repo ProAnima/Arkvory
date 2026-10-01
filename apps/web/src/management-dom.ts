@@ -11,6 +11,12 @@ export function node<K extends keyof HTMLElementTagNameMap>(
   if (className) result.className = className;
   return result;
 }
+/** Secondary explanation rendered as a localized tooltip; `label` names its trigger button. */
+export function helpText(key: MessageKey, label: MessageKey) {
+  const result = node('p', key, 'hint');
+  result.dataset['help'] = label;
+  return result;
+}
 export function command(key: MessageKey, action: () => void, className = 'secondary') {
   const result = node('button', key, className);
   result.type = 'button';

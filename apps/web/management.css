@@ -76,3 +76,42 @@ fieldset.management-stack {
 .management-dialog strong {
   overflow-wrap: anywhere;
 }
+/* Repository list: a row per repository instead of a card; rights expand below the row. */
+#repository-list {
+  display: grid;
+  border-top: var(--border-width) solid var(--color-border);
+}
+.repository-row {
+  display: grid;
+  grid-template-columns: minmax(var(--label-min), 1fr) minmax(0, 2fr) auto;
+  align-items: start;
+  gap: var(--space-2) var(--space-4);
+  padding: var(--space-2) 0;
+  border-bottom: var(--border-width) solid var(--color-border);
+  overflow-wrap: anywhere;
+}
+.repository-row > h3 {
+  display: flex;
+  align-items: center;
+  min-height: var(--control-small-height);
+  font-size: var(--text-base);
+}
+.repository-row > .disclosure {
+  border-top: 0;
+  padding-block: 0;
+}
+.permission-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin-top: var(--space-2);
+}
+@media (max-width: 760px) {
+  .repository-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .repository-row > .disclosure {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+}

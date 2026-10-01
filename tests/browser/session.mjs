@@ -184,7 +184,11 @@ async function exerciseOwnerServices(page, f) {
   await connectWithKey(page, f.headers.authorization.slice(7));
   await page.locator('#services-nav').waitFor();
   await page.locator('[data-nav=services]').click();
-  await page.locator('#service-account-list p[data-i18n=serviceEmptyOwner]').waitFor();
+  await page.locator('#service-account-list [data-i18n=serviceEmpty]').waitFor();
+  // The owner-key explanation is a tooltip next to the empty state.
+  await page
+    .locator('#service-account-list [role=tooltip][data-i18n=serviceEmptyOwner]')
+    .waitFor({ state: 'attached' });
   await page.locator('[data-nav=help]').click();
   assert.equal(await page.locator('#help-hint').getAttribute('data-i18n'), 'helpHintConnected');
 }

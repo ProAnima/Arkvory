@@ -15,6 +15,7 @@ import { exerciseBuildDetails } from './build-details.mjs';
 import { exerciseDeletion } from './deletion.mjs';
 import { exercisePromotion } from './promotion.mjs';
 import { exerciseErrorFeedback } from './errors.mjs';
+import { exerciseDesktopDensity } from './density.mjs';
 import { chromium } from 'playwright';
 const browser = await chromium.launch({
   headless: true,
@@ -144,7 +145,7 @@ try {
   await page.waitForFunction(() => document.querySelector('#asset-revision').value === '1');
   await go('history');
   await page.locator('#history-path').fill('releases/latest.upack');
-  await page.locator('#history button').click();
+  await page.locator('#history button[data-i18n=historyLoad]').click();
   await page.locator('#asset-history tr').waitFor();
   await exerciseAdministrationLoading(page, go);
   await page.locator('summary[data-i18n=createUser]').click();
@@ -290,6 +291,7 @@ try {
   await exerciseDeletion(page, f);
   await exerciseStoragePolicy(page, f);
   await exerciseGuides(page, f);
+  await exerciseDesktopDensity(browser, origin, f);
   // Last: it exhausts the sign-in budget of this server's loopback client.
   await exerciseErrorFeedback(browser, origin, f);
   assert.deepEqual(errors, []);

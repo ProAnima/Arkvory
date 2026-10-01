@@ -4,71 +4,71 @@
   --font-sans: 'Inter', 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif;
   --font-mono: 'Cascadia Code', 'SFMono-Regular', Consolas, monospace;
   --text-xs: 0.75rem;
-  --text-sm: 0.875rem;
-  --text-md: 0.9375rem;
-  --text-base: 1rem;
-  --text-lg: 1.125rem;
-  --text-display: clamp(1.625rem, 2.6vw, 2.125rem);
+  --text-sm: 0.8125rem;
+  --text-md: 0.84375rem;
+  --text-base: 0.875rem;
+  --text-lg: 1rem;
+  --text-display: 1.25rem;
   --weight-normal: 400;
   --weight-medium: 500;
   --weight-semibold: 600;
   --weight-bold: 700;
   --leading-tight: 1.15;
-  --leading-normal: 1.5;
-  --leading-relaxed: 1.7;
+  --leading-normal: 1.4;
+  --leading-relaxed: 1.55;
   --tracking-tight: -0.04em;
   --tracking-normal: -0.012em;
   --tracking-label: 0.11em;
   --space-1: 0.25rem;
   --space-2: 0.5rem;
-  --space-3: 0.75rem;
-  --space-4: 1rem;
-  --space-5: 1.25rem;
-  --space-6: 1.5rem;
-  --space-8: 2rem;
-  --space-10: 2.5rem;
-  --space-12: 3rem;
-  --radius-xs: 0.375rem;
-  --radius-control: 0.75rem;
-  --radius-card: 1.25rem;
-  --radius-large: 1.5rem;
+  --space-3: 0.625rem;
+  --space-4: 0.75rem;
+  --space-5: 1rem;
+  --space-6: 1.25rem;
+  --space-8: 1.5rem;
+  --space-10: 2rem;
+  --space-12: 2.5rem;
+  --radius-xs: 0.25rem;
+  --radius-control: 0.375rem;
+  --radius-card: 0.625rem;
+  --radius-large: 0.75rem;
   --radius-pill: 999px;
   --border-width: 1px;
-  --focus-width: 3px;
-  --focus-offset: 3px;
+  --focus-width: 2px;
+  --focus-offset: 2px;
   --icon-stroke: 1.6;
-  --control-height: 2.75rem;
-  --control-small-height: 2.25rem;
-  --icon-size: 1.125rem;
-  --brand-size: 2.5rem;
-  --text-brand: 1.625rem;
-  --brand-icon: 1.75rem;
-  --sidebar-width: 15.5rem;
-  --sidebar-rail-width: 5rem;
+  --control-height: 2rem;
+  --control-small-height: 1.75rem;
+  --icon-size: 1rem;
+  --brand-size: 2rem;
+  --text-brand: 1.25rem;
+  --brand-icon: 1.375rem;
+  --sidebar-width: 13rem;
+  --sidebar-rail-width: 3.5rem;
   --language-control-width: 6.5rem;
   --content-max: 92rem;
-  --page-gutter: clamp(1.25rem, 3.2vw, 3.5rem);
-  --panel-padding: 1.5rem;
+  --page-gutter: clamp(0.75rem, 1.6vw, 1.5rem);
+  --panel-padding: 1rem;
   --aside-width: 21rem;
-  --empty-height: 14rem;
-  --compact-empty-height: 12rem;
-  --checkbox-size: 1.125rem;
+  --empty-height: 9rem;
+  --compact-empty-height: 7rem;
+  --checkbox-size: 1rem;
   --update-dialog-width: 36rem;
   --color-update-backdrop: rgb(8 13 30 / 65%);
-  --table-actions-width: 16rem;
+  --table-actions-width: 9rem;
   --z-status: 10;
   --empty-copy-width: 26rem;
-  --empty-icon-size: 5rem;
-  --file-picker-height: 15rem;
-  --upload-symbol-size: 2.5rem;
+  --empty-icon-size: 2.5rem;
+  --file-picker-height: 7.5rem;
+  --upload-symbol-size: 1.5rem;
   --text-symbol: var(--upload-symbol-size);
   --promotion-column-min: 20rem;
   --sign-in-field-min: 12rem;
   --progress-height: 0.375rem;
   --dot-size: 0.4375rem;
   --table-min: 36rem;
-  --label-min: 9rem;
-  --nav-height: 2.875rem;
+  --label-min: 8rem;
+  --nav-height: 2.125rem;
   --motion-fast: 160ms;
   --motion-normal: 220ms;
   --motion-theme: 180ms;
@@ -77,8 +77,8 @@
   --opacity-disabled: 0.45;
   --z-sidebar: 20;
   --z-skip: 30;
-  --help-target: 2rem;
-  --help-icon: 1.125rem;
+  --help-target: 1.5rem;
+  --help-icon: 0.9375rem;
   --help-width: 20rem;
   --help-max-height: 40dvh;
   --z-tooltip: 40;
@@ -175,17 +175,22 @@
 /* Breakpoints: custom properties cannot be used in media-query conditions. */
 @media (max-width: 1100px) {
   :root {
-    --sidebar-width: 13.5rem;
-    --panel-padding: 1.25rem;
+    --sidebar-width: 12rem;
+  }
+}
+/* Mouse and trackpad get a dense desktop layout; touch keeps 44px targets (WCAG 2.5.5). */
+@media (pointer: coarse) {
+  :root {
+    --control-height: 2.75rem;
+    --control-small-height: 2.5rem;
+    --help-target: 2.75rem;
+    --nav-height: 2.75rem;
   }
 }
 @media (max-width: 760px) {
   :root {
-    --text-brand: 1.375rem;
-    --brand-size: 2.25rem;
-    --page-gutter: 1rem;
-    --panel-padding: 1rem;
-    --empty-height: 16rem;
+    --page-gutter: 0.75rem;
+    --panel-padding: 0.75rem;
   }
 }
 /* The compact desktop rail narrows the sidebar; the phone layout keeps the full-width menu. */

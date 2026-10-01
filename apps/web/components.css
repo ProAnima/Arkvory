@@ -9,8 +9,8 @@
   padding: var(--panel-padding);
 }
 .connection {
-  margin-bottom: var(--space-6);
-  padding: var(--space-4) var(--panel-padding);
+  margin-bottom: var(--space-3);
+  padding: var(--space-2) var(--panel-padding);
 }
 summary {
   cursor: pointer;
@@ -37,8 +37,8 @@ summary {
 }
 .connection-body {
   display: grid;
-  gap: var(--space-4);
-  margin-top: var(--space-5);
+  gap: var(--space-3);
+  margin-top: var(--space-3);
 }
 .sign-in-form,
 .connection-fields {
@@ -78,7 +78,7 @@ summary {
 label {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: var(--space-1);
   font-size: var(--text-sm);
   font-weight: var(--weight-medium);
   min-width: 0;
@@ -89,7 +89,7 @@ select {
   border: var(--border-width) solid var(--color-border-strong);
   border-radius: var(--radius-control);
   background: var(--color-input);
-  padding: var(--space-3);
+  padding: var(--space-1) var(--space-3);
   min-width: 0;
   max-width: 100%;
   width: 100%;
@@ -156,8 +156,8 @@ textarea {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: var(--space-4);
-  margin-bottom: var(--space-4);
+  gap: var(--space-3);
+  margin-bottom: var(--space-2);
   flex-wrap: wrap;
 }
 .catalog-card > .section-heading {
@@ -173,8 +173,8 @@ textarea {
   display: flex;
   flex-wrap: wrap;
   align-items: end;
-  gap: var(--space-3);
-  margin-block: var(--space-5);
+  gap: var(--space-2);
+  margin-block: var(--space-3);
 }
 .group-row th {
   background: var(--color-raised);
@@ -182,11 +182,14 @@ textarea {
   font-weight: var(--weight-semibold);
 }
 .catalog-card > .search-form {
+  align-items: center;
   padding-inline: var(--panel-padding);
 }
 .catalog-card > .catalog-filter {
   margin-inline: var(--panel-padding);
-  margin-bottom: var(--space-5);
+  margin-bottom: var(--space-2);
+  padding-block: 0;
+  border-top: 0;
 }
 .search-form > label:not(.grow) {
   flex: 0 1 20%;
@@ -211,7 +214,7 @@ th {
 }
 th,
 td {
-  padding: var(--space-3) var(--panel-padding);
+  padding: var(--space-2) var(--space-4);
 }
 td {
   border-bottom: var(--border-width) solid var(--color-border);
@@ -242,7 +245,17 @@ progress,
 td button {
   font-size: var(--text-sm);
   min-height: var(--control-small-height);
-  margin: var(--space-1);
+  margin: 0;
+}
+/* Dense filter rows: select captions stay visible but small; text inputs use placeholders. */
+.compact-filter > label > span:not(.sr-only) {
+  color: var(--color-muted);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-normal);
+}
+.compact-filter > label:not(.grow) {
+  flex: 0 1 auto;
+  min-width: var(--label-min);
 }
 .table-footer {
   display: flex;

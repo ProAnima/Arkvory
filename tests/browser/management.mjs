@@ -55,7 +55,10 @@ try {
   await page.locator('#services-nav').waitFor();
   assert.equal(await page.locator('#repository').inputValue(), 'releases');
   await go('services');
-  await page.locator('#service-account-list [data-i18n=serviceEmptyOwner]').waitFor();
+  await page.locator('#service-account-list [data-i18n=serviceEmpty]').waitFor();
+  await page
+    .locator('#service-account-list [role=tooltip][data-i18n=serviceEmptyOwner]')
+    .waitFor({ state: 'attached' });
   await page.locator('summary[data-i18n=serviceCreate]').click();
   await page.locator('#service-create-name').fill('browser-ci');
   const create = page.locator('#service-create-form');

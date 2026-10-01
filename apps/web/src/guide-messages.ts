@@ -3,8 +3,6 @@ export const guideEnglish = {
     'The owner account exists. Sign in and finish repository permissions in Access groups; account creation must not be repeated.',
   onboarding: 'Welcome to Arkvory',
   help: 'API & CLI',
-  welcomeLead: 'Initial setup',
-  welcomeBody: 'Set up access, publish a file and connect your tools.',
   welcomeAccess: '01 · Sign in',
   welcomeAccessBody:
     'On Windows, use the owner account you created in Setup. For a headless installation, create an owner using the private recovery key on the server.',
@@ -47,8 +45,6 @@ export const guideRussian: Record<keyof typeof guideEnglish, string> = {
     'Владелец создан. Войдите и завершите выдачу прав в группах доступа; повторно создавать владельца не нужно.',
   onboarding: 'Добро пожаловать в Arkvory',
   help: 'API и CLI',
-  welcomeLead: 'Первоначальная настройка',
-  welcomeBody: 'Настройте доступ, опубликуйте файл и подключите инструменты.',
   welcomeAccess: '01 · Войдите',
   welcomeAccessBody:
     'В Windows используйте владельца, созданного в установщике. После серверной установки создайте владельца с помощью закрытого ключа восстановления на сервере.',

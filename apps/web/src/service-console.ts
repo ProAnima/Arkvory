@@ -2,7 +2,7 @@ import { requestCurrent } from './management-task.js';
 import type { ArkvoryClient } from '@proanima/arkvory-sdk';
 import type { ServiceAccountResponse } from '@proanima/arkvory-contracts';
 import { BindingsEditor } from './bindings-editor.js';
-import { command, disclosure, field, node, submit } from './management-dom.js';
+import { command, disclosure, field, helpText, node, submit } from './management-dom.js';
 import { ManagementTask } from './management-task.js';
 import type { ManagementDialogs } from './management-dialogs.js';
 import type { ServiceAuthority } from './service-authority.js';
@@ -101,7 +101,7 @@ export class ServiceConsole {
     name.input.pattern = '[a-zA-Z0-9_.-]{3,64}';
     form.append(
       name.label,
-      node('p', 'servicePolicyHint', 'hint'),
+      helpText('servicePolicyHint', 'servicePolicyHelpLabel'),
       bindings.root,
       submit('serviceCreate'),
     );
@@ -145,7 +145,7 @@ export class ServiceConsole {
       });
     };
     const details = disclosure('servicePolicy');
-    details.append(node('p', 'servicePolicyHint', 'hint'), form);
+    details.append(helpText('servicePolicyHint', 'servicePolicyHelpLabel'), form);
     this.selected.append(details);
   }
   private installAudit() {
@@ -177,16 +177,16 @@ export class ServiceConsole {
       this.list.append(row);
     }
     // The file-based owner key administers access but is not itself a service account.
-    if (!result.items.length)
-      this.list.append(
-        node(
-          'p',
-          this.authority.bootstrap && this.authority.writable
-            ? 'serviceEmptyOwner'
-            : 'serviceEmptyDelegated',
-          'hint',
-        ),
-      );
+    if (!result.items.length) {
+      if (this.authority.bootstrap && this.authority.writable) {
+        const empty = node('div', undefined, 'inline');
+        empty.append(
+          node('p', 'serviceEmpty', 'hint'),
+          helpText('serviceEmptyOwner', 'serviceOwnerKeyHelpLabel'),
+        );
+        this.list.append(empty);
+      } else this.list.append(node('p', 'serviceEmptyDelegated', 'hint'));
+    }
   }
   private async open(account: ServiceAccountResponse, signal: AbortSignal) {
     this.account = account;
