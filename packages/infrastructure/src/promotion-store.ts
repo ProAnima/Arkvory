@@ -12,7 +12,7 @@ import { lockCatalogMutation } from './catalog-mutation.js';
 import { lockServiceAccess } from './service-authorization.js';
 import { removeArtifactInTransaction } from './retention.js';
 import { addStageInTransaction, recordPromotionEvent } from './stage-events.js';
-import { inTransaction } from './transaction.js';
+import { inTransaction } from './pg-transaction.js';
 
 interface SourceRow {
   descriptor: unknown;

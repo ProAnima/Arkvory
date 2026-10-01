@@ -26,10 +26,12 @@ const keys = [
 const auth = { authorization: `Bearer ${token}` };
 const readOnly = { authorization: `Bearer ${reader}` };
 
+// A fixed entry time keeps equal inputs byte-identical; yazl defaults to the current clock.
+const entryTime = { mtime: new Date('2026-01-01T00:00:00Z') };
 async function upack(manifest, extra = '') {
   const zip = new ZipFile();
-  zip.addBuffer(Buffer.from(JSON.stringify(manifest)), 'upack.json');
-  zip.addBuffer(Buffer.from('payload ' + extra), 'package/readme.txt');
+  zip.addBuffer(Buffer.from(JSON.stringify(manifest)), 'upack.json', entryTime);
+  zip.addBuffer(Buffer.from('payload ' + extra), 'package/readme.txt', entryTime);
   zip.end();
   const chunks = [];
   for await (const chunk of zip.outputStream) chunks.push(chunk);
@@ -219,8 +221,9 @@ test('identity conflicts in the target are rejected unless the bytes are identic
     target: 'prod',
   });
   assert.equal(conflict.statusCode, 409, conflict.body);
-  const same = await publish(f, 'dev', await upack({ name: 'twin', version: '1.0.0' }, 'x'));
-  const existing = await publish(f, 'prod', await upack({ name: 'twin', version: '1.0.0' }, 'x'));
+  const twin = await upack({ name: 'twin', version: '1.0.0' }, 'x');
+  const same = await publish(f, 'dev', twin);
+  const existing = await publish(f, 'prod', twin);
   const adopted = await call(f, 'POST', `/api/v1/repositories/dev/artifacts/${same}/promote`, {
     target: 'prod',
     stages: ['prod'],

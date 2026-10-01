@@ -3,7 +3,7 @@ import type { MutationAccess } from '@proanima/arkvory-domain';
 import type { Page, PromotionEvent, StageEntry, StageStore } from '@proanima/arkvory-application';
 import { lockCatalogMutation, requirePublished } from './catalog-mutation.js';
 import { lockServiceAccess } from './service-authorization.js';
-import { inTransaction } from './transaction.js';
+import { inTransaction } from './pg-transaction.js';
 import {
   addStageInTransaction,
   promotionEvent,
