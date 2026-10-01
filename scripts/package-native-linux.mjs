@@ -1,6 +1,7 @@
 import { mkdir, cp, copyFile, writeFile, readFile, chmod } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { execFileSync } from 'node:child_process';
+import { tarExecutable } from './tar.mjs';
 
 export async function linuxPackages(payload, stage, output, release, nodeArchive) {
   const tree = join(stage, 'linux');
@@ -9,7 +10,7 @@ export async function linuxPackages(payload, stage, output, release, nodeArchive
   await cp(payload, destination, { recursive: true });
   const node = join(stage, 'node');
   await mkdir(node);
-  execFileSync('tar', ['-xJf', nodeArchive, '-C', node, '--strip-components=1']);
+  execFileSync(tarExecutable(), ['-xJf', nodeArchive, '-C', node, '--strip-components=1']);
   await copyFile(join(node, 'bin/node'), join(destination, 'node'));
   await chmod(join(destination, 'node'), 0o755);
   await copyFile(join(node, 'LICENSE'), join(destination, 'NODE-LICENSE.txt'));

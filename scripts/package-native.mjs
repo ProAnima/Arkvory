@@ -5,6 +5,7 @@ import { execFileSync } from 'node:child_process';
 import { dependency } from './native-dependencies.mjs';
 import { verifyReleaseFiles, sha256 } from './release-files.mjs';
 import { linuxPackages } from './package-native-linux.mjs';
+import { tarExecutable } from './tar.mjs';
 import { windowsClient, linuxClient } from './package-client.mjs';
 
 const source = resolve(process.argv[2] ?? ''),
@@ -81,7 +82,7 @@ async function windowsPackage() {
   await mkdir(join(stage, 'pg'));
   // Do not unpack pgAdmin/StackBuilder: they are not runtime dependencies of Arkvory.
   execFileSync(
-    'tar.exe',
+    tarExecutable(),
     [
       '-xf',
       pgArchive,

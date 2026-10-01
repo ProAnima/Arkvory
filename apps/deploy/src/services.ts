@@ -7,6 +7,7 @@ import { jsonFile } from './files.js';
 import { runtimeEnvironment } from './runtime.js';
 import { setTimeout as delay } from 'node:timers/promises';
 import { healthReady } from './health.js';
+import { windowsAdministrator } from './preflight.js';
 
 export class Services {
   constructor(
@@ -154,6 +155,8 @@ export class Services {
   }
   async schedule(release: Release): Promise<void> {
     const windows = process.platform === 'win32';
+    const manual =
+      'Register the host updater as administrator, or schedule updates-poll under the container engine owner.';
     if (!windows) {
       try {
         await access('/run/systemd/system');
@@ -162,11 +165,13 @@ export class Services {
         return;
       }
       if (process.getuid?.() !== 0) {
-        console.log(
-          'Register the host updater as administrator, or schedule updates-poll under the container engine owner.',
-        );
+        console.log(manual);
         return;
       }
+    } else if (this.state.mode === 'compose' && !(await windowsAdministrator())) {
+      // Same contract as a docker-group user on Linux: no SYSTEM task without elevation.
+      console.log(manual);
+      return;
     }
     const script = join(
       this.root,

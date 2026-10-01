@@ -1,5 +1,6 @@
 import { parse } from 'yaml';
 import { planGates } from './inventory.mjs';
+import { inspectRunnerImages } from './runners.mjs';
 
 const archiveCondition = "${{ always() && vars.ARKVORY_UPLOAD_ARTIFACTS == 'true' }}";
 
@@ -87,6 +88,7 @@ export function inspectWorkflow(text, registry) {
   for (const trigger of ['push', 'pull_request'])
     if (workflow.on[trigger]?.paths || workflow.on[trigger]?.['paths-ignore'])
       errors.push('Required workflows must not silently skip changed paths');
+  errors.push(...inspectRunnerImages(jobs));
   errors.push(...inspectVerdictWiring(jobs));
   errors.push(...inspectLargeMatrix(jobs.large));
   if (registry) errors.push(...inspectCoverage(jobs, registry));

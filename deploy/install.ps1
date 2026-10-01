@@ -3,8 +3,11 @@ param([string]$Root = 'C:\ProgramData\ProAnima\Arkvory', [string]$Version = '',
     [ValidateSet('docker','podman')][string]$Engine = 'docker',
     [string]$Config = '', [string]$Artifact = '', [switch]$AutomaticUpdates, [switch]$Pin)
 $ErrorActionPreference = 'Stop'
-$admin = [Security.Principal.WindowsPrincipal]::new([Security.Principal.WindowsIdentity]::GetCurrent())
-if (-not $admin.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) { throw 'Run installer as Administrator' }
+$identity = [Security.Principal.WindowsIdentity]::GetCurrent()
+$admin = [Security.Principal.WindowsPrincipal]::new($identity)
+# Native services need Administrator. Compose uses the installing user's container engine:
+# Docker Desktop reads bind mounts with that user's token, so the root also grants that user.
+if ($Mode -eq 'windows' -and -not $admin.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) { throw 'Run installer as Administrator' }
 $Root = [IO.Path]::GetFullPath($Root)
 New-Item -ItemType Directory -Path $Root -Force | Out-Null
 if ($Root -eq [IO.Path]::GetPathRoot($Root)) { throw 'Use a dedicated installation directory' }
@@ -13,8 +16,10 @@ foreach ($entry in Get-ChildItem -LiteralPath $Root -Force) {
         throw 'Use a dedicated directory; an existing installation must be managed with manage.mjs'
     }
 }
-& icacls.exe $Root /inheritance:r /grant:r '*S-1-5-18:(OI)(CI)F' '*S-1-5-32-544:(OI)(CI)F' | Out-Null
-if ($LASTEXITCODE -ne 0) { throw 'Run installer as Administrator in a dedicated directory' }
+$grants = @('*S-1-5-18:(OI)(CI)F', '*S-1-5-32-544:(OI)(CI)F')
+if ($Mode -eq 'compose') { $grants += '*' + $identity.User.Value + ':(OI)(CI)F' }
+& icacls.exe $Root /inheritance:r /grant:r @grants | Out-Null
+if ($LASTEXITCODE -ne 0) { throw 'Use a dedicated installation directory you are allowed to protect' }
 $work = Join-Path $Root ('bootstrap.' + [guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path $work | Out-Null
 $node = Join-Path $Root 'runtime/node-v24.21.0-win-x64/node.exe'

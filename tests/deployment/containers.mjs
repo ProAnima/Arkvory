@@ -1,15 +1,19 @@
 import { execFileSync } from 'node:child_process';
-import { mkdtemp, readFile, writeFile, mkdir, copyFile } from 'node:fs/promises';
+import { mkdtemp, readFile, writeFile, mkdir, copyFile, realpath } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import assert from 'node:assert/strict';
 import { verifyReleaseFiles } from '../../scripts/release-files.mjs';
+import { tarExecutable } from '../../scripts/tar.mjs';
+import { extractArchive } from '../../apps/deploy/dist/archive.js';
 import { exerciseUpdateControl } from './update-control.mjs';
 import { exerciseContainerRecovery } from './container-recovery.mjs';
+const windows = process.platform === 'win32';
 const run = (args) =>
   execFileSync('docker', args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'inherit'] }).trim();
-run(['info']);
+// The gate needs Linux containers. Docker Desktop in Windows-containers mode cannot run the image.
+assert.equal(run(['info', '--format', '{{.OSType}}']), 'linux', 'Docker must run Linux containers');
 for (const args of [
   ['ps', '-aq'],
   ['volume', 'ls', '-q'],
@@ -17,7 +21,8 @@ for (const args of [
   if (run([...args, '--filter', 'label=com.docker.compose.project=proanima-arkvory']))
     throw Error('Deployment container gate requires an unused proanima-arkvory project');
 }
-const temporary = await mkdtemp(join(tmpdir(), 'arkvory-container-gate-'));
+// Windows TEMP may be an 8.3 alias; bind mounts and the updater task use the canonical path.
+const temporary = await realpath(await mkdtemp(join(tmpdir(), 'arkvory-container-gate-')));
 const artifact = process.env.ARKVORY_RELEASE_ARTIFACT ?? join(temporary, 'artifact');
 const root = join(temporary, 'install');
 if (!process.env.ARKVORY_RELEASE_ARTIFACT)
@@ -33,18 +38,66 @@ await verifyReleaseFiles(
   execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),
 );
 const nextVersion = manifest.version.replace(/\d+$/, (patch) => String(Number(patch) + 1));
-const bundle = join(temporary, 'Linux installer with spaces');
-await mkdir(bundle);
-execFileSync('tar', ['-xzf', join(artifact, 'Arkvory-Linux.tar.gz'), '-C', bundle]);
+const bundle = join(temporary, `${windows ? 'Windows' : 'Linux'} installer with spaces`);
+if (windows) await extractArchive(join(artifact, 'Arkvory-Windows.zip'), bundle);
+else {
+  await mkdir(bundle);
+  execFileSync(tarExecutable(), ['-xzf', join(artifact, 'Arkvory-Linux.tar.gz'), '-C', bundle]);
+}
+// Windows PowerShell 5 must not inherit PowerShell 7's incompatible module search path.
+const powershellEnvironment = Object.fromEntries(
+  Object.entries(process.env).filter(([key]) => key.toLowerCase() !== 'psmodulepath'),
+);
+// Both hosts run the shipped bundle entrypoint, including the checksum-verified Node.js download.
+function installFromBundle() {
+  if (windows)
+    execFileSync(
+      'powershell.exe',
+      [
+        '-NoProfile',
+        '-NonInteractive',
+        '-ExecutionPolicy',
+        'Bypass',
+        '-File',
+        join(bundle, 'install.ps1'),
+        '-Mode',
+        'compose',
+        '-Root',
+        root,
+        '-Artifact',
+        bundle,
+      ],
+      { env: powershellEnvironment, stdio: 'inherit', windowsHide: true },
+    );
+  else
+    execFileSync('bash', [join(bundle, 'install.sh'), '--mode', 'compose'], {
+      env: { ...process.env, ARKVORY_INSTALL_ROOT: root, ARKVORY_ARTIFACT_DIR: bundle },
+      stdio: 'inherit',
+    });
+}
 const manage = (args) =>
   args[0] === 'install'
-    ? execFileSync('bash', [join(bundle, 'install.sh'), '--mode', 'compose'], {
-        env: { ...process.env, ARKVORY_INSTALL_ROOT: root, ARKVORY_ARTIFACT_DIR: bundle },
-        stdio: 'inherit',
-      })
+    ? installFromBundle()
     : execFileSync(process.execPath, [join(root, 'manage.mjs'), ...args, '--root', root], {
         stdio: 'inherit',
       });
+// An elevated Windows run registers the SYSTEM updater for this temporary root; never leave it.
+function removeWindowsUpdater() {
+  execFileSync(
+    'powershell.exe',
+    [
+      '-NoProfile',
+      '-NonInteractive',
+      '-Command',
+      '$task = Get-ScheduledTask -TaskName ProAnimaArkvoryUpdate -ErrorAction SilentlyContinue; if ($task -and ($task.Actions | Where-Object { $_.Arguments.Contains($env:ARKVORY_GATE_ROOT) })) { Unregister-ScheduledTask -TaskName ProAnimaArkvoryUpdate -Confirm:$false }',
+    ],
+    {
+      env: { ...powershellEnvironment, ARKVORY_GATE_ROOT: root },
+      stdio: 'inherit',
+      windowsHide: true,
+    },
+  );
+}
 const compose = [
   'compose',
   '--project-name',
@@ -138,5 +191,9 @@ try {
   }
   throw error;
 } finally {
-  run([...compose, 'down', '--volumes', '--remove-orphans']);
+  try {
+    run([...compose, 'down', '--volumes', '--remove-orphans']);
+  } finally {
+    if (windows) removeWindowsUpdater();
+  }
 }

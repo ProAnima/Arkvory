@@ -18,7 +18,16 @@ ZIP/tar-комплекты остаются для операторской ав
 
 ### Командные установщики
 
-Скачайте `install.sh` либо `install.ps1` из проверенного [релиза](https://github.com/ProAnima/Arkvory/releases), просмотрите скрипт перед запуском с правами администратора. Он скачивает закреплённый Node.js 24 LTS с проверкой SHA-256, затем проверенный runtime Arkvory. npm и компилятор на целевом сервере не нужны.
+Скачайте `install.sh` либо `install.ps1` из проверенного [релиза](https://github.com/ProAnima/Arkvory/releases) и просмотрите скрипт перед запуском. Он скачивает закреплённый Node.js 24 LTS с проверкой SHA-256, затем проверенный runtime Arkvory. npm и компилятор на целевом сервере не нужны. Без опубликованного релиза используйте распакованный комплект `Arkvory-Linux.tar.gz` / `Arkvory-Windows.zip` (локальный artifact, см. «Docker одной командой») либо установку из исходников.
+
+| Вариант                  | Команда                                 | Права                                           | Supervisor                           |
+| ------------------------ | --------------------------------------- | ----------------------------------------------- | ------------------------------------ |
+| Linux, systemd           | `sudo bash ./install.sh --automatic`    | root                                            | systemd: `arkvory-api`, `-worker`    |
+| Windows, нативные службы | `.\install.ps1 -AutomaticUpdates`       | PowerShell от администратора                    | WinSW: `Arkvoryapi`, `Arkvoryworker` |
+| Docker, Linux            | `sudo bash ./install.sh --mode compose` | root либо пользователь группы docker            | restart policy Docker                |
+| Docker, Windows          | `.\install.ps1 -Mode compose`           | пользователь Docker Desktop, повышение не нужно | restart policy Docker Desktop        |
+
+Командным нативным вариантам нужна доступная PostgreSQL (URL запрашивается скрыто); графические EXE/DEB/RPM создают выделенный кластер. Docker-вариант поднимает API, worker и PostgreSQL 18.4 из `deploy/compose.yml`.
 
 Linux, нативно:
 
@@ -42,13 +51,86 @@ Docker, Linux:
 sudo bash ./install.sh --mode compose --automatic
 ```
 
-Docker, Windows с работающим Docker Desktop в режиме Linux containers:
+Без root установщик работает от пользователя группы docker с доступным ему корнем: `ARKVORY_INSTALL_ROOT="$HOME/arkvory" bash ./install.sh --mode compose`. Корень получает 0700, а systemd-updater не регистрируется (см. «Планировщик updater без повышения прав»). Ограничение ProtectHome относится только к нативной службе.
+
+Docker, Windows с работающим Docker Desktop в режиме Linux containers, обычная PowerShell **от того же пользователя, под которым запущен Docker Desktop**:
 
 ```powershell
 .\install.ps1 -Mode compose
 ```
 
+Повышение прав для Compose не требуется и не рекомендуется: Docker Desktop читает bind mounts с токеном своего пользователя, поэтому ACL корня — SYSTEM, Administrators и этот пользователь, без наследования ([ADR 0050](../docs/adr/0050-windows-compose-engine-user.md)). Корень по умолчанию — `C:\ProgramData\ProAnima\Arkvory`; другой задаётся `-Root`. Если PowerShell запрещает запуск скриптов, используйте `powershell -ExecutionPolicy Bypass -File .\install.ps1 -Mode compose` (политика меняется только для этого процесса). При запуске от администратора дополнительно регистрируется SYSTEM-задача updater, которая рассчитана на системный движок, а не на Docker Desktop.
+
 Движок и Compose должны быть установлены заранее; установщик не меняет гипервизор, WSL или Docker. Образ собирается локально из скомпилированного релиза. PostgreSQL 18.4 включён, пароль генерируется; named volumes сохраняют каталог БД и файлы. Для Podman: `--engine podman` / `-Engine podman`, нужен совместимый compose provider; приёмка конкретной версии проводится отдельно. Rootless Podman и Docker Desktop требуют планировщика в контексте пользователя движка; системный updater рассчитан на системный Docker/Podman. Windows containers не поставляются.
+
+### Docker одной командой
+
+Стек API + worker + PostgreSQL из `deploy/compose.yml` ставится одной командой установщика. Из опубликованного релиза — команды из таблицы выше. Из распакованного комплекта без доступа к GitHub Releases (Node.js по-прежнему скачивается с проверкой SHA-256):
+
+```bash
+# Linux, в каталоге распакованного Arkvory-Linux.tar.gz
+sudo env ARKVORY_ARTIFACT_DIR="$PWD" bash ./install.sh --mode compose
+```
+
+```powershell
+# Windows, в каталоге распакованного Arkvory-Windows.zip
+.\install.ps1 -Mode compose -Artifact $PWD.Path
+```
+
+Передавайте `-Root`/`-Artifact` абсолютными путями: .NET разрешает относительный путь от рабочего каталога процесса, а не от текущего каталога PowerShell.
+
+Из исходников (оценка до первого релиза; нужен Node.js 24 и `npm ci --ignore-scripts`) одна команда собирает проект, упаковывает тот же комплект, что проверяют гейты, и ставит его в режиме Compose текущим Node.js:
+
+```bash
+npm run deploy:compose -- --root "$HOME/arkvory-compose"
+```
+
+```powershell
+npm run deploy:compose -- --root C:\Arkvory\compose
+```
+
+Параметры: `--version 0.1.0` (по умолчанию `0.0.1` — локальная сборка, которую плановое обновление заменит первым stable-релизом), `--engine podman`. Корень должен быть новым выделенным каталогом. Production-установку выполняйте из проверенного релиза, не из рабочего дерева.
+
+После установки консоль открывается по `http://127.0.0.1:8080/console/`, ключ — в `config/bootstrap-token.txt`. Управление Compose-проектом (Linux; на Windows те же аргументы с путями `$root\...`):
+
+```bash
+root=/opt/proanima-arkvory
+version=$(node -p "require('$root/installation.json').current.version")
+compose=(docker compose --project-name proanima-arkvory --project-directory "$root" --env-file "$root/config/compose.env" -f "$root/releases/$version/deploy/compose.yml")
+"${compose[@]}" ps
+"${compose[@]}" logs --tail 100 api worker
+"${compose[@]}" stop --timeout 120 worker api
+"${compose[@]}" up -d --wait api worker
+```
+
+```powershell
+$root = 'C:\ProgramData\ProAnima\Arkvory'
+$version = (Get-Content "$root\installation.json" -Raw | ConvertFrom-Json).current.version
+docker compose --project-name proanima-arkvory --project-directory $root --env-file "$root\config\compose.env" -f "$root\releases\$version\deploy\compose.yml" ps
+```
+
+Полное удаление оценочной установки вместе с данными — та же команда с `down --volumes`, затем удаление каталога root. На рабочем хранилище `down --volumes` не выполняйте.
+
+### Планировщик updater без повышения прав
+
+Установка Compose без root/Administrator не регистрирует системный updater и печатает указание запланировать `updates-poll` под владельцем движка. Без него консоль не применит запросы обновления. Linux (crontab пользователя группы docker):
+
+```bash
+* * * * * /path/to/root/runtime/node-v24.21.0-linux-x64/bin/node /path/to/root/manage.mjs updates-poll --root /path/to/root
+```
+
+Windows (обычная PowerShell от пользователя Docker Desktop; задача работает только в его сеансе, пока Docker Desktop запущен):
+
+```powershell
+$root = 'C:\ProgramData\ProAnima\Arkvory'
+$node = "$root\runtime\node-v24.21.0-win-x64\node.exe"
+$action = New-ScheduledTaskAction -Execute $node -Argument "`"$root\manage.mjs`" updates-poll --root `"$root`"" -WorkingDirectory $root
+$trigger = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(1) -RepetitionInterval (New-TimeSpan -Minutes 1)
+$settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -MultipleInstances IgnoreNew -ExecutionTimeLimit (New-TimeSpan -Minutes 30)
+Register-ScheduledTask -TaskName ProAnimaArkvoryUpdate -Action $action -Trigger $trigger -Settings $settings
+```
+
+Аргументы совпадают с системной задачей `schedule-windows.ps1`, поэтому повторная регистрация от администратора не считается чужой установкой. `npm run deploy:compose` не скачивает runtime: в обеих командах укажите путь к используемому Node.js 24.
 
 HTTP по умолчанию доступен только через `http://127.0.0.1:8080`. Первичный ключ — в `config/bootstrap-token.txt`, в вывод установки он не попадает. После первого входа создайте ограниченные учётные записи/ключи и замените bootstrap credential. Для удалённого доступа настройте HTTPS reverse proxy: [nginx.conf.example](nginx.conf.example) не буферизует большие загрузки. Сертификаты, домен и firewall настраивает оператор.
 
@@ -56,7 +138,7 @@ Readiness проверяется отдельным `config/health-token.txt`: �
 
 ## Приватный репозиторий
 
-Перед сетевой установкой создайте **в выделенном каталоге установки** `github-token.txt` с токеном чтения Contents этого репозитория. Не передавайте его аргументом CLI. Linux: owner root, mode 0600, каталог 0700; Windows: только Administrators/SYSTEM. Тот же файл использует updater. Служба Arkvory не должна читать его. Токен, скопированный после установки, нужно защитить теми же правами. Для публичных releases он не нужен.
+Перед сетевой установкой создайте **в выделенном каталоге установки** `github-token.txt` с токеном чтения Contents этого репозитория. Не передавайте его аргументом CLI. Linux: owner root (или пользователь Compose без root), mode 0600, каталог 0700; Windows: только Administrators/SYSTEM, для Compose без повышения — ещё установивший пользователь. Тот же файл использует updater. Служба Arkvory не должна читать его. Токен, скопированный после установки, нужно защитить теми же правами. Для публичных releases он не нужен.
 
 ## Каталоги и управление
 
@@ -72,7 +154,7 @@ Readiness проверяется отдельным `config/health-token.txt`: �
 
 Контейнерные данные находятся в `proanima-arkvory_storage` и `proanima-arkvory_catalog`, а не в host data. Не запускайте `down --volumes` на установленном хранилище. Профиль имеет фиксированные Compose project и порт, одна установка на container host. Нельзя подключать второго writer к той же БД/root.
 
-Примеры используют `node`; при отсутствии в PATH укажите поставленный `runtime/node-v24.21.0-<platform>/bin/node` (Linux) либо `runtime/node-v24.21.0-win-x64/node.exe`. Выполняйте команды с правами администратора:
+Примеры используют `node`; при отсутствии в PATH укажите поставленный `runtime/node-v24.21.0-<platform>/bin/node` (Linux) либо `runtime/node-v24.21.0-win-x64/node.exe`. Выполняйте команды с правами администратора (для Compose без повышения — от пользователя, установившего его):
 
 ```bash
 node /opt/proanima-arkvory/manage.mjs status --root /opt/proanima-arkvory
@@ -118,10 +200,10 @@ npm run release:package -- 0.1.0
 node artifacts/0.1.0/arkvory-setup.mjs install --root /opt/proanima-arkvory --mode compose --artifact artifacts/0.1.0
 ```
 
-Нативная локальная установка требует --config и административных прав. Артефакты рабочего дерева — для проверки; production выпускает workflow с tested commit. `Prepare stable release` работает только с main: read-only job выполняет полный release gate и собирает один candidate; приёмка Windows/Linux и контейнеров использует именно его. Отдельный publish job проверяет SHA-256 всех assets и совпадение commit/version, не пересобирает и не запускает артефакт, затем создаёт tag и draft. Только он имеет contents:write. Публикация draft владельцем делает версию доступной автообновлению. Неполный draft после ошибки upload нельзя публиковать. Повтор с существующим tag отказывает: разберите сбой, не заменяйте опубликованную версию.
+Ту же последовательность для Compose выполняет `npm run deploy:compose -- --root <dir>`. Нативная локальная установка требует --config и административных прав. Артефакты рабочего дерева — для проверки; production выпускает workflow с tested commit. `Prepare stable release` работает только с main: read-only job выполняет полный release gate и собирает один candidate; приёмка Windows/Linux и контейнеров использует именно его. Отдельный publish job проверяет SHA-256 всех assets и совпадение commit/version, не пересобирает и не запускает артефакт, затем создаёт tag и draft. Только он имеет contents:write. Публикация draft владельцем делает версию доступной автообновлению. Неполный draft после ошибки upload нельзя публиковать. Повтор с существующим tag отказывает: разберите сбой, не заменяйте опубликованную версию.
 
 `release-checksums.json` связывает runtime, bootstrap, командные установщики и два комплекта с одной версией/коммитом. Это контроль целостности, не независимая цифровая подпись. Передача candidate между jobs требует доступной квоты GitHub Actions artifacts. При нехватке места workflow блокирует выпуск; переключения на непроверенную пересборку или пропуска приёмки нет.
 
-Гейты `deployment`, `deployment-services`, `deployment-containers` проверяют соответственно переносимый runtime, настоящий crash/restart двух изолированных служб и Docker install/migrate/update с сохранением volume. Service gate требует Windows Administrator либо Linux/systemd и passwordless sudo; container gate — Docker/Compose без уже установленного проекта proanima-arkvory. Они обязательны в CI и verify/release; отсутствие инфраструктуры не считается pass. Двухсерверный HA остаётся стендовой проверкой.
+Гейты `deployment`, `deployment-services`, `deployment-containers` проверяют соответственно переносимый runtime, настоящий crash/restart двух изолированных служб и Docker install/migrate/update с сохранением volume. Service gate требует Windows Administrator либо Linux/systemd и passwordless sudo; container gate — Docker/Compose без уже установленного проекта proanima-arkvory. На Linux он запускает `install.sh --mode compose`, на Windows-хосте с Docker Desktop (Linux containers) — `install.ps1 -Mode compose` от пользователя Docker Desktop, без повышения прав: `npm run gate -- deployment-containers`. Они обязательны в CI и verify/release; отсутствие инфраструктуры не считается pass. Двухсерверный HA остаётся стендовой проверкой.
 
 Архитектура: [ADR 0031](../docs/adr/0031-release-installation-and-supervision.md). Supervisor: [systemd](https://www.freedesktop.org/software/systemd/man/latest/systemd.service.html), [WinSW](https://github.com/winsw/winsw/blob/v2.12.0/doc/xmlConfigFile.md), [Docker](https://docs.docker.com/engine/containers/start-containers-automatically/).

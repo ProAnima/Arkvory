@@ -15,7 +15,7 @@ Node.js 24, npm 11. Установка: npm ci --ignore-scripts.
 | npm run gate -- large       | Политики, сборка, оба сценария 5 GiB                                                  |
 | npm run gate -- security    | npm audit, high/critical блокируют                                                    |
 
-Можно передать несколько имён: npm run gate -- unit integration. Зависимости выполняются один раз, задания — последовательно. Старые npm test, test:integration, test:browser, test:large и check вызывают тот же runner. npm run build остаётся командой сборки для разработки, без заявления о прохождении тестов.
+Отдельные гейты поставки: `deployment`, `deployment-services`, `deployment-containers`, `native-package`, `native-install`, `large-full`, `large-multipart` (требования к хосту — в таблице ниже). Можно передать несколько имён: npm run gate -- unit integration. Зависимости выполняются один раз, задания — последовательно. Старые npm test, test:integration, test:browser, test:large и check вызывают тот же runner. npm run build остаётся командой сборки для разработки, без заявления о прохождении тестов.
 
 ### Быстрый цикл разработки
 
@@ -33,12 +33,30 @@ Native jobs в check/release кэшируют только `.cache/native-downlo
 
 Мастер Remote Setup проверяется существующими unit/browser/deployment/native-install gates. В browser добавлен отдельный сценарий форм и обеих тем; native-install проверяет реальный shell/stdin, готовность служб и консоль через loopback SSH на одноразовых Windows/Linux runner’ах. Это не заменяет приёмку с настоящим OpenSSH и сетевой инфраструктурой площадки.
 
+### Локальный запуск на Windows и Linux
+
+Команды одинаковы на обеих ОС; на Windows запускайте их из PowerShell через npm. Отсутствие указанного ресурса — ошибка gate, не пропуск.
+
+| Gate                    | Windows                                                                                                                        | Linux                                                                                      |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------ |
+| `quick`, `security`     | Node.js 24, npm 11; security — доступ к npm registry                                                                           | то же                                                                                      |
+| `integration`           | `npm run test:db:up` (Docker), `.env.test` из `.env.test.example`                                                              | то же                                                                                      |
+| `browser`               | как integration + `npm run test:browser:install`                                                                               | то же (`--with-deps` ставит системные библиотеки)                                          |
+| `large`                 | как integration + ≥ 11 GiB свободного temp                                                                                     | то же                                                                                      |
+| `deployment`            | Windows PowerShell 5, Git for Windows (`%ProgramFiles%\Git\bin\bash.exe` для `bash -n`), `%SystemRoot%\System32\tar.exe`       | tar, bash, pwsh                                                                            |
+| `deployment-services`   | PowerShell от администратора                                                                                                   | systemd и passwordless sudo                                                                |
+| `deployment-containers` | Docker Desktop в режиме Linux containers, запуск от пользователя Docker Desktop (повышение прав не нужно), свободный порт 8080 | Docker Engine + Compose v2, пользователь группы docker, curl, python3, свободный порт 8080 |
+| `native-package`        | загрузка закреплённых зависимостей в `.cache/native-downloads`                                                                 | то же + dpkg-deb, rpmbuild                                                                 |
+| `native-install`        | только одноразовый runner: ставит службы и пакеты                                                                              | то же                                                                                      |
+
+`deployment-containers` требует, чтобы на движке не было проекта `proanima-arkvory` (контейнеров и volumes): gate удаляет свои volumes и не трогает чужую установку. Он скачивает проверенный Node.js 24.21.0 с nodejs.org, как поставляемый установщик. Пример для Windows: `npm run gate -- quick deployment deployment-containers`; для Linux CI-эквивалент Quality — `npm run gate -- quick deployment deployment-services`.
+
 Для large нужно не менее 11 GiB свободного temp. Suites с одной БД не запускать одновременно даже из разных checkout: standalone advisory lock действует на всю БД. Локальный lock .cache/gates.lock содержит PID; после аварии сначала убедиться, что процесс завершён, затем удалить только этот файл. При ошибке гейт останавливается; не делает retry, skip или карантин.
 
 ## Расширение
 
-1. Unit-тесты: tests/_.test.mjs; PostgreSQL: tests/integration/\**/_.test.mjs. Новые файлы подхватываются автоматически.
-2. Новый scenario зарегистрировать entries/kind/needs/timeoutSeconds в config/gates.json. Добавить в обязательные профили и соответствующее CI-задание. Если helper запускается дочерним процессом, вне графа import, внести его в spawnedHelpers с объяснением в review.
+1. Unit-тесты: `tests/*.test.mjs`; PostgreSQL: `tests/integration/**/*.test.mjs`. Новые файлы подхватываются автоматически. Исполняемые тесты пишутся только как `.mjs`: policy отклоняет `.js`, `.cjs`, `.ts` и другие файлы в tests вне `tests/fixtures/` (кроме `.md`), потому что ни один gate их не запустит.
+2. Новый scenario зарегистрировать entries/kind/needs/timeoutSeconds в config/gates.json. Добавить в обязательные профили и соответствующее CI-задание. Если helper запускается дочерним процессом, вне графа import, внести его в spawnedHelpers с объяснением в review. Policy требует, чтобы имя такого helper встречалось в коде, достижимом из gate; иначе запись в реестре считается сокрытием сироты. Любой `tests/**/*.mjs`, не достижимый из gate через import или spawnedHelpers, блокирует policy.
 3. Новое рабочее пространство зарегистрировать в config/architecture.json, разрешить минимальные зависимости и публичный index; порядок обязан быть топологическим.
 4. Проверить не только успешный путь, но наблюдаемую ошибку, отмену, повтор, конфликт и освобождение ресурсов, применимые к сценарию. Контрактные тесты должны использовать реальную реализацию порта.
 
@@ -56,7 +74,7 @@ Native jobs в check/release кэшируют только `.cache/native-downlo
 
 ## CI и merge
 
-Required check для main: Arkvory merge gate. Он проверяет quality на Ubuntu 22.04/24.04 и Windows Server 2022/2025, integration, browser, security и deployment-containers. Missing/failed/cancelled/skipped любого обязательного задания блокирует итог, включая отсутствие контейнерной lane. Большие передачи обязательны для main push, v-тегов, merge queue и еженедельной проверки (понедельник 02:20 UTC); ручной запуск поддерживает large_transfers. Обычный PR может пропустить только large. Публикация v-тега не является публикацией релиза/артефакта. Настройки branch protection живут в GitHub и проверяются отдельно от YAML.
+Required check для main: Arkvory merge gate. Он проверяет quality на Ubuntu 22.04/24.04 и Windows Server 2022/2025, native install на Ubuntu 24.04/Windows Server 2022, integration, browser, security и deployment-containers. Missing/failed/cancelled/skipped любого обязательного задания блокирует итог, включая отсутствие контейнерной lane. Все jobs работают на образах с явной версией; `*-latest` запрещён policy. Состав lanes и текущее состояние биллинга Actions: [CI](CI.md). Большие передачи обязательны для main push, v-тегов, merge queue и еженедельной проверки (понедельник 02:20 UTC); ручной запуск поддерживает large_transfers. Обычный PR может пропустить только large. Публикация v-тега не является публикацией релиза/артефакта. Настройки branch protection живут в GitHub и проверяются отдельно от YAML.
 
 На 2026-09-25 API GitHub для закрытого ProAnima/Arkvory возвращает 403 на branch protection и rulesets с требованием GitHub Pro. Поэтому запрет merge через настройки сервера пока недоступен; зелёный Arkvory merge gate — обязательное правило процесса. После включения подходящего тарифа назначить его required status для main и требовать актуальную ветку. Публичность проприетарного репозитория ради обхода ограничения менять нельзя.
 
@@ -66,7 +84,9 @@ Required check для main: Arkvory merge gate. Он проверяет quality 
 
 В verify/release обязательны deployment (переносимый production artifact), deployment-services (реальный restart двух изолированных служб после crash, Linux/systemd + sudo либо Windows Administrator) и deployment-containers (настоящий Docker install/update с сохранением volume). Quality CI запускает упаковку и службы на Windows/Linux, отдельная обязательная lane проверяет контейнеры. Локально отсутствующие права/движок — непройденный gate; нельзя выдавать quick за полный verify. Подробности и ограничения: [развёртывание](../deploy/README.md).
 
-Quality вызывается одной командой `npm run gate -- quick deployment deployment-services`: общие зависимости выполняются один раз, отчёт охватывает весь набор. Deployment проверяет целостность комплектов автоматизации и синтаксис PowerShell/Bash. Для проверки пакетов нужны tar, Bash и PowerShell (pwsh на Linux; Windows PowerShell 5 и Git Bash на Windows). Контейнерная приёмка запускает install.sh из распакованного комплекта, включая загрузку проверенного Node.js.
+Quality вызывается одной командой `npm run gate -- quick deployment deployment-services`: общие зависимости выполняются один раз, отчёт охватывает весь набор. Deployment проверяет целостность комплектов автоматизации и синтаксис PowerShell/Bash. Для проверки пакетов нужны tar, Bash и PowerShell (pwsh на Linux; Windows PowerShell 5 и Git Bash на Windows). На Windows упаковка и проверки вызывают `%SystemRoot%\System32\tar.exe` (bsdtar) по абсолютному пути: GNU tar из Git читает `C:\...` как удалённый `host:path`, поэтому порядок PATH не влияет на результат (`scripts/tar.mjs`).
+
+Контейнерная приёмка запускает поставляемый установщик из распакованного комплекта, включая загрузку проверенного Node.js: на Linux `install.sh --mode compose` из `Arkvory-Linux.tar.gz`, на Windows `install.ps1 -Mode compose` из `Arkvory-Windows.zip` (Docker Desktop, Linux containers). Далее одинаково: migrate, round-trip mailbox updater, crash/restart API/worker/PostgreSQL по restart policy, обновление с сохранением volume, `down --volumes`. Windows-прогон без повышения прав не регистрирует SYSTEM updater; при повышенных правах gate удаляет задачу `ProAnimaArkvoryUpdate`, только если она указывает на его временный корень. [ADR 0050](adr/0050-windows-compose-engine-user.md).
 
 Обязательная native lane: `npm run gate -- native-install`. Зависимость `native-package` собирает реальные EXE/DEB/RPM с проверенными компонентами; установка разрешена только на одноразовых Actions runners. Проверяются readiness, непривилегированная роль БД, Windows owner login, повторная установка без замены секретов, удаление с сохранением кластера. Linux дополнительно проверяет RPM в Fedora 44 с systemd. Для локальной проверки без установки служб: `npm run gate -- native-package`. Это не заменяет native-install. [ADR 0033](adr/0033-native-installers-and-guided-setup.md).
 

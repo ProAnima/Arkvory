@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile, mkdir, access } from 'node:fs/promises';
 import { join } from 'node:path';
 import { execFileSync } from 'node:child_process';
+import { tarExecutable } from './tar.mjs';
 import { sha256 } from './release-files.mjs';
 
 export async function verifyInstallers(output, root, extract) {
@@ -9,7 +10,7 @@ export async function verifyInstallers(output, root, extract) {
     linux = join(root, 'bundle Linux');
   await extract(join(output, 'Arkvory-Windows.zip'), windows);
   await mkdir(linux);
-  execFileSync('tar', ['-xzf', join(output, 'Arkvory-Linux.tar.gz'), '-C', linux]);
+  execFileSync(tarExecutable(), ['-xzf', join(output, 'Arkvory-Linux.tar.gz'), '-C', linux]);
   for (const directory of [windows, linux]) {
     for (const name of ['arkvory-runtime.zip', 'arkvory-setup.mjs', 'arkvory-release.json'])
       assert.equal(

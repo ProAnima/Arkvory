@@ -21,7 +21,8 @@ export async function save(root: string, state: Installation): Promise<void> {
   await atomicJson(join(root, 'installation.json'), state);
 }
 export async function install(root: string, options: Map<string, string>): Promise<void> {
-  await protectInstallation(root);
+  const mode = options.get('mode') ?? (process.platform === 'win32' ? 'windows' : 'systemd');
+  await protectInstallation(root, mode);
   try {
     await access(join(root, 'installation.json'));
     throw new Error('Already installed; use update');
@@ -31,7 +32,7 @@ export async function install(root: string, options: Map<string, string>): Promi
   const selected = await source(root, options.get('version') ?? null, options.get('artifact'));
   const state = parseInstallation({
     format: 1,
-    mode: options.get('mode') ?? (process.platform === 'win32' ? 'windows' : 'systemd'),
+    mode,
     engine: options.get('engine') ?? 'docker',
     automatic: options.has('automatic'),
     pin: options.has('pin') ? selected.release.version : null,

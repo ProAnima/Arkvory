@@ -2,6 +2,7 @@ import { mkdir, copyFile, readFile, writeFile, chmod } from 'node:fs/promises';
 import { createWriteStream } from 'node:fs';
 import { join } from 'node:path';
 import { execFileSync } from 'node:child_process';
+import { tarExecutable } from './tar.mjs';
 import { pipeline } from 'node:stream/promises';
 import { ZipFile } from 'yazl';
 import { releaseFiles, sha256 } from './release-files.mjs';
@@ -39,7 +40,7 @@ export async function packageInstallers(output, staging, release) {
       await done;
     } else
       execFileSync(
-        'tar',
+        tarExecutable(),
         ['-czf', join(output, 'Arkvory-Linux.tar.gz'), '-C', directory, ...files],
         {
           stdio: 'inherit',

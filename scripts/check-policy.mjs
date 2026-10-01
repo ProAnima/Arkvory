@@ -4,7 +4,13 @@ import { readFile, access, mkdir, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { resolve } from 'node:path';
 import { analyzeSource, inspectExceptions } from './policy/source.mjs';
-import { filesUnder, planGates, testInventory, inspectWorkspaces } from './policy/inventory.mjs';
+import {
+  filesUnder,
+  planGates,
+  testInventory,
+  inspectTestFileTypes,
+  inspectWorkspaces,
+} from './policy/inventory.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const json = async (path) => JSON.parse(await readFile(resolve(root, path), 'utf8'));
@@ -40,7 +46,11 @@ for (const e of exceptions)
       problems.push(`${e.id}: missing evidence ${file}`);
     }
   }
-problems.push(...(await inspectWorkspaces(root, policy)), ...testInventory(gates, analyses));
+problems.push(
+  ...(await inspectWorkspaces(root, policy)),
+  ...testInventory(gates, analyses),
+  ...inspectTestFileTypes(await filesUnder(root, 'tests')),
+);
 planGates(gates, Object.keys(gates.tasks));
 const releasePlan = planGates(gates, ['release']);
 for (const task of Object.keys(gates.tasks))

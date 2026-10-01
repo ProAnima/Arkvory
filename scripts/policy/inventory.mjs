@@ -68,7 +68,6 @@ export function testInventory(registry, analyses) {
     if (!entries.length) problems.push(`Empty test gate: ${task.pattern ?? task.entries}`);
     entries.forEach((f) => roots.add(f));
   }
-  for (const path of registry.spawnedHelpers) roots.add(path);
   const reached = new Set();
   function visit(file) {
     if (reached.has(file)) return;
@@ -85,10 +84,32 @@ export function testInventory(registry, analyses) {
       }
   }
   roots.forEach(visit);
+  // A helper outside the import graph counts only if gate-reached code names it; otherwise the
+  // registry entry alone would hide a file that no gate ever starts.
+  const started = [...reached];
+  for (const path of registry.spawnedHelpers) {
+    const name = path.slice(path.lastIndexOf('/') + 1);
+    if (!started.some((file) => analyses.get(file)?.text?.includes(name)))
+      problems.push(`Spawned helper is not started by any gate: ${path}`);
+    visit(path);
+  }
   for (const file of files)
     if (file.startsWith('tests/') && file.endsWith('.mjs') && !reached.has(file))
       problems.push(`Test outside every gate/import graph: ${file}`);
   return problems;
+}
+// Gates and the import graph only see .mjs entries. A test written with another executable
+// extension would never run while every gate stays green, so only data may use other types.
+export function inspectTestFileTypes(files) {
+  return files
+    .filter(
+      (file) =>
+        file.startsWith('tests/') &&
+        !file.startsWith('tests/fixtures/') &&
+        !file.endsWith('.mjs') &&
+        !file.endsWith('.md'),
+    )
+    .map((file) => `Test file type outside every gate: ${file}`);
 }
 export async function inspectWorkspaces(root, architecture) {
   const problems = [],

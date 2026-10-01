@@ -1,4 +1,5 @@
 import { parse } from 'yaml';
+import { inspectRunnerImages } from './runners.mjs';
 
 export function inspectReleaseWorkflow(text) {
   const workflow = parse(text),
@@ -97,7 +98,7 @@ export function inspectReleaseWorkflow(text) {
       )
     )
       errors.push(`${name}: current-run candidate required`);
-  errors.push(...inspectNative(workflow));
+  errors.push(...inspectNative(workflow), ...inspectRunnerImages(workflow.jobs));
   return errors;
 }
 
