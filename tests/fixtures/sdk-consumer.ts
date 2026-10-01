@@ -38,8 +38,10 @@ export type WidenedBlockers = Assert<
   Equal<Exclude<Blocker<ArkvoryClient>, Blocker<LegacyClient>>, 'promotion_stage'>
 >;
 // Compile against built package exports, as an external strict TypeScript consumer does.
+// search items additionally carry size, createdAt, publishedAt, labels and stages: additive
+// response fields, so existing reads of id/name remain assignable (ExistingCallsRemainValid).
 export type UnchangedMethods = Assert<
-  Equal<ChangedMethods, 'registerPackage' | 'capabilities' | Widened>
+  Equal<ChangedMethods, 'registerPackage' | 'capabilities' | 'search' | Widened>
 >;
 export type UnchangedKeys = Assert<
   Equal<

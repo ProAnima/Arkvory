@@ -7,8 +7,13 @@ import {
   text,
   items,
   readPackageList,
+  readArtifactSearchPage,
 } from '@proanima/arkvory-contracts';
-import type { BuildAttachmentResponse, AnnotationsResponse } from '@proanima/arkvory-contracts';
+import type {
+  ArtifactSearchPageResponse,
+  BuildAttachmentResponse,
+  AnnotationsResponse,
+} from '@proanima/arkvory-contracts';
 import type { HttpPort } from './http-transport.js';
 import { repositoryPath } from './http-transport.js';
 
@@ -82,17 +87,12 @@ export class CatalogApi {
       metadataKey?: string;
       metadataValue?: string;
     } = {},
-  ) {
+  ): Promise<ArtifactSearchPageResponse> {
     const q = new URLSearchParams();
     for (const [key, value] of Object.entries(query)) q.set(key, value);
-    const r = record(await this.http.call(repositoryPath(repository, `search?${q.toString()}`)));
-    return {
-      items: items(r['items']).map((value) => {
-        const i = record(value);
-        return { id: text(i['id']), name: text(i['name']) };
-      }),
-      next: r['next'] === null ? null : text(r['next']),
-    };
+    return readArtifactSearchPage(
+      await this.http.call(repositoryPath(repository, `search?${q.toString()}`)),
+    );
   }
   async attachments(repository: string, id: string, signal?: AbortSignal) {
     return readAttachmentRevision(

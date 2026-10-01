@@ -1,5 +1,5 @@
 import { compareVersions, ArkvoryError } from '@proanima/arkvory-domain';
-import type { PackageEntry, PackageListOptions } from './catalog.js';
+import type { PackageEntry, PackageListOptions } from './catalog-ports.js';
 
 export function parsePackageListOptions(value: Record<string, unknown>): PackageListOptions {
   if (

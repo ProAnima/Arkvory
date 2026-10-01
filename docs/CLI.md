@@ -92,7 +92,7 @@ arkvoryctl search --query build-42 --label staging
 arkvoryctl search --metadata-key commit --metadata-value abc123
 ```
 
-`--metadata-key` и `--metadata-value` передаются вместе и задают точное, регистрозависимое равенство. Пустая строка значения допустима. Лимиты: ключ 64, значение 1024, общий текст 240 символов; до 100 результатов, продолжение через `--after`. UI и SDK предоставляют те же фильтры. Поиск использует актуальную annotation, а не скрытые старые значения upload descriptor. Substring search may scan the repository; this is not an indexed full-text engine. Exact metadata filters are case-sensitive and must be supplied as a key/value pair.
+`--metadata-key` и `--metadata-value` передаются вместе и задают точное, регистрозависимое равенство. Пустая строка значения допустима. Лимиты: ключ 64, значение 1024, общий текст 240 символов; до 100 результатов, продолжение через `--after`. Каждый результат содержит `id`, `name`, `size` (десятичная строка), `createdAt`, `publishedAt`, текущие `labels` и `stages`. UI и SDK предоставляют те же фильтры. Поиск использует актуальную annotation, а не скрытые старые значения upload descriptor. Substring search may scan the repository; this is not an indexed full-text engine. Exact metadata filters are case-sensitive and must be supplied as a key/value pair.
 
 ## Метки, метаданные и вложения
 

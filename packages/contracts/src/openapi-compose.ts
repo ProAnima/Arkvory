@@ -2,14 +2,9 @@ import { operationPolicies } from './operation-policy.js';
 import { apiClassification } from './api-surfaces.js';
 import type { ApiSurface, ApiVisibility } from './api-surfaces.js';
 import type { ApiMethod, OperationPolicy } from './operation-policy.js';
-import {
-  contentResponses,
-  downloadHeaders,
-  nativeErrorResponse,
-  requestIdHeader,
-} from './http-contract.js';
+import { composeOperation, methodPolicy, object, route } from './openapi-operation.js';
+import type { ObjectValue } from './openapi-operation.js';
 
-type ObjectValue = Record<string, unknown>;
 export interface ApiOperation extends OperationPolicy {
   surface: ApiSurface;
   visibility: ApiVisibility;
@@ -19,17 +14,11 @@ export interface ApiOperation extends OperationPolicy {
   route: string;
 }
 export const apiMethods: readonly ApiMethod[] = ['get', 'head', 'post', 'put', 'patch', 'delete'];
-function object(value: unknown): ObjectValue {
-  if (!value || typeof value !== 'object' || Array.isArray(value))
-    throw new Error('Invalid API contract object');
-  return Object.fromEntries(Object.entries(value));
-}
-function route(path: string): string {
-  return path.replace(/\{(\w+)\}/g, (_match, name: string) =>
-    name === 'packagePath' || name === 'assetPath' ? '*' : `:${name}`,
-  );
-}
-// arkvory-exception ARCH-001 -- Existing adapter or contract implementation combines related operations; freeze growth and extract cohesive responsibilities while preserving transactional and authorization invariants.
+
+/**
+ * Joins declared OpenAPI paths with operation policies. Every declared operation needs a policy
+ * and every policy an operation; operationIds are unique, GET implies HEAD.
+ */
 export function composeApiPaths(source: Record<string, ObjectValue>) {
   const paths: Record<string, ObjectValue> = {};
   const operations: ApiOperation[] = [];
@@ -41,12 +30,7 @@ export function composeApiPaths(source: Record<string, ObjectValue>) {
     if (item['get'] && !item['head']) item['head'] = item['get'];
     for (const method of apiMethods) {
       if (!item[method]) continue;
-      const policy =
-        declared[method] ??
-        (method === 'head' && declared.get
-          ? { ...declared.get, operationId: `${declared.get.operationId}Head` }
-          : undefined);
-      if (!policy) throw new Error(`Missing API policy: ${method} ${path}`);
+      const policy = methodPolicy(declared, method, path);
       if (ids.has(policy.operationId))
         throw new Error(`Duplicate operationId: ${policy.operationId}`);
       ids.add(policy.operationId);
@@ -55,101 +39,7 @@ export function composeApiPaths(source: Record<string, ObjectValue>) {
       const summary = originalOperation['summary'];
       if (typeof summary !== 'string' || summary.length > 1024)
         throw new Error(`Missing API summary: ${method} ${path}`);
-      const content = policy.tag === 'Content';
-      const named =
-        policy.operationId.startsWith('downloadPackageContent') ||
-        policy.operationId.startsWith('downloadAssetContent');
-      const upload =
-        policy.operationId === 'putUploadContent' || policy.operationId === 'putUploadPart';
-      const responses: ObjectValue = {
-        ...object(originalOperation['responses']),
-        ...(content ? contentResponses : {}),
-        default: nativeErrorResponse,
-      };
-      // All routes may be rejected by HTTP validation/CORS/admission or authentication.
-      const statuses =
-        policy.access.kind === 'public'
-          ? ['400', '403', '503']
-          : ['400', '401', '403', '404', '409', '422', '503', '507'];
-      for (const status of statuses) responses[status] ??= nativeErrorResponse;
-      if (method !== 'get' && method !== 'head')
-        responses['405'] = {
-          ...nativeErrorResponse,
-          description: 'Reader rejects mutations with code read_only.',
-          headers: {
-            ...nativeErrorResponse.headers,
-            Allow: { schema: { type: 'string', enum: ['GET, HEAD'] } },
-          },
-        };
-      responses['503'] = {
-        ...nativeErrorResponse,
-        description: 'Unavailable or busy; reconcile mutation state before retry.',
-        headers: {
-          ...nativeErrorResponse.headers,
-          'Retry-After': { schema: { type: 'string' }, description: 'Delay in seconds.' },
-        },
-      };
-      if (method === 'head' && content) {
-        delete responses['206'];
-        delete responses['416'];
-      }
-      const normalizedResponses: ObjectValue = {};
-      for (const [status, value] of Object.entries(responses)) {
-        const response = object(value);
-        response['headers'] = {
-          'X-Request-Id': requestIdHeader,
-          ...(response['headers'] ? object(response['headers']) : {}),
-        };
-        if (method === 'head') delete response['content'];
-        normalizedResponses[status] = response;
-      }
-      const security = policy.access.kind === 'public' ? [] : [{ serviceKey: [] }];
-      const parameters = originalOperation['parameters'] ?? downloadHeaders;
-      const headParameters = Array.isArray(parameters)
-        ? parameters.filter((p: unknown) => {
-            const parameter = object(p);
-            return parameter['in'] !== 'header' || parameter['name'] === 'If-None-Match';
-          })
-        : [];
-      item[method] = {
-        ...originalOperation,
-        ...(content ? { parameters: method === 'head' ? headParameters : parameters } : {}),
-        operationId: policy.operationId,
-        tags: [policy.tag],
-        security,
-        'x-arkvory-authorization': policy.access,
-        'x-arkvory-authority': policy.access.kind,
-        'x-arkvory-surface': classification.surface,
-        'x-arkvory-visibility': classification.visibility,
-        'x-arkvory-retry': policy.retry,
-        'x-arkvory-route': route(path),
-        'x-arkvory-gateway': method === 'get' || method === 'head' ? 'writer-or-reader' : 'writer',
-        ...(content
-          ? {
-              'x-arkvory-streaming': {
-                sizeLimit: 'capabilities.limits.maxObjectBytes',
-                range: method === 'head' ? 'ignored' : 'single',
-                immutableBytes: true,
-                resolution: named ? 'catalog-lookup-per-request' : 'artifact-id',
-              },
-            }
-          : {}),
-        ...(upload
-          ? {
-              'x-arkvory-streaming': {
-                sizeLimit: 'capabilities.limits.maxObjectBytes',
-                requestBytes: policy.operationId === 'putUploadPart' ? 'upload.partBytes' : 'size',
-                checksum: 'sha256',
-                partialRequestCommitted: false,
-                recovery:
-                  policy.operationId === 'putUploadPart'
-                    ? 'list-parts-then-retry-same-index-and-hash'
-                    : 'get-upload-status-before-retry',
-              },
-            }
-          : {}),
-        responses: normalizedResponses,
-      };
+      item[method] = composeOperation(originalOperation, policy, classification, method, path);
       operations.push({ ...policy, ...classification, summary, method, path, route: route(path) });
     }
     paths[path] = item;

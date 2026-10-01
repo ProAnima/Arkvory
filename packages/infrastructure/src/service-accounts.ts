@@ -1,112 +1,26 @@
-// arkvory-exception ARCH-009 -- Existing adapter or contract implementation combines related operations; freeze growth and extract cohesive responsibilities while preserving transactional and authorization invariants.
-import { createHash, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
+import { randomUUID, timingSafeEqual } from 'node:crypto';
 import type { Pool, PoolClient } from 'pg';
-import { ArkvoryError, parseBindings, requireSubset } from '@proanima/arkvory-domain';
+import { ArkvoryError } from '@proanima/arkvory-domain';
 import type { ServiceBinding, Principal, AdministrationAction } from '@proanima/arkvory-domain';
-import type { ApiKey, ServiceAccount, ServiceStore } from '@proanima/arkvory-application';
-import { serviceKeyExpiry } from './service-key-expiry.js';
-import { issuerPrincipal, managedPrincipal } from './service-authorization.js';
+import type { ServiceStore } from '@proanima/arkvory-application';
+import { managedPrincipal } from './service-authorization.js';
 import type { CredentialRow } from './service-authorization.js';
-
 import { administrationContext, authorizeAdministration } from './delegation-authorization.js';
-import type { AdministrationContext } from './delegation-authorization.js';
 import { listDelegations, writeDelegation } from './service-delegations.js';
-interface AccountRow {
-  id: string;
-  name: string;
-  enabled: boolean;
-  revision: number;
-  bindings: unknown;
-  created_at: Date;
-}
-interface KeyRow {
-  id: string;
-  account_id: string;
-  name: string;
-  state: ApiKey['state'];
-  bindings: unknown;
-  created_at: Date;
-  expires_at: Date;
-  activation_expires_at: Date;
-  rotated_from: string | null;
-  fingerprint: string;
-  issued_via_key_id: string | null;
-}
-function account(row: AccountRow | undefined): ServiceAccount {
-  if (!row) throw new ArkvoryError('not_found', 'Service resource not found');
-  return {
-    id: row.id,
-    name: row.name,
-    enabled: row.enabled,
-    revision: row.revision,
-    bindings: parseBindings(row.bindings),
-    createdAt: row.created_at.toISOString(),
-  };
-}
-function key(row: KeyRow | undefined): ApiKey {
-  if (!row) throw new ArkvoryError('not_found', 'Service resource not found');
-  return {
-    id: row.id,
-    accountId: row.account_id,
-    name: row.name,
-    state: row.state,
-    bindings: parseBindings(row.bindings),
-    createdAt: row.created_at.toISOString(),
-    expiresAt: row.expires_at.toISOString(),
-    activationExpiresAt: row.activation_expires_at.toISOString(),
-    rotatedFrom: row.rotated_from,
-  };
-}
-function tokenId(token: string): string | undefined {
-  return /^arkvory_([0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})\.[A-Za-z0-9_-]{43}$/.exec(
-    token,
-  )?.[1];
-}
-const digest = (value: string) => createHash('sha256').update(value).digest('hex');
-function page<T>(rows: readonly T[], id: (row: T) => string) {
-  const items = rows.slice(0, 50);
-  const last = items.at(-1);
-  return { items, next: rows.length > 50 && last ? id(last) : null };
-}
-// arkvory-exception ARCH-010 -- Existing adapter or contract implementation combines related operations; freeze growth and extract cohesive responsibilities while preserving transactional and authorization invariants.
+import { account, digest, key, page, tokenId } from './service-rows.js';
+import type { AccountRow, KeyRow } from './service-rows.js';
+import { recordServiceEvent, serviceTransaction } from './service-transaction.js';
+import { issueServiceKey } from './service-key-issue.js';
+import { activateServiceKey } from './service-key-activation.js';
+
+/**
+ * PostgreSQL service accounts, managed keys and delegations. Every operation runs in one
+ * serviceTransaction; control mutations hold the shared administration lock (see there).
+ */
 export class PostgresServices implements ServiceStore {
   constructor(private readonly pool: Pool) {}
-  private async change<T>(work: (client: PoolClient) => Promise<T>, mutation = true): Promise<T> {
-    const client = await this.pool.connect();
-    let broken = false;
-    try {
-      await client.query(mutation ? 'BEGIN' : 'BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');
-      if (mutation) await client.query('SELECT pg_advisory_xact_lock(18471,12)');
-      const result = await work(client);
-      await client.query('COMMIT');
-      return result;
-    } catch (error) {
-      try {
-        await client.query('ROLLBACK');
-      } catch {
-        broken = true;
-      }
-      if (typeof error === 'object' && error !== null && 'code' in error && error.code === '23505')
-        throw new ArkvoryError('conflict', 'Service name or credential already exists');
-      throw error;
-    } finally {
-      client.release(broken);
-    }
-  }
-  private async event(
-    client: PoolClient,
-    actor: string,
-    action: string,
-    accountId: string,
-    keyId?: string,
-  ) {
-    await client.query(
-      'INSERT INTO arkvory_service_audit(actor,action,account_id,key_id) VALUES($1,$2,$3,$4)',
-      [actor, action, accountId, keyId ?? null],
-    );
-    // Bounded operational history; export before retention removes older events.
-    await client.query(`DELETE FROM arkvory_service_audit WHERE sequence IN
-      (SELECT sequence FROM arkvory_service_audit ORDER BY sequence DESC OFFSET 100000 LIMIT 1000)`);
+  private change<T>(work: (client: PoolClient) => Promise<T>, mutation = true): Promise<T> {
+    return serviceTransaction(this.pool, work, mutation);
   }
   async accounts(actor: Principal, after?: string) {
     return this.change(async (c) => {
@@ -151,7 +65,7 @@ export class PostgresServices implements ServiceStore {
           )
         ).rows[0],
       );
-      await this.event(c, actor.id, 'service.create', a.id);
+      await recordServiceEvent(c, actor.id, 'service.create', a.id);
       return a;
     });
   }
@@ -177,7 +91,7 @@ export class PostgresServices implements ServiceStore {
           )
         ).rows[0],
       );
-      await this.event(c, actor.id, enabled ? 'service.enable' : 'service.disable', id);
+      await recordServiceEvent(c, actor.id, enabled ? 'service.enable' : 'service.disable', id);
       return result;
     });
   }
@@ -208,7 +122,7 @@ export class PostgresServices implements ServiceStore {
           )
         ).rows[0],
       );
-      await this.event(c, actor.id, 'service.policy', id);
+      await recordServiceEvent(c, actor.id, 'service.policy', id);
       return result;
     });
   }
@@ -244,7 +158,6 @@ export class PostgresServices implements ServiceStore {
       return row;
     }, false);
   }
-  // arkvory-exception ARCH-011 -- Existing adapter or contract implementation combines related operations; freeze growth and extract cohesive responsibilities while preserving transactional and authorization invariants.
   async issue(
     actor: Principal,
     accountId: string,
@@ -254,98 +167,8 @@ export class PostgresServices implements ServiceStore {
     expiresAt: string | undefined,
     rotate = false,
   ) {
-    const fingerprint = digest(
-      JSON.stringify({
-        name,
-        bindings,
-        expiresAt: expiresAt ?? null,
-        rotatedFrom: rotate ? accountId : null,
-      }),
-    );
-    return this.change(async (c) => {
-      const ctx = await administrationContext(c, actor);
-      const rotatedFrom = rotate ? accountId : undefined;
-      const targetId = rotate
-        ? key(
-            (await c.query<KeyRow>('SELECT * FROM arkvory_api_keys WHERE id=$1', [accountId]))
-              .rows[0],
-          ).accountId
-        : accountId;
-      await authorizeAdministration(c, ctx, targetId, 'credential.manage', bindings);
-      const a = account(
-        (
-          await c.query<AccountRow>(
-            'SELECT * FROM arkvory_service_accounts WHERE id=$1 FOR UPDATE',
-            [targetId],
-          )
-        ).rows[0],
-      );
-      if (!a.enabled) throw new ArkvoryError('forbidden', 'Service account disabled');
-      const existing = (
-        await c.query<KeyRow>(
-          'SELECT * FROM arkvory_api_keys WHERE account_id=$1 AND issued_by=$2 AND idempotency_key=$3',
-          [targetId, actor.id, idempotencyKey],
-        )
-      ).rows[0];
-      if (existing) {
-        if (existing.fingerprint !== fingerprint)
-          throw new ArkvoryError('conflict', 'Idempotency key has different parameters');
-        return { key: key(existing) };
-      }
-      requireSubset(bindings, a.bindings);
-      const now = (await c.query<{ now: Date }>('SELECT clock_timestamp() AS now')).rows[0]?.now;
-      if (!now) throw new ArkvoryError('unavailable', 'Database time unavailable');
-      const expires = serviceKeyExpiry(now, expiresAt, ctx.bootstrap ? undefined : ctx.expiresAt);
-      if (rotatedFrom) {
-        const old = key(
-          (
-            await c.query<KeyRow>(
-              'SELECT * FROM arkvory_api_keys WHERE id=$1 AND account_id=$2 FOR UPDATE',
-              [rotatedFrom, targetId],
-            )
-          ).rows[0],
-        );
-        if (old.state !== 'active' || Date.parse(old.expiresAt) <= now.getTime())
-          throw new ArkvoryError('conflict', 'Rotation requires an active key');
-        await authorizeAdministration(c, ctx, targetId, 'credential.manage', old.bindings);
-        requireSubset(bindings, old.bindings);
-      }
-      const counts = (
-        await c.query<{ pending: string; total: string }>(
-          `SELECT
-        count(*) FILTER(WHERE account_id=$1 AND state='pending' AND expires_at>clock_timestamp() AND activation_expires_at>clock_timestamp())::text AS pending,
-        count(*)::text AS total FROM arkvory_api_keys`,
-          [targetId],
-        )
-      ).rows[0];
-      if (!counts || Number(counts.pending) >= 2 || Number(counts.total) >= 10000)
-        throw new ArkvoryError('capacity_exceeded', 'API key capacity reached');
-      const id = randomUUID();
-      const secret = `arkvory_${id}.${randomBytes(32).toString('base64url')}`;
-      const issued = key(
-        (
-          await c.query<KeyRow>(
-            `INSERT INTO arkvory_api_keys(id,account_id,name,secret_hash,bindings,expires_at,rotated_from,issued_by,idempotency_key,fingerprint,issued_via_key_id)
-        VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`,
-            [
-              id,
-              targetId,
-              name,
-              digest(secret),
-              JSON.stringify(bindings),
-              expires.toISOString(),
-              rotatedFrom ?? null,
-              actor.id,
-              idempotencyKey,
-              fingerprint,
-              ctx.bootstrap ? null : ctx.keyId,
-            ],
-          )
-        ).rows[0],
-      );
-      await this.event(c, actor.id, rotatedFrom ? 'key.rotate' : 'key.issue', targetId, id);
-      return { key: issued, secret };
-    });
+    const request = { accountId, idempotencyKey, name, bindings, expiresAt, rotate };
+    return this.change((c) => issueServiceKey(c, actor, request));
   }
   async revoke(actor: Principal, id: string): Promise<void> {
     await this.change(async (c) => {
@@ -357,85 +180,13 @@ export class PostgresServices implements ServiceStore {
       await authorizeAdministration(c, ctx, k.accountId, 'credential.manage', k.bindings);
       if (k.state === 'revoked') return;
       await c.query("UPDATE arkvory_api_keys SET state='revoked' WHERE id=$1", [id]);
-      await this.event(c, actor.id, 'key.revoke', k.accountId, id);
+      await recordServiceEvent(c, actor.id, 'key.revoke', k.accountId, id);
     });
   }
   async activate(token: string): Promise<void> {
     const id = tokenId(token);
     if (!id) throw new ArkvoryError('unauthorized', 'Invalid credential');
-    await this.change(async (c) => {
-      const row = (
-        await c.query<
-          KeyRow & { secret_hash: string; account_bindings: unknown; enabled: boolean }
-        >(
-          `SELECT k.*,a.bindings AS account_bindings,a.enabled FROM arkvory_api_keys k JOIN arkvory_service_accounts a ON a.id=k.account_id
-         WHERE k.id=$1 AND k.expires_at>clock_timestamp() AND (k.state='active' OR (k.state='pending' AND k.activation_expires_at>clock_timestamp()))
-         FOR UPDATE OF a,k`,
-          [id],
-        )
-      ).rows[0];
-      if (
-        !row ||
-        !row.enabled ||
-        !timingSafeEqual(Buffer.from(row.secret_hash, 'hex'), Buffer.from(digest(token), 'hex'))
-      )
-        throw new ArkvoryError('unauthorized', 'Invalid credential');
-      if (row.state === 'active') return;
-      let issuerContext: AdministrationContext | undefined;
-      if (row.issued_via_key_id) {
-        const issuer = (
-          await c.query<{ account_id: string }>(
-            'SELECT account_id FROM arkvory_api_keys WHERE id=$1',
-            [row.issued_via_key_id],
-          )
-        ).rows[0];
-        if (!issuer) throw new ArkvoryError('forbidden', 'Issuing operator unavailable');
-        const operator = issuerPrincipal(issuer.account_id, row.issued_via_key_id);
-        const ctx = await administrationContext(c, operator);
-        await authorizeAdministration(
-          c,
-          ctx,
-          row.account_id,
-          'credential.manage',
-          parseBindings(row.bindings),
-        );
-        issuerContext = ctx;
-      }
-      requireSubset(parseBindings(row.bindings), parseBindings(row.account_bindings));
-      const count = await c.query<{ count: string }>(
-        "SELECT count(*) FROM arkvory_api_keys WHERE account_id=$1 AND state='active' AND expires_at>clock_timestamp()",
-        [row.account_id],
-      );
-      if (Number(count.rows[0]?.count) >= 3)
-        throw new ArkvoryError('capacity_exceeded', 'Active key limit reached');
-      if (row.rotated_from) {
-        const old = (
-          await c.query<KeyRow>(
-            "SELECT * FROM arkvory_api_keys WHERE id=$1 AND state='active' AND expires_at>clock_timestamp() FOR UPDATE",
-            [row.rotated_from],
-          )
-        ).rows[0];
-        if (!old) throw new ArkvoryError('conflict', 'Source key no longer active');
-        if (issuerContext)
-          await authorizeAdministration(
-            c,
-            issuerContext,
-            row.account_id,
-            'credential.manage',
-            parseBindings(old.bindings),
-          );
-        requireSubset(parseBindings(row.bindings), parseBindings(old.bindings));
-        await c.query(
-          "UPDATE arkvory_api_keys SET expires_at=LEAST(expires_at,clock_timestamp()+interval '24 hours') WHERE id=$1",
-          [row.rotated_from],
-        );
-      }
-      await c.query(
-        "UPDATE arkvory_api_keys SET state='active',expires_at=LEAST(expires_at,COALESCE($2::timestamptz,expires_at)) WHERE id=$1",
-        [id, issuerContext && !issuerContext.bootstrap ? issuerContext.expiresAt : null],
-      );
-      await this.event(c, `service:${row.account_id}`, 'key.activate', row.account_id, id);
-    });
+    await this.change((c) => activateServiceKey(c, id, token));
   }
   private async credential(id: string, pending = false) {
     return (
@@ -522,7 +273,7 @@ export class PostgresServices implements ServiceStore {
         expected,
         { actions, ceiling },
       );
-      await this.event(c, actor.id, 'delegation.set', target, keyId);
+      await recordServiceEvent(c, actor.id, 'delegation.set', target, keyId);
       return result;
     });
   }
@@ -535,7 +286,7 @@ export class PostgresServices implements ServiceStore {
         target,
         expected,
       );
-      await this.event(c, actor.id, 'delegation.remove', target, keyId);
+      await recordServiceEvent(c, actor.id, 'delegation.remove', target, keyId);
       return result;
     });
   }

@@ -5,117 +5,13 @@ import {
   requireId,
   requireAssetPath,
 } from '@proanima/arkvory-domain';
-import type { Principal, PackageManifest, MutationAccess } from '@proanima/arkvory-domain';
+import type { Principal, PackageManifest } from '@proanima/arkvory-domain';
 import type { StorageService } from './storage.js';
 import { validateAssetPage } from './asset-page.js';
-import type { AssetEntry, AssetPage, AssetPageOptions } from './asset-page.js';
+import type { AssetPage, AssetPageOptions } from './asset-page.js';
+import type { BrowseStore, PackageListOptions, PackagePage } from './catalog-ports.js';
 export type { AssetEntry } from './asset-page.js';
 
-export interface Annotation {
-  revision: number;
-  labels: readonly string[];
-  metadata: Readonly<Record<string, string>>;
-  collections: readonly string[];
-}
-export interface PackageEntry {
-  group: string;
-  name: string;
-  version: string;
-  artifactId: string;
-  manifest: Readonly<Record<string, unknown>>;
-}
-export interface PackageListOptions {
-  sort: 'group' | 'name' | 'version';
-  direction: 'asc' | 'desc';
-  groupBy: 'none' | 'group' | 'package';
-}
-export interface PackagePage {
-  items: readonly PackageEntry[];
-  next: string | null;
-}
-export interface AssetRevision extends AssetEntry {
-  actor: string | null;
-  createdAt: string | null;
-  sourceRevision: number | null;
-}
-export interface AssetHistoryPage {
-  items: readonly AssetRevision[];
-  next: number | null;
-}
-export interface BrowseStore {
-  annotation(repository: string, id: string): Promise<Annotation>;
-  annotate(
-    repository: string,
-    id: string,
-    expected: number,
-    annotation: Omit<Annotation, 'revision'>,
-    actor: string,
-    access: MutationAccess,
-  ): Promise<Annotation>;
-  register(
-    repository: string,
-    id: string,
-    manifest: PackageManifest,
-    actor: string,
-    access: MutationAccess,
-  ): Promise<PackageEntry>;
-  resolvePackage(
-    repository: string,
-    group: string,
-    name: string,
-    version: string | undefined,
-  ): Promise<string | null>;
-  packagePage(
-    repository: string,
-    group: string | undefined,
-    name: string | undefined,
-    options: PackageListOptions,
-    after: string | undefined,
-    limit: number,
-  ): Promise<PackagePage>;
-  asset(repository: string, path: string): Promise<AssetEntry>;
-  assetRevision(repository: string, path: string, revision: number): Promise<AssetRevision>;
-  assetHistory(repository: string, path: string, before?: number): Promise<AssetHistoryPage>;
-  assets(repository: string, prefix: string): Promise<readonly AssetEntry[]>;
-  assetPage(repository: string, options: AssetPageOptions): Promise<AssetPage>;
-  setAsset(
-    repository: string,
-    path: string,
-    id: string,
-    expected: number,
-    actor: string,
-    access: MutationAccess,
-    sourceRevision?: number,
-  ): Promise<AssetEntry>;
-  search(
-    repository: string,
-    query: string,
-    label: string,
-    collection: string,
-    after: string | undefined,
-    metadata?: { key: string; value: string },
-  ): Promise<readonly { id: string; name: string }[]>;
-  audit(
-    repository: string,
-    after: string,
-  ): Promise<
-    readonly {
-      sequence: string;
-      actor: string;
-      action: string;
-      artifactId: string;
-      occurredAt: string;
-    }[]
-  >;
-  reference(
-    repository: string,
-    id: string,
-    owner: string,
-    access: MutationAccess,
-    key: string,
-    remove: boolean,
-  ): Promise<void>;
-}
 export interface ManifestReader {
   inspect(id: string): Promise<PackageManifest>;
 }

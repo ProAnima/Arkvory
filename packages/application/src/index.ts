@@ -2,6 +2,7 @@ export * from './ports.js';
 export * from './storage.js';
 export * from './operations.js';
 export * from './catalog.js';
+export * from './catalog-ports.js';
 export * from './promotion.js';
 export * from './package-resolution.js';
 export * from './identity.js';

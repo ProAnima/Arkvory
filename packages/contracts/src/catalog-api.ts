@@ -1,3 +1,4 @@
+import { artifactSearchItemSchema } from './artifact-search.js';
 const str = { type: 'string' } as const;
 const revision = { type: 'integer', minimum: 0, maximum: 2147483646 } as const;
 const storedRevision = { type: 'integer', minimum: 1, maximum: 2147483647 } as const;
@@ -345,15 +346,18 @@ const paths: Record<string, Record<string, unknown>> = {
   },
   [`${root}/search`]: {
     get: operation(
-      'Search names and metadata values (case-insensitive substring); exact label, collection and metadataKey/metadataValue pair; pages of 100',
+      'Search names and metadata values (case-insensitive substring); exact label, collection and metadataKey/metadataValue pair; pages of 100 with size, times, current labels and stages',
       {
-        ...page({
-          type: 'object',
-          properties: { id: { type: 'string', format: 'uuid' }, name: str },
-        }),
+        type: 'object',
+        required: ['items', 'next'],
         properties: {
-          ...page({ type: 'object', properties: { id: str, name: str } }).properties,
-          next: { type: 'string', nullable: true },
+          items: { type: 'array', maxItems: 100, items: artifactSearchItemSchema },
+          next: {
+            type: 'string',
+            format: 'uuid',
+            nullable: true,
+            description: 'Last ID of a full page; pass as after',
+          },
         },
       },
       {

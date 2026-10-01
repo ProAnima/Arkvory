@@ -25,18 +25,26 @@ function queryRevision(value: unknown): number {
   return Number(value);
 }
 
-// arkvory-exception ARCH-014 -- Existing route registrar groups endpoints with shared authorizer dependencies; separate by responsibility with the complete operation inventory unchanged.
-export function registerCatalogRoutes(
-  app: FastifyInstance,
-  services: {
-    browse: ArtifactCatalog;
-    principal: (request: FastifyRequest) => Principal;
-    modifying: <T>(request: FastifyRequest, action: () => Promise<T>) => Promise<T>;
-  },
-) {
-  const { browse, principal, modifying } = services;
-  type Params = { repository: string; id: string; index: string };
-  const base = '/api/v1/repositories/:repository';
+interface CatalogRouteServices {
+  browse: ArtifactCatalog;
+  principal: (request: FastifyRequest) => Principal;
+  modifying: <T>(request: FastifyRequest, action: () => Promise<T>) => Promise<T>;
+}
+type Params = { repository: string; id: string; index: string };
+const base = '/api/v1/repositories/:repository';
+
+/** Catalog endpoints by responsibility; the operation inventory is checked against OpenAPI. */
+export function registerCatalogRoutes(app: FastifyInstance, services: CatalogRouteServices) {
+  registerAnnotationRoutes(app, services);
+  registerPackageRoutes(app, services);
+  registerAssetRoutes(app, services);
+  registerAssetHistoryRoutes(app, services);
+  registerSearchRoute(app, services.browse, services.principal);
+  registerJournalRoutes(app, services);
+}
+
+function registerAnnotationRoutes(app: FastifyInstance, services: CatalogRouteServices) {
+  const { browse, principal } = services;
   app.get<{ Params: Params }>(`${base}/artifacts/:id/annotations`, async (request) =>
     browse.annotation(principal(request), request.params.repository, request.params.id),
   );
@@ -53,6 +61,10 @@ export function registerCatalogRoutes(
       );
     },
   );
+}
+
+function registerPackageRoutes(app: FastifyInstance, services: CatalogRouteServices) {
+  const { browse, principal, modifying } = services;
   app.post<{ Params: Params }>(`${base}/artifacts/:id/package`, async (request) =>
     modifying(request, () =>
       browse.register(principal(request), request.params.repository, request.params.id),
@@ -78,6 +90,10 @@ export function registerCatalogRoutes(
     );
     return { ...organizePackages(page.items, options), next: page.next };
   });
+}
+
+function registerAssetRoutes(app: FastifyInstance, services: CatalogRouteServices) {
+  const { browse, principal } = services;
   app.get<{ Params: Params; Querystring: unknown }>(`${base}/assets`, async (request) => ({
     items: await browse.assets(
       principal(request),
@@ -115,6 +131,10 @@ export function registerCatalogRoutes(
       revision(body['expectedRevision']),
     );
   });
+}
+
+function registerAssetHistoryRoutes(app: FastifyInstance, services: CatalogRouteServices) {
+  const { browse, principal } = services;
   app.get<{ Params: Params; Querystring: unknown }>(`${base}/asset/history`, async (request) => {
     const q = object(request.query);
     return browse.assetHistory(
@@ -147,7 +167,10 @@ export function registerCatalogRoutes(
       revision(body['expectedRevision']),
     );
   });
-  registerSearchRoute(app, browse, principal);
+}
+
+function registerJournalRoutes(app: FastifyInstance, services: CatalogRouteServices) {
+  const { browse, principal } = services;
   app.get<{ Params: Params; Querystring: unknown }>(`${base}/audit`, async (request) => ({
     items: await browse.audit(
       principal(request),
@@ -176,23 +199,24 @@ function registerSearchRoute(
   browse: ArtifactCatalog,
   principal: (request: FastifyRequest) => Principal,
 ) {
-  type Params = { repository: string };
-  const base = '/api/v1/repositories/:repository';
-  app.get<{ Params: Params; Querystring: unknown }>(`${base}/search`, async (request) => {
-    const q = object(request.query);
-    if ((q['metadataKey'] === undefined) !== (q['metadataValue'] === undefined))
-      throw new ArkvoryError('invalid_input', 'Metadata key and value must be supplied together');
-    const items = await browse.search(
-      principal(request),
-      request.params.repository,
-      string(q['q'], ''),
-      string(q['label'], ''),
-      string(q['collection'], ''),
-      q['after'] === undefined ? undefined : string(q['after']),
-      q['metadataKey'] === undefined
-        ? undefined
-        : { key: string(q['metadataKey']), value: string(q['metadataValue']) },
-    );
-    return { items, next: items.length === 100 ? (items.at(-1)?.id ?? null) : null };
-  });
+  app.get<{ Params: Pick<Params, 'repository'>; Querystring: unknown }>(
+    `${base}/search`,
+    async (request) => {
+      const q = object(request.query);
+      if ((q['metadataKey'] === undefined) !== (q['metadataValue'] === undefined))
+        throw new ArkvoryError('invalid_input', 'Metadata key and value must be supplied together');
+      const items = await browse.search(
+        principal(request),
+        request.params.repository,
+        string(q['q'], ''),
+        string(q['label'], ''),
+        string(q['collection'], ''),
+        q['after'] === undefined ? undefined : string(q['after']),
+        q['metadataKey'] === undefined
+          ? undefined
+          : { key: string(q['metadataKey']), value: string(q['metadataValue']) },
+      );
+      return { items, next: items.length === 100 ? (items.at(-1)?.id ?? null) : null };
+    },
+  );
 }
