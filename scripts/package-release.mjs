@@ -7,6 +7,7 @@ import {
   writeFile,
   readdir,
   realpath,
+  rm,
   stat,
 } from 'node:fs/promises';
 import { createWriteStream, createReadStream } from 'node:fs';
@@ -156,4 +157,11 @@ await writeFile(join(output, 'arkvory-release.json'), JSON.stringify(release, nu
 for (const name of ['install.sh', 'install.ps1'])
   await copyFile(join('deploy', name), join(output, name));
 await packageInstallers(output, staging, release);
-console.log(`Release ${version}: ${output}. Temporary dependency tree: ${staging}`);
+// The staging tree (production node_modules) is only an input of the archives; every packaging
+// run created a fresh one, so keeping it leaked hundreds of MiB per gate run into TEMP.
+if (process.env.ARKVORY_KEEP_RELEASE_STAGING === '1')
+  console.log(`Release ${version}: ${output}. Staging kept: ${staging}`);
+else {
+  await rm(staging, { recursive: true, force: true, maxRetries: 3 });
+  console.log(`Release ${version}: ${output}`);
+}

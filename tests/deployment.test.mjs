@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, readFile, writeFile, lstat } from 'node:fs/promises';
+import { mkdtemp, readFile, writeFile, lstat, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createWriteStream } from 'node:fs';
@@ -173,8 +173,9 @@ test('unconfirmed rollback termination is preserved for the outer installation l
   await assert.rejects(applyUpdate(state, next, true, fake), (error) => error === failure);
   assert.equal(fake.events.at(-1), 'recovery-required');
 });
-test('filesystem lock rejects a concurrent writer and preserves configuration atomically', async () => {
+test('filesystem lock rejects a concurrent writer and preserves configuration atomically', async (t) => {
   const root = await mkdtemp(join(tmpdir(), 'arkvory-lock-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
   await exclusive(root, async () => {
     await assert.rejects(
       exclusive(root, async () => {}),
@@ -205,8 +206,9 @@ test('release archive rejects traversal, links and Windows alternate streams on 
     assert.throws(() => archivePath('/release', path, 0));
   assert.throws(() => archivePath('/release', 'link', 0o120777 * 65536), /special/);
 });
-test('extractor refuses existing destinations and duplicate archive files', async () => {
+test('extractor refuses existing destinations and duplicate archive files', async (t) => {
   const root = await mkdtemp(join(tmpdir(), 'arkvory-zip-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
   const archive = join(root, 'archive.zip');
   const zip = new ZipFile();
   zip.addBuffer(Buffer.from('first'), 'file');
@@ -220,6 +222,7 @@ test('extractor refuses existing destinations and duplicate archive files', asyn
 });
 test('private GitHub asset redirect strips authorization and verifies checksum', async (t) => {
   const root = await mkdtemp(join(tmpdir(), 'arkvory-download-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
   let calls = 0;
   t.mock.method(globalThis, 'fetch', async (url, options) => {
     calls++;
@@ -260,8 +263,9 @@ test('Compose runtime keeps tmpfs options in one mount and persists data separat
   assert.ok(compose.services.api.volumes.includes('storage:/var/lib/arkvory'));
   assert.deepEqual(compose.services.api.ports, ['127.0.0.1:8080:8080']);
 });
-test('stale lock fails closed without taking ownership from another updater', async () => {
+test('stale lock fails closed without taking ownership from another updater', async (t) => {
   const root = await mkdtemp(join(tmpdir(), 'arkvory-stale-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
   await writeFile(join(root, 'operation.lock'), 'interrupted');
   await assert.rejects(
     exclusive(root, async () => {}),

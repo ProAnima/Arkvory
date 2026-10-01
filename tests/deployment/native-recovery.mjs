@@ -2,9 +2,10 @@ import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { join } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
+import { requireDisposableHost } from './disposable-host.mjs';
 
 export async function exerciseNativeRecovery(root, token, read) {
-  assert.equal(process.env.GITHUB_ACTIONS, 'true', 'Recovery requires a disposable runner');
+  requireDisposableHost('Native recovery');
   const windows = process.platform === 'win32';
   const env = Object.fromEntries(
     Object.entries(process.env).filter(([key]) => key.toLowerCase() !== 'psmodulepath'),

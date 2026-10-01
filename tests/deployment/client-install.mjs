@@ -3,9 +3,10 @@ import { mkdtemp, access, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import assert from 'node:assert/strict';
+import { requireDisposableHost } from './disposable-host.mjs';
 
 export async function exerciseClient(output, version) {
-  assert.equal(process.env.GITHUB_ACTIONS, 'true');
+  requireDisposableHost('Client installation');
   const windows = process.platform === 'win32';
   const directory = await mkdtemp(join(tmpdir(), 'arkvory-client-install-'));
   const installation = join(directory, 'Arkvory CLI');

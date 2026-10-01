@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdtemp, readFile, access } from 'node:fs/promises';
+import { mkdtemp, readFile, access, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -83,3 +83,5 @@ assert.equal(
 console.log(
   'Portable release packaging, extraction, standalone bootstrap and production dependency resolution passed',
 );
+// Kept on failure for diagnosis; a passing run must not accumulate candidates in TEMP.
+await rm(root, { recursive: true, force: true, maxRetries: 3 });

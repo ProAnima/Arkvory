@@ -7,11 +7,12 @@ import ssh2 from 'ssh2';
 import { RemoteWorkflow } from '../../apps/deploy/dist/remote-workflow.js';
 import { RemoteSsh, discoverHost } from '../../apps/deploy/dist/remote-ssh.js';
 import { remoteNode } from '../../apps/deploy/dist/remote-target.js';
+import { requireDisposableHost } from './disposable-host.mjs';
 
 // Real command execution is restricted to the same disposable runner as native-install.
 // The SSH transport is loopback-only; native services/readiness and shell stdin are real.
 export async function exerciseRemoteAccess() {
-  assert.equal(process.env.GITHUB_ACTIONS, 'true');
+  requireDisposableHost('Remote access');
   const key = generateKeyPairSync('rsa', { modulusLength: 2048 }).privateKey.export({
     type: 'pkcs1',
     format: 'pem',

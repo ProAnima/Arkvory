@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFile, mkdtemp, writeFile } from 'node:fs/promises';
+import { readFile, mkdtemp, writeFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { parse, stringify } from 'yaml';
@@ -58,8 +58,9 @@ test('release workflow rejects privilege escalation, unchecked bytes and accepta
     assert.ok(inspectReleaseWorkflow(stringify(workflow)).length);
   }
 });
-test('release inventory binds all launchers and runtime bytes to the tested commit', async () => {
+test('release inventory binds all launchers and runtime bytes to the tested commit', async (t) => {
   const directory = await mkdtemp(join(tmpdir(), 'arkvory-release-policy-'));
+  t.after(() => rm(directory, { recursive: true, force: true }));
   for (const name of releaseFiles) await writeFile(join(directory, name), 'test fixture');
   const manifest = {
     version: '1.2.3',

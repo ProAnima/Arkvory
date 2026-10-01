@@ -29,9 +29,42 @@ Windows lanes не запускают `deployment-containers`: на GitHub-hoste
 
 [`Prepare stable release`](../.github/workflows/release.yml) запускается вручную только с main: `build` (ubuntu-24.04) выполняет `npm run gate -- release` и собирает один candidate; `acceptance` на четырёх ОС проверяет этот candidate через `deployment deployment-services`, а на Linux дополнительно `deployment-containers`; `native` (ubuntu-24.04, windows-2022) — `native-install`; `publish` проверяет хеши и создаёт draft. Подробности: [ENGINEERING_GATES](ENGINEERING_GATES.md#проверки-поставки-и-служб).
 
+## Локальный конвейер
+
+Без GitHub Actions те же lanes выполняются на машине сопровождающего (Windows + Docker Desktop, либо Linux + Docker Engine без windows-lane). Решение и границы: [ADR 0053](adr/0053-local-ci-and-release.md).
+
+```
+npm run ci:local                # verify: все lanes, нужен чистый коммит
+npm run ci:local -- release     # плюс оба сценария 5 GiB
+npm run ci:local -- --allow-dirty --lane linux,linux-system
+npm run release:local -- 1.2.3 --dry-run
+npm run release:local -- 1.2.3  # черновик релиза на GitHub
+```
+
+| Lane           | Где                                                       | Гейты (verify)                                                                                                      |
+| -------------- | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `windows`      | хост, рабочее дерево; БД `npm run test:db:up`             | static, unit, security, integration, browser, deployment, deployment-containers, native-package (+ 5 GiB в release) |
+| `linux`        | контейнер `scripts/ci/linux.Dockerfile` + PostgreSQL 18.4 | static, unit, integration, browser, deployment                                                                      |
+| `linux-system` | одноразовый контейнер с systemd                           | native-package, deployment-services, native-install                                                                 |
+
+Не выполняются локально (gap): Windows `deployment-services` и `native-install` — они ставят службы и пакет на машину. Покрыты другим lane: Linux `deployment-containers`, `security`, оба сценария 5 GiB. Полнота плана проверяется `tests/local-ci.test.mjs`: новый гейт в config/gates.json без lane или явного объявления роняет unit-гейт.
+
+Контейнерные lanes тестируют коммит через `git bundle`. С `--allow-dirty` они тестируют снимок рабочего дерева (временный индекс; HEAD, индекс и stash не меняются), а evidence помечено `dirty`. Итог: `test-results/local-ci/<commit>-<profile>/evidence.{json,md}` и отчёты гейтов по lanes. Первый запуск собирает образ (Ubuntu по digest, Node.js из закреплённого архива поставки, Chromium Playwright) и скачивает нативные зависимости. Потом используются тома `arkvory-ci-npm` и `arkvory-ci-native`. `--keep-containers` оставляет контейнеры для разбора.
+
+`release:local` создаёт только черновик:
+
+1. Проверяет main, чистое дерево, HEAD = `origin/main` (сначала push), `gh auth`, право записи, отсутствие тега и релиза, версию выше опубликованных.
+2. Берёт свежее releasable evidence release-профиля (`--reuse-evidence`) или запускает его.
+3. Упаковывает один candidate в `artifacts/<версия>`.
+4. Принимает его на Windows и в systemd-контейнере.
+5. Сверяет хеши.
+6. Создаёт `gh release create --draft --target <sha>` с проверенными файлами, `arkvory-local-ci-evidence.json` и заметками о пробелах.
+
+Опубликовать черновик на GitHub нужно вручную. До публикации автообновление его не видит.
+
 ## Состояние GitHub Actions на 2026-10-01
 
-Jobs репозитория завершаются ошибкой до первого шага из-за проблемы биллинга аккаунта GitHub (лимит расходов/оплата), а не из-за кода. Такой прогон не является ни успехом, ни доказательством дефекта: verdict остаётся красным, merge по зелёному gate невозможен. До восстановления биллинга обязательные проверки выполняются локально (`npm run gate -- verify` на хосте с PostgreSQL, Chromium, Docker и правами администратора, либо отдельными гейтами из таблицы в ENGINEERING_GATES), и PR перечисляет фактически выполненные и невыполненные гейты. После восстановления повторите workflow для последнего commit.
+Jobs репозитория падают до первого шага из-за проблемы с биллингом аккаунта GitHub (лимит расходов или оплата), а не из-за кода. Такой прогон не означает ни успеха, ни дефекта: verdict остаётся красным, merge по зелёному gate невозможен. До восстановления биллинга обязательные проверки выполняются локальным конвейером выше, и PR перечисляет фактически выполненные и невыполненные гейты. После восстановления повторите workflow для последнего commit.
 
 ## Отчёты
 

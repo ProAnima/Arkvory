@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { mkdtemp, readFile, writeFile, mkdir, copyFile, realpath } from 'node:fs/promises';
+import { mkdtemp, readFile, writeFile, mkdir, copyFile, realpath, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
@@ -197,3 +197,5 @@ try {
     if (windows) removeWindowsUpdater();
   }
 }
+// Reached only after a passing run; failures keep the installation root for diagnosis.
+await rm(temporary, { recursive: true, force: true, maxRetries: 3 });

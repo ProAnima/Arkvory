@@ -10,13 +10,10 @@ import { exerciseClient } from './client-install.mjs';
 import { exerciseRemoteAccess } from './remote-access.mjs';
 import { exerciseUpdateControl } from './update-control.mjs';
 import { exerciseNativeRecovery } from './native-recovery.mjs';
+import { requireDisposableHost } from './disposable-host.mjs';
 
 // This gate uses production service names only on disposable CI machines, never a developer workstation.
-assert.equal(
-  process.env.GITHUB_ACTIONS,
-  'true',
-  'Native installation acceptance requires a disposable Actions runner',
-);
+requireDisposableHost('Native installation acceptance');
 const windows = process.platform === 'win32';
 const output = resolve(process.env.ARKVORY_NATIVE_ARTIFACT ?? 'test-results/native-candidate');
 const manifest = JSON.parse(

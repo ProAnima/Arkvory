@@ -4,12 +4,9 @@ import { join, resolve } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
+import { requireDisposableHost } from './disposable-host.mjs';
 const windows = process.platform === 'win32';
-assert.equal(
-  process.env.GITHUB_ACTIONS,
-  'true',
-  'Service acceptance requires a disposable Actions runner',
-);
+requireDisposableHost('Service acceptance');
 // LocalService cannot resolve Node entrypoints through another user's private AppData.
 // Match the production installer's machine-wide location instead of the runner's TEMP.
 const root = windows

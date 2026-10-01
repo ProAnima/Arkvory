@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, writeFile, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import {
@@ -11,8 +11,9 @@ import {
 import { initialize } from '../apps/deploy/dist/initialize.js';
 import { deploymentHelp } from '../apps/deploy/dist/help.js';
 
-test('managed database credentials isolate cluster ownership, use SCRAM bootstrap and refuse replacement', async () => {
+test('managed database credentials isolate cluster ownership, use SCRAM bootstrap and refuse replacement', async (t) => {
   const root = await mkdtemp(join(tmpdir(), 'arkvory-managed-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
   const bin = join(root, 'bin');
   await mkdir(bin);
   for (const name of ['initdb', 'postgres', 'pg_ctl', 'psql', 'pg_isready'])
@@ -35,8 +36,9 @@ test('managed database credentials isolate cluster ownership, use SCRAM bootstra
   await assert.rejects(databaseSettings(root), /Invalid/);
 });
 
-test('managed database selection cannot replace an external URL or Compose database', async () => {
+test('managed database selection cannot replace an external URL or Compose database', async (t) => {
   const root = await mkdtemp(join(tmpdir(), 'arkvory-managed-conflict-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
   const config = join(root, 'config.json');
   await writeFile(
     config,

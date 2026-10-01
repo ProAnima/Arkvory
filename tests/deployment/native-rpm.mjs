@@ -3,9 +3,10 @@ import { writeFile, mkdtemp } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import assert from 'node:assert/strict';
+import { requireDisposableHost } from './disposable-host.mjs';
 
 export async function exerciseRpm(output) {
-  assert.equal(process.env.GITHUB_ACTIONS, 'true');
+  requireDisposableHost('RPM installation');
   const name = `arkvory-rpm-gate-${process.pid}`;
   const directory = await mkdtemp(join(tmpdir(), 'arkvory-rpm-gate-'));
   await writeFile(
@@ -35,11 +36,14 @@ export async function exerciseRpm(output) {
       '/tmp',
       '-v',
       '/sys/fs/cgroup:/sys/fs/cgroup:rw',
-      '-v',
-      `${output}:/candidate:ro`,
       name,
     ]);
     created = true;
+    // Copy instead of bind-mounting: `docker cp` reads from the client side, so the check also
+    // works when the Docker client itself runs in a container (local CI linux-system lane).
+    run(['exec', name, 'mkdir', '/candidate']);
+    for (const file of ['Arkvory-CLI-x86_64.rpm', 'Arkvory-x86_64.rpm'])
+      run(['cp', join(output, file), `${name}:/candidate/${file}`]);
     run(['exec', name, 'dnf', 'install', '-y', '/candidate/Arkvory-CLI-x86_64.rpm']);
     assert.ok(JSON.parse(run(['exec', name, 'arkvoryctl', '--version'])).version);
     assert.throws(() => run(['exec', name, 'rpm', '-q', 'postgresql-server']));

@@ -32,8 +32,12 @@ export const dependencies = {
   ],
 };
 export async function dependency(name, cache) {
-  const [url, hash] = dependencies[name] ?? [];
-  if (!url) throw Error('Unknown native dependency');
+  const pinned = dependencies[name];
+  if (!pinned) throw Error('Unknown native dependency');
+  return pinnedDownload(name, pinned, cache);
+}
+/** Downloads once into the cache and verifies the pinned SHA-256 on every use. */
+export async function pinnedDownload(name, [url, hash], cache) {
   await mkdir(cache, { recursive: true });
   const path = join(cache, hash + (url.endsWith('.exe') ? '.exe' : '.archive'));
   let exists = false;
