@@ -26,6 +26,7 @@ import { installUploadControls } from './upload-controls.js';
 import { installUserTokens } from './user-tokens.js';
 import { installAuthConsole } from './auth-console.js';
 import { exceedsServerLimit } from './server-limits.js';
+import { artifactRow } from './artifact-row.js';
 const token = element('token', HTMLInputElement),
   repository = element('repository', HTMLInputElement),
   output = element('status', HTMLOutputElement),
@@ -214,40 +215,17 @@ async function list(after?: string) {
     if (generation !== listGeneration) return;
     state.repository(true);
     if (!after) rows.replaceChildren();
-    for (const item of page.items) {
-      const row = document.createElement('tr'),
-        name = document.createElement('td'),
-        id = document.createElement('span'),
-        actions = document.createElement('td');
-      const filename = document.createElement('span');
-      filename.textContent = item.name;
-      filename.className = 'artifact-name';
-      filename.id = `artifact-name-${item.id}`;
-      id.textContent = item.id;
-      id.className = 'artifact-id';
-      name.append(filename, id);
-      const button = document.createElement('button');
-      message(button, 'open');
-      button.className = 'secondary small';
-      button.setAttribute('aria-describedby', filename.id);
-      button.onclick = () => {
-        run(() => openArtifact(repo, item.id, item.name));
-      };
-      const download = document.createElement('button');
-      message(download, 'download');
-      download.type = 'button';
-      download.className = 'secondary small';
-      download.setAttribute('aria-describedby', filename.id);
-      download.onclick = () => {
-        run(() => downloads.enqueue(repo, item.id, item.name));
-      };
-      const controls = document.createElement('div');
-      controls.className = 'catalog-actions';
-      controls.append(button, download);
-      actions.append(controls);
-      row.append(name, actions);
-      rows.append(row);
-    }
+    for (const item of page.items)
+      rows.append(
+        artifactRow(item, {
+          open: () => {
+            run(() => openArtifact(repo, item.id, item.name));
+          },
+          download: () => {
+            run(() => downloads.enqueue(repo, item.id, item.name));
+          },
+        }),
+      );
     const more = element('more', HTMLButtonElement);
     more.disabled = page.next === null;
     more.onclick = () => {
