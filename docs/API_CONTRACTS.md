@@ -40,7 +40,7 @@ Multipart-сессия сохраняет состояние вне памяти
 
 ## Скачивание по пакету и пути файла
 
-`GET|HEAD /api/v1/repositories/{repository}/packages/content?group=&name=&version=` выдаёт исходный архив точной версии UPack, без `version` — старшей SemVer-версии. `GET|HEAD /api/v1/repositories/{repository}/asset/content?path=` выдаёт текущую ревизию файла. Операции `downloadPackageContent` и `downloadAssetContent` разрешают один неизменяемый артефакт на момент запроса и далее следуют контракту `artifacts/{id}/content`: право `content.read`, admission, bandwidth, Range/ETag/If-Range, 304/416. Новая версия или ревизия пути не меняет уже выдаваемые байты; ETag принадлежит выбранному содержимому, поэтому докачка через If-Range после смены цели получает полный ответ, а не смешанный файл.
+`GET|HEAD /api/v1/repositories/{repository}/packages/content?group=&name=&version=` выдаёт исходный архив точной версии UPack, без `version` — старшей стабильной SemVer-версии; диапазоны, стадии и prerelease описаны в [PROMOTION](PROMOTION.md). `GET|HEAD /api/v1/repositories/{repository}/asset/content?path=` выдаёт текущую ревизию файла. Операции `downloadPackageContent` и `downloadAssetContent` разрешают один неизменяемый артефакт на момент запроса и далее следуют контракту `artifacts/{id}/content`: право `content.read`, admission, bandwidth, Range/ETag/If-Range, 304/416. Новая версия или ревизия пути не меняет уже выдаваемые байты; ETag принадлежит выбранному содержимому, поэтому докачка через If-Range после смены цели получает полный ответ, а не смешанный файл.
 
 Синхронный download не заменяется на `202 + job`. При перегрузке возможны ограниченное ожидание и Retry-After; клиент без retry требует запаса ресурсов/выделенной полосы.
 

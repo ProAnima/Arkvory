@@ -13,6 +13,7 @@ const legacyActions: Readonly<
 > = {
   'artifact.read': ['read'],
   'artifact.list': ['read'],
+  'artifact.promote': ['read', 'write'],
   'content.read': ['read'],
   'upload.create': ['write'],
   'upload.read': ['write'],

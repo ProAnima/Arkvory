@@ -6,7 +6,7 @@ export interface Arguments {
   readonly json: boolean;
   readonly language: 'en' | 'ru';
 }
-const flags = new Set(['json', 'help', 'version']);
+const flags = new Set(['json', 'help', 'version', 'move', 'prerelease']);
 const values = new Set([
   'lang',
   'profile',
@@ -27,6 +27,12 @@ const values = new Set([
   'timeout',
   'attempt-timeout',
   'retries',
+  'to',
+  'stage',
+  'comment',
+  'exact',
+  'range',
+  'order',
 ]);
 export function parseArguments(argv: readonly string[]): Arguments {
   const options = new Map<string, string>(),

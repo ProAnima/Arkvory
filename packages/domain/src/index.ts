@@ -2,6 +2,8 @@
 export * from './artifact.js';
 export * from './lifecycle.js';
 export * from './object-size.js';
+export * from './promotion.js';
+export * from './version-range.js';
 export * from './identity.js';
 export * from './service-access.js';
 

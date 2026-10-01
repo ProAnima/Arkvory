@@ -17,3 +17,4 @@ artifacts/
 test-results/
 .DS_Store
 Thumbs.db
+.claude/worktrees/

@@ -37,7 +37,9 @@ test('repository discovery exposes own logical scopes with schemas, paging and u
   );
   const card = await client.repository('alpha');
   assert.deepEqual(card.formats, ['upack', 'assets']);
-  assert.equal(card.permissions.length, 19);
+  // Coarse read+write maps to every action except the explicitly managed-only ones.
+  assert.equal(card.permissions.length, 20);
+  assert.ok(card.permissions.includes('artifact.promote'));
   const old = await client.permissions();
   assert.ok(old.bindings.every((b) => !b.actions.includes('repository.read')));
   for (const [url, path] of [

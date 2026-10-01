@@ -13,7 +13,7 @@ Arkvory развивается как самостоятельное храни�
 - Удалить пакет адаптеров внешнего протокола и маршруты `/api/packages/{repository}/download`, `/upack/{repository}/download/...`, `/endpoints/{repository}/content/...`. Тег OpenAPI `Legacy` и область `compatibility` каталога операций удаляются.
 - Удалить аутентификацию заголовком `X-ApiKey` и `Authorization: Basic` с именем `api`. Все защищённые операции принимают только `Authorization: Bearer`: managed и file-based сервисные ключи, пользовательские сессии.
 - Перенести сценарии скачивания по идентичности в нативный API:
-  - `GET|HEAD /api/v1/repositories/{repository}/packages/content?group=&name=&version=` — точная версия UPack; без `version` — старшая SemVer-версия. operationId `downloadPackageContent`.
+  - `GET|HEAD /api/v1/repositories/{repository}/packages/content?group=&name=&version=` — точная версия UPack; без `version` — старшая SemVer-версия (после [ADR 0047](0047-artifact-promotion.md) — старшая стабильная, prerelease только явно). operationId `downloadPackageContent`.
   - `GET|HEAD /api/v1/repositories/{repository}/asset/content?path=` — текущая ревизия файла по пути. operationId `downloadAssetContent`.
 - Оба маршрута на каждом запросе разрешают один неизменяемый артефакт и далее используют тот же путь выдачи, что `GET|HEAD .../artifacts/{id}/content`: право `content.read` (для file keys и групп — coarse `read`), admission, bandwidth, content pins, Range/ETag/If-Range, 304/416. Операции относятся к области `transfers` и, как остальные GET/HEAD, доступны на reader.
 - Публичный контракт `/api/v1`, OpenAPI и SDK далее меняются аддитивно либо через ADR; поддержка проверяется собственными SDK/CLI и фикстурами с известным происхождением.

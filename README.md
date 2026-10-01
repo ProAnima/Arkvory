@@ -156,7 +156,7 @@ Content can be downloaded by artifact ID or by name:
 | ------------------------------------------------- | ------------------------------------------ |
 | `GET/HEAD artifacts/{id}/content`                 | Immutable bytes of one artifact            |
 | `GET/HEAD packages/content?group=&name=&version=` | Original UPack archive of an exact version |
-| `GET/HEAD packages/content?group=&name=`          | Highest SemVer version of the package      |
+| `GET/HEAD packages/content?group=&name=`          | Highest stable SemVer; see range and stage |
 | `GET/HEAD asset/content?path=`                    | Current revision of a file path            |
 
 Name-based routes resolve the target on every request and then follow the same ACL (`content.read`), admission, bandwidth and Range/ETag/If-Range rules as downloads by ID. To resume, send `If-Range` with the returned ETag or pin the artifact ID. Third-party repository protocols are not emulated; see [ADR 0045](docs/adr/0045-native-only-api.md).
@@ -228,7 +228,7 @@ For an existing database, edit `ARKVORY_DATABASE_URL` in `.env` instead of start
 | `npm run test:large`       | 5 GiB HTTP upload/download, process restart, hash and RSS checks     |
 | `npm run format`           | Apply formatting                                                     |
 
-Multipart uploads resume from recorded parts (the session fixes the part size; clients over 16 GiB complete through the worker); whole-file PUT retries restart from byte zero. Online cleanup releases cancelled reservations after deleting their content and the grace period. One API process owns a standalone database; this profile provides no node failover. Keep the database and the entire storage directory, including `storage-id`, together in backup/restore procedures. Before updating, stop API/worker, back up both, run `npm run migrate` (schema 21), then start the new code. See [asset history and restore](docs/LIFECYCLE_AND_CATALOG.md#история-и-восстановление-файлов) and [online catalog indexes](docs/adr/0014-online-package-page-indexes.md).
+Multipart uploads resume from recorded parts (the session fixes the part size; clients over 16 GiB complete through the worker); whole-file PUT retries restart from byte zero. Online cleanup releases cancelled reservations after deleting their content and the grace period. One API process owns a standalone database; this profile provides no node failover. Keep the database and the entire storage directory, including `storage-id`, together in backup/restore procedures. Before updating, stop API/worker, back up both, run `npm run migrate` (schema 22), then start the new code. See [asset history and restore](docs/LIFECYCLE_AND_CATALOG.md#история-и-восстановление-файлов) and [online catalog indexes](docs/adr/0014-online-package-page-indexes.md).
 
 ## Development rules
 
@@ -289,6 +289,12 @@ Repository access does not replace such an agreement. Permission scope, ownershi
 Repository terms: [LICENSE.md](LICENSE.md). Attribution: [NOTICE.md](NOTICE.md). Third-party components retain their own licenses.
 
 Downloads now have a bounded client queue in the SDK and console: pause/resume from private disk staging, cancellation, waiting-queue cleanup, concurrency and start-delay controls. The final destination is saved only after checksum verification. An OPFS journal and sealed 8 MiB segments restore unfinished downloads after a page reload: reconnect, restore the queue, then choose destinations to resume. Credentials and destination handles are not persisted. These are not distributed server jobs. [Download queue and limits](docs/DOWNLOAD_QUEUE.md).
+
+### Promotion and version resolution
+
+Builds move from CI to production in two compatible ways. **Stages** are controlled labels (`qa`, `release`, `prod`; up to 16 per artifact) that change only through the promotion API with the `artifact.promote` permission; every change is journaled with actor, time and comment, and staged artifacts are protected from retention. **Repository promotion** publishes an artifact in another repository (`dev` → `staging` → `prod`) without transferring bytes again: `copy` keeps the source, `move` retires it in the same transaction. Repeating a promotion returns the existing copy.
+
+Deploy agents ask for a version instead of an ID: `packages/resolve` and `packages/content` accept an exact version or a SemVer range (`^1.4`, `>=1.0.0 <2.0.0`), a stage, prerelease opt-in and `order=promoted` for "most recently promoted", so rollback is a stage change. A key with only `content.read` can download the selected version. API, SDK (`client.promotions`, `inRepository(...).stages/promotions/packages.resolve`) and CLI (`arkvoryctl promote`, `stages`, `packages resolve|download`, `promotions journal`); the console shows stages, promotion history and a promote form on the artifact page and stage chips in the package list. Schema 22. [Promotion guide](docs/PROMOTION.md), [ADR 0047](docs/adr/0047-artifact-promotion.md).
 
 ### Build metadata and attachments
 

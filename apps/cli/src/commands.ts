@@ -8,6 +8,7 @@ import { publishPackage } from './publish-package.js';
 import { upload } from './upload.js';
 import { download } from './download.js';
 import { CliError } from './errors.js';
+import { isPromotionCommand, promotionCommand } from './promotion-commands.js';
 
 export async function execute(
   args: Arguments,
@@ -31,10 +32,14 @@ export async function execute(
       'attachments',
       'packages',
       'storage',
+      'promote',
+      'stages',
+      'promotions',
     ].includes(command)
   )
     throw new CliError('unknown_command');
   const connected = await connection(args, signal);
+  if (isPromotionCommand(args)) return promotionCommand(args, connected, signal, progress);
   const { client, server, repository } = connected;
   if (
     command === 'upload' ||

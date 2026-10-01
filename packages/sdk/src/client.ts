@@ -10,6 +10,7 @@ import { StorageApi } from './storage-api.js';
 import { UploadsApi } from './uploads-api.js';
 import { UploadTransfer } from './upload-transfer.js';
 import { DownloadApi } from './download-api.js';
+import { PromotionsApi } from './promotions-api.js';
 import { HttpTransport } from './http-transport.js';
 import { transferPolicy } from './transfer.js';
 import type { TransferPolicy } from './transfer.js';
@@ -43,10 +44,13 @@ export class ArkvoryClient {
   readonly identity: IdentityClient;
   readonly administration: AdministrationClient;
   readonly updates: UpdatesApi;
+  /** Stages, promotion between repositories and version resolution. */
+  readonly promotions: PromotionsApi;
   constructor(baseUrl: string, token: () => string, policy: ClientOptions = {}) {
     const normalized = transferPolicy(policy);
     const http = new HttpTransport(baseUrl, token, policy);
     this.updates = new UpdatesApi(http);
+    this.promotions = new PromotionsApi(http);
     this.discovery = new DiscoveryApi(http);
     this.authentication = new IdentityApi(http);
     this.usersApi = new UsersApi(http);

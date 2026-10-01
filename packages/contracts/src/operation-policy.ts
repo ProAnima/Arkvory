@@ -1,4 +1,5 @@
 import { storageOperations, attachmentOperations } from './storage-operation-policies.js';
+import { promotionOperations } from './promotion-api.js';
 import type { servicePermissionNames } from './service-api.js';
 import type { AdministrationPermission } from './delegation-api.js';
 type ServicePermission = (typeof servicePermissionNames)[number];
@@ -491,6 +492,8 @@ for (const [suffix, method, id, actions, legacy, retry] of attachmentOperations)
     legacy,
     retry,
   );
+for (const [suffix, method, id, actions, legacy, retry] of promotionOperations)
+  data(root + suffix, method, id, 'Catalog', actions, legacy, retry);
 for (const [path, method, id, actions, retry] of storageOperations)
   data(root + path, method, id, 'Catalog', actions, null, retry);
 export const operationPolicies: Readonly<typeof policies> = policies;

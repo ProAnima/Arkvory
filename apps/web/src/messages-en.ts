@@ -4,6 +4,7 @@ import { interfaceEnglish } from './interface-messages.js';
 import { guideEnglish } from './guide-messages.js';
 import { cleanupEnglish } from './cleanup-messages.js';
 import { updateEnglish } from './update-messages.js';
+import { promotionEnglish } from './promotion-messages.js';
 export const en = {
   ...managementEnglish,
   ...permissionEnglish,
@@ -11,6 +12,7 @@ export const en = {
   ...interfaceEnglish,
   ...cleanupEnglish,
   ...updateEnglish,
+  ...promotionEnglish,
   storageTitle: 'Storage & automatic cleanup',
   storageHelp:
     'Retention applies to registered UPack builds. Pinned builds, file history and protected labels survive. Save a disabled policy first to preview it; enabling starts automatic deletion. Configure physical reclamation below without stopping Arkvory.',
@@ -62,6 +64,7 @@ export const en = {
   deletionAsset: 'A current or historical file revision uses this artifact.',
   deletionAttachment: 'An attachment revision uses this artifact.',
   deletionLabel: 'A retention rule protects this label.',
+  deletionStage: 'The artifact is promoted to a stage; remove the stage first.',
   deletionConfirm: 'Paste the selected artifact ID to confirm deletion',
   deletionSubmit: 'Delete this artifact',
   deletionRecheck:

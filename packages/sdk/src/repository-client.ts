@@ -6,6 +6,7 @@ import type { UploadsApi } from './uploads-api.js';
 import type { UploadTransfer } from './upload-transfer.js';
 import type { AssetsApi } from './assets-api.js';
 import type { OperationQuery } from '@proanima/arkvory-contracts';
+import type { PromotionsApi } from './promotions-api.js';
 
 type RepositoryTransport = Pick<
   StorageApi,
@@ -43,7 +44,19 @@ type RepositoryTransport = Pick<
   Pick<
     AssetsApi,
     'asset' | 'assetPage' | 'assetHistory' | 'assetRevision' | 'setAsset' | 'restoreAsset'
-  >;
+  > & {
+    readonly promotions: Pick<
+      PromotionsApi,
+      | 'stages'
+      | 'setStage'
+      | 'removeStage'
+      | 'staged'
+      | 'promote'
+      | 'history'
+      | 'journal'
+      | 'resolve'
+    >;
+  };
 
 /** Ergonomic scope, not a credential or security boundary. Transport/retry behavior stays shared. */
 export function repositoryClient(client: RepositoryTransport, repository: string) {
@@ -52,6 +65,11 @@ export function repositoryClient(client: RepositoryTransport, repository: string
     <A extends unknown[], R>(method: (repository: string, ...args: A) => R) =>
     (...args: A): R =>
       method.call(client, repository, ...args);
+  const promotions = client.promotions;
+  const scoped =
+    <A extends unknown[], R>(method: (repository: string, ...args: A) => R) =>
+    (...args: A): R =>
+      method.call(promotions, repository, ...args);
   return Object.freeze({
     id: repository,
     describe: bind(client.repository),
@@ -99,6 +117,18 @@ export function repositoryClient(client: RepositoryTransport, repository: string
     packages: Object.freeze({
       list: bind(client.packages),
       register: bind(client.registerPackage),
+      resolve: scoped(promotions.resolve),
+    }),
+    stages: Object.freeze({
+      list: scoped(promotions.stages),
+      add: scoped(promotions.setStage),
+      remove: scoped(promotions.removeStage),
+      artifacts: scoped(promotions.staged),
+    }),
+    promotions: Object.freeze({
+      promote: scoped(promotions.promote),
+      history: scoped(promotions.history),
+      journal: scoped(promotions.journal),
     }),
     assets: Object.freeze({
       get: bind(client.asset),

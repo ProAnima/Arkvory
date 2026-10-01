@@ -2,6 +2,7 @@ import type { ArkvoryClient } from '@proanima/arkvory-sdk';
 import type { PackageResponse } from '@proanima/arkvory-contracts';
 import { element } from './dom.js';
 import { clearMessage, message } from './i18n.js';
+import { decorateStages, packageRow } from './package-stages.js';
 
 // arkvory-exception ARCH-027 -- Existing UI controller contains event wiring and view state; freeze its size and extract cohesive controllers only with browser state/reset acceptance.
 export function installPackageView(
@@ -50,22 +51,11 @@ export function installPackageView(
     return allowed.find((item) => item === value) ?? fallback;
   };
   const add = (item: PackageResponse) => {
-    const row = document.createElement('tr');
-    for (const value of [item.group, item.name, item.version]) {
-      const cell = document.createElement('td');
-      cell.textContent = value;
-      row.append(cell);
-    }
-    const action = document.createElement('td');
-    const button = document.createElement('button');
-    button.className = 'secondary small';
-    message(button, 'open');
-    button.onclick = () => {
-      run(() => open(item.artifactId));
-    };
-    action.append(button);
-    row.append(action);
-    rows.append(row);
+    rows.append(
+      packageRow(item, () => {
+        run(() => open(item.artifactId));
+      }),
+    );
   };
   const refresh = async () => {
     const current = ++generation;
@@ -96,7 +86,7 @@ export function installPackageView(
         const header = document.createElement('tr');
         header.className = 'group-row';
         const title = document.createElement('th');
-        title.colSpan = 4;
+        title.colSpan = 5;
         title.scope = 'rowgroup';
         title.textContent = group.name
           ? `${group.group || '—'} / ${group.name}`
@@ -106,6 +96,8 @@ export function installPackageView(
         for (const item of group.items) add(item);
       }
     } else for (const item of result.items) add(item);
+    // Stage chips are decorative; a missing artifact.list permission leaves them empty.
+    void decorateStages(client, repo, rows).catch(() => undefined);
     message(status, result.items.length ? 'packageCount' : 'noPackages', {
       count: result.items.length,
     });

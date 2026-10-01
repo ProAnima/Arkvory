@@ -8,6 +8,8 @@ ${ru ? 'НАЧАЛО РАБОТЫ' : 'GET STARTED'}
   arkvoryctl doctor
   arkvoryctl packages publish build.upack --label test --json
   arkvoryctl download ARTIFACT_ID ./build.upack
+  arkvoryctl promote ARTIFACT_ID --to prod --stage release
+  arkvoryctl packages download app ./app.upack --range ^1.4 --stage release
 
 ${ru ? 'КОМАНДЫ' : 'COMMANDS'}
   profile add NAME --server URL [--token-file PATH] [--repository NAME]
@@ -25,6 +27,11 @@ ${ru ? 'КОМАНДЫ' : 'COMMANDS'}
   packages list [--group GROUP] [--name NAME] [--after CURSOR]
   packages publish FILE [--label TAG] [--file METADATA.json] [--state CHECKPOINT.json]
   packages register ID                        ${ru ? 'Индексировать загруженный UPack' : 'Index an uploaded UPack'}
+  packages resolve NAME [--group G] [--exact V | --range R] [--stage S] [--prerelease] [--order promoted]
+  packages download NAME OUTPUT [${ru ? 'те же фильтры' : 'same filters'}]  ${ru ? 'Версия по диапазону/стадии, SHA-256' : 'Version by range/stage, SHA-256 verified'}
+  promote ID --to REPOSITORY [--move] [--stage S1,S2] [--comment TEXT]
+  stages list ID | add ID STAGE [--comment TEXT] | remove ID STAGE | artifacts [--stage S]
+  promotions history ID | journal [--after CURSOR]
   annotations get ID
   annotations set ID --revision N --file ANNOTATIONS.json
   attachments get ID | history ID

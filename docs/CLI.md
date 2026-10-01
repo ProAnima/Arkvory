@@ -77,6 +77,12 @@ CI should inject `ARKVORY_BASE_URL` and `ARKVORY_TOKEN_FILE` (or `ARKVORY_TOKEN`
 
 `packages publish FILE` uploads and registers an existing UPack archive. Keep the checkpoint and repeat the same command after interruption or a lost response. A registration error identifies the already uploaded artifact; it is not automatically deleted. The command succeeds only when both stages are confirmed. Archive creation and manifest editing remain separate operations.
 
+## Продвижение и выбор версии / Promotion and version selection
+
+`promote ID --to REPOSITORY [--move] [--stage S1,S2] [--comment TEXT]` публикует артефакт в другом репозитории без повторной передачи байтов; повтор возвращает ту же копию. `stages list|add|remove|artifacts` управляет стадиями, `promotions history ID` и `promotions journal [--after N]` читают журнал. `packages resolve NAME` и `packages download NAME OUTPUT` выбирают версию по `--exact`, `--range`, `--stage`, `--prerelease` и `--order promoted`; скачивание идёт по выбранному artifact ID с проверкой SHA-256 и продолжением. Права и правила: [PROMOTION](PROMOTION.md).
+
+`promote` publishes an artifact in another repository without re-sending bytes; repeating it returns the same copy. `packages download app ./app.upack --range ^1.4 --stage release` resolves the version first and then performs a verified, resumable download by artifact ID.
+
 ## Поиск / Search
 
 `search --query TEXT` ищет регистронезависимую подстроку в имени и значениях актуальных метаданных. `%` и `_` — обычные символы, не wildcard. Дополнительные метки/коллекции объединяются через AND.

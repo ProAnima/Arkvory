@@ -5,6 +5,13 @@ import { element } from './dom.js';
 import { clearMessage, message } from './i18n.js';
 import { feedback, errorKey } from './feedback.js';
 
+const blockerMessages: Record<DeletionCandidateResponse['blockers'][number], MessageKey> = {
+  reference: 'deletionReference',
+  asset_history: 'deletionAsset',
+  attachment_history: 'deletionAttachment',
+  protected_label: 'deletionLabel',
+  promotion_stage: 'deletionStage',
+};
 // arkvory-exception ARCH-021 -- Existing UI controller contains event wiring and view state; freeze its size and extract cohesive controllers only with browser state/reset acceptance.
 export function installArtifactDeletion(client: ArkvoryClient, deleted: () => Promise<void>) {
   const section = element('artifact-deletion', HTMLDetailsElement),
@@ -57,15 +64,9 @@ export function installArtifactDeletion(client: ArkvoryClient, deleted: () => Pr
       .then((result) => {
         if (version !== generation) return;
         candidate = result;
-        const keys: Record<DeletionCandidateResponse['blockers'][number], MessageKey> = {
-          reference: 'deletionReference',
-          asset_history: 'deletionAsset',
-          attachment_history: 'deletionAttachment',
-          protected_label: 'deletionLabel',
-        };
         for (const reason of result.blockers) {
           const row = document.createElement('li');
-          message(row, keys[reason]);
+          message(row, blockerMessages[reason]);
           reasons.append(row);
         }
         form.hidden = result.blockers.length > 0;

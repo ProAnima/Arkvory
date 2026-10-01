@@ -12,6 +12,7 @@ import { mkdir } from 'node:fs/promises';
 import { setup, create, base } from '../integration/fixture.mjs';
 import { exerciseBuildDetails } from './build-details.mjs';
 import { exerciseDeletion } from './deletion.mjs';
+import { exercisePromotion } from './promotion.mjs';
 import { chromium } from 'playwright';
 const browser = await chromium.launch({
   headless: true,
@@ -274,6 +275,7 @@ try {
   await page.waitForFunction(() => document.querySelector('#token').value === '');
   assert.equal(await page.locator('#selected-name').isVisible(), false);
   await exerciseClearedMessages(page);
+  await exercisePromotion(page, f);
   await exerciseDeletion(page, f);
   await exerciseStoragePolicy(page, f);
   await exerciseGuides(page, f);

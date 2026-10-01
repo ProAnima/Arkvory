@@ -15,9 +15,32 @@ type ChangedMethods = {
 
 // ADR 0041 adds an optional AbortSignal to registerPackage; ADR 0046 adds part layout limits to
 // capabilities. Existing invocations and reads remain assignable.
-export type ExistingCallsRemainValid = Assert<ArkvoryClient extends LegacyClient ? true : false>;
+// ADR 0047 widens deletion blockers (promotion_stage) and permission names (artifact.promote);
+// exhaustive consumers of these values must handle the additions.
+type Widened =
+  | 'inspectDeletion'
+  | 'deleteArtifact'
+  | 'previewStoragePolicy'
+  | 'runStoragePolicy'
+  | 'previewRetention'
+  | 'applyRetention'
+  | 'repositories'
+  | 'repository';
+export type ExistingCallsRemainValid = Assert<
+  Omit<ArkvoryClient, Widened> extends Omit<LegacyClient, Widened> ? true : false
+>;
+type Blocker<T> = T extends {
+  inspectDeletion(...args: never[]): Promise<{ blockers: readonly (infer B)[] }>;
+}
+  ? B
+  : never;
+export type WidenedBlockers = Assert<
+  Equal<Exclude<Blocker<ArkvoryClient>, Blocker<LegacyClient>>, 'promotion_stage'>
+>;
 // Compile against built package exports, as an external strict TypeScript consumer does.
-export type UnchangedMethods = Assert<Equal<ChangedMethods, 'registerPackage' | 'capabilities'>>;
+export type UnchangedMethods = Assert<
+  Equal<ChangedMethods, 'registerPackage' | 'capabilities' | Widened>
+>;
 export type UnchangedKeys = Assert<
   Equal<
     Exclude<
@@ -33,6 +56,7 @@ export type UnchangedKeys = Assert<
       | 'tokens'
       | 'createToken'
       | 'revokeToken'
+      | 'promotions'
     >,
     keyof LegacyClient
   >

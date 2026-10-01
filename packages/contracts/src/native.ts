@@ -12,6 +12,7 @@ import { composeApiPaths } from './openapi-compose.js';
 import { delegationPaths } from './delegation-api.js';
 import { repositoryPaths } from './repositories.js';
 import { operationPaths } from './operations.js';
+import { promotionPaths } from './promotion-api.js';
 import type { ApiSurface } from './api-surfaces.js';
 export const descriptorSchema = {
   type: 'object',
@@ -236,6 +237,7 @@ const composed = composeApiPaths({
   ...repositoryPaths,
   ...operationPaths,
   ...attachmentPaths,
+  ...promotionPaths,
   ...retentionPaths,
   ...storagePolicyPaths,
   ...cleanupPaths,

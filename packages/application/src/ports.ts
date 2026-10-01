@@ -72,6 +72,14 @@ export interface BlobStore {
     backendId?: string,
   ): AsyncIterable<Uint8Array>;
   exists(id: string, size: number, backendId?: string): Promise<void>;
+  /** Shares published immutable bytes under a new id without copying them; checks the size. */
+  duplicate(
+    sourceId: string,
+    targetId: string,
+    expected: ArtifactDescriptor,
+    cancellation: Cancellation,
+    backendId?: string,
+  ): Promise<void>;
   collect?(
     id: string,
     removeContent: boolean,

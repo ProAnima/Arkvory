@@ -15,6 +15,8 @@ import { hashFile } from './file-hash.js';
 import { installAnnotationEditor } from './annotation-editor.js';
 import { installBuildAttachments } from './build-attachments.js';
 import { installArtifactDeletion } from './artifact-deletion.js';
+import { installPromotionPanel } from './promotion-panel.js';
+import { installArtifactSummary } from './artifact-summary.js';
 import { installDownloads } from './downloads.js';
 import { installUpdates } from './updates.js';
 import { installUploadControls } from './upload-controls.js';
@@ -85,6 +87,12 @@ let repositoryEdited = false;
 let authenticationGeneration = 0;
 const repositoryOptions = element('repository-options', HTMLElement);
 const run = consoleRunner(output);
+const summary = installArtifactSummary(client, output);
+const promotion = installPromotionPanel(client, run, () => {
+  clearSelection();
+  showView('catalog');
+  run(() => list());
+});
 function connection(connected: boolean) {
   const state = element('connection-state', HTMLSpanElement);
   const details = element('connection-card', HTMLDetailsElement);
@@ -131,10 +139,14 @@ async function openArtifact(repo: string, id: string, name: string) {
   element('editor-empty', HTMLDivElement).hidden = true;
   showView('metadata');
   feedback(output, 'revisionStatus', { revision: a.revision });
+  promotion.open(repo, id, operations);
+  await summary.open(repo, id);
   await attachments.open(repo, id, operations);
   if (generation === selectionGeneration) deletion.open(repo, id, operations.has('deleteArtifact'));
 }
 function clearSelection() {
+  summary.clear();
+  promotion.clear();
   deletion.clear();
   attachments.clear();
   annotationEditor.set({}, false);

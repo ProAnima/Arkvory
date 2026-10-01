@@ -4,6 +4,7 @@ import { interfaceRussian } from './interface-messages.js';
 import { guideRussian } from './guide-messages.js';
 import { cleanupRussian } from './cleanup-messages.js';
 import { updateRussian } from './update-messages.js';
+import { promotionRussian } from './promotion-messages.js';
 import type { en } from './messages-en.js';
 export const ru: Record<keyof typeof en, string> = {
   ...managementRussian,
@@ -12,6 +13,7 @@ export const ru: Record<keyof typeof en, string> = {
   ...interfaceRussian,
   ...cleanupRussian,
   ...updateRussian,
+  ...promotionRussian,
   storageTitle: 'Хранение и автоочистка',
   storageHelp:
     'Очистка применяется к зарегистрированным UPack-билдам. Ссылки, история файлов и защищённые метки сохраняют билды. Сначала сохраните выключенную политику и проверьте кандидатов; включение запускает автоудаление. Физическое освобождение места настраивается ниже без остановки Arkvory.',
@@ -63,6 +65,7 @@ export const ru: Record<keyof typeof en, string> = {
   deletionAsset: 'Текущая или историческая ревизия файла использует артефакт.',
   deletionAttachment: 'Ревизия вложений использует этот артефакт.',
   deletionLabel: 'Правило очистки защищает эту метку.',
+  deletionStage: 'Артефакт продвинут на стадию; сначала снимите стадию.',
   deletionConfirm: 'Вставьте ID выбранного артефакта для подтверждения удаления',
   deletionSubmit: 'Удалить этот артефакт',
   deletionRecheck: 'Артефакт изменился или защищён. Проверьте зависимости ещё раз.',

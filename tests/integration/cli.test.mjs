@@ -171,3 +171,96 @@ test('remote CLI profiles, transfers across process restarts, metadata CAS and c
   assert.equal(invalid.error.artifactId, receipt.id);
   assert.equal((await run(['list'], { ARKVORY_TOKEN: 'invalid-credential' }, 3)).error.status, 401);
 });
+
+test('CLI promotes between repositories and downloads the staged version by range', async (t) => {
+  const token = 'cli-promote-' + createHash('sha256').update(String(Math.random())).digest('hex');
+  const f = await setup(t, {
+    keys: [
+      {
+        sha256: createHash('sha256').update(token).digest('hex'),
+        principal: { id: 'cli', repositories: ['dev', 'prod'], permissions: ['read', 'write'] },
+      },
+    ],
+  });
+  const server = (await f.listen()) + '/';
+  const env = {
+    ...process.env,
+    ARKVORY_CLI_HOME: join(f.directory, 'cli'),
+    ARKVORY_BASE_URL: server,
+    ARKVORY_TOKEN: token,
+  };
+  delete env.ARKVORY_TOKEN_FILE;
+  const run = async (args) => {
+    const result = await promisify(execFile)(
+      process.execPath,
+      [resolve('apps/cli/dist/main.js'), ...args, '--json'],
+      { env, windowsHide: true, timeout: 30000, maxBuffer: 1024 * 1024 },
+    );
+    return JSON.parse(result.stdout);
+  };
+  const versions = {};
+  for (const version of ['1.0.0', '1.4.0', '2.0.0']) {
+    const zip = new ZipFile();
+    zip.addBuffer(Buffer.from(JSON.stringify({ name: 'app', version })), 'upack.json');
+    zip.addBuffer(Buffer.from('build ' + version), 'package/build.txt');
+    zip.end();
+    const chunks = [];
+    for await (const chunk of zip.outputStream) chunks.push(chunk);
+    const file = join(f.directory, `app-${version}.upack`);
+    await writeFile(file, Buffer.concat(chunks));
+    versions[version] = { file, bytes: Buffer.concat(chunks) };
+    const published = await run(['packages', 'publish', file, '--repository', 'dev']);
+    versions[version].id = published.artifactId;
+  }
+  const promoted = await run([
+    'promote',
+    versions['1.4.0'].id,
+    '--repository',
+    'dev',
+    '--to',
+    'prod',
+    '--stage',
+    'release,canary',
+    '--comment',
+    'approved',
+  ]);
+  assert.equal(promoted.created, true);
+  assert.deepEqual(promoted.stages, ['canary', 'release']);
+  const resolved = await run([
+    'packages',
+    'resolve',
+    'app',
+    '--repository',
+    'prod',
+    '--range',
+    '^1.0',
+    '--stage',
+    'release',
+  ]);
+  assert.equal(resolved.version, '1.4.0');
+  // --version is the global client flag; exact package versions use --exact.
+  const exact = await run([
+    'packages',
+    'resolve',
+    'app',
+    '--repository',
+    'dev',
+    '--exact',
+    '1.0.0',
+  ]);
+  assert.equal(exact.version, '1.0.0');
+  const output = join(f.directory, 'deployed.upack');
+  await run(['packages', 'download', 'app', output, '--repository', 'prod', '--stage', 'release']);
+  assert.deepEqual(await readFile(output), versions['1.4.0'].bytes);
+  const journal = await run(['promotions', 'journal', '--repository', 'prod']);
+  assert.deepEqual(
+    journal.items.map((event) => event.action),
+    ['stage.added', 'stage.added', 'received'],
+  );
+  await run(['stages', 'remove', promoted.artifactId, 'canary', '--repository', 'prod']);
+  const staged = await run(['stages', 'list', promoted.artifactId, '--repository', 'prod']);
+  assert.deepEqual(
+    staged.map((entry) => entry.stage),
+    ['release'],
+  );
+});

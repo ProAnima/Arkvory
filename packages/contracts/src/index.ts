@@ -21,3 +21,5 @@ export * from './retention.js';
 export * from './storage-policy.js';
 export * from './cleanup.js';
 export * from './updates.js';
+export * from './promotions.js';
+export { promotionOperations, resolvedPackageSchema } from './promotion-api.js';

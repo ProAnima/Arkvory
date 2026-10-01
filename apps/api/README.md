@@ -2,7 +2,7 @@
 
 Работающий Fastify composition root: конфигурация, сервисные ключи, нативные HTTP routes, Range/ETag, допуски передач, health и lifecycle. Запуск через npm run build, npm run migrate, npm start. См. CORE_RUNBOOK.
 
-Помимо чтения по ID артефакта, API выдаёт UPack по group/name/version либо старшей SemVer (`GET|HEAD /api/v1/repositories/{repository}/packages/content`) и текущую ревизию файла по пути (`.../asset/content`) с теми же ACL, admission и Range/ETag. [Карта API](../../docs/API_MAP.md).
+Помимо чтения по ID артефакта, API выдаёт UPack по group/name/version либо старшей стабильной SemVer, диапазону и стадии (`GET|HEAD /api/v1/repositories/{repository}/packages/content`) и текущую ревизию файла по пути (`.../asset/content`) с теми же ACL, admission и Range/ETag. [Карта API](../../docs/API_MAP.md).
 
 [Запуск и API](../../docs/CORE_RUNBOOK.md), [границы](../../docs/ARCHITECTURE.md), [ADR](../../docs/adr/0004-native-standalone-core.md). Публичный вход — src/index.ts; runtime exports — dist/index.js и declarations.
 

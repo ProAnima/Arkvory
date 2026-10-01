@@ -9,3 +9,4 @@ backups/
 artifacts/
 test-results/
 .cache/
+.claude/worktrees/

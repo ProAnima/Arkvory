@@ -219,7 +219,13 @@ const runSchema = object({
         maxItems: 4,
         items: {
           type: 'string',
-          enum: ['reference', 'asset_history', 'attachment_history', 'protected_label'],
+          enum: [
+            'reference',
+            'asset_history',
+            'attachment_history',
+            'protected_label',
+            'promotion_stage',
+          ],
         },
       },
     }),

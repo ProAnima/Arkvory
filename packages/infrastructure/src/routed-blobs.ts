@@ -104,6 +104,23 @@ export class RoutedBlobStore implements BlobStore {
     return this.getTarget(backendId).verify(id, expected, cancellation, backendId);
   }
 
+  duplicate(
+    sourceId: string,
+    targetId: string,
+    expected: ArtifactDescriptor,
+    cancellation: Cancellation,
+    backendId?: string,
+  ): Promise<void> {
+    // A hard link cannot cross backends; the copy stays on the source backend.
+    return this.getTarget(backendId).duplicate(
+      sourceId,
+      targetId,
+      expected,
+      cancellation,
+      backendId,
+    );
+  }
+
   read(
     id: string,
     size: number,

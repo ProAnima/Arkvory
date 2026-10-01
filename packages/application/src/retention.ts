@@ -15,7 +15,7 @@ import type {
 } from '@proanima/arkvory-domain';
 
 export type DeletionBlocker =
-  'reference' | 'asset_history' | 'attachment_history' | 'protected_label';
+  'reference' | 'asset_history' | 'attachment_history' | 'protected_label' | 'promotion_stage';
 export interface DeletionCandidate {
   id: string;
   name: string;

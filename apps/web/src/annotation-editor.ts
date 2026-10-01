@@ -66,7 +66,7 @@ export function installAnnotationEditor() {
     for (const button of presets.querySelectorAll('button'))
       button.setAttribute('aria-pressed', String(current.includes(button.textContent)));
   };
-  for (const name of ['bse', 'test', 'staging', 'release']) {
+  for (const name of ['nightly', 'test', 'staging', 'release']) {
     const button = document.createElement('button');
     button.type = 'button';
     button.textContent = name;

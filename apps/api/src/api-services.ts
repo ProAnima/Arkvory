@@ -9,6 +9,8 @@ import {
   ArtifactRetention,
   BuildAttachments,
   RepositoryCleanup,
+  ArtifactPromotion,
+  PackageResolver,
 } from '@proanima/arkvory-application';
 import {
   PostgresIdentity,
@@ -21,6 +23,9 @@ import {
   PostgresAttachments,
   PostgresCleanupSettings,
   PostgresOnlineCleanup,
+  PostgresStages,
+  PostgresPackageCandidates,
+  PostgresPromotions,
 } from '@proanima/arkvory-infrastructure';
 import type {
   LocalBlobStore,
@@ -50,7 +55,15 @@ export function createApiServices(
     new PostgresBrowse(catalog.pool),
     new ZipManifestReader(blobs, pins),
   );
+  const stages = new PostgresStages(catalog.pool);
   return {
+    promotion: new ArtifactPromotion(
+      service,
+      stages,
+      new PostgresPromotions(catalog.pool, catalog, blobs),
+      { next: randomUUID, now },
+    ),
+    resolver: new PackageResolver(new PostgresPackageCandidates(catalog.pool), stages),
     pins,
     cleanup: new RepositoryCleanup(new PostgresCleanupSettings(catalog.pool)),
     collector: new PostgresOnlineCleanup(catalog.pool, blobs),

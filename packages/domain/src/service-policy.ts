@@ -6,6 +6,7 @@ export const serviceActions = [
   'artifact.read',
   'artifact.list',
   'artifact.delete',
+  'artifact.promote',
   'content.read',
   'upload.create',
   'upload.read',

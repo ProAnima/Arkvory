@@ -22,6 +22,7 @@ export const deletionBlockers = [
   'asset_history',
   'attachment_history',
   'protected_label',
+  'promotion_stage',
 ] as const;
 export const deletionOutcomes = [
   'deleted',

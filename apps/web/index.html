@@ -766,6 +766,7 @@
                   <th scope="col" data-i18n="packageGroup">Группа UPack</th>
                   <th scope="col" data-i18n="packageName">Имя пакета</th>
                   <th scope="col" data-i18n="version">Версия</th>
+                  <th scope="col" data-i18n="packageStages">Стадии</th>
                   <th scope="col" data-i18n="actions">Действия</th>
                 </tr>
               </thead>
@@ -1135,6 +1136,25 @@ GET /api/v1/operations?repository=releases</code></pre>
             <p data-i18n="selectHint">Откройте файл в каталоге или истории.</p>
           </div>
           <p id="selected-name" class="selected-name" hidden></p>
+          <dl id="artifact-summary" class="artifact-summary" hidden>
+            <div>
+              <dt data-i18n="summarySize">Размер</dt>
+              <dd id="summary-size"></dd>
+            </div>
+            <div>
+              <dt data-i18n="summaryCreated">Загружен</dt>
+              <dd id="summary-created"></dd>
+            </div>
+            <div class="summary-hash">
+              <dt data-i18n="summaryHash">SHA-256</dt>
+              <dd>
+                <code id="summary-sha" class="mono"></code
+                ><button id="summary-copy" type="button" class="ghost small" data-i18n="copyHash">
+                  Копировать
+                </button>
+              </dd>
+            </div>
+          </dl>
           <div id="editor" class="split-layout" hidden>
             <div class="card padded">
               <details class="disclosure">
@@ -1227,6 +1247,76 @@ GET /api/v1/operations?repository=releases</code></pre>
               </form>
             </aside>
           </div>
+          <section
+            id="promotion-panel"
+            class="card padded promotion"
+            hidden
+            aria-labelledby="promotion-title"
+          >
+            <div class="section-heading">
+              <h2 id="promotion-title" data-i18n="promotionTitle">Продвижение</h2>
+              <p class="hint" data-i18n="promotionHint"></p>
+            </div>
+            <div class="promotion-layout">
+              <div class="stack">
+                <h3 data-i18n="stagesTitle">Стадии</h3>
+                <ul id="stage-list" class="stage-list" aria-live="polite"></ul>
+                <p id="stage-empty" class="hint" data-i18n="stagesEmpty"></p>
+                <form id="stage-form" class="stack" hidden>
+                  <div class="form-grid">
+                    <label
+                      ><span data-i18n="stageName">Стадия</span
+                      ><input
+                        id="stage-name"
+                        required
+                        maxlength="32"
+                        autocomplete="off"
+                        spellcheck="false"
+                        placeholder="release" /></label
+                    ><label
+                      ><span data-i18n="stageComment">Комментарий</span
+                      ><input id="stage-comment" maxlength="1024"
+                    /></label>
+                  </div>
+                  <button class="secondary" data-i18n="stageAdd">Добавить стадию</button>
+                </form>
+              </div>
+              <form id="promote-form" class="stack" hidden>
+                <h3 data-i18n="promoteTitle">Продвинуть в репозиторий</h3>
+                <div class="form-grid">
+                  <label
+                    ><span data-i18n="promoteTarget">Целевой репозиторий</span
+                    ><select id="promote-target" required></select></label
+                  ><label
+                    ><span data-i18n="promoteStages">Стадии</span
+                    ><input
+                      id="promote-stages"
+                      data-i18n-placeholder="commaHint"
+                      placeholder="Разделяйте запятыми"
+                  /></label>
+                </div>
+                <label
+                  ><span data-i18n="promoteComment">Комментарий</span
+                  ><input id="promote-comment" maxlength="1024"
+                /></label>
+                <label class="check"
+                  ><input id="promote-move" type="checkbox" /><span data-i18n="promoteMove"></span
+                ></label>
+                <p class="hint" data-i18n="promoteMoveHint"></p>
+                <button class="primary" data-i18n="promoteSubmit">Продвинуть</button>
+              </form>
+            </div>
+            <output id="promotion-status" role="status" aria-live="polite"></output>
+            <h3 data-i18n="promotionHistory">История</h3>
+            <ol id="promotion-history" class="promotion-history"></ol>
+            <button
+              id="promotion-more"
+              type="button"
+              class="ghost small"
+              data-i18n="promotionMore"
+              hidden
+            ></button>
+          </section>
           <details id="artifact-deletion" class="card padded artifact-deletion" hidden>
             <summary data-i18n="deletionTitle">Удаление артефакта</summary>
             <p class="hint" data-i18n="deletionHelp"></p>

@@ -221,7 +221,7 @@ Collections объединяют версии из разных репозито
 
 Общие правила: стабильные ID, UTC, пагинация курсором, фильтры, машинные коды ошибок, request ID, optimistic concurrency и идемпотентность записей. Публичный API не раскрывает физические пути хранения. `/health/live`, `/health/ready` и метрики имеют разные назначения.
 
-Скачивание по идентичности: `GET|HEAD /api/v1/repositories/{repository}/packages/content?group=&name=&version=` (без `version` — старшая SemVer) и `GET|HEAD /api/v1/repositories/{repository}/asset/content?path=` для текущей ревизии файла. Права, admission, Range/ETag и полоса те же, что у скачивания по ID. Аутентификация — только `Authorization: Bearer`. Сторонние протоколы совместимости не поддерживаются ([ADR 0045](adr/0045-native-only-api.md)).
+Скачивание по идентичности: `GET|HEAD /api/v1/repositories/{repository}/packages/content?group=&name=&version=` (без `version` — старшая стабильная SemVer; диапазоны и стадии — [PROMOTION](PROMOTION.md)) и `GET|HEAD /api/v1/repositories/{repository}/asset/content?path=` для текущей ревизии файла. Права, admission, Range/ETag и полоса те же, что у скачивания по ID. Аутентификация — только `Authorization: Bearer`. Сторонние протоколы совместимости не поддерживаются ([ADR 0045](adr/0045-native-only-api.md)).
 
 Публичный контракт `/api/v1`, OpenAPI и SDK меняются аддитивно либо через ADR. Поддержка подтверждается собственными SDK/CLI и фикстурами с известным происхождением; записывающие тесты не выполняются на рабочих репозиториях. Неподдержанные методы не возвращают фиктивный успех.
 

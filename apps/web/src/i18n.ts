@@ -30,6 +30,8 @@ function render(node: HTMLElement) {
     const value = node.dataset[data];
     if (value && isMessageKey(value)) attribute(node, name, t(value));
   }
+  const bytes = node.dataset['bytes'];
+  if (bytes) text(node, formatBytes(language, Number(bytes)));
   const date = node.dataset['date'];
   if (date)
     text(
@@ -57,6 +59,23 @@ export function message(
     if (node.dataset[name] !== value) node.dataset[name] = value;
   render(node);
 }
+/** Binary units with locale digits; values stay exact in data-bytes for language switches. */
+export function formatBytes(locale: Language, value: number): string {
+  const units = ['sizeBytes', 'sizeKiB', 'sizeMiB', 'sizeGiB', 'sizeTiB'] as const;
+  let size = value,
+    unit = 0;
+  while (size >= 1024 && unit < units.length - 1) {
+    size /= 1024;
+    unit++;
+  }
+  const digits = unit === 0 ? 0 : size < 10 ? 2 : 1;
+  const formatted = new Intl.NumberFormat(locale, { maximumFractionDigits: digits }).format(size);
+  return translate(locale, units[unit] ?? 'sizeBytes', { value: formatted });
+}
+export function bytesMessage(node: HTMLElement, bytes: number | string) {
+  attribute(node, 'data-bytes', String(bytes));
+  render(node);
+}
 export function dateMessage(node: HTMLElement, date: string) {
   attribute(node, 'data-date', date);
   render(node);
@@ -64,7 +83,13 @@ export function dateMessage(node: HTMLElement, date: string) {
 export function clearMessage(node: HTMLElement) {
   // Remove translation state too, so a language change cannot resurrect a cleared result.
   for (const name of Object.keys(node.dataset))
-    if (name === 'i18n' || name === 'date' || name === 'tone' || name.startsWith('param'))
+    if (
+      name === 'i18n' ||
+      name === 'date' ||
+      name === 'bytes' ||
+      name === 'tone' ||
+      name.startsWith('param')
+    )
       Reflect.deleteProperty(node.dataset, name);
   text(node, '');
 }
@@ -72,7 +97,7 @@ export function setLanguage(value: Language) {
   language = value;
   document.documentElement.lang = language;
   for (const node of document.querySelectorAll<HTMLElement>(
-    '[data-i18n], [data-i18n-placeholder], [data-i18n-label], [data-date]',
+    '[data-i18n], [data-i18n-placeholder], [data-i18n-label], [data-date], [data-bytes]',
   ))
     render(node);
   savePreference('language', language);

@@ -72,8 +72,10 @@ async function fixture(t, { download, bandwidth, check, signal, read } = {}) {
   registerDownloadRoutes(
     app,
     {
-      resolvePackage: async () => 'artifact',
-      resolveAssetContent: async () => ({ path: 'file', revision: 1, artifactId: 'artifact' }),
+      resolver: { resolve: async () => ({ artifactId: 'artifact', version: '1.0.0' }) },
+      browse: {
+        resolveAssetContent: async () => ({ path: 'file', revision: 1, artifactId: 'artifact' }),
+      },
     },
     () => owner,
     sender,

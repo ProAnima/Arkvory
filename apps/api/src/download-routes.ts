@@ -1,5 +1,9 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import type { ArtifactCatalog, StorageService } from '@proanima/arkvory-application';
+import type {
+  ArtifactCatalog,
+  PackageResolver,
+  StorageService,
+} from '@proanima/arkvory-application';
 import type {
   AdmissionQueue,
   BandwidthGovernor,
@@ -120,26 +124,12 @@ async function* protectedContent(source: AsyncIterable<Uint8Array>, check: () =>
   }
   check();
 }
-const packageQuery = {
-  type: 'object',
-  additionalProperties: false,
-  required: ['name'],
-  properties: {
-    group: { type: 'string', maxLength: 128 },
-    name: { type: 'string', minLength: 1, maxLength: 128 },
-    version: { type: 'string', minLength: 1, maxLength: 128 },
-  },
-} as const;
-const assetQuery = {
-  type: 'object',
-  additionalProperties: false,
-  required: ['path'],
-  properties: { path: { type: 'string', minLength: 1, maxLength: 1024 } },
-} as const;
-
 export function registerDownloadRoutes(
   app: FastifyInstance,
-  browse: Pick<ArtifactCatalog, 'resolvePackage' | 'resolveAssetContent'>,
+  lookup: {
+    resolver: Pick<PackageResolver, 'resolve'>;
+    browse: Pick<ArtifactCatalog, 'resolveAssetContent'>;
+  },
   principal: RequestContext['principal'],
   sendContent: ReturnType<typeof createContentSender>,
 ) {
@@ -152,32 +142,37 @@ export function registerDownloadRoutes(
       sendContent(request, reply, request.params.repository, request.params.id),
   });
   // Name-based reads resolve per request; clients resuming with Range must pin the returned ETag.
-  app.route<{
-    Params: { repository: string };
-    Querystring: { group?: string; name: string; version?: string };
-  }>({
+  app.route<{ Params: { repository: string }; Querystring: unknown }>({
     method: ['GET', 'HEAD'],
     url: base + '/packages/content',
-    schema: { querystring: packageQuery },
     handler: async (request, reply) => {
       const { repository } = request.params;
-      const { group = '', name, version } = request.query;
-      const id = await browse.resolvePackage(principal(request), repository, group, name, version);
-      if (!id) throw new ArkvoryError('not_found', 'Package not found');
-      return sendContent(request, reply, repository, id);
-    },
-  });
-  app.route<{ Params: { repository: string }; Querystring: { path: string } }>({
-    method: ['GET', 'HEAD'],
-    url: base + '/asset/content',
-    schema: { querystring: assetQuery },
-    handler: async (request, reply) => {
-      const { repository } = request.params;
-      const entry = await browse.resolveAssetContent(
+      const found = await lookup.resolver.resolve(
         principal(request),
         repository,
-        request.query.path,
+        request.query,
+        'content.read',
       );
+      reply.header('X-Arkvory-Artifact-Id', found.artifactId);
+      reply.header('X-Arkvory-Package-Version', found.version);
+      return sendContent(request, reply, repository, found.artifactId);
+    },
+  });
+  app.route<{ Params: { repository: string }; Querystring: unknown }>({
+    method: ['GET', 'HEAD'],
+    url: base + '/asset/content',
+    handler: async (request, reply) => {
+      const { repository } = request.params;
+      const q = request.query;
+      if (
+        typeof q !== 'object' ||
+        q === null ||
+        Object.keys(q).some((key) => key !== 'path') ||
+        !('path' in q) ||
+        typeof q.path !== 'string'
+      )
+        throw new ArkvoryError('invalid_input', 'path is the only file query option');
+      const entry = await lookup.browse.resolveAssetContent(principal(request), repository, q.path);
       return sendContent(request, reply, repository, entry.artifactId);
     },
   });

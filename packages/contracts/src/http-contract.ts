@@ -119,8 +119,8 @@ export const supplementalPaths = {
   '/api/v1/repositories/{repository}/packages/content': {
     parameters: [repository],
     get: contentGet(
-      'Download a UPack by group, name and version; the highest SemVer when version is omitted.',
-      [query('group'), query('name', true), query('version')],
+      'Download a UPack resolved by version, SemVer range and stage; without either, the highest stable version.',
+      packageQueryParameters,
     ),
   },
   '/api/v1/repositories/{repository}/asset/content': {
@@ -128,4 +128,5 @@ export const supplementalPaths = {
     get: contentGet('Download the current revision of a file path.', [query('path', true)]),
   },
 };
+import { packageQueryParameters } from './promotion-api.js';
 import { apiSurfaces } from './api-surfaces.js';

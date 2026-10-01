@@ -17,6 +17,9 @@ export { PostgresUserTokens } from './user-tokens.js';
 export { PostgresServices } from './service-accounts.js';
 
 export * from './attachments.js';
+export { PostgresStages } from './stage-store.js';
+export { PostgresPackageCandidates } from './package-candidates.js';
+export { PostgresPromotions } from './promotion-store.js';
 
 export { PostgresRetention } from './retention.js';
 

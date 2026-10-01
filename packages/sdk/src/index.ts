@@ -4,4 +4,6 @@ export * from './checkpointed-download.js';
 export { ArkvoryHttpError, ArkvoryNetworkError, ArkvoryIntegrityError } from './transfer.js';
 export type { TransferPolicy, TransferOptions } from './transfer.js';
 export type { RepositoryClient } from './repository-client.js';
+export { PromotionsApi, packageQueryString } from './promotions-api.js';
+export type { PackageQuery, PromoteRequest, PageOptions } from './promotions-api.js';
 export type { IdentityClient, AdministrationClient } from './management-client.js';

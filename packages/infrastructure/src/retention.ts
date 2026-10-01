@@ -24,6 +24,7 @@ export interface CandidateRow {
   asset: boolean;
   attached: boolean;
   labelled: boolean;
+  staged: boolean;
 }
 export const candidateSql = `SELECT u.id,u.descriptor->>'name' AS name,u.size::text,u.published_at,
   COALESCE(a.revision,0) AS revision,
@@ -31,6 +32,7 @@ export const candidateSql = `SELECT u.id,u.descriptor->>'name' AS name,u.size::t
   (EXISTS(SELECT 1 FROM arkvory_asset_revisions r WHERE r.artifact_id=u.id) OR
    EXISTS(SELECT 1 FROM arkvory_assets r WHERE r.artifact_id=u.id)) AS asset,
   EXISTS(SELECT 1 FROM arkvory_attachment_targets t WHERE t.target_id=u.id) AS attached,
+  EXISTS(SELECT 1 FROM arkvory_artifact_stages s WHERE s.artifact_id=u.id) AS staged,
   COALESCE(a.labels,u.descriptor->'labels','[]'::jsonb) ?| $3::text[] AS labelled
   FROM arkvory_uploads u LEFT JOIN arkvory_annotations a ON a.artifact_id=u.id
   WHERE u.repository=$1 AND u.status='available'`;
@@ -40,6 +42,7 @@ export function candidate(row: CandidateRow): DeletionCandidate {
   if (row.asset) blockers.push('asset_history');
   if (row.attached) blockers.push('attachment_history');
   if (row.labelled) blockers.push('protected_label');
+  if (row.staged) blockers.push('promotion_stage');
   return {
     id: row.id,
     name: row.name,

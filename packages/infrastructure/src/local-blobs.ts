@@ -181,6 +181,30 @@ export class LocalBlobStore implements BlobStore {
     await this.verifyPath(this.blob(id), expected, cancellation);
   }
 
+  async duplicate(
+    sourceId: string,
+    targetId: string,
+    expected: ArtifactDescriptor,
+    cancellation: Cancellation,
+  ): Promise<void> {
+    await this.exists(sourceId, expected.size);
+    const target = this.blob(targetId);
+    cancellation.throwIfAborted();
+    try {
+      // Published blobs are immutable, so a second directory entry shares bytes safely.
+      await link(this.blob(sourceId), target);
+    } catch (error) {
+      if (!hasCode(error, 'EEXIST')) throw error;
+      const [left, right] = await Promise.all([
+        stat(this.blob(sourceId), { bigint: true }),
+        stat(target, { bigint: true }),
+      ]);
+      if (left.ino !== right.ino || left.dev !== right.dev)
+        await this.verifyPath(target, expected, cancellation);
+    }
+    await syncDirectory(dirname(target));
+  }
+
   private async verifyPath(
     path: string,
     expected: ArtifactDescriptor,
