@@ -42,6 +42,8 @@ export interface MetricSources {
   readonly now: () => number;
   readonly startedAtSeconds: number;
   readonly residentMemory: () => number;
+  /** Built-in HTTPS certificate expiry; absent when TLS terminates elsewhere. */
+  readonly tlsNotAfterMs?: () => number;
 }
 
 /**
@@ -85,6 +87,7 @@ export class ApiMetrics {
       ['collector'],
     );
     this.registerProcess();
+    this.registerTls();
     this.registerTransfers();
     this.registerJobs();
   }
@@ -126,6 +129,18 @@ export class ApiMetrics {
         this.refreshing = undefined;
       });
     return this.refreshing;
+  }
+
+  private registerTls(): void {
+    const notAfter = this.sources.tlsNotAfterMs;
+    if (!notAfter) return;
+    this.registry.sampled({
+      name: 'arkvory_tls_certificate_expiry_timestamp_seconds',
+      help: 'Expiry of the certificate served by the built-in HTTPS listener (Unix seconds).',
+      type: 'gauge',
+      labels: [],
+      collect: () => [{ labels: {}, value: Math.floor(notAfter() / 1000) }],
+    });
   }
 
   private registerProcess(): void {

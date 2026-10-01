@@ -9,6 +9,7 @@ import {
 } from '@proanima/arkvory-infrastructure';
 import type { LogLevel } from '@proanima/arkvory-infrastructure';
 import { createServer } from './server.js';
+import { plaintextExposed } from './tls-config.js';
 import { loadConfig } from './config.js';
 import { RequestDrain } from './drain.js';
 import { defaultDrainTimeoutMs } from './operability-config.js';
@@ -79,7 +80,15 @@ try {
     code: 'api.listening',
     address: config.host,
     port: typeof bound === 'object' && bound ? bound.port : config.port,
+    tls: Boolean(config.tls),
   });
+  if (plaintextExposed(config.host, Boolean(config.tls), config.trustedProxies ?? []))
+    diagnostics.write({
+      level: 'warning',
+      component: 'process',
+      code: 'http.plaintext_exposed',
+      address: config.host,
+    });
 } catch (error) {
   // Constant identifiers and redacted validation text only; never URLs or credentials.
   diagnostics.write({

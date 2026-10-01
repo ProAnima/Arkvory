@@ -228,3 +228,22 @@ test('transfer gauges follow admission state and the label set stays bounded', a
     'other',
   ]);
 });
+
+test('built-in HTTPS exposes the certificate expiry; without it the series is absent', async () => {
+  const base = {
+    identity: processIdentity('api', '9.8.7', 1, 'metrics-host'),
+    transfers: {
+      uploadGate: new AdmissionQueue(1, 4, 4, 1000, 1),
+      downloadGate: new AdmissionQueue(1, 4, 4, 1000, 1),
+    },
+    activeRequests: () => 0,
+    diagnostics: { counters: { written: 0, dropped: 0, truncated: 0, oversized: 0 } },
+    now: () => 0,
+    startedAtSeconds: 1700000000,
+    residentMemory: () => 1,
+  };
+  const plain = await new ApiMetrics(base).render();
+  assert.doesNotMatch(plain, /arkvory_tls_certificate_expiry_timestamp_seconds/);
+  const secure = await new ApiMetrics({ ...base, tlsNotAfterMs: () => 1800000000500 }).render();
+  assert.match(secure, /^arkvory_tls_certificate_expiry_timestamp_seconds 1800000000$/m);
+});

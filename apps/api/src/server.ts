@@ -5,6 +5,7 @@ import { ApiRuntime } from './api-runtime.js';
 import { createApiServices } from './api-services.js';
 import { registerApiRoutes } from './api-routes.js';
 import { createHttpServer } from './http-server.js';
+import { prepareTls } from './tls-transport.js';
 import { createRequestContext } from './request-context.js';
 import { registerRequestSecurity } from './request-security.js';
 import { registerHttpErrors } from './http-errors.js';
@@ -65,7 +66,8 @@ function registerMaintenance(
 
 export async function createServer(config: ServerConfig, lifecycle: ServerLifecycle = {}) {
   const policy = resolveUploadTimeouts(config);
-  const app = createHttpServer({ trustedProxies: config.trustedProxies ?? [] });
+  const tls = await prepareTls(config);
+  const app = createHttpServer({ trustedProxies: config.trustedProxies ?? [], ...tls.options });
   const runtime = new ApiRuntime(config);
   const drain = lifecycle.drain ?? new RequestDrain();
   drain.onBegin(runtime.transfers.drain);
@@ -82,6 +84,7 @@ export async function createServer(config: ServerConfig, lifecycle: ServerLifecy
   const closeDiagnostics = () => {
     if (diagnostics !== lifecycle.diagnostics) diagnostics.close();
   };
+  const certificate = tls.attach(app, diagnostics);
   let background: ReturnType<typeof registerBackgroundTasks> | undefined;
   app.addHook('preClose', async () => {
     // Refuse new work and interrupt transfers before draining tasks that still need the pool.
@@ -123,6 +126,7 @@ export async function createServer(config: ServerConfig, lifecycle: ServerLifecy
         now: () => performance.now(),
         startedAtSeconds: Math.round(Date.now() / 1000 - process.uptime()),
         residentMemory: () => process.memoryUsage.rss(),
+        ...(certificate ? { tlsNotAfterMs: () => certificate.notAfterMs } : {}),
       }),
       () => performance.now(),
     );

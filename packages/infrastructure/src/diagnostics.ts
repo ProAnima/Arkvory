@@ -58,6 +58,9 @@ export interface DiagnosticFields {
   dropped?: number;
   truncated?: number;
   recordCode?: string;
+  tls?: boolean;
+  notAfter?: string;
+  daysLeft?: number;
 }
 export interface DiagnosticRecord extends DiagnosticFields {
   level: LogLevel;

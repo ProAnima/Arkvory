@@ -9,6 +9,8 @@ import { readUploadTimeouts } from './upload-policy.js';
 import type { UploadTimeoutOptions } from './upload-policy.js';
 import { readOperability } from './operability-config.js';
 import type { OperabilityOptions } from './operability-config.js';
+import { readTls } from './tls-config.js';
+import type { TlsSettings } from './tls-config.js';
 export { parseKeys } from '@proanima/arkvory-infrastructure';
 export type { ServiceKey } from '@proanima/arkvory-infrastructure';
 
@@ -40,6 +42,8 @@ export interface ServerConfig extends UploadTimeoutOptions, OperabilityOptions {
   readonly trustedProxies?: readonly string[];
   /** Operator ceiling for one object; the multipart layout limit applies when unset. */
   readonly maxObjectBytes?: number;
+  /** Built-in HTTPS; absent means plain HTTP for loopback or a TLS-terminating proxy. */
+  readonly tls?: TlsSettings;
 }
 
 /** Startup logs may print these messages: they name the variable, never its value or path. */
@@ -144,6 +148,7 @@ export async function loadConfig(env: NodeJS.ProcessEnv): Promise<ServerConfig> 
       : {}),
     host: env['ARKVORY_HOST'] ?? '127.0.0.1',
     port: number('ARKVORY_PORT', 8080, 65535),
+    ...readTls(env),
     capacityBytes: number('ARKVORY_CAPACITY_BYTES', 10 * 1024 ** 4, Number.MAX_SAFE_INTEGER),
     maxUploads,
     maxDownloads,
