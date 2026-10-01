@@ -28,6 +28,9 @@ export * from './storage-policy.js';
 
 export * from './diagnostics.js';
 export * from './failure-classification.js';
+export { processIdentity, readReleaseVersion } from './process-identity.js';
+export { installCrashHandlers } from './process-guards.js';
+export * from './metrics.js';
 export { PostgresCleanupSettings } from './cleanup-settings.js';
 export { PostgresOnlineCleanup } from './online-cleanup.js';
 export { PostgresContentPins } from './content-pins.js';

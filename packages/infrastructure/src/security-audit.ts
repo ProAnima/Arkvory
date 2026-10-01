@@ -10,6 +10,7 @@ import type {
   SecurityEvent,
 } from '@proanima/arkvory-application';
 import { inTransaction } from './pg-transaction.js';
+import { storedCorrelation } from './request-correlation.js';
 
 interface AuditRow {
   id: string;
@@ -31,8 +32,8 @@ function clip(value: string | null, length: number): string | null {
 }
 function insertion(actor: SecurityActor, event: SecurityEvent): [string, unknown[]] {
   return [
-    `INSERT INTO arkvory_security_audit(actor,credential,action,target,outcome,code,client_ip,details)
-     VALUES($1,$2,$3,$4,$5,$6,$7,$8)`,
+    `INSERT INTO arkvory_security_audit(actor,credential,action,target,outcome,code,client_ip,details,request_id)
+     VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
     [
       clip(actor.id, 160),
       actor.credential,
@@ -42,6 +43,7 @@ function insertion(actor: SecurityActor, event: SecurityEvent): [string, unknown
       event.code ?? null,
       clip(actor.clientIp, 64),
       JSON.stringify(event.details ?? {}),
+      storedCorrelation(actor.requestId),
     ],
   ];
 }

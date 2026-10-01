@@ -52,6 +52,22 @@ test('a first-release database upgrades to exactly the schema of a fresh install
     );
   await migrate(legacy);
   assert.deepEqual(await schemaFingerprint(legacy), expected);
+  // Migration 24 is expand-only: nullable correlation columns without defaults.
+  assert.deepEqual(
+    (
+      await legacy.query(
+        `SELECT table_name, is_nullable, column_default, character_maximum_length
+         FROM information_schema.columns
+         WHERE table_schema=current_schema() AND column_name='request_id' ORDER BY table_name`,
+      )
+    ).rows,
+    ['arkvory_audit', 'arkvory_jobs', 'arkvory_security_audit'].map((table) => ({
+      table_name: table,
+      is_nullable: 'YES',
+      column_default: null,
+      character_maximum_length: 128,
+    })),
+  );
   // Data steps of historical migrations still run: cancellation time and publication backfill.
   assert.deepEqual(
     (

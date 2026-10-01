@@ -2,6 +2,8 @@ import type { Pool, PoolClient } from 'pg';
 import type { MutationAccess } from '@proanima/arkvory-domain';
 import { lockCatalogMutation, requirePublished } from './catalog-mutation.js';
 import { lockServiceAccess } from './service-authorization.js';
+import { appendCatalogAudit } from './catalog-audit.js';
+import { accessCorrelation } from './request-correlation.js';
 
 /** Who changes which published artifact; `action` is the audit action recorded on success. */
 export interface CatalogChange {
@@ -32,9 +34,17 @@ export async function changePublished<T>(
     await lockCatalogMutation(client, change.repository);
     await requirePublished(client, change.repository, change.id);
     const result = await work(client);
-    await client.query(
-      'INSERT INTO arkvory_audit(repository,artifact_id,actor,action) VALUES($1,$2,$3,$4)',
-      [change.repository, change.id, change.actor, change.action],
+    await appendCatalogAudit(
+      client,
+      [
+        {
+          repository: change.repository,
+          artifactId: change.id,
+          actor: change.actor,
+          action: change.action,
+        },
+      ],
+      accessCorrelation(change.access),
     );
     await client.query('COMMIT');
     return result;

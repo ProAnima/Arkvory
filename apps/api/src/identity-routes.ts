@@ -59,7 +59,7 @@ function registerPublicRoutes(
     if (wait) return rateLimited(request, reply, wait);
     try {
       const session = await passwordWork(request, reply, address, () =>
-        service.login(body['name'], body['password'], request.ip),
+        service.login(body['name'], body['password'], request.ip, request.id),
       );
       throttle.loginSucceeded(address);
       return session;
@@ -76,7 +76,7 @@ function registerPublicRoutes(
     const wait = service.allowRegistration ? throttle.admitRegistration(address) : 0;
     if (wait) return rateLimited(request, reply, wait);
     const session = await passwordWork(request, reply, address, () =>
-      service.register(body['name'], body['password'], request.ip),
+      service.register(body['name'], body['password'], request.ip, request.id),
     );
     return reply.code(201).send(session);
   });

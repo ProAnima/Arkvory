@@ -142,6 +142,19 @@ async function migrateCatalogIndexes(pool: Pool): Promise<void> {
   }
 }
 
+/** Highest recorded migration, 0 for an empty database; read-only and safe before migrate(). */
+export async function appliedSchemaVersion(pool: Pool): Promise<number> {
+  // Two statements: a subquery on a missing table fails at analysis even in an untaken branch.
+  const present = await pool.query<{ present: boolean }>(
+    "SELECT to_regclass('arkvory_migrations') IS NOT NULL AS present",
+  );
+  if (present.rows[0]?.present !== true) return 0;
+  const result = await pool.query<{ version: number | null }>(
+    'SELECT max(version) AS version FROM arkvory_migrations',
+  );
+  return result.rows[0]?.version ?? 0;
+}
+
 /**
  * Applies all schema versions in one transaction under advisory lock 18471/1, then builds the
  * online catalog indexes outside it (CREATE INDEX CONCURRENTLY cannot run in a transaction).

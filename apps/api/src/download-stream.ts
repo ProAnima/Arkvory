@@ -15,7 +15,7 @@ export function downloadStream(
     if (signal.aborted) return;
     diagnostics.write({
       level: 'error',
-      component: 'api',
+      component: 'http',
       code:
         error instanceof ArkvoryError && error.code === 'integrity_mismatch'
           ? 'download.integrity_mismatch'

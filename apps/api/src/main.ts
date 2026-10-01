@@ -1,69 +1,94 @@
-import { DiagnosticLogger, failureCause, startupReason } from '@proanima/arkvory-infrastructure';
+import {
+  DiagnosticLogger,
+  failureCause,
+  installCrashHandlers,
+  parseLogLevel,
+  processIdentity,
+  readReleaseVersion,
+  startupReason,
+} from '@proanima/arkvory-infrastructure';
+import type { LogLevel } from '@proanima/arkvory-infrastructure';
 import { createServer } from './server.js';
 import { loadConfig } from './config.js';
-import { RequestDrain, drainThenClose } from './drain.js';
+import { RequestDrain } from './drain.js';
 import { defaultDrainTimeoutMs } from './operability-config.js';
+import { createShutdown } from './shutdown.js';
+import type { ShutdownRequest } from './shutdown.js';
 
 // Supervisors (systemd, WinSW, compose) allow 120 s for close after the drain window.
 const closeBudgetMs = 120000;
 
+/** An invalid level still fails startup through loadConfig; until then info applies. */
+function initialLevel(): LogLevel {
+  try {
+    return parseLogLevel(process.env['ARKVORY_LOG_LEVEL']);
+  } catch {
+    return 'info';
+  }
+}
+
+// releases/<version>/apps/api/dist/main.js -> releases/<version>/release.json
+const identity = processIdentity(
+  'api',
+  await readReleaseVersion(new URL('../../../release.json', import.meta.url)),
+);
+// One logger per process: lifecycle, HTTP and crash records share its backpressure accounting.
+const diagnostics = new DiagnosticLogger(process.stdout, () => new Date().toISOString(), {
+  level: initialLevel(),
+  process: identity,
+});
+installCrashHandlers(diagnostics);
+
 try {
   const config = await loadConfig(process.env);
   const drain = new RequestDrain();
+  let shutdown: (request: ShutdownRequest) => void = () => undefined;
   const app = await createServer(config, {
     drain,
+    diagnostics,
+    identity,
     onOwnershipLost: () => {
-      process.stderr.write('Arkvory gateway ownership lost; stopping for supervisor recovery.\n');
-      shutdown(true);
+      process.exitCode = 1;
+      diagnostics.write({ level: 'error', component: 'process', code: 'api.ownership_lost' });
+      shutdown({ failed: true });
     },
   });
-  const drainTimeoutMs = config.drainTimeoutMs ?? defaultDrainTimeoutMs;
-  const expedite = new AbortController();
-  let stopping = false;
-  function shutdown(failed = false) {
-    if (failed) process.exitCode = 1;
-    if (stopping) {
-      // A second signal skips the remaining drain window; close keeps its own deadline.
-      expedite.abort();
-      return;
-    }
-    stopping = true;
-    // A fenced process must stop at once; otherwise admitted transfers may finish first.
-    const drainWindowMs = failed ? 0 : drainTimeoutMs;
-    const deadline = setTimeout(() => process.exit(1), drainWindowMs + closeBudgetMs);
-    deadline.unref();
-    void drainThenClose(app, drain, drainWindowMs, expedite.signal).then(
-      () => {
-        clearTimeout(deadline);
-      },
-      () => {
-        process.exit(1);
-      },
-    );
-  }
-  for (const event of ['SIGINT', 'SIGTERM'] as const) {
-    process.on(event, () => {
-      shutdown();
+  shutdown = createShutdown({
+    app,
+    drain,
+    drainTimeoutMs: config.drainTimeoutMs ?? defaultDrainTimeoutMs,
+    closeBudgetMs,
+    diagnostics,
+    now: () => performance.now(),
+    exit: (code) => process.exit(code),
+  });
+  for (const signal of ['SIGINT', 'SIGTERM'] as const)
+    process.on(signal, () => {
+      shutdown({ signal });
     });
-  }
   try {
     await app.listen({ host: config.host, port: config.port });
   } catch (error) {
     await app.close();
     throw error;
   }
-  process.stdout.write(`Arkvory API listening on ${config.host}:${String(config.port)}\n`);
+  const bound = app.server.address();
+  diagnostics.write({
+    level: 'info',
+    component: 'process',
+    code: 'api.listening',
+    address: config.host,
+    port: typeof bound === 'object' && bound ? bound.port : config.port,
+  });
 } catch (error) {
-  const diagnostics = new DiagnosticLogger(process.stderr, () => new Date().toISOString());
   // Constant identifiers and redacted validation text only; never URLs or credentials.
   diagnostics.write({
     level: 'error',
-    component: 'api',
+    component: 'process',
     code: 'startup.failed',
     reason: startupReason(error),
     ...failureCause(error),
   });
-  diagnostics.close();
   process.stderr.write(
     'Arkvory startup failed. Check configuration, database migration, and storage access.\n',
   );

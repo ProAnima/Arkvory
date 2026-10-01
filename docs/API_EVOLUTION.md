@@ -54,6 +54,8 @@ OpenAPI текущего runtime остаётся 3.0.3 до отдельног�
 | События         | Transactional outbox, bounded backlog, retention/replay window, dead-letter и ручной replay. Хранение bodies ограничено; секреты и полные bytes не идут в event payload.                                                  |
 | Наблюдаемость   | Metrics cardinality без key ID / artifact ID в labels; audit содержит actor/key ID/request ID/revision, не secret. Агрегация bytes не требует записи в БД на каждый chunk.                                                |
 
+Текущее состояние наблюдаемости ([ADR 0052](adr/0052-structured-observability.md)): `GET /health/metrics` с метками шаблона маршрута, метода и класса статуса; request ID хранится в задачах, каталожном и security-аудите, но в публичные списки аудита пока не выводится.
+
 Проектируемые rate-limit ошибки новых control API — 429 + Retry-After; общий перегруз/недоступность — 503. Текущие 503/507 не заменять для существующих клиентов без проверки SDK и контрактов. Retry ограничен deadline и jitter; 401/403 не повторять бесконечно. Потерянный ответ create/complete проверяется по idempotency receipt/status, CAS-конфликт требует перечитать ресурс, не повторять старое тело с произвольной новой revision. HTTP conditional requests и Range опираются на [RFC 9110](https://httpwg.org/specs/rfc9110.html).
 
 ## События и внешние сервисы

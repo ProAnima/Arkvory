@@ -49,8 +49,9 @@ export function createRequestContext(maxRequests = 128) {
     principal,
     signal,
     countRequest,
+    // A per-request copy carries the correlation ID into scenarios, jobs and audit rows explicitly.
     authenticate: (request: FastifyRequest, value: Principal) => {
-      principals.set(request, value);
+      principals.set(request, { ...value, requestId: request.id });
     },
     peekPrincipal: (request: FastifyRequest) => principals.get(request),
     requestSignal: (request: FastifyRequest) => requestSignals.get(request),

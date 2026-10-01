@@ -4,6 +4,8 @@ import type { BuildAttachment, MutationAccess } from '@proanima/arkvory-domain';
 import type { AttachmentRevision, AttachmentStore } from '@proanima/arkvory-application';
 import { lockCatalogMutation, requirePublished } from './catalog-mutation.js';
 import { lockServiceAccess } from './service-authorization.js';
+import { appendCatalogAudit } from './catalog-audit.js';
+import { accessCorrelation } from './request-correlation.js';
 
 interface RevisionRow {
   revision: number;
@@ -79,9 +81,10 @@ export class PostgresAttachments implements AttachmentStore {
         'INSERT INTO arkvory_attachment_targets(parent_id,revision,target_id) SELECT $1,$2,unnest($3::uuid[])',
         [id, expected + 1, ids],
       );
-      await client.query(
-        'INSERT INTO arkvory_audit(repository,artifact_id,actor,action) VALUES($1,$2,$3,$4)',
-        [repository, id, access.principal.id, 'attachments.replace'],
+      await appendCatalogAudit(
+        client,
+        [{ repository, artifactId: id, actor: access.principal.id, action: 'attachments.replace' }],
+        accessCorrelation(access),
       );
       const row = inserted.rows[0];
       if (!row) throw new ArkvoryError('unavailable', 'Attachment revision missing');

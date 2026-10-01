@@ -186,6 +186,33 @@ test('security journal is administrator-only and validates its page cursor', asy
     await assert.rejects(service.securityAudit(admin, after, limit), { code: 'invalid_input' });
 });
 
+test('audited identity work carries the request ID of the principal or anonymous attempt', async () => {
+  const { service, calls, audit } = harness(true);
+  const admin = { ...fileAdmin, administrator: true, requestId: 'req-admin-0001' };
+  await service.createUser(admin, 'alice', 'long-password', false, '198.51.100.4');
+  assert.deepEqual(calls.at(-1).args.at(-1), {
+    id: 'admin',
+    credential: 'file-key',
+    clientIp: '198.51.100.4',
+    requestId: 'req-admin-0001',
+  });
+  await service.login('alice', 'long-password', '192.0.2.5', 'req-login-0001');
+  assert.deepEqual(calls.at(-1).args.at(-1), {
+    id: null,
+    credential: null,
+    clientIp: '192.0.2.5',
+    requestId: 'req-login-0001',
+  });
+  await service.register('carol', 'long-password-1', '192.0.2.6', 'req-register-01');
+  assert.equal(calls.at(-1).args.at(-1).requestId, 'req-register-01');
+  await assert.rejects(service.tokens({ ...personal, requestId: 'req-denied-0001' }, null), {
+    code: 'forbidden',
+  });
+  assert.equal(audit.at(-1).actor.requestId, 'req-denied-0001');
+  await service.login('alice', 'long-password', null);
+  assert.equal('requestId' in calls.at(-1).args.at(-1), false, 'absent, never an empty value');
+});
+
 test('operation discovery hides session-only and administrator operations from tokens', () => {
   const sessionOnly = { kind: 'account-session' };
   const admin = { kind: 'administrator' };

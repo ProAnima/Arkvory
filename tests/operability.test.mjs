@@ -245,6 +245,7 @@ test('operability settings validate pool, request budget, reserve, access log an
     storageReserveBytes: 1024 ** 3,
     accessLog: true,
     drainTimeoutMs: 30000,
+    logLevel: 'info',
   });
   assert.equal(readOperability({}, { maxUploads: 32, maxDownloads: 256 }).maxRequests, 352);
   const env = {
@@ -253,6 +254,7 @@ test('operability settings validate pool, request budget, reserve, access log an
     ARKVORY_STORAGE_RESERVE_BYTES: '0',
     ARKVORY_ACCESS_LOG: 'false',
     ARKVORY_DRAIN_TIMEOUT_MS: '0',
+    ARKVORY_LOG_LEVEL: 'debug',
   };
   assert.deepEqual(readOperability(env, transfers), {
     databasePoolSize: 24,
@@ -260,6 +262,7 @@ test('operability settings validate pool, request budget, reserve, access log an
     storageReserveBytes: 0,
     accessLog: false,
     drainTimeoutMs: 0,
+    logLevel: 'debug',
   });
   for (const [name, value] of [
     ['ARKVORY_DATABASE_POOL_SIZE', '3'],
@@ -268,6 +271,8 @@ test('operability settings validate pool, request budget, reserve, access log an
     ['ARKVORY_ACCESS_LOG', 'yes'],
     ['ARKVORY_DRAIN_TIMEOUT_MS', '3600001'],
     ['ARKVORY_STORAGE_RESERVE_BYTES', '-1'],
+    ['ARKVORY_LOG_LEVEL', 'verbose'],
+    ['ARKVORY_LOG_LEVEL', 'WARNING'],
   ])
     assert.throws(() => readOperability({ [name]: value }, transfers), new RegExp(name), name);
   assert.equal(storageReserveBytes(undefined), 1024 ** 3);

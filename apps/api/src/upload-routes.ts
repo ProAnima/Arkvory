@@ -83,7 +83,7 @@ function registerContent(app: FastifyInstance, s: Services) {
   const report = (request: FastifyRequest, code: 'upload.input_timeout' | 'upload.deadline') => {
     s.diagnostics.write({
       level: 'warning',
-      component: 'api',
+      component: 'http',
       code,
       requestId: request.id,
       route: request.routeOptions.url ?? 'unknown',

@@ -64,15 +64,18 @@ export class RequestDrain {
 /**
  * Stops admitting work, waits up to timeoutMs for admitted responses, then closes the server.
  * close() interrupts whatever is still running and destroys the remaining connections.
+ * settledHook observes the drain outcome before close begins; it must not throw.
  */
 export async function drainThenClose(
   app: { close(): PromiseLike<unknown> },
   drain: RequestDrain,
   timeoutMs: number,
   signal?: AbortSignal,
+  settledHook?: (settled: boolean) => void,
 ): Promise<boolean> {
   drain.begin();
   const settled = await drain.settle(timeoutMs, signal);
+  settledHook?.(settled);
   await app.close();
   return settled;
 }

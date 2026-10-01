@@ -15,10 +15,20 @@ import { deploymentHelp } from './help.js';
 import { createOwner } from './owner.js';
 import { pollUpdates, resetUpdateRequest } from './update-control.js';
 import { prepareUpdateControl } from './update-setup.js';
+import { report } from './output.js';
+import { runWithLogFile } from './log-file.js';
 
 function argumentsOf(args: string[]): Map<string, string> {
   const options = new Map<string, string>();
-  const flags = ['automatic', 'scheduled', 'pin', 'disable-updates', 'enable-updates', 'unpin'];
+  const flags = [
+    'automatic',
+    'scheduled',
+    'pin',
+    'disable-updates',
+    'enable-updates',
+    'unpin',
+    'log-captured',
+  ];
   const values = [
     'root',
     'mode',
@@ -43,6 +53,35 @@ function argumentsOf(args: string[]): Map<string, string> {
   }
   return options;
 }
+/**
+ * Task Scheduler discards a task's output. Without a console, the Windows updater re-runs itself
+ * with stdout and stderr appended to logs/updater.log. Task arguments stay unchanged, so an older
+ * release (after a rollback) keeps working with the same registration.
+ */
+async function capturedUpdater(
+  operation: string,
+  options: Map<string, string>,
+  root: string,
+): Promise<boolean> {
+  if (
+    operation !== 'updates-poll' ||
+    process.platform !== 'win32' ||
+    process.stdout.isTTY ||
+    options.has('log-captured')
+  )
+    return false;
+  const code = await runWithLogFile(join(root, 'logs', 'updater.log'), process.execPath, [
+    process.argv[1] ?? '',
+    ...process.argv.slice(2),
+    '--log-captured',
+  ]);
+  if (code === undefined) {
+    report('warning', 'Updater log is unavailable; continuing without a log file');
+    return false;
+  }
+  process.exitCode = code;
+  return true;
+}
 async function main(): Promise<void> {
   if (Number(process.versions.node.split('.')[0]) !== 24)
     throw new Error('Arkvory requires Node.js 24 LTS');
@@ -60,6 +99,7 @@ async function main(): Promise<void> {
     console.log(parseInstallation(await jsonFile(join(root, 'installation.json'))));
     return;
   }
+  if (await capturedUpdater(operation, options, root)) return;
   await exclusive(root, async () => {
     switch (operation) {
       case 'updates-poll':
@@ -133,11 +173,7 @@ async function main(): Promise<void> {
   });
 }
 main().catch((error: unknown) => {
-  // Configuration and child-process errors can contain credentials; only our controlled errors reach stderr.
-  console.error(
-    error instanceof Error
-      ? error.message.replace(/postgres(?:ql)?:\/\/\S+/g, '[database URL redacted]')
-      : 'Deployment failed',
-  );
+  // Configuration and child-process errors can contain credentials; report() redacts every line.
+  report('error', error instanceof Error ? error.message : 'Deployment failed');
   process.exitCode = 1;
 });

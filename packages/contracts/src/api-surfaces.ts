@@ -64,7 +64,8 @@ export function apiClassification(policy: OperationPolicy): {
     case 'System':
       surface =
         policy.operationId.startsWith('getReadiness') ||
-        policy.operationId.startsWith('getLiveness')
+        policy.operationId.startsWith('getLiveness') ||
+        policy.operationId.startsWith('getMetrics')
           ? 'operations'
           : 'discovery';
       break;

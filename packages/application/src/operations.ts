@@ -100,7 +100,12 @@ export interface CompletionJob {
   attempts: number;
   errorCode: string | null;
 }
+/** A job reserved by a worker, with the request that last queued it (NULL before migration 24). */
+export interface ClaimedJob extends CompletionJob {
+  readonly requestId: string | null;
+}
 export interface JobStore {
+  /** Records access.principal.requestId with the job; a requeue replaces it. */
   enqueue(
     repository: string,
     uploadId: string,
@@ -109,7 +114,10 @@ export interface JobStore {
     access?: MutationAccess,
   ): Promise<CompletionJob>;
   get(id: string): Promise<CompletionJob>;
-  take(): Promise<CompletionJob | null>;
+  /** Fails abandoned jobs whose attempts are spent; each row is returned to exactly one caller. */
+  exhaust(): Promise<readonly ClaimedJob[]>;
+  /** Never selects exhausted jobs; a worker calls exhaust() first so they reach a final state. */
+  take(): Promise<ClaimedJob | null>;
   heartbeat(id: string, generation: number): Promise<boolean>;
   finish(id: string, generation: number, errorCode: string | null): Promise<boolean>;
 }

@@ -156,6 +156,11 @@ export interface Principal {
     readonly permissions: readonly ('read' | 'write')[];
   }[];
   readonly administrator?: boolean;
+  /**
+   * Correlation ID of the request (or job) this principal was resolved for. Set only by a
+   * composition root; authorization never reads it. Audit and job adapters persist it.
+   */
+  readonly requestId?: string;
 }
 
 export function authorize(

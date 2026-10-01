@@ -3,6 +3,7 @@ import { migrateStoragePolicy } from './storage-policy-schema.js';
 import { migrateCleanup } from './cleanup-schema.js';
 import { migratePromotions } from './promotion-schema.js';
 import { migrateIdentitySecurity } from './identity-security-schema.js';
+import { migrateRequestCorrelation } from './correlation-schema.js';
 
 export async function migrateStorageSchemas(client: PoolClient) {
   await migrateStoragePolicy(client);
@@ -13,6 +14,7 @@ export async function migrateStorageSchemas(client: PoolClient) {
   await migrateAdaptiveParts(client);
   await migratePromotions(client);
   await migrateIdentitySecurity(client);
+  await migrateRequestCorrelation(client);
 }
 
 export async function migrateLargeObjects(client: PoolClient): Promise<void> {

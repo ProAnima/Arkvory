@@ -214,11 +214,12 @@ export class IdentityService {
     const value = requireGrant(repository, access);
     return this.store.grant(groupId, value.repository, value.access, actor);
   }
-  async login(name: unknown, password: unknown, clientIp: string | null) {
+  /** requestId correlates the anonymous attempt with the access log; it is not an identity. */
+  async login(name: unknown, password: unknown, clientIp: string | null, requestId?: string) {
     return this.store.login(
       requireAccountName(name),
       requirePassword(password),
-      anonymousActor(clientIp),
+      anonymousActor(clientIp, requestId),
     );
   }
   resolve(token: string) {
@@ -241,12 +242,12 @@ export class IdentityService {
       securityActor(principal, clientIp),
     );
   }
-  async register(name: unknown, password: unknown, clientIp: string | null) {
+  async register(name: unknown, password: unknown, clientIp: string | null, requestId?: string) {
     if (!this.allowRegistration)
       throw new ArkvoryError('forbidden', 'Account registration is disabled');
     const validName = requireAccountName(name);
     const validPassword = requirePassword(password);
-    const actor = anonymousActor(clientIp);
+    const actor = anonymousActor(clientIp, requestId);
     await this.store.createUser(validName, validPassword, false, 'self-registration', actor);
     return this.store.login(validName, validPassword, actor);
   }

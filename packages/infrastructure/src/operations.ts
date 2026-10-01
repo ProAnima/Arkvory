@@ -2,10 +2,16 @@ import type { Pool } from 'pg';
 import { ArkvoryError } from '@proanima/arkvory-domain';
 import type { MutationAccess } from '@proanima/arkvory-domain';
 import { lockServiceAccess } from './service-authorization.js';
-import type { CleanupCatalog, CompletionJob, JobStore } from '@proanima/arkvory-application';
+import type {
+  CleanupCatalog,
+  ClaimedJob,
+  CompletionJob,
+  JobStore,
+} from '@proanima/arkvory-application';
 import type { Cancellation } from '@proanima/arkvory-application';
 import { StorageOwnership } from './storage-ownership.js';
 import { contentLockKey, uploadLockKey } from './content-pins.js';
+import { accessCorrelation, storedCorrelation } from './request-correlation.js';
 
 export class PostgresCleanup implements CleanupCatalog {
   constructor(private readonly pool: Pool) {}
@@ -127,6 +133,20 @@ function job(row: Record<string, unknown> | undefined): CompletionJob {
     ...(typeof credential === 'string' ? { credentialId: credential } : {}),
   };
 }
+function claimed(row: Record<string, unknown>): ClaimedJob {
+  const requestId = row['request_id'];
+  return {
+    ...job(row),
+    requestId: typeof requestId === 'string' ? storedCorrelation(requestId) : null,
+  };
+}
+/** Active completion backlog for metrics; bounded by the enqueue limit of 10 000 active jobs. */
+export interface JobBacklog {
+  readonly queued: number;
+  readonly running: number;
+  /** How long the longest-waiting runnable job has waited; jobs in retry backoff excluded. */
+  readonly oldestQueuedSeconds: number;
+}
 
 export class PostgresJobs implements JobStore {
   constructor(private readonly pool: Pool) {}
@@ -171,8 +191,8 @@ export class PostgresJobs implements JobStore {
           )
             throw new ArkvoryError('capacity_exceeded', 'Completion queue is full');
           const updated = await client.query<Record<string, unknown>>(
-            "UPDATE arkvory_jobs SET credential_id=$2,status='queued',attempts=0,generation=generation+1,error_code=NULL,available_at=now() WHERE id=$1 RETURNING *",
-            [previous.id, credential ?? previous.credentialId],
+            "UPDATE arkvory_jobs SET credential_id=$2,status='queued',attempts=0,generation=generation+1,error_code=NULL,available_at=now(),request_id=$3 WHERE id=$1 RETURNING *",
+            [previous.id, credential ?? previous.credentialId, accessCorrelation(access)],
           );
           await client.query('COMMIT');
           return job(updated.rows[0]);
@@ -187,8 +207,15 @@ export class PostgresJobs implements JobStore {
       if (Number(count.rows[0]?.total) >= 10000 || Number(count.rows[0]?.owned) >= 100)
         throw new ArkvoryError('capacity_exceeded', 'Completion queue is full');
       const inserted = await client.query<Record<string, unknown>>(
-        `INSERT INTO arkvory_jobs(id,repository,upload_id,owner,credential_id) SELECT $1,repository,id,owner,$5 FROM arkvory_uploads WHERE id=$2 AND repository=$3 AND owner=$4 AND status='pending' AND expires_at>now() RETURNING *`,
-        [id, uploadId, repository, owner, access?.principal.managed?.keyId ?? null],
+        `INSERT INTO arkvory_jobs(id,repository,upload_id,owner,credential_id,request_id) SELECT $1,repository,id,owner,$5,$6 FROM arkvory_uploads WHERE id=$2 AND repository=$3 AND owner=$4 AND status='pending' AND expires_at>now() RETURNING *`,
+        [
+          id,
+          uploadId,
+          repository,
+          owner,
+          access?.principal.managed?.keyId ?? null,
+          accessCorrelation(access),
+        ],
       );
       if (!inserted.rows[0])
         throw new ArkvoryError('conflict', 'Upload is not eligible for completion');
@@ -214,14 +241,30 @@ export class PostgresJobs implements JobStore {
       ).rows[0],
     );
   }
-  async take() {
-    await this.pool.query(
-      `UPDATE arkvory_jobs SET status='failed',error_code='attempts_exhausted' WHERE status='running' AND lease_until<now() AND attempts>=5`,
+  async exhaust(): Promise<readonly ClaimedJob[]> {
+    const result = await this.pool.query<Record<string, unknown>>(
+      `UPDATE arkvory_jobs SET status='failed',error_code='attempts_exhausted' WHERE status='running' AND lease_until<now() AND attempts>=5 RETURNING *`,
     );
+    return result.rows.map(claimed);
+  }
+  async take(): Promise<ClaimedJob | null> {
     const result = await this.pool.query<Record<string, unknown>>(
       `WITH candidate AS (SELECT id FROM arkvory_jobs WHERE attempts<5 AND ((status='queued' AND available_at<=now()) OR (status='running' AND lease_until<now())) ORDER BY created_at,id FOR UPDATE SKIP LOCKED LIMIT 1) UPDATE arkvory_jobs j SET status='running',generation=generation+1,attempts=attempts+1,lease_until=now()+interval '30 seconds' FROM candidate WHERE j.id=candidate.id RETURNING j.*`,
     );
-    return result.rows[0] ? job(result.rows[0]) : null;
+    return result.rows[0] ? claimed(result.rows[0]) : null;
+  }
+  async backlog(): Promise<JobBacklog> {
+    const result = await this.pool.query<{ status: string; jobs: number; oldest: number }>(
+      `SELECT status, count(*)::integer AS jobs,
+         COALESCE(EXTRACT(EPOCH FROM now()-min(available_at) FILTER (WHERE available_at<=now())),0)::float8 AS oldest
+       FROM arkvory_jobs WHERE status IN ('queued','running') GROUP BY status`,
+    );
+    const row = (status: string) => result.rows.find((candidate) => candidate.status === status);
+    return {
+      queued: row('queued')?.jobs ?? 0,
+      running: row('running')?.jobs ?? 0,
+      oldestQueuedSeconds: Math.max(0, row('queued')?.oldest ?? 0),
+    };
   }
   async heartbeat(id: string, generation: number) {
     const result = await this.pool.query(

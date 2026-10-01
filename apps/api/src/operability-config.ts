@@ -1,4 +1,5 @@
-import { storageReserveBytes } from '@proanima/arkvory-infrastructure';
+import { parseLogLevel, storageReserveBytes } from '@proanima/arkvory-infrastructure';
+import type { LogLevel } from '@proanima/arkvory-infrastructure';
 
 export interface OperabilityOptions {
   /** Query pool ceiling; ownership, download lease and pin sessions hold up to three. */
@@ -9,6 +10,8 @@ export interface OperabilityOptions {
   readonly accessLog?: boolean;
   /** Time admitted requests may finish after SIGTERM/SIGINT before connections are closed. */
   readonly drainTimeoutMs?: number;
+  /** Minimum diagnostic level written to stdout; lower records are discarded unserialized. */
+  readonly logLevel?: LogLevel;
 }
 
 export const defaultMaxRequests = 128;
@@ -57,5 +60,6 @@ export function readOperability(
       0,
       maxDrainTimeoutMs,
     ),
+    logLevel: parseLogLevel(env['ARKVORY_LOG_LEVEL']),
   };
 }

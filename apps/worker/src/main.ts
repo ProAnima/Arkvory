@@ -1,48 +1,62 @@
-import { readFile } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import { setTimeout as delay } from 'node:timers/promises';
 import { StorageService } from '@proanima/arkvory-application';
 import { ArkvoryError } from '@proanima/arkvory-domain';
 import {
   DiagnosticLogger,
-  classifyFailure,
   failureCause,
+  installCrashHandlers,
+  parseLogLevel,
+  processIdentity,
+  readReleaseVersion,
   startupReason,
   PostgresJobs,
-  PostgresJobLease,
   PostgresIdentity,
   PostgresServices,
-  parseKeys,
 } from '@proanima/arkvory-infrastructure';
+import type { LogLevel, PostgresJobLease } from '@proanima/arkvory-infrastructure';
 import { resources } from './runtime.js';
+import { processJob, retireExhausted } from './completion.js';
 
-/** Job error codes drive bounded requeue; only an ArkvoryError keeps its deliberate code. */
-function jobErrorCode(error: unknown): string {
-  if (error instanceof ArkvoryError) return error.code;
-  switch (classifyFailure(error)) {
-    case 'storage_full':
-      return 'capacity_exceeded';
-    case 'dependency_unavailable':
-    case 'cancelled':
-      return 'unavailable';
-    case 'unexpected':
-      return 'internal';
+let levelError: Error | undefined;
+function level(): LogLevel {
+  try {
+    return parseLogLevel(process.env['ARKVORY_LOG_LEVEL']);
+  } catch (error) {
+    // Reported as a startup failure below, once the logger exists.
+    levelError = error instanceof Error ? error : new Error('Invalid ARKVORY_LOG_LEVEL');
+    return 'info';
   }
 }
-
-const diagnostics = new DiagnosticLogger(process.stdout, () => new Date().toISOString());
+// releases/<version>/apps/worker/dist/main.js -> releases/<version>/release.json
+const diagnostics = new DiagnosticLogger(process.stdout, () => new Date().toISOString(), {
+  level: level(),
+  process: processIdentity(
+    'worker',
+    await readReleaseVersion(new URL('../../../release.json', import.meta.url)),
+  ),
+});
+installCrashHandlers(diagnostics);
 const stop = new AbortController();
 let shutdownDeadline: ReturnType<typeof setTimeout> | undefined;
-const stopWorker = () => {
+const stopWorker = (signal?: string) => {
+  if (!stop.signal.aborted)
+    diagnostics.write({
+      level: 'info',
+      component: 'worker',
+      code: 'worker.stopping',
+      ...(signal ? { signal } : {}),
+    });
   stop.abort();
   shutdownDeadline ??= setTimeout(() => process.exit(1), 120000);
   shutdownDeadline.unref();
 };
-for (const event of ['SIGINT', 'SIGTERM'] as const)
-  process.once(event, () => {
-    stopWorker();
+for (const signal of ['SIGINT', 'SIGTERM'] as const)
+  process.once(signal, () => {
+    stopWorker(signal);
   });
 try {
+  if (levelError) throw levelError;
   const keyFile = process.env['ARKVORY_KEYS_FILE'];
   if (!keyFile) throw new Error('ARKVORY_KEYS_FILE is required');
   const { catalog, blobs } = await resources('worker');
@@ -55,70 +69,34 @@ try {
   }, 1000);
   recovery.unref();
   const jobs = new PostgresJobs(catalog.pool);
-  const identity = new PostgresIdentity(catalog.pool);
-  const services = new PostgresServices(catalog.pool);
-  const service = new StorageService(catalog, blobs, {
-    next: randomUUID,
-    now: () => new Date().toISOString(),
-  });
+  const dependencies = {
+    jobs,
+    identity: new PostgresIdentity(catalog.pool),
+    services: new PostgresServices(catalog.pool),
+    storage: new StorageService(catalog, blobs, {
+      next: randomUUID,
+      now: () => new Date().toISOString(),
+    }),
+    keyFile,
+    ownerActive: () => catalog.active,
+    stopped: stop.signal,
+    diagnostics,
+    now: () => performance.now(),
+    leaseStarted: (lease: PostgresJobLease | undefined) => {
+      currentLease = lease;
+    },
+  };
+  diagnostics.write({ level: 'info', component: 'worker', code: 'worker.started' });
   try {
     while (!stop.signal.aborted && catalog.active) {
+      await retireExhausted(jobs, diagnostics);
       const job = await jobs.take();
       if (!job) {
         if (process.argv.includes('--once')) break;
         await delay(1000, undefined, { signal: stop.signal }).catch(() => undefined);
         continue;
       }
-      const lease = new PostgresJobLease(jobs, job.id, job.generation, () => catalog.active);
-      let errorCode: string | null = null;
-      let cause: ReturnType<typeof failureCause> | undefined;
-      try {
-        await lease.start();
-        currentLease = lease;
-        let principal;
-        if (job.owner.startsWith('service:')) {
-          principal = job.credentialId ? await services.principalForKey(job.credentialId) : null;
-          if (principal?.id !== job.owner) principal = null;
-        } else if (job.owner.startsWith('user:')) {
-          principal = await identity.principalForUser(job.owner.slice(5));
-        } else {
-          const raw = await readFile(keyFile, 'utf8');
-          if (raw.length > 1024 * 1024)
-            throw new ArkvoryError('forbidden', 'Key configuration too large');
-          const value: unknown = JSON.parse(raw);
-          principal = parseKeys(value).find(
-            (key) =>
-              key.principal.id === job.owner &&
-              key.principal.repositories.includes(job.repository) &&
-              key.principal.permissions.includes('write'),
-          )?.principal;
-        }
-        if (!principal) throw new ArkvoryError('forbidden', 'Job authorization revoked');
-        await service.complete(principal, job.repository, job.uploadId, {
-          throwIfAborted() {
-            stop.signal.throwIfAborted();
-            lease.check();
-          },
-        });
-      } catch (error) {
-        errorCode = jobErrorCode(error);
-        if (!(error instanceof ArkvoryError)) cause = failureCause(error);
-      }
-      let recorded = false;
-      currentLease = undefined;
-      try {
-        recorded = await lease.finish(errorCode);
-      } finally {
-        await lease.close();
-      }
-      diagnostics.write({
-        level: errorCode || !recorded ? 'error' : 'info',
-        component: 'worker',
-        code: !recorded ? 'completion.lease_lost' : (errorCode ?? 'completion.completed'),
-        jobId: job.id,
-        repository: job.repository,
-        ...cause,
-      });
+      await processJob(job, dependencies);
       if (process.argv.includes('--once')) break;
     }
     if (!catalog.active && !stop.signal.aborted)
@@ -127,6 +105,7 @@ try {
     clearInterval(recovery);
     await catalog.close();
   }
+  diagnostics.write({ level: 'info', component: 'worker', code: 'worker.stopped' });
 } catch (error) {
   // Constant identifiers and redacted validation text only; never URLs or credentials.
   diagnostics.write({
@@ -136,8 +115,11 @@ try {
     reason: startupReason(error),
     ...failureCause(error),
   });
+  process.stderr.write(
+    'Arkvory worker stopped with an error. Check configuration, database migration, storage access and the preceding worker.* line.\n',
+  );
   process.exitCode = 1;
 }
 
 clearTimeout(shutdownDeadline);
-diagnostics.close();
+// The logger stays open until exit so a late crash is still recorded by the crash handlers.

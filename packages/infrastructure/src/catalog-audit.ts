@@ -26,6 +26,37 @@ export async function readCatalogAudit(
   }));
 }
 
+export interface CatalogAuditRow {
+  readonly repository: string;
+  readonly artifactId: string;
+  readonly actor: string;
+  readonly action: string;
+}
+/**
+ * Caller owns the transaction: audit rows commit or roll back with the change they describe.
+ * Rows receive sequence numbers in array order. requestId is the stored correlation or NULL.
+ */
+export async function appendCatalogAudit(
+  client: PoolClient,
+  rows: readonly CatalogAuditRow[],
+  requestId: string | null,
+): Promise<void> {
+  await client.query(
+    `INSERT INTO arkvory_audit(repository,artifact_id,actor,action,request_id)
+     SELECT t.repository, t.artifact_id, t.actor, t.action, $5
+     FROM unnest($1::text[], $2::uuid[], $3::text[], $4::text[])
+       WITH ORDINALITY AS t(repository, artifact_id, actor, action, position)
+     ORDER BY t.position`,
+    [
+      rows.map((row) => row.repository),
+      rows.map((row) => row.artifactId),
+      rows.map((row) => row.actor),
+      rows.map((row) => row.action),
+      requestId,
+    ],
+  );
+}
+
 /** Owner-scoped retention reference; adding and removing are idempotent in the catalog change. */
 export async function writeReference(
   client: PoolClient,

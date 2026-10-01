@@ -1,12 +1,17 @@
-import { PostgresCleanup } from '@proanima/arkvory-infrastructure';
+import { PostgresCleanup, failureCause } from '@proanima/arkvory-infrastructure';
 import { ArkvoryError } from '@proanima/arkvory-domain';
 import { resources } from './runtime.js';
+import { maintenanceFailed, maintenanceLogger } from './maintenance-log.js';
+
+const diagnostics = await maintenanceLogger('scrub');
+const started = performance.now();
 try {
   const { catalog, blobs } = await resources('maintenance');
   let checked = 0,
     failed = 0;
   let after: string | undefined;
   try {
+    diagnostics.write({ level: 'info', component: 'maintenance', code: 'scrub.started' });
     const records = new PostgresCleanup(catalog.pool);
     for (;;) {
       const rows = await records.page(after, 100);
@@ -23,24 +28,36 @@ try {
             },
           });
           checked++;
-        } catch {
+        } catch (error) {
           failed++;
-          process.stdout.write(
-            JSON.stringify({
-              id: row.id,
-              repository: row.repository,
-              status: 'verification_failed',
-            }) + '\n',
-          );
+          diagnostics.write({
+            level: 'error',
+            component: 'maintenance',
+            code: 'scrub.verification_failed',
+            artifactId: row.id,
+            repository: row.repository,
+            ...(error instanceof ArkvoryError ? { errorCode: error.code } : failureCause(error)),
+          });
         }
       }
     }
-    process.stdout.write(JSON.stringify({ checked, failed }) + '\n');
+    diagnostics.write({
+      level: failed ? 'error' : 'info',
+      component: 'maintenance',
+      code: 'scrub.completed',
+      checked,
+      failed,
+      durationMs: Math.round(performance.now() - started),
+    });
     if (failed) process.exitCode = 1;
   } finally {
     await catalog.close();
   }
-} catch {
-  process.stderr.write('Scrub failed. Stop API and worker and verify maintenance configuration.\n');
-  process.exitCode = 1;
+} catch (error) {
+  maintenanceFailed(
+    diagnostics,
+    'scrub.failed',
+    error,
+    'Scrub failed. Stop API and worker and verify maintenance configuration.',
+  );
 }

@@ -18,7 +18,8 @@ const run = (args, env) =>
     p.stdout.on('data', (b) => (output += b));
     p.stderr.on('data', (b) => (output += b));
     p.on('error', reject);
-    p.on('exit', (code) => resolve({ code, output }));
+    // 'close' waits for stdio: 'exit' can precede the last structured lines.
+    p.on('close', (code) => resolve({ code, output }));
   });
 test('directory import dry run, verified transfer and repeat are idempotent', async (t) => {
   const f = await setup(t);
@@ -53,5 +54,12 @@ test('directory import dry run, verified transfer and repeat are idempotent', as
     ARKVORY_DATA_DIR: f.directory,
   });
   assert.equal(scrub.code, 0, scrub.output);
-  assert.equal(JSON.parse(scrub.output).checked, 1);
+  const records = scrub.output
+    .split('\n')
+    .filter((line) => line.startsWith('{'))
+    .map((line) => JSON.parse(line));
+  const summary = records.find((record) => record.code === 'scrub.completed');
+  assert.equal(summary?.checked, 1, scrub.output);
+  assert.equal(summary.failed, 0);
+  assert.equal(summary.service, 'scrub');
 });

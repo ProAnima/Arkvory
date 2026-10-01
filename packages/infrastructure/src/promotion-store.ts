@@ -10,6 +10,8 @@ import type {
 } from '@proanima/arkvory-application';
 import { lockCatalogMutation } from './catalog-mutation.js';
 import { lockServiceAccess } from './service-authorization.js';
+import { appendCatalogAudit } from './catalog-audit.js';
+import { accessCorrelation } from './request-correlation.js';
 import { removeArtifactInTransaction } from './retention.js';
 import { addStageInTransaction, recordPromotionEvent } from './stage-events.js';
 import { inTransaction } from './pg-transaction.js';
@@ -257,10 +259,23 @@ export class PostgresPromotions implements PromotionStore {
       peerRepository: input.source.repository,
       peerArtifactId: input.id,
     });
-    await client.query(
-      `INSERT INTO arkvory_audit(repository,artifact_id,actor,action)
-       VALUES($1,$2,$5,'artifact.promote'),($3,$4,$5,'artifact.receive')`,
-      [input.source.repository, input.id, input.target.repository, targetId, actor],
+    await appendCatalogAudit(
+      client,
+      [
+        {
+          repository: input.source.repository,
+          artifactId: input.id,
+          actor,
+          action: 'artifact.promote',
+        },
+        {
+          repository: input.target.repository,
+          artifactId: targetId,
+          actor,
+          action: 'artifact.receive',
+        },
+      ],
+      accessCorrelation(input.target),
     );
   }
 

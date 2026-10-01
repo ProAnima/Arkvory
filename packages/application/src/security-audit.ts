@@ -25,6 +25,8 @@ export interface SecurityActor {
   readonly id: string | null;
   readonly credential: CredentialKind | null;
   readonly clientIp: string | null;
+  /** Request correlation stored with the event; never part of the audit listing contract. */
+  readonly requestId?: string;
 }
 export interface SecurityEvent {
   readonly action: SecurityAction;
@@ -60,10 +62,20 @@ export interface SecurityAuditReader {
 }
 
 export function securityActor(principal: Principal, clientIp: string | null): SecurityActor {
-  return { id: principal.id, credential: principal.credential, clientIp };
+  return {
+    id: principal.id,
+    credential: principal.credential,
+    clientIp,
+    ...(principal.requestId === undefined ? {} : { requestId: principal.requestId }),
+  };
 }
-export function anonymousActor(clientIp: string | null): SecurityActor {
-  return { id: null, credential: null, clientIp };
+export function anonymousActor(clientIp: string | null, requestId?: string): SecurityActor {
+  return {
+    id: null,
+    credential: null,
+    clientIp,
+    ...(requestId === undefined ? {} : { requestId }),
+  };
 }
 
 /** Newest-first keyset page; the cursor is the decimal id of the last returned entry. */

@@ -1,4 +1,5 @@
 import type { FastifyInstance } from 'fastify';
+import { failureCause } from '@proanima/arkvory-infrastructure';
 import type { DiagnosticLogger } from '@proanima/arkvory-infrastructure';
 
 interface Tasks {
@@ -26,11 +27,12 @@ export function registerBackgroundTasks(app: FastifyInstance, tasks: Tasks) {
         if (collecting || !tasks.available()) return;
         collecting = tasks
           .collect?.()
-          .catch(() => {
+          .catch((error: unknown) => {
             tasks.diagnostics.write({
               level: 'error',
-              component: 'storage',
+              component: 'maintenance',
               code: 'cleanup.unavailable',
+              ...failureCause(error),
             });
           })
           .finally(() => {
@@ -44,11 +46,12 @@ export function registerBackgroundTasks(app: FastifyInstance, tasks: Tasks) {
         if (maintenance || !tasks.available()) return;
         maintenance = tasks
           .maintain()
-          .catch(() => {
+          .catch((error: unknown) => {
             tasks.diagnostics.write({
               level: 'error',
-              component: 'storage',
+              component: 'maintenance',
               code: 'maintenance.unavailable',
+              ...failureCause(error),
             });
           })
           .finally(() => {

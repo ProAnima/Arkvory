@@ -8,6 +8,7 @@ import { runtimeEnvironment } from './runtime.js';
 import { setTimeout as delay } from 'node:timers/promises';
 import { healthReady, localApiHost } from './health.js';
 import { windowsAdministrator } from './preflight.js';
+import { report } from './output.js';
 
 export class Services {
   constructor(
@@ -163,16 +164,19 @@ export class Services {
       try {
         await access('/run/systemd/system');
       } catch {
-        console.log('Host updater needs an external scheduler: run updates-poll every minute.');
+        report(
+          'warning',
+          'Host updater needs an external scheduler: run updates-poll every minute.',
+        );
         return;
       }
       if (process.getuid?.() !== 0) {
-        console.log(manual);
+        report('warning', manual);
         return;
       }
     } else if (this.state.mode === 'compose' && !(await windowsAdministrator())) {
       // Same contract as a docker-group user on Linux: no SYSTEM task without elevation.
-      console.log(manual);
+      report('warning', manual);
       return;
     }
     const script = join(

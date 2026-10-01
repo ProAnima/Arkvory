@@ -9,6 +9,7 @@ import { initialize } from './initialize.js';
 import { applyUpdate } from './update.js';
 import { protectInstallation } from './preflight.js';
 import { prepareUpdateControl } from './update-setup.js';
+import { report } from './output.js';
 
 export async function save(root: string, state: Installation): Promise<void> {
   // Compose image follows the same journalled switch; data volumes never depend on a release directory.
@@ -62,7 +63,8 @@ export async function install(root: string, options: Map<string, string>): Promi
   await services.start(state.current);
   await services.healthy();
   await services.schedule(state.current);
-  console.log(
+  report(
+    'info',
     'Arkvory installed. Bootstrap credential: config/bootstrap-token.txt. Keep it private and rotate after setup.',
   );
 }
@@ -96,7 +98,7 @@ export async function update(
 ): Promise<void> {
   const state = parseInstallation(await jsonFile(join(root, 'installation.json')));
   if (options.has('scheduled') && (!state.automatic || state.pin !== null)) {
-    console.log('Automatic updates disabled or version pinned');
+    report('info', 'Automatic updates disabled or version pinned');
     return;
   }
   await checkJournal(root);
@@ -115,7 +117,7 @@ export async function update(
     save: (next) => save(root, next),
     journal: (value) => atomicJson(join(root, 'journal.json'), value),
   });
-  console.log(changed ? `Updated to ${selected.release.version}` : 'Already current');
+  report('info', changed ? `Updated to ${selected.release.version}` : 'Already current');
 }
 export async function recover(root: string): Promise<void> {
   const state = parseInstallation(await jsonFile(join(root, 'installation.json')));

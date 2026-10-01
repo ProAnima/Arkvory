@@ -1,5 +1,5 @@
-import { randomUUID } from 'node:crypto';
 import Fastify from 'fastify';
+import { requestIdGenerator } from './request-correlation.js';
 
 /**
  * Client addresses come from the socket unless the peer is a configured reverse proxy; then
@@ -16,7 +16,8 @@ export function createHttpServer(
     connectionTimeout: 30000,
     return503OnClosing: true,
     forceCloseConnections: true,
-    genReqId: () => randomUUID(),
+    // X-Request-Id is accepted only from trusted proxies; Fastify's own header lookup stays off.
+    genReqId: requestIdGenerator(options.trustedProxies),
     requestIdHeader: false,
     ajv: { customOptions: { coerceTypes: false, removeAdditional: false } },
   });

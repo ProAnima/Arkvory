@@ -9,11 +9,17 @@ export class PostgresJobLease {
   private pending: Promise<void> | undefined;
   private started = false;
   private stopped = false;
+  /**
+   * renewalFailed observes a background heartbeat failure (database error or lost reservation)
+   * after which the lease is stopped; it must not throw. The initial renewal in start() rejects
+   * to its caller instead.
+   */
   constructor(
     private readonly jobs: Pick<JobStore, 'heartbeat' | 'finish'>,
     private readonly id: string,
     private readonly generation: number,
     private readonly ownerActive: () => boolean,
+    private readonly renewalFailed: (error: unknown) => void = () => undefined,
   ) {}
   get active(): boolean {
     const active = !this.stopped && this.ownerActive() && this.window.active;
@@ -48,8 +54,13 @@ export class PostgresJobLease {
         () => {
           this.schedule();
         },
-        () => {
+        (error: unknown) => {
           this.stop();
+          try {
+            this.renewalFailed(error);
+          } catch {
+            // Observation is best-effort; the lease is already stopped.
+          }
         },
       );
     }, 2000);

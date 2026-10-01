@@ -74,7 +74,10 @@ test('structured diagnostics stop buffering under backpressure and report droppe
   callbacks.shift()();
   await new Promise((r) => setImmediate(r));
   assert.equal(lines.length, 2);
-  assert.equal(JSON.parse(lines[1]).code, 'diagnostics.dropped.10000');
+  const notice = JSON.parse(lines[1]);
+  assert.equal(notice.code, 'diagnostics.dropped');
+  assert.equal(notice.dropped, 10000);
+  assert.equal(logger.counters.dropped, 10000);
   callbacks.shift()();
   await new Promise((r) => setImmediate(r));
   logger.close();

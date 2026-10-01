@@ -1,6 +1,8 @@
 import type { FastifyRequest, FastifyReply } from 'fastify';
+import { failureCause } from '@proanima/arkvory-infrastructure';
 import type { DiagnosticLogger, PostgresStoragePolicy } from '@proanima/arkvory-infrastructure';
 import type { RequestContext } from './request-context.js';
+import { traceIdOf } from './request-correlation.js';
 
 /** A bounded, best-effort queue; transfers never await database logging. */
 export class ResponseDiagnostics {
@@ -12,7 +14,7 @@ export class ResponseDiagnostics {
   }[] = [];
   private dropped = 0;
   constructor(
-    private readonly writer: Pick<DiagnosticLogger, 'write' | 'close'>,
+    private readonly writer: Pick<DiagnosticLogger, 'write'>,
     private readonly store: Pick<PostgresStoragePolicy, 'recordEvent'>,
     private readonly context: Pick<RequestContext, 'errorCode' | 'errorCause' | 'peekPrincipal'>,
   ) {}
@@ -30,11 +32,13 @@ export class ResponseDiagnostics {
       /^[a-z0-9][a-z0-9_-]{0,63}$/.test(params.repository)
         ? params.repository
         : undefined;
+    const traceId = traceIdOf(request.headers['traceparent']);
     this.writer.write({
       level,
-      component: 'api',
+      component: 'http',
       code,
       requestId: request.id,
+      ...(traceId ? { traceId } : {}),
       route,
       method: request.method,
       status: reply.statusCode,
@@ -67,11 +71,13 @@ export class ResponseDiagnostics {
       if (!event) break;
       try {
         await this.store.recordEvent(event.repository, event.level, event.code, event.details);
-      } catch {
+      } catch (error) {
         this.writer.write({
           level: 'error',
           component: 'storage',
           code: 'diagnostics.persist_failed',
+          repository: event.repository,
+          ...failureCause(error),
         });
         break;
       }
@@ -80,14 +86,15 @@ export class ResponseDiagnostics {
       this.writer.write({
         level: 'warning',
         component: 'storage',
-        code: `diagnostics.queue_dropped.${String(this.dropped)}`,
+        code: 'diagnostics.queue_dropped',
+        dropped: this.dropped,
       });
       this.dropped = 0;
     }
   }
 
+  /** Discards unsent events; the process logger belongs to the composition root. */
   close(): void {
     this.queue.length = 0;
-    this.writer.close();
   }
 }

@@ -59,7 +59,9 @@ export function createApiServices(
     new ZipManifestReader(blobs, pins),
   );
   const stages = new PostgresStages(catalog.pool);
+  const jobs = new PostgresJobs(catalog.pool);
   return {
+    jobs,
     promotion: new ArtifactPromotion(
       service,
       stages,
@@ -85,6 +87,6 @@ export function createApiServices(
     storage: new RepositoryStorage(storagePolicies),
     retention: new ArtifactRetention(new PostgresRetention(catalog.pool), now),
     attachments: new BuildAttachments(service, new PostgresAttachments(catalog.pool)),
-    completion: new CompletionQueue(new PostgresJobs(catalog.pool), randomUUID),
+    completion: new CompletionQueue(jobs, randomUUID),
   };
 }

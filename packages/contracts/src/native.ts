@@ -14,6 +14,7 @@ import { delegationPaths } from './delegation-api.js';
 import { repositoryPaths } from './repositories.js';
 import { operationPaths } from './operations.js';
 import { promotionPaths } from './promotion-api.js';
+import { metricsPaths } from './metrics.js';
 import type { ApiSurface } from './api-surfaces.js';
 export const descriptorSchema = {
   type: 'object',
@@ -236,6 +237,7 @@ const baseDocument = {
 const composed = composeApiPaths({
   ...baseDocument.paths,
   ...supplementalPaths,
+  ...metricsPaths,
   ...delegationPaths,
   ...repositoryPaths,
   ...operationPaths,

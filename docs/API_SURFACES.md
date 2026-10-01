@@ -11,7 +11,7 @@
 | `catalog`        | Описания, организация, версии и ссылки на содержимое              | artifacts, annotations, packages, assets/history, references, repository audit            |
 | `transfers`      | Приём и раздача байтов, состояние собственных загрузок/заданий    | upload create/parts/complete/cancel, jobs, download/HEAD/Range по ID, пакету и пути файла |
 | `administration` | Учётные записи, группы, сервисы, credentials, policy и delegation | users, access-groups, service-accounts, api-keys                                          |
-| `operations`     | Текущее состояние процесса и готовность шлюза                     | health/live, health/ready                                                                 |
+| `operations`     | Текущее состояние процесса и готовность шлюза                     | health/live, health/status, health/ready, health/metrics                                  |
 
 Это логические области контракта, не шесть новых сервисов. URL существующих операций `/api/v1` сохраняются. Размещение writer/reader определяется deployment-профилем, а не названием surface. Будущее физическое разделение должно сохранять operationId, авторизацию, ресурсные границы и общий контракт ошибок.
 

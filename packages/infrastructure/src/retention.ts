@@ -12,6 +12,8 @@ import type {
   DeletionResult,
 } from '@proanima/arkvory-application';
 import { lockServiceAccess } from './service-authorization.js';
+import { appendCatalogAudit } from './catalog-audit.js';
+import { accessCorrelation } from './request-correlation.js';
 import { lockCatalogMutation } from './catalog-mutation.js';
 
 export interface CandidateRow {
@@ -136,9 +138,10 @@ export async function removeArtifactInTransaction(
     item.id,
     principal.id,
   ]);
-  await client.query(
-    "INSERT INTO arkvory_audit(repository,artifact_id,actor,action) VALUES($1,$2,$3,'artifact.delete')",
-    [repository, item.id, principal.id],
+  await appendCatalogAudit(
+    client,
+    [{ repository, artifactId: item.id, actor: principal.id, action: 'artifact.delete' }],
+    accessCorrelation(access),
   );
   return result('deleted');
 }

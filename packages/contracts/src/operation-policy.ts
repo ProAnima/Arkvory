@@ -134,6 +134,7 @@ add(
   'read',
 );
 add('/health/ready', 'get', 'getReadiness', 'System', { kind: 'authenticated' }, 'read');
+add('/health/metrics', 'get', 'getMetrics', 'System', { kind: 'authenticated' }, 'read');
 add('/api/v1/openapi.json', 'get', 'getOpenApi', 'System', { kind: 'authenticated' }, 'read');
 add('/api/v1/capabilities', 'get', 'getCapabilities', 'System', { kind: 'authenticated' }, 'read');
 add(
