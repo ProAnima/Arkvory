@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { ArkvoryError } from '@proanima/arkvory-domain';
-import { readinessSchema } from '@proanima/arkvory-contracts';
+import { readinessSchema, healthStatusSchema } from '@proanima/arkvory-contracts';
 import type {
   LocalBlobStore,
   PostgresCatalog,
@@ -8,6 +8,7 @@ import type {
   AdmissionQueue,
   BandwidthGovernor,
 } from '@proanima/arkvory-infrastructure';
+import { ReadinessProbe } from './readiness.js';
 
 interface Health {
   catalog: Pick<PostgresCatalog, 'ready'>;
@@ -22,11 +23,35 @@ interface Health {
     downloadBandwidth: Pick<BandwidthGovernor, 'snapshot'>;
   };
 }
-export function registerHealthRoutes(app: FastifyInstance, dependencies: Health) {
+export function registerHealthRoutes(
+  app: FastifyInstance,
+  dependencies: Health,
+  draining: () => boolean,
+) {
   const { catalog, blobs, role, lease, available } = dependencies;
   const { uploadGate, downloadGate, uploadBandwidth, downloadBandwidth } = dependencies.transfers;
+  const probe = new ReadinessProbe(
+    async () => {
+      await catalog.ready();
+      await blobs.ready();
+      if (!available()) throw new ArkvoryError('unavailable', 'Gateway ownership lost');
+    },
+    draining,
+    () => performance.now(),
+  );
   app.get('/health/live', () => Promise.resolve({ status: 'ok' }));
+  // Public and detail-free: load balancers need only the HTTP status and this enum.
+  app.get(
+    '/health/status',
+    { schema: { response: { 200: healthStatusSchema, 503: healthStatusSchema } } },
+    async (_request, reply) => {
+      const status = await probe.status();
+      if (status !== 'ready') void reply.code(503).header('Retry-After', '2');
+      return { status };
+    },
+  );
   app.get('/health/ready', { schema: { response: { 200: readinessSchema } } }, async () => {
+    if (draining()) throw new ArkvoryError('unavailable', 'Server is draining');
     await catalog.ready();
     await blobs.ready();
     let writable = role === 'api';

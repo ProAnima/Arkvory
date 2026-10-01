@@ -77,7 +77,8 @@ const jsonResponse = {
   content: { 'application/json': { schema: uploadSchema } },
 };
 const errorResponse = {
-  description: 'Error with code, message, requestId; 503 responses include Retry-After',
+  description:
+    'Error with code, message, requestId; 503 responses include Retry-After; 500 internal does not',
   content: {
     'application/json': {
       schema: {
@@ -250,7 +251,7 @@ const composed = composeApiPaths({
 export const apiOperations = composed.operations;
 export const openApiDocument = {
   ...baseDocument,
-  info: { ...baseDocument.info, title: 'ProAnima Arkvory API', version: '0.13.0' },
+  info: { ...baseDocument.info, title: 'ProAnima Arkvory API', version: '0.14.0' },
   components: {
     ...baseDocument.components,
     schemas: { NativeError: nativeErrorSchema },

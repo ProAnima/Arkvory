@@ -6,6 +6,7 @@ import type { PostgresServices } from '@proanima/arkvory-infrastructure';
 import type { ServerConfig } from './config.js';
 import type { RequestContext } from './request-context.js';
 import { LoginAdmission } from './login-admission.js';
+import type { RequestDrain } from './drain.js';
 
 interface Security {
   config: Pick<ServerConfig, 'keys'>;
@@ -15,9 +16,12 @@ interface Security {
   serviceAccounts: Pick<PostgresServices, 'resolve'>;
   context: Pick<RequestContext, 'signal' | 'countRequest' | 'authenticate'>;
   registerOwner: (id: string) => void;
+  drain: Pick<RequestDrain, 'isDraining' | 'track'>;
 }
+// Public probes manage their own availability answer and never touch credentials.
+const publicPaths = new Set(['/health/live', '/health/status']);
 export function registerRequestSecurity(app: FastifyInstance, dependencies: Security) {
-  const { config, role, available, identity, serviceAccounts, context, registerOwner } =
+  const { config, role, available, identity, serviceAccounts, context, registerOwner, drain } =
     dependencies;
   const loginAdmission = new LoginAdmission();
   app.addHook('preValidation', (request, _reply, done) => {
@@ -29,11 +33,16 @@ export function registerRequestSecurity(app: FastifyInstance, dependencies: Secu
       .header('X-Request-Id', request.id)
       .header('X-Content-Type-Options', 'nosniff')
       .header('Cache-Control', 'private, no-store');
-    if (
-      request.routeOptions.url === '/health/live' ||
-      request.routeOptions.url?.startsWith('/console/')
-    )
-      return;
+    const route = request.routeOptions.url ?? '';
+    if (publicPaths.has(route) || route.startsWith('/console/')) return;
+    const health = route.startsWith('/health/');
+    if (!health) {
+      if (drain.isDraining) {
+        reply.header('Connection', 'close');
+        throw new ArkvoryError('busy', 'Server is draining; retry later');
+      }
+      drain.track(reply.raw);
+    }
     if (!available())
       throw new ArkvoryError(
         'unavailable',
@@ -54,7 +63,8 @@ export function registerRequestSecurity(app: FastifyInstance, dependencies: Secu
       return;
     }
     // Public login cannot consume the protected budget; session lookup remains bounded.
-    context.countRequest(reply);
+    // Health probes stay outside it so transfer load cannot flap a node out of the balancer.
+    if (!health) context.countRequest(reply);
     const auth = request.headers.authorization;
     const token = auth?.startsWith('Bearer ') ? auth.slice(7) : '';
     const digest = createHash('sha256').update(token).digest();

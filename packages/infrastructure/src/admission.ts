@@ -11,6 +11,7 @@ export class AdmissionQueue {
   private active = 0;
   private readonly activeOwners = new Map<string, number>();
   private closed = false;
+  private draining = false;
   private rejected = 0;
   private timedOut = 0;
   private cancelled = 0;
@@ -51,6 +52,10 @@ export class AdmissionQueue {
   async acquire(owner: string, signal?: AbortSignal): Promise<() => void> {
     signal?.throwIfAborted();
     if (this.closed) throw new ArkvoryError('unavailable', 'Gateway is closing');
+    if (this.draining) {
+      this.rejected++;
+      throw new ArkvoryError('busy', 'Gateway is draining; retry later');
+    }
     if (this.active < this.slots && this.waiting.length === 0 && this.ownerAvailable(owner)) {
       this.activate(owner);
       this.lastOwner = owner;
@@ -126,6 +131,18 @@ export class AdmissionQueue {
       else this.activeOwners.set(owner, count);
       this.dispatch();
     };
+  }
+  /** Rejects queued and future admissions; active slots finish and release normally. */
+  drain() {
+    this.draining = true;
+    for (const waiter of this.waiting.splice(0)) {
+      waiter.cleanup();
+      this.rejected++;
+      waiter.reject(new ArkvoryError('busy', 'Gateway is draining; retry later'));
+    }
+  }
+  get idle(): boolean {
+    return this.active === 0 && this.waiting.length === 0;
   }
   close() {
     this.closed = true;

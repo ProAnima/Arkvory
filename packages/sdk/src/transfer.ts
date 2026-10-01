@@ -108,6 +108,7 @@ export class TransferAttempts {
         clearTimeout(timer);
       }
       this.options.signal?.throwIfAborted();
+      // 500 internal is a server defect, not a transient state: it is never retried.
       const retryable =
         failure instanceof ArkvoryNetworkError ||
         (failure instanceof ArkvoryHttpError && [408, 429, 502, 503, 504].includes(failure.status));

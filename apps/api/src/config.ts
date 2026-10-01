@@ -6,10 +6,12 @@ import type { ServiceKey } from '@proanima/arkvory-infrastructure';
 import { parseCorsOrigins } from './cors.js';
 import { readUploadTimeouts } from './upload-policy.js';
 import type { UploadTimeoutOptions } from './upload-policy.js';
+import { readOperability } from './operability-config.js';
+import type { OperabilityOptions } from './operability-config.js';
 export { parseKeys } from '@proanima/arkvory-infrastructure';
 export type { ServiceKey } from '@proanima/arkvory-infrastructure';
 
-export interface ServerConfig extends UploadTimeoutOptions {
+export interface ServerConfig extends UploadTimeoutOptions, OperabilityOptions {
   readonly role?: 'api' | 'reader';
   readonly sharedDownloads?: SharedDownloadPolicy;
   readonly databaseUrl: string;
@@ -37,6 +39,31 @@ export interface ServerConfig extends UploadTimeoutOptions {
   readonly maxObjectBytes?: number;
 }
 
+/** Startup logs may print these messages: they name the variable, never its value or path. */
+async function readKeys(path: string): Promise<readonly ServiceKey[]> {
+  let text: string;
+  try {
+    text = await readFile(path, 'utf8');
+  } catch (error) {
+    const code =
+      error instanceof Error && 'code' in error && typeof error.code === 'string'
+        ? error.code
+        : 'unknown';
+    // The cause keeps the path for debugging; startupReason never walks the cause chain.
+    throw new Error(`Cannot read ARKVORY_KEYS_FILE (${code.replace(/[^A-Z0-9_]/g, '')})`, {
+      cause: error,
+    });
+  }
+  if (text.length > 1024 * 1024) throw new Error('Key file is too large');
+  let keys: unknown;
+  try {
+    keys = JSON.parse(text);
+  } catch {
+    throw new Error('ARKVORY_KEYS_FILE is not valid JSON');
+  }
+  return parseKeys(keys);
+}
+
 export async function loadConfig(env: NodeJS.ProcessEnv): Promise<ServerConfig> {
   const required = (name: string): string => {
     const value = env[name];
@@ -56,9 +83,7 @@ export async function loadConfig(env: NodeJS.ProcessEnv): Promise<ServerConfig> 
       'invalid_input',
       'ARKVORY_DATABASE_URL must be a PostgreSQL connection URL',
     );
-  const keyFile = await readFile(required('ARKVORY_KEYS_FILE'), 'utf8');
-  if (keyFile.length > 1024 * 1024) throw new Error('Key file is too large');
-  const keys: unknown = JSON.parse(keyFile);
+  const keys = await readKeys(required('ARKVORY_KEYS_FILE'));
   const maxUploads = number('ARKVORY_MAX_UPLOADS', 2, 32);
   const maxDownloads = number('ARKVORY_MAX_DOWNLOADS', 16, 256);
   const transferQueueLimit = number('ARKVORY_TRANSFER_QUEUE_LIMIT', 64, 1024);
@@ -99,6 +124,7 @@ export async function loadConfig(env: NodeJS.ProcessEnv): Promise<ServerConfig> 
     throw new Error('Read gateway requires shared download configuration');
   return {
     ...readUploadTimeouts(env),
+    ...readOperability(env, { maxUploads, maxDownloads }),
     role,
     ...(sharedDownloads ? { sharedDownloads } : {}),
     databaseUrl,
@@ -107,7 +133,7 @@ export async function loadConfig(env: NodeJS.ProcessEnv): Promise<ServerConfig> 
       ? {}
       : { maxObjectBytes: number('ARKVORY_MAX_OBJECT_BYTES', MAX_OBJECT_BYTES, MAX_OBJECT_BYTES) }),
     dataDirectory: required('ARKVORY_DATA_DIR'),
-    keys: parseKeys(keys),
+    keys,
     corsOrigins: parseCorsOrigins(env['ARKVORY_CORS_ORIGINS']),
     webDirectory: env['ARKVORY_WEB_DIR'] ?? 'apps/web/public',
     ...(env['ARKVORY_UPDATE_CONTROL_DIR']

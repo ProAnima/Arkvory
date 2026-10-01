@@ -133,7 +133,9 @@ test('competing restores commit one revision; history or audit failure rolls bac
       `CREATE FUNCTION reject_change() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'injected write failure'; END $$; CREATE TRIGGER reject_change BEFORE INSERT ON ${table} FOR EACH ROW EXECUTE FUNCTION reject_change()`,
     );
     const response = await restore(f, 2, 3);
-    assert.equal(response.statusCode, 503, response.body);
+    // A trigger exception is an unclassified database failure: 500 internal, no Retry-After.
+    assert.equal(response.statusCode, 500, response.body);
+    assert.equal(response.headers['retry-after'], undefined);
     const current = (
       await f.app.inject({ url: `${base}/asset?path=${encoded}`, headers: f.readerHeaders })
     ).json();

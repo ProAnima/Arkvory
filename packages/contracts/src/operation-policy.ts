@@ -87,6 +87,7 @@ function data(
   add(path, method, id, tag, repo(actions, legacy, owner), retry);
 }
 add('/health/live', 'get', 'getLiveness', 'System', { kind: 'public' }, 'read');
+add('/health/status', 'get', 'getReadinessStatus', 'System', { kind: 'public' }, 'read');
 add(
   '/api/v1/system/updates',
   'get',

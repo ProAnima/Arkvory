@@ -73,3 +73,10 @@ export const readinessSchema = {
     },
   },
 } as const;
+/** Public load-balancer status: 200 only for ready; no counters, roles or reasons. */
+export const healthStatusSchema = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['status'],
+  properties: { status: { type: 'string', enum: ['ready', 'unavailable', 'draining'] } },
+} as const;

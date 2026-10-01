@@ -53,6 +53,11 @@ export function createTransferControls(config: ServerConfig, available: () => bo
       uploadBandwidth.register(id);
       downloadBandwidth.register(id);
     },
+    drain: () => {
+      uploadGate.drain();
+      downloadGate.drain();
+      loginGate.drain();
+    },
     close: () => {
       uploadGate.close();
       downloadGate.close();

@@ -14,7 +14,7 @@ export class ResponseDiagnostics {
   constructor(
     private readonly writer: Pick<DiagnosticLogger, 'write' | 'close'>,
     private readonly store: Pick<PostgresStoragePolicy, 'recordEvent'>,
-    private readonly context: Pick<RequestContext, 'errorCode' | 'peekPrincipal'>,
+    private readonly context: Pick<RequestContext, 'errorCode' | 'errorCause' | 'peekPrincipal'>,
   ) {}
   record(request: FastifyRequest, reply: FastifyReply): void {
     if (reply.statusCode < 400) return;
@@ -38,6 +38,7 @@ export class ResponseDiagnostics {
       route,
       method: request.method,
       status: reply.statusCode,
+      ...this.context.errorCause(request),
     });
     // Unknown/unauthenticated repository names cannot poison another repository's event stream.
     const p = this.context.peekPrincipal(request);

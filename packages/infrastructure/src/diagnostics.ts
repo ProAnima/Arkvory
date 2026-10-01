@@ -10,6 +10,17 @@ export interface DiagnosticRecord {
   method?: string;
   status?: number;
   repository?: string;
+  /** Access log fields; route is the template, never the raw URL or query string. */
+  durationMs?: number;
+  bytesSent?: number;
+  principal?: string;
+  clientIp?: string;
+  completed?: boolean;
+  /** Constant failure identifiers from failureCause and a redacted startupReason. */
+  errorName?: string;
+  errno?: string;
+  sqlstate?: string;
+  reason?: string;
 }
 /** Caller supplies allowlisted codes and route templates, never exception text or raw URLs. */
 export class DiagnosticLogger {

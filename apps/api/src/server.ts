@@ -17,14 +17,18 @@ import { maintainStorage } from './storage-maintenance.js';
 import { resolveUploadTimeouts } from './upload-policy.js';
 import { registerUpdateRoutes } from './update-routes.js';
 import { registerOwnershipRecovery } from './ownership-recovery.js';
+import { registerAccessLog } from './access-log.js';
+import { RequestDrain } from './drain.js';
 
 export async function createServer(
   config: ServerConfig,
-  lifecycle: { onOwnershipLost?: () => void } = {},
+  lifecycle: { onOwnershipLost?: () => void; drain?: RequestDrain } = {},
 ) {
   const policy = resolveUploadTimeouts(config);
   const app = createHttpServer();
   const runtime = new ApiRuntime(config);
+  const drain = lifecycle.drain ?? new RequestDrain();
+  drain.onBegin(runtime.transfers.drain);
   if (lifecycle.onOwnershipLost)
     registerOwnershipRecovery(app, runtime.available, lifecycle.onOwnershipLost);
   const diagnostics = new DiagnosticLogger(process.stdout, () => new Date().toISOString());
@@ -44,10 +48,17 @@ export async function createServer(
       allowRegistration: config.allowRegistration ?? false,
       ...(config.maxObjectBytes === undefined ? {} : { maxObjectBytes: config.maxObjectBytes }),
     });
-    const context = createRequestContext();
+    const context = createRequestContext(config.maxRequests);
     const responses = new ResponseDiagnostics(diagnostics, services.storagePolicies, context);
     // Guard registration precedes feature routes and background startup.
     registerContractGuard(app);
+    // loadConfig enables it by default; embedded/test servers opt in explicitly.
+    if (config.accessLog === true)
+      registerAccessLog(app, {
+        writer: diagnostics,
+        principal: context.peekPrincipal,
+        now: () => performance.now(),
+      });
     registerCors(app, config.corsOrigins ?? []);
     background = registerBackgroundTasks(app, {
       role: runtime.role,
@@ -72,9 +83,10 @@ export async function createServer(
       identity: services.identity,
       serviceAccounts: services.serviceAccounts,
       registerOwner: runtime.transfers.registerOwner,
+      drain,
     });
     registerHttpErrors(app, context);
-    registerHealthRoutes(app, runtime);
+    registerHealthRoutes(app, runtime, () => drain.isDraining);
     registerUpdateRoutes(app, context.principal, config.updateControlDirectory);
     registerApiRoutes(app, {
       services,

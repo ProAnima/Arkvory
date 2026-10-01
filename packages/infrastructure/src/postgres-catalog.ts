@@ -69,12 +69,16 @@ export class PostgresCatalog implements Catalog {
   private claim: StorageOwnership | undefined;
   private claimAttempted = false;
   private claiming = false;
+  /** poolSize bounds query connections; ownership, lease and pin sessions hold up to three. */
   constructor(
     connectionString: string,
     private readonly capacityBytes: number,
     maxWriters: number,
+    poolSize = 5,
   ) {
-    this.pool = catalogPool(connectionString, 5);
+    if (!Number.isSafeInteger(poolSize) || poolSize < 4 || poolSize > 200)
+      throw new Error('Invalid database pool size');
+    this.pool = catalogPool(connectionString, poolSize);
     this.locks = catalogPool(connectionString, maxWriters);
   }
 

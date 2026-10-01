@@ -21,13 +21,25 @@ async function syncDirectory(directory: string): Promise<void> {
   }
 }
 
+/** Free space kept for the database, logs and the OS; ARKVORY_STORAGE_RESERVE_BYTES. */
+export const defaultStorageReserveBytes = 1024 ** 3;
+export function storageReserveBytes(raw: string | undefined): number {
+  if (raw === undefined) return defaultStorageReserveBytes;
+  const value = Number(raw);
+  if (!/^(0|[1-9][0-9]*)$/.test(raw) || !Number.isSafeInteger(value))
+    throw new Error('Invalid ARKVORY_STORAGE_RESERVE_BYTES');
+  return value;
+}
+
 export class LocalBlobStore implements BlobStore {
   readonly root: string;
   private reservedBytes = 0;
   constructor(
     root: string,
-    private readonly reserveBytes = 256 * 1024 ** 2,
+    private readonly reserveBytes = defaultStorageReserveBytes,
   ) {
+    if (!Number.isSafeInteger(reserveBytes) || reserveBytes < 0)
+      throw new Error('Invalid storage reserve');
     this.root = resolve(root);
   }
 

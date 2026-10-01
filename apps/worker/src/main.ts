@@ -5,6 +5,9 @@ import { StorageService } from '@proanima/arkvory-application';
 import { ArkvoryError } from '@proanima/arkvory-domain';
 import {
   DiagnosticLogger,
+  classifyFailure,
+  failureCause,
+  startupReason,
   PostgresJobs,
   PostgresJobLease,
   PostgresIdentity,
@@ -12,6 +15,20 @@ import {
   parseKeys,
 } from '@proanima/arkvory-infrastructure';
 import { resources } from './runtime.js';
+
+/** Job error codes drive bounded requeue; only an ArkvoryError keeps its deliberate code. */
+function jobErrorCode(error: unknown): string {
+  if (error instanceof ArkvoryError) return error.code;
+  switch (classifyFailure(error)) {
+    case 'storage_full':
+      return 'capacity_exceeded';
+    case 'dependency_unavailable':
+    case 'cancelled':
+      return 'unavailable';
+    case 'unexpected':
+      return 'internal';
+  }
+}
 
 const diagnostics = new DiagnosticLogger(process.stdout, () => new Date().toISOString());
 const stop = new AbortController();
@@ -54,6 +71,7 @@ try {
       }
       const lease = new PostgresJobLease(jobs, job.id, job.generation, () => catalog.active);
       let errorCode: string | null = null;
+      let cause: ReturnType<typeof failureCause> | undefined;
       try {
         await lease.start();
         currentLease = lease;
@@ -83,7 +101,8 @@ try {
           },
         });
       } catch (error) {
-        errorCode = error instanceof ArkvoryError ? error.code : 'unavailable';
+        errorCode = jobErrorCode(error);
+        if (!(error instanceof ArkvoryError)) cause = failureCause(error);
       }
       let recorded = false;
       currentLease = undefined;
@@ -98,6 +117,7 @@ try {
         code: !recorded ? 'completion.lease_lost' : (errorCode ?? 'completion.completed'),
         jobId: job.id,
         repository: job.repository,
+        ...cause,
       });
       if (process.argv.includes('--once')) break;
     }
@@ -107,8 +127,15 @@ try {
     clearInterval(recovery);
     await catalog.close();
   }
-} catch {
-  diagnostics.write({ level: 'error', component: 'worker', code: 'worker.unavailable' });
+} catch (error) {
+  // Constant identifiers and redacted validation text only; never URLs or credentials.
+  diagnostics.write({
+    level: 'error',
+    component: 'worker',
+    code: 'worker.unavailable',
+    reason: startupReason(error),
+    ...failureCause(error),
+  });
   process.exitCode = 1;
 }
 

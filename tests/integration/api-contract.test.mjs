@@ -31,7 +31,11 @@ test('every registered API method has its documented authentication boundary and
     };
     assert.equal(
       response.statusCode,
-      op.access.kind !== 'public' ? 401 : op.path === '/health/live' ? 200 : 400,
+      op.access.kind !== 'public'
+        ? 401
+        : ['/health/live', '/health/status'].includes(op.path)
+          ? 200
+          : 400,
       `${op.method} ${op.path}: ${response.body}`,
     );
     validateResponse(op.path, op.method, response);

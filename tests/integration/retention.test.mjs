@@ -287,7 +287,7 @@ test('delete and pin races cannot commit dangling references; revoked credential
       criteria: criteria(),
       items: [selection(first), selection(second)],
     }),
-    { status: 503 },
+    { status: 500, code: 'internal' },
   );
   assert.equal(
     (

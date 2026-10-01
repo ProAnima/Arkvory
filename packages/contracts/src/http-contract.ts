@@ -65,7 +65,21 @@ const contentGet = (summary: string, parameters: readonly object[]) => ({
   parameters: [...downloadHeaders, ...parameters],
   responses: contentResponses,
 });
+const healthStatusContent = { 'application/json': { schema: healthStatusSchema } };
 export const supplementalPaths = {
+  '/health/status': {
+    get: {
+      summary: 'Public load-balancer readiness without details; outside the request budget.',
+      responses: {
+        '200': { description: 'Ready to accept new transfers.', content: healthStatusContent },
+        '503': {
+          description: 'unavailable (dependency or ownership) or draining (graceful shutdown).',
+          headers: { 'Retry-After': header('Seconds before the next probe.') },
+          content: healthStatusContent,
+        },
+      },
+    },
+  },
   '/health/live': {
     get: {
       summary: 'Public process liveness; does not check dependencies.',
@@ -130,3 +144,4 @@ export const supplementalPaths = {
 };
 import { packageQueryParameters } from './promotion-api.js';
 import { apiSurfaces } from './api-surfaces.js';
+import { healthStatusSchema } from './health.js';

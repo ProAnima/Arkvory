@@ -33,8 +33,13 @@ export class ApiRuntime {
     this.role = gatewayRole(config);
     // Validate local limits before allocating pools or claiming ownership.
     this.transfers = createTransferControls(config, this.available);
-    this.blobs = new LocalBlobStore(config.dataDirectory);
-    this.catalog = new PostgresCatalog(config.databaseUrl, config.capacityBytes, config.maxUploads);
+    this.blobs = new LocalBlobStore(config.dataDirectory, config.storageReserveBytes);
+    this.catalog = new PostgresCatalog(
+      config.databaseUrl,
+      config.capacityBytes,
+      config.maxUploads,
+      config.databasePoolSize ?? 10,
+    );
     this.pins = new PostgresContentPins(this.catalog.pool);
     this.lease = config.sharedDownloads
       ? new PostgresDownloadLease(this.catalog.pool, config.sharedDownloads)

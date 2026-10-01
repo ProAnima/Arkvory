@@ -10,7 +10,9 @@ export type ErrorCode =
   | 'capacity_exceeded'
   | 'integrity_mismatch'
   | 'busy'
-  | 'unavailable';
+  | 'unavailable'
+  /** Unclassified server defect: 500 without Retry-After; clients must not retry blindly. */
+  | 'internal';
 
 export class ArkvoryError extends Error {
   constructor(

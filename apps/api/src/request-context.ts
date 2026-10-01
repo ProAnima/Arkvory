@@ -1,12 +1,16 @@
 import type { FastifyRequest, FastifyReply } from 'fastify';
 import { ArkvoryError } from '@proanima/arkvory-domain';
 import type { Principal } from '@proanima/arkvory-domain';
+import type { FailureCause } from '@proanima/arkvory-infrastructure';
 
 /** Request-local authority and cancellation; no process-global request state. */
-export function createRequestContext() {
+export function createRequestContext(maxRequests = 128) {
+  if (!Number.isSafeInteger(maxRequests) || maxRequests < 1)
+    throw new Error('Invalid request budget');
   const principals = new WeakMap<FastifyRequest, Principal>();
   const requestSignals = new WeakMap<FastifyRequest, AbortSignal>();
   const errorCodes = new WeakMap<FastifyRequest, string>();
+  const errorCauses = new WeakMap<FastifyRequest, FailureCause>();
   let requests = 0;
   const principal = (request: FastifyRequest): Principal => {
     const result = principals.get(request);
@@ -30,7 +34,7 @@ export function createRequestContext() {
     return controller.signal;
   };
   const countRequest = (reply: FastifyReply) => {
-    if (requests >= 128) throw new ArkvoryError('busy', 'Request capacity exceeded');
+    if (requests >= maxRequests) throw new ArkvoryError('busy', 'Request capacity exceeded');
     requests++;
     let released = false;
     reply.raw.once('close', () => {
@@ -51,8 +55,10 @@ export function createRequestContext() {
     peekPrincipal: (request: FastifyRequest) => principals.get(request),
     requestSignal: (request: FastifyRequest) => requestSignals.get(request),
     errorCode: (request: FastifyRequest) => errorCodes.get(request),
-    recordError: (request: FastifyRequest, code: string) => {
+    errorCause: (request: FastifyRequest) => errorCauses.get(request),
+    recordError: (request: FastifyRequest, code: string, cause?: FailureCause) => {
       errorCodes.set(request, code);
+      if (cause) errorCauses.set(request, cause);
     },
   };
 }

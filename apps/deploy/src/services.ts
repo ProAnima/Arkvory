@@ -6,7 +6,7 @@ import type { Installation, Release } from './model.js';
 import { jsonFile } from './files.js';
 import { runtimeEnvironment } from './runtime.js';
 import { setTimeout as delay } from 'node:timers/promises';
-import { healthReady } from './health.js';
+import { healthReady, localApiHost } from './health.js';
 import { windowsAdministrator } from './preflight.js';
 
 export class Services {
@@ -90,10 +90,12 @@ export class Services {
     const env = runtimeEnvironment(await jsonFile(join(this.root, 'config/runtime.json')));
     const port = this.state.mode === 'compose' ? '8080' : (env['ARKVORY_PORT'] ?? '8080');
     if (!/^[0-9]{1,5}$/.test(port)) throw new Error('Invalid health port');
+    // Compose publishes the container port on host loopback regardless of ARKVORY_HOST.
+    const host = this.state.mode === 'compose' ? '127.0.0.1' : localApiHost(env['ARKVORY_HOST']);
     let consecutive = 0;
     for (let attempt = 0; attempt < 60; attempt++) {
       try {
-        consecutive = (await healthReady(port, join(this.root, 'config/health-token.txt')))
+        consecutive = (await healthReady(port, join(this.root, 'config/health-token.txt'), host))
           ? consecutive + 1
           : 0;
         if (consecutive >= 3) {

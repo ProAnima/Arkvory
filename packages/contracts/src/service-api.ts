@@ -240,7 +240,7 @@ const auditSchema = {
 };
 const error = {
   description:
-    'code, message and requestId; 400 invalid input, 401 credential, 403 scope, 404 missing, 409 revision/idempotency, 503 unavailable, 507 capacity',
+    'code, message and requestId; 400 invalid input, 401 credential, 403 scope, 404 missing, 409 revision/idempotency, 500 internal without Retry-After, 503 busy/unavailable with Retry-After, 507 capacity',
   content: {
     'application/json': {
       schema: {

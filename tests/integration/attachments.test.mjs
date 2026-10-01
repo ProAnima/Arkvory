@@ -246,7 +246,8 @@ test('attachment history, target pins and audit roll back together; migration 12
     headers: f.headers,
     payload: { expectedRevision: 0, items: [item(target)] },
   });
-  assert.equal(response.statusCode, 503);
+  assert.equal(response.statusCode, 500);
+  assert.equal(response.json().code, 'internal');
   assert.equal((await f.app.inject({ url, headers: f.headers })).json().revision, 0);
   assert.equal(
     (await f.catalog.pool.query('SELECT count(*) FROM arkvory_attachment_targets')).rows[0].count,

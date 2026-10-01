@@ -203,6 +203,21 @@ test('bounded retries, Retry-After, cancellation and attempt deadlines', async (
       }
     },
   );
+  await t.test('500 internal is final while transient 503 is retried', async (t) => {
+    for (const [status, code, expected] of [
+      [500, 'internal', 1],
+      [503, 'unavailable', 3],
+    ]) {
+      let count = 0;
+      const { client } = await serve(t, (_req, res) => {
+        count++;
+        res.writeHead(status, { 'content-type': 'application/json' });
+        res.end(JSON.stringify({ code, message: 'failure', requestId: 'r' }));
+      });
+      await assert.rejects(client.downloadVerified('releases', 'id'), { status, code });
+      assert.equal(count, expected, `${status} attempts`);
+    }
+  });
   await t.test('abort stops backoff before another request', async (t) => {
     let count = 0;
     const controller = new AbortController();
