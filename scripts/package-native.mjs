@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, cp, copyFile, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, cp, copyFile, readFile, writeFile, rm } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { execFileSync } from 'node:child_process';
@@ -42,6 +42,8 @@ await writeFile(
   join(output, `native-${process.platform}.json`),
   JSON.stringify({ version: release.version, commit: release.commit, files: hashes }, null, 2),
 );
+// The stage holds expanded runtimes and installer inputs only; the packages are in `output`.
+await rm(stage, { recursive: true, force: true, maxRetries: 3 });
 console.log(`Native packages: ${output}`);
 
 function powershell(script, environment = {}) {

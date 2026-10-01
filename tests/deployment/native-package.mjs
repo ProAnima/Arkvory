@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { mkdir, mkdtemp, readFile, access } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, access, rm } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
 import { tmpdir } from 'node:os';
 import assert from 'node:assert/strict';
@@ -23,3 +23,5 @@ await access(
   join(output, process.platform === 'win32' ? 'Arkvory-Setup-x64.exe' : 'Arkvory-amd64.deb'),
 );
 console.log('Native package compiled; pinned dependencies and release identity verified');
+// Kept on failure for diagnosis; the native packages themselves live in `output`.
+await rm(temporary, { recursive: true, force: true, maxRetries: 3 });
