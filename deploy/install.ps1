@@ -28,8 +28,14 @@ if (-not (Test-Path -LiteralPath $node)) {
     $archive = Join-Path $work 'node.zip'
     Invoke-WebRequest 'https://nodejs.org/dist/v24.21.0/node-v24.21.0-win-x64.zip' -OutFile $archive -UseBasicParsing
     if ((Get-FileHash $archive -Algorithm SHA256).Hash -ne '158F7685B44DE51F6C0DF1D153526CBCD3E1BC739A8DFC607721CEF75DE9E541') { throw 'Node.js checksum mismatch' }
-    Expand-Archive -LiteralPath $archive -DestinationPath (Join-Path $Root 'runtime') -Force
     $node = Join-Path $Root 'runtime/node-v24.21.0-win-x64/node.exe'
+    # Antivirus scanning can briefly hold a freshly extracted node.exe; retry before failing clearly.
+    foreach ($attempt in 1..3) {
+        Expand-Archive -LiteralPath $archive -DestinationPath (Join-Path $Root 'runtime') -Force
+        if (Test-Path -LiteralPath $node) { break }
+        Start-Sleep -Seconds (2 * $attempt)
+    }
+    if (-not (Test-Path -LiteralPath $node)) { throw 'Node.js runtime is incomplete after extraction (node.exe missing); check antivirus quarantine' }
 }
 if ($Version -and $Version -notmatch '^(0|[1-9][0-9]{0,5})\.(0|[1-9][0-9]{0,5})\.(0|[1-9][0-9]{0,5})$') { throw 'Invalid stable version' }
 if ($Artifact) {
