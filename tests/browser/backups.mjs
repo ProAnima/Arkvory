@@ -15,6 +15,22 @@ import {
 const isStatus = (request) => request.url().includes('/api/v1/backup/status');
 const two = (value) => String(value).padStart(2, '0');
 
+/**
+ * Retention keeps one point per local day of the plan zone. A fixed zone made the expected
+ * keep/delete split depend on the wall clock near local midnight; a zone where it is now about
+ * noon keeps every point of this short scenario on one local day whenever the gate runs.
+ */
+function middayZone(now = new Date()) {
+  let best = 0;
+  for (let offset = -11; offset <= 12; offset++) {
+    const hour = (now.getUTCHours() + offset + 24) % 24;
+    const current = (now.getUTCHours() + best + 24) % 24;
+    if (Math.abs(hour - 12) < Math.abs(current - 12)) best = offset;
+  }
+  // POSIX-style Etc zones invert the sign: Etc/GMT-3 is UTC+03:00.
+  return best === 0 ? 'UTC' : `Etc/GMT${best > 0 ? '-' : '+'}${String(Math.abs(best))}`;
+}
+
 async function warningCodes(page) {
   return page
     .locator('#backup-warnings li')
@@ -350,6 +366,7 @@ export async function exerciseBackups(browser, origin, f) {
     await queuedRun(page, f);
     await agentWithoutVault(page, f);
     const { path: vault } = await newVault({ after: (fn) => cleanup.push(fn) });
+    await savePlan(f, { timezone: middayZone() });
     const points = await captures(page, f, vault);
     agent = points.agent;
     await retention(page, f, points);
