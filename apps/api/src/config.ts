@@ -1,7 +1,8 @@
 import { readFile } from 'node:fs/promises';
 import { isIP } from 'node:net';
 import { ArkvoryError, MAX_OBJECT_BYTES } from '@proanima/arkvory-domain';
-import { parseKeys, downloadShare } from '@proanima/arkvory-infrastructure';
+import { parseKeys, downloadShare, readMirrorSettings } from '@proanima/arkvory-infrastructure';
+import type { MirrorConfiguration } from '@proanima/arkvory-application';
 import type { SharedDownloadPolicy } from '@proanima/arkvory-infrastructure';
 import type { ServiceKey } from '@proanima/arkvory-infrastructure';
 import { parseCorsOrigins } from './cors.js';
@@ -44,6 +45,8 @@ export interface ServerConfig extends UploadTimeoutOptions, OperabilityOptions {
   readonly maxObjectBytes?: number;
   /** Built-in HTTPS; absent means plain HTTP for loopback or a TLS-terminating proxy. */
   readonly tls?: TlsSettings;
+  /** Mirrored repositories (ADR 0058): read-only for clients, synchronized by the worker. */
+  readonly mirrors?: readonly MirrorConfiguration[];
 }
 
 /** Startup logs may print these messages: they name the variable, never its value or path. */
@@ -71,6 +74,26 @@ async function readKeys(path: string): Promise<readonly ServiceKey[]> {
   return parseKeys(keys);
 }
 
+/** Bytes per second: 0 is unlimited, otherwise 64 KiB/s to 1 TiB/s. */
+function byteRate(env: NodeJS.ProcessEnv, name: string): number {
+  const raw = env[name] ?? '0';
+  const value = Number(raw);
+  if (
+    !/^(0|[1-9][0-9]*)$/.test(raw) ||
+    !Number.isSafeInteger(value) ||
+    (value !== 0 && (value < 65536 || value > 1024 ** 4))
+  )
+    throw new Error(`Invalid ${name}`);
+  return value;
+}
+
+/** The API needs which repositories are mirrors and of what; the source key stays with the worker. */
+async function readMirrors(env: NodeJS.ProcessEnv): Promise<readonly MirrorConfiguration[]> {
+  return (await readMirrorSettings(env['ARKVORY_MIRRORS_FILE'])).map(
+    ({ repository, upstream, sourceRepository }) => ({ repository, upstream, sourceRepository }),
+  );
+}
+
 export async function loadConfig(env: NodeJS.ProcessEnv): Promise<ServerConfig> {
   const required = (name: string): string => {
     const value = env[name];
@@ -91,20 +114,11 @@ export async function loadConfig(env: NodeJS.ProcessEnv): Promise<ServerConfig> 
       'ARKVORY_DATABASE_URL must be a PostgreSQL connection URL',
     );
   const keys = await readKeys(required('ARKVORY_KEYS_FILE'));
+  const mirrors = await readMirrors(env);
   const maxUploads = number('ARKVORY_MAX_UPLOADS', 2, 32);
   const maxDownloads = number('ARKVORY_MAX_DOWNLOADS', 16, 256);
   const transferQueueLimit = number('ARKVORY_TRANSFER_QUEUE_LIMIT', 64, 1024);
-  const rate = (name: string): number => {
-    const raw = env[name] ?? '0';
-    const value = Number(raw);
-    if (
-      !/^(0|[1-9][0-9]*)$/.test(raw) ||
-      !Number.isSafeInteger(value) ||
-      (value !== 0 && (value < 65536 || value > 1024 ** 4))
-    )
-      throw new Error(`Invalid ${name}`);
-    return value;
-  };
+  const rate = (name: string) => byteRate(env, name);
   const role = env['ARKVORY_ROLE'] ?? 'api';
   if (role !== 'api' && role !== 'reader') throw new Error('Invalid ARKVORY_ROLE');
   let sharedDownloads: SharedDownloadPolicy | undefined;
@@ -141,6 +155,7 @@ export async function loadConfig(env: NodeJS.ProcessEnv): Promise<ServerConfig> 
       : { maxObjectBytes: number('ARKVORY_MAX_OBJECT_BYTES', MAX_OBJECT_BYTES, MAX_OBJECT_BYTES) }),
     dataDirectory: required('ARKVORY_DATA_DIR'),
     keys,
+    ...(mirrors.length > 0 ? { mirrors } : {}),
     corsOrigins: parseCorsOrigins(env['ARKVORY_CORS_ORIGINS']),
     webDirectory: env['ARKVORY_WEB_DIR'] ?? 'apps/web/public',
     ...(env['ARKVORY_UPDATE_CONTROL_DIR']

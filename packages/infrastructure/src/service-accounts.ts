@@ -254,7 +254,7 @@ export class PostgresServices implements ServiceStore {
         key_id: string | null;
         occurred_at: Date;
       }>(
-        'SELECT sequence::text,actor,action,account_id,key_id,occurred_at FROM arkvory_service_audit WHERE account_id=$1 AND sequence>$2::bigint ORDER BY sequence LIMIT 100',
+        'SELECT sequence::text,actor,action,account_id,key_id,occurred_at FROM arkvory_service_audit WHERE account_id=$1 AND sequence>$2::bigint ORDER BY arkvory_service_audit.sequence LIMIT 100',
         [accountId, after],
       );
       return rows.rows.map((r) => ({

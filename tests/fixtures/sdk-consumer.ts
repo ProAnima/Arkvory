@@ -67,8 +67,9 @@ export type UnchangedKeys = Assert<
       | 'securityAudit'
       // ADR 0056: instance backups as the additive namespace `backup`.
       | 'backup'
-      // ADR 0058: the repository change feed that mirrors follow.
+      // ADR 0058: the repository change feed that mirrors follow and the mirror status.
       | 'catalogChanges'
+      | 'repositoryMirror'
     >,
     keyof LegacyClient
   >

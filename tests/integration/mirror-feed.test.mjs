@@ -114,3 +114,26 @@ test('the feed needs only list access, and rejects malformed cursors with field 
   });
   assert.equal(other.statusCode, 403, 'no feed of a repository outside the key scope');
 });
+
+test('more than nine changes stay in numeric order on every page of the feed and the audit', async (t) => {
+  const f = await setup(t);
+  for (let index = 0; index < 12; index++) await publish(f, `artifact ${String(index)}`);
+  const numeric = (items) => items.map((item) => Number(item.sequence));
+  const ascending = (values) =>
+    values.every((value, index) => index === 0 || value > values[index - 1]);
+  const all = await changes(f);
+  assert.equal(all.items.length, 12);
+  assert.ok(ascending(numeric(all.items)), JSON.stringify(numeric(all.items)));
+  // Pages of five follow each other without gaps or repeats ("10" must not sort before "9").
+  const paged = [];
+  let after = '0';
+  for (;;) {
+    const page = await changes(f, `?after=${after}&limit=5`);
+    paged.push(...page.items);
+    if (page.next === null) break;
+    after = page.next;
+  }
+  assert.deepEqual(numeric(paged), numeric(all.items));
+  const audit = await f.app.inject({ url: `${base}/audit`, headers: f.headers });
+  assert.ok(ascending(numeric(audit.json().items)), audit.body);
+});

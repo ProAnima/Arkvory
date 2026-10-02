@@ -1,8 +1,23 @@
-import { authorize, ArkvoryError, requireRepository } from './artifact.js';
+import { authorize, ArkvoryError, requireRepository, requireWritable } from './artifact.js';
 import type { Principal } from './artifact.js';
 
 import { serviceActions } from './service-policy.js';
 import type { ServiceAction, ServiceBinding } from './service-policy.js';
+/** Actions that never change a repository; every other action is refused in a mirror. */
+const readActions: ReadonlySet<ServiceAction> = new Set([
+  'repository.read',
+  'storage.read',
+  'diagnostics.read',
+  'artifact.read',
+  'artifact.list',
+  'content.read',
+  'upload.read',
+  'job.read',
+  'package.read',
+  'asset.read',
+  'annotation.read',
+  'audit.read',
+]);
 function action(value: unknown): ServiceAction {
   const found = serviceActions.find((item) => item === value);
   if (!found) throw new ArkvoryError('invalid_input', 'Unknown service permission');
@@ -85,6 +100,7 @@ export function authorizeAction(
       throw new ArkvoryError('forbidden', 'Service permission denied', {
         reason: 'permission_missing',
       });
+    if (!readActions.has(permission)) requireWritable(principal, repository);
   } else {
     if (legacy === null || legacy.length === 0)
       throw new ArkvoryError('forbidden', 'Explicit managed permission required', {

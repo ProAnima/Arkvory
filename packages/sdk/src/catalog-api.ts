@@ -9,6 +9,7 @@ import {
   readPackageList,
   readArtifactSearchPage,
   readCatalogChangePage,
+  readRepositoryMirror,
 } from '@proanima/arkvory-contracts';
 import type {
   ArtifactSearchPageResponse,
@@ -169,6 +170,12 @@ export class CatalogApi {
         undefined,
         query.signal,
       ),
+    );
+  }
+  /** Synchronization of a mirrored repository; 404 (ArkvoryHttpError) for an ordinary one. */
+  async mirror(repository: string, signal?: AbortSignal) {
+    return readRepositoryMirror(
+      await this.http.call(repositoryPath(repository, 'mirror'), 'GET', undefined, signal),
     );
   }
   async registerPackage(repository: string, id: string, signal?: AbortSignal) {

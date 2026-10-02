@@ -13,9 +13,11 @@ import {
   PostgresJobs,
   PostgresIdentity,
   PostgresServices,
+  readMirrorSettings,
 } from '@proanima/arkvory-infrastructure';
 import type { LogLevel, PostgresJobLease } from '@proanima/arkvory-infrastructure';
-import { resources } from './runtime.js';
+import { capacityBytes, resources } from './runtime.js';
+import { runMirrors } from './mirror-loop.js';
 import { processJob, retireExhausted } from './completion.js';
 
 let levelError: Error | undefined;
@@ -59,7 +61,12 @@ try {
   if (levelError) throw levelError;
   const keyFile = process.env['ARKVORY_KEYS_FILE'];
   if (!keyFile) throw new Error('ARKVORY_KEYS_FILE is required');
-  const { catalog, blobs } = await resources('worker');
+  const mirrors = await readMirrorSettings(process.env['ARKVORY_MIRRORS_FILE']);
+  // Mirror copies create uploads here, so they need the installation's capacity limit.
+  const { catalog, blobs } = await resources(
+    'worker',
+    mirrors.length > 0 ? capacityBytes(process.env['ARKVORY_CAPACITY_BYTES']) : 0,
+  );
   let currentLease: PostgresJobLease | undefined;
   const recovery = setInterval(() => {
     if (stop.signal.aborted || (catalog.active && (!currentLease || currentLease.active))) return;
@@ -87,6 +94,14 @@ try {
     },
   };
   diagnostics.write({ level: 'info', component: 'worker', code: 'worker.started' });
+  const mirroring = runMirrors({
+    catalog,
+    blobs,
+    dataDirectory: process.env['ARKVORY_DATA_DIR'] ?? '',
+    mirrors,
+    stop: stop.signal,
+    diagnostics,
+  });
   try {
     while (!stop.signal.aborted && catalog.active) {
       await retireExhausted(jobs, diagnostics);
@@ -102,6 +117,9 @@ try {
     if (!catalog.active && !stop.signal.aborted)
       throw new ArkvoryError('unavailable', 'Worker ownership lost');
   } finally {
+    // Mirror loops end on the same stop signal or lost ownership; the pool closes after them.
+    if (!stop.signal.aborted) stopWorker();
+    await mirroring;
     clearInterval(recovery);
     await catalog.close();
   }

@@ -23,6 +23,7 @@ export const errorReasons = {
     'already_exists',
     'stage_limit',
     'state_conflict',
+    'mirror_read_only',
   ],
   forbidden: [
     'permission_missing',

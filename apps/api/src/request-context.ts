@@ -4,7 +4,11 @@ import type { Principal } from '@proanima/arkvory-domain';
 import type { FailureCause } from '@proanima/arkvory-infrastructure';
 
 /** Request-local authority and cancellation; no process-global request state. */
-export function createRequestContext(maxRequests = 128) {
+/**
+ * `readOnly` lists the mirrored repositories (ADR 0058): every authenticated principal carries
+ * them, so authorization refuses changes there whatever grants the credential has.
+ */
+export function createRequestContext(maxRequests = 128, readOnly: readonly string[] = []) {
   if (!Number.isSafeInteger(maxRequests) || maxRequests < 1)
     throw new Error('Invalid request budget');
   const principals = new WeakMap<FastifyRequest, Principal>();
@@ -55,7 +59,11 @@ export function createRequestContext(maxRequests = 128) {
     countRequest,
     // A per-request copy carries the correlation ID into scenarios, jobs and audit rows explicitly.
     authenticate: (request: FastifyRequest, value: Principal) => {
-      principals.set(request, { ...value, requestId: request.id });
+      principals.set(request, {
+        ...value,
+        requestId: request.id,
+        ...(readOnly.length > 0 ? { readOnlyRepositories: readOnly } : {}),
+      });
     },
     peekPrincipal: (request: FastifyRequest) => principals.get(request),
     requestSignal: (request: FastifyRequest) => requestSignals.get(request),

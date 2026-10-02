@@ -12,7 +12,9 @@ import {
   ArtifactPromotion,
   PackageResolver,
   BackupControl,
+  MirrorStatus,
 } from '@proanima/arkvory-application';
+import type { MirrorConfiguration } from '@proanima/arkvory-application';
 import {
   PostgresIdentity,
   PostgresSecurityAudit,
@@ -32,6 +34,7 @@ import {
   PostgresBackupPlan,
   PostgresBackupRequests,
   PostgresBackupStatus,
+  PostgresMirrorState,
 } from '@proanima/arkvory-infrastructure';
 import { AuthThrottle } from './auth-throttle.js';
 import { BackupMetrics } from './backup-metrics.js';
@@ -46,7 +49,11 @@ export function createApiServices(
   catalog: PostgresCatalog,
   blobs: LocalBlobStore,
   pins: PostgresContentPins,
-  options: { allowRegistration?: boolean; maxObjectBytes?: number } = {},
+  options: {
+    allowRegistration?: boolean;
+    maxObjectBytes?: number;
+    mirrors?: readonly MirrorConfiguration[];
+  } = {},
 ) {
   const { allowRegistration = false, maxObjectBytes } = options;
   const now = () => new Date().toISOString();
@@ -70,6 +77,7 @@ export function createApiServices(
   const backupRequests = new PostgresBackupRequests(catalog.pool);
   return {
     jobs,
+    mirrors: new MirrorStatus(options.mirrors ?? [], new PostgresMirrorState(catalog.pool)),
     metricSources: {
       jobs,
       backup: new BackupMetrics(backupStatus, () => performance.now()),

@@ -233,6 +233,9 @@ export class ArkvoryClient {
   catalogChanges(...args: Parameters<CatalogApi['changes']>) {
     return this.catalog.changes(...args);
   }
+  repositoryMirror(...args: Parameters<CatalogApi['mirror']>) {
+    return this.catalog.mirror(...args);
+  }
   setAsset(...args: Parameters<AssetsApi['setAsset']>) {
     return this.assets.setAsset(...args);
   }

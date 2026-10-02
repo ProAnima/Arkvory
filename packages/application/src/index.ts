@@ -30,3 +30,6 @@ export type * from './backup-agent-ports.js';
 export * from './backup-control.js';
 export * from './backup-agent.js';
 export * from './backup-retention-apply.js';
+export * from './mirror-ports.js';
+export * from './mirror-sync.js';
+export * from './mirror-status.js';

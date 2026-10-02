@@ -141,6 +141,19 @@ export interface Principal {
    * composition root; authorization never reads it. Audit and job adapters persist it.
    */
   readonly requestId?: string;
+  /**
+   * Mirrored repositories of this installation (ADR 0058), set by the API composition root for
+   * every request: changes there come only from synchronization, whatever the grants say.
+   */
+  readonly readOnlyRepositories?: readonly string[];
+}
+
+/** A mirrored repository refuses changes with a distinct reason instead of a missing grant. */
+export function requireWritable(principal: Principal, repository: string): void {
+  if (principal.readOnlyRepositories?.includes(repository))
+    throw new ArkvoryError('conflict', 'This repository is a read-only mirror', {
+      reason: 'mirror_read_only',
+    });
 }
 
 export function authorize(
@@ -162,6 +175,7 @@ export function authorize(
     throw new ArkvoryError('forbidden', 'Repository access denied', {
       reason: 'permission_missing',
     });
+  if (permission === 'write') requireWritable(principal, repository);
 }
 
 export interface MutationAccess {

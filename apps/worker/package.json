@@ -18,6 +18,7 @@
   "dependencies": {
     "@proanima/arkvory-domain": "0.0.0",
     "@proanima/arkvory-application": "0.0.0",
-    "@proanima/arkvory-infrastructure": "0.0.0"
+    "@proanima/arkvory-infrastructure": "0.0.0",
+    "@proanima/arkvory-sdk": "0.0.0"
   }
 }

@@ -13,7 +13,7 @@ export interface BackupTable {
 export const MINIMUM_RESTORE_SCHEMA = 25;
 
 /**
- * Every Arkvory table of schema 27 is either exported here, in foreign-key-safe load order, or
+ * Every Arkvory table of schema 28 is either exported here, in foreign-key-safe load order, or
  * excluded below with a reason. A migration that adds a table must extend one of the lists;
  * capture refuses an unlisted table and tests compare both lists with a migrated database.
  */
@@ -50,6 +50,8 @@ export const exportedTables: readonly BackupTable[] = [
   { name: 'arkvory_promotion_events', key: ['sequence'] },
   { name: 'arkvory_promotions', key: ['target_artifact_id'] },
   { name: 'arkvory_security_audit', key: ['id'] },
+  // The feed cursor belongs to the mirrored data: restored together, the mirror continues.
+  { name: 'arkvory_mirror_state', key: ['repository'] },
 ];
 
 export const excludedTables: readonly ExcludedTable[] = [

@@ -1,7 +1,10 @@
 import type { Pool, PoolClient } from 'pg';
 import type { CatalogAuditEntry, CatalogFeedPage } from '@proanima/arkvory-application';
 
-/** Catalog mutation journal after a decimal sequence cursor; at most 100 entries per call. */
+/**
+ * Catalog mutation journal after a decimal sequence cursor; at most 100 entries per call.
+ * ORDER BY names the table column: the bare name would sort the text output column ("10" < "9").
+ */
 export async function readCatalogAudit(
   pool: Pool,
   repository: string,
@@ -14,7 +17,7 @@ export async function readCatalogAudit(
     artifact_id: string;
     occurred_at: Date;
   }>(
-    'SELECT sequence::text,actor,action,artifact_id,occurred_at FROM arkvory_audit WHERE repository=$1 AND sequence>$2::bigint ORDER BY sequence LIMIT 100',
+    'SELECT sequence::text,actor,action,artifact_id,occurred_at FROM arkvory_audit WHERE repository=$1 AND sequence>$2::bigint ORDER BY arkvory_audit.sequence LIMIT 100',
     [repository, after],
   );
   return result.rows.map((row) => ({
@@ -39,7 +42,7 @@ export async function readCatalogChanges(
 ): Promise<CatalogFeedPage> {
   const [rows, head] = await Promise.all([
     pool.query<{ sequence: string; action: string; artifact_id: string; detail: string | null }>(
-      'SELECT sequence::text,action,artifact_id,detail FROM arkvory_audit WHERE repository=$1 AND sequence>$2::bigint ORDER BY sequence LIMIT $3',
+      'SELECT sequence::text,action,artifact_id,detail FROM arkvory_audit WHERE repository=$1 AND sequence>$2::bigint ORDER BY arkvory_audit.sequence LIMIT $3',
       [repository, after, limit],
     ),
     pool.query<{ head: string | null }>(

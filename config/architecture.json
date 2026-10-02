@@ -41,7 +41,12 @@
     },
     {
       "path": "apps/worker",
-      "allowed": ["packages/application", "packages/domain", "packages/infrastructure"]
+      "allowed": [
+        "packages/application",
+        "packages/domain",
+        "packages/infrastructure",
+        "packages/sdk"
+      ]
     },
     {
       "path": "apps/scheduler",

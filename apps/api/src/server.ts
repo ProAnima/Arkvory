@@ -117,8 +117,9 @@ export async function createServer(config: ServerConfig, lifecycle: ServerLifecy
     const services = createApiServices(runtime.catalog, runtime.blobs, runtime.pins, {
       allowRegistration: config.allowRegistration ?? false,
       ...(config.maxObjectBytes === undefined ? {} : { maxObjectBytes: config.maxObjectBytes }),
+      ...(config.mirrors ? { mirrors: config.mirrors } : {}),
     });
-    const context = createRequestContext(config.maxRequests);
+    const context = createRequestContext(config.maxRequests, services.mirrors.repositories);
     const responses = new ResponseDiagnostics(diagnostics, services.storagePolicies, context);
     // Guard registration precedes feature routes and background startup.
     registerContractGuard(app);

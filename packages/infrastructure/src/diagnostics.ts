@@ -10,6 +10,7 @@ export type LogComponent =
   | 'worker'
   | 'maintenance'
   | 'backup'
+  | 'mirror'
   | 'migrate'
   | 'process'
   | 'diagnostics';
