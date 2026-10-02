@@ -14,7 +14,7 @@ import { searchArtifacts } from './artifact-search.js';
 import { readAsset, readAssets } from './asset-list.js';
 import { readAssetPage } from './asset-page.js';
 import { readAssetHistory, readAssetRevision, writeAssetPointer } from './asset-revisions.js';
-import { readCatalogAudit, writeReference } from './catalog-audit.js';
+import { readCatalogAudit, readCatalogChanges, writeReference } from './catalog-audit.js';
 import { changePublished } from './catalog-change.js';
 import { readPackagePage } from './package-page.js';
 import { insertPackage, resolvePackageArtifact } from './package-registry.js';
@@ -98,8 +98,11 @@ export class PostgresBrowse implements BrowseStore {
     sourceRevision?: number,
   ): Promise<AssetEntry> {
     const action = sourceRevision === undefined ? 'asset.replace' : 'asset.restore';
-    return changePublished(this.pool, { repository, id, actor, action, access }, (client) =>
-      writeAssetPointer(client, { repository, path, id, expected, actor, sourceRevision }),
+    return changePublished(
+      this.pool,
+      { repository, id, actor, action, access, detail: path },
+      (client) =>
+        writeAssetPointer(client, { repository, path, id, expected, actor, sourceRevision }),
     );
   }
   search(...args: Parameters<BrowseStore['search']>) {
@@ -107,6 +110,9 @@ export class PostgresBrowse implements BrowseStore {
   }
   audit(repository: string, after: string) {
     return readCatalogAudit(this.pool, repository, after);
+  }
+  changes(repository: string, after: string, limit: number) {
+    return readCatalogChanges(this.pool, repository, after, limit);
   }
   async reference(
     repository: string,

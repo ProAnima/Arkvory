@@ -194,6 +194,24 @@ export class ArtifactCatalog {
       throw new ArkvoryError('invalid_input', 'Invalid audit cursor');
     return this.store.audit(repo, after);
   }
+  /**
+   * The repository change feed for mirrors (ADR 0058): readable with list access, without the
+   * actors of the audit journal. A full page means more may follow from its last sequence.
+   */
+  async changes(p: Principal, repo: string, after: string, limit: number) {
+    authorizeAction(p, repo, 'artifact.list', ['read']);
+    if (!/^[0-9]{1,18}$/.test(after))
+      throw new ArkvoryError('invalid_input', 'Invalid change cursor', {
+        details: [{ field: 'after', problem: 'format' }],
+      });
+    if (!Number.isSafeInteger(limit) || limit < 1 || limit > 100)
+      throw new ArkvoryError('invalid_input', 'limit must be 1 to 100', {
+        details: [{ field: 'limit', problem: 'range' }],
+      });
+    const page = await this.store.changes(repo, after, limit);
+    const last = page.items.at(-1);
+    return { ...page, next: page.items.length === limit && last ? last.sequence : null };
+  }
   async reference(p: Principal, repo: string, id: string, key: string, remove: boolean) {
     authorizeAction(p, repo, 'reference.write', ['write']);
     await this.storage.artifact(p, repo, id);

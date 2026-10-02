@@ -8,9 +8,11 @@ import {
   items,
   readPackageList,
   readArtifactSearchPage,
+  readCatalogChangePage,
 } from '@proanima/arkvory-contracts';
 import type {
   ArtifactSearchPageResponse,
+  CatalogChangePageResponse,
   BuildAttachmentResponse,
   AnnotationsResponse,
 } from '@proanima/arkvory-contracts';
@@ -150,6 +152,22 @@ export class CatalogApi {
         repositoryPath(repository, `artifacts/${encodeURIComponent(id)}/annotations`),
         'PUT',
         { expectedRevision, value },
+      ),
+    );
+  }
+  /** Ordered change feed for mirrors (ADR 0058); follow `next` until it is null. */
+  async changes(
+    repository: string,
+    query: { after?: string; limit?: number; signal?: AbortSignal } = {},
+  ): Promise<CatalogChangePageResponse> {
+    const params = new URLSearchParams({ after: query.after ?? '0' });
+    if (query.limit !== undefined) params.set('limit', String(query.limit));
+    return readCatalogChangePage(
+      await this.http.call(
+        repositoryPath(repository, `changes?${params.toString()}`),
+        'GET',
+        undefined,
+        query.signal,
       ),
     );
   }

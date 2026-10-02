@@ -14,6 +14,8 @@ import { claimStorageSession } from './storage-claim.js';
 import type { StorageRole } from './storage-claim.js';
 import { StorageOwnership } from './storage-ownership.js';
 import { lockServiceAccess } from './service-authorization.js';
+import { accessCorrelation } from './request-correlation.js';
+import { transitionUpload } from './upload-transition.js';
 import { SCHEMA_VERSION } from './schema-version.js';
 import type { Catalog, UploadMutation } from '@proanima/arkvory-application';
 
@@ -272,17 +274,9 @@ export class PostgresCatalog implements Catalog {
         check();
         // Use the SAME connection that owns the advisory lock. A lost connection
         // cannot commit a stale publication through the general-purpose pool.
-        return guarded(async () => {
-          const updated = await client.query<Record<string, unknown>>(
-            `UPDATE arkvory_uploads SET status=$3, cancelled_at=CASE WHEN $3='cancelled' THEN COALESCE(cancelled_at,now()) ELSE cancelled_at END WHERE repository=$1 AND id=$2 AND status IN ('pending',$3) AND (status='available' OR $3='cancelled' OR expires_at>now()) RETURNING *`,
-            [repository, id, target],
-          );
-          if (!updated.rows[0])
-            throw new ArkvoryError('conflict', 'Upload state prevents this operation', {
-              reason: 'upload_state',
-            });
-          return decode(updated.rows[0]);
-        });
+        return guarded(async () =>
+          decode(await transitionUpload(client, repository, id, target, accessCorrelation(access))),
+        );
       };
       const value = await action({
         recordPart: async (part) =>

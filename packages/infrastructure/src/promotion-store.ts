@@ -231,6 +231,7 @@ export class PostgresPromotions implements PromotionStore {
         stage,
         actor,
         input.comment,
+        accessCorrelation(input.target),
       );
     if (created || input.mode === 'move') await this.record(client, input, targetId);
     if (input.mode === 'move') await this.retire(client, input);

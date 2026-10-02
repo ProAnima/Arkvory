@@ -44,6 +44,8 @@ export function registerServiceRoutes(
         namespacePermissions: false,
         webhooks: false,
         replicatedStorage: false,
+        // A source a mirror can follow (ADR 0058): GET repositories/{r}/changes.
+        mirrorFeed: true,
       },
       limits: {
         maxObjectBytes: String(maxObjectBytes),

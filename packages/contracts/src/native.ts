@@ -16,6 +16,7 @@ import { operationPaths } from './operations.js';
 import { promotionPaths } from './promotion-api.js';
 import { metricsPaths } from './metrics.js';
 import { backupPaths } from './backup-api.js';
+import { mirrorPaths } from './mirror-api.js';
 import type { ApiSurface } from './api-surfaces.js';
 export const descriptorSchema = {
   type: 'object',
@@ -237,6 +238,7 @@ const composed = composeApiPaths({
   ...cleanupPaths,
   ...updatePaths,
   ...backupPaths,
+  ...mirrorPaths,
   ['/api/v1/repositories/{repository}/artifacts/{id}']: {
     ...baseDocument.paths['/api/v1/repositories/{repository}/artifacts/{id}'],
     delete: deletionOperation,

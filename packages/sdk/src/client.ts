@@ -230,6 +230,9 @@ export class ArkvoryClient {
   registerPackage(...args: Parameters<CatalogApi['registerPackage']>) {
     return this.catalog.registerPackage(...args);
   }
+  catalogChanges(...args: Parameters<CatalogApi['changes']>) {
+    return this.catalog.changes(...args);
+  }
   setAsset(...args: Parameters<AssetsApi['setAsset']>) {
     return this.assets.setAsset(...args);
   }

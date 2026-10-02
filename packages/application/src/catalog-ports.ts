@@ -39,6 +39,18 @@ export interface CatalogAuditEntry {
   artifactId: string;
   occurredAt: string;
 }
+/** One change of the repository feed (ADR 0058); `detail` is the asset path or the stage. */
+export interface CatalogFeedEntry {
+  sequence: string;
+  action: string;
+  artifactId: string;
+  detail: string | null;
+}
+export interface CatalogFeedPage {
+  items: readonly CatalogFeedEntry[];
+  /** Newest committed sequence of the repository, "0" for an empty journal. */
+  head: string;
+}
 /**
  * One available artifact in search results. `size` is a decimal string (full 64-bit precision);
  * `labels` are the current labels (annotation when replaced, otherwise the upload descriptor);
@@ -122,6 +134,7 @@ export interface ArtifactSearchStore {
 }
 export interface CatalogJournalStore {
   audit(repository: string, after: string): Promise<readonly CatalogAuditEntry[]>;
+  changes(repository: string, after: string, limit: number): Promise<CatalogFeedPage>;
   reference(
     repository: string,
     id: string,

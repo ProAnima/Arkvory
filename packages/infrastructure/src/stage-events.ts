@@ -2,6 +2,7 @@ import type { PoolClient } from 'pg';
 import { ArkvoryError, MAX_STAGES } from '@proanima/arkvory-domain';
 import type { PromotionMode } from '@proanima/arkvory-domain';
 import type { PromotionAction, PromotionEvent, StageEntry } from '@proanima/arkvory-application';
+import { appendCatalogAudit } from './catalog-audit.js';
 
 export interface StageRow {
   artifact_id: string;
@@ -54,8 +55,33 @@ export interface PromotionEventInput {
   peerRepository?: string | null;
   peerArtifactId?: string | null;
   comment?: string | null;
+  /** Stored correlation of the request; the repository change feed row carries it too. */
+  requestId?: string | null;
 }
+const feedActions: Partial<Record<PromotionAction, string>> = {
+  'stage.added': 'stage.add',
+  'stage.removed': 'stage.remove',
+};
+/**
+ * Caller holds the repository catalog gate. Stage changes also enter the repository change feed
+ * (`arkvory_audit`, ADR 0058) with the stage as detail, so mirrors follow them in commit order.
+ */
 export async function recordPromotionEvent(client: PoolClient, input: PromotionEventInput) {
+  const feed = feedActions[input.action];
+  if (feed && input.stage)
+    await appendCatalogAudit(
+      client,
+      [
+        {
+          repository: input.repository,
+          artifactId: input.artifactId,
+          actor: input.actor,
+          action: feed,
+          detail: input.stage,
+        },
+      ],
+      input.requestId ?? null,
+    );
   await client.query(
     `INSERT INTO arkvory_promotion_events
        (repository,artifact_id,action,stage,mode,peer_repository,peer_artifact_id,actor,comment)
@@ -82,6 +108,7 @@ export async function addStageInTransaction(
   stage: string,
   actor: string,
   comment: string | null,
+  requestId: string | null = null,
 ): Promise<StageEntry> {
   const inserted = await client.query<StageRow>(
     `INSERT INTO arkvory_artifact_stages(repository,artifact_id,stage,actor,comment)
@@ -99,6 +126,7 @@ export async function addStageInTransaction(
       stage,
       actor,
       comment,
+      requestId,
     });
     return stageEntry(row);
   }

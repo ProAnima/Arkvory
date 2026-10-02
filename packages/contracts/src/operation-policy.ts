@@ -1,5 +1,6 @@
 import { storageOperations, attachmentOperations } from './storage-operation-policies.js';
 import { promotionOperations } from './promotion-api.js';
+import { mirrorOperations } from './mirror-api.js';
 import { accountAdministrationOperations } from './account-operation-policies.js';
 import { backupOperations } from './backup-api.js';
 import type { BackupPermissionName } from './backup-wire.js';
@@ -489,7 +490,10 @@ for (const [suffix, method, id, actions, legacy, retry] of attachmentOperations)
     legacy,
     retry,
   );
-for (const [suffix, method, id, actions, legacy, retry] of promotionOperations)
+for (const [suffix, method, id, actions, legacy, retry] of [
+  ...promotionOperations,
+  ...mirrorOperations,
+])
   data(root + suffix, method, id, 'Catalog', actions, legacy, retry);
 for (const [path, method, id, actions, retry] of storageOperations)
   data(root + path, method, id, 'Catalog', actions, null, retry);

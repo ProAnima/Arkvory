@@ -12,6 +12,8 @@ export interface CatalogChange {
   actor: string;
   action: string;
   access: MutationAccess | undefined;
+  /** Asset path the change concerns; journaled as the feed detail (ADR 0058). */
+  detail?: string;
 }
 
 /**
@@ -42,6 +44,7 @@ export async function changePublished<T>(
           artifactId: change.id,
           actor: change.actor,
           action: change.action,
+          ...(change.detail === undefined ? {} : { detail: change.detail }),
         },
       ],
       accessCorrelation(change.access),

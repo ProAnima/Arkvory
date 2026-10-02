@@ -64,9 +64,10 @@ test('annotation and reference changes commit only together with their catalog a
   assert.equal((await reference()).statusCode, 204);
   assert.equal(await references(), 1);
   const audit = (await f.app.inject({ url: `${base}/audit`, headers: f.headers })).json().items;
+  // Since schema 27 the publication itself is journaled first (repository change feed, ADR 0058).
   assert.deepEqual(
     audit.map((entry) => entry.action),
-    ['annotations.replace', 'reference.add', 'reference.add'],
+    ['artifact.publish', 'annotations.replace', 'reference.add', 'reference.add'],
   );
 });
 

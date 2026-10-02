@@ -184,6 +184,22 @@ function registerJournalRoutes(app: FastifyInstance, services: CatalogRouteServi
       string(object(request.query)['after'], '0'),
     ),
   }));
+  app.get<{ Params: Params; Querystring: unknown }>(`${base}/changes`, (request) => {
+    const q = object(request.query);
+    if (Object.keys(q).some((key) => !['after', 'limit'].includes(key)))
+      throw new ArkvoryError('invalid_input', 'Unknown change feed option');
+    const limit = q['limit'];
+    if (limit !== undefined && (typeof limit !== 'string' || !/^[1-9][0-9]{0,2}$/.test(limit)))
+      throw new ArkvoryError('invalid_input', 'limit must be 1 to 100', {
+        details: [{ field: 'limit', problem: 'range' }],
+      });
+    return browse.changes(
+      principal(request),
+      request.params.repository,
+      string(q['after'], '0'),
+      limit === undefined ? 100 : Number(limit),
+    );
+  });
   app.route<{ Params: Params; Body: unknown }>({
     method: ['POST', 'DELETE'],
     url: `${base}/artifacts/:id/references`,

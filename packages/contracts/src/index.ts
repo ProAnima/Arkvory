@@ -24,6 +24,7 @@ export * from './storage-policy.js';
 export * from './cleanup.js';
 export * from './updates.js';
 export * from './backup-wire.js';
+export * from './mirror-api.js';
 export {
   backupOperations,
   backupPlanSchema,

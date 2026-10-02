@@ -102,7 +102,7 @@ test('migration 25 is expand-only: backup tables and the barrier row, nothing el
   const pool = await emptySchema(t);
   await migrate(pool, { upTo: 24 });
   const before = await schemaFingerprint(pool);
-  await migrate(pool);
+  await migrate(pool, { upTo: 26 });
   const after = await schemaFingerprint(pool);
   const unrelated = (row) => !/^arkvory_backup_/.test(row.table ?? row.name);
   for (const part of ['columns', 'constraints', 'indexes', 'triggers', 'functions'])
@@ -123,7 +123,7 @@ test('migration 26 is expand-only: new backup tables and defaulted counters on c
       point_id,attempts,generation) VALUES('00000000-0000-4000-8000-000000000001','capture',
       'failed','blobs','legacy','00000000-0000-4000-8000-000000000002',
       '00000000-0000-4000-8000-000000000003',1,1)`);
-  await migrate(pool);
+  await migrate(pool, { upTo: 26 });
   const after = await schemaFingerprint(pool);
   const created = /^arkvory_backup_(plan|agent|requests|points)/;
   const existing = (row) => !created.test(row.table ?? '') && !created.test(row.name ?? '');
@@ -161,4 +161,24 @@ test('migration 26 is expand-only: new backup tables and defaulted counters on c
   assert.deepEqual([plan[0].keep_daily, plan[0].keep_weekly, plan[0].keep_monthly], [7, 4, 6]);
   const agent = (await pool.query('SELECT owner, generation::int FROM arkvory_backup_agent')).rows;
   assert.deepEqual(agent, [{ owner: null, generation: 0 }]);
+});
+
+test('migration 27 is expand-only: one nullable detail column on the catalog journal', async (t) => {
+  const pool = await emptySchema(t);
+  await migrate(pool, { upTo: 26 });
+  const before = await schemaFingerprint(pool);
+  await migrate(pool, { upTo: 27 });
+  const after = await schemaFingerprint(pool);
+  const added = (row) => row.table === 'arkvory_audit' && row.column === 'detail';
+  assert.deepEqual(
+    after.columns.filter((row) => !added(row)),
+    before.columns,
+  );
+  assert.deepEqual(
+    after.columns.filter(added).map((row) => [row.not_null, row.default]),
+    [[false, null]],
+  );
+  for (const part of ['constraints', 'indexes', 'triggers', 'functions'])
+    assert.deepEqual(after[part], before[part], part);
+  assert.deepEqual(after.migrations, [...before.migrations, 27]);
 });

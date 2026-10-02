@@ -4,6 +4,7 @@ import type { Page, PromotionEvent, StageEntry, StageStore } from '@proanima/ark
 import { lockCatalogMutation, requirePublished } from './catalog-mutation.js';
 import { lockServiceAccess } from './service-authorization.js';
 import { inTransaction } from './pg-transaction.js';
+import { accessCorrelation } from './request-correlation.js';
 import {
   addStageInTransaction,
   promotionEvent,
@@ -60,6 +61,7 @@ export class PostgresStages implements StageStore {
         stage,
         access.principal.id,
         comment,
+        accessCorrelation(access),
       );
     });
   }
@@ -80,6 +82,7 @@ export class PostgresStages implements StageStore {
         action: 'stage.removed',
         stage,
         actor: access.principal.id,
+        requestId: accessCorrelation(access),
       });
       return true;
     });
