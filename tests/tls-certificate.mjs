@@ -51,7 +51,9 @@ export function selfSignedCertificate({
     ),
   );
   const serial = randomBytes(16);
-  serial[0] &= 0x7f;
+  // DER INTEGER: positive and minimal. A leading 0x00 before a byte below 0x80 is "illegal
+  // padding" (about one serial in 256), so the first byte is kept in 0x01..0x7f.
+  serial[0] = (serial[0] & 0x7f) | 0x01;
   const tbs = sequence(
     explicit(0, integer([2])),
     integer(serial),

@@ -52,10 +52,13 @@ export const notExecuted = [
     reason: 'Installs the Windows package machine-wide; runs only on a disposable runner',
   },
   {
+    // Docker Desktop shares Windows files without POSIX owners, so uid 1000 bind mounts of a
+    // Linux host (the Compose vault) behave differently there; only a Linux runner shows them.
     gate: 'deployment-containers',
     platform: 'linux',
-    kind: 'covered',
-    reason: 'The Windows lane runs it against the Docker Desktop Linux engine',
+    kind: 'gap',
+    reason:
+      'Linux-host Compose (bind-mount ownership) runs only on GitHub Actions; the Windows lane covers Docker Desktop',
   },
   {
     gate: 'security',

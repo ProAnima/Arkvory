@@ -16,7 +16,7 @@
 - Контейнерные lanes получают исходники через `git bundle`, а не через bind mount: тестируется ровно коммит, `node_modules` хоста в Linux не попадает. При `--allow-dirty` рабочее дерево фиксируется как отдельный commit object через временный индекс (HEAD, индекс и stash не меняются). Такое evidence помечено `dirty` и для выпуска не годится.
 - Проверка одноразовой машины (`tests/deployment/disposable-host.mjs`) принимает GitHub Actions или Linux-контейнер с `ARKVORY_DISPOSABLE_HOST=container` и маркером `/.dockerenv` или `/run/.containerenv`. Переменная на рабочей станции без контейнера не проходит. Проверка RPM копирует пакеты в sibling-контейнер через `docker cp` вместо bind mount, поэтому работает и из контейнера с сокетом движка хоста.
 - План lanes (`scripts/ci/lanes.mjs`) — исполняемое правило. Каждый гейт из `mergeTasks` (и `releaseTasks` для release) на каждой платформе либо выполняется, либо объявлен явно:
-  - `gap` — локально не покрыт: Windows `deployment-services` и `native-install`;
+  - `gap` — локально не покрыт: Windows `deployment-services` и `native-install`; Linux `deployment-containers` (права bind mount Linux-хоста, добавлено 2026-10-02 после ошибки vault Compose, которую Docker Desktop не воспроизводит);
   - `covered` — платформенно-независимый результат даёт другой lane.
 
   Новый гейт без такого решения роняет unit-тест.

@@ -23,10 +23,12 @@ const host = { os: 'Windows_NT 10', node: 'v24', docker: '29' };
 test('every required gate runs in a local lane or is declared not executed', () => {
   assert.deepEqual(uncoveredGates(registry, 'verify'), []);
   assert.deepEqual(uncoveredGates(registry, 'release'), []);
-  // Only service installs on Windows are real gaps; everything else is covered elsewhere.
+  // Real gaps: service installs on Windows and Compose on a Linux host; the rest is covered.
   assert.deepEqual(
-    notExecuted.filter((entry) => entry.kind === 'gap').map((entry) => entry.gate),
-    ['deployment-services', 'native-install'],
+    notExecuted
+      .filter((entry) => entry.kind === 'gap')
+      .map((entry) => `${entry.gate}:${entry.platform}`),
+    ['deployment-services:win32', 'native-install:win32', 'deployment-containers:linux'],
   );
   assert.ok(notExecuted.every((entry) => entry.reason.length > 10));
 });

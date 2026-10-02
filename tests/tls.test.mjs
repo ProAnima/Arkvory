@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { X509Certificate } from 'node:crypto';
 import { request } from 'node:https';
 import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -41,6 +42,12 @@ function get(port, ca) {
     call.end();
   });
 }
+
+test('generated test certificates are always strict DER', () => {
+  // One random serial in 256 used to need a padding byte that OpenSSL rejects.
+  for (let index = 0; index < 512; index++)
+    assert.ok(new X509Certificate(selfSignedCertificate().cert).serialNumber.length > 0);
+});
 
 test('TLS settings require both files and bounded options', () => {
   assert.deepEqual(readTls({}), {});
