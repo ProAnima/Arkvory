@@ -17,6 +17,8 @@ export const backupUnitFile = '/etc/systemd/system/arkvory-backup.service';
 export const windowsBackupService = 'Arkvorybackup';
 
 export type ComposeCall = (release: Release, args: string[]) => Promise<void>;
+/** A Compose call whose stdout is captured: one-shot commands that report a result. */
+export type ComposeOutput = (release: Release, args: string[]) => Promise<string>;
 export interface BackupSupervision {
   readonly root: string;
   readonly state: Installation;

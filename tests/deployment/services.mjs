@@ -43,7 +43,8 @@ const readCount = (role) =>
 function powershell(script, args) {
   run('powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', script, ...args]);
 }
-function register() {
+/** `services` is the update adoption of a new role: units only, no walk over the data tree. */
+function register(scope = 'full') {
   if (windows)
     powershell(resolve('deploy/register-windows.ps1'), [
       '-Root',
@@ -52,9 +53,21 @@ function register() {
       process.execPath,
       '-Prefix',
       prefix,
+      ...(scope === 'services' ? ['-ServicesOnly'] : []),
     ]);
-  else run('sudo', ['bash', resolve('deploy/register-linux.sh'), root, process.execPath, prefix]);
+  else
+    run('sudo', [
+      'bash',
+      resolve('deploy/register-linux.sh'),
+      root,
+      process.execPath,
+      prefix,
+      scope,
+    ]);
 }
+const marker = join(root, 'data', 'ownership.marker');
+const markerOwner = () =>
+  execFileSync('sudo', ['stat', '-c', '%U', marker], { encoding: 'utf8' }).trim();
 /** The same vault opening that arkvory configure --backup-vault applies (ADR 0057). */
 function openVault() {
   if (windows)
@@ -71,6 +84,7 @@ function openVault() {
 try {
   register();
   openVault();
+  if (!windows) run('sudo', ['touch', marker]);
   // Repair must restore persisted boot/recovery settings, not merely rewrite configuration files.
   for (const role of roles) {
     if (windows) {
@@ -78,7 +92,12 @@ try {
       run('sc.exe', ['failure', `${prefix}${role}`, 'reset=', '0', 'actions=', 'none/0']);
     } else run('sudo', ['systemctl', 'disable', `${prefix}-${role}`]);
   }
-  register();
+  register('services');
+  if (!windows) {
+    assert.equal(markerOwner(), 'root', 'Service-only registration must not walk the data tree');
+    register();
+    assert.equal(markerOwner(), 'arkvory', 'Full registration owns the data tree');
+  }
   for (const role of roles) {
     if (windows)
       run('powershell.exe', [
@@ -116,7 +135,7 @@ try {
       'Explicit maintenance stop must suppress recovery',
     );
   console.log(
-    'Native autostart repair, three consecutive crashes and deliberate stop passed for API, worker and backup agent',
+    'Native autostart repair (service-only and full), three consecutive crashes and deliberate stop passed for API, worker and backup agent',
   );
 } finally {
   if (windows) {

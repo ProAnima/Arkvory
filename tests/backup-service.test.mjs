@@ -11,9 +11,11 @@ import { reportBackupAgent } from '../apps/deploy/dist/backup-probe.js';
 import {
   VaultAccess,
   containerVault,
+  parseContents,
   vaultOverride,
   vaultOverrideFile,
 } from '../apps/deploy/dist/vault-access.js';
+import { accessDenied } from '../apps/deploy/dist/vault-location.js';
 import { replaceText } from '../apps/deploy/dist/files.js';
 import { removeTestDirectory } from './helpers.mjs';
 
@@ -140,10 +142,15 @@ test('a Compose vault that cannot be owned leaves no bind mount behind', async (
   await writeFile(join(root, 'config/runtime.json'), '{}');
   const vault = await directory(t);
   const calls = [];
-  const access = new VaultAccess(root, installation('compose'), async (current, args) => {
-    calls.push(args.join(' '));
-    throw new Error('vault-owner failed');
-  });
+  const access = new VaultAccess(
+    root,
+    installation('compose'),
+    async (current, args) => {
+      calls.push(args.join(' '));
+      throw new Error('vault-owner failed');
+    },
+    async () => assert.fail('no inspection'),
+  );
   // On Windows the ACL step fails first (no script in this release); elsewhere vault-owner.
   await assert.rejects(access.open(vault));
   await assert.rejects(readFile(join(root, vaultOverrideFile)), { code: 'ENOENT' });
@@ -202,4 +209,76 @@ test('an agent that never comes online is a warning, not a failed installation',
   assert.match(lines[0], /WARN The backup agent did not come online/);
   assert.equal(lines.length, 2, 'retryable errors end in the same bounded warning');
   assert.match(lines[1], /WARN The backup agent did not come online/);
+});
+
+const vaultId = '0d6c2b1e-5f4a-4c3b-9a8d-7e6f5a4b3c2d';
+
+test('the container reports vault contents as the vault owner sees them', async (t) => {
+  const vault = await directory(t);
+  const inspect = (path) =>
+    spawnSync(process.execPath, [resolve('apps/deploy/dist/container.js'), 'vault-inspect', path], {
+      encoding: 'utf8',
+    });
+  assert.deepEqual(JSON.parse(inspect(vault).stdout), { vaultId: null, empty: true });
+  await writeFile(
+    join(vault, 'vault.json'),
+    JSON.stringify({ format: 'arkvory-vault', version: 1, vaultId }),
+  );
+  assert.deepEqual(JSON.parse(inspect(vault).stdout), { vaultId, empty: false });
+  assert.notEqual(inspect('relative').status, 0);
+});
+
+test('inspection output is one validated line after any Compose messages', () => {
+  const line = JSON.stringify({ vaultId, empty: false });
+  assert.deepEqual(parseContents(`Container backup-run Creating\n${line}\n`), {
+    vaultId,
+    empty: false,
+  });
+  assert.deepEqual(parseContents('{"vaultId":null,"empty":true}'), { vaultId: null, empty: true });
+  for (const output of ['', 'not json', '{"vaultId":"x","empty":false}', '{"vaultId":null}'])
+    assert.throws(() => parseContents(output), /vault-inspect printed/);
+});
+
+test('only permission errors, also wrapped, send inspection to the container', () => {
+  const denied = Object.assign(new Error('denied'), { code: 'EACCES' });
+  assert.equal(accessDenied(denied), true);
+  assert.equal(accessDenied(new Error('wrapped', { cause: denied })), true);
+  assert.equal(accessDenied(Object.assign(new Error('gone'), { code: 'ENOENT' })), false);
+  assert.equal(accessDenied('EACCES'), false);
+});
+
+test('a Compose vault the host cannot read is read by the container user, then unmounted', async (t) => {
+  const root = await directory(t);
+  await mkdir(join(root, 'config'));
+  await mkdir(join(root, 'releases', release.version, 'deploy'), { recursive: true });
+  const vault = await directory(t);
+  await writeFile(
+    join(vault, 'vault.json'),
+    JSON.stringify({ format: 'arkvory-vault', version: 1, vaultId }),
+  );
+  const calls = [];
+  const access = new VaultAccess(
+    root,
+    installation('compose'),
+    async () => assert.fail('inspection changes no ownership'),
+    async (current, args) => {
+      // The bind mount exists exactly while the container looks at the vault.
+      assert.match(await readFile(join(root, vaultOverrideFile), 'utf8'), /arkvory-vault/);
+      calls.push(args.join(' '));
+      const result = JSON.stringify({ vaultId, empty: false });
+      return `Container proanima-arkvory-backup-run Creating\n${result}\n`;
+    },
+  );
+  // POSIX permissions model the vault the container user owns; root and Windows read it anyway.
+  const restricted = process.platform !== 'win32' && process.getuid?.() !== 0;
+  if (restricted) {
+    await chmod(vault, 0o000);
+    t.after(() => chmod(vault, 0o700));
+  }
+  assert.deepEqual(await access.contents(vault), { vaultId, empty: false });
+  assert.deepEqual(
+    calls,
+    restricted ? [`run --rm --no-deps -T backup vault-inspect ${containerVault}`] : [],
+  );
+  await assert.rejects(readFile(join(root, vaultOverrideFile)), { code: 'ENOENT' });
 });

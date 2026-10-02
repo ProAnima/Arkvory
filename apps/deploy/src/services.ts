@@ -2,7 +2,7 @@ import { join } from 'node:path';
 import { access, readFile } from 'node:fs/promises';
 import type { BackupStatusResponse } from '@proanima/arkvory-contracts';
 import { provisionDatabase, databaseSettings } from './managed-database.js';
-import { command, isUnconfirmedTermination } from './process.js';
+import { command, commandOutput, isUnconfirmedTermination } from './process.js';
 import type { Installation, Release } from './model.js';
 import { atomicCopy, exists, jsonFile } from './files.js';
 import {
@@ -16,6 +16,7 @@ import type { BackupSupervision } from './backup-service.js';
 import { backupStatus, reportBackupAgent } from './backup-probe.js';
 import type { BackupServiceControl } from './backup-setup.js';
 import { VaultAccess, vaultOverrideFile } from './vault-access.js';
+import type { VaultContents } from './vault-location.js';
 import { runtimeEnvironment } from './runtime.js';
 import { setTimeout as delay } from 'node:timers/promises';
 import { healthReady } from './health.js';
@@ -33,27 +34,32 @@ export class Services implements BackupServiceControl {
     this.backup = { root, state, compose: (release, args) => this.compose(release, args) };
   }
   private async compose(release: Release, args: string[]): Promise<void> {
+    await command(this.state.engine, await this.composeArgs(release, args), undefined, {
+      ARKVORY_IMAGE: `proanima-arkvory:${release.version}`,
+    });
+  }
+  private async composeOutput(release: Release, args: string[]): Promise<string> {
+    return commandOutput(this.state.engine, await this.composeArgs(release, args), undefined, {
+      ARKVORY_IMAGE: `proanima-arkvory:${release.version}`,
+    });
+  }
+  private async composeArgs(release: Release, args: string[]): Promise<string[]> {
     const files = ['-f', join(this.root, 'releases', release.version, 'deploy/compose.yml')];
     // The vault bind mount exists only for a release that declares the backup service.
     const override = join(this.root, vaultOverrideFile);
     if ((await exists(override)) && (await shipsBackupRole(this.root, this.state, release)))
       files.push('-f', override);
-    await command(
-      this.state.engine,
-      [
-        'compose',
-        '--project-name',
-        'proanima-arkvory',
-        '--project-directory',
-        this.root,
-        '--env-file',
-        join(this.root, 'config/compose.env'),
-        ...files,
-        ...args,
-      ],
-      undefined,
-      { ARKVORY_IMAGE: `proanima-arkvory:${release.version}` },
-    );
+    return [
+      'compose',
+      '--project-name',
+      'proanima-arkvory',
+      '--project-directory',
+      this.root,
+      '--env-file',
+      join(this.root, 'config/compose.env'),
+      ...files,
+      ...args,
+    ];
   }
   async prepare(release: Release): Promise<void> {
     if (this.state.mode !== 'compose' && (await databaseSettings(this.root))) {
@@ -128,7 +134,8 @@ export class Services implements BackupServiceControl {
   }
   /**
    * Registers the roles of `release` that an installation created by an older release lacks
-   * (today: the backup agent). A one-time full provision, the same as a repair.
+   * (today: the backup agent). Services only: ownership and ACLs of the tree were set when the
+   * installation was created, and re-applying them walks the whole data directory.
    */
   async adopt(release: Release): Promise<void> {
     if (
@@ -138,7 +145,7 @@ export class Services implements BackupServiceControl {
     )
       return;
     report('info', 'Registering the backup agent service of this release');
-    await this.provision(release);
+    await this.provision(release, 'services');
   }
   /** After readiness: an absent agent is a warning, never a failed install or update. */
   async confirmBackup(release: Release): Promise<void> {
@@ -159,11 +166,19 @@ export class Services implements BackupServiceControl {
     }
     await startBackup(this.backup, this.state.current, true);
   }
+  private vaultAccess(): VaultAccess {
+    return new VaultAccess(this.root, this.state, this.backup.compose, (release, args) =>
+      this.composeOutput(release, args),
+    );
+  }
   openVault(vault: string | null): Promise<() => Promise<void>> {
-    return new VaultAccess(this.root, this.state, this.backup.compose).open(vault);
+    return this.vaultAccess().open(vault);
   }
   initializeVault(vault: string): Promise<void> {
-    return new VaultAccess(this.root, this.state, this.backup.compose).initialize(vault);
+    return this.vaultAccess().initialize(vault);
+  }
+  readVault(vault: string): Promise<VaultContents> {
+    return this.vaultAccess().contents(vault);
   }
   /** One readiness probe; a seam so the retry loop can be exercised without a live API. */
   ready(target: LocalTarget, tokenFile: string): Promise<boolean> {
@@ -205,7 +220,8 @@ export class Services implements BackupServiceControl {
     // A new file inherits only the root ACL; the managed database grants NetworkService again.
     if (this.state.mode === 'windows') await provisionDatabase(this.root, directory);
   }
-  async provision(release: Release): Promise<void> {
+  /** `full` (install, repair): services plus ownership and ACLs of the whole tree. */
+  async provision(release: Release, scope: 'full' | 'services' = 'full'): Promise<void> {
     if (this.state.mode === 'compose') return;
     await this.refreshLauncher(release);
     const script = join(
@@ -227,8 +243,9 @@ export class Services implements BackupServiceControl {
         this.root,
         '-Node',
         process.execPath,
+        ...(scope === 'services' ? ['-ServicesOnly'] : []),
       ]);
-    else await command('bash', [script, this.root, process.execPath]);
+    else await command('bash', [script, this.root, process.execPath, 'arkvory', scope]);
   }
   private async workerRunning(): Promise<void> {
     if (this.state.mode === 'systemd')

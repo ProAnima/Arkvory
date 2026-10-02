@@ -6,7 +6,11 @@ import { tmpdir } from 'node:os';
 import { join, parse } from 'node:path';
 import { configureBackup } from '../apps/deploy/dist/backup-setup.js';
 import { BackupCredentialRejected, waitForBackup } from '../apps/deploy/dist/backup-probe.js';
-import { hiddenBySystemdSandbox, inspectVault } from '../apps/deploy/dist/vault-location.js';
+import {
+  hiddenBySystemdSandbox,
+  inspectVault,
+  vaultContents,
+} from '../apps/deploy/dist/vault-location.js';
 import { removeTestDirectory } from './helpers.mjs';
 
 const release = { version: '1.2.3', commit: 'c', schema: 26, archiveSha256: 'a', setupSha256: 's' };
@@ -52,6 +56,7 @@ function services(reply) {
       calls.push('init');
       await vaultDocument(vault);
     },
+    readVault: (vault) => vaultContents(vault),
     restartBackup: async () => calls.push('restart'),
     backupStatus: async () => reply(calls),
   };

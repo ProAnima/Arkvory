@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { setTimeout as delay } from 'node:timers/promises';
 import {
   command,
+  commandOutput,
   DeploymentCommandTimeout,
   isUnconfirmedTermination,
 } from '../apps/deploy/dist/process.js';
@@ -103,4 +104,12 @@ test('termination uncertainty inspection neither loops nor invokes a cause gette
     false,
   );
   assert.equal(isUnconfirmedTermination(new DeploymentCommandTimeout(false)), true);
+});
+
+test('captured commands return stdout, keep failures and refuse unbounded output', async () => {
+  const node = (script) => commandOutput(process.execPath, ['-e', script]);
+  assert.equal(await node('console.log("first"); console.log("{}")'), 'first\n{}\n');
+  await assert.rejects(node('process.exit(3)'), /Deployment command failed \(3\)/);
+  // A result line is small; a command that keeps printing is a broken contract.
+  await assert.rejects(node('process.stdout.write("x".repeat(70000))'), /more output/);
 });

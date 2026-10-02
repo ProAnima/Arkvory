@@ -24,13 +24,42 @@ export function isUnconfirmedTermination(error: unknown): boolean {
   return false;
 }
 
+interface CommandOptions {
+  timeoutMs?: number;
+  terminationTimeoutMs?: number;
+}
+/** Output a deploy tool parses (one JSON line); more is a broken contract, not data to keep. */
+const maxOutputBytes = 64 * 1024;
+
 export async function command(
   executable: string,
   args: string[],
   cwd?: string,
   environment?: Record<string, string>,
-  options: { timeoutMs?: number; terminationTimeoutMs?: number } = {},
+  options: CommandOptions = {},
 ): Promise<void> {
+  await execute(executable, args, cwd, environment, options, false);
+}
+
+/** Like command, with stdout captured (bounded) instead of inherited; stderr stays visible. */
+export function commandOutput(
+  executable: string,
+  args: string[],
+  cwd?: string,
+  environment?: Record<string, string>,
+  options: CommandOptions = {},
+): Promise<string> {
+  return execute(executable, args, cwd, environment, options, true);
+}
+
+async function execute(
+  executable: string,
+  args: string[],
+  cwd: string | undefined,
+  environment: Record<string, string> | undefined,
+  options: CommandOptions,
+  capture: boolean,
+): Promise<string> {
   const timeoutMs = options.timeoutMs ?? 15 * 60000;
   const terminationTimeoutMs = options.terminationTimeoutMs ?? 10000;
   if (
@@ -52,14 +81,22 @@ export async function command(
   const child = spawn(executable, args, {
     cwd,
     env: childEnvironment,
-    stdio: 'inherit',
+    // A captured command gets no terminal: `compose run` must not allocate a TTY for it.
+    stdio: capture ? ['ignore', 'pipe', 'inherit'] : 'inherit',
     windowsHide: true,
     shell: false,
     detached: process.platform !== 'win32',
   });
-  const state = { startupFailed: false };
+  const state = { startupFailed: false, overflow: false };
   child.once('error', () => {
     state.startupFailed = true;
+  });
+  const output: Buffer[] = [];
+  let outputBytes = 0;
+  child.stdout?.on('data', (chunk: Buffer) => {
+    outputBytes += chunk.length;
+    if (outputBytes <= maxOutputBytes) output.push(chunk);
+    else state.overflow = true;
   });
   const closed = new Promise<{ kind: 'closed'; code: number | null }>((resolve) => {
     child.once('close', (code) => {
@@ -83,4 +120,6 @@ export async function command(
   if (state.startupFailed) throw new Error('Cannot start deployment command');
   if (result.code !== 0)
     throw new Error(`Deployment command failed (${String(result.code ?? 'signal')})`);
+  if (state.overflow) throw new Error('Deployment command printed more output than expected');
+  return Buffer.concat(output).toString('utf8');
 }

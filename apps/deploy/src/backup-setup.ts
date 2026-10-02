@@ -8,8 +8,8 @@ import type { Installation, Release } from './model.js';
 import { isUnconfirmedTermination } from './process.js';
 import { runtimeEnvironment } from './runtime.js';
 import { containerVault } from './vault-access.js';
-import { inspectVault, readVaultId } from './vault-location.js';
-import type { VaultLocation } from './vault-location.js';
+import { inspectVault } from './vault-location.js';
+import type { VaultContents, VaultLocation } from './vault-location.js';
 
 export interface BackupChange {
   readonly vault?: string;
@@ -24,6 +24,8 @@ export interface BackupServiceControl {
   /** Makes exactly this vault (or none) usable by the backup service; returns the undo. */
   openVault(vault: string | null): Promise<() => Promise<void>>;
   initializeVault(vault: string): Promise<void>;
+  /** Contents as the vault's owner sees them; in Compose that may be only the container user. */
+  readVault(vault: string): Promise<VaultContents>;
   /** Restarts only the backup service; API and worker keep serving. */
   restartBackup(): Promise<void>;
   backupStatus(): Promise<BackupStatusResponse>;
@@ -52,13 +54,17 @@ async function checkedVault(
   env: Record<string, string>,
   change: BackupChange,
   platform: NodeJS.Platform,
+  control: BackupServiceControl,
 ): Promise<VaultLocation> {
-  const location = await inspectVault(change.vault ?? '', {
+  const context = {
     root,
     dataDirectory: state.mode === 'compose' ? undefined : env['ARKVORY_DATA_DIR'],
     mode: state.mode,
     platform,
-  });
+  };
+  const location = await inspectVault(change.vault ?? '', context, (directory) =>
+    control.readVault(directory),
+  );
   if (location.vaultId === null && !change.initialize)
     throw new Error(
       'The directory has no vault.json: mount the vault volume, or pass --init-vault to create a vault in this empty directory',
@@ -121,7 +127,7 @@ export async function configureBackup(
   const env = runtimeEnvironment(JSON.parse(previous));
   const location =
     kind === 'enable'
-      ? await checkedVault(root, state, env, change, options.platform ?? process.platform)
+      ? await checkedVault(root, state, env, change, options.platform ?? process.platform, control)
       : null;
   const next = { ...env };
   if (location)
@@ -134,10 +140,10 @@ export async function configureBackup(
     progress.undo = await control.openVault(location?.path ?? null);
     if (location && vaultId === null) {
       await control.initializeVault(location.path);
-      vaultId = await readVaultId(location.path);
-      if (vaultId === null) throw new Error('vault init did not create vault.json');
       // Files written by the initializing account belong to the service account afterwards.
       await control.openVault(location.path);
+      vaultId = (await control.readVault(location.path)).vaultId;
+      if (vaultId === null) throw new Error('vault init did not create vault.json');
     }
     await replaceText(path, JSON.stringify(next, null, 2) + '\n');
     progress.restarted = true;

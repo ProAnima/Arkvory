@@ -5,11 +5,14 @@ import { jsonFile } from './files.js';
 import type { Installation } from './model.js';
 import { record } from './model.js';
 
-/** A checked vault directory: canonical path, its vault ID (null without vault.json). */
-export interface VaultLocation {
-  readonly path: string;
+/** What a vault directory holds: its vault ID (null without vault.json) and emptiness. */
+export interface VaultContents {
   readonly vaultId: string | null;
   readonly empty: boolean;
+}
+/** A checked vault directory: its canonical path and contents. */
+export interface VaultLocation extends VaultContents {
+  readonly path: string;
 }
 export interface VaultContext {
   readonly root: string;
@@ -66,6 +69,9 @@ async function canonical(path: string): Promise<string> {
   }
 }
 
+export const isVaultId = (value: string) =>
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
+
 /** vault.json written by `vault init`; only its identity is read here. */
 export async function readVaultId(directory: string): Promise<string | null> {
   let document: unknown;
@@ -78,9 +84,22 @@ export async function readVaultId(directory: string): Promise<string | null> {
   const vault = record(document);
   if (vault['format'] !== 'arkvory-vault' || typeof vault['vaultId'] !== 'string')
     throw new Error('vault.json is not an Arkvory vault document');
-  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(vault['vaultId']))
-    throw new Error('vault.json has an invalid vault ID');
+  if (!isVaultId(vault['vaultId'])) throw new Error('vault.json has an invalid vault ID');
   return vault['vaultId'];
+}
+
+export async function vaultContents(directory: string): Promise<VaultContents> {
+  const vaultId = await readVaultId(directory);
+  return { vaultId, empty: (await readdir(directory)).length === 0 };
+}
+
+/** The account running configure may not see into a vault another account owns. */
+export function accessDenied(error: unknown): boolean {
+  for (let depth = 0; depth < 4 && error instanceof Error; depth++) {
+    if ('code' in error && (error.code === 'EACCES' || error.code === 'EPERM')) return true;
+    error = error.cause;
+  }
+  return false;
 }
 
 async function writable(directory: string): Promise<void> {
@@ -97,8 +116,14 @@ async function writable(directory: string): Promise<void> {
  * Checks a vault directory before anything changes: absolute, an existing writable directory,
  * not a filesystem root, separate from the installation root and the storage directory after
  * resolving symlinks, junctions and 8.3 names, and reachable from the service sandbox.
+ * `read` returns the contents; Compose passes one that falls back to the container user, who
+ * owns the vault there (uid 1000, 0700) and may be the only account able to look inside.
  */
-export async function inspectVault(path: string, context: VaultContext): Promise<VaultLocation> {
+export async function inspectVault(
+  path: string,
+  context: VaultContext,
+  read: (directory: string) => Promise<VaultContents> = vaultContents,
+): Promise<VaultLocation> {
   const requested = syntax(path, context.platform);
   let actual: string;
   try {
@@ -122,7 +147,11 @@ export async function inspectVault(path: string, context: VaultContext): Promise
     throw new Error(
       'The backup service cannot reach /home, /root, /run/user, /tmp or /var/tmp (systemd sandbox); choose another directory',
     );
-  await writable(actual);
-  const vaultId = await readVaultId(actual);
-  return { path: actual, vaultId, empty: (await readdir(actual)).length === 0 };
+  try {
+    await writable(actual);
+  } catch (error) {
+    // Compose hands the directory to the container user, who writes it; this account need not.
+    if (context.mode !== 'compose' || !accessDenied(error)) throw error;
+  }
+  return { path: actual, ...(await read(actual)) };
 }

@@ -1,20 +1,25 @@
-param([Parameter(Mandatory)][string]$Root, [Parameter(Mandatory)][string]$Node, [ValidatePattern('^[a-zA-Z][a-zA-Z0-9]{0,40}$')][string]$Prefix = 'Arkvory')
+param([Parameter(Mandatory)][string]$Root, [Parameter(Mandatory)][string]$Node, [ValidatePattern('^[a-zA-Z][a-zA-Z0-9]{0,40}$')][string]$Prefix = 'Arkvory', [switch]$ServicesOnly)
 $ErrorActionPreference = 'Stop'
 $admin = [Security.Principal.WindowsPrincipal]::new([Security.Principal.WindowsIdentity]::GetCurrent())
 if (-not $admin.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) { throw 'Run installer as Administrator' }
-# SIDs are independent of the Windows display language. Application identity cannot modify releases or updater credentials.
-& icacls.exe $Root /inheritance:r /grant:r '*S-1-5-18:(OI)(CI)F' '*S-1-5-32-544:(OI)(CI)F' '*S-1-5-19:(OI)(CI)RX' | Out-Null
-if ($LASTEXITCODE -ne 0) { throw 'Cannot secure installation directory' }
-foreach ($name in @('data','logs','updates/inbox')) {
-    if (-not (Test-Path -LiteralPath (Join-Path $Root $name))) { continue }
-    & icacls.exe (Join-Path $Root $name) /grant:r '*S-1-5-19:(OI)(CI)M' | Out-Null
-    if ($LASTEXITCODE -ne 0) { throw 'Cannot grant runtime directory access' }
-}
-foreach ($name in @('config/bootstrap-token.txt','config/postgres.env','github-token.txt','bootstrap.owner')) {
-    $path = Join-Path $Root $name
-    if (Test-Path -LiteralPath $path) {
-        & icacls.exe $path /inheritance:r /grant:r '*S-1-5-18:F' '*S-1-5-32-544:F' | Out-Null
-        if ($LASTEXITCODE -ne 0) { throw 'Cannot secure credential file' }
+# -ServicesOnly: an update that adds a role to an existing installation registers services only.
+# Install and repair rewrite the inheritable ACLs below, and Windows propagates them through the
+# whole data tree; that walk over terabytes does not belong in an update's downtime window.
+if (-not $ServicesOnly) {
+    # SIDs are independent of the Windows display language. Application identity cannot modify releases or updater credentials.
+    & icacls.exe $Root /inheritance:r /grant:r '*S-1-5-18:(OI)(CI)F' '*S-1-5-32-544:(OI)(CI)F' '*S-1-5-19:(OI)(CI)RX' | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw 'Cannot secure installation directory' }
+    foreach ($name in @('data','logs','updates/inbox')) {
+        if (-not (Test-Path -LiteralPath (Join-Path $Root $name))) { continue }
+        & icacls.exe (Join-Path $Root $name) /grant:r '*S-1-5-19:(OI)(CI)M' | Out-Null
+        if ($LASTEXITCODE -ne 0) { throw 'Cannot grant runtime directory access' }
+    }
+    foreach ($name in @('config/bootstrap-token.txt','config/postgres.env','github-token.txt','bootstrap.owner')) {
+        $path = Join-Path $Root $name
+        if (Test-Path -LiteralPath $path) {
+            & icacls.exe $path /inheritance:r /grant:r '*S-1-5-18:F' '*S-1-5-32-544:F' | Out-Null
+            if ($LASTEXITCODE -ne 0) { throw 'Cannot secure credential file' }
+        }
     }
 }
 $wrapper = Join-Path $Root 'service/WinSW-x64.exe'

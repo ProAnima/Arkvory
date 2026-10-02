@@ -1,11 +1,13 @@
 import { readFile, unlink } from 'node:fs/promises';
 import { join } from 'node:path';
 import { atomicText, jsonFile } from './files.js';
-import type { ComposeCall } from './backup-service.js';
+import type { ComposeCall, ComposeOutput } from './backup-service.js';
 import type { Installation } from './model.js';
+import { record } from './model.js';
 import { command, isUnconfirmedTermination } from './process.js';
 import { runtimeEnvironment } from './runtime.js';
-import { unsafePath } from './vault-location.js';
+import { accessDenied, isVaultId, unsafePath, vaultContents } from './vault-location.js';
+import type { VaultContents } from './vault-location.js';
 
 /** Where the Compose backup container sees the bind-mounted host vault. */
 export const containerVault = '/srv/arkvory-vault';
@@ -56,6 +58,23 @@ async function remove(path: string): Promise<void> {
   });
 }
 
+/** The last stdout line of `vault-inspect`; Compose may print its own lines before it. */
+export function parseContents(output: string): VaultContents {
+  const line = output.trim().split('\n').at(-1) ?? '';
+  let value: unknown;
+  try {
+    value = JSON.parse(line);
+  } catch (error) {
+    throw new Error('vault-inspect printed no result', { cause: error });
+  }
+  const contents = record(value);
+  const vaultId = contents['vaultId'];
+  const valid = vaultId === null || (typeof vaultId === 'string' && isVaultId(vaultId));
+  if (!valid || typeof contents['empty'] !== 'boolean')
+    throw new Error('vault-inspect printed an invalid result');
+  return { vaultId, empty: contents['empty'] };
+}
+
 /**
  * Gives the backup service exactly one vault, in the way of each supervisor: a systemd drop-in
  * that opens the read-only sandbox for the vault (owner arkvory, 0700), an ACL for LocalService
@@ -67,6 +86,7 @@ export class VaultAccess {
     private readonly root: string,
     private readonly state: Installation,
     private readonly compose: ComposeCall,
+    private readonly composeOutput: ComposeOutput,
   ) {}
 
   private script(name: string): string {
@@ -136,6 +156,33 @@ export class VaultAccess {
       throw error;
     }
     return restore;
+  }
+
+  /**
+   * The vault's contents. In Compose the container user owns the vault (uid 1000, 0700) and the
+   * account running configure may not see inside; then a one-shot container of the release
+   * reads it as that owner. Only the override file changes for it, and it is restored: no
+   * ownership changes before the checks of configure have passed.
+   */
+  async contents(vault: string): Promise<VaultContents> {
+    try {
+      return await vaultContents(vault);
+    } catch (error) {
+      if (this.state.mode !== 'compose' || !accessDenied(error)) throw error;
+    }
+    const restore = await this.snapshot();
+    try {
+      await atomicText(join(this.root, vaultOverrideFile), vaultOverride(vault), 0o600);
+      const args = ['run', '--rm', '--no-deps', '-T', 'backup', 'vault-inspect', containerVault];
+      return parseContents(await this.composeOutput(this.state.current, args));
+    } catch (error) {
+      if (isUnconfirmedTermination(error)) throw error;
+      throw new Error('Neither this account nor the container user can read the vault directory', {
+        cause: error,
+      });
+    } finally {
+      await restore();
+    }
   }
 
   /** `vault init` of this release's backup CLI with the installation's runtime environment. */
