@@ -30,32 +30,32 @@ API discovery now exposes credential-scoped operations and six responsibility ar
 
 The RU/EN console includes direct catalog downloads, compact mobile navigation, contextual queue controls and grouped access-management forms. [UI behavior and browser acceptance](docs/CONSOLE_UX.md).
 
-| Area                                                                  | Status                                                          |
-| --------------------------------------------------------------------- | --------------------------------------------------------------- |
-| Strict TypeScript, clean boundaries, runtime builds                   | Implemented                                                     |
-| Streaming transfers, SHA-256, GET/HEAD/Range/ETag                     | Implemented                                                     |
-| Adaptive parts (8 MiB–1 GiB), resume, TTL, idempotent completion      | Implemented                                                     |
-| Bounded SDK retries, verified Range downloads, saved-prefix resume    | Implemented; [recovery guide](docs/TRANSFER_RECOVERY.md)        |
-| Metadata/labels/collections, CAS, search, catalog audit               | Implemented                                                     |
-| UPack manifest/group/SemVer, immutable versions, asset revisions      | Implemented with validator limits                               |
-| PostgreSQL completion jobs, lease/generation, retries, worker         | Implemented                                                     |
-| Bounded upload/download admission with client rotation                | One gateway, in memory                                          |
-| Shared-storage read gateways and fixed aggregate download shares      | Implemented; PostgreSQL leases, no node failover                |
-| GC and scrub                                                          | Online bounded cleanup; offline repair/scrub                    |
-| SDK and RU/EN web console                                             | Implemented; details in runbook                                 |
-| External browser UI through Bearer API and explicit origin allowlist  | Implemented for native API; [setup](docs/EXTERNAL_UI.md)        |
-| Asset history, exact revision lookup, atomic restore with audit       | API, SDK and console implemented                                |
-| User accounts and repository access groups                            | Administrator registration, sessions and group grants           |
-| Package catalog sorting, grouping and cursor paging                   | API, SDK and console; up to 100 versions per page               |
-| Download by package identity or file path                             | Implemented; same ACL, Range and limits as by ID                |
-| Directory import with resume and download/hash verification           | Implemented; metadata and ACL mapping separate                  |
-| Structured JSON logs, levels, request→job→audit correlation, metrics  | Implemented; [runbook](docs/CORE_RUNBOOK.md), ADR 0052          |
-| Error codes with reasons and field details; request ID in UI and CLI  | Implemented; [error contract](docs/API_CONTRACTS.md), ADR 0051  |
-| Built-in HTTPS with certificate reload; reverse proxy still supported | Implemented; ADR 0055                                           |
-| Consistent backup to disk/NAS, verify, restore to an empty target     | Operator CLI, unencrypted vault; ADR 0054                       |
-| Scheduled backups, retention, warnings, backup API/SDK/CLI            | Backend, agent and console screen working (schema 26); ADR 0056 |
-| Local CI lanes (Windows, Linux, systemd) and draft releases           | Implemented; [local pipeline](docs/CI.md), ADR 0053             |
-| Two-server replication, failover, global balancing                    | Design stage; lab validation deferred                           |
+| Area                                                                  | Status                                                                    |
+| --------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| Strict TypeScript, clean boundaries, runtime builds                   | Implemented                                                               |
+| Streaming transfers, SHA-256, GET/HEAD/Range/ETag                     | Implemented                                                               |
+| Adaptive parts (8 MiB–1 GiB), resume, TTL, idempotent completion      | Implemented                                                               |
+| Bounded SDK retries, verified Range downloads, saved-prefix resume    | Implemented; [recovery guide](docs/TRANSFER_RECOVERY.md)                  |
+| Metadata/labels/collections, CAS, search, catalog audit               | Implemented                                                               |
+| UPack manifest/group/SemVer, immutable versions, asset revisions      | Implemented with validator limits                                         |
+| PostgreSQL completion jobs, lease/generation, retries, worker         | Implemented                                                               |
+| Bounded upload/download admission with client rotation                | One gateway, in memory                                                    |
+| Shared-storage read gateways and fixed aggregate download shares      | Implemented; PostgreSQL leases, no node failover                          |
+| GC and scrub                                                          | Online bounded cleanup; offline repair/scrub                              |
+| SDK and RU/EN web console                                             | Implemented; details in runbook                                           |
+| External browser UI through Bearer API and explicit origin allowlist  | Implemented for native API; [setup](docs/EXTERNAL_UI.md)                  |
+| Asset history, exact revision lookup, atomic restore with audit       | API, SDK and console implemented                                          |
+| User accounts and repository access groups                            | Administrator registration, sessions and group grants                     |
+| Package catalog sorting, grouping and cursor paging                   | API, SDK and console; up to 100 versions per page                         |
+| Download by package identity or file path                             | Implemented; same ACL, Range and limits as by ID                          |
+| Directory import with resume and download/hash verification           | Implemented; metadata and ACL mapping separate                            |
+| Structured JSON logs, levels, request→job→audit correlation, metrics  | Implemented; [runbook](docs/CORE_RUNBOOK.md), ADR 0052                    |
+| Error codes with reasons and field details; request ID in UI and CLI  | Implemented; [error contract](docs/API_CONTRACTS.md), ADR 0051            |
+| Built-in HTTPS with certificate reload; reverse proxy still supported | Implemented; ADR 0055                                                     |
+| Consistent backup to disk/NAS, verify, restore to an empty target     | Operator CLI, unencrypted vault; ADR 0054                                 |
+| Scheduled backups, retention, warnings, backup API/SDK/CLI            | Agent, installer services and console section (schema 26); ADR 0056, 0057 |
+| Local CI lanes (Windows, Linux, systemd) and draft releases           | Implemented; [local pipeline](docs/CI.md), ADR 0053                       |
+| Two-server replication, failover, global balancing                    | Design stage; lab validation deferred                                     |
 
 Run `npm run migrate`, `npm start` and `npm run worker` separately. Console: `/console/`. This is a development release, not a production HA system. See the [core runbook](docs/CORE_RUNBOOK.md), [0.2 features](docs/LIFECYCLE_AND_CATALOG.md), [import and migration](docs/MIGRATION.md), [two-server profile](docs/TWO_NODE_PLAN.md) and [validation](docs/CORE_VALIDATION.md) (engineering documents in Russian).
 
@@ -103,7 +103,7 @@ Administrators can create accounts and repository access groups. Users sign in w
 - Planned: short-lived transfer tokens scoped to an object and an action; current downloads require ordinary API authorization.
 - Archive validation, safe paths, and metadata size limits.
 - Recovery of intermediate operations, idempotent completion, and integrity checks.
-- Health/readiness and transfer diagnostics are implemented. A manual consistent backup of the database and blobs into a built-in vault, its verification and a restore into an empty target run through the operator CLI `npm run backup` (ADR 0054). The supervised agent `npm run backup -- agent` adds a daily schedule in an explicit time zone, retention with prune, verification, warnings and metrics; the API `/api/v1/backup`, SDK `client.backup` and `arkvoryctl backup` queue and observe its work (ADR 0056); the console section "Backups" shows status and warnings, runs a backup or a full verification, pins points, applies retention after a preview and edits the plan, while restore stays an operator command ([console behavior](docs/CONSOLE_UX.md#резервные-копии)). Encryption, S3, the restore wizard and service registration by installers remain [planned](docs/BACKUP_RECOVERY.md).
+- Health/readiness and transfer diagnostics are implemented. A manual consistent backup of the database and blobs into a built-in vault, its verification and a restore into an empty target run through the operator CLI `npm run backup` (ADR 0054). The supervised agent `npm run backup -- agent` adds a daily schedule in an explicit time zone, retention with prune, verification, warnings and metrics; the API `/api/v1/backup`, SDK `client.backup` and `arkvoryctl backup` queue and observe its work (ADR 0056); the console section "Backups" shows status and warnings, runs a backup or a full verification, pins points, applies retention after a preview and edits the plan, while restore stays an operator command ([console behavior](docs/CONSOLE_UX.md#резервные-копии)). Installers run the agent as a supervised service next to API and worker; `arkvory configure --backup-vault <dir> --init-vault` checks the vault directory, grants the service account access, restarts the agent and rolls back unless the agent reports the vault (ADR 0057). Encryption, S3 and the restore wizard remain [planned](docs/BACKUP_RECOVERY.md).
 
 ## Architecture
 

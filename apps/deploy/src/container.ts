@@ -1,2 +1,3 @@
 import { runRole } from './runtime.js';
-await runRole('/opt/arkvory', '/run/arkvory/runtime.json', process.argv[2] ?? 'api');
+const [role = 'api', ...args] = process.argv.slice(2);
+await runRole('/opt/arkvory', '/run/arkvory/runtime.json', role, args);

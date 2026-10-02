@@ -1,9 +1,21 @@
 import { join } from 'node:path';
-import { access } from 'node:fs/promises';
+import { access, readFile } from 'node:fs/promises';
+import type { BackupStatusResponse } from '@proanima/arkvory-contracts';
 import { provisionDatabase, databaseSettings } from './managed-database.js';
 import { command, isUnconfirmedTermination } from './process.js';
 import type { Installation, Release } from './model.js';
-import { jsonFile } from './files.js';
+import { atomicCopy, exists, jsonFile } from './files.js';
+import {
+  backupRegistered,
+  backupRunning,
+  shipsBackupRole,
+  startBackup,
+  stopWindowsBackup,
+} from './backup-service.js';
+import type { BackupSupervision } from './backup-service.js';
+import { backupStatus, reportBackupAgent } from './backup-probe.js';
+import type { BackupServiceControl } from './backup-setup.js';
+import { VaultAccess, vaultOverrideFile } from './vault-access.js';
 import { runtimeEnvironment } from './runtime.js';
 import { setTimeout as delay } from 'node:timers/promises';
 import { healthReady } from './health.js';
@@ -12,13 +24,21 @@ import type { LocalTarget } from './local-api.js';
 import { windowsAdministrator } from './preflight.js';
 import { report } from './output.js';
 
-export class Services {
+export class Services implements BackupServiceControl {
+  private readonly backup: BackupSupervision;
   constructor(
     private readonly root: string,
     private readonly state: Installation,
-  ) {}
-  private compose(release: Release, args: string[]): Promise<void> {
-    return command(
+  ) {
+    this.backup = { root, state, compose: (release, args) => this.compose(release, args) };
+  }
+  private async compose(release: Release, args: string[]): Promise<void> {
+    const files = ['-f', join(this.root, 'releases', release.version, 'deploy/compose.yml')];
+    // The vault bind mount exists only for a release that declares the backup service.
+    const override = join(this.root, vaultOverrideFile);
+    if ((await exists(override)) && (await shipsBackupRole(this.root, this.state, release)))
+      files.push('-f', override);
+    await command(
       this.state.engine,
       [
         'compose',
@@ -28,8 +48,7 @@ export class Services {
         this.root,
         '--env-file',
         join(this.root, 'config/compose.env'),
-        '-f',
-        join(this.root, 'releases', release.version, 'deploy/compose.yml'),
+        ...files,
         ...args,
       ],
       undefined,
@@ -70,16 +89,33 @@ export class Services {
       await this.compose(release, ['run', '--rm', 'migrate']);
     } else await command(process.execPath, [join(this.root, 'launcher.mjs'), this.root, 'migrate']);
   }
+  /** Stops the agent first: its running phase ends as `interrupted` and the job is queued again. */
   async stop(): Promise<void> {
+    const backup = await backupRunning(this.backup);
     if (this.state.mode === 'compose')
-      await this.compose(this.state.current, ['stop', '--timeout', '120', 'worker', 'api']);
+      await this.compose(this.state.current, [
+        'stop',
+        '--timeout',
+        '120',
+        ...(backup ? ['backup'] : []),
+        'worker',
+        'api',
+      ]);
     else if (this.state.mode === 'systemd')
-      await command('systemctl', ['stop', 'arkvory-worker', 'arkvory-api']);
-    else
+      await command('systemctl', [
+        'stop',
+        ...(backup ? ['arkvory-backup'] : []),
+        'arkvory-worker',
+        'arkvory-api',
+      ]);
+    else {
+      if (backup) await stopWindowsBackup(this.root);
       for (const role of ['worker', 'api'])
         // WinSW stop returns before shutdown; wait before switching the release pointer.
         await command(join(this.root, `service/arkvory-${role}.exe`), ['stopwait']);
+    }
   }
+  /** API and worker decide readiness; the agent starts afterwards and may fail on its own. */
   async start(release: Release): Promise<void> {
     if (this.state.mode === 'compose') {
       await this.compose(release, ['up', '-d', '--wait', '--wait-timeout', '180', 'api', 'worker']);
@@ -88,6 +124,46 @@ export class Services {
     else
       for (const role of ['api', 'worker'])
         await command(join(this.root, `service/arkvory-${role}.exe`), ['start']);
+    await startBackup(this.backup, release);
+  }
+  /**
+   * Registers the roles of `release` that an installation created by an older release lacks
+   * (today: the backup agent). A one-time full provision, the same as a repair.
+   */
+  async adopt(release: Release): Promise<void> {
+    if (
+      this.state.mode === 'compose' ||
+      (await backupRegistered(this.root, this.state)) ||
+      !(await shipsBackupRole(this.root, this.state, release))
+    )
+      return;
+    report('info', 'Registering the backup agent service of this release');
+    await this.provision(release);
+  }
+  /** After readiness: an absent agent is a warning, never a failed install or update. */
+  async confirmBackup(release: Release): Promise<void> {
+    if (!(await shipsBackupRole(this.root, this.state, release))) return;
+    if (this.state.mode !== 'compose' && !(await backupRegistered(this.root, this.state))) return;
+    await reportBackupAgent(() => this.backupStatus());
+  }
+  backupStatus(): Promise<BackupStatusResponse> {
+    return backupStatus(this.root, this.state);
+  }
+  async restartBackup(): Promise<void> {
+    if (await backupRunning(this.backup)) {
+      if (this.state.mode === 'compose')
+        await this.compose(this.state.current, ['stop', '--timeout', '120', 'backup']);
+      else if (this.state.mode === 'systemd')
+        await command('systemctl', ['stop', 'arkvory-backup']);
+      else await stopWindowsBackup(this.root);
+    }
+    await startBackup(this.backup, this.state.current, true);
+  }
+  openVault(vault: string | null): Promise<() => Promise<void>> {
+    return new VaultAccess(this.root, this.state, this.backup.compose).open(vault);
+  }
+  initializeVault(vault: string): Promise<void> {
+    return new VaultAccess(this.root, this.state, this.backup.compose).initialize(vault);
   }
   /** One readiness probe; a seam so the retry loop can be exercised without a live API. */
   ready(target: LocalTarget, tokenFile: string): Promise<boolean> {
@@ -116,8 +192,22 @@ export class Services {
     }
     throw new Error('Arkvory did not become ready');
   }
+  /**
+   * Service units run root/launcher.mjs, a bundle copied at installation. A release that adds a
+   * role brings a launcher that knows it; launchers stay compatible with older releases' roles.
+   */
+  private async refreshLauncher(release: Release): Promise<void> {
+    const directory = join(this.root, 'releases', release.version);
+    const source = join(directory, 'deploy/launcher.mjs');
+    const target = join(this.root, 'launcher.mjs');
+    if ((await readFile(source)).equals(await readFile(target))) return;
+    await atomicCopy(source, target, 0o644);
+    // A new file inherits only the root ACL; the managed database grants NetworkService again.
+    if (this.state.mode === 'windows') await provisionDatabase(this.root, directory);
+  }
   async provision(release: Release): Promise<void> {
     if (this.state.mode === 'compose') return;
+    await this.refreshLauncher(release);
     const script = join(
       this.root,
       'releases',

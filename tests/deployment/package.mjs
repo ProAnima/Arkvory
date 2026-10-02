@@ -78,8 +78,54 @@ const state = {
   pin: null,
   current: selected.release,
 };
-const { writeFile } = await import('node:fs/promises');
+const { writeFile, mkdir } = await import('node:fs/promises');
 await writeFile(join(target, 'installation.json'), JSON.stringify(state));
+// configure --init-vault goes through the release launcher to the backup CLI of that release.
+await mkdir(join(target, 'config'));
+await writeFile(
+  join(target, 'config/runtime.json'),
+  JSON.stringify({ ARKVORY_DATA_DIR: join(target, 'data') }),
+);
+const vault = join(root, 'backup vault');
+execFileSync(
+  process.execPath,
+  [join(runtime, 'deploy/launcher.mjs'), target, 'vault-init', vault],
+  { cwd: root, stdio: 'inherit' },
+);
+assert.equal(JSON.parse(await readFile(join(vault, 'vault.json'), 'utf8')).format, 'arkvory-vault');
+assert.throws(() =>
+  execFileSync(
+    process.execPath,
+    [join(runtime, 'deploy/launcher.mjs'), target, 'vault-init', vault],
+    {
+      cwd: root,
+      stdio: 'ignore',
+    },
+  ),
+);
+// Service scripts run unattended as root/Administrator: they must at least parse.
+const bash =
+  process.platform === 'win32' ? join(process.env.ProgramFiles, 'Git/bin/bash.exe') : 'bash';
+for (const name of ['register-linux.sh', 'backup-vault-linux.sh', 'database-linux.sh'])
+  execFileSync(bash, ['-n', join(runtime, 'deploy', name)], { stdio: 'inherit' });
+const powershellEnvironment = Object.fromEntries(
+  Object.entries(process.env).filter(([key]) => key.toLowerCase() !== 'psmodulepath'),
+);
+for (const name of ['register-windows.ps1', 'backup-vault-windows.ps1', 'native/remove.ps1'])
+  execFileSync(
+    process.platform === 'win32' ? 'powershell.exe' : 'pwsh',
+    [
+      '-NoProfile',
+      '-NonInteractive',
+      '-Command',
+      '$tokens=$null; $errors=$null; [System.Management.Automation.Language.Parser]::ParseFile($env:ARKVORY_PARSE_PATH,[ref]$tokens,[ref]$errors) | Out-Null; if ($errors.Count) { $errors | Out-String | Write-Error; exit 1 }',
+    ],
+    {
+      env: { ...powershellEnvironment, ARKVORY_PARSE_PATH: join(runtime, 'deploy', name) },
+      stdio: 'inherit',
+      windowsHide: true,
+    },
+  );
 execFileSync(process.execPath, [join(output, 'arkvory-setup.mjs'), 'status', '--root', target], {
   cwd: root,
   stdio: 'inherit',

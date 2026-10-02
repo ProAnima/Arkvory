@@ -7,7 +7,7 @@ if ($task) {
   if (($task.Actions.Arguments -ne $expected) -and ($task.Actions.Arguments -ne $monitor)) { throw 'Another installation owns the updater task' }
   Unregister-ScheduledTask -TaskName 'ProAnimaArkvoryUpdate' -Confirm:$false
 }
-foreach ($entry in @(@('Arkvoryworker','service/arkvory-worker.exe'),@('Arkvoryapi','service/arkvory-api.exe'),@('Arkvorydatabase','database/arkvory-database.exe'))) {
+foreach ($entry in @(@('Arkvorybackup','service/arkvory-backup.exe'),@('Arkvoryworker','service/arkvory-worker.exe'),@('Arkvoryapi','service/arkvory-api.exe'),@('Arkvorydatabase','database/arkvory-database.exe'))) {
   $service = Get-CimInstance Win32_Service -Filter "Name='$($entry[0])'"
   $exe = Join-Path $Root $entry[1]
   if ($service) {
@@ -18,3 +18,4 @@ foreach ($entry in @(@('Arkvoryworker','service/arkvory-worker.exe'),@('Arkvorya
   }
 }
 # Deliberately retain the complete ProgramData tree, including database, blobs and recovery credentials.
+# The backup vault lives outside the root and is never touched.

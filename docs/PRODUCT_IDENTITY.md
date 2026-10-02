@@ -2,20 +2,20 @@
 
 Arkvory — самостоятельное хранилище ProAnimaStudio. Автор, правообладатель и держатель бренда — Ian Panaev лично. Лицензия проприетарная.
 
-| Поверхность     | Имя                                                                                                         |
-| --------------- | ----------------------------------------------------------------------------------------------------------- |
-| Репозиторий     | `ProAnima/Arkvory`                                                                                          |
-| Клиент / SDK    | `arkvoryctl`, `@proanima/arkvory-sdk`, `ArkvoryClient`                                                      |
-| Установка       | `arkvory`, `arkvory-setup.mjs`                                                                              |
-| Конфигурация    | `ARKVORY_*`                                                                                                 |
-| SQL             | таблицы, индексы, роли и тестовые схемы `arkvory_*`                                                         |
-| Сервисные ключи | `arkvory_<uuid>.<secret>`                                                                                   |
-| CLI             | `.config/arkvory/profiles.json`, `.arkvory-upload.json`, `.arkvory-download.json`, `.arkvory-part`          |
-| Браузер         | `arkvory.ui.*`, OPFS `arkvory-download-staging-v1`, Web Locks `arkvory-download:*`                          |
-| Windows         | службы `Arkvoryapi`, `Arkvoryworker`, `Arkvorydatabase`; данные `C:\ProgramData\ProAnima\Arkvory`           |
-| Linux           | `arkvory-api`, `arkvory-worker`, `arkvory-database`, `arkvory-update.timer`; данные `/opt/proanima-arkvory` |
-| Compose         | проект `proanima-arkvory`, volumes `proanima-arkvory_storage`, `proanima-arkvory_catalog`                   |
-| Релизы          | `arkvory-release.json`, `arkvory-runtime.zip`, `Arkvory-Setup-x64.exe`, DEB/RPM и клиентские пакеты Arkvory |
+| Поверхность     | Имя                                                                                                                           |
+| --------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| Репозиторий     | `ProAnima/Arkvory`                                                                                                            |
+| Клиент / SDK    | `arkvoryctl`, `@proanima/arkvory-sdk`, `ArkvoryClient`                                                                        |
+| Установка       | `arkvory`, `arkvory-setup.mjs`                                                                                                |
+| Конфигурация    | `ARKVORY_*`                                                                                                                   |
+| SQL             | таблицы, индексы, роли и тестовые схемы `arkvory_*`                                                                           |
+| Сервисные ключи | `arkvory_<uuid>.<secret>`                                                                                                     |
+| CLI             | `.config/arkvory/profiles.json`, `.arkvory-upload.json`, `.arkvory-download.json`, `.arkvory-part`                            |
+| Браузер         | `arkvory.ui.*`, OPFS `arkvory-download-staging-v1`, Web Locks `arkvory-download:*`                                            |
+| Windows         | службы `Arkvoryapi`, `Arkvoryworker`, `Arkvorybackup`, `Arkvorydatabase`; данные `C:\ProgramData\ProAnima\Arkvory`            |
+| Linux           | `arkvory-api`, `arkvory-worker`, `arkvory-backup`, `arkvory-database`, `arkvory-update.timer`; данные `/opt/proanima-arkvory` |
+| Compose         | проект `proanima-arkvory`, volumes `proanima-arkvory_storage`, `proanima-arkvory_catalog`                                     |
+| Релизы          | `arkvory-release.json`, `arkvory-runtime.zip`, `Arkvory-Setup-x64.exe`, DEB/RPM и клиентские пакеты Arkvory                   |
 
 Продукт ещё не используется в установках. Все компоненты используют единую идентичность Arkvory с чистой установкой: aliases окружения, поиск альтернативных профилей/checkpoints и автоматический перенос прежних данных отсутствуют. PostgreSQL-миграции создают схему Arkvory; тестовые окружения создаются заново. Сборочные кэши и история Git не являются частью поставляемого продукта.
 

@@ -12,16 +12,22 @@ for (const name of ['config/bootstrap-token.txt', 'github-token.txt']) {
   }
   if (!denied) throw Error('Service identity must not read administrator credentials');
 }
-let writeDenied = false;
-try {
-  const file = await open(join(root, `forbidden-${role}`), 'wx');
-  await file.close();
-} catch (error) {
-  if (['EACCES', 'EPERM', 'EROFS'].includes(error.code)) writeDenied = true;
-  else throw error;
+async function writeDenied(path) {
+  try {
+    const file = await open(path, 'wx');
+    await file.close();
+  } catch (error) {
+    if (['EACCES', 'EPERM', 'EROFS'].includes(error.code)) return true;
+    throw error;
+  }
+  return false;
 }
-if (!writeDenied) throw Error('Service identity must not modify the installation');
-const path = join(root, 'data', `${role}.starts`);
+if (!(await writeDenied(join(root, `forbidden-${role}`))))
+  throw Error('Service identity must not modify the installation');
+// The backup unit sees storage read-only; only the vault opened by its drop-in is writable.
+if (role === 'backup' && process.platform === 'linux' && !(await writeDenied(join(root, 'data/x'))))
+  throw Error('The backup agent must not modify storage');
+const path = join(root, role === 'backup' ? 'vault' : 'data', `${role}.starts`);
 let starts = 0;
 try {
   starts = Number(await readFile(path, 'utf8'));

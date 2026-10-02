@@ -58,6 +58,7 @@ export async function exerciseRpm(output) {
       '--quiet',
       'arkvory-api',
       'arkvory-worker',
+      'arkvory-backup',
       'arkvory-database',
     ]);
     const before = run([

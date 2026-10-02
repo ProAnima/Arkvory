@@ -1,6 +1,6 @@
 # Установка Arkvory
 
-Самостоятельная установка одного API и completion worker: Linux/systemd, Windows desktop/Server и Docker Compose. Поддерживаются стабильные опубликованные GitHub Releases, фиксация версии и отключаемые автоматические обновления. Готовые артефакты создаёт workflow `Prepare stable release`; **до публикации первого релиза сетевой installer не сможет скачать Arkvory**. Из исходников можно установить локальный артефакт.
+Самостоятельная установка одного API, completion worker и агента резервных копий: Linux/systemd, Windows desktop/Server и Docker Compose. Поддерживаются стабильные опубликованные GitHub Releases, фиксация версии и отключаемые автоматические обновления. Готовые артефакты создаёт workflow `Prepare stable release`; **до публикации первого релиза сетевой installer не сможет скачать Arkvory**. Из исходников можно установить локальный артефакт.
 
 ## Быстрый запуск
 
@@ -20,14 +20,14 @@ ZIP/tar-комплекты остаются для операторской ав
 
 Скачайте `install.sh` либо `install.ps1` из проверенного [релиза](https://github.com/ProAnima/Arkvory/releases) и просмотрите скрипт перед запуском. Он скачивает закреплённый Node.js 24 LTS с проверкой SHA-256, затем проверенный runtime Arkvory. npm и компилятор на целевом сервере не нужны. Без опубликованного релиза используйте распакованный комплект `Arkvory-Linux.tar.gz` / `Arkvory-Windows.zip` (локальный artifact, см. «Docker одной командой») либо установку из исходников.
 
-| Вариант                  | Команда                                 | Права                                           | Supervisor                           |
-| ------------------------ | --------------------------------------- | ----------------------------------------------- | ------------------------------------ |
-| Linux, systemd           | `sudo bash ./install.sh --automatic`    | root                                            | systemd: `arkvory-api`, `-worker`    |
-| Windows, нативные службы | `.\install.ps1 -AutomaticUpdates`       | PowerShell от администратора                    | WinSW: `Arkvoryapi`, `Arkvoryworker` |
-| Docker, Linux            | `sudo bash ./install.sh --mode compose` | root либо пользователь группы docker            | restart policy Docker                |
-| Docker, Windows          | `.\install.ps1 -Mode compose`           | пользователь Docker Desktop, повышение не нужно | restart policy Docker Desktop        |
+| Вариант                  | Команда                                 | Права                                           | Supervisor                                            |
+| ------------------------ | --------------------------------------- | ----------------------------------------------- | ----------------------------------------------------- |
+| Linux, systemd           | `sudo bash ./install.sh --automatic`    | root                                            | systemd: `arkvory-api`, `-worker`, `-backup`          |
+| Windows, нативные службы | `.\install.ps1 -AutomaticUpdates`       | PowerShell от администратора                    | WinSW: `Arkvoryapi`, `Arkvoryworker`, `Arkvorybackup` |
+| Docker, Linux            | `sudo bash ./install.sh --mode compose` | root либо пользователь группы docker            | restart policy Docker                                 |
+| Docker, Windows          | `.\install.ps1 -Mode compose`           | пользователь Docker Desktop, повышение не нужно | restart policy Docker Desktop                         |
 
-Командным нативным вариантам нужна доступная PostgreSQL (URL запрашивается скрыто); графические EXE/DEB/RPM создают выделенный кластер. Docker-вариант поднимает API, worker и PostgreSQL 18.4 из `deploy/compose.yml`.
+Командным нативным вариантам нужна доступная PostgreSQL (URL запрашивается скрыто); графические EXE/DEB/RPM создают выделенный кластер. Docker-вариант поднимает API, worker, агента резервных копий и PostgreSQL 18.4 из `deploy/compose.yml`.
 
 Linux, нативно:
 
@@ -43,7 +43,7 @@ Windows x64, PowerShell от администратора (Windows desktop с п
 .\install.ps1 -AutomaticUpdates
 ```
 
-Путь — `C:\ProgramData\ProAnima\Arkvory`; доступны `-Root`, `-Config`, `-Version` и `-Pin`. Для другого Root используйте машинный каталог вне пользовательского профиля/AppData: LocalService должен проходить по родительским каталогам при разрешении пути Node.js. PostgreSQL URL запрашивается скрыто. Службы `Arkvoryapi` и `Arkvoryworker` используют LocalService; WinSW 2.12.0 проверяется по закреплённому SHA-256. Пользовательский сеанс для нативных служб не нужен.
+Путь — `C:\ProgramData\ProAnima\Arkvory`; доступны `-Root`, `-Config`, `-Version` и `-Pin`. Для другого Root используйте машинный каталог вне пользовательского профиля/AppData: LocalService должен проходить по родительским каталогам при разрешении пути Node.js. PostgreSQL URL запрашивается скрыто. Службы `Arkvoryapi`, `Arkvoryworker` и `Arkvorybackup` используют LocalService; WinSW 2.12.0 проверяется по закреплённому SHA-256. Пользовательский сеанс для нативных служб не нужен.
 
 Docker, Linux:
 
@@ -65,7 +65,7 @@ Docker, Windows с работающим Docker Desktop в режиме Linux con
 
 ### Docker одной командой
 
-Стек API + worker + PostgreSQL из `deploy/compose.yml` ставится одной командой установщика. Из опубликованного релиза — команды из таблицы выше. Из распакованного комплекта без доступа к GitHub Releases (Node.js по-прежнему скачивается с проверкой SHA-256):
+Стек API + worker + агент резервных копий + PostgreSQL из `deploy/compose.yml` ставится одной командой установщика. Из опубликованного релиза — команды из таблицы выше. Из распакованного комплекта без доступа к GitHub Releases (Node.js по-прежнему скачивается с проверкой SHA-256):
 
 ```bash
 # Linux, в каталоге распакованного Arkvory-Linux.tar.gz
@@ -97,10 +97,13 @@ npm run deploy:compose -- --root C:\Arkvory\compose
 root=/opt/proanima-arkvory
 version=$(node -p "require('$root/installation.json').current.version")
 compose=(docker compose --project-name proanima-arkvory --project-directory "$root" --env-file "$root/config/compose.env" -f "$root/releases/$version/deploy/compose.yml")
+# Настроенный vault резервных копий: без этого файла `up` пересоздаст backup без vault.
+[[ -f "$root/config/compose.vault.yml" ]] && compose+=(-f "$root/config/compose.vault.yml")
 "${compose[@]}" ps
-"${compose[@]}" logs --tail 100 api worker
-"${compose[@]}" stop --timeout 120 worker api
+"${compose[@]}" logs --tail 100 api worker backup
+"${compose[@]}" stop --timeout 120 backup worker api
 "${compose[@]}" up -d --wait api worker
+"${compose[@]}" up -d backup
 ```
 
 ```powershell
@@ -136,6 +139,19 @@ HTTP по умолчанию доступен только через `http://12
 
 Readiness проверяется отдельным `config/health-token.txt`: его запись `deployment-health` в keys.json не имеет repository grants и административных прав. Сохраняйте эту запись при ротации bootstrap; при замене health credential синхронно меняйте токен и его SHA-256 и перезапускайте API. Healthcheck не использует административный ключ и не снимает авторизацию с `/health/ready`.
 
+### Резервные копии
+
+Агент резервных копий (`arkvory-backup` / `Arkvorybackup` / сервис Compose `backup`) устанавливается и запускается вместе с API и worker, но в readiness не входит. Без vault он работает и сообщает `vault_not_configured`. Vault — отдельный том или NAS, смонтированный заранее, вне корня установки. Подключение и отключение:
+
+```bash
+sudo arkvory configure --root /opt/proanima-arkvory --backup-vault /mnt/backup/arkvory --init-vault
+sudo arkvory configure --root /opt/proanima-arkvory --backup-vault-off
+```
+
+Команда проверяет каталог до изменений и создаёт `vault.json` только в пустом каталоге (`--init-vault`). Затем она выдаёт доступ учётной записи службы (Linux — `arkvory`, 0700 и drop-in systemd; Windows — `NT AUTHORITY\LOCAL SERVICE`; Compose — bind mount `config/compose.vault.yml` с владельцем uid 1000) и перезапускает только агента. Изменение принимается, когда агент сам сообщил этот vault доступным; при сбое прежняя настройка возвращается. Расписание, retention и копии — в консоли, `arkvoryctl backup` и [CORE_RUNBOOK](../docs/CORE_RUNBOOK.md#резервные-копии-без-участия-оператора-b2). Решение: [ADR 0057](../docs/adr/0057-backup-agent-service.md).
+
+Установка 0.2.x, обновлённая своим же кодом (`manage.mjs update`/`upgrade`, планировщик), службу агента не получает: после обновления выполните `arkvory updates-connect --root <root>`. Пакеты deb, rpm и exe и обновления, выполненные новой версией, регистрируют её сами. Удаление и repair vault не трогают.
+
 ## Приватный репозиторий
 
 Перед сетевой установкой создайте **в выделенном каталоге установки** `github-token.txt` с токеном чтения Contents этого репозитория. Не передавайте его аргументом CLI. Linux: owner root (или пользователь Compose без root), mode 0600, каталог 0700; Windows: только Administrators/SYSTEM, для Compose без повышения — ещё установивший пользователь. Тот же файл использует updater. Служба Arkvory не должна читать его. Токен, скопированный после установки, нужно защитить теми же правами. Для публичных releases он не нужен.
@@ -166,11 +182,11 @@ node /opt/proanima-arkvory/manage.mjs configure --root /opt/proanima-arkvory --u
 
 Новые установки подключают уведомления и минутный обработчик команд. Проверка stable GitHub Releases выполняется каждые 6 часов, даже при выключенной автоустановке. `--automatic` / `-AutomaticUpdates` включает установку в окно 03:00–03:59 UTC на всех платформах; час меняется в консоли → Обновления. Не более одной попытки за сутки UTC, без догоняющего запуска вне окна. Pin запрещает плановую смену версии. Ручной выбор: `update --version 1.2.3`; downgrade запрещён. На хостах без системного планировщика его подключает оператор. [Уведомления, подключение существующих установок, API и восстановление](../docs/UPDATES.md).
 
-Linux: `systemctl status arkvory-api arkvory-worker`, `journalctl -u arkvory-api -u arkvory-worker`, updater — `journalctl -u arkvory-update`; лимиты journald задаются в ОС. Windows: Services и logs с ротацией по 20 MiB, пять архивов; вывод задачи `ProAnimaArkvoryUpdate` (запуск без консоли) пишется в `logs/updater.log` с той же ротацией. Строки deploy CLI имеют формат `<ISO-8601> INFO|WARN|ERROR <текст>`, секреты редактируются. Поля JSON-журнала API/worker и метрики: [CORE_RUNBOOK](../docs/CORE_RUNBOOK.md#журналы-метрики-и-корреляция). Docker: Compose logs, JSON logs ограничены 20 MiB × 5. Сбой процесса вызывает restart через 10 секунд у нативных служб, у Docker — по политике движка. Неуспешная readiness сама по себе не вызывает restart: мониторинг отдельно сообщает о недоступной БД, потере ownership и дисковых ошибках. [Матрица автозапуска, восстановления и обязательных проверок](../docs/SERVICE_RECOVERY.md) отдельно описывает зависимость Docker от запуска движка и ограничения Linux без systemd.
+Linux: `systemctl status arkvory-api arkvory-worker arkvory-backup`, `journalctl -u arkvory-api -u arkvory-worker -u arkvory-backup`, updater — `journalctl -u arkvory-update`; лимиты journald задаются в ОС. Windows: Services и logs с ротацией по 20 MiB, пять архивов; вывод задачи `ProAnimaArkvoryUpdate` (запуск без консоли) пишется в `logs/updater.log` с той же ротацией. Строки deploy CLI имеют формат `<ISO-8601> INFO|WARN|ERROR <текст>`, секреты редактируются. Поля JSON-журнала API/worker и метрики: [CORE_RUNBOOK](../docs/CORE_RUNBOOK.md#журналы-метрики-и-корреляция). Docker: Compose logs, JSON logs ограничены 20 MiB × 5. Сбой процесса вызывает restart через 10 секунд у нативных служб, у Docker — по политике движка. Неуспешная readiness сама по себе не вызывает restart: мониторинг отдельно сообщает о недоступной БД, потере ownership и дисковых ошибках. [Матрица автозапуска, восстановления и обязательных проверок](../docs/SERVICE_RECOVERY.md) отдельно описывает зависимость Docker от запуска движка и ограничения Linux без systemd.
 
 ## Обновление и восстановление
 
-Сначала проверяется полный релиз: SHA-256, безопасные пути ZIP и лимиты распаковки; для Compose заранее строится образ. Затем останавливаются worker/API с пределом 120 секунд, переключается версия, запускаются процессы и проверяется readiness. При той же схеме миграции не запускаются, возможен автоматический rollback. Старый код, ключи, конфигурация, volumes и данные сохраняются. Это обновление с перерывом, не HA/rolling update; клиентам нужны resume/retry.
+Сначала проверяется полный релиз: SHA-256, безопасные пути ZIP и лимиты распаковки; для Compose заранее строится образ. Затем останавливаются агент резервных копий, worker и API с пределом 120 секунд, переключается версия, запускаются API, worker, затем агент, и проверяется readiness API/worker. Агент в readiness не входит: если он не сообщил о себе за ~90 секунд, печатается WARN, обновление не откатывается. При той же схеме миграции не запускаются, возможен автоматический rollback. Старый код, ключи, конфигурация, volumes и данные сохраняются. Это обновление с перерывом, не HA/rolling update; клиентам нужны resume/retry.
 
 Изменение схемы требует offline backup БД и полного storage root, проверки восстановления и migration notes. После этого:
 
@@ -204,6 +220,6 @@ node artifacts/0.1.0/arkvory-setup.mjs install --root /opt/proanima-arkvory --mo
 
 `release-checksums.json` связывает runtime, bootstrap, командные установщики и два комплекта с одной версией/коммитом. Это контроль целостности, не независимая цифровая подпись. Передача candidate между jobs требует доступной квоты GitHub Actions artifacts. При нехватке места workflow блокирует выпуск; переключения на непроверенную пересборку или пропуска приёмки нет.
 
-Гейты `deployment`, `deployment-services`, `deployment-containers` проверяют соответственно переносимый runtime, настоящий crash/restart двух изолированных служб и Docker install/migrate/update с сохранением volume. Service gate требует Windows Administrator либо Linux/systemd и passwordless sudo; container gate — Docker/Compose без уже установленного проекта proanima-arkvory. На Linux он запускает `install.sh --mode compose`, на Windows-хосте с Docker Desktop (Linux containers) — `install.ps1 -Mode compose` от пользователя Docker Desktop, без повышения прав: `npm run gate -- deployment-containers`. Они обязательны в CI и verify/release; отсутствие инфраструктуры не считается pass. Двухсерверный HA остаётся стендовой проверкой.
+Гейты `deployment`, `deployment-services`, `deployment-containers` проверяют соответственно переносимый runtime, настоящий crash/restart трёх изолированных служб (API, worker, агент резервных копий с vault через drop-in/ACL) и Docker install/migrate/копию/update с сохранением volume. Service gate требует Windows Administrator либо Linux/systemd и passwordless sudo; container gate — Docker/Compose без уже установленного проекта proanima-arkvory. На Linux он запускает `install.sh --mode compose`, на Windows-хосте с Docker Desktop (Linux containers) — `install.ps1 -Mode compose` от пользователя Docker Desktop, без повышения прав: `npm run gate -- deployment-containers`. Они обязательны в CI и verify/release; отсутствие инфраструктуры не считается pass. Двухсерверный HA остаётся стендовой проверкой.
 
 Архитектура: [ADR 0031](../docs/adr/0031-release-installation-and-supervision.md). Supervisor: [systemd](https://www.freedesktop.org/software/systemd/man/latest/systemd.service.html), [WinSW](https://github.com/winsw/winsw/blob/v2.12.0/doc/xmlConfigFile.md), [Docker](https://docs.docker.com/engine/containers/start-containers-automatically/).

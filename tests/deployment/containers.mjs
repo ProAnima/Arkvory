@@ -9,6 +9,7 @@ import { tarExecutable } from '../../scripts/tar.mjs';
 import { extractArchive } from '../../apps/deploy/dist/archive.js';
 import { exerciseUpdateControl } from './update-control.mjs';
 import { exerciseContainerRecovery } from './container-recovery.mjs';
+import { exerciseBackupAgent, vaultReported, waitForAgent } from './backup-acceptance.mjs';
 const windows = process.platform === 'win32';
 const run = (args) =>
   execFileSync('docker', args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'inherit'] }).trim();
@@ -125,14 +126,30 @@ async function ready() {
   }
   throw Error('Container API readiness timed out');
 }
+// A host directory next to the installation, bind-mounted into the backup container.
+const vault = join(temporary, 'backup vault');
+let vaultId = null;
 try {
   manage(['install', '--mode', 'compose', '--artifact', artifact]);
-  await exerciseUpdateControl(
-    (await readFile(join(root, 'config/bootstrap-token.txt'), 'utf8')).trim(),
-    async () => {
-      manage(['updates-poll']);
-    },
-  );
+  const token = (await readFile(join(root, 'config/bootstrap-token.txt'), 'utf8')).trim();
+  await exerciseUpdateControl(token, async () => {
+    manage(['updates-poll']);
+  });
+  await mkdir(vault);
+  const capture = await exerciseBackupAgent(token, async () => {
+    manage(['configure', '--backup-vault', vault, '--init-vault']);
+  });
+  vaultId = capture.vaultId;
+  // The point is visible to the agent exactly where it wrote it: committed in the host vault.
+  run([
+    ...compose,
+    'exec',
+    '-T',
+    'backup',
+    'node',
+    '-e',
+    `require('fs').accessSync('/srv/arkvory-vault/points/${capture.pointId}/COMMITTED')`,
+  ]);
   run([
     ...compose,
     'exec',
@@ -167,9 +184,17 @@ try {
     JSON.parse(await readFile(join(root, 'installation.json'), 'utf8')).current.version,
     nextVersion,
   );
-  console.log('Container install, migrations, crash restart and persistent-volume update passed');
+  // The update recreates the agent from the new image with the same vault mount.
+  await waitForAgent(
+    token,
+    (status) => vaultReported(status) && status.vault.id === vaultId,
+    'The backup agent must report its vault after the update',
+  );
+  console.log(
+    'Container install, migrations, backup agent, crash restart and persistent-volume update passed',
+  );
 } catch (error) {
-  console.error(run([...compose, 'logs', '--no-color', '--tail', '40', 'api', 'worker']));
+  console.error(run([...compose, 'logs', '--no-color', '--tail', '40', 'api', 'worker', 'backup']));
   run([...compose, 'stop', '--timeout', '10', 'api', 'worker']);
   const diagnostic =
     "import {readFile} from 'node:fs/promises';Object.assign(process.env,JSON.parse(await readFile('/run/arkvory/runtime.json','utf8')));process.env.ARKVORY_WEB_DIR='/opt/arkvory/apps/web/public';try{const {loadConfig}=await import('./apps/api/dist/config.js');const {createServer}=await import('./apps/api/dist/server.js');const app=await createServer(await loadConfig(process.env));await app.close();}catch(e){console.error('Startup diagnostic: '+String(e.message).replace(/postgres(?:ql)?:\\/\\/\\S+/g,'[database URL redacted]'));process.exitCode=1;}";
@@ -193,6 +218,24 @@ try {
 } finally {
   try {
     run([...compose, 'down', '--volumes', '--remove-orphans']);
+    // On Linux the vault belongs to the container user (uid 1000); return it to this runner.
+    if (!windows && vaultId !== null)
+      run([
+        'run',
+        '--rm',
+        '--user',
+        '0:0',
+        '--network',
+        'none',
+        '-v',
+        `${vault}:/vault`,
+        '--entrypoint',
+        'chown',
+        `proanima-arkvory:${manifest.version}`,
+        '-R',
+        `${process.getuid()}:${process.getgid()}`,
+        '/vault',
+      ]);
   } finally {
     if (windows) removeWindowsUpdater();
   }

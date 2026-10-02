@@ -62,6 +62,7 @@ export async function install(root: string, options: Map<string, string>): Promi
   await services.provision(state.current);
   await services.start(state.current);
   await services.healthy();
+  await services.confirmBackup(state.current);
   await services.schedule(state.current);
   report(
     'info',
@@ -78,6 +79,7 @@ export async function finishInstall(root: string): Promise<void> {
   await services.provision(state.current);
   await services.start(state.current);
   await services.healthy();
+  await services.confirmBackup(state.current);
   await services.schedule(state.current);
 }
 export async function checkJournal(root: string): Promise<void> {
@@ -112,12 +114,18 @@ export async function update(
       await services.prepare(selected.release);
     },
     stop: () => services.stop(),
-    start: (release) => services.start(release),
+    start: async (release) => {
+      // An installation from a release without the backup role gets its service while stopped.
+      await services.adopt(release);
+      await services.start(release);
+    },
     healthy: () => services.healthy(),
     save: (next) => save(root, next),
     journal: (value) => atomicJson(join(root, 'journal.json'), value),
   });
   report('info', changed ? `Updated to ${selected.release.version}` : 'Already current');
+  // Outside applyUpdate: the agent never decides about a rollback of the API.
+  if (changed) await services.confirmBackup(selected.release);
 }
 export async function recover(root: string): Promise<void> {
   const state = parseInstallation(await jsonFile(join(root, 'installation.json')));
@@ -135,6 +143,7 @@ export async function recover(root: string): Promise<void> {
   await services.start(previous);
   await services.healthy();
   await atomicJson(join(root, 'journal.json'), { ...journal, phase: 'recovered' });
+  await services.confirmBackup(previous);
 }
 export async function upgrade(root: string, options: Map<string, string>): Promise<void> {
   const backup = options.get('backup-record');
@@ -166,6 +175,7 @@ export async function upgrade(root: string, options: Map<string, string>): Promi
   await save(root, { ...state, current: selected.release });
   // No rollback after a migration attempt: the backup, not old binaries, is the recovery boundary.
   await services.migrate(selected.release);
+  await services.adopt(selected.release);
   await services.start(selected.release);
   await services.healthy();
   await atomicJson(join(root, 'journal.json'), {
@@ -174,4 +184,5 @@ export async function upgrade(root: string, options: Map<string, string>): Promi
     next: selected.release,
     backup,
   });
+  await services.confirmBackup(selected.release);
 }

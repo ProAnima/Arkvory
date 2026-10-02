@@ -25,7 +25,8 @@ if (-not (Test-Path -LiteralPath $wrapper)) {
 }
 if ((Get-FileHash $wrapper -Algorithm SHA256).Hash -ne '05B82D46AD331CC16BDC00DE5C6332C1EF818DF8CEEFCD49C726553209B3A0DA') { throw 'WinSW checksum mismatch' }
 function Xml([string]$value) { [Security.SecurityElement]::Escape($value) }
-foreach ($role in @('api','worker')) {
+# The backup agent shares the LocalService identity; arkvory configure grants it the vault.
+foreach ($role in @('api','worker','backup')) {
     $name = "$Prefix$role"
     $exe = Join-Path $Root "service/arkvory-$role.exe"
     $existing = Get-CimInstance Win32_Service -Filter "Name='$name'"

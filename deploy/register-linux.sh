@@ -24,10 +24,17 @@ if [[ -d "$root/updates/inbox" ]]; then
 fi
 chmod 0640 "$root/config/runtime.json" "$root/config/keys.json"
 chmod 0600 "$root/config/bootstrap-token.txt" "$root/config/postgres.env"
-for role in api worker; do
+for role in api worker backup; do
   unit="/etc/systemd/system/$prefix-$role.service"
   if [[ -e "$unit" ]] && ! grep -Fq "# Arkvory installation: $root" "$unit"; then
     echo 'A different Arkvory installation owns this service' >&2; exit 1
+  fi
+  if [[ $role == backup ]]; then
+    # The agent only reads storage; backup-vault-linux.sh opens the vault with a drop-in.
+    writable='# Storage stays read-only; the vault is a drop-in of arkvory configure.'
+  else
+    writable="ReadWritePaths=\"$root/data\" \"$root/logs\"
+ReadWritePaths=\"-$root/updates/inbox\""
   fi
   cat > "$unit" <<EOF
 # Arkvory installation: $root
@@ -50,8 +57,7 @@ NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=true
-ReadWritePaths="$root/data" "$root/logs"
-ReadWritePaths="-$root/updates/inbox"
+$writable
 UMask=0027
 StandardOutput=journal
 StandardError=journal
@@ -60,4 +66,4 @@ WantedBy=multi-user.target
 EOF
 done
 systemctl daemon-reload
-systemctl enable "$prefix-api" "$prefix-worker"
+systemctl enable "$prefix-api" "$prefix-worker" "$prefix-backup"

@@ -1,4 +1,16 @@
-import { open, mkdir, readFile, rename, unlink, lstat } from 'node:fs/promises';
+import { constants } from 'node:fs';
+import {
+  open,
+  mkdir,
+  readFile,
+  rename,
+  unlink,
+  lstat,
+  stat,
+  copyFile,
+  chmod,
+  access,
+} from 'node:fs/promises';
 import { dirname, join, resolve, relative, isAbsolute } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { isUnconfirmedTermination } from './process.js';
@@ -9,6 +21,15 @@ export function inside(root: string, ...parts: string[]): string {
   if (!delta || delta.startsWith('..') || isAbsolute(delta))
     throw new Error('Path must remain inside installation');
   return path;
+}
+export async function exists(path: string): Promise<boolean> {
+  try {
+    await access(path);
+    return true;
+  } catch (error) {
+    if (error instanceof Error && 'code' in error && error.code === 'ENOENT') return false;
+    throw error;
+  }
 }
 export async function jsonFile(path: string): Promise<unknown> {
   const info = await lstat(path);
@@ -29,6 +50,45 @@ export async function atomicText(path: string, value: string, mode = 0o644): Pro
     await file.close();
   }
   await rename(temporary, path);
+  await syncDirectory(dirname(path));
+}
+/**
+ * Replaces an existing configuration file atomically and keeps its mode, owner and group. A new
+ * inode belongs to the writer (root); without the old group the service account (root:arkvory
+ * 0640 on Linux) could no longer read the file after a restart.
+ */
+export async function replaceText(path: string, value: string): Promise<void> {
+  const info = await stat(path);
+  const mode = info.mode & 0o777;
+  const temporary = `${path}.${randomUUID()}.tmp`;
+  const file = await open(temporary, 'wx', mode);
+  try {
+    try {
+      await file.writeFile(value);
+      await file.chmod(mode);
+      if (process.platform !== 'win32') await file.chown(info.uid, info.gid);
+      await file.sync();
+    } finally {
+      await file.close();
+    }
+    await rename(temporary, path);
+  } catch (error) {
+    await unlink(temporary).catch(() => undefined);
+    throw error;
+  }
+  await syncDirectory(dirname(path));
+}
+/** Copies a file into place through a temporary sibling, so readers never see a partial copy. */
+export async function atomicCopy(source: string, path: string, mode: number): Promise<void> {
+  const temporary = `${path}.${randomUUID()}.tmp`;
+  try {
+    await copyFile(source, temporary, constants.COPYFILE_EXCL);
+    await chmod(temporary, mode);
+    await rename(temporary, path);
+  } catch (error) {
+    await unlink(temporary).catch(() => undefined);
+    throw error;
+  }
   await syncDirectory(dirname(path));
 }
 export async function syncDirectory(path: string): Promise<void> {

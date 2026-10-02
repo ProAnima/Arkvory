@@ -61,6 +61,24 @@ services:
     command: [worker]
     depends_on:
       api: { condition: service_healthy }
+  # Backup agent (ADR 0057): storage read-only, no keys and no ports. The vault is a host
+  # directory bind-mounted by config/compose.vault.yml (arkvory configure --backup-vault).
+  backup:
+    <<: *runtime
+    command: [backup]
+    volumes:
+      - storage:/var/lib/arkvory:ro
+      - ./config/runtime.json:/run/arkvory/runtime.json:ro
+    depends_on:
+      database: { condition: service_healthy }
+  # One-shot: the container user (uid 1000) owns the vault. Runs only with the vault override.
+  vault-owner:
+    image: ${ARKVORY_IMAGE}
+    user: '0:0'
+    entrypoint: [chown, -R, '1000:1000', /srv/arkvory-vault]
+    network_mode: none
+    restart: 'no'
+    profiles: [maintenance]
 volumes:
   catalog:
   storage:

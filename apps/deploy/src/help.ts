@@ -6,7 +6,8 @@ arkvory <command> --root <absolute-directory> [options]
 install        Install a verified stable release / Установить проверенный релиз
 finish-install Resume saved installation / Продолжить сохранённую установку
 status         Show installed version and update policy / Состояние
-updates-connect Connect console notifications and host scheduler / Подключить обновления в UI
+updates-connect Connect console notifications and host scheduler; registers missing services
+               (backup agent after an update from 0.2) / Подключить обновления и недостающие службы
 updates-poll    Process one update-control tick / Проверка и обработка очереди
 updates-reset   Clear an interrupted request after reconciliation / Снять запрос после проверки
 update         Update within the same database schema / Обновить код
@@ -15,6 +16,10 @@ recover        Recover interrupted code switch / Восстановить пер
 configure      --enable-updates | --disable-updates | --pin --version X.Y.Z | --unpin
                --tls-cert <pem> --tls-key <pem> [--listen-host <addr>] | --tls-off
                Built-in HTTPS; restarts, verifies, rolls back on failure / HTTPS с откатом
+               --backup-vault <absolute dir> [--init-vault] | --backup-vault-off
+               Vault of the backup agent: outside the root and storage, writable; --init-vault
+               creates vault.json only in an empty directory; restarts the agent, requires it
+               to report the vault, rolls back on failure / Vault агента копий с откатом
 
 Installation options:
   --artifact <directory>  Verified local release (offline)
@@ -29,6 +34,7 @@ Examples:
   arkvory update --root /opt/proanima-arkvory --artifact /media/release
   arkvory configure --root /opt/proanima-arkvory --disable-updates
   arkvory configure --root /opt/proanima-arkvory --tls-cert /etc/arkvory/fullchain.pem --tls-key /etc/arkvory/privkey.pem --listen-host 0.0.0.0
+  arkvory configure --root /opt/proanima-arkvory --backup-vault /mnt/backup/arkvory --init-vault
 
 Console / Консоль: http://127.0.0.1:8080/console/#onboarding
 API: /api/v1/capabilities, /api/v1/operations (authenticated / с авторизацией)

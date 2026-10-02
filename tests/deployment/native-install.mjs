@@ -11,6 +11,8 @@ import { exerciseRemoteAccess } from './remote-access.mjs';
 import { exerciseUpdateControl } from './update-control.mjs';
 import { exerciseNativeRecovery } from './native-recovery.mjs';
 import { requireDisposableHost } from './disposable-host.mjs';
+import { committedPoint, exerciseInstalledBackup, removeGateVault } from './native-backup.mjs';
+import { vaultReported, waitForAgent } from './backup-acceptance.mjs';
 
 // This gate uses production service names only on disposable CI machines, never a developer workstation.
 requireDisposableHost('Native installation acceptance');
@@ -45,6 +47,11 @@ const read = async (path) => {
     ? bytes.subarray(2).toString('utf16le')
     : bytes.toString('utf8');
 };
+// Outside the installation root and outside the systemd sandbox's private trees.
+const vault = windows
+  ? join(process.env.ProgramData, `arkvory-vault-gate-${process.pid}`)
+  : `/srv/arkvory-vault-gate-${process.pid}`;
+let backupPoint = null;
 const temporary = await mkdtemp(join(tmpdir(), 'arkvory-owner-gate-'));
 const password = randomBytes(24).toString('hex');
 const ownerFile = join(temporary, 'owner.json');
@@ -88,6 +95,7 @@ try {
       'Disable-ScheduledTask -TaskName ProAnimaArkvoryUpdate | Out-Null',
     ]);
   else run('sudo', ['systemctl', 'stop', 'arkvory-update.timer']);
+  backupPoint = await exerciseInstalledBackup(root, vault, token, run);
   await exerciseNativeRecovery(root, token, read);
   if (windows) {
     const login = await fetch('http://127.0.0.1:8080/api/v1/auth/login', {
@@ -135,6 +143,12 @@ try {
   else run('sudo', ['apt-get', 'install', '--reinstall', '-y', join(output, 'Arkvory-amd64.deb')]);
   assert.equal(await read(join(root, 'config/runtime.json')), before);
   assert.equal(await read(join(root, 'database/owner-password')), ownerBefore);
+  // Repair keeps the configured vault and the agent comes back with it.
+  await waitForAgent(
+    token.trim(),
+    (status) => vaultReported(status) && status.vault.id === backupPoint.vaultId,
+    'The backup agent must report its vault after repair',
+  );
   if (windows) {
     // Simulate a concurrent updater: the EXE must return failure without stopping healthy services.
     const lock = join(root, 'operation.lock');
@@ -175,6 +189,8 @@ try {
       'bootstrap.log',
       'database/arkvory-database.err.log',
       'database/arkvory-database.wrapper.log',
+      'logs/arkvory-backup.out.log',
+      'logs/arkvory-backup.err.log',
     ]) {
       try {
         console.error(
@@ -190,7 +206,18 @@ try {
   } else
     execFileSync(
       'sudo',
-      ['journalctl', '-u', 'arkvory-database', '-u', 'arkvory-api', '-n', '80', '--no-pager'],
+      [
+        'journalctl',
+        '-u',
+        'arkvory-database',
+        '-u',
+        'arkvory-api',
+        '-u',
+        'arkvory-backup',
+        '-n',
+        '120',
+        '--no-pager',
+      ],
       { stdio: 'inherit' },
     );
   throw error;
@@ -210,6 +237,9 @@ try {
 }
 await read(join(root, 'database/cluster/PG_VERSION'));
 await read(join(root, 'config/runtime.json'));
+// Uninstall leaves the vault and its points untouched.
+await committedPoint(vault, backupPoint.pointId);
+await removeGateVault(vault);
 if (!windows) await exerciseRpm(output);
 console.log(
   'Native installer, restricted database role, owner login and data-preserving uninstall passed',

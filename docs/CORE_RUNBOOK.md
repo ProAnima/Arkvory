@@ -170,7 +170,7 @@ SIGTERM/SIGINT переводит API в режим drain: `/health/status` и `
 
 Операторский CLI `arkvory-backup` (`apps/backup`) делает согласованную копию работающего экземпляра во встроенный файловый vault на отдельном диске или смонтированном NAS, проверяет её и восстанавливает в **пустую** БД и **пустой** каталог хранения. API и worker не останавливаются. Решение и протокол: [ADR 0054](adr/0054-built-in-backup-vault.md), [BACKUP_RECOVERY](BACKUP_RECOVERY.md). Это не PITR и не HA: точка содержит опубликованное состояние на момент T; незавершённые загрузки не восстанавливаются.
 
-**Обязанности оператора.** Vault не шифруется: в нём каталог, хеши паролей и все опубликованные файлы. Размещайте его только на зашифрованном томе (LUKS, BitLocker, шифрование NAS) с доступом лишь для учётной записи службы и администратора резервирования. Linux: `chown arkvory:arkvory /mnt/backup/arkvory && chmod 700 /mnt/backup/arkvory` (CLI создаёт каталоги 0700 и файлы 0600). Windows: режимы POSIX не действуют, ограничьте ACL, например `icacls D:\Backup\Arkvory /inheritance:r /grant:r "NT SERVICE\ArkvoryApi:(OI)(CI)F" "BUILTIN\Administrators:(OI)(CI)F"`. Тот же физический диск, что и storage, не защищает от отказа диска.
+**Обязанности оператора.** Vault не шифруется: в нём каталог, хеши паролей и все опубликованные файлы. Размещайте его только на зашифрованном томе (LUKS, BitLocker, шифрование NAS) с доступом лишь для учётной записи службы и администратора резервирования. Linux: `chown arkvory:arkvory /mnt/backup/arkvory && chmod 700 /mnt/backup/arkvory` (CLI создаёт каталоги 0700 и файлы 0600). Windows: режимы POSIX не действуют, ограничьте ACL: службы Arkvory работают от `NT AUTHORITY\LOCAL SERVICE`, например `icacls D:\Backup\Arkvory /inheritance:r /grant:r "*S-1-5-19:(OI)(CI)M" "*S-1-5-32-544:(OI)(CI)F" "*S-1-5-18:(OI)(CI)F"`. В установке это делает `arkvory configure --backup-vault` (раздел B2 ниже). Тот же физический диск, что и storage, не защищает от отказа диска.
 
 **Подготовка.** Все процессы (API, readers, worker, maintenance) обновлены до схемы релиза (25 для B1, 26 с агентом B2; `npm run migrate`): процесс без маркера протокола backup даёт `upgrade_required`. Команды читают ту же конфигурацию, что API и worker: `ARKVORY_DATABASE_URL`, `ARKVORY_DATA_DIR`, `ARKVORY_STORAGE_RESERVE_BYTES`, `ARKVORY_LOG_LEVEL`. Дополнительно (ограниченные значения): `ARKVORY_BACKUP_LEASE_SECONDS` (60, 2–3600), `ARKVORY_BACKUP_SNAPSHOT_SECONDS` (1800, 60–86400 — предел барьера, snapshot и экспорта таблиц), `ARKVORY_BACKUP_BARRIER_SECONDS` (30, 1–600 — ожидание уже начатых удалений). В установленном релизе: `node releases/<version>/apps/backup/dist/main.js …` от имени учётной записи службы с её файлом окружения.
 
@@ -220,30 +220,39 @@ npm run backup -- restore --vault /mnt/backup/arkvory --point <id> --storage /sr
 | `ARKVORY_BACKUP_POLL_SECONDS`     | Пауза между проверками очереди и расписания, 15 (1–3600)                                                   |
 | `ARKVORY_BACKUP_LEASE_SECONDS`    | Lease агента и копии, 60 (2–3600); heartbeat каждую треть, не реже 30 с                                    |
 
-**Служба ОС.** Установщики пока не регистрируют агента (у launcher нативной установки нет роли backup): оператор создаёт службу сам — одна на сервер, от учётной записи Arkvory, с теми же значениями окружения, что у API (`ARKVORY_DATABASE_URL`, `ARKVORY_DATA_DIR`), автоматический перезапуск, доступ на запись к vault. Пример systemd для установки из исходников (`/etc/systemd/system/arkvory-backup.service`, файл окружения доступен только `root` и `arkvory`):
+**Служба и vault в установке.** Установщики регистрируют агента третьей службой рядом с API и worker ([ADR 0057](adr/0057-backup-agent-service.md)): systemd `arkvory-backup`, Windows `Arkvorybackup`, сервис Compose `backup`. Автозапуск, восстановление после падения (через 10 с), остановка перед переключением релиза и запуск после API и worker выполняются так же, как у worker. Сбой агента не отменяет установку или обновление: установщик ждёт его heartbeat около 90 с и при отсутствии печатает WARN. Без vault агент работает и сообщает `vault_not_configured`. Vault подключает одна команда (от root или администратора, для Compose — от владельца установки):
 
-```ini
-[Unit]
-Description=ProAnima Arkvory backup agent
-After=network-online.target postgresql.service
-
-[Service]
-User=arkvory
-EnvironmentFile=/etc/arkvory/arkvory.env
-Environment=ARKVORY_BACKUP_VAULT=/mnt/backup/arkvory
-WorkingDirectory=/opt/arkvory
-ExecStart=/usr/bin/node apps/backup/dist/main.js agent
-Restart=always
-RestartSec=10
-ReadWritePaths=/mnt/backup/arkvory
-KillSignal=SIGTERM
-TimeoutStopSec=120
-
-[Install]
-WantedBy=multi-user.target
+```sh
+sudo arkvory configure --root /opt/proanima-arkvory --backup-vault /mnt/backup/arkvory --init-vault
+sudo arkvory configure --root /opt/proanima-arkvory --backup-vault-off
 ```
 
-На Windows — служба, запускающая ту же команду от учётной записи службы Arkvory с доступом к vault. Второй экземпляр безопасен: он ждёт в standby (`backup.agent.standby`) и берёт lease после остановки первого или истечения его lease. SIGTERM/SIGINT прерывают текущую фазу (копия — `interrupted`, pins освобождаются), задание возвращается в очередь, lease освобождается, код выхода 0. Потерянный lease (`backup.agent.lease_lost`) останавливает работу и возвращает агента в standby. Перед обновлением релиза останавливайте агента вместе с API и worker.
+```powershell
+$root = 'C:\ProgramData\ProAnima\Arkvory'
+& "$root\runtime\node.exe" "$root\manage.mjs" configure --root $root --backup-vault D:\Backup\Arkvory --init-vault
+```
+
+Порядок работы `configure --backup-vault`:
+
+1. Проверяет каталог до любых изменений: абсолютный путь, каталог существует и доступен для записи, после разрешения symlink, junction и 8.3 он вне корня установки и `ARKVORY_DATA_DIR` и не содержит их. На systemd vault не может лежать в /home, /root, /run/user, /tmp, /var/tmp: sandbox службы их не показывает.
+2. `--init-vault` создаёт `vault.json` только в пустом каталоге; существующий vault не инициализируется повторно. Без `vault.json` и без флага команда отказывает: так отключённый том NAS не принимается за пустой vault.
+3. Выдаёт доступ учётной записи службы (таблица ниже), записывает `ARKVORY_BACKUP_VAULT` в `config/runtime.json` и перезапускает только агента.
+4. Ждёт до 150 с, пока heartbeat агента не сообщит именно этот vault (ID из `vault.json`) доступным. Для проверки нужен `config/bootstrap-token.txt` с правом `backup.read`.
+5. При любой ошибке возвращает прежние `runtime.json` и доступ и перезапускает агента.
+
+`--backup-vault-off` убирает vault у агента, не трогая сам каталог и его права. Перезапуск прерывает идущую копию (`interrupted`), задание повторяется.
+
+| Установка     | Учётная запись службы                                              | Что делает configure                                                                                                                                                                      |
+| ------------- | ------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Linux systemd | `arkvory`                                                          | `chown -R arkvory:arkvory`, 0700; drop-in `/etc/systemd/system/arkvory-backup.service.d/arkvory-vault.conf` с `ReadWritePaths`. Остальная ФС, включая storage, для агента только читается |
+| Windows       | `NT AUTHORITY\LOCAL SERVICE` (S-1-5-19), та же, что у API и worker | `icacls /inheritance:r`: SYSTEM и Administrators — F, LocalService — M, наследование для новых файлов                                                                                     |
+| Compose       | uid 1000 контейнера                                                | bind mount из `config/compose.vault.yml` в `/srv/arkvory-vault`, владелец 1000; на Windows-хосте ACL: SYSTEM, Administrators и пользователь Docker Desktop                                |
+
+На Windows vault размещают на локальном или iSCSI томе: LocalService не входит в общие папки SMB, UNC-пути отклоняются. Том NAS монтируйте до старта службы; если он смонтирован позже, перезапустите агента. Ручные команды Compose с настроенным vault включают `-f config/compose.vault.yml`, иначе `up` пересоздаст контейнер без vault (агент сообщит `vault_unavailable`). Обновление с 0.2.x, выполненное кодом старой версии (`manage.mjs update`/`upgrade`, планировщик), службу агента не регистрирует: после него выполните `arkvory updates-connect --root <root>`. Пакеты deb, rpm и exe регистрируют её сами.
+
+Диагностика: `systemctl status arkvory-backup`, `journalctl -u arkvory-backup`; Windows — `Get-Service Arkvorybackup`, журналы `<root>/logs/arkvory-backup.*.log`; Compose — `logs backup`. Установка из исходников запускает `npm run backup -- agent` под supervisor оператора с тем же окружением, что у API, и с правом записи в vault.
+
+Второй экземпляр безопасен: он ждёт в standby (`backup.agent.standby`) и берёт lease после остановки первого или истечения его lease. SIGTERM/SIGINT прерывают текущую фазу (копия — `interrupted`, pins освобождаются), задание возвращается в очередь, lease освобождается, код выхода 0. Потерянный lease (`backup.agent.lease_lost`) останавливает работу и возвращает агента в standby.
 
 **Расписание и задания.** План один: `enabled`, `hour:minute` и явный IANA-пояс (`Europe/Moscow`, `UTC`); после миграции 26 он выключен (02:00 UTC, retention 7/4/6). Включение и изменение — `PUT /api/v1/backup/plan` с `expectedRevision` (409 `revision_mismatch` — перечитать план). Несуществующее местное время (перевод часов вперёд) выполняется в момент перехода, повторяющееся — один раз, при первом наступлении. После простоя агента выполняется одна догоняющая копия; слоты до изменения расписания не догоняются. Копия сейчас — `arkvoryctl backup run` или `POST /api/v1/backup/runs`; каждая копия запускает структурную проверку новой точки и retention отдельными заданиями, глубокая проверка новейшей точки — раз в 7 дней. Задание, прерванное остановкой или конкуренцией (`busy`), повторяется до 5 раз. Состояние — `arkvoryctl backup status|jobs|points`.
 

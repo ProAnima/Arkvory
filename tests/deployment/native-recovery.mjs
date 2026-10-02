@@ -20,7 +20,7 @@ export async function exerciseNativeRecovery(root, token, read) {
   const ps = (script) =>
     run('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', script]);
   const settings = JSON.parse(await read(join(root, 'database/settings.json')));
-  for (const role of ['api', 'worker', 'database']) {
+  for (const role of ['api', 'worker', 'backup', 'database']) {
     const name = windows ? `Arkvory${role}` : `arkvory-${role}`;
     const state = () =>
       windows
@@ -76,5 +76,5 @@ export async function exerciseNativeRecovery(root, token, read) {
     }
     assert.ok(recovered, `${name} must restart automatically and restore API readiness`);
   }
-  console.log('Installed API/worker/database autostart and actual crash recovery passed');
+  console.log('Installed API/worker/backup/database autostart and actual crash recovery passed');
 }

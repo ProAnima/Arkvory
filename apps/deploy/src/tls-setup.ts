@@ -1,7 +1,7 @@
 import { X509Certificate, createPrivateKey } from 'node:crypto';
 import { readFile, stat } from 'node:fs/promises';
 import { isAbsolute, join } from 'node:path';
-import { atomicText } from './files.js';
+import { replaceText } from './files.js';
 import { localApiHost } from './local-api.js';
 import type { Installation, Release } from './model.js';
 import { runtimeEnvironment } from './runtime.js';
@@ -93,15 +93,15 @@ export async function configureTls(
     change.certificateFile && change.keyFile && !change.disable
       ? await validateTlsFiles(change.certificateFile, change.keyFile, now)
       : null;
-  // Same mode as update-setup: the service group reads it, nobody else does.
-  await atomicText(path, JSON.stringify(next, null, 2) + '\n', 0o640);
+  // Keeps the mode and the root:arkvory ownership: the service group reads it, nobody else does.
+  await replaceText(path, JSON.stringify(next, null, 2) + '\n');
   try {
     await services.stop();
     await services.start(state.current);
     await services.healthy();
     return expires;
   } catch (error) {
-    await atomicText(path, previous, 0o640);
+    await replaceText(path, previous);
     await services.stop();
     await services.start(state.current);
     await services.healthy();
