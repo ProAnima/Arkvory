@@ -271,11 +271,13 @@ test('a Compose vault the host cannot read is read by the container user, then u
   );
   // POSIX permissions model the vault the container user owns; root and Windows read it anyway.
   const restricted = process.platform !== 'win32' && process.getuid?.() !== 0;
-  if (restricted) {
-    await chmod(vault, 0o000);
-    t.after(() => chmod(vault, 0o700));
+  // Restored here, not in t.after: after hooks run in registration order, after the removal.
+  if (restricted) await chmod(vault, 0o000);
+  try {
+    assert.deepEqual(await access.contents(vault), { vaultId, empty: false });
+  } finally {
+    if (restricted) await chmod(vault, 0o700);
   }
-  assert.deepEqual(await access.contents(vault), { vaultId, empty: false });
   assert.deepEqual(
     calls,
     restricted ? [`run --rm --no-deps -T backup vault-inspect ${containerVault}`] : [],
