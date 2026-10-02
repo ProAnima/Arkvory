@@ -13,6 +13,8 @@ update         Update within the same database schema / Обновить код
 upgrade        Schema maintenance; --backup-record required / Обновить схему
 recover        Recover interrupted code switch / Восстановить переключение
 configure      --enable-updates | --disable-updates | --pin --version X.Y.Z | --unpin
+               --tls-cert <pem> --tls-key <pem> [--listen-host <addr>] | --tls-off
+               Built-in HTTPS; restarts, verifies, rolls back on failure / HTTPS с откатом
 
 Installation options:
   --artifact <directory>  Verified local release (offline)
@@ -26,6 +28,7 @@ Examples:
   arkvory status --root /opt/proanima-arkvory
   arkvory update --root /opt/proanima-arkvory --artifact /media/release
   arkvory configure --root /opt/proanima-arkvory --disable-updates
+  arkvory configure --root /opt/proanima-arkvory --tls-cert /etc/arkvory/fullchain.pem --tls-key /etc/arkvory/privkey.pem --listen-host 0.0.0.0
 
 Console / Консоль: http://127.0.0.1:8080/console/#onboarding
 API: /api/v1/capabilities, /api/v1/operations (authenticated / с авторизацией)

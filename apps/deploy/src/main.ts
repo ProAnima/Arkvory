@@ -17,6 +17,7 @@ import { pollUpdates, resetUpdateRequest } from './update-control.js';
 import { prepareUpdateControl } from './update-setup.js';
 import { report } from './output.js';
 import { runWithLogFile } from './log-file.js';
+import { configureTls } from './tls-setup.js';
 
 function argumentsOf(args: string[]): Map<string, string> {
   const options = new Map<string, string>();
@@ -28,6 +29,7 @@ function argumentsOf(args: string[]): Map<string, string> {
     'enable-updates',
     'unpin',
     'log-captured',
+    'tls-off',
   ];
   const values = [
     'root',
@@ -39,6 +41,9 @@ function argumentsOf(args: string[]): Map<string, string> {
     'backup-record',
     'database-bin',
     'owner-file',
+    'tls-cert',
+    'tls-key',
+    'listen-host',
   ];
   for (let index = 0; index < args.length; index++) {
     const name = args[index]?.replace(/^--/, '');
@@ -158,6 +163,10 @@ async function main(): Promise<void> {
         break;
       case 'configure': {
         const state = parseInstallation(await jsonFile(join(root, 'installation.json')));
+        if (['tls-cert', 'tls-key', 'tls-off', 'listen-host'].some((name) => options.has(name))) {
+          await configureHttps(root, state, options);
+          break;
+        }
         if (options.has('disable-updates')) state.automatic = false;
         if (options.has('enable-updates')) state.automatic = true;
         if (options.has('pin'))
@@ -171,6 +180,34 @@ async function main(): Promise<void> {
         throw new Error('Commands: install, status, update, configure, recover, upgrade');
     }
   });
+}
+async function configureHttps(
+  root: string,
+  state: ReturnType<typeof parseInstallation>,
+  options: Map<string, string>,
+): Promise<void> {
+  const certificateFile = options.get('tls-cert');
+  const keyFile = options.get('tls-key');
+  const host = options.get('listen-host');
+  const expires = await exclusive(root, () =>
+    configureTls(
+      root,
+      state,
+      {
+        ...(certificateFile ? { certificateFile } : {}),
+        ...(keyFile ? { keyFile } : {}),
+        ...(host ? { host } : {}),
+        disable: options.has('tls-off'),
+      },
+      new Services(root, state),
+    ),
+  );
+  report(
+    'info',
+    expires
+      ? `Built-in HTTPS is active; the certificate expires ${expires.toISOString()}`
+      : 'Built-in HTTPS is off; the API serves plain HTTP',
+  );
 }
 main().catch((error: unknown) => {
   // Configuration and child-process errors can contain credentials; report() redacts every line.
