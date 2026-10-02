@@ -57,7 +57,7 @@ API предоставляет каталог операций текущего 
 | Локальный CI (Windows, Linux, systemd) и черновики релизов           | Реализовано; [локальный конвейер](docs/CI.md), ADR 0053                             |
 | Два сервера с репликацией, failover и глобальная балансировка        | Проектирование; стенд отложен                                                       |
 
-Запуск: `npm run migrate`, `npm start`, отдельно `npm run worker`. Консоль: `/console/`. Это выпуск для разработки, не промышленная HA-система. См. [основной runbook](docs/CORE_RUNBOOK.md), [возможности 0.2](docs/LIFECYCLE_AND_CATALOG.md), [импорт и миграцию](docs/MIGRATION.md), [профиль двух серверов](docs/TWO_NODE_PLAN.md) и [проверки](docs/CORE_VALIDATION.md).
+Запуск: `npm run migrate`, `npm start`, отдельно `npm run worker`. Консоль: `/console/`. Запуск из исходников предназначен для разработки. Сервер ставится [установщиками](deploy/README.md) и вводится в эксплуатацию по [чек-листу Standalone](docs/PRODUCTION.md); Standalone — один сервер, не HA-система. См. [основной runbook](docs/CORE_RUNBOOK.md), [возможности 0.2](docs/LIFECYCLE_AND_CATALOG.md), [импорт и миграцию](docs/MIGRATION.md), [профиль двух серверов](docs/TWO_NODE_PLAN.md) и [проверки](docs/CORE_VALIDATION.md).
 
 ## Возможности и дальнейшее развитие
 
@@ -267,22 +267,23 @@ Multipart upload продолжается с подтверждённых час
 
 Английский и русский README описывают одинаковый объём продукта. Подробная инженерная документация пока ведётся на русском; проприетарная лицензия и уведомление об авторстве — на английском.
 
-| Документ                                     | Содержание                                         |
-| -------------------------------------------- | -------------------------------------------------- |
-| [CORE_RUNBOOK](docs/CORE_RUNBOOK.md)         | Запуск ядра, API, конфигурация и восстановление    |
-| [CORE_VALIDATION](docs/CORE_VALIDATION.md)   | Результаты испытаний standalone и ограничения      |
-| [PROJECT_PLAN](docs/PROJECT_PLAN.md)         | Подробный продуктовый и технический план           |
-| [ARCHITECTURE](docs/ARCHITECTURE.md)         | Слои и разрешённые зависимости                     |
-| [DOMAIN_MODEL](docs/DOMAIN_MODEL.md)         | Предметные сущности и инварианты                   |
-| [API_CONTRACTS](docs/API_CONTRACTS.md)       | Нативный API, SDK и контракты скачивания           |
-| [RELIABILITY](docs/RELIABILITY.md)           | Запись, очереди, сеть, деградация и восстановление |
-| [TESTING](docs/TESTING.md)                   | Стратегия функциональных и отказных испытаний      |
-| [CI](docs/CI.md)                             | Действующие проверки GitHub Actions                |
-| [BOOTSTRAP_CHECKS](docs/BOOTSTRAP_CHECKS.md) | Что проверено в исходном каркасе                   |
-| [ROADMAP](docs/ROADMAP.md)                   | Этапы и открытые решения                           |
-| [ADR](docs/adr/README.md)                    | История архитектурных решений                      |
-| [SECURITY](SECURITY.md)                      | Требования безопасности                            |
-| [LICENSING](docs/LICENSING.md)               | Правообладатель и модель разрешений партнёрам      |
+| Документ                                     | Содержание                                                                              |
+| -------------------------------------------- | --------------------------------------------------------------------------------------- |
+| [PRODUCTION](docs/PRODUCTION.md)             | Чек-лист вывода Standalone в эксплуатацию: HTTPS, доступ, копии, мониторинг, обновления |
+| [CORE_RUNBOOK](docs/CORE_RUNBOOK.md)         | Запуск ядра, API, конфигурация и восстановление                                         |
+| [CORE_VALIDATION](docs/CORE_VALIDATION.md)   | Результаты испытаний standalone и ограничения                                           |
+| [PROJECT_PLAN](docs/PROJECT_PLAN.md)         | Подробный продуктовый и технический план                                                |
+| [ARCHITECTURE](docs/ARCHITECTURE.md)         | Слои и разрешённые зависимости                                                          |
+| [DOMAIN_MODEL](docs/DOMAIN_MODEL.md)         | Предметные сущности и инварианты                                                        |
+| [API_CONTRACTS](docs/API_CONTRACTS.md)       | Нативный API, SDK и контракты скачивания                                                |
+| [RELIABILITY](docs/RELIABILITY.md)           | Запись, очереди, сеть, деградация и восстановление                                      |
+| [TESTING](docs/TESTING.md)                   | Стратегия функциональных и отказных испытаний                                           |
+| [CI](docs/CI.md)                             | Действующие проверки GitHub Actions                                                     |
+| [BOOTSTRAP_CHECKS](docs/BOOTSTRAP_CHECKS.md) | Что проверено в исходном каркасе                                                        |
+| [ROADMAP](docs/ROADMAP.md)                   | Этапы и открытые решения                                                                |
+| [ADR](docs/adr/README.md)                    | История архитектурных решений                                                           |
+| [SECURITY](SECURITY.md)                      | Требования безопасности                                                                 |
+| [LICENSING](docs/LICENSING.md)               | Правообладатель и модель разрешений партнёрам                                           |
 
 ## Лицензия и авторство
 

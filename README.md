@@ -57,7 +57,7 @@ The RU/EN console includes direct catalog downloads, compact mobile navigation, 
 | Local CI lanes (Windows, Linux, systemd) and draft releases           | Implemented; [local pipeline](docs/CI.md), ADR 0053                       |
 | Two-server replication, failover, global balancing                    | Design stage; lab validation deferred                                     |
 
-Run `npm run migrate`, `npm start` and `npm run worker` separately. Console: `/console/`. This is a development release, not a production HA system. See the [core runbook](docs/CORE_RUNBOOK.md), [0.2 features](docs/LIFECYCLE_AND_CATALOG.md), [import and migration](docs/MIGRATION.md), [two-server profile](docs/TWO_NODE_PLAN.md) and [validation](docs/CORE_VALIDATION.md) (engineering documents in Russian).
+Run `npm run migrate`, `npm start` and `npm run worker` separately. Console: `/console/`. Running from source is for development. A server is installed with the [installers](deploy/README.md) and brought into service with the [Standalone go-live checklist](docs/PRODUCTION.md); Standalone is one server, not an HA system. See the [core runbook](docs/CORE_RUNBOOK.md), [0.2 features](docs/LIFECYCLE_AND_CATALOG.md), [import and migration](docs/MIGRATION.md), [two-server profile](docs/TWO_NODE_PLAN.md) and [validation](docs/CORE_VALIDATION.md) (engineering documents in Russian).
 
 ## Capabilities and direction
 
@@ -267,22 +267,23 @@ Full stage criteria are in [ROADMAP](docs/ROADMAP.md). The first standalone tran
 
 The English and Russian READMEs describe the same product scope. Detailed engineering documents are currently maintained in Russian; the proprietary license and attribution notice are in English.
 
-| Document                                     | Contents                                              |
-| -------------------------------------------- | ----------------------------------------------------- |
-| [CORE_RUNBOOK](docs/CORE_RUNBOOK.md)         | Running the native core, API, configuration, recovery |
-| [CORE_VALIDATION](docs/CORE_VALIDATION.md)   | Measured standalone test results and limitations      |
-| [PROJECT_PLAN](docs/PROJECT_PLAN.md)         | Detailed product and technical plan                   |
-| [ARCHITECTURE](docs/ARCHITECTURE.md)         | Layers and allowed dependencies                       |
-| [DOMAIN_MODEL](docs/DOMAIN_MODEL.md)         | Domain entities and invariants                        |
-| [API_CONTRACTS](docs/API_CONTRACTS.md)       | Native API, SDK, and download contracts               |
-| [RELIABILITY](docs/RELIABILITY.md)           | Writes, queues, networking, degradation, and recovery |
-| [TESTING](docs/TESTING.md)                   | Functional and failure-testing strategy               |
-| [CI](docs/CI.md)                             | Current GitHub Actions checks                         |
-| [BOOTSTRAP_CHECKS](docs/BOOTSTRAP_CHECKS.md) | Validation of the initial scaffold                    |
-| [ROADMAP](docs/ROADMAP.md)                   | Stages and open decisions                             |
-| [ADR](docs/adr/README.md)                    | Architecture decision history                         |
-| [SECURITY](SECURITY.md)                      | Security requirements                                 |
-| [LICENSING](docs/LICENSING.md)               | Ownership and partner licensing model                 |
+| Document                                     | Contents                                                                  |
+| -------------------------------------------- | ------------------------------------------------------------------------- |
+| [PRODUCTION](docs/PRODUCTION.md)             | Standalone go-live checklist: HTTPS, access, backups, monitoring, updates |
+| [CORE_RUNBOOK](docs/CORE_RUNBOOK.md)         | Running the native core, API, configuration, recovery                     |
+| [CORE_VALIDATION](docs/CORE_VALIDATION.md)   | Measured standalone test results and limitations                          |
+| [PROJECT_PLAN](docs/PROJECT_PLAN.md)         | Detailed product and technical plan                                       |
+| [ARCHITECTURE](docs/ARCHITECTURE.md)         | Layers and allowed dependencies                                           |
+| [DOMAIN_MODEL](docs/DOMAIN_MODEL.md)         | Domain entities and invariants                                            |
+| [API_CONTRACTS](docs/API_CONTRACTS.md)       | Native API, SDK, and download contracts                                   |
+| [RELIABILITY](docs/RELIABILITY.md)           | Writes, queues, networking, degradation, and recovery                     |
+| [TESTING](docs/TESTING.md)                   | Functional and failure-testing strategy                                   |
+| [CI](docs/CI.md)                             | Current GitHub Actions checks                                             |
+| [BOOTSTRAP_CHECKS](docs/BOOTSTRAP_CHECKS.md) | Validation of the initial scaffold                                        |
+| [ROADMAP](docs/ROADMAP.md)                   | Stages and open decisions                                                 |
+| [ADR](docs/adr/README.md)                    | Architecture decision history                                             |
+| [SECURITY](SECURITY.md)                      | Security requirements                                                     |
+| [LICENSING](docs/LICENSING.md)               | Ownership and partner licensing model                                     |
 
 ## License and ownership
 
