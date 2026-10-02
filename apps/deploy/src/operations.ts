@@ -66,7 +66,7 @@ export async function install(root: string, options: Map<string, string>): Promi
   await services.schedule(state.current);
   report(
     'info',
-    'Arkvory installed. Bootstrap credential: config/bootstrap-token.txt. Keep it private and rotate after setup.',
+    'Arkvory installed. Recovery key: config/bootstrap-token.txt. Keep it on this host for setup tools; use accounts and service keys for daily work.',
   );
 }
 export async function finishInstall(root: string): Promise<void> {
