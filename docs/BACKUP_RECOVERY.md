@@ -1,14 +1,14 @@
 # Backup и recovery: проект механизмов
 
-Статус: **проект, механизмы ещё не реализованы**. 2026-09-26. Правообладатель: Ian Panaev, бренд ProAnimaStudio.
+Статус: **B1 реализован** (2026-10-02, [ADR 0054](adr/0054-built-in-backup-vault.md)): ручная согласованная копия во встроенный vault на диске/NAS, проверка и восстановление в пустую цель через операторский CLI. Остальное в документе — проект следующих этапов. Правообладатель: Ian Panaev, бренд ProAnimaStudio.
 
 Задача — получать самостоятельные проверяемые точки восстановления Arkvory без остановки обычной раздачи и приёма файлов, а восстанавливать их через понятный мастер даже при полной потере исходного сервера. Исходный масштаб: 4 ТБ, объекты десятков гигабайт и больше. Нельзя свести задачу к копированию каталога или запуску pg_dump: БД, неизменяемые blobs, конфигурация и автоочистка должны согласовать один состав копии.
 
 ## Что уже есть и чего нет
 
-Есть неизменяемые опубликованные blobs, PostgreSQL, история и ссылки, GC с защитой активных читателей, нативные установщики и локальный SSH-мастер. Есть ручной `--backup-record` перед сменой схемы. Он проверяет существование файла оператора, а не пригодность backup.
+Есть (B1): операторский CLI `arkvory-backup` (`apps/backup`, `npm run backup -- …`) с командами `vault init`, `capture`, `list`, `verify [--deep]`, `restore`; durable capture jobs с idempotency key, lease и fencing generation; постоянные backup pins и барьер допуска unlink, которые соблюдают online GC и offline repair; логический экспорт всех таблиц Arkvory из одного snapshot T (реестр таблиц, NDJSON, SHA-256 и число строк); встроенный файловый vault с `vault.json`, дедупликацией blob по неизменяемому ID и атомарной публикацией точки; структурная и глубокая проверка; restore в пустую БД и пустой storage с версионированной нормализацией и отчётом. Миграция 25. Эксплуатация: [CORE_RUNBOOK](CORE_RUNBOOK.md#резервные-копии-b1).
 
-Нет backup jobs, постоянных backup pins, согласованного экспорта БД/blobs, расписаний резервирования, backup API, ключевого набора восстановления, clean-room restore и UI резервных копий. Восстановление ревизии asset в каталоге не заменяет восстановление потерянной площадки. Репликация также решает другую задачу.
+Нет: шифрования vault и recovery kit (vault обязан лежать на зашифрованном томе с ограниченным доступом), S3/restic, удаления точек и prune, расписаний, бюджетов полосы, backup API, SDK и UI, restore drill как отдельного статуса, controlled cutover, PITR и HA backup. Ручной `--backup-record` перед сменой схемы по-прежнему проверяет только существование файла оператора. Восстановление ревизии asset в каталоге не заменяет восстановление потерянной площадки. Репликация также решает другую задачу.
 
 Сценарии интерфейса: [BACKUP_UX](BACKUP_UX.md). Решение: [ADR 0037](adr/0037-consistent-backup-and-recovery.md). API ниже — проект; работающий OpenAPI не изменяется.
 
@@ -26,7 +26,7 @@
 
 Первоначально проектируем два адаптера назначения: отдельный диск/смонтированный NAS и S3-совместимый vault. Один план относится к одному источнику и одному vault; несколько планов дают независимые копии с собственными датами и результатами. Копирование готовой точки во второй vault — последующее расширение; нельзя показывать его успешным по результату первого назначения.
 
-Для шифрованного хранения с дедупликацией предлагается **restic за узким адаптером**, а не собственный формат шифрования и упаковки. Arkvory владеет согласованностью, manifest, правами, job state и UX. Выбор окончательно принимается после spike с Windows, Linux, NAS и выбранным S3. Версия binary и checksum будут закреплены; установщики должны поставлять компонент, лицензии и SBOM. Shell-команды пользователя и незакреплённый download latest запрещены.
+B1 использует **встроенный файловый vault** без шифрования ([ADR 0054](adr/0054-built-in-backup-vault.md)); узкий порт vault оставлен для последующих адаптеров. Для шифрованного хранения с дедупликацией в следующих этапах рассматривается **restic за узким адаптером**, а не собственный формат шифрования и упаковки. Arkvory владеет согласованностью, manifest, правами, job state и UX. Выбор окончательно принимается после spike с Windows, Linux, NAS и выбранным S3. Версия binary и checksum будут закреплены; установщики должны поставлять компонент, лицензии и SBOM. Shell-команды пользователя и незакреплённый download latest запрещены.
 
 Копии должны экономить передачу неизменившихся данных, при этом каждая видимая точка описывает полный восстанавливаемый набор. UI различает логический объём, прочитанные bytes, новые bytes назначения и фактически освобождённое место. Не складываем размеры точек для оценки занятого vault и не называем дедупликацию цепочкой SQL incremental dumps. Поведение restic и ограничения parent/file change detection: [официальное описание backup](https://restic.readthedocs.io/en/stable/040_backup.html).
 
@@ -48,7 +48,7 @@
 6. Передаёт в backup engine только указанные immutable blobs, готовый dump и versioned manifest/config. Потоковое чтение, ограниченные concurrency/cache/staging и rate. Никакого ZIP на 4 ТБ или копирования working PGDATA. Отсутствующий файл/неверный SHA — failure, а не успешная копия с warning.
 7. Engine завершает свой snapshot. Coordinator сверяет наличие полного набора, фиксирует внешнюю restore point и квитанцию, затем освобождает source pins. Manifest и inventory находятся **в самой зашифрованной копии**; каталог точек можно восстановить без исходной БД.
 
-Нужна новая миграция backup jobs/pins/barriers и изменение **online GC и offline repair**. Текущие session pins читателей не заменяют durable backup pins. Старый runtime, не знающий backup protocol, нельзя запускать рядом: включение требует обновления всех writer/worker/readers/maintenance tools и capability check.
+Реализация B1: миграция 25 (jobs/pins/barrier), протокол допуска unlink в **online GC и offline repair** и capability check по маркеру `18471/20` ([ADR 0054](adr/0054-built-in-backup-vault.md)). Вместо pg_dump таблицы выгружаются логически (NDJSON) из того же snapshot T; restore загружает только данные в известные таблицы и не исполняет SQL из копии. Текущие session pins читателей не заменяют durable backup pins. Старый runtime, не знающий backup protocol, нельзя запускать рядом: capture отказывает с `upgrade_required`, пока writer без маркера держит БД.
 
 ### Отказы и продолжение
 
@@ -135,14 +135,14 @@ Domain: состояния, политика retention, оценка приго�
 
 ## Порядок поставки и гейты
 
-| Инкремент | Готовый вертикальный результат                                            | Обязательная приёмка                                                                                                            |
-| --------- | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| B0        | Spike engine + capture/GC protocol; окончательный ADR                     | Linux/Windows, S3/NAS, dump snapshot, file mutation/GC races, crypto/key portability.                                           |
-| B1        | Ручная согласованная копия в local/NAS + CLI + отдельный агент            | Snapshot race с publications/deletions; crash во всех границах; полный restore на чистую БД. Без restore этот этап не закончен. |
-| B2        | RU/EN UI, расписание, progress, budgets, retention и предупреждения       | CAS/ACL/idempotency, DST/downtime, reconnect UI, disk full, keyboard/themes/320px.                                              |
-| B3        | S3 + независимый recovery kit + автономный recovery wizard                | Потеря source, отключённый API, неверный key, подменённый manifest, S3 retries/permissions, S3-compatible contract suite.       |
-| B4        | Restore drill, controlled cutover и проверенный immutable/offsite profile | Старый writer fenced, secrets не воскрешают, нет исходящих side effects, отсутствие данных при сбое не скрыто.                  |
-| B5        | Измерение 4 ТБ и профиль PITR/два узла                                    | Согласованное окно WAL/blobs, RPO/RTO, capacity/I/O/p95 под реальной смешанной нагрузкой.                                       |
+| Инкремент | Готовый вертикальный результат                                            | Обязательная приёмка                                                                                                        |
+| --------- | ------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| B0        | Spike engine + capture/GC protocol; окончательный ADR                     | Протокол capture/GC и движок B1 решены ADR 0054; spike restic/S3 и переносимость ключей переходят в B3.                     |
+| B1 ✔      | Ручная согласованная копия в local/NAS + CLI + отдельный агент            | Выполнено 2026-10-02 (ADR 0054): гонки с публикациями, удалениями и GC; отказы на границах фаз; restore на чистую БД и API. |
+| B2        | RU/EN UI, расписание, progress, budgets, retention и предупреждения       | CAS/ACL/idempotency, DST/downtime, reconnect UI, disk full, keyboard/themes/320px.                                          |
+| B3        | S3 + независимый recovery kit + автономный recovery wizard                | Потеря source, отключённый API, неверный key, подменённый manifest, S3 retries/permissions, S3-compatible contract suite.   |
+| B4        | Restore drill, controlled cutover и проверенный immutable/offsite profile | Старый writer fenced, secrets не воскрешают, нет исходящих side effects, отсутствие данных при сбое не скрыто.              |
+| B5        | Измерение 4 ТБ и профиль PITR/два узла                                    | Согласованное окно WAL/blobs, RPO/RTO, capacity/I/O/p95 под реальной смешанной нагрузкой.                                   |
 
 Тесты входят в общий registry gates, verify/release и CI; не отдельные необязательные scripts. Новые Linux/Windows/S3 lanes не должны молча skip при отсутствующей инфраструктуре. Fault tests включают lease expiry со старым процессом, loss of mount, cancellation during commit, snapshot loss, missing blob, corrupted pack, last-good retention, schema incompatibility, восстановление revoked keys и недоступность исходного узла. Скорость и RPO/RTO публикуются только вместе с конфигурацией стенда и измерениями.
 

@@ -35,6 +35,7 @@
     "gc": "node --env-file-if-exists=.env apps/worker/dist/gc.js",
     "import": "node --env-file-if-exists=.env scripts/import.mjs",
     "scrub": "node --env-file-if-exists=.env apps/worker/dist/scrub.js",
+    "backup": "node --env-file-if-exists=.env apps/backup/dist/main.js",
     "upack:manifest": "node scripts/upack-manifest.mjs",
     "gate": "node --env-file-if-exists=.env.test scripts/gates.mjs",
     "gate:list": "node scripts/gates.mjs --list",

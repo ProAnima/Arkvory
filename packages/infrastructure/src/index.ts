@@ -28,9 +28,30 @@ export * from './storage-policy.js';
 
 export * from './diagnostics.js';
 export * from './failure-classification.js';
-export { processIdentity, readReleaseVersion } from './process-identity.js';
+export { processIdentity, readReleaseVersion, readReleaseCommit } from './process-identity.js';
 export { installCrashHandlers } from './process-guards.js';
 export * from './metrics.js';
 export { PostgresCleanupSettings } from './cleanup-settings.js';
 export { PostgresOnlineCleanup } from './online-cleanup.js';
 export { PostgresContentPins } from './content-pins.js';
+
+export { admitUnlink, finishUnlink } from './unlink-admission.js';
+export { FileVault, defaultFileVaultOptions } from './file-vault.js';
+export type { FileVaultOptions } from './file-vault.js';
+export { canonicalPath, containsPath, requireSeparateTrees } from './vault-paths.js';
+export {
+  MINIMUM_RESTORE_SCHEMA,
+  exportedTables,
+  excludedTables,
+  unregisteredTables,
+  presentTablesQuery,
+} from './backup-tables.js';
+export { PostgresSnapshotSource, defaultSnapshotOptions } from './backup-snapshot.js';
+export type { SnapshotOptions } from './backup-snapshot.js';
+export { PostgresBackupJobs, MAX_CAPTURE_ATTEMPTS } from './backup-jobs.js';
+export { PostgresUnlinkBarrier, PostgresCapturePins } from './backup-protection.js';
+export { backupPool, claimBackupSource, LocalContentSource } from './backup-source.js';
+export type { BackupPool } from './backup-source.js';
+export { PostgresRestoreDatabase } from './backup-restore-db.js';
+export { RESTORE_NORMALIZATION_VERSION } from './backup-normalize.js';
+export { LocalRestoreStorage } from './restore-storage.js';

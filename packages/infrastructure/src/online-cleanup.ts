@@ -5,6 +5,7 @@ import type { CleanupBlobs } from '@proanima/arkvory-application';
 import { StorageOwnership } from './storage-ownership.js';
 import { contentLockKey, uploadLockKey } from './content-pins.js';
 import { recordStorageEvent } from './storage-events.js';
+import { admitUnlink, finishUnlink } from './unlink-admission.js';
 
 interface Candidate {
   id: string;
@@ -152,7 +153,8 @@ export class PostgresOnlineCleanup {
     const uploadKey = uploadLockKey(item.id),
       contentKey = contentLockKey(item.id);
     let upload = false,
-      content = false;
+      content = false,
+      admitted = false;
     try {
       upload =
         (
@@ -196,6 +198,15 @@ export class PostgresOnlineCleanup {
         return;
       }
       check();
+      // Lock order: upload → content → backup unlink admission (unlink-admission.ts).
+      if (item.status === 'cancelled') {
+        admitted = await admitUnlink(c, item.id);
+        if (!admitted) {
+          // A backup pin or a closed barrier keeps the bytes; a later pass retries.
+          result.deferred++;
+          return;
+        }
+      }
       await this.blobs.collect(item.id, item.status === 'cancelled', { throwIfAborted: check });
       check();
       // Retry after crash is safe: unlink is idempotent; quota is released only after durable deletion.
@@ -209,6 +220,7 @@ export class PostgresOnlineCleanup {
         if (item.status === 'cancelled') result.bytes += BigInt(item.size);
       }
     } finally {
+      if (admitted) await finishUnlink(c);
       if (content) await c.query('SELECT pg_advisory_unlock($1::bigint)', [contentKey]);
       if (upload) await c.query('SELECT pg_advisory_unlock($1::bigint)', [uploadKey]);
     }

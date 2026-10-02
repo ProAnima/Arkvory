@@ -18,6 +18,7 @@
 | apps/api       | application, domain, contracts, infrastructure | Другие apps и SDK                                           |
 | apps/worker    | application, domain, infrastructure            | HTTP/Web/SDK                                                |
 | apps/scheduler | application, domain, infrastructure            | HTTP/Web/SDK                                                |
+| apps/backup    | application, domain, infrastructure            | HTTP/Web/SDK и другие apps                                  |
 | apps/web       | sdk, contracts                                 | Все серверные пакеты и другие apps                          |
 
 Импорты типов также соблюдают границы. Межпакетный доступ — по workspace-имени через `src/index.ts`; даже разрешённый соседний пакет не открывает все свои внутренние файлы. Граф проверяется dependency-cruiser. Для domain/application дополнительно запрещены runtime-зависимости на сторонние пакеты и Node builtins; `import type` не должен использоваться для обхода модели.
@@ -52,7 +53,7 @@ LocalBlobStore — профиль одного сервера. HA использ
 
 ## Текущее состояние
 
-Проект backup/recovery: единая точка БД/blobs, durable backup pins для GC, отдельный локальный агент и независимый recovery entrypoint. Границы, failure semantics и будущие API — в [ADR 0037](adr/0037-consistent-backup-and-recovery.md) и [BACKUP_RECOVERY](BACKUP_RECOVERY.md). Это не реализованный runtime; текущие reader pins не защищают резервные копии.
+Резервирование B1 — отдельный composition root `apps/backup` (операторский CLI, не HTTP-сервис). Domain хранит состояния job/фаз, решение по повторному ключу, gate схемы и валидацию manifest; application — `CaptureBackup`, `VerifyPoint`, `RestoreToEmptyTarget` и узкие порты; infrastructure — PostgreSQL jobs/pins/барьер допуска unlink, snapshot-экспорт по реестру таблиц, файловый vault и загрузку restore. Online GC и offline repair удаляют содержимое только через общий допуск unlink. Решение: [ADR 0054](adr/0054-built-in-backup-vault.md), протокол и следующие этапы: [ADR 0037](adr/0037-consistent-backup-and-recovery.md), [BACKUP_RECOVERY](BACKUP_RECOVERY.md). Reader pins по-прежнему не заменяют backup pins.
 
 Фоновая физическая очистка реализована отдельными domain/application/SQL модулями, API/SDK и UI. Неблокирующие per-object guards защищают активные uploads и shared content readers; writer запускает ограниченные порции. Миграции 16/17, динамическая политика и отсутствие SQL-транзакций вокруг filesystem I/O: [ADR 0035](adr/0035-online-cleanup.md), [эксплуатация](ONLINE_CLEANUP.md).
 

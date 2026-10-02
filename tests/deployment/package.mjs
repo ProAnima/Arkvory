@@ -60,6 +60,14 @@ execFileSync(process.execPath, ['--input-type=module', '-e', code], {
   cwd: runtime,
   stdio: 'inherit',
 });
+// The backup operator CLI ships in the same runtime and resolves only production dependencies.
+assert.match(
+  execFileSync(process.execPath, [join(runtime, 'apps/backup/dist/main.js'), '--help'], {
+    cwd: runtime,
+    encoding: 'utf8',
+  }),
+  /arkvory-backup/,
+);
 await assert.rejects(access(join(runtime, 'node_modules/typescript')), /ENOENT/);
 await assert.rejects(access(join(runtime, '.env')), /ENOENT/);
 const state = {

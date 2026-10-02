@@ -21,3 +21,7 @@ export * from './retention.js';
 
 export * from './storage-policy.js';
 export * from './cleanup.js';
+export type * from './backup-ports.js';
+export * from './backup-capture.js';
+export * from './backup-verify.js';
+export * from './backup-restore.js';

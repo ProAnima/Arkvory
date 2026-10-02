@@ -41,3 +41,17 @@ export async function readReleaseVersion(manifest: URL): Promise<string> {
     return 'dev';
   }
 }
+
+/** Commit of the staged release manifest, or null for development checkouts. */
+export async function readReleaseCommit(manifest: URL): Promise<string | null> {
+  try {
+    const text = await readFile(manifest, 'utf8');
+    if (text.length > 64 * 1024) return null;
+    const value: unknown = JSON.parse(text);
+    if (typeof value !== 'object' || value === null) return null;
+    const commit: unknown = Reflect.get(value, 'commit');
+    return typeof commit === 'string' && /^[a-f0-9]{40}$/.test(commit) ? commit : null;
+  } catch {
+    return null;
+  }
+}

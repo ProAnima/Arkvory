@@ -166,6 +166,47 @@ SIGTERM/SIGINT переводит API в режим drain: `/health/status` и `
 
 Добавлены offline GC и scrub: остановить API/worker, отключить их автоматический запуск, затем `npm run gc` или `npm run scrub`. Политика TTL/grace, освобождение резервов и ограничения описаны в [runbook 0.2](LIFECYCLE_AND_CATALOG.md).
 
+## Резервные копии (B1)
+
+Операторский CLI `arkvory-backup` (`apps/backup`) делает согласованную копию работающего экземпляра во встроенный файловый vault на отдельном диске или смонтированном NAS, проверяет её и восстанавливает в **пустую** БД и **пустой** каталог хранения. API и worker не останавливаются. Решение и протокол: [ADR 0054](adr/0054-built-in-backup-vault.md), [BACKUP_RECOVERY](BACKUP_RECOVERY.md). Это не PITR и не HA: точка содержит опубликованное состояние на момент T; незавершённые загрузки не восстанавливаются.
+
+**Обязанности оператора.** Vault не шифруется: в нём каталог, хеши паролей и все опубликованные файлы. Размещайте его только на зашифрованном томе (LUKS, BitLocker, шифрование NAS) с доступом лишь для учётной записи службы и администратора резервирования. Linux: `chown arkvory:arkvory /mnt/backup/arkvory && chmod 700 /mnt/backup/arkvory` (CLI создаёт каталоги 0700 и файлы 0600). Windows: режимы POSIX не действуют, ограничьте ACL, например `icacls D:\Backup\Arkvory /inheritance:r /grant:r "NT SERVICE\ArkvoryApi:(OI)(CI)F" "BUILTIN\Administrators:(OI)(CI)F"`. Тот же физический диск, что и storage, не защищает от отказа диска.
+
+**Подготовка.** Все процессы (API, readers, worker, maintenance) обновлены до схемы 25 (`npm run migrate`): процесс без маркера протокола backup даёт `upgrade_required`. Команды читают ту же конфигурацию, что API и worker: `ARKVORY_DATABASE_URL`, `ARKVORY_DATA_DIR`, `ARKVORY_STORAGE_RESERVE_BYTES`, `ARKVORY_LOG_LEVEL`. Дополнительно (ограниченные значения): `ARKVORY_BACKUP_LEASE_SECONDS` (60, 2–3600), `ARKVORY_BACKUP_SNAPSHOT_SECONDS` (1800, 60–86400 — предел барьера, snapshot и экспорта таблиц), `ARKVORY_BACKUP_BARRIER_SECONDS` (30, 1–600 — ожидание уже начатых удалений). В установленном релизе: `node releases/<version>/apps/backup/dist/main.js …` от имени учётной записи службы с её файлом окружения.
+
+```sh
+npm run backup -- vault init /mnt/backup/arkvory          # один раз; каталог новый или пустой
+npm run backup -- capture --vault /mnt/backup/arkvory --idempotency-key nightly-2026-10-02
+npm run backup -- list --vault /mnt/backup/arkvory
+npm run backup -- verify --vault /mnt/backup/arkvory                 # хеши файлов и наличие blob
+npm run backup -- verify --vault /mnt/backup/arkvory --point <id> --deep   # читает каждый blob
+```
+
+`vault init` создаёт `vault.json`. Без него `capture` ничего не пишет (`vault_missing`): так отключённый NAS не превращается в запись на локальный диск под точкой монтирования. Vault внутри `ARKVORY_DATA_DIR` (или наоборот, в том числе через symlink/junction) отклоняется (`unsafe_path`). Повтор `capture` с тем же `--idempotency-key` возвращает ту же точку или продолжает тот же job новой попыткой (до 5); без ключа каждый запуск — новый job. Одновременно идёт одна копия на БД; во время копии `npm run gc`/`scrub` получают отказ (`busy`), online GC откладывает только закреплённые файлы. Не запускайте миграции во время копии: DDL ждёт окончания экспорта таблиц. Если процесс копии умер, его pins и барьер остаются до истечения lease; следующий `capture` (любой ключ) снимает их через fencing.
+
+**Пробное восстановление в чистую цель.** Создайте пустую БД (`CREATE DATABASE arkvory_restore OWNER arkvory;`) и выберите несуществующий или пустой каталог хранения на другом томе. Строку подключения передавайте через окружение, а не аргументом (виден в списке процессов):
+
+```sh
+export ARKVORY_RESTORE_DATABASE_URL=postgresql://arkvory@db.example/arkvory_restore
+npm run backup -- restore --vault /mnt/backup/arkvory --point <id> --storage /srv/arkvory-restore
+npm run backup -- restore --vault /mnt/backup/arkvory --point <id> --storage /srv/arkvory-restore --yes --report /root/restore-report.json
+```
+
+Без `--yes` выполняется только проверка: точка, хеши, версия схемы, пустота цели; ничего не пишется. С `--yes`: blob копируются с проверкой SHA-256, БД мигрируется до схемы копии, таблицы загружаются одной транзакцией, применяется нормализация, затем оставшиеся миграции. Непустая цель — `target_not_empty`; при сбое удалите и создайте цель заново. Затем запустите отдельный экземпляр API с `ARKVORY_DATABASE_URL` новой БД, `ARKVORY_DATA_DIR` нового каталога и своим `ARKVORY_KEYS_FILE` и проверьте `/health/ready`, каталог, скачивания и права. Production-адрес на цель не переключайте: это отдельное решение после проверки.
+
+После восстановления (нормализация 1): незавершённые загрузки отменены, их задачи завершены `failed/conflict`, незавершённые продвижения удалены; сессии не перенесены; персональные токены отозваны; сервисные ключи `revoked` — выпустите новые; политики физической очистки и retention выключены — включите осознанно. Пользователи, группы и права сохранены вместе с паролями на момент T (пароль, изменённый после T, снова действует: сбросьте пароли по своей политике). Отчёт (`--report`, строка `backup.restore.completed`) содержит только ID и счётчики.
+
+**Журнал и коды выхода.** Каждая строка stdout — JSON (`component: backup`): `backup.phase` (`barrier → pins → tables → blobs → manifest → commit → done`), `backup.capture.completed`, `backup.point`, `backup.verify.point`/`backup.verify.problem`, `backup.restore.phase`/`planned`/`completed`, при ошибке `backup.failed` с `errorCode` и одной подсказкой в stderr. Пути, URL и секреты не пишутся.
+
+| Код | Значение                                                                                                             |
+| --- | -------------------------------------------------------------------------------------------------------------------- |
+| 0   | Успех; для restore без `--yes` — пройденная проверка                                                                 |
+| 1   | Сбой выполнения (БД/диск недоступны, lease или snapshot потеряны, vault/цель заполнены); точки не повреждены         |
+| 2   | Неверные аргументы или переменные окружения                                                                          |
+| 3   | Отказ проверки безопасности: нет `vault.json`, пересечение каталогов, непустая цель, схема, старый writer, нет точки |
+| 4   | Нарушена целостность: хеш, отсутствующий blob, подменённый manifest; vault не изменять до разбора                    |
+| 5   | Занято: идёт другая копия или offline maintenance, удаление не завершилось за время барьера; повторить позже         |
+
 ## Проверки
 
 ```sh

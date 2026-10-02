@@ -5,21 +5,7 @@ import { join, resolve, dirname, relative } from 'node:path';
 import { ArkvoryError, MAX_PARTS, requireId } from '@proanima/arkvory-domain';
 import type { ArtifactDescriptor, UploadPart } from '@proanima/arkvory-domain';
 import type { BlobStore, Cancellation } from '@proanima/arkvory-application';
-
-function hasCode(error: unknown, code: string): boolean {
-  return error instanceof Error && 'code' in error && error.code === code;
-}
-
-async function syncDirectory(directory: string): Promise<void> {
-  // Windows has no supported directory fsync through Node. See ADR 0004.
-  if (process.platform === 'win32') return;
-  const handle = await open(directory, 'r');
-  try {
-    await handle.sync();
-  } finally {
-    await handle.close();
-  }
-}
+import { hasCode, syncDirectory } from './fs-durability.js';
 
 /** Free space kept for the database, logs and the OS; ARKVORY_STORAGE_RESERVE_BYTES. */
 export const defaultStorageReserveBytes = 1024 ** 3;

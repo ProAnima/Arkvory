@@ -4,6 +4,7 @@ import { mkdtemp, mkdir, writeFile, readFile, access } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { GarbageCollector } from '@proanima/arkvory-application';
+import { ArkvoryError } from '@proanima/arkvory-domain';
 import { LocalBlobStore } from '@proanima/arkvory-infrastructure';
 import { removeTestDirectory } from './helpers.mjs';
 
@@ -84,4 +85,40 @@ test('local reclamation stops between filesystem phases after protection loss', 
   await assert.rejects(access(staging), { code: 'ENOENT' });
   assert.equal(await readFile(join(parts, 'part'), 'utf8'), 'parts');
   assert.equal(await readFile(blobs.contentPath(row.id), 'utf8'), 'content');
+});
+
+test('offline cleanup defers an object refused as busy, such as backup-pinned content', async () => {
+  const other = { ...row, id: '00000000-0000-4000-8000-000000000002' };
+  let deleted = 0;
+  let reclaimed = 0;
+  const gc = new GarbageCollector(
+    {
+      async page(after) {
+        return after ? [] : [row, other];
+      },
+      async exclusive(id, _removeContent, action) {
+        if (id === row.id) throw new ArkvoryError('busy', 'Content is protected by a backup');
+        return action({ throwIfAborted() {} });
+      },
+      async reclaimed() {
+        reclaimed++;
+      },
+      async expire() {
+        assert.fail('Cancelled records must not expire');
+      },
+    },
+    {
+      async collect() {
+        deleted++;
+      },
+    },
+    { throwIfAborted() {} },
+  );
+  assert.deepEqual(await gc.run('2026-01-03T00:00:00.000Z'), {
+    visited: 2,
+    collected: 1,
+    deferred: 1,
+  });
+  assert.equal(deleted, 1);
+  assert.equal(reclaimed, 1);
 });

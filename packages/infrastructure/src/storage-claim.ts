@@ -66,20 +66,21 @@ export async function claimStorageSession(
         'INSERT INTO arkvory_storage_identity(singleton,storage_id) VALUES(true,$1) ON CONFLICT DO NOTHING',
         [requireId(storageId)],
       );
+    // 17 marks online cleanup content pins, 20 the backup unlink protocol (pins and barrier).
     const identity = await client.query<{ storage_id: string }>(
-      'SELECT storage_id,pg_advisory_lock_shared(18471,17) FROM arkvory_storage_identity WHERE singleton=true',
+      'SELECT storage_id,pg_advisory_lock_shared(18471,17),pg_advisory_lock_shared(18471,20) FROM arkvory_storage_identity WHERE singleton=true',
     );
     if (identity.rows[0]?.storage_id !== storageId)
       throw new ArkvoryError('conflict', 'Database belongs to a different storage directory');
 
     await ownership.start(
       role === 'worker'
-        ? [6, 4, 17]
+        ? [6, 4, 17, 20]
         : role === 'reader'
-          ? [7, 4, 17]
+          ? [7, 4, 17, 20]
           : role === 'api'
-            ? [7, 3, 4, 17]
-            : [3, 4, 17],
+            ? [7, 3, 4, 17, 20]
+            : [3, 4, 17, 20],
     );
     return ownership;
   } catch (error) {

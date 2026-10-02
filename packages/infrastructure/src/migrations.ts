@@ -6,6 +6,7 @@ import { Pool } from 'pg';
 import type { PoolClient } from 'pg';
 import { migrateServices } from './service-schema.js';
 import { migrateDelegations } from './delegation-schema.js';
+import { SCHEMA_VERSION } from './schema-version.js';
 
 const packagePageIndexes = [
   {
@@ -84,7 +85,7 @@ const catalogIndexMigrations = [
   },
 ] as const;
 
-async function migrateCatalogIndexes(pool: Pool): Promise<void> {
+async function migrateCatalogIndexes(pool: Pool, upTo: number): Promise<void> {
   // Index builds can exceed the short request timeout on the runtime catalog pool.
   const migrationPool = new Pool({
     ...pool.options,
@@ -110,6 +111,7 @@ async function migrateCatalogIndexes(pool: Pool): Promise<void> {
       delay = Math.min(delay * 2, 1000);
     }
     for (const migration of catalogIndexMigrations) {
+      if (migration.version > upTo) continue;
       const applied = await client.query(
         'SELECT version FROM arkvory_migrations WHERE version=$1',
         [migration.version],
@@ -155,12 +157,32 @@ export async function appliedSchemaVersion(pool: Pool): Promise<number> {
   return result.rows[0]?.version ?? 0;
 }
 
+/** Groups of versions 9-13 in their historical order between the base and storage schemas. */
+const serviceSteps: readonly (readonly [number, (client: PoolClient) => Promise<void>])[] = [
+  [9, migrateServices],
+  [10, migrateDelegations],
+  [12, migrateAttachments],
+  [13, migrateRetention],
+];
+
+export interface MigrateOptions {
+  /**
+   * Highest version to apply, for a data-only restore into the schema of an older backup.
+   * Steps keep their historical order; every step only depends on lower versions, so a bounded
+   * run followed by an unbounded one reaches the same schema as a fresh migration.
+   */
+  readonly upTo?: number;
+}
+
 /**
- * Applies all schema versions in one transaction under advisory lock 18471/1, then builds the
+ * Applies schema versions in one transaction under advisory lock 18471/1, then builds the
  * online catalog indexes outside it (CREATE INDEX CONCURRENTLY cannot run in a transaction).
  * Every step is skipped when its version is recorded, so repeated and concurrent runs are safe.
  */
-export async function migrate(pool: Pool): Promise<void> {
+export async function migrate(pool: Pool, options: MigrateOptions = {}): Promise<void> {
+  const upTo = options.upTo ?? SCHEMA_VERSION;
+  if (!Number.isSafeInteger(upTo) || upTo < 1 || upTo > SCHEMA_VERSION)
+    throw new Error('Migration bound is outside the versions of this release');
   const client = await pool.connect();
   let unusable = false;
   try {
@@ -169,12 +191,9 @@ export async function migrate(pool: Pool): Promise<void> {
     await client.query(
       `CREATE TABLE IF NOT EXISTS arkvory_migrations(version integer PRIMARY KEY, applied_at timestamptz NOT NULL DEFAULT now())`,
     );
-    await migrateBaseSchema(client);
-    await migrateServices(client);
-    await migrateDelegations(client);
-    await migrateAttachments(client);
-    await migrateRetention(client);
-    await migrateStorageSchemas(client);
+    await migrateBaseSchema(client, upTo);
+    for (const [version, step] of serviceSteps) if (version <= upTo) await step(client);
+    await migrateStorageSchemas(client, upTo);
     await client.query('COMMIT');
   } catch (error) {
     try {
@@ -186,5 +205,5 @@ export async function migrate(pool: Pool): Promise<void> {
   } finally {
     client.release(unusable);
   }
-  await migrateCatalogIndexes(pool);
+  await migrateCatalogIndexes(pool, upTo);
 }

@@ -52,6 +52,7 @@ The RU/EN console includes direct catalog downloads, compact mobile navigation, 
 | Structured JSON logs, levels, request→job→audit correlation, metrics  | Implemented; [runbook](docs/CORE_RUNBOOK.md), ADR 0052         |
 | Error codes with reasons and field details; request ID in UI and CLI  | Implemented; [error contract](docs/API_CONTRACTS.md), ADR 0051 |
 | Built-in HTTPS with certificate reload; reverse proxy still supported | Implemented; ADR 0055                                          |
+| Consistent backup to disk/NAS, verify, restore to an empty target     | Operator CLI, unencrypted vault; ADR 0054                      |
 | Local CI lanes (Windows, Linux, systemd) and draft releases           | Implemented; [local pipeline](docs/CI.md), ADR 0053            |
 | Two-server replication, failover, global balancing                    | Design stage; lab validation deferred                          |
 
@@ -101,7 +102,7 @@ Administrators can create accounts and repository access groups. Users sign in w
 - Planned: short-lived transfer tokens scoped to an object and an action; current downloads require ordinary API authorization.
 - Archive validation, safe paths, and metadata size limits.
 - Recovery of intermediate operations, idempotent completion, and integrity checks.
-- Health/readiness and transfer diagnostics are implemented. Automated backup, coordinated database/blob recovery, and restore drills remain [planned](docs/BACKUP_RECOVERY.md).
+- Health/readiness and transfer diagnostics are implemented. A manual consistent backup of the database and blobs into a built-in vault, its verification and a restore into an empty target run through the operator CLI `npm run backup` (ADR 0054); schedules, encryption, S3 and a backup UI remain [planned](docs/BACKUP_RECOVERY.md).
 
 ## Architecture
 
@@ -232,7 +233,7 @@ For an existing database, edit `ARKVORY_DATABASE_URL` in `.env` instead of start
 | `npm run test:large`       | 5 GiB HTTP upload/download, process restart, hash and RSS checks     |
 | `npm run format`           | Apply formatting                                                     |
 
-Multipart uploads resume from recorded parts (the session fixes the part size; clients over 16 GiB complete through the worker); whole-file PUT retries restart from byte zero. Online cleanup releases cancelled reservations after deleting their content and the grace period. One API process owns a standalone database; this profile provides no node failover. Keep the database and the entire storage directory, including `storage-id`, together in backup/restore procedures. Before updating, stop API/worker, back up both, run `npm run migrate` (schema 24), then start the new code. See [asset history and restore](docs/LIFECYCLE_AND_CATALOG.md#история-и-восстановление-файлов) and [online catalog indexes](docs/adr/0014-online-package-page-indexes.md).
+Multipart uploads resume from recorded parts (the session fixes the part size; clients over 16 GiB complete through the worker); whole-file PUT retries restart from byte zero. Online cleanup releases cancelled reservations after deleting their content and the grace period. One API process owns a standalone database; this profile provides no node failover. Keep the database and the entire storage directory, including `storage-id`, together in backup/restore procedures. Before updating, stop API/worker, back up both, run `npm run migrate` (schema 25), then start the new code. See [asset history and restore](docs/LIFECYCLE_AND_CATALOG.md#история-и-восстановление-файлов) and [online catalog indexes](docs/adr/0014-online-package-page-indexes.md).
 
 ## Development rules
 

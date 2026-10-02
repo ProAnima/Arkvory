@@ -10,7 +10,11 @@ export interface CleanupRecord {
   cancelledAt: string | null;
 }
 export interface CleanupCatalog {
-  /** Hold upload ownership and, for blob removal, the exclusive content guard during action. */
+  /**
+   * Hold upload ownership and, for blob removal, the exclusive content guard and the backup
+   * unlink admission during action. Rejects with `busy` when the object is in use or a backup
+   * pin or closed barrier protects its content.
+   */
   exclusive<T>(
     id: string,
     removeContent: boolean,
@@ -34,7 +38,7 @@ export class GarbageCollector {
   async run(
     now: string,
     graceMilliseconds = 86400000,
-  ): Promise<{ visited: number; collected: number }> {
+  ): Promise<{ visited: number; collected: number; deferred: number }> {
     if (
       !Number.isFinite(Date.parse(now)) ||
       !Number.isSafeInteger(graceMilliseconds) ||
@@ -44,6 +48,7 @@ export class GarbageCollector {
     let after: string | undefined;
     let visited = 0;
     let collected = 0;
+    let deferred = 0;
     for (;;) {
       this.cancellation.throwIfAborted();
       const rows = await this.catalog.page(after, 100);
@@ -52,20 +57,35 @@ export class GarbageCollector {
       for (const row of rows) {
         visited++;
         after = row.id;
-        if (await this.collect(row, now, graceMilliseconds)) collected++;
+        const outcome = await this.collect(row, now, graceMilliseconds);
+        if (outcome === 'collected') collected++;
+        else if (outcome === 'deferred') deferred++;
       }
     }
-    return { visited, collected };
+    return { visited, collected, deferred };
   }
-  private async collect(row: CleanupRecord, now: string, graceMilliseconds: number) {
+  private async collect(
+    row: CleanupRecord,
+    now: string,
+    graceMilliseconds: number,
+  ): Promise<'collected' | 'skipped' | 'deferred'> {
     this.cancellation.throwIfAborted();
-    if (row.status === 'pending' && Date.parse(row.expiresAt) > Date.parse(now)) return false;
+    if (row.status === 'pending' && Date.parse(row.expiresAt) > Date.parse(now)) return 'skipped';
     if (
       row.status === 'cancelled' &&
       (row.cancelledAt === null ||
         Date.parse(row.cancelledAt) + graceMilliseconds > Date.parse(now))
     )
-      return false;
+      return 'skipped';
+    try {
+      return await this.exclusive(row, now);
+    } catch (error) {
+      // An object in use or protected by a backup pin/barrier keeps its bytes until a later run.
+      if (error instanceof ArkvoryError && error.code === 'busy') return 'deferred';
+      throw error;
+    }
+  }
+  private exclusive(row: CleanupRecord, now: string): Promise<'collected' | 'skipped'> {
     return this.catalog.exclusive(row.id, row.status === 'cancelled', async (ownership) => {
       const cancellation = {
         throwIfAborted: () => {
@@ -77,14 +97,14 @@ export class GarbageCollector {
       if (row.status === 'pending') {
         await this.catalog.expire(row.id, now);
         cancellation.throwIfAborted();
-        return false;
+        return 'skipped';
       }
       await this.blobs.collect(row.id, row.status === 'cancelled', cancellation);
       cancellation.throwIfAborted();
-      if (row.status === 'available') return false;
+      if (row.status === 'available') return 'skipped';
       await this.catalog.reclaimed(row.id);
       cancellation.throwIfAborted();
-      return true;
+      return 'collected';
     });
   }
 }

@@ -12,6 +12,7 @@ import type { Cancellation } from '@proanima/arkvory-application';
 import { StorageOwnership } from './storage-ownership.js';
 import { contentLockKey, uploadLockKey } from './content-pins.js';
 import { accessCorrelation, storedCorrelation } from './request-correlation.js';
+import { admitUnlink } from './unlink-admission.js';
 
 export class PostgresCleanup implements CleanupCatalog {
   constructor(private readonly pool: Pool) {}
@@ -34,6 +35,10 @@ export class PostgresCleanup implements CleanupCatalog {
         if (!result.rows[0]?.acquired) throw new ArkvoryError('busy', 'Cleanup object is in use');
       }
       await ownership.startObjects(keys);
+      // Lock order: upload → content → backup unlink admission. The shared admission lock lives
+      // on this dedicated session and ends with it in ownership.close().
+      if (removeContent && !(await admitUnlink(client, id)))
+        throw new ArkvoryError('busy', 'Content is protected by a backup');
       const cancellation = {
         throwIfAborted() {
           if (!ownership.active)

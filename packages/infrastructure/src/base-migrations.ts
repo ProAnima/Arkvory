@@ -152,8 +152,12 @@ const baseSteps: readonly { version: number; sql: string }[] = [
 ];
 
 /** Caller holds the migration transaction and advisory lock 18471/1; steps run in version order. */
-export async function migrateBaseSchema(client: PoolClient): Promise<void> {
+export async function migrateBaseSchema(
+  client: PoolClient,
+  upTo = Number.MAX_SAFE_INTEGER,
+): Promise<void> {
   for (const step of baseSteps) {
+    if (step.version > upTo) continue;
     const applied = await client.query('SELECT version FROM arkvory_migrations WHERE version=$1', [
       step.version,
     ]);

@@ -1,0 +1,26 @@
+{
+  "name": "@proanima/arkvory-backup",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Резервные копии во встроенный vault и восстановление: composition root оператора",
+  "bin": {
+    "arkvory-backup": "./dist/main.js"
+  },
+  "exports": {
+    "arkvory-source": "./src/index.ts",
+    "types": "./dist/index.d.ts",
+    "import": "./dist/index.js"
+  },
+  "license": "UNLICENSED",
+  "author": "Ian Panaev",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ProAnima/Arkvory.git"
+  },
+  "dependencies": {
+    "@proanima/arkvory-domain": "0.0.0",
+    "@proanima/arkvory-application": "0.0.0",
+    "@proanima/arkvory-infrastructure": "0.0.0"
+  }
+}

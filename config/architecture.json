@@ -48,6 +48,10 @@
       "allowed": ["packages/application", "packages/domain", "packages/infrastructure"]
     },
     {
+      "path": "apps/backup",
+      "allowed": ["packages/application", "packages/domain", "packages/infrastructure"]
+    },
+    {
       "path": "apps/web",
       "allowed": ["packages/sdk", "packages/contracts"]
     },

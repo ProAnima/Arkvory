@@ -19,6 +19,8 @@ export * from './retention.js';
 export * from './storage-policy.js';
 export * from './cleanup.js';
 export * from './storage-routing.js';
+export * from './backup.js';
+export * from './backup-manifest.js';
 export {
   errorCodes,
   errorReasons,

@@ -21,6 +21,7 @@ try {
       code: 'gc.completed',
       visited: result.visited,
       collected: result.collected,
+      deferred: result.deferred,
       durationMs: Math.round(performance.now() - started),
     });
   } finally {

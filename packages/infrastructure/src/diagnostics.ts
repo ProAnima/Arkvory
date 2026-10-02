@@ -4,8 +4,16 @@ export const logLevels = ['debug', 'info', 'warning', 'error'] as const;
 export type LogLevel = (typeof logLevels)[number];
 /** Closed set: a new subsystem extends this union instead of inventing free-form strings. */
 export type LogComponent =
-  'api' | 'http' | 'storage' | 'worker' | 'maintenance' | 'migrate' | 'process' | 'diagnostics';
-export type LogService = 'api' | 'worker' | 'migrate' | 'gc' | 'scrub';
+  | 'api'
+  | 'http'
+  | 'storage'
+  | 'worker'
+  | 'maintenance'
+  | 'backup'
+  | 'migrate'
+  | 'process'
+  | 'diagnostics';
+export type LogService = 'api' | 'worker' | 'migrate' | 'gc' | 'scrub' | 'backup';
 
 /** Stable per-process fields repeated on every line so a single line is attributable. */
 export interface ProcessIdentity {
@@ -61,6 +69,30 @@ export interface DiagnosticFields {
   tls?: boolean;
   notAfter?: string;
   daysLeft?: number;
+  deferred?: number;
+  /** Backup vault, point and job progress (ADR 0054); identifiers and counts only. */
+  pointId?: string;
+  vaultId?: string;
+  phase?: string;
+  outcome?: string;
+  attempt?: number;
+  snapshotAt?: string;
+  schemaVersion?: number;
+  blobs?: number;
+  copied?: number;
+  reused?: number;
+  tables?: number;
+  rows?: number;
+  contentBytes?: string;
+  problems?: number;
+  subject?: string;
+  depth?: string;
+  cancelledUploads?: number;
+  failedJobs?: number;
+  droppedPromotions?: number;
+  revokedTokens?: number;
+  revokedServiceKeys?: number;
+  disabledPolicies?: number;
 }
 export interface DiagnosticRecord extends DiagnosticFields {
   level: LogLevel;

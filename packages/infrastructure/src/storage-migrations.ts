@@ -4,17 +4,25 @@ import { migrateCleanup } from './cleanup-schema.js';
 import { migratePromotions } from './promotion-schema.js';
 import { migrateIdentitySecurity } from './identity-security-schema.js';
 import { migrateRequestCorrelation } from './correlation-schema.js';
+import { migrateBackups } from './backup-schema.js';
 
-export async function migrateStorageSchemas(client: PoolClient) {
-  await migrateStoragePolicy(client);
-  await migrateCleanup(client);
-  await migrateLargeObjects(client);
-  await migrateUserTokens(client);
-  await migrateStorageRouting(client);
-  await migrateAdaptiveParts(client);
-  await migratePromotions(client);
-  await migrateIdentitySecurity(client);
-  await migrateRequestCorrelation(client);
+/** Steps of versions 15-25 in their historical order; each records its own version. */
+const storageSteps: readonly (readonly [number, (client: PoolClient) => Promise<void>])[] = [
+  [15, migrateStoragePolicy],
+  [16, migrateCleanup],
+  [18, migrateLargeObjects],
+  [19, migrateUserTokens],
+  [20, migrateStorageRouting],
+  [21, migrateAdaptiveParts],
+  [22, migratePromotions],
+  [23, migrateIdentitySecurity],
+  [24, migrateRequestCorrelation],
+  [25, migrateBackups],
+];
+
+/** upTo bounds the applied versions (restore of an older backup); the order never changes. */
+export async function migrateStorageSchemas(client: PoolClient, upTo = Number.MAX_SAFE_INTEGER) {
+  for (const [version, step] of storageSteps) if (version <= upTo) await step(client);
 }
 
 export async function migrateLargeObjects(client: PoolClient): Promise<void> {

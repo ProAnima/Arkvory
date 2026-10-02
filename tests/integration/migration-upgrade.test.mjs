@@ -94,3 +94,19 @@ test('repeating migration on a current schema changes neither structure nor hist
   assert.deepEqual(await schemaFingerprint(pool), structure);
   assert.deepEqual(await history(), applied);
 });
+
+test('migration 25 is expand-only: backup tables and the barrier row, nothing else changes', async (t) => {
+  const pool = await emptySchema(t);
+  await migrate(pool, { upTo: 24 });
+  const before = await schemaFingerprint(pool);
+  await migrate(pool);
+  const after = await schemaFingerprint(pool);
+  const unrelated = (row) => !/^arkvory_backup_/.test(row.table ?? row.name);
+  for (const part of ['columns', 'constraints', 'indexes', 'triggers', 'functions'])
+    assert.deepEqual(after[part].filter(unrelated), before[part], part);
+  assert.deepEqual(after.migrations, [...before.migrations, 25]);
+  assert.equal(
+    (await pool.query('SELECT state FROM arkvory_backup_barrier WHERE singleton')).rows[0].state,
+    'open',
+  );
+});
