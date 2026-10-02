@@ -4,6 +4,7 @@ import { readFile } from 'node:fs/promises';
 import { parse } from 'yaml';
 import { AdmissionQueue, processIdentity } from '@proanima/arkvory-infrastructure';
 import { ApiMetrics } from '../apps/api/dist/api-metrics.js';
+import { BackupMetrics } from '../apps/api/dist/backup-metrics.js';
 
 /** Every metric the API can expose, including histogram series and optional TLS/job sources. */
 async function exposedNames() {
@@ -16,6 +17,58 @@ async function exposedNames() {
     activeRequests: () => 0,
     diagnostics: { counters: { written: 0, dropped: 0, truncated: 0, oversized: 0 } },
     jobs: { backlog: async () => ({ queued: 0, running: 0, oldestQueuedSeconds: 0 }) },
+    backup: new BackupMetrics(
+      {
+        currentVault: async () => null,
+        snapshot: async () => ({
+          now: 2000,
+          agent: {
+            active: true,
+            seenAt: 1000,
+            version: '1.0.0',
+            vaultConfigured: true,
+            vaultId: null,
+            vaultAvailable: true,
+            freeBytes: '1',
+            totalBytes: '2',
+            lastError: null,
+          },
+          plan: {
+            enabled: true,
+            hour: 2,
+            minute: 0,
+            timezone: 'UTC',
+            retention: { daily: 7, weekly: 4, monthly: 6 },
+            revision: 1,
+            scheduleFrom: 0,
+            lastSlotAt: null,
+            updatedAt: 0,
+            updatedBy: null,
+          },
+          newest: {
+            id: '00000000-0000-4000-8000-000000000001',
+            vaultId: '00000000-0000-4000-8000-000000000002',
+            snapshotAt: 1000,
+            completedAt: 1000,
+            blobs: 0,
+            contentBytes: '0',
+            newBytes: '0',
+            tables: 0,
+            rows: 0,
+            pinned: false,
+            verifiedAt: null,
+            verifyDepth: null,
+            verifyError: null,
+            deepVerifiedAt: null,
+          },
+          running: null,
+          lastCaptureFailed: false,
+          verifyFailed: false,
+          lastDeepVerifiedAt: null,
+        }),
+      },
+      () => 0,
+    ),
     now: () => 0,
     startedAtSeconds: 0,
     residentMemory: () => 0,

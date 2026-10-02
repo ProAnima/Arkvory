@@ -19,3 +19,5 @@ export { PromotionsApi, packageQueryString } from './promotions-api.js';
 export type { PackageQuery, PromoteRequest, PageOptions } from './promotions-api.js';
 export type { IdentityClient, AdministrationClient } from './management-client.js';
 export type { CreateTokenOptions } from './identity-api.js';
+export { BackupApi } from './backup-api.js';
+export type { BackupPageQuery } from './backup-api.js';

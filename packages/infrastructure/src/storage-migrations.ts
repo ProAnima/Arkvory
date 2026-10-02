@@ -5,8 +5,9 @@ import { migratePromotions } from './promotion-schema.js';
 import { migrateIdentitySecurity } from './identity-security-schema.js';
 import { migrateRequestCorrelation } from './correlation-schema.js';
 import { migrateBackups } from './backup-schema.js';
+import { migrateUnattendedBackups } from './backup-agent-schema.js';
 
-/** Steps of versions 15-25 in their historical order; each records its own version. */
+/** Steps of versions 15-26 in their historical order; each records its own version. */
 const storageSteps: readonly (readonly [number, (client: PoolClient) => Promise<void>])[] = [
   [15, migrateStoragePolicy],
   [16, migrateCleanup],
@@ -18,6 +19,7 @@ const storageSteps: readonly (readonly [number, (client: PoolClient) => Promise<
   [23, migrateIdentitySecurity],
   [24, migrateRequestCorrelation],
   [25, migrateBackups],
+  [26, migrateUnattendedBackups],
 ];
 
 /** upTo bounds the applied versions (restore of an older backup); the order never changes. */

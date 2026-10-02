@@ -172,7 +172,7 @@ SIGTERM/SIGINT переводит API в режим drain: `/health/status` и `
 
 **Обязанности оператора.** Vault не шифруется: в нём каталог, хеши паролей и все опубликованные файлы. Размещайте его только на зашифрованном томе (LUKS, BitLocker, шифрование NAS) с доступом лишь для учётной записи службы и администратора резервирования. Linux: `chown arkvory:arkvory /mnt/backup/arkvory && chmod 700 /mnt/backup/arkvory` (CLI создаёт каталоги 0700 и файлы 0600). Windows: режимы POSIX не действуют, ограничьте ACL, например `icacls D:\Backup\Arkvory /inheritance:r /grant:r "NT SERVICE\ArkvoryApi:(OI)(CI)F" "BUILTIN\Administrators:(OI)(CI)F"`. Тот же физический диск, что и storage, не защищает от отказа диска.
 
-**Подготовка.** Все процессы (API, readers, worker, maintenance) обновлены до схемы 25 (`npm run migrate`): процесс без маркера протокола backup даёт `upgrade_required`. Команды читают ту же конфигурацию, что API и worker: `ARKVORY_DATABASE_URL`, `ARKVORY_DATA_DIR`, `ARKVORY_STORAGE_RESERVE_BYTES`, `ARKVORY_LOG_LEVEL`. Дополнительно (ограниченные значения): `ARKVORY_BACKUP_LEASE_SECONDS` (60, 2–3600), `ARKVORY_BACKUP_SNAPSHOT_SECONDS` (1800, 60–86400 — предел барьера, snapshot и экспорта таблиц), `ARKVORY_BACKUP_BARRIER_SECONDS` (30, 1–600 — ожидание уже начатых удалений). В установленном релизе: `node releases/<version>/apps/backup/dist/main.js …` от имени учётной записи службы с её файлом окружения.
+**Подготовка.** Все процессы (API, readers, worker, maintenance) обновлены до схемы релиза (25 для B1, 26 с агентом B2; `npm run migrate`): процесс без маркера протокола backup даёт `upgrade_required`. Команды читают ту же конфигурацию, что API и worker: `ARKVORY_DATABASE_URL`, `ARKVORY_DATA_DIR`, `ARKVORY_STORAGE_RESERVE_BYTES`, `ARKVORY_LOG_LEVEL`. Дополнительно (ограниченные значения): `ARKVORY_BACKUP_LEASE_SECONDS` (60, 2–3600), `ARKVORY_BACKUP_SNAPSHOT_SECONDS` (1800, 60–86400 — предел барьера, snapshot и экспорта таблиц), `ARKVORY_BACKUP_BARRIER_SECONDS` (30, 1–600 — ожидание уже начатых удалений). В установленном релизе: `node releases/<version>/apps/backup/dist/main.js …` от имени учётной записи службы с её файлом окружения.
 
 ```sh
 npm run backup -- vault init /mnt/backup/arkvory          # один раз; каталог новый или пустой
@@ -206,6 +206,67 @@ npm run backup -- restore --vault /mnt/backup/arkvory --point <id> --storage /sr
 | 3   | Отказ проверки безопасности: нет `vault.json`, пересечение каталогов, непустая цель, схема, старый writer, нет точки |
 | 4   | Нарушена целостность: хеш, отсутствующий blob, подменённый manifest; vault не изменять до разбора                    |
 | 5   | Занято: идёт другая копия или offline maintenance, удаление не завершилось за время барьера; повторить позже         |
+
+## Резервные копии без участия оператора (B2)
+
+Агент `arkvory-backup agent` (`npm run backup -- agent`; в установленном релизе `node releases/<version>/apps/backup/dist/main.js agent`) делает копии по расписанию и по запросам API, проверяет их и применяет retention. API и консоль только ставят задания и читают состояние из БД; путь vault знает только агент. Решение: [ADR 0056](adr/0056-unattended-backups.md). Обязанности по защите vault — как в B1 выше.
+
+**Окружение агента.** Те же `ARKVORY_DATABASE_URL`, `ARKVORY_DATA_DIR`, `ARKVORY_STORAGE_RESERVE_BYTES`, `ARKVORY_LOG_LEVEL` и таймауты B1. Дополнительно:
+
+| Переменная                        | Значение                                                                                                   |
+| --------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `ARKVORY_BACKUP_VAULT`            | Каталог, созданный `vault init`. Без неё агент работает, сообщает `vault_not_configured`, задания — ошибка |
+| `ARKVORY_BACKUP_BYTES_PER_SECOND` | Ограничение полосы копирования, не меньше 65536; без значения — без ограничения                            |
+| `ARKVORY_BACKUP_POLL_SECONDS`     | Пауза между проверками очереди и расписания, 15 (1–3600)                                                   |
+| `ARKVORY_BACKUP_LEASE_SECONDS`    | Lease агента и копии, 60 (2–3600); heartbeat каждую треть, не реже 30 с                                    |
+
+**Служба ОС.** Установщики пока не регистрируют агента (у launcher нативной установки нет роли backup): оператор создаёт службу сам — одна на сервер, от учётной записи Arkvory, с теми же значениями окружения, что у API (`ARKVORY_DATABASE_URL`, `ARKVORY_DATA_DIR`), автоматический перезапуск, доступ на запись к vault. Пример systemd для установки из исходников (`/etc/systemd/system/arkvory-backup.service`, файл окружения доступен только `root` и `arkvory`):
+
+```ini
+[Unit]
+Description=ProAnima Arkvory backup agent
+After=network-online.target postgresql.service
+
+[Service]
+User=arkvory
+EnvironmentFile=/etc/arkvory/arkvory.env
+Environment=ARKVORY_BACKUP_VAULT=/mnt/backup/arkvory
+WorkingDirectory=/opt/arkvory
+ExecStart=/usr/bin/node apps/backup/dist/main.js agent
+Restart=always
+RestartSec=10
+ReadWritePaths=/mnt/backup/arkvory
+KillSignal=SIGTERM
+TimeoutStopSec=120
+
+[Install]
+WantedBy=multi-user.target
+```
+
+На Windows — служба, запускающая ту же команду от учётной записи службы Arkvory с доступом к vault. Второй экземпляр безопасен: он ждёт в standby (`backup.agent.standby`) и берёт lease после остановки первого или истечения его lease. SIGTERM/SIGINT прерывают текущую фазу (копия — `interrupted`, pins освобождаются), задание возвращается в очередь, lease освобождается, код выхода 0. Потерянный lease (`backup.agent.lease_lost`) останавливает работу и возвращает агента в standby. Перед обновлением релиза останавливайте агента вместе с API и worker.
+
+**Расписание и задания.** План один: `enabled`, `hour:minute` и явный IANA-пояс (`Europe/Moscow`, `UTC`); после миграции 26 он выключен (02:00 UTC, retention 7/4/6). Включение и изменение — `PUT /api/v1/backup/plan` с `expectedRevision` (409 `revision_mismatch` — перечитать план). Несуществующее местное время (перевод часов вперёд) выполняется в момент перехода, повторяющееся — один раз, при первом наступлении. После простоя агента выполняется одна догоняющая копия; слоты до изменения расписания не догоняются. Копия сейчас — `arkvoryctl backup run` или `POST /api/v1/backup/runs`; каждая копия запускает структурную проверку новой точки и retention отдельными заданиями, глубокая проверка новейшей точки — раз в 7 дней. Задание, прерванное остановкой или конкуренцией (`busy`), повторяется до 5 раз. Состояние — `arkvoryctl backup status|jobs|points`.
+
+**Retention.** Сохраняются новейшие точки последних N местных дней, недель ISO и месяцев пояса плана (по умолчанию 7/4/6, группы объединяются), закреплённые (`arkvoryctl backup pin <id>`, снятие `--off`) и новейшая точка; минимум одна точка остаётся всегда. Точки с ошибкой проверки и точки другого источника в том же vault не удаляются. `GET /api/v1/backup/retention/preview` показывает решение до применения. Apply сначала отмечает точку в каталоге, затем удаляет `COMMITTED` и её каталог, затем prune удаляет blob, которых нет ни в одной оставшейся точке, и остатки попыток. Повреждённая точка в vault (каталог без `COMMITTED` или неверный manifest) останавливает prune с `invalid_manifest`: оставьте vault как есть, выясните причину, затем уберите повреждённый каталог вручную. Retention и prune не идут одновременно с копией или проверкой агента (блокировка 18471/21); `verify` CLI без подключения к БД блокировку не берёт — не запускайте его во время retention.
+
+**Предупреждения** (`GET /api/v1/backup/status`, `arkvoryctl backup status`; при critical CLI выходит с кодом 9):
+
+| Код                    | Уровень  | Действие                                                                    |
+| ---------------------- | -------- | --------------------------------------------------------------------------- |
+| `vault_not_configured` | warning  | Задать `ARKVORY_BACKUP_VAULT` агенту и перезапустить службу                 |
+| `agent_offline`        | critical | Нет heartbeat 2 минуты или агент остановлен: запустить службу               |
+| `schedule_disabled`    | warning  | Включить план, если копии нужны по расписанию                               |
+| `no_backup_yet`        | warning  | Выполнить первую копию                                                      |
+| `backup_stale`         | critical | T новейшей точки старше 26 ч при включённом плане: смотреть `jobs` и журнал |
+| `last_run_failed`      | warning  | Последняя завершённая копия неуспешна: `errorCode` в `backup jobs`          |
+| `vault_unavailable`    | critical | Том vault не смонтирован или нет `vault.json`                               |
+| `vault_low_space`      | warning  | Меньше 10% или меньше двух «новых байт» последней точки: освободить место   |
+| `verify_failed`        | critical | Точка не прошла проверку: vault не менять, разобрать причину                |
+| `never_deep_verified`  | warning  | Нет глубокой проверки 8 дней: проверить работу агента                       |
+
+**Журнал агента** (`component: backup`): `backup.agent.started|standby|lease_acquired|lease_lost|stopped|failed`, `backup.request.started|done|failed|requeued` (`jobId`, `kind`, `errorCode`), `backup.schedule.due`, `backup.phase`, `backup.retention.applied` (`forgotten`, `blobs`, `freedBytes`), `backup.catalog.reconciled`. Путей, URL и секретов нет.
+
+**Метрики и оповещения.** `GET /health/metrics` API (данные из БД, кэш 5 с): `arkvory_backup_last_success_timestamp_seconds` (T новейшей точки), `arkvory_backup_agent_last_seen_timestamp_seconds`, `arkvory_backup_warnings{code}` (1 — активно). Правила `ArkvoryBackupStale`, `ArkvoryBackupAgentOffline`, `ArkvoryBackupWarning` — в [deploy/monitoring/arkvory-alerts.yml](../deploy/monitoring/arkvory-alerts.yml).
 
 ## Проверки
 

@@ -21,6 +21,11 @@ export * from './cleanup.js';
 export * from './storage-routing.js';
 export * from './backup.js';
 export * from './backup-manifest.js';
+export * from './backup-schedule.js';
+export * from './backup-retention.js';
+export * from './backup-plan.js';
+export * from './backup-warnings.js';
+export * from './backup-requests.js';
 export {
   errorCodes,
   errorReasons,

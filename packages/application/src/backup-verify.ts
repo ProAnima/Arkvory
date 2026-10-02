@@ -60,8 +60,16 @@ function invalidPoint(pointId: string, deep: boolean): PointVerification {
  * each inventory blob exists with its size; deep verification also hashes every blob. A point
  * that fails is reported, never repaired or removed.
  */
+export interface VerifyOptions {
+  /** Inventory entries checked so far and their content bytes; called after each entry. */
+  readonly progress?: (done: { readonly blobs: number; readonly bytes: bigint }) => void;
+}
+
 export class VerifyPoint {
-  constructor(private readonly vault: ReadableVault) {}
+  constructor(
+    private readonly vault: ReadableVault,
+    private readonly options: VerifyOptions = {},
+  ) {}
 
   async run(
     request: { readonly pointId?: string; readonly deep: boolean },
@@ -150,6 +158,7 @@ export class VerifyPoint {
       if (!(await this.vault.hasBlob(entry))) problems.add('blob_missing', entry.id);
       else if (deep && (await this.vault.blobDigest(entry, cancellation)) !== entry.sha256)
         problems.add('blob_mismatch', entry.id);
+      this.options.progress?.({ blobs: count, bytes });
     }
     if (count !== manifest.inventory.count || bytes.toString() !== manifest.inventory.contentBytes)
       problems.add('inventory_invalid', INVENTORY_FILE);

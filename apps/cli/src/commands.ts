@@ -9,6 +9,7 @@ import { upload } from './upload.js';
 import { download } from './download.js';
 import { CliError } from './errors.js';
 import { isPromotionCommand, promotionCommand } from './promotion-commands.js';
+import { backupCommand } from './backup-commands.js';
 
 export async function execute(
   args: Arguments,
@@ -35,10 +36,12 @@ export async function execute(
       'promote',
       'stages',
       'promotions',
+      'backup',
     ].includes(command)
   )
     throw new CliError('unknown_command');
   const connected = await connection(args, signal);
+  if (command === 'backup') return backupCommand(args, connected, timed(args, signal));
   if (isPromotionCommand(args)) return promotionCommand(args, connected, signal, progress);
   const { client, server, repository } = connected;
   if (
@@ -47,10 +50,7 @@ export async function execute(
     (command === 'packages' && word(args, 1) === 'publish')
   )
     return transfer(args, connected, signal, progress);
-  signal = AbortSignal.any([
-    signal,
-    AbortSignal.timeout(numericOption(args, 'timeout', 60000, 1, 3600000)),
-  ]);
+  signal = timed(args, signal);
   const scoped = client.inRepository(repository);
   switch (command) {
     case 'doctor':
@@ -101,6 +101,12 @@ export async function execute(
       break;
   }
   throw new CliError('unknown_command');
+}
+function timed(args: Arguments, signal: AbortSignal): AbortSignal {
+  return AbortSignal.any([
+    signal,
+    AbortSignal.timeout(numericOption(args, 'timeout', 60000, 1, 3600000)),
+  ]);
 }
 function query(args: Arguments, names: readonly string[]): Record<string, string> {
   return Object.fromEntries(

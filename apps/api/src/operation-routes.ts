@@ -104,7 +104,7 @@ export function registerOperationRoutes(
             ? [...access.actions]
             : access.kind === 'repository-discovery'
               ? [access.action]
-              : access.kind === 'service-administration'
+              : access.kind === 'service-administration' || access.kind === 'system'
                 ? [access.action]
                 : [],
       });

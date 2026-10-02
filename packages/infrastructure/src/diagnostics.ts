@@ -93,6 +93,14 @@ export interface DiagnosticFields {
   revokedTokens?: number;
   revokedServiceKeys?: number;
   disabledPolicies?: number;
+  /** Unattended backups (ADR 0056): request kind, slot, retention and copy totals. */
+  kind?: string;
+  slotAt?: string;
+  copiedBytes?: string;
+  forgotten?: number;
+  freedBytes?: string;
+  damaged?: number;
+  points?: number;
 }
 export interface DiagnosticRecord extends DiagnosticFields {
   level: LogLevel;

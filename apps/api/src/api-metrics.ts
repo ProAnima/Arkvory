@@ -38,6 +38,11 @@ export interface MetricSources {
   readonly activeRequests: () => number;
   readonly diagnostics: Pick<DiagnosticLogger, 'counters'>;
   readonly jobs?: { backlog(): Promise<JobBacklog> };
+  /** Database-backed backup gauges with their own cache (ADR 0056). */
+  readonly backup?: {
+    refresh(failed: () => void): Promise<void>;
+    register(registry: MetricsRegistry): void;
+  };
   /** Monotonic milliseconds for durations and cache age. */
   readonly now: () => number;
   readonly startedAtSeconds: number;
@@ -90,6 +95,7 @@ export class ApiMetrics {
     this.registerTls();
     this.registerTransfers();
     this.registerJobs();
+    sources.backup?.register(this.registry);
   }
 
   observe(observed: ObservedResponse): void {
@@ -104,7 +110,12 @@ export class ApiMetrics {
   }
 
   async render(): Promise<string> {
-    await this.refreshBacklog();
+    await Promise.all([
+      this.refreshBacklog(),
+      this.sources.backup?.refresh(() => {
+        this.collectionFailures.inc({ collector: 'backup' });
+      }),
+    ]);
     return this.registry.render();
   }
 

@@ -13,7 +13,7 @@ export interface BackupTable {
 export const MINIMUM_RESTORE_SCHEMA = 25;
 
 /**
- * Every Arkvory table of schema 25 is either exported here, in foreign-key-safe load order, or
+ * Every Arkvory table of schema 26 is either exported here, in foreign-key-safe load order, or
  * excluded below with a reason. A migration that adds a table must extend one of the lists;
  * capture refuses an unlisted table and tests compare both lists with a migrated database.
  */
@@ -61,6 +61,13 @@ export const excludedTables: readonly ExcludedTable[] = [
   { name: 'arkvory_backup_jobs', reason: 'backup state of the source instance' },
   { name: 'arkvory_backup_pins', reason: 'backup state of the source instance' },
   { name: 'arkvory_backup_barrier', reason: 'backup state of the source instance' },
+  {
+    name: 'arkvory_backup_plan',
+    reason: 'backup schedule of the source; a restore starts with backups disabled',
+  },
+  { name: 'arkvory_backup_agent', reason: 'runtime ownership of the backup agent' },
+  { name: 'arkvory_backup_requests', reason: 'backup state of the source instance' },
+  { name: 'arkvory_backup_points', reason: 'catalog cache of the vault, rebuilt by the agent' },
 ];
 
 const identifier = /^[a-z_][a-z0-9_]{0,62}$/;

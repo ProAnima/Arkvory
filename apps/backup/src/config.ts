@@ -54,3 +54,31 @@ export function restoreReserveBytes(env: NodeJS.ProcessEnv): number {
     throw new BackupFailure('invalid_argument', 'Invalid ARKVORY_STORAGE_RESERVE_BYTES');
   }
 }
+
+/** The supervised agent: source configuration plus optional vault, bandwidth and polling. */
+export interface AgentConfig {
+  readonly source: SourceConfig;
+  /** Initialized vault directory, or null until an operator configures one. */
+  readonly vault: string | null;
+  /** Copy bandwidth cap; null is unlimited. */
+  readonly bytesPerSecond: number | null;
+  readonly pollSeconds: number;
+}
+
+/** 64 KiB/s up to 1 TB/s: below the floor a 4 TB first copy could never finish. */
+function bandwidth(raw: string | undefined): number | null {
+  if (raw === undefined || raw === '') return null;
+  if (!/^[1-9][0-9]{4,12}$/.test(raw) || Number(raw) < 65536)
+    throw new BackupFailure('invalid_argument', 'Invalid ARKVORY_BACKUP_BYTES_PER_SECOND');
+  return Number(raw);
+}
+
+export function agentConfig(env: NodeJS.ProcessEnv): AgentConfig {
+  const vault = env['ARKVORY_BACKUP_VAULT'];
+  return {
+    source: sourceConfig(env),
+    vault: vault === undefined || vault === '' ? null : vault,
+    bytesPerSecond: bandwidth(env['ARKVORY_BACKUP_BYTES_PER_SECOND']),
+    pollSeconds: bounded(env, 'ARKVORY_BACKUP_POLL_SECONDS', 15, 1, 3600),
+  };
+}

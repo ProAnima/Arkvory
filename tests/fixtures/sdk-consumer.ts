@@ -65,6 +65,8 @@ export type UnchangedKeys = Assert<
       | 'accountTokens'
       | 'revokeAccountToken'
       | 'securityAudit'
+      // ADR 0056: instance backups as the additive namespace `backup`.
+      | 'backup'
     >,
     keyof LegacyClient
   >

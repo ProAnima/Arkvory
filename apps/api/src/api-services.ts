@@ -11,6 +11,7 @@ import {
   RepositoryCleanup,
   ArtifactPromotion,
   PackageResolver,
+  BackupControl,
 } from '@proanima/arkvory-application';
 import {
   PostgresIdentity,
@@ -27,8 +28,13 @@ import {
   PostgresStages,
   PostgresPackageCandidates,
   PostgresPromotions,
+  PostgresBackupCatalog,
+  PostgresBackupPlan,
+  PostgresBackupRequests,
+  PostgresBackupStatus,
 } from '@proanima/arkvory-infrastructure';
 import { AuthThrottle } from './auth-throttle.js';
+import { BackupMetrics } from './backup-metrics.js';
 import type {
   LocalBlobStore,
   PostgresCatalog,
@@ -60,8 +66,22 @@ export function createApiServices(
   );
   const stages = new PostgresStages(catalog.pool);
   const jobs = new PostgresJobs(catalog.pool);
+  const backupStatus = new PostgresBackupStatus(catalog.pool);
+  const backupRequests = new PostgresBackupRequests(catalog.pool);
   return {
     jobs,
+    metricSources: {
+      jobs,
+      backup: new BackupMetrics(backupStatus, () => performance.now()),
+    },
+    backup: new BackupControl({
+      status: backupStatus,
+      plans: new PostgresBackupPlan(catalog.pool),
+      requests: backupRequests,
+      jobs: backupRequests,
+      catalog: new PostgresBackupCatalog(catalog.pool),
+      next: randomUUID,
+    }),
     promotion: new ArtifactPromotion(
       service,
       stages,

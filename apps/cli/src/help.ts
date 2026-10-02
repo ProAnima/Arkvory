@@ -37,6 +37,8 @@ ${ru ? 'КОМАНДЫ' : 'COMMANDS'}
   attachments get ID | history ID
   attachments set ID --revision N --file ATTACHMENTS.json
   storage usage | policy
+  backup status | run | jobs [--after CURSOR] | points [--after CURSOR]  ${ru ? 'Резервные копии экземпляра' : 'Instance backups'}
+  backup verify POINT_ID | pin POINT_ID [--off]  ${ru ? 'Глубокая проверка, закрепление' : 'Deep verification, pinning'}
 
 ${ru ? 'ОБЩИЕ ПАРАМЕТРЫ' : 'GLOBAL OPTIONS'}
   --profile NAME  --repository NAME  --json  --lang en|ru  --help  --version
@@ -58,7 +60,7 @@ ${ru ? 'ПРОДОЛЖЕНИЕ ПЕРЕДАЧИ' : 'RESUMING TRANSFERS'}
 ${ru ? 'КОДЫ ВЫХОДА' : 'EXIT CODES'}
   0 OK; 2 ${ru ? 'параметры' : 'usage'}; 3 ${ru ? 'доступ' : 'access'}; 4 HTTP/network/${ru ? 'перегрузка' : 'busy'};
   5 SHA-256/integrity_mismatch; 6 ${ru ? 'конфликт' : 'conflict'}; 7 ${ru ? 'локальная ошибка/протокол' : 'local/protocol error'};
-  8 ${ru ? 'лимит ёмкости (capacity_exceeded)' : 'capacity limit (capacity_exceeded)'}; 130 Ctrl+C
+  8 ${ru ? 'лимит ёмкости (capacity_exceeded)' : 'capacity limit (capacity_exceeded)'}; 9 ${ru ? 'backup status: критическое предупреждение' : 'backup status: critical warning'}; 130 Ctrl+C
   ${ru ? 'Ошибки сервера: code/reason, сообщение и ID запроса; --json добавляет details и retryAfterSeconds.' : 'Server errors show code/reason, message and request ID; --json adds details and retryAfterSeconds.'}
   ${ru ? 'JSON: результат — stdout, ошибки — stderr. Страницы возвращают next; используйте --after.' : 'JSON: result on stdout, errors on stderr. Pages return next; pass it using --after.'}
 

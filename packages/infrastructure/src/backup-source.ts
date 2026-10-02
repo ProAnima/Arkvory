@@ -30,7 +30,9 @@ export function backupPool(connectionString: string, max: number): BackupPool {
  * Session of one capture process. Lock order: 18471/4 shared (no offline repair while a capture
  * runs; workers and gateways hold it shared as well) → 18471/17 and 18471/20 shared (protocol
  * marks: without 17 online cleanup would treat this session as a legacy gateway) → 18471/19
- * exclusive (one capture per database). The writer lock is never taken: API and worker serve.
+ * exclusive (one capture per database) → 18471/21 shared (vault maintenance: retention prune
+ * holds it exclusively, ADR 0056). 19 and 21 are only tried, never awaited. The writer lock is
+ * never taken: API and worker serve.
  */
 export async function claimBackupSource(pool: Pool, storageId: string): Promise<StorageOwnership> {
   const client = await pool.connect();
@@ -49,12 +51,17 @@ export async function claimBackupSource(pool: Pool, storageId: string): Promise<
     );
     if (capture.rows[0]?.acquired !== true)
       throw new BackupFailure('busy', 'Another capture is running for this database');
+    const vault = await client.query<{ acquired: boolean }>(
+      'SELECT pg_try_advisory_lock_shared(18471,21) AS acquired',
+    );
+    if (vault.rows[0]?.acquired !== true)
+      throw new BackupFailure('busy', 'Backup retention is pruning the vault');
     const identity = await client.query<{ storage_id: string }>(
       'SELECT storage_id::text FROM arkvory_storage_identity WHERE singleton',
     );
     if (identity.rows[0]?.storage_id !== storageId)
       throw new BackupFailure('storage_mismatch', 'Database belongs to another storage directory');
-    await ownership.start([4, 17, 19, 20]);
+    await ownership.start([4, 17, 19, 20, 21]);
     return ownership;
   } catch (error) {
     await ownership.close();

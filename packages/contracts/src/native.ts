@@ -15,6 +15,7 @@ import { repositoryPaths } from './repositories.js';
 import { operationPaths } from './operations.js';
 import { promotionPaths } from './promotion-api.js';
 import { metricsPaths } from './metrics.js';
+import { backupPaths } from './backup-api.js';
 import type { ApiSurface } from './api-surfaces.js';
 export const descriptorSchema = {
   type: 'object',
@@ -235,6 +236,7 @@ const composed = composeApiPaths({
   ...storagePolicyPaths,
   ...cleanupPaths,
   ...updatePaths,
+  ...backupPaths,
   ['/api/v1/repositories/{repository}/artifacts/{id}']: {
     ...baseDocument.paths['/api/v1/repositories/{repository}/artifacts/{id}'],
     delete: deletionOperation,
@@ -243,7 +245,7 @@ const composed = composeApiPaths({
 export const apiOperations = composed.operations;
 export const openApiDocument = {
   ...baseDocument,
-  info: { ...baseDocument.info, title: 'ProAnima Arkvory API', version: '0.14.0' },
+  info: { ...baseDocument.info, title: 'ProAnima Arkvory API', version: '0.15.0' },
   components: {
     ...baseDocument.components,
     schemas: { NativeError: nativeErrorSchema },

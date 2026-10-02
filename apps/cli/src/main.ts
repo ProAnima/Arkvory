@@ -3,6 +3,7 @@ import { parseArguments } from './arguments.js';
 import { execute } from './commands.js';
 import { failure, failureText } from './errors.js';
 import { help } from './help.js';
+import { Rendered } from './backup-commands.js';
 
 const controller = new AbortController();
 const interrupt = () => {
@@ -32,7 +33,10 @@ try {
         `${args.language === 'ru' ? 'Передано' : 'Transferred'}: ${String(bytes)} / ${String(total)} B\n`,
       );
     });
-    console.log(JSON.stringify(result, null, json ? undefined : 2));
+    if (result instanceof Rendered) {
+      console.log(json ? JSON.stringify(result.json) : result.text(args.language));
+      process.exitCode = result.exitCode;
+    } else console.log(JSON.stringify(result, null, json ? undefined : 2));
   }
 } catch (error) {
   const result = failure(error, controller.signal.aborted);

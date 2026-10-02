@@ -1,5 +1,6 @@
-import { authorizeAction, ArkvoryError } from '@proanima/arkvory-domain';
+import { authorizeAction, ArkvoryError, grantedBackupPermissions } from '@proanima/arkvory-domain';
 import type {
+  BackupPermission,
   Principal,
   ServiceAction,
   ServiceDelegation,
@@ -20,6 +21,7 @@ export type ApiAccessRequirement =
         | 'pending-or-active-key';
     }
   | { kind: 'service-administration'; action: AdministrationAction }
+  | { kind: 'system'; action: BackupPermission }
   | { kind: 'repository-discovery'; resource: 'visible-repositories' | 'path.repository' }
   | {
       kind: 'repository';
@@ -52,6 +54,8 @@ export function operationVisible(
       return bootstrap || !!principal.managed;
     case 'pending-or-active-key':
       return !!principal.managed;
+    case 'system':
+      return grantedBackupPermissions(principal).includes(requirement.action);
     case 'service-administration':
       return (
         bootstrap ||

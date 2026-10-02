@@ -41,6 +41,7 @@ export function apiClassification(policy: OperationPolicy): {
       visibility = 'self';
       break;
     case 'administrator':
+    case 'system':
       visibility = 'administrator';
       break;
     case 'service-bootstrap':
@@ -59,6 +60,7 @@ export function apiClassification(policy: OperationPolicy): {
   let surface: ApiSurface;
   switch (policy.tag) {
     case 'Updates':
+    case 'Backups':
       surface = 'administration';
       break;
     case 'System':

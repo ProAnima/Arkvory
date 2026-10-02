@@ -2,6 +2,8 @@
 
 Управление установленным кодом: `GET/HEAD /api/v1/system/updates` и `POST /api/v1/system/updates/requests`. Surface administration, глобальный administrator, команды check/configure/apply с revision и UUID. SDK: `client.updates`. [Контракт, права и восстановление](UPDATES.md).
 
+Резервные копии экземпляра (B2, [ADR 0056](adr/0056-unattended-backups.md)): `/api/v1/backup/*`, surface administration, системные права `backup.read`/`backup.manage` (администратор учётных записей или файловый ключ владельца/bootstrap; ключи репозиториев — 403). Подробности — [раздел 1a](#1a-резервные-копии--реализовано). Схема БД 26.
+
 Области ответственности, уровни видимости, каталог операций текущего credential и SDK для удалённых клиентов реализованы: [API_SURFACES](API_SURFACES.md). `GET/HEAD /api/v1/operations` — authenticated, контекст repository необязателен, pagination до 100, advisory conditions. `GET/HEAD /api/v1/openapi.json?surface=…` — документационное представление. Актуальная схема БД — 17.
 
 Дата сверки: 2026-09-25, runtime со схемой 17. Это точка входа для интеграторов: **реализованные маршруты** ниже отделены от **проектируемых расширений**. Детальные JSON-схемы текущего сервера: `GET /api/v1/openapi.json` с действующим Bearer. OpenAPI сейчас 3.0.3; новую модель доступа описывает [API_ACCESS](API_ACCESS.md), порядок внедрения — [API_EVOLUTION](API_EVOLUTION.md).
@@ -42,6 +44,25 @@
 | PUT / DELETE `/api/v1/access-groups/{id}/grants/{repository}` | administrator                 | 204; access read/write либо снять grant                                             | `policy.manage` + разрешение делегировать конкретные actions/resources      |
 
 CORS: OPTIONS для `/api/v1/*` и `/health/ready` проверяет origin/method/headers без Bearer. Это не разрешение на саму операцию; см. [EXTERNAL_UI](EXTERNAL_UI.md). `/console/` — статический клиент, не API управления.
+
+## 1a. Резервные копии — реализовано
+
+Команды выполняет агент `arkvory-backup agent`; API ставит задания в очередь и читает состояние из БД, не принимает и не возвращает путей. Права проверяются до разбора входа. Байты — десятичные строки, время — ISO UTC. SDK: `client.backup`; CLI: `arkvoryctl backup`.
+
+| Метод и путь                             | Право           | Результат / условие                                                                                                                                      |
+| ---------------------------------------- | --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GET `/api/v1/backup/status`              | `backup.read`   | `vault {configured,id,available,freeBytes,totalBytes}`, `agent {online,lastSeenAt,version}`, `plan`, `lastCompleted`, `nextRunAt`, `running`, `warnings` |
+| GET `/api/v1/backup/plan`                | `backup.read`   | `{enabled,hour,minute,timezone,retention{daily,weekly,monthly},revision}`                                                                                |
+| PUT `/api/v1/backup/plan`                | `backup.manage` | Тело плана + `expectedRevision`; 200 план, 409 `revision_mismatch`, 400 `validation` с `details` (JSON Pointer)                                          |
+| POST `/api/v1/backup/runs`               | `backup.manage` | `Idempotency-Key` обязателен; 202 `{id,kind:'capture',state}`; повтор ключа — то же задание; 507 `queue_full` при 100 открытых                           |
+| POST `/api/v1/backup/points/{id}/verify` | `backup.manage` | `Idempotency-Key`; 202 `{id,kind:'verify',state}`, глубокая проверка; 404 для неизвестной точки; 409 `idempotency_mismatch` для ключа другой точки       |
+| POST `/api/v1/backup/retention/apply`    | `backup.manage` | `Idempotency-Key`; 202 `{id,kind:'retention',state}`                                                                                                     |
+| GET `/api/v1/backup/jobs?after&limit`    | `backup.read`   | `{items: Job[], next}`, новые первыми, limit 1–100 (50); Job `{id,kind,state,phase,startedAt,finishedAt,errorCode,pointId,progress}`                     |
+| GET `/api/v1/backup/points?after&limit`  | `backup.read`   | `{items: Point[], next}`, новейший T первым; Point `{id,snapshotAt,completedAt,blobs,contentBytes,newBytes,tables,rows,pinned,verifiedAt,verifyDepth,…}` |
+| PUT `/api/v1/backup/points/{id}/pin`     | `backup.manage` | `{pinned: boolean}` → Point; 404 для неизвестной или забытой точки                                                                                       |
+| GET `/api/v1/backup/retention/preview`   | `backup.read`   | `{keep: {id,reasons}[], delete: {id}[]}`; reasons `daily/weekly/monthly/pinned/newest`; рекомендательный, apply решает заново по vault                   |
+
+`state` задания: `queued|running|committing|completed|failed|interrupted`; `kind`: `capture|verify|retention`. `progress {bytesCopied,bytesTotal,blobsCopied,blobsTotal}`: для копии — обработанные (скопированные или уже имевшиеся в vault) байты и объекты, для проверки — проверенные, для retention — удалённые blob и освобождённые байты. Коды предупреждений и уровни — [CORE_RUNBOOK](CORE_RUNBOOK.md#резервные-копии-без-участия-оператора-b2). GET также доступны как HEAD.
 
 ## 2. Загрузки, задания и байты — реализовано
 

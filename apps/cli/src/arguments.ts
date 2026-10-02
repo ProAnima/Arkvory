@@ -6,7 +6,7 @@ export interface Arguments {
   readonly json: boolean;
   readonly language: 'en' | 'ru';
 }
-const flags = new Set(['json', 'help', 'version', 'move', 'prerelease', 'verbose']);
+const flags = new Set(['json', 'help', 'version', 'move', 'prerelease', 'verbose', 'off']);
 const values = new Set([
   'lang',
   'profile',

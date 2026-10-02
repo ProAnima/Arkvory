@@ -26,11 +26,13 @@ import type {
   Cancellation,
   CaptureVault,
   FileDigest,
-  ReadableVault,
+  MaintainedVault,
   StagedPoint,
+  VaultListing,
 } from '@proanima/arkvory-application';
 import { hasCode, syncDirectory } from './fs-durability.js';
 import { canonicalPath } from './vault-paths.js';
+import { forgetPoint, pruneVault, sharedContentBytes, vaultListing } from './vault-maintenance.js';
 import {
   VAULT_DIRECTORY_MODE,
   digestFile,
@@ -101,8 +103,11 @@ function pointFileParts(name: string): readonly string[] {
   throw new BackupFailure('unsafe_path', 'Unexpected point file name');
 }
 
-/** Built-in vault on a local disk or mounted NAS directory (ADR 0054); no encryption in B1. */
-export class FileVault implements CaptureVault, ReadableVault {
+/**
+ * Built-in vault on a local disk or mounted NAS directory (ADR 0054); no encryption in B1.
+ * Forget and prune (ADR 0056) run only under the exclusive vault lock of the caller.
+ */
+export class FileVault implements CaptureVault, MaintainedVault {
   private constructor(
     readonly root: string,
     private readonly options: FileVaultOptions,
@@ -274,6 +279,29 @@ export class FileVault implements CaptureVault, ReadableVault {
 
   readBlob(entry: InventoryEntry): AsyncIterable<Uint8Array> {
     return readExactly(this.blobPath(entry.id), entry.size);
+  }
+
+  listing(): Promise<VaultListing> {
+    return vaultListing(this);
+  }
+
+  sharedBytes(point: BackupManifest, previous: BackupManifest, cancellation: Cancellation) {
+    return sharedContentBytes(this, point, previous, cancellation);
+  }
+
+  forget(pointId: string): Promise<void> {
+    return forgetPoint(this, pointId);
+  }
+
+  prune(remaining: readonly BackupManifest[], cancellation: Cancellation) {
+    return pruneVault(this, remaining, cancellation);
+  }
+
+  /** Free and total bytes of the vault volume (statfs), for the agent heartbeat. */
+  async volume(): Promise<{ readonly freeBytes: bigint; readonly totalBytes: bigint }> {
+    await this.identity();
+    const volume = await statfs(this.root, { bigint: true });
+    return { freeBytes: volume.bavail * volume.bsize, totalBytes: volume.blocks * volume.bsize };
   }
 
   /** One directory rename publishes the point; a second publisher of the id sees `exists`. */

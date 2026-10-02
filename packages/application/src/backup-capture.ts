@@ -46,11 +46,22 @@ export const defaultCaptureLimits: CaptureLimits = {
   snapshotMilliseconds: 30 * 60 * 1000,
 };
 
+/** Content of the copy phase processed so far: copied or already present in the vault. */
+export interface CaptureCounters {
+  readonly bytesDone: bigint;
+  readonly bytesTotal: bigint;
+  readonly blobsDone: number;
+  readonly blobsTotal: number;
+}
 export interface CaptureEvent {
   readonly phase: BackupPhase;
   readonly jobId: string;
   readonly pointId: string;
   readonly attempt: number;
+  /** Fencing generation of the attempt; progress writes must match it. */
+  readonly generation: number;
+  /** Present during the copy phase, after each content object. */
+  readonly counters?: CaptureCounters;
 }
 export interface CaptureDependencies {
   readonly jobs: CaptureJobs;
@@ -73,6 +84,8 @@ export interface CaptureResult {
   readonly contentBytes: string;
   readonly copied: number;
   readonly reused: number;
+  /** Decimal bytes written to the vault by this capture (new content only). */
+  readonly copiedBytes: string;
   readonly tables: number;
   readonly rows: number;
 }
@@ -145,6 +158,7 @@ function fromManifest(outcome: CaptureResult['outcome'], manifest: BackupManifes
     contentBytes: manifest.inventory.contentBytes,
     copied: 0,
     reused: manifest.inventory.count,
+    copiedBytes: '0',
     tables: manifest.tables.length,
     rows: manifest.tables.reduce((sum, table) => sum + table.rows, 0),
   };
@@ -222,7 +236,7 @@ export class CaptureBackup {
     try {
       const startedAt = this.deps.identity.now();
       const exported = await this.exportSnapshot(lease, stage);
-      const copy = await this.copyContent(lease, stage);
+      const copy = await this.copyContent(lease, stage, exported.inventory);
       await this.enter(lease, 'manifest');
       const manifest = parseBackupManifest(
         manifestDocument({
@@ -362,21 +376,54 @@ export class CaptureBackup {
     this.checkDeadline(deadline);
   }
 
-  private async copyContent(lease: CaptureLease, stage: StagedPoint) {
+  private async copyContent(
+    lease: CaptureLease,
+    stage: StagedPoint,
+    inventory: { readonly count: number; readonly contentBytes: string },
+  ) {
     await this.enter(lease, 'blobs');
-    const totals = { copied: 0, reused: 0 };
+    const totals = { copied: 0, reused: 0, bytes: 0n };
+    const counters = {
+      bytesDone: 0n,
+      bytesTotal: BigInt(inventory.contentBytes),
+      blobsDone: 0,
+      blobsTotal: inventory.count,
+    };
+    this.report(lease, 'blobs', counters);
     for await (const line of stage.lines(INVENTORY_FILE, lease)) {
       lease.throwIfAborted();
       const entry = parseInventoryEntry(parseVaultJson(line));
+      const before = counters.bytesDone;
       // Content ids are immutable, so content stored by an earlier point is shared as is.
       if (await this.deps.vault.hasBlob(entry)) {
         totals.reused++;
-        continue;
+      } else {
+        const counted = this.counted(this.deps.content.read(entry), (bytes) => {
+          counters.bytesDone = before + bytes;
+          this.report(lease, 'blobs', counters);
+        });
+        await this.deps.vault.putBlob(entry, counted, lease);
+        totals.copied++;
+        totals.bytes += BigInt(entry.size);
       }
-      await this.deps.vault.putBlob(entry, this.deps.content.read(entry), lease);
-      totals.copied++;
+      counters.blobsDone++;
+      counters.bytesDone = before + BigInt(entry.size);
+      this.report(lease, 'blobs', counters);
     }
-    return totals;
+    return { copied: totals.copied, reused: totals.reused, copiedBytes: totals.bytes.toString() };
+  }
+
+  /** Reports the bytes of one object as they pass; consumers throttle what they persist. */
+  private async *counted(
+    source: AsyncIterable<Uint8Array>,
+    progress: (bytes: bigint) => void,
+  ): AsyncIterable<Uint8Array> {
+    let bytes = 0n;
+    for await (const chunk of source) {
+      yield chunk;
+      bytes += BigInt(chunk.byteLength);
+      progress(bytes);
+    }
   }
 
   private checkDeadline(deadline: number): void {
@@ -389,12 +436,14 @@ export class CaptureBackup {
     this.report(lease, phase);
   }
 
-  private report(lease: CaptureLease, phase: BackupPhase): void {
+  private report(lease: CaptureLease, phase: BackupPhase, counters?: CaptureCounters): void {
     this.deps.progress?.({
       phase,
       jobId: lease.jobId,
       pointId: lease.pointId,
       attempt: lease.attempt,
+      generation: lease.generation,
+      ...(counters ? { counters: { ...counters } } : {}),
     });
   }
 }

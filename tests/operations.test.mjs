@@ -35,7 +35,7 @@ test('all operations have one explicit responsibility and visibility; documentat
   }
   assert.deepEqual(found.sort(), apiOperations.map((o) => o.operationId).sort());
   assert.equal(new Set(found).size, found.length);
-  assert.equal(openApiDocument.info.version, '0.14.0');
+  assert.equal(openApiDocument.info.version, '0.15.0');
 });
 test('operation visibility keeps resource bindings, bootstrap, user admin and delegated actions independent', () => {
   const content = apiOperations.find((o) => o.operationId === 'putUploadContent').access;

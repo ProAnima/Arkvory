@@ -6,6 +6,7 @@ import {
   FileVault,
   LocalBlobStore,
   LocalContentSource,
+  PacedContentSource,
   PostgresBackupJobs,
   PostgresCapturePins,
   PostgresSnapshotSource,
@@ -84,9 +85,12 @@ export function captureDependencies(
     readonly config: SourceConfig;
     readonly release: { readonly version: string; readonly commit: string | null };
     readonly progress?: (event: CaptureEvent) => void;
+    /** Copy bandwidth cap of the agent (ARKVORY_BACKUP_BYTES_PER_SECOND); absent: unlimited. */
+    readonly bytesPerSecond?: number | null;
   },
 ): CaptureDependencies {
-  const { config } = options;
+  const { config, bytesPerSecond } = options;
+  const content = new LocalContentSource(source.blobs);
   return {
     jobs: new PostgresBackupJobs(source.pool, {
       owner: randomUUID(),
@@ -95,7 +99,7 @@ export function captureDependencies(
     barrier: new PostgresUnlinkBarrier(source.pool, { waitMs: config.barrierSeconds * 1000 }),
     pins: new PostgresCapturePins(source.pool),
     snapshots: new PostgresSnapshotSource(source.pool),
-    content: new LocalContentSource(source.blobs),
+    content: bytesPerSecond ? new PacedContentSource(content, bytesPerSecond) : content,
     vault,
     identity: { next: () => randomUUID(), now: () => new Date().toISOString() },
     release: options.release,

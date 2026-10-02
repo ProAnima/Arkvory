@@ -25,3 +25,8 @@ export type * from './backup-ports.js';
 export * from './backup-capture.js';
 export * from './backup-verify.js';
 export * from './backup-restore.js';
+export type * from './backup-control-ports.js';
+export type * from './backup-agent-ports.js';
+export * from './backup-control.js';
+export * from './backup-agent.js';
+export * from './backup-retention-apply.js';

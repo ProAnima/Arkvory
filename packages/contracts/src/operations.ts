@@ -3,6 +3,7 @@ import type { ApiSurface, ApiVisibility } from './api-surfaces.js';
 import { items, record, text } from './wire-values.js';
 import { servicePermissionNames } from './service-api.js';
 import { administrationPermissionNames } from './delegation-api.js';
+import { backupPermissionNames } from './backup-wire.js';
 import type { ApiMethod, OperationPolicy } from './operation-policy.js';
 
 const methods = ['get', 'head', 'post', 'put', 'patch', 'delete'] as const;
@@ -24,7 +25,11 @@ export const operationConditions = [
   'own-key',
 ] as const;
 export type OperationCondition = (typeof operationConditions)[number];
-const permissions = [...servicePermissionNames, ...administrationPermissionNames];
+const permissions = [
+  ...servicePermissionNames,
+  ...administrationPermissionNames,
+  ...backupPermissionNames,
+];
 export interface OperationDescriptor {
   operationId: string;
   method: ApiMethod;

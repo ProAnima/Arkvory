@@ -68,6 +68,7 @@ node ./arkvoryctl.mjs packages publish ./build.upack --state ./job-state/upload.
 | 6         | Конфликт ревизии, состояния, блокировки, существующий файл (`conflict`, 409) / Conflict                                       |
 | 7         | Локальный I/O или недопустимый протокол / Local I/O or protocol error                                                         |
 | 8         | Лимит ёмкости сервера: квота, диск, учётные записи, ключи, очередь (`capacity_exceeded`, 507) / Server capacity limit reached |
+| 9         | `backup status`: активно критическое предупреждение резервирования / A critical backup warning is active                      |
 | 130       | Прерывание / Interrupted                                                                                                      |
 
 Код выхода выбирается по `code` ответа сервера, а для ответа без конверта Arkvory (прокси) — по HTTP-статусу. Exit 8 введён в [ADR 0051](adr/0051-error-contract.md); раньше 507 и 422 давали 4. При 429/503 CLI печатает задержку из `Retry-After`; автоматически повторяются только сетевые сбои и 408/429/502/503/504 в пределах `--retries`.
@@ -87,6 +88,23 @@ CI should inject `ARKVORY_BASE_URL` and `ARKVORY_TOKEN_FILE` (or `ARKVORY_TOKEN`
 Успех возвращает `{ artifactId, package, checkpoint }` только после подтверждения регистрации. Это два шага, а не общая транзакция: при отказе регистрации загруженный артефакт сохраняется. JSON-ошибка содержит `stage: "register"`, `artifactId` и исходный exit code/HTTP status. Повторите **ту же команду с теми же параметрами**: checkpoint возвращает прежний upload, а повтор регистрации того же artifact ID идемпотентен. Потеря ответа после регистрации не создаёт новую версию. Конфликт другой публикации той же версии возвращает 409; она не перезаписывается.
 
 `packages publish FILE` uploads and registers an existing UPack archive. Keep the checkpoint and repeat the same command after interruption or a lost response. A registration error identifies the already uploaded artifact; it is not automatically deleted. The command succeeds only when both stages are confirmed. Archive creation and manifest editing remain separate operations.
+
+## Резервные копии / Backups
+
+Команды требуют системного права `backup.read` (`status`, `jobs`, `points`) или `backup.manage` (`run`, `verify`, `pin`): их имеет администратор учётных записей (сессия) или файловый ключ владельца/bootstrap; ключ репозитория получает 403 и exit 3. Выполняет копии агент сервера ([ADR 0056](adr/0056-unattended-backups.md)); CLI только ставит задания и читает состояние.
+
+| Команда                          | Результат                                                                                                   |
+| -------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `backup status`                  | Vault, агент, план, последняя точка, следующий запуск, текущее задание, предупреждения; exit 9 при critical |
+| `backup run`                     | Ставит копию; новый ключ идемпотентности на каждый вызов; вывод — задание `{id, kind, state}`               |
+| `backup jobs [--after CURSOR]`   | Задания новыми первыми; `next` для следующей страницы                                                       |
+| `backup points [--after CURSOR]` | Точки новейшим T первым: размер, проверка, закрепление                                                      |
+| `backup verify POINT_ID`         | Ставит глубокую проверку точки (читаются все байты)                                                         |
+| `backup pin POINT_ID [--off]`    | Закрепляет точку сверх retention или снимает закрепление                                                    |
+
+Без `--json` вывод — строки для человека на языке `--lang` (байты в двоичных единицах, время ISO UTC); с `--json` stdout содержит ровно объект ответа API (`BackupStatus`, `{items, next}`, задание или точку). Пример мониторинга: `arkvoryctl backup status --json || alert` — exit 9 означает активное critical-предупреждение (`agent_offline`, `backup_stale`, `vault_unavailable`, `verify_failed`), остальные коды — как в таблице выше.
+
+`backup status|run|jobs|points|verify ID|pin ID [--off]` reads and queues instance backups through `client.backup`; the server's backup agent executes them. Text output is human-readable, `--json` prints the API object. `backup status` exits 9 while a critical warning is active.
 
 ## Продвижение и выбор версии / Promotion and version selection
 

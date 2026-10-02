@@ -3,6 +3,7 @@ import type { BackupFailureCode } from '@proanima/arkvory-domain';
 
 export type BackupCommand =
   | { readonly kind: 'help' }
+  | { readonly kind: 'agent' }
   | { readonly kind: 'vault-init'; readonly vault: string }
   | { readonly kind: 'capture'; readonly vault: string; readonly idempotencyKey?: string }
   | { readonly kind: 'list'; readonly vault: string }
@@ -23,12 +24,15 @@ export type BackupCommand =
     };
 
 export const usage = `Usage: arkvory-backup <command>
+  agent                                    supervised service: schedule, requests, retention
   vault init <dir>                         create a vault in a new or empty directory
   capture --vault <dir> [--idempotency-key <key>]
   list --vault <dir>
   verify --vault <dir> [--point <id>] [--deep]
   restore --vault <dir> --point <id> --storage <dir> [--database-url <url>] [--yes] [--report <file>]
 Source configuration: ARKVORY_DATABASE_URL, ARKVORY_DATA_DIR (as for API and worker).
+Agent: ARKVORY_BACKUP_VAULT (initialized vault), ARKVORY_BACKUP_BYTES_PER_SECOND (copy cap),
+ARKVORY_BACKUP_POLL_SECONDS (15). SIGTERM/SIGINT stop it after the current phase (exit 0).
 Restore target database: --database-url or ARKVORY_RESTORE_DATABASE_URL (preferred: not in ps).
 Without --yes, restore only runs the read-only preflight. Exit codes: 0 ok, 1 failed,
 2 usage, 3 refused by a safety check, 4 integrity failure, 5 busy (retry later).`;
@@ -115,6 +119,9 @@ export function parseArguments(argv: readonly string[]): BackupCommand {
   const [command, ...rest] = argv;
   if (command === undefined || command === '--help' || command === 'help') return { kind: 'help' };
   switch (command) {
+    case 'agent':
+      if (rest.length) throw invalid('Usage: agent');
+      return { kind: 'agent' };
     case 'vault': {
       const [action, directory, ...extra] = rest;
       if (action !== 'init' || !directory || directory.startsWith('--') || extra.length)

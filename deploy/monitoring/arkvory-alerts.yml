@@ -86,3 +86,34 @@ groups:
         annotations:
           summary: The built-in HTTPS certificate has expired
           description: Clients reject the connection; install a renewed certificate.
+
+      - alert: ArkvoryBackupStale
+        # Age counts from snapshot T of the newest completed point; the daily plan allows 26 h.
+        expr: time() - arkvory_backup_last_success_timestamp_seconds > 26 * 3600
+        for: 15m
+        labels:
+          severity: critical
+        annotations:
+          summary: The newest Arkvory backup point is older than 26 hours
+          description: Check arkvoryctl backup status and jobs, the backup agent service and its backup.request.failed records.
+
+      - alert: ArkvoryBackupAgentOffline
+        expr: |
+          time() - arkvory_backup_agent_last_seen_timestamp_seconds > 120
+            or arkvory_backup_warnings{code="agent_offline"} == 1
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: The Arkvory backup agent has not sent a heartbeat for more than 2 minutes
+          description: Start or restart the arkvory-backup agent service; scheduled and requested backups wait until it runs.
+
+      - alert: ArkvoryBackupWarning
+        # Stale and offline have their own alerts; the remaining critical codes are listed here.
+        expr: max by (code) (arkvory_backup_warnings{code=~"vault_unavailable|verify_failed"}) == 1
+        for: 10m
+        labels:
+          severity: critical
+        annotations:
+          summary: Arkvory backups report {{ $labels.code }}
+          description: vault_unavailable - mount the vault volume of ARKVORY_BACKUP_VAULT for the agent; verify_failed - keep the vault unchanged and investigate the damaged point.

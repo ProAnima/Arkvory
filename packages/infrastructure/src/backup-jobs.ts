@@ -241,7 +241,7 @@ export class PostgresBackupJobs implements CaptureJobs {
       const done = await client.query(
         `UPDATE arkvory_backup_jobs SET state='completed', phase='done',
           completed_at=clock_timestamp(), lease_owner=NULL, lease_until=NULL,
-          updated_at=clock_timestamp()
+          bytes_copied=bytes_total, blobs_copied=blobs_total, updated_at=clock_timestamp()
          WHERE id=$1 AND generation=$2 AND state=ANY($3::text[])`,
         [lease.jobId, lease.generation, sources('completed')],
       );
@@ -262,4 +262,33 @@ export class PostgresBackupJobs implements CaptureJobs {
       if (failed.rowCount === 1) await releaseCapture(client, lease.jobId);
     });
   }
+}
+
+/**
+ * Copy progress of one capture attempt (schema 26). Informational: a write that finds another
+ * generation or a finished job changes nothing, and completion sets the final counters itself.
+ */
+export async function recordCaptureProgress(
+  pool: Pool,
+  attempt: { readonly jobId: string; readonly generation: number },
+  counters: {
+    readonly bytesDone: bigint;
+    readonly bytesTotal: bigint;
+    readonly blobsDone: number;
+    readonly blobsTotal: number;
+  },
+): Promise<void> {
+  await pool.query(
+    `UPDATE arkvory_backup_jobs SET bytes_copied=$3, bytes_total=$4, blobs_copied=$5,
+      blobs_total=$6, updated_at=clock_timestamp()
+     WHERE id=$1 AND generation=$2 AND state IN ('running','committing')`,
+    [
+      requireId(attempt.jobId),
+      attempt.generation,
+      counters.bytesDone.toString(),
+      counters.bytesTotal.toString(),
+      counters.blobsDone,
+      counters.blobsTotal,
+    ],
+  );
 }

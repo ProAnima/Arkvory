@@ -1,6 +1,8 @@
 import { storageOperations, attachmentOperations } from './storage-operation-policies.js';
 import { promotionOperations } from './promotion-api.js';
 import { accountAdministrationOperations } from './account-operation-policies.js';
+import { backupOperations } from './backup-api.js';
+import type { BackupPermissionName } from './backup-wire.js';
 import type { servicePermissionNames } from './service-api.js';
 import type { AdministrationPermission } from './delegation-api.js';
 type ServicePermission = (typeof servicePermissionNames)[number];
@@ -27,6 +29,7 @@ export interface OperationPolicy {
         legacy: 'own-nonempty-grants';
         invisible: 'omit' | 'not_found';
       }
+    | { kind: 'system'; action: BackupPermissionName }
     | {
         kind: 'service-administration';
         action: AdministrationPermission;
@@ -490,4 +493,6 @@ for (const [suffix, method, id, actions, legacy, retry] of promotionOperations)
   data(root + suffix, method, id, 'Catalog', actions, legacy, retry);
 for (const [path, method, id, actions, retry] of storageOperations)
   data(root + path, method, id, 'Catalog', actions, null, retry);
+for (const [path, method, id, action, retry] of backupOperations)
+  add(`/api/v1${path}`, method, id, 'Backups', { kind: 'system', action }, retry);
 export const operationPolicies: Readonly<typeof policies> = policies;

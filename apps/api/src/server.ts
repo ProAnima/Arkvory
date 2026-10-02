@@ -23,6 +23,7 @@ import { registerOwnershipRecovery } from './ownership-recovery.js';
 import { registerAccessLog } from './access-log.js';
 import { RequestDrain } from './drain.js';
 import { ApiMetrics, registerMetrics } from './api-metrics.js';
+import type { MetricSources } from './api-metrics.js';
 
 export interface ServerLifecycle {
   onOwnershipLost?: () => void;
@@ -61,6 +62,22 @@ function registerMaintenance(
       responses.close();
     },
     diagnostics,
+  });
+}
+
+/** Process clocks and sizes of the metrics; the server passes only its own sources. */
+function processMetrics(
+  sources: Pick<MetricSources, 'identity' | 'transfers' | 'diagnostics' | 'jobs' | 'backup'>,
+  activeRequests: () => number,
+  certificate: { readonly notAfterMs: number } | undefined,
+): ApiMetrics {
+  return new ApiMetrics({
+    ...sources,
+    activeRequests,
+    now: () => performance.now(),
+    startedAtSeconds: Math.round(Date.now() / 1000 - process.uptime()),
+    residentMemory: () => process.memoryUsage.rss(),
+    ...(certificate ? { tlsNotAfterMs: () => certificate.notAfterMs } : {}),
   });
 }
 
@@ -117,17 +134,11 @@ export async function createServer(config: ServerConfig, lifecycle: ServerLifecy
     // Observes every response, including rejections by the security hooks registered below.
     registerMetrics(
       app,
-      new ApiMetrics({
-        identity,
-        transfers: runtime.transfers,
-        activeRequests: () => drain.activeRequests,
-        diagnostics,
-        jobs: services.jobs,
-        now: () => performance.now(),
-        startedAtSeconds: Math.round(Date.now() / 1000 - process.uptime()),
-        residentMemory: () => process.memoryUsage.rss(),
-        ...(certificate ? { tlsNotAfterMs: () => certificate.notAfterMs } : {}),
-      }),
+      processMetrics(
+        { identity, transfers: runtime.transfers, diagnostics, ...services.metricSources },
+        () => drain.activeRequests,
+        certificate,
+      ),
       () => performance.now(),
     );
     registerCors(app, config.corsOrigins ?? []);

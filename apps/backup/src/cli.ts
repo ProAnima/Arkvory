@@ -19,6 +19,8 @@ import { runCapture } from './capture-command.js';
 import { runRestore } from './restore-command.js';
 import { runList, runVaultInit, runVerify } from './vault-commands.js';
 import type { CliContext } from './context.js';
+import { runAgent } from './agent.js';
+import { agentConfig } from './config.js';
 
 const hints: Partial<Record<BackupFailureCode, string>> = {
   vault_missing:
@@ -44,8 +46,20 @@ function level(env: NodeJS.ProcessEnv): { level: LogLevel; invalid: boolean } {
   }
 }
 
+async function runAgentCommand(context: CliContext): Promise<number> {
+  await runAgent({
+    config: agentConfig(context.env),
+    release: context.release,
+    logger: context.logger,
+    signal: context.signal,
+  });
+  return 0;
+}
+
 function dispatch(command: Exclude<BackupCommand, { kind: 'help' }>, context: CliContext) {
   switch (command.kind) {
+    case 'agent':
+      return runAgentCommand(context);
     case 'vault-init':
       return runVaultInit(command, context);
     case 'capture':
@@ -92,7 +106,7 @@ export async function runBackupCli(argv: readonly string[], env: NodeJS.ProcessE
       process.stdout.write(usage + '\n');
       return 0;
     }
-    return await dispatch(command, { logger, env, cancellation, release });
+    return await dispatch(command, { logger, env, cancellation, release, signal: stop.signal });
   } catch (error) {
     const failure = backupFailureOf(error);
     // Messages are constant texts of this code base; causes contribute identifiers only.

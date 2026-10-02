@@ -7,5 +7,7 @@ export interface CliContext {
   readonly env: NodeJS.ProcessEnv;
   /** Fails with `interrupted` after SIGINT/SIGTERM. */
   readonly cancellation: Cancellation;
+  /** Aborted by SIGINT/SIGTERM; the agent stops waiting on it. */
+  readonly signal: AbortSignal;
   readonly release: { readonly version: string; readonly commit: string | null };
 }

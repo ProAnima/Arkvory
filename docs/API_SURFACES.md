@@ -17,16 +17,16 @@
 
 ## Уровни видимости — без наследования полномочий
 
-| Visibility       | Что означает                                                                                                               |
-| ---------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| `public`         | Сам вызов не требует Bearer: liveness и обмен username/password на сессию. Каталог операций всё равно требует авторизацию. |
-| `authenticated`  | Общие сведения для действующего credential; не разрешение читать чужие ресурсы.                                            |
-| `self`           | Своя identity, сессия либо credential; дополнительные условия отражены в authorization metadata.                           |
-| `repository`     | Точные actions внутри одного репозитория.                                                                                  |
-| `owned-resource` | Те же actions плюс владелец upload/job/reference.                                                                          |
-| `delegated`      | Конкретный целевой service account, отдельные admin actions и ceiling; bootstrap остаётся явной альтернативой.             |
-| `bootstrap`      | Локально настроенное управление сервисными identities/delegations.                                                         |
-| `administrator`  | Управление пользовательскими учётными записями и группами.                                                                 |
+| Visibility       | Что означает                                                                                                                                               |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `public`         | Сам вызов не требует Bearer: liveness и обмен username/password на сессию. Каталог операций всё равно требует авторизацию.                                 |
+| `authenticated`  | Общие сведения для действующего credential; не разрешение читать чужие ресурсы.                                                                            |
+| `self`           | Своя identity, сессия либо credential; дополнительные условия отражены в authorization metadata.                                                           |
+| `repository`     | Точные actions внутри одного репозитория.                                                                                                                  |
+| `owned-resource` | Те же actions плюс владелец upload/job/reference.                                                                                                          |
+| `delegated`      | Конкретный целевой service account, отдельные admin actions и ceiling; bootstrap остаётся явной альтернативой.                                             |
+| `bootstrap`      | Локально настроенное управление сервисными identities/delegations.                                                                                         |
+| `administrator`  | Управление пользовательскими учётными записями и группами; системные права `backup.read`/`backup.manage` резервных копий (вид доступа `system`, ADR 0056). |
 
 Administrator не наследует download, bootstrap не становится пользовательским administrator, Publisher не наследует Reader. Managed account/key bindings пересекаются по **действию и тому же репозиторию**. Новые actions не включаются в старые read/write автоматически. Runtime use cases остаются источником решений; `x-arkvory-surface` и `x-arkvory-visibility` являются описанием, а не middleware авторизации.
 
