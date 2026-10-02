@@ -167,9 +167,11 @@ td .backup-secondary {
   flex-wrap: wrap;
   gap: var(--space-2);
 }
-/* Row actions change backups, so they keep full targets: 32 px for a mouse, 44 px for touch. */
+/* Row actions change backups, so they keep full targets: 32 px for a mouse, 44 px for touch.
+   The width floor matters for short labels ("Pin") with narrow fonts. */
 .backup-actions button {
   min-height: var(--control-height);
+  min-width: var(--control-height);
 }
 /* Column names inside cells serve the card layout of narrow screens only. */
 .backup-cell-label {
