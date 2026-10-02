@@ -18,3 +18,5 @@
 Экран Downloads использует portable SDK queue и OPFS staging с межвкладочной защитой Web Locks. Destination заменяется после проверки hash; пауза сохраняет checkpoint, отмена удаляет только staging. [Контракт](../../docs/DOWNLOAD_QUEUE.md).
 
 Карточка сборки: редактор metadata, свободные метки с подсказками, файлы-вложения с resumable upload, связями по ID, историей и восстановлением. [Сценарии и ограничения](../../docs/BUILD_DETAILS.md).
+
+Экран «Резервные копии» (`#/backups`) виден по operation discovery с `backup.read`: состояние и предупреждения, копия сейчас, точки, задания, план с CAS; опрос только при открытом задании. [Сценарии](../../docs/CONSOLE_UX.md#резервные-копии).

@@ -53,7 +53,7 @@ The RU/EN console includes direct catalog downloads, compact mobile navigation, 
 | Error codes with reasons and field details; request ID in UI and CLI  | Implemented; [error contract](docs/API_CONTRACTS.md), ADR 0051  |
 | Built-in HTTPS with certificate reload; reverse proxy still supported | Implemented; ADR 0055                                           |
 | Consistent backup to disk/NAS, verify, restore to an empty target     | Operator CLI, unencrypted vault; ADR 0054                       |
-| Scheduled backups, retention, warnings, backup API/SDK/CLI            | Backend and agent implemented (schema 26); UI pending; ADR 0056 |
+| Scheduled backups, retention, warnings, backup API/SDK/CLI            | Backend, agent and console screen working (schema 26); ADR 0056 |
 | Local CI lanes (Windows, Linux, systemd) and draft releases           | Implemented; [local pipeline](docs/CI.md), ADR 0053             |
 | Two-server replication, failover, global balancing                    | Design stage; lab validation deferred                           |
 
@@ -103,7 +103,7 @@ Administrators can create accounts and repository access groups. Users sign in w
 - Planned: short-lived transfer tokens scoped to an object and an action; current downloads require ordinary API authorization.
 - Archive validation, safe paths, and metadata size limits.
 - Recovery of intermediate operations, idempotent completion, and integrity checks.
-- Health/readiness and transfer diagnostics are implemented. A manual consistent backup of the database and blobs into a built-in vault, its verification and a restore into an empty target run through the operator CLI `npm run backup` (ADR 0054). The supervised agent `npm run backup -- agent` adds a daily schedule in an explicit time zone, retention with prune, verification, warnings and metrics; the API `/api/v1/backup`, SDK `client.backup` and `arkvoryctl backup` queue and observe its work (ADR 0056). Encryption, S3, the backup console section and service registration by installers remain [planned](docs/BACKUP_RECOVERY.md).
+- Health/readiness and transfer diagnostics are implemented. A manual consistent backup of the database and blobs into a built-in vault, its verification and a restore into an empty target run through the operator CLI `npm run backup` (ADR 0054). The supervised agent `npm run backup -- agent` adds a daily schedule in an explicit time zone, retention with prune, verification, warnings and metrics; the API `/api/v1/backup`, SDK `client.backup` and `arkvoryctl backup` queue and observe its work (ADR 0056); the console section "Backups" shows status and warnings, runs a backup or a full verification, pins points, applies retention after a preview and edits the plan, while restore stays an operator command ([console behavior](docs/CONSOLE_UX.md#резервные-копии)). Encryption, S3, the restore wizard and service registration by installers remain [planned](docs/BACKUP_RECOVERY.md).
 
 ## Architecture
 

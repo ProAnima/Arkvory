@@ -90,6 +90,8 @@
   --disclosure-open: 45deg;
   --indicator-width: 3px;
   --fact-min: 12rem;
+  --backup-zone-width: 20rem;
+  --confirm-details-max-height: 40dvh;
   --palette-white: #ffffff;
   --palette-ink: #17233b;
   --palette-slate: #53627a;
@@ -124,6 +126,7 @@
   --color-on-accent: var(--palette-white);
   --color-focus: #2463dc;
   --color-success: #196347;
+  --color-warning: #8f5200;
   --color-error: var(--palette-red);
   --color-info-bg: #eaf2ff;
   --color-selection: #c9e1ff;
@@ -157,6 +160,7 @@
   --color-on-accent: #102237;
   --color-focus: #79dff4;
   --color-success: #86ddbb;
+  --color-warning: #f2c46d;
   --color-error: var(--palette-rose);
   --color-info-bg: #1a2c44;
   --color-selection: #304b6e;

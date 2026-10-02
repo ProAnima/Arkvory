@@ -16,6 +16,7 @@ import { exerciseDeletion } from './deletion.mjs';
 import { exercisePromotion } from './promotion.mjs';
 import { exerciseErrorFeedback } from './errors.mjs';
 import { exerciseDesktopDensity } from './density.mjs';
+import { exerciseBackups } from './backups.mjs';
 import { chromium } from 'playwright';
 const browser = await chromium.launch({
   headless: true,
@@ -291,6 +292,8 @@ try {
   await exerciseDeletion(page, f);
   await exerciseStoragePolicy(page, f);
   await exerciseGuides(page, f);
+  // Before density: that pass then also measures the populated Backups screen.
+  await exerciseBackups(browser, origin, f);
   await exerciseDesktopDensity(browser, origin, f);
   // Last: it exhausts the sign-in budget of this server's loopback client.
   await exerciseErrorFeedback(browser, origin, f);

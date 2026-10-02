@@ -1,0 +1,310 @@
+/* Backups screen (ADR 0056): state is always text first; color and the dot only repeat it. */
+#backups-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-4);
+}
+.backup-summary > * + * {
+  margin-top: var(--space-4);
+}
+.backup-summary > .section-heading {
+  margin-bottom: 0;
+}
+.backup-state {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  border: var(--border-width) solid currentColor;
+  border-radius: var(--radius-pill);
+  background: var(--color-raised);
+  color: var(--color-muted);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  padding: var(--space-1) var(--space-3);
+}
+.backup-state::before {
+  content: '';
+  width: var(--dot-size);
+  height: var(--dot-size);
+  border-radius: var(--radius-pill);
+  background: currentColor;
+}
+.backup-state[data-state='ok'] {
+  color: var(--color-success);
+}
+.backup-state[data-state='warning'],
+[data-tone='warning'] {
+  color: var(--color-warning);
+}
+.backup-state[data-state='critical'] {
+  color: var(--color-error);
+}
+.backup-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--fact-min)), 1fr));
+  gap: var(--space-3) var(--space-5);
+  margin: 0;
+}
+.backup-facts dt {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: var(--help-target);
+  color: var(--color-muted);
+  font-size: var(--text-sm);
+}
+.backup-facts dd {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-1) var(--space-2);
+  min-width: 0;
+  margin: 0;
+  font-weight: var(--weight-semibold);
+  overflow-wrap: anywhere;
+}
+.backup-secondary {
+  flex-basis: 100%;
+  color: var(--color-muted);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-normal);
+}
+.backup-secondary:empty {
+  display: none;
+}
+td .backup-secondary {
+  display: block;
+  margin-top: var(--space-1);
+}
+.backup-flag {
+  border: var(--border-width) solid currentColor;
+  border-radius: var(--radius-pill);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  padding: 0 var(--space-2);
+}
+.backup-running {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-control);
+  background: var(--color-info-bg);
+  font-size: var(--text-sm);
+}
+.backup-running progress,
+.backup-progress progress {
+  margin: 0;
+}
+.backup-warnings {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.backup-warnings li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-3);
+  padding: var(--space-1) var(--space-3);
+  border: var(--border-width) solid var(--color-border);
+  border-inline-start: var(--indicator-width) solid var(--color-warning);
+  border-radius: var(--radius-control);
+  font-size: var(--text-sm);
+  overflow-wrap: anywhere;
+}
+.backup-warnings li[data-severity='critical'] {
+  border-inline-start-color: var(--color-error);
+}
+.backup-severity {
+  color: var(--color-warning);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+}
+[data-severity='critical'] > .backup-severity {
+  color: var(--color-error);
+}
+.backup-restore {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+}
+.backup-table td {
+  vertical-align: top;
+}
+.backup-chip {
+  display: inline-block;
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-pill);
+  color: var(--color-muted);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  padding: 0 var(--space-2);
+  white-space: nowrap;
+}
+.backup-chip[data-verify='structural'] {
+  color: var(--color-text);
+}
+.backup-chip[data-verify='deep'],
+.backup-job-state[data-state='completed'] {
+  color: var(--color-success);
+  border-color: currentColor;
+}
+.backup-chip[data-verify='failed'],
+.backup-job-state[data-state='failed'],
+.backup-job-state[data-state='interrupted'] {
+  color: var(--color-error);
+  border-color: currentColor;
+}
+.backup-table code {
+  display: block;
+  margin-top: var(--space-1);
+}
+.backup-actions .backup-cell-value {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+/* Row actions change backups, so they keep full targets: 32 px for a mouse, 44 px for touch. */
+.backup-actions button {
+  min-height: var(--control-height);
+}
+/* Column names inside cells serve the card layout of narrow screens only. */
+.backup-cell-label {
+  display: none;
+}
+.backup-progress {
+  min-width: var(--label-min);
+}
+.backup-plan,
+.backup-plan-fields {
+  display: grid;
+  gap: var(--space-4);
+  min-width: 0;
+}
+.backup-plan-fields {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.backup-plan-fields > .button-row {
+  justify-content: start;
+}
+.backup-plan-fields > .backup-enabled {
+  justify-self: start;
+}
+.backup-schedule {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: var(--space-2) var(--space-4);
+}
+.backup-schedule > label {
+  flex: 0 1 var(--label-min);
+}
+.backup-schedule > .backup-zone {
+  flex: 0 1 var(--backup-zone-width);
+}
+.backup-zone-facts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--control-height);
+}
+#backup-zone-offset {
+  margin-top: 0;
+}
+.backup-retention {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: var(--space-3);
+  min-width: 0;
+  margin: 0;
+  padding: var(--space-2) var(--space-4) var(--space-3);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-control);
+}
+.backup-retention legend {
+  padding-inline: var(--space-2);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+}
+.backup-retention label {
+  flex: 0 1 var(--label-min);
+}
+.confirm-details {
+  max-height: var(--confirm-details-max-height);
+  overflow-y: auto;
+}
+.backup-retention-preview {
+  display: grid;
+  gap: var(--space-3);
+}
+.backup-retention-preview h3 {
+  font-size: var(--text-base);
+}
+.backup-retention-preview ul {
+  display: grid;
+  gap: var(--space-1);
+  margin: var(--space-1) 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--text-sm);
+}
+.backup-retention-preview li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-2);
+}
+/* Phones: each row becomes a card of labelled values, without horizontal scrolling. */
+@media (max-width: 760px) {
+  .backup-table,
+  .backup-table tbody,
+  .backup-table td {
+    display: block;
+    min-width: 0;
+  }
+  .backup-table thead {
+    display: none;
+  }
+  .backup-table tr {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-2) var(--space-4);
+    padding: var(--space-3) 0;
+    border-bottom: var(--border-width) solid var(--color-border);
+  }
+  .backup-table td {
+    padding: 0;
+    border: 0;
+  }
+  .backup-table td.backup-actions,
+  .backup-table td.backup-progress {
+    grid-column: 1 / -1;
+  }
+  .backup-actions:not(:has(button:not([hidden]))) {
+    display: none;
+  }
+  .backup-cell-label {
+    display: block;
+    color: var(--color-muted);
+    font-size: var(--text-xs);
+  }
+  .backup-schedule > label,
+  .backup-schedule > .backup-zone,
+  .backup-retention label {
+    flex: 1 1 100%;
+  }
+}
+@media (forced-colors: active) {
+  .backup-state,
+  .backup-chip,
+  .backup-warnings li {
+    border: var(--border-width) solid CanvasText;
+  }
+}

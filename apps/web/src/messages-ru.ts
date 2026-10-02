@@ -5,6 +5,7 @@ import { interfaceRussian } from './interface-messages.js';
 import { guideRussian } from './guide-messages.js';
 import { cleanupRussian } from './cleanup-messages.js';
 import { updateRussian } from './update-messages.js';
+import { backupRussian } from './backup-messages.js';
 import { promotionRussian } from './promotion-messages.js';
 import { errorRussian } from './error-messages.js';
 import type { en } from './messages-en.js';
@@ -16,6 +17,7 @@ export const ru: Record<keyof typeof en, string> = {
   ...interfaceRussian,
   ...cleanupRussian,
   ...updateRussian,
+  ...backupRussian,
   ...promotionRussian,
   ...consoleRussian,
   storageTitle: 'Хранение и автоочистка',

@@ -5,6 +5,7 @@ import { interfaceEnglish } from './interface-messages.js';
 import { guideEnglish } from './guide-messages.js';
 import { cleanupEnglish } from './cleanup-messages.js';
 import { updateEnglish } from './update-messages.js';
+import { backupEnglish } from './backup-messages.js';
 import { promotionEnglish } from './promotion-messages.js';
 import { errorEnglish } from './error-messages.js';
 export const en = {
@@ -15,6 +16,7 @@ export const en = {
   ...interfaceEnglish,
   ...cleanupEnglish,
   ...updateEnglish,
+  ...backupEnglish,
   ...promotionEnglish,
   ...consoleEnglish,
   storageTitle: 'Storage & automatic cleanup',

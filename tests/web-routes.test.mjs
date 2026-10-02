@@ -7,6 +7,7 @@ test('console links map sections and artifacts without carrying other state', ()
   assert.deepEqual(parseRoute(''), { kind: 'empty' });
   assert.deepEqual(parseRoute('#/'), { kind: 'empty' });
   assert.deepEqual(parseRoute('#/packages'), { kind: 'view', view: 'packages' });
+  assert.deepEqual(parseRoute('#/backups'), { kind: 'view', view: 'backups' });
   assert.deepEqual(parseRoute('#help'), { kind: 'view', view: 'help' });
   assert.deepEqual(parseRoute('#onboarding'), { kind: 'view', view: 'onboarding' });
   assert.deepEqual(parseRoute('#/artifact/team%2Fa/01J%20X'), {

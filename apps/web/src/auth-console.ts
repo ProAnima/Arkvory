@@ -24,6 +24,7 @@ export interface AuthConsoleContext {
   administration: { show: () => void; refresh: () => Promise<void> };
   updates: { connect: (admin: boolean) => void };
   management: { connect: () => Promise<void> };
+  backups: { connect: () => Promise<void> };
   userTokens: { show: () => void; hide: () => void; refresh: () => Promise<void> };
   session: (credential: Credential) => void;
   routes: { pending: () => boolean; restore: (ready: Promise<void>) => Promise<void> };
@@ -59,6 +60,11 @@ const passwordFields = {
   '/currentPassword': 'current-password',
   '/newPassword': 'own-new-password',
 };
+
+/** Restricted screens appear once both management and backup permissions are known. */
+async function connectManagement(ctx: AuthConsoleContext): Promise<void> {
+  await Promise.all([ctx.management.connect(), ctx.backups.connect()]);
+}
 
 function signedOut(ctx: AuthConsoleContext) {
   ctx.downloads.reset();
@@ -123,7 +129,7 @@ function createAuthSessionHandler(ctx: AuthConsoleContext): AuthHandler {
       ctx.isRepositoryEdited(),
     );
     ctx.updates.connect(me.administrator);
-    const managed = ctx.management.connect();
+    const managed = connectManagement(ctx);
     element('change-password', HTMLFormElement).hidden = false;
     ctx.userTokens.show();
     void ctx.userTokens.refresh();
@@ -158,7 +164,7 @@ function bindSessionLifecycle(ctx: AuthConsoleContext): void {
       ctx.session(session ? 'session' : 'key');
       if (me.administrator) ctx.administration.show();
       ctx.updates.connect(me.administrator);
-      const managed = ctx.management.connect();
+      const managed = connectManagement(ctx);
       element('change-password', HTMLFormElement).hidden = !session;
       if (session) {
         ctx.userTokens.show();

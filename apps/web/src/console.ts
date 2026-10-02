@@ -22,6 +22,7 @@ import { installPromotionPanel } from './promotion-panel.js';
 import { installArtifactSummary } from './artifact-summary.js';
 import { installDownloads } from './downloads.js';
 import { installUpdates } from './updates.js';
+import { installBackups } from './backups.js';
 import { installUploadControls } from './upload-controls.js';
 import { installUserTokens } from './user-tokens.js';
 import { installAuthConsole } from './auth-console.js';
@@ -62,6 +63,7 @@ const management = new ManagementConsole(apiBaseUrl, token, (id, storage) => {
     if (administrator) administration.show();
     updates.connect(administrator);
     void management.connect();
+    void backups.connect();
   });
 });
 const repositoryStorage = installRepositoryStorage(client);
@@ -94,6 +96,7 @@ const repositoryOptions = element('repository-options', HTMLElement);
 // Bound after sign-in handling is installed; only password sessions can expire in place.
 let expireSession: (error: unknown) => boolean = () => false;
 const run = consoleRunner(output, (error) => expireSession(error));
+const backups = installBackups(apiBaseUrl, token, (error) => expireSession(error));
 const summary = installArtifactSummary(client, output);
 const promotion = installPromotionPanel(client, run, () => {
   clearSelection();
@@ -174,6 +177,7 @@ function clearCatalog() {
   administration.clear();
   updates.clear();
   management.clear();
+  backups.clear();
   element('change-password', HTMLFormElement).hidden = true;
   if (!element('administration-panel', HTMLElement).hidden) showView('catalog');
 }
@@ -285,6 +289,7 @@ const auth = installAuthConsole({
   downloads,
   administration,
   updates,
+  backups,
   management,
   userTokens,
   session: (credential) => {

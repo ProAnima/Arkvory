@@ -18,6 +18,8 @@ export async function exerciseDesktopDensity(browser, origin, f) {
     await connectWithKey(page, f.headers.authorization.slice(7));
     await page.locator('#connection-state[data-connected=true]').waitFor();
     await page.locator('#artifacts tr').first().waitFor();
+    // Restricted screens appear after permission discovery; the owner key sees Backups too.
+    await page.locator('#backups-nav').waitFor();
     // The page title shares the top bar with the primary action and preferences.
     assert.equal(await page.locator('.topbar #page-title').count(), 1);
     const control = await page.locator('#query').boundingBox();

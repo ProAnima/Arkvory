@@ -2,6 +2,7 @@ import { isMessageKey, translate } from './messages.js';
 import type { MessageKey, Language } from './messages.js';
 import { languagePreference, readPreference, savePreference } from './preferences.js';
 import { presentAction } from './action-presentation.js';
+import { relativeParts } from './relative-time.js';
 let language: Language = languagePreference(readPreference('language'), navigator.language);
 function text(node: HTMLElement, value: string) {
   // Progress updates must not replace unchanged live-region text or disturb text selection.
@@ -37,14 +38,30 @@ function render(node: HTMLElement) {
   const bytes = node.dataset['bytes'];
   if (bytes) text(node, formatBytes(language, Number(bytes)));
   const date = node.dataset['date'];
-  if (date)
-    text(
-      node,
-      new Intl.DateTimeFormat(language, {
-        dateStyle: 'medium',
-        timeStyle: 'short',
-      }).format(new Date(date)),
-    );
+  if (date) text(node, formatDate(new Date(date), node.dataset['dateZone']));
+  const relative = node.dataset['relative'];
+  if (relative) {
+    // The age is computed at render time; the exact local time stays available on hover.
+    const at = new Date(relative);
+    const { value, unit } = relativeParts(at.getTime(), Date.now());
+    text(node, new Intl.RelativeTimeFormat(language, { numeric: 'auto' }).format(value, unit));
+    attribute(node, 'title', formatDate(at, undefined));
+  }
+}
+/** Local medium date and short time; an explicit zone (e.g. UTC) is named in the text. */
+function formatDate(date: Date, zone: string | undefined) {
+  const options: Intl.DateTimeFormatOptions = zone
+    ? {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        timeZone: zone,
+        timeZoneName: 'short',
+      }
+    : { dateStyle: 'medium', timeStyle: 'short' };
+  return new Intl.DateTimeFormat(language, options).format(date);
 }
 export function message(
   node: HTMLElement,
@@ -84,16 +101,26 @@ export function bytesMessage(node: HTMLElement, bytes: number | string) {
   attribute(node, 'data-bytes', String(bytes));
   render(node);
 }
-export function dateMessage(node: HTMLElement, date: string) {
+export function dateMessage(node: HTMLElement, date: string, zone?: string) {
   attribute(node, 'data-date', date);
+  if (zone) attribute(node, 'data-date-zone', zone);
+  else node.removeAttribute('data-date-zone');
+  render(node);
+}
+/** "5 minutes ago" in the current language, with the exact local time as the hover title. */
+export function relativeMessage(node: HTMLElement, date: string) {
+  attribute(node, 'data-relative', date);
   render(node);
 }
 export function clearMessage(node: HTMLElement) {
   // Remove translation state too, so a language change cannot resurrect a cleared result.
+  if (node.dataset['relative']) node.removeAttribute('title');
   for (const name of Object.keys(node.dataset))
     if (
       name === 'i18n' ||
       name === 'date' ||
+      name === 'dateZone' ||
+      name === 'relative' ||
       name === 'bytes' ||
       name === 'tone' ||
       name === 'byteParams' ||
@@ -110,7 +137,7 @@ export function setLanguage(value: Language) {
   language = value;
   document.documentElement.lang = language;
   for (const node of document.querySelectorAll<HTMLElement>(
-    '[data-i18n], [data-i18n-placeholder], [data-i18n-label], [data-date], [data-bytes]',
+    '[data-i18n], [data-i18n-placeholder], [data-i18n-label], [data-date], [data-bytes], [data-relative]',
   ))
     render(node);
   savePreference('language', language);

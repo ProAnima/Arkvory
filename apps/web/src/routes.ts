@@ -5,6 +5,7 @@ export const views = [
   'packages',
   'administration',
   'updates',
+  'backups',
   'upload',
   'downloads',
   'history',

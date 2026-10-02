@@ -135,6 +135,19 @@
           </svg>
           <span data-i18n="updates">Обновления</span>
         </button>
+        <button
+          type="button"
+          data-nav="backups"
+          aria-controls="backups-panel"
+          id="backups-nav"
+          hidden
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <ellipse cx="12" cy="5" rx="8" ry="3" />
+            <path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3" />
+          </svg>
+          <span data-i18n="backups">Резервные копии</span>
+        </button>
         <button type="button" data-nav="onboarding" aria-controls="onboarding-panel">
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path d="M12 8v4l3 2" />
@@ -476,6 +489,267 @@
             </form>
           </div>
         </section>
+        <section id="backups-panel" data-view="backups" aria-labelledby="page-title" hidden>
+          <div id="backup-summary" class="card padded backup-summary">
+            <div class="section-heading">
+              <span
+                id="backup-state"
+                class="backup-state"
+                data-state="unknown"
+                data-i18n="backupStateLoading"
+                >Загружаем состояние…</span
+              >
+              <div class="button-row">
+                <button
+                  id="backup-refresh"
+                  class="secondary"
+                  type="button"
+                  data-i18n="backupRefresh"
+                >
+                  Обновить состояние
+                </button>
+                <button id="backup-run" class="primary" type="button" data-i18n="backupRun" hidden>
+                  Создать копию сейчас
+                </button>
+              </div>
+            </div>
+            <dl class="backup-facts">
+              <div>
+                <dt>
+                  <span data-i18n="backupNewest">Последняя копия</span>
+                  <span
+                    class="hint"
+                    data-i18n="backupNewestHelp"
+                    data-help="backupNewestHelpLabel"
+                  ></span>
+                </dt>
+                <dd><time id="backup-newest">—</time></dd>
+              </div>
+              <div>
+                <dt data-i18n="backupNextRun">Следующий запуск</dt>
+                <dd>
+                  <span id="backup-next">—</span>
+                  <span
+                    id="backup-overdue"
+                    class="backup-flag"
+                    data-tone="error"
+                    data-i18n="backupOverdue"
+                    hidden
+                    >Просрочен</span
+                  >
+                  <span id="backup-next-utc" class="backup-secondary"></span>
+                </dd>
+              </div>
+              <div>
+                <dt data-i18n="backupAgent">Агент копирования</dt>
+                <dd>
+                  <span id="backup-agent">—</span>
+                  <span class="backup-secondary"
+                    ><span id="backup-agent-seen-label" data-i18n="backupAgentSeen" hidden
+                      >Последний сигнал</span
+                    >
+                    <time id="backup-agent-seen"></time>
+                    <span id="backup-agent-version"></span
+                  ></span>
+                </dd>
+              </div>
+              <div>
+                <dt data-i18n="backupVault">Хранилище копий</dt>
+                <dd id="backup-vault">—</dd>
+              </div>
+            </dl>
+            <div id="backup-running" class="backup-running" hidden>
+              <p aria-live="polite">
+                <span id="backup-running-label" data-i18n="backupRunningLabel"
+                  >Сейчас выполняется</span
+                >
+                <span id="backup-running-kind"></span> · <span id="backup-running-phase"></span>
+              </p>
+              <progress
+                id="backup-running-progress"
+                max="100"
+                aria-labelledby="backup-running-label backup-running-bytes"
+                hidden
+              ></progress>
+              <span id="backup-running-bytes" class="backup-secondary"></span>
+            </div>
+            <ul
+              id="backup-warnings"
+              class="backup-warnings"
+              data-i18n-label="backupWarningsLabel"
+              aria-label="Предупреждения о копиях"
+              hidden
+            ></ul>
+            <div class="backup-restore">
+              <span class="hint" data-i18n="backupRestoreNote"
+                >Восстановление выполняет оператор на сервере — в пустую цель.</span
+              >
+              <span
+                class="hint"
+                data-i18n="backupRestoreHelp"
+                data-help="backupRestoreHelpLabel"
+              ></span>
+            </div>
+            <output id="backup-status" aria-live="polite"></output>
+          </div>
+          <div class="card padded">
+            <div class="section-heading">
+              <div class="inline">
+                <h2 data-i18n="backupPoints">Точки восстановления</h2>
+                <span
+                  class="hint"
+                  data-i18n="backupPointsHelp"
+                  data-help="backupPointsHelpLabel"
+                ></span>
+              </div>
+              <button
+                id="backup-retention"
+                class="secondary"
+                type="button"
+                data-i18n="backupRetentionApply"
+                hidden
+              >
+                Применить хранение
+              </button>
+            </div>
+            <div class="table" tabindex="0" role="region" data-i18n-label="tableRegion">
+              <table class="backup-table">
+                <thead>
+                  <tr>
+                    <th scope="col" data-i18n="backupSnapshot">Состояние на (T)</th>
+                    <th scope="col" data-i18n="backupCompleted">Завершена</th>
+                    <th scope="col" data-i18n="backupSize">Объём</th>
+                    <th scope="col" data-i18n="backupFiles">Файлы</th>
+                    <th scope="col" data-i18n="backupVerification">Проверка</th>
+                    <th scope="col" data-i18n="backupPinnedColumn">Закрепление</th>
+                    <th scope="col" data-i18n="actions">Действия</th>
+                  </tr>
+                </thead>
+                <tbody id="backup-points"></tbody>
+              </table>
+            </div>
+            <p id="backup-points-empty" class="hint" data-i18n="backupPointsEmpty" hidden>
+              В текущем хранилище копий ещё нет точек восстановления.
+            </p>
+            <div class="table-footer">
+              <output id="backup-points-status" aria-live="polite"></output>
+              <button
+                id="backup-points-more"
+                class="secondary"
+                type="button"
+                data-i18n="more"
+                hidden
+              >
+                Ещё
+              </button>
+            </div>
+          </div>
+          <div class="card padded">
+            <div class="section-heading">
+              <div class="inline">
+                <h2 data-i18n="backupJobs">Задания</h2>
+                <span
+                  class="hint"
+                  data-i18n="backupJobsHelp"
+                  data-help="backupJobsHelpLabel"
+                ></span>
+              </div>
+            </div>
+            <div class="table" tabindex="0" role="region" data-i18n-label="tableRegion">
+              <table class="backup-table">
+                <thead>
+                  <tr>
+                    <th scope="col" data-i18n="backupJobKind">Задание</th>
+                    <th scope="col" data-i18n="backupJobState">Состояние</th>
+                    <th scope="col" data-i18n="backupJobPhase">Этап</th>
+                    <th scope="col" data-i18n="backupJobStarted">Начато</th>
+                    <th scope="col" data-i18n="backupJobFinished">Закончено</th>
+                    <th scope="col" data-i18n="backupJobError">Код ошибки</th>
+                    <th scope="col" data-i18n="backupJobProgress">Прогресс</th>
+                  </tr>
+                </thead>
+                <tbody id="backup-jobs"></tbody>
+              </table>
+            </div>
+            <p id="backup-jobs-empty" class="hint" data-i18n="backupJobsEmpty" hidden>
+              Заданий ещё не было.
+            </p>
+            <div class="table-footer">
+              <button id="backup-jobs-more" class="secondary" type="button" data-i18n="more" hidden>
+                Ещё
+              </button>
+            </div>
+          </div>
+          <div class="card padded">
+            <div class="section-heading">
+              <div class="inline">
+                <h2 data-i18n="backupPlan">Расписание и хранение</h2>
+                <span
+                  class="hint"
+                  data-i18n="backupPlanHelp"
+                  data-help="backupPlanHelpLabel"
+                ></span>
+              </div>
+            </div>
+            <form id="backup-plan" class="backup-plan">
+              <fieldset id="backup-plan-fields" class="backup-plan-fields" disabled>
+                <label class="backup-enabled"
+                  ><span data-i18n="backupEnabled">Копировать ежедневно по расписанию</span
+                  ><input id="backup-enabled" type="checkbox"
+                /></label>
+                <div class="backup-schedule">
+                  <label
+                    ><span data-i18n="backupTime">Местное время</span
+                    ><input id="backup-time" type="time" step="60" required
+                  /></label>
+                  <label class="backup-zone"
+                    ><span data-i18n="backupTimezone">Часовой пояс (IANA)</span
+                    ><input
+                      id="backup-timezone"
+                      list="backup-zones"
+                      required
+                      maxlength="64"
+                      autocomplete="off"
+                      spellcheck="false"
+                      aria-describedby="backup-zone-offset"
+                      data-i18n-placeholder="backupTimezonePlaceholder"
+                      placeholder="например, Europe/Moscow" /><datalist id="backup-zones"></datalist
+                  ></label>
+                  <div class="backup-zone-facts">
+                    <output id="backup-zone-offset" class="hint"></output>
+                    <button id="backup-zone-browser" class="ghost" type="button" hidden></button>
+                  </div>
+                </div>
+                <fieldset class="backup-retention">
+                  <legend data-i18n="backupRetentionLegend">
+                    Хранить новейшую точку за последние
+                  </legend>
+                  <label
+                    ><span data-i18n="backupDaily">Дней</span
+                    ><input id="backup-daily" type="number" min="0" max="366" step="1" required
+                  /></label>
+                  <label
+                    ><span data-i18n="backupWeekly">Недель</span
+                    ><input id="backup-weekly" type="number" min="0" max="260" step="1" required
+                  /></label>
+                  <label
+                    ><span data-i18n="backupMonthly">Месяцев</span
+                    ><input id="backup-monthly" type="number" min="0" max="120" step="1" required
+                  /></label>
+                </fieldset>
+                <div class="button-row">
+                  <button id="backup-plan-save" class="primary" data-i18n="backupPlanSave">
+                    Сохранить план
+                  </button>
+                </div>
+              </fieldset>
+              <p id="backup-read-only" class="hint" data-i18n="backupReadOnly" hidden>
+                Изменение копий требует права управления резервным копированием.
+              </p>
+              <output id="backup-plan-status" aria-live="polite"></output>
+            </form>
+          </div>
+        </section>
         <dialog
           id="action-confirm"
           class="management-dialog"
@@ -484,6 +758,7 @@
         >
           <h2 id="action-confirm-title" data-i18n="managementConfirm">Подтверждение действия</h2>
           <p id="action-confirm-text"></p>
+          <div id="action-confirm-details" class="confirm-details" hidden></div>
           <div class="management-actions">
             <button
               id="action-confirm-cancel"

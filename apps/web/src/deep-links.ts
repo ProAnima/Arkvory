@@ -11,6 +11,7 @@ const restricted: Partial<Record<View, string>> = {
   repositories: 'repositories-nav',
   services: 'services-nav',
   updates: 'updates-nav',
+  backups: 'backups-nav',
 };
 
 export interface DeepLinkContext {
