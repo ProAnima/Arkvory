@@ -94,6 +94,17 @@ SELECT id, action, outcome FROM arkvory_security_audit WHERE request_id = '<requ
 
 Метрики: `GET /health/metrics` с любым действующим ключом или сессией (как `/health/ready`; без credential — 401), Prometheus text 0.0.4, вне бюджета запросов, работает во время drain. Пример `scrape_config`: `metrics_path: /health/metrics`, `authorization: { credentials_file: /etc/prometheus/arkvory.token }`; используйте отдельный сервисный ключ без прав на репозитории. Метрики: `arkvory_http_requests_total` и `arkvory_http_request_duration_seconds` (метки `method`, `route` — шаблон, `status_class`), `arkvory_http_request_bytes_total`/`arkvory_http_response_bytes_total`, `arkvory_http_requests_in_flight`, `arkvory_transfer_active`/`arkvory_transfer_queue_depth`/`arkvory_transfer_admission_failures_total` (`direction`), `arkvory_completion_jobs` (`state=queued|running`, из БД, кеш 5 с), `arkvory_completion_oldest_queued_seconds`, `arkvory_diagnostic_records_total` (`outcome`), `arkvory_build_info`, `arkvory_process_start_time_seconds`, `arkvory_process_resident_memory_bytes`, при встроенном HTTPS — `arkvory_tls_certificate_expiry_timestamp_seconds`. p95/p99 считаются в Prometheus, например `histogram_quantile(0.99, sum by (le, route) (rate(arkvory_http_request_duration_seconds_bucket[5m])))`. Значения принадлежат процессу и сбрасываются при перезапуске; у worker нет HTTP-порта, исходы задач видны по строкам `completion.*`.
 
+Готовые правила алертов: [deploy/monitoring/arkvory-alerts.yml](../deploy/monitoring/arkvory-alerts.yml). В них:
+
+- недоступность API и доля ответов 5xx;
+- p99 запросов каталога и управления (передача файлов исключена);
+- ожидание задач завершения больше 10 минут;
+- отказы и тайм-ауты допуска передач;
+- потерянные строки журнала и сбои сбора метрик из БД;
+- окончание срока встроенного сертификата.
+
+Правила подключаются через `rule_files:`, а scrape job должен называться `arkvory`. Пороги стартовые, их нужно уточнить по измеренному трафику. `tests/monitoring-rules.test.mjs` проверяет, что каждое правило ссылается только на реально выдаваемые метрики. Место на томе хранилища и PostgreSQL контролируйте node_exporter и postgres_exporter.
+
 Deploy CLI печатает строки `<ISO-8601> INFO|WARN|ERROR <текст>` с одним редактором секретов. Планировщик обновлений Windows пишет вывод в `logs/updater.log` установки (ротация 20 MiB × 5); на Linux вывод `arkvory-update.service` собирает journald.
 
 ## Пользователи и группы

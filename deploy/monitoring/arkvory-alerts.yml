@@ -1,0 +1,88 @@
+# Prometheus alerting rules for ProAnima Arkvory (`GET /health/metrics`).
+# Load with `rule_files:` in prometheus.yml; the scrape job must be named "arkvory".
+# Thresholds are starting points for a Standalone server: tune them to measured traffic.
+groups:
+  - name: arkvory
+    rules:
+      - alert: ArkvoryDown
+        expr: up{job="arkvory"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: Arkvory API is not answering metrics scrapes
+          description: Check the arkvory-api service, its startup.failed log record and the TLS or proxy path.
+
+      - alert: ArkvoryHighServerErrorRate
+        expr: |
+          sum(rate(arkvory_http_requests_total{status_class="5xx"}[10m]))
+            / clamp_min(sum(rate(arkvory_http_requests_total[10m])), 0.001) > 0.05
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: More than 5% of Arkvory responses are server errors
+          description: Correlate requestId in http.access and 5xx diagnostics; storage_full and dependency_unavailable point to disk or PostgreSQL.
+
+      - alert: ArkvorySlowMetadataRequests
+        # Transfers of large files are excluded: their duration follows object size, not health.
+        expr: |
+          histogram_quantile(0.99,
+            sum by (le) (rate(arkvory_http_request_duration_seconds_bucket{route!~".*(content|parts).*"}[10m]))
+          ) > 2
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: p99 latency of Arkvory catalog and control requests is above 2 s
+          description: Check PostgreSQL load, completion backlog and admission queues.
+
+      - alert: ArkvoryCompletionBacklog
+        expr: arkvory_completion_oldest_queued_seconds > 600
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: An upload completion job has waited more than 10 minutes
+          description: The worker may be stopped or failing; see completion.* and worker.unavailable records.
+
+      - alert: ArkvoryTransferAdmissionRejections
+        expr: sum by (direction) (rate(arkvory_transfer_admission_failures_total{reason!="cancelled"}[10m])) > 0.1
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: Arkvory keeps rejecting or timing out {{ $labels.direction }} transfers
+          description: Clients wait for capacity; review ARKVORY_MAX_UPLOADS/DOWNLOADS, queue limits and per-principal caps.
+
+      - alert: ArkvoryDiagnosticsDropped
+        expr: increase(arkvory_diagnostic_records_total{outcome="dropped"}[15m]) > 0
+        labels:
+          severity: warning
+        annotations:
+          summary: Arkvory dropped log records under stdout backpressure
+          description: The log collector is not keeping up; incident evidence may be missing.
+
+      - alert: ArkvoryMetricsCollectionFailing
+        expr: increase(arkvory_metrics_collection_failures_total[15m]) > 0
+        labels:
+          severity: warning
+        annotations:
+          summary: Database-backed Arkvory metrics could not be collected
+          description: arkvory_completion_* values are omitted until PostgreSQL answers again.
+
+      - alert: ArkvoryTlsCertificateExpiring
+        expr: arkvory_tls_certificate_expiry_timestamp_seconds - time() < 14 * 86400
+        labels:
+          severity: warning
+        annotations:
+          summary: The built-in HTTPS certificate expires in less than 14 days
+          description: Renew the files in ARKVORY_TLS_CERT_FILE/KEY_FILE; Arkvory reloads them without a restart.
+
+      - alert: ArkvoryTlsCertificateExpired
+        expr: arkvory_tls_certificate_expiry_timestamp_seconds - time() < 0
+        labels:
+          severity: critical
+        annotations:
+          summary: The built-in HTTPS certificate has expired
+          description: Clients reject the connection; install a renewed certificate.
