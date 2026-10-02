@@ -289,6 +289,17 @@ test('a mirror seeds, follows the feed and serves artifacts, packages, paths and
       assert.equal(response.statusCode, 409, `${method} ${url}`);
       assert.equal(response.json().reason, 'mirror_read_only', `${method} ${url}`);
     }
+    // Discovery offers reads and hides every change, so the console shows no write actions.
+    // Promotion stays: a copy from the mirror into an ordinary repository is allowed.
+    const discovered = await mirror.app.inject({
+      url: '/api/v1/operations?repository=releases&limit=100',
+      headers: mirror.headers,
+    });
+    assert.equal(discovered.statusCode, 200, discovered.body);
+    const ids = discovered.json().items.map((item) => item.operationId);
+    assert.ok(ids.includes('downloadArtifact') && ids.includes('getRepositoryMirror'), ids.join());
+    for (const id of ['createUpload', 'setAnnotations', 'setArtifactStage', 'deleteArtifact'])
+      assert.ok(!ids.includes(id), id);
     // An ordinary repository is not a mirror.
     const plain = await mirror.app.inject({
       url: '/api/v1/repositories/other/mirror',

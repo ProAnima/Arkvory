@@ -792,6 +792,15 @@
           aria-labelledby="page-title"
           class="card catalog-card"
         >
+          <div id="mirror-state" class="mirror-state" hidden>
+            <span id="mirror-badge" class="badge" data-i18n="mirrorBadge">Зеркало</span>
+            <p id="mirror-details" class="hint" data-help="mirrorHelpLabel">
+              <span id="mirror-source" data-i18n="mirrorDetails"></span>
+              <span data-i18n="mirrorSynced">Последняя синхронизация:</span>
+              <span id="mirror-synced"></span>
+              <span id="mirror-error" hidden></span>
+            </p>
+          </div>
           <details id="storage-panel" hidden>
             <summary data-i18n="storageTitle">Хранение и автоочистка</summary>
             <p class="hint" data-i18n="storageHelp" data-help="storageHelpLabel"></p>

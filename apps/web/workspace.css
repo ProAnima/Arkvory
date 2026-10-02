@@ -393,3 +393,25 @@ output:not(.status-bar output):not(.transfer-card output):not(:empty) {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+/* Mirror of another installation (ADR 0058): a compact badge, details in the help tooltip. */
+.catalog-card > .mirror-state {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--panel-padding) 0;
+}
+.mirror-state[data-state='synced'] > .badge {
+  color: var(--color-success);
+}
+.mirror-state[data-state='behind'] > .badge,
+.mirror-state[data-state='pending'] > .badge {
+  color: var(--color-warning);
+}
+.mirror-state[data-state='failing'] > .badge {
+  color: var(--color-error);
+}
+/* Nobody uploads into a mirror; the server refuses it anyway (409 mirror_read_only). */
+:root[data-mirror='true'] #heading-upload,
+:root[data-mirror='true'] [data-nav='upload'] {
+  display: none;
+}

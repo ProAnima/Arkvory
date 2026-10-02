@@ -83,7 +83,9 @@ export function operationVisible(
           authorizeAction(principal, repository, action, requirement.legacy);
         return true;
       } catch (error) {
-        if (error instanceof ArkvoryError && error.code === 'forbidden') return false;
+        // A mirrored repository (ADR 0058) offers no changes, whatever the grants.
+        const mirrored = error instanceof ArkvoryError && error.reason === 'mirror_read_only';
+        if (mirrored || (error instanceof ArkvoryError && error.code === 'forbidden')) return false;
         throw error;
       }
   }

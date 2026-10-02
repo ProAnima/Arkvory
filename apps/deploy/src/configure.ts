@@ -7,10 +7,18 @@ import { checkJournal, save } from './operations.js';
 import { report } from './output.js';
 import { Services } from './services.js';
 import { configureTls } from './tls-setup.js';
+import { configureMirror } from './mirror-setup.js';
 
 const httpsOptions = ['tls-cert', 'tls-key', 'tls-off', 'listen-host'];
 const vaultOptions = ['backup-vault', 'init-vault', 'backup-vault-off'];
 const updateOptions = ['disable-updates', 'enable-updates', 'pin', 'unpin', 'version'];
+const mirrorOptions = [
+  'mirror',
+  'mirror-upstream',
+  'mirror-source',
+  'mirror-token-file',
+  'mirror-detach',
+];
 
 async function configureHttps(root: string, state: Installation, options: Map<string, string>) {
   const certificateFile = options.get('tls-cert');
@@ -55,6 +63,33 @@ async function configureVault(root: string, state: Installation, options: Map<st
   );
 }
 
+async function configureMirrors(root: string, state: Installation, options: Map<string, string>) {
+  const value = (name: string) => options.get(name);
+  const repository = value('mirror');
+  const upstream = value('mirror-upstream');
+  const sourceRepository = value('mirror-source');
+  const tokenFile = value('mirror-token-file');
+  const detach = value('mirror-detach');
+  const outcome = await configureMirror(
+    root,
+    state,
+    {
+      ...(repository ? { repository } : {}),
+      ...(upstream ? { upstream } : {}),
+      ...(sourceRepository ? { sourceRepository } : {}),
+      ...(tokenFile ? { tokenFile } : {}),
+      ...(detach ? { detach } : {}),
+    },
+    new Services(root, state),
+  );
+  report(
+    'info',
+    outcome === 'attached'
+      ? `${repository ?? ''} is a mirror; the worker synchronizes it and clients can only read it`
+      : `${detach ?? ''} is an ordinary repository again; its artifacts stay and accept writes`,
+  );
+}
+
 async function configureUpdates(root: string, state: Installation, options: Map<string, string>) {
   if (options.has('disable-updates')) state.automatic = false;
   if (options.has('enable-updates')) state.automatic = true;
@@ -72,12 +107,20 @@ async function configureUpdates(root: string, state: Installation, options: Map<
 export async function configure(root: string, options: Map<string, string>): Promise<void> {
   const state = parseInstallation(await jsonFile(join(root, 'installation.json')));
   const used = (names: readonly string[]) => names.some((name) => options.has(name));
-  const kinds = [used(httpsOptions), used(vaultOptions), used(updateOptions)].filter(Boolean);
-  if (kinds.length > 1)
-    throw new Error('Change HTTPS, the backup vault and update policy in separate configure calls');
-  if (used(httpsOptions) || used(vaultOptions)) {
+  const groups = [httpsOptions, vaultOptions, mirrorOptions, updateOptions];
+  if (groups.filter(used).length > 1)
+    throw new Error(
+      'Change HTTPS, the backup vault, mirrors and update policy in separate configure calls',
+    );
+  const restarting = [
+    [httpsOptions, configureHttps],
+    [vaultOptions, configureVault],
+    [mirrorOptions, configureMirrors],
+  ] as const;
+  const change = restarting.find(([names]) => used(names));
+  if (change) {
     // Restarting services must not race an interrupted release switch.
     await checkJournal(root);
-    await (used(httpsOptions) ? configureHttps : configureVault)(root, state, options);
+    await change[1](root, state, options);
   } else await configureUpdates(root, state, options);
 }

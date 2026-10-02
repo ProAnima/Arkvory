@@ -16,6 +16,7 @@ import type { BackupSupervision } from './backup-service.js';
 import { backupStatus, reportBackupAgent } from './backup-probe.js';
 import type { BackupServiceControl } from './backup-setup.js';
 import { VaultAccess, vaultOverrideFile } from './vault-access.js';
+import { mirrorsOverrideFile } from './mirror-setup.js';
 import type { VaultContents } from './vault-location.js';
 import { runtimeEnvironment } from './runtime.js';
 import { setTimeout as delay } from 'node:timers/promises';
@@ -49,6 +50,9 @@ export class Services implements BackupServiceControl {
     const override = join(this.root, vaultOverrideFile);
     if ((await exists(override)) && (await shipsBackupRole(this.root, this.state, release)))
       files.push('-f', override);
+    // Mounts config/mirrors into API and worker while repositories are mirrored (ADR 0058).
+    const mirrors = join(this.root, mirrorsOverrideFile);
+    if (await exists(mirrors)) files.push('-f', mirrors);
     return [
       'compose',
       '--project-name',

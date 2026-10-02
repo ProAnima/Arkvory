@@ -20,6 +20,10 @@ configure      --enable-updates | --disable-updates | --pin --version X.Y.Z | --
                Vault of the backup agent: outside the root and storage, writable; --init-vault
                creates vault.json only in an empty directory; restarts the agent, requires it
                to report the vault, rolls back on failure / Vault агента копий с откатом
+               --mirror <repo> --mirror-upstream <https://origin> [--mirror-source <repo>]
+               --mirror-token-file <file> | --mirror-detach <repo>
+               Read-only mirror of a repository of another installation; checks the source
+               with the read-only key, restarts, rolls back on failure / Зеркало с откатом
 
 Installation options:
   --artifact <directory>  Verified local release (offline)
@@ -35,6 +39,8 @@ Examples:
   arkvory configure --root /opt/proanima-arkvory --disable-updates
   arkvory configure --root /opt/proanima-arkvory --tls-cert /etc/arkvory/fullchain.pem --tls-key /etc/arkvory/privkey.pem --listen-host 0.0.0.0
   arkvory configure --root /opt/proanima-arkvory --backup-vault /mnt/backup/arkvory --init-vault
+  arkvory configure --root /opt/proanima-arkvory --mirror releases --mirror-upstream https://arkvory.example --mirror-token-file /root/mirror.key
+  arkvory configure --root /opt/proanima-arkvory --mirror-detach releases
 
 Console / Консоль: http://127.0.0.1:8080/console/#onboarding
 API: /api/v1/capabilities, /api/v1/operations (authenticated / с авторизацией)

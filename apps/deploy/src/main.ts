@@ -39,6 +39,11 @@ function argumentsOf(args: string[]): Map<string, string> {
     'tls-key',
     'listen-host',
     'backup-vault',
+    'mirror',
+    'mirror-upstream',
+    'mirror-source',
+    'mirror-token-file',
+    'mirror-detach',
   ];
   for (let index = 0; index < args.length; index++) {
     const name = args[index]?.replace(/^--/, '');

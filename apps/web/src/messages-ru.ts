@@ -8,6 +8,7 @@ import { updateRussian } from './update-messages.js';
 import { backupRussian } from './backup-messages.js';
 import { promotionRussian } from './promotion-messages.js';
 import { errorRussian } from './error-messages.js';
+import { mirrorRussian } from './mirror-messages.js';
 import type { en } from './messages-en.js';
 export const ru: Record<keyof typeof en, string> = {
   ...errorRussian,
@@ -19,6 +20,7 @@ export const ru: Record<keyof typeof en, string> = {
   ...updateRussian,
   ...backupRussian,
   ...promotionRussian,
+  ...mirrorRussian,
   ...consoleRussian,
   storageTitle: 'Хранение и автоочистка',
   storageHelp:
