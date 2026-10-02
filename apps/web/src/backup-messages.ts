@@ -52,7 +52,7 @@ export const backupEnglish = {
   backupActionLastRunFailed:
     'The error code is in the job table; the agent journal has the record backup.request.failed.',
   backupActionVaultUnavailable:
-    'The backup storage volume is not mounted or has no vault.json. Check the disk or NAS on the server.',
+    'The backup storage volume is not mounted, has no vault.json or is not writable. Check the disk or NAS on the server.',
   backupActionVaultLowSpace:
     'Less than 10% or less than twice the last new data is free. Free space on the backup volume or keep fewer points.',
   backupActionVerifyFailed:
@@ -206,7 +206,7 @@ export const backupRussian: Record<keyof typeof backupEnglish, string> = {
   backupActionLastRunFailed:
     'Код ошибки — в таблице заданий; в журнале агента — запись backup.request.failed.',
   backupActionVaultUnavailable:
-    'Том хранилища копий не смонтирован или в нём нет vault.json. Проверьте диск или NAS на сервере.',
+    'Том хранилища копий не смонтирован, в нём нет vault.json или в него нельзя записать. Проверьте диск или NAS на сервере.',
   backupActionVaultLowSpace:
     'Свободно меньше 10% или меньше двух объёмов новых данных последней копии. Освободите место на томе или храните меньше точек.',
   backupActionVerifyFailed:

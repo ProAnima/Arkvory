@@ -268,7 +268,7 @@ $root = 'C:\ProgramData\ProAnima\Arkvory'
 | `no_backup_yet`        | warning  | Выполнить первую копию                                                      |
 | `backup_stale`         | critical | T новейшей точки старше 26 ч при включённом плане: смотреть `jobs` и журнал |
 | `last_run_failed`      | warning  | Последняя завершённая копия неуспешна: `errorCode` в `backup jobs`          |
-| `vault_unavailable`    | critical | Том vault не смонтирован или нет `vault.json`                               |
+| `vault_unavailable`    | critical | Том vault не смонтирован, нет `vault.json` или в vault нельзя записать      |
 | `vault_low_space`      | warning  | Меньше 10% или меньше двух «новых байт» последней точки: освободить место   |
 | `verify_failed`        | critical | Точка не прошла проверку: vault не менять, разобрать причину                |
 | `never_deep_verified`  | warning  | Нет глубокой проверки 8 дней: проверить работу агента                       |

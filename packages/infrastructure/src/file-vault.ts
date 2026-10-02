@@ -304,6 +304,18 @@ export class FileVault implements CaptureVault, MaintainedVault {
     return { freeBytes: volume.bavail * volume.bsize, totalBytes: volume.blocks * volume.bsize };
   }
 
+  /**
+   * Creates and removes one empty file in the staging area, so a read-only remount or a lost
+   * write permission shows in the heartbeat before the next copy fails. A probe left by a crash
+   * is removed by prune with the other attempt leftovers; prune may also remove a live one.
+   */
+  async writeProbe(): Promise<void> {
+    await this.identity();
+    const probe = join(this.root, 'points', '.staging', `probe.${randomUUID()}`);
+    await (await open(probe, 'wx', 0o600)).close();
+    await rm(probe, { force: true });
+  }
+
   /** One directory rename publishes the point; a second publisher of the id sees `exists`. */
   async publish(staged: string, pointId: string): Promise<'committed' | 'exists'> {
     await this.identity();

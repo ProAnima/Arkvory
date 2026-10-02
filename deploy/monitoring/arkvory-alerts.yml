@@ -116,4 +116,4 @@ groups:
           severity: critical
         annotations:
           summary: Arkvory backups report {{ $labels.code }}
-          description: vault_unavailable - mount the vault volume of ARKVORY_BACKUP_VAULT for the agent; verify_failed - keep the vault unchanged and investigate the damaged point.
+          description: vault_unavailable - mount the vault volume of ARKVORY_BACKUP_VAULT for the agent and keep it writable; verify_failed - keep the vault unchanged and investigate the damaged point.
