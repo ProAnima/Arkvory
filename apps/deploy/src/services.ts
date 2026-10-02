@@ -6,7 +6,9 @@ import type { Installation, Release } from './model.js';
 import { jsonFile } from './files.js';
 import { runtimeEnvironment } from './runtime.js';
 import { setTimeout as delay } from 'node:timers/promises';
-import { healthReady, localApiHost } from './health.js';
+import { healthReady } from './health.js';
+import { localTarget } from './local-api.js';
+import type { LocalTarget } from './local-api.js';
 import { windowsAdministrator } from './preflight.js';
 import { report } from './output.js';
 
@@ -87,16 +89,18 @@ export class Services {
       for (const role of ['api', 'worker'])
         await command(join(this.root, `service/arkvory-${role}.exe`), ['start']);
   }
+  /** One readiness probe; a seam so the retry loop can be exercised without a live API. */
+  ready(target: LocalTarget, tokenFile: string): Promise<boolean> {
+    return healthReady(target, tokenFile);
+  }
   async healthy(): Promise<void> {
     const env = runtimeEnvironment(await jsonFile(join(this.root, 'config/runtime.json')));
-    const port = this.state.mode === 'compose' ? '8080' : (env['ARKVORY_PORT'] ?? '8080');
-    if (!/^[0-9]{1,5}$/.test(port)) throw new Error('Invalid health port');
     // Compose publishes the container port on host loopback regardless of ARKVORY_HOST.
-    const host = this.state.mode === 'compose' ? '127.0.0.1' : localApiHost(env['ARKVORY_HOST']);
+    const target = localTarget(env, this.state.mode === 'compose');
     let consecutive = 0;
     for (let attempt = 0; attempt < 60; attempt++) {
       try {
-        consecutive = (await healthReady(port, join(this.root, 'config/health-token.txt'), host))
+        consecutive = (await this.ready(target, join(this.root, 'config/health-token.txt')))
           ? consecutive + 1
           : 0;
         if (consecutive >= 3) {

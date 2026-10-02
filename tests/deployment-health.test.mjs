@@ -15,8 +15,8 @@ async function fixture(t, failure) {
   await mkdir(join(directory, 'config'));
   await writeFile(join(directory, 'config/runtime.json'), '{}');
   await writeFile(join(directory, 'config/health-token.txt'), 'a'.repeat(64));
-  t.mock.method(globalThis, 'fetch', async () => new Response(null, { status: 200 }));
   const services = new Services(directory, { mode: 'systemd' });
+  t.mock.method(services, 'ready', async () => true);
   let calls = 0;
   // Exercise the real readiness loop without invoking the host's service manager.
   t.mock.method(services, 'workerRunning', async () => {
@@ -69,13 +69,16 @@ test('readiness probes a LAN-bound API on its configured address', async (t) => 
   const runtime = { ARKVORY_HOST: '192.168.10.5', ARKVORY_PORT: '8443' };
   await writeFile(join(directory, 'config/runtime.json'), JSON.stringify(runtime));
   await writeFile(join(directory, 'config/health-token.txt'), 'a'.repeat(64));
-  const urls = [];
-  t.mock.method(globalThis, 'fetch', async (url) => {
-    urls.push(String(url));
-    return new Response(null, { status: 200 });
-  });
+  const targets = [];
   const services = new Services(directory, { mode: 'systemd' });
+  t.mock.method(services, 'ready', async (target) => {
+    targets.push(JSON.stringify(target));
+    return true;
+  });
   t.mock.method(services, 'workerRunning', async () => undefined);
   await exclusive(directory, () => services.healthy());
-  assert.deepEqual(new Set(urls), new Set(['http://192.168.10.5:8443/health/ready']));
+  assert.deepEqual(
+    new Set(targets),
+    new Set([JSON.stringify({ host: '192.168.10.5', port: '8443' })]),
+  );
 });
