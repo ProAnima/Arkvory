@@ -11,6 +11,8 @@ export interface MirrorChange {
   readonly upstream?: string;
   readonly sourceRepository?: string;
   readonly tokenFile?: string;
+  /** Import mode: an ordinary repository taking over versions with these stages. */
+  readonly stages?: readonly string[];
   /** Turns a mirrored repository into an ordinary, writable one. */
   readonly detach?: string;
 }
@@ -19,6 +21,7 @@ interface MirrorEntry {
   upstream: string;
   sourceRepository: string;
   tokenFile: string;
+  stages?: readonly string[];
 }
 /** Checks that the source answers this key with a change feed of the source repository. */
 export type UpstreamProbe = (upstream: string, source: string, token: string) => Promise<void>;
@@ -27,6 +30,15 @@ export const mirrorsOverrideFile = 'config/compose.mirrors.yml';
 const repositoryPattern = /^[a-z0-9][a-z0-9_-]{0,63}$/;
 const loopback = new Set(['localhost', '127.0.0.1', '[::1]']);
 const containerDirectory = '/run/arkvory/mirrors';
+
+/** The stage rule of the product (domain requireStage), repeated: deploy has no domain access. */
+function stageList(value: readonly string[] | undefined): readonly string[] | undefined {
+  if (value === undefined) return undefined;
+  const valid = value.every((stage) => /^[a-z0-9][a-z0-9_.-]{0,31}$/.test(stage));
+  if (!valid || value.length === 0 || value.length > 16 || new Set(value).size !== value.length)
+    throw new Error('--mirror-stages lists 1 to 16 distinct stage names');
+  return value;
+}
 
 function repository(value: string | undefined, option: string): string {
   if (!value || !repositoryPattern.test(value)) throw new Error(`Invalid --${option}`);
@@ -135,7 +147,16 @@ function entries(text: string | null): MirrorEntry[] {
       typeof tokenFile !== 'string'
     )
       throw new Error('config/mirrors/mirrors.json has an invalid entry');
-    return { repository: name, upstream, sourceRepository, tokenFile };
+    const raw: unknown = row['stages'];
+    const listed: readonly unknown[] = Array.isArray(raw) ? raw : [];
+    const stages = listed.filter((stage): stage is string => typeof stage === 'string');
+    return {
+      repository: name,
+      upstream,
+      sourceRepository,
+      tokenFile,
+      ...(stages.length > 0 ? { stages } : {}),
+    };
   });
 }
 
@@ -228,6 +249,7 @@ export async function configureMirror(
       (existing.upstream !== upstream || existing.sourceRepository !== sourceRepository)
     )
       throw new Error(`${target} mirrors another source; detach it first`);
+    const stages = stageList(change.stages);
     secret = await token(change.tokenFile);
     await probe(upstream, sourceRepository, secret);
     const entry = {
@@ -235,6 +257,7 @@ export async function configureMirror(
       upstream,
       sourceRepository,
       tokenFile: paths.seen(`${target}.token`),
+      ...(stages ? { stages } : {}),
     };
     next = [...current.filter((item) => item.repository !== target), entry];
   }

@@ -5,6 +5,7 @@ import { parse } from 'yaml';
 import { AdmissionQueue, processIdentity } from '@proanima/arkvory-infrastructure';
 import { ApiMetrics } from '../apps/api/dist/api-metrics.js';
 import { BackupMetrics } from '../apps/api/dist/backup-metrics.js';
+import { MirrorMetrics } from '../apps/api/dist/mirror-metrics.js';
 
 /** Every metric the API can expose, including histogram series and optional TLS/job sources. */
 async function exposedNames() {
@@ -66,6 +67,23 @@ async function exposedNames() {
           verifyFailed: false,
           lastDeepVerifiedAt: null,
         }),
+      },
+      () => 0,
+    ),
+    mirrors: new MirrorMetrics(
+      {
+        all: async () => [
+          {
+            repository: 'releases',
+            upstream: 'https://source.example',
+            sourceRepository: 'releases',
+            state: {
+              syncedAt: '2026-10-02T00:00:00.000Z',
+              checkedAt: '2026-10-02T00:00:00.000Z',
+              errorCode: null,
+            },
+          },
+        ],
       },
       () => 0,
     ),

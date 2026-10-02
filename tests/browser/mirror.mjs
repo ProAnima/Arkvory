@@ -50,9 +50,22 @@ export async function exerciseMirror(browser, f) {
     assert.equal((await badge.textContent()).trim(), 'Mirror · sync error');
     await page.locator('#language').selectOption('ru');
     assert.equal((await badge.textContent()).trim(), 'Зеркало · ошибка синхронизации');
+    // Import mode (dev -> prod): an ordinary repository, so uploads stay; the badge explains.
+    f.config.mirrors[0] = { ...f.config.mirrors[0], stages: ['release'] };
+    await f.restart();
+    const importing = await f.listen();
+    await state(`UPDATE arkvory_mirror_state SET error_code=NULL, error_at=NULL`);
+    await page.goto(`${importing}/console/`);
+    await page.locator('#language').selectOption('en');
+    await connectWithKey(page, f.headers.authorization.slice(7));
+    await page.locator('#mirror-state[data-state=synced]').waitFor();
+    assert.equal((await badge.textContent()).trim(), 'Imports');
+    assert.equal(await page.locator('#heading-upload').isVisible(), true);
+    await page.locator('#mirror-state .help-trigger').hover();
+    assert.match(await details.textContent(), /marked release in “builds”/);
     assert.deepEqual(errors, []);
     console.log(
-      'PASS mirror: badge per sync state, source in the tooltip, no upload action, RU/EN',
+      'PASS mirror: badge per sync state, source in the tooltip, no upload action, RU/EN; import badge keeps uploads',
     );
   } finally {
     await context.close();

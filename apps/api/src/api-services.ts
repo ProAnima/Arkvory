@@ -38,6 +38,7 @@ import {
 } from '@proanima/arkvory-infrastructure';
 import { AuthThrottle } from './auth-throttle.js';
 import { BackupMetrics } from './backup-metrics.js';
+import { MirrorMetrics } from './mirror-metrics.js';
 import type {
   LocalBlobStore,
   PostgresCatalog,
@@ -75,12 +76,17 @@ export function createApiServices(
   const jobs = new PostgresJobs(catalog.pool);
   const backupStatus = new PostgresBackupStatus(catalog.pool);
   const backupRequests = new PostgresBackupRequests(catalog.pool);
+  const mirrors = new MirrorStatus(options.mirrors ?? [], new PostgresMirrorState(catalog.pool));
   return {
     jobs,
-    mirrors: new MirrorStatus(options.mirrors ?? [], new PostgresMirrorState(catalog.pool)),
+    mirrors,
     metricSources: {
       jobs,
       backup: new BackupMetrics(backupStatus, () => performance.now()),
+      // Only an installation with mirrors exposes mirror gauges.
+      ...((options.mirrors ?? []).length > 0
+        ? { mirrors: new MirrorMetrics(mirrors, () => performance.now()) }
+        : {}),
     },
     backup: new BackupControl({
       status: backupStatus,

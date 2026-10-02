@@ -61,7 +61,7 @@
 
 ## Ограничения профиля
 
-- Один сервер: нет репликации и failover ([REPLICATION](REPLICATION.md) — проект).
+- Один сервер: автоматического failover нет. Вторая площадка с зеркалами и ручным переходом — [SECOND_SITE](SECOND_SITE.md); синхронный HA — проект ([REPLICATION](REPLICATION.md)).
 - Vault не шифруется приложением: шифрование и права тома — обязанность оператора.
 - Нет S3/restic, offsite и immutable профиля, мастера восстановления и статуса restore drill ([BACKUP_RECOVERY](BACKUP_RECOVERY.md)).
 - На Windows API, worker и агент работают под общей учётной записью LocalService.

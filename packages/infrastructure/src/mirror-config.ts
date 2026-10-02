@@ -1,5 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import { isAbsolute } from 'node:path';
+import { requireStage } from '@proanima/arkvory-domain';
 
 /** One mirrored repository of this installation (ADR 0058). */
 export interface MirrorSettings {
@@ -13,6 +14,11 @@ export interface MirrorSettings {
    * CA of the source is trusted through NODE_EXTRA_CA_CERTS of the worker; TLS is always verified.
    */
   readonly tokenFile: string;
+  /**
+   * Import mode (ADR 0058): an ordinary, writable repository that takes over the versions given
+   * one of these stages on the source; deletions there do not reach it. Absent: a mirror.
+   */
+  readonly stages?: readonly string[];
 }
 
 const repositoryPattern = /^[a-z0-9][a-z0-9_-]{0,63}$/;
@@ -53,7 +59,7 @@ function path(value: unknown, field = 'tokenFile'): string {
 function entry(value: unknown): MirrorSettings {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) fail('mirror');
   const row: Record<string, unknown> = Object.fromEntries(Object.entries(value));
-  const known = ['repository', 'upstream', 'sourceRepository', 'tokenFile'];
+  const known = ['repository', 'upstream', 'sourceRepository', 'tokenFile', 'stages'];
   if (Object.keys(row).some((key) => !known.includes(key))) fail('unknown field');
   const { repository, sourceRepository } = row;
   if (typeof repository !== 'string' || !repositoryPattern.test(repository)) fail('repository');
@@ -64,7 +70,22 @@ function entry(value: unknown): MirrorSettings {
     upstream: upstream(row['upstream']),
     sourceRepository,
     tokenFile: path(row['tokenFile']),
+    ...(row['stages'] === undefined ? {} : { stages: stages(row['stages']) }),
   };
+}
+
+function stages(value: unknown): readonly string[] {
+  if (!Array.isArray(value) || value.length === 0 || value.length > 16) fail('stages');
+  const list: readonly unknown[] = value;
+  const parsed = list.map((stage) => {
+    try {
+      return requireStage(stage);
+    } catch {
+      fail('stages');
+    }
+  });
+  if (new Set(parsed).size !== parsed.length) fail('stages');
+  return parsed;
 }
 
 /** `{ "mirrors": [...] }`; each local repository mirrors at most one source. */

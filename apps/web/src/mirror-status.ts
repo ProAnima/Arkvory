@@ -34,21 +34,30 @@ export function installMirrorStatus(client: ArkvoryClient) {
   };
   const render = (status: RepositoryMirrorResponse) => {
     const state = stateOf(status);
+    const importing = status.mode === 'import';
     container.dataset['state'] = state;
-    message(
-      badge,
-      state === 'failing' ? 'mirrorFailing' : state === 'synced' ? 'mirrorBadge' : 'mirrorBehind',
-    );
-    message(source, 'mirrorDetails', {
-      source: status.sourceRepository,
-      upstream: new URL(status.upstream).host,
-    });
+    const upstream = new URL(status.upstream).host;
+    if (importing) {
+      // An import target is an ordinary repository: its own uploads stay possible.
+      message(badge, state === 'failing' ? 'mirrorImportFailing' : 'mirrorImport');
+      message(source, 'mirrorImportDetails', {
+        stages: status.stages.join(', '),
+        source: status.sourceRepository,
+        upstream,
+      });
+    } else {
+      message(
+        badge,
+        state === 'failing' ? 'mirrorFailing' : state === 'synced' ? 'mirrorBadge' : 'mirrorBehind',
+      );
+      message(source, 'mirrorDetails', { source: status.sourceRepository, upstream });
+    }
     if (status.syncedAt) relativeMessage(synced, status.syncedAt);
     else message(synced, 'mirrorNever');
     failure.hidden = status.errorCode === null;
     if (status.errorCode !== null) message(failure, 'mirrorError', { code: status.errorCode });
     container.hidden = false;
-    mirrored(true);
+    mirrored(!importing);
   };
   return {
     clear,

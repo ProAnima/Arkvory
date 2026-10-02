@@ -10,6 +10,8 @@ export function mirrorResponse(entry: MirrorStatusEntry): RepositoryMirrorRespon
     repository,
     upstream,
     sourceRepository,
+    mode: entry.stages ? 'import' : 'mirror',
+    stages: [...(entry.stages ?? [])],
     phase: state?.phase ?? 'pending',
     seedStep: state?.seedStep ?? null,
     cursor: state?.cursor ?? '0',

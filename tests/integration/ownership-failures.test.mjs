@@ -52,9 +52,19 @@ test('isolated upload and cleanup sessions stop on partition while the writer st
       { code: 'unavailable' },
     );
     // A new session can acquire the same object. The previous callback was not allowed to continue.
-    await run(async (protection) => {
-      protection.throwIfAborted();
-    });
+    // The database releases the old session's lock once the proxy has closed its upstream
+    // connection, which under load lags behind the client side: busy is retried, bounded.
+    for (let attempt = 1; ; attempt++) {
+      try {
+        await run(async (protection) => {
+          protection.throwIfAborted();
+        });
+        break;
+      } catch (error) {
+        if (error?.code !== 'busy' || attempt === 20) throw error;
+        await delay(250);
+      }
+    }
   }
 });
 

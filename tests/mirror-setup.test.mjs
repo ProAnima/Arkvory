@@ -74,6 +74,26 @@ test('attaching checks the source with the key, writes the mirror and restarts',
   await assert.rejects(readFile(join(root, 'config/mirrors/releases.token')), { code: 'ENOENT' });
 });
 
+test('import mode keeps its stages and refuses invalid ones before any request', async (t) => {
+  const { root, tokenFile, state } = await installation(t);
+  await configureMirror(
+    root,
+    state,
+    { ...attach(tokenFile), stages: ['release', 'hotfix'] },
+    services(),
+    async () => undefined,
+  );
+  const mirrors = await json(join(root, 'config/mirrors/mirrors.json'));
+  assert.deepEqual(mirrors.mirrors[0].stages, ['release', 'hotfix']);
+  for (const stages of [['Release'], [], ['a', 'a']])
+    await assert.rejects(
+      configureMirror(root, state, { ...attach(tokenFile), stages }, services(), async () =>
+        assert.fail('no request'),
+      ),
+      /--mirror-stages/,
+    );
+});
+
 test('Compose sees the files inside the containers through a generated mount', async (t) => {
   const { root, tokenFile, state } = await installation(t, 'compose');
   await configureMirror(root, state, attach(tokenFile), services(), async () => undefined);

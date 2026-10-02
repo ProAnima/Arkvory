@@ -41,6 +41,9 @@ export interface RepositoryMirrorResponse {
   readonly repository: string;
   readonly upstream: string;
   readonly sourceRepository: string;
+  /** `mirror`: read-only copy; `import`: ordinary repository taking over versions with `stages`. */
+  readonly mode: 'mirror' | 'import';
+  readonly stages: readonly string[];
   readonly phase: MirrorPhaseName;
   readonly seedStep: (typeof mirrorSeedSteps)[number] | null;
   readonly cursor: string;
@@ -74,6 +77,8 @@ export function readRepositoryMirror(value: unknown): RepositoryMirrorResponse {
     repository: text(row['repository']),
     upstream: text(row['upstream']),
     sourceRepository: text(row['sourceRepository']),
+    mode: oneOf(row['mode'], ['mirror', 'import'] as const),
+    stages: items(row['stages']).map(text),
     phase: oneOf(row['phase'], mirrorPhases),
     seedStep: optional(row['seedStep'], (step) => oneOf(step, mirrorSeedSteps)),
     cursor: sequence(row['cursor']),
@@ -126,6 +131,8 @@ const mirrorSchema = {
     'repository',
     'upstream',
     'sourceRepository',
+    'mode',
+    'stages',
     'phase',
     'seedStep',
     'cursor',
@@ -142,6 +149,8 @@ const mirrorSchema = {
     repository: str,
     upstream: { type: 'string', format: 'uri' },
     sourceRepository: str,
+    mode: { type: 'string', enum: ['mirror', 'import'] },
+    stages: { type: 'array', items: str, maxItems: 16 },
     phase: { type: 'string', enum: mirrorPhases },
     seedStep: { type: 'string', enum: mirrorSeedSteps, nullable: true },
     cursor: decimal,

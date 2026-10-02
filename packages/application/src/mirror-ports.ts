@@ -43,6 +43,12 @@ export interface MirrorSource {
   annotation(id: string, cancellation: Cancellation): Promise<MirrorAnnotation | null>;
   stages(id: string, cancellation: Cancellation): Promise<readonly MirrorStage[]>;
   asset(path: string, cancellation: Cancellation): Promise<MirrorAsset | null>;
+  /** IDs of artifacts that currently carry `stage`, page by page (import mode). */
+  staged(
+    stage: string,
+    after: string | null,
+    cancellation: Cancellation,
+  ): Promise<MirrorPage<string>>;
   /** Bytes start..end (inclusive) of the immutable artifact; the length is checked by the port. */
   content(
     artifact: MirrorArtifact,
@@ -63,6 +69,18 @@ export interface MirrorTarget {
   remove(id: string): Promise<void>;
   annotate(id: string, annotation: MirrorAnnotation): Promise<void>;
   register(id: string): Promise<void>;
+  /**
+   * Import mode: completes a taken-over version without overriding local decisions. The
+   * annotation applies only while the local one was never changed, the bytes register as UPack
+   * when they are one and are not registered yet, stages are only added. Repeatable after a crash.
+   */
+  adopt(
+    id: string,
+    annotation: MirrorAnnotation | null,
+    stages: readonly MirrorStage[],
+  ): Promise<void>;
+  /** Local copy of a source ID: `deleted` means removed here, never to be imported again. */
+  local(id: string): Promise<'absent' | 'partial' | 'present' | 'deleted'>;
   stages(id: string, stages: readonly MirrorStage[]): Promise<void>;
   asset(asset: MirrorAsset): Promise<void>;
 }

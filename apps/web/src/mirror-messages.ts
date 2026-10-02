@@ -8,6 +8,10 @@ export const mirrorEnglish = {
   mirrorSynced: 'Last synchronized:',
   mirrorError: 'The last attempt failed ({code}); downloads keep working.',
   mirrorNever: 'not yet',
+  mirrorImport: 'Imports',
+  mirrorImportFailing: 'Imports · sync error',
+  mirrorImportDetails:
+    'Versions marked {stages} in “{source}” on {upstream} are copied here automatically. Later changes and deletions there do not affect them.',
 };
 
 export const mirrorRussian: Record<keyof typeof mirrorEnglish, string> = {
@@ -20,4 +24,8 @@ export const mirrorRussian: Record<keyof typeof mirrorEnglish, string> = {
   mirrorSynced: 'Последняя синхронизация:',
   mirrorError: 'Последняя попытка не удалась ({code}); скачивание продолжает работать.',
   mirrorNever: 'ещё не было',
+  mirrorImport: 'Импорт',
+  mirrorImportFailing: 'Импорт · ошибка синхронизации',
+  mirrorImportDetails:
+    'Версии со стадией {stages} из «{source}» на {upstream} копируются сюда автоматически. Дальнейшие изменения и удаления там их не затрагивают.',
 };

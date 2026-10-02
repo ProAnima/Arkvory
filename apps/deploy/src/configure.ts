@@ -17,6 +17,7 @@ const mirrorOptions = [
   'mirror-upstream',
   'mirror-source',
   'mirror-token-file',
+  'mirror-stages',
   'mirror-detach',
 ];
 
@@ -70,6 +71,9 @@ async function configureMirrors(root: string, state: Installation, options: Map<
   const sourceRepository = value('mirror-source');
   const tokenFile = value('mirror-token-file');
   const detach = value('mirror-detach');
+  const stages = value('mirror-stages')
+    ?.split(',')
+    .map((stage) => stage.trim());
   const outcome = await configureMirror(
     root,
     state,
@@ -78,6 +82,7 @@ async function configureMirrors(root: string, state: Installation, options: Map<
       ...(upstream ? { upstream } : {}),
       ...(sourceRepository ? { sourceRepository } : {}),
       ...(tokenFile ? { tokenFile } : {}),
+      ...(stages ? { stages } : {}),
       ...(detach ? { detach } : {}),
     },
     new Services(root, state),
@@ -85,7 +90,9 @@ async function configureMirrors(root: string, state: Installation, options: Map<
   report(
     'info',
     outcome === 'attached'
-      ? `${repository ?? ''} is a mirror; the worker synchronizes it and clients can only read it`
+      ? stages
+        ? `${repository ?? ''} imports versions with stage ${stages.join(', ')}; it stays writable here`
+        : `${repository ?? ''} is a mirror; the worker synchronizes it and clients can only read it`
       : `${detach ?? ''} is an ordinary repository again; its artifacts stay and accept writes`,
   );
 }

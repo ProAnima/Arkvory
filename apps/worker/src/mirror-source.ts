@@ -92,6 +92,15 @@ export class SdkMirrorSource implements MirrorSource {
     return (found ?? []).map(({ stage, comment }) => ({ stage, comment }));
   }
 
+  async staged(stage: string, after: string | null): Promise<MirrorPage<string>> {
+    const page = await this.client.promotions.staged(
+      this.repository,
+      { stage, limit: 100, ...(after === null ? {} : { after }) },
+      this.signal(),
+    );
+    return { items: page.items.map((entry) => entry.artifactId), next: page.next };
+  }
+
   async asset(path: string): Promise<MirrorAsset | null> {
     const found = await absentAs(this.client.asset(this.repository, path));
     return found ? { path: found.path, artifactId: found.artifactId } : null;

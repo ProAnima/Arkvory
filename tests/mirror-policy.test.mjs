@@ -38,6 +38,13 @@ test('mirror settings accept an HTTPS origin and refuse anything that would leak
   assert.throws(() => parseMirrorSettings({ mirrors: [entry(), entry()] }), /duplicate repository/);
   assert.throws(() => parseMirrorSettings({ mirrors: [], extra: true }), /unknown field/);
   assert.deepEqual(parseMirrorSettings({ mirrors: [] }), []);
+  // Import mode: stages are product stage names, distinct, 1 to 16.
+  assert.deepEqual(
+    parseMirrorSettings({ mirrors: [entry({ stages: ['release', 'hotfix'] })] })[0].stages,
+    ['release', 'hotfix'],
+  );
+  for (const stages of [[], ['Release'], ['release', 'release'], 'release'])
+    assert.throws(() => parseMirrorSettings({ mirrors: [entry({ stages })] }), /stages/);
 });
 
 test('a mirrored repository refuses every change and allows every read, for any credential', () => {

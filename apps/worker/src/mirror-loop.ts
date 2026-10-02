@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import { setTimeout as delay } from 'node:timers/promises';
-import { MirrorSync, mirrorErrorCode } from '@proanima/arkvory-application';
+import { MirrorSync, StageImport, mirrorErrorCode } from '@proanima/arkvory-application';
 import { PostgresContentPins, PostgresMirrorState } from '@proanima/arkvory-infrastructure';
 import type {
   DiagnosticLogger,
@@ -45,9 +45,10 @@ async function follow(
   const fields = { component: 'mirror', repository: mirror.repository } as const;
   let token = '';
   const source = new SdkMirrorSource(mirror.upstream, mirror.sourceRepository, () => token, stop);
-  const sync = new MirrorSync({
+  const dependencies = {
     repository: mirror.repository,
-    source: `${mirror.upstream}|${mirror.sourceRepository}`,
+    // The stages are part of an import's identity: other stages start a new seed.
+    source: [mirror.upstream, mirror.sourceRepository, ...(mirror.stages ?? [])].join('|'),
     upstream: source,
     target: new ServiceMirrorTarget(
       mirror.repository,
@@ -58,7 +59,11 @@ async function follow(
     ),
     states: new PostgresMirrorState(catalog.pool),
     now: () => new Date().toISOString(),
-  });
+  };
+  // With stages the repository imports promoted versions (ADR 0058); without, it mirrors.
+  const sync = mirror.stages
+    ? new StageImport({ ...dependencies, stages: mirror.stages })
+    : new MirrorSync(dependencies);
   const cancellation = {
     throwIfAborted: () => {
       stop.throwIfAborted();

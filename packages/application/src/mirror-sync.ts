@@ -23,7 +23,8 @@ export type MirrorStep = 'progress' | 'idle';
 /** Feed actions of state the mirror does not carry (owner references, build attachments). */
 const ignored = new Set(['reference.add', 'reference.remove', 'attachments.replace']);
 
-function stopped(cancellation: Cancellation): boolean {
+/** Whether a failure came from the caller stopping the step, not from the source. */
+export function stopped(cancellation: Cancellation): boolean {
   try {
     cancellation.throwIfAborted();
     return false;
@@ -66,7 +67,7 @@ export class MirrorSync {
   private async current(): Promise<MirrorState> {
     this.state ??= await this.d.states.load(this.d.repository);
     if (!this.state) {
-      this.state = initialState(this.d.repository, this.d.source);
+      this.state = initialMirrorState(this.d.repository, this.d.source);
       await this.d.states.save(this.state);
     }
     if (this.state.source !== this.d.source)
@@ -182,7 +183,7 @@ export class MirrorSync {
   }
 }
 
-function initialState(repository: string, source: string): MirrorState {
+export function initialMirrorState(repository: string, source: string): MirrorState {
   return {
     repository,
     source,

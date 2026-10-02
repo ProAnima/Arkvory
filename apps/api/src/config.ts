@@ -90,7 +90,12 @@ function byteRate(env: NodeJS.ProcessEnv, name: string): number {
 /** The API needs which repositories are mirrors and of what; the source key stays with the worker. */
 async function readMirrors(env: NodeJS.ProcessEnv): Promise<readonly MirrorConfiguration[]> {
   return (await readMirrorSettings(env['ARKVORY_MIRRORS_FILE'])).map(
-    ({ repository, upstream, sourceRepository }) => ({ repository, upstream, sourceRepository }),
+    ({ repository, upstream, sourceRepository, stages }) => ({
+      repository,
+      upstream,
+      sourceRepository,
+      ...(stages ? { stages } : {}),
+    }),
   );
 }
 

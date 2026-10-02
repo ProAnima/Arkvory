@@ -43,6 +43,11 @@ export interface MetricSources {
     refresh(failed: () => void): Promise<void>;
     register(registry: MetricsRegistry): void;
   };
+  /** Mirror synchronization gauges, same cache rules (ADR 0058). */
+  readonly mirrors?: {
+    refresh(failed: () => void): Promise<void>;
+    register(registry: MetricsRegistry): void;
+  };
   /** Monotonic milliseconds for durations and cache age. */
   readonly now: () => number;
   readonly startedAtSeconds: number;
@@ -96,6 +101,7 @@ export class ApiMetrics {
     this.registerTransfers();
     this.registerJobs();
     sources.backup?.register(this.registry);
+    sources.mirrors?.register(this.registry);
   }
 
   observe(observed: ObservedResponse): void {
@@ -114,6 +120,9 @@ export class ApiMetrics {
       this.refreshBacklog(),
       this.sources.backup?.refresh(() => {
         this.collectionFailures.inc({ collector: 'backup' });
+      }),
+      this.sources.mirrors?.refresh(() => {
+        this.collectionFailures.inc({ collector: 'mirror' });
       }),
     ]);
     return this.registry.render();

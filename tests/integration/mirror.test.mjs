@@ -7,7 +7,7 @@ import { join } from 'node:path';
 import { Pool } from 'pg';
 import { ZipFile } from 'yazl';
 import { createServer } from '../../apps/api/dist/index.js';
-import { MirrorSync } from '@proanima/arkvory-application';
+import { MirrorSync, StageImport } from '@proanima/arkvory-application';
 import { ArkvoryClient } from '@proanima/arkvory-sdk';
 import {
   LocalBlobStore,
@@ -84,7 +84,7 @@ const key = (id, permissions, administrator = false) => {
  * so a second writer cannot share the source's database (other schemas or not). One cleanup in
  * the right order: server, pools, then the database and the storage directory.
  */
-async function mirrorInstance(t, upstream) {
+async function mirrorInstance(t, upstream, stages) {
   const connectionString = process.env.ARKVORY_TEST_DATABASE_URL;
   if (!connectionString) throw new Error('ARKVORY_TEST_DATABASE_URL is required');
   const url = new URL(connectionString);
@@ -106,7 +106,14 @@ async function mirrorInstance(t, upstream) {
     maxUploads: 2,
     maxDownloads: 2,
     keys: [writer.entry, reader.entry],
-    mirrors: [{ repository: 'releases', upstream, sourceRepository: 'releases' }],
+    mirrors: [
+      {
+        repository: 'releases',
+        upstream,
+        sourceRepository: 'releases',
+        ...(stages ? { stages } : {}),
+      },
+    ],
   };
   const migrations = new PostgresCatalog(config.databaseUrl, 0, 1);
   const closers = [() => migrations.close()];
@@ -133,10 +140,10 @@ async function mirrorInstance(t, upstream) {
 }
 
 /** Source and mirror installations; the mirror's worker side is driven step by step. */
-async function pair(t) {
+async function pair(t, stages) {
   const source = await setup(t);
   const upstream = await source.listen();
-  const mirror = await mirrorInstance(t, upstream);
+  const mirror = await mirrorInstance(t, upstream, stages);
   const blobs = new LocalBlobStore(mirror.directory, 0);
   const catalog = new PostgresCatalog(mirror.config.databaseUrl, mirror.config.capacityBytes, 2);
   const stop = new AbortController();
@@ -148,15 +155,18 @@ async function pair(t) {
   });
   await catalog.claimStorage(await blobs.identity(), 'worker');
   const reader = source.readerHeaders.authorization.slice(7);
-  const make = (upstreamSource) =>
-    new MirrorSync({
+  const target = new ServiceMirrorTarget('releases', catalog, blobs, mirror.directory, pins);
+  const make = (upstreamSource) => {
+    const dependencies = {
       repository: 'releases',
-      source: `${upstream}|releases`,
+      source: [upstream, 'releases', ...(stages ?? [])].join('|'),
       upstream: upstreamSource,
-      target: new ServiceMirrorTarget('releases', catalog, blobs, mirror.directory, pins),
+      target,
       states: new PostgresMirrorState(catalog.pool),
       now: () => new Date().toISOString(),
-    });
+    };
+    return stages ? new StageImport({ ...dependencies, stages }) : new MirrorSync(dependencies);
+  };
   const port = (address) => new SdkMirrorSource(address, 'releases', () => reader, stop.signal);
   const sourcePort = port(upstream);
   /** The source port with counted range reads; `fail` names the call (1-based) that breaks. */
@@ -193,7 +203,7 @@ async function pair(t) {
     await new ArkvoryClient(upstream, () => issued.secret).activateServiceKey();
     return { authorization: 'Bearer ' + issued.secret };
   };
-  return { source, mirror, catalog, port, counted, make, settle, deleter };
+  return { source, mirror, catalog, target, port, counted, make, settle, deleter };
 }
 
 const content = async (f, url) => {
@@ -243,6 +253,16 @@ test('a mirror seeds, follows the feed and serves artifacts, packages, paths and
     assert.equal(status.caughtUp, true);
     assert.equal(status.copiedArtifacts, 4);
     assert.equal(status.errorCode, null);
+    // Prometheus sees the same state; the stale and failing alerts are built on these series.
+    const metrics = await mirror.app.inject({ url: '/health/metrics', headers: mirror.headers });
+    assert.match(
+      metrics.body,
+      /^arkvory_mirror_last_sync_timestamp_seconds\{repository="releases",mode="mirror"\} \d+$/m,
+    );
+    assert.match(
+      metrics.body,
+      /^arkvory_mirror_failing\{repository="releases",mode="mirror"\} 0$/m,
+    );
 
     // Changes after the seed arrive through the feed, deletions included.
     await call(source, 'DELETE', `/artifacts/${c}/stages/staging`, undefined, 204);
@@ -335,4 +355,67 @@ test('an interrupted copy resumes from its recorded parts and the mirror outlive
     assert.deepEqual(await content(mirror, `/artifacts/${id}/content`), large);
     assert.notEqual((await call(mirror, 'GET', '/mirror')).json().errorCode, null);
   }
+});
+
+test('dev to prod: versions given the release stage are taken over once and stay', async (t) => {
+  const p = await pair(t, ['release']);
+  const { source: dev, mirror: prod } = p;
+  const promoted = await publish(dev, Buffer.from('promoted build'), 'app-1.bin');
+  const internal = await publish(dev, Buffer.from('internal build'), 'app-2.bin');
+  await call(dev, 'PUT', `/artifacts/${promoted}/annotations`, {
+    expectedRevision: 0,
+    value: { labels: ['signed'], metadata: { commit: 'abc' }, collections: [] },
+  });
+  await call(dev, 'PUT', `/artifacts/${promoted}/stages/release`, {});
+  await call(dev, 'PUT', `/artifacts/${internal}/stages/qa`, {});
+  await p.settle();
+  assert.deepEqual(
+    await content(prod, `/artifacts/${promoted}/content`),
+    Buffer.from('promoted build'),
+  );
+  assert.deepEqual(
+    (await call(prod, 'GET', `/artifacts/${promoted}/stages`)).json().items.map((s) => s.stage),
+    ['release'],
+  );
+  assert.deepEqual((await call(prod, 'GET', `/artifacts/${promoted}/annotations`)).json().labels, [
+    'signed',
+  ]);
+  await call(prod, 'GET', `/artifacts/${internal}`, undefined, 404);
+
+  // A later promotion arrives through the feed; the dev cleanup does not reach prod.
+  await call(dev, 'PUT', `/artifacts/${internal}/stages/release`, {});
+  await call(dev, 'DELETE', `/artifacts/${promoted}/stages/release`, undefined, 204);
+  const removed = await dev.app.inject({
+    method: 'DELETE',
+    url: `${base}/artifacts/${promoted}`,
+    headers: await p.deleter(),
+    payload: { expectedAnnotationRevision: 1 },
+  });
+  assert.equal(removed.json().outcome, 'deleted', removed.body);
+  await p.settle();
+  assert.deepEqual(
+    await content(prod, `/artifacts/${internal}/content`),
+    Buffer.from('internal build'),
+  );
+  assert.deepEqual(
+    await content(prod, `/artifacts/${promoted}/content`),
+    Buffer.from('promoted build'),
+  );
+  assert.deepEqual(
+    (await call(prod, 'GET', `/artifacts/${promoted}/stages`)).json().items.map((s) => s.stage),
+    ['release'],
+    'stage removal on dev does not reach prod',
+  );
+
+  // Prod is an ordinary repository: its own uploads work, and its deletions stick.
+  await publish(prod, Buffer.from('prod hotfix'), 'hotfix.bin');
+  await p.target.remove(internal);
+  await call(dev, 'DELETE', `/artifacts/${internal}/stages/release`, undefined, 204);
+  await call(dev, 'PUT', `/artifacts/${internal}/stages/release`, {});
+  await p.settle();
+  await call(prod, 'GET', `/artifacts/${internal}`, undefined, 404);
+  const status = (await call(prod, 'GET', '/mirror')).json();
+  assert.equal(status.mode, 'import');
+  assert.deepEqual(status.stages, ['release']);
+  assert.equal(status.copiedArtifacts, 2);
 });

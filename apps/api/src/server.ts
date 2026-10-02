@@ -119,7 +119,7 @@ export async function createServer(config: ServerConfig, lifecycle: ServerLifecy
       ...(config.maxObjectBytes === undefined ? {} : { maxObjectBytes: config.maxObjectBytes }),
       ...(config.mirrors ? { mirrors: config.mirrors } : {}),
     });
-    const context = createRequestContext(config.maxRequests, services.mirrors.repositories);
+    const context = createRequestContext(config.maxRequests, services.mirrors.readOnlyRepositories);
     const responses = new ResponseDiagnostics(diagnostics, services.storagePolicies, context);
     // Guard registration precedes feature routes and background startup.
     registerContractGuard(app);

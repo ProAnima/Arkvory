@@ -117,3 +117,22 @@ groups:
         annotations:
           summary: Arkvory backups report {{ $labels.code }}
           description: vault_unavailable - mount the vault volume of ARKVORY_BACKUP_VAULT for the agent and keep it writable; verify_failed - keep the vault unchanged and investigate the damaged point.
+
+      - alert: ArkvoryMirrorStale
+        # Mirrors and imports (ADR 0058): caught up with the source feed less than an hour ago.
+        expr: time() - arkvory_mirror_last_sync_timestamp_seconds > 3600
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: Mirror {{ $labels.repository }} has not caught up with its source for over an hour
+          description: Check errorCode in GET /api/v1/repositories/{repository}/mirror, the worker mirror.step_failed records and the network path and key to the source. Downloads keep working from what is copied.
+
+      - alert: ArkvoryMirrorFailing
+        expr: max by (repository) (arkvory_mirror_failing) == 1
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: Synchronization of mirror {{ $labels.repository }} keeps failing
+          description: mirror_mismatch - keep the copy and investigate the artifact; mirror_source_changed - detach before changing the source; otherwise the source, its key or the local disk.

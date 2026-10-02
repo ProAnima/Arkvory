@@ -101,7 +101,7 @@ export class ServiceMirrorTarget implements MirrorTarget {
     return new StorageService(this.catalog, this.blobs, { next: () => id, now });
   }
 
-  private async local(storage: StorageService, id: string): Promise<Upload | null> {
+  private async uploadOf(storage: StorageService, id: string): Promise<Upload | null> {
     try {
       return await storage.status(this.principal, this.repository, id);
     } catch (error) {
@@ -113,7 +113,7 @@ export class ServiceMirrorTarget implements MirrorTarget {
   async copy(artifact: MirrorArtifact, source: MirrorSource, c: Cancellation): Promise<number> {
     const { id, descriptor } = artifact;
     const storage = this.storage(id);
-    const found = await this.local(storage, id);
+    const found = await this.uploadOf(storage, id);
     const upload =
       found ??
       (await storage.create(
@@ -219,6 +219,39 @@ export class ServiceMirrorTarget implements MirrorTarget {
 
   async register(id: string): Promise<void> {
     await this.browse.register(this.principal, this.repository, id);
+  }
+
+  async local(id: string): Promise<'absent' | 'partial' | 'present' | 'deleted'> {
+    const upload = await this.uploadOf(this.storage(id), id);
+    if (!upload) return 'absent';
+    if (upload.status === 'available') return 'present';
+    return upload.status === 'pending' ? 'partial' : 'deleted';
+  }
+
+  async adopt(
+    id: string,
+    annotation: MirrorAnnotation | null,
+    stages: readonly MirrorStage[],
+  ): Promise<void> {
+    if (annotation) {
+      // Revision 0: nobody here has edited the annotations yet, so the source's apply.
+      const current = await this.browse.annotation(this.principal, this.repository, id);
+      if (current.revision === 0)
+        await this.browse.annotate(this.principal, this.repository, id, 0, annotation);
+    }
+    try {
+      await this.browse.register(this.principal, this.repository, id);
+    } catch (error) {
+      // Not a UPack, or this installation has the identity from another artifact already.
+      const skipped =
+        error instanceof ArkvoryError &&
+        (error.code === 'invalid_input' || error.reason === 'version_exists');
+      if (!skipped) throw error;
+    }
+    const current = await this.promotion.stages(this.principal, this.repository, id);
+    for (const { stage, comment } of stages)
+      if (!current.some((entry) => entry.stage === stage))
+        await this.promotion.setStage(this.principal, this.repository, id, stage, comment);
   }
 
   async stages(id: string, wanted: readonly MirrorStage[]): Promise<void> {

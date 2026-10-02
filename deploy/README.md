@@ -154,7 +154,7 @@ sudo arkvory configure --root /opt/proanima-arkvory --backup-vault-off
 
 ### Зеркала репозиториев
 
-Установка может держать копию репозитория другой установки Arkvory рядом с потребителями. Копия доступна только для чтения и раздаёт файлы и при недоступном главном сервере. Подключение — `arkvory configure --root <root> --mirror <repository> --mirror-upstream https://<главный> --mirror-token-file <ключ только для чтения>`, отключение — `--mirror-detach <repository>`. Команда проверяет главный этим ключом до изменений, перезапускает API и worker и при сбое возвращает прежнюю настройку. Подробности: [CORE_RUNBOOK](../docs/CORE_RUNBOOK.md#зеркала-репозиториев), решение — [ADR 0058](../docs/adr/0058-pull-mirrors.md).
+Установка может держать копию репозитория другой установки Arkvory рядом с потребителями. Копия доступна только для чтения и раздаёт файлы и при недоступном главном сервере. Подключение — `arkvory configure --root <root> --mirror <repository> --mirror-upstream https://<главный> --mirror-token-file <ключ только для чтения>`, отключение — `--mirror-detach <repository>`. С `--mirror-stages release` получается перенос dev → prod: обычный репозиторий забирает версии со стадией `release`, и очистка на dev их не удаляет. Команда проверяет главный этим ключом до изменений, перезапускает API и worker и при сбое возвращает прежнюю настройку. Подробности: [CORE_RUNBOOK](../docs/CORE_RUNBOOK.md#зеркала-репозиториев), решение — [ADR 0058](../docs/adr/0058-pull-mirrors.md).
 
 ## Приватный репозиторий
 
