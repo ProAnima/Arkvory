@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { initialUpdateSnapshot, monitorUpdates } from '../apps/deploy/dist/update-monitor.js';
 import { DeploymentCommandTimeout } from '../apps/deploy/dist/process.js';
+import { BackupRequired } from '../apps/deploy/dist/backup-guard.js';
 import { readUpdateRequest, readUpdateSnapshot } from '@proanima/arkvory-contracts';
 
 const now = '2026-09-26T03:05:00.000Z';
@@ -103,12 +104,24 @@ test('failed release checks are throttled and cannot trigger installation of sta
   await monitorUpdates(enabled, failed, null, now, f.port);
   assert.deepEqual(f.events, ['check']);
 });
-test('schema changes notify but never call automatic installation', async () => {
+test('a schema change installs in the window; a refused backup reports maintenance once a day', async () => {
   const enabled = { ...state, automatic: true },
-    f = fixture(enabled, { ...next, schema: 16 });
+    candidate = { ...next, schema: 16 };
+  const f = fixture(enabled, candidate);
   const result = await monitorUpdates(enabled, f.snapshot, null, now, f.port);
-  assert.equal(result.error, 'maintenance_required');
-  assert.deepEqual(f.events, ['check']);
+  assert.equal(result.error, null);
+  assert.equal(result.currentSchema, 16);
+  assert.deepEqual(f.events, ['check', ['apply', '1.1.0', next.archiveSha256]]);
+  const refused = fixture(enabled, candidate);
+  refused.port.apply = async () => {
+    refused.events.push('apply');
+    throw new BackupRequired('No backup vault is configured');
+  };
+  const failed = await monitorUpdates(enabled, refused.snapshot, null, now, refused.port);
+  assert.equal(failed.error, 'maintenance_required');
+  assert.equal(failed.currentVersion, '1.0.0');
+  await monitorUpdates(enabled, failed, null, '2026-09-26T03:35:00.000Z', refused.port);
+  assert.deepEqual(refused.events, ['check', 'apply'], 'one attempt per day');
 });
 test('requests use CAS, preserve selected bytes and acknowledge duplicates without side effects', async () => {
   const f = fixture();

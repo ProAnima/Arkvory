@@ -8,7 +8,12 @@ export interface UpdatePort {
   start(release: Release): Promise<void>;
   healthy(): Promise<void>;
   save(state: Installation): Promise<void>;
-  journal(value: { phase: string; previous: Release; next: Release }): Promise<void>;
+  journal(value: {
+    phase: string;
+    previous: Release;
+    next: Release;
+    backup?: string;
+  }): Promise<void>;
 }
 export async function applyUpdate(
   state: Installation,
@@ -16,7 +21,9 @@ export async function applyUpdate(
   scheduled: boolean,
   port: UpdatePort,
 ): Promise<boolean> {
-  if (updateDecision(state, next, scheduled) === 'unchanged') return false;
+  const decision = updateDecision(state, next, scheduled);
+  if (decision === 'unchanged') return false;
+  if (decision === 'migrate') throw new Error('Schema change requires a verified backup first');
   // Complete download, verification and extraction before interrupting active transfers.
   await port.stage(next);
   await port.journal({ phase: 'prepared', previous: state.current, next });

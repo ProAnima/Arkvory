@@ -1,6 +1,7 @@
 import { rename, unlink, access } from 'node:fs/promises';
 import { join } from 'node:path';
 import { readUpdateSnapshot, readUpdateRequest } from '@proanima/arkvory-contracts';
+import type { UpdateSnapshot } from '@proanima/arkvory-contracts';
 import { atomicJson, jsonFile } from './files.js';
 import { parseInstallation } from './model.js';
 import { GitHubReleases } from './github.js';
@@ -29,8 +30,14 @@ export async function pollUpdates(root: string): Promise<void> {
   } catch (error) {
     if (!missing(error)) throw error;
   }
+  // The last saved snapshot, re-saved with a fresh heartbeat while an update waits for a backup.
+  let last: UpdateSnapshot = previous;
+  const beat = () => atomicJson(path, { ...last, heartbeatAt: new Date().toISOString() });
   await monitorUpdates(state, previous, request, new Date().toISOString(), {
-    save: (snapshot) => atomicJson(path, snapshot),
+    save: async (snapshot) => {
+      last = { ...snapshot };
+      await atomicJson(path, snapshot);
+    },
     resolve: async () =>
       (
         await (
@@ -44,7 +51,7 @@ export async function pollUpdates(root: string): Promise<void> {
       await save(root, { ...state, automatic });
     },
     apply: async (version, digest) => {
-      await update(root, new Map([['version', version]]), digest);
+      await update(root, new Map([['version', version]]), digest, beat);
       return parseInstallation(await jsonFile(join(root, 'installation.json')));
     },
   });

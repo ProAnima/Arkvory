@@ -1,12 +1,18 @@
 import { copyFile, access, chmod } from 'node:fs/promises';
 import { join } from 'node:path';
+import { randomUUID } from 'node:crypto';
 import { atomicJson, atomicText, jsonFile } from './files.js';
-import { parseInstallation, parseRelease, record, newer } from './model.js';
+import { parseInstallation, parseRelease, record, newer, updateDecision } from './model.js';
 import type { Installation } from './model.js';
 import { source, stage } from './staging.js';
+import type { Source } from './staging.js';
 import { Services } from './services.js';
 import { initialize } from './initialize.js';
 import { applyUpdate } from './update.js';
+import type { UpdatePort } from './update.js';
+import { applyMigration, recoveryDirection } from './migration-update.js';
+import { guardWait, verifiedBackup } from './backup-guard.js';
+import { localBackupControl } from './backup-probe.js';
 import { protectInstallation } from './preflight.js';
 import { prepareUpdateControl } from './update-setup.js';
 import { report } from './output.js';
@@ -93,22 +99,8 @@ export async function checkJournal(root: string): Promise<void> {
   if (!['committed', 'rolled-back', 'recovered'].includes(String(journal['phase'])))
     throw new Error('Interrupted deployment; use recover after inspecting journal.json');
 }
-export async function update(
-  root: string,
-  options: Map<string, string>,
-  expectedDigest?: string,
-): Promise<void> {
-  const state = parseInstallation(await jsonFile(join(root, 'installation.json')));
-  if (options.has('scheduled') && (!state.automatic || state.pin !== null)) {
-    report('info', 'Automatic updates disabled or version pinned');
-    return;
-  }
-  await checkJournal(root);
-  const selected = await source(root, options.get('version') ?? state.pin, options.get('artifact'));
-  if (expectedDigest !== undefined && selected.release.archiveSha256 !== expectedDigest)
-    throw new Error('Selected release bytes changed; check releases again');
-  const services = new Services(root, state);
-  const changed = await applyUpdate(state, selected.release, options.has('scheduled'), {
+function updatePort(root: string, selected: Source, services: Services): UpdatePort {
+  return {
     stage: async () => {
       await stage(root, selected);
       await services.prepare(selected.release);
@@ -122,29 +114,75 @@ export async function update(
     healthy: () => services.healthy(),
     save: (next) => save(root, next),
     journal: (value) => atomicJson(join(root, 'journal.json'), value),
-  });
+  };
+}
+/**
+ * `beat` keeps the console updater heartbeat fresh while a schema-changing update waits for
+ * its backup; the operation lock is held throughout.
+ */
+export async function update(
+  root: string,
+  options: Map<string, string>,
+  expectedDigest?: string,
+  beat?: () => Promise<void>,
+): Promise<void> {
+  const state = parseInstallation(await jsonFile(join(root, 'installation.json')));
+  const scheduled = options.has('scheduled');
+  if (scheduled && (!state.automatic || state.pin !== null)) {
+    report('info', 'Automatic updates disabled or version pinned');
+    return;
+  }
+  await checkJournal(root);
+  const selected = await source(root, options.get('version') ?? state.pin, options.get('artifact'));
+  if (expectedDigest !== undefined && selected.release.archiveSha256 !== expectedDigest)
+    throw new Error('Selected release bytes changed; check releases again');
+  const services = new Services(root, state);
+  const port = updatePort(root, selected, services);
+  if (updateDecision(state, selected.release, scheduled) === 'migrate') {
+    await applyMigration(state, selected.release, {
+      ...port,
+      backup: async () => {
+        report('info', 'Database schema changes: capturing and verifying a backup first');
+        const wait = beat ? { ...guardWait, beat } : guardWait;
+        const point = await verifiedBackup(localBackupControl(root, state), randomUUID(), wait);
+        return `backup point ${point.pointId} of vault ${point.vaultId} (${point.snapshotAt})`;
+      },
+      migrate: (release) => services.migrate(release),
+    });
+    report('info', `Updated to ${selected.release.version} with a database migration`);
+    await services.confirmBackup(selected.release);
+    return;
+  }
+  const changed = await applyUpdate(state, selected.release, scheduled, port);
   report('info', changed ? `Updated to ${selected.release.version}` : 'Already current');
   // Outside applyUpdate: the agent never decides about a rollback of the API.
   if (changed) await services.confirmBackup(selected.release);
 }
+/** Completes an interrupted deployment in the direction the journal allows (ADR 0059). */
 export async function recover(root: string): Promise<void> {
   const state = parseInstallation(await jsonFile(join(root, 'installation.json')));
   const journal = record(await jsonFile(join(root, 'journal.json')));
-  if (journal['phase'] === 'maintenance-required')
-    throw new Error(
-      'Database migration may have run; restore backup or finish maintenance manually',
-    );
   const previous = parseRelease(journal['previous']);
-  if (previous.schema !== state.current.schema)
-    throw new Error('Cannot restore code across schema changes');
+  const next = parseRelease(journal['next']);
   const services = new Services(root, state);
   await services.stop();
+  if (recoveryDirection(previous, next, String(journal['phase'])) === 'forward') {
+    await save(root, { ...state, current: next });
+    await services.migrate(next);
+    await services.adopt(next);
+    await services.start(next);
+    await services.healthy();
+    await atomicJson(join(root, 'journal.json'), { ...journal, phase: 'committed' });
+    await services.confirmBackup(next);
+    return;
+  }
   await save(root, { ...state, current: previous });
   await services.start(previous);
   await services.healthy();
   await atomicJson(join(root, 'journal.json'), { ...journal, phase: 'recovered' });
   await services.confirmBackup(previous);
 }
+/** Manual path with an operator backup: the same journal and rollback as an update (ADR 0059). */
 export async function upgrade(root: string, options: Map<string, string>): Promise<void> {
   const backup = options.get('backup-record');
   if (!backup)
@@ -162,27 +200,11 @@ export async function upgrade(root: string, options: Map<string, string>): Promi
     throw new Error('Maintenance upgrade must move forward');
   if (state.pin !== null && selected.release.version !== state.pin)
     throw new Error('Unpin before maintenance upgrade');
-  await stage(root, selected);
   const services = new Services(root, state);
-  await services.prepare(selected.release);
-  await atomicJson(join(root, 'journal.json'), {
-    phase: 'maintenance-required',
-    previous: state.current,
-    next: selected.release,
-    backup,
-  });
-  await services.stop();
-  await save(root, { ...state, current: selected.release });
-  // No rollback after a migration attempt: the backup, not old binaries, is the recovery boundary.
-  await services.migrate(selected.release);
-  await services.adopt(selected.release);
-  await services.start(selected.release);
-  await services.healthy();
-  await atomicJson(join(root, 'journal.json'), {
-    phase: 'committed',
-    previous: state.current,
-    next: selected.release,
-    backup,
+  await applyMigration(state, selected.release, {
+    ...updatePort(root, selected, services),
+    backup: () => Promise.resolve(`operator backup record ${backup}`),
+    migrate: (release) => services.migrate(release),
   });
   await services.confirmBackup(selected.release);
 }

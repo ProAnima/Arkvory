@@ -2,6 +2,7 @@ import type { UpdateSnapshot, UpdateRequest } from '@proanima/arkvory-contracts'
 import type { Installation, Release } from './model.js';
 import { newer } from './model.js';
 import { isUnconfirmedTermination } from './process.js';
+import { BackupRequired } from './backup-guard.js';
 
 export interface UpdateMonitorPort {
   save(snapshot: UpdateSnapshot): Promise<void>;
@@ -95,10 +96,7 @@ async function execute(
         snapshot.pin !== null
       )
         throw new Error('Release selection changed');
-      if (candidate.schema !== snapshot.currentSchema) {
-        snapshot.error = 'maintenance_required';
-        snapshot.phase = 'failed';
-      } else await applyRelease(snapshot, now, port);
+      await applyRelease(snapshot, now, port);
     } else {
       if (request?.kind === 'check' || due) {
         snapshot.phase = 'checking';
@@ -130,15 +128,17 @@ async function execute(
         snapshot.lastAttemptDay !== day &&
         snapshot.latest &&
         newer(snapshot.latest.version, snapshot.currentVersion)
-      ) {
-        if (snapshot.latest.schema !== snapshot.currentSchema)
-          snapshot.error = 'maintenance_required';
-        else await applyRelease(snapshot, now, port);
-      }
+      )
+        await applyRelease(snapshot, now, port);
     }
   } catch (error) {
     snapshot.phase = 'failed';
-    snapshot.error = isUnconfirmedTermination(error) ? 'recovery_required' : 'update_failed';
+    // A schema change without a verified backup was refused before anything changed.
+    snapshot.error = isUnconfirmedTermination(error)
+      ? 'recovery_required'
+      : error instanceof BackupRequired
+        ? 'maintenance_required'
+        : 'update_failed';
     if (isUnconfirmedTermination(error)) {
       await save().catch(() => undefined);
       throw error;

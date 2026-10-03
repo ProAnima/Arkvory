@@ -135,6 +135,37 @@ try {
   await exerciseUpdateControl(token, async () => {
     manage(['updates-poll']);
   });
+  // The next release declares a newer schema: the update must back up first (ADR 0059).
+  const next = join(temporary, 'next');
+  await mkdir(next);
+  await copyFile(join(artifact, 'arkvory-runtime.zip'), join(next, 'arkvory-runtime.zip'));
+  await writeFile(
+    join(next, 'arkvory-release.json'),
+    JSON.stringify({ ...manifest, version: nextVersion, schema: manifest.schema + 1 }),
+  );
+  let refusal = '';
+  try {
+    execFileSync(
+      process.execPath,
+      [join(root, 'manage.mjs'), 'update', '--artifact', next, '--root', root],
+      {
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'pipe'],
+      },
+    );
+  } catch (error) {
+    refusal = `${error.stdout}${error.stderr}`;
+  }
+  assert.match(
+    refusal,
+    /No backup vault is configured/,
+    'a schema change without a vault is refused',
+  );
+  assert.equal(
+    JSON.parse(await readFile(join(root, 'installation.json'), 'utf8')).current.version,
+    manifest.version,
+  );
+  await ready();
   await mkdir(vault);
   const capture = await exerciseBackupAgent(token, async () => {
     manage(['configure', '--backup-vault', vault, '--init-vault']);
@@ -160,14 +191,14 @@ try {
     "require('fs').writeFileSync('/var/lib/arkvory/deployment-sentinel','preserved')",
   ]);
   await exerciseContainerRecovery(run, compose, ready);
-  const next = join(temporary, 'next');
-  await mkdir(next);
-  await copyFile(join(artifact, 'arkvory-runtime.zip'), join(next, 'arkvory-runtime.zip'));
-  await writeFile(
-    join(next, 'arkvory-release.json'),
-    JSON.stringify({ ...manifest, version: nextVersion }),
-  );
   manage(['update', '--artifact', next]);
+  // A fresh point was captured and verified for this update, not the earlier one reused.
+  const journal = JSON.parse(await readFile(join(root, 'journal.json'), 'utf8'));
+  assert.equal(journal.phase, 'committed');
+  const recorded = /^backup point ([0-9a-f-]{36}) of vault (\S+) /.exec(journal.backup);
+  assert.ok(recorded, journal.backup);
+  assert.notEqual(recorded[1], capture.pointId);
+  assert.equal(recorded[2], vaultId);
   assert.equal(
     run([
       ...compose,
@@ -191,7 +222,7 @@ try {
     'The backup agent must report its vault after the update',
   );
   console.log(
-    'Container install, migrations, backup agent, crash restart and persistent-volume update passed',
+    'Container install, migrations, backup agent, crash restart and schema update behind a verified backup passed',
   );
 } catch (error) {
   console.error(run([...compose, 'logs', '--no-color', '--tail', '40', 'api', 'worker', 'backup']));

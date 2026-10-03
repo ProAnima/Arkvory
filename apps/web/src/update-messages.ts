@@ -12,7 +12,7 @@ export const updateEnglish = {
   updateHour: 'Maintenance hour (UTC)',
   updateSave: 'Save settings',
   updatePolicyHelp:
-    'Checks run every 6 hours, even when automatic installation is off. Automatic installation runs once per day during the selected UTC hour. Schema changes require backed-up maintenance.',
+    'Checks run every 6 hours, even when automatic installation is off. Automatic installation runs once per day during the selected UTC hour. A release that changes the database schema installs only after the server has captured and verified a fresh backup.',
   updateUnavailable:
     'The host updater is not connected. Ask the server administrator to connect it using updates-connect.',
   updateStale:
@@ -26,7 +26,9 @@ export const updateEnglish = {
   updatePinned:
     'Version is pinned. Remove the pin on the server before installing from the console.',
   updateMaintenance:
-    'This release changes the database schema. Use a backed-up maintenance upgrade on the server.',
+    'Installation refused: a release that changes the database schema needs a fresh verified backup. Connect a backup vault and complete the first backup, then check again, or upgrade manually on the server.',
+  updateMigration:
+    'This release changes the database schema. The server captures and verifies a backup before installing, so installation takes longer.',
   updateCheckFailed:
     'Release check failed. The displayed release may be outdated. Check GitHub access and credentials on the server.',
   updateFailed: 'Update failed. Inspect the installation journal and service logs before retrying.',
@@ -35,7 +37,7 @@ export const updateEnglish = {
   updateConflict: 'Settings changed while the request was waiting. Refresh and submit again.',
   updateConfirm: 'Install Arkvory {version}?',
   updateConfirmHelp:
-    'Active transfers may be interrupted and need to resume. The installer verifies the release and attempts rollback if startup fails. Schedule this action during a maintenance window.',
+    'Active transfers may be interrupted and need to resume. The installer verifies the release, backs up first when the database schema changes, and attempts rollback if startup fails. Schedule this action during a maintenance window.',
   updateCancel: 'Cancel',
   updateConfirmButton: 'Install this release',
   updateConnection:
@@ -55,7 +57,7 @@ export const updateRussian: Record<keyof typeof updateEnglish, string> = {
   updateHour: 'Час обслуживания (UTC)',
   updateSave: 'Сохранить настройки',
   updatePolicyHelp:
-    'Проверка выполняется каждые 6 часов, даже если автоустановка выключена. Автоустановка запускается один раз в сутки в выбранный час UTC. Изменение схемы БД требует обслуживания с резервной копией.',
+    'Проверка выполняется каждые 6 часов, даже если автоустановка выключена. Автоустановка запускается один раз в сутки в выбранный час UTC. Релиз, меняющий схему БД, устанавливается только после того, как сервер сделает и проверит свежую резервную копию.',
   updateUnavailable:
     'Механизм обновлений на сервере не подключён. Администратор сервера может подключить его командой updates-connect.',
   updateStale:
@@ -68,7 +70,9 @@ export const updateRussian: Record<keyof typeof updateEnglish, string> = {
   updateUnknown: 'Проверка ещё не выполнялась',
   updatePinned: 'Версия закреплена. Перед установкой из консоли снимите закрепление на сервере.',
   updateMaintenance:
-    'Релиз меняет схему БД. Выполните обновление в режиме обслуживания с резервной копией на сервере.',
+    'Установка отклонена: для релиза, меняющего схему БД, нужна свежая проверенная резервная копия. Подключите хранилище копий и дождитесь первой копии, затем проверьте снова — или обновите вручную на сервере.',
+  updateMigration:
+    'Релиз меняет схему БД. Перед установкой сервер сделает и проверит резервную копию, поэтому установка займёт больше времени.',
   updateCheckFailed:
     'Не удалось проверить релизы. Показанная версия может быть устаревшей. Проверьте доступ к GitHub и учётные данные на сервере.',
   updateFailed:
@@ -79,7 +83,7 @@ export const updateRussian: Record<keyof typeof updateEnglish, string> = {
     'Настройки изменились, пока запрос ожидал выполнения. Обновите сведения и повторите действие.',
   updateConfirm: 'Установить Arkvory {version}?',
   updateConfirmHelp:
-    'Активные передачи могут прерваться и потребовать продолжения. Установщик проверит релиз и попытается выполнить откат при ошибке запуска. Выполняйте действие в окно обслуживания.',
+    'Активные передачи могут прерваться и потребовать продолжения. Установщик проверит релиз, при смене схемы БД сначала сделает резервную копию и попытается выполнить откат при ошибке запуска. Выполняйте действие в окно обслуживания.',
   updateCancel: 'Отмена',
   updateConfirmButton: 'Установить этот релиз',
   updateConnection:

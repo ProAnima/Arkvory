@@ -325,7 +325,7 @@ The administrator console announces new stable releases and provides manual inst
 
 Native installers: **Arkvory-Setup-x64.exe** (RU/EN wizard, bundled Node.js/PostgreSQL/WinSW/VC++ runtime, owner account and onboarding), **Arkvory-amd64.deb** and **Arkvory-x86_64.rpm** (bundled Node.js; database dependencies resolved by the package manager). Windows setup works offline. Native packages and data-preserving uninstall have dedicated CI gates. RPM distribution acceptance and publisher signing remain release prerequisites. The console includes guided setup and a permission-aware API catalogue with CLI help.
 
-Stable updates use verified GitHub Releases, optional automatic updates, version pinning and same-schema rollback. Data and configuration remain separate from code; the database has its own supervised service. PostgreSQL major upgrades and installed runtime maintenance are separate operator actions. Advanced script/Compose installation remains available; CMD launchers have been removed. [Installation and platform requirements](deploy/README.md).
+Stable updates use verified GitHub Releases, optional automatic updates, version pinning and rollback. A release that changes the database schema installs the same way, but only after the built-in agent has captured and verified a fresh backup; a failed migration returns to the previous version. Data and configuration remain separate from code; the database has its own supervised service. PostgreSQL major upgrades and installed runtime maintenance are separate operator actions. Advanced script/Compose installation remains available; CMD launchers have been removed. [Installation and platform requirements](deploy/README.md).
 
 ### Remote CLI
 

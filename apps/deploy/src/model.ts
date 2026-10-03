@@ -82,7 +82,7 @@ export function updateDecision(
   state: Installation,
   next: Release,
   scheduled: boolean,
-): 'update' | 'unchanged' {
+): 'update' | 'migrate' | 'unchanged' {
   if (scheduled && (!state.automatic || state.pin !== null)) return 'unchanged';
   if (next.version === state.current.version) {
     if (next.archiveSha256 !== state.current.archiveSha256)
@@ -91,9 +91,7 @@ export function updateDecision(
   }
   if (!newer(next.version, state.current.version)) throw new Error('Downgrades are forbidden');
   if (state.pin !== null && next.version !== state.pin) throw new Error('Version is pinned');
-  if (next.schema !== state.current.schema)
-    throw new Error(
-      'Schema change requires a backed-up maintenance upgrade; automatic update refused',
-    );
-  return 'update';
+  if (next.schema < state.current.schema) throw new Error('Release lowers the database schema');
+  // A newer schema migrates only behind a verified backup (ADR 0059).
+  return next.schema === state.current.schema ? 'update' : 'migrate';
 }

@@ -1,8 +1,14 @@
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
-import { readBackupStatus } from '@proanima/arkvory-contracts';
+import {
+  readBackupJobPage,
+  readBackupPointPage,
+  readBackupReceipt,
+  readBackupStatus,
+} from '@proanima/arkvory-contracts';
 import type { BackupStatusResponse } from '@proanima/arkvory-contracts';
+import type { BackupControlPort } from './backup-guard.js';
 import { jsonFile } from './files.js';
 import { localRequest, localTarget } from './local-api.js';
 import type { Installation } from './model.js';
@@ -27,26 +33,57 @@ export interface BackupWait {
 /** About 90 seconds: two supervisor restarts (10 s each) of an agent that starts too early. */
 export const agentWait: BackupWait = { attempts: 45, intervalMs: 2000 };
 
+/** One call of /api/v1/backup with the file-based bootstrap key; 2xx bodies are returned parsed. */
+async function backupCall(
+  root: string,
+  state: Installation,
+  path: string,
+  options: { method?: string; headers?: Readonly<Record<string, string>> } = {},
+): Promise<unknown> {
+  const env = runtimeEnvironment(await jsonFile(join(root, 'config/runtime.json')));
+  const token = (await readFile(join(root, 'config/bootstrap-token.txt'), 'utf8')).trim();
+  const response = await localRequest(
+    localTarget(env, state.mode === 'compose'),
+    `/api/v1/backup${path}`,
+    {
+      ...options,
+      headers: { ...options.headers, Authorization: `Bearer ${token}` },
+      timeoutMs: 5000,
+    },
+  );
+  if (response.status === 401 || response.status === 403) throw new BackupCredentialRejected();
+  if (response.status < 200 || response.status > 299)
+    throw new Error(`Backup API is unavailable (HTTP ${String(response.status)})`);
+  return JSON.parse(response.body);
+}
+
 /**
- * GET /api/v1/backup/status with the file-based bootstrap key over the transport the
- * installation configured. The agent publishes its state only through its heartbeat in the
- * database; the API is the single reader installers use.
+ * GET /api/v1/backup/status over the transport the installation configured. The agent
+ * publishes its state only through its heartbeat in the database; the API is the single reader
+ * installers use.
  */
 export async function backupStatus(
   root: string,
   state: Installation,
 ): Promise<BackupStatusResponse> {
-  const env = runtimeEnvironment(await jsonFile(join(root, 'config/runtime.json')));
-  const token = (await readFile(join(root, 'config/bootstrap-token.txt'), 'utf8')).trim();
-  const response = await localRequest(
-    localTarget(env, state.mode === 'compose'),
-    '/api/v1/backup/status',
-    { headers: { Authorization: `Bearer ${token}` }, timeoutMs: 5000 },
-  );
-  if (response.status === 401 || response.status === 403) throw new BackupCredentialRejected();
-  if (response.status !== 200)
-    throw new Error(`Backup status is unavailable (HTTP ${String(response.status)})`);
-  return readBackupStatus(JSON.parse(response.body));
+  return readBackupStatus(await backupCall(root, state, '/status'));
+}
+
+/** The backup API of the running release for the schema-update guard (ADR 0059). */
+export function localBackupControl(root: string, state: Installation): BackupControlPort {
+  return {
+    status: () => backupStatus(root, state),
+    run: async (key) =>
+      readBackupReceipt(
+        await backupCall(root, state, '/runs', {
+          method: 'POST',
+          headers: { 'Idempotency-Key': key },
+        }),
+      ),
+    jobs: async () => readBackupJobPage(await backupCall(root, state, '/jobs?limit=100')).items,
+    points: async () =>
+      readBackupPointPage(await backupCall(root, state, '/points?limit=100')).items,
+  };
 }
 
 /** Polls until `accept` holds; null after the bounded wait. A rejected credential is final. */

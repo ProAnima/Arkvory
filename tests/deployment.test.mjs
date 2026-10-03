@@ -65,7 +65,7 @@ function port(fail = '') {
     },
   };
 }
-test('release policy rejects unstable versions, replaced assets, downgrades and schema changes', () => {
+test('release policy rejects unstable versions, replaced assets, downgrades and lower schemas', () => {
   for (const version of ['1.2.3-rc.1', 'v1.2.3', '01.2.3', '../1', '1000000.0.0'])
     assert.throws(() => parseRelease({ ...previous, version }));
   assert.equal(newer('1.10.0', '1.9.9'), true);
@@ -74,7 +74,10 @@ test('release policy rejects unstable versions, replaced assets, downgrades and 
     /replaced/,
   );
   assert.throws(() => updateDecision(state, { ...next, version: '0.9.0' }, false), /Downgrade/);
-  assert.throws(() => updateDecision(state, { ...next, schema: 16 }, true), /Schema/);
+  // A newer schema migrates behind a verified backup (ADR 0059); a lower one never installs.
+  assert.equal(updateDecision(state, { ...next, schema: 16 }, true), 'migrate');
+  assert.throws(() => updateDecision(state, { ...next, schema: 14 }, false), /lowers/);
+  assert.equal(updateDecision(state, next, false), 'update');
 });
 test('scheduled update honors disabled and pinned installations', async () => {
   for (const change of [{ automatic: false }, { pin: '1.0.0' }]) {

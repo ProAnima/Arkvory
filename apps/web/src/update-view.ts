@@ -90,9 +90,9 @@ export class UpdateView {
       message(element('update-notice', HTMLElement), 'updateAvailable', {
         version: snapshot.latest.version,
       });
-    const maintenance = snapshot.latest && snapshot.latest.schema !== snapshot.currentSchema;
-    this.install.disabled =
-      !available || stale || working || !!snapshot.pin || !!snapshot.error || !!maintenance;
+    // A schema change installs behind a verified backup on the server (ADR 0059).
+    const migration = available && snapshot.latest?.schema !== snapshot.currentSchema;
+    this.install.disabled = !available || stale || working || !!snapshot.pin || !!snapshot.error;
     message(
       this.output,
       snapshot.phase === 'updating'
@@ -107,8 +107,8 @@ export class UpdateView {
                 ? 'updateChecking'
                 : snapshot.pin
                   ? 'updatePinned'
-                  : maintenance
-                    ? 'updateMaintenance'
+                  : migration
+                    ? 'updateMigration'
                     : 'updateIdle',
     );
   }

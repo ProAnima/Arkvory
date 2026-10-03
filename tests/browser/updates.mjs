@@ -93,7 +93,15 @@ try {
   await save();
   await connect();
   assert.equal(await page.locator('#update-install').isDisabled(), true);
-  assert.match(await page.locator('#updates-status').innerText(), /database schema/);
+  assert.match(await page.locator('#updates-status').innerText(), /fresh verified backup/);
+  // After a new check the schema change is installable again: the server backs up first.
+  snapshot.revision++;
+  snapshot.phase = 'idle';
+  snapshot.error = null;
+  await save();
+  await connect();
+  assert.equal(await page.locator('#update-install').isDisabled(), false);
+  assert.match(await page.locator('#updates-status').innerText(), /captures and verifies a backup/);
   await page.locator('#update-automatic').check();
   await page.locator('#update-hour').selectOption('22');
   await page.locator('#update-settings button').click();
