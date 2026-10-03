@@ -21,7 +21,7 @@
 - [ ] Сертификат на публичное имя сервера выпущен внешним инструментом (certbot, win-acme, корпоративный УЦ) и продлевается им же. Ключ без пароля, читать его может только учётная запись службы.
 - [ ] HTTPS включён одной из двух схем ([HTTPS](CORE_RUNBOOK.md#конфигурация), [ADR 0055](adr/0055-built-in-tls.md)):
   - встроенный: `arkvory configure --root <root> --tls-cert <fullchain.pem> --tls-key <privkey.pem> --listen-host 0.0.0.0` — проверка файлов, перезапуск и откат при сбое; продлённые файлы подхватываются без перезапуска;
-  - reverse proxy: API остаётся на loopback, proxy указан в `ARKVORY_TRUSTED_PROXIES` и не буферизует тела ([nginx.conf.example](../deploy/nginx.conf.example)).
+  - reverse proxy: API остаётся на loopback, proxy указан в `ARKVORY_TRUSTED_PROXIES` и не буферизует тела ([nginx.conf.example](../deploy/nginx.conf.example)); журнал доступа proxy не пишет строку запроса — в ней ссылки на скачивание несут свой секрет ([ADR 0062](adr/0062-download-links.md)).
 - [ ] Firewall: снаружи открыт только порт HTTPS (API или proxy) и только для сетей клиентов. PostgreSQL слушает loopback. HTTP-порт API на внешнем адресе без proxy не открыт; в журнале запуска нет `http.plaintext_exposed`.
 - [ ] С клиентской машины `GET https://<имя>/health/status` отвечает 200, цепочка сертификата проверяется без исключений. Проверку TLS на клиентах не отключать.
 

@@ -41,6 +41,18 @@ arkvoryctl download ARTIFACT_ID ./downloaded.upack
 
 Get a scoped key from your administrator, keep it in a private file, add a profile and run `doctor`. Use `packages publish FILE` to upload and register UPack in one command, or `upload FILE` for ordinary files; `packages register ID` indexes an existing artifact. Use `--profile` and `--repository` for a single command, or `profile use NAME` to change the default. `--help --lang en|ru` explains all commands.
 
+## Ссылка на скачивание / Download link
+
+```sh
+arkvoryctl link ARTIFACT_ID --ttl 3600
+# {"url":"https://arkvory.example/api/v1/repositories/releases/artifacts/…/content?token=dtl_…","expiresAt":"…"}
+curl -fL -o build.upack "$URL"
+```
+
+Ссылка открывает содержимое одного артефакта без ключа до `expiresAt` (60 с – 24 ч, по умолчанию час). Сама ссылка — секрет: передавайте её как ключ и не публикуйте; сервер её не журналирует, но журналы вашего прокси и история браузера могут сохранить. Отозвать раньше срока нельзя — выдавайте короткие ссылки ([ADR 0062](adr/0062-download-links.md)).
+
+A link downloads one artifact without a key until `expiresAt` (60 s to 24 h, one hour by default). Treat it as a secret; it cannot be revoked early.
+
 ## CI/CD и формат вывода
 
 ```sh

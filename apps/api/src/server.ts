@@ -166,6 +166,7 @@ export async function createServer(config: ServerConfig, lifecycle: ServerLifecy
       available: runtime.available,
       identity: services.identity,
       serviceAccounts: services.serviceAccounts,
+      links: services.links,
       registerOwner: runtime.transfers.registerOwner,
       drain,
     });

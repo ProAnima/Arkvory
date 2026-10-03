@@ -72,6 +72,8 @@ export type UnchangedKeys = Assert<
       | 'repositoryMirror'
       // ADR 0060: feedback to ProAnimaStudio as the additive namespace `feedback`.
       | 'feedback'
+      // ADR 0062: short-lived download links.
+      | 'createDownloadLink'
     >,
     keyof LegacyClient
   >

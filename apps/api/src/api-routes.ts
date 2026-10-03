@@ -20,6 +20,7 @@ import { registerCatalogRoutes } from './catalog-routes.js';
 import { registerPromotionRoutes } from './promotion-routes.js';
 import { registerBackupRoutes } from './backup-routes.js';
 import { registerMirrorRoutes } from './mirror-routes.js';
+import { registerLinkRoutes } from './link-routes.js';
 
 interface Composition {
   services: ReturnType<typeof createApiServices>;
@@ -51,6 +52,7 @@ export function registerApiRoutes(app: FastifyInstance, dependencies: Compositio
   });
   registerRepositoryRoutes(app, principal);
   registerArtifactRoutes(app, s.service, principal);
+  registerLinkRoutes(app, s.links, principal);
   registerDownloadRoutes(
     app,
     { resolver: s.resolver, browse: s.browse },

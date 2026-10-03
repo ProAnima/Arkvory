@@ -66,6 +66,11 @@ export class HttpTransport implements HttpPort {
     )
       throw new ArkvoryClientError('insecure_url', 'Use HTTPS (HTTP is allowed only on loopback)');
   }
+  /** The absolute URL of an API path under this client's base URL (which may carry a prefix). */
+  href(path: string): string {
+    return new URL(path, this.base.href.endsWith('/') ? this.base : new URL(this.base.href + '/'))
+      .href;
+  }
   async request(path: string, init: RequestInit = {}, signal?: AbortSignal) {
     const deadline =
       signal ??
@@ -78,10 +83,7 @@ export class HttpTransport implements HttpPort {
     signal = signals.length ? AbortSignal.any(signals) : undefined;
     const headers = new Headers(init.headers);
     headers.set('Authorization', `Bearer ${this.token()}`);
-    const url = new URL(
-      path,
-      this.base.href.endsWith('/') ? this.base : new URL(this.base.href + '/'),
-    );
+    const url = new URL(this.href(path));
     const started = Date.now();
     const observe = (response?: Response) => {
       this.observe(init.method ?? 'GET', url, started, response);

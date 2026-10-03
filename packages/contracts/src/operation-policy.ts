@@ -1,6 +1,7 @@
 import { storageOperations, attachmentOperations } from './storage-operation-policies.js';
 import { promotionOperations } from './promotion-api.js';
 import { mirrorOperations } from './mirror-api.js';
+import { downloadLinkOperationPolicies } from './download-link-api.js';
 import { accountAdministrationOperations } from './account-operation-policies.js';
 import { backupOperations } from './backup-api.js';
 import { feedbackOperations } from './feedback-api.js';
@@ -485,6 +486,7 @@ for (const [suffix, method, id, actions, legacy, retry] of attachmentOperations)
 for (const [suffix, method, id, actions, legacy, retry] of [
   ...promotionOperations,
   ...mirrorOperations,
+  ...downloadLinkOperationPolicies,
 ])
   data(root + suffix, method, id, 'Catalog', actions, legacy, retry);
 for (const [path, method, id, actions, retry] of storageOperations)

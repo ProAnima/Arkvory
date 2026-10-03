@@ -34,3 +34,4 @@ export * from './mirror-ports.js';
 export * from './mirror-sync.js';
 export * from './mirror-status.js';
 export * from './mirror-import.js';
+export * from './download-links.js';

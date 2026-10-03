@@ -39,7 +39,7 @@ type RepositoryTransport = Pick<
     | 'packages'
     | 'registerPackage'
   > &
-  Pick<DownloadApi, 'download' | 'downloadVerified'> &
+  Pick<DownloadApi, 'download' | 'downloadVerified' | 'createDownloadLink'> &
   Pick<UploadsApi, 'create' | 'status' | 'parts' | 'complete' | 'enqueue' | 'cancel'> &
   Pick<UploadTransfer, 'resume'> &
   Pick<
@@ -85,6 +85,7 @@ export function repositoryClient(client: RepositoryTransport, repository: string
       get: bind(client.artifact),
       download: bind(client.download),
       downloadVerified: bind(client.downloadVerified),
+      link: bind(client.createDownloadLink),
     }),
     attachments: Object.freeze({
       get: bind(client.attachments),

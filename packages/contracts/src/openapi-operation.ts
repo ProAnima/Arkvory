@@ -7,6 +7,7 @@ import {
   requestIdHeader,
 } from './http-contract.js';
 import { retryAfterHeader } from './errors.js';
+import { downloadLinkOperations } from './download-link-api.js';
 
 export type ObjectValue = Record<string, unknown>;
 export function object(value: unknown): ObjectValue {
@@ -164,7 +165,12 @@ export function composeOperation(
     ...(content ? { parameters: contentParameters(original['parameters'], method) } : {}),
     operationId: policy.operationId,
     tags: [policy.tag],
-    security: policy.access.kind === 'public' ? [] : [{ serviceKey: [] }],
+    security:
+      policy.access.kind === 'public'
+        ? []
+        : downloadLinkOperations.includes(policy.operationId)
+          ? [{ serviceKey: [] }, { downloadLink: [] }]
+          : [{ serviceKey: [] }],
     'x-arkvory-authorization': policy.access,
     'x-arkvory-authority': policy.access.kind,
     'x-arkvory-surface': classification.surface,

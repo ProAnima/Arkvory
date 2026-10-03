@@ -1,7 +1,12 @@
 import { createHash, timingSafeEqual } from 'node:crypto';
-import type { FastifyInstance } from 'fastify';
+import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { ArkvoryError } from '@proanima/arkvory-domain';
-import type { CredentialRejection, IdentityService } from '@proanima/arkvory-application';
+import type { Principal } from '@proanima/arkvory-domain';
+import type {
+  CredentialRejection,
+  DownloadLinks,
+  IdentityService,
+} from '@proanima/arkvory-application';
 import type { PostgresServices } from '@proanima/arkvory-infrastructure';
 import type { ServerConfig } from './config.js';
 import type { RequestContext } from './request-context.js';
@@ -15,6 +20,7 @@ interface Security {
   available: () => boolean;
   identity: Pick<IdentityService, 'resolve' | 'rejection'>;
   serviceAccounts: Pick<PostgresServices, 'resolve' | 'rejection'>;
+  links: Pick<DownloadLinks, 'principal' | 'rejection'>;
   context: Pick<RequestContext, 'signal' | 'countRequest' | 'authenticate'>;
   registerOwner: (id: string) => void;
   drain: Pick<RequestDrain, 'isDraining' | 'track'>;
@@ -30,11 +36,71 @@ async function rejection(
     ? serviceAccounts.rejection(token)
     : identity.rejection(token);
 }
+const contentRoute = '/api/v1/repositories/:repository/artifacts/:id/content';
+/**
+ * A download link (ADR 0062): `?token=` on GET/HEAD of an artifact's content, without an
+ * Authorization header. Anywhere else the parameter is not a credential.
+ */
+function linkOf(request: FastifyRequest): string | undefined {
+  if (request.routeOptions.url !== contentRoute || request.headers.authorization) return undefined;
+  if (request.method !== 'GET' && request.method !== 'HEAD') return undefined;
+  const query: unknown = request.query;
+  const token = query && typeof query === 'object' && 'token' in query ? query.token : undefined;
+  return typeof token === 'string' ? token : undefined;
+}
+function pathOf(request: FastifyRequest): { repository: string; id: string } {
+  const params: unknown = request.params;
+  if (!params || typeof params !== 'object' || !('repository' in params) || !('id' in params))
+    return { repository: '', id: '' };
+  const { repository, id } = params;
+  return {
+    repository: typeof repository === 'string' ? repository : '',
+    id: typeof id === 'string' ? id : '',
+  };
+}
+/** Service key, file key, session or personal token from the Authorization header. */
+async function bearerPrincipal(
+  { config, identity, serviceAccounts }: Pick<Security, 'config' | 'identity' | 'serviceAccounts'>,
+  token: string,
+  activation: boolean,
+): Promise<Principal | null> {
+  // Digest and file-key comparison run for every token, as before, whatever its shape.
+  const digest = createHash('sha256').update(token).digest();
+  const key = token.startsWith('arkvory_')
+    ? undefined
+    : config.keys.find((candidate) =>
+        timingSafeEqual(digest, Buffer.from(candidate.sha256, 'hex')),
+      );
+  if (token.length < 32 || token.length > 512) return null;
+  if (token.startsWith('arkvory_')) return serviceAccounts.resolve(token, activation);
+  return key ? { ...key.principal, credential: 'file-key' } : identity.resolve(token);
+}
+/** A download link authenticates its own artifact's content (ADR 0062); true when handled. */
+async function linkRequest(
+  request: FastifyRequest,
+  reply: FastifyReply,
+  { links, context, registerOwner }: Pick<Security, 'links' | 'context' | 'registerOwner'>,
+): Promise<boolean> {
+  const link = linkOf(request);
+  if (link === undefined) return false;
+  const { repository, id } = pathOf(request);
+  const holder = await links.principal(link, repository, id);
+  if (!holder) {
+    await sendFailure(request, reply, {
+      code: 'unauthorized',
+      message: 'Valid download link required',
+      reason: await links.rejection(link),
+    });
+    return true;
+  }
+  context.authenticate(request, holder);
+  registerOwner(holder.id);
+  return true;
+}
 // Public probes manage their own availability answer and never touch credentials.
 const publicPaths = new Set(['/health/live', '/health/status']);
 export function registerRequestSecurity(app: FastifyInstance, dependencies: Security) {
-  const { config, role, available, identity, serviceAccounts, context, registerOwner, drain } =
-    dependencies;
+  const { role, available, context, registerOwner, drain } = dependencies;
   const loginAdmission = new LoginAdmission();
   app.addHook('preValidation', (request, _reply, done) => {
     loginAdmission.bodyReceived(request);
@@ -81,25 +147,14 @@ export function registerRequestSecurity(app: FastifyInstance, dependencies: Secu
     // Public login cannot consume the protected budget; session lookup remains bounded.
     // Health probes stay outside it so transfer load cannot flap a node out of the balancer.
     if (!health) context.countRequest(reply);
+    if (await linkRequest(request, reply, dependencies)) return;
     const auth = request.headers.authorization;
     const token = auth?.startsWith('Bearer ') ? auth.slice(7) : '';
-    const digest = createHash('sha256').update(token).digest();
-    const key = token.startsWith('arkvory_')
-      ? undefined
-      : config.keys.find((candidate) =>
-          timingSafeEqual(digest, Buffer.from(candidate.sha256, 'hex')),
-        );
-    const authenticated =
-      token.length >= 32 && token.length <= 512
-        ? token.startsWith('arkvory_')
-          ? await serviceAccounts.resolve(
-              token,
-              request.routeOptions.url === '/api/v1/auth/activate-key',
-            )
-          : key
-            ? { ...key.principal, credential: 'file-key' as const }
-            : await identity.resolve(token)
-        : null;
+    const authenticated = await bearerPrincipal(
+      dependencies,
+      token,
+      request.routeOptions.url === '/api/v1/auth/activate-key',
+    );
     if (!authenticated) {
       reply.header('WWW-Authenticate', 'Bearer');
       await sendFailure(request, reply, {

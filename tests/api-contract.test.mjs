@@ -115,7 +115,7 @@ test('route drift rejects unknown methods, missing routes and undocumented conso
   );
 });
 
-test('streaming contract separates full, range and HEAD semantics and accepts only Bearer credentials', () => {
+test('streaming contract separates full, range and HEAD semantics; only artifact content also takes a download link', () => {
   for (const op of apiOperations.filter((o) => o.tag === 'Content')) {
     const contract = openApiDocument.paths[op.path][op.method];
     assert.deepEqual(op.access.actions, ['content.read']);
@@ -129,7 +129,13 @@ test('streaming contract separates full, range and HEAD semantics and accepts on
         contract.responses['206'].content['application/octet-stream'].schema.format,
         'binary',
       );
-    assert.deepEqual(contract.security, [{ serviceKey: [] }]);
+    // ADR 0062: a download link names one artifact, so only content by id accepts it.
+    const linked = ['downloadArtifact', 'headArtifactContent'].includes(op.operationId);
+    assert.deepEqual(
+      contract.security,
+      linked ? [{ serviceKey: [] }, { downloadLink: [] }] : [{ serviceKey: [] }],
+      op.operationId,
+    );
   }
   const named = openApiDocument.paths['/api/v1/repositories/{repository}/packages/content'].head;
   assert.deepEqual(
@@ -142,5 +148,14 @@ test('streaming contract separates full, range and HEAD semantics and accepts on
     ].resolution,
     'catalog-lookup-per-request',
   );
-  assert.equal(Object.keys(openApiDocument.components.securitySchemes).length, 1);
+  assert.deepEqual(Object.keys(openApiDocument.components.securitySchemes).sort(), [
+    'downloadLink',
+    'serviceKey',
+  ]);
+  assert.deepEqual(openApiDocument.components.securitySchemes.downloadLink, {
+    type: 'apiKey',
+    in: 'query',
+    name: 'token',
+    description: 'Download link (ADR 0062): content of one artifact, GET and HEAD only',
+  });
 });

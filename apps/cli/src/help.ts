@@ -23,6 +23,7 @@ ${ru ? 'КОМАНДЫ' : 'COMMANDS'}
   inspect ID
   upload FILE [--label TAG] [--file METADATA.json] [--state CHECKPOINT.json]
   download ID OUTPUT
+  link ID [--ttl SECONDS]                     ${ru ? 'Ссылка на скачивание без ключа, 60 с – 24 ч (1 ч по умолчанию)' : 'Download link without a key, 60 s to 24 h (1 h by default)'}
   uploads status ID | cancel ID
   packages list [--group GROUP] [--name NAME] [--after CURSOR]
   packages publish FILE [--label TAG] [--file METADATA.json] [--state CHECKPOINT.json]

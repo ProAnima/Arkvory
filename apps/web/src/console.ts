@@ -31,6 +31,7 @@ import { artifactRow } from './artifact-row.js';
 import { withFieldErrors } from './field-errors.js';
 import { installClientLog } from './client-log.js';
 import { installReportDialog } from './report-dialog.js';
+import { installDownloadLink } from './download-link.js';
 // First: failures while the console starts belong in a feedback report as well.
 installClientLog();
 const token = element('token', HTMLInputElement),
@@ -74,6 +75,7 @@ const repositoryStorage = installRepositoryStorage(client);
 const state = installConnectionState(repositoryStorage, repository);
 const updates = installUpdates(client);
 const report = installReportDialog(client);
+const downloadLink = installDownloadLink(client, () => selected);
 const downloads = installDownloads(apiBaseUrl, token);
 const annotationEditor = installAnnotationEditor();
 const attachments = installBuildAttachments(client, (repo, id, name) =>
@@ -134,6 +136,7 @@ async function openArtifact(repo: string, id: string, name: string) {
     element(id, HTMLInputElement).disabled = !operations.has('setAnnotations');
   element('annotation-save', HTMLButtonElement).disabled = !operations.has('setAnnotations');
   element('download', HTMLButtonElement).hidden = !operations.has('downloadArtifact');
+  downloadLink.open(operations.has('createDownloadLink'));
   element('register-package', HTMLButtonElement).hidden = !operations.has('registerPackage');
   element('asset', HTMLFormElement).hidden = !operations.has('setAsset');
   element('editor', HTMLDivElement).hidden = false;

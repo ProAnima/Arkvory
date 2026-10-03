@@ -13,6 +13,7 @@ import {
   PackageResolver,
   BackupControl,
   MirrorStatus,
+  DownloadLinks,
 } from '@proanima/arkvory-application';
 import type { MirrorConfiguration } from '@proanima/arkvory-application';
 import {
@@ -35,6 +36,7 @@ import {
   PostgresBackupRequests,
   PostgresBackupStatus,
   PostgresMirrorState,
+  PostgresTransferLinks,
 } from '@proanima/arkvory-infrastructure';
 import { AuthThrottle } from './auth-throttle.js';
 import { BackupMetrics } from './backup-metrics.js';
@@ -121,6 +123,7 @@ export function createApiServices(
     storage: new RepositoryStorage(storagePolicies),
     retention: new ArtifactRetention(new PostgresRetention(catalog.pool), now),
     attachments: new BuildAttachments(service, new PostgresAttachments(catalog.pool)),
+    links: new DownloadLinks(service, new PostgresTransferLinks(catalog.pool)),
     completion: new CompletionQueue(jobs, randomUUID),
   };
 }

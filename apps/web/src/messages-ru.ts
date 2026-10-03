@@ -334,6 +334,9 @@ export const ru: Record<keyof typeof en, string> = {
   metadataJson: 'Метаданные (JSON)',
   save: 'Сохранить изменения',
   download: 'Скачать',
+  downloadLink: 'Ссылка на скачивание',
+  downloadLinkCopied: 'Ссылка скопирована. Она открывает только этот файл и действует до',
+  downloadLinkCopy: 'Скопируйте ссылку ниже. Она открывает только этот файл и действует до',
   register: 'Зарегистрировать UPack',
   assetTitle: 'Ссылка на файл',
   assetHint:

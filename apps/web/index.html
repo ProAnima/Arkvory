@@ -1653,9 +1653,29 @@ GET /api/v1/operations?repository=releases</code></pre>
                     Сохранить изменения</button
                   ><button id="download" type="button" class="secondary" data-i18n="download">
                     Скачать</button
+                  ><button
+                    id="download-link"
+                    type="button"
+                    class="secondary"
+                    data-i18n="downloadLink"
+                    hidden
+                  >
+                    Ссылка на скачивание</button
                   ><button id="register-package" type="button" class="ghost" data-i18n="register">
                     Зарегистрировать UPack
                   </button>
+                </div>
+                <div id="download-link-result" class="download-link-result" hidden>
+                  <p class="hint">
+                    <span id="download-link-note"></span> <span id="download-link-expiry"></span>
+                  </p>
+                  <input
+                    id="download-link-url"
+                    type="text"
+                    readonly
+                    spellcheck="false"
+                    aria-labelledby="download-link-note"
+                  />
                 </div>
               </form>
             </div>

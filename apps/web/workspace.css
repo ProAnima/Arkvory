@@ -415,3 +415,14 @@ output:not(.status-bar output):not(.transfer-card output):not(:empty) {
 :root[data-mirror='true'] [data-nav='upload'] {
   display: none;
 }
+/* Download link (ADR 0062): the URL stays selectable for manual copying. */
+.download-link-result {
+  display: grid;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+.download-link-result input {
+  width: 100%;
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+}

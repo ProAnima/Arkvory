@@ -1,9 +1,14 @@
-# Put this server in an existing Nginx http context; replace hostname and certificate paths.
+# Put this file in an existing Nginx http context; replace hostname and certificate paths.
+# Download links (ADR 0062) carry their secret in ?token=. The default access log writes the whole
+# request line, so this one logs the path without the query string.
+log_format arkvory_path '$remote_addr [$time_local] "$request_method $uri $server_protocol" '
+                        '$status $body_bytes_sent $request_time $request_id';
 server {
     listen 443 ssl;
     server_name arkvory.example.com;
     ssl_certificate /etc/arkvory/tls/fullchain.pem;
     ssl_certificate_key /etc/arkvory/tls/privkey.pem;
+    access_log /var/log/nginx/arkvory.access.log arkvory_path;
     client_max_body_size 0;
     client_body_timeout 60s;
     location / {

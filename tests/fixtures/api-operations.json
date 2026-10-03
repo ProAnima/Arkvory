@@ -149,6 +149,7 @@
   "POST /api/v1/backup/retention/apply requestBackupRetention",
   "POST /api/v1/backup/runs requestBackupRun",
   "POST /api/v1/feedback sendFeedback",
+  "POST /api/v1/repositories/{repository}/artifacts/{id}/links createDownloadLink",
   "POST /api/v1/repositories/{repository}/artifacts/{id}/package registerPackage",
   "POST /api/v1/repositories/{repository}/artifacts/{id}/promote promoteArtifact",
   "POST /api/v1/repositories/{repository}/artifacts/{id}/references addReference",

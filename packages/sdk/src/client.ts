@@ -76,7 +76,7 @@ export class ArkvoryClient {
     this.uploads = new UploadsApi(http, normalized);
     // Narrow facade ports preserve overrides of status/parts/complete/artifact in transfer workflows.
     this.uploader = new UploadTransfer(http, normalized, this);
-    this.downloads = new DownloadApi(http, normalized, this);
+    this.downloads = new DownloadApi(http, normalized, this, (path) => http.href(path));
     const namespaces = managementClients(this);
     this.identity = namespaces.identity;
     this.administration = namespaces.administration;
@@ -323,6 +323,9 @@ export class ArkvoryClient {
   }
   download(...args: Parameters<DownloadApi['download']>) {
     return this.downloads.download(...args);
+  }
+  createDownloadLink(...args: Parameters<DownloadApi['createDownloadLink']>) {
+    return this.downloads.createDownloadLink(...args);
   }
   downloadVerified(...args: Parameters<DownloadApi['downloadVerified']>) {
     return this.downloads.downloadVerified(...args);

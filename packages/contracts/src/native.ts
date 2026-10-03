@@ -17,6 +17,7 @@ import { promotionPaths } from './promotion-api.js';
 import { metricsPaths } from './metrics.js';
 import { backupPaths } from './backup-api.js';
 import { mirrorPaths } from './mirror-api.js';
+import { downloadLinkParameter, downloadLinkPaths } from './download-link-api.js';
 import { feedbackPaths } from './feedback-api.js';
 import type { ApiSurface } from './api-surfaces.js';
 export const descriptorSchema = {
@@ -110,6 +111,12 @@ const baseDocument = {
   components: {
     securitySchemes: {
       serviceKey: { type: 'http', scheme: 'bearer', description: 'Service key or account session' },
+      downloadLink: {
+        type: 'apiKey',
+        in: 'query',
+        name: 'token',
+        description: 'Download link (ADR 0062): content of one artifact, GET and HEAD only',
+      },
     },
   },
   paths: {
@@ -211,15 +218,19 @@ const baseDocument = {
       parameters: [repositoryParameter, idParameter],
       get: {
         summary: 'Download immutable content',
-        parameters: ['Range', 'If-Range', 'If-None-Match'].map((name) => ({
-          name,
-          in: 'header',
-          schema: { type: 'string' },
-        })),
+        parameters: [
+          ...['Range', 'If-Range', 'If-None-Match'].map((name) => ({
+            name,
+            in: 'header',
+            schema: { type: 'string' },
+          })),
+          downloadLinkParameter,
+        ],
         responses: byteResponses,
       },
       head: {
         summary: 'Read content headers without bytes; Range is ignored',
+        parameters: [downloadLinkParameter],
         responses: byteResponses,
       },
     },
@@ -240,6 +251,7 @@ const composed = composeApiPaths({
   ...updatePaths,
   ...backupPaths,
   ...mirrorPaths,
+  ...downloadLinkPaths,
   ...feedbackPaths,
   ['/api/v1/repositories/{repository}/artifacts/{id}']: {
     ...baseDocument.paths['/api/v1/repositories/{repository}/artifacts/{id}'],

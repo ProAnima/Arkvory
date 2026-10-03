@@ -33,6 +33,7 @@ const values = new Set([
   'exact',
   'range',
   'order',
+  'ttl',
 ]);
 export function parseArguments(argv: readonly string[]): Arguments {
   const options = new Map<string, string>(),

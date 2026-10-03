@@ -83,6 +83,7 @@
         "tests/browser/downloads.mjs",
         "tests/browser/updates.mjs",
         "tests/browser/feedback.mjs",
+        "tests/browser/download-link.mjs",
         "tests/browser/remote-wizard.mjs"
       ],
       "kind": "scenario",

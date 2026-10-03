@@ -330,6 +330,9 @@ export const en = {
   metadataJson: 'Metadata (JSON)',
   save: 'Save changes',
   download: 'Download',
+  downloadLink: 'Download link',
+  downloadLinkCopied: 'Link copied. It opens only this file and works until',
+  downloadLinkCopy: 'Copy the link below. It opens only this file and works until',
   register: 'Register UPack',
   assetTitle: 'File reference',
   assetHint:

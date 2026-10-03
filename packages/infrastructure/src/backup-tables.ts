@@ -58,6 +58,7 @@ export const excludedTables: readonly ExcludedTable[] = [
   { name: 'arkvory_migrations', reason: 'schema history; restore migrates the target itself' },
   { name: 'arkvory_storage_identity', reason: 'bound to the new target storage directory' },
   { name: 'arkvory_user_sessions', reason: 'ephemeral sign-in sessions are never restored' },
+  { name: 'arkvory_transfer_links', reason: 'download links live at most a day; never restored' },
   { name: 'arkvory_gateway_leases', reason: 'runtime ownership of gateway slots' },
   { name: 'arkvory_download_policy', reason: 'gateway topology is configured on the target' },
   { name: 'arkvory_backup_jobs', reason: 'backup state of the source instance' },

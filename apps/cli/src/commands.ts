@@ -28,6 +28,7 @@ export async function execute(
       'inspect',
       'upload',
       'download',
+      'link',
       'uploads',
       'annotations',
       'attachments',
@@ -75,6 +76,13 @@ export async function execute(
     case 'inspect':
       validateCommand(args, 2);
       return scoped.artifacts.get(word(args, 1), signal);
+    case 'link': {
+      // ADR 0062: the URL itself is the credential; it reads this one artifact until expiresAt.
+      validateCommand(args, 2, ['ttl']);
+      const ttlSeconds = numericOption(args, 'ttl', 3600, 60, 86400);
+      const { url, expiresAt } = await scoped.artifacts.link(word(args, 1), { ttlSeconds }, signal);
+      return { url, expiresAt };
+    }
     case 'uploads':
       validateCommand(args, 3);
       if (word(args, 1) === 'status') return scoped.uploads.get(word(args, 2), signal);
