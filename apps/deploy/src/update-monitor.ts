@@ -70,9 +70,11 @@ function synchronize(
   hub: HubView | undefined,
 ): UpdateSnapshot {
   const snapshot = { ...previous, heartbeatAt: now };
-  // A change made on the host (configure) invalidates a console form like any other setting.
   if (hub && (snapshot.statistics !== hub.statistics || snapshot.channel !== hub.channel)) {
-    snapshot.revision++;
+    // A change made on the host (configure) invalidates a console form that showed the old
+    // value. Filling in fields a snapshot did not know yet (new installation, update from an
+    // older updater) changes nothing a console showed: a queued request must still apply.
+    if (snapshot.statistics !== undefined && snapshot.channel !== undefined) snapshot.revision++;
     snapshot.statistics = hub.statistics;
     snapshot.channel = hub.channel;
   }

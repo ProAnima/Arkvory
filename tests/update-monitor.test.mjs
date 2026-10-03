@@ -213,6 +213,19 @@ test('the hub settings reach the snapshot and the console may turn statistics of
   const first = await monitorUpdates(state, f.snapshot, null, now, f.port, hub);
   assert.equal(first.statistics, true);
   assert.equal(first.channel, 'stable');
+  // Learning the hub settings is not a change: a request queued before still applies.
+  assert.equal(first.revision, f.snapshot.revision);
+  const queued = readUpdateRequest({
+    kind: 'configure',
+    id: randomUUID(),
+    expectedRevision: f.snapshot.revision,
+    automatic: false,
+    hourUTC: 4,
+  });
+  const fresh = fixture();
+  const applied = await monitorUpdates(state, fresh.snapshot, queued, now, fresh.port, hub);
+  assert.equal(applied.error, null);
+  assert.equal(applied.hourUTC, 4);
   const request = readUpdateRequest({
     kind: 'configure',
     id: randomUUID(),
