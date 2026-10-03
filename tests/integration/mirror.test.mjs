@@ -19,7 +19,7 @@ import {
 import { SdkMirrorSource } from '../../apps/worker/dist/mirror-source.js';
 import { ServiceMirrorTarget } from '../../apps/worker/dist/mirror-target.js';
 import { setup, base } from './fixture.mjs';
-import { removeTestDirectory } from '../helpers.mjs';
+import { dropTestDatabase, removeTestDirectory } from '../helpers.mjs';
 
 const never = { throwIfAborted() {} };
 
@@ -121,7 +121,7 @@ async function mirrorInstance(t, upstream, stages) {
     try {
       for (const close of closers.reverse()) await close();
     } finally {
-      await admin.query(`DROP DATABASE IF EXISTS ${name} WITH (FORCE)`);
+      await dropTestDatabase(admin, name);
       await admin.end();
       await removeTestDirectory(directory);
     }

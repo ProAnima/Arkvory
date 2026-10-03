@@ -14,7 +14,7 @@ import {
   openVault,
   sourceConfig,
 } from '../../apps/backup/dist/index.js';
-import { removeTestDirectory } from '../helpers.mjs';
+import { dropTestDatabase, removeTestDirectory } from '../helpers.mjs';
 import { base, create } from './fixture.mjs';
 
 export const sha = (bytes) => createHash('sha256').update(bytes).digest('hex');
@@ -135,7 +135,7 @@ export async function temporaryDatabase(t) {
     try {
       for (const close of closers.reverse()) await close();
     } finally {
-      await admin.query(`DROP DATABASE IF EXISTS ${name} WITH (FORCE)`);
+      await dropTestDatabase(admin, name);
       await admin.end();
     }
   });
