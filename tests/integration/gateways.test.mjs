@@ -170,15 +170,12 @@ test('lease close keeps the slot reserved; expiry increments generation and old 
     )
   ).rows[0];
   lease.close();
-  const replacement = new PostgresDownloadLease(f.catalog.pool, { ...policy, slot: 1 });
-  await assert.rejects(replacement.start(), { code: 'busy' });
   await assert.rejects(lease.renew(), { code: 'unavailable' });
-  await new Promise((resolve) =>
-    setTimeout(resolve, Math.max(0, before.expires_at.getTime() - Date.now()) + 100),
-  );
+  // A replacement waits out the reservation of the stopped gateway instead of failing at once.
   const next = new PostgresDownloadLease(f.catalog.pool, { ...policy, slot: 1 });
   f.cleanup.push(() => next.close());
   await next.start();
+  assert.ok(Date.now() >= before.expires_at.getTime() - 50, 'not before the reservation expired');
   assert.equal(
     (await f.catalog.pool.query('SELECT generation::text FROM arkvory_gateway_leases WHERE slot=1'))
       .rows[0].generation,
@@ -186,6 +183,39 @@ test('lease close keeps the slot reserved; expiry increments generation and old 
   );
   assert.equal(lease.active, false);
   assert.equal(next.active, true);
+});
+
+test('a reader serves while the writer is down; the restarted writer takes its slot back', async (t) => {
+  const f = await fixture(t),
+    bytes = Buffer.alloc(64 * 1024, 0x2a),
+    id = await publish(f, bytes);
+  const reader = await childReader(f, 1);
+  const writerHeld = async () =>
+    (
+      await f.catalog.pool.query(`SELECT 1 FROM pg_locks WHERE locktype='advisory'
+        AND classid=18471 AND objid=3 AND objsubid=2 AND granted
+        AND database=(SELECT oid FROM pg_database WHERE datname=current_database())`)
+    ).rowCount > 0;
+  // The restart waits out the slot its predecessor reserved; the reader serves meanwhile.
+  const restarting = f.restart();
+  for (let tries = 0; (await writerHeld()) && tries < 100; tries++)
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  assert.equal(await writerHeld(), false, 'the writer is down');
+  const served = await fetch(`${reader.address}${base}/artifacts/${id}/content`, {
+    headers: f.readerHeaders,
+  });
+  assert.equal(served.status, 200);
+  assert.deepEqual(Buffer.from(await served.arrayBuffer()), bytes);
+  const ready = await fetch(reader.address + '/health/ready', { headers: f.readerHeaders });
+  assert.equal(ready.status, 200);
+  // Back in service: the writer accepts uploads and the reader serves what it publishes.
+  const writer = { ...f, app: await restarting };
+  const later = Buffer.from('published after the restart');
+  const laterId = await publish(writer, later);
+  const fresh = await fetch(`${reader.address}${base}/artifacts/${laterId}/content`, {
+    headers: f.readerHeaders,
+  });
+  assert.deepEqual(Buffer.from(await fresh.arrayBuffer()), later);
 });
 
 test('a stalled database link expires delivery locally; restored connectivity cannot revive the old gateway', async (t) => {
@@ -206,15 +236,13 @@ test('a stalled database link expires delivery locally; restored connectivity ca
   await interrupted;
   assert(performance.now() - started < 9500, 'Gateway outlived local lease validity');
   assert.equal((await fetch(address + '/health/ready', { headers: f.headers })).status, 503);
-  await assert.rejects(createServer(readerConfig(f, 1)), { code: 'busy' });
-  const remaining = (
-    await f.catalog.pool.query(
-      'SELECT GREATEST(0,EXTRACT(EPOCH FROM (expires_at-clock_timestamp()))*1000)::float AS ms FROM arkvory_gateway_leases WHERE slot=1',
-    )
-  ).rows[0].ms;
-  await new Promise((resolve) => setTimeout(resolve, remaining + 100));
+  // The replacement waits out the stalled gateway's reservation and starts only after it.
+  const reservation = (
+    await f.catalog.pool.query('SELECT expires_at FROM arkvory_gateway_leases WHERE slot=1')
+  ).rows[0].expires_at;
   const next = await createServer(readerConfig(f, 1));
   f.cleanup.push(() => next.close());
+  assert.ok(Date.now() >= reservation.getTime() - 50, 'not before the reservation expired');
   proxy.resume();
   await new Promise((resolve) => setTimeout(resolve, 100));
   assert.equal((await fetch(address + '/health/ready', { headers: f.headers })).status, 503);

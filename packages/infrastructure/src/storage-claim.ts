@@ -4,6 +4,14 @@ import { StorageOwnership } from './storage-ownership.js';
 
 export type StorageRole = 'api' | 'reader' | 'worker' | 'maintenance';
 
+/** Another completion worker holds its singleton lock; a standby worker waits and retries. */
+export class WorkerSingletonBusy extends ArkvoryError {
+  constructor() {
+    super('busy', 'Another completion worker is active for this database');
+    this.name = 'WorkerSingletonBusy';
+  }
+}
+
 /** Acquire the established profile, writer, maintenance and content-pin barriers in order. */
 export async function claimStorageSession(
   pool: Pool,
@@ -30,13 +38,12 @@ export async function claimStorageSession(
           throw new ArkvoryError('conflict', 'Database requires shared download configuration');
       }
     }
-    // One writer per database, including the shared-download profile. This is not HA.
+    // One completion worker per database in every profile; others wait as standby. Not HA.
     if (role === 'worker') {
       const worker = await client.query<{ acquired: boolean }>(
         'SELECT pg_try_advisory_lock(18471,6) AS acquired',
       );
-      if (!worker.rows[0]?.acquired)
-        throw new ArkvoryError('busy', 'Standalone supports one completion worker');
+      if (!worker.rows[0]?.acquired) throw new WorkerSingletonBusy();
     }
     if (role !== 'worker' && role !== 'reader') {
       const lock = await client.query<{ acquired: boolean }>(

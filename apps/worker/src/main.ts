@@ -16,11 +16,13 @@ import {
   readMirrorSettings,
 } from '@proanima/arkvory-infrastructure';
 import type { LogLevel, PostgresJobLease } from '@proanima/arkvory-infrastructure';
-import { capacityBytes, resources } from './runtime.js';
+import { capacityBytes, workerResources } from './runtime.js';
 import { runMirrors } from './mirror-loop.js';
 import { processJob, retireExhausted } from './completion.js';
 
 let levelError: Error | undefined;
+/** Stopped while another worker held the lock: a clean stop, not a failure. */
+class StoppedOnStandby extends Error {}
 function level(): LogLevel {
   try {
     return parseLogLevel(process.env['ARKVORY_LOG_LEVEL']);
@@ -63,10 +65,15 @@ try {
   if (!keyFile) throw new Error('ARKVORY_KEYS_FILE is required');
   const mirrors = await readMirrorSettings(process.env['ARKVORY_MIRRORS_FILE']);
   // Mirror copies create uploads here, so they need the installation's capacity limit.
-  const { catalog, blobs } = await resources(
-    'worker',
+  const acquired = await workerResources(
     mirrors.length > 0 ? capacityBytes(process.env['ARKVORY_CAPACITY_BYTES']) : 0,
+    stop.signal,
+    () => {
+      diagnostics.write({ level: 'info', component: 'worker', code: 'worker.standby' });
+    },
   );
+  if (!acquired) throw new StoppedOnStandby();
+  const { catalog, blobs } = acquired;
   let currentLease: PostgresJobLease | undefined;
   const recovery = setInterval(() => {
     if (stop.signal.aborted || (catalog.active && (!currentLease || currentLease.active))) return;
@@ -125,6 +132,12 @@ try {
   }
   diagnostics.write({ level: 'info', component: 'worker', code: 'worker.stopped' });
 } catch (error) {
+  if (error instanceof StoppedOnStandby)
+    diagnostics.write({ level: 'info', component: 'worker', code: 'worker.stopped' });
+  else reportFailure(error);
+}
+
+function reportFailure(error: unknown) {
   // Constant identifiers and redacted validation text only; never URLs or credentials.
   diagnostics.write({
     level: 'error',

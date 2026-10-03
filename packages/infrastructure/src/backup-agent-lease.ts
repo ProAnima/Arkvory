@@ -121,10 +121,12 @@ function values(facts: AgentHeartbeat): unknown[] {
 /**
  * Local view of the agent lease, renewed every third of its duration (at most every 20 s with
  * the default 60 s). It is trusted for two thirds of the lease from the start of each renewal,
- * so this agent stops before another may take over; a failed renewal is final.
+ * so this agent stops before another may take over; a failed renewal is final. Both clocks
+ * count, like the gateway leases: the monotonic one can stand still while the host sleeps.
  */
 export class RenewedAgentLease implements AgentLease {
   private deadline: number;
+  private wallDeadline: number;
   private lost = false;
   private closed = false;
   private timer: ReturnType<typeof setTimeout> | undefined;
@@ -137,13 +139,20 @@ export class RenewedAgentLease implements AgentLease {
     private readonly renew: (lease: RenewedAgentLease) => Promise<boolean>,
     grantedAt: number,
     private readonly monotonic: () => number = () => performance.now(),
+    private readonly wall: () => number = () => Date.now(),
   ) {
     this.deadline = grantedAt + (leaseMs * 2) / 3;
+    this.wallDeadline = this.wall() - (this.monotonic() - grantedAt) + (leaseMs * 2) / 3;
     this.schedule();
   }
 
   get active(): boolean {
-    return !this.closed && !this.lost && this.monotonic() < this.deadline;
+    return (
+      !this.closed &&
+      !this.lost &&
+      this.monotonic() < this.deadline &&
+      this.wall() < this.wallDeadline
+    );
   }
 
   throwIfAborted(): void {
@@ -155,10 +164,14 @@ export class RenewedAgentLease implements AgentLease {
     this.timer = setTimeout(
       () => {
         const started = this.monotonic();
+        const startedWall = this.wall();
         this.pending = this.renew(this).then(
           (renewed) => {
             if (!renewed || !this.active) this.lost = true;
-            else this.deadline = started + (this.leaseMs * 2) / 3;
+            else {
+              this.deadline = started + (this.leaseMs * 2) / 3;
+              this.wallDeadline = startedWall + (this.leaseMs * 2) / 3;
+            }
             this.schedule();
           },
           () => {

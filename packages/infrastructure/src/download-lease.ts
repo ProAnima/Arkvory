@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
-import type { Pool } from 'pg';
+import { setTimeout as delay } from 'node:timers/promises';
+import type { Pool, PoolClient } from 'pg';
 import { ArkvoryError } from '@proanima/arkvory-domain';
 
 export interface SharedDownloadPolicy {
@@ -74,7 +75,11 @@ export class DownloadLeaseWindow {
   }
 }
 
-/** Fixed shares, ten-second DB leases, conservative eight-second local validity. */
+/**
+ * Fixed shares, ten-second DB leases, conservative eight-second local validity. The lease keeps
+ * one connection of its own from start to close: renewing every two seconds must not wait for
+ * the shared pool, which transfers and catalog queries can saturate for longer than the lease.
+ */
 export class PostgresDownloadLease {
   private readonly instance = randomUUID();
   private generation = '';
@@ -83,6 +88,7 @@ export class PostgresDownloadLease {
   private started = false;
   private closed = false;
   private renewing = false;
+  private client: PoolClient | undefined;
   constructor(
     private readonly pool: Pool,
     readonly policy: SharedDownloadPolicy,
@@ -101,9 +107,33 @@ export class PostgresDownloadLease {
     };
   }
 
+  /**
+   * Takes the slot. A reservation left by a stopped gateway is waited out: its expiry is fixed,
+   * and the earlier owner stopped serving before it (local validity 8 s, database 10 s). A
+   * reservation whose expiry moves is renewed by a running gateway with this slot: busy.
+   */
   async start() {
     if (this.started || this.closed) throw new Error('Download lease cannot be restarted');
     this.started = true;
+    const deadline = performance.now() + 15_000;
+    let observed: string | null = null;
+    for (;;) {
+      const reservation = await this.acquire();
+      if (reservation === null) return;
+      if (
+        (observed !== null && reservation.expiresAt !== observed) ||
+        performance.now() > deadline
+      ) {
+        this.close();
+        throw new ArkvoryError('busy', 'Download slot is in use by a running gateway');
+      }
+      observed = reservation.expiresAt;
+      await delay(Math.min(1000, reservation.remainingMs + 50));
+    }
+  }
+
+  /** One attempt: null when the slot is taken now, else the reservation that holds it. */
+  private async acquire(): Promise<{ expiresAt: string; remainingMs: number } | null> {
     const start = this.window.begin();
     const client = await this.pool.connect();
     let broken = false;
@@ -135,11 +165,26 @@ export class PostgresDownloadLease {
         [this.policy.slot, this.instance],
       );
       const row = acquired.rows[0];
-      if (!row) throw new ArkvoryError('busy', 'Download slot lease is still reserved');
+      if (!row) {
+        const held = await client.query<{ expires_at: string; remaining_ms: number }>(
+          `SELECT expires_at::text,
+             GREATEST(0, CEIL(EXTRACT(EPOCH FROM expires_at-clock_timestamp())*1000))::int AS remaining_ms
+           FROM arkvory_gateway_leases WHERE slot=$1`,
+          [this.policy.slot],
+        );
+        await client.query('ROLLBACK');
+        client.release();
+        const reservation = held.rows[0];
+        return reservation
+          ? { expiresAt: reservation.expires_at, remainingMs: reservation.remaining_ms }
+          : { expiresAt: '', remainingMs: 0 };
+      }
       this.generation = row.generation;
       await client.query('COMMIT');
       this.window.accept(start, true);
+      this.client = client;
       this.schedule();
+      return null;
     } catch (error) {
       this.close();
       try {
@@ -147,9 +192,8 @@ export class PostgresDownloadLease {
       } catch {
         broken = true;
       }
-      throw error;
-    } finally {
       client.release(broken);
+      throw error;
     }
   }
 
@@ -166,19 +210,16 @@ export class PostgresDownloadLease {
         },
       );
     }, 2000);
+    // The lease never keeps a process alive by itself; the server owns the event loop.
+    this.timer.unref();
   }
 
   async renew() {
-    if (!this.active || this.renewing)
+    const client = this.client;
+    if (!this.active || this.renewing || !client)
       throw new ArkvoryError('unavailable', 'Download budget lease is unavailable');
     this.renewing = true;
     const start = this.window.begin();
-    const client = await this.pool.connect().catch((error: unknown) => {
-      this.close();
-      this.renewing = false;
-      throw error;
-    });
-    let broken = false;
     try {
       await client.query('BEGIN');
       await client.query("SET LOCAL statement_timeout='2s'");
@@ -193,15 +234,11 @@ export class PostgresDownloadLease {
       this.window.accept(start);
     } catch (error) {
       this.close();
-      try {
-        await client.query('ROLLBACK');
-      } catch {
-        broken = true;
-      }
+      await client.query('ROLLBACK').catch(() => undefined);
       throw error;
     } finally {
       this.renewing = false;
-      client.release(broken);
+      if (this.closed) this.dropConnection();
     }
   }
 
@@ -210,6 +247,15 @@ export class PostgresDownloadLease {
     this.window.stop();
     clearTimeout(this.timer);
     this.timer = undefined;
+    // A renewal in flight drops the connection when it ends; it must not be released twice.
+    if (!this.renewing) this.dropConnection();
     // Keep the DB expiry: shutdown/lost acknowledgements must not immediately recycle a share.
+  }
+
+  /** Destroyed, not returned: a lease session is never reused by the pool. */
+  private dropConnection() {
+    const client = this.client;
+    this.client = undefined;
+    client?.release(true);
   }
 }

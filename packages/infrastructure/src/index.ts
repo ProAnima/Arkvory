@@ -5,6 +5,7 @@ export * from './migrations.js';
 export { SCHEMA_VERSION } from './schema-version.js';
 export * from './operations.js';
 export { PostgresJobLease } from './job-lease.js';
+export { WorkerSingletonBusy } from './storage-claim.js';
 
 export * from './service-keys.js';
 export * from './browse.js';

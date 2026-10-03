@@ -1,6 +1,8 @@
+import { setTimeout as delay } from 'node:timers/promises';
 import {
   LocalBlobStore,
   PostgresCatalog,
+  WorkerSingletonBusy,
   storageReserveBytes,
 } from '@proanima/arkvory-infrastructure';
 /** Capacity matters only for uploads the worker creates itself (mirror copies, ADR 0058). */
@@ -30,4 +32,32 @@ export async function resources(role: 'worker' | 'maintenance', capacity = 0) {
     await catalog.close();
     throw error;
   }
+}
+
+/** Pause between attempts of a standby worker to take the completion worker's lock. */
+export const standbyRetryMs = 5000;
+
+/**
+ * Worker resources once this process is the database's completion worker. While another one
+ * holds the lock this process waits as standby (reported once) instead of exiting and being
+ * restarted in a loop; stopping it while it waits returns null.
+ */
+export async function workerResources(
+  capacity: number,
+  stop: AbortSignal,
+  onStandby: () => void,
+  retryMs = standbyRetryMs,
+): Promise<Awaited<ReturnType<typeof resources>> | null> {
+  let reported = false;
+  while (!stop.aborted) {
+    try {
+      return await resources('worker', capacity);
+    } catch (error) {
+      if (!(error instanceof WorkerSingletonBusy)) throw error;
+      if (!reported) onStandby();
+      reported = true;
+      await delay(retryMs, undefined, { signal: stop }).catch(() => undefined);
+    }
+  }
+  return null;
 }
