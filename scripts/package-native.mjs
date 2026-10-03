@@ -23,7 +23,8 @@ await mkdir(payload);
 const cache = resolve('.cache/native-downloads');
 for (const name of ['arkvory-runtime.zip', 'arkvory-release.json', 'arkvory-setup.mjs'])
   await copyFile(join(source, name), join(payload, name));
-await copyFile('LICENSE.md', join(payload, 'LICENSE.md'));
+for (const name of ['LICENSE.md', 'LICENSE.ru.md', 'NOTICE.md'])
+  await copyFile(name, join(payload, name));
 let files;
 if (process.platform === 'win32') files = await windowsPackage();
 else if (process.platform === 'linux' && process.arch === 'x64') {

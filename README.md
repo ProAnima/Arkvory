@@ -210,7 +210,7 @@ scripts/            project verification tools
 
 ## Development setup
 
-For authorized developers under the proprietary license. Requires Node.js 24 LTS, npm 11, PostgreSQL 18, and a local filesystem supporting hard links. Docker is optional if PostgreSQL is already available.
+For development within your organization under the [license](LICENSE.md). Requires Node.js 24 LTS, npm 11, PostgreSQL 18, and a local filesystem supporting hard links. Docker is optional if PostgreSQL is already available.
 
 ```sh
 git clone https://github.com/ProAnima/Arkvory.git
@@ -267,7 +267,7 @@ Full stage criteria are in [ROADMAP](docs/ROADMAP.md). The first standalone tran
 
 ## Documentation
 
-The English and Russian READMEs describe the same product scope. Detailed engineering documents are currently maintained in Russian; the proprietary license and attribution notice are in English.
+The English and Russian READMEs describe the same product scope. Detailed engineering documents are currently maintained in Russian; the license is in Russian and English.
 
 | Document                                     | Contents                                                                  |
 | -------------------------------------------- | ------------------------------------------------------------------------- |
@@ -286,17 +286,15 @@ The English and Russian READMEs describe the same product scope. Detailed engine
 | [ROADMAP](docs/ROADMAP.md)                   | Stages and open decisions                                                 |
 | [ADR](docs/adr/README.md)                    | Architecture decision history                                             |
 | [SECURITY](SECURITY.md)                      | Security requirements                                                     |
-| [LICENSING](docs/LICENSING.md)               | Ownership and partner licensing model                                     |
+| [LICENSING](docs/LICENSING.md)               | Ownership and the free, no-fork license                                   |
 
 ## License and ownership
 
-**Copyright © 2026 Ian Panaev. All rights reserved.**
+**© 2026 Ian Panaev (Ян Панаев), ProAnimaStudio.**
 
-ProAnima Arkvory is proprietary software. Ian Panaev is its author, copyright holder, and owner of the ProAnimaStudio brand. Rights to use, modify, distribute, or maintain private forks are granted to specifically authorized organizations only through separate written agreements with the rights holder, subject to applicable law and other validly granted rights.
+ProAnima Arkvory is free of charge for everyone, companies included, and its source code is open for reading. It is not open source: you may use it and change it within your organization, but you may not distribute copies or forks, sell it or offer it as a service. When you publicly describe a system built on Arkvory, name the source: "ProAnima Arkvory by ProAnimaStudio (Ian Panaev), https://github.com/ProAnima/Arkvory". Copies come only from official sources.
 
-Repository access does not replace such an agreement. Permission scope, ownership of modifications, binary distribution, and use of branding are agreed separately. The original source code is not released under MIT, Apache, GPL, or another open-source license.
-
-Repository terms: [LICENSE.md](LICENSE.md). Attribution: [NOTICE.md](NOTICE.md). Third-party components retain their own licenses.
+Terms: [license](LICENSE.md) ([на русском](LICENSE.ru.md); the Russian text prevails), notice: [NOTICE.md](NOTICE.md), model: [LICENSING](docs/LICENSING.md). Third-party components retain their own licenses.
 
 Downloads now have a bounded client queue in the SDK and console: pause/resume from private disk staging, cancellation, waiting-queue cleanup, concurrency and start-delay controls. The final destination is saved only after checksum verification. An OPFS journal and sealed 8 MiB segments restore unfinished downloads after a page reload: reconnect, restore the queue, then choose destinations to resume. Credentials and destination handles are not persisted. These are not distributed server jobs. [Download queue and limits](docs/DOWNLOAD_QUEUE.md).
 

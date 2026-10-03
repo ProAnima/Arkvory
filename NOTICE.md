@@ -1,13 +1,13 @@
-# Attribution and ownership
+# Attribution / Указание источника
 
-- **Project:** ProAnima Arkvory
-- **Brand:** ProAnimaStudio
-- **Author, copyright holder and brand owner:** Ian Panaev
+**ProAnima Arkvory** by **ProAnimaStudio** — https://github.com/ProAnima/Arkvory
 
-Copyright (c) 2026 Ian Panaev. All rights reserved.
+Author, copyright holder and brand owner / автор, правообладатель и владелец бренда: **Ian Panaev (Ян Панаев)**, info@proanima.net.
 
-ProAnimaStudio is the brand under which this project is developed. The rights holder identified here is Ian Panaev personally.
+Copyright © 2026 Ian Panaev. Provided free of charge under the [ProAnima Arkvory License 1.0](LICENSE.md) ([на русском](LICENSE.ru.md)): use and changes within your organization are allowed; distribution of copies and forks, sale and hosting for third parties are not; public descriptions of systems that use Arkvory name the source.
 
-Use, modification, distribution, and private forks by partner organizations are governed by [LICENSE.md](LICENSE.md) and their separate written agreements with Ian Panaev.
+This notice must stay with every copy and must not be removed or hidden (LICENSE.md, section 2). / Это уведомление сохраняется в каждой копии; удалять или скрывать его нельзя (раздел 2 лицензии).
 
-Third-party dependencies retain their own copyright notices and licenses. Dependency manifests and the lock-file identify the current development toolchain; they do not constitute a complete distribution notice for a future runtime release. Before distributing a release, review and include the notices required for the components actually shipped.
+ProAnimaStudio is the brand under which this project is developed; the rights holder is Ian Panaev personally.
+
+Third-party components keep their own copyright notices and licenses; the native installers list them in THIRD-PARTY.md, and the release archive carries the licenses of the npm packages it ships.

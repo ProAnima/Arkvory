@@ -2,7 +2,7 @@ Name: proanima-arkvory
 Version: @VERSION@
 Release: 1
 Summary: ProAnima Arkvory UPack and file storage
-License: Proprietary
+License: LicenseRef-ProAnima-Arkvory-1.0
 BuildArch: x86_64
 Requires: postgresql-server >= 16
 Requires: systemd
@@ -16,7 +16,7 @@ AutoReqProv: no
 
 %description
 Autonomous file storage, dedicated local database and supervised services.
-Copyright Ian Panaev. All rights reserved.
+Copyright Ian Panaev, ProAnimaStudio. Free of charge under the ProAnima Arkvory License 1.0 (LICENSE.md).
 
 %install
 mkdir -p %{buildroot}/usr

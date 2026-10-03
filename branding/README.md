@@ -1,6 +1,6 @@
 # Arkvory identity
 
-Copyright © Ian Panaev. All rights reserved. Brand owner: Ian Panaev personally. Studio: ProAnimaStudio. These assets are covered by the repository's proprietary license; they are not an open icon pack.
+Copyright © Ian Panaev. Brand owner: Ian Panaev personally. Studio: ProAnimaStudio. The marks are not licensed for other uses (LICENSE.md, section 6): they ship with the unmodified software and may be used only to name the source; they are not an open icon pack.
 
 `identity.json` defines the geometric A mark, its negative-space opening and palette. `npm run brand:generate` creates SVG assets on all platforms and ICO/PNG on Windows using the system drawing runtime. Commit the generated assets together with the source. ICO files contain 16, 24, 32, 48, 64, 128 and 256 px frames.
 

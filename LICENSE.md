@@ -1,43 +1,66 @@
-# ProAnima Arkvory — Proprietary Software Notice
+# ProAnima Arkvory License 1.0
 
-Copyright (c) 2026 Ian Panaev. All rights reserved.
+ProAnima Arkvory is free of charge, and its source code is open for reading. This is not an open-source license: it permits use and changes for your own needs, but not the distribution of copies or forks.
 
-## 1. Rights holder and scope
+Licensor: Ian Panaev (Ян Панаев), author and copyright holder of ProAnima Arkvory and owner of the ProAnimaStudio brand. Contact: info@proanima.net.
 
-Ian Panaev is the copyright holder of the original ProAnima Arkvory source code and documentation supplied in this repository, and the owner of the Arkvory and ProAnimaStudio brands. References to ProAnimaStudio identify the brand and do not identify a separate corporate copyright holder.
+The software: ProAnima Arkvory, that is, its source code, builds, installers, container images, documentation and updates published by the licensor.
 
-This notice applies to original project materials, except materials expressly identified as subject to different terms. Third-party components are addressed in section 5.
+You: the individual or organization that installs or uses the software. Your organization: you, if you are an organization, or the organization on whose behalf you act, together with its employees and the contractors working for it.
 
-## 2. No general license grant
+## 1. What you may do
 
-Except as required by applicable law or expressly authorized by a separate written agreement with Ian Panaev, no permission is granted to use, execute, reproduce, modify, distribute, sublicense, sell, make available as a service, or create derivative works of the software or documentation.
+Free of charge, worldwide and non-exclusively, without the right to transfer these rights or to grant them to others, for as long as you comply with this license, you may:
 
-This repository does not grant an open-source license. Possession of a copy, access to a repository, or the technical availability of a fork button does not itself grant additional rights under this notice. This notice does not revoke rights already validly granted in a separate agreement or override mandatory applicable law or rights separately granted by the rights holder under applicable hosting-platform terms.
+- install and use any number of copies of the software for any purpose, including in the work of a commercial organization;
+- read and study the source code;
+- change the software and use changed versions within your organization.
 
-## 3. Authorized organizations and private forks
+## 2. What you may not do
 
-A specifically identified organization may create and maintain a private fork only to the extent expressly authorized in a separate written agreement with Ian Panaev.
+- Distribute the software or changed versions of it, in whole or in part, in source or built form, to anyone outside your organization, or publish them. This includes forks, builds, container images and patches that contain code of the software. Copies are obtained only from official sources: https://github.com/ProAnima/Arkvory, the ProAnimaStudio update service and the container registries named in the official documentation. A fork that a hosting platform creates under its own terms gives no rights beyond this license.
+- Sell, rent or lend the software or access to it, or charge for it, or provide it to third parties as a hosted or managed service. Using your installation to store and deliver your own artifacts, including to your own customers, is permitted.
+- Remove, hide or change copyright notices, this license, NOTICE.md, or the names ProAnima Arkvory and ProAnimaStudio in the interface and documentation of the software.
+- Present a changed version as the original software or as released by the licensor.
 
-That agreement must define the authorized legal entity, permitted users and purposes, scope of copying and modification, permitted hosting and access, any rights to deploy or distribute source code or binaries, term, and applicable termination conditions. Affiliates, contractors, customers, and other third parties are not automatically included in an organization's authorization.
+## 3. Attribution
 
-No company is granted permission merely by being mentioned in documentation, integrations, examples, or issue discussions. Any sublicensing, onward transfer, public release, or expanded use requires an express grant in the applicable agreement. Ownership and licensing of partner modifications are determined by that agreement; this notice does not automatically assign ownership of those modifications.
+When you publicly describe a product, service or infrastructure that uses the software (on a website, in documentation, publications or presentations), name the source: "ProAnima Arkvory by ProAnimaStudio (Ian Panaev), https://github.com/ProAnima/Arkvory".
 
-## 4. Branding and attribution
+## 4. Third-party components
 
-No trademark or branding license is granted by this notice. Use of ProAnimaStudio or ProAnima Arkvory branding, beyond uses permitted by law, requires separate authorization from Ian Panaev.
+The software includes components of third parties, among them Node.js, PostgreSQL, WinSW and npm packages. They are provided under their own licenses, whose texts come with the software. This license does not restrict the rights those licenses grant.
 
-Authorized copies must retain this notice and applicable attribution unless the written agreement expressly provides otherwise. No statement in this notice asserts trademark registration.
+## 5. Contributions
 
-## 5. Third-party materials
+The licensor may use, change and publish bug reports, suggestions and code that you send to the licensor, including pull requests, without restriction or payment. By sending them you confirm that you have the right to do so.
 
-Third-party libraries, tools, and other components remain subject to their respective licenses. This notice does not replace those licenses or restrict rights independently granted by their owners. Inclusion of a third-party component does not grant a license to the original ProAnima Arkvory materials.
+## 6. Names and brands
 
-## 6. Warranty and liability
+This license grants no rights to the names and marks ProAnima, ProAnimaStudio and ProAnima Arkvory, except to name the source as section 3 requires.
 
-Unless a separate written agreement provides otherwise, and to the extent permitted by applicable law, the software and documentation are provided "AS IS", without warranties of any kind, express or implied, including warranties of merchantability, fitness for a particular purpose, or non-infringement.
+## 7. Data
 
-To the extent permitted by applicable law and except as otherwise agreed in writing, Ian Panaev shall not be liable for claims, damages, or other liability arising from the software or documentation. This provision does not exclude liability that cannot lawfully be excluded.
+Files and data you store with the software stay on your servers. To check for and install updates the software contacts the ProAnimaStudio update service, and GitHub when that service cannot be reached. With these checks and in anonymous statistics it sends a random installation identifier, the version, operating system, architecture, update channel and installed updates; names, addresses, content and IP addresses are not stored. Statistics can be turned off. Feedback is sent only when a user sends it and contains what the feedback form shows before sending.
 
-## 7. Separate agreements
+## 8. No warranty
 
-An executed written agreement with Ian Panaev governs the rights expressly granted to the identified licensee and prevails over this notice to the extent of a conflict within its scope. Permissions must not be inferred from silence, technical access, or prior informal discussions.
+The software is provided "as is", without warranties of any kind, express or implied, including fitness for a particular purpose. You are responsible for backing up your data.
+
+## 9. Limitation of liability
+
+To the extent permitted by law, the licensor is not liable for damages, lost profits, loss of data or other harm arising from the use of or inability to use the software. This does not exclude liability that cannot be excluded by law.
+
+## 10. Termination
+
+Your rights under this license end automatically if you breach it. If it is your first breach and you remedy it within 30 days after the licensor tells you about it, your rights are restored. After termination you must stop using the software and delete all copies of it, including changed versions.
+
+## 11. Other permissions
+
+Rights beyond this license, for example to distribute a changed version, are given only by a separate written agreement with the licensor, which prevails within its scope. Contact: info@proanima.net.
+
+## 12. Language
+
+This license exists in Russian and English. Both texts have the same meaning; if they differ, the Russian text prevails.
+
+Copyright © 2026 Ian Panaev (Ян Панаев), ProAnimaStudio. Rights not granted by this license are reserved.

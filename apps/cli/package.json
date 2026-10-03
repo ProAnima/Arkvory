@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "description": "Remote Arkvory client for people and CI/CD",
-  "license": "UNLICENSED",
+  "license": "SEE LICENSE IN LICENSE.md",
   "author": "Ian Panaev",
   "exports": {
     "arkvory-source": "./src/index.ts",

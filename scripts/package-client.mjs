@@ -9,7 +9,8 @@ async function clientFiles(source, destination, node, license) {
   await copyFile('node_modules/ssh2/LICENSE', join(destination, 'SSH2-LICENSE.txt'));
   await copyFile(node, join(destination, process.platform === 'win32' ? 'node.exe' : 'node'));
   await copyFile(license, join(destination, 'NODE-LICENSE.txt'));
-  await copyFile('LICENSE.md', join(destination, 'LICENSE.md'));
+  for (const name of ['LICENSE.md', 'LICENSE.ru.md', 'NOTICE.md'])
+    await copyFile(name, join(destination, name));
   await copyFile('docs/CLI.md', join(destination, 'CLI.md'));
   await copyFile('docs/REMOTE_DEPLOYMENT.md', join(destination, 'REMOTE_DEPLOYMENT.md'));
 }

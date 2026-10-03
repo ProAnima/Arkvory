@@ -37,3 +37,46 @@ test('agreements are UTF-8 with BOM and CRLF and name the rights holder', async 
       assert.ok(text.includes(required), `${path} (${language}) names ${required}`);
   }
 });
+
+test('the installers show exactly the repository license, in both languages', async () => {
+  const plain = (text) =>
+    text
+      .replace(/^\uFEFF/, '')
+      .replace(/\r\n/g, '\n')
+      .replace(/^#+ /gm, '');
+  for (const [file, license] of [
+    ['deploy/legal/EULA.en.txt', 'LICENSE.md'],
+    ['deploy/legal/EULA.ru.txt', 'LICENSE.ru.md'],
+  ])
+    assert.equal(
+      plain(await readFile(file, 'utf8')),
+      plain(await readFile(license, 'utf8')),
+      `${file} must be generated from ${license}`,
+    );
+});
+
+test('the license keeps the owner decisions of ADR 0061', async () => {
+  const en = await readFile('LICENSE.md', 'utf8');
+  const ru = await readFile('LICENSE.ru.md', 'utf8');
+  // Free use for everyone, changes inside the organization, no forks, no sale, attribution.
+  for (const required of [
+    'free of charge',
+    'including in the work of a commercial organization',
+    'use changed versions within your organization',
+    'Distribute the software or changed versions',
+    'provide it to third parties as a hosted or managed service',
+    'name the source',
+    'This is not an open-source license',
+  ])
+    assert.ok(en.includes(required), required);
+  for (const required of [
+    'бесплатно',
+    'в том числе в работе коммерческой организации',
+    'использовать изменённые версии внутри своей организации',
+    'Распространять программу или её изменённые версии',
+    'указывайте источник',
+    'при расхождении действует русский текст',
+  ])
+    assert.ok(ru.includes(required), required);
+  assert.equal(en.match(/^## \d+\./gm).length, ru.match(/^## \d+\./gm).length, 'same sections');
+});

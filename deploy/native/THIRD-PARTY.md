@@ -1,6 +1,6 @@
 # Dependencies distributed with native installers
 
-Arkvory remains proprietary, copyright Ian Panaev. Independent components retain their own licenses:
+Arkvory is provided under the ProAnima Arkvory License 1.0 (LICENSE.md), copyright Ian Panaev. Independent components retain their own licenses:
 
 - Node.js 24.21.0: MIT and bundled notices in `runtime/NODE-LICENSE.txt` (Linux: `NODE-LICENSE.txt`).
 - PostgreSQL 18.4 Windows binaries supplied by EDB: `runtime/postgres/server_license.txt`, `commandlinetools_3rd_party_licenses.txt` and `doc`. Linux uses distribution packages with their original notices.

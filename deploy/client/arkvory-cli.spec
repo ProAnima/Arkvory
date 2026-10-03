@@ -2,7 +2,7 @@ Name: proanima-arkvory-cli
 Version: @VERSION@
 Release: 1
 Summary: ProAnima Arkvory remote command-line client
-License: Proprietary
+License: LicenseRef-ProAnima-Arkvory-1.0
 BuildArch: x86_64
 Requires: ca-certificates
 Requires: xdg-utils
@@ -14,7 +14,7 @@ AutoReqProv: no
 
 %description
 Remote file transfers and repository management with a bundled Node.js runtime.
-Copyright Ian Panaev. All rights reserved.
+Copyright Ian Panaev, ProAnimaStudio. Free of charge under the ProAnima Arkvory License 1.0 (LICENSE.md).
 
 %install
 mkdir -p %{buildroot}/usr

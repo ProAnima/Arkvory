@@ -31,7 +31,14 @@ if ((await readdir(output)).length !== 0)
 // Windows TEMP may use an 8.3 alias. Compare canonical paths on both sides of the containment check.
 const staging = await realpath(await mkdtemp(join(tmpdir(), 'arkvory-release-')));
 const { units } = JSON.parse(await readFile('config/architecture.json', 'utf8'));
-for (const name of ['package.json', 'package-lock.json', 'LICENSE.md'])
+// The license (both languages) and NOTICE travel with every copy (LICENSE.md, section 2).
+for (const name of [
+  'package.json',
+  'package-lock.json',
+  'LICENSE.md',
+  'LICENSE.ru.md',
+  'NOTICE.md',
+])
   await copyFile(name, join(staging, name));
 for (const unit of units) {
   await mkdir(join(staging, unit.path), { recursive: true });

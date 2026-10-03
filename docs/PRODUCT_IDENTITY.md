@@ -1,6 +1,6 @@
 # Идентичность Arkvory / Arkvory identity
 
-Arkvory — самостоятельное хранилище ProAnimaStudio. Автор, правообладатель и держатель бренда — Ian Panaev лично. Лицензия проприетарная.
+Arkvory — самостоятельное хранилище ProAnimaStudio. Автор, правообладатель и держатель бренда — Ian Panaev лично. Лицензия: бесплатная, код открыт для чтения, без форков ([ADR 0061](adr/0061-free-source-available-license.md)).
 
 | Поверхность     | Имя                                                                                                                           |
 | --------------- | ----------------------------------------------------------------------------------------------------------------------------- |
@@ -25,7 +25,7 @@ Arkvory — самостоятельное хранилище ProAnimaStudio. А
 
 ## English
 
-Arkvory is a standalone ProAnimaStudio storage product. Ian Panaev personally owns the copyright and brand. The proprietary license applies.
+Arkvory is a standalone ProAnimaStudio storage product. Ian Panaev personally owns the copyright and brand. It is free of charge with source code open for reading and no forks ([ADR 0061](adr/0061-free-source-available-license.md)).
 
 The product is not deployed yet. All runtime settings, SQL objects, credentials, CLI profiles, browser storage, services and release assets use the Arkvory identity listed above. Fresh installations use this namespace directly; no alternate-name aliases, fallback files or conversion layer are provided. Build caches and Git history are outside the distributed product.
 
