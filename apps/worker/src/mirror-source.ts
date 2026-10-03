@@ -38,7 +38,12 @@ export class SdkMirrorSource implements MirrorSource {
     token: () => string,
     private readonly stop: AbortSignal,
   ) {
-    this.client = new ArkvoryClient(upstream, token, { maxAttempts: 3 });
+    // The fallback deadline and the shutdown signal also cover calls without a signal of their own.
+    this.client = new ArkvoryClient(upstream, token, {
+      maxAttempts: 3,
+      signal: stop,
+      requestTimeoutMs,
+    });
   }
 
   private signal(): AbortSignal {
@@ -113,7 +118,16 @@ export class SdkMirrorSource implements MirrorSource {
   ): Promise<AsyncIterable<Uint8Array>> {
     const controller = new AbortController();
     const signal = AbortSignal.any([this.stop, controller.signal]);
-    const response = await this.client.download(this.repository, source.id, { start, end }, signal);
+    // Until the headers arrive the request deadline applies; then the idle timeout of the body.
+    const headers = setTimeout(() => {
+      controller.abort();
+    }, requestTimeoutMs);
+    let response: Response;
+    try {
+      response = await this.client.download(this.repository, source.id, { start, end }, signal);
+    } finally {
+      clearTimeout(headers);
+    }
     if (response.status !== 206 || !response.body) {
       controller.abort();
       throw new Error('The source answered a range request without partial content');

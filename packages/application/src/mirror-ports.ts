@@ -83,6 +83,15 @@ export interface MirrorTarget {
   local(id: string): Promise<'absent' | 'partial' | 'present' | 'deleted'>;
   stages(id: string, stages: readonly MirrorStage[]): Promise<void>;
   asset(asset: MirrorAsset): Promise<void>;
+  /** Registry rows of the copy (ADR 0063), over artifacts copied before; all repeatable. */
+  ociBlob(digest: string, artifactId: string): Promise<void>;
+  /**
+   * The manifest held by the local artifact and, with a tag, the tag on it. Skipped when this
+   * mirror lacks content it references: the source has deleted that since, and so will the feed.
+   */
+  ociManifest(image: string, artifactId: string, tag: string | null): Promise<void>;
+  ociUntag(image: string, tag: string): Promise<void>;
+  ociForget(image: string, digest: string): Promise<void>;
 }
 
 export type MirrorPhase = 'seeding' | 'following';

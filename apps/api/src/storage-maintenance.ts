@@ -1,18 +1,24 @@
 import { ArkvoryError, authorizeAction } from '@proanima/arkvory-domain';
 import type { PostgresStoragePolicy, PostgresServices } from '@proanima/arkvory-infrastructure';
 
-/** One bounded batch on the writer; database gates and due times fence overlapping runs. */
+/**
+ * One bounded batch on the writer; database gates and due times fence overlapping runs. A policy
+ * of a mirrored repository is refused like any other change there (`readOnly`, ADR 0058): only
+ * the synchronization deletes in a mirror, and the refusal shows in the policy's last result.
+ */
 export async function maintainStorage(
   store: PostgresStoragePolicy,
   services: PostgresServices,
   active: () => boolean,
+  readOnly: readonly string[] = [],
 ) {
   await store.monitorCapacities(active);
   for (const due of await store.due()) {
     if (!active()) return;
     try {
-      const principal = await services.principalForKey(due.authorizer_key_id);
-      if (!principal) throw new ArkvoryError('forbidden', 'Policy credential unavailable');
+      const found = await services.principalForKey(due.authorizer_key_id);
+      if (!found) throw new ArkvoryError('forbidden', 'Policy credential unavailable');
+      const principal = { ...found, readOnlyRepositories: readOnly };
       authorizeAction(principal, due.repository, 'storage.manage', null);
       authorizeAction(principal, due.repository, 'artifact.delete', null);
       await store.run(

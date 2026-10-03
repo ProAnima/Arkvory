@@ -1,8 +1,17 @@
-import type { Pool } from 'pg';
-import { OciError, isOciDigest } from '@proanima/arkvory-domain';
+import type { Pool, PoolClient } from 'pg';
+import {
+  OciError,
+  isOciDigest,
+  ociFeedActions,
+  ociManifestDetail,
+  ociTagDetail,
+} from '@proanima/arkvory-domain';
+import type { Principal } from '@proanima/arkvory-domain';
 import type { OciIndex, OciManifestRecord, OciUploadState } from '@proanima/arkvory-application';
 import { inTransaction } from './pg-transaction.js';
 import { lockCatalogMutation } from './catalog-mutation.js';
+import { appendCatalogAudit } from './catalog-audit.js';
+import { storedCorrelation } from './request-correlation.js';
 
 interface ManifestRow {
   digest: string;
@@ -15,7 +24,25 @@ const manifestOf = (row: ManifestRow): OciManifestRecord => ({
   mediaType: row.media_type,
 });
 
-/** Registry rows in PostgreSQL (ADR 0063); the artifacts keep the bytes. */
+/** One feed entry of a registry change, in the caller's transaction. */
+function journal(
+  client: PoolClient,
+  actor: Principal,
+  entry: { repository: string; artifactId: string; action: string; detail: string },
+): Promise<void> {
+  return appendCatalogAudit(
+    client,
+    [{ ...entry, actor: actor.id }],
+    storedCorrelation(actor.requestId),
+  );
+}
+
+/**
+ * Registry rows in PostgreSQL (ADR 0063); the artifacts keep the bytes. Every change takes the
+ * repository's catalog lock and journals itself in the same transaction: the feed order is the
+ * commit order (mirrors follow it, ADR 0058), and retention, which deletes under that lock,
+ * sees committed references.
+ */
 export class PostgresOciIndex implements OciIndex {
   constructor(private readonly pool: Pool) {}
 
@@ -27,12 +54,26 @@ export class PostgresOciIndex implements OciIndex {
     return result.rows[0]?.artifact_id ?? null;
   }
 
-  async addBlob(repository: string, digest: string, artifactId: string): Promise<void> {
-    await this.pool.query(
-      `INSERT INTO arkvory_oci_blobs(repository,digest,artifact_id) VALUES($1,$2,$3)
-       ON CONFLICT (repository,digest) DO UPDATE SET artifact_id=EXCLUDED.artifact_id`,
-      [repository, digest, artifactId],
-    );
+  async addBlob(
+    actor: Principal,
+    repository: string,
+    digest: string,
+    artifactId: string,
+  ): Promise<void> {
+    await inTransaction(this.pool, async (client) => {
+      await lockCatalogMutation(client, repository);
+      await client.query(
+        `INSERT INTO arkvory_oci_blobs(repository,digest,artifact_id) VALUES($1,$2,$3)
+         ON CONFLICT (repository,digest) DO UPDATE SET artifact_id=EXCLUDED.artifact_id`,
+        [repository, digest, artifactId],
+      );
+      await journal(client, actor, {
+        repository,
+        artifactId,
+        action: ociFeedActions.blob,
+        detail: digest,
+      });
+    });
   }
 
   async manifest(
@@ -55,6 +96,7 @@ export class PostgresOciIndex implements OciIndex {
   }
 
   async putManifest(
+    actor: Principal,
     repository: string,
     image: string,
     manifest: OciManifestRecord & { readonly references: readonly string[] },
@@ -90,31 +132,80 @@ export class PostgresOciIndex implements OciIndex {
          SELECT $1,$2,$3,target FROM unnest($4::text[]) AS target ON CONFLICT DO NOTHING`,
         [repository, image, manifest.digest, manifest.references],
       );
-      if (tag !== null)
-        await client.query(
-          `INSERT INTO arkvory_oci_tags(repository,image,tag,digest) VALUES($1,$2,$3,$4)
-           ON CONFLICT (repository,image,tag)
-           DO UPDATE SET digest=EXCLUDED.digest, updated_at=now()`,
-          [repository, image, tag, manifest.digest],
-        );
+      const { artifactId, digest } = manifest;
+      await journal(client, actor, {
+        repository,
+        artifactId,
+        action: ociFeedActions.manifest,
+        detail: ociManifestDetail(image, digest),
+      });
+      if (tag === null) return;
+      await client.query(
+        `INSERT INTO arkvory_oci_tags(repository,image,tag,digest) VALUES($1,$2,$3,$4)
+         ON CONFLICT (repository,image,tag)
+         DO UPDATE SET digest=EXCLUDED.digest, updated_at=now()`,
+        [repository, image, tag, digest],
+      );
+      await journal(client, actor, {
+        repository,
+        artifactId,
+        action: ociFeedActions.tag,
+        detail: ociTagDetail(image, tag),
+      });
     });
   }
 
-  async deleteManifest(repository: string, image: string, digest: string): Promise<boolean> {
-    // Tags and references go with the manifest by ON DELETE CASCADE.
-    const result = await this.pool.query(
-      'DELETE FROM arkvory_oci_manifests WHERE repository=$1 AND image=$2 AND digest=$3',
-      [repository, image, digest],
-    );
-    return (result.rowCount ?? 0) > 0;
+  async deleteManifest(
+    actor: Principal,
+    repository: string,
+    image: string,
+    digest: string,
+  ): Promise<boolean> {
+    return inTransaction(this.pool, async (client) => {
+      await lockCatalogMutation(client, repository);
+      // Tags and references go with the manifest by ON DELETE CASCADE.
+      const removed = await client.query<{ artifact_id: string }>(
+        `DELETE FROM arkvory_oci_manifests WHERE repository=$1 AND image=$2 AND digest=$3
+         RETURNING artifact_id::text`,
+        [repository, image, digest],
+      );
+      const artifactId = removed.rows[0]?.artifact_id;
+      if (artifactId === undefined) return false;
+      await journal(client, actor, {
+        repository,
+        artifactId,
+        action: ociFeedActions.manifestDeleted,
+        detail: ociManifestDetail(image, digest),
+      });
+      return true;
+    });
   }
 
-  async deleteTag(repository: string, image: string, tag: string): Promise<boolean> {
-    const result = await this.pool.query(
-      'DELETE FROM arkvory_oci_tags WHERE repository=$1 AND image=$2 AND tag=$3',
-      [repository, image, tag],
-    );
-    return (result.rowCount ?? 0) > 0;
+  async deleteTag(
+    actor: Principal,
+    repository: string,
+    image: string,
+    tag: string,
+  ): Promise<boolean> {
+    return inTransaction(this.pool, async (client) => {
+      await lockCatalogMutation(client, repository);
+      const removed = await client.query<{ artifact_id: string }>(
+        `DELETE FROM arkvory_oci_tags t USING arkvory_oci_manifests m
+         WHERE t.repository=$1 AND t.image=$2 AND t.tag=$3
+           AND m.repository=t.repository AND m.image=t.image AND m.digest=t.digest
+         RETURNING m.artifact_id::text`,
+        [repository, image, tag],
+      );
+      const artifactId = removed.rows[0]?.artifact_id;
+      if (artifactId === undefined) return false;
+      await journal(client, actor, {
+        repository,
+        artifactId,
+        action: ociFeedActions.tagDeleted,
+        detail: ociTagDetail(image, tag),
+      });
+      return true;
+    });
   }
 
   async tags(

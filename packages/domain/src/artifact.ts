@@ -165,6 +165,16 @@ export function authorize(
     throw new ArkvoryError('forbidden', 'Explicit service action required', {
       reason: 'permission_missing',
     });
+  requireRepositoryGrant(principal, repository, permission);
+  if (permission === 'write') requireWritable(principal, repository);
+}
+
+/** The repository grant alone, for a reading action that legacy credentials hold by `write`. */
+export function requireRepositoryGrant(
+  principal: Principal,
+  repository: string,
+  permission: 'read' | 'write',
+): void {
   requireRepository(repository);
   const allowed = principal.grants
     ? principal.grants.some(
@@ -175,7 +185,6 @@ export function authorize(
     throw new ArkvoryError('forbidden', 'Repository access denied', {
       reason: 'permission_missing',
     });
-  if (permission === 'write') requireWritable(principal, repository);
 }
 
 export interface MutationAccess {

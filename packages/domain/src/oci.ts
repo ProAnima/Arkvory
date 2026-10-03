@@ -185,3 +185,34 @@ export function parseOciManifest(
 /** A tag is the reference unless it is a digest. */
 export const isOciTag = (reference: string) =>
   tagPattern.test(reference) && !isOciDigest(reference);
+
+/**
+ * Registry changes in the repository feed (ADR 0058, 0063). The artifact of an entry is the
+ * blob's or the manifest's; the detail names the rest: a digest, `<image>@<digest>` or
+ * `<image>:<tag>` (neither an image name nor a tag contains `@` or `:`).
+ */
+export const ociFeedActions = {
+  blob: 'oci.blob',
+  manifest: 'oci.manifest',
+  tag: 'oci.tag',
+  manifestDeleted: 'oci.manifest.delete',
+  tagDeleted: 'oci.tag.delete',
+} as const;
+export const ociManifestDetail = (image: string, digest: string) => `${image}@${digest}`;
+export const ociTagDetail = (image: string, tag: string) => `${image}:${tag}`;
+
+/** `<image>@<digest>` or `<image>:<tag>` of a feed entry; null when it is neither. */
+export function parseOciDetail(
+  detail: string | null,
+): { image: string; digest: string } | { image: string; tag: string } | null {
+  if (detail === null) return null;
+  const at = detail.lastIndexOf('@');
+  if (at > 0) {
+    const digest = detail.slice(at + 1);
+    return isOciDigest(digest) ? { image: detail.slice(0, at), digest } : null;
+  }
+  const colon = detail.lastIndexOf(':');
+  if (colon <= 0) return null;
+  const tag = detail.slice(colon + 1);
+  return isOciTag(tag) ? { image: detail.slice(0, colon), tag } : null;
+}

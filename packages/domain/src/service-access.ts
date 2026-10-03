@@ -1,4 +1,10 @@
-import { authorize, ArkvoryError, requireRepository, requireWritable } from './artifact.js';
+import {
+  authorize,
+  ArkvoryError,
+  requireRepositoryGrant,
+  requireRepository,
+  requireWritable,
+} from './artifact.js';
 import type { Principal } from './artifact.js';
 
 import { serviceActions } from './service-policy.js';
@@ -106,6 +112,9 @@ export function authorizeAction(
       throw new ArkvoryError('forbidden', 'Explicit managed permission required', {
         reason: 'permission_missing',
       });
-    for (const p of legacy) authorize(principal, repository, p);
+    // Audit, own uploads and jobs are read with a write grant; reading stays possible in a mirror.
+    if (readActions.has(permission))
+      for (const p of legacy) requireRepositoryGrant(principal, repository, p);
+    else for (const p of legacy) authorize(principal, repository, p);
   }
 }

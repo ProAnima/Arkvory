@@ -40,16 +40,20 @@ export async function readCatalogChanges(
   after: string,
   limit: number,
 ): Promise<CatalogFeedPage> {
-  const [rows, head] = await Promise.all([
-    pool.query<{ sequence: string; action: string; artifact_id: string; detail: string | null }>(
-      'SELECT sequence::text,action,artifact_id,detail FROM arkvory_audit WHERE repository=$1 AND sequence>$2::bigint ORDER BY arkvory_audit.sequence LIMIT $3',
-      [repository, after, limit],
-    ),
-    pool.query<{ head: string | null }>(
-      'SELECT max(sequence)::text AS head FROM arkvory_audit WHERE repository=$1',
-      [repository],
-    ),
-  ]);
+  const rows = await pool.query<{
+    sequence: string;
+    action: string;
+    artifact_id: string;
+    detail: string | null;
+  }>(
+    'SELECT sequence::text,action,artifact_id,detail FROM arkvory_audit WHERE repository=$1 AND sequence>$2::bigint ORDER BY arkvory_audit.sequence LIMIT $3',
+    [repository, after, limit],
+  );
+  // After the items, never beside them: the head is then at least the last item returned.
+  const head = await pool.query<{ head: string | null }>(
+    'SELECT max(sequence)::text AS head FROM arkvory_audit WHERE repository=$1',
+    [repository],
+  );
   return {
     items: rows.rows.map((row) => ({
       sequence: row.sequence,

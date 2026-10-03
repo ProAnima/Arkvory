@@ -18,6 +18,7 @@ import type {
   MirrorTarget,
 } from '@proanima/arkvory-application';
 import { ArkvoryError, descriptorWire } from '@proanima/arkvory-domain';
+import { MirrorRegistryRows } from './mirror-registry-rows.js';
 import type { Principal, Upload } from '@proanima/arkvory-domain';
 import {
   PostgresBrowse,
@@ -64,6 +65,7 @@ export class ServiceMirrorTarget implements MirrorTarget {
   private readonly promotion: ArtifactPromotion;
   private readonly deletions: PostgresRetention;
   private readonly staging: string;
+  private readonly registry: MirrorRegistryRows;
 
   constructor(
     private readonly repository: string,
@@ -94,6 +96,7 @@ export class ServiceMirrorTarget implements MirrorTarget {
     );
     this.deletions = new PostgresRetention(pool);
     this.staging = join(dataDirectory, 'mirror-staging');
+    this.registry = new MirrorRegistryRows(repository, pool, this.principal, storage);
   }
 
   /** The copy keeps the source ID: the storage service of one artifact issues exactly it. */
@@ -130,10 +133,13 @@ export class ServiceMirrorTarget implements MirrorTarget {
         throw new MirrorFailure('mirror_mismatch', 'A local artifact differs from the source');
       return 0;
     }
-    if (upload.status === 'cancelled')
-      throw new MirrorFailure('mirror_upload_cancelled', 'The local copy was cancelled');
-    if (Date.parse(upload.expiresAt) <= Date.now())
-      await reopenMirrorUpload(this.catalog.pool, this.repository, id, this.principal.id);
+    // Expired while the source was away (cleanup may have cancelled it): continue it. Only a copy
+    // that was published and then deleted here cannot be reopened.
+    if (
+      (upload.status === 'cancelled' || Date.parse(upload.expiresAt) <= Date.now()) &&
+      !(await reopenMirrorUpload(this.catalog.pool, this.repository, id, this.principal.id))
+    )
+      throw new MirrorFailure('mirror_upload_cancelled', 'The local copy was deleted here');
     if (descriptor.size === 0) {
       await storage.upload(this.principal, this.repository, id, nothing(), c);
       return 0;
@@ -225,7 +231,11 @@ export class ServiceMirrorTarget implements MirrorTarget {
     const upload = await this.uploadOf(this.storage(id), id);
     if (!upload) return 'absent';
     if (upload.status === 'available') return 'present';
-    return upload.status === 'pending' ? 'partial' : 'deleted';
+    if (upload.status === 'pending') return 'partial';
+    // Cancelled by cleanup before the copy completed is unfinished, not deleted: copy reopens it.
+    return (await reopenMirrorUpload(this.catalog.pool, this.repository, id, this.principal.id))
+      ? 'partial'
+      : 'deleted';
   }
 
   async adopt(
@@ -262,6 +272,19 @@ export class ServiceMirrorTarget implements MirrorTarget {
     for (const { stage } of current)
       if (!wanted.some((entry) => entry.stage === stage))
         await this.promotion.removeStage(this.principal, this.repository, id, stage);
+  }
+
+  ociBlob(digest: string, artifactId: string): Promise<void> {
+    return this.registry.blob(digest, artifactId);
+  }
+  ociManifest(image: string, artifactId: string, tag: string | null): Promise<void> {
+    return this.registry.manifest(image, artifactId, tag);
+  }
+  ociUntag(image: string, tag: string): Promise<void> {
+    return this.registry.untag(image, tag);
+  }
+  ociForget(image: string, digest: string): Promise<void> {
+    return this.registry.forget(image, digest);
   }
 
   async asset(asset: MirrorAsset): Promise<void> {

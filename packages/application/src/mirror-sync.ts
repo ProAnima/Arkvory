@@ -1,6 +1,7 @@
 import type { CatalogFeedEntry } from './catalog-ports.js';
 import type { Cancellation } from './ports.js';
 import { MirrorFailure } from './mirror-ports.js';
+import { applyRegistryChange, isRegistryChange } from './mirror-registry.js';
 import type {
   MirrorArtifact,
   MirrorSource,
@@ -33,6 +34,73 @@ export function stopped(cancellation: Cancellation): boolean {
   }
 }
 
+/** `upstream|sourceRepository` of a source string; import stages follow after it. */
+export function sourceOrigin(source: string): string {
+  return source.split('|').slice(0, 2).join('|');
+}
+
+/**
+ * The stored state for this source. Another source string starts a new seed, which re-reads the
+ * source and skips what is here (the copy counters carry over). A mirror refuses another
+ * upstream or source repository (`anyOrigin` false): it already holds a copy of the other one.
+ */
+export async function stateFor(
+  d: Pick<MirrorSyncDependencies, 'repository' | 'source' | 'states'>,
+  loaded: MirrorState | null,
+  anyOrigin: boolean,
+): Promise<MirrorState> {
+  if (loaded?.source === d.source) return loaded;
+  if (loaded && !anyOrigin && sourceOrigin(loaded.source) !== sourceOrigin(d.source))
+    throw new MirrorFailure(
+      'mirror_source_changed',
+      'This repository holds a copy of another source; mirror the new source into a new repository',
+    );
+  const fresh = {
+    ...initialMirrorState(d.repository, d.source),
+    ...(loaded ? { copiedArtifacts: loaded.copiedArtifacts, copiedBytes: loaded.copiedBytes } : {}),
+  };
+  await d.states.save(fresh);
+  return fresh;
+}
+
+/**
+ * Records a failed step in the stored state, also when the state belongs to another source (its
+ * source is kept): the status and the failing gauge must show what stops the mirror.
+ */
+export async function recordFailure(
+  d: Pick<MirrorSyncDependencies, 'repository' | 'states' | 'now'>,
+  known: MirrorState | null,
+  error: unknown,
+): Promise<MirrorState | null> {
+  const state = known ?? (await d.states.load(d.repository));
+  if (!state) return null;
+  const failed = { ...state, errorCode: mirrorErrorCode(error), errorAt: d.now() };
+  await d.states.save(failed);
+  return failed;
+}
+
+/**
+ * A source whose feed head is below the applied cursor was restored or reinstalled: its newer
+ * events would reuse sequences the mirror has passed. Seed again (the seed re-reads the source
+ * and never deletes here) and say why in the status until the mirror has caught up.
+ */
+export async function reseedBehind(
+  d: Pick<MirrorSyncDependencies, 'repository' | 'source' | 'states' | 'now'>,
+  state: MirrorState,
+  head: string,
+): Promise<MirrorState | null> {
+  if (BigInt(head) >= BigInt(state.cursor)) return null;
+  const reseeded = {
+    ...initialMirrorState(d.repository, d.source),
+    copiedArtifacts: state.copiedArtifacts,
+    copiedBytes: state.copiedBytes,
+    errorCode: 'mirror_source_behind',
+    errorAt: d.now(),
+  };
+  await d.states.save(reseeded);
+  return reseeded;
+}
+
 /** Machine code of a failed step: the failure's own code, else a constant. */
 export function mirrorErrorCode(error: unknown): string {
   const code = typeof error === 'object' && error !== null && 'code' in error ? error.code : null;
@@ -43,38 +111,34 @@ export function mirrorErrorCode(error: unknown): string {
  * Synchronization of one mirrored repository (ADR 0058), one bounded step at a time; the caller
  * loops, sleeps when idle and backs off after a failure. First the seed: remember the feed head,
  * then bring artifacts, packages and asset paths in line with the source page by page; then
- * follow the feed from that head. Every applied page or event is saved before the next one, so
- * a restart repeats at most the unsaved unit, and every unit is idempotent: it re-reads the
- * current source state instead of replaying an event payload.
+ * follow the feed. The registry of container images (ADR 0063) has no listing to seed from, so
+ * following starts at the beginning and, up to the seed head, applies registry entries only
+ * (`seedHead` marks that replay); after it, every entry. Every applied page or event is saved
+ * before the next one, so a restart repeats at most the unsaved unit, and every unit is
+ * idempotent: it re-reads the current source state instead of replaying an event payload.
  */
 export class MirrorSync {
   private state: MirrorState | null = null;
   constructor(private readonly d: MirrorSyncDependencies) {}
 
   async step(cancellation: Cancellation): Promise<MirrorStep> {
-    const state = await this.current();
     try {
+      const state = await this.current();
       return state.phase === 'seeding'
         ? await this.seed(state, cancellation)
         : await this.follow(state, cancellation);
     } catch (error) {
-      if (!stopped(cancellation))
-        await this.save({ errorCode: mirrorErrorCode(error), errorAt: this.d.now() });
+      if (!stopped(cancellation)) {
+        const known = this.state?.source === this.d.source ? this.state : null;
+        this.state = (await recordFailure(this.d, known, error)) ?? this.state;
+      }
       throw error;
     }
   }
 
   private async current(): Promise<MirrorState> {
-    this.state ??= await this.d.states.load(this.d.repository);
-    if (!this.state) {
-      this.state = initialMirrorState(this.d.repository, this.d.source);
-      await this.d.states.save(this.state);
-    }
-    if (this.state.source !== this.d.source)
-      throw new MirrorFailure(
-        'mirror_source_changed',
-        'The repository mirrors another source; detach it before changing the source',
-      );
+    if (this.state?.source !== this.d.source)
+      this.state = await stateFor(this.d, await this.d.states.load(this.d.repository), false);
     return this.state;
   }
 
@@ -105,14 +169,7 @@ export class MirrorSync {
       const page = await upstream.assets(state.seedAfter, cancellation);
       for (const asset of page.items) await this.syncAsset(asset.path, cancellation);
       if (page.next !== null) await this.save({ seedAfter: page.next });
-      else
-        await this.save({
-          phase: 'following',
-          cursor: state.seedHead,
-          seedStep: null,
-          seedAfter: null,
-          seedHead: null,
-        });
+      else await this.save({ phase: 'following', cursor: '0', seedStep: null, seedAfter: null });
     }
     return 'progress';
   }
@@ -123,18 +180,40 @@ export class MirrorSync {
 
   private async follow(state: MirrorState, cancellation: Cancellation): Promise<MirrorStep> {
     const page = await this.d.upstream.changes(state.cursor, cancellation);
+    const reseeded = await reseedBehind(this.d, state, page.head);
+    if (reseeded) {
+      this.state = reseeded;
+      return 'progress';
+    }
     await this.save({ head: page.head, checkedAt: this.d.now() });
     for (const change of page.items) {
-      await this.apply(change, cancellation);
-      await this.save({ cursor: change.sequence });
+      const replay = state.seedHead !== null && BigInt(change.sequence) <= BigInt(state.seedHead);
+      if (!replay || isRegistryChange(change.action)) await this.apply(change, cancellation);
+      await this.save(
+        replay && change.sequence === state.seedHead
+          ? { cursor: change.sequence, seedHead: null }
+          : { cursor: change.sequence },
+      );
     }
     if (page.next !== null) return 'progress';
-    await this.save({ syncedAt: this.d.now(), errorCode: null, errorAt: null });
+    // The replay reached the end of the feed: the cursor is at least the seed head, also when
+    // no entry below it is left to read.
+    const { cursor, seedHead } = await this.current();
+    const reached = seedHead !== null && BigInt(cursor) < BigInt(seedHead) ? seedHead : cursor;
+    await this.save({
+      cursor: reached,
+      syncedAt: this.d.now(),
+      errorCode: null,
+      errorAt: null,
+      seedHead: null,
+    });
     return page.items.length > 0 ? 'progress' : 'idle';
   }
 
   private async apply(change: CatalogFeedEntry, cancellation: Cancellation): Promise<void> {
     if (ignored.has(change.action)) return;
+    if (isRegistryChange(change.action))
+      return applyRegistryChange(change, this.d.target, (id) => this.refresh(id, cancellation));
     if (change.action === 'artifact.delete') return this.d.target.remove(change.artifactId);
     if (change.action === 'asset.replace' || change.action === 'asset.restore') {
       if (change.detail !== null) await this.syncAsset(change.detail, cancellation);

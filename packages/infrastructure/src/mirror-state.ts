@@ -1,4 +1,6 @@
 import type { Pool } from 'pg';
+import { ArkvoryError } from '@proanima/arkvory-domain';
+import { uploadLockKey } from './content-pins.js';
 import type {
   MirrorPhase,
   MirrorSeedStep,
@@ -93,10 +95,13 @@ export class PostgresMirrorState implements MirrorStateStore {
 }
 
 /**
- * Gives a pending upload of the mirror a fresh lifetime without its recorded parts: an upload
- * that expired while the source was unreachable, or whose parts did not add up to the source
- * SHA-256. The artifact ID is the source's, so the row is reused instead of recreated; parts are
- * written again and overwrite their files. Only a pending upload of `owner` is touched.
+ * Gives an unfinished upload of the mirror a fresh lifetime without its recorded parts: one that
+ * expired while the source was unreachable (still pending, or already cancelled by online
+ * cleanup), or whose parts did not add up to the source SHA-256. The artifact ID is the source's,
+ * so the row is reused instead of recreated; parts are written again and overwrite their files.
+ * Only an upload of `owner` that was never published is touched: a copy deleted here stays
+ * deleted. The upload lock, which online cleanup holds while it reclaims old parts, keeps both
+ * from overlapping; a busy lock is retried by the next step.
  */
 export async function reopenMirrorUpload(
   pool: Pool,
@@ -108,9 +113,18 @@ export async function reopenMirrorUpload(
   let broken = false;
   try {
     await client.query('BEGIN');
+    const lock = await client.query<{ acquired: boolean }>(
+      'SELECT pg_try_advisory_xact_lock($1::bigint) AS acquired',
+      [uploadLockKey(id)],
+    );
+    if (!lock.rows[0]?.acquired) throw new ArkvoryError('busy', 'Upload is being modified');
     const reopened = await client.query(
-      `UPDATE arkvory_uploads SET expires_at=now()+interval '7 days'
-       WHERE repository=$1 AND id=$2 AND owner=$3 AND status='pending' RETURNING id`,
+      `UPDATE arkvory_uploads SET status='pending', cancelled_at=NULL, reclaimed=false,
+         temp_cleaned=false, expires_at=now()+interval '7 days'
+       WHERE repository=$1 AND id=$2 AND owner=$3 AND published_at IS NULL
+         AND (status='pending' OR (status='cancelled' AND NOT EXISTS(
+           SELECT 1 FROM arkvory_artifact_deletions WHERE artifact_id=$2)))
+       RETURNING id`,
       [repository, id, owner],
     );
     if (reopened.rowCount === 1)

@@ -65,6 +65,10 @@ function target() {
     register: async (id) => t.log.push(`register ${id}`),
     stages: async (id) => t.log.push(`stages ${id}`),
     asset: async (asset) => t.log.push(`asset ${asset.path}=${asset.artifactId}`),
+    ociBlob: async (digest, id) => t.log.push(`blob ${digest}=${id}`),
+    ociManifest: async (image, id, tag) => t.log.push(`manifest ${image} ${id} ${tag}`),
+    ociUntag: async (image, tag) => t.log.push(`untag ${image}:${tag}`),
+    ociForget: async (image, digest) => t.log.push(`forget ${image}@${digest}`),
   };
   return t;
 }
@@ -189,7 +193,90 @@ test('a state of another source is never continued', async () => {
     mirror(source(), target(), st, 'https://b|releases').step(never),
     (error) => error instanceof MirrorFailure && error.code === 'mirror_source_changed',
   );
+  // The refusal shows in the status; the stored source and cursor stay those of the first one.
+  const kept = st.rows.get('releases');
+  assert.equal(kept.errorCode, 'mirror_source_changed');
+  assert.equal(kept.source, 'https://a|releases');
+  assert.equal(kept.cursor, '1');
   assert.equal(mirrorErrorCode(new Error('plain')), 'mirror_failed');
   assert.equal(mirrorErrorCode({ code: 'Bad Code' }), 'mirror_failed');
   assert.equal(mirrorErrorCode({ code: 'not_found' }), 'not_found');
+});
+
+test('another stage list of the same source seeds again and keeps the copy counters', async () => {
+  const st = states();
+  await settle(mirror(source({ artifacts: ['a'], head: '3' }), target(), st));
+  const t = target();
+  await settle(mirror(source({ artifacts: ['a'], head: '3' }), t, st, 'https://a|releases|x'));
+  const state = st.rows.get('releases');
+  assert.equal(state.source, 'https://a|releases|x');
+  assert.equal(state.phase, 'following');
+  assert.equal(state.copiedArtifacts, 2, 'counted again only for what the new seed copied');
+  assert.ok(t.log.includes('copy a'), 'the new seed re-read the source');
+});
+
+test('a source restored behind the cursor is seeded again, and the status says why', async () => {
+  const st = states();
+  const s = source({ artifacts: ['a'], head: '9' });
+  await settle(mirror(s, target(), st));
+  assert.equal(st.rows.get('releases').cursor, '9');
+  s.head = '4';
+  const sync = mirror(s, target(), st);
+  assert.equal(await sync.step(never), 'progress');
+  const reseeded = st.rows.get('releases');
+  assert.equal(reseeded.phase, 'seeding');
+  assert.equal(reseeded.errorCode, 'mirror_source_behind');
+  await settle(sync);
+  const done = st.rows.get('releases');
+  assert.equal(done.cursor, '4');
+  assert.equal(done.errorCode, null, 'cleared once the mirror has caught up again');
+});
+
+const digest = (c) => `sha256:${c.repeat(64)}`;
+const entry = (sequence, action, artifactId, detail = null) => ({
+  sequence,
+  action,
+  artifactId,
+  detail,
+});
+
+test('after the seed, registry entries below its head are replayed in order, others skipped', async () => {
+  const feed = [
+    entry('1', 'artifact.publish', 'l'),
+    entry('2', 'oci.blob', 'l', digest('1')),
+    entry('3', 'artifact.publish', 'm'),
+    entry('4', 'oci.manifest', 'm', `team/web@${digest('2')}`),
+    entry('5', 'oci.tag', 'm', 'team/web:1.0'),
+    entry('6', 'oci.tag', 'm', 'team/web:old'),
+    entry('7', 'oci.tag.delete', 'm', 'team/web:old'),
+    entry('8', 'oci.blob', 'gone', digest('3')),
+  ];
+  const s = source({ artifacts: ['l', 'm'], head: '8', feed });
+  const t = target();
+  const st = states();
+  await settle(mirror(s, t, st));
+  const registry = t.log.filter((line) => /^(blob|manifest|untag|forget) /.test(line));
+  assert.deepEqual(registry, [
+    `blob ${digest('1')}=l`,
+    'manifest team/web m null',
+    'manifest team/web m 1.0',
+    'manifest team/web m old',
+    'untag team/web:old',
+  ]);
+  assert.ok(t.log.includes('remove gone'), 'content gone on the source is not recorded');
+  assert.equal(st.rows.get('releases').cursor, '8');
+
+  // Following: every entry applies; a deleted manifest is forgotten, a bad detail only refreshes.
+  t.log.length = 0;
+  s.feed.push(
+    entry('9', 'oci.manifest.delete', 'm', `team/web@${digest('2')}`),
+    entry('10', 'oci.tag', 'm', 'no-separator'),
+    entry('11', 'oci.newer', 'l'),
+  );
+  s.head = '11';
+  await settle(mirror(s, t, st));
+  assert.deepEqual(
+    t.log.filter((line) => !line.startsWith('annotate') && !line.startsWith('stages')),
+    [`forget team/web@${digest('2')}`, 'copy m', 'copy l'],
+  );
 });

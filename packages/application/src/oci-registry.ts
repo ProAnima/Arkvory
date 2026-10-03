@@ -21,11 +21,15 @@ export interface OciUploadState {
   readonly owner: string;
   readonly received: number;
 }
-/** Registry rows over artifacts (ADR 0063). Blobs are per repository, manifests per image. */
+/**
+ * Registry rows over artifacts (ADR 0063). Blobs are per repository, manifests per image. Every
+ * change is journaled in the repository feed with the actor, in its transaction, so mirrors
+ * follow the registry like the rest of the catalog (ADR 0058).
+ */
 export interface OciIndex {
   blob(repository: string, digest: string): Promise<string | null>;
   /** Points the digest at the artifact that now holds it, replacing a vanished one. */
-  addBlob(repository: string, digest: string, artifactId: string): Promise<void>;
+  addBlob(actor: Principal, repository: string, digest: string, artifactId: string): Promise<void>;
   /** By tag or by digest. */
   manifest(repository: string, image: string, reference: string): Promise<OciManifestRecord | null>;
   /**
@@ -35,14 +39,20 @@ export interface OciIndex {
    * longer available at that moment.
    */
   putManifest(
+    actor: Principal,
     repository: string,
     image: string,
     manifest: OciManifestRecord & { readonly references: readonly string[] },
     tag: string | null,
   ): Promise<void>;
   /** Removes the manifest, its references and the tags pointing at it; false when unknown. */
-  deleteManifest(repository: string, image: string, digest: string): Promise<boolean>;
-  deleteTag(repository: string, image: string, tag: string): Promise<boolean>;
+  deleteManifest(
+    actor: Principal,
+    repository: string,
+    image: string,
+    digest: string,
+  ): Promise<boolean>;
+  deleteTag(actor: Principal, repository: string, image: string, tag: string): Promise<boolean>;
   tags(repository: string, image: string, after: string | null, limit: number): Promise<string[]>;
   startUpload(state: OciUploadState): Promise<void>;
   upload(id: string): Promise<OciUploadState | null>;
@@ -243,6 +253,7 @@ export class OciRegistry {
         ? existing.artifactId
         : await this.storeManifest(principal, target, document, parsed.mediaType, cancellation);
     await this.index.putManifest(
+      principal,
       repository,
       image,
       {
@@ -263,8 +274,8 @@ export class OciRegistry {
   async deleteManifest(principal: Principal, repository: string, image: string, reference: string) {
     authorizeAction(principal, repository, 'artifact.delete', null);
     const removed = isOciTag(reference)
-      ? await this.index.deleteTag(repository, image, reference)
-      : await this.index.deleteManifest(repository, image, reference);
+      ? await this.index.deleteTag(principal, repository, image, reference)
+      : await this.index.deleteManifest(principal, repository, image, reference);
     if (!removed) throw new OciError('MANIFEST_UNKNOWN', 'Manifest unknown');
   }
 
@@ -292,7 +303,7 @@ export class OciRegistry {
         await this.storage.cancel(principal, state.repository, created.id);
         throw new OciError('DIGEST_INVALID', 'Content does not match the digest');
       }
-    await this.index.addBlob(state.repository, digest, created.id);
+    await this.index.addBlob(principal, state.repository, digest, created.id);
   }
 
   private async storeManifest(

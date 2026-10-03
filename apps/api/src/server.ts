@@ -55,6 +55,7 @@ function registerMaintenance(
           services.storagePolicies,
           services.serviceAccounts,
           runtime.available,
+          services.mirrors.readOnlyRepositories,
         );
       } finally {
         // Bounded batch; the security journal must not grow without limit under login floods.

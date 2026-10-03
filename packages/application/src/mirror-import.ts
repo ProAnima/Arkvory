@@ -1,5 +1,5 @@
 import type { MirrorState } from './mirror-ports.js';
-import { initialMirrorState, mirrorErrorCode, stopped } from './mirror-sync.js';
+import { recordFailure, reseedBehind, stateFor, stopped } from './mirror-sync.js';
 import type { MirrorStep, MirrorSyncDependencies } from './mirror-sync.js';
 import type { Cancellation } from './ports.js';
 
@@ -21,30 +21,27 @@ export class StageImport {
   constructor(private readonly d: StageImportDependencies) {}
 
   async step(cancellation: Cancellation): Promise<MirrorStep> {
-    const state = await this.current();
     try {
+      const state = await this.current();
       return state.phase === 'seeding'
         ? await this.seed(state, cancellation)
         : await this.follow(state, cancellation);
     } catch (error) {
-      if (!stopped(cancellation))
-        await this.save({ errorCode: mirrorErrorCode(error), errorAt: this.d.now() });
+      if (!stopped(cancellation)) {
+        const known = this.state?.source === this.d.source ? this.state : null;
+        this.state = (await recordFailure(this.d, known, error)) ?? this.state;
+      }
       throw error;
     }
   }
 
+  /**
+   * Another source, other stages or a former mirror: seed again. Importing never deletes and
+   * skips what is here already, so a new seed only brings what the new filter selects.
+   */
   private async current(): Promise<MirrorState> {
-    this.state ??= await this.d.states.load(this.d.repository);
-    if (!this.state) {
-      this.state = initialMirrorState(this.d.repository, this.d.source);
-      await this.d.states.save(this.state);
-    }
-    // Another source or other stages: seed again. Importing never deletes and skips what is here
-    // already, so a new seed only brings what the new filter selects (unlike a mirror, which stops).
-    if (this.state.source !== this.d.source) {
-      this.state = initialMirrorState(this.d.repository, this.d.source);
-      await this.d.states.save(this.state);
-    }
+    if (this.state?.source !== this.d.source)
+      this.state = await stateFor(this.d, await this.d.states.load(this.d.repository), true);
     return this.state;
   }
 
@@ -83,6 +80,11 @@ export class StageImport {
 
   private async follow(state: MirrorState, cancellation: Cancellation): Promise<MirrorStep> {
     const page = await this.d.upstream.changes(state.cursor, cancellation);
+    const reseeded = await reseedBehind(this.d, state, page.head);
+    if (reseeded) {
+      this.state = reseeded;
+      return 'progress';
+    }
     await this.save({ head: page.head, checkedAt: this.d.now() });
     for (const change of page.items) {
       const wanted =

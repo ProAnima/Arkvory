@@ -243,6 +243,20 @@ test('automatic runs survive restart, reauthorize keys, respect due time and nev
   assert.ok((await store.events('releases', '0')).items.some((e) => e.code === 'retention.failed'));
 });
 
+test('a policy of a repository that became a mirror deletes nothing there', async (t) => {
+  const f = await setup(t),
+    a = await access(f),
+    old = await build(f, 'a', 20);
+  await build(f, 'a', 10);
+  await a.client.setStoragePolicy('releases', 0, policy());
+  const store = new PostgresStoragePolicy(f.catalog.pool),
+    services = new PostgresServices(f.catalog.pool);
+  // Only the synchronization deletes in a mirror; the policy reports the refusal instead.
+  await maintainStorage(store, services, () => true, ['releases']);
+  assert.equal((await f.catalog.get('releases', old)).status, 'available');
+  assert.equal((await store.get('releases')).lastError, 'conflict');
+});
+
 test('storage operations enforce scoped managed permissions, validate contracts and reject unsafe input', async (t) => {
   const f = await setup(t),
     a = await access(f, ['storage.read', 'storage.manage', 'diagnostics.read']);
