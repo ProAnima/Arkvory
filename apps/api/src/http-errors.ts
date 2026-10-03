@@ -123,6 +123,11 @@ export async function sendFailure(
   return reply.code(httpStatus(failure)).send(body);
 }
 
+/** A stream can fail after Fastify staged its headers; an error must not inherit them. */
+export function clearStagedHeaders(reply: FastifyReply): void {
+  for (const header of stagedHeaders) reply.removeHeader(header);
+}
+
 export function registerHttpErrors(
   app: FastifyInstance,
   context: Pick<RequestContext, 'recordError'>,
@@ -130,7 +135,7 @@ export function registerHttpErrors(
   app.setErrorHandler((error, request, reply) => {
     // A stream can fail before its first byte after Fastify has staged headers on raw.
     // Clear both header stores so JSON errors cannot inherit the file's type or validators.
-    for (const header of stagedHeaders) reply.removeHeader(header);
+    clearStagedHeaders(reply);
     const failure = httpFailure(error);
     // The cause is logged by ResponseDiagnostics; the client receives only the fixed message.
     context.recordError(request, failure.code, failure.cause);

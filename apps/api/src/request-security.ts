@@ -13,6 +13,8 @@ import type { RequestContext } from './request-context.js';
 import { LoginAdmission } from './login-admission.js';
 import type { RequestDrain } from './drain.js';
 import { sendFailure } from './http-errors.js';
+import type { HttpFailure } from './http-failure.js';
+import { isRegistry, registryCredential, sendOciFailure } from './oci-errors.js';
 
 interface Security {
   config: Pick<ServerConfig, 'keys'>;
@@ -97,6 +99,18 @@ async function linkRequest(
   registerOwner(holder.id);
   return true;
 }
+/** The registry answers in its own envelope (ADR 0063); every other route in Arkvory's. */
+function refuse(request: FastifyRequest, reply: FastifyReply, failure: HttpFailure) {
+  return isRegistry(request)
+    ? sendOciFailure(request, reply, failure)
+    : sendFailure(request, reply, failure);
+}
+/** Bearer everywhere; the registry also takes the key as a Basic password (docker login). */
+function credentialOf(request: FastifyRequest): string {
+  const auth = request.headers.authorization;
+  if (isRegistry(request)) return registryCredential(auth);
+  return auth?.startsWith('Bearer ') ? auth.slice(7) : '';
+}
 // Public probes manage their own availability answer and never touch credentials.
 const publicPaths = new Set(['/health/live', '/health/status']);
 export function registerRequestSecurity(app: FastifyInstance, dependencies: Security) {
@@ -148,16 +162,15 @@ export function registerRequestSecurity(app: FastifyInstance, dependencies: Secu
     // Health probes stay outside it so transfer load cannot flap a node out of the balancer.
     if (!health) context.countRequest(reply);
     if (await linkRequest(request, reply, dependencies)) return;
-    const auth = request.headers.authorization;
-    const token = auth?.startsWith('Bearer ') ? auth.slice(7) : '';
+    const token = credentialOf(request);
     const authenticated = await bearerPrincipal(
       dependencies,
       token,
       request.routeOptions.url === '/api/v1/auth/activate-key',
     );
     if (!authenticated) {
-      reply.header('WWW-Authenticate', 'Bearer');
-      await sendFailure(request, reply, {
+      if (!isRegistry(request)) reply.header('WWW-Authenticate', 'Bearer');
+      await refuse(request, reply, {
         code: 'unauthorized',
         message: 'Valid service key required',
         reason: await rejection(dependencies, token),
@@ -169,10 +182,10 @@ export function registerRequestSecurity(app: FastifyInstance, dependencies: Secu
       registerOwner(authenticated.id);
     }
     if (role === 'reader' && request.method !== 'GET' && request.method !== 'HEAD') {
-      await reply.code(405).header('Allow', 'GET, HEAD').send({
+      reply.header('Allow', 'GET, HEAD');
+      await refuse(request, reply, {
         code: 'read_only',
         message: 'Read gateway does not accept mutations',
-        requestId: request.id,
       });
       return;
     }
@@ -183,7 +196,7 @@ export function registerRequestSecurity(app: FastifyInstance, dependencies: Secu
       request.method !== 'HEAD' &&
       request.routeOptions.url !== '/api/v1/auth/logout'
     ) {
-      await sendFailure(request, reply, {
+      await refuse(request, reply, {
         code: 'forbidden',
         message: 'Read-only personal access token',
         reason: 'read_only_token',

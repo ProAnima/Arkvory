@@ -145,7 +145,7 @@ Upload owner привязан к principal. Долговечность сейч�
 | E    | Управление retention / операции удаления                                  | Реализованы explicit permission, preview, fixed-selection apply и защита ссылок/истории; scheduler и отдельный online GC реализованы: [ONLINE_CLEANUP](ONLINE_CLEANUP.md). [Контракт](ARTIFACT_RETENTION.md). |
 | E    | Статус replicas / gateways / очередей                                     | `system.observe`; управление квотами — отдельный операторский контракт, не параметр произвольного клиента.                                                                                                    |
 
-OAuth/OIDC federation, S3/NuGet/npm/OCI adapters — потенциальные отдельные интеграции, не обещание совместимости. Они добавляются только при конкретном сценарии и используют те же authorizer/storage use cases.
+Реестр образов OCI реализован ([ADR 0063](adr/0063-oci-registry.md)). OAuth/OIDC federation, S3/NuGet/npm adapters — потенциальные отдельные интеграции, не обещание совместимости. Они добавляются только при конкретном сценарии и используют те же authorizer/storage use cases.
 
 ## 5. Рецепты для клиентов
 

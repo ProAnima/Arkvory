@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { apiOperations, assertRouteInventory } from '@proanima/arkvory-contracts';
 import type { RuntimeRoute } from '@proanima/arkvory-contracts';
+import { registryRoute } from './oci-errors.js';
 
 // Exact static exclusions. A new API beneath /console/ must not silently escape inventory.
 const staticPaths = [
@@ -15,7 +16,12 @@ const staticPaths = [
   '/console/tokens.css',
   '/console/appearance-init.js',
 ];
-const exclusions = staticPaths.flatMap((url) => ['GET', 'HEAD'].map((method) => ({ method, url })));
+// The container registry follows the OCI Distribution specification, not the /api/v1 contract.
+const registryMethods = ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE'];
+const exclusions = [
+  ...staticPaths.flatMap((url) => ['GET', 'HEAD'].map((method) => ({ method, url }))),
+  ...registryMethods.map((method) => ({ method, url: registryRoute })),
+];
 export function registerContractGuard(app: FastifyInstance): void {
   const routes: RuntimeRoute[] = [];
   app.addHook('onRoute', (options) => {

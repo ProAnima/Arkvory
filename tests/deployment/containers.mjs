@@ -10,6 +10,7 @@ import { extractArchive } from '../../apps/deploy/dist/archive.js';
 import { exerciseUpdateControl } from './update-control.mjs';
 import { exerciseContainerRecovery } from './container-recovery.mjs';
 import { exerciseBackupAgent, vaultReported, waitForAgent } from './backup-acceptance.mjs';
+import { exerciseImageRegistry } from './container-registry.mjs';
 const windows = process.platform === 'win32';
 const run = (args) =>
   execFileSync('docker', args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'inherit'] }).trim();
@@ -166,6 +167,7 @@ try {
     manifest.version,
   );
   await ready();
+  await exerciseImageRegistry(token, temporary);
   await mkdir(vault);
   const capture = await exerciseBackupAgent(token, async () => {
     manage(['configure', '--backup-vault', vault, '--init-vault']);
@@ -222,7 +224,7 @@ try {
     'The backup agent must report its vault after the update',
   );
   console.log(
-    'Container install, migrations, backup agent, crash restart and schema update behind a verified backup passed',
+    'Container install, migrations, image push and pull, backup agent, crash restart and schema update behind a verified backup passed',
   );
 } catch (error) {
   console.error(run([...compose, 'logs', '--no-color', '--tail', '40', 'api', 'worker', 'backup']));

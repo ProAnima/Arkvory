@@ -21,6 +21,7 @@ import { registerPromotionRoutes } from './promotion-routes.js';
 import { registerBackupRoutes } from './backup-routes.js';
 import { registerMirrorRoutes } from './mirror-routes.js';
 import { registerLinkRoutes } from './link-routes.js';
+import { registerOciRoutes } from './oci-routes.js';
 
 interface Composition {
   services: ReturnType<typeof createApiServices>;
@@ -53,20 +54,28 @@ export function registerApiRoutes(app: FastifyInstance, dependencies: Compositio
   registerRepositoryRoutes(app, principal);
   registerArtifactRoutes(app, s.service, principal);
   registerLinkRoutes(app, s.links, principal);
-  registerDownloadRoutes(
-    app,
-    { resolver: s.resolver, browse: s.browse },
+  const sendContent = createContentSender({
+    service: s.service,
+    downloadGate: transfers.downloadGate,
+    downloadBandwidth: transfers.downloadBandwidth,
     principal,
-    createContentSender({
-      service: s.service,
-      downloadGate: transfers.downloadGate,
-      downloadBandwidth: transfers.downloadBandwidth,
-      principal,
-      signal,
-      diagnostics,
-      pins: s.pins,
-    }),
-  );
+    signal,
+    diagnostics,
+    pins: s.pins,
+  });
+  registerDownloadRoutes(app, { resolver: s.resolver, browse: s.browse }, principal, sendContent);
+  registerOciRoutes(app, {
+    registry: s.registry,
+    principal,
+    signal,
+    modifying,
+    context,
+    sendContent,
+    bandwidth: transfers.uploadBandwidth,
+    policy,
+    diagnostics,
+    role,
+  });
   registerStoragePolicyRoutes(app, s.storage, s.storagePolicies, principal);
   registerCleanupRoutes(app, s.cleanup, principal);
   registerRetentionRoutes(app, s.retention, principal);

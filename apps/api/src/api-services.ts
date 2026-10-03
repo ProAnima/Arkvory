@@ -14,6 +14,7 @@ import {
   BackupControl,
   MirrorStatus,
   DownloadLinks,
+  OciRegistry,
 } from '@proanima/arkvory-application';
 import type { MirrorConfiguration } from '@proanima/arkvory-application';
 import {
@@ -37,6 +38,8 @@ import {
   PostgresBackupStatus,
   PostgresMirrorState,
   PostgresTransferLinks,
+  PostgresOciIndex,
+  FileOciStaging,
 } from '@proanima/arkvory-infrastructure';
 import { AuthThrottle } from './auth-throttle.js';
 import { BackupMetrics } from './backup-metrics.js';
@@ -124,6 +127,13 @@ export function createApiServices(
     retention: new ArtifactRetention(new PostgresRetention(catalog.pool), now),
     attachments: new BuildAttachments(service, new PostgresAttachments(catalog.pool)),
     links: new DownloadLinks(service, new PostgresTransferLinks(catalog.pool)),
+    registry: new OciRegistry(
+      service,
+      new PostgresOciIndex(catalog.pool),
+      new FileOciStaging(blobs.root, (bytes) => blobs.checkSpace(bytes)),
+      { next: randomUUID },
+      service.maxObjectBytes,
+    ),
     completion: new CompletionQueue(jobs, randomUUID),
   };
 }

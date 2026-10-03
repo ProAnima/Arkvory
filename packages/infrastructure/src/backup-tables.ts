@@ -13,7 +13,7 @@ export interface BackupTable {
 export const MINIMUM_RESTORE_SCHEMA = 25;
 
 /**
- * Every Arkvory table of schema 28 is either exported here, in foreign-key-safe load order, or
+ * Every Arkvory table of schema 30 is either exported here, in foreign-key-safe load order, or
  * excluded below with a reason. A migration that adds a table must extend one of the lists;
  * capture refuses an unlisted table and tests compare both lists with a migrated database.
  */
@@ -52,6 +52,11 @@ export const exportedTables: readonly BackupTable[] = [
   { name: 'arkvory_security_audit', key: ['id'] },
   // The feed cursor belongs to the mirrored data: restored together, the mirror continues.
   { name: 'arkvory_mirror_state', key: ['repository'] },
+  // The container registry rows name artifacts restored above (ADR 0063).
+  { name: 'arkvory_oci_blobs', key: ['repository', 'digest'] },
+  { name: 'arkvory_oci_manifests', key: ['repository', 'image', 'digest'] },
+  { name: 'arkvory_oci_tags', key: ['repository', 'image', 'tag'] },
+  { name: 'arkvory_oci_references', key: ['repository', 'image', 'manifest', 'target'] },
 ];
 
 export const excludedTables: readonly ExcludedTable[] = [
@@ -71,6 +76,10 @@ export const excludedTables: readonly ExcludedTable[] = [
   { name: 'arkvory_backup_agent', reason: 'runtime ownership of the backup agent' },
   { name: 'arkvory_backup_requests', reason: 'backup state of the source instance' },
   { name: 'arkvory_backup_points', reason: 'catalog cache of the vault, rebuilt by the agent' },
+  {
+    name: 'arkvory_oci_uploads',
+    reason: 'image uploads in progress; their staged bytes stay with the source',
+  },
 ];
 
 const identifier = /^[a-z_][a-z0-9_]{0,62}$/;
