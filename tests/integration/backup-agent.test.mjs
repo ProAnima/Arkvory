@@ -34,9 +34,11 @@ const facts = {
   lastError: null,
 };
 /** No request is open and at least `count` exist (follow-ups are queued between steps). */
-const settled = async (f, count = 1) =>
-  (await requests(f, "state IN ('queued','running')")).length === 0 &&
-  (await requests(f)).length >= count;
+/** One snapshot of all requests: two queries could miss a follow-up queued between them. */
+const settled = async (f, count = 1) => {
+  const rows = await requests(f);
+  return rows.length >= count && rows.every((row) => !['queued', 'running'].includes(row.state));
+};
 
 test('one agent holds the lease; a standby takes over and a fenced owner cannot write', async (t) => {
   const f = await setup(t);

@@ -185,22 +185,18 @@ test('lease close keeps the slot reserved; expiry increments generation and old 
   assert.equal(next.active, true);
 });
 
-test('a reader serves while the writer is down; the restarted writer takes its slot back', async (t) => {
+test('a reader serves while the writer is down; a new writer takes the slot back', async (t) => {
   const f = await fixture(t),
     bytes = Buffer.alloc(64 * 1024, 0x2a),
     id = await publish(f, bytes);
   const reader = await childReader(f, 1);
-  const writerHeld = async () =>
-    (
-      await f.catalog.pool.query(`SELECT 1 FROM pg_locks WHERE locktype='advisory'
-        AND classid=18471 AND objid=3 AND objsubid=2 AND granted
-        AND database=(SELECT oid FROM pg_database WHERE datname=current_database())`)
-    ).rowCount > 0;
-  // The restart waits out the slot its predecessor reserved; the reader serves meanwhile.
-  const restarting = f.restart();
-  for (let tries = 0; (await writerHeld()) && tries < 100; tries++)
-    await new Promise((resolve) => setTimeout(resolve, 50));
-  assert.equal(await writerHeld(), false, 'the writer is down');
+  await f.app.close();
+  const writerHeld = (
+    await f.catalog.pool.query(`SELECT 1 FROM pg_locks WHERE locktype='advisory'
+      AND classid=18471 AND objid=3 AND objsubid=2 AND granted
+      AND database=(SELECT oid FROM pg_database WHERE datname=current_database())`)
+  ).rowCount;
+  assert.equal(writerHeld, 0, 'the writer is down');
   const served = await fetch(`${reader.address}${base}/artifacts/${id}/content`, {
     headers: f.readerHeaders,
   });
@@ -208,10 +204,11 @@ test('a reader serves while the writer is down; the restarted writer takes its s
   assert.deepEqual(Buffer.from(await served.arrayBuffer()), bytes);
   const ready = await fetch(reader.address + '/health/ready', { headers: f.readerHeaders });
   assert.equal(ready.status, 200);
-  // Back in service: the writer accepts uploads and the reader serves what it publishes.
-  const writer = { ...f, app: await restarting };
+  // The new writer waits out the slot its predecessor reserved, then publishes again.
+  const writer = await createServer(f.config);
+  f.cleanup.push(() => writer.close());
   const later = Buffer.from('published after the restart');
-  const laterId = await publish(writer, later);
+  const laterId = await publish({ ...f, app: writer }, later);
   const fresh = await fetch(`${reader.address}${base}/artifacts/${laterId}/content`, {
     headers: f.readerHeaders,
   });
