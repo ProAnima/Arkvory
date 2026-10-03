@@ -19,6 +19,9 @@ import { registerConsole } from './console.js';
 import { maintainStorage } from './storage-maintenance.js';
 import { resolveUploadTimeouts } from './upload-policy.js';
 import { registerUpdateRoutes } from './update-routes.js';
+import { UpdateControl } from './update-control.js';
+import { registerFeedback } from './feedback-routes.js';
+import { RecentLog } from './recent-log.js';
 import { registerOwnershipRecovery } from './ownership-recovery.js';
 import { registerAccessLog } from './access-log.js';
 import { RequestDrain } from './drain.js';
@@ -30,6 +33,8 @@ export interface ServerLifecycle {
   drain?: RequestDrain;
   /** Process logger owned by the caller, which closes it after the server; else one is created. */
   diagnostics?: DiagnosticLogger;
+  /** The newest lines of the caller's logger, for feedback reports (ADR 0060). */
+  recentLog?: { text(): string };
   identity?: ProcessIdentity;
 }
 
@@ -81,6 +86,18 @@ function processMetrics(
   });
 }
 
+/** The caller's logger and its recent lines, or this server's own logger with a recent log. */
+function processLog(config: ServerConfig, lifecycle: ServerLifecycle, identity: ProcessIdentity) {
+  if (lifecycle.diagnostics)
+    return { diagnostics: lifecycle.diagnostics, recentLog: lifecycle.recentLog ?? null };
+  const recentLog = new RecentLog(process.stdout);
+  const diagnostics = new DiagnosticLogger(recentLog, () => new Date().toISOString(), {
+    level: config.logLevel ?? 'info',
+    process: identity,
+  });
+  return { diagnostics, recentLog };
+}
+
 export async function createServer(config: ServerConfig, lifecycle: ServerLifecycle = {}) {
   const policy = resolveUploadTimeouts(config);
   const tls = await prepareTls(config);
@@ -91,12 +108,7 @@ export async function createServer(config: ServerConfig, lifecycle: ServerLifecy
   if (lifecycle.onOwnershipLost)
     registerOwnershipRecovery(app, runtime.available, lifecycle.onOwnershipLost);
   const identity = lifecycle.identity ?? processIdentity('api', 'dev');
-  const diagnostics =
-    lifecycle.diagnostics ??
-    new DiagnosticLogger(process.stdout, () => new Date().toISOString(), {
-      level: config.logLevel ?? 'info',
-      process: identity,
-    });
+  const { diagnostics, recentLog } = processLog(config, lifecycle, identity);
   // Only a logger created here is closed here; a caller's logger outlives the server.
   const closeDiagnostics = () => {
     if (diagnostics !== lifecycle.diagnostics) diagnostics.close();
@@ -160,6 +172,13 @@ export async function createServer(config: ServerConfig, lifecycle: ServerLifecy
     registerHttpErrors(app, context);
     registerHealthRoutes(app, runtime, () => drain.isDraining);
     registerUpdateRoutes(app, context.principal, config.updateControlDirectory);
+    registerFeedback(app, context.principal, {
+      hub: config.hub ?? null,
+      version: identity.version,
+      log: recentLog,
+      mirrors: services.mirrors,
+      updates: new UpdateControl(config.updateControlDirectory),
+    });
     registerApiRoutes(app, {
       services,
       context,

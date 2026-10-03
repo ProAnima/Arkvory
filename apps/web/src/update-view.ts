@@ -24,6 +24,7 @@ export class UpdateView {
   readonly form = element('update-settings', HTMLFormElement);
   readonly automatic = element('update-automatic', HTMLInputElement);
   readonly hour = element('update-hour', HTMLSelectElement);
+  readonly statistics = element('update-statistics', HTMLInputElement);
   readonly check = element('update-check', HTMLButtonElement);
   readonly install = element('update-install', HTMLButtonElement);
   readonly dialog = element('update-confirm', HTMLDialogElement);
@@ -83,7 +84,13 @@ export class UpdateView {
     if (!dirty) {
       this.automatic.checked = snapshot.automatic;
       this.hour.value = String(snapshot.hourUTC);
+      this.statistics.checked = snapshot.statistics === true;
     }
+    // Older host updaters do not report the hub (ADR 0060): nothing to show or change.
+    element('update-statistics-field', HTMLElement).hidden = snapshot.statistics === undefined;
+    const hub = element('update-hub', HTMLElement);
+    hub.hidden = snapshot.channel === undefined;
+    if (snapshot.channel) message(hub, 'updateHub', { channel: snapshot.channel });
     const available = snapshot.latest && newer(snapshot.latest.version, snapshot.currentVersion);
     this.banner.hidden = !available;
     if (available && snapshot.latest)

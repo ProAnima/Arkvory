@@ -21,7 +21,8 @@ export function registerConsole(app: FastifyInstance, directory: string) {
         .header('Content-Type', type)
         .header(
           'Content-Security-Policy',
-          "default-src 'none'; img-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'",
+          // blob: only for images the page itself made from local files (feedback screenshots).
+          "default-src 'none'; img-src 'self' blob:; script-src 'self'; style-src 'self'; connect-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'",
         )
         .header('Referrer-Policy', 'no-referrer')
         .send(await readFile(resolve(directory, file))),

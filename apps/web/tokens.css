@@ -92,6 +92,9 @@
   --fact-min: 12rem;
   --backup-zone-width: 20rem;
   --confirm-details-max-height: 40dvh;
+  --report-dialog-width: 42rem;
+  --report-thumbnail: 4.5rem;
+  --report-preview-height: 16rem;
   --palette-white: #ffffff;
   --palette-ink: #17233b;
   --palette-slate: #53627a;

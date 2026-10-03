@@ -50,6 +50,7 @@
 ## 7. Обновления
 
 - [ ] Выбран режим: автоматические stable-обновления в окно или pin версии с ручным `update` ([UPDATES](UPDATES.md)). Любое обновление — перерыв обслуживания, не rolling update.
+- [ ] Решено про статистику ProAnimaStudio (по умолчанию включена; `configure --statistics off`) и канал обновлений; сервер имеет исходящий HTTPS к `hub.proanima.net` и `github.com`/`objects.githubusercontent.com` или обновляется вручную из файлов ([UPDATES](UPDATES.md#хаб-подпись-и-статистика)).
 - [ ] Для релизов со сменой схемы подключён vault и есть хотя бы одна завершённая копия. Тогда установщик сам снимает и проверяет свежую точку перед миграцией ([UPDATES](UPDATES.md#смена-схемы-бд)). Без vault: перед `upgrade --backup-record` сделана и проверена точка (`arkvoryctl backup run`, затем `backup verify <id>`); файл — запись оператора, а не доказательство полноты копии.
 - [ ] Процедура после аварии updater известна: journal, `operation.lock`, `recover`.
 

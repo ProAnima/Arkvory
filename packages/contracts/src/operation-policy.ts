@@ -3,6 +3,8 @@ import { promotionOperations } from './promotion-api.js';
 import { mirrorOperations } from './mirror-api.js';
 import { accountAdministrationOperations } from './account-operation-policies.js';
 import { backupOperations } from './backup-api.js';
+import { feedbackOperations } from './feedback-api.js';
+import { updateOperations } from './updates-api.js';
 import type { BackupPermissionName } from './backup-wire.js';
 import type { servicePermissionNames } from './service-api.js';
 import type { AdministrationPermission } from './delegation-api.js';
@@ -93,22 +95,12 @@ function data(
 }
 add('/health/live', 'get', 'getLiveness', 'System', { kind: 'public' }, 'read');
 add('/health/status', 'get', 'getReadinessStatus', 'System', { kind: 'public' }, 'read');
-add(
-  '/api/v1/system/updates',
-  'get',
-  'getSystemUpdates',
-  'Updates',
-  { kind: 'administrator' },
-  'read',
-);
-add(
-  '/api/v1/system/updates/requests',
-  'post',
-  'requestSystemUpdate',
-  'Updates',
-  { kind: 'administrator' },
-  'compare-and-swap',
-);
+for (const [tag, operations] of [
+  ['Updates', updateOperations],
+  ['Feedback', feedbackOperations],
+] as const)
+  for (const [path, method, id, kind, retry] of operations)
+    add(`/api/v1${path}`, method, id, tag, { kind }, retry);
 add(
   '/api/v1/repositories',
   'get',

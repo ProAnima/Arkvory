@@ -22,6 +22,7 @@ function argumentsOf(args: string[]): Map<string, string> {
     'unpin',
     'log-captured',
     'tls-off',
+    'hub-off',
     'init-vault',
     'backup-vault-off',
   ];
@@ -38,6 +39,9 @@ function argumentsOf(args: string[]): Map<string, string> {
     'tls-cert',
     'tls-key',
     'listen-host',
+    'hub-url',
+    'update-channel',
+    'statistics',
     'backup-vault',
     'mirror',
     'mirror-upstream',

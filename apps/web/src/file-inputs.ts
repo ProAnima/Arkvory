@@ -2,7 +2,10 @@ import { message } from './i18n.js';
 
 /** Keep the real file input and native picker, but localize its in-page presentation. */
 export function initializeFileInputs() {
-  for (const input of document.querySelectorAll<HTMLInputElement>('input[type="file"]')) {
+  // A hidden input is driven by its own button (feedback screenshots): nothing to present.
+  for (const input of document.querySelectorAll<HTMLInputElement>(
+    'input[type="file"]:not([hidden])',
+  )) {
     const control = document.createElement('span');
     control.className = 'file-control';
     const action = document.createElement('span');

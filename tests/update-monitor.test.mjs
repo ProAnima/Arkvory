@@ -203,3 +203,39 @@ test('update commands reject shell fields, prereleases and out-of-range policy v
   ])
     assert.throws(() => readUpdateRequest({ ...base, ...patch }));
 });
+test('the hub settings reach the snapshot and the console may turn statistics off', async () => {
+  const f = fixture();
+  const configured = [];
+  f.port.configure = async (automatic, statistics) => {
+    configured.push([automatic, statistics]);
+  };
+  const hub = { statistics: true, channel: 'stable' };
+  const first = await monitorUpdates(state, f.snapshot, null, now, f.port, hub);
+  assert.equal(first.statistics, true);
+  assert.equal(first.channel, 'stable');
+  const request = readUpdateRequest({
+    kind: 'configure',
+    id: randomUUID(),
+    expectedRevision: first.revision,
+    automatic: false,
+    hourUTC: 3,
+    statistics: false,
+  });
+  const next = await monitorUpdates(state, first, request, now, f.port, hub);
+  assert.deepEqual(configured, [[false, false]]);
+  assert.equal(next.statistics, false);
+  assert.deepEqual(readUpdateSnapshot(next), next);
+  assert.throws(() => readUpdateRequest({ ...request, statistics: 'off' }));
+  // Older consoles omit the field: statistics stay as they are.
+  const older = readUpdateRequest(
+    JSON.parse(JSON.stringify({ ...request, id: randomUUID(), statistics: undefined })),
+  );
+  assert.equal('statistics' in older, false);
+  // A change on the host invalidates a console form like any other setting.
+  const host = await monitorUpdates(state, next, null, now, f.port, {
+    statistics: true,
+    channel: 'beta',
+  });
+  assert.ok(host.revision > next.revision);
+  assert.equal(host.channel, 'beta');
+});

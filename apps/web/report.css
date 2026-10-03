@@ -1,0 +1,90 @@
+/* Feedback to ProAnimaStudio (ADR 0060): one dialog, screenshots as a wrapping list. */
+.report-dialog {
+  width: min(var(--report-dialog-width), calc(100vw - var(--space-8)));
+  max-width: none;
+}
+.report-dialog form > * + * {
+  margin-top: var(--space-4);
+}
+.report-dialog label:not(.check) {
+  display: grid;
+  gap: var(--space-2);
+}
+.report-dialog textarea {
+  width: 100%;
+  resize: vertical;
+  font-family: var(--font-sans);
+}
+.report-logs .check {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-start;
+  align-items: center;
+  gap: var(--space-3);
+}
+.report-drop {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: var(--border-width) dashed var(--color-border-strong);
+  border-radius: var(--radius-control);
+  background: var(--color-input);
+}
+.report-drop:focus-visible {
+  outline: var(--focus-width) solid var(--color-focus);
+  outline-offset: var(--focus-offset);
+}
+.report-drop > button {
+  justify-self: start;
+}
+.report-shots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.report-shots:empty {
+  display: none;
+}
+.report-shots li {
+  display: grid;
+  grid-template-columns: var(--report-thumbnail) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-2);
+  max-width: 100%;
+  padding: var(--space-2);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+}
+.report-shots img {
+  width: var(--report-thumbnail);
+  height: var(--report-thumbnail);
+  object-fit: cover;
+  border-radius: var(--radius-xs);
+}
+.report-shots span {
+  overflow-wrap: anywhere;
+  font-size: var(--text-sm);
+}
+.report-logs {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-control);
+}
+.report-preview {
+  max-height: var(--report-preview-height);
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+}
+.report-preview:focus-visible {
+  outline: var(--focus-width) solid var(--color-focus);
+}

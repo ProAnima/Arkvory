@@ -16,6 +16,7 @@
     "release:package": "node scripts/package-release.mjs",
     "ci:local": "node scripts/ci/local.mjs",
     "release:local": "node scripts/ci/release-local.mjs",
+    "release:sign": "node scripts/release-signing.mjs",
     "deploy:compose": "node scripts/compose-install.mjs",
     "check": "node scripts/gates.mjs static",
     "typecheck": "node scripts/check-types.mjs",

@@ -1,5 +1,6 @@
 import { DiscoveryApi } from './discovery-api.js';
 import { UpdatesApi } from './updates-api.js';
+import { FeedbackApi } from './feedback-api.js';
 import { IdentityApi } from './identity-api.js';
 import { UsersApi } from './users-api.js';
 import { ServiceAccountsApi } from './service-accounts-api.js';
@@ -55,12 +56,15 @@ export class ArkvoryClient {
   readonly promotions: PromotionsApi;
   /** Instance backups: status, plan, jobs, points; system permissions backup.read/manage. */
   readonly backup: BackupApi;
+  /** Feedback with screenshots and logs to ProAnimaStudio, through this server. */
+  readonly feedback: FeedbackApi;
   constructor(baseUrl: string, token: () => string, policy: ClientOptions = {}) {
     const normalized = transferPolicy(policy);
     const http = new HttpTransport(baseUrl, token, policy);
     this.updates = new UpdatesApi(http);
     this.promotions = new PromotionsApi(http);
     this.backup = new BackupApi(http);
+    this.feedback = new FeedbackApi(http);
     this.discovery = new DiscoveryApi(http);
     this.authentication = new IdentityApi(http);
     this.usersApi = new UsersApi(http);

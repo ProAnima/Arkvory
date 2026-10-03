@@ -95,12 +95,19 @@ try {
   assert.equal(await page.locator('#update-install').isDisabled(), true);
   assert.match(await page.locator('#updates-status').innerText(), /fresh verified backup/);
   // After a new check the schema change is installable again: the server backs up first.
+  // Older updaters do not report the hub: the statistics switch stays away.
+  assert.equal(await page.locator('#update-statistics-field').isVisible(), false);
   snapshot.revision++;
   snapshot.phase = 'idle';
   snapshot.error = null;
+  snapshot.statistics = true;
+  snapshot.channel = 'stable';
   await save();
   await connect();
   assert.equal(await page.locator('#update-install').isDisabled(), false);
+  assert.equal(await page.locator('#update-statistics').isChecked(), true);
+  assert.match(await page.locator('#update-hub').innerText(), /stable/);
+  await page.locator('#update-statistics').uncheck();
   assert.match(await page.locator('#updates-status').innerText(), /captures and verifies a backup/);
   await page.locator('#update-automatic').check();
   await page.locator('#update-hour').selectOption('22');
@@ -112,6 +119,7 @@ try {
   assert.equal(policy.kind, 'configure');
   assert.equal(policy.automatic, true);
   assert.equal(policy.hourUTC, 22);
+  assert.equal(policy.statistics, false);
   await page.locator('#connection-card > summary').click();
   await page.locator('#logout').click();
   // Logout clears local state after the server has acknowledged session revocation.

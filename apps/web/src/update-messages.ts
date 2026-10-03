@@ -11,6 +11,9 @@ export const updateEnglish = {
   updateAutomatic: 'Install compatible stable releases automatically',
   updateHour: 'Maintenance hour (UTC)',
   updateSave: 'Save settings',
+  updateStatistics: 'Send anonymous statistics to ProAnimaStudio',
+  updateHub:
+    'Channel: {channel}. Versions are approved in the ProAnimaStudio hub; GitHub is used only when the hub cannot be reached. Statistics: a random installation id, version, system and installed updates — no names, addresses or content. Without statistics a version arrives only when it is rolled out to everyone.',
   updatePolicyHelp:
     'Checks run every 6 hours, even when automatic installation is off. Automatic installation runs once per day during the selected UTC hour. A release that changes the database schema installs only after the server has captured and verified a fresh backup.',
   updateUnavailable:
@@ -56,6 +59,9 @@ export const updateRussian: Record<keyof typeof updateEnglish, string> = {
   updateAutomatic: 'Автоматически устанавливать совместимые стабильные релизы',
   updateHour: 'Час обслуживания (UTC)',
   updateSave: 'Сохранить настройки',
+  updateStatistics: 'Отправлять анонимную статистику в ProAnimaStudio',
+  updateHub:
+    'Канал: {channel}. Версии одобряются в хабе ProAnimaStudio; GitHub используется, только если хаб недоступен. Статистика: случайный идентификатор установки, версия, система и установленные обновления — без имён, адресов и содержимого. Без статистики версия приходит, только когда её раскатывают на всех.',
   updatePolicyHelp:
     'Проверка выполняется каждые 6 часов, даже если автоустановка выключена. Автоустановка запускается один раз в сутки в выбранный час UTC. Релиз, меняющий схему БД, устанавливается только после того, как сервер сделает и проверит свежую резервную копию.',
   updateUnavailable:

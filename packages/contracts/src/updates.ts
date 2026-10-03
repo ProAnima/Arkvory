@@ -22,11 +22,15 @@ export interface UpdateSnapshot {
   error: UpdateError | null;
   lastAttemptDay: string | null;
   lastRequestId: string | null;
+  /** Anonymous statistics to the ProAnimaStudio hub (ADR 0060); absent from older updaters. */
+  statistics?: boolean;
+  /** The hub's update channel of this installation; absent from older updaters. */
+  channel?: 'stable' | 'beta';
 }
 export type UpdateRequest = { id: string; expectedRevision: number } & (
   | { kind: 'check' }
   | { kind: 'apply'; version: string; sha256: string }
-  | { kind: 'configure'; automatic: boolean; hourUTC: number }
+  | { kind: 'configure'; automatic: boolean; hourUTC: number; statistics?: boolean }
 );
 export function updateVersion(value: unknown): string {
   const result = text(value);
@@ -65,14 +69,24 @@ export function readUpdateRequest(value: unknown): UpdateRequest {
   const base = { id: id(r['id']), expectedRevision: number(r['expectedRevision'], 2147483646) };
   const kind = r['kind'];
   const keys =
-    kind === 'apply' ? ['version', 'sha256'] : kind === 'configure' ? ['automatic', 'hourUTC'] : [];
+    kind === 'apply'
+      ? ['version', 'sha256']
+      : kind === 'configure'
+        ? ['automatic', 'hourUTC', 'statistics']
+        : [];
   if (Object.keys(r).some((key) => !['id', 'expectedRevision', 'kind', ...keys].includes(key)))
     throw new Error('Unknown update field');
   if (kind === 'check') return { ...base, kind };
   if (kind === 'apply')
     return { ...base, kind, version: updateVersion(r['version']), sha256: digest(r['sha256']) };
   if (kind === 'configure')
-    return { ...base, kind, automatic: bool(r['automatic']), hourUTC: number(r['hourUTC'], 23) };
+    return {
+      ...base,
+      kind,
+      automatic: bool(r['automatic']),
+      hourUTC: number(r['hourUTC'], 23),
+      ...('statistics' in r ? { statistics: bool(r['statistics']) } : {}),
+    };
   throw new Error('Invalid update operation');
 }
 export function readUpdateSnapshot(value: unknown): UpdateSnapshot {
@@ -108,5 +122,11 @@ export function readUpdateSnapshot(value: unknown): UpdateSnapshot {
     error: error as UpdateError | null,
     lastAttemptDay: day,
     lastRequestId: r['lastRequestId'] === null ? null : id(r['lastRequestId']),
+    ...('statistics' in r ? { statistics: bool(r['statistics']) } : {}),
+    ...('channel' in r ? { channel: channelOf(r['channel']) } : {}),
   };
+}
+function channelOf(value: unknown): 'stable' | 'beta' {
+  if (value !== 'stable' && value !== 'beta') throw new Error('Invalid update channel');
+  return value;
 }

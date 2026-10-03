@@ -29,6 +29,10 @@ import { installAuthConsole } from './auth-console.js';
 import { exceedsServerLimit } from './server-limits.js';
 import { artifactRow } from './artifact-row.js';
 import { withFieldErrors } from './field-errors.js';
+import { installClientLog } from './client-log.js';
+import { installReportDialog } from './report-dialog.js';
+// First: failures while the console starts belong in a feedback report as well.
+installClientLog();
 const token = element('token', HTMLInputElement),
   repository = element('repository', HTMLInputElement),
   output = element('status', HTMLOutputElement),
@@ -69,6 +73,7 @@ const management = new ManagementConsole(apiBaseUrl, token, (id, storage) => {
 const repositoryStorage = installRepositoryStorage(client);
 const state = installConnectionState(repositoryStorage, repository);
 const updates = installUpdates(client);
+const report = installReportDialog(client);
 const downloads = installDownloads(apiBaseUrl, token);
 const annotationEditor = installAnnotationEditor();
 const attachments = installBuildAttachments(client, (repo, id, name) =>
@@ -176,6 +181,7 @@ function clearCatalog() {
   clearPackages();
   administration.clear();
   updates.clear();
+  report.clear();
   management.clear();
   backups.clear();
   element('change-password', HTMLFormElement).hidden = true;
@@ -288,7 +294,13 @@ const auth = installAuthConsole({
   resetHistory,
   downloads,
   administration,
-  updates,
+  // Signed in: update notifications and the feedback form follow the same role.
+  updates: {
+    connect: (admin: boolean) => {
+      updates.connect(admin);
+      report.connect(admin);
+    },
+  },
   backups,
   management,
   userTokens,

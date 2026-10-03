@@ -1,3 +1,8 @@
+/** System-level operations of the host updater: [path, method, operationId, access, retry]. */
+export const updateOperations = [
+  ['/system/updates', 'get', 'getSystemUpdates', 'administrator', 'read'],
+  ['/system/updates/requests', 'post', 'requestSystemUpdate', 'administrator', 'compare-and-swap'],
+] as const;
 const object = (properties: Record<string, unknown>) => ({
   type: 'object',
   additionalProperties: false,
@@ -8,6 +13,11 @@ const version = {
   type: 'string',
   pattern: '^(0|[1-9][0-9]{0,5})\\.(0|[1-9][0-9]{0,5})\\.(0|[1-9][0-9]{0,5})$',
 };
+/** Properties a client may omit and older updaters do not write (ADR 0060). */
+const optional = (schema: ReturnType<typeof object>, properties: Record<string, unknown>) => ({
+  ...schema,
+  properties: { ...schema.properties, ...properties },
+});
 const integer = (maximum: number) => ({ type: 'integer', minimum: 0, maximum });
 const hash = { type: 'string', pattern: '^[a-f0-9]{64}$' };
 const id = { type: 'string', format: 'uuid' };
@@ -17,40 +27,49 @@ export const updateRequestSchema = {
   oneOf: [
     object({ ...base, kind: { type: 'string', enum: ['check'] } }),
     object({ ...base, kind: { type: 'string', enum: ['apply'] }, version, sha256: hash }),
-    object({
-      ...base,
-      kind: { type: 'string', enum: ['configure'] },
-      automatic: { type: 'boolean' },
-      hourUTC: integer(23),
-    }),
+    optional(
+      object({
+        ...base,
+        kind: { type: 'string', enum: ['configure'] },
+        automatic: { type: 'boolean' },
+        hourUTC: integer(23),
+      }),
+      { statistics: { type: 'boolean' } },
+    ),
   ],
 };
-const snapshot = object({
-  revision: integer(2147483646),
-  currentVersion: version,
-  currentSchema: integer(2147483647),
-  automatic: { type: 'boolean' },
-  hourUTC: integer(23),
-  pin: { ...version, nullable: true },
-  heartbeatAt: time,
-  checkedAt: { ...time, nullable: true },
-  latest: { ...object({ version, schema: integer(2147483647), sha256: hash }), nullable: true },
-  phase: { type: 'string', enum: ['idle', 'checking', 'updating', 'failed'] },
-  error: {
-    type: 'string',
-    nullable: true,
-    enum: [
-      'check_failed',
-      'update_failed',
-      'conflict',
-      'maintenance_required',
-      'recovery_required',
-      null,
-    ],
+const snapshot = optional(
+  object({
+    revision: integer(2147483646),
+    currentVersion: version,
+    currentSchema: integer(2147483647),
+    automatic: { type: 'boolean' },
+    hourUTC: integer(23),
+    pin: { ...version, nullable: true },
+    heartbeatAt: time,
+    checkedAt: { ...time, nullable: true },
+    latest: { ...object({ version, schema: integer(2147483647), sha256: hash }), nullable: true },
+    phase: { type: 'string', enum: ['idle', 'checking', 'updating', 'failed'] },
+    error: {
+      type: 'string',
+      nullable: true,
+      enum: [
+        'check_failed',
+        'update_failed',
+        'conflict',
+        'maintenance_required',
+        'recovery_required',
+        null,
+      ],
+    },
+    lastAttemptDay: { type: 'string', nullable: true },
+    lastRequestId: { ...id, nullable: true },
+  }),
+  {
+    statistics: { type: 'boolean' },
+    channel: { type: 'string', enum: ['stable', 'beta'] },
   },
-  lastAttemptDay: { type: 'string', nullable: true },
-  lastRequestId: { ...id, nullable: true },
-});
+);
 export const updatePaths = {
   '/api/v1/system/updates': {
     get: {

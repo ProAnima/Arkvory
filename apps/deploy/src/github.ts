@@ -1,19 +1,38 @@
-import { createHash } from 'node:crypto';
-import { open, readFile, unlink } from 'node:fs/promises';
+import { readFile } from 'node:fs/promises';
 import { record, parseRelease, version } from './model.js';
 import type { Release } from './model.js';
+import { ReleaseHttp } from './release-http.js';
+import { releaseKeys } from './release-keys.js';
+import { verifyReleaseSignature } from './release-signature.js';
+import type { ReleaseKey } from './release-signature.js';
 
 const api = 'https://api.github.com/repos/ProAnima/Arkvory';
 export interface ReleaseAssets {
   release: Release;
   archiveUrl: string;
 }
-export class GitHubReleases {
+/** Where a release comes from over the network: the hub (ADR 0060) or GitHub directly. */
+export interface ReleaseSource {
+  /** The release to install; null when nothing newer than `current` is offered. */
+  resolve(pin: string | null, current: Release | null): Promise<ReleaseAssets | null>;
+  download(url: string, destination: string, sha256: string): Promise<void>;
+}
+export class GitHubReleases implements ReleaseSource {
+  private readonly http: ReleaseHttp;
   constructor(
-    private readonly token: string,
-    private readonly signal?: AbortSignal,
+    token: string,
+    signal?: AbortSignal,
+    private readonly keys: readonly ReleaseKey[] = releaseKeys,
   ) {
     if (!/^[A-Za-z0-9_-]{0,512}$/.test(token)) throw new Error('Invalid GitHub token file');
+    // Private asset redirects must never forward the GitHub credential to a storage host.
+    this.http = new ReleaseHttp(
+      (target): Record<string, string> =>
+        target.origin === 'https://api.github.com' && token
+          ? { Authorization: `Bearer ${token}`, 'X-GitHub-Api-Version': '2022-11-28' }
+          : {},
+      signal,
+    );
   }
   static async fromTokenFile(path: string, signal?: AbortSignal): Promise<GitHubReleases> {
     const token = await readFile(path, 'utf8').catch((error: unknown) => {
@@ -22,57 +41,12 @@ export class GitHubReleases {
     });
     return new GitHubReleases(token.trim(), signal);
   }
-  private async response(url: string, accept: string): Promise<Response> {
-    let target = new URL(url);
-    for (let redirect = 0; redirect < 6; redirect++) {
-      if (target.protocol !== 'https:' || target.username || target.password)
-        throw new Error('Unsafe release URL');
-      const headers: Record<string, string> = {
-        Accept: accept,
-        'User-Agent': 'ProAnima-Arkvory-Installer',
-        'X-GitHub-Api-Version': '2022-11-28',
-      };
-      // Private asset redirects must never forward the GitHub credential to a storage host.
-      if (target.origin === 'https://api.github.com' && this.token)
-        headers['Authorization'] = `Bearer ${this.token}`;
-      const response = await fetch(target, {
-        headers,
-        redirect: 'manual',
-        signal: this.signal
-          ? AbortSignal.any([this.signal, AbortSignal.timeout(600000)])
-          : AbortSignal.timeout(600000),
-      });
-      if ([301, 302, 303, 307, 308].includes(response.status)) {
-        await response.body?.cancel();
-        const location = response.headers.get('location');
-        if (!location) throw new Error('Missing asset redirect');
-        target = new URL(location, target);
-        continue;
-      }
-      if (!response.ok) {
-        await response.body?.cancel();
-        throw new Error(`GitHub request failed (${String(response.status)})`);
-      }
-      return response;
-    }
-    throw new Error('Too many release redirects');
-  }
   private async json(url: string, asset = false): Promise<unknown> {
-    const response = await this.response(
-      url,
-      asset ? 'application/octet-stream' : 'application/vnd.github+json',
-    );
-    const chunks: Uint8Array[] = [];
-    let size = 0;
-    if (!response.body) throw new Error('Empty release response');
-    for await (const raw of response.body) {
-      const chunk: unknown = raw;
-      if (!(chunk instanceof Uint8Array)) throw new Error('Invalid HTTP stream');
-      size += chunk.length;
-      if (size > 1024 * 1024) throw new Error('Release metadata too large');
-      chunks.push(chunk);
-    }
-    return JSON.parse(Buffer.concat(chunks).toString('utf8')) as unknown;
+    return JSON.parse((await this.raw(url, asset)).toString('utf8')) as unknown;
+  }
+  private async raw(url: string, asset = true): Promise<Buffer> {
+    const accept = asset ? 'application/octet-stream' : 'application/vnd.github+json';
+    return this.http.bytes(await this.http.response(url, accept));
   }
   async resolve(pin: string | null): Promise<ReleaseAssets> {
     const data = record(
@@ -91,34 +65,16 @@ export class GitHubReleases {
         throw new Error(`Missing release asset: ${name}`);
       return match['url'];
     };
-    const release = parseRelease(await this.json(asset('arkvory-release.json'), true));
+    const manifest = await this.raw(asset('arkvory-release.json'));
+    const signature = (await this.raw(asset('arkvory-release.json.sig'))).toString('utf8');
+    verifyReleaseSignature(manifest, signature, this.keys);
+    const release = parseRelease(JSON.parse(manifest.toString('utf8')));
     if (data['tag_name'] !== `v${release.version}` || (pin !== null && pin !== release.version))
       throw new Error('Release tag mismatch');
     return { release, archiveUrl: asset('arkvory-runtime.zip') };
   }
-  async download(url: string, destination: string, sha256: string): Promise<void> {
-    const file = await open(destination, 'wx', 0o600);
-    try {
-      const response = await this.response(url, 'application/octet-stream');
-      if (!response.body) throw new Error('Empty archive');
-      let size = 0;
-      const hash = createHash('sha256');
-      for await (const raw of response.body) {
-        const chunk: unknown = raw;
-        if (!(chunk instanceof Uint8Array)) throw new Error('Invalid HTTP stream');
-        size += chunk.length;
-        if (size > 512 * 1024 ** 2) throw new Error('Release archive exceeds limit');
-        hash.update(chunk);
-        await file.writeFile(chunk);
-      }
-      if (hash.digest('hex') !== sha256) throw new Error('Release checksum mismatch');
-      await file.sync();
-    } catch (error) {
-      await file.close();
-      await unlink(destination);
-      throw error;
-    }
-    await file.close();
+  download(url: string, destination: string, sha256: string): Promise<void> {
+    return this.http.download(url, destination, sha256);
   }
   async native(platform: 'linux' | 'windows', name: string) {
     if (!['Arkvory-amd64.deb', 'Arkvory-x86_64.rpm', 'Arkvory-Setup-x64.exe'].includes(name))

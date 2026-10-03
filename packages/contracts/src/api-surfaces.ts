@@ -74,6 +74,10 @@ export function apiClassification(policy: OperationPolicy): {
     case 'Repositories':
       surface = 'discovery';
       break;
+    // Support of the installation by its vendor (ADR 0060).
+    case 'Feedback':
+      surface = 'operations';
+      break;
     case 'Identity':
       surface = access.kind === 'administrator' ? 'administration' : 'identity';
       break;

@@ -15,6 +15,7 @@ import { RequestDrain } from './drain.js';
 import { defaultDrainTimeoutMs } from './operability-config.js';
 import { createShutdown } from './shutdown.js';
 import type { ShutdownRequest } from './shutdown.js';
+import { RecentLog } from './recent-log.js';
 
 // Supervisors (systemd, WinSW, compose) allow 120 s for close after the drain window.
 const closeBudgetMs = 120000;
@@ -34,7 +35,9 @@ const identity = processIdentity(
   await readReleaseVersion(new URL('../../../release.json', import.meta.url)),
 );
 // One logger per process: lifecycle, HTTP and crash records share its backpressure accounting.
-const diagnostics = new DiagnosticLogger(process.stdout, () => new Date().toISOString(), {
+// Its newest lines stay in memory for feedback reports of administrators (ADR 0060).
+const recentLog = new RecentLog(process.stdout);
+const diagnostics = new DiagnosticLogger(recentLog, () => new Date().toISOString(), {
   level: initialLevel(),
   process: identity,
 });
@@ -47,6 +50,7 @@ try {
   const app = await createServer(config, {
     drain,
     diagnostics,
+    recentLog,
     identity,
     onOwnershipLost: () => {
       process.exitCode = 1;

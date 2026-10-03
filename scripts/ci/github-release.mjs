@@ -89,9 +89,9 @@ export async function releasePreconditions(root, version, output, { strict = tru
 
 export function releaseNotes(version, evidence, acceptance) {
   return [
-    'All release gates passed for this commit on the maintainer workstation (local CI). Review deployment notes and platform evidence before publishing. Publishing makes this version eligible for opt-in automatic updates.',
+    'All release gates passed for this commit on the maintainer workstation (local CI). The release is signed (arkvory-release.json.sig, latest.json). Review deployment notes and platform evidence before publishing; after publishing, approve the version for a channel in the hub.',
     '',
-    'Все release-гейты для этого commit пройдены локальным конвейером на машине сопровождающего. Перед публикацией проверьте инструкции развёртывания и результаты проверок платформ. Публикация разрешает установкам с включённым автообновлением перейти на эту версию.',
+    'Все release-гейты для этого commit пройдены локальным конвейером на машине сопровождающего. Релиз подписан (arkvory-release.json.sig, latest.json). Перед публикацией проверьте инструкции развёртывания и результаты проверок платформ; после публикации одобрите версию для канала в хабе.',
     '',
     `### Release gates (${version})`,
     '',

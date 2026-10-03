@@ -187,6 +187,16 @@
           Загрузить файл
         </button>
         <div class="preferences">
+          <button
+            id="report-open"
+            class="secondary small"
+            type="button"
+            aria-haspopup="dialog"
+            data-i18n="reportOpen"
+            hidden
+          >
+            Обратная связь
+          </button>
           <label class="theme-control"
             ><span class="sr-only" data-i18n="theme">Оформление</span
             ><span id="theme-icon" class="preference-icon" aria-hidden="true"></span
@@ -485,6 +495,13 @@
                 ><span data-i18n="updateHour">Час обслуживания (UTC)</span
                 ><select id="update-hour" disabled></select
               ></label>
+              <label id="update-statistics-field" class="check" hidden
+                ><input id="update-statistics" type="checkbox" disabled /><span
+                  data-i18n="updateStatistics"
+                  >Отправлять анонимную статистику в ProAnimaStudio</span
+                ></label
+              >
+              <p id="update-hub" class="hint" hidden></p>
               <button class="secondary" data-i18n="updateSave" disabled>Сохранить настройки</button>
             </form>
           </div>
@@ -769,6 +786,71 @@
               Отмена</button
             ><button id="action-confirm-proceed" type="button" class="primary"></button>
           </div>
+        </dialog>
+        <dialog
+          id="report-dialog"
+          class="management-dialog report-dialog"
+          aria-labelledby="report-title"
+          aria-describedby="report-intro"
+        >
+          <form id="report-form" novalidate>
+            <h2 id="report-title" data-i18n="reportTitle">Обратная связь с ProAnimaStudio</h2>
+            <p id="report-intro" class="hint" data-i18n="reportIntro"></p>
+            <label
+              ><span data-i18n="reportMessage">Что случилось или что стоит улучшить?</span
+              ><textarea id="report-message" rows="5" maxlength="20000" required></textarea>
+            </label>
+            <label
+              ><span data-i18n="reportEmail">Адрес для ответа (необязательно)</span
+              ><input id="report-email" type="email" autocomplete="email" maxlength="254"
+            /></label>
+            <div id="report-drop" class="report-drop">
+              <p id="report-shots-hint" class="hint" data-i18n="reportScreenshots"></p>
+              <button
+                id="report-pick"
+                type="button"
+                class="secondary small"
+                data-i18n="reportAddScreenshot"
+              >
+                Выбрать изображения
+              </button>
+              <input
+                id="report-files"
+                type="file"
+                accept="image/png,image/jpeg,image/webp,image/gif"
+                multiple
+                hidden
+              />
+              <ul id="report-shots" class="report-shots" aria-describedby="report-shots-hint"></ul>
+            </div>
+            <fieldset class="report-logs">
+              <legend data-i18n="reportLogs">Журналы</legend>
+              <label class="check"
+                ><input id="report-client-log" type="checkbox" checked /><span
+                  id="report-client-label"
+                ></span
+              ></label>
+              <label id="report-server-field" class="check" hidden
+                ><input id="report-server-log" type="checkbox" checked /><span
+                  data-i18n="reportServerLog"
+                  >Журнал сервера и состояние системы</span
+                ></label
+              >
+              <details id="report-preview">
+                <summary data-i18n="reportShow">Показать, что будет приложено</summary>
+                <p id="report-preview-note" class="hint"></p>
+                <pre id="report-preview-text" class="report-preview" tabindex="0"></pre>
+              </details>
+            </fieldset>
+            <output id="report-status" aria-live="polite"></output>
+            <div class="management-actions">
+              <button id="report-cancel" type="button" class="secondary" data-i18n="confirmCancel">
+                Отмена</button
+              ><button id="report-send" type="submit" class="primary" data-i18n="reportSend">
+                Отправить
+              </button>
+            </div>
+          </form>
         </dialog>
         <dialog id="update-confirm" aria-labelledby="update-confirm-title">
           <h2 id="update-confirm-title"></h2>

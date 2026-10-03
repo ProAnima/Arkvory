@@ -64,7 +64,8 @@ const release = await request(`${base}/releases`, {
     name: `Arkvory ${version}`,
     draft: true,
     prerelease: false,
-    body: 'All release gates passed for this commit. Review deployment notes and platform smoke evidence before publishing. Publishing makes this version eligible for opt-in automatic updates.\n\nВсе release-гейты пройдены. Перед публикацией проверьте инструкции развёртывания и результаты проверок платформ. Публикация разрешает установкам с включённым автообновлением перейти на эту версию.',
+    // The signing key never reaches CI (ADR 0060): the draft is signed on the release workstation.
+    body: `All release gates passed for this commit. Sign the draft on the release workstation before publishing: npm run release:sign -- sign-draft ${version}. Installations refuse unsigned releases; after publishing, approve the version in the hub.\n\nВсе release-гейты пройдены. Перед публикацией подпишите черновик на рабочей станции выпуска: npm run release:sign -- sign-draft ${version}. Установки не принимают неподписанные релизы; после публикации одобрите версию в хабе.`,
   }),
 });
 if (

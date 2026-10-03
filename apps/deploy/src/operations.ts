@@ -3,8 +3,9 @@ import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { atomicJson, atomicText, jsonFile } from './files.js';
 import { parseInstallation, parseRelease, record, newer, updateDecision } from './model.js';
-import type { Installation } from './model.js';
-import { source, stage } from './staging.js';
+import type { Installation, Release } from './model.js';
+import { hubClient, source, stage } from './staging.js';
+import { reportUpdated } from './hub.js';
 import type { Source } from './staging.js';
 import { Services } from './services.js';
 import { initialize } from './initialize.js';
@@ -133,7 +134,12 @@ export async function update(
     return;
   }
   await checkJournal(root);
-  const selected = await source(root, options.get('version') ?? state.pin, options.get('artifact'));
+  const selected = await source(
+    root,
+    options.get('version') ?? state.pin,
+    options.get('artifact'),
+    state.current,
+  );
   if (expectedDigest !== undefined && selected.release.archiveSha256 !== expectedDigest)
     throw new Error('Selected release bytes changed; check releases again');
   const services = new Services(root, state);
@@ -150,13 +156,19 @@ export async function update(
       migrate: (release) => services.migrate(release),
     });
     report('info', `Updated to ${selected.release.version} with a database migration`);
-    await services.confirmBackup(selected.release);
+    await updated(root, services, selected.release);
     return;
   }
   const changed = await applyUpdate(state, selected.release, scheduled, port);
   report('info', changed ? `Updated to ${selected.release.version}` : 'Already current');
+  if (changed) await updated(root, services, selected.release);
+}
+/** After a committed update: never a reason to roll back or to fail the command. */
+async function updated(root: string, services: Services, release: Release): Promise<void> {
   // Outside applyUpdate: the agent never decides about a rollback of the API.
-  if (changed) await services.confirmBackup(selected.release);
+  await services.confirmBackup(release);
+  const hub = await hubClient(root).catch(() => null);
+  if (hub) await reportUpdated(hub, release);
 }
 /** Completes an interrupted deployment in the direction the journal allows (ADR 0059). */
 export async function recover(root: string): Promise<void> {
@@ -192,7 +204,12 @@ export async function upgrade(root: string, options: Map<string, string>): Promi
   await access(backup);
   await checkJournal(root);
   const state = parseInstallation(await jsonFile(join(root, 'installation.json')));
-  const selected = await source(root, options.get('version') ?? state.pin, options.get('artifact'));
+  const selected = await source(
+    root,
+    options.get('version') ?? state.pin,
+    options.get('artifact'),
+    state.current,
+  );
   if (
     !newer(selected.release.version, state.current.version) ||
     selected.release.schema < state.current.schema

@@ -16,6 +16,9 @@ upgrade        Schema change without the built-in vault; --backup-record require
 recover        Finish an interrupted update: back before a migration, forward after it
                / Завершить прерванное обновление
 configure      --enable-updates | --disable-updates | --pin --version X.Y.Z | --unpin
+               --hub-url <https://origin> | --hub-off, --update-channel stable|beta,
+               --statistics on|off: updates approved in the ProAnimaStudio hub (GitHub when it
+               cannot be reached), anonymous statistics / Хаб обновлений, канал, статистика
                --tls-cert <pem> --tls-key <pem> [--listen-host <addr>] | --tls-off
                Built-in HTTPS; restarts, verifies, rolls back on failure / HTTPS с откатом
                --backup-vault <absolute dir> [--init-vault] | --backup-vault-off

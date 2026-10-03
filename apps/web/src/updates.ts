@@ -39,6 +39,7 @@ class UpdateConsole {
           expectedRevision: this.snapshot.revision,
           automatic: v.automatic.checked,
           hourUTC: Number(v.hour.value),
+          ...(this.snapshot.statistics === undefined ? {} : { statistics: v.statistics.checked }),
         });
     };
     v.install.onclick = () => {

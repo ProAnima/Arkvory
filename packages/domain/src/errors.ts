@@ -58,8 +58,13 @@ export const errorReasons = {
   ],
   integrity_mismatch: [],
   busy: ['request_limit'],
-  unavailable: [],
-  rate_limited: ['login_attempts', 'registration_attempts', 'password_attempts'],
+  unavailable: ['feedback_disabled', 'hub_unreachable'],
+  rate_limited: [
+    'login_attempts',
+    'registration_attempts',
+    'password_attempts',
+    'feedback_attempts',
+  ],
   read_only: [],
   /** Unclassified server defect: 500 without Retry-After; clients must not retry blindly. */
   internal: [],

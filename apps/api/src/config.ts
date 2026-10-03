@@ -1,4 +1,5 @@
 import { readFile } from 'node:fs/promises';
+import type { FeedbackHub } from './feedback.js';
 import { isIP } from 'node:net';
 import { ArkvoryError, MAX_OBJECT_BYTES } from '@proanima/arkvory-domain';
 import { parseKeys, downloadShare, readMirrorSettings } from '@proanima/arkvory-infrastructure';
@@ -47,6 +48,11 @@ export interface ServerConfig extends UploadTimeoutOptions, OperabilityOptions {
   readonly tls?: TlsSettings;
   /** Mirrored repositories (ADR 0058): read-only for clients, synchronized by the worker. */
   readonly mirrors?: readonly MirrorConfiguration[];
+  /**
+   * Where console feedback goes (ADR 0060). Absent or null: feedback is off; loadConfig turns
+   * the studio hub on unless ARKVORY_HUB_URL is set empty.
+   */
+  readonly hub?: FeedbackHub | null;
 }
 
 /** Startup logs may print these messages: they name the variable, never its value or path. */
@@ -85,6 +91,20 @@ function byteRate(env: NodeJS.ProcessEnv, name: string): number {
   )
     throw new Error(`Invalid ${name}`);
   return value;
+}
+
+const loopback = new Set(['127.0.0.1', 'localhost', '[::1]']);
+/** ARKVORY_HUB_URL: unset is the studio hub, empty is off; https, plain http on loopback only. */
+function readHub(env: NodeJS.ProcessEnv): { hub: FeedbackHub | null } {
+  const value = env['ARKVORY_HUB_URL'] ?? 'https://hub.proanima.net';
+  if (value === '') return { hub: null };
+  const url = new URL(value);
+  const plain = url.protocol === 'http:' && loopback.has(url.hostname);
+  if ((url.protocol !== 'https:' && !plain) || url.username || url.password || url.search)
+    throw new Error('Invalid ARKVORY_HUB_URL');
+  const project = env['ARKVORY_HUB_PROJECT'] ?? 'arkvory';
+  if (!/^[a-z0-9][a-z0-9-]{0,62}$/.test(project)) throw new Error('Invalid ARKVORY_HUB_PROJECT');
+  return { hub: { url: url.href.replace(/\/+$/, ''), project } };
 }
 
 /** The API needs which repositories are mirrors and of what; the source key stays with the worker. */
@@ -161,6 +181,7 @@ export async function loadConfig(env: NodeJS.ProcessEnv): Promise<ServerConfig> 
     dataDirectory: required('ARKVORY_DATA_DIR'),
     keys,
     ...(mirrors.length > 0 ? { mirrors } : {}),
+    ...readHub(env),
     corsOrigins: parseCorsOrigins(env['ARKVORY_CORS_ORIGINS']),
     webDirectory: env['ARKVORY_WEB_DIR'] ?? 'apps/web/public',
     ...(env['ARKVORY_UPDATE_CONTROL_DIR']

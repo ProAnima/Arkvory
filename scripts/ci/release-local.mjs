@@ -1,8 +1,9 @@
 import { fileURLToPath } from 'node:url';
-import { copyFile, mkdir, readFile, readdir, stat, writeFile } from 'node:fs/promises';
+import { access, copyFile, mkdir, readFile, readdir, stat, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { nativeFiles, verifyNativeFiles } from '../native-files.mjs';
 import { releaseFiles, verifyReleaseFiles } from '../release-files.mjs';
+import { signDirectory, signingKeyFile } from '../release-signing.mjs';
 import { runLocalCi } from './local-run.mjs';
 import { npm } from './windows-lane.mjs';
 import {
@@ -90,6 +91,18 @@ async function assemble(output, version, commit, native) {
   return files.map((name) => join(output, name));
 }
 
+/** A rehearsal without the key on this machine still runs; a real release cannot. */
+async function sign(output, dryRun) {
+  try {
+    await access(signingKeyFile());
+  } catch {
+    if (!dryRun) throw new Error(`No release signing key: ${signingKeyFile()}`);
+    process.stdout.write('Warning (rehearsal): no signing key; the release is not signed\n');
+    return [];
+  }
+  return signDirectory(output);
+}
+
 async function main(options) {
   const controller = new AbortController();
   process.once('SIGINT', () => controller.abort());
@@ -107,6 +120,8 @@ async function main(options) {
   await npm(root, ['run', 'release:package', '--', options.version, output], { signal });
   const acceptance = await acceptCandidate(output, signal);
   const files = await assemble(output, options.version, commit, acceptance.native);
+  // Installations accept only releases signed with a built-in key (ADR 0060).
+  const signed = await sign(output, options.dryRun);
   const notes = resolve(root, 'artifacts', `${name}-release-notes.md`);
   const proof = resolve(root, 'artifacts', `${name}-evidence`);
   await mkdir(proof, { recursive: true });
@@ -119,10 +134,12 @@ async function main(options) {
   const details = { tag, commit, version: options.version, notesFile: notes };
   if (options.dryRun) {
     process.stdout.write(`\nDry run: tested assets in ${output}\nNotes: ${notes}\n`);
-    process.stdout.write(`Would run: ${draftCommand(details)} (+${files.length + 1} assets)\n`);
+    process.stdout.write(
+      `Would run: ${draftCommand(details)} (+${files.length + signed.length + 1} assets)\n`,
+    );
     return;
   }
-  const url = createDraft(root, { ...details, files: [...files, evidenceFile] });
+  const url = createDraft(root, { ...details, files: [...files, ...signed, evidenceFile] });
   process.stdout.write(`\nDraft release prepared: ${url}\nReview it on GitHub, then publish.\n`);
 }
 

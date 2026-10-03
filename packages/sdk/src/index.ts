@@ -20,4 +20,5 @@ export type { PackageQuery, PromoteRequest, PageOptions } from './promotions-api
 export type { IdentityClient, AdministrationClient } from './management-client.js';
 export type { CreateTokenOptions } from './identity-api.js';
 export { BackupApi } from './backup-api.js';
+export { FeedbackApi } from './feedback-api.js';
 export type { BackupPageQuery } from './backup-api.js';

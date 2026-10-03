@@ -7,7 +7,8 @@ import { BackupRequired } from './backup-guard.js';
 export interface UpdateMonitorPort {
   save(snapshot: UpdateSnapshot): Promise<void>;
   resolve(): Promise<Release>;
-  configure(automatic: boolean): Promise<void>;
+  /** `statistics` only when the console asked to change it. */
+  configure(automatic: boolean, statistics?: boolean): Promise<void>;
   apply(version: string, sha256: string): Promise<Installation>;
 }
 export function initialUpdateSnapshot(state: Installation, now: string): UpdateSnapshot {
@@ -27,6 +28,11 @@ export function initialUpdateSnapshot(state: Installation, now: string): UpdateS
     lastRequestId: null,
   };
 }
+/** The hub settings the console shows and changes (ADR 0060). */
+export interface HubView {
+  readonly statistics: boolean;
+  readonly channel: 'stable' | 'beta';
+}
 /** Called under the installation lock. Persist intent before any operation that can stop services. */
 export async function monitorUpdates(
   state: Installation,
@@ -34,8 +40,9 @@ export async function monitorUpdates(
   request: UpdateRequest | null,
   now: string,
   port: UpdateMonitorPort,
+  hub?: HubView,
 ): Promise<UpdateSnapshot> {
-  const snapshot = synchronize(previous, state, now);
+  const snapshot = synchronize(previous, state, now, hub);
   const save = () => port.save(snapshot);
   if (request && request.id === snapshot.lastRequestId) {
     await save();
@@ -56,8 +63,19 @@ export async function monitorUpdates(
   await save();
   return snapshot;
 }
-function synchronize(previous: UpdateSnapshot, state: Installation, now: string): UpdateSnapshot {
+function synchronize(
+  previous: UpdateSnapshot,
+  state: Installation,
+  now: string,
+  hub: HubView | undefined,
+): UpdateSnapshot {
   const snapshot = { ...previous, heartbeatAt: now };
+  // A change made on the host (configure) invalidates a console form like any other setting.
+  if (hub && (snapshot.statistics !== hub.statistics || snapshot.channel !== hub.channel)) {
+    snapshot.revision++;
+    snapshot.statistics = hub.statistics;
+    snapshot.channel = hub.channel;
+  }
   if (
     snapshot.currentVersion !== state.current.version ||
     snapshot.automatic !== state.automatic ||
@@ -82,8 +100,9 @@ async function execute(
     snapshot.checkedAt === null || Date.parse(now) - Date.parse(snapshot.checkedAt) >= 6 * 3600000;
   try {
     if (request?.kind === 'configure') {
-      await port.configure(request.automatic);
+      await port.configure(request.automatic, request.statistics);
       snapshot.automatic = request.automatic;
+      if (request.statistics !== undefined) snapshot.statistics = request.statistics;
       snapshot.hourUTC = request.hourUTC;
       snapshot.error = null;
       snapshot.phase = 'idle';

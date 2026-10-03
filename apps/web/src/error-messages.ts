@@ -7,6 +7,11 @@ export const errorEnglish = {
     'A proxy in front of Arkvory did not get an answer from it. Try again shortly or contact the administrator.',
   errorInternal: 'Unexpected server error. Report the request ID below to the administrator.',
   errorUnavailable: 'The service is temporarily unavailable. Try again shortly.',
+  errorFeedbackDisabled:
+    'Feedback is turned off on this server. Write to info@proanima.net instead.',
+  errorHubUnreachable:
+    'The server cannot reach ProAnimaStudio right now. Try again later or write to info@proanima.net.',
+  errorFeedbackLimited: 'Too many messages from this server. Wait a few minutes and try again.',
   errorReadOnly:
     'This address only serves downloads. Make changes through the main Arkvory address.',
   errorRouteMissing:
@@ -76,6 +81,10 @@ export const errorRussian: Record<keyof typeof errorEnglish, string> = {
   errorInternal:
     'Непредвиденная ошибка сервера. Сообщите администратору идентификатор запроса ниже.',
   errorUnavailable: 'Сервис временно недоступен. Повторите чуть позже.',
+  errorFeedbackDisabled: 'Обратная связь на этом сервере выключена. Напишите на info@proanima.net.',
+  errorHubUnreachable:
+    'Сервер сейчас не может связаться с ProAnimaStudio. Повторите позже или напишите на info@proanima.net.',
+  errorFeedbackLimited: 'Слишком много сообщений с этого сервера. Подождите несколько минут.',
   errorReadOnly: 'Этот адрес только раздаёт файлы. Вносите изменения через основной адрес Arkvory.',
   errorRouteMissing:
     'Этот сервер Arkvory не поддерживает операцию. Обновите сервер или перезагрузите консоль.',

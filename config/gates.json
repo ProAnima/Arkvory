@@ -82,6 +82,7 @@
         "tests/browser/management.mjs",
         "tests/browser/downloads.mjs",
         "tests/browser/updates.mjs",
+        "tests/browser/feedback.mjs",
         "tests/browser/remote-wizard.mjs"
       ],
       "kind": "scenario",

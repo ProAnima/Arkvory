@@ -72,6 +72,11 @@ const byReason: Readonly<Record<string, Readonly<Record<string, MessageKey>>>> =
     login_attempts: 'errorRateLimited',
     registration_attempts: 'errorRegistrationLimited',
     password_attempts: 'errorPasswordLimited',
+    feedback_attempts: 'errorFeedbackLimited',
+  },
+  unavailable: {
+    feedback_disabled: 'errorFeedbackDisabled',
+    hub_unreachable: 'errorHubUnreachable',
   },
 };
 const byCode: Readonly<Record<string, MessageKey>> = {
