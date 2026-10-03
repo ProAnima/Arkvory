@@ -25,7 +25,6 @@ WizardStyle=modern dynamic windows11
 WizardSizePercent=120,115
 WizardImageFile={#Payload}\wizard.png
 DisableWelcomePage=no
-LicenseFile=..\..\LICENSE.md
 Compression=lzma2/fast
 SolidCompression=yes
 LZMAUseSeparateProcess=yes
@@ -38,8 +37,8 @@ RestartApplications=no
 Uninstallable=yes
 
 [Languages]
-Name: "en"; MessagesFile: "compiler:Default.isl"
-Name: "ru"; MessagesFile: "compiler:Languages\Russian.isl"
+Name: "en"; MessagesFile: "compiler:Default.isl"; LicenseFile: "..\legal\EULA.en.txt"
+Name: "ru"; MessagesFile: "compiler:Languages\Russian.isl"; LicenseFile: "..\legal\EULA.ru.txt"
 
 [CustomMessages]
 en.WelcomeLabel2=Your storage. Your infrastructure.%n%nSetup includes Node.js, PostgreSQL and service supervision. No developer tools or internet connection are required.%n%nFiles and database remain on this computer. Automatic updates are disabled by default.

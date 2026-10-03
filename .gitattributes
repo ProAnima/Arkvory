@@ -3,3 +3,5 @@
 *.jpg binary
 *.upack binary
 *.zip binary
+# Inno Setup shows license texts in a Windows memo: keep CRLF and the UTF-8 BOM.
+deploy/legal/*.txt text eol=crlf

@@ -21,7 +21,6 @@ DisableWelcomePage=no
 WizardStyle=modern dynamic windows11
 WizardSizePercent=120,115
 WizardImageFile={#Payload}\wizard.png
-LicenseFile=..\..\LICENSE.md
 Compression=lzma2/fast
 SolidCompression=yes
 OutputBaseFilename=Arkvory-CLI-Setup-x64
@@ -31,8 +30,8 @@ ChangesEnvironment=yes
 SetupLogging=yes
 
 [Languages]
-Name: "en"; MessagesFile: "compiler:Default.isl"
-Name: "ru"; MessagesFile: "compiler:Languages\Russian.isl"
+Name: "en"; MessagesFile: "compiler:Default.isl"; LicenseFile: "..\legal\EULA.en.txt"
+Name: "ru"; MessagesFile: "compiler:Languages\Russian.isl"; LicenseFile: "..\legal\EULA.ru.txt"
 
 [CustomMessages]
 en.WelcomeLabel2=Your storage, from your terminal.%n%nInstall arkvoryctl for this user. Node.js is included; no administrator account, database or server services are needed.%n%nAfter setup, open a new terminal and run arkvoryctl --help. Connect to your server with a profile and a private key file.
