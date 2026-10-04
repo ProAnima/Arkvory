@@ -74,7 +74,7 @@ export class PostgresCatalog implements Catalog {
   /** poolSize bounds query connections; ownership, lease and pin sessions hold up to three. */
   constructor(
     connectionString: string,
-    private readonly capacityBytes: number,
+    readonly capacityBytes: number,
     maxWriters: number,
     poolSize = 5,
   ) {

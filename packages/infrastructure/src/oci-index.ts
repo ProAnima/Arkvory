@@ -44,7 +44,11 @@ function journal(
  * sees committed references.
  */
 export class PostgresOciIndex implements OciIndex {
-  constructor(private readonly pool: Pool) {}
+  constructor(
+    private readonly pool: Pool,
+    /** The catalog's capacity; uploads staged here count against it like stored bytes. */
+    private readonly capacityBytes = Number.MAX_SAFE_INTEGER,
+  ) {}
 
   async blob(repository: string, digest: string): Promise<string | null> {
     const result = await this.pool.query<{ artifact_id: string }>(
@@ -244,6 +248,27 @@ export class PostgresOciIndex implements OciIndex {
     );
     const row = result.rows[0];
     return row ? { ...row, received: Number(row.received) } : null;
+  }
+
+  async stagingRoom(repository: string, upload: string): Promise<number> {
+    const result = await this.pool.query<{ total: string; repository: string | null }>(
+      `SELECT
+         ($3::bigint - (SELECT COALESCE(sum(size),0) FROM arkvory_uploads WHERE NOT reclaimed)
+           - (SELECT COALESCE(sum(received),0) FROM arkvory_oci_uploads WHERE id<>$2))::text
+           AS total,
+         ((SELECT (policy->>'quotaBytes')::numeric FROM arkvory_storage_policies
+            WHERE repository=$1)
+           - (SELECT COALESCE(sum(size),0) FROM arkvory_uploads
+              WHERE repository=$1 AND NOT reclaimed)
+           - (SELECT COALESCE(sum(received),0) FROM arkvory_oci_uploads
+              WHERE repository=$1 AND id<>$2))::text AS repository`,
+      [repository, upload, String(this.capacityBytes)],
+    );
+    const row = result.rows[0];
+    const room = [row?.total, row?.repository].map((value) =>
+      value === null || value === undefined ? Number.MAX_SAFE_INTEGER : Number(value),
+    );
+    return Math.max(0, Math.min(Number.MAX_SAFE_INTEGER, ...room));
   }
 
   async setReceived(id: string, received: number): Promise<void> {

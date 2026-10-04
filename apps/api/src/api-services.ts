@@ -161,7 +161,7 @@ export function createApiServices(
     npm: npmRegistry(service, rawStaging, catalog.pool, now),
     registry: new OciRegistry(
       service,
-      new PostgresOciIndex(catalog.pool),
+      new PostgresOciIndex(catalog.pool, catalog.capacityBytes),
       new FileOciStaging(blobs.root, (bytes) => blobs.checkSpace(bytes)),
       { next: randomUUID },
       service.maxObjectBytes,

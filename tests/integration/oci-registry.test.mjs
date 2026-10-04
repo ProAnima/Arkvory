@@ -1,10 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createHash, randomBytes } from 'node:crypto';
+import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { readdir, utimes } from 'node:fs/promises';
 import { join } from 'node:path';
 import { ArkvoryClient } from '@proanima/arkvory-sdk';
 import { OciRegistry } from '@proanima/arkvory-application';
+import { serviceActions } from '@proanima/arkvory-domain';
 import { FileOciStaging, PostgresOciIndex } from '@proanima/arkvory-infrastructure';
 import { setup } from './fixture.mjs';
 
@@ -318,6 +319,28 @@ test('an index needs its platform manifests; abandoned uploads expire with their
   const stored = await putManifest(call, name, 'latest', index([amd.digest]), indexType);
   assert.equal(stored.status, 201);
   assert.equal((await call(`/v2/${name}/manifests/latest`)).headers.get('content-type'), indexType);
+  // A BuildKit registry cache: an index whose entries are blobs (layers, cache configuration).
+  const cacheConfig = Buffer.from(JSON.stringify({ layers: [] }));
+  await pushBlob(call, name, cacheConfig);
+  const cache = (entries) =>
+    Buffer.from(JSON.stringify({ schemaVersion: 2, mediaType: indexType, manifests: entries }));
+  const cacheEntries = [
+    { mediaType: 'application/vnd.oci.image.layer.v1.tar', digest: digestOf(layer), size: 1024 },
+    {
+      mediaType: 'application/vnd.buildkit.cacheconfig.v0',
+      digest: digestOf(cacheConfig),
+      size: cacheConfig.length,
+    },
+  ];
+  assert.equal(
+    (await putManifest(call, name, 'cache', cache(cacheEntries), indexType)).status,
+    201,
+  );
+  const unknownBlob = cache([{ ...cacheEntries[1], digest: digestOf(Buffer.from('none')) }]);
+  assert.equal(
+    await errorOf(await putManifest(call, name, 'cache2', unknownBlob, indexType)),
+    'MANIFEST_BLOB_UNKNOWN',
+  );
 
   const started = await call(`/v2/${name}/blobs/uploads/`, { method: 'POST' });
   const id = started.headers.get('docker-upload-uuid');
@@ -344,4 +367,38 @@ test('an index needs its platform manifests; abandoned uploads expire with their
   assert.deepEqual(await readdir(join(f.directory, 'oci-uploads')), []);
   const status = await call(started.headers.get('location'));
   assert.equal(await errorOf(status), 'BLOB_UPLOAD_UNKNOWN');
+});
+
+test('bytes staged in open uploads count against the repository quota', async (t) => {
+  const { f, url, call } = await registry(t);
+  // A quota is set by a managed key of the repository (the policy names its authorizer).
+  f.config.keys[0].principal.serviceAdministrator = true;
+  const root = new ArkvoryClient(url, () => f.headers.authorization.slice(7));
+  const bindings = [{ resource: { kind: 'repository', id: 'releases' }, actions: serviceActions }];
+  const account = await root.createServiceAccount('storage-manager', bindings);
+  const key = await root.issueServiceKey(account.id, randomUUID(), { name: 'quota', bindings });
+  const client = new ArkvoryClient(url, () => key.secret);
+  await client.activateServiceKey();
+  const policy = await client.storagePolicy('releases');
+  await client.setStoragePolicy('releases', policy.revision, {
+    ...policy.policy,
+    enabled: false,
+    quotaBytes: String(1024 * 1024),
+  });
+  const name = 'releases/app';
+  // A blob within the quota is pushed as usual.
+  await pushBlob(call, name, randomBytes(200 * 1024));
+  const open = async (bytes) => {
+    const started = await call(`/v2/${name}/blobs/uploads/`, { method: 'POST' });
+    return call(started.headers.get('location'), {
+      method: 'PATCH',
+      headers: { 'content-type': 'application/octet-stream' },
+      body: bytes,
+    });
+  };
+  // Neither session finishes; the second would take the repository past its quota.
+  assert.equal((await open(randomBytes(600 * 1024))).status, 202);
+  const refused = await open(randomBytes(600 * 1024));
+  assert.equal(refused.status, 507);
+  assert.equal((await refused.json()).errors[0].code, 'DENIED');
 });

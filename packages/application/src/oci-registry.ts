@@ -57,6 +57,12 @@ export interface OciIndex {
   startUpload(state: OciUploadState): Promise<void>;
   upload(id: string): Promise<OciUploadState | null>;
   setReceived(id: string, received: number): Promise<void>;
+  /**
+   * Bytes `upload` may still stage: the repository quota and the installation capacity, less
+   * the stored bytes and what other open uploads have staged. Staged bytes are not artifacts
+   * yet; without this, abandoned sessions could fill the volume past every quota.
+   */
+  stagingRoom(repository: string, upload: string): Promise<number>;
   endUpload(id: string): Promise<void>;
   /** Forgets uploads idle for longer than `seconds` by the database clock; returns their ids. */
   expireUploads(seconds: number, limit: number): Promise<string[]>;
@@ -175,13 +181,26 @@ export class OciRegistry {
       const state = await this.upload(principal, path);
       if (offset !== undefined && offset !== state.received)
         throw new OciError('BLOB_UPLOAD_INVALID', 'Chunk out of order', 416);
-      const size = await this.staging.append(
-        state.id,
-        state.received,
-        source,
-        this.maxBlobBytes,
-        cancellation,
-      );
+      const room = await this.index.stagingRoom(path.repository, state.id);
+      const limit = Math.min(this.maxBlobBytes, state.received + room);
+      const size = await this.staging
+        .append(state.id, state.received, source, limit, cancellation)
+        .catch((error: unknown) => {
+          // The bound came from the quota or capacity, not from the blob size limit.
+          if (
+            limit < this.maxBlobBytes &&
+            error instanceof OciError &&
+            error.code === 'SIZE_INVALID'
+          )
+            throw new ArkvoryError(
+              'capacity_exceeded',
+              'Storage quota exceeded by staged uploads',
+              {
+                reason: 'storage_quota',
+              },
+            );
+          throw error;
+        });
       await this.index.setReceived(state.id, size);
       return size;
     });

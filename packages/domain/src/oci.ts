@@ -140,6 +140,27 @@ function descriptors(value: unknown, field: string): string[] {
 }
 
 /**
+ * Entries of an index: manifests by their media type (or none given), anything else a blob. A
+ * BuildKit registry cache lists its layers and cache configuration in an index this way.
+ */
+function indexEntries(value: unknown): { blobs: string[]; manifests: string[] } {
+  const digests = descriptors(value, 'manifests');
+  const values: readonly unknown[] = Array.isArray(value) ? value : [];
+  const blobs: string[] = [];
+  const manifests: string[] = [];
+  values.forEach((item, position) => {
+    const type =
+      item && typeof item === 'object' && 'mediaType' in item ? item.mediaType : undefined;
+    const digest = digests[position];
+    if (digest === undefined) return;
+    if (type === undefined || ociManifestTypes.some((known) => known === type))
+      manifests.push(digest);
+    else blobs.push(digest);
+  });
+  return { blobs: [...new Set(blobs)], manifests: [...new Set(manifests)] };
+}
+
+/**
  * Parses an image manifest, image index, Docker schema 2 manifest or manifest list. The type
  * comes from Content-Type, falling back to the document's own mediaType; the document must not
  * contradict it. Only what the registry checks is extracted: the referenced digests.
@@ -171,11 +192,7 @@ export function parseOciManifest(
   if (!('schemaVersion' in document) || document.schemaVersion !== 2)
     throw new OciError('MANIFEST_INVALID', 'Only schemaVersion 2 is supported');
   if (isIndex(mediaType))
-    return {
-      mediaType,
-      blobs: [],
-      manifests: descriptors('manifests' in document ? document.manifests : undefined, 'manifests'),
-    };
+    return { mediaType, ...indexEntries('manifests' in document ? document.manifests : undefined) };
   const config = 'config' in document ? descriptors([document.config], 'config') : [];
   if (config.length !== 1) throw new OciError('MANIFEST_INVALID', 'Image manifest needs a config');
   const layers = descriptors('layers' in document ? document.layers : [], 'layers');

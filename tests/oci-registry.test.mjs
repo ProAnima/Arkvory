@@ -74,13 +74,22 @@ test('manifests yield the digests the registry must hold; type and shape are che
     blobs: [digest('c'), digest('d')],
     manifests: [],
   });
+  // Index entries are manifests by their media type (or none given), anything else a blob.
   const index = JSON.stringify({
     schemaVersion: 2,
-    manifests: [{ digest: digest('e'), size: 1, mediaType: 'x' }],
+    manifests: [
+      { digest: digest('e'), size: 1, mediaType: 'application/vnd.oci.image.manifest.v1+json' },
+      { digest: digest('f'), size: 1 },
+      { digest: digest('a'), size: 1, mediaType: 'application/vnd.buildkit.cacheconfig.v0' },
+    ],
   });
   assert.deepEqual(
     parseOciManifest(index, index.length, 'application/vnd.oci.image.index.v1+json; charset=x'),
-    { mediaType: 'application/vnd.oci.image.index.v1+json', blobs: [], manifests: [digest('e')] },
+    {
+      mediaType: 'application/vnd.oci.image.index.v1+json',
+      blobs: [digest('a')],
+      manifests: [digest('e'), digest('f')],
+    },
   );
   const docker = image({ mediaType: 'application/vnd.docker.distribution.manifest.v2+json' });
   assert.equal(
@@ -119,6 +128,7 @@ function registry(overrides = {}) {
     upload: async (id) => (id === path.id ? state : null),
     blob: async () => null,
     setReceived: async (id, size) => calls.push(['received', size]),
+    stagingRoom: async () => Number.MAX_SAFE_INTEGER,
     endUpload: async (id) => calls.push(['end', id]),
     addBlob: async (...args) => calls.push(['blob', ...args]),
     ...overrides.index,
