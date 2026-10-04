@@ -76,3 +76,4 @@ ADR нужен для изменения границ, публичных кон
 - [0063 — Реестр образов OCI поверх артефактов](0063-oci-registry.md)
 - [0064 — Raw-файлы по пути одним запросом](0064-raw-files-by-path.md)
 - [0065 — Git LFS с блокировками поверх артефактов](0065-git-lfs.md)
+- [0066 — npm-реестр для Unity Package Manager](0066-npm-registry-for-unity.md)

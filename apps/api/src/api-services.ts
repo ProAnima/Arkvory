@@ -17,6 +17,7 @@ import {
   OciRegistry,
   RawFiles,
   GitLfs,
+  NpmRegistry,
 } from '@proanima/arkvory-application';
 import type { MirrorConfiguration } from '@proanima/arkvory-application';
 import {
@@ -43,6 +44,9 @@ import {
   PostgresOciIndex,
   FileOciStaging,
   FileRawStaging,
+  FileNpmPublishStaging,
+  GzipNpmTarballInspector,
+  PostgresNpmIndex,
   PostgresLfsIndex,
   PostgresLfsLocks,
 } from '@proanima/arkvory-infrastructure';
@@ -54,6 +58,17 @@ import type {
   PostgresCatalog,
   PostgresContentPins,
 } from '@proanima/arkvory-infrastructure';
+
+/** The npm registry (ADR 0066): one index reads and changes; publishes stage like raw files. */
+function npmRegistry(
+  service: StorageService,
+  staging: FileRawStaging,
+  pool: PostgresCatalog['pool'],
+) {
+  const index = new PostgresNpmIndex(pool);
+  const tarballs = new GzipNpmTarballInspector();
+  return new NpmRegistry(service, new FileNpmPublishStaging(staging), tarballs, index, index);
+}
 
 /** Composition only: each registrar receives just the services it consumes. */
 export function createApiServices(
@@ -141,6 +156,7 @@ export function createApiServices(
       new PostgresLfsLocks(catalog.pool),
       { next: randomUUID },
     ),
+    npm: npmRegistry(service, rawStaging, catalog.pool),
     registry: new OciRegistry(
       service,
       new PostgresOciIndex(catalog.pool),

@@ -1,20 +1,28 @@
+import { npmVersionOf } from '@proanima/arkvory-application';
 import type { StorageService } from '@proanima/arkvory-application';
 import {
+  ArkvoryError,
   MAX_OCI_MANIFEST_BYTES,
   OciError,
   isOciDigest,
   parseOciManifest,
 } from '@proanima/arkvory-domain';
 import type { Principal } from '@proanima/arkvory-domain';
-import { PostgresOciIndex } from '@proanima/arkvory-infrastructure';
+import {
+  GzipNpmTarballInspector,
+  PostgresNpmIndex,
+  PostgresOciIndex,
+} from '@proanima/arkvory-infrastructure';
 
 /**
- * Registry rows of a mirrored repository (ADR 0063), written through the registry's own index:
+ * Registry rows of a mirrored repository (ADR 0063, 0066), written through the registries' own indexes:
  * locks, references and feed entries are those of a push, so a mirror of this mirror follows
  * the images too. The rows point at artifacts the synchronization has copied with source IDs.
  */
 export class MirrorRegistryRows {
   private readonly index: PostgresOciIndex;
+  private readonly npm: PostgresNpmIndex;
+  private readonly tarballs = new GzipNpmTarballInspector();
   constructor(
     private readonly repository: string,
     pool: ConstructorParameters<typeof PostgresOciIndex>[0],
@@ -22,6 +30,29 @@ export class MirrorRegistryRows {
     private readonly storage: Pick<StorageService, 'download'>,
   ) {
     this.index = new PostgresOciIndex(pool);
+    this.npm = new PostgresNpmIndex(pool);
+  }
+
+  /** The version of the local tarball, read from its package.json exactly as at the publish. */
+  async npmVersion(artifactId: string): Promise<void> {
+    const { read } = await this.storage.download(this.principal, this.repository, artifactId);
+    let version;
+    try {
+      version = npmVersionOf(await this.tarballs.inspect(read()), artifactId);
+    } catch (error) {
+      // Not a package tarball: the feed names only published versions, so nothing to record.
+      if (error instanceof ArkvoryError && error.code === 'invalid_input') return;
+      throw error;
+    }
+    await this.npm.addVersion(this.principal, this.repository, version, []);
+  }
+
+  async npmTag(name: string, tag: string, version: string): Promise<void> {
+    await this.npm.setTag(this.principal, this.repository, name, tag, version);
+  }
+
+  async npmUntag(name: string, tag: string): Promise<void> {
+    await this.npm.removeTag(this.principal, this.repository, name, tag);
   }
 
   async blob(digest: string, artifactId: string): Promise<void> {

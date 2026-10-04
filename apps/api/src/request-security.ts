@@ -16,6 +16,7 @@ import { sendFailure } from './http-errors.js';
 import type { HttpFailure } from './http-failure.js';
 import { isRegistry, registryCredential, sendOciFailure } from './oci-errors.js';
 import { isLfs, lfsPrefix, sendLfsFailure } from './lfs-errors.js';
+import { isNpm, sendNpmFailure } from './npm-errors.js';
 
 interface Security {
   config: Pick<ServerConfig, 'keys'>;
@@ -100,9 +101,10 @@ async function linkRequest(
   registerOwner(holder.id);
   return true;
 }
-/** The registry answers in its own envelope (ADR 0063); every other route in Arkvory's. */
+/** Protocols answer in their own envelopes (ADR 0063, 0065, 0066); /api/v1 in Arkvory's. */
 function refuse(request: FastifyRequest, reply: FastifyReply, failure: HttpFailure) {
   if (isLfs(request)) return sendLfsFailure(request, reply, failure);
+  if (isNpm(request)) return sendNpmFailure(request, reply, failure);
   return isRegistry(request)
     ? sendOciFailure(request, reply, failure)
     : sendFailure(request, reply, failure);
@@ -110,8 +112,8 @@ function refuse(request: FastifyRequest, reply: FastifyReply, failure: HttpFailu
 /** Bearer everywhere; the registry also takes the key as a Basic password (docker login). */
 function credentialOf(request: FastifyRequest): string {
   const auth = request.headers.authorization;
-  // docker login and git's credential helper both send the key as a Basic password.
-  if (isRegistry(request) || isLfs(request)) return registryCredential(auth);
+  // docker login, git's credential helper and npm's `_auth` send the key as a Basic password.
+  if (isRegistry(request) || isLfs(request) || isNpm(request)) return registryCredential(auth);
   return auth?.startsWith('Bearer ') ? auth.slice(7) : '';
 }
 // Public probes manage their own availability answer and never touch credentials.
@@ -172,7 +174,8 @@ export function registerRequestSecurity(app: FastifyInstance, dependencies: Secu
       request.routeOptions.url === '/api/v1/auth/activate-key',
     );
     if (!authenticated) {
-      if (!isRegistry(request) && !isLfs(request)) reply.header('WWW-Authenticate', 'Bearer');
+      if (!isRegistry(request) && !isLfs(request) && !isNpm(request))
+        reply.header('WWW-Authenticate', 'Bearer');
       await refuse(request, reply, {
         code: 'unauthorized',
         message: 'Valid service key required',

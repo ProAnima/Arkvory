@@ -70,6 +70,9 @@ function target() {
     ociUntag: async (image, tag) => t.log.push(`untag ${image}:${tag}`),
     ociForget: async (image, digest) => t.log.push(`forget ${image}@${digest}`),
     lfsObject: async (oid, id) => t.log.push(`lfs ${oid}=${id}`),
+    npmVersion: async (id) => t.log.push(`npm ${id}`),
+    npmTag: async (name, tag, version) => t.log.push(`npm-tag ${name}@${tag}=${version}`),
+    npmUntag: async (name, tag) => t.log.push(`npm-untag ${name}@${tag}`),
   };
   return t;
 }
@@ -281,5 +284,22 @@ test('after the seed, registry entries below its head are replayed in order, oth
   assert.deepEqual(
     t.log.filter((line) => !line.startsWith('annotate') && !line.startsWith('stages')),
     [`forget team/web@${digest('2')}`, 'copy m', 'copy l'],
+  );
+
+  // npm versions come from the copied tarball; tags follow by name; bad details are skipped.
+  t.log.length = 0;
+  const npm = (detail) => JSON.stringify({ name: 'com.example.tools', ...detail });
+  s.feed.push(
+    entry('13', 'npm.version', 'l', npm({ version: '1.0.0' })),
+    entry('14', 'npm.tag', 'l', npm({ tag: 'latest', version: '1.0.0' })),
+    entry('15', 'npm.tag.delete', 'l', npm({ tag: 'beta' })),
+    entry('16', 'npm.tag', 'l', '{"name":"Bad Name","tag":"latest","version":"1.0.0"}'),
+    entry('17', 'npm.version', 'gone', npm({ version: '2.0.0' })),
+  );
+  s.head = '17';
+  await settle(mirror(s, t, st));
+  assert.deepEqual(
+    t.log.filter((line) => line.startsWith('npm')),
+    ['npm l', 'npm-tag com.example.tools@latest=1.0.0', 'npm-untag com.example.tools@beta'],
   );
 });

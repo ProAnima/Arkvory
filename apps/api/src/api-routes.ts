@@ -24,6 +24,7 @@ import { registerLinkRoutes } from './link-routes.js';
 import { registerOciRoutes } from './oci-routes.js';
 import { registerRawRoutes } from './raw-routes.js';
 import { registerLfsRoutes } from './lfs-routes.js';
+import { registerNpmRoutes } from './npm-routes.js';
 
 interface Composition {
   services: ReturnType<typeof createApiServices>;
@@ -79,6 +80,17 @@ export function registerApiRoutes(app: FastifyInstance, dependencies: Compositio
   });
   registerLfsRoutes(app, {
     lfs: s.lfs,
+    principal,
+    signal,
+    context,
+    modifying,
+    sendContent,
+    bandwidth: transfers.uploadBandwidth,
+    policy,
+    diagnostics,
+  });
+  registerNpmRoutes(app, {
+    npm: s.npm,
     principal,
     signal,
     context,

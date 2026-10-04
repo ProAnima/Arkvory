@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash, randomBytes } from 'node:crypto';
 import { pair } from './mirror-fixture.mjs';
+import { npmPublishBody, npmTarball } from '../npm-fixtures.mjs';
 
 const digestOf = (bytes) => `sha256:${createHash('sha256').update(bytes).digest('hex')}`;
 const basic = (headers) =>
@@ -156,6 +157,71 @@ test('Git LFS objects reach the mirror before and after its seed', async (t) => 
     url: `/lfs/releases/objects/${early}`,
     headers: { ...mirror.headers, 'content-type': 'application/octet-stream' },
     payload: before,
+  });
+  assert.equal(refused.statusCode, 409);
+});
+
+async function publishNpm(f, version, bytes, tags) {
+  const tarball = npmTarball(
+    { name: 'com.proanima.tools', version, unity: '2022.3' },
+    { 'Runtime/Atlas.bin': bytes },
+  );
+  const response = await f.app.inject({
+    method: 'PUT',
+    url: '/npm/releases/com.proanima.tools',
+    headers: { ...f.headers, 'content-type': 'application/json' },
+    payload: npmPublishBody('com.proanima.tools', version, tarball, tags),
+  });
+  assert.equal(response.statusCode, 201, response.body);
+  return tarball;
+}
+
+test('npm versions and dist-tags reach the mirror before and after its seed', async (t) => {
+  const { source, mirror, settle } = await pair(t);
+  const first = await publishNpm(source, '1.0.0', randomBytes(100 * 1024), ['latest']);
+  await settle();
+  const second = await publishNpm(source, '1.1.0', randomBytes(50 * 1024), ['beta']);
+  const moved = await source.app.inject({
+    method: 'PUT',
+    url: '/npm/releases/-/package/com.proanima.tools/dist-tags/latest',
+    headers: { ...source.headers, 'content-type': 'application/json' },
+    payload: '"1.1.0"',
+  });
+  assert.equal(moved.statusCode, 200, moved.body);
+  const removed = await source.app.inject({
+    method: 'DELETE',
+    url: '/npm/releases/-/package/com.proanima.tools/dist-tags/beta',
+    headers: source.headers,
+  });
+  assert.equal(removed.statusCode, 200, removed.body);
+  await settle();
+
+  const packument = (
+    await mirror.app.inject({
+      url: '/npm/releases/com.proanima.tools',
+      headers: mirror.readerHeaders,
+    })
+  ).json();
+  assert.deepEqual(packument['dist-tags'], { latest: '1.1.0' });
+  assert.equal(packument.versions['1.0.0'].unity, '2022.3');
+  for (const [version, tarball] of [
+    ['1.0.0', first],
+    ['1.1.0', second],
+  ]) {
+    const { dist } = packument.versions[version];
+    assert.equal(dist.shasum, createHash('sha1').update(tarball).digest('hex'));
+    const download = await mirror.app.inject({
+      url: new URL(dist.tarball).pathname,
+      headers: mirror.readerHeaders,
+    });
+    assert.deepEqual(download.rawPayload, tarball);
+  }
+  // A mirror is read-only for publishing too.
+  const refused = await mirror.app.inject({
+    method: 'PUT',
+    url: '/npm/releases/com.proanima.tools',
+    headers: { ...mirror.headers, 'content-type': 'application/json' },
+    payload: npmPublishBody('com.proanima.tools', '2.0.0', first),
   });
   assert.equal(refused.statusCode, 409);
 });

@@ -20,6 +20,9 @@ export { PostgresOciIndex } from './oci-index.js';
 export { FileOciStaging } from './oci-staging.js';
 export { FileRawStaging } from './raw-staging.js';
 export { PostgresLfsIndex, PostgresLfsLocks } from './lfs-store.js';
+export { PostgresNpmIndex } from './npm-store.js';
+export { FileNpmPublishStaging, NpmPublishBody } from './npm-publish-body.js';
+export { GzipNpmTarballInspector } from './npm-tarball.js';
 export { PostgresSecurityAudit, SECURITY_AUDIT_RETENTION } from './security-audit.js';
 export { PostgresServices } from './service-accounts.js';
 

@@ -36,6 +36,8 @@ const exclusions = [
   ...registryMethods.map((method) => ({ method, url: registryRoute })),
   // Git LFS follows the git-lfs batch, transfer and locking APIs (ADR 0065).
   ...lfsRoutes.map(([method, url]) => ({ method, url })),
+  // The npm registry protocol for Unity Package Manager and npm (ADR 0066).
+  ...['GET', 'HEAD', 'PUT', 'DELETE'].map((method) => ({ method, url: '/npm/:repository/*' })),
 ];
 export function registerContractGuard(app: FastifyInstance): void {
   const routes: RuntimeRoute[] = [];

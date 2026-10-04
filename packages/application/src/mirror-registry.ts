@@ -2,18 +2,56 @@ import {
   isLfsOid,
   isOciDigest,
   lfsObjectAction,
+  npmFeedActions,
   ociFeedActions,
+  parseNpmDetail,
   parseOciDetail,
 } from '@proanima/arkvory-domain';
 import type { CatalogFeedEntry } from './catalog-ports.js';
 import type { MirrorTarget } from './mirror-ports.js';
 
 /**
- * Index changes of the feed: container registry (ADR 0063) and Git LFS objects (ADR 0065). They
- * have no listing to seed from, so a mirror replays them; it applies them to its own rows.
+ * Index changes of the feed: container registry (ADR 0063), Git LFS objects (ADR 0065) and npm
+ * packages (ADR 0066). They have no listing to seed from, so a mirror replays them; it applies
+ * them to its own rows.
  */
 export const isRegistryChange = (action: string) =>
-  action.startsWith('oci.') || action === lfsObjectAction;
+  action.startsWith('oci.') || action.startsWith('npm.') || action === lfsObjectAction;
+
+type Target = Pick<
+  MirrorTarget,
+  | 'ociBlob'
+  | 'ociManifest'
+  | 'ociUntag'
+  | 'ociForget'
+  | 'lfsObject'
+  | 'npmVersion'
+  | 'npmTag'
+  | 'npmUntag'
+>;
+
+/** npm entries; false for actions of the other registries. */
+async function applyNpmChange(
+  change: CatalogFeedEntry,
+  target: Target,
+  refresh: (id: string) => Promise<boolean>,
+): Promise<boolean> {
+  const detail = parseNpmDetail(change.detail);
+  switch (change.action) {
+    case npmFeedActions.version:
+      if (await refresh(change.artifactId)) await target.npmVersion(change.artifactId);
+      return true;
+    case npmFeedActions.tag:
+      if (detail?.tag && detail.version)
+        await target.npmTag(detail.name, detail.tag, detail.version);
+      return true;
+    case npmFeedActions.tagDeleted:
+      if (detail?.tag) await target.npmUntag(detail.name, detail.tag);
+      return true;
+    default:
+      return false;
+  }
+}
 
 /**
  * Applies one registry change of the source. Blob and manifest rows point at artifacts with the
@@ -23,9 +61,10 @@ export const isRegistryChange = (action: string) =>
  */
 export async function applyRegistryChange(
   change: CatalogFeedEntry,
-  target: Pick<MirrorTarget, 'ociBlob' | 'ociManifest' | 'ociUntag' | 'ociForget' | 'lfsObject'>,
+  target: Target,
   refresh: (id: string) => Promise<boolean>,
 ): Promise<void> {
+  if (await applyNpmChange(change, target, refresh)) return;
   const id = change.artifactId;
   const detail = parseOciDetail(change.detail);
   const named = detail && 'digest' in detail ? detail : null;

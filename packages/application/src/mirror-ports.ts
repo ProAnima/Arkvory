@@ -94,6 +94,11 @@ export interface MirrorTarget {
   ociForget(image: string, digest: string): Promise<void>;
   /** The Git LFS object row of an oid (ADR 0065), over the copied artifact; repeatable. */
   lfsObject(oid: string, artifactId: string): Promise<void>;
+  /** The npm version of a copied tarball (ADR 0066), derived from its package.json. */
+  npmVersion(artifactId: string): Promise<void>;
+  /** Unknown versions are skipped: the source deleted them since. */
+  npmTag(name: string, tag: string, version: string): Promise<void>;
+  npmUntag(name: string, tag: string): Promise<void>;
 }
 
 export type MirrorPhase = 'seeding' | 'following';

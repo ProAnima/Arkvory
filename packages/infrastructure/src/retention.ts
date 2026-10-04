@@ -35,7 +35,8 @@ export const candidateSql = `SELECT u.id,u.descriptor->>'name' AS name,u.size::t
    EXISTS(SELECT 1 FROM arkvory_oci_blobs b JOIN arkvory_oci_references o
      ON o.repository=b.repository AND o.target=b.digest
      WHERE b.repository=u.repository AND b.artifact_id=u.id) OR
-   EXISTS(SELECT 1 FROM arkvory_lfs_objects l WHERE l.repository=u.repository AND l.artifact_id=u.id)) AS referenced,
+   EXISTS(SELECT 1 FROM arkvory_lfs_objects l WHERE l.repository=u.repository AND l.artifact_id=u.id) OR
+   EXISTS(SELECT 1 FROM arkvory_npm_versions n WHERE n.repository=u.repository AND n.artifact_id=u.id)) AS referenced,
   (EXISTS(SELECT 1 FROM arkvory_asset_revisions r WHERE r.artifact_id=u.id) OR
    EXISTS(SELECT 1 FROM arkvory_assets r WHERE r.artifact_id=u.id)) AS asset,
   EXISTS(SELECT 1 FROM arkvory_attachment_targets t WHERE t.target_id=u.id) AS attached,

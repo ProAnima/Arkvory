@@ -292,6 +292,15 @@ export class ServiceMirrorTarget implements MirrorTarget {
   lfsObject(oid: string, artifactId: string): Promise<void> {
     return this.lfs.addObject(this.principal, this.repository, oid, artifactId);
   }
+  npmVersion(artifactId: string): Promise<void> {
+    return this.registry.npmVersion(artifactId);
+  }
+  npmTag(name: string, tag: string, version: string): Promise<void> {
+    return this.registry.npmTag(name, tag, version);
+  }
+  npmUntag(name: string, tag: string): Promise<void> {
+    return this.registry.npmUntag(name, tag);
+  }
 
   async asset(asset: MirrorAsset): Promise<void> {
     let current: { revision: number; artifactId: string } | null = null;
