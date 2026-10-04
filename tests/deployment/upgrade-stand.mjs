@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -37,17 +38,55 @@ async function previousRelease(work) {
   return { version: listing.version, path };
 }
 
+const newer = (version, than) => {
+  const [a, b] = [version, than].map((text) => text.split('.').map(Number));
+  for (let index = 0; index < 3; index++)
+    if ((a[index] ?? 0) !== (b[index] ?? 0)) return (a[index] ?? 0) > (b[index] ?? 0);
+  return false;
+};
+
+/**
+ * The candidate's .deb when it is newer than the previous release (a release run). A verify run
+ * packages 0.0.1, which the updater refuses as a downgrade: the same code is packaged again as
+ * the next minor version, as the native-package gate does.
+ */
+async function upgradeCandidate(previousVersion, work) {
+  const listing = JSON.parse(await readFile(join(candidate, 'native-linux.json'), 'utf8'));
+  if (newer(listing.version, previousVersion))
+    return { version: listing.version, path: join(candidate, 'Arkvory-amd64.deb') };
+  const [major, minor] = previousVersion.split('.').map(Number);
+  const version = `${String(major)}.${String(minor + 1)}.0`;
+  const base = join(work, 'base');
+  const output = join(work, 'native');
+  assert.ok(process.env.npm_execpath, 'Run through npm gate');
+  const npm = [process.env.npm_execpath, 'run', 'release:package', '--', version, base];
+  execFileSync(process.execPath, npm, { stdio: 'inherit' });
+  execFileSync(process.execPath, ['scripts/package-native.mjs', base, output], {
+    stdio: 'inherit',
+  });
+  return { version, path: join(output, 'Arkvory-amd64.deb') };
+}
+/** The failure output of a command expected to fail; null when it succeeded. */
+function failureOf(action) {
+  try {
+    action();
+    return null;
+  } catch (error) {
+    return `${String(error.stdout ?? '')}${String(error.stderr ?? '')}`;
+  }
+}
+
 const work = await mkdtemp(join(tmpdir(), 'arkvory-upgrade-'));
 const stand = standNetwork();
 let passed = false;
 try {
   const previous = await previousRelease(work);
-  const release = JSON.parse(await readFile(join(candidate, 'native-linux.json'), 'utf8'));
+  const release = await upgradeCandidate(previous.version, work);
   const host = stand.start('arkvory-upgrade', await standImage());
   await host.booted();
   host.exec(['mkdir', '-p', '/stand']);
   host.copy(previous.path, '/stand/previous.deb');
-  host.copy(join(candidate, 'Arkvory-amd64.deb'), '/stand/candidate.deb');
+  host.copy(release.path, '/stand/candidate.deb');
   host.copy(resolve('tests/deployment/stand-probe.mjs'), '/stand/stand-probe.mjs');
   const version = () => host.exec(['dpkg-query', '-W', '-f=${Version}', 'proanima-arkvory']);
   host.exec(['dpkg', '-i', '/stand/previous.deb']);
@@ -62,7 +101,8 @@ try {
   ];
 
   // A schema change without a backup vault: refused before any change, the old release serves.
-  assert.throws(() => host.exec(['dpkg', '-i', '/stand/candidate.deb']));
+  const refused = failureOf(() => host.exec(['dpkg', '-i', '/stand/candidate.deb']));
+  assert.match(String(refused), /No backup vault is configured/);
   host.probe('ready', on);
   for (const item of kept)
     assert.equal(host.probe('content', { ...on, id: item.id }).sha256, item.sha256);
