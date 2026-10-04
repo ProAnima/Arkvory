@@ -34,7 +34,7 @@ export interface RawFile {
   readonly consumed: boolean;
 }
 type Current = { revision: number; artifactId: string; size: number; sha256: string } | null;
-type Storage = Pick<StorageService, 'artifact' | 'create' | 'upload' | 'maxObjectBytes'>;
+type Storage = Pick<StorageService, 'artifact' | 'cancel' | 'create' | 'upload' | 'maxObjectBytes'>;
 
 const absent = (error: unknown) => error instanceof ArkvoryError && error.code === 'not_found';
 /** The artifact is named after the file; long or unusual names keep a neutral one. */
@@ -124,7 +124,14 @@ export class RawFiles {
       labels: [],
       metadata: {},
     });
-    await this.storage.upload(principal, repository, created.id, source, cancellation);
+    try {
+      await this.storage.upload(principal, repository, created.id, source, cancellation);
+    } catch (error) {
+      // Each request has its own key: a failed one would otherwise hold its size against the
+      // quota until it expires, and a retrying client would reserve it again every attempt.
+      await this.storage.cancel(principal, repository, created.id).catch(() => undefined);
+      throw error;
+    }
     const entry = await this.catalog.setAsset(
       principal,
       repository,

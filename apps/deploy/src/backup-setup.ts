@@ -88,22 +88,43 @@ interface Progress {
   restarted: boolean;
 }
 
-/** Every step runs even after a failed one; the agent restarts only if it was restarted. */
 /**
- * Restores runtime.json and the previous exposure; a restarted agent must report the previous
- * state (a vault or none) before this returns, so a status read right after the command shows
- * what is configured, not the heartbeat of the refused vault.
+ * The vault the agent reported before the change: its ID, null for none, undefined when the
+ * agent was not online to say. A rollback waits for exactly that report.
+ */
+async function reportedVault(control: BackupServiceControl): Promise<string | null | undefined> {
+  const status = await control.backupStatus().catch(() => null);
+  if (!status?.agent.online) return undefined;
+  return status.vault.configured ? status.vault.id : null;
+}
+
+/** The previous vault again, by its ID when known: the refused one may have been configured too. */
+function restored(previousVault: string | null | undefined, hadVault: boolean) {
+  return (status: BackupStatusResponse) =>
+    status.agent.online &&
+    (previousVault === undefined
+      ? status.vault.configured === hadVault
+      : previousVault === null
+        ? !status.vault.configured
+        : status.vault.configured && status.vault.id === previousVault);
+}
+
+/**
+ * Restores runtime.json and the previous exposure; every step runs even after a failed one. A
+ * restarted agent must report the previous state (that vault or none) before this returns, so a
+ * status read right after the command shows what is configured, not the refused vault's heartbeat.
  */
 async function rollback(
   path: string,
-  previous: string,
+  previous: { readonly text: string; readonly vault: string | null | undefined },
   progress: Progress,
   control: BackupServiceControl,
   wait: BackupWait | undefined,
 ): Promise<string> {
   const problems: string[] = [];
-  const hadVault = runtimeEnvironment(JSON.parse(previous))['ARKVORY_BACKUP_VAULT'] !== undefined;
-  const steps = [() => replaceText(path, previous)];
+  const hadVault =
+    runtimeEnvironment(JSON.parse(previous.text))['ARKVORY_BACKUP_VAULT'] !== undefined;
+  const steps = [() => replaceText(path, previous.text)];
   if (progress.undo) steps.push(progress.undo);
   if (progress.restarted)
     steps.push(
@@ -111,7 +132,7 @@ async function rollback(
       async () => {
         const reported = await waitForBackup(
           () => control.backupStatus(),
-          (status) => status.agent.online && status.vault.configured === hadVault,
+          restored(previous.vault, hadVault),
           wait,
         );
         if (!reported)
@@ -153,6 +174,7 @@ export async function configureBackup(
     next['ARKVORY_BACKUP_VAULT'] = state.mode === 'compose' ? containerVault : location.path;
   else delete next['ARKVORY_BACKUP_VAULT'];
   await control.adopt(state.current);
+  const previousVault = await reportedVault(control);
   const progress: Progress = { undo: null, restarted: false };
   let vaultId = location?.vaultId ?? null;
   try {
@@ -178,7 +200,8 @@ export async function configureBackup(
     // A timed-out command may still change the installation; never race it with a rollback.
     if (isUnconfirmedTermination(error)) throw error;
     const reason = error instanceof Error ? error.message : 'restart failed';
-    const incomplete = await rollback(path, previous, progress, control, options.wait);
+    const before = { text: previous, vault: previousVault };
+    const incomplete = await rollback(path, before, progress, control, options.wait);
     throw new Error(
       `The backup vault was not ${location ? 'configured' : 'turned off'}; the previous configuration is restored (${reason})${incomplete}`,
       { cause: error },

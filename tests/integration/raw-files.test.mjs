@@ -65,6 +65,11 @@ test('curl stores files by path; the same bytes again add no revision', async (t
   const wrong = await curl([...auth, '-H', `X-Checksum-Sha256: ${sha(first)}`, '-T', file, url]);
   assert.equal(wrong.status, 422);
   assert.equal(wrong.body.code, 'integrity_mismatch');
+  // ...and holds no quota: the failed attempt is cancelled, not left pending for a week.
+  const pending = await f.catalog.pool.query(
+    "SELECT count(*)::int AS n FROM arkvory_uploads WHERE status='pending'",
+  );
+  assert.equal(pending.rows[0].n, 0);
 
   // Downloads: whole file, Range, HEAD; the current revision is served.
   const output = join(work, 'out.bin');
@@ -153,6 +158,11 @@ test('the SDK stores in one request; arkvoryctl put and get go through resumable
     end: 9,
   });
   assert.deepEqual(Buffer.from(await part.arrayBuffer()), bytes.subarray(0, 10));
+  // `..` would be resolved into another repository's route before any request: refused locally.
+  for (const path of ['../../other/raw/x.zip', 'a//b', 'a/./b', 'C:/x'])
+    await assert.rejects(client.raw.putRawFile('releases', path, new Blob([bytes])), {
+      code: 'invalid_argument',
+    });
 
   const env = {
     ...process.env,

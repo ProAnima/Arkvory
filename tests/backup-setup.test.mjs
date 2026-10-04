@@ -310,3 +310,35 @@ test('inspection reports the canonical path, vault identity and emptiness', asyn
   await writeFile(join(vault, 'vault.json'), '{"format":"other"}');
   await assert.rejects(inspectVault(vault, context), /not an Arkvory vault/);
 });
+
+test('a refused second vault rolls back to the first one by its ID, not to any vault', async (t) => {
+  const root = await installation(t);
+  const first = await directory(t, 'arkvory-vault-');
+  const firstId = await vaultDocument(first);
+  const second = await directory(t, 'arkvory-vault-');
+  const secondId = await vaultDocument(second);
+  const path = join(root, 'config/runtime.json');
+  const runtime = { ...(await runtimeOf(root)), ARKVORY_BACKUP_VAULT: first };
+  await writeFile(path, JSON.stringify(runtime, null, 2) + '\n');
+  const restarts = (calls) => calls.filter((call) => call === 'restart').length;
+  const report = (recovers) => (calls) =>
+    restarts(calls) === 0 || (recovers && restarts(calls) >= 2)
+      ? status({ configured: true, available: true, id: firstId })
+      : // The second vault stays in the heartbeat: configured, but not available.
+        status({ configured: true, available: false, id: secondId });
+  const recovered = await configureBackup(
+    root,
+    state('windows'),
+    { vault: second },
+    services(report(true)),
+    { wait },
+  ).catch((error) => error);
+  assert.match(recovered.message, /previous configuration is restored/);
+  assert.doesNotMatch(recovered.message, /rollback incomplete/);
+  assert.equal((await runtimeOf(root)).ARKVORY_BACKUP_VAULT, first);
+  // The refused vault's heartbeat is configured too; it must not pass for the first one.
+  await assert.rejects(
+    configureBackup(root, state('windows'), { vault: second }, services(report(false)), { wait }),
+    /rollback incomplete: the backup agent did not report the previous configuration/,
+  );
+});

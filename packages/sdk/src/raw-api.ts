@@ -4,9 +4,20 @@ import type { HttpPort } from './http-transport.js';
 import { repositoryPath } from './http-transport.js';
 import { ArkvoryClientError } from './transfer.js';
 
-/** The path of a raw file; each segment encoded, the slashes stay folders. */
+/**
+ * The path of a raw file; each segment encoded, the slashes stay folders. Checked here with the
+ * server's rules: URL resolution would turn `..` into another route before the server saw it.
+ */
 function rawPath(repository: string, path: string) {
-  return repositoryPath(repository, `raw/${path.split('/').map(encodeURIComponent).join('/')}`);
+  const segments = path.split('/');
+  if (
+    path.length > 1024 ||
+    path.includes('\\') ||
+    path.includes(':') ||
+    segments.some((part) => part === '' || part === '.' || part === '..' || /\p{Cc}/u.test(part))
+  )
+    throw new ArkvoryClientError('invalid_argument', 'Invalid file path');
+  return repositoryPath(repository, `raw/${segments.map(encodeURIComponent).join('/')}`);
 }
 
 /**
