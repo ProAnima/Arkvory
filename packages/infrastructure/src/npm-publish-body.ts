@@ -5,6 +5,8 @@ import type { FileRawStaging } from './raw-staging.js';
 const quote = 0x22;
 const backslash = 0x5c;
 const maxKeyBytes = 1024;
+/** npm documents nest a few levels; each level costs a frame, so a deep body is refused early. */
+const maxDepth = 64;
 const base64Text = /^[A-Za-z0-9+/]*$/;
 
 interface Frame {
@@ -92,10 +94,9 @@ export class NpmPublishBody {
     const top = this.stack.at(-1);
     switch (byte) {
       case 0x7b:
-        this.stack.push({ array: false, key: null, expectKey: true });
-        return false;
       case 0x5b:
-        this.stack.push({ array: true, key: null, expectKey: false });
+        if (this.stack.length >= maxDepth) throw invalid('The publish document nests too deeply');
+        this.stack.push({ array: byte === 0x5b, key: null, expectKey: byte === 0x7b });
         return false;
       case 0x7d:
       case 0x5d:

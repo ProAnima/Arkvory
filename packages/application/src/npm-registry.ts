@@ -12,6 +12,7 @@ import {
 import type { NpmDigests, NpmVersionRecord, Principal } from '@proanima/arkvory-domain';
 import type { Cancellation } from './ports.js';
 import type { StorageService } from './storage.js';
+import { unusable } from './upload-reuse.js';
 
 /** What the registry derives from a tarball's bytes, alike for a publish and for a mirror. */
 export interface NpmTarballFacts {
@@ -25,7 +26,8 @@ export interface NpmTarballFacts {
   readonly integrity: NpmDigests;
 }
 export interface NpmTarballInspector {
-  inspect(source: AsyncIterable<Uint8Array>): Promise<NpmTarballFacts>;
+  /** Reads the whole tarball; stops with the cancellation (a publish whose client is gone). */
+  inspect(source: AsyncIterable<Uint8Array>, cancellation?: Cancellation): Promise<NpmTarballFacts>;
 }
 /** The tarball of an `npm publish` body, staged; its JSON document stays bounded in memory. */
 export interface NpmPublishStaging {
@@ -144,6 +146,7 @@ export class NpmRegistry {
     private readonly inspector: NpmTarballInspector,
     private readonly reader: NpmIndexReader,
     private readonly writer: NpmIndexWriter,
+    private readonly ids: { next(): string; now(): string },
   ) {}
 
   async packument(principal: Principal, repository: string, name: string) {
@@ -217,7 +220,7 @@ export class NpmRegistry {
       const request = parseNpmPublish(staged.document, name);
       if (staged.attachments !== 1)
         throw new ArkvoryError('invalid_input', 'The publish carries no tarball data');
-      const facts = await this.inspector.inspect(this.staging.read(staged.id));
+      const facts = await this.inspector.inspect(this.staging.read(staged.id), cancellation);
       checkDeclared(request.declared, facts);
       const manifest = parseNpmManifest(facts.manifest);
       if (manifest.name !== name || manifest.version !== request.version)
@@ -227,17 +230,22 @@ export class NpmRegistry {
         if (current !== facts.sha1) throw versionExists();
         return { created: false };
       }
-      const created = await this.storage.create(principal, repository, `npm-${facts.sha256}`, {
+      const descriptor = {
         name: npmTarballFile(name, request.version),
         size: String(facts.size),
         sha256: facts.sha256,
         labels: ['npm'],
         metadata: {},
-      });
-      if (created.status === 'cancelled')
-        throw new ArkvoryError('conflict', 'This tarball was published and deleted', {
-          reason: 'version_exists',
-        });
+      };
+      const key = `npm-${facts.sha256}`;
+      let created = await this.storage.create(principal, repository, key, descriptor);
+      if (unusable(created, this.ids.now()))
+        created = await this.storage.create(
+          principal,
+          repository,
+          `${key}.${this.ids.next()}`,
+          descriptor,
+        );
       if (created.status === 'pending') {
         const bytes = this.staging.read(staged.id);
         await this.storage.upload(principal, repository, created.id, bytes, cancellation);

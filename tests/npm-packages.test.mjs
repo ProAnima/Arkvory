@@ -185,3 +185,37 @@ test('a packument serves each manifest with the registry name, version and dist'
   });
   assert.equal(packument.time['1.0.0'], '2026-10-04T10:00:00.000Z');
 });
+
+test('a tarball is read to its end: a second or linked manifest is refused, as npm keeps the last', async () => {
+  const twice = gzipSync(
+    tar(entry('package/package.json', manifest()), entry('package/package.json', manifest())),
+  );
+  await assert.rejects(inspect(twice), /more than one package\.json/);
+  // pacote drops `.` segments and the first directory: both land on package.json.
+  const dotted = gzipSync(
+    tar(entry('package/package.json', manifest()), entry('other/./package.json', manifest())),
+  );
+  await assert.rejects(inspect(dotted), /more than one package\.json/);
+  const linked = gzipSync(
+    tar(entry('package/package.json', Buffer.alloc(0), '2'), entry('x/package.json', manifest())),
+  );
+  await assert.rejects(inspect(linked), /regular file/);
+  const contiguous = gzipSync(tar(entry('package/package.json', manifest(), '7')));
+  assert.equal((await inspect(contiguous)).manifest.version, '1.2.0');
+  const hugePax = gzipSync(tar(entry('PaxHeader', Buffer.alloc(65 * 1024, 0x61), 'x')));
+  await assert.rejects(inspect(hugePax), /path header is too large/);
+});
+
+test('a gzip bomb, a deep publish body and a cancelled inspection stop early', async () => {
+  const bomb = gzipSync(tar(entry('package/zeros.bin', Buffer.alloc(80 * 1024 * 1024))));
+  assert.ok(bomb.length < 200 * 1024, 'the archive itself is small');
+  await assert.rejects(inspect(bomb), /expands too far/);
+  const reader = new NpmPublishBody(64 * 1024);
+  assert.throws(() => reader.push(Buffer.from('{"a":' + '['.repeat(100))), /nests too deeply/);
+  const controller = new AbortController();
+  controller.abort();
+  await assert.rejects(
+    new GzipNpmTarballInspector().inspect(chunks(gzipSync(tar()), 64), controller.signal),
+    { name: 'AbortError' },
+  );
+});

@@ -8,6 +8,7 @@ import type { createContentSender } from './download-routes.js';
 import type { resolveUploadTimeouts } from './upload-policy.js';
 import { UploadReceiver } from './upload-lifetime.js';
 import { registerNpmErrors } from './npm-errors.js';
+import { publicOrigin } from './public-origin.js';
 
 interface Npm {
   readonly npm: NpmRegistry;
@@ -76,7 +77,7 @@ function targetOf(request: Request): NpmTarget {
 }
 
 const base = (request: Request) =>
-  `${request.protocol}://${request.host}/npm/${encodeURIComponent(request.params.repository)}`;
+  `${publicOrigin(request).origin}/npm/${encodeURIComponent(request.params.repository)}`;
 const count = (value: unknown, fallback: number, max: number) => {
   const number = typeof value === 'string' && /^\d{1,6}$/.test(value) ? Number(value) : fallback;
   return Math.min(number, max);

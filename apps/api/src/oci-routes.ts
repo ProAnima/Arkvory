@@ -163,6 +163,8 @@ export function registerOciRoutes(app: FastifyInstance, s: Registry) {
   };
   void app.register((scope, _options, done) => {
     registerOciErrors(scope, s.context);
+    // Blob bodies stay streams whatever type a client declares; only manifests are parsed.
+    scope.removeAllContentTypeParsers();
     scope.addContentTypeParser(
       [...ociManifestTypes],
       { parseAs: 'buffer', bodyLimit: MAX_OCI_MANIFEST_BYTES },

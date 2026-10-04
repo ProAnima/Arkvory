@@ -10,6 +10,7 @@ import {
 import type { Principal } from '@proanima/arkvory-domain';
 import type { Cancellation } from './ports.js';
 import type { StorageService } from './storage.js';
+import { unusable } from './upload-reuse.js';
 
 export interface LfsLock {
   readonly id: string;
@@ -21,7 +22,11 @@ export interface LfsLock {
 }
 /** Object rows over artifacts (ADR 0065); every change is journaled in the repository feed. */
 export interface LfsIndex {
-  object(repository: string, oid: string): Promise<string | null>;
+  /** The available artifact holding the oid; null when there is none (or it was deleted). */
+  object(
+    repository: string,
+    oid: string,
+  ): Promise<{ readonly artifactId: string; readonly size: number } | null>;
   /** Points the oid at the artifact that now holds it, replacing a vanished one. */
   addObject(actor: Principal, repository: string, oid: string, artifactId: string): Promise<void>;
 }
@@ -49,8 +54,7 @@ export interface LfsObjectState {
   readonly present: boolean;
 }
 
-type Storage = Pick<StorageService, 'artifact' | 'create' | 'upload' | 'maxObjectBytes'>;
-const absent = (error: unknown) => error instanceof ArkvoryError && error.code === 'not_found';
+type Storage = Pick<StorageService, 'create' | 'upload' | 'maxObjectBytes'>;
 const lockPage = (value: unknown) =>
   typeof value === 'number' && Number.isSafeInteger(value) && value >= 1 && value <= 100
     ? value
@@ -67,7 +71,7 @@ export class GitLfs {
     private readonly storage: Storage,
     private readonly index: LfsIndex,
     private readonly locks: LfsLocks,
-    private readonly ids: { next(): string },
+    private readonly ids: { next(): string; now(): string },
   ) {}
 
   async batch(principal: Principal, repository: string, body: unknown) {
@@ -77,7 +81,7 @@ export class GitLfs {
     else authorizeAction(principal, repository, 'upload.create', ['write']);
     const objects: LfsObjectState[] = [];
     for (const { oid, size } of request.objects) {
-      const stored = await this.stored(principal, repository, oid);
+      const stored = await this.index.object(repository, oid);
       objects.push({ oid, size, present: stored !== null && stored.size === size });
     }
     return { operation: request.operation, objects };
@@ -87,7 +91,7 @@ export class GitLfs {
   async object(principal: Principal, repository: string, oid: string): Promise<string> {
     authorizeAction(principal, repository, 'content.read', ['read']);
     if (!isLfsOid(oid)) throw new LfsError(404, 'Object does not exist');
-    const stored = await this.stored(principal, repository, oid);
+    const stored = await this.index.object(repository, oid);
     if (!stored) throw new LfsError(404, 'Object does not exist');
     return stored.artifactId;
   }
@@ -95,7 +99,9 @@ export class GitLfs {
   /**
    * Stores one object of the basic transfer. The artifact store checks size and SHA-256 against
    * the oid while it writes. An object stored already is not sent again (`consumed` false); a
-   * retried upload of the same owner finds its artifact by the oid's idempotency key.
+   * retried upload of the same owner finds its artifact by the oid's idempotency key. An upload
+   * under that key which expired or was deleted starts over under a fresh key, so an interrupted
+   * push never blocks the object for its owner.
    */
   async upload(
     principal: Principal,
@@ -106,17 +112,24 @@ export class GitLfs {
   ): Promise<{ readonly consumed: boolean }> {
     authorizeAction(principal, repository, 'upload.create', ['write']);
     if (!isLfsOid(object.oid)) throw new LfsError(422, 'Invalid oid');
-    const stored = await this.stored(principal, repository, object.oid);
+    const stored = await this.index.object(repository, object.oid);
     if (stored && stored.size === object.size) return { consumed: false };
-    const created = await this.storage.create(principal, repository, `lfs-${object.oid}`, {
+    const descriptor = {
       name: object.oid,
       size: String(object.size),
       sha256: object.oid,
       labels: ['lfs'],
       metadata: {},
-    });
-    if (created.status === 'cancelled')
-      throw new LfsError(409, 'This object was stored and deleted; it cannot be uploaded again');
+    };
+    const key = `lfs-${object.oid}`;
+    let created = await this.storage.create(principal, repository, key, descriptor);
+    if (unusable(created, this.ids.now()))
+      created = await this.storage.create(
+        principal,
+        repository,
+        `${key}.${this.ids.next()}`,
+        descriptor,
+      );
     if (created.status === 'pending')
       await this.storage.upload(principal, repository, created.id, source, cancellation);
     await this.index.addObject(principal, repository, object.oid, created.id);
@@ -172,18 +185,6 @@ export class GitLfs {
     const removed = await this.locks.remove(repository, id);
     if (!removed) throw new LfsError(404, 'Lock does not exist');
     return removed;
-  }
-
-  private async stored(principal: Principal, repository: string, oid: string) {
-    const artifactId = await this.index.object(repository, oid);
-    if (!artifactId) return null;
-    try {
-      const upload = await this.storage.artifact(principal, repository, artifactId, 'content.read');
-      return { artifactId, size: upload.descriptor.size };
-    } catch (error) {
-      if (absent(error)) return null;
-      throw error;
-    }
   }
 }
 

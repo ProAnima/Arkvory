@@ -15,12 +15,18 @@ import { storedCorrelation } from './request-correlation.js';
 export class PostgresLfsIndex implements LfsIndex {
   constructor(private readonly pool: Pool) {}
 
-  async object(repository: string, oid: string): Promise<string | null> {
-    const result = await this.pool.query<{ artifact_id: string }>(
-      'SELECT artifact_id::text FROM arkvory_lfs_objects WHERE repository=$1 AND oid=$2',
+  async object(
+    repository: string,
+    oid: string,
+  ): Promise<{ readonly artifactId: string; readonly size: number } | null> {
+    const result = await this.pool.query<{ artifact_id: string; size: string }>(
+      `SELECT l.artifact_id::text, u.size::text FROM arkvory_lfs_objects l
+       JOIN arkvory_uploads u ON u.id=l.artifact_id AND u.status='available'
+       WHERE l.repository=$1 AND l.oid=$2`,
       [repository, oid],
     );
-    return result.rows[0]?.artifact_id ?? null;
+    const row = result.rows[0];
+    return row ? { artifactId: row.artifact_id, size: Number(row.size) } : null;
   }
 
   async addObject(
@@ -60,6 +66,8 @@ const lockOf = (row: LockRow): LfsLock => ({
   lockedAt: row.locked_at.toISOString(),
 });
 const columns = 'id::text, path, owner_id, owner_name, locked_at';
+/** Lock IDs are UUIDs; anything else names no lock (and must not reach the uuid cast). */
+const lockId = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
 /** File locks of the repositories; one per path, ordered by path for stable pages. */
 export class PostgresLfsLocks implements LfsLocks {
@@ -99,12 +107,12 @@ export class PostgresLfsLocks implements LfsLocks {
     after: string | null,
     limit: number,
   ): Promise<{ readonly locks: readonly LfsLock[]; readonly next: string | null }> {
-    const id = filter.id !== undefined && /^[0-9a-f-]{36}$/.test(filter.id) ? filter.id : null;
+    const id = filter.id !== undefined && lockId.test(filter.id) ? filter.id : null;
     if (filter.id !== undefined && id === null) return { locks: [], next: null };
     const result = await this.pool.query<LockRow>(
       `SELECT ${columns} FROM arkvory_lfs_locks
        WHERE repository=$1 AND ($2::text IS NULL OR path=$2) AND ($3::uuid IS NULL OR id=$3)
-         AND ($4::text IS NULL OR path > $4)
+         AND ($4::text IS NULL OR path COLLATE "C" > $4::text COLLATE "C")
        ORDER BY path COLLATE "C" LIMIT $5`,
       [repository, filter.path ?? null, id, after, limit + 1],
     );
@@ -117,7 +125,7 @@ export class PostgresLfsLocks implements LfsLocks {
   }
 
   async get(repository: string, id: string): Promise<LfsLock | null> {
-    if (!/^[0-9a-f-]{36}$/.test(id)) return null;
+    if (!lockId.test(id)) return null;
     const result = await this.pool.query<LockRow>(
       `SELECT ${columns} FROM arkvory_lfs_locks WHERE repository=$1 AND id=$2`,
       [repository, id],
@@ -127,7 +135,7 @@ export class PostgresLfsLocks implements LfsLocks {
   }
 
   async remove(repository: string, id: string): Promise<LfsLock | null> {
-    if (!/^[0-9a-f-]{36}$/.test(id)) return null;
+    if (!lockId.test(id)) return null;
     const result = await this.pool.query<LockRow>(
       `DELETE FROM arkvory_lfs_locks WHERE repository=$1 AND id=$2 RETURNING ${columns}`,
       [repository, id],

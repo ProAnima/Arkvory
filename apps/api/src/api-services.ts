@@ -64,10 +64,12 @@ function npmRegistry(
   service: StorageService,
   staging: FileRawStaging,
   pool: PostgresCatalog['pool'],
+  now: () => string,
 ) {
   const index = new PostgresNpmIndex(pool);
   const tarballs = new GzipNpmTarballInspector();
-  return new NpmRegistry(service, new FileNpmPublishStaging(staging), tarballs, index, index);
+  const ids = { next: randomUUID, now };
+  return new NpmRegistry(service, new FileNpmPublishStaging(staging), tarballs, index, index, ids);
 }
 
 /** Composition only: each registrar receives just the services it consumes. */
@@ -154,9 +156,9 @@ export function createApiServices(
       service,
       new PostgresLfsIndex(catalog.pool),
       new PostgresLfsLocks(catalog.pool),
-      { next: randomUUID },
+      { next: randomUUID, now },
     ),
-    npm: npmRegistry(service, rawStaging, catalog.pool),
+    npm: npmRegistry(service, rawStaging, catalog.pool, now),
     registry: new OciRegistry(
       service,
       new PostgresOciIndex(catalog.pool),

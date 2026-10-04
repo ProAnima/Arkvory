@@ -216,7 +216,7 @@ export class PostgresOciIndex implements OciIndex {
   ): Promise<string[]> {
     const result = await this.pool.query<{ tag: string }>(
       `SELECT tag FROM arkvory_oci_tags WHERE repository=$1 AND image=$2
-       AND ($3::text IS NULL OR tag > $3) ORDER BY tag COLLATE "C" LIMIT $4`,
+       AND ($3::text IS NULL OR tag COLLATE "C" > $3::text COLLATE "C") ORDER BY tag COLLATE "C" LIMIT $4`,
       [repository, image, after, limit],
     );
     return result.rows.map((row) => row.tag);

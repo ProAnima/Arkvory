@@ -8,6 +8,7 @@ import type { createContentSender } from './download-routes.js';
 import type { resolveUploadTimeouts } from './upload-policy.js';
 import { UploadReceiver } from './upload-lifetime.js';
 import { lfsMediaType, registerLfsErrors } from './lfs-errors.js';
+import { publicOrigin } from './public-origin.js';
 
 interface Lfs {
   readonly lfs: GitLfs;
@@ -38,12 +39,12 @@ const json = (reply: FastifyReply, status: number, body: unknown) =>
 
 /**
  * Hrefs of the basic transfer on this server. The client's own Authorization goes back in the
- * action header: git-lfs then sends the object request with it, over the same TLS connection
- * it came from; nothing else learns the credential.
+ * action header: git-lfs then sends the object request with it to the origin it came from.
+ * Never into a plain-HTTP href for another host: git-lfs would send the key in clear text.
  */
 function action(request: FastifyRequest<{ Params: Repository }>, oid: string) {
-  const origin = `${request.protocol}://${request.host}`;
-  const authorization = request.headers.authorization;
+  const { origin, secure } = publicOrigin(request);
+  const authorization = secure ? request.headers.authorization : undefined;
   return {
     href: `${origin}/lfs/${encodeURIComponent(request.params.repository)}/objects/${oid}`,
     ...(authorization ? { header: { Authorization: authorization } } : {}),
@@ -161,6 +162,8 @@ export function registerLfsRoutes(app: FastifyInstance, s: Lfs) {
   const receiver = new UploadReceiver(s.policy, s.bandwidth, report);
   void app.register((scope, _options, done) => {
     registerLfsErrors(scope, s.context);
+    // Object bodies stay streams whatever type git-lfs detects (text assets come as text/plain).
+    scope.removeAllContentTypeParsers();
     scope.addContentTypeParser(
       lfsMediaType,
       { parseAs: 'string', bodyLimit: 1024 * 1024 },

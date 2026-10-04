@@ -53,11 +53,18 @@ test('git pushes and clones large files through Arkvory; locks show their owner'
   await git(source, ['lfs', 'install', '--local']);
   await git(source, ['config', 'lfs.url', lfsUrl]);
   await git(source, ['config', `lfs.${lfsUrl}.locksverify`, 'true']);
-  await git(source, ['lfs', 'track', '*.bin', '*.uasset']);
+  await git(source, ['lfs', 'track', '*.bin', '*.uasset', '*.prefab']);
   const level = randomBytes(5 * 1024 * 1024 + 3);
   const texture = randomBytes(700 * 1024);
+  // Unity text assets: git-lfs sends them as text/plain, below and above the JSON body limit.
+  const prefab = (count) =>
+    Buffer.from(`%YAML 1.1\n${'--- !u!1 &1\nGameObject:\n  m_Name: Hero\n'.repeat(count)}`);
+  const small = prefab(10);
+  const large = prefab(5000);
   await writeFile(join(source, 'Level.bin'), level);
   await writeFile(join(source, 'Hero.uasset'), texture);
+  await writeFile(join(source, 'Small.prefab'), small);
+  await writeFile(join(source, 'Large.prefab'), large);
   await writeFile(join(source, 'README.md'), '# game\n');
   await git(source, ['add', '.']);
   await git(source, ['commit', '-m', 'assets']);
@@ -71,10 +78,7 @@ test('git pushes and clones large files through Arkvory; locks show their owner'
   );
   assert.deepEqual(
     rows.rows.map((row) => [row.oid, row.size]),
-    [
-      [sha(texture), String(texture.length)],
-      [sha(level), String(level.length)],
-    ],
+    [small, large, texture, level].map((bytes) => [sha(bytes), String(bytes.length)]),
   );
 
   // A fresh clone gets the bytes from Arkvory through the smudge filter.
@@ -82,12 +86,14 @@ test('git pushes and clones large files through Arkvory; locks show their owner'
   await git(work, ['-c', `lfs.url=${lfsUrl}`, 'clone', remote, copy]);
   assert.equal(sha(await readFile(join(copy, 'Level.bin'))), sha(level));
   assert.equal(sha(await readFile(join(copy, 'Hero.uasset'))), sha(texture));
+  assert.equal(sha(await readFile(join(copy, 'Small.prefab'))), sha(small));
+  assert.equal(sha(await readFile(join(copy, 'Large.prefab'))), sha(large));
 
   // Pushing the same objects again sends nothing new.
   await git(source, ['commit', '--allow-empty', '-m', 'again']);
   await git(source, ['push', 'origin', 'main']);
   const count = await f.catalog.pool.query('SELECT count(*)::int AS n FROM arkvory_uploads');
-  assert.equal(count.rows[0].n, 2);
+  assert.equal(count.rows[0].n, 4);
 
   // File locking for binary assets: the lock names its owner, another one cannot take it.
   // git-lfs 3 prints the new locks as a list.
@@ -147,4 +153,136 @@ test('the LFS API refuses wrong credentials, sizes and missing objects in its ow
     f.readerHeaders,
   );
   assert.equal(reader.status, 403);
+});
+
+test('lock pages follow byte order and malformed lock IDs are simply unknown', async (t) => {
+  const f = await setup(t);
+  const lfs = (method, path, body) =>
+    f.app.inject({
+      method,
+      url: `/lfs/releases/${path}`,
+      headers: { ...f.headers, 'content-type': 'application/vnd.git-lfs+json' },
+      ...(body === undefined ? {} : { payload: JSON.stringify(body) }),
+    });
+  for (const path of ['Assets/apple.unity', 'Assets/Zebra.unity', 'Assets/Beta.unity'])
+    assert.equal((await lfs('POST', 'locks', { path })).statusCode, 201);
+  // The database collation may differ from byte order (en_US puts `apple` before `Zebra`).
+  const seen = [];
+  let cursor = '';
+  do {
+    const page = (await lfs('GET', `locks?limit=1${cursor ? `&cursor=${cursor}` : ''}`)).json();
+    seen.push(...page.locks.map((lock) => lock.path));
+    cursor = page.next_cursor ? encodeURIComponent(page.next_cursor) : '';
+  } while (cursor);
+  assert.deepEqual(seen, ['Assets/Beta.unity', 'Assets/Zebra.unity', 'Assets/apple.unity']);
+  const odd = '-'.repeat(36);
+  assert.deepEqual((await lfs('GET', `locks?id=${odd}`)).json().locks, []);
+  assert.equal((await lfs('POST', `locks/${odd}/unlock`, {})).statusCode, 404);
+});
+
+test('an expired or cancelled attempt never blocks its object; write-only keys see stored ones', async (t) => {
+  const writer = `w-${sha(randomBytes(16))}`;
+  const pusher = `p-${sha(randomBytes(16))}`;
+  const key = (token, id, permissions) => ({
+    sha256: sha(token),
+    principal: { id, repositories: ['releases'], permissions },
+  });
+  const f = await setup(t, {
+    keys: [key(writer, 'test-writer', ['read', 'write']), key(pusher, 'ci-push', ['write'])],
+  });
+  const as = (token) => ({ authorization: `Bearer ${token}` });
+  const put = (token, bytes) =>
+    f.app.inject({
+      method: 'PUT',
+      url: `/lfs/releases/objects/${sha(bytes)}`,
+      headers: { ...as(token), 'content-type': 'application/octet-stream' },
+      payload: bytes,
+    });
+  // An earlier attempt of the same owner under the oid's key: one expired, one cancelled.
+  const attempt = async (bytes) => {
+    const oid = sha(bytes);
+    const started = await f.app.inject({
+      method: 'POST',
+      url: '/api/v1/repositories/releases/uploads',
+      headers: { ...as(writer), 'idempotency-key': `lfs-${oid}` },
+      payload: {
+        name: oid,
+        size: String(bytes.length),
+        sha256: oid,
+        labels: ['lfs'],
+        metadata: {},
+      },
+    });
+    assert.equal(started.statusCode, 201, started.body);
+    return started.json().id;
+  };
+  const expired = randomBytes(4096);
+  const id = await attempt(expired);
+  await f.catalog.pool.query(
+    "UPDATE arkvory_uploads SET expires_at=now()-interval '1 second' WHERE id=$1",
+    [id],
+  );
+  const cancelled = randomBytes(2048);
+  const other = await attempt(cancelled);
+  const cancel = await f.app.inject({
+    method: 'DELETE',
+    url: `/api/v1/repositories/releases/uploads/${other}`,
+    headers: as(writer),
+  });
+  assert.equal(cancel.statusCode, 200, cancel.body);
+  for (const bytes of [expired, cancelled]) {
+    assert.equal((await put(writer, bytes)).statusCode, 200);
+    const got = await f.app.inject({
+      url: `/lfs/releases/objects/${sha(bytes)}`,
+      headers: as(writer),
+    });
+    assert.deepEqual(got.rawPayload, bytes);
+  }
+
+  // A key that may only push (no content.read) still learns that an object is stored.
+  const batch = await f.app.inject({
+    method: 'POST',
+    url: '/lfs/releases/objects/batch',
+    headers: { ...as(pusher), 'content-type': 'application/vnd.git-lfs+json' },
+    payload: JSON.stringify({
+      operation: 'upload',
+      objects: [{ oid: sha(expired), size: expired.length }],
+    }),
+  });
+  assert.equal(batch.statusCode, 200, batch.body);
+  assert.equal(batch.json().objects[0].actions, undefined, 'stored: nothing to send');
+  assert.equal((await put(pusher, expired)).statusCode, 200);
+});
+
+test('transfer actions carry the key only to an https origin or loopback', async (t) => {
+  const f = await setup(t);
+  const bytes = randomBytes(64);
+  const put = await f.app.inject({
+    method: 'PUT',
+    url: `/lfs/releases/objects/${sha(bytes)}`,
+    headers: { ...f.headers, 'content-type': 'application/octet-stream' },
+    payload: bytes,
+  });
+  assert.equal(put.statusCode, 200);
+  const download = async (headers) =>
+    (
+      await f.app.inject({
+        method: 'POST',
+        url: '/lfs/releases/objects/batch',
+        headers: { ...f.headers, 'content-type': 'application/vnd.git-lfs+json', ...headers },
+        payload: JSON.stringify({
+          operation: 'download',
+          objects: [{ oid: sha(bytes), size: bytes.length }],
+        }),
+      })
+    ).json().objects[0].actions.download;
+  // TLS ended at a proxy not listed as trusted: the scheme may only be upgraded.
+  const proxied = await download({ host: 'arkvory.example', 'x-forwarded-proto': 'https' });
+  assert.match(proxied.href, /^https:\/\/arkvory\.example\/lfs\/releases\/objects\//);
+  assert.equal(proxied.header.Authorization, f.headers.authorization);
+  const plain = await download({ host: 'arkvory.example' });
+  assert.match(plain.href, /^http:\/\/arkvory\.example\//);
+  assert.equal(plain.header, undefined, 'no key into a clear-text link');
+  const local = await download({ host: '127.0.0.1:8080', 'x-forwarded-proto': 'http' });
+  assert.equal(local.header.Authorization, f.headers.authorization);
 });

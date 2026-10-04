@@ -38,7 +38,7 @@ async function errorOf(response) {
   return body.errors[0].code;
 }
 /** Docker's sequence: a session, one PATCH per chunk with Content-Range, PUT with the digest. */
-async function pushBlob(call, name, bytes, chunks = 1) {
+async function pushBlob(call, name, bytes, chunks = 1, type = 'application/octet-stream') {
   const started = await call(`/v2/${name}/blobs/uploads/`, { method: 'POST' });
   assert.equal(started.status, 202, await started.clone().text());
   assert.equal(started.headers.get('docker-distribution-api-version'), 'registry/2.0');
@@ -49,7 +49,7 @@ async function pushBlob(call, name, bytes, chunks = 1) {
     const patched = await call(location, {
       method: 'PATCH',
       headers: {
-        'content-type': 'application/octet-stream',
+        'content-type': type,
         'content-range': `${String(offset)}-${String(offset + chunk.length - 1)}`,
       },
       body: chunk,
@@ -89,7 +89,8 @@ async function putManifest(call, name, reference, bytes, type = imageType) {
 async function pushImage(call, name, tag) {
   const config = Buffer.from(JSON.stringify({ architecture: 'amd64', os: 'linux' }));
   const layer = randomBytes(300 * 1024);
-  await pushBlob(call, name, config);
+  // A declared JSON or text type changes nothing: blob bodies are bytes.
+  await pushBlob(call, name, config, 1, 'application/json');
   await pushBlob(call, name, layer, 3);
   const manifest = imageManifest(config, [layer]);
   const stored = await putManifest(call, name, tag, manifest);
@@ -147,15 +148,18 @@ test('a repeated push stores nothing twice and tags page in order', async (t) =>
   const blobs = await f.catalog.pool.query('SELECT count(*)::int AS n FROM arkvory_uploads');
   // The same layer again: the upload completes against the stored blob.
   await pushBlob(call, name, first.layer, 2);
-  for (const tag of ['a', 'c']) {
+  for (const tag of ['a', 'c', 'B', 'Z']) {
     const again = await putManifest(call, name, tag, first.manifest);
     assert.equal(again.status, 201);
   }
   const after = await f.catalog.pool.query('SELECT count(*)::int AS n FROM arkvory_uploads');
   assert.equal(after.rows[0].n, blobs.rows[0].n, 'no new artifacts');
+  // Pages follow byte order whatever the database collation (en_US would put `a` before `Z`).
   const page = await call(`/v2/${name}/tags/list?n=2`);
-  assert.deepEqual((await page.json()).tags, ['a', 'b']);
-  assert.equal(page.headers.get('link'), `</v2/${name}/tags/list?n=2&last=b>; rel="next"`);
+  assert.deepEqual((await page.json()).tags, ['B', 'Z']);
+  assert.equal(page.headers.get('link'), `</v2/${name}/tags/list?n=2&last=Z>; rel="next"`);
+  const middle = await call(`/v2/${name}/tags/list?n=2&last=Z`);
+  assert.deepEqual((await middle.json()).tags, ['a', 'b']);
   const rest = await call(`/v2/${name}/tags/list?n=2&last=b`);
   assert.deepEqual((await rest.json()).tags, ['c']);
   assert.equal(rest.headers.get('link'), null);

@@ -89,6 +89,13 @@ export class PostgresDownloadLease {
   private closed = false;
   private renewing = false;
   private client: PoolClient | undefined;
+  /**
+   * The kept connection is checked out, so the pool no longer listens for its errors: a reset or
+   * a terminated session between renewals is a lost lease here, not an uncaught exception.
+   */
+  private readonly lost = () => {
+    this.close();
+  };
   constructor(
     private readonly pool: Pool,
     readonly policy: SharedDownloadPolicy,
@@ -182,6 +189,7 @@ export class PostgresDownloadLease {
       this.generation = row.generation;
       await client.query('COMMIT');
       this.window.accept(start, true);
+      client.on('error', this.lost);
       this.client = client;
       this.schedule();
       return null;

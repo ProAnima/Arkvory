@@ -11,7 +11,8 @@ export const npmFeedActions = {
   tagDeleted: 'npm.tag.delete',
 } as const;
 export const MAX_NPM_NAME_LENGTH = 214;
-export const MAX_NPM_MANIFEST_BYTES = 1024 * 1024;
+/** package.json of a version; the packument serves every version's manifest in one answer. */
+export const MAX_NPM_MANIFEST_BYTES = 256 * 1024;
 
 const invalid = (message: string) => new ArkvoryError('invalid_input', message);
 const namePattern = /^(?:@[a-z0-9][a-z0-9._~-]*\/)?[a-z0-9][a-z0-9._~-]*$/;
