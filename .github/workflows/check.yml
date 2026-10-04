@@ -251,9 +251,9 @@ jobs:
         run: node scripts/ci-report.mjs
 
   stand:
-    name: Two-site stand (packaged hosts, mirror, failover)
+    name: Stands (two sites with mirror and failover, upgrade from the latest release)
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
         with:

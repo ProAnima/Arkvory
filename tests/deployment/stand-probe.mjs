@@ -5,6 +5,7 @@
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { getCACertificates, setDefaultCACertificates } from 'node:tls';
+import { gzipSync } from 'node:zlib';
 
 const [command = '', raw = '{}'] = process.argv.slice(2);
 const args = JSON.parse(raw);
@@ -105,6 +106,86 @@ async function mirrorKey() {
   return { secret };
 }
 
+/** One ustar entry (header with checksum, data padded to 512 bytes) for a probe tarball. */
+function tarEntry(name, data) {
+  const header = Buffer.alloc(512);
+  header.write(name, 0, 100, 'utf8');
+  header.write('0000644\0', 100);
+  header.write('0000000\0', 108);
+  header.write('0000000\0', 116);
+  header.write(`${data.length.toString(8).padStart(11, '0')}\0`, 124);
+  header.write('00000000000\0', 136);
+  header.write('        ', 148);
+  header.write('0', 156);
+  header.write('ustar\0', 257);
+  header.write('00', 263);
+  let sum = 0;
+  for (const byte of header) sum += byte;
+  header.write(`${sum.toString(8).padStart(6, '0')}\0 `, 148);
+  return Buffer.concat([header, data, Buffer.alloc((512 - (data.length % 512)) % 512)]);
+}
+
+/** Raw files, Git LFS and npm on this installation's schema: each stores and serves bytes. */
+async function protocols() {
+  const bytes = randomBytes(64 * 1024);
+  const oid = sha256(bytes);
+  const binary = { 'content-type': 'application/octet-stream' };
+  const raw = `${repository}/raw/tools/probe.bin`;
+  await expect(
+    await call(raw, {
+      method: 'PUT',
+      headers: { ...binary, 'x-checksum-sha256': oid },
+      body: bytes,
+    }),
+    201,
+    'raw put',
+  );
+  const got = await expect(await call(raw), 200, 'raw get');
+  if (sha256(Buffer.from(await got.arrayBuffer())) !== oid) throw new Error('raw content differs');
+  // git-lfs sends text assets as text/plain; the body is still bytes.
+  const object = `/lfs/releases/objects/${oid}`;
+  const text = { 'content-type': 'text/plain' };
+  await expect(await call(object, { method: 'PUT', headers: text, body: bytes }), 200, 'lfs put');
+  const batch = await expect(
+    await call('/lfs/releases/objects/batch', {
+      method: 'POST',
+      headers: { 'content-type': 'application/vnd.git-lfs+json' },
+      body: JSON.stringify({ operation: 'download', objects: [{ oid, size: bytes.length }] }),
+    }),
+    200,
+    'lfs batch',
+  );
+  if (!(await batch.json()).objects[0]?.actions?.download) throw new Error('lfs object missing');
+  const name = 'com.proanima.probe';
+  const manifest = Buffer.from(JSON.stringify({ name, version: '1.0.0', unity: '2022.3' }));
+  const tarball = gzipSync(
+    Buffer.concat([tarEntry('package/package.json', manifest), Buffer.alloc(1024)]),
+  );
+  const publish = {
+    name,
+    'dist-tags': { latest: '1.0.0' },
+    versions: { '1.0.0': { name, version: '1.0.0' } },
+    _attachments: { 'p.tgz': { data: tarball.toString('base64'), length: tarball.length } },
+  };
+  await expect(
+    await call(`/npm/releases/${name}`, {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(publish),
+    }),
+    201,
+    'npm publish',
+  );
+  const packument = await (
+    await expect(await call(`/npm/releases/${name}`), 200, 'packument')
+  ).json();
+  const tarballUrl = new URL(packument.versions['1.0.0'].dist.tarball).pathname;
+  const fetched = await expect(await call(tarballUrl), 200, 'npm tarball');
+  if (sha256(Buffer.from(await fetched.arrayBuffer())) !== sha256(tarball))
+    throw new Error('npm tarball differs');
+  return { raw: true, lfs: true, npm: packument['dist-tags'].latest };
+}
+
 /** A one-layer image pushed like docker does it, by tag. */
 async function image() {
   const blob = async (bytes, mediaType) => {
@@ -185,6 +266,7 @@ const commands = {
   },
   publish,
   image,
+  protocols,
   'mirror-key': mirrorKey,
   status: async () => {
     const response = await call(`${repository}/mirror`);

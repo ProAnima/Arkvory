@@ -161,8 +161,8 @@
     },
     "deployment-stand": {
       "needs": ["native-package"],
-      "timeoutSeconds": 1500,
-      "entries": ["tests/deployment/two-site-stand.mjs"],
+      "timeoutSeconds": 1800,
+      "entries": ["tests/deployment/two-site-stand.mjs", "tests/deployment/upgrade-stand.mjs"],
       "kind": "scenario"
     },
     "deployment-nas": {
