@@ -17,6 +17,7 @@ import { localBackupControl } from './backup-probe.js';
 import { protectInstallation } from './preflight.js';
 import { prepareUpdateControl } from './update-setup.js';
 import { report } from './output.js';
+import { warnEngineAutostart } from './engine-autostart.js';
 
 export async function save(root: string, state: Installation): Promise<void> {
   // Compose image follows the same journalled switch; data volumes never depend on a release directory.
@@ -71,6 +72,7 @@ export async function install(root: string, options: Map<string, string>): Promi
   await services.healthy();
   await services.confirmBackup(state.current);
   await services.schedule(state.current);
+  await warnEngineAutostart(state);
   report(
     'info',
     'Arkvory installed. Recovery key: config/bootstrap-token.txt. Keep it on this host for setup tools; use accounts and service keys for daily work.',

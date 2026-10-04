@@ -70,7 +70,7 @@ Run `npm run migrate`, `npm start` and `npm run worker` separately. Console: `/c
 
 The standalone gateway now supports aggregate upload/download rate ceilings, a shared ceiling per principal across keys and connections, per-principal active transfer caps, and authenticated readiness diagnostics. Rates are configurable and disabled by default; active transfer defaults are one upload and up to four downloads per principal. These budgets belong to one process. See [traffic control](docs/TRAFFIC_CONTROL.md).
 
-An optional shared-storage profile runs one writer and additional read gateways. Fixed download shares are reserved through finite PostgreSQL leases; a lost lease stops delivery until restart. Idle shares are not redistributed. See [read gateways](docs/READ_GATEWAYS.md).
+An optional shared-storage profile runs one writer and additional read gateways. Fixed download shares are reserved through finite PostgreSQL leases; a lost lease ends the gateway process and its service manager restarts it. Idle shares are not redistributed. See [read gateways](docs/READ_GATEWAYS.md).
 
 The console has light, dark and system themes, live English/Russian switching, and responsive catalog, upload, history and artifact screens. Colors, typography, spacing, radii, controls and motion use centralized design tokens. The browser stores appearance/language preferences and private download checkpoints with a recovery journal; credentials remain in memory. See the [design system](docs/DESIGN_SYSTEM.md) and [download recovery and storage limits](docs/DOWNLOAD_QUEUE.md).
 
@@ -110,6 +110,7 @@ Administrators can create accounts and repository access groups. Users sign in w
 - Planned: short-lived transfer tokens scoped to an object and an action; current downloads require ordinary API authorization.
 - Archive validation, safe paths, and metadata size limits.
 - Recovery of intermediate operations, idempotent completion, and integrity checks.
+- Services restart by themselves after a crash, an unrequested exit, a lost storage ownership or lease, and a hung main thread (event-loop watchdog), under systemd, Windows services and Docker Compose ([ADR 0067](docs/adr/0067-self-healing-services.md)).
 - Health/readiness and transfer diagnostics are implemented. A manual consistent backup of the database and blobs into a built-in vault, its verification and a restore into an empty target run through the operator CLI `npm run backup` (ADR 0054). The supervised agent `npm run backup -- agent` adds a daily schedule in an explicit time zone, retention with prune, verification, warnings and metrics; the API `/api/v1/backup`, SDK `client.backup` and `arkvoryctl backup` queue and observe its work (ADR 0056); the console section "Backups" shows status and warnings, runs a backup or a full verification, pins points, applies retention after a preview and edits the plan, while restore stays an operator command ([console behavior](docs/CONSOLE_UX.md#резервные-копии)). Installers run the agent as a supervised service next to API and worker; `arkvory configure --backup-vault <dir> --init-vault` checks the vault directory, grants the service account access, restarts the agent and rolls back unless the agent reports the vault (ADR 0057). Encryption, S3 and the restore wizard remain [planned](docs/BACKUP_RECOVERY.md).
 
 ## Architecture

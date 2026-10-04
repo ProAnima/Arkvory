@@ -143,7 +143,7 @@
     },
     "deployment-containers": {
       "needs": ["build"],
-      "timeoutSeconds": 900,
+      "timeoutSeconds": 1200,
       "entries": ["tests/deployment/containers.mjs"],
       "kind": "scenario"
     },
@@ -155,7 +155,7 @@
     },
     "native-install": {
       "needs": ["native-package"],
-      "timeoutSeconds": 900,
+      "timeoutSeconds": 1500,
       "entries": ["tests/deployment/native-install.mjs"],
       "kind": "scenario"
     },
@@ -176,7 +176,8 @@
     "tests/integration/api-child.mjs",
     "tests/deployment/service-child.mjs",
     "tests/deployment/process-child.mjs",
-    "tests/deployment/stand-probe.mjs"
+    "tests/deployment/stand-probe.mjs",
+    "tests/watchdog-child.mjs"
   ],
   "mergeTasks": [
     "static",

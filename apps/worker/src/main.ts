@@ -14,7 +14,9 @@ import {
   PostgresIdentity,
   PostgresServices,
   readMirrorSettings,
+  startEventLoopWatchdog,
   trustMirrorCertificates,
+  watchdogSeconds,
 } from '@proanima/arkvory-infrastructure';
 import type { LogLevel, PostgresJobLease } from '@proanima/arkvory-infrastructure';
 import { capacityBytes, workerResources } from './runtime.js';
@@ -34,12 +36,13 @@ function level(): LogLevel {
   }
 }
 // releases/<version>/apps/worker/dist/main.js -> releases/<version>/release.json
+const identity = processIdentity(
+  'worker',
+  await readReleaseVersion(new URL('../../../release.json', import.meta.url)),
+);
 const diagnostics = new DiagnosticLogger(process.stdout, () => new Date().toISOString(), {
   level: level(),
-  process: processIdentity(
-    'worker',
-    await readReleaseVersion(new URL('../../../release.json', import.meta.url)),
-  ),
+  process: identity,
 });
 installCrashHandlers(diagnostics);
 const stop = new AbortController();
@@ -62,6 +65,18 @@ for (const signal of ['SIGINT', 'SIGTERM'] as const)
   });
 try {
   if (levelError) throw levelError;
+  startEventLoopWatchdog({
+    seconds: watchdogSeconds(process.env['ARKVORY_WATCHDOG_SECONDS']),
+    fields: identity,
+    onError: (error) => {
+      diagnostics.write({
+        level: 'warning',
+        component: 'worker',
+        code: 'process.watchdog_failed',
+        ...failureCause(error),
+      });
+    },
+  });
   const keyFile = process.env['ARKVORY_KEYS_FILE'];
   if (!keyFile) throw new Error('ARKVORY_KEYS_FILE is required');
   const mirrors = await readMirrorSettings(process.env['ARKVORY_MIRRORS_FILE']);

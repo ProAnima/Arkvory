@@ -11,8 +11,10 @@ import {
   readReleaseCommit,
   readReleaseVersion,
   redactDiagnostic,
+  startEventLoopWatchdog,
+  watchdogSeconds,
 } from '@proanima/arkvory-infrastructure';
-import type { LogLevel } from '@proanima/arkvory-infrastructure';
+import type { EventLoopWatchdog, LogLevel } from '@proanima/arkvory-infrastructure';
 import { exitCodeFor, parseArguments, usage } from './arguments.js';
 import type { BackupCommand } from './arguments.js';
 import { runCapture } from './capture-command.js';
@@ -21,6 +23,14 @@ import { runList, runVaultInit, runVerify } from './vault-commands.js';
 import type { CliContext } from './context.js';
 import { runAgent } from './agent.js';
 import { agentConfig } from './config.js';
+
+function watchdogSetting(value: string | undefined): number {
+  try {
+    return watchdogSeconds(value);
+  } catch {
+    throw new BackupFailure('invalid_argument', 'Invalid ARKVORY_WATCHDOG_SECONDS');
+  }
+}
 
 const hints: Partial<Record<BackupFailureCode, string>> = {
   vault_missing:
@@ -87,6 +97,7 @@ export async function runBackupCli(argv: readonly string[], env: NodeJS.ProcessE
     process: processIdentity('backup', release.version),
   });
   const uninstall = installCrashHandlers(logger);
+  let watchdog: EventLoopWatchdog | undefined;
   const stop = new AbortController();
   const signal = () => {
     stop.abort();
@@ -101,6 +112,18 @@ export async function runBackupCli(argv: readonly string[], env: NodeJS.ProcessE
   try {
     if (configured.invalid)
       throw new BackupFailure('invalid_argument', 'Invalid ARKVORY_LOG_LEVEL');
+    watchdog = startEventLoopWatchdog({
+      seconds: watchdogSetting(env['ARKVORY_WATCHDOG_SECONDS']),
+      fields: processIdentity('backup', release.version),
+      onError: (error) => {
+        logger.write({
+          level: 'warning',
+          component: 'backup',
+          code: 'process.watchdog_failed',
+          ...failureCause(error),
+        });
+      },
+    });
     const command = parseArguments(argv);
     if (command.kind === 'help') {
       process.stdout.write(usage + '\n');
@@ -127,6 +150,7 @@ export async function runBackupCli(argv: readonly string[], env: NodeJS.ProcessE
   } finally {
     process.off('SIGINT', signal);
     process.off('SIGTERM', signal);
+    watchdog?.stop();
     uninstall();
     await logger.flush();
   }

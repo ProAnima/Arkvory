@@ -10,6 +10,7 @@ import { prepareUpdateControl } from './update-setup.js';
 import { report } from './output.js';
 import { runWithLogFile } from './log-file.js';
 import { configure } from './configure.js';
+import { warnEngineAutostart } from './engine-autostart.js';
 
 function argumentsOf(args: string[]): Map<string, string> {
   const options = new Map<string, string>();
@@ -107,7 +108,9 @@ async function main(): Promise<void> {
   const root = resolve(rawRoot);
   if (/[\r\n\0"%$`]/.test(root)) throw new Error('Unsupported installation path');
   if (operation === 'status') {
-    console.log(parseInstallation(await jsonFile(join(root, 'installation.json'))));
+    const state = parseInstallation(await jsonFile(join(root, 'installation.json')));
+    console.log(state);
+    await warnEngineAutostart(state);
     return;
   }
   if (await capturedUpdater(operation, options, root)) return;

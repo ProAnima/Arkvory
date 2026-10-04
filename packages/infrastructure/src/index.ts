@@ -39,6 +39,12 @@ export * from './diagnostics.js';
 export * from './failure-classification.js';
 export { processIdentity, readReleaseVersion, readReleaseCommit } from './process-identity.js';
 export { installCrashHandlers } from './process-guards.js';
+export {
+  DEFAULT_WATCHDOG_SECONDS,
+  startEventLoopWatchdog,
+  watchdogSeconds,
+} from './event-loop-watchdog.js';
+export type { EventLoopWatchdog } from './event-loop-watchdog.js';
 export * from './metrics.js';
 export { PostgresCleanupSettings } from './cleanup-settings.js';
 export { PostgresOnlineCleanup } from './online-cleanup.js';

@@ -4,6 +4,8 @@ import {
   installCrashHandlers,
   parseLogLevel,
   processIdentity,
+  startEventLoopWatchdog,
+  watchdogSeconds,
   readReleaseVersion,
   startupReason,
 } from '@proanima/arkvory-infrastructure';
@@ -44,6 +46,18 @@ const diagnostics = new DiagnosticLogger(recentLog, () => new Date().toISOString
 installCrashHandlers(diagnostics);
 
 try {
+  startEventLoopWatchdog({
+    seconds: watchdogSeconds(process.env['ARKVORY_WATCHDOG_SECONDS']),
+    fields: identity,
+    onError: (error) => {
+      diagnostics.write({
+        level: 'warning',
+        component: 'process',
+        code: 'process.watchdog_failed',
+        ...failureCause(error),
+      });
+    },
+  });
   const config = await loadConfig(process.env);
   const drain = new RequestDrain();
   let shutdown: (request: ShutdownRequest) => void = () => undefined;

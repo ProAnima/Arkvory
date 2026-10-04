@@ -9,7 +9,7 @@ import { exerciseRpm } from './native-rpm.mjs';
 import { exerciseClient } from './client-install.mjs';
 import { exerciseRemoteAccess } from './remote-access.mjs';
 import { exerciseUpdateControl } from './update-control.mjs';
-import { exerciseNativeRecovery } from './native-recovery.mjs';
+import { exerciseNativeHang, exerciseNativeRecovery } from './native-recovery.mjs';
 import { requireDisposableHost } from './disposable-host.mjs';
 import { committedPoint, exerciseInstalledBackup, removeGateVault } from './native-backup.mjs';
 import { vaultReported, waitForAgent } from './backup-acceptance.mjs';
@@ -97,6 +97,7 @@ try {
   else run('sudo', ['systemctl', 'stop', 'arkvory-update.timer']);
   backupPoint = await exerciseInstalledBackup(root, vault, token, run);
   await exerciseNativeRecovery(root, token, read);
+  await exerciseNativeHang(token);
   if (windows) {
     const login = await fetch('http://127.0.0.1:8080/api/v1/auth/login', {
       method: 'POST',

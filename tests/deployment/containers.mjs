@@ -9,7 +9,7 @@ import { verifyReleaseFiles } from '../../scripts/release-files.mjs';
 import { tarExecutable } from '../../scripts/tar.mjs';
 import { extractArchive } from '../../apps/deploy/dist/archive.js';
 import { exerciseUpdateControl } from './update-control.mjs';
-import { exerciseContainerRecovery } from './container-recovery.mjs';
+import { exerciseContainerRecovery, exerciseStallRecovery } from './container-recovery.mjs';
 import { exerciseBackupAgent, vaultReported, waitForAgent } from './backup-acceptance.mjs';
 import { exerciseImageRegistry } from './container-registry.mjs';
 const windows = process.platform === 'win32';
@@ -194,6 +194,7 @@ try {
     "require('fs').writeFileSync('/var/lib/arkvory/deployment-sentinel','preserved')",
   ]);
   await exerciseContainerRecovery(run, compose, ready);
+  await exerciseStallRecovery(run, compose, ready);
   manage(['update', '--artifact', next]);
   // A fresh point was captured and verified for this update, not the earlier one reused.
   const journal = JSON.parse(await readFile(join(root, 'journal.json'), 'utf8'));
