@@ -4,7 +4,7 @@ import { atomicText, replaceText } from './files.js';
 import type { Installation } from './model.js';
 import { runtimeEnvironment } from './runtime.js';
 import type { ServiceControl } from './tls-setup.js';
-import { sourceCertificates, trustSourceCertificates } from './mirror-ca.js';
+import { mergeCertificates, sourceCertificates, trustSourceCertificates } from './mirror-ca.js';
 
 /** `arkvory configure --mirror …` (ADR 0058): one repository per call. */
 export interface MirrorChange {
@@ -264,7 +264,7 @@ export async function configureMirror(
       throw new Error(`${target} mirrors another source; detach it first`);
     const stages = stageList(change.stages);
     secret = await token(change.tokenFile);
-    if (change.caFile) bundle = await sourceCertificates(change.caFile);
+    if (change.caFile) bundle = mergeCertificates(bundle, await sourceCertificates(change.caFile));
     // The probe runs in this process: it trusts what the worker will trust, nothing more.
     if (bundle !== null) trustSourceCertificates(bundle);
     await probe(upstream, sourceRepository, secret);

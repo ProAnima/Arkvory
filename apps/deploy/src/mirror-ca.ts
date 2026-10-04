@@ -33,6 +33,20 @@ export async function sourceCertificates(file: string, now = Date.now()): Promis
   return blocks.join('\n') + '\n';
 }
 
+/**
+ * The stored bundle with `added` appended; a certificate already stored is kept once. Mirrors of
+ * one installation share the bundle, so attaching one never drops another source's authority.
+ */
+export function mergeCertificates(stored: string | null, added: string): string {
+  const all = [...(stored?.match(block) ?? []), ...(added.match(block) ?? [])];
+  const unique = [
+    ...new Map(all.map((pem) => [new X509Certificate(pem).fingerprint256, pem])).values(),
+  ];
+  if (unique.length > maxCertificates)
+    throw new Error(`Mirror sources may name at most ${String(maxCertificates)} certificates`);
+  return unique.join('\n') + '\n';
+}
+
 /** This process trusts the bundle besides its default authorities (the probe of the source). */
 export function trustSourceCertificates(bundle: string): void {
   setDefaultCACertificates([...getCACertificates('default'), ...(bundle.match(block) ?? [])]);

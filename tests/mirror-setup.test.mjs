@@ -236,8 +236,19 @@ test('a source with a self-signed certificate is reached only with its authority
   const stored = join(root, 'config/mirrors/ca.pem');
   assert.equal((await json(join(root, 'config/runtime.json'))).ARKVORY_MIRRORS_CA_FILE, stored);
   assert.equal(await readFile(stored, 'utf8'), certificate.cert);
+  // A second mirror's authority is added: the first mirror keeps trusting its own source.
+  const other = selfSignedCertificate();
+  const both = join(root, 'other-ca.pem');
+  await writeFile(both, other.cert + certificate.cert);
+  const second = { ...change(both), repository: 'builds' };
+  assert.equal(await configureMirror(root, state, second, services()), 'attached');
+  const bundle = await readFile(stored, 'utf8');
+  assert.equal(bundle.split('-----BEGIN CERTIFICATE-----').length - 1, 2, 'each one once');
+  assert.ok(bundle.includes(certificate.cert.trim()) && bundle.includes(other.cert.trim()));
   // The authorities go with the last mirror.
   assert.equal(await configureMirror(root, state, { detach: 'releases' }, services()), 'detached');
+  assert.equal(await readFile(stored, 'utf8'), bundle);
+  assert.equal(await configureMirror(root, state, { detach: 'builds' }, services()), 'detached');
   assert.equal((await json(join(root, 'config/runtime.json'))).ARKVORY_MIRRORS_CA_FILE, undefined);
   await assert.rejects(readFile(stored), { code: 'ENOENT' });
 });
