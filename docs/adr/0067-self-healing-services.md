@@ -57,6 +57,6 @@ API, worker и агент резервных копий работают под 
   - родитель как ES-модуль;
   - разбор настройки.
 - Гейт `deployment-containers`: главные потоки API, worker и агента ставятся на паузу через инспектор (`SIGUSR1`, `Debugger.pause`); сторож завершает их, Docker перезапускает, установка снова готова.
-- Гейт `native-install` (Linux systemd локально и на GitHub, Windows на GitHub): то же для установленных служб, на Windows инспектор открывается через `process._debugProcess`.
+- Гейт `native-install` (Linux systemd локально и на GitHub, Windows на GitHub): то же для установленных служб, на Windows инспектор открывается через `process._debugProcess` из сеанса 0 (разовая задача SYSTEM): службы публикуют обработчик отладки только в своём сеансе.
 - Падения, три подряд, и плановая остановка — прежние гейты `deployment-services` и `native-install`.
 - `tests/engine-autostart.test.mjs`: чтение настройки автозапуска Docker Desktop.

@@ -80,16 +80,34 @@ export async function exerciseNativeRecovery(root, token, read) {
 }
 
 /** Opens the inspector of process `pid` and pauses its main thread; its other threads go on. */
-async function pauseMainThread(pid, run) {
-  if (process.platform === 'win32') run(process.execPath, ['-e', `process._debugProcess(${pid})`]);
-  else run('sudo', ['kill', '-USR1', String(pid)]);
+// A Windows service runs in session 0, where Node publishes its debug handler: only a process
+// there finds it, so a one-shot SYSTEM task opens the inspector. Removed right after.
+const inspectorTask = 'ArkvoryGateInspector';
+function openInspector(pid, run, ps) {
+  if (process.platform !== 'win32') return run('sudo', ['kill', '-USR1', String(pid)]);
+  ps(
+    `$action = New-ScheduledTaskAction -Execute '${process.execPath}' -Argument '-e process._debugProcess(${String(pid)})'; ` +
+      `Register-ScheduledTask -TaskName ${inspectorTask} -Action $action -User 'NT AUTHORITY\\SYSTEM' -RunLevel Highest -Force | Out-Null; ` +
+      `Start-ScheduledTask -TaskName ${inspectorTask}`,
+  );
+}
+
+async function pauseMainThread(pid, run, ps) {
   let targets;
-  for (let attempt = 0; attempt < 50 && !targets; attempt++) {
-    try {
-      targets = await (await fetch('http://127.0.0.1:9229/json/list')).json();
-    } catch {
-      await delay(200);
+  try {
+    openInspector(pid, run, ps);
+    for (let attempt = 0; attempt < 100 && !targets; attempt++) {
+      try {
+        targets = await (await fetch('http://127.0.0.1:9229/json/list')).json();
+      } catch {
+        await delay(200);
+      }
     }
+  } finally {
+    if (process.platform === 'win32')
+      ps(
+        `Unregister-ScheduledTask -TaskName ${inspectorTask} -Confirm:$false -ErrorAction SilentlyContinue`,
+      );
   }
   assert.ok(targets?.[0], `the inspector of ${String(pid)} did not open`);
   const socket = new WebSocket(targets[0].webSocketDebuggerUrl);
@@ -130,7 +148,7 @@ export async function exerciseNativeHang(token) {
     const name = windows ? `Arkvory${role}` : `arkvory-${role}`;
     const before = appPid(name);
     assert.ok(before > 0, `${name} must be running`);
-    const socket = await pauseMainThread(before, run);
+    const socket = await pauseMainThread(before, run, ps);
     let recovered = false;
     for (let attempt = 0; attempt < 150; attempt++) {
       await delay(1000);
