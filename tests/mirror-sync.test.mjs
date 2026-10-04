@@ -49,10 +49,11 @@ function source(initial = {}) {
 }
 
 function target() {
-  const t = { log: [], present: new Set() };
+  const t = { log: [], present: new Set(), deleted: new Set() };
   t.port = {
     copy: async (artifact) => {
       t.log.push(`copy ${artifact.id}`);
+      if (t.deleted.has(artifact.id)) return null;
       if (t.present.has(artifact.id)) return 0;
       t.present.add(artifact.id);
       return artifact.descriptor.size;
@@ -302,4 +303,18 @@ test('after the seed, registry entries below its head are replayed in order, oth
     t.log.filter((line) => line.startsWith('npm')),
     ['npm l', 'npm-tag com.example.tools@latest=1.0.0', 'npm-untag com.example.tools@beta'],
   );
+});
+
+test('a copy deleted here is skipped, not retried forever, when a restored source lists it', async () => {
+  const s = source({ artifacts: ['a', 'b', 'c'], packages: ['b'], head: '5' });
+  const t = target();
+  t.deleted.add('b');
+  const st = states();
+  await settle(mirror(s, t, st));
+  const state = st.rows.get('releases');
+  assert.equal(state.phase, 'following', 'the seed completes');
+  assert.equal(state.errorCode, null);
+  assert.equal(state.copiedArtifacts, 2);
+  assert.ok(!t.log.includes('register b'), 'nothing is recorded for the deleted copy');
+  assert.ok(!t.log.some((line) => line.startsWith('annotate b')));
 });

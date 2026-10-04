@@ -61,10 +61,16 @@ export interface MirrorSource {
 export interface MirrorTarget {
   /**
    * Makes the artifact available locally under the source ID, resuming a partial copy part by
-   * part. Returns the bytes copied now (0 when it was already available). Another SHA-256 for
-   * the same ID is a MirrorFailure, never an overwrite.
+   * part. Returns the bytes copied now (0 when it was already available), or null when the copy
+   * was deleted here: a deleted copy stays deleted even if a restored source lists it again, and
+   * the artifact is skipped. Another SHA-256 for the same ID is a MirrorFailure, never an
+   * overwrite.
    */
-  copy(artifact: MirrorArtifact, source: MirrorSource, cancellation: Cancellation): Promise<number>;
+  copy(
+    artifact: MirrorArtifact,
+    source: MirrorSource,
+    cancellation: Cancellation,
+  ): Promise<number | null>;
   /** Deletes like a client deletion (tombstone, then GC); absence is success. */
   remove(id: string): Promise<void>;
   annotate(id: string, annotation: MirrorAnnotation): Promise<void>;

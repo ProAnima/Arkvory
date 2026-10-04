@@ -238,6 +238,7 @@ export class MirrorSync {
   private async ensure(artifact: MirrorArtifact, cancellation: Cancellation): Promise<boolean> {
     const { upstream, target } = this.d;
     const copied = await target.copy(artifact, upstream, cancellation);
+    if (copied === null) return false;
     if (copied > 0) {
       const state = await this.current();
       await this.save({

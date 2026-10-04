@@ -116,7 +116,11 @@ export class ServiceMirrorTarget implements MirrorTarget {
     }
   }
 
-  async copy(artifact: MirrorArtifact, source: MirrorSource, c: Cancellation): Promise<number> {
+  async copy(
+    artifact: MirrorArtifact,
+    source: MirrorSource,
+    c: Cancellation,
+  ): Promise<number | null> {
     const { id, descriptor } = artifact;
     const storage = this.storage(id);
     const found = await this.uploadOf(storage, id);
@@ -142,7 +146,9 @@ export class ServiceMirrorTarget implements MirrorTarget {
       (upload.status === 'cancelled' || Date.parse(upload.expiresAt) <= Date.now()) &&
       !(await reopenMirrorUpload(this.catalog.pool, this.repository, id, this.principal.id))
     )
-      throw new MirrorFailure('mirror_upload_cancelled', 'The local copy was deleted here');
+      // Deleted here after the source deleted it: a source restored from an older backup lists
+      // it again. Failing would stop the seed for good; the deletion stands and it is skipped.
+      return null;
     if (descriptor.size === 0) {
       await storage.upload(this.principal, this.repository, id, nothing(), c);
       return 0;

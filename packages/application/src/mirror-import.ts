@@ -115,6 +115,8 @@ export class StageImport {
     // The stage was removed before this import ran: the version was not promoted after all.
     if (stages.length === 0) return;
     const copied = local === 'present' ? 0 : await target.copy(artifact, upstream, cancellation);
+    // Deleted here meanwhile: the deletion stands, as in a mirror.
+    if (copied === null) return;
     await target.adopt(id, await upstream.annotation(id, cancellation), stages);
     if (copied > 0) {
       const state = await this.current();
