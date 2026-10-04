@@ -202,6 +202,28 @@ test('a vault the agent never reports restores runtime.json and the previous exp
   assert.deepEqual(control.calls, ['adopt 1.2.3', 'open vault', 'restart', 'undo', 'restart']);
 });
 
+test('the rollback returns once the agent reports the previous state, else says so', async (t) => {
+  const root = await installation(t);
+  const vault = await directory(t, 'arkvory-vault-');
+  await vaultDocument(vault);
+  // The refused vault stays in the heartbeat until the restarted agent reports none again.
+  const restarts = (calls) => calls.filter((call) => call === 'restart').length;
+  const recovering = services((calls) =>
+    restarts(calls) < 2 ? status({ configured: true, available: false }) : status(),
+  );
+  const refused = await configureBackup(root, state('windows'), { vault }, recovering, {
+    wait,
+  }).catch((error) => error);
+  assert.match(refused.message, /previous configuration is restored/);
+  assert.doesNotMatch(refused.message, /rollback incomplete/);
+  // An agent that keeps the refused vault's report: the command does not claim a clean state.
+  const stuck = services(() => status({ configured: true, available: false }));
+  await assert.rejects(
+    configureBackup(root, state('windows'), { vault }, stuck, { wait }),
+    /rollback incomplete: the backup agent did not report the previous configuration/,
+  );
+});
+
 test('a failure before the restart rolls back without restarting the agent', async (t) => {
   const root = await installation(t);
   const vault = await directory(t, 'arkvory-vault-');

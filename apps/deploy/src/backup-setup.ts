@@ -89,16 +89,35 @@ interface Progress {
 }
 
 /** Every step runs even after a failed one; the agent restarts only if it was restarted. */
+/**
+ * Restores runtime.json and the previous exposure; a restarted agent must report the previous
+ * state (a vault or none) before this returns, so a status read right after the command shows
+ * what is configured, not the heartbeat of the refused vault.
+ */
 async function rollback(
   path: string,
   previous: string,
   progress: Progress,
   control: BackupServiceControl,
+  wait: BackupWait | undefined,
 ): Promise<string> {
   const problems: string[] = [];
+  const hadVault = runtimeEnvironment(JSON.parse(previous))['ARKVORY_BACKUP_VAULT'] !== undefined;
   const steps = [() => replaceText(path, previous)];
   if (progress.undo) steps.push(progress.undo);
-  if (progress.restarted) steps.push(() => control.restartBackup());
+  if (progress.restarted)
+    steps.push(
+      () => control.restartBackup(),
+      async () => {
+        const reported = await waitForBackup(
+          () => control.backupStatus(),
+          (status) => status.agent.online && status.vault.configured === hadVault,
+          wait,
+        );
+        if (!reported)
+          throw new Error('the backup agent did not report the previous configuration');
+      },
+    );
   for (const step of steps)
     await step().catch((error: unknown) => {
       problems.push(error instanceof Error ? error.message : 'rollback step failed');
@@ -159,7 +178,7 @@ export async function configureBackup(
     // A timed-out command may still change the installation; never race it with a rollback.
     if (isUnconfirmedTermination(error)) throw error;
     const reason = error instanceof Error ? error.message : 'restart failed';
-    const incomplete = await rollback(path, previous, progress, control);
+    const incomplete = await rollback(path, previous, progress, control, options.wait);
     throw new Error(
       `The backup vault was not ${location ? 'configured' : 'turned off'}; the previous configuration is restored (${reason})${incomplete}`,
       { cause: error },
