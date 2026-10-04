@@ -1,10 +1,7 @@
 import { DiscoveryApi } from './discovery-api.js';
 import { UpdatesApi } from './updates-api.js';
 import { FeedbackApi } from './feedback-api.js';
-import { IdentityApi } from './identity-api.js';
-import { UsersApi } from './users-api.js';
-import { ServiceAccountsApi } from './service-accounts-api.js';
-import { CredentialsApi } from './credentials-api.js';
+import { AccountClient } from './account-client.js';
 import { CatalogApi } from './catalog-api.js';
 import { AssetsApi } from './assets-api.js';
 import { RawApi } from './raw-api.js';
@@ -38,12 +35,8 @@ export interface ClientOptions extends TransferPolicy {
 }
 
 /** Compatible public facade. Each operation delegates to its responsible API module. */
-export class ArkvoryClient {
+export class ArkvoryClient extends AccountClient {
   private readonly discovery: DiscoveryApi;
-  private readonly authentication: IdentityApi;
-  private readonly usersApi: UsersApi;
-  private readonly services: ServiceAccountsApi;
-  private readonly credentials: CredentialsApi;
   private readonly catalog: CatalogApi;
   private readonly assets: AssetsApi;
   /** Raw files by path in one request (ADR 0064); resumable uploads stay create/resume. */
@@ -64,15 +57,12 @@ export class ArkvoryClient {
   constructor(baseUrl: string, token: () => string, policy: ClientOptions = {}) {
     const normalized = transferPolicy(policy);
     const http = new HttpTransport(baseUrl, token, policy);
+    super(http);
     this.updates = new UpdatesApi(http);
     this.promotions = new PromotionsApi(http);
     this.backup = new BackupApi(http);
     this.feedback = new FeedbackApi(http);
     this.discovery = new DiscoveryApi(http);
-    this.authentication = new IdentityApi(http);
-    this.usersApi = new UsersApi(http);
-    this.services = new ServiceAccountsApi(http);
-    this.credentials = new CredentialsApi(http);
     this.catalog = new CatalogApi(http);
     this.assets = new AssetsApi(http);
     this.raw = new RawApi(http);
@@ -99,114 +89,6 @@ export class ArkvoryClient {
   }
   repository(...args: Parameters<DiscoveryApi['repository']>) {
     return this.discovery.repository(...args);
-  }
-  login(...args: Parameters<IdentityApi['login']>) {
-    return this.authentication.login(...args);
-  }
-  register(...args: Parameters<IdentityApi['register']>) {
-    return this.authentication.register(...args);
-  }
-  permissions(...args: Parameters<IdentityApi['permissions']>) {
-    return this.authentication.permissions(...args);
-  }
-  activateServiceKey(...args: Parameters<IdentityApi['activateServiceKey']>) {
-    return this.authentication.activateServiceKey(...args);
-  }
-  me(...args: Parameters<IdentityApi['me']>) {
-    return this.authentication.me(...args);
-  }
-  logout(...args: Parameters<IdentityApi['logout']>) {
-    return this.authentication.logout(...args);
-  }
-  changePassword(...args: Parameters<IdentityApi['changePassword']>) {
-    return this.authentication.changePassword(...args);
-  }
-  tokens(...args: Parameters<IdentityApi['tokens']>) {
-    return this.authentication.tokens(...args);
-  }
-  createToken(...args: Parameters<IdentityApi['createToken']>) {
-    return this.authentication.createToken(...args);
-  }
-  revokeToken(...args: Parameters<IdentityApi['revokeToken']>) {
-    return this.authentication.revokeToken(...args);
-  }
-  authOptions(...args: Parameters<IdentityApi['authOptions']>) {
-    return this.authentication.authOptions(...args);
-  }
-  accountTokens(...args: Parameters<UsersApi['accountTokens']>) {
-    return this.usersApi.accountTokens(...args);
-  }
-  revokeAccountToken(...args: Parameters<UsersApi['revokeAccountToken']>) {
-    return this.usersApi.revokeAccountToken(...args);
-  }
-  securityAudit(...args: Parameters<UsersApi['securityAudit']>) {
-    return this.usersApi.securityAudit(...args);
-  }
-  users(...args: Parameters<UsersApi['users']>) {
-    return this.usersApi.users(...args);
-  }
-  createUser(...args: Parameters<UsersApi['createUser']>) {
-    return this.usersApi.createUser(...args);
-  }
-  updateUser(...args: Parameters<UsersApi['updateUser']>) {
-    return this.usersApi.updateUser(...args);
-  }
-  accessGroups(...args: Parameters<UsersApi['accessGroups']>) {
-    return this.usersApi.accessGroups(...args);
-  }
-  createAccessGroup(...args: Parameters<UsersApi['createAccessGroup']>) {
-    return this.usersApi.createAccessGroup(...args);
-  }
-  setGroupMember(...args: Parameters<UsersApi['setGroupMember']>) {
-    return this.usersApi.setGroupMember(...args);
-  }
-  setGroupGrant(...args: Parameters<UsersApi['setGroupGrant']>) {
-    return this.usersApi.setGroupGrant(...args);
-  }
-  serviceAccounts(...args: Parameters<ServiceAccountsApi['serviceAccounts']>) {
-    return this.services.serviceAccounts(...args);
-  }
-  servicePolicy(...args: Parameters<ServiceAccountsApi['servicePolicy']>) {
-    return this.services.servicePolicy(...args);
-  }
-  serviceAccount(...args: Parameters<ServiceAccountsApi['serviceAccount']>) {
-    return this.services.serviceAccount(...args);
-  }
-  createServiceAccount(...args: Parameters<ServiceAccountsApi['createServiceAccount']>) {
-    return this.services.createServiceAccount(...args);
-  }
-  updateServiceAccount(...args: Parameters<ServiceAccountsApi['updateServiceAccount']>) {
-    return this.services.updateServiceAccount(...args);
-  }
-  setServicePolicy(...args: Parameters<ServiceAccountsApi['setServicePolicy']>) {
-    return this.services.setServicePolicy(...args);
-  }
-  serviceKeys(...args: Parameters<ServiceAccountsApi['serviceKeys']>) {
-    return this.services.serviceKeys(...args);
-  }
-  serviceAudit(...args: Parameters<ServiceAccountsApi['serviceAudit']>) {
-    return this.services.serviceAudit(...args);
-  }
-  serviceDelegations(...args: Parameters<CredentialsApi['serviceDelegations']>) {
-    return this.credentials.serviceDelegations(...args);
-  }
-  setServiceDelegation(...args: Parameters<CredentialsApi['setServiceDelegation']>) {
-    return this.credentials.setServiceDelegation(...args);
-  }
-  removeServiceDelegation(...args: Parameters<CredentialsApi['removeServiceDelegation']>) {
-    return this.credentials.removeServiceDelegation(...args);
-  }
-  serviceKey(...args: Parameters<CredentialsApi['serviceKey']>) {
-    return this.credentials.serviceKey(...args);
-  }
-  issueServiceKey(...args: Parameters<CredentialsApi['issueServiceKey']>) {
-    return this.credentials.issueServiceKey(...args);
-  }
-  rotateServiceKey(...args: Parameters<CredentialsApi['rotateServiceKey']>) {
-    return this.credentials.rotateServiceKey(...args);
-  }
-  revokeServiceKey(...args: Parameters<CredentialsApi['revokeServiceKey']>) {
-    return this.credentials.revokeServiceKey(...args);
   }
   packages(...args: Parameters<CatalogApi['packages']>) {
     return this.catalog.packages(...args);

@@ -86,6 +86,33 @@ interface Entry {
 }
 const terminal = (state: DownloadState) => ['completed', 'cancelled', 'failed'].includes(state);
 
+/** What a running job reports back: progress, retries and the start of its final commit. */
+function downloadContext(e: Entry, signal: AbortSignal, changed: () => void): DownloadContext {
+  return {
+    signal,
+    progress: (bytes) => {
+      if (!Number.isSafeInteger(bytes) || bytes < 0)
+        throw new ArkvoryClientError('invalid_response', 'Invalid download progress');
+      e.bytes = bytes;
+      if (e.state === 'retrying') e.state = 'running';
+      e.retry = null;
+      changed();
+    },
+    retry: (event) => {
+      if (e.state === 'running' || e.state === 'retrying') {
+        e.state = 'retrying';
+        e.retry = { ...event };
+        changed();
+      }
+    },
+    beginCommit: () => {
+      signal.throwIfAborted();
+      e.state = 'saving';
+      changed();
+    },
+  };
+}
+
 /** Bounded client-side scheduler. One slot covers the full stream, retries and local commit. */
 export class DownloadQueue {
   private policy;
@@ -332,29 +359,11 @@ export class DownloadQueue {
     e.work = Promise.resolve().then(async () => {
       try {
         controller.signal.throwIfAborted();
-        await e.job.run({
-          signal: controller.signal,
-          progress: (bytes) => {
-            if (!Number.isSafeInteger(bytes) || bytes < 0)
-              throw new ArkvoryClientError('invalid_response', 'Invalid download progress');
-            e.bytes = bytes;
-            if (e.state === 'retrying') e.state = 'running';
-            e.retry = null;
+        await e.job.run(
+          downloadContext(e, controller.signal, () => {
             this.changed();
-          },
-          retry: (event) => {
-            if (e.state === 'running' || e.state === 'retrying') {
-              e.state = 'retrying';
-              e.retry = { ...event };
-              this.changed();
-            }
-          },
-          beginCommit: () => {
-            controller.signal.throwIfAborted();
-            e.state = 'saving';
-            this.changed();
-          },
-        });
+          }),
+        );
         if (e.state !== 'saving') controller.signal.throwIfAborted();
         e.state = 'completed';
         // A committed file stays successful even if temporary-file cleanup needs another try.

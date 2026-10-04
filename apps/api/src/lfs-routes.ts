@@ -2,24 +2,13 @@ import { Readable } from 'node:stream';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { LfsError } from '@proanima/arkvory-domain';
 import type { GitLfs, LfsLock } from '@proanima/arkvory-application';
-import type { BandwidthGovernor, DiagnosticLogger } from '@proanima/arkvory-infrastructure';
-import type { RequestContext } from './request-context.js';
-import type { createContentSender } from './download-routes.js';
-import type { resolveUploadTimeouts } from './upload-policy.js';
 import { UploadReceiver } from './upload-lifetime.js';
+import type { ProtocolTransfers } from './protocol-transfers.js';
 import { lfsMediaType, registerLfsErrors } from './lfs-errors.js';
 import { publicOrigin } from './public-origin.js';
 
-interface Lfs {
+interface Lfs extends ProtocolTransfers {
   readonly lfs: GitLfs;
-  readonly principal: RequestContext['principal'];
-  readonly signal: RequestContext['signal'];
-  readonly context: Pick<RequestContext, 'recordError'>;
-  readonly modifying: <T>(request: FastifyRequest, action: () => Promise<T>) => Promise<T>;
-  readonly sendContent: ReturnType<typeof createContentSender>;
-  readonly bandwidth: Pick<BandwidthGovernor, 'stream'>;
-  readonly policy: ReturnType<typeof resolveUploadTimeouts>;
-  readonly diagnostics: Pick<DiagnosticLogger, 'write'>;
 }
 type Repository = { repository: string };
 type ObjectParams = Repository & { oid: string };

@@ -1,11 +1,11 @@
 import { createHash, randomUUID } from 'node:crypto';
-import { createReadStream } from 'node:fs';
 import { mkdir, open, link, unlink, stat, statfs, readFile, rm } from 'node:fs/promises';
 import { join, resolve, dirname, relative } from 'node:path';
 import { ArkvoryError, MAX_PARTS, requireId } from '@proanima/arkvory-domain';
 import type { ArtifactDescriptor, UploadPart } from '@proanima/arkvory-domain';
 import type { BlobStore, Cancellation } from '@proanima/arkvory-application';
 import { hasCode, syncDirectory } from './fs-durability.js';
+import { streamFile, verifyFile } from './blob-files.js';
 
 /** Free space kept for the database, logs and the OS; ARKVORY_STORAGE_RESERVE_BYTES. */
 export const defaultStorageReserveBytes = 1024 ** 3;
@@ -152,7 +152,7 @@ export class LocalBlobStore implements BlobStore {
         await link(temporary, target);
       } catch (error) {
         if (!hasCode(error, 'EEXIST')) throw error;
-        await this.verifyPath(target, expected, cancellation);
+        await verifyFile(target, expected, cancellation);
       }
       await syncDirectory(dirname(target));
     } finally {
@@ -178,7 +178,7 @@ export class LocalBlobStore implements BlobStore {
     cancellation: Cancellation,
   ): Promise<void> {
     await this.exists(id, expected.size);
-    await this.verifyPath(this.blob(id), expected, cancellation);
+    await verifyFile(this.blob(id), expected, cancellation);
   }
 
   async duplicate(
@@ -200,28 +200,9 @@ export class LocalBlobStore implements BlobStore {
         stat(target, { bigint: true }),
       ]);
       if (left.ino !== right.ino || left.dev !== right.dev)
-        await this.verifyPath(target, expected, cancellation);
+        await verifyFile(target, expected, cancellation);
     }
     await syncDirectory(dirname(target));
-  }
-
-  private async verifyPath(
-    path: string,
-    expected: ArtifactDescriptor,
-    cancellation: Cancellation,
-  ): Promise<void> {
-    const info = await stat(path);
-    if (info.size !== expected.size)
-      throw new ArkvoryError('integrity_mismatch', 'Stored size mismatch');
-    const hash = createHash('sha256');
-    for await (const chunk of this.streamFile(path, expected.size)) {
-      cancellation.throwIfAborted();
-      hash.update(chunk);
-    }
-    cancellation.throwIfAborted();
-    if (hash.digest('hex') !== expected.sha256)
-      throw new ArkvoryError('integrity_mismatch', 'Stored content failed integrity verification');
-    await syncDirectory(dirname(path));
   }
 
   async *read(
@@ -229,30 +210,7 @@ export class LocalBlobStore implements BlobStore {
     size: number,
     range?: { start: number; end: number },
   ): AsyncIterable<Uint8Array> {
-    yield* this.streamFile(this.blob(id), size, range);
-  }
-
-  private async *streamFile(
-    path: string,
-    size: number,
-    range?: { start: number; end: number },
-  ): AsyncIterable<Uint8Array> {
-    if (size === 0) return;
-    const stream = createReadStream(path, {
-      start: range?.start ?? 0,
-      end: range?.end ?? size - 1,
-      highWaterMark: 64 * 1024,
-    });
-    let remaining = range ? range.end - range.start + 1 : size;
-    for await (const chunk of stream) {
-      if (!(chunk instanceof Uint8Array))
-        throw new ArkvoryError('unavailable', 'Invalid content stream');
-      remaining -= chunk.byteLength;
-      yield chunk;
-    }
-    // A file can be truncated after the metadata/stat check. Never report a successful short EOF.
-    if (remaining !== 0)
-      throw new ArkvoryError('integrity_mismatch', 'Stored content ended before its declared size');
+    yield* streamFile(this.blob(id), size, range);
   }
 
   private partPath(id: string, part: UploadPart): string {
@@ -291,7 +249,7 @@ export class LocalBlobStore implements BlobStore {
   }
 
   async *readParts(id: string, parts: readonly UploadPart[]): AsyncIterable<Uint8Array> {
-    for (const part of parts) yield* this.streamFile(this.partPath(id, part), part.size);
+    for (const part of parts) yield* streamFile(this.partPath(id, part), part.size);
   }
 
   async collect(id: string, removeContent: boolean, cancellation: Cancellation): Promise<void> {

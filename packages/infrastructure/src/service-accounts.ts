@@ -12,6 +12,7 @@ import type { AccountRow, KeyRow } from './service-rows.js';
 import { recordServiceEvent, serviceTransaction } from './service-transaction.js';
 import { issueServiceKey } from './service-key-issue.js';
 import { activateServiceKey } from './service-key-activation.js';
+import { serviceAuditPage } from './service-audit-page.js';
 
 /**
  * PostgreSQL service accounts, managed keys and delegations. Every operation runs in one
@@ -246,25 +247,7 @@ export class PostgresServices implements ServiceStore {
           ])
         ).rows[0],
       );
-      const rows = await c.query<{
-        sequence: string;
-        actor: string;
-        action: string;
-        account_id: string;
-        key_id: string | null;
-        occurred_at: Date;
-      }>(
-        'SELECT sequence::text,actor,action,account_id,key_id,occurred_at FROM arkvory_service_audit WHERE account_id=$1 AND sequence>$2::bigint ORDER BY arkvory_service_audit.sequence LIMIT 100',
-        [accountId, after],
-      );
-      return rows.rows.map((r) => ({
-        sequence: r.sequence,
-        actor: r.actor,
-        action: r.action,
-        accountId: r.account_id,
-        keyId: r.key_id,
-        occurredAt: r.occurred_at.toISOString(),
-      }));
+      return serviceAuditPage(c, accountId, after);
     }, false);
   }
   delegations(actor: Principal, keyId: string) {

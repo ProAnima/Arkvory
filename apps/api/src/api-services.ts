@@ -14,10 +14,6 @@ import {
   BackupControl,
   MirrorStatus,
   DownloadLinks,
-  OciRegistry,
-  RawFiles,
-  GitLfs,
-  NpmRegistry,
 } from '@proanima/arkvory-application';
 import type { MirrorConfiguration } from '@proanima/arkvory-application';
 import {
@@ -41,36 +37,16 @@ import {
   PostgresBackupStatus,
   PostgresMirrorState,
   PostgresTransferLinks,
-  PostgresOciIndex,
-  FileOciStaging,
-  FileRawStaging,
-  FileNpmPublishStaging,
-  GzipNpmTarballInspector,
-  PostgresNpmIndex,
-  PostgresLfsIndex,
-  PostgresLfsLocks,
 } from '@proanima/arkvory-infrastructure';
 import { AuthThrottle } from './auth-throttle.js';
 import { BackupMetrics } from './backup-metrics.js';
 import { MirrorMetrics } from './mirror-metrics.js';
+import { createProtocolServices } from './protocol-services.js';
 import type {
   LocalBlobStore,
   PostgresCatalog,
   PostgresContentPins,
 } from '@proanima/arkvory-infrastructure';
-
-/** The npm registry (ADR 0066): one index reads and changes; publishes stage like raw files. */
-function npmRegistry(
-  service: StorageService,
-  staging: FileRawStaging,
-  pool: PostgresCatalog['pool'],
-  now: () => string,
-) {
-  const index = new PostgresNpmIndex(pool);
-  const tarballs = new GzipNpmTarballInspector();
-  const ids = { next: randomUUID, now };
-  return new NpmRegistry(service, new FileNpmPublishStaging(staging), tarballs, index, index, ids);
-}
 
 /** Composition only: each registrar receives just the services it consumes. */
 export function createApiServices(
@@ -104,7 +80,6 @@ export function createApiServices(
   const backupStatus = new PostgresBackupStatus(catalog.pool);
   const backupRequests = new PostgresBackupRequests(catalog.pool);
   const mirrors = new MirrorStatus(options.mirrors ?? [], new PostgresMirrorState(catalog.pool));
-  const rawStaging = new FileRawStaging(blobs.root, (bytes) => blobs.checkSpace(bytes));
   return {
     jobs,
     mirrors,
@@ -150,22 +125,7 @@ export function createApiServices(
     retention: new ArtifactRetention(new PostgresRetention(catalog.pool), now),
     attachments: new BuildAttachments(service, new PostgresAttachments(catalog.pool)),
     links: new DownloadLinks(service, new PostgresTransferLinks(catalog.pool)),
-    rawStaging,
-    raw: new RawFiles(service, browse, rawStaging, { next: randomUUID }),
-    lfs: new GitLfs(
-      service,
-      new PostgresLfsIndex(catalog.pool),
-      new PostgresLfsLocks(catalog.pool),
-      { next: randomUUID, now },
-    ),
-    npm: npmRegistry(service, rawStaging, catalog.pool, now),
-    registry: new OciRegistry(
-      service,
-      new PostgresOciIndex(catalog.pool, catalog.capacityBytes),
-      new FileOciStaging(blobs.root, (bytes) => blobs.checkSpace(bytes)),
-      { next: randomUUID },
-      service.maxObjectBytes,
-    ),
+    ...createProtocolServices(service, browse, catalog, blobs, now),
     completion: new CompletionQueue(jobs, randomUUID),
   };
 }

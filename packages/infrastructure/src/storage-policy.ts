@@ -1,16 +1,11 @@
 import type { Pool, PoolClient } from 'pg';
 import { recordStorageEvent } from './storage-events.js';
-import {
-  ArkvoryError,
-  defaultStoragePolicy,
-  parseStoragePolicy,
-  capacityState,
-} from '@proanima/arkvory-domain';
+import { repositoryUsage, storageEventPage } from './storage-usage.js';
+import { ArkvoryError, defaultStoragePolicy, parseStoragePolicy } from '@proanima/arkvory-domain';
 import type { MutationAccess, StoragePolicy } from '@proanima/arkvory-domain';
 import type {
   StoragePolicyStore,
   StoragePolicySnapshot,
-  StorageUsage,
   StorageEvent,
   DeletionResult,
 } from '@proanima/arkvory-application';
@@ -131,33 +126,8 @@ export class PostgresStoragePolicy implements StoragePolicyStore {
       return snapshot(result.rows[0]);
     });
   }
-  private async usageIn(
-    c: Pool | PoolClient,
-    repository: string,
-    policy: StoragePolicy,
-  ): Promise<StorageUsage> {
-    const row = (
-      await c.query<{ published: string; pending: string; retired: string; reserved: string }>(
-        `SELECT
-      COALESCE(sum(size) FILTER(WHERE status='available' AND NOT reclaimed),0)::text AS published,
-      COALESCE(sum(size) FILTER(WHERE status='pending' AND NOT reclaimed),0)::text AS pending,
-      COALESCE(sum(size) FILTER(WHERE status='cancelled' AND NOT reclaimed),0)::text AS retired,
-      COALESCE(sum(size) FILTER(WHERE NOT reclaimed),0)::text AS reserved FROM arkvory_uploads WHERE repository=$1`,
-        [repository],
-      )
-    ).rows[0];
-    if (!row) throw new ArkvoryError('unavailable', 'Storage usage unavailable');
-    return {
-      publishedBytes: row.published,
-      pendingBytes: row.pending,
-      retiredBytes: row.retired,
-      reservedBytes: row.reserved,
-      quotaBytes: policy.quotaBytes,
-      state: capacityState(row.reserved, policy),
-    };
-  }
   async usage(repository: string) {
-    return this.usageIn(this.pool, repository, (await this.get(repository)).policy);
+    return repositoryUsage(this.pool, repository, (await this.get(repository)).policy);
   }
   private async candidates(c: Pool | PoolClient, repository: string, policy: StoragePolicy) {
     const clock = (
@@ -290,7 +260,7 @@ export class PostgresStoragePolicy implements StoragePolicyStore {
     policy: StoragePolicy,
     previous: string | null,
   ) {
-    const usage = await this.usageIn(c, repository, policy);
+    const usage = await repositoryUsage(c, repository, policy);
     if (previous !== usage.state) {
       await this.record(
         c,
@@ -331,27 +301,7 @@ export class PostgresStoragePolicy implements StoragePolicyStore {
   ) {
     await this.transaction((c) => this.record(c, repository, level, code, details));
   }
-  async events(repository: string, after: string, level?: StorageEvent['level']) {
-    const rows = (
-      await this.pool.query<{
-        sequence: string;
-        occurred_at: Date;
-        level: StorageEvent['level'];
-        code: string;
-        details: StorageEvent['details'];
-      }>(
-        `SELECT * FROM arkvory_storage_events WHERE repository=$1 AND sequence>$2::bigint
-      AND ($3::text IS NULL OR level=$3) ORDER BY sequence LIMIT 101`,
-        [repository, after, level ?? null],
-      )
-    ).rows;
-    const items = rows.slice(0, 100).map((r) => ({
-      sequence: r.sequence,
-      occurredAt: r.occurred_at.toISOString(),
-      level: r.level,
-      code: r.code,
-      details: r.details,
-    }));
-    return { items, next: rows.length > 100 ? (items.at(-1)?.sequence ?? null) : null };
+  events(repository: string, after: string, level?: StorageEvent['level']) {
+    return storageEventPage(this.pool, repository, after, level);
   }
 }

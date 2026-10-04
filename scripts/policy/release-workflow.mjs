@@ -2,8 +2,19 @@ import { parse } from 'yaml';
 import { inspectRunnerImages } from './runners.mjs';
 
 export function inspectReleaseWorkflow(text) {
-  const workflow = parse(text),
-    errors = [];
+  const workflow = parse(text);
+  return [
+    ...inspectReleaseShape(workflow),
+    ...inspectReleaseSteps(workflow.jobs ?? {}),
+    ...inspectReleaseOrder(workflow),
+    ...inspectNative(workflow),
+    ...inspectRunnerImages(workflow.jobs),
+  ];
+}
+
+/** Jobs, trigger, permissions, dependencies and platforms of the release workflow. */
+function inspectReleaseShape(workflow) {
+  const errors = [];
   const { build, acceptance, publish } = workflow.jobs ?? {};
   if (
     Object.keys(workflow.jobs ?? {})
@@ -35,7 +46,13 @@ export function inspectReleaseWorkflow(text) {
     acceptance?.strategy?.['fail-fast'] !== false
   )
     errors.push('All supported release platforms must be checked');
-  for (const [name, job] of Object.entries(workflow.jobs ?? {})) {
+  return errors;
+}
+
+/** Every job is bounded and blocking; its steps are pinned and cannot hide a failure. */
+function inspectReleaseSteps(jobs) {
+  const errors = [];
+  for (const [name, job] of Object.entries(jobs)) {
     if (
       job['continue-on-error'] ||
       !Number.isInteger(job['timeout-minutes']) ||
@@ -55,6 +72,13 @@ export function inspectReleaseWorkflow(text) {
         errors.push('Publishing cannot install dependencies, build or execute candidate code');
     }
   }
+  return errors;
+}
+
+/** Gates before packaging before upload; acceptance and publishing use this run's candidate. */
+function inspectReleaseOrder(workflow) {
+  const errors = [];
+  const { build, acceptance } = workflow.jobs ?? {};
   const steps = build?.steps ?? [];
   const gate = steps.findIndex(
     (s) => s.run === 'npm run gate -- release' && !Object.hasOwn(s, 'if'),
@@ -98,7 +122,6 @@ export function inspectReleaseWorkflow(text) {
       )
     )
       errors.push(`${name}: current-run candidate required`);
-  errors.push(...inspectNative(workflow), ...inspectRunnerImages(workflow.jobs));
   return errors;
 }
 

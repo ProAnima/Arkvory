@@ -2,22 +2,12 @@ import { Readable } from 'node:stream';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { ArkvoryError } from '@proanima/arkvory-domain';
 import type { ArtifactCatalog, RawFiles } from '@proanima/arkvory-application';
-import type { BandwidthGovernor, DiagnosticLogger } from '@proanima/arkvory-infrastructure';
-import type { RequestContext } from './request-context.js';
-import type { createContentSender } from './download-routes.js';
-import type { resolveUploadTimeouts } from './upload-policy.js';
 import { UploadReceiver } from './upload-lifetime.js';
+import type { ProtocolTransfers } from './protocol-transfers.js';
 
-interface Raw {
+interface Raw extends ProtocolTransfers {
   readonly raw: RawFiles;
   readonly browse: Pick<ArtifactCatalog, 'resolveAssetContent'>;
-  readonly principal: RequestContext['principal'];
-  readonly signal: RequestContext['signal'];
-  readonly modifying: <T>(request: FastifyRequest, action: () => Promise<T>) => Promise<T>;
-  readonly sendContent: ReturnType<typeof createContentSender>;
-  readonly bandwidth: Pick<BandwidthGovernor, 'stream'>;
-  readonly policy: ReturnType<typeof resolveUploadTimeouts>;
-  readonly diagnostics: Pick<DiagnosticLogger, 'write'>;
 }
 type Params = { repository: string; '*': string };
 const route = '/api/v1/repositories/:repository/raw/*';

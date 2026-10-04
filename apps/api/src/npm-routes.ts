@@ -2,24 +2,13 @@ import { Readable } from 'node:stream';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { ArkvoryError, npmPackument } from '@proanima/arkvory-domain';
 import type { NpmRegistry, NpmSearchItem } from '@proanima/arkvory-application';
-import type { BandwidthGovernor, DiagnosticLogger } from '@proanima/arkvory-infrastructure';
-import type { RequestContext } from './request-context.js';
-import type { createContentSender } from './download-routes.js';
-import type { resolveUploadTimeouts } from './upload-policy.js';
 import { UploadReceiver } from './upload-lifetime.js';
+import type { ProtocolTransfers } from './protocol-transfers.js';
 import { registerNpmErrors } from './npm-errors.js';
 import { publicOrigin } from './public-origin.js';
 
-interface Npm {
+interface Npm extends ProtocolTransfers {
   readonly npm: NpmRegistry;
-  readonly principal: RequestContext['principal'];
-  readonly signal: RequestContext['signal'];
-  readonly context: Pick<RequestContext, 'recordError'>;
-  readonly modifying: <T>(request: FastifyRequest, action: () => Promise<T>) => Promise<T>;
-  readonly sendContent: ReturnType<typeof createContentSender>;
-  readonly bandwidth: Pick<BandwidthGovernor, 'stream'>;
-  readonly policy: ReturnType<typeof resolveUploadTimeouts>;
-  readonly diagnostics: Pick<DiagnosticLogger, 'write'>;
 }
 type Request = FastifyRequest<{ Params: { repository: string } }>;
 export type NpmTarget =
