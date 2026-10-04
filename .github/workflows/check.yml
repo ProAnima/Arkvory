@@ -250,10 +250,36 @@ jobs:
         if: ${{ always() }}
         run: node scripts/ci-report.mjs
 
+  stand:
+    name: Two-site stand (packaged hosts, mirror, failover)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Cache verified native dependency archives
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: .cache/native-downloads
+          key: native-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/native-dependencies.mjs') }}
+        env:
+          SEGMENT_DOWNLOAD_TIMEOUT_MINS: '2'
+      - run: sudo apt-get update && sudo apt-get install -y rpm postgresql
+      - run: npm run gate -- deployment-stand
+      - name: Publish gate report
+        if: ${{ always() }}
+        run: node scripts/ci-report.mjs
+
   verdict:
     name: Arkvory merge gate
     if: ${{ always() }}
-    needs: [check, integration, browser, security, large, deployment-containers, native]
+    needs: [check, integration, browser, security, large, deployment-containers, native, stand]
     runs-on: ubuntu-24.04
     timeout-minutes: 2
     steps:

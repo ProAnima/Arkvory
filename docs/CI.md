@@ -8,16 +8,17 @@
 
 ## Lanes
 
-| Job                     | Runner                                     | Команда                                                      | Когда                                                                   |
-| ----------------------- | ------------------------------------------ | ------------------------------------------------------------ | ----------------------------------------------------------------------- |
-| `check` (Quality)       | ubuntu-22.04, ubuntu-24.04, windows-2022/5 | `npm run gate -- quick deployment deployment-services`       | всегда                                                                  |
-| `native`                | ubuntu-24.04, windows-2022                 | `npm run gate -- native-install` (включает `native-package`) | всегда                                                                  |
-| `integration`           | ubuntu-24.04 + PostgreSQL 18.4             | `npm run gate -- integration`                                | всегда                                                                  |
-| `browser`               | ubuntu-24.04 + PostgreSQL 18.4             | `npm run gate -- browser`                                    | всегда                                                                  |
-| `security`              | ubuntu-24.04                               | `npm run gate -- security`                                   | всегда                                                                  |
-| `deployment-containers` | ubuntu-24.04 (Docker Engine)               | `npm run gate -- deployment-containers`                      | всегда                                                                  |
-| `large`                 | ubuntu-24.04 + PostgreSQL 18.4, ×2         | `npm run gate -- large-full` / `large-multipart`             | push в main, `v*`, merge queue, schedule, ручной `large_transfers=true` |
-| `verdict`               | ubuntu-24.04                               | `node scripts/ci-verdict.mjs`                                | всегда                                                                  |
+| Job                     | Runner                                     | Команда                                                        | Когда                                                                   |
+| ----------------------- | ------------------------------------------ | -------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| `check` (Quality)       | ubuntu-22.04, ubuntu-24.04, windows-2022/5 | `npm run gate -- quick deployment deployment-services`         | всегда                                                                  |
+| `native`                | ubuntu-24.04, windows-2022                 | `npm run gate -- native-install` (включает `native-package`)   | всегда                                                                  |
+| `integration`           | ubuntu-24.04 + PostgreSQL 18.4             | `npm run gate -- integration`                                  | всегда                                                                  |
+| `browser`               | ubuntu-24.04 + PostgreSQL 18.4             | `npm run gate -- browser`                                      | всегда                                                                  |
+| `security`              | ubuntu-24.04                               | `npm run gate -- security`                                     | всегда                                                                  |
+| `deployment-containers` | ubuntu-24.04 (Docker Engine)               | `npm run gate -- deployment-containers`                        | всегда                                                                  |
+| `stand`                 | ubuntu-24.04 (Docker Engine)               | `npm run gate -- deployment-stand` (включает `native-package`) | всегда                                                                  |
+| `large`                 | ubuntu-24.04 + PostgreSQL 18.4, ×2         | `npm run gate -- large-full` / `large-multipart`               | push в main, `v*`, merge queue, schedule, ручной `large_transfers=true` |
+| `verdict`               | ubuntu-24.04                               | `node scripts/ci-verdict.mjs`                                  | всегда                                                                  |
 
 Обязательны все lanes, кроме `large`. Итоговый `Arkvory merge gate` (verdict) запускается всегда и блокирует результат при missing/failed/cancelled/skipped любого обязательного job. Для push в main, `v*`, merge queue, расписания и ручного запуска с `large_transfers` он требует также оба сценария 5 GiB. Обычный pull request может пропустить только `large`.
 
@@ -45,7 +46,7 @@ npm run release:local -- 1.2.3  # черновик релиза на GitHub
 | -------------- | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
 | `windows`      | хост, рабочее дерево; БД `npm run test:db:up`             | static, unit, security, integration, browser, deployment, deployment-containers, native-package (+ 5 GiB в release) |
 | `linux`        | контейнер `scripts/ci/linux.Dockerfile` + PostgreSQL 18.4 | static, unit, integration, browser, deployment                                                                      |
-| `linux-system` | одноразовый контейнер с systemd                           | native-package, deployment-services, native-install                                                                 |
+| `linux-system` | одноразовый контейнер с systemd                           | native-package, deployment-services, native-install, deployment-stand                                               |
 
 Не выполняются локально (gap): Windows `deployment-services` и `native-install` — они ставят службы и пакет на машину; Linux `deployment-containers` — Docker Desktop отдаёт файлы Windows без владельцев POSIX, поэтому bind mount с uid 1000 (vault Compose) на Linux-хосте ведёт себя иначе и проверяется только в GitHub Actions. Покрыты другим lane: Linux `security`, оба сценария 5 GiB. Полнота плана проверяется `tests/local-ci.test.mjs`: новый гейт в config/gates.json без lane или явного объявления роняет unit-гейт.
 

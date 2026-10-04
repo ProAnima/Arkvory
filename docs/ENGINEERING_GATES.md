@@ -15,7 +15,7 @@ Node.js 24, npm 11. Установка: npm ci --ignore-scripts.
 | npm run gate -- large       | Политики, сборка, оба сценария 5 GiB                                                  |
 | npm run gate -- security    | npm audit, high/critical блокируют                                                    |
 
-Отдельные гейты поставки: `deployment`, `deployment-services`, `deployment-containers`, `native-package`, `native-install`, `large-full`, `large-multipart` (требования к хосту — в таблице ниже). Можно передать несколько имён: npm run gate -- unit integration. Зависимости выполняются один раз, задания — последовательно. Старые npm test, test:integration, test:browser, test:large и check вызывают тот же runner. npm run build остаётся командой сборки для разработки, без заявления о прохождении тестов.
+Отдельные гейты поставки: `deployment`, `deployment-services`, `deployment-containers`, `native-package`, `native-install`, `deployment-stand`, `large-full`, `large-multipart` (требования к хосту — в таблице ниже). Можно передать несколько имён: npm run gate -- unit integration. Зависимости выполняются один раз, задания — последовательно. Старые npm test, test:integration, test:browser, test:large и check вызывают тот же runner. npm run build остаётся командой сборки для разработки, без заявления о прохождении тестов.
 
 ### Быстрый цикл разработки
 
@@ -48,6 +48,7 @@ Native jobs в check/release кэшируют только `.cache/native-downlo
 | `deployment-containers` | Docker Desktop в режиме Linux containers, запуск от пользователя Docker Desktop (повышение прав не нужно), свободный порт 8080 | Docker Engine + Compose v2, пользователь группы docker, curl, python3, свободный порт 8080 |
 | `native-package`        | загрузка закреплённых зависимостей в `.cache/native-downloads`                                                                 | то же + dpkg-deb, rpmbuild                                                                 |
 | `native-install`        | только одноразовый runner: ставит службы и пакеты                                                                              | то же                                                                                      |
+| `deployment-stand`      | не выполняется (Linux-контейнеры с systemd)                                                                                    | Docker Engine, привилегированные контейнеры с systemd; образ стенда собирается один раз    |
 
 `deployment-containers` требует, чтобы на движке не было проекта `proanima-arkvory` (контейнеров и volumes): gate удаляет свои volumes и не трогает чужую установку. Он скачивает проверенный Node.js 24.21.0 с nodejs.org, как поставляемый установщик. Пример для Windows: `npm run gate -- quick deployment deployment-containers`; для Linux CI-эквивалент Quality — `npm run gate -- quick deployment deployment-services`.
 

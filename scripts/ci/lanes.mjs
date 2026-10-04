@@ -29,7 +29,7 @@ export const lanes = {
   'linux-system': {
     environment: 'linux-systemd-container',
     platform: 'linux',
-    verify: ['native-package', 'deployment-services', 'native-install'],
+    verify: ['native-package', 'deployment-services', 'native-install', 'deployment-stand'],
     release: [],
   },
 };
@@ -50,6 +50,13 @@ export const notExecuted = [
     platform: 'win32',
     kind: 'gap',
     reason: 'Installs the Windows package machine-wide; runs only on a disposable runner',
+  },
+  {
+    // Two hosts with systemd and the native .deb: Linux containers on the same engine.
+    gate: 'deployment-stand',
+    platform: 'win32',
+    kind: 'covered',
+    reason: 'The two-site stand of Linux systemd hosts runs in the linux-system lane',
   },
   {
     // Docker Desktop shares Windows files without POSIX owners, so uid 1000 bind mounts of a

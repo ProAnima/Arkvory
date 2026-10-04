@@ -10,7 +10,8 @@
       "deployment",
       "deployment-services",
       "deployment-containers",
-      "native-install"
+      "native-install",
+      "deployment-stand"
     ],
     "release": [
       "static",
@@ -23,7 +24,8 @@
       "deployment",
       "deployment-services",
       "deployment-containers",
-      "native-install"
+      "native-install",
+      "deployment-stand"
     ],
     "large": ["large-full", "large-multipart"]
   },
@@ -154,12 +156,19 @@
       "timeoutSeconds": 900,
       "entries": ["tests/deployment/native-install.mjs"],
       "kind": "scenario"
+    },
+    "deployment-stand": {
+      "needs": ["native-package"],
+      "timeoutSeconds": 1500,
+      "entries": ["tests/deployment/two-site-stand.mjs"],
+      "kind": "scenario"
     }
   },
   "spawnedHelpers": [
     "tests/integration/api-child.mjs",
     "tests/deployment/service-child.mjs",
-    "tests/deployment/process-child.mjs"
+    "tests/deployment/process-child.mjs",
+    "tests/deployment/stand-probe.mjs"
   ],
   "mergeTasks": [
     "static",
@@ -171,7 +180,8 @@
     "deployment-services",
     "deployment-containers",
     "native-package",
-    "native-install"
+    "native-install",
+    "deployment-stand"
   ],
   "releaseTasks": ["large-full", "large-multipart"]
 }
