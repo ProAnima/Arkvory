@@ -249,6 +249,13 @@ $root = 'C:\ProgramData\ProAnima\Arkvory'
 | Windows       | `NT AUTHORITY\LOCAL SERVICE` (S-1-5-19), та же, что у API и worker | `icacls /inheritance:r`: SYSTEM и Administrators — F, LocalService — M, наследование для новых файлов                                                                                     |
 | Compose       | uid 1000 контейнера                                                | bind mount из `config/compose.vault.yml` в `/srv/arkvory-vault`, владелец 1000; на Windows-хосте ACL: SYSTEM, Administrators и пользователь Docker Desktop                                |
 
+**Vault на NAS (Linux).** Проверено стендом `deployment-nas` (SMB 3 через `cifs` и NFS 4): копия, структурная и глубокая проверка, отказ при неверном монтировании.
+
+- **SMB.** Монтируйте от имени службы, иначе файлы будут принадлежать root, и агент не сможет писать. Тогда `configure` откажет и вернёт прежнюю конфигурацию. Пример: `mount -t cifs //nas/arkvory /mnt/backup/arkvory -o credentials=/etc/arkvory/smb.credentials,uid=$(id -u arkvory),gid=$(id -g arkvory),file_mode=0600,dir_mode=0700,vers=3.1.1`. Файл с учётными данными должен иметь права 0600.
+- **NFS.** Сопоставление владельцев должно оставлять файлы службе `arkvory`: `no_root_squash` на экспорте либо один и тот же uid на сервере.
+- **Монтирование при загрузке.** Запись в `/etc/fstab` с `_netdev` (для SMB ещё `nofail`, если NAS может быть недоступен). При обрыве NAS агент сообщает `vault_unavailable`. Пустую папку на месте отвалившегося монтирования он не примет за vault: идентификатор хранится в `vault.json`.
+- **Свободное место.** Vault держит запас 1 ГиБ. Копия на почти полную сетевую папку завершается `vault_full`, а не повреждённой точкой.
+
 На Windows vault размещают на локальном или iSCSI томе: LocalService не входит в общие папки SMB, UNC-пути отклоняются. Том NAS монтируйте до старта службы; если он смонтирован позже, перезапустите агента. Ручные команды Compose с настроенным vault включают `-f config/compose.vault.yml`, иначе `up` пересоздаст контейнер без vault (агент сообщит `vault_unavailable`). Обновление с 0.2.x, выполненное кодом старой версии (`manage.mjs update`/`upgrade`, планировщик), службу агента не регистрирует: после него выполните `arkvory updates-connect --root <root>`. Пакеты deb, rpm и exe регистрируют её сами.
 
 Диагностика: `systemctl status arkvory-backup`, `journalctl -u arkvory-backup`; Windows — `Get-Service Arkvorybackup`, журналы `<root>/logs/arkvory-backup.*.log`; Compose — `logs backup`. Установка из исходников запускает `npm run backup -- agent` под supervisor оператора с тем же окружением, что у API, и с правом записи в vault.

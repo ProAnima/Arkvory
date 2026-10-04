@@ -52,6 +52,20 @@ export const notExecuted = [
     reason: 'Installs the Windows package machine-wide; runs only on a disposable runner',
   },
   {
+    // SMB and NFS mounts need the cifs, nfs and nfsd modules of the Docker host's kernel. A gate
+    // never loads kernel modules on a workstation, so only a disposable runner runs this one.
+    gate: 'deployment-nas',
+    platform: 'win32',
+    kind: 'gap',
+    reason: 'Needs cifs/nfs/nfsd kernel modules on the Docker host; runs on a GitHub runner',
+  },
+  {
+    gate: 'deployment-nas',
+    platform: 'linux',
+    kind: 'gap',
+    reason: 'Needs cifs/nfs/nfsd kernel modules on the Docker host; runs on a GitHub runner',
+  },
+  {
     // Two hosts with systemd and the native .deb: Linux containers on the same engine.
     gate: 'deployment-stand',
     platform: 'win32',

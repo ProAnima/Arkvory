@@ -151,8 +151,38 @@ async function ready() {
   }
 }
 
+/** One backup command (capture or deep verification) followed until its job ends. */
+async function backupJob(path) {
+  const receipt = await expect(
+    await call(path, { method: 'POST', headers: { 'idempotency-key': randomUUID() } }),
+    202,
+    `request ${path}`,
+  );
+  const { id } = await receipt.json();
+  const deadline = Date.now() + (args.seconds ?? 300) * 1000;
+  for (;;) {
+    const jobs = await (await call('/api/v1/backup/jobs?limit=20')).json();
+    const job = jobs.items.find((item) => item.id === id);
+    if (job?.state === 'completed') return job;
+    if (job?.state === 'failed') throw new Error(`Backup job failed: ${String(job.errorCode)}`);
+    if (Date.now() > deadline) throw new Error(`Backup job ${id} did not finish`);
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+  }
+}
+
 const commands = {
   ready,
+  'backup-status': async () => (await call('/api/v1/backup/status')).json(),
+  'backup-capture': async () => {
+    const job = await backupJob('/api/v1/backup/runs');
+    const points = await (await call('/api/v1/backup/points?limit=10')).json();
+    const point = points.items.find((item) => item.id === job.pointId);
+    return { pointId: job.pointId, blobs: point?.blobs ?? 0 };
+  },
+  'backup-verify': async () => {
+    const job = await backupJob(`/api/v1/backup/points/${args.point}/verify`);
+    return { state: job.state };
+  },
   publish,
   image,
   'mirror-key': mirrorKey,

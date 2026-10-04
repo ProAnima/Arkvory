@@ -5,14 +5,15 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 // The base of the local CI image, so the stand runs the distribution the packages target. All
-// package dependencies are installed here: the .deb then installs without network access.
+// package dependencies are installed here: the .deb then installs without network access. The
+// file servers (Samba, NFS) stay masked except on the host that plays the NAS.
 const dockerfile = `FROM ubuntu:24.04@sha256:008173c23f95b170204355c12626cb5a965d779a7e1283b09e9cffbb1bf33ca3
 ENV DEBIAN_FRONTEND=noninteractive container=docker
 RUN apt-get update \\
  && apt-get install -y --no-install-recommends systemd systemd-sysv dbus postgresql python3 \\
-      ca-certificates libatomic1 iproute2 procps \\
+      ca-certificates libatomic1 iproute2 procps samba cifs-utils nfs-kernel-server nfs-common \\
  && rm -rf /var/lib/apt/lists/* \\
- && systemctl mask postgresql.service
+ && systemctl mask postgresql.service smbd.service nmbd.service nfs-server.service
 STOPSIGNAL SIGRTMIN+3
 CMD ["/sbin/init"]
 `;
@@ -57,7 +58,8 @@ export function standNetwork() {
   return {
     network,
     hosts,
-    start(name, image) {
+    /** `tmpfs`: more memory-backed mounts, e.g. a NAS export (overlayfs cannot be exported). */
+    start(name, image, { tmpfs = [] } = {}) {
       const container = `${network}-${name}`;
       docker([
         'run',
@@ -81,6 +83,7 @@ export function standNetwork() {
         '/run/lock',
         '--tmpfs',
         '/tmp',
+        ...tmpfs.flatMap((path) => ['--tmpfs', path]),
         '-v',
         '/sys/fs/cgroup:/sys/fs/cgroup:rw',
         image,
@@ -90,7 +93,9 @@ export function standNetwork() {
       return host;
     },
     async remove() {
-      for (const host of hosts) {
+      // Clients before servers (reverse start order): a host whose NFS server vanished first
+      // keeps processes in uninterruptible sleep, and the engine cannot kill its container.
+      for (const host of [...hosts].reverse()) {
         try {
           docker(['rm', '-f', host.container]);
         } catch {}
@@ -103,8 +108,18 @@ export function standNetwork() {
 }
 
 function standHost(container, name) {
+  // `input` needs -i: without it docker exec gives the command no standard input.
   const exec = (args, options = {}) =>
-    docker(['exec', ...(options.env ?? []).flatMap((e) => ['-e', e]), container, ...args], options);
+    docker(
+      [
+        'exec',
+        ...(options.input === undefined ? [] : ['-i']),
+        ...(options.env ?? []).flatMap((e) => ['-e', e]),
+        container,
+        ...args,
+      ],
+      options,
+    );
   return {
     container,
     name,
@@ -146,6 +161,8 @@ function standHost(container, name) {
           'arkvory-worker',
           '-u',
           'arkvory-database',
+          '-u',
+          'arkvory-backup',
           '-n',
           String(lines),
           '--no-pager',

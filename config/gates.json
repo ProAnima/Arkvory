@@ -11,7 +11,8 @@
       "deployment-services",
       "deployment-containers",
       "native-install",
-      "deployment-stand"
+      "deployment-stand",
+      "deployment-nas"
     ],
     "release": [
       "static",
@@ -25,7 +26,8 @@
       "deployment-services",
       "deployment-containers",
       "native-install",
-      "deployment-stand"
+      "deployment-stand",
+      "deployment-nas"
     ],
     "large": ["large-full", "large-multipart"]
   },
@@ -162,6 +164,12 @@
       "timeoutSeconds": 1500,
       "entries": ["tests/deployment/two-site-stand.mjs"],
       "kind": "scenario"
+    },
+    "deployment-nas": {
+      "needs": ["native-package"],
+      "timeoutSeconds": 1500,
+      "entries": ["tests/deployment/nas-stand.mjs"],
+      "kind": "scenario"
     }
   },
   "spawnedHelpers": [
@@ -181,7 +189,8 @@
     "deployment-containers",
     "native-package",
     "native-install",
-    "deployment-stand"
+    "deployment-stand",
+    "deployment-nas"
   ],
   "releaseTasks": ["large-full", "large-multipart"]
 }
