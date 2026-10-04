@@ -15,7 +15,8 @@ if [[ -z "$node" ]]; then
     *) echo 'Supported Linux architectures: x64, arm64' >&2; exit 1 ;;
   esac
   file="node-v24.21.0-linux-$arch.tar.xz"
-  curl --fail --silent --show-error --proto '=https' "https://nodejs.org/dist/v24.21.0/$file" -o "$work/$file"
+  curl --fail --silent --show-error --proto '=https' --retry 3 --retry-delay 5 --retry-connrefused \
+    "https://nodejs.org/dist/v24.21.0/$file" -o "$work/$file"
   printf '%s  %s\n' "$checksum" "$work/$file" | sha256sum --check --status
   mkdir -p "$root/runtime"
   tar -xJf "$work/$file" -C "$root/runtime"
@@ -34,7 +35,7 @@ PY
 else
 # urllib deliberately removes Authorization when GitHub redirects a private asset to another origin.
 python3 - "$root" "$work" "${ARKVORY_RELEASE_VERSION:-}" <<'PY'
-import hashlib, json, pathlib, re, sys, urllib.request
+import hashlib, json, pathlib, re, sys, time, urllib.error, urllib.request
 root, work, version = pathlib.Path(sys.argv[1]), pathlib.Path(sys.argv[2]), sys.argv[3]
 if version and not re.fullmatch(r'(0|[1-9][0-9]{0,5})\.(0|[1-9][0-9]{0,5})\.(0|[1-9][0-9]{0,5})',version): raise RuntimeError('Invalid stable version')
 token_file=root/'github-token.txt'
@@ -52,10 +53,18 @@ def get(url, asset=False):
     if not url.startswith(base): raise RuntimeError('Invalid asset origin')
     headers={'User-Agent':'Arkvory-Installer','Accept':'application/octet-stream' if asset else 'application/vnd.github+json'}
     if token: headers['Authorization']='Bearer '+token
-    with opener.open(urllib.request.Request(url,headers=headers),timeout=120) as response:
-        data=response.read(8*1024*1024+1)
-        if len(data)>8*1024*1024: raise RuntimeError('Bootstrap asset too large')
-        return data
+    # Three attempts with a pause for network failures and 5xx; other HTTP answers are final.
+    for attempt in (1,2,3):
+        try:
+            with opener.open(urllib.request.Request(url,headers=headers),timeout=120) as response:
+                data=response.read(8*1024*1024+1)
+                if len(data)>8*1024*1024: raise RuntimeError('Bootstrap asset too large')
+                return data
+        except urllib.error.HTTPError as error:
+            if error.code<500 or attempt==3: raise
+        except (urllib.error.URLError, TimeoutError, ConnectionError):
+            if attempt==3: raise
+        time.sleep(5*attempt)
 release=json.loads(get(base+('tags/v'+version if version else 'latest')))
 if release['draft'] or release['prerelease']: raise RuntimeError('Stable release required')
 assets={a['name']:a['url'] for a in release['assets']}

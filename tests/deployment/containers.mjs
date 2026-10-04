@@ -1,6 +1,7 @@
 import { execFileSync } from 'node:child_process';
 import { mkdtemp, readFile, writeFile, mkdir, copyFile, realpath, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
+import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import assert from 'node:assert/strict';
@@ -250,7 +251,9 @@ try {
   throw error;
 } finally {
   try {
-    run([...compose, 'down', '--volumes', '--remove-orphans']);
+    // Without compose.env the installation started nothing; a teardown would hide the failure.
+    if (existsSync(join(root, 'config/compose.env')))
+      run([...compose, 'down', '--volumes', '--remove-orphans']);
     // On Linux the vault belongs to the container user (uid 1000); return it to this runner.
     if (!windows && vaultId !== null)
       run([
