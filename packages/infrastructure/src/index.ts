@@ -18,6 +18,7 @@ export { PostgresUserTokens } from './user-tokens.js';
 export { PostgresTransferLinks } from './transfer-links.js';
 export { PostgresOciIndex } from './oci-index.js';
 export { FileOciStaging } from './oci-staging.js';
+export { FileRawStaging } from './raw-staging.js';
 export { PostgresSecurityAudit, SECURITY_AUDIT_RETENTION } from './security-audit.js';
 export { PostgresServices } from './service-accounts.js';
 

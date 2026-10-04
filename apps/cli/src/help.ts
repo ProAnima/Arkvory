@@ -23,6 +23,8 @@ ${ru ? 'КОМАНДЫ' : 'COMMANDS'}
   inspect ID
   upload FILE [--label TAG] [--file METADATA.json] [--state CHECKPOINT.json]
   download ID OUTPUT
+  put FILE PATH [--label TAG] [--state CHECKPOINT.json]  ${ru ? 'Файл как новая ревизия пути; то же содержимое не грузится' : 'File as the next revision of a path; same bytes upload nothing'}
+  get PATH OUTPUT                             ${ru ? 'Текущая ревизия пути, с проверкой SHA-256' : 'Current revision of a path, SHA-256 verified'}
   link ID [--ttl SECONDS]                     ${ru ? 'Ссылка на скачивание без ключа, 60 с – 24 ч (1 ч по умолчанию)' : 'Download link without a key, 60 s to 24 h (1 h by default)'}
   uploads status ID | cancel ID
   packages list [--group GROUP] [--name NAME] [--after CURSOR]

@@ -35,7 +35,11 @@ arkvoryctl profile add production --server https://arkvory.example --token-file 
 arkvoryctl doctor
 arkvoryctl packages publish ./build.upack --label test
 arkvoryctl download ARTIFACT_ID ./downloaded.upack
+arkvoryctl put "./Build/Game Setup.exe" builds/game/1.4/GameSetup.exe
+arkvoryctl get builds/game/1.4/GameSetup.exe ./GameSetup.exe
 ```
+
+`put FILE PATH` загружает файл частями, с чекпойнтом рядом с файлом, и делает его следующей ревизией пути. Если по пути уже лежат те же байты, загрузки нет: повтор шага сборки ничего не стоит. Путь, изменённый кем-то другим, не перезаписывается (`revision_mismatch`). `get PATH OUTPUT` скачивает текущую ревизию с докачкой и проверкой SHA-256. Без CLI тот же путь доступен одним запросом: `curl -T file -H "Authorization: Bearer $KEY" https://…/api/v1/repositories/releases/raw/builds/game/1.4/GameSetup.exe` ([ADR 0064](adr/0064-raw-files-by-path.md)).
 
 `upload` принимает обычный файл или UPack. `packages publish FILE` последовательно загружает файл и регистрирует UPack. `packages register ID` остаётся для уже загруженного артефакта. Некорректный архив остаётся доступным как обычный файл; команда публикации завершается ошибкой. Профиль по умолчанию выбирается при добавлении первого профиля, затем `profile use NAME`. Разовый выбор: `--profile NAME`; смена репозитория: `--repository NAME`. Список/удаление: `profile list`, `profile remove NAME`.
 

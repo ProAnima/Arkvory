@@ -15,6 +15,7 @@ import {
   MirrorStatus,
   DownloadLinks,
   OciRegistry,
+  RawFiles,
 } from '@proanima/arkvory-application';
 import type { MirrorConfiguration } from '@proanima/arkvory-application';
 import {
@@ -40,6 +41,7 @@ import {
   PostgresTransferLinks,
   PostgresOciIndex,
   FileOciStaging,
+  FileRawStaging,
 } from '@proanima/arkvory-infrastructure';
 import { AuthThrottle } from './auth-throttle.js';
 import { BackupMetrics } from './backup-metrics.js';
@@ -82,6 +84,7 @@ export function createApiServices(
   const backupStatus = new PostgresBackupStatus(catalog.pool);
   const backupRequests = new PostgresBackupRequests(catalog.pool);
   const mirrors = new MirrorStatus(options.mirrors ?? [], new PostgresMirrorState(catalog.pool));
+  const rawStaging = new FileRawStaging(blobs.root, (bytes) => blobs.checkSpace(bytes));
   return {
     jobs,
     mirrors,
@@ -127,6 +130,8 @@ export function createApiServices(
     retention: new ArtifactRetention(new PostgresRetention(catalog.pool), now),
     attachments: new BuildAttachments(service, new PostgresAttachments(catalog.pool)),
     links: new DownloadLinks(service, new PostgresTransferLinks(catalog.pool)),
+    rawStaging,
+    raw: new RawFiles(service, browse, rawStaging, { next: randomUUID }),
     registry: new OciRegistry(
       service,
       new PostgresOciIndex(catalog.pool),

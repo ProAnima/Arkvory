@@ -18,6 +18,7 @@ import { metricsPaths } from './metrics.js';
 import { backupPaths } from './backup-api.js';
 import { mirrorPaths } from './mirror-api.js';
 import { downloadLinkParameter, downloadLinkPaths } from './download-link-api.js';
+import { rawPaths } from './raw-paths.js';
 import { feedbackPaths } from './feedback-api.js';
 import type { ApiSurface } from './api-surfaces.js';
 export const descriptorSchema = {
@@ -252,6 +253,7 @@ const composed = composeApiPaths({
   ...backupPaths,
   ...mirrorPaths,
   ...downloadLinkPaths,
+  ...rawPaths,
   ...feedbackPaths,
   ['/api/v1/repositories/{repository}/artifacts/{id}']: {
     ...baseDocument.paths['/api/v1/repositories/{repository}/artifacts/{id}'],

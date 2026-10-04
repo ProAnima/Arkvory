@@ -7,9 +7,33 @@ import { readJson } from './local-files.js';
 import { publishPackage } from './publish-package.js';
 import { upload } from './upload.js';
 import { download } from './download.js';
+import { getFromPath, putToPath } from './path-transfer.js';
 import { CliError } from './errors.js';
 import { isPromotionCommand, promotionCommand } from './promotion-commands.js';
 import { backupCommand } from './backup-commands.js';
+
+const remoteCommands = [
+  'doctor',
+  'repositories',
+  'operations',
+  'list',
+  'search',
+  'inspect',
+  'upload',
+  'download',
+  'put',
+  'get',
+  'link',
+  'uploads',
+  'annotations',
+  'attachments',
+  'packages',
+  'storage',
+  'promote',
+  'stages',
+  'promotions',
+  'backup',
+];
 
 export async function execute(
   args: Arguments,
@@ -18,29 +42,7 @@ export async function execute(
 ): Promise<unknown> {
   const command = word(args, 0);
   if (command === 'profile') return profiles(args);
-  if (
-    ![
-      'doctor',
-      'repositories',
-      'operations',
-      'list',
-      'search',
-      'inspect',
-      'upload',
-      'download',
-      'link',
-      'uploads',
-      'annotations',
-      'attachments',
-      'packages',
-      'storage',
-      'promote',
-      'stages',
-      'promotions',
-      'backup',
-    ].includes(command)
-  )
-    throw new CliError('unknown_command');
+  if (!remoteCommands.includes(command)) throw new CliError('unknown_command');
   const connected = await connection(args, signal);
   if (command === 'backup') return backupCommand(args, connected, timed(args, signal));
   if (isPromotionCommand(args)) return promotionCommand(args, connected, signal, progress);
@@ -48,6 +50,8 @@ export async function execute(
   if (
     command === 'upload' ||
     command === 'download' ||
+    command === 'put' ||
+    command === 'get' ||
     (command === 'packages' && word(args, 1) === 'publish')
   )
     return transfer(args, connected, signal, progress);
@@ -131,6 +135,32 @@ function transfer(
   progress: (n: number, total: number) => void,
 ) {
   const requestTimeoutMs = numericOption(args, 'timeout', 60000, 1, 3600000);
+  if (word(args, 0) === 'get') {
+    validateCommand(args, 3);
+    const output = word(args, 2);
+    return getFromPath({
+      ...connected,
+      assetPath: word(args, 1),
+      output,
+      signal,
+      progress,
+      requestTimeoutMs,
+    });
+  }
+  if (word(args, 0) === 'put') {
+    validateCommand(args, 3, ['state', 'file', 'label']);
+    return putToPath({
+      ...connected,
+      path: word(args, 1),
+      assetPath: word(args, 2),
+      signal,
+      progress,
+      requestTimeoutMs,
+      ...(args.options.has('state') ? { state: option(args, 'state') } : {}),
+      ...(args.options.has('file') ? { annotations: option(args, 'file') } : {}),
+      ...(args.options.has('label') ? { label: option(args, 'label') } : {}),
+    });
+  }
   if (word(args, 0) === 'download') {
     validateCommand(args, 3);
     return download({

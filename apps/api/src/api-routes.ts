@@ -22,6 +22,7 @@ import { registerBackupRoutes } from './backup-routes.js';
 import { registerMirrorRoutes } from './mirror-routes.js';
 import { registerLinkRoutes } from './link-routes.js';
 import { registerOciRoutes } from './oci-routes.js';
+import { registerRawRoutes } from './raw-routes.js';
 
 interface Composition {
   services: ReturnType<typeof createApiServices>;
@@ -64,6 +65,17 @@ export function registerApiRoutes(app: FastifyInstance, dependencies: Compositio
     pins: s.pins,
   });
   registerDownloadRoutes(app, { resolver: s.resolver, browse: s.browse }, principal, sendContent);
+  registerRawRoutes(app, {
+    raw: s.raw,
+    browse: s.browse,
+    principal,
+    signal,
+    modifying,
+    sendContent,
+    bandwidth: transfers.uploadBandwidth,
+    policy,
+    diagnostics,
+  });
   registerOciRoutes(app, {
     registry: s.registry,
     principal,

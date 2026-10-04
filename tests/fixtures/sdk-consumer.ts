@@ -74,6 +74,8 @@ export type UnchangedKeys = Assert<
       | 'feedback'
       // ADR 0062: short-lived download links.
       | 'createDownloadLink'
+      // ADR 0064: raw files by path as the additive namespace `raw`.
+      | 'raw'
     >,
     keyof LegacyClient
   >

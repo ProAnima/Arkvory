@@ -7,6 +7,7 @@ import { ServiceAccountsApi } from './service-accounts-api.js';
 import { CredentialsApi } from './credentials-api.js';
 import { CatalogApi } from './catalog-api.js';
 import { AssetsApi } from './assets-api.js';
+import { RawApi } from './raw-api.js';
 import { StorageApi } from './storage-api.js';
 import { UploadsApi } from './uploads-api.js';
 import { UploadTransfer } from './upload-transfer.js';
@@ -45,6 +46,8 @@ export class ArkvoryClient {
   private readonly credentials: CredentialsApi;
   private readonly catalog: CatalogApi;
   private readonly assets: AssetsApi;
+  /** Raw files by path in one request (ADR 0064); resumable uploads stay create/resume. */
+  readonly raw: RawApi;
   private readonly storage: StorageApi;
   private readonly uploads: UploadsApi;
   private readonly uploader: UploadTransfer;
@@ -72,6 +75,7 @@ export class ArkvoryClient {
     this.credentials = new CredentialsApi(http);
     this.catalog = new CatalogApi(http);
     this.assets = new AssetsApi(http);
+    this.raw = new RawApi(http);
     this.storage = new StorageApi(http);
     this.uploads = new UploadsApi(http, normalized);
     // Narrow facade ports preserve overrides of status/parts/complete/artifact in transfer workflows.

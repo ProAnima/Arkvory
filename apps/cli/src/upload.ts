@@ -17,8 +17,10 @@ export interface UploadInput {
   signal: AbortSignal;
   progress: (bytes: number, total: number) => void;
   requestTimeoutMs?: number;
+  /** Already computed by the caller (put): the file is not read twice. */
+  sha256?: string;
 }
-async function digest(blob: Blob, signal: AbortSignal) {
+export async function digest(blob: Blob, signal: AbortSignal) {
   const hash = createHash('sha256'),
     reader = blob.stream().getReader();
   try {
@@ -41,7 +43,7 @@ export async function upload(input: UploadInput) {
   if (state === path) throw new CliError('invalid_state_path');
   return exclusive(state, async () => {
     const blob = await openAsBlob(path);
-    const sha256 = await digest(blob, input.signal);
+    const sha256 = input.sha256 ?? (await digest(blob, input.signal));
     const annotations = readAnnotations({
       revision: 0,
       labels: input.label ? [input.label] : [],

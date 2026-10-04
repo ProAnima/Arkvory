@@ -27,6 +27,7 @@ export * from './backup-wire.js';
 export * from './mirror-api.js';
 export * from './feedback-api.js';
 export * from './download-link-api.js';
+export * from './raw-api.js';
 export {
   backupOperations,
   backupPlanSchema,

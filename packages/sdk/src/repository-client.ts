@@ -6,6 +6,7 @@ import type { DownloadApi } from './download-api.js';
 import type { UploadsApi } from './uploads-api.js';
 import type { UploadTransfer } from './upload-transfer.js';
 import type { AssetsApi } from './assets-api.js';
+import type { RawApi } from './raw-api.js';
 import type { OperationQuery } from '@proanima/arkvory-contracts';
 import type { PromotionsApi } from './promotions-api.js';
 
@@ -46,6 +47,7 @@ type RepositoryTransport = Pick<
     AssetsApi,
     'asset' | 'assetPage' | 'assetHistory' | 'assetRevision' | 'setAsset' | 'restoreAsset'
   > & {
+    readonly raw: Pick<RawApi, 'putRawFile' | 'downloadRawFile'>;
     readonly promotions: Pick<
       PromotionsApi,
       | 'stages'
@@ -58,6 +60,9 @@ type RepositoryTransport = Pick<
       | 'resolve'
     >;
   };
+
+type RawArgs<K extends 'putRawFile' | 'downloadRawFile'> =
+  Parameters<RawApi[K]> extends [string, ...infer Rest] ? Rest : never;
 
 /** Ergonomic scope, not a credential or security boundary. Transport/retry behavior stays shared. */
 export function repositoryClient(client: RepositoryTransport, repository: string) {
@@ -140,6 +145,9 @@ export function repositoryClient(client: RepositoryTransport, repository: string
       revision: bind(client.assetRevision),
       assign: bind(client.setAsset),
       restore: bind(client.restoreAsset),
+      put: (...args: RawArgs<'putRawFile'>) => client.raw.putRawFile(repository, ...args),
+      download: (...args: RawArgs<'downloadRawFile'>) =>
+        client.raw.downloadRawFile(repository, ...args),
     }),
   });
 }

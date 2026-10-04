@@ -60,8 +60,9 @@ function registerMaintenance(
       } finally {
         // Bounded batch; the security journal must not grow without limit under login floods.
         if (runtime.available()) await services.securityAudit.prune();
-        // Abandoned image uploads and their staged bytes (ADR 0063).
+        // Abandoned image uploads and their staged bytes (ADR 0063), raw leftovers (ADR 0064).
         if (runtime.available()) await services.registry.expireUploads();
+        if (runtime.available()) await services.rawStaging.prune(24 * 60 * 60);
       }
     },
     collect: () => services.collector.tick(runtime.available),

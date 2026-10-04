@@ -50,7 +50,7 @@ const query = (name: string, required = false) => ({
   required,
   schema: { type: 'string' },
 });
-const contentGet = (summary: string, parameters: readonly object[]) => ({
+export const contentGet = (summary: string, parameters: readonly object[]) => ({
   summary,
   description:
     'Resolves the name on every request, then streams immutable bytes. Resume with Range and If-Range set to the returned ETag, or download by artifact id.',
