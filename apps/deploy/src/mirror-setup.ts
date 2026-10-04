@@ -4,6 +4,7 @@ import { atomicText, replaceText } from './files.js';
 import type { Installation } from './model.js';
 import { runtimeEnvironment } from './runtime.js';
 import type { ServiceControl } from './tls-setup.js';
+import { sourceCertificates, trustSourceCertificates } from './mirror-ca.js';
 
 /** `arkvory configure --mirror …` (ADR 0058): one repository per call. */
 export interface MirrorChange {
@@ -13,6 +14,11 @@ export interface MirrorChange {
   readonly tokenFile?: string;
   /** Import mode: an ordinary repository taking over versions with these stages. */
   readonly stages?: readonly string[];
+  /**
+   * PEM with the authorities of mirror sources (corporate or self-signed); replaces the stored
+   * bundle, which serves every mirror of the installation.
+   */
+  readonly caFile?: string;
   /** Turns a mirrored repository into an ordinary, writable one. */
   readonly detach?: string;
 }
@@ -103,6 +109,8 @@ export const fetchProbe: UpstreamProbe = async (upstream, source, secret) => {
 interface Layout {
   readonly directory: string;
   readonly mirrors: string;
+  /** Authorities of the sources, trusted by the worker besides its defaults. */
+  readonly ca: string;
   readonly runtime: string;
   /** Paths as the API and worker read them (Compose: inside the containers). */
   readonly seen: (name: string) => string;
@@ -112,6 +120,7 @@ function layout(root: string, state: Installation): Layout {
   return {
     directory,
     mirrors: join(directory, 'mirrors.json'),
+    ca: join(directory, 'ca.pem'),
     runtime: join(root, 'config/runtime.json'),
     seen: (name) =>
       state.mode === 'compose' ? `${containerDirectory}/${name}` : join(directory, name),
@@ -193,6 +202,7 @@ interface Snapshot {
   readonly runtime: string;
   readonly mirrors: string | null;
   readonly token: string | null;
+  readonly ca: string | null;
   readonly override: string | null;
 }
 
@@ -201,6 +211,7 @@ async function restore(paths: Layout, tokenPath: string, overridePath: string, b
   for (const [path, text] of [
     [paths.mirrors, before.mirrors],
     [tokenPath, before.token],
+    [paths.ca, before.ca],
     [overridePath, before.override],
   ] as const)
     if (text === null) await unlink(path).catch(() => undefined);
@@ -225,6 +236,7 @@ export async function configureMirror(
     runtime: await readFile(paths.runtime, 'utf8'),
     mirrors: await optional(paths.mirrors),
     token: null,
+    ca: await optional(paths.ca),
     override: await optional(join(root, mirrorsOverrideFile)),
   };
   const current = entries(before.mirrors);
@@ -236,6 +248,7 @@ export async function configureMirror(
   const snapshot = { ...before, token: await optional(tokenPath) };
   let next: MirrorEntry[];
   let secret: string | null = null;
+  let bundle = before.ca;
   if (change.detach) {
     if (!current.some((entry) => entry.repository === target))
       throw new Error(`${target} is not a mirrored repository`);
@@ -251,6 +264,9 @@ export async function configureMirror(
       throw new Error(`${target} mirrors another source; detach it first`);
     const stages = stageList(change.stages);
     secret = await token(change.tokenFile);
+    if (change.caFile) bundle = await sourceCertificates(change.caFile);
+    // The probe runs in this process: it trusts what the worker will trust, nothing more.
+    if (bundle !== null) trustSourceCertificates(bundle);
     await probe(upstream, sourceRepository, secret);
     const entry = {
       repository: target,
@@ -264,8 +280,12 @@ export async function configureMirror(
   const owner = await stat(paths.runtime);
   const mode = state.mode === 'compose' ? 0o644 : 0o640;
   const env = runtimeEnvironment(JSON.parse(before.runtime));
+  // The authorities go with the last mirror; until then a detach keeps them for the others.
+  if (next.length === 0) bundle = null;
   if (next.length > 0) env['ARKVORY_MIRRORS_FILE'] = paths.seen('mirrors.json');
   else delete env['ARKVORY_MIRRORS_FILE'];
+  if (bundle !== null) env['ARKVORY_MIRRORS_CA_FILE'] = paths.seen('ca.pem');
+  else delete env['ARKVORY_MIRRORS_CA_FILE'];
   try {
     await mkdir(paths.directory, {
       recursive: true,
@@ -277,6 +297,8 @@ export async function configureMirror(
     if (next.length > 0)
       await write(paths.mirrors, JSON.stringify({ mirrors: next }, null, 2) + '\n', owner, mode);
     else await unlink(paths.mirrors).catch(() => undefined);
+    if (bundle !== null) await write(paths.ca, bundle, owner, mode);
+    else await unlink(paths.ca).catch(() => undefined);
     if (state.mode === 'compose') {
       if (next.length > 0) await atomicText(join(root, mirrorsOverrideFile), override(), 0o600);
       else await unlink(join(root, mirrorsOverrideFile)).catch(() => undefined);

@@ -65,8 +65,9 @@ function worker(t, mirror, files) {
       ARKVORY_KEYS_FILE: files.keys,
       ARKVORY_MIRRORS_FILE: files.mirrors,
       ARKVORY_CAPACITY_BYTES: String(16 * 1024 ** 3),
-      // The source's certificate is self-signed: trusted like a corporate CA, never disabled.
-      NODE_EXTRA_CA_CERTS: files.ca,
+      // The source's certificate is self-signed: its authority is stored like a corporate CA
+      // (arkvory configure --mirror-ca-file) and trusted besides the defaults, never disabled.
+      ARKVORY_MIRRORS_CA_FILE: files.ca,
     },
   });
   const handle = { child, output: '', ended: once(child, 'exit') };

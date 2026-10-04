@@ -48,6 +48,7 @@ function argumentsOf(args: string[]): Map<string, string> {
     'mirror-source',
     'mirror-token-file',
     'mirror-stages',
+    'mirror-ca-file',
     'mirror-detach',
   ];
   for (let index = 0; index < args.length; index++) {

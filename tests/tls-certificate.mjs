@@ -32,15 +32,17 @@ function time(date) {
 }
 const ecdsaSha256 = sequence(oid('1.2.840.10045.4.3.2'));
 
+/** `names`: DNS names of the certificate (the first is also its CN); 127.0.0.1 is always in. */
 export function selfSignedCertificate({
   notBefore = new Date(Date.now() - 60_000),
   days = 30,
+  names = ['localhost'],
 } = {}) {
   const { privateKey, publicKey } = generateKeyPairSync('ec', { namedCurve: 'P-256' });
-  const name = sequence(set(sequence(oid('2.5.4.3'), tlv(0x0c, Buffer.from('localhost')))));
+  const name = sequence(set(sequence(oid('2.5.4.3'), tlv(0x0c, Buffer.from(names[0])))));
   const notAfter = new Date(notBefore.getTime() + days * 24 * 60 * 60 * 1000);
   const altNames = sequence(
-    tlv(0x82, Buffer.from('localhost')),
+    ...names.map((dns) => tlv(0x82, Buffer.from(dns))),
     tlv(0x87, Buffer.from([127, 0, 0, 1])),
   );
   const extensions = explicit(

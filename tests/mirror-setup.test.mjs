@@ -4,8 +4,11 @@ import { mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createServer } from 'node:http';
+import { createServer as createHttpsServer } from 'node:https';
+import { once } from 'node:events';
 import { configureMirror, fetchProbe, upstreamOrigin } from '../apps/deploy/dist/mirror-setup.js';
 import { removeTestDirectory } from './helpers.mjs';
+import { selfSignedCertificate } from './tls-certificate.mjs';
 
 const release = { version: '1.0.0', commit: 'c', schema: 28, archiveSha256: 'a', setupSha256: 's' };
 const key = 'arkvory_' + 'k'.repeat(40);
@@ -188,4 +191,53 @@ test('the probe asks the source for the mirror feed with the key and never echoe
   });
   mode = 'old';
   await assert.rejects(fetchProbe(origin, 'releases', key), /without the mirror change feed/);
+});
+
+test('a source with a self-signed certificate is reached only with its authority', async (t) => {
+  const { root, tokenFile, state } = await installation(t);
+  const certificate = selfSignedCertificate();
+  const source = createHttpsServer(certificate, (request, response) => {
+    response.setHeader('content-type', 'application/json');
+    response.end(
+      JSON.stringify(
+        request.url?.startsWith('/api/v1/capabilities')
+          ? { features: { mirrorFeed: true } }
+          : { items: [], head: '0', next: null },
+      ),
+    );
+  });
+  source.listen(0, '127.0.0.1');
+  await once(source, 'listening');
+  t.after(() => source.close());
+  const upstream = `https://localhost:${String(source.address().port)}`;
+  const change = (caFile) => ({ repository: 'releases', upstream, tokenFile, caFile });
+  // Without the authority the probe refuses before any change; TLS is never relaxed.
+  const untouched = services();
+  await assert.rejects(
+    configureMirror(root, state, change(undefined), untouched),
+    /cannot be reached over verified TLS/,
+  );
+  assert.deepEqual(untouched.calls, []);
+  const garbage = join(root, 'garbage.pem');
+  await writeFile(garbage, 'not a certificate');
+  await assert.rejects(configureMirror(root, state, change(garbage), services()), /1 to 64/);
+  const expired = join(root, 'expired.pem');
+  const day = 24 * 60 * 60 * 1000;
+  await writeFile(
+    expired,
+    selfSignedCertificate({ notBefore: new Date(Date.now() - 3 * day), days: 1 }).cert,
+  );
+  await assert.rejects(configureMirror(root, state, change(expired), services()), /expired/);
+  await assert.rejects(readFile(join(root, 'config/mirrors/ca.pem')), { code: 'ENOENT' });
+
+  const authority = join(root, 'source-ca.pem');
+  await writeFile(authority, certificate.cert);
+  assert.equal(await configureMirror(root, state, change(authority), services()), 'attached');
+  const stored = join(root, 'config/mirrors/ca.pem');
+  assert.equal((await json(join(root, 'config/runtime.json'))).ARKVORY_MIRRORS_CA_FILE, stored);
+  assert.equal(await readFile(stored, 'utf8'), certificate.cert);
+  // The authorities go with the last mirror.
+  assert.equal(await configureMirror(root, state, { detach: 'releases' }, services()), 'detached');
+  assert.equal((await json(join(root, 'config/runtime.json'))).ARKVORY_MIRRORS_CA_FILE, undefined);
+  await assert.rejects(readFile(stored), { code: 'ENOENT' });
 });

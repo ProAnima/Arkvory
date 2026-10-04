@@ -14,6 +14,7 @@ import {
   PostgresIdentity,
   PostgresServices,
   readMirrorSettings,
+  trustMirrorCertificates,
 } from '@proanima/arkvory-infrastructure';
 import type { LogLevel, PostgresJobLease } from '@proanima/arkvory-infrastructure';
 import { capacityBytes, workerResources } from './runtime.js';
@@ -64,6 +65,8 @@ try {
   const keyFile = process.env['ARKVORY_KEYS_FILE'];
   if (!keyFile) throw new Error('ARKVORY_KEYS_FILE is required');
   const mirrors = await readMirrorSettings(process.env['ARKVORY_MIRRORS_FILE']);
+  // Before the first request to a source: fetch reads the default authorities per connection.
+  await trustMirrorCertificates(process.env['ARKVORY_MIRRORS_CA_FILE']);
   // Mirror copies create uploads here, so they need the installation's capacity limit.
   const acquired = await workerResources(
     mirrors.length > 0 ? capacityBytes(process.env['ARKVORY_CAPACITY_BYTES']) : 0,

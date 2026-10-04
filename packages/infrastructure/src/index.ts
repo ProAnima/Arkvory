@@ -68,5 +68,9 @@ export { PostgresBackupStatus } from './backup-status.js';
 export { PostgresVaultLock, VAULT_LOCK } from './backup-vault-lock.js';
 export { PacedContentSource } from './backup-pacing.js';
 export { PostgresMirrorState, reopenMirrorUpload } from './mirror-state.js';
-export { parseMirrorSettings, readMirrorSettings } from './mirror-config.js';
+export {
+  parseMirrorSettings,
+  readMirrorSettings,
+  trustMirrorCertificates,
+} from './mirror-config.js';
 export type { MirrorSettings } from './mirror-config.js';

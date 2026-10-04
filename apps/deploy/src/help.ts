@@ -26,10 +26,13 @@ configure      --enable-updates | --disable-updates | --pin --version X.Y.Z | --
                creates vault.json only in an empty directory; restarts the agent, requires it
                to report the vault, rolls back on failure / Vault агента копий с откатом
                --mirror <repo> --mirror-upstream <https://origin> [--mirror-source <repo>]
-               --mirror-token-file <file> [--mirror-stages a,b] | --mirror-detach <repo>
+               --mirror-token-file <file> [--mirror-stages a,b] [--mirror-ca-file <pem>]
+               | --mirror-detach <repo>
                Read-only mirror of a repository of another installation, or with
                --mirror-stages an ordinary repository importing versions given those stages
-               (dev -> prod); checks the source, restarts, rolls back / Зеркало или импорт
+               (dev -> prod); checks the source, restarts, rolls back / Зеркало или импорт;
+               --mirror-ca-file trusts the authority of a source with a corporate or
+               self-signed certificate besides the defaults (TLS stays verified)
 
 Installation options:
   --artifact <directory>  Verified local release (offline)

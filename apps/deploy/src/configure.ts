@@ -29,6 +29,7 @@ const mirrorOptions = [
   'mirror-source',
   'mirror-token-file',
   'mirror-stages',
+  'mirror-ca-file',
   'mirror-detach',
 ];
 
@@ -82,6 +83,7 @@ async function configureMirrors(root: string, state: Installation, options: Map<
   const sourceRepository = value('mirror-source');
   const tokenFile = value('mirror-token-file');
   const detach = value('mirror-detach');
+  const caFile = value('mirror-ca-file');
   const stages = value('mirror-stages')
     ?.split(',')
     .map((stage) => stage.trim());
@@ -94,6 +96,7 @@ async function configureMirrors(root: string, state: Installation, options: Map<
       ...(sourceRepository ? { sourceRepository } : {}),
       ...(tokenFile ? { tokenFile } : {}),
       ...(stages ? { stages } : {}),
+      ...(caFile ? { caFile } : {}),
       ...(detach ? { detach } : {}),
     },
     new Services(root, state),

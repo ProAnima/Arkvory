@@ -1,4 +1,5 @@
 import { readFile } from 'node:fs/promises';
+import { getCACertificates, setDefaultCACertificates } from 'node:tls';
 import { isAbsolute } from 'node:path';
 import { requireStage } from '@proanima/arkvory-domain';
 
@@ -11,7 +12,8 @@ export interface MirrorSettings {
   readonly sourceRepository: string;
   /**
    * File with a read-only key of the source; read by the worker only, never logged. A corporate
-   * CA of the source is trusted through NODE_EXTRA_CA_CERTS of the worker; TLS is always verified.
+   * CA of the source is trusted through ARKVORY_MIRRORS_CA_FILE (trustMirrorCertificates); TLS is
+   * always verified.
    */
   readonly tokenFile: string;
   /**
@@ -120,4 +122,22 @@ export async function readMirrorSettings(
     throw new Error('Invalid ARKVORY_MIRRORS_FILE: JSON', { cause: error });
   }
   return parseMirrorSettings(document);
+}
+
+/**
+ * Authorities of mirror sources that `arkvory configure --mirror-ca-file` stored
+ * (ARKVORY_MIRRORS_CA_FILE): trusted by this process besides its defaults, before any request.
+ * Unlike NODE_EXTRA_CA_CERTS this travels in runtime.json, so every installation mode sets it.
+ * TLS verification itself is never relaxed. Returns the number of added certificates.
+ */
+export async function trustMirrorCertificates(file: string | undefined): Promise<number> {
+  if (file === undefined || file === '') return 0;
+  if (!isAbsolute(file)) throw new Error('Invalid ARKVORY_MIRRORS_CA_FILE');
+  const blocks =
+    (await readFile(file, 'utf8')).match(
+      /-----BEGIN CERTIFICATE-----[\s\S]+?-----END CERTIFICATE-----/g,
+    ) ?? [];
+  if (blocks.length === 0) throw new Error('ARKVORY_MIRRORS_CA_FILE holds no certificates');
+  setDefaultCACertificates([...getCACertificates('default'), ...blocks]);
+  return blocks.length;
 }
