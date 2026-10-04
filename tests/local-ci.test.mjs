@@ -1,9 +1,17 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { execFileSync } from 'node:child_process';
+import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { lanes, notExecuted, planLanes, uncoveredGates } from '../scripts/ci/lanes.mjs';
 import { laneResult, renderMarkdown, summarize } from '../scripts/ci/evidence.mjs';
-import { newerThan, parseVersion, releaseNotes } from '../scripts/ci/github-release.mjs';
+import {
+  newerThan,
+  parseVersion,
+  releaseNotes,
+  releasePreconditions,
+} from '../scripts/ci/github-release.mjs';
 import { parseArguments as localArguments } from '../scripts/ci/local.mjs';
 import { parseArguments as releaseArguments } from '../scripts/ci/release-local.mjs';
 import { disposableHost } from './deployment/disposable-host.mjs';
@@ -145,4 +153,34 @@ test('service gates accept only GitHub runners or the local CI container', () =>
   assert.equal(disposableHost(local, 'linux', none), null, 'A workstation variable is not enough');
   assert.equal(disposableHost(local, 'win32', docker), null);
   assert.equal(disposableHost({}, 'linux', docker), null);
+});
+
+test('a rehearsal goes on without GitHub; a release does not', async (t) => {
+  const root = await mkdtemp(join(tmpdir(), 'arkvory-release-pre-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const git = (...args) => execFileSync('git', args, { cwd: root, stdio: 'pipe' });
+  git('init', '--initial-branch=main');
+  git(
+    '-c',
+    'user.name=ci',
+    '-c',
+    'user.email=ci@example.invalid',
+    'commit',
+    '--allow-empty',
+    '-m',
+    'x',
+  );
+  const offline = () => {
+    throw new Error('git ls-remote failed: Could not connect to server');
+  };
+  const output = join(root, 'missing-output');
+  const rehearsal = await releasePreconditions(root, '9.9.9', output, {
+    strict: false,
+    remote: offline,
+  });
+  assert.match(rehearsal.warnings.join(), /GitHub checks unavailable: .*Could not connect/);
+  await assert.rejects(
+    releasePreconditions(root, '9.9.9', output, { remote: offline }),
+    /Could not connect/,
+  );
 });

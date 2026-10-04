@@ -70,14 +70,26 @@ function remoteProblems(root, version, commit, git) {
  * version must be new and greater than every published release the updater could compare.
  * A rehearsal (`strict: false`) reports remote problems as warnings and never publishes.
  */
-export async function releasePreconditions(root, version, output, { strict = true } = {}) {
+export async function releasePreconditions(
+  root,
+  version,
+  output,
+  { strict = true, remote = remoteProblems } = {},
+) {
   parseVersion(version);
   const git = (args) => run('git', args, { cwd: root }).stdout;
   if (git(['rev-parse', '--abbrev-ref', 'HEAD']) !== 'main')
     throw new Error('Releases are cut from main; check out main');
   if (git(['status', '--porcelain'])) throw new Error('Commit or discard local changes first');
   const commit = git(['rev-parse', 'HEAD']);
-  const warnings = remoteProblems(root, version, commit, git);
+  let warnings;
+  try {
+    warnings = remote(root, version, commit, git);
+  } catch (error) {
+    // A rehearsal never touches GitHub: an unreachable remote is one more warning there.
+    if (strict) throw error;
+    warnings = [`GitHub checks unavailable: ${error instanceof Error ? error.message : 'unknown'}`];
+  }
   if (strict && warnings.length) throw new Error(warnings.join('\n'));
   try {
     if ((await readdir(output)).length) throw new Error(`${output} must be empty`);
