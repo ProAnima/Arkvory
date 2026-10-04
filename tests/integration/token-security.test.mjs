@@ -132,6 +132,19 @@ test('read tokens are denied every write while read-write tokens keep account gr
   });
   assert.equal(blocked.statusCode, 403);
   assert.equal(blocked.json().message, 'Read-only personal access token');
+  // A Git LFS batch is a POST for clones too: a read token may download, never upload.
+  const lfsBatch = (operation) =>
+    f.app.inject({
+      method: 'POST',
+      url: '/lfs/releases/objects/batch',
+      headers: {
+        authorization: `Basic ${Buffer.from(`alice:${read.token}`).toString('base64')}`,
+        'content-type': 'application/vnd.git-lfs+json',
+      },
+      payload: JSON.stringify({ operation, objects: [{ oid: 'a'.repeat(64), size: 1 }] }),
+    });
+  assert.equal((await lfsBatch('download')).statusCode, 200);
+  assert.equal((await lfsBatch('upload')).statusCode, 403);
   assert.equal((await upload(f, write.token, 'read-write-scope')).statusCode, 201);
   const logout = await f.app.inject({
     method: 'POST',

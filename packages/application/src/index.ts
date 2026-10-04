@@ -37,3 +37,4 @@ export * from './mirror-import.js';
 export * from './download-links.js';
 export * from './oci-registry.js';
 export * from './raw-files.js';
+export * from './git-lfs.js';

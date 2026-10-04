@@ -14,7 +14,7 @@ ENV DEBIAN_FRONTEND=noninteractive \
 
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
-      ca-certificates git sudo systemd systemd-sysv dbus rpm postgresql xz-utils procps \
+      ca-certificates git git-lfs sudo systemd systemd-sysv dbus rpm postgresql xz-utils procps \
       iproute2 docker.io libicu74 \
  && rm -rf /var/lib/apt/lists/*
 

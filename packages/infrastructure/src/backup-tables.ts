@@ -13,7 +13,7 @@ export interface BackupTable {
 export const MINIMUM_RESTORE_SCHEMA = 25;
 
 /**
- * Every Arkvory table of schema 30 is either exported here, in foreign-key-safe load order, or
+ * Every Arkvory table of schema 31 is either exported here, in foreign-key-safe load order, or
  * excluded below with a reason. A migration that adds a table must extend one of the lists;
  * capture refuses an unlisted table and tests compare both lists with a migrated database.
  */
@@ -57,6 +57,9 @@ export const exportedTables: readonly BackupTable[] = [
   { name: 'arkvory_oci_manifests', key: ['repository', 'image', 'digest'] },
   { name: 'arkvory_oci_tags', key: ['repository', 'image', 'tag'] },
   { name: 'arkvory_oci_references', key: ['repository', 'image', 'manifest', 'target'] },
+  // Git LFS objects name artifacts restored above; locks are the team's coordination (ADR 0065).
+  { name: 'arkvory_lfs_objects', key: ['repository', 'oid'] },
+  { name: 'arkvory_lfs_locks', key: ['id'] },
 ];
 
 export const excludedTables: readonly ExcludedTable[] = [

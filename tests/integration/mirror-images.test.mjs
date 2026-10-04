@@ -111,3 +111,51 @@ test('images pushed to the source pull from the mirror; deletions there follow',
   for (const action of ['oci.blob', 'oci.manifest', 'oci.tag', 'oci.tag.delete'])
     assert.ok(actions.includes(action), `${action} in ${actions.join()}`);
 });
+
+/** An LFS object through the batch API and the basic transfer, as git-lfs uploads it. */
+async function pushLfs(f, bytes) {
+  const oid = createHash('sha256').update(bytes).digest('hex');
+  const stored = await f.app.inject({
+    method: 'PUT',
+    url: `/lfs/releases/objects/${oid}`,
+    headers: { ...f.headers, 'content-type': 'application/octet-stream' },
+    payload: bytes,
+  });
+  assert.equal(stored.statusCode, 200, stored.body);
+  return oid;
+}
+
+test('Git LFS objects reach the mirror before and after its seed', async (t) => {
+  const { source, mirror, settle } = await pair(t);
+  const before = randomBytes(300 * 1024);
+  const early = await pushLfs(source, before);
+  await settle();
+  const after = randomBytes(200 * 1024);
+  const late = await pushLfs(source, after);
+  await settle();
+  for (const [oid, bytes] of [
+    [early, before],
+    [late, after],
+  ]) {
+    const batch = await mirror.app.inject({
+      method: 'POST',
+      url: '/lfs/releases/objects/batch',
+      headers: { ...mirror.readerHeaders, 'content-type': 'application/vnd.git-lfs+json' },
+      payload: JSON.stringify({ operation: 'download', objects: [{ oid, size: bytes.length }] }),
+    });
+    assert.ok(batch.json().objects[0].actions.download, batch.body);
+    const object = await mirror.app.inject({
+      url: `/lfs/releases/objects/${oid}`,
+      headers: mirror.readerHeaders,
+    });
+    assert.deepEqual(object.rawPayload, bytes);
+  }
+  // A mirror is read-only for LFS uploads too.
+  const refused = await mirror.app.inject({
+    method: 'PUT',
+    url: `/lfs/releases/objects/${early}`,
+    headers: { ...mirror.headers, 'content-type': 'application/octet-stream' },
+    payload: before,
+  });
+  assert.equal(refused.statusCode, 409);
+});

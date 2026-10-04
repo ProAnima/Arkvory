@@ -27,6 +27,7 @@ export * from './backup-plan.js';
 export * from './backup-warnings.js';
 export * from './backup-requests.js';
 export * from './oci.js';
+export * from './lfs.js';
 export {
   errorCodes,
   errorReasons,

@@ -15,6 +15,7 @@ import type { RequestDrain } from './drain.js';
 import { sendFailure } from './http-errors.js';
 import type { HttpFailure } from './http-failure.js';
 import { isRegistry, registryCredential, sendOciFailure } from './oci-errors.js';
+import { isLfs, lfsPrefix, sendLfsFailure } from './lfs-errors.js';
 
 interface Security {
   config: Pick<ServerConfig, 'keys'>;
@@ -101,6 +102,7 @@ async function linkRequest(
 }
 /** The registry answers in its own envelope (ADR 0063); every other route in Arkvory's. */
 function refuse(request: FastifyRequest, reply: FastifyReply, failure: HttpFailure) {
+  if (isLfs(request)) return sendLfsFailure(request, reply, failure);
   return isRegistry(request)
     ? sendOciFailure(request, reply, failure)
     : sendFailure(request, reply, failure);
@@ -108,7 +110,8 @@ function refuse(request: FastifyRequest, reply: FastifyReply, failure: HttpFailu
 /** Bearer everywhere; the registry also takes the key as a Basic password (docker login). */
 function credentialOf(request: FastifyRequest): string {
   const auth = request.headers.authorization;
-  if (isRegistry(request)) return registryCredential(auth);
+  // docker login and git's credential helper both send the key as a Basic password.
+  if (isRegistry(request) || isLfs(request)) return registryCredential(auth);
   return auth?.startsWith('Bearer ') ? auth.slice(7) : '';
 }
 // Public probes manage their own availability answer and never touch credentials.
@@ -169,7 +172,7 @@ export function registerRequestSecurity(app: FastifyInstance, dependencies: Secu
       request.routeOptions.url === '/api/v1/auth/activate-key',
     );
     if (!authenticated) {
-      if (!isRegistry(request)) reply.header('WWW-Authenticate', 'Bearer');
+      if (!isRegistry(request) && !isLfs(request)) reply.header('WWW-Authenticate', 'Bearer');
       await refuse(request, reply, {
         code: 'unauthorized',
         message: 'Valid service key required',
@@ -190,11 +193,13 @@ export function registerRequestSecurity(app: FastifyInstance, dependencies: Secu
       return;
     }
     // Defence in depth: a read token has no write grants, and no mutation route accepts it.
+    // A Git LFS batch is a POST for downloads too; its upload operation still needs write grants.
     if (
       authenticated.tokenScope === 'read' &&
       request.method !== 'GET' &&
       request.method !== 'HEAD' &&
-      request.routeOptions.url !== '/api/v1/auth/logout'
+      request.routeOptions.url !== '/api/v1/auth/logout' &&
+      request.routeOptions.url !== `${lfsPrefix}objects/batch`
     ) {
       await refuse(request, reply, {
         code: 'forbidden',

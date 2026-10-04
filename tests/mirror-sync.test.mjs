@@ -69,6 +69,7 @@ function target() {
     ociManifest: async (image, id, tag) => t.log.push(`manifest ${image} ${id} ${tag}`),
     ociUntag: async (image, tag) => t.log.push(`untag ${image}:${tag}`),
     ociForget: async (image, digest) => t.log.push(`forget ${image}@${digest}`),
+    lfsObject: async (oid, id) => t.log.push(`lfs ${oid}=${id}`),
   };
   return t;
 }
@@ -250,30 +251,32 @@ test('after the seed, registry entries below its head are replayed in order, oth
     entry('6', 'oci.tag', 'm', 'team/web:old'),
     entry('7', 'oci.tag.delete', 'm', 'team/web:old'),
     entry('8', 'oci.blob', 'gone', digest('3')),
+    entry('9', 'lfs.object', 'l', '4'.repeat(64)),
   ];
-  const s = source({ artifacts: ['l', 'm'], head: '8', feed });
+  const s = source({ artifacts: ['l', 'm'], head: '9', feed });
   const t = target();
   const st = states();
   await settle(mirror(s, t, st));
-  const registry = t.log.filter((line) => /^(blob|manifest|untag|forget) /.test(line));
+  const registry = t.log.filter((line) => /^(blob|manifest|untag|forget|lfs) /.test(line));
   assert.deepEqual(registry, [
     `blob ${digest('1')}=l`,
     'manifest team/web m null',
     'manifest team/web m 1.0',
     'manifest team/web m old',
     'untag team/web:old',
+    `lfs ${'4'.repeat(64)}=l`,
   ]);
   assert.ok(t.log.includes('remove gone'), 'content gone on the source is not recorded');
-  assert.equal(st.rows.get('releases').cursor, '8');
+  assert.equal(st.rows.get('releases').cursor, '9');
 
   // Following: every entry applies; a deleted manifest is forgotten, a bad detail only refreshes.
   t.log.length = 0;
   s.feed.push(
-    entry('9', 'oci.manifest.delete', 'm', `team/web@${digest('2')}`),
-    entry('10', 'oci.tag', 'm', 'no-separator'),
-    entry('11', 'oci.newer', 'l'),
+    entry('10', 'oci.manifest.delete', 'm', `team/web@${digest('2')}`),
+    entry('11', 'oci.tag', 'm', 'no-separator'),
+    entry('12', 'oci.newer', 'l'),
   );
-  s.head = '11';
+  s.head = '12';
   await settle(mirror(s, t, st));
   assert.deepEqual(
     t.log.filter((line) => !line.startsWith('annotate') && !line.startsWith('stages')),

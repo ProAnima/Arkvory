@@ -16,6 +16,7 @@ import {
   DownloadLinks,
   OciRegistry,
   RawFiles,
+  GitLfs,
 } from '@proanima/arkvory-application';
 import type { MirrorConfiguration } from '@proanima/arkvory-application';
 import {
@@ -42,6 +43,8 @@ import {
   PostgresOciIndex,
   FileOciStaging,
   FileRawStaging,
+  PostgresLfsIndex,
+  PostgresLfsLocks,
 } from '@proanima/arkvory-infrastructure';
 import { AuthThrottle } from './auth-throttle.js';
 import { BackupMetrics } from './backup-metrics.js';
@@ -132,6 +135,12 @@ export function createApiServices(
     links: new DownloadLinks(service, new PostgresTransferLinks(catalog.pool)),
     rawStaging,
     raw: new RawFiles(service, browse, rawStaging, { next: randomUUID }),
+    lfs: new GitLfs(
+      service,
+      new PostgresLfsIndex(catalog.pool),
+      new PostgresLfsLocks(catalog.pool),
+      { next: randomUUID },
+    ),
     registry: new OciRegistry(
       service,
       new PostgresOciIndex(catalog.pool),

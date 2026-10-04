@@ -22,6 +22,7 @@ import { MirrorRegistryRows } from './mirror-registry-rows.js';
 import type { Principal, Upload } from '@proanima/arkvory-domain';
 import {
   PostgresBrowse,
+  PostgresLfsIndex,
   PostgresPromotions,
   PostgresRetention,
   PostgresStages,
@@ -66,6 +67,7 @@ export class ServiceMirrorTarget implements MirrorTarget {
   private readonly deletions: PostgresRetention;
   private readonly staging: string;
   private readonly registry: MirrorRegistryRows;
+  private readonly lfs: PostgresLfsIndex;
 
   constructor(
     private readonly repository: string,
@@ -97,6 +99,7 @@ export class ServiceMirrorTarget implements MirrorTarget {
     this.deletions = new PostgresRetention(pool);
     this.staging = join(dataDirectory, 'mirror-staging');
     this.registry = new MirrorRegistryRows(repository, pool, this.principal, storage);
+    this.lfs = new PostgresLfsIndex(pool);
   }
 
   /** The copy keeps the source ID: the storage service of one artifact issues exactly it. */
@@ -285,6 +288,9 @@ export class ServiceMirrorTarget implements MirrorTarget {
   }
   ociForget(image: string, digest: string): Promise<void> {
     return this.registry.forget(image, digest);
+  }
+  lfsObject(oid: string, artifactId: string): Promise<void> {
+    return this.lfs.addObject(this.principal, this.repository, oid, artifactId);
   }
 
   async asset(asset: MirrorAsset): Promise<void> {

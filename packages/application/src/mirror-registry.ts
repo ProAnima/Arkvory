@@ -1,9 +1,19 @@
-import { isOciDigest, ociFeedActions, parseOciDetail } from '@proanima/arkvory-domain';
+import {
+  isLfsOid,
+  isOciDigest,
+  lfsObjectAction,
+  ociFeedActions,
+  parseOciDetail,
+} from '@proanima/arkvory-domain';
 import type { CatalogFeedEntry } from './catalog-ports.js';
 import type { MirrorTarget } from './mirror-ports.js';
 
-/** Registry changes of the feed (ADR 0063); the mirror applies them to its own registry rows. */
-export const isRegistryChange = (action: string) => action.startsWith('oci.');
+/**
+ * Index changes of the feed: container registry (ADR 0063) and Git LFS objects (ADR 0065). They
+ * have no listing to seed from, so a mirror replays them; it applies them to its own rows.
+ */
+export const isRegistryChange = (action: string) =>
+  action.startsWith('oci.') || action === lfsObjectAction;
 
 /**
  * Applies one registry change of the source. Blob and manifest rows point at artifacts with the
@@ -13,15 +23,23 @@ export const isRegistryChange = (action: string) => action.startsWith('oci.');
  */
 export async function applyRegistryChange(
   change: CatalogFeedEntry,
-  target: Pick<MirrorTarget, 'ociBlob' | 'ociManifest' | 'ociUntag' | 'ociForget'>,
+  target: Pick<MirrorTarget, 'ociBlob' | 'ociManifest' | 'ociUntag' | 'ociForget' | 'lfsObject'>,
   refresh: (id: string) => Promise<boolean>,
 ): Promise<void> {
   const id = change.artifactId;
   const detail = parseOciDetail(change.detail);
   const named = detail && 'digest' in detail ? detail : null;
   const tagged = detail && 'tag' in detail ? detail : null;
-  const digest = change.detail !== null && isOciDigest(change.detail) ? change.detail : null;
+  const digest =
+    change.detail !== null &&
+    (change.action === lfsObjectAction ? isLfsOid(change.detail) : isOciDigest(change.detail))
+      ? change.detail
+      : null;
   switch (change.action) {
+    case lfsObjectAction:
+      if (digest === null) break;
+      if (await refresh(id)) await target.lfsObject(digest, id);
+      return;
     case ociFeedActions.blob:
       if (digest === null) break;
       if (await refresh(id)) await target.ociBlob(digest, id);
