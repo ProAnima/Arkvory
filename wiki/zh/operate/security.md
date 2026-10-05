@@ -1,12 +1,198 @@
 ---
-title: 'Security'
-description: 'How to harden an Arkvory server, where its secrets live, which limits protect sign-in, what is logged and audited, and what is sent to the ProAnimaStudio hub.'
+title: 安全
+description: '如何加固 Arkvory 服务器、其机密存放位置、哪些限制保护登录、记录和审计什么，以及向 ProAnimaStudio 中心（hub）发送什么。'
 ---
 
-<!-- arkvory-untranslated -->
+# 安全
 
-::: warning
-此页面尚未翻译，目前以英文显示。
-:::
+本页面向运行服务器的管理员。它首先介绍加固新安装的步骤，然后详细描述每项防护。
 
-<!--@include: ../../operate/security.md-->
+项目声明威胁模型和外部安全审查仍未完成。不要将服务器发布到开放的互联网上。只允许您的客户端网络访问它。
+
+## 加固新服务器 {#checklist}
+
+1. 在 HTTPS 可用之前，保持默认监听地址 `127.0.0.1`。参见[网络与 HTTPS](#network)。
+2. 启用 HTTPS，并且只向客户端网络开放 HTTPS 端口。绝不要开放数据库端口。
+3. 为管理员创建个人账户。保留恢复密钥（引导密钥）以备紧急情况。参见[恢复密钥](../install/index#recovery-key)。
+4. 为每个工具或 CI 系统分配各自的服务账户，并授予权限最少的密钥。参见[密钥与令牌](#keys)。
+5. 保持自行注册关闭。它默认就是关闭的。
+6. 如果 Arkvory 前面有反向代理，请设置 `ARKVORY_TRUSTED_PROXIES`。参见[登录限制](#sign-in-limits)。
+7. 将备份存储放在加密卷上，只有服务账户和备份管理员可以读取。参见[备份](./backups)。
+8. 在服务器之外保留机密文件的副本。参见[备份您的机密](#secret-backups)。
+9. 接入指标和告警。参见[监控](./monitoring)。
+
+## 网络与 HTTPS {#network}
+
+服务器默认监听 `127.0.0.1:8080`。原生安装在您配置 HTTPS 之后可以监听其他地址：
+
+```bash
+sudo arkvory configure --root /opt/proanima-arkvory --tls-cert /etc/arkvory/fullchain.pem --tls-key /etc/arkvory/privkey.pem --listen-host 0.0.0.0
+```
+
+该命令检查文件、重启服务，并在服务无法启动时恢复旧设置。完整流程以及需要反向代理的 Docker Compose 请参见 [HTTPS 与反向代理](../install/https)。
+
+- 证书和密钥必须可读、匹配且未过期。否则 API 不会启动，也绝不会回退到明文 HTTP。
+- 最低 TLS 版本为 1.2。设置 `ARKVORY_TLS_MIN_VERSION=TLSv1.3` 可要求 1.3。不支持客户端证书。
+- 当服务器自行提供 HTTPS 时，它会在应答中带上 `Strict-Transport-Security: max-age=31536000`。当由代理终止 TLS 时，该头部由代理负责。
+- 续期后的证书文件每 300 秒（`ARKVORY_TLS_RELOAD_SECONDS`）重新读取一次，无需重启。新连接会获得新证书。无法读取的文件会让正在使用的证书保持不变，并写入 `tls.reload_failed`。在最后 14 天里，每天都会写入 `tls.expiring`。
+- 未启用 TLS 且没有受信任代理的非回环地址会在启动时写入警告 `http.plaintext_exposed`。在允许客户端接入之前请先修复它。
+- Arkvory 绝不会关闭对所接收证书的检查：镜像不会，中心（hub）不会，命令行客户端也不会。对于镜像，请通过 `--mirror-ca-file` 添加您自己的证书颁发机构。
+
+在反向代理之后，API 保持在回环地址上。代理必须流式传输正文，不得缓冲整个文件。不要在代理处记录查询字符串，因为下载链接在那里携带机密。
+
+## 服务器上的机密 {#secrets}
+
+安装程序会在安装根目录中创建这些文件。请保持安装程序设置的权限。
+
+| 文件                         | 内容                                              | 访问权限                                                       |
+| ---------------------------- | ------------------------------------------------- | -------------------------------------------------------------- |
+| `config/bootstrap-token.txt` | 恢复密钥（引导密钥）。它具有管理员权限            | Linux：仅 root（模式 0600）。Windows：SYSTEM 和 Administrators |
+| `config/keys.json`           | 恢复密钥和健康密钥的 SHA-256 哈希，绝不是密钥本身 | Linux：root 写入，服务组读取（0640）。Windows：从根目录继承    |
+| `config/health-token.txt`    | 健康密钥 `deployment-health`。它没有仓库权限      | Linux：仅 root。Compose：在容器中可读                          |
+| `config/runtime.json`        | 所有服务器设置，包括带密码的数据库 URL            | Linux：root 写入，服务组读取（0640）。Windows：从根目录继承    |
+| `config/postgres.env`        | Compose 安装的数据库密码                          | 仅 root，或 SYSTEM 和 Administrators                           |
+| `github-token.txt`           | 用于更新的可选 GitHub 令牌                        | 仅 root，或 SYSTEM 和 Administrators                           |
+| `config/mirrors/*.token`     | 镜像源服务器的读取密钥                            | 服务账户                                                       |
+| TLS 密钥                     | 证书的私钥                                        | 位置由您选择。只允许服务账户访问                               |
+
+在 Windows 上，根目录将完全控制权授予 SYSTEM 和 Administrators。服务账户 `LocalService` 读取根目录，并且只写入 `data\`、`logs\` 和更新收件箱。数据库在不同的账户下运行，因此 API 无法读取数据库文件。
+
+所有机密的规则：
+
+- 通过文件或环境变量传递它们，绝不要通过命令参数。参数在进程列表中可见。
+- 不要将恢复密钥复制到客户端、CI 系统或脚本中。为日常工作创建账户和服务密钥。
+- 服务器绝不会将密钥、密码、令牌、`Authorization` 头部或查询字符串写入其日志。参见[监控](./monitoring#never-logged)。
+- 安装程序的命令输出会脱敏数据库 URL、密钥和长机密。
+
+要更换恢复密钥，请同时更改文件 `bootstrap-token.txt` 及其在 `config/keys.json` 中的哈希，保留条目 `deployment-health`，然后重启 API 和工作进程（worker）。参见[配置](../install/configuration)。
+
+## 密码与登录限制 {#sign-in-limits}
+
+密码长度为 12 到 128 个字符，并且仅以加盐哈希（scrypt）形式存储。一次登录持续 12 小时。一个账户最多有 32 个活动会话；新的登录会结束最旧的会话。更改密码或重置密码会结束所有会话，并撤销该账户的所有个人令牌。
+
+Arkvory 没有硬性锁定，因为那会让任何知道用户名的人锁定所有者。它通过多层机制减缓攻击：
+
+| 层级               | 限制                                                                                                                                                                        |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 按地址，登录       | 一次允许 10 次尝试，之后每 15 秒允许 1 次。正确的密码会归还该次尝试。IPv6 按 /64 网络计数                                                                                   |
+| 按地址，自行注册   | 3 次尝试，之后每 20 分钟 1 次；每个进程 20 次，之后每 3 分钟 1 次                                                                                                           |
+| 按账户             | 每次错误的密码会增加一个单位的欠账。欠账每 6 秒减少 1。超过 20 个单位后，每次错误的密码都会增加一段等待时间，从 1 秒翻倍到 2 分钟。在等待期间，即使是正确的密码也会得到 429 |
+| 同时进行的登录请求 | 最多 16 个，且请求正文必须在 10 秒内到达                                                                                                                                    |
+| 密码检查           | 匿名检查和管理员检查使用不同的队列，因此大量登录不会阻塞管理员                                                                                                              |
+
+应答为 429 `rate_limited`，原因为 `login_attempts`，并带有头部 `Retry-After`。按地址的计数器存在于进程中，重启时重置。账户欠账在数据库中。管理员重置密码会清除它。
+
+在反向代理之后，请将 `ARKVORY_TRUSTED_PROXIES` 设置为代理的地址（最多 32 个，IP 或 CIDR）。只有这些地址可以通过 `X-Forwarded-For` 指明客户端地址。没有该设置时，每个客户端共用代理的地址，几次登录失败就会让所有人被暂时锁定。
+
+## 密钥、令牌与到期 {#keys}
+
+| 凭据               | 有效期                                                               | 轮换                                                                                       |
+| ------------------ | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| 登录会话           | 12 小时                                                              | 重新登录                                                                                   |
+| 个人访问令牌       | 默认 90 天，最多 365 天。范围 `read` 或 `read-write`。绝无管理员权限 | 在 [[ui:personalAccessTokens]] 中创建新令牌并撤销旧令牌                                    |
+| 服务密钥           | 默认 90 天，最多 365 天。已签发但未激活的密钥会在 15 分钟后过期      | [[ui:keyRotate]] 签发新密钥。旧密钥最多再工作 24 小时。[[ui:keyRevoke]] 会立即停止某个密钥 |
+| 下载链接           | 在控制台中为一小时                                                   | 创建新链接                                                                                 |
+| 恢复密钥和健康密钥 | 它们不会过期                                                         | 手动更换它们。参见[服务器上的机密](#secrets)                                               |
+
+仅在已登录的会话中创建个人令牌和更改密码。令牌不能创建令牌。个人令牌无论由谁拥有都没有管理员权限。
+
+工具的最小权限：
+
+- 在 [[ui:services]] 中为每个消费者创建一个服务账户，并在确切的仓库和它所需的确切操作上设置 [[ui:servicePolicy]]。[[ui:bindingRead]] 和 [[ui:bindingPublish]] 会填充典型的权限集。
+- 创建账户和授权需要恢复密钥或委派的单独权限。[[ui:delegations]] 让所有者将受限权限传递给操作员。委派密钥的存续时间绝不会超过其签发者的密钥。
+- 为指标抓取器分配具有最小权限的独立密钥。
+- 撤销授权会阻止等待激活的密钥，但不会撤销已经激活的密钥。请自行撤销或禁用那些密钥。已经开始下载的传输会在撤销后继续。
+- 权限更改从下一个请求开始生效。服务器会为每个请求重新检查访问权限，包括列表、元数据和文件字节。
+
+## 审计日志 {#audit}
+
+| 日志         | 包含内容                                                                                        | 读取位置                                                          |
+| ------------ | ----------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| 安全日志     | 登录及失败、注册、账户/组/授权/密码和个人令牌的更改，带操作者、凭据类型、目标、结果和客户端地址 | `GET /api/v1/security/audit`，用于管理员会话或恢复密钥            |
+| 目录审计     | 仓库中制品、路径、注解和阶段的更改                                                              | `GET /api/v1/repositories/{repository}/audit`，需要读取审计的权限 |
+| 服务账户活动 | 服务账户的创建、更改、已签发和已撤销的密钥                                                      | 控制台中的 [[ui:serviceAudit]]                                    |
+| 进程日志     | 每个请求一行 `http.access`，带 `principal` 和 `clientIp`                                        | 参见[监控](./monitoring#logs)                                     |
+
+安全日志仅追加：数据库拒绝更改或删除任何行。服务器保留 365 天且最多 1,000,000 行，并分批删除最旧的行。被速率限制拒绝的请求不会被记录，因此洪水攻击无法使表增长。如果您需要更长的历史记录，请将日志导出到您自己的事件存储。
+
+```bash
+curl -fsS -H "Authorization: Bearer $ARKVORY_KEY" "https://arkvory.example/api/v1/security/audit?limit=100"
+```
+
+使用 `after` 参数并传入最后一个 ID 来读取更旧的行。
+
+## 控制台与浏览器 {#console-headers}
+
+服务器在控制台的应答上设置以下头部：
+
+| 头部                      | 值                                                                                                                                                                                  |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Content-Security-Policy` | `default-src 'none'; img-src 'self' blob:; script-src 'self'; style-src 'self'; connect-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'` |
+| `Referrer-Policy`         | `no-referrer`                                                                                                                                                                       |
+| `X-Content-Type-Options`  | `nosniff`                                                                                                                                                                           |
+| `Cache-Control`           | `private, no-store`                                                                                                                                                                 |
+| `X-Request-Id`            | 应答的请求 ID                                                                                                                                                                       |
+
+每个 API 应答也带有 `X-Content-Type-Options`、`Cache-Control` 和 `X-Request-Id`。该 CSP 不允许内联脚本、外部脚本、框架嵌入，也不允许连接到其他主机。来自 `blob:` 的图片是您添加到反馈消息中的截图。
+
+服务器不设置任何 cookie。控制台仅在浏览器标签页的内存中保存密钥或会话令牌。浏览器只存储主题和语言的选择，以及下载队列的私有文件。来自其他地址的浏览器页面无法调用 API：`ARKVORY_CORS_ORIGINS` 默认为空。它最多为外部控制台列出 16 个确切的源，使用 HTTPS 或回环地址上的 HTTP。被允许的源不会获得额外权限，因为每个请求都需要密钥。
+
+## 更新签名 {#update-signing}
+
+每个发行版都有一个清单 `arkvory-release.json`，其中包含其归档和安装程序的 SHA-256，以及签名 `arkvory-release.json.sig`。该签名是 minisign 格式的 Ed25519 签名。更新程序在其代码中内置公钥。
+
+- 来自中心（hub）或 GitHub 的发行版，只有当其签名与内置密钥匹配且 SHA-256 值与清单匹配时才会安装。错误的签名会报错，更新程序不会寻找其他来源。
+- 私有签名密钥保留在维护者手中，绝不会出现在您的服务器上。发行版可以同时携带旧公钥和新公钥，以便轮换密钥。
+- 您通过 `--artifact` 传入的本地文件夹由您自行选择。其中的签名文件在存在时会被检查。
+- 图形安装程序以及 `.deb` 和 `.rpm` 软件包尚未使用发布者证书签名。Windows 会显示发布者未知。请仅从 [GitHub Releases](https://github.com/ProAnima/Arkvory/releases) 下载它们，并将 SHA-256 值与 `release-checksums.json` 比对。
+- 更改数据库模式的发行版，只有在服务器已生成并验证新的备份之后才会安装。参见[更新](../install/updates)。
+
+## 向 ProAnimaStudio 中心（hub）发送什么 {#hub}
+
+更新在 ProAnimaStudio 的中心（hub）（`https://hub.proanima.net`）中批准。服务器在以下情况下会与其联系：
+
+| 数据           | 时机                         | 内容                                                                                                                                                                         |
+| -------------- | ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 更新检查       | 每 6 小时                    | 当前版本、操作系统和架构是地址的一部分。开启统计后，请求头部 `X-Install-Id` 中会带一个随机的安装 ID                                                                          |
+| 事件 `updated` | 安装更新之后，且统计已开启   | 版本和安装 ID                                                                                                                                                                |
+| 反馈           | 仅当用户在控制台中提交表单时 | 文本、用于回复的可选电子邮件地址、最多 6 张截图，以及浏览器页面的日志。管理员可以添加 API 日志的最后 1.5 MiB 和系统摘要。表单会在您发送之前显示全部内容（[[ui:reportShow]]） |
+
+安装 ID 是 `config/install-id` 中的一个随机 UUID。它不包含名称、地址或内容。项目声明中心（hub）不存储 IP 地址、名称或文件内容。不启用统计时不会发送该 ID，并且只有当某个版本向所有安装发布时，中心才会提供它。系统摘要包含版本、模式编号以及更新和镜像的状态，不含地址和机密。API 日志也没有机密。
+
+关闭它：
+
+```bash
+sudo arkvory configure --root /opt/proanima-arkvory --statistics off
+sudo arkvory configure --root /opt/proanima-arkvory --hub-off
+```
+
+- `--statistics off` 会停止安装 ID 和 `updated` 事件。控制台有相同的开关：[[ui:updates]] 中的 [[ui:updateStatistics]]。
+- `--hub-off` 会停止与中心（hub）的所有联系。之后更新仅来自 GitHub，并且控制台反馈会在服务下次重启后关闭。用户会改为获得控制台中显示的联系地址。
+- `--hub-url https://hub.example` 将服务器指向另一个中心（hub）。只接受 HTTPS，或回环地址上的 HTTP。
+
+每 6 小时的检查在自动安装关闭时也会运行。没有互联网访问的服务器可从发行版的本地副本进行安装。参见[更新](../install/updates)。
+
+## 备份您的机密 {#secret-backups}
+
+备份存储保存目录、密码哈希和所有已发布的文件。它未加密。它不保存您配置文件的内容。请在服务器之外的加密位置保留这些文件的第二份副本：
+
+- `config/keys.json` 和 `config/bootstrap-token.txt`（恢复密钥），
+- `config/runtime.json`，
+- TLS 证书和密钥，
+- `config/mirrors/`，其中包含镜像的密钥，
+- `config/hub.json` 和 `github-token.txt`，如果您使用它们。
+
+恢复会创建一个具有自己的设置和密钥文件的新实例。恢复之后，会话会消失，个人令牌和服务密钥会被撤销，物理清理和保留策略会关闭。请签发新密钥，并有意识地重新开启这些策略。密码会恢复到快照时的状态。请将这些文件的每一份副本都视为机密。参见[备份](./backups)。
+
+## 报告漏洞 {#vulnerabilities}
+
+不要在公开 issue 中描述漏洞或发布密钥。项目所有者是 Ian Panaev（GitHub 账户 `ProAnima`）。项目尚未发布专门用于安全报告的私密渠道。请通过项目的 GitHub 账户，或发送到控制台显示的工作室地址 `info@proanima.net`，发送一条不含漏洞利用细节的简短消息，并请求一种私密的方式继续沟通。参见仓库中的 `SECURITY.md`。
+
+## 相关页面 {#related-pages}
+
+- [监控](./monitoring)
+- [自愈](./self-healing)
+- [账户与访问](../use/accounts)
+- [HTTPS 与反向代理](../install/https)
+- [认证](../api/authentication)
+- [错误](../api/errors)

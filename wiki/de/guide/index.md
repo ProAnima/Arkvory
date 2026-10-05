@@ -38,7 +38,7 @@ Jede gespeicherte Datei ist ein unveränderliches **Artefakt** mit einer SHA-256
 - **Stufen und Hochstufung.** Markieren Sie einen Build als `qa`, `release` oder `prod` oder veröffentlichen Sie ihn ohne erneuten Upload in einem anderen Repository. Ein Deployment-Agent kann „den neuesten `release`-Build im Bereich `^1.4`“ anfordern.
 - **Metadaten.** Labels, Textmetadaten, Sammlungen und angehängte Dateien wie Manifeste, SBOMs und Signaturen.
 - **Aufbewahrung.** Behalten Sie die letzten N Builds jedes Pakets, legen Sie Kontingente fest und entfernen Sie alte Inhalte im Hintergrund.
-- **Backups.** Ein Backup-Agent kopiert täglich die Datenbank und alle Inhalte in einen Backup-Speicher auf einem anderen Datenträger oder NAS und prüft die Kopien.
+- **Backups.** Ein Backup-Agent kopiert die Datenbank und alle Inhalte in einen Backup-Speicher auf einem anderen Datenträger oder NAS, nach einem täglichen Zeitplan, den ein Administrator einschaltet, und prüft die Kopien.
 - **Spiegel.** Eine zweite Installation kann eine schreibgeschützte Kopie eines Repositorys führen und sie ausliefern, wenn der Hauptserver nicht verfügbar ist.
 - **Lese-Gateways.** Zusätzliche Download-Prozesse auf demselben gemeinsamen Speicher teilen sich ein Download-Budget.
 - **Selbstheilung.** Die Dienste starten nach einem Absturz oder Stillstand neu. Lange Übertragungen können nach dem Neustart fortgesetzt werden.

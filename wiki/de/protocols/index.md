@@ -27,13 +27,13 @@ Die Routen unter `/v2`, `/lfs` und `/npm` folgen den Spezifikationen ihrer Proto
 
 Jede Anfrage benötigt Anmeldedaten, außer öffentlichen Health-Checks. Arkvory akzeptiert diese Arten:
 
-| Art                        | Sieht so aus         | Woher es kommt                                                                                                                            | Typische Verwendung                                          |
-| -------------------------- | -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
-| Persönliches Zugriffstoken | `pat_...`            | Wird von einem Benutzer in der Konsole erstellt. Zugriff `read` oder `read-write`. Läuft ab (standardmäßig nach 90 Tagen, höchstens 365). | Entwickler: Unity, Git, Docker auf einem Arbeitsplatzrechner |
-| Dienstschlüssel            | `arkvory_...`        | Wird von einem Administrator für ein Dienstkonto ausgestellt, mit genau festgelegten Aktionen pro Repository                              | CI/CD, Deployment-Agents, Build-Server                       |
-| Dateischlüssel             | beliebiges Geheimnis | Die Schlüsseldatei des Servers (`ARKVORY_KEYS_FILE`), mit `read` oder `write` pro Repository; der Besitzerschlüssel verwaltet außerdem    | Besitzer der Installation, ältere Integrationen              |
-| Sitzung                    | `dps_...`            | Anmeldung an der Konsole; 12 Stunden gültig                                                                                               | Interaktive Arbeit in der Konsole                            |
-| Download-Link              | URL mit `?token=`    | Für ein Artefakt erstellt; 60 Sekunden bis 24 Stunden                                                                                     | Eine Datei ohne Schlüssel an jemanden weitergeben            |
+| Art                        | Sieht so aus         | Woher es kommt                                                                                                                                                          | Typische Verwendung                                          |
+| -------------------------- | -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| Persönliches Zugriffstoken | `pat_...`            | Wird von einem Benutzer in der Konsole erstellt. Zugriff `read` oder `read-write`. Läuft ab (standardmäßig nach 90 Tagen, höchstens 365).                               | Entwickler: Unity, Git, Docker auf einem Arbeitsplatzrechner |
+| Dienstschlüssel            | `arkvory_...`        | Wird für ein Dienstkonto ausgestellt, mit genau festgelegten Aktionen pro Repository, mit dem Wiederherstellungsschlüssel oder von einem delegierten Operator-Schlüssel | CI/CD, Deployment-Agents, Build-Server                       |
+| Dateischlüssel             | beliebiges Geheimnis | Die Schlüsseldatei des Servers (`ARKVORY_KEYS_FILE`), mit `read` oder `write` pro Repository; der Besitzerschlüssel verwaltet außerdem                                  | Besitzer der Installation, ältere Integrationen              |
+| Sitzung                    | `dps_...`            | Anmeldung an der Konsole; 12 Stunden gültig                                                                                                                             | Interaktive Arbeit in der Konsole                            |
+| Download-Link              | URL mit `?token=`    | Für ein Artefakt erstellt; 60 Sekunden bis 24 Stunden                                                                                                                   | Eine Datei ohne Schlüssel an jemanden weitergeben            |
 
 Die Protokolle unterscheiden sich nur darin, wie sie den Schlüssel senden:
 

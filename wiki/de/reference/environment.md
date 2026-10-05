@@ -80,14 +80,14 @@ Diese Limits gelten für einen API-Prozess. Raten sind in Bytes pro Sekunde ange
 
 ## Netzwerk, HTTPS und Browser {#network-https-and-browsers}
 
-| Variable                     | Gelesen von | Standard      | Bedeutung                                                                                                                           |
-| ---------------------------- | ----------- | ------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| `ARKVORY_TLS_CERT_FILE`      | API         | nicht gesetzt | PEM-Zertifikat (mit seiner Kette) für integriertes HTTPS. Setzen Sie es zusammen mit der Schlüsseldatei.                            |
-| `ARKVORY_TLS_KEY_FILE`       | API         | nicht gesetzt | Privater PEM-Schlüssel ohne Passwort.                                                                                               |
-| `ARKVORY_TLS_MIN_VERSION`    | API         | `TLSv1.2`     | `TLSv1.2` oder `TLSv1.3`.                                                                                                           |
-| `ARKVORY_TLS_RELOAD_SECONDS` | API         | `300`         | Wie oft erneuerte Zertifikatsdateien gelesen werden: 30–86 400 Sekunden, oder `0`, um sie nur beim Start zu lesen.                  |
-| `ARKVORY_CORS_ORIGINS`       | API         | leer          | Kommagetrennte Liste von bis zu 16 Browser-Origins, für eine Konsole unter einer anderen Adresse. Nur HTTPS oder HTTP auf Loopback. |
-| `ARKVORY_TRUSTED_PROXIES`    | API         | leer          | Bis zu 32 Reverse-Proxy-Adressen (IP oder CIDR). Nur diese dürfen die Client-Adresse mit `X-Forwarded-For` setzen.                  |
+| Variable                     | Gelesen von | Standard      | Bedeutung                                                                                                                                                                                                                                                    |
+| ---------------------------- | ----------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `ARKVORY_TLS_CERT_FILE`      | API         | nicht gesetzt | PEM-Zertifikat (mit seiner Kette) für integriertes HTTPS. Setzen Sie es zusammen mit der Schlüsseldatei.                                                                                                                                                     |
+| `ARKVORY_TLS_KEY_FILE`       | API         | nicht gesetzt | Privater PEM-Schlüssel ohne Passwort.                                                                                                                                                                                                                        |
+| `ARKVORY_TLS_MIN_VERSION`    | API         | `TLSv1.2`     | `TLSv1.2` oder `TLSv1.3`.                                                                                                                                                                                                                                    |
+| `ARKVORY_TLS_RELOAD_SECONDS` | API         | `300`         | Wie oft erneuerte Zertifikatsdateien gelesen werden: 30–86 400 Sekunden, oder `0`, um sie nur beim Start zu lesen.                                                                                                                                           |
+| `ARKVORY_CORS_ORIGINS`       | API         | leer          | Kommagetrennte Liste von bis zu 16 Browser-Origins, für eine Konsole unter einer anderen Adresse. Nur HTTPS oder HTTP auf Loopback.                                                                                                                          |
+| `ARKVORY_TRUSTED_PROXIES`    | API         | leer          | Bis zu 32 Reverse-Proxy-Adressen (IP oder CIDR). Nur diese dürfen die Client-Adresse mit `X-Forwarded-For`, die Anfrage-ID mit `X-Request-Id` sowie Host und Protokoll absoluter Links (Git LFS, npm) mit `X-Forwarded-Host` und `X-Forwarded-Proto` setzen. |
 
 Integriertes HTTPS ist für native Installationen gedacht. Verwenden Sie mit Docker Compose einen Reverse-Proxy. Siehe [HTTPS](../install/https).
 
@@ -123,11 +123,11 @@ Siehe [Spiegel](../operate/mirrors).
 
 ## Updates und der Hub {#updates-and-the-hub}
 
-| Variable                     | Gelesen von | Standard                   | Bedeutung                                                                                                                                                 |
-| ---------------------------- | ----------- | -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ARKVORY_HUB_URL`            | API         | `https://hub.proanima.net` | Adresse des ProAnimaStudio-Hubs, verwendet für das Feedback aus der Konsole. Ein leerer Wert schaltet das Feedback aus. Nur HTTPS oder HTTP auf Loopback. |
-| `ARKVORY_HUB_PROJECT`        | API         | `arkvory`                  | Projektname im Hub.                                                                                                                                       |
-| `ARKVORY_UPDATE_CONTROL_DIR` | API         | nicht gesetzt              | Verzeichnis, das die API mit dem Updater des Hosts teilt. Die Installer setzen es. Ohne diese Angabe kann die Konsole keine Updates anfordern.            |
+| Variable                     | Gelesen von | Standard                   | Bedeutung                                                                                                                                                                                                                                           |
+| ---------------------------- | ----------- | -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ARKVORY_HUB_URL`            | API         | `https://hub.proanima.net` | Adresse des ProAnimaStudio-Hubs, verwendet nur für das Feedback aus der Konsole (der Update-Hub steht in `config/hub.json` und wird mit `arkvory configure` geändert). Ein leerer Wert schaltet das Feedback aus. Nur HTTPS oder HTTP auf Loopback. |
+| `ARKVORY_HUB_PROJECT`        | API         | `arkvory`                  | Projektname im Hub.                                                                                                                                                                                                                                 |
+| `ARKVORY_UPDATE_CONTROL_DIR` | API         | nicht gesetzt              | Verzeichnis, das die API mit dem Updater des Hosts teilt. Die Installer setzen es. Ohne diese Angabe kann die Konsole keine Updates anfordern.                                                                                                      |
 
 Siehe [Updates](../install/updates).
 

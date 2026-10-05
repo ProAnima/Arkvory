@@ -38,7 +38,7 @@ Cada archivo almacenado es un **artefacto** inmutable con una suma de comprobaci
 - **Etapas y promoción.** Marque una compilación como `qa`, `release` o `prod`, o publíquela en otro repositorio sin una nueva subida. Un agente de despliegue puede pedir «la compilación `release` más reciente del rango `^1.4`».
 - **Metadatos.** Etiquetas, metadatos de texto, colecciones y archivos adjuntos, como manifiestos, SBOM y firmas.
 - **Retención.** Conserve las últimas N compilaciones de cada paquete, establezca cuotas y elimine el contenido antiguo en segundo plano.
-- **Copias de seguridad.** Un agente de copias de seguridad copia a diario la base de datos y todo el contenido en un almacén de copias situado en otro disco o en un NAS, y verifica las copias.
+- **Copias de seguridad.** Un agente de copias de seguridad copia la base de datos y todo el contenido en un almacén de copias situado en otro disco o en un NAS, con una programación diaria que activa un administrador, y verifica las copias.
 - **Espejos.** Una segunda instalación puede mantener una copia de solo lectura de un repositorio y servirla cuando el servidor principal no está disponible.
 - **Puertas de enlace de lectura.** Procesos de descarga adicionales sobre el mismo almacenamiento compartido, que comparten un único presupuesto de descarga.
 - **Autorrecuperación.** Los servicios se reinician tras una caída o cuando dejan de responder. Las transferencias largas pueden continuar tras el reinicio.

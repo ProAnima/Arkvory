@@ -27,13 +27,13 @@ Las rutas bajo `/v2`, `/lfs` y `/npm` siguen las especificaciones de sus protoco
 
 Toda solicitud necesita una credencial, salvo las comprobaciones de estado públicas. Arkvory acepta estos tipos:
 
-| Tipo                     | Aspecto           | Origen                                                                                                                                     | Uso habitual                                                   |
-| ------------------------ | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------- |
-| Token de acceso personal | `pat_...`         | Lo crea un usuario en la consola. Ámbito `read` o `read-write`. Caduca (a los 90 días de forma predeterminada, como máximo a los 365).     | Desarrolladores: Unity, git, Docker en una estación de trabajo |
-| Clave de servicio        | `arkvory_...`     | La emite un administrador para una cuenta de servicio, con acciones exactas por repositorio                                                | CI/CD, agentes de despliegue, servidores de compilación        |
-| Clave de archivo         | cualquier secreto | El archivo de claves del servidor (`ARKVORY_KEYS_FILE`), con `read` o `write` por repositorio; la clave del propietario también administra | Propietario de la instalación, integraciones heredadas         |
-| Sesión                   | `dps_...`         | Inicio de sesión en la consola; válida durante 12 horas                                                                                    | Trabajo interactivo en la consola                              |
-| Enlace de descarga       | URL con `?token=` | Se crea para un artefacto; de 60 segundos a 24 horas                                                                                       | Entregar un archivo a alguien que no tiene una clave           |
+| Tipo                     | Aspecto           | Origen                                                                                                                                             | Uso habitual                                                   |
+| ------------------------ | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| Token de acceso personal | `pat_...`         | Lo crea un usuario en la consola. Ámbito `read` o `read-write`. Caduca (a los 90 días de forma predeterminada, como máximo a los 365).             | Desarrolladores: Unity, git, Docker en una estación de trabajo |
+| Clave de servicio        | `arkvory_...`     | Se emite para una cuenta de servicio, con acciones exactas por repositorio, con la clave de recuperación o mediante una clave de operador delegada | CI/CD, agentes de despliegue, servidores de compilación        |
+| Clave de archivo         | cualquier secreto | El archivo de claves del servidor (`ARKVORY_KEYS_FILE`), con `read` o `write` por repositorio; la clave del propietario también administra         | Propietario de la instalación, integraciones heredadas         |
+| Sesión                   | `dps_...`         | Inicio de sesión en la consola; válida durante 12 horas                                                                                            | Trabajo interactivo en la consola                              |
+| Enlace de descarga       | URL con `?token=` | Se crea para un artefacto; de 60 segundos a 24 horas                                                                                               | Entregar un archivo a alguien que no tiene una clave           |
 
 Los protocolos se diferencian solo en cómo envían la clave:
 

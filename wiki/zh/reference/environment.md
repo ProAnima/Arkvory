@@ -80,14 +80,14 @@ Restart-Service Arkvoryapi, Arkvoryworker, Arkvorybackup
 
 ## 网络、HTTPS 与浏览器 {#network-https-and-browsers}
 
-| 变量                         | 读取方 | 默认值    | 含义                                                                                              |
-| ---------------------------- | ------ | --------- | ------------------------------------------------------------------------------------------------- |
-| `ARKVORY_TLS_CERT_FILE`      | API    | 未设置    | 用于内置 HTTPS 的 PEM 证书（含证书链）。请与密钥文件一起设置。                                    |
-| `ARKVORY_TLS_KEY_FILE`       | API    | 未设置    | 不带密码的 PEM 私钥。                                                                             |
-| `ARKVORY_TLS_MIN_VERSION`    | API    | `TLSv1.2` | `TLSv1.2` 或 `TLSv1.3`。                                                                          |
-| `ARKVORY_TLS_RELOAD_SECONDS` | API    | `300`     | 多久读取一次续期后的证书文件：30–86 400 秒；`0` 表示只在启动时读取。                              |
-| `ARKVORY_CORS_ORIGINS`       | API    | 空        | 以逗号分隔的列表，最多 16 个浏览器源，用于位于其他地址的控制台。仅限 HTTPS，或回环地址上的 HTTP。 |
-| `ARKVORY_TRUSTED_PROXIES`    | API    | 空        | 最多 32 个反向代理地址（IP 或 CIDR）。只有这些代理可以通过 `X-Forwarded-For` 设置客户端地址。     |
+| 变量                         | 读取方 | 默认值    | 含义                                                                                                                                                                                                                    |
+| ---------------------------- | ------ | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ARKVORY_TLS_CERT_FILE`      | API    | 未设置    | 用于内置 HTTPS 的 PEM 证书（含证书链）。请与密钥文件一起设置。                                                                                                                                                          |
+| `ARKVORY_TLS_KEY_FILE`       | API    | 未设置    | 不带密码的 PEM 私钥。                                                                                                                                                                                                   |
+| `ARKVORY_TLS_MIN_VERSION`    | API    | `TLSv1.2` | `TLSv1.2` 或 `TLSv1.3`。                                                                                                                                                                                                |
+| `ARKVORY_TLS_RELOAD_SECONDS` | API    | `300`     | 多久读取一次续期后的证书文件：30–86 400 秒；`0` 表示只在启动时读取。                                                                                                                                                    |
+| `ARKVORY_CORS_ORIGINS`       | API    | 空        | 以逗号分隔的列表，最多 16 个浏览器源，用于位于其他地址的控制台。仅限 HTTPS，或回环地址上的 HTTP。                                                                                                                       |
+| `ARKVORY_TRUSTED_PROXIES`    | API    | 空        | 最多 32 个反向代理地址（IP 或 CIDR）。只有这些代理可以通过 `X-Forwarded-For` 设置客户端地址，通过 `X-Request-Id` 设置请求 ID，通过 `X-Forwarded-Host` 和 `X-Forwarded-Proto` 设置绝对链接（Git LFS、npm）的主机和协议。 |
 
 内置 HTTPS 适用于原生安装。使用 Docker Compose 时，请使用反向代理。参见 [HTTPS](../install/https)。
 
@@ -123,11 +123,11 @@ Restart-Service Arkvoryapi, Arkvoryworker, Arkvorybackup
 
 ## 更新与中心（hub） {#updates-and-the-hub}
 
-| 变量                         | 读取方 | 默认值                     | 含义                                                                                           |
-| ---------------------------- | ------ | -------------------------- | ---------------------------------------------------------------------------------------------- |
-| `ARKVORY_HUB_URL`            | API    | `https://hub.proanima.net` | ProAnimaStudio 中心的地址，供控制台反馈使用。空值会关闭反馈。仅限 HTTPS，或回环地址上的 HTTP。 |
-| `ARKVORY_HUB_PROJECT`        | API    | `arkvory`                  | 中心上的项目名称。                                                                             |
-| `ARKVORY_UPDATE_CONTROL_DIR` | API    | 未设置                     | API 与主机更新程序共享的目录。由安装程序设置。没有它，控制台无法请求更新。                     |
+| 变量                         | 读取方 | 默认值                     | 含义                                                                                                                                                                 |
+| ---------------------------- | ------ | -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ARKVORY_HUB_URL`            | API    | `https://hub.proanima.net` | ProAnimaStudio 中心的地址，仅供控制台反馈使用（更新中心保存在 `config/hub.json` 中，用 `arkvory configure` 修改）。空值会关闭反馈。仅限 HTTPS，或回环地址上的 HTTP。 |
+| `ARKVORY_HUB_PROJECT`        | API    | `arkvory`                  | 中心上的项目名称。                                                                                                                                                   |
+| `ARKVORY_UPDATE_CONTROL_DIR` | API    | 未设置                     | API 与主机更新程序共享的目录。由安装程序设置。没有它，控制台无法请求更新。                                                                                           |
 
 参见[更新](../install/updates)。
 

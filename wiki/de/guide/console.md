@@ -81,7 +81,7 @@ Der Bereich [[ui:metadata]] zeigt ein einzelnes Artefakt:
 - [[ui:assetTitle]]: [[ui:assign]] macht dieses Artefakt zum aktuellen Inhalt eines Dateipfads.
 - [[ui:promotionTitle]]: [[ui:stageAdd]] markiert das Artefakt mit einer Stufe, etwa `qa` oder `release`. [[ui:promoteSubmit]] veröffentlicht es in einem anderen Repository. Siehe [Hochstufung](../use/promotion).
 - [[ui:attachmentsTitle]]: [[ui:attachmentAdd]] verknüpft ein Manifest, ein SBOM, eine Signatur, einen Bericht oder eine andere Datei mit diesem Build. [[ui:attachmentHistory]] zeigt frühere Stände.
-- [[ui:deletionTitle]]: [[ui:deletionInspect]] zeigt, was das Artefakt noch verwendet. Zum Löschen fügen Sie die Artefakt-ID ein und wählen [[ui:deletionSubmit]].
+- [[ui:deletionTitle]]: [[ui:deletionInspect]] zeigt, was das Artefakt noch verwendet. Zum Löschen fügen Sie die Artefakt-ID ein und wählen [[ui:deletionSubmit]]. Das Löschen erfordert einen Dienstschlüssel mit der Aktion `artifact.delete`; eine Anmeldung mit Passwort, ein persönliches Token und der Wiederherstellungsschlüssel können nicht löschen.
 
 ## Übertragungen {#transfers}
 
@@ -109,7 +109,7 @@ Hier verwalten Administratoren Personen. [[ui:accountsHeading]] listet die Konte
 
 ### Repositorys {#repositories}
 
-[[ui:repositories]] zeigt die Repositorys, die Sie sehen können, mit [[ui:repositoryRights]]. Jede Karte bietet [[ui:repositoryOpen]], [[ui:repositoryStorage]] (Kontingent, automatische Bereinigung und physische Bereinigung) und für Administratoren [[ui:repositoryAccess]]. Ein gespiegeltes Repository zeigt das Badge [[ui:mirrorBadge]]. Siehe [Repositorys](../use/repositories) und [Speicher](../operate/storage).
+[[ui:repositories]] zeigt die Repositorys, die Sie sehen können, mit [[ui:repositoryRights]]. Jede Karte bietet [[ui:repositoryOpen]], [[ui:repositoryStorage]] (Kontingent, automatische Bereinigung und physische Bereinigung; erfordert einen Dienstschlüssel mit den Aktionen `storage.read` oder `storage.manage`) und für Administratoren [[ui:repositoryAccess]]. Ein gespiegeltes Repository zeigt das Badge [[ui:mirrorBadge]]. Siehe [Repositorys](../use/repositories) und [Speicher](../operate/storage).
 
 ### Dienstzugriff {#service-access}
 

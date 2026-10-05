@@ -81,7 +81,7 @@ La sección [[ui:metadata]] muestra un artefacto:
 - [[ui:assetTitle]]: [[ui:assign]] convierte este artefacto en el contenido actual de una ruta de archivo.
 - [[ui:promotionTitle]]: [[ui:stageAdd]] marca el artefacto con una etapa, como `qa` o `release`. [[ui:promoteSubmit]] lo publica en otro repositorio. Consulte [Promoción](../use/promotion).
 - [[ui:attachmentsTitle]]: [[ui:attachmentAdd]] vincula un manifiesto, un SBOM, una firma, un informe u otro archivo a esta compilación. [[ui:attachmentHistory]] muestra los conjuntos anteriores.
-- [[ui:deletionTitle]]: [[ui:deletionInspect]] muestra qué sigue usando el artefacto. Para eliminarlo, pegue el ID del artefacto y seleccione [[ui:deletionSubmit]].
+- [[ui:deletionTitle]]: [[ui:deletionInspect]] muestra qué sigue usando el artefacto. Para eliminarlo, pegue el ID del artefacto y seleccione [[ui:deletionSubmit]]. Eliminar requiere una clave de servicio con la acción `artifact.delete`: una sesión con contraseña, un token personal y la clave de recuperación no pueden eliminar.
 
 ## Transferencias {#transfers}
 
@@ -109,7 +109,7 @@ Aquí los administradores gestionan las cuentas de las personas. [[ui:accountsHe
 
 ### Repositorios {#repositories}
 
-La sección [[ui:repositories]] muestra los repositorios que usted puede ver, con el apartado [[ui:repositoryRights]]. Cada tarjeta tiene [[ui:repositoryOpen]], [[ui:repositoryStorage]] (cuota, limpieza automática y limpieza física) y, para los administradores, [[ui:repositoryAccess]]. Un repositorio espejo muestra la insignia [[ui:mirrorBadge]]. Consulte [Repositorios](../use/repositories) y [Almacenamiento](../operate/storage).
+La sección [[ui:repositories]] muestra los repositorios que usted puede ver, con el apartado [[ui:repositoryRights]]. Cada tarjeta tiene [[ui:repositoryOpen]], [[ui:repositoryStorage]] (cuota, limpieza automática y limpieza física; requiere una clave de servicio con las acciones `storage.read` o `storage.manage`) y, para los administradores, [[ui:repositoryAccess]]. Un repositorio espejo muestra la insignia [[ui:mirrorBadge]]. Consulte [Repositorios](../use/repositories) y [Almacenamiento](../operate/storage).
 
 ### Acceso de servicios {#service-access}
 

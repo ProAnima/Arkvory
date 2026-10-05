@@ -81,7 +81,7 @@ Web 控制台是 Arkvory 的浏览器界面。它是服务器的一部分，因�
 - [[ui:assetTitle]]：[[ui:assign]] 会把此制品设为某个文件路径的当前内容。
 - [[ui:promotionTitle]]：[[ui:stageAdd]] 会给制品标记一个阶段，例如 `qa` 或 `release`。[[ui:promoteSubmit]] 会把它发布到另一个仓库。参见[晋级](../use/promotion)。
 - [[ui:attachmentsTitle]]：[[ui:attachmentAdd]] 会把清单、SBOM、签名、报告或其他文件关联到此构建。[[ui:attachmentHistory]] 显示之前的几组附件。
-- [[ui:deletionTitle]]：[[ui:deletionInspect]] 显示仍在使用该制品的内容。若要删除，请粘贴制品 ID 并选择 [[ui:deletionSubmit]]。
+- [[ui:deletionTitle]]：[[ui:deletionInspect]] 显示仍在使用该制品的内容。若要删除，请粘贴制品 ID 并选择 [[ui:deletionSubmit]]。删除需要带有 `artifact.delete` 操作的服务密钥；密码登录、个人令牌和恢复密钥都不能删除。
 
 ## 传输 {#transfers}
 
@@ -109,7 +109,7 @@ Web 控制台是 Arkvory 的浏览器界面。它是服务器的一部分，因�
 
 ### 仓库 {#repositories}
 
-[[ui:repositories]] 显示您能看到的仓库，以及 [[ui:repositoryRights]]。每张卡片上有 [[ui:repositoryOpen]]、[[ui:repositoryStorage]]（配额、自动清理和物理清理），管理员还能看到 [[ui:repositoryAccess]]。镜像仓库会显示 [[ui:mirrorBadge]] 徽标。参见[仓库](../use/repositories)和[存储](../operate/storage)。
+[[ui:repositories]] 显示您能看到的仓库，以及 [[ui:repositoryRights]]。每张卡片上有 [[ui:repositoryOpen]]、[[ui:repositoryStorage]]（配额、自动清理和物理清理；需要带有 `storage.read` 或 `storage.manage` 操作的服务密钥），管理员还能看到 [[ui:repositoryAccess]]。镜像仓库会显示 [[ui:mirrorBadge]] 徽标。参见[仓库](../use/repositories)和[存储](../operate/storage)。
 
 ### 服务访问 {#service-access}
 
