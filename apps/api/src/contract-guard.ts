@@ -29,6 +29,7 @@ const staticPaths = [
   '/console/tokens.css',
   '/console/appearance-init.js',
   '/console/locales/:file',
+  '/console/flags/:file',
 ];
 // The container registry follows the OCI Distribution specification, not the /api/v1 contract.
 const registryMethods = ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE'];

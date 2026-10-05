@@ -2,6 +2,7 @@ import { fillKey } from './session.mjs';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { create, base } from '../integration/fixture.mjs';
+import { chooseLanguage } from './language.mjs';
 
 // A stage set elsewhere appears in the catalog row before the labels; removed afterwards so later
 // scenarios do not meet a retention blocker.
@@ -42,7 +43,7 @@ export async function exercisePromotion(page, f) {
   });
   assert.equal(put.statusCode, 200, put.body);
   await page.setViewportSize({ width: 1440, height: 1000 });
-  await page.locator('#language').selectOption('en');
+  await chooseLanguage(page, 'en');
   await fillKey(page, f.headers.authorization.slice(7));
   await page.locator('[data-nav=catalog]').click();
   await page.locator('#connect-submit').click();
@@ -100,7 +101,7 @@ export async function exercisePromotion(page, f) {
   // Removal asks for confirmation (accepted by the scenario dialog handler).
   await page.locator('#stage-list li', { hasText: 'qa' }).locator('button').click();
   await page.locator('#stage-empty').waitFor();
-  await page.locator('#language').selectOption('ru');
+  await chooseLanguage(page, 'ru');
   assert.equal(await page.locator('#promotion-title').textContent(), 'Продвижение');
   assert.match(await page.locator('#summary-size').textContent(), /23\s*Б/);
   for (const width of [390, 768]) {
@@ -111,7 +112,7 @@ export async function exercisePromotion(page, f) {
       `promotion panel overflows at ${String(width)}px`,
     );
   }
-  await page.locator('#language').selectOption('en');
+  await chooseLanguage(page, 'en');
   await page.setViewportSize({ width: 1440, height: 1000 });
   await exerciseCatalogStages(page, f, id);
   await page.locator('#connection-card summary').first().click();

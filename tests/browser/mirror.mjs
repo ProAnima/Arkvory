@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { connectWithKey } from './session.mjs';
+import { chooseLanguage } from './language.mjs';
 
 /**
  * The connected repository is a mirror (ADR 0058): the server restarts with `releases` mirrored
@@ -26,7 +27,7 @@ export async function exerciseMirror(browser, f) {
     const errors = [];
     page.on('pageerror', (error) => errors.push(error.message));
     await page.goto(`${origin}/console/`);
-    await page.locator('#language').selectOption('en');
+    await chooseLanguage(page, 'en');
     await connectWithKey(page, f.headers.authorization.slice(7));
     const badge = page.locator('#mirror-badge');
     await badge.waitFor();
@@ -48,7 +49,7 @@ export async function exerciseMirror(browser, f) {
     await connectWithKey(page, f.headers.authorization.slice(7));
     await page.locator('#mirror-state[data-state=failing]').waitFor();
     assert.equal((await badge.textContent()).trim(), 'Mirror · sync error');
-    await page.locator('#language').selectOption('ru');
+    await chooseLanguage(page, 'ru');
     assert.equal((await badge.textContent()).trim(), 'Зеркало · ошибка синхронизации');
     // Import mode (dev -> prod): an ordinary repository, so uploads stay; the badge explains.
     f.config.mirrors[0] = { ...f.config.mirrors[0], stages: ['release'] };
@@ -56,7 +57,7 @@ export async function exerciseMirror(browser, f) {
     const importing = await f.listen();
     await state(`UPDATE arkvory_mirror_state SET error_code=NULL, error_at=NULL`);
     await page.goto(`${importing}/console/`);
-    await page.locator('#language').selectOption('en');
+    await chooseLanguage(page, 'en');
     await connectWithKey(page, f.headers.authorization.slice(7));
     await page.locator('#mirror-state[data-state=synced]').waitFor();
     assert.equal((await badge.textContent()).trim(), 'Imports');

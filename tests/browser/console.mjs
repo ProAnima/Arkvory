@@ -18,8 +18,9 @@ import { exerciseErrorFeedback } from './errors.mjs';
 import { exerciseDesktopDensity } from './density.mjs';
 import { exerciseBackups } from './backups.mjs';
 import { exerciseMirror } from './mirror.mjs';
-import { exerciseLanguages } from './languages.mjs';
+import { exerciseLanguageMenu, exerciseLanguages } from './languages.mjs';
 import { chromium } from 'playwright';
+import { chooseLanguage } from './language.mjs';
 const browser = await chromium.launch({
   headless: true,
   ...(process.env.ARKVORY_BROWSER_CHANNEL ? { channel: process.env.ARKVORY_BROWSER_CHANNEL } : {}),
@@ -68,7 +69,7 @@ try {
   };
   const origin = await f.listen();
   await page.goto(`${origin}/console/`);
-  await page.locator('#language').selectOption('en');
+  await chooseLanguage(page, 'en');
   await exerciseAppearance(page);
   assert.equal(await page.locator('#login-name').isVisible(), true);
   assert.equal(await page.locator('#token').isVisible(), false);
@@ -228,7 +229,7 @@ try {
       for (const language of ['ru', 'en']) {
         await page.setViewportSize({ width, height: 1000 });
         await page.locator('#theme').selectOption(theme);
-        await page.locator('#language').selectOption(language);
+        await chooseLanguage(page, language);
         for (const view of [
           'catalog',
           'upload',
@@ -272,6 +273,7 @@ try {
             });
         }
       }
+  await exerciseLanguageMenu(page);
   await exerciseLanguages(page, go);
   assert.equal(await page.locator('#labels').inputValue(), 'unsaved-label');
   await page.setViewportSize({ width: 390, height: 844 });

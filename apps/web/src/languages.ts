@@ -13,20 +13,28 @@ export interface LanguageInfo {
   readonly dir?: 'rtl';
   /** The tag for numbers and dates where it is not `code` (Arabic: Latin digits, as sizes and ports have). */
   readonly intl?: string;
+  /** Two letters beside the flag on the switch's button. */
+  readonly short: string;
+  /**
+   * The flag shown beside the language: a picture only, apps/web/flags/<flag>.svg (flag-icons,
+   * MIT). A flag is a country, not a language: English is shown with the United Kingdom's,
+   * Portuguese with Brazil's (the translation is Brazilian), Arabic with Saudi Arabia's.
+   */
+  readonly flag: string;
 }
 
 export const LANGUAGES = [
-  { code: 'en', name: 'English' },
-  { code: 'ru', name: 'Русский' },
-  { code: 'es', name: 'Español' },
-  { code: 'fr', name: 'Français' },
-  { code: 'de', name: 'Deutsch' },
-  { code: 'pt', name: 'Português' },
-  { code: 'zh', name: '中文' },
-  { code: 'ja', name: '日本語' },
-  { code: 'ko', name: '한국어' },
-  { code: 'hi', name: 'हिन्दी' },
-  { code: 'ar', name: 'العربية', dir: 'rtl', intl: 'ar-u-nu-latn' },
+  { code: 'en', name: 'English', short: 'EN', flag: 'gb' },
+  { code: 'ru', name: 'Русский', short: 'RU', flag: 'ru' },
+  { code: 'es', name: 'Español', short: 'ES', flag: 'es' },
+  { code: 'fr', name: 'Français', short: 'FR', flag: 'fr' },
+  { code: 'de', name: 'Deutsch', short: 'DE', flag: 'de' },
+  { code: 'pt', name: 'Português', short: 'PT', flag: 'br' },
+  { code: 'zh', name: '中文', short: 'ZH', flag: 'cn' },
+  { code: 'ja', name: '日本語', short: 'JA', flag: 'jp' },
+  { code: 'ko', name: '한국어', short: 'KO', flag: 'kr' },
+  { code: 'hi', name: 'हिन्दी', short: 'HI', flag: 'in' },
+  { code: 'ar', name: 'العربية', short: 'AR', flag: 'sa', dir: 'rtl', intl: 'ar-u-nu-latn' },
 ] as const satisfies readonly LanguageInfo[];
 
 export type Language = (typeof LANGUAGES)[number]['code'];

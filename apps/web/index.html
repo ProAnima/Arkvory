@@ -205,11 +205,21 @@
               <option value="light" data-i18n="light">Светлая</option>
               <option value="dark" data-i18n="dark">Тёмная</option>
             </select></label
-          ><label class="language-control"
-            ><span class="sr-only" data-i18n="language">Язык</span
-            ><span id="language-icon" class="preference-icon" aria-hidden="true"></span
-            ><select id="language"></select
-          ></label>
+          >
+          <div class="lang-menu">
+            <button
+              type="button"
+              id="language"
+              class="lang-menu-button"
+              popovertarget="language-list"
+              aria-haspopup="menu"
+              aria-expanded="false"
+            >
+              <span id="language-current" class="lang-menu-current"></span>
+              <span class="lang-menu-caret" data-icon="down" aria-hidden="true"></span>
+            </button>
+            <div id="language-list" popover="auto" class="lang-menu-list" role="menu"></div>
+          </div>
         </div>
       </header>
       <main id="main" tabindex="-1">

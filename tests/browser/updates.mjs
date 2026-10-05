@@ -8,6 +8,7 @@ import { chromium } from 'playwright';
 import { setup } from '../integration/fixture.mjs';
 import { removeTestDirectory } from '../helpers.mjs';
 import { initialUpdateSnapshot } from '../../apps/deploy/dist/update-monitor.js';
+import { chooseLanguage } from './language.mjs';
 
 const directory = await mkdtemp(join(tmpdir(), 'arkvory-update-browser-'));
 const cleanup = [];
@@ -39,7 +40,7 @@ try {
   const base = await f.listen();
   const connect = async () => {
     await page.goto(base + '/console/');
-    await page.locator('#language').selectOption('en');
+    await chooseLanguage(page, 'en');
     await fillKey(page, f.headers.authorization.slice(7));
     await page.locator('#connect-submit').click();
     await page.locator('#update-banner').waitFor();
@@ -54,7 +55,7 @@ try {
     for (const theme of ['dark', 'light']) {
       await page.setViewportSize({ width, height: 1000 });
       await page.locator('#theme').selectOption(theme);
-      await page.locator('#language').selectOption(width === 390 ? 'ru' : 'en');
+      await chooseLanguage(page, width === 390 ? 'ru' : 'en');
       assert.equal(
         await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
         true,
@@ -62,7 +63,7 @@ try {
       await page.screenshot({ path: `test-results/updates-${width}-${theme}.png`, fullPage: true });
     }
   await page.setViewportSize({ width: 1440, height: 1000 });
-  await page.locator('#language').selectOption('en');
+  await chooseLanguage(page, 'en');
   snapshot.revision++;
   await save();
   await page.locator('#update-check').click();

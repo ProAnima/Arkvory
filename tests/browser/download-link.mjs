@@ -5,6 +5,7 @@ import { chromium } from 'playwright';
 import { setup } from '../integration/fixture.mjs';
 import { publish } from '../integration/backup-fixture.mjs';
 import { connectWithKey, jargon } from './session.mjs';
+import { chooseLanguage } from './language.mjs';
 
 const sha = (bytes) => createHash('sha256').update(bytes).digest('hex');
 const cleanup = [];
@@ -28,7 +29,7 @@ try {
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
   await page.goto(`${origin}/console/#/artifact/releases/${artifact.id}`);
-  await page.locator('#language').selectOption('en');
+  await chooseLanguage(page, 'en');
   await connectWithKey(page, f.headers.authorization.slice(7));
   await page.locator('#selected-name').waitFor();
   const button = page.locator('#download-link');
@@ -54,7 +55,7 @@ try {
   const response = await fetch(url);
   assert.equal(response.status, 200, 'the link downloads without a key');
   assert.equal(sha(Buffer.from(await response.arrayBuffer())), sha(artifact.bytes));
-  await page.locator('#language').selectOption('ru');
+  await chooseLanguage(page, 'ru');
   assert.match(await page.locator('#download-link-note').innerText(), /только этот файл/);
   assert.doesNotMatch(await page.locator('#download-link-result').innerText(), jargon);
   for (const width of [390, 1440]) {

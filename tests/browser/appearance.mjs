@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { mkdir } from 'node:fs/promises';
 import { exerciseIconActions } from './icon-actions.mjs';
+import { chooseLanguage } from './language.mjs';
 
 export async function exerciseAppearance(page) {
   await exerciseIconActions(page);
@@ -20,15 +21,16 @@ export async function exerciseAppearance(page) {
   assert.equal(await tip.isVisible(), false);
   await trigger.click();
   assert.equal(await tip.isVisible(), true);
-  // Re-localize an open tooltip without moving focus or re-creating its trigger.
-  await page.locator('#language').evaluate((node) => {
-    node.value = 'ru';
-    node.dispatchEvent(new Event('change', { bubbles: true }));
-  });
+  // A tooltip opened again after the language changed speaks the new language, from the same
+  // trigger (choosing a language is an interaction elsewhere, so it closes the pinned tip).
+  await chooseLanguage(page, 'ru');
+  assert.equal(await tip.isVisible(), false);
+  const localized = page.getByRole('button', { name: 'Об артефактах', exact: true });
+  assert.equal(await localized.count(), 1);
+  await localized.click();
   assert.equal(await tip.isVisible(), true);
   assert.match(await tip.textContent(), /Неизменяемые/);
-  assert.equal(await page.getByRole('button', { name: 'Об артефактах', exact: true }).count(), 1);
-  await page.locator('#language').selectOption('en');
+  await chooseLanguage(page, 'en');
   await page.locator('#theme').selectOption('dark');
   await page.setViewportSize({ width: 390, height: 844 });
   await trigger.tap();
@@ -103,7 +105,7 @@ export async function exerciseAppearance(page) {
   ).setFiles({ name: 'localization.txt', mimeType: 'text/plain', buffer: Buffer.from('UI') });
   const selection = page.locator('#upload-panel .file-control-selection');
   assert.equal(await selection.textContent(), 'localization.txt');
-  await page.locator('#language').selectOption('ru');
+  await chooseLanguage(page, 'ru');
   assert.equal(
     await page.locator('#upload-panel .file-control-action').textContent(),
     'Выбрать файл',
@@ -112,7 +114,7 @@ export async function exerciseAppearance(page) {
   await file.evaluate((node) => node.form.reset());
   await page.waitForFunction(() => document.querySelector('#file').files.length === 0);
   assert.equal(await selection.textContent(), 'Файл не выбран');
-  await page.locator('#language').selectOption('en');
+  await chooseLanguage(page, 'en');
   assert.equal(await selection.textContent(), 'No file selected');
   await page.locator('[data-nav=catalog]').click();
   console.log(

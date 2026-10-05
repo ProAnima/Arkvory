@@ -2,6 +2,7 @@ import { fillKey } from './session.mjs';
 import assert from 'node:assert/strict';
 import { ArkvoryClient } from '@proanima/arkvory-sdk';
 import { create, base } from '../integration/fixture.mjs';
+import { chooseLanguage } from './language.mjs';
 
 export async function exerciseDeletion(page, f) {
   f.config.keys[0].principal.serviceAdministrator = true;
@@ -40,7 +41,7 @@ export async function exerciseDeletion(page, f) {
     200,
   );
   await page.setViewportSize({ width: 1440, height: 1000 });
-  await page.locator('#language').selectOption('en');
+  await chooseLanguage(page, 'en');
   await fillKey(page, issued.secret);
   await page.locator('[data-nav=catalog]').click();
   await page.locator('#query').fill('');
@@ -90,7 +91,7 @@ export async function exerciseDeletion(page, f) {
     [390, 'ru', 'dark'],
   ]) {
     await page.setViewportSize({ width, height: 1000 });
-    await page.locator('#language').selectOption(language);
+    await chooseLanguage(page, language);
     await page.locator('#theme').selectOption(theme);
     assert.equal(await page.locator('#deletion-confirm').inputValue(), id);
     assert.equal(

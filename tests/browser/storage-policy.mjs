@@ -1,6 +1,7 @@
 import { fillKey, jargon } from './session.mjs';
 import assert from 'node:assert/strict';
 import { ArkvoryClient } from '@proanima/arkvory-sdk';
+import { chooseLanguage } from './language.mjs';
 
 export async function exerciseStoragePolicy(page, f) {
   f.config.keys[0].principal.serviceAdministrator = true;
@@ -24,7 +25,7 @@ export async function exerciseStoragePolicy(page, f) {
   const client = new ArkvoryClient(url, () => issued.secret);
   await client.activateServiceKey();
   await page.setViewportSize({ width: 1440, height: 1000 });
-  await page.locator('#language').selectOption('en');
+  await chooseLanguage(page, 'en');
   await page.locator('#connection-card').evaluate((e) => {
     e.open = true;
   });
@@ -88,7 +89,7 @@ export async function exerciseStoragePolicy(page, f) {
     [390, 'ru', 'dark'],
   ]) {
     await page.setViewportSize({ width, height: 1000 });
-    await page.locator('#language').selectOption(language);
+    await chooseLanguage(page, language);
     await page.locator('#theme').selectOption(theme);
     assert.equal(await page.locator('#storage-keep').inputValue(), '9');
     assert.doesNotMatch(await page.locator('#storage-panel').innerText(), jargon, language);

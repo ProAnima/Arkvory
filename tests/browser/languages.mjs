@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { LANGUAGES } from '../../apps/web/dist/languages.js';
+import { chooseLanguage } from './language.mjs';
 
 // Each language's own script: a fetched dictionary really replaced the English on the screen.
 const SCRIPT = {
@@ -19,7 +20,7 @@ const VIEWS = ['catalog', 'upload', 'downloads', 'packages', 'history', 'metadat
  */
 export async function exerciseLanguages(page, go) {
   for (const { code } of LANGUAGES.filter(({ code }) => code !== 'en' && code !== 'ru')) {
-    await page.locator('#language').selectOption(code);
+    await chooseLanguage(page, code);
     await page.waitForFunction((lang) => document.documentElement.lang === lang, code);
     assert.equal(
       await page.evaluate(() => document.documentElement.dir),
@@ -56,5 +57,63 @@ export async function exerciseLanguages(page, go) {
     await page.screenshot({ path: `test-results/console-language-${code}.png`, fullPage: true });
   }
   await page.setViewportSize({ width: 1440, height: 1000 });
-  await page.locator('#language').selectOption('en');
+  await chooseLanguage(page, 'en');
+}
+
+/**
+ * The menu itself: the flag and letters of the current language, every item with a flag that
+ * loaded, keyboard (arrows, Home, End, a letter, Escape, Enter) and the document's language.
+ */
+export async function exerciseLanguageMenu(page) {
+  const button = page.locator('#language');
+  const list = page.locator('#language-list');
+  const loaded = (selector) =>
+    page
+      .locator(selector)
+      .evaluateAll((nodes) => nodes.every((node) => node.complete && node.naturalWidth > 0));
+  assert.equal(await button.getAttribute('aria-expanded'), 'false');
+  assert.match((await button.getAttribute('aria-label')) ?? '', /English/);
+  assert.equal(await loaded('#language img.flag'), true, 'the current flag loads');
+  await button.click();
+  assert.equal(await list.evaluate((node) => node.matches(':popover-open')), true);
+  assert.equal(await button.getAttribute('aria-expanded'), 'true');
+  await page.screenshot({ path: 'test-results/console-language-menu.png' });
+  assert.equal(await list.locator('[role=menuitemradio]').count(), LANGUAGES.length);
+  assert.equal(await loaded('#language-list img.flag'), true, 'every flag loads');
+  assert.equal(await list.locator('[aria-checked=true]').getAttribute('data-lang'), 'en');
+  // The names are each in their own script, whatever the page is in.
+  assert.equal(await list.locator('[data-lang=ar] .lang-menu-name').getAttribute('dir'), 'rtl');
+  const focused = () => page.evaluate(() => document.activeElement?.dataset.lang ?? '');
+  assert.equal(await focused(), 'en', 'the open list starts at the current language');
+  await page.keyboard.press('ArrowDown');
+  assert.equal(await focused(), 'ru');
+  await page.keyboard.press('End');
+  assert.equal(await focused(), 'ar');
+  await page.keyboard.press('Home');
+  assert.equal(await focused(), 'en');
+  await page.keyboard.press('ArrowUp');
+  assert.equal(await focused(), 'ar', 'the list wraps');
+  // A letter finds a language by its own name, its letters or its English name.
+  await page.keyboard.press('d');
+  assert.equal(await focused(), 'de');
+  await page.keyboard.press('j');
+  assert.equal(await focused(), 'ja');
+  await page.keyboard.press('Escape');
+  assert.equal(await list.evaluate((node) => node.matches(':popover-open')), false);
+  assert.equal(await page.evaluate(() => document.activeElement?.id), 'language');
+  await button.focus();
+  await page.keyboard.press('ArrowDown');
+  // The list opens and takes the focus a moment later; keys go to it once it has.
+  await page.waitForFunction(
+    () =>
+      document.querySelector('#language-list').matches(':popover-open') &&
+      document.activeElement?.dataset.lang === 'en',
+  );
+  await page.keyboard.press('d');
+  assert.equal(await focused(), 'de');
+  await page.keyboard.press('Enter');
+  await page.waitForFunction(() => document.documentElement.lang === 'de');
+  assert.match((await button.getAttribute('aria-label')) ?? '', /Deutsch/);
+  assert.equal(await button.locator('.lang-menu-short').textContent(), 'DE');
+  await chooseLanguage(page, 'en');
 }

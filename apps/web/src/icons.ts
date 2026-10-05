@@ -16,6 +16,7 @@ const paths = {
   reset: 'M3 4v6h6M4 10a8 8 0 1 1 1 8',
   copy: 'M9 9h12v12H9ZM5 15H3V3h12v2',
   check: 'm5 12 4 4L19 6',
+  down: 'm6 9 6 6 6-6',
   key: 'M14 8a5 5 0 1 0-4 4l4 4h3v3h4v-4l-7-7',
   link: 'm10 14 4-4M8 16l-2 2a4 4 0 0 1-6-6l5-5a4 4 0 0 1 6 0m2 1 2-2a4 4 0 0 1 6 6l-5 5a4 4 0 0 1-6 0',
   trash: 'M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7m4-7v7',

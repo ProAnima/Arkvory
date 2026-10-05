@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { mkdir } from 'node:fs/promises';
+import { chooseLanguage } from './language.mjs';
 
 export async function exerciseIconActions(page) {
   if ((await page.locator('#sidebar-toggle').getAttribute('aria-expanded')) === 'false')
@@ -56,7 +57,7 @@ export async function exerciseIconActions(page) {
     node.hidden = false;
   });
   await page.locator('#query').fill('preserved icon draft');
-  await page.locator('#language').selectOption('ru');
+  await chooseLanguage(page, 'ru');
   const localized = page.getByRole('button', { name: 'Найти', exact: true });
   assert.equal(await localized.locator('svg').count(), 1);
   assert.equal(await page.locator('#query').inputValue(), 'preserved icon draft');
@@ -66,8 +67,10 @@ export async function exerciseIconActions(page) {
   assert.notEqual(await page.locator('#theme-icon path').getAttribute('d'), sun);
   assert.equal(await page.locator('#theme').getAttribute('aria-label'), 'Оформление: Тёмная');
   await page.setViewportSize({ width: 320, height: 844 });
-  const languageBox = await page.locator('#language').boundingBox();
-  assert.ok(languageBox.width >= 100, 'Language code must not be clipped beside its icon');
+  const clipped = await page
+    .locator('#language')
+    .evaluate((node) => node.scrollWidth > node.clientWidth);
+  assert.equal(clipped, false, 'The flag and the letters of the language must not be clipped');
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.locator('#sidebar-toggle').click();
@@ -85,7 +88,7 @@ export async function exerciseIconActions(page) {
   await mkdir('test-results', { recursive: true });
   await page.screenshot({ path: 'test-results/icon-rail-dark.png', fullPage: true });
   await page.locator('#sidebar-toggle').click();
-  await page.locator('#language').selectOption('en');
+  await chooseLanguage(page, 'en');
   await page.locator('#theme').selectOption('system');
   await page.locator('#query').fill('');
   console.log(

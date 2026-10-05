@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { chooseLanguage } from './language.mjs';
 
 const settle = (page) =>
   page.evaluate(
@@ -88,7 +89,7 @@ export async function exerciseAdministrationLoading(page, go) {
 
 export async function exerciseClearedMessages(page) {
   for (const language of ['en', 'ru']) {
-    await page.locator('#language').selectOption(language);
+    await chooseLanguage(page, language);
     for (const id of [
       'admin-status',
       'package-status',

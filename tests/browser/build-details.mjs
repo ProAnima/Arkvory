@@ -1,6 +1,7 @@
 import { fillKey } from './session.mjs';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
+import { chooseLanguage } from './language.mjs';
 
 export async function exerciseBuildDetails(page, f, buildId) {
   const root = `/api/v1/repositories/releases/artifacts/${buildId}`;
@@ -116,7 +117,7 @@ export async function exerciseBuildDetails(page, f, buildId) {
   // The same endpoint/UI works with read-only credentials and suppresses write controls.
   const viewer = await page.context().browser().newPage();
   await viewer.goto(page.url());
-  await viewer.locator('#language').selectOption('en');
+  await chooseLanguage(viewer, 'en');
   await fillKey(viewer, f.readerHeaders.authorization.slice(7));
   await viewer.locator('#connect-submit').click();
   // The shared artifact link opens the same build once the reader has connected.

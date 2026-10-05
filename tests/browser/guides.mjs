@@ -1,9 +1,10 @@
 import { fillKey } from './session.mjs';
 import assert from 'node:assert/strict';
+import { chooseLanguage } from './language.mjs';
 
 export async function exerciseGuides(page, fixture) {
   await page.setViewportSize({ width: 1440, height: 1000 });
-  await page.locator('#language').selectOption('en');
+  await chooseLanguage(page, 'en');
   await page.locator('#connection-card').evaluate((node) => {
     node.open = true;
   });
@@ -38,7 +39,7 @@ export async function exerciseGuides(page, fixture) {
     for (const theme of ['dark', 'light']) {
       await page.locator('#theme').selectOption(theme);
       for (const language of ['ru', 'en']) {
-        await page.locator('#language').selectOption(language);
+        await chooseLanguage(page, language);
         assert.equal(await page.locator('#welcome-name').inputValue(), 'unsaved-owner');
         assert.equal(
           await page.evaluate(() => document.documentElement.scrollWidth > innerWidth),

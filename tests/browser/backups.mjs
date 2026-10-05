@@ -11,6 +11,7 @@ import {
   savePlan,
   startAgent,
 } from '../integration/backup-agent-fixture.mjs';
+import { chooseLanguage } from './language.mjs';
 
 const isStatus = (request) => request.url().includes('/api/v1/backup/status');
 const two = (value) => String(value).padStart(2, '0');
@@ -109,9 +110,9 @@ async function planForm(page, f) {
   await page.locator('#backup-timezone[aria-invalid=true]').waitFor();
   assert.equal(await page.evaluate(() => document.activeElement?.id), 'backup-timezone');
   assert.equal(await page.locator('#backup-plan-status').getAttribute('data-i18n'), 'errorFields');
-  await page.locator('#language').selectOption('ru');
+  await chooseLanguage(page, 'ru');
   assert.equal(await page.locator('#backup-timezone-error').innerText(), 'Неверный формат.');
-  await page.locator('#language').selectOption('en');
+  await chooseLanguage(page, 'en');
   await page.locator('#backup-timezone').fill('Europe/Moscow');
   assert.equal(await page.locator('#backup-timezone').getAttribute('aria-invalid'), null);
   assert.equal((await api(f, 'GET', '/plan')).body.timezone, 'Europe/Moscow');
@@ -283,7 +284,7 @@ async function layouts(page, paths) {
       for (const language of ['ru', 'en']) {
         await page.setViewportSize({ width, height: 900 });
         await page.locator('#theme').selectOption(theme);
-        await page.locator('#language').selectOption(language);
+        await chooseLanguage(page, language);
         const overflow = await page.evaluate(
           () => document.documentElement.scrollWidth - window.innerWidth,
         );
@@ -299,7 +300,7 @@ async function layouts(page, paths) {
       }
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.locator('#theme').selectOption('light');
-  await page.locator('#language').selectOption('en');
+  await chooseLanguage(page, 'en');
 }
 
 /** Touch input enlarges every control of the screen to 44 px; the mouse layout stays dense. */
@@ -336,7 +337,7 @@ async function touchTargets(browser, origin, f) {
 async function readerKey(context, origin, f) {
   const page = await context.newPage();
   await page.goto(`${origin}/console/#/backups`);
-  await page.locator('#language').selectOption('en');
+  await chooseLanguage(page, 'en');
   await connectWithKey(page, f.readerHeaders.authorization.slice(7));
   await page.locator('#status[data-i18n=routeUnavailable]').waitFor();
   assert.equal(await page.locator('#backups-nav').isVisible(), false);
@@ -358,7 +359,7 @@ export async function exerciseBackups(browser, origin, f) {
     page.on('pageerror', (error) => errors.push(error.message));
     // A link opened before sign-in waits until backup permissions are discovered.
     await page.goto(`${origin}/console/#/backups`);
-    await page.locator('#language').selectOption('en');
+    await chooseLanguage(page, 'en');
     await connectWithKey(page, f.headers.authorization.slice(7));
     await page.locator('#backups-panel').waitFor();
     await initialState(page);

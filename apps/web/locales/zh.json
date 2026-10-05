@@ -1935,6 +1935,10 @@
     "en": "Appearance: {value}",
     "text": "外观：{value}"
   },
+  "languageCurrent": {
+    "en": "Language: {value}",
+    "text": "语言：{value}"
+  },
   "repositoryHint": {
     "en": "After sign-in, the first repository available to you is selected.",
     "text": "登录后，将自动选择您可访问的第一个仓库。"

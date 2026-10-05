@@ -48,7 +48,19 @@ await build({
   outfile: 'apps/web/public/style.css',
   bundle: true,
 });
-await copyFile('node_modules/@noble/hashes/LICENSE', 'apps/web/public/THIRD-PARTY.txt');
+// Third-party texts shipped with the console: the hash library and the flags beside the languages.
+await writeFile(
+  'apps/web/public/THIRD-PARTY.txt',
+  [
+    await readFile('node_modules/@noble/hashes/LICENSE', 'utf8'),
+    'flag-icons (flags of the language switch, apps/web/flags)',
+    await readFile('apps/web/flags/LICENSE', 'utf8'),
+  ].join('\n\n'),
+);
+await mkdir('apps/web/public/flags', { recursive: true });
+for (const name of await readdir('apps/web/flags'))
+  if (name.endsWith('.svg'))
+    await copyFile(`apps/web/flags/${name}`, `apps/web/public/flags/${name}`);
 // The console's other languages. A translator's file keeps the English each text was made from
 // (tests/web-locales.test.mjs finds what English changed since); the console fetches the texts.
 await mkdir('apps/web/public/locales', { recursive: true });

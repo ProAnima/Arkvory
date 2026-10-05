@@ -12,6 +12,11 @@ const dictionaries = new Map<Language, Dictionary>([
 ]);
 let dictionary: Dictionary = dictionaries.get(language) ?? en;
 let requests = 0;
+const listeners = new Set<() => void>();
+/** Called whenever the page takes another language (the language switch redraws itself). */
+export function onLanguageChange(listener: () => void) {
+  listeners.add(listener);
+}
 /** The documentation site; English at its root, another language in its own folder. */
 const DOCUMENTATION = 'https://proanima.github.io/Arkvory/';
 export function documentationUrl(value: Language, page = '') {
@@ -171,6 +176,7 @@ function apply(value: Language, next: Dictionary) {
   dictionary = next;
   document.documentElement.lang = value;
   document.documentElement.dir = directionOf(value);
+  for (const listener of listeners) listener();
   for (const node of document.querySelectorAll<HTMLElement>(
     '[data-i18n], [data-i18n-placeholder], [data-i18n-label], [data-docs], [data-date], [data-bytes], [data-relative]',
   ))

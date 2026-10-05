@@ -2,6 +2,7 @@
 import assert from 'node:assert/strict';
 import { ArkvoryClient } from '@proanima/arkvory-sdk';
 import { chromium } from 'playwright';
+import { chooseLanguage } from './language.mjs';
 
 /** Internal terms that must not reach people in RU/EN copy (technical help keeps API names). */
 export const jargon =
@@ -46,7 +47,7 @@ async function phoneLayout(page) {
   for (const width of [375, 390])
     for (const language of ['ru', 'en']) {
       await page.setViewportSize({ width, height: 844 });
-      await page.locator('#language').selectOption(language);
+      await chooseLanguage(page, language);
       assert.deepEqual(await splitWords(page, '#connection-card'), [], `${width}/${language}`);
       assert.equal(
         await page.evaluate(() => document.documentElement.scrollWidth > innerWidth),
@@ -54,7 +55,7 @@ async function phoneLayout(page) {
       );
     }
   await page.setViewportSize({ width: 1280, height: 900 });
-  await page.locator('#language').selectOption('en');
+  await chooseLanguage(page, 'en');
 }
 
 /**
@@ -114,7 +115,7 @@ export async function exerciseSignIn(browser, origin, f, artifactId) {
   page.on('pageerror', (error) => errors.push(error.message));
   const link = `#/artifact/releases/${artifactId}`;
   await page.goto(`${origin}/console/${link}`);
-  await page.locator('#language').selectOption('en');
+  await chooseLanguage(page, 'en');
   // People sign in with a password first; the key form stays collapsed and Disconnect hidden.
   assert.equal(await page.locator('#login-name').isVisible(), true);
   assert.equal(await page.locator('#token').isVisible(), false);

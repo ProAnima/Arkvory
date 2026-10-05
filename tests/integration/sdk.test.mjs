@@ -54,6 +54,14 @@ test('portable SDK uploads parts, edits annotations and streams HTTP ranges', as
   assert.equal(typeof (await german.json()).catalog, 'string');
   for (const name of ['xx.json', 'DE.json', 'de.js', '..%2Fconsole.js', '%2E%2E%2Fconsole.js'])
     assert.equal((await fetch(address + '/console/locales/' + name)).status, 404, name);
+  // The flags beside the languages: pictures under the same rule (two letters and .svg).
+  const flag = await fetch(address + '/console/flags/gb.svg');
+  assert.equal(flag.status, 200);
+  assert.match(flag.headers.get('content-type'), /image\/svg\+xml/);
+  assert.match(flag.headers.get('content-security-policy'), /default-src 'none'/);
+  assert.match(await flag.text(), /<svg/);
+  for (const name of ['xx.svg', 'GB.svg', 'gb.png', 'gb.svg.map', '..%2Fconsole.js', 'LICENSE'])
+    assert.equal((await fetch(address + '/console/flags/' + name)).status, 404, name);
   const unauthorized = await fetch(address + base + '/artifacts');
   assert.equal(unauthorized.status, 401);
 });

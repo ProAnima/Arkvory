@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { connectWithKey } from './session.mjs';
+import { chooseLanguage } from './language.mjs';
 
 /**
  * The shared console scenario runs with touch emulation, which selects the 44px touch layout.
@@ -33,7 +34,7 @@ export async function exerciseDesktopDensity(browser, origin, f) {
       );
     assert.ok(views.length >= 6, `visible views: ${views.join(', ')}`);
     for (const language of ['en', 'ru']) {
-      await page.locator('#language').selectOption(language);
+      await chooseLanguage(page, language);
       for (const width of [1024, 1440]) {
         await page.setViewportSize({ width, height: 900 });
         for (const view of views) {

@@ -1,8 +1,8 @@
 import { initializeTooltips } from './tooltips.js';
 import { initializeFileInputs } from './file-inputs.js';
 import { element } from './dom.js';
-import { currentLanguage, message, setLanguage } from './i18n.js';
-import { LANGUAGES, isLanguage } from './languages.js';
+import { message } from './i18n.js';
+import { installLanguageMenu } from './language-menu.js';
 import { themePreference, readPreference, savePreference, applyTheme } from './preferences.js';
 import { initializeGuides } from './guides.js';
 import { initializeActionTooltips } from './action-tooltips.js';
@@ -80,25 +80,7 @@ export function initializeShell() {
       toggle.focus();
     }
   });
-  const language = element('language', HTMLSelectElement);
-  // Each language by its own name, in its own script and direction, whatever the page is in.
-  language.replaceChildren(
-    ...LANGUAGES.map(({ code, name, ...info }) => {
-      const option = new Option(name, code);
-      option.lang = code;
-      option.dir = 'dir' in info ? info.dir : 'ltr';
-      return option;
-    }),
-  );
-  language.value = currentLanguage();
-  language.onchange = () => {
-    const chosen = language.value;
-    if (!isLanguage(chosen)) return;
-    void setLanguage(chosen).then((applied) => {
-      // Not fetched (or overtaken by a later choice): the switch shows what the page is in.
-      if (!applied) language.value = currentLanguage();
-    });
-  };
+  installLanguageMenu();
   const theme = element('theme', HTMLSelectElement);
   theme.value = themePreference(readPreference('theme'));
   theme.onchange = () => {

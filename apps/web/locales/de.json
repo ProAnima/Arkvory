@@ -1935,6 +1935,10 @@
     "en": "Appearance: {value}",
     "text": "Darstellung: {value}"
   },
+  "languageCurrent": {
+    "en": "Language: {value}",
+    "text": "Sprache: {value}"
+  },
   "repositoryHint": {
     "en": "After sign-in, the first repository available to you is selected.",
     "text": "Nach der Anmeldung wird das erste für Sie verfügbare Repository ausgewählt."

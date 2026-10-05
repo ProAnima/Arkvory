@@ -6,6 +6,7 @@ import { chromium } from 'playwright';
 import { ArkvoryClient } from '@proanima/arkvory-sdk';
 import { setup } from '../integration/fixture.mjs';
 import { exerciseLostKeyResponse } from './management-failures.mjs';
+import { chooseLanguage } from './language.mjs';
 
 const cleanup = [],
   secret = randomUUID() + randomUUID();
@@ -45,7 +46,7 @@ try {
     await page.locator(`[data-nav=${view}]`).click();
   };
   await page.goto(base + '/console/');
-  await page.locator('#language').selectOption('en');
+  await chooseLanguage(page, 'en');
   await fillKey(page, secret);
   await page.locator('#connect-submit').click();
   await page.locator('#services-nav').waitFor();
@@ -157,7 +158,7 @@ try {
 
   const viewer = await browser.newPage();
   await viewer.goto(base + '/console/');
-  await viewer.locator('#language').selectOption('en');
+  await chooseLanguage(viewer, 'en');
   await fillKey(viewer, replacementSecret);
   await viewer.locator('#connect-submit').click();
   await viewer.locator('#services-nav').waitFor();
@@ -203,7 +204,7 @@ try {
       for (const language of ['ru', 'en']) {
         await page.setViewportSize({ width, height: 1000 });
         await page.locator('#theme').selectOption(theme);
-        await page.locator('#language').selectOption(language);
+        await chooseLanguage(page, language);
         for (const view of ['services', 'repositories']) {
           await go(view);
           assert.equal(
@@ -221,7 +222,7 @@ try {
   // Clearing the identity erases dynamic administration forms, including any issued secret.
   await page.locator('#connection-card > summary').click();
   await fillKey(page, '');
-  await page.locator('#language').selectOption('en');
+  await chooseLanguage(page, 'en');
   assert.equal(await page.locator('#services-controls').textContent(), '');
   assert.equal((await page.locator('#issued-secret').inputValue()).length, 0);
   assert.equal(await page.locator('#services-nav').isVisible(), false);

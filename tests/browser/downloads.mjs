@@ -5,6 +5,7 @@ import { createHash } from 'node:crypto';
 import { mkdir } from 'node:fs/promises';
 import { setup, create, base } from '../integration/fixture.mjs';
 import { chromium } from 'playwright';
+import { chooseLanguage } from './language.mjs';
 const cleanup = [];
 const browser = await chromium.launch({
   headless: true,
@@ -51,7 +52,7 @@ try {
     };
   });
   await page.goto(`${address}/console/`);
-  await page.locator('#language').selectOption('en');
+  await chooseLanguage(page, 'en');
   await fillKey(page, f.headers.authorization.slice(7));
   await page.locator('#connect-submit').click();
   await page.locator('#artifacts button').first().click();
@@ -206,7 +207,7 @@ try {
   for (const theme of ['light', 'dark']) {
     await page.locator('#theme').selectOption(theme);
     for (const language of ['en', 'ru']) {
-      await page.locator('#language').selectOption(language);
+      await chooseLanguage(page, language);
       await page.setViewportSize({ width: language === 'en' ? 1440 : 390, height: 1000 });
       assert.equal(
         await page.evaluate(() => document.documentElement.scrollWidth > innerWidth),
@@ -244,7 +245,7 @@ try {
         });
     });
     await other.goto(`${address}/console/`);
-    await other.locator('#language').selectOption('en');
+    await chooseLanguage(other, 'en');
     await fillKey(other, f.headers.authorization.slice(7));
     await other.locator('#connect-submit').click();
     await other.locator('#artifacts button').first().click();

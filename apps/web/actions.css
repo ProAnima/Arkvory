@@ -81,9 +81,111 @@ button[data-icon-only] > .action-label {
   color: var(--color-text);
   background: var(--color-surface);
 }
-.preferences .language-control select {
-  width: var(--language-control-width);
-  padding-inline-start: var(--space-10);
+/* The language: a flag and two letters, opening the list of every language (language-menu.ts). */
+.preferences .lang-menu {
+  position: relative;
+  flex: 0 0 auto;
+}
+.flag {
+  flex: none;
+  width: var(--flag-width);
+  height: var(--flag-height);
+  border-radius: var(--radius-xs);
+  object-fit: cover;
+  box-shadow: 0 0 0 var(--border-width) var(--color-border);
+}
+.lang-menu-current {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.lang-menu-short {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+}
+.lang-menu-caret {
+  display: inline-flex;
+  color: var(--color-muted);
+}
+.lang-menu-caret .action-icon {
+  width: var(--check-width);
+  height: var(--check-width);
+}
+.preferences .lang-menu-button {
+  anchor-name: --language-anchor;
+}
+.preferences .lang-menu-button {
+  min-height: var(--control-height);
+  background: var(--color-surface);
+  border-color: var(--color-border);
+  color: var(--color-text);
+}
+.lang-menu-button[aria-expanded='true'] {
+  border-color: var(--color-border-strong);
+}
+.lang-menu-list {
+  position: fixed;
+  /* Without anchor positioning: under the top bar, at its outer edge. */
+  inset: var(--space-12) auto auto auto;
+  inset-inline-end: var(--space-4);
+  margin: 0;
+  width: max-content;
+  min-width: var(--language-menu-width);
+  max-height: var(--language-menu-height);
+  overflow-y: auto;
+  padding: var(--space-2);
+  border: var(--border-width) solid var(--color-border-strong);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: var(--shadow-float);
+}
+.lang-menu-list:popover-open {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.lang-menu-list button {
+  display: grid;
+  grid-template-columns: var(--flag-width) 1fr var(--check-width);
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: var(--control-height);
+  padding: var(--space-2) var(--space-3);
+  border: 0;
+  border-radius: var(--radius-xs);
+  background: transparent;
+  font-weight: var(--weight-medium);
+  text-align: start;
+}
+.lang-menu-list button:focus-visible {
+  background: var(--color-nav-hover);
+}
+.lang-menu-list button[aria-checked='true'] {
+  background: var(--color-nav-active);
+  color: var(--color-nav-text);
+}
+/* At the list's start, not its own: العربية lines up with the names above it. */
+.lang-menu-name {
+  justify-self: start;
+}
+.lang-menu-check {
+  display: inline-flex;
+  justify-content: center;
+}
+.lang-menu-check .action-icon {
+  width: var(--check-width);
+  height: var(--check-width);
+}
+/* Under the button, lined up with its outer edge (the left one in a right-to-left page). */
+@supports (position-area: bottom) {
+  .lang-menu-list {
+    position-anchor: --language-anchor;
+    position-area: block-end span-inline-start;
+    inset: auto;
+    margin: var(--space-2) 0 0;
+  }
 }
 [data-action-anchor] {
   anchor-name: --action-anchor;

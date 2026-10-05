@@ -3,6 +3,7 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { ru } from '../../apps/web/dist/messages.js';
+import { chooseLanguage } from './language.mjs';
 
 const password = 'error-fixture-password';
 const uuid = /^[0-9a-f-]{36}$/;
@@ -30,14 +31,14 @@ async function fieldFromServer(page) {
     true,
   );
   assert.match(await page.locator('#request-id .request-id-value').textContent(), uuid);
-  await page.locator('#language').selectOption('ru');
+  await chooseLanguage(page, 'ru');
   assert.equal(await page.locator('#login-name-error').textContent(), ru.fieldInvalid);
   assert.equal(await page.locator('#status').textContent(), ru.errorFields);
   assert.equal(
     await page.locator('#request-id [data-i18n=requestIdLabel]').textContent(),
     ru.requestIdLabel,
   );
-  await page.locator('#language').selectOption('en');
+  await chooseLanguage(page, 'en');
   await page.locator('#login-name').fill('ui-errors');
   assert.equal(await page.locator('#login-name').getAttribute('aria-invalid'), null);
   assert.equal(await page.locator('#login-name-error').isVisible(), false);
@@ -83,9 +84,9 @@ async function retryAfter(page, f) {
   const retry = page.locator('#request-id .error-ref-retry');
   assert.match(await retry.textContent(), /^Try again in \d+ s\.$/);
   assert.match(await page.locator('#request-id .request-id-value').textContent(), uuid);
-  await page.locator('#language').selectOption('ru');
+  await chooseLanguage(page, 'ru');
   assert.match(await retry.textContent(), /^Повторите через \d+ с\.$/);
-  await page.locator('#language').selectOption('en');
+  await chooseLanguage(page, 'en');
 }
 
 /** Runs last in console.mjs: it exhausts the sign-in budget of 127.0.0.1 on that server. */
@@ -104,7 +105,7 @@ export async function exerciseErrorFeedback(browser, origin, f) {
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
   await page.goto(`${origin}/console/`);
-  await page.locator('#language').selectOption('en');
+  await chooseLanguage(page, 'en');
   await fieldFromServer(page);
   await passwordForm(page, f);
   await retryAfter(page, f);

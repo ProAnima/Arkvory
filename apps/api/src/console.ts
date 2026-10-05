@@ -4,6 +4,8 @@ import type { FastifyInstance, FastifyReply } from 'fastify';
 
 /** A dictionary of the console other than the bundled English and Russian: `xx.json`. */
 const dictionaryName = /^[a-z]{2}\.json$/;
+/** The flag beside a language in the switch: `gb.svg`. */
+const flagName = /^[a-z]{2}\.svg$/;
 
 function send(reply: FastifyReply, type: string, body: Buffer) {
   return reply
@@ -34,16 +36,35 @@ export function registerConsole(app: FastifyInstance, directory: string) {
     app.get(url, async (_request, reply) =>
       send(reply, type, await readFile(resolve(directory, file))),
     );
-  // The name is checked before it reaches the file system: two letters, nothing else.
-  app.get<{ Params: { file: string } }>('/console/locales/:file', async (request, reply) => {
+  // A name is checked before it reaches the file system: two letters and the extension.
+  named(
+    app,
+    '/console/locales/:file',
+    directory,
+    'locales',
+    dictionaryName,
+    'application/json; charset=utf-8',
+  );
+  named(app, '/console/flags/:file', directory, 'flags', flagName, 'image/svg+xml');
+}
+
+function named(
+  app: FastifyInstance,
+  route: string,
+  directory: string,
+  folder: string,
+  pattern: RegExp,
+  type: string,
+) {
+  app.get<{ Params: { file: string } }>(route, async (request, reply) => {
     const name = request.params.file;
-    const body = dictionaryName.test(name)
-      ? await readFile(resolve(directory, 'locales', name)).catch(() => undefined)
+    const body = pattern.test(name)
+      ? await readFile(resolve(directory, folder, name)).catch(() => undefined)
       : undefined;
     if (!body) {
       reply.callNotFound();
       return reply;
     }
-    return send(reply, 'application/json; charset=utf-8', body);
+    return send(reply, type, body);
   });
 }

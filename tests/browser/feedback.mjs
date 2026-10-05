@@ -109,10 +109,12 @@ try {
       node.value = value;
       node.dispatchEvent(new Event('change', { bubbles: true }));
     }, theme);
-    await page.locator('#language').evaluate((node, value) => {
-      node.value = value;
-      node.dispatchEvent(new Event('change', { bubbles: true }));
+    // The open dialog is modal: the menu behind it is not reachable by a person, so the
+    // language is chosen the way the menu does it, with a click on its item.
+    await page.evaluate((value) => {
+      document.querySelector(`#language-list [data-lang="${value}"]`).click();
     }, language);
+    await page.waitForFunction((value) => document.documentElement.lang === value, language);
     const box = await page.locator('#report-dialog').boundingBox();
     assert.ok(box && box.width <= width, `dialog fits ${String(width)} px`);
     assert.equal(
