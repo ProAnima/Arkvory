@@ -18,3 +18,12 @@ test-results/
 .DS_Store
 Thumbs.db
 .claude/worktrees/
+
+# Documentation site: generated pages and build output (scripts/wiki.mjs)
+wiki/.vitepress/dist/
+wiki/.vitepress/cache/
+wiki/internal/
+wiki/api/reference/
+wiki/api/errors.md
+wiki/*/api/reference/
+wiki/*/api/errors.md

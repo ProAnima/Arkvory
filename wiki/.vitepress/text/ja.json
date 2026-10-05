@@ -1,0 +1,202 @@
+{
+  "common": {
+    "outline": "このページの内容",
+    "prev": "前のページ",
+    "next": "次のページ",
+    "returnToTop": "トップに戻る",
+    "sidebarMenu": "メニュー",
+    "appearance": "外観",
+    "lightTheme": "ライトテーマに切り替え",
+    "darkTheme": "ダークテーマに切り替え",
+    "langMenu": "言語を変更",
+    "skipToContent": "本文へスキップ",
+    "editLink": "GitHubでこのページを編集",
+    "download": "ダウンロード",
+    "notFound": {
+      "title": "ページが見つかりません",
+      "quote": "ドキュメントにこのアドレスのページはありません。",
+      "link": "トップページへ",
+      "linkLabel": "ドキュメントのトップページへ移動"
+    },
+    "search": {
+      "button": "検索",
+      "noResults": "一致する結果はありません：",
+      "reset": "検索をクリア",
+      "back": "検索を閉じる",
+      "details": "詳細を表示",
+      "select": "選択",
+      "navigate": "移動",
+      "close": "閉じる"
+    }
+  },
+  "description": "Arkvoryのドキュメント。ビルドアーティファクト、UPackパッケージ、コンテナーイメージ、Git LFS、npmパッケージ、Unityパッケージ、通常のファイルを保存するセルフホスト型リポジトリについて、インストール、運用、バックアップ、ミラー、HTTP APIを説明します。",
+  "sections": {
+    "guide": "はじめに",
+    "install": "インストールと更新",
+    "use": "Arkvoryの使い方",
+    "protocols": "クライアントとプロトコル",
+    "operate": "運用",
+    "api": "HTTP API",
+    "apiReference": "APIリファレンス",
+    "reference": "リファレンス",
+    "internal": "開発者向け"
+  },
+  "internalOnly": "ロシア語",
+  "untranslated": "このページはまだ翻訳されていません。英語で表示しています。",
+  "home": {
+    "tagline": "ビルドアーティファクト、パッケージ、コンテナーイメージ、大容量ファイルをセルフホストで保存。CI、デプロイエージェント、ゲーム開発チームが1台のサーバーを共有できます。",
+    "start": "はじめる",
+    "install": "インストール",
+    "api": "HTTP API"
+  },
+  "api": {
+    "operations": "操作",
+    "method": "メソッド",
+    "path": "パス",
+    "access": "アクセス",
+    "retry": "再試行",
+    "parameters": "パラメーター",
+    "name": "名前",
+    "in": "場所",
+    "required": "必須",
+    "type": "型",
+    "description": "説明",
+    "requestBody": "リクエスト本文",
+    "responses": "レスポンス",
+    "status": "ステータス",
+    "example": "例",
+    "yes": "はい",
+    "no": "いいえ",
+    "none": "なし",
+    "intro": "このグループの操作と、それぞれのアクセスルール、再試行ルール、パラメーター、レスポンスです。すべてのリクエストにはキーを付けます：`Authorization: Bearer <key>`（「認証」を参照）。",
+    "legacy": "ファイルキー：{grants}",
+    "accessKinds": {
+      "public": "誰でも（キー不要）",
+      "authenticated": "有効なキーまたはセッション",
+      "account-session": "サインイン済みのアカウントセッション（キーは不可）",
+      "administrator": "管理者",
+      "service-bootstrap": "ブートストラップキー（インストールの回復キー）",
+      "bootstrap-or-own-key": "ブートストラップキー、またはそのキー自体",
+      "pending-or-active-key": "発行されたキー（有効化の前後を問わない）",
+      "repository-discovery": "呼び出し元が参照できるリポジトリ（{action}）",
+      "system": "システム権限{action}",
+      "service-administration": "サービス管理権限{action}",
+      "repository": "リポジトリ権限：{actions}"
+    },
+    "retryKinds": {
+      "read": "再試行しても安全（読み取り）",
+      "never-automatic": "自動的に再試行しない",
+      "idempotent": "再試行しても安全：同じリクエストは同じ効果になる",
+      "idempotency-key": "同じIdempotency-Keyを使えば再試行しても安全",
+      "compare-and-swap": "想定するリビジョンを指定した場合のみ再試行（compare-and-swap）",
+      "reconcile-upload": "アップロードを再取得してから判断",
+      "reconcile-job": "ジョブを再取得してから判断"
+    },
+    "locations": {
+      "path": "パス",
+      "query": "クエリ",
+      "header": "ヘッダー"
+    },
+    "pages": {
+      "system": {
+        "title": "システムとヘルス",
+        "intro": "稼働状態（liveness）、準備状態（readiness）、メトリクス、OpenAPIドキュメント、サーバーの機能。"
+      },
+      "repositories": {
+        "title": "リポジトリ",
+        "intro": "呼び出し元が参照できるリポジトリと、個々のリポジトリの詳細。"
+      },
+      "uploads": {
+        "title": "アップロード",
+        "intro": "再開可能なアップロード：アップロードセッションを作成し、バイトを一括またはパートに分けて送信し、完了させて、その完了ジョブを追跡します。"
+      },
+      "artifacts": {
+        "title": "アーティファクトとカタログ",
+        "intro": "公開済みのアーティファクト：一覧、詳細、コンテンツ、注釈、参照、検索、カタログの監査とその変更フィード。"
+      },
+      "packages": {
+        "title": "パッケージ",
+        "intro": "UPackパッケージ：登録、一覧、バージョン、名前・バージョン・バージョン範囲によるダウンロード。"
+      },
+      "files": {
+        "title": "パス指定ファイル",
+        "intro": "リポジトリ内のパスで指定するファイル：リビジョン、履歴、復元、1回のリクエストで扱うrawファイル。"
+      },
+      "promotion": {
+        "title": "ステージとプロモーション",
+        "intro": "アーティファクトのステージ（例：`release`）、リポジトリ間のプロモーション、ステージからバージョンへの解決。"
+      },
+      "storage": {
+        "title": "ストレージポリシーと保持",
+        "intro": "クォータ、使用量、保持ポリシーとそのプレビューおよび実行、クリーンアップ、アーティファクトの削除。"
+      },
+      "mirrors": {
+        "title": "ミラー",
+        "intro": "ミラーリングされたリポジトリの状態と、ミラーが追跡するフィード。"
+      },
+      "links": {
+        "title": "ダウンロードリンク",
+        "intro": "キーを持たない人が1つのアーティファクトをダウンロードできる、有効期限付きのリンク。"
+      },
+      "attachments": {
+        "title": "ビルドの添付ファイル",
+        "intro": "アーティファクトに添付されたログ、レポート、その他のファイルと、その履歴。"
+      },
+      "accounts": {
+        "title": "アカウントとサインイン",
+        "intro": "サインイン、セッション、個人用アクセストークン、ユーザー、グループ、セキュリティ監査。"
+      },
+      "services": {
+        "title": "サービスアカウントとキー",
+        "intro": "CIと自動化のためのサービスアカウントと、そのキー、ポリシー、委任、監査。"
+      },
+      "backups": {
+        "title": "バックアップ",
+        "intro": "組み込みのバックアップエージェントの状態、プラン、実行、復元ポイント、検証、保持。"
+      },
+      "updates": {
+        "title": "更新",
+        "intro": "ハブから提供される更新と、そのインストールの要求。"
+      },
+      "feedback": {
+        "title": "フィードバック",
+        "intro": "このサーバーを通じてProAnimaStudioに送信される、スクリーンショットとログ付きのレポート。"
+      }
+    },
+    "field": "フィールド",
+    "response": "レスポンス",
+    "rules": {
+      "title": "ルール",
+      "length": "{min}～{max}文字",
+      "minLength": "{min}文字以上",
+      "maxLength": "{max}文字以内",
+      "items": "{min}～{max}個の要素",
+      "minItems": "{min}個以上の要素",
+      "maxItems": "{max}個以内の要素",
+      "entries": "{max}個以内のエントリ",
+      "range": "{min}～{max}",
+      "minimum": "{min}以上",
+      "maximum": "{max}以下",
+      "oneOf": "次のいずれか：{values}",
+      "pattern": "{pattern}に一致",
+      "decimal": "10進数字で表した整数（文字列として送信）",
+      "sha256": "SHA-256：小文字の16進数字64桁",
+      "unique": "要素の重複なし",
+      "each": "各要素：{rules}",
+      "default": "既定値：{value}",
+      "nullable": "nullも可",
+      "arrayOf": "{type}の配列",
+      "mapOf": "{type}のマップ"
+    }
+  },
+  "errors": {
+    "title": "エラー",
+    "intro": "すべての失敗は、安定したマシンコード、それを詳しく示す任意の理由、人向けのメッセージ、サポート用のリクエストIDを含むJSONエンベロープとして返されます。クライアントはメッセージのテキストではなく、コードと理由で判断してください。",
+    "code": "コード",
+    "reason": "理由",
+    "status": "HTTPステータス",
+    "meaning": "意味",
+    "reasons": "理由",
+    "codes": "コード"
+  }
+}

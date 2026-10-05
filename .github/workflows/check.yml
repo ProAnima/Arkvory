@@ -232,6 +232,31 @@ jobs:
           retention-days: 7
           if-no-files-found: warn
 
+  docs:
+    name: Documentation site
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run gate -- docs
+      - name: Publish gate report to logs and job summary
+        if: ${{ always() }}
+        run: node scripts/ci-report.mjs
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        if: ${{ always() && vars.ARKVORY_UPLOAD_ARTIFACTS == 'true' }}
+        with:
+          name: docs
+          path: test-results/
+          retention-days: 7
+          if-no-files-found: warn
+
   deployment-containers:
     name: Container deployment and update
     runs-on: ubuntu-24.04
@@ -307,7 +332,19 @@ jobs:
   verdict:
     name: Arkvory merge gate
     if: ${{ always() }}
-    needs: [check, integration, browser, security, large, deployment-containers, native, stand, nas]
+    needs:
+      [
+        check,
+        integration,
+        browser,
+        security,
+        docs,
+        large,
+        deployment-containers,
+        native,
+        stand,
+        nas,
+      ]
     runs-on: ubuntu-24.04
     timeout-minutes: 2
     steps:

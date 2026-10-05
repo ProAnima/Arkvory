@@ -7,6 +7,7 @@
       "security",
       "integration",
       "browser",
+      "docs",
       "deployment",
       "deployment-services",
       "deployment-containers",
@@ -20,6 +21,7 @@
       "security",
       "integration",
       "browser",
+      "docs",
       "large-full",
       "large-multipart",
       "deployment",
@@ -93,6 +95,16 @@
       "kind": "scenario",
       "database": true,
       "browser": true
+    },
+    "docs": {
+      "needs": ["build"],
+      "timeoutSeconds": 600,
+      "commands": [
+        {
+          "script": "scripts/wiki.mjs",
+          "args": ["build"]
+        }
+      ]
     },
     "large-full": {
       "needs": ["build"],
@@ -185,6 +197,7 @@
     "security",
     "integration",
     "browser",
+    "docs",
     "deployment",
     "deployment-services",
     "deployment-containers",

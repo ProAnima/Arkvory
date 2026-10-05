@@ -1,0 +1,1044 @@
+{
+  "operations": {
+    "getReadiness": {
+      "en": {
+        "summary": "Check detailed readiness",
+        "description": "Answers `ready` when the database and storage respond, with this node's `role` (`api` or `reader`), whether it accepts writes now (`writable` is false on a read gateway and while the disk keeps its free-space reserve), the shared download slot of a read gateway and aggregate upload and download admission and bandwidth counters. While the server drains or a dependency is unavailable it answers 503 with Retry-After. It does not count against the request budget; for a load balancer without a key use `getReadinessStatus`."
+      },
+      "summary": "상세 준비 상태 확인",
+      "description": "데이터베이스와 스토리지가 응답하면 `ready`로 응답하며, 이 노드의 `role`(`api` 또는 `reader`), 지금 쓰기를 받는지 여부(`writable` 값은 읽기 게이트웨이이거나 디스크가 여유 공간 예비분을 지키는 동안 false입니다), 읽기 게이트웨이의 공유 다운로드 슬롯, 업로드·다운로드 수용량과 대역폭의 집계 카운터를 함께 제공합니다. 서버가 드레인 중이거나 종속 서비스를 사용할 수 없으면 Retry-After와 함께 503으로 응답합니다. 요청 한도에 포함되지 않으며, 키 없이 쓰는 로드 밸런서에는 `getReadinessStatus` 작업을 사용합니다."
+    },
+    "getCapabilities": {
+      "en": {
+        "summary": "Get server capabilities and limits",
+        "description": "Returns the API versions, the gateway role, feature flags (for example `selfRegistration` or `mirrorFeed`) and the limits a client adapts to: the largest object (`maxObjectBytes`, a decimal string), the smallest and largest multipart segment, the largest number of parts and the largest page size. Read it once when a client starts; it lists no resources."
+      },
+      "summary": "서버 기능과 제한 조회",
+      "description": "API 버전, 게이트웨이 역할, 기능 플래그(예: `selfRegistration`, `mirrorFeed`)와 클라이언트가 맞춰야 하는 제한을 반환합니다. 제한에는 가장 큰 객체(`maxObjectBytes`, 10진 문자열), 최소·최대 멀티파트 세그먼트 크기, 최대 파트 수, 최대 페이지 크기가 있습니다. 클라이언트를 시작할 때 한 번 읽으며, 리소스 목록은 포함하지 않습니다."
+    },
+    "getReadinessStatus": {
+      "en": {
+        "summary": "Check readiness for a load balancer",
+        "description": "Needs no key and returns no details: 200 with `{\"status\":\"ready\"}`, or 503 with `unavailable` or `draining` and Retry-After. The dependency check is shared and cached for one second, so frequent probes do not load the database, and the probe does not count against the request budget."
+      },
+      "summary": "로드 밸런서용 준비 상태 확인",
+      "description": "키가 필요 없고 세부 정보도 반환하지 않습니다. `{\"status\":\"ready\"}` 본문과 함께 200을 반환하거나, `unavailable` 또는 `draining` 상태와 Retry-After를 포함한 503을 반환합니다. 종속 서비스 검사는 공유되며 1초 동안 캐시되므로 잦은 프로브가 데이터베이스에 부하를 주지 않고, 프로브는 요청 한도에 포함되지 않습니다."
+    },
+    "getLiveness": {
+      "en": {
+        "summary": "Check that the process is alive",
+        "description": "Returns 200 with `{\"status\":\"ok\"}` while the process answers HTTP. It checks no dependency, so use it to decide on a restart and `getReadinessStatus` to decide on traffic."
+      },
+      "summary": "프로세스 생존 확인",
+      "description": "프로세스가 HTTP에 응답하는 동안 `{\"status\":\"ok\"}` 본문과 함께 200을 반환합니다. 종속 서비스를 검사하지 않으므로 재시작 여부를 판단할 때 사용하고, 트래픽 수신 여부는 `getReadinessStatus`로 판단합니다."
+    },
+    "getOpenApi": {
+      "en": {
+        "summary": "Get the OpenAPI document",
+        "description": "Returns the OpenAPI 3.0 document of this deployment, with the `x-arkvory-*` extensions that describe each operation's access, retry and gateway rules. `surface` (`discovery`, `identity`, `catalog`, `transfers`, `administration` or `operations`) returns only that area; an unknown or repeated query parameter is a 400. The document is the same for every caller and grants nothing: to learn what this credential may call, use `listVisibleOperations`."
+      },
+      "summary": "OpenAPI 문서 조회",
+      "description": "이 배포의 OpenAPI 3.0 문서를 반환하며, 각 작업의 접근, 재시도, 게이트웨이 규칙을 설명하는 `x-arkvory-*` 확장을 포함합니다. `surface`(`discovery`, `identity`, `catalog`, `transfers`, `administration`, `operations` 중 하나)를 지정하면 해당 영역만 반환하며, 알 수 없거나 반복된 쿼리 매개변수는 400입니다. 문서는 모든 호출자에게 같고 어떤 권한도 부여하지 않으므로, 현재 자격 증명으로 호출할 수 있는 작업은 `listVisibleOperations`로 확인합니다."
+    },
+    "getMetrics": {
+      "en": {
+        "summary": "Get Prometheus metrics",
+        "description": "Returns the process metrics in the Prometheus text format (`text/plain; version=0.0.4`) for a scraper. Counters and histograms belong to this process and start from zero after a restart (see `arkvory_process_start_time_seconds`); labels are limited to route template, method, status class and transfer direction and never name an artifact, key or account. The scrape does not count against the request budget."
+      },
+      "summary": "Prometheus 메트릭 조회",
+      "description": "스크레이퍼를 위해 프로세스 메트릭을 Prometheus 텍스트 형식(`text/plain; version=0.0.4`)으로 반환합니다. 카운터와 히스토그램은 이 프로세스에 속하며 재시작 후 0에서 다시 시작합니다(`arkvory_process_start_time_seconds` 참조). 레이블은 라우트 템플릿, 메서드, 상태 클래스, 전송 방향으로 제한되며 아티팩트, 키, 계정을 식별하는 이름은 절대 포함하지 않습니다. 스크레이프는 요청 한도에 포함되지 않습니다."
+    },
+    "listVisibleOperations": {
+      "en": {
+        "summary": "List the operations this credential may call",
+        "description": "Lists the operations of this gateway the credential may call, ordered by `operationId`, each with its surface, retry rule, required actions and the `conditions` checked only at call time (such as `resource-state` or `upload-owner`). `repository` adds the operations of that repository (an unknown or foreign repository is a 404), `surface` narrows the list to one area; pages hold `limit` items (1–100, default 50), continue with `after` set to `next`. The answer is advisory: build menus from it, but every real request is authorized again, and a read gateway lists no changing methods."
+      },
+      "summary": "현재 자격 증명으로 호출 가능한 작업 목록",
+      "description": "자격 증명으로 호출할 수 있는 이 게이트웨이의 작업을 `operationId` 순으로 나열하며, 각 항목에 영역, 재시도 규칙, 필요한 권한 액션, 호출 시점에만 검사되는 `conditions`(예: `resource-state`, `upload-owner`)를 담습니다. `repository`를 지정하면 해당 리포지토리의 작업이 추가되고(알 수 없거나 접근할 수 없는 리포지토리는 404), `surface`는 목록을 한 영역으로 좁힙니다. 페이지는 `limit`개 항목(1–100, 기본 50)으로 구성되며 `after`에 `next` 값을 넣어 이어서 조회합니다. 응답은 참고용입니다. 메뉴 구성에 활용할 수 있지만 모든 실제 요청은 다시 인가되며, 읽기 게이트웨이는 변경 메서드를 나열하지 않습니다."
+    },
+    "listRepositories": {
+      "en": {
+        "summary": "List the repositories you can access",
+        "description": "Lists, ordered by name, the repositories in which the caller holds a permission, each with its formats (`upack`, `assets`) and the caller's own permissions there; a managed service key sees only those where it holds `repository.read`. A repository is the scope of the caller's grants, not an entry of a server-wide registry. Pages hold `limit` cards (1–100, default 50); continue with `after` set to `next`."
+      },
+      "summary": "접근 가능한 리포지토리 목록",
+      "description": "호출자가 권한을 가진 리포지토리를 이름순으로 나열하며, 각 항목에 형식(`upack`, `assets`)과 그 리포지토리에서 호출자 자신의 권한을 담습니다. 관리형 서비스 키에는 `repository.read` 권한이 있는 리포지토리만 보입니다. 리포지토리는 서버 전체 레지스트리의 항목이 아니라 호출자에게 부여된 권한의 범위입니다. 페이지는 `limit`개 카드(1–100, 기본 50)로 구성되며 `after`에 `next` 값을 넣어 이어서 조회합니다."
+    },
+    "getRepository": {
+      "en": {
+        "summary": "Get a repository card",
+        "description": "Returns the caller's card of one repository: its formats and the caller's permissions in it. A repository the caller cannot see answers 404, exactly like one that does not exist; HEAD makes this a cheap access check. Seeing a repository grants no access to its content or settings."
+      },
+      "summary": "리포지토리 카드 조회",
+      "description": "호출자 기준으로 한 리포지토리의 카드, 즉 형식과 그 안에서 호출자의 권한을 반환합니다. 호출자가 볼 수 없는 리포지토리는 존재하지 않는 리포지토리와 똑같이 404로 응답하며, HEAD를 쓰면 가벼운 접근 확인이 됩니다. 리포지토리가 보인다고 해서 그 콘텐츠나 설정에 대한 접근 권한이 생기지는 않습니다."
+    },
+    "listUploadParts": {
+      "en": {
+        "summary": "List the received parts of an upload",
+        "description": "Returns `partBytes`, the part size fixed for this upload when it was created (8 MiB, doubled for files that would need more than 10 000 parts; only the last part is shorter), and the parts already stored with their index, size and SHA-256. Read it before resuming an interrupted multipart upload and send only the missing parts with `putUploadPart`. Only the upload's creator sees it; for anyone else it is a 404."
+      },
+      "summary": "업로드된 파트 목록",
+      "description": "업로드를 만들 때 정해진 파트 크기 `partBytes`(8 MiB이며, 10,000개를 넘는 파트가 필요한 파일은 크기를 두 배로 늘립니다. 마지막 파트만 더 짧습니다)와, 이미 저장된 파트의 인덱스, 크기, SHA-256을 반환합니다. 중단된 멀티파트 업로드를 재개하기 전에 읽고, 빠진 파트만 `putUploadPart`로 보냅니다. 업로드를 만든 사용자만 볼 수 있으며 그 외에는 404입니다."
+    },
+    "putUploadPart": {
+      "en": {
+        "summary": "Upload one part",
+        "description": "Stores the body as part `index` (from 0) of a pending multipart upload; its length must be exactly `partBytes` (from `listUploadParts`), or the remainder for the last part, and `X-Content-SHA256` must be the lowercase hex SHA-256 of these bytes, otherwise 422. Parts may arrive in any order, but an upload takes one request at a time (a concurrent one gets 503 `busy`); sending a part again with the same hash is safe, a different hash for an index already stored is a 409 `part_mismatch`. When every part is stored, call `completeUpload` or `enqueueCompletion`."
+      },
+      "summary": "파트 하나 업로드",
+      "description": "요청 본문을 보류 중인 멀티파트 업로드의 `index`번 파트(0부터 시작)로 저장합니다. 본문 길이는 정확히 `partBytes`(`listUploadParts`에서 확인)여야 하며 마지막 파트는 남은 길이여야 합니다. `X-Content-SHA256` 헤더는 이 바이트의 소문자 16진수 SHA-256이어야 하며, 그렇지 않으면 422입니다. 파트는 어떤 순서로 도착해도 되지만 한 업로드는 한 번에 요청 하나만 받습니다(동시 요청은 503 `busy`). 같은 해시로 파트를 다시 보내는 것은 안전하며, 이미 저장된 인덱스에 다른 해시를 보내면 409 `part_mismatch`입니다. 모든 파트가 저장되면 `completeUpload` 또는 `enqueueCompletion`을 호출합니다."
+    },
+    "enqueueCompletion": {
+      "en": {
+        "summary": "Complete an upload in the background",
+        "description": "Queues the completion of a pending upload for the worker service instead of doing it in the request, and returns the job at once with 202; follow it with `getCompletionJob`. Calling it again for the same upload returns the same job, and a job that failed for a transient reason is queued again. A queued job does not mean the artifact is published: only `completed` does. 409 `upload_state` if the upload is no longer pending; 507 `queue_full` when the caller has 100 open jobs or the server 10 000."
+      },
+      "summary": "백그라운드에서 업로드 완료",
+      "description": "요청 안에서 처리하는 대신 보류 중인 업로드의 완료를 워커 서비스용 큐에 넣고, 즉시 202와 함께 작업을 반환합니다. 진행 상황은 `getCompletionJob`으로 확인합니다. 같은 업로드에 다시 호출하면 같은 작업을 반환하며, 일시적인 이유로 실패한 작업은 다시 큐에 들어갑니다. 작업이 큐에 있다는 것은 아티팩트가 게시되었다는 뜻이 아니며, `completed`일 때만 게시된 것입니다. 업로드가 더 이상 보류 상태가 아니면 409 `upload_state`, 호출자의 열린 작업이 100개이거나 서버 전체가 10,000개이면 507 `queue_full`입니다."
+    },
+    "getCompletionJob": {
+      "en": {
+        "summary": "Get a completion job",
+        "description": "Returns the state of a completion job queued with `enqueueCompletion`: `queued`, `running`, `completed` (the upload is published) or `failed` with an `errorCode`, plus the number of attempts. The worker tries up to five times with growing pauses; errors such as `integrity_mismatch` fail at once. Only the job's creator sees it; for anyone else it is a 404."
+      },
+      "summary": "완료 작업 조회",
+      "description": "`enqueueCompletion`으로 큐에 넣은 완료 작업의 상태를 반환합니다. 상태는 `queued`, `running`, `completed`(업로드가 게시됨), 또는 `errorCode`를 포함한 `failed`이며, 시도 횟수도 함께 제공합니다. 워커는 간격을 점점 늘려 가며 최대 다섯 번 시도하고, `integrity_mismatch` 같은 오류는 즉시 실패합니다. 작업을 만든 사용자만 볼 수 있으며 그 외에는 404입니다."
+    },
+    "createUpload": {
+      "en": {
+        "summary": "Create an upload session",
+        "description": "Reserves an upload for one file described by `name`, `size` (a decimal string), `sha256` and optional `labels` and `metadata`; returns 201 with the session (`pending`, valid for 7 days) and its `Location`. `Idempotency-Key` (1–128 letters, digits and `_.:-`) is required: the same key with the same description returns the same session, with a different description it is a 409 `idempotency_mismatch`. The size is reserved against the repository quota and the server's capacity at once (507). Then send the bytes whole with `putUploadContent`, or in parts with `putUploadPart` and finish with `completeUpload`."
+      },
+      "summary": "업로드 세션 생성",
+      "description": "`name`, `size`(10진 문자열), `sha256`과 선택 사항인 `labels`, `metadata`로 설명하는 파일 하나의 업로드를 예약하고, 201과 함께 세션(`pending`, 7일간 유효)과 그 `Location`을 반환합니다. `Idempotency-Key` 헤더(문자, 숫자, `_.:-` 1–128자)는 필수이며, 같은 키와 같은 설명이면 같은 세션을 반환하고 설명이 다르면 409 `idempotency_mismatch`입니다. 크기는 리포지토리 할당량과 서버 용량에 대해 즉시 예약되며, 초과하면 507입니다. 이후 바이트 전체를 `putUploadContent`로 보내거나, `putUploadPart`로 파트별로 보낸 뒤 `completeUpload`로 마칩니다."
+    },
+    "getUpload": {
+      "en": {
+        "summary": "Get an upload",
+        "description": "Returns the session with its `status` (`pending`, `available` once published, `cancelled`), its expiry and the declared descriptor. After a lost response to `putUploadContent` or `completeUpload`, read this first: `available` means the artifact is published under the same ID. Only the upload's creator sees it; for anyone else it is a 404."
+      },
+      "summary": "업로드 조회",
+      "description": "세션과 그 `status`(`pending`, 게시되면 `available`, `cancelled`), 만료 시각, 선언된 디스크립터를 반환합니다. `putUploadContent` 또는 `completeUpload`의 응답을 받지 못했다면 가장 먼저 이 작업을 호출합니다. `available`이면 아티팩트가 같은 ID로 게시된 것입니다. 업로드를 만든 사용자만 볼 수 있으며 그 외에는 404입니다."
+    },
+    "cancelUpload": {
+      "en": {
+        "summary": "Cancel an upload",
+        "description": "Cancels a pending upload and returns it with status `cancelled`; a published upload cannot be cancelled (409 `upload_state`). The received bytes are hidden at once but remain reserved against the quota until the repository's online cleanup (`setCleanup`, off by default) removes them after its grace period."
+      },
+      "summary": "업로드 취소",
+      "description": "보류 중인 업로드를 취소하고 상태 `cancelled`로 반환합니다. 게시된 업로드는 취소할 수 없습니다(409 `upload_state`). 받은 바이트는 즉시 숨겨지지만, 리포지토리의 온라인 물리적 정리(`setCleanup`, 기본값은 꺼짐)가 유예 기간이 지난 뒤 제거할 때까지 할당량에 계속 예약되어 있습니다."
+    },
+    "putUploadContent": {
+      "en": {
+        "summary": "Upload the whole file in one request",
+        "description": "Streams the request body as the complete content of a pending upload, checks it against the declared size and SHA-256 (422 on mismatch) and publishes the artifact; the answer is the upload with status `available`. An interrupted request leaves nothing to resume: read the upload with `getUpload`, then send the file again from byte zero. Not for an upload that already has parts (409 `upload_state`); one request must also finish within the server's upload deadline (30 minutes by default), so send large files in parts."
+      },
+      "summary": "파일 전체를 한 번의 요청으로 업로드",
+      "description": "요청 본문을 보류 중인 업로드의 전체 콘텐츠로 스트리밍하고, 선언된 크기와 SHA-256에 맞는지 검사하여(불일치는 422) 아티팩트를 게시합니다. 응답은 상태가 `available`인 업로드입니다. 중단된 요청은 재개할 것이 없으므로, `getUpload`로 업로드를 확인한 뒤 파일을 0바이트부터 다시 보냅니다. 이미 파트가 있는 업로드에는 사용할 수 없으며(409 `upload_state`), 한 요청은 서버의 업로드 제한 시간(기본 30분) 안에 끝나야 하므로 큰 파일은 파트로 나누어 보냅니다."
+    },
+    "completeUpload": {
+      "en": {
+        "summary": "Complete an upload",
+        "description": "Assembles the stored parts in order, checks the whole file against the declared size and SHA-256 and publishes the artifact; returns the upload with status `available`. Calling it again for a published upload returns the same result, so it also recovers a completion whose answer was lost. A missing part is a 409 `parts_incomplete`, a content mismatch a 422; for very large files where the request might time out, use `enqueueCompletion` instead."
+      },
+      "summary": "업로드 완료",
+      "description": "저장된 파트를 순서대로 조립하고 파일 전체를 선언된 크기와 SHA-256에 대해 검사한 뒤 아티팩트를 게시하며, 상태가 `available`인 업로드를 반환합니다. 이미 게시된 업로드에 다시 호출하면 같은 결과를 반환하므로, 응답이 유실된 완료도 이 호출로 복구할 수 있습니다. 파트가 빠져 있으면 409 `parts_incomplete`, 내용이 맞지 않으면 422입니다. 요청이 시간 초과될 수 있는 매우 큰 파일에는 대신 `enqueueCompletion`을 사용합니다."
+    },
+    "getAnnotations": {
+      "en": {
+        "summary": "Get the annotations of an artifact",
+        "description": "Returns the current labels, metadata and collections of a published artifact with their `revision`. Revision 0 means they were never replaced: labels and metadata are those given when the upload was created, and collections are empty. Pass the revision to `setAnnotations` as `expectedRevision`."
+      },
+      "summary": "아티팩트 어노테이션 조회",
+      "description": "게시된 아티팩트의 현재 레이블, 메타데이터, 컬렉션을 `revision`과 함께 반환합니다. 리비전 0은 아직 교체한 적이 없다는 뜻으로, 레이블과 메타데이터는 업로드를 만들 때 지정한 값이고 컬렉션은 비어 있습니다. 이 리비전을 `setAnnotations`에 `expectedRevision`으로 전달합니다."
+    },
+    "setAnnotations": {
+      "en": {
+        "summary": "Replace the annotations of an artifact",
+        "description": "Replaces `labels`, `metadata` and `collections` of a published artifact at once; a field left out of `value` becomes empty. `expectedRevision` must be the current revision (0 for the first change), otherwise 409 `revision_mismatch`: read the annotations again and reapply the change. Up to 32 labels and 32 collections (1–64 letters, digits or `_.:-`) and 32 metadata entries (values up to 1024 characters); the bytes and the original descriptor never change."
+      },
+      "summary": "아티팩트 어노테이션 교체",
+      "description": "게시된 아티팩트의 `labels`, `metadata`, `collections` 필드를 한 번에 교체하며, `value`에서 생략한 필드는 비게 됩니다. `expectedRevision`은 현재 리비전(첫 변경이면 0)이어야 하며, 그렇지 않으면 409 `revision_mismatch`이므로 어노테이션을 다시 읽고 변경을 다시 적용합니다. 레이블과 컬렉션은 각각 32개까지(1–64자의 문자, 숫자, `_.:-`), 메타데이터 항목은 32개까지(값은 1,024자까지) 허용되며, 바이트와 원래의 디스크립터는 바뀌지 않습니다."
+    },
+    "registerPackage": {
+      "en": {
+        "summary": "Register an artifact as a UPack package",
+        "description": "Opens the published artifact as a UPack ZIP, reads the root `upack.json` (`name`, optional `group`, SemVer `version`) and registers that package version for it; unsafe or invalid archives are rejected with 400. A version is immutable: registering the same artifact again returns the same entry, another artifact for an existing group, name and version (compared without case) is a 409 `version_exists`. Afterwards the version appears in `listPackages` and resolves by name, range and stage."
+      },
+      "summary": "아티팩트를 UPack 패키지로 등록",
+      "description": "게시된 아티팩트를 UPack ZIP으로 열어 루트의 `upack.json`(`name`, 선택 사항인 `group`, SemVer `version`)을 읽고, 그 패키지 버전을 아티팩트에 등록합니다. 안전하지 않거나 올바르지 않은 아카이브는 400으로 거부됩니다. 버전은 변경할 수 없습니다. 같은 아티팩트를 다시 등록하면 같은 항목을 반환하고, 이미 있는 그룹, 이름, 버전(대소문자 구분 없이 비교)에 다른 아티팩트를 등록하면 409 `version_exists`입니다. 등록 후 이 버전은 `listPackages`에 나타나며 이름, 범위, 스테이지로 확인할 수 있습니다."
+    },
+    "searchArtifacts": {
+      "en": {
+        "summary": "Search artifacts",
+        "description": "Finds published artifacts by `q` (a case-insensitive substring of the name or of a current metadata value), an exact current `label`, a `collection`, and an exact `metadataKey`/`metadataValue` pair, which go together; all given filters must match. Results come in pages of 100 ordered by ID, each with size, creation and publication times, current labels and promotion stages; continue with `after` set to `next`. Metadata and collections are not returned: read them with `getAnnotations`."
+      },
+      "summary": "아티팩트 검색",
+      "description": "게시된 아티팩트를 다음 조건으로 찾습니다. `q`(이름 또는 현재 메타데이터 값에 포함된 부분 문자열, 대소문자 구분 없음), 현재 `label`과 정확히 일치하는 값, `collection`, 함께 지정해야 하는 `metadataKey`/`metadataValue` 쌍입니다. 지정한 필터는 모두 일치해야 합니다. 결과는 ID 순으로 100개씩 페이지로 나뉘고, 각 항목에 크기, 생성·게시 시각, 현재 레이블, 승격 스테이지가 있으며 `after`에 `next` 값을 넣어 이어서 조회합니다. 메타데이터와 컬렉션은 반환되지 않으므로 `getAnnotations`로 읽습니다."
+    },
+    "getCatalogAudit": {
+      "en": {
+        "summary": "Read the catalog audit of a repository",
+        "description": "Returns, oldest first, up to 100 catalog changes of the repository after the sequence number `after` (default 0): publications, deletions, annotation and attachment changes, package registrations, file path changes, references, stages and promotions, each with actor, action, artifact and time. To read further, pass the last `sequence` of the page as `after`; there is no `next` field. Downloads and sign-ins are not in it; mirrors follow `listCatalogChanges`, which omits actors."
+      },
+      "summary": "리포지토리 카탈로그 감사 기록 조회",
+      "description": "순번 `after`(기본 0) 이후의 리포지토리 카탈로그 변경을 오래된 순으로 최대 100개 반환합니다. 변경에는 게시, 삭제, 어노테이션과 첨부 파일 변경, 패키지 등록, 파일 경로 변경, 참조, 스테이지와 승격이 있으며 각각 행위자, 작업, 아티팩트, 시각을 담습니다. 이어서 읽으려면 페이지의 마지막 `sequence`를 `after`로 전달하며 `next` 필드는 없습니다. 다운로드와 로그인은 포함되지 않으며, 미러는 행위자를 생략하는 `listCatalogChanges`를 따라갑니다."
+    },
+    "addReference": {
+      "en": {
+        "summary": "Add a reference to an artifact",
+        "description": "Records that something outside Arkvory uses this artifact, under a `key` of your choice (1–256 letters, digits or `_.:/-`), for example a deployment name. A referenced artifact cannot be deleted or removed by retention until every reference is gone. The reference belongs to the caller; adding the same key again changes nothing."
+      },
+      "summary": "아티팩트에 참조 추가",
+      "description": "Arkvory 밖의 무언가가 이 아티팩트를 사용한다는 사실을 임의로 정한 `key`(문자, 숫자, `_.:/-` 1–256자, 예: 배포 이름)로 기록합니다. 참조가 있는 아티팩트는 모든 참조가 사라질 때까지 삭제할 수 없고 보존 규칙으로도 제거할 수 없습니다. 참조는 호출자에게 속하며, 같은 키를 다시 추가해도 아무것도 바뀌지 않습니다."
+    },
+    "removeReference": {
+      "en": {
+        "summary": "Remove a reference from an artifact",
+        "description": "Removes the caller's own reference `key` from the artifact; references of other callers stay. Removing a key that is not there succeeds as well."
+      },
+      "summary": "아티팩트에서 참조 제거",
+      "description": "호출자 자신의 참조 `key`를 아티팩트에서 제거하며 다른 호출자의 참조는 그대로 남습니다. 없는 키를 제거하는 요청도 성공합니다."
+    },
+    "listArtifacts": {
+      "en": {
+        "summary": "List artifacts",
+        "description": "Lists the published artifacts of the repository ordered by ID, `limit` per page (1–100, default 50); continue with `after` set to `next`. `next` is set whenever a page is full, so the last page may be empty. Each item carries the descriptor given at upload; current labels and metadata are in `getAnnotations`."
+      },
+      "summary": "아티팩트 목록",
+      "description": "리포지토리의 게시된 아티팩트를 ID 순으로 페이지당 `limit`개(1–100, 기본 50) 나열하며, `after`에 `next` 값을 넣어 이어서 조회합니다. 페이지가 가득 찰 때마다 `next`가 설정되므로 마지막 페이지는 비어 있을 수 있습니다. 각 항목에는 업로드 때 지정한 디스크립터가 있으며, 현재 레이블과 메타데이터는 `getAnnotations`에 있습니다."
+    },
+    "getArtifact": {
+      "en": {
+        "summary": "Get an artifact",
+        "description": "Returns a published artifact: its ID, repository, status, creation time and the descriptor given at upload (name, size, SHA-256, original labels and metadata). Pending, cancelled and deleted artifacts answer 404. To read the bytes use `downloadArtifact`."
+      },
+      "summary": "아티팩트 조회",
+      "description": "게시된 아티팩트의 ID, 리포지토리, 상태, 생성 시각, 업로드 때 지정한 디스크립터(이름, 크기, SHA-256, 원래의 레이블과 메타데이터)를 반환합니다. 보류 중, 취소됨, 삭제된 아티팩트는 404로 응답합니다. 바이트를 읽으려면 `downloadArtifact`를 사용합니다."
+    },
+    "deleteArtifact": {
+      "en": {
+        "summary": "Delete an artifact",
+        "description": "Logically deletes a published artifact: it disappears from lists, searches and downloads at once, and its bytes are reclaimed by the repository's online cleanup (`setCleanup`, off by default) after its grace period. `expectedAnnotationRevision` must equal the current annotation revision. The answer is 200 with an `outcome`: `deleted`, `already_deleted`, `changed` (the revision differs), `not_found`, or `protected` with the `blockers` that keep it (a reference, a file path revision, a build attachment or a promotion stage). Check beforehand with `inspectArtifactDeletion`."
+      },
+      "summary": "아티팩트 삭제",
+      "description": "게시된 아티팩트를 논리적으로 삭제합니다. 목록, 검색, 다운로드에서 즉시 사라지며, 바이트는 유예 기간이 지난 뒤 리포지토리의 온라인 물리적 정리(`setCleanup`, 기본값은 꺼짐)가 회수합니다. `expectedAnnotationRevision`은 현재 어노테이션 리비전과 같아야 합니다. 응답은 200이며 `outcome`은 `deleted`, `already_deleted`, `changed`(리비전이 다름), `not_found`, 또는 삭제를 막는 `blockers`(참조, 파일 경로 리비전, 빌드 첨부 파일, 승격 스테이지)를 포함한 `protected` 중 하나입니다. 사전에 `inspectArtifactDeletion`으로 확인할 수 있습니다."
+    },
+    "downloadArtifact": {
+      "en": {
+        "summary": "Download an artifact",
+        "description": "Streams the original bytes with `Content-Length`, `Content-Disposition` (the artifact name) and a strong `ETag` (`\"sha256:<hex>\"`). A single `Range` gives 206 (an unsatisfiable one 416); `If-Range` with the ETag resumes safely, and `If-None-Match` answers 304. HEAD returns the same headers without a body and ignores `Range`. Instead of an `Authorization` header the request may carry a download link from `createDownloadLink` as `token`; downloads wait for a free slot of the server's download admission."
+      },
+      "summary": "아티팩트 다운로드",
+      "description": "원본 바이트를 `Content-Length`, `Content-Disposition`(아티팩트 이름), 강한 `ETag`(`\"sha256:<hex>\"`)와 함께 스트리밍합니다. `Range`를 하나 지정하면 206이고(만족할 수 없는 범위는 416), ETag와 함께 `If-Range`를 보내면 안전하게 재개되며, `If-None-Match`에는 304로 응답합니다. HEAD는 본문 없이 같은 헤더를 반환하며 `Range`는 무시합니다. `Authorization` 헤더 대신 `createDownloadLink`로 만든 다운로드 링크를 `token`으로 전달할 수도 있습니다. 다운로드는 서버의 다운로드 수용 제어에서 빈 슬롯이 생길 때까지 대기합니다."
+    },
+    "listCatalogChanges": {
+      "en": {
+        "summary": "Follow the change feed of a repository",
+        "description": "Returns, in commit order, up to `limit` changes (1–100, default 100) after the sequence `after` (default 0): action, artifact and, for file paths and stages, the path or stage in `detail`; actors are left out, so list access is enough. `head` is the newest sequence of the repository, `next` the cursor of the following page or null when the page reached the head. A mirror stores the last sequence it applied and polls from there."
+      },
+      "summary": "리포지토리 변경 피드 따라가기",
+      "description": "순번 `after`(기본 0) 이후의 변경을 커밋 순서대로 최대 `limit`개(1–100, 기본 100) 반환합니다. 각 변경은 작업과 아티팩트를 담고, 파일 경로와 스테이지의 경우 `detail`에 경로나 스테이지를 담습니다. 행위자는 생략되므로 목록 조회 권한만으로 충분합니다. `head`는 리포지토리의 최신 순번이고 `next`는 다음 페이지의 커서이며, 페이지가 `head`에 도달하면 null입니다. 미러는 마지막으로 적용한 순번을 저장하고 그 지점부터 폴링합니다."
+    },
+    "createDownloadLink": {
+      "en": {
+        "summary": "Create a download link",
+        "description": "Returns a secret `token`, a `url` relative to the API origin and `expiresAt` for `downloadArtifact` of this one artifact without a key; `ttlSeconds` sets the lifetime (60 seconds to one day, default one hour). The token is shown only in this answer and cannot be revoked: it stops working when it expires or the artifact is deleted, and downloads through it count against the creator's transfer limits. A caller may hold 1000 live links (507 `token_limit`), and a download link cannot create further links."
+      },
+      "summary": "다운로드 링크 생성",
+      "description": "이 아티팩트 하나에 한해 키 없이 `downloadArtifact`를 호출할 수 있게 하는 비밀 `token`, API 오리진 기준의 상대 `url`, `expiresAt`을 반환합니다. `ttlSeconds`로 유효 기간을 정하며(60초에서 1일까지, 기본 1시간), 토큰은 이 응답에서만 볼 수 있고 폐기할 수 없습니다. 토큰은 만료되거나 아티팩트가 삭제되면 사용할 수 없게 되며, 토큰을 통한 다운로드는 만든 사용자의 전송 한도에 포함됩니다. 호출자는 유효한 링크를 1,000개까지 가질 수 있고(507 `token_limit`), 다운로드 링크로는 다른 링크를 만들 수 없습니다."
+    },
+    "listPackages": {
+      "en": {
+        "summary": "List package versions",
+        "description": "Lists the registered UPack versions with their manifests, filtered by `group` and `name` (exact, ignoring case; `group=` with an empty value selects the root group, leaving it out selects all groups). `sort` (`group`, `name`, `version`), `direction` (`asc`, `desc`) and `groupBy` (`none`, `group`, `package`, which adds `groups` listing the `artifactIds` of the page) shape the result. Pages hold `limit` items (1–100, default 50); continue with `after` set to `next` and the same filters. Pages are not a snapshot: versions registered in between can be missed until the next pass."
+      },
+      "summary": "패키지 버전 목록",
+      "description": "등록된 UPack 버전을 매니페스트와 함께 나열하며, `group`과 `name`(대소문자를 무시하고 정확히 일치)으로 필터링합니다. `group=`처럼 값을 비우면 루트 그룹을 선택하고, 생략하면 모든 그룹을 선택합니다. `sort`(`group`, `name`, `version`), `direction`(`asc`, `desc`), `groupBy`(`none`, `group`, `package`이며, 페이지의 `artifactIds`를 나열하는 `groups`를 추가함)가 결과의 형태를 정합니다. 페이지는 `limit`개 항목(1–100, 기본 50)으로 구성되며 같은 필터와 함께 `after`에 `next` 값을 넣어 이어서 조회합니다. 페이지는 스냅샷이 아니므로 그 사이에 등록된 버전은 다음 순회까지 누락될 수 있습니다."
+    },
+    "downloadPackageContent": {
+      "en": {
+        "summary": "Download a package by name and version",
+        "description": "Resolves `name` (in `group`, the root group by default) to one registered version and streams it like `downloadArtifact`; `X-Arkvory-Artifact-Id` and `X-Arkvory-Package-Version` name the choice. Select by exact `version` or SemVer `range` (such as `^1.4` or `>=1.0.0 <2.0.0`), optionally only versions with `stage`; without either it takes the highest stable version, `prerelease=true` admits prereleases and `order=promoted` takes the version most recently given `stage`. The name is resolved on every request, so resume with `If-Range` set to the returned ETag, or download by artifact ID; `resolvePackage` gives the same choice without the bytes."
+      },
+      "summary": "이름과 버전으로 패키지 다운로드",
+      "description": "`group`(기본은 루트 그룹) 안의 `name`에 해당하는 등록된 버전 하나를 확인하고 `downloadArtifact`와 같은 방식으로 스트리밍하며, `X-Arkvory-Artifact-Id`와 `X-Arkvory-Package-Version` 헤더가 선택된 결과를 알려 줍니다. 정확한 `version` 또는 SemVer `range`(예: `^1.4`, `>=1.0.0 <2.0.0`)로 선택하고, `stage`를 지정하면 해당 스테이지가 있는 버전만 대상으로 합니다. 둘 다 없으면 가장 높은 안정 버전을 선택하며, `prerelease=true`는 프리릴리스를 포함하고 `order=promoted`는 `stage`가 가장 최근에 부여된 버전을 선택합니다. 이름은 요청마다 새로 확인되므로 반환된 ETag를 `If-Range`에 지정해 재개하거나 아티팩트 ID로 다운로드해야 하며, `resolvePackage`는 바이트 없이 같은 선택을 제공합니다."
+    },
+    "listAssets": {
+      "en": {
+        "summary": "List file paths by prefix",
+        "description": "Returns every file path that starts with `prefix` (literal, not a pattern; empty for all), ordered by path, each with its current revision and artifact ID. There is no paging: more than 1000 matches is a 400 asking for a narrower prefix, so prefer `listAssetPage` for large trees."
+      },
+      "summary": "접두사로 파일 경로 목록 조회",
+      "description": "`prefix`(패턴이 아닌 리터럴, 비우면 전체)로 시작하는 모든 파일 경로를 경로순으로 반환하며, 각 항목에 현재 리비전과 아티팩트 ID가 있습니다. 페이징이 없고 일치 항목이 1,000개를 넘으면 더 좁은 접두사를 요구하는 400이 반환되므로, 큰 트리에는 `listAssetPage`를 사용합니다."
+    },
+    "listAssetPage": {
+      "en": {
+        "summary": "List file paths page by page",
+        "description": "Returns the current file paths that start with `prefix` (literal; empty for all) in UTF-8 byte order, each with its current revision and artifact ID. Pages hold `limit` items (1–100, default 50); continue with `after` set to the opaque `next`. Pages are not a snapshot: paths changed between requests can appear with their newer revision or be missed until the next pass."
+      },
+      "summary": "파일 경로를 페이지 단위로 조회",
+      "description": "`prefix`(리터럴, 비우면 전체)로 시작하는 현재 파일 경로를 UTF-8 바이트 순서로 반환하며, 각 항목에 현재 리비전과 아티팩트 ID가 있습니다. 페이지는 `limit`개 항목(1–100, 기본 50)으로 구성되며 `after`에 불투명한 `next` 값을 넣어 이어서 조회합니다. 페이지는 스냅샷이 아니므로 요청 사이에 변경된 경로는 더 새로운 리비전으로 나타나거나 다음 순회까지 누락될 수 있습니다."
+    },
+    "getAsset": {
+      "en": {
+        "summary": "Get the current revision of a file path",
+        "description": "Returns the current `revision` of `path` and the ID of the artifact it points to; an unknown path is a 404. A path has 1–1024 characters in `/`-separated segments, without empty, `.` or `..` segments, `\\`, `:` or control characters. Download the bytes with `downloadAssetContent`, or pass the revision to `setAsset` as `expectedRevision`."
+      },
+      "summary": "파일 경로의 현재 리비전 조회",
+      "description": "`path`의 현재 `revision`과 그 경로가 가리키는 아티팩트의 ID를 반환하며, 알 수 없는 경로는 404입니다. 경로는 `/`로 구분된 세그먼트로 이루어진 1–1024자이며, 빈 세그먼트, `.`·`..` 세그먼트, `\\`, `:`, 제어 문자를 포함할 수 없습니다. 바이트는 `downloadAssetContent`로 다운로드하고, 리비전은 `setAsset`에 `expectedRevision`으로 전달합니다."
+    },
+    "setAsset": {
+      "en": {
+        "summary": "Point a file path at an artifact",
+        "description": "Makes `path` name a published artifact of the same repository as its new revision; `expectedRevision` is 0 to create the path and the current revision to replace it, otherwise 409 `revision_mismatch`. Earlier revisions stay in the history and keep their artifacts from being deleted. To store bytes and name them in one request, use `putRawFile`."
+      },
+      "summary": "파일 경로가 아티팩트를 가리키게 설정",
+      "description": "`path`가 같은 리포지토리의 게시된 아티팩트를 새 리비전으로 가리키게 합니다. `expectedRevision`은 경로를 만들 때는 0, 교체할 때는 현재 리비전이어야 하며, 그렇지 않으면 409 `revision_mismatch`입니다. 이전 리비전은 기록에 남고, 그 리비전이 가리키는 아티팩트가 삭제되지 않도록 지켜 줍니다. 바이트 저장과 이름 지정을 한 요청으로 하려면 `putRawFile`을 사용합니다."
+    },
+    "getAssetHistory": {
+      "en": {
+        "summary": "List the revisions of a file path",
+        "description": "Returns the revisions of `path`, newest first, 50 per page, each with its artifact, the actor, the time and, for a restore, the `sourceRevision` it copied (actor and time are null for revisions recorded by early server versions). Continue with `before` set to `next`. An unknown path is a 404."
+      },
+      "summary": "파일 경로의 리비전 목록",
+      "description": "`path`의 리비전을 최신순으로 페이지당 50개 반환하며, 각 항목에 아티팩트, 행위자, 시각이 있고 복원이면 복사한 `sourceRevision`도 있습니다(초기 서버 버전이 기록한 리비전은 행위자와 시각이 null입니다). `before`에 `next` 값을 넣어 이어서 조회합니다. 알 수 없는 경로는 404입니다."
+    },
+    "getAssetRevision": {
+      "en": {
+        "summary": "Get one revision of a file path",
+        "description": "Returns revision `revision` of `path` with its artifact ID, actor, time and restore source. Revisions never change, so the artifact ID can be cached; download it with `downloadArtifact`. A missing path or revision is a 404."
+      },
+      "summary": "파일 경로의 특정 리비전 조회",
+      "description": "`path`의 리비전 `revision`을 아티팩트 ID, 행위자, 시각, 복원 원본과 함께 반환합니다. 리비전은 절대 바뀌지 않으므로 아티팩트 ID를 캐시할 수 있으며, 다운로드는 `downloadArtifact`로 합니다. 없는 경로나 리비전은 404입니다."
+    },
+    "restoreAsset": {
+      "en": {
+        "summary": "Restore an earlier revision of a file path",
+        "description": "Adds a new revision of `path` that points at the artifact of `sourceRevision`; nothing is copied and no revision is removed. `expectedRevision` must be the current revision (at least 1), otherwise 409 `revision_mismatch` — so repeating a restore that already succeeded is a 409, not a second restore. The new revision records `sourceRevision`, and the change is audited in the same transaction."
+      },
+      "summary": "파일 경로의 이전 리비전 복원",
+      "description": "`sourceRevision`의 아티팩트를 가리키는 `path`의 새 리비전을 추가하며, 아무것도 복사되지 않고 어떤 리비전도 제거되지 않습니다. `expectedRevision`은 현재 리비전(1 이상)이어야 하며 그렇지 않으면 409 `revision_mismatch`입니다. 따라서 이미 성공한 복원을 반복하면 두 번째 복원이 되지 않고 409가 됩니다. 새 리비전에는 `sourceRevision`이 기록되며, 이 변경은 같은 트랜잭션에서 감사 기록에 남습니다."
+    },
+    "downloadAssetContent": {
+      "en": {
+        "summary": "Download a file by path",
+        "description": "Resolves `path` to its current revision and streams that artifact like `downloadArtifact`, with `Range`, `If-Range`, `If-None-Match` and HEAD. The path is resolved on every request, so resume with `If-Range` set to the returned ETag: after the path moved on, the answer is the whole new file instead of a mixed one. `downloadRawFile` does the same with the path in the URL."
+      },
+      "summary": "경로로 파일 다운로드",
+      "description": "`path`를 현재 리비전으로 확인하고 해당 아티팩트를 `downloadArtifact`와 같은 방식으로 스트리밍하며, `Range`, `If-Range`, `If-None-Match`, HEAD를 지원합니다. 경로는 요청마다 새로 확인되므로 반환된 ETag를 `If-Range`에 지정해 재개합니다. 그 사이 경로가 바뀌었다면 두 버전이 섞인 응답 대신 새 파일 전체를 반환합니다. `downloadRawFile`은 경로를 URL에 넣는다는 점만 다를 뿐 같은 일을 합니다."
+    },
+    "putRawFile": {
+      "en": {
+        "summary": "Upload a file to a path in one request",
+        "description": "Stores the request body, of any media type, as the new revision of the path in the URL, for scripts and CI (`curl -T`); the answer is 201 with the path, revision and artifact. With `X-Checksum-Sha256` and `Content-Length` the bytes stream straight to storage and are verified; without them they are staged and hashed first (422 if the body does not match a given checksum). The same bytes as the current revision add nothing and answer 200 with `created: false`, `If-None-Match: *` only creates (409 `already_exists`), and a concurrent writer of the same path gets 409 `revision_mismatch`. For very large files prefer the resumable upload sessions."
+      },
+      "summary": "한 번의 요청으로 경로에 파일 업로드",
+      "description": "스크립트와 CI(`curl -T`)를 위해, 미디어 형식에 관계없이 요청 본문을 URL에 있는 경로의 새 리비전으로 저장하며, 응답은 경로, 리비전, 아티팩트를 담은 201입니다. `X-Checksum-Sha256` 및 `Content-Length` 헤더를 함께 보내면 바이트가 스토리지로 바로 스트리밍되어 검증되고, 보내지 않으면 먼저 임시 저장소에 받아 해시를 계산합니다(지정한 체크섬과 본문이 다르면 422). 현재 리비전과 같은 바이트는 아무것도 추가하지 않고 `created: false`와 함께 200으로 응답합니다. `If-None-Match: *`를 보내면 경로가 없을 때만 생성하며(이미 있으면 409 `already_exists`), 같은 경로에 동시에 쓰는 다른 작성자는 409 `revision_mismatch`를 받습니다. 매우 큰 파일에는 재개 가능한 업로드 세션을 권장합니다."
+    },
+    "downloadRawFile": {
+      "en": {
+        "summary": "Download a file by its URL path",
+        "description": "Streams the current revision of the path in the URL like `downloadArtifact`, with `Range`, `If-Range`, `If-None-Match`, HEAD and `X-Arkvory-Artifact-Id` naming the artifact. The path is resolved on every request, so resume with `If-Range` set to the returned ETag, or download the artifact by ID."
+      },
+      "summary": "URL 경로로 파일 다운로드",
+      "description": "URL에 있는 경로의 현재 리비전을 `downloadArtifact`와 같은 방식으로 스트리밍하며, `Range`, `If-Range`, `If-None-Match`, HEAD를 지원하고 `X-Arkvory-Artifact-Id` 헤더로 아티팩트를 알려 줍니다. 경로는 요청마다 새로 확인되므로 반환된 ETag를 `If-Range`에 지정해 재개하거나 아티팩트를 ID로 다운로드합니다."
+    },
+    "listArtifactStages": {
+      "en": {
+        "summary": "List the stages of an artifact",
+        "description": "Returns the current promotion stages of a published artifact (at most 16), each with the time it was added, the actor and the comment."
+      },
+      "summary": "아티팩트 스테이지 목록",
+      "description": "게시된 아티팩트의 현재 승격 스테이지(최대 16개)를 반환하며, 각 항목에 추가된 시각, 행위자, 코멘트가 있습니다."
+    },
+    "setArtifactStage": {
+      "en": {
+        "summary": "Add a stage to an artifact",
+        "description": "Marks a published artifact with `stage` (1–32 lower-case letters, digits or `_.-`, starting with a letter or digit), with an optional `comment` of up to 1024 characters, and records the event in the promotion journal. Adding a stage the artifact already has changes nothing and keeps the original time, so to promote the same version again (for a rollback with `order=promoted`) remove the stage first. An artifact has at most 16 stages (409 `stage_limit`)."
+      },
+      "summary": "아티팩트에 스테이지 추가",
+      "description": "게시된 아티팩트에 `stage`(영문 소문자, 숫자, `_.-` 1–32자, 문자나 숫자로 시작)를 표시하고, 선택 사항인 `comment`(최대 1,024자)와 함께 승격 저널에 이벤트를 기록합니다. 아티팩트에 이미 있는 스테이지를 추가해도 아무것도 바뀌지 않고 원래 시각이 유지되므로, 같은 버전을 다시 승격하려면(`order=promoted`를 쓰는 롤백 등) 먼저 스테이지를 제거합니다. 아티팩트는 스테이지를 최대 16개까지 가질 수 있습니다(409 `stage_limit`)."
+    },
+    "removeArtifactStage": {
+      "en": {
+        "summary": "Remove a stage from an artifact",
+        "description": "Removes `stage` from a published artifact and records the event in the promotion journal; removing a stage the artifact does not have succeeds too. Package resolution by this stage stops choosing the artifact at once."
+      },
+      "summary": "아티팩트에서 스테이지 제거",
+      "description": "게시된 아티팩트에서 `stage`를 제거하고 승격 저널에 이벤트를 기록하며, 아티팩트에 없는 스테이지를 제거하는 요청도 성공합니다. 이 스테이지로 하는 패키지 확인은 즉시 이 아티팩트를 더 이상 선택하지 않습니다."
+    },
+    "listArtifactPromotions": {
+      "en": {
+        "summary": "List the promotion history of an artifact",
+        "description": "Returns the journal of one artifact, oldest first: stages added and removed, promotions to and from other repositories with the peer artifact, actor, comment and time. Pages hold `limit` events (1–100, default 50); continue with `after` set to `next`."
+      },
+      "summary": "아티팩트 승격 기록 목록",
+      "description": "아티팩트 하나의 저널을 오래된 순으로 반환합니다. 추가·제거된 스테이지와 다른 리포지토리로의 승격 및 다른 리포지토리로부터의 승격이 들어 있으며, 각 항목에 대응 아티팩트, 행위자, 코멘트, 시각이 있습니다. 페이지는 `limit`개 이벤트(1–100, 기본 50)로 구성되며 `after`에 `next` 값을 넣어 이어서 조회합니다."
+    },
+    "promoteArtifact": {
+      "en": {
+        "summary": "Promote an artifact to another repository",
+        "description": "Publishes the artifact in `target` without sending the bytes again, optionally with `stages` and a `comment`; the caller also needs `artifact.promote` in the target. `mode` `copy` (default) keeps the source; `move`, which needs `artifact.promote` here as well, retires the source in the same transaction, carries its stages over and is refused with 409 when the source cannot be deleted. The answer is 201 with the copy; a repeat returns the same copy with 200, and a target that already has this package version returns that artifact when the SHA-256 matches and a 409 `version_exists` when it does not. Build attachments and file paths are not carried over."
+      },
+      "summary": "아티팩트를 다른 리포지토리로 승격",
+      "description": "바이트를 다시 보내지 않고 `target`에 아티팩트를 게시하며, 선택적으로 `stages`와 `comment`를 지정할 수 있습니다. 호출자는 대상 리포지토리에서도 `artifact.promote` 권한이 필요합니다. `mode`가 `copy`(기본)이면 원본을 유지하고, `move`는 이쪽에서도 `artifact.promote`가 필요하며 같은 트랜잭션에서 원본을 삭제 처리하고 스테이지를 함께 옮기며, 원본을 삭제할 수 없으면 409로 거부됩니다. 응답은 사본과 함께 201이고, 반복하면 같은 사본을 200으로 반환합니다. 대상에 이 패키지 버전이 이미 있으면 SHA-256이 같을 때는 그 아티팩트를 반환하고 다를 때는 409 `version_exists`입니다. 빌드 첨부 파일과 파일 경로는 옮겨지지 않습니다."
+    },
+    "listStagedArtifacts": {
+      "en": {
+        "summary": "List artifacts with stages",
+        "description": "Lists the stage entries of the repository (artifact, stage, time, actor, comment) ordered by artifact and stage, optionally only `stage`, or only the artifacts in `ids` (1–100 comma-separated IDs, for example to show the stages of a page of packages at once). Pages hold `limit` entries (1–100, default 100); continue with `after` set to `next` (`<artifactId>/<stage>`)."
+      },
+      "summary": "스테이지가 있는 아티팩트 목록",
+      "description": "리포지토리의 스테이지 항목(아티팩트, 스테이지, 시각, 행위자, 코멘트)을 아티팩트와 스테이지 순으로 나열하며, 선택적으로 `stage`만, 또는 `ids`(쉼표로 구분한 ID 1–100개, 예: 패키지 한 페이지의 스테이지를 한 번에 표시)에 있는 아티팩트만 대상으로 합니다. 페이지는 `limit`개 항목(1–100, 기본 100)으로 구성되며 `after`에 `next` 값(`<artifactId>/<stage>`)을 넣어 이어서 조회합니다."
+    },
+    "listRepositoryPromotions": {
+      "en": {
+        "summary": "Follow the promotion journal of a repository",
+        "description": "Returns the stage and promotion events of every artifact in the repository, oldest first, for CI/CD to poll: stage added or removed, promoted to another repository, received from one. Pages hold `limit` events (1–100, default 50); store the last `sequence` and continue with `after` set to `next`."
+      },
+      "summary": "리포지토리 승격 저널 따라가기",
+      "description": "리포지토리의 모든 아티팩트에 대한 스테이지 및 승격 이벤트를 오래된 순으로 반환하며, CI/CD가 폴링하는 용도입니다. 이벤트는 스테이지 추가 또는 제거, 다른 리포지토리로의 승격, 다른 리포지토리로부터의 수신입니다. 페이지는 `limit`개 이벤트(1–100, 기본 50)로 구성되며, 마지막 `sequence`를 저장해 두었다가 `after`에 `next` 값을 넣어 이어서 조회합니다."
+    },
+    "resolvePackage": {
+      "en": {
+        "summary": "Resolve a package version",
+        "description": "Chooses one registered UPack version by the same rules as `downloadPackageContent` and returns it without the bytes: version, artifact ID, SHA-256, size, publication time and current stages. `name` is required, `group` defaults to the root group; select by exact `version` or SemVer `range`, optionally `stage`, `prerelease=true` and `order=promoted` (needs `stage`); without `version` and `range` it is the highest stable version. No match is a 404; download the result by artifact ID to stay on that version."
+      },
+      "summary": "패키지 버전 확인",
+      "description": "`downloadPackageContent`와 같은 규칙으로 등록된 UPack 버전 하나를 선택해 바이트 없이 반환합니다. 응답에는 버전, 아티팩트 ID, SHA-256, 크기, 게시 시각, 현재 스테이지가 있습니다. `name`은 필수이고 `group`의 기본값은 루트 그룹이며, 정확한 `version` 또는 SemVer `range`로 선택하고 선택적으로 `stage`, `prerelease=true`, `order=promoted`(`stage` 필요)를 지정합니다. `version`과 `range`가 없으면 가장 높은 안정 버전입니다. 일치하는 항목이 없으면 404이며, 그 버전에 머무르려면 결과를 아티팩트 ID로 다운로드합니다."
+    },
+    "inspectArtifactDeletion": {
+      "en": {
+        "summary": "Check whether an artifact can be deleted",
+        "description": "Returns the artifact's name, size, publication time, current `annotationRevision` and the `blockers` that would keep it from deletion: `reference` (an external reference, or use by a container image, Git LFS or npm), `asset_history` (a current or earlier file path revision), `attachment_history` or `promotion_stage`. Nothing changes; pass the revision to `deleteArtifact` as `expectedAnnotationRevision`."
+      },
+      "summary": "아티팩트를 삭제할 수 있는지 확인",
+      "description": "아티팩트의 이름, 크기, 게시 시각, 현재 `annotationRevision`과 삭제를 막는 `blockers`를 반환합니다. `blockers`는 `reference`(외부 참조이거나 컨테이너 이미지, Git LFS, npm이 사용 중인 경우), `asset_history`(현재 또는 이전 파일 경로 리비전), `attachment_history`, `promotion_stage` 중 하나입니다. 아무것도 변경하지 않으며, 리비전은 `deleteArtifact`에 `expectedAnnotationRevision`으로 전달합니다."
+    },
+    "previewRetention": {
+      "en": {
+        "summary": "Preview retention candidates",
+        "description": "Lists the published artifacts released before `criteria.publishedBefore` (a past UTC time with milliseconds), ordered by ID, each with its annotation revision and blockers, `protected_label` meaning one of `criteria.protectedLabels` (an explicit list of up to 32). Pages hold `limit` items (1–100, default 50); continue with `after` set to `next`. Nothing is reserved: choose the items to delete and pass them with their revisions to `applyRetention`, which checks them again."
+      },
+      "summary": "보존 규칙으로 삭제할 후보 미리 보기",
+      "description": "게시 시각이 `criteria.publishedBefore`(밀리초를 포함한 과거 UTC 시각) 이전인 아티팩트를 ID 순으로 나열하며, 각 항목에 어노테이션 리비전과 차단 요인이 있습니다. `protected_label`은 `criteria.protectedLabels`(명시적으로 지정한 최대 32개의 목록) 중 하나가 있다는 뜻입니다. 페이지는 `limit`개 항목(1–100, 기본 50)으로 구성되며 `after`에 `next` 값을 넣어 이어서 조회합니다. 아무것도 예약되지 않으므로, 삭제할 항목을 골라 리비전과 함께 `applyRetention`에 전달하면 이 작업이 다시 검사합니다."
+    },
+    "applyRetention": {
+      "en": {
+        "summary": "Delete the selected retention candidates",
+        "description": "Rechecks 1–100 artifacts chosen from `previewRetention` (`items` with `id` and `expectedAnnotationRevision`) against the same `criteria` and logically deletes the eligible ones in one transaction. Each item gets an `outcome`: `deleted`, `already_deleted`, `changed` (the annotations changed), `not_eligible` (published too late), `protected` with its blockers, or `not_found`. The bytes stay reserved until the repository's online cleanup reclaims them."
+      },
+      "summary": "선택한 보존 규칙 후보 삭제",
+      "description": "`previewRetention`에서 고른 아티팩트 1–100개(`id`와 `expectedAnnotationRevision`을 담은 `items`)를 같은 `criteria`로 다시 검사하여, 대상이 되는 항목을 한 트랜잭션에서 논리적으로 삭제합니다. 각 항목의 `outcome`은 `deleted`, `already_deleted`, `changed`(어노테이션이 변경됨), `not_eligible`(너무 늦게 게시됨), 차단 요인을 포함한 `protected`, `not_found` 중 하나입니다. 바이트는 리포지토리의 온라인 물리적 정리가 회수할 때까지 예약된 상태로 남습니다."
+    },
+    "getStoragePolicy": {
+      "en": {
+        "summary": "Get the storage policy",
+        "description": "Returns the repository's automatic cleanup and quota settings with their `revision`, the next and last scheduled run, how many builds the last run deleted and its error. By default the policy is disabled and there is no repository quota (the server-wide capacity still applies)."
+      },
+      "summary": "스토리지 정책 조회",
+      "description": "리포지토리의 자동 정리 및 할당량 설정을 `revision`과 함께 반환하며, 다음 예약 실행과 마지막 예약 실행, 마지막 실행에서 삭제한 빌드 수와 그 오류도 포함합니다. 기본적으로 정책은 비활성이고 리포지토리 할당량은 없습니다(서버 전체 용량 제한은 계속 적용됩니다)."
+    },
+    "setStoragePolicy": {
+      "en": {
+        "summary": "Replace the storage policy",
+        "description": "Replaces the whole policy: keep the last `keepLast` registered UPack builds per package, per channel label (`channels`) or per repository (`grouping`), never delete `protectedLabels` or builds younger than `minAgeHours`, run every `intervalMinutes`, and limit the repository with `quotaBytes` (a decimal string, `null` for none) and its warning thresholds. `expectedRevision` must be the current revision, otherwise 409 `revision_mismatch`. Enabling also needs `artifact.delete` and ties the schedule to the calling managed key: once that key is revoked, expires or loses these permissions, scheduled deletion stops until the policy is saved with another key. Ordinary files count against the quota but are never deleted by it."
+      },
+      "summary": "스토리지 정책 교체",
+      "description": "정책 전체를 교체합니다. 패키지별, 채널 레이블별(`channels`) 또는 리포지토리별(`grouping`)로 최근 `keepLast`개의 등록된 UPack 빌드를 유지하고, `protectedLabels`가 있는 빌드와 `minAgeHours`보다 새로운 빌드는 삭제하지 않으며, `intervalMinutes`마다 실행합니다. 또한 `quotaBytes`(10진 문자열, 없으면 `null`)와 경고 임계값으로 리포지토리를 제한합니다. `expectedRevision`은 현재 리비전이어야 하며 그렇지 않으면 409 `revision_mismatch`입니다. 활성화하려면 `artifact.delete` 권한도 필요하고, 일정이 호출한 관리형 키에 묶입니다. 그 키가 폐기되거나 만료되거나 이 권한을 잃으면, 정책을 다른 키로 저장할 때까지 예약된 삭제가 중지됩니다. 일반 파일은 할당량에 포함되지만 할당량 때문에 삭제되지는 않습니다."
+    },
+    "getStorageUsage": {
+      "en": {
+        "summary": "Get the storage usage of a repository",
+        "description": "Returns the bytes reserved by the repository as decimal strings: published, pending uploads and retired (deleted or cancelled, not yet reclaimed), their sum `reservedBytes`, the quota and a `state` (`unlimited`, `normal`, `warning`, `critical`, `exceeded`). This is the logical reservation counted against the quota, not the space used on disk."
+      },
+      "summary": "리포지토리 스토리지 사용량 조회",
+      "description": "리포지토리가 예약한 바이트를 10진 문자열로 반환합니다. 게시됨, 보류 중인 업로드, 삭제 대기(삭제되었거나 취소되었으나 아직 회수되지 않음)로 나뉘며, 이들의 합계 `reservedBytes`, 할당량, `state`(`unlimited`, `normal`, `warning`, `critical`, `exceeded`)가 포함됩니다. 이는 할당량에 대해 계산되는 논리적 예약량이며 디스크에서 실제로 사용한 공간이 아닙니다."
+    },
+    "previewStoragePolicy": {
+      "en": {
+        "summary": "Preview what the storage policy would delete",
+        "description": "Returns up to 100 registered builds the saved policy would delete now (even while it is disabled), with the policy `revision` and `hasMore`; builds kept by references, file paths, attachments, protected labels or age are left out. Nothing is reserved: a run ranks the builds again."
+      },
+      "summary": "스토리지 정책이 삭제할 대상 미리 보기",
+      "description": "저장된 정책이 지금 삭제할 등록된 빌드를 최대 100개 반환하며(정책이 비활성이어도 동일), 정책 `revision`과 `hasMore`를 함께 제공합니다. 참조, 파일 경로, 첨부 파일, 보호 레이블, 최소 경과 시간 때문에 유지되는 빌드는 제외됩니다. 아무것도 예약되지 않으며, 실행 시에는 빌드의 순위를 다시 매깁니다."
+    },
+    "runStoragePolicy": {
+      "en": {
+        "summary": "Run the storage policy now",
+        "description": "Runs one batch of the enabled policy at once instead of waiting for the schedule: it ranks the builds again, checks permissions and dependencies, and logically deletes up to 100, returning an outcome for each. `expectedRevision` must be the current policy revision and the policy must be enabled, otherwise 409. The bytes are reclaimed later by the repository's online cleanup, which has its own policy (`setCleanup`)."
+      },
+      "summary": "스토리지 정책 지금 실행",
+      "description": "예약된 시각을 기다리지 않고 활성화된 정책의 한 배치를 즉시 실행합니다. 빌드의 순위를 다시 매기고, 권한과 의존 관계를 확인한 뒤 최대 100개를 논리적으로 삭제하며 각각의 결과를 반환합니다. `expectedRevision`은 현재 정책 리비전이어야 하고 정책이 활성화되어 있어야 하며, 그렇지 않으면 409입니다. 바이트는 나중에 리포지토리의 온라인 물리적 정리가 회수하며, 이 정리에는 별도의 정책(`setCleanup`)이 있습니다."
+    },
+    "getStorageEvents": {
+      "en": {
+        "summary": "List the storage events of a repository",
+        "description": "Returns up to 100 diagnostic events of storage policies, quotas, retention and cleanup after the sequence `after` (default 0), oldest first, each with level, code and a few details; `level` (`info`, `warning`, `error`) filters them, continue with `after` set to `next`. Only the newest 1000 events per repository and 20 000 overall are kept, so export them for longer retention."
+      },
+      "summary": "리포지토리 스토리지 이벤트 목록",
+      "description": "순번 `after`(기본 0) 이후의 스토리지 정책, 할당량, 보존, 물리적 정리에 관한 진단 이벤트를 오래된 순으로 최대 100개 반환하며, 각 이벤트에 수준, 코드, 몇 가지 세부 정보가 있습니다. `level`(`info`, `warning`, `error`)로 필터링하고 `after`에 `next` 값을 넣어 이어서 조회합니다. 이벤트는 리포지토리당 최신 1,000개, 전체 20,000개까지만 보관되므로 더 오래 보관하려면 내보내야 합니다."
+    },
+    "getCleanup": {
+      "en": {
+        "summary": "Get the online cleanup settings",
+        "description": "Returns the repository's online cleanup policy with its `revision` (`enabled`, `graceHours`, `batchSize`, `intervalSeconds`, `delayMilliseconds`), the last and next run, and how many objects the last batch reclaimed, deferred or failed with the bytes freed. Cleanup is what physically removes cancelled uploads and deleted artifacts; it is off by default."
+      },
+      "summary": "온라인 물리적 정리 설정 조회",
+      "description": "리포지토리의 온라인 물리적 정리 정책(`enabled`, `graceHours`, `batchSize`, `intervalSeconds`, `delayMilliseconds`)을 `revision`과 함께 반환하며, 마지막 실행과 다음 실행, 마지막 배치에서 회수했거나 보류했거나 실패한 객체 수와 확보한 바이트도 포함합니다. 물리적 정리는 취소된 업로드와 삭제된 아티팩트를 실제로 제거하는 작업이며 기본값은 꺼짐입니다."
+    },
+    "setCleanup": {
+      "en": {
+        "summary": "Configure online cleanup",
+        "description": "Replaces the cleanup policy while the server runs: `enabled` (also to pause), `graceHours` (0–8760, how long deleted content stays before removal), `batchSize` (1–100 objects), `intervalSeconds` (5–86400) and `delayMilliseconds` (0–1000 between objects). `expectedRevision` must be the current revision (0 before the first change), otherwise 409 `revision_mismatch`. A change takes effect between objects, never halfway through one."
+      },
+      "summary": "온라인 물리적 정리 구성",
+      "description": "서버가 실행 중인 동안 정리 정책을 교체합니다. `enabled`(일시 중지에도 사용), `graceHours`(0–8760, 삭제된 콘텐츠가 제거되기 전까지 남는 시간), `batchSize`(객체 1–100개), `intervalSeconds`(5–86400), `delayMilliseconds`(객체 사이 0–1000)를 지정합니다. `expectedRevision`은 현재 리비전(첫 변경 전에는 0)이어야 하며 그렇지 않으면 409 `revision_mismatch`입니다. 변경은 객체 사이에 적용되며 객체 하나를 처리하는 도중에는 적용되지 않습니다."
+    },
+    "requestCleanup": {
+      "en": {
+        "summary": "Request a cleanup batch now",
+        "description": "Schedules the next batch of the enabled cleanup policy to start at once; the answer is the cleanup state, and the bytes are freed only when the batch has run (see `lastRunAt` in `getCleanup`). `expectedRevision` must be the current revision; a disabled cleanup is a 409 `state_conflict`. Objects that are being read or written are deferred to a later batch."
+      },
+      "summary": "정리 배치를 지금 요청",
+      "description": "활성화된 정리 정책의 다음 배치가 즉시 시작되도록 예약하며, 응답은 정리 상태입니다. 바이트는 배치가 실행된 뒤에야 확보됩니다(`getCleanup`의 `lastRunAt` 참조). `expectedRevision`은 현재 리비전이어야 하며, 비활성화된 정리는 409 `state_conflict`입니다. 읽거나 쓰는 중인 객체는 이후 배치로 미뤄집니다."
+    },
+    "getRepositoryMirror": {
+      "en": {
+        "summary": "Get the synchronization state of a mirror",
+        "description": "For a repository this server mirrors from another Arkvory (configured in `ARKVORY_MIRRORS_FILE`), returns the source, the `mode` (`mirror`, a read-only copy, or `import`, which takes over versions with the listed `stages`), the `phase` (`pending`, `seeding`, `following`), the applied `cursor` and the source `head`, `caughtUp`, the last check, sync and error, and the artifacts and bytes copied. Sequences are journal numbers of the source, so their difference is not a count of changes. An ordinary repository answers 404."
+      },
+      "summary": "미러의 동기화 상태 조회",
+      "description": "이 서버가 다른 Arkvory에서 미러링하는 리포지토리(`ARKVORY_MIRRORS_FILE`에 구성)에 대해 원본, `mode`, `phase`, 적용된 `cursor`와 원본의 `head`, `caughtUp`, 마지막 확인, 동기화, 오류, 복사된 아티팩트와 바이트를 반환합니다. `mode`는 `mirror`(읽기 전용 사본) 또는 `import`(나열된 `stages`가 붙은 버전을 인수함)이고, `phase`는 `pending`, `seeding`, `following` 중 하나입니다. 순번은 원본 저널의 번호이므로 그 차이는 변경 수가 아닙니다. 일반 리포지토리는 404로 응답합니다."
+    },
+    "getBuildAttachments": {
+      "en": {
+        "summary": "Get the attachments of a build",
+        "description": "Returns the current attachment revision of an artifact: up to 32 entries, each naming another published artifact of the repository with a `name`, a `kind` (`manifest`, `sbom`, `signature`, `report`, `file`) and a `description`, plus the actor and time of the change. Revision 0 with no items means nothing was ever attached. Download an attached file by its `artifactId`."
+      },
+      "summary": "빌드의 첨부 파일 조회",
+      "description": "아티팩트의 현재 첨부 파일 리비전을 반환합니다. 항목은 최대 32개이며, 각 항목은 같은 리포지토리의 다른 게시된 아티팩트를 `name`, `kind`(`manifest`, `sbom`, `signature`, `report`, `file`), `description`과 함께 가리키고, 변경한 행위자와 시각도 포함합니다. 항목이 없는 리비전 0은 첨부된 적이 없다는 뜻입니다. 첨부된 파일은 그 `artifactId`로 다운로드합니다."
+    },
+    "replaceBuildAttachments": {
+      "en": {
+        "summary": "Replace the attachments of a build",
+        "description": "Replaces the whole attachment list of an artifact (up to 32 entries; an empty list removes them all) and returns the new revision. Each target must be another artifact already published in the same repository (upload it first), names are unique ignoring case and descriptions have up to 512 characters. `expectedRevision` must be the current revision (0 for the first list), otherwise 409 `revision_mismatch`; artifacts named in any revision stay protected from deletion."
+      },
+      "summary": "빌드의 첨부 파일 교체",
+      "description": "아티팩트의 첨부 파일 목록 전체를 교체하고(최대 32개, 빈 목록이면 모두 제거) 새 리비전을 반환합니다. 각 대상은 같은 리포지토리에 이미 게시된 다른 아티팩트여야 하며(먼저 업로드합니다), 이름은 대소문자를 구분하지 않고 고유해야 하고, 설명은 512자까지 허용됩니다. `expectedRevision`은 현재 리비전(첫 목록이면 0)이어야 하며 그렇지 않으면 409 `revision_mismatch`입니다. 어느 리비전에든 이름이 올라 있는 아티팩트는 삭제로부터 계속 보호됩니다."
+    },
+    "getBuildAttachmentHistory": {
+      "en": {
+        "summary": "List the attachment history of a build",
+        "description": "Returns the earlier and current attachment revisions of an artifact, newest first, 20 per page, each with its entries, actor and time; continue with `before` set to `next`. The attached artifacts of every revision remain downloadable, because they are protected from deletion."
+      },
+      "summary": "빌드의 첨부 파일 기록 목록",
+      "description": "아티팩트의 이전 및 현재 첨부 파일 리비전을 최신순으로 페이지당 20개 반환하며, 각 항목에 항목 목록, 행위자, 시각이 있고 `before`에 `next` 값을 넣어 이어서 조회합니다. 모든 리비전의 첨부된 아티팩트는 삭제로부터 보호되므로 계속 다운로드할 수 있습니다."
+    },
+    "login": {
+      "en": {
+        "summary": "Sign in",
+        "description": "Exchanges an account `name` and `password` for a bearer session `token` valid for 12 hours, with its `expiresAt` and the account; send it as `Authorization: Bearer`. An unknown name, a wrong password and a disabled account all answer the same 401 `invalid_credentials`. Attempts are throttled per client address and per account (429 `rate_limited` with Retry-After), and an account keeps at most 32 sessions: a new one ends the oldest."
+      },
+      "summary": "로그인",
+      "description": "계정 `name`과 `password`를 12시간 동안 유효한 Bearer 세션 `token`으로 바꿔 주며, `expiresAt`과 계정이 함께 반환됩니다. 토큰은 `Authorization: Bearer`로 전송합니다. 알 수 없는 이름, 잘못된 비밀번호, 비활성화된 계정은 모두 같은 401 `invalid_credentials`로 응답합니다. 시도는 클라이언트 주소별, 계정별로 제한되며(Retry-After를 포함한 429 `rate_limited`), 계정은 세션을 최대 32개 유지하므로 새 세션이 생기면 가장 오래된 세션이 종료됩니다."
+    },
+    "registerAccount": {
+      "en": {
+        "summary": "Register an account",
+        "description": "Creates an ordinary account (never an administrator) with `name` (3–64 letters, digits or `_.-`) and `password` (12–128 characters) and signs it in, answering 201 with a 12-hour session like `login`. Works only when the server allows self-registration (see `getAuthOptions`), otherwise 403 `registration_disabled`; a taken name is a 409 `already_exists`. Attempts are throttled per client address (429 with Retry-After), and self-registration stops at 900 accounts."
+      },
+      "summary": "계정 등록",
+      "description": "`name`(문자, 숫자, `_.-` 3–64자)과 `password`(12–128자)로 일반 계정(관리자는 불가)을 만들고 로그인시켜, `login`과 같은 12시간 세션과 함께 201로 응답합니다. 서버가 자체 등록을 허용할 때만 동작하며(`getAuthOptions` 참조) 그렇지 않으면 403 `registration_disabled`이고, 이미 사용 중인 이름은 409 `already_exists`입니다. 시도는 클라이언트 주소별로 제한되며(Retry-After를 포함한 429), 자체 등록은 계정이 900개가 되면 중단됩니다."
+    },
+    "getAuthOptions": {
+      "en": {
+        "summary": "Get the sign-in options",
+        "description": "Tells a console before sign-in which forms to show: `selfRegistration` is true when `registerAccount` is open on this server."
+      },
+      "summary": "로그인 옵션 조회",
+      "description": "로그인 전에 콘솔이 어떤 양식을 보여 줄지 알려 줍니다. 이 서버에서 `registerAccount`가 열려 있으면 `selfRegistration`이 true입니다."
+    },
+    "listUserTokens": {
+      "en": {
+        "summary": "List your personal access tokens",
+        "description": "Lists the personal access tokens of the signed-in account, active first, with name, prefix, scope, creation, expiry, last use and whether it is revoked; the secrets are never shown again."
+      },
+      "summary": "내 개인용 액세스 토큰 목록",
+      "description": "로그인한 계정의 개인용 액세스 토큰을 활성 토큰부터 나열하며, 이름, 접두사, 범위, 생성 시각, 만료 시각, 마지막 사용 시각, 폐기 여부가 있습니다. 비밀 값은 다시 표시되지 않습니다."
+    },
+    "createUserToken": {
+      "en": {
+        "summary": "Create a personal access token",
+        "description": "Creates a token for scripts and tools that acts as the signed-in account; the secret is in this answer only. `name` has 1–64 characters, `expiresAt` defaults to 90 days and must lie in the future and within 365 days, and `scope` is `read-write` (default) or `read`, which can never change anything. Tokens never carry administrator rights, cannot create tokens, and an account has at most 50 active ones (507 `token_limit`)."
+      },
+      "summary": "개인용 액세스 토큰 생성",
+      "description": "스크립트와 도구가 로그인한 계정으로 동작하게 하는 토큰을 만들며, 비밀 값은 이 응답에서만 볼 수 있습니다. `name`은 1–64자이고, `expiresAt`의 기본값은 90일이며 미래 시각이면서 365일 이내여야 하고, `scope`는 `read-write`(기본값) 또는 `read`이며 `read`는 어떤 것도 변경할 수 없습니다. 토큰에는 관리자 권한이 절대 없고 토큰을 만들 수 없으며, 계정당 활성 토큰은 최대 50개입니다(507 `token_limit`)."
+    },
+    "revokeUserToken": {
+      "en": {
+        "summary": "Revoke your personal access token",
+        "description": "Revokes one personal access token of the signed-in account; requests with it fail from now on. Revoking an already revoked token succeeds as well."
+      },
+      "summary": "내 개인용 액세스 토큰 폐기",
+      "description": "로그인한 계정의 개인용 액세스 토큰 하나를 폐기하며, 이후 이 토큰을 쓴 요청은 실패합니다. 이미 폐기된 토큰을 다시 폐기해도 성공합니다."
+    },
+    "logout": {
+      "en": {
+        "summary": "Sign out",
+        "description": "Ends the account session sent in `Authorization`; its token stops working at once. With any other credential (a personal token or a service key) it answers 204 and revokes nothing."
+      },
+      "summary": "로그아웃",
+      "description": "`Authorization`으로 보낸 계정 세션을 종료하며, 그 토큰은 즉시 사용할 수 없게 됩니다. 다른 자격 증명(개인용 토큰이나 서비스 키)으로 호출하면 204로 응답하고 아무것도 폐기하지 않습니다."
+    },
+    "changeOwnPassword": {
+      "en": {
+        "summary": "Change your password",
+        "description": "Sets `newPassword` (12–128 characters) after checking `currentPassword`; a wrong current password is a 401 `current_password_invalid` and counts toward the sign-in backoff. On success every session and every personal access token of the account is revoked, including the current session, so sign in again."
+      },
+      "summary": "내 비밀번호 변경",
+      "description": "`currentPassword`를 확인한 뒤 `newPassword`(12–128자)를 설정하며, 현재 비밀번호가 틀리면 401 `current_password_invalid`이고 로그인 시도 백오프에 합산됩니다. 성공하면 현재 세션을 포함한 계정의 모든 세션과 모든 개인용 액세스 토큰이 폐기되므로 다시 로그인해야 합니다."
+    },
+    "getCurrentPrincipal": {
+      "en": {
+        "summary": "Get the current identity",
+        "description": "Returns who the credential belongs to: its `id`, whether it is an administrator, the credential kind (`session`, `personal-token`, `service-key` or `file-key`), the scope of a personal token, and the repositories it has `read` or `write` access to. Use it to show the signed-in user and to choose a repository; for the exact permissions of a managed service key use `getOwnPermissions`."
+      },
+      "summary": "현재 신원 조회",
+      "description": "자격 증명이 누구의 것인지 반환합니다. 응답에는 `id`, 관리자 여부, 자격 증명 종류(`session`, `personal-token`, `service-key`, `file-key`), 개인용 토큰의 범위, `read` 또는 `write` 접근 권한이 있는 리포지토리가 있습니다. 로그인한 사용자를 표시하고 리포지토리를 고를 때 사용하며, 관리형 서비스 키의 정확한 권한은 `getOwnPermissions`로 확인합니다."
+    },
+    "listUsers": {
+      "en": {
+        "summary": "List accounts",
+        "description": "Lists all user accounts ordered by name, with ID, name, administrator flag and whether they are enabled. The server holds at most 1000 accounts."
+      },
+      "summary": "계정 목록",
+      "description": "모든 사용자 계정을 이름순으로 나열하며, ID, 이름, 관리자 플래그, 활성화 여부가 있습니다. 서버가 보유할 수 있는 계정은 최대 1,000개입니다."
+    },
+    "createUser": {
+      "en": {
+        "summary": "Create an account",
+        "description": "Creates an account with `name` (3–64 letters, digits or `_.-`), `password` (12–128 characters) and `administrator` (default false), and answers 201 with it. A taken name is a 409 `already_exists`; the server holds at most 1000 accounts (507 `account_limit`)."
+      },
+      "summary": "계정 생성",
+      "description": "`name`(문자, 숫자, `_.-` 3–64자), `password`(12–128자), `administrator`(기본값 false)로 계정을 만들고 201로 응답합니다. 이미 사용 중인 이름은 409 `already_exists`이며, 서버가 보유할 수 있는 계정은 최대 1,000개입니다(507 `account_limit`)."
+    },
+    "updateUser": {
+      "en": {
+        "summary": "Enable, disable or reset an account",
+        "description": "Changes `enabled` and/or sets a new `password` of an account; the administrator flag cannot be changed here. Disabling ends every session of the account and its personal tokens stop working while it stays disabled; a password reset ends every session and revokes every personal token."
+      },
+      "summary": "계정 활성화, 비활성화, 재설정",
+      "description": "계정의 `enabled`를 변경하거나 새 `password`를 설정하며(둘 다 가능), 관리자 플래그는 여기서 변경할 수 없습니다. 비활성화하면 계정의 모든 세션이 종료되고 비활성 상태인 동안 개인용 토큰도 동작하지 않습니다. 비밀번호를 재설정하면 모든 세션이 종료되고 모든 개인용 토큰이 폐기됩니다."
+    },
+    "listAccountTokens": {
+      "en": {
+        "summary": "List the personal access tokens of an account",
+        "description": "Lists the personal access tokens of any account, active first, with name, prefix, scope, creation, expiry, last use and revocation; never the secrets. Use it to review automation before disabling or resetting the account."
+      },
+      "summary": "계정의 개인용 액세스 토큰 목록",
+      "description": "임의 계정의 개인용 액세스 토큰을 활성 토큰부터 나열하며, 이름, 접두사, 범위, 생성, 만료, 마지막 사용, 폐기 정보가 있고 비밀 값은 절대 포함하지 않습니다. 계정을 비활성화하거나 재설정하기 전에 자동화를 검토하는 데 사용합니다."
+    },
+    "revokeAccountToken": {
+      "en": {
+        "summary": "Revoke a personal access token of an account",
+        "description": "Revokes one personal access token of the account `id`; requests with it fail from now on, and the event is recorded in the security audit. Revoking an already revoked token succeeds as well."
+      },
+      "summary": "계정의 개인용 액세스 토큰 폐기",
+      "description": "계정 `id`의 개인용 액세스 토큰 하나를 폐기하며, 이후 이 토큰을 쓴 요청은 실패하고 이 이벤트는 보안 감사 기록에 남습니다. 이미 폐기된 토큰을 다시 폐기해도 성공합니다."
+    },
+    "listAccessGroups": {
+      "en": {
+        "summary": "List access groups",
+        "description": "Lists all access groups with their member account IDs and repository grants (`read` or `write`). The server holds at most 100 groups and 10 000 memberships and grants each."
+      },
+      "summary": "액세스 그룹 목록",
+      "description": "모든 액세스 그룹을 구성원 계정 ID와 리포지토리 권한 부여(`read` 또는 `write`)와 함께 나열합니다. 서버가 보유할 수 있는 그룹은 최대 100개이며, 구성원 관계와 권한 부여는 각각 최대 10,000개입니다."
+    },
+    "createAccessGroup": {
+      "en": {
+        "summary": "Create an access group",
+        "description": "Creates an empty group with `name` (2–64 letters, digits or `_.-`) and answers 201 with it; a taken name is a 409 `already_exists`. Add members with `addGroupMember` and repositories with `setGroupGrant`."
+      },
+      "summary": "액세스 그룹 생성",
+      "description": "`name`(문자, 숫자, `_.-` 2–64자)으로 빈 그룹을 만들고 201로 응답하며, 이미 사용 중인 이름은 409 `already_exists`입니다. 구성원은 `addGroupMember`로, 리포지토리는 `setGroupGrant`로 추가합니다."
+    },
+    "addGroupMember": {
+      "en": {
+        "summary": "Add an account to a group",
+        "description": "Makes the account `userId` a member of the group; it gains the group's repository access with its next request. Adding an existing member changes nothing; at most 10 000 memberships in all (507 `membership_limit`)."
+      },
+      "summary": "그룹에 계정 추가",
+      "description": "계정 `userId`를 그룹의 구성원으로 만들며, 다음 요청부터 그룹의 리포지토리 접근 권한을 얻습니다. 이미 구성원인 계정을 추가해도 아무것도 바뀌지 않으며, 구성원 관계는 전체 최대 10,000개입니다(507 `membership_limit`)."
+    },
+    "removeGroupMember": {
+      "en": {
+        "summary": "Remove an account from a group",
+        "description": "Removes the account `userId` from the group; the access it had through the group ends with its next request. Removing an account that is not a member succeeds as well."
+      },
+      "summary": "그룹에서 계정 제거",
+      "description": "계정 `userId`를 그룹에서 제거하며, 그룹을 통해 가졌던 접근 권한은 다음 요청부터 사라집니다. 구성원이 아닌 계정을 제거해도 성공합니다."
+    },
+    "setGroupGrant": {
+      "en": {
+        "summary": "Grant a group access to a repository",
+        "description": "Gives the group's members `access` `read` or `write` to `repository`, replacing an earlier grant of the group there; it applies from their next request. A repository needs no separate creation: the grant makes it visible to them. At most 10 000 grants in all (507 `grant_limit`)."
+      },
+      "summary": "그룹에 리포지토리 접근 권한 부여",
+      "description": "그룹 구성원에게 `repository`에 대한 `access`(`read` 또는 `write`)를 부여하며, 해당 리포지토리에 대한 그룹의 이전 부여를 대체하고 구성원의 다음 요청부터 적용됩니다. 리포지토리는 별도로 만들 필요가 없으며, 권한을 부여하면 구성원에게 보이게 됩니다. 권한 부여는 전체 최대 10,000개입니다(507 `grant_limit`)."
+    },
+    "removeGroupGrant": {
+      "en": {
+        "summary": "Remove a group's access to a repository",
+        "description": "Removes the group's grant for `repository`; its members keep only the access they have through other groups. Removing a grant that does not exist succeeds as well."
+      },
+      "summary": "그룹의 리포지토리 접근 권한 제거",
+      "description": "`repository`에 대한 그룹의 권한 부여를 제거하며, 구성원은 다른 그룹을 통해 가진 접근 권한만 유지합니다. 없는 권한 부여를 제거해도 성공합니다."
+    },
+    "listSecurityAudit": {
+      "en": {
+        "summary": "Read the security audit",
+        "description": "Returns the append-only journal of sign-ins, registrations, account, group, grant, password and personal token changes, newest first, each with actor, credential kind, target, outcome and client address; throttled attempts are not journaled. Pages hold `limit` entries (1–100, default 50); continue with `after` set to `next`."
+      },
+      "summary": "보안 감사 기록 조회",
+      "description": "로그인, 등록, 계정·그룹·권한 부여·비밀번호·개인용 토큰 변경의 추가 전용(append-only) 저널을 최신순으로 반환하며, 각 항목에 행위자, 자격 증명 종류, 대상, 결과, 클라이언트 주소가 있습니다. 제한된 시도는 저널에 기록되지 않습니다. 페이지는 `limit`개 항목(1–100, 기본 50)으로 구성되며 `after`에 `next` 값을 넣어 이어서 조회합니다."
+    },
+    "getOwnPermissions": {
+      "en": {
+        "summary": "Get your effective permissions",
+        "description": "Returns the caller's `profile` (`managed` for a managed service key, `legacy` otherwise), its key ID, its effective bindings (each repository with the exact actions allowed there) and whether it is the bootstrap service administrator. Use it to adapt a client; the server still checks every request, so a change of permissions applies at once."
+      },
+      "summary": "내 유효 권한 조회",
+      "description": "호출자의 `profile`(관리형 서비스 키는 `managed`, 그 외는 `legacy`), 키 ID, 유효한 바인딩(각 리포지토리와 거기서 허용되는 정확한 액션), 부트스트랩 서비스 관리자인지 여부를 반환합니다. 클라이언트를 맞출 때 사용하며, 서버는 모든 요청을 여전히 검사하므로 권한 변경은 즉시 적용됩니다."
+    },
+    "listServiceAccounts": {
+      "en": {
+        "summary": "List service accounts",
+        "description": "Lists the service accounts the caller may see, ordered by ID, 50 per page, each with name, enabled flag, `revision`, policy `bindings` and creation time; continue with `after` set to `next`. The bootstrap key sees all of them, a delegate only the targets where its delegation includes `service-account.read`; without that the list is empty rather than refused."
+      },
+      "summary": "서비스 계정 목록",
+      "description": "호출자가 볼 수 있는 서비스 계정을 ID 순으로 페이지당 50개 나열하며, 이름, 활성화 플래그, `revision`, 정책 `bindings`, 생성 시각이 있고 `after`에 `next` 값을 넣어 이어서 조회합니다. 부트스트랩 키는 모든 계정을 보고, 위임받은 키는 위임에 `service-account.read`가 포함된 대상만 봅니다. 그 권한이 없으면 거부되지 않고 빈 목록이 반환됩니다."
+    },
+    "createServiceAccount": {
+      "en": {
+        "summary": "Create a service account",
+        "description": "Creates a machine identity for CI or an application with `name` (3–64 letters, digits or `_.-`) and its policy `bindings`: for each repository, the exact actions its keys may use (such as `upload.create` or `content.read`). Answers 201 with the account; then issue a key with `issueServiceKey`. A taken name is a 409 `already_exists`."
+      },
+      "summary": "서비스 계정 생성",
+      "description": "CI나 애플리케이션용 머신 ID를 `name`(문자, 숫자, `_.-` 3–64자)과 정책 `bindings`로 만듭니다. 바인딩은 리포지토리마다 그 키가 사용할 수 있는 정확한 액션(예: `upload.create`, `content.read`)입니다. 계정과 함께 201로 응답하며, 이후 `issueServiceKey`로 키를 발급합니다. 이미 사용 중인 이름은 409 `already_exists`입니다."
+    },
+    "getServiceAccount": {
+      "en": {
+        "summary": "Get a service account",
+        "description": "Returns the account's name, enabled flag, `revision`, policy bindings and creation time. For a delegate, an account it was not assigned answers 404 and a missing action on an assigned one 403."
+      },
+      "summary": "서비스 계정 조회",
+      "description": "계정의 이름, 활성화 플래그, `revision`, 정책 바인딩, 생성 시각을 반환합니다. 위임받은 키가 자신에게 배정되지 않은 계정을 조회하면 404이고, 배정된 계정에서 필요한 액션이 없으면 403입니다."
+    },
+    "updateServiceAccount": {
+      "en": {
+        "summary": "Enable or disable a service account",
+        "description": "Sets `enabled`; `expectedRevision` must be the current revision, otherwise 409 `revision_mismatch`. Only this flag changes here (the name cannot). Disabling blocks every key of the account from the next request; enabling restores the keys that are neither expired nor revoked. A delegate may do it only when the whole current policy lies within its ceiling."
+      },
+      "summary": "서비스 계정 활성화 또는 비활성화",
+      "description": "`enabled`를 설정하며, `expectedRevision`은 현재 리비전이어야 하고 그렇지 않으면 409 `revision_mismatch`입니다. 여기서 바뀌는 것은 이 플래그뿐입니다(이름은 변경할 수 없음). 비활성화하면 다음 요청부터 계정의 모든 키가 차단되고, 활성화하면 만료되거나 폐기되지 않은 키가 복원됩니다. 위임받은 키는 현재 정책 전체가 자신의 상한 안에 있을 때만 이 작업을 할 수 있습니다."
+    },
+    "getServicePolicy": {
+      "en": {
+        "summary": "Get the policy of a service account",
+        "description": "Returns the account with its policy `bindings` and `revision`, like `getServiceAccount`, for a caller that holds `policy.read`. A key's effective permissions are the intersection of this policy and the key's own bindings, per repository and action."
+      },
+      "summary": "서비스 계정 정책 조회",
+      "description": "`policy.read` 권한을 가진 호출자에게, `getServiceAccount`처럼 계정을 정책 `bindings` 및 `revision`과 함께 반환합니다. 키의 유효 권한은 이 정책과 키 자체의 바인딩의 교집합이며, 리포지토리와 액션별로 계산됩니다."
+    },
+    "setServicePolicy": {
+      "en": {
+        "summary": "Replace the policy of a service account",
+        "description": "Replaces the account's `bindings` (up to 64, each a repository with its exact actions); `expectedRevision` must be the current revision, otherwise 409 `revision_mismatch`. Every key follows the change from its next request: narrowing takes effect at once, widening never goes beyond a key's own bindings. A delegate needs both the current and the new policy to lie within its ceiling."
+      },
+      "summary": "서비스 계정 정책 교체",
+      "description": "계정의 `bindings`(각각 리포지토리와 정확한 액션으로 이루어진 항목, 최대 64개)를 교체하며, `expectedRevision`은 현재 리비전이어야 하고 그렇지 않으면 409 `revision_mismatch`입니다. 모든 키는 다음 요청부터 변경을 따릅니다. 범위를 좁히면 즉시 적용되고, 넓혀도 키 자신의 바인딩을 넘지는 않습니다. 위임받은 키는 현재 정책과 새 정책이 모두 자신의 상한 안에 있어야 합니다."
+    },
+    "listServiceKeys": {
+      "en": {
+        "summary": "List the keys of a service account",
+        "description": "Lists key metadata of the account ordered by ID, 50 per page: name, `state` (`pending`, `active`, `revoked`), bindings, creation, expiry, activation deadline and the key it was rotated from; never secrets or hashes. Continue with `after` set to `next`. Expiry does not change `state`, so compare `expiresAt` with the current time."
+      },
+      "summary": "서비스 계정의 키 목록",
+      "description": "계정의 키 메타데이터를 ID 순으로 페이지당 50개 나열하며, 이름, `state`(`pending`, `active`, `revoked`), 바인딩, 생성, 만료, 활성화 기한, 교체 전 키가 있고 비밀 값이나 해시는 절대 포함하지 않습니다. `after`에 `next` 값을 넣어 이어서 조회합니다. 만료되어도 `state`는 바뀌지 않으므로 `expiresAt`을 현재 시각과 비교합니다."
+    },
+    "issueServiceKey": {
+      "en": {
+        "summary": "Issue a key for a service account",
+        "description": "Issues a pending key with `name`, `bindings` (effective only where the account policy allows them too) and optional `expiresAt` (UTC; 90 days by default, at most 365, and for a delegate never beyond its own key). The first answer is 201 with `key` and the `secret`, shown only this once; a repeat with the same `Idempotency-Key` and body is 200 with the metadata only, a different body a 409. The holder must call `activateServiceKey` with the secret within 15 minutes; if the secret was lost, revoke the key and issue a new one under a new Idempotency-Key."
+      },
+      "summary": "서비스 계정의 키 발급",
+      "description": "`name`, `bindings`(계정 정책에서도 허용되는 범위에서만 유효), 선택 사항인 `expiresAt`(UTC, 기본 90일, 최대 365일이며 위임받은 키가 발급하는 경우 자신의 키 만료 이후로 설정할 수 없음)로 대기 상태의 키를 발급합니다. 첫 응답은 `key`와 한 번만 표시되는 `secret`을 담은 201이고, 같은 `Idempotency-Key`와 본문으로 반복하면 메타데이터만 담은 200, 본문이 다르면 409입니다. 키 소유자는 15분 안에 비밀 값으로 `activateServiceKey`를 호출해야 하며, 비밀 값을 잃었다면 키를 폐기하고 새 Idempotency-Key로 새 키를 발급합니다."
+    },
+    "getServiceAudit": {
+      "en": {
+        "summary": "Read the audit of a service account",
+        "description": "Returns, oldest first, up to 100 events of the account after the sequence `after` (default 0): account, policy and key changes such as issue, rotation, activation and revocation, each with actor, action, key and time. To read further, pass the last `sequence` as `after`; there is no `next` field. Only the newest 100 000 events of the server are kept."
+      },
+      "summary": "서비스 계정 감사 기록 조회",
+      "description": "순번 `after`(기본 0) 이후의 계정 이벤트를 오래된 순으로 최대 100개 반환합니다. 이벤트는 계정, 정책, 키 변경(발급, 교체, 활성화, 폐기 등)이며 각각 행위자, 작업, 키, 시각이 있습니다. 이어서 읽으려면 마지막 `sequence`를 `after`로 전달하며 `next` 필드는 없습니다. 서버 전체에서 최신 100,000개 이벤트만 보관됩니다."
+    },
+    "getServiceKey": {
+      "en": {
+        "summary": "Get a key",
+        "description": "Returns the metadata of one managed key: its account, name, state, bindings, creation, expiry, activation deadline and the key it was rotated from; never the secret or its hash."
+      },
+      "summary": "키 조회",
+      "description": "관리형 키 하나의 메타데이터, 즉 계정, 이름, 상태, 바인딩, 생성, 만료, 활성화 기한, 교체 전 키를 반환하며 비밀 값이나 해시는 절대 포함하지 않습니다."
+    },
+    "rotateServiceKey": {
+      "en": {
+        "summary": "Rotate a key",
+        "description": "Issues a pending successor of key `id` for the same account with the same or narrower `bindings`, answering like `issueServiceKey`: 201 with the one-time `secret`, 200 with metadata only on a repeat with the same `Idempotency-Key`. Once the successor is activated, the old key stays valid for at most 24 more hours; revoke it explicitly when the new one works, but only after the jobs it started have finished. Delegations held by an operator key are not copied to its successor."
+      },
+      "summary": "키 교체",
+      "description": "키 `id`와 같은 계정에 대해 같거나 더 좁은 `bindings`를 가진 대기 상태의 후속 키를 발급하며, 응답은 `issueServiceKey`와 같습니다. 일회성 `secret`을 담은 201이고, 같은 `Idempotency-Key`로 반복하면 메타데이터만 담은 200입니다. 후속 키가 활성화되면 이전 키는 최대 24시간 더 유효합니다. 새 키가 동작하는 것을 확인한 뒤, 이전 키로 시작한 작업이 끝난 다음에 이전 키를 직접 폐기합니다. 운영자 키가 가진 위임은 후속 키로 복사되지 않습니다."
+    },
+    "revokeServiceKey": {
+      "en": {
+        "summary": "Revoke a key",
+        "description": "Revokes the key for good: its next request fails, while a download already running is not cut off. Repeating succeeds with 204. Keys that a revoked operator key issued and that were already activated stay valid; revoke them separately."
+      },
+      "summary": "키 폐기",
+      "description": "키를 영구히 폐기하며, 다음 요청부터 실패하지만 이미 진행 중인 다운로드는 끊기지 않습니다. 반복해도 204로 성공합니다. 폐기된 운영자 키가 발급해 이미 활성화된 키는 계속 유효하므로 별도로 폐기해야 합니다."
+    },
+    "activateServiceKey": {
+      "en": {
+        "summary": "Activate a key",
+        "description": "Proves that the holder received a newly issued key: call it with that key as `Authorization: Bearer` within 15 minutes of issue, and the key becomes active (204). Repeating is safe and does not extend the expiry. Activating a rotated key cuts the remaining lifetime of the key it replaces to at most 24 hours."
+      },
+      "summary": "키 활성화",
+      "description": "새로 발급된 키를 소유자가 받았음을 증명합니다. 발급 후 15분 안에 그 키를 `Authorization: Bearer`로 사용해 호출하면 키가 활성 상태가 됩니다(204). 반복해도 안전하며 만료 시각은 연장되지 않습니다. 교체된 키를 활성화하면 그 키가 대체하는 이전 키의 남은 수명이 최대 24시간으로 줄어듭니다."
+    },
+    "listServiceDelegations": {
+      "en": {
+        "summary": "List the delegations of a key",
+        "description": "Returns the delegations held by operator key `id`, up to 64 including disabled ones: for each target account its `revision`, whether it is `enabled`, the administration `actions` (such as `credential.manage`) and the `ceiling` of repository bindings it may hand out. A delegate reads its own here (its key ID is `credentialId` in `getOwnPermissions`); another key's list is a 403."
+      },
+      "summary": "키의 위임 목록",
+      "description": "운영자 키 `id`가 가진 위임을 비활성화된 것을 포함해 최대 64개 반환합니다. 대상 계정마다 `revision`, `enabled` 여부, 관리 `actions`(예: `credential.manage`), 넘겨줄 수 있는 리포지토리 바인딩의 `ceiling`이 있습니다. 위임받은 키는 여기서 자신의 위임을 읽을 수 있으며(키 ID는 `getOwnPermissions`의 `credentialId`), 다른 키의 목록은 403입니다."
+    },
+    "setServiceDelegation": {
+      "en": {
+        "summary": "Delegate the administration of a service account",
+        "description": "Lets key `id` administer the service account `accountId` with the given `actions` (`service-account.read`, `service-account.manage`, `policy.read`, `policy.manage`, `credential.read`, `credential.manage`, `service-audit.read`) within `ceiling`, up to 16 repository bindings it may hand out; manage does not imply read. `expectedRevision` is 0 to create and the record's current revision to change or re-enable it, otherwise 409. The key must be active and issued by the bootstrap key, and an account cannot both hold delegations and be the target of one, so delegation never chains."
+      },
+      "summary": "서비스 계정 관리 위임",
+      "description": "키 `id`가 주어진 `actions`(`service-account.read`, `service-account.manage`, `policy.read`, `policy.manage`, `credential.read`, `credential.manage`, `service-audit.read`)로 서비스 계정 `accountId`를 `ceiling`(넘겨줄 수 있는 리포지토리 바인딩 최대 16개) 안에서 관리하게 합니다. manage는 read를 포함하지 않습니다. `expectedRevision`은 생성할 때 0이고, 변경하거나 다시 활성화할 때는 레코드의 현재 리비전이어야 하며 그렇지 않으면 409입니다. 키는 활성 상태이고 부트스트랩 키가 발급한 것이어야 하며, 계정은 위임을 가지면서 동시에 위임의 대상이 될 수 없으므로 위임은 연쇄되지 않습니다."
+    },
+    "removeServiceDelegation": {
+      "en": {
+        "summary": "Withdraw a delegation",
+        "description": "Disables the delegation of key `id` over `accountId`; the JSON body carries `expectedRevision`, the record's current revision. The record stays as a disabled entry without actions and with a higher revision, returned with 200; after a lost answer read it with `listServiceDelegations` instead of repeating, since the old revision is a 409. Keys the delegate already issued and activated keep working: revoke them or disable the account separately."
+      },
+      "summary": "위임 철회",
+      "description": "키 `id`의 `accountId`에 대한 위임을 비활성화하며, JSON 본문에 레코드의 현재 리비전인 `expectedRevision`이 있어야 합니다. 레코드는 액션이 없고 리비전이 더 높은 비활성 항목으로 남으며 200으로 반환됩니다. 응답을 받지 못했다면 이전 리비전은 409가 되므로 반복하지 말고 `listServiceDelegations`로 읽습니다. 위임받은 키가 이미 발급해 활성화한 키는 계속 동작하므로 별도로 폐기하거나 계정을 비활성화합니다."
+    },
+    "getBackupStatus": {
+      "en": {
+        "summary": "Get the backup status",
+        "description": "Summarizes the backup system: the vault (`configured`, `available`, free and total bytes), the backup agent (`online`, last heartbeat, version), the plan, the newest completed point, the next scheduled run, the running job and `warnings`, each a code such as `agent_offline` or `backup_stale` with severity `warning` or `critical`. The vault is reported unavailable while the agent is offline. It contains no paths or secrets."
+      },
+      "summary": "백업 상태 조회",
+      "description": "백업 시스템을 요약해 반환합니다. 구성 요소는 백업 보관소(`configured`, `available`, 여유 및 전체 바이트), 백업 에이전트(`online`, 마지막 하트비트, 버전), 계획, 가장 최근에 완료된 복원 지점, 다음 예약 실행, 실행 중인 작업, `warnings`입니다. 각 경고는 `agent_offline`, `backup_stale` 같은 코드와 `warning` 또는 `critical` 심각도를 가집니다. 에이전트가 오프라인이면 보관소는 사용할 수 없는 것으로 보고됩니다. 경로나 비밀 값은 포함하지 않습니다."
+    },
+    "getBackupPlan": {
+      "en": {
+        "summary": "Get the backup plan",
+        "description": "Returns the daily schedule (`enabled`, `hour` and `minute` in the IANA `timezone`) and the retention policy (`daily`, `weekly`, `monthly` points to keep) with the `revision` to send back to `updateBackupPlan`. Until changed the plan is disabled, with a 02:00 UTC schedule and 7 daily, 4 weekly and 6 monthly points."
+      },
+      "summary": "백업 계획 조회",
+      "description": "일일 일정(`enabled`, IANA `timezone` 기준의 `hour`와 `minute`)과 보존 정책(유지할 `daily`, `weekly`, `monthly` 지점 수), 그리고 `updateBackupPlan`에 되돌려 보낼 `revision`을 반환합니다. 변경하기 전의 계획은 비활성이며, UTC 02:00 일정과 일간 7개, 주간 4개, 월간 6개 지점으로 구성됩니다."
+    },
+    "updateBackupPlan": {
+      "en": {
+        "summary": "Replace the backup plan",
+        "description": "Replaces the whole plan: `enabled`, `hour` (0–23), `minute` (0–59), `timezone` and `retention` (at most 366 daily, 260 weekly, 120 monthly) must all be present. `expectedRevision` must be the current revision, otherwise 409 `revision_mismatch`; an invalid field is a 400 with a JSON Pointer in `details`. The agent follows the new schedule from its next check."
+      },
+      "summary": "백업 계획 교체",
+      "description": "계획 전체를 교체하며 `enabled`, `hour`(0–23), `minute`(0–59), `timezone`, `retention`(일간 최대 366개, 주간 260개, 월간 120개)이 모두 있어야 합니다. `expectedRevision`은 현재 리비전이어야 하며 그렇지 않으면 409 `revision_mismatch`이고, 올바르지 않은 필드는 `details`에 JSON Pointer를 담은 400입니다. 에이전트는 다음 확인부터 새 일정을 따릅니다."
+    },
+    "requestBackupRun": {
+      "en": {
+        "summary": "Request a backup now",
+        "description": "Queues a capture for the backup agent outside the schedule and returns 202 with the job (`kind` `capture`); the agent runs it, then verification and retention. `Idempotency-Key` is required: repeating it, from the same caller, returns the same job. Follow the job in `listBackupJobs`. At most 100 backup requests may be open at once (507 `queue_full`); while no agent is online the job waits."
+      },
+      "summary": "지금 백업 요청",
+      "description": "일정과 별개로 백업 에이전트에 캡처를 큐에 넣고, 작업(`kind`는 `capture`)과 함께 202로 응답합니다. 에이전트가 이를 실행한 뒤 검증과 보존 규칙 적용을 수행합니다. `Idempotency-Key`는 필수이며, 같은 호출자가 반복하면 같은 작업을 반환합니다. 작업은 `listBackupJobs`에서 추적합니다. 열려 있는 백업 요청은 동시에 최대 100개입니다(507 `queue_full`). 온라인 상태인 에이전트가 없으면 작업은 대기합니다."
+    },
+    "listBackupJobs": {
+      "en": {
+        "summary": "List backup jobs",
+        "description": "Lists capture, verify and retention jobs, newest first, each with its `state` (`queued`, `running`, `committing`, `completed`, `failed`, `interrupted`), `phase`, times, `errorCode`, the resulting point and `progress` (bytes and objects processed). Pages hold `limit` jobs (1–100, default 50); continue with `after` set to `next`."
+      },
+      "summary": "백업 작업 목록",
+      "description": "캡처, 검증, 보존 작업을 최신순으로 나열하며, 각 항목에 `state`(`queued`, `running`, `committing`, `completed`, `failed`, `interrupted`), `phase`, 시각, `errorCode`, 결과 지점, `progress`(처리된 바이트와 객체)가 있습니다. 페이지는 `limit`개 작업(1–100, 기본 50)으로 구성되며 `after`에 `next` 값을 넣어 이어서 조회합니다."
+    },
+    "listBackupPoints": {
+      "en": {
+        "summary": "List backup points",
+        "description": "Lists the completed restore points of the current vault, newest snapshot first, each with the snapshot time T, size, bytes added to the vault, whether it is `pinned` and its latest verification (`verifiedAt`, `verifyDepth` `structural` or `deep`, `verifyError`). Pages hold `limit` points (1–100, default 50); continue with `after` set to `next`. A vault that was replaced shows only its own points."
+      },
+      "summary": "백업 지점 목록",
+      "description": "현재 보관소의 완료된 복원 지점을 스냅샷이 최신인 순으로 나열하며, 각 항목에 스냅샷 시각 T, 크기, 보관소에 추가된 바이트, `pinned` 여부, 최신 검증 결과(`verifiedAt`, `verifyDepth`는 `structural` 또는 `deep`, `verifyError`)가 있습니다. 페이지는 `limit`개 지점(1–100, 기본 50)으로 구성되며 `after`에 `next` 값을 넣어 이어서 조회합니다. 교체된 보관소는 자신의 지점만 표시합니다."
+    },
+    "requestBackupVerify": {
+      "en": {
+        "summary": "Request a deep check of a backup point",
+        "description": "Queues a verification of the point `id` that reads every stored byte of it; the answer is 202 with the job, and the outcome appears in `verifiedAt`, `verifyDepth` and `verifyError` of the point. `Idempotency-Key` is required, and reusing it for another point is a 409 `idempotency_mismatch`. An unknown point is a 404."
+      },
+      "summary": "백업 지점의 심층 검사 요청",
+      "description": "지점 `id`가 저장한 모든 바이트를 읽는 검증을 큐에 넣고 작업과 함께 202로 응답하며, 결과는 해당 지점의 `verifiedAt`, `verifyDepth`, `verifyError`에 나타납니다. `Idempotency-Key`는 필수이며, 다른 지점에 같은 키를 재사용하면 409 `idempotency_mismatch`입니다. 알 수 없는 지점은 404입니다."
+    },
+    "setBackupPointPin": {
+      "en": {
+        "summary": "Pin or unpin a backup point",
+        "description": "Sets `pinned` of the point `id`; a pinned point is kept by retention beyond the policy until it is unpinned. Setting the same value again changes nothing, and the answer is the updated point. An unknown or already forgotten point is a 404."
+      },
+      "summary": "백업 지점 고정 또는 고정 해제",
+      "description": "지점 `id`의 `pinned`를 설정하며, 고정된 지점은 고정을 해제할 때까지 정책의 범위를 넘어 보존 규칙이 유지합니다. 같은 값을 다시 설정해도 아무것도 바뀌지 않고, 응답은 갱신된 지점입니다. 알 수 없거나 이미 정리된 지점은 404입니다."
+    },
+    "previewBackupRetention": {
+      "en": {
+        "summary": "Preview what backup retention keeps",
+        "description": "Shows which points the retention policy would keep, each with the reasons (`daily`, `weekly`, `monthly`, `pinned`, `newest`), and which it would delete now. Points that failed verification are not considered. The preview is advisory: `requestBackupRetention` decides again from the vault when it runs."
+      },
+      "summary": "백업 보존 규칙이 유지하는 대상 미리 보기",
+      "description": "보존 정책이 유지할 지점과 지금 삭제할 지점을 보여 주며, 유지할 지점마다 이유(`daily`, `weekly`, `monthly`, `pinned`, `newest`)가 있습니다. 검증에 실패한 지점은 고려되지 않습니다. 미리 보기는 참고용이며, `requestBackupRetention`은 실행 시 보관소를 기준으로 다시 결정합니다."
+    },
+    "requestBackupRetention": {
+      "en": {
+        "summary": "Request backup retention",
+        "description": "Queues a retention job: the agent forgets the points outside the policy and then removes content no remaining point uses, so space returns to the vault only when the job has completed. Returns 202 with the job; `Idempotency-Key` is required and repeating it returns the same job. Look at `previewBackupRetention` first."
+      },
+      "summary": "백업 보존 작업 요청",
+      "description": "보존 작업을 큐에 넣습니다. 에이전트가 정책 밖의 지점을 잊고, 남은 어떤 지점도 사용하지 않는 콘텐츠를 제거하므로, 보관소에 공간이 돌아오는 것은 작업이 완료된 뒤입니다. 작업과 함께 202로 응답하며, `Idempotency-Key`는 필수이고 반복하면 같은 작업을 반환합니다. 먼저 `previewBackupRetention`을 확인합니다."
+    },
+    "getSystemUpdates": {
+      "en": {
+        "summary": "Get the update state",
+        "description": "Returns what the host updater reports: the installed version and schema, the newest release found (`latest`), the automatic update settings (`automatic`, `hourUTC`, `pin`, `channel`, `statistics`), the `phase` (`idle`, `checking`, `updating`, `failed`), the last `error`, the last heartbeat and the settings `revision`, plus the request still waiting in the updater's mailbox (`pending`). `snapshot` is null when no host updater is connected. Pass `revision` to `requestSystemUpdate`."
+      },
+      "summary": "업데이트 상태 조회",
+      "description": "호스트 업데이터가 보고하는 내용을 반환합니다. 설치된 버전과 스키마, 발견된 최신 릴리스(`latest`), 자동 업데이트 설정(`automatic`, `hourUTC`, `pin`, `channel`, `statistics`), `phase`(`idle`, `checking`, `updating`, `failed`), 마지막 `error`, 마지막 하트비트, 설정 `revision`이 있으며, 업데이터의 메일박스에서 아직 대기 중인 요청(`pending`)도 포함됩니다. 호스트 업데이터가 연결되어 있지 않으면 `snapshot`은 null입니다. `revision`은 `requestSystemUpdate`에 전달합니다."
+    },
+    "requestSystemUpdate": {
+      "en": {
+        "summary": "Request an update action",
+        "description": "Hands one command to the host updater, which does the work: `kind` `check` looks for a new release, `apply` installs the given stable `version` with its `sha256`, `configure` sets `automatic`, `hourUTC` and optionally `statistics`. Send a new UUID as `id` and the `expectedRevision` from `getSystemUpdates`; 409 `revision_mismatch` means the settings changed, 503 `busy` that a request is pending or the updater is working, 503 `unavailable` that no updater is connected or its heartbeat is older than five minutes. The answer 202 only means the request was queued: follow `phase`, `currentVersion` and `lastRequestId` in `getSystemUpdates`. Repeating the same `id` and body is safe."
+      },
+      "summary": "업데이트 작업 요청",
+      "description": "호스트 업데이터에 명령 하나를 전달하면 업데이터가 작업을 수행합니다. `kind`가 `check`이면 새 릴리스를 찾고, `apply`는 주어진 안정 `version`을 `sha256`과 함께 설치하며, `configure`는 `automatic`, `hourUTC`, 선택적으로 `statistics`를 설정합니다. `id`에 새 UUID를, `expectedRevision`에 `getSystemUpdates`의 값을 보냅니다. 409 `revision_mismatch`는 설정이 변경되었다는 뜻이고, 503 `busy`는 요청이 대기 중이거나 업데이터가 작업 중이라는 뜻이며, 503 `unavailable`은 업데이터가 연결되어 있지 않거나 하트비트가 5분보다 오래되었다는 뜻입니다. 응답 202는 요청이 큐에 들어갔다는 의미일 뿐이므로, `getSystemUpdates`의 `phase`, `currentVersion`, `lastRequestId`로 진행 상황을 확인합니다. 같은 `id`와 본문으로 반복해도 안전합니다."
+    },
+    "sendFeedback": {
+      "en": {
+        "summary": "Send feedback to ProAnimaStudio",
+        "description": "Forwards a message through this server to the ProAnimaStudio hub and answers 202 with the hub's `id`. Send `message` (up to 20 000 characters), `lang` (`ru` or `en`), `serverLog` (true attaches this server's log and a system summary, administrators only), and optionally `email` for a reply, `screen`, up to 6 base64 `screenshots` (PNG, JPEG, WebP or GIF, 8 MiB each) and the console's `clientLog`; the total is limited to 15 MiB. Nothing is retried, so a second call is a second message. 503 `feedback_disabled` when the operator turned it off, 503 `hub_unreachable` when the hub does not answer, 429 `feedback_attempts` when this server sent too much."
+      },
+      "summary": "ProAnimaStudio에 피드백 보내기",
+      "description": "이 서버를 거쳐 ProAnimaStudio 허브로 메시지를 전달하고, 허브의 `id`와 함께 202로 응답합니다. `message`(최대 20,000자), `lang`(`ru` 또는 `en`), `serverLog`(true이면 이 서버의 로그와 시스템 요약을 첨부하며 관리자만 가능)를 보내고, 선택적으로 답장을 받을 `email`, `screen`, base64로 인코딩한 `screenshots`(PNG, JPEG, WebP, GIF, 각 8 MiB, 최대 6개), 콘솔의 `clientLog`를 보냅니다. 전체 크기는 15 MiB로 제한됩니다. 서버는 재시도하지 않으므로 두 번째 호출은 두 번째 메시지가 됩니다. 운영자가 껐으면 503 `feedback_disabled`, 허브가 응답하지 않으면 503 `hub_unreachable`, 이 서버가 너무 많이 보냈으면 429 `feedback_attempts`입니다."
+    },
+    "getFeedbackAttachments": {
+      "en": {
+        "summary": "Preview the feedback attachments",
+        "description": "Returns the two texts that `sendFeedback` attaches when `serverLog` is true: the recent records of this server's log and a system summary (versions, operating system, update and mirror states) without addresses, names or secrets. Show them to the administrator before sending."
+      },
+      "summary": "피드백 첨부 파일 미리 보기",
+      "description": "`serverLog`가 true일 때 `sendFeedback`이 첨부하는 두 텍스트, 즉 이 서버 로그의 최근 기록과 시스템 요약(버전, 운영 체제, 업데이트 및 미러 상태이며 주소, 이름, 비밀 값은 제외)을 반환합니다. 보내기 전에 관리자에게 보여 줍니다."
+    }
+  },
+  "errors": {
+    "codes": {
+      "invalid_input": "요청의 형식이 올바르지 않거나 허용되지 않는 값이 있습니다. 요청을 고친 뒤 다시 보냅니다.",
+      "not_found": "객체가 존재하지 않거나 호출자가 볼 수 없습니다.",
+      "conflict": "요청이 현재 상태와 충돌합니다. 상태를 다시 읽은 뒤 결정합니다.",
+      "forbidden": "자격 증명은 유효하지만 이 작업을 수행할 권한이 없습니다.",
+      "unauthorized": "유효한 자격 증명이 없습니다. 없거나, 잘못되었거나, 만료되었거나, 폐기되었습니다.",
+      "capacity_exceeded": "할당량, 용량 또는 제한을 초과하게 됩니다.",
+      "integrity_mismatch": "바이트가 선언된 크기 또는 SHA-256과 일치하지 않습니다.",
+      "busy": "서버가 수용 한도에 도달했습니다. Retry-After 이후에 다시 시도합니다.",
+      "unavailable": "종속 서비스를 지금은 사용할 수 없습니다. Retry-After 이후에 다시 시도합니다.",
+      "rate_limited": "시도 횟수가 너무 많습니다. Retry-After까지 기다립니다.",
+      "read_only": "이 서버 또는 게이트웨이는 변경을 받지 않습니다(읽기 게이트웨이 또는 미러).",
+      "internal": "예기치 않은 서버 결함입니다. 요청 ID를 알려 주면 지원팀이 원인을 찾는 데 도움이 됩니다. 무작정 반복하지 않습니다."
+    },
+    "reasons": {
+      "validation": "필드가 없거나 규칙에서 벗어난 값이 있습니다. 세부 정보에 해당 필드 이름이 들어 있습니다.",
+      "malformed_json": "본문이 올바른 JSON이 아닙니다.",
+      "body_too_large": "본문이 이 작업이 받아들이는 크기보다 큽니다.",
+      "unsupported_media_type": "Content-Type이 이 작업에서 받아들이는 형식이 아닙니다.",
+      "method_not_allowed": "경로는 있지만 이 메서드로는 사용할 수 없습니다.",
+      "range_not_satisfiable": "요청한 바이트 범위가 콘텐츠 밖에 있습니다.",
+      "route_not_found": "해당 라우트가 없습니다.",
+      "upload_expired": "업로드 세션이 완료되기 전에 만료되었습니다.",
+      "upload_state": "업로드가 이 단계를 허용하는 상태가 아닙니다.",
+      "revision_mismatch": "기대한 리비전이 현재 리비전이 아닙니다(다른 변경이 먼저 반영되었습니다).",
+      "version_exists": "이 버전은 이미 다른 콘텐츠로 게시되었습니다.",
+      "part_mismatch": "파트가 선언된 크기 또는 SHA-256과 일치하지 않습니다.",
+      "parts_incomplete": "업로드의 일부 파트가 아직 도착하지 않았습니다.",
+      "idempotency_mismatch": "Idempotency-Key가 이전에 다른 요청에 사용되었습니다.",
+      "already_exists": "이 이름 또는 경로의 객체가 이미 있습니다.",
+      "stage_limit": "아티팩트가 허용되는 최대 스테이지 수에 도달했습니다.",
+      "state_conflict": "객체가 이 변경을 허용하지 않는 상태입니다.",
+      "mirror_read_only": "리포지토리가 미러이므로 동기화를 통해서만 변경됩니다.",
+      "permission_missing": "자격 증명에 이 작업에 필요한 액션 권한이 없습니다.",
+      "read_only_token": "읽기 전용 개인용 토큰은 아무것도 변경할 수 없습니다.",
+      "credential_revoked": "키 또는 토큰이 폐기되었습니다.",
+      "session_required": "키가 아니라 로그인한 계정 세션만 이 작업을 할 수 있습니다.",
+      "administrator_required": "관리자만 이 작업을 할 수 있습니다.",
+      "registration_disabled": "이 서버에서는 자체 등록이 꺼져 있습니다.",
+      "origin_not_allowed": "브라우저 오리진이 ARKVORY_CORS_ORIGINS에 없습니다.",
+      "invalid_credentials": "계정 이름 또는 비밀번호가 틀렸습니다.",
+      "current_password_invalid": "현재 비밀번호가 틀렸습니다.",
+      "credential_missing": "요청에 자격 증명이 없습니다.",
+      "credential_invalid": "자격 증명이 유효한 키, 토큰, 세션이 아닙니다.",
+      "session_expired": "세션이 만료되었습니다. 다시 로그인합니다.",
+      "token_expired": "개인용 토큰이 만료되었습니다.",
+      "storage_quota": "리포지토리 할당량을 초과하게 됩니다.",
+      "storage_full": "서버 디스크가 여유 공간 예비분을 지켜야 하므로 더 쓸 공간이 없습니다.",
+      "account_limit": "계정 수가 한도에 도달했습니다.",
+      "group_limit": "그룹 수가 한도에 도달했습니다.",
+      "membership_limit": "그룹 구성원 수가 한도에 도달했습니다.",
+      "grant_limit": "권한 부여 수가 한도에 도달했습니다.",
+      "key_limit": "키 수가 한도에 도달했습니다.",
+      "token_limit": "개인용 토큰 수가 한도에 도달했습니다.",
+      "delegation_limit": "위임 수가 한도에 도달했습니다.",
+      "catalog_limit": "설치 환경의 카탈로그 용량을 초과하게 됩니다.",
+      "queue_full": "전송 큐가 가득 찼습니다.",
+      "transfer_limit": "호출자가 허용된 수만큼의 전송을 이미 진행 중입니다.",
+      "request_limit": "서버가 수용하는 만큼의 요청을 이미 처리하고 있습니다.",
+      "feedback_disabled": "이 서버에서는 피드백이 꺼져 있습니다.",
+      "hub_unreachable": "업데이트 허브에 연결할 수 없습니다.",
+      "login_attempts": "로그인 시도가 너무 많습니다. 기다립니다.",
+      "registration_attempts": "등록 시도가 너무 많습니다. 기다립니다.",
+      "password_attempts": "비밀번호 시도가 너무 많습니다. 기다립니다.",
+      "feedback_attempts": "피드백 보고가 너무 많습니다. 기다립니다."
+    }
+  },
+  "fields": {
+    "Byte size, decimal string": "바이트 크기, 10진 문자열",
+    "Bytes this point added to the vault.": "이 지점이 백업 보관소에 추가한 바이트입니다.",
+    "Current labels: annotation when replaced, otherwise the upload descriptor": "현재 레이블: 교체된 경우 어노테이션, 그렇지 않으면 업로드 디스크립터",
+    "Current promotion stages in byte order": "현재 승격 스테이지, 바이트 순서",
+    "Every part has this size except the last one.": "마지막 파트를 제외한 모든 파트가 이 크기입니다.",
+    "Exclusive before cursor; null at end": "커서 이전(해당 값 제외). 끝이면 null",
+    "Explicit IANA time zone, e.g. Europe/Moscow; validated by the server.": "명시적인 IANA 시간대(예: Europe/Moscow). 서버가 검증합니다.",
+    "Last ID of a full page; pass as after": "가득 찬 페이지의 마지막 ID. after로 전달합니다",
+    "Null for history recorded before migration 4": "마이그레이션 4 이전에 기록된 항목은 null",
+    "Opaque cursor bound to repository and prefix; null at end. Never grants access.": "리포지토리와 접두사에 묶인 불투명 커서. 끝이면 null. 접근 권한을 부여하지 않습니다.",
+    "Optional initiating managed key ID; never its secret.": "작업을 시작한 관리형 키의 ID(선택 사항). 비밀 값은 포함하지 않습니다.",
+    "Processed bytes: copied or already in the vault.": "처리된 바이트: 복사되었거나 이미 백업 보관소에 있는 바이트",
+    "Publication time; null only when none was recorded": "게시 시각. 기록된 것이 없을 때만 null",
+    "Restored revision; null for ordinary replacement": "복원된 리비전. 일반 교체이면 null",
+    "Smallest multipart segment.": "가장 작은 멀티파트 세그먼트입니다.",
+    "Snapshot time T; the age of a point counts from T.": "스냅샷 시각 T. 지점의 경과 시간은 T부터 계산합니다.",
+    "Start of execution, or the request time while queued.": "실행 시작 시각. 큐에 있는 동안은 요청 시각",
+    "Upload reservation time": "업로드 예약 시각"
+  }
+}

@@ -1,0 +1,1044 @@
+{
+  "operations": {
+    "getReadiness": {
+      "en": {
+        "summary": "Check detailed readiness",
+        "description": "Answers `ready` when the database and storage respond, with this node's `role` (`api` or `reader`), whether it accepts writes now (`writable` is false on a read gateway and while the disk keeps its free-space reserve), the shared download slot of a read gateway and aggregate upload and download admission and bandwidth counters. While the server drains or a dependency is unavailable it answers 503 with Retry-After. It does not count against the request budget; for a load balancer without a key use `getReadinessStatus`."
+      },
+      "summary": "Detaillierte Bereitschaft prüfen",
+      "description": "Antwortet mit `ready`, wenn Datenbank und Speicher reagieren, und liefert die `role` dieses Knotens (`api` oder `reader`), ob er derzeit Schreibzugriffe annimmt (`writable` ist auf einem Lese-Gateway false, ebenso solange auf dem Datenträger nur noch die Reserve an freiem Speicherplatz bleibt), den gemeinsamen Download-Slot eines Lese-Gateways sowie aggregierte Zähler für Zulassung und Bandbreite von Uploads und Downloads. Solange der Server herunterfährt (Draining) oder eine Abhängigkeit nicht verfügbar ist, antwortet er mit 503 und Retry-After. Die Anfrage wird nicht auf das Anfragebudget angerechnet; für einen Load Balancer ohne Schlüssel verwenden Sie `getReadinessStatus`."
+    },
+    "getCapabilities": {
+      "en": {
+        "summary": "Get server capabilities and limits",
+        "description": "Returns the API versions, the gateway role, feature flags (for example `selfRegistration` or `mirrorFeed`) and the limits a client adapts to: the largest object (`maxObjectBytes`, a decimal string), the smallest and largest multipart segment, the largest number of parts and the largest page size. Read it once when a client starts; it lists no resources."
+      },
+      "summary": "Serverfähigkeiten und Limits abrufen",
+      "description": "Liefert die API-Versionen, die Gateway-Rolle, Feature-Flags (zum Beispiel `selfRegistration` oder `mirrorFeed`) und die Limits, an die sich ein Client anpasst: das größte Objekt (`maxObjectBytes`, eine Dezimalzeichenfolge), das kleinste und das größte Multipart-Segment, die größte Anzahl von Teilen und die größte Seitengröße. Lesen Sie sie einmal beim Start eines Clients; sie listet keine Ressourcen auf."
+    },
+    "getReadinessStatus": {
+      "en": {
+        "summary": "Check readiness for a load balancer",
+        "description": "Needs no key and returns no details: 200 with `{\"status\":\"ready\"}`, or 503 with `unavailable` or `draining` and Retry-After. The dependency check is shared and cached for one second, so frequent probes do not load the database, and the probe does not count against the request budget."
+      },
+      "summary": "Bereitschaft für einen Load Balancer prüfen",
+      "description": "Benötigt keinen Schlüssel und liefert keine Details: 200 mit `{\"status\":\"ready\"}` oder 503 mit `unavailable` oder `draining` und Retry-After. Die Prüfung der Abhängigkeiten wird gemeinsam genutzt und eine Sekunde zwischengespeichert, sodass häufige Probes die Datenbank nicht belasten; die Probe wird nicht auf das Anfragebudget angerechnet."
+    },
+    "getLiveness": {
+      "en": {
+        "summary": "Check that the process is alive",
+        "description": "Returns 200 with `{\"status\":\"ok\"}` while the process answers HTTP. It checks no dependency, so use it to decide on a restart and `getReadinessStatus` to decide on traffic."
+      },
+      "summary": "Prüfen, ob der Prozess läuft",
+      "description": "Liefert 200 mit `{\"status\":\"ok\"}`, solange der Prozess HTTP beantwortet. Es werden keine Abhängigkeiten geprüft; verwenden Sie die Anfrage daher für die Entscheidung über einen Neustart und `getReadinessStatus` für die Entscheidung über Datenverkehr."
+    },
+    "getOpenApi": {
+      "en": {
+        "summary": "Get the OpenAPI document",
+        "description": "Returns the OpenAPI 3.0 document of this deployment, with the `x-arkvory-*` extensions that describe each operation's access, retry and gateway rules. `surface` (`discovery`, `identity`, `catalog`, `transfers`, `administration` or `operations`) returns only that area; an unknown or repeated query parameter is a 400. The document is the same for every caller and grants nothing: to learn what this credential may call, use `listVisibleOperations`."
+      },
+      "summary": "OpenAPI-Dokument abrufen",
+      "description": "Liefert das OpenAPI-3.0-Dokument dieser Installation mit den Erweiterungen `x-arkvory-*`, die Zugriffs-, Wiederholungs- und Gateway-Regeln jeder Operation beschreiben. `surface` (`discovery`, `identity`, `catalog`, `transfers`, `administration` oder `operations`) liefert nur diesen Bereich; ein unbekannter oder wiederholter Query-Parameter ergibt 400. Das Dokument ist für alle Aufrufer gleich und gewährt nichts: Welche Aufrufe diese Anmeldedaten erlauben, ermitteln Sie mit `listVisibleOperations`."
+    },
+    "getMetrics": {
+      "en": {
+        "summary": "Get Prometheus metrics",
+        "description": "Returns the process metrics in the Prometheus text format (`text/plain; version=0.0.4`) for a scraper. Counters and histograms belong to this process and start from zero after a restart (see `arkvory_process_start_time_seconds`); labels are limited to route template, method, status class and transfer direction and never name an artifact, key or account. The scrape does not count against the request budget."
+      },
+      "summary": "Prometheus-Metriken abrufen",
+      "description": "Liefert die Prozessmetriken im Prometheus-Textformat (`text/plain; version=0.0.4`) für einen Scraper. Zähler und Histogramme gehören zu diesem Prozess und beginnen nach einem Neustart bei null (siehe `arkvory_process_start_time_seconds`); Labels beschränken sich auf Routenvorlage, Methode, Statusklasse und Transferrichtung und nennen nie ein Artefakt, einen Schlüssel oder ein Konto. Der Scrape wird nicht auf das Anfragebudget angerechnet."
+    },
+    "listVisibleOperations": {
+      "en": {
+        "summary": "List the operations this credential may call",
+        "description": "Lists the operations of this gateway the credential may call, ordered by `operationId`, each with its surface, retry rule, required actions and the `conditions` checked only at call time (such as `resource-state` or `upload-owner`). `repository` adds the operations of that repository (an unknown or foreign repository is a 404), `surface` narrows the list to one area; pages hold `limit` items (1–100, default 50), continue with `after` set to `next`. The answer is advisory: build menus from it, but every real request is authorized again, and a read gateway lists no changing methods."
+      },
+      "summary": "Operationen auflisten, die diese Anmeldedaten aufrufen dürfen",
+      "description": "Listet die Operationen dieses Gateways, die die Anmeldedaten aufrufen dürfen, nach `operationId` geordnet, jeweils mit ihrem Bereich (surface), ihrer Wiederholungsregel, den erforderlichen Aktionen und den `conditions`, die erst beim Aufruf geprüft werden (etwa `resource-state` oder `upload-owner`). `repository` fügt die Operationen dieses Repositorys hinzu (ein unbekanntes oder fremdes Repository ergibt 404), `surface` beschränkt die Liste auf einen Bereich; Seiten enthalten `limit` Einträge (1–100, Standard 50), weiter mit `after` = `next`. Die Antwort ist unverbindlich: Erstellen Sie Menüs daraus, aber jede echte Anfrage wird erneut autorisiert, und ein Lese-Gateway listet keine ändernden Methoden."
+    },
+    "listRepositories": {
+      "en": {
+        "summary": "List the repositories you can access",
+        "description": "Lists, ordered by name, the repositories in which the caller holds a permission, each with its formats (`upack`, `assets`) and the caller's own permissions there; a managed service key sees only those where it holds `repository.read`. A repository is the scope of the caller's grants, not an entry of a server-wide registry. Pages hold `limit` cards (1–100, default 50); continue with `after` set to `next`."
+      },
+      "summary": "Zugängliche Repositorys auflisten",
+      "description": "Listet die Repositorys nach Namen geordnet auf, in denen der Aufrufer eine Berechtigung besitzt, jeweils mit ihren Formaten (`upack`, `assets`) und den eigenen Berechtigungen des Aufrufers dort; ein verwalteter Dienstschlüssel sieht nur die Repositorys, in denen er `repository.read` besitzt. Ein Repository ist der Geltungsbereich der Zuweisungen des Aufrufers, kein Eintrag eines serverweiten Verzeichnisses. Seiten enthalten `limit` Karten (1–100, Standard 50); weiter mit `after` = `next`."
+    },
+    "getRepository": {
+      "en": {
+        "summary": "Get a repository card",
+        "description": "Returns the caller's card of one repository: its formats and the caller's permissions in it. A repository the caller cannot see answers 404, exactly like one that does not exist; HEAD makes this a cheap access check. Seeing a repository grants no access to its content or settings."
+      },
+      "summary": "Repository-Karte abrufen",
+      "description": "Liefert die Karte eines Repositorys für den Aufrufer: seine Formate und die Berechtigungen des Aufrufers darin. Ein Repository, das der Aufrufer nicht sehen kann, antwortet mit 404, genau wie ein nicht vorhandenes; HEAD macht daraus eine günstige Zugriffsprüfung. Ein sichtbares Repository gewährt keinen Zugriff auf seinen Inhalt oder seine Einstellungen."
+    },
+    "listUploadParts": {
+      "en": {
+        "summary": "List the received parts of an upload",
+        "description": "Returns `partBytes`, the part size fixed for this upload when it was created (8 MiB, doubled for files that would need more than 10 000 parts; only the last part is shorter), and the parts already stored with their index, size and SHA-256. Read it before resuming an interrupted multipart upload and send only the missing parts with `putUploadPart`. Only the upload's creator sees it; for anyone else it is a 404."
+      },
+      "summary": "Empfangene Teile eines Uploads auflisten",
+      "description": "Liefert `partBytes`, die beim Anlegen des Uploads festgelegte Teilgröße (8 MiB, verdoppelt bei Dateien, die mehr als 10.000 Teile benötigen würden; nur das letzte Teil ist kürzer), sowie die bereits gespeicherten Teile mit Index, Größe und SHA-256. Lesen Sie die Liste, bevor Sie einen unterbrochenen Multipart-Upload fortsetzen, und senden Sie nur die fehlenden Teile mit `putUploadPart`. Nur der Ersteller des Uploads sieht sie; für alle anderen ist es ein 404."
+    },
+    "putUploadPart": {
+      "en": {
+        "summary": "Upload one part",
+        "description": "Stores the body as part `index` (from 0) of a pending multipart upload; its length must be exactly `partBytes` (from `listUploadParts`), or the remainder for the last part, and `X-Content-SHA256` must be the lowercase hex SHA-256 of these bytes, otherwise 422. Parts may arrive in any order, but an upload takes one request at a time (a concurrent one gets 503 `busy`); sending a part again with the same hash is safe, a different hash for an index already stored is a 409 `part_mismatch`. When every part is stored, call `completeUpload` or `enqueueCompletion`."
+      },
+      "summary": "Ein Teil hochladen",
+      "description": "Speichert den Body als Teil `index` (ab 0) eines ausstehenden Multipart-Uploads; seine Länge muss genau `partBytes` (aus `listUploadParts`) betragen, beim letzten Teil dem Rest, und `X-Content-SHA256` muss der SHA-256 dieser Bytes als Hexadezimalzahl in Kleinbuchstaben sein, sonst 422. Teile dürfen in beliebiger Reihenfolge eintreffen, doch ein Upload nimmt jeweils nur eine Anfrage entgegen (eine gleichzeitige erhält 503 `busy`); ein Teil mit demselben Hash erneut zu senden ist sicher, ein anderer Hash für einen bereits gespeicherten Index ergibt 409 `part_mismatch`. Sind alle Teile gespeichert, rufen Sie `completeUpload` oder `enqueueCompletion` auf."
+    },
+    "enqueueCompletion": {
+      "en": {
+        "summary": "Complete an upload in the background",
+        "description": "Queues the completion of a pending upload for the worker service instead of doing it in the request, and returns the job at once with 202; follow it with `getCompletionJob`. Calling it again for the same upload returns the same job, and a job that failed for a transient reason is queued again. A queued job does not mean the artifact is published: only `completed` does. 409 `upload_state` if the upload is no longer pending; 507 `queue_full` when the caller has 100 open jobs or the server 10 000."
+      },
+      "summary": "Upload im Hintergrund abschließen",
+      "description": "Stellt den Abschluss eines ausstehenden Uploads für den Worker-Dienst in die Warteschlange, statt ihn in der Anfrage auszuführen, und gibt den Job sofort mit 202 zurück; verfolgen Sie ihn mit `getCompletionJob`. Ein erneuter Aufruf für denselben Upload liefert denselben Job, und ein Job, der aus einem vorübergehenden Grund fehlgeschlagen ist, wird erneut eingereiht. Ein eingereihter Job bedeutet nicht, dass das Artefakt veröffentlicht ist: Das gilt erst bei `completed`. 409 `upload_state`, wenn der Upload nicht mehr aussteht; 507 `queue_full`, wenn der Aufrufer 100 offene Jobs hat oder der Server 10.000."
+    },
+    "getCompletionJob": {
+      "en": {
+        "summary": "Get a completion job",
+        "description": "Returns the state of a completion job queued with `enqueueCompletion`: `queued`, `running`, `completed` (the upload is published) or `failed` with an `errorCode`, plus the number of attempts. The worker tries up to five times with growing pauses; errors such as `integrity_mismatch` fail at once. Only the job's creator sees it; for anyone else it is a 404."
+      },
+      "summary": "Abschluss-Job abrufen",
+      "description": "Liefert den Zustand eines mit `enqueueCompletion` eingereihten Abschluss-Jobs: `queued`, `running`, `completed` (der Upload ist veröffentlicht) oder `failed` mit einem `errorCode`, dazu die Zahl der Versuche. Der Worker unternimmt bis zu fünf Versuche mit wachsenden Pausen; Fehler wie `integrity_mismatch` lassen den Job sofort fehlschlagen. Nur der Ersteller des Jobs sieht ihn; für alle anderen ist es ein 404."
+    },
+    "createUpload": {
+      "en": {
+        "summary": "Create an upload session",
+        "description": "Reserves an upload for one file described by `name`, `size` (a decimal string), `sha256` and optional `labels` and `metadata`; returns 201 with the session (`pending`, valid for 7 days) and its `Location`. `Idempotency-Key` (1–128 letters, digits and `_.:-`) is required: the same key with the same description returns the same session, with a different description it is a 409 `idempotency_mismatch`. The size is reserved against the repository quota and the server's capacity at once (507). Then send the bytes whole with `putUploadContent`, or in parts with `putUploadPart` and finish with `completeUpload`."
+      },
+      "summary": "Upload-Sitzung erstellen",
+      "description": "Reserviert einen Upload für eine Datei, die durch `name`, `size` (eine Dezimalzeichenfolge), `sha256` und optionale `labels` und `metadata` beschrieben wird; liefert 201 mit der Sitzung (`pending`, 7 Tage gültig) und ihrem Header `Location`. `Idempotency-Key` (1–128 Buchstaben, Ziffern und `_.:-`) ist erforderlich: Derselbe Schlüssel mit derselben Beschreibung liefert dieselbe Sitzung, mit einer anderen Beschreibung ergibt er 409 `idempotency_mismatch`. Die Größe wird sofort auf das Kontingent des Repositorys und die Kapazität des Servers angerechnet (507). Senden Sie die Bytes anschließend vollständig mit `putUploadContent` oder in Teilen mit `putUploadPart` und schließen Sie mit `completeUpload` ab."
+    },
+    "getUpload": {
+      "en": {
+        "summary": "Get an upload",
+        "description": "Returns the session with its `status` (`pending`, `available` once published, `cancelled`), its expiry and the declared descriptor. After a lost response to `putUploadContent` or `completeUpload`, read this first: `available` means the artifact is published under the same ID. Only the upload's creator sees it; for anyone else it is a 404."
+      },
+      "summary": "Upload abrufen",
+      "description": "Liefert die Sitzung mit ihrem `status` (`pending`, `available` nach der Veröffentlichung, `cancelled`), ihrem Ablaufzeitpunkt und dem angegebenen Deskriptor. Lesen Sie sie nach einer verlorenen Antwort auf `putUploadContent` oder `completeUpload` als Erstes: `available` bedeutet, dass das Artefakt unter derselben ID veröffentlicht ist. Nur der Ersteller des Uploads sieht sie; für alle anderen ist es ein 404."
+    },
+    "cancelUpload": {
+      "en": {
+        "summary": "Cancel an upload",
+        "description": "Cancels a pending upload and returns it with status `cancelled`; a published upload cannot be cancelled (409 `upload_state`). The received bytes are hidden at once but remain reserved against the quota until the repository's online cleanup (`setCleanup`, off by default) removes them after its grace period."
+      },
+      "summary": "Upload abbrechen",
+      "description": "Bricht einen ausstehenden Upload ab und liefert ihn mit dem Status `cancelled` zurück; ein veröffentlichter Upload lässt sich nicht abbrechen (409 `upload_state`). Die empfangenen Bytes werden sofort ausgeblendet, bleiben aber auf das Kontingent angerechnet, bis die Online-Bereinigung des Repositorys (`setCleanup`, standardmäßig aus) sie nach ihrer Karenzzeit entfernt."
+    },
+    "putUploadContent": {
+      "en": {
+        "summary": "Upload the whole file in one request",
+        "description": "Streams the request body as the complete content of a pending upload, checks it against the declared size and SHA-256 (422 on mismatch) and publishes the artifact; the answer is the upload with status `available`. An interrupted request leaves nothing to resume: read the upload with `getUpload`, then send the file again from byte zero. Not for an upload that already has parts (409 `upload_state`); one request must also finish within the server's upload deadline (30 minutes by default), so send large files in parts."
+      },
+      "summary": "Die ganze Datei in einer Anfrage hochladen",
+      "description": "Streamt den Request-Body als vollständigen Inhalt eines ausstehenden Uploads, prüft ihn gegen die angegebene Größe und den angegebenen SHA-256 (422 bei Abweichung) und veröffentlicht das Artefakt; die Antwort ist der Upload mit dem Status `available`. Eine unterbrochene Anfrage hinterlässt nichts, was sich fortsetzen ließe: Lesen Sie den Upload mit `getUpload` und senden Sie die Datei erneut ab Byte null. Nicht für einen Upload, der schon Teile hat (409 `upload_state`); außerdem muss eine Anfrage innerhalb der Upload-Frist des Servers (standardmäßig 30 Minuten) abgeschlossen sein, senden Sie große Dateien daher in Teilen."
+    },
+    "completeUpload": {
+      "en": {
+        "summary": "Complete an upload",
+        "description": "Assembles the stored parts in order, checks the whole file against the declared size and SHA-256 and publishes the artifact; returns the upload with status `available`. Calling it again for a published upload returns the same result, so it also recovers a completion whose answer was lost. A missing part is a 409 `parts_incomplete`, a content mismatch a 422; for very large files where the request might time out, use `enqueueCompletion` instead."
+      },
+      "summary": "Upload abschließen",
+      "description": "Setzt die gespeicherten Teile der Reihe nach zusammen, prüft die gesamte Datei gegen die angegebene Größe und den angegebenen SHA-256 und veröffentlicht das Artefakt; liefert den Upload mit dem Status `available`. Ein erneuter Aufruf für einen veröffentlichten Upload liefert dasselbe Ergebnis und holt damit auch einen Abschluss nach, dessen Antwort verloren ging. Ein fehlendes Teil ergibt 409 `parts_incomplete`, ein abweichender Inhalt 422; für sehr große Dateien, bei denen die Anfrage in ein Timeout laufen könnte, verwenden Sie stattdessen `enqueueCompletion`."
+    },
+    "getAnnotations": {
+      "en": {
+        "summary": "Get the annotations of an artifact",
+        "description": "Returns the current labels, metadata and collections of a published artifact with their `revision`. Revision 0 means they were never replaced: labels and metadata are those given when the upload was created, and collections are empty. Pass the revision to `setAnnotations` as `expectedRevision`."
+      },
+      "summary": "Annotationen eines Artefakts abrufen",
+      "description": "Liefert die aktuellen Labels, Metadaten und Sammlungen eines veröffentlichten Artefakts mit ihrer `revision`. Revision 0 bedeutet, dass sie nie ersetzt wurden: Labels und Metadaten sind die beim Anlegen des Uploads angegebenen, und die Sammlungen sind leer. Übergeben Sie die Revision an `setAnnotations` als `expectedRevision`."
+    },
+    "setAnnotations": {
+      "en": {
+        "summary": "Replace the annotations of an artifact",
+        "description": "Replaces `labels`, `metadata` and `collections` of a published artifact at once; a field left out of `value` becomes empty. `expectedRevision` must be the current revision (0 for the first change), otherwise 409 `revision_mismatch`: read the annotations again and reapply the change. Up to 32 labels and 32 collections (1–64 letters, digits or `_.:-`) and 32 metadata entries (values up to 1024 characters); the bytes and the original descriptor never change."
+      },
+      "summary": "Annotationen eines Artefakts ersetzen",
+      "description": "Ersetzt `labels`, `metadata` und `collections` eines veröffentlichten Artefakts auf einmal; ein in `value` weggelassenes Feld wird leer. `expectedRevision` muss die aktuelle Revision sein (0 für die erste Änderung), sonst 409 `revision_mismatch`: Lesen Sie die Annotationen erneut und wenden Sie die Änderung neu an. Bis zu 32 Labels und 32 Sammlungen (1–64 Buchstaben, Ziffern oder `_.:-`) sowie 32 Metadateneinträge (Werte bis zu 1024 Zeichen); die Bytes und der ursprüngliche Deskriptor ändern sich nie."
+    },
+    "registerPackage": {
+      "en": {
+        "summary": "Register an artifact as a UPack package",
+        "description": "Opens the published artifact as a UPack ZIP, reads the root `upack.json` (`name`, optional `group`, SemVer `version`) and registers that package version for it; unsafe or invalid archives are rejected with 400. A version is immutable: registering the same artifact again returns the same entry, another artifact for an existing group, name and version (compared without case) is a 409 `version_exists`. Afterwards the version appears in `listPackages` and resolves by name, range and stage."
+      },
+      "summary": "Artefakt als UPack-Paket registrieren",
+      "description": "Öffnet das veröffentlichte Artefakt als UPack-ZIP, liest die `upack.json` im Stammverzeichnis des Archivs (`name`, optional `group`, `version` nach SemVer) und registriert diese Paketversion dafür; unsichere oder ungültige Archive werden mit 400 abgelehnt. Eine Version ist unveränderlich: Dasselbe Artefakt erneut zu registrieren liefert denselben Eintrag, ein anderes Artefakt für eine vorhandene Kombination aus Gruppe, Name und Version (ohne Beachtung der Groß-/Kleinschreibung verglichen) ergibt 409 `version_exists`. Danach erscheint die Version in `listPackages` und wird nach Name, Versionsbereich und Stufe aufgelöst."
+    },
+    "searchArtifacts": {
+      "en": {
+        "summary": "Search artifacts",
+        "description": "Finds published artifacts by `q` (a case-insensitive substring of the name or of a current metadata value), an exact current `label`, a `collection`, and an exact `metadataKey`/`metadataValue` pair, which go together; all given filters must match. Results come in pages of 100 ordered by ID, each with size, creation and publication times, current labels and promotion stages; continue with `after` set to `next`. Metadata and collections are not returned: read them with `getAnnotations`."
+      },
+      "summary": "Artefakte suchen",
+      "description": "Findet veröffentlichte Artefakte anhand von `q` (einer Teilzeichenfolge des Namens oder eines aktuellen Metadatenwerts, ohne Beachtung der Groß-/Kleinschreibung), eines exakten aktuellen `label`, einer `collection` und eines exakten Paars `metadataKey`/`metadataValue`, die nur zusammen angegeben werden; alle angegebenen Filter müssen zutreffen. Die Ergebnisse kommen in Seiten zu 100, nach ID geordnet, jeweils mit Größe, Erstellungs- und Veröffentlichungszeit, aktuellen Labels und Hochstufungsstufen; weiter mit `after` = `next`. Metadaten und Sammlungen werden nicht zurückgegeben: Lesen Sie sie mit `getAnnotations`."
+    },
+    "getCatalogAudit": {
+      "en": {
+        "summary": "Read the catalog audit of a repository",
+        "description": "Returns, oldest first, up to 100 catalog changes of the repository after the sequence number `after` (default 0): publications, deletions, annotation and attachment changes, package registrations, file path changes, references, stages and promotions, each with actor, action, artifact and time. To read further, pass the last `sequence` of the page as `after`; there is no `next` field. Downloads and sign-ins are not in it; mirrors follow `listCatalogChanges`, which omits actors."
+      },
+      "summary": "Katalog-Audit eines Repositorys lesen",
+      "description": "Liefert, älteste zuerst, bis zu 100 Katalogänderungen des Repositorys nach der Sequenznummer `after` (Standard 0): Veröffentlichungen, Löschungen, Änderungen an Annotationen und Anhängen, Paketregistrierungen, Änderungen von Dateipfaden, Referenzen, Stufen und Hochstufungen, jeweils mit Akteur, Aktion, Artefakt und Zeit. Um weiterzulesen, übergeben Sie die letzte `sequence` der Seite als `after`; es gibt kein Feld `next`. Downloads und Anmeldungen sind darin nicht enthalten; Spiegel folgen `listCatalogChanges`, das die Akteure auslässt."
+    },
+    "addReference": {
+      "en": {
+        "summary": "Add a reference to an artifact",
+        "description": "Records that something outside Arkvory uses this artifact, under a `key` of your choice (1–256 letters, digits or `_.:/-`), for example a deployment name. A referenced artifact cannot be deleted or removed by retention until every reference is gone. The reference belongs to the caller; adding the same key again changes nothing."
+      },
+      "summary": "Referenz zu einem Artefakt hinzufügen",
+      "description": "Vermerkt, dass etwas außerhalb von Arkvory dieses Artefakt verwendet, unter einem frei gewählten `key` (1–256 Buchstaben, Ziffern oder `_.:/-`), zum Beispiel dem Namen einer Bereitstellung. Ein referenziertes Artefakt kann weder gelöscht noch durch die Aufbewahrungsregeln entfernt werden, solange noch eine Referenz besteht. Die Referenz gehört dem Aufrufer; denselben Schlüssel erneut hinzuzufügen ändert nichts."
+    },
+    "removeReference": {
+      "en": {
+        "summary": "Remove a reference from an artifact",
+        "description": "Removes the caller's own reference `key` from the artifact; references of other callers stay. Removing a key that is not there succeeds as well."
+      },
+      "summary": "Referenz von einem Artefakt entfernen",
+      "description": "Entfernt die eigene Referenz `key` des Aufrufers vom Artefakt; Referenzen anderer Aufrufer bleiben bestehen. Auch das Entfernen eines nicht vorhandenen Schlüssels ist erfolgreich."
+    },
+    "listArtifacts": {
+      "en": {
+        "summary": "List artifacts",
+        "description": "Lists the published artifacts of the repository ordered by ID, `limit` per page (1–100, default 50); continue with `after` set to `next`. `next` is set whenever a page is full, so the last page may be empty. Each item carries the descriptor given at upload; current labels and metadata are in `getAnnotations`."
+      },
+      "summary": "Artefakte auflisten",
+      "description": "Listet die veröffentlichten Artefakte des Repositorys nach ID geordnet auf, `limit` pro Seite (1–100, Standard 50); weiter mit `after` = `next`. `next` ist gesetzt, sobald eine Seite voll ist, daher kann die letzte Seite leer sein. Jeder Eintrag enthält den beim Upload angegebenen Deskriptor; aktuelle Labels und Metadaten stehen in `getAnnotations`."
+    },
+    "getArtifact": {
+      "en": {
+        "summary": "Get an artifact",
+        "description": "Returns a published artifact: its ID, repository, status, creation time and the descriptor given at upload (name, size, SHA-256, original labels and metadata). Pending, cancelled and deleted artifacts answer 404. To read the bytes use `downloadArtifact`."
+      },
+      "summary": "Artefakt abrufen",
+      "description": "Liefert ein veröffentlichtes Artefakt: seine ID, das Repository, den Status, die Erstellungszeit und den beim Upload angegebenen Deskriptor (Name, Größe, SHA-256, ursprüngliche Labels und Metadaten). Ausstehende, abgebrochene und gelöschte Artefakte antworten mit 404. Die Bytes lesen Sie mit `downloadArtifact`."
+    },
+    "deleteArtifact": {
+      "en": {
+        "summary": "Delete an artifact",
+        "description": "Logically deletes a published artifact: it disappears from lists, searches and downloads at once, and its bytes are reclaimed by the repository's online cleanup (`setCleanup`, off by default) after its grace period. `expectedAnnotationRevision` must equal the current annotation revision. The answer is 200 with an `outcome`: `deleted`, `already_deleted`, `changed` (the revision differs), `not_found`, or `protected` with the `blockers` that keep it (a reference, a file path revision, a build attachment or a promotion stage). Check beforehand with `inspectArtifactDeletion`."
+      },
+      "summary": "Artefakt löschen",
+      "description": "Löscht ein veröffentlichtes Artefakt logisch: Es verschwindet sofort aus Listen, Suchen und Downloads, und seine Bytes werden nach der Karenzzeit von der Online-Bereinigung des Repositorys (`setCleanup`, standardmäßig aus) freigegeben. `expectedAnnotationRevision` muss der aktuellen Annotationsrevision entsprechen. Die Antwort ist 200 mit einem `outcome`: `deleted`, `already_deleted`, `changed` (die Revision weicht ab), `not_found` oder `protected` mit den `blockers`, die es zurückhalten (eine Referenz, eine Revision eines Dateipfads, ein Build-Anhang oder eine Hochstufungsstufe). Prüfen Sie vorab mit `inspectArtifactDeletion`."
+    },
+    "downloadArtifact": {
+      "en": {
+        "summary": "Download an artifact",
+        "description": "Streams the original bytes with `Content-Length`, `Content-Disposition` (the artifact name) and a strong `ETag` (`\"sha256:<hex>\"`). A single `Range` gives 206 (an unsatisfiable one 416); `If-Range` with the ETag resumes safely, and `If-None-Match` answers 304. HEAD returns the same headers without a body and ignores `Range`. Instead of an `Authorization` header the request may carry a download link from `createDownloadLink` as `token`; downloads wait for a free slot of the server's download admission."
+      },
+      "summary": "Artefakt herunterladen",
+      "description": "Streamt die Originalbytes mit `Content-Length`, `Content-Disposition` (dem Artefaktnamen) und einem starken `ETag` (`\"sha256:<hex>\"`). Ein einzelner `Range`-Header ergibt 206 (ein nicht erfüllbarer 416); `If-Range` mit dem ETag setzt den Download sicher fort, und `If-None-Match` ergibt 304. HEAD liefert dieselben Header ohne Body und ignoriert `Range`. Statt eines `Authorization`-Headers kann die Anfrage einen Download-Link aus `createDownloadLink` als `token` tragen; Downloads warten auf einen freien Slot der Download-Zulassung des Servers."
+    },
+    "listCatalogChanges": {
+      "en": {
+        "summary": "Follow the change feed of a repository",
+        "description": "Returns, in commit order, up to `limit` changes (1–100, default 100) after the sequence `after` (default 0): action, artifact and, for file paths and stages, the path or stage in `detail`; actors are left out, so list access is enough. `head` is the newest sequence of the repository, `next` the cursor of the following page or null when the page reached the head. A mirror stores the last sequence it applied and polls from there."
+      },
+      "summary": "Änderungsfeed eines Repositorys verfolgen",
+      "description": "Liefert in Commit-Reihenfolge bis zu `limit` Änderungen (1–100, Standard 100) nach der Sequenz `after` (Standard 0): Aktion, Artefakt und, bei Dateipfaden und Stufen, den Pfad oder die Stufe in `detail`; Akteure werden ausgelassen, daher genügt Listenzugriff. `head` ist die neueste Sequenz des Repositorys, `next` der Cursor der folgenden Seite oder null, wenn die Seite den neuesten Stand erreicht hat. Ein Spiegel speichert die zuletzt angewendete Sequenz und fragt von dort aus zyklisch ab."
+    },
+    "createDownloadLink": {
+      "en": {
+        "summary": "Create a download link",
+        "description": "Returns a secret `token`, a `url` relative to the API origin and `expiresAt` for `downloadArtifact` of this one artifact without a key; `ttlSeconds` sets the lifetime (60 seconds to one day, default one hour). The token is shown only in this answer and cannot be revoked: it stops working when it expires or the artifact is deleted, and downloads through it count against the creator's transfer limits. A caller may hold 1000 live links (507 `token_limit`), and a download link cannot create further links."
+      },
+      "summary": "Download-Link erstellen",
+      "description": "Liefert ein geheimes `token`, eine `url` relativ zum API-Origin und `expiresAt` für `downloadArtifact` genau dieses einen Artefakts ohne Schlüssel; `ttlSeconds` legt die Lebensdauer fest (60 Sekunden bis ein Tag, Standard eine Stunde). Das Token wird nur in dieser Antwort angezeigt und lässt sich nicht widerrufen: Es funktioniert nicht mehr, wenn es abläuft oder das Artefakt gelöscht wird, und Downloads damit werden auf die Transferlimits des Erstellers angerechnet. Ein Aufrufer darf 1000 aktive Links besitzen (507 `token_limit`), und ein Download-Link kann keine weiteren Links erstellen."
+    },
+    "listPackages": {
+      "en": {
+        "summary": "List package versions",
+        "description": "Lists the registered UPack versions with their manifests, filtered by `group` and `name` (exact, ignoring case; `group=` with an empty value selects the root group, leaving it out selects all groups). `sort` (`group`, `name`, `version`), `direction` (`asc`, `desc`) and `groupBy` (`none`, `group`, `package`, which adds `groups` listing the `artifactIds` of the page) shape the result. Pages hold `limit` items (1–100, default 50); continue with `after` set to `next` and the same filters. Pages are not a snapshot: versions registered in between can be missed until the next pass."
+      },
+      "summary": "Paketversionen auflisten",
+      "description": "Listet die registrierten UPack-Versionen mit ihren Manifesten auf, gefiltert nach `group` und `name` (exakt, ohne Beachtung der Groß-/Kleinschreibung; `group=` mit leerem Wert wählt die Stammgruppe, ohne den Parameter werden alle Gruppen gewählt). `sort` (`group`, `name`, `version`), `direction` (`asc`, `desc`) und `groupBy` (`none`, `group`, `package`, was `groups` mit den `artifactIds` der Seite hinzufügt) bestimmen das Ergebnis. Seiten enthalten `limit` Einträge (1–100, Standard 50); weiter mit `after` = `next` und denselben Filtern. Seiten sind kein Snapshot: Zwischenzeitlich registrierte Versionen können bis zum nächsten Durchlauf fehlen."
+    },
+    "downloadPackageContent": {
+      "en": {
+        "summary": "Download a package by name and version",
+        "description": "Resolves `name` (in `group`, the root group by default) to one registered version and streams it like `downloadArtifact`; `X-Arkvory-Artifact-Id` and `X-Arkvory-Package-Version` name the choice. Select by exact `version` or SemVer `range` (such as `^1.4` or `>=1.0.0 <2.0.0`), optionally only versions with `stage`; without either it takes the highest stable version, `prerelease=true` admits prereleases and `order=promoted` takes the version most recently given `stage`. The name is resolved on every request, so resume with `If-Range` set to the returned ETag, or download by artifact ID; `resolvePackage` gives the same choice without the bytes."
+      },
+      "summary": "Paket nach Name und Version herunterladen",
+      "description": "Löst `name` (in `group`, standardmäßig die Stammgruppe) zu genau einer registrierten Version auf und streamt sie wie `downloadArtifact`; `X-Arkvory-Artifact-Id` und `X-Arkvory-Package-Version` nennen die getroffene Wahl. Wählen Sie über die exakte `version` oder einen SemVer-Bereich `range` (etwa `^1.4` oder `>=1.0.0 <2.0.0`), optional nur Versionen mit `stage`; ohne beides wird die höchste stabile Version genommen, `prerelease=true` lässt Vorabversionen zu und `order=promoted` nimmt die Version, die zuletzt die Stufe `stage` erhalten hat. Der Name wird bei jeder Anfrage aufgelöst; setzen Sie einen Download daher mit `If-Range` auf den zurückgegebenen ETag fort oder laden Sie über die Artefakt-ID herunter; `resolvePackage` liefert dieselbe Auswahl ohne die Bytes."
+    },
+    "listAssets": {
+      "en": {
+        "summary": "List file paths by prefix",
+        "description": "Returns every file path that starts with `prefix` (literal, not a pattern; empty for all), ordered by path, each with its current revision and artifact ID. There is no paging: more than 1000 matches is a 400 asking for a narrower prefix, so prefer `listAssetPage` for large trees."
+      },
+      "summary": "Dateipfade nach Präfix auflisten",
+      "description": "Liefert jeden Dateipfad, der mit `prefix` beginnt (wörtlich, kein Muster; leer für alle), nach Pfad geordnet, jeweils mit aktueller Revision und Artefakt-ID. Es gibt keine Seitenaufteilung: Mehr als 1000 Treffer ergeben 400 mit der Aufforderung, ein engeres Präfix zu wählen; verwenden Sie daher für große Bäume besser `listAssetPage`."
+    },
+    "listAssetPage": {
+      "en": {
+        "summary": "List file paths page by page",
+        "description": "Returns the current file paths that start with `prefix` (literal; empty for all) in UTF-8 byte order, each with its current revision and artifact ID. Pages hold `limit` items (1–100, default 50); continue with `after` set to the opaque `next`. Pages are not a snapshot: paths changed between requests can appear with their newer revision or be missed until the next pass."
+      },
+      "summary": "Dateipfade seitenweise auflisten",
+      "description": "Liefert die aktuellen Dateipfade, die mit `prefix` beginnen (wörtlich; leer für alle), in UTF-8-Byte-Reihenfolge, jeweils mit aktueller Revision und Artefakt-ID. Seiten enthalten `limit` Einträge (1–100, Standard 50); weiter mit `after` = dem opaken `next`. Seiten sind kein Snapshot: Zwischenzeitlich geänderte Pfade können mit ihrer neueren Revision erscheinen oder bis zum nächsten Durchlauf fehlen."
+    },
+    "getAsset": {
+      "en": {
+        "summary": "Get the current revision of a file path",
+        "description": "Returns the current `revision` of `path` and the ID of the artifact it points to; an unknown path is a 404. A path has 1–1024 characters in `/`-separated segments, without empty, `.` or `..` segments, `\\`, `:` or control characters. Download the bytes with `downloadAssetContent`, or pass the revision to `setAsset` as `expectedRevision`."
+      },
+      "summary": "Aktuelle Revision eines Dateipfads abrufen",
+      "description": "Liefert die aktuelle `revision` von `path` und die ID des Artefakts, auf das er verweist; ein unbekannter Pfad ergibt 404. Ein Pfad hat 1–1024 Zeichen in durch `/` getrennten Segmenten, ohne leere Segmente, ohne `.`- oder `..`-Segmente und ohne `\\`, `:` oder Steuerzeichen. Laden Sie die Bytes mit `downloadAssetContent` herunter oder übergeben Sie die Revision an `setAsset` als `expectedRevision`."
+    },
+    "setAsset": {
+      "en": {
+        "summary": "Point a file path at an artifact",
+        "description": "Makes `path` name a published artifact of the same repository as its new revision; `expectedRevision` is 0 to create the path and the current revision to replace it, otherwise 409 `revision_mismatch`. Earlier revisions stay in the history and keep their artifacts from being deleted. To store bytes and name them in one request, use `putRawFile`."
+      },
+      "summary": "Einen Dateipfad auf ein Artefakt verweisen lassen",
+      "description": "Lässt `path` ein veröffentlichtes Artefakt desselben Repositorys als seine neue Revision bezeichnen; `expectedRevision` ist 0, um den Pfad anzulegen, und die aktuelle Revision, um ihn zu ersetzen, sonst 409 `revision_mismatch`. Frühere Revisionen bleiben im Verlauf und schützen ihre Artefakte vor dem Löschen. Um Bytes zu speichern und in einer Anfrage zu benennen, verwenden Sie `putRawFile`."
+    },
+    "getAssetHistory": {
+      "en": {
+        "summary": "List the revisions of a file path",
+        "description": "Returns the revisions of `path`, newest first, 50 per page, each with its artifact, the actor, the time and, for a restore, the `sourceRevision` it copied (actor and time are null for revisions recorded by early server versions). Continue with `before` set to `next`. An unknown path is a 404."
+      },
+      "summary": "Revisionen eines Dateipfads auflisten",
+      "description": "Liefert die Revisionen von `path`, neueste zuerst, 50 pro Seite, jeweils mit ihrem Artefakt, dem Akteur, der Zeit und, bei einer Wiederherstellung, der kopierten `sourceRevision` (Akteur und Zeit sind null bei Revisionen, die frühe Serverversionen aufgezeichnet haben). Weiter mit `before` = `next`. Ein unbekannter Pfad ergibt 404."
+    },
+    "getAssetRevision": {
+      "en": {
+        "summary": "Get one revision of a file path",
+        "description": "Returns revision `revision` of `path` with its artifact ID, actor, time and restore source. Revisions never change, so the artifact ID can be cached; download it with `downloadArtifact`. A missing path or revision is a 404."
+      },
+      "summary": "Eine Revision eines Dateipfads abrufen",
+      "description": "Liefert die Revision `revision` von `path` mit Artefakt-ID, Akteur, Zeit und Quelle der Wiederherstellung. Revisionen ändern sich nie, daher lässt sich die Artefakt-ID zwischenspeichern; laden Sie das Artefakt mit `downloadArtifact` herunter. Ein fehlender Pfad oder eine fehlende Revision ergibt 404."
+    },
+    "restoreAsset": {
+      "en": {
+        "summary": "Restore an earlier revision of a file path",
+        "description": "Adds a new revision of `path` that points at the artifact of `sourceRevision`; nothing is copied and no revision is removed. `expectedRevision` must be the current revision (at least 1), otherwise 409 `revision_mismatch` — so repeating a restore that already succeeded is a 409, not a second restore. The new revision records `sourceRevision`, and the change is audited in the same transaction."
+      },
+      "summary": "Eine frühere Revision eines Dateipfads wiederherstellen",
+      "description": "Fügt eine neue Revision von `path` hinzu, die auf das Artefakt von `sourceRevision` verweist; nichts wird kopiert und keine Revision entfernt. `expectedRevision` muss die aktuelle Revision sein (mindestens 1), sonst 409 `revision_mismatch` – daher ist die Wiederholung einer bereits erfolgreichen Wiederherstellung ein 409 und keine zweite Wiederherstellung. Die neue Revision hält `sourceRevision` fest, und die Änderung wird in derselben Transaktion im Audit protokolliert."
+    },
+    "downloadAssetContent": {
+      "en": {
+        "summary": "Download a file by path",
+        "description": "Resolves `path` to its current revision and streams that artifact like `downloadArtifact`, with `Range`, `If-Range`, `If-None-Match` and HEAD. The path is resolved on every request, so resume with `If-Range` set to the returned ETag: after the path moved on, the answer is the whole new file instead of a mixed one. `downloadRawFile` does the same with the path in the URL."
+      },
+      "summary": "Datei nach Pfad herunterladen",
+      "description": "Löst `path` zu seiner aktuellen Revision auf und streamt dieses Artefakt wie `downloadArtifact`, mit `Range`, `If-Range`, `If-None-Match` und HEAD. Der Pfad wird bei jeder Anfrage aufgelöst; setzen Sie einen Download daher mit `If-Range` auf den zurückgegebenen ETag fort: Hat sich der Pfad inzwischen weiterbewegt, ist die Antwort die gesamte neue Datei statt einer Mischung aus beiden. `downloadRawFile` leistet dasselbe mit dem Pfad in der URL."
+    },
+    "putRawFile": {
+      "en": {
+        "summary": "Upload a file to a path in one request",
+        "description": "Stores the request body, of any media type, as the new revision of the path in the URL, for scripts and CI (`curl -T`); the answer is 201 with the path, revision and artifact. With `X-Checksum-Sha256` and `Content-Length` the bytes stream straight to storage and are verified; without them they are staged and hashed first (422 if the body does not match a given checksum). The same bytes as the current revision add nothing and answer 200 with `created: false`, `If-None-Match: *` only creates (409 `already_exists`), and a concurrent writer of the same path gets 409 `revision_mismatch`. For very large files prefer the resumable upload sessions."
+      },
+      "summary": "Eine Datei in einer Anfrage in einen Pfad hochladen",
+      "description": "Speichert den Request-Body beliebigen Medientyps als neue Revision des Pfads in der URL, für Skripte und CI (`curl -T`); die Antwort ist 201 mit Pfad, Revision und Artefakt. Mit `X-Checksum-Sha256` und `Content-Length` werden die Bytes direkt in den Speicher gestreamt und geprüft; ohne sie werden sie zunächst zwischengespeichert und gehasht (422, wenn der Body nicht zu einer angegebenen Prüfsumme passt). Dieselben Bytes wie in der aktuellen Revision fügen nichts hinzu und ergeben 200 mit `created: false`, `If-None-Match: *` legt ausschließlich an (409 `already_exists`), und ein gleichzeitiger Schreiber desselben Pfads erhält 409 `revision_mismatch`. Für sehr große Dateien sind die fortsetzbaren Upload-Sitzungen vorzuziehen."
+    },
+    "downloadRawFile": {
+      "en": {
+        "summary": "Download a file by its URL path",
+        "description": "Streams the current revision of the path in the URL like `downloadArtifact`, with `Range`, `If-Range`, `If-None-Match`, HEAD and `X-Arkvory-Artifact-Id` naming the artifact. The path is resolved on every request, so resume with `If-Range` set to the returned ETag, or download the artifact by ID."
+      },
+      "summary": "Datei über ihren URL-Pfad herunterladen",
+      "description": "Streamt die aktuelle Revision des Pfads in der URL wie `downloadArtifact`, mit `Range`, `If-Range`, `If-None-Match`, HEAD und `X-Arkvory-Artifact-Id`, das das Artefakt nennt. Der Pfad wird bei jeder Anfrage aufgelöst; setzen Sie einen Download daher mit `If-Range` auf den zurückgegebenen ETag fort oder laden Sie das Artefakt über die ID herunter."
+    },
+    "listArtifactStages": {
+      "en": {
+        "summary": "List the stages of an artifact",
+        "description": "Returns the current promotion stages of a published artifact (at most 16), each with the time it was added, the actor and the comment."
+      },
+      "summary": "Stufen eines Artefakts auflisten",
+      "description": "Liefert die aktuellen Hochstufungsstufen eines veröffentlichten Artefakts (höchstens 16), jeweils mit dem Zeitpunkt des Hinzufügens, dem Akteur und dem Kommentar."
+    },
+    "setArtifactStage": {
+      "en": {
+        "summary": "Add a stage to an artifact",
+        "description": "Marks a published artifact with `stage` (1–32 lower-case letters, digits or `_.-`, starting with a letter or digit), with an optional `comment` of up to 1024 characters, and records the event in the promotion journal. Adding a stage the artifact already has changes nothing and keeps the original time, so to promote the same version again (for a rollback with `order=promoted`) remove the stage first. An artifact has at most 16 stages (409 `stage_limit`)."
+      },
+      "summary": "Einem Artefakt eine Stufe hinzufügen",
+      "description": "Markiert ein veröffentlichtes Artefakt mit `stage` (1–32 Kleinbuchstaben, Ziffern oder `_.-`, beginnend mit einem Buchstaben oder einer Ziffer), optional mit einem `comment` von bis zu 1024 Zeichen, und hält das Ereignis im Hochstufungsjournal fest. Eine Stufe hinzuzufügen, die das Artefakt bereits hat, ändert nichts und behält den ursprünglichen Zeitpunkt; um dieselbe Version erneut hochzustufen (für ein Rollback mit `order=promoted`), entfernen Sie die Stufe zuerst. Ein Artefakt hat höchstens 16 Stufen (409 `stage_limit`)."
+    },
+    "removeArtifactStage": {
+      "en": {
+        "summary": "Remove a stage from an artifact",
+        "description": "Removes `stage` from a published artifact and records the event in the promotion journal; removing a stage the artifact does not have succeeds too. Package resolution by this stage stops choosing the artifact at once."
+      },
+      "summary": "Eine Stufe von einem Artefakt entfernen",
+      "description": "Entfernt `stage` von einem veröffentlichten Artefakt und hält das Ereignis im Hochstufungsjournal fest; auch das Entfernen einer Stufe, die das Artefakt nicht hat, ist erfolgreich. Die Paketauflösung nach dieser Stufe wählt das Artefakt sofort nicht mehr."
+    },
+    "listArtifactPromotions": {
+      "en": {
+        "summary": "List the promotion history of an artifact",
+        "description": "Returns the journal of one artifact, oldest first: stages added and removed, promotions to and from other repositories with the peer artifact, actor, comment and time. Pages hold `limit` events (1–100, default 50); continue with `after` set to `next`."
+      },
+      "summary": "Hochstufungsverlauf eines Artefakts auflisten",
+      "description": "Liefert das Journal eines Artefakts, älteste zuerst: hinzugefügte und entfernte Stufen sowie Hochstufungen in andere Repositorys und aus ihnen, mit dem Gegenartefakt, Akteur, Kommentar und Zeit. Seiten enthalten `limit` Ereignisse (1–100, Standard 50); weiter mit `after` = `next`."
+    },
+    "promoteArtifact": {
+      "en": {
+        "summary": "Promote an artifact to another repository",
+        "description": "Publishes the artifact in `target` without sending the bytes again, optionally with `stages` and a `comment`; the caller also needs `artifact.promote` in the target. `mode` `copy` (default) keeps the source; `move`, which needs `artifact.promote` here as well, retires the source in the same transaction, carries its stages over and is refused with 409 when the source cannot be deleted. The answer is 201 with the copy; a repeat returns the same copy with 200, and a target that already has this package version returns that artifact when the SHA-256 matches and a 409 `version_exists` when it does not. Build attachments and file paths are not carried over."
+      },
+      "summary": "Ein Artefakt in ein anderes Repository hochstufen",
+      "description": "Veröffentlicht das Artefakt in `target`, ohne die Bytes erneut zu senden, optional mit `stages` und einem `comment`; der Aufrufer benötigt außerdem `artifact.promote` im Ziel. Bei `mode` `copy` (Standard) bleibt die Quelle erhalten; `move`, das auch hier `artifact.promote` verlangt, mustert die Quelle in derselben Transaktion aus, übernimmt ihre Stufen und wird mit 409 abgelehnt, wenn die Quelle nicht gelöscht werden kann. Die Antwort ist 201 mit der Kopie; eine Wiederholung liefert dieselbe Kopie mit 200, und ein Ziel, das diese Paketversion bereits hat, liefert dieses Artefakt, wenn der SHA-256 übereinstimmt, und 409 `version_exists`, wenn nicht. Build-Anhänge und Dateipfade werden nicht übernommen."
+    },
+    "listStagedArtifacts": {
+      "en": {
+        "summary": "List artifacts with stages",
+        "description": "Lists the stage entries of the repository (artifact, stage, time, actor, comment) ordered by artifact and stage, optionally only `stage`, or only the artifacts in `ids` (1–100 comma-separated IDs, for example to show the stages of a page of packages at once). Pages hold `limit` entries (1–100, default 100); continue with `after` set to `next` (`<artifactId>/<stage>`)."
+      },
+      "summary": "Artefakte mit Stufen auflisten",
+      "description": "Listet die Stufeneinträge des Repositorys (Artefakt, Stufe, Zeit, Akteur, Kommentar) nach Artefakt und Stufe geordnet auf, optional nur für die Stufe `stage` oder nur für die Artefakte in `ids` (1–100 durch Komma getrennte IDs, etwa um die Stufen einer Seite von Paketen auf einmal anzuzeigen). Seiten enthalten `limit` Einträge (1–100, Standard 100); weiter mit `after` = `next` (`<artifactId>/<stage>`)."
+    },
+    "listRepositoryPromotions": {
+      "en": {
+        "summary": "Follow the promotion journal of a repository",
+        "description": "Returns the stage and promotion events of every artifact in the repository, oldest first, for CI/CD to poll: stage added or removed, promoted to another repository, received from one. Pages hold `limit` events (1–100, default 50); store the last `sequence` and continue with `after` set to `next`."
+      },
+      "summary": "Hochstufungsjournal eines Repositorys verfolgen",
+      "description": "Liefert die Stufen- und Hochstufungsereignisse jedes Artefakts im Repository, älteste zuerst, zum Abfragen durch CI/CD: Stufe hinzugefügt oder entfernt, in ein anderes Repository hochgestuft, aus einem anderen erhalten. Seiten enthalten `limit` Ereignisse (1–100, Standard 50); merken Sie sich die letzte `sequence` und fahren Sie mit `after` = `next` fort."
+    },
+    "resolvePackage": {
+      "en": {
+        "summary": "Resolve a package version",
+        "description": "Chooses one registered UPack version by the same rules as `downloadPackageContent` and returns it without the bytes: version, artifact ID, SHA-256, size, publication time and current stages. `name` is required, `group` defaults to the root group; select by exact `version` or SemVer `range`, optionally `stage`, `prerelease=true` and `order=promoted` (needs `stage`); without `version` and `range` it is the highest stable version. No match is a 404; download the result by artifact ID to stay on that version."
+      },
+      "summary": "Paketversion auflösen",
+      "description": "Wählt nach denselben Regeln wie `downloadPackageContent` genau eine registrierte UPack-Version und liefert sie ohne die Bytes zurück: Version, Artefakt-ID, SHA-256, Größe, Veröffentlichungszeit und aktuelle Stufen. `name` ist erforderlich, `group` ist standardmäßig die Stammgruppe; wählen Sie über die exakte `version` oder einen SemVer-Bereich `range`, optional `stage`, `prerelease=true` und `order=promoted` (erfordert `stage`); ohne `version` und `range` ist es die höchste stabile Version. Kein Treffer ergibt 404; laden Sie das Ergebnis über die Artefakt-ID herunter, um bei dieser Version zu bleiben."
+    },
+    "inspectArtifactDeletion": {
+      "en": {
+        "summary": "Check whether an artifact can be deleted",
+        "description": "Returns the artifact's name, size, publication time, current `annotationRevision` and the `blockers` that would keep it from deletion: `reference` (an external reference, or use by a container image, Git LFS or npm), `asset_history` (a current or earlier file path revision), `attachment_history` or `promotion_stage`. Nothing changes; pass the revision to `deleteArtifact` as `expectedAnnotationRevision`."
+      },
+      "summary": "Prüfen, ob ein Artefakt gelöscht werden kann",
+      "description": "Liefert Name, Größe, Veröffentlichungszeit und aktuelle `annotationRevision` des Artefakts sowie die `blockers`, die das Löschen verhindern würden: `reference` (eine externe Referenz oder die Verwendung durch ein Container-Image, Git LFS oder npm), `asset_history` (eine aktuelle oder frühere Revision eines Dateipfads), `attachment_history` oder `promotion_stage`. Nichts wird geändert; übergeben Sie die Revision an `deleteArtifact` als `expectedAnnotationRevision`."
+    },
+    "previewRetention": {
+      "en": {
+        "summary": "Preview retention candidates",
+        "description": "Lists the published artifacts released before `criteria.publishedBefore` (a past UTC time with milliseconds), ordered by ID, each with its annotation revision and blockers, `protected_label` meaning one of `criteria.protectedLabels` (an explicit list of up to 32). Pages hold `limit` items (1–100, default 50); continue with `after` set to `next`. Nothing is reserved: choose the items to delete and pass them with their revisions to `applyRetention`, which checks them again."
+      },
+      "summary": "Kandidaten der Aufbewahrung in der Vorschau anzeigen",
+      "description": "Listet die veröffentlichten Artefakte auf, die vor `criteria.publishedBefore` veröffentlicht wurden (ein vergangener UTC-Zeitpunkt mit Millisekunden), nach ID geordnet, jeweils mit ihrer Annotationsrevision und ihren Blockern; `protected_label` bedeutet eines der `criteria.protectedLabels` (eine explizite Liste mit bis zu 32 Einträgen). Seiten enthalten `limit` Einträge (1–100, Standard 50); weiter mit `after` = `next`. Nichts wird reserviert: Wählen Sie die zu löschenden Einträge aus und übergeben Sie sie mit ihren Revisionen an `applyRetention`, das sie erneut prüft."
+    },
+    "applyRetention": {
+      "en": {
+        "summary": "Delete the selected retention candidates",
+        "description": "Rechecks 1–100 artifacts chosen from `previewRetention` (`items` with `id` and `expectedAnnotationRevision`) against the same `criteria` and logically deletes the eligible ones in one transaction. Each item gets an `outcome`: `deleted`, `already_deleted`, `changed` (the annotations changed), `not_eligible` (published too late), `protected` with its blockers, or `not_found`. The bytes stay reserved until the repository's online cleanup reclaims them."
+      },
+      "summary": "Ausgewählte Kandidaten der Aufbewahrung löschen",
+      "description": "Prüft 1–100 aus `previewRetention` gewählte Artefakte (`items` mit `id` und `expectedAnnotationRevision`) erneut gegen dieselben `criteria` und löscht die infrage kommenden in einer Transaktion logisch. Jeder Eintrag erhält ein `outcome`: `deleted`, `already_deleted`, `changed` (die Annotationen haben sich geändert), `not_eligible` (zu spät veröffentlicht), `protected` mit seinen Blockern oder `not_found`. Die Bytes bleiben reserviert, bis die Online-Bereinigung des Repositorys sie freigibt."
+    },
+    "getStoragePolicy": {
+      "en": {
+        "summary": "Get the storage policy",
+        "description": "Returns the repository's automatic cleanup and quota settings with their `revision`, the next and last scheduled run, how many builds the last run deleted and its error. By default the policy is disabled and there is no repository quota (the server-wide capacity still applies)."
+      },
+      "summary": "Speicherrichtlinie abrufen",
+      "description": "Liefert die Einstellungen der automatischen Bereinigung und des Kontingents des Repositorys mit ihrer `revision`, den nächsten und den letzten geplanten Lauf, wie viele Builds der letzte Lauf gelöscht hat, und dessen Fehler. Standardmäßig ist die Richtlinie deaktiviert, und es gibt kein Kontingent für das Repository (die serverweite Kapazität gilt weiterhin)."
+    },
+    "setStoragePolicy": {
+      "en": {
+        "summary": "Replace the storage policy",
+        "description": "Replaces the whole policy: keep the last `keepLast` registered UPack builds per package, per channel label (`channels`) or per repository (`grouping`), never delete `protectedLabels` or builds younger than `minAgeHours`, run every `intervalMinutes`, and limit the repository with `quotaBytes` (a decimal string, `null` for none) and its warning thresholds. `expectedRevision` must be the current revision, otherwise 409 `revision_mismatch`. Enabling also needs `artifact.delete` and ties the schedule to the calling managed key: once that key is revoked, expires or loses these permissions, scheduled deletion stops until the policy is saved with another key. Ordinary files count against the quota but are never deleted by it."
+      },
+      "summary": "Speicherrichtlinie ersetzen",
+      "description": "Ersetzt die gesamte Richtlinie: Behalten werden die letzten `keepLast` registrierten UPack-Builds je Paket, je Kanal-Label (`channels`) oder je Repository (`grouping`); `protectedLabels` und Builds, die jünger als `minAgeHours` sind, werden nie gelöscht; der Lauf erfolgt alle `intervalMinutes`, und das Repository wird mit `quotaBytes` (eine Dezimalzeichenfolge, `null` für keines) und seinen Warnschwellen begrenzt. `expectedRevision` muss die aktuelle Revision sein, sonst 409 `revision_mismatch`. Das Aktivieren erfordert außerdem `artifact.delete` und bindet den Zeitplan an den aufrufenden verwalteten Schlüssel: Wird dieser Schlüssel widerrufen, läuft er ab oder verliert er diese Berechtigungen, stoppt das geplante Löschen, bis die Richtlinie mit einem anderen Schlüssel gespeichert wird. Gewöhnliche Dateien zählen auf das Kontingent, werden von ihm aber nie gelöscht."
+    },
+    "getStorageUsage": {
+      "en": {
+        "summary": "Get the storage usage of a repository",
+        "description": "Returns the bytes reserved by the repository as decimal strings: published, pending uploads and retired (deleted or cancelled, not yet reclaimed), their sum `reservedBytes`, the quota and a `state` (`unlimited`, `normal`, `warning`, `critical`, `exceeded`). This is the logical reservation counted against the quota, not the space used on disk."
+      },
+      "summary": "Speichernutzung eines Repositorys abrufen",
+      "description": "Liefert die vom Repository reservierten Bytes als Dezimalzeichenfolgen: veröffentlicht, ausstehende Uploads und ausgemustert (gelöscht oder abgebrochen, noch nicht freigegeben), ihre Summe `reservedBytes`, das Kontingent und einen `state` (`unlimited`, `normal`, `warning`, `critical`, `exceeded`). Das ist die logische Reservierung, die auf das Kontingent angerechnet wird, nicht der auf dem Datenträger belegte Platz."
+    },
+    "previewStoragePolicy": {
+      "en": {
+        "summary": "Preview what the storage policy would delete",
+        "description": "Returns up to 100 registered builds the saved policy would delete now (even while it is disabled), with the policy `revision` and `hasMore`; builds kept by references, file paths, attachments, protected labels or age are left out. Nothing is reserved: a run ranks the builds again."
+      },
+      "summary": "Vorschau anzeigen, was die Speicherrichtlinie löschen würde",
+      "description": "Liefert bis zu 100 registrierte Builds, die die gespeicherte Richtlinie jetzt löschen würde (auch wenn sie deaktiviert ist), mit der `revision` der Richtlinie und `hasMore`; Builds, die durch Referenzen, Dateipfade, Anhänge, geschützte Labels oder ihr Alter gehalten werden, sind ausgelassen. Nichts wird reserviert: Ein Lauf ermittelt die Rangfolge der Builds neu."
+    },
+    "runStoragePolicy": {
+      "en": {
+        "summary": "Run the storage policy now",
+        "description": "Runs one batch of the enabled policy at once instead of waiting for the schedule: it ranks the builds again, checks permissions and dependencies, and logically deletes up to 100, returning an outcome for each. `expectedRevision` must be the current policy revision and the policy must be enabled, otherwise 409. The bytes are reclaimed later by the repository's online cleanup, which has its own policy (`setCleanup`)."
+      },
+      "summary": "Speicherrichtlinie jetzt ausführen",
+      "description": "Führt sofort einen Batch der aktivierten Richtlinie aus, statt auf den Zeitplan zu warten: Er ermittelt die Rangfolge der Builds neu, prüft Berechtigungen und Abhängigkeiten und löscht bis zu 100 logisch, mit einem Ergebnis je Eintrag. `expectedRevision` muss die aktuelle Revision der Richtlinie sein, und die Richtlinie muss aktiviert sein, sonst 409. Die Bytes werden später von der Online-Bereinigung des Repositorys freigegeben, die eine eigene Richtlinie hat (`setCleanup`)."
+    },
+    "getStorageEvents": {
+      "en": {
+        "summary": "List the storage events of a repository",
+        "description": "Returns up to 100 diagnostic events of storage policies, quotas, retention and cleanup after the sequence `after` (default 0), oldest first, each with level, code and a few details; `level` (`info`, `warning`, `error`) filters them, continue with `after` set to `next`. Only the newest 1000 events per repository and 20 000 overall are kept, so export them for longer retention."
+      },
+      "summary": "Speicherereignisse eines Repositorys auflisten",
+      "description": "Liefert bis zu 100 Diagnoseereignisse zu Speicherrichtlinien, Kontingenten, Aufbewahrung und Bereinigung nach der Sequenz `after` (Standard 0), älteste zuerst, jeweils mit Schweregrad, Code und einigen Details; `level` (`info`, `warning`, `error`) filtert sie, weiter mit `after` = `next`. Es werden nur die neuesten 1000 Ereignisse je Repository und 20.000 insgesamt aufbewahrt; exportieren Sie sie daher, wenn Sie sie länger benötigen."
+    },
+    "getCleanup": {
+      "en": {
+        "summary": "Get the online cleanup settings",
+        "description": "Returns the repository's online cleanup policy with its `revision` (`enabled`, `graceHours`, `batchSize`, `intervalSeconds`, `delayMilliseconds`), the last and next run, and how many objects the last batch reclaimed, deferred or failed with the bytes freed. Cleanup is what physically removes cancelled uploads and deleted artifacts; it is off by default."
+      },
+      "summary": "Einstellungen der Online-Bereinigung abrufen",
+      "description": "Liefert die Online-Bereinigungsrichtlinie des Repositorys mit ihrer `revision` (`enabled`, `graceHours`, `batchSize`, `intervalSeconds`, `delayMilliseconds`), den letzten und den nächsten Lauf sowie wie viele Objekte der letzte Batch freigegeben hat, wie viele zurückgestellt wurden oder fehlschlugen, und die freigegebenen Bytes. Die Bereinigung entfernt abgebrochene Uploads und gelöschte Artefakte physisch; standardmäßig ist sie aus."
+    },
+    "setCleanup": {
+      "en": {
+        "summary": "Configure online cleanup",
+        "description": "Replaces the cleanup policy while the server runs: `enabled` (also to pause), `graceHours` (0–8760, how long deleted content stays before removal), `batchSize` (1–100 objects), `intervalSeconds` (5–86400) and `delayMilliseconds` (0–1000 between objects). `expectedRevision` must be the current revision (0 before the first change), otherwise 409 `revision_mismatch`. A change takes effect between objects, never halfway through one."
+      },
+      "summary": "Online-Bereinigung konfigurieren",
+      "description": "Ersetzt die Bereinigungsrichtlinie, während der Server läuft: `enabled` (auch zum Pausieren), `graceHours` (0–8760, wie lange gelöschter Inhalt vor dem Entfernen bestehen bleibt), `batchSize` (1–100 Objekte), `intervalSeconds` (5–86400) und `delayMilliseconds` (0–1000 zwischen den Objekten). `expectedRevision` muss die aktuelle Revision sein (0 vor der ersten Änderung), sonst 409 `revision_mismatch`. Eine Änderung wirkt zwischen zwei Objekten, nie mitten in einem."
+    },
+    "requestCleanup": {
+      "en": {
+        "summary": "Request a cleanup batch now",
+        "description": "Schedules the next batch of the enabled cleanup policy to start at once; the answer is the cleanup state, and the bytes are freed only when the batch has run (see `lastRunAt` in `getCleanup`). `expectedRevision` must be the current revision; a disabled cleanup is a 409 `state_conflict`. Objects that are being read or written are deferred to a later batch."
+      },
+      "summary": "Einen Bereinigungs-Batch jetzt anfordern",
+      "description": "Plant den nächsten Batch der aktivierten Bereinigungsrichtlinie zum sofortigen Start; die Antwort ist der Bereinigungszustand, und die Bytes werden erst freigegeben, wenn der Batch gelaufen ist (siehe `lastRunAt` in `getCleanup`). `expectedRevision` muss die aktuelle Revision sein; eine deaktivierte Bereinigung ergibt 409 `state_conflict`. Objekte, die gerade gelesen oder geschrieben werden, werden auf einen späteren Batch verschoben."
+    },
+    "getRepositoryMirror": {
+      "en": {
+        "summary": "Get the synchronization state of a mirror",
+        "description": "For a repository this server mirrors from another Arkvory (configured in `ARKVORY_MIRRORS_FILE`), returns the source, the `mode` (`mirror`, a read-only copy, or `import`, which takes over versions with the listed `stages`), the `phase` (`pending`, `seeding`, `following`), the applied `cursor` and the source `head`, `caughtUp`, the last check, sync and error, and the artifacts and bytes copied. Sequences are journal numbers of the source, so their difference is not a count of changes. An ordinary repository answers 404."
+      },
+      "summary": "Synchronisierungszustand eines Spiegels abrufen",
+      "description": "Liefert für ein Repository, das dieser Server von einem anderen Arkvory spiegelt (konfiguriert in `ARKVORY_MIRRORS_FILE`), die Quelle, den `mode` (`mirror`, eine schreibgeschützte Kopie, oder `import`, der Versionen mit den aufgelisteten `stages` übernimmt), die `phase` (`pending`, `seeding`, `following`), den angewendeten `cursor` und den `head` der Quelle, `caughtUp`, die letzte Prüfung, die letzte Synchronisierung und den letzten Fehler sowie die kopierten Artefakte und Bytes. Sequenzen sind Journalnummern der Quelle, ihre Differenz ist daher keine Anzahl von Änderungen. Ein gewöhnliches Repository antwortet mit 404."
+    },
+    "getBuildAttachments": {
+      "en": {
+        "summary": "Get the attachments of a build",
+        "description": "Returns the current attachment revision of an artifact: up to 32 entries, each naming another published artifact of the repository with a `name`, a `kind` (`manifest`, `sbom`, `signature`, `report`, `file`) and a `description`, plus the actor and time of the change. Revision 0 with no items means nothing was ever attached. Download an attached file by its `artifactId`."
+      },
+      "summary": "Anhänge eines Builds abrufen",
+      "description": "Liefert die aktuelle Anhangsrevision eines Artefakts: bis zu 32 Einträge, die jeweils ein anderes veröffentlichtes Artefakt des Repositorys mit `name`, `kind` (`manifest`, `sbom`, `signature`, `report`, `file`) und `description` benennen, dazu Akteur und Zeit der Änderung. Revision 0 ohne Einträge bedeutet, dass nie etwas angehängt wurde. Laden Sie eine angehängte Datei über ihre `artifactId` herunter."
+    },
+    "replaceBuildAttachments": {
+      "en": {
+        "summary": "Replace the attachments of a build",
+        "description": "Replaces the whole attachment list of an artifact (up to 32 entries; an empty list removes them all) and returns the new revision. Each target must be another artifact already published in the same repository (upload it first), names are unique ignoring case and descriptions have up to 512 characters. `expectedRevision` must be the current revision (0 for the first list), otherwise 409 `revision_mismatch`; artifacts named in any revision stay protected from deletion."
+      },
+      "summary": "Anhänge eines Builds ersetzen",
+      "description": "Ersetzt die gesamte Anhangsliste eines Artefakts (bis zu 32 Einträge; eine leere Liste entfernt alle) und liefert die neue Revision zurück. Jedes Ziel muss ein anderes, bereits im selben Repository veröffentlichtes Artefakt sein (laden Sie es zuerst hoch), Namen sind ohne Beachtung der Groß-/Kleinschreibung eindeutig, und Beschreibungen haben bis zu 512 Zeichen. `expectedRevision` muss die aktuelle Revision sein (0 für die erste Liste), sonst 409 `revision_mismatch`; in einer beliebigen Revision genannte Artefakte bleiben vor dem Löschen geschützt."
+    },
+    "getBuildAttachmentHistory": {
+      "en": {
+        "summary": "List the attachment history of a build",
+        "description": "Returns the earlier and current attachment revisions of an artifact, newest first, 20 per page, each with its entries, actor and time; continue with `before` set to `next`. The attached artifacts of every revision remain downloadable, because they are protected from deletion."
+      },
+      "summary": "Anhangsverlauf eines Builds auflisten",
+      "description": "Liefert die früheren und die aktuelle Anhangsrevision eines Artefakts, neueste zuerst, 20 pro Seite, jeweils mit ihren Einträgen, Akteur und Zeit; weiter mit `before` = `next`. Die angehängten Artefakte jeder Revision bleiben herunterladbar, weil sie vor dem Löschen geschützt sind."
+    },
+    "login": {
+      "en": {
+        "summary": "Sign in",
+        "description": "Exchanges an account `name` and `password` for a bearer session `token` valid for 12 hours, with its `expiresAt` and the account; send it as `Authorization: Bearer`. An unknown name, a wrong password and a disabled account all answer the same 401 `invalid_credentials`. Attempts are throttled per client address and per account (429 `rate_limited` with Retry-After), and an account keeps at most 32 sessions: a new one ends the oldest."
+      },
+      "summary": "Anmelden",
+      "description": "Tauscht den `name` und das `password` eines Kontos gegen ein Bearer-Sitzungs-`token` mit 12 Stunden Gültigkeit samt `expiresAt` und dem Konto; senden Sie es als `Authorization: Bearer`. Ein unbekannter Name, ein falsches Passwort und ein deaktiviertes Konto ergeben alle dieselbe Antwort 401 `invalid_credentials`. Versuche werden pro Client-Adresse und pro Konto gedrosselt (429 `rate_limited` mit Retry-After), und ein Konto behält höchstens 32 Sitzungen: Eine neue beendet die älteste."
+    },
+    "registerAccount": {
+      "en": {
+        "summary": "Register an account",
+        "description": "Creates an ordinary account (never an administrator) with `name` (3–64 letters, digits or `_.-`) and `password` (12–128 characters) and signs it in, answering 201 with a 12-hour session like `login`. Works only when the server allows self-registration (see `getAuthOptions`), otherwise 403 `registration_disabled`; a taken name is a 409 `already_exists`. Attempts are throttled per client address (429 with Retry-After), and self-registration stops at 900 accounts."
+      },
+      "summary": "Konto registrieren",
+      "description": "Erstellt ein gewöhnliches Konto (nie einen Administrator) mit `name` (3–64 Buchstaben, Ziffern oder `_.-`) und `password` (12–128 Zeichen) und meldet es an; die Antwort ist 201 mit einer 12-Stunden-Sitzung wie bei `login`. Funktioniert nur, wenn der Server die Selbstregistrierung erlaubt (siehe `getAuthOptions`), sonst 403 `registration_disabled`; ein vergebener Name ergibt 409 `already_exists`. Versuche werden pro Client-Adresse gedrosselt (429 mit Retry-After), und die Selbstregistrierung endet bei 900 Konten."
+    },
+    "getAuthOptions": {
+      "en": {
+        "summary": "Get the sign-in options",
+        "description": "Tells a console before sign-in which forms to show: `selfRegistration` is true when `registerAccount` is open on this server."
+      },
+      "summary": "Anmeldeoptionen abrufen",
+      "description": "Teilt einer Konsole vor der Anmeldung mit, welche Formulare sie zeigen soll: `selfRegistration` ist true, wenn `registerAccount` auf diesem Server offen ist."
+    },
+    "listUserTokens": {
+      "en": {
+        "summary": "List your personal access tokens",
+        "description": "Lists the personal access tokens of the signed-in account, active first, with name, prefix, scope, creation, expiry, last use and whether it is revoked; the secrets are never shown again."
+      },
+      "summary": "Eigene persönliche Zugriffstoken auflisten",
+      "description": "Listet die persönlichen Zugriffstoken des angemeldeten Kontos auf, aktive zuerst, mit Name, Präfix, Scope, Erstellung, Ablauf, letzter Verwendung und der Angabe, ob das jeweilige Token widerrufen ist; die Geheimnisse werden nie wieder angezeigt."
+    },
+    "createUserToken": {
+      "en": {
+        "summary": "Create a personal access token",
+        "description": "Creates a token for scripts and tools that acts as the signed-in account; the secret is in this answer only. `name` has 1–64 characters, `expiresAt` defaults to 90 days and must lie in the future and within 365 days, and `scope` is `read-write` (default) or `read`, which can never change anything. Tokens never carry administrator rights, cannot create tokens, and an account has at most 50 active ones (507 `token_limit`)."
+      },
+      "summary": "Persönliches Zugriffstoken erstellen",
+      "description": "Erstellt ein Token für Skripte und Tools, das als das angemeldete Konto handelt; das Geheimnis steht nur in dieser Antwort. `name` hat 1–64 Zeichen, `expiresAt` ist standardmäßig in 90 Tagen und muss in der Zukunft, aber höchstens 365 Tage entfernt liegen, und `scope` ist `read-write` (Standard) oder `read`, das nie etwas ändern kann. Token tragen nie Administratorrechte, können keine Token erstellen, und ein Konto hat höchstens 50 aktive (507 `token_limit`)."
+    },
+    "revokeUserToken": {
+      "en": {
+        "summary": "Revoke your personal access token",
+        "description": "Revokes one personal access token of the signed-in account; requests with it fail from now on. Revoking an already revoked token succeeds as well."
+      },
+      "summary": "Eigenes persönliches Zugriffstoken widerrufen",
+      "description": "Widerruft ein persönliches Zugriffstoken des angemeldeten Kontos; Anfragen damit schlagen ab sofort fehl. Auch das Widerrufen eines bereits widerrufenen Tokens ist erfolgreich."
+    },
+    "logout": {
+      "en": {
+        "summary": "Sign out",
+        "description": "Ends the account session sent in `Authorization`; its token stops working at once. With any other credential (a personal token or a service key) it answers 204 and revokes nothing."
+      },
+      "summary": "Abmelden",
+      "description": "Beendet die im Header `Authorization` gesendete Kontositzung; ihr Token funktioniert sofort nicht mehr. Mit anderen Anmeldedaten (einem persönlichen Token oder einem Dienstschlüssel) antwortet sie mit 204 und widerruft nichts."
+    },
+    "changeOwnPassword": {
+      "en": {
+        "summary": "Change your password",
+        "description": "Sets `newPassword` (12–128 characters) after checking `currentPassword`; a wrong current password is a 401 `current_password_invalid` and counts toward the sign-in backoff. On success every session and every personal access token of the account is revoked, including the current session, so sign in again."
+      },
+      "summary": "Eigenes Passwort ändern",
+      "description": "Setzt `newPassword` (12–128 Zeichen), nachdem `currentPassword` geprüft wurde; ein falsches aktuelles Passwort ergibt 401 `current_password_invalid` und zählt für das Backoff bei der Anmeldung mit. Bei Erfolg werden alle Sitzungen und alle persönlichen Zugriffstoken des Kontos widerrufen, auch die aktuelle Sitzung; melden Sie sich daher erneut an."
+    },
+    "getCurrentPrincipal": {
+      "en": {
+        "summary": "Get the current identity",
+        "description": "Returns who the credential belongs to: its `id`, whether it is an administrator, the credential kind (`session`, `personal-token`, `service-key` or `file-key`), the scope of a personal token, and the repositories it has `read` or `write` access to. Use it to show the signed-in user and to choose a repository; for the exact permissions of a managed service key use `getOwnPermissions`."
+      },
+      "summary": "Aktuelle Identität abrufen",
+      "description": "Liefert, wem die Anmeldedaten gehören: ihre `id`, ob es ein Administrator ist, die Art der Anmeldedaten (`session`, `personal-token`, `service-key` oder `file-key`), den Scope eines persönlichen Tokens und die Repositorys, auf die sie `read`- oder `write`-Zugriff haben. Verwenden Sie sie, um den angemeldeten Benutzer anzuzeigen und ein Repository zu wählen; für die genauen Berechtigungen eines verwalteten Dienstschlüssels verwenden Sie `getOwnPermissions`."
+    },
+    "listUsers": {
+      "en": {
+        "summary": "List accounts",
+        "description": "Lists all user accounts ordered by name, with ID, name, administrator flag and whether they are enabled. The server holds at most 1000 accounts."
+      },
+      "summary": "Konten auflisten",
+      "description": "Listet alle Benutzerkonten nach Namen geordnet auf, mit ID, Name, Administratorkennzeichen und der Angabe, ob sie aktiviert sind. Ein Server kann höchstens 1000 Konten haben."
+    },
+    "createUser": {
+      "en": {
+        "summary": "Create an account",
+        "description": "Creates an account with `name` (3–64 letters, digits or `_.-`), `password` (12–128 characters) and `administrator` (default false), and answers 201 with it. A taken name is a 409 `already_exists`; the server holds at most 1000 accounts (507 `account_limit`)."
+      },
+      "summary": "Konto erstellen",
+      "description": "Erstellt ein Konto mit `name` (3–64 Buchstaben, Ziffern oder `_.-`), `password` (12–128 Zeichen) und `administrator` (Standard false) und antwortet mit 201 und dem Konto. Ein vergebener Name ergibt 409 `already_exists`; der Server kann höchstens 1000 Konten haben (507 `account_limit`)."
+    },
+    "updateUser": {
+      "en": {
+        "summary": "Enable, disable or reset an account",
+        "description": "Changes `enabled` and/or sets a new `password` of an account; the administrator flag cannot be changed here. Disabling ends every session of the account and its personal tokens stop working while it stays disabled; a password reset ends every session and revokes every personal token."
+      },
+      "summary": "Konto aktivieren, deaktivieren oder Passwort zurücksetzen",
+      "description": "Ändert `enabled` und/oder setzt ein neues `password` eines Kontos; das Administratorkennzeichen lässt sich hier nicht ändern. Das Deaktivieren beendet alle Sitzungen des Kontos, und seine persönlichen Token funktionieren nicht, solange es deaktiviert bleibt; ein Zurücksetzen des Passworts beendet alle Sitzungen und widerruft jedes persönliche Token."
+    },
+    "listAccountTokens": {
+      "en": {
+        "summary": "List the personal access tokens of an account",
+        "description": "Lists the personal access tokens of any account, active first, with name, prefix, scope, creation, expiry, last use and revocation; never the secrets. Use it to review automation before disabling or resetting the account."
+      },
+      "summary": "Persönliche Zugriffstoken eines Kontos auflisten",
+      "description": "Listet die persönlichen Zugriffstoken eines beliebigen Kontos auf, aktive zuerst, mit Name, Präfix, Scope, Erstellung, Ablauf, letzter Verwendung und Widerruf; nie die Geheimnisse. Verwenden Sie die Liste, um Automatisierung zu prüfen, bevor Sie das Konto deaktivieren oder zurücksetzen."
+    },
+    "revokeAccountToken": {
+      "en": {
+        "summary": "Revoke a personal access token of an account",
+        "description": "Revokes one personal access token of the account `id`; requests with it fail from now on, and the event is recorded in the security audit. Revoking an already revoked token succeeds as well."
+      },
+      "summary": "Persönliches Zugriffstoken eines Kontos widerrufen",
+      "description": "Widerruft ein persönliches Zugriffstoken des Kontos `id`; Anfragen damit schlagen ab sofort fehl, und das Ereignis wird im Sicherheits-Audit festgehalten. Auch das Widerrufen eines bereits widerrufenen Tokens ist erfolgreich."
+    },
+    "listAccessGroups": {
+      "en": {
+        "summary": "List access groups",
+        "description": "Lists all access groups with their member account IDs and repository grants (`read` or `write`). The server holds at most 100 groups and 10 000 memberships and grants each."
+      },
+      "summary": "Zugriffsgruppen auflisten",
+      "description": "Listet alle Zugriffsgruppen mit den Konto-IDs ihrer Mitglieder und ihren Repository-Zuweisungen (`read` oder `write`) auf. Ein Server kann höchstens 100 Gruppen sowie jeweils 10.000 Mitgliedschaften und Zuweisungen haben."
+    },
+    "createAccessGroup": {
+      "en": {
+        "summary": "Create an access group",
+        "description": "Creates an empty group with `name` (2–64 letters, digits or `_.-`) and answers 201 with it; a taken name is a 409 `already_exists`. Add members with `addGroupMember` and repositories with `setGroupGrant`."
+      },
+      "summary": "Zugriffsgruppe erstellen",
+      "description": "Erstellt eine leere Gruppe mit `name` (2–64 Buchstaben, Ziffern oder `_.-`) und antwortet mit 201 und der Gruppe; ein vergebener Name ergibt 409 `already_exists`. Fügen Sie Mitglieder mit `addGroupMember` und Repositorys mit `setGroupGrant` hinzu."
+    },
+    "addGroupMember": {
+      "en": {
+        "summary": "Add an account to a group",
+        "description": "Makes the account `userId` a member of the group; it gains the group's repository access with its next request. Adding an existing member changes nothing; at most 10 000 memberships in all (507 `membership_limit`)."
+      },
+      "summary": "Ein Konto zu einer Gruppe hinzufügen",
+      "description": "Macht das Konto `userId` zum Mitglied der Gruppe; es erhält den Repository-Zugriff der Gruppe mit seiner nächsten Anfrage. Ein bereits vorhandenes Mitglied erneut hinzuzufügen ändert nichts; insgesamt sind höchstens 10.000 Mitgliedschaften möglich (507 `membership_limit`)."
+    },
+    "removeGroupMember": {
+      "en": {
+        "summary": "Remove an account from a group",
+        "description": "Removes the account `userId` from the group; the access it had through the group ends with its next request. Removing an account that is not a member succeeds as well."
+      },
+      "summary": "Ein Konto aus einer Gruppe entfernen",
+      "description": "Entfernt das Konto `userId` aus der Gruppe; der Zugriff, den es über die Gruppe hatte, endet mit seiner nächsten Anfrage. Auch das Entfernen eines Kontos, das kein Mitglied ist, ist erfolgreich."
+    },
+    "setGroupGrant": {
+      "en": {
+        "summary": "Grant a group access to a repository",
+        "description": "Gives the group's members `access` `read` or `write` to `repository`, replacing an earlier grant of the group there; it applies from their next request. A repository needs no separate creation: the grant makes it visible to them. At most 10 000 grants in all (507 `grant_limit`)."
+      },
+      "summary": "Einer Gruppe Zugriff auf ein Repository gewähren",
+      "description": "Gibt den Mitgliedern der Gruppe `access` `read` oder `write` auf `repository` und ersetzt eine frühere Zuweisung der Gruppe dort; sie gilt ab ihrer nächsten Anfrage. Ein Repository muss nicht gesondert angelegt werden: Die Zuweisung macht es für sie sichtbar. Insgesamt sind höchstens 10.000 Zuweisungen möglich (507 `grant_limit`)."
+    },
+    "removeGroupGrant": {
+      "en": {
+        "summary": "Remove a group's access to a repository",
+        "description": "Removes the group's grant for `repository`; its members keep only the access they have through other groups. Removing a grant that does not exist succeeds as well."
+      },
+      "summary": "Zugriff einer Gruppe auf ein Repository entziehen",
+      "description": "Entfernt die Zuweisung der Gruppe für `repository`; ihre Mitglieder behalten nur den Zugriff, den sie über andere Gruppen haben. Auch das Entfernen einer nicht vorhandenen Zuweisung ist erfolgreich."
+    },
+    "listSecurityAudit": {
+      "en": {
+        "summary": "Read the security audit",
+        "description": "Returns the append-only journal of sign-ins, registrations, account, group, grant, password and personal token changes, newest first, each with actor, credential kind, target, outcome and client address; throttled attempts are not journaled. Pages hold `limit` entries (1–100, default 50); continue with `after` set to `next`."
+      },
+      "summary": "Sicherheits-Audit lesen",
+      "description": "Liefert das Journal, an das nur angehängt wird (append-only), mit Anmeldungen, Registrierungen sowie Änderungen an Konten, Gruppen, Zuweisungen, Passwörtern und persönlichen Token, neueste zuerst, jeweils mit Akteur, Art der Anmeldedaten, Ziel, Ergebnis und Client-Adresse; gedrosselte Versuche werden nicht protokolliert. Seiten enthalten `limit` Einträge (1–100, Standard 50); weiter mit `after` = `next`."
+    },
+    "getOwnPermissions": {
+      "en": {
+        "summary": "Get your effective permissions",
+        "description": "Returns the caller's `profile` (`managed` for a managed service key, `legacy` otherwise), its key ID, its effective bindings (each repository with the exact actions allowed there) and whether it is the bootstrap service administrator. Use it to adapt a client; the server still checks every request, so a change of permissions applies at once."
+      },
+      "summary": "Eigene wirksame Berechtigungen abrufen",
+      "description": "Liefert das `profile` des Aufrufers (`managed` für einen verwalteten Dienstschlüssel, sonst `legacy`), seine Schlüssel-ID, seine wirksamen Bindungen (jedes Repository mit den dort genau erlaubten Aktionen) und ob er der Bootstrap-Dienstadministrator ist. Verwenden Sie die Operation, um einen Client anzupassen; der Server prüft weiterhin jede Anfrage, daher gilt eine Änderung der Berechtigungen sofort."
+    },
+    "listServiceAccounts": {
+      "en": {
+        "summary": "List service accounts",
+        "description": "Lists the service accounts the caller may see, ordered by ID, 50 per page, each with name, enabled flag, `revision`, policy `bindings` and creation time; continue with `after` set to `next`. The bootstrap key sees all of them, a delegate only the targets where its delegation includes `service-account.read`; without that the list is empty rather than refused."
+      },
+      "summary": "Dienstkonten auflisten",
+      "description": "Listet die Dienstkonten auf, die der Aufrufer sehen darf, nach ID geordnet, 50 pro Seite, jeweils mit Name, Aktivierungsstatus, `revision`, Richtlinien-`bindings` und Erstellungszeit; weiter mit `after` = `next`. Der Bootstrap-Schlüssel sieht alle, ein Delegat nur die Zielkonten, bei denen seine Delegierung `service-account.read` enthält; ohne diese Aktion ist die Liste leer, statt abgelehnt zu werden."
+    },
+    "createServiceAccount": {
+      "en": {
+        "summary": "Create a service account",
+        "description": "Creates a machine identity for CI or an application with `name` (3–64 letters, digits or `_.-`) and its policy `bindings`: for each repository, the exact actions its keys may use (such as `upload.create` or `content.read`). Answers 201 with the account; then issue a key with `issueServiceKey`. A taken name is a 409 `already_exists`."
+      },
+      "summary": "Dienstkonto erstellen",
+      "description": "Erstellt eine Maschinenidentität für CI oder eine Anwendung mit `name` (3–64 Buchstaben, Ziffern oder `_.-`) und ihren Richtlinien-`bindings`: für jedes Repository die genauen Aktionen, die ihre Schlüssel nutzen dürfen (etwa `upload.create` oder `content.read`). Antwortet mit 201 und dem Konto; stellen Sie danach mit `issueServiceKey` einen Schlüssel aus. Ein vergebener Name ergibt 409 `already_exists`."
+    },
+    "getServiceAccount": {
+      "en": {
+        "summary": "Get a service account",
+        "description": "Returns the account's name, enabled flag, `revision`, policy bindings and creation time. For a delegate, an account it was not assigned answers 404 and a missing action on an assigned one 403."
+      },
+      "summary": "Dienstkonto abrufen",
+      "description": "Liefert Name, Aktivierungsstatus, `revision`, Richtlinienbindungen und Erstellungszeit des Kontos. Für einen Delegaten antwortet ein ihm nicht zugewiesenes Konto mit 404 und eine fehlende Aktion bei einem zugewiesenen mit 403."
+    },
+    "updateServiceAccount": {
+      "en": {
+        "summary": "Enable or disable a service account",
+        "description": "Sets `enabled`; `expectedRevision` must be the current revision, otherwise 409 `revision_mismatch`. Only this flag changes here (the name cannot). Disabling blocks every key of the account from the next request; enabling restores the keys that are neither expired nor revoked. A delegate may do it only when the whole current policy lies within its ceiling."
+      },
+      "summary": "Dienstkonto aktivieren oder deaktivieren",
+      "description": "Setzt `enabled`; `expectedRevision` muss die aktuelle Revision sein, sonst 409 `revision_mismatch`. Nur dieses Kennzeichen ändert sich hier (der Name nicht). Das Deaktivieren sperrt ab der nächsten Anfrage jeden Schlüssel des Kontos; das Aktivieren stellt die Schlüssel wieder her, die weder abgelaufen noch widerrufen sind. Ein Delegat darf dies nur, wenn die gesamte aktuelle Richtlinie innerhalb seiner Obergrenze liegt."
+    },
+    "getServicePolicy": {
+      "en": {
+        "summary": "Get the policy of a service account",
+        "description": "Returns the account with its policy `bindings` and `revision`, like `getServiceAccount`, for a caller that holds `policy.read`. A key's effective permissions are the intersection of this policy and the key's own bindings, per repository and action."
+      },
+      "summary": "Richtlinie eines Dienstkontos abrufen",
+      "description": "Liefert das Konto mit seinen Richtlinien-`bindings` und der `revision`, wie `getServiceAccount`, für einen Aufrufer mit `policy.read`. Die wirksamen Berechtigungen eines Schlüssels sind die Schnittmenge aus dieser Richtlinie und den eigenen Bindungen des Schlüssels, je Repository und Aktion."
+    },
+    "setServicePolicy": {
+      "en": {
+        "summary": "Replace the policy of a service account",
+        "description": "Replaces the account's `bindings` (up to 64, each a repository with its exact actions); `expectedRevision` must be the current revision, otherwise 409 `revision_mismatch`. Every key follows the change from its next request: narrowing takes effect at once, widening never goes beyond a key's own bindings. A delegate needs both the current and the new policy to lie within its ceiling."
+      },
+      "summary": "Richtlinie eines Dienstkontos ersetzen",
+      "description": "Ersetzt die `bindings` des Kontos (bis zu 64, jede ein Repository mit seinen genauen Aktionen); `expectedRevision` muss die aktuelle Revision sein, sonst 409 `revision_mismatch`. Jeder Schlüssel folgt der Änderung ab seiner nächsten Anfrage: Eine Einschränkung wirkt sofort, eine Erweiterung geht nie über die eigenen Bindungen eines Schlüssels hinaus. Ein Delegat benötigt, dass sowohl die aktuelle als auch die neue Richtlinie innerhalb seiner Obergrenze liegen."
+    },
+    "listServiceKeys": {
+      "en": {
+        "summary": "List the keys of a service account",
+        "description": "Lists key metadata of the account ordered by ID, 50 per page: name, `state` (`pending`, `active`, `revoked`), bindings, creation, expiry, activation deadline and the key it was rotated from; never secrets or hashes. Continue with `after` set to `next`. Expiry does not change `state`, so compare `expiresAt` with the current time."
+      },
+      "summary": "Schlüssel eines Dienstkontos auflisten",
+      "description": "Listet die Schlüsselmetadaten des Kontos nach ID geordnet auf, 50 pro Seite: Name, `state` (`pending`, `active`, `revoked`), Bindungen, Erstellung, Ablauf, Aktivierungsfrist und den Schlüssel, aus dem er rotiert wurde; nie Geheimnisse oder Hashes. Weiter mit `after` = `next`. Der Ablauf ändert `state` nicht; vergleichen Sie daher `expiresAt` mit der aktuellen Zeit."
+    },
+    "issueServiceKey": {
+      "en": {
+        "summary": "Issue a key for a service account",
+        "description": "Issues a pending key with `name`, `bindings` (effective only where the account policy allows them too) and optional `expiresAt` (UTC; 90 days by default, at most 365, and for a delegate never beyond its own key). The first answer is 201 with `key` and the `secret`, shown only this once; a repeat with the same `Idempotency-Key` and body is 200 with the metadata only, a different body a 409. The holder must call `activateServiceKey` with the secret within 15 minutes; if the secret was lost, revoke the key and issue a new one under a new Idempotency-Key."
+      },
+      "summary": "Schlüssel für ein Dienstkonto ausstellen",
+      "description": "Stellt einen ausstehenden Schlüssel aus, mit `name`, `bindings` (nur dort wirksam, wo die Kontorichtlinie sie ebenfalls erlaubt) und optionalem `expiresAt` (UTC; standardmäßig 90 Tage, höchstens 365, und für einen Delegaten nie über seinen eigenen Schlüssel hinaus). Die erste Antwort ist 201 mit `key` und dem `secret`, das nur dieses eine Mal angezeigt wird; eine Wiederholung mit demselben `Idempotency-Key` und Body ergibt 200 nur mit den Metadaten, ein anderer Body 409. Der Inhaber muss `activateServiceKey` innerhalb von 15 Minuten mit dem Geheimnis aufrufen; ist das Geheimnis verloren, widerrufen Sie den Schlüssel und stellen Sie unter einem neuen Idempotency-Key einen neuen aus."
+    },
+    "getServiceAudit": {
+      "en": {
+        "summary": "Read the audit of a service account",
+        "description": "Returns, oldest first, up to 100 events of the account after the sequence `after` (default 0): account, policy and key changes such as issue, rotation, activation and revocation, each with actor, action, key and time. To read further, pass the last `sequence` as `after`; there is no `next` field. Only the newest 100 000 events of the server are kept."
+      },
+      "summary": "Audit eines Dienstkontos lesen",
+      "description": "Liefert, älteste zuerst, bis zu 100 Ereignisse des Kontos nach der Sequenz `after` (Standard 0): Änderungen an Konto, Richtlinie und Schlüsseln wie Ausstellung, Rotation, Aktivierung und Widerruf, jeweils mit Akteur, Aktion, Schlüssel und Zeit. Um weiterzulesen, übergeben Sie die letzte `sequence` als `after`; es gibt kein Feld `next`. Es werden nur die neuesten 100.000 Ereignisse des Servers aufbewahrt."
+    },
+    "getServiceKey": {
+      "en": {
+        "summary": "Get a key",
+        "description": "Returns the metadata of one managed key: its account, name, state, bindings, creation, expiry, activation deadline and the key it was rotated from; never the secret or its hash."
+      },
+      "summary": "Schlüssel abrufen",
+      "description": "Liefert die Metadaten eines verwalteten Schlüssels: sein Konto, Name, Zustand, Bindungen, Erstellung, Ablauf, Aktivierungsfrist und den Schlüssel, aus dem er rotiert wurde; nie das Geheimnis oder seinen Hash."
+    },
+    "rotateServiceKey": {
+      "en": {
+        "summary": "Rotate a key",
+        "description": "Issues a pending successor of key `id` for the same account with the same or narrower `bindings`, answering like `issueServiceKey`: 201 with the one-time `secret`, 200 with metadata only on a repeat with the same `Idempotency-Key`. Once the successor is activated, the old key stays valid for at most 24 more hours; revoke it explicitly when the new one works, but only after the jobs it started have finished. Delegations held by an operator key are not copied to its successor."
+      },
+      "summary": "Schlüssel rotieren",
+      "description": "Stellt einen ausstehenden Nachfolger des Schlüssels `id` für dasselbe Konto mit denselben oder engeren `bindings` aus und antwortet wie `issueServiceKey`: 201 mit dem einmaligen `secret`, bei einer Wiederholung mit demselben `Idempotency-Key` 200 nur mit Metadaten. Sobald der Nachfolger aktiviert ist, bleibt der alte Schlüssel höchstens 24 weitere Stunden gültig; widerrufen Sie ihn ausdrücklich, wenn der neue funktioniert, aber erst nachdem die von ihm gestarteten Jobs beendet sind. Delegierungen eines Operator-Schlüssels werden nicht auf seinen Nachfolger kopiert."
+    },
+    "revokeServiceKey": {
+      "en": {
+        "summary": "Revoke a key",
+        "description": "Revokes the key for good: its next request fails, while a download already running is not cut off. Repeating succeeds with 204. Keys that a revoked operator key issued and that were already activated stay valid; revoke them separately."
+      },
+      "summary": "Schlüssel widerrufen",
+      "description": "Widerruft den Schlüssel endgültig: Seine nächste Anfrage schlägt fehl, ein bereits laufender Download wird jedoch nicht abgebrochen. Eine Wiederholung ist erfolgreich und liefert 204. Schlüssel, die ein widerrufener Operator-Schlüssel ausgestellt hat und die bereits aktiviert wurden, bleiben gültig; widerrufen Sie sie gesondert."
+    },
+    "activateServiceKey": {
+      "en": {
+        "summary": "Activate a key",
+        "description": "Proves that the holder received a newly issued key: call it with that key as `Authorization: Bearer` within 15 minutes of issue, and the key becomes active (204). Repeating is safe and does not extend the expiry. Activating a rotated key cuts the remaining lifetime of the key it replaces to at most 24 hours."
+      },
+      "summary": "Schlüssel aktivieren",
+      "description": "Belegt, dass der Inhaber einen neu ausgestellten Schlüssel erhalten hat: Rufen Sie die Operation mit diesem Schlüssel als `Authorization: Bearer` innerhalb von 15 Minuten nach der Ausstellung auf, dann wird der Schlüssel aktiv (204). Eine Wiederholung ist sicher und verlängert den Ablauf nicht. Das Aktivieren eines rotierten Schlüssels kürzt die Restlaufzeit des Schlüssels, den er ersetzt, auf höchstens 24 Stunden."
+    },
+    "listServiceDelegations": {
+      "en": {
+        "summary": "List the delegations of a key",
+        "description": "Returns the delegations held by operator key `id`, up to 64 including disabled ones: for each target account its `revision`, whether it is `enabled`, the administration `actions` (such as `credential.manage`) and the `ceiling` of repository bindings it may hand out. A delegate reads its own here (its key ID is `credentialId` in `getOwnPermissions`); another key's list is a 403."
+      },
+      "summary": "Delegierungen eines Schlüssels auflisten",
+      "description": "Liefert die Delegierungen des Operator-Schlüssels `id`, bis zu 64 einschließlich deaktivierter: für jedes Zielkonto die `revision`, ob die Delegierung `enabled` ist, die Verwaltungs-`actions` (etwa `credential.manage`) und das `ceiling`, die Obergrenze der Repository-Bindungen, die der Schlüssel weitergeben darf. Ein Delegat liest hier seine eigenen (seine Schlüssel-ID ist `credentialId` in `getOwnPermissions`); die Liste eines anderen Schlüssels ergibt 403."
+    },
+    "setServiceDelegation": {
+      "en": {
+        "summary": "Delegate the administration of a service account",
+        "description": "Lets key `id` administer the service account `accountId` with the given `actions` (`service-account.read`, `service-account.manage`, `policy.read`, `policy.manage`, `credential.read`, `credential.manage`, `service-audit.read`) within `ceiling`, up to 16 repository bindings it may hand out; manage does not imply read. `expectedRevision` is 0 to create and the record's current revision to change or re-enable it, otherwise 409. The key must be active and issued by the bootstrap key, and an account cannot both hold delegations and be the target of one, so delegation never chains."
+      },
+      "summary": "Die Verwaltung eines Dienstkontos delegieren",
+      "description": "Erlaubt dem Schlüssel `id`, das Dienstkonto `accountId` mit den angegebenen `actions` (`service-account.read`, `service-account.manage`, `policy.read`, `policy.manage`, `credential.read`, `credential.manage`, `service-audit.read`) innerhalb von `ceiling` zu verwalten, bis zu 16 Repository-Bindungen, die er weitergeben darf; eine Verwaltungsaktion (manage) schließt die Leseaktion (read) nicht ein. `expectedRevision` ist 0 zum Erstellen und die aktuelle Revision des Eintrags zum Ändern oder erneuten Aktivieren, sonst 409. Der Schlüssel muss aktiv und vom Bootstrap-Schlüssel ausgestellt sein, und ein Konto kann nicht zugleich Delegierungen besitzen und Ziel einer Delegierung sein, sodass Delegierungen nie verkettet werden."
+    },
+    "removeServiceDelegation": {
+      "en": {
+        "summary": "Withdraw a delegation",
+        "description": "Disables the delegation of key `id` over `accountId`; the JSON body carries `expectedRevision`, the record's current revision. The record stays as a disabled entry without actions and with a higher revision, returned with 200; after a lost answer read it with `listServiceDelegations` instead of repeating, since the old revision is a 409. Keys the delegate already issued and activated keep working: revoke them or disable the account separately."
+      },
+      "summary": "Eine Delegierung zurückziehen",
+      "description": "Deaktiviert die Delegierung des Schlüssels `id` für `accountId`; der JSON-Body trägt `expectedRevision`, die aktuelle Revision des Eintrags. Der Eintrag bleibt als deaktivierter Eintrag ohne Aktionen und mit höherer Revision bestehen und wird mit 200 zurückgegeben; lesen Sie ihn nach einer verlorenen Antwort mit `listServiceDelegations`, statt die Anfrage zu wiederholen, denn die alte Revision ergibt 409. Schlüssel, die der Delegat bereits ausgestellt und aktiviert hat, funktionieren weiter: Widerrufen Sie sie oder deaktivieren Sie das Konto gesondert."
+    },
+    "getBackupStatus": {
+      "en": {
+        "summary": "Get the backup status",
+        "description": "Summarizes the backup system: the vault (`configured`, `available`, free and total bytes), the backup agent (`online`, last heartbeat, version), the plan, the newest completed point, the next scheduled run, the running job and `warnings`, each a code such as `agent_offline` or `backup_stale` with severity `warning` or `critical`. The vault is reported unavailable while the agent is offline. It contains no paths or secrets."
+      },
+      "summary": "Backup-Status abrufen",
+      "description": "Fasst das Backup-System zusammen: den Backup-Speicher (`configured`, `available`, freie und gesamte Bytes), den Backup-Agent (`online`, letzter Heartbeat, Version), den Plan, den neuesten abgeschlossenen Wiederherstellungspunkt, den nächsten geplanten Lauf, den laufenden Job und `warnings`, jede ein Code wie `agent_offline` oder `backup_stale` mit dem Schweregrad `warning` oder `critical`. Der Backup-Speicher wird als nicht verfügbar gemeldet, solange der Agent offline ist. Die Antwort enthält keine Pfade oder Geheimnisse."
+    },
+    "getBackupPlan": {
+      "en": {
+        "summary": "Get the backup plan",
+        "description": "Returns the daily schedule (`enabled`, `hour` and `minute` in the IANA `timezone`) and the retention policy (`daily`, `weekly`, `monthly` points to keep) with the `revision` to send back to `updateBackupPlan`. Until changed the plan is disabled, with a 02:00 UTC schedule and 7 daily, 4 weekly and 6 monthly points."
+      },
+      "summary": "Backup-Plan abrufen",
+      "description": "Liefert den täglichen Zeitplan (`enabled`, `hour` und `minute` in der IANA-`timezone`) und die Aufbewahrungsrichtlinie (`daily`, `weekly`, `monthly` aufzubewahrende Punkte) mit der `revision`, die Sie an `updateBackupPlan` zurücksenden. Bis zu einer Änderung ist der Plan deaktiviert, mit einem Zeitplan um 02:00 UTC und 7 täglichen, 4 wöchentlichen und 6 monatlichen Punkten."
+    },
+    "updateBackupPlan": {
+      "en": {
+        "summary": "Replace the backup plan",
+        "description": "Replaces the whole plan: `enabled`, `hour` (0–23), `minute` (0–59), `timezone` and `retention` (at most 366 daily, 260 weekly, 120 monthly) must all be present. `expectedRevision` must be the current revision, otherwise 409 `revision_mismatch`; an invalid field is a 400 with a JSON Pointer in `details`. The agent follows the new schedule from its next check."
+      },
+      "summary": "Backup-Plan ersetzen",
+      "description": "Ersetzt den gesamten Plan: `enabled`, `hour` (0–23), `minute` (0–59), `timezone` und `retention` (höchstens 366 tägliche, 260 wöchentliche, 120 monatliche) müssen alle vorhanden sein. `expectedRevision` muss die aktuelle Revision sein, sonst 409 `revision_mismatch`; ein ungültiges Feld ergibt 400 mit einem JSON Pointer in `details`. Der Agent folgt dem neuen Zeitplan ab seiner nächsten Prüfung."
+    },
+    "requestBackupRun": {
+      "en": {
+        "summary": "Request a backup now",
+        "description": "Queues a capture for the backup agent outside the schedule and returns 202 with the job (`kind` `capture`); the agent runs it, then verification and retention. `Idempotency-Key` is required: repeating it, from the same caller, returns the same job. Follow the job in `listBackupJobs`. At most 100 backup requests may be open at once (507 `queue_full`); while no agent is online the job waits."
+      },
+      "summary": "Ein Backup jetzt anfordern",
+      "description": "Reiht außerhalb des Zeitplans eine Erfassung für den Backup-Agent ein und liefert 202 mit dem Job (`kind` `capture`); der Agent führt sie aus, danach Verifikation und Aufbewahrung. `Idempotency-Key` ist erforderlich: Dessen Wiederholung durch denselben Aufrufer liefert denselben Job. Verfolgen Sie den Job in `listBackupJobs`. Höchstens 100 Backup-Anforderungen dürfen gleichzeitig offen sein (507 `queue_full`); solange kein Agent online ist, wartet der Job."
+    },
+    "listBackupJobs": {
+      "en": {
+        "summary": "List backup jobs",
+        "description": "Lists capture, verify and retention jobs, newest first, each with its `state` (`queued`, `running`, `committing`, `completed`, `failed`, `interrupted`), `phase`, times, `errorCode`, the resulting point and `progress` (bytes and objects processed). Pages hold `limit` jobs (1–100, default 50); continue with `after` set to `next`."
+      },
+      "summary": "Backup-Jobs auflisten",
+      "description": "Listet die Jobs zur Erfassung, Verifikation und Aufbewahrung auf, neueste zuerst, jeweils mit `state` (`queued`, `running`, `committing`, `completed`, `failed`, `interrupted`), `phase`, Zeiten, `errorCode`, dem entstandenen Punkt und `progress` (verarbeitete Bytes und Objekte). Seiten enthalten `limit` Jobs (1–100, Standard 50); weiter mit `after` = `next`."
+    },
+    "listBackupPoints": {
+      "en": {
+        "summary": "List backup points",
+        "description": "Lists the completed restore points of the current vault, newest snapshot first, each with the snapshot time T, size, bytes added to the vault, whether it is `pinned` and its latest verification (`verifiedAt`, `verifyDepth` `structural` or `deep`, `verifyError`). Pages hold `limit` points (1–100, default 50); continue with `after` set to `next`. A vault that was replaced shows only its own points."
+      },
+      "summary": "Wiederherstellungspunkte auflisten",
+      "description": "Listet die abgeschlossenen Wiederherstellungspunkte des aktuellen Backup-Speichers auf, neuester Snapshot zuerst, jeweils mit dem Snapshot-Zeitpunkt T, der Größe, den zum Backup-Speicher hinzugekommenen Bytes, der Angabe, ob er `pinned` (angeheftet) ist, und seiner letzten Verifikation (`verifiedAt`, `verifyDepth` `structural` oder `deep`, `verifyError`). Seiten enthalten `limit` Punkte (1–100, Standard 50); weiter mit `after` = `next`. Ein ersetzter Backup-Speicher zeigt nur seine eigenen Punkte."
+    },
+    "requestBackupVerify": {
+      "en": {
+        "summary": "Request a deep check of a backup point",
+        "description": "Queues a verification of the point `id` that reads every stored byte of it; the answer is 202 with the job, and the outcome appears in `verifiedAt`, `verifyDepth` and `verifyError` of the point. `Idempotency-Key` is required, and reusing it for another point is a 409 `idempotency_mismatch`. An unknown point is a 404."
+      },
+      "summary": "Tiefenprüfung eines Wiederherstellungspunkts anfordern",
+      "description": "Reiht eine Verifikation des Punkts `id` ein, die jedes gespeicherte Byte von ihm liest; die Antwort ist 202 mit dem Job, und das Ergebnis erscheint in `verifiedAt`, `verifyDepth` und `verifyError` des Punkts. `Idempotency-Key` ist erforderlich, und seine Wiederverwendung für einen anderen Punkt ergibt 409 `idempotency_mismatch`. Ein unbekannter Punkt ergibt 404."
+    },
+    "setBackupPointPin": {
+      "en": {
+        "summary": "Pin or unpin a backup point",
+        "description": "Sets `pinned` of the point `id`; a pinned point is kept by retention beyond the policy until it is unpinned. Setting the same value again changes nothing, and the answer is the updated point. An unknown or already forgotten point is a 404."
+      },
+      "summary": "Wiederherstellungspunkt anheften oder Anheftung aufheben",
+      "description": "Setzt `pinned` des Punkts `id`; ein angehefteter Punkt wird von der Aufbewahrung über die Richtlinie hinaus behalten, bis die Anheftung aufgehoben wird. Denselben Wert erneut zu setzen ändert nichts, und die Antwort ist der aktualisierte Punkt. Ein unbekannter oder bereits vergessener Punkt ergibt 404."
+    },
+    "previewBackupRetention": {
+      "en": {
+        "summary": "Preview what backup retention keeps",
+        "description": "Shows which points the retention policy would keep, each with the reasons (`daily`, `weekly`, `monthly`, `pinned`, `newest`), and which it would delete now. Points that failed verification are not considered. The preview is advisory: `requestBackupRetention` decides again from the vault when it runs."
+      },
+      "summary": "Vorschau anzeigen, was die Backup-Aufbewahrung behält",
+      "description": "Zeigt, welche Punkte die Aufbewahrungsrichtlinie behalten würde, jeweils mit den Gründen (`daily`, `weekly`, `monthly`, `pinned`, `newest`), und welche sie jetzt löschen würde. Punkte, die die Verifikation nicht bestanden haben, werden nicht berücksichtigt. Die Vorschau ist unverbindlich: `requestBackupRetention` entscheidet beim Lauf erneut anhand des Backup-Speichers."
+    },
+    "requestBackupRetention": {
+      "en": {
+        "summary": "Request backup retention",
+        "description": "Queues a retention job: the agent forgets the points outside the policy and then removes content no remaining point uses, so space returns to the vault only when the job has completed. Returns 202 with the job; `Idempotency-Key` is required and repeating it returns the same job. Look at `previewBackupRetention` first."
+      },
+      "summary": "Backup-Aufbewahrung anfordern",
+      "description": "Reiht einen Aufbewahrungs-Job ein: Der Agent vergisst die Punkte außerhalb der Richtlinie und entfernt dann Inhalte, die kein verbleibender Punkt mehr verwendet, sodass der Speicherplatz erst nach Abschluss des Jobs in den Backup-Speicher zurückkehrt. Liefert 202 mit dem Job; `Idempotency-Key` ist erforderlich, und seine Wiederholung liefert denselben Job. Sehen Sie sich zuerst `previewBackupRetention` an."
+    },
+    "getSystemUpdates": {
+      "en": {
+        "summary": "Get the update state",
+        "description": "Returns what the host updater reports: the installed version and schema, the newest release found (`latest`), the automatic update settings (`automatic`, `hourUTC`, `pin`, `channel`, `statistics`), the `phase` (`idle`, `checking`, `updating`, `failed`), the last `error`, the last heartbeat and the settings `revision`, plus the request still waiting in the updater's mailbox (`pending`). `snapshot` is null when no host updater is connected. Pass `revision` to `requestSystemUpdate`."
+      },
+      "summary": "Update-Zustand abrufen",
+      "description": "Liefert, was der Host-Updater meldet: die installierte Version und das Schema, das neueste gefundene Release (`latest`), die Einstellungen für automatische Updates (`automatic`, `hourUTC`, `pin`, `channel`, `statistics`), die `phase` (`idle`, `checking`, `updating`, `failed`), den letzten `error`, den letzten Heartbeat und die `revision` der Einstellungen, dazu die Anfrage, die noch im Postfach des Updaters wartet (`pending`). `snapshot` ist null, wenn kein Host-Updater verbunden ist. Übergeben Sie `revision` an `requestSystemUpdate`."
+    },
+    "requestSystemUpdate": {
+      "en": {
+        "summary": "Request an update action",
+        "description": "Hands one command to the host updater, which does the work: `kind` `check` looks for a new release, `apply` installs the given stable `version` with its `sha256`, `configure` sets `automatic`, `hourUTC` and optionally `statistics`. Send a new UUID as `id` and the `expectedRevision` from `getSystemUpdates`; 409 `revision_mismatch` means the settings changed, 503 `busy` that a request is pending or the updater is working, 503 `unavailable` that no updater is connected or its heartbeat is older than five minutes. The answer 202 only means the request was queued: follow `phase`, `currentVersion` and `lastRequestId` in `getSystemUpdates`. Repeating the same `id` and body is safe."
+      },
+      "summary": "Eine Update-Aktion anfordern",
+      "description": "Übergibt dem Host-Updater, der die Arbeit erledigt, einen Befehl: `kind` `check` sucht nach einem neuen Release, `apply` installiert die angegebene stabile `version` mit ihrem `sha256`, `configure` setzt `automatic`, `hourUTC` und optional `statistics`. Senden Sie eine neue UUID als `id` und die `expectedRevision` aus `getSystemUpdates`; 409 `revision_mismatch` bedeutet, dass sich die Einstellungen geändert haben, 503 `busy`, dass eine Anfrage aussteht oder der Updater arbeitet, 503 `unavailable`, dass kein Updater verbunden ist oder sein Heartbeat älter als fünf Minuten ist. Die Antwort 202 bedeutet nur, dass die Anfrage eingereiht wurde: Verfolgen Sie `phase`, `currentVersion` und `lastRequestId` in `getSystemUpdates`. Dieselbe `id` mit demselben Body zu wiederholen ist sicher."
+    },
+    "sendFeedback": {
+      "en": {
+        "summary": "Send feedback to ProAnimaStudio",
+        "description": "Forwards a message through this server to the ProAnimaStudio hub and answers 202 with the hub's `id`. Send `message` (up to 20 000 characters), `lang` (`ru` or `en`), `serverLog` (true attaches this server's log and a system summary, administrators only), and optionally `email` for a reply, `screen`, up to 6 base64 `screenshots` (PNG, JPEG, WebP or GIF, 8 MiB each) and the console's `clientLog`; the total is limited to 15 MiB. Nothing is retried, so a second call is a second message. 503 `feedback_disabled` when the operator turned it off, 503 `hub_unreachable` when the hub does not answer, 429 `feedback_attempts` when this server sent too much."
+      },
+      "summary": "Feedback an ProAnimaStudio senden",
+      "description": "Leitet eine Nachricht über diesen Server an den ProAnimaStudio-Hub weiter und antwortet mit 202 und der `id` des Hubs. Senden Sie `message` (bis zu 20.000 Zeichen), `lang` (`ru` oder `en`), `serverLog` (true hängt das Log dieses Servers und eine Systemzusammenfassung an, nur für Administratoren) und optional `email` für eine Antwort, `screen`, bis zu 6 base64-kodierte `screenshots` (PNG, JPEG, WebP oder GIF, je 8 MiB) und das `clientLog` der Konsole; die Gesamtgröße ist auf 15 MiB begrenzt. Es wird nichts wiederholt, ein zweiter Aufruf ist also eine zweite Nachricht. 503 `feedback_disabled`, wenn der Betreiber es abgeschaltet hat, 503 `hub_unreachable`, wenn der Hub nicht antwortet, 429 `feedback_attempts`, wenn dieser Server zu viel gesendet hat."
+    },
+    "getFeedbackAttachments": {
+      "en": {
+        "summary": "Preview the feedback attachments",
+        "description": "Returns the two texts that `sendFeedback` attaches when `serverLog` is true: the recent records of this server's log and a system summary (versions, operating system, update and mirror states) without addresses, names or secrets. Show them to the administrator before sending."
+      },
+      "summary": "Feedback-Anhänge in der Vorschau anzeigen",
+      "description": "Liefert die beiden Texte, die `sendFeedback` anhängt, wenn `serverLog` true ist: die jüngsten Einträge des Logs dieses Servers und eine Systemzusammenfassung (Versionen, Betriebssystem, Update- und Spiegelzustände) ohne Adressen, Namen oder Geheimnisse. Zeigen Sie sie dem Administrator vor dem Senden an."
+    }
+  },
+  "errors": {
+    "codes": {
+      "invalid_input": "Die Anfrage ist fehlerhaft oder ein Wert ist nicht zulässig; korrigieren Sie die Anfrage, bevor Sie sie erneut senden.",
+      "not_found": "Das Objekt existiert nicht, oder der Aufrufer darf es nicht sehen.",
+      "conflict": "Die Anfrage steht im Widerspruch zum aktuellen Zustand; lesen Sie den Zustand erneut und entscheiden Sie dann.",
+      "forbidden": "Die Anmeldedaten sind gültig, aber es fehlt die Berechtigung für diese Aktion.",
+      "unauthorized": "Keine gültigen Anmeldedaten: fehlend, falsch, abgelaufen oder widerrufen.",
+      "capacity_exceeded": "Ein Kontingent, eine Kapazität oder ein Limit würde überschritten.",
+      "integrity_mismatch": "Die Bytes stimmen nicht mit der angegebenen Größe oder dem angegebenen SHA-256 überein.",
+      "busy": "Der Server hat seine Zulassungsgrenze erreicht; wiederholen Sie die Anfrage nach Retry-After.",
+      "unavailable": "Eine Abhängigkeit ist derzeit nicht verfügbar; wiederholen Sie die Anfrage nach Retry-After.",
+      "rate_limited": "Zu viele Versuche; warten Sie Retry-After ab.",
+      "read_only": "Dieser Server oder dieses Gateway nimmt keine Änderungen an (Lese-Gateway oder Spiegel).",
+      "internal": "Ein unerwarteter Serverfehler; die Anfrage-ID hilft dem Support, ihn zu finden. Nicht blind wiederholen."
+    },
+    "reasons": {
+      "validation": "Ein Feld fehlt oder hat einen Wert außerhalb seiner Regeln; details nennt das Feld.",
+      "malformed_json": "Der Body ist kein gültiges JSON.",
+      "body_too_large": "Der Body ist größer, als diese Operation akzeptiert.",
+      "unsupported_media_type": "Der Content-Type wird von dieser Operation nicht akzeptiert.",
+      "method_not_allowed": "Der Pfad existiert, aber nicht mit dieser Methode.",
+      "range_not_satisfiable": "Der angeforderte Byte-Bereich liegt außerhalb des Inhalts.",
+      "route_not_found": "Diese Route gibt es nicht.",
+      "upload_expired": "Die Upload-Sitzung ist abgelaufen, bevor sie abgeschlossen wurde.",
+      "upload_state": "Der Upload befindet sich nicht in einem Zustand, der diesen Schritt erlaubt.",
+      "revision_mismatch": "Die erwartete Revision ist nicht die aktuelle (eine andere Änderung kam zuerst).",
+      "version_exists": "Diese Version wurde bereits mit anderem Inhalt veröffentlicht.",
+      "part_mismatch": "Ein Teil stimmt nicht mit seiner angegebenen Größe oder seinem SHA-256 überein.",
+      "parts_incomplete": "Es sind noch nicht alle Teile des Uploads eingetroffen.",
+      "idempotency_mismatch": "Der Idempotency-Key wurde bereits mit einer anderen Anfrage verwendet.",
+      "already_exists": "Ein Objekt mit diesem Namen oder Pfad existiert bereits.",
+      "stage_limit": "Das Artefakt hat die maximale Anzahl von Stufen.",
+      "state_conflict": "Das Objekt befindet sich in einem Zustand, der diese Änderung nicht erlaubt.",
+      "mirror_read_only": "Das Repository ist ein Spiegel; es ändert sich nur durch Synchronisierung.",
+      "permission_missing": "Den Anmeldedaten fehlt die Aktion, die diese Operation benötigt.",
+      "read_only_token": "Ein schreibgeschütztes persönliches Token kann nichts ändern.",
+      "credential_revoked": "Der Schlüssel oder das Token wurde widerrufen.",
+      "session_required": "Nur die Sitzung eines angemeldeten Kontos darf dies tun, kein Schlüssel.",
+      "administrator_required": "Nur ein Administrator darf dies tun.",
+      "registration_disabled": "Die Selbstregistrierung ist auf diesem Server abgeschaltet.",
+      "origin_not_allowed": "Der Browser-Origin steht nicht in ARKVORY_CORS_ORIGINS.",
+      "invalid_credentials": "Der Kontoname oder das Passwort ist falsch.",
+      "current_password_invalid": "Das aktuelle Passwort ist falsch.",
+      "credential_missing": "Die Anfrage enthält keine Anmeldedaten.",
+      "credential_invalid": "Die Anmeldedaten sind weder ein gültiger Schlüssel noch ein gültiges Token noch eine gültige Sitzung.",
+      "session_expired": "Die Sitzung ist abgelaufen; melden Sie sich erneut an.",
+      "token_expired": "Das persönliche Token ist abgelaufen.",
+      "storage_quota": "Das Kontingent des Repositorys würde überschritten.",
+      "storage_full": "Der Datenträger des Servers hält seine Reserve an freiem Speicherplatz frei; für mehr ist kein Platz.",
+      "account_limit": "Die Anzahl der Konten hat ihr Limit erreicht.",
+      "group_limit": "Die Anzahl der Gruppen hat ihr Limit erreicht.",
+      "membership_limit": "Die Anzahl der Gruppenmitglieder hat ihr Limit erreicht.",
+      "grant_limit": "Die Anzahl der Zuweisungen hat ihr Limit erreicht.",
+      "key_limit": "Die Anzahl der Schlüssel hat ihr Limit erreicht.",
+      "token_limit": "Die Anzahl der persönlichen Token hat ihr Limit erreicht.",
+      "delegation_limit": "Die Anzahl der Delegierungen hat ihr Limit erreicht.",
+      "catalog_limit": "Die Katalogkapazität der Installation würde überschritten.",
+      "queue_full": "Die Transfer-Warteschlange ist voll.",
+      "transfer_limit": "Der Aufrufer hat so viele Transfers, wie erlaubt sind.",
+      "request_limit": "Der Server bearbeitet so viele Anfragen, wie er zulässt.",
+      "feedback_disabled": "Feedback ist auf diesem Server abgeschaltet.",
+      "hub_unreachable": "Der Update-Hub ist nicht erreichbar.",
+      "login_attempts": "Zu viele Anmeldeversuche; warten Sie.",
+      "registration_attempts": "Zu viele Registrierungsversuche; warten Sie.",
+      "password_attempts": "Zu viele Passwortversuche; warten Sie.",
+      "feedback_attempts": "Zu viele Feedback-Meldungen; warten Sie."
+    }
+  },
+  "fields": {
+    "Byte size, decimal string": "Größe in Bytes, Dezimalzeichenfolge",
+    "Bytes this point added to the vault.": "Bytes, die dieser Punkt zum Backup-Speicher hinzugefügt hat.",
+    "Current labels: annotation when replaced, otherwise the upload descriptor": "Aktuelle Labels: die Annotation, wenn sie ersetzt wurde, sonst der Deskriptor des Uploads",
+    "Current promotion stages in byte order": "Aktuelle Hochstufungsstufen in Byte-Reihenfolge",
+    "Every part has this size except the last one.": "Alle Teile haben diese Größe, außer dem letzten.",
+    "Exclusive before cursor; null at end": "Exklusiv vor dem Cursor; am Ende null",
+    "Explicit IANA time zone, e.g. Europe/Moscow; validated by the server.": "Explizite IANA-Zeitzone, z. B. Europe/Moscow; wird vom Server validiert.",
+    "Last ID of a full page; pass as after": "Letzte ID einer vollen Seite; als after übergeben",
+    "Null for history recorded before migration 4": "Null bei Verlauf, der vor Migration 4 aufgezeichnet wurde",
+    "Opaque cursor bound to repository and prefix; null at end. Never grants access.": "Opaker Cursor, der an Repository und Präfix gebunden ist; am Ende null. Gewährt nie Zugriff.",
+    "Optional initiating managed key ID; never its secret.": "Optionale ID des auslösenden verwalteten Schlüssels; nie sein Geheimnis.",
+    "Processed bytes: copied or already in the vault.": "Verarbeitete Bytes: kopiert oder bereits im Backup-Speicher.",
+    "Publication time; null only when none was recorded": "Veröffentlichungszeit; nur dann null, wenn keine aufgezeichnet wurde",
+    "Restored revision; null for ordinary replacement": "Wiederhergestellte Revision; null bei gewöhnlichem Ersetzen",
+    "Smallest multipart segment.": "Kleinstes Multipart-Segment.",
+    "Snapshot time T; the age of a point counts from T.": "Snapshot-Zeitpunkt T; das Alter eines Punkts zählt ab T.",
+    "Start of execution, or the request time while queued.": "Beginn der Ausführung oder, solange eingereiht, die Zeit der Anfrage.",
+    "Upload reservation time": "Zeitpunkt der Upload-Reservierung"
+  }
+}

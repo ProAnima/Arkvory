@@ -1,0 +1,202 @@
+{
+  "common": {
+    "outline": "Sur cette page",
+    "prev": "Page précédente",
+    "next": "Page suivante",
+    "returnToTop": "Retour en haut",
+    "sidebarMenu": "Menu",
+    "appearance": "Apparence",
+    "lightTheme": "Passer au thème clair",
+    "darkTheme": "Passer au thème sombre",
+    "langMenu": "Changer de langue",
+    "skipToContent": "Aller au contenu",
+    "editLink": "Modifier cette page sur GitHub",
+    "download": "Télécharger",
+    "notFound": {
+      "title": "PAGE INTROUVABLE",
+      "quote": "Il n’y a pas de page à cette adresse dans la documentation.",
+      "link": "Retour à l’accueil",
+      "linkLabel": "Aller à la page d’accueil de la documentation"
+    },
+    "search": {
+      "button": "Rechercher",
+      "noResults": "Aucun résultat pour",
+      "reset": "Effacer la recherche",
+      "back": "Fermer la recherche",
+      "details": "Afficher les détails",
+      "select": "sélectionner",
+      "navigate": "se déplacer",
+      "close": "fermer"
+    }
+  },
+  "description": "Documentation d’Arkvory : un dépôt auto-hébergé pour les artefacts de build, les paquets UPack, les images de conteneurs, Git LFS, les paquets npm et Unity et les fichiers bruts ; installation, exploitation, sauvegardes, miroirs et API HTTP.",
+  "sections": {
+    "guide": "Premiers pas",
+    "install": "Installation et mise à jour",
+    "use": "Utiliser Arkvory",
+    "protocols": "Clients et protocoles",
+    "operate": "Exploitation",
+    "api": "API HTTP",
+    "apiReference": "Référence de l’API",
+    "reference": "Référence",
+    "internal": "Pour les développeurs"
+  },
+  "internalOnly": "en russe",
+  "untranslated": "Cette page n'est pas encore traduite ; elle est affichée en anglais.",
+  "home": {
+    "tagline": "Stockage auto-hébergé pour les artefacts de build, les paquets, les images de conteneurs et les fichiers volumineux : un seul serveur pour la CI, les agents de déploiement et les équipes de jeu vidéo.",
+    "start": "Commencer",
+    "install": "Installer",
+    "api": "API HTTP"
+  },
+  "api": {
+    "operations": "Opérations",
+    "method": "Méthode",
+    "path": "Chemin",
+    "access": "Accès",
+    "retry": "Nouvelle tentative",
+    "parameters": "Paramètres",
+    "name": "Nom",
+    "in": "Emplacement",
+    "required": "Obligatoire",
+    "type": "Type",
+    "description": "Description",
+    "requestBody": "Corps de la requête",
+    "responses": "Réponses",
+    "status": "Statut",
+    "example": "Exemple",
+    "yes": "oui",
+    "no": "non",
+    "none": "aucun",
+    "intro": "Opérations de ce groupe, avec leur règle d’accès, leur règle de nouvelle tentative, leurs paramètres et leurs réponses. Chaque requête porte une clé : `Authorization: Bearer <clé>` (voir « Authentification »).",
+    "legacy": "clés de fichier : {grants}",
+    "accessKinds": {
+      "public": "Tout le monde, sans clé",
+      "authenticated": "Toute clé ou session valide",
+      "account-session": "Une session de compte ouverte (pas une clé)",
+      "administrator": "Administrateur",
+      "service-bootstrap": "Clé d’amorçage (clé de récupération de l’installation)",
+      "bootstrap-or-own-key": "Clé d’amorçage, ou la clé elle-même",
+      "pending-or-active-key": "La clé émise, avant ou après activation",
+      "repository-discovery": "Dépôts visibles par l’appelant ({action})",
+      "system": "Autorisation système {action}",
+      "service-administration": "Autorisation d’administration des services {action}",
+      "repository": "Autorisation sur le dépôt : {actions}"
+    },
+    "retryKinds": {
+      "read": "Peut être répétée sans risque (lecture)",
+      "never-automatic": "Ne pas répéter automatiquement",
+      "idempotent": "Peut être répétée sans risque : la même requête a le même effet",
+      "idempotency-key": "Peut être répétée sans risque avec la même Idempotency-Key",
+      "compare-and-swap": "Répéter uniquement avec la révision attendue (compare-and-swap)",
+      "reconcile-upload": "Relire le téléversement, puis décider",
+      "reconcile-job": "Relire la tâche, puis décider"
+    },
+    "locations": {
+      "path": "chemin",
+      "query": "requête",
+      "header": "en-tête"
+    },
+    "pages": {
+      "system": {
+        "title": "Système et état de santé",
+        "intro": "Vivacité, disponibilité, métriques, document OpenAPI et capacités du serveur."
+      },
+      "repositories": {
+        "title": "Dépôts",
+        "intro": "Les dépôts visibles par l’appelant et les détails de l’un d’eux."
+      },
+      "uploads": {
+        "title": "Téléversements",
+        "intro": "Téléversements avec reprise : créer une session de téléversement, envoyer les octets en une fois ou par parties, la terminer et suivre sa tâche de finalisation."
+      },
+      "artifacts": {
+        "title": "Artefacts et catalogue",
+        "intro": "Artefacts publiés : liste, détails, contenu, annotations, références, recherche, audit du catalogue et son flux de modifications."
+      },
+      "packages": {
+        "title": "Paquets",
+        "intro": "Paquets UPack : enregistrement, liste, versions et téléchargements par nom, version ou plage de versions."
+      },
+      "files": {
+        "title": "Fichiers par chemin",
+        "intro": "Fichiers adressés par un chemin dans le dépôt : révisions, historique, restauration et fichiers bruts en une seule requête."
+      },
+      "promotion": {
+        "title": "Étapes et promotion",
+        "intro": "Étapes d’un artefact (par exemple `release`), promotion entre dépôts et résolution d’une étape en version."
+      },
+      "storage": {
+        "title": "Politiques de stockage et rétention",
+        "intro": "Quotas, utilisation, politiques de rétention, leur aperçu et leur exécution, nettoyage et suppression d’artefacts."
+      },
+      "mirrors": {
+        "title": "Miroirs",
+        "intro": "L’état d’un dépôt miroir et le flux que suit un miroir."
+      },
+      "links": {
+        "title": "Liens de téléchargement",
+        "intro": "Liens à durée limitée qui permettent à une personne sans clé de télécharger un artefact."
+      },
+      "attachments": {
+        "title": "Pièces jointes de build",
+        "intro": "Journaux, rapports et autres fichiers joints à un artefact, avec leur historique."
+      },
+      "accounts": {
+        "title": "Comptes et connexion",
+        "intro": "Connexion, sessions, jetons d’accès personnels, utilisateurs, groupes et audit de sécurité."
+      },
+      "services": {
+        "title": "Comptes de service et clés",
+        "intro": "Comptes de service pour la CI et l’automatisation, leurs clés, politiques, délégations et audit."
+      },
+      "backups": {
+        "title": "Sauvegardes",
+        "intro": "État, plan, exécutions, points, vérification et rétention de l’agent de sauvegarde intégré."
+      },
+      "updates": {
+        "title": "Mises à jour",
+        "intro": "Offres de mise à jour du hub et demande d’installation de l’une d’elles."
+      },
+      "feedback": {
+        "title": "Commentaires",
+        "intro": "Rapports avec captures d’écran et journaux envoyés à ProAnimaStudio via ce serveur."
+      }
+    },
+    "field": "Champ",
+    "response": "Réponse",
+    "rules": {
+      "title": "Règles",
+      "length": "{min}–{max} caractères",
+      "minLength": "au moins {min} caractères",
+      "maxLength": "jusqu’à {max} caractères",
+      "items": "{min}–{max} éléments",
+      "minItems": "au moins {min} éléments",
+      "maxItems": "jusqu’à {max} éléments",
+      "entries": "jusqu’à {max} entrées",
+      "range": "{min}–{max}",
+      "minimum": "au moins {min}",
+      "maximum": "au plus {max}",
+      "oneOf": "une valeur parmi {values}",
+      "pattern": "correspond à {pattern}",
+      "decimal": "un nombre entier en chiffres décimaux, transmis sous forme de chaîne",
+      "sha256": "SHA-256 : 64 chiffres hexadécimaux en minuscules",
+      "unique": "aucun élément répété",
+      "each": "chaque élément : {rules}",
+      "default": "par défaut {value}",
+      "nullable": "peut être null",
+      "arrayOf": "tableau de {type}",
+      "mapOf": "dictionnaire de {type}"
+    }
+  },
+  "errors": {
+    "title": "Erreurs",
+    "intro": "Chaque échec est une enveloppe JSON avec un code machine stable, une raison facultative qui le précise, un message destiné aux personnes et l’ID de requête pour le support. Les clients décident en fonction du code et de la raison, jamais du texte du message.",
+    "code": "Code",
+    "reason": "Raison",
+    "status": "Statut HTTP",
+    "meaning": "Signification",
+    "reasons": "Raisons",
+    "codes": "Codes"
+  }
+}

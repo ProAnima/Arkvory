@@ -1,0 +1,202 @@
+{
+  "common": {
+    "outline": "Auf dieser Seite",
+    "prev": "Vorherige Seite",
+    "next": "Nächste Seite",
+    "returnToTop": "Nach oben",
+    "sidebarMenu": "Menü",
+    "appearance": "Darstellung",
+    "lightTheme": "Zum hellen Design wechseln",
+    "darkTheme": "Zum dunklen Design wechseln",
+    "langMenu": "Sprache ändern",
+    "skipToContent": "Zum Inhalt springen",
+    "editLink": "Diese Seite auf GitHub bearbeiten",
+    "download": "Herunterladen",
+    "notFound": {
+      "title": "SEITE NICHT GEFUNDEN",
+      "quote": "Unter dieser Adresse gibt es in der Dokumentation keine Seite.",
+      "link": "Zur Startseite",
+      "linkLabel": "Zur Startseite der Dokumentation"
+    },
+    "search": {
+      "button": "Suchen",
+      "noResults": "Keine Ergebnisse für",
+      "reset": "Suche löschen",
+      "back": "Suche schließen",
+      "details": "Details anzeigen",
+      "select": "auswählen",
+      "navigate": "bewegen",
+      "close": "schließen"
+    }
+  },
+  "description": "Dokumentation von Arkvory: ein selbst gehostetes Repository für Build-Artefakte, UPack-Pakete, Container-Images, Git LFS, npm- und Unity-Pakete sowie beliebige Dateien; Installation, Betrieb, Backups, Spiegel und die HTTP API.",
+  "sections": {
+    "guide": "Erste Schritte",
+    "install": "Installation und Update",
+    "use": "Arbeiten mit Arkvory",
+    "protocols": "Clients und Protokolle",
+    "operate": "Betrieb",
+    "api": "HTTP API",
+    "apiReference": "API-Referenz",
+    "reference": "Referenz",
+    "internal": "Für Entwickler"
+  },
+  "internalOnly": "auf Russisch",
+  "untranslated": "Diese Seite ist noch nicht übersetzt und wird auf Englisch angezeigt.",
+  "home": {
+    "tagline": "Selbst gehosteter Speicher für Build-Artefakte, Pakete, Container-Images und große Dateien: ein Server für CI, Bereitstellungsagenten und Spieleteams.",
+    "start": "Loslegen",
+    "install": "Installieren",
+    "api": "HTTP API"
+  },
+  "api": {
+    "operations": "Vorgänge",
+    "method": "Methode",
+    "path": "Pfad",
+    "access": "Zugriff",
+    "retry": "Wiederholung",
+    "parameters": "Parameter",
+    "name": "Name",
+    "in": "Ort",
+    "required": "Erforderlich",
+    "type": "Typ",
+    "description": "Beschreibung",
+    "requestBody": "Anfragetext",
+    "responses": "Antworten",
+    "status": "Status",
+    "example": "Beispiel",
+    "yes": "ja",
+    "no": "nein",
+    "none": "keine",
+    "intro": "Die Vorgänge dieser Gruppe mit ihrer Zugriffsregel, Wiederholungsregel, ihren Parametern und Antworten. Jede Anfrage trägt einen Schlüssel: `Authorization: Bearer <Schlüssel>` (siehe „Authentifizierung“).",
+    "legacy": "Dateischlüssel: {grants}",
+    "accessKinds": {
+      "public": "Jeder, ohne Schlüssel",
+      "authenticated": "Jeder gültige Schlüssel oder jede gültige Sitzung",
+      "account-session": "Eine angemeldete Kontositzung (kein Schlüssel)",
+      "administrator": "Administrator",
+      "service-bootstrap": "Bootstrap-Schlüssel (Wiederherstellungsschlüssel der Installation)",
+      "bootstrap-or-own-key": "Bootstrap-Schlüssel oder der Schlüssel selbst",
+      "pending-or-active-key": "Der ausgestellte Schlüssel, vor oder nach der Aktivierung",
+      "repository-discovery": "Repositorys, die der Aufrufer sehen darf ({action})",
+      "system": "Systemberechtigung {action}",
+      "service-administration": "Berechtigung zur Dienstverwaltung {action}",
+      "repository": "Repository-Berechtigung: {actions}"
+    },
+    "retryKinds": {
+      "read": "Wiederholen ist sicher (Lesen)",
+      "never-automatic": "Nicht automatisch wiederholen",
+      "idempotent": "Wiederholen ist sicher: Dieselbe Anfrage hat dieselbe Wirkung",
+      "idempotency-key": "Wiederholen ist sicher mit demselben Idempotency-Key",
+      "compare-and-swap": "Nur mit der erwarteten Revision wiederholen (compare-and-swap)",
+      "reconcile-upload": "Upload erneut lesen, dann entscheiden",
+      "reconcile-job": "Job erneut lesen, dann entscheiden"
+    },
+    "locations": {
+      "path": "Pfad",
+      "query": "Query",
+      "header": "Header"
+    },
+    "pages": {
+      "system": {
+        "title": "System und Zustand",
+        "intro": "Liveness, Readiness, Metriken, das OpenAPI-Dokument und die Fähigkeiten des Servers."
+      },
+      "repositories": {
+        "title": "Repositorys",
+        "intro": "Die Repositorys, die ein Aufrufer sehen darf, und die Details eines Repositorys."
+      },
+      "uploads": {
+        "title": "Uploads",
+        "intro": "Fortsetzbare Uploads: eine Upload-Sitzung erstellen, die Bytes vollständig oder in Teilen senden, den Upload abschließen und den Abschluss-Job verfolgen."
+      },
+      "artifacts": {
+        "title": "Artefakte und Katalog",
+        "intro": "Veröffentlichte Artefakte: Auflistung, Details, Inhalt, Annotationen, Referenzen, Suche, das Katalog-Audit und sein Änderungsfeed."
+      },
+      "packages": {
+        "title": "Pakete",
+        "intro": "UPack-Pakete: Registrierung, Auflistung, Versionen und Downloads nach Name, Version oder Versionsbereich."
+      },
+      "files": {
+        "title": "Dateien nach Pfad",
+        "intro": "Dateien, die über einen Pfad im Repository adressiert werden: Revisionen, Verlauf, Wiederherstellung und Raw-Dateien in einer einzigen Anfrage."
+      },
+      "promotion": {
+        "title": "Stufen und Hochstufung",
+        "intro": "Stufen eines Artefakts (zum Beispiel `release`), Hochstufung zwischen Repositorys und Auflösung einer Stufe zu einer Version."
+      },
+      "storage": {
+        "title": "Speicherrichtlinien und Aufbewahrung",
+        "intro": "Kontingente, Belegung, Aufbewahrungsrichtlinien samt Vorschau und Ausführung, Bereinigung und Löschen von Artefakten."
+      },
+      "mirrors": {
+        "title": "Spiegel",
+        "intro": "Der Zustand eines gespiegelten Repositorys und der Feed, dem ein Spiegel folgt."
+      },
+      "links": {
+        "title": "Download-Links",
+        "intro": "Zeitlich begrenzte Links, mit denen jemand ohne Schlüssel ein Artefakt herunterladen kann."
+      },
+      "attachments": {
+        "title": "Build-Anhänge",
+        "intro": "Protokolle, Berichte und andere Dateien, die an ein Artefakt angehängt sind, samt ihrem Verlauf."
+      },
+      "accounts": {
+        "title": "Konten und Anmeldung",
+        "intro": "Anmeldung, Sitzungen, persönliche Zugriffstoken, Benutzer, Gruppen und das Sicherheits-Audit."
+      },
+      "services": {
+        "title": "Dienstkonten und Schlüssel",
+        "intro": "Dienstkonten für CI und Automatisierung, ihre Schlüssel, Richtlinien, Delegierungen und ihr Audit."
+      },
+      "backups": {
+        "title": "Backups",
+        "intro": "Status, Plan, Läufe, Wiederherstellungspunkte, Prüfung und Aufbewahrung des integrierten Backup-Agenten."
+      },
+      "updates": {
+        "title": "Updates",
+        "intro": "Update-Angebote vom Hub und die Anforderung, eines davon zu installieren."
+      },
+      "feedback": {
+        "title": "Feedback",
+        "intro": "Berichte mit Screenshots und Protokollen, die über diesen Server an ProAnimaStudio gesendet werden."
+      }
+    },
+    "field": "Feld",
+    "response": "Antwort",
+    "rules": {
+      "title": "Regeln",
+      "length": "{min}–{max} Zeichen",
+      "minLength": "mindestens {min} Zeichen",
+      "maxLength": "höchstens {max} Zeichen",
+      "items": "{min}–{max} Elemente",
+      "minItems": "mindestens {min} Elemente",
+      "maxItems": "höchstens {max} Elemente",
+      "entries": "höchstens {max} Einträge",
+      "range": "{min}–{max}",
+      "minimum": "mindestens {min}",
+      "maximum": "höchstens {max}",
+      "oneOf": "einer von {values}",
+      "pattern": "entspricht {pattern}",
+      "decimal": "eine ganze Zahl in Dezimalziffern, als String gesendet",
+      "sha256": "SHA-256: 64 hexadezimale Ziffern in Kleinbuchstaben",
+      "unique": "keine wiederholten Elemente",
+      "each": "jedes Element: {rules}",
+      "default": "Standard {value}",
+      "nullable": "darf null sein",
+      "arrayOf": "Array von {type}",
+      "mapOf": "Map von {type}"
+    }
+  },
+  "errors": {
+    "title": "Fehler",
+    "intro": "Jeder Fehler ist ein JSON-Umschlag mit einem stabilen Maschinencode, einem optionalen Grund, der ihn präzisiert, einer Meldung für Menschen und der Anfrage-ID für den Support. Clients entscheiden anhand von Code und Grund, nie anhand des Meldungstexts.",
+    "code": "Code",
+    "reason": "Grund",
+    "status": "HTTP-Status",
+    "meaning": "Bedeutung",
+    "reasons": "Gründe",
+    "codes": "Codes"
+  }
+}

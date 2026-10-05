@@ -78,3 +78,4 @@ ADR нужен для изменения границ, публичных кон
 - [0065 — Git LFS с блокировками поверх артефактов](0065-git-lfs.md)
 - [0066 — npm-реестр для Unity Package Manager](0066-npm-registry-for-unity.md)
 - [0067 — Самовосстановление служб: падение, потеря владения и зависание](0067-self-healing-services.md)
+- [0068 — Сайт документации и одиннадцать языков консоли](0068-documentation-site-and-languages.md)

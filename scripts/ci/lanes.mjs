@@ -14,6 +14,7 @@ export const lanes = {
       'security',
       'integration',
       'browser',
+      'docs',
       'deployment',
       'deployment-containers',
       'native-package',
@@ -80,6 +81,12 @@ export const notExecuted = [
     kind: 'gap',
     reason:
       'Linux-host Compose (bind-mount ownership) runs only on GitHub Actions; the Windows lane covers Docker Desktop',
+  },
+  {
+    gate: 'docs',
+    platform: 'linux',
+    kind: 'covered',
+    reason: 'The documentation site does not depend on the platform; the Windows lane builds it',
   },
   {
     gate: 'security',

@@ -1,0 +1,202 @@
+{
+  "common": {
+    "outline": "Nesta página",
+    "prev": "Página anterior",
+    "next": "Próxima página",
+    "returnToTop": "Voltar ao topo",
+    "sidebarMenu": "Menu",
+    "appearance": "Aparência",
+    "lightTheme": "Mudar para o tema claro",
+    "darkTheme": "Mudar para o tema escuro",
+    "langMenu": "Mudar idioma",
+    "skipToContent": "Pular para o conteúdo",
+    "editLink": "Editar esta página no GitHub",
+    "download": "Baixar",
+    "notFound": {
+      "title": "PÁGINA NÃO ENCONTRADA",
+      "quote": "Não há nenhuma página neste endereço da documentação.",
+      "link": "Voltar ao início",
+      "linkLabel": "Ir para a página inicial da documentação"
+    },
+    "search": {
+      "button": "Pesquisar",
+      "noResults": "Nenhum resultado para",
+      "reset": "Limpar a pesquisa",
+      "back": "Fechar a pesquisa",
+      "details": "Mostrar detalhes",
+      "select": "selecionar",
+      "navigate": "navegar",
+      "close": "fechar"
+    }
+  },
+  "description": "Documentação do Arkvory: repositório auto-hospedado para artefatos de build, pacotes UPack, imagens de contêiner, Git LFS, pacotes npm e Unity e arquivos comuns; instalação, operação, backups, espelhos e a API HTTP.",
+  "sections": {
+    "guide": "Primeiros passos",
+    "install": "Instalação e atualização",
+    "use": "Trabalhando com o Arkvory",
+    "protocols": "Clientes e protocolos",
+    "operate": "Operação",
+    "api": "API HTTP",
+    "apiReference": "Referência da API",
+    "reference": "Referência",
+    "internal": "Para desenvolvedores"
+  },
+  "internalOnly": "em russo",
+  "untranslated": "Esta página ainda não foi traduzida e é exibida em inglês.",
+  "home": {
+    "tagline": "Armazenamento auto-hospedado para artefatos de build, pacotes, imagens de contêiner e arquivos grandes: um único servidor para CI, agentes de implantação e equipes de jogos.",
+    "start": "Começar",
+    "install": "Instalar",
+    "api": "API HTTP"
+  },
+  "api": {
+    "operations": "Operações",
+    "method": "Método",
+    "path": "Caminho",
+    "access": "Acesso",
+    "retry": "Repetição",
+    "parameters": "Parâmetros",
+    "name": "Nome",
+    "in": "Local",
+    "required": "Obrigatório",
+    "type": "Tipo",
+    "description": "Descrição",
+    "requestBody": "Corpo da solicitação",
+    "responses": "Respostas",
+    "status": "Status",
+    "example": "Exemplo",
+    "yes": "sim",
+    "no": "não",
+    "none": "nenhum",
+    "intro": "Operações deste grupo com a regra de acesso, a regra de repetição, os parâmetros e as respostas. Toda solicitação leva uma chave: `Authorization: Bearer <chave>` (consulte “Autenticação”).",
+    "legacy": "chaves em arquivo: {grants}",
+    "accessKinds": {
+      "public": "Qualquer pessoa, sem chave",
+      "authenticated": "Qualquer chave ou sessão válida",
+      "account-session": "Uma sessão de conta iniciada (não uma chave)",
+      "administrator": "Administrador",
+      "service-bootstrap": "Chave de bootstrap (chave de recuperação da instalação)",
+      "bootstrap-or-own-key": "Chave de bootstrap ou a própria chave",
+      "pending-or-active-key": "A chave emitida, antes ou depois da ativação",
+      "repository-discovery": "Repositórios que o chamador pode ver ({action})",
+      "system": "Permissão de sistema {action}",
+      "service-administration": "Permissão de administração de serviços {action}",
+      "repository": "Permissão no repositório: {actions}"
+    },
+    "retryKinds": {
+      "read": "Pode ser repetida com segurança (leitura)",
+      "never-automatic": "Não repetir automaticamente",
+      "idempotent": "Pode ser repetida com segurança: a mesma solicitação tem o mesmo efeito",
+      "idempotency-key": "Pode ser repetida com segurança com a mesma Idempotency-Key",
+      "compare-and-swap": "Repetir somente com a revisão esperada (compare-and-swap)",
+      "reconcile-upload": "Ler o upload novamente e então decidir",
+      "reconcile-job": "Ler a tarefa novamente e então decidir"
+    },
+    "locations": {
+      "path": "caminho",
+      "query": "consulta",
+      "header": "cabeçalho"
+    },
+    "pages": {
+      "system": {
+        "title": "Sistema e integridade",
+        "intro": "Liveness, readiness, métricas, o documento OpenAPI e as capacidades do servidor."
+      },
+      "repositories": {
+        "title": "Repositórios",
+        "intro": "Os repositórios que um chamador pode ver e os detalhes de cada um."
+      },
+      "uploads": {
+        "title": "Uploads",
+        "intro": "Uploads retomáveis: crie uma sessão de upload, envie os bytes de uma vez ou em partes, conclua-a e acompanhe a tarefa de conclusão."
+      },
+      "artifacts": {
+        "title": "Artefatos e catálogo",
+        "intro": "Artefatos publicados: listagem, detalhes, conteúdo, anotações, referências, pesquisa, a auditoria do catálogo e o feed de alterações."
+      },
+      "packages": {
+        "title": "Pacotes",
+        "intro": "Pacotes UPack: registro, listagem, versões e downloads por nome, versão ou intervalo."
+      },
+      "files": {
+        "title": "Arquivos por caminho",
+        "intro": "Arquivos endereçados por um caminho no repositório: versões, histórico, restauração e arquivos brutos (raw) em uma única solicitação."
+      },
+      "promotion": {
+        "title": "Estágios e promoção",
+        "intro": "Estágios de um artefato (por exemplo, `release`), promoção entre repositórios e resolução de um estágio para uma versão."
+      },
+      "storage": {
+        "title": "Políticas de armazenamento e retenção",
+        "intro": "Cotas, uso, políticas de retenção, a visualização e a execução delas, limpeza e exclusão de artefatos."
+      },
+      "mirrors": {
+        "title": "Espelhos",
+        "intro": "O estado de um repositório espelhado e o feed que um espelho acompanha."
+      },
+      "links": {
+        "title": "Links de download",
+        "intro": "Links com prazo limitado que permitem a alguém sem chave baixar um artefato."
+      },
+      "attachments": {
+        "title": "Anexos de build",
+        "intro": "Logs, relatórios e outros arquivos anexados a um artefato, com o histórico deles."
+      },
+      "accounts": {
+        "title": "Contas e login",
+        "intro": "Login, sessões, tokens de acesso pessoal, usuários, grupos e a auditoria de segurança."
+      },
+      "services": {
+        "title": "Contas de serviço e chaves",
+        "intro": "Contas de serviço para CI e automação, com as chaves, políticas, delegações e auditoria delas."
+      },
+      "backups": {
+        "title": "Backups",
+        "intro": "Status, plano, execuções, pontos, verificação e retenção do agente de backup integrado."
+      },
+      "updates": {
+        "title": "Atualizações",
+        "intro": "Ofertas de atualização do hub e a solicitação para instalar uma delas."
+      },
+      "feedback": {
+        "title": "Feedback",
+        "intro": "Relatórios com capturas de tela e logs enviados à ProAnimaStudio por meio deste servidor."
+      }
+    },
+    "field": "Campo",
+    "response": "Resposta",
+    "rules": {
+      "title": "Regras",
+      "length": "{min}–{max} caracteres",
+      "minLength": "pelo menos {min} caracteres",
+      "maxLength": "até {max} caracteres",
+      "items": "{min}–{max} itens",
+      "minItems": "pelo menos {min} itens",
+      "maxItems": "até {max} itens",
+      "entries": "até {max} entradas",
+      "range": "{min}–{max}",
+      "minimum": "pelo menos {min}",
+      "maximum": "no máximo {max}",
+      "oneOf": "um destes: {values}",
+      "pattern": "corresponde a {pattern}",
+      "decimal": "um número inteiro em dígitos decimais, enviado como string",
+      "sha256": "SHA-256: 64 dígitos hexadecimais minúsculos",
+      "unique": "sem itens repetidos",
+      "each": "cada item: {rules}",
+      "default": "padrão {value}",
+      "nullable": "pode ser null",
+      "arrayOf": "array de {type}",
+      "mapOf": "mapa de {type}"
+    }
+  },
+  "errors": {
+    "title": "Erros",
+    "intro": "Toda falha é um envelope JSON com um código de máquina estável, um motivo opcional que o detalha, uma mensagem para pessoas e o ID da solicitação para o suporte. Os clientes decidem pelo código e pelo motivo, nunca pelo texto da mensagem.",
+    "code": "Código",
+    "reason": "Motivo",
+    "status": "Status HTTP",
+    "meaning": "Significado",
+    "reasons": "Motivos",
+    "codes": "Códigos"
+  }
+}

@@ -1,0 +1,1044 @@
+{
+  "operations": {
+    "getReadiness": {
+      "en": {
+        "summary": "Check detailed readiness",
+        "description": "Answers `ready` when the database and storage respond, with this node's `role` (`api` or `reader`), whether it accepts writes now (`writable` is false on a read gateway and while the disk keeps its free-space reserve), the shared download slot of a read gateway and aggregate upload and download admission and bandwidth counters. While the server drains or a dependency is unavailable it answers 503 with Retry-After. It does not count against the request budget; for a load balancer without a key use `getReadinessStatus`."
+      },
+      "summary": "詳細なレディネスの確認",
+      "description": "データベースとストレージが応答すると`ready`を返します。あわせて、このノードの`role`（`api`または`reader`）、現在書き込みを受け付けるかどうか（読み取りゲートウェイ、およびディスクの空き容量が予約分まで減っている間は`writable`がfalse）、読み取りゲートウェイの共有ダウンロードスロット、アップロードとダウンロードの受け入れ状況と帯域幅の集計カウンターを返します。サーバーがドレイン中、または依存先が利用できない間は、Retry-After付きで503を返します。リクエスト予算には含まれません。キーを持たないロードバランサーには`getReadinessStatus`を使用してください。"
+    },
+    "getCapabilities": {
+      "en": {
+        "summary": "Get server capabilities and limits",
+        "description": "Returns the API versions, the gateway role, feature flags (for example `selfRegistration` or `mirrorFeed`) and the limits a client adapts to: the largest object (`maxObjectBytes`, a decimal string), the smallest and largest multipart segment, the largest number of parts and the largest page size. Read it once when a client starts; it lists no resources."
+      },
+      "summary": "サーバーの機能と制限の取得",
+      "description": "APIバージョン、ゲートウェイのロール、機能フラグ（たとえば`selfRegistration`や`mirrorFeed`）、およびクライアントが合わせるべき制限を返します。制限には、最大オブジェクトサイズ（`maxObjectBytes`、10進数の文字列）、マルチパートのセグメントの最小サイズと最大サイズ、パート数の上限、ページサイズの上限が含まれます。クライアントの起動時に一度読み取ってください。リソースの一覧は含まれません。"
+    },
+    "getReadinessStatus": {
+      "en": {
+        "summary": "Check readiness for a load balancer",
+        "description": "Needs no key and returns no details: 200 with `{\"status\":\"ready\"}`, or 503 with `unavailable` or `draining` and Retry-After. The dependency check is shared and cached for one second, so frequent probes do not load the database, and the probe does not count against the request budget."
+      },
+      "summary": "ロードバランサー向けのレディネス確認",
+      "description": "キーは不要で、詳細は返しません。200と`{\"status\":\"ready\"}`を返すか、`unavailable`または`draining`を伴う503とRetry-Afterを返します。依存先の確認は共有され、1秒間キャッシュされるため、頻繁なプローブでもデータベースに負荷がかかりません。また、このプローブはリクエスト予算に含まれません。"
+    },
+    "getLiveness": {
+      "en": {
+        "summary": "Check that the process is alive",
+        "description": "Returns 200 with `{\"status\":\"ok\"}` while the process answers HTTP. It checks no dependency, so use it to decide on a restart and `getReadinessStatus` to decide on traffic."
+      },
+      "summary": "プロセスの生存確認",
+      "description": "プロセスがHTTPに応答している間、200と`{\"status\":\"ok\"}`を返します。依存先は確認しないため、再起動するかどうかの判断にはこちらを、トラフィックを流すかどうかの判断には`getReadinessStatus`を使用してください。"
+    },
+    "getOpenApi": {
+      "en": {
+        "summary": "Get the OpenAPI document",
+        "description": "Returns the OpenAPI 3.0 document of this deployment, with the `x-arkvory-*` extensions that describe each operation's access, retry and gateway rules. `surface` (`discovery`, `identity`, `catalog`, `transfers`, `administration` or `operations`) returns only that area; an unknown or repeated query parameter is a 400. The document is the same for every caller and grants nothing: to learn what this credential may call, use `listVisibleOperations`."
+      },
+      "summary": "OpenAPIドキュメントの取得",
+      "description": "このデプロイメントのOpenAPI 3.0ドキュメントを返します。各オペレーションのアクセス、リトライ、ゲートウェイのルールを記述する`x-arkvory-*`拡張が含まれます。`surface`（`discovery`、`identity`、`catalog`、`transfers`、`administration`、`operations`）を指定すると、その領域のみを返します。未知のクエリパラメーターや重複したクエリパラメーターは400になります。ドキュメントはどの呼び出し元に対しても同じで、権限を与えるものではありません。この認証情報で呼び出せるオペレーションを調べるには、`listVisibleOperations`を使用してください。"
+    },
+    "getMetrics": {
+      "en": {
+        "summary": "Get Prometheus metrics",
+        "description": "Returns the process metrics in the Prometheus text format (`text/plain; version=0.0.4`) for a scraper. Counters and histograms belong to this process and start from zero after a restart (see `arkvory_process_start_time_seconds`); labels are limited to route template, method, status class and transfer direction and never name an artifact, key or account. The scrape does not count against the request budget."
+      },
+      "summary": "Prometheusメトリクスの取得",
+      "description": "スクレイパー向けに、プロセスのメトリクスをPrometheusテキスト形式（`text/plain; version=0.0.4`）で返します。カウンターとヒストグラムはこのプロセスに属し、再起動後はゼロから始まります（`arkvory_process_start_time_seconds`を参照）。ラベルはルートテンプレート、メソッド、ステータスクラス、転送方向に限られ、アーティファクト、キー、アカウントの名前が現れることはありません。スクレイプはリクエスト予算に含まれません。"
+    },
+    "listVisibleOperations": {
+      "en": {
+        "summary": "List the operations this credential may call",
+        "description": "Lists the operations of this gateway the credential may call, ordered by `operationId`, each with its surface, retry rule, required actions and the `conditions` checked only at call time (such as `resource-state` or `upload-owner`). `repository` adds the operations of that repository (an unknown or foreign repository is a 404), `surface` narrows the list to one area; pages hold `limit` items (1–100, default 50), continue with `after` set to `next`. The answer is advisory: build menus from it, but every real request is authorized again, and a read gateway lists no changing methods."
+      },
+      "summary": "この認証情報で呼び出せるオペレーションの一覧表示",
+      "description": "この認証情報で呼び出せるこのゲートウェイのオペレーションを、`operationId`順に列挙します。各項目には、領域（`surface`）、リトライルール、必要なアクション、および呼び出し時にのみ確認される`conditions`（`resource-state`や`upload-owner`など）が含まれます。`repository`を指定するとそのリポジトリのオペレーションも含まれ（存在しない、またはアクセスできないリポジトリは404）、`surface`を指定すると一覧を1つの領域に絞り込みます。ページには`limit`件（1〜100、既定は50）が含まれ、続きは`after`に`next`を設定して取得します。結果は参考情報です。メニューの構築には利用できますが、実際のリクエストはすべて改めて認可され、読み取りゲートウェイは変更を伴うメソッドを一覧に含めません。"
+    },
+    "listRepositories": {
+      "en": {
+        "summary": "List the repositories you can access",
+        "description": "Lists, ordered by name, the repositories in which the caller holds a permission, each with its formats (`upack`, `assets`) and the caller's own permissions there; a managed service key sees only those where it holds `repository.read`. A repository is the scope of the caller's grants, not an entry of a server-wide registry. Pages hold `limit` cards (1–100, default 50); continue with `after` set to `next`."
+      },
+      "summary": "アクセスできるリポジトリの一覧表示",
+      "description": "呼び出し元が権限を持つリポジトリを名前順に列挙します。各項目には、リポジトリの形式（`upack`、`assets`）と、そのリポジトリでの呼び出し元自身の権限が含まれます。マネージドサービスキーには、`repository.read`を持つリポジトリのみが表示されます。リポジトリは呼び出し元に付与された権限の範囲であり、サーバー全体のレジストリのエントリではありません。ページには`limit`件のカード（1〜100、既定は50）が含まれ、続きは`after`に`next`を設定して取得します。"
+    },
+    "getRepository": {
+      "en": {
+        "summary": "Get a repository card",
+        "description": "Returns the caller's card of one repository: its formats and the caller's permissions in it. A repository the caller cannot see answers 404, exactly like one that does not exist; HEAD makes this a cheap access check. Seeing a repository grants no access to its content or settings."
+      },
+      "summary": "リポジトリカードの取得",
+      "description": "1つのリポジトリについて、呼び出し元のカードを返します。カードには、そのリポジトリの形式と、呼び出し元の権限が含まれます。呼び出し元から見えないリポジトリは、存在しないリポジトリとまったく同じく404で応答します。HEADを使うと軽量なアクセス確認になります。リポジトリが見えることは、そのコンテンツや設定へのアクセス権を与えるものではありません。"
+    },
+    "listUploadParts": {
+      "en": {
+        "summary": "List the received parts of an upload",
+        "description": "Returns `partBytes`, the part size fixed for this upload when it was created (8 MiB, doubled for files that would need more than 10 000 parts; only the last part is shorter), and the parts already stored with their index, size and SHA-256. Read it before resuming an interrupted multipart upload and send only the missing parts with `putUploadPart`. Only the upload's creator sees it; for anyone else it is a 404."
+      },
+      "summary": "受信済みパートの一覧表示",
+      "description": "`partBytes`（アップロードの作成時に確定したこのアップロードのパートサイズ。8MiBで、10,000パートを超えるファイルでは倍にします。短くなるのは最後のパートだけです）と、保存済みのパートをインデックス、サイズ、SHA-256とともに返します。中断したマルチパートアップロードを再開する前にこれを読み取り、不足しているパートだけを`putUploadPart`で送信してください。参照できるのはアップロードの作成者のみで、他の人には404になります。"
+    },
+    "putUploadPart": {
+      "en": {
+        "summary": "Upload one part",
+        "description": "Stores the body as part `index` (from 0) of a pending multipart upload; its length must be exactly `partBytes` (from `listUploadParts`), or the remainder for the last part, and `X-Content-SHA256` must be the lowercase hex SHA-256 of these bytes, otherwise 422. Parts may arrive in any order, but an upload takes one request at a time (a concurrent one gets 503 `busy`); sending a part again with the same hash is safe, a different hash for an index already stored is a 409 `part_mismatch`. When every part is stored, call `completeUpload` or `enqueueCompletion`."
+      },
+      "summary": "パートのアップロード",
+      "description": "リクエストボディを、保留中のマルチパートアップロードのパート`index`（0から開始）として保存します。長さは`partBytes`（`listUploadParts`で取得）とちょうど同じでなければならず、最後のパートは残りのバイト数にします。`X-Content-SHA256`にはこれらのバイトの小文字16進表記のSHA-256を指定する必要があり、そうでない場合は422になります。パートは任意の順序で到着してかまいませんが、1つのアップロードが同時に処理できるリクエストは1つです（同時に送ると503 `busy`）。同じハッシュでパートを再送しても安全ですが、保存済みのインデックスに別のハッシュで送ると409 `part_mismatch`になります。すべてのパートが保存されたら、`completeUpload`または`enqueueCompletion`を呼び出してください。"
+    },
+    "enqueueCompletion": {
+      "en": {
+        "summary": "Complete an upload in the background",
+        "description": "Queues the completion of a pending upload for the worker service instead of doing it in the request, and returns the job at once with 202; follow it with `getCompletionJob`. Calling it again for the same upload returns the same job, and a job that failed for a transient reason is queued again. A queued job does not mean the artifact is published: only `completed` does. 409 `upload_state` if the upload is no longer pending; 507 `queue_full` when the caller has 100 open jobs or the server 10 000."
+      },
+      "summary": "アップロードのバックグラウンドでの完了",
+      "description": "リクエスト内で処理する代わりに、保留中のアップロードの完了をワーカーサービス用にキューへ登録し、ジョブを202ですぐに返します。進行状況は`getCompletionJob`で確認します。同じアップロードに対して再度呼び出すと同じジョブが返り、一時的な理由で失敗したジョブは再びキューに入ります。ジョブがキューに入っていても、アーティファクトが公開されたとは限りません。公開されたことを示すのは`completed`だけです。アップロードがもう保留中でない場合は409 `upload_state`、呼び出し元の未完了ジョブが100件、またはサーバー全体で10,000件に達している場合は507 `queue_full`になります。"
+    },
+    "getCompletionJob": {
+      "en": {
+        "summary": "Get a completion job",
+        "description": "Returns the state of a completion job queued with `enqueueCompletion`: `queued`, `running`, `completed` (the upload is published) or `failed` with an `errorCode`, plus the number of attempts. The worker tries up to five times with growing pauses; errors such as `integrity_mismatch` fail at once. Only the job's creator sees it; for anyone else it is a 404."
+      },
+      "summary": "完了ジョブの取得",
+      "description": "`enqueueCompletion`でキューに登録された完了ジョブの状態を返します。状態は`queued`、`running`、`completed`（アップロードが公開済み）、`failed`（`errorCode`を伴う）のいずれかで、試行回数も含まれます。ワーカーは間隔を延ばしながら最大5回試行しますが、`integrity_mismatch`のようなエラーは即座に失敗します。参照できるのはジョブの作成者のみで、他の人には404になります。"
+    },
+    "createUpload": {
+      "en": {
+        "summary": "Create an upload session",
+        "description": "Reserves an upload for one file described by `name`, `size` (a decimal string), `sha256` and optional `labels` and `metadata`; returns 201 with the session (`pending`, valid for 7 days) and its `Location`. `Idempotency-Key` (1–128 letters, digits and `_.:-`) is required: the same key with the same description returns the same session, with a different description it is a 409 `idempotency_mismatch`. The size is reserved against the repository quota and the server's capacity at once (507). Then send the bytes whole with `putUploadContent`, or in parts with `putUploadPart` and finish with `completeUpload`."
+      },
+      "summary": "アップロードセッションの作成",
+      "description": "`name`、`size`（10進数の文字列）、`sha256`、および任意の`labels`と`metadata`で記述される1つのファイルのために、アップロードを予約します。201とセッション（`pending`、有効期間は7日間）およびその`Location`を返します。`Idempotency-Key`（英字、数字、`_.:-`からなる1〜128文字）は必須です。同じキーで同じ記述を送ると同じセッションが返り、記述が異なる場合は409 `idempotency_mismatch`になります。サイズはリポジトリのクォータとサーバーの容量に対してただちに予約されます（507）。その後、`putUploadContent`でバイト列全体を送信するか、`putUploadPart`でパートごとに送信して`completeUpload`で完了します。"
+    },
+    "getUpload": {
+      "en": {
+        "summary": "Get an upload",
+        "description": "Returns the session with its `status` (`pending`, `available` once published, `cancelled`), its expiry and the declared descriptor. After a lost response to `putUploadContent` or `completeUpload`, read this first: `available` means the artifact is published under the same ID. Only the upload's creator sees it; for anyone else it is a 404."
+      },
+      "summary": "アップロードの取得",
+      "description": "セッションを、`status`（`pending`、公開後は`available`、`cancelled`）、有効期限、宣言されたディスクリプターとともに返します。`putUploadContent`や`completeUpload`の応答が失われた場合は、まずこれを読み取ってください。`available`であれば、アーティファクトは同じIDで公開されています。参照できるのはアップロードの作成者のみで、他の人には404になります。"
+    },
+    "cancelUpload": {
+      "en": {
+        "summary": "Cancel an upload",
+        "description": "Cancels a pending upload and returns it with status `cancelled`; a published upload cannot be cancelled (409 `upload_state`). The received bytes are hidden at once but remain reserved against the quota until the repository's online cleanup (`setCleanup`, off by default) removes them after its grace period."
+      },
+      "summary": "アップロードのキャンセル",
+      "description": "保留中のアップロードをキャンセルし、ステータス`cancelled`で返します。公開済みのアップロードはキャンセルできません（409 `upload_state`）。受信済みのバイトはただちに非表示になりますが、リポジトリの物理クリーンアップ（`setCleanup`、既定ではオフ）が猶予期間の経過後に削除するまで、クォータ上は予約されたままです。"
+    },
+    "putUploadContent": {
+      "en": {
+        "summary": "Upload the whole file in one request",
+        "description": "Streams the request body as the complete content of a pending upload, checks it against the declared size and SHA-256 (422 on mismatch) and publishes the artifact; the answer is the upload with status `available`. An interrupted request leaves nothing to resume: read the upload with `getUpload`, then send the file again from byte zero. Not for an upload that already has parts (409 `upload_state`); one request must also finish within the server's upload deadline (30 minutes by default), so send large files in parts."
+      },
+      "summary": "ファイル全体を1回のリクエストでアップロード",
+      "description": "リクエストボディをストリームとして、保留中のアップロードの完全な内容として受け取り、宣言されたサイズおよびSHA-256と照合して（不一致の場合は422）アーティファクトを公開します。応答は、ステータス`available`のアップロードです。リクエストが中断した場合、再開できるものは残りません。`getUpload`でアップロードを読み取ってから、ファイルを先頭のバイトから送り直してください。すでにパートがあるアップロードには使用できません（409 `upload_state`）。また、1回のリクエストはサーバーのアップロード期限（既定は30分）内に完了する必要があるため、大きなファイルはパートに分けて送信してください。"
+    },
+    "completeUpload": {
+      "en": {
+        "summary": "Complete an upload",
+        "description": "Assembles the stored parts in order, checks the whole file against the declared size and SHA-256 and publishes the artifact; returns the upload with status `available`. Calling it again for a published upload returns the same result, so it also recovers a completion whose answer was lost. A missing part is a 409 `parts_incomplete`, a content mismatch a 422; for very large files where the request might time out, use `enqueueCompletion` instead."
+      },
+      "summary": "アップロードの完了",
+      "description": "保存済みのパートを順に結合し、ファイル全体を宣言されたサイズおよびSHA-256と照合してアーティファクトを公開します。ステータス`available`のアップロードを返します。公開済みのアップロードに対して再度呼び出すと同じ結果が返るため、応答が失われた完了処理の復旧にも使えます。パートが不足している場合は409 `parts_incomplete`、内容が一致しない場合は422になります。リクエストがタイムアウトするおそれのある非常に大きなファイルには、代わりに`enqueueCompletion`を使用してください。"
+    },
+    "getAnnotations": {
+      "en": {
+        "summary": "Get the annotations of an artifact",
+        "description": "Returns the current labels, metadata and collections of a published artifact with their `revision`. Revision 0 means they were never replaced: labels and metadata are those given when the upload was created, and collections are empty. Pass the revision to `setAnnotations` as `expectedRevision`."
+      },
+      "summary": "アーティファクトのアノテーションの取得",
+      "description": "公開済みアーティファクトの現在のラベル、メタデータ、コレクションを、その`revision`とともに返します。リビジョン0は、一度も置換されていないことを意味します。ラベルとメタデータはアップロードの作成時に指定されたもので、コレクションは空です。このリビジョンを`setAnnotations`の`expectedRevision`として渡してください。"
+    },
+    "setAnnotations": {
+      "en": {
+        "summary": "Replace the annotations of an artifact",
+        "description": "Replaces `labels`, `metadata` and `collections` of a published artifact at once; a field left out of `value` becomes empty. `expectedRevision` must be the current revision (0 for the first change), otherwise 409 `revision_mismatch`: read the annotations again and reapply the change. Up to 32 labels and 32 collections (1–64 letters, digits or `_.:-`) and 32 metadata entries (values up to 1024 characters); the bytes and the original descriptor never change."
+      },
+      "summary": "アーティファクトのアノテーションの置換",
+      "description": "公開済みアーティファクトの`labels`、`metadata`、`collections`を一括で置換します。`value`に含めなかったフィールドは空になります。`expectedRevision`は現在のリビジョン（最初の変更では0）でなければならず、そうでない場合は409 `revision_mismatch`になります。その場合はアノテーションを読み取り直して、変更をもう一度適用してください。ラベルとコレクションはそれぞれ最大32個（英字、数字、`_.:-`からなる1〜64文字）、メタデータは最大32エントリ（値は1024文字まで）です。バイト列と元のディスクリプターは変わりません。"
+    },
+    "registerPackage": {
+      "en": {
+        "summary": "Register an artifact as a UPack package",
+        "description": "Opens the published artifact as a UPack ZIP, reads the root `upack.json` (`name`, optional `group`, SemVer `version`) and registers that package version for it; unsafe or invalid archives are rejected with 400. A version is immutable: registering the same artifact again returns the same entry, another artifact for an existing group, name and version (compared without case) is a 409 `version_exists`. Afterwards the version appears in `listPackages` and resolves by name, range and stage."
+      },
+      "summary": "アーティファクトのUPackパッケージとしての登録",
+      "description": "公開済みアーティファクトをUPack ZIPとして開き、ルートの`upack.json`（`name`、任意の`group`、SemVerの`version`）を読み取って、そのパッケージバージョンを登録します。安全でないアーカイブや不正なアーカイブは400で拒否されます。バージョンは不変です。同じアーティファクトを再度登録すると同じエントリが返り、既存のグループ、名前、バージョンの組（大文字小文字を区別せずに比較）に別のアーティファクトを登録しようとすると409 `version_exists`になります。登録後、そのバージョンは`listPackages`に表示され、名前、範囲、ステージで解決できるようになります。"
+    },
+    "searchArtifacts": {
+      "en": {
+        "summary": "Search artifacts",
+        "description": "Finds published artifacts by `q` (a case-insensitive substring of the name or of a current metadata value), an exact current `label`, a `collection`, and an exact `metadataKey`/`metadataValue` pair, which go together; all given filters must match. Results come in pages of 100 ordered by ID, each with size, creation and publication times, current labels and promotion stages; continue with `after` set to `next`. Metadata and collections are not returned: read them with `getAnnotations`."
+      },
+      "summary": "アーティファクトの検索",
+      "description": "公開済みアーティファクトを、`q`（名前または現在のメタデータ値に含まれる、大文字小文字を区別しない部分文字列）、現在のラベルとの完全一致`label`、`collection`、および必ず組で指定する`metadataKey`と`metadataValue`の完全一致で検索します。指定したフィルターはすべて一致する必要があります。結果はID順に100件ずつのページで返り、各項目にはサイズ、作成時刻と公開時刻、現在のラベル、プロモーションステージが含まれます。続きは`after`に`next`を設定して取得します。メタデータとコレクションは返されないため、`getAnnotations`で読み取ってください。"
+    },
+    "getCatalogAudit": {
+      "en": {
+        "summary": "Read the catalog audit of a repository",
+        "description": "Returns, oldest first, up to 100 catalog changes of the repository after the sequence number `after` (default 0): publications, deletions, annotation and attachment changes, package registrations, file path changes, references, stages and promotions, each with actor, action, artifact and time. To read further, pass the last `sequence` of the page as `after`; there is no `next` field. Downloads and sign-ins are not in it; mirrors follow `listCatalogChanges`, which omits actors."
+      },
+      "summary": "リポジトリのカタログ監査の取得",
+      "description": "シーケンス番号`after`（既定は0）より後のリポジトリのカタログ変更を、古いものから最大100件返します。対象は、公開、削除、アノテーションと添付ファイルの変更、パッケージの登録、ファイルパスの変更、参照、ステージ、プロモーションで、それぞれに実行者、アクション、アーティファクト、時刻が含まれます。続きを読むには、ページの最後の`sequence`を`after`として渡します。`next`フィールドはありません。ダウンロードとサインインは含まれません。ミラーは、実行者を含まない`listCatalogChanges`で変更に追従します。"
+    },
+    "addReference": {
+      "en": {
+        "summary": "Add a reference to an artifact",
+        "description": "Records that something outside Arkvory uses this artifact, under a `key` of your choice (1–256 letters, digits or `_.:/-`), for example a deployment name. A referenced artifact cannot be deleted or removed by retention until every reference is gone. The reference belongs to the caller; adding the same key again changes nothing."
+      },
+      "summary": "アーティファクトへの参照の追加",
+      "description": "Arkvoryの外部の何かがこのアーティファクトを使用していることを、任意の`key`（英字、数字、`_.:/-`からなる1〜256文字。たとえばデプロイ名）で記録します。参照があるアーティファクトは、すべての参照がなくなるまで、削除も保持ルールによる削除もできません。参照は呼び出し元に属し、同じキーを再度追加しても何も変わりません。"
+    },
+    "removeReference": {
+      "en": {
+        "summary": "Remove a reference from an artifact",
+        "description": "Removes the caller's own reference `key` from the artifact; references of other callers stay. Removing a key that is not there succeeds as well."
+      },
+      "summary": "アーティファクトからの参照の削除",
+      "description": "アーティファクトから呼び出し元自身の参照`key`を削除します。他の呼び出し元の参照は残ります。存在しないキーを削除した場合も成功します。"
+    },
+    "listArtifacts": {
+      "en": {
+        "summary": "List artifacts",
+        "description": "Lists the published artifacts of the repository ordered by ID, `limit` per page (1–100, default 50); continue with `after` set to `next`. `next` is set whenever a page is full, so the last page may be empty. Each item carries the descriptor given at upload; current labels and metadata are in `getAnnotations`."
+      },
+      "summary": "アーティファクトの一覧表示",
+      "description": "リポジトリの公開済みアーティファクトをID順に、1ページあたり`limit`件（1〜100、既定は50）で列挙します。続きは`after`に`next`を設定して取得します。ページが満杯のときは常に`next`が設定されるため、最後のページが空になることがあります。各項目にはアップロード時に指定されたディスクリプターが含まれます。現在のラベルとメタデータは`getAnnotations`で取得できます。"
+    },
+    "getArtifact": {
+      "en": {
+        "summary": "Get an artifact",
+        "description": "Returns a published artifact: its ID, repository, status, creation time and the descriptor given at upload (name, size, SHA-256, original labels and metadata). Pending, cancelled and deleted artifacts answer 404. To read the bytes use `downloadArtifact`."
+      },
+      "summary": "アーティファクトの取得",
+      "description": "公開済みアーティファクトを返します。ID、リポジトリ、ステータス、作成時刻、アップロード時に指定されたディスクリプター（名前、サイズ、SHA-256、元のラベルとメタデータ）が含まれます。保留中、キャンセル済み、削除済みのアーティファクトは404で応答します。バイト列を読み取るには`downloadArtifact`を使用してください。"
+    },
+    "deleteArtifact": {
+      "en": {
+        "summary": "Delete an artifact",
+        "description": "Logically deletes a published artifact: it disappears from lists, searches and downloads at once, and its bytes are reclaimed by the repository's online cleanup (`setCleanup`, off by default) after its grace period. `expectedAnnotationRevision` must equal the current annotation revision. The answer is 200 with an `outcome`: `deleted`, `already_deleted`, `changed` (the revision differs), `not_found`, or `protected` with the `blockers` that keep it (a reference, a file path revision, a build attachment or a promotion stage). Check beforehand with `inspectArtifactDeletion`."
+      },
+      "summary": "アーティファクトの削除",
+      "description": "公開済みアーティファクトを論理削除します。一覧、検索、ダウンロードからはただちに消え、そのバイト列はリポジトリの物理クリーンアップ（`setCleanup`、既定ではオフ）によって猶予期間の経過後に回収されます。`expectedAnnotationRevision`は現在のアノテーションのリビジョンと等しくなければなりません。応答は200で、`outcome`は`deleted`、`already_deleted`、`changed`（リビジョンが異なる）、`not_found`、または削除を妨げているもの（参照、ファイルパスのリビジョン、ビルドの添付ファイル、プロモーションステージ）を示す`blockers`を伴う`protected`のいずれかです。事前に`inspectArtifactDeletion`で確認してください。"
+    },
+    "downloadArtifact": {
+      "en": {
+        "summary": "Download an artifact",
+        "description": "Streams the original bytes with `Content-Length`, `Content-Disposition` (the artifact name) and a strong `ETag` (`\"sha256:<hex>\"`). A single `Range` gives 206 (an unsatisfiable one 416); `If-Range` with the ETag resumes safely, and `If-None-Match` answers 304. HEAD returns the same headers without a body and ignores `Range`. Instead of an `Authorization` header the request may carry a download link from `createDownloadLink` as `token`; downloads wait for a free slot of the server's download admission."
+      },
+      "summary": "アーティファクトのダウンロード",
+      "description": "元のバイト列を、`Content-Length`、`Content-Disposition`（アーティファクト名）、強い`ETag`（`\"sha256:<hex>\"`）とともにストリームで返します。単一の`Range`には206で応答し（満たせない場合は416）、ETagを指定した`If-Range`で安全に再開でき、`If-None-Match`には304で応答します。HEADは本文なしで同じヘッダーを返し、`Range`は無視します。`Authorization`ヘッダーの代わりに、`createDownloadLink`で作成したダウンロードリンクを`token`として付けることもできます。ダウンロードは、サーバーのダウンロード受け入れ枠に空きが出るまで待機します。"
+    },
+    "listCatalogChanges": {
+      "en": {
+        "summary": "Follow the change feed of a repository",
+        "description": "Returns, in commit order, up to `limit` changes (1–100, default 100) after the sequence `after` (default 0): action, artifact and, for file paths and stages, the path or stage in `detail`; actors are left out, so list access is enough. `head` is the newest sequence of the repository, `next` the cursor of the following page or null when the page reached the head. A mirror stores the last sequence it applied and polls from there."
+      },
+      "summary": "リポジトリの変更フィードの取得",
+      "description": "シーケンス`after`（既定は0）より後の変更を、コミット順に最大`limit`件（1〜100、既定は100）返します。各変更には、アクションとアーティファクトが含まれ、ファイルパスとステージについては、そのパスまたはステージが`detail`に含まれます。実行者は含まれないため、一覧表示の権限があれば十分です。`head`はリポジトリの最新のシーケンス、`next`は次のページのカーソルで、ページが`head`に達した場合はnullです。ミラーは最後に適用したシーケンスを保存し、そこからポーリングします。"
+    },
+    "createDownloadLink": {
+      "en": {
+        "summary": "Create a download link",
+        "description": "Returns a secret `token`, a `url` relative to the API origin and `expiresAt` for `downloadArtifact` of this one artifact without a key; `ttlSeconds` sets the lifetime (60 seconds to one day, default one hour). The token is shown only in this answer and cannot be revoked: it stops working when it expires or the artifact is deleted, and downloads through it count against the creator's transfer limits. A caller may hold 1000 live links (507 `token_limit`), and a download link cannot create further links."
+      },
+      "summary": "ダウンロードリンクの作成",
+      "description": "キーなしでこの1つのアーティファクトを`downloadArtifact`するための、秘密の`token`、APIオリジンからの相対`url`、`expiresAt`を返します。`ttlSeconds`で有効期間を設定します（60秒〜1日、既定は1時間）。トークンはこの応答でのみ表示され、取り消せません。有効期限が切れるかアーティファクトが削除されると使えなくなり、これを通じたダウンロードは作成者の転送制限に計上されます。呼び出し元が保持できる有効なリンクは1000件までで（507 `token_limit`）、ダウンロードリンクから別のリンクを作成することはできません。"
+    },
+    "listPackages": {
+      "en": {
+        "summary": "List package versions",
+        "description": "Lists the registered UPack versions with their manifests, filtered by `group` and `name` (exact, ignoring case; `group=` with an empty value selects the root group, leaving it out selects all groups). `sort` (`group`, `name`, `version`), `direction` (`asc`, `desc`) and `groupBy` (`none`, `group`, `package`, which adds `groups` listing the `artifactIds` of the page) shape the result. Pages hold `limit` items (1–100, default 50); continue with `after` set to `next` and the same filters. Pages are not a snapshot: versions registered in between can be missed until the next pass."
+      },
+      "summary": "パッケージバージョンの一覧表示",
+      "description": "登録済みのUPackバージョンをマニフェストとともに列挙します。`group`と`name`（完全一致、大文字小文字は無視）で絞り込めます。値が空の`group=`はルートグループを選択し、省略するとすべてのグループが対象です。`sort`（`group`、`name`、`version`）、`direction`（`asc`、`desc`）、`groupBy`（`none`、`group`、`package`。これにより、ページの`artifactIds`を列挙する`groups`が追加されます）で結果を整形します。ページには`limit`件（1〜100、既定は50）が含まれ、続きは同じフィルターで`after`に`next`を設定して取得します。ページはスナップショットではありません。その間に登録されたバージョンは、次に走査し直すまで見落とされることがあります。"
+    },
+    "downloadPackageContent": {
+      "en": {
+        "summary": "Download a package by name and version",
+        "description": "Resolves `name` (in `group`, the root group by default) to one registered version and streams it like `downloadArtifact`; `X-Arkvory-Artifact-Id` and `X-Arkvory-Package-Version` name the choice. Select by exact `version` or SemVer `range` (such as `^1.4` or `>=1.0.0 <2.0.0`), optionally only versions with `stage`; without either it takes the highest stable version, `prerelease=true` admits prereleases and `order=promoted` takes the version most recently given `stage`. The name is resolved on every request, so resume with `If-Range` set to the returned ETag, or download by artifact ID; `resolvePackage` gives the same choice without the bytes."
+      },
+      "summary": "名前とバージョンによるパッケージのダウンロード",
+      "description": "`name`（`group`内。既定はルートグループ）を登録済みの1つのバージョンに解決し、`downloadArtifact`と同様にストリームで返します。選ばれたものは`X-Arkvory-Artifact-Id`と`X-Arkvory-Package-Version`で分かります。正確な`version`またはSemVerの`range`（`^1.4`、`>=1.0.0 <2.0.0`など）で選択でき、必要に応じて`stage`を持つバージョンのみに限定できます。どちらも指定しない場合は最も高い安定版バージョンを選び、`prerelease=true`でプレリリースも対象になり、`order=promoted`では直近に`stage`へプロモートされたバージョンを選びます。名前はリクエストのたびに解決されるため、再開するときは返されたETagを`If-Range`に設定するか、アーティファクトIDでダウンロードしてください。`resolvePackage`は、バイト列を返さずに同じ選択結果を返します。"
+    },
+    "listAssets": {
+      "en": {
+        "summary": "List file paths by prefix",
+        "description": "Returns every file path that starts with `prefix` (literal, not a pattern; empty for all), ordered by path, each with its current revision and artifact ID. There is no paging: more than 1000 matches is a 400 asking for a narrower prefix, so prefer `listAssetPage` for large trees."
+      },
+      "summary": "プレフィックスによるファイルパスの一覧表示",
+      "description": "`prefix`（リテラルでありパターンではない。空にするとすべて）で始まるすべてのファイルパスを、パス順に返します。各項目には現在のリビジョンとアーティファクトIDが含まれます。ページングはありません。一致が1000件を超えると、より狭いプレフィックスを求める400になるため、大きなツリーには`listAssetPage`を使用してください。"
+    },
+    "listAssetPage": {
+      "en": {
+        "summary": "List file paths page by page",
+        "description": "Returns the current file paths that start with `prefix` (literal; empty for all) in UTF-8 byte order, each with its current revision and artifact ID. Pages hold `limit` items (1–100, default 50); continue with `after` set to the opaque `next`. Pages are not a snapshot: paths changed between requests can appear with their newer revision or be missed until the next pass."
+      },
+      "summary": "ファイルパスのページごとの一覧表示",
+      "description": "`prefix`（リテラル。空にするとすべて）で始まる現在のファイルパスを、UTF-8のバイト順で返します。各項目には現在のリビジョンとアーティファクトIDが含まれます。ページには`limit`件（1〜100、既定は50）が含まれ、続きは不透明な`next`を`after`に設定して取得します。ページはスナップショットではありません。リクエストの間に変更されたパスは、新しいリビジョンで現れるか、次に走査し直すまで見落とされることがあります。"
+    },
+    "getAsset": {
+      "en": {
+        "summary": "Get the current revision of a file path",
+        "description": "Returns the current `revision` of `path` and the ID of the artifact it points to; an unknown path is a 404. A path has 1–1024 characters in `/`-separated segments, without empty, `.` or `..` segments, `\\`, `:` or control characters. Download the bytes with `downloadAssetContent`, or pass the revision to `setAsset` as `expectedRevision`."
+      },
+      "summary": "ファイルパスの現在のリビジョンの取得",
+      "description": "`path`の現在の`revision`と、それが指すアーティファクトのIDを返します。未知のパスは404です。パスは`/`区切りのセグメントからなる1〜1024文字で、空のセグメント、`.`や`..`のセグメント、`\\`、`:`、制御文字を含めることはできません。バイト列は`downloadAssetContent`でダウンロードするか、リビジョンを`setAsset`の`expectedRevision`として渡してください。"
+    },
+    "setAsset": {
+      "en": {
+        "summary": "Point a file path at an artifact",
+        "description": "Makes `path` name a published artifact of the same repository as its new revision; `expectedRevision` is 0 to create the path and the current revision to replace it, otherwise 409 `revision_mismatch`. Earlier revisions stay in the history and keep their artifacts from being deleted. To store bytes and name them in one request, use `putRawFile`."
+      },
+      "summary": "ファイルパスのアーティファクトへの割り当て",
+      "description": "`path`が、同じリポジトリの公開済みアーティファクトを新しいリビジョンとして指すようにします。`expectedRevision`は、パスを作成するときは0、置き換えるときは現在のリビジョンとし、そうでない場合は409 `revision_mismatch`になります。以前のリビジョンは履歴に残り、それらのアーティファクトが削除されないよう保護します。バイト列の保存と命名を1回のリクエストで行うには、`putRawFile`を使用してください。"
+    },
+    "getAssetHistory": {
+      "en": {
+        "summary": "List the revisions of a file path",
+        "description": "Returns the revisions of `path`, newest first, 50 per page, each with its artifact, the actor, the time and, for a restore, the `sourceRevision` it copied (actor and time are null for revisions recorded by early server versions). Continue with `before` set to `next`. An unknown path is a 404."
+      },
+      "summary": "ファイルパスのリビジョンの一覧表示",
+      "description": "`path`のリビジョンを新しい順に、1ページ50件で返します。各項目には、アーティファクト、実行者、時刻、そして復元の場合はコピー元の`sourceRevision`が含まれます（初期のサーバーバージョンで記録されたリビジョンでは、実行者と時刻はnullです）。続きは`before`に`next`を設定して取得します。未知のパスは404です。"
+    },
+    "getAssetRevision": {
+      "en": {
+        "summary": "Get one revision of a file path",
+        "description": "Returns revision `revision` of `path` with its artifact ID, actor, time and restore source. Revisions never change, so the artifact ID can be cached; download it with `downloadArtifact`. A missing path or revision is a 404."
+      },
+      "summary": "ファイルパスの特定のリビジョンの取得",
+      "description": "`path`のリビジョン`revision`を、アーティファクトID、実行者、時刻、復元元とともに返します。リビジョンは決して変わらないため、アーティファクトIDはキャッシュできます。ダウンロードには`downloadArtifact`を使用してください。パスまたはリビジョンが存在しない場合は404です。"
+    },
+    "restoreAsset": {
+      "en": {
+        "summary": "Restore an earlier revision of a file path",
+        "description": "Adds a new revision of `path` that points at the artifact of `sourceRevision`; nothing is copied and no revision is removed. `expectedRevision` must be the current revision (at least 1), otherwise 409 `revision_mismatch` — so repeating a restore that already succeeded is a 409, not a second restore. The new revision records `sourceRevision`, and the change is audited in the same transaction."
+      },
+      "summary": "ファイルパスの以前のリビジョンの復元",
+      "description": "`sourceRevision`のアーティファクトを指す`path`の新しいリビジョンを追加します。何もコピーされず、リビジョンも削除されません。`expectedRevision`は現在のリビジョン（1以上）でなければならず、そうでない場合は409 `revision_mismatch`になります。そのため、すでに成功した復元を繰り返すと、2回目の復元ではなく409になります。新しいリビジョンには`sourceRevision`が記録され、変更は同じトランザクション内で監査されます。"
+    },
+    "downloadAssetContent": {
+      "en": {
+        "summary": "Download a file by path",
+        "description": "Resolves `path` to its current revision and streams that artifact like `downloadArtifact`, with `Range`, `If-Range`, `If-None-Match` and HEAD. The path is resolved on every request, so resume with `If-Range` set to the returned ETag: after the path moved on, the answer is the whole new file instead of a mixed one. `downloadRawFile` does the same with the path in the URL."
+      },
+      "summary": "パスによるファイルのダウンロード",
+      "description": "`path`を現在のリビジョンに解決し、そのアーティファクトを`downloadArtifact`と同様に、`Range`、`If-Range`、`If-None-Match`、HEADに対応してストリームで返します。パスはリクエストのたびに解決されるため、再開するときは返されたETagを`If-Range`に設定してください。パスがその後更新されていた場合、応答は新旧が混在したものではなく、新しいファイル全体になります。URLにパスを含める同等の操作が`downloadRawFile`です。"
+    },
+    "putRawFile": {
+      "en": {
+        "summary": "Upload a file to a path in one request",
+        "description": "Stores the request body, of any media type, as the new revision of the path in the URL, for scripts and CI (`curl -T`); the answer is 201 with the path, revision and artifact. With `X-Checksum-Sha256` and `Content-Length` the bytes stream straight to storage and are verified; without them they are staged and hashed first (422 if the body does not match a given checksum). The same bytes as the current revision add nothing and answer 200 with `created: false`, `If-None-Match: *` only creates (409 `already_exists`), and a concurrent writer of the same path gets 409 `revision_mismatch`. For very large files prefer the resumable upload sessions."
+      },
+      "summary": "1回のリクエストでパスにファイルをアップロード",
+      "description": "スクリプトやCI（`curl -T`）向けに、任意のメディアタイプのリクエストボディを、URL内のパスの新しいリビジョンとして保存します。応答は201で、パス、リビジョン、アーティファクトを返します。`X-Checksum-Sha256`と`Content-Length`を付けると、バイト列はストレージへ直接ストリームされて検証されます。付けない場合は、先に一時領域へ保存されてハッシュが計算されます（指定したチェックサムとボディが一致しなければ422）。現在のリビジョンと同じバイト列は何も追加せず、`created: false`を伴う200で応答します。`If-None-Match: *`は作成のみを行い（409 `already_exists`）、同じパスに同時に書き込んだ側は409 `revision_mismatch`になります。非常に大きなファイルには、再開可能なアップロードセッションを使用してください。"
+    },
+    "downloadRawFile": {
+      "en": {
+        "summary": "Download a file by its URL path",
+        "description": "Streams the current revision of the path in the URL like `downloadArtifact`, with `Range`, `If-Range`, `If-None-Match`, HEAD and `X-Arkvory-Artifact-Id` naming the artifact. The path is resolved on every request, so resume with `If-Range` set to the returned ETag, or download the artifact by ID."
+      },
+      "summary": "URLパスによるファイルのダウンロード",
+      "description": "URL内のパスの現在のリビジョンを、`downloadArtifact`と同様に、`Range`、`If-Range`、`If-None-Match`、HEADに対応してストリームで返します。アーティファクトは`X-Arkvory-Artifact-Id`で分かります。パスはリクエストのたびに解決されるため、再開するときは返されたETagを`If-Range`に設定するか、アーティファクトをIDでダウンロードしてください。"
+    },
+    "listArtifactStages": {
+      "en": {
+        "summary": "List the stages of an artifact",
+        "description": "Returns the current promotion stages of a published artifact (at most 16), each with the time it was added, the actor and the comment."
+      },
+      "summary": "アーティファクトのステージの一覧表示",
+      "description": "公開済みアーティファクトの現在のプロモーションステージ（最大16件）を、追加された時刻、実行者、コメントとともに返します。"
+    },
+    "setArtifactStage": {
+      "en": {
+        "summary": "Add a stage to an artifact",
+        "description": "Marks a published artifact with `stage` (1–32 lower-case letters, digits or `_.-`, starting with a letter or digit), with an optional `comment` of up to 1024 characters, and records the event in the promotion journal. Adding a stage the artifact already has changes nothing and keeps the original time, so to promote the same version again (for a rollback with `order=promoted`) remove the stage first. An artifact has at most 16 stages (409 `stage_limit`)."
+      },
+      "summary": "アーティファクトへのステージの追加",
+      "description": "公開済みアーティファクトに`stage`（英小文字、数字、`_.-`からなる1〜32文字で、先頭は英字または数字）を付け、必要に応じて最大1024文字の`comment`を添えて、プロモーションジャーナルにイベントを記録します。アーティファクトがすでに持っているステージを追加しても何も変わらず、元の時刻が維持されます。そのため、同じバージョンを再度プロモートするとき（`order=promoted`を使ったロールバックのため）は、先にそのステージを削除してください。アーティファクトのステージは最大16個です（409 `stage_limit`）。"
+    },
+    "removeArtifactStage": {
+      "en": {
+        "summary": "Remove a stage from an artifact",
+        "description": "Removes `stage` from a published artifact and records the event in the promotion journal; removing a stage the artifact does not have succeeds too. Package resolution by this stage stops choosing the artifact at once."
+      },
+      "summary": "アーティファクトからのステージの削除",
+      "description": "公開済みアーティファクトから`stage`を削除し、プロモーションジャーナルにイベントを記録します。アーティファクトが持っていないステージを削除した場合も成功します。このステージによるパッケージの解決では、そのアーティファクトはただちに選ばれなくなります。"
+    },
+    "listArtifactPromotions": {
+      "en": {
+        "summary": "List the promotion history of an artifact",
+        "description": "Returns the journal of one artifact, oldest first: stages added and removed, promotions to and from other repositories with the peer artifact, actor, comment and time. Pages hold `limit` events (1–100, default 50); continue with `after` set to `next`."
+      },
+      "summary": "アーティファクトのプロモーション履歴の一覧表示",
+      "description": "1つのアーティファクトのジャーナルを古いものから返します。内容は、ステージの追加と削除、他のリポジトリへの、または他のリポジトリからのプロモーションで、相手側のアーティファクト、実行者、コメント、時刻が含まれます。ページには`limit`件のイベント（1〜100、既定は50）が含まれ、続きは`after`に`next`を設定して取得します。"
+    },
+    "promoteArtifact": {
+      "en": {
+        "summary": "Promote an artifact to another repository",
+        "description": "Publishes the artifact in `target` without sending the bytes again, optionally with `stages` and a `comment`; the caller also needs `artifact.promote` in the target. `mode` `copy` (default) keeps the source; `move`, which needs `artifact.promote` here as well, retires the source in the same transaction, carries its stages over and is refused with 409 when the source cannot be deleted. The answer is 201 with the copy; a repeat returns the same copy with 200, and a target that already has this package version returns that artifact when the SHA-256 matches and a 409 `version_exists` when it does not. Build attachments and file paths are not carried over."
+      },
+      "summary": "アーティファクトの別のリポジトリへのプロモート",
+      "description": "バイト列を再送せずに、アーティファクトを`target`に公開します。必要に応じて`stages`と`comment`を指定できます。呼び出し元には`target`での`artifact.promote`も必要です。`mode`が`copy`（既定）の場合はコピー元を残します。`move`ではこちらのリポジトリでも`artifact.promote`が必要で、同じトランザクション内でコピー元を論理削除してそのステージを引き継ぎ、コピー元を削除できない場合は409で拒否されます。応答は201とコピーです。繰り返すと同じコピーが200で返り、宛先にすでにこのパッケージバージョンがある場合は、SHA-256が一致すればそのアーティファクトを返し、一致しなければ409 `version_exists`になります。ビルドの添付ファイルとファイルパスは引き継がれません。"
+    },
+    "listStagedArtifacts": {
+      "en": {
+        "summary": "List artifacts with stages",
+        "description": "Lists the stage entries of the repository (artifact, stage, time, actor, comment) ordered by artifact and stage, optionally only `stage`, or only the artifacts in `ids` (1–100 comma-separated IDs, for example to show the stages of a page of packages at once). Pages hold `limit` entries (1–100, default 100); continue with `after` set to `next` (`<artifactId>/<stage>`)."
+      },
+      "summary": "ステージを持つアーティファクトの一覧表示",
+      "description": "リポジトリのステージエントリ（アーティファクト、ステージ、時刻、実行者、コメント）を、アーティファクトとステージの順に列挙します。`stage`のみ、または`ids`（カンマ区切りの1〜100個のID。たとえばパッケージの1ページ分のステージを一度に表示する場合に使用）に含まれるアーティファクトのみに絞り込むこともできます。ページには`limit`件のエントリ（1〜100、既定は100）が含まれ、続きは`after`に`next`（`<artifactId>/<stage>`）を設定して取得します。"
+    },
+    "listRepositoryPromotions": {
+      "en": {
+        "summary": "Follow the promotion journal of a repository",
+        "description": "Returns the stage and promotion events of every artifact in the repository, oldest first, for CI/CD to poll: stage added or removed, promoted to another repository, received from one. Pages hold `limit` events (1–100, default 50); store the last `sequence` and continue with `after` set to `next`."
+      },
+      "summary": "リポジトリのプロモーションジャーナルの取得",
+      "description": "リポジトリ内のすべてのアーティファクトのステージとプロモーションのイベントを、CI/CDがポーリングできるように古いものから返します。対象は、ステージの追加と削除、別のリポジトリへのプロモート、別のリポジトリからの受け取りです。ページには`limit`件のイベント（1〜100、既定は50）が含まれ、最後の`sequence`を保存して、`after`に`next`を設定して続きを取得します。"
+    },
+    "resolvePackage": {
+      "en": {
+        "summary": "Resolve a package version",
+        "description": "Chooses one registered UPack version by the same rules as `downloadPackageContent` and returns it without the bytes: version, artifact ID, SHA-256, size, publication time and current stages. `name` is required, `group` defaults to the root group; select by exact `version` or SemVer `range`, optionally `stage`, `prerelease=true` and `order=promoted` (needs `stage`); without `version` and `range` it is the highest stable version. No match is a 404; download the result by artifact ID to stay on that version."
+      },
+      "summary": "パッケージバージョンの解決",
+      "description": "`downloadPackageContent`と同じルールで登録済みのUPackバージョンを1つ選び、バイト列なしで返します。内容は、バージョン、アーティファクトID、SHA-256、サイズ、公開時刻、現在のステージです。`name`は必須で、`group`の既定はルートグループです。正確な`version`またはSemVerの`range`で選択でき、必要に応じて`stage`、`prerelease=true`、`order=promoted`（`stage`が必要）も指定できます。`version`と`range`のどちらも指定しない場合は、最も高い安定版バージョンになります。一致するものがなければ404です。そのバージョンに固定したままにするには、結果をアーティファクトIDでダウンロードしてください。"
+    },
+    "inspectArtifactDeletion": {
+      "en": {
+        "summary": "Check whether an artifact can be deleted",
+        "description": "Returns the artifact's name, size, publication time, current `annotationRevision` and the `blockers` that would keep it from deletion: `reference` (an external reference, or use by a container image, Git LFS or npm), `asset_history` (a current or earlier file path revision), `attachment_history` or `promotion_stage`. Nothing changes; pass the revision to `deleteArtifact` as `expectedAnnotationRevision`."
+      },
+      "summary": "アーティファクトを削除できるかの確認",
+      "description": "アーティファクトの名前、サイズ、公開時刻、現在の`annotationRevision`、および削除を妨げる`blockers`を返します。`blockers`は、`reference`（外部からの参照、またはコンテナイメージ、Git LFS、npmによる使用）、`asset_history`（現在または以前のファイルパスのリビジョン）、`attachment_history`、`promotion_stage`のいずれかです。何も変更されません。このリビジョンを`deleteArtifact`の`expectedAnnotationRevision`として渡してください。"
+    },
+    "previewRetention": {
+      "en": {
+        "summary": "Preview retention candidates",
+        "description": "Lists the published artifacts released before `criteria.publishedBefore` (a past UTC time with milliseconds), ordered by ID, each with its annotation revision and blockers, `protected_label` meaning one of `criteria.protectedLabels` (an explicit list of up to 32). Pages hold `limit` items (1–100, default 50); continue with `after` set to `next`. Nothing is reserved: choose the items to delete and pass them with their revisions to `applyRetention`, which checks them again."
+      },
+      "summary": "保持ルールによる削除候補のプレビュー",
+      "description": "`criteria.publishedBefore`（ミリ秒を含む過去のUTC時刻）より前に公開された公開済みアーティファクトをID順に列挙します。各項目にはアノテーションのリビジョンと削除を妨げるものが含まれ、`protected_label`は`criteria.protectedLabels`（最大32個までの明示的なリスト）のいずれかに該当することを意味します。ページには`limit`件（1〜100、既定は50）が含まれ、続きは`after`に`next`を設定して取得します。何も予約されません。削除する項目を選び、リビジョンとともに`applyRetention`に渡してください。そこで改めて確認されます。"
+    },
+    "applyRetention": {
+      "en": {
+        "summary": "Delete the selected retention candidates",
+        "description": "Rechecks 1–100 artifacts chosen from `previewRetention` (`items` with `id` and `expectedAnnotationRevision`) against the same `criteria` and logically deletes the eligible ones in one transaction. Each item gets an `outcome`: `deleted`, `already_deleted`, `changed` (the annotations changed), `not_eligible` (published too late), `protected` with its blockers, or `not_found`. The bytes stay reserved until the repository's online cleanup reclaims them."
+      },
+      "summary": "選択した削除候補の保持ルールによる削除",
+      "description": "`previewRetention`から選んだ1〜100件のアーティファクト（`id`と`expectedAnnotationRevision`を持つ`items`）を同じ`criteria`で再確認し、対象となるものを1つのトランザクションで論理削除します。各項目には`outcome`が付き、`deleted`、`already_deleted`、`changed`（アノテーションが変更された）、`not_eligible`（基準時刻より後に公開された）、削除を妨げるものを伴う`protected`、`not_found`のいずれかです。バイト列は、リポジトリの物理クリーンアップが回収するまで予約されたままです。"
+    },
+    "getStoragePolicy": {
+      "en": {
+        "summary": "Get the storage policy",
+        "description": "Returns the repository's automatic cleanup and quota settings with their `revision`, the next and last scheduled run, how many builds the last run deleted and its error. By default the policy is disabled and there is no repository quota (the server-wide capacity still applies)."
+      },
+      "summary": "ストレージポリシーの取得",
+      "description": "リポジトリの自動クリーンアップとクォータの設定を`revision`とともに返します。あわせて、次回と前回のスケジュール実行、前回の実行で削除したビルド数、およびそのエラーも返します。既定ではポリシーは無効で、リポジトリのクォータもありません（サーバー全体の容量の制限は引き続き適用されます）。"
+    },
+    "setStoragePolicy": {
+      "en": {
+        "summary": "Replace the storage policy",
+        "description": "Replaces the whole policy: keep the last `keepLast` registered UPack builds per package, per channel label (`channels`) or per repository (`grouping`), never delete `protectedLabels` or builds younger than `minAgeHours`, run every `intervalMinutes`, and limit the repository with `quotaBytes` (a decimal string, `null` for none) and its warning thresholds. `expectedRevision` must be the current revision, otherwise 409 `revision_mismatch`. Enabling also needs `artifact.delete` and ties the schedule to the calling managed key: once that key is revoked, expires or loses these permissions, scheduled deletion stops until the policy is saved with another key. Ordinary files count against the quota but are never deleted by it."
+      },
+      "summary": "ストレージポリシーの置換",
+      "description": "ポリシー全体を置き換えます。パッケージごと、チャンネルラベルごと（`channels`）、またはリポジトリごと（`grouping`）に登録済みのUPackビルドを直近の`keepLast`件だけ保持し、`protectedLabels`を持つビルドや`minAgeHours`より新しいビルドは削除せず、`intervalMinutes`ごとに実行します。また、`quotaBytes`（10進数の文字列、なしの場合は`null`）とその警告しきい値でリポジトリを制限します。`expectedRevision`は現在のリビジョンでなければならず、そうでない場合は409 `revision_mismatch`になります。有効にするには`artifact.delete`も必要で、スケジュールは呼び出したマネージドキーに結び付けられます。そのキーが失効するか、期限切れになるか、これらの権限を失うと、ポリシーが別のキーで保存されるまでスケジュールされた削除は停止します。通常のファイルはクォータには計上されますが、クォータによって削除されることはありません。"
+    },
+    "getStorageUsage": {
+      "en": {
+        "summary": "Get the storage usage of a repository",
+        "description": "Returns the bytes reserved by the repository as decimal strings: published, pending uploads and retired (deleted or cancelled, not yet reclaimed), their sum `reservedBytes`, the quota and a `state` (`unlimited`, `normal`, `warning`, `critical`, `exceeded`). This is the logical reservation counted against the quota, not the space used on disk."
+      },
+      "summary": "リポジトリのストレージ使用量の取得",
+      "description": "リポジトリが予約しているバイト数を10進数の文字列で返します。内訳は、公開済み、保留中のアップロード、廃棄済み（削除またはキャンセルされ、まだ回収されていないもの）で、その合計が`reservedBytes`です。あわせてクォータと`state`（`unlimited`、`normal`、`warning`、`critical`、`exceeded`）も返します。これはクォータに対して計上される論理的な予約量であり、ディスク上の使用量ではありません。"
+    },
+    "previewStoragePolicy": {
+      "en": {
+        "summary": "Preview what the storage policy would delete",
+        "description": "Returns up to 100 registered builds the saved policy would delete now (even while it is disabled), with the policy `revision` and `hasMore`; builds kept by references, file paths, attachments, protected labels or age are left out. Nothing is reserved: a run ranks the builds again."
+      },
+      "summary": "ストレージポリシーによる削除対象のプレビュー",
+      "description": "保存済みのポリシーが現時点で削除するはずの登録済みビルドを最大100件、ポリシーの`revision`と`hasMore`とともに返します（ポリシーが無効でも返します）。参照、ファイルパス、添付ファイル、保護ラベル、経過期間によって保持されるビルドは含まれません。何も予約されません。実行時にはビルドが改めてランク付けされます。"
+    },
+    "runStoragePolicy": {
+      "en": {
+        "summary": "Run the storage policy now",
+        "description": "Runs one batch of the enabled policy at once instead of waiting for the schedule: it ranks the builds again, checks permissions and dependencies, and logically deletes up to 100, returning an outcome for each. `expectedRevision` must be the current policy revision and the policy must be enabled, otherwise 409. The bytes are reclaimed later by the repository's online cleanup, which has its own policy (`setCleanup`)."
+      },
+      "summary": "ストレージポリシーの即時実行",
+      "description": "有効なポリシーを、スケジュールを待たずに1バッチ分すぐに実行します。ビルドを改めてランク付けし、権限と依存関係を確認して、最大100件を論理削除し、それぞれの結果を返します。`expectedRevision`は現在のポリシーのリビジョンでなければならず、ポリシーが有効である必要があります。そうでない場合は409です。バイト列は、独自のポリシー（`setCleanup`）を持つリポジトリの物理クリーンアップによって、後で回収されます。"
+    },
+    "getStorageEvents": {
+      "en": {
+        "summary": "List the storage events of a repository",
+        "description": "Returns up to 100 diagnostic events of storage policies, quotas, retention and cleanup after the sequence `after` (default 0), oldest first, each with level, code and a few details; `level` (`info`, `warning`, `error`) filters them, continue with `after` set to `next`. Only the newest 1000 events per repository and 20 000 overall are kept, so export them for longer retention."
+      },
+      "summary": "リポジトリのストレージイベントの一覧表示",
+      "description": "ストレージポリシー、クォータ、保持、クリーンアップの診断イベントを、シーケンス`after`（既定は0）より後から古いものの順に最大100件返します。各イベントにはレベル、コード、いくつかの詳細が含まれます。`level`（`info`、`warning`、`error`）で絞り込め、続きは`after`に`next`を設定して取得します。保持されるのはリポジトリごとに最新の1000件、全体で20,000件のみです。より長く保持したい場合はエクスポートしてください。"
+    },
+    "getCleanup": {
+      "en": {
+        "summary": "Get the online cleanup settings",
+        "description": "Returns the repository's online cleanup policy with its `revision` (`enabled`, `graceHours`, `batchSize`, `intervalSeconds`, `delayMilliseconds`), the last and next run, and how many objects the last batch reclaimed, deferred or failed with the bytes freed. Cleanup is what physically removes cancelled uploads and deleted artifacts; it is off by default."
+      },
+      "summary": "物理クリーンアップ設定の取得",
+      "description": "リポジトリの物理クリーンアップポリシーを`revision`（`enabled`、`graceHours`、`batchSize`、`intervalSeconds`、`delayMilliseconds`）とともに返します。あわせて前回と次回の実行、直近のバッチで回収、延期、失敗したオブジェクト数、解放したバイト数も返します。物理クリーンアップは、キャンセルされたアップロードと削除されたアーティファクトを物理的に削除する処理で、既定ではオフです。"
+    },
+    "setCleanup": {
+      "en": {
+        "summary": "Configure online cleanup",
+        "description": "Replaces the cleanup policy while the server runs: `enabled` (also to pause), `graceHours` (0–8760, how long deleted content stays before removal), `batchSize` (1–100 objects), `intervalSeconds` (5–86400) and `delayMilliseconds` (0–1000 between objects). `expectedRevision` must be the current revision (0 before the first change), otherwise 409 `revision_mismatch`. A change takes effect between objects, never halfway through one."
+      },
+      "summary": "物理クリーンアップの設定",
+      "description": "サーバーの稼働中にクリーンアップポリシーを置き換えます。`enabled`（一時停止にも使用）、`graceHours`（0〜8760。削除されたコンテンツが物理的に削除されるまでの猶予期間）、`batchSize`（1〜100オブジェクト）、`intervalSeconds`（5〜86400）、`delayMilliseconds`（オブジェクト間で0〜1000）を指定します。`expectedRevision`は現在のリビジョン（最初の変更前は0）でなければならず、そうでない場合は409 `revision_mismatch`になります。変更はオブジェクトの処理の合間に反映され、1つのオブジェクトの処理の途中で反映されることはありません。"
+    },
+    "requestCleanup": {
+      "en": {
+        "summary": "Request a cleanup batch now",
+        "description": "Schedules the next batch of the enabled cleanup policy to start at once; the answer is the cleanup state, and the bytes are freed only when the batch has run (see `lastRunAt` in `getCleanup`). `expectedRevision` must be the current revision; a disabled cleanup is a 409 `state_conflict`. Objects that are being read or written are deferred to a later batch."
+      },
+      "summary": "クリーンアップバッチの即時実行の要求",
+      "description": "有効なクリーンアップポリシーの次のバッチを、ただちに開始するようスケジュールします。応答はクリーンアップの状態で、バイトが解放されるのはバッチが実行された後だけです（`getCleanup`の`lastRunAt`を参照）。`expectedRevision`は現在のリビジョンでなければならず、クリーンアップが無効な場合は409 `state_conflict`になります。読み取り中または書き込み中のオブジェクトは、後のバッチに持ち越されます。"
+    },
+    "getRepositoryMirror": {
+      "en": {
+        "summary": "Get the synchronization state of a mirror",
+        "description": "For a repository this server mirrors from another Arkvory (configured in `ARKVORY_MIRRORS_FILE`), returns the source, the `mode` (`mirror`, a read-only copy, or `import`, which takes over versions with the listed `stages`), the `phase` (`pending`, `seeding`, `following`), the applied `cursor` and the source `head`, `caughtUp`, the last check, sync and error, and the artifacts and bytes copied. Sequences are journal numbers of the source, so their difference is not a count of changes. An ordinary repository answers 404."
+      },
+      "summary": "ミラーの同期状態の取得",
+      "description": "このサーバーが別のArkvoryからミラーしているリポジトリ（`ARKVORY_MIRRORS_FILE`で設定）について、ミラー元、`mode`（読み取り専用のコピーである`mirror`、または、リストされた`stages`のバージョンを引き継ぐ`import`）、`phase`（`pending`、`seeding`、`following`）、適用済みの`cursor`とミラー元の`head`、`caughtUp`、前回の確認・同期・エラー、コピーされたアーティファクトとバイトの数を返します。シーケンスはミラー元のジャーナル番号であるため、その差は変更の件数ではありません。通常のリポジトリは404で応答します。"
+    },
+    "getBuildAttachments": {
+      "en": {
+        "summary": "Get the attachments of a build",
+        "description": "Returns the current attachment revision of an artifact: up to 32 entries, each naming another published artifact of the repository with a `name`, a `kind` (`manifest`, `sbom`, `signature`, `report`, `file`) and a `description`, plus the actor and time of the change. Revision 0 with no items means nothing was ever attached. Download an attached file by its `artifactId`."
+      },
+      "summary": "ビルドの添付ファイルの取得",
+      "description": "アーティファクトの現在の添付ファイルのリビジョンを返します。最大32エントリで、各エントリはリポジトリ内の別の公開済みアーティファクトを指し、`name`、`kind`（`manifest`、`sbom`、`signature`、`report`、`file`）、`description`を持ちます。あわせて、変更の実行者と時刻も返します。項目のないリビジョン0は、何も添付されたことがないことを意味します。添付ファイルは、その`artifactId`でダウンロードしてください。"
+    },
+    "replaceBuildAttachments": {
+      "en": {
+        "summary": "Replace the attachments of a build",
+        "description": "Replaces the whole attachment list of an artifact (up to 32 entries; an empty list removes them all) and returns the new revision. Each target must be another artifact already published in the same repository (upload it first), names are unique ignoring case and descriptions have up to 512 characters. `expectedRevision` must be the current revision (0 for the first list), otherwise 409 `revision_mismatch`; artifacts named in any revision stay protected from deletion."
+      },
+      "summary": "ビルドの添付ファイルの置換",
+      "description": "アーティファクトの添付ファイルのリスト全体を置き換え（最大32エントリ。空のリストを指定するとすべて削除）、新しいリビジョンを返します。各対象は、同じリポジトリにすでに公開されている別のアーティファクトでなければなりません（先にアップロードしてください）。名前は大文字小文字を区別せずに一意で、説明は最大512文字です。`expectedRevision`は現在のリビジョン（最初のリストでは0）でなければならず、そうでない場合は409 `revision_mismatch`になります。いずれかのリビジョンで指定されたアーティファクトは、削除から保護されたままになります。"
+    },
+    "getBuildAttachmentHistory": {
+      "en": {
+        "summary": "List the attachment history of a build",
+        "description": "Returns the earlier and current attachment revisions of an artifact, newest first, 20 per page, each with its entries, actor and time; continue with `before` set to `next`. The attached artifacts of every revision remain downloadable, because they are protected from deletion."
+      },
+      "summary": "ビルドの添付ファイル履歴の一覧表示",
+      "description": "アーティファクトの以前および現在の添付ファイルのリビジョンを新しい順に、1ページ20件で返します。各リビジョンにはエントリ、実行者、時刻が含まれます。続きは`before`に`next`を設定して取得します。すべてのリビジョンの添付アーティファクトは削除から保護されているため、引き続きダウンロードできます。"
+    },
+    "login": {
+      "en": {
+        "summary": "Sign in",
+        "description": "Exchanges an account `name` and `password` for a bearer session `token` valid for 12 hours, with its `expiresAt` and the account; send it as `Authorization: Bearer`. An unknown name, a wrong password and a disabled account all answer the same 401 `invalid_credentials`. Attempts are throttled per client address and per account (429 `rate_limited` with Retry-After), and an account keeps at most 32 sessions: a new one ends the oldest."
+      },
+      "summary": "サインイン",
+      "description": "アカウントの`name`と`password`を、12時間有効なBearerセッション`token`と交換します。応答には`expiresAt`とアカウントも含まれ、トークンは`Authorization: Bearer`として送信します。未知の名前、誤ったパスワード、無効化されたアカウントは、いずれも同じ401 `invalid_credentials`で応答します。試行はクライアントアドレスごと、アカウントごとに制限され（Retry-After付きの429 `rate_limited`）、1つのアカウントが保持できるセッションは最大32個で、新しいセッションを作ると最も古いものが終了します。"
+    },
+    "registerAccount": {
+      "en": {
+        "summary": "Register an account",
+        "description": "Creates an ordinary account (never an administrator) with `name` (3–64 letters, digits or `_.-`) and `password` (12–128 characters) and signs it in, answering 201 with a 12-hour session like `login`. Works only when the server allows self-registration (see `getAuthOptions`), otherwise 403 `registration_disabled`; a taken name is a 409 `already_exists`. Attempts are throttled per client address (429 with Retry-After), and self-registration stops at 900 accounts."
+      },
+      "summary": "アカウントの登録",
+      "description": "`name`（英字、数字、`_.-`からなる3〜64文字）と`password`（12〜128文字）で通常のアカウント（管理者ではありません）を作成してサインインさせ、`login`と同様に12時間のセッションを付けて201で応答します。サーバーが自己登録を許可している場合（`getAuthOptions`を参照）にのみ動作し、許可していない場合は403 `registration_disabled`になります。すでに使われている名前は409 `already_exists`です。試行はクライアントアドレスごとに制限され（Retry-After付きの429）、自己登録は900アカウントで停止します。"
+    },
+    "getAuthOptions": {
+      "en": {
+        "summary": "Get the sign-in options",
+        "description": "Tells a console before sign-in which forms to show: `selfRegistration` is true when `registerAccount` is open on this server."
+      },
+      "summary": "サインインオプションの取得",
+      "description": "サインイン前のコンソールに、どのフォームを表示するかを伝えます。このサーバーで`registerAccount`が利用できる場合、`selfRegistration`はtrueです。"
+    },
+    "listUserTokens": {
+      "en": {
+        "summary": "List your personal access tokens",
+        "description": "Lists the personal access tokens of the signed-in account, active first, with name, prefix, scope, creation, expiry, last use and whether it is revoked; the secrets are never shown again."
+      },
+      "summary": "個人用アクセストークンの一覧表示",
+      "description": "サインイン中のアカウントの個人用アクセストークンを、有効なものを先に列挙します。各項目には、名前、プレフィックス、スコープ、作成日時、有効期限、最終使用日時、取り消し済みかどうかが含まれます。シークレットが再び表示されることはありません。"
+    },
+    "createUserToken": {
+      "en": {
+        "summary": "Create a personal access token",
+        "description": "Creates a token for scripts and tools that acts as the signed-in account; the secret is in this answer only. `name` has 1–64 characters, `expiresAt` defaults to 90 days and must lie in the future and within 365 days, and `scope` is `read-write` (default) or `read`, which can never change anything. Tokens never carry administrator rights, cannot create tokens, and an account has at most 50 active ones (507 `token_limit`)."
+      },
+      "summary": "個人用アクセストークンの作成",
+      "description": "サインイン中のアカウントとして動作する、スクリプトやツール向けのトークンを作成します。シークレットはこの応答にのみ含まれます。`name`は1〜64文字、`expiresAt`の既定は90日後で、未来かつ365日以内でなければなりません。`scope`は`read-write`（既定）または`read`で、`read`では何も変更できません。トークンに管理者権限が付くことはなく、トークンを作成することもできません。1つのアカウントが持てる有効なトークンは最大50個です（507 `token_limit`）。"
+    },
+    "revokeUserToken": {
+      "en": {
+        "summary": "Revoke your personal access token",
+        "description": "Revokes one personal access token of the signed-in account; requests with it fail from now on. Revoking an already revoked token succeeds as well."
+      },
+      "summary": "個人用アクセストークンの取り消し",
+      "description": "サインイン中のアカウントの個人用アクセストークンを1つ取り消します。以後、そのトークンを使ったリクエストは失敗します。すでに取り消されたトークンを取り消した場合も成功します。"
+    },
+    "logout": {
+      "en": {
+        "summary": "Sign out",
+        "description": "Ends the account session sent in `Authorization`; its token stops working at once. With any other credential (a personal token or a service key) it answers 204 and revokes nothing."
+      },
+      "summary": "サインアウト",
+      "description": "`Authorization`で送信されたアカウントのセッションを終了します。そのトークンはただちに使えなくなります。他の認証情報（個人用トークンまたはサービスキー）では、204を返し、何も取り消しません。"
+    },
+    "changeOwnPassword": {
+      "en": {
+        "summary": "Change your password",
+        "description": "Sets `newPassword` (12–128 characters) after checking `currentPassword`; a wrong current password is a 401 `current_password_invalid` and counts toward the sign-in backoff. On success every session and every personal access token of the account is revoked, including the current session, so sign in again."
+      },
+      "summary": "自分のパスワードの変更",
+      "description": "`currentPassword`を確認したうえで`newPassword`（12〜128文字）を設定します。現在のパスワードが誤っている場合は401 `current_password_invalid`になり、サインインのバックオフに計上されます。成功すると、現在のセッションを含め、アカウントのすべてのセッションとすべての個人用アクセストークンが取り消されるため、改めてサインインしてください。"
+    },
+    "getCurrentPrincipal": {
+      "en": {
+        "summary": "Get the current identity",
+        "description": "Returns who the credential belongs to: its `id`, whether it is an administrator, the credential kind (`session`, `personal-token`, `service-key` or `file-key`), the scope of a personal token, and the repositories it has `read` or `write` access to. Use it to show the signed-in user and to choose a repository; for the exact permissions of a managed service key use `getOwnPermissions`."
+      },
+      "summary": "現在のアイデンティティの取得",
+      "description": "認証情報の持ち主を返します。内容は、`id`、管理者かどうか、認証情報の種類（`session`、`personal-token`、`service-key`、`file-key`）、個人用トークンのスコープ、`read`または`write`アクセスを持つリポジトリです。サインイン中のユーザーを表示したり、リポジトリを選択したりするために使用します。マネージドサービスキーの正確な権限を調べるには、`getOwnPermissions`を使用してください。"
+    },
+    "listUsers": {
+      "en": {
+        "summary": "List accounts",
+        "description": "Lists all user accounts ordered by name, with ID, name, administrator flag and whether they are enabled. The server holds at most 1000 accounts."
+      },
+      "summary": "アカウントの一覧表示",
+      "description": "すべてのユーザーアカウントを名前順に列挙します。各項目には、ID、名前、管理者フラグ、有効かどうかが含まれます。サーバーが保持できるアカウントは最大1000件です。"
+    },
+    "createUser": {
+      "en": {
+        "summary": "Create an account",
+        "description": "Creates an account with `name` (3–64 letters, digits or `_.-`), `password` (12–128 characters) and `administrator` (default false), and answers 201 with it. A taken name is a 409 `already_exists`; the server holds at most 1000 accounts (507 `account_limit`)."
+      },
+      "summary": "アカウントの作成",
+      "description": "`name`（英字、数字、`_.-`からなる3〜64文字）、`password`（12〜128文字）、`administrator`（既定はfalse）でアカウントを作成し、201でそれを返します。すでに使われている名前は409 `already_exists`で、サーバーが保持できるアカウントは最大1000件です（507 `account_limit`）。"
+    },
+    "updateUser": {
+      "en": {
+        "summary": "Enable, disable or reset an account",
+        "description": "Changes `enabled` and/or sets a new `password` of an account; the administrator flag cannot be changed here. Disabling ends every session of the account and its personal tokens stop working while it stays disabled; a password reset ends every session and revokes every personal token."
+      },
+      "summary": "アカウントの有効化、無効化、パスワードのリセット",
+      "description": "アカウントの`enabled`を変更するか、新しい`password`を設定するか、その両方を行います。ここでは管理者フラグは変更できません。無効化するとアカウントのすべてのセッションが終了し、無効のままの間はその個人用トークンも使えなくなります。パスワードをリセットすると、すべてのセッションが終了し、すべての個人用トークンが取り消されます。"
+    },
+    "listAccountTokens": {
+      "en": {
+        "summary": "List the personal access tokens of an account",
+        "description": "Lists the personal access tokens of any account, active first, with name, prefix, scope, creation, expiry, last use and revocation; never the secrets. Use it to review automation before disabling or resetting the account."
+      },
+      "summary": "アカウントの個人用アクセストークンの一覧表示",
+      "description": "任意のアカウントの個人用アクセストークンを、有効なものを先に列挙します。各項目には、名前、プレフィックス、スコープ、作成日時、有効期限、最終使用日時、取り消し状況が含まれます。シークレットは含まれません。アカウントを無効化またはリセットする前に、自動化の利用状況を確認するために使用します。"
+    },
+    "revokeAccountToken": {
+      "en": {
+        "summary": "Revoke a personal access token of an account",
+        "description": "Revokes one personal access token of the account `id`; requests with it fail from now on, and the event is recorded in the security audit. Revoking an already revoked token succeeds as well."
+      },
+      "summary": "アカウントの個人用アクセストークンの取り消し",
+      "description": "アカウント`id`の個人用アクセストークンを1つ取り消します。以後、そのトークンを使ったリクエストは失敗し、このイベントはセキュリティ監査に記録されます。すでに取り消されたトークンを取り消した場合も成功します。"
+    },
+    "listAccessGroups": {
+      "en": {
+        "summary": "List access groups",
+        "description": "Lists all access groups with their member account IDs and repository grants (`read` or `write`). The server holds at most 100 groups and 10 000 memberships and grants each."
+      },
+      "summary": "アクセスグループの一覧表示",
+      "description": "すべてのアクセスグループを、所属するアカウントのIDとリポジトリへの付与（`read`または`write`）とともに列挙します。サーバーが保持できるのは、グループが最大100件、所属と付与がそれぞれ最大10,000件です。"
+    },
+    "createAccessGroup": {
+      "en": {
+        "summary": "Create an access group",
+        "description": "Creates an empty group with `name` (2–64 letters, digits or `_.-`) and answers 201 with it; a taken name is a 409 `already_exists`. Add members with `addGroupMember` and repositories with `setGroupGrant`."
+      },
+      "summary": "アクセスグループの作成",
+      "description": "`name`（英字、数字、`_.-`からなる2〜64文字）で空のグループを作成し、201でそれを返します。すでに使われている名前は409 `already_exists`です。メンバーは`addGroupMember`で、リポジトリは`setGroupGrant`で追加します。"
+    },
+    "addGroupMember": {
+      "en": {
+        "summary": "Add an account to a group",
+        "description": "Makes the account `userId` a member of the group; it gains the group's repository access with its next request. Adding an existing member changes nothing; at most 10 000 memberships in all (507 `membership_limit`)."
+      },
+      "summary": "グループへのアカウントの追加",
+      "description": "アカウント`userId`をグループのメンバーにします。そのアカウントは、次のリクエストからグループのリポジトリアクセスを得ます。すでにメンバーであるアカウントを追加しても何も変わりません。所属の合計は最大10,000件です（507 `membership_limit`）。"
+    },
+    "removeGroupMember": {
+      "en": {
+        "summary": "Remove an account from a group",
+        "description": "Removes the account `userId` from the group; the access it had through the group ends with its next request. Removing an account that is not a member succeeds as well."
+      },
+      "summary": "グループからのアカウントの削除",
+      "description": "アカウント`userId`をグループから削除します。グループ経由で持っていたアクセスは、次のリクエストから失われます。メンバーでないアカウントを削除した場合も成功します。"
+    },
+    "setGroupGrant": {
+      "en": {
+        "summary": "Grant a group access to a repository",
+        "description": "Gives the group's members `access` `read` or `write` to `repository`, replacing an earlier grant of the group there; it applies from their next request. A repository needs no separate creation: the grant makes it visible to them. At most 10 000 grants in all (507 `grant_limit`)."
+      },
+      "summary": "グループへのリポジトリアクセスの付与",
+      "description": "グループのメンバーに、`repository`への`access`（`read`または`write`）を付与します。そのグループの以前の付与は置き換えられ、メンバーの次のリクエストから適用されます。リポジトリを別途作成する必要はなく、付与によってメンバーから見えるようになります。付与の合計は最大10,000件です（507 `grant_limit`）。"
+    },
+    "removeGroupGrant": {
+      "en": {
+        "summary": "Remove a group's access to a repository",
+        "description": "Removes the group's grant for `repository`; its members keep only the access they have through other groups. Removing a grant that does not exist succeeds as well."
+      },
+      "summary": "グループのリポジトリアクセスの削除",
+      "description": "`repository`に対するグループの付与を削除します。メンバーには、他のグループ経由で持つアクセスだけが残ります。存在しない付与を削除した場合も成功します。"
+    },
+    "listSecurityAudit": {
+      "en": {
+        "summary": "Read the security audit",
+        "description": "Returns the append-only journal of sign-ins, registrations, account, group, grant, password and personal token changes, newest first, each with actor, credential kind, target, outcome and client address; throttled attempts are not journaled. Pages hold `limit` entries (1–100, default 50); continue with `after` set to `next`."
+      },
+      "summary": "セキュリティ監査の取得",
+      "description": "サインイン、登録、アカウント、グループ、付与、パスワード、個人用アクセストークンの変更の、追記専用ジャーナルを新しい順に返します。各項目には、実行者、認証情報の種類、対象、結果、クライアントアドレスが含まれます。スロットリングされた試行はジャーナルに記録されません。ページには`limit`件（1〜100、既定は50）が含まれ、続きは`after`に`next`を設定して取得します。"
+    },
+    "getOwnPermissions": {
+      "en": {
+        "summary": "Get your effective permissions",
+        "description": "Returns the caller's `profile` (`managed` for a managed service key, `legacy` otherwise), its key ID, its effective bindings (each repository with the exact actions allowed there) and whether it is the bootstrap service administrator. Use it to adapt a client; the server still checks every request, so a change of permissions applies at once."
+      },
+      "summary": "自分の有効な権限の取得",
+      "description": "呼び出し元の`profile`（マネージドサービスキーでは`managed`、それ以外は`legacy`）、そのキーID、有効なバインディング（各リポジトリと、そこで許可される正確なアクション）、そしてブートストラップサービス管理者かどうかを返します。クライアントを適応させるために使用してください。サーバーはすべてのリクエストを引き続き確認するため、権限の変更はただちに反映されます。"
+    },
+    "listServiceAccounts": {
+      "en": {
+        "summary": "List service accounts",
+        "description": "Lists the service accounts the caller may see, ordered by ID, 50 per page, each with name, enabled flag, `revision`, policy `bindings` and creation time; continue with `after` set to `next`. The bootstrap key sees all of them, a delegate only the targets where its delegation includes `service-account.read`; without that the list is empty rather than refused."
+      },
+      "summary": "サービスアカウントの一覧表示",
+      "description": "呼び出し元が参照できるサービスアカウントをID順に、1ページ50件で列挙します。各項目には、名前、有効フラグ、`revision`、ポリシーの`bindings`、作成時刻が含まれます。続きは`after`に`next`を設定して取得します。ブートストラップキーはすべてを参照でき、委任先は、自分への委任に`service-account.read`が含まれる対象のみを参照できます。それがない場合、一覧は拒否されるのではなく空になります。"
+    },
+    "createServiceAccount": {
+      "en": {
+        "summary": "Create a service account",
+        "description": "Creates a machine identity for CI or an application with `name` (3–64 letters, digits or `_.-`) and its policy `bindings`: for each repository, the exact actions its keys may use (such as `upload.create` or `content.read`). Answers 201 with the account; then issue a key with `issueServiceKey`. A taken name is a 409 `already_exists`."
+      },
+      "summary": "サービスアカウントの作成",
+      "description": "CIやアプリケーション用のマシンアイデンティティを、`name`（英字、数字、`_.-`からなる3〜64文字）と、そのポリシーの`bindings`で作成します。`bindings`は、リポジトリごとに、そのキーが使用できる正確なアクション（`upload.create`や`content.read`など）を指定するものです。応答は201とアカウントで、その後`issueServiceKey`でキーを発行します。すでに使われている名前は409 `already_exists`です。"
+    },
+    "getServiceAccount": {
+      "en": {
+        "summary": "Get a service account",
+        "description": "Returns the account's name, enabled flag, `revision`, policy bindings and creation time. For a delegate, an account it was not assigned answers 404 and a missing action on an assigned one 403."
+      },
+      "summary": "サービスアカウントの取得",
+      "description": "アカウントの名前、有効フラグ、`revision`、ポリシーのバインディング、作成時刻を返します。委任先に対しては、割り当てられていないアカウントは404で、割り当てられたアカウントに対して必要なアクションがない場合は403で応答します。"
+    },
+    "updateServiceAccount": {
+      "en": {
+        "summary": "Enable or disable a service account",
+        "description": "Sets `enabled`; `expectedRevision` must be the current revision, otherwise 409 `revision_mismatch`. Only this flag changes here (the name cannot). Disabling blocks every key of the account from the next request; enabling restores the keys that are neither expired nor revoked. A delegate may do it only when the whole current policy lies within its ceiling."
+      },
+      "summary": "サービスアカウントの有効化と無効化",
+      "description": "`enabled`を設定します。`expectedRevision`は現在のリビジョンでなければならず、そうでない場合は409 `revision_mismatch`になります。ここで変更できるのはこのフラグのみです（名前は変更できません）。無効化すると、次のリクエストからアカウントのすべてのキーがブロックされ、有効化すると、期限切れでも取り消し済みでもないキーが復活します。委任先がこれを行えるのは、現在のポリシー全体が自分の上限の範囲内にある場合に限られます。"
+    },
+    "getServicePolicy": {
+      "en": {
+        "summary": "Get the policy of a service account",
+        "description": "Returns the account with its policy `bindings` and `revision`, like `getServiceAccount`, for a caller that holds `policy.read`. A key's effective permissions are the intersection of this policy and the key's own bindings, per repository and action."
+      },
+      "summary": "サービスアカウントのポリシーの取得",
+      "description": "`policy.read`を持つ呼び出し元に対して、`getServiceAccount`と同様に、アカウントをそのポリシーの`bindings`と`revision`とともに返します。キーの有効な権限は、リポジトリとアクションごとの、このポリシーとキー自身のバインディングの共通部分です。"
+    },
+    "setServicePolicy": {
+      "en": {
+        "summary": "Replace the policy of a service account",
+        "description": "Replaces the account's `bindings` (up to 64, each a repository with its exact actions); `expectedRevision` must be the current revision, otherwise 409 `revision_mismatch`. Every key follows the change from its next request: narrowing takes effect at once, widening never goes beyond a key's own bindings. A delegate needs both the current and the new policy to lie within its ceiling."
+      },
+      "summary": "サービスアカウントのポリシーの置換",
+      "description": "アカウントの`bindings`（最大64件。それぞれリポジトリと正確なアクションの組）を置き換えます。`expectedRevision`は現在のリビジョンでなければならず、そうでない場合は409 `revision_mismatch`になります。すべてのキーは次のリクエストから変更に従います。範囲の縮小はただちに反映され、拡大してもキー自身のバインディングを超えることはありません。委任先には、現在のポリシーと新しいポリシーの両方が自分の上限の範囲内にあることが必要です。"
+    },
+    "listServiceKeys": {
+      "en": {
+        "summary": "List the keys of a service account",
+        "description": "Lists key metadata of the account ordered by ID, 50 per page: name, `state` (`pending`, `active`, `revoked`), bindings, creation, expiry, activation deadline and the key it was rotated from; never secrets or hashes. Continue with `after` set to `next`. Expiry does not change `state`, so compare `expiresAt` with the current time."
+      },
+      "summary": "サービスアカウントのキーの一覧表示",
+      "description": "アカウントのキーのメタデータをID順に、1ページ50件で列挙します。内容は、名前、`state`（`pending`、`active`、`revoked`）、バインディング、作成、有効期限、アクティベーションの期限、ローテーション元のキーで、シークレットやハッシュは含まれません。続きは`after`に`next`を設定して取得します。有効期限が切れても`state`は変わらないため、`expiresAt`を現在時刻と比較してください。"
+    },
+    "issueServiceKey": {
+      "en": {
+        "summary": "Issue a key for a service account",
+        "description": "Issues a pending key with `name`, `bindings` (effective only where the account policy allows them too) and optional `expiresAt` (UTC; 90 days by default, at most 365, and for a delegate never beyond its own key). The first answer is 201 with `key` and the `secret`, shown only this once; a repeat with the same `Idempotency-Key` and body is 200 with the metadata only, a different body a 409. The holder must call `activateServiceKey` with the secret within 15 minutes; if the secret was lost, revoke the key and issue a new one under a new Idempotency-Key."
+      },
+      "summary": "サービスアカウントのキーの発行",
+      "description": "`name`、`bindings`（アカウントのポリシーでも許可されている範囲でのみ有効）、および任意の`expiresAt`（UTC。既定は90日、最大365日で、委任先の場合は自身のキーの期限を超えられません）を指定して、保留中のキーを発行します。最初の応答は201で、`key`と`secret`を返します。`secret`が表示されるのはこの1回だけです。同じ`Idempotency-Key`とボディで繰り返すと、メタデータのみを含む200になり、ボディが異なる場合は409になります。キーの保持者は、15分以内にシークレットを使って`activateServiceKey`を呼び出す必要があります。シークレットを紛失した場合は、キーを取り消し、新しいIdempotency-Keyで新しいキーを発行してください。"
+    },
+    "getServiceAudit": {
+      "en": {
+        "summary": "Read the audit of a service account",
+        "description": "Returns, oldest first, up to 100 events of the account after the sequence `after` (default 0): account, policy and key changes such as issue, rotation, activation and revocation, each with actor, action, key and time. To read further, pass the last `sequence` as `after`; there is no `next` field. Only the newest 100 000 events of the server are kept."
+      },
+      "summary": "サービスアカウントの監査の取得",
+      "description": "シーケンス`after`（既定は0）より後のアカウントのイベントを、古いものから最大100件返します。対象は、発行、ローテーション、アクティベーション、取り消しといった、アカウント、ポリシー、キーの変更で、それぞれに実行者、アクション、キー、時刻が含まれます。続きを読むには、最後の`sequence`を`after`として渡します。`next`フィールドはありません。保持されるのは、サーバー全体で最新の100,000件のイベントのみです。"
+    },
+    "getServiceKey": {
+      "en": {
+        "summary": "Get a key",
+        "description": "Returns the metadata of one managed key: its account, name, state, bindings, creation, expiry, activation deadline and the key it was rotated from; never the secret or its hash."
+      },
+      "summary": "キーの取得",
+      "description": "1つのマネージドキーのメタデータを返します。内容は、アカウント、名前、状態、バインディング、作成、有効期限、アクティベーションの期限、ローテーション元のキーで、シークレットやそのハッシュは含まれません。"
+    },
+    "rotateServiceKey": {
+      "en": {
+        "summary": "Rotate a key",
+        "description": "Issues a pending successor of key `id` for the same account with the same or narrower `bindings`, answering like `issueServiceKey`: 201 with the one-time `secret`, 200 with metadata only on a repeat with the same `Idempotency-Key`. Once the successor is activated, the old key stays valid for at most 24 more hours; revoke it explicitly when the new one works, but only after the jobs it started have finished. Delegations held by an operator key are not copied to its successor."
+      },
+      "summary": "キーのローテーション",
+      "description": "キー`id`の後継となる保留中のキーを、同じアカウントに対して、同じかより狭い`bindings`で発行します。応答は`issueServiceKey`と同様で、201と1回限りの`secret`、同じ`Idempotency-Key`で繰り返した場合はメタデータのみの200です。後継がアクティベートされた後も、古いキーは最大24時間まで有効なままです。新しいキーが動作することを確認し、古いキーが開始したジョブが完了してから、明示的に取り消してください。オペレーターキーが持つ委任は、後継キーにはコピーされません。"
+    },
+    "revokeServiceKey": {
+      "en": {
+        "summary": "Revoke a key",
+        "description": "Revokes the key for good: its next request fails, while a download already running is not cut off. Repeating succeeds with 204. Keys that a revoked operator key issued and that were already activated stay valid; revoke them separately."
+      },
+      "summary": "キーの取り消し",
+      "description": "キーを完全に取り消します。次のリクエストは失敗しますが、すでに実行中のダウンロードは切断されません。繰り返しても204で成功します。取り消されたオペレーターキーが発行し、すでにアクティベートされているキーは有効なままなので、別途取り消してください。"
+    },
+    "activateServiceKey": {
+      "en": {
+        "summary": "Activate a key",
+        "description": "Proves that the holder received a newly issued key: call it with that key as `Authorization: Bearer` within 15 minutes of issue, and the key becomes active (204). Repeating is safe and does not extend the expiry. Activating a rotated key cuts the remaining lifetime of the key it replaces to at most 24 hours."
+      },
+      "summary": "キーのアクティベート",
+      "description": "保持者が新しく発行されたキーを受け取ったことを証明します。発行から15分以内に、そのキーを`Authorization: Bearer`として呼び出すと、キーが有効になります（204）。繰り返しても安全で、有効期限は延長されません。ローテーションされたキーをアクティベートすると、置き換えられる側のキーの残りの有効期間は最大24時間に短縮されます。"
+    },
+    "listServiceDelegations": {
+      "en": {
+        "summary": "List the delegations of a key",
+        "description": "Returns the delegations held by operator key `id`, up to 64 including disabled ones: for each target account its `revision`, whether it is `enabled`, the administration `actions` (such as `credential.manage`) and the `ceiling` of repository bindings it may hand out. A delegate reads its own here (its key ID is `credentialId` in `getOwnPermissions`); another key's list is a 403."
+      },
+      "summary": "キーの委任の一覧表示",
+      "description": "オペレーターキー`id`が持つ委任を、無効なものを含めて最大64件返します。対象アカウントごとに、`revision`、`enabled`かどうか、管理用の`actions`（`credential.manage`など）、付与できるリポジトリバインディングの`ceiling`が含まれます。委任先はここで自分の委任を読み取れます（そのキーIDは`getOwnPermissions`の`credentialId`です）。他のキーの一覧は403になります。"
+    },
+    "setServiceDelegation": {
+      "en": {
+        "summary": "Delegate the administration of a service account",
+        "description": "Lets key `id` administer the service account `accountId` with the given `actions` (`service-account.read`, `service-account.manage`, `policy.read`, `policy.manage`, `credential.read`, `credential.manage`, `service-audit.read`) within `ceiling`, up to 16 repository bindings it may hand out; manage does not imply read. `expectedRevision` is 0 to create and the record's current revision to change or re-enable it, otherwise 409. The key must be active and issued by the bootstrap key, and an account cannot both hold delegations and be the target of one, so delegation never chains."
+      },
+      "summary": "サービスアカウントの管理の委任",
+      "description": "キー`id`に、指定した`actions`（`service-account.read`、`service-account.manage`、`policy.read`、`policy.manage`、`credential.read`、`credential.manage`、`service-audit.read`）で、サービスアカウント`accountId`を`ceiling`（付与できるリポジトリバインディング。最大16件）の範囲内で管理させます。manageはreadを含意しません。`expectedRevision`は、作成するときは0、変更または再有効化するときはレコードの現在のリビジョンとし、そうでない場合は409です。キーは有効で、ブートストラップキーが発行したものでなければなりません。また、1つのアカウントが委任を持ちつつ委任の対象にもなることはできないため、委任が連鎖することはありません。"
+    },
+    "removeServiceDelegation": {
+      "en": {
+        "summary": "Withdraw a delegation",
+        "description": "Disables the delegation of key `id` over `accountId`; the JSON body carries `expectedRevision`, the record's current revision. The record stays as a disabled entry without actions and with a higher revision, returned with 200; after a lost answer read it with `listServiceDelegations` instead of repeating, since the old revision is a 409. Keys the delegate already issued and activated keep working: revoke them or disable the account separately."
+      },
+      "summary": "委任の撤回",
+      "description": "キー`id`の`accountId`に対する委任を無効にします。JSONボディには、レコードの現在のリビジョンである`expectedRevision`を含めます。レコードは、アクションを持たない無効なエントリとして、より高いリビジョンで残り、200で返されます。応答が失われた場合は、繰り返さずに`listServiceDelegations`で読み取ってください。古いリビジョンは409になるためです。委任先がすでに発行してアクティベートしたキーは引き続き動作するため、別途取り消すか、アカウントを無効にしてください。"
+    },
+    "getBackupStatus": {
+      "en": {
+        "summary": "Get the backup status",
+        "description": "Summarizes the backup system: the vault (`configured`, `available`, free and total bytes), the backup agent (`online`, last heartbeat, version), the plan, the newest completed point, the next scheduled run, the running job and `warnings`, each a code such as `agent_offline` or `backup_stale` with severity `warning` or `critical`. The vault is reported unavailable while the agent is offline. It contains no paths or secrets."
+      },
+      "summary": "バックアップ状態の取得",
+      "description": "バックアップシステムの概要を返します。内容は、保管庫（`configured`、`available`、空きバイト数と合計バイト数）、バックアップエージェント（`online`、最後のハートビート、バージョン）、プラン、完了した最新の復元ポイント、次回のスケジュール実行、実行中のジョブ、そして`warnings`です。`warnings`はそれぞれ`agent_offline`や`backup_stale`のようなコードと、重大度`warning`または`critical`を持ちます。エージェントがオフラインの間、保管庫は利用不可として報告されます。パスやシークレットは含まれません。"
+    },
+    "getBackupPlan": {
+      "en": {
+        "summary": "Get the backup plan",
+        "description": "Returns the daily schedule (`enabled`, `hour` and `minute` in the IANA `timezone`) and the retention policy (`daily`, `weekly`, `monthly` points to keep) with the `revision` to send back to `updateBackupPlan`. Until changed the plan is disabled, with a 02:00 UTC schedule and 7 daily, 4 weekly and 6 monthly points."
+      },
+      "summary": "バックアッププランの取得",
+      "description": "毎日のスケジュール（`enabled`、IANAの`timezone`での`hour`と`minute`）と、保持ポリシー（残す`daily`、`weekly`、`monthly`のポイント数）を、`updateBackupPlan`に送り返すための`revision`とともに返します。変更するまでプランは無効で、スケジュールは02:00 UTC、保持は日次7件、週次4件、月次6件です。"
+    },
+    "updateBackupPlan": {
+      "en": {
+        "summary": "Replace the backup plan",
+        "description": "Replaces the whole plan: `enabled`, `hour` (0–23), `minute` (0–59), `timezone` and `retention` (at most 366 daily, 260 weekly, 120 monthly) must all be present. `expectedRevision` must be the current revision, otherwise 409 `revision_mismatch`; an invalid field is a 400 with a JSON Pointer in `details`. The agent follows the new schedule from its next check."
+      },
+      "summary": "バックアッププランの置換",
+      "description": "プラン全体を置き換えます。`enabled`、`hour`（0〜23）、`minute`（0〜59）、`timezone`、`retention`（日次は最大366、週次は最大260、月次は最大120）はすべて必須です。`expectedRevision`は現在のリビジョンでなければならず、そうでない場合は409 `revision_mismatch`になります。無効なフィールドは400で、`details`にJSON Pointerが含まれます。エージェントは、次の確認から新しいスケジュールに従います。"
+    },
+    "requestBackupRun": {
+      "en": {
+        "summary": "Request a backup now",
+        "description": "Queues a capture for the backup agent outside the schedule and returns 202 with the job (`kind` `capture`); the agent runs it, then verification and retention. `Idempotency-Key` is required: repeating it, from the same caller, returns the same job. Follow the job in `listBackupJobs`. At most 100 backup requests may be open at once (507 `queue_full`); while no agent is online the job waits."
+      },
+      "summary": "バックアップの即時実行の要求",
+      "description": "スケジュール外で、バックアップエージェント用のキャプチャをキューへ登録し、ジョブ（`kind`は`capture`）とともに202を返します。エージェントがそれを実行し、続いて検証と保持を行います。`Idempotency-Key`は必須で、同じ呼び出し元が繰り返すと同じジョブが返ります。ジョブは`listBackupJobs`で確認してください。同時に未完了にできるバックアップ要求は最大100件です（507 `queue_full`）。オンラインのエージェントがない間、ジョブは待機します。"
+    },
+    "listBackupJobs": {
+      "en": {
+        "summary": "List backup jobs",
+        "description": "Lists capture, verify and retention jobs, newest first, each with its `state` (`queued`, `running`, `committing`, `completed`, `failed`, `interrupted`), `phase`, times, `errorCode`, the resulting point and `progress` (bytes and objects processed). Pages hold `limit` jobs (1–100, default 50); continue with `after` set to `next`."
+      },
+      "summary": "バックアップジョブの一覧表示",
+      "description": "キャプチャ、検証、保持のジョブを新しい順に列挙します。各ジョブには、`state`（`queued`、`running`、`committing`、`completed`、`failed`、`interrupted`）、`phase`、時刻、`errorCode`、結果のポイント、`progress`（処理したバイト数とオブジェクト数）が含まれます。ページには`limit`件のジョブ（1〜100、既定は50）が含まれ、続きは`after`に`next`を設定して取得します。"
+    },
+    "listBackupPoints": {
+      "en": {
+        "summary": "List backup points",
+        "description": "Lists the completed restore points of the current vault, newest snapshot first, each with the snapshot time T, size, bytes added to the vault, whether it is `pinned` and its latest verification (`verifiedAt`, `verifyDepth` `structural` or `deep`, `verifyError`). Pages hold `limit` points (1–100, default 50); continue with `after` set to `next`. A vault that was replaced shows only its own points."
+      },
+      "summary": "バックアップポイントの一覧表示",
+      "description": "現在の保管庫の完了済みの復元ポイントを、スナップショットが新しい順に列挙します。各ポイントには、スナップショット時刻T、サイズ、保管庫に追加されたバイト数、`pinned`かどうか、最新の検証結果（`verifiedAt`、`verifyDepth`は`structural`または`deep`、`verifyError`）が含まれます。ページには`limit`件のポイント（1〜100、既定は50）が含まれ、続きは`after`に`next`を設定して取得します。置き換えられた保管庫には、その保管庫自身のポイントのみが表示されます。"
+    },
+    "requestBackupVerify": {
+      "en": {
+        "summary": "Request a deep check of a backup point",
+        "description": "Queues a verification of the point `id` that reads every stored byte of it; the answer is 202 with the job, and the outcome appears in `verifiedAt`, `verifyDepth` and `verifyError` of the point. `Idempotency-Key` is required, and reusing it for another point is a 409 `idempotency_mismatch`. An unknown point is a 404."
+      },
+      "summary": "バックアップポイントの詳細検証の要求",
+      "description": "ポイント`id`の保存済みバイトをすべて読み取る検証をキューへ登録します。応答は202とジョブで、結果はポイントの`verifiedAt`、`verifyDepth`、`verifyError`に現れます。`Idempotency-Key`は必須で、別のポイントに再利用すると409 `idempotency_mismatch`になります。未知のポイントは404です。"
+    },
+    "setBackupPointPin": {
+      "en": {
+        "summary": "Pin or unpin a backup point",
+        "description": "Sets `pinned` of the point `id`; a pinned point is kept by retention beyond the policy until it is unpinned. Setting the same value again changes nothing, and the answer is the updated point. An unknown or already forgotten point is a 404."
+      },
+      "summary": "バックアップポイントの固定と固定解除",
+      "description": "ポイント`id`の`pinned`を設定します。固定されたポイントは、固定を解除するまで、ポリシーを超えて保持ルールによって保持されます。同じ値を再度設定しても何も変わらず、応答は更新後のポイントです。未知のポイント、またはすでに破棄されたポイントは404です。"
+    },
+    "previewBackupRetention": {
+      "en": {
+        "summary": "Preview what backup retention keeps",
+        "description": "Shows which points the retention policy would keep, each with the reasons (`daily`, `weekly`, `monthly`, `pinned`, `newest`), and which it would delete now. Points that failed verification are not considered. The preview is advisory: `requestBackupRetention` decides again from the vault when it runs."
+      },
+      "summary": "バックアップの保持ルールで残るもののプレビュー",
+      "description": "保持ポリシーでどのポイントが残るか（それぞれの理由`daily`、`weekly`、`monthly`、`pinned`、`newest`付き）と、現時点でどのポイントが削除されるかを示します。検証に失敗したポイントは考慮されません。プレビューは参考情報です。`requestBackupRetention`は実行時に保管庫から改めて判断します。"
+    },
+    "requestBackupRetention": {
+      "en": {
+        "summary": "Request backup retention",
+        "description": "Queues a retention job: the agent forgets the points outside the policy and then removes content no remaining point uses, so space returns to the vault only when the job has completed. Returns 202 with the job; `Idempotency-Key` is required and repeating it returns the same job. Look at `previewBackupRetention` first."
+      },
+      "summary": "バックアップの保持ルール適用の要求",
+      "description": "保持ジョブをキューへ登録します。エージェントはポリシー外のポイントを破棄し、残ったどのポイントも使っていないコンテンツを削除するため、保管庫に空き容量が戻るのはジョブが完了してからです。ジョブとともに202を返します。`Idempotency-Key`は必須で、繰り返すと同じジョブが返ります。事前に`previewBackupRetention`を確認してください。"
+    },
+    "getSystemUpdates": {
+      "en": {
+        "summary": "Get the update state",
+        "description": "Returns what the host updater reports: the installed version and schema, the newest release found (`latest`), the automatic update settings (`automatic`, `hourUTC`, `pin`, `channel`, `statistics`), the `phase` (`idle`, `checking`, `updating`, `failed`), the last `error`, the last heartbeat and the settings `revision`, plus the request still waiting in the updater's mailbox (`pending`). `snapshot` is null when no host updater is connected. Pass `revision` to `requestSystemUpdate`."
+      },
+      "summary": "アップデート状態の取得",
+      "description": "ホストのアップデーターが報告する内容を返します。内容は、インストール済みのバージョンとスキーマ、見つかった最新のリリース（`latest`）、自動アップデートの設定（`automatic`、`hourUTC`、`pin`、`channel`、`statistics`）、`phase`（`idle`、`checking`、`updating`、`failed`）、最後の`error`、最後のハートビート、設定の`revision`、そしてアップデーターのメールボックスで待機中のリクエスト（`pending`）です。ホストのアップデーターが接続されていない場合、`snapshot`はnullです。`revision`を`requestSystemUpdate`に渡してください。"
+    },
+    "requestSystemUpdate": {
+      "en": {
+        "summary": "Request an update action",
+        "description": "Hands one command to the host updater, which does the work: `kind` `check` looks for a new release, `apply` installs the given stable `version` with its `sha256`, `configure` sets `automatic`, `hourUTC` and optionally `statistics`. Send a new UUID as `id` and the `expectedRevision` from `getSystemUpdates`; 409 `revision_mismatch` means the settings changed, 503 `busy` that a request is pending or the updater is working, 503 `unavailable` that no updater is connected or its heartbeat is older than five minutes. The answer 202 only means the request was queued: follow `phase`, `currentVersion` and `lastRequestId` in `getSystemUpdates`. Repeating the same `id` and body is safe."
+      },
+      "summary": "アップデート操作の要求",
+      "description": "実際の処理を行うホストのアップデーターに、コマンドを1つ渡します。`kind`が`check`なら新しいリリースを確認し、`apply`なら指定した安定版の`version`を`sha256`とともにインストールし、`configure`なら`automatic`、`hourUTC`、および任意の`statistics`を設定します。`id`には新しいUUIDを、`expectedRevision`には`getSystemUpdates`で取得した値を送ります。409 `revision_mismatch`は設定が変更されたこと、503 `busy`はリクエストが保留中かアップデーターが作業中であること、503 `unavailable`はアップデーターが接続されていないか、ハートビートが5分より古いことを意味します。202の応答は、リクエストがキューに入ったことだけを意味します。`getSystemUpdates`の`phase`、`currentVersion`、`lastRequestId`で経過を確認してください。同じ`id`とボディで繰り返しても安全です。"
+    },
+    "sendFeedback": {
+      "en": {
+        "summary": "Send feedback to ProAnimaStudio",
+        "description": "Forwards a message through this server to the ProAnimaStudio hub and answers 202 with the hub's `id`. Send `message` (up to 20 000 characters), `lang` (`ru` or `en`), `serverLog` (true attaches this server's log and a system summary, administrators only), and optionally `email` for a reply, `screen`, up to 6 base64 `screenshots` (PNG, JPEG, WebP or GIF, 8 MiB each) and the console's `clientLog`; the total is limited to 15 MiB. Nothing is retried, so a second call is a second message. 503 `feedback_disabled` when the operator turned it off, 503 `hub_unreachable` when the hub does not answer, 429 `feedback_attempts` when this server sent too much."
+      },
+      "summary": "ProAnimaStudioへのフィードバックの送信",
+      "description": "このサーバーを経由して、ProAnimaStudioハブへメッセージを転送し、ハブの`id`とともに202を返します。`message`（最大20,000文字）、`lang`（`ru`または`en`）、`serverLog`（trueにするとこのサーバーのログとシステムの概要を添付。管理者のみ）を送り、必要に応じて、返信用の`email`、`screen`、Base64の`screenshots`（PNG、JPEG、WebP、GIF。最大6枚、各8MiB）、コンソールの`clientLog`を送ります。合計の上限は15MiBです。再試行は行われないため、2回目の呼び出しは2通目のメッセージになります。運用者が無効にしている場合は503 `feedback_disabled`、ハブが応答しない場合は503 `hub_unreachable`、このサーバーが送りすぎた場合は429 `feedback_attempts`です。"
+    },
+    "getFeedbackAttachments": {
+      "en": {
+        "summary": "Preview the feedback attachments",
+        "description": "Returns the two texts that `sendFeedback` attaches when `serverLog` is true: the recent records of this server's log and a system summary (versions, operating system, update and mirror states) without addresses, names or secrets. Show them to the administrator before sending."
+      },
+      "summary": "フィードバックの添付内容のプレビュー",
+      "description": "`serverLog`がtrueのときに`sendFeedback`が添付する2つのテキストを返します。このサーバーのログの最近のレコードと、アドレス、名前、シークレットを含まないシステムの概要（バージョン、オペレーティングシステム、アップデートとミラーの状態）です。送信する前に管理者に見せてください。"
+    }
+  },
+  "errors": {
+    "codes": {
+      "invalid_input": "リクエストの形式が不正か、許可されていない値が含まれています。リクエストを修正してから再送してください。",
+      "not_found": "オブジェクトが存在しないか、呼び出し元から見えません。",
+      "conflict": "リクエストが現在の状態と競合しています。状態を読み取り直してから判断してください。",
+      "forbidden": "認証情報は有効ですが、この操作に必要な権限がありません。",
+      "unauthorized": "有効な認証情報がありません。認証情報が存在しない、誤っている、期限切れ、または取り消されています。",
+      "capacity_exceeded": "クォータ、容量、または制限を超過することになります。",
+      "integrity_mismatch": "バイト列が、宣言されたサイズまたはSHA-256と一致しません。",
+      "busy": "サーバーが受け入れ上限に達しています。Retry-Afterで示される時間の経過後に再試行してください。",
+      "unavailable": "依存先が現在利用できません。Retry-Afterで示される時間の経過後に再試行してください。",
+      "rate_limited": "試行回数が多すぎます。Retry-Afterで示される時間まで待ってください。",
+      "read_only": "このサーバーまたはゲートウェイは変更を受け付けません（読み取りゲートウェイまたはミラー）。",
+      "internal": "サーバーで予期しない不具合が発生しました。リクエストIDがあると、サポートが原因を特定しやすくなります。やみくもに再試行しないでください。"
+    },
+    "reasons": {
+      "validation": "フィールドが欠けているか、規則に反する値が指定されています。detailsにフィールド名が示されます。",
+      "malformed_json": "ボディが有効なJSONではありません。",
+      "body_too_large": "ボディが、このオペレーションの受け付ける大きさを超えています。",
+      "unsupported_media_type": "Content-Typeが、このオペレーションの受け付けるものではありません。",
+      "method_not_allowed": "パスは存在しますが、このメソッドには対応していません。",
+      "range_not_satisfiable": "要求されたバイト範囲がコンテンツの範囲外です。",
+      "route_not_found": "そのようなルートはありません。",
+      "upload_expired": "アップロードが完了する前に、アップロードセッションの有効期限が切れました。",
+      "upload_state": "アップロードがこの手順を許す状態にありません。",
+      "revision_mismatch": "期待したリビジョンが現在のものではありません（先に別の変更が行われました）。",
+      "version_exists": "このバージョンは、別の内容ですでに公開されています。",
+      "part_mismatch": "パートが、宣言されたサイズまたはSHA-256と一致しません。",
+      "parts_incomplete": "アップロードのパートがまだすべて届いていません。",
+      "idempotency_mismatch": "Idempotency-Keyが、以前に別のリクエストで使用されています。",
+      "already_exists": "この名前またはパスのオブジェクトがすでに存在します。",
+      "stage_limit": "アーティファクトのステージ数が上限に達しています。",
+      "state_conflict": "オブジェクトがこの変更を許さない状態にあります。",
+      "mirror_read_only": "リポジトリはミラーであり、同期によってのみ変更されます。",
+      "permission_missing": "認証情報に、このオペレーションに必要なアクションの権限がありません。",
+      "read_only_token": "読み取り専用の個人用トークンでは何も変更できません。",
+      "credential_revoked": "キーまたはトークンは取り消されています。",
+      "session_required": "サインイン済みのアカウントのセッションのみが実行でき、キーでは実行できません。",
+      "administrator_required": "管理者のみが実行できます。",
+      "registration_disabled": "このサーバーでは自己登録が無効になっています。",
+      "origin_not_allowed": "ブラウザーのオリジンがARKVORY_CORS_ORIGINSに含まれていません。",
+      "invalid_credentials": "アカウント名またはパスワードが誤っています。",
+      "current_password_invalid": "現在のパスワードが誤っています。",
+      "credential_missing": "リクエストに認証情報が含まれていません。",
+      "credential_invalid": "認証情報が、有効なキー、トークン、セッションのいずれでもありません。",
+      "session_expired": "セッションの有効期限が切れました。もう一度サインインしてください。",
+      "token_expired": "個人用トークンの有効期限が切れました。",
+      "storage_quota": "リポジトリのクォータを超えることになります。",
+      "storage_full": "サーバーのディスクの空き容量が予約分まで減っており、これ以上の余裕がありません。",
+      "account_limit": "アカウント数が上限に達しています。",
+      "group_limit": "グループ数が上限に達しています。",
+      "membership_limit": "グループのメンバー数が上限に達しています。",
+      "grant_limit": "付与の数が上限に達しています。",
+      "key_limit": "キーの数が上限に達しています。",
+      "token_limit": "個人用トークンの数が上限に達しています。",
+      "delegation_limit": "委任の数が上限に達しています。",
+      "catalog_limit": "インストールのカタログ容量を超えることになります。",
+      "queue_full": "転送キューが満杯です。",
+      "transfer_limit": "呼び出し元がすでに許可された数の転送を行っています。",
+      "request_limit": "サーバーが受け入れる数のリクエストをすでに処理しています。",
+      "feedback_disabled": "このサーバーではフィードバックが無効になっています。",
+      "hub_unreachable": "アップデートハブに接続できません。",
+      "login_attempts": "サインインの試行が多すぎます。しばらく待ってください。",
+      "registration_attempts": "登録の試行が多すぎます。しばらく待ってください。",
+      "password_attempts": "パスワードの試行が多すぎます。しばらく待ってください。",
+      "feedback_attempts": "フィードバックのレポートが多すぎます。しばらく待ってください。"
+    }
+  },
+  "fields": {
+    "Byte size, decimal string": "バイトサイズ（10進数の文字列）",
+    "Bytes this point added to the vault.": "このポイントが保管庫に追加したバイト数。",
+    "Current labels: annotation when replaced, otherwise the upload descriptor": "現在のラベル。置換されている場合はアノテーション、そうでなければアップロード時のディスクリプター",
+    "Current promotion stages in byte order": "現在のプロモーションステージ（バイト順）",
+    "Every part has this size except the last one.": "最後のパートを除き、すべてのパートがこのサイズです。",
+    "Exclusive before cursor; null at end": "この値より前のエントリを返すカーソル（この値自体は含まない）。末尾ではnull",
+    "Explicit IANA time zone, e.g. Europe/Moscow; validated by the server.": "明示的なIANAタイムゾーン（例：Europe/Moscow）。サーバーが検証します。",
+    "Last ID of a full page; pass as after": "満杯のページの最後のID。afterとして渡します",
+    "Null for history recorded before migration 4": "マイグレーション4より前に記録された履歴ではnull",
+    "Opaque cursor bound to repository and prefix; null at end. Never grants access.": "リポジトリとプレフィックスに結び付けられた不透明なカーソル。末尾ではnull。アクセスを与えることはありません。",
+    "Optional initiating managed key ID; never its secret.": "ジョブを開始したマネージドキーのID（任意）。シークレットは決して含まれません。",
+    "Processed bytes: copied or already in the vault.": "処理済みのバイト数。コピーしたもの、またはすでに保管庫にあるもの。",
+    "Publication time; null only when none was recorded": "公開時刻。記録がない場合にのみnull",
+    "Restored revision; null for ordinary replacement": "復元されたリビジョン。通常の置換ではnull",
+    "Smallest multipart segment.": "マルチパートの最小セグメント。",
+    "Snapshot time T; the age of a point counts from T.": "スナップショット時刻T。ポイントの経過期間はTから数えます。",
+    "Start of execution, or the request time while queued.": "実行の開始時刻。キューで待機している間はリクエスト時刻。",
+    "Upload reservation time": "アップロードの予約時刻"
+  }
+}

@@ -1,0 +1,12 @@
+---
+title: 'Read gateways'
+description: 'Run extra download-only API processes on the same server and storage, share one download budget between them and monitor them.'
+---
+
+<!-- arkvory-untranslated -->
+
+::: warning
+Cette page n'est pas encore traduite ; elle est affichée en anglais.
+:::
+
+<!--@include: ../../operate/read-gateways.md-->

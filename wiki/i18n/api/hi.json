@@ -1,0 +1,1044 @@
+{
+  "operations": {
+    "getReadiness": {
+      "en": {
+        "summary": "Check detailed readiness",
+        "description": "Answers `ready` when the database and storage respond, with this node's `role` (`api` or `reader`), whether it accepts writes now (`writable` is false on a read gateway and while the disk keeps its free-space reserve), the shared download slot of a read gateway and aggregate upload and download admission and bandwidth counters. While the server drains or a dependency is unavailable it answers 503 with Retry-After. It does not count against the request budget; for a load balancer without a key use `getReadinessStatus`."
+      },
+      "summary": "विस्तृत रेडीनेस जाँचें",
+      "description": "डेटाबेस और स्टोरेज के उत्तर देने पर `ready` लौटाता है, साथ में इस नोड की `role` (`api` या `reader`), वह अभी लिखने के अनुरोध स्वीकार करता है या नहीं (रीड गेटवे पर और जब तक डिस्क पर खाली स्थान का केवल रिज़र्व बचा है, `writable` false रहता है), रीड गेटवे का साझा डाउनलोड स्लॉट तथा अपलोड और डाउनलोड के प्रवेश नियंत्रण (admission) एवं बैंडविड्थ के समेकित काउंटर देता है। सर्वर के ड्रेन होने (नए अनुरोध लेना बंद करने) या किसी निर्भरता के अनुपलब्ध होने पर वह Retry-After के साथ 503 लौटाता है। यह अनुरोध-बजट में नहीं गिना जाता; कुंजी के बिना लोड बैलेंसर के लिए `getReadinessStatus` का उपयोग करें।"
+    },
+    "getCapabilities": {
+      "en": {
+        "summary": "Get server capabilities and limits",
+        "description": "Returns the API versions, the gateway role, feature flags (for example `selfRegistration` or `mirrorFeed`) and the limits a client adapts to: the largest object (`maxObjectBytes`, a decimal string), the smallest and largest multipart segment, the largest number of parts and the largest page size. Read it once when a client starts; it lists no resources."
+      },
+      "summary": "सर्वर की क्षमताएँ और सीमाएँ प्राप्त करें",
+      "description": "API संस्करण, गेटवे की भूमिका, फ़ीचर फ़्लैग (उदाहरण के लिए `selfRegistration` या `mirrorFeed`) और वे सीमाएँ लौटाता है जिनके अनुसार क्लाइंट स्वयं को ढालता है: सबसे बड़ा ऑब्जेक्ट (`maxObjectBytes`, दशमलव स्ट्रिंग), सबसे छोटा और सबसे बड़ा मल्टीपार्ट खंड, भागों की अधिकतम संख्या और पृष्ठ का अधिकतम आकार। क्लाइंट शुरू होते समय इसे एक बार पढ़ें; यह कोई संसाधन सूचीबद्ध नहीं करता।"
+    },
+    "getReadinessStatus": {
+      "en": {
+        "summary": "Check readiness for a load balancer",
+        "description": "Needs no key and returns no details: 200 with `{\"status\":\"ready\"}`, or 503 with `unavailable` or `draining` and Retry-After. The dependency check is shared and cached for one second, so frequent probes do not load the database, and the probe does not count against the request budget."
+      },
+      "summary": "लोड बैलेंसर के लिए रेडीनेस जाँचें",
+      "description": "कुंजी की आवश्यकता नहीं है और कोई विवरण नहीं लौटाता: 200 के साथ `{\"status\":\"ready\"}`, या 503 के साथ `unavailable` अथवा `draining` और Retry-After। निर्भरता की जाँच साझा है और एक सेकंड के लिए कैश की जाती है, इसलिए बार-बार की जाने वाली प्रोब डेटाबेस पर भार नहीं डालतीं, और प्रोब अनुरोध-बजट में नहीं गिनी जाती।"
+    },
+    "getLiveness": {
+      "en": {
+        "summary": "Check that the process is alive",
+        "description": "Returns 200 with `{\"status\":\"ok\"}` while the process answers HTTP. It checks no dependency, so use it to decide on a restart and `getReadinessStatus` to decide on traffic."
+      },
+      "summary": "जाँचें कि प्रोसेस चल रही है",
+      "description": "जब तक प्रोसेस HTTP का उत्तर देती है, 200 के साथ `{\"status\":\"ok\"}` लौटाता है। यह किसी निर्भरता की जाँच नहीं करता, इसलिए रीस्टार्ट का निर्णय लेने के लिए इसका और ट्रैफ़िक का निर्णय लेने के लिए `getReadinessStatus` का उपयोग करें।"
+    },
+    "getOpenApi": {
+      "en": {
+        "summary": "Get the OpenAPI document",
+        "description": "Returns the OpenAPI 3.0 document of this deployment, with the `x-arkvory-*` extensions that describe each operation's access, retry and gateway rules. `surface` (`discovery`, `identity`, `catalog`, `transfers`, `administration` or `operations`) returns only that area; an unknown or repeated query parameter is a 400. The document is the same for every caller and grants nothing: to learn what this credential may call, use `listVisibleOperations`."
+      },
+      "summary": "OpenAPI दस्तावेज़ प्राप्त करें",
+      "description": "इस डिप्लॉयमेंट का OpenAPI 3.0 दस्तावेज़ लौटाता है, जिसमें `x-arkvory-*` एक्सटेंशन हर ऑपरेशन के एक्सेस, रीट्राई और गेटवे नियम बताते हैं। `surface` (`discovery`, `identity`, `catalog`, `transfers`, `administration` या `operations`) केवल उसी क्षेत्र को लौटाता है; अज्ञात या दोहराया गया क्वेरी पैरामीटर 400 है। दस्तावेज़ हर कॉलर के लिए समान है और कोई अधिकार नहीं देता: यह जानने के लिए कि यह क्रेडेंशियल क्या कॉल कर सकता है, `listVisibleOperations` का उपयोग करें।"
+    },
+    "getMetrics": {
+      "en": {
+        "summary": "Get Prometheus metrics",
+        "description": "Returns the process metrics in the Prometheus text format (`text/plain; version=0.0.4`) for a scraper. Counters and histograms belong to this process and start from zero after a restart (see `arkvory_process_start_time_seconds`); labels are limited to route template, method, status class and transfer direction and never name an artifact, key or account. The scrape does not count against the request budget."
+      },
+      "summary": "Prometheus मेट्रिक्स प्राप्त करें",
+      "description": "स्क्रेपर के लिए प्रोसेस की मेट्रिक्स Prometheus टेक्स्ट फ़ॉर्मैट (`text/plain; version=0.0.4`) में लौटाता है। काउंटर और हिस्टोग्राम इसी प्रोसेस के हैं और रीस्टार्ट के बाद शून्य से शुरू होते हैं (देखें `arkvory_process_start_time_seconds`); लेबल रूट टेम्पलेट, मेथड, स्टेटस क्लास और ट्रांसफ़र की दिशा तक सीमित हैं और कभी किसी आर्टिफ़ैक्ट, कुंजी या खाते का नाम नहीं देते। स्क्रेप अनुरोध-बजट में नहीं गिना जाता।"
+    },
+    "listVisibleOperations": {
+      "en": {
+        "summary": "List the operations this credential may call",
+        "description": "Lists the operations of this gateway the credential may call, ordered by `operationId`, each with its surface, retry rule, required actions and the `conditions` checked only at call time (such as `resource-state` or `upload-owner`). `repository` adds the operations of that repository (an unknown or foreign repository is a 404), `surface` narrows the list to one area; pages hold `limit` items (1–100, default 50), continue with `after` set to `next`. The answer is advisory: build menus from it, but every real request is authorized again, and a read gateway lists no changing methods."
+      },
+      "summary": "वे ऑपरेशन सूचीबद्ध करें जिन्हें यह क्रेडेंशियल कॉल कर सकता है",
+      "description": "इस गेटवे के वे ऑपरेशन सूचीबद्ध करता है जिन्हें क्रेडेंशियल कॉल कर सकता है, `operationId` के क्रम में; प्रत्येक के साथ उसका क्षेत्र (surface), रीट्राई नियम, आवश्यक क्रियाएँ और वे `conditions` हैं जो केवल कॉल के समय जाँची जाती हैं (जैसे `resource-state` या `upload-owner`)। `repository` उस रिपॉज़िटरी के ऑपरेशन जोड़ता है (अज्ञात या पहुँच से बाहर की रिपॉज़िटरी पर 404), `surface` सूची को एक क्षेत्र तक सीमित करता है; प्रत्येक पृष्ठ में `limit` आइटम होते हैं (1–100, डिफ़ॉल्ट 50), `after` में `next` देकर आगे बढ़ें। उत्तर केवल परामर्शात्मक है: मेन्यू इससे बनाएँ, परंतु हर वास्तविक अनुरोध फिर से अधिकृत किया जाता है, और रीड गेटवे परिवर्तन करने वाले मेथड सूचीबद्ध नहीं करता।"
+    },
+    "listRepositories": {
+      "en": {
+        "summary": "List the repositories you can access",
+        "description": "Lists, ordered by name, the repositories in which the caller holds a permission, each with its formats (`upack`, `assets`) and the caller's own permissions there; a managed service key sees only those where it holds `repository.read`. A repository is the scope of the caller's grants, not an entry of a server-wide registry. Pages hold `limit` cards (1–100, default 50); continue with `after` set to `next`."
+      },
+      "summary": "वे रिपॉज़िटरी सूचीबद्ध करें जिन तक आपकी पहुँच है",
+      "description": "नाम के क्रम में वे रिपॉज़िटरी सूचीबद्ध करता है जिनमें कॉलर के पास कोई अनुमति है; प्रत्येक के साथ उसके फ़ॉर्मैट (`upack`, `assets`) और वहाँ कॉलर की अपनी अनुमतियाँ हैं; प्रबंधित सेवा कुंजी केवल वही रिपॉज़िटरी देखती है जिनमें उसके पास `repository.read` है। रिपॉज़िटरी कॉलर के अनुदानों (grants) का दायरा है, पूरे सर्वर की किसी रजिस्ट्री की प्रविष्टि नहीं। प्रत्येक पृष्ठ में `limit` कार्ड होते हैं (1–100, डिफ़ॉल्ट 50); `after` में `next` देकर आगे बढ़ें।"
+    },
+    "getRepository": {
+      "en": {
+        "summary": "Get a repository card",
+        "description": "Returns the caller's card of one repository: its formats and the caller's permissions in it. A repository the caller cannot see answers 404, exactly like one that does not exist; HEAD makes this a cheap access check. Seeing a repository grants no access to its content or settings."
+      },
+      "summary": "रिपॉज़िटरी कार्ड प्राप्त करें",
+      "description": "कॉलर के लिए एक रिपॉज़िटरी का कार्ड लौटाता है: उसके फ़ॉर्मैट और उसमें कॉलर की अनुमतियाँ। जो रिपॉज़िटरी कॉलर नहीं देख सकता, उस पर 404 मिलता है, ठीक वैसे ही जैसे अस्तित्वहीन रिपॉज़िटरी पर; HEAD इसे पहुँच की सस्ती जाँच बना देता है। किसी रिपॉज़िटरी का दिखना उसकी सामग्री या सेटिंग तक पहुँच नहीं देता।"
+    },
+    "listUploadParts": {
+      "en": {
+        "summary": "List the received parts of an upload",
+        "description": "Returns `partBytes`, the part size fixed for this upload when it was created (8 MiB, doubled for files that would need more than 10 000 parts; only the last part is shorter), and the parts already stored with their index, size and SHA-256. Read it before resuming an interrupted multipart upload and send only the missing parts with `putUploadPart`. Only the upload's creator sees it; for anyone else it is a 404."
+      },
+      "summary": "अपलोड के प्राप्त भाग सूचीबद्ध करें",
+      "description": "`partBytes` लौटाता है, यानी वह भाग-आकार जो इस अपलोड के बनने पर तय हुआ था (8 MiB, उन फ़ाइलों के लिए दोगुना किया गया जिन्हें 10 000 से अधिक भाग चाहिए होते; केवल अंतिम भाग छोटा होता है), और अब तक संग्रहीत भाग उनके इंडेक्स, आकार और SHA-256 के साथ। बाधित मल्टीपार्ट अपलोड को जारी रखने से पहले इसे पढ़ें और `putUploadPart` से केवल छूटे हुए भाग भेजें। इसे केवल अपलोड का निर्माता देख सकता है; किसी और के लिए यह 404 है।"
+    },
+    "putUploadPart": {
+      "en": {
+        "summary": "Upload one part",
+        "description": "Stores the body as part `index` (from 0) of a pending multipart upload; its length must be exactly `partBytes` (from `listUploadParts`), or the remainder for the last part, and `X-Content-SHA256` must be the lowercase hex SHA-256 of these bytes, otherwise 422. Parts may arrive in any order, but an upload takes one request at a time (a concurrent one gets 503 `busy`); sending a part again with the same hash is safe, a different hash for an index already stored is a 409 `part_mismatch`. When every part is stored, call `completeUpload` or `enqueueCompletion`."
+      },
+      "summary": "एक भाग अपलोड करें",
+      "description": "बॉडी को लंबित मल्टीपार्ट अपलोड के भाग `index` (0 से शुरू) के रूप में संग्रहीत करता है; उसकी लंबाई ठीक `partBytes` (`listUploadParts` से) होनी चाहिए, या अंतिम भाग के लिए शेष बाइट, और `X-Content-SHA256` इन बाइट का छोटे अक्षरों वाला हेक्स SHA-256 होना चाहिए, अन्यथा 422। भाग किसी भी क्रम में आ सकते हैं, पर एक अपलोड एक समय में एक ही अनुरोध लेता है (समवर्ती अनुरोध को 503 `busy` मिलता है); उसी हैश के साथ भाग फिर भेजना सुरक्षित है, जबकि पहले से संग्रहीत इंडेक्स के लिए भिन्न हैश 409 `part_mismatch` है। सभी भाग संग्रहीत हो जाने पर `completeUpload` या `enqueueCompletion` कॉल करें।"
+    },
+    "enqueueCompletion": {
+      "en": {
+        "summary": "Complete an upload in the background",
+        "description": "Queues the completion of a pending upload for the worker service instead of doing it in the request, and returns the job at once with 202; follow it with `getCompletionJob`. Calling it again for the same upload returns the same job, and a job that failed for a transient reason is queued again. A queued job does not mean the artifact is published: only `completed` does. 409 `upload_state` if the upload is no longer pending; 507 `queue_full` when the caller has 100 open jobs or the server 10 000."
+      },
+      "summary": "अपलोड को पृष्ठभूमि में पूरा करें",
+      "description": "लंबित अपलोड का पूरा होना अनुरोध के भीतर करने के बजाय वर्कर सेवा के लिए कतार में लगाता है और तुरंत 202 के साथ जॉब लौटाता है; उसे `getCompletionJob` से देखें। उसी अपलोड के लिए इसे दोबारा कॉल करने पर वही जॉब मिलता है, और जो जॉब किसी अस्थायी कारण से विफल हुआ था उसे फिर कतार में लगाया जाता है। कतार में लगे जॉब का अर्थ यह नहीं कि आर्टिफ़ैक्ट प्रकाशित हो गया: केवल `completed` का यही अर्थ है। अपलोड अब लंबित न हो तो 409 `upload_state`; कॉलर के 100 खुले जॉब हों या सर्वर के 10 000, तो 507 `queue_full`।"
+    },
+    "getCompletionJob": {
+      "en": {
+        "summary": "Get a completion job",
+        "description": "Returns the state of a completion job queued with `enqueueCompletion`: `queued`, `running`, `completed` (the upload is published) or `failed` with an `errorCode`, plus the number of attempts. The worker tries up to five times with growing pauses; errors such as `integrity_mismatch` fail at once. Only the job's creator sees it; for anyone else it is a 404."
+      },
+      "summary": "कम्प्लीशन जॉब प्राप्त करें",
+      "description": "`enqueueCompletion` से कतार में लगे कम्प्लीशन जॉब की स्थिति लौटाता है: `queued`, `running`, `completed` (अपलोड प्रकाशित हो गया) या `failed` के साथ `errorCode`, और प्रयासों की संख्या। वर्कर बढ़ते अंतराल के साथ अधिकतम पाँच बार प्रयास करता है; `integrity_mismatch` जैसी त्रुटियाँ तुरंत विफल कर देती हैं। इसे केवल जॉब का निर्माता देख सकता है; किसी और के लिए यह 404 है।"
+    },
+    "createUpload": {
+      "en": {
+        "summary": "Create an upload session",
+        "description": "Reserves an upload for one file described by `name`, `size` (a decimal string), `sha256` and optional `labels` and `metadata`; returns 201 with the session (`pending`, valid for 7 days) and its `Location`. `Idempotency-Key` (1–128 letters, digits and `_.:-`) is required: the same key with the same description returns the same session, with a different description it is a 409 `idempotency_mismatch`. The size is reserved against the repository quota and the server's capacity at once (507). Then send the bytes whole with `putUploadContent`, or in parts with `putUploadPart` and finish with `completeUpload`."
+      },
+      "summary": "अपलोड सत्र बनाएँ",
+      "description": "`name`, `size` (दशमलव स्ट्रिंग), `sha256` और वैकल्पिक `labels` तथा `metadata` से वर्णित एक फ़ाइल के लिए अपलोड आरक्षित करता है; सत्र (`pending`, 7 दिन तक वैध) और उसका `Location` लेकर 201 लौटाता है। `Idempotency-Key` (1–128 अक्षर, अंक और `_.:-`) अनिवार्य है: वही कुंजी और वही विवरण वही सत्र लौटाता है, भिन्न विवरण पर 409 `idempotency_mismatch` मिलता है। आकार उसी समय रिपॉज़िटरी कोटा और सर्वर की क्षमता के विरुद्ध आरक्षित हो जाता है (507)। फिर बाइट `putUploadContent` से पूरे भेजें, या `putUploadPart` से भागों में भेजकर `completeUpload` से समाप्त करें।"
+    },
+    "getUpload": {
+      "en": {
+        "summary": "Get an upload",
+        "description": "Returns the session with its `status` (`pending`, `available` once published, `cancelled`), its expiry and the declared descriptor. After a lost response to `putUploadContent` or `completeUpload`, read this first: `available` means the artifact is published under the same ID. Only the upload's creator sees it; for anyone else it is a 404."
+      },
+      "summary": "अपलोड प्राप्त करें",
+      "description": "सत्र को उसकी `status` (`pending`, प्रकाशित होने पर `available`, `cancelled`), समाप्ति समय और घोषित डिस्क्रिप्टर के साथ लौटाता है। `putUploadContent` या `completeUpload` का उत्तर खो जाने पर पहले इसे पढ़ें: `available` का अर्थ है कि आर्टिफ़ैक्ट उसी ID के अंतर्गत प्रकाशित हो चुका है। इसे केवल अपलोड का निर्माता देख सकता है; किसी और के लिए यह 404 है।"
+    },
+    "cancelUpload": {
+      "en": {
+        "summary": "Cancel an upload",
+        "description": "Cancels a pending upload and returns it with status `cancelled`; a published upload cannot be cancelled (409 `upload_state`). The received bytes are hidden at once but remain reserved against the quota until the repository's online cleanup (`setCleanup`, off by default) removes them after its grace period."
+      },
+      "summary": "अपलोड रद्द करें",
+      "description": "लंबित अपलोड रद्द करता है और उसे `cancelled` स्थिति के साथ लौटाता है; प्रकाशित अपलोड रद्द नहीं किया जा सकता (409 `upload_state`)। प्राप्त बाइट तुरंत छिपा दिए जाते हैं, परंतु रिपॉज़िटरी का ऑनलाइन क्लीनअप (`setCleanup`, डिफ़ॉल्ट रूप से बंद) अपनी छूट अवधि के बाद उन्हें हटाने तक वे कोटा के विरुद्ध आरक्षित रहते हैं।"
+    },
+    "putUploadContent": {
+      "en": {
+        "summary": "Upload the whole file in one request",
+        "description": "Streams the request body as the complete content of a pending upload, checks it against the declared size and SHA-256 (422 on mismatch) and publishes the artifact; the answer is the upload with status `available`. An interrupted request leaves nothing to resume: read the upload with `getUpload`, then send the file again from byte zero. Not for an upload that already has parts (409 `upload_state`); one request must also finish within the server's upload deadline (30 minutes by default), so send large files in parts."
+      },
+      "summary": "पूरी फ़ाइल एक अनुरोध में अपलोड करें",
+      "description": "अनुरोध की बॉडी को लंबित अपलोड की पूरी सामग्री के रूप में स्ट्रीम करता है, उसे घोषित आकार और SHA-256 से मिलाता है (बेमेल होने पर 422) और आर्टिफ़ैक्ट प्रकाशित करता है; उत्तर `available` स्थिति वाला अपलोड है। बाधित अनुरोध जारी रखने के लिए कुछ नहीं छोड़ता: अपलोड को `getUpload` से पढ़ें, फिर फ़ाइल को बाइट शून्य से दोबारा भेजें। जिस अपलोड में पहले से भाग हैं उसके लिए नहीं है (409 `upload_state`); साथ ही एक अनुरोध को सर्वर की अपलोड समय-सीमा (डिफ़ॉल्ट 30 मिनट) के भीतर पूरा होना होगा, इसलिए बड़ी फ़ाइलें भागों में भेजें।"
+    },
+    "completeUpload": {
+      "en": {
+        "summary": "Complete an upload",
+        "description": "Assembles the stored parts in order, checks the whole file against the declared size and SHA-256 and publishes the artifact; returns the upload with status `available`. Calling it again for a published upload returns the same result, so it also recovers a completion whose answer was lost. A missing part is a 409 `parts_incomplete`, a content mismatch a 422; for very large files where the request might time out, use `enqueueCompletion` instead."
+      },
+      "summary": "अपलोड पूरा करें",
+      "description": "संग्रहीत भागों को क्रम से जोड़ता है, पूरी फ़ाइल को घोषित आकार और SHA-256 से मिलाता है और आर्टिफ़ैक्ट प्रकाशित करता है; `available` स्थिति वाला अपलोड लौटाता है। प्रकाशित अपलोड के लिए इसे दोबारा कॉल करने पर वही परिणाम मिलता है, इसलिए यह उस पूर्णता को भी पुनर्प्राप्त कर लेता है जिसका उत्तर खो गया था। भाग छूटा हो तो 409 `parts_incomplete`, सामग्री बेमेल हो तो 422; बहुत बड़ी फ़ाइलों के लिए, जहाँ अनुरोध टाइमआउट हो सकता है, इसके बजाय `enqueueCompletion` का उपयोग करें।"
+    },
+    "getAnnotations": {
+      "en": {
+        "summary": "Get the annotations of an artifact",
+        "description": "Returns the current labels, metadata and collections of a published artifact with their `revision`. Revision 0 means they were never replaced: labels and metadata are those given when the upload was created, and collections are empty. Pass the revision to `setAnnotations` as `expectedRevision`."
+      },
+      "summary": "आर्टिफ़ैक्ट के एनोटेशन प्राप्त करें",
+      "description": "प्रकाशित आर्टिफ़ैक्ट के वर्तमान लेबल, मेटाडेटा और संग्रह उनके `revision` के साथ लौटाता है। संशोधन 0 का अर्थ है कि उन्हें कभी बदला नहीं गया: लेबल और मेटाडेटा वही हैं जो अपलोड बनाते समय दिए गए थे, और संग्रह खाली हैं। संशोधन को `setAnnotations` में `expectedRevision` के रूप में दें।"
+    },
+    "setAnnotations": {
+      "en": {
+        "summary": "Replace the annotations of an artifact",
+        "description": "Replaces `labels`, `metadata` and `collections` of a published artifact at once; a field left out of `value` becomes empty. `expectedRevision` must be the current revision (0 for the first change), otherwise 409 `revision_mismatch`: read the annotations again and reapply the change. Up to 32 labels and 32 collections (1–64 letters, digits or `_.:-`) and 32 metadata entries (values up to 1024 characters); the bytes and the original descriptor never change."
+      },
+      "summary": "आर्टिफ़ैक्ट के एनोटेशन प्रतिस्थापित करें",
+      "description": "प्रकाशित आर्टिफ़ैक्ट के `labels`, `metadata` और `collections` एक साथ प्रतिस्थापित करता है; `value` से छोड़ा गया फ़ील्ड खाली हो जाता है। `expectedRevision` वर्तमान संशोधन होना चाहिए (पहले परिवर्तन के लिए 0), अन्यथा 409 `revision_mismatch`: एनोटेशन फिर से पढ़ें और परिवर्तन दोबारा लागू करें। अधिकतम 32 लेबल और 32 संग्रह (1–64 अक्षर, अंक या `_.:-`) और 32 मेटाडेटा प्रविष्टियाँ (मान 1024 वर्णों तक); बाइट और मूल डिस्क्रिप्टर कभी नहीं बदलते।"
+    },
+    "registerPackage": {
+      "en": {
+        "summary": "Register an artifact as a UPack package",
+        "description": "Opens the published artifact as a UPack ZIP, reads the root `upack.json` (`name`, optional `group`, SemVer `version`) and registers that package version for it; unsafe or invalid archives are rejected with 400. A version is immutable: registering the same artifact again returns the same entry, another artifact for an existing group, name and version (compared without case) is a 409 `version_exists`. Afterwards the version appears in `listPackages` and resolves by name, range and stage."
+      },
+      "summary": "आर्टिफ़ैक्ट को UPack पैकेज के रूप में पंजीकृत करें",
+      "description": "प्रकाशित आर्टिफ़ैक्ट को UPack ZIP के रूप में खोलता है, रूट `upack.json` (`name`, वैकल्पिक `group`, SemVer `version`) पढ़ता है और उसके लिए वह पैकेज संस्करण पंजीकृत करता है; असुरक्षित या अमान्य आर्काइव 400 के साथ अस्वीकार की जाती हैं। संस्करण अपरिवर्तनीय है: उसी आर्टिफ़ैक्ट को फिर पंजीकृत करने पर वही प्रविष्टि मिलती है, जबकि मौजूदा समूह, नाम और संस्करण (बड़े-छोटे अक्षर का भेद किए बिना तुलना) के लिए कोई अन्य आर्टिफ़ैक्ट 409 `version_exists` है। इसके बाद संस्करण `listPackages` में दिखता है और नाम, श्रेणी तथा स्टेज से निर्धारित (resolve) किया जा सकता है।"
+    },
+    "searchArtifacts": {
+      "en": {
+        "summary": "Search artifacts",
+        "description": "Finds published artifacts by `q` (a case-insensitive substring of the name or of a current metadata value), an exact current `label`, a `collection`, and an exact `metadataKey`/`metadataValue` pair, which go together; all given filters must match. Results come in pages of 100 ordered by ID, each with size, creation and publication times, current labels and promotion stages; continue with `after` set to `next`. Metadata and collections are not returned: read them with `getAnnotations`."
+      },
+      "summary": "आर्टिफ़ैक्ट खोजें",
+      "description": "प्रकाशित आर्टिफ़ैक्ट `q` (नाम या किसी वर्तमान मेटाडेटा मान का बड़े-छोटे अक्षर का भेद न करने वाला सबस्ट्रिंग), किसी सटीक वर्तमान `label`, किसी `collection`, और सटीक `metadataKey`/`metadataValue` जोड़ी से खोजता है, जो साथ-साथ दिए जाते हैं; दिए गए सभी फ़िल्टर मेल खाने चाहिए। परिणाम ID के क्रम में 100 के पृष्ठों में आते हैं, प्रत्येक के साथ आकार, निर्माण और प्रकाशन का समय, वर्तमान लेबल और प्रमोशन स्टेज; `after` में `next` देकर आगे बढ़ें। मेटाडेटा और संग्रह नहीं लौटाए जाते: उन्हें `getAnnotations` से पढ़ें।"
+    },
+    "getCatalogAudit": {
+      "en": {
+        "summary": "Read the catalog audit of a repository",
+        "description": "Returns, oldest first, up to 100 catalog changes of the repository after the sequence number `after` (default 0): publications, deletions, annotation and attachment changes, package registrations, file path changes, references, stages and promotions, each with actor, action, artifact and time. To read further, pass the last `sequence` of the page as `after`; there is no `next` field. Downloads and sign-ins are not in it; mirrors follow `listCatalogChanges`, which omits actors."
+      },
+      "summary": "रिपॉज़िटरी का कैटलॉग ऑडिट पढ़ें",
+      "description": "क्रम संख्या `after` (डिफ़ॉल्ट 0) के बाद रिपॉज़िटरी के अधिकतम 100 कैटलॉग परिवर्तन, सबसे पुराना पहले, लौटाता है: प्रकाशन, हटाना, एनोटेशन और अटैचमेंट के परिवर्तन, पैकेज पंजीकरण, फ़ाइल पथ के परिवर्तन, संदर्भ, स्टेज और प्रमोशन, प्रत्येक के साथ कर्ता, क्रिया, आर्टिफ़ैक्ट और समय। आगे पढ़ने के लिए पृष्ठ का अंतिम `sequence` `after` में दें; कोई `next` फ़ील्ड नहीं है। डाउनलोड और साइन-इन इसमें नहीं हैं; मिरर `listCatalogChanges` का अनुसरण करते हैं, जिसमें कर्ता नहीं होते।"
+    },
+    "addReference": {
+      "en": {
+        "summary": "Add a reference to an artifact",
+        "description": "Records that something outside Arkvory uses this artifact, under a `key` of your choice (1–256 letters, digits or `_.:/-`), for example a deployment name. A referenced artifact cannot be deleted or removed by retention until every reference is gone. The reference belongs to the caller; adding the same key again changes nothing."
+      },
+      "summary": "आर्टिफ़ैक्ट में संदर्भ जोड़ें",
+      "description": "दर्ज करता है कि Arkvory के बाहर कोई चीज़ इस आर्टिफ़ैक्ट का उपयोग करती है, आपकी चुनी हुई `key` (1–256 अक्षर, अंक या `_.:/-`) के अंतर्गत, उदाहरण के लिए किसी डिप्लॉयमेंट का नाम। संदर्भित आर्टिफ़ैक्ट को हटाया नहीं जा सकता और प्रतिधारण भी उसे नहीं हटा सकता, जब तक सभी संदर्भ समाप्त न हो जाएँ। संदर्भ कॉलर का होता है; वही कुंजी फिर जोड़ने पर कुछ नहीं बदलता।"
+    },
+    "removeReference": {
+      "en": {
+        "summary": "Remove a reference from an artifact",
+        "description": "Removes the caller's own reference `key` from the artifact; references of other callers stay. Removing a key that is not there succeeds as well."
+      },
+      "summary": "आर्टिफ़ैक्ट से संदर्भ हटाएँ",
+      "description": "आर्टिफ़ैक्ट से कॉलर का अपना संदर्भ `key` हटाता है; अन्य कॉलर के संदर्भ बने रहते हैं। जो कुंजी मौजूद नहीं है उसे हटाना भी सफल होता है।"
+    },
+    "listArtifacts": {
+      "en": {
+        "summary": "List artifacts",
+        "description": "Lists the published artifacts of the repository ordered by ID, `limit` per page (1–100, default 50); continue with `after` set to `next`. `next` is set whenever a page is full, so the last page may be empty. Each item carries the descriptor given at upload; current labels and metadata are in `getAnnotations`."
+      },
+      "summary": "आर्टिफ़ैक्ट सूचीबद्ध करें",
+      "description": "रिपॉज़िटरी के प्रकाशित आर्टिफ़ैक्ट ID के क्रम में सूचीबद्ध करता है, प्रति पृष्ठ `limit` (1–100, डिफ़ॉल्ट 50); `after` में `next` देकर आगे बढ़ें। पृष्ठ भरा होने पर हर बार `next` सेट होता है, इसलिए अंतिम पृष्ठ खाली हो सकता है। प्रत्येक आइटम में अपलोड के समय दिया गया डिस्क्रिप्टर होता है; वर्तमान लेबल और मेटाडेटा `getAnnotations` में हैं।"
+    },
+    "getArtifact": {
+      "en": {
+        "summary": "Get an artifact",
+        "description": "Returns a published artifact: its ID, repository, status, creation time and the descriptor given at upload (name, size, SHA-256, original labels and metadata). Pending, cancelled and deleted artifacts answer 404. To read the bytes use `downloadArtifact`."
+      },
+      "summary": "आर्टिफ़ैक्ट प्राप्त करें",
+      "description": "प्रकाशित आर्टिफ़ैक्ट लौटाता है: उसकी ID, रिपॉज़िटरी, स्थिति, निर्माण समय और अपलोड के समय दिया गया डिस्क्रिप्टर (नाम, आकार, SHA-256, मूल लेबल और मेटाडेटा)। लंबित, रद्द किए गए और हटाए गए आर्टिफ़ैक्ट पर 404 मिलता है। बाइट पढ़ने के लिए `downloadArtifact` का उपयोग करें।"
+    },
+    "deleteArtifact": {
+      "en": {
+        "summary": "Delete an artifact",
+        "description": "Logically deletes a published artifact: it disappears from lists, searches and downloads at once, and its bytes are reclaimed by the repository's online cleanup (`setCleanup`, off by default) after its grace period. `expectedAnnotationRevision` must equal the current annotation revision. The answer is 200 with an `outcome`: `deleted`, `already_deleted`, `changed` (the revision differs), `not_found`, or `protected` with the `blockers` that keep it (a reference, a file path revision, a build attachment or a promotion stage). Check beforehand with `inspectArtifactDeletion`."
+      },
+      "summary": "आर्टिफ़ैक्ट हटाएँ",
+      "description": "प्रकाशित आर्टिफ़ैक्ट को तार्किक रूप से हटाता है: वह सूचियों, खोजों और डाउनलोड से तुरंत गायब हो जाता है, और उसके बाइट रिपॉज़िटरी के ऑनलाइन क्लीनअप (`setCleanup`, डिफ़ॉल्ट रूप से बंद) द्वारा उसकी छूट अवधि के बाद वापस लिए जाते हैं। `expectedAnnotationRevision` वर्तमान एनोटेशन संशोधन के बराबर होना चाहिए। उत्तर 200 है और उसमें एक `outcome` होता है: `deleted`, `already_deleted`, `changed` (संशोधन भिन्न है), `not_found`, या `protected` के साथ वे `blockers` जो उसे रोके रखते हैं (कोई संदर्भ, फ़ाइल पथ का संशोधन, बिल्ड अटैचमेंट या प्रमोशन स्टेज)। पहले `inspectArtifactDeletion` से जाँच लें।"
+    },
+    "downloadArtifact": {
+      "en": {
+        "summary": "Download an artifact",
+        "description": "Streams the original bytes with `Content-Length`, `Content-Disposition` (the artifact name) and a strong `ETag` (`\"sha256:<hex>\"`). A single `Range` gives 206 (an unsatisfiable one 416); `If-Range` with the ETag resumes safely, and `If-None-Match` answers 304. HEAD returns the same headers without a body and ignores `Range`. Instead of an `Authorization` header the request may carry a download link from `createDownloadLink` as `token`; downloads wait for a free slot of the server's download admission."
+      },
+      "summary": "आर्टिफ़ैक्ट डाउनलोड करें",
+      "description": "मूल बाइट `Content-Length`, `Content-Disposition` (आर्टिफ़ैक्ट का नाम) और सशक्त (strong) `ETag` (`\"sha256:<hex>\"`) के साथ स्ट्रीम करता है। एकल `Range` पर 206 मिलता है (जिसे पूरा नहीं किया जा सकता उस पर 416); ETag के साथ `If-Range` सुरक्षित रूप से डाउनलोड जारी रखता है, और `If-None-Match` पर 304 मिलता है। HEAD बिना बॉडी के वही हेडर लौटाता है और `Range` की उपेक्षा करता है। `Authorization` हेडर के बजाय अनुरोध `createDownloadLink` से मिला डाउनलोड लिंक `token` के रूप में ले जा सकता है; डाउनलोड सर्वर के डाउनलोड प्रवेश नियंत्रण में खाली स्लॉट की प्रतीक्षा करते हैं।"
+    },
+    "listCatalogChanges": {
+      "en": {
+        "summary": "Follow the change feed of a repository",
+        "description": "Returns, in commit order, up to `limit` changes (1–100, default 100) after the sequence `after` (default 0): action, artifact and, for file paths and stages, the path or stage in `detail`; actors are left out, so list access is enough. `head` is the newest sequence of the repository, `next` the cursor of the following page or null when the page reached the head. A mirror stores the last sequence it applied and polls from there."
+      },
+      "summary": "रिपॉज़िटरी की परिवर्तन फ़ीड का अनुसरण करें",
+      "description": "क्रम संख्या `after` (डिफ़ॉल्ट 0) के बाद कमिट के क्रम में अधिकतम `limit` परिवर्तन (1–100, डिफ़ॉल्ट 100) लौटाता है: क्रिया, आर्टिफ़ैक्ट और, फ़ाइल पथ व स्टेज के लिए, `detail` में पथ या स्टेज; कर्ता छोड़ दिए जाते हैं, इसलिए सूची देखने की पहुँच पर्याप्त है। `head` रिपॉज़िटरी का नवीनतम क्रम है, `next` अगले पृष्ठ का कर्सर है या null जब पृष्ठ नवीनतम क्रम तक पहुँच गया हो। मिरर अंतिम लागू किया गया क्रम सहेजता है और वहीं से पोल करता है।"
+    },
+    "createDownloadLink": {
+      "en": {
+        "summary": "Create a download link",
+        "description": "Returns a secret `token`, a `url` relative to the API origin and `expiresAt` for `downloadArtifact` of this one artifact without a key; `ttlSeconds` sets the lifetime (60 seconds to one day, default one hour). The token is shown only in this answer and cannot be revoked: it stops working when it expires or the artifact is deleted, and downloads through it count against the creator's transfer limits. A caller may hold 1000 live links (507 `token_limit`), and a download link cannot create further links."
+      },
+      "summary": "डाउनलोड लिंक बनाएँ",
+      "description": "कुंजी के बिना केवल इसी एक आर्टिफ़ैक्ट के `downloadArtifact` के लिए एक गुप्त `token`, API ऑरिजिन के सापेक्ष `url` और `expiresAt` लौटाता है; `ttlSeconds` जीवनकाल तय करता है (60 सेकंड से एक दिन तक, डिफ़ॉल्ट एक घंटा)। टोकन केवल इसी उत्तर में दिखाया जाता है और निरस्त नहीं किया जा सकता: वह समाप्त होने या आर्टिफ़ैक्ट हटाए जाने पर काम करना बंद कर देता है, और उसके द्वारा किए गए डाउनलोड निर्माता की ट्रांसफ़र सीमाओं में गिने जाते हैं। कॉलर के पास 1000 सक्रिय लिंक हो सकते हैं (507 `token_limit`), और डाउनलोड लिंक से आगे के लिंक नहीं बनाए जा सकते।"
+    },
+    "listPackages": {
+      "en": {
+        "summary": "List package versions",
+        "description": "Lists the registered UPack versions with their manifests, filtered by `group` and `name` (exact, ignoring case; `group=` with an empty value selects the root group, leaving it out selects all groups). `sort` (`group`, `name`, `version`), `direction` (`asc`, `desc`) and `groupBy` (`none`, `group`, `package`, which adds `groups` listing the `artifactIds` of the page) shape the result. Pages hold `limit` items (1–100, default 50); continue with `after` set to `next` and the same filters. Pages are not a snapshot: versions registered in between can be missed until the next pass."
+      },
+      "summary": "पैकेज संस्करण सूचीबद्ध करें",
+      "description": "पंजीकृत UPack संस्करण उनके मैनिफ़ेस्ट के साथ सूचीबद्ध करता है, `group` और `name` से फ़िल्टर किए हुए (सटीक, बड़े-छोटे अक्षर की उपेक्षा के साथ; खाली मान वाला `group=` रूट समूह चुनता है, उसे छोड़ देने पर सभी समूह चुने जाते हैं)। `sort` (`group`, `name`, `version`), `direction` (`asc`, `desc`) और `groupBy` (`none`, `group`, `package`, जो पृष्ठ के `artifactIds` सूचीबद्ध करने वाला `groups` जोड़ता है) परिणाम को आकार देते हैं। प्रत्येक पृष्ठ में `limit` आइटम होते हैं (1–100, डिफ़ॉल्ट 50); उन्हीं फ़िल्टर के साथ `after` में `next` देकर आगे बढ़ें। पृष्ठ स्नैपशॉट नहीं हैं: बीच में पंजीकृत हुए संस्करण अगले पास तक छूट सकते हैं।"
+    },
+    "downloadPackageContent": {
+      "en": {
+        "summary": "Download a package by name and version",
+        "description": "Resolves `name` (in `group`, the root group by default) to one registered version and streams it like `downloadArtifact`; `X-Arkvory-Artifact-Id` and `X-Arkvory-Package-Version` name the choice. Select by exact `version` or SemVer `range` (such as `^1.4` or `>=1.0.0 <2.0.0`), optionally only versions with `stage`; without either it takes the highest stable version, `prerelease=true` admits prereleases and `order=promoted` takes the version most recently given `stage`. The name is resolved on every request, so resume with `If-Range` set to the returned ETag, or download by artifact ID; `resolvePackage` gives the same choice without the bytes."
+      },
+      "summary": "नाम और संस्करण से पैकेज डाउनलोड करें",
+      "description": "`name` (`group` में, डिफ़ॉल्ट रूप से रूट समूह) को एक पंजीकृत संस्करण में निर्धारित (resolve) करता है और उसे `downloadArtifact` की तरह स्ट्रीम करता है; `X-Arkvory-Artifact-Id` और `X-Arkvory-Package-Version` चुनाव का नाम बताते हैं। सटीक `version` या SemVer `range` (जैसे `^1.4` या `>=1.0.0 <2.0.0`) से चुनें, वैकल्पिक रूप से केवल `stage` वाले संस्करण; दोनों के बिना यह सबसे ऊँचा स्थिर संस्करण लेता है, `prerelease=true` प्री-रिलीज़ की अनुमति देता है और `order=promoted` वह संस्करण लेता है जिसे `stage` सबसे हाल में दिया गया। नाम हर अनुरोध पर निर्धारित होता है, इसलिए लौटाए गए ETag पर सेट `If-Range` से डाउनलोड जारी रखें, या आर्टिफ़ैक्ट को ID से डाउनलोड करें; `resolvePackage` बाइट के बिना वही चुनाव देता है।"
+    },
+    "listAssets": {
+      "en": {
+        "summary": "List file paths by prefix",
+        "description": "Returns every file path that starts with `prefix` (literal, not a pattern; empty for all), ordered by path, each with its current revision and artifact ID. There is no paging: more than 1000 matches is a 400 asking for a narrower prefix, so prefer `listAssetPage` for large trees."
+      },
+      "summary": "उपसर्ग से फ़ाइल पथ सूचीबद्ध करें",
+      "description": "हर वह फ़ाइल पथ लौटाता है जो `prefix` से शुरू होता है (शाब्दिक, पैटर्न नहीं; सभी के लिए खाली), पथ के क्रम में, प्रत्येक के साथ उसका वर्तमान संशोधन और आर्टिफ़ैक्ट ID। इसमें पृष्ठांकन नहीं है: 1000 से अधिक मिलान पर 400 मिलता है जो संकरा उपसर्ग माँगता है, इसलिए बड़े वृक्षों के लिए `listAssetPage` को प्राथमिकता दें।"
+    },
+    "listAssetPage": {
+      "en": {
+        "summary": "List file paths page by page",
+        "description": "Returns the current file paths that start with `prefix` (literal; empty for all) in UTF-8 byte order, each with its current revision and artifact ID. Pages hold `limit` items (1–100, default 50); continue with `after` set to the opaque `next`. Pages are not a snapshot: paths changed between requests can appear with their newer revision or be missed until the next pass."
+      },
+      "summary": "फ़ाइल पथ पृष्ठ-दर-पृष्ठ सूचीबद्ध करें",
+      "description": "वर्तमान फ़ाइल पथ लौटाता है जो `prefix` से शुरू होते हैं (शाब्दिक; सभी के लिए खाली), UTF-8 बाइट क्रम में, प्रत्येक के साथ उसका वर्तमान संशोधन और आर्टिफ़ैक्ट ID। प्रत्येक पृष्ठ में `limit` आइटम होते हैं (1–100, डिफ़ॉल्ट 50); अपारदर्शी `next` को `after` में देकर आगे बढ़ें। पृष्ठ स्नैपशॉट नहीं हैं: अनुरोधों के बीच बदले पथ अपने नए संशोधन के साथ दिख सकते हैं या अगले पास तक छूट सकते हैं।"
+    },
+    "getAsset": {
+      "en": {
+        "summary": "Get the current revision of a file path",
+        "description": "Returns the current `revision` of `path` and the ID of the artifact it points to; an unknown path is a 404. A path has 1–1024 characters in `/`-separated segments, without empty, `.` or `..` segments, `\\`, `:` or control characters. Download the bytes with `downloadAssetContent`, or pass the revision to `setAsset` as `expectedRevision`."
+      },
+      "summary": "फ़ाइल पथ का वर्तमान संशोधन प्राप्त करें",
+      "description": "`path` का वर्तमान `revision` और उस आर्टिफ़ैक्ट की ID लौटाता है जिसकी ओर वह इंगित करता है; अज्ञात पथ पर 404 मिलता है। पथ में `/` से अलग किए गए खंडों में 1–1024 वर्ण होते हैं, बिना खाली, `.` या `..` खंडों के, और बिना `\\`, `:` या नियंत्रण वर्णों के। बाइट `downloadAssetContent` से डाउनलोड करें, या संशोधन को `setAsset` में `expectedRevision` के रूप में दें।"
+    },
+    "setAsset": {
+      "en": {
+        "summary": "Point a file path at an artifact",
+        "description": "Makes `path` name a published artifact of the same repository as its new revision; `expectedRevision` is 0 to create the path and the current revision to replace it, otherwise 409 `revision_mismatch`. Earlier revisions stay in the history and keep their artifacts from being deleted. To store bytes and name them in one request, use `putRawFile`."
+      },
+      "summary": "फ़ाइल पथ को आर्टिफ़ैक्ट की ओर इंगित करें",
+      "description": "`path` को उसी रिपॉज़िटरी के प्रकाशित आर्टिफ़ैक्ट का नाम बनाता है, नए संशोधन के रूप में; `expectedRevision` पथ बनाने के लिए 0 है और बदलने के लिए वर्तमान संशोधन, अन्यथा 409 `revision_mismatch`। पिछले संशोधन इतिहास में रहते हैं और उनके आर्टिफ़ैक्ट को हटाए जाने से बचाए रखते हैं। बाइट सहेजने और उन्हें एक ही अनुरोध में नाम देने के लिए `putRawFile` का उपयोग करें।"
+    },
+    "getAssetHistory": {
+      "en": {
+        "summary": "List the revisions of a file path",
+        "description": "Returns the revisions of `path`, newest first, 50 per page, each with its artifact, the actor, the time and, for a restore, the `sourceRevision` it copied (actor and time are null for revisions recorded by early server versions). Continue with `before` set to `next`. An unknown path is a 404."
+      },
+      "summary": "फ़ाइल पथ के संशोधन सूचीबद्ध करें",
+      "description": "`path` के संशोधन, सबसे नया पहले, प्रति पृष्ठ 50, लौटाता है; प्रत्येक के साथ उसका आर्टिफ़ैक्ट, कर्ता, समय और, पुनर्स्थापना के लिए, वह `sourceRevision` जिससे उसे कॉपी किया गया (सर्वर के शुरुआती संस्करणों द्वारा दर्ज संशोधनों के लिए कर्ता और समय null हैं)। `before` में `next` देकर आगे बढ़ें। अज्ञात पथ पर 404 मिलता है।"
+    },
+    "getAssetRevision": {
+      "en": {
+        "summary": "Get one revision of a file path",
+        "description": "Returns revision `revision` of `path` with its artifact ID, actor, time and restore source. Revisions never change, so the artifact ID can be cached; download it with `downloadArtifact`. A missing path or revision is a 404."
+      },
+      "summary": "फ़ाइल पथ का एक संशोधन प्राप्त करें",
+      "description": "`path` का संशोधन `revision` उसकी आर्टिफ़ैक्ट ID, कर्ता, समय और पुनर्स्थापना स्रोत के साथ लौटाता है। संशोधन कभी नहीं बदलते, इसलिए आर्टिफ़ैक्ट ID कैश की जा सकती है; उसे `downloadArtifact` से डाउनलोड करें। अनुपस्थित पथ या संशोधन पर 404 मिलता है।"
+    },
+    "restoreAsset": {
+      "en": {
+        "summary": "Restore an earlier revision of a file path",
+        "description": "Adds a new revision of `path` that points at the artifact of `sourceRevision`; nothing is copied and no revision is removed. `expectedRevision` must be the current revision (at least 1), otherwise 409 `revision_mismatch` — so repeating a restore that already succeeded is a 409, not a second restore. The new revision records `sourceRevision`, and the change is audited in the same transaction."
+      },
+      "summary": "फ़ाइल पथ का पिछला संशोधन पुनर्स्थापित करें",
+      "description": "`path` का नया संशोधन जोड़ता है जो `sourceRevision` के आर्टिफ़ैक्ट की ओर इंगित करता है; कुछ कॉपी नहीं होता और कोई संशोधन नहीं हटता। `expectedRevision` वर्तमान संशोधन होना चाहिए (कम से कम 1), अन्यथा 409 `revision_mismatch` — इसलिए सफल हो चुकी पुनर्स्थापना को दोहराने पर दूसरी पुनर्स्थापना के बजाय 409 मिलता है। नया संशोधन `sourceRevision` दर्ज करता है, और परिवर्तन उसी ट्रांज़ैक्शन में ऑडिट किया जाता है।"
+    },
+    "downloadAssetContent": {
+      "en": {
+        "summary": "Download a file by path",
+        "description": "Resolves `path` to its current revision and streams that artifact like `downloadArtifact`, with `Range`, `If-Range`, `If-None-Match` and HEAD. The path is resolved on every request, so resume with `If-Range` set to the returned ETag: after the path moved on, the answer is the whole new file instead of a mixed one. `downloadRawFile` does the same with the path in the URL."
+      },
+      "summary": "पथ से फ़ाइल डाउनलोड करें",
+      "description": "`path` को उसके वर्तमान संशोधन में निर्धारित (resolve) करता है और उस आर्टिफ़ैक्ट को `downloadArtifact` की तरह स्ट्रीम करता है, `Range`, `If-Range`, `If-None-Match` और HEAD के साथ। पथ हर अनुरोध पर निर्धारित होता है, इसलिए लौटाए गए ETag पर सेट `If-Range` से डाउनलोड जारी रखें: पथ के आगे बढ़ जाने पर उत्तर मिली-जुली फ़ाइल के बजाय पूरी नई फ़ाइल होती है। `downloadRawFile` वही करता है, पर पथ URL में होता है।"
+    },
+    "putRawFile": {
+      "en": {
+        "summary": "Upload a file to a path in one request",
+        "description": "Stores the request body, of any media type, as the new revision of the path in the URL, for scripts and CI (`curl -T`); the answer is 201 with the path, revision and artifact. With `X-Checksum-Sha256` and `Content-Length` the bytes stream straight to storage and are verified; without them they are staged and hashed first (422 if the body does not match a given checksum). The same bytes as the current revision add nothing and answer 200 with `created: false`, `If-None-Match: *` only creates (409 `already_exists`), and a concurrent writer of the same path gets 409 `revision_mismatch`. For very large files prefer the resumable upload sessions."
+      },
+      "summary": "एक अनुरोध में किसी पथ पर फ़ाइल अपलोड करें",
+      "description": "स्क्रिप्ट और CI के लिए (`curl -T`), किसी भी मीडिया प्रकार की अनुरोध बॉडी को URL के पथ के नए संशोधन के रूप में सहेजता है; उत्तर पथ, संशोधन और आर्टिफ़ैक्ट के साथ 201 है। `X-Checksum-Sha256` और `Content-Length` होने पर बाइट सीधे स्टोरेज में स्ट्रीम होते हैं और सत्यापित किए जाते हैं; इनके बिना उन्हें पहले स्टेजिंग में रखकर हैश किया जाता है (दिए गए चेकसम से बॉडी न मिलने पर 422)। वर्तमान संशोधन के समान बाइट कुछ नहीं जोड़ते और `created: false` के साथ 200 लौटता है; `If-None-Match: *` केवल नया पथ बनाने देता है (पहले से मौजूद होने पर 409 `already_exists`), और उसी पथ पर लिखने वाले समवर्ती लेखक को 409 `revision_mismatch` मिलता है। बहुत बड़ी फ़ाइलों के लिए पुनः आरंभ योग्य अपलोड सत्र बेहतर हैं।"
+    },
+    "downloadRawFile": {
+      "en": {
+        "summary": "Download a file by its URL path",
+        "description": "Streams the current revision of the path in the URL like `downloadArtifact`, with `Range`, `If-Range`, `If-None-Match`, HEAD and `X-Arkvory-Artifact-Id` naming the artifact. The path is resolved on every request, so resume with `If-Range` set to the returned ETag, or download the artifact by ID."
+      },
+      "summary": "URL पथ से फ़ाइल डाउनलोड करें",
+      "description": "URL में दिए पथ का वर्तमान संशोधन `downloadArtifact` की तरह स्ट्रीम करता है, `Range`, `If-Range`, `If-None-Match`, HEAD के साथ, और `X-Arkvory-Artifact-Id` आर्टिफ़ैक्ट का नाम बताता है। पथ हर अनुरोध पर निर्धारित होता है, इसलिए लौटाए गए ETag पर सेट `If-Range` से डाउनलोड जारी रखें, या आर्टिफ़ैक्ट को ID से डाउनलोड करें।"
+    },
+    "listArtifactStages": {
+      "en": {
+        "summary": "List the stages of an artifact",
+        "description": "Returns the current promotion stages of a published artifact (at most 16), each with the time it was added, the actor and the comment."
+      },
+      "summary": "आर्टिफ़ैक्ट के स्टेज सूचीबद्ध करें",
+      "description": "प्रकाशित आर्टिफ़ैक्ट के वर्तमान प्रमोशन स्टेज लौटाता है (अधिकतम 16), प्रत्येक के साथ जोड़ने का समय, कर्ता और टिप्पणी।"
+    },
+    "setArtifactStage": {
+      "en": {
+        "summary": "Add a stage to an artifact",
+        "description": "Marks a published artifact with `stage` (1–32 lower-case letters, digits or `_.-`, starting with a letter or digit), with an optional `comment` of up to 1024 characters, and records the event in the promotion journal. Adding a stage the artifact already has changes nothing and keeps the original time, so to promote the same version again (for a rollback with `order=promoted`) remove the stage first. An artifact has at most 16 stages (409 `stage_limit`)."
+      },
+      "summary": "आर्टिफ़ैक्ट में स्टेज जोड़ें",
+      "description": "प्रकाशित आर्टिफ़ैक्ट को `stage` (1–32 छोटे अक्षर, अंक या `_.-`, जो अक्षर या अंक से शुरू हो) से चिह्नित करता है, वैकल्पिक `comment` (1024 वर्णों तक) के साथ, और घटना को प्रमोशन जर्नल में दर्ज करता है। आर्टिफ़ैक्ट में पहले से मौजूद स्टेज जोड़ने पर कुछ नहीं बदलता और मूल समय बना रहता है, इसलिए उसी संस्करण को फिर प्रमोट करने के लिए (`order=promoted` के साथ रोलबैक हेतु) पहले स्टेज हटाएँ। आर्टिफ़ैक्ट में अधिकतम 16 स्टेज हो सकते हैं (409 `stage_limit`)।"
+    },
+    "removeArtifactStage": {
+      "en": {
+        "summary": "Remove a stage from an artifact",
+        "description": "Removes `stage` from a published artifact and records the event in the promotion journal; removing a stage the artifact does not have succeeds too. Package resolution by this stage stops choosing the artifact at once."
+      },
+      "summary": "आर्टिफ़ैक्ट से स्टेज हटाएँ",
+      "description": "प्रकाशित आर्टिफ़ैक्ट से `stage` हटाता है और घटना को प्रमोशन जर्नल में दर्ज करता है; जो स्टेज आर्टिफ़ैक्ट में नहीं है उसे हटाना भी सफल होता है। इस स्टेज से पैकेज निर्धारण (resolution) उसी क्षण से आर्टिफ़ैक्ट को चुनना बंद कर देता है।"
+    },
+    "listArtifactPromotions": {
+      "en": {
+        "summary": "List the promotion history of an artifact",
+        "description": "Returns the journal of one artifact, oldest first: stages added and removed, promotions to and from other repositories with the peer artifact, actor, comment and time. Pages hold `limit` events (1–100, default 50); continue with `after` set to `next`."
+      },
+      "summary": "आर्टिफ़ैक्ट का प्रमोशन इतिहास सूचीबद्ध करें",
+      "description": "एक आर्टिफ़ैक्ट का जर्नल सबसे पुराने से पहले लौटाता है: जोड़े और हटाए गए स्टेज, अन्य रिपॉज़िटरी में और वहाँ से प्रमोशन (सहभागी आर्टिफ़ैक्ट के साथ), कर्ता, टिप्पणी और समय। प्रत्येक पृष्ठ में `limit` घटनाएँ होती हैं (1–100, डिफ़ॉल्ट 50); `after` में `next` देकर आगे बढ़ें।"
+    },
+    "promoteArtifact": {
+      "en": {
+        "summary": "Promote an artifact to another repository",
+        "description": "Publishes the artifact in `target` without sending the bytes again, optionally with `stages` and a `comment`; the caller also needs `artifact.promote` in the target. `mode` `copy` (default) keeps the source; `move`, which needs `artifact.promote` here as well, retires the source in the same transaction, carries its stages over and is refused with 409 when the source cannot be deleted. The answer is 201 with the copy; a repeat returns the same copy with 200, and a target that already has this package version returns that artifact when the SHA-256 matches and a 409 `version_exists` when it does not. Build attachments and file paths are not carried over."
+      },
+      "summary": "आर्टिफ़ैक्ट को दूसरी रिपॉज़िटरी में प्रमोट करें",
+      "description": "बाइट दोबारा भेजे बिना आर्टिफ़ैक्ट को `target` में प्रकाशित करता है, वैकल्पिक रूप से `stages` और `comment` के साथ; कॉलर को लक्ष्य रिपॉज़िटरी में भी `artifact.promote` चाहिए। `mode` `copy` (डिफ़ॉल्ट) स्रोत को बनाए रखता है; `move`, जिसके लिए यहाँ भी `artifact.promote` चाहिए, उसी ट्रांज़ैक्शन में स्रोत को सेवामुक्त (retire) कर देता है, उसके स्टेज साथ ले जाता है और जब स्रोत हटाया न जा सके तो 409 से अस्वीकार किया जाता है। उत्तर प्रति के साथ 201 है; दोहराने पर वही प्रति 200 के साथ मिलती है, और जिस लक्ष्य में यह पैकेज संस्करण पहले से है वह SHA-256 मेल खाने पर वही आर्टिफ़ैक्ट लौटाता है और न मिलने पर 409 `version_exists`। बिल्ड अटैचमेंट और फ़ाइल पथ साथ नहीं जाते।"
+    },
+    "listStagedArtifacts": {
+      "en": {
+        "summary": "List artifacts with stages",
+        "description": "Lists the stage entries of the repository (artifact, stage, time, actor, comment) ordered by artifact and stage, optionally only `stage`, or only the artifacts in `ids` (1–100 comma-separated IDs, for example to show the stages of a page of packages at once). Pages hold `limit` entries (1–100, default 100); continue with `after` set to `next` (`<artifactId>/<stage>`)."
+      },
+      "summary": "स्टेज वाले आर्टिफ़ैक्ट सूचीबद्ध करें",
+      "description": "रिपॉज़िटरी की स्टेज प्रविष्टियाँ (आर्टिफ़ैक्ट, स्टेज, समय, कर्ता, टिप्पणी) आर्टिफ़ैक्ट और स्टेज के क्रम में सूचीबद्ध करता है, वैकल्पिक रूप से केवल `stage`, या केवल `ids` में दिए आर्टिफ़ैक्ट (अल्पविराम से अलग की गई 1–100 ID, उदाहरण के लिए पैकेजों के एक पृष्ठ के स्टेज एक साथ दिखाने के लिए)। प्रत्येक पृष्ठ में `limit` प्रविष्टियाँ होती हैं (1–100, डिफ़ॉल्ट 100); `after` में `next` (`<artifactId>/<stage>`) देकर आगे बढ़ें।"
+    },
+    "listRepositoryPromotions": {
+      "en": {
+        "summary": "Follow the promotion journal of a repository",
+        "description": "Returns the stage and promotion events of every artifact in the repository, oldest first, for CI/CD to poll: stage added or removed, promoted to another repository, received from one. Pages hold `limit` events (1–100, default 50); store the last `sequence` and continue with `after` set to `next`."
+      },
+      "summary": "रिपॉज़िटरी का प्रमोशन जर्नल अनुसरण करें",
+      "description": "CI/CD के पोल करने के लिए रिपॉज़िटरी के हर आर्टिफ़ैक्ट की स्टेज और प्रमोशन घटनाएँ, सबसे पुरानी पहले, लौटाता है: स्टेज जोड़ा या हटाया गया, दूसरी रिपॉज़िटरी में प्रमोट किया गया, किसी से प्राप्त किया गया। प्रत्येक पृष्ठ में `limit` घटनाएँ होती हैं (1–100, डिफ़ॉल्ट 50); अंतिम `sequence` सहेजें और `after` में `next` देकर आगे बढ़ें।"
+    },
+    "resolvePackage": {
+      "en": {
+        "summary": "Resolve a package version",
+        "description": "Chooses one registered UPack version by the same rules as `downloadPackageContent` and returns it without the bytes: version, artifact ID, SHA-256, size, publication time and current stages. `name` is required, `group` defaults to the root group; select by exact `version` or SemVer `range`, optionally `stage`, `prerelease=true` and `order=promoted` (needs `stage`); without `version` and `range` it is the highest stable version. No match is a 404; download the result by artifact ID to stay on that version."
+      },
+      "summary": "पैकेज संस्करण निर्धारित करें",
+      "description": "`downloadPackageContent` के समान नियमों से एक पंजीकृत UPack संस्करण चुनता है और उसे बाइट के बिना लौटाता है: संस्करण, आर्टिफ़ैक्ट ID, SHA-256, आकार, प्रकाशन समय और वर्तमान स्टेज। `name` आवश्यक है, `group` डिफ़ॉल्ट रूप से रूट समूह है; सटीक `version` या SemVer `range` से चुनें, वैकल्पिक रूप से `stage`, `prerelease=true` और `order=promoted` (इसके लिए `stage` चाहिए); `version` और `range` के बिना यह सबसे ऊँचा स्थिर संस्करण है। कोई मेल न मिलने पर 404; उसी संस्करण पर बने रहने के लिए परिणाम को आर्टिफ़ैक्ट ID से डाउनलोड करें।"
+    },
+    "inspectArtifactDeletion": {
+      "en": {
+        "summary": "Check whether an artifact can be deleted",
+        "description": "Returns the artifact's name, size, publication time, current `annotationRevision` and the `blockers` that would keep it from deletion: `reference` (an external reference, or use by a container image, Git LFS or npm), `asset_history` (a current or earlier file path revision), `attachment_history` or `promotion_stage`. Nothing changes; pass the revision to `deleteArtifact` as `expectedAnnotationRevision`."
+      },
+      "summary": "जाँचें कि आर्टिफ़ैक्ट हटाया जा सकता है या नहीं",
+      "description": "आर्टिफ़ैक्ट का नाम, आकार, प्रकाशन समय, वर्तमान `annotationRevision` और वे `blockers` लौटाता है जो उसे हटाए जाने से रोकेंगे: `reference` (कोई बाहरी संदर्भ, या किसी कंटेनर इमेज, Git LFS अथवा npm द्वारा उपयोग), `asset_history` (वर्तमान या पुराना फ़ाइल पथ संशोधन), `attachment_history` या `promotion_stage`। कुछ नहीं बदलता; संशोधन को `deleteArtifact` में `expectedAnnotationRevision` के रूप में दें।"
+    },
+    "previewRetention": {
+      "en": {
+        "summary": "Preview retention candidates",
+        "description": "Lists the published artifacts released before `criteria.publishedBefore` (a past UTC time with milliseconds), ordered by ID, each with its annotation revision and blockers, `protected_label` meaning one of `criteria.protectedLabels` (an explicit list of up to 32). Pages hold `limit` items (1–100, default 50); continue with `after` set to `next`. Nothing is reserved: choose the items to delete and pass them with their revisions to `applyRetention`, which checks them again."
+      },
+      "summary": "प्रतिधारण के उम्मीदवारों का पूर्वावलोकन करें",
+      "description": "`criteria.publishedBefore` से पहले जारी प्रकाशित आर्टिफ़ैक्ट (अतीत का UTC समय, मिलीसेकंड सहित) ID के क्रम में सूचीबद्ध करता है, प्रत्येक के साथ उसका एनोटेशन संशोधन और ब्लॉकर; `protected_label` का अर्थ है कि `criteria.protectedLabels` (अधिकतम 32 की स्पष्ट सूची) में से कोई लेबल लगा है। प्रत्येक पृष्ठ में `limit` आइटम होते हैं (1–100, डिफ़ॉल्ट 50); `after` में `next` देकर आगे बढ़ें। कुछ आरक्षित नहीं होता: हटाने के आइटम चुनें और उन्हें उनके संशोधनों के साथ `applyRetention` को दें, जो उन्हें फिर जाँचता है।"
+    },
+    "applyRetention": {
+      "en": {
+        "summary": "Delete the selected retention candidates",
+        "description": "Rechecks 1–100 artifacts chosen from `previewRetention` (`items` with `id` and `expectedAnnotationRevision`) against the same `criteria` and logically deletes the eligible ones in one transaction. Each item gets an `outcome`: `deleted`, `already_deleted`, `changed` (the annotations changed), `not_eligible` (published too late), `protected` with its blockers, or `not_found`. The bytes stay reserved until the repository's online cleanup reclaims them."
+      },
+      "summary": "चुने हुए प्रतिधारण उम्मीदवार हटाएँ",
+      "description": "`previewRetention` से चुने गए 1–100 आर्टिफ़ैक्ट (`items`, जिनमें `id` और `expectedAnnotationRevision`) को उसी `criteria` के विरुद्ध फिर जाँचता है और पात्र आर्टिफ़ैक्ट को एक ट्रांज़ैक्शन में तार्किक रूप से हटाता है। हर आइटम को एक `outcome` मिलता है: `deleted`, `already_deleted`, `changed` (एनोटेशन बदल गए), `not_eligible` (बहुत देर से प्रकाशित), `protected` अपने ब्लॉकर के साथ, या `not_found`। बाइट तब तक आरक्षित रहते हैं जब तक रिपॉज़िटरी का ऑनलाइन क्लीनअप उन्हें वापस नहीं ले लेता।"
+    },
+    "getStoragePolicy": {
+      "en": {
+        "summary": "Get the storage policy",
+        "description": "Returns the repository's automatic cleanup and quota settings with their `revision`, the next and last scheduled run, how many builds the last run deleted and its error. By default the policy is disabled and there is no repository quota (the server-wide capacity still applies)."
+      },
+      "summary": "स्टोरेज नीति प्राप्त करें",
+      "description": "रिपॉज़िटरी की स्वचालित क्लीनअप और कोटा सेटिंग उनके `revision` के साथ लौटाता है, साथ ही अगला और पिछला निर्धारित रन, पिछले रन ने कितने बिल्ड हटाए और उसकी त्रुटि। डिफ़ॉल्ट रूप से नीति अक्षम होती है और रिपॉज़िटरी का कोई कोटा नहीं होता (पूरे सर्वर की क्षमता फिर भी लागू रहती है)।"
+    },
+    "setStoragePolicy": {
+      "en": {
+        "summary": "Replace the storage policy",
+        "description": "Replaces the whole policy: keep the last `keepLast` registered UPack builds per package, per channel label (`channels`) or per repository (`grouping`), never delete `protectedLabels` or builds younger than `minAgeHours`, run every `intervalMinutes`, and limit the repository with `quotaBytes` (a decimal string, `null` for none) and its warning thresholds. `expectedRevision` must be the current revision, otherwise 409 `revision_mismatch`. Enabling also needs `artifact.delete` and ties the schedule to the calling managed key: once that key is revoked, expires or loses these permissions, scheduled deletion stops until the policy is saved with another key. Ordinary files count against the quota but are never deleted by it."
+      },
+      "summary": "स्टोरेज नीति प्रतिस्थापित करें",
+      "description": "पूरी नीति प्रतिस्थापित करता है: प्रत्येक पैकेज, प्रत्येक चैनल लेबल (`channels`) या प्रत्येक रिपॉज़िटरी (`grouping`) के अंतिम `keepLast` पंजीकृत UPack बिल्ड रखें, `protectedLabels` वाले या `minAgeHours` से नए बिल्ड कभी न हटाएँ, हर `intervalMinutes` पर चलाएँ, और रिपॉज़िटरी को `quotaBytes` (दशमलव स्ट्रिंग, कोई सीमा न हो तो `null`) और उसकी चेतावनी सीमाओं से सीमित करें। `expectedRevision` वर्तमान संशोधन होना चाहिए, अन्यथा 409 `revision_mismatch`। सक्षम करने के लिए `artifact.delete` भी चाहिए और शेड्यूल कॉल करने वाली प्रबंधित कुंजी से बँध जाता है: वह कुंजी निरस्त होने, समाप्त होने या इन अनुमतियों को खोने पर निर्धारित हटाना तब तक रुका रहता है जब तक नीति किसी अन्य कुंजी से सहेजी नहीं जाती। सामान्य फ़ाइलें कोटा में गिनी जाती हैं, पर उससे कभी हटाई नहीं जातीं।"
+    },
+    "getStorageUsage": {
+      "en": {
+        "summary": "Get the storage usage of a repository",
+        "description": "Returns the bytes reserved by the repository as decimal strings: published, pending uploads and retired (deleted or cancelled, not yet reclaimed), their sum `reservedBytes`, the quota and a `state` (`unlimited`, `normal`, `warning`, `critical`, `exceeded`). This is the logical reservation counted against the quota, not the space used on disk."
+      },
+      "summary": "रिपॉज़िटरी का स्टोरेज उपयोग प्राप्त करें",
+      "description": "रिपॉज़िटरी द्वारा आरक्षित बाइट दशमलव स्ट्रिंग के रूप में लौटाता है: प्रकाशित, लंबित अपलोड और सेवामुक्त (हटाए गए या रद्द किए गए, अभी वापस नहीं लिए गए), उनका योग `reservedBytes`, कोटा और एक `state` (`unlimited`, `normal`, `warning`, `critical`, `exceeded`)। यह कोटा के विरुद्ध गिना जाने वाला तार्किक आरक्षण है, डिस्क पर प्रयुक्त स्थान नहीं।"
+    },
+    "previewStoragePolicy": {
+      "en": {
+        "summary": "Preview what the storage policy would delete",
+        "description": "Returns up to 100 registered builds the saved policy would delete now (even while it is disabled), with the policy `revision` and `hasMore`; builds kept by references, file paths, attachments, protected labels or age are left out. Nothing is reserved: a run ranks the builds again."
+      },
+      "summary": "पूर्वावलोकन करें कि स्टोरेज नीति क्या हटाएगी",
+      "description": "अधिकतम 100 पंजीकृत बिल्ड लौटाता है जिन्हें सहेजी हुई नीति अभी हटा देगी (नीति अक्षम होने पर भी), नीति `revision` और `hasMore` के साथ; संदर्भों, फ़ाइल पथों, अटैचमेंट, संरक्षित लेबल या आयु के कारण रखे गए बिल्ड छोड़ दिए जाते हैं। कुछ आरक्षित नहीं होता: रन बिल्ड को फिर से क्रम में लगाता है।"
+    },
+    "runStoragePolicy": {
+      "en": {
+        "summary": "Run the storage policy now",
+        "description": "Runs one batch of the enabled policy at once instead of waiting for the schedule: it ranks the builds again, checks permissions and dependencies, and logically deletes up to 100, returning an outcome for each. `expectedRevision` must be the current policy revision and the policy must be enabled, otherwise 409. The bytes are reclaimed later by the repository's online cleanup, which has its own policy (`setCleanup`)."
+      },
+      "summary": "स्टोरेज नीति अभी चलाएँ",
+      "description": "शेड्यूल की प्रतीक्षा करने के बजाय सक्षम नीति का एक बैच तुरंत चलाता है: वह बिल्ड को फिर क्रम में लगाता है, अनुमतियाँ और निर्भरताएँ जाँचता है, और अधिकतम 100 को तार्किक रूप से हटाता है, हर एक का परिणाम लौटाते हुए। `expectedRevision` नीति का वर्तमान संशोधन होना चाहिए और नीति सक्षम होनी चाहिए, अन्यथा 409। बाइट बाद में रिपॉज़िटरी के ऑनलाइन क्लीनअप द्वारा वापस लिए जाते हैं, जिसकी अपनी नीति है (`setCleanup`)।"
+    },
+    "getStorageEvents": {
+      "en": {
+        "summary": "List the storage events of a repository",
+        "description": "Returns up to 100 diagnostic events of storage policies, quotas, retention and cleanup after the sequence `after` (default 0), oldest first, each with level, code and a few details; `level` (`info`, `warning`, `error`) filters them, continue with `after` set to `next`. Only the newest 1000 events per repository and 20 000 overall are kept, so export them for longer retention."
+      },
+      "summary": "रिपॉज़िटरी की स्टोरेज घटनाएँ सूचीबद्ध करें",
+      "description": "क्रम संख्या `after` (डिफ़ॉल्ट 0) के बाद स्टोरेज नीतियों, कोटा, प्रतिधारण और क्लीनअप की अधिकतम 100 नैदानिक घटनाएँ, सबसे पुरानी पहले, लौटाता है, प्रत्येक के साथ स्तर, कोड और कुछ विवरण; `level` (`info`, `warning`, `error`) उन्हें फ़िल्टर करता है, `after` में `next` देकर आगे बढ़ें। प्रति रिपॉज़िटरी केवल नवीनतम 1000 और कुल मिलाकर 20 000 घटनाएँ रखी जाती हैं, इसलिए लंबे समय तक रखने के लिए उन्हें एक्सपोर्ट करें।"
+    },
+    "getCleanup": {
+      "en": {
+        "summary": "Get the online cleanup settings",
+        "description": "Returns the repository's online cleanup policy with its `revision` (`enabled`, `graceHours`, `batchSize`, `intervalSeconds`, `delayMilliseconds`), the last and next run, and how many objects the last batch reclaimed, deferred or failed with the bytes freed. Cleanup is what physically removes cancelled uploads and deleted artifacts; it is off by default."
+      },
+      "summary": "ऑनलाइन क्लीनअप की सेटिंग प्राप्त करें",
+      "description": "रिपॉज़िटरी की ऑनलाइन क्लीनअप नीति उसके `revision` (`enabled`, `graceHours`, `batchSize`, `intervalSeconds`, `delayMilliseconds`) के साथ लौटाता है, साथ ही पिछला और अगला रन, और पिछले बैच ने कितने ऑब्जेक्ट वापस लिए, टाले या विफल किए तथा कितने बाइट मुक्त हुए। क्लीनअप ही रद्द किए गए अपलोड और हटाए गए आर्टिफ़ैक्ट को भौतिक रूप से हटाता है; यह डिफ़ॉल्ट रूप से बंद है।"
+    },
+    "setCleanup": {
+      "en": {
+        "summary": "Configure online cleanup",
+        "description": "Replaces the cleanup policy while the server runs: `enabled` (also to pause), `graceHours` (0–8760, how long deleted content stays before removal), `batchSize` (1–100 objects), `intervalSeconds` (5–86400) and `delayMilliseconds` (0–1000 between objects). `expectedRevision` must be the current revision (0 before the first change), otherwise 409 `revision_mismatch`. A change takes effect between objects, never halfway through one."
+      },
+      "summary": "ऑनलाइन क्लीनअप कॉन्फ़िगर करें",
+      "description": "सर्वर चलते समय क्लीनअप नीति प्रतिस्थापित करता है: `enabled` (रोकने के लिए भी), `graceHours` (0–8760, हटाई गई सामग्री कितनी देर रुकी रहती है), `batchSize` (1–100 ऑब्जेक्ट), `intervalSeconds` (5–86400) और `delayMilliseconds` (ऑब्जेक्ट के बीच 0–1000)। `expectedRevision` वर्तमान संशोधन होना चाहिए (पहले परिवर्तन से पहले 0), अन्यथा 409 `revision_mismatch`। परिवर्तन ऑब्जेक्ट के बीच प्रभावी होता है, किसी के बीच में कभी नहीं।"
+    },
+    "requestCleanup": {
+      "en": {
+        "summary": "Request a cleanup batch now",
+        "description": "Schedules the next batch of the enabled cleanup policy to start at once; the answer is the cleanup state, and the bytes are freed only when the batch has run (see `lastRunAt` in `getCleanup`). `expectedRevision` must be the current revision; a disabled cleanup is a 409 `state_conflict`. Objects that are being read or written are deferred to a later batch."
+      },
+      "summary": "क्लीनअप बैच अभी माँगें",
+      "description": "सक्षम क्लीनअप नीति का अगला बैच तुरंत शुरू होने के लिए निर्धारित करता है; उत्तर क्लीनअप की स्थिति है, और बाइट तभी मुक्त होते हैं जब बैच चल चुका हो (देखें `getCleanup` में `lastRunAt`)। `expectedRevision` वर्तमान संशोधन होना चाहिए; अक्षम क्लीनअप पर 409 `state_conflict`। जिन ऑब्जेक्ट को पढ़ा या लिखा जा रहा है वे बाद के बैच तक टाल दिए जाते हैं।"
+    },
+    "getRepositoryMirror": {
+      "en": {
+        "summary": "Get the synchronization state of a mirror",
+        "description": "For a repository this server mirrors from another Arkvory (configured in `ARKVORY_MIRRORS_FILE`), returns the source, the `mode` (`mirror`, a read-only copy, or `import`, which takes over versions with the listed `stages`), the `phase` (`pending`, `seeding`, `following`), the applied `cursor` and the source `head`, `caughtUp`, the last check, sync and error, and the artifacts and bytes copied. Sequences are journal numbers of the source, so their difference is not a count of changes. An ordinary repository answers 404."
+      },
+      "summary": "मिरर की सिंक्रनाइज़ेशन स्थिति प्राप्त करें",
+      "description": "जिस रिपॉज़िटरी को यह सर्वर किसी अन्य Arkvory से मिरर करता है (`ARKVORY_MIRRORS_FILE` में कॉन्फ़िगर), उसके लिए स्रोत, `mode` (`mirror`, केवल-पढ़ने वाली प्रति, या `import`, जो सूचीबद्ध `stages` वाले संस्करण अपने हाथ में ले लेता है), `phase` (`pending`, `seeding`, `following`), लागू किया गया `cursor` और स्रोत का `head`, `caughtUp`, अंतिम जाँच, सिंक और त्रुटि, तथा कॉपी किए गए आर्टिफ़ैक्ट और बाइट लौटाता है। क्रम संख्याएँ स्रोत के जर्नल नंबर हैं, इसलिए उनका अंतर परिवर्तनों की गिनती नहीं है। साधारण रिपॉज़िटरी पर 404 मिलता है।"
+    },
+    "getBuildAttachments": {
+      "en": {
+        "summary": "Get the attachments of a build",
+        "description": "Returns the current attachment revision of an artifact: up to 32 entries, each naming another published artifact of the repository with a `name`, a `kind` (`manifest`, `sbom`, `signature`, `report`, `file`) and a `description`, plus the actor and time of the change. Revision 0 with no items means nothing was ever attached. Download an attached file by its `artifactId`."
+      },
+      "summary": "बिल्ड के अटैचमेंट प्राप्त करें",
+      "description": "आर्टिफ़ैक्ट का वर्तमान अटैचमेंट संशोधन लौटाता है: अधिकतम 32 प्रविष्टियाँ, प्रत्येक रिपॉज़िटरी के किसी अन्य प्रकाशित आर्टिफ़ैक्ट को `name`, `kind` (`manifest`, `sbom`, `signature`, `report`, `file`) और `description` के साथ नामित करती है, साथ ही परिवर्तन का कर्ता और समय। बिना आइटम का संशोधन 0 बताता है कि कभी कुछ संलग्न नहीं किया गया। संलग्न फ़ाइल को उसकी `artifactId` से डाउनलोड करें।"
+    },
+    "replaceBuildAttachments": {
+      "en": {
+        "summary": "Replace the attachments of a build",
+        "description": "Replaces the whole attachment list of an artifact (up to 32 entries; an empty list removes them all) and returns the new revision. Each target must be another artifact already published in the same repository (upload it first), names are unique ignoring case and descriptions have up to 512 characters. `expectedRevision` must be the current revision (0 for the first list), otherwise 409 `revision_mismatch`; artifacts named in any revision stay protected from deletion."
+      },
+      "summary": "बिल्ड के अटैचमेंट प्रतिस्थापित करें",
+      "description": "आर्टिफ़ैक्ट की पूरी अटैचमेंट सूची प्रतिस्थापित करता है (अधिकतम 32 प्रविष्टियाँ; खाली सूची सभी हटा देती है) और नया संशोधन लौटाता है। हर लक्ष्य उसी रिपॉज़िटरी में पहले से प्रकाशित कोई अन्य आर्टिफ़ैक्ट होना चाहिए (पहले उसे अपलोड करें), नाम बड़े-छोटे अक्षर की उपेक्षा करके अद्वितीय होते हैं और विवरण अधिकतम 512 वर्णों के होते हैं। `expectedRevision` वर्तमान संशोधन होना चाहिए (पहली सूची के लिए 0), अन्यथा 409 `revision_mismatch`; किसी भी संशोधन में नामित आर्टिफ़ैक्ट हटाए जाने से सुरक्षित रहते हैं।"
+    },
+    "getBuildAttachmentHistory": {
+      "en": {
+        "summary": "List the attachment history of a build",
+        "description": "Returns the earlier and current attachment revisions of an artifact, newest first, 20 per page, each with its entries, actor and time; continue with `before` set to `next`. The attached artifacts of every revision remain downloadable, because they are protected from deletion."
+      },
+      "summary": "बिल्ड का अटैचमेंट इतिहास सूचीबद्ध करें",
+      "description": "आर्टिफ़ैक्ट के पिछले और वर्तमान अटैचमेंट संशोधन, सबसे नया पहले, प्रति पृष्ठ 20, प्रत्येक के साथ उसकी प्रविष्टियाँ, कर्ता और समय लौटाता है; `before` में `next` देकर आगे बढ़ें। हर संशोधन के संलग्न आर्टिफ़ैक्ट डाउनलोड योग्य रहते हैं, क्योंकि वे हटाए जाने से सुरक्षित हैं।"
+    },
+    "login": {
+      "en": {
+        "summary": "Sign in",
+        "description": "Exchanges an account `name` and `password` for a bearer session `token` valid for 12 hours, with its `expiresAt` and the account; send it as `Authorization: Bearer`. An unknown name, a wrong password and a disabled account all answer the same 401 `invalid_credentials`. Attempts are throttled per client address and per account (429 `rate_limited` with Retry-After), and an account keeps at most 32 sessions: a new one ends the oldest."
+      },
+      "summary": "साइन इन करें",
+      "description": "खाते के `name` और `password` के बदले 12 घंटे के लिए वैध बियरर सत्र `token`, उसके `expiresAt` और खाते के साथ देता है; इसे `Authorization: Bearer` के रूप में भेजें। अज्ञात नाम, गलत पासवर्ड और अक्षम खाता, तीनों पर एक ही 401 `invalid_credentials` मिलता है। प्रयास क्लाइंट पते और खाते के अनुसार थ्रॉटल होते हैं (Retry-After के साथ 429 `rate_limited`), और एक खाते के अधिकतम 32 सत्र रहते हैं: नया सत्र सबसे पुराने को समाप्त कर देता है।"
+    },
+    "registerAccount": {
+      "en": {
+        "summary": "Register an account",
+        "description": "Creates an ordinary account (never an administrator) with `name` (3–64 letters, digits or `_.-`) and `password` (12–128 characters) and signs it in, answering 201 with a 12-hour session like `login`. Works only when the server allows self-registration (see `getAuthOptions`), otherwise 403 `registration_disabled`; a taken name is a 409 `already_exists`. Attempts are throttled per client address (429 with Retry-After), and self-registration stops at 900 accounts."
+      },
+      "summary": "खाता पंजीकृत करें",
+      "description": "`name` (3–64 अक्षर, अंक या `_.-`) और `password` (12–128 वर्ण) के साथ साधारण खाता बनाता है (कभी व्यवस्थापक नहीं) और उसे साइन इन करता है, `login` की तरह 12 घंटे के सत्र के साथ 201 लौटाता है। केवल तभी काम करता है जब सर्वर स्व-पंजीकरण की अनुमति देता है (देखें `getAuthOptions`), अन्यथा 403 `registration_disabled`; लिया जा चुका नाम 409 `already_exists` है। प्रयास क्लाइंट पते के अनुसार थ्रॉटल होते हैं (Retry-After के साथ 429), और स्व-पंजीकरण 900 खातों पर रुक जाता है।"
+    },
+    "getAuthOptions": {
+      "en": {
+        "summary": "Get the sign-in options",
+        "description": "Tells a console before sign-in which forms to show: `selfRegistration` is true when `registerAccount` is open on this server."
+      },
+      "summary": "साइन-इन विकल्प प्राप्त करें",
+      "description": "कंसोल को साइन-इन से पहले बताता है कि कौन-से फ़ॉर्म दिखाने हैं: जब इस सर्वर पर `registerAccount` खुला हो तो `selfRegistration` true होता है।"
+    },
+    "listUserTokens": {
+      "en": {
+        "summary": "List your personal access tokens",
+        "description": "Lists the personal access tokens of the signed-in account, active first, with name, prefix, scope, creation, expiry, last use and whether it is revoked; the secrets are never shown again."
+      },
+      "summary": "अपने व्यक्तिगत एक्सेस टोकन सूचीबद्ध करें",
+      "description": "साइन-इन किए हुए खाते के व्यक्तिगत एक्सेस टोकन सूचीबद्ध करता है, सक्रिय पहले, प्रत्येक के नाम, उपसर्ग, स्कोप, निर्माण, समाप्ति, अंतिम उपयोग और यह कि वह निरस्त है या नहीं के साथ; गोपनीय मान फिर कभी नहीं दिखाए जाते।"
+    },
+    "createUserToken": {
+      "en": {
+        "summary": "Create a personal access token",
+        "description": "Creates a token for scripts and tools that acts as the signed-in account; the secret is in this answer only. `name` has 1–64 characters, `expiresAt` defaults to 90 days and must lie in the future and within 365 days, and `scope` is `read-write` (default) or `read`, which can never change anything. Tokens never carry administrator rights, cannot create tokens, and an account has at most 50 active ones (507 `token_limit`)."
+      },
+      "summary": "व्यक्तिगत एक्सेस टोकन बनाएँ",
+      "description": "स्क्रिप्ट और टूल के लिए टोकन बनाता है जो साइन-इन किए हुए खाते के रूप में कार्य करता है; गोपनीय मान केवल इसी उत्तर में होता है। `name` में 1–64 वर्ण होते हैं, `expiresAt` डिफ़ॉल्ट रूप से 90 दिन है और भविष्य में तथा 365 दिनों के भीतर होना चाहिए, और `scope` `read-write` (डिफ़ॉल्ट) या `read` है, जो कभी कुछ नहीं बदल सकता। टोकन कभी व्यवस्थापक अधिकार नहीं रखते, टोकन नहीं बना सकते, और एक खाते के अधिकतम 50 सक्रिय टोकन हो सकते हैं (507 `token_limit`)।"
+    },
+    "revokeUserToken": {
+      "en": {
+        "summary": "Revoke your personal access token",
+        "description": "Revokes one personal access token of the signed-in account; requests with it fail from now on. Revoking an already revoked token succeeds as well."
+      },
+      "summary": "अपना व्यक्तिगत एक्सेस टोकन निरस्त करें",
+      "description": "साइन-इन किए हुए खाते का एक व्यक्तिगत एक्सेस टोकन निरस्त करता है; उसके साथ किए गए अनुरोध अब से विफल होंगे। पहले से निरस्त टोकन को निरस्त करना भी सफल होता है।"
+    },
+    "logout": {
+      "en": {
+        "summary": "Sign out",
+        "description": "Ends the account session sent in `Authorization`; its token stops working at once. With any other credential (a personal token or a service key) it answers 204 and revokes nothing."
+      },
+      "summary": "साइन आउट करें",
+      "description": "`Authorization` में भेजे गए खाते के सत्र को समाप्त करता है; उसका टोकन तुरंत काम करना बंद कर देता है। किसी अन्य क्रेडेंशियल (व्यक्तिगत टोकन या सेवा कुंजी) के साथ यह 204 लौटाता है और कुछ निरस्त नहीं करता।"
+    },
+    "changeOwnPassword": {
+      "en": {
+        "summary": "Change your password",
+        "description": "Sets `newPassword` (12–128 characters) after checking `currentPassword`; a wrong current password is a 401 `current_password_invalid` and counts toward the sign-in backoff. On success every session and every personal access token of the account is revoked, including the current session, so sign in again."
+      },
+      "summary": "अपना पासवर्ड बदलें",
+      "description": "`currentPassword` जाँचने के बाद `newPassword` (12–128 वर्ण) सेट करता है; गलत वर्तमान पासवर्ड 401 `current_password_invalid` है और साइन-इन बैकऑफ़ में गिना जाता है। सफल होने पर खाते का हर सत्र और हर व्यक्तिगत एक्सेस टोकन निरस्त हो जाता है, वर्तमान सत्र सहित, इसलिए फिर से साइन इन करें।"
+    },
+    "getCurrentPrincipal": {
+      "en": {
+        "summary": "Get the current identity",
+        "description": "Returns who the credential belongs to: its `id`, whether it is an administrator, the credential kind (`session`, `personal-token`, `service-key` or `file-key`), the scope of a personal token, and the repositories it has `read` or `write` access to. Use it to show the signed-in user and to choose a repository; for the exact permissions of a managed service key use `getOwnPermissions`."
+      },
+      "summary": "वर्तमान पहचान प्राप्त करें",
+      "description": "बताता है कि क्रेडेंशियल किसका है: उसकी `id`, वह व्यवस्थापक है या नहीं, क्रेडेंशियल का प्रकार (`session`, `personal-token`, `service-key` या `file-key`), व्यक्तिगत टोकन का स्कोप, और वे रिपॉज़िटरी जिनमें उसकी `read` या `write` पहुँच है। इसे साइन-इन किए हुए उपयोगकर्ता को दिखाने और रिपॉज़िटरी चुनने के लिए उपयोग करें; प्रबंधित सेवा कुंजी की सटीक अनुमतियों के लिए `getOwnPermissions` का उपयोग करें।"
+    },
+    "listUsers": {
+      "en": {
+        "summary": "List accounts",
+        "description": "Lists all user accounts ordered by name, with ID, name, administrator flag and whether they are enabled. The server holds at most 1000 accounts."
+      },
+      "summary": "खाते सूचीबद्ध करें",
+      "description": "सभी उपयोगकर्ता खाते नाम के क्रम में सूचीबद्ध करता है, ID, नाम, व्यवस्थापक फ़्लैग और सक्षम हैं या नहीं के साथ। सर्वर अधिकतम 1000 खाते रखता है।"
+    },
+    "createUser": {
+      "en": {
+        "summary": "Create an account",
+        "description": "Creates an account with `name` (3–64 letters, digits or `_.-`), `password` (12–128 characters) and `administrator` (default false), and answers 201 with it. A taken name is a 409 `already_exists`; the server holds at most 1000 accounts (507 `account_limit`)."
+      },
+      "summary": "खाता बनाएँ",
+      "description": "`name` (3–64 अक्षर, अंक या `_.-`), `password` (12–128 वर्ण) और `administrator` (डिफ़ॉल्ट false) के साथ खाता बनाता है और उसे 201 के साथ लौटाता है। लिया जा चुका नाम 409 `already_exists` है; सर्वर अधिकतम 1000 खाते रखता है (507 `account_limit`)।"
+    },
+    "updateUser": {
+      "en": {
+        "summary": "Enable, disable or reset an account",
+        "description": "Changes `enabled` and/or sets a new `password` of an account; the administrator flag cannot be changed here. Disabling ends every session of the account and its personal tokens stop working while it stays disabled; a password reset ends every session and revokes every personal token."
+      },
+      "summary": "खाता सक्षम, अक्षम या रीसेट करें",
+      "description": "किसी खाते का `enabled` बदलता है और/या नया `password` सेट करता है; व्यवस्थापक फ़्लैग यहाँ नहीं बदला जा सकता। अक्षम करने से खाते के सभी सत्र समाप्त हो जाते हैं और जब तक वह अक्षम रहता है उसके व्यक्तिगत टोकन काम नहीं करते; पासवर्ड रीसेट सभी सत्र समाप्त करता है और हर व्यक्तिगत टोकन निरस्त करता है।"
+    },
+    "listAccountTokens": {
+      "en": {
+        "summary": "List the personal access tokens of an account",
+        "description": "Lists the personal access tokens of any account, active first, with name, prefix, scope, creation, expiry, last use and revocation; never the secrets. Use it to review automation before disabling or resetting the account."
+      },
+      "summary": "किसी खाते के व्यक्तिगत एक्सेस टोकन सूचीबद्ध करें",
+      "description": "किसी भी खाते के व्यक्तिगत एक्सेस टोकन सूचीबद्ध करता है, सक्रिय पहले, प्रत्येक के नाम, उपसर्ग, स्कोप, निर्माण, समाप्ति, अंतिम उपयोग और निरस्तीकरण के साथ; गोपनीय मान कभी नहीं। खाते को अक्षम या रीसेट करने से पहले ऑटोमेशन की समीक्षा के लिए इसका उपयोग करें।"
+    },
+    "revokeAccountToken": {
+      "en": {
+        "summary": "Revoke a personal access token of an account",
+        "description": "Revokes one personal access token of the account `id`; requests with it fail from now on, and the event is recorded in the security audit. Revoking an already revoked token succeeds as well."
+      },
+      "summary": "किसी खाते का व्यक्तिगत एक्सेस टोकन निरस्त करें",
+      "description": "खाते `id` का एक व्यक्तिगत एक्सेस टोकन निरस्त करता है; उसके साथ किए गए अनुरोध अब से विफल होंगे, और घटना सुरक्षा ऑडिट में दर्ज की जाती है। पहले से निरस्त टोकन को निरस्त करना भी सफल होता है।"
+    },
+    "listAccessGroups": {
+      "en": {
+        "summary": "List access groups",
+        "description": "Lists all access groups with their member account IDs and repository grants (`read` or `write`). The server holds at most 100 groups and 10 000 memberships and grants each."
+      },
+      "summary": "एक्सेस समूह सूचीबद्ध करें",
+      "description": "सभी एक्सेस समूह उनके सदस्य खातों की ID और रिपॉज़िटरी अनुदानों (`read` या `write`) के साथ सूचीबद्ध करता है। सर्वर अधिकतम 100 समूह, 10 000 सदस्यताएँ और 10 000 अनुदान रखता है।"
+    },
+    "createAccessGroup": {
+      "en": {
+        "summary": "Create an access group",
+        "description": "Creates an empty group with `name` (2–64 letters, digits or `_.-`) and answers 201 with it; a taken name is a 409 `already_exists`. Add members with `addGroupMember` and repositories with `setGroupGrant`."
+      },
+      "summary": "एक्सेस समूह बनाएँ",
+      "description": "`name` (2–64 अक्षर, अंक या `_.-`) के साथ खाली समूह बनाता है और उसे 201 के साथ लौटाता है; लिया जा चुका नाम 409 `already_exists` है। सदस्य `addGroupMember` से और रिपॉज़िटरी `setGroupGrant` से जोड़ें।"
+    },
+    "addGroupMember": {
+      "en": {
+        "summary": "Add an account to a group",
+        "description": "Makes the account `userId` a member of the group; it gains the group's repository access with its next request. Adding an existing member changes nothing; at most 10 000 memberships in all (507 `membership_limit`)."
+      },
+      "summary": "समूह में खाता जोड़ें",
+      "description": "खाते `userId` को समूह का सदस्य बनाता है; उसे समूह की रिपॉज़िटरी पहुँच अपने अगले अनुरोध से मिल जाती है। मौजूदा सदस्य को जोड़ने पर कुछ नहीं बदलता; कुल मिलाकर अधिकतम 10 000 सदस्यताएँ (507 `membership_limit`)।"
+    },
+    "removeGroupMember": {
+      "en": {
+        "summary": "Remove an account from a group",
+        "description": "Removes the account `userId` from the group; the access it had through the group ends with its next request. Removing an account that is not a member succeeds as well."
+      },
+      "summary": "समूह से खाता हटाएँ",
+      "description": "खाते `userId` को समूह से हटाता है; समूह के माध्यम से उसकी पहुँच उसके अगले अनुरोध से समाप्त हो जाती है। जो खाता सदस्य नहीं है उसे हटाना भी सफल होता है।"
+    },
+    "setGroupGrant": {
+      "en": {
+        "summary": "Grant a group access to a repository",
+        "description": "Gives the group's members `access` `read` or `write` to `repository`, replacing an earlier grant of the group there; it applies from their next request. A repository needs no separate creation: the grant makes it visible to them. At most 10 000 grants in all (507 `grant_limit`)."
+      },
+      "summary": "समूह को रिपॉज़िटरी तक पहुँच दें",
+      "description": "समूह के सदस्यों को `repository` की `read` या `write` `access` देता है, वहाँ समूह के पहले के अनुदान को प्रतिस्थापित करते हुए; यह उनके अगले अनुरोध से लागू होता है। रिपॉज़िटरी के लिए अलग से निर्माण की ज़रूरत नहीं: अनुदान उसे उनके लिए दृश्य बना देता है। कुल मिलाकर अधिकतम 10 000 अनुदान (507 `grant_limit`)।"
+    },
+    "removeGroupGrant": {
+      "en": {
+        "summary": "Remove a group's access to a repository",
+        "description": "Removes the group's grant for `repository`; its members keep only the access they have through other groups. Removing a grant that does not exist succeeds as well."
+      },
+      "summary": "समूह की रिपॉज़िटरी पहुँच हटाएँ",
+      "description": "`repository` के लिए समूह का अनुदान हटाता है; उसके सदस्यों के पास केवल वही पहुँच रहती है जो उन्हें अन्य समूहों से मिलती है। जो अनुदान मौजूद नहीं है उसे हटाना भी सफल होता है।"
+    },
+    "listSecurityAudit": {
+      "en": {
+        "summary": "Read the security audit",
+        "description": "Returns the append-only journal of sign-ins, registrations, account, group, grant, password and personal token changes, newest first, each with actor, credential kind, target, outcome and client address; throttled attempts are not journaled. Pages hold `limit` entries (1–100, default 50); continue with `after` set to `next`."
+      },
+      "summary": "सुरक्षा ऑडिट पढ़ें",
+      "description": "साइन-इन, पंजीकरण, खाते, समूह, अनुदान, पासवर्ड और व्यक्तिगत टोकन के परिवर्तनों का केवल-जोड़ने वाला जर्नल, सबसे नया पहले, लौटाता है; प्रत्येक के साथ कर्ता, क्रेडेंशियल का प्रकार, लक्ष्य, परिणाम और क्लाइंट पता है; थ्रॉटल किए गए प्रयास जर्नल में दर्ज नहीं होते। प्रत्येक पृष्ठ में `limit` प्रविष्टियाँ होती हैं (1–100, डिफ़ॉल्ट 50); `after` में `next` देकर आगे बढ़ें।"
+    },
+    "getOwnPermissions": {
+      "en": {
+        "summary": "Get your effective permissions",
+        "description": "Returns the caller's `profile` (`managed` for a managed service key, `legacy` otherwise), its key ID, its effective bindings (each repository with the exact actions allowed there) and whether it is the bootstrap service administrator. Use it to adapt a client; the server still checks every request, so a change of permissions applies at once."
+      },
+      "summary": "अपनी प्रभावी अनुमतियाँ प्राप्त करें",
+      "description": "कॉलर का `profile` (प्रबंधित सेवा कुंजी के लिए `managed`, अन्यथा `legacy`), उसकी कुंजी की ID, उसकी प्रभावी बाइंडिंग (हर रिपॉज़िटरी और वहाँ अनुमत सटीक क्रियाएँ) और यह कि वह बूटस्ट्रैप सेवा व्यवस्थापक है या नहीं, लौटाता है। क्लाइंट को ढालने के लिए इसका उपयोग करें; सर्वर फिर भी हर अनुरोध जाँचता है, इसलिए अनुमतियों का परिवर्तन तुरंत लागू होता है।"
+    },
+    "listServiceAccounts": {
+      "en": {
+        "summary": "List service accounts",
+        "description": "Lists the service accounts the caller may see, ordered by ID, 50 per page, each with name, enabled flag, `revision`, policy `bindings` and creation time; continue with `after` set to `next`. The bootstrap key sees all of them, a delegate only the targets where its delegation includes `service-account.read`; without that the list is empty rather than refused."
+      },
+      "summary": "सेवा खाते सूचीबद्ध करें",
+      "description": "कॉलर जो सेवा खाते देख सकता है उन्हें ID के क्रम में, प्रति पृष्ठ 50, सूचीबद्ध करता है; प्रत्येक के साथ नाम, सक्षम फ़्लैग, `revision`, नीति `bindings` और निर्माण समय है; `after` में `next` देकर आगे बढ़ें। बूटस्ट्रैप कुंजी सभी देखती है, डेलिगेट केवल वे लक्ष्य जहाँ उसके प्रत्यायोजन में `service-account.read` शामिल है; वह न हो तो सूची अस्वीकार किए जाने के बजाय खाली रहती है।"
+    },
+    "createServiceAccount": {
+      "en": {
+        "summary": "Create a service account",
+        "description": "Creates a machine identity for CI or an application with `name` (3–64 letters, digits or `_.-`) and its policy `bindings`: for each repository, the exact actions its keys may use (such as `upload.create` or `content.read`). Answers 201 with the account; then issue a key with `issueServiceKey`. A taken name is a 409 `already_exists`."
+      },
+      "summary": "सेवा खाता बनाएँ",
+      "description": "CI या किसी एप्लिकेशन के लिए `name` (3–64 अक्षर, अंक या `_.-`) और उसकी नीति `bindings` के साथ मशीन पहचान बनाता है: प्रत्येक रिपॉज़िटरी के लिए वे सटीक क्रियाएँ जो उसकी कुंजियाँ उपयोग कर सकती हैं (जैसे `upload.create` या `content.read`)। खाते के साथ 201 लौटाता है; फिर `issueServiceKey` से कुंजी जारी करें। लिया जा चुका नाम 409 `already_exists` है।"
+    },
+    "getServiceAccount": {
+      "en": {
+        "summary": "Get a service account",
+        "description": "Returns the account's name, enabled flag, `revision`, policy bindings and creation time. For a delegate, an account it was not assigned answers 404 and a missing action on an assigned one 403."
+      },
+      "summary": "सेवा खाता प्राप्त करें",
+      "description": "खाते का नाम, सक्षम फ़्लैग, `revision`, नीति बाइंडिंग और निर्माण समय लौटाता है। डेलिगेट के लिए, जो खाता उसे सौंपा नहीं गया उस पर 404 मिलता है और सौंपे गए खाते पर किसी क्रिया की कमी होने पर 403।"
+    },
+    "updateServiceAccount": {
+      "en": {
+        "summary": "Enable or disable a service account",
+        "description": "Sets `enabled`; `expectedRevision` must be the current revision, otherwise 409 `revision_mismatch`. Only this flag changes here (the name cannot). Disabling blocks every key of the account from the next request; enabling restores the keys that are neither expired nor revoked. A delegate may do it only when the whole current policy lies within its ceiling."
+      },
+      "summary": "सेवा खाता सक्षम या अक्षम करें",
+      "description": "`enabled` सेट करता है; `expectedRevision` वर्तमान संशोधन होना चाहिए, अन्यथा 409 `revision_mismatch`। यहाँ केवल यही फ़्लैग बदलता है (नाम नहीं बदला जा सकता)। अक्षम करने से खाते की हर कुंजी अगले अनुरोध से अवरुद्ध हो जाती है; सक्षम करने से वे कुंजियाँ बहाल होती हैं जो न समाप्त हुई हैं और न निरस्त। डेलिगेट यह तभी कर सकता है जब पूरी वर्तमान नीति उसकी ऊपरी सीमा के भीतर हो।"
+    },
+    "getServicePolicy": {
+      "en": {
+        "summary": "Get the policy of a service account",
+        "description": "Returns the account with its policy `bindings` and `revision`, like `getServiceAccount`, for a caller that holds `policy.read`. A key's effective permissions are the intersection of this policy and the key's own bindings, per repository and action."
+      },
+      "summary": "सेवा खाते की नीति प्राप्त करें",
+      "description": "`policy.read` रखने वाले कॉलर के लिए, `getServiceAccount` की तरह, खाते को उसकी नीति `bindings` और `revision` के साथ लौटाता है। कुंजी की प्रभावी अनुमतियाँ इस नीति और कुंजी की अपनी बाइंडिंग का प्रतिच्छेदन हैं, प्रति रिपॉज़िटरी और क्रिया।"
+    },
+    "setServicePolicy": {
+      "en": {
+        "summary": "Replace the policy of a service account",
+        "description": "Replaces the account's `bindings` (up to 64, each a repository with its exact actions); `expectedRevision` must be the current revision, otherwise 409 `revision_mismatch`. Every key follows the change from its next request: narrowing takes effect at once, widening never goes beyond a key's own bindings. A delegate needs both the current and the new policy to lie within its ceiling."
+      },
+      "summary": "सेवा खाते की नीति प्रतिस्थापित करें",
+      "description": "खाते की `bindings` प्रतिस्थापित करता है (अधिकतम 64, प्रत्येक एक रिपॉज़िटरी और उसकी सटीक क्रियाएँ); `expectedRevision` वर्तमान संशोधन होना चाहिए, अन्यथा 409 `revision_mismatch`। हर कुंजी अपने अगले अनुरोध से परिवर्तन का पालन करती है: संकुचन तुरंत प्रभावी होता है, विस्तार कभी कुंजी की अपनी बाइंडिंग से आगे नहीं जाता। डेलिगेट को वर्तमान और नई, दोनों नीतियाँ अपनी ऊपरी सीमा के भीतर चाहिए।"
+    },
+    "listServiceKeys": {
+      "en": {
+        "summary": "List the keys of a service account",
+        "description": "Lists key metadata of the account ordered by ID, 50 per page: name, `state` (`pending`, `active`, `revoked`), bindings, creation, expiry, activation deadline and the key it was rotated from; never secrets or hashes. Continue with `after` set to `next`. Expiry does not change `state`, so compare `expiresAt` with the current time."
+      },
+      "summary": "सेवा खाते की कुंजियाँ सूचीबद्ध करें",
+      "description": "खाते की कुंजियों का मेटाडेटा ID के क्रम में, प्रति पृष्ठ 50, सूचीबद्ध करता है: नाम, `state` (`pending`, `active`, `revoked`), बाइंडिंग, निर्माण, समाप्ति, सक्रियण की समय-सीमा और वह कुंजी जिससे इसे रोटेट किया गया; गोपनीय मान या हैश कभी नहीं। `after` में `next` देकर आगे बढ़ें। समाप्ति से `state` नहीं बदलती, इसलिए `expiresAt` की तुलना वर्तमान समय से करें।"
+    },
+    "issueServiceKey": {
+      "en": {
+        "summary": "Issue a key for a service account",
+        "description": "Issues a pending key with `name`, `bindings` (effective only where the account policy allows them too) and optional `expiresAt` (UTC; 90 days by default, at most 365, and for a delegate never beyond its own key). The first answer is 201 with `key` and the `secret`, shown only this once; a repeat with the same `Idempotency-Key` and body is 200 with the metadata only, a different body a 409. The holder must call `activateServiceKey` with the secret within 15 minutes; if the secret was lost, revoke the key and issue a new one under a new Idempotency-Key."
+      },
+      "summary": "सेवा खाते के लिए कुंजी जारी करें",
+      "description": "`name`, `bindings` (केवल वहीं प्रभावी जहाँ खाते की नीति भी उन्हें अनुमति देती है) और वैकल्पिक `expiresAt` (UTC; डिफ़ॉल्ट 90 दिन, अधिकतम 365, और डेलिगेट के लिए कभी उसकी अपनी कुंजी से आगे नहीं) के साथ लंबित कुंजी जारी करता है। पहला उत्तर `key` और `secret` के साथ 201 है, जो केवल इसी एक बार दिखाया जाता है; उसी `Idempotency-Key` और बॉडी के साथ दोहराने पर केवल मेटाडेटा के साथ 200 मिलता है, भिन्न बॉडी पर 409। धारक को गोपनीय मान के साथ 15 मिनट के भीतर `activateServiceKey` कॉल करना होगा; गोपनीय मान खो जाए तो कुंजी निरस्त करें और नई Idempotency-Key के साथ नई जारी करें।"
+    },
+    "getServiceAudit": {
+      "en": {
+        "summary": "Read the audit of a service account",
+        "description": "Returns, oldest first, up to 100 events of the account after the sequence `after` (default 0): account, policy and key changes such as issue, rotation, activation and revocation, each with actor, action, key and time. To read further, pass the last `sequence` as `after`; there is no `next` field. Only the newest 100 000 events of the server are kept."
+      },
+      "summary": "सेवा खाते का ऑडिट पढ़ें",
+      "description": "क्रम संख्या `after` (डिफ़ॉल्ट 0) के बाद खाते की अधिकतम 100 घटनाएँ, सबसे पुरानी पहले, लौटाता है: खाते, नीति और कुंजी के परिवर्तन जैसे जारी करना, रोटेशन, सक्रियण और निरस्तीकरण, प्रत्येक के साथ कर्ता, क्रिया, कुंजी और समय। आगे पढ़ने के लिए अंतिम `sequence` `after` में दें; कोई `next` फ़ील्ड नहीं है। सर्वर की केवल नवीनतम 100 000 घटनाएँ रखी जाती हैं।"
+    },
+    "getServiceKey": {
+      "en": {
+        "summary": "Get a key",
+        "description": "Returns the metadata of one managed key: its account, name, state, bindings, creation, expiry, activation deadline and the key it was rotated from; never the secret or its hash."
+      },
+      "summary": "कुंजी प्राप्त करें",
+      "description": "एक प्रबंधित कुंजी का मेटाडेटा लौटाता है: उसका खाता, नाम, स्थिति, बाइंडिंग, निर्माण, समाप्ति, सक्रियण की समय-सीमा और वह कुंजी जिससे इसे रोटेट किया गया; गोपनीय मान या उसका हैश कभी नहीं।"
+    },
+    "rotateServiceKey": {
+      "en": {
+        "summary": "Rotate a key",
+        "description": "Issues a pending successor of key `id` for the same account with the same or narrower `bindings`, answering like `issueServiceKey`: 201 with the one-time `secret`, 200 with metadata only on a repeat with the same `Idempotency-Key`. Once the successor is activated, the old key stays valid for at most 24 more hours; revoke it explicitly when the new one works, but only after the jobs it started have finished. Delegations held by an operator key are not copied to its successor."
+      },
+      "summary": "कुंजी रोटेट करें",
+      "description": "कुंजी `id` का उसी खाते के लिए लंबित उत्तराधिकारी जारी करता है, उन्हीं या संकरी `bindings` के साथ, और `issueServiceKey` की तरह उत्तर देता है: एक बार दिखने वाले `secret` के साथ 201, उसी `Idempotency-Key` के साथ दोहराने पर केवल मेटाडेटा के साथ 200। उत्तराधिकारी के सक्रिय होने के बाद पुरानी कुंजी अधिकतम 24 घंटे और वैध रहती है; नई कुंजी के काम करने पर उसे स्पष्ट रूप से निरस्त करें, पर तभी जब उसके शुरू किए जॉब समाप्त हो चुके हों। ऑपरेटर कुंजी के प्रत्यायोजन उसके उत्तराधिकारी में कॉपी नहीं होते।"
+    },
+    "revokeServiceKey": {
+      "en": {
+        "summary": "Revoke a key",
+        "description": "Revokes the key for good: its next request fails, while a download already running is not cut off. Repeating succeeds with 204. Keys that a revoked operator key issued and that were already activated stay valid; revoke them separately."
+      },
+      "summary": "कुंजी निरस्त करें",
+      "description": "कुंजी को हमेशा के लिए निरस्त करता है: उसका अगला अनुरोध विफल होगा, जबकि पहले से चल रहा डाउनलोड नहीं कटता। दोहराने पर 204 के साथ सफल होता है। जो कुंजियाँ निरस्त ऑपरेटर कुंजी ने जारी की थीं और जो पहले ही सक्रिय हो चुकी हैं वे वैध रहती हैं; उन्हें अलग से निरस्त करें।"
+    },
+    "activateServiceKey": {
+      "en": {
+        "summary": "Activate a key",
+        "description": "Proves that the holder received a newly issued key: call it with that key as `Authorization: Bearer` within 15 minutes of issue, and the key becomes active (204). Repeating is safe and does not extend the expiry. Activating a rotated key cuts the remaining lifetime of the key it replaces to at most 24 hours."
+      },
+      "summary": "कुंजी सक्रिय करें",
+      "description": "प्रमाणित करता है कि धारक को नई जारी की गई कुंजी मिल गई है: उसे जारी होने के 15 मिनट के भीतर उसी कुंजी को `Authorization: Bearer` के रूप में देकर कॉल करें, और कुंजी सक्रिय हो जाती है (204)। दोहराना सुरक्षित है और समाप्ति को नहीं बढ़ाता। रोटेट की गई कुंजी को सक्रिय करने से जिस कुंजी को वह प्रतिस्थापित करती है उसका शेष जीवनकाल अधिकतम 24 घंटे तक घट जाता है।"
+    },
+    "listServiceDelegations": {
+      "en": {
+        "summary": "List the delegations of a key",
+        "description": "Returns the delegations held by operator key `id`, up to 64 including disabled ones: for each target account its `revision`, whether it is `enabled`, the administration `actions` (such as `credential.manage`) and the `ceiling` of repository bindings it may hand out. A delegate reads its own here (its key ID is `credentialId` in `getOwnPermissions`); another key's list is a 403."
+      },
+      "summary": "कुंजी के प्रत्यायोजन सूचीबद्ध करें",
+      "description": "ऑपरेटर कुंजी `id` के प्रत्यायोजन लौटाता है, अक्षम किए गए सहित अधिकतम 64: प्रत्येक लक्ष्य खाते के लिए उसका `revision`, वह `enabled` है या नहीं, प्रशासनिक `actions` (जैसे `credential.manage`) और रिपॉज़िटरी बाइंडिंग की वह `ceiling` जो वह आगे दे सकती है। डेलिगेट यहाँ अपने ही प्रत्यायोजन पढ़ता है (उसकी कुंजी की ID `getOwnPermissions` में `credentialId` है); किसी अन्य कुंजी की सूची 403 है।"
+    },
+    "setServiceDelegation": {
+      "en": {
+        "summary": "Delegate the administration of a service account",
+        "description": "Lets key `id` administer the service account `accountId` with the given `actions` (`service-account.read`, `service-account.manage`, `policy.read`, `policy.manage`, `credential.read`, `credential.manage`, `service-audit.read`) within `ceiling`, up to 16 repository bindings it may hand out; manage does not imply read. `expectedRevision` is 0 to create and the record's current revision to change or re-enable it, otherwise 409. The key must be active and issued by the bootstrap key, and an account cannot both hold delegations and be the target of one, so delegation never chains."
+      },
+      "summary": "सेवा खाते का प्रशासन प्रत्यायोजित करें",
+      "description": "कुंजी `id` को दी गई `actions` (`service-account.read`, `service-account.manage`, `policy.read`, `policy.manage`, `credential.read`, `credential.manage`, `service-audit.read`) के साथ सेवा खाते `accountId` का प्रशासन करने देता है, `ceiling` के भीतर, यानी अधिकतम 16 रिपॉज़िटरी बाइंडिंग जो वह आगे दे सकती है; manage का अर्थ read नहीं होता। `expectedRevision` बनाने के लिए 0 है और बदलने या फिर से सक्षम करने के लिए रिकॉर्ड का वर्तमान संशोधन, अन्यथा 409। कुंजी सक्रिय होनी चाहिए और बूटस्ट्रैप कुंजी से जारी की गई हो, और कोई खाता एक साथ प्रत्यायोजन रखने वाला और किसी प्रत्यायोजन का लक्ष्य नहीं हो सकता, इसलिए प्रत्यायोजन कभी शृंखला नहीं बनाता।"
+    },
+    "removeServiceDelegation": {
+      "en": {
+        "summary": "Withdraw a delegation",
+        "description": "Disables the delegation of key `id` over `accountId`; the JSON body carries `expectedRevision`, the record's current revision. The record stays as a disabled entry without actions and with a higher revision, returned with 200; after a lost answer read it with `listServiceDelegations` instead of repeating, since the old revision is a 409. Keys the delegate already issued and activated keep working: revoke them or disable the account separately."
+      },
+      "summary": "प्रत्यायोजन वापस लें",
+      "description": "`accountId` पर कुंजी `id` का प्रत्यायोजन अक्षम करता है; JSON बॉडी में `expectedRevision` होता है, यानी रिकॉर्ड का वर्तमान संशोधन। रिकॉर्ड बिना क्रियाओं और ऊँचे संशोधन के साथ अक्षम प्रविष्टि के रूप में रहता है, जो 200 के साथ लौटाया जाता है; उत्तर खो जाने पर दोहराने के बजाय उसे `listServiceDelegations` से पढ़ें, क्योंकि पुराना संशोधन 409 है। जो कुंजियाँ डेलिगेट पहले ही जारी और सक्रिय कर चुका है वे काम करती रहती हैं: उन्हें निरस्त करें या खाते को अलग से अक्षम करें।"
+    },
+    "getBackupStatus": {
+      "en": {
+        "summary": "Get the backup status",
+        "description": "Summarizes the backup system: the vault (`configured`, `available`, free and total bytes), the backup agent (`online`, last heartbeat, version), the plan, the newest completed point, the next scheduled run, the running job and `warnings`, each a code such as `agent_offline` or `backup_stale` with severity `warning` or `critical`. The vault is reported unavailable while the agent is offline. It contains no paths or secrets."
+      },
+      "summary": "बैकअप की स्थिति प्राप्त करें",
+      "description": "बैकअप प्रणाली का सारांश देता है: बैकअप स्टोरेज (vault) (`configured`, `available`, खाली और कुल बाइट), बैकअप एजेंट (`online`, अंतिम हार्टबीट, संस्करण), योजना, सबसे नया पूर्ण बिंदु, अगला निर्धारित रन, चल रहा जॉब और `warnings`, जिनमें से प्रत्येक `agent_offline` या `backup_stale` जैसा कोड है और उसकी गंभीरता `warning` या `critical` है। एजेंट ऑफ़लाइन होने पर बैकअप स्टोरेज अनुपलब्ध बताया जाता है। इसमें कोई पथ या गोपनीय मान नहीं होता।"
+    },
+    "getBackupPlan": {
+      "en": {
+        "summary": "Get the backup plan",
+        "description": "Returns the daily schedule (`enabled`, `hour` and `minute` in the IANA `timezone`) and the retention policy (`daily`, `weekly`, `monthly` points to keep) with the `revision` to send back to `updateBackupPlan`. Until changed the plan is disabled, with a 02:00 UTC schedule and 7 daily, 4 weekly and 6 monthly points."
+      },
+      "summary": "बैकअप योजना प्राप्त करें",
+      "description": "दैनिक शेड्यूल (`enabled`, IANA `timezone` में `hour` और `minute`) और प्रतिधारण नीति (रखने के लिए `daily`, `weekly`, `monthly` बिंदु) उस `revision` के साथ लौटाता है जिसे `updateBackupPlan` को वापस भेजना है। बदले जाने तक योजना अक्षम रहती है, शेड्यूल 02:00 UTC का है और 7 दैनिक, 4 साप्ताहिक तथा 6 मासिक बिंदु रखे जाते हैं।"
+    },
+    "updateBackupPlan": {
+      "en": {
+        "summary": "Replace the backup plan",
+        "description": "Replaces the whole plan: `enabled`, `hour` (0–23), `minute` (0–59), `timezone` and `retention` (at most 366 daily, 260 weekly, 120 monthly) must all be present. `expectedRevision` must be the current revision, otherwise 409 `revision_mismatch`; an invalid field is a 400 with a JSON Pointer in `details`. The agent follows the new schedule from its next check."
+      },
+      "summary": "बैकअप योजना प्रतिस्थापित करें",
+      "description": "पूरी योजना प्रतिस्थापित करता है: `enabled`, `hour` (0–23), `minute` (0–59), `timezone` और `retention` (अधिकतम 366 दैनिक, 260 साप्ताहिक, 120 मासिक) सभी मौजूद होने चाहिए। `expectedRevision` वर्तमान संशोधन होना चाहिए, अन्यथा 409 `revision_mismatch`; अमान्य फ़ील्ड पर 400 मिलता है, जिसके `details` में JSON Pointer होता है। एजेंट नया शेड्यूल अपनी अगली जाँच से अपनाता है।"
+    },
+    "requestBackupRun": {
+      "en": {
+        "summary": "Request a backup now",
+        "description": "Queues a capture for the backup agent outside the schedule and returns 202 with the job (`kind` `capture`); the agent runs it, then verification and retention. `Idempotency-Key` is required: repeating it, from the same caller, returns the same job. Follow the job in `listBackupJobs`. At most 100 backup requests may be open at once (507 `queue_full`); while no agent is online the job waits."
+      },
+      "summary": "बैकअप अभी माँगें",
+      "description": "बैकअप एजेंट के लिए शेड्यूल के बाहर एक कैप्चर कतार में लगाता है और जॉब (`kind` `capture`) के साथ 202 लौटाता है; एजेंट उसे चलाता है, फिर सत्यापन और प्रतिधारण। `Idempotency-Key` आवश्यक है: उसी कॉलर से दोहराने पर वही जॉब मिलता है। जॉब को `listBackupJobs` में देखें। एक समय में अधिकतम 100 बैकअप अनुरोध खुले रह सकते हैं (507 `queue_full`); जब तक कोई एजेंट ऑनलाइन नहीं है, जॉब प्रतीक्षा करता है।"
+    },
+    "listBackupJobs": {
+      "en": {
+        "summary": "List backup jobs",
+        "description": "Lists capture, verify and retention jobs, newest first, each with its `state` (`queued`, `running`, `committing`, `completed`, `failed`, `interrupted`), `phase`, times, `errorCode`, the resulting point and `progress` (bytes and objects processed). Pages hold `limit` jobs (1–100, default 50); continue with `after` set to `next`."
+      },
+      "summary": "बैकअप जॉब सूचीबद्ध करें",
+      "description": "कैप्चर, सत्यापन और प्रतिधारण जॉब, सबसे नया पहले, सूचीबद्ध करता है; प्रत्येक के साथ उसकी `state` (`queued`, `running`, `committing`, `completed`, `failed`, `interrupted`), `phase`, समय, `errorCode`, परिणामी बिंदु और `progress` (संसाधित बाइट और ऑब्जेक्ट) है। प्रत्येक पृष्ठ में `limit` जॉब होते हैं (1–100, डिफ़ॉल्ट 50); `after` में `next` देकर आगे बढ़ें।"
+    },
+    "listBackupPoints": {
+      "en": {
+        "summary": "List backup points",
+        "description": "Lists the completed restore points of the current vault, newest snapshot first, each with the snapshot time T, size, bytes added to the vault, whether it is `pinned` and its latest verification (`verifiedAt`, `verifyDepth` `structural` or `deep`, `verifyError`). Pages hold `limit` points (1–100, default 50); continue with `after` set to `next`. A vault that was replaced shows only its own points."
+      },
+      "summary": "बैकअप बिंदु सूचीबद्ध करें",
+      "description": "वर्तमान बैकअप स्टोरेज (vault) के पूर्ण पुनर्स्थापना बिंदु, सबसे नया स्नैपशॉट पहले, सूचीबद्ध करता है; प्रत्येक के साथ स्नैपशॉट समय T, आकार, बैकअप स्टोरेज में जोड़े गए बाइट, वह `pinned` है या नहीं और उसका नवीनतम सत्यापन (`verifiedAt`, `verifyDepth` `structural` या `deep`, `verifyError`) है। प्रत्येक पृष्ठ में `limit` बिंदु होते हैं (1–100, डिफ़ॉल्ट 50); `after` में `next` देकर आगे बढ़ें। बदला गया बैकअप स्टोरेज केवल अपने ही बिंदु दिखाता है।"
+    },
+    "requestBackupVerify": {
+      "en": {
+        "summary": "Request a deep check of a backup point",
+        "description": "Queues a verification of the point `id` that reads every stored byte of it; the answer is 202 with the job, and the outcome appears in `verifiedAt`, `verifyDepth` and `verifyError` of the point. `Idempotency-Key` is required, and reusing it for another point is a 409 `idempotency_mismatch`. An unknown point is a 404."
+      },
+      "summary": "बैकअप बिंदु की गहन जाँच माँगें",
+      "description": "बिंदु `id` का सत्यापन कतार में लगाता है जो उसका हर संग्रहीत बाइट पढ़ता है; उत्तर जॉब के साथ 202 है, और परिणाम बिंदु के `verifiedAt`, `verifyDepth` और `verifyError` में दिखता है। `Idempotency-Key` आवश्यक है, और उसे किसी अन्य बिंदु के लिए दोबारा उपयोग करने पर 409 `idempotency_mismatch` मिलता है। अज्ञात बिंदु पर 404।"
+    },
+    "setBackupPointPin": {
+      "en": {
+        "summary": "Pin or unpin a backup point",
+        "description": "Sets `pinned` of the point `id`; a pinned point is kept by retention beyond the policy until it is unpinned. Setting the same value again changes nothing, and the answer is the updated point. An unknown or already forgotten point is a 404."
+      },
+      "summary": "बैकअप बिंदु को पिन या अनपिन करें",
+      "description": "बिंदु `id` का `pinned` सेट करता है; पिन किया गया बिंदु अनपिन किए जाने तक नीति से परे भी प्रतिधारण द्वारा रखा जाता है। वही मान फिर सेट करने पर कुछ नहीं बदलता, और उत्तर अद्यतन बिंदु है। अज्ञात या पहले ही भुलाए गए बिंदु पर 404।"
+    },
+    "previewBackupRetention": {
+      "en": {
+        "summary": "Preview what backup retention keeps",
+        "description": "Shows which points the retention policy would keep, each with the reasons (`daily`, `weekly`, `monthly`, `pinned`, `newest`), and which it would delete now. Points that failed verification are not considered. The preview is advisory: `requestBackupRetention` decides again from the vault when it runs."
+      },
+      "summary": "पूर्वावलोकन करें कि बैकअप प्रतिधारण क्या रखेगा",
+      "description": "दिखाता है कि प्रतिधारण नीति कौन-से बिंदु रखेगी, प्रत्येक के कारणों (`daily`, `weekly`, `monthly`, `pinned`, `newest`) के साथ, और कौन-से वह अभी हटा देगी। जिन बिंदुओं का सत्यापन विफल रहा उन पर विचार नहीं किया जाता। पूर्वावलोकन परामर्शात्मक है: `requestBackupRetention` चलते समय बैकअप स्टोरेज से फिर निर्णय लेता है।"
+    },
+    "requestBackupRetention": {
+      "en": {
+        "summary": "Request backup retention",
+        "description": "Queues a retention job: the agent forgets the points outside the policy and then removes content no remaining point uses, so space returns to the vault only when the job has completed. Returns 202 with the job; `Idempotency-Key` is required and repeating it returns the same job. Look at `previewBackupRetention` first."
+      },
+      "summary": "बैकअप प्रतिधारण माँगें",
+      "description": "प्रतिधारण जॉब कतार में लगाता है: एजेंट नीति से बाहर के बिंदुओं को भुला देता है और फिर वह सामग्री हटाता है जिसका कोई शेष बिंदु उपयोग नहीं करता, इसलिए बैकअप स्टोरेज में स्थान जॉब पूरा होने पर ही लौटता है। जॉब के साथ 202 लौटाता है; `Idempotency-Key` आवश्यक है और उसे दोहराने पर वही जॉब मिलता है। पहले `previewBackupRetention` देखें।"
+    },
+    "getSystemUpdates": {
+      "en": {
+        "summary": "Get the update state",
+        "description": "Returns what the host updater reports: the installed version and schema, the newest release found (`latest`), the automatic update settings (`automatic`, `hourUTC`, `pin`, `channel`, `statistics`), the `phase` (`idle`, `checking`, `updating`, `failed`), the last `error`, the last heartbeat and the settings `revision`, plus the request still waiting in the updater's mailbox (`pending`). `snapshot` is null when no host updater is connected. Pass `revision` to `requestSystemUpdate`."
+      },
+      "summary": "अपडेट की स्थिति प्राप्त करें",
+      "description": "वह लौटाता है जो होस्ट अपडेटर बताता है: स्थापित संस्करण और स्कीमा, मिली सबसे नई रिलीज़ (`latest`), स्वचालित अपडेट की सेटिंग (`automatic`, `hourUTC`, `pin`, `channel`, `statistics`), `phase` (`idle`, `checking`, `updating`, `failed`), अंतिम `error`, अंतिम हार्टबीट और सेटिंग का `revision`, तथा अपडेटर के मेलबॉक्स में अब भी प्रतीक्षारत अनुरोध (`pending`)। जब कोई होस्ट अपडेटर जुड़ा न हो तो `snapshot` null होता है। `revision` को `requestSystemUpdate` में दें।"
+    },
+    "requestSystemUpdate": {
+      "en": {
+        "summary": "Request an update action",
+        "description": "Hands one command to the host updater, which does the work: `kind` `check` looks for a new release, `apply` installs the given stable `version` with its `sha256`, `configure` sets `automatic`, `hourUTC` and optionally `statistics`. Send a new UUID as `id` and the `expectedRevision` from `getSystemUpdates`; 409 `revision_mismatch` means the settings changed, 503 `busy` that a request is pending or the updater is working, 503 `unavailable` that no updater is connected or its heartbeat is older than five minutes. The answer 202 only means the request was queued: follow `phase`, `currentVersion` and `lastRequestId` in `getSystemUpdates`. Repeating the same `id` and body is safe."
+      },
+      "summary": "अपडेट की क्रिया माँगें",
+      "description": "होस्ट अपडेटर को एक आदेश सौंपता है, जो काम करता है: `kind` `check` नई रिलीज़ खोजता है, `apply` दिए गए स्थिर `version` को उसके `sha256` के साथ स्थापित करता है, `configure` `automatic`, `hourUTC` और वैकल्पिक रूप से `statistics` सेट करता है। `id` के रूप में नई UUID और `getSystemUpdates` से `expectedRevision` भेजें; 409 `revision_mismatch` का अर्थ है कि सेटिंग बदल गई, 503 `busy` का अर्थ है कि कोई अनुरोध लंबित है या अपडेटर काम कर रहा है, 503 `unavailable` का अर्थ है कि कोई अपडेटर जुड़ा नहीं है या उसका हार्टबीट पाँच मिनट से पुराना है। उत्तर 202 का केवल इतना अर्थ है कि अनुरोध कतार में लग गया: `getSystemUpdates` में `phase`, `currentVersion` और `lastRequestId` देखें। वही `id` और बॉडी दोहराना सुरक्षित है।"
+    },
+    "sendFeedback": {
+      "en": {
+        "summary": "Send feedback to ProAnimaStudio",
+        "description": "Forwards a message through this server to the ProAnimaStudio hub and answers 202 with the hub's `id`. Send `message` (up to 20 000 characters), `lang` (`ru` or `en`), `serverLog` (true attaches this server's log and a system summary, administrators only), and optionally `email` for a reply, `screen`, up to 6 base64 `screenshots` (PNG, JPEG, WebP or GIF, 8 MiB each) and the console's `clientLog`; the total is limited to 15 MiB. Nothing is retried, so a second call is a second message. 503 `feedback_disabled` when the operator turned it off, 503 `hub_unreachable` when the hub does not answer, 429 `feedback_attempts` when this server sent too much."
+      },
+      "summary": "ProAnimaStudio को फ़ीडबैक भेजें",
+      "description": "इस सर्वर के माध्यम से ProAnimaStudio हब को संदेश अग्रेषित करता है और हब की `id` के साथ 202 लौटाता है। `message` (20 000 वर्णों तक), `lang` (`ru` या `en`), `serverLog` (true होने पर इस सर्वर का लॉग और सिस्टम सारांश संलग्न होता है, केवल व्यवस्थापकों के लिए) भेजें, और वैकल्पिक रूप से उत्तर के लिए `email`, `screen`, base64 में अधिकतम 6 `screenshots` (PNG, JPEG, WebP या GIF, प्रत्येक 8 MiB) तथा कंसोल का `clientLog`; कुल सीमा 15 MiB है। कुछ भी दोबारा नहीं आज़माया जाता, इसलिए दूसरा कॉल दूसरा संदेश है। ऑपरेटर द्वारा बंद किए जाने पर 503 `feedback_disabled`, हब के उत्तर न देने पर 503 `hub_unreachable`, और इस सर्वर द्वारा बहुत अधिक भेजे जाने पर 429 `feedback_attempts`।"
+    },
+    "getFeedbackAttachments": {
+      "en": {
+        "summary": "Preview the feedback attachments",
+        "description": "Returns the two texts that `sendFeedback` attaches when `serverLog` is true: the recent records of this server's log and a system summary (versions, operating system, update and mirror states) without addresses, names or secrets. Show them to the administrator before sending."
+      },
+      "summary": "फ़ीडबैक अटैचमेंट का पूर्वावलोकन करें",
+      "description": "वे दो पाठ लौटाता है जो `serverLog` true होने पर `sendFeedback` संलग्न करता है: इस सर्वर के लॉग के हाल के रिकॉर्ड और एक सिस्टम सारांश (संस्करण, ऑपरेटिंग सिस्टम, अपडेट और मिरर की स्थितियाँ), बिना पतों, नामों या गोपनीय मानों के। भेजने से पहले उन्हें व्यवस्थापक को दिखाएँ।"
+    }
+  },
+  "errors": {
+    "codes": {
+      "invalid_input": "अनुरोध गलत रूप में है या कोई मान अनुमत नहीं है; दोबारा भेजने से पहले अनुरोध ठीक करें।",
+      "not_found": "ऑब्जेक्ट मौजूद नहीं है, या कॉलर उसे देख नहीं सकता।",
+      "conflict": "अनुरोध वर्तमान स्थिति से टकराता है; स्थिति फिर से पढ़ें, फिर निर्णय लें।",
+      "forbidden": "क्रेडेंशियल वैध है, पर इस क्रिया की अनुमति उसके पास नहीं है।",
+      "unauthorized": "कोई वैध क्रेडेंशियल नहीं: अनुपस्थित, गलत, समाप्त या निरस्त।",
+      "capacity_exceeded": "कोटा, क्षमता या कोई सीमा पार हो जाएगी।",
+      "integrity_mismatch": "बाइट घोषित आकार या SHA-256 से मेल नहीं खाते।",
+      "busy": "सर्वर अपनी प्रवेश सीमा पर है; Retry-After के बाद दोहराएँ।",
+      "unavailable": "कोई निर्भरता अभी उपलब्ध नहीं है; Retry-After के बाद दोहराएँ।",
+      "rate_limited": "बहुत अधिक प्रयास; Retry-After तक प्रतीक्षा करें।",
+      "read_only": "यह सर्वर या गेटवे परिवर्तन स्वीकार नहीं करता (रीड गेटवे या मिरर)।",
+      "internal": "सर्वर की अप्रत्याशित खराबी; अनुरोध ID से सहायता टीम उसे खोज पाती है। आँख मूँदकर दोबारा न भेजें।"
+    },
+    "reasons": {
+      "validation": "कोई फ़ील्ड अनुपस्थित है या उसका मान नियमों से बाहर है; details फ़ील्ड का नाम बताते हैं।",
+      "malformed_json": "बॉडी वैध JSON नहीं है।",
+      "body_too_large": "बॉडी इस ऑपरेशन की स्वीकार्य सीमा से बड़ी है।",
+      "unsupported_media_type": "Content-Type ऐसा नहीं है जिसे यह ऑपरेशन स्वीकार करता हो।",
+      "method_not_allowed": "पथ मौजूद है, पर इस मेथड के साथ नहीं।",
+      "range_not_satisfiable": "माँगी गई बाइट श्रेणी सामग्री के बाहर है।",
+      "route_not_found": "ऐसा कोई रूट नहीं है।",
+      "upload_expired": "अपलोड सत्र पूरा होने से पहले समाप्त हो गया।",
+      "upload_state": "अपलोड ऐसी स्थिति में नहीं है जो यह चरण करने दे।",
+      "revision_mismatch": "अपेक्षित संशोधन वर्तमान नहीं है (कोई अन्य परिवर्तन पहले हो चुका है)।",
+      "version_exists": "यह संस्करण पहले ही अन्य सामग्री के साथ प्रकाशित हो चुका है।",
+      "part_mismatch": "कोई भाग अपने घोषित आकार या SHA-256 से मेल नहीं खाता।",
+      "parts_incomplete": "अपलोड के सभी भाग अभी तक नहीं पहुँचे हैं।",
+      "idempotency_mismatch": "Idempotency-Key पहले किसी भिन्न अनुरोध के साथ उपयोग की जा चुकी है।",
+      "already_exists": "इस नाम या पथ वाला ऑब्जेक्ट पहले से मौजूद है।",
+      "stage_limit": "आर्टिफ़ैक्ट में स्टेज की अधिकतम संख्या पहले ही है।",
+      "state_conflict": "ऑब्जेक्ट ऐसी स्थिति में है जो यह परिवर्तन नहीं होने देती।",
+      "mirror_read_only": "रिपॉज़िटरी मिरर है; वह केवल सिंक्रनाइज़ेशन से बदलती है।",
+      "permission_missing": "क्रेडेंशियल के पास वह क्रिया नहीं है जो इस ऑपरेशन को चाहिए।",
+      "read_only_token": "केवल-पढ़ने वाला व्यक्तिगत टोकन कुछ नहीं बदल सकता।",
+      "credential_revoked": "कुंजी या टोकन निरस्त कर दिया गया है।",
+      "session_required": "केवल साइन-इन किए खाते का सत्र यह कर सकता है, कुंजी नहीं।",
+      "administrator_required": "केवल व्यवस्थापक यह कर सकता है।",
+      "registration_disabled": "इस सर्वर पर स्व-पंजीकरण बंद है।",
+      "origin_not_allowed": "ब्राउज़र ऑरिजिन ARKVORY_CORS_ORIGINS में नहीं है।",
+      "invalid_credentials": "खाते का नाम या पासवर्ड गलत है।",
+      "current_password_invalid": "वर्तमान पासवर्ड गलत है।",
+      "credential_missing": "अनुरोध में कोई क्रेडेंशियल नहीं है।",
+      "credential_invalid": "क्रेडेंशियल वैध कुंजी, टोकन या सत्र नहीं है।",
+      "session_expired": "सत्र समाप्त हो गया; फिर से साइन इन करें।",
+      "token_expired": "व्यक्तिगत टोकन समाप्त हो गया।",
+      "storage_quota": "रिपॉज़िटरी का कोटा पार हो जाएगा।",
+      "storage_full": "सर्वर की डिस्क अपना खाली स्थान का रिज़र्व बनाए रखती है; और जगह नहीं है।",
+      "account_limit": "खातों की संख्या अपनी सीमा पर है।",
+      "group_limit": "समूहों की संख्या अपनी सीमा पर है।",
+      "membership_limit": "समूह सदस्यों की संख्या अपनी सीमा पर है।",
+      "grant_limit": "अनुदानों की संख्या अपनी सीमा पर है।",
+      "key_limit": "कुंजियों की संख्या अपनी सीमा पर है।",
+      "token_limit": "व्यक्तिगत टोकन की संख्या अपनी सीमा पर है।",
+      "delegation_limit": "प्रत्यायोजनों की संख्या अपनी सीमा पर है।",
+      "catalog_limit": "इंस्टॉलेशन की कैटलॉग क्षमता पार हो जाएगी।",
+      "queue_full": "ट्रांसफ़र कतार भरी हुई है।",
+      "transfer_limit": "कॉलर के पास उतने ट्रांसफ़र हैं जितने की अनुमति है।",
+      "request_limit": "सर्वर उतने अनुरोध संभाल रहा है जितने वह स्वीकार करता है।",
+      "feedback_disabled": "इस सर्वर पर फ़ीडबैक बंद है।",
+      "hub_unreachable": "अपडेट हब तक पहुँचा नहीं जा सकता।",
+      "login_attempts": "साइन-इन के बहुत अधिक प्रयास; प्रतीक्षा करें।",
+      "registration_attempts": "पंजीकरण के बहुत अधिक प्रयास; प्रतीक्षा करें।",
+      "password_attempts": "पासवर्ड के बहुत अधिक प्रयास; प्रतीक्षा करें।",
+      "feedback_attempts": "बहुत अधिक फ़ीडबैक रिपोर्ट; प्रतीक्षा करें।"
+    }
+  },
+  "fields": {
+    "Byte size, decimal string": "बाइट में आकार, दशमलव स्ट्रिंग",
+    "Bytes this point added to the vault.": "इस बिंदु ने बैकअप स्टोरेज (vault) में जितने बाइट जोड़े।",
+    "Current labels: annotation when replaced, otherwise the upload descriptor": "वर्तमान लेबल: बदले जाने पर एनोटेशन के, अन्यथा अपलोड डिस्क्रिप्टर के",
+    "Current promotion stages in byte order": "वर्तमान प्रमोशन स्टेज, बाइट क्रम में",
+    "Every part has this size except the last one.": "अंतिम भाग को छोड़कर हर भाग का यही आकार होता है।",
+    "Exclusive before cursor; null at end": "कर्सर से पहले का (कर्सर शामिल नहीं); अंत में null",
+    "Explicit IANA time zone, e.g. Europe/Moscow; validated by the server.": "स्पष्ट IANA टाइम ज़ोन, जैसे Europe/Moscow; सर्वर द्वारा सत्यापित।",
+    "Last ID of a full page; pass as after": "भरे हुए पृष्ठ की अंतिम ID; after के रूप में दें",
+    "Null for history recorded before migration 4": "माइग्रेशन 4 से पहले दर्ज इतिहास के लिए null",
+    "Opaque cursor bound to repository and prefix; null at end. Never grants access.": "रिपॉज़िटरी और उपसर्ग से बँधा अपारदर्शी कर्सर; अंत में null। यह कभी पहुँच नहीं देता।",
+    "Optional initiating managed key ID; never its secret.": "आरंभ करने वाली प्रबंधित कुंजी की वैकल्पिक ID; उसका गोपनीय मान कभी नहीं।",
+    "Processed bytes: copied or already in the vault.": "संसाधित बाइट: कॉपी किए गए या पहले से बैकअप स्टोरेज (vault) में मौजूद।",
+    "Publication time; null only when none was recorded": "प्रकाशन समय; null केवल तब जब कोई दर्ज न हुआ हो",
+    "Restored revision; null for ordinary replacement": "पुनर्स्थापित किया गया संशोधन; साधारण प्रतिस्थापन के लिए null",
+    "Smallest multipart segment.": "सबसे छोटा मल्टीपार्ट खंड।",
+    "Snapshot time T; the age of a point counts from T.": "स्नैपशॉट समय T; बिंदु की आयु T से गिनी जाती है।",
+    "Start of execution, or the request time while queued.": "निष्पादन का आरंभ, या कतार में रहते समय अनुरोध का समय।",
+    "Upload reservation time": "अपलोड आरक्षण का समय"
+  }
+}

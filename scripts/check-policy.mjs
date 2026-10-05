@@ -1,5 +1,6 @@
 import { inspectWorkflow } from './policy/workflow.mjs';
 import { inspectReleaseWorkflow } from './policy/release-workflow.mjs';
+import { inspectPagesWorkflow } from './policy/pages-workflow.mjs';
 import { readFile, access, mkdir, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { resolve } from 'node:path';
@@ -58,6 +59,7 @@ for (const task of Object.keys(gates.tasks))
 problems.push(
   ...inspectWorkflow(await readFile(resolve(root, '.github/workflows/check.yml'), 'utf8'), gates),
   ...inspectReleaseWorkflow(await readFile(resolve(root, '.github/workflows/release.yml'), 'utf8')),
+  ...inspectPagesWorkflow(await readFile(resolve(root, '.github/workflows/pages.yml'), 'utf8')),
 );
 for (const [profile, required] of [
   ['verify', gates.mergeTasks],

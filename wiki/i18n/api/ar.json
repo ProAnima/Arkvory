@@ -1,0 +1,1044 @@
+{
+  "operations": {
+    "getReadiness": {
+      "en": {
+        "summary": "Check detailed readiness",
+        "description": "Answers `ready` when the database and storage respond, with this node's `role` (`api` or `reader`), whether it accepts writes now (`writable` is false on a read gateway and while the disk keeps its free-space reserve), the shared download slot of a read gateway and aggregate upload and download admission and bandwidth counters. While the server drains or a dependency is unavailable it answers 503 with Retry-After. It does not count against the request budget; for a load balancer without a key use `getReadinessStatus`."
+      },
+      "summary": "فحص الجاهزية التفصيلي",
+      "description": "يردّ بالقيمة `ready` عندما تستجيب قاعدة البيانات والتخزين، ومعها `role` لهذه العقدة (`api` أو `reader`)، وما إذا كانت تقبل الكتابة الآن (تكون قيمة `writable` هي false على بوابة القراءة وما دام القرص يحتفظ باحتياطي المساحة الحرة)، وخانة التنزيل المشتركة لبوابة القراءة، وعدّادات إجمالية لقبول الرفع والتنزيل وعرض النطاق الترددي. وأثناء إفراغ الخادم لطلباته الجارية (draining) أو عند عدم توفّر إحدى التبعيات يردّ بالرمز 503 مع Retry-After. ولا يُحتسب هذا الطلب ضمن ميزانية الطلبات؛ ولموازن الأحمال الذي لا يملك مفتاحًا استخدم `getReadinessStatus`."
+    },
+    "getCapabilities": {
+      "en": {
+        "summary": "Get server capabilities and limits",
+        "description": "Returns the API versions, the gateway role, feature flags (for example `selfRegistration` or `mirrorFeed`) and the limits a client adapts to: the largest object (`maxObjectBytes`, a decimal string), the smallest and largest multipart segment, the largest number of parts and the largest page size. Read it once when a client starts; it lists no resources."
+      },
+      "summary": "الحصول على إمكانات الخادم وحدوده",
+      "description": "يعيد إصدارات واجهة API، ودور البوابة، وأعلام الميزات (مثل `selfRegistration` أو `mirrorFeed`)، والحدود التي يتكيّف معها العميل: أكبر كائن (`maxObjectBytes`، سلسلة نصية عشرية)، وأصغر جزء وأكبر جزء في الرفع متعدد الأجزاء، وأكبر عدد من الأجزاء، وأكبر حجم للصفحة. اقرأه مرة واحدة عند بدء تشغيل العميل؛ فهو لا يسرد أي موارد."
+    },
+    "getReadinessStatus": {
+      "en": {
+        "summary": "Check readiness for a load balancer",
+        "description": "Needs no key and returns no details: 200 with `{\"status\":\"ready\"}`, or 503 with `unavailable` or `draining` and Retry-After. The dependency check is shared and cached for one second, so frequent probes do not load the database, and the probe does not count against the request budget."
+      },
+      "summary": "فحص الجاهزية لموازن الأحمال",
+      "description": "لا يحتاج إلى مفتاح ولا يعيد أي تفاصيل: إما 200 مع `{\"status\":\"ready\"}`، وإما 503 مع القيمة `unavailable` أو `draining` ومع Retry-After. يُشارَك فحص التبعيات ويُخزَّن مؤقتًا لمدة ثانية واحدة، لذا لا تُثقِل الفحوص المتكررة قاعدة البيانات، ولا يُحتسب الفحص ضمن ميزانية الطلبات."
+    },
+    "getLiveness": {
+      "en": {
+        "summary": "Check that the process is alive",
+        "description": "Returns 200 with `{\"status\":\"ok\"}` while the process answers HTTP. It checks no dependency, so use it to decide on a restart and `getReadinessStatus` to decide on traffic."
+      },
+      "summary": "التحقق من أن العملية حيّة",
+      "description": "يعيد 200 مع `{\"status\":\"ok\"}` ما دامت العملية تردّ على HTTP. ولا يفحص أي تبعية، لذا استخدمه لاتخاذ قرار إعادة التشغيل، واستخدم `getReadinessStatus` لاتخاذ قرار توجيه الحركة."
+    },
+    "getOpenApi": {
+      "en": {
+        "summary": "Get the OpenAPI document",
+        "description": "Returns the OpenAPI 3.0 document of this deployment, with the `x-arkvory-*` extensions that describe each operation's access, retry and gateway rules. `surface` (`discovery`, `identity`, `catalog`, `transfers`, `administration` or `operations`) returns only that area; an unknown or repeated query parameter is a 400. The document is the same for every caller and grants nothing: to learn what this credential may call, use `listVisibleOperations`."
+      },
+      "summary": "الحصول على وثيقة OpenAPI",
+      "description": "يعيد وثيقة OpenAPI 3.0 الخاصة بهذا النشر، مع امتدادات `x-arkvory-*` التي تصف قواعد الوصول وإعادة المحاولة والبوابة لكل عملية. تعيد القيمة `surface` (`discovery` أو `identity` أو `catalog` أو `transfers` أو `administration` أو `operations`) ذلك المجال وحده؛ أما معامل استعلام غير معروف أو مكرر فينتج عنه الخطأ 400. الوثيقة واحدة لكل المستدعين ولا تمنح أي صلاحية: لمعرفة ما يجوز لبيانات الاعتماد هذه استدعاؤه استخدم `listVisibleOperations`."
+    },
+    "getMetrics": {
+      "en": {
+        "summary": "Get Prometheus metrics",
+        "description": "Returns the process metrics in the Prometheus text format (`text/plain; version=0.0.4`) for a scraper. Counters and histograms belong to this process and start from zero after a restart (see `arkvory_process_start_time_seconds`); labels are limited to route template, method, status class and transfer direction and never name an artifact, key or account. The scrape does not count against the request budget."
+      },
+      "summary": "الحصول على مقاييس Prometheus",
+      "description": "يعيد مقاييس العملية بتنسيق Prometheus النصي (`text/plain; version=0.0.4`) لأداة الجمع (scraper). تخص العدّادات والمدرّجات التكرارية (histograms) هذه العملية وتبدأ من الصفر بعد إعادة التشغيل (انظر `arkvory_process_start_time_seconds`)؛ وتقتصر التسميات على قالب المسار والطريقة وفئة الحالة واتجاه النقل، ولا تذكر أبدًا اسم مُخرَج أو مفتاح أو حساب. ولا يُحتسب الجمع ضمن ميزانية الطلبات."
+    },
+    "listVisibleOperations": {
+      "en": {
+        "summary": "List the operations this credential may call",
+        "description": "Lists the operations of this gateway the credential may call, ordered by `operationId`, each with its surface, retry rule, required actions and the `conditions` checked only at call time (such as `resource-state` or `upload-owner`). `repository` adds the operations of that repository (an unknown or foreign repository is a 404), `surface` narrows the list to one area; pages hold `limit` items (1–100, default 50), continue with `after` set to `next`. The answer is advisory: build menus from it, but every real request is authorized again, and a read gateway lists no changing methods."
+      },
+      "summary": "عرض قائمة العمليات التي يجوز لبيانات الاعتماد استدعاؤها",
+      "description": "يسرد عمليات هذه البوابة التي يجوز لبيانات الاعتماد استدعاؤها، مرتبةً حسب `operationId`، مع مجال كل عملية (surface) وقاعدة إعادة المحاولة والإجراءات المطلوبة و`conditions` التي لا تُفحص إلا وقت الاستدعاء (مثل `resource-state` أو `upload-owner`). تضيف `repository` عمليات ذلك المستودع (مستودع غير معروف أو غير متاح للمستدعي يعني 404)، وتحصر `surface` القائمة في مجال واحد؛ وتحتوي الصفحة على `limit` عنصرًا (من 1 إلى 100، والافتراضي 50)، وللمتابعة اضبط `after` على قيمة `next`. الإجابة استشارية: ابنِ منها القوائم، لكن كل طلب فعلي يُفوَّض من جديد، ولا تسرد بوابة القراءة أي طرق تغيّر الحالة."
+    },
+    "listRepositories": {
+      "en": {
+        "summary": "List the repositories you can access",
+        "description": "Lists, ordered by name, the repositories in which the caller holds a permission, each with its formats (`upack`, `assets`) and the caller's own permissions there; a managed service key sees only those where it holds `repository.read`. A repository is the scope of the caller's grants, not an entry of a server-wide registry. Pages hold `limit` cards (1–100, default 50); continue with `after` set to `next`."
+      },
+      "summary": "عرض قائمة المستودعات المتاحة لك",
+      "description": "يسرد، مرتبةً حسب الاسم، المستودعات التي يملك المستدعي فيها إذنًا، مع صيغ كل منها (`upack` و`assets`) وأذونات المستدعي نفسه فيه؛ أما مفتاح الخدمة المُدار فيرى فقط المستودعات التي يملك فيها `repository.read`. المستودع هو نطاق ما مُنح للمستدعي، وليس مدخلًا في سجل على مستوى الخادم. تحتوي الصفحة على `limit` بطاقة (من 1 إلى 100، والافتراضي 50)؛ وللمتابعة اضبط `after` على قيمة `next`."
+    },
+    "getRepository": {
+      "en": {
+        "summary": "Get a repository card",
+        "description": "Returns the caller's card of one repository: its formats and the caller's permissions in it. A repository the caller cannot see answers 404, exactly like one that does not exist; HEAD makes this a cheap access check. Seeing a repository grants no access to its content or settings."
+      },
+      "summary": "الحصول على بطاقة مستودع",
+      "description": "يعيد بطاقة المستدعي لمستودع واحد: صيغه وأذونات المستدعي فيه. المستودع الذي لا يستطيع المستدعي رؤيته يردّ بـ 404 تمامًا كالمستودع غير الموجود؛ ويجعل HEAD هذا فحص وصول رخيصًا. ورؤية المستودع لا تمنح وصولًا إلى محتواه أو إعداداته."
+    },
+    "listUploadParts": {
+      "en": {
+        "summary": "List the received parts of an upload",
+        "description": "Returns `partBytes`, the part size fixed for this upload when it was created (8 MiB, doubled for files that would need more than 10 000 parts; only the last part is shorter), and the parts already stored with their index, size and SHA-256. Read it before resuming an interrupted multipart upload and send only the missing parts with `putUploadPart`. Only the upload's creator sees it; for anyone else it is a 404."
+      },
+      "summary": "عرض قائمة الأجزاء المستلمة من عملية رفع",
+      "description": "يعيد `partBytes`، وهو حجم الجزء الذي تحدد لعملية الرفع هذه عند إنشائها (8 MiB، ويُضاعَف الحجم للملفات التي تتطلب أكثر من 10 000 جزء؛ ولا يكون أقصر إلا الجزء الأخير)، والأجزاء المخزَّنة بالفعل مع رقمها التسلسلي وحجمها وSHA-256. اقرأه قبل استئناف رفع متعدد الأجزاء انقطع، وأرسل الأجزاء الناقصة فقط عبر `putUploadPart`. لا يراه إلا منشئ عملية الرفع؛ وبالنسبة لغيره تكون النتيجة 404."
+    },
+    "putUploadPart": {
+      "en": {
+        "summary": "Upload one part",
+        "description": "Stores the body as part `index` (from 0) of a pending multipart upload; its length must be exactly `partBytes` (from `listUploadParts`), or the remainder for the last part, and `X-Content-SHA256` must be the lowercase hex SHA-256 of these bytes, otherwise 422. Parts may arrive in any order, but an upload takes one request at a time (a concurrent one gets 503 `busy`); sending a part again with the same hash is safe, a different hash for an index already stored is a 409 `part_mismatch`. When every part is stored, call `completeUpload` or `enqueueCompletion`."
+      },
+      "summary": "رفع جزء واحد",
+      "description": "يخزّن المتن (body) جزءًا برقم `index` (يبدأ من 0) في عملية رفع متعدد الأجزاء معلّقة؛ ويجب أن يساوي طوله `partBytes` تمامًا (من `listUploadParts`)، أو المتبقي للجزء الأخير، وأن يكون `X-Content-SHA256` هو SHA-256 بالنظام السداسي عشري وبأحرف صغيرة لهذه البايتات، وإلا كانت النتيجة 422. يجوز أن تصل الأجزاء بأي ترتيب، لكن عملية الرفع تقبل طلبًا واحدًا في كل مرة (والطلب المتزامن الآخر يحصل على 503 `busy`)؛ وإعادة إرسال جزء بقيمة التجزئة نفسها آمنة، أما قيمة تجزئة مختلفة لرقم مخزَّن بالفعل فهي 409 `part_mismatch`. وعند تخزين كل الأجزاء استدعِ `completeUpload` أو `enqueueCompletion`."
+    },
+    "enqueueCompletion": {
+      "en": {
+        "summary": "Complete an upload in the background",
+        "description": "Queues the completion of a pending upload for the worker service instead of doing it in the request, and returns the job at once with 202; follow it with `getCompletionJob`. Calling it again for the same upload returns the same job, and a job that failed for a transient reason is queued again. A queued job does not mean the artifact is published: only `completed` does. 409 `upload_state` if the upload is no longer pending; 507 `queue_full` when the caller has 100 open jobs or the server 10 000."
+      },
+      "summary": "إكمال عملية رفع في الخلفية",
+      "description": "يضع إكمال عملية رفع معلّقة في طابور خدمة العامل (worker) بدلًا من تنفيذه داخل الطلب، ويعيد المهمة فورًا مع 202؛ تابعها عبر `getCompletionJob`. وإعادة استدعائه لعملية الرفع نفسها تعيد المهمة نفسها، أما المهمة التي فشلت لسبب عابر فتُوضع في الطابور من جديد. وجود مهمة في الطابور لا يعني أن المُخرَج نُشر: النشر يعني الحالة `completed` فقط. والنتيجة 409 `upload_state` إذا لم تعد عملية الرفع معلّقة؛ و507 `queue_full` عندما يكون لدى المستدعي 100 مهمة مفتوحة أو لدى الخادم 10 000."
+    },
+    "getCompletionJob": {
+      "en": {
+        "summary": "Get a completion job",
+        "description": "Returns the state of a completion job queued with `enqueueCompletion`: `queued`, `running`, `completed` (the upload is published) or `failed` with an `errorCode`, plus the number of attempts. The worker tries up to five times with growing pauses; errors such as `integrity_mismatch` fail at once. Only the job's creator sees it; for anyone else it is a 404."
+      },
+      "summary": "الحصول على مهمة إكمال",
+      "description": "يعيد حالة مهمة إكمال وُضعت في الطابور عبر `enqueueCompletion`: `queued` أو `running` أو `completed` (تم نشر عملية الرفع) أو `failed` مع `errorCode`، إضافةً إلى عدد المحاولات. يحاول العامل حتى خمس مرات بفواصل زمنية متزايدة؛ أما أخطاء مثل `integrity_mismatch` فتُفشِل المهمة فورًا. لا يراها إلا منشئ المهمة؛ وبالنسبة لغيره تكون النتيجة 404."
+    },
+    "createUpload": {
+      "en": {
+        "summary": "Create an upload session",
+        "description": "Reserves an upload for one file described by `name`, `size` (a decimal string), `sha256` and optional `labels` and `metadata`; returns 201 with the session (`pending`, valid for 7 days) and its `Location`. `Idempotency-Key` (1–128 letters, digits and `_.:-`) is required: the same key with the same description returns the same session, with a different description it is a 409 `idempotency_mismatch`. The size is reserved against the repository quota and the server's capacity at once (507). Then send the bytes whole with `putUploadContent`, or in parts with `putUploadPart` and finish with `completeUpload`."
+      },
+      "summary": "إنشاء جلسة رفع",
+      "description": "يحجز عملية رفع لملف واحد يصفه `name` و`size` (سلسلة نصية عشرية) و`sha256` و`labels` و`metadata` الاختياريان؛ ويعيد 201 مع الجلسة (`pending`، صالحة لمدة 7 أيام) و`Location` الخاص بها. المفتاح `Idempotency-Key` (من 1 إلى 128 حرفًا من الأحرف والأرقام و`_.:-`) مطلوب: المفتاح نفسه مع الوصف نفسه يعيد الجلسة نفسها، ومع وصف مختلف يكون الناتج 409 `idempotency_mismatch`. ويُحجز الحجم فورًا من حصة تخزين المستودع ومن سعة الخادم (507). بعد ذلك أرسل البايتات كاملة عبر `putUploadContent`، أو على أجزاء عبر `putUploadPart` ثم أنهِ بـ `completeUpload`."
+    },
+    "getUpload": {
+      "en": {
+        "summary": "Get an upload",
+        "description": "Returns the session with its `status` (`pending`, `available` once published, `cancelled`), its expiry and the declared descriptor. After a lost response to `putUploadContent` or `completeUpload`, read this first: `available` means the artifact is published under the same ID. Only the upload's creator sees it; for anyone else it is a 404."
+      },
+      "summary": "الحصول على عملية رفع",
+      "description": "يعيد الجلسة مع `status` (`pending`، أو `available` بعد النشر، أو `cancelled`) وتاريخ انتهائها والواصف المُعلَن. بعد ضياع الردّ على `putUploadContent` أو `completeUpload` اقرأ هذا أولًا: القيمة `available` تعني أن المُخرَج نُشر بالمعرّف نفسه. لا يراها إلا منشئ عملية الرفع؛ وبالنسبة لغيره تكون النتيجة 404."
+    },
+    "cancelUpload": {
+      "en": {
+        "summary": "Cancel an upload",
+        "description": "Cancels a pending upload and returns it with status `cancelled`; a published upload cannot be cancelled (409 `upload_state`). The received bytes are hidden at once but remain reserved against the quota until the repository's online cleanup (`setCleanup`, off by default) removes them after its grace period."
+      },
+      "summary": "إلغاء عملية رفع",
+      "description": "يلغي عملية رفع معلّقة ويعيدها بالحالة `cancelled`؛ أما عملية الرفع المنشورة فلا يمكن إلغاؤها (409 `upload_state`). تُخفى البايتات المستلمة فورًا لكنها تبقى محجوزة من حصة التخزين إلى أن يزيلها التنظيف الفعلي أثناء التشغيل في المستودع (`setCleanup`، وهو معطّل افتراضيًا) بعد انقضاء فترة السماح."
+    },
+    "putUploadContent": {
+      "en": {
+        "summary": "Upload the whole file in one request",
+        "description": "Streams the request body as the complete content of a pending upload, checks it against the declared size and SHA-256 (422 on mismatch) and publishes the artifact; the answer is the upload with status `available`. An interrupted request leaves nothing to resume: read the upload with `getUpload`, then send the file again from byte zero. Not for an upload that already has parts (409 `upload_state`); one request must also finish within the server's upload deadline (30 minutes by default), so send large files in parts."
+      },
+      "summary": "رفع الملف كاملًا في طلب واحد",
+      "description": "يبثّ متن الطلب بوصفه المحتوى الكامل لعملية رفع معلّقة، ويقارنه بالحجم المُعلَن وSHA-256 (422 عند عدم التطابق)، وينشر المُخرَج؛ والردّ هو عملية الرفع بالحالة `available`. الطلب الذي انقطع لا يترك شيئًا يمكن استئنافه: اقرأ عملية الرفع عبر `getUpload`، ثم أرسل الملف من جديد من البايت صفر. لا يصلح لعملية رفع لها أجزاء بالفعل (409 `upload_state`)؛ كما يجب أن ينتهي الطلب الواحد خلال مهلة الرفع في الخادم (30 دقيقة افتراضيًا)، فأرسل الملفات الكبيرة على أجزاء."
+    },
+    "completeUpload": {
+      "en": {
+        "summary": "Complete an upload",
+        "description": "Assembles the stored parts in order, checks the whole file against the declared size and SHA-256 and publishes the artifact; returns the upload with status `available`. Calling it again for a published upload returns the same result, so it also recovers a completion whose answer was lost. A missing part is a 409 `parts_incomplete`, a content mismatch a 422; for very large files where the request might time out, use `enqueueCompletion` instead."
+      },
+      "summary": "إكمال عملية رفع",
+      "description": "يجمّع الأجزاء المخزَّنة بالترتيب، ويتحقق من الملف كاملًا مقابل الحجم المُعلَن وSHA-256، وينشر المُخرَج؛ ويعيد عملية الرفع بالحالة `available`. وإعادة استدعائه لعملية رفع منشورة تعيد النتيجة نفسها، فيصلح بذلك أيضًا لاستعادة إكمال ضاع ردّه. الجزء الناقص هو 409 `parts_incomplete`، وعدم تطابق المحتوى هو 422؛ وللملفات الكبيرة جدًا التي قد ينتهي فيها زمن الطلب استخدم `enqueueCompletion` بدلًا منه."
+    },
+    "getAnnotations": {
+      "en": {
+        "summary": "Get the annotations of an artifact",
+        "description": "Returns the current labels, metadata and collections of a published artifact with their `revision`. Revision 0 means they were never replaced: labels and metadata are those given when the upload was created, and collections are empty. Pass the revision to `setAnnotations` as `expectedRevision`."
+      },
+      "summary": "الحصول على التعليقات التوضيحية لمُخرَج",
+      "description": "يعيد التسميات وبيانات التعريف والتجميعات الحالية لمُخرَج منشور مع `revision` الخاصة بها. المراجعة 0 تعني أنها لم تُستبدل قط: فالتسميات وبيانات التعريف هي ما أُعطي عند إنشاء عملية الرفع، والتجميعات فارغة. مرّر المراجعة إلى `setAnnotations` بوصفها `expectedRevision`."
+    },
+    "setAnnotations": {
+      "en": {
+        "summary": "Replace the annotations of an artifact",
+        "description": "Replaces `labels`, `metadata` and `collections` of a published artifact at once; a field left out of `value` becomes empty. `expectedRevision` must be the current revision (0 for the first change), otherwise 409 `revision_mismatch`: read the annotations again and reapply the change. Up to 32 labels and 32 collections (1–64 letters, digits or `_.:-`) and 32 metadata entries (values up to 1024 characters); the bytes and the original descriptor never change."
+      },
+      "summary": "استبدال التعليقات التوضيحية لمُخرَج",
+      "description": "يستبدل `labels` و`metadata` و`collections` لمُخرَج منشور دفعة واحدة؛ والحقل المحذوف من `value` يصبح فارغًا. يجب أن تكون `expectedRevision` هي المراجعة الحالية (0 لأول تغيير)، وإلا كانت النتيجة 409 `revision_mismatch`: اقرأ التعليقات التوضيحية من جديد وأعد تطبيق التغيير. يُسمح بما يصل إلى 32 تسمية و32 تجميعة (من 1 إلى 64 حرفًا من الأحرف والأرقام أو `_.:-`) و32 مدخلًا من بيانات التعريف (قيمها حتى 1024 حرفًا)؛ أما البايتات والواصف الأصلي فلا يتغيّران أبدًا."
+    },
+    "registerPackage": {
+      "en": {
+        "summary": "Register an artifact as a UPack package",
+        "description": "Opens the published artifact as a UPack ZIP, reads the root `upack.json` (`name`, optional `group`, SemVer `version`) and registers that package version for it; unsafe or invalid archives are rejected with 400. A version is immutable: registering the same artifact again returns the same entry, another artifact for an existing group, name and version (compared without case) is a 409 `version_exists`. Afterwards the version appears in `listPackages` and resolves by name, range and stage."
+      },
+      "summary": "تسجيل مُخرَج بوصفه حزمة UPack",
+      "description": "يفتح المُخرَج المنشور بوصفه ملف ZIP من نوع UPack، ويقرأ `upack.json` في الجذر (`name`، و`group` الاختياري، و`version` بصيغة SemVer)، ويسجّل إصدار الحزمة هذا له؛ وتُرفض الأرشيفات غير الآمنة أو غير الصالحة بالخطأ 400. الإصدار غير قابل للتغيير: تسجيل المُخرَج نفسه مرة أخرى يعيد المدخل نفسه، أما مُخرَج آخر لمجموعة واسم وإصدار موجودة (تُقارَن دون مراعاة حالة الأحرف) فهو 409 `version_exists`. بعد ذلك يظهر الإصدار في `listPackages` ويمكن تحديده بالاسم والنطاق والمرحلة."
+    },
+    "searchArtifacts": {
+      "en": {
+        "summary": "Search artifacts",
+        "description": "Finds published artifacts by `q` (a case-insensitive substring of the name or of a current metadata value), an exact current `label`, a `collection`, and an exact `metadataKey`/`metadataValue` pair, which go together; all given filters must match. Results come in pages of 100 ordered by ID, each with size, creation and publication times, current labels and promotion stages; continue with `after` set to `next`. Metadata and collections are not returned: read them with `getAnnotations`."
+      },
+      "summary": "البحث في المُخرَجات",
+      "description": "يعثر على المُخرَجات المنشورة حسب `q` (سلسلة جزئية من الاسم أو من قيمة بيانات تعريف حالية، دون مراعاة حالة الأحرف)، و`label` حالية مطابقة تمامًا، و`collection`، وزوج `metadataKey`/`metadataValue` مطابق تمامًا ويُستخدمان معًا؛ ويجب أن تتطابق كل المرشحات المعطاة. تأتي النتائج في صفحات من 100 مرتبةً حسب المعرّف، لكل منها الحجم وأوقات الإنشاء والنشر والتسميات الحالية ومراحل الترقية؛ وللمتابعة اضبط `after` على قيمة `next`. لا تُعاد بيانات التعريف ولا التجميعات: اقرأها عبر `getAnnotations`."
+    },
+    "getCatalogAudit": {
+      "en": {
+        "summary": "Read the catalog audit of a repository",
+        "description": "Returns, oldest first, up to 100 catalog changes of the repository after the sequence number `after` (default 0): publications, deletions, annotation and attachment changes, package registrations, file path changes, references, stages and promotions, each with actor, action, artifact and time. To read further, pass the last `sequence` of the page as `after`; there is no `next` field. Downloads and sign-ins are not in it; mirrors follow `listCatalogChanges`, which omits actors."
+      },
+      "summary": "قراءة تدقيق الفهرس لمستودع",
+      "description": "يعيد، بدءًا من الأقدم، ما يصل إلى 100 تغيير في فهرس المستودع بعد الرقم التسلسلي `after` (الافتراضي 0): عمليات النشر والحذف، وتغييرات التعليقات التوضيحية والمرفقات، وتسجيلات الحزم، وتغييرات مسارات الملفات، والمراجع، والمراحل والترقيات، لكل منها الفاعل والإجراء والمُخرَج والوقت. وللمتابعة مرّر آخر `sequence` في الصفحة بوصفه `after`؛ ولا يوجد حقل `next`. لا تظهر فيه عمليات التنزيل ولا تسجيلات الدخول؛ أما المرايا فتتابع `listCatalogChanges` الذي يُسقط الفاعلين."
+    },
+    "addReference": {
+      "en": {
+        "summary": "Add a reference to an artifact",
+        "description": "Records that something outside Arkvory uses this artifact, under a `key` of your choice (1–256 letters, digits or `_.:/-`), for example a deployment name. A referenced artifact cannot be deleted or removed by retention until every reference is gone. The reference belongs to the caller; adding the same key again changes nothing."
+      },
+      "summary": "إضافة مرجع إلى مُخرَج",
+      "description": "يسجّل أن جهة خارج Arkvory تستخدم هذا المُخرَج، تحت `key` تختاره بنفسك (من 1 إلى 256 حرفًا من الأحرف والأرقام أو `_.:/-`)، مثل اسم نشر (deployment). لا يمكن حذف المُخرَج المُشار إليه ولا إزالته بقواعد الاحتفاظ إلى أن تزول كل المراجع. والمرجع يخص المستدعي؛ وإضافة المفتاح نفسه مرة أخرى لا تغيّر شيئًا."
+    },
+    "removeReference": {
+      "en": {
+        "summary": "Remove a reference from an artifact",
+        "description": "Removes the caller's own reference `key` from the artifact; references of other callers stay. Removing a key that is not there succeeds as well."
+      },
+      "summary": "إزالة مرجع من مُخرَج",
+      "description": "يزيل مرجع المستدعي نفسه `key` من المُخرَج؛ وتبقى مراجع المستدعين الآخرين. وإزالة مفتاح غير موجود تنجح هي الأخرى."
+    },
+    "listArtifacts": {
+      "en": {
+        "summary": "List artifacts",
+        "description": "Lists the published artifacts of the repository ordered by ID, `limit` per page (1–100, default 50); continue with `after` set to `next`. `next` is set whenever a page is full, so the last page may be empty. Each item carries the descriptor given at upload; current labels and metadata are in `getAnnotations`."
+      },
+      "summary": "عرض قائمة المُخرَجات",
+      "description": "يسرد المُخرَجات المنشورة في المستودع مرتبةً حسب المعرّف، بمعدل `limit` في الصفحة (من 1 إلى 100، والافتراضي 50)؛ وللمتابعة اضبط `after` على قيمة `next`. تُضبط `next` كلما امتلأت الصفحة، لذا قد تكون الصفحة الأخيرة فارغة. يحمل كل عنصر الواصف المُعطى عند الرفع؛ أما التسميات وبيانات التعريف الحالية ففي `getAnnotations`."
+    },
+    "getArtifact": {
+      "en": {
+        "summary": "Get an artifact",
+        "description": "Returns a published artifact: its ID, repository, status, creation time and the descriptor given at upload (name, size, SHA-256, original labels and metadata). Pending, cancelled and deleted artifacts answer 404. To read the bytes use `downloadArtifact`."
+      },
+      "summary": "الحصول على مُخرَج",
+      "description": "يعيد مُخرَجًا منشورًا: معرّفه ومستودعه وحالته ووقت إنشائه والواصف المُعطى عند الرفع (الاسم والحجم وSHA-256 والتسميات وبيانات التعريف الأصلية). المُخرَجات المعلّقة والملغاة والمحذوفة تردّ بـ 404. لقراءة البايتات استخدم `downloadArtifact`."
+    },
+    "deleteArtifact": {
+      "en": {
+        "summary": "Delete an artifact",
+        "description": "Logically deletes a published artifact: it disappears from lists, searches and downloads at once, and its bytes are reclaimed by the repository's online cleanup (`setCleanup`, off by default) after its grace period. `expectedAnnotationRevision` must equal the current annotation revision. The answer is 200 with an `outcome`: `deleted`, `already_deleted`, `changed` (the revision differs), `not_found`, or `protected` with the `blockers` that keep it (a reference, a file path revision, a build attachment or a promotion stage). Check beforehand with `inspectArtifactDeletion`."
+      },
+      "summary": "حذف مُخرَج",
+      "description": "يحذف مُخرَجًا منشورًا حذفًا منطقيًا: يختفي فورًا من القوائم وعمليات البحث والتنزيلات، وتُستعاد بايتاته بالتنظيف الفعلي أثناء التشغيل في المستودع (`setCleanup`، وهو معطّل افتراضيًا) بعد انقضاء فترة السماح. يجب أن تساوي `expectedAnnotationRevision` مراجعة التعليقات التوضيحية الحالية. الردّ 200 مع `outcome`: `deleted` أو `already_deleted` أو `changed` (اختلفت المراجعة) أو `not_found` أو `protected` مع `blockers` التي تمنع حذفه (مرجع، أو مراجعة لمسار ملف، أو مرفق نسخة بناء، أو مرحلة ترقية). افحص ذلك مسبقًا بـ `inspectArtifactDeletion`."
+    },
+    "downloadArtifact": {
+      "en": {
+        "summary": "Download an artifact",
+        "description": "Streams the original bytes with `Content-Length`, `Content-Disposition` (the artifact name) and a strong `ETag` (`\"sha256:<hex>\"`). A single `Range` gives 206 (an unsatisfiable one 416); `If-Range` with the ETag resumes safely, and `If-None-Match` answers 304. HEAD returns the same headers without a body and ignores `Range`. Instead of an `Authorization` header the request may carry a download link from `createDownloadLink` as `token`; downloads wait for a free slot of the server's download admission."
+      },
+      "summary": "تنزيل مُخرَج",
+      "description": "يبثّ البايتات الأصلية مع `Content-Length` و`Content-Disposition` (اسم المُخرَج) و`ETag` قوي (`\"sha256:<hex>\"`). يعطي `Range` واحد النتيجة 206 (ونطاق لا يمكن تلبيته يعطي 416)؛ ويستأنف `If-Range` مع ETag التنزيل بأمان، ويردّ `If-None-Match` بـ 304. ويعيد HEAD الترويسات نفسها دون متن ويتجاهل `Range`. وبدلًا من ترويسة `Authorization` يجوز أن يحمل الطلب رابط تنزيل من `createDownloadLink` بوصفه `token`؛ وتنتظر التنزيلات خانة شاغرة في قبول التنزيلات بالخادم."
+    },
+    "listCatalogChanges": {
+      "en": {
+        "summary": "Follow the change feed of a repository",
+        "description": "Returns, in commit order, up to `limit` changes (1–100, default 100) after the sequence `after` (default 0): action, artifact and, for file paths and stages, the path or stage in `detail`; actors are left out, so list access is enough. `head` is the newest sequence of the repository, `next` the cursor of the following page or null when the page reached the head. A mirror stores the last sequence it applied and polls from there."
+      },
+      "summary": "متابعة موجز تغييرات مستودع",
+      "description": "يعيد، بترتيب التثبيت (commit)، ما يصل إلى `limit` تغييرًا (من 1 إلى 100، والافتراضي 100) بعد التسلسل `after` (الافتراضي 0): الإجراء والمُخرَج، وبالنسبة لمسارات الملفات والمراحل المسار أو المرحلة في `detail`؛ ولا يتضمن الفاعلين، لذا يكفي إذن عرض القوائم. `head` هو أحدث تسلسل في المستودع، و`next` مؤشر الصفحة التالية أو null إذا بلغت الصفحة `head`. وتخزّن المرآة آخر تسلسل طبّقته وتستطلع (poll) بدءًا منه."
+    },
+    "createDownloadLink": {
+      "en": {
+        "summary": "Create a download link",
+        "description": "Returns a secret `token`, a `url` relative to the API origin and `expiresAt` for `downloadArtifact` of this one artifact without a key; `ttlSeconds` sets the lifetime (60 seconds to one day, default one hour). The token is shown only in this answer and cannot be revoked: it stops working when it expires or the artifact is deleted, and downloads through it count against the creator's transfer limits. A caller may hold 1000 live links (507 `token_limit`), and a download link cannot create further links."
+      },
+      "summary": "إنشاء رابط تنزيل",
+      "description": "يعيد `token` سريًّا و`url` نسبيًّا إلى أصل API (origin) و`expiresAt`، لاستخدامها مع `downloadArtifact` لهذا المُخرَج وحده دون مفتاح؛ وتحدد `ttlSeconds` مدة الصلاحية (من 60 ثانية إلى يوم واحد، والافتراضي ساعة واحدة). يظهر الرمز في هذه الإجابة فقط ولا يمكن إبطاله: يتوقف عن العمل عند انتهاء صلاحيته أو حذف المُخرَج، وتُحتسب التنزيلات عبره ضمن حدود النقل الخاصة بمنشئه. يجوز للمستدعي أن يحتفظ بـ 1000 رابط فعّال (507 `token_limit`)، ولا يستطيع رابط التنزيل إنشاء روابط أخرى."
+    },
+    "listPackages": {
+      "en": {
+        "summary": "List package versions",
+        "description": "Lists the registered UPack versions with their manifests, filtered by `group` and `name` (exact, ignoring case; `group=` with an empty value selects the root group, leaving it out selects all groups). `sort` (`group`, `name`, `version`), `direction` (`asc`, `desc`) and `groupBy` (`none`, `group`, `package`, which adds `groups` listing the `artifactIds` of the page) shape the result. Pages hold `limit` items (1–100, default 50); continue with `after` set to `next` and the same filters. Pages are not a snapshot: versions registered in between can be missed until the next pass."
+      },
+      "summary": "عرض قائمة إصدارات الحزم",
+      "description": "يسرد إصدارات UPack المسجّلة مع ملفات بياناتها (manifests)، بعد التصفية حسب `group` و`name` (مطابقة تامة دون مراعاة حالة الأحرف؛ `group=` بقيمة فارغة يحدد المجموعة الجذرية، وحذفه يحدد كل المجموعات). وتشكّل النتيجة كل من `sort` (`group` أو `name` أو `version`) و`direction` (`asc` أو `desc`) و`groupBy` (`none` أو `group` أو `package`، وهذا الأخير يضيف `groups` تسرد `artifactIds` الخاصة بالصفحة). تحتوي الصفحة على `limit` عنصرًا (من 1 إلى 100، والافتراضي 50)؛ وللمتابعة اضبط `after` على قيمة `next` مع المرشحات نفسها. الصفحات ليست لقطة ثابتة: قد تفوتك إصدارات سُجّلت في الأثناء حتى المرور التالي."
+    },
+    "downloadPackageContent": {
+      "en": {
+        "summary": "Download a package by name and version",
+        "description": "Resolves `name` (in `group`, the root group by default) to one registered version and streams it like `downloadArtifact`; `X-Arkvory-Artifact-Id` and `X-Arkvory-Package-Version` name the choice. Select by exact `version` or SemVer `range` (such as `^1.4` or `>=1.0.0 <2.0.0`), optionally only versions with `stage`; without either it takes the highest stable version, `prerelease=true` admits prereleases and `order=promoted` takes the version most recently given `stage`. The name is resolved on every request, so resume with `If-Range` set to the returned ETag, or download by artifact ID; `resolvePackage` gives the same choice without the bytes."
+      },
+      "summary": "تنزيل حزمة بالاسم والإصدار",
+      "description": "يحدد `name` (في `group`، والمجموعة الجذرية افتراضيًا) إصدارًا مسجّلًا واحدًا ويبثّه كما يفعل `downloadArtifact`؛ ويبيّن `X-Arkvory-Artifact-Id` و`X-Arkvory-Package-Version` الاختيار. يتم الاختيار بـ `version` مطابق تمامًا أو بنطاق SemVer `range` (مثل `^1.4` أو `>=1.0.0 <2.0.0`)، ويمكن اختيار الإصدارات ذات `stage` فقط؛ وبدون أيٍّ منهما يؤخذ أعلى إصدار مستقر، و`prerelease=true` يسمح بإصدارات ما قبل الإصدار النهائي، و`order=promoted` يأخذ الإصدار الذي مُنح `stage` أحدث مرة. يُحدَّد الاسم في كل طلب، لذا استأنف باستخدام `If-Range` مضبوطًا على ETag المُعاد، أو نزّل بمعرّف المُخرَج؛ ويعطي `resolvePackage` الاختيار نفسه دون البايتات."
+    },
+    "listAssets": {
+      "en": {
+        "summary": "List file paths by prefix",
+        "description": "Returns every file path that starts with `prefix` (literal, not a pattern; empty for all), ordered by path, each with its current revision and artifact ID. There is no paging: more than 1000 matches is a 400 asking for a narrower prefix, so prefer `listAssetPage` for large trees."
+      },
+      "summary": "عرض قائمة مسارات الملفات حسب البادئة",
+      "description": "يعيد كل مسار ملف يبدأ بـ `prefix` (حرفيًا لا بوصفه نمطًا؛ وتعني القيمة الفارغة كل المسارات)، مرتبةً حسب المسار، لكل منها مراجعته الحالية ومعرّف المُخرَج. لا يوجد ترقيم للصفحات: أكثر من 1000 تطابق يعني الخطأ 400 الذي يطلب بادئة أضيق، لذا فضّل `listAssetPage` للأشجار الكبيرة."
+    },
+    "listAssetPage": {
+      "en": {
+        "summary": "List file paths page by page",
+        "description": "Returns the current file paths that start with `prefix` (literal; empty for all) in UTF-8 byte order, each with its current revision and artifact ID. Pages hold `limit` items (1–100, default 50); continue with `after` set to the opaque `next`. Pages are not a snapshot: paths changed between requests can appear with their newer revision or be missed until the next pass."
+      },
+      "summary": "عرض قائمة مسارات الملفات صفحةً صفحة",
+      "description": "يعيد مسارات الملفات الحالية التي تبدأ بـ `prefix` (حرفيًا؛ وتعني القيمة الفارغة كل المسارات) بترتيب بايتات UTF-8، لكل منها مراجعته الحالية ومعرّف المُخرَج. تحتوي الصفحة على `limit` عنصرًا (من 1 إلى 100، والافتراضي 50)؛ وللمتابعة اضبط `after` على قيمة `next` غير الشفافة (opaque). الصفحات ليست لقطة ثابتة: قد تظهر المسارات التي تغيّرت بين الطلبات بمراجعتها الأحدث، أو تفوتك حتى المرور التالي."
+    },
+    "getAsset": {
+      "en": {
+        "summary": "Get the current revision of a file path",
+        "description": "Returns the current `revision` of `path` and the ID of the artifact it points to; an unknown path is a 404. A path has 1–1024 characters in `/`-separated segments, without empty, `.` or `..` segments, `\\`, `:` or control characters. Download the bytes with `downloadAssetContent`, or pass the revision to `setAsset` as `expectedRevision`."
+      },
+      "summary": "الحصول على المراجعة الحالية لمسار ملف",
+      "description": "يعيد `revision` الحالية للمسار `path` ومعرّف المُخرَج الذي يشير إليه؛ والمسار غير المعروف هو 404. يتكوّن المسار من 1 إلى 1024 حرفًا في مقاطع تفصل بينها `/`، دون مقاطع فارغة أو `.` أو `..`، ودون `\\` أو `:` أو محارف تحكم. نزّل البايتات بـ `downloadAssetContent`، أو مرّر المراجعة إلى `setAsset` بوصفها `expectedRevision`."
+    },
+    "setAsset": {
+      "en": {
+        "summary": "Point a file path at an artifact",
+        "description": "Makes `path` name a published artifact of the same repository as its new revision; `expectedRevision` is 0 to create the path and the current revision to replace it, otherwise 409 `revision_mismatch`. Earlier revisions stay in the history and keep their artifacts from being deleted. To store bytes and name them in one request, use `putRawFile`."
+      },
+      "summary": "ربط مسار ملف بمُخرَج",
+      "description": "يجعل `path` يسمّي مُخرَجًا منشورًا في المستودع نفسه بوصفه مراجعته الجديدة؛ وتكون `expectedRevision` هي 0 لإنشاء المسار، وهي المراجعة الحالية لاستبداله، وإلا كانت النتيجة 409 `revision_mismatch`. تبقى المراجعات السابقة في المحفوظات وتحمي مُخرَجاتها من الحذف. ولتخزين البايتات وتسميتها في طلب واحد استخدم `putRawFile`."
+    },
+    "getAssetHistory": {
+      "en": {
+        "summary": "List the revisions of a file path",
+        "description": "Returns the revisions of `path`, newest first, 50 per page, each with its artifact, the actor, the time and, for a restore, the `sourceRevision` it copied (actor and time are null for revisions recorded by early server versions). Continue with `before` set to `next`. An unknown path is a 404."
+      },
+      "summary": "عرض قائمة مراجعات مسار ملف",
+      "description": "يعيد مراجعات `path` بدءًا من الأحدث، 50 في الصفحة، لكل منها مُخرَجها والفاعل والوقت، وبالنسبة للاستعادة `sourceRevision` التي نُسخت (يكون الفاعل والوقت null في المراجعات المسجّلة بإصدارات الخادم المبكرة). تابع بضبط `before` على قيمة `next`. والمسار غير المعروف هو 404."
+    },
+    "getAssetRevision": {
+      "en": {
+        "summary": "Get one revision of a file path",
+        "description": "Returns revision `revision` of `path` with its artifact ID, actor, time and restore source. Revisions never change, so the artifact ID can be cached; download it with `downloadArtifact`. A missing path or revision is a 404."
+      },
+      "summary": "الحصول على مراجعة واحدة لمسار ملف",
+      "description": "يعيد المراجعة `revision` للمسار `path` مع معرّف مُخرَجها والفاعل والوقت ومصدر الاستعادة. المراجعات لا تتغير أبدًا، لذا يمكن تخزين معرّف المُخرَج مؤقتًا؛ ونزّله بـ `downloadArtifact`. والمسار أو المراجعة غير الموجودة يعطي 404."
+    },
+    "restoreAsset": {
+      "en": {
+        "summary": "Restore an earlier revision of a file path",
+        "description": "Adds a new revision of `path` that points at the artifact of `sourceRevision`; nothing is copied and no revision is removed. `expectedRevision` must be the current revision (at least 1), otherwise 409 `revision_mismatch` — so repeating a restore that already succeeded is a 409, not a second restore. The new revision records `sourceRevision`, and the change is audited in the same transaction."
+      },
+      "summary": "استعادة مراجعة سابقة لمسار ملف",
+      "description": "يضيف مراجعة جديدة للمسار `path` تشير إلى مُخرَج `sourceRevision`؛ ولا يُنسخ شيء ولا تُزال أي مراجعة. يجب أن تكون `expectedRevision` هي المراجعة الحالية (1 على الأقل)، وإلا كانت النتيجة 409 `revision_mismatch`، ولذلك فإن تكرار استعادة نجحت سابقًا يعطي 409 لا استعادة ثانية. تسجّل المراجعة الجديدة `sourceRevision`، ويُدقَّق التغيير في المعاملة نفسها."
+    },
+    "downloadAssetContent": {
+      "en": {
+        "summary": "Download a file by path",
+        "description": "Resolves `path` to its current revision and streams that artifact like `downloadArtifact`, with `Range`, `If-Range`, `If-None-Match` and HEAD. The path is resolved on every request, so resume with `If-Range` set to the returned ETag: after the path moved on, the answer is the whole new file instead of a mixed one. `downloadRawFile` does the same with the path in the URL."
+      },
+      "summary": "تنزيل ملف حسب المسار",
+      "description": "يحدد `path` إلى مراجعته الحالية ويبثّ مُخرَجها كما يفعل `downloadArtifact`، مع `Range` و`If-Range` و`If-None-Match` وHEAD. يُحدَّد المسار في كل طلب، لذا استأنف باستخدام `If-Range` مضبوطًا على ETag المُعاد: فإذا تغيّر المسار بعد ذلك كان الردّ هو الملف الجديد كاملًا بدلًا من ملف مختلط. ويفعل `downloadRawFile` الأمر نفسه والمسار في العنوان (URL)."
+    },
+    "putRawFile": {
+      "en": {
+        "summary": "Upload a file to a path in one request",
+        "description": "Stores the request body, of any media type, as the new revision of the path in the URL, for scripts and CI (`curl -T`); the answer is 201 with the path, revision and artifact. With `X-Checksum-Sha256` and `Content-Length` the bytes stream straight to storage and are verified; without them they are staged and hashed first (422 if the body does not match a given checksum). The same bytes as the current revision add nothing and answer 200 with `created: false`, `If-None-Match: *` only creates (409 `already_exists`), and a concurrent writer of the same path gets 409 `revision_mismatch`. For very large files prefer the resumable upload sessions."
+      },
+      "summary": "رفع ملف إلى مسار في طلب واحد",
+      "description": "يخزّن متن الطلب، من أي نوع وسائط، بوصفه المراجعة الجديدة للمسار الموجود في العنوان (URL)، للنصوص البرمجية (scripts) وأنظمة CI (`curl -T`)؛ والردّ 201 مع المسار والمراجعة والمُخرَج. مع `X-Checksum-Sha256` و`Content-Length` تُبثّ البايتات مباشرة إلى التخزين وتُتحقَّق؛ ومن دونهما تُحفظ مؤقتًا في منطقة التجهيز (staging) وتُحسَب تجزئتها أولًا (422 إذا لم يطابق المتن المجموع الاختباري المعطى). البايتات نفسها كالمراجعة الحالية لا تضيف شيئًا ويكون الردّ 200 مع `created: false`، و`If-None-Match: *` ينشئ فقط (409 `already_exists`)، وكاتب متزامن لنفس المسار يحصل على 409 `revision_mismatch`. وللملفات الكبيرة جدًا فضّل جلسات الرفع القابلة للاستئناف."
+    },
+    "downloadRawFile": {
+      "en": {
+        "summary": "Download a file by its URL path",
+        "description": "Streams the current revision of the path in the URL like `downloadArtifact`, with `Range`, `If-Range`, `If-None-Match`, HEAD and `X-Arkvory-Artifact-Id` naming the artifact. The path is resolved on every request, so resume with `If-Range` set to the returned ETag, or download the artifact by ID."
+      },
+      "summary": "تنزيل ملف عبر مسار العنوان",
+      "description": "يبثّ المراجعة الحالية للمسار الموجود في العنوان (URL) كما يفعل `downloadArtifact`، مع `Range` و`If-Range` و`If-None-Match` وHEAD، ويسمّي `X-Arkvory-Artifact-Id` المُخرَج. يُحدَّد المسار في كل طلب، لذا استأنف باستخدام `If-Range` مضبوطًا على ETag المُعاد، أو نزّل المُخرَج بمعرّفه."
+    },
+    "listArtifactStages": {
+      "en": {
+        "summary": "List the stages of an artifact",
+        "description": "Returns the current promotion stages of a published artifact (at most 16), each with the time it was added, the actor and the comment."
+      },
+      "summary": "عرض قائمة مراحل مُخرَج",
+      "description": "يعيد مراحل الترقية الحالية لمُخرَج منشور (16 كحد أقصى)، لكل منها وقت إضافتها والفاعل والتعليق."
+    },
+    "setArtifactStage": {
+      "en": {
+        "summary": "Add a stage to an artifact",
+        "description": "Marks a published artifact with `stage` (1–32 lower-case letters, digits or `_.-`, starting with a letter or digit), with an optional `comment` of up to 1024 characters, and records the event in the promotion journal. Adding a stage the artifact already has changes nothing and keeps the original time, so to promote the same version again (for a rollback with `order=promoted`) remove the stage first. An artifact has at most 16 stages (409 `stage_limit`)."
+      },
+      "summary": "إضافة مرحلة إلى مُخرَج",
+      "description": "يعلّم مُخرَجًا منشورًا بالمرحلة `stage` (من 1 إلى 32 حرفًا لاتينيًا صغيرًا أو رقمًا أو `_.-`، على أن تبدأ بحرف أو رقم)، مع `comment` اختياري حتى 1024 حرفًا، ويسجّل الحدث في سجل الترقيات. إضافة مرحلة موجودة بالفعل للمُخرَج لا تغيّر شيئًا وتُبقي الوقت الأصلي، لذا فلترقية الإصدار نفسه مرة أخرى (للتراجع بـ `order=promoted`) أزل المرحلة أولًا. للمُخرَج 16 مرحلة كحد أقصى (409 `stage_limit`)."
+    },
+    "removeArtifactStage": {
+      "en": {
+        "summary": "Remove a stage from an artifact",
+        "description": "Removes `stage` from a published artifact and records the event in the promotion journal; removing a stage the artifact does not have succeeds too. Package resolution by this stage stops choosing the artifact at once."
+      },
+      "summary": "إزالة مرحلة من مُخرَج",
+      "description": "يزيل `stage` من مُخرَج منشور ويسجّل الحدث في سجل الترقيات؛ وإزالة مرحلة ليست لدى المُخرَج تنجح هي الأخرى. ويتوقف تحديد الحزمة حسب هذه المرحلة عن اختيار المُخرَج فورًا."
+    },
+    "listArtifactPromotions": {
+      "en": {
+        "summary": "List the promotion history of an artifact",
+        "description": "Returns the journal of one artifact, oldest first: stages added and removed, promotions to and from other repositories with the peer artifact, actor, comment and time. Pages hold `limit` events (1–100, default 50); continue with `after` set to `next`."
+      },
+      "summary": "عرض سجل ترقيات مُخرَج",
+      "description": "يعيد سجل مُخرَج واحد بدءًا من الأقدم: المراحل المضافة والمزالة، والترقيات إلى مستودعات أخرى ومنها مع المُخرَج المقابل والفاعل والتعليق والوقت. تحتوي الصفحة على `limit` حدثًا (من 1 إلى 100، والافتراضي 50)؛ وللمتابعة اضبط `after` على قيمة `next`."
+    },
+    "promoteArtifact": {
+      "en": {
+        "summary": "Promote an artifact to another repository",
+        "description": "Publishes the artifact in `target` without sending the bytes again, optionally with `stages` and a `comment`; the caller also needs `artifact.promote` in the target. `mode` `copy` (default) keeps the source; `move`, which needs `artifact.promote` here as well, retires the source in the same transaction, carries its stages over and is refused with 409 when the source cannot be deleted. The answer is 201 with the copy; a repeat returns the same copy with 200, and a target that already has this package version returns that artifact when the SHA-256 matches and a 409 `version_exists` when it does not. Build attachments and file paths are not carried over."
+      },
+      "summary": "ترقية مُخرَج إلى مستودع آخر",
+      "description": "ينشر المُخرَج في `target` دون إرسال البايتات مرة أخرى، مع `stages` و`comment` اختياريين؛ ويحتاج المستدعي أيضًا إلى `artifact.promote` في الهدف. يحدد `mode` السلوك: `copy` (الافتراضي) يُبقي المصدر؛ أما `move`، الذي يحتاج إلى `artifact.promote` هنا أيضًا، فيسحب المصدر في المعاملة نفسها وينقل مراحله، ويُرفض بالخطأ 409 إذا تعذّر حذف المصدر. الردّ 201 مع النسخة؛ وتكراره يعيد النسخة نفسها مع 200؛ وإذا كان الهدف يحوي إصدار الحزمة نفسه أعاد ذلك المُخرَج عند تطابق SHA-256، وأعاد 409 `version_exists` عند عدم تطابقه. ولا تُنقل مرفقات نسخة البناء ولا مسارات الملفات."
+    },
+    "listStagedArtifacts": {
+      "en": {
+        "summary": "List artifacts with stages",
+        "description": "Lists the stage entries of the repository (artifact, stage, time, actor, comment) ordered by artifact and stage, optionally only `stage`, or only the artifacts in `ids` (1–100 comma-separated IDs, for example to show the stages of a page of packages at once). Pages hold `limit` entries (1–100, default 100); continue with `after` set to `next` (`<artifactId>/<stage>`)."
+      },
+      "summary": "عرض قائمة المُخرَجات ذات المراحل",
+      "description": "يسرد مدخلات المراحل في المستودع (المُخرَج والمرحلة والوقت والفاعل والتعليق) مرتبةً حسب المُخرَج والمرحلة، ويمكن حصرها في `stage` معيّنة، أو في المُخرَجات المذكورة في `ids` فقط (من 1 إلى 100 معرّف مفصولة بفواصل، مثلًا لعرض مراحل صفحة من الحزم دفعة واحدة). تحتوي الصفحة على `limit` مدخلًا (من 1 إلى 100، والافتراضي 100)؛ وللمتابعة اضبط `after` على قيمة `next` (`<artifactId>/<stage>`)."
+    },
+    "listRepositoryPromotions": {
+      "en": {
+        "summary": "Follow the promotion journal of a repository",
+        "description": "Returns the stage and promotion events of every artifact in the repository, oldest first, for CI/CD to poll: stage added or removed, promoted to another repository, received from one. Pages hold `limit` events (1–100, default 50); store the last `sequence` and continue with `after` set to `next`."
+      },
+      "summary": "متابعة سجل ترقيات مستودع",
+      "description": "يعيد أحداث المراحل والترقيات لكل مُخرَج في المستودع، بدءًا من الأقدم، ليستطلعها CI/CD: إضافة مرحلة أو إزالتها، والترقية إلى مستودع آخر، والاستلام من مستودع. تحتوي الصفحة على `limit` حدثًا (من 1 إلى 100، والافتراضي 50)؛ احفظ آخر `sequence` وتابع بضبط `after` على قيمة `next`."
+    },
+    "resolvePackage": {
+      "en": {
+        "summary": "Resolve a package version",
+        "description": "Chooses one registered UPack version by the same rules as `downloadPackageContent` and returns it without the bytes: version, artifact ID, SHA-256, size, publication time and current stages. `name` is required, `group` defaults to the root group; select by exact `version` or SemVer `range`, optionally `stage`, `prerelease=true` and `order=promoted` (needs `stage`); without `version` and `range` it is the highest stable version. No match is a 404; download the result by artifact ID to stay on that version."
+      },
+      "summary": "تحديد إصدار حزمة",
+      "description": "يختار إصدار UPack مسجّلًا واحدًا بالقواعد نفسها المتبعة في `downloadPackageContent` ويعيده دون البايتات: الإصدار ومعرّف المُخرَج وSHA-256 والحجم ووقت النشر والمراحل الحالية. `name` مطلوب، و`group` افتراضيًا المجموعة الجذرية؛ ويتم الاختيار بـ `version` مطابق تمامًا أو بنطاق SemVer `range`، ويمكن إضافة `stage` و`prerelease=true` و`order=promoted` (يتطلب `stage`)؛ وبدون `version` و`range` يكون الناتج أعلى إصدار مستقر. غياب أي تطابق هو 404؛ ونزّل النتيجة بمعرّف المُخرَج لتبقى على ذلك الإصدار."
+    },
+    "inspectArtifactDeletion": {
+      "en": {
+        "summary": "Check whether an artifact can be deleted",
+        "description": "Returns the artifact's name, size, publication time, current `annotationRevision` and the `blockers` that would keep it from deletion: `reference` (an external reference, or use by a container image, Git LFS or npm), `asset_history` (a current or earlier file path revision), `attachment_history` or `promotion_stage`. Nothing changes; pass the revision to `deleteArtifact` as `expectedAnnotationRevision`."
+      },
+      "summary": "فحص إمكانية حذف مُخرَج",
+      "description": "يعيد اسم المُخرَج وحجمه ووقت نشره و`annotationRevision` الحالية و`blockers` التي تمنع حذفه: `reference` (مرجع خارجي، أو استخدام من صورة حاوية أو Git LFS أو npm)، و`asset_history` (مراجعة حالية أو سابقة لمسار ملف)، و`attachment_history` أو `promotion_stage`. لا يتغير شيء؛ ومرّر المراجعة إلى `deleteArtifact` بوصفها `expectedAnnotationRevision`."
+    },
+    "previewRetention": {
+      "en": {
+        "summary": "Preview retention candidates",
+        "description": "Lists the published artifacts released before `criteria.publishedBefore` (a past UTC time with milliseconds), ordered by ID, each with its annotation revision and blockers, `protected_label` meaning one of `criteria.protectedLabels` (an explicit list of up to 32). Pages hold `limit` items (1–100, default 50); continue with `after` set to `next`. Nothing is reserved: choose the items to delete and pass them with their revisions to `applyRetention`, which checks them again."
+      },
+      "summary": "معاينة المرشحين للحذف حسب الاحتفاظ",
+      "description": "يسرد المُخرَجات المنشورة التي نُشرت قبل `criteria.publishedBefore` (وقت UTC ماضٍ بالميلي ثانية)، مرتبةً حسب المعرّف، لكل منها مراجعة التعليقات التوضيحية والعوائق، و`protected_label` تعني إحدى `criteria.protectedLabels` (قائمة صريحة حتى 32). تحتوي الصفحة على `limit` عنصرًا (من 1 إلى 100، والافتراضي 50)؛ وللمتابعة اضبط `after` على قيمة `next`. لا يُحجز شيء: اختر العناصر المراد حذفها ومرّرها مع مراجعاتها إلى `applyRetention`، الذي يفحصها من جديد."
+    },
+    "applyRetention": {
+      "en": {
+        "summary": "Delete the selected retention candidates",
+        "description": "Rechecks 1–100 artifacts chosen from `previewRetention` (`items` with `id` and `expectedAnnotationRevision`) against the same `criteria` and logically deletes the eligible ones in one transaction. Each item gets an `outcome`: `deleted`, `already_deleted`, `changed` (the annotations changed), `not_eligible` (published too late), `protected` with its blockers, or `not_found`. The bytes stay reserved until the repository's online cleanup reclaims them."
+      },
+      "summary": "حذف المرشحين المختارين حسب الاحتفاظ",
+      "description": "يعيد فحص ما بين 1 و100 مُخرَج اختيرت من `previewRetention` (`items` فيها `id` و`expectedAnnotationRevision`) مقابل `criteria` نفسها، ويحذف المؤهّل منها حذفًا منطقيًا في معاملة واحدة. يحصل كل عنصر على `outcome`: `deleted` أو `already_deleted` أو `changed` (تغيّرت التعليقات التوضيحية) أو `not_eligible` (نُشر بعد الموعد) أو `protected` مع عوائقه، أو `not_found`. وتبقى البايتات محجوزة إلى أن يستردها التنظيف الفعلي أثناء التشغيل في المستودع."
+    },
+    "getStoragePolicy": {
+      "en": {
+        "summary": "Get the storage policy",
+        "description": "Returns the repository's automatic cleanup and quota settings with their `revision`, the next and last scheduled run, how many builds the last run deleted and its error. By default the policy is disabled and there is no repository quota (the server-wide capacity still applies)."
+      },
+      "summary": "الحصول على سياسة التخزين",
+      "description": "يعيد إعدادات التنظيف التلقائي وحصة التخزين في المستودع مع `revision`، وموعد التشغيل المقبل والأخير، وعدد نسخ البناء التي حذفها التشغيل الأخير وخطأه. السياسة معطّلة افتراضيًا ولا توجد حصة للمستودع (تظل سعة الخادم الإجمالية سارية)."
+    },
+    "setStoragePolicy": {
+      "en": {
+        "summary": "Replace the storage policy",
+        "description": "Replaces the whole policy: keep the last `keepLast` registered UPack builds per package, per channel label (`channels`) or per repository (`grouping`), never delete `protectedLabels` or builds younger than `minAgeHours`, run every `intervalMinutes`, and limit the repository with `quotaBytes` (a decimal string, `null` for none) and its warning thresholds. `expectedRevision` must be the current revision, otherwise 409 `revision_mismatch`. Enabling also needs `artifact.delete` and ties the schedule to the calling managed key: once that key is revoked, expires or loses these permissions, scheduled deletion stops until the policy is saved with another key. Ordinary files count against the quota but are never deleted by it."
+      },
+      "summary": "استبدال سياسة التخزين",
+      "description": "يستبدل السياسة كلها: الاحتفاظ بآخر `keepLast` من نسخ بناء UPack المسجّلة لكل حزمة، أو لكل تسمية قناة (`channels`)، أو لكل مستودع (`grouping`)، وعدم حذف `protectedLabels` ولا نسخ البناء الأحدث من `minAgeHours`، والتشغيل كل `intervalMinutes`، وتقييد المستودع بـ `quotaBytes` (سلسلة نصية عشرية، و`null` لعدم وجود حصة) وعتبات التحذير الخاصة بها. يجب أن تكون `expectedRevision` هي المراجعة الحالية، وإلا كانت النتيجة 409 `revision_mismatch`. ويتطلب التفعيل أيضًا `artifact.delete` ويربط الجدولة بمفتاح الخدمة المُدار الذي استدعى العملية: فإذا أُبطل هذا المفتاح أو انتهت صلاحيته أو فقد هذه الأذونات توقف الحذف المجدول إلى أن تُحفظ السياسة بمفتاح آخر. والملفات العادية تُحتسب من الحصة لكنها لا تُحذف بها أبدًا."
+    },
+    "getStorageUsage": {
+      "en": {
+        "summary": "Get the storage usage of a repository",
+        "description": "Returns the bytes reserved by the repository as decimal strings: published, pending uploads and retired (deleted or cancelled, not yet reclaimed), their sum `reservedBytes`, the quota and a `state` (`unlimited`, `normal`, `warning`, `critical`, `exceeded`). This is the logical reservation counted against the quota, not the space used on disk."
+      },
+      "summary": "الحصول على استخدام التخزين في مستودع",
+      "description": "يعيد البايتات التي حجزها المستودع كسلاسل نصية عشرية: المنشورة وعمليات الرفع المعلّقة والمسحوبة (المحذوفة أو الملغاة ولم تُستعَد مساحتها بعد)، ومجموعها `reservedBytes`، والحصة، و`state` (`unlimited` أو `normal` أو `warning` أو `critical` أو `exceeded`). هذا هو الحجز المنطقي المحسوب على الحصة، وليس المساحة المستخدمة على القرص."
+    },
+    "previewStoragePolicy": {
+      "en": {
+        "summary": "Preview what the storage policy would delete",
+        "description": "Returns up to 100 registered builds the saved policy would delete now (even while it is disabled), with the policy `revision` and `hasMore`; builds kept by references, file paths, attachments, protected labels or age are left out. Nothing is reserved: a run ranks the builds again."
+      },
+      "summary": "معاينة ما ستحذفه سياسة التخزين",
+      "description": "يعيد حتى 100 من نسخ البناء المسجّلة التي ستحذفها السياسة المحفوظة الآن (حتى وهي معطّلة)، مع `revision` للسياسة و`hasMore`؛ ولا تظهر النسخ التي تحتفظ بها المراجع أو مسارات الملفات أو المرفقات أو التسميات المحمية أو العمر. لا يُحجز شيء: فكل تشغيل يعيد ترتيب نسخ البناء من جديد."
+    },
+    "runStoragePolicy": {
+      "en": {
+        "summary": "Run the storage policy now",
+        "description": "Runs one batch of the enabled policy at once instead of waiting for the schedule: it ranks the builds again, checks permissions and dependencies, and logically deletes up to 100, returning an outcome for each. `expectedRevision` must be the current policy revision and the policy must be enabled, otherwise 409. The bytes are reclaimed later by the repository's online cleanup, which has its own policy (`setCleanup`)."
+      },
+      "summary": "تشغيل سياسة التخزين الآن",
+      "description": "يشغّل دفعة واحدة من السياسة المفعّلة فورًا بدلًا من انتظار الجدولة: يعيد ترتيب نسخ البناء، ويفحص الأذونات والتبعيات، ويحذف حذفًا منطقيًا حتى 100 منها، ويعيد نتيجة لكل نسخة. يجب أن تكون `expectedRevision` هي مراجعة السياسة الحالية وأن تكون السياسة مفعّلة، وإلا كانت النتيجة 409. وتُستعاد البايتات لاحقًا بالتنظيف الفعلي أثناء التشغيل في المستودع، وله سياسته الخاصة (`setCleanup`)."
+    },
+    "getStorageEvents": {
+      "en": {
+        "summary": "List the storage events of a repository",
+        "description": "Returns up to 100 diagnostic events of storage policies, quotas, retention and cleanup after the sequence `after` (default 0), oldest first, each with level, code and a few details; `level` (`info`, `warning`, `error`) filters them, continue with `after` set to `next`. Only the newest 1000 events per repository and 20 000 overall are kept, so export them for longer retention."
+      },
+      "summary": "عرض قائمة أحداث التخزين لمستودع",
+      "description": "يعيد حتى 100 حدث تشخيصي لسياسات التخزين والحصص والاحتفاظ والتنظيف بعد التسلسل `after` (الافتراضي 0)، بدءًا من الأقدم، لكل منها المستوى والرمز وبعض التفاصيل؛ ويرشّحها `level` (`info` أو `warning` أو `error`)، وللمتابعة اضبط `after` على قيمة `next`. لا يُحتفظ إلا بأحدث 1000 حدث لكل مستودع و20 000 حدث إجمالًا، لذا صدّرها إن أردت احتفاظًا أطول."
+    },
+    "getCleanup": {
+      "en": {
+        "summary": "Get the online cleanup settings",
+        "description": "Returns the repository's online cleanup policy with its `revision` (`enabled`, `graceHours`, `batchSize`, `intervalSeconds`, `delayMilliseconds`), the last and next run, and how many objects the last batch reclaimed, deferred or failed with the bytes freed. Cleanup is what physically removes cancelled uploads and deleted artifacts; it is off by default."
+      },
+      "summary": "الحصول على إعدادات التنظيف الفعلي أثناء التشغيل",
+      "description": "يعيد سياسة التنظيف الفعلي أثناء التشغيل للمستودع مع `revision` الخاصة بها (`enabled` و`graceHours` و`batchSize` و`intervalSeconds` و`delayMilliseconds`)، وآخر تشغيل والتشغيل التالي، وعدد الكائنات التي استعادتها الدفعة الأخيرة أو أجّلتها أو فشلت فيها، مع البايتات المحرَّرة. التنظيف هو ما يزيل فعليًا عمليات الرفع الملغاة والمُخرَجات المحذوفة؛ وهو معطّل افتراضيًا."
+    },
+    "setCleanup": {
+      "en": {
+        "summary": "Configure online cleanup",
+        "description": "Replaces the cleanup policy while the server runs: `enabled` (also to pause), `graceHours` (0–8760, how long deleted content stays before removal), `batchSize` (1–100 objects), `intervalSeconds` (5–86400) and `delayMilliseconds` (0–1000 between objects). `expectedRevision` must be the current revision (0 before the first change), otherwise 409 `revision_mismatch`. A change takes effect between objects, never halfway through one."
+      },
+      "summary": "ضبط التنظيف الفعلي أثناء التشغيل",
+      "description": "يستبدل سياسة التنظيف أثناء عمل الخادم: `enabled` (وكذلك للإيقاف المؤقت)، و`graceHours` (من 0 إلى 8760، وهي المدة التي يبقى فيها المحتوى المحذوف قبل إزالته)، و`batchSize` (من 1 إلى 100 كائن)، و`intervalSeconds` (من 5 إلى 86400)، و`delayMilliseconds` (من 0 إلى 1000 بين كائن وآخر). يجب أن تكون `expectedRevision` هي المراجعة الحالية (0 قبل أول تغيير)، وإلا كانت النتيجة 409 `revision_mismatch`. ويسري التغيير بين الكائنات، ولا يسري أبدًا في منتصف أحدها."
+    },
+    "requestCleanup": {
+      "en": {
+        "summary": "Request a cleanup batch now",
+        "description": "Schedules the next batch of the enabled cleanup policy to start at once; the answer is the cleanup state, and the bytes are freed only when the batch has run (see `lastRunAt` in `getCleanup`). `expectedRevision` must be the current revision; a disabled cleanup is a 409 `state_conflict`. Objects that are being read or written are deferred to a later batch."
+      },
+      "summary": "طلب دفعة تنظيف الآن",
+      "description": "يجدول بدء الدفعة التالية من سياسة التنظيف المفعّلة فورًا؛ والردّ هو حالة التنظيف، ولا تتحرر البايتات إلا بعد تشغيل الدفعة (انظر `lastRunAt` في `getCleanup`). يجب أن تكون `expectedRevision` هي المراجعة الحالية؛ والتنظيف المعطّل يعطي 409 `state_conflict`. الكائنات التي تجري قراءتها أو كتابتها تُؤجَّل إلى دفعة لاحقة."
+    },
+    "getRepositoryMirror": {
+      "en": {
+        "summary": "Get the synchronization state of a mirror",
+        "description": "For a repository this server mirrors from another Arkvory (configured in `ARKVORY_MIRRORS_FILE`), returns the source, the `mode` (`mirror`, a read-only copy, or `import`, which takes over versions with the listed `stages`), the `phase` (`pending`, `seeding`, `following`), the applied `cursor` and the source `head`, `caughtUp`, the last check, sync and error, and the artifacts and bytes copied. Sequences are journal numbers of the source, so their difference is not a count of changes. An ordinary repository answers 404."
+      },
+      "summary": "الحصول على حالة مزامنة مرآة",
+      "description": "بالنسبة لمستودع يعكسه هذا الخادم من Arkvory آخر (مضبوط في `ARKVORY_MIRRORS_FILE`)، يعيد المصدر، و`mode` (`mirror` وهي نسخة للقراءة فقط، أو `import` الذي يتسلّم الإصدارات ذات `stages` المذكورة)، و`phase` (`pending` أو `seeding` أو `following`)، و`cursor` المطبَّق و`head` للمصدر، و`caughtUp`، وآخر فحص ومزامنة وخطأ، والمُخرَجات والبايتات المنسوخة. التسلسلات هي أرقام سجل المصدر، لذا فالفرق بينها ليس عدد التغييرات. والمستودع العادي يردّ بـ 404."
+    },
+    "getBuildAttachments": {
+      "en": {
+        "summary": "Get the attachments of a build",
+        "description": "Returns the current attachment revision of an artifact: up to 32 entries, each naming another published artifact of the repository with a `name`, a `kind` (`manifest`, `sbom`, `signature`, `report`, `file`) and a `description`, plus the actor and time of the change. Revision 0 with no items means nothing was ever attached. Download an attached file by its `artifactId`."
+      },
+      "summary": "الحصول على مرفقات نسخة بناء",
+      "description": "يعيد مراجعة المرفقات الحالية لمُخرَج: حتى 32 مدخلًا، يسمّي كل منها مُخرَجًا منشورًا آخر في المستودع مع `name` و`kind` (`manifest` أو `sbom` أو `signature` أو `report` أو `file`) و`description`، إضافةً إلى الفاعل ووقت التغيير. المراجعة 0 بلا عناصر تعني أن شيئًا لم يُرفق قط. نزّل الملف المرفق بـ `artifactId` الخاص به."
+    },
+    "replaceBuildAttachments": {
+      "en": {
+        "summary": "Replace the attachments of a build",
+        "description": "Replaces the whole attachment list of an artifact (up to 32 entries; an empty list removes them all) and returns the new revision. Each target must be another artifact already published in the same repository (upload it first), names are unique ignoring case and descriptions have up to 512 characters. `expectedRevision` must be the current revision (0 for the first list), otherwise 409 `revision_mismatch`; artifacts named in any revision stay protected from deletion."
+      },
+      "summary": "استبدال مرفقات نسخة بناء",
+      "description": "يستبدل قائمة مرفقات المُخرَج كلها (حتى 32 مدخلًا؛ وقائمة فارغة تزيلها جميعًا) ويعيد المراجعة الجديدة. يجب أن يكون كل هدف مُخرَجًا آخر منشورًا بالفعل في المستودع نفسه (ارفعه أولًا)، والأسماء فريدة دون مراعاة حالة الأحرف، وللأوصاف حتى 512 حرفًا. يجب أن تكون `expectedRevision` هي المراجعة الحالية (0 للقائمة الأولى)، وإلا كانت النتيجة 409 `revision_mismatch`؛ وتبقى المُخرَجات المذكورة في أي مراجعة محمية من الحذف."
+    },
+    "getBuildAttachmentHistory": {
+      "en": {
+        "summary": "List the attachment history of a build",
+        "description": "Returns the earlier and current attachment revisions of an artifact, newest first, 20 per page, each with its entries, actor and time; continue with `before` set to `next`. The attached artifacts of every revision remain downloadable, because they are protected from deletion."
+      },
+      "summary": "عرض سجل مرفقات نسخة بناء",
+      "description": "يعيد مراجعات المرفقات السابقة والحالية لمُخرَج، بدءًا من الأحدث، 20 في الصفحة، لكل منها مدخلاتها والفاعل والوقت؛ وتابع بضبط `before` على قيمة `next`. تبقى المُخرَجات المرفقة في كل مراجعة قابلة للتنزيل لأنها محمية من الحذف."
+    },
+    "login": {
+      "en": {
+        "summary": "Sign in",
+        "description": "Exchanges an account `name` and `password` for a bearer session `token` valid for 12 hours, with its `expiresAt` and the account; send it as `Authorization: Bearer`. An unknown name, a wrong password and a disabled account all answer the same 401 `invalid_credentials`. Attempts are throttled per client address and per account (429 `rate_limited` with Retry-After), and an account keeps at most 32 sessions: a new one ends the oldest."
+      },
+      "summary": "تسجيل الدخول",
+      "description": "يبادل `name` و`password` لحساب برمز جلسة `token` من نوع Bearer صالح لمدة 12 ساعة، مع `expiresAt` والحساب؛ أرسله بالصيغة `Authorization: Bearer`. الاسم غير المعروف وكلمة المرور الخاطئة والحساب المعطّل تعطي كلها الردّ نفسه: 401 `invalid_credentials`. تُقيَّد وتيرة المحاولات لكل عنوان عميل ولكل حساب (429 `rate_limited` مع Retry-After)، ويحتفظ الحساب بما لا يزيد على 32 جلسة: وجلسة جديدة تنهي الأقدم."
+    },
+    "registerAccount": {
+      "en": {
+        "summary": "Register an account",
+        "description": "Creates an ordinary account (never an administrator) with `name` (3–64 letters, digits or `_.-`) and `password` (12–128 characters) and signs it in, answering 201 with a 12-hour session like `login`. Works only when the server allows self-registration (see `getAuthOptions`), otherwise 403 `registration_disabled`; a taken name is a 409 `already_exists`. Attempts are throttled per client address (429 with Retry-After), and self-registration stops at 900 accounts."
+      },
+      "summary": "تسجيل حساب",
+      "description": "ينشئ حسابًا عاديًا (وليس مسؤولًا أبدًا) بـ `name` (من 3 إلى 64 حرفًا من الأحرف والأرقام أو `_.-`) و`password` (من 12 إلى 128 حرفًا) ويسجّل دخوله، ويردّ بـ 201 مع جلسة مدتها 12 ساعة كما في `login`. يعمل فقط عندما يسمح الخادم بالتسجيل الذاتي (انظر `getAuthOptions`)، وإلا كان 403 `registration_disabled`؛ والاسم المأخوذ هو 409 `already_exists`. تُقيَّد وتيرة المحاولات لكل عنوان عميل (429 مع Retry-After)، ويتوقف التسجيل الذاتي عند 900 حساب."
+    },
+    "getAuthOptions": {
+      "en": {
+        "summary": "Get the sign-in options",
+        "description": "Tells a console before sign-in which forms to show: `selfRegistration` is true when `registerAccount` is open on this server."
+      },
+      "summary": "الحصول على خيارات تسجيل الدخول",
+      "description": "يخبر وحدة التحكم قبل تسجيل الدخول بالنماذج التي ينبغي عرضها: تكون `selfRegistration` صحيحة (true) عندما تكون `registerAccount` متاحة على هذا الخادم."
+    },
+    "listUserTokens": {
+      "en": {
+        "summary": "List your personal access tokens",
+        "description": "Lists the personal access tokens of the signed-in account, active first, with name, prefix, scope, creation, expiry, last use and whether it is revoked; the secrets are never shown again."
+      },
+      "summary": "عرض قائمة رموز الوصول الشخصية الخاصة بك",
+      "description": "يسرد رموز الوصول الشخصية للحساب الذي سجّل دخوله، الفعّالة أولًا، مع الاسم والبادئة والنطاق وتاريخ الإنشاء والانتهاء وآخر استخدام وما إذا كان الرمز مُبطَلًا؛ ولا تُعرض الأسرار مرة أخرى أبدًا."
+    },
+    "createUserToken": {
+      "en": {
+        "summary": "Create a personal access token",
+        "description": "Creates a token for scripts and tools that acts as the signed-in account; the secret is in this answer only. `name` has 1–64 characters, `expiresAt` defaults to 90 days and must lie in the future and within 365 days, and `scope` is `read-write` (default) or `read`, which can never change anything. Tokens never carry administrator rights, cannot create tokens, and an account has at most 50 active ones (507 `token_limit`)."
+      },
+      "summary": "إنشاء رمز وصول شخصي",
+      "description": "ينشئ رمزًا للنصوص البرمجية والأدوات يعمل بصفة الحساب الذي سجّل دخوله؛ ويظهر السر في هذه الإجابة فقط. لـ `name` من 1 إلى 64 حرفًا، وتكون `expiresAt` افتراضيًا بعد 90 يومًا ويجب أن تقع في المستقبل وخلال 365 يومًا، و`scope` هي `read-write` (الافتراضي) أو `read` الذي لا يستطيع تغيير أي شيء أبدًا. الرموز لا تحمل صلاحيات المسؤول أبدًا ولا تستطيع إنشاء رموز، وللحساب 50 رمزًا فعّالًا كحد أقصى (507 `token_limit`)."
+    },
+    "revokeUserToken": {
+      "en": {
+        "summary": "Revoke your personal access token",
+        "description": "Revokes one personal access token of the signed-in account; requests with it fail from now on. Revoking an already revoked token succeeds as well."
+      },
+      "summary": "إبطال رمز الوصول الشخصي الخاص بك",
+      "description": "يبطل رمز وصول شخصي واحدًا للحساب الذي سجّل دخوله؛ وتفشل الطلبات التي تحمله من الآن فصاعدًا. وإبطال رمز مُبطَل بالفعل ينجح هو الآخر."
+    },
+    "logout": {
+      "en": {
+        "summary": "Sign out",
+        "description": "Ends the account session sent in `Authorization`; its token stops working at once. With any other credential (a personal token or a service key) it answers 204 and revokes nothing."
+      },
+      "summary": "تسجيل الخروج",
+      "description": "ينهي جلسة الحساب المرسلة في `Authorization`؛ ويتوقف رمزها عن العمل فورًا. ومع أي بيانات اعتماد أخرى (رمز شخصي أو مفتاح خدمة) يردّ بـ 204 ولا يُبطل شيئًا."
+    },
+    "changeOwnPassword": {
+      "en": {
+        "summary": "Change your password",
+        "description": "Sets `newPassword` (12–128 characters) after checking `currentPassword`; a wrong current password is a 401 `current_password_invalid` and counts toward the sign-in backoff. On success every session and every personal access token of the account is revoked, including the current session, so sign in again."
+      },
+      "summary": "تغيير كلمة مرورك",
+      "description": "يعيّن `newPassword` (من 12 إلى 128 حرفًا) بعد التحقق من `currentPassword`؛ وكلمة المرور الحالية الخاطئة هي 401 `current_password_invalid` وتُحتسب ضمن التأخير المتصاعد لتسجيل الدخول (backoff). وعند النجاح تُبطَل كل جلسات الحساب وكل رموز الوصول الشخصية الخاصة به، بما في ذلك الجلسة الحالية، لذا سجّل الدخول من جديد."
+    },
+    "getCurrentPrincipal": {
+      "en": {
+        "summary": "Get the current identity",
+        "description": "Returns who the credential belongs to: its `id`, whether it is an administrator, the credential kind (`session`, `personal-token`, `service-key` or `file-key`), the scope of a personal token, and the repositories it has `read` or `write` access to. Use it to show the signed-in user and to choose a repository; for the exact permissions of a managed service key use `getOwnPermissions`."
+      },
+      "summary": "الحصول على الهوية الحالية",
+      "description": "يعيد صاحب بيانات الاعتماد: `id` الخاص به، وما إذا كان مسؤولًا، ونوع بيانات الاعتماد (`session` أو `personal-token` أو `service-key` أو `file-key`)، ونطاق الرمز الشخصي، والمستودعات التي يملك لها وصول `read` أو `write`. استخدمه لعرض المستخدم الذي سجّل دخوله ولاختيار مستودع؛ أما الأذونات الدقيقة لمفتاح خدمة مُدار فاستخدم لها `getOwnPermissions`."
+    },
+    "listUsers": {
+      "en": {
+        "summary": "List accounts",
+        "description": "Lists all user accounts ordered by name, with ID, name, administrator flag and whether they are enabled. The server holds at most 1000 accounts."
+      },
+      "summary": "عرض قائمة الحسابات",
+      "description": "يسرد كل حسابات المستخدمين مرتبةً حسب الاسم، مع المعرّف والاسم وعلامة المسؤول وما إذا كانت الحسابات مفعّلة. يحتفظ الخادم بما لا يزيد على 1000 حساب."
+    },
+    "createUser": {
+      "en": {
+        "summary": "Create an account",
+        "description": "Creates an account with `name` (3–64 letters, digits or `_.-`), `password` (12–128 characters) and `administrator` (default false), and answers 201 with it. A taken name is a 409 `already_exists`; the server holds at most 1000 accounts (507 `account_limit`)."
+      },
+      "summary": "إنشاء حساب",
+      "description": "ينشئ حسابًا بـ `name` (من 3 إلى 64 حرفًا من الأحرف والأرقام أو `_.-`) و`password` (من 12 إلى 128 حرفًا) و`administrator` (الافتراضي false)، ويردّ بـ 201 معه. الاسم المأخوذ هو 409 `already_exists`؛ ويحتفظ الخادم بما لا يزيد على 1000 حساب (507 `account_limit`)."
+    },
+    "updateUser": {
+      "en": {
+        "summary": "Enable, disable or reset an account",
+        "description": "Changes `enabled` and/or sets a new `password` of an account; the administrator flag cannot be changed here. Disabling ends every session of the account and its personal tokens stop working while it stays disabled; a password reset ends every session and revokes every personal token."
+      },
+      "summary": "تفعيل حساب أو تعطيله أو إعادة تعيينه",
+      "description": "يغيّر `enabled` و/أو يعيّن `password` جديدة لحساب؛ ولا يمكن تغيير علامة المسؤول هنا. يُنهي التعطيل كل جلسات الحساب وتتوقف رموز وصوله الشخصية عن العمل ما دام معطّلًا؛ وإعادة تعيين كلمة المرور تُنهي كل الجلسات وتُبطل كل رمز شخصي."
+    },
+    "listAccountTokens": {
+      "en": {
+        "summary": "List the personal access tokens of an account",
+        "description": "Lists the personal access tokens of any account, active first, with name, prefix, scope, creation, expiry, last use and revocation; never the secrets. Use it to review automation before disabling or resetting the account."
+      },
+      "summary": "عرض قائمة رموز الوصول الشخصية لحساب",
+      "description": "يسرد رموز الوصول الشخصية لأي حساب، الفعّالة أولًا، مع الاسم والبادئة والنطاق والإنشاء والانتهاء وآخر استخدام والإبطال؛ ولا يعرض الأسرار أبدًا. استخدمه لمراجعة الأتمتة قبل تعطيل الحساب أو إعادة تعيينه."
+    },
+    "revokeAccountToken": {
+      "en": {
+        "summary": "Revoke a personal access token of an account",
+        "description": "Revokes one personal access token of the account `id`; requests with it fail from now on, and the event is recorded in the security audit. Revoking an already revoked token succeeds as well."
+      },
+      "summary": "إبطال رمز وصول شخصي لحساب",
+      "description": "يبطل رمز وصول شخصي واحدًا للحساب `id`؛ وتفشل الطلبات التي تحمله من الآن فصاعدًا، ويُسجَّل الحدث في تدقيق الأمان. وإبطال رمز مُبطَل بالفعل ينجح هو الآخر."
+    },
+    "listAccessGroups": {
+      "en": {
+        "summary": "List access groups",
+        "description": "Lists all access groups with their member account IDs and repository grants (`read` or `write`). The server holds at most 100 groups and 10 000 memberships and grants each."
+      },
+      "summary": "عرض قائمة مجموعات الوصول",
+      "description": "يسرد كل مجموعات الوصول مع معرّفات حسابات أعضائها ومنح المستودعات (`read` أو `write`). يحتفظ الخادم بما لا يزيد على 100 مجموعة، وبما لا يزيد على 10 000 عضوية و10 000 منحة."
+    },
+    "createAccessGroup": {
+      "en": {
+        "summary": "Create an access group",
+        "description": "Creates an empty group with `name` (2–64 letters, digits or `_.-`) and answers 201 with it; a taken name is a 409 `already_exists`. Add members with `addGroupMember` and repositories with `setGroupGrant`."
+      },
+      "summary": "إنشاء مجموعة وصول",
+      "description": "ينشئ مجموعة فارغة بـ `name` (من 2 إلى 64 حرفًا من الأحرف والأرقام أو `_.-`) ويردّ بـ 201 معها؛ والاسم المأخوذ هو 409 `already_exists`. أضف الأعضاء بـ `addGroupMember` والمستودعات بـ `setGroupGrant`."
+    },
+    "addGroupMember": {
+      "en": {
+        "summary": "Add an account to a group",
+        "description": "Makes the account `userId` a member of the group; it gains the group's repository access with its next request. Adding an existing member changes nothing; at most 10 000 memberships in all (507 `membership_limit`)."
+      },
+      "summary": "إضافة حساب إلى مجموعة",
+      "description": "يجعل الحساب `userId` عضوًا في المجموعة؛ ويكتسب وصول المجموعة إلى المستودعات مع طلبه التالي. وإضافة عضو موجود بالفعل لا تغيّر شيئًا؛ والحد 10 000 عضوية إجمالًا (507 `membership_limit`)."
+    },
+    "removeGroupMember": {
+      "en": {
+        "summary": "Remove an account from a group",
+        "description": "Removes the account `userId` from the group; the access it had through the group ends with its next request. Removing an account that is not a member succeeds as well."
+      },
+      "summary": "إزالة حساب من مجموعة",
+      "description": "يزيل الحساب `userId` من المجموعة؛ ويزول الوصول الذي كان يملكه عبر المجموعة مع طلبه التالي. وإزالة حساب ليس عضوًا تنجح هي الأخرى."
+    },
+    "setGroupGrant": {
+      "en": {
+        "summary": "Grant a group access to a repository",
+        "description": "Gives the group's members `access` `read` or `write` to `repository`, replacing an earlier grant of the group there; it applies from their next request. A repository needs no separate creation: the grant makes it visible to them. At most 10 000 grants in all (507 `grant_limit`)."
+      },
+      "summary": "منح مجموعة وصولًا إلى مستودع",
+      "description": "يمنح أعضاء المجموعة وصولًا `access` من نوع `read` أو `write` إلى `repository`، ويستبدل منحة سابقة للمجموعة هناك؛ ويسري من طلبهم التالي. لا يحتاج المستودع إلى إنشاء منفصل: المنحة تجعله مرئيًا لهم. والحد 10 000 منحة إجمالًا (507 `grant_limit`)."
+    },
+    "removeGroupGrant": {
+      "en": {
+        "summary": "Remove a group's access to a repository",
+        "description": "Removes the group's grant for `repository`; its members keep only the access they have through other groups. Removing a grant that does not exist succeeds as well."
+      },
+      "summary": "إزالة وصول مجموعة إلى مستودع",
+      "description": "يزيل منحة المجموعة للمستودع `repository`؛ ولا يحتفظ أعضاؤها إلا بالوصول الذي يملكونه عبر مجموعات أخرى. وإزالة منحة غير موجودة تنجح هي الأخرى."
+    },
+    "listSecurityAudit": {
+      "en": {
+        "summary": "Read the security audit",
+        "description": "Returns the append-only journal of sign-ins, registrations, account, group, grant, password and personal token changes, newest first, each with actor, credential kind, target, outcome and client address; throttled attempts are not journaled. Pages hold `limit` entries (1–100, default 50); continue with `after` set to `next`."
+      },
+      "summary": "قراءة تدقيق الأمان",
+      "description": "يعيد السجل الذي لا يقبل إلا الإلحاق (append-only) لتسجيلات الدخول والتسجيلات وتغييرات الحسابات والمجموعات والمنح وكلمات المرور ورموز الوصول الشخصية، بدءًا من الأحدث، لكل منها الفاعل ونوع بيانات الاعتماد والهدف والنتيجة وعنوان العميل؛ ولا تُسجَّل المحاولات المقيَّدة. تحتوي الصفحة على `limit` مدخلًا (من 1 إلى 100، والافتراضي 50)؛ وللمتابعة اضبط `after` على قيمة `next`."
+    },
+    "getOwnPermissions": {
+      "en": {
+        "summary": "Get your effective permissions",
+        "description": "Returns the caller's `profile` (`managed` for a managed service key, `legacy` otherwise), its key ID, its effective bindings (each repository with the exact actions allowed there) and whether it is the bootstrap service administrator. Use it to adapt a client; the server still checks every request, so a change of permissions applies at once."
+      },
+      "summary": "الحصول على أذوناتك الفعلية",
+      "description": "يعيد `profile` للمستدعي (`managed` لمفتاح خدمة مُدار، و`legacy` فيما عدا ذلك)، ومعرّف مفتاحه، وارتباطاته الفعلية (كل مستودع مع الإجراءات المسموحة فيه بدقة)، وما إذا كان مسؤول الخدمة الأولي (bootstrap). استخدمه لتكييف العميل؛ ومع ذلك يفحص الخادم كل طلب، لذا يسري أي تغيير في الأذونات فورًا."
+    },
+    "listServiceAccounts": {
+      "en": {
+        "summary": "List service accounts",
+        "description": "Lists the service accounts the caller may see, ordered by ID, 50 per page, each with name, enabled flag, `revision`, policy `bindings` and creation time; continue with `after` set to `next`. The bootstrap key sees all of them, a delegate only the targets where its delegation includes `service-account.read`; without that the list is empty rather than refused."
+      },
+      "summary": "عرض قائمة حسابات الخدمة",
+      "description": "يسرد حسابات الخدمة التي يجوز للمستدعي رؤيتها، مرتبةً حسب المعرّف، 50 في الصفحة، لكل منها الاسم وعلامة التفعيل و`revision` وارتباطات السياسة `bindings` ووقت الإنشاء؛ وللمتابعة اضبط `after` على قيمة `next`. يرى مفتاح التهيئة (bootstrap) كلها، أما المفوَّض فيرى فقط الأهداف التي يتضمن تفويضه فيها `service-account.read`؛ ومن دون ذلك تكون القائمة فارغة لا مرفوضة."
+    },
+    "createServiceAccount": {
+      "en": {
+        "summary": "Create a service account",
+        "description": "Creates a machine identity for CI or an application with `name` (3–64 letters, digits or `_.-`) and its policy `bindings`: for each repository, the exact actions its keys may use (such as `upload.create` or `content.read`). Answers 201 with the account; then issue a key with `issueServiceKey`. A taken name is a 409 `already_exists`."
+      },
+      "summary": "إنشاء حساب خدمة",
+      "description": "ينشئ هوية آلية لـ CI أو لتطبيق بـ `name` (من 3 إلى 64 حرفًا من الأحرف والأرقام أو `_.-`) وارتباطات سياسته `bindings`: لكل مستودع، الإجراءات الدقيقة التي يجوز لمفاتيحه استخدامها (مثل `upload.create` أو `content.read`). يردّ بـ 201 مع الحساب؛ ثم أصدر مفتاحًا بـ `issueServiceKey`. والاسم المأخوذ هو 409 `already_exists`."
+    },
+    "getServiceAccount": {
+      "en": {
+        "summary": "Get a service account",
+        "description": "Returns the account's name, enabled flag, `revision`, policy bindings and creation time. For a delegate, an account it was not assigned answers 404 and a missing action on an assigned one 403."
+      },
+      "summary": "الحصول على حساب خدمة",
+      "description": "يعيد اسم الحساب وعلامة التفعيل و`revision` وارتباطات السياسة ووقت الإنشاء. وبالنسبة للمفوَّض، فإن حسابًا لم يُسنَد إليه يعطي 404، وغياب إجراء على حساب مُسنَد إليه يعطي 403."
+    },
+    "updateServiceAccount": {
+      "en": {
+        "summary": "Enable or disable a service account",
+        "description": "Sets `enabled`; `expectedRevision` must be the current revision, otherwise 409 `revision_mismatch`. Only this flag changes here (the name cannot). Disabling blocks every key of the account from the next request; enabling restores the keys that are neither expired nor revoked. A delegate may do it only when the whole current policy lies within its ceiling."
+      },
+      "summary": "تفعيل حساب خدمة أو تعطيله",
+      "description": "يعيّن `enabled`؛ ويجب أن تكون `expectedRevision` هي المراجعة الحالية، وإلا كانت النتيجة 409 `revision_mismatch`. لا يتغير هنا إلا هذه العلامة (أما الاسم فلا يتغير). يحجب التعطيل كل مفاتيح الحساب من الطلب التالي؛ ويعيد التفعيل المفاتيح التي لم تنتهِ صلاحيتها ولم تُبطل. ولا يجوز للمفوَّض ذلك إلا إذا كانت السياسة الحالية كلها ضمن سقفه (ceiling)."
+    },
+    "getServicePolicy": {
+      "en": {
+        "summary": "Get the policy of a service account",
+        "description": "Returns the account with its policy `bindings` and `revision`, like `getServiceAccount`, for a caller that holds `policy.read`. A key's effective permissions are the intersection of this policy and the key's own bindings, per repository and action."
+      },
+      "summary": "الحصول على سياسة حساب خدمة",
+      "description": "يعيد الحساب مع ارتباطات سياسته `bindings` و`revision`، مثل `getServiceAccount`، للمستدعي الذي يملك `policy.read`. الأذونات الفعلية للمفتاح هي تقاطع هذه السياسة مع ارتباطات المفتاح نفسه، لكل مستودع وإجراء."
+    },
+    "setServicePolicy": {
+      "en": {
+        "summary": "Replace the policy of a service account",
+        "description": "Replaces the account's `bindings` (up to 64, each a repository with its exact actions); `expectedRevision` must be the current revision, otherwise 409 `revision_mismatch`. Every key follows the change from its next request: narrowing takes effect at once, widening never goes beyond a key's own bindings. A delegate needs both the current and the new policy to lie within its ceiling."
+      },
+      "summary": "استبدال سياسة حساب خدمة",
+      "description": "يستبدل `bindings` الحساب (حتى 64، كل منها مستودع مع إجراءاته الدقيقة)؛ ويجب أن تكون `expectedRevision` هي المراجعة الحالية، وإلا كانت النتيجة 409 `revision_mismatch`. يتبع كل مفتاح التغيير من طلبه التالي: التضييق يسري فورًا، والتوسيع لا يتجاوز أبدًا ارتباطات المفتاح نفسه. ويحتاج المفوَّض إلى أن تقع السياسة الحالية والجديدة معًا ضمن سقفه."
+    },
+    "listServiceKeys": {
+      "en": {
+        "summary": "List the keys of a service account",
+        "description": "Lists key metadata of the account ordered by ID, 50 per page: name, `state` (`pending`, `active`, `revoked`), bindings, creation, expiry, activation deadline and the key it was rotated from; never secrets or hashes. Continue with `after` set to `next`. Expiry does not change `state`, so compare `expiresAt` with the current time."
+      },
+      "summary": "عرض قائمة مفاتيح حساب خدمة",
+      "description": "يسرد بيانات تعريف مفاتيح الحساب مرتبةً حسب المعرّف، 50 في الصفحة: الاسم، و`state` (`pending` أو `active` أو `revoked`)، والارتباطات، والإنشاء، والانتهاء، والمهلة النهائية للتفعيل، والمفتاح الذي دُوِّر هذا المفتاح منه؛ ولا تُعرض الأسرار ولا قيم التجزئة أبدًا. تابع بضبط `after` على قيمة `next`. لا يغيّر الانتهاء قيمة `state`، لذا قارن `expiresAt` بالوقت الحالي."
+    },
+    "issueServiceKey": {
+      "en": {
+        "summary": "Issue a key for a service account",
+        "description": "Issues a pending key with `name`, `bindings` (effective only where the account policy allows them too) and optional `expiresAt` (UTC; 90 days by default, at most 365, and for a delegate never beyond its own key). The first answer is 201 with `key` and the `secret`, shown only this once; a repeat with the same `Idempotency-Key` and body is 200 with the metadata only, a different body a 409. The holder must call `activateServiceKey` with the secret within 15 minutes; if the secret was lost, revoke the key and issue a new one under a new Idempotency-Key."
+      },
+      "summary": "إصدار مفتاح لحساب خدمة",
+      "description": "يصدر مفتاحًا معلّقًا بـ `name` و`bindings` (لا تسري إلا حيث تسمح بها سياسة الحساب أيضًا) و`expiresAt` الاختياري (UTC؛ 90 يومًا افتراضيًا، و365 كحد أقصى، وبالنسبة للمفوَّض لا يتجاوز أجل مفتاحه هو). الردّ الأول 201 مع `key` و`secret` اللذين يظهران هذه المرة فقط؛ وتكرار الطلب بـ `Idempotency-Key` والمتن نفسيهما يعطي 200 مع بيانات التعريف فقط، ومتن مختلف يعطي 409. على حامل المفتاح استدعاء `activateServiceKey` بالسر خلال 15 دقيقة؛ وإذا ضاع السر فأبطل المفتاح وأصدر مفتاحًا جديدًا بـ `Idempotency-Key` جديد."
+    },
+    "getServiceAudit": {
+      "en": {
+        "summary": "Read the audit of a service account",
+        "description": "Returns, oldest first, up to 100 events of the account after the sequence `after` (default 0): account, policy and key changes such as issue, rotation, activation and revocation, each with actor, action, key and time. To read further, pass the last `sequence` as `after`; there is no `next` field. Only the newest 100 000 events of the server are kept."
+      },
+      "summary": "قراءة تدقيق حساب خدمة",
+      "description": "يعيد، بدءًا من الأقدم، ما يصل إلى 100 حدث للحساب بعد التسلسل `after` (الافتراضي 0): تغييرات الحساب والسياسة والمفاتيح، مثل الإصدار والتدوير والتفعيل والإبطال، لكل منها الفاعل والإجراء والمفتاح والوقت. وللمتابعة مرّر آخر `sequence` بوصفه `after`؛ ولا يوجد حقل `next`. لا يُحتفظ إلا بأحدث 100 000 حدث في الخادم."
+    },
+    "getServiceKey": {
+      "en": {
+        "summary": "Get a key",
+        "description": "Returns the metadata of one managed key: its account, name, state, bindings, creation, expiry, activation deadline and the key it was rotated from; never the secret or its hash."
+      },
+      "summary": "الحصول على مفتاح",
+      "description": "يعيد بيانات تعريف مفتاح مُدار واحد: حسابه واسمه وحالته وارتباطاته وإنشاءه وانتهاءه والمهلة النهائية لتفعيله والمفتاح الذي دُوِّر هذا المفتاح منه؛ ولا يعيد السر ولا قيمة تجزئته أبدًا."
+    },
+    "rotateServiceKey": {
+      "en": {
+        "summary": "Rotate a key",
+        "description": "Issues a pending successor of key `id` for the same account with the same or narrower `bindings`, answering like `issueServiceKey`: 201 with the one-time `secret`, 200 with metadata only on a repeat with the same `Idempotency-Key`. Once the successor is activated, the old key stays valid for at most 24 more hours; revoke it explicitly when the new one works, but only after the jobs it started have finished. Delegations held by an operator key are not copied to its successor."
+      },
+      "summary": "تدوير مفتاح",
+      "description": "يصدر خلفًا معلّقًا للمفتاح `id` للحساب نفسه بالارتباطات `bindings` نفسها أو بارتباطات أضيق، ويردّ مثل `issueServiceKey`: 201 مع `secret` لمرة واحدة، و200 مع بيانات التعريف فقط عند التكرار بـ `Idempotency-Key` نفسه. وبعد تفعيل الخلف يبقى المفتاح القديم صالحًا 24 ساعة أخرى كحد أقصى؛ فأبطله صراحةً عندما يعمل الجديد، لكن بعد انتهاء المهام التي بدأها فقط. ولا تُنسخ التفويضات التي يحملها مفتاح مشغّل (operator) إلى خلفه."
+    },
+    "revokeServiceKey": {
+      "en": {
+        "summary": "Revoke a key",
+        "description": "Revokes the key for good: its next request fails, while a download already running is not cut off. Repeating succeeds with 204. Keys that a revoked operator key issued and that were already activated stay valid; revoke them separately."
+      },
+      "summary": "إبطال مفتاح",
+      "description": "يبطل المفتاح نهائيًا: يفشل طلبه التالي، بينما لا يُقطع تنزيل قيد التشغيل. والتكرار ينجح بـ 204. أما المفاتيح التي أصدرها مفتاح مشغّل مُبطَل وتم تفعيلها بالفعل فتظل صالحة؛ فأبطلها على حدة."
+    },
+    "activateServiceKey": {
+      "en": {
+        "summary": "Activate a key",
+        "description": "Proves that the holder received a newly issued key: call it with that key as `Authorization: Bearer` within 15 minutes of issue, and the key becomes active (204). Repeating is safe and does not extend the expiry. Activating a rotated key cuts the remaining lifetime of the key it replaces to at most 24 hours."
+      },
+      "summary": "تفعيل مفتاح",
+      "description": "يثبت أن الحامل تسلّم مفتاحًا أُصدر حديثًا: استدعِه بذلك المفتاح في `Authorization: Bearer` خلال 15 دقيقة من الإصدار، فيصبح المفتاح فعّالًا (204). والتكرار آمن ولا يمدّ مدة الانتهاء. وتفعيل مفتاح مُدوَّر يقصّر ما تبقى من عمر المفتاح الذي يحلّ محله إلى 24 ساعة كحد أقصى."
+    },
+    "listServiceDelegations": {
+      "en": {
+        "summary": "List the delegations of a key",
+        "description": "Returns the delegations held by operator key `id`, up to 64 including disabled ones: for each target account its `revision`, whether it is `enabled`, the administration `actions` (such as `credential.manage`) and the `ceiling` of repository bindings it may hand out. A delegate reads its own here (its key ID is `credentialId` in `getOwnPermissions`); another key's list is a 403."
+      },
+      "summary": "عرض قائمة تفويضات مفتاح",
+      "description": "يعيد التفويضات التي يحملها مفتاح المشغّل `id`، حتى 64 بما فيها المعطّلة: لكل حساب هدف `revision` الخاصة به، وما إذا كان `enabled`، و`actions` الإدارة (مثل `credential.manage`)، و`ceiling` لارتباطات المستودعات التي يجوز له منحها. يقرأ المفوَّض تفويضاته هنا (ومعرّف مفتاحه هو `credentialId` في `getOwnPermissions`)؛ وقائمة مفتاح آخر هي 403."
+    },
+    "setServiceDelegation": {
+      "en": {
+        "summary": "Delegate the administration of a service account",
+        "description": "Lets key `id` administer the service account `accountId` with the given `actions` (`service-account.read`, `service-account.manage`, `policy.read`, `policy.manage`, `credential.read`, `credential.manage`, `service-audit.read`) within `ceiling`, up to 16 repository bindings it may hand out; manage does not imply read. `expectedRevision` is 0 to create and the record's current revision to change or re-enable it, otherwise 409. The key must be active and issued by the bootstrap key, and an account cannot both hold delegations and be the target of one, so delegation never chains."
+      },
+      "summary": "تفويض إدارة حساب خدمة",
+      "description": "يتيح للمفتاح `id` إدارة حساب الخدمة `accountId` بالإجراءات `actions` المعطاة (`service-account.read` و`service-account.manage` و`policy.read` و`policy.manage` و`credential.read` و`credential.manage` و`service-audit.read`) ضمن `ceiling`، أي حتى 16 ارتباط مستودع يجوز له منحها؛ والإدارة (manage) لا تعني القراءة ضمنًا. تكون `expectedRevision` هي 0 للإنشاء، وهي المراجعة الحالية للسجل لتغييره أو إعادة تفعيله، وإلا كانت النتيجة 409. يجب أن يكون المفتاح فعّالًا وصادرًا عن مفتاح التهيئة، ولا يجوز لحساب أن يحمل تفويضات وأن يكون هدفًا لتفويض في آن واحد، فلا تتسلسل التفويضات أبدًا."
+    },
+    "removeServiceDelegation": {
+      "en": {
+        "summary": "Withdraw a delegation",
+        "description": "Disables the delegation of key `id` over `accountId`; the JSON body carries `expectedRevision`, the record's current revision. The record stays as a disabled entry without actions and with a higher revision, returned with 200; after a lost answer read it with `listServiceDelegations` instead of repeating, since the old revision is a 409. Keys the delegate already issued and activated keep working: revoke them or disable the account separately."
+      },
+      "summary": "سحب تفويض",
+      "description": "يعطّل تفويض المفتاح `id` على `accountId`؛ ويحمل متن JSON القيمة `expectedRevision`، وهي المراجعة الحالية للسجل. يبقى السجل مدخلًا معطّلًا بلا إجراءات وبمراجعة أعلى، ويُعاد مع 200؛ وبعد ضياع الردّ اقرأه بـ `listServiceDelegations` بدلًا من التكرار، لأن المراجعة القديمة تعطي 409. المفاتيح التي أصدرها المفوَّض وفعّلها بالفعل تواصل العمل: فأبطلها أو عطّل الحساب على حدة."
+    },
+    "getBackupStatus": {
+      "en": {
+        "summary": "Get the backup status",
+        "description": "Summarizes the backup system: the vault (`configured`, `available`, free and total bytes), the backup agent (`online`, last heartbeat, version), the plan, the newest completed point, the next scheduled run, the running job and `warnings`, each a code such as `agent_offline` or `backup_stale` with severity `warning` or `critical`. The vault is reported unavailable while the agent is offline. It contains no paths or secrets."
+      },
+      "summary": "الحصول على حالة النسخ الاحتياطي",
+      "description": "يلخّص نظام النسخ الاحتياطي: مخزن النسخ الاحتياطية (`configured` و`available` والبايتات الحرة والكلية)، ووكيل النسخ الاحتياطي (`online` وآخر نبضة (heartbeat) وإصداره)، والخطة، وأحدث نقطة مكتملة، والتشغيل المجدول التالي، والمهمة الجارية، و`warnings`، وكل منها رمز مثل `agent_offline` أو `backup_stale` بخطورة `warning` أو `critical`. ويُبلَّغ عن المخزن بأنه غير متاح ما دام الوكيل غير متصل. ولا يتضمن مسارات ولا أسرارًا."
+    },
+    "getBackupPlan": {
+      "en": {
+        "summary": "Get the backup plan",
+        "description": "Returns the daily schedule (`enabled`, `hour` and `minute` in the IANA `timezone`) and the retention policy (`daily`, `weekly`, `monthly` points to keep) with the `revision` to send back to `updateBackupPlan`. Until changed the plan is disabled, with a 02:00 UTC schedule and 7 daily, 4 weekly and 6 monthly points."
+      },
+      "summary": "الحصول على خطة النسخ الاحتياطي",
+      "description": "يعيد الجدول اليومي (`enabled` و`hour` و`minute` في المنطقة الزمنية IANA `timezone`) وسياسة الاحتفاظ (نقاط `daily` و`weekly` و`monthly` المراد الاحتفاظ بها) مع `revision` التي تُرسل مرة أخرى إلى `updateBackupPlan`. وما لم تتغير الخطة تكون معطّلة، بجدول 02:00 UTC و7 نقاط يومية و4 أسبوعية و6 شهرية."
+    },
+    "updateBackupPlan": {
+      "en": {
+        "summary": "Replace the backup plan",
+        "description": "Replaces the whole plan: `enabled`, `hour` (0–23), `minute` (0–59), `timezone` and `retention` (at most 366 daily, 260 weekly, 120 monthly) must all be present. `expectedRevision` must be the current revision, otherwise 409 `revision_mismatch`; an invalid field is a 400 with a JSON Pointer in `details`. The agent follows the new schedule from its next check."
+      },
+      "summary": "استبدال خطة النسخ الاحتياطي",
+      "description": "يستبدل الخطة كلها: يجب أن تكون `enabled` و`hour` (من 0 إلى 23) و`minute` (من 0 إلى 59) و`timezone` و`retention` (حتى 366 يومية و260 أسبوعية و120 شهرية) موجودة جميعًا. يجب أن تكون `expectedRevision` هي المراجعة الحالية، وإلا كانت النتيجة 409 `revision_mismatch`؛ والحقل غير الصالح هو 400 مع JSON Pointer في `details`. ويتبع الوكيل الجدول الجديد من فحصه التالي."
+    },
+    "requestBackupRun": {
+      "en": {
+        "summary": "Request a backup now",
+        "description": "Queues a capture for the backup agent outside the schedule and returns 202 with the job (`kind` `capture`); the agent runs it, then verification and retention. `Idempotency-Key` is required: repeating it, from the same caller, returns the same job. Follow the job in `listBackupJobs`. At most 100 backup requests may be open at once (507 `queue_full`); while no agent is online the job waits."
+      },
+      "summary": "طلب نسخة احتياطية الآن",
+      "description": "يضع في الطابور عملية التقاط (capture) للوكيل خارج الجدول ويردّ بـ 202 مع المهمة (`kind` هي `capture`)؛ وينفّذها الوكيل، ثم التحقق والاحتفاظ. المفتاح `Idempotency-Key` مطلوب: تكراره من المستدعي نفسه يعيد المهمة نفسها. تابع المهمة في `listBackupJobs`. يجوز أن يكون مفتوحًا في وقت واحد ما لا يزيد على 100 طلب نسخ احتياطي (507 `queue_full`)؛ وما دام لا يوجد وكيل متصل تنتظر المهمة."
+    },
+    "listBackupJobs": {
+      "en": {
+        "summary": "List backup jobs",
+        "description": "Lists capture, verify and retention jobs, newest first, each with its `state` (`queued`, `running`, `committing`, `completed`, `failed`, `interrupted`), `phase`, times, `errorCode`, the resulting point and `progress` (bytes and objects processed). Pages hold `limit` jobs (1–100, default 50); continue with `after` set to `next`."
+      },
+      "summary": "عرض قائمة مهام النسخ الاحتياطي",
+      "description": "يسرد مهام الالتقاط والتحقق والاحتفاظ، بدءًا من الأحدث، لكل منها `state` (`queued` أو `running` أو `committing` أو `completed` أو `failed` أو `interrupted`) و`phase` والأوقات و`errorCode` والنقطة الناتجة و`progress` (البايتات والكائنات المعالَجة). تحتوي الصفحة على `limit` مهمة (من 1 إلى 100، والافتراضي 50)؛ وللمتابعة اضبط `after` على قيمة `next`."
+    },
+    "listBackupPoints": {
+      "en": {
+        "summary": "List backup points",
+        "description": "Lists the completed restore points of the current vault, newest snapshot first, each with the snapshot time T, size, bytes added to the vault, whether it is `pinned` and its latest verification (`verifiedAt`, `verifyDepth` `structural` or `deep`, `verifyError`). Pages hold `limit` points (1–100, default 50); continue with `after` set to `next`. A vault that was replaced shows only its own points."
+      },
+      "summary": "عرض قائمة نقاط النسخ الاحتياطي",
+      "description": "يسرد نقاط الاستعادة المكتملة في المخزن الحالي، بدءًا من أحدث لقطة، لكل منها وقت اللقطة T والحجم والبايتات المضافة إلى المخزن وما إذا كانت `pinned` وآخر تحقق منها (`verifiedAt`، و`verifyDepth` هو `structural` أو `deep`، و`verifyError`). تحتوي الصفحة على `limit` نقطة (من 1 إلى 100، والافتراضي 50)؛ وللمتابعة اضبط `after` على قيمة `next`. والمخزن الذي استُبدل لا يعرض إلا نقاطه هو."
+    },
+    "requestBackupVerify": {
+      "en": {
+        "summary": "Request a deep check of a backup point",
+        "description": "Queues a verification of the point `id` that reads every stored byte of it; the answer is 202 with the job, and the outcome appears in `verifiedAt`, `verifyDepth` and `verifyError` of the point. `Idempotency-Key` is required, and reusing it for another point is a 409 `idempotency_mismatch`. An unknown point is a 404."
+      },
+      "summary": "طلب فحص عميق لنقطة نسخ احتياطي",
+      "description": "يضع في الطابور تحققًا من النقطة `id` يقرأ كل بايت مخزَّن منها؛ والردّ 202 مع المهمة، وتظهر النتيجة في `verifiedAt` و`verifyDepth` و`verifyError` الخاصة بالنقطة. المفتاح `Idempotency-Key` مطلوب، وإعادة استخدامه لنقطة أخرى هي 409 `idempotency_mismatch`. والنقطة غير المعروفة هي 404."
+    },
+    "setBackupPointPin": {
+      "en": {
+        "summary": "Pin or unpin a backup point",
+        "description": "Sets `pinned` of the point `id`; a pinned point is kept by retention beyond the policy until it is unpinned. Setting the same value again changes nothing, and the answer is the updated point. An unknown or already forgotten point is a 404."
+      },
+      "summary": "تثبيت نقطة نسخ احتياطي أو إلغاء تثبيتها",
+      "description": "يعيّن `pinned` للنقطة `id`؛ وتبقى النقطة المثبّتة محفوظة خارج حدود سياسة الاحتفاظ إلى أن يُلغى تثبيتها. وتعيين القيمة نفسها مرة أخرى لا يغيّر شيئًا، والردّ هو النقطة المحدَّثة. والنقطة غير المعروفة أو التي نُسيت بالفعل هي 404."
+    },
+    "previewBackupRetention": {
+      "en": {
+        "summary": "Preview what backup retention keeps",
+        "description": "Shows which points the retention policy would keep, each with the reasons (`daily`, `weekly`, `monthly`, `pinned`, `newest`), and which it would delete now. Points that failed verification are not considered. The preview is advisory: `requestBackupRetention` decides again from the vault when it runs."
+      },
+      "summary": "معاينة ما ستحتفظ به سياسة احتفاظ النسخ الاحتياطية",
+      "description": "يعرض النقاط التي ستحتفظ بها سياسة الاحتفاظ، لكل منها أسبابها (`daily` و`weekly` و`monthly` و`pinned` و`newest`)، والنقاط التي ستحذفها الآن. لا تُؤخذ في الاعتبار النقاط التي فشل التحقق منها. المعاينة استشارية: فيقرر `requestBackupRetention` من جديد استنادًا إلى المخزن وقت تشغيله."
+    },
+    "requestBackupRetention": {
+      "en": {
+        "summary": "Request backup retention",
+        "description": "Queues a retention job: the agent forgets the points outside the policy and then removes content no remaining point uses, so space returns to the vault only when the job has completed. Returns 202 with the job; `Idempotency-Key` is required and repeating it returns the same job. Look at `previewBackupRetention` first."
+      },
+      "summary": "طلب تطبيق الاحتفاظ بالنسخ الاحتياطية",
+      "description": "يضع في الطابور مهمة احتفاظ: ينسى الوكيل النقاط الواقعة خارج السياسة ثم يزيل المحتوى الذي لا تستخدمه أي نقطة متبقية، لذا لا تعود المساحة إلى المخزن إلا بعد اكتمال المهمة. يردّ بـ 202 مع المهمة؛ والمفتاح `Idempotency-Key` مطلوب وتكراره يعيد المهمة نفسها. اطّلع على `previewBackupRetention` أولًا."
+    },
+    "getSystemUpdates": {
+      "en": {
+        "summary": "Get the update state",
+        "description": "Returns what the host updater reports: the installed version and schema, the newest release found (`latest`), the automatic update settings (`automatic`, `hourUTC`, `pin`, `channel`, `statistics`), the `phase` (`idle`, `checking`, `updating`, `failed`), the last `error`, the last heartbeat and the settings `revision`, plus the request still waiting in the updater's mailbox (`pending`). `snapshot` is null when no host updater is connected. Pass `revision` to `requestSystemUpdate`."
+      },
+      "summary": "الحصول على حالة التحديث",
+      "description": "يعيد ما يبلّغ عنه محدِّث المضيف: الإصدار المثبّت ومخطط البيانات (schema)، وأحدث إصدار مُكتشَف (`latest`)، وإعدادات التحديث التلقائي (`automatic` و`hourUTC` و`pin` و`channel` و`statistics`)، و`phase` (`idle` أو `checking` أو `updating` أو `failed`)، وآخر `error`، وآخر نبضة، و`revision` الإعدادات، إضافةً إلى الطلب الذي ما زال ينتظر في صندوق بريد المحدِّث (`pending`). وتكون `snapshot` هي null إذا لم يكن هناك محدِّث مضيف متصل. مرّر `revision` إلى `requestSystemUpdate`."
+    },
+    "requestSystemUpdate": {
+      "en": {
+        "summary": "Request an update action",
+        "description": "Hands one command to the host updater, which does the work: `kind` `check` looks for a new release, `apply` installs the given stable `version` with its `sha256`, `configure` sets `automatic`, `hourUTC` and optionally `statistics`. Send a new UUID as `id` and the `expectedRevision` from `getSystemUpdates`; 409 `revision_mismatch` means the settings changed, 503 `busy` that a request is pending or the updater is working, 503 `unavailable` that no updater is connected or its heartbeat is older than five minutes. The answer 202 only means the request was queued: follow `phase`, `currentVersion` and `lastRequestId` in `getSystemUpdates`. Repeating the same `id` and body is safe."
+      },
+      "summary": "طلب إجراء تحديث",
+      "description": "يسلّم أمرًا واحدًا إلى محدِّث المضيف الذي يؤدي العمل: `kind` هي `check` للبحث عن إصدار جديد، أو `apply` لتثبيت الإصدار المستقر المعطى `version` مع `sha256` الخاص به، أو `configure` لضبط `automatic` و`hourUTC` و`statistics` الاختيارية. أرسل UUID جديدًا بوصفه `id` و`expectedRevision` من `getSystemUpdates`؛ و409 `revision_mismatch` يعني أن الإعدادات تغيّرت، و503 `busy` أن هناك طلبًا معلّقًا أو أن المحدِّث يعمل، و503 `unavailable` أنه لا يوجد محدِّث متصل أو أن آخر نبضة له أقدم من خمس دقائق. والردّ 202 يعني فقط أن الطلب وُضع في الطابور: تابع `phase` و`currentVersion` و`lastRequestId` في `getSystemUpdates`. وتكرار `id` والمتن نفسيهما آمن."
+    },
+    "sendFeedback": {
+      "en": {
+        "summary": "Send feedback to ProAnimaStudio",
+        "description": "Forwards a message through this server to the ProAnimaStudio hub and answers 202 with the hub's `id`. Send `message` (up to 20 000 characters), `lang` (`ru` or `en`), `serverLog` (true attaches this server's log and a system summary, administrators only), and optionally `email` for a reply, `screen`, up to 6 base64 `screenshots` (PNG, JPEG, WebP or GIF, 8 MiB each) and the console's `clientLog`; the total is limited to 15 MiB. Nothing is retried, so a second call is a second message. 503 `feedback_disabled` when the operator turned it off, 503 `hub_unreachable` when the hub does not answer, 429 `feedback_attempts` when this server sent too much."
+      },
+      "summary": "إرسال ملاحظات إلى ProAnimaStudio",
+      "description": "يمرّر رسالة عبر هذا الخادم إلى مركز ProAnimaStudio (hub) ويردّ بـ 202 مع `id` الذي يعطيه المركز. أرسل `message` (حتى 20 000 حرف)، و`lang` (`ru` أو `en`)، و`serverLog` (القيمة true ترفق سجل هذا الخادم وملخصًا للنظام، للمسؤولين فقط)، واختياريًا `email` للردّ، و`screen`، وحتى 6 لقطات شاشة `screenshots` بترميز base64 (PNG أو JPEG أو WebP أو GIF، 8 MiB لكل منها) و`clientLog` الخاص بوحدة التحكم؛ ويُحدّ المجموع بـ 15 MiB. لا تُعاد أي محاولة تلقائيًا، فالاستدعاء الثاني رسالة ثانية. والنتيجة 503 `feedback_disabled` إذا عطّل المشغّل الميزة، و503 `hub_unreachable` إذا لم يردّ المركز، و429 `feedback_attempts` إذا أرسل هذا الخادم أكثر من اللازم."
+    },
+    "getFeedbackAttachments": {
+      "en": {
+        "summary": "Preview the feedback attachments",
+        "description": "Returns the two texts that `sendFeedback` attaches when `serverLog` is true: the recent records of this server's log and a system summary (versions, operating system, update and mirror states) without addresses, names or secrets. Show them to the administrator before sending."
+      },
+      "summary": "معاينة مرفقات الملاحظات",
+      "description": "يعيد النصّين اللذين يرفقهما `sendFeedback` عندما تكون `serverLog` هي true: السجلات الأخيرة لسجل هذا الخادم وملخصًا للنظام (الإصدارات ونظام التشغيل وحالتا التحديث والمرآة) دون عناوين أو أسماء أو أسرار. اعرضهما على المسؤول قبل الإرسال."
+    }
+  },
+  "errors": {
+    "codes": {
+      "invalid_input": "الطلب مشوَّه أو إحدى القيم غير مسموح بها؛ صحّح الطلب قبل إرساله مرة أخرى.",
+      "not_found": "الكائن غير موجود، أو لا يحق للمستدعي رؤيته.",
+      "conflict": "الطلب يتعارض مع الحالة الحالية؛ أعد قراءة الحالة ثم قرّر.",
+      "forbidden": "بيانات الاعتماد صالحة لكنها تفتقر إلى الإذن اللازم لهذا الإجراء.",
+      "unauthorized": "لا توجد بيانات اعتماد صالحة: مفقودة أو خاطئة أو منتهية الصلاحية أو مُبطَلة.",
+      "capacity_exceeded": "سيتم تجاوز حصة أو سعة أو حد.",
+      "integrity_mismatch": "البايتات لا تطابق الحجم المُعلَن أو SHA-256.",
+      "busy": "الخادم عند حد القبول لديه؛ أعد المحاولة بعد المدة المحددة في Retry-After.",
+      "unavailable": "إحدى التبعيات غير متاحة الآن؛ أعد المحاولة بعد المدة المحددة في Retry-After.",
+      "rate_limited": "محاولات كثيرة جدًا؛ انتظر المدة المحددة في Retry-After.",
+      "read_only": "هذا الخادم أو هذه البوابة لا يقبل التغييرات (بوابة قراءة أو مرآة).",
+      "internal": "عطل غير متوقع في الخادم؛ يساعد معرّف الطلب الدعم على العثور عليه. لا تكرر الطلب دون تمحيص."
+    },
+    "reasons": {
+      "validation": "حقل مفقود أو قيمته خارج قواعده؛ وتسمّي details الحقل.",
+      "malformed_json": "المتن ليس JSON صالحًا.",
+      "body_too_large": "المتن أكبر مما تقبله هذه العملية.",
+      "unsupported_media_type": "قيمة Content-Type ليست مما تقبله هذه العملية.",
+      "method_not_allowed": "المسار موجود لكن ليس بهذه الطريقة.",
+      "range_not_satisfiable": "نطاق البايتات المطلوب يقع خارج المحتوى.",
+      "route_not_found": "لا يوجد مسار (route) كهذا.",
+      "upload_expired": "انتهت صلاحية جلسة الرفع قبل إكمالها.",
+      "upload_state": "عملية الرفع ليست في حالة تسمح بهذه الخطوة.",
+      "revision_mismatch": "المراجعة المتوقعة ليست المراجعة الحالية (سبقها تغيير آخر).",
+      "version_exists": "نُشر هذا الإصدار من قبل بمحتوى آخر.",
+      "part_mismatch": "الجزء لا يطابق حجمه المُعلَن أو SHA-256.",
+      "parts_incomplete": "لم تصل كل أجزاء عملية الرفع بعد.",
+      "idempotency_mismatch": "سبق استخدام Idempotency-Key مع طلب مختلف.",
+      "already_exists": "يوجد بالفعل كائن بهذا الاسم أو المسار.",
+      "stage_limit": "بلغ المُخرَج الحد الأقصى لعدد المراحل.",
+      "state_conflict": "الكائن في حالة لا تسمح بهذا التغيير.",
+      "mirror_read_only": "المستودع مرآة؛ ولا يتغير إلا بالمزامنة.",
+      "permission_missing": "تفتقر بيانات الاعتماد إلى الإجراء الذي تحتاجه هذه العملية.",
+      "read_only_token": "الرمز الشخصي للقراءة فقط لا يستطيع تغيير أي شيء.",
+      "credential_revoked": "أُبطل المفتاح أو الرمز.",
+      "session_required": "لا يجوز ذلك إلا لجلسة حساب مسجَّل الدخول، وليس لمفتاح.",
+      "administrator_required": "لا يجوز ذلك إلا لمسؤول.",
+      "registration_disabled": "التسجيل الذاتي معطّل على هذا الخادم.",
+      "origin_not_allowed": "أصل المتصفح (origin) غير مدرج في ARKVORY_CORS_ORIGINS.",
+      "invalid_credentials": "اسم الحساب أو كلمة المرور خاطئة.",
+      "current_password_invalid": "كلمة المرور الحالية خاطئة.",
+      "credential_missing": "لا يحمل الطلب أي بيانات اعتماد.",
+      "credential_invalid": "بيانات الاعتماد ليست مفتاحًا أو رمزًا أو جلسة صالحة.",
+      "session_expired": "انتهت صلاحية الجلسة؛ سجّل الدخول من جديد.",
+      "token_expired": "انتهت صلاحية الرمز الشخصي.",
+      "storage_quota": "سيتم تجاوز حصة تخزين المستودع.",
+      "storage_full": "قرص الخادم يحتفظ باحتياطي المساحة الحرة؛ ولا مكان لمزيد من البيانات.",
+      "account_limit": "عدد الحسابات بلغ حده الأقصى.",
+      "group_limit": "عدد المجموعات بلغ حده الأقصى.",
+      "membership_limit": "عدد أعضاء المجموعات بلغ حده الأقصى.",
+      "grant_limit": "عدد المنح بلغ حده الأقصى.",
+      "key_limit": "عدد المفاتيح بلغ حده الأقصى.",
+      "token_limit": "عدد الرموز الشخصية بلغ حده الأقصى.",
+      "delegation_limit": "عدد التفويضات بلغ حده الأقصى.",
+      "catalog_limit": "سيتم تجاوز سعة الفهرس في هذا التثبيت.",
+      "queue_full": "طابور النقل ممتلئ.",
+      "transfer_limit": "لدى المستدعي أقصى عدد مسموح به من عمليات النقل.",
+      "request_limit": "يعالج الخادم أقصى عدد من الطلبات يقبله.",
+      "feedback_disabled": "الملاحظات معطّلة على هذا الخادم.",
+      "hub_unreachable": "تعذّر الوصول إلى مركز التحديثات.",
+      "login_attempts": "محاولات تسجيل دخول كثيرة جدًا؛ انتظر.",
+      "registration_attempts": "محاولات تسجيل كثيرة جدًا؛ انتظر.",
+      "password_attempts": "محاولات كلمة مرور كثيرة جدًا؛ انتظر.",
+      "feedback_attempts": "تقارير ملاحظات كثيرة جدًا؛ انتظر."
+    }
+  },
+  "fields": {
+    "Byte size, decimal string": "الحجم بالبايت، سلسلة نصية عشرية",
+    "Bytes this point added to the vault.": "البايتات التي أضافتها هذه النقطة إلى المخزن.",
+    "Current labels: annotation when replaced, otherwise the upload descriptor": "التسميات الحالية: من التعليقات التوضيحية إذا استُبدلت، وإلا فمن واصف الرفع",
+    "Current promotion stages in byte order": "مراحل الترقية الحالية بترتيب البايتات",
+    "Every part has this size except the last one.": "لكل جزء هذا الحجم عدا الجزء الأخير.",
+    "Exclusive before cursor; null at end": "مؤشر حصري لما قبله؛ null عند النهاية",
+    "Explicit IANA time zone, e.g. Europe/Moscow; validated by the server.": "منطقة زمنية صريحة من IANA، مثل Europe/Moscow؛ يتحقق منها الخادم.",
+    "Last ID of a full page; pass as after": "آخر معرّف في صفحة ممتلئة؛ مرّره بوصفه after",
+    "Null for history recorded before migration 4": "null للمحفوظات المسجّلة قبل الترحيل 4",
+    "Opaque cursor bound to repository and prefix; null at end. Never grants access.": "مؤشر غير شفاف (opaque) مرتبط بالمستودع والبادئة؛ null عند النهاية. ولا يمنح وصولًا أبدًا.",
+    "Optional initiating managed key ID; never its secret.": "معرّف اختياري للمفتاح المُدار الذي بدأ العملية؛ وليس سرّه أبدًا.",
+    "Processed bytes: copied or already in the vault.": "البايتات المعالَجة: المنسوخة أو الموجودة بالفعل في المخزن.",
+    "Publication time; null only when none was recorded": "وقت النشر؛ null فقط عند عدم تسجيل أي وقت",
+    "Restored revision; null for ordinary replacement": "المراجعة المستعادة؛ null للاستبدال العادي",
+    "Smallest multipart segment.": "أصغر جزء في الرفع متعدد الأجزاء.",
+    "Snapshot time T; the age of a point counts from T.": "وقت اللقطة T؛ ويُحتسب عمر النقطة منذ T.",
+    "Start of execution, or the request time while queued.": "بداية التنفيذ، أو وقت الطلب ما دام في الطابور.",
+    "Upload reservation time": "وقت حجز الرفع"
+  }
+}

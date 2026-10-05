@@ -1,0 +1,202 @@
+{
+  "common": {
+    "outline": "本页内容",
+    "prev": "上一页",
+    "next": "下一页",
+    "returnToTop": "返回顶部",
+    "sidebarMenu": "菜单",
+    "appearance": "外观",
+    "lightTheme": "切换到浅色主题",
+    "darkTheme": "切换到深色主题",
+    "langMenu": "切换语言",
+    "skipToContent": "跳到正文",
+    "editLink": "在 GitHub 上编辑此页",
+    "download": "下载",
+    "notFound": {
+      "title": "页面未找到",
+      "quote": "文档中没有此地址对应的页面。",
+      "link": "返回首页",
+      "linkLabel": "前往文档首页"
+    },
+    "search": {
+      "button": "搜索",
+      "noResults": "未找到相关结果：",
+      "reset": "清除搜索",
+      "back": "关闭搜索",
+      "details": "显示详情",
+      "select": "选择",
+      "navigate": "切换",
+      "close": "关闭"
+    }
+  },
+  "description": "Arkvory 文档：自托管的构建制品、UPack 包、容器镜像、Git LFS、npm 包、Unity 包和原始文件仓库；涵盖安装、运维、备份、仓库镜像和 HTTP API。",
+  "sections": {
+    "guide": "入门",
+    "install": "安装与更新",
+    "use": "使用 Arkvory",
+    "protocols": "客户端与协议",
+    "operate": "运维",
+    "api": "HTTP API",
+    "apiReference": "API 参考",
+    "reference": "参考",
+    "internal": "开发者资料"
+  },
+  "internalOnly": "俄语",
+  "untranslated": "此页面尚未翻译，目前以英文显示。",
+  "home": {
+    "tagline": "自托管的构建制品、包、容器镜像和大文件存储：一台服务器即可服务 CI、部署代理和游戏团队。",
+    "start": "开始使用",
+    "install": "安装",
+    "api": "HTTP API"
+  },
+  "api": {
+    "operations": "操作",
+    "method": "方法",
+    "path": "路径",
+    "access": "访问",
+    "retry": "重试",
+    "parameters": "参数",
+    "name": "名称",
+    "in": "位置",
+    "required": "必需",
+    "type": "类型",
+    "description": "说明",
+    "requestBody": "请求正文",
+    "responses": "响应",
+    "status": "状态",
+    "example": "示例",
+    "yes": "是",
+    "no": "否",
+    "none": "无",
+    "intro": "本组中的操作及其访问规则、重试规则、参数和响应。每个请求都需携带密钥：`Authorization: Bearer <密钥>`（参见“身份验证”）。",
+    "legacy": "文件密钥：{grants}",
+    "accessKinds": {
+      "public": "任何人，无需密钥",
+      "authenticated": "任何有效的密钥或会话",
+      "account-session": "已登录的账户会话（不是密钥）",
+      "administrator": "管理员",
+      "service-bootstrap": "引导密钥（安装的恢复密钥）",
+      "bootstrap-or-own-key": "引导密钥，或该密钥本身",
+      "pending-or-active-key": "已签发的密钥，激活前后均可",
+      "repository-discovery": "调用方可见的仓库（{action}）",
+      "system": "系统权限 {action}",
+      "service-administration": "服务管理权限 {action}",
+      "repository": "仓库权限：{actions}"
+    },
+    "retryKinds": {
+      "read": "可安全重试（读取）",
+      "never-automatic": "请勿自动重试",
+      "idempotent": "可安全重试：相同的请求效果相同",
+      "idempotency-key": "使用相同的 Idempotency-Key 可安全重试",
+      "compare-and-swap": "仅在携带预期修订版本时重试（compare-and-swap）",
+      "reconcile-upload": "先重新读取上传状态，再做决定",
+      "reconcile-job": "先重新读取任务状态，再做决定"
+    },
+    "locations": {
+      "path": "路径",
+      "query": "查询",
+      "header": "标头"
+    },
+    "pages": {
+      "system": {
+        "title": "系统与健康状况",
+        "intro": "存活状态、就绪状态、指标、OpenAPI 文档以及服务器的功能。"
+      },
+      "repositories": {
+        "title": "仓库",
+        "intro": "调用方可见的仓库，以及单个仓库的详细信息。"
+      },
+      "uploads": {
+        "title": "上传",
+        "intro": "可续传的上传：创建上传会话，整体或分片发送字节，完成上传，并跟踪其完成任务。"
+      },
+      "artifacts": {
+        "title": "制品与目录",
+        "intro": "已发布的制品：列表、详细信息、内容、注解、引用、搜索、目录审计及其变更流。"
+      },
+      "packages": {
+        "title": "包",
+        "intro": "UPack 包：注册、列表、版本，以及按名称、版本或版本范围下载。"
+      },
+      "files": {
+        "title": "路径文件",
+        "intro": "通过仓库中的路径访问的文件：修订版本、历史记录、恢复，以及通过单个请求处理的原始文件。"
+      },
+      "promotion": {
+        "title": "阶段与晋级",
+        "intro": "制品的阶段（例如 `release`）、仓库之间的晋级，以及将阶段解析为版本。"
+      },
+      "storage": {
+        "title": "存储策略与保留",
+        "intro": "配额、用量、保留策略及其预览和运行、物理清理以及制品删除。"
+      },
+      "mirrors": {
+        "title": "镜像",
+        "intro": "仓库镜像的状态，以及镜像所跟踪的变更流。"
+      },
+      "links": {
+        "title": "下载链接",
+        "intro": "有时效的链接，没有密钥的人也可以通过它下载单个制品。"
+      },
+      "attachments": {
+        "title": "构建附件",
+        "intro": "附加到制品的日志、报告和其他文件，以及它们的历史记录。"
+      },
+      "accounts": {
+        "title": "账户与登录",
+        "intro": "登录、会话、个人访问令牌、用户、组和安全审计。"
+      },
+      "services": {
+        "title": "服务账户与密钥",
+        "intro": "用于 CI 和自动化的服务账户，及其密钥、策略、委派和审计。"
+      },
+      "backups": {
+        "title": "备份",
+        "intro": "内置备份代理的状态、计划、运行、恢复点、验证和保留。"
+      },
+      "updates": {
+        "title": "更新",
+        "intro": "中心提供的可用更新，以及安装更新的请求。"
+      },
+      "feedback": {
+        "title": "反馈",
+        "intro": "通过此服务器发送给 ProAnimaStudio 的反馈，附带屏幕截图和日志。"
+      }
+    },
+    "field": "字段",
+    "response": "响应",
+    "rules": {
+      "title": "规则",
+      "length": "{min}–{max} 个字符",
+      "minLength": "至少 {min} 个字符",
+      "maxLength": "最多 {max} 个字符",
+      "items": "{min}–{max} 项",
+      "minItems": "至少 {min} 项",
+      "maxItems": "最多 {max} 项",
+      "entries": "最多 {max} 个条目",
+      "range": "{min}–{max}",
+      "minimum": "不小于 {min}",
+      "maximum": "不大于 {max}",
+      "oneOf": "取值之一：{values}",
+      "pattern": "匹配 {pattern}",
+      "decimal": "用十进制数字表示的整数，以字符串形式发送",
+      "sha256": "SHA-256：64 位小写十六进制数字",
+      "unique": "不允许重复项",
+      "each": "每项：{rules}",
+      "default": "默认值 {value}",
+      "nullable": "可以为 null",
+      "arrayOf": "数组（{type}）",
+      "mapOf": "映射（{type}）"
+    }
+  },
+  "errors": {
+    "title": "错误",
+    "intro": "每次失败都会返回统一的 JSON 结构，其中包含稳定的机器可读代码、用于细化的可选原因、面向用户的消息，以及供技术支持使用的请求 ID。客户端应根据代码和原因进行判断，而不是根据消息文本。",
+    "code": "代码",
+    "reason": "原因",
+    "status": "HTTP 状态",
+    "meaning": "含义",
+    "reasons": "原因",
+    "codes": "代码"
+  }
+}

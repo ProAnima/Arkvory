@@ -1,0 +1,202 @@
+{
+  "common": {
+    "outline": "On this page",
+    "prev": "Previous page",
+    "next": "Next page",
+    "returnToTop": "Return to top",
+    "sidebarMenu": "Menu",
+    "appearance": "Appearance",
+    "lightTheme": "Switch to the light theme",
+    "darkTheme": "Switch to the dark theme",
+    "langMenu": "Change language",
+    "skipToContent": "Skip to content",
+    "editLink": "Edit this page on GitHub",
+    "download": "Download",
+    "notFound": {
+      "title": "PAGE NOT FOUND",
+      "quote": "There is no page at this address in the documentation.",
+      "link": "Back to the start",
+      "linkLabel": "Go to the documentation's start page"
+    },
+    "search": {
+      "button": "Search",
+      "noResults": "No results for",
+      "reset": "Clear the search",
+      "back": "Close the search",
+      "details": "Show details",
+      "select": "to select",
+      "navigate": "to move",
+      "close": "to close"
+    }
+  },
+  "description": "Arkvory documentation: a self-hosted repository for build artifacts, UPack packages, container images, Git LFS, npm and Unity packages and raw files; installation, operation, backups, mirrors and the HTTP API.",
+  "sections": {
+    "guide": "Getting started",
+    "install": "Install and update",
+    "use": "Working with Arkvory",
+    "protocols": "Clients and protocols",
+    "operate": "Operation",
+    "api": "HTTP API",
+    "apiReference": "API reference",
+    "reference": "Reference",
+    "internal": "For developers"
+  },
+  "internalOnly": "in Russian",
+  "untranslated": "This page has not been translated yet and is shown in English.",
+  "home": {
+    "tagline": "Self-hosted storage for build artifacts, packages, container images and large files: one server for CI, deployment agents and game teams.",
+    "start": "Get started",
+    "install": "Install",
+    "api": "HTTP API"
+  },
+  "api": {
+    "operations": "Operations",
+    "method": "Method",
+    "path": "Path",
+    "access": "Access",
+    "retry": "Retry",
+    "parameters": "Parameters",
+    "name": "Name",
+    "in": "In",
+    "required": "Required",
+    "type": "Type",
+    "description": "Description",
+    "requestBody": "Request body",
+    "responses": "Responses",
+    "status": "Status",
+    "example": "Example",
+    "yes": "yes",
+    "no": "no",
+    "none": "none",
+    "intro": "Operations of this group with their access rule, retry rule, parameters and answers. Every request carries a key: `Authorization: Bearer <key>` (see Authentication).",
+    "legacy": "file keys: {grants}",
+    "accessKinds": {
+      "public": "Anyone, without a key",
+      "authenticated": "Any valid key or session",
+      "account-session": "A signed-in account session (not a key)",
+      "administrator": "Administrator",
+      "service-bootstrap": "Bootstrap key (installation recovery key)",
+      "bootstrap-or-own-key": "Bootstrap key, or the key itself",
+      "pending-or-active-key": "The issued key, before or after activation",
+      "repository-discovery": "Repositories the caller may see ({action})",
+      "system": "System permission {action}",
+      "service-administration": "Service administration permission {action}",
+      "repository": "Repository permission: {actions}"
+    },
+    "retryKinds": {
+      "read": "Safe to repeat (read)",
+      "never-automatic": "Do not repeat automatically",
+      "idempotent": "Safe to repeat: the same request has the same effect",
+      "idempotency-key": "Safe to repeat with the same Idempotency-Key",
+      "compare-and-swap": "Repeat only with the expected revision (compare-and-swap)",
+      "reconcile-upload": "Re-read the upload, then decide",
+      "reconcile-job": "Re-read the job, then decide"
+    },
+    "locations": {
+      "path": "path",
+      "query": "query",
+      "header": "header"
+    },
+    "pages": {
+      "system": {
+        "title": "System and health",
+        "intro": "Liveness, readiness, metrics, the OpenAPI document and the server's capabilities."
+      },
+      "repositories": {
+        "title": "Repositories",
+        "intro": "The repositories a caller may see and the details of one."
+      },
+      "uploads": {
+        "title": "Uploads",
+        "intro": "Resumable uploads: create an upload session, send the bytes whole or in parts, complete it, and follow its completion job."
+      },
+      "artifacts": {
+        "title": "Artifacts and catalog",
+        "intro": "Published artifacts: listing, details, content, annotations, references, search, the catalog audit and its change feed."
+      },
+      "packages": {
+        "title": "Packages",
+        "intro": "UPack packages: registration, listing, versions and downloads by name, version or range."
+      },
+      "files": {
+        "title": "Files by path",
+        "intro": "Files addressed by a path in the repository: revisions, history, restore, and raw files in one request."
+      },
+      "promotion": {
+        "title": "Stages and promotion",
+        "intro": "Stages of an artifact (for example `release`), promotion between repositories and resolution of a stage to a version."
+      },
+      "storage": {
+        "title": "Storage policies and retention",
+        "intro": "Quotas, usage, retention policies, their preview and run, cleanup and deletion of artifacts."
+      },
+      "mirrors": {
+        "title": "Mirrors",
+        "intro": "The state of a mirrored repository and the feed a mirror follows."
+      },
+      "links": {
+        "title": "Download links",
+        "intro": "Time-limited links that let someone without a key download one artifact."
+      },
+      "attachments": {
+        "title": "Build attachments",
+        "intro": "Logs, reports and other files attached to an artifact, with their history."
+      },
+      "accounts": {
+        "title": "Accounts and sign-in",
+        "intro": "Sign-in, sessions, personal access tokens, users, groups and the security audit."
+      },
+      "services": {
+        "title": "Service accounts and keys",
+        "intro": "Service accounts for CI and automation, their keys, policies, delegations and audit."
+      },
+      "backups": {
+        "title": "Backups",
+        "intro": "Status, plan, runs, points, verification and retention of the built-in backup agent."
+      },
+      "updates": {
+        "title": "Updates",
+        "intro": "Update offers from the hub and the request to install one."
+      },
+      "feedback": {
+        "title": "Feedback",
+        "intro": "Reports with screenshots and logs sent to ProAnimaStudio through this server."
+      }
+    },
+    "field": "Field",
+    "response": "Response",
+    "rules": {
+      "title": "Rules",
+      "length": "{min}–{max} characters",
+      "minLength": "at least {min} characters",
+      "maxLength": "up to {max} characters",
+      "items": "{min}–{max} items",
+      "minItems": "at least {min} items",
+      "maxItems": "up to {max} items",
+      "entries": "up to {max} entries",
+      "range": "{min}–{max}",
+      "minimum": "at least {min}",
+      "maximum": "at most {max}",
+      "oneOf": "one of {values}",
+      "pattern": "matches {pattern}",
+      "decimal": "a whole number in decimal digits, sent as a string",
+      "sha256": "SHA-256: 64 lowercase hexadecimal digits",
+      "unique": "no repeated items",
+      "each": "each: {rules}",
+      "default": "default {value}",
+      "nullable": "may be null",
+      "arrayOf": "array of {type}",
+      "mapOf": "map of {type}"
+    }
+  },
+  "errors": {
+    "title": "Errors",
+    "intro": "Every failure is a JSON envelope with a stable machine code, an optional reason that refines it, a message for people and the request ID for support. Clients decide by code and reason, never by the message text.",
+    "code": "Code",
+    "reason": "Reason",
+    "status": "HTTP status",
+    "meaning": "Meaning",
+    "reasons": "Reasons",
+    "codes": "Codes"
+  }
+}

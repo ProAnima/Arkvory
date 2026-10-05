@@ -45,7 +45,8 @@
     "policy:check": "node scripts/check-policy.mjs",
     "test:db:up": "docker compose -f compose.test.yml up -d --wait",
     "test:db:stop": "docker compose -f compose.test.yml stop",
-    "brand:generate": "node scripts/build-brand.mjs"
+    "brand:generate": "node scripts/build-brand.mjs",
+    "wiki": "node scripts/wiki.mjs"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
@@ -58,10 +59,12 @@
     "dependency-cruiser": "18.4.0",
     "esbuild": "0.28.2",
     "eslint": "10.11.0",
+    "minisearch": "7.2.0",
     "playwright": "1.63.0",
     "prettier": "3.9.8",
     "typescript": "5.9.3",
     "typescript-eslint": "8.70.1",
+    "vitepress": "2.0.0-alpha.20",
     "yaml": "2.9.1",
     "yazl": "3.3.1"
   },
