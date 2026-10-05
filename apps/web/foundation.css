@@ -144,3 +144,12 @@ svg {
   stroke-linejoin: round;
   flex-shrink: 0;
 }
+/* Right to left (Arabic), what is data reads left to right: keys, hashes, paths, commands. */
+:root[dir='rtl'] :is(code, kbd, samp, pre) {
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+/* A field takes the direction of what is typed into it: a name in Arabic, a path in Latin. */
+:root[dir='rtl'] :is(input, textarea) {
+  unicode-bidi: plaintext;
+}

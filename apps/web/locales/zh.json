@@ -1,0 +1,3518 @@
+{
+  "errorNetwork": {
+    "en": "Arkvory did not answer. Check your network connection and try again.",
+    "text": "Arkvory 没有响应。请检查网络连接后重试。"
+  },
+  "errorTimeout": {
+    "en": "The server took too long to answer, so the request was stopped. Try again.",
+    "text": "服务器响应时间过长，请求已停止。请重试。"
+  },
+  "errorGateway": {
+    "en": "A proxy in front of Arkvory did not get an answer from it. Try again shortly or contact the administrator.",
+    "text": "Arkvory 前置的代理服务器没有收到 Arkvory 的响应。请稍后重试或联系管理员。"
+  },
+  "errorInternal": {
+    "en": "Unexpected server error. Report the request ID below to the administrator.",
+    "text": "服务器发生意外错误。请将下方的请求 ID 告知管理员。"
+  },
+  "errorUnavailable": {
+    "en": "The service is temporarily unavailable. Try again shortly.",
+    "text": "服务暂时不可用。请稍后重试。"
+  },
+  "errorFeedbackDisabled": {
+    "en": "Feedback is turned off on this server. Write to info@proanima.net instead.",
+    "text": "此服务器已关闭反馈功能。请改为发送邮件至 info@proanima.net。"
+  },
+  "errorHubUnreachable": {
+    "en": "The server cannot reach ProAnimaStudio right now. Try again later or write to info@proanima.net.",
+    "text": "服务器目前无法连接 ProAnimaStudio。请稍后重试，或发送邮件至 info@proanima.net。"
+  },
+  "errorFeedbackLimited": {
+    "en": "Too many messages from this server. Wait a few minutes and try again.",
+    "text": "来自此服务器的消息过多。请等待几分钟后重试。"
+  },
+  "errorReadOnly": {
+    "en": "This address only serves downloads. Make changes through the main Arkvory address.",
+    "text": "此地址仅提供下载。请通过 Arkvory 的主地址进行更改。"
+  },
+  "errorRouteMissing": {
+    "en": "This Arkvory server does not support the operation. Update the server or reload the console.",
+    "text": "此 Arkvory 服务器不支持该操作。请更新服务器或重新加载控制台。"
+  },
+  "errorBodyTooLarge": {
+    "en": "The entered data is too large. Shorten the values and try again.",
+    "text": "输入的数据过大。请缩短内容后重试。"
+  },
+  "errorMediaType": {
+    "en": "The server did not accept the request format. Reload the console.",
+    "text": "服务器不接受此请求格式。请重新加载控制台。"
+  },
+  "errorMalformed": {
+    "en": "The server could not read the request. Reload the console and try again.",
+    "text": "服务器无法读取该请求。请重新加载控制台后重试。"
+  },
+  "errorFields": {
+    "en": "Check the highlighted fields.",
+    "text": "请检查突出显示的字段。"
+  },
+  "errorRange": {
+    "en": "The requested part of the file is not available. Restart the download.",
+    "text": "请求的文件部分不可用。请重新开始下载。"
+  },
+  "errorTooManyRequests": {
+    "en": "Too many requests. Wait a moment and try again.",
+    "text": "请求过多。请稍候再试。"
+  },
+  "errorRegistrationLimited": {
+    "en": "Too many sign-up attempts from this network. Wait and try again.",
+    "text": "来自此网络的注册尝试过多。请稍后重试。"
+  },
+  "errorPasswordLimited": {
+    "en": "Too many wrong attempts at the current password. Wait and try again.",
+    "text": "当前密码尝试错误次数过多。请稍后重试。"
+  },
+  "sessionEnded": {
+    "en": "Your session has ended: you signed out elsewhere, changed the password or access was revoked. Sign in again.",
+    "text": "您的会话已结束：您已在其他地方退出登录、修改了密码，或访问权限已被撤销。请重新登录。"
+  },
+  "errorTokenExpired": {
+    "en": "This key or token has expired. Create a new one and connect again.",
+    "text": "此密钥或令牌已过期。请创建新的密钥或令牌，然后重新连接。"
+  },
+  "errorReadOnlyToken": {
+    "en": "This token can only read. Use a read-write token or sign in with your password.",
+    "text": "此令牌只能读取。请使用读写令牌，或使用密码登录。"
+  },
+  "errorCredentialRevoked": {
+    "en": "The key used for this action was revoked or has expired.",
+    "text": "用于此操作的密钥已被撤销或已过期。"
+  },
+  "errorSessionRequired": {
+    "en": "This action needs a password sign-in; keys and tokens cannot do it.",
+    "text": "此操作需要使用密码登录；密钥和令牌无法执行此操作。"
+  },
+  "errorAdministratorRequired": {
+    "en": "Only an administrator can do this.",
+    "text": "只有管理员可以执行此操作。"
+  },
+  "errorRegistrationDisabled": {
+    "en": "Self sign-up is turned off. Ask an administrator for an account.",
+    "text": "自助注册已关闭。请联系管理员为您创建账户。"
+  },
+  "errorOriginForbidden": {
+    "en": "The server does not allow requests from this console address. Contact the administrator.",
+    "text": "服务器不允许来自此控制台地址的请求。请联系管理员。"
+  },
+  "errorUploadExpired": {
+    "en": "The upload expired before it was finished. Start a new upload.",
+    "text": "上传在完成前已过期。请开始新的上传。"
+  },
+  "errorUploadState": {
+    "en": "This upload is already published or cancelled. Start a new upload.",
+    "text": "此上传已发布或已取消。请开始新的上传。"
+  },
+  "errorRevisionMismatch": {
+    "en": "Someone changed this item meanwhile. Reload it and apply your change again.",
+    "text": "此项目在此期间已被他人修改。请重新加载，然后再次应用您的更改。"
+  },
+  "errorVersionExists": {
+    "en": "This package version already exists. Publish it under a new version.",
+    "text": "此包版本已存在。请使用新版本发布。"
+  },
+  "errorPartsIncomplete": {
+    "en": "Some parts of the file have not arrived yet. Resume the upload.",
+    "text": "文件的部分分片尚未送达。请续传。"
+  },
+  "errorIdempotency": {
+    "en": "This duplicate protection key was already used for another file. Start a new upload to get a new key.",
+    "text": "此防重复键已用于另一个文件。请开始新的上传以获取新键。"
+  },
+  "errorAlreadyExists": {
+    "en": "An item with this name already exists. Choose another name.",
+    "text": "已存在同名项目。请选择其他名称。"
+  },
+  "errorStageLimit": {
+    "en": "This artifact already has the maximum number of stages. Remove one first.",
+    "text": "此制品的阶段数量已达上限。请先移除一个阶段。"
+  },
+  "errorStorageQuota": {
+    "en": "The repository quota is used up. Delete old builds or ask an administrator to raise it.",
+    "text": "仓库配额已用尽。请删除旧构建，或请管理员提高配额。"
+  },
+  "errorStorageFull": {
+    "en": "The server disk is full. Contact the administrator.",
+    "text": "服务器磁盘已满。请联系管理员。"
+  },
+  "errorAccountLimit": {
+    "en": "The maximum number of accounts has been reached.",
+    "text": "账户数量已达上限。"
+  },
+  "errorGroupLimit": {
+    "en": "The maximum number of groups has been reached.",
+    "text": "组数量已达上限。"
+  },
+  "errorMembershipLimit": {
+    "en": "The maximum number of group members has been reached.",
+    "text": "组成员数量已达上限。"
+  },
+  "errorGrantLimit": {
+    "en": "The maximum number of access rules has been reached.",
+    "text": "访问规则数量已达上限。"
+  },
+  "errorKeyLimit": {
+    "en": "The key limit for this account has been reached. Revoke unused keys first.",
+    "text": "此账户的密钥数量已达上限。请先撤销不再使用的密钥。"
+  },
+  "errorTokenLimit": {
+    "en": "You already have the maximum of active tokens. Revoke unused tokens first.",
+    "text": "您的有效令牌数量已达上限。请先撤销不再使用的令牌。"
+  },
+  "errorDelegationLimit": {
+    "en": "The maximum number of delegations has been reached.",
+    "text": "委派数量已达上限。"
+  },
+  "errorCatalogLimit": {
+    "en": "The storage catalog is full. Contact the administrator.",
+    "text": "存储目录已满。请联系管理员。"
+  },
+  "errorQueueFull": {
+    "en": "The processing queue is full. Try again later.",
+    "text": "处理队列已满。请稍后重试。"
+  },
+  "errorTransferLimit": {
+    "en": "Too many transfers are running right now. Try again later.",
+    "text": "当前正在进行的传输过多。请稍后重试。"
+  },
+  "errorCompletionFailed": {
+    "en": "The server could not finish this upload. Start a new upload or contact the administrator.",
+    "text": "服务器无法完成此上传。请开始新的上传或联系管理员。"
+  },
+  "errorUnexpectedResponse": {
+    "en": "The server sent an answer this console does not understand. Update the server or the console.",
+    "text": "服务器返回了此控制台无法识别的响应。请更新服务器或控制台。"
+  },
+  "fieldRequired": {
+    "en": "Required.",
+    "text": "必填。"
+  },
+  "fieldInvalid": {
+    "en": "Check this value.",
+    "text": "请检查此值。"
+  },
+  "fieldFormat": {
+    "en": "The format is not valid.",
+    "text": "格式无效。"
+  },
+  "fieldLength": {
+    "en": "The length is outside the allowed range.",
+    "text": "长度超出允许范围。"
+  },
+  "fieldRange": {
+    "en": "The value is outside the allowed range.",
+    "text": "值超出允许范围。"
+  },
+  "fieldType": {
+    "en": "This kind of value is not accepted.",
+    "text": "不接受此类型的值。"
+  },
+  "fieldUnknown": {
+    "en": "The server does not accept this field.",
+    "text": "服务器不接受此字段。"
+  },
+  "requestIdLabel": {
+    "en": "Request ID",
+    "text": "请求 ID"
+  },
+  "retryIn": {
+    "en": "Try again in {seconds} s.",
+    "text": "请在 {seconds} 秒后重试。"
+  },
+  "repositories": {
+    "en": "Repositories",
+    "text": "仓库"
+  },
+  "services": {
+    "en": "Service access",
+    "text": "服务访问"
+  },
+  "managementReload": {
+    "en": "Reload",
+    "text": "重新加载"
+  },
+  "managementMore": {
+    "en": "Next page",
+    "text": "下一页"
+  },
+  "managementEmpty": {
+    "en": "No entries available for this credential.",
+    "text": "当前凭据没有可用的条目。"
+  },
+  "managementSaved": {
+    "en": "Changes saved.",
+    "text": "更改已保存。"
+  },
+  "managementClose": {
+    "en": "Close",
+    "text": "关闭"
+  },
+  "repositoryModel": {
+    "en": "A repository appears once access to it is granted. Renaming or deleting repositories is not available here.",
+    "text": "获得仓库的访问权限后，仓库才会显示在这里。此处不支持重命名或删除仓库。"
+  },
+  "managementAccountInfo": {
+    "en": "ID {id} · version {revision}",
+    "text": "ID {id} · 版本 {revision}"
+  },
+  "repositoryOpen": {
+    "en": "Open files",
+    "text": "打开文件"
+  },
+  "repositoryStorage": {
+    "en": "Storage & cleanup",
+    "text": "存储与清理"
+  },
+  "repositoryAccess": {
+    "en": "Manage access",
+    "text": "管理访问权限"
+  },
+  "repositoryRights": {
+    "en": "Your permissions",
+    "text": "您的权限"
+  },
+  "serviceCreate": {
+    "en": "Create service account",
+    "text": "创建服务账户"
+  },
+  "serviceName": {
+    "en": "Account name",
+    "text": "账户名称"
+  },
+  "servicePolicy": {
+    "en": "Repository permissions",
+    "text": "仓库权限"
+  },
+  "servicePolicyHint": {
+    "en": "A key can do only what both this policy and the key itself allow. An empty policy gives no access to files.",
+    "text": "密钥只能执行此策略和密钥本身都允许的操作。空策略不授予任何文件访问权限。"
+  },
+  "serviceEnable": {
+    "en": "Enable account",
+    "text": "启用账户"
+  },
+  "serviceDisable": {
+    "en": "Disable account",
+    "text": "停用账户"
+  },
+  "serviceDisableHint": {
+    "en": "Disabling blocks every key of this account. Active transfers may finish.",
+    "text": "停用后，此账户的所有密钥都将被阻止。正在进行的传输可以完成。"
+  },
+  "servicePolicySave": {
+    "en": "Save policy",
+    "text": "保存策略"
+  },
+  "serviceKeys": {
+    "en": "Service keys",
+    "text": "服务密钥"
+  },
+  "serviceAudit": {
+    "en": "Activity log",
+    "text": "活动日志"
+  },
+  "serviceRefresh": {
+    "en": "Reload account",
+    "text": "重新加载账户"
+  },
+  "serviceDelegated": {
+    "en": "Access is limited to assigned accounts and actions.",
+    "text": "访问权限仅限于分配给您的账户和操作。"
+  },
+  "bindingAdd": {
+    "en": "Add repository",
+    "text": "添加仓库"
+  },
+  "bindingPermissions": {
+    "en": "Individual permissions",
+    "text": "单项权限"
+  },
+  "bindingRead": {
+    "en": "Read preset",
+    "text": "读取预设"
+  },
+  "bindingPublish": {
+    "en": "Publish preset",
+    "text": "发布预设"
+  },
+  "bindingNone": {
+    "en": "Clear permissions",
+    "text": "清除权限"
+  },
+  "bindingRemove": {
+    "en": "Remove repository",
+    "text": "移除仓库"
+  },
+  "bindingInvalid": {
+    "en": "Use unique repository IDs and select at least one permission for each repository.",
+    "text": "请使用不重复的仓库 ID，并为每个仓库至少选择一项权限。"
+  },
+  "keyNew": {
+    "en": "New key / cancel rotation",
+    "text": "新建密钥 / 取消轮换"
+  },
+  "keyIssue": {
+    "en": "Issue key",
+    "text": "签发密钥"
+  },
+  "keyExpires": {
+    "en": "Expires",
+    "text": "过期时间"
+  },
+  "keyName": {
+    "en": "Key name",
+    "text": "密钥名称"
+  },
+  "keyExpiry": {
+    "en": "Expires at (local time, optional)",
+    "text": "过期时间（本地时间，可选）"
+  },
+  "keyExpiryHint": {
+    "en": "Default: up to 90 days. Maximum: 365 days, also limited by the issuing operator’s expiry.",
+    "text": "默认最长 90 天，上限为 365 天，且不得晚于签发者自身密钥的过期时间。"
+  },
+  "keyRotate": {
+    "en": "Rotate",
+    "text": "轮换"
+  },
+  "keyRevoke": {
+    "en": "Revoke",
+    "text": "撤销"
+  },
+  "keyPending": {
+    "en": "Pending activation",
+    "text": "待激活"
+  },
+  "keyActive": {
+    "en": "Active",
+    "text": "有效"
+  },
+  "keyRevoked": {
+    "en": "Revoked",
+    "text": "已撤销"
+  },
+  "keyExpired": {
+    "en": "Expired",
+    "text": "已过期"
+  },
+  "keyRotationHint": {
+    "en": "Rotation cannot expand permissions. Activating the replacement limits the old key to at most 24 more hours. Delegations are not copied.",
+    "text": "轮换不能扩大权限。激活替换密钥后，旧密钥最多还能使用 24 小时。委派不会被复制。"
+  },
+  "keyRevokeHint": {
+    "en": "Revocation is permanent. Existing transfers may finish; new requests will be rejected.",
+    "text": "撤销是永久性的。正在进行的传输可以完成；新的请求将被拒绝。"
+  },
+  "keySecret": {
+    "en": "Save the new secret",
+    "text": "保存新机密"
+  },
+  "keySecretHint": {
+    "en": "Shown once. Save the secret securely before closing.",
+    "text": "仅显示一次。关闭前请妥善保存此机密。"
+  },
+  "keySecretMissing": {
+    "en": "The key was already issued; its secret cannot be shown again. Find it in the list, revoke it and issue another key if needed.",
+    "text": "此密钥已签发，其机密无法再次显示。如有需要，请在列表中找到该密钥，将其撤销后签发新密钥。"
+  },
+  "keyCopy": {
+    "en": "Copy secret",
+    "text": "复制机密"
+  },
+  "keyCopied": {
+    "en": "Copied.",
+    "text": "已复制。"
+  },
+  "keyCopyFailed": {
+    "en": "Clipboard unavailable. Select and copy the secret manually.",
+    "text": "剪贴板不可用。请手动选择并复制机密。"
+  },
+  "keyActivate": {
+    "en": "Activate key",
+    "text": "激活密钥"
+  },
+  "keyActivated": {
+    "en": "Key activated. Store it securely before closing.",
+    "text": "密钥已激活。关闭前请妥善保存。"
+  },
+  "keySaved": {
+    "en": "I have saved the secret",
+    "text": "我已保存机密"
+  },
+  "keyActivateHint": {
+    "en": "Activate after saving the secret. Pending credentials expire after 15 minutes.",
+    "text": "保存机密后再激活。待激活的凭据将在 15 分钟后过期。"
+  },
+  "keyRetryHint": {
+    "en": "After a network failure, retry without changing the form to reuse the issuance request. A lost secret cannot be recovered.",
+    "text": "发生网络故障后，请在不修改表单的情况下重试，以复用同一个签发请求。丢失的机密无法找回。"
+  },
+  "managementConfirm": {
+    "en": "Confirm action",
+    "text": "确认操作"
+  },
+  "managementConfirmName": {
+    "en": "Type the displayed name to confirm",
+    "text": "输入显示的名称以确认"
+  },
+  "managementConfirmSubmit": {
+    "en": "Confirm",
+    "text": "确认"
+  },
+  "delegations": {
+    "en": "Delegated administration",
+    "text": "委派管理"
+  },
+  "delegationTarget": {
+    "en": "Target account ID",
+    "text": "目标账户 ID"
+  },
+  "delegationActions": {
+    "en": "Administrative actions",
+    "text": "管理操作"
+  },
+  "delegationCeiling": {
+    "en": "Maximum repository permissions",
+    "text": "仓库权限上限"
+  },
+  "delegationSave": {
+    "en": "Save delegation",
+    "text": "保存委派"
+  },
+  "delegationRemove": {
+    "en": "Remove delegation",
+    "text": "移除委派"
+  },
+  "delegationNew": {
+    "en": "New delegation",
+    "text": "新建委派"
+  },
+  "delegationHint": {
+    "en": "Only the server owner (the setup account) can change delegations. Removing a delegation does not revoke keys its holder already activated.",
+    "text": "只有服务器所有者（初始设置时创建的账户）可以更改委派。移除委派不会撤销被委派者已激活的密钥。"
+  },
+  "delegationOwn": {
+    "en": "My administrative grants",
+    "text": "我的管理授权"
+  },
+  "keyDetails": {
+    "en": "Key details",
+    "text": "密钥详情"
+  },
+  "permission.repository.read": {
+    "en": "Discover repositories",
+    "text": "查看仓库"
+  },
+  "permission.storage.read": {
+    "en": "View storage policy and usage",
+    "text": "查看存储策略和用量"
+  },
+  "permission.storage.manage": {
+    "en": "Manage storage policy",
+    "text": "管理存储策略"
+  },
+  "permission.diagnostics.read": {
+    "en": "Read diagnostics",
+    "text": "查看诊断信息"
+  },
+  "permission.artifact.read": {
+    "en": "Read artifact details",
+    "text": "查看制品详情"
+  },
+  "permission.artifact.list": {
+    "en": "List artifacts",
+    "text": "列出制品"
+  },
+  "permission.artifact.delete": {
+    "en": "Delete artifacts",
+    "text": "删除制品"
+  },
+  "permission.artifact.promote": {
+    "en": "Promote artifacts and manage stages",
+    "text": "晋级制品并管理阶段"
+  },
+  "permission.content.read": {
+    "en": "Download files",
+    "text": "下载文件"
+  },
+  "permission.upload.create": {
+    "en": "Start uploads",
+    "text": "开始上传"
+  },
+  "permission.upload.read": {
+    "en": "Read upload progress",
+    "text": "查看上传进度"
+  },
+  "permission.upload.write": {
+    "en": "Upload bytes",
+    "text": "上传数据"
+  },
+  "permission.upload.complete": {
+    "en": "Finish uploads",
+    "text": "完成上传"
+  },
+  "permission.upload.cancel": {
+    "en": "Cancel uploads",
+    "text": "取消上传"
+  },
+  "permission.job.read": {
+    "en": "Read jobs",
+    "text": "查看任务"
+  },
+  "permission.package.read": {
+    "en": "Read packages",
+    "text": "查看包"
+  },
+  "permission.package.publish": {
+    "en": "Publish packages",
+    "text": "发布包"
+  },
+  "permission.asset.read": {
+    "en": "Read file links",
+    "text": "查看文件链接"
+  },
+  "permission.asset.write": {
+    "en": "Assign file links",
+    "text": "分配文件链接"
+  },
+  "permission.asset.restore": {
+    "en": "Restore file history",
+    "text": "恢复文件历史版本"
+  },
+  "permission.annotation.read": {
+    "en": "Read metadata",
+    "text": "查看元数据"
+  },
+  "permission.annotation.write": {
+    "en": "Edit metadata",
+    "text": "编辑元数据"
+  },
+  "permission.reference.write": {
+    "en": "Manage references",
+    "text": "管理引用"
+  },
+  "permission.audit.read": {
+    "en": "Read audit",
+    "text": "查看审计"
+  },
+  "permission.service-account.read": {
+    "en": "Read accounts",
+    "text": "查看账户"
+  },
+  "permission.service-account.manage": {
+    "en": "Enable or disable accounts",
+    "text": "启用或停用账户"
+  },
+  "permission.policy.read": {
+    "en": "Read account policies",
+    "text": "查看账户策略"
+  },
+  "permission.policy.manage": {
+    "en": "Manage account policies",
+    "text": "管理账户策略"
+  },
+  "permission.credential.read": {
+    "en": "Read key metadata",
+    "text": "查看密钥元数据"
+  },
+  "permission.credential.manage": {
+    "en": "Issue, rotate and revoke keys",
+    "text": "签发、轮换和撤销密钥"
+  },
+  "permission.service-audit.read": {
+    "en": "Read service audit",
+    "text": "查看服务审计"
+  },
+  "welcomePartial": {
+    "en": "The owner account exists. Sign in and finish repository permissions in Access groups; account creation must not be repeated.",
+    "text": "所有者账户已存在。请登录，并在“访问组”中完成仓库权限设置；请勿重复创建账户。"
+  },
+  "onboarding": {
+    "en": "Welcome to Arkvory",
+    "text": "欢迎使用 Arkvory"
+  },
+  "help": {
+    "en": "API & CLI",
+    "text": "API 与 CLI"
+  },
+  "welcomeAccess": {
+    "en": "01 · Sign in",
+    "text": "01 · 登录"
+  },
+  "welcomeAccessBody": {
+    "en": "On Windows, use the owner account you created in Setup. For a headless installation, create an owner using the private recovery key on the server.",
+    "text": "在 Windows 上，请使用安装程序中创建的所有者账户。对于无图形界面的安装，请在服务器上使用私有恢复密钥创建所有者。"
+  },
+  "welcomeSignIn": {
+    "en": "Open sign in",
+    "text": "前往登录"
+  },
+  "welcomeOwner": {
+    "en": "Create the first owner",
+    "text": "创建第一个所有者"
+  },
+  "welcomeRecovery": {
+    "en": "Recovery key",
+    "text": "恢复密钥"
+  },
+  "welcomeName": {
+    "en": "Owner name · 3–64 Latin letters, digits, dot, dash or underscore",
+    "text": "所有者名称 · 3–64 个拉丁字母、数字、点、短横线或下划线"
+  },
+  "welcomePassword": {
+    "en": "Password · at least 12 characters",
+    "text": "密码 · 至少 12 个字符"
+  },
+  "welcomeCreate": {
+    "en": "Create owner",
+    "text": "创建所有者"
+  },
+  "welcomeCreated": {
+    "en": "Owner created. Sign in with your new password. Keep the recovery key offline.",
+    "text": "所有者已创建。请使用新密码登录。请离线保管恢复密钥。"
+  },
+  "welcomePublish": {
+    "en": "02 · Publish a file",
+    "text": "02 · 发布文件"
+  },
+  "welcomePublishBody": {
+    "en": "Start with a small file in releases. Add labels and metadata; UPack builds can also carry manifests and attachments.",
+    "text": "先在 releases 中上传一个小文件。添加标签和元数据；UPack 构建还可以附带清单和附件。"
+  },
+  "welcomePublishAction": {
+    "en": "Open uploads",
+    "text": "打开上传"
+  },
+  "welcomeConnect": {
+    "en": "03 · Connect your tools",
+    "text": "03 · 连接您的工具"
+  },
+  "welcomeConnectBody": {
+    "en": "Give each integration its own service account and only the repository actions it needs. The API catalog shows the operations available to you.",
+    "text": "为每个集成分配单独的服务账户，并只授予它所需的仓库操作权限。API 目录会显示您可用的操作。"
+  },
+  "welcomeOperate": {
+    "en": "04 · Prepare production",
+    "text": "04 · 准备生产环境"
+  },
+  "welcomeOperateBody": {
+    "en": "Before remote access: configure HTTPS, backups and disk alerts. Updates are opt-in. Local storage is a single-server profile.",
+    "text": "开放远程访问前，请配置 HTTPS、备份和磁盘告警。更新需要手动启用。本地存储属于单服务器配置。"
+  },
+  "helpLoad": {
+    "en": "Load permitted API operations",
+    "text": "加载允许的 API 操作"
+  },
+  "helpSearch": {
+    "en": "Search method, path or operation",
+    "text": "搜索方法、路径或操作"
+  },
+  "helpHint": {
+    "en": "Sign in to see API operations available to your account.",
+    "text": "登录后即可查看您的账户可用的 API 操作。"
+  },
+  "helpEmpty": {
+    "en": "No matching operations.",
+    "text": "没有匹配的操作。"
+  },
+  "helpLoaded": {
+    "en": "Loaded {count} operations.",
+    "text": "已加载 {count} 个操作。"
+  },
+  "helpRetry": {
+    "en": "Retry policy:",
+    "text": "重试策略："
+  },
+  "helpActions": {
+    "en": "Required actions:",
+    "text": "所需操作："
+  },
+  "helpCli": {
+    "en": "Server lifecycle CLI",
+    "text": "服务器生命周期 CLI"
+  },
+  "helpRemoteCli": {
+    "en": "Remote client · arkvoryctl",
+    "text": "远程客户端 · arkvoryctl"
+  },
+  "helpRemoteCliBody": {
+    "en": "Install the separate Arkvory CLI package on your computer. It includes Node.js and needs no server services. Store your key in a private file. Repeat the same transfer command after interruption; use --json for CI/CD.",
+    "text": "在您的计算机上安装独立的 Arkvory CLI 包。它自带 Node.js，不需要任何服务器服务。请将密钥保存在私有文件中。传输中断后，重新执行同一条传输命令即可；在 CI/CD 中请使用 --json。"
+  },
+  "helpCliBody": {
+    "en": "Run from an elevated terminal on the server. These commands manage deployment; integrations use the HTTP API and SDK. Replace ROOT with the installation directory.",
+    "text": "请在服务器上以管理员身份打开的终端中运行。这些命令用于管理部署；集成请使用 HTTP API 和 SDK。请将 ROOT 替换为安装目录。"
+  },
+  "helpDocs": {
+    "en": "Documentation",
+    "text": "文档"
+  },
+  "helpDocsBody": {
+    "en": "Installation, everyday work, clients and protocols, operation, backups and the full HTTP API reference, in the language of the console.",
+    "text": "以控制台当前的语言提供：安装、日常使用、客户端与协议、运维、备份以及完整的 HTTP API 参考。"
+  },
+  "helpDocsOpen": {
+    "en": "Open the documentation",
+    "text": "打开文档"
+  },
+  "helpRecipes": {
+    "en": "Integration checklist",
+    "text": "集成检查清单"
+  },
+  "helpRecipesBody": {
+    "en": "Read capabilities → discover repositories → create upload with an idempotency key → resume parts → complete → poll readiness → download using Range and ETag. Never blindly retry a non-idempotent write.",
+    "text": "读取 capabilities → 发现仓库 → 使用幂等键创建上传 → 续传分片 → 完成上传 → 轮询就绪状态 → 使用 Range 和 ETag 下载。切勿盲目重试非幂等的写入操作。"
+  },
+  "navigationExpand": {
+    "en": "Expand sidebar",
+    "text": "展开侧边栏"
+  },
+  "navigationCollapse": {
+    "en": "Collapse sidebar",
+    "text": "折叠侧边栏"
+  },
+  "noUsers": {
+    "en": "No user accounts yet.",
+    "text": "还没有用户账户。"
+  },
+  "noAccessGroups": {
+    "en": "No access groups yet.",
+    "text": "还没有访问组。"
+  },
+  "fileBrowse": {
+    "en": "Choose file",
+    "text": "选择文件"
+  },
+  "fileNotSelected": {
+    "en": "No file selected",
+    "text": "未选择文件"
+  },
+  "navLibrary": {
+    "en": "Library",
+    "text": "库"
+  },
+  "navTransfers": {
+    "en": "Transfers",
+    "text": "传输"
+  },
+  "navResources": {
+    "en": "Resources",
+    "text": "资源"
+  },
+  "navStart": {
+    "en": "Getting started",
+    "text": "入门"
+  },
+  "keyHelpLabel": {
+    "en": "About service keys",
+    "text": "关于服务密钥"
+  },
+  "catalogHelpLabel": {
+    "en": "About artifacts",
+    "text": "关于制品"
+  },
+  "packageHelpLabel": {
+    "en": "About package filters",
+    "text": "关于包筛选"
+  },
+  "labelHelpLabel": {
+    "en": "About build labels",
+    "text": "关于构建标签"
+  },
+  "metadataHelpLabel": {
+    "en": "About metadata",
+    "text": "关于元数据"
+  },
+  "assetHelpLabel": {
+    "en": "About file links and versions",
+    "text": "关于文件链接和版本"
+  },
+  "attachmentHelpLabel": {
+    "en": "About build attachments",
+    "text": "关于构建附件"
+  },
+  "historyHelpLabel": {
+    "en": "About file history",
+    "text": "关于文件历史记录"
+  },
+  "adminHelpLabel": {
+    "en": "About access management",
+    "text": "关于访问管理"
+  },
+  "cleanupTitle": {
+    "en": "Physical cleanup",
+    "text": "物理清理"
+  },
+  "cleanupHelp": {
+    "en": "Frees disk space without stopping Arkvory. Active transfers and pinned files are deferred. Enable only after every Arkvory server is updated, including read servers and background processors. Pausing finishes the current file. The grace period is not a recycle bin.",
+    "text": "在不停止 Arkvory 的情况下释放磁盘空间。正在传输的文件和已固定的文件会推迟处理。请在所有 Arkvory 服务器（包括读取服务器和后台处理进程）都完成更新后再启用。暂停时会先处理完当前文件。宽限期不是回收站。"
+  },
+  "cleanupEnabled": {
+    "en": "Enable background cleanup",
+    "text": "启用后台清理"
+  },
+  "cleanupGrace": {
+    "en": "Grace period after deletion (hours)",
+    "text": "删除后的宽限期（小时）"
+  },
+  "cleanupBatch": {
+    "en": "Files per batch",
+    "text": "每批文件数"
+  },
+  "cleanupInterval": {
+    "en": "Interval between batches (seconds)",
+    "text": "批次间隔（秒）"
+  },
+  "cleanupDelay": {
+    "en": "Delay between files (milliseconds)",
+    "text": "文件间延迟（毫秒）"
+  },
+  "cleanupRefresh": {
+    "en": "Refresh cleanup status",
+    "text": "刷新清理状态"
+  },
+  "cleanupSave": {
+    "en": "Apply settings",
+    "text": "应用设置"
+  },
+  "cleanupRun": {
+    "en": "Request a batch",
+    "text": "请求执行一批"
+  },
+  "cleanupSaved": {
+    "en": "Cleanup settings applied.",
+    "text": "清理设置已应用。"
+  },
+  "cleanupRequested": {
+    "en": "Batch requested. Refresh status to see its result.",
+    "text": "已请求执行一批。刷新状态即可查看结果。"
+  },
+  "cleanupStats": {
+    "en": "Last batch: freed {bytes} · processed {collected} · deferred {deferred} · failed {failed}",
+    "text": "上一批：释放 {bytes} · 已处理 {collected} · 已推迟 {deferred} · 失败 {failed}"
+  },
+  "cleanupLastRun": {
+    "en": "Last completed batch:",
+    "text": "上次完成的批次："
+  },
+  "cleanupPaused": {
+    "en": "Cleanup is paused.",
+    "text": "清理已暂停。"
+  },
+  "cleanupScheduled": {
+    "en": "Background cleanup is enabled.",
+    "text": "后台清理已启用。"
+  },
+  "updates": {
+    "en": "Updates",
+    "text": "更新"
+  },
+  "updateAvailable": {
+    "en": "Arkvory {version} is available",
+    "text": "Arkvory {version} 现已推出"
+  },
+  "updateOpen": {
+    "en": "View update",
+    "text": "查看更新"
+  },
+  "updateCurrent": {
+    "en": "Installed version",
+    "text": "已安装版本"
+  },
+  "updateLatest": {
+    "en": "Latest stable release",
+    "text": "最新稳定版"
+  },
+  "updateChecked": {
+    "en": "Last check",
+    "text": "上次检查"
+  },
+  "updateCheck": {
+    "en": "Check now",
+    "text": "立即检查"
+  },
+  "updateInstall": {
+    "en": "Install update",
+    "text": "安装更新"
+  },
+  "updateSettings": {
+    "en": "Automatic updates",
+    "text": "自动更新"
+  },
+  "updateAutomatic": {
+    "en": "Install compatible stable releases automatically",
+    "text": "自动安装兼容的稳定版"
+  },
+  "updateHour": {
+    "en": "Maintenance hour (UTC)",
+    "text": "维护时段（UTC）"
+  },
+  "updateSave": {
+    "en": "Save settings",
+    "text": "保存设置"
+  },
+  "updateStatistics": {
+    "en": "Send anonymous statistics to ProAnimaStudio",
+    "text": "向 ProAnimaStudio 发送匿名统计信息"
+  },
+  "updateHub": {
+    "en": "Channel: {channel}. Versions are approved in the ProAnimaStudio hub; GitHub is used only when the hub cannot be reached. Statistics: a random installation id, version, system and installed updates — no names, addresses or content. Without statistics a version arrives only when it is rolled out to everyone.",
+    "text": "通道：{channel}。版本由 ProAnimaStudio 中心审核批准；仅当无法连接中心时才使用 GitHub。统计信息包括随机的安装 ID、版本、系统和已安装的更新，不含名称、地址或内容。不发送统计信息时，只有在某个版本向所有人推出后才会收到它。"
+  },
+  "updatePolicyHelp": {
+    "en": "Checks run every 6 hours, even when automatic installation is off. Automatic installation runs once per day during the selected UTC hour. A release that changes the database schema installs only after the server has captured and verified a fresh backup.",
+    "text": "每 6 小时检查一次，即使关闭了自动安装也会检查。自动安装每天在所选的 UTC 时段内运行一次。对于会更改数据库架构的版本，只有在服务器创建并验证了新的备份之后才会安装。"
+  },
+  "updateUnavailable": {
+    "en": "The host updater is not connected. Ask the server administrator to connect it using updates-connect.",
+    "text": "主机更新程序未连接。请服务器管理员使用 updates-connect 进行连接。"
+  },
+  "updateStale": {
+    "en": "The host updater has stopped reporting. Check the scheduler and installation lock on the server.",
+    "text": "主机更新程序已停止上报。请检查服务器上的计划任务和安装锁。"
+  },
+  "updateIdle": {
+    "en": "Updater is ready",
+    "text": "更新程序已就绪"
+  },
+  "updateChecking": {
+    "en": "Checking stable releases…",
+    "text": "正在检查稳定版…"
+  },
+  "updateWorking": {
+    "en": "Installing the release. The service may briefly disconnect; this page will reconnect.",
+    "text": "正在安装版本。服务可能会短暂断开；此页面将自动重新连接。"
+  },
+  "updatePending": {
+    "en": "Request accepted. Waiting for the host updater (usually within one minute).",
+    "text": "请求已接受。正在等待主机更新程序处理（通常在一分钟内）。"
+  },
+  "updateUnknown": {
+    "en": "Not checked yet",
+    "text": "尚未检查"
+  },
+  "updatePinned": {
+    "en": "Version is pinned. Remove the pin on the server before installing from the console.",
+    "text": "版本已固定。请先在服务器上取消固定，再从控制台安装。"
+  },
+  "updateMaintenance": {
+    "en": "Installation refused: a release that changes the database schema needs a fresh verified backup. Connect a backup vault and complete the first backup, then check again, or upgrade manually on the server.",
+    "text": "安装被拒绝：会更改数据库架构的版本需要一个经过验证的新备份。请连接备份存储并完成首次备份，然后再次检查；或在服务器上手动升级。"
+  },
+  "updateMigration": {
+    "en": "This release changes the database schema. The server captures and verifies a backup before installing, so installation takes longer.",
+    "text": "此版本会更改数据库架构。服务器会在安装前创建并验证备份，因此安装耗时更长。"
+  },
+  "updateCheckFailed": {
+    "en": "Release check failed. The displayed release may be outdated. Check GitHub access and credentials on the server.",
+    "text": "检查版本失败。显示的版本可能已过时。请检查服务器对 GitHub 的访问和凭据。"
+  },
+  "updateFailed": {
+    "en": "Update failed. Inspect the installation journal and service logs before retrying.",
+    "text": "更新失败。重试前请检查安装日志和服务日志。"
+  },
+  "updateRecovery": {
+    "en": "Manual recovery is required. Inspect processes, installation lock and journal on the server.",
+    "text": "需要手动恢复。请检查服务器上的进程、安装锁和日志。"
+  },
+  "updateConflict": {
+    "en": "Settings changed while the request was waiting. Refresh and submit again.",
+    "text": "请求等待期间设置已更改。请刷新后重新提交。"
+  },
+  "updateConfirm": {
+    "en": "Install Arkvory {version}?",
+    "text": "安装 Arkvory {version}？"
+  },
+  "updateConfirmHelp": {
+    "en": "Active transfers may be interrupted and need to resume. The installer verifies the release, backs up first when the database schema changes, and attempts rollback if startup fails. Schedule this action during a maintenance window.",
+    "text": "正在进行的传输可能会中断，需要续传。安装程序会验证版本，在数据库架构变更时先进行备份，并在启动失败时尝试回滚。请在维护时段内执行此操作。"
+  },
+  "updateCancel": {
+    "en": "Cancel",
+    "text": "取消"
+  },
+  "updateConfirmButton": {
+    "en": "Install this release",
+    "text": "安装此版本"
+  },
+  "updateConnection": {
+    "en": "Cannot contact Arkvory. Retrying automatically; do not submit another installation request.",
+    "text": "无法连接 Arkvory。正在自动重试；请勿再次提交安装请求。"
+  },
+  "backups": {
+    "en": "Backups",
+    "text": "备份"
+  },
+  "backupStateOk": {
+    "en": "Backups are healthy",
+    "text": "备份运行正常"
+  },
+  "backupStateWarning": {
+    "en": "Needs attention",
+    "text": "需要关注"
+  },
+  "backupStateCritical": {
+    "en": "Action required",
+    "text": "需要处理"
+  },
+  "backupStateLoading": {
+    "en": "Loading status…",
+    "text": "正在加载状态…"
+  },
+  "backupRefresh": {
+    "en": "Refresh status",
+    "text": "刷新状态"
+  },
+  "backupRun": {
+    "en": "Create backup now",
+    "text": "立即备份"
+  },
+  "backupNewest": {
+    "en": "Latest backup",
+    "text": "最新备份"
+  },
+  "backupNewestNone": {
+    "en": "No backups yet",
+    "text": "尚无备份"
+  },
+  "backupNewestHelp": {
+    "en": "Age counts from the snapshot time T: a backup contains the data as of T, not as of its completion. Hover the age for the exact local time.",
+    "text": "距今时间从快照时间 T 起算：备份包含截至 T 时刻的数据，而不是截至完成时的数据。将鼠标悬停在距今时间上可查看确切的本地时间。"
+  },
+  "backupNewestHelpLabel": {
+    "en": "About backup age",
+    "text": "关于备份距今时间"
+  },
+  "backupNextRun": {
+    "en": "Next run",
+    "text": "下次运行"
+  },
+  "backupNextDisabled": {
+    "en": "Schedule is off",
+    "text": "计划已关闭"
+  },
+  "backupNextUnknown": {
+    "en": "Not scheduled",
+    "text": "未安排"
+  },
+  "backupOverdue": {
+    "en": "Overdue",
+    "text": "已逾期"
+  },
+  "backupAgent": {
+    "en": "Backup agent",
+    "text": "备份代理"
+  },
+  "backupAgentOnline": {
+    "en": "Online",
+    "text": "在线"
+  },
+  "backupAgentOffline": {
+    "en": "Offline",
+    "text": "离线"
+  },
+  "backupAgentNever": {
+    "en": "Has not connected yet",
+    "text": "尚未连接过"
+  },
+  "backupAgentSeen": {
+    "en": "Last signal",
+    "text": "最后信号"
+  },
+  "backupAgentVersion": {
+    "en": "· version {version}",
+    "text": "· 版本 {version}"
+  },
+  "backupVault": {
+    "en": "Backup storage",
+    "text": "备份存储"
+  },
+  "backupVaultFree": {
+    "en": "{free} free of {total}",
+    "text": "可用 {free}，共 {total}"
+  },
+  "backupVaultAvailable": {
+    "en": "Available",
+    "text": "可用"
+  },
+  "backupVaultNotConfigured": {
+    "en": "Not configured",
+    "text": "未配置"
+  },
+  "backupVaultUnknown": {
+    "en": "Unknown while the agent is offline",
+    "text": "代理离线时无法获知"
+  },
+  "backupVaultUnavailable": {
+    "en": "Unavailable",
+    "text": "不可用"
+  },
+  "backupWarningsLabel": {
+    "en": "Backup warnings",
+    "text": "备份警告"
+  },
+  "backupSeverityWarning": {
+    "en": "Warning",
+    "text": "警告"
+  },
+  "backupSeverityCritical": {
+    "en": "Critical",
+    "text": "严重"
+  },
+  "backupWarningHelpLabel": {
+    "en": "What to do",
+    "text": "处理方法"
+  },
+  "backupWarningVaultNotConfigured": {
+    "en": "Backup storage is not configured for the agent",
+    "text": "未为代理配置备份存储"
+  },
+  "backupWarningAgentOffline": {
+    "en": "The backup agent is offline",
+    "text": "备份代理离线"
+  },
+  "backupWarningScheduleDisabled": {
+    "en": "The daily schedule is off",
+    "text": "每日计划已关闭"
+  },
+  "backupWarningNoBackupYet": {
+    "en": "There is no backup yet",
+    "text": "尚无备份"
+  },
+  "backupWarningBackupStale": {
+    "en": "The latest backup is out of date",
+    "text": "最新备份已过时"
+  },
+  "backupWarningLastRunFailed": {
+    "en": "The last backup failed",
+    "text": "上次备份失败"
+  },
+  "backupWarningVaultUnavailable": {
+    "en": "Backup storage is unavailable",
+    "text": "备份存储不可用"
+  },
+  "backupWarningVaultLowSpace": {
+    "en": "Backup storage is running out of space",
+    "text": "备份存储空间即将用尽"
+  },
+  "backupWarningVerifyFailed": {
+    "en": "A restore point failed verification",
+    "text": "某个恢复点未通过验证"
+  },
+  "backupWarningNeverDeepVerified": {
+    "en": "No full verification for more than 8 days",
+    "text": "超过 8 天未进行完整验证"
+  },
+  "backupActionVaultNotConfigured": {
+    "en": "Set ARKVORY_BACKUP_VAULT to a directory prepared with vault init in the environment of the arkvory-backup service and restart it. Once installers support it, use arkvory configure --backup-vault.",
+    "text": "在 arkvory-backup 服务的环境中，将 ARKVORY_BACKUP_VAULT 设置为已用 vault init 准备好的目录，然后重启该服务。待安装程序支持后，可改用 arkvory configure --backup-vault。"
+  },
+  "backupActionAgentOffline": {
+    "en": "Start the arkvory-backup service (npm run backup -- agent) and check its journal. Without the agent nothing is copied.",
+    "text": "启动 arkvory-backup 服务（npm run backup -- agent）并检查其日志。没有代理，就不会备份任何数据。"
+  },
+  "backupActionScheduleDisabled": {
+    "en": "Turn on the plan below if backups must run every day.",
+    "text": "如果需要每天备份，请启用下方的计划。"
+  },
+  "backupActionNoBackupYet": {
+    "en": "Create the first backup with \"Create backup now\".",
+    "text": "点击“立即备份”创建第一个备份。"
+  },
+  "backupActionBackupStale": {
+    "en": "The newest point is older than 26 hours. Check the job error codes below and the agent journal.",
+    "text": "最新的恢复点已超过 26 小时。请检查下方任务的错误代码和代理日志。"
+  },
+  "backupActionLastRunFailed": {
+    "en": "The error code is in the job table; the agent journal has the record backup.request.failed.",
+    "text": "错误代码见任务表；代理日志中有 backup.request.failed 记录。"
+  },
+  "backupActionVaultUnavailable": {
+    "en": "The backup storage volume is not mounted, has no vault.json or is not writable. Check the disk or NAS on the server.",
+    "text": "备份存储卷未挂载、缺少 vault.json 或不可写。请检查服务器上的磁盘或 NAS。"
+  },
+  "backupActionVaultLowSpace": {
+    "en": "Less than 10% or less than twice the last new data is free. Free space on the backup volume or keep fewer points.",
+    "text": "可用空间不足 10%，或不足上次新增数据量的两倍。请释放备份卷上的空间，或减少保留的恢复点。"
+  },
+  "backupActionVerifyFailed": {
+    "en": "Do not change the backup storage. Find the point with a verification error below and investigate its code.",
+    "text": "请勿更改备份存储。在下方找到验证出错的恢复点，并根据其错误代码排查原因。"
+  },
+  "backupActionNeverDeepVerified": {
+    "en": "Run \"Verify fully\" for the newest point and check that the agent is running.",
+    "text": "对最新的恢复点运行“完整验证”，并确认代理正在运行。"
+  },
+  "backupRestoreNote": {
+    "en": "Restoring is an operator action on the server, into an empty target.",
+    "text": "恢复由运维人员在服务器上执行，且目标必须为空。"
+  },
+  "backupRestoreHelp": {
+    "en": "On the server: npm run backup -- restore --vault <vault> --point <id> --storage <empty directory>, with ARKVORY_RESTORE_DATABASE_URL of an empty database. Run it first without --yes (a check that writes nothing), then with --yes, start a separate instance on the restored data and check it before switching production. Details: the documentation, \"Backups\".",
+    "text": "在服务器上运行：npm run backup -- restore --vault <vault> --point <id> --storage <空目录>，并将 ARKVORY_RESTORE_DATABASE_URL 设为一个空数据库。先不带 --yes 运行（仅检查，不写入任何内容），再带 --yes 运行；然后在恢复的数据上启动一个独立实例，检查无误后再切换生产环境。详情请参阅文档中的“备份”。"
+  },
+  "backupRestoreHelpLabel": {
+    "en": "How to restore",
+    "text": "如何恢复"
+  },
+  "backupRunningLabel": {
+    "en": "Running now",
+    "text": "正在运行"
+  },
+  "backupRunQueued": {
+    "en": "Backup queued. The agent starts it at its next queue check.",
+    "text": "备份已加入队列。代理会在下次检查队列时开始执行。"
+  },
+  "backupVerifyQueued": {
+    "en": "Full verification queued.",
+    "text": "完整验证已加入队列。"
+  },
+  "backupRetentionQueued": {
+    "en": "Retention queued: the agent removes the points outside the policy.",
+    "text": "保留任务已加入队列：代理将删除不符合策略的恢复点。"
+  },
+  "backupPinDone": {
+    "en": "Point pinned: retention keeps it.",
+    "text": "恢复点已固定：保留规则不会删除它。"
+  },
+  "backupUnpinDone": {
+    "en": "Point unpinned.",
+    "text": "已取消固定恢复点。"
+  },
+  "backupPoints": {
+    "en": "Restore points",
+    "text": "恢复点"
+  },
+  "backupPointsHelp": {
+    "en": "Retention keeps the newest point of each of the last N local days of the plan time zone, and likewise of weeks and months, plus pinned points and the newest point. Other points of the same day are removed: pin a point you must keep.",
+    "text": "保留规则会按计划所用时区，为最近 N 个本地日各保留最新的一个恢复点，周和月同理；此外还会保留已固定的恢复点和最新的恢复点。同一天的其他恢复点将被删除：必须保留的恢复点请固定。"
+  },
+  "backupPointsHelpLabel": {
+    "en": "About retention",
+    "text": "关于保留"
+  },
+  "backupRetentionApply": {
+    "en": "Apply retention",
+    "text": "应用保留规则"
+  },
+  "backupPointsEmpty": {
+    "en": "No restore points in the current backup storage yet.",
+    "text": "当前备份存储中还没有恢复点。"
+  },
+  "backupSnapshot": {
+    "en": "State as of (T)",
+    "text": "数据截至（T）"
+  },
+  "backupCompleted": {
+    "en": "Completed",
+    "text": "完成时间"
+  },
+  "backupSize": {
+    "en": "Size",
+    "text": "大小"
+  },
+  "backupNewBytes": {
+    "en": "+{size} new",
+    "text": "新增 {size}"
+  },
+  "backupFiles": {
+    "en": "Files",
+    "text": "文件"
+  },
+  "backupVerification": {
+    "en": "Verification",
+    "text": "验证"
+  },
+  "backupVerifyNone": {
+    "en": "Not verified",
+    "text": "未验证"
+  },
+  "backupVerifyStructural": {
+    "en": "Structure checked",
+    "text": "已检查结构"
+  },
+  "backupVerifyDeep": {
+    "en": "Fully verified",
+    "text": "已完整验证"
+  },
+  "backupVerifyFailed": {
+    "en": "Verification failed",
+    "text": "验证失败"
+  },
+  "backupPinnedColumn": {
+    "en": "Pinned",
+    "text": "固定"
+  },
+  "backupPinnedYes": {
+    "en": "Pinned",
+    "text": "已固定"
+  },
+  "backupVerifyDeepAction": {
+    "en": "Verify fully",
+    "text": "完整验证"
+  },
+  "backupPin": {
+    "en": "Pin",
+    "text": "固定"
+  },
+  "backupUnpin": {
+    "en": "Unpin",
+    "text": "取消固定"
+  },
+  "backupRetentionConfirm": {
+    "en": "Apply retention now? Removal from the backup storage cannot be undone: the points below and the content no remaining point needs are deleted.",
+    "text": "立即应用保留规则？从备份存储中删除的内容无法撤消：下方列出的恢复点，以及其余恢复点不再需要的内容，都将被删除。"
+  },
+  "backupRetentionKeep": {
+    "en": "Kept: {count}",
+    "text": "保留：{count}"
+  },
+  "backupRetentionDelete": {
+    "en": "Removed: {count}",
+    "text": "删除：{count}"
+  },
+  "backupRetentionNothing": {
+    "en": "Nothing to remove.",
+    "text": "没有需要删除的内容。"
+  },
+  "backupReasonDaily": {
+    "en": "day",
+    "text": "日"
+  },
+  "backupReasonWeekly": {
+    "en": "week",
+    "text": "周"
+  },
+  "backupReasonMonthly": {
+    "en": "month",
+    "text": "月"
+  },
+  "backupReasonPinned": {
+    "en": "pinned",
+    "text": "已固定"
+  },
+  "backupReasonNewest": {
+    "en": "newest",
+    "text": "最新"
+  },
+  "backupPointShort": {
+    "en": "Point {id}",
+    "text": "恢复点 {id}"
+  },
+  "backupJobs": {
+    "en": "Jobs",
+    "text": "任务"
+  },
+  "backupJobsHelp": {
+    "en": "Jobs run in the backup agent on the server, one at a time; closing this page does not stop them. Every backup is followed by a structure check and retention.",
+    "text": "任务由服务器上的备份代理逐个执行；关闭此页面不会停止任务。每次备份之后都会进行结构检查并应用保留规则。"
+  },
+  "backupJobsHelpLabel": {
+    "en": "About jobs",
+    "text": "关于任务"
+  },
+  "backupJobsEmpty": {
+    "en": "No backup jobs yet.",
+    "text": "还没有备份任务。"
+  },
+  "backupJobKind": {
+    "en": "Job",
+    "text": "任务"
+  },
+  "backupJobState": {
+    "en": "State",
+    "text": "状态"
+  },
+  "backupJobPhase": {
+    "en": "Phase",
+    "text": "步骤"
+  },
+  "backupJobStarted": {
+    "en": "Started",
+    "text": "开始时间"
+  },
+  "backupJobFinished": {
+    "en": "Finished",
+    "text": "结束时间"
+  },
+  "backupJobError": {
+    "en": "Error code",
+    "text": "错误代码"
+  },
+  "backupJobProgress": {
+    "en": "Progress",
+    "text": "进度"
+  },
+  "backupKindCapture": {
+    "en": "Backup",
+    "text": "备份"
+  },
+  "backupKindVerify": {
+    "en": "Verification",
+    "text": "验证"
+  },
+  "backupKindRetention": {
+    "en": "Retention",
+    "text": "保留"
+  },
+  "backupJobQueued": {
+    "en": "Queued",
+    "text": "排队中"
+  },
+  "backupJobRunning": {
+    "en": "Running",
+    "text": "运行中"
+  },
+  "backupJobCommitting": {
+    "en": "Finishing",
+    "text": "正在完成"
+  },
+  "backupJobCompleted": {
+    "en": "Completed",
+    "text": "已完成"
+  },
+  "backupJobFailed": {
+    "en": "Failed",
+    "text": "失败"
+  },
+  "backupJobInterrupted": {
+    "en": "Interrupted",
+    "text": "已中断"
+  },
+  "backupPhasePreparing": {
+    "en": "Preparing",
+    "text": "准备"
+  },
+  "backupPhaseCatalog": {
+    "en": "Catalog snapshot",
+    "text": "目录快照"
+  },
+  "backupPhaseTransfer": {
+    "en": "Copying files",
+    "text": "复制文件"
+  },
+  "backupPhaseFinishing": {
+    "en": "Finishing",
+    "text": "收尾"
+  },
+  "backupPhaseDone": {
+    "en": "Done",
+    "text": "完成"
+  },
+  "backupPhaseStructural": {
+    "en": "Structure check",
+    "text": "结构检查"
+  },
+  "backupPhaseDeep": {
+    "en": "Full check",
+    "text": "完整检查"
+  },
+  "backupProgressBytes": {
+    "en": "{done} of {total}",
+    "text": "{done} / {total}"
+  },
+  "backupPlan": {
+    "en": "Schedule and retention",
+    "text": "计划与保留"
+  },
+  "backupPlanHelp": {
+    "en": "One backup per day at the chosen local time of an explicit time zone; a nonexistent time during a clock change runs at the change. After downtime one missed run is caught up. Turning the plan on does not start a backup immediately.",
+    "text": "每天在指定时区的所选本地时间备份一次；如果该时间因时钟调整而不存在，则在调整时刻运行。停机后会补跑一次错过的备份。启用计划不会立即开始备份。"
+  },
+  "backupPlanHelpLabel": {
+    "en": "About the plan",
+    "text": "关于计划"
+  },
+  "backupEnabled": {
+    "en": "Back up daily on schedule",
+    "text": "按计划每日备份"
+  },
+  "backupTime": {
+    "en": "Local time",
+    "text": "本地时间"
+  },
+  "backupTimezone": {
+    "en": "Time zone (IANA)",
+    "text": "时区（IANA）"
+  },
+  "backupTimezonePlaceholder": {
+    "en": "e.g. Europe/Moscow",
+    "text": "例如 Asia/Shanghai"
+  },
+  "backupZoneOffset": {
+    "en": "Now {offset}",
+    "text": "当前 {offset}"
+  },
+  "backupZoneUnknown": {
+    "en": "This browser does not know the zone; the server checks it on save.",
+    "text": "此浏览器无法识别该时区；服务器会在保存时进行检查。"
+  },
+  "backupZoneBrowser": {
+    "en": "Use {zone}",
+    "text": "使用 {zone}"
+  },
+  "backupRetentionLegend": {
+    "en": "Keep the newest point of the last",
+    "text": "保留最近若干天、周、月中每个周期的最新恢复点"
+  },
+  "backupDaily": {
+    "en": "Days",
+    "text": "天数"
+  },
+  "backupWeekly": {
+    "en": "Weeks",
+    "text": "周数"
+  },
+  "backupMonthly": {
+    "en": "Months",
+    "text": "月数"
+  },
+  "backupPlanSave": {
+    "en": "Save plan",
+    "text": "保存计划"
+  },
+  "backupPlanSaved": {
+    "en": "Plan saved · version {revision}",
+    "text": "计划已保存 · 版本 {revision}"
+  },
+  "backupPlanConflict": {
+    "en": "The plan was changed elsewhere. Its current version is loaded: review it and save again.",
+    "text": "计划已在其他地方被修改。已加载其当前版本：请检查后再次保存。"
+  },
+  "backupReadOnly": {
+    "en": "Changing backups requires the backup management permission.",
+    "text": "更改备份需要备份管理权限。"
+  },
+  "summarySize": {
+    "en": "Size",
+    "text": "大小"
+  },
+  "summaryCreated": {
+    "en": "Uploaded",
+    "text": "上传时间"
+  },
+  "summaryHash": {
+    "en": "SHA-256",
+    "text": "SHA-256"
+  },
+  "copyHash": {
+    "en": "Copy",
+    "text": "复制"
+  },
+  "hashCopied": {
+    "en": "SHA-256 copied to the clipboard.",
+    "text": "SHA-256 已复制到剪贴板。"
+  },
+  "copyFailed": {
+    "en": "The browser did not allow copying. Select the value and copy it manually.",
+    "text": "浏览器不允许复制。请选中该值并手动复制。"
+  },
+  "promotionTitle": {
+    "en": "Promotion",
+    "text": "晋级"
+  },
+  "promotionHint": {
+    "en": "Stages mark where a build is approved. Promotion publishes the build in another repository without uploading it again.",
+    "text": "阶段标明构建已在何处获得批准。晋级会将构建发布到另一个仓库，无需重新上传。"
+  },
+  "stagesTitle": {
+    "en": "Stages",
+    "text": "阶段"
+  },
+  "stagesEmpty": {
+    "en": "No stages yet.",
+    "text": "还没有阶段。"
+  },
+  "stageName": {
+    "en": "Stage",
+    "text": "阶段"
+  },
+  "stageComment": {
+    "en": "Comment (optional)",
+    "text": "备注（可选）"
+  },
+  "stageAdd": {
+    "en": "Add stage",
+    "text": "添加阶段"
+  },
+  "stageRemove": {
+    "en": "Remove stage {stage}",
+    "text": "移除阶段 {stage}"
+  },
+  "stageRemoveConfirm": {
+    "en": "Remove stage {stage}? Deployments that resolve this stage will pick another version.",
+    "text": "移除阶段 {stage}？按此阶段解析版本的部署将选取其他版本。"
+  },
+  "stageAdded": {
+    "en": "Stage {stage} added.",
+    "text": "已添加阶段 {stage}。"
+  },
+  "stageRemoved": {
+    "en": "Stage {stage} removed.",
+    "text": "已移除阶段 {stage}。"
+  },
+  "stageInvalid": {
+    "en": "Use lowercase letters, digits, dot, dash or underscore (up to 32 characters).",
+    "text": "请使用小写字母、数字、点、短横线或下划线（最多 32 个字符）。"
+  },
+  "promoteTitle": {
+    "en": "Promote to repository",
+    "text": "晋级到仓库"
+  },
+  "promoteTarget": {
+    "en": "Target repository",
+    "text": "目标仓库"
+  },
+  "promoteNoTargets": {
+    "en": "No other repository allows you to promote.",
+    "text": "没有其他允许您晋级的仓库。"
+  },
+  "promoteStages": {
+    "en": "Stages in the target",
+    "text": "目标仓库中的阶段"
+  },
+  "promoteComment": {
+    "en": "Comment (optional)",
+    "text": "备注（可选）"
+  },
+  "promoteMove": {
+    "en": "Move: remove the build from this repository after promotion",
+    "text": "移动：晋级后从此仓库移除该构建"
+  },
+  "promoteMoveHint": {
+    "en": "Without Move, the build stays here and a copy appears in the target.",
+    "text": "不选择“移动”时，构建会保留在此处，并在目标仓库中出现一份副本。"
+  },
+  "promoteMoveConfirm": {
+    "en": "Move the build to {repository}? It will be removed from this repository.",
+    "text": "将构建移动到 {repository}？它将从此仓库中移除。"
+  },
+  "promoteSubmit": {
+    "en": "Promote",
+    "text": "晋级"
+  },
+  "promoteDone": {
+    "en": "Published in {repository}.",
+    "text": "已在 {repository} 中发布。"
+  },
+  "promoteExisting": {
+    "en": "Already published in {repository}; stages updated.",
+    "text": "已在 {repository} 中发布；阶段已更新。"
+  },
+  "promoteMoved": {
+    "en": "Moved to {repository}. The build was removed from this repository.",
+    "text": "已移动到 {repository}。该构建已从此仓库中移除。"
+  },
+  "promotionHistory": {
+    "en": "History",
+    "text": "历史记录"
+  },
+  "promotionHistoryEmpty": {
+    "en": "No promotion events yet.",
+    "text": "还没有晋级事件。"
+  },
+  "promotionMore": {
+    "en": "Show more",
+    "text": "显示更多"
+  },
+  "eventStageAdded": {
+    "en": "{actor} added stage {stage}",
+    "text": "{actor} 添加了阶段 {stage}"
+  },
+  "eventStageRemoved": {
+    "en": "{actor} removed stage {stage}",
+    "text": "{actor} 移除了阶段 {stage}"
+  },
+  "eventPromotedCopy": {
+    "en": "{actor} copied to {repository}",
+    "text": "{actor} 复制到了 {repository}"
+  },
+  "eventPromotedMove": {
+    "en": "{actor} moved to {repository}",
+    "text": "{actor} 移动到了 {repository}"
+  },
+  "eventReceivedCopy": {
+    "en": "{actor} copied from {repository}",
+    "text": "{actor} 从 {repository} 复制而来"
+  },
+  "eventReceivedMove": {
+    "en": "{actor} moved from {repository}",
+    "text": "{actor} 从 {repository} 移动而来"
+  },
+  "packageStages": {
+    "en": "Stages",
+    "text": "阶段"
+  },
+  "sizeBytes": {
+    "en": "{value} B",
+    "text": "{value} B"
+  },
+  "sizeKiB": {
+    "en": "{value} KiB",
+    "text": "{value} KiB"
+  },
+  "sizeMiB": {
+    "en": "{value} MiB",
+    "text": "{value} MiB"
+  },
+  "sizeGiB": {
+    "en": "{value} GiB",
+    "text": "{value} GiB"
+  },
+  "sizeTiB": {
+    "en": "{value} TiB",
+    "text": "{value} TiB"
+  },
+  "mirrorBadge": {
+    "en": "Mirror",
+    "text": "镜像"
+  },
+  "mirrorBehind": {
+    "en": "Mirror · syncing",
+    "text": "镜像 · 同步中"
+  },
+  "mirrorFailing": {
+    "en": "Mirror · sync error",
+    "text": "镜像 · 同步错误"
+  },
+  "mirrorHelpLabel": {
+    "en": "About this mirror",
+    "text": "关于此镜像"
+  },
+  "mirrorDetails": {
+    "en": "Read-only copy of “{source}” from {upstream}, kept in sync by the server.",
+    "text": "{upstream} 上“{source}”的只读副本，由服务器保持同步。"
+  },
+  "mirrorSynced": {
+    "en": "Last synchronized:",
+    "text": "上次同步："
+  },
+  "mirrorError": {
+    "en": "The last attempt failed ({code}); downloads keep working.",
+    "text": "上次尝试失败（{code}）；下载仍可正常进行。"
+  },
+  "mirrorNever": {
+    "en": "not yet",
+    "text": "尚未同步"
+  },
+  "mirrorImport": {
+    "en": "Imports",
+    "text": "导入"
+  },
+  "mirrorImportFailing": {
+    "en": "Imports · sync error",
+    "text": "导入 · 同步错误"
+  },
+  "mirrorImportDetails": {
+    "en": "Versions marked {stages} in “{source}” on {upstream} are copied here automatically. Later changes and deletions there do not affect them.",
+    "text": "{upstream} 上“{source}”中标记为 {stages} 的版本会自动复制到这里。之后源仓库中的更改和删除不会影响这些版本。"
+  },
+  "reportOpen": {
+    "en": "Feedback",
+    "text": "反馈"
+  },
+  "reportTitle": {
+    "en": "Feedback to ProAnimaStudio",
+    "text": "向 ProAnimaStudio 反馈"
+  },
+  "reportIntro": {
+    "en": "Your message goes to the developers of Arkvory through the ProAnimaStudio hub. Only what this form shows is sent.",
+    "text": "您的消息将通过 ProAnimaStudio 中心发送给 Arkvory 的开发人员。只会发送此表单中显示的内容。"
+  },
+  "reportMessage": {
+    "en": "What happened, or what should work better?",
+    "text": "发生了什么问题，或者哪些地方可以改进？"
+  },
+  "reportEmail": {
+    "en": "Email for a reply (optional)",
+    "text": "回复邮箱（可选）"
+  },
+  "reportScreenshots": {
+    "en": "Screenshots: paste from the clipboard (Ctrl+V), drop files here or choose them. Up to 6 PNG, JPEG, WebP or GIF images, 8 MB each.",
+    "text": "屏幕截图：从剪贴板粘贴（Ctrl+V）、将文件拖放到此处或选择文件。最多 6 张 PNG、JPEG、WebP 或 GIF 图片，每张不超过 8 MB。"
+  },
+  "reportAddScreenshot": {
+    "en": "Choose images",
+    "text": "选择图片"
+  },
+  "reportShot": {
+    "en": "{name} · {size}",
+    "text": "{name} · {size}"
+  },
+  "reportRemove": {
+    "en": "Remove {name}",
+    "text": "移除 {name}"
+  },
+  "reportLogs": {
+    "en": "Logs",
+    "text": "日志"
+  },
+  "reportClientLog": {
+    "en": "Log of this page — entries: {count}",
+    "text": "此页面的日志（共 {count} 条）"
+  },
+  "reportServerLog": {
+    "en": "Server log and system summary",
+    "text": "服务器日志和系统摘要"
+  },
+  "reportShow": {
+    "en": "Show what is attached",
+    "text": "显示附带的内容"
+  },
+  "reportLoading": {
+    "en": "Loading…",
+    "text": "正在加载…"
+  },
+  "reportTail": {
+    "en": "The last {count} lines are shown; the whole log is attached.",
+    "text": "仅显示最后 {count} 行；将附带完整日志。"
+  },
+  "reportSend": {
+    "en": "Send",
+    "text": "发送"
+  },
+  "reportSending": {
+    "en": "Sending…",
+    "text": "正在发送…"
+  },
+  "reportSent": {
+    "en": "Thank you! Your message was sent, reference {id}.",
+    "text": "谢谢！您的消息已发送，编号为 {id}。"
+  },
+  "reportClose": {
+    "en": "Close",
+    "text": "关闭"
+  },
+  "reportMessageRequired": {
+    "en": "Describe the problem or the idea.",
+    "text": "请描述问题或想法。"
+  },
+  "reportEmailInvalid": {
+    "en": "Check the email address.",
+    "text": "请检查邮箱地址。"
+  },
+  "reportTooMany": {
+    "en": "At most 6 images.",
+    "text": "最多 6 张图片。"
+  },
+  "reportFileType": {
+    "en": "{name}: only PNG, JPEG, WebP or GIF images.",
+    "text": "{name}：仅支持 PNG、JPEG、WebP 或 GIF 图片。"
+  },
+  "reportFileTooLarge": {
+    "en": "{name} is larger than 8 MB.",
+    "text": "{name} 超过 8 MB。"
+  },
+  "reportTooLarge": {
+    "en": "Everything together is over 15 MB: remove some images.",
+    "text": "总大小超过 15 MB：请移除部分图片。"
+  },
+  "productName": {
+    "en": "ProAnima Arkvory",
+    "text": "ProAnima Arkvory"
+  },
+  "productShortName": {
+    "en": "Arkvory",
+    "text": "Arkvory"
+  },
+  "studioName": {
+    "en": "PROANIMA STUDIO",
+    "text": "PROANIMA STUDIO"
+  },
+  "copyright": {
+    "en": "© Ian Panaev · ProAnimaStudio",
+    "text": "© Ian Panaev · ProAnimaStudio"
+  },
+  "themeCurrent": {
+    "en": "Appearance: {value}",
+    "text": "外观：{value}"
+  },
+  "repositoryHint": {
+    "en": "After sign-in, the first repository available to you is selected.",
+    "text": "登录后，将自动选择您可访问的第一个仓库。"
+  },
+  "keySignIn": {
+    "en": "Connect with a service or automation key",
+    "text": "使用服务密钥或自动化密钥连接"
+  },
+  "signInFailed": {
+    "en": "Wrong username or password.",
+    "text": "用户名或密码错误。"
+  },
+  "currentPasswordWrong": {
+    "en": "The current password is wrong.",
+    "text": "当前密码错误。"
+  },
+  "sessionExpired": {
+    "en": "Your session has expired. Sign in again to continue.",
+    "text": "您的会话已过期。请重新登录以继续。"
+  },
+  "errorSignInRequired": {
+    "en": "Sign in or connect with a service key to continue.",
+    "text": "请登录或使用服务密钥连接以继续。"
+  },
+  "idempotencyHint": {
+    "en": "Prevents a retried upload from creating a second copy. It is sent as the Idempotency-Key of the request that creates the upload.",
+    "text": "防止重试的上传产生第二份副本。该键会作为创建上传的请求的 Idempotency-Key 发送。"
+  },
+  "idempotencyHelpLabel": {
+    "en": "About duplicate protection",
+    "text": "关于防重复"
+  },
+  "assetPathExample": {
+    "en": "releases/current.upack",
+    "text": "releases/current.upack"
+  },
+  "stageExample": {
+    "en": "release",
+    "text": "release"
+  },
+  "storageUsageUnlimited": {
+    "en": "Published {published} · unfinished uploads {pending} · awaiting cleanup {retired} · in use {total} · no quota",
+    "text": "已发布 {published} · 未完成的上传 {pending} · 等待清理 {retired} · 已用 {total} · 无配额"
+  },
+  "storageQuotaInvalid": {
+    "en": "Enter the quota in GiB, for example 50 or 0.5.",
+    "text": "请以 GiB 为单位输入配额，例如 50 或 0.5。"
+  },
+  "storagePreviewItem": {
+    "en": "{name} · {id} · {size}",
+    "text": "{name} · {id} · {size}"
+  },
+  "attachmentVersion": {
+    "en": "Version {revision}",
+    "text": "版本 {revision}"
+  },
+  "storageEventCode": {
+    "en": "· {level} · {code}",
+    "text": "· {level} · {code}"
+  },
+  "packageGroupHeading": {
+    "en": "{group} / {name}",
+    "text": "{group} / {name}"
+  },
+  "repositoryHelpLabel": {
+    "en": "About repository selection",
+    "text": "关于仓库选择"
+  },
+  "metadataFilterHelpLabel": {
+    "en": "About exact metadata",
+    "text": "关于精确元数据"
+  },
+  "resumeHelpLabel": {
+    "en": "About resuming",
+    "text": "关于续传"
+  },
+  "downloadHelpLabel": {
+    "en": "About download recovery",
+    "text": "关于下载恢复"
+  },
+  "updatePolicyHelpLabel": {
+    "en": "About update schedule",
+    "text": "关于更新计划"
+  },
+  "uploadHelpLabel": {
+    "en": "About upload ID",
+    "text": "关于上传 ID"
+  },
+  "repositoryModelHelpLabel": {
+    "en": "About repositories",
+    "text": "关于仓库"
+  },
+  "servicePolicyHelpLabel": {
+    "en": "About service policy",
+    "text": "关于服务策略"
+  },
+  "tokenSessionHelpLabel": {
+    "en": "About personal tokens",
+    "text": "关于个人令牌"
+  },
+  "storageHelpLabel": {
+    "en": "About retention",
+    "text": "关于保留"
+  },
+  "cleanupHelpLabel": {
+    "en": "About physical cleanup",
+    "text": "关于物理清理"
+  },
+  "promotionHelpLabel": {
+    "en": "About promotion",
+    "text": "关于晋级"
+  },
+  "promoteMoveHelpLabel": {
+    "en": "About move",
+    "text": "关于移动"
+  },
+  "attachmentRecoveryHelpLabel": {
+    "en": "About attachment recovery",
+    "text": "关于附件恢复"
+  },
+  "helpHintLabel": {
+    "en": "About the operation catalog",
+    "text": "关于操作目录"
+  },
+  "catalogSizeLabel": {
+    "en": "Size",
+    "text": "大小"
+  },
+  "catalogPublishedLabel": {
+    "en": "Published",
+    "text": "发布时间"
+  },
+  "grantRepository": {
+    "en": "{repository}:",
+    "text": "{repository}："
+  },
+  "delegationGrantLine": {
+    "en": "{target}: {actions}",
+    "text": "{target}：{actions}"
+  },
+  "keyBindingLine": {
+    "en": "{repository}: {actions}",
+    "text": "{repository}：{actions}"
+  },
+  "serviceAuditLine": {
+    "en": "{action} · {actor} · {key}",
+    "text": "{action} · {actor} · {key}"
+  },
+  "updateHourOption": {
+    "en": "{hour}:00 UTC",
+    "text": "{hour}:00 UTC"
+  },
+  "helpOperationTitle": {
+    "en": "{method} {path}",
+    "text": "{method} {path}"
+  },
+  "helpOperationIdentity": {
+    "en": "{id} · {surface} · {visibility}",
+    "text": "{id} · {surface} · {visibility}"
+  },
+  "helpHintConnected": {
+    "en": "You are connected. Load the API operations your access allows.",
+    "text": "已连接。加载您的访问权限所允许的 API 操作。"
+  },
+  "helpRemoteCliExample": {
+    "en": "arkvoryctl --help\narkvoryctl profile add production --server https://arkvory.example --token-file /private/arkvory.key\narkvoryctl doctor\narkvoryctl packages publish build.upack --label test\narkvoryctl download ARTIFACT_ID ./build.upack",
+    "text": "arkvoryctl --help\narkvoryctl profile add production --server https://arkvory.example --token-file /private/arkvory.key\narkvoryctl doctor\narkvoryctl packages publish build.upack --label test\narkvoryctl download ARTIFACT_ID ./build.upack"
+  },
+  "helpCliExample": {
+    "en": "arkvory help\narkvory status --root ROOT\narkvory update --root ROOT\narkvory configure --root ROOT --disable-updates\narkvory configure --root ROOT --pin --version 1.2.3",
+    "text": "arkvory help\narkvory status --root ROOT\narkvory update --root ROOT\narkvory configure --root ROOT --disable-updates\narkvory configure --root ROOT --pin --version 1.2.3"
+  },
+  "helpRecipesExample": {
+    "en": "GET /api/v1/capabilities\nGET /api/v1/repositories\nGET /api/v1/operations?repository=releases",
+    "text": "GET /api/v1/capabilities\nGET /api/v1/repositories\nGET /api/v1/operations?repository=releases"
+  },
+  "serviceEmpty": {
+    "en": "No service accounts yet.",
+    "text": "还没有服务账户。"
+  },
+  "serviceOwnerKeyHelpLabel": {
+    "en": "About the owner key",
+    "text": "关于所有者密钥"
+  },
+  "serviceEmptyOwner": {
+    "en": "The owner key from the server file is meant for setup, not automation: create a service account below, then issue a key for it.",
+    "text": "服务器文件中的所有者密钥用于初始设置，而不是自动化：请在下方创建服务账户，然后为其签发密钥。"
+  },
+  "serviceEmptyDelegated": {
+    "en": "No service accounts are assigned to you yet. Ask the server owner to delegate one.",
+    "text": "目前还没有分配给您的服务账户。请联系服务器所有者为您委派一个。"
+  },
+  "serviceAuditEmpty": {
+    "en": "No activity recorded yet.",
+    "text": "尚无活动记录。"
+  },
+  "repositoryEmpty": {
+    "en": "No repositories are available to this account or key.",
+    "text": "此账户或密钥没有可用的仓库。"
+  },
+  "routeUnknown": {
+    "en": "This link does not match a console section. The artifact list is shown instead.",
+    "text": "此链接与控制台中的任何部分都不匹配。已改为显示制品列表。"
+  },
+  "routeUnavailable": {
+    "en": "This section is not available to the current account or key. The artifact list is shown instead.",
+    "text": "当前账户或密钥无法使用此部分。已改为显示制品列表。"
+  },
+  "routeArtifactMissing": {
+    "en": "The linked artifact was not found or is not available to you.",
+    "text": "未找到链接指向的制品，或您无权访问该制品。"
+  },
+  "routeSignIn": {
+    "en": "Sign in to open the linked page.",
+    "text": "请登录以打开链接指向的页面。"
+  },
+  "confirmCancel": {
+    "en": "Cancel",
+    "text": "取消"
+  },
+  "confirmDisableUser": {
+    "en": "Disable {name}? Active sessions end immediately and personal tokens stop working until the account is enabled again.",
+    "text": "停用 {name}？其活动会话将立即结束，个人令牌在账户重新启用之前都将失效。"
+  },
+  "confirmRemoveMember": {
+    "en": "Remove {user} from {group}? They lose the repository access granted through this group.",
+    "text": "将 {user} 从 {group} 中移除？该用户将失去通过此组获得的仓库访问权限。"
+  },
+  "confirmRemoveGrant": {
+    "en": "Remove access of {group} to {repository}? Group members lose this access immediately.",
+    "text": "移除 {group} 对 {repository} 的访问权限？组成员将立即失去此访问权限。"
+  },
+  "storageTitle": {
+    "en": "Storage & automatic cleanup",
+    "text": "存储与自动清理"
+  },
+  "storageHelp": {
+    "en": "Retention applies to registered UPack builds. Pinned builds, file history and protected labels survive. Save a disabled policy first to preview it; enabling starts automatic deletion. Disk space is reclaimed below without stopping Arkvory.",
+    "text": "保留规则适用于已注册的 UPack 构建。已固定的构建、文件历史记录和受保护的标签不受影响。请先保存一个未启用的策略进行预览；启用后将开始自动删除。下方的物理清理可在不停止 Arkvory 的情况下回收磁盘空间。"
+  },
+  "storageRefresh": {
+    "en": "Reload settings & usage",
+    "text": "重新加载设置和用量"
+  },
+  "storagePolicy": {
+    "en": "Retention policy",
+    "text": "保留策略"
+  },
+  "storageGrouping": {
+    "en": "Count last N by",
+    "text": "最近 N 个的计数范围"
+  },
+  "storagePerChannel": {
+    "en": "Package and channel",
+    "text": "包和通道"
+  },
+  "storagePerPackage": {
+    "en": "Package",
+    "text": "包"
+  },
+  "storageGlobal": {
+    "en": "Whole repository",
+    "text": "整个仓库"
+  },
+  "storageKeep": {
+    "en": "Last N builds (default)",
+    "text": "保留最近 N 个构建（默认）"
+  },
+  "storageAge": {
+    "en": "Minimum age before deletion (hours)",
+    "text": "删除前的最短保留时间（小时）"
+  },
+  "storageInterval": {
+    "en": "Cleanup interval (minutes)",
+    "text": "清理间隔（分钟）"
+  },
+  "storageQuota": {
+    "en": "Quota, GiB (empty = no repository limit)",
+    "text": "配额，GiB（留空表示不限制仓库）"
+  },
+  "storageProtected": {
+    "en": "Protected labels (comma separated)",
+    "text": "受保护的标签（以逗号分隔）"
+  },
+  "storageWarningPercent": {
+    "en": "Warning threshold (%)",
+    "text": "警告阈值（%）"
+  },
+  "storageCriticalPercent": {
+    "en": "Critical threshold (%)",
+    "text": "严重阈值（%）"
+  },
+  "storageChannels": {
+    "en": "Channel overrides: label=N, one per line",
+    "text": "按通道覆盖：标签=N，每行一个"
+  },
+  "storageEnabled": {
+    "en": "Enable automatic cleanup",
+    "text": "启用自动清理"
+  },
+  "storageAcknowledge": {
+    "en": "I understand that saving an enabled policy authorizes automatic deletion.",
+    "text": "我了解，保存已启用的策略即表示授权自动删除。"
+  },
+  "storageSave": {
+    "en": "Save policy",
+    "text": "保存策略"
+  },
+  "storagePreview": {
+    "en": "Preview saved policy",
+    "text": "预览已保存的策略"
+  },
+  "storageEvents": {
+    "en": "Warnings, errors & storage events",
+    "text": "警告、错误和存储事件"
+  },
+  "storageMore": {
+    "en": "Load next events",
+    "text": "加载后续事件"
+  },
+  "storageRevision": {
+    "en": "Policy version {revision} · last cleanup deleted {count} builds",
+    "text": "策略版本 {revision} · 上次清理删除了 {count} 个构建"
+  },
+  "storageRunFailed": {
+    "en": "Automatic cleanup stopped: {code}. Check its authorizing key and storage health.",
+    "text": "自动清理已停止：{code}。请检查授权此清理的密钥以及存储的健康状况。"
+  },
+  "storageUsage": {
+    "en": "Published {published} · unfinished uploads {pending} · awaiting cleanup {retired} · in use {total} of {quota}",
+    "text": "已发布 {published} · 未完成的上传 {pending} · 等待清理 {retired} · 已用 {total} / {quota}"
+  },
+  "storageNormal": {
+    "en": "Capacity is below warning thresholds, or no repository quota is set.",
+    "text": "容量低于警告阈值，或未设置仓库配额。"
+  },
+  "storageWarning": {
+    "en": "Storage is approaching its quota. Review retention and schedule physical cleanup.",
+    "text": "存储用量接近配额。请检查保留策略并安排物理清理。"
+  },
+  "storageCritical": {
+    "en": "Storage is near or at its quota. New reservations that exceed the quota are rejected.",
+    "text": "存储用量已接近或达到配额。超出配额的新预留将被拒绝。"
+  },
+  "storageConfirmRequired": {
+    "en": "Automatic cleanup requires deletion permission and explicit acknowledgement.",
+    "text": "自动清理需要删除权限和明确确认。"
+  },
+  "storageSaved": {
+    "en": "Policy saved. An enabled policy will run automatically.",
+    "text": "策略已保存。已启用的策略将自动运行。"
+  },
+  "storagePreviewCount": {
+    "en": "Saved policy: {count} deletion candidates in this batch.",
+    "text": "已保存的策略：本批次有 {count} 个删除候选项。"
+  },
+  "storagePreviewMore": {
+    "en": "Saved policy: {count} candidates shown; more remain.",
+    "text": "已保存的策略：已显示 {count} 个候选项，还有更多。"
+  },
+  "deletionTitle": {
+    "en": "Delete artifact",
+    "text": "删除制品"
+  },
+  "deletionHelp": {
+    "en": "Deletion removes this artifact from the catalog and prevents new downloads. It cannot be undone here. Existing file history, attachments and external references are protected. Disk space is reclaimed separately during maintenance.",
+    "text": "删除会将此制品从目录中移除，并阻止新的下载。此操作无法在此处撤消。现有的文件历史记录、附件和外部引用受到保护。磁盘空间会在维护期间单独回收。"
+  },
+  "deletionInspect": {
+    "en": "Check dependencies",
+    "text": "检查依赖项"
+  },
+  "deletionChecking": {
+    "en": "Checking dependencies…",
+    "text": "正在检查依赖项…"
+  },
+  "deletionBlocked": {
+    "en": "Deletion is blocked by retained references.",
+    "text": "存在保留的引用，无法删除。"
+  },
+  "deletionReady": {
+    "en": "No blocking references. This explicit action permits deletion whatever the labels, release included. Dependencies and metadata will be checked again.",
+    "text": "没有阻止删除的引用。这一明确操作允许删除制品，无论它带有什么标签，包括 release。依赖项和元数据将再次检查。"
+  },
+  "deletionReference": {
+    "en": "An external service has pinned this artifact.",
+    "text": "外部服务已固定此制品。"
+  },
+  "deletionAsset": {
+    "en": "A file path or its history uses this artifact.",
+    "text": "某个文件路径或其历史记录正在使用此制品。"
+  },
+  "deletionAttachment": {
+    "en": "Another build lists this artifact as an attachment, now or in its history.",
+    "text": "另一个构建当前或在其历史记录中将此制品列为附件。"
+  },
+  "deletionLabel": {
+    "en": "A retention rule protects this label.",
+    "text": "某条保留规则保护此标签。"
+  },
+  "deletionStage": {
+    "en": "The artifact is promoted to a stage; remove the stage first.",
+    "text": "此制品已晋级到某个阶段；请先移除该阶段。"
+  },
+  "deletionConfirm": {
+    "en": "Paste the selected artifact ID to confirm deletion",
+    "text": "粘贴所选制品的 ID 以确认删除"
+  },
+  "deletionSubmit": {
+    "en": "Delete this artifact",
+    "text": "删除此制品"
+  },
+  "deletionRecheck": {
+    "en": "The artifact changed or is protected. Check dependencies again before proceeding.",
+    "text": "制品已更改或受到保护。继续之前请重新检查依赖项。"
+  },
+  "deletionDone": {
+    "en": "Artifact deleted. Physical cleanup will run separately.",
+    "text": "制品已删除。物理清理将单独进行。"
+  },
+  "deletionRefresh": {
+    "en": "Artifact deleted, but the catalog could not be refreshed. Reload the list.",
+    "text": "制品已删除，但无法刷新目录。请重新加载列表。"
+  },
+  "labelPresets": {
+    "en": "Common build labels",
+    "text": "常用构建标签"
+  },
+  "labelsHelp": {
+    "en": "Use any labels. Presets can be combined; they do not move files or grant access.",
+    "text": "可以使用任意标签。预设可以组合使用；标签不会移动文件，也不会授予访问权限。"
+  },
+  "metadataFields": {
+    "en": "Build metadata",
+    "text": "构建元数据"
+  },
+  "metadataAdd": {
+    "en": "Add field",
+    "text": "添加字段"
+  },
+  "metadataFilter": {
+    "en": "Exact metadata",
+    "text": "精确元数据"
+  },
+  "metadataFilterHint": {
+    "en": "Key and value match exactly, including case. An empty value matches an empty field.",
+    "text": "键和值必须完全匹配，区分大小写。空值匹配空字段。"
+  },
+  "metadataKey": {
+    "en": "Key",
+    "text": "键"
+  },
+  "metadataValue": {
+    "en": "Value",
+    "text": "值"
+  },
+  "metadataRemove": {
+    "en": "Remove field",
+    "text": "移除字段"
+  },
+  "metadataHelp": {
+    "en": "Up to 32 text fields. Examples: build.number, git.commit, target.os. Use a manifest for structured data.",
+    "text": "最多 32 个文本字段。示例：build.number、git.commit、target.os。结构化数据请使用清单。"
+  },
+  "metadataInvalid": {
+    "en": "Check metadata: unique keys, text values and a valid JSON object are required.",
+    "text": "请检查元数据：键必须唯一，值必须为文本，并且必须是有效的 JSON 对象。"
+  },
+  "attachmentsTitle": {
+    "en": "Manifests & additional files",
+    "text": "清单与附加文件"
+  },
+  "attachmentsHelp": {
+    "en": "Files belong to this build. Removing a link keeps the original file and its history.",
+    "text": "这些文件属于此构建。移除链接会保留原始文件及其历史记录。"
+  },
+  "attachmentsEmpty": {
+    "en": "No attachments yet.",
+    "text": "还没有附件。"
+  },
+  "attachmentCount": {
+    "en": "{count} / 32 files · version {revision}",
+    "text": "{count} / 32 个文件 · 版本 {revision}"
+  },
+  "attachmentAdd": {
+    "en": "Add attachment",
+    "text": "添加附件"
+  },
+  "attachmentSource": {
+    "en": "Source",
+    "text": "来源"
+  },
+  "attachmentUpload": {
+    "en": "Upload file",
+    "text": "上传文件"
+  },
+  "attachmentExisting": {
+    "en": "Link published artifact",
+    "text": "链接已发布的制品"
+  },
+  "attachmentKind": {
+    "en": "Purpose",
+    "text": "用途"
+  },
+  "attachmentManifest": {
+    "en": "Manifest",
+    "text": "清单"
+  },
+  "attachmentSbom": {
+    "en": "SBOM",
+    "text": "SBOM"
+  },
+  "attachmentSignature": {
+    "en": "Signature",
+    "text": "签名"
+  },
+  "attachmentReport": {
+    "en": "Report",
+    "text": "报告"
+  },
+  "attachmentFile": {
+    "en": "File",
+    "text": "文件"
+  },
+  "attachmentChoose": {
+    "en": "Choose attachment",
+    "text": "选择附件"
+  },
+  "attachmentName": {
+    "en": "Attachment name",
+    "text": "附件名称"
+  },
+  "attachmentDescription": {
+    "en": "Description (optional)",
+    "text": "描述（可选）"
+  },
+  "attachmentUnlink": {
+    "en": "Remove link",
+    "text": "移除链接"
+  },
+  "attachmentReload": {
+    "en": "Reload attachments",
+    "text": "重新加载附件"
+  },
+  "attachmentReloaded": {
+    "en": "Attachments reloaded. Your form is preserved.",
+    "text": "附件已重新加载。表单中填写的内容已保留。"
+  },
+  "attachmentSaved": {
+    "en": "Attachments saved · version {revision}",
+    "text": "附件已保存 · 版本 {revision}"
+  },
+  "attachmentHistory": {
+    "en": "Attachment history",
+    "text": "附件历史记录"
+  },
+  "attachmentHistoryEmpty": {
+    "en": "No changes yet.",
+    "text": "还没有更改。"
+  },
+  "attachmentRestore": {
+    "en": "Restore this set",
+    "text": "恢复这组附件"
+  },
+  "attachmentNew": {
+    "en": "Clear form",
+    "text": "清空表单"
+  },
+  "attachmentRecovery": {
+    "en": "Upload recovery",
+    "text": "上传恢复"
+  },
+  "attachmentRecoveryHelp": {
+    "en": "Pause keeps this upload in the tab. Submit again to resume. If linking fails, the published file remains available by this ID; reload attachments before retrying. After closing the tab, use the Upload screen to resume by ID.",
+    "text": "暂停会将此上传保留在当前标签页中。再次提交即可续传。如果链接失败，已发布的文件仍可通过此 ID 访问；重试前请重新加载附件。关闭标签页后，请在“上传”页面中按 ID 续传。"
+  },
+  "attachmentProgress": {
+    "en": "Attachment upload progress",
+    "text": "附件上传进度"
+  },
+  "attachmentDuplicate": {
+    "en": "An attachment with this name already exists. Choose a different name or remove its link first.",
+    "text": "已存在同名附件。请选择其他名称，或先移除该附件的链接。"
+  },
+  "navigationMenu": {
+    "en": "Sections",
+    "text": "菜单"
+  },
+  "downloadSettings": {
+    "en": "Queue settings",
+    "text": "队列设置"
+  },
+  "downloadHeld": {
+    "en": "Queue paused. New downloads will wait.",
+    "text": "队列已暂停。新的下载将等待。"
+  },
+  "downloadEmptyTitle": {
+    "en": "No downloads yet",
+    "text": "还没有下载"
+  },
+  "technicalDetails": {
+    "en": "File identifier",
+    "text": "文件标识符"
+  },
+  "manageMembers": {
+    "en": "Manage group members",
+    "text": "管理组成员"
+  },
+  "manageGrants": {
+    "en": "Manage repository access",
+    "text": "管理仓库访问权限"
+  },
+  "accountsHeading": {
+    "en": "Accounts",
+    "text": "账户"
+  },
+  "groupsHeading": {
+    "en": "Groups and permissions",
+    "text": "组与权限"
+  },
+  "tableRegion": {
+    "en": "Results table — scroll horizontally for more columns",
+    "text": "结果表格（可水平滚动查看更多列）"
+  },
+  "searchEmpty": {
+    "en": "This repository has no artifacts yet.",
+    "text": "此仓库还没有制品。"
+  },
+  "searchEmptyTitle": {
+    "en": "No artifacts",
+    "text": "没有制品"
+  },
+  "downloadCleanupFailed": {
+    "en": "Saved. Temporary cleanup failed; use Remove finished to retry.",
+    "text": "已保存。临时文件清理失败；请使用“移除已完成”重试。"
+  },
+  "downloads": {
+    "en": "Downloads",
+    "text": "下载"
+  },
+  "downloadRestore": {
+    "en": "Restore queue",
+    "text": "恢复队列"
+  },
+  "downloadRestored": {
+    "en": "Restored · choose a destination to resume",
+    "text": "已恢复 · 选择保存位置以继续"
+  },
+  "downloadRestoreReady": {
+    "en": "Queue restored. Resume each file to choose its destination.",
+    "text": "队列已恢复。请逐个继续下载，并为每个文件选择保存位置。"
+  },
+  "downloadRestoreEmpty": {
+    "en": "No saved downloads for this connection.",
+    "text": "此连接没有已保存的下载。"
+  },
+  "downloadQueued": {
+    "en": "Waiting",
+    "text": "等待中"
+  },
+  "downloadRunning": {
+    "en": "Downloading",
+    "text": "下载中"
+  },
+  "downloadRetrying": {
+    "en": "Retrying",
+    "text": "重试中"
+  },
+  "downloadPausing": {
+    "en": "Saving checkpoint…",
+    "text": "正在保存检查点…"
+  },
+  "downloadPaused": {
+    "en": "Paused",
+    "text": "已暂停"
+  },
+  "downloadSaving": {
+    "en": "Saving verified file…",
+    "text": "正在保存已验证的文件…"
+  },
+  "downloadCancelling": {
+    "en": "Cancelling…",
+    "text": "正在取消…"
+  },
+  "downloadCancelled": {
+    "en": "Cancelled",
+    "text": "已取消"
+  },
+  "downloadCompleted": {
+    "en": "Verified and saved",
+    "text": "已验证并保存"
+  },
+  "downloadFailed": {
+    "en": "Failed",
+    "text": "失败"
+  },
+  "downloadResume": {
+    "en": "Resume / retry",
+    "text": "继续 / 重试"
+  },
+  "downloadCancel": {
+    "en": "Cancel",
+    "text": "取消"
+  },
+  "downloadsPause": {
+    "en": "Pause all",
+    "text": "全部暂停"
+  },
+  "downloadsResume": {
+    "en": "Resume queue",
+    "text": "继续队列"
+  },
+  "downloadsClearWaiting": {
+    "en": "Cancel waiting",
+    "text": "取消等待中的下载"
+  },
+  "downloadsCancel": {
+    "en": "Cancel all",
+    "text": "全部取消"
+  },
+  "downloadsClearFinished": {
+    "en": "Remove finished",
+    "text": "移除已完成"
+  },
+  "downloadConcurrency": {
+    "en": "Parallel downloads",
+    "text": "并行下载数"
+  },
+  "downloadInterval": {
+    "en": "Start interval, ms",
+    "text": "启动间隔，ms"
+  },
+  "downloadWait": {
+    "en": "Queue wait limit, seconds",
+    "text": "队列等待上限，秒"
+  },
+  "downloadApply": {
+    "en": "Apply limits",
+    "text": "应用限制"
+  },
+  "downloadPolicySaved": {
+    "en": "Queue limits updated. Downloads already running will continue.",
+    "text": "队列限制已更新。正在进行的下载将继续。"
+  },
+  "downloadSummary": {
+    "en": "Active: {active} · Waiting: {waiting} · Total: {count}",
+    "text": "活动：{active} · 等待：{waiting} · 总计：{count}"
+  },
+  "downloadBytes": {
+    "en": "{bytes} written",
+    "text": "已写入 {bytes}"
+  },
+  "downloadRetryDelay": {
+    "en": "Retry delay: {seconds} s",
+    "text": "重试延迟：{seconds} 秒"
+  },
+  "downloadDuplicate": {
+    "en": "This destination is already in the queue. Remove its finished job first.",
+    "text": "此保存位置已在队列中。请先移除对应的已完成任务。"
+  },
+  "downloadEmpty": {
+    "en": "Choose Download next to a file in the catalog.",
+    "text": "在目录中点击文件旁边的“下载”。"
+  },
+  "downloadAdded": {
+    "en": "Download added to the queue.",
+    "text": "下载已加入队列。"
+  },
+  "downloadWaitTimeout": {
+    "en": "Queue wait expired. You can retry.",
+    "text": "队列等待已超时。您可以重试。"
+  },
+  "downloadQueueFull": {
+    "en": "Queue is full. Remove finished jobs to make room.",
+    "text": "队列已满。请移除已完成的任务以腾出空间。"
+  },
+  "downloadDiskFull": {
+    "en": "Browser storage is full. Cancel unused downloads to free staging space.",
+    "text": "浏览器存储已满。请取消不需要的下载以释放暂存空间。"
+  },
+  "downloadNote": {
+    "en": "After a page reload, reconnect and restore the queue. Resume each file to choose its destination. Sealed segments remain in browser storage; credentials are not saved. The destination is replaced only after checksum verification. Browser storage needs space for the file.",
+    "text": "页面重新加载后，请重新连接并恢复队列。逐个继续下载，为每个文件选择保存位置。已封存的分段会保留在浏览器存储中；凭据不会被保存。只有在校验和验证通过后，才会替换目标文件。浏览器存储需要有足够的空间容纳该文件。"
+  },
+  "downloadState": {
+    "en": "State",
+    "text": "状态"
+  },
+  "downloadProgress": {
+    "en": "Progress",
+    "text": "进度"
+  },
+  "navigation": {
+    "en": "Workspace navigation",
+    "text": "工作区导航"
+  },
+  "catalog": {
+    "en": "Artifacts",
+    "text": "制品"
+  },
+  "packages": {
+    "en": "Packages",
+    "text": "包"
+  },
+  "administration": {
+    "en": "Users and access",
+    "text": "用户与访问"
+  },
+  "upload": {
+    "en": "Upload",
+    "text": "上传"
+  },
+  "history": {
+    "en": "File history",
+    "text": "文件历史"
+  },
+  "metadata": {
+    "en": "Artifact details",
+    "text": "制品详情"
+  },
+  "theme": {
+    "en": "Appearance",
+    "text": "外观"
+  },
+  "language": {
+    "en": "Language",
+    "text": "语言"
+  },
+  "light": {
+    "en": "Light",
+    "text": "浅色"
+  },
+  "dark": {
+    "en": "Dark",
+    "text": "深色"
+  },
+  "system": {
+    "en": "System",
+    "text": "跟随系统"
+  },
+  "connection": {
+    "en": "Repository connection",
+    "text": "仓库连接"
+  },
+  "repository": {
+    "en": "Repository",
+    "text": "仓库"
+  },
+  "serviceKey": {
+    "en": "Service key",
+    "text": "服务密钥"
+  },
+  "keyPlaceholder": {
+    "en": "Paste a service or automation key",
+    "text": "粘贴服务密钥或自动化密钥"
+  },
+  "connect": {
+    "en": "Connect",
+    "text": "连接"
+  },
+  "disconnect": {
+    "en": "Disconnect",
+    "text": "断开连接"
+  },
+  "keyHint": {
+    "en": "The key stays in this tab. It is never saved in browser storage.",
+    "text": "密钥仅保留在此标签页中，绝不会保存到浏览器存储。"
+  },
+  "accountName": {
+    "en": "Username",
+    "text": "用户名"
+  },
+  "password": {
+    "en": "Password",
+    "text": "密码"
+  },
+  "signIn": {
+    "en": "Sign in",
+    "text": "登录"
+  },
+  "adminHint": {
+    "en": "Create accounts and grant repository access through groups.",
+    "text": "创建账户，并通过组授予仓库访问权限。"
+  },
+  "administrator": {
+    "en": "Administrator",
+    "text": "管理员"
+  },
+  "createUser": {
+    "en": "Create user",
+    "text": "创建用户"
+  },
+  "accessGroup": {
+    "en": "Access group",
+    "text": "访问组"
+  },
+  "createGroup": {
+    "en": "Create group",
+    "text": "创建组"
+  },
+  "addMember": {
+    "en": "Add to group",
+    "text": "添加到组"
+  },
+  "removeMember": {
+    "en": "Remove from group",
+    "text": "从组中移除"
+  },
+  "access": {
+    "en": "Access",
+    "text": "访问权限"
+  },
+  "read": {
+    "en": "Read",
+    "text": "读取"
+  },
+  "write": {
+    "en": "Read and write",
+    "text": "读写"
+  },
+  "saveGrant": {
+    "en": "Save access",
+    "text": "保存访问权限"
+  },
+  "removeGrant": {
+    "en": "Remove access",
+    "text": "移除访问权限"
+  },
+  "members": {
+    "en": "Members",
+    "text": "成员"
+  },
+  "grants": {
+    "en": "Grants",
+    "text": "授权"
+  },
+  "packageGroup": {
+    "en": "UPack group",
+    "text": "UPack 组"
+  },
+  "packageName": {
+    "en": "Package name",
+    "text": "包名称"
+  },
+  "version": {
+    "en": "Version",
+    "text": "版本"
+  },
+  "sortBy": {
+    "en": "Sort by",
+    "text": "排序依据"
+  },
+  "direction": {
+    "en": "Order",
+    "text": "顺序"
+  },
+  "ascending": {
+    "en": "Ascending",
+    "text": "升序"
+  },
+  "descending": {
+    "en": "Descending",
+    "text": "降序"
+  },
+  "groupBy": {
+    "en": "Group by",
+    "text": "分组依据"
+  },
+  "noGrouping": {
+    "en": "No grouping",
+    "text": "不分组"
+  },
+  "apply": {
+    "en": "Apply",
+    "text": "应用"
+  },
+  "clearFilters": {
+    "en": "Reset",
+    "text": "重置"
+  },
+  "packageFilterHint": {
+    "en": "Group and name are exact matches, ignoring letter case.",
+    "text": "组和名称须完全匹配，不区分大小写。"
+  },
+  "applyFilters": {
+    "en": "Apply the filters to see packages.",
+    "text": "应用筛选条件以查看包。"
+  },
+  "apiAddressError": {
+    "en": "The Arkvory API address is invalid. Contact the UI administrator.",
+    "text": "Arkvory API 地址无效。请联系界面管理员。"
+  },
+  "noRepositoryAccess": {
+    "en": "This account or key cannot read any repositories. Ask an administrator for access.",
+    "text": "此账户或密钥无法读取任何仓库。请联系管理员获取访问权限。"
+  },
+  "noPackages": {
+    "en": "No registered packages match these filters.",
+    "text": "没有符合这些筛选条件的已注册包。"
+  },
+  "packageCount": {
+    "en": "{count} packages on this page",
+    "text": "本页共 {count} 个包"
+  },
+  "pageNumber": {
+    "en": "Page {page}",
+    "text": "第 {page} 页"
+  },
+  "previousPage": {
+    "en": "Previous",
+    "text": "上一页"
+  },
+  "nextPage": {
+    "en": "Next",
+    "text": "下一页"
+  },
+  "accessSaved": {
+    "en": "Access updated",
+    "text": "访问权限已更新"
+  },
+  "userCreated": {
+    "en": "User created",
+    "text": "用户已创建"
+  },
+  "groupCreated": {
+    "en": "Group created",
+    "text": "组已创建"
+  },
+  "signedIn": {
+    "en": "Signed in as {name}",
+    "text": "已登录为 {name}"
+  },
+  "accountStatus": {
+    "en": "Status",
+    "text": "状态"
+  },
+  "enabled": {
+    "en": "Active",
+    "text": "已启用"
+  },
+  "disabled": {
+    "en": "Disabled",
+    "text": "已停用"
+  },
+  "disableUser": {
+    "en": "Disable",
+    "text": "停用"
+  },
+  "enableUser": {
+    "en": "Enable",
+    "text": "启用"
+  },
+  "newPassword": {
+    "en": "New password",
+    "text": "新密码"
+  },
+  "currentPassword": {
+    "en": "Current password",
+    "text": "当前密码"
+  },
+  "changeOwnPassword": {
+    "en": "Change my password",
+    "text": "修改我的密码"
+  },
+  "passwordChangedSignIn": {
+    "en": "Password changed. Sign in again.",
+    "text": "密码已修改。请重新登录。"
+  },
+  "resetPassword": {
+    "en": "Reset password",
+    "text": "重置密码"
+  },
+  "passwordChanged": {
+    "en": "Password changed; active sessions revoked",
+    "text": "密码已修改；活动会话已撤销"
+  },
+  "signUp": {
+    "en": "Sign up",
+    "text": "注册"
+  },
+  "registerAccount": {
+    "en": "Create account",
+    "text": "创建账户"
+  },
+  "accountRegistered": {
+    "en": "Account created and signed in.",
+    "text": "账户已创建并已登录。"
+  },
+  "personalAccessTokens": {
+    "en": "Personal access tokens",
+    "text": "个人访问令牌"
+  },
+  "generateToken": {
+    "en": "Generate token",
+    "text": "生成令牌"
+  },
+  "tokenName": {
+    "en": "Token name",
+    "text": "令牌名称"
+  },
+  "tokenNamePlaceholder": {
+    "en": "e.g. External UI, CLI",
+    "text": "例如：外部 UI、CLI"
+  },
+  "tokenCreatedWarning": {
+    "en": "Save this token now. It will not be shown again.",
+    "text": "请立即保存此令牌。它不会再次显示。"
+  },
+  "copyToken": {
+    "en": "Copy token",
+    "text": "复制令牌"
+  },
+  "tokenCopied": {
+    "en": "Token copied to clipboard.",
+    "text": "令牌已复制到剪贴板。"
+  },
+  "revokeToken": {
+    "en": "Revoke token",
+    "text": "撤销令牌"
+  },
+  "noUserTokens": {
+    "en": "No personal access tokens generated yet.",
+    "text": "尚未生成个人访问令牌。"
+  },
+  "tokenSessionOnly": {
+    "en": "Tokens are created and revoked from a password session only; a token cannot create tokens or administer accounts.",
+    "text": "令牌只能在密码登录的会话中创建和撤销；令牌不能创建令牌，也不能管理账户。"
+  },
+  "tokenExpiry": {
+    "en": "Expires after",
+    "text": "有效期"
+  },
+  "tokenDays30": {
+    "en": "30 days",
+    "text": "30 天"
+  },
+  "tokenDays90": {
+    "en": "90 days",
+    "text": "90 天"
+  },
+  "tokenDays365": {
+    "en": "365 days",
+    "text": "365 天"
+  },
+  "tokenScope": {
+    "en": "Access",
+    "text": "访问权限"
+  },
+  "tokenScopeRead": {
+    "en": "Read only",
+    "text": "只读"
+  },
+  "tokenScopeReadWrite": {
+    "en": "Read and write",
+    "text": "读写"
+  },
+  "tokenPrefix": {
+    "en": "Prefix",
+    "text": "前缀"
+  },
+  "tokenCreated": {
+    "en": "Created",
+    "text": "创建时间"
+  },
+  "tokenExpires": {
+    "en": "Expires",
+    "text": "过期时间"
+  },
+  "tokenLastUsed": {
+    "en": "Last used",
+    "text": "上次使用"
+  },
+  "tokenStatus": {
+    "en": "Status",
+    "text": "状态"
+  },
+  "tokenActive": {
+    "en": "Active",
+    "text": "有效"
+  },
+  "tokenRevokedState": {
+    "en": "Revoked",
+    "text": "已撤销"
+  },
+  "tokenExpired": {
+    "en": "Expired",
+    "text": "已过期"
+  },
+  "tokenNeverUsed": {
+    "en": "Never",
+    "text": "从未使用"
+  },
+  "tokenNoExpiry": {
+    "en": "—",
+    "text": "—"
+  },
+  "tokenRevokeConfirm": {
+    "en": "Revoke “{name}”? Clients using it lose access immediately.",
+    "text": "撤销“{name}”？使用此令牌的客户端将立即失去访问权限。"
+  },
+  "tokenRevokeConfirmSubmit": {
+    "en": "Revoke",
+    "text": "撤销"
+  },
+  "tokenRevokeCancel": {
+    "en": "Cancel",
+    "text": "取消"
+  },
+  "tokenCopyFailed": {
+    "en": "Copy failed. The token is selected; copy it manually.",
+    "text": "复制失败。令牌已选中，请手动复制。"
+  },
+  "connected": {
+    "en": "Connected",
+    "text": "已连接"
+  },
+  "disconnected": {
+    "en": "Not connected",
+    "text": "未连接"
+  },
+  "uploadFile": {
+    "en": "Upload file",
+    "text": "上传文件"
+  },
+  "search": {
+    "en": "Search",
+    "text": "搜索"
+  },
+  "searchPlaceholder": {
+    "en": "Name or metadata value…",
+    "text": "名称或元数据值…"
+  },
+  "labelFilter": {
+    "en": "Filter by label",
+    "text": "按标签筛选"
+  },
+  "labelPlaceholder": {
+    "en": "Any label",
+    "text": "任意标签"
+  },
+  "name": {
+    "en": "File name",
+    "text": "名称"
+  },
+  "actions": {
+    "en": "Actions",
+    "text": "操作"
+  },
+  "open": {
+    "en": "Open",
+    "text": "打开"
+  },
+  "more": {
+    "en": "Load more",
+    "text": "加载更多"
+  },
+  "loaded": {
+    "en": "{count} loaded",
+    "text": "已加载 {count} 个"
+  },
+  "emptyTitle": {
+    "en": "Not connected",
+    "text": "未连接"
+  },
+  "emptyDescription": {
+    "en": "Sign in with your username and password, or connect with a service key.",
+    "text": "请使用用户名和密码登录，或使用服务密钥连接。"
+  },
+  "noResultsTitle": {
+    "en": "No matching artifacts",
+    "text": "没有匹配的制品"
+  },
+  "noResults": {
+    "en": "Change your search or clear the filters.",
+    "text": "请修改搜索条件或清除筛选条件。"
+  },
+  "catalogHint": {
+    "en": "Immutable content · Editable metadata",
+    "text": "内容不可变 · 元数据可编辑"
+  },
+  "file": {
+    "en": "Choose a file",
+    "text": "选择文件"
+  },
+  "chooseFile": {
+    "en": "File to upload",
+    "text": "要上传的文件"
+  },
+  "resumeTitle": {
+    "en": "Resume an upload",
+    "text": "继续上传"
+  },
+  "resumeHint": {
+    "en": "Have an upload ID? Select the same file and enter the ID below.",
+    "text": "已有上传 ID？请选择同一个文件，并在下方输入该 ID。"
+  },
+  "uploadId": {
+    "en": "Upload ID",
+    "text": "上传 ID"
+  },
+  "idempotency": {
+    "en": "Duplicate protection key",
+    "text": "防重复键"
+  },
+  "automatic": {
+    "en": "Generated automatically",
+    "text": "自动生成"
+  },
+  "startUpload": {
+    "en": "Upload / resume",
+    "text": "上传 / 续传"
+  },
+  "pause": {
+    "en": "Pause",
+    "text": "暂停"
+  },
+  "newUpload": {
+    "en": "New upload",
+    "text": "新建上传"
+  },
+  "uploadHint": {
+    "en": "Keep your upload ID to resume after closing this tab.",
+    "text": "请记下上传 ID，以便关闭此标签页后继续上传。"
+  },
+  "transferTitle": {
+    "en": "Transfer status",
+    "text": "传输状态"
+  },
+  "transferIdle": {
+    "en": "Waiting for a file",
+    "text": "等待文件"
+  },
+  "hashing": {
+    "en": "Checking file integrity…",
+    "text": "正在检查文件完整性…"
+  },
+  "uploading": {
+    "en": "Uploading · {percent}%",
+    "text": "正在上传 · {percent}%"
+  },
+  "published": {
+    "en": "File published · {id}",
+    "text": "文件已发布 · {id}"
+  },
+  "paused": {
+    "en": "Transfer paused. You can resume it with the same file.",
+    "text": "传输已暂停。您可以使用同一个文件继续。"
+  },
+  "selectArtifact": {
+    "en": "Select an artifact",
+    "text": "选择制品"
+  },
+  "selectHint": {
+    "en": "Open a file in the catalog or history.",
+    "text": "在目录或历史记录中打开一个文件。"
+  },
+  "backCatalog": {
+    "en": "Back to artifacts",
+    "text": "返回制品列表"
+  },
+  "selected": {
+    "en": "Artifact ID",
+    "text": "制品 ID"
+  },
+  "labels": {
+    "en": "Labels",
+    "text": "标签"
+  },
+  "collections": {
+    "en": "Collections",
+    "text": "集合"
+  },
+  "commaHint": {
+    "en": "Separate with commas",
+    "text": "以逗号分隔"
+  },
+  "metadataJson": {
+    "en": "Metadata (JSON)",
+    "text": "元数据（JSON）"
+  },
+  "save": {
+    "en": "Save changes",
+    "text": "保存更改"
+  },
+  "download": {
+    "en": "Download",
+    "text": "下载"
+  },
+  "downloadLink": {
+    "en": "Download link",
+    "text": "下载链接"
+  },
+  "downloadLinkCopied": {
+    "en": "Link copied. It opens only this file and works until {expires}.",
+    "text": "链接已复制。它只能打开此文件，有效期至 {expires}。"
+  },
+  "downloadLinkCopy": {
+    "en": "Copy the link below. It opens only this file and works until {expires}.",
+    "text": "请复制下方的链接。它只能打开此文件，有效期至 {expires}。"
+  },
+  "register": {
+    "en": "Register UPack",
+    "text": "注册 UPack"
+  },
+  "assetTitle": {
+    "en": "File reference",
+    "text": "文件链接"
+  },
+  "assetHint": {
+    "en": "Assign this artifact to a path. The current link version protects against simultaneous changes: use 0 for a new path or the current version shown in the file history.",
+    "text": "将此制品分配到一个路径。当前链接版本用于防止同时修改：新路径请填写 0，否则请填写文件历史记录中显示的当前版本。"
+  },
+  "assetPath": {
+    "en": "File path",
+    "text": "文件路径"
+  },
+  "currentRevision": {
+    "en": "Current link version",
+    "text": "当前链接版本"
+  },
+  "assign": {
+    "en": "Assign file",
+    "text": "分配文件"
+  },
+  "historyLoad": {
+    "en": "Load history",
+    "text": "加载历史记录"
+  },
+  "historyHint": {
+    "en": "Restoring creates a new version. Open any version to download its original file.",
+    "text": "恢复会创建一个新版本。打开任意版本即可下载其原始文件。"
+  },
+  "revision": {
+    "en": "Version",
+    "text": "版本"
+  },
+  "date": {
+    "en": "Created",
+    "text": "创建时间"
+  },
+  "actor": {
+    "en": "Author",
+    "text": "作者"
+  },
+  "source": {
+    "en": "Restored from",
+    "text": "恢复自"
+  },
+  "restore": {
+    "en": "Restore version {revision}",
+    "text": "恢复版本 {revision}"
+  },
+  "historyMore": {
+    "en": "Older versions",
+    "text": "更早的版本"
+  },
+  "historyEmpty": {
+    "en": "Enter a file path to explore its history.",
+    "text": "输入文件路径以查看其历史记录。"
+  },
+  "historyCount": {
+    "en": "{count} versions loaded · current version {revision}",
+    "text": "已加载 {count} 个版本 · 当前版本 {revision}"
+  },
+  "restored": {
+    "en": "Restored as version {revision}",
+    "text": "已恢复为版本 {revision}"
+  },
+  "historyConflict": {
+    "en": "The file has changed. Reload history before restoring.",
+    "text": "文件已更改。恢复前请重新加载历史记录。"
+  },
+  "ready": {
+    "en": "Connect a repository to begin.",
+    "text": "连接仓库即可开始。"
+  },
+  "searching": {
+    "en": "Loading artifacts…",
+    "text": "正在加载制品…"
+  },
+  "revisionStatus": {
+    "en": "Details opened · version {revision}",
+    "text": "已打开详情 · 版本 {revision}"
+  },
+  "saved": {
+    "en": "Changes saved · version {revision}",
+    "text": "更改已保存 · 版本 {revision}"
+  },
+  "registered": {
+    "en": "Registered {name} {version}",
+    "text": "已注册 {name} {version}"
+  },
+  "assigned": {
+    "en": "File link saved · version {revision}",
+    "text": "文件链接已保存 · 版本 {revision}"
+  },
+  "chooseFileError": {
+    "en": "Choose a file first.",
+    "text": "请先选择文件。"
+  },
+  "fileTooLarge": {
+    "en": "The file exceeds the maximum size configured on the server.",
+    "text": "文件超过服务器设置的最大大小。"
+  },
+  "uploadRunning": {
+    "en": "An upload is already in progress.",
+    "text": "已有上传正在进行。"
+  },
+  "selectError": {
+    "en": "Open an artifact first.",
+    "text": "请先打开一个制品。"
+  },
+  "hashError": {
+    "en": "Could not read or verify the selected file. Please select it again.",
+    "text": "无法读取或验证所选文件。请重新选择该文件。"
+  },
+  "saveUnsupported": {
+    "en": "Streaming save requires Chrome or Edge over HTTPS. Other clients can download through the SDK.",
+    "text": "流式保存需要通过 HTTPS 使用 Chrome 或 Edge。其他客户端可以通过 SDK 下载。"
+  },
+  "mismatch": {
+    "en": "This file differs from the upload. Select the original file or start a new upload.",
+    "text": "此文件与上传中的文件不一致。请选择原始文件，或开始新的上传。"
+  },
+  "errorGeneric": {
+    "en": "The operation could not be completed. Try again.",
+    "text": "无法完成该操作。请重试。"
+  },
+  "errorUnauthorized": {
+    "en": "This key is not valid or was revoked. Enter a valid key.",
+    "text": "此密钥无效或已被撤销。请输入有效的密钥。"
+  },
+  "errorForbidden": {
+    "en": "You do not have permission for this operation.",
+    "text": "您没有执行此操作的权限。"
+  },
+  "errorRateLimited": {
+    "en": "Too many sign-in attempts. Wait and try again.",
+    "text": "登录尝试次数过多。请稍后重试。"
+  },
+  "errorNotFound": {
+    "en": "The requested file or version was not found.",
+    "text": "未找到请求的文件或版本。"
+  },
+  "errorConflict": {
+    "en": "The item has changed or the operation conflicts with its state. Refresh before trying again.",
+    "text": "该项目已更改，或操作与其当前状态冲突。请刷新后重试。"
+  },
+  "errorInput": {
+    "en": "Check the entered values and try again.",
+    "text": "请检查输入的值后重试。"
+  },
+  "errorIntegrity": {
+    "en": "The file integrity check failed. Retry with the original file.",
+    "text": "文件完整性检查失败。请使用原始文件重试。"
+  },
+  "errorBusy": {
+    "en": "The service is busy. Try again shortly.",
+    "text": "服务繁忙。请稍后重试。"
+  },
+  "errorCapacity": {
+    "en": "A capacity limit has been reached.",
+    "text": "已达到容量上限。"
+  },
+  "cancelled": {
+    "en": "Operation cancelled.",
+    "text": "操作已取消。"
+  },
+  "publishedRefresh": {
+    "en": "File published, but the catalog could not refresh. Open Artifacts to refresh it.",
+    "text": "文件已发布，但目录未能刷新。请打开“制品”进行刷新。"
+  },
+  "skip": {
+    "en": "Skip to content",
+    "text": "跳到主要内容"
+  },
+  "noScript": {
+    "en": "Enable JavaScript to use the storage console.",
+    "text": "请启用 JavaScript 以使用存储控制台。"
+  }
+}

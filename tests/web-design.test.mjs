@@ -22,17 +22,18 @@ test('localization covers every UI key and keeps interpolation parameters consis
   for (const match of html.matchAll(/data-help="([^"]+)"/g))
     assert(Object.hasOwn(en, match[1]), match[1]);
   assert.equal(
-    translate('en', 'historyCount', { count: 50, revision: 101 }),
+    translate(en, 'historyCount', { count: 50, revision: 101 }),
     '50 versions loaded · current version 101',
   );
-  assert.equal(translate('ru', 'restored', { revision: 3 }), 'Восстановлено как версия 3');
+  assert.equal(translate(ru, 'restored', { revision: 3 }), 'Восстановлено как версия 3');
 });
 
 test('preferences fall back safely and denied browser storage is optional', () => {
   assert.equal(themePreference('unknown'), 'system');
   assert.equal(themePreference('dark'), 'dark');
   assert.equal(languagePreference(null, 'ru-RU'), 'ru');
-  assert.equal(languagePreference('invalid', 'de-DE'), 'en');
+  assert.equal(languagePreference('invalid', 'de-DE'), 'de');
+  assert.equal(languagePreference('invalid', 'nl-NL'), 'en');
   assert.equal(languagePreference('en', 'ru-RU'), 'en');
   const previous = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
   Object.defineProperty(globalThis, 'localStorage', {

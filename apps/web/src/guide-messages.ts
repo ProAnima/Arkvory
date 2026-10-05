@@ -19,7 +19,7 @@ export const guideEnglish = {
   welcomePublishAction: 'Open uploads',
   welcomeConnect: '03 · Connect your tools',
   welcomeConnectBody:
-    'Give each integration its own service account and only the repository actions it needs. Use the API catalogue to see current permissions.',
+    'Give each integration its own service account and only the repository actions it needs. The API catalog shows the operations available to you.',
   welcomeOperate: '04 · Prepare production',
   welcomeOperateBody:
     'Before remote access: configure HTTPS, backups and disk alerts. Updates are opt-in. Local storage is a single-server profile.',
@@ -36,6 +36,10 @@ export const guideEnglish = {
     'Install the separate Arkvory CLI package on your computer. It includes Node.js and needs no server services. Store your key in a private file. Repeat the same transfer command after interruption; use --json for CI/CD.',
   helpCliBody:
     'Run from an elevated terminal on the server. These commands manage deployment; integrations use the HTTP API and SDK. Replace ROOT with the installation directory.',
+  helpDocs: 'Documentation',
+  helpDocsBody:
+    'Installation, everyday work, clients and protocols, operation, backups and the full HTTP API reference, in the language of the console.',
+  helpDocsOpen: 'Open the documentation',
   helpRecipes: 'Integration checklist',
   helpRecipesBody:
     'Read capabilities → discover repositories → create upload with an idempotency key → resume parts → complete → poll readiness → download using Range and ETag. Never blindly retry a non-idempotent write.',
@@ -78,6 +82,10 @@ export const guideRussian: Record<keyof typeof guideEnglish, string> = {
     'Установите отдельный пакет Arkvory CLI на свой компьютер. Node.js включён, службы сервера не нужны. Храните ключ в приватном файле. После обрыва повторите ту же команду передачи; для CI/CD используйте --json.',
   helpCliBody:
     'Запускайте в терминале администратора на сервере. Эти команды управляют развёртыванием; интеграции используют HTTP API и SDK. Вместо ROOT укажите папку установки.',
+  helpDocs: 'Документация',
+  helpDocsBody:
+    'Установка, повседневная работа, клиенты и протоколы, эксплуатация, резервные копии и полный справочник HTTP API — на языке консоли.',
+  helpDocsOpen: 'Открыть документацию',
   helpRecipes: 'Порядок интеграции',
   helpRecipesBody:
     'Прочитать capabilities → получить репозитории → создать upload с ключом идемпотентности → передать части с resume → завершить → дождаться готовности → скачать с Range и ETag. Не повторяйте неидемпотентную запись вслепую.',

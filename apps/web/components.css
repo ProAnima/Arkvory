@@ -122,7 +122,7 @@ input[type='file']::file-selector-button {
   background: var(--color-surface);
   padding: var(--space-2) var(--space-3);
   border-radius: var(--radius-control);
-  margin-right: var(--space-3);
+  margin-inline-end: var(--space-3);
   cursor: pointer;
 }
 textarea {
@@ -203,7 +203,7 @@ table {
   width: 100%;
   min-width: var(--table-min);
   font-size: var(--text-sm);
-  text-align: left;
+  text-align: start;
 }
 th {
   background: var(--color-raised);
@@ -442,7 +442,7 @@ footer {
 .skip {
   position: fixed;
   top: var(--space-3);
-  left: var(--space-3);
+  inset-inline-start: var(--space-3);
   padding: var(--space-3);
   background: var(--color-accent);
   color: var(--color-on-accent);

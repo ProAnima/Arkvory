@@ -180,7 +180,8 @@ async function submit(client: ArkvoryClient, v: Nodes, shots: Screenshots, admin
     const receipt = await client.feedback.send({
       message: text,
       email: v.email.value.trim() || null,
-      lang: document.documentElement.lang === 'en' ? 'en' : 'ru',
+      // The feedback contract has Russian and English; a console in another language reports English.
+      lang: document.documentElement.lang === 'ru' ? 'ru' : 'en',
       screen: `${String(innerWidth)}x${String(innerHeight)}`,
       screenshots: images,
       clientLog,

@@ -11,7 +11,7 @@
     position: static;
     width: 100%;
     padding: var(--space-4);
-    border-right: 0;
+    border-inline-end: 0;
     border-bottom: var(--border-width) solid var(--color-border);
     gap: var(--space-4);
   }
@@ -35,14 +35,14 @@
     font-size: var(--text-sm);
   }
   .workspace {
-    margin-left: 0;
+    margin-inline-start: 0;
     min-height: auto;
   }
   .topbar {
     flex-wrap: wrap;
   }
   .preferences {
-    margin-left: auto;
+    margin-inline-start: auto;
   }
   .preferences label > span {
     position: absolute;

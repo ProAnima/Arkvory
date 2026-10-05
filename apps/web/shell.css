@@ -1,10 +1,11 @@
 .sidebar {
   position: fixed;
-  inset: 0 auto 0 0;
+  inset-block: 0;
+  inset-inline: 0 auto;
   width: var(--sidebar-width);
   padding: var(--space-4) var(--space-3) var(--space-4);
   background: var(--color-sidebar);
-  border-right: var(--border-width) solid var(--color-border);
+  border-inline-end: var(--border-width) solid var(--color-border);
   display: flex;
   flex-direction: column;
   z-index: var(--z-sidebar);
@@ -112,7 +113,7 @@ nav button[aria-current='page']:hover {
 .environment small {
   flex-basis: 100%;
   color: var(--color-muted);
-  padding-left: var(--space-4);
+  padding-inline-start: var(--space-4);
   font-size: var(--text-xs);
 }
 .dot {
@@ -124,7 +125,7 @@ nav button[aria-current='page']:hover {
 }
 .workspace {
   background-image: var(--gradient-ambient);
-  margin-left: var(--sidebar-width);
+  margin-inline-start: var(--sidebar-width);
   min-height: 100dvh;
   display: flex;
   flex-direction: column;

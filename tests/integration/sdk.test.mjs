@@ -47,6 +47,13 @@ test('portable SDK uploads parts, edits annotations and streams HTTP ranges', as
     assert.match(asset.headers.get('content-security-policy'), /script-src 'self'/);
     assert((await asset.text()).length > 0);
   }
+  // A dictionary of the console is fetched by its two letters; any other name is not a file.
+  const german = await fetch(address + '/console/locales/de.json');
+  assert.equal(german.status, 200);
+  assert.match(german.headers.get('content-type'), /application\/json/);
+  assert.equal(typeof (await german.json()).catalog, 'string');
+  for (const name of ['xx.json', 'DE.json', 'de.js', '..%2Fconsole.js', '%2E%2E%2Fconsole.js'])
+    assert.equal((await fetch(address + '/console/locales/' + name)).status, 404, name);
   const unauthorized = await fetch(address + base + '/artifacts');
   assert.equal(unauthorized.status, 401);
 });

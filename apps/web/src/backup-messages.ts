@@ -61,7 +61,7 @@ export const backupEnglish = {
     'Run "Verify fully" for the newest point and check that the agent is running.',
   backupRestoreNote: 'Restoring is an operator action on the server, into an empty target.',
   backupRestoreHelp:
-    'On the server: npm run backup -- restore --vault <vault> --point <id> --storage <empty directory>, with ARKVORY_RESTORE_DATABASE_URL of an empty database. Run it first without --yes (a check that writes nothing), then with --yes, start a separate instance on the restored data and check it before switching production. Details: CORE_RUNBOOK, "Backups (B1)".',
+    'On the server: npm run backup -- restore --vault <vault> --point <id> --storage <empty directory>, with ARKVORY_RESTORE_DATABASE_URL of an empty database. Run it first without --yes (a check that writes nothing), then with --yes, start a separate instance on the restored data and check it before switching production. Details: the documentation, "Backups".',
   backupRestoreHelpLabel: 'How to restore',
   backupRunningLabel: 'Running now',
   backupRunQueued: 'Backup queued. The agent starts it at its next queue check.',
@@ -108,7 +108,7 @@ export const backupEnglish = {
   backupJobsEmpty: 'No backup jobs yet.',
   backupJobKind: 'Job',
   backupJobState: 'State',
-  backupJobPhase: 'Stage',
+  backupJobPhase: 'Phase',
   backupJobStarted: 'Started',
   backupJobFinished: 'Finished',
   backupJobError: 'Error code',
@@ -215,7 +215,7 @@ export const backupRussian: Record<keyof typeof backupEnglish, string> = {
     'Запустите «Проверить полностью» для новейшей точки и убедитесь, что агент работает.',
   backupRestoreNote: 'Восстановление выполняет оператор на сервере — в пустую цель.',
   backupRestoreHelp:
-    'На сервере: npm run backup -- restore --vault <vault> --point <id> --storage <пустой каталог> с ARKVORY_RESTORE_DATABASE_URL пустой БД. Сначала без --yes (проверка, ничего не пишет), затем с --yes; запустите отдельный экземпляр на восстановленных данных и проверьте его до переключения production. Подробнее: CORE_RUNBOOK, «Резервные копии (B1)».',
+    'На сервере: npm run backup -- restore --vault <vault> --point <id> --storage <пустой каталог> с ARKVORY_RESTORE_DATABASE_URL пустой БД. Сначала без --yes (проверка, ничего не пишет), затем с --yes; запустите отдельный экземпляр на восстановленных данных и проверьте его до переключения production. Подробнее: документация, «Резервные копии».',
   backupRestoreHelpLabel: 'Как восстановить',
   backupRunningLabel: 'Сейчас выполняется',
   backupRunQueued: 'Копия поставлена в очередь. Агент начнёт её при следующей проверке очереди.',

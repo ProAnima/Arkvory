@@ -208,27 +208,8 @@
           ><label class="language-control"
             ><span class="sr-only" data-i18n="language">Язык</span
             ><span id="language-icon" class="preference-icon" aria-hidden="true"></span
-            ><select id="language">
-              <option
-                value="ru"
-                lang="ru"
-                data-i18n="languageCodeRu"
-                data-i18n-label="languageRussian"
-                aria-label="Русский"
-              >
-                RU
-              </option>
-              <option
-                value="en"
-                lang="en"
-                data-i18n="languageCodeEn"
-                data-i18n-label="languageEnglish"
-                aria-label="English"
-              >
-                EN
-              </option>
-            </select></label
-          >
+            ><select id="language"></select
+          ></label>
         </div>
       </header>
       <main id="main" tabindex="-1">
@@ -409,7 +390,7 @@
               <table class="table">
                 <thead>
                   <tr>
-                    <th scope="col" data-i18n="name">Название</th>
+                    <th scope="col" data-i18n="tokenName">Название токена</th>
                     <th scope="col" data-i18n="tokenPrefix">Префикс</th>
                     <th scope="col" data-i18n="tokenScope">Доступ</th>
                     <th scope="col" data-i18n="tokenCreated">Создан</th>
@@ -1466,6 +1447,20 @@
           </article>
           <div class="guide-grid">
             <article class="card">
+              <h3 data-i18n="helpDocs"></h3>
+              <p data-i18n="helpDocsBody"></p>
+              <p>
+                <a
+                  id="help-docs"
+                  data-docs=""
+                  data-i18n="helpDocsOpen"
+                  href="https://proanima.github.io/Arkvory/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                ></a>
+              </p>
+            </article>
+            <article class="card">
               <h3 data-i18n="helpRemoteCli"></h3>
               <p data-i18n="helpRemoteCliBody"></p>
               <pre><code data-i18n="helpRemoteCliExample">arkvoryctl --help
@@ -1667,7 +1662,7 @@ GET /api/v1/operations?repository=releases</code></pre>
                 </div>
                 <div id="download-link-result" class="download-link-result" hidden>
                   <p class="hint">
-                    <span id="download-link-note"></span> <span id="download-link-expiry"></span>
+                    <span id="download-link-note"></span>
                   </p>
                   <input
                     id="download-link-url"

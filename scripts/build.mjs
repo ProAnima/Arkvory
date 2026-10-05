@@ -1,6 +1,6 @@
 import { execFileSync } from 'node:child_process';
 import { resolve } from 'node:path';
-import { mkdir, copyFile, writeFile, readFile } from 'node:fs/promises';
+import { mkdir, copyFile, writeFile, readFile, readdir } from 'node:fs/promises';
 import { build } from 'esbuild';
 import { cleanBuild } from './gates/clean-build.mjs';
 
@@ -49,3 +49,14 @@ await build({
   bundle: true,
 });
 await copyFile('node_modules/@noble/hashes/LICENSE', 'apps/web/public/THIRD-PARTY.txt');
+// The console's other languages. A translator's file keeps the English each text was made from
+// (tests/web-locales.test.mjs finds what English changed since); the console fetches the texts.
+await mkdir('apps/web/public/locales', { recursive: true });
+for (const name of await readdir('apps/web/locales')) {
+  if (!name.endsWith('.json')) continue;
+  const entries = JSON.parse(await readFile(`apps/web/locales/${name}`, 'utf8'));
+  const texts = Object.fromEntries(
+    Object.entries(entries).map(([key, entry]) => [key, entry.text]),
+  );
+  await writeFile(`apps/web/public/locales/${name}`, JSON.stringify(texts));
+}

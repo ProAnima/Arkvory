@@ -48,7 +48,9 @@ try {
       await page.locator('#download-link-note').getAttribute('data-i18n'),
     ),
   );
-  assert.ok(await page.locator('#download-link-expiry').getAttribute('data-date'));
+  // The expiry is a value of the sentence, written where the language puts it.
+  assert.ok(await page.locator('#download-link-note').getAttribute('data-param-expires'));
+  assert.match(await page.locator('#download-link-note').innerText(), /d/);
   const response = await fetch(url);
   assert.equal(response.status, 200, 'the link downloads without a key');
   assert.equal(sha(Buffer.from(await response.arrayBuffer())), sha(artifact.bytes));

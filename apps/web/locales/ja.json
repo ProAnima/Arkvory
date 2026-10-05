@@ -1,0 +1,3518 @@
+{
+  "errorNetwork": {
+    "en": "Arkvory did not answer. Check your network connection and try again.",
+    "text": "Arkvoryから応答がありません。ネットワーク接続を確認して、もう一度お試しください。"
+  },
+  "errorTimeout": {
+    "en": "The server took too long to answer, so the request was stopped. Try again.",
+    "text": "サーバーの応答に時間がかかりすぎたため、リクエストを中止しました。もう一度お試しください。"
+  },
+  "errorGateway": {
+    "en": "A proxy in front of Arkvory did not get an answer from it. Try again shortly or contact the administrator.",
+    "text": "Arkvoryの前段にあるプロキシがArkvoryから応答を受け取れませんでした。しばらくしてからもう一度お試しいただくか、管理者に問い合わせてください。"
+  },
+  "errorInternal": {
+    "en": "Unexpected server error. Report the request ID below to the administrator.",
+    "text": "予期しないサーバーエラーが発生しました。下に表示されているリクエストIDを管理者に伝えてください。"
+  },
+  "errorUnavailable": {
+    "en": "The service is temporarily unavailable. Try again shortly.",
+    "text": "サービスは一時的に利用できません。しばらくしてからもう一度お試しください。"
+  },
+  "errorFeedbackDisabled": {
+    "en": "Feedback is turned off on this server. Write to info@proanima.net instead.",
+    "text": "このサーバーではフィードバックが無効になっています。代わりにinfo@proanima.netまでご連絡ください。"
+  },
+  "errorHubUnreachable": {
+    "en": "The server cannot reach ProAnimaStudio right now. Try again later or write to info@proanima.net.",
+    "text": "現在、サーバーからProAnimaStudioに接続できません。後でもう一度お試しいただくか、info@proanima.netまでご連絡ください。"
+  },
+  "errorFeedbackLimited": {
+    "en": "Too many messages from this server. Wait a few minutes and try again.",
+    "text": "このサーバーからのメッセージが多すぎます。数分待ってからもう一度お試しください。"
+  },
+  "errorReadOnly": {
+    "en": "This address only serves downloads. Make changes through the main Arkvory address.",
+    "text": "このアドレスはダウンロード専用です。変更はArkvoryのメインアドレスから行ってください。"
+  },
+  "errorRouteMissing": {
+    "en": "This Arkvory server does not support the operation. Update the server or reload the console.",
+    "text": "このArkvoryサーバーはこの操作をサポートしていません。サーバーを更新するか、コンソールを再読み込みしてください。"
+  },
+  "errorBodyTooLarge": {
+    "en": "The entered data is too large. Shorten the values and try again.",
+    "text": "入力したデータが大きすぎます。値を短くして、もう一度お試しください。"
+  },
+  "errorMediaType": {
+    "en": "The server did not accept the request format. Reload the console.",
+    "text": "サーバーがリクエストの形式を受け付けませんでした。コンソールを再読み込みしてください。"
+  },
+  "errorMalformed": {
+    "en": "The server could not read the request. Reload the console and try again.",
+    "text": "サーバーがリクエストを読み取れませんでした。コンソールを再読み込みして、もう一度お試しください。"
+  },
+  "errorFields": {
+    "en": "Check the highlighted fields.",
+    "text": "強調表示されたフィールドを確認してください。"
+  },
+  "errorRange": {
+    "en": "The requested part of the file is not available. Restart the download.",
+    "text": "要求されたファイルの範囲は利用できません。ダウンロードを最初からやり直してください。"
+  },
+  "errorTooManyRequests": {
+    "en": "Too many requests. Wait a moment and try again.",
+    "text": "リクエストが多すぎます。少し待ってからもう一度お試しください。"
+  },
+  "errorRegistrationLimited": {
+    "en": "Too many sign-up attempts from this network. Wait and try again.",
+    "text": "このネットワークからの登録の試行が多すぎます。しばらく待ってからもう一度お試しください。"
+  },
+  "errorPasswordLimited": {
+    "en": "Too many wrong attempts at the current password. Wait and try again.",
+    "text": "現在のパスワードの入力ミスが多すぎます。しばらく待ってからもう一度お試しください。"
+  },
+  "sessionEnded": {
+    "en": "Your session has ended: you signed out elsewhere, changed the password or access was revoked. Sign in again.",
+    "text": "セッションが終了しました。別の場所でサインアウトしたか、パスワードを変更したか、アクセスが取り消されました。もう一度サインインしてください。"
+  },
+  "errorTokenExpired": {
+    "en": "This key or token has expired. Create a new one and connect again.",
+    "text": "このキーまたはトークンは有効期限が切れています。新しいものを作成して、もう一度接続してください。"
+  },
+  "errorReadOnlyToken": {
+    "en": "This token can only read. Use a read-write token or sign in with your password.",
+    "text": "このトークンは読み取り専用です。読み書き可能なトークンを使用するか、パスワードでサインインしてください。"
+  },
+  "errorCredentialRevoked": {
+    "en": "The key used for this action was revoked or has expired.",
+    "text": "この操作に使用したキーは、取り消されたか有効期限が切れています。"
+  },
+  "errorSessionRequired": {
+    "en": "This action needs a password sign-in; keys and tokens cannot do it.",
+    "text": "この操作にはパスワードによるサインインが必要です。キーやトークンでは実行できません。"
+  },
+  "errorAdministratorRequired": {
+    "en": "Only an administrator can do this.",
+    "text": "この操作は管理者のみが実行できます。"
+  },
+  "errorRegistrationDisabled": {
+    "en": "Self sign-up is turned off. Ask an administrator for an account.",
+    "text": "セルフサインアップは無効になっています。管理者にアカウントの作成を依頼してください。"
+  },
+  "errorOriginForbidden": {
+    "en": "The server does not allow requests from this console address. Contact the administrator.",
+    "text": "サーバーは、このコンソールのアドレスからのリクエストを許可していません。管理者に問い合わせてください。"
+  },
+  "errorUploadExpired": {
+    "en": "The upload expired before it was finished. Start a new upload.",
+    "text": "アップロードは完了する前に期限切れになりました。新しいアップロードを開始してください。"
+  },
+  "errorUploadState": {
+    "en": "This upload is already published or cancelled. Start a new upload.",
+    "text": "このアップロードは既に公開済みか、キャンセルされています。新しいアップロードを開始してください。"
+  },
+  "errorRevisionMismatch": {
+    "en": "Someone changed this item meanwhile. Reload it and apply your change again.",
+    "text": "この項目は、操作中に別のユーザーによって変更されました。再読み込みしてから、変更をもう一度適用してください。"
+  },
+  "errorVersionExists": {
+    "en": "This package version already exists. Publish it under a new version.",
+    "text": "このパッケージバージョンは既に存在します。新しいバージョンで公開してください。"
+  },
+  "errorPartsIncomplete": {
+    "en": "Some parts of the file have not arrived yet. Resume the upload.",
+    "text": "ファイルの一部のパートがまだ届いていません。アップロードを再開してください。"
+  },
+  "errorIdempotency": {
+    "en": "This duplicate protection key was already used for another file. Start a new upload to get a new key.",
+    "text": "この重複防止キーは既に別のファイルに使用されています。新しいアップロードを開始して、新しいキーを取得してください。"
+  },
+  "errorAlreadyExists": {
+    "en": "An item with this name already exists. Choose another name.",
+    "text": "この名前の項目は既に存在します。別の名前を選択してください。"
+  },
+  "errorStageLimit": {
+    "en": "This artifact already has the maximum number of stages. Remove one first.",
+    "text": "このアーティファクトのステージ数は既に上限に達しています。先にステージを1つ削除してください。"
+  },
+  "errorStorageQuota": {
+    "en": "The repository quota is used up. Delete old builds or ask an administrator to raise it.",
+    "text": "リポジトリのクォータを使い切りました。古いビルドを削除するか、管理者にクォータの引き上げを依頼してください。"
+  },
+  "errorStorageFull": {
+    "en": "The server disk is full. Contact the administrator.",
+    "text": "サーバーのディスクがいっぱいです。管理者に問い合わせてください。"
+  },
+  "errorAccountLimit": {
+    "en": "The maximum number of accounts has been reached.",
+    "text": "アカウント数が上限に達しました。"
+  },
+  "errorGroupLimit": {
+    "en": "The maximum number of groups has been reached.",
+    "text": "グループ数が上限に達しました。"
+  },
+  "errorMembershipLimit": {
+    "en": "The maximum number of group members has been reached.",
+    "text": "グループメンバー数が上限に達しました。"
+  },
+  "errorGrantLimit": {
+    "en": "The maximum number of access rules has been reached.",
+    "text": "アクセスルール数が上限に達しました。"
+  },
+  "errorKeyLimit": {
+    "en": "The key limit for this account has been reached. Revoke unused keys first.",
+    "text": "このアカウントのキー数が上限に達しました。先に不要なキーを取り消してください。"
+  },
+  "errorTokenLimit": {
+    "en": "You already have the maximum of active tokens. Revoke unused tokens first.",
+    "text": "有効なトークンの数が既に上限に達しています。先に不要なトークンを取り消してください。"
+  },
+  "errorDelegationLimit": {
+    "en": "The maximum number of delegations has been reached.",
+    "text": "委任の数が上限に達しました。"
+  },
+  "errorCatalogLimit": {
+    "en": "The storage catalog is full. Contact the administrator.",
+    "text": "ストレージのカタログがいっぱいです。管理者に問い合わせてください。"
+  },
+  "errorQueueFull": {
+    "en": "The processing queue is full. Try again later.",
+    "text": "処理キューがいっぱいです。後でもう一度お試しください。"
+  },
+  "errorTransferLimit": {
+    "en": "Too many transfers are running right now. Try again later.",
+    "text": "現在実行中の転送が多すぎます。後でもう一度お試しください。"
+  },
+  "errorCompletionFailed": {
+    "en": "The server could not finish this upload. Start a new upload or contact the administrator.",
+    "text": "サーバーはこのアップロードを完了できませんでした。新しいアップロードを開始するか、管理者に問い合わせてください。"
+  },
+  "errorUnexpectedResponse": {
+    "en": "The server sent an answer this console does not understand. Update the server or the console.",
+    "text": "サーバーから、このコンソールが解釈できない応答が返されました。サーバーまたはコンソールを更新してください。"
+  },
+  "fieldRequired": {
+    "en": "Required.",
+    "text": "必須です。"
+  },
+  "fieldInvalid": {
+    "en": "Check this value.",
+    "text": "この値を確認してください。"
+  },
+  "fieldFormat": {
+    "en": "The format is not valid.",
+    "text": "形式が正しくありません。"
+  },
+  "fieldLength": {
+    "en": "The length is outside the allowed range.",
+    "text": "長さが許容範囲外です。"
+  },
+  "fieldRange": {
+    "en": "The value is outside the allowed range.",
+    "text": "値が許容範囲外です。"
+  },
+  "fieldType": {
+    "en": "This kind of value is not accepted.",
+    "text": "この種類の値は受け付けられません。"
+  },
+  "fieldUnknown": {
+    "en": "The server does not accept this field.",
+    "text": "サーバーはこのフィールドを受け付けません。"
+  },
+  "requestIdLabel": {
+    "en": "Request ID",
+    "text": "リクエストID"
+  },
+  "retryIn": {
+    "en": "Try again in {seconds} s.",
+    "text": "{seconds}秒後にもう一度お試しください。"
+  },
+  "repositories": {
+    "en": "Repositories",
+    "text": "リポジトリ"
+  },
+  "services": {
+    "en": "Service access",
+    "text": "サービスアクセス"
+  },
+  "managementReload": {
+    "en": "Reload",
+    "text": "再読み込み"
+  },
+  "managementMore": {
+    "en": "Next page",
+    "text": "次のページ"
+  },
+  "managementEmpty": {
+    "en": "No entries available for this credential.",
+    "text": "この認証情報で利用できるエントリはありません。"
+  },
+  "managementSaved": {
+    "en": "Changes saved.",
+    "text": "変更を保存しました。"
+  },
+  "managementClose": {
+    "en": "Close",
+    "text": "閉じる"
+  },
+  "repositoryModel": {
+    "en": "A repository appears once access to it is granted. Renaming or deleting repositories is not available here.",
+    "text": "リポジトリは、アクセス権が付与されると表示されます。ここではリポジトリの名前変更や削除はできません。"
+  },
+  "managementAccountInfo": {
+    "en": "ID {id} · version {revision}",
+    "text": "ID {id} · バージョン{revision}"
+  },
+  "repositoryOpen": {
+    "en": "Open files",
+    "text": "ファイルを開く"
+  },
+  "repositoryStorage": {
+    "en": "Storage & cleanup",
+    "text": "ストレージとクリーンアップ"
+  },
+  "repositoryAccess": {
+    "en": "Manage access",
+    "text": "アクセスの管理"
+  },
+  "repositoryRights": {
+    "en": "Your permissions",
+    "text": "自分の権限"
+  },
+  "serviceCreate": {
+    "en": "Create service account",
+    "text": "サービスアカウントを作成"
+  },
+  "serviceName": {
+    "en": "Account name",
+    "text": "アカウント名"
+  },
+  "servicePolicy": {
+    "en": "Repository permissions",
+    "text": "リポジトリの権限"
+  },
+  "servicePolicyHint": {
+    "en": "A key can do only what both this policy and the key itself allow. An empty policy gives no access to files.",
+    "text": "キーで実行できるのは、このポリシーとキー自体の両方で許可された操作だけです。ポリシーが空の場合、ファイルへのアクセスは許可されません。"
+  },
+  "serviceEnable": {
+    "en": "Enable account",
+    "text": "アカウントを有効化"
+  },
+  "serviceDisable": {
+    "en": "Disable account",
+    "text": "アカウントを無効化"
+  },
+  "serviceDisableHint": {
+    "en": "Disabling blocks every key of this account. Active transfers may finish.",
+    "text": "無効にすると、このアカウントのすべてのキーがブロックされます。実行中の転送は完了する場合があります。"
+  },
+  "servicePolicySave": {
+    "en": "Save policy",
+    "text": "ポリシーを保存"
+  },
+  "serviceKeys": {
+    "en": "Service keys",
+    "text": "サービスキー"
+  },
+  "serviceAudit": {
+    "en": "Activity log",
+    "text": "アクティビティログ"
+  },
+  "serviceRefresh": {
+    "en": "Reload account",
+    "text": "アカウントを再読み込み"
+  },
+  "serviceDelegated": {
+    "en": "Access is limited to assigned accounts and actions.",
+    "text": "アクセスは、割り当てられたアカウントと操作に限定されています。"
+  },
+  "bindingAdd": {
+    "en": "Add repository",
+    "text": "リポジトリを追加"
+  },
+  "bindingPermissions": {
+    "en": "Individual permissions",
+    "text": "個別の権限"
+  },
+  "bindingRead": {
+    "en": "Read preset",
+    "text": "読み取りプリセット"
+  },
+  "bindingPublish": {
+    "en": "Publish preset",
+    "text": "公開プリセット"
+  },
+  "bindingNone": {
+    "en": "Clear permissions",
+    "text": "権限をクリア"
+  },
+  "bindingRemove": {
+    "en": "Remove repository",
+    "text": "リポジトリを外す"
+  },
+  "bindingInvalid": {
+    "en": "Use unique repository IDs and select at least one permission for each repository.",
+    "text": "リポジトリIDは重複しないように指定し、各リポジトリに少なくとも1つの権限を選択してください。"
+  },
+  "keyNew": {
+    "en": "New key / cancel rotation",
+    "text": "新しいキー / ローテーションをキャンセル"
+  },
+  "keyIssue": {
+    "en": "Issue key",
+    "text": "キーを発行"
+  },
+  "keyExpires": {
+    "en": "Expires",
+    "text": "有効期限"
+  },
+  "keyName": {
+    "en": "Key name",
+    "text": "キー名"
+  },
+  "keyExpiry": {
+    "en": "Expires at (local time, optional)",
+    "text": "有効期限（ローカル時刻、省略可）"
+  },
+  "keyExpiryHint": {
+    "en": "Default: up to 90 days. Maximum: 365 days, also limited by the issuing operator’s expiry.",
+    "text": "既定：最大90日。上限は365日で、発行するオペレーターのキーの有効期限によっても制限されます。"
+  },
+  "keyRotate": {
+    "en": "Rotate",
+    "text": "ローテーション"
+  },
+  "keyRevoke": {
+    "en": "Revoke",
+    "text": "取り消す"
+  },
+  "keyPending": {
+    "en": "Pending activation",
+    "text": "有効化待ち"
+  },
+  "keyActive": {
+    "en": "Active",
+    "text": "有効"
+  },
+  "keyRevoked": {
+    "en": "Revoked",
+    "text": "取り消し済み"
+  },
+  "keyExpired": {
+    "en": "Expired",
+    "text": "期限切れ"
+  },
+  "keyRotationHint": {
+    "en": "Rotation cannot expand permissions. Activating the replacement limits the old key to at most 24 more hours. Delegations are not copied.",
+    "text": "ローテーションで権限を拡大することはできません。後継キーを有効化すると、古いキーが使えるのは最大24時間になります。委任はコピーされません。"
+  },
+  "keyRevokeHint": {
+    "en": "Revocation is permanent. Existing transfers may finish; new requests will be rejected.",
+    "text": "取り消しは元に戻せません。実行中の転送は完了する場合がありますが、新しいリクエストは拒否されます。"
+  },
+  "keySecret": {
+    "en": "Save the new secret",
+    "text": "新しいシークレットを保存してください"
+  },
+  "keySecretHint": {
+    "en": "Shown once. Save the secret securely before closing.",
+    "text": "一度だけ表示されます。閉じる前に、シークレットを安全な場所に保存してください。"
+  },
+  "keySecretMissing": {
+    "en": "The key was already issued; its secret cannot be shown again. Find it in the list, revoke it and issue another key if needed.",
+    "text": "このキーは既に発行済みのため、シークレットを再表示できません。必要に応じて、一覧でキーを探して取り消し、別のキーを発行してください。"
+  },
+  "keyCopy": {
+    "en": "Copy secret",
+    "text": "シークレットをコピー"
+  },
+  "keyCopied": {
+    "en": "Copied.",
+    "text": "コピーしました。"
+  },
+  "keyCopyFailed": {
+    "en": "Clipboard unavailable. Select and copy the secret manually.",
+    "text": "クリップボードを使用できません。シークレットを選択して手動でコピーしてください。"
+  },
+  "keyActivate": {
+    "en": "Activate key",
+    "text": "キーを有効化"
+  },
+  "keyActivated": {
+    "en": "Key activated. Store it securely before closing.",
+    "text": "キーを有効化しました。閉じる前に安全な場所に保管してください。"
+  },
+  "keySaved": {
+    "en": "I have saved the secret",
+    "text": "シークレットを保存しました"
+  },
+  "keyActivateHint": {
+    "en": "Activate after saving the secret. Pending credentials expire after 15 minutes.",
+    "text": "シークレットを保存してから有効化してください。有効化待ちの認証情報は15分で期限切れになります。"
+  },
+  "keyRetryHint": {
+    "en": "After a network failure, retry without changing the form to reuse the issuance request. A lost secret cannot be recovered.",
+    "text": "ネットワーク障害の後は、フォームを変更せずに再試行すると、同じ発行リクエストが再利用されます。失ったシークレットは復元できません。"
+  },
+  "managementConfirm": {
+    "en": "Confirm action",
+    "text": "操作の確認"
+  },
+  "managementConfirmName": {
+    "en": "Type the displayed name to confirm",
+    "text": "確認のため、表示されている名前を入力してください"
+  },
+  "managementConfirmSubmit": {
+    "en": "Confirm",
+    "text": "確認"
+  },
+  "delegations": {
+    "en": "Delegated administration",
+    "text": "管理の委任"
+  },
+  "delegationTarget": {
+    "en": "Target account ID",
+    "text": "対象アカウントのID"
+  },
+  "delegationActions": {
+    "en": "Administrative actions",
+    "text": "管理操作"
+  },
+  "delegationCeiling": {
+    "en": "Maximum repository permissions",
+    "text": "リポジトリ権限の上限"
+  },
+  "delegationSave": {
+    "en": "Save delegation",
+    "text": "委任を保存"
+  },
+  "delegationRemove": {
+    "en": "Remove delegation",
+    "text": "委任を解除"
+  },
+  "delegationNew": {
+    "en": "New delegation",
+    "text": "新しい委任"
+  },
+  "delegationHint": {
+    "en": "Only the server owner (the setup account) can change delegations. Removing a delegation does not revoke keys its holder already activated.",
+    "text": "委任を変更できるのは、サーバーの所有者（セットアップ時に作成したアカウント）だけです。委任を解除しても、委任先が既に有効化したキーは取り消されません。"
+  },
+  "delegationOwn": {
+    "en": "My administrative grants",
+    "text": "自分の管理権限"
+  },
+  "keyDetails": {
+    "en": "Key details",
+    "text": "キーの詳細"
+  },
+  "permission.repository.read": {
+    "en": "Discover repositories",
+    "text": "リポジトリの検出"
+  },
+  "permission.storage.read": {
+    "en": "View storage policy and usage",
+    "text": "ストレージポリシーと使用量の表示"
+  },
+  "permission.storage.manage": {
+    "en": "Manage storage policy",
+    "text": "ストレージポリシーの管理"
+  },
+  "permission.diagnostics.read": {
+    "en": "Read diagnostics",
+    "text": "診断情報の読み取り"
+  },
+  "permission.artifact.read": {
+    "en": "Read artifact details",
+    "text": "アーティファクトの詳細の読み取り"
+  },
+  "permission.artifact.list": {
+    "en": "List artifacts",
+    "text": "アーティファクトの一覧表示"
+  },
+  "permission.artifact.delete": {
+    "en": "Delete artifacts",
+    "text": "アーティファクトの削除"
+  },
+  "permission.artifact.promote": {
+    "en": "Promote artifacts and manage stages",
+    "text": "アーティファクトのプロモートとステージの管理"
+  },
+  "permission.content.read": {
+    "en": "Download files",
+    "text": "ファイルのダウンロード"
+  },
+  "permission.upload.create": {
+    "en": "Start uploads",
+    "text": "アップロードの開始"
+  },
+  "permission.upload.read": {
+    "en": "Read upload progress",
+    "text": "アップロードの進行状況の読み取り"
+  },
+  "permission.upload.write": {
+    "en": "Upload bytes",
+    "text": "データの送信"
+  },
+  "permission.upload.complete": {
+    "en": "Finish uploads",
+    "text": "アップロードの完了"
+  },
+  "permission.upload.cancel": {
+    "en": "Cancel uploads",
+    "text": "アップロードのキャンセル"
+  },
+  "permission.job.read": {
+    "en": "Read jobs",
+    "text": "ジョブの読み取り"
+  },
+  "permission.package.read": {
+    "en": "Read packages",
+    "text": "パッケージの読み取り"
+  },
+  "permission.package.publish": {
+    "en": "Publish packages",
+    "text": "パッケージの公開"
+  },
+  "permission.asset.read": {
+    "en": "Read file links",
+    "text": "ファイルリンクの読み取り"
+  },
+  "permission.asset.write": {
+    "en": "Assign file links",
+    "text": "ファイルリンクの割り当て"
+  },
+  "permission.asset.restore": {
+    "en": "Restore file history",
+    "text": "ファイル履歴の復元"
+  },
+  "permission.annotation.read": {
+    "en": "Read metadata",
+    "text": "メタデータの読み取り"
+  },
+  "permission.annotation.write": {
+    "en": "Edit metadata",
+    "text": "メタデータの編集"
+  },
+  "permission.reference.write": {
+    "en": "Manage references",
+    "text": "参照の管理"
+  },
+  "permission.audit.read": {
+    "en": "Read audit",
+    "text": "監査ログの読み取り"
+  },
+  "permission.service-account.read": {
+    "en": "Read accounts",
+    "text": "アカウントの読み取り"
+  },
+  "permission.service-account.manage": {
+    "en": "Enable or disable accounts",
+    "text": "アカウントの有効化・無効化"
+  },
+  "permission.policy.read": {
+    "en": "Read account policies",
+    "text": "アカウントポリシーの読み取り"
+  },
+  "permission.policy.manage": {
+    "en": "Manage account policies",
+    "text": "アカウントポリシーの管理"
+  },
+  "permission.credential.read": {
+    "en": "Read key metadata",
+    "text": "キーのメタデータの読み取り"
+  },
+  "permission.credential.manage": {
+    "en": "Issue, rotate and revoke keys",
+    "text": "キーの発行、ローテーション、取り消し"
+  },
+  "permission.service-audit.read": {
+    "en": "Read service audit",
+    "text": "サービス監査ログの読み取り"
+  },
+  "welcomePartial": {
+    "en": "The owner account exists. Sign in and finish repository permissions in Access groups; account creation must not be repeated.",
+    "text": "所有者アカウントは既に存在します。サインインして、アクセスグループでリポジトリの権限設定を完了してください。アカウントの作成を繰り返さないでください。"
+  },
+  "onboarding": {
+    "en": "Welcome to Arkvory",
+    "text": "Arkvoryへようこそ"
+  },
+  "help": {
+    "en": "API & CLI",
+    "text": "APIとCLI"
+  },
+  "welcomeAccess": {
+    "en": "01 · Sign in",
+    "text": "01 · サインイン"
+  },
+  "welcomeAccessBody": {
+    "en": "On Windows, use the owner account you created in Setup. For a headless installation, create an owner using the private recovery key on the server.",
+    "text": "Windowsでは、セットアップで作成した所有者アカウントを使用します。ヘッドレスインストールの場合は、サーバー上にある非公開の回復キーを使って所有者を作成してください。"
+  },
+  "welcomeSignIn": {
+    "en": "Open sign in",
+    "text": "サインインを開く"
+  },
+  "welcomeOwner": {
+    "en": "Create the first owner",
+    "text": "最初の所有者を作成"
+  },
+  "welcomeRecovery": {
+    "en": "Recovery key",
+    "text": "回復キー"
+  },
+  "welcomeName": {
+    "en": "Owner name · 3–64 Latin letters, digits, dot, dash or underscore",
+    "text": "所有者名 · 3～64文字の半角英字、数字、ドット、ハイフン、アンダースコア"
+  },
+  "welcomePassword": {
+    "en": "Password · at least 12 characters",
+    "text": "パスワード · 12文字以上"
+  },
+  "welcomeCreate": {
+    "en": "Create owner",
+    "text": "所有者を作成"
+  },
+  "welcomeCreated": {
+    "en": "Owner created. Sign in with your new password. Keep the recovery key offline.",
+    "text": "所有者を作成しました。新しいパスワードでサインインしてください。回復キーはオフラインで保管してください。"
+  },
+  "welcomePublish": {
+    "en": "02 · Publish a file",
+    "text": "02 · ファイルを公開"
+  },
+  "welcomePublishBody": {
+    "en": "Start with a small file in releases. Add labels and metadata; UPack builds can also carry manifests and attachments.",
+    "text": "まずはreleasesに小さなファイルを置いてみましょう。ラベルとメタデータを追加できます。UPackビルドにはマニフェストや添付ファイルも付けられます。"
+  },
+  "welcomePublishAction": {
+    "en": "Open uploads",
+    "text": "アップロードを開く"
+  },
+  "welcomeConnect": {
+    "en": "03 · Connect your tools",
+    "text": "03 · ツールを接続"
+  },
+  "welcomeConnectBody": {
+    "en": "Give each integration its own service account and only the repository actions it needs. The API catalog shows the operations available to you.",
+    "text": "連携ごとに専用のサービスアカウントを用意し、必要なリポジトリ操作だけを許可してください。自分が利用できる操作はAPIカタログで確認できます。"
+  },
+  "welcomeOperate": {
+    "en": "04 · Prepare production",
+    "text": "04 · 本番運用の準備"
+  },
+  "welcomeOperateBody": {
+    "en": "Before remote access: configure HTTPS, backups and disk alerts. Updates are opt-in. Local storage is a single-server profile.",
+    "text": "リモートアクセスを許可する前に、HTTPS、バックアップ、ディスク容量のアラートを設定してください。更新はオプトイン方式です。ローカルストレージは単一サーバー向けの構成です。"
+  },
+  "helpLoad": {
+    "en": "Load permitted API operations",
+    "text": "許可されたAPI操作を読み込む"
+  },
+  "helpSearch": {
+    "en": "Search method, path or operation",
+    "text": "メソッド、パス、操作で検索"
+  },
+  "helpHint": {
+    "en": "Sign in to see API operations available to your account.",
+    "text": "サインインすると、自分のアカウントで利用できるAPI操作が表示されます。"
+  },
+  "helpEmpty": {
+    "en": "No matching operations.",
+    "text": "一致する操作はありません。"
+  },
+  "helpLoaded": {
+    "en": "Loaded {count} operations.",
+    "text": "{count}件の操作を読み込みました。"
+  },
+  "helpRetry": {
+    "en": "Retry policy:",
+    "text": "再試行ポリシー："
+  },
+  "helpActions": {
+    "en": "Required actions:",
+    "text": "必要な権限："
+  },
+  "helpCli": {
+    "en": "Server lifecycle CLI",
+    "text": "サーバー運用CLI"
+  },
+  "helpRemoteCli": {
+    "en": "Remote client · arkvoryctl",
+    "text": "リモートクライアント · arkvoryctl"
+  },
+  "helpRemoteCliBody": {
+    "en": "Install the separate Arkvory CLI package on your computer. It includes Node.js and needs no server services. Store your key in a private file. Repeat the same transfer command after interruption; use --json for CI/CD.",
+    "text": "別パッケージのArkvory CLIを自分のコンピューターにインストールします。Node.jsが同梱されており、サーバーのサービスは不要です。キーは非公開のファイルに保存してください。中断した場合は同じ転送コマンドを再実行します。CI/CDでは--jsonを使用してください。"
+  },
+  "helpCliBody": {
+    "en": "Run from an elevated terminal on the server. These commands manage deployment; integrations use the HTTP API and SDK. Replace ROOT with the installation directory.",
+    "text": "サーバー上の管理者権限のターミナルで実行してください。これらのコマンドはデプロイを管理するもので、連携にはHTTP APIとSDKを使用します。ROOTはインストールディレクトリに置き換えてください。"
+  },
+  "helpDocs": {
+    "en": "Documentation",
+    "text": "ドキュメント"
+  },
+  "helpDocsBody": {
+    "en": "Installation, everyday work, clients and protocols, operation, backups and the full HTTP API reference, in the language of the console.",
+    "text": "インストール、日常の作業、クライアントとプロトコル、運用、バックアップ、HTTP APIの完全なリファレンスを、コンソールと同じ言語で提供しています。"
+  },
+  "helpDocsOpen": {
+    "en": "Open the documentation",
+    "text": "ドキュメントを開く"
+  },
+  "helpRecipes": {
+    "en": "Integration checklist",
+    "text": "連携のチェックリスト"
+  },
+  "helpRecipesBody": {
+    "en": "Read capabilities → discover repositories → create upload with an idempotency key → resume parts → complete → poll readiness → download using Range and ETag. Never blindly retry a non-idempotent write.",
+    "text": "capabilitiesを読み取る → リポジトリを検出する → 冪等キーを付けてアップロードを作成する → パートを再開する → 完了する → 準備完了をポーリングする → RangeとETagでダウンロードする。冪等でない書き込みを無条件に再試行しないでください。"
+  },
+  "navigationExpand": {
+    "en": "Expand sidebar",
+    "text": "サイドバーを展開"
+  },
+  "navigationCollapse": {
+    "en": "Collapse sidebar",
+    "text": "サイドバーを折りたたむ"
+  },
+  "noUsers": {
+    "en": "No user accounts yet.",
+    "text": "ユーザーアカウントはまだありません。"
+  },
+  "noAccessGroups": {
+    "en": "No access groups yet.",
+    "text": "アクセスグループはまだありません。"
+  },
+  "fileBrowse": {
+    "en": "Choose file",
+    "text": "ファイルを選択"
+  },
+  "fileNotSelected": {
+    "en": "No file selected",
+    "text": "ファイルが選択されていません"
+  },
+  "navLibrary": {
+    "en": "Library",
+    "text": "ライブラリ"
+  },
+  "navTransfers": {
+    "en": "Transfers",
+    "text": "転送"
+  },
+  "navResources": {
+    "en": "Resources",
+    "text": "リソース"
+  },
+  "navStart": {
+    "en": "Getting started",
+    "text": "はじめに"
+  },
+  "keyHelpLabel": {
+    "en": "About service keys",
+    "text": "サービスキーについて"
+  },
+  "catalogHelpLabel": {
+    "en": "About artifacts",
+    "text": "アーティファクトについて"
+  },
+  "packageHelpLabel": {
+    "en": "About package filters",
+    "text": "パッケージフィルターについて"
+  },
+  "labelHelpLabel": {
+    "en": "About build labels",
+    "text": "ビルドラベルについて"
+  },
+  "metadataHelpLabel": {
+    "en": "About metadata",
+    "text": "メタデータについて"
+  },
+  "assetHelpLabel": {
+    "en": "About file links and versions",
+    "text": "ファイルリンクとバージョンについて"
+  },
+  "attachmentHelpLabel": {
+    "en": "About build attachments",
+    "text": "ビルドの添付ファイルについて"
+  },
+  "historyHelpLabel": {
+    "en": "About file history",
+    "text": "ファイル履歴について"
+  },
+  "adminHelpLabel": {
+    "en": "About access management",
+    "text": "アクセス管理について"
+  },
+  "cleanupTitle": {
+    "en": "Physical cleanup",
+    "text": "物理クリーンアップ"
+  },
+  "cleanupHelp": {
+    "en": "Frees disk space without stopping Arkvory. Active transfers and pinned files are deferred. Enable only after every Arkvory server is updated, including read servers and background processors. Pausing finishes the current file. The grace period is not a recycle bin.",
+    "text": "Arkvoryを停止せずにディスク領域を解放します。実行中の転送や固定されたファイルは後回しになります。読み取りサーバーやバックグラウンド処理を含む、すべてのArkvoryサーバーを更新してから有効にしてください。一時停止すると、処理中のファイルを終えてから止まります。猶予期間はごみ箱ではありません。"
+  },
+  "cleanupEnabled": {
+    "en": "Enable background cleanup",
+    "text": "バックグラウンドクリーンアップを有効にする"
+  },
+  "cleanupGrace": {
+    "en": "Grace period after deletion (hours)",
+    "text": "削除後の猶予期間（時間）"
+  },
+  "cleanupBatch": {
+    "en": "Files per batch",
+    "text": "1バッチあたりのファイル数"
+  },
+  "cleanupInterval": {
+    "en": "Interval between batches (seconds)",
+    "text": "バッチの間隔（秒）"
+  },
+  "cleanupDelay": {
+    "en": "Delay between files (milliseconds)",
+    "text": "ファイル間の待機時間（ミリ秒）"
+  },
+  "cleanupRefresh": {
+    "en": "Refresh cleanup status",
+    "text": "クリーンアップの状態を更新"
+  },
+  "cleanupSave": {
+    "en": "Apply settings",
+    "text": "設定を適用"
+  },
+  "cleanupRun": {
+    "en": "Request a batch",
+    "text": "バッチを要求"
+  },
+  "cleanupSaved": {
+    "en": "Cleanup settings applied.",
+    "text": "クリーンアップの設定を適用しました。"
+  },
+  "cleanupRequested": {
+    "en": "Batch requested. Refresh status to see its result.",
+    "text": "バッチを要求しました。結果を確認するには状態を更新してください。"
+  },
+  "cleanupStats": {
+    "en": "Last batch: freed {bytes} · processed {collected} · deferred {deferred} · failed {failed}",
+    "text": "前回のバッチ：{bytes}を解放 · 処理{collected}件 · 延期{deferred}件 · 失敗{failed}件"
+  },
+  "cleanupLastRun": {
+    "en": "Last completed batch:",
+    "text": "最後に完了したバッチ："
+  },
+  "cleanupPaused": {
+    "en": "Cleanup is paused.",
+    "text": "クリーンアップは一時停止中です。"
+  },
+  "cleanupScheduled": {
+    "en": "Background cleanup is enabled.",
+    "text": "バックグラウンドクリーンアップは有効です。"
+  },
+  "updates": {
+    "en": "Updates",
+    "text": "更新"
+  },
+  "updateAvailable": {
+    "en": "Arkvory {version} is available",
+    "text": "Arkvory {version}を利用できます"
+  },
+  "updateOpen": {
+    "en": "View update",
+    "text": "更新を表示"
+  },
+  "updateCurrent": {
+    "en": "Installed version",
+    "text": "インストール済みのバージョン"
+  },
+  "updateLatest": {
+    "en": "Latest stable release",
+    "text": "最新の安定版リリース"
+  },
+  "updateChecked": {
+    "en": "Last check",
+    "text": "最終確認"
+  },
+  "updateCheck": {
+    "en": "Check now",
+    "text": "今すぐ確認"
+  },
+  "updateInstall": {
+    "en": "Install update",
+    "text": "更新をインストール"
+  },
+  "updateSettings": {
+    "en": "Automatic updates",
+    "text": "自動更新"
+  },
+  "updateAutomatic": {
+    "en": "Install compatible stable releases automatically",
+    "text": "互換性のある安定版リリースを自動的にインストールする"
+  },
+  "updateHour": {
+    "en": "Maintenance hour (UTC)",
+    "text": "メンテナンス時間帯（UTC）"
+  },
+  "updateSave": {
+    "en": "Save settings",
+    "text": "設定を保存"
+  },
+  "updateStatistics": {
+    "en": "Send anonymous statistics to ProAnimaStudio",
+    "text": "匿名の統計情報をProAnimaStudioに送信する"
+  },
+  "updateHub": {
+    "en": "Channel: {channel}. Versions are approved in the ProAnimaStudio hub; GitHub is used only when the hub cannot be reached. Statistics: a random installation id, version, system and installed updates — no names, addresses or content. Without statistics a version arrives only when it is rolled out to everyone.",
+    "text": "チャネル：{channel}。バージョンはProAnimaStudioのハブで承認されます。GitHubは、ハブに接続できない場合にのみ使用されます。統計情報：ランダムなインストールID、バージョン、システム、インストール済みの更新。名前、アドレス、コンテンツは含まれません。統計情報を送信しない場合、新しいバージョンは全員に展開されたときにのみ届きます。"
+  },
+  "updatePolicyHelp": {
+    "en": "Checks run every 6 hours, even when automatic installation is off. Automatic installation runs once per day during the selected UTC hour. A release that changes the database schema installs only after the server has captured and verified a fresh backup.",
+    "text": "確認は、自動インストールがオフの場合でも6時間ごとに実行されます。自動インストールは1日1回、選択したUTCの時間帯に実行されます。データベーススキーマを変更するリリースは、サーバーが新しいバックアップを取得して検証した後にのみインストールされます。"
+  },
+  "updateUnavailable": {
+    "en": "The host updater is not connected. Ask the server administrator to connect it using updates-connect.",
+    "text": "ホストのアップデーターが接続されていません。サーバー管理者に、updates-connectを使って接続するよう依頼してください。"
+  },
+  "updateStale": {
+    "en": "The host updater has stopped reporting. Check the scheduler and installation lock on the server.",
+    "text": "ホストのアップデーターからの報告が途絶えています。サーバー上のスケジューラーとインストールロックを確認してください。"
+  },
+  "updateIdle": {
+    "en": "Updater is ready",
+    "text": "アップデーターは準備完了です"
+  },
+  "updateChecking": {
+    "en": "Checking stable releases…",
+    "text": "安定版リリースを確認しています…"
+  },
+  "updateWorking": {
+    "en": "Installing the release. The service may briefly disconnect; this page will reconnect.",
+    "text": "リリースをインストールしています。サービスが一時的に切断される場合がありますが、このページは自動的に再接続します。"
+  },
+  "updatePending": {
+    "en": "Request accepted. Waiting for the host updater (usually within one minute).",
+    "text": "リクエストを受け付けました。ホストのアップデーターを待っています（通常は1分以内）。"
+  },
+  "updateUnknown": {
+    "en": "Not checked yet",
+    "text": "まだ確認していません"
+  },
+  "updatePinned": {
+    "en": "Version is pinned. Remove the pin on the server before installing from the console.",
+    "text": "バージョンが固定されています。コンソールからインストールする前に、サーバー上で固定を解除してください。"
+  },
+  "updateMaintenance": {
+    "en": "Installation refused: a release that changes the database schema needs a fresh verified backup. Connect a backup vault and complete the first backup, then check again, or upgrade manually on the server.",
+    "text": "インストールは拒否されました。データベーススキーマを変更するリリースには、検証済みの新しいバックアップが必要です。バックアップの保管庫を接続して最初のバックアップを完了してから再度確認するか、サーバー上で手動でアップグレードしてください。"
+  },
+  "updateMigration": {
+    "en": "This release changes the database schema. The server captures and verifies a backup before installing, so installation takes longer.",
+    "text": "このリリースはデータベーススキーマを変更します。サーバーはインストール前にバックアップを取得して検証するため、インストールに時間がかかります。"
+  },
+  "updateCheckFailed": {
+    "en": "Release check failed. The displayed release may be outdated. Check GitHub access and credentials on the server.",
+    "text": "リリースの確認に失敗しました。表示されているリリースは古い可能性があります。サーバー上のGitHubへのアクセスと認証情報を確認してください。"
+  },
+  "updateFailed": {
+    "en": "Update failed. Inspect the installation journal and service logs before retrying.",
+    "text": "更新に失敗しました。再試行する前に、インストールジャーナルとサービスのログを確認してください。"
+  },
+  "updateRecovery": {
+    "en": "Manual recovery is required. Inspect processes, installation lock and journal on the server.",
+    "text": "手動での復旧が必要です。サーバー上のプロセス、インストールロック、ジャーナルを確認してください。"
+  },
+  "updateConflict": {
+    "en": "Settings changed while the request was waiting. Refresh and submit again.",
+    "text": "リクエストの待機中に設定が変更されました。再読み込みしてから、もう一度送信してください。"
+  },
+  "updateConfirm": {
+    "en": "Install Arkvory {version}?",
+    "text": "Arkvory {version}をインストールしますか？"
+  },
+  "updateConfirmHelp": {
+    "en": "Active transfers may be interrupted and need to resume. The installer verifies the release, backs up first when the database schema changes, and attempts rollback if startup fails. Schedule this action during a maintenance window.",
+    "text": "実行中の転送が中断され、再開が必要になる場合があります。インストーラーはリリースを検証し、データベーススキーマが変わる場合は先にバックアップを取得し、起動に失敗した場合はロールバックを試みます。この操作はメンテナンス時間帯に実行してください。"
+  },
+  "updateCancel": {
+    "en": "Cancel",
+    "text": "キャンセル"
+  },
+  "updateConfirmButton": {
+    "en": "Install this release",
+    "text": "このリリースをインストール"
+  },
+  "updateConnection": {
+    "en": "Cannot contact Arkvory. Retrying automatically; do not submit another installation request.",
+    "text": "Arkvoryに接続できません。自動的に再試行しています。インストールのリクエストを再送信しないでください。"
+  },
+  "backups": {
+    "en": "Backups",
+    "text": "バックアップ"
+  },
+  "backupStateOk": {
+    "en": "Backups are healthy",
+    "text": "バックアップは正常です"
+  },
+  "backupStateWarning": {
+    "en": "Needs attention",
+    "text": "注意が必要です"
+  },
+  "backupStateCritical": {
+    "en": "Action required",
+    "text": "対応が必要です"
+  },
+  "backupStateLoading": {
+    "en": "Loading status…",
+    "text": "状態を読み込んでいます…"
+  },
+  "backupRefresh": {
+    "en": "Refresh status",
+    "text": "状態を更新"
+  },
+  "backupRun": {
+    "en": "Create backup now",
+    "text": "今すぐバックアップ"
+  },
+  "backupNewest": {
+    "en": "Latest backup",
+    "text": "最新のバックアップ"
+  },
+  "backupNewestNone": {
+    "en": "No backups yet",
+    "text": "バックアップはまだありません"
+  },
+  "backupNewestHelp": {
+    "en": "Age counts from the snapshot time T: a backup contains the data as of T, not as of its completion. Hover the age for the exact local time.",
+    "text": "経過時間はスナップショット時刻Tから数えます。バックアップに含まれるのはTの時点のデータで、完了時点のデータではありません。経過時間にマウスポインターを合わせると、正確なローカル時刻が表示されます。"
+  },
+  "backupNewestHelpLabel": {
+    "en": "About backup age",
+    "text": "バックアップの経過時間について"
+  },
+  "backupNextRun": {
+    "en": "Next run",
+    "text": "次回の実行"
+  },
+  "backupNextDisabled": {
+    "en": "Schedule is off",
+    "text": "スケジュールはオフです"
+  },
+  "backupNextUnknown": {
+    "en": "Not scheduled",
+    "text": "スケジュールされていません"
+  },
+  "backupOverdue": {
+    "en": "Overdue",
+    "text": "期限超過"
+  },
+  "backupAgent": {
+    "en": "Backup agent",
+    "text": "バックアップエージェント"
+  },
+  "backupAgentOnline": {
+    "en": "Online",
+    "text": "オンライン"
+  },
+  "backupAgentOffline": {
+    "en": "Offline",
+    "text": "オフライン"
+  },
+  "backupAgentNever": {
+    "en": "Has not connected yet",
+    "text": "まだ接続していません"
+  },
+  "backupAgentSeen": {
+    "en": "Last signal",
+    "text": "最終通信"
+  },
+  "backupAgentVersion": {
+    "en": "· version {version}",
+    "text": "· バージョン{version}"
+  },
+  "backupVault": {
+    "en": "Backup storage",
+    "text": "バックアップ保管庫"
+  },
+  "backupVaultFree": {
+    "en": "{free} free of {total}",
+    "text": "空き：{free}（合計{total}）"
+  },
+  "backupVaultAvailable": {
+    "en": "Available",
+    "text": "利用可能"
+  },
+  "backupVaultNotConfigured": {
+    "en": "Not configured",
+    "text": "未設定"
+  },
+  "backupVaultUnknown": {
+    "en": "Unknown while the agent is offline",
+    "text": "エージェントがオフラインのため不明"
+  },
+  "backupVaultUnavailable": {
+    "en": "Unavailable",
+    "text": "利用不可"
+  },
+  "backupWarningsLabel": {
+    "en": "Backup warnings",
+    "text": "バックアップの警告"
+  },
+  "backupSeverityWarning": {
+    "en": "Warning",
+    "text": "警告"
+  },
+  "backupSeverityCritical": {
+    "en": "Critical",
+    "text": "重大"
+  },
+  "backupWarningHelpLabel": {
+    "en": "What to do",
+    "text": "対処方法"
+  },
+  "backupWarningVaultNotConfigured": {
+    "en": "Backup storage is not configured for the agent",
+    "text": "エージェントにバックアップ保管庫が設定されていません"
+  },
+  "backupWarningAgentOffline": {
+    "en": "The backup agent is offline",
+    "text": "バックアップエージェントがオフラインです"
+  },
+  "backupWarningScheduleDisabled": {
+    "en": "The daily schedule is off",
+    "text": "毎日のスケジュールがオフになっています"
+  },
+  "backupWarningNoBackupYet": {
+    "en": "There is no backup yet",
+    "text": "バックアップがまだありません"
+  },
+  "backupWarningBackupStale": {
+    "en": "The latest backup is out of date",
+    "text": "最新のバックアップが古くなっています"
+  },
+  "backupWarningLastRunFailed": {
+    "en": "The last backup failed",
+    "text": "前回のバックアップが失敗しました"
+  },
+  "backupWarningVaultUnavailable": {
+    "en": "Backup storage is unavailable",
+    "text": "バックアップ保管庫を利用できません"
+  },
+  "backupWarningVaultLowSpace": {
+    "en": "Backup storage is running out of space",
+    "text": "バックアップ保管庫の空き容量が少なくなっています"
+  },
+  "backupWarningVerifyFailed": {
+    "en": "A restore point failed verification",
+    "text": "復元ポイントの検証に失敗しました"
+  },
+  "backupWarningNeverDeepVerified": {
+    "en": "No full verification for more than 8 days",
+    "text": "8日以上、完全な検証が行われていません"
+  },
+  "backupActionVaultNotConfigured": {
+    "en": "Set ARKVORY_BACKUP_VAULT to a directory prepared with vault init in the environment of the arkvory-backup service and restart it. Once installers support it, use arkvory configure --backup-vault.",
+    "text": "arkvory-backupサービスの環境で、ARKVORY_BACKUP_VAULTにvault initで準備したディレクトリを設定し、サービスを再起動してください。インストーラーが対応した後は、arkvory configure --backup-vaultを使用できます。"
+  },
+  "backupActionAgentOffline": {
+    "en": "Start the arkvory-backup service (npm run backup -- agent) and check its journal. Without the agent nothing is copied.",
+    "text": "arkvory-backupサービス（npm run backup -- agent）を起動し、そのジャーナルを確認してください。エージェントが動作していないと、何もバックアップされません。"
+  },
+  "backupActionScheduleDisabled": {
+    "en": "Turn on the plan below if backups must run every day.",
+    "text": "バックアップを毎日実行する必要がある場合は、下のプランをオンにしてください。"
+  },
+  "backupActionNoBackupYet": {
+    "en": "Create the first backup with \"Create backup now\".",
+    "text": "「今すぐバックアップ」で最初のバックアップを作成してください。"
+  },
+  "backupActionBackupStale": {
+    "en": "The newest point is older than 26 hours. Check the job error codes below and the agent journal.",
+    "text": "最新のポイントは26時間以上前のものです。下のジョブのエラーコードと、エージェントのジャーナルを確認してください。"
+  },
+  "backupActionLastRunFailed": {
+    "en": "The error code is in the job table; the agent journal has the record backup.request.failed.",
+    "text": "エラーコードはジョブの表に表示されます。エージェントのジャーナルにはbackup.request.failedのレコードが記録されています。"
+  },
+  "backupActionVaultUnavailable": {
+    "en": "The backup storage volume is not mounted, has no vault.json or is not writable. Check the disk or NAS on the server.",
+    "text": "バックアップ保管庫のボリュームがマウントされていないか、vault.jsonがないか、書き込みできません。サーバー上のディスクまたはNASを確認してください。"
+  },
+  "backupActionVaultLowSpace": {
+    "en": "Less than 10% or less than twice the last new data is free. Free space on the backup volume or keep fewer points.",
+    "text": "空き容量が10%未満か、前回の新規データ量の2倍未満です。バックアップボリュームの空き容量を増やすか、保持するポイントを減らしてください。"
+  },
+  "backupActionVerifyFailed": {
+    "en": "Do not change the backup storage. Find the point with a verification error below and investigate its code.",
+    "text": "バックアップ保管庫は変更しないでください。下で検証エラーのあるポイントを探し、そのコードを調査してください。"
+  },
+  "backupActionNeverDeepVerified": {
+    "en": "Run \"Verify fully\" for the newest point and check that the agent is running.",
+    "text": "最新のポイントに対して「完全に検証」を実行し、エージェントが動作していることを確認してください。"
+  },
+  "backupRestoreNote": {
+    "en": "Restoring is an operator action on the server, into an empty target.",
+    "text": "復元は、オペレーターがサーバー上で空の復元先に対して行う操作です。"
+  },
+  "backupRestoreHelp": {
+    "en": "On the server: npm run backup -- restore --vault <vault> --point <id> --storage <empty directory>, with ARKVORY_RESTORE_DATABASE_URL of an empty database. Run it first without --yes (a check that writes nothing), then with --yes, start a separate instance on the restored data and check it before switching production. Details: the documentation, \"Backups\".",
+    "text": "サーバー上で次のコマンドを実行します：npm run backup -- restore --vault <vault> --point <id> --storage <空のディレクトリ>。ARKVORY_RESTORE_DATABASE_URLには空のデータベースを指定します。まず--yesなしで実行し（何も書き込まない確認）、次に--yesを付けて実行します。復元したデータで別のインスタンスを起動して確認してから、本番環境を切り替えてください。詳細はドキュメントの「バックアップ」を参照してください。"
+  },
+  "backupRestoreHelpLabel": {
+    "en": "How to restore",
+    "text": "復元の方法"
+  },
+  "backupRunningLabel": {
+    "en": "Running now",
+    "text": "実行中"
+  },
+  "backupRunQueued": {
+    "en": "Backup queued. The agent starts it at its next queue check.",
+    "text": "バックアップをキューに追加しました。エージェントは次にキューを確認したときに開始します。"
+  },
+  "backupVerifyQueued": {
+    "en": "Full verification queued.",
+    "text": "完全な検証をキューに追加しました。"
+  },
+  "backupRetentionQueued": {
+    "en": "Retention queued: the agent removes the points outside the policy.",
+    "text": "保持処理をキューに追加しました。エージェントがポリシー外のポイントを削除します。"
+  },
+  "backupPinDone": {
+    "en": "Point pinned: retention keeps it.",
+    "text": "ポイントを固定しました。保持ルールによって削除されることはありません。"
+  },
+  "backupUnpinDone": {
+    "en": "Point unpinned.",
+    "text": "ポイントの固定を解除しました。"
+  },
+  "backupPoints": {
+    "en": "Restore points",
+    "text": "復元ポイント"
+  },
+  "backupPointsHelp": {
+    "en": "Retention keeps the newest point of each of the last N local days of the plan time zone, and likewise of weeks and months, plus pinned points and the newest point. Other points of the same day are removed: pin a point you must keep.",
+    "text": "保持ルールでは、プランのタイムゾーンにおける直近N日間の各日の最新ポイントを残し、週と月についても同様に残します。さらに、固定されたポイントと最新のポイントも残ります。同じ日のほかのポイントは削除されるため、残す必要があるポイントは固定してください。"
+  },
+  "backupPointsHelpLabel": {
+    "en": "About retention",
+    "text": "保持について"
+  },
+  "backupRetentionApply": {
+    "en": "Apply retention",
+    "text": "保持を適用"
+  },
+  "backupPointsEmpty": {
+    "en": "No restore points in the current backup storage yet.",
+    "text": "現在のバックアップ保管庫には、まだ復元ポイントがありません。"
+  },
+  "backupSnapshot": {
+    "en": "State as of (T)",
+    "text": "データの時点（T）"
+  },
+  "backupCompleted": {
+    "en": "Completed",
+    "text": "完了"
+  },
+  "backupSize": {
+    "en": "Size",
+    "text": "サイズ"
+  },
+  "backupNewBytes": {
+    "en": "+{size} new",
+    "text": "+{size}（新規）"
+  },
+  "backupFiles": {
+    "en": "Files",
+    "text": "ファイル"
+  },
+  "backupVerification": {
+    "en": "Verification",
+    "text": "検証"
+  },
+  "backupVerifyNone": {
+    "en": "Not verified",
+    "text": "未検証"
+  },
+  "backupVerifyStructural": {
+    "en": "Structure checked",
+    "text": "構造を確認済み"
+  },
+  "backupVerifyDeep": {
+    "en": "Fully verified",
+    "text": "完全に検証済み"
+  },
+  "backupVerifyFailed": {
+    "en": "Verification failed",
+    "text": "検証に失敗"
+  },
+  "backupPinnedColumn": {
+    "en": "Pinned",
+    "text": "固定"
+  },
+  "backupPinnedYes": {
+    "en": "Pinned",
+    "text": "固定済み"
+  },
+  "backupVerifyDeepAction": {
+    "en": "Verify fully",
+    "text": "完全に検証"
+  },
+  "backupPin": {
+    "en": "Pin",
+    "text": "固定"
+  },
+  "backupUnpin": {
+    "en": "Unpin",
+    "text": "固定を解除"
+  },
+  "backupRetentionConfirm": {
+    "en": "Apply retention now? Removal from the backup storage cannot be undone: the points below and the content no remaining point needs are deleted.",
+    "text": "今すぐ保持を適用しますか？バックアップ保管庫からの削除は元に戻せません。下のポイントと、残りのどのポイントにも必要のないコンテンツが削除されます。"
+  },
+  "backupRetentionKeep": {
+    "en": "Kept: {count}",
+    "text": "保持：{count}"
+  },
+  "backupRetentionDelete": {
+    "en": "Removed: {count}",
+    "text": "削除：{count}"
+  },
+  "backupRetentionNothing": {
+    "en": "Nothing to remove.",
+    "text": "削除するものはありません。"
+  },
+  "backupReasonDaily": {
+    "en": "day",
+    "text": "日次"
+  },
+  "backupReasonWeekly": {
+    "en": "week",
+    "text": "週次"
+  },
+  "backupReasonMonthly": {
+    "en": "month",
+    "text": "月次"
+  },
+  "backupReasonPinned": {
+    "en": "pinned",
+    "text": "固定"
+  },
+  "backupReasonNewest": {
+    "en": "newest",
+    "text": "最新"
+  },
+  "backupPointShort": {
+    "en": "Point {id}",
+    "text": "ポイント{id}"
+  },
+  "backupJobs": {
+    "en": "Jobs",
+    "text": "ジョブ"
+  },
+  "backupJobsHelp": {
+    "en": "Jobs run in the backup agent on the server, one at a time; closing this page does not stop them. Every backup is followed by a structure check and retention.",
+    "text": "ジョブはサーバー上のバックアップエージェントで1つずつ実行されます。このページを閉じても停止しません。各バックアップの後には、構造チェックと保持処理が行われます。"
+  },
+  "backupJobsHelpLabel": {
+    "en": "About jobs",
+    "text": "ジョブについて"
+  },
+  "backupJobsEmpty": {
+    "en": "No backup jobs yet.",
+    "text": "バックアップジョブはまだありません。"
+  },
+  "backupJobKind": {
+    "en": "Job",
+    "text": "ジョブ"
+  },
+  "backupJobState": {
+    "en": "State",
+    "text": "状態"
+  },
+  "backupJobPhase": {
+    "en": "Phase",
+    "text": "フェーズ"
+  },
+  "backupJobStarted": {
+    "en": "Started",
+    "text": "開始"
+  },
+  "backupJobFinished": {
+    "en": "Finished",
+    "text": "終了"
+  },
+  "backupJobError": {
+    "en": "Error code",
+    "text": "エラーコード"
+  },
+  "backupJobProgress": {
+    "en": "Progress",
+    "text": "進行状況"
+  },
+  "backupKindCapture": {
+    "en": "Backup",
+    "text": "バックアップ"
+  },
+  "backupKindVerify": {
+    "en": "Verification",
+    "text": "検証"
+  },
+  "backupKindRetention": {
+    "en": "Retention",
+    "text": "保持"
+  },
+  "backupJobQueued": {
+    "en": "Queued",
+    "text": "待機中"
+  },
+  "backupJobRunning": {
+    "en": "Running",
+    "text": "実行中"
+  },
+  "backupJobCommitting": {
+    "en": "Finishing",
+    "text": "完了処理中"
+  },
+  "backupJobCompleted": {
+    "en": "Completed",
+    "text": "完了"
+  },
+  "backupJobFailed": {
+    "en": "Failed",
+    "text": "失敗"
+  },
+  "backupJobInterrupted": {
+    "en": "Interrupted",
+    "text": "中断"
+  },
+  "backupPhasePreparing": {
+    "en": "Preparing",
+    "text": "準備中"
+  },
+  "backupPhaseCatalog": {
+    "en": "Catalog snapshot",
+    "text": "カタログのスナップショット"
+  },
+  "backupPhaseTransfer": {
+    "en": "Copying files",
+    "text": "ファイルのコピー"
+  },
+  "backupPhaseFinishing": {
+    "en": "Finishing",
+    "text": "完了処理"
+  },
+  "backupPhaseDone": {
+    "en": "Done",
+    "text": "完了"
+  },
+  "backupPhaseStructural": {
+    "en": "Structure check",
+    "text": "構造チェック"
+  },
+  "backupPhaseDeep": {
+    "en": "Full check",
+    "text": "完全チェック"
+  },
+  "backupProgressBytes": {
+    "en": "{done} of {total}",
+    "text": "{done} / {total}"
+  },
+  "backupPlan": {
+    "en": "Schedule and retention",
+    "text": "スケジュールと保持"
+  },
+  "backupPlanHelp": {
+    "en": "One backup per day at the chosen local time of an explicit time zone; a nonexistent time during a clock change runs at the change. After downtime one missed run is caught up. Turning the plan on does not start a backup immediately.",
+    "text": "明示的に指定したタイムゾーンの、選択したローカル時刻に1日1回バックアップを作成します。時刻の切り替え（夏時間など）で存在しない時刻になる場合は、切り替えの時点で実行されます。停止していた期間の後は、実行できなかった分を1回だけ取り戻します。プランをオンにしても、すぐにバックアップが始まるわけではありません。"
+  },
+  "backupPlanHelpLabel": {
+    "en": "About the plan",
+    "text": "プランについて"
+  },
+  "backupEnabled": {
+    "en": "Back up daily on schedule",
+    "text": "スケジュールに従って毎日バックアップする"
+  },
+  "backupTime": {
+    "en": "Local time",
+    "text": "ローカル時刻"
+  },
+  "backupTimezone": {
+    "en": "Time zone (IANA)",
+    "text": "タイムゾーン（IANA）"
+  },
+  "backupTimezonePlaceholder": {
+    "en": "e.g. Europe/Moscow",
+    "text": "例：Asia/Tokyo"
+  },
+  "backupZoneOffset": {
+    "en": "Now {offset}",
+    "text": "現在：{offset}"
+  },
+  "backupZoneUnknown": {
+    "en": "This browser does not know the zone; the server checks it on save.",
+    "text": "このブラウザーはこのタイムゾーンを認識できません。保存時にサーバーが確認します。"
+  },
+  "backupZoneBrowser": {
+    "en": "Use {zone}",
+    "text": "{zone}を使用"
+  },
+  "backupRetentionLegend": {
+    "en": "Keep the newest point of the last",
+    "text": "直近の各期間の最新ポイントを保持"
+  },
+  "backupDaily": {
+    "en": "Days",
+    "text": "日数"
+  },
+  "backupWeekly": {
+    "en": "Weeks",
+    "text": "週数"
+  },
+  "backupMonthly": {
+    "en": "Months",
+    "text": "月数"
+  },
+  "backupPlanSave": {
+    "en": "Save plan",
+    "text": "プランを保存"
+  },
+  "backupPlanSaved": {
+    "en": "Plan saved · version {revision}",
+    "text": "プランを保存しました · バージョン{revision}"
+  },
+  "backupPlanConflict": {
+    "en": "The plan was changed elsewhere. Its current version is loaded: review it and save again.",
+    "text": "プランは別の場所で変更されました。現在のバージョンを読み込んだので、内容を確認してもう一度保存してください。"
+  },
+  "backupReadOnly": {
+    "en": "Changing backups requires the backup management permission.",
+    "text": "バックアップを変更するには、バックアップ管理の権限が必要です。"
+  },
+  "summarySize": {
+    "en": "Size",
+    "text": "サイズ"
+  },
+  "summaryCreated": {
+    "en": "Uploaded",
+    "text": "アップロード日時"
+  },
+  "summaryHash": {
+    "en": "SHA-256",
+    "text": "SHA-256"
+  },
+  "copyHash": {
+    "en": "Copy",
+    "text": "コピー"
+  },
+  "hashCopied": {
+    "en": "SHA-256 copied to the clipboard.",
+    "text": "SHA-256をクリップボードにコピーしました。"
+  },
+  "copyFailed": {
+    "en": "The browser did not allow copying. Select the value and copy it manually.",
+    "text": "ブラウザーでコピーが許可されませんでした。値を選択して手動でコピーしてください。"
+  },
+  "promotionTitle": {
+    "en": "Promotion",
+    "text": "プロモーション"
+  },
+  "promotionHint": {
+    "en": "Stages mark where a build is approved. Promotion publishes the build in another repository without uploading it again.",
+    "text": "ステージは、ビルドがどこで承認されたかを示します。プロモーションは、ビルドを再アップロードせずに別のリポジトリで公開します。"
+  },
+  "stagesTitle": {
+    "en": "Stages",
+    "text": "ステージ"
+  },
+  "stagesEmpty": {
+    "en": "No stages yet.",
+    "text": "ステージはまだありません。"
+  },
+  "stageName": {
+    "en": "Stage",
+    "text": "ステージ"
+  },
+  "stageComment": {
+    "en": "Comment (optional)",
+    "text": "コメント（省略可）"
+  },
+  "stageAdd": {
+    "en": "Add stage",
+    "text": "ステージを追加"
+  },
+  "stageRemove": {
+    "en": "Remove stage {stage}",
+    "text": "ステージ{stage}を削除"
+  },
+  "stageRemoveConfirm": {
+    "en": "Remove stage {stage}? Deployments that resolve this stage will pick another version.",
+    "text": "ステージ{stage}を削除しますか？このステージで解決しているデプロイでは、別のバージョンが選ばれるようになります。"
+  },
+  "stageAdded": {
+    "en": "Stage {stage} added.",
+    "text": "ステージ{stage}を追加しました。"
+  },
+  "stageRemoved": {
+    "en": "Stage {stage} removed.",
+    "text": "ステージ{stage}を削除しました。"
+  },
+  "stageInvalid": {
+    "en": "Use lowercase letters, digits, dot, dash or underscore (up to 32 characters).",
+    "text": "半角英小文字、数字、ドット、ハイフン、アンダースコアを使用してください（32文字以内）。"
+  },
+  "promoteTitle": {
+    "en": "Promote to repository",
+    "text": "リポジトリにプロモート"
+  },
+  "promoteTarget": {
+    "en": "Target repository",
+    "text": "プロモート先リポジトリ"
+  },
+  "promoteNoTargets": {
+    "en": "No other repository allows you to promote.",
+    "text": "プロモートが許可されているほかのリポジトリはありません。"
+  },
+  "promoteStages": {
+    "en": "Stages in the target",
+    "text": "プロモート先でのステージ"
+  },
+  "promoteComment": {
+    "en": "Comment (optional)",
+    "text": "コメント（省略可）"
+  },
+  "promoteMove": {
+    "en": "Move: remove the build from this repository after promotion",
+    "text": "移動：プロモーション後にこのリポジトリからビルドを削除する"
+  },
+  "promoteMoveHint": {
+    "en": "Without Move, the build stays here and a copy appears in the target.",
+    "text": "移動しない場合、ビルドはここに残り、プロモート先にコピーが作成されます。"
+  },
+  "promoteMoveConfirm": {
+    "en": "Move the build to {repository}? It will be removed from this repository.",
+    "text": "ビルドを{repository}に移動しますか？このリポジトリからは削除されます。"
+  },
+  "promoteSubmit": {
+    "en": "Promote",
+    "text": "プロモート"
+  },
+  "promoteDone": {
+    "en": "Published in {repository}.",
+    "text": "{repository}で公開しました。"
+  },
+  "promoteExisting": {
+    "en": "Already published in {repository}; stages updated.",
+    "text": "{repository}で既に公開されています。ステージを更新しました。"
+  },
+  "promoteMoved": {
+    "en": "Moved to {repository}. The build was removed from this repository.",
+    "text": "{repository}に移動しました。このリポジトリからビルドを削除しました。"
+  },
+  "promotionHistory": {
+    "en": "History",
+    "text": "履歴"
+  },
+  "promotionHistoryEmpty": {
+    "en": "No promotion events yet.",
+    "text": "プロモーションのイベントはまだありません。"
+  },
+  "promotionMore": {
+    "en": "Show more",
+    "text": "さらに表示"
+  },
+  "eventStageAdded": {
+    "en": "{actor} added stage {stage}",
+    "text": "{actor}がステージ{stage}を追加しました"
+  },
+  "eventStageRemoved": {
+    "en": "{actor} removed stage {stage}",
+    "text": "{actor}がステージ{stage}を削除しました"
+  },
+  "eventPromotedCopy": {
+    "en": "{actor} copied to {repository}",
+    "text": "{actor}が{repository}にコピーしました"
+  },
+  "eventPromotedMove": {
+    "en": "{actor} moved to {repository}",
+    "text": "{actor}が{repository}に移動しました"
+  },
+  "eventReceivedCopy": {
+    "en": "{actor} copied from {repository}",
+    "text": "{actor}が{repository}からコピーしました"
+  },
+  "eventReceivedMove": {
+    "en": "{actor} moved from {repository}",
+    "text": "{actor}が{repository}から移動しました"
+  },
+  "packageStages": {
+    "en": "Stages",
+    "text": "ステージ"
+  },
+  "sizeBytes": {
+    "en": "{value} B",
+    "text": "{value} B"
+  },
+  "sizeKiB": {
+    "en": "{value} KiB",
+    "text": "{value} KiB"
+  },
+  "sizeMiB": {
+    "en": "{value} MiB",
+    "text": "{value} MiB"
+  },
+  "sizeGiB": {
+    "en": "{value} GiB",
+    "text": "{value} GiB"
+  },
+  "sizeTiB": {
+    "en": "{value} TiB",
+    "text": "{value} TiB"
+  },
+  "mirrorBadge": {
+    "en": "Mirror",
+    "text": "ミラー"
+  },
+  "mirrorBehind": {
+    "en": "Mirror · syncing",
+    "text": "ミラー · 同期中"
+  },
+  "mirrorFailing": {
+    "en": "Mirror · sync error",
+    "text": "ミラー · 同期エラー"
+  },
+  "mirrorHelpLabel": {
+    "en": "About this mirror",
+    "text": "このミラーについて"
+  },
+  "mirrorDetails": {
+    "en": "Read-only copy of “{source}” from {upstream}, kept in sync by the server.",
+    "text": "{upstream}にある「{source}」の読み取り専用コピーです。サーバーが同期を維持しています。"
+  },
+  "mirrorSynced": {
+    "en": "Last synchronized:",
+    "text": "最終同期："
+  },
+  "mirrorError": {
+    "en": "The last attempt failed ({code}); downloads keep working.",
+    "text": "前回の試行は失敗しました（{code}）。ダウンロードは引き続き利用できます。"
+  },
+  "mirrorNever": {
+    "en": "not yet",
+    "text": "未実施"
+  },
+  "mirrorImport": {
+    "en": "Imports",
+    "text": "インポート"
+  },
+  "mirrorImportFailing": {
+    "en": "Imports · sync error",
+    "text": "インポート · 同期エラー"
+  },
+  "mirrorImportDetails": {
+    "en": "Versions marked {stages} in “{source}” on {upstream} are copied here automatically. Later changes and deletions there do not affect them.",
+    "text": "{upstream}にある「{source}」で{stages}が付いたバージョンは、自動的にここにコピーされます。コピー元でのその後の変更や削除は、これらのバージョンに影響しません。"
+  },
+  "reportOpen": {
+    "en": "Feedback",
+    "text": "フィードバック"
+  },
+  "reportTitle": {
+    "en": "Feedback to ProAnimaStudio",
+    "text": "ProAnimaStudioへのフィードバック"
+  },
+  "reportIntro": {
+    "en": "Your message goes to the developers of Arkvory through the ProAnimaStudio hub. Only what this form shows is sent.",
+    "text": "メッセージはProAnimaStudioのハブを経由してArkvoryの開発者に届きます。送信されるのは、このフォームに表示されている内容だけです。"
+  },
+  "reportMessage": {
+    "en": "What happened, or what should work better?",
+    "text": "何が起きたか、または何を改善すべきかを教えてください"
+  },
+  "reportEmail": {
+    "en": "Email for a reply (optional)",
+    "text": "返信用のメールアドレス（省略可）"
+  },
+  "reportScreenshots": {
+    "en": "Screenshots: paste from the clipboard (Ctrl+V), drop files here or choose them. Up to 6 PNG, JPEG, WebP or GIF images, 8 MB each.",
+    "text": "スクリーンショット：クリップボードから貼り付ける（Ctrl+V）か、ここにファイルをドロップするか、ファイルを選択します。PNG、JPEG、WebP、GIF形式の画像を最大6枚、1枚あたり8 MBまで添付できます。"
+  },
+  "reportAddScreenshot": {
+    "en": "Choose images",
+    "text": "画像を選択"
+  },
+  "reportShot": {
+    "en": "{name} · {size}",
+    "text": "{name} · {size}"
+  },
+  "reportRemove": {
+    "en": "Remove {name}",
+    "text": "{name}を削除"
+  },
+  "reportLogs": {
+    "en": "Logs",
+    "text": "ログ"
+  },
+  "reportClientLog": {
+    "en": "Log of this page — entries: {count}",
+    "text": "このページのログ — エントリ数：{count}"
+  },
+  "reportServerLog": {
+    "en": "Server log and system summary",
+    "text": "サーバーログとシステムの概要"
+  },
+  "reportShow": {
+    "en": "Show what is attached",
+    "text": "添付される内容を表示"
+  },
+  "reportLoading": {
+    "en": "Loading…",
+    "text": "読み込んでいます…"
+  },
+  "reportTail": {
+    "en": "The last {count} lines are shown; the whole log is attached.",
+    "text": "最後の{count}行を表示しています。ログ全体が添付されます。"
+  },
+  "reportSend": {
+    "en": "Send",
+    "text": "送信"
+  },
+  "reportSending": {
+    "en": "Sending…",
+    "text": "送信しています…"
+  },
+  "reportSent": {
+    "en": "Thank you! Your message was sent, reference {id}.",
+    "text": "ありがとうございます。メッセージを送信しました。参照番号：{id}"
+  },
+  "reportClose": {
+    "en": "Close",
+    "text": "閉じる"
+  },
+  "reportMessageRequired": {
+    "en": "Describe the problem or the idea.",
+    "text": "問題またはアイデアを記入してください。"
+  },
+  "reportEmailInvalid": {
+    "en": "Check the email address.",
+    "text": "メールアドレスを確認してください。"
+  },
+  "reportTooMany": {
+    "en": "At most 6 images.",
+    "text": "画像は6枚までです。"
+  },
+  "reportFileType": {
+    "en": "{name}: only PNG, JPEG, WebP or GIF images.",
+    "text": "{name}：PNG、JPEG、WebP、GIF形式の画像のみ使用できます。"
+  },
+  "reportFileTooLarge": {
+    "en": "{name} is larger than 8 MB.",
+    "text": "{name}は8 MBを超えています。"
+  },
+  "reportTooLarge": {
+    "en": "Everything together is over 15 MB: remove some images.",
+    "text": "合計が15 MBを超えています。画像をいくつか削除してください。"
+  },
+  "productName": {
+    "en": "ProAnima Arkvory",
+    "text": "ProAnima Arkvory"
+  },
+  "productShortName": {
+    "en": "Arkvory",
+    "text": "Arkvory"
+  },
+  "studioName": {
+    "en": "PROANIMA STUDIO",
+    "text": "PROANIMA STUDIO"
+  },
+  "copyright": {
+    "en": "© Ian Panaev · ProAnimaStudio",
+    "text": "© Ian Panaev · ProAnimaStudio"
+  },
+  "themeCurrent": {
+    "en": "Appearance: {value}",
+    "text": "外観：{value}"
+  },
+  "repositoryHint": {
+    "en": "After sign-in, the first repository available to you is selected.",
+    "text": "サインインすると、利用可能な最初のリポジトリが選択されます。"
+  },
+  "keySignIn": {
+    "en": "Connect with a service or automation key",
+    "text": "サービスキーまたは自動化用のキーで接続"
+  },
+  "signInFailed": {
+    "en": "Wrong username or password.",
+    "text": "ユーザー名またはパスワードが正しくありません。"
+  },
+  "currentPasswordWrong": {
+    "en": "The current password is wrong.",
+    "text": "現在のパスワードが正しくありません。"
+  },
+  "sessionExpired": {
+    "en": "Your session has expired. Sign in again to continue.",
+    "text": "セッションの有効期限が切れました。続行するには、もう一度サインインしてください。"
+  },
+  "errorSignInRequired": {
+    "en": "Sign in or connect with a service key to continue.",
+    "text": "続行するには、サインインするか、サービスキーで接続してください。"
+  },
+  "idempotencyHint": {
+    "en": "Prevents a retried upload from creating a second copy. It is sent as the Idempotency-Key of the request that creates the upload.",
+    "text": "再試行したアップロードによって2つ目のコピーが作成されるのを防ぎます。アップロードを作成するリクエストのIdempotency-Keyとして送信されます。"
+  },
+  "idempotencyHelpLabel": {
+    "en": "About duplicate protection",
+    "text": "重複防止について"
+  },
+  "assetPathExample": {
+    "en": "releases/current.upack",
+    "text": "releases/current.upack"
+  },
+  "stageExample": {
+    "en": "release",
+    "text": "release"
+  },
+  "storageUsageUnlimited": {
+    "en": "Published {published} · unfinished uploads {pending} · awaiting cleanup {retired} · in use {total} · no quota",
+    "text": "公開済み：{published} · 未完了のアップロード：{pending} · クリーンアップ待ち：{retired} · 使用量：{total} · クォータなし"
+  },
+  "storageQuotaInvalid": {
+    "en": "Enter the quota in GiB, for example 50 or 0.5.",
+    "text": "クォータをGiB単位で入力してください（例：50、0.5）。"
+  },
+  "storagePreviewItem": {
+    "en": "{name} · {id} · {size}",
+    "text": "{name} · {id} · {size}"
+  },
+  "attachmentVersion": {
+    "en": "Version {revision}",
+    "text": "バージョン{revision}"
+  },
+  "storageEventCode": {
+    "en": "· {level} · {code}",
+    "text": "· {level} · {code}"
+  },
+  "packageGroupHeading": {
+    "en": "{group} / {name}",
+    "text": "{group} / {name}"
+  },
+  "repositoryHelpLabel": {
+    "en": "About repository selection",
+    "text": "リポジトリの選択について"
+  },
+  "metadataFilterHelpLabel": {
+    "en": "About exact metadata",
+    "text": "メタデータの完全一致について"
+  },
+  "resumeHelpLabel": {
+    "en": "About resuming",
+    "text": "再開について"
+  },
+  "downloadHelpLabel": {
+    "en": "About download recovery",
+    "text": "ダウンロードの復旧について"
+  },
+  "updatePolicyHelpLabel": {
+    "en": "About update schedule",
+    "text": "更新のスケジュールについて"
+  },
+  "uploadHelpLabel": {
+    "en": "About upload ID",
+    "text": "アップロードIDについて"
+  },
+  "repositoryModelHelpLabel": {
+    "en": "About repositories",
+    "text": "リポジトリについて"
+  },
+  "servicePolicyHelpLabel": {
+    "en": "About service policy",
+    "text": "サービスポリシーについて"
+  },
+  "tokenSessionHelpLabel": {
+    "en": "About personal tokens",
+    "text": "個人用アクセストークンについて"
+  },
+  "storageHelpLabel": {
+    "en": "About retention",
+    "text": "保持について"
+  },
+  "cleanupHelpLabel": {
+    "en": "About physical cleanup",
+    "text": "物理クリーンアップについて"
+  },
+  "promotionHelpLabel": {
+    "en": "About promotion",
+    "text": "プロモーションについて"
+  },
+  "promoteMoveHelpLabel": {
+    "en": "About move",
+    "text": "移動について"
+  },
+  "attachmentRecoveryHelpLabel": {
+    "en": "About attachment recovery",
+    "text": "添付ファイルの復旧について"
+  },
+  "helpHintLabel": {
+    "en": "About the operation catalog",
+    "text": "操作カタログについて"
+  },
+  "catalogSizeLabel": {
+    "en": "Size",
+    "text": "サイズ"
+  },
+  "catalogPublishedLabel": {
+    "en": "Published",
+    "text": "公開日時"
+  },
+  "grantRepository": {
+    "en": "{repository}:",
+    "text": "{repository}："
+  },
+  "delegationGrantLine": {
+    "en": "{target}: {actions}",
+    "text": "{target}：{actions}"
+  },
+  "keyBindingLine": {
+    "en": "{repository}: {actions}",
+    "text": "{repository}：{actions}"
+  },
+  "serviceAuditLine": {
+    "en": "{action} · {actor} · {key}",
+    "text": "{action} · {actor} · {key}"
+  },
+  "updateHourOption": {
+    "en": "{hour}:00 UTC",
+    "text": "{hour}:00 UTC"
+  },
+  "helpOperationTitle": {
+    "en": "{method} {path}",
+    "text": "{method} {path}"
+  },
+  "helpOperationIdentity": {
+    "en": "{id} · {surface} · {visibility}",
+    "text": "{id} · {surface} · {visibility}"
+  },
+  "helpHintConnected": {
+    "en": "You are connected. Load the API operations your access allows.",
+    "text": "接続済みです。アクセス権で許可されているAPI操作を読み込んでください。"
+  },
+  "helpRemoteCliExample": {
+    "en": "arkvoryctl --help\narkvoryctl profile add production --server https://arkvory.example --token-file /private/arkvory.key\narkvoryctl doctor\narkvoryctl packages publish build.upack --label test\narkvoryctl download ARTIFACT_ID ./build.upack",
+    "text": "arkvoryctl --help\narkvoryctl profile add production --server https://arkvory.example --token-file /private/arkvory.key\narkvoryctl doctor\narkvoryctl packages publish build.upack --label test\narkvoryctl download ARTIFACT_ID ./build.upack"
+  },
+  "helpCliExample": {
+    "en": "arkvory help\narkvory status --root ROOT\narkvory update --root ROOT\narkvory configure --root ROOT --disable-updates\narkvory configure --root ROOT --pin --version 1.2.3",
+    "text": "arkvory help\narkvory status --root ROOT\narkvory update --root ROOT\narkvory configure --root ROOT --disable-updates\narkvory configure --root ROOT --pin --version 1.2.3"
+  },
+  "helpRecipesExample": {
+    "en": "GET /api/v1/capabilities\nGET /api/v1/repositories\nGET /api/v1/operations?repository=releases",
+    "text": "GET /api/v1/capabilities\nGET /api/v1/repositories\nGET /api/v1/operations?repository=releases"
+  },
+  "serviceEmpty": {
+    "en": "No service accounts yet.",
+    "text": "サービスアカウントはまだありません。"
+  },
+  "serviceOwnerKeyHelpLabel": {
+    "en": "About the owner key",
+    "text": "所有者キーについて"
+  },
+  "serviceEmptyOwner": {
+    "en": "The owner key from the server file is meant for setup, not automation: create a service account below, then issue a key for it.",
+    "text": "サーバーのファイルにある所有者キーは、自動化用ではなくセットアップ用です。下でサービスアカウントを作成してから、そのアカウントのキーを発行してください。"
+  },
+  "serviceEmptyDelegated": {
+    "en": "No service accounts are assigned to you yet. Ask the server owner to delegate one.",
+    "text": "まだサービスアカウントが割り当てられていません。サーバーの所有者に委任を依頼してください。"
+  },
+  "serviceAuditEmpty": {
+    "en": "No activity recorded yet.",
+    "text": "まだアクティビティは記録されていません。"
+  },
+  "repositoryEmpty": {
+    "en": "No repositories are available to this account or key.",
+    "text": "このアカウントまたはキーで利用できるリポジトリはありません。"
+  },
+  "routeUnknown": {
+    "en": "This link does not match a console section. The artifact list is shown instead.",
+    "text": "このリンクはコンソールのどのセクションにも該当しません。代わりにアーティファクトの一覧を表示しています。"
+  },
+  "routeUnavailable": {
+    "en": "This section is not available to the current account or key. The artifact list is shown instead.",
+    "text": "このセクションは、現在のアカウントまたはキーでは利用できません。代わりにアーティファクトの一覧を表示しています。"
+  },
+  "routeArtifactMissing": {
+    "en": "The linked artifact was not found or is not available to you.",
+    "text": "リンク先のアーティファクトが見つからないか、利用できません。"
+  },
+  "routeSignIn": {
+    "en": "Sign in to open the linked page.",
+    "text": "リンク先のページを開くには、サインインしてください。"
+  },
+  "confirmCancel": {
+    "en": "Cancel",
+    "text": "キャンセル"
+  },
+  "confirmDisableUser": {
+    "en": "Disable {name}? Active sessions end immediately and personal tokens stop working until the account is enabled again.",
+    "text": "{name}を無効にしますか？実行中のセッションは直ちに終了し、アカウントが再び有効になるまで個人用アクセストークンは使用できなくなります。"
+  },
+  "confirmRemoveMember": {
+    "en": "Remove {user} from {group}? They lose the repository access granted through this group.",
+    "text": "{user}を{group}から削除しますか？このグループを通じて付与されたリポジトリへのアクセス権が失われます。"
+  },
+  "confirmRemoveGrant": {
+    "en": "Remove access of {group} to {repository}? Group members lose this access immediately.",
+    "text": "{group}の{repository}へのアクセス権を削除しますか？グループのメンバーは直ちにこのアクセス権を失います。"
+  },
+  "storageTitle": {
+    "en": "Storage & automatic cleanup",
+    "text": "ストレージと自動クリーンアップ"
+  },
+  "storageHelp": {
+    "en": "Retention applies to registered UPack builds. Pinned builds, file history and protected labels survive. Save a disabled policy first to preview it; enabling starts automatic deletion. Disk space is reclaimed below without stopping Arkvory.",
+    "text": "保持ルールは、登録済みのUPackビルドに適用されます。固定されたビルド、ファイル履歴、保護されたラベルは削除されません。まずポリシーを無効のまま保存してプレビューしてください。有効にすると自動削除が始まります。ディスク領域は、下の物理クリーンアップによってArkvoryを停止せずに解放されます。"
+  },
+  "storageRefresh": {
+    "en": "Reload settings & usage",
+    "text": "設定と使用量を再読み込み"
+  },
+  "storagePolicy": {
+    "en": "Retention policy",
+    "text": "保持ポリシー"
+  },
+  "storageGrouping": {
+    "en": "Count last N by",
+    "text": "最新N件の数え方"
+  },
+  "storagePerChannel": {
+    "en": "Package and channel",
+    "text": "パッケージとチャネルごと"
+  },
+  "storagePerPackage": {
+    "en": "Package",
+    "text": "パッケージごと"
+  },
+  "storageGlobal": {
+    "en": "Whole repository",
+    "text": "リポジトリ全体"
+  },
+  "storageKeep": {
+    "en": "Last N builds (default)",
+    "text": "保持する最新ビルド数N（既定）"
+  },
+  "storageAge": {
+    "en": "Minimum age before deletion (hours)",
+    "text": "削除までの最小経過時間（時間）"
+  },
+  "storageInterval": {
+    "en": "Cleanup interval (minutes)",
+    "text": "クリーンアップの間隔（分）"
+  },
+  "storageQuota": {
+    "en": "Quota, GiB (empty = no repository limit)",
+    "text": "クォータ（GiB。空欄の場合、リポジトリの上限なし）"
+  },
+  "storageProtected": {
+    "en": "Protected labels (comma separated)",
+    "text": "保護するラベル（カンマ区切り）"
+  },
+  "storageWarningPercent": {
+    "en": "Warning threshold (%)",
+    "text": "警告のしきい値（%）"
+  },
+  "storageCriticalPercent": {
+    "en": "Critical threshold (%)",
+    "text": "重大のしきい値（%）"
+  },
+  "storageChannels": {
+    "en": "Channel overrides: label=N, one per line",
+    "text": "チャネルごとの上書き：ラベル=N（1行に1つ）"
+  },
+  "storageEnabled": {
+    "en": "Enable automatic cleanup",
+    "text": "自動クリーンアップを有効にする"
+  },
+  "storageAcknowledge": {
+    "en": "I understand that saving an enabled policy authorizes automatic deletion.",
+    "text": "有効なポリシーを保存すると、自動削除が許可されることを理解しています。"
+  },
+  "storageSave": {
+    "en": "Save policy",
+    "text": "ポリシーを保存"
+  },
+  "storagePreview": {
+    "en": "Preview saved policy",
+    "text": "保存済みのポリシーをプレビュー"
+  },
+  "storageEvents": {
+    "en": "Warnings, errors & storage events",
+    "text": "警告、エラー、ストレージイベント"
+  },
+  "storageMore": {
+    "en": "Load next events",
+    "text": "次のイベントを読み込む"
+  },
+  "storageRevision": {
+    "en": "Policy version {revision} · last cleanup deleted {count} builds",
+    "text": "ポリシーのバージョン{revision} · 前回のクリーンアップで{count}件のビルドを削除"
+  },
+  "storageRunFailed": {
+    "en": "Automatic cleanup stopped: {code}. Check its authorizing key and storage health.",
+    "text": "自動クリーンアップが停止しました：{code}。承認に使用したキーと、ストレージの状態を確認してください。"
+  },
+  "storageUsage": {
+    "en": "Published {published} · unfinished uploads {pending} · awaiting cleanup {retired} · in use {total} of {quota}",
+    "text": "公開済み：{published} · 未完了のアップロード：{pending} · クリーンアップ待ち：{retired} · 使用量：{total} / {quota}"
+  },
+  "storageNormal": {
+    "en": "Capacity is below warning thresholds, or no repository quota is set.",
+    "text": "使用量が警告のしきい値を下回っているか、リポジトリのクォータが設定されていません。"
+  },
+  "storageWarning": {
+    "en": "Storage is approaching its quota. Review retention and schedule physical cleanup.",
+    "text": "ストレージがクォータに近づいています。保持ルールを見直し、物理クリーンアップをスケジュールしてください。"
+  },
+  "storageCritical": {
+    "en": "Storage is near or at its quota. New reservations that exceed the quota are rejected.",
+    "text": "ストレージがクォータに近いか、クォータに達しています。クォータを超える新しい予約は拒否されます。"
+  },
+  "storageConfirmRequired": {
+    "en": "Automatic cleanup requires deletion permission and explicit acknowledgement.",
+    "text": "自動クリーンアップには、削除の権限と明示的な同意が必要です。"
+  },
+  "storageSaved": {
+    "en": "Policy saved. An enabled policy will run automatically.",
+    "text": "ポリシーを保存しました。有効なポリシーは自動的に実行されます。"
+  },
+  "storagePreviewCount": {
+    "en": "Saved policy: {count} deletion candidates in this batch.",
+    "text": "保存済みのポリシー：このバッチの削除候補は{count}件です。"
+  },
+  "storagePreviewMore": {
+    "en": "Saved policy: {count} candidates shown; more remain.",
+    "text": "保存済みのポリシー：{count}件の候補を表示しています。ほかにも候補があります。"
+  },
+  "deletionTitle": {
+    "en": "Delete artifact",
+    "text": "アーティファクトの削除"
+  },
+  "deletionHelp": {
+    "en": "Deletion removes this artifact from the catalog and prevents new downloads. It cannot be undone here. Existing file history, attachments and external references are protected. Disk space is reclaimed separately during maintenance.",
+    "text": "削除すると、このアーティファクトはカタログから除かれ、新たにダウンロードできなくなります。ここでは元に戻せません。既存のファイル履歴、添付ファイル、外部参照は保護されます。ディスク領域はメンテナンス中に別途解放されます。"
+  },
+  "deletionInspect": {
+    "en": "Check dependencies",
+    "text": "依存関係を確認"
+  },
+  "deletionChecking": {
+    "en": "Checking dependencies…",
+    "text": "依存関係を確認しています…"
+  },
+  "deletionBlocked": {
+    "en": "Deletion is blocked by retained references.",
+    "text": "保持されている参照があるため、削除できません。"
+  },
+  "deletionReady": {
+    "en": "No blocking references. This explicit action permits deletion whatever the labels, release included. Dependencies and metadata will be checked again.",
+    "text": "削除を妨げる参照はありません。この明示的な操作では、ラベルに関係なく削除が許可されます（releaseも含む）。依存関係とメタデータはもう一度確認されます。"
+  },
+  "deletionReference": {
+    "en": "An external service has pinned this artifact.",
+    "text": "外部サービスがこのアーティファクトを固定しています。"
+  },
+  "deletionAsset": {
+    "en": "A file path or its history uses this artifact.",
+    "text": "ファイルパスまたはその履歴が、このアーティファクトを使用しています。"
+  },
+  "deletionAttachment": {
+    "en": "Another build lists this artifact as an attachment, now or in its history.",
+    "text": "別のビルドが、現在または履歴の中で、このアーティファクトを添付ファイルとして参照しています。"
+  },
+  "deletionLabel": {
+    "en": "A retention rule protects this label.",
+    "text": "保持ルールがこのラベルを保護しています。"
+  },
+  "deletionStage": {
+    "en": "The artifact is promoted to a stage; remove the stage first.",
+    "text": "このアーティファクトはステージにプロモートされています。先にステージを削除してください。"
+  },
+  "deletionConfirm": {
+    "en": "Paste the selected artifact ID to confirm deletion",
+    "text": "削除を確定するには、選択したアーティファクトのIDを貼り付けてください"
+  },
+  "deletionSubmit": {
+    "en": "Delete this artifact",
+    "text": "このアーティファクトを削除"
+  },
+  "deletionRecheck": {
+    "en": "The artifact changed or is protected. Check dependencies again before proceeding.",
+    "text": "アーティファクトが変更されたか、保護されています。続行する前に、依存関係をもう一度確認してください。"
+  },
+  "deletionDone": {
+    "en": "Artifact deleted. Physical cleanup will run separately.",
+    "text": "アーティファクトを削除しました。物理クリーンアップは別途実行されます。"
+  },
+  "deletionRefresh": {
+    "en": "Artifact deleted, but the catalog could not be refreshed. Reload the list.",
+    "text": "アーティファクトを削除しましたが、カタログを更新できませんでした。一覧を再読み込みしてください。"
+  },
+  "labelPresets": {
+    "en": "Common build labels",
+    "text": "よく使うビルドラベル"
+  },
+  "labelsHelp": {
+    "en": "Use any labels. Presets can be combined; they do not move files or grant access.",
+    "text": "任意のラベルを使用できます。プリセットは組み合わせて使えます。ラベルによってファイルが移動したり、アクセス権が付与されたりすることはありません。"
+  },
+  "metadataFields": {
+    "en": "Build metadata",
+    "text": "ビルドのメタデータ"
+  },
+  "metadataAdd": {
+    "en": "Add field",
+    "text": "フィールドを追加"
+  },
+  "metadataFilter": {
+    "en": "Exact metadata",
+    "text": "メタデータの完全一致"
+  },
+  "metadataFilterHint": {
+    "en": "Key and value match exactly, including case. An empty value matches an empty field.",
+    "text": "キーと値は、大文字と小文字を区別して完全一致で比較されます。空の値は空のフィールドに一致します。"
+  },
+  "metadataKey": {
+    "en": "Key",
+    "text": "キー"
+  },
+  "metadataValue": {
+    "en": "Value",
+    "text": "値"
+  },
+  "metadataRemove": {
+    "en": "Remove field",
+    "text": "フィールドを削除"
+  },
+  "metadataHelp": {
+    "en": "Up to 32 text fields. Examples: build.number, git.commit, target.os. Use a manifest for structured data.",
+    "text": "テキストフィールドは最大32個です。例：build.number、git.commit、target.os。構造化データにはマニフェストを使用してください。"
+  },
+  "metadataInvalid": {
+    "en": "Check metadata: unique keys, text values and a valid JSON object are required.",
+    "text": "メタデータを確認してください。キーが重複せず、値がテキストで、全体が有効なJSONオブジェクトである必要があります。"
+  },
+  "attachmentsTitle": {
+    "en": "Manifests & additional files",
+    "text": "マニフェストと追加ファイル"
+  },
+  "attachmentsHelp": {
+    "en": "Files belong to this build. Removing a link keeps the original file and its history.",
+    "text": "これらのファイルはこのビルドに属します。リンクを削除しても、元のファイルとその履歴は残ります。"
+  },
+  "attachmentsEmpty": {
+    "en": "No attachments yet.",
+    "text": "添付ファイルはまだありません。"
+  },
+  "attachmentCount": {
+    "en": "{count} / 32 files · version {revision}",
+    "text": "{count} / 32ファイル · バージョン{revision}"
+  },
+  "attachmentAdd": {
+    "en": "Add attachment",
+    "text": "添付ファイルを追加"
+  },
+  "attachmentSource": {
+    "en": "Source",
+    "text": "ソース"
+  },
+  "attachmentUpload": {
+    "en": "Upload file",
+    "text": "ファイルをアップロード"
+  },
+  "attachmentExisting": {
+    "en": "Link published artifact",
+    "text": "公開済みのアーティファクトをリンク"
+  },
+  "attachmentKind": {
+    "en": "Purpose",
+    "text": "用途"
+  },
+  "attachmentManifest": {
+    "en": "Manifest",
+    "text": "マニフェスト"
+  },
+  "attachmentSbom": {
+    "en": "SBOM",
+    "text": "SBOM"
+  },
+  "attachmentSignature": {
+    "en": "Signature",
+    "text": "署名"
+  },
+  "attachmentReport": {
+    "en": "Report",
+    "text": "レポート"
+  },
+  "attachmentFile": {
+    "en": "File",
+    "text": "ファイル"
+  },
+  "attachmentChoose": {
+    "en": "Choose attachment",
+    "text": "添付ファイルを選択"
+  },
+  "attachmentName": {
+    "en": "Attachment name",
+    "text": "添付ファイル名"
+  },
+  "attachmentDescription": {
+    "en": "Description (optional)",
+    "text": "説明（省略可）"
+  },
+  "attachmentUnlink": {
+    "en": "Remove link",
+    "text": "リンクを削除"
+  },
+  "attachmentReload": {
+    "en": "Reload attachments",
+    "text": "添付ファイルを再読み込み"
+  },
+  "attachmentReloaded": {
+    "en": "Attachments reloaded. Your form is preserved.",
+    "text": "添付ファイルを再読み込みしました。フォームの内容は保持されています。"
+  },
+  "attachmentSaved": {
+    "en": "Attachments saved · version {revision}",
+    "text": "添付ファイルを保存しました · バージョン{revision}"
+  },
+  "attachmentHistory": {
+    "en": "Attachment history",
+    "text": "添付ファイルの履歴"
+  },
+  "attachmentHistoryEmpty": {
+    "en": "No changes yet.",
+    "text": "まだ変更はありません。"
+  },
+  "attachmentRestore": {
+    "en": "Restore this set",
+    "text": "このセットを復元"
+  },
+  "attachmentNew": {
+    "en": "Clear form",
+    "text": "フォームをクリア"
+  },
+  "attachmentRecovery": {
+    "en": "Upload recovery",
+    "text": "アップロードの復旧"
+  },
+  "attachmentRecoveryHelp": {
+    "en": "Pause keeps this upload in the tab. Submit again to resume. If linking fails, the published file remains available by this ID; reload attachments before retrying. After closing the tab, use the Upload screen to resume by ID.",
+    "text": "一時停止しても、このアップロードはタブ内に保持されます。再開するには、もう一度送信してください。リンクに失敗した場合も、公開済みのファイルはこのIDで引き続き利用できます。再試行する前に添付ファイルを再読み込みしてください。タブを閉じた後は、「アップロード」画面でIDを指定して再開できます。"
+  },
+  "attachmentProgress": {
+    "en": "Attachment upload progress",
+    "text": "添付ファイルのアップロードの進行状況"
+  },
+  "attachmentDuplicate": {
+    "en": "An attachment with this name already exists. Choose a different name or remove its link first.",
+    "text": "この名前の添付ファイルは既に存在します。別の名前を選択するか、先に既存のリンクを削除してください。"
+  },
+  "navigationMenu": {
+    "en": "Sections",
+    "text": "セクション"
+  },
+  "downloadSettings": {
+    "en": "Queue settings",
+    "text": "キューの設定"
+  },
+  "downloadHeld": {
+    "en": "Queue paused. New downloads will wait.",
+    "text": "キューは一時停止中です。新しいダウンロードは待機します。"
+  },
+  "downloadEmptyTitle": {
+    "en": "No downloads yet",
+    "text": "ダウンロードはまだありません"
+  },
+  "technicalDetails": {
+    "en": "File identifier",
+    "text": "ファイル識別子"
+  },
+  "manageMembers": {
+    "en": "Manage group members",
+    "text": "グループメンバーの管理"
+  },
+  "manageGrants": {
+    "en": "Manage repository access",
+    "text": "リポジトリアクセスの管理"
+  },
+  "accountsHeading": {
+    "en": "Accounts",
+    "text": "アカウント"
+  },
+  "groupsHeading": {
+    "en": "Groups and permissions",
+    "text": "グループと権限"
+  },
+  "tableRegion": {
+    "en": "Results table — scroll horizontally for more columns",
+    "text": "結果の表 — 横にスクロールすると、ほかの列が表示されます"
+  },
+  "searchEmpty": {
+    "en": "This repository has no artifacts yet.",
+    "text": "このリポジトリにはまだアーティファクトがありません。"
+  },
+  "searchEmptyTitle": {
+    "en": "No artifacts",
+    "text": "アーティファクトなし"
+  },
+  "downloadCleanupFailed": {
+    "en": "Saved. Temporary cleanup failed; use Remove finished to retry.",
+    "text": "保存しました。一時ファイルのクリーンアップに失敗しました。再試行するには「完了済みを削除」を使用してください。"
+  },
+  "downloads": {
+    "en": "Downloads",
+    "text": "ダウンロード"
+  },
+  "downloadRestore": {
+    "en": "Restore queue",
+    "text": "キューを復元"
+  },
+  "downloadRestored": {
+    "en": "Restored · choose a destination to resume",
+    "text": "復元済み · 再開するには保存先を選択してください"
+  },
+  "downloadRestoreReady": {
+    "en": "Queue restored. Resume each file to choose its destination.",
+    "text": "キューを復元しました。各ファイルを再開して、保存先を選択してください。"
+  },
+  "downloadRestoreEmpty": {
+    "en": "No saved downloads for this connection.",
+    "text": "この接続で保存されているダウンロードはありません。"
+  },
+  "downloadQueued": {
+    "en": "Waiting",
+    "text": "待機中"
+  },
+  "downloadRunning": {
+    "en": "Downloading",
+    "text": "ダウンロード中"
+  },
+  "downloadRetrying": {
+    "en": "Retrying",
+    "text": "再試行中"
+  },
+  "downloadPausing": {
+    "en": "Saving checkpoint…",
+    "text": "チェックポイントを保存しています…"
+  },
+  "downloadPaused": {
+    "en": "Paused",
+    "text": "一時停止"
+  },
+  "downloadSaving": {
+    "en": "Saving verified file…",
+    "text": "検証済みのファイルを保存しています…"
+  },
+  "downloadCancelling": {
+    "en": "Cancelling…",
+    "text": "キャンセルしています…"
+  },
+  "downloadCancelled": {
+    "en": "Cancelled",
+    "text": "キャンセル済み"
+  },
+  "downloadCompleted": {
+    "en": "Verified and saved",
+    "text": "検証・保存済み"
+  },
+  "downloadFailed": {
+    "en": "Failed",
+    "text": "失敗"
+  },
+  "downloadResume": {
+    "en": "Resume / retry",
+    "text": "再開 / 再試行"
+  },
+  "downloadCancel": {
+    "en": "Cancel",
+    "text": "キャンセル"
+  },
+  "downloadsPause": {
+    "en": "Pause all",
+    "text": "すべて一時停止"
+  },
+  "downloadsResume": {
+    "en": "Resume queue",
+    "text": "キューを再開"
+  },
+  "downloadsClearWaiting": {
+    "en": "Cancel waiting",
+    "text": "待機中をキャンセル"
+  },
+  "downloadsCancel": {
+    "en": "Cancel all",
+    "text": "すべてキャンセル"
+  },
+  "downloadsClearFinished": {
+    "en": "Remove finished",
+    "text": "完了済みを削除"
+  },
+  "downloadConcurrency": {
+    "en": "Parallel downloads",
+    "text": "同時ダウンロード数"
+  },
+  "downloadInterval": {
+    "en": "Start interval, ms",
+    "text": "開始間隔（ms）"
+  },
+  "downloadWait": {
+    "en": "Queue wait limit, seconds",
+    "text": "キューの待機時間の上限（秒）"
+  },
+  "downloadApply": {
+    "en": "Apply limits",
+    "text": "制限を適用"
+  },
+  "downloadPolicySaved": {
+    "en": "Queue limits updated. Downloads already running will continue.",
+    "text": "キューの制限を更新しました。実行中のダウンロードはそのまま続行されます。"
+  },
+  "downloadSummary": {
+    "en": "Active: {active} · Waiting: {waiting} · Total: {count}",
+    "text": "実行中：{active} · 待機中：{waiting} · 合計：{count}"
+  },
+  "downloadBytes": {
+    "en": "{bytes} written",
+    "text": "{bytes}を書き込み済み"
+  },
+  "downloadRetryDelay": {
+    "en": "Retry delay: {seconds} s",
+    "text": "再試行までの待機：{seconds}秒"
+  },
+  "downloadDuplicate": {
+    "en": "This destination is already in the queue. Remove its finished job first.",
+    "text": "この保存先は既にキューにあります。先に完了済みのジョブを削除してください。"
+  },
+  "downloadEmpty": {
+    "en": "Choose Download next to a file in the catalog.",
+    "text": "カタログでファイルの横にある「ダウンロード」を選択してください。"
+  },
+  "downloadAdded": {
+    "en": "Download added to the queue.",
+    "text": "ダウンロードをキューに追加しました。"
+  },
+  "downloadWaitTimeout": {
+    "en": "Queue wait expired. You can retry.",
+    "text": "キューの待機時間が上限を超えました。再試行できます。"
+  },
+  "downloadQueueFull": {
+    "en": "Queue is full. Remove finished jobs to make room.",
+    "text": "キューがいっぱいです。完了済みのジョブを削除して空きを作ってください。"
+  },
+  "downloadDiskFull": {
+    "en": "Browser storage is full. Cancel unused downloads to free staging space.",
+    "text": "ブラウザーのストレージがいっぱいです。不要なダウンロードをキャンセルして、一時保存領域を空けてください。"
+  },
+  "downloadNote": {
+    "en": "After a page reload, reconnect and restore the queue. Resume each file to choose its destination. Sealed segments remain in browser storage; credentials are not saved. The destination is replaced only after checksum verification. Browser storage needs space for the file.",
+    "text": "ページを再読み込みした後は、再接続してキューを復元してください。各ファイルを再開して保存先を選択します。確定済みのセグメントはブラウザーのストレージに残りますが、認証情報は保存されません。保存先のファイルは、チェックサムの検証後にのみ置き換えられます。ブラウザーのストレージには、ファイル分の空き容量が必要です。"
+  },
+  "downloadState": {
+    "en": "State",
+    "text": "状態"
+  },
+  "downloadProgress": {
+    "en": "Progress",
+    "text": "進行状況"
+  },
+  "navigation": {
+    "en": "Workspace navigation",
+    "text": "ワークスペースのナビゲーション"
+  },
+  "catalog": {
+    "en": "Artifacts",
+    "text": "アーティファクト"
+  },
+  "packages": {
+    "en": "Packages",
+    "text": "パッケージ"
+  },
+  "administration": {
+    "en": "Users and access",
+    "text": "ユーザーとアクセス"
+  },
+  "upload": {
+    "en": "Upload",
+    "text": "アップロード"
+  },
+  "history": {
+    "en": "File history",
+    "text": "ファイル履歴"
+  },
+  "metadata": {
+    "en": "Artifact details",
+    "text": "アーティファクトの詳細"
+  },
+  "theme": {
+    "en": "Appearance",
+    "text": "外観"
+  },
+  "language": {
+    "en": "Language",
+    "text": "言語"
+  },
+  "light": {
+    "en": "Light",
+    "text": "ライト"
+  },
+  "dark": {
+    "en": "Dark",
+    "text": "ダーク"
+  },
+  "system": {
+    "en": "System",
+    "text": "システム"
+  },
+  "connection": {
+    "en": "Repository connection",
+    "text": "リポジトリへの接続"
+  },
+  "repository": {
+    "en": "Repository",
+    "text": "リポジトリ"
+  },
+  "serviceKey": {
+    "en": "Service key",
+    "text": "サービスキー"
+  },
+  "keyPlaceholder": {
+    "en": "Paste a service or automation key",
+    "text": "サービスキーまたは自動化用のキーを貼り付け"
+  },
+  "connect": {
+    "en": "Connect",
+    "text": "接続"
+  },
+  "disconnect": {
+    "en": "Disconnect",
+    "text": "切断"
+  },
+  "keyHint": {
+    "en": "The key stays in this tab. It is never saved in browser storage.",
+    "text": "キーはこのタブ内にのみ保持され、ブラウザーのストレージには保存されません。"
+  },
+  "accountName": {
+    "en": "Username",
+    "text": "ユーザー名"
+  },
+  "password": {
+    "en": "Password",
+    "text": "パスワード"
+  },
+  "signIn": {
+    "en": "Sign in",
+    "text": "サインイン"
+  },
+  "adminHint": {
+    "en": "Create accounts and grant repository access through groups.",
+    "text": "アカウントを作成し、グループを通じてリポジトリへのアクセス権を付与します。"
+  },
+  "administrator": {
+    "en": "Administrator",
+    "text": "管理者"
+  },
+  "createUser": {
+    "en": "Create user",
+    "text": "ユーザーを作成"
+  },
+  "accessGroup": {
+    "en": "Access group",
+    "text": "アクセスグループ"
+  },
+  "createGroup": {
+    "en": "Create group",
+    "text": "グループを作成"
+  },
+  "addMember": {
+    "en": "Add to group",
+    "text": "グループに追加"
+  },
+  "removeMember": {
+    "en": "Remove from group",
+    "text": "グループから削除"
+  },
+  "access": {
+    "en": "Access",
+    "text": "アクセス"
+  },
+  "read": {
+    "en": "Read",
+    "text": "読み取り"
+  },
+  "write": {
+    "en": "Read and write",
+    "text": "読み取りと書き込み"
+  },
+  "saveGrant": {
+    "en": "Save access",
+    "text": "アクセス権を保存"
+  },
+  "removeGrant": {
+    "en": "Remove access",
+    "text": "アクセス権を削除"
+  },
+  "members": {
+    "en": "Members",
+    "text": "メンバー"
+  },
+  "grants": {
+    "en": "Grants",
+    "text": "アクセス権"
+  },
+  "packageGroup": {
+    "en": "UPack group",
+    "text": "UPackグループ"
+  },
+  "packageName": {
+    "en": "Package name",
+    "text": "パッケージ名"
+  },
+  "version": {
+    "en": "Version",
+    "text": "バージョン"
+  },
+  "sortBy": {
+    "en": "Sort by",
+    "text": "並べ替え"
+  },
+  "direction": {
+    "en": "Order",
+    "text": "順序"
+  },
+  "ascending": {
+    "en": "Ascending",
+    "text": "昇順"
+  },
+  "descending": {
+    "en": "Descending",
+    "text": "降順"
+  },
+  "groupBy": {
+    "en": "Group by",
+    "text": "グループ化"
+  },
+  "noGrouping": {
+    "en": "No grouping",
+    "text": "グループ化しない"
+  },
+  "apply": {
+    "en": "Apply",
+    "text": "適用"
+  },
+  "clearFilters": {
+    "en": "Reset",
+    "text": "リセット"
+  },
+  "packageFilterHint": {
+    "en": "Group and name are exact matches, ignoring letter case.",
+    "text": "グループと名前は、大文字と小文字を区別せずに完全一致で検索されます。"
+  },
+  "applyFilters": {
+    "en": "Apply the filters to see packages.",
+    "text": "パッケージを表示するには、フィルターを適用してください。"
+  },
+  "apiAddressError": {
+    "en": "The Arkvory API address is invalid. Contact the UI administrator.",
+    "text": "ArkvoryのAPIアドレスが無効です。UIの管理者に問い合わせてください。"
+  },
+  "noRepositoryAccess": {
+    "en": "This account or key cannot read any repositories. Ask an administrator for access.",
+    "text": "このアカウントまたはキーでは、どのリポジトリも読み取れません。管理者にアクセス権を依頼してください。"
+  },
+  "noPackages": {
+    "en": "No registered packages match these filters.",
+    "text": "これらのフィルターに一致する登録済みパッケージはありません。"
+  },
+  "packageCount": {
+    "en": "{count} packages on this page",
+    "text": "このページのパッケージ：{count}件"
+  },
+  "pageNumber": {
+    "en": "Page {page}",
+    "text": "{page}ページ"
+  },
+  "previousPage": {
+    "en": "Previous",
+    "text": "前へ"
+  },
+  "nextPage": {
+    "en": "Next",
+    "text": "次へ"
+  },
+  "accessSaved": {
+    "en": "Access updated",
+    "text": "アクセス権を更新しました"
+  },
+  "userCreated": {
+    "en": "User created",
+    "text": "ユーザーを作成しました"
+  },
+  "groupCreated": {
+    "en": "Group created",
+    "text": "グループを作成しました"
+  },
+  "signedIn": {
+    "en": "Signed in as {name}",
+    "text": "{name}としてサインインしました"
+  },
+  "accountStatus": {
+    "en": "Status",
+    "text": "状態"
+  },
+  "enabled": {
+    "en": "Active",
+    "text": "有効"
+  },
+  "disabled": {
+    "en": "Disabled",
+    "text": "無効"
+  },
+  "disableUser": {
+    "en": "Disable",
+    "text": "無効化"
+  },
+  "enableUser": {
+    "en": "Enable",
+    "text": "有効化"
+  },
+  "newPassword": {
+    "en": "New password",
+    "text": "新しいパスワード"
+  },
+  "currentPassword": {
+    "en": "Current password",
+    "text": "現在のパスワード"
+  },
+  "changeOwnPassword": {
+    "en": "Change my password",
+    "text": "自分のパスワードを変更"
+  },
+  "passwordChangedSignIn": {
+    "en": "Password changed. Sign in again.",
+    "text": "パスワードを変更しました。もう一度サインインしてください。"
+  },
+  "resetPassword": {
+    "en": "Reset password",
+    "text": "パスワードをリセット"
+  },
+  "passwordChanged": {
+    "en": "Password changed; active sessions revoked",
+    "text": "パスワードを変更しました。実行中のセッションは取り消されました"
+  },
+  "signUp": {
+    "en": "Sign up",
+    "text": "サインアップ"
+  },
+  "registerAccount": {
+    "en": "Create account",
+    "text": "アカウントを作成"
+  },
+  "accountRegistered": {
+    "en": "Account created and signed in.",
+    "text": "アカウントを作成し、サインインしました。"
+  },
+  "personalAccessTokens": {
+    "en": "Personal access tokens",
+    "text": "個人用アクセストークン"
+  },
+  "generateToken": {
+    "en": "Generate token",
+    "text": "トークンを生成"
+  },
+  "tokenName": {
+    "en": "Token name",
+    "text": "トークン名"
+  },
+  "tokenNamePlaceholder": {
+    "en": "e.g. External UI, CLI",
+    "text": "例：外部UI、CLI"
+  },
+  "tokenCreatedWarning": {
+    "en": "Save this token now. It will not be shown again.",
+    "text": "このトークンを今すぐ保存してください。再表示されることはありません。"
+  },
+  "copyToken": {
+    "en": "Copy token",
+    "text": "トークンをコピー"
+  },
+  "tokenCopied": {
+    "en": "Token copied to clipboard.",
+    "text": "トークンをクリップボードにコピーしました。"
+  },
+  "revokeToken": {
+    "en": "Revoke token",
+    "text": "トークンを取り消す"
+  },
+  "noUserTokens": {
+    "en": "No personal access tokens generated yet.",
+    "text": "個人用アクセストークンはまだ生成されていません。"
+  },
+  "tokenSessionOnly": {
+    "en": "Tokens are created and revoked from a password session only; a token cannot create tokens or administer accounts.",
+    "text": "トークンの作成と取り消しは、パスワードでサインインしたセッションからのみ行えます。トークンを使ってトークンを作成したり、アカウントを管理したりすることはできません。"
+  },
+  "tokenExpiry": {
+    "en": "Expires after",
+    "text": "有効期間"
+  },
+  "tokenDays30": {
+    "en": "30 days",
+    "text": "30日"
+  },
+  "tokenDays90": {
+    "en": "90 days",
+    "text": "90日"
+  },
+  "tokenDays365": {
+    "en": "365 days",
+    "text": "365日"
+  },
+  "tokenScope": {
+    "en": "Access",
+    "text": "アクセス"
+  },
+  "tokenScopeRead": {
+    "en": "Read only",
+    "text": "読み取り専用"
+  },
+  "tokenScopeReadWrite": {
+    "en": "Read and write",
+    "text": "読み取りと書き込み"
+  },
+  "tokenPrefix": {
+    "en": "Prefix",
+    "text": "プレフィックス"
+  },
+  "tokenCreated": {
+    "en": "Created",
+    "text": "作成日時"
+  },
+  "tokenExpires": {
+    "en": "Expires",
+    "text": "有効期限"
+  },
+  "tokenLastUsed": {
+    "en": "Last used",
+    "text": "最終使用"
+  },
+  "tokenStatus": {
+    "en": "Status",
+    "text": "状態"
+  },
+  "tokenActive": {
+    "en": "Active",
+    "text": "有効"
+  },
+  "tokenRevokedState": {
+    "en": "Revoked",
+    "text": "取り消し済み"
+  },
+  "tokenExpired": {
+    "en": "Expired",
+    "text": "期限切れ"
+  },
+  "tokenNeverUsed": {
+    "en": "Never",
+    "text": "未使用"
+  },
+  "tokenNoExpiry": {
+    "en": "—",
+    "text": "—"
+  },
+  "tokenRevokeConfirm": {
+    "en": "Revoke “{name}”? Clients using it lose access immediately.",
+    "text": "「{name}」を取り消しますか？このトークンを使用しているクライアントは、直ちにアクセスできなくなります。"
+  },
+  "tokenRevokeConfirmSubmit": {
+    "en": "Revoke",
+    "text": "取り消す"
+  },
+  "tokenRevokeCancel": {
+    "en": "Cancel",
+    "text": "キャンセル"
+  },
+  "tokenCopyFailed": {
+    "en": "Copy failed. The token is selected; copy it manually.",
+    "text": "コピーに失敗しました。トークンが選択された状態なので、手動でコピーしてください。"
+  },
+  "connected": {
+    "en": "Connected",
+    "text": "接続済み"
+  },
+  "disconnected": {
+    "en": "Not connected",
+    "text": "未接続"
+  },
+  "uploadFile": {
+    "en": "Upload file",
+    "text": "ファイルをアップロード"
+  },
+  "search": {
+    "en": "Search",
+    "text": "検索"
+  },
+  "searchPlaceholder": {
+    "en": "Name or metadata value…",
+    "text": "名前またはメタデータの値…"
+  },
+  "labelFilter": {
+    "en": "Filter by label",
+    "text": "ラベルで絞り込み"
+  },
+  "labelPlaceholder": {
+    "en": "Any label",
+    "text": "すべてのラベル"
+  },
+  "name": {
+    "en": "File name",
+    "text": "ファイル名"
+  },
+  "actions": {
+    "en": "Actions",
+    "text": "操作"
+  },
+  "open": {
+    "en": "Open",
+    "text": "開く"
+  },
+  "more": {
+    "en": "Load more",
+    "text": "さらに読み込む"
+  },
+  "loaded": {
+    "en": "{count} loaded",
+    "text": "{count}件を読み込み済み"
+  },
+  "emptyTitle": {
+    "en": "Not connected",
+    "text": "未接続"
+  },
+  "emptyDescription": {
+    "en": "Sign in with your username and password, or connect with a service key.",
+    "text": "ユーザー名とパスワードでサインインするか、サービスキーで接続してください。"
+  },
+  "noResultsTitle": {
+    "en": "No matching artifacts",
+    "text": "一致するアーティファクトはありません"
+  },
+  "noResults": {
+    "en": "Change your search or clear the filters.",
+    "text": "検索条件を変更するか、フィルターをクリアしてください。"
+  },
+  "catalogHint": {
+    "en": "Immutable content · Editable metadata",
+    "text": "不変のコンテンツ · 編集可能なメタデータ"
+  },
+  "file": {
+    "en": "Choose a file",
+    "text": "ファイルを選択"
+  },
+  "chooseFile": {
+    "en": "File to upload",
+    "text": "アップロードするファイル"
+  },
+  "resumeTitle": {
+    "en": "Resume an upload",
+    "text": "アップロードを再開"
+  },
+  "resumeHint": {
+    "en": "Have an upload ID? Select the same file and enter the ID below.",
+    "text": "アップロードIDをお持ちですか？同じファイルを選択し、下にIDを入力してください。"
+  },
+  "uploadId": {
+    "en": "Upload ID",
+    "text": "アップロードID"
+  },
+  "idempotency": {
+    "en": "Duplicate protection key",
+    "text": "重複防止キー"
+  },
+  "automatic": {
+    "en": "Generated automatically",
+    "text": "自動生成"
+  },
+  "startUpload": {
+    "en": "Upload / resume",
+    "text": "アップロード / 再開"
+  },
+  "pause": {
+    "en": "Pause",
+    "text": "一時停止"
+  },
+  "newUpload": {
+    "en": "New upload",
+    "text": "新しいアップロード"
+  },
+  "uploadHint": {
+    "en": "Keep your upload ID to resume after closing this tab.",
+    "text": "このタブを閉じた後でも再開できるよう、アップロードIDを控えておいてください。"
+  },
+  "transferTitle": {
+    "en": "Transfer status",
+    "text": "転送の状態"
+  },
+  "transferIdle": {
+    "en": "Waiting for a file",
+    "text": "ファイルを待っています"
+  },
+  "hashing": {
+    "en": "Checking file integrity…",
+    "text": "ファイルの整合性を確認しています…"
+  },
+  "uploading": {
+    "en": "Uploading · {percent}%",
+    "text": "アップロード中 · {percent}%"
+  },
+  "published": {
+    "en": "File published · {id}",
+    "text": "ファイルを公開しました · {id}"
+  },
+  "paused": {
+    "en": "Transfer paused. You can resume it with the same file.",
+    "text": "転送を一時停止しました。同じファイルで再開できます。"
+  },
+  "selectArtifact": {
+    "en": "Select an artifact",
+    "text": "アーティファクトを選択してください"
+  },
+  "selectHint": {
+    "en": "Open a file in the catalog or history.",
+    "text": "カタログまたは履歴でファイルを開いてください。"
+  },
+  "backCatalog": {
+    "en": "Back to artifacts",
+    "text": "アーティファクトに戻る"
+  },
+  "selected": {
+    "en": "Artifact ID",
+    "text": "アーティファクトID"
+  },
+  "labels": {
+    "en": "Labels",
+    "text": "ラベル"
+  },
+  "collections": {
+    "en": "Collections",
+    "text": "コレクション"
+  },
+  "commaHint": {
+    "en": "Separate with commas",
+    "text": "カンマで区切ります"
+  },
+  "metadataJson": {
+    "en": "Metadata (JSON)",
+    "text": "メタデータ（JSON）"
+  },
+  "save": {
+    "en": "Save changes",
+    "text": "変更を保存"
+  },
+  "download": {
+    "en": "Download",
+    "text": "ダウンロード"
+  },
+  "downloadLink": {
+    "en": "Download link",
+    "text": "ダウンロードリンク"
+  },
+  "downloadLinkCopied": {
+    "en": "Link copied. It opens only this file and works until {expires}.",
+    "text": "リンクをコピーしました。このリンクで開けるのはこのファイルだけで、{expires}まで有効です。"
+  },
+  "downloadLinkCopy": {
+    "en": "Copy the link below. It opens only this file and works until {expires}.",
+    "text": "下のリンクをコピーしてください。このリンクで開けるのはこのファイルだけで、{expires}まで有効です。"
+  },
+  "register": {
+    "en": "Register UPack",
+    "text": "UPackとして登録"
+  },
+  "assetTitle": {
+    "en": "File reference",
+    "text": "ファイル参照"
+  },
+  "assetHint": {
+    "en": "Assign this artifact to a path. The current link version protects against simultaneous changes: use 0 for a new path or the current version shown in the file history.",
+    "text": "このアーティファクトをパスに割り当てます。現在のリンクのバージョンを指定することで、同時に行われた変更による上書きを防ぎます。新しいパスには0を、既存のパスにはファイル履歴に表示されている現在のバージョンを指定してください。"
+  },
+  "assetPath": {
+    "en": "File path",
+    "text": "ファイルパス"
+  },
+  "currentRevision": {
+    "en": "Current link version",
+    "text": "現在のリンクのバージョン"
+  },
+  "assign": {
+    "en": "Assign file",
+    "text": "ファイルを割り当て"
+  },
+  "historyLoad": {
+    "en": "Load history",
+    "text": "履歴を読み込む"
+  },
+  "historyHint": {
+    "en": "Restoring creates a new version. Open any version to download its original file.",
+    "text": "復元すると新しいバージョンが作成されます。どのバージョンも、開くと元のファイルをダウンロードできます。"
+  },
+  "revision": {
+    "en": "Version",
+    "text": "バージョン"
+  },
+  "date": {
+    "en": "Created",
+    "text": "作成日時"
+  },
+  "actor": {
+    "en": "Author",
+    "text": "作成者"
+  },
+  "source": {
+    "en": "Restored from",
+    "text": "復元元"
+  },
+  "restore": {
+    "en": "Restore version {revision}",
+    "text": "バージョン{revision}を復元"
+  },
+  "historyMore": {
+    "en": "Older versions",
+    "text": "以前のバージョン"
+  },
+  "historyEmpty": {
+    "en": "Enter a file path to explore its history.",
+    "text": "履歴を表示するには、ファイルパスを入力してください。"
+  },
+  "historyCount": {
+    "en": "{count} versions loaded · current version {revision}",
+    "text": "{count}件のバージョンを読み込み済み · 現在のバージョン{revision}"
+  },
+  "restored": {
+    "en": "Restored as version {revision}",
+    "text": "バージョン{revision}として復元しました"
+  },
+  "historyConflict": {
+    "en": "The file has changed. Reload history before restoring.",
+    "text": "ファイルが変更されています。復元する前に履歴を再読み込みしてください。"
+  },
+  "ready": {
+    "en": "Connect a repository to begin.",
+    "text": "開始するには、リポジトリに接続してください。"
+  },
+  "searching": {
+    "en": "Loading artifacts…",
+    "text": "アーティファクトを読み込んでいます…"
+  },
+  "revisionStatus": {
+    "en": "Details opened · version {revision}",
+    "text": "詳細を開きました · バージョン{revision}"
+  },
+  "saved": {
+    "en": "Changes saved · version {revision}",
+    "text": "変更を保存しました · バージョン{revision}"
+  },
+  "registered": {
+    "en": "Registered {name} {version}",
+    "text": "{name} {version}を登録しました"
+  },
+  "assigned": {
+    "en": "File link saved · version {revision}",
+    "text": "ファイルリンクを保存しました · バージョン{revision}"
+  },
+  "chooseFileError": {
+    "en": "Choose a file first.",
+    "text": "先にファイルを選択してください。"
+  },
+  "fileTooLarge": {
+    "en": "The file exceeds the maximum size configured on the server.",
+    "text": "ファイルが、サーバーで設定されている最大サイズを超えています。"
+  },
+  "uploadRunning": {
+    "en": "An upload is already in progress.",
+    "text": "既にアップロードが進行中です。"
+  },
+  "selectError": {
+    "en": "Open an artifact first.",
+    "text": "先にアーティファクトを開いてください。"
+  },
+  "hashError": {
+    "en": "Could not read or verify the selected file. Please select it again.",
+    "text": "選択したファイルを読み取れないか、検証できませんでした。もう一度選択してください。"
+  },
+  "saveUnsupported": {
+    "en": "Streaming save requires Chrome or Edge over HTTPS. Other clients can download through the SDK.",
+    "text": "ストリーミング保存には、HTTPS経由で接続したChromeまたはEdgeが必要です。ほかのクライアントでは、SDKを使ってダウンロードできます。"
+  },
+  "mismatch": {
+    "en": "This file differs from the upload. Select the original file or start a new upload.",
+    "text": "このファイルはアップロード中のファイルと異なります。元のファイルを選択するか、新しいアップロードを開始してください。"
+  },
+  "errorGeneric": {
+    "en": "The operation could not be completed. Try again.",
+    "text": "操作を完了できませんでした。もう一度お試しください。"
+  },
+  "errorUnauthorized": {
+    "en": "This key is not valid or was revoked. Enter a valid key.",
+    "text": "このキーは無効か、取り消されています。有効なキーを入力してください。"
+  },
+  "errorForbidden": {
+    "en": "You do not have permission for this operation.",
+    "text": "この操作を行う権限がありません。"
+  },
+  "errorRateLimited": {
+    "en": "Too many sign-in attempts. Wait and try again.",
+    "text": "サインインの試行回数が多すぎます。しばらく待ってからもう一度お試しください。"
+  },
+  "errorNotFound": {
+    "en": "The requested file or version was not found.",
+    "text": "要求されたファイルまたはバージョンが見つかりませんでした。"
+  },
+  "errorConflict": {
+    "en": "The item has changed or the operation conflicts with its state. Refresh before trying again.",
+    "text": "項目が変更されたか、操作が項目の現在の状態と競合しています。再読み込みしてから、もう一度お試しください。"
+  },
+  "errorInput": {
+    "en": "Check the entered values and try again.",
+    "text": "入力した値を確認して、もう一度お試しください。"
+  },
+  "errorIntegrity": {
+    "en": "The file integrity check failed. Retry with the original file.",
+    "text": "ファイルの整合性チェックに失敗しました。元のファイルで再試行してください。"
+  },
+  "errorBusy": {
+    "en": "The service is busy. Try again shortly.",
+    "text": "サービスがビジー状態です。しばらくしてからもう一度お試しください。"
+  },
+  "errorCapacity": {
+    "en": "A capacity limit has been reached.",
+    "text": "容量の上限に達しました。"
+  },
+  "cancelled": {
+    "en": "Operation cancelled.",
+    "text": "操作をキャンセルしました。"
+  },
+  "publishedRefresh": {
+    "en": "File published, but the catalog could not refresh. Open Artifacts to refresh it.",
+    "text": "ファイルを公開しましたが、カタログを更新できませんでした。「アーティファクト」を開いて更新してください。"
+  },
+  "skip": {
+    "en": "Skip to content",
+    "text": "本文へスキップ"
+  },
+  "noScript": {
+    "en": "Enable JavaScript to use the storage console.",
+    "text": "ストレージコンソールを使用するには、JavaScriptを有効にしてください。"
+  }
+}

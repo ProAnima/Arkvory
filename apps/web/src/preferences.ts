@@ -1,14 +1,16 @@
-import type { Language } from './messages.js';
+import { preferredLanguage, type Language } from './languages.js';
 export type Theme = 'light' | 'dark' | 'system';
 export function themePreference(value: string | null): Theme {
   return value === 'light' || value === 'dark' ? value : 'system';
 }
-export function languagePreference(value: string | null, browserLanguage: string): Language {
-  return value === 'en' || value === 'ru'
-    ? value
-    : browserLanguage.toLowerCase().startsWith('ru')
-      ? 'ru'
-      : 'en';
+export function languagePreference(
+  value: string | null,
+  browserLanguages: string | readonly string[],
+): Language {
+  return preferredLanguage(
+    value,
+    typeof browserLanguages === 'string' ? [browserLanguages] : browserLanguages,
+  );
 }
 export function readPreference(key: 'theme' | 'language'): string | null {
   try {

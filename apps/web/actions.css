@@ -110,12 +110,12 @@ button[data-icon-only] > .action-label {
   #action-tooltip {
     position-anchor: --action-anchor;
     position-area: top;
-    position-try-fallbacks: flip-block, right, left;
+    position-try-fallbacks: flip-block, inline-end, inline-start;
     inset: auto;
     margin: var(--space-2);
   }
   #action-tooltip[data-side='rail'] {
-    position-area: right;
+    position-area: inline-end;
   }
 }
 #action-tooltip:popover-open {

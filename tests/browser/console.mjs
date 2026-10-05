@@ -18,6 +18,7 @@ import { exerciseErrorFeedback } from './errors.mjs';
 import { exerciseDesktopDensity } from './density.mjs';
 import { exerciseBackups } from './backups.mjs';
 import { exerciseMirror } from './mirror.mjs';
+import { exerciseLanguages } from './languages.mjs';
 import { chromium } from 'playwright';
 const browser = await chromium.launch({
   headless: true,
@@ -271,6 +272,7 @@ try {
             });
         }
       }
+  await exerciseLanguages(page, go);
   assert.equal(await page.locator('#labels').inputValue(), 'unsaved-label');
   await page.setViewportSize({ width: 390, height: 844 });
   await page.locator('#navigation-toggle').click();
@@ -302,7 +304,7 @@ try {
   await exerciseMirror(browser, f);
   assert.deepEqual(errors, []);
   console.log(
-    'PASS console: API upload/download, metadata, history, users, search/reset, keyboard menu, 7 views × 4 widths × RU/EN × light/dark',
+    'PASS console: API upload/download, metadata, history, users, search/reset, keyboard menu, 7 views × 4 widths × RU/EN × light/dark, 9 more languages × 2 widths',
   );
 } finally {
   await browser.close();

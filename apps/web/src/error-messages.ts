@@ -23,7 +23,7 @@ export const errorEnglish = {
   errorRange: 'The requested part of the file is not available. Restart the download.',
   errorTooManyRequests: 'Too many requests. Wait a moment and try again.',
   errorRegistrationLimited: 'Too many sign-up attempts from this network. Wait and try again.',
-  errorPasswordLimited: 'Too many wrong current passwords. Wait and try again.',
+  errorPasswordLimited: 'Too many wrong attempts at the current password. Wait and try again.',
   sessionEnded:
     'Your session has ended: you signed out elsewhere, changed the password or access was revoked. Sign in again.',
   errorTokenExpired: 'This key or token has expired. Create a new one and connect again.',
@@ -42,7 +42,7 @@ export const errorEnglish = {
   errorVersionExists: 'This package version already exists. Publish it under a new version.',
   errorPartsIncomplete: 'Some parts of the file have not arrived yet. Resume the upload.',
   errorIdempotency:
-    'This upload key was already used for another file. Start a new upload to get a fresh key.',
+    'This duplicate protection key was already used for another file. Start a new upload to get a new key.',
   errorAlreadyExists: 'An item with this name already exists. Choose another name.',
   errorStageLimit: 'This artifact already has the maximum number of stages. Remove one first.',
   errorStorageQuota:
@@ -96,7 +96,8 @@ export const errorRussian: Record<keyof typeof errorEnglish, string> = {
   errorTooManyRequests: 'Слишком много запросов. Подождите немного и повторите.',
   errorRegistrationLimited:
     'Слишком много попыток регистрации из этой сети. Подождите и повторите.',
-  errorPasswordLimited: 'Слишком много неверных текущих паролей. Подождите и повторите.',
+  errorPasswordLimited:
+    'Слишком много неверных попыток ввести текущий пароль. Подождите и повторите.',
   sessionEnded:
     'Сеанс завершён: выполнен выход в другом месте, изменён пароль или отозван доступ. Войдите снова.',
   errorTokenExpired: 'Срок действия ключа или токена истёк. Создайте новый и подключитесь снова.',
@@ -115,7 +116,7 @@ export const errorRussian: Record<keyof typeof errorEnglish, string> = {
   errorVersionExists: 'Такая версия пакета уже есть. Опубликуйте пакет под новой версией.',
   errorPartsIncomplete: 'Не все части файла получены. Продолжите загрузку.',
   errorIdempotency:
-    'Этот ключ загрузки уже использован для другого файла. Начните новую загрузку с новым ключом.',
+    'Этот ключ защиты от повторов уже использован для другого файла. Начните новую загрузку с новым ключом.',
   errorAlreadyExists: 'Объект с таким именем уже существует. Выберите другое имя.',
   errorStageLimit: 'У артефакта уже максимальное число стадий. Сначала удалите одну из них.',
   errorStorageQuota:

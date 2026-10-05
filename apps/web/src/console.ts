@@ -6,7 +6,7 @@ import { ArkvoryClient } from '@proanima/arkvory-sdk';
 import { text } from '@proanima/arkvory-contracts';
 import { element } from './dom.js';
 import { installAssetHistory } from './asset-history.js';
-import { message } from './i18n.js';
+import { initializeLanguage, message } from './i18n.js';
 import { feedback, UiError, showFailure } from './feedback.js';
 import { initializeShell, setArtifactRoute, showView } from './shell.js';
 import { installConnectionState } from './connection-state.js';
@@ -43,6 +43,8 @@ const token = element('token', HTMLInputElement),
 const apiBaseUrl =
   document.querySelector<HTMLMetaElement>('meta[name="arkvory-api-base-url"]')?.content.trim() ||
   location.origin;
+// The page is shown in its language from the first paint: a fetched dictionary is awaited.
+await initializeLanguage();
 initializeShell();
 let client: ArkvoryClient;
 try {

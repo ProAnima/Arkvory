@@ -69,7 +69,7 @@ export const en = {
   deletionChecking: 'Checking dependencies…',
   deletionBlocked: 'Deletion is blocked by retained references.',
   deletionReady:
-    'No blocking references. This action also permits deleting builds labelled release. Dependencies and metadata will be checked again.',
+    'No blocking references. This explicit action permits deletion whatever the labels, release included. Dependencies and metadata will be checked again.',
   deletionReference: 'An external service has pinned this artifact.',
   deletionAsset: 'A file path or its history uses this artifact.',
   deletionAttachment: 'Another build lists this artifact as an attachment, now or in its history.',
@@ -331,8 +331,8 @@ export const en = {
   save: 'Save changes',
   download: 'Download',
   downloadLink: 'Download link',
-  downloadLinkCopied: 'Link copied. It opens only this file and works until',
-  downloadLinkCopy: 'Copy the link below. It opens only this file and works until',
+  downloadLinkCopied: 'Link copied. It opens only this file and works until {expires}.',
+  downloadLinkCopy: 'Copy the link below. It opens only this file and works until {expires}.',
   register: 'Register UPack',
   assetTitle: 'File reference',
   assetHint:

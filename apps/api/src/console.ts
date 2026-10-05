@@ -1,6 +1,21 @@
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
-import type { FastifyInstance } from 'fastify';
+import type { FastifyInstance, FastifyReply } from 'fastify';
+
+/** A dictionary of the console other than the bundled English and Russian: `xx.json`. */
+const dictionaryName = /^[a-z]{2}\.json$/;
+
+function send(reply: FastifyReply, type: string, body: Buffer) {
+  return reply
+    .header('Content-Type', type)
+    .header(
+      'Content-Security-Policy',
+      // blob: only for images the page itself made from local files (feedback screenshots).
+      "default-src 'none'; img-src 'self' blob:; script-src 'self'; style-src 'self'; connect-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'",
+    )
+    .header('Referrer-Policy', 'no-referrer')
+    .send(body);
+}
 
 export function registerConsole(app: FastifyInstance, directory: string) {
   const files = [
@@ -17,14 +32,18 @@ export function registerConsole(app: FastifyInstance, directory: string) {
   ] as const;
   for (const [url, file, type] of files)
     app.get(url, async (_request, reply) =>
-      reply
-        .header('Content-Type', type)
-        .header(
-          'Content-Security-Policy',
-          // blob: only for images the page itself made from local files (feedback screenshots).
-          "default-src 'none'; img-src 'self' blob:; script-src 'self'; style-src 'self'; connect-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'",
-        )
-        .header('Referrer-Policy', 'no-referrer')
-        .send(await readFile(resolve(directory, file))),
+      send(reply, type, await readFile(resolve(directory, file))),
     );
+  // The name is checked before it reaches the file system: two letters, nothing else.
+  app.get<{ Params: { file: string } }>('/console/locales/:file', async (request, reply) => {
+    const name = request.params.file;
+    const body = dictionaryName.test(name)
+      ? await readFile(resolve(directory, 'locales', name)).catch(() => undefined)
+      : undefined;
+    if (!body) {
+      reply.callNotFound();
+      return reply;
+    }
+    return send(reply, 'application/json; charset=utf-8', body);
+  });
 }

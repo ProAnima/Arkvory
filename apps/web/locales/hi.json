@@ -1,0 +1,3518 @@
+{
+  "errorNetwork": {
+    "en": "Arkvory did not answer. Check your network connection and try again.",
+    "text": "Arkvory से कोई जवाब नहीं मिला। अपना नेटवर्क कनेक्शन जाँचें और फिर से प्रयास करें।"
+  },
+  "errorTimeout": {
+    "en": "The server took too long to answer, so the request was stopped. Try again.",
+    "text": "सर्वर ने जवाब देने में बहुत देर लगाई, इसलिए अनुरोध रोक दिया गया। फिर से प्रयास करें।"
+  },
+  "errorGateway": {
+    "en": "A proxy in front of Arkvory did not get an answer from it. Try again shortly or contact the administrator.",
+    "text": "Arkvory के आगे लगे प्रॉक्सी को उससे कोई जवाब नहीं मिला। थोड़ी देर बाद फिर से प्रयास करें या व्यवस्थापक से संपर्क करें।"
+  },
+  "errorInternal": {
+    "en": "Unexpected server error. Report the request ID below to the administrator.",
+    "text": "सर्वर में अनपेक्षित त्रुटि हुई। नीचे दी गई अनुरोध ID व्यवस्थापक को बताएँ।"
+  },
+  "errorUnavailable": {
+    "en": "The service is temporarily unavailable. Try again shortly.",
+    "text": "सेवा अस्थायी रूप से उपलब्ध नहीं है। थोड़ी देर बाद फिर से प्रयास करें।"
+  },
+  "errorFeedbackDisabled": {
+    "en": "Feedback is turned off on this server. Write to info@proanima.net instead.",
+    "text": "इस सर्वर पर फ़ीडबैक बंद है। इसके बजाय info@proanima.net पर लिखें।"
+  },
+  "errorHubUnreachable": {
+    "en": "The server cannot reach ProAnimaStudio right now. Try again later or write to info@proanima.net.",
+    "text": "सर्वर अभी ProAnimaStudio से संपर्क नहीं कर पा रहा है। बाद में फिर से प्रयास करें या info@proanima.net पर लिखें।"
+  },
+  "errorFeedbackLimited": {
+    "en": "Too many messages from this server. Wait a few minutes and try again.",
+    "text": "इस सर्वर से बहुत अधिक संदेश आए हैं। कुछ मिनट रुककर फिर से प्रयास करें।"
+  },
+  "errorReadOnly": {
+    "en": "This address only serves downloads. Make changes through the main Arkvory address.",
+    "text": "यह पता केवल डाउनलोड के लिए है। बदलाव Arkvory के मुख्य पते से करें।"
+  },
+  "errorRouteMissing": {
+    "en": "This Arkvory server does not support the operation. Update the server or reload the console.",
+    "text": "यह Arkvory सर्वर इस ऑपरेशन का समर्थन नहीं करता। सर्वर को अपडेट करें या कंसोल को फिर से लोड करें।"
+  },
+  "errorBodyTooLarge": {
+    "en": "The entered data is too large. Shorten the values and try again.",
+    "text": "दर्ज किया गया डेटा बहुत बड़ा है। मान छोटे करें और फिर से प्रयास करें।"
+  },
+  "errorMediaType": {
+    "en": "The server did not accept the request format. Reload the console.",
+    "text": "सर्वर ने अनुरोध का फ़ॉर्मैट स्वीकार नहीं किया। कंसोल को फिर से लोड करें।"
+  },
+  "errorMalformed": {
+    "en": "The server could not read the request. Reload the console and try again.",
+    "text": "सर्वर अनुरोध को पढ़ नहीं सका। कंसोल को फिर से लोड करें और फिर से प्रयास करें।"
+  },
+  "errorFields": {
+    "en": "Check the highlighted fields.",
+    "text": "हाइलाइट किए गए फ़ील्ड जाँचें।"
+  },
+  "errorRange": {
+    "en": "The requested part of the file is not available. Restart the download.",
+    "text": "फ़ाइल का अनुरोधित भाग उपलब्ध नहीं है। डाउनलोड नए सिरे से शुरू करें।"
+  },
+  "errorTooManyRequests": {
+    "en": "Too many requests. Wait a moment and try again.",
+    "text": "बहुत अधिक अनुरोध। थोड़ा रुककर फिर से प्रयास करें।"
+  },
+  "errorRegistrationLimited": {
+    "en": "Too many sign-up attempts from this network. Wait and try again.",
+    "text": "इस नेटवर्क से साइन अप के बहुत अधिक प्रयास हुए हैं। थोड़ा रुककर फिर से प्रयास करें।"
+  },
+  "errorPasswordLimited": {
+    "en": "Too many wrong attempts at the current password. Wait and try again.",
+    "text": "वर्तमान पासवर्ड के बहुत अधिक गलत प्रयास हुए हैं। थोड़ा रुककर फिर से प्रयास करें।"
+  },
+  "sessionEnded": {
+    "en": "Your session has ended: you signed out elsewhere, changed the password or access was revoked. Sign in again.",
+    "text": "आपका सत्र समाप्त हो गया है: आपने कहीं और साइन आउट किया, पासवर्ड बदला या आपका एक्सेस निरस्त कर दिया गया। फिर से साइन इन करें।"
+  },
+  "errorTokenExpired": {
+    "en": "This key or token has expired. Create a new one and connect again.",
+    "text": "इस कुंजी या टोकन की अवधि समाप्त हो गई है। नई कुंजी या टोकन बनाएँ और फिर से कनेक्ट करें।"
+  },
+  "errorReadOnlyToken": {
+    "en": "This token can only read. Use a read-write token or sign in with your password.",
+    "text": "यह टोकन केवल पढ़ सकता है। पढ़ने और लिखने वाले टोकन का उपयोग करें या अपने पासवर्ड से साइन इन करें।"
+  },
+  "errorCredentialRevoked": {
+    "en": "The key used for this action was revoked or has expired.",
+    "text": "इस कार्रवाई के लिए उपयोग की गई कुंजी निरस्त कर दी गई है या उसकी अवधि समाप्त हो गई है।"
+  },
+  "errorSessionRequired": {
+    "en": "This action needs a password sign-in; keys and tokens cannot do it.",
+    "text": "इस कार्रवाई के लिए पासवर्ड से साइन इन करना आवश्यक है; कुंजियाँ और टोकन यह नहीं कर सकते।"
+  },
+  "errorAdministratorRequired": {
+    "en": "Only an administrator can do this.",
+    "text": "यह केवल व्यवस्थापक कर सकता है।"
+  },
+  "errorRegistrationDisabled": {
+    "en": "Self sign-up is turned off. Ask an administrator for an account.",
+    "text": "स्वयं साइन अप करने की सुविधा बंद है। खाते के लिए व्यवस्थापक से अनुरोध करें।"
+  },
+  "errorOriginForbidden": {
+    "en": "The server does not allow requests from this console address. Contact the administrator.",
+    "text": "सर्वर इस कंसोल पते से आने वाले अनुरोधों की अनुमति नहीं देता। व्यवस्थापक से संपर्क करें।"
+  },
+  "errorUploadExpired": {
+    "en": "The upload expired before it was finished. Start a new upload.",
+    "text": "अपलोड पूरा होने से पहले ही उसकी अवधि समाप्त हो गई। नया अपलोड शुरू करें।"
+  },
+  "errorUploadState": {
+    "en": "This upload is already published or cancelled. Start a new upload.",
+    "text": "यह अपलोड पहले ही प्रकाशित या रद्द हो चुका है। नया अपलोड शुरू करें।"
+  },
+  "errorRevisionMismatch": {
+    "en": "Someone changed this item meanwhile. Reload it and apply your change again.",
+    "text": "इस बीच किसी ने यह आइटम बदल दिया है। इसे फिर से लोड करें और अपना बदलाव दोबारा करें।"
+  },
+  "errorVersionExists": {
+    "en": "This package version already exists. Publish it under a new version.",
+    "text": "पैकेज का यह संस्करण पहले से मौजूद है। इसे नए संस्करण के रूप में प्रकाशित करें।"
+  },
+  "errorPartsIncomplete": {
+    "en": "Some parts of the file have not arrived yet. Resume the upload.",
+    "text": "फ़ाइल के कुछ भाग अभी तक नहीं पहुँचे हैं। अपलोड जारी रखें।"
+  },
+  "errorIdempotency": {
+    "en": "This duplicate protection key was already used for another file. Start a new upload to get a new key.",
+    "text": "दोहराव से सुरक्षा की यह कुंजी पहले ही किसी दूसरी फ़ाइल के लिए उपयोग हो चुकी है। नई कुंजी पाने के लिए नया अपलोड शुरू करें।"
+  },
+  "errorAlreadyExists": {
+    "en": "An item with this name already exists. Choose another name.",
+    "text": "इस नाम का आइटम पहले से मौजूद है। कोई दूसरा नाम चुनें।"
+  },
+  "errorStageLimit": {
+    "en": "This artifact already has the maximum number of stages. Remove one first.",
+    "text": "इस आर्टिफ़ैक्ट पर पहले से ही अधिकतम संख्या में स्टेज हैं। पहले कोई एक स्टेज हटाएँ।"
+  },
+  "errorStorageQuota": {
+    "en": "The repository quota is used up. Delete old builds or ask an administrator to raise it.",
+    "text": "रिपॉज़िटरी का कोटा पूरा हो गया है। पुराने बिल्ड हटाएँ या कोटा बढ़ाने के लिए व्यवस्थापक से कहें।"
+  },
+  "errorStorageFull": {
+    "en": "The server disk is full. Contact the administrator.",
+    "text": "सर्वर की डिस्क भर गई है। व्यवस्थापक से संपर्क करें।"
+  },
+  "errorAccountLimit": {
+    "en": "The maximum number of accounts has been reached.",
+    "text": "खातों की अधिकतम संख्या पूरी हो गई है।"
+  },
+  "errorGroupLimit": {
+    "en": "The maximum number of groups has been reached.",
+    "text": "समूहों की अधिकतम संख्या पूरी हो गई है।"
+  },
+  "errorMembershipLimit": {
+    "en": "The maximum number of group members has been reached.",
+    "text": "समूह सदस्यों की अधिकतम संख्या पूरी हो गई है।"
+  },
+  "errorGrantLimit": {
+    "en": "The maximum number of access rules has been reached.",
+    "text": "एक्सेस नियमों की अधिकतम संख्या पूरी हो गई है।"
+  },
+  "errorKeyLimit": {
+    "en": "The key limit for this account has been reached. Revoke unused keys first.",
+    "text": "इस खाते के लिए कुंजियों की सीमा पूरी हो गई है। पहले अनुपयोगी कुंजियाँ निरस्त करें।"
+  },
+  "errorTokenLimit": {
+    "en": "You already have the maximum of active tokens. Revoke unused tokens first.",
+    "text": "आपके पास पहले से ही अधिकतम संख्या में सक्रिय टोकन हैं। पहले अनुपयोगी टोकन निरस्त करें।"
+  },
+  "errorDelegationLimit": {
+    "en": "The maximum number of delegations has been reached.",
+    "text": "प्रत्यायोजनों की अधिकतम संख्या पूरी हो गई है।"
+  },
+  "errorCatalogLimit": {
+    "en": "The storage catalog is full. Contact the administrator.",
+    "text": "स्टोरेज कैटलॉग भर गया है। व्यवस्थापक से संपर्क करें।"
+  },
+  "errorQueueFull": {
+    "en": "The processing queue is full. Try again later.",
+    "text": "प्रोसेसिंग कतार भर गई है। बाद में फिर से प्रयास करें।"
+  },
+  "errorTransferLimit": {
+    "en": "Too many transfers are running right now. Try again later.",
+    "text": "अभी बहुत अधिक ट्रांसफ़र चल रहे हैं। बाद में फिर से प्रयास करें।"
+  },
+  "errorCompletionFailed": {
+    "en": "The server could not finish this upload. Start a new upload or contact the administrator.",
+    "text": "सर्वर यह अपलोड पूरा नहीं कर सका। नया अपलोड शुरू करें या व्यवस्थापक से संपर्क करें।"
+  },
+  "errorUnexpectedResponse": {
+    "en": "The server sent an answer this console does not understand. Update the server or the console.",
+    "text": "सर्वर ने ऐसा जवाब भेजा जिसे यह कंसोल नहीं समझता। सर्वर या कंसोल को अपडेट करें।"
+  },
+  "fieldRequired": {
+    "en": "Required.",
+    "text": "यह फ़ील्ड आवश्यक है।"
+  },
+  "fieldInvalid": {
+    "en": "Check this value.",
+    "text": "यह मान जाँचें।"
+  },
+  "fieldFormat": {
+    "en": "The format is not valid.",
+    "text": "फ़ॉर्मैट मान्य नहीं है।"
+  },
+  "fieldLength": {
+    "en": "The length is outside the allowed range.",
+    "text": "लंबाई अनुमत सीमा से बाहर है।"
+  },
+  "fieldRange": {
+    "en": "The value is outside the allowed range.",
+    "text": "मान अनुमत सीमा से बाहर है।"
+  },
+  "fieldType": {
+    "en": "This kind of value is not accepted.",
+    "text": "इस प्रकार का मान स्वीकार नहीं किया जाता।"
+  },
+  "fieldUnknown": {
+    "en": "The server does not accept this field.",
+    "text": "सर्वर यह फ़ील्ड स्वीकार नहीं करता।"
+  },
+  "requestIdLabel": {
+    "en": "Request ID",
+    "text": "अनुरोध ID"
+  },
+  "retryIn": {
+    "en": "Try again in {seconds} s.",
+    "text": "{seconds} सेकंड बाद फिर से प्रयास करें।"
+  },
+  "repositories": {
+    "en": "Repositories",
+    "text": "रिपॉज़िटरी"
+  },
+  "services": {
+    "en": "Service access",
+    "text": "सेवा एक्सेस"
+  },
+  "managementReload": {
+    "en": "Reload",
+    "text": "फिर से लोड करें"
+  },
+  "managementMore": {
+    "en": "Next page",
+    "text": "अगला पेज"
+  },
+  "managementEmpty": {
+    "en": "No entries available for this credential.",
+    "text": "इस क्रेडेंशियल के लिए कोई प्रविष्टि उपलब्ध नहीं है।"
+  },
+  "managementSaved": {
+    "en": "Changes saved.",
+    "text": "बदलाव सहेजे गए।"
+  },
+  "managementClose": {
+    "en": "Close",
+    "text": "बंद करें"
+  },
+  "repositoryModel": {
+    "en": "A repository appears once access to it is granted. Renaming or deleting repositories is not available here.",
+    "text": "किसी रिपॉज़िटरी का एक्सेस मिलने पर ही वह यहाँ दिखाई देती है। रिपॉज़िटरी का नाम बदलना या उसे हटाना यहाँ उपलब्ध नहीं है।"
+  },
+  "managementAccountInfo": {
+    "en": "ID {id} · version {revision}",
+    "text": "ID {id} · संस्करण {revision}"
+  },
+  "repositoryOpen": {
+    "en": "Open files",
+    "text": "फ़ाइलें खोलें"
+  },
+  "repositoryStorage": {
+    "en": "Storage & cleanup",
+    "text": "स्टोरेज और क्लीनअप"
+  },
+  "repositoryAccess": {
+    "en": "Manage access",
+    "text": "एक्सेस प्रबंधित करें"
+  },
+  "repositoryRights": {
+    "en": "Your permissions",
+    "text": "आपकी अनुमतियाँ"
+  },
+  "serviceCreate": {
+    "en": "Create service account",
+    "text": "सेवा खाता बनाएँ"
+  },
+  "serviceName": {
+    "en": "Account name",
+    "text": "खाते का नाम"
+  },
+  "servicePolicy": {
+    "en": "Repository permissions",
+    "text": "रिपॉज़िटरी अनुमतियाँ"
+  },
+  "servicePolicyHint": {
+    "en": "A key can do only what both this policy and the key itself allow. An empty policy gives no access to files.",
+    "text": "कुंजी केवल वही कर सकती है जिसकी अनुमति यह नीति और स्वयं कुंजी, दोनों देती हैं। खाली नीति फ़ाइलों का कोई एक्सेस नहीं देती।"
+  },
+  "serviceEnable": {
+    "en": "Enable account",
+    "text": "खाता सक्षम करें"
+  },
+  "serviceDisable": {
+    "en": "Disable account",
+    "text": "खाता अक्षम करें"
+  },
+  "serviceDisableHint": {
+    "en": "Disabling blocks every key of this account. Active transfers may finish.",
+    "text": "अक्षम करने पर इस खाते की हर कुंजी ब्लॉक हो जाती है। चल रहे ट्रांसफ़र पूरे हो सकते हैं।"
+  },
+  "servicePolicySave": {
+    "en": "Save policy",
+    "text": "नीति सहेजें"
+  },
+  "serviceKeys": {
+    "en": "Service keys",
+    "text": "सेवा कुंजियाँ"
+  },
+  "serviceAudit": {
+    "en": "Activity log",
+    "text": "गतिविधि लॉग"
+  },
+  "serviceRefresh": {
+    "en": "Reload account",
+    "text": "खाता फिर से लोड करें"
+  },
+  "serviceDelegated": {
+    "en": "Access is limited to assigned accounts and actions.",
+    "text": "एक्सेस केवल असाइन किए गए खातों और कार्रवाइयों तक सीमित है।"
+  },
+  "bindingAdd": {
+    "en": "Add repository",
+    "text": "रिपॉज़िटरी जोड़ें"
+  },
+  "bindingPermissions": {
+    "en": "Individual permissions",
+    "text": "अलग-अलग अनुमतियाँ"
+  },
+  "bindingRead": {
+    "en": "Read preset",
+    "text": "पढ़ने का प्रीसेट"
+  },
+  "bindingPublish": {
+    "en": "Publish preset",
+    "text": "प्रकाशन का प्रीसेट"
+  },
+  "bindingNone": {
+    "en": "Clear permissions",
+    "text": "अनुमतियाँ साफ़ करें"
+  },
+  "bindingRemove": {
+    "en": "Remove repository",
+    "text": "रिपॉज़िटरी हटाएँ"
+  },
+  "bindingInvalid": {
+    "en": "Use unique repository IDs and select at least one permission for each repository.",
+    "text": "अद्वितीय रिपॉज़िटरी ID का उपयोग करें और हर रिपॉज़िटरी के लिए कम से कम एक अनुमति चुनें।"
+  },
+  "keyNew": {
+    "en": "New key / cancel rotation",
+    "text": "नई कुंजी / रोटेशन रद्द करें"
+  },
+  "keyIssue": {
+    "en": "Issue key",
+    "text": "कुंजी जारी करें"
+  },
+  "keyExpires": {
+    "en": "Expires",
+    "text": "समाप्ति"
+  },
+  "keyName": {
+    "en": "Key name",
+    "text": "कुंजी का नाम"
+  },
+  "keyExpiry": {
+    "en": "Expires at (local time, optional)",
+    "text": "समाप्ति का समय (स्थानीय समय, वैकल्पिक)"
+  },
+  "keyExpiryHint": {
+    "en": "Default: up to 90 days. Maximum: 365 days, also limited by the issuing operator’s expiry.",
+    "text": "डिफ़ॉल्ट: 90 दिन तक। अधिकतम: 365 दिन, लेकिन जारी करने वाले ऑपरेटर की कुंजी की समाप्ति से अधिक नहीं।"
+  },
+  "keyRotate": {
+    "en": "Rotate",
+    "text": "रोटेट करें"
+  },
+  "keyRevoke": {
+    "en": "Revoke",
+    "text": "निरस्त करें"
+  },
+  "keyPending": {
+    "en": "Pending activation",
+    "text": "सक्रियण लंबित"
+  },
+  "keyActive": {
+    "en": "Active",
+    "text": "सक्रिय"
+  },
+  "keyRevoked": {
+    "en": "Revoked",
+    "text": "निरस्त"
+  },
+  "keyExpired": {
+    "en": "Expired",
+    "text": "अवधि समाप्त"
+  },
+  "keyRotationHint": {
+    "en": "Rotation cannot expand permissions. Activating the replacement limits the old key to at most 24 more hours. Delegations are not copied.",
+    "text": "रोटेशन से अनुमतियाँ नहीं बढ़तीं। नई कुंजी सक्रिय करने के बाद पुरानी कुंजी अधिकतम 24 घंटे और काम करती है। प्रत्यायोजन कॉपी नहीं होते।"
+  },
+  "keyRevokeHint": {
+    "en": "Revocation is permanent. Existing transfers may finish; new requests will be rejected.",
+    "text": "निरस्तीकरण स्थायी है। चल रहे ट्रांसफ़र पूरे हो सकते हैं; नए अनुरोध अस्वीकार कर दिए जाएँगे।"
+  },
+  "keySecret": {
+    "en": "Save the new secret",
+    "text": "नया सीक्रेट सहेजें"
+  },
+  "keySecretHint": {
+    "en": "Shown once. Save the secret securely before closing.",
+    "text": "यह केवल एक बार दिखाया जाता है। बंद करने से पहले सीक्रेट को सुरक्षित जगह पर सहेज लें।"
+  },
+  "keySecretMissing": {
+    "en": "The key was already issued; its secret cannot be shown again. Find it in the list, revoke it and issue another key if needed.",
+    "text": "कुंजी पहले ही जारी हो चुकी है; उसका सीक्रेट दोबारा नहीं दिखाया जा सकता। सूची में कुंजी खोजें, उसे निरस्त करें और ज़रूरत हो तो दूसरी कुंजी जारी करें।"
+  },
+  "keyCopy": {
+    "en": "Copy secret",
+    "text": "सीक्रेट कॉपी करें"
+  },
+  "keyCopied": {
+    "en": "Copied.",
+    "text": "कॉपी हो गया।"
+  },
+  "keyCopyFailed": {
+    "en": "Clipboard unavailable. Select and copy the secret manually.",
+    "text": "क्लिपबोर्ड उपलब्ध नहीं है। सीक्रेट को चुनकर मैन्युअल रूप से कॉपी करें।"
+  },
+  "keyActivate": {
+    "en": "Activate key",
+    "text": "कुंजी सक्रिय करें"
+  },
+  "keyActivated": {
+    "en": "Key activated. Store it securely before closing.",
+    "text": "कुंजी सक्रिय हो गई। बंद करने से पहले इसे सुरक्षित रूप से सहेज लें।"
+  },
+  "keySaved": {
+    "en": "I have saved the secret",
+    "text": "मैंने सीक्रेट सहेज लिया है"
+  },
+  "keyActivateHint": {
+    "en": "Activate after saving the secret. Pending credentials expire after 15 minutes.",
+    "text": "सीक्रेट सहेजने के बाद सक्रिय करें। लंबित क्रेडेंशियल 15 मिनट बाद समाप्त हो जाते हैं।"
+  },
+  "keyRetryHint": {
+    "en": "After a network failure, retry without changing the form to reuse the issuance request. A lost secret cannot be recovered.",
+    "text": "नेटवर्क विफल होने के बाद फ़ॉर्म बदले बिना फिर से प्रयास करें, ताकि जारी करने का वही अनुरोध दोबारा उपयोग हो। खोया हुआ सीक्रेट वापस नहीं पाया जा सकता।"
+  },
+  "managementConfirm": {
+    "en": "Confirm action",
+    "text": "कार्रवाई की पुष्टि करें"
+  },
+  "managementConfirmName": {
+    "en": "Type the displayed name to confirm",
+    "text": "पुष्टि के लिए दिखाया गया नाम टाइप करें"
+  },
+  "managementConfirmSubmit": {
+    "en": "Confirm",
+    "text": "पुष्टि करें"
+  },
+  "delegations": {
+    "en": "Delegated administration",
+    "text": "प्रत्यायोजित प्रशासन"
+  },
+  "delegationTarget": {
+    "en": "Target account ID",
+    "text": "लक्ष्य खाता ID"
+  },
+  "delegationActions": {
+    "en": "Administrative actions",
+    "text": "प्रशासनिक कार्रवाइयाँ"
+  },
+  "delegationCeiling": {
+    "en": "Maximum repository permissions",
+    "text": "अधिकतम रिपॉज़िटरी अनुमतियाँ"
+  },
+  "delegationSave": {
+    "en": "Save delegation",
+    "text": "प्रत्यायोजन सहेजें"
+  },
+  "delegationRemove": {
+    "en": "Remove delegation",
+    "text": "प्रत्यायोजन हटाएँ"
+  },
+  "delegationNew": {
+    "en": "New delegation",
+    "text": "नया प्रत्यायोजन"
+  },
+  "delegationHint": {
+    "en": "Only the server owner (the setup account) can change delegations. Removing a delegation does not revoke keys its holder already activated.",
+    "text": "केवल सर्वर का स्वामी (सेटअप के समय बना खाता) प्रत्यायोजन बदल सकता है। प्रत्यायोजन हटाने से वे कुंजियाँ निरस्त नहीं होतीं जिन्हें उसका धारक पहले ही सक्रिय कर चुका है।"
+  },
+  "delegationOwn": {
+    "en": "My administrative grants",
+    "text": "मेरे प्रशासनिक अधिकार"
+  },
+  "keyDetails": {
+    "en": "Key details",
+    "text": "कुंजी का विवरण"
+  },
+  "permission.repository.read": {
+    "en": "Discover repositories",
+    "text": "रिपॉज़िटरी खोजना"
+  },
+  "permission.storage.read": {
+    "en": "View storage policy and usage",
+    "text": "स्टोरेज नीति और उपयोग देखना"
+  },
+  "permission.storage.manage": {
+    "en": "Manage storage policy",
+    "text": "स्टोरेज नीति प्रबंधित करना"
+  },
+  "permission.diagnostics.read": {
+    "en": "Read diagnostics",
+    "text": "डायग्नोस्टिक्स पढ़ना"
+  },
+  "permission.artifact.read": {
+    "en": "Read artifact details",
+    "text": "आर्टिफ़ैक्ट का विवरण पढ़ना"
+  },
+  "permission.artifact.list": {
+    "en": "List artifacts",
+    "text": "आर्टिफ़ैक्ट की सूची देखना"
+  },
+  "permission.artifact.delete": {
+    "en": "Delete artifacts",
+    "text": "आर्टिफ़ैक्ट हटाना"
+  },
+  "permission.artifact.promote": {
+    "en": "Promote artifacts and manage stages",
+    "text": "आर्टिफ़ैक्ट प्रमोट करना और स्टेज प्रबंधित करना"
+  },
+  "permission.content.read": {
+    "en": "Download files",
+    "text": "फ़ाइलें डाउनलोड करना"
+  },
+  "permission.upload.create": {
+    "en": "Start uploads",
+    "text": "अपलोड शुरू करना"
+  },
+  "permission.upload.read": {
+    "en": "Read upload progress",
+    "text": "अपलोड की प्रगति पढ़ना"
+  },
+  "permission.upload.write": {
+    "en": "Upload bytes",
+    "text": "बाइट अपलोड करना"
+  },
+  "permission.upload.complete": {
+    "en": "Finish uploads",
+    "text": "अपलोड पूरे करना"
+  },
+  "permission.upload.cancel": {
+    "en": "Cancel uploads",
+    "text": "अपलोड रद्द करना"
+  },
+  "permission.job.read": {
+    "en": "Read jobs",
+    "text": "कार्य पढ़ना"
+  },
+  "permission.package.read": {
+    "en": "Read packages",
+    "text": "पैकेज पढ़ना"
+  },
+  "permission.package.publish": {
+    "en": "Publish packages",
+    "text": "पैकेज प्रकाशित करना"
+  },
+  "permission.asset.read": {
+    "en": "Read file links",
+    "text": "फ़ाइल लिंक पढ़ना"
+  },
+  "permission.asset.write": {
+    "en": "Assign file links",
+    "text": "फ़ाइल लिंक असाइन करना"
+  },
+  "permission.asset.restore": {
+    "en": "Restore file history",
+    "text": "फ़ाइल इतिहास पुनर्स्थापित करना"
+  },
+  "permission.annotation.read": {
+    "en": "Read metadata",
+    "text": "मेटाडेटा पढ़ना"
+  },
+  "permission.annotation.write": {
+    "en": "Edit metadata",
+    "text": "मेटाडेटा संपादित करना"
+  },
+  "permission.reference.write": {
+    "en": "Manage references",
+    "text": "संदर्भ प्रबंधित करना"
+  },
+  "permission.audit.read": {
+    "en": "Read audit",
+    "text": "ऑडिट पढ़ना"
+  },
+  "permission.service-account.read": {
+    "en": "Read accounts",
+    "text": "खाते पढ़ना"
+  },
+  "permission.service-account.manage": {
+    "en": "Enable or disable accounts",
+    "text": "खाते सक्षम या अक्षम करना"
+  },
+  "permission.policy.read": {
+    "en": "Read account policies",
+    "text": "खाता नीतियाँ पढ़ना"
+  },
+  "permission.policy.manage": {
+    "en": "Manage account policies",
+    "text": "खाता नीतियाँ प्रबंधित करना"
+  },
+  "permission.credential.read": {
+    "en": "Read key metadata",
+    "text": "कुंजियों का मेटाडेटा पढ़ना"
+  },
+  "permission.credential.manage": {
+    "en": "Issue, rotate and revoke keys",
+    "text": "कुंजियाँ जारी, रोटेट और निरस्त करना"
+  },
+  "permission.service-audit.read": {
+    "en": "Read service audit",
+    "text": "सेवा ऑडिट पढ़ना"
+  },
+  "welcomePartial": {
+    "en": "The owner account exists. Sign in and finish repository permissions in Access groups; account creation must not be repeated.",
+    "text": "स्वामी खाता मौजूद है। साइन इन करें और एक्सेस समूहों में रिपॉज़िटरी अनुमतियाँ देने का काम पूरा करें; खाता दोबारा नहीं बनाना है।"
+  },
+  "onboarding": {
+    "en": "Welcome to Arkvory",
+    "text": "Arkvory में आपका स्वागत है"
+  },
+  "help": {
+    "en": "API & CLI",
+    "text": "API और CLI"
+  },
+  "welcomeAccess": {
+    "en": "01 · Sign in",
+    "text": "01 · साइन इन करें"
+  },
+  "welcomeAccessBody": {
+    "en": "On Windows, use the owner account you created in Setup. For a headless installation, create an owner using the private recovery key on the server.",
+    "text": "Windows पर, सेटअप में बनाए गए स्वामी खाते का उपयोग करें। हेडलेस इंस्टॉलेशन में, सर्वर पर रखी निजी पुनर्प्राप्ति कुंजी से स्वामी बनाएँ।"
+  },
+  "welcomeSignIn": {
+    "en": "Open sign in",
+    "text": "साइन इन खोलें"
+  },
+  "welcomeOwner": {
+    "en": "Create the first owner",
+    "text": "पहला स्वामी बनाएँ"
+  },
+  "welcomeRecovery": {
+    "en": "Recovery key",
+    "text": "पुनर्प्राप्ति कुंजी"
+  },
+  "welcomeName": {
+    "en": "Owner name · 3–64 Latin letters, digits, dot, dash or underscore",
+    "text": "स्वामी का नाम · 3–64 लैटिन अक्षर, अंक, बिंदु, डैश या अंडरस्कोर"
+  },
+  "welcomePassword": {
+    "en": "Password · at least 12 characters",
+    "text": "पासवर्ड · कम से कम 12 वर्ण"
+  },
+  "welcomeCreate": {
+    "en": "Create owner",
+    "text": "स्वामी बनाएँ"
+  },
+  "welcomeCreated": {
+    "en": "Owner created. Sign in with your new password. Keep the recovery key offline.",
+    "text": "स्वामी बन गया। अपने नए पासवर्ड से साइन इन करें। पुनर्प्राप्ति कुंजी को ऑफ़लाइन रखें।"
+  },
+  "welcomePublish": {
+    "en": "02 · Publish a file",
+    "text": "02 · फ़ाइल प्रकाशित करें"
+  },
+  "welcomePublishBody": {
+    "en": "Start with a small file in releases. Add labels and metadata; UPack builds can also carry manifests and attachments.",
+    "text": "releases में किसी छोटी फ़ाइल से शुरुआत करें। लेबल और मेटाडेटा जोड़ें; UPack बिल्ड के साथ मैनिफ़ेस्ट और अटैचमेंट भी रखे जा सकते हैं।"
+  },
+  "welcomePublishAction": {
+    "en": "Open uploads",
+    "text": "अपलोड खोलें"
+  },
+  "welcomeConnect": {
+    "en": "03 · Connect your tools",
+    "text": "03 · अपने टूल कनेक्ट करें"
+  },
+  "welcomeConnectBody": {
+    "en": "Give each integration its own service account and only the repository actions it needs. The API catalog shows the operations available to you.",
+    "text": "हर इंटीग्रेशन को उसका अपना सेवा खाता दें और केवल वही रिपॉज़िटरी कार्रवाइयाँ दें जिनकी उसे ज़रूरत है। API कैटलॉग आपके लिए उपलब्ध ऑपरेशन दिखाता है।"
+  },
+  "welcomeOperate": {
+    "en": "04 · Prepare production",
+    "text": "04 · प्रोडक्शन की तैयारी करें"
+  },
+  "welcomeOperateBody": {
+    "en": "Before remote access: configure HTTPS, backups and disk alerts. Updates are opt-in. Local storage is a single-server profile.",
+    "text": "रिमोट एक्सेस से पहले: HTTPS, बैकअप और डिस्क अलर्ट कॉन्फ़िगर करें। अपडेट अपने-आप तभी इंस्टॉल होते हैं जब आप इसे चालू करें। लोकल स्टोरेज केवल एक सर्वर वाले सेटअप के लिए है।"
+  },
+  "helpLoad": {
+    "en": "Load permitted API operations",
+    "text": "अनुमत API ऑपरेशन लोड करें"
+  },
+  "helpSearch": {
+    "en": "Search method, path or operation",
+    "text": "मेथड, पथ या ऑपरेशन खोजें"
+  },
+  "helpHint": {
+    "en": "Sign in to see API operations available to your account.",
+    "text": "अपने खाते के लिए उपलब्ध API ऑपरेशन देखने के लिए साइन इन करें।"
+  },
+  "helpEmpty": {
+    "en": "No matching operations.",
+    "text": "कोई मेल खाता ऑपरेशन नहीं।"
+  },
+  "helpLoaded": {
+    "en": "Loaded {count} operations.",
+    "text": "लोड किए गए ऑपरेशन: {count}।"
+  },
+  "helpRetry": {
+    "en": "Retry policy:",
+    "text": "पुनः प्रयास नीति:"
+  },
+  "helpActions": {
+    "en": "Required actions:",
+    "text": "आवश्यक कार्रवाइयाँ:"
+  },
+  "helpCli": {
+    "en": "Server lifecycle CLI",
+    "text": "सर्वर लाइफ़साइकल CLI"
+  },
+  "helpRemoteCli": {
+    "en": "Remote client · arkvoryctl",
+    "text": "रिमोट क्लाइंट · arkvoryctl"
+  },
+  "helpRemoteCliBody": {
+    "en": "Install the separate Arkvory CLI package on your computer. It includes Node.js and needs no server services. Store your key in a private file. Repeat the same transfer command after interruption; use --json for CI/CD.",
+    "text": "अपने कंप्यूटर पर अलग Arkvory CLI पैकेज इंस्टॉल करें। इसमें Node.js शामिल है और इसे सर्वर की सेवाओं की ज़रूरत नहीं होती। अपनी कुंजी किसी निजी फ़ाइल में रखें। रुकावट के बाद ट्रांसफ़र का वही कमांड दोबारा चलाएँ; CI/CD के लिए --json का उपयोग करें।"
+  },
+  "helpCliBody": {
+    "en": "Run from an elevated terminal on the server. These commands manage deployment; integrations use the HTTP API and SDK. Replace ROOT with the installation directory.",
+    "text": "सर्वर पर व्यवस्थापक अधिकारों वाले टर्मिनल से चलाएँ। ये कमांड डिप्लॉयमेंट का प्रबंधन करते हैं; इंटीग्रेशन HTTP API और SDK का उपयोग करते हैं। ROOT की जगह इंस्टॉलेशन फ़ोल्डर लिखें।"
+  },
+  "helpDocs": {
+    "en": "Documentation",
+    "text": "दस्तावेज़ीकरण"
+  },
+  "helpDocsBody": {
+    "en": "Installation, everyday work, clients and protocols, operation, backups and the full HTTP API reference, in the language of the console.",
+    "text": "इंस्टॉलेशन, रोज़मर्रा का काम, क्लाइंट और प्रोटोकॉल, संचालन, बैकअप और पूरा HTTP API संदर्भ, कंसोल की भाषा में।"
+  },
+  "helpDocsOpen": {
+    "en": "Open the documentation",
+    "text": "दस्तावेज़ीकरण खोलें"
+  },
+  "helpRecipes": {
+    "en": "Integration checklist",
+    "text": "इंटीग्रेशन चेकलिस्ट"
+  },
+  "helpRecipesBody": {
+    "en": "Read capabilities → discover repositories → create upload with an idempotency key → resume parts → complete → poll readiness → download using Range and ETag. Never blindly retry a non-idempotent write.",
+    "text": "capabilities पढ़ें → रिपॉज़िटरी खोजें → आइडेम्पोटेंसी कुंजी के साथ अपलोड बनाएँ → भाग भेजें और रुकावट पर जारी रखें → पूरा करें → तैयार होने तक स्थिति जाँचें → Range और ETag के साथ डाउनलोड करें। गैर-आइडेम्पोटेंट लेखन को कभी बिना जाँचे दोबारा न भेजें।"
+  },
+  "navigationExpand": {
+    "en": "Expand sidebar",
+    "text": "साइडबार विस्तृत करें"
+  },
+  "navigationCollapse": {
+    "en": "Collapse sidebar",
+    "text": "साइडबार संक्षिप्त करें"
+  },
+  "noUsers": {
+    "en": "No user accounts yet.",
+    "text": "अभी कोई उपयोगकर्ता खाता नहीं है।"
+  },
+  "noAccessGroups": {
+    "en": "No access groups yet.",
+    "text": "अभी कोई एक्सेस समूह नहीं है।"
+  },
+  "fileBrowse": {
+    "en": "Choose file",
+    "text": "फ़ाइल चुनें"
+  },
+  "fileNotSelected": {
+    "en": "No file selected",
+    "text": "कोई फ़ाइल नहीं चुनी गई"
+  },
+  "navLibrary": {
+    "en": "Library",
+    "text": "लाइब्रेरी"
+  },
+  "navTransfers": {
+    "en": "Transfers",
+    "text": "ट्रांसफ़र"
+  },
+  "navResources": {
+    "en": "Resources",
+    "text": "संसाधन"
+  },
+  "navStart": {
+    "en": "Getting started",
+    "text": "शुरुआत"
+  },
+  "keyHelpLabel": {
+    "en": "About service keys",
+    "text": "सेवा कुंजियों के बारे में"
+  },
+  "catalogHelpLabel": {
+    "en": "About artifacts",
+    "text": "आर्टिफ़ैक्ट के बारे में"
+  },
+  "packageHelpLabel": {
+    "en": "About package filters",
+    "text": "पैकेज फ़िल्टर के बारे में"
+  },
+  "labelHelpLabel": {
+    "en": "About build labels",
+    "text": "बिल्ड लेबल के बारे में"
+  },
+  "metadataHelpLabel": {
+    "en": "About metadata",
+    "text": "मेटाडेटा के बारे में"
+  },
+  "assetHelpLabel": {
+    "en": "About file links and versions",
+    "text": "फ़ाइल लिंक और संस्करणों के बारे में"
+  },
+  "attachmentHelpLabel": {
+    "en": "About build attachments",
+    "text": "बिल्ड अटैचमेंट के बारे में"
+  },
+  "historyHelpLabel": {
+    "en": "About file history",
+    "text": "फ़ाइल इतिहास के बारे में"
+  },
+  "adminHelpLabel": {
+    "en": "About access management",
+    "text": "एक्सेस प्रबंधन के बारे में"
+  },
+  "cleanupTitle": {
+    "en": "Physical cleanup",
+    "text": "भौतिक क्लीनअप"
+  },
+  "cleanupHelp": {
+    "en": "Frees disk space without stopping Arkvory. Active transfers and pinned files are deferred. Enable only after every Arkvory server is updated, including read servers and background processors. Pausing finishes the current file. The grace period is not a recycle bin.",
+    "text": "Arkvory को रोके बिना डिस्क स्पेस खाली करता है। चल रहे ट्रांसफ़र और पिन की गई फ़ाइलें बाद के लिए टाल दी जाती हैं। इसे तभी सक्षम करें जब हर Arkvory सर्वर अपडेट हो चुका हो, जिनमें रीड सर्वर और पृष्ठभूमि प्रोसेसर भी शामिल हैं। रोकने पर मौजूदा फ़ाइल पूरी की जाती है। छूट अवधि कोई रीसायकल बिन नहीं है।"
+  },
+  "cleanupEnabled": {
+    "en": "Enable background cleanup",
+    "text": "पृष्ठभूमि क्लीनअप सक्षम करें"
+  },
+  "cleanupGrace": {
+    "en": "Grace period after deletion (hours)",
+    "text": "हटाने के बाद छूट अवधि (घंटे)"
+  },
+  "cleanupBatch": {
+    "en": "Files per batch",
+    "text": "प्रति बैच फ़ाइलें"
+  },
+  "cleanupInterval": {
+    "en": "Interval between batches (seconds)",
+    "text": "बैचों के बीच अंतराल (सेकंड)"
+  },
+  "cleanupDelay": {
+    "en": "Delay between files (milliseconds)",
+    "text": "फ़ाइलों के बीच विलंब (मिलीसेकंड)"
+  },
+  "cleanupRefresh": {
+    "en": "Refresh cleanup status",
+    "text": "क्लीनअप की स्थिति रीफ़्रेश करें"
+  },
+  "cleanupSave": {
+    "en": "Apply settings",
+    "text": "सेटिंग्स लागू करें"
+  },
+  "cleanupRun": {
+    "en": "Request a batch",
+    "text": "एक बैच का अनुरोध करें"
+  },
+  "cleanupSaved": {
+    "en": "Cleanup settings applied.",
+    "text": "क्लीनअप सेटिंग्स लागू की गईं।"
+  },
+  "cleanupRequested": {
+    "en": "Batch requested. Refresh status to see its result.",
+    "text": "बैच का अनुरोध किया गया। परिणाम देखने के लिए स्थिति रीफ़्रेश करें।"
+  },
+  "cleanupStats": {
+    "en": "Last batch: freed {bytes} · processed {collected} · deferred {deferred} · failed {failed}",
+    "text": "पिछला बैच: खाली हुआ {bytes} · प्रोसेस हुईं {collected} · टाली गईं {deferred} · विफल {failed}"
+  },
+  "cleanupLastRun": {
+    "en": "Last completed batch:",
+    "text": "पिछला पूरा हुआ बैच:"
+  },
+  "cleanupPaused": {
+    "en": "Cleanup is paused.",
+    "text": "क्लीनअप रुका हुआ है।"
+  },
+  "cleanupScheduled": {
+    "en": "Background cleanup is enabled.",
+    "text": "पृष्ठभूमि क्लीनअप सक्षम है।"
+  },
+  "updates": {
+    "en": "Updates",
+    "text": "अपडेट"
+  },
+  "updateAvailable": {
+    "en": "Arkvory {version} is available",
+    "text": "Arkvory {version} उपलब्ध है"
+  },
+  "updateOpen": {
+    "en": "View update",
+    "text": "अपडेट देखें"
+  },
+  "updateCurrent": {
+    "en": "Installed version",
+    "text": "इंस्टॉल किया गया संस्करण"
+  },
+  "updateLatest": {
+    "en": "Latest stable release",
+    "text": "नवीनतम स्थिर रिलीज़"
+  },
+  "updateChecked": {
+    "en": "Last check",
+    "text": "पिछली जाँच"
+  },
+  "updateCheck": {
+    "en": "Check now",
+    "text": "अभी जाँचें"
+  },
+  "updateInstall": {
+    "en": "Install update",
+    "text": "अपडेट इंस्टॉल करें"
+  },
+  "updateSettings": {
+    "en": "Automatic updates",
+    "text": "स्वचालित अपडेट"
+  },
+  "updateAutomatic": {
+    "en": "Install compatible stable releases automatically",
+    "text": "संगत स्थिर रिलीज़ अपने-आप इंस्टॉल करें"
+  },
+  "updateHour": {
+    "en": "Maintenance hour (UTC)",
+    "text": "रखरखाव का घंटा (UTC)"
+  },
+  "updateSave": {
+    "en": "Save settings",
+    "text": "सेटिंग्स सहेजें"
+  },
+  "updateStatistics": {
+    "en": "Send anonymous statistics to ProAnimaStudio",
+    "text": "ProAnimaStudio को अनाम आँकड़े भेजें"
+  },
+  "updateHub": {
+    "en": "Channel: {channel}. Versions are approved in the ProAnimaStudio hub; GitHub is used only when the hub cannot be reached. Statistics: a random installation id, version, system and installed updates — no names, addresses or content. Without statistics a version arrives only when it is rolled out to everyone.",
+    "text": "चैनल: {channel}। संस्करण ProAnimaStudio हब में स्वीकृत किए जाते हैं; GitHub का उपयोग केवल तब होता है जब हब से संपर्क न हो सके। आँकड़े: एक रैंडम इंस्टॉलेशन ID, संस्करण, सिस्टम और इंस्टॉल किए गए अपडेट — कोई नाम, पता या सामग्री नहीं। आँकड़ों के बिना नया संस्करण तभी मिलता है जब वह सभी के लिए जारी हो जाता है।"
+  },
+  "updatePolicyHelp": {
+    "en": "Checks run every 6 hours, even when automatic installation is off. Automatic installation runs once per day during the selected UTC hour. A release that changes the database schema installs only after the server has captured and verified a fresh backup.",
+    "text": "जाँच हर 6 घंटे में चलती है, तब भी जब स्वचालित इंस्टॉलेशन बंद हो। स्वचालित इंस्टॉलेशन दिन में एक बार चुने गए UTC घंटे में चलता है। डेटाबेस स्कीमा बदलने वाली रिलीज़ तभी इंस्टॉल होती है जब सर्वर एक ताज़ा बैकअप बनाकर उसे सत्यापित कर ले।"
+  },
+  "updateUnavailable": {
+    "en": "The host updater is not connected. Ask the server administrator to connect it using updates-connect.",
+    "text": "होस्ट अपडेटर कनेक्ट नहीं है। सर्वर व्यवस्थापक से कहें कि वह updates-connect से इसे कनेक्ट करे।"
+  },
+  "updateStale": {
+    "en": "The host updater has stopped reporting. Check the scheduler and installation lock on the server.",
+    "text": "होस्ट अपडेटर ने रिपोर्ट करना बंद कर दिया है। सर्वर पर शेड्यूलर और इंस्टॉलेशन लॉक जाँचें।"
+  },
+  "updateIdle": {
+    "en": "Updater is ready",
+    "text": "अपडेटर तैयार है"
+  },
+  "updateChecking": {
+    "en": "Checking stable releases…",
+    "text": "स्थिर रिलीज़ जाँची जा रही हैं…"
+  },
+  "updateWorking": {
+    "en": "Installing the release. The service may briefly disconnect; this page will reconnect.",
+    "text": "रिलीज़ इंस्टॉल हो रही है। सेवा का कनेक्शन कुछ देर के लिए टूट सकता है; यह पेज फिर से कनेक्ट हो जाएगा।"
+  },
+  "updatePending": {
+    "en": "Request accepted. Waiting for the host updater (usually within one minute).",
+    "text": "अनुरोध स्वीकार किया गया। होस्ट अपडेटर की प्रतीक्षा है (आमतौर पर एक मिनट के भीतर)।"
+  },
+  "updateUnknown": {
+    "en": "Not checked yet",
+    "text": "अभी तक जाँच नहीं हुई"
+  },
+  "updatePinned": {
+    "en": "Version is pinned. Remove the pin on the server before installing from the console.",
+    "text": "संस्करण पिन किया हुआ है। कंसोल से इंस्टॉल करने से पहले सर्वर पर पिन हटाएँ।"
+  },
+  "updateMaintenance": {
+    "en": "Installation refused: a release that changes the database schema needs a fresh verified backup. Connect a backup vault and complete the first backup, then check again, or upgrade manually on the server.",
+    "text": "इंस्टॉलेशन अस्वीकार किया गया: डेटाबेस स्कीमा बदलने वाली रिलीज़ के लिए ताज़ा और सत्यापित बैकअप आवश्यक है। बैकअप स्टोरेज कनेक्ट करें और पहला बैकअप पूरा होने दें, फिर दोबारा जाँचें, या सर्वर पर मैन्युअल रूप से अपग्रेड करें।"
+  },
+  "updateMigration": {
+    "en": "This release changes the database schema. The server captures and verifies a backup before installing, so installation takes longer.",
+    "text": "यह रिलीज़ डेटाबेस स्कीमा बदलती है। इंस्टॉल करने से पहले सर्वर बैकअप बनाकर उसे सत्यापित करता है, इसलिए इंस्टॉलेशन में अधिक समय लगता है।"
+  },
+  "updateCheckFailed": {
+    "en": "Release check failed. The displayed release may be outdated. Check GitHub access and credentials on the server.",
+    "text": "रिलीज़ की जाँच विफल रही। दिखाई गई रिलीज़ पुरानी हो सकती है। सर्वर पर GitHub एक्सेस और क्रेडेंशियल जाँचें।"
+  },
+  "updateFailed": {
+    "en": "Update failed. Inspect the installation journal and service logs before retrying.",
+    "text": "अपडेट विफल रहा। फिर से प्रयास करने से पहले इंस्टॉलेशन जर्नल और सेवा लॉग देखें।"
+  },
+  "updateRecovery": {
+    "en": "Manual recovery is required. Inspect processes, installation lock and journal on the server.",
+    "text": "मैन्युअल पुनर्प्राप्ति आवश्यक है। सर्वर पर प्रोसेस, इंस्टॉलेशन लॉक और जर्नल जाँचें।"
+  },
+  "updateConflict": {
+    "en": "Settings changed while the request was waiting. Refresh and submit again.",
+    "text": "अनुरोध प्रतीक्षा में रहते हुए सेटिंग्स बदल गईं। रीफ़्रेश करें और फिर से सबमिट करें।"
+  },
+  "updateConfirm": {
+    "en": "Install Arkvory {version}?",
+    "text": "Arkvory {version} इंस्टॉल करें?"
+  },
+  "updateConfirmHelp": {
+    "en": "Active transfers may be interrupted and need to resume. The installer verifies the release, backs up first when the database schema changes, and attempts rollback if startup fails. Schedule this action during a maintenance window.",
+    "text": "चल रहे ट्रांसफ़र बाधित हो सकते हैं और उन्हें जारी रखना पड़ सकता है। इंस्टॉलर रिलीज़ को सत्यापित करता है, डेटाबेस स्कीमा बदलने पर पहले बैकअप बनाता है और शुरू होने में विफलता पर रोलबैक का प्रयास करता है। यह कार्रवाई रखरखाव के समय के लिए शेड्यूल करें।"
+  },
+  "updateCancel": {
+    "en": "Cancel",
+    "text": "रद्द करें"
+  },
+  "updateConfirmButton": {
+    "en": "Install this release",
+    "text": "यह रिलीज़ इंस्टॉल करें"
+  },
+  "updateConnection": {
+    "en": "Cannot contact Arkvory. Retrying automatically; do not submit another installation request.",
+    "text": "Arkvory से संपर्क नहीं हो पा रहा है। अपने-आप फिर से प्रयास किया जा रहा है; इंस्टॉलेशन का दूसरा अनुरोध न भेजें।"
+  },
+  "backups": {
+    "en": "Backups",
+    "text": "बैकअप"
+  },
+  "backupStateOk": {
+    "en": "Backups are healthy",
+    "text": "बैकअप ठीक हैं"
+  },
+  "backupStateWarning": {
+    "en": "Needs attention",
+    "text": "ध्यान देने की आवश्यकता है"
+  },
+  "backupStateCritical": {
+    "en": "Action required",
+    "text": "कार्रवाई आवश्यक है"
+  },
+  "backupStateLoading": {
+    "en": "Loading status…",
+    "text": "स्थिति लोड हो रही है…"
+  },
+  "backupRefresh": {
+    "en": "Refresh status",
+    "text": "स्थिति रीफ़्रेश करें"
+  },
+  "backupRun": {
+    "en": "Create backup now",
+    "text": "अभी बैकअप बनाएँ"
+  },
+  "backupNewest": {
+    "en": "Latest backup",
+    "text": "नवीनतम बैकअप"
+  },
+  "backupNewestNone": {
+    "en": "No backups yet",
+    "text": "अभी कोई बैकअप नहीं"
+  },
+  "backupNewestHelp": {
+    "en": "Age counts from the snapshot time T: a backup contains the data as of T, not as of its completion. Hover the age for the exact local time.",
+    "text": "आयु स्नैपशॉट के समय T से गिनी जाती है: बैकअप में डेटा वैसा होता है जैसा वह T पर था, न कि बैकअप पूरा होने के समय। सटीक स्थानीय समय देखने के लिए आयु पर पॉइंटर ले जाएँ।"
+  },
+  "backupNewestHelpLabel": {
+    "en": "About backup age",
+    "text": "बैकअप की आयु के बारे में"
+  },
+  "backupNextRun": {
+    "en": "Next run",
+    "text": "अगला रन"
+  },
+  "backupNextDisabled": {
+    "en": "Schedule is off",
+    "text": "शेड्यूल बंद है"
+  },
+  "backupNextUnknown": {
+    "en": "Not scheduled",
+    "text": "शेड्यूल नहीं किया गया"
+  },
+  "backupOverdue": {
+    "en": "Overdue",
+    "text": "विलंबित"
+  },
+  "backupAgent": {
+    "en": "Backup agent",
+    "text": "बैकअप एजेंट"
+  },
+  "backupAgentOnline": {
+    "en": "Online",
+    "text": "ऑनलाइन"
+  },
+  "backupAgentOffline": {
+    "en": "Offline",
+    "text": "ऑफ़लाइन"
+  },
+  "backupAgentNever": {
+    "en": "Has not connected yet",
+    "text": "अभी तक कनेक्ट नहीं हुआ"
+  },
+  "backupAgentSeen": {
+    "en": "Last signal",
+    "text": "अंतिम संकेत"
+  },
+  "backupAgentVersion": {
+    "en": "· version {version}",
+    "text": "· संस्करण {version}"
+  },
+  "backupVault": {
+    "en": "Backup storage",
+    "text": "बैकअप स्टोरेज"
+  },
+  "backupVaultFree": {
+    "en": "{free} free of {total}",
+    "text": "{total} में से {free} खाली"
+  },
+  "backupVaultAvailable": {
+    "en": "Available",
+    "text": "उपलब्ध"
+  },
+  "backupVaultNotConfigured": {
+    "en": "Not configured",
+    "text": "कॉन्फ़िगर नहीं किया गया"
+  },
+  "backupVaultUnknown": {
+    "en": "Unknown while the agent is offline",
+    "text": "एजेंट ऑफ़लाइन है, इसलिए अज्ञात"
+  },
+  "backupVaultUnavailable": {
+    "en": "Unavailable",
+    "text": "उपलब्ध नहीं"
+  },
+  "backupWarningsLabel": {
+    "en": "Backup warnings",
+    "text": "बैकअप चेतावनियाँ"
+  },
+  "backupSeverityWarning": {
+    "en": "Warning",
+    "text": "चेतावनी"
+  },
+  "backupSeverityCritical": {
+    "en": "Critical",
+    "text": "गंभीर"
+  },
+  "backupWarningHelpLabel": {
+    "en": "What to do",
+    "text": "क्या करें"
+  },
+  "backupWarningVaultNotConfigured": {
+    "en": "Backup storage is not configured for the agent",
+    "text": "एजेंट के लिए बैकअप स्टोरेज कॉन्फ़िगर नहीं किया गया है"
+  },
+  "backupWarningAgentOffline": {
+    "en": "The backup agent is offline",
+    "text": "बैकअप एजेंट ऑफ़लाइन है"
+  },
+  "backupWarningScheduleDisabled": {
+    "en": "The daily schedule is off",
+    "text": "दैनिक शेड्यूल बंद है"
+  },
+  "backupWarningNoBackupYet": {
+    "en": "There is no backup yet",
+    "text": "अभी तक कोई बैकअप नहीं है"
+  },
+  "backupWarningBackupStale": {
+    "en": "The latest backup is out of date",
+    "text": "नवीनतम बैकअप पुराना हो चुका है"
+  },
+  "backupWarningLastRunFailed": {
+    "en": "The last backup failed",
+    "text": "पिछला बैकअप विफल रहा"
+  },
+  "backupWarningVaultUnavailable": {
+    "en": "Backup storage is unavailable",
+    "text": "बैकअप स्टोरेज उपलब्ध नहीं है"
+  },
+  "backupWarningVaultLowSpace": {
+    "en": "Backup storage is running out of space",
+    "text": "बैकअप स्टोरेज में जगह कम हो रही है"
+  },
+  "backupWarningVerifyFailed": {
+    "en": "A restore point failed verification",
+    "text": "एक पुनर्स्थापना बिंदु सत्यापन में विफल रहा"
+  },
+  "backupWarningNeverDeepVerified": {
+    "en": "No full verification for more than 8 days",
+    "text": "8 दिनों से अधिक समय से कोई पूर्ण सत्यापन नहीं हुआ"
+  },
+  "backupActionVaultNotConfigured": {
+    "en": "Set ARKVORY_BACKUP_VAULT to a directory prepared with vault init in the environment of the arkvory-backup service and restart it. Once installers support it, use arkvory configure --backup-vault.",
+    "text": "arkvory-backup सेवा के एनवायरनमेंट में ARKVORY_BACKUP_VAULT को vault init से तैयार की गई डायरेक्टरी पर सेट करें और सेवा को पुनः प्रारंभ करें। जब इंस्टॉलर इसका समर्थन करने लगें, तब arkvory configure --backup-vault का उपयोग करें।"
+  },
+  "backupActionAgentOffline": {
+    "en": "Start the arkvory-backup service (npm run backup -- agent) and check its journal. Without the agent nothing is copied.",
+    "text": "arkvory-backup सेवा (npm run backup -- agent) शुरू करें और उसका जर्नल जाँचें। एजेंट के बिना कुछ भी कॉपी नहीं होता।"
+  },
+  "backupActionScheduleDisabled": {
+    "en": "Turn on the plan below if backups must run every day.",
+    "text": "यदि बैकअप हर दिन चलने चाहिए, तो नीचे योजना चालू करें।"
+  },
+  "backupActionNoBackupYet": {
+    "en": "Create the first backup with \"Create backup now\".",
+    "text": "“अभी बैकअप बनाएँ” से पहला बैकअप बनाएँ।"
+  },
+  "backupActionBackupStale": {
+    "en": "The newest point is older than 26 hours. Check the job error codes below and the agent journal.",
+    "text": "नवीनतम बिंदु 26 घंटे से अधिक पुराना है। नीचे कार्यों के त्रुटि कोड और एजेंट का जर्नल जाँचें।"
+  },
+  "backupActionLastRunFailed": {
+    "en": "The error code is in the job table; the agent journal has the record backup.request.failed.",
+    "text": "त्रुटि कोड कार्य तालिका में है; एजेंट के जर्नल में backup.request.failed प्रविष्टि है।"
+  },
+  "backupActionVaultUnavailable": {
+    "en": "The backup storage volume is not mounted, has no vault.json or is not writable. Check the disk or NAS on the server.",
+    "text": "बैकअप स्टोरेज वॉल्यूम माउंट नहीं है, उसमें vault.json नहीं है या उसमें लिखा नहीं जा सकता। सर्वर पर डिस्क या NAS जाँचें।"
+  },
+  "backupActionVaultLowSpace": {
+    "en": "Less than 10% or less than twice the last new data is free. Free space on the backup volume or keep fewer points.",
+    "text": "10% से कम, या पिछले नए डेटा के दोगुने से कम जगह खाली है। बैकअप वॉल्यूम पर जगह खाली करें या कम बिंदु रखें।"
+  },
+  "backupActionVerifyFailed": {
+    "en": "Do not change the backup storage. Find the point with a verification error below and investigate its code.",
+    "text": "बैकअप स्टोरेज में कोई बदलाव न करें। नीचे सत्यापन त्रुटि वाला बिंदु खोजें और उसके कोड से कारण की जाँच करें।"
+  },
+  "backupActionNeverDeepVerified": {
+    "en": "Run \"Verify fully\" for the newest point and check that the agent is running.",
+    "text": "नवीनतम बिंदु के लिए “पूरी तरह सत्यापित करें” चलाएँ और जाँचें कि एजेंट चल रहा है।"
+  },
+  "backupRestoreNote": {
+    "en": "Restoring is an operator action on the server, into an empty target.",
+    "text": "पुनर्स्थापना सर्वर पर ऑपरेटर करता है, एक खाली लक्ष्य में।"
+  },
+  "backupRestoreHelp": {
+    "en": "On the server: npm run backup -- restore --vault <vault> --point <id> --storage <empty directory>, with ARKVORY_RESTORE_DATABASE_URL of an empty database. Run it first without --yes (a check that writes nothing), then with --yes, start a separate instance on the restored data and check it before switching production. Details: the documentation, \"Backups\".",
+    "text": "सर्वर पर: npm run backup -- restore --vault <vault> --point <id> --storage <खाली डायरेक्टरी>, साथ में किसी खाली डेटाबेस का ARKVORY_RESTORE_DATABASE_URL। पहले इसे --yes के बिना चलाएँ (एक जाँच जो कुछ नहीं लिखती), फिर --yes के साथ; पुनर्स्थापित डेटा पर एक अलग इंस्टेंस शुरू करें और प्रोडक्शन को उस पर ले जाने से पहले उसे जाँचें। विवरण: दस्तावेज़ीकरण, “बैकअप”।"
+  },
+  "backupRestoreHelpLabel": {
+    "en": "How to restore",
+    "text": "पुनर्स्थापित कैसे करें"
+  },
+  "backupRunningLabel": {
+    "en": "Running now",
+    "text": "अभी चल रहा है"
+  },
+  "backupRunQueued": {
+    "en": "Backup queued. The agent starts it at its next queue check.",
+    "text": "बैकअप कतार में है। एजेंट अगली बार कतार जाँचने पर इसे शुरू करेगा।"
+  },
+  "backupVerifyQueued": {
+    "en": "Full verification queued.",
+    "text": "पूर्ण सत्यापन कतार में है।"
+  },
+  "backupRetentionQueued": {
+    "en": "Retention queued: the agent removes the points outside the policy.",
+    "text": "प्रतिधारण कतार में है: एजेंट नीति से बाहर के बिंदु हटा देगा।"
+  },
+  "backupPinDone": {
+    "en": "Point pinned: retention keeps it.",
+    "text": "बिंदु पिन किया गया: प्रतिधारण इसे बनाए रखेगा।"
+  },
+  "backupUnpinDone": {
+    "en": "Point unpinned.",
+    "text": "बिंदु अनपिन किया गया।"
+  },
+  "backupPoints": {
+    "en": "Restore points",
+    "text": "पुनर्स्थापना बिंदु"
+  },
+  "backupPointsHelp": {
+    "en": "Retention keeps the newest point of each of the last N local days of the plan time zone, and likewise of weeks and months, plus pinned points and the newest point. Other points of the same day are removed: pin a point you must keep.",
+    "text": "प्रतिधारण, योजना के समय क्षेत्र के पिछले N स्थानीय दिनों में से हर दिन का नवीनतम बिंदु रखता है, इसी तरह हफ़्तों और महीनों का भी, और साथ में पिन किए गए बिंदु और सबसे नया बिंदु भी। उसी दिन के बाकी बिंदु हटा दिए जाते हैं: जिस बिंदु को रखना ज़रूरी है, उसे पिन करें।"
+  },
+  "backupPointsHelpLabel": {
+    "en": "About retention",
+    "text": "प्रतिधारण के बारे में"
+  },
+  "backupRetentionApply": {
+    "en": "Apply retention",
+    "text": "प्रतिधारण लागू करें"
+  },
+  "backupPointsEmpty": {
+    "en": "No restore points in the current backup storage yet.",
+    "text": "वर्तमान बैकअप स्टोरेज में अभी कोई पुनर्स्थापना बिंदु नहीं है।"
+  },
+  "backupSnapshot": {
+    "en": "State as of (T)",
+    "text": "इस समय की स्थिति (T)"
+  },
+  "backupCompleted": {
+    "en": "Completed",
+    "text": "पूरा हुआ"
+  },
+  "backupSize": {
+    "en": "Size",
+    "text": "आकार"
+  },
+  "backupNewBytes": {
+    "en": "+{size} new",
+    "text": "+{size} नया"
+  },
+  "backupFiles": {
+    "en": "Files",
+    "text": "फ़ाइलें"
+  },
+  "backupVerification": {
+    "en": "Verification",
+    "text": "सत्यापन"
+  },
+  "backupVerifyNone": {
+    "en": "Not verified",
+    "text": "सत्यापित नहीं"
+  },
+  "backupVerifyStructural": {
+    "en": "Structure checked",
+    "text": "संरचना जाँची गई"
+  },
+  "backupVerifyDeep": {
+    "en": "Fully verified",
+    "text": "पूरी तरह सत्यापित"
+  },
+  "backupVerifyFailed": {
+    "en": "Verification failed",
+    "text": "सत्यापन विफल"
+  },
+  "backupPinnedColumn": {
+    "en": "Pinned",
+    "text": "पिन"
+  },
+  "backupPinnedYes": {
+    "en": "Pinned",
+    "text": "पिन किया गया"
+  },
+  "backupVerifyDeepAction": {
+    "en": "Verify fully",
+    "text": "पूरी तरह सत्यापित करें"
+  },
+  "backupPin": {
+    "en": "Pin",
+    "text": "पिन करें"
+  },
+  "backupUnpin": {
+    "en": "Unpin",
+    "text": "अनपिन करें"
+  },
+  "backupRetentionConfirm": {
+    "en": "Apply retention now? Removal from the backup storage cannot be undone: the points below and the content no remaining point needs are deleted.",
+    "text": "अभी प्रतिधारण लागू करें? बैकअप स्टोरेज से हटाना पूर्ववत नहीं किया जा सकता: नीचे दिए गए बिंदु और वह सामग्री, जिसकी किसी बचे हुए बिंदु को ज़रूरत नहीं है, हटा दी जाएगी।"
+  },
+  "backupRetentionKeep": {
+    "en": "Kept: {count}",
+    "text": "रखे जाएँगे: {count}"
+  },
+  "backupRetentionDelete": {
+    "en": "Removed: {count}",
+    "text": "हटाए जाएँगे: {count}"
+  },
+  "backupRetentionNothing": {
+    "en": "Nothing to remove.",
+    "text": "हटाने के लिए कुछ नहीं है।"
+  },
+  "backupReasonDaily": {
+    "en": "day",
+    "text": "दिन"
+  },
+  "backupReasonWeekly": {
+    "en": "week",
+    "text": "सप्ताह"
+  },
+  "backupReasonMonthly": {
+    "en": "month",
+    "text": "महीना"
+  },
+  "backupReasonPinned": {
+    "en": "pinned",
+    "text": "पिन किया गया"
+  },
+  "backupReasonNewest": {
+    "en": "newest",
+    "text": "सबसे नया"
+  },
+  "backupPointShort": {
+    "en": "Point {id}",
+    "text": "बिंदु {id}"
+  },
+  "backupJobs": {
+    "en": "Jobs",
+    "text": "कार्य"
+  },
+  "backupJobsHelp": {
+    "en": "Jobs run in the backup agent on the server, one at a time; closing this page does not stop them. Every backup is followed by a structure check and retention.",
+    "text": "कार्य सर्वर पर बैकअप एजेंट में एक-एक करके चलते हैं; यह पेज बंद करने से वे नहीं रुकते। हर बैकअप के बाद संरचना जाँच और प्रतिधारण होता है।"
+  },
+  "backupJobsHelpLabel": {
+    "en": "About jobs",
+    "text": "कार्यों के बारे में"
+  },
+  "backupJobsEmpty": {
+    "en": "No backup jobs yet.",
+    "text": "अभी तक कोई बैकअप कार्य नहीं।"
+  },
+  "backupJobKind": {
+    "en": "Job",
+    "text": "कार्य"
+  },
+  "backupJobState": {
+    "en": "State",
+    "text": "स्थिति"
+  },
+  "backupJobPhase": {
+    "en": "Phase",
+    "text": "चरण"
+  },
+  "backupJobStarted": {
+    "en": "Started",
+    "text": "शुरू हुआ"
+  },
+  "backupJobFinished": {
+    "en": "Finished",
+    "text": "समाप्त हुआ"
+  },
+  "backupJobError": {
+    "en": "Error code",
+    "text": "त्रुटि कोड"
+  },
+  "backupJobProgress": {
+    "en": "Progress",
+    "text": "प्रगति"
+  },
+  "backupKindCapture": {
+    "en": "Backup",
+    "text": "बैकअप"
+  },
+  "backupKindVerify": {
+    "en": "Verification",
+    "text": "सत्यापन"
+  },
+  "backupKindRetention": {
+    "en": "Retention",
+    "text": "प्रतिधारण"
+  },
+  "backupJobQueued": {
+    "en": "Queued",
+    "text": "कतार में"
+  },
+  "backupJobRunning": {
+    "en": "Running",
+    "text": "चल रहा है"
+  },
+  "backupJobCommitting": {
+    "en": "Finishing",
+    "text": "पूरा हो रहा है"
+  },
+  "backupJobCompleted": {
+    "en": "Completed",
+    "text": "पूरा हुआ"
+  },
+  "backupJobFailed": {
+    "en": "Failed",
+    "text": "विफल"
+  },
+  "backupJobInterrupted": {
+    "en": "Interrupted",
+    "text": "बाधित"
+  },
+  "backupPhasePreparing": {
+    "en": "Preparing",
+    "text": "तैयारी"
+  },
+  "backupPhaseCatalog": {
+    "en": "Catalog snapshot",
+    "text": "कैटलॉग स्नैपशॉट"
+  },
+  "backupPhaseTransfer": {
+    "en": "Copying files",
+    "text": "फ़ाइलें कॉपी हो रही हैं"
+  },
+  "backupPhaseFinishing": {
+    "en": "Finishing",
+    "text": "पूरा किया जा रहा है"
+  },
+  "backupPhaseDone": {
+    "en": "Done",
+    "text": "हो गया"
+  },
+  "backupPhaseStructural": {
+    "en": "Structure check",
+    "text": "संरचना जाँच"
+  },
+  "backupPhaseDeep": {
+    "en": "Full check",
+    "text": "पूर्ण जाँच"
+  },
+  "backupProgressBytes": {
+    "en": "{done} of {total}",
+    "text": "{total} में से {done}"
+  },
+  "backupPlan": {
+    "en": "Schedule and retention",
+    "text": "शेड्यूल और प्रतिधारण"
+  },
+  "backupPlanHelp": {
+    "en": "One backup per day at the chosen local time of an explicit time zone; a nonexistent time during a clock change runs at the change. After downtime one missed run is caught up. Turning the plan on does not start a backup immediately.",
+    "text": "किसी स्पष्ट समय क्षेत्र के चुने गए स्थानीय समय पर दिन में एक बैकअप; घड़ी बदलने के दौरान जो समय होता ही नहीं, उस दिन बैकअप बदलाव के क्षण में चलता है। डाउनटाइम के बाद छूटा हुआ एक रन पूरा किया जाता है। योजना चालू करने से बैकअप तुरंत शुरू नहीं होता।"
+  },
+  "backupPlanHelpLabel": {
+    "en": "About the plan",
+    "text": "योजना के बारे में"
+  },
+  "backupEnabled": {
+    "en": "Back up daily on schedule",
+    "text": "शेड्यूल के अनुसार रोज़ बैकअप लें"
+  },
+  "backupTime": {
+    "en": "Local time",
+    "text": "स्थानीय समय"
+  },
+  "backupTimezone": {
+    "en": "Time zone (IANA)",
+    "text": "समय क्षेत्र (IANA)"
+  },
+  "backupTimezonePlaceholder": {
+    "en": "e.g. Europe/Moscow",
+    "text": "उदा. Asia/Kolkata"
+  },
+  "backupZoneOffset": {
+    "en": "Now {offset}",
+    "text": "अभी {offset}"
+  },
+  "backupZoneUnknown": {
+    "en": "This browser does not know the zone; the server checks it on save.",
+    "text": "यह ब्राउज़र इस समय क्षेत्र को नहीं पहचानता; सहेजते समय सर्वर इसकी जाँच करेगा।"
+  },
+  "backupZoneBrowser": {
+    "en": "Use {zone}",
+    "text": "{zone} का उपयोग करें"
+  },
+  "backupRetentionLegend": {
+    "en": "Keep the newest point of the last",
+    "text": "पिछले इतने समय का नवीनतम बिंदु रखें"
+  },
+  "backupDaily": {
+    "en": "Days",
+    "text": "दिन"
+  },
+  "backupWeekly": {
+    "en": "Weeks",
+    "text": "सप्ताह"
+  },
+  "backupMonthly": {
+    "en": "Months",
+    "text": "महीने"
+  },
+  "backupPlanSave": {
+    "en": "Save plan",
+    "text": "योजना सहेजें"
+  },
+  "backupPlanSaved": {
+    "en": "Plan saved · version {revision}",
+    "text": "योजना सहेजी गई · संस्करण {revision}"
+  },
+  "backupPlanConflict": {
+    "en": "The plan was changed elsewhere. Its current version is loaded: review it and save again.",
+    "text": "योजना कहीं और बदल दी गई है। इसका वर्तमान संस्करण लोड किया गया है: इसकी समीक्षा करें और फिर से सहेजें।"
+  },
+  "backupReadOnly": {
+    "en": "Changing backups requires the backup management permission.",
+    "text": "बैकअप बदलने के लिए बैकअप प्रबंधन की अनुमति आवश्यक है।"
+  },
+  "summarySize": {
+    "en": "Size",
+    "text": "आकार"
+  },
+  "summaryCreated": {
+    "en": "Uploaded",
+    "text": "अपलोड किया गया"
+  },
+  "summaryHash": {
+    "en": "SHA-256",
+    "text": "SHA-256"
+  },
+  "copyHash": {
+    "en": "Copy",
+    "text": "कॉपी करें"
+  },
+  "hashCopied": {
+    "en": "SHA-256 copied to the clipboard.",
+    "text": "SHA-256 क्लिपबोर्ड पर कॉपी किया गया।"
+  },
+  "copyFailed": {
+    "en": "The browser did not allow copying. Select the value and copy it manually.",
+    "text": "ब्राउज़र ने कॉपी करने की अनुमति नहीं दी। मान को चुनें और मैन्युअल रूप से कॉपी करें।"
+  },
+  "promotionTitle": {
+    "en": "Promotion",
+    "text": "प्रमोशन"
+  },
+  "promotionHint": {
+    "en": "Stages mark where a build is approved. Promotion publishes the build in another repository without uploading it again.",
+    "text": "स्टेज बताते हैं कि बिल्ड कहाँ स्वीकृत है। प्रमोशन बिल्ड को दोबारा अपलोड किए बिना किसी दूसरी रिपॉज़िटरी में प्रकाशित करता है।"
+  },
+  "stagesTitle": {
+    "en": "Stages",
+    "text": "स्टेज"
+  },
+  "stagesEmpty": {
+    "en": "No stages yet.",
+    "text": "अभी कोई स्टेज नहीं।"
+  },
+  "stageName": {
+    "en": "Stage",
+    "text": "स्टेज"
+  },
+  "stageComment": {
+    "en": "Comment (optional)",
+    "text": "टिप्पणी (वैकल्पिक)"
+  },
+  "stageAdd": {
+    "en": "Add stage",
+    "text": "स्टेज जोड़ें"
+  },
+  "stageRemove": {
+    "en": "Remove stage {stage}",
+    "text": "स्टेज {stage} हटाएँ"
+  },
+  "stageRemoveConfirm": {
+    "en": "Remove stage {stage}? Deployments that resolve this stage will pick another version.",
+    "text": "स्टेज {stage} हटाएँ? जो डिप्लॉयमेंट इस स्टेज से संस्करण निर्धारित करते हैं, वे कोई दूसरा संस्करण चुनेंगे।"
+  },
+  "stageAdded": {
+    "en": "Stage {stage} added.",
+    "text": "स्टेज {stage} जोड़ा गया।"
+  },
+  "stageRemoved": {
+    "en": "Stage {stage} removed.",
+    "text": "स्टेज {stage} हटाया गया।"
+  },
+  "stageInvalid": {
+    "en": "Use lowercase letters, digits, dot, dash or underscore (up to 32 characters).",
+    "text": "छोटे लैटिन अक्षर, अंक, बिंदु, डैश या अंडरस्कोर का उपयोग करें (अधिकतम 32 वर्ण)।"
+  },
+  "promoteTitle": {
+    "en": "Promote to repository",
+    "text": "रिपॉज़िटरी में प्रमोट करें"
+  },
+  "promoteTarget": {
+    "en": "Target repository",
+    "text": "लक्ष्य रिपॉज़िटरी"
+  },
+  "promoteNoTargets": {
+    "en": "No other repository allows you to promote.",
+    "text": "कोई दूसरी रिपॉज़िटरी आपको प्रमोट करने की अनुमति नहीं देती।"
+  },
+  "promoteStages": {
+    "en": "Stages in the target",
+    "text": "लक्ष्य में स्टेज"
+  },
+  "promoteComment": {
+    "en": "Comment (optional)",
+    "text": "टिप्पणी (वैकल्पिक)"
+  },
+  "promoteMove": {
+    "en": "Move: remove the build from this repository after promotion",
+    "text": "स्थानांतरित करें: प्रमोशन के बाद इस रिपॉज़िटरी से बिल्ड हटा दें"
+  },
+  "promoteMoveHint": {
+    "en": "Without Move, the build stays here and a copy appears in the target.",
+    "text": "स्थानांतरण के बिना बिल्ड यहीं रहता है और लक्ष्य में उसकी एक कॉपी दिखाई देती है।"
+  },
+  "promoteMoveConfirm": {
+    "en": "Move the build to {repository}? It will be removed from this repository.",
+    "text": "बिल्ड को {repository} में स्थानांतरित करें? इसे इस रिपॉज़िटरी से हटा दिया जाएगा।"
+  },
+  "promoteSubmit": {
+    "en": "Promote",
+    "text": "प्रमोट करें"
+  },
+  "promoteDone": {
+    "en": "Published in {repository}.",
+    "text": "{repository} में प्रकाशित किया गया।"
+  },
+  "promoteExisting": {
+    "en": "Already published in {repository}; stages updated.",
+    "text": "{repository} में पहले से प्रकाशित है; स्टेज अपडेट किए गए।"
+  },
+  "promoteMoved": {
+    "en": "Moved to {repository}. The build was removed from this repository.",
+    "text": "{repository} में स्थानांतरित किया गया। बिल्ड को इस रिपॉज़िटरी से हटा दिया गया।"
+  },
+  "promotionHistory": {
+    "en": "History",
+    "text": "इतिहास"
+  },
+  "promotionHistoryEmpty": {
+    "en": "No promotion events yet.",
+    "text": "अभी तक कोई प्रमोशन इवेंट नहीं।"
+  },
+  "promotionMore": {
+    "en": "Show more",
+    "text": "और दिखाएँ"
+  },
+  "eventStageAdded": {
+    "en": "{actor} added stage {stage}",
+    "text": "{actor} ने स्टेज {stage} जोड़ा"
+  },
+  "eventStageRemoved": {
+    "en": "{actor} removed stage {stage}",
+    "text": "{actor} ने स्टेज {stage} हटाया"
+  },
+  "eventPromotedCopy": {
+    "en": "{actor} copied to {repository}",
+    "text": "{actor} ने {repository} में कॉपी किया"
+  },
+  "eventPromotedMove": {
+    "en": "{actor} moved to {repository}",
+    "text": "{actor} ने {repository} में स्थानांतरित किया"
+  },
+  "eventReceivedCopy": {
+    "en": "{actor} copied from {repository}",
+    "text": "{actor} ने {repository} से कॉपी किया"
+  },
+  "eventReceivedMove": {
+    "en": "{actor} moved from {repository}",
+    "text": "{actor} ने {repository} से स्थानांतरित किया"
+  },
+  "packageStages": {
+    "en": "Stages",
+    "text": "स्टेज"
+  },
+  "sizeBytes": {
+    "en": "{value} B",
+    "text": "{value} B"
+  },
+  "sizeKiB": {
+    "en": "{value} KiB",
+    "text": "{value} KiB"
+  },
+  "sizeMiB": {
+    "en": "{value} MiB",
+    "text": "{value} MiB"
+  },
+  "sizeGiB": {
+    "en": "{value} GiB",
+    "text": "{value} GiB"
+  },
+  "sizeTiB": {
+    "en": "{value} TiB",
+    "text": "{value} TiB"
+  },
+  "mirrorBadge": {
+    "en": "Mirror",
+    "text": "मिरर"
+  },
+  "mirrorBehind": {
+    "en": "Mirror · syncing",
+    "text": "मिरर · सिंक हो रहा है"
+  },
+  "mirrorFailing": {
+    "en": "Mirror · sync error",
+    "text": "मिरर · सिंक त्रुटि"
+  },
+  "mirrorHelpLabel": {
+    "en": "About this mirror",
+    "text": "इस मिरर के बारे में"
+  },
+  "mirrorDetails": {
+    "en": "Read-only copy of “{source}” from {upstream}, kept in sync by the server.",
+    "text": "{upstream} से “{source}” की केवल-पढ़ने योग्य कॉपी, जिसे सर्वर सिंक में रखता है।"
+  },
+  "mirrorSynced": {
+    "en": "Last synchronized:",
+    "text": "पिछला सिंक:"
+  },
+  "mirrorError": {
+    "en": "The last attempt failed ({code}); downloads keep working.",
+    "text": "पिछला प्रयास विफल रहा ({code}); डाउनलोड काम करते रहेंगे।"
+  },
+  "mirrorNever": {
+    "en": "not yet",
+    "text": "अभी तक नहीं"
+  },
+  "mirrorImport": {
+    "en": "Imports",
+    "text": "आयात"
+  },
+  "mirrorImportFailing": {
+    "en": "Imports · sync error",
+    "text": "आयात · सिंक त्रुटि"
+  },
+  "mirrorImportDetails": {
+    "en": "Versions marked {stages} in “{source}” on {upstream} are copied here automatically. Later changes and deletions there do not affect them.",
+    "text": "{upstream} पर “{source}” में {stages} से चिह्नित संस्करण अपने-आप यहाँ कॉपी हो जाते हैं। वहाँ बाद में होने वाले बदलावों और हटाए जाने का उन पर कोई असर नहीं पड़ता।"
+  },
+  "reportOpen": {
+    "en": "Feedback",
+    "text": "फ़ीडबैक"
+  },
+  "reportTitle": {
+    "en": "Feedback to ProAnimaStudio",
+    "text": "ProAnimaStudio को फ़ीडबैक"
+  },
+  "reportIntro": {
+    "en": "Your message goes to the developers of Arkvory through the ProAnimaStudio hub. Only what this form shows is sent.",
+    "text": "आपका संदेश ProAnimaStudio हब के ज़रिए Arkvory के डेवलपरों तक पहुँचता है। केवल वही भेजा जाता है जो यह फ़ॉर्म दिखाता है।"
+  },
+  "reportMessage": {
+    "en": "What happened, or what should work better?",
+    "text": "क्या हुआ, या क्या बेहतर काम करना चाहिए?"
+  },
+  "reportEmail": {
+    "en": "Email for a reply (optional)",
+    "text": "जवाब के लिए ईमेल (वैकल्पिक)"
+  },
+  "reportScreenshots": {
+    "en": "Screenshots: paste from the clipboard (Ctrl+V), drop files here or choose them. Up to 6 PNG, JPEG, WebP or GIF images, 8 MB each.",
+    "text": "स्क्रीनशॉट: क्लिपबोर्ड से पेस्ट करें (Ctrl+V), फ़ाइलें यहाँ खींचकर छोड़ें या उन्हें चुनें। अधिकतम 6 PNG, JPEG, WebP या GIF चित्र, हर एक 8 MB तक।"
+  },
+  "reportAddScreenshot": {
+    "en": "Choose images",
+    "text": "चित्र चुनें"
+  },
+  "reportShot": {
+    "en": "{name} · {size}",
+    "text": "{name} · {size}"
+  },
+  "reportRemove": {
+    "en": "Remove {name}",
+    "text": "{name} हटाएँ"
+  },
+  "reportLogs": {
+    "en": "Logs",
+    "text": "लॉग"
+  },
+  "reportClientLog": {
+    "en": "Log of this page — entries: {count}",
+    "text": "इस पेज का लॉग — प्रविष्टियाँ: {count}"
+  },
+  "reportServerLog": {
+    "en": "Server log and system summary",
+    "text": "सर्वर लॉग और सिस्टम सारांश"
+  },
+  "reportShow": {
+    "en": "Show what is attached",
+    "text": "संलग्न सामग्री दिखाएँ"
+  },
+  "reportLoading": {
+    "en": "Loading…",
+    "text": "लोड हो रहा है…"
+  },
+  "reportTail": {
+    "en": "The last {count} lines are shown; the whole log is attached.",
+    "text": "अंतिम {count} पंक्तियाँ दिखाई गई हैं; पूरा लॉग संलग्न है।"
+  },
+  "reportSend": {
+    "en": "Send",
+    "text": "भेजें"
+  },
+  "reportSending": {
+    "en": "Sending…",
+    "text": "भेजा जा रहा है…"
+  },
+  "reportSent": {
+    "en": "Thank you! Your message was sent, reference {id}.",
+    "text": "धन्यवाद! आपका संदेश भेज दिया गया, संदर्भ संख्या {id}।"
+  },
+  "reportClose": {
+    "en": "Close",
+    "text": "बंद करें"
+  },
+  "reportMessageRequired": {
+    "en": "Describe the problem or the idea.",
+    "text": "समस्या या सुझाव का वर्णन करें।"
+  },
+  "reportEmailInvalid": {
+    "en": "Check the email address.",
+    "text": "ईमेल पता जाँचें।"
+  },
+  "reportTooMany": {
+    "en": "At most 6 images.",
+    "text": "अधिकतम 6 चित्र।"
+  },
+  "reportFileType": {
+    "en": "{name}: only PNG, JPEG, WebP or GIF images.",
+    "text": "{name}: केवल PNG, JPEG, WebP या GIF चित्र।"
+  },
+  "reportFileTooLarge": {
+    "en": "{name} is larger than 8 MB.",
+    "text": "{name} 8 MB से बड़ी है।"
+  },
+  "reportTooLarge": {
+    "en": "Everything together is over 15 MB: remove some images.",
+    "text": "सब मिलाकर 15 MB से अधिक है: कुछ चित्र हटाएँ।"
+  },
+  "productName": {
+    "en": "ProAnima Arkvory",
+    "text": "ProAnima Arkvory"
+  },
+  "productShortName": {
+    "en": "Arkvory",
+    "text": "Arkvory"
+  },
+  "studioName": {
+    "en": "PROANIMA STUDIO",
+    "text": "PROANIMA STUDIO"
+  },
+  "copyright": {
+    "en": "© Ian Panaev · ProAnimaStudio",
+    "text": "© Ian Panaev · ProAnimaStudio"
+  },
+  "themeCurrent": {
+    "en": "Appearance: {value}",
+    "text": "रूप: {value}"
+  },
+  "repositoryHint": {
+    "en": "After sign-in, the first repository available to you is selected.",
+    "text": "साइन इन करने के बाद आपके लिए उपलब्ध पहली रिपॉज़िटरी चुनी जाती है।"
+  },
+  "keySignIn": {
+    "en": "Connect with a service or automation key",
+    "text": "सेवा या ऑटोमेशन कुंजी से कनेक्ट करें"
+  },
+  "signInFailed": {
+    "en": "Wrong username or password.",
+    "text": "उपयोगकर्ता नाम या पासवर्ड गलत है।"
+  },
+  "currentPasswordWrong": {
+    "en": "The current password is wrong.",
+    "text": "वर्तमान पासवर्ड गलत है।"
+  },
+  "sessionExpired": {
+    "en": "Your session has expired. Sign in again to continue.",
+    "text": "आपका सत्र समाप्त हो गया है। जारी रखने के लिए फिर से साइन इन करें।"
+  },
+  "errorSignInRequired": {
+    "en": "Sign in or connect with a service key to continue.",
+    "text": "जारी रखने के लिए साइन इन करें या सेवा कुंजी से कनेक्ट करें।"
+  },
+  "idempotencyHint": {
+    "en": "Prevents a retried upload from creating a second copy. It is sent as the Idempotency-Key of the request that creates the upload.",
+    "text": "दोबारा किए गए अपलोड को दूसरी कॉपी बनाने से रोकता है। इसे अपलोड बनाने वाले अनुरोध के Idempotency-Key के रूप में भेजा जाता है।"
+  },
+  "idempotencyHelpLabel": {
+    "en": "About duplicate protection",
+    "text": "दोहराव से सुरक्षा के बारे में"
+  },
+  "assetPathExample": {
+    "en": "releases/current.upack",
+    "text": "releases/current.upack"
+  },
+  "stageExample": {
+    "en": "release",
+    "text": "release"
+  },
+  "storageUsageUnlimited": {
+    "en": "Published {published} · unfinished uploads {pending} · awaiting cleanup {retired} · in use {total} · no quota",
+    "text": "प्रकाशित {published} · अधूरे अपलोड {pending} · क्लीनअप की प्रतीक्षा में {retired} · उपयोग में {total} · कोई कोटा नहीं"
+  },
+  "storageQuotaInvalid": {
+    "en": "Enter the quota in GiB, for example 50 or 0.5.",
+    "text": "कोटा GiB में दर्ज करें, उदाहरण के लिए 50 या 0.5।"
+  },
+  "storagePreviewItem": {
+    "en": "{name} · {id} · {size}",
+    "text": "{name} · {id} · {size}"
+  },
+  "attachmentVersion": {
+    "en": "Version {revision}",
+    "text": "संस्करण {revision}"
+  },
+  "storageEventCode": {
+    "en": "· {level} · {code}",
+    "text": "· {level} · {code}"
+  },
+  "packageGroupHeading": {
+    "en": "{group} / {name}",
+    "text": "{group} / {name}"
+  },
+  "repositoryHelpLabel": {
+    "en": "About repository selection",
+    "text": "रिपॉज़िटरी चुनने के बारे में"
+  },
+  "metadataFilterHelpLabel": {
+    "en": "About exact metadata",
+    "text": "सटीक मेटाडेटा के बारे में"
+  },
+  "resumeHelpLabel": {
+    "en": "About resuming",
+    "text": "अपलोड जारी रखने के बारे में"
+  },
+  "downloadHelpLabel": {
+    "en": "About download recovery",
+    "text": "डाउनलोड की पुनर्प्राप्ति के बारे में"
+  },
+  "updatePolicyHelpLabel": {
+    "en": "About update schedule",
+    "text": "अपडेट शेड्यूल के बारे में"
+  },
+  "uploadHelpLabel": {
+    "en": "About upload ID",
+    "text": "अपलोड ID के बारे में"
+  },
+  "repositoryModelHelpLabel": {
+    "en": "About repositories",
+    "text": "रिपॉज़िटरी के बारे में"
+  },
+  "servicePolicyHelpLabel": {
+    "en": "About service policy",
+    "text": "सेवा नीति के बारे में"
+  },
+  "tokenSessionHelpLabel": {
+    "en": "About personal tokens",
+    "text": "व्यक्तिगत टोकन के बारे में"
+  },
+  "storageHelpLabel": {
+    "en": "About retention",
+    "text": "प्रतिधारण के बारे में"
+  },
+  "cleanupHelpLabel": {
+    "en": "About physical cleanup",
+    "text": "भौतिक क्लीनअप के बारे में"
+  },
+  "promotionHelpLabel": {
+    "en": "About promotion",
+    "text": "प्रमोशन के बारे में"
+  },
+  "promoteMoveHelpLabel": {
+    "en": "About move",
+    "text": "स्थानांतरण के बारे में"
+  },
+  "attachmentRecoveryHelpLabel": {
+    "en": "About attachment recovery",
+    "text": "अटैचमेंट की पुनर्प्राप्ति के बारे में"
+  },
+  "helpHintLabel": {
+    "en": "About the operation catalog",
+    "text": "ऑपरेशन कैटलॉग के बारे में"
+  },
+  "catalogSizeLabel": {
+    "en": "Size",
+    "text": "आकार"
+  },
+  "catalogPublishedLabel": {
+    "en": "Published",
+    "text": "प्रकाशित"
+  },
+  "grantRepository": {
+    "en": "{repository}:",
+    "text": "{repository}:"
+  },
+  "delegationGrantLine": {
+    "en": "{target}: {actions}",
+    "text": "{target}: {actions}"
+  },
+  "keyBindingLine": {
+    "en": "{repository}: {actions}",
+    "text": "{repository}: {actions}"
+  },
+  "serviceAuditLine": {
+    "en": "{action} · {actor} · {key}",
+    "text": "{action} · {actor} · {key}"
+  },
+  "updateHourOption": {
+    "en": "{hour}:00 UTC",
+    "text": "{hour}:00 UTC"
+  },
+  "helpOperationTitle": {
+    "en": "{method} {path}",
+    "text": "{method} {path}"
+  },
+  "helpOperationIdentity": {
+    "en": "{id} · {surface} · {visibility}",
+    "text": "{id} · {surface} · {visibility}"
+  },
+  "helpHintConnected": {
+    "en": "You are connected. Load the API operations your access allows.",
+    "text": "आप कनेक्ट हैं। अपने एक्सेस से अनुमत API ऑपरेशन लोड करें।"
+  },
+  "helpRemoteCliExample": {
+    "en": "arkvoryctl --help\narkvoryctl profile add production --server https://arkvory.example --token-file /private/arkvory.key\narkvoryctl doctor\narkvoryctl packages publish build.upack --label test\narkvoryctl download ARTIFACT_ID ./build.upack",
+    "text": "arkvoryctl --help\narkvoryctl profile add production --server https://arkvory.example --token-file /private/arkvory.key\narkvoryctl doctor\narkvoryctl packages publish build.upack --label test\narkvoryctl download ARTIFACT_ID ./build.upack"
+  },
+  "helpCliExample": {
+    "en": "arkvory help\narkvory status --root ROOT\narkvory update --root ROOT\narkvory configure --root ROOT --disable-updates\narkvory configure --root ROOT --pin --version 1.2.3",
+    "text": "arkvory help\narkvory status --root ROOT\narkvory update --root ROOT\narkvory configure --root ROOT --disable-updates\narkvory configure --root ROOT --pin --version 1.2.3"
+  },
+  "helpRecipesExample": {
+    "en": "GET /api/v1/capabilities\nGET /api/v1/repositories\nGET /api/v1/operations?repository=releases",
+    "text": "GET /api/v1/capabilities\nGET /api/v1/repositories\nGET /api/v1/operations?repository=releases"
+  },
+  "serviceEmpty": {
+    "en": "No service accounts yet.",
+    "text": "अभी कोई सेवा खाता नहीं है।"
+  },
+  "serviceOwnerKeyHelpLabel": {
+    "en": "About the owner key",
+    "text": "स्वामी कुंजी के बारे में"
+  },
+  "serviceEmptyOwner": {
+    "en": "The owner key from the server file is meant for setup, not automation: create a service account below, then issue a key for it.",
+    "text": "सर्वर की फ़ाइल वाली स्वामी कुंजी सेटअप के लिए है, ऑटोमेशन के लिए नहीं: नीचे एक सेवा खाता बनाएँ, फिर उसके लिए कुंजी जारी करें।"
+  },
+  "serviceEmptyDelegated": {
+    "en": "No service accounts are assigned to you yet. Ask the server owner to delegate one.",
+    "text": "अभी आपको कोई सेवा खाता असाइन नहीं किया गया है। सर्वर के स्वामी से कोई खाता प्रत्यायोजित करने के लिए कहें।"
+  },
+  "serviceAuditEmpty": {
+    "en": "No activity recorded yet.",
+    "text": "अभी तक कोई गतिविधि दर्ज नहीं हुई।"
+  },
+  "repositoryEmpty": {
+    "en": "No repositories are available to this account or key.",
+    "text": "इस खाते या कुंजी के लिए कोई रिपॉज़िटरी उपलब्ध नहीं है।"
+  },
+  "routeUnknown": {
+    "en": "This link does not match a console section. The artifact list is shown instead.",
+    "text": "यह लिंक कंसोल के किसी अनुभाग से मेल नहीं खाता। इसके बजाय आर्टिफ़ैक्ट की सूची दिखाई गई है।"
+  },
+  "routeUnavailable": {
+    "en": "This section is not available to the current account or key. The artifact list is shown instead.",
+    "text": "यह अनुभाग वर्तमान खाते या कुंजी के लिए उपलब्ध नहीं है। इसके बजाय आर्टिफ़ैक्ट की सूची दिखाई गई है।"
+  },
+  "routeArtifactMissing": {
+    "en": "The linked artifact was not found or is not available to you.",
+    "text": "लिंक किया गया आर्टिफ़ैक्ट नहीं मिला या आपके लिए उपलब्ध नहीं है।"
+  },
+  "routeSignIn": {
+    "en": "Sign in to open the linked page.",
+    "text": "लिंक किया गया पेज खोलने के लिए साइन इन करें।"
+  },
+  "confirmCancel": {
+    "en": "Cancel",
+    "text": "रद्द करें"
+  },
+  "confirmDisableUser": {
+    "en": "Disable {name}? Active sessions end immediately and personal tokens stop working until the account is enabled again.",
+    "text": "{name} को अक्षम करें? सक्रिय सत्र तुरंत समाप्त हो जाएँगे और खाता फिर से सक्षम होने तक व्यक्तिगत टोकन काम नहीं करेंगे।"
+  },
+  "confirmRemoveMember": {
+    "en": "Remove {user} from {group}? They lose the repository access granted through this group.",
+    "text": "{user} को {group} से हटाएँ? इस समूह के ज़रिए मिला रिपॉज़िटरी एक्सेस समाप्त हो जाएगा।"
+  },
+  "confirmRemoveGrant": {
+    "en": "Remove access of {group} to {repository}? Group members lose this access immediately.",
+    "text": "{repository} पर {group} का एक्सेस हटाएँ? समूह के सदस्यों का यह एक्सेस तुरंत समाप्त हो जाएगा।"
+  },
+  "storageTitle": {
+    "en": "Storage & automatic cleanup",
+    "text": "स्टोरेज और स्वचालित क्लीनअप"
+  },
+  "storageHelp": {
+    "en": "Retention applies to registered UPack builds. Pinned builds, file history and protected labels survive. Save a disabled policy first to preview it; enabling starts automatic deletion. Disk space is reclaimed below without stopping Arkvory.",
+    "text": "प्रतिधारण पंजीकृत UPack बिल्ड पर लागू होता है। पिन किए गए बिल्ड, फ़ाइल इतिहास और सुरक्षित लेबल बने रहते हैं। पूर्वावलोकन के लिए पहले नीति को अक्षम स्थिति में सहेजें; सक्षम करने पर स्वचालित हटाना शुरू हो जाता है। डिस्क स्पेस नीचे वाले अनुभाग में Arkvory को रोके बिना खाली किया जाता है।"
+  },
+  "storageRefresh": {
+    "en": "Reload settings & usage",
+    "text": "सेटिंग्स और उपयोग फिर से लोड करें"
+  },
+  "storagePolicy": {
+    "en": "Retention policy",
+    "text": "प्रतिधारण नीति"
+  },
+  "storageGrouping": {
+    "en": "Count last N by",
+    "text": "पिछले N की गिनती का आधार"
+  },
+  "storagePerChannel": {
+    "en": "Package and channel",
+    "text": "पैकेज और चैनल"
+  },
+  "storagePerPackage": {
+    "en": "Package",
+    "text": "पैकेज"
+  },
+  "storageGlobal": {
+    "en": "Whole repository",
+    "text": "पूरी रिपॉज़िटरी"
+  },
+  "storageKeep": {
+    "en": "Last N builds (default)",
+    "text": "पिछले N बिल्ड (डिफ़ॉल्ट)"
+  },
+  "storageAge": {
+    "en": "Minimum age before deletion (hours)",
+    "text": "हटाने से पहले न्यूनतम आयु (घंटे)"
+  },
+  "storageInterval": {
+    "en": "Cleanup interval (minutes)",
+    "text": "क्लीनअप अंतराल (मिनट)"
+  },
+  "storageQuota": {
+    "en": "Quota, GiB (empty = no repository limit)",
+    "text": "कोटा, GiB (खाली = रिपॉज़िटरी की कोई सीमा नहीं)"
+  },
+  "storageProtected": {
+    "en": "Protected labels (comma separated)",
+    "text": "सुरक्षित लेबल (अल्पविराम से अलग करें)"
+  },
+  "storageWarningPercent": {
+    "en": "Warning threshold (%)",
+    "text": "चेतावनी सीमा (%)"
+  },
+  "storageCriticalPercent": {
+    "en": "Critical threshold (%)",
+    "text": "गंभीर सीमा (%)"
+  },
+  "storageChannels": {
+    "en": "Channel overrides: label=N, one per line",
+    "text": "चैनलों के लिए अलग मान: लेबल=N, हर पंक्ति में एक"
+  },
+  "storageEnabled": {
+    "en": "Enable automatic cleanup",
+    "text": "स्वचालित क्लीनअप सक्षम करें"
+  },
+  "storageAcknowledge": {
+    "en": "I understand that saving an enabled policy authorizes automatic deletion.",
+    "text": "मुझे पता है कि सक्षम नीति सहेजने से स्वचालित रूप से हटाने की अनुमति मिल जाती है।"
+  },
+  "storageSave": {
+    "en": "Save policy",
+    "text": "नीति सहेजें"
+  },
+  "storagePreview": {
+    "en": "Preview saved policy",
+    "text": "सहेजी गई नीति का पूर्वावलोकन करें"
+  },
+  "storageEvents": {
+    "en": "Warnings, errors & storage events",
+    "text": "चेतावनियाँ, त्रुटियाँ और स्टोरेज इवेंट"
+  },
+  "storageMore": {
+    "en": "Load next events",
+    "text": "अगले इवेंट लोड करें"
+  },
+  "storageRevision": {
+    "en": "Policy version {revision} · last cleanup deleted {count} builds",
+    "text": "नीति संस्करण {revision} · पिछले क्लीनअप में हटाए गए बिल्ड: {count}"
+  },
+  "storageRunFailed": {
+    "en": "Automatic cleanup stopped: {code}. Check its authorizing key and storage health.",
+    "text": "स्वचालित क्लीनअप रुक गया: {code}। इसे अधिकृत करने वाली कुंजी और स्टोरेज की स्थिति जाँचें।"
+  },
+  "storageUsage": {
+    "en": "Published {published} · unfinished uploads {pending} · awaiting cleanup {retired} · in use {total} of {quota}",
+    "text": "प्रकाशित {published} · अधूरे अपलोड {pending} · क्लीनअप की प्रतीक्षा में {retired} · उपयोग में {quota} में से {total}"
+  },
+  "storageNormal": {
+    "en": "Capacity is below warning thresholds, or no repository quota is set.",
+    "text": "क्षमता चेतावनी सीमाओं से नीचे है, या रिपॉज़िटरी का कोई कोटा सेट नहीं है।"
+  },
+  "storageWarning": {
+    "en": "Storage is approaching its quota. Review retention and schedule physical cleanup.",
+    "text": "स्टोरेज अपने कोटे के करीब पहुँच रहा है। प्रतिधारण की समीक्षा करें और भौतिक क्लीनअप शेड्यूल करें।"
+  },
+  "storageCritical": {
+    "en": "Storage is near or at its quota. New reservations that exceed the quota are rejected.",
+    "text": "स्टोरेज अपने कोटे के करीब है या उस तक पहुँच गया है। कोटे से अधिक के नए आरक्षण अस्वीकार किए जाते हैं।"
+  },
+  "storageConfirmRequired": {
+    "en": "Automatic cleanup requires deletion permission and explicit acknowledgement.",
+    "text": "स्वचालित क्लीनअप के लिए हटाने की अनुमति और स्पष्ट स्वीकृति आवश्यक है।"
+  },
+  "storageSaved": {
+    "en": "Policy saved. An enabled policy will run automatically.",
+    "text": "नीति सहेजी गई। सक्षम नीति अपने-आप चलेगी।"
+  },
+  "storagePreviewCount": {
+    "en": "Saved policy: {count} deletion candidates in this batch.",
+    "text": "सहेजी गई नीति: इस बैच में हटाने के लिए {count} उम्मीदवार।"
+  },
+  "storagePreviewMore": {
+    "en": "Saved policy: {count} candidates shown; more remain.",
+    "text": "सहेजी गई नीति: {count} उम्मीदवार दिखाए गए; और भी बाकी हैं।"
+  },
+  "deletionTitle": {
+    "en": "Delete artifact",
+    "text": "आर्टिफ़ैक्ट हटाएँ"
+  },
+  "deletionHelp": {
+    "en": "Deletion removes this artifact from the catalog and prevents new downloads. It cannot be undone here. Existing file history, attachments and external references are protected. Disk space is reclaimed separately during maintenance.",
+    "text": "हटाने से यह आर्टिफ़ैक्ट कैटलॉग से निकल जाता है और नए डाउनलोड रुक जाते हैं। इसे यहाँ पूर्ववत नहीं किया जा सकता। मौजूदा फ़ाइल इतिहास, अटैचमेंट और बाहरी संदर्भ सुरक्षित रहते हैं। डिस्क स्पेस रखरखाव के दौरान अलग से खाली किया जाता है।"
+  },
+  "deletionInspect": {
+    "en": "Check dependencies",
+    "text": "निर्भरताएँ जाँचें"
+  },
+  "deletionChecking": {
+    "en": "Checking dependencies…",
+    "text": "निर्भरताएँ जाँची जा रही हैं…"
+  },
+  "deletionBlocked": {
+    "en": "Deletion is blocked by retained references.",
+    "text": "बनाए रखे गए संदर्भों के कारण हटाना अवरुद्ध है।"
+  },
+  "deletionReady": {
+    "en": "No blocking references. This explicit action permits deletion whatever the labels, release included. Dependencies and metadata will be checked again.",
+    "text": "कोई अवरोधक संदर्भ नहीं है। यह स्पष्ट कार्रवाई लेबल चाहे जो भी हों, release सहित, हटाने की अनुमति देती है। निर्भरताएँ और मेटाडेटा फिर से जाँचे जाएँगे।"
+  },
+  "deletionReference": {
+    "en": "An external service has pinned this artifact.",
+    "text": "किसी बाहरी सेवा ने इस आर्टिफ़ैक्ट को पिन किया है।"
+  },
+  "deletionAsset": {
+    "en": "A file path or its history uses this artifact.",
+    "text": "कोई फ़ाइल पथ या उसका इतिहास इस आर्टिफ़ैक्ट का उपयोग करता है।"
+  },
+  "deletionAttachment": {
+    "en": "Another build lists this artifact as an attachment, now or in its history.",
+    "text": "कोई दूसरा बिल्ड, अभी या अपने इतिहास में, इस आर्टिफ़ैक्ट को अटैचमेंट के रूप में सूचीबद्ध करता है।"
+  },
+  "deletionLabel": {
+    "en": "A retention rule protects this label.",
+    "text": "एक प्रतिधारण नियम इस लेबल को सुरक्षित रखता है।"
+  },
+  "deletionStage": {
+    "en": "The artifact is promoted to a stage; remove the stage first.",
+    "text": "आर्टिफ़ैक्ट किसी स्टेज पर प्रमोट किया गया है; पहले स्टेज हटाएँ।"
+  },
+  "deletionConfirm": {
+    "en": "Paste the selected artifact ID to confirm deletion",
+    "text": "हटाने की पुष्टि के लिए चुने गए आर्टिफ़ैक्ट की ID पेस्ट करें"
+  },
+  "deletionSubmit": {
+    "en": "Delete this artifact",
+    "text": "यह आर्टिफ़ैक्ट हटाएँ"
+  },
+  "deletionRecheck": {
+    "en": "The artifact changed or is protected. Check dependencies again before proceeding.",
+    "text": "आर्टिफ़ैक्ट बदल गया है या सुरक्षित है। आगे बढ़ने से पहले निर्भरताएँ फिर से जाँचें।"
+  },
+  "deletionDone": {
+    "en": "Artifact deleted. Physical cleanup will run separately.",
+    "text": "आर्टिफ़ैक्ट हटा दिया गया। भौतिक क्लीनअप अलग से चलेगा।"
+  },
+  "deletionRefresh": {
+    "en": "Artifact deleted, but the catalog could not be refreshed. Reload the list.",
+    "text": "आर्टिफ़ैक्ट हटा दिया गया, लेकिन कैटलॉग रीफ़्रेश नहीं हो सका। सूची फिर से लोड करें।"
+  },
+  "labelPresets": {
+    "en": "Common build labels",
+    "text": "आम बिल्ड लेबल"
+  },
+  "labelsHelp": {
+    "en": "Use any labels. Presets can be combined; they do not move files or grant access.",
+    "text": "कोई भी लेबल उपयोग करें। प्रीसेट को एक साथ जोड़ा जा सकता है; वे फ़ाइलों को कहीं नहीं ले जाते और एक्सेस नहीं देते।"
+  },
+  "metadataFields": {
+    "en": "Build metadata",
+    "text": "बिल्ड मेटाडेटा"
+  },
+  "metadataAdd": {
+    "en": "Add field",
+    "text": "फ़ील्ड जोड़ें"
+  },
+  "metadataFilter": {
+    "en": "Exact metadata",
+    "text": "सटीक मेटाडेटा"
+  },
+  "metadataFilterHint": {
+    "en": "Key and value match exactly, including case. An empty value matches an empty field.",
+    "text": "कुंजी और मान अक्षरों के केस सहित पूरी तरह मेल खाने चाहिए। खाली मान खाली फ़ील्ड से मेल खाता है।"
+  },
+  "metadataKey": {
+    "en": "Key",
+    "text": "कुंजी"
+  },
+  "metadataValue": {
+    "en": "Value",
+    "text": "मान"
+  },
+  "metadataRemove": {
+    "en": "Remove field",
+    "text": "फ़ील्ड हटाएँ"
+  },
+  "metadataHelp": {
+    "en": "Up to 32 text fields. Examples: build.number, git.commit, target.os. Use a manifest for structured data.",
+    "text": "अधिकतम 32 टेक्स्ट फ़ील्ड। उदाहरण: build.number, git.commit, target.os। संरचित डेटा के लिए मैनिफ़ेस्ट का उपयोग करें।"
+  },
+  "metadataInvalid": {
+    "en": "Check metadata: unique keys, text values and a valid JSON object are required.",
+    "text": "मेटाडेटा जाँचें: अद्वितीय कुंजियाँ, टेक्स्ट मान और एक मान्य JSON ऑब्जेक्ट आवश्यक हैं।"
+  },
+  "attachmentsTitle": {
+    "en": "Manifests & additional files",
+    "text": "मैनिफ़ेस्ट और अतिरिक्त फ़ाइलें"
+  },
+  "attachmentsHelp": {
+    "en": "Files belong to this build. Removing a link keeps the original file and its history.",
+    "text": "ये फ़ाइलें इस बिल्ड से जुड़ी हैं। लिंक हटाने पर मूल फ़ाइल और उसका इतिहास बना रहता है।"
+  },
+  "attachmentsEmpty": {
+    "en": "No attachments yet.",
+    "text": "अभी कोई अटैचमेंट नहीं।"
+  },
+  "attachmentCount": {
+    "en": "{count} / 32 files · version {revision}",
+    "text": "{count} / 32 फ़ाइलें · संस्करण {revision}"
+  },
+  "attachmentAdd": {
+    "en": "Add attachment",
+    "text": "अटैचमेंट जोड़ें"
+  },
+  "attachmentSource": {
+    "en": "Source",
+    "text": "स्रोत"
+  },
+  "attachmentUpload": {
+    "en": "Upload file",
+    "text": "फ़ाइल अपलोड करें"
+  },
+  "attachmentExisting": {
+    "en": "Link published artifact",
+    "text": "प्रकाशित आर्टिफ़ैक्ट लिंक करें"
+  },
+  "attachmentKind": {
+    "en": "Purpose",
+    "text": "उद्देश्य"
+  },
+  "attachmentManifest": {
+    "en": "Manifest",
+    "text": "मैनिफ़ेस्ट"
+  },
+  "attachmentSbom": {
+    "en": "SBOM",
+    "text": "SBOM"
+  },
+  "attachmentSignature": {
+    "en": "Signature",
+    "text": "हस्ताक्षर"
+  },
+  "attachmentReport": {
+    "en": "Report",
+    "text": "रिपोर्ट"
+  },
+  "attachmentFile": {
+    "en": "File",
+    "text": "फ़ाइल"
+  },
+  "attachmentChoose": {
+    "en": "Choose attachment",
+    "text": "अटैचमेंट चुनें"
+  },
+  "attachmentName": {
+    "en": "Attachment name",
+    "text": "अटैचमेंट का नाम"
+  },
+  "attachmentDescription": {
+    "en": "Description (optional)",
+    "text": "विवरण (वैकल्पिक)"
+  },
+  "attachmentUnlink": {
+    "en": "Remove link",
+    "text": "लिंक हटाएँ"
+  },
+  "attachmentReload": {
+    "en": "Reload attachments",
+    "text": "अटैचमेंट फिर से लोड करें"
+  },
+  "attachmentReloaded": {
+    "en": "Attachments reloaded. Your form is preserved.",
+    "text": "अटैचमेंट फिर से लोड किए गए। आपका फ़ॉर्म सुरक्षित है।"
+  },
+  "attachmentSaved": {
+    "en": "Attachments saved · version {revision}",
+    "text": "अटैचमेंट सहेजे गए · संस्करण {revision}"
+  },
+  "attachmentHistory": {
+    "en": "Attachment history",
+    "text": "अटैचमेंट इतिहास"
+  },
+  "attachmentHistoryEmpty": {
+    "en": "No changes yet.",
+    "text": "अभी कोई बदलाव नहीं।"
+  },
+  "attachmentRestore": {
+    "en": "Restore this set",
+    "text": "यह सेट पुनर्स्थापित करें"
+  },
+  "attachmentNew": {
+    "en": "Clear form",
+    "text": "फ़ॉर्म साफ़ करें"
+  },
+  "attachmentRecovery": {
+    "en": "Upload recovery",
+    "text": "अपलोड की पुनर्प्राप्ति"
+  },
+  "attachmentRecoveryHelp": {
+    "en": "Pause keeps this upload in the tab. Submit again to resume. If linking fails, the published file remains available by this ID; reload attachments before retrying. After closing the tab, use the Upload screen to resume by ID.",
+    "text": "रोकने पर यह अपलोड इसी टैब में बना रहता है। जारी रखने के लिए फिर से सबमिट करें। अगर लिंक करना विफल हो जाए, तो प्रकाशित फ़ाइल इसी ID से उपलब्ध रहती है; फिर से प्रयास करने से पहले अटैचमेंट फिर से लोड करें। टैब बंद करने के बाद ID से जारी रखने के लिए “अपलोड” स्क्रीन का उपयोग करें।"
+  },
+  "attachmentProgress": {
+    "en": "Attachment upload progress",
+    "text": "अटैचमेंट अपलोड की प्रगति"
+  },
+  "attachmentDuplicate": {
+    "en": "An attachment with this name already exists. Choose a different name or remove its link first.",
+    "text": "इस नाम का अटैचमेंट पहले से मौजूद है। कोई दूसरा नाम चुनें या पहले उसका लिंक हटाएँ।"
+  },
+  "navigationMenu": {
+    "en": "Sections",
+    "text": "अनुभाग"
+  },
+  "downloadSettings": {
+    "en": "Queue settings",
+    "text": "कतार सेटिंग्स"
+  },
+  "downloadHeld": {
+    "en": "Queue paused. New downloads will wait.",
+    "text": "कतार रुकी हुई है। नए डाउनलोड प्रतीक्षा करेंगे।"
+  },
+  "downloadEmptyTitle": {
+    "en": "No downloads yet",
+    "text": "अभी कोई डाउनलोड नहीं"
+  },
+  "technicalDetails": {
+    "en": "File identifier",
+    "text": "फ़ाइल पहचानकर्ता"
+  },
+  "manageMembers": {
+    "en": "Manage group members",
+    "text": "समूह के सदस्य प्रबंधित करें"
+  },
+  "manageGrants": {
+    "en": "Manage repository access",
+    "text": "रिपॉज़िटरी एक्सेस प्रबंधित करें"
+  },
+  "accountsHeading": {
+    "en": "Accounts",
+    "text": "खाते"
+  },
+  "groupsHeading": {
+    "en": "Groups and permissions",
+    "text": "समूह और अनुमतियाँ"
+  },
+  "tableRegion": {
+    "en": "Results table — scroll horizontally for more columns",
+    "text": "परिणाम तालिका — और कॉलम देखने के लिए क्षैतिज रूप से स्क्रॉल करें"
+  },
+  "searchEmpty": {
+    "en": "This repository has no artifacts yet.",
+    "text": "इस रिपॉज़िटरी में अभी कोई आर्टिफ़ैक्ट नहीं है।"
+  },
+  "searchEmptyTitle": {
+    "en": "No artifacts",
+    "text": "कोई आर्टिफ़ैक्ट नहीं"
+  },
+  "downloadCleanupFailed": {
+    "en": "Saved. Temporary cleanup failed; use Remove finished to retry.",
+    "text": "सहेजा गया। अस्थायी डेटा साफ़ नहीं हो सका; फिर से प्रयास करने के लिए “पूरे हुए हटाएँ” का उपयोग करें।"
+  },
+  "downloads": {
+    "en": "Downloads",
+    "text": "डाउनलोड"
+  },
+  "downloadRestore": {
+    "en": "Restore queue",
+    "text": "कतार पुनर्स्थापित करें"
+  },
+  "downloadRestored": {
+    "en": "Restored · choose a destination to resume",
+    "text": "पुनर्स्थापित · जारी रखने के लिए गंतव्य चुनें"
+  },
+  "downloadRestoreReady": {
+    "en": "Queue restored. Resume each file to choose its destination.",
+    "text": "कतार पुनर्स्थापित हो गई। हर फ़ाइल को जारी रखें और उसका गंतव्य चुनें।"
+  },
+  "downloadRestoreEmpty": {
+    "en": "No saved downloads for this connection.",
+    "text": "इस कनेक्शन के लिए कोई सहेजा गया डाउनलोड नहीं है।"
+  },
+  "downloadQueued": {
+    "en": "Waiting",
+    "text": "प्रतीक्षा में"
+  },
+  "downloadRunning": {
+    "en": "Downloading",
+    "text": "डाउनलोड हो रहा है"
+  },
+  "downloadRetrying": {
+    "en": "Retrying",
+    "text": "फिर से प्रयास हो रहा है"
+  },
+  "downloadPausing": {
+    "en": "Saving checkpoint…",
+    "text": "चेकपॉइंट सहेजा जा रहा है…"
+  },
+  "downloadPaused": {
+    "en": "Paused",
+    "text": "रुका हुआ"
+  },
+  "downloadSaving": {
+    "en": "Saving verified file…",
+    "text": "सत्यापित फ़ाइल सहेजी जा रही है…"
+  },
+  "downloadCancelling": {
+    "en": "Cancelling…",
+    "text": "रद्द हो रहा है…"
+  },
+  "downloadCancelled": {
+    "en": "Cancelled",
+    "text": "रद्द किया गया"
+  },
+  "downloadCompleted": {
+    "en": "Verified and saved",
+    "text": "सत्यापित और सहेजा गया"
+  },
+  "downloadFailed": {
+    "en": "Failed",
+    "text": "विफल"
+  },
+  "downloadResume": {
+    "en": "Resume / retry",
+    "text": "जारी रखें / फिर से प्रयास करें"
+  },
+  "downloadCancel": {
+    "en": "Cancel",
+    "text": "रद्द करें"
+  },
+  "downloadsPause": {
+    "en": "Pause all",
+    "text": "सभी रोकें"
+  },
+  "downloadsResume": {
+    "en": "Resume queue",
+    "text": "कतार जारी रखें"
+  },
+  "downloadsClearWaiting": {
+    "en": "Cancel waiting",
+    "text": "प्रतीक्षारत रद्द करें"
+  },
+  "downloadsCancel": {
+    "en": "Cancel all",
+    "text": "सभी रद्द करें"
+  },
+  "downloadsClearFinished": {
+    "en": "Remove finished",
+    "text": "पूरे हुए हटाएँ"
+  },
+  "downloadConcurrency": {
+    "en": "Parallel downloads",
+    "text": "एक साथ डाउनलोड"
+  },
+  "downloadInterval": {
+    "en": "Start interval, ms",
+    "text": "शुरुआत का अंतराल, ms"
+  },
+  "downloadWait": {
+    "en": "Queue wait limit, seconds",
+    "text": "कतार में प्रतीक्षा की सीमा, सेकंड"
+  },
+  "downloadApply": {
+    "en": "Apply limits",
+    "text": "सीमाएँ लागू करें"
+  },
+  "downloadPolicySaved": {
+    "en": "Queue limits updated. Downloads already running will continue.",
+    "text": "कतार की सीमाएँ अपडेट हो गईं। पहले से चल रहे डाउनलोड जारी रहेंगे।"
+  },
+  "downloadSummary": {
+    "en": "Active: {active} · Waiting: {waiting} · Total: {count}",
+    "text": "सक्रिय: {active} · प्रतीक्षा में: {waiting} · कुल: {count}"
+  },
+  "downloadBytes": {
+    "en": "{bytes} written",
+    "text": "लिखा गया: {bytes}"
+  },
+  "downloadRetryDelay": {
+    "en": "Retry delay: {seconds} s",
+    "text": "फिर से प्रयास में विलंब: {seconds} सेकंड"
+  },
+  "downloadDuplicate": {
+    "en": "This destination is already in the queue. Remove its finished job first.",
+    "text": "यह गंतव्य पहले से कतार में है। पहले उसका पूरा हुआ कार्य हटाएँ।"
+  },
+  "downloadEmpty": {
+    "en": "Choose Download next to a file in the catalog.",
+    "text": "कैटलॉग में किसी फ़ाइल के पास “डाउनलोड करें” चुनें।"
+  },
+  "downloadAdded": {
+    "en": "Download added to the queue.",
+    "text": "डाउनलोड कतार में जोड़ा गया।"
+  },
+  "downloadWaitTimeout": {
+    "en": "Queue wait expired. You can retry.",
+    "text": "कतार में प्रतीक्षा का समय समाप्त हो गया। आप फिर से प्रयास कर सकते हैं।"
+  },
+  "downloadQueueFull": {
+    "en": "Queue is full. Remove finished jobs to make room.",
+    "text": "कतार भरी हुई है। जगह बनाने के लिए पूरे हुए कार्य हटाएँ।"
+  },
+  "downloadDiskFull": {
+    "en": "Browser storage is full. Cancel unused downloads to free staging space.",
+    "text": "ब्राउज़र स्टोरेज भर गया है। अस्थायी जगह खाली करने के लिए अनुपयोगी डाउनलोड रद्द करें।"
+  },
+  "downloadNote": {
+    "en": "After a page reload, reconnect and restore the queue. Resume each file to choose its destination. Sealed segments remain in browser storage; credentials are not saved. The destination is replaced only after checksum verification. Browser storage needs space for the file.",
+    "text": "पेज फिर से लोड होने के बाद दोबारा कनेक्ट करें और कतार पुनर्स्थापित करें। हर फ़ाइल को जारी रखें और उसका गंतव्य चुनें। सील किए गए खंड ब्राउज़र स्टोरेज में रहते हैं; क्रेडेंशियल सहेजे नहीं जाते। गंतव्य फ़ाइल चेकसम सत्यापन के बाद ही बदली जाती है। ब्राउज़र स्टोरेज में फ़ाइल के लिए जगह होनी चाहिए।"
+  },
+  "downloadState": {
+    "en": "State",
+    "text": "स्थिति"
+  },
+  "downloadProgress": {
+    "en": "Progress",
+    "text": "प्रगति"
+  },
+  "navigation": {
+    "en": "Workspace navigation",
+    "text": "वर्कस्पेस नेविगेशन"
+  },
+  "catalog": {
+    "en": "Artifacts",
+    "text": "आर्टिफ़ैक्ट"
+  },
+  "packages": {
+    "en": "Packages",
+    "text": "पैकेज"
+  },
+  "administration": {
+    "en": "Users and access",
+    "text": "उपयोगकर्ता और एक्सेस"
+  },
+  "upload": {
+    "en": "Upload",
+    "text": "अपलोड"
+  },
+  "history": {
+    "en": "File history",
+    "text": "फ़ाइल इतिहास"
+  },
+  "metadata": {
+    "en": "Artifact details",
+    "text": "आर्टिफ़ैक्ट का विवरण"
+  },
+  "theme": {
+    "en": "Appearance",
+    "text": "रूप"
+  },
+  "language": {
+    "en": "Language",
+    "text": "भाषा"
+  },
+  "light": {
+    "en": "Light",
+    "text": "लाइट"
+  },
+  "dark": {
+    "en": "Dark",
+    "text": "डार्क"
+  },
+  "system": {
+    "en": "System",
+    "text": "सिस्टम"
+  },
+  "connection": {
+    "en": "Repository connection",
+    "text": "रिपॉज़िटरी कनेक्शन"
+  },
+  "repository": {
+    "en": "Repository",
+    "text": "रिपॉज़िटरी"
+  },
+  "serviceKey": {
+    "en": "Service key",
+    "text": "सेवा कुंजी"
+  },
+  "keyPlaceholder": {
+    "en": "Paste a service or automation key",
+    "text": "सेवा या ऑटोमेशन कुंजी पेस्ट करें"
+  },
+  "connect": {
+    "en": "Connect",
+    "text": "कनेक्ट करें"
+  },
+  "disconnect": {
+    "en": "Disconnect",
+    "text": "डिस्कनेक्ट करें"
+  },
+  "keyHint": {
+    "en": "The key stays in this tab. It is never saved in browser storage.",
+    "text": "कुंजी इसी टैब में रहती है। इसे कभी ब्राउज़र स्टोरेज में नहीं सहेजा जाता।"
+  },
+  "accountName": {
+    "en": "Username",
+    "text": "उपयोगकर्ता नाम"
+  },
+  "password": {
+    "en": "Password",
+    "text": "पासवर्ड"
+  },
+  "signIn": {
+    "en": "Sign in",
+    "text": "साइन इन करें"
+  },
+  "adminHint": {
+    "en": "Create accounts and grant repository access through groups.",
+    "text": "खाते बनाएँ और समूहों के ज़रिए रिपॉज़िटरी एक्सेस दें।"
+  },
+  "administrator": {
+    "en": "Administrator",
+    "text": "व्यवस्थापक"
+  },
+  "createUser": {
+    "en": "Create user",
+    "text": "उपयोगकर्ता बनाएँ"
+  },
+  "accessGroup": {
+    "en": "Access group",
+    "text": "एक्सेस समूह"
+  },
+  "createGroup": {
+    "en": "Create group",
+    "text": "समूह बनाएँ"
+  },
+  "addMember": {
+    "en": "Add to group",
+    "text": "समूह में जोड़ें"
+  },
+  "removeMember": {
+    "en": "Remove from group",
+    "text": "समूह से हटाएँ"
+  },
+  "access": {
+    "en": "Access",
+    "text": "एक्सेस"
+  },
+  "read": {
+    "en": "Read",
+    "text": "पढ़ना"
+  },
+  "write": {
+    "en": "Read and write",
+    "text": "पढ़ना और लिखना"
+  },
+  "saveGrant": {
+    "en": "Save access",
+    "text": "एक्सेस सहेजें"
+  },
+  "removeGrant": {
+    "en": "Remove access",
+    "text": "एक्सेस हटाएँ"
+  },
+  "members": {
+    "en": "Members",
+    "text": "सदस्य"
+  },
+  "grants": {
+    "en": "Grants",
+    "text": "एक्सेस नियम"
+  },
+  "packageGroup": {
+    "en": "UPack group",
+    "text": "UPack समूह"
+  },
+  "packageName": {
+    "en": "Package name",
+    "text": "पैकेज का नाम"
+  },
+  "version": {
+    "en": "Version",
+    "text": "संस्करण"
+  },
+  "sortBy": {
+    "en": "Sort by",
+    "text": "इसके अनुसार क्रमबद्ध करें"
+  },
+  "direction": {
+    "en": "Order",
+    "text": "क्रम"
+  },
+  "ascending": {
+    "en": "Ascending",
+    "text": "आरोही"
+  },
+  "descending": {
+    "en": "Descending",
+    "text": "अवरोही"
+  },
+  "groupBy": {
+    "en": "Group by",
+    "text": "इसके अनुसार समूहित करें"
+  },
+  "noGrouping": {
+    "en": "No grouping",
+    "text": "कोई समूहीकरण नहीं"
+  },
+  "apply": {
+    "en": "Apply",
+    "text": "लागू करें"
+  },
+  "clearFilters": {
+    "en": "Reset",
+    "text": "रीसेट करें"
+  },
+  "packageFilterHint": {
+    "en": "Group and name are exact matches, ignoring letter case.",
+    "text": "समूह और नाम पूरी तरह मेल खाने चाहिए; अक्षरों का केस अनदेखा किया जाता है।"
+  },
+  "applyFilters": {
+    "en": "Apply the filters to see packages.",
+    "text": "पैकेज देखने के लिए फ़िल्टर लागू करें।"
+  },
+  "apiAddressError": {
+    "en": "The Arkvory API address is invalid. Contact the UI administrator.",
+    "text": "Arkvory API का पता अमान्य है। UI व्यवस्थापक से संपर्क करें।"
+  },
+  "noRepositoryAccess": {
+    "en": "This account or key cannot read any repositories. Ask an administrator for access.",
+    "text": "यह खाता या कुंजी कोई भी रिपॉज़िटरी नहीं पढ़ सकती। एक्सेस के लिए व्यवस्थापक से अनुरोध करें।"
+  },
+  "noPackages": {
+    "en": "No registered packages match these filters.",
+    "text": "इन फ़िल्टर से कोई पंजीकृत पैकेज मेल नहीं खाता।"
+  },
+  "packageCount": {
+    "en": "{count} packages on this page",
+    "text": "इस पेज पर पैकेज: {count}"
+  },
+  "pageNumber": {
+    "en": "Page {page}",
+    "text": "पेज {page}"
+  },
+  "previousPage": {
+    "en": "Previous",
+    "text": "पिछला"
+  },
+  "nextPage": {
+    "en": "Next",
+    "text": "अगला"
+  },
+  "accessSaved": {
+    "en": "Access updated",
+    "text": "एक्सेस अपडेट हो गया"
+  },
+  "userCreated": {
+    "en": "User created",
+    "text": "उपयोगकर्ता बनाया गया"
+  },
+  "groupCreated": {
+    "en": "Group created",
+    "text": "समूह बनाया गया"
+  },
+  "signedIn": {
+    "en": "Signed in as {name}",
+    "text": "{name} के रूप में साइन इन किया गया"
+  },
+  "accountStatus": {
+    "en": "Status",
+    "text": "स्थिति"
+  },
+  "enabled": {
+    "en": "Active",
+    "text": "सक्रिय"
+  },
+  "disabled": {
+    "en": "Disabled",
+    "text": "अक्षम"
+  },
+  "disableUser": {
+    "en": "Disable",
+    "text": "अक्षम करें"
+  },
+  "enableUser": {
+    "en": "Enable",
+    "text": "सक्षम करें"
+  },
+  "newPassword": {
+    "en": "New password",
+    "text": "नया पासवर्ड"
+  },
+  "currentPassword": {
+    "en": "Current password",
+    "text": "वर्तमान पासवर्ड"
+  },
+  "changeOwnPassword": {
+    "en": "Change my password",
+    "text": "मेरा पासवर्ड बदलें"
+  },
+  "passwordChangedSignIn": {
+    "en": "Password changed. Sign in again.",
+    "text": "पासवर्ड बदल गया। फिर से साइन इन करें।"
+  },
+  "resetPassword": {
+    "en": "Reset password",
+    "text": "पासवर्ड रीसेट करें"
+  },
+  "passwordChanged": {
+    "en": "Password changed; active sessions revoked",
+    "text": "पासवर्ड बदल गया; सक्रिय सत्र निरस्त कर दिए गए"
+  },
+  "signUp": {
+    "en": "Sign up",
+    "text": "साइन अप करें"
+  },
+  "registerAccount": {
+    "en": "Create account",
+    "text": "खाता बनाएँ"
+  },
+  "accountRegistered": {
+    "en": "Account created and signed in.",
+    "text": "खाता बन गया और आप साइन इन हो गए।"
+  },
+  "personalAccessTokens": {
+    "en": "Personal access tokens",
+    "text": "व्यक्तिगत एक्सेस टोकन"
+  },
+  "generateToken": {
+    "en": "Generate token",
+    "text": "टोकन बनाएँ"
+  },
+  "tokenName": {
+    "en": "Token name",
+    "text": "टोकन का नाम"
+  },
+  "tokenNamePlaceholder": {
+    "en": "e.g. External UI, CLI",
+    "text": "उदा. बाहरी UI, CLI"
+  },
+  "tokenCreatedWarning": {
+    "en": "Save this token now. It will not be shown again.",
+    "text": "यह टोकन अभी सहेज लें। यह दोबारा नहीं दिखाया जाएगा।"
+  },
+  "copyToken": {
+    "en": "Copy token",
+    "text": "टोकन कॉपी करें"
+  },
+  "tokenCopied": {
+    "en": "Token copied to clipboard.",
+    "text": "टोकन क्लिपबोर्ड पर कॉपी किया गया।"
+  },
+  "revokeToken": {
+    "en": "Revoke token",
+    "text": "टोकन निरस्त करें"
+  },
+  "noUserTokens": {
+    "en": "No personal access tokens generated yet.",
+    "text": "अभी तक कोई व्यक्तिगत एक्सेस टोकन नहीं बनाया गया है।"
+  },
+  "tokenSessionOnly": {
+    "en": "Tokens are created and revoked from a password session only; a token cannot create tokens or administer accounts.",
+    "text": "टोकन केवल पासवर्ड वाले सत्र से बनाए और निरस्त किए जाते हैं; कोई टोकन न तो टोकन बना सकता है और न ही खातों का प्रबंधन कर सकता है।"
+  },
+  "tokenExpiry": {
+    "en": "Expires after",
+    "text": "समाप्ति अवधि"
+  },
+  "tokenDays30": {
+    "en": "30 days",
+    "text": "30 दिन"
+  },
+  "tokenDays90": {
+    "en": "90 days",
+    "text": "90 दिन"
+  },
+  "tokenDays365": {
+    "en": "365 days",
+    "text": "365 दिन"
+  },
+  "tokenScope": {
+    "en": "Access",
+    "text": "एक्सेस"
+  },
+  "tokenScopeRead": {
+    "en": "Read only",
+    "text": "केवल पढ़ना"
+  },
+  "tokenScopeReadWrite": {
+    "en": "Read and write",
+    "text": "पढ़ना और लिखना"
+  },
+  "tokenPrefix": {
+    "en": "Prefix",
+    "text": "प्रीफ़िक्स"
+  },
+  "tokenCreated": {
+    "en": "Created",
+    "text": "बनाया गया"
+  },
+  "tokenExpires": {
+    "en": "Expires",
+    "text": "समाप्ति"
+  },
+  "tokenLastUsed": {
+    "en": "Last used",
+    "text": "अंतिम उपयोग"
+  },
+  "tokenStatus": {
+    "en": "Status",
+    "text": "स्थिति"
+  },
+  "tokenActive": {
+    "en": "Active",
+    "text": "सक्रिय"
+  },
+  "tokenRevokedState": {
+    "en": "Revoked",
+    "text": "निरस्त"
+  },
+  "tokenExpired": {
+    "en": "Expired",
+    "text": "अवधि समाप्त"
+  },
+  "tokenNeverUsed": {
+    "en": "Never",
+    "text": "कभी नहीं"
+  },
+  "tokenNoExpiry": {
+    "en": "—",
+    "text": "—"
+  },
+  "tokenRevokeConfirm": {
+    "en": "Revoke “{name}”? Clients using it lose access immediately.",
+    "text": "“{name}” निरस्त करें? इसका उपयोग करने वाले क्लाइंट तुरंत एक्सेस खो देंगे।"
+  },
+  "tokenRevokeConfirmSubmit": {
+    "en": "Revoke",
+    "text": "निरस्त करें"
+  },
+  "tokenRevokeCancel": {
+    "en": "Cancel",
+    "text": "रद्द करें"
+  },
+  "tokenCopyFailed": {
+    "en": "Copy failed. The token is selected; copy it manually.",
+    "text": "कॉपी नहीं हो सका। टोकन चुना हुआ है; इसे मैन्युअल रूप से कॉपी करें।"
+  },
+  "connected": {
+    "en": "Connected",
+    "text": "कनेक्ट है"
+  },
+  "disconnected": {
+    "en": "Not connected",
+    "text": "कनेक्ट नहीं है"
+  },
+  "uploadFile": {
+    "en": "Upload file",
+    "text": "फ़ाइल अपलोड करें"
+  },
+  "search": {
+    "en": "Search",
+    "text": "खोजें"
+  },
+  "searchPlaceholder": {
+    "en": "Name or metadata value…",
+    "text": "नाम या मेटाडेटा मान…"
+  },
+  "labelFilter": {
+    "en": "Filter by label",
+    "text": "लेबल से फ़िल्टर करें"
+  },
+  "labelPlaceholder": {
+    "en": "Any label",
+    "text": "कोई भी लेबल"
+  },
+  "name": {
+    "en": "File name",
+    "text": "फ़ाइल का नाम"
+  },
+  "actions": {
+    "en": "Actions",
+    "text": "कार्रवाइयाँ"
+  },
+  "open": {
+    "en": "Open",
+    "text": "खोलें"
+  },
+  "more": {
+    "en": "Load more",
+    "text": "और लोड करें"
+  },
+  "loaded": {
+    "en": "{count} loaded",
+    "text": "लोड किए गए: {count}"
+  },
+  "emptyTitle": {
+    "en": "Not connected",
+    "text": "कनेक्ट नहीं है"
+  },
+  "emptyDescription": {
+    "en": "Sign in with your username and password, or connect with a service key.",
+    "text": "अपने उपयोगकर्ता नाम और पासवर्ड से साइन इन करें, या सेवा कुंजी से कनेक्ट करें।"
+  },
+  "noResultsTitle": {
+    "en": "No matching artifacts",
+    "text": "कोई मेल खाता आर्टिफ़ैक्ट नहीं"
+  },
+  "noResults": {
+    "en": "Change your search or clear the filters.",
+    "text": "अपनी खोज बदलें या फ़िल्टर साफ़ करें।"
+  },
+  "catalogHint": {
+    "en": "Immutable content · Editable metadata",
+    "text": "अपरिवर्तनीय सामग्री · संपादन योग्य मेटाडेटा"
+  },
+  "file": {
+    "en": "Choose a file",
+    "text": "फ़ाइल चुनें"
+  },
+  "chooseFile": {
+    "en": "File to upload",
+    "text": "अपलोड करने के लिए फ़ाइल"
+  },
+  "resumeTitle": {
+    "en": "Resume an upload",
+    "text": "अपलोड जारी रखें"
+  },
+  "resumeHint": {
+    "en": "Have an upload ID? Select the same file and enter the ID below.",
+    "text": "क्या आपके पास अपलोड ID है? वही फ़ाइल चुनें और नीचे ID दर्ज करें।"
+  },
+  "uploadId": {
+    "en": "Upload ID",
+    "text": "अपलोड ID"
+  },
+  "idempotency": {
+    "en": "Duplicate protection key",
+    "text": "दोहराव से सुरक्षा की कुंजी"
+  },
+  "automatic": {
+    "en": "Generated automatically",
+    "text": "अपने-आप बनाई जाती है"
+  },
+  "startUpload": {
+    "en": "Upload / resume",
+    "text": "अपलोड करें / जारी रखें"
+  },
+  "pause": {
+    "en": "Pause",
+    "text": "रोकें"
+  },
+  "newUpload": {
+    "en": "New upload",
+    "text": "नया अपलोड"
+  },
+  "uploadHint": {
+    "en": "Keep your upload ID to resume after closing this tab.",
+    "text": "यह टैब बंद करने के बाद जारी रखने के लिए अपनी अपलोड ID संभालकर रखें।"
+  },
+  "transferTitle": {
+    "en": "Transfer status",
+    "text": "ट्रांसफ़र की स्थिति"
+  },
+  "transferIdle": {
+    "en": "Waiting for a file",
+    "text": "फ़ाइल की प्रतीक्षा है"
+  },
+  "hashing": {
+    "en": "Checking file integrity…",
+    "text": "फ़ाइल की अखंडता जाँची जा रही है…"
+  },
+  "uploading": {
+    "en": "Uploading · {percent}%",
+    "text": "अपलोड हो रहा है · {percent}%"
+  },
+  "published": {
+    "en": "File published · {id}",
+    "text": "फ़ाइल प्रकाशित हुई · {id}"
+  },
+  "paused": {
+    "en": "Transfer paused. You can resume it with the same file.",
+    "text": "ट्रांसफ़र रुका हुआ है। आप इसे उसी फ़ाइल के साथ जारी रख सकते हैं।"
+  },
+  "selectArtifact": {
+    "en": "Select an artifact",
+    "text": "एक आर्टिफ़ैक्ट चुनें"
+  },
+  "selectHint": {
+    "en": "Open a file in the catalog or history.",
+    "text": "कैटलॉग या इतिहास में कोई फ़ाइल खोलें।"
+  },
+  "backCatalog": {
+    "en": "Back to artifacts",
+    "text": "आर्टिफ़ैक्ट पर वापस जाएँ"
+  },
+  "selected": {
+    "en": "Artifact ID",
+    "text": "आर्टिफ़ैक्ट ID"
+  },
+  "labels": {
+    "en": "Labels",
+    "text": "लेबल"
+  },
+  "collections": {
+    "en": "Collections",
+    "text": "संग्रह"
+  },
+  "commaHint": {
+    "en": "Separate with commas",
+    "text": "अल्पविराम से अलग करें"
+  },
+  "metadataJson": {
+    "en": "Metadata (JSON)",
+    "text": "मेटाडेटा (JSON)"
+  },
+  "save": {
+    "en": "Save changes",
+    "text": "बदलाव सहेजें"
+  },
+  "download": {
+    "en": "Download",
+    "text": "डाउनलोड करें"
+  },
+  "downloadLink": {
+    "en": "Download link",
+    "text": "डाउनलोड लिंक"
+  },
+  "downloadLinkCopied": {
+    "en": "Link copied. It opens only this file and works until {expires}.",
+    "text": "लिंक कॉपी हो गया। यह केवल इसी फ़ाइल को खोलता है और {expires} तक काम करता है।"
+  },
+  "downloadLinkCopy": {
+    "en": "Copy the link below. It opens only this file and works until {expires}.",
+    "text": "नीचे दिया गया लिंक कॉपी करें। यह केवल इसी फ़ाइल को खोलता है और {expires} तक काम करता है।"
+  },
+  "register": {
+    "en": "Register UPack",
+    "text": "UPack पंजीकृत करें"
+  },
+  "assetTitle": {
+    "en": "File reference",
+    "text": "फ़ाइल संदर्भ"
+  },
+  "assetHint": {
+    "en": "Assign this artifact to a path. The current link version protects against simultaneous changes: use 0 for a new path or the current version shown in the file history.",
+    "text": "इस आर्टिफ़ैक्ट को किसी पथ पर असाइन करें। लिंक का वर्तमान संस्करण एक साथ होने वाले बदलावों से बचाता है: नए पथ के लिए 0 दर्ज करें, अन्यथा फ़ाइल इतिहास में दिखाया गया वर्तमान संस्करण।"
+  },
+  "assetPath": {
+    "en": "File path",
+    "text": "फ़ाइल पथ"
+  },
+  "currentRevision": {
+    "en": "Current link version",
+    "text": "लिंक का वर्तमान संस्करण"
+  },
+  "assign": {
+    "en": "Assign file",
+    "text": "फ़ाइल असाइन करें"
+  },
+  "historyLoad": {
+    "en": "Load history",
+    "text": "इतिहास लोड करें"
+  },
+  "historyHint": {
+    "en": "Restoring creates a new version. Open any version to download its original file.",
+    "text": "पुनर्स्थापित करने से एक नया संस्करण बनता है। किसी भी संस्करण की मूल फ़ाइल डाउनलोड करने के लिए उसे खोलें।"
+  },
+  "revision": {
+    "en": "Version",
+    "text": "संस्करण"
+  },
+  "date": {
+    "en": "Created",
+    "text": "बनाया गया"
+  },
+  "actor": {
+    "en": "Author",
+    "text": "लेखक"
+  },
+  "source": {
+    "en": "Restored from",
+    "text": "इससे पुनर्स्थापित"
+  },
+  "restore": {
+    "en": "Restore version {revision}",
+    "text": "संस्करण {revision} पुनर्स्थापित करें"
+  },
+  "historyMore": {
+    "en": "Older versions",
+    "text": "पुराने संस्करण"
+  },
+  "historyEmpty": {
+    "en": "Enter a file path to explore its history.",
+    "text": "किसी फ़ाइल का इतिहास देखने के लिए उसका पथ दर्ज करें।"
+  },
+  "historyCount": {
+    "en": "{count} versions loaded · current version {revision}",
+    "text": "लोड किए गए संस्करण: {count} · वर्तमान संस्करण {revision}"
+  },
+  "restored": {
+    "en": "Restored as version {revision}",
+    "text": "संस्करण {revision} के रूप में पुनर्स्थापित किया गया"
+  },
+  "historyConflict": {
+    "en": "The file has changed. Reload history before restoring.",
+    "text": "फ़ाइल बदल गई है। पुनर्स्थापित करने से पहले इतिहास फिर से लोड करें।"
+  },
+  "ready": {
+    "en": "Connect a repository to begin.",
+    "text": "शुरू करने के लिए कोई रिपॉज़िटरी कनेक्ट करें।"
+  },
+  "searching": {
+    "en": "Loading artifacts…",
+    "text": "आर्टिफ़ैक्ट लोड हो रहे हैं…"
+  },
+  "revisionStatus": {
+    "en": "Details opened · version {revision}",
+    "text": "विवरण खोला गया · संस्करण {revision}"
+  },
+  "saved": {
+    "en": "Changes saved · version {revision}",
+    "text": "बदलाव सहेजे गए · संस्करण {revision}"
+  },
+  "registered": {
+    "en": "Registered {name} {version}",
+    "text": "{name} {version} पंजीकृत किया गया"
+  },
+  "assigned": {
+    "en": "File link saved · version {revision}",
+    "text": "फ़ाइल लिंक सहेजा गया · संस्करण {revision}"
+  },
+  "chooseFileError": {
+    "en": "Choose a file first.",
+    "text": "पहले कोई फ़ाइल चुनें।"
+  },
+  "fileTooLarge": {
+    "en": "The file exceeds the maximum size configured on the server.",
+    "text": "फ़ाइल सर्वर पर कॉन्फ़िगर किए गए अधिकतम आकार से बड़ी है।"
+  },
+  "uploadRunning": {
+    "en": "An upload is already in progress.",
+    "text": "एक अपलोड पहले से चल रहा है।"
+  },
+  "selectError": {
+    "en": "Open an artifact first.",
+    "text": "पहले कोई आर्टिफ़ैक्ट खोलें।"
+  },
+  "hashError": {
+    "en": "Could not read or verify the selected file. Please select it again.",
+    "text": "चुनी गई फ़ाइल पढ़ी या सत्यापित नहीं की जा सकी। कृपया उसे फिर से चुनें।"
+  },
+  "saveUnsupported": {
+    "en": "Streaming save requires Chrome or Edge over HTTPS. Other clients can download through the SDK.",
+    "text": "स्ट्रीमिंग के साथ सहेजने के लिए HTTPS पर Chrome या Edge आवश्यक है। दूसरे क्लाइंट SDK के ज़रिए डाउनलोड कर सकते हैं।"
+  },
+  "mismatch": {
+    "en": "This file differs from the upload. Select the original file or start a new upload.",
+    "text": "यह फ़ाइल अपलोड वाली फ़ाइल से अलग है। मूल फ़ाइल चुनें या नया अपलोड शुरू करें।"
+  },
+  "errorGeneric": {
+    "en": "The operation could not be completed. Try again.",
+    "text": "ऑपरेशन पूरा नहीं हो सका। फिर से प्रयास करें।"
+  },
+  "errorUnauthorized": {
+    "en": "This key is not valid or was revoked. Enter a valid key.",
+    "text": "यह कुंजी मान्य नहीं है या निरस्त कर दी गई है। एक मान्य कुंजी दर्ज करें।"
+  },
+  "errorForbidden": {
+    "en": "You do not have permission for this operation.",
+    "text": "आपके पास इस ऑपरेशन की अनुमति नहीं है।"
+  },
+  "errorRateLimited": {
+    "en": "Too many sign-in attempts. Wait and try again.",
+    "text": "साइन इन के बहुत अधिक प्रयास। थोड़ा रुककर फिर से प्रयास करें।"
+  },
+  "errorNotFound": {
+    "en": "The requested file or version was not found.",
+    "text": "अनुरोधित फ़ाइल या संस्करण नहीं मिला।"
+  },
+  "errorConflict": {
+    "en": "The item has changed or the operation conflicts with its state. Refresh before trying again.",
+    "text": "आइटम बदल गया है या ऑपरेशन उसकी स्थिति से मेल नहीं खाता। फिर से प्रयास करने से पहले रीफ़्रेश करें।"
+  },
+  "errorInput": {
+    "en": "Check the entered values and try again.",
+    "text": "दर्ज किए गए मान जाँचें और फिर से प्रयास करें।"
+  },
+  "errorIntegrity": {
+    "en": "The file integrity check failed. Retry with the original file.",
+    "text": "फ़ाइल की अखंडता जाँच विफल रही। मूल फ़ाइल के साथ फिर से प्रयास करें।"
+  },
+  "errorBusy": {
+    "en": "The service is busy. Try again shortly.",
+    "text": "सेवा व्यस्त है। थोड़ी देर बाद फिर से प्रयास करें।"
+  },
+  "errorCapacity": {
+    "en": "A capacity limit has been reached.",
+    "text": "क्षमता की सीमा पूरी हो गई है।"
+  },
+  "cancelled": {
+    "en": "Operation cancelled.",
+    "text": "ऑपरेशन रद्द किया गया।"
+  },
+  "publishedRefresh": {
+    "en": "File published, but the catalog could not refresh. Open Artifacts to refresh it.",
+    "text": "फ़ाइल प्रकाशित हो गई, लेकिन कैटलॉग रीफ़्रेश नहीं हो सका। इसे रीफ़्रेश करने के लिए “आर्टिफ़ैक्ट” खोलें।"
+  },
+  "skip": {
+    "en": "Skip to content",
+    "text": "सामग्री पर जाएँ"
+  },
+  "noScript": {
+    "en": "Enable JavaScript to use the storage console.",
+    "text": "स्टोरेज कंसोल का उपयोग करने के लिए JavaScript सक्षम करें।"
+  }
+}

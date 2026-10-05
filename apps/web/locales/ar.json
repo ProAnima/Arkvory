@@ -1,0 +1,3518 @@
+{
+  "errorNetwork": {
+    "en": "Arkvory did not answer. Check your network connection and try again.",
+    "text": "لم يستجب Arkvory. تحقّق من اتصالك بالشبكة وحاول مرة أخرى."
+  },
+  "errorTimeout": {
+    "en": "The server took too long to answer, so the request was stopped. Try again.",
+    "text": "استغرق الخادم وقتًا طويلًا في الرد، لذا أُوقف الطلب. حاول مرة أخرى."
+  },
+  "errorGateway": {
+    "en": "A proxy in front of Arkvory did not get an answer from it. Try again shortly or contact the administrator.",
+    "text": "لم يتلقَّ الخادم الوكيل الموجود أمام Arkvory ردًا منه. حاول مرة أخرى بعد قليل أو اتصل بالمسؤول."
+  },
+  "errorInternal": {
+    "en": "Unexpected server error. Report the request ID below to the administrator.",
+    "text": "حدث خطأ غير متوقع في الخادم. أبلغ المسؤول بمعرّف الطلب الظاهر أدناه."
+  },
+  "errorUnavailable": {
+    "en": "The service is temporarily unavailable. Try again shortly.",
+    "text": "الخدمة غير متاحة مؤقتًا. حاول مرة أخرى بعد قليل."
+  },
+  "errorFeedbackDisabled": {
+    "en": "Feedback is turned off on this server. Write to info@proanima.net instead.",
+    "text": "الملاحظات معطّلة على هذا الخادم. راسلنا بدلًا من ذلك على info@proanima.net."
+  },
+  "errorHubUnreachable": {
+    "en": "The server cannot reach ProAnimaStudio right now. Try again later or write to info@proanima.net.",
+    "text": "يتعذّر على الخادم الوصول إلى ProAnimaStudio حاليًا. حاول لاحقًا أو راسلنا على info@proanima.net."
+  },
+  "errorFeedbackLimited": {
+    "en": "Too many messages from this server. Wait a few minutes and try again.",
+    "text": "وردت رسائل كثيرة جدًا من هذا الخادم. انتظر بضع دقائق ثم حاول مرة أخرى."
+  },
+  "errorReadOnly": {
+    "en": "This address only serves downloads. Make changes through the main Arkvory address.",
+    "text": "هذا العنوان مخصّص للتنزيل فقط. أجرِ التغييرات عبر عنوان Arkvory الرئيسي."
+  },
+  "errorRouteMissing": {
+    "en": "This Arkvory server does not support the operation. Update the server or reload the console.",
+    "text": "لا يدعم خادم Arkvory هذا العملية المطلوبة. حدّث الخادم أو أعد تحميل وحدة التحكم."
+  },
+  "errorBodyTooLarge": {
+    "en": "The entered data is too large. Shorten the values and try again.",
+    "text": "البيانات المُدخلة كبيرة جدًا. اختصر القيم وحاول مرة أخرى."
+  },
+  "errorMediaType": {
+    "en": "The server did not accept the request format. Reload the console.",
+    "text": "لم يقبل الخادم تنسيق الطلب. أعد تحميل وحدة التحكم."
+  },
+  "errorMalformed": {
+    "en": "The server could not read the request. Reload the console and try again.",
+    "text": "تعذّر على الخادم قراءة الطلب. أعد تحميل وحدة التحكم وحاول مرة أخرى."
+  },
+  "errorFields": {
+    "en": "Check the highlighted fields.",
+    "text": "تحقّق من الحقول المميّزة."
+  },
+  "errorRange": {
+    "en": "The requested part of the file is not available. Restart the download.",
+    "text": "الجزء المطلوب من الملف غير متاح. ابدأ التنزيل من جديد."
+  },
+  "errorTooManyRequests": {
+    "en": "Too many requests. Wait a moment and try again.",
+    "text": "طلبات كثيرة جدًا. انتظر قليلًا ثم حاول مرة أخرى."
+  },
+  "errorRegistrationLimited": {
+    "en": "Too many sign-up attempts from this network. Wait and try again.",
+    "text": "محاولات تسجيل كثيرة جدًا من هذه الشبكة. انتظر ثم حاول مرة أخرى."
+  },
+  "errorPasswordLimited": {
+    "en": "Too many wrong attempts at the current password. Wait and try again.",
+    "text": "محاولات خاطئة كثيرة جدًا لإدخال كلمة المرور الحالية. انتظر ثم حاول مرة أخرى."
+  },
+  "sessionEnded": {
+    "en": "Your session has ended: you signed out elsewhere, changed the password or access was revoked. Sign in again.",
+    "text": "انتهت جلستك: إما أنك سجّلت الخروج من مكان آخر، أو غيّرت كلمة المرور، أو أُبطل وصولك. سجّل الدخول مرة أخرى."
+  },
+  "errorTokenExpired": {
+    "en": "This key or token has expired. Create a new one and connect again.",
+    "text": "انتهت صلاحية هذا المفتاح أو الرمز. أنشئ واحدًا جديدًا واتصل مرة أخرى."
+  },
+  "errorReadOnlyToken": {
+    "en": "This token can only read. Use a read-write token or sign in with your password.",
+    "text": "هذا الرمز للقراءة فقط. استخدم رمزًا للقراءة والكتابة أو سجّل الدخول بكلمة المرور."
+  },
+  "errorCredentialRevoked": {
+    "en": "The key used for this action was revoked or has expired.",
+    "text": "المفتاح المستخدم لهذا الإجراء أُبطل أو انتهت صلاحيته."
+  },
+  "errorSessionRequired": {
+    "en": "This action needs a password sign-in; keys and tokens cannot do it.",
+    "text": "يتطلب هذا الإجراء تسجيل الدخول بكلمة المرور؛ ولا يمكن تنفيذه بالمفاتيح أو الرموز."
+  },
+  "errorAdministratorRequired": {
+    "en": "Only an administrator can do this.",
+    "text": "هذا الإجراء متاح للمسؤول فقط."
+  },
+  "errorRegistrationDisabled": {
+    "en": "Self sign-up is turned off. Ask an administrator for an account.",
+    "text": "التسجيل الذاتي معطّل. اطلب من المسؤول إنشاء حساب لك."
+  },
+  "errorOriginForbidden": {
+    "en": "The server does not allow requests from this console address. Contact the administrator.",
+    "text": "لا يسمح الخادم بالطلبات الواردة من عنوان وحدة التحكم هذا. اتصل بالمسؤول."
+  },
+  "errorUploadExpired": {
+    "en": "The upload expired before it was finished. Start a new upload.",
+    "text": "انتهت صلاحية عملية الرفع قبل اكتمالها. ابدأ عملية رفع جديدة."
+  },
+  "errorUploadState": {
+    "en": "This upload is already published or cancelled. Start a new upload.",
+    "text": "عملية الرفع هذه منشورة أو ملغاة بالفعل. ابدأ عملية رفع جديدة."
+  },
+  "errorRevisionMismatch": {
+    "en": "Someone changed this item meanwhile. Reload it and apply your change again.",
+    "text": "غيّر شخص آخر هذا العنصر في هذه الأثناء. أعد تحميله وطبّق تغييرك مرة أخرى."
+  },
+  "errorVersionExists": {
+    "en": "This package version already exists. Publish it under a new version.",
+    "text": "إصدار الحزمة هذا موجود بالفعل. انشرها برقم إصدار جديد."
+  },
+  "errorPartsIncomplete": {
+    "en": "Some parts of the file have not arrived yet. Resume the upload.",
+    "text": "لم تصل بعض أجزاء الملف بعد. استأنف الرفع."
+  },
+  "errorIdempotency": {
+    "en": "This duplicate protection key was already used for another file. Start a new upload to get a new key.",
+    "text": "استُخدم مفتاح الحماية من التكرار هذا من قبل لملف آخر. ابدأ عملية رفع جديدة للحصول على مفتاح جديد."
+  },
+  "errorAlreadyExists": {
+    "en": "An item with this name already exists. Choose another name.",
+    "text": "يوجد عنصر بهذا الاسم بالفعل. اختر اسمًا آخر."
+  },
+  "errorStageLimit": {
+    "en": "This artifact already has the maximum number of stages. Remove one first.",
+    "text": "بلغ هذا المُخرَج الحد الأقصى لعدد المراحل. أزل إحداها أولًا."
+  },
+  "errorStorageQuota": {
+    "en": "The repository quota is used up. Delete old builds or ask an administrator to raise it.",
+    "text": "استُنفدت حصة تخزين المستودع. احذف نسخ البناء القديمة أو اطلب من المسؤول زيادة الحصة."
+  },
+  "errorStorageFull": {
+    "en": "The server disk is full. Contact the administrator.",
+    "text": "قرص الخادم ممتلئ. اتصل بالمسؤول."
+  },
+  "errorAccountLimit": {
+    "en": "The maximum number of accounts has been reached.",
+    "text": "تم بلوغ الحد الأقصى لعدد الحسابات."
+  },
+  "errorGroupLimit": {
+    "en": "The maximum number of groups has been reached.",
+    "text": "تم بلوغ الحد الأقصى لعدد المجموعات."
+  },
+  "errorMembershipLimit": {
+    "en": "The maximum number of group members has been reached.",
+    "text": "تم بلوغ الحد الأقصى لعدد أعضاء المجموعات."
+  },
+  "errorGrantLimit": {
+    "en": "The maximum number of access rules has been reached.",
+    "text": "تم بلوغ الحد الأقصى لعدد قواعد الوصول."
+  },
+  "errorKeyLimit": {
+    "en": "The key limit for this account has been reached. Revoke unused keys first.",
+    "text": "تم بلوغ الحد الأقصى للمفاتيح في هذا الحساب. أبطل المفاتيح غير المستخدمة أولًا."
+  },
+  "errorTokenLimit": {
+    "en": "You already have the maximum of active tokens. Revoke unused tokens first.",
+    "text": "لديك بالفعل الحد الأقصى من الرموز النشطة. أبطل الرموز غير المستخدمة أولًا."
+  },
+  "errorDelegationLimit": {
+    "en": "The maximum number of delegations has been reached.",
+    "text": "تم بلوغ الحد الأقصى لعدد التفويضات."
+  },
+  "errorCatalogLimit": {
+    "en": "The storage catalog is full. Contact the administrator.",
+    "text": "فهرس التخزين ممتلئ. اتصل بالمسؤول."
+  },
+  "errorQueueFull": {
+    "en": "The processing queue is full. Try again later.",
+    "text": "قائمة انتظار المعالجة ممتلئة. حاول لاحقًا."
+  },
+  "errorTransferLimit": {
+    "en": "Too many transfers are running right now. Try again later.",
+    "text": "تجري حاليًا عمليات نقل كثيرة جدًا. حاول لاحقًا."
+  },
+  "errorCompletionFailed": {
+    "en": "The server could not finish this upload. Start a new upload or contact the administrator.",
+    "text": "تعذّر على الخادم إكمال عملية الرفع هذه. ابدأ عملية رفع جديدة أو اتصل بالمسؤول."
+  },
+  "errorUnexpectedResponse": {
+    "en": "The server sent an answer this console does not understand. Update the server or the console.",
+    "text": "أرسل الخادم ردًا لا تفهمه وحدة التحكم هذه. حدّث الخادم أو وحدة التحكم."
+  },
+  "fieldRequired": {
+    "en": "Required.",
+    "text": "حقل مطلوب."
+  },
+  "fieldInvalid": {
+    "en": "Check this value.",
+    "text": "تحقّق من هذه القيمة."
+  },
+  "fieldFormat": {
+    "en": "The format is not valid.",
+    "text": "التنسيق غير صالح."
+  },
+  "fieldLength": {
+    "en": "The length is outside the allowed range.",
+    "text": "الطول خارج النطاق المسموح به."
+  },
+  "fieldRange": {
+    "en": "The value is outside the allowed range.",
+    "text": "القيمة خارج النطاق المسموح به."
+  },
+  "fieldType": {
+    "en": "This kind of value is not accepted.",
+    "text": "هذا النوع من القيم غير مقبول."
+  },
+  "fieldUnknown": {
+    "en": "The server does not accept this field.",
+    "text": "لا يقبل الخادم هذا الحقل."
+  },
+  "requestIdLabel": {
+    "en": "Request ID",
+    "text": "معرّف الطلب"
+  },
+  "retryIn": {
+    "en": "Try again in {seconds} s.",
+    "text": "حاول مرة أخرى بعد {seconds} ث."
+  },
+  "repositories": {
+    "en": "Repositories",
+    "text": "المستودعات"
+  },
+  "services": {
+    "en": "Service access",
+    "text": "وصول الخدمات"
+  },
+  "managementReload": {
+    "en": "Reload",
+    "text": "إعادة تحميل"
+  },
+  "managementMore": {
+    "en": "Next page",
+    "text": "الصفحة التالية"
+  },
+  "managementEmpty": {
+    "en": "No entries available for this credential.",
+    "text": "لا توجد إدخالات متاحة لبيانات الاعتماد هذه."
+  },
+  "managementSaved": {
+    "en": "Changes saved.",
+    "text": "تم حفظ التغييرات."
+  },
+  "managementClose": {
+    "en": "Close",
+    "text": "إغلاق"
+  },
+  "repositoryModel": {
+    "en": "A repository appears once access to it is granted. Renaming or deleting repositories is not available here.",
+    "text": "يظهر المستودع بمجرد منح الوصول إليه. لا تتوفر هنا إعادة تسمية المستودعات أو حذفها."
+  },
+  "managementAccountInfo": {
+    "en": "ID {id} · version {revision}",
+    "text": "المعرّف {id} · المراجعة {revision}"
+  },
+  "repositoryOpen": {
+    "en": "Open files",
+    "text": "فتح الملفات"
+  },
+  "repositoryStorage": {
+    "en": "Storage & cleanup",
+    "text": "التخزين والتنظيف"
+  },
+  "repositoryAccess": {
+    "en": "Manage access",
+    "text": "إدارة الوصول"
+  },
+  "repositoryRights": {
+    "en": "Your permissions",
+    "text": "أذوناتك"
+  },
+  "serviceCreate": {
+    "en": "Create service account",
+    "text": "إنشاء حساب خدمة"
+  },
+  "serviceName": {
+    "en": "Account name",
+    "text": "اسم الحساب"
+  },
+  "servicePolicy": {
+    "en": "Repository permissions",
+    "text": "أذونات المستودعات"
+  },
+  "servicePolicyHint": {
+    "en": "A key can do only what both this policy and the key itself allow. An empty policy gives no access to files.",
+    "text": "لا يمكن للمفتاح أن ينفّذ إلا ما تسمح به هذه السياسة والمفتاح نفسه معًا. السياسة الفارغة لا تمنح أي وصول إلى الملفات."
+  },
+  "serviceEnable": {
+    "en": "Enable account",
+    "text": "تمكين الحساب"
+  },
+  "serviceDisable": {
+    "en": "Disable account",
+    "text": "تعطيل الحساب"
+  },
+  "serviceDisableHint": {
+    "en": "Disabling blocks every key of this account. Active transfers may finish.",
+    "text": "يؤدي التعطيل إلى حظر كل مفاتيح هذا الحساب. قد تكتمل عمليات النقل الجارية."
+  },
+  "servicePolicySave": {
+    "en": "Save policy",
+    "text": "حفظ السياسة"
+  },
+  "serviceKeys": {
+    "en": "Service keys",
+    "text": "مفاتيح الخدمة"
+  },
+  "serviceAudit": {
+    "en": "Activity log",
+    "text": "سجل النشاط"
+  },
+  "serviceRefresh": {
+    "en": "Reload account",
+    "text": "إعادة تحميل الحساب"
+  },
+  "serviceDelegated": {
+    "en": "Access is limited to assigned accounts and actions.",
+    "text": "يقتصر الوصول على الحسابات والإجراءات المعيّنة لك."
+  },
+  "bindingAdd": {
+    "en": "Add repository",
+    "text": "إضافة مستودع"
+  },
+  "bindingPermissions": {
+    "en": "Individual permissions",
+    "text": "أذونات فردية"
+  },
+  "bindingRead": {
+    "en": "Read preset",
+    "text": "إعداد مسبق للقراءة"
+  },
+  "bindingPublish": {
+    "en": "Publish preset",
+    "text": "إعداد مسبق للنشر"
+  },
+  "bindingNone": {
+    "en": "Clear permissions",
+    "text": "مسح الأذونات"
+  },
+  "bindingRemove": {
+    "en": "Remove repository",
+    "text": "إزالة المستودع"
+  },
+  "bindingInvalid": {
+    "en": "Use unique repository IDs and select at least one permission for each repository.",
+    "text": "استخدم معرّفات مستودعات غير مكرّرة واختر إذنًا واحدًا على الأقل لكل مستودع."
+  },
+  "keyNew": {
+    "en": "New key / cancel rotation",
+    "text": "مفتاح جديد / إلغاء التدوير"
+  },
+  "keyIssue": {
+    "en": "Issue key",
+    "text": "إصدار مفتاح"
+  },
+  "keyExpires": {
+    "en": "Expires",
+    "text": "ينتهي في"
+  },
+  "keyName": {
+    "en": "Key name",
+    "text": "اسم المفتاح"
+  },
+  "keyExpiry": {
+    "en": "Expires at (local time, optional)",
+    "text": "تاريخ انتهاء الصلاحية (بالتوقيت المحلي، اختياري)"
+  },
+  "keyExpiryHint": {
+    "en": "Default: up to 90 days. Maximum: 365 days, also limited by the issuing operator’s expiry.",
+    "text": "الافتراضي: حتى 90 يومًا. الحد الأقصى: 365 يومًا، ولا يتجاوز أيضًا تاريخ انتهاء صلاحية المشغّل الذي يُصدره."
+  },
+  "keyRotate": {
+    "en": "Rotate",
+    "text": "تدوير"
+  },
+  "keyRevoke": {
+    "en": "Revoke",
+    "text": "إبطال"
+  },
+  "keyPending": {
+    "en": "Pending activation",
+    "text": "بانتظار التنشيط"
+  },
+  "keyActive": {
+    "en": "Active",
+    "text": "نشط"
+  },
+  "keyRevoked": {
+    "en": "Revoked",
+    "text": "مُبطَل"
+  },
+  "keyExpired": {
+    "en": "Expired",
+    "text": "منتهي الصلاحية"
+  },
+  "keyRotationHint": {
+    "en": "Rotation cannot expand permissions. Activating the replacement limits the old key to at most 24 more hours. Delegations are not copied.",
+    "text": "لا يمكن للتدوير توسيع الأذونات. يؤدي تنشيط المفتاح البديل إلى قصر صلاحية المفتاح القديم على 24 ساعة إضافية كحد أقصى. لا تُنسخ التفويضات."
+  },
+  "keyRevokeHint": {
+    "en": "Revocation is permanent. Existing transfers may finish; new requests will be rejected.",
+    "text": "الإبطال نهائي. قد تكتمل عمليات النقل الجارية، أما الطلبات الجديدة فستُرفض."
+  },
+  "keySecret": {
+    "en": "Save the new secret",
+    "text": "احفظ السر الجديد"
+  },
+  "keySecretHint": {
+    "en": "Shown once. Save the secret securely before closing.",
+    "text": "يُعرض مرة واحدة فقط. احفظ السر في مكان آمن قبل الإغلاق."
+  },
+  "keySecretMissing": {
+    "en": "The key was already issued; its secret cannot be shown again. Find it in the list, revoke it and issue another key if needed.",
+    "text": "صدر المفتاح بالفعل، ولا يمكن عرض سره مرة أخرى. ابحث عنه في القائمة وأبطله، ثم أصدر مفتاحًا آخر عند الحاجة."
+  },
+  "keyCopy": {
+    "en": "Copy secret",
+    "text": "نسخ السر"
+  },
+  "keyCopied": {
+    "en": "Copied.",
+    "text": "تم النسخ."
+  },
+  "keyCopyFailed": {
+    "en": "Clipboard unavailable. Select and copy the secret manually.",
+    "text": "الحافظة غير متاحة. حدّد السر وانسخه يدويًا."
+  },
+  "keyActivate": {
+    "en": "Activate key",
+    "text": "تنشيط المفتاح"
+  },
+  "keyActivated": {
+    "en": "Key activated. Store it securely before closing.",
+    "text": "تم تنشيط المفتاح. خزّنه في مكان آمن قبل الإغلاق."
+  },
+  "keySaved": {
+    "en": "I have saved the secret",
+    "text": "لقد حفظت السر"
+  },
+  "keyActivateHint": {
+    "en": "Activate after saving the secret. Pending credentials expire after 15 minutes.",
+    "text": "نشّط المفتاح بعد حفظ السر. تنتهي صلاحية بيانات الاعتماد التي تنتظر التنشيط بعد 15 دقيقة."
+  },
+  "keyRetryHint": {
+    "en": "After a network failure, retry without changing the form to reuse the issuance request. A lost secret cannot be recovered.",
+    "text": "بعد أي عطل في الشبكة، أعد المحاولة دون تغيير النموذج لإعادة استخدام طلب الإصدار نفسه. لا يمكن استرداد السر المفقود."
+  },
+  "managementConfirm": {
+    "en": "Confirm action",
+    "text": "تأكيد الإجراء"
+  },
+  "managementConfirmName": {
+    "en": "Type the displayed name to confirm",
+    "text": "اكتب الاسم المعروض للتأكيد"
+  },
+  "managementConfirmSubmit": {
+    "en": "Confirm",
+    "text": "تأكيد"
+  },
+  "delegations": {
+    "en": "Delegated administration",
+    "text": "الإدارة المفوَّضة"
+  },
+  "delegationTarget": {
+    "en": "Target account ID",
+    "text": "معرّف الحساب المستهدف"
+  },
+  "delegationActions": {
+    "en": "Administrative actions",
+    "text": "الإجراءات الإدارية"
+  },
+  "delegationCeiling": {
+    "en": "Maximum repository permissions",
+    "text": "الحد الأقصى لأذونات المستودعات"
+  },
+  "delegationSave": {
+    "en": "Save delegation",
+    "text": "حفظ التفويض"
+  },
+  "delegationRemove": {
+    "en": "Remove delegation",
+    "text": "إزالة التفويض"
+  },
+  "delegationNew": {
+    "en": "New delegation",
+    "text": "تفويض جديد"
+  },
+  "delegationHint": {
+    "en": "Only the server owner (the setup account) can change delegations. Removing a delegation does not revoke keys its holder already activated.",
+    "text": "لا يمكن تغيير التفويضات إلا لمالك الخادم (حساب الإعداد الأول). لا تؤدي إزالة التفويض إلى إبطال المفاتيح التي نشّطها صاحبه بالفعل."
+  },
+  "delegationOwn": {
+    "en": "My administrative grants",
+    "text": "أذوناتي الإدارية"
+  },
+  "keyDetails": {
+    "en": "Key details",
+    "text": "تفاصيل المفتاح"
+  },
+  "permission.repository.read": {
+    "en": "Discover repositories",
+    "text": "اكتشاف المستودعات"
+  },
+  "permission.storage.read": {
+    "en": "View storage policy and usage",
+    "text": "عرض سياسة التخزين والاستخدام"
+  },
+  "permission.storage.manage": {
+    "en": "Manage storage policy",
+    "text": "إدارة سياسة التخزين"
+  },
+  "permission.diagnostics.read": {
+    "en": "Read diagnostics",
+    "text": "قراءة بيانات التشخيص"
+  },
+  "permission.artifact.read": {
+    "en": "Read artifact details",
+    "text": "قراءة تفاصيل المُخرَجات"
+  },
+  "permission.artifact.list": {
+    "en": "List artifacts",
+    "text": "سرد المُخرَجات"
+  },
+  "permission.artifact.delete": {
+    "en": "Delete artifacts",
+    "text": "حذف المُخرَجات"
+  },
+  "permission.artifact.promote": {
+    "en": "Promote artifacts and manage stages",
+    "text": "ترقية المُخرَجات وإدارة المراحل"
+  },
+  "permission.content.read": {
+    "en": "Download files",
+    "text": "تنزيل الملفات"
+  },
+  "permission.upload.create": {
+    "en": "Start uploads",
+    "text": "بدء عمليات الرفع"
+  },
+  "permission.upload.read": {
+    "en": "Read upload progress",
+    "text": "قراءة تقدّم الرفع"
+  },
+  "permission.upload.write": {
+    "en": "Upload bytes",
+    "text": "رفع البيانات"
+  },
+  "permission.upload.complete": {
+    "en": "Finish uploads",
+    "text": "إنهاء عمليات الرفع"
+  },
+  "permission.upload.cancel": {
+    "en": "Cancel uploads",
+    "text": "إلغاء عمليات الرفع"
+  },
+  "permission.job.read": {
+    "en": "Read jobs",
+    "text": "قراءة المهام"
+  },
+  "permission.package.read": {
+    "en": "Read packages",
+    "text": "قراءة الحزم"
+  },
+  "permission.package.publish": {
+    "en": "Publish packages",
+    "text": "نشر الحزم"
+  },
+  "permission.asset.read": {
+    "en": "Read file links",
+    "text": "قراءة روابط الملفات"
+  },
+  "permission.asset.write": {
+    "en": "Assign file links",
+    "text": "تعيين روابط الملفات"
+  },
+  "permission.asset.restore": {
+    "en": "Restore file history",
+    "text": "استعادة محفوظات الملفات"
+  },
+  "permission.annotation.read": {
+    "en": "Read metadata",
+    "text": "قراءة بيانات التعريف"
+  },
+  "permission.annotation.write": {
+    "en": "Edit metadata",
+    "text": "تحرير بيانات التعريف"
+  },
+  "permission.reference.write": {
+    "en": "Manage references",
+    "text": "إدارة الارتباطات"
+  },
+  "permission.audit.read": {
+    "en": "Read audit",
+    "text": "قراءة سجل التدقيق"
+  },
+  "permission.service-account.read": {
+    "en": "Read accounts",
+    "text": "قراءة الحسابات"
+  },
+  "permission.service-account.manage": {
+    "en": "Enable or disable accounts",
+    "text": "تمكين الحسابات أو تعطيلها"
+  },
+  "permission.policy.read": {
+    "en": "Read account policies",
+    "text": "قراءة سياسات الحسابات"
+  },
+  "permission.policy.manage": {
+    "en": "Manage account policies",
+    "text": "إدارة سياسات الحسابات"
+  },
+  "permission.credential.read": {
+    "en": "Read key metadata",
+    "text": "قراءة بيانات تعريف المفاتيح"
+  },
+  "permission.credential.manage": {
+    "en": "Issue, rotate and revoke keys",
+    "text": "إصدار المفاتيح وتدويرها وإبطالها"
+  },
+  "permission.service-audit.read": {
+    "en": "Read service audit",
+    "text": "قراءة سجل تدقيق الخدمات"
+  },
+  "welcomePartial": {
+    "en": "The owner account exists. Sign in and finish repository permissions in Access groups; account creation must not be repeated.",
+    "text": "حساب المالك موجود بالفعل. سجّل الدخول وأكمل منح أذونات المستودعات في «مجموعات الوصول»؛ ولا تكرّر إنشاء الحساب."
+  },
+  "onboarding": {
+    "en": "Welcome to Arkvory",
+    "text": "مرحبًا بك في Arkvory"
+  },
+  "help": {
+    "en": "API & CLI",
+    "text": "API و CLI"
+  },
+  "welcomeAccess": {
+    "en": "01 · Sign in",
+    "text": "01 · سجّل الدخول"
+  },
+  "welcomeAccessBody": {
+    "en": "On Windows, use the owner account you created in Setup. For a headless installation, create an owner using the private recovery key on the server.",
+    "text": "على Windows، استخدم حساب المالك الذي أنشأته في برنامج الإعداد. أما في التثبيت دون واجهة، فأنشئ مالكًا باستخدام مفتاح الاسترداد الخاص الموجود على الخادم."
+  },
+  "welcomeSignIn": {
+    "en": "Open sign in",
+    "text": "فتح تسجيل الدخول"
+  },
+  "welcomeOwner": {
+    "en": "Create the first owner",
+    "text": "إنشاء المالك الأول"
+  },
+  "welcomeRecovery": {
+    "en": "Recovery key",
+    "text": "مفتاح الاسترداد"
+  },
+  "welcomeName": {
+    "en": "Owner name · 3–64 Latin letters, digits, dot, dash or underscore",
+    "text": "اسم المالك · 3–64 من الأحرف اللاتينية أو الأرقام أو النقطة أو الشرطة أو الشرطة السفلية"
+  },
+  "welcomePassword": {
+    "en": "Password · at least 12 characters",
+    "text": "كلمة المرور · 12 حرفًا على الأقل"
+  },
+  "welcomeCreate": {
+    "en": "Create owner",
+    "text": "إنشاء المالك"
+  },
+  "welcomeCreated": {
+    "en": "Owner created. Sign in with your new password. Keep the recovery key offline.",
+    "text": "تم إنشاء المالك. سجّل الدخول بكلمة مرورك الجديدة. واحتفظ بمفتاح الاسترداد بعيدًا عن الشبكة."
+  },
+  "welcomePublish": {
+    "en": "02 · Publish a file",
+    "text": "02 · انشر ملفًا"
+  },
+  "welcomePublishBody": {
+    "en": "Start with a small file in releases. Add labels and metadata; UPack builds can also carry manifests and attachments.",
+    "text": "ابدأ بملف صغير في releases. أضف تسميات وبيانات تعريف؛ ويمكن أن تحمل نسخ بناء UPack أيضًا ملفات بيان ومرفقات."
+  },
+  "welcomePublishAction": {
+    "en": "Open uploads",
+    "text": "فتح عمليات الرفع"
+  },
+  "welcomeConnect": {
+    "en": "03 · Connect your tools",
+    "text": "03 · اربط أدواتك"
+  },
+  "welcomeConnectBody": {
+    "en": "Give each integration its own service account and only the repository actions it needs. The API catalog shows the operations available to you.",
+    "text": "خصّص لكل تكامل حساب خدمة مستقلًا، ولا تمنحه إلا إجراءات المستودع التي يحتاجها. ويعرض فهرس API العمليات المتاحة لك."
+  },
+  "welcomeOperate": {
+    "en": "04 · Prepare production",
+    "text": "04 · استعد للإنتاج"
+  },
+  "welcomeOperateBody": {
+    "en": "Before remote access: configure HTTPS, backups and disk alerts. Updates are opt-in. Local storage is a single-server profile.",
+    "text": "قبل فتح الوصول عن بُعد: اضبط HTTPS والنسخ الاحتياطية وتنبيهات مساحة القرص. التحديثات التلقائية لا تعمل إلا بعد تفعيلها. التخزين المحلي مخصص لخادم واحد."
+  },
+  "helpLoad": {
+    "en": "Load permitted API operations",
+    "text": "تحميل عمليات API المسموح بها"
+  },
+  "helpSearch": {
+    "en": "Search method, path or operation",
+    "text": "البحث بالأسلوب أو المسار أو العملية"
+  },
+  "helpHint": {
+    "en": "Sign in to see API operations available to your account.",
+    "text": "سجّل الدخول لعرض عمليات API المتاحة لحسابك."
+  },
+  "helpEmpty": {
+    "en": "No matching operations.",
+    "text": "لا توجد عمليات مطابقة."
+  },
+  "helpLoaded": {
+    "en": "Loaded {count} operations.",
+    "text": "العمليات المحمّلة: {count}."
+  },
+  "helpRetry": {
+    "en": "Retry policy:",
+    "text": "سياسة إعادة المحاولة:"
+  },
+  "helpActions": {
+    "en": "Required actions:",
+    "text": "الإجراءات المطلوبة:"
+  },
+  "helpCli": {
+    "en": "Server lifecycle CLI",
+    "text": "CLI لإدارة دورة حياة الخادم"
+  },
+  "helpRemoteCli": {
+    "en": "Remote client · arkvoryctl",
+    "text": "العميل البعيد · arkvoryctl"
+  },
+  "helpRemoteCliBody": {
+    "en": "Install the separate Arkvory CLI package on your computer. It includes Node.js and needs no server services. Store your key in a private file. Repeat the same transfer command after interruption; use --json for CI/CD.",
+    "text": "ثبّت حزمة Arkvory CLI المنفصلة على حاسوبك. فهي تتضمن Node.js ولا تحتاج إلى خدمات الخادم. خزّن مفتاحك في ملف خاص. بعد أي انقطاع، كرّر أمر النقل نفسه؛ واستخدم --json في CI/CD."
+  },
+  "helpCliBody": {
+    "en": "Run from an elevated terminal on the server. These commands manage deployment; integrations use the HTTP API and SDK. Replace ROOT with the installation directory.",
+    "text": "شغّل هذه الأوامر من طرفية بصلاحيات مرتفعة على الخادم. تدير هذه الأوامر التثبيت نفسه، أما التكاملات فتستخدم HTTP API و SDK. استبدل ROOT بمجلد التثبيت."
+  },
+  "helpDocs": {
+    "en": "Documentation",
+    "text": "التوثيق"
+  },
+  "helpDocsBody": {
+    "en": "Installation, everyday work, clients and protocols, operation, backups and the full HTTP API reference, in the language of the console.",
+    "text": "التثبيت، والعمل اليومي، والعملاء والبروتوكولات، والتشغيل، والنسخ الاحتياطية، ومرجع HTTP API الكامل، بلغة وحدة التحكم."
+  },
+  "helpDocsOpen": {
+    "en": "Open the documentation",
+    "text": "فتح التوثيق"
+  },
+  "helpRecipes": {
+    "en": "Integration checklist",
+    "text": "قائمة التحقق للتكامل"
+  },
+  "helpRecipesBody": {
+    "en": "Read capabilities → discover repositories → create upload with an idempotency key → resume parts → complete → poll readiness → download using Range and ETag. Never blindly retry a non-idempotent write.",
+    "text": "اقرأ الإمكانات (capabilities) ← اكتشف المستودعات ← أنشئ عملية رفع بمفتاح منع التكرار ← استأنف الأجزاء ← أكمل الرفع ← استطلع الجاهزية ← نزّل باستخدام Range و ETag. لا تُعِد أبدًا وبشكل أعمى كتابةً لا تضمن تكرارًا آمنًا."
+  },
+  "navigationExpand": {
+    "en": "Expand sidebar",
+    "text": "توسيع الشريط الجانبي"
+  },
+  "navigationCollapse": {
+    "en": "Collapse sidebar",
+    "text": "طي الشريط الجانبي"
+  },
+  "noUsers": {
+    "en": "No user accounts yet.",
+    "text": "لا توجد حسابات مستخدمين بعد."
+  },
+  "noAccessGroups": {
+    "en": "No access groups yet.",
+    "text": "لا توجد مجموعات وصول بعد."
+  },
+  "fileBrowse": {
+    "en": "Choose file",
+    "text": "اختيار ملف"
+  },
+  "fileNotSelected": {
+    "en": "No file selected",
+    "text": "لم يتم اختيار ملف"
+  },
+  "navLibrary": {
+    "en": "Library",
+    "text": "المكتبة"
+  },
+  "navTransfers": {
+    "en": "Transfers",
+    "text": "النقل"
+  },
+  "navResources": {
+    "en": "Resources",
+    "text": "الموارد"
+  },
+  "navStart": {
+    "en": "Getting started",
+    "text": "البدء"
+  },
+  "keyHelpLabel": {
+    "en": "About service keys",
+    "text": "حول مفاتيح الخدمة"
+  },
+  "catalogHelpLabel": {
+    "en": "About artifacts",
+    "text": "حول المُخرَجات"
+  },
+  "packageHelpLabel": {
+    "en": "About package filters",
+    "text": "حول عوامل تصفية الحزم"
+  },
+  "labelHelpLabel": {
+    "en": "About build labels",
+    "text": "حول تسميات نسخ البناء"
+  },
+  "metadataHelpLabel": {
+    "en": "About metadata",
+    "text": "حول بيانات التعريف"
+  },
+  "assetHelpLabel": {
+    "en": "About file links and versions",
+    "text": "حول روابط الملفات وإصداراتها"
+  },
+  "attachmentHelpLabel": {
+    "en": "About build attachments",
+    "text": "حول مرفقات نسخ البناء"
+  },
+  "historyHelpLabel": {
+    "en": "About file history",
+    "text": "حول محفوظات الملفات"
+  },
+  "adminHelpLabel": {
+    "en": "About access management",
+    "text": "حول إدارة الوصول"
+  },
+  "cleanupTitle": {
+    "en": "Physical cleanup",
+    "text": "التنظيف الفعلي"
+  },
+  "cleanupHelp": {
+    "en": "Frees disk space without stopping Arkvory. Active transfers and pinned files are deferred. Enable only after every Arkvory server is updated, including read servers and background processors. Pausing finishes the current file. The grace period is not a recycle bin.",
+    "text": "يحرّر مساحة القرص دون إيقاف Arkvory. تُؤجَّل عمليات النقل النشطة والملفات المثبّتة. لا تمكّنه إلا بعد تحديث كل خوادم Arkvory، بما فيها خوادم القراءة ومعالجات الخلفية. عند الإيقاف المؤقت يُستكمل الملف الحالي أولًا. فترة السماح ليست سلة محذوفات."
+  },
+  "cleanupEnabled": {
+    "en": "Enable background cleanup",
+    "text": "تمكين التنظيف في الخلفية"
+  },
+  "cleanupGrace": {
+    "en": "Grace period after deletion (hours)",
+    "text": "فترة السماح بعد الحذف (بالساعات)"
+  },
+  "cleanupBatch": {
+    "en": "Files per batch",
+    "text": "عدد الملفات في كل دفعة"
+  },
+  "cleanupInterval": {
+    "en": "Interval between batches (seconds)",
+    "text": "الفاصل بين الدفعات (بالثواني)"
+  },
+  "cleanupDelay": {
+    "en": "Delay between files (milliseconds)",
+    "text": "التأخير بين الملفات (بالمللي ثانية)"
+  },
+  "cleanupRefresh": {
+    "en": "Refresh cleanup status",
+    "text": "تحديث حالة التنظيف"
+  },
+  "cleanupSave": {
+    "en": "Apply settings",
+    "text": "تطبيق الإعدادات"
+  },
+  "cleanupRun": {
+    "en": "Request a batch",
+    "text": "طلب دفعة"
+  },
+  "cleanupSaved": {
+    "en": "Cleanup settings applied.",
+    "text": "تم تطبيق إعدادات التنظيف."
+  },
+  "cleanupRequested": {
+    "en": "Batch requested. Refresh status to see its result.",
+    "text": "تم طلب الدفعة. حدّث الحالة لرؤية نتيجتها."
+  },
+  "cleanupStats": {
+    "en": "Last batch: freed {bytes} · processed {collected} · deferred {deferred} · failed {failed}",
+    "text": "آخر دفعة: المساحة المحرَّرة {bytes} · المعالَج {collected} · المؤجَّل {deferred} · الفاشل {failed}"
+  },
+  "cleanupLastRun": {
+    "en": "Last completed batch:",
+    "text": "آخر دفعة مكتملة:"
+  },
+  "cleanupPaused": {
+    "en": "Cleanup is paused.",
+    "text": "التنظيف متوقف مؤقتًا."
+  },
+  "cleanupScheduled": {
+    "en": "Background cleanup is enabled.",
+    "text": "التنظيف في الخلفية مُمكَّن."
+  },
+  "updates": {
+    "en": "Updates",
+    "text": "التحديثات"
+  },
+  "updateAvailable": {
+    "en": "Arkvory {version} is available",
+    "text": "يتوفر Arkvory {version}"
+  },
+  "updateOpen": {
+    "en": "View update",
+    "text": "عرض التحديث"
+  },
+  "updateCurrent": {
+    "en": "Installed version",
+    "text": "الإصدار المثبَّت"
+  },
+  "updateLatest": {
+    "en": "Latest stable release",
+    "text": "أحدث إصدار مستقر"
+  },
+  "updateChecked": {
+    "en": "Last check",
+    "text": "آخر فحص"
+  },
+  "updateCheck": {
+    "en": "Check now",
+    "text": "التحقق الآن"
+  },
+  "updateInstall": {
+    "en": "Install update",
+    "text": "تثبيت التحديث"
+  },
+  "updateSettings": {
+    "en": "Automatic updates",
+    "text": "التحديثات التلقائية"
+  },
+  "updateAutomatic": {
+    "en": "Install compatible stable releases automatically",
+    "text": "تثبيت الإصدارات المستقرة المتوافقة تلقائيًا"
+  },
+  "updateHour": {
+    "en": "Maintenance hour (UTC)",
+    "text": "ساعة الصيانة (UTC)"
+  },
+  "updateSave": {
+    "en": "Save settings",
+    "text": "حفظ الإعدادات"
+  },
+  "updateStatistics": {
+    "en": "Send anonymous statistics to ProAnimaStudio",
+    "text": "إرسال إحصاءات مجهولة الهوية إلى ProAnimaStudio"
+  },
+  "updateHub": {
+    "en": "Channel: {channel}. Versions are approved in the ProAnimaStudio hub; GitHub is used only when the hub cannot be reached. Statistics: a random installation id, version, system and installed updates — no names, addresses or content. Without statistics a version arrives only when it is rolled out to everyone.",
+    "text": "القناة: {channel}. تُعتمد الإصدارات في مركز ProAnimaStudio، ولا يُستخدم GitHub إلا عند تعذّر الوصول إلى المركز. الإحصاءات: معرّف تثبيت عشوائي، والإصدار، والنظام، والتحديثات المثبّتة — دون أسماء أو عناوين أو محتوى. ومن دون الإحصاءات لا يصلك الإصدار إلا عند طرحه للجميع."
+  },
+  "updatePolicyHelp": {
+    "en": "Checks run every 6 hours, even when automatic installation is off. Automatic installation runs once per day during the selected UTC hour. A release that changes the database schema installs only after the server has captured and verified a fresh backup.",
+    "text": "يجري الفحص كل 6 ساعات، حتى عند إيقاف التثبيت التلقائي. يعمل التثبيت التلقائي مرة واحدة يوميًا خلال ساعة UTC المحددة. الإصدار الذي يغيّر مخطط قاعدة البيانات لا يُثبَّت إلا بعد أن يلتقط الخادم نسخة احتياطية حديثة ويتحقق منها."
+  },
+  "updateUnavailable": {
+    "en": "The host updater is not connected. Ask the server administrator to connect it using updates-connect.",
+    "text": "أداة التحديث على المضيف غير موصولة. اطلب من مسؤول الخادم توصيلها باستخدام updates-connect."
+  },
+  "updateStale": {
+    "en": "The host updater has stopped reporting. Check the scheduler and installation lock on the server.",
+    "text": "توقفت أداة التحديث على المضيف عن إرسال تقاريرها. تحقّق من المجدول وقفل التثبيت على الخادم."
+  },
+  "updateIdle": {
+    "en": "Updater is ready",
+    "text": "أداة التحديث جاهزة"
+  },
+  "updateChecking": {
+    "en": "Checking stable releases…",
+    "text": "جارٍ التحقق من الإصدارات المستقرة…"
+  },
+  "updateWorking": {
+    "en": "Installing the release. The service may briefly disconnect; this page will reconnect.",
+    "text": "جارٍ تثبيت الإصدار. قد ينقطع الاتصال بالخدمة لفترة وجيزة، وستعيد هذه الصفحة الاتصال تلقائيًا."
+  },
+  "updatePending": {
+    "en": "Request accepted. Waiting for the host updater (usually within one minute).",
+    "text": "تم قبول الطلب. في انتظار أداة التحديث على المضيف (عادةً خلال دقيقة واحدة)."
+  },
+  "updateUnknown": {
+    "en": "Not checked yet",
+    "text": "لم يُجرَ الفحص بعد"
+  },
+  "updatePinned": {
+    "en": "Version is pinned. Remove the pin on the server before installing from the console.",
+    "text": "الإصدار مُجمَّد على الخادم. ألغِ التجميد هناك قبل التثبيت من وحدة التحكم."
+  },
+  "updateMaintenance": {
+    "en": "Installation refused: a release that changes the database schema needs a fresh verified backup. Connect a backup vault and complete the first backup, then check again, or upgrade manually on the server.",
+    "text": "رُفض التثبيت: الإصدار الذي يغيّر مخطط قاعدة البيانات يحتاج إلى نسخة احتياطية حديثة تم التحقق منها. اربط مخزن نسخ احتياطية وأكمل أول نسخة احتياطية، ثم تحقّق مرة أخرى، أو حدّث يدويًا على الخادم."
+  },
+  "updateMigration": {
+    "en": "This release changes the database schema. The server captures and verifies a backup before installing, so installation takes longer.",
+    "text": "يغيّر هذا الإصدار مخطط قاعدة البيانات. يلتقط الخادم نسخة احتياطية ويتحقق منها قبل التثبيت، لذا يستغرق التثبيت وقتًا أطول."
+  },
+  "updateCheckFailed": {
+    "en": "Release check failed. The displayed release may be outdated. Check GitHub access and credentials on the server.",
+    "text": "فشل التحقق من الإصدارات. قد يكون الإصدار المعروض قديمًا. تحقّق من الوصول إلى GitHub ومن بيانات الاعتماد على الخادم."
+  },
+  "updateFailed": {
+    "en": "Update failed. Inspect the installation journal and service logs before retrying.",
+    "text": "فشل التحديث. افحص سجل التثبيت وسجلات الخدمات قبل إعادة المحاولة."
+  },
+  "updateRecovery": {
+    "en": "Manual recovery is required. Inspect processes, installation lock and journal on the server.",
+    "text": "يلزم استرداد يدوي. افحص العمليات الجارية وقفل التثبيت وسجله على الخادم."
+  },
+  "updateConflict": {
+    "en": "Settings changed while the request was waiting. Refresh and submit again.",
+    "text": "تغيّرت الإعدادات بينما كان الطلب ينتظر. حدّث الصفحة وأرسل مرة أخرى."
+  },
+  "updateConfirm": {
+    "en": "Install Arkvory {version}?",
+    "text": "هل تريد تثبيت Arkvory {version}؟"
+  },
+  "updateConfirmHelp": {
+    "en": "Active transfers may be interrupted and need to resume. The installer verifies the release, backs up first when the database schema changes, and attempts rollback if startup fails. Schedule this action during a maintenance window.",
+    "text": "قد تنقطع عمليات النقل النشطة وتحتاج إلى استئناف. يتحقق برنامج التثبيت من الإصدار، ويأخذ نسخة احتياطية أولًا عندما يتغيّر مخطط قاعدة البيانات، ويحاول التراجع إذا فشل بدء التشغيل. جدوِل هذا الإجراء ضمن فترة صيانة."
+  },
+  "updateCancel": {
+    "en": "Cancel",
+    "text": "إلغاء"
+  },
+  "updateConfirmButton": {
+    "en": "Install this release",
+    "text": "تثبيت هذا الإصدار"
+  },
+  "updateConnection": {
+    "en": "Cannot contact Arkvory. Retrying automatically; do not submit another installation request.",
+    "text": "يتعذّر الاتصال بـ Arkvory. تجري إعادة المحاولة تلقائيًا؛ لا ترسل طلب تثبيت آخر."
+  },
+  "backups": {
+    "en": "Backups",
+    "text": "النسخ الاحتياطية"
+  },
+  "backupStateOk": {
+    "en": "Backups are healthy",
+    "text": "النسخ الاحتياطية سليمة"
+  },
+  "backupStateWarning": {
+    "en": "Needs attention",
+    "text": "تحتاج إلى انتباه"
+  },
+  "backupStateCritical": {
+    "en": "Action required",
+    "text": "يلزم اتخاذ إجراء"
+  },
+  "backupStateLoading": {
+    "en": "Loading status…",
+    "text": "جارٍ تحميل الحالة…"
+  },
+  "backupRefresh": {
+    "en": "Refresh status",
+    "text": "تحديث الحالة"
+  },
+  "backupRun": {
+    "en": "Create backup now",
+    "text": "إنشاء نسخة احتياطية الآن"
+  },
+  "backupNewest": {
+    "en": "Latest backup",
+    "text": "أحدث نسخة احتياطية"
+  },
+  "backupNewestNone": {
+    "en": "No backups yet",
+    "text": "لا توجد نسخ احتياطية بعد"
+  },
+  "backupNewestHelp": {
+    "en": "Age counts from the snapshot time T: a backup contains the data as of T, not as of its completion. Hover the age for the exact local time.",
+    "text": "يُحسب العمر من وقت اللقطة T: تحتوي النسخة الاحتياطية على البيانات كما كانت في اللحظة T، لا عند اكتمالها. مرّر المؤشر فوق العمر لرؤية الوقت المحلي الدقيق."
+  },
+  "backupNewestHelpLabel": {
+    "en": "About backup age",
+    "text": "حول عمر النسخة الاحتياطية"
+  },
+  "backupNextRun": {
+    "en": "Next run",
+    "text": "التشغيل التالي"
+  },
+  "backupNextDisabled": {
+    "en": "Schedule is off",
+    "text": "الجدول متوقف"
+  },
+  "backupNextUnknown": {
+    "en": "Not scheduled",
+    "text": "غير مجدول"
+  },
+  "backupOverdue": {
+    "en": "Overdue",
+    "text": "متأخر"
+  },
+  "backupAgent": {
+    "en": "Backup agent",
+    "text": "وكيل النسخ الاحتياطي"
+  },
+  "backupAgentOnline": {
+    "en": "Online",
+    "text": "متصل"
+  },
+  "backupAgentOffline": {
+    "en": "Offline",
+    "text": "غير متصل"
+  },
+  "backupAgentNever": {
+    "en": "Has not connected yet",
+    "text": "لم يتصل بعد"
+  },
+  "backupAgentSeen": {
+    "en": "Last signal",
+    "text": "آخر إشارة"
+  },
+  "backupAgentVersion": {
+    "en": "· version {version}",
+    "text": "· الإصدار {version}"
+  },
+  "backupVault": {
+    "en": "Backup storage",
+    "text": "مخزن النسخ الاحتياطية"
+  },
+  "backupVaultFree": {
+    "en": "{free} free of {total}",
+    "text": "المساحة الحرة {free} من {total}"
+  },
+  "backupVaultAvailable": {
+    "en": "Available",
+    "text": "متاح"
+  },
+  "backupVaultNotConfigured": {
+    "en": "Not configured",
+    "text": "غير مكوَّن"
+  },
+  "backupVaultUnknown": {
+    "en": "Unknown while the agent is offline",
+    "text": "غير معروف ما دام الوكيل غير متصل"
+  },
+  "backupVaultUnavailable": {
+    "en": "Unavailable",
+    "text": "غير متاح"
+  },
+  "backupWarningsLabel": {
+    "en": "Backup warnings",
+    "text": "تحذيرات النسخ الاحتياطي"
+  },
+  "backupSeverityWarning": {
+    "en": "Warning",
+    "text": "تحذير"
+  },
+  "backupSeverityCritical": {
+    "en": "Critical",
+    "text": "حرج"
+  },
+  "backupWarningHelpLabel": {
+    "en": "What to do",
+    "text": "ما الذي يجب فعله"
+  },
+  "backupWarningVaultNotConfigured": {
+    "en": "Backup storage is not configured for the agent",
+    "text": "لم يُكوَّن مخزن النسخ الاحتياطية للوكيل"
+  },
+  "backupWarningAgentOffline": {
+    "en": "The backup agent is offline",
+    "text": "وكيل النسخ الاحتياطي غير متصل"
+  },
+  "backupWarningScheduleDisabled": {
+    "en": "The daily schedule is off",
+    "text": "الجدول اليومي متوقف"
+  },
+  "backupWarningNoBackupYet": {
+    "en": "There is no backup yet",
+    "text": "لا توجد نسخة احتياطية بعد"
+  },
+  "backupWarningBackupStale": {
+    "en": "The latest backup is out of date",
+    "text": "أحدث نسخة احتياطية قديمة"
+  },
+  "backupWarningLastRunFailed": {
+    "en": "The last backup failed",
+    "text": "فشلت آخر نسخة احتياطية"
+  },
+  "backupWarningVaultUnavailable": {
+    "en": "Backup storage is unavailable",
+    "text": "مخزن النسخ الاحتياطية غير متاح"
+  },
+  "backupWarningVaultLowSpace": {
+    "en": "Backup storage is running out of space",
+    "text": "مساحة مخزن النسخ الاحتياطية توشك على النفاد"
+  },
+  "backupWarningVerifyFailed": {
+    "en": "A restore point failed verification",
+    "text": "فشلت إحدى نقاط الاستعادة في التحقق"
+  },
+  "backupWarningNeverDeepVerified": {
+    "en": "No full verification for more than 8 days",
+    "text": "لم يُجرَ تحقق كامل منذ أكثر من 8 أيام"
+  },
+  "backupActionVaultNotConfigured": {
+    "en": "Set ARKVORY_BACKUP_VAULT to a directory prepared with vault init in the environment of the arkvory-backup service and restart it. Once installers support it, use arkvory configure --backup-vault.",
+    "text": "عيّن ARKVORY_BACKUP_VAULT إلى مجلد مُهيّأ بالأمر vault init في بيئة الخدمة arkvory-backup، ثم أعد تشغيلها. وعندما تدعم برامج التثبيت ذلك، استخدم arkvory configure --backup-vault."
+  },
+  "backupActionAgentOffline": {
+    "en": "Start the arkvory-backup service (npm run backup -- agent) and check its journal. Without the agent nothing is copied.",
+    "text": "شغّل الخدمة arkvory-backup (npm run backup -- agent) وافحص سجلها. فمن دون الوكيل لا يُنسخ شيء."
+  },
+  "backupActionScheduleDisabled": {
+    "en": "Turn on the plan below if backups must run every day.",
+    "text": "شغّل الخطة أدناه إذا كان يجب إجراء النسخ الاحتياطي يوميًا."
+  },
+  "backupActionNoBackupYet": {
+    "en": "Create the first backup with \"Create backup now\".",
+    "text": "أنشئ أول نسخة احتياطية بالزر «إنشاء نسخة احتياطية الآن»."
+  },
+  "backupActionBackupStale": {
+    "en": "The newest point is older than 26 hours. Check the job error codes below and the agent journal.",
+    "text": "أحدث نقطة أقدم من 26 ساعة. افحص رموز أخطاء المهام أدناه وسجل الوكيل."
+  },
+  "backupActionLastRunFailed": {
+    "en": "The error code is in the job table; the agent journal has the record backup.request.failed.",
+    "text": "رمز الخطأ موجود في جدول المهام، ويحتوي سجل الوكيل على الإدخال backup.request.failed."
+  },
+  "backupActionVaultUnavailable": {
+    "en": "The backup storage volume is not mounted, has no vault.json or is not writable. Check the disk or NAS on the server.",
+    "text": "وحدة تخزين النسخ الاحتياطية غير مُركّبة، أو لا تحتوي على vault.json، أو غير قابلة للكتابة. افحص القرص أو NAS على الخادم."
+  },
+  "backupActionVaultLowSpace": {
+    "en": "Less than 10% or less than twice the last new data is free. Free space on the backup volume or keep fewer points.",
+    "text": "المساحة الحرة أقل من 10% أو أقل من ضعف حجم البيانات الجديدة في آخر نسخة. حرّر مساحة على وحدة تخزين النسخ الاحتياطية أو احتفظ بعدد أقل من النقاط."
+  },
+  "backupActionVerifyFailed": {
+    "en": "Do not change the backup storage. Find the point with a verification error below and investigate its code.",
+    "text": "لا تغيّر مخزن النسخ الاحتياطية. ابحث أدناه عن النقطة التي فيها خطأ تحقق وافحص رمزه."
+  },
+  "backupActionNeverDeepVerified": {
+    "en": "Run \"Verify fully\" for the newest point and check that the agent is running.",
+    "text": "شغّل «تحقق كامل» لأحدث نقطة وتأكّد من أن الوكيل يعمل."
+  },
+  "backupRestoreNote": {
+    "en": "Restoring is an operator action on the server, into an empty target.",
+    "text": "الاستعادة إجراء ينفّذه المشغّل على الخادم، وتكون إلى هدف فارغ."
+  },
+  "backupRestoreHelp": {
+    "en": "On the server: npm run backup -- restore --vault <vault> --point <id> --storage <empty directory>, with ARKVORY_RESTORE_DATABASE_URL of an empty database. Run it first without --yes (a check that writes nothing), then with --yes, start a separate instance on the restored data and check it before switching production. Details: the documentation, \"Backups\".",
+    "text": "على الخادم: npm run backup -- restore --vault <vault> --point <id> --storage <empty directory>، مع ARKVORY_RESTORE_DATABASE_URL لقاعدة بيانات فارغة. شغّله أولًا دون --yes (فحص لا يكتب شيئًا)، ثم مع --yes، ثم شغّل مثيلًا منفصلًا على البيانات المستعادة وافحصه قبل تحويل الإنتاج إليه. التفاصيل: التوثيق، قسم «النسخ الاحتياطية»."
+  },
+  "backupRestoreHelpLabel": {
+    "en": "How to restore",
+    "text": "كيفية الاستعادة"
+  },
+  "backupRunningLabel": {
+    "en": "Running now",
+    "text": "قيد التشغيل الآن"
+  },
+  "backupRunQueued": {
+    "en": "Backup queued. The agent starts it at its next queue check.",
+    "text": "أُضيفت النسخة الاحتياطية إلى قائمة الانتظار. سيبدأها الوكيل عند فحصه التالي للقائمة."
+  },
+  "backupVerifyQueued": {
+    "en": "Full verification queued.",
+    "text": "أُضيف التحقق الكامل إلى قائمة الانتظار."
+  },
+  "backupRetentionQueued": {
+    "en": "Retention queued: the agent removes the points outside the policy.",
+    "text": "أُضيف الاحتفاظ إلى قائمة الانتظار: سيزيل الوكيل النقاط الخارجة عن السياسة."
+  },
+  "backupPinDone": {
+    "en": "Point pinned: retention keeps it.",
+    "text": "تم تثبيت النقطة: ستُبقيها قواعد الاحتفاظ."
+  },
+  "backupUnpinDone": {
+    "en": "Point unpinned.",
+    "text": "تم إلغاء تثبيت النقطة."
+  },
+  "backupPoints": {
+    "en": "Restore points",
+    "text": "نقاط الاستعادة"
+  },
+  "backupPointsHelp": {
+    "en": "Retention keeps the newest point of each of the last N local days of the plan time zone, and likewise of weeks and months, plus pinned points and the newest point. Other points of the same day are removed: pin a point you must keep.",
+    "text": "تُبقي قواعد الاحتفاظ أحدث نقطة لكل يوم من آخر N أيام محلية وفق المنطقة الزمنية للخطة، وكذلك للأسابيع والأشهر، إضافةً إلى النقاط المثبّتة وأحدث نقطة. تُزال النقاط الأخرى من اليوم نفسه: ثبّت أي نقطة يجب الاحتفاظ بها."
+  },
+  "backupPointsHelpLabel": {
+    "en": "About retention",
+    "text": "حول الاحتفاظ"
+  },
+  "backupRetentionApply": {
+    "en": "Apply retention",
+    "text": "تطبيق الاحتفاظ"
+  },
+  "backupPointsEmpty": {
+    "en": "No restore points in the current backup storage yet.",
+    "text": "لا توجد نقاط استعادة في مخزن النسخ الاحتياطية الحالي بعد."
+  },
+  "backupSnapshot": {
+    "en": "State as of (T)",
+    "text": "الحالة في (T)"
+  },
+  "backupCompleted": {
+    "en": "Completed",
+    "text": "وقت الاكتمال"
+  },
+  "backupSize": {
+    "en": "Size",
+    "text": "الحجم"
+  },
+  "backupNewBytes": {
+    "en": "+{size} new",
+    "text": "+{size} جديد"
+  },
+  "backupFiles": {
+    "en": "Files",
+    "text": "الملفات"
+  },
+  "backupVerification": {
+    "en": "Verification",
+    "text": "التحقق"
+  },
+  "backupVerifyNone": {
+    "en": "Not verified",
+    "text": "لم يُتحقَّق منها"
+  },
+  "backupVerifyStructural": {
+    "en": "Structure checked",
+    "text": "تم فحص البنية"
+  },
+  "backupVerifyDeep": {
+    "en": "Fully verified",
+    "text": "تم التحقق بالكامل"
+  },
+  "backupVerifyFailed": {
+    "en": "Verification failed",
+    "text": "فشل التحقق"
+  },
+  "backupPinnedColumn": {
+    "en": "Pinned",
+    "text": "التثبيت"
+  },
+  "backupPinnedYes": {
+    "en": "Pinned",
+    "text": "مثبّتة"
+  },
+  "backupVerifyDeepAction": {
+    "en": "Verify fully",
+    "text": "تحقق كامل"
+  },
+  "backupPin": {
+    "en": "Pin",
+    "text": "تثبيت"
+  },
+  "backupUnpin": {
+    "en": "Unpin",
+    "text": "إلغاء التثبيت"
+  },
+  "backupRetentionConfirm": {
+    "en": "Apply retention now? Removal from the backup storage cannot be undone: the points below and the content no remaining point needs are deleted.",
+    "text": "هل تريد تطبيق الاحتفاظ الآن؟ لا يمكن التراجع عن الإزالة من مخزن النسخ الاحتياطية: ستُحذف النقاط أدناه والمحتوى الذي لم تعد تحتاجه أي نقطة متبقية."
+  },
+  "backupRetentionKeep": {
+    "en": "Kept: {count}",
+    "text": "المُبقاة: {count}"
+  },
+  "backupRetentionDelete": {
+    "en": "Removed: {count}",
+    "text": "المُزالة: {count}"
+  },
+  "backupRetentionNothing": {
+    "en": "Nothing to remove.",
+    "text": "لا يوجد ما يُزال."
+  },
+  "backupReasonDaily": {
+    "en": "day",
+    "text": "يوم"
+  },
+  "backupReasonWeekly": {
+    "en": "week",
+    "text": "أسبوع"
+  },
+  "backupReasonMonthly": {
+    "en": "month",
+    "text": "شهر"
+  },
+  "backupReasonPinned": {
+    "en": "pinned",
+    "text": "مثبّتة"
+  },
+  "backupReasonNewest": {
+    "en": "newest",
+    "text": "الأحدث"
+  },
+  "backupPointShort": {
+    "en": "Point {id}",
+    "text": "النقطة {id}"
+  },
+  "backupJobs": {
+    "en": "Jobs",
+    "text": "المهام"
+  },
+  "backupJobsHelp": {
+    "en": "Jobs run in the backup agent on the server, one at a time; closing this page does not stop them. Every backup is followed by a structure check and retention.",
+    "text": "تعمل المهام في وكيل النسخ الاحتياطي على الخادم، واحدة تلو الأخرى، ولا يؤدي إغلاق هذه الصفحة إلى إيقافها. تعقب كل نسخة احتياطية فحصٌ للبنية وتطبيقٌ للاحتفاظ."
+  },
+  "backupJobsHelpLabel": {
+    "en": "About jobs",
+    "text": "حول المهام"
+  },
+  "backupJobsEmpty": {
+    "en": "No backup jobs yet.",
+    "text": "لا توجد مهام نسخ احتياطي بعد."
+  },
+  "backupJobKind": {
+    "en": "Job",
+    "text": "المهمة"
+  },
+  "backupJobState": {
+    "en": "State",
+    "text": "الحالة"
+  },
+  "backupJobPhase": {
+    "en": "Phase",
+    "text": "الخطوة"
+  },
+  "backupJobStarted": {
+    "en": "Started",
+    "text": "وقت البدء"
+  },
+  "backupJobFinished": {
+    "en": "Finished",
+    "text": "وقت الانتهاء"
+  },
+  "backupJobError": {
+    "en": "Error code",
+    "text": "رمز الخطأ"
+  },
+  "backupJobProgress": {
+    "en": "Progress",
+    "text": "التقدّم"
+  },
+  "backupKindCapture": {
+    "en": "Backup",
+    "text": "نسخ احتياطي"
+  },
+  "backupKindVerify": {
+    "en": "Verification",
+    "text": "تحقق"
+  },
+  "backupKindRetention": {
+    "en": "Retention",
+    "text": "احتفاظ"
+  },
+  "backupJobQueued": {
+    "en": "Queued",
+    "text": "في قائمة الانتظار"
+  },
+  "backupJobRunning": {
+    "en": "Running",
+    "text": "قيد التشغيل"
+  },
+  "backupJobCommitting": {
+    "en": "Finishing",
+    "text": "جارٍ الإنهاء"
+  },
+  "backupJobCompleted": {
+    "en": "Completed",
+    "text": "مكتملة"
+  },
+  "backupJobFailed": {
+    "en": "Failed",
+    "text": "فشلت"
+  },
+  "backupJobInterrupted": {
+    "en": "Interrupted",
+    "text": "انقطعت"
+  },
+  "backupPhasePreparing": {
+    "en": "Preparing",
+    "text": "التحضير"
+  },
+  "backupPhaseCatalog": {
+    "en": "Catalog snapshot",
+    "text": "لقطة الفهرس"
+  },
+  "backupPhaseTransfer": {
+    "en": "Copying files",
+    "text": "نسخ الملفات"
+  },
+  "backupPhaseFinishing": {
+    "en": "Finishing",
+    "text": "الإنهاء"
+  },
+  "backupPhaseDone": {
+    "en": "Done",
+    "text": "تم"
+  },
+  "backupPhaseStructural": {
+    "en": "Structure check",
+    "text": "فحص البنية"
+  },
+  "backupPhaseDeep": {
+    "en": "Full check",
+    "text": "فحص كامل"
+  },
+  "backupProgressBytes": {
+    "en": "{done} of {total}",
+    "text": "{done} من {total}"
+  },
+  "backupPlan": {
+    "en": "Schedule and retention",
+    "text": "الجدول والاحتفاظ"
+  },
+  "backupPlanHelp": {
+    "en": "One backup per day at the chosen local time of an explicit time zone; a nonexistent time during a clock change runs at the change. After downtime one missed run is caught up. Turning the plan on does not start a backup immediately.",
+    "text": "نسخة احتياطية واحدة يوميًا في الوقت المحلي المختار ضمن منطقة زمنية محددة صراحةً؛ وإذا لم يكن ذلك الوقت موجودًا بسبب تغيير الساعة، فيجري التشغيل لحظة التغيير. بعد فترة توقف يُعوَّض تشغيل فائت واحد فقط. لا يؤدي تشغيل الخطة إلى بدء نسخة احتياطية فورًا."
+  },
+  "backupPlanHelpLabel": {
+    "en": "About the plan",
+    "text": "حول الخطة"
+  },
+  "backupEnabled": {
+    "en": "Back up daily on schedule",
+    "text": "نسخ احتياطي يومي وفق الجدول"
+  },
+  "backupTime": {
+    "en": "Local time",
+    "text": "الوقت المحلي"
+  },
+  "backupTimezone": {
+    "en": "Time zone (IANA)",
+    "text": "المنطقة الزمنية (IANA)"
+  },
+  "backupTimezonePlaceholder": {
+    "en": "e.g. Europe/Moscow",
+    "text": "مثلًا Asia/Riyadh"
+  },
+  "backupZoneOffset": {
+    "en": "Now {offset}",
+    "text": "الآن {offset}"
+  },
+  "backupZoneUnknown": {
+    "en": "This browser does not know the zone; the server checks it on save.",
+    "text": "لا يعرف هذا المتصفح هذه المنطقة؛ وسيتحقق منها الخادم عند الحفظ."
+  },
+  "backupZoneBrowser": {
+    "en": "Use {zone}",
+    "text": "استخدام {zone}"
+  },
+  "backupRetentionLegend": {
+    "en": "Keep the newest point of the last",
+    "text": "الاحتفاظ بأحدث نقطة لكل فترة من الفترات الأخيرة"
+  },
+  "backupDaily": {
+    "en": "Days",
+    "text": "عدد الأيام"
+  },
+  "backupWeekly": {
+    "en": "Weeks",
+    "text": "عدد الأسابيع"
+  },
+  "backupMonthly": {
+    "en": "Months",
+    "text": "عدد الأشهر"
+  },
+  "backupPlanSave": {
+    "en": "Save plan",
+    "text": "حفظ الخطة"
+  },
+  "backupPlanSaved": {
+    "en": "Plan saved · version {revision}",
+    "text": "تم حفظ الخطة · المراجعة {revision}"
+  },
+  "backupPlanConflict": {
+    "en": "The plan was changed elsewhere. Its current version is loaded: review it and save again.",
+    "text": "تم تغيير الخطة من مكان آخر. حُمّلت مراجعتها الحالية: راجعها واحفظها مرة أخرى."
+  },
+  "backupReadOnly": {
+    "en": "Changing backups requires the backup management permission.",
+    "text": "يتطلب تغيير النسخ الاحتياطية إذن إدارة النسخ الاحتياطي."
+  },
+  "summarySize": {
+    "en": "Size",
+    "text": "الحجم"
+  },
+  "summaryCreated": {
+    "en": "Uploaded",
+    "text": "تاريخ الرفع"
+  },
+  "summaryHash": {
+    "en": "SHA-256",
+    "text": "SHA-256"
+  },
+  "copyHash": {
+    "en": "Copy",
+    "text": "نسخ"
+  },
+  "hashCopied": {
+    "en": "SHA-256 copied to the clipboard.",
+    "text": "تم نسخ SHA-256 إلى الحافظة."
+  },
+  "copyFailed": {
+    "en": "The browser did not allow copying. Select the value and copy it manually.",
+    "text": "لم يسمح المتصفح بالنسخ. حدّد القيمة وانسخها يدويًا."
+  },
+  "promotionTitle": {
+    "en": "Promotion",
+    "text": "الترقية"
+  },
+  "promotionHint": {
+    "en": "Stages mark where a build is approved. Promotion publishes the build in another repository without uploading it again.",
+    "text": "تبيّن المراحل أين اعتُمد البناء. أما الترقية فتنشر البناء في مستودع آخر دون رفعه مرة أخرى."
+  },
+  "stagesTitle": {
+    "en": "Stages",
+    "text": "المراحل"
+  },
+  "stagesEmpty": {
+    "en": "No stages yet.",
+    "text": "لا توجد مراحل بعد."
+  },
+  "stageName": {
+    "en": "Stage",
+    "text": "المرحلة"
+  },
+  "stageComment": {
+    "en": "Comment (optional)",
+    "text": "تعليق (اختياري)"
+  },
+  "stageAdd": {
+    "en": "Add stage",
+    "text": "إضافة مرحلة"
+  },
+  "stageRemove": {
+    "en": "Remove stage {stage}",
+    "text": "إزالة المرحلة {stage}"
+  },
+  "stageRemoveConfirm": {
+    "en": "Remove stage {stage}? Deployments that resolve this stage will pick another version.",
+    "text": "هل تريد إزالة المرحلة {stage}؟ ستختار عمليات التوزيع التي تحدد الإصدار بهذه المرحلة إصدارًا آخر."
+  },
+  "stageAdded": {
+    "en": "Stage {stage} added.",
+    "text": "تمت إضافة المرحلة {stage}."
+  },
+  "stageRemoved": {
+    "en": "Stage {stage} removed.",
+    "text": "تمت إزالة المرحلة {stage}."
+  },
+  "stageInvalid": {
+    "en": "Use lowercase letters, digits, dot, dash or underscore (up to 32 characters).",
+    "text": "استخدم أحرفًا لاتينية صغيرة أو أرقامًا أو نقطة أو شرطة أو شرطة سفلية (حتى 32 حرفًا)."
+  },
+  "promoteTitle": {
+    "en": "Promote to repository",
+    "text": "الترقية إلى مستودع"
+  },
+  "promoteTarget": {
+    "en": "Target repository",
+    "text": "المستودع الهدف"
+  },
+  "promoteNoTargets": {
+    "en": "No other repository allows you to promote.",
+    "text": "لا يوجد مستودع آخر يسمح لك بالترقية إليه."
+  },
+  "promoteStages": {
+    "en": "Stages in the target",
+    "text": "المراحل في المستودع الهدف"
+  },
+  "promoteComment": {
+    "en": "Comment (optional)",
+    "text": "تعليق (اختياري)"
+  },
+  "promoteMove": {
+    "en": "Move: remove the build from this repository after promotion",
+    "text": "نقل: إزالة البناء من هذا المستودع بعد الترقية"
+  },
+  "promoteMoveHint": {
+    "en": "Without Move, the build stays here and a copy appears in the target.",
+    "text": "من دون «نقل» يبقى البناء هنا وتظهر نسخة منه في المستودع الهدف."
+  },
+  "promoteMoveConfirm": {
+    "en": "Move the build to {repository}? It will be removed from this repository.",
+    "text": "هل تريد نقل البناء إلى {repository}؟ ستتم إزالته من هذا المستودع."
+  },
+  "promoteSubmit": {
+    "en": "Promote",
+    "text": "ترقية"
+  },
+  "promoteDone": {
+    "en": "Published in {repository}.",
+    "text": "تم النشر في {repository}."
+  },
+  "promoteExisting": {
+    "en": "Already published in {repository}; stages updated.",
+    "text": "منشور بالفعل في {repository}؛ وتم تحديث المراحل."
+  },
+  "promoteMoved": {
+    "en": "Moved to {repository}. The build was removed from this repository.",
+    "text": "تم النقل إلى {repository}. وأُزيل البناء من هذا المستودع."
+  },
+  "promotionHistory": {
+    "en": "History",
+    "text": "المحفوظات"
+  },
+  "promotionHistoryEmpty": {
+    "en": "No promotion events yet.",
+    "text": "لا توجد أحداث ترقية بعد."
+  },
+  "promotionMore": {
+    "en": "Show more",
+    "text": "عرض المزيد"
+  },
+  "eventStageAdded": {
+    "en": "{actor} added stage {stage}",
+    "text": "أضاف {actor} المرحلة {stage}"
+  },
+  "eventStageRemoved": {
+    "en": "{actor} removed stage {stage}",
+    "text": "أزال {actor} المرحلة {stage}"
+  },
+  "eventPromotedCopy": {
+    "en": "{actor} copied to {repository}",
+    "text": "نسخ {actor} إلى {repository}"
+  },
+  "eventPromotedMove": {
+    "en": "{actor} moved to {repository}",
+    "text": "نقل {actor} إلى {repository}"
+  },
+  "eventReceivedCopy": {
+    "en": "{actor} copied from {repository}",
+    "text": "نسخ {actor} من {repository}"
+  },
+  "eventReceivedMove": {
+    "en": "{actor} moved from {repository}",
+    "text": "نقل {actor} من {repository}"
+  },
+  "packageStages": {
+    "en": "Stages",
+    "text": "المراحل"
+  },
+  "sizeBytes": {
+    "en": "{value} B",
+    "text": "{value} B"
+  },
+  "sizeKiB": {
+    "en": "{value} KiB",
+    "text": "{value} KiB"
+  },
+  "sizeMiB": {
+    "en": "{value} MiB",
+    "text": "{value} MiB"
+  },
+  "sizeGiB": {
+    "en": "{value} GiB",
+    "text": "{value} GiB"
+  },
+  "sizeTiB": {
+    "en": "{value} TiB",
+    "text": "{value} TiB"
+  },
+  "mirrorBadge": {
+    "en": "Mirror",
+    "text": "مرآة"
+  },
+  "mirrorBehind": {
+    "en": "Mirror · syncing",
+    "text": "مرآة · جارٍ المزامنة"
+  },
+  "mirrorFailing": {
+    "en": "Mirror · sync error",
+    "text": "مرآة · خطأ في المزامنة"
+  },
+  "mirrorHelpLabel": {
+    "en": "About this mirror",
+    "text": "حول هذه المرآة"
+  },
+  "mirrorDetails": {
+    "en": "Read-only copy of “{source}” from {upstream}, kept in sync by the server.",
+    "text": "نسخة للقراءة فقط من «{source}» الموجود على {upstream}، ويُبقيها الخادم متزامنة."
+  },
+  "mirrorSynced": {
+    "en": "Last synchronized:",
+    "text": "آخر مزامنة:"
+  },
+  "mirrorError": {
+    "en": "The last attempt failed ({code}); downloads keep working.",
+    "text": "فشلت المحاولة الأخيرة ({code})؛ ويستمر التنزيل في العمل."
+  },
+  "mirrorNever": {
+    "en": "not yet",
+    "text": "ليس بعد"
+  },
+  "mirrorImport": {
+    "en": "Imports",
+    "text": "استيراد"
+  },
+  "mirrorImportFailing": {
+    "en": "Imports · sync error",
+    "text": "استيراد · خطأ في المزامنة"
+  },
+  "mirrorImportDetails": {
+    "en": "Versions marked {stages} in “{source}” on {upstream} are copied here automatically. Later changes and deletions there do not affect them.",
+    "text": "تُنسخ إلى هنا تلقائيًا الإصدارات التي تحمل المراحل {stages} في «{source}» على {upstream}. ولا تتأثر بالتغييرات أو عمليات الحذف اللاحقة هناك."
+  },
+  "reportOpen": {
+    "en": "Feedback",
+    "text": "الملاحظات"
+  },
+  "reportTitle": {
+    "en": "Feedback to ProAnimaStudio",
+    "text": "ملاحظات إلى ProAnimaStudio"
+  },
+  "reportIntro": {
+    "en": "Your message goes to the developers of Arkvory through the ProAnimaStudio hub. Only what this form shows is sent.",
+    "text": "تصل رسالتك إلى مطوّري Arkvory عبر مركز ProAnimaStudio. ولا يُرسل إلا ما يظهر في هذا النموذج."
+  },
+  "reportMessage": {
+    "en": "What happened, or what should work better?",
+    "text": "ماذا حدث، أو ما الذي ينبغي أن يعمل بشكل أفضل؟"
+  },
+  "reportEmail": {
+    "en": "Email for a reply (optional)",
+    "text": "البريد الإلكتروني للرد (اختياري)"
+  },
+  "reportScreenshots": {
+    "en": "Screenshots: paste from the clipboard (Ctrl+V), drop files here or choose them. Up to 6 PNG, JPEG, WebP or GIF images, 8 MB each.",
+    "text": "لقطات الشاشة: الصقها من الحافظة (Ctrl+V)، أو أفلت الملفات هنا، أو اخترها. حتى 6 صور بتنسيق PNG أو JPEG أو WebP أو GIF، بحد أقصى 8 MB لكل صورة."
+  },
+  "reportAddScreenshot": {
+    "en": "Choose images",
+    "text": "اختيار صور"
+  },
+  "reportShot": {
+    "en": "{name} · {size}",
+    "text": "{name} · {size}"
+  },
+  "reportRemove": {
+    "en": "Remove {name}",
+    "text": "إزالة {name}"
+  },
+  "reportLogs": {
+    "en": "Logs",
+    "text": "السجلات"
+  },
+  "reportClientLog": {
+    "en": "Log of this page — entries: {count}",
+    "text": "سجل هذه الصفحة — الإدخالات: {count}"
+  },
+  "reportServerLog": {
+    "en": "Server log and system summary",
+    "text": "سجل الخادم وملخص النظام"
+  },
+  "reportShow": {
+    "en": "Show what is attached",
+    "text": "عرض ما سيُرفق"
+  },
+  "reportLoading": {
+    "en": "Loading…",
+    "text": "جارٍ التحميل…"
+  },
+  "reportTail": {
+    "en": "The last {count} lines are shown; the whole log is attached.",
+    "text": "معروض آخر {count} من الأسطر؛ ويُرفق السجل كاملًا."
+  },
+  "reportSend": {
+    "en": "Send",
+    "text": "إرسال"
+  },
+  "reportSending": {
+    "en": "Sending…",
+    "text": "جارٍ الإرسال…"
+  },
+  "reportSent": {
+    "en": "Thank you! Your message was sent, reference {id}.",
+    "text": "شكرًا لك! أُرسلت رسالتك، ورقمها المرجعي {id}."
+  },
+  "reportClose": {
+    "en": "Close",
+    "text": "إغلاق"
+  },
+  "reportMessageRequired": {
+    "en": "Describe the problem or the idea.",
+    "text": "صِف المشكلة أو الفكرة."
+  },
+  "reportEmailInvalid": {
+    "en": "Check the email address.",
+    "text": "تحقّق من عنوان البريد الإلكتروني."
+  },
+  "reportTooMany": {
+    "en": "At most 6 images.",
+    "text": "6 صور كحد أقصى."
+  },
+  "reportFileType": {
+    "en": "{name}: only PNG, JPEG, WebP or GIF images.",
+    "text": "{name}: يُقبل فقط صور PNG أو JPEG أو WebP أو GIF."
+  },
+  "reportFileTooLarge": {
+    "en": "{name} is larger than 8 MB.",
+    "text": "حجم {name} أكبر من 8 MB."
+  },
+  "reportTooLarge": {
+    "en": "Everything together is over 15 MB: remove some images.",
+    "text": "الحجم الإجمالي يتجاوز 15 MB: أزل بعض الصور."
+  },
+  "productName": {
+    "en": "ProAnima Arkvory",
+    "text": "ProAnima Arkvory"
+  },
+  "productShortName": {
+    "en": "Arkvory",
+    "text": "Arkvory"
+  },
+  "studioName": {
+    "en": "PROANIMA STUDIO",
+    "text": "PROANIMA STUDIO"
+  },
+  "copyright": {
+    "en": "© Ian Panaev · ProAnimaStudio",
+    "text": "© Ian Panaev · ProAnimaStudio"
+  },
+  "themeCurrent": {
+    "en": "Appearance: {value}",
+    "text": "المظهر: {value}"
+  },
+  "repositoryHint": {
+    "en": "After sign-in, the first repository available to you is selected.",
+    "text": "بعد تسجيل الدخول، يُحدَّد أول مستودع متاح لك."
+  },
+  "keySignIn": {
+    "en": "Connect with a service or automation key",
+    "text": "الاتصال بمفتاح خدمة أو أتمتة"
+  },
+  "signInFailed": {
+    "en": "Wrong username or password.",
+    "text": "اسم المستخدم أو كلمة المرور غير صحيحة."
+  },
+  "currentPasswordWrong": {
+    "en": "The current password is wrong.",
+    "text": "كلمة المرور الحالية غير صحيحة."
+  },
+  "sessionExpired": {
+    "en": "Your session has expired. Sign in again to continue.",
+    "text": "انتهت صلاحية جلستك. سجّل الدخول مرة أخرى للمتابعة."
+  },
+  "errorSignInRequired": {
+    "en": "Sign in or connect with a service key to continue.",
+    "text": "سجّل الدخول أو اتصل بمفتاح خدمة للمتابعة."
+  },
+  "idempotencyHint": {
+    "en": "Prevents a retried upload from creating a second copy. It is sent as the Idempotency-Key of the request that creates the upload.",
+    "text": "يمنع إعادة محاولة الرفع من إنشاء نسخة ثانية. يُرسل بوصفه Idempotency-Key في الطلب الذي ينشئ عملية الرفع."
+  },
+  "idempotencyHelpLabel": {
+    "en": "About duplicate protection",
+    "text": "حول الحماية من التكرار"
+  },
+  "assetPathExample": {
+    "en": "releases/current.upack",
+    "text": "releases/current.upack"
+  },
+  "stageExample": {
+    "en": "release",
+    "text": "release"
+  },
+  "storageUsageUnlimited": {
+    "en": "Published {published} · unfinished uploads {pending} · awaiting cleanup {retired} · in use {total} · no quota",
+    "text": "المنشور {published} · عمليات رفع غير مكتملة {pending} · بانتظار التنظيف {retired} · المستخدَم {total} · بلا حصة"
+  },
+  "storageQuotaInvalid": {
+    "en": "Enter the quota in GiB, for example 50 or 0.5.",
+    "text": "أدخل الحصة بوحدة GiB، مثلًا 50 أو 0.5."
+  },
+  "storagePreviewItem": {
+    "en": "{name} · {id} · {size}",
+    "text": "{name} · {id} · {size}"
+  },
+  "attachmentVersion": {
+    "en": "Version {revision}",
+    "text": "الإصدار {revision}"
+  },
+  "storageEventCode": {
+    "en": "· {level} · {code}",
+    "text": "· {level} · {code}"
+  },
+  "packageGroupHeading": {
+    "en": "{group} / {name}",
+    "text": "{group} / {name}"
+  },
+  "repositoryHelpLabel": {
+    "en": "About repository selection",
+    "text": "حول اختيار المستودع"
+  },
+  "metadataFilterHelpLabel": {
+    "en": "About exact metadata",
+    "text": "حول المطابقة التامة لبيانات التعريف"
+  },
+  "resumeHelpLabel": {
+    "en": "About resuming",
+    "text": "حول الاستئناف"
+  },
+  "downloadHelpLabel": {
+    "en": "About download recovery",
+    "text": "حول استرداد التنزيلات"
+  },
+  "updatePolicyHelpLabel": {
+    "en": "About update schedule",
+    "text": "حول جدول التحديثات"
+  },
+  "uploadHelpLabel": {
+    "en": "About upload ID",
+    "text": "حول معرّف الرفع"
+  },
+  "repositoryModelHelpLabel": {
+    "en": "About repositories",
+    "text": "حول المستودعات"
+  },
+  "servicePolicyHelpLabel": {
+    "en": "About service policy",
+    "text": "حول سياسة الخدمة"
+  },
+  "tokenSessionHelpLabel": {
+    "en": "About personal tokens",
+    "text": "حول الرموز الشخصية"
+  },
+  "storageHelpLabel": {
+    "en": "About retention",
+    "text": "حول الاحتفاظ"
+  },
+  "cleanupHelpLabel": {
+    "en": "About physical cleanup",
+    "text": "حول التنظيف الفعلي"
+  },
+  "promotionHelpLabel": {
+    "en": "About promotion",
+    "text": "حول الترقية"
+  },
+  "promoteMoveHelpLabel": {
+    "en": "About move",
+    "text": "حول النقل"
+  },
+  "attachmentRecoveryHelpLabel": {
+    "en": "About attachment recovery",
+    "text": "حول استرداد المرفقات"
+  },
+  "helpHintLabel": {
+    "en": "About the operation catalog",
+    "text": "حول فهرس العمليات"
+  },
+  "catalogSizeLabel": {
+    "en": "Size",
+    "text": "الحجم"
+  },
+  "catalogPublishedLabel": {
+    "en": "Published",
+    "text": "تاريخ النشر"
+  },
+  "grantRepository": {
+    "en": "{repository}:",
+    "text": "{repository}:"
+  },
+  "delegationGrantLine": {
+    "en": "{target}: {actions}",
+    "text": "{target}: {actions}"
+  },
+  "keyBindingLine": {
+    "en": "{repository}: {actions}",
+    "text": "{repository}: {actions}"
+  },
+  "serviceAuditLine": {
+    "en": "{action} · {actor} · {key}",
+    "text": "{action} · {actor} · {key}"
+  },
+  "updateHourOption": {
+    "en": "{hour}:00 UTC",
+    "text": "{hour}:00 UTC"
+  },
+  "helpOperationTitle": {
+    "en": "{method} {path}",
+    "text": "{method} {path}"
+  },
+  "helpOperationIdentity": {
+    "en": "{id} · {surface} · {visibility}",
+    "text": "{id} · {surface} · {visibility}"
+  },
+  "helpHintConnected": {
+    "en": "You are connected. Load the API operations your access allows.",
+    "text": "أنت متصل. حمّل عمليات API التي يسمح بها وصولك."
+  },
+  "helpRemoteCliExample": {
+    "en": "arkvoryctl --help\narkvoryctl profile add production --server https://arkvory.example --token-file /private/arkvory.key\narkvoryctl doctor\narkvoryctl packages publish build.upack --label test\narkvoryctl download ARTIFACT_ID ./build.upack",
+    "text": "arkvoryctl --help\narkvoryctl profile add production --server https://arkvory.example --token-file /private/arkvory.key\narkvoryctl doctor\narkvoryctl packages publish build.upack --label test\narkvoryctl download ARTIFACT_ID ./build.upack"
+  },
+  "helpCliExample": {
+    "en": "arkvory help\narkvory status --root ROOT\narkvory update --root ROOT\narkvory configure --root ROOT --disable-updates\narkvory configure --root ROOT --pin --version 1.2.3",
+    "text": "arkvory help\narkvory status --root ROOT\narkvory update --root ROOT\narkvory configure --root ROOT --disable-updates\narkvory configure --root ROOT --pin --version 1.2.3"
+  },
+  "helpRecipesExample": {
+    "en": "GET /api/v1/capabilities\nGET /api/v1/repositories\nGET /api/v1/operations?repository=releases",
+    "text": "GET /api/v1/capabilities\nGET /api/v1/repositories\nGET /api/v1/operations?repository=releases"
+  },
+  "serviceEmpty": {
+    "en": "No service accounts yet.",
+    "text": "لا توجد حسابات خدمة بعد."
+  },
+  "serviceOwnerKeyHelpLabel": {
+    "en": "About the owner key",
+    "text": "حول مفتاح المالك"
+  },
+  "serviceEmptyOwner": {
+    "en": "The owner key from the server file is meant for setup, not automation: create a service account below, then issue a key for it.",
+    "text": "مفتاح المالك الموجود في ملف الخادم مخصص للإعداد لا للأتمتة: أنشئ حساب خدمة أدناه، ثم أصدر له مفتاحًا."
+  },
+  "serviceEmptyDelegated": {
+    "en": "No service accounts are assigned to you yet. Ask the server owner to delegate one.",
+    "text": "لم يُعيَّن لك أي حساب خدمة بعد. اطلب من مالك الخادم أن يفوّض إليك حسابًا."
+  },
+  "serviceAuditEmpty": {
+    "en": "No activity recorded yet.",
+    "text": "لم يُسجَّل أي نشاط بعد."
+  },
+  "repositoryEmpty": {
+    "en": "No repositories are available to this account or key.",
+    "text": "لا تتوفر أي مستودعات لهذا الحساب أو المفتاح."
+  },
+  "routeUnknown": {
+    "en": "This link does not match a console section. The artifact list is shown instead.",
+    "text": "لا يطابق هذا الرابط أي قسم في وحدة التحكم. تُعرض قائمة المُخرَجات بدلًا من ذلك."
+  },
+  "routeUnavailable": {
+    "en": "This section is not available to the current account or key. The artifact list is shown instead.",
+    "text": "هذا القسم غير متاح للحساب أو المفتاح الحالي. تُعرض قائمة المُخرَجات بدلًا من ذلك."
+  },
+  "routeArtifactMissing": {
+    "en": "The linked artifact was not found or is not available to you.",
+    "text": "لم يُعثر على المُخرَج المشار إليه في الرابط، أو أنه غير متاح لك."
+  },
+  "routeSignIn": {
+    "en": "Sign in to open the linked page.",
+    "text": "سجّل الدخول لفتح الصفحة المشار إليها في الرابط."
+  },
+  "confirmCancel": {
+    "en": "Cancel",
+    "text": "إلغاء"
+  },
+  "confirmDisableUser": {
+    "en": "Disable {name}? Active sessions end immediately and personal tokens stop working until the account is enabled again.",
+    "text": "هل تريد تعطيل {name}؟ تنتهي الجلسات النشطة فورًا، وتتوقف الرموز الشخصية عن العمل إلى أن يُمكَّن الحساب مرة أخرى."
+  },
+  "confirmRemoveMember": {
+    "en": "Remove {user} from {group}? They lose the repository access granted through this group.",
+    "text": "هل تريد إزالة {user} من {group}؟ سيفقد الوصول إلى المستودعات الممنوح عبر هذه المجموعة."
+  },
+  "confirmRemoveGrant": {
+    "en": "Remove access of {group} to {repository}? Group members lose this access immediately.",
+    "text": "هل تريد إزالة وصول {group} إلى {repository}؟ سيفقد أعضاء المجموعة هذا الوصول فورًا."
+  },
+  "storageTitle": {
+    "en": "Storage & automatic cleanup",
+    "text": "التخزين والتنظيف التلقائي"
+  },
+  "storageHelp": {
+    "en": "Retention applies to registered UPack builds. Pinned builds, file history and protected labels survive. Save a disabled policy first to preview it; enabling starts automatic deletion. Disk space is reclaimed below without stopping Arkvory.",
+    "text": "ينطبق الاحتفاظ على نسخ بناء UPack المسجّلة. وتبقى نسخ البناء المثبّتة ومحفوظات الملفات والتسميات المحمية. احفظ السياسة معطّلة أولًا لمعاينتها؛ فالتمكين يبدأ الحذف التلقائي. وتُستعاد مساحة القرص في القسم أدناه دون إيقاف Arkvory."
+  },
+  "storageRefresh": {
+    "en": "Reload settings & usage",
+    "text": "إعادة تحميل الإعدادات والاستخدام"
+  },
+  "storagePolicy": {
+    "en": "Retention policy",
+    "text": "سياسة الاحتفاظ"
+  },
+  "storageGrouping": {
+    "en": "Count last N by",
+    "text": "احتساب آخر N حسب"
+  },
+  "storagePerChannel": {
+    "en": "Package and channel",
+    "text": "الحزمة والقناة"
+  },
+  "storagePerPackage": {
+    "en": "Package",
+    "text": "الحزمة"
+  },
+  "storageGlobal": {
+    "en": "Whole repository",
+    "text": "المستودع بأكمله"
+  },
+  "storageKeep": {
+    "en": "Last N builds (default)",
+    "text": "آخر N من نسخ البناء (افتراضي)"
+  },
+  "storageAge": {
+    "en": "Minimum age before deletion (hours)",
+    "text": "الحد الأدنى للعمر قبل الحذف (بالساعات)"
+  },
+  "storageInterval": {
+    "en": "Cleanup interval (minutes)",
+    "text": "الفاصل بين عمليات التنظيف (بالدقائق)"
+  },
+  "storageQuota": {
+    "en": "Quota, GiB (empty = no repository limit)",
+    "text": "الحصة بوحدة GiB (فارغ = بلا حد للمستودع)"
+  },
+  "storageProtected": {
+    "en": "Protected labels (comma separated)",
+    "text": "التسميات المحمية (مفصولة بفواصل)"
+  },
+  "storageWarningPercent": {
+    "en": "Warning threshold (%)",
+    "text": "حد التحذير (%)"
+  },
+  "storageCriticalPercent": {
+    "en": "Critical threshold (%)",
+    "text": "الحد الحرج (%)"
+  },
+  "storageChannels": {
+    "en": "Channel overrides: label=N, one per line",
+    "text": "قيم خاصة بالقنوات: label=N، قيمة واحدة في كل سطر"
+  },
+  "storageEnabled": {
+    "en": "Enable automatic cleanup",
+    "text": "تمكين التنظيف التلقائي"
+  },
+  "storageAcknowledge": {
+    "en": "I understand that saving an enabled policy authorizes automatic deletion.",
+    "text": "أدرك أن حفظ سياسة مُمكَّنة يأذن بالحذف التلقائي."
+  },
+  "storageSave": {
+    "en": "Save policy",
+    "text": "حفظ السياسة"
+  },
+  "storagePreview": {
+    "en": "Preview saved policy",
+    "text": "معاينة السياسة المحفوظة"
+  },
+  "storageEvents": {
+    "en": "Warnings, errors & storage events",
+    "text": "التحذيرات والأخطاء وأحداث التخزين"
+  },
+  "storageMore": {
+    "en": "Load next events",
+    "text": "تحميل الأحداث التالية"
+  },
+  "storageRevision": {
+    "en": "Policy version {revision} · last cleanup deleted {count} builds",
+    "text": "مراجعة السياسة {revision} · نسخ البناء المحذوفة في آخر تنظيف: {count}"
+  },
+  "storageRunFailed": {
+    "en": "Automatic cleanup stopped: {code}. Check its authorizing key and storage health.",
+    "text": "توقف التنظيف التلقائي: {code}. تحقّق من المفتاح الذي أذن به ومن سلامة التخزين."
+  },
+  "storageUsage": {
+    "en": "Published {published} · unfinished uploads {pending} · awaiting cleanup {retired} · in use {total} of {quota}",
+    "text": "المنشور {published} · عمليات رفع غير مكتملة {pending} · بانتظار التنظيف {retired} · المستخدَم {total} من {quota}"
+  },
+  "storageNormal": {
+    "en": "Capacity is below warning thresholds, or no repository quota is set.",
+    "text": "السعة أقل من حدود التحذير، أو لم تُعيَّن حصة للمستودع."
+  },
+  "storageWarning": {
+    "en": "Storage is approaching its quota. Review retention and schedule physical cleanup.",
+    "text": "يقترب التخزين من حصته. راجع قواعد الاحتفاظ وجدوِل التنظيف الفعلي."
+  },
+  "storageCritical": {
+    "en": "Storage is near or at its quota. New reservations that exceed the quota are rejected.",
+    "text": "التخزين قريب من حصته أو بلغها. وتُرفض الحجوزات الجديدة التي تتجاوز الحصة."
+  },
+  "storageConfirmRequired": {
+    "en": "Automatic cleanup requires deletion permission and explicit acknowledgement.",
+    "text": "يتطلب التنظيف التلقائي إذن الحذف وإقرارًا صريحًا."
+  },
+  "storageSaved": {
+    "en": "Policy saved. An enabled policy will run automatically.",
+    "text": "تم حفظ السياسة. وستعمل السياسة المُمكَّنة تلقائيًا."
+  },
+  "storagePreviewCount": {
+    "en": "Saved policy: {count} deletion candidates in this batch.",
+    "text": "السياسة المحفوظة: عدد المرشّحين للحذف في هذه الدفعة {count}."
+  },
+  "storagePreviewMore": {
+    "en": "Saved policy: {count} candidates shown; more remain.",
+    "text": "السياسة المحفوظة: معروض {count} من المرشّحين، وهناك المزيد."
+  },
+  "deletionTitle": {
+    "en": "Delete artifact",
+    "text": "حذف المُخرَج"
+  },
+  "deletionHelp": {
+    "en": "Deletion removes this artifact from the catalog and prevents new downloads. It cannot be undone here. Existing file history, attachments and external references are protected. Disk space is reclaimed separately during maintenance.",
+    "text": "يزيل الحذف هذا المُخرَج من الفهرس ويمنع التنزيلات الجديدة، ولا يمكن التراجع عنه هنا. أما محفوظات الملفات والمرفقات والارتباطات الخارجية الموجودة فهي محمية. وتُستعاد مساحة القرص بشكل منفصل أثناء الصيانة."
+  },
+  "deletionInspect": {
+    "en": "Check dependencies",
+    "text": "التحقق من التبعيات"
+  },
+  "deletionChecking": {
+    "en": "Checking dependencies…",
+    "text": "جارٍ التحقق من التبعيات…"
+  },
+  "deletionBlocked": {
+    "en": "Deletion is blocked by retained references.",
+    "text": "الحذف محظور بسبب ارتباطات محتفَظ بها."
+  },
+  "deletionReady": {
+    "en": "No blocking references. This explicit action permits deletion whatever the labels, release included. Dependencies and metadata will be checked again.",
+    "text": "لا توجد ارتباطات مانعة. يسمح هذا الإجراء الصريح بالحذف أيًا كانت التسميات، بما فيها release. وسيُعاد التحقق من التبعيات وبيانات التعريف."
+  },
+  "deletionReference": {
+    "en": "An external service has pinned this artifact.",
+    "text": "ثبّتت خدمة خارجية هذا المُخرَج."
+  },
+  "deletionAsset": {
+    "en": "A file path or its history uses this artifact.",
+    "text": "يستخدم مسار ملف أو محفوظاته هذا المُخرَج."
+  },
+  "deletionAttachment": {
+    "en": "Another build lists this artifact as an attachment, now or in its history.",
+    "text": "يُدرج بناء آخر هذا المُخرَج كمرفق، حاليًا أو في محفوظاته."
+  },
+  "deletionLabel": {
+    "en": "A retention rule protects this label.",
+    "text": "تحمي قاعدة احتفاظ هذه التسمية."
+  },
+  "deletionStage": {
+    "en": "The artifact is promoted to a stage; remove the stage first.",
+    "text": "تمت ترقية المُخرَج إلى مرحلة؛ أزل المرحلة أولًا."
+  },
+  "deletionConfirm": {
+    "en": "Paste the selected artifact ID to confirm deletion",
+    "text": "الصق معرّف المُخرَج المحدد لتأكيد الحذف"
+  },
+  "deletionSubmit": {
+    "en": "Delete this artifact",
+    "text": "حذف هذا المُخرَج"
+  },
+  "deletionRecheck": {
+    "en": "The artifact changed or is protected. Check dependencies again before proceeding.",
+    "text": "تغيّر المُخرَج أو أنه محمي. تحقّق من التبعيات مرة أخرى قبل المتابعة."
+  },
+  "deletionDone": {
+    "en": "Artifact deleted. Physical cleanup will run separately.",
+    "text": "تم حذف المُخرَج. وسيجري التنظيف الفعلي بشكل منفصل."
+  },
+  "deletionRefresh": {
+    "en": "Artifact deleted, but the catalog could not be refreshed. Reload the list.",
+    "text": "تم حذف المُخرَج، لكن تعذّر تحديث الفهرس. أعد تحميل القائمة."
+  },
+  "labelPresets": {
+    "en": "Common build labels",
+    "text": "تسميات البناء الشائعة"
+  },
+  "labelsHelp": {
+    "en": "Use any labels. Presets can be combined; they do not move files or grant access.",
+    "text": "استخدم أي تسميات تريدها. يمكن الجمع بين التسميات الجاهزة، وهي لا تنقل الملفات ولا تمنح أي وصول."
+  },
+  "metadataFields": {
+    "en": "Build metadata",
+    "text": "بيانات تعريف البناء"
+  },
+  "metadataAdd": {
+    "en": "Add field",
+    "text": "إضافة حقل"
+  },
+  "metadataFilter": {
+    "en": "Exact metadata",
+    "text": "مطابقة بيانات التعريف"
+  },
+  "metadataFilterHint": {
+    "en": "Key and value match exactly, including case. An empty value matches an empty field.",
+    "text": "يُطابَق المفتاح والقيمة تمامًا، بما في ذلك حالة الأحرف. والقيمة الفارغة تطابق حقلًا فارغًا."
+  },
+  "metadataKey": {
+    "en": "Key",
+    "text": "المفتاح"
+  },
+  "metadataValue": {
+    "en": "Value",
+    "text": "القيمة"
+  },
+  "metadataRemove": {
+    "en": "Remove field",
+    "text": "إزالة الحقل"
+  },
+  "metadataHelp": {
+    "en": "Up to 32 text fields. Examples: build.number, git.commit, target.os. Use a manifest for structured data.",
+    "text": "حتى 32 حقلًا نصيًا. أمثلة: build.number، git.commit، target.os. استخدم ملف بيان للبيانات المنظَّمة."
+  },
+  "metadataInvalid": {
+    "en": "Check metadata: unique keys, text values and a valid JSON object are required.",
+    "text": "تحقّق من بيانات التعريف: يلزم أن تكون المفاتيح غير مكرّرة والقيم نصية، وأن يكون كائن JSON صالحًا."
+  },
+  "attachmentsTitle": {
+    "en": "Manifests & additional files",
+    "text": "ملفات البيان والملفات الإضافية"
+  },
+  "attachmentsHelp": {
+    "en": "Files belong to this build. Removing a link keeps the original file and its history.",
+    "text": "تنتمي الملفات إلى هذا البناء. وإزالة الربط تُبقي الملف الأصلي ومحفوظاته."
+  },
+  "attachmentsEmpty": {
+    "en": "No attachments yet.",
+    "text": "لا توجد مرفقات بعد."
+  },
+  "attachmentCount": {
+    "en": "{count} / 32 files · version {revision}",
+    "text": "الملفات: {count} / 32 · الإصدار {revision}"
+  },
+  "attachmentAdd": {
+    "en": "Add attachment",
+    "text": "إضافة مرفق"
+  },
+  "attachmentSource": {
+    "en": "Source",
+    "text": "المصدر"
+  },
+  "attachmentUpload": {
+    "en": "Upload file",
+    "text": "رفع ملف"
+  },
+  "attachmentExisting": {
+    "en": "Link published artifact",
+    "text": "ربط مُخرَج منشور"
+  },
+  "attachmentKind": {
+    "en": "Purpose",
+    "text": "الغرض"
+  },
+  "attachmentManifest": {
+    "en": "Manifest",
+    "text": "ملف بيان"
+  },
+  "attachmentSbom": {
+    "en": "SBOM",
+    "text": "SBOM"
+  },
+  "attachmentSignature": {
+    "en": "Signature",
+    "text": "توقيع"
+  },
+  "attachmentReport": {
+    "en": "Report",
+    "text": "تقرير"
+  },
+  "attachmentFile": {
+    "en": "File",
+    "text": "ملف"
+  },
+  "attachmentChoose": {
+    "en": "Choose attachment",
+    "text": "اختيار مرفق"
+  },
+  "attachmentName": {
+    "en": "Attachment name",
+    "text": "اسم المرفق"
+  },
+  "attachmentDescription": {
+    "en": "Description (optional)",
+    "text": "الوصف (اختياري)"
+  },
+  "attachmentUnlink": {
+    "en": "Remove link",
+    "text": "إزالة الربط"
+  },
+  "attachmentReload": {
+    "en": "Reload attachments",
+    "text": "إعادة تحميل المرفقات"
+  },
+  "attachmentReloaded": {
+    "en": "Attachments reloaded. Your form is preserved.",
+    "text": "تمت إعادة تحميل المرفقات، وبقيت بيانات النموذج كما هي."
+  },
+  "attachmentSaved": {
+    "en": "Attachments saved · version {revision}",
+    "text": "تم حفظ المرفقات · الإصدار {revision}"
+  },
+  "attachmentHistory": {
+    "en": "Attachment history",
+    "text": "محفوظات المرفقات"
+  },
+  "attachmentHistoryEmpty": {
+    "en": "No changes yet.",
+    "text": "لا توجد تغييرات بعد."
+  },
+  "attachmentRestore": {
+    "en": "Restore this set",
+    "text": "استعادة هذه المجموعة"
+  },
+  "attachmentNew": {
+    "en": "Clear form",
+    "text": "مسح النموذج"
+  },
+  "attachmentRecovery": {
+    "en": "Upload recovery",
+    "text": "استرداد الرفع"
+  },
+  "attachmentRecoveryHelp": {
+    "en": "Pause keeps this upload in the tab. Submit again to resume. If linking fails, the published file remains available by this ID; reload attachments before retrying. After closing the tab, use the Upload screen to resume by ID.",
+    "text": "يُبقي الإيقاف المؤقت عملية الرفع هذه في علامة التبويب، فأرسل النموذج مرة أخرى للاستئناف. إذا فشل الربط، يبقى الملف المنشور متاحًا بهذا المعرّف؛ فأعد تحميل المرفقات قبل إعادة المحاولة. وبعد إغلاق علامة التبويب، استخدم شاشة «الرفع» للاستئناف بالمعرّف."
+  },
+  "attachmentProgress": {
+    "en": "Attachment upload progress",
+    "text": "تقدّم رفع المرفق"
+  },
+  "attachmentDuplicate": {
+    "en": "An attachment with this name already exists. Choose a different name or remove its link first.",
+    "text": "يوجد مرفق بهذا الاسم بالفعل. اختر اسمًا مختلفًا أو أزل ربطه أولًا."
+  },
+  "navigationMenu": {
+    "en": "Sections",
+    "text": "الأقسام"
+  },
+  "downloadSettings": {
+    "en": "Queue settings",
+    "text": "إعدادات قائمة الانتظار"
+  },
+  "downloadHeld": {
+    "en": "Queue paused. New downloads will wait.",
+    "text": "قائمة الانتظار متوقفة مؤقتًا، وستنتظر التنزيلات الجديدة."
+  },
+  "downloadEmptyTitle": {
+    "en": "No downloads yet",
+    "text": "لا توجد تنزيلات بعد"
+  },
+  "technicalDetails": {
+    "en": "File identifier",
+    "text": "معرّف الملف"
+  },
+  "manageMembers": {
+    "en": "Manage group members",
+    "text": "إدارة أعضاء المجموعات"
+  },
+  "manageGrants": {
+    "en": "Manage repository access",
+    "text": "إدارة الوصول إلى المستودعات"
+  },
+  "accountsHeading": {
+    "en": "Accounts",
+    "text": "الحسابات"
+  },
+  "groupsHeading": {
+    "en": "Groups and permissions",
+    "text": "المجموعات والأذونات"
+  },
+  "tableRegion": {
+    "en": "Results table — scroll horizontally for more columns",
+    "text": "جدول النتائج — مرّر أفقيًا لرؤية المزيد من الأعمدة"
+  },
+  "searchEmpty": {
+    "en": "This repository has no artifacts yet.",
+    "text": "لا توجد مُخرَجات في هذا المستودع بعد."
+  },
+  "searchEmptyTitle": {
+    "en": "No artifacts",
+    "text": "لا توجد مُخرَجات"
+  },
+  "downloadCleanupFailed": {
+    "en": "Saved. Temporary cleanup failed; use Remove finished to retry.",
+    "text": "تم الحفظ، لكن فشل تنظيف الملفات المؤقتة؛ استخدم «إزالة المكتملة» لإعادة المحاولة."
+  },
+  "downloads": {
+    "en": "Downloads",
+    "text": "التنزيلات"
+  },
+  "downloadRestore": {
+    "en": "Restore queue",
+    "text": "استعادة قائمة الانتظار"
+  },
+  "downloadRestored": {
+    "en": "Restored · choose a destination to resume",
+    "text": "تمت الاستعادة · اختر وجهة للاستئناف"
+  },
+  "downloadRestoreReady": {
+    "en": "Queue restored. Resume each file to choose its destination.",
+    "text": "تمت استعادة قائمة الانتظار. استأنف كل ملف لاختيار وجهته."
+  },
+  "downloadRestoreEmpty": {
+    "en": "No saved downloads for this connection.",
+    "text": "لا توجد تنزيلات محفوظة لهذا الاتصال."
+  },
+  "downloadQueued": {
+    "en": "Waiting",
+    "text": "في الانتظار"
+  },
+  "downloadRunning": {
+    "en": "Downloading",
+    "text": "جارٍ التنزيل"
+  },
+  "downloadRetrying": {
+    "en": "Retrying",
+    "text": "جارٍ إعادة المحاولة"
+  },
+  "downloadPausing": {
+    "en": "Saving checkpoint…",
+    "text": "جارٍ حفظ نقطة الاستئناف…"
+  },
+  "downloadPaused": {
+    "en": "Paused",
+    "text": "متوقف مؤقتًا"
+  },
+  "downloadSaving": {
+    "en": "Saving verified file…",
+    "text": "جارٍ حفظ الملف بعد التحقق منه…"
+  },
+  "downloadCancelling": {
+    "en": "Cancelling…",
+    "text": "جارٍ الإلغاء…"
+  },
+  "downloadCancelled": {
+    "en": "Cancelled",
+    "text": "أُلغي"
+  },
+  "downloadCompleted": {
+    "en": "Verified and saved",
+    "text": "تم التحقق والحفظ"
+  },
+  "downloadFailed": {
+    "en": "Failed",
+    "text": "فشل"
+  },
+  "downloadResume": {
+    "en": "Resume / retry",
+    "text": "استئناف / إعادة المحاولة"
+  },
+  "downloadCancel": {
+    "en": "Cancel",
+    "text": "إلغاء"
+  },
+  "downloadsPause": {
+    "en": "Pause all",
+    "text": "إيقاف الكل مؤقتًا"
+  },
+  "downloadsResume": {
+    "en": "Resume queue",
+    "text": "استئناف قائمة الانتظار"
+  },
+  "downloadsClearWaiting": {
+    "en": "Cancel waiting",
+    "text": "إلغاء المنتظرة"
+  },
+  "downloadsCancel": {
+    "en": "Cancel all",
+    "text": "إلغاء الكل"
+  },
+  "downloadsClearFinished": {
+    "en": "Remove finished",
+    "text": "إزالة المكتملة"
+  },
+  "downloadConcurrency": {
+    "en": "Parallel downloads",
+    "text": "التنزيلات المتوازية"
+  },
+  "downloadInterval": {
+    "en": "Start interval, ms",
+    "text": "فاصل البدء، ms"
+  },
+  "downloadWait": {
+    "en": "Queue wait limit, seconds",
+    "text": "حد الانتظار في القائمة، بالثواني"
+  },
+  "downloadApply": {
+    "en": "Apply limits",
+    "text": "تطبيق الحدود"
+  },
+  "downloadPolicySaved": {
+    "en": "Queue limits updated. Downloads already running will continue.",
+    "text": "تم تحديث حدود قائمة الانتظار. وستستمر التنزيلات الجارية."
+  },
+  "downloadSummary": {
+    "en": "Active: {active} · Waiting: {waiting} · Total: {count}",
+    "text": "النشطة: {active} · المنتظرة: {waiting} · الإجمالي: {count}"
+  },
+  "downloadBytes": {
+    "en": "{bytes} written",
+    "text": "المكتوب: {bytes}"
+  },
+  "downloadRetryDelay": {
+    "en": "Retry delay: {seconds} s",
+    "text": "تأخير إعادة المحاولة: {seconds} ث"
+  },
+  "downloadDuplicate": {
+    "en": "This destination is already in the queue. Remove its finished job first.",
+    "text": "هذه الوجهة موجودة بالفعل في قائمة الانتظار. أزل مهمتها المكتملة أولًا."
+  },
+  "downloadEmpty": {
+    "en": "Choose Download next to a file in the catalog.",
+    "text": "اختر «تنزيل» بجوار ملف في الفهرس."
+  },
+  "downloadAdded": {
+    "en": "Download added to the queue.",
+    "text": "أُضيف التنزيل إلى قائمة الانتظار."
+  },
+  "downloadWaitTimeout": {
+    "en": "Queue wait expired. You can retry.",
+    "text": "انتهت مهلة الانتظار في القائمة. يمكنك إعادة المحاولة."
+  },
+  "downloadQueueFull": {
+    "en": "Queue is full. Remove finished jobs to make room.",
+    "text": "قائمة الانتظار ممتلئة. أزل المهام المكتملة لإفساح المجال."
+  },
+  "downloadDiskFull": {
+    "en": "Browser storage is full. Cancel unused downloads to free staging space.",
+    "text": "مساحة تخزين المتصفح ممتلئة. ألغِ التنزيلات غير المستخدمة لتحرير المساحة المؤقتة."
+  },
+  "downloadNote": {
+    "en": "After a page reload, reconnect and restore the queue. Resume each file to choose its destination. Sealed segments remain in browser storage; credentials are not saved. The destination is replaced only after checksum verification. Browser storage needs space for the file.",
+    "text": "بعد إعادة تحميل الصفحة، أعد الاتصال واستعد قائمة الانتظار، ثم استأنف كل ملف لاختيار وجهته. تبقى المقاطع المكتملة في تخزين المتصفح، ولا تُحفظ بيانات الاعتماد. ولا تُستبدل الوجهة إلا بعد التحقق من المجموع الاختباري. ويحتاج تخزين المتصفح إلى مساحة تتسع للملف."
+  },
+  "downloadState": {
+    "en": "State",
+    "text": "الحالة"
+  },
+  "downloadProgress": {
+    "en": "Progress",
+    "text": "التقدّم"
+  },
+  "navigation": {
+    "en": "Workspace navigation",
+    "text": "التنقل في مساحة العمل"
+  },
+  "catalog": {
+    "en": "Artifacts",
+    "text": "المُخرَجات"
+  },
+  "packages": {
+    "en": "Packages",
+    "text": "الحزم"
+  },
+  "administration": {
+    "en": "Users and access",
+    "text": "المستخدمون والوصول"
+  },
+  "upload": {
+    "en": "Upload",
+    "text": "الرفع"
+  },
+  "history": {
+    "en": "File history",
+    "text": "محفوظات الملفات"
+  },
+  "metadata": {
+    "en": "Artifact details",
+    "text": "تفاصيل المُخرَج"
+  },
+  "theme": {
+    "en": "Appearance",
+    "text": "المظهر"
+  },
+  "language": {
+    "en": "Language",
+    "text": "اللغة"
+  },
+  "light": {
+    "en": "Light",
+    "text": "فاتح"
+  },
+  "dark": {
+    "en": "Dark",
+    "text": "داكن"
+  },
+  "system": {
+    "en": "System",
+    "text": "حسب النظام"
+  },
+  "connection": {
+    "en": "Repository connection",
+    "text": "الاتصال بالمستودع"
+  },
+  "repository": {
+    "en": "Repository",
+    "text": "المستودع"
+  },
+  "serviceKey": {
+    "en": "Service key",
+    "text": "مفتاح الخدمة"
+  },
+  "keyPlaceholder": {
+    "en": "Paste a service or automation key",
+    "text": "الصق مفتاح خدمة أو أتمتة"
+  },
+  "connect": {
+    "en": "Connect",
+    "text": "اتصال"
+  },
+  "disconnect": {
+    "en": "Disconnect",
+    "text": "قطع الاتصال"
+  },
+  "keyHint": {
+    "en": "The key stays in this tab. It is never saved in browser storage.",
+    "text": "يبقى المفتاح في علامة التبويب هذه، ولا يُحفظ أبدًا في تخزين المتصفح."
+  },
+  "accountName": {
+    "en": "Username",
+    "text": "اسم المستخدم"
+  },
+  "password": {
+    "en": "Password",
+    "text": "كلمة المرور"
+  },
+  "signIn": {
+    "en": "Sign in",
+    "text": "تسجيل الدخول"
+  },
+  "adminHint": {
+    "en": "Create accounts and grant repository access through groups.",
+    "text": "أنشئ الحسابات وامنح الوصول إلى المستودعات عبر المجموعات."
+  },
+  "administrator": {
+    "en": "Administrator",
+    "text": "مسؤول"
+  },
+  "createUser": {
+    "en": "Create user",
+    "text": "إنشاء مستخدم"
+  },
+  "accessGroup": {
+    "en": "Access group",
+    "text": "مجموعة الوصول"
+  },
+  "createGroup": {
+    "en": "Create group",
+    "text": "إنشاء مجموعة"
+  },
+  "addMember": {
+    "en": "Add to group",
+    "text": "إضافة إلى المجموعة"
+  },
+  "removeMember": {
+    "en": "Remove from group",
+    "text": "إزالة من المجموعة"
+  },
+  "access": {
+    "en": "Access",
+    "text": "الوصول"
+  },
+  "read": {
+    "en": "Read",
+    "text": "قراءة"
+  },
+  "write": {
+    "en": "Read and write",
+    "text": "قراءة وكتابة"
+  },
+  "saveGrant": {
+    "en": "Save access",
+    "text": "حفظ الوصول"
+  },
+  "removeGrant": {
+    "en": "Remove access",
+    "text": "إزالة الوصول"
+  },
+  "members": {
+    "en": "Members",
+    "text": "الأعضاء"
+  },
+  "grants": {
+    "en": "Grants",
+    "text": "الأذونات الممنوحة"
+  },
+  "packageGroup": {
+    "en": "UPack group",
+    "text": "مجموعة UPack"
+  },
+  "packageName": {
+    "en": "Package name",
+    "text": "اسم الحزمة"
+  },
+  "version": {
+    "en": "Version",
+    "text": "الإصدار"
+  },
+  "sortBy": {
+    "en": "Sort by",
+    "text": "الفرز حسب"
+  },
+  "direction": {
+    "en": "Order",
+    "text": "الترتيب"
+  },
+  "ascending": {
+    "en": "Ascending",
+    "text": "تصاعدي"
+  },
+  "descending": {
+    "en": "Descending",
+    "text": "تنازلي"
+  },
+  "groupBy": {
+    "en": "Group by",
+    "text": "التجميع حسب"
+  },
+  "noGrouping": {
+    "en": "No grouping",
+    "text": "بلا تجميع"
+  },
+  "apply": {
+    "en": "Apply",
+    "text": "تطبيق"
+  },
+  "clearFilters": {
+    "en": "Reset",
+    "text": "إعادة تعيين"
+  },
+  "packageFilterHint": {
+    "en": "Group and name are exact matches, ignoring letter case.",
+    "text": "تُطابَق المجموعة والاسم تمامًا، مع تجاهل حالة الأحرف."
+  },
+  "applyFilters": {
+    "en": "Apply the filters to see packages.",
+    "text": "طبّق عوامل التصفية لعرض الحزم."
+  },
+  "apiAddressError": {
+    "en": "The Arkvory API address is invalid. Contact the UI administrator.",
+    "text": "عنوان Arkvory API غير صالح. اتصل بمسؤول الواجهة."
+  },
+  "noRepositoryAccess": {
+    "en": "This account or key cannot read any repositories. Ask an administrator for access.",
+    "text": "لا يستطيع هذا الحساب أو المفتاح قراءة أي مستودع. اطلب الوصول من المسؤول."
+  },
+  "noPackages": {
+    "en": "No registered packages match these filters.",
+    "text": "لا توجد حزم مسجّلة تطابق عوامل التصفية هذه."
+  },
+  "packageCount": {
+    "en": "{count} packages on this page",
+    "text": "الحزم في هذه الصفحة: {count}"
+  },
+  "pageNumber": {
+    "en": "Page {page}",
+    "text": "الصفحة {page}"
+  },
+  "previousPage": {
+    "en": "Previous",
+    "text": "السابق"
+  },
+  "nextPage": {
+    "en": "Next",
+    "text": "التالي"
+  },
+  "accessSaved": {
+    "en": "Access updated",
+    "text": "تم تحديث الوصول"
+  },
+  "userCreated": {
+    "en": "User created",
+    "text": "تم إنشاء المستخدم"
+  },
+  "groupCreated": {
+    "en": "Group created",
+    "text": "تم إنشاء المجموعة"
+  },
+  "signedIn": {
+    "en": "Signed in as {name}",
+    "text": "تم تسجيل الدخول باسم {name}"
+  },
+  "accountStatus": {
+    "en": "Status",
+    "text": "الحالة"
+  },
+  "enabled": {
+    "en": "Active",
+    "text": "نشط"
+  },
+  "disabled": {
+    "en": "Disabled",
+    "text": "معطّل"
+  },
+  "disableUser": {
+    "en": "Disable",
+    "text": "تعطيل"
+  },
+  "enableUser": {
+    "en": "Enable",
+    "text": "تمكين"
+  },
+  "newPassword": {
+    "en": "New password",
+    "text": "كلمة المرور الجديدة"
+  },
+  "currentPassword": {
+    "en": "Current password",
+    "text": "كلمة المرور الحالية"
+  },
+  "changeOwnPassword": {
+    "en": "Change my password",
+    "text": "تغيير كلمة مروري"
+  },
+  "passwordChangedSignIn": {
+    "en": "Password changed. Sign in again.",
+    "text": "تم تغيير كلمة المرور. سجّل الدخول مرة أخرى."
+  },
+  "resetPassword": {
+    "en": "Reset password",
+    "text": "إعادة تعيين كلمة المرور"
+  },
+  "passwordChanged": {
+    "en": "Password changed; active sessions revoked",
+    "text": "تم تغيير كلمة المرور، وأُبطلت الجلسات النشطة"
+  },
+  "signUp": {
+    "en": "Sign up",
+    "text": "التسجيل"
+  },
+  "registerAccount": {
+    "en": "Create account",
+    "text": "إنشاء حساب"
+  },
+  "accountRegistered": {
+    "en": "Account created and signed in.",
+    "text": "تم إنشاء الحساب وتسجيل الدخول."
+  },
+  "personalAccessTokens": {
+    "en": "Personal access tokens",
+    "text": "رموز الوصول الشخصية"
+  },
+  "generateToken": {
+    "en": "Generate token",
+    "text": "إنشاء رمز"
+  },
+  "tokenName": {
+    "en": "Token name",
+    "text": "اسم الرمز"
+  },
+  "tokenNamePlaceholder": {
+    "en": "e.g. External UI, CLI",
+    "text": "مثلًا: واجهة خارجية، CLI"
+  },
+  "tokenCreatedWarning": {
+    "en": "Save this token now. It will not be shown again.",
+    "text": "احفظ هذا الرمز الآن، فلن يُعرض مرة أخرى."
+  },
+  "copyToken": {
+    "en": "Copy token",
+    "text": "نسخ الرمز"
+  },
+  "tokenCopied": {
+    "en": "Token copied to clipboard.",
+    "text": "تم نسخ الرمز إلى الحافظة."
+  },
+  "revokeToken": {
+    "en": "Revoke token",
+    "text": "إبطال الرمز"
+  },
+  "noUserTokens": {
+    "en": "No personal access tokens generated yet.",
+    "text": "لم يُنشأ أي رمز وصول شخصي بعد."
+  },
+  "tokenSessionOnly": {
+    "en": "Tokens are created and revoked from a password session only; a token cannot create tokens or administer accounts.",
+    "text": "لا تُنشأ الرموز ولا تُبطَل إلا من جلسة سُجّل الدخول إليها بكلمة المرور؛ ولا يستطيع الرمز إنشاء رموز أخرى أو إدارة الحسابات."
+  },
+  "tokenExpiry": {
+    "en": "Expires after",
+    "text": "تنتهي الصلاحية بعد"
+  },
+  "tokenDays30": {
+    "en": "30 days",
+    "text": "30 يومًا"
+  },
+  "tokenDays90": {
+    "en": "90 days",
+    "text": "90 يومًا"
+  },
+  "tokenDays365": {
+    "en": "365 days",
+    "text": "365 يومًا"
+  },
+  "tokenScope": {
+    "en": "Access",
+    "text": "الوصول"
+  },
+  "tokenScopeRead": {
+    "en": "Read only",
+    "text": "قراءة فقط"
+  },
+  "tokenScopeReadWrite": {
+    "en": "Read and write",
+    "text": "قراءة وكتابة"
+  },
+  "tokenPrefix": {
+    "en": "Prefix",
+    "text": "البادئة"
+  },
+  "tokenCreated": {
+    "en": "Created",
+    "text": "تاريخ الإنشاء"
+  },
+  "tokenExpires": {
+    "en": "Expires",
+    "text": "ينتهي في"
+  },
+  "tokenLastUsed": {
+    "en": "Last used",
+    "text": "آخر استخدام"
+  },
+  "tokenStatus": {
+    "en": "Status",
+    "text": "الحالة"
+  },
+  "tokenActive": {
+    "en": "Active",
+    "text": "نشط"
+  },
+  "tokenRevokedState": {
+    "en": "Revoked",
+    "text": "مُبطَل"
+  },
+  "tokenExpired": {
+    "en": "Expired",
+    "text": "منتهي الصلاحية"
+  },
+  "tokenNeverUsed": {
+    "en": "Never",
+    "text": "لم يُستخدم قط"
+  },
+  "tokenNoExpiry": {
+    "en": "—",
+    "text": "—"
+  },
+  "tokenRevokeConfirm": {
+    "en": "Revoke “{name}”? Clients using it lose access immediately.",
+    "text": "هل تريد إبطال «{name}»؟ سيفقد العملاء الذين يستخدمونه الوصول فورًا."
+  },
+  "tokenRevokeConfirmSubmit": {
+    "en": "Revoke",
+    "text": "إبطال"
+  },
+  "tokenRevokeCancel": {
+    "en": "Cancel",
+    "text": "إلغاء"
+  },
+  "tokenCopyFailed": {
+    "en": "Copy failed. The token is selected; copy it manually.",
+    "text": "فشل النسخ. الرمز محدد؛ انسخه يدويًا."
+  },
+  "connected": {
+    "en": "Connected",
+    "text": "متصل"
+  },
+  "disconnected": {
+    "en": "Not connected",
+    "text": "غير متصل"
+  },
+  "uploadFile": {
+    "en": "Upload file",
+    "text": "رفع ملف"
+  },
+  "search": {
+    "en": "Search",
+    "text": "بحث"
+  },
+  "searchPlaceholder": {
+    "en": "Name or metadata value…",
+    "text": "الاسم أو قيمة في بيانات التعريف…"
+  },
+  "labelFilter": {
+    "en": "Filter by label",
+    "text": "التصفية حسب التسمية"
+  },
+  "labelPlaceholder": {
+    "en": "Any label",
+    "text": "أي تسمية"
+  },
+  "name": {
+    "en": "File name",
+    "text": "اسم الملف"
+  },
+  "actions": {
+    "en": "Actions",
+    "text": "الإجراءات"
+  },
+  "open": {
+    "en": "Open",
+    "text": "فتح"
+  },
+  "more": {
+    "en": "Load more",
+    "text": "تحميل المزيد"
+  },
+  "loaded": {
+    "en": "{count} loaded",
+    "text": "المحمَّل: {count}"
+  },
+  "emptyTitle": {
+    "en": "Not connected",
+    "text": "غير متصل"
+  },
+  "emptyDescription": {
+    "en": "Sign in with your username and password, or connect with a service key.",
+    "text": "سجّل الدخول باسم المستخدم وكلمة المرور، أو اتصل بمفتاح خدمة."
+  },
+  "noResultsTitle": {
+    "en": "No matching artifacts",
+    "text": "لا توجد مُخرَجات مطابقة"
+  },
+  "noResults": {
+    "en": "Change your search or clear the filters.",
+    "text": "غيّر عبارة البحث أو امسح عوامل التصفية."
+  },
+  "catalogHint": {
+    "en": "Immutable content · Editable metadata",
+    "text": "محتوى غير قابل للتغيير · بيانات تعريف قابلة للتحرير"
+  },
+  "file": {
+    "en": "Choose a file",
+    "text": "اختر ملفًا"
+  },
+  "chooseFile": {
+    "en": "File to upload",
+    "text": "الملف المراد رفعه"
+  },
+  "resumeTitle": {
+    "en": "Resume an upload",
+    "text": "استئناف عملية رفع"
+  },
+  "resumeHint": {
+    "en": "Have an upload ID? Select the same file and enter the ID below.",
+    "text": "هل لديك معرّف رفع؟ اختر الملف نفسه وأدخل المعرّف أدناه."
+  },
+  "uploadId": {
+    "en": "Upload ID",
+    "text": "معرّف الرفع"
+  },
+  "idempotency": {
+    "en": "Duplicate protection key",
+    "text": "مفتاح الحماية من التكرار"
+  },
+  "automatic": {
+    "en": "Generated automatically",
+    "text": "يُنشأ تلقائيًا"
+  },
+  "startUpload": {
+    "en": "Upload / resume",
+    "text": "رفع / استئناف"
+  },
+  "pause": {
+    "en": "Pause",
+    "text": "إيقاف مؤقت"
+  },
+  "newUpload": {
+    "en": "New upload",
+    "text": "عملية رفع جديدة"
+  },
+  "uploadHint": {
+    "en": "Keep your upload ID to resume after closing this tab.",
+    "text": "احتفظ بمعرّف الرفع لتتمكن من الاستئناف بعد إغلاق علامة التبويب هذه."
+  },
+  "transferTitle": {
+    "en": "Transfer status",
+    "text": "حالة النقل"
+  },
+  "transferIdle": {
+    "en": "Waiting for a file",
+    "text": "في انتظار ملف"
+  },
+  "hashing": {
+    "en": "Checking file integrity…",
+    "text": "جارٍ التحقق من سلامة الملف…"
+  },
+  "uploading": {
+    "en": "Uploading · {percent}%",
+    "text": "جارٍ الرفع · {percent}%"
+  },
+  "published": {
+    "en": "File published · {id}",
+    "text": "تم نشر الملف · {id}"
+  },
+  "paused": {
+    "en": "Transfer paused. You can resume it with the same file.",
+    "text": "النقل متوقف مؤقتًا. يمكنك استئنافه بالملف نفسه."
+  },
+  "selectArtifact": {
+    "en": "Select an artifact",
+    "text": "اختر مُخرَجًا"
+  },
+  "selectHint": {
+    "en": "Open a file in the catalog or history.",
+    "text": "افتح ملفًا من الفهرس أو المحفوظات."
+  },
+  "backCatalog": {
+    "en": "Back to artifacts",
+    "text": "العودة إلى المُخرَجات"
+  },
+  "selected": {
+    "en": "Artifact ID",
+    "text": "معرّف المُخرَج"
+  },
+  "labels": {
+    "en": "Labels",
+    "text": "التسميات"
+  },
+  "collections": {
+    "en": "Collections",
+    "text": "التجميعات"
+  },
+  "commaHint": {
+    "en": "Separate with commas",
+    "text": "افصل بينها بفواصل"
+  },
+  "metadataJson": {
+    "en": "Metadata (JSON)",
+    "text": "بيانات التعريف (JSON)"
+  },
+  "save": {
+    "en": "Save changes",
+    "text": "حفظ التغييرات"
+  },
+  "download": {
+    "en": "Download",
+    "text": "تنزيل"
+  },
+  "downloadLink": {
+    "en": "Download link",
+    "text": "رابط التنزيل"
+  },
+  "downloadLinkCopied": {
+    "en": "Link copied. It opens only this file and works until {expires}.",
+    "text": "تم نسخ الرابط. يفتح هذا الملف فقط، ويعمل حتى {expires}."
+  },
+  "downloadLinkCopy": {
+    "en": "Copy the link below. It opens only this file and works until {expires}.",
+    "text": "انسخ الرابط أدناه. يفتح هذا الملف فقط، ويعمل حتى {expires}."
+  },
+  "register": {
+    "en": "Register UPack",
+    "text": "تسجيل UPack"
+  },
+  "assetTitle": {
+    "en": "File reference",
+    "text": "رابط الملف"
+  },
+  "assetHint": {
+    "en": "Assign this artifact to a path. The current link version protects against simultaneous changes: use 0 for a new path or the current version shown in the file history.",
+    "text": "عيّن هذا المُخرَج إلى مسار. يحمي الإصدار الحالي للرابط من التغييرات المتزامنة: استخدم 0 لمسار جديد، أو الإصدار الحالي الظاهر في محفوظات الملف."
+  },
+  "assetPath": {
+    "en": "File path",
+    "text": "مسار الملف"
+  },
+  "currentRevision": {
+    "en": "Current link version",
+    "text": "الإصدار الحالي للرابط"
+  },
+  "assign": {
+    "en": "Assign file",
+    "text": "تعيين الملف"
+  },
+  "historyLoad": {
+    "en": "Load history",
+    "text": "تحميل المحفوظات"
+  },
+  "historyHint": {
+    "en": "Restoring creates a new version. Open any version to download its original file.",
+    "text": "تُنشئ الاستعادة إصدارًا جديدًا. افتح أي إصدار لتنزيل ملفه الأصلي."
+  },
+  "revision": {
+    "en": "Version",
+    "text": "الإصدار"
+  },
+  "date": {
+    "en": "Created",
+    "text": "تاريخ الإنشاء"
+  },
+  "actor": {
+    "en": "Author",
+    "text": "المؤلف"
+  },
+  "source": {
+    "en": "Restored from",
+    "text": "مُستعاد من"
+  },
+  "restore": {
+    "en": "Restore version {revision}",
+    "text": "استعادة الإصدار {revision}"
+  },
+  "historyMore": {
+    "en": "Older versions",
+    "text": "إصدارات أقدم"
+  },
+  "historyEmpty": {
+    "en": "Enter a file path to explore its history.",
+    "text": "أدخل مسار ملف لاستعراض محفوظاته."
+  },
+  "historyCount": {
+    "en": "{count} versions loaded · current version {revision}",
+    "text": "الإصدارات المحمّلة: {count} · الإصدار الحالي {revision}"
+  },
+  "restored": {
+    "en": "Restored as version {revision}",
+    "text": "تمت الاستعادة كإصدار {revision}"
+  },
+  "historyConflict": {
+    "en": "The file has changed. Reload history before restoring.",
+    "text": "تغيّر الملف. أعد تحميل المحفوظات قبل الاستعادة."
+  },
+  "ready": {
+    "en": "Connect a repository to begin.",
+    "text": "اتصل بمستودع للبدء."
+  },
+  "searching": {
+    "en": "Loading artifacts…",
+    "text": "جارٍ تحميل المُخرَجات…"
+  },
+  "revisionStatus": {
+    "en": "Details opened · version {revision}",
+    "text": "تم فتح التفاصيل · المراجعة {revision}"
+  },
+  "saved": {
+    "en": "Changes saved · version {revision}",
+    "text": "تم حفظ التغييرات · المراجعة {revision}"
+  },
+  "registered": {
+    "en": "Registered {name} {version}",
+    "text": "تم تسجيل {name} {version}"
+  },
+  "assigned": {
+    "en": "File link saved · version {revision}",
+    "text": "تم حفظ رابط الملف · الإصدار {revision}"
+  },
+  "chooseFileError": {
+    "en": "Choose a file first.",
+    "text": "اختر ملفًا أولًا."
+  },
+  "fileTooLarge": {
+    "en": "The file exceeds the maximum size configured on the server.",
+    "text": "يتجاوز الملف الحد الأقصى للحجم المكوَّن على الخادم."
+  },
+  "uploadRunning": {
+    "en": "An upload is already in progress.",
+    "text": "هناك عملية رفع قيد التنفيذ بالفعل."
+  },
+  "selectError": {
+    "en": "Open an artifact first.",
+    "text": "افتح مُخرَجًا أولًا."
+  },
+  "hashError": {
+    "en": "Could not read or verify the selected file. Please select it again.",
+    "text": "تعذّرت قراءة الملف المحدد أو التحقق منه. يُرجى اختياره مرة أخرى."
+  },
+  "saveUnsupported": {
+    "en": "Streaming save requires Chrome or Edge over HTTPS. Other clients can download through the SDK.",
+    "text": "يتطلب الحفظ المتدفق Chrome أو Edge عبر HTTPS. ويمكن للعملاء الآخرين التنزيل عبر SDK."
+  },
+  "mismatch": {
+    "en": "This file differs from the upload. Select the original file or start a new upload.",
+    "text": "يختلف هذا الملف عن الملف قيد الرفع. اختر الملف الأصلي أو ابدأ عملية رفع جديدة."
+  },
+  "errorGeneric": {
+    "en": "The operation could not be completed. Try again.",
+    "text": "تعذّر إكمال العملية. حاول مرة أخرى."
+  },
+  "errorUnauthorized": {
+    "en": "This key is not valid or was revoked. Enter a valid key.",
+    "text": "هذا المفتاح غير صالح أو أُبطل. أدخل مفتاحًا صالحًا."
+  },
+  "errorForbidden": {
+    "en": "You do not have permission for this operation.",
+    "text": "ليس لديك إذن لتنفيذ هذه العملية."
+  },
+  "errorRateLimited": {
+    "en": "Too many sign-in attempts. Wait and try again.",
+    "text": "محاولات تسجيل دخول كثيرة جدًا. انتظر ثم حاول مرة أخرى."
+  },
+  "errorNotFound": {
+    "en": "The requested file or version was not found.",
+    "text": "لم يُعثر على الملف أو الإصدار المطلوب."
+  },
+  "errorConflict": {
+    "en": "The item has changed or the operation conflicts with its state. Refresh before trying again.",
+    "text": "تغيّر العنصر أو أن العملية تتعارض مع حالته. حدّث البيانات قبل إعادة المحاولة."
+  },
+  "errorInput": {
+    "en": "Check the entered values and try again.",
+    "text": "تحقّق من القيم المُدخلة وحاول مرة أخرى."
+  },
+  "errorIntegrity": {
+    "en": "The file integrity check failed. Retry with the original file.",
+    "text": "فشل التحقق من سلامة الملف. أعد المحاولة بالملف الأصلي."
+  },
+  "errorBusy": {
+    "en": "The service is busy. Try again shortly.",
+    "text": "الخدمة مشغولة. حاول مرة أخرى بعد قليل."
+  },
+  "errorCapacity": {
+    "en": "A capacity limit has been reached.",
+    "text": "تم بلوغ حد السعة."
+  },
+  "cancelled": {
+    "en": "Operation cancelled.",
+    "text": "أُلغيت العملية."
+  },
+  "publishedRefresh": {
+    "en": "File published, but the catalog could not refresh. Open Artifacts to refresh it.",
+    "text": "تم نشر الملف، لكن تعذّر تحديث الفهرس. افتح «المُخرَجات» لتحديثه."
+  },
+  "skip": {
+    "en": "Skip to content",
+    "text": "انتقل إلى المحتوى"
+  },
+  "noScript": {
+    "en": "Enable JavaScript to use the storage console.",
+    "text": "مكّن JavaScript لاستخدام وحدة تحكم التخزين."
+  }
+}

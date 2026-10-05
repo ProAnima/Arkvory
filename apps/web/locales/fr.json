@@ -1,0 +1,3518 @@
+{
+  "errorNetwork": {
+    "en": "Arkvory did not answer. Check your network connection and try again.",
+    "text": "Arkvory ne répond pas. Vérifiez votre connexion réseau et réessayez."
+  },
+  "errorTimeout": {
+    "en": "The server took too long to answer, so the request was stopped. Try again.",
+    "text": "Le serveur a mis trop de temps à répondre ; la requête a été interrompue. Réessayez."
+  },
+  "errorGateway": {
+    "en": "A proxy in front of Arkvory did not get an answer from it. Try again shortly or contact the administrator.",
+    "text": "Un proxy placé devant Arkvory n’a pas obtenu de réponse de sa part. Réessayez dans un instant ou contactez l’administrateur."
+  },
+  "errorInternal": {
+    "en": "Unexpected server error. Report the request ID below to the administrator.",
+    "text": "Erreur inattendue du serveur. Communiquez l’ID de requête ci-dessous à l’administrateur."
+  },
+  "errorUnavailable": {
+    "en": "The service is temporarily unavailable. Try again shortly.",
+    "text": "Le service est temporairement indisponible. Réessayez dans un instant."
+  },
+  "errorFeedbackDisabled": {
+    "en": "Feedback is turned off on this server. Write to info@proanima.net instead.",
+    "text": "Les commentaires sont désactivés sur ce serveur. Écrivez plutôt à info@proanima.net."
+  },
+  "errorHubUnreachable": {
+    "en": "The server cannot reach ProAnimaStudio right now. Try again later or write to info@proanima.net.",
+    "text": "Le serveur ne parvient pas à joindre ProAnimaStudio pour le moment. Réessayez plus tard ou écrivez à info@proanima.net."
+  },
+  "errorFeedbackLimited": {
+    "en": "Too many messages from this server. Wait a few minutes and try again.",
+    "text": "Trop de messages envoyés depuis ce serveur. Patientez quelques minutes, puis réessayez."
+  },
+  "errorReadOnly": {
+    "en": "This address only serves downloads. Make changes through the main Arkvory address.",
+    "text": "Cette adresse sert uniquement aux téléchargements. Effectuez les modifications via l’adresse principale d’Arkvory."
+  },
+  "errorRouteMissing": {
+    "en": "This Arkvory server does not support the operation. Update the server or reload the console.",
+    "text": "Ce serveur Arkvory ne prend pas en charge cette opération. Mettez à jour le serveur ou rechargez la console."
+  },
+  "errorBodyTooLarge": {
+    "en": "The entered data is too large. Shorten the values and try again.",
+    "text": "Les données saisies sont trop volumineuses. Raccourcissez les valeurs et réessayez."
+  },
+  "errorMediaType": {
+    "en": "The server did not accept the request format. Reload the console.",
+    "text": "Le serveur n’a pas accepté le format de la requête. Rechargez la console."
+  },
+  "errorMalformed": {
+    "en": "The server could not read the request. Reload the console and try again.",
+    "text": "Le serveur n’a pas pu lire la requête. Rechargez la console et réessayez."
+  },
+  "errorFields": {
+    "en": "Check the highlighted fields.",
+    "text": "Vérifiez les champs mis en évidence."
+  },
+  "errorRange": {
+    "en": "The requested part of the file is not available. Restart the download.",
+    "text": "La partie demandée du fichier n’est pas disponible. Relancez le téléchargement."
+  },
+  "errorTooManyRequests": {
+    "en": "Too many requests. Wait a moment and try again.",
+    "text": "Trop de requêtes. Patientez un instant, puis réessayez."
+  },
+  "errorRegistrationLimited": {
+    "en": "Too many sign-up attempts from this network. Wait and try again.",
+    "text": "Trop de tentatives d’inscription depuis ce réseau. Patientez, puis réessayez."
+  },
+  "errorPasswordLimited": {
+    "en": "Too many wrong attempts at the current password. Wait and try again.",
+    "text": "Trop de tentatives incorrectes pour le mot de passe actuel. Patientez, puis réessayez."
+  },
+  "sessionEnded": {
+    "en": "Your session has ended: you signed out elsewhere, changed the password or access was revoked. Sign in again.",
+    "text": "Votre session a pris fin : déconnexion effectuée ailleurs, mot de passe modifié ou accès révoqué. Reconnectez-vous."
+  },
+  "errorTokenExpired": {
+    "en": "This key or token has expired. Create a new one and connect again.",
+    "text": "Cette clé ou ce jeton a expiré. Générez une nouvelle clé ou un nouveau jeton, puis reconnectez-vous."
+  },
+  "errorReadOnlyToken": {
+    "en": "This token can only read. Use a read-write token or sign in with your password.",
+    "text": "Ce jeton n’autorise que la lecture. Utilisez un jeton en lecture-écriture ou connectez-vous avec votre mot de passe."
+  },
+  "errorCredentialRevoked": {
+    "en": "The key used for this action was revoked or has expired.",
+    "text": "La clé utilisée pour cette action a été révoquée ou a expiré."
+  },
+  "errorSessionRequired": {
+    "en": "This action needs a password sign-in; keys and tokens cannot do it.",
+    "text": "Cette action nécessite une connexion par mot de passe ; les clés et les jetons ne le permettent pas."
+  },
+  "errorAdministratorRequired": {
+    "en": "Only an administrator can do this.",
+    "text": "Seul un administrateur peut effectuer cette action."
+  },
+  "errorRegistrationDisabled": {
+    "en": "Self sign-up is turned off. Ask an administrator for an account.",
+    "text": "L’inscription libre est désactivée. Demandez un compte à un administrateur."
+  },
+  "errorOriginForbidden": {
+    "en": "The server does not allow requests from this console address. Contact the administrator.",
+    "text": "Le serveur n’autorise pas les requêtes provenant de l’adresse de cette console. Contactez l’administrateur."
+  },
+  "errorUploadExpired": {
+    "en": "The upload expired before it was finished. Start a new upload.",
+    "text": "Le téléversement a expiré avant d’être terminé. Lancez un nouveau téléversement."
+  },
+  "errorUploadState": {
+    "en": "This upload is already published or cancelled. Start a new upload.",
+    "text": "Ce téléversement est déjà publié ou annulé. Lancez un nouveau téléversement."
+  },
+  "errorRevisionMismatch": {
+    "en": "Someone changed this item meanwhile. Reload it and apply your change again.",
+    "text": "Quelqu’un a modifié cet élément entre-temps. Rechargez-le et appliquez à nouveau votre modification."
+  },
+  "errorVersionExists": {
+    "en": "This package version already exists. Publish it under a new version.",
+    "text": "Cette version du paquet existe déjà. Publiez le paquet sous une nouvelle version."
+  },
+  "errorPartsIncomplete": {
+    "en": "Some parts of the file have not arrived yet. Resume the upload.",
+    "text": "Certaines parties du fichier ne sont pas encore arrivées. Reprenez le téléversement."
+  },
+  "errorIdempotency": {
+    "en": "This duplicate protection key was already used for another file. Start a new upload to get a new key.",
+    "text": "Cette clé de protection contre les doublons a déjà été utilisée pour un autre fichier. Lancez un nouveau téléversement pour obtenir une nouvelle clé."
+  },
+  "errorAlreadyExists": {
+    "en": "An item with this name already exists. Choose another name.",
+    "text": "Un élément portant ce nom existe déjà. Choisissez un autre nom."
+  },
+  "errorStageLimit": {
+    "en": "This artifact already has the maximum number of stages. Remove one first.",
+    "text": "Cet artefact a déjà le nombre maximal d’étapes. Retirez-en d’abord une."
+  },
+  "errorStorageQuota": {
+    "en": "The repository quota is used up. Delete old builds or ask an administrator to raise it.",
+    "text": "Le quota du dépôt est épuisé. Supprimez d’anciens builds ou demandez à un administrateur de l’augmenter."
+  },
+  "errorStorageFull": {
+    "en": "The server disk is full. Contact the administrator.",
+    "text": "Le disque du serveur est plein. Contactez l’administrateur."
+  },
+  "errorAccountLimit": {
+    "en": "The maximum number of accounts has been reached.",
+    "text": "Le nombre maximal de comptes est atteint."
+  },
+  "errorGroupLimit": {
+    "en": "The maximum number of groups has been reached.",
+    "text": "Le nombre maximal de groupes est atteint."
+  },
+  "errorMembershipLimit": {
+    "en": "The maximum number of group members has been reached.",
+    "text": "Le nombre maximal de membres de groupe est atteint."
+  },
+  "errorGrantLimit": {
+    "en": "The maximum number of access rules has been reached.",
+    "text": "Le nombre maximal de règles d’accès est atteint."
+  },
+  "errorKeyLimit": {
+    "en": "The key limit for this account has been reached. Revoke unused keys first.",
+    "text": "La limite de clés de ce compte est atteinte. Révoquez d’abord les clés inutilisées."
+  },
+  "errorTokenLimit": {
+    "en": "You already have the maximum of active tokens. Revoke unused tokens first.",
+    "text": "Vous avez déjà le nombre maximal de jetons actifs. Révoquez d’abord les jetons inutilisés."
+  },
+  "errorDelegationLimit": {
+    "en": "The maximum number of delegations has been reached.",
+    "text": "Le nombre maximal de délégations est atteint."
+  },
+  "errorCatalogLimit": {
+    "en": "The storage catalog is full. Contact the administrator.",
+    "text": "Le catalogue de stockage est plein. Contactez l’administrateur."
+  },
+  "errorQueueFull": {
+    "en": "The processing queue is full. Try again later.",
+    "text": "La file de traitement est pleine. Réessayez plus tard."
+  },
+  "errorTransferLimit": {
+    "en": "Too many transfers are running right now. Try again later.",
+    "text": "Trop de transferts sont en cours. Réessayez plus tard."
+  },
+  "errorCompletionFailed": {
+    "en": "The server could not finish this upload. Start a new upload or contact the administrator.",
+    "text": "Le serveur n’a pas pu terminer ce téléversement. Lancez un nouveau téléversement ou contactez l’administrateur."
+  },
+  "errorUnexpectedResponse": {
+    "en": "The server sent an answer this console does not understand. Update the server or the console.",
+    "text": "Le serveur a envoyé une réponse que cette console ne comprend pas. Mettez à jour le serveur ou la console."
+  },
+  "fieldRequired": {
+    "en": "Required.",
+    "text": "Obligatoire."
+  },
+  "fieldInvalid": {
+    "en": "Check this value.",
+    "text": "Vérifiez cette valeur."
+  },
+  "fieldFormat": {
+    "en": "The format is not valid.",
+    "text": "Le format n’est pas valide."
+  },
+  "fieldLength": {
+    "en": "The length is outside the allowed range.",
+    "text": "La longueur est hors de la plage autorisée."
+  },
+  "fieldRange": {
+    "en": "The value is outside the allowed range.",
+    "text": "La valeur est hors de la plage autorisée."
+  },
+  "fieldType": {
+    "en": "This kind of value is not accepted.",
+    "text": "Ce type de valeur n’est pas accepté."
+  },
+  "fieldUnknown": {
+    "en": "The server does not accept this field.",
+    "text": "Le serveur n’accepte pas ce champ."
+  },
+  "requestIdLabel": {
+    "en": "Request ID",
+    "text": "ID de requête"
+  },
+  "retryIn": {
+    "en": "Try again in {seconds} s.",
+    "text": "Réessayez dans {seconds} s."
+  },
+  "repositories": {
+    "en": "Repositories",
+    "text": "Dépôts"
+  },
+  "services": {
+    "en": "Service access",
+    "text": "Accès des services"
+  },
+  "managementReload": {
+    "en": "Reload",
+    "text": "Recharger"
+  },
+  "managementMore": {
+    "en": "Next page",
+    "text": "Page suivante"
+  },
+  "managementEmpty": {
+    "en": "No entries available for this credential.",
+    "text": "Aucune entrée accessible avec ces identifiants."
+  },
+  "managementSaved": {
+    "en": "Changes saved.",
+    "text": "Modifications enregistrées."
+  },
+  "managementClose": {
+    "en": "Close",
+    "text": "Fermer"
+  },
+  "repositoryModel": {
+    "en": "A repository appears once access to it is granted. Renaming or deleting repositories is not available here.",
+    "text": "Un dépôt apparaît dès que l’accès à celui-ci est accordé. Il n’est pas possible de renommer ni de supprimer des dépôts ici."
+  },
+  "managementAccountInfo": {
+    "en": "ID {id} · version {revision}",
+    "text": "ID {id} · version {revision}"
+  },
+  "repositoryOpen": {
+    "en": "Open files",
+    "text": "Ouvrir les fichiers"
+  },
+  "repositoryStorage": {
+    "en": "Storage & cleanup",
+    "text": "Stockage et nettoyage"
+  },
+  "repositoryAccess": {
+    "en": "Manage access",
+    "text": "Gérer l’accès"
+  },
+  "repositoryRights": {
+    "en": "Your permissions",
+    "text": "Vos autorisations"
+  },
+  "serviceCreate": {
+    "en": "Create service account",
+    "text": "Créer un compte de service"
+  },
+  "serviceName": {
+    "en": "Account name",
+    "text": "Nom du compte"
+  },
+  "servicePolicy": {
+    "en": "Repository permissions",
+    "text": "Autorisations sur les dépôts"
+  },
+  "servicePolicyHint": {
+    "en": "A key can do only what both this policy and the key itself allow. An empty policy gives no access to files.",
+    "text": "Une clé ne peut faire que ce que cette politique et la clé elle-même autorisent toutes deux. Une politique vide ne donne aucun accès aux fichiers."
+  },
+  "serviceEnable": {
+    "en": "Enable account",
+    "text": "Activer le compte"
+  },
+  "serviceDisable": {
+    "en": "Disable account",
+    "text": "Désactiver le compte"
+  },
+  "serviceDisableHint": {
+    "en": "Disabling blocks every key of this account. Active transfers may finish.",
+    "text": "La désactivation bloque toutes les clés de ce compte. Les transferts en cours peuvent se terminer."
+  },
+  "servicePolicySave": {
+    "en": "Save policy",
+    "text": "Enregistrer la politique"
+  },
+  "serviceKeys": {
+    "en": "Service keys",
+    "text": "Clés de service"
+  },
+  "serviceAudit": {
+    "en": "Activity log",
+    "text": "Journal d’activité"
+  },
+  "serviceRefresh": {
+    "en": "Reload account",
+    "text": "Recharger le compte"
+  },
+  "serviceDelegated": {
+    "en": "Access is limited to assigned accounts and actions.",
+    "text": "L’accès est limité aux comptes et aux actions qui vous sont attribués."
+  },
+  "bindingAdd": {
+    "en": "Add repository",
+    "text": "Ajouter un dépôt"
+  },
+  "bindingPermissions": {
+    "en": "Individual permissions",
+    "text": "Autorisations individuelles"
+  },
+  "bindingRead": {
+    "en": "Read preset",
+    "text": "Préréglage lecture"
+  },
+  "bindingPublish": {
+    "en": "Publish preset",
+    "text": "Préréglage publication"
+  },
+  "bindingNone": {
+    "en": "Clear permissions",
+    "text": "Effacer les autorisations"
+  },
+  "bindingRemove": {
+    "en": "Remove repository",
+    "text": "Retirer le dépôt"
+  },
+  "bindingInvalid": {
+    "en": "Use unique repository IDs and select at least one permission for each repository.",
+    "text": "Utilisez des ID de dépôt uniques et sélectionnez au moins une autorisation pour chaque dépôt."
+  },
+  "keyNew": {
+    "en": "New key / cancel rotation",
+    "text": "Nouvelle clé / annuler le renouvellement"
+  },
+  "keyIssue": {
+    "en": "Issue key",
+    "text": "Émettre la clé"
+  },
+  "keyExpires": {
+    "en": "Expires",
+    "text": "Expiration"
+  },
+  "keyName": {
+    "en": "Key name",
+    "text": "Nom de la clé"
+  },
+  "keyExpiry": {
+    "en": "Expires at (local time, optional)",
+    "text": "Expire le (heure locale, facultatif)"
+  },
+  "keyExpiryHint": {
+    "en": "Default: up to 90 days. Maximum: 365 days, also limited by the issuing operator’s expiry.",
+    "text": "Par défaut : jusqu’à 90 jours. Maximum : 365 jours, et jamais au-delà de l’expiration de la clé de l’opérateur qui l’émet."
+  },
+  "keyRotate": {
+    "en": "Rotate",
+    "text": "Renouveler"
+  },
+  "keyRevoke": {
+    "en": "Revoke",
+    "text": "Révoquer"
+  },
+  "keyPending": {
+    "en": "Pending activation",
+    "text": "En attente d’activation"
+  },
+  "keyActive": {
+    "en": "Active",
+    "text": "Active"
+  },
+  "keyRevoked": {
+    "en": "Revoked",
+    "text": "Révoquée"
+  },
+  "keyExpired": {
+    "en": "Expired",
+    "text": "Expirée"
+  },
+  "keyRotationHint": {
+    "en": "Rotation cannot expand permissions. Activating the replacement limits the old key to at most 24 more hours. Delegations are not copied.",
+    "text": "Le renouvellement ne peut pas étendre les autorisations. Une fois la clé de remplacement activée, l’ancienne clé reste valable 24 heures au plus. Les délégations ne sont pas copiées."
+  },
+  "keyRevokeHint": {
+    "en": "Revocation is permanent. Existing transfers may finish; new requests will be rejected.",
+    "text": "La révocation est définitive. Les transferts en cours peuvent se terminer ; les nouvelles requêtes seront rejetées."
+  },
+  "keySecret": {
+    "en": "Save the new secret",
+    "text": "Enregistrez le nouveau secret"
+  },
+  "keySecretHint": {
+    "en": "Shown once. Save the secret securely before closing.",
+    "text": "Affiché une seule fois. Conservez le secret en lieu sûr avant de fermer."
+  },
+  "keySecretMissing": {
+    "en": "The key was already issued; its secret cannot be shown again. Find it in the list, revoke it and issue another key if needed.",
+    "text": "La clé a déjà été émise ; son secret ne peut plus être affiché. Retrouvez-la dans la liste, révoquez-la et émettez-en une autre si nécessaire."
+  },
+  "keyCopy": {
+    "en": "Copy secret",
+    "text": "Copier le secret"
+  },
+  "keyCopied": {
+    "en": "Copied.",
+    "text": "Copié."
+  },
+  "keyCopyFailed": {
+    "en": "Clipboard unavailable. Select and copy the secret manually.",
+    "text": "Presse-papiers indisponible. Sélectionnez le secret et copiez-le manuellement."
+  },
+  "keyActivate": {
+    "en": "Activate key",
+    "text": "Activer la clé"
+  },
+  "keyActivated": {
+    "en": "Key activated. Store it securely before closing.",
+    "text": "Clé activée. Conservez-la en lieu sûr avant de fermer."
+  },
+  "keySaved": {
+    "en": "I have saved the secret",
+    "text": "J’ai enregistré le secret"
+  },
+  "keyActivateHint": {
+    "en": "Activate after saving the secret. Pending credentials expire after 15 minutes.",
+    "text": "Activez la clé après avoir enregistré le secret. Les clés en attente d’activation expirent au bout de 15 minutes."
+  },
+  "keyRetryHint": {
+    "en": "After a network failure, retry without changing the form to reuse the issuance request. A lost secret cannot be recovered.",
+    "text": "Après une erreur réseau, réessayez sans modifier le formulaire afin de réutiliser la même demande d’émission. Un secret perdu ne peut pas être récupéré."
+  },
+  "managementConfirm": {
+    "en": "Confirm action",
+    "text": "Confirmer l’action"
+  },
+  "managementConfirmName": {
+    "en": "Type the displayed name to confirm",
+    "text": "Saisissez le nom affiché pour confirmer"
+  },
+  "managementConfirmSubmit": {
+    "en": "Confirm",
+    "text": "Confirmer"
+  },
+  "delegations": {
+    "en": "Delegated administration",
+    "text": "Administration déléguée"
+  },
+  "delegationTarget": {
+    "en": "Target account ID",
+    "text": "ID du compte cible"
+  },
+  "delegationActions": {
+    "en": "Administrative actions",
+    "text": "Actions d’administration"
+  },
+  "delegationCeiling": {
+    "en": "Maximum repository permissions",
+    "text": "Autorisations maximales sur les dépôts"
+  },
+  "delegationSave": {
+    "en": "Save delegation",
+    "text": "Enregistrer la délégation"
+  },
+  "delegationRemove": {
+    "en": "Remove delegation",
+    "text": "Supprimer la délégation"
+  },
+  "delegationNew": {
+    "en": "New delegation",
+    "text": "Nouvelle délégation"
+  },
+  "delegationHint": {
+    "en": "Only the server owner (the setup account) can change delegations. Removing a delegation does not revoke keys its holder already activated.",
+    "text": "Seul le propriétaire du serveur (le compte de la configuration initiale) peut modifier les délégations. Supprimer une délégation ne révoque pas les clés que son titulaire a déjà activées."
+  },
+  "delegationOwn": {
+    "en": "My administrative grants",
+    "text": "Mes autorisations d’administration"
+  },
+  "keyDetails": {
+    "en": "Key details",
+    "text": "Détails de la clé"
+  },
+  "permission.repository.read": {
+    "en": "Discover repositories",
+    "text": "Découvrir les dépôts"
+  },
+  "permission.storage.read": {
+    "en": "View storage policy and usage",
+    "text": "Voir la politique de stockage et l’utilisation"
+  },
+  "permission.storage.manage": {
+    "en": "Manage storage policy",
+    "text": "Gérer la politique de stockage"
+  },
+  "permission.diagnostics.read": {
+    "en": "Read diagnostics",
+    "text": "Lire les diagnostics"
+  },
+  "permission.artifact.read": {
+    "en": "Read artifact details",
+    "text": "Lire les détails des artefacts"
+  },
+  "permission.artifact.list": {
+    "en": "List artifacts",
+    "text": "Lister les artefacts"
+  },
+  "permission.artifact.delete": {
+    "en": "Delete artifacts",
+    "text": "Supprimer des artefacts"
+  },
+  "permission.artifact.promote": {
+    "en": "Promote artifacts and manage stages",
+    "text": "Promouvoir des artefacts et gérer les étapes"
+  },
+  "permission.content.read": {
+    "en": "Download files",
+    "text": "Télécharger des fichiers"
+  },
+  "permission.upload.create": {
+    "en": "Start uploads",
+    "text": "Lancer des téléversements"
+  },
+  "permission.upload.read": {
+    "en": "Read upload progress",
+    "text": "Suivre la progression des téléversements"
+  },
+  "permission.upload.write": {
+    "en": "Upload bytes",
+    "text": "Téléverser les données"
+  },
+  "permission.upload.complete": {
+    "en": "Finish uploads",
+    "text": "Terminer des téléversements"
+  },
+  "permission.upload.cancel": {
+    "en": "Cancel uploads",
+    "text": "Annuler des téléversements"
+  },
+  "permission.job.read": {
+    "en": "Read jobs",
+    "text": "Lire les tâches"
+  },
+  "permission.package.read": {
+    "en": "Read packages",
+    "text": "Lire les paquets"
+  },
+  "permission.package.publish": {
+    "en": "Publish packages",
+    "text": "Publier des paquets"
+  },
+  "permission.asset.read": {
+    "en": "Read file links",
+    "text": "Lire les liens de fichiers"
+  },
+  "permission.asset.write": {
+    "en": "Assign file links",
+    "text": "Attribuer des liens de fichiers"
+  },
+  "permission.asset.restore": {
+    "en": "Restore file history",
+    "text": "Restaurer l’historique des fichiers"
+  },
+  "permission.annotation.read": {
+    "en": "Read metadata",
+    "text": "Lire les métadonnées"
+  },
+  "permission.annotation.write": {
+    "en": "Edit metadata",
+    "text": "Modifier les métadonnées"
+  },
+  "permission.reference.write": {
+    "en": "Manage references",
+    "text": "Gérer les références"
+  },
+  "permission.audit.read": {
+    "en": "Read audit",
+    "text": "Lire l’audit"
+  },
+  "permission.service-account.read": {
+    "en": "Read accounts",
+    "text": "Lire les comptes"
+  },
+  "permission.service-account.manage": {
+    "en": "Enable or disable accounts",
+    "text": "Activer ou désactiver des comptes"
+  },
+  "permission.policy.read": {
+    "en": "Read account policies",
+    "text": "Lire les politiques des comptes"
+  },
+  "permission.policy.manage": {
+    "en": "Manage account policies",
+    "text": "Gérer les politiques des comptes"
+  },
+  "permission.credential.read": {
+    "en": "Read key metadata",
+    "text": "Lire les métadonnées des clés"
+  },
+  "permission.credential.manage": {
+    "en": "Issue, rotate and revoke keys",
+    "text": "Émettre, renouveler et révoquer des clés"
+  },
+  "permission.service-audit.read": {
+    "en": "Read service audit",
+    "text": "Lire l’audit des services"
+  },
+  "welcomePartial": {
+    "en": "The owner account exists. Sign in and finish repository permissions in Access groups; account creation must not be repeated.",
+    "text": "Le compte propriétaire existe déjà. Connectez-vous et terminez l’attribution des autorisations sur les dépôts dans Groupes d’accès ; ne relancez pas la création du compte."
+  },
+  "onboarding": {
+    "en": "Welcome to Arkvory",
+    "text": "Bienvenue dans Arkvory"
+  },
+  "help": {
+    "en": "API & CLI",
+    "text": "API et CLI"
+  },
+  "welcomeAccess": {
+    "en": "01 · Sign in",
+    "text": "01 · Se connecter"
+  },
+  "welcomeAccessBody": {
+    "en": "On Windows, use the owner account you created in Setup. For a headless installation, create an owner using the private recovery key on the server.",
+    "text": "Sous Windows, utilisez le compte propriétaire créé dans le programme d’installation. Pour une installation sans interface graphique, créez un propriétaire à l’aide de la clé de récupération privée présente sur le serveur."
+  },
+  "welcomeSignIn": {
+    "en": "Open sign in",
+    "text": "Ouvrir la connexion"
+  },
+  "welcomeOwner": {
+    "en": "Create the first owner",
+    "text": "Créer le premier propriétaire"
+  },
+  "welcomeRecovery": {
+    "en": "Recovery key",
+    "text": "Clé de récupération"
+  },
+  "welcomeName": {
+    "en": "Owner name · 3–64 Latin letters, digits, dot, dash or underscore",
+    "text": "Nom du propriétaire · 3 à 64 lettres latines, chiffres, point, tiret ou trait de soulignement"
+  },
+  "welcomePassword": {
+    "en": "Password · at least 12 characters",
+    "text": "Mot de passe · au moins 12 caractères"
+  },
+  "welcomeCreate": {
+    "en": "Create owner",
+    "text": "Créer le propriétaire"
+  },
+  "welcomeCreated": {
+    "en": "Owner created. Sign in with your new password. Keep the recovery key offline.",
+    "text": "Propriétaire créé. Connectez-vous avec votre nouveau mot de passe. Conservez la clé de récupération hors ligne."
+  },
+  "welcomePublish": {
+    "en": "02 · Publish a file",
+    "text": "02 · Publier un fichier"
+  },
+  "welcomePublishBody": {
+    "en": "Start with a small file in releases. Add labels and metadata; UPack builds can also carry manifests and attachments.",
+    "text": "Commencez par un petit fichier dans releases. Ajoutez des étiquettes et des métadonnées ; les builds UPack peuvent aussi comporter des manifestes et des pièces jointes."
+  },
+  "welcomePublishAction": {
+    "en": "Open uploads",
+    "text": "Ouvrir les téléversements"
+  },
+  "welcomeConnect": {
+    "en": "03 · Connect your tools",
+    "text": "03 · Connecter vos outils"
+  },
+  "welcomeConnectBody": {
+    "en": "Give each integration its own service account and only the repository actions it needs. The API catalog shows the operations available to you.",
+    "text": "Attribuez à chaque intégration son propre compte de service, avec uniquement les actions sur les dépôts dont elle a besoin. Le catalogue d’API indique les opérations qui vous sont accessibles."
+  },
+  "welcomeOperate": {
+    "en": "04 · Prepare production",
+    "text": "04 · Préparer la production"
+  },
+  "welcomeOperateBody": {
+    "en": "Before remote access: configure HTTPS, backups and disk alerts. Updates are opt-in. Local storage is a single-server profile.",
+    "text": "Avant d’ouvrir l’accès à distance : configurez HTTPS, les sauvegardes et les alertes d’espace disque. Les mises à jour automatiques sont désactivées par défaut. Le stockage local correspond à un profil à serveur unique."
+  },
+  "helpLoad": {
+    "en": "Load permitted API operations",
+    "text": "Charger les opérations d’API autorisées"
+  },
+  "helpSearch": {
+    "en": "Search method, path or operation",
+    "text": "Rechercher une méthode, un chemin ou une opération"
+  },
+  "helpHint": {
+    "en": "Sign in to see API operations available to your account.",
+    "text": "Connectez-vous pour voir les opérations d’API disponibles pour votre compte."
+  },
+  "helpEmpty": {
+    "en": "No matching operations.",
+    "text": "Aucune opération correspondante."
+  },
+  "helpLoaded": {
+    "en": "Loaded {count} operations.",
+    "text": "Opérations chargées : {count}."
+  },
+  "helpRetry": {
+    "en": "Retry policy:",
+    "text": "Politique de nouvelle tentative :"
+  },
+  "helpActions": {
+    "en": "Required actions:",
+    "text": "Actions requises :"
+  },
+  "helpCli": {
+    "en": "Server lifecycle CLI",
+    "text": "CLI de gestion du serveur"
+  },
+  "helpRemoteCli": {
+    "en": "Remote client · arkvoryctl",
+    "text": "Client distant · arkvoryctl"
+  },
+  "helpRemoteCliBody": {
+    "en": "Install the separate Arkvory CLI package on your computer. It includes Node.js and needs no server services. Store your key in a private file. Repeat the same transfer command after interruption; use --json for CI/CD.",
+    "text": "Installez le paquet Arkvory CLI distinct sur votre ordinateur. Il inclut Node.js et ne nécessite aucun service du serveur. Conservez votre clé dans un fichier privé. Après une interruption, relancez la même commande de transfert ; utilisez --json pour la CI/CD."
+  },
+  "helpCliBody": {
+    "en": "Run from an elevated terminal on the server. These commands manage deployment; integrations use the HTTP API and SDK. Replace ROOT with the installation directory.",
+    "text": "À exécuter sur le serveur depuis un terminal avec élévation de privilèges. Ces commandes gèrent le déploiement ; les intégrations utilisent l’API HTTP et le SDK. Remplacez ROOT par le répertoire d’installation."
+  },
+  "helpDocs": {
+    "en": "Documentation",
+    "text": "Documentation"
+  },
+  "helpDocsBody": {
+    "en": "Installation, everyday work, clients and protocols, operation, backups and the full HTTP API reference, in the language of the console.",
+    "text": "Installation, travail quotidien, clients et protocoles, exploitation, sauvegardes et référence complète de l’API HTTP, dans la langue de la console."
+  },
+  "helpDocsOpen": {
+    "en": "Open the documentation",
+    "text": "Ouvrir la documentation"
+  },
+  "helpRecipes": {
+    "en": "Integration checklist",
+    "text": "Liste de contrôle d’intégration"
+  },
+  "helpRecipesBody": {
+    "en": "Read capabilities → discover repositories → create upload with an idempotency key → resume parts → complete → poll readiness → download using Range and ETag. Never blindly retry a non-idempotent write.",
+    "text": "Lire les capabilities → découvrir les dépôts → créer un téléversement avec une clé d’idempotence → reprendre les parties → terminer → attendre la disponibilité → télécharger avec Range et ETag. Ne réessayez jamais à l’aveugle une écriture non idempotente."
+  },
+  "navigationExpand": {
+    "en": "Expand sidebar",
+    "text": "Développer la barre latérale"
+  },
+  "navigationCollapse": {
+    "en": "Collapse sidebar",
+    "text": "Réduire la barre latérale"
+  },
+  "noUsers": {
+    "en": "No user accounts yet.",
+    "text": "Aucun compte utilisateur pour l’instant."
+  },
+  "noAccessGroups": {
+    "en": "No access groups yet.",
+    "text": "Aucun groupe d’accès pour l’instant."
+  },
+  "fileBrowse": {
+    "en": "Choose file",
+    "text": "Choisir un fichier"
+  },
+  "fileNotSelected": {
+    "en": "No file selected",
+    "text": "Aucun fichier sélectionné"
+  },
+  "navLibrary": {
+    "en": "Library",
+    "text": "Bibliothèque"
+  },
+  "navTransfers": {
+    "en": "Transfers",
+    "text": "Transferts"
+  },
+  "navResources": {
+    "en": "Resources",
+    "text": "Ressources"
+  },
+  "navStart": {
+    "en": "Getting started",
+    "text": "Premiers pas"
+  },
+  "keyHelpLabel": {
+    "en": "About service keys",
+    "text": "À propos des clés de service"
+  },
+  "catalogHelpLabel": {
+    "en": "About artifacts",
+    "text": "À propos des artefacts"
+  },
+  "packageHelpLabel": {
+    "en": "About package filters",
+    "text": "À propos des filtres de paquets"
+  },
+  "labelHelpLabel": {
+    "en": "About build labels",
+    "text": "À propos des étiquettes de build"
+  },
+  "metadataHelpLabel": {
+    "en": "About metadata",
+    "text": "À propos des métadonnées"
+  },
+  "assetHelpLabel": {
+    "en": "About file links and versions",
+    "text": "À propos des liens de fichiers et des versions"
+  },
+  "attachmentHelpLabel": {
+    "en": "About build attachments",
+    "text": "À propos des pièces jointes de build"
+  },
+  "historyHelpLabel": {
+    "en": "About file history",
+    "text": "À propos de l’historique des fichiers"
+  },
+  "adminHelpLabel": {
+    "en": "About access management",
+    "text": "À propos de la gestion des accès"
+  },
+  "cleanupTitle": {
+    "en": "Physical cleanup",
+    "text": "Nettoyage physique"
+  },
+  "cleanupHelp": {
+    "en": "Frees disk space without stopping Arkvory. Active transfers and pinned files are deferred. Enable only after every Arkvory server is updated, including read servers and background processors. Pausing finishes the current file. The grace period is not a recycle bin.",
+    "text": "Libère de l’espace disque sans arrêter Arkvory. Les transferts en cours et les fichiers épinglés sont reportés. N’activez cette fonction qu’après la mise à jour de tous les serveurs Arkvory, y compris les serveurs de lecture et les processus d’arrière-plan. La mise en pause laisse d’abord se terminer le fichier en cours. Le délai de grâce n’est pas une corbeille."
+  },
+  "cleanupEnabled": {
+    "en": "Enable background cleanup",
+    "text": "Activer le nettoyage en arrière-plan"
+  },
+  "cleanupGrace": {
+    "en": "Grace period after deletion (hours)",
+    "text": "Délai de grâce après suppression (heures)"
+  },
+  "cleanupBatch": {
+    "en": "Files per batch",
+    "text": "Fichiers par lot"
+  },
+  "cleanupInterval": {
+    "en": "Interval between batches (seconds)",
+    "text": "Intervalle entre les lots (secondes)"
+  },
+  "cleanupDelay": {
+    "en": "Delay between files (milliseconds)",
+    "text": "Pause entre les fichiers (millisecondes)"
+  },
+  "cleanupRefresh": {
+    "en": "Refresh cleanup status",
+    "text": "Actualiser l’état du nettoyage"
+  },
+  "cleanupSave": {
+    "en": "Apply settings",
+    "text": "Appliquer les paramètres"
+  },
+  "cleanupRun": {
+    "en": "Request a batch",
+    "text": "Demander un lot"
+  },
+  "cleanupSaved": {
+    "en": "Cleanup settings applied.",
+    "text": "Paramètres de nettoyage appliqués."
+  },
+  "cleanupRequested": {
+    "en": "Batch requested. Refresh status to see its result.",
+    "text": "Lot demandé. Actualisez l’état pour voir son résultat."
+  },
+  "cleanupStats": {
+    "en": "Last batch: freed {bytes} · processed {collected} · deferred {deferred} · failed {failed}",
+    "text": "Dernier lot : {bytes} libérés · {collected} traités · {deferred} reportés · {failed} en échec"
+  },
+  "cleanupLastRun": {
+    "en": "Last completed batch:",
+    "text": "Dernier lot terminé :"
+  },
+  "cleanupPaused": {
+    "en": "Cleanup is paused.",
+    "text": "Le nettoyage est en pause."
+  },
+  "cleanupScheduled": {
+    "en": "Background cleanup is enabled.",
+    "text": "Le nettoyage en arrière-plan est activé."
+  },
+  "updates": {
+    "en": "Updates",
+    "text": "Mises à jour"
+  },
+  "updateAvailable": {
+    "en": "Arkvory {version} is available",
+    "text": "Arkvory {version} est disponible"
+  },
+  "updateOpen": {
+    "en": "View update",
+    "text": "Voir la mise à jour"
+  },
+  "updateCurrent": {
+    "en": "Installed version",
+    "text": "Version installée"
+  },
+  "updateLatest": {
+    "en": "Latest stable release",
+    "text": "Dernière version stable"
+  },
+  "updateChecked": {
+    "en": "Last check",
+    "text": "Dernière vérification"
+  },
+  "updateCheck": {
+    "en": "Check now",
+    "text": "Vérifier maintenant"
+  },
+  "updateInstall": {
+    "en": "Install update",
+    "text": "Installer la mise à jour"
+  },
+  "updateSettings": {
+    "en": "Automatic updates",
+    "text": "Mises à jour automatiques"
+  },
+  "updateAutomatic": {
+    "en": "Install compatible stable releases automatically",
+    "text": "Installer automatiquement les versions stables compatibles"
+  },
+  "updateHour": {
+    "en": "Maintenance hour (UTC)",
+    "text": "Heure de maintenance (UTC)"
+  },
+  "updateSave": {
+    "en": "Save settings",
+    "text": "Enregistrer les paramètres"
+  },
+  "updateStatistics": {
+    "en": "Send anonymous statistics to ProAnimaStudio",
+    "text": "Envoyer des statistiques anonymes à ProAnimaStudio"
+  },
+  "updateHub": {
+    "en": "Channel: {channel}. Versions are approved in the ProAnimaStudio hub; GitHub is used only when the hub cannot be reached. Statistics: a random installation id, version, system and installed updates — no names, addresses or content. Without statistics a version arrives only when it is rolled out to everyone.",
+    "text": "Canal : {channel}. Les versions sont approuvées dans le hub ProAnimaStudio ; GitHub n’est utilisé que si le hub est injoignable. Statistiques : un identifiant d’installation aléatoire, la version, le système et les mises à jour installées — ni noms, ni adresses, ni contenu. Sans statistiques, une version n’arrive que lorsqu’elle est déployée pour tous."
+  },
+  "updatePolicyHelp": {
+    "en": "Checks run every 6 hours, even when automatic installation is off. Automatic installation runs once per day during the selected UTC hour. A release that changes the database schema installs only after the server has captured and verified a fresh backup.",
+    "text": "Les vérifications ont lieu toutes les 6 heures, même lorsque l’installation automatique est désactivée. L’installation automatique s’exécute une fois par jour pendant l’heure UTC choisie. Une version qui modifie le schéma de la base de données ne s’installe qu’après que le serveur a réalisé et vérifié une sauvegarde récente."
+  },
+  "updateUnavailable": {
+    "en": "The host updater is not connected. Ask the server administrator to connect it using updates-connect.",
+    "text": "Le service de mise à jour de l’hôte n’est pas connecté. Demandez à l’administrateur du serveur de le connecter avec updates-connect."
+  },
+  "updateStale": {
+    "en": "The host updater has stopped reporting. Check the scheduler and installation lock on the server.",
+    "text": "Le service de mise à jour de l’hôte ne signale plus son état. Vérifiez le planificateur et le verrou d’installation sur le serveur."
+  },
+  "updateIdle": {
+    "en": "Updater is ready",
+    "text": "Le service de mise à jour est prêt"
+  },
+  "updateChecking": {
+    "en": "Checking stable releases…",
+    "text": "Vérification des versions stables…"
+  },
+  "updateWorking": {
+    "en": "Installing the release. The service may briefly disconnect; this page will reconnect.",
+    "text": "Installation de la version en cours. Le service peut se déconnecter brièvement ; cette page se reconnectera."
+  },
+  "updatePending": {
+    "en": "Request accepted. Waiting for the host updater (usually within one minute).",
+    "text": "Demande acceptée. En attente du service de mise à jour de l’hôte (généralement moins d’une minute)."
+  },
+  "updateUnknown": {
+    "en": "Not checked yet",
+    "text": "Pas encore vérifié"
+  },
+  "updatePinned": {
+    "en": "Version is pinned. Remove the pin on the server before installing from the console.",
+    "text": "La version est épinglée. Retirez l’épinglage sur le serveur avant d’installer depuis la console."
+  },
+  "updateMaintenance": {
+    "en": "Installation refused: a release that changes the database schema needs a fresh verified backup. Connect a backup vault and complete the first backup, then check again, or upgrade manually on the server.",
+    "text": "Installation refusée : une version qui modifie le schéma de la base de données exige une sauvegarde récente et vérifiée. Connectez un stockage des sauvegardes et effectuez la première sauvegarde, puis vérifiez à nouveau, ou mettez à niveau manuellement sur le serveur."
+  },
+  "updateMigration": {
+    "en": "This release changes the database schema. The server captures and verifies a backup before installing, so installation takes longer.",
+    "text": "Cette version modifie le schéma de la base de données. Le serveur réalise et vérifie une sauvegarde avant l’installation, qui prend donc plus de temps."
+  },
+  "updateCheckFailed": {
+    "en": "Release check failed. The displayed release may be outdated. Check GitHub access and credentials on the server.",
+    "text": "La vérification des versions a échoué. La version affichée n’est peut-être plus à jour. Vérifiez l’accès à GitHub et les identifiants sur le serveur."
+  },
+  "updateFailed": {
+    "en": "Update failed. Inspect the installation journal and service logs before retrying.",
+    "text": "La mise à jour a échoué. Examinez le journal d’installation et les journaux des services avant de réessayer."
+  },
+  "updateRecovery": {
+    "en": "Manual recovery is required. Inspect processes, installation lock and journal on the server.",
+    "text": "Une récupération manuelle est nécessaire. Examinez les processus, le verrou d’installation et le journal sur le serveur."
+  },
+  "updateConflict": {
+    "en": "Settings changed while the request was waiting. Refresh and submit again.",
+    "text": "Les paramètres ont changé pendant que la demande était en attente. Actualisez, puis soumettez à nouveau."
+  },
+  "updateConfirm": {
+    "en": "Install Arkvory {version}?",
+    "text": "Installer Arkvory {version} ?"
+  },
+  "updateConfirmHelp": {
+    "en": "Active transfers may be interrupted and need to resume. The installer verifies the release, backs up first when the database schema changes, and attempts rollback if startup fails. Schedule this action during a maintenance window.",
+    "text": "Les transferts en cours peuvent être interrompus et devront reprendre. Le programme d’installation vérifie la version, effectue d’abord une sauvegarde si le schéma de la base de données change, et tente de revenir à la version précédente si le démarrage échoue. Planifiez cette action pendant une fenêtre de maintenance."
+  },
+  "updateCancel": {
+    "en": "Cancel",
+    "text": "Annuler"
+  },
+  "updateConfirmButton": {
+    "en": "Install this release",
+    "text": "Installer cette version"
+  },
+  "updateConnection": {
+    "en": "Cannot contact Arkvory. Retrying automatically; do not submit another installation request.",
+    "text": "Impossible de joindre Arkvory. Nouvelle tentative automatique en cours ; n’envoyez pas d’autre demande d’installation."
+  },
+  "backups": {
+    "en": "Backups",
+    "text": "Sauvegardes"
+  },
+  "backupStateOk": {
+    "en": "Backups are healthy",
+    "text": "Sauvegardes en bon état"
+  },
+  "backupStateWarning": {
+    "en": "Needs attention",
+    "text": "Attention requise"
+  },
+  "backupStateCritical": {
+    "en": "Action required",
+    "text": "Intervention requise"
+  },
+  "backupStateLoading": {
+    "en": "Loading status…",
+    "text": "Chargement de l’état…"
+  },
+  "backupRefresh": {
+    "en": "Refresh status",
+    "text": "Actualiser l’état"
+  },
+  "backupRun": {
+    "en": "Create backup now",
+    "text": "Sauvegarder maintenant"
+  },
+  "backupNewest": {
+    "en": "Latest backup",
+    "text": "Dernière sauvegarde"
+  },
+  "backupNewestNone": {
+    "en": "No backups yet",
+    "text": "Aucune sauvegarde pour l’instant"
+  },
+  "backupNewestHelp": {
+    "en": "Age counts from the snapshot time T: a backup contains the data as of T, not as of its completion. Hover the age for the exact local time.",
+    "text": "L’âge est compté à partir de l’instant T de l’instantané : une sauvegarde contient les données telles qu’elles étaient à l’instant T, et non à la fin de la sauvegarde. Survolez l’âge pour afficher l’heure locale exacte."
+  },
+  "backupNewestHelpLabel": {
+    "en": "About backup age",
+    "text": "À propos de l’âge des sauvegardes"
+  },
+  "backupNextRun": {
+    "en": "Next run",
+    "text": "Prochaine exécution"
+  },
+  "backupNextDisabled": {
+    "en": "Schedule is off",
+    "text": "Planification désactivée"
+  },
+  "backupNextUnknown": {
+    "en": "Not scheduled",
+    "text": "Non planifiée"
+  },
+  "backupOverdue": {
+    "en": "Overdue",
+    "text": "En retard"
+  },
+  "backupAgent": {
+    "en": "Backup agent",
+    "text": "Agent de sauvegarde"
+  },
+  "backupAgentOnline": {
+    "en": "Online",
+    "text": "En ligne"
+  },
+  "backupAgentOffline": {
+    "en": "Offline",
+    "text": "Hors ligne"
+  },
+  "backupAgentNever": {
+    "en": "Has not connected yet",
+    "text": "Jamais connecté"
+  },
+  "backupAgentSeen": {
+    "en": "Last signal",
+    "text": "Dernier signal"
+  },
+  "backupAgentVersion": {
+    "en": "· version {version}",
+    "text": "· version {version}"
+  },
+  "backupVault": {
+    "en": "Backup storage",
+    "text": "Stockage des sauvegardes"
+  },
+  "backupVaultFree": {
+    "en": "{free} free of {total}",
+    "text": "{free} libres sur {total}"
+  },
+  "backupVaultAvailable": {
+    "en": "Available",
+    "text": "Disponible"
+  },
+  "backupVaultNotConfigured": {
+    "en": "Not configured",
+    "text": "Non configuré"
+  },
+  "backupVaultUnknown": {
+    "en": "Unknown while the agent is offline",
+    "text": "Inconnu tant que l’agent est hors ligne"
+  },
+  "backupVaultUnavailable": {
+    "en": "Unavailable",
+    "text": "Indisponible"
+  },
+  "backupWarningsLabel": {
+    "en": "Backup warnings",
+    "text": "Avertissements de sauvegarde"
+  },
+  "backupSeverityWarning": {
+    "en": "Warning",
+    "text": "Avertissement"
+  },
+  "backupSeverityCritical": {
+    "en": "Critical",
+    "text": "Critique"
+  },
+  "backupWarningHelpLabel": {
+    "en": "What to do",
+    "text": "Que faire"
+  },
+  "backupWarningVaultNotConfigured": {
+    "en": "Backup storage is not configured for the agent",
+    "text": "Le stockage des sauvegardes n’est pas configuré pour l’agent"
+  },
+  "backupWarningAgentOffline": {
+    "en": "The backup agent is offline",
+    "text": "L’agent de sauvegarde est hors ligne"
+  },
+  "backupWarningScheduleDisabled": {
+    "en": "The daily schedule is off",
+    "text": "La planification quotidienne est désactivée"
+  },
+  "backupWarningNoBackupYet": {
+    "en": "There is no backup yet",
+    "text": "Aucune sauvegarde n’existe encore"
+  },
+  "backupWarningBackupStale": {
+    "en": "The latest backup is out of date",
+    "text": "La dernière sauvegarde est trop ancienne"
+  },
+  "backupWarningLastRunFailed": {
+    "en": "The last backup failed",
+    "text": "La dernière sauvegarde a échoué"
+  },
+  "backupWarningVaultUnavailable": {
+    "en": "Backup storage is unavailable",
+    "text": "Le stockage des sauvegardes est indisponible"
+  },
+  "backupWarningVaultLowSpace": {
+    "en": "Backup storage is running out of space",
+    "text": "Le stockage des sauvegardes manque d’espace"
+  },
+  "backupWarningVerifyFailed": {
+    "en": "A restore point failed verification",
+    "text": "Un point de restauration a échoué à la vérification"
+  },
+  "backupWarningNeverDeepVerified": {
+    "en": "No full verification for more than 8 days",
+    "text": "Aucune vérification complète depuis plus de 8 jours"
+  },
+  "backupActionVaultNotConfigured": {
+    "en": "Set ARKVORY_BACKUP_VAULT to a directory prepared with vault init in the environment of the arkvory-backup service and restart it. Once installers support it, use arkvory configure --backup-vault.",
+    "text": "Définissez ARKVORY_BACKUP_VAULT sur un répertoire préparé avec vault init dans l’environnement du service arkvory-backup, puis redémarrez celui-ci. Dès que les programmes d’installation le prendront en charge, utilisez arkvory configure --backup-vault."
+  },
+  "backupActionAgentOffline": {
+    "en": "Start the arkvory-backup service (npm run backup -- agent) and check its journal. Without the agent nothing is copied.",
+    "text": "Démarrez le service arkvory-backup (npm run backup -- agent) et consultez son journal. Sans l’agent, rien n’est copié."
+  },
+  "backupActionScheduleDisabled": {
+    "en": "Turn on the plan below if backups must run every day.",
+    "text": "Activez le plan ci-dessous si les sauvegardes doivent s’exécuter chaque jour."
+  },
+  "backupActionNoBackupYet": {
+    "en": "Create the first backup with \"Create backup now\".",
+    "text": "Créez la première sauvegarde avec « Sauvegarder maintenant »."
+  },
+  "backupActionBackupStale": {
+    "en": "The newest point is older than 26 hours. Check the job error codes below and the agent journal.",
+    "text": "Le point le plus récent date de plus de 26 heures. Consultez les codes d’erreur des tâches ci-dessous et le journal de l’agent."
+  },
+  "backupActionLastRunFailed": {
+    "en": "The error code is in the job table; the agent journal has the record backup.request.failed.",
+    "text": "Le code d’erreur figure dans le tableau des tâches ; le journal de l’agent contient l’entrée backup.request.failed."
+  },
+  "backupActionVaultUnavailable": {
+    "en": "The backup storage volume is not mounted, has no vault.json or is not writable. Check the disk or NAS on the server.",
+    "text": "Le volume du stockage des sauvegardes n’est pas monté, ne contient pas de vault.json ou n’est pas accessible en écriture. Vérifiez le disque ou le NAS sur le serveur."
+  },
+  "backupActionVaultLowSpace": {
+    "en": "Less than 10% or less than twice the last new data is free. Free space on the backup volume or keep fewer points.",
+    "text": "L’espace libre est inférieur à 10 % ou à deux fois le volume des dernières nouvelles données. Libérez de l’espace sur le volume de sauvegarde ou conservez moins de points."
+  },
+  "backupActionVerifyFailed": {
+    "en": "Do not change the backup storage. Find the point with a verification error below and investigate its code.",
+    "text": "Ne modifiez pas le stockage des sauvegardes. Repérez ci-dessous le point qui présente une erreur de vérification et analysez son code."
+  },
+  "backupActionNeverDeepVerified": {
+    "en": "Run \"Verify fully\" for the newest point and check that the agent is running.",
+    "text": "Lancez « Vérifier entièrement » pour le point le plus récent et vérifiez que l’agent est en cours d’exécution."
+  },
+  "backupRestoreNote": {
+    "en": "Restoring is an operator action on the server, into an empty target.",
+    "text": "La restauration est une action d’opérateur sur le serveur, vers une cible vide."
+  },
+  "backupRestoreHelp": {
+    "en": "On the server: npm run backup -- restore --vault <vault> --point <id> --storage <empty directory>, with ARKVORY_RESTORE_DATABASE_URL of an empty database. Run it first without --yes (a check that writes nothing), then with --yes, start a separate instance on the restored data and check it before switching production. Details: the documentation, \"Backups\".",
+    "text": "Sur le serveur : npm run backup -- restore --vault <vault> --point <id> --storage <répertoire vide>, avec ARKVORY_RESTORE_DATABASE_URL pointant vers une base de données vide. Exécutez d’abord la commande sans --yes (une vérification qui n’écrit rien), puis avec --yes ; démarrez une instance distincte sur les données restaurées et vérifiez-la avant de basculer la production. Détails : la documentation, « Sauvegardes »."
+  },
+  "backupRestoreHelpLabel": {
+    "en": "How to restore",
+    "text": "Comment restaurer"
+  },
+  "backupRunningLabel": {
+    "en": "Running now",
+    "text": "En cours"
+  },
+  "backupRunQueued": {
+    "en": "Backup queued. The agent starts it at its next queue check.",
+    "text": "Sauvegarde mise en file d’attente. L’agent la lancera lors de sa prochaine consultation de la file."
+  },
+  "backupVerifyQueued": {
+    "en": "Full verification queued.",
+    "text": "Vérification complète mise en file d’attente."
+  },
+  "backupRetentionQueued": {
+    "en": "Retention queued: the agent removes the points outside the policy.",
+    "text": "Rétention mise en file d’attente : l’agent supprime les points hors politique."
+  },
+  "backupPinDone": {
+    "en": "Point pinned: retention keeps it.",
+    "text": "Point épinglé : la rétention le conserve."
+  },
+  "backupUnpinDone": {
+    "en": "Point unpinned.",
+    "text": "Point désépinglé."
+  },
+  "backupPoints": {
+    "en": "Restore points",
+    "text": "Points de restauration"
+  },
+  "backupPointsHelp": {
+    "en": "Retention keeps the newest point of each of the last N local days of the plan time zone, and likewise of weeks and months, plus pinned points and the newest point. Other points of the same day are removed: pin a point you must keep.",
+    "text": "La rétention conserve le point le plus récent de chacun des N derniers jours locaux du fuseau horaire du plan, et de même pour les semaines et les mois, ainsi que les points épinglés et le point le plus récent. Les autres points d’une même journée sont supprimés : épinglez un point que vous devez conserver."
+  },
+  "backupPointsHelpLabel": {
+    "en": "About retention",
+    "text": "À propos de la rétention"
+  },
+  "backupRetentionApply": {
+    "en": "Apply retention",
+    "text": "Appliquer la rétention"
+  },
+  "backupPointsEmpty": {
+    "en": "No restore points in the current backup storage yet.",
+    "text": "Aucun point de restauration dans le stockage des sauvegardes actuel pour l’instant."
+  },
+  "backupSnapshot": {
+    "en": "State as of (T)",
+    "text": "État à l’instant T"
+  },
+  "backupCompleted": {
+    "en": "Completed",
+    "text": "Fin"
+  },
+  "backupSize": {
+    "en": "Size",
+    "text": "Taille"
+  },
+  "backupNewBytes": {
+    "en": "+{size} new",
+    "text": "+{size} ajoutés"
+  },
+  "backupFiles": {
+    "en": "Files",
+    "text": "Fichiers"
+  },
+  "backupVerification": {
+    "en": "Verification",
+    "text": "Vérification"
+  },
+  "backupVerifyNone": {
+    "en": "Not verified",
+    "text": "Non vérifié"
+  },
+  "backupVerifyStructural": {
+    "en": "Structure checked",
+    "text": "Structure vérifiée"
+  },
+  "backupVerifyDeep": {
+    "en": "Fully verified",
+    "text": "Entièrement vérifié"
+  },
+  "backupVerifyFailed": {
+    "en": "Verification failed",
+    "text": "Échec de la vérification"
+  },
+  "backupPinnedColumn": {
+    "en": "Pinned",
+    "text": "Épinglage"
+  },
+  "backupPinnedYes": {
+    "en": "Pinned",
+    "text": "Épinglé"
+  },
+  "backupVerifyDeepAction": {
+    "en": "Verify fully",
+    "text": "Vérifier entièrement"
+  },
+  "backupPin": {
+    "en": "Pin",
+    "text": "Épingler"
+  },
+  "backupUnpin": {
+    "en": "Unpin",
+    "text": "Désépingler"
+  },
+  "backupRetentionConfirm": {
+    "en": "Apply retention now? Removal from the backup storage cannot be undone: the points below and the content no remaining point needs are deleted.",
+    "text": "Appliquer la rétention maintenant ? La suppression dans le stockage des sauvegardes est irréversible : les points ci-dessous et le contenu dont aucun point restant n’a besoin sont supprimés."
+  },
+  "backupRetentionKeep": {
+    "en": "Kept: {count}",
+    "text": "Conservés : {count}"
+  },
+  "backupRetentionDelete": {
+    "en": "Removed: {count}",
+    "text": "Supprimés : {count}"
+  },
+  "backupRetentionNothing": {
+    "en": "Nothing to remove.",
+    "text": "Rien à supprimer."
+  },
+  "backupReasonDaily": {
+    "en": "day",
+    "text": "jour"
+  },
+  "backupReasonWeekly": {
+    "en": "week",
+    "text": "semaine"
+  },
+  "backupReasonMonthly": {
+    "en": "month",
+    "text": "mois"
+  },
+  "backupReasonPinned": {
+    "en": "pinned",
+    "text": "épinglé"
+  },
+  "backupReasonNewest": {
+    "en": "newest",
+    "text": "le plus récent"
+  },
+  "backupPointShort": {
+    "en": "Point {id}",
+    "text": "Point {id}"
+  },
+  "backupJobs": {
+    "en": "Jobs",
+    "text": "Tâches"
+  },
+  "backupJobsHelp": {
+    "en": "Jobs run in the backup agent on the server, one at a time; closing this page does not stop them. Every backup is followed by a structure check and retention.",
+    "text": "Les tâches s’exécutent dans l’agent de sauvegarde sur le serveur, une à la fois ; fermer cette page ne les arrête pas. Chaque sauvegarde est suivie d’une vérification de structure et de l’application de la rétention."
+  },
+  "backupJobsHelpLabel": {
+    "en": "About jobs",
+    "text": "À propos des tâches"
+  },
+  "backupJobsEmpty": {
+    "en": "No backup jobs yet.",
+    "text": "Aucune tâche de sauvegarde pour l’instant."
+  },
+  "backupJobKind": {
+    "en": "Job",
+    "text": "Tâche"
+  },
+  "backupJobState": {
+    "en": "State",
+    "text": "État"
+  },
+  "backupJobPhase": {
+    "en": "Phase",
+    "text": "Phase"
+  },
+  "backupJobStarted": {
+    "en": "Started",
+    "text": "Début"
+  },
+  "backupJobFinished": {
+    "en": "Finished",
+    "text": "Fin"
+  },
+  "backupJobError": {
+    "en": "Error code",
+    "text": "Code d’erreur"
+  },
+  "backupJobProgress": {
+    "en": "Progress",
+    "text": "Progression"
+  },
+  "backupKindCapture": {
+    "en": "Backup",
+    "text": "Sauvegarde"
+  },
+  "backupKindVerify": {
+    "en": "Verification",
+    "text": "Vérification"
+  },
+  "backupKindRetention": {
+    "en": "Retention",
+    "text": "Rétention"
+  },
+  "backupJobQueued": {
+    "en": "Queued",
+    "text": "En file d’attente"
+  },
+  "backupJobRunning": {
+    "en": "Running",
+    "text": "En cours"
+  },
+  "backupJobCommitting": {
+    "en": "Finishing",
+    "text": "Finalisation"
+  },
+  "backupJobCompleted": {
+    "en": "Completed",
+    "text": "Terminée"
+  },
+  "backupJobFailed": {
+    "en": "Failed",
+    "text": "Échec"
+  },
+  "backupJobInterrupted": {
+    "en": "Interrupted",
+    "text": "Interrompue"
+  },
+  "backupPhasePreparing": {
+    "en": "Preparing",
+    "text": "Préparation"
+  },
+  "backupPhaseCatalog": {
+    "en": "Catalog snapshot",
+    "text": "Instantané du catalogue"
+  },
+  "backupPhaseTransfer": {
+    "en": "Copying files",
+    "text": "Copie des fichiers"
+  },
+  "backupPhaseFinishing": {
+    "en": "Finishing",
+    "text": "Finalisation"
+  },
+  "backupPhaseDone": {
+    "en": "Done",
+    "text": "Terminé"
+  },
+  "backupPhaseStructural": {
+    "en": "Structure check",
+    "text": "Vérification de structure"
+  },
+  "backupPhaseDeep": {
+    "en": "Full check",
+    "text": "Vérification complète"
+  },
+  "backupProgressBytes": {
+    "en": "{done} of {total}",
+    "text": "{done} sur {total}"
+  },
+  "backupPlan": {
+    "en": "Schedule and retention",
+    "text": "Planification et rétention"
+  },
+  "backupPlanHelp": {
+    "en": "One backup per day at the chosen local time of an explicit time zone; a nonexistent time during a clock change runs at the change. After downtime one missed run is caught up. Turning the plan on does not start a backup immediately.",
+    "text": "Une sauvegarde par jour, à l’heure locale choisie dans un fuseau horaire explicite ; une heure inexistante lors d’un changement d’heure est exécutée au moment du changement. Après une interruption, une exécution manquée est rattrapée. Activer le plan ne lance pas de sauvegarde immédiatement."
+  },
+  "backupPlanHelpLabel": {
+    "en": "About the plan",
+    "text": "À propos du plan"
+  },
+  "backupEnabled": {
+    "en": "Back up daily on schedule",
+    "text": "Sauvegarder chaque jour selon la planification"
+  },
+  "backupTime": {
+    "en": "Local time",
+    "text": "Heure locale"
+  },
+  "backupTimezone": {
+    "en": "Time zone (IANA)",
+    "text": "Fuseau horaire (IANA)"
+  },
+  "backupTimezonePlaceholder": {
+    "en": "e.g. Europe/Moscow",
+    "text": "p. ex. Europe/Paris"
+  },
+  "backupZoneOffset": {
+    "en": "Now {offset}",
+    "text": "Actuellement {offset}"
+  },
+  "backupZoneUnknown": {
+    "en": "This browser does not know the zone; the server checks it on save.",
+    "text": "Ce navigateur ne connaît pas ce fuseau ; le serveur le vérifiera à l’enregistrement."
+  },
+  "backupZoneBrowser": {
+    "en": "Use {zone}",
+    "text": "Utiliser {zone}"
+  },
+  "backupRetentionLegend": {
+    "en": "Keep the newest point of the last",
+    "text": "Conserver le point le plus récent des derniers"
+  },
+  "backupDaily": {
+    "en": "Days",
+    "text": "Jours"
+  },
+  "backupWeekly": {
+    "en": "Weeks",
+    "text": "Semaines"
+  },
+  "backupMonthly": {
+    "en": "Months",
+    "text": "Mois"
+  },
+  "backupPlanSave": {
+    "en": "Save plan",
+    "text": "Enregistrer le plan"
+  },
+  "backupPlanSaved": {
+    "en": "Plan saved · version {revision}",
+    "text": "Plan enregistré · version {revision}"
+  },
+  "backupPlanConflict": {
+    "en": "The plan was changed elsewhere. Its current version is loaded: review it and save again.",
+    "text": "Le plan a été modifié ailleurs. Sa version actuelle est chargée : vérifiez-la et enregistrez à nouveau."
+  },
+  "backupReadOnly": {
+    "en": "Changing backups requires the backup management permission.",
+    "text": "La modification des sauvegardes nécessite l’autorisation de gestion des sauvegardes."
+  },
+  "summarySize": {
+    "en": "Size",
+    "text": "Taille"
+  },
+  "summaryCreated": {
+    "en": "Uploaded",
+    "text": "Téléversé le"
+  },
+  "summaryHash": {
+    "en": "SHA-256",
+    "text": "SHA-256"
+  },
+  "copyHash": {
+    "en": "Copy",
+    "text": "Copier"
+  },
+  "hashCopied": {
+    "en": "SHA-256 copied to the clipboard.",
+    "text": "SHA-256 copié dans le presse-papiers."
+  },
+  "copyFailed": {
+    "en": "The browser did not allow copying. Select the value and copy it manually.",
+    "text": "Le navigateur n’a pas autorisé la copie. Sélectionnez la valeur et copiez-la manuellement."
+  },
+  "promotionTitle": {
+    "en": "Promotion",
+    "text": "Promotion"
+  },
+  "promotionHint": {
+    "en": "Stages mark where a build is approved. Promotion publishes the build in another repository without uploading it again.",
+    "text": "Les étapes indiquent où un build a été approuvé. La promotion publie le build dans un autre dépôt sans le téléverser à nouveau."
+  },
+  "stagesTitle": {
+    "en": "Stages",
+    "text": "Étapes"
+  },
+  "stagesEmpty": {
+    "en": "No stages yet.",
+    "text": "Aucune étape pour l’instant."
+  },
+  "stageName": {
+    "en": "Stage",
+    "text": "Étape"
+  },
+  "stageComment": {
+    "en": "Comment (optional)",
+    "text": "Commentaire (facultatif)"
+  },
+  "stageAdd": {
+    "en": "Add stage",
+    "text": "Ajouter une étape"
+  },
+  "stageRemove": {
+    "en": "Remove stage {stage}",
+    "text": "Retirer l’étape {stage}"
+  },
+  "stageRemoveConfirm": {
+    "en": "Remove stage {stage}? Deployments that resolve this stage will pick another version.",
+    "text": "Retirer l’étape {stage} ? Les déploiements qui résolvent cette étape choisiront une autre version."
+  },
+  "stageAdded": {
+    "en": "Stage {stage} added.",
+    "text": "Étape {stage} ajoutée."
+  },
+  "stageRemoved": {
+    "en": "Stage {stage} removed.",
+    "text": "Étape {stage} retirée."
+  },
+  "stageInvalid": {
+    "en": "Use lowercase letters, digits, dot, dash or underscore (up to 32 characters).",
+    "text": "Utilisez des lettres minuscules, des chiffres, le point, le tiret ou le trait de soulignement (32 caractères au maximum)."
+  },
+  "promoteTitle": {
+    "en": "Promote to repository",
+    "text": "Promouvoir vers un dépôt"
+  },
+  "promoteTarget": {
+    "en": "Target repository",
+    "text": "Dépôt cible"
+  },
+  "promoteNoTargets": {
+    "en": "No other repository allows you to promote.",
+    "text": "Aucun autre dépôt ne vous permet d’effectuer une promotion."
+  },
+  "promoteStages": {
+    "en": "Stages in the target",
+    "text": "Étapes dans la cible"
+  },
+  "promoteComment": {
+    "en": "Comment (optional)",
+    "text": "Commentaire (facultatif)"
+  },
+  "promoteMove": {
+    "en": "Move: remove the build from this repository after promotion",
+    "text": "Déplacer : retirer le build de ce dépôt après la promotion"
+  },
+  "promoteMoveHint": {
+    "en": "Without Move, the build stays here and a copy appears in the target.",
+    "text": "Sans « Déplacer », le build reste ici et une copie apparaît dans la cible."
+  },
+  "promoteMoveConfirm": {
+    "en": "Move the build to {repository}? It will be removed from this repository.",
+    "text": "Déplacer le build vers {repository} ? Il sera retiré de ce dépôt."
+  },
+  "promoteSubmit": {
+    "en": "Promote",
+    "text": "Promouvoir"
+  },
+  "promoteDone": {
+    "en": "Published in {repository}.",
+    "text": "Publié dans {repository}."
+  },
+  "promoteExisting": {
+    "en": "Already published in {repository}; stages updated.",
+    "text": "Déjà publié dans {repository} ; étapes mises à jour."
+  },
+  "promoteMoved": {
+    "en": "Moved to {repository}. The build was removed from this repository.",
+    "text": "Déplacé vers {repository}. Le build a été retiré de ce dépôt."
+  },
+  "promotionHistory": {
+    "en": "History",
+    "text": "Historique"
+  },
+  "promotionHistoryEmpty": {
+    "en": "No promotion events yet.",
+    "text": "Aucun événement de promotion pour l’instant."
+  },
+  "promotionMore": {
+    "en": "Show more",
+    "text": "Afficher plus"
+  },
+  "eventStageAdded": {
+    "en": "{actor} added stage {stage}",
+    "text": "{actor} a ajouté l’étape {stage}"
+  },
+  "eventStageRemoved": {
+    "en": "{actor} removed stage {stage}",
+    "text": "{actor} a retiré l’étape {stage}"
+  },
+  "eventPromotedCopy": {
+    "en": "{actor} copied to {repository}",
+    "text": "{actor} a copié vers {repository}"
+  },
+  "eventPromotedMove": {
+    "en": "{actor} moved to {repository}",
+    "text": "{actor} a déplacé vers {repository}"
+  },
+  "eventReceivedCopy": {
+    "en": "{actor} copied from {repository}",
+    "text": "{actor} a copié depuis {repository}"
+  },
+  "eventReceivedMove": {
+    "en": "{actor} moved from {repository}",
+    "text": "{actor} a déplacé depuis {repository}"
+  },
+  "packageStages": {
+    "en": "Stages",
+    "text": "Étapes"
+  },
+  "sizeBytes": {
+    "en": "{value} B",
+    "text": "{value} o"
+  },
+  "sizeKiB": {
+    "en": "{value} KiB",
+    "text": "{value} Kio"
+  },
+  "sizeMiB": {
+    "en": "{value} MiB",
+    "text": "{value} Mio"
+  },
+  "sizeGiB": {
+    "en": "{value} GiB",
+    "text": "{value} Gio"
+  },
+  "sizeTiB": {
+    "en": "{value} TiB",
+    "text": "{value} Tio"
+  },
+  "mirrorBadge": {
+    "en": "Mirror",
+    "text": "Miroir"
+  },
+  "mirrorBehind": {
+    "en": "Mirror · syncing",
+    "text": "Miroir · synchronisation"
+  },
+  "mirrorFailing": {
+    "en": "Mirror · sync error",
+    "text": "Miroir · erreur de synchronisation"
+  },
+  "mirrorHelpLabel": {
+    "en": "About this mirror",
+    "text": "À propos de ce miroir"
+  },
+  "mirrorDetails": {
+    "en": "Read-only copy of “{source}” from {upstream}, kept in sync by the server.",
+    "text": "Copie en lecture seule de « {source} » depuis {upstream}, maintenue synchronisée par le serveur."
+  },
+  "mirrorSynced": {
+    "en": "Last synchronized:",
+    "text": "Dernière synchronisation :"
+  },
+  "mirrorError": {
+    "en": "The last attempt failed ({code}); downloads keep working.",
+    "text": "La dernière tentative a échoué ({code}) ; les téléchargements continuent de fonctionner."
+  },
+  "mirrorNever": {
+    "en": "not yet",
+    "text": "pas encore"
+  },
+  "mirrorImport": {
+    "en": "Imports",
+    "text": "Importations"
+  },
+  "mirrorImportFailing": {
+    "en": "Imports · sync error",
+    "text": "Importations · erreur de synchronisation"
+  },
+  "mirrorImportDetails": {
+    "en": "Versions marked {stages} in “{source}” on {upstream} are copied here automatically. Later changes and deletions there do not affect them.",
+    "text": "Les versions marquées {stages} dans « {source} » sur {upstream} sont copiées ici automatiquement. Les modifications et suppressions ultérieures à la source ne les affectent pas."
+  },
+  "reportOpen": {
+    "en": "Feedback",
+    "text": "Commentaires"
+  },
+  "reportTitle": {
+    "en": "Feedback to ProAnimaStudio",
+    "text": "Envoyer des commentaires à ProAnimaStudio"
+  },
+  "reportIntro": {
+    "en": "Your message goes to the developers of Arkvory through the ProAnimaStudio hub. Only what this form shows is sent.",
+    "text": "Votre message est transmis aux développeurs d’Arkvory via le hub ProAnimaStudio. Seul ce qu’affiche ce formulaire est envoyé."
+  },
+  "reportMessage": {
+    "en": "What happened, or what should work better?",
+    "text": "Que s’est-il passé, ou qu’est-ce qui devrait mieux fonctionner ?"
+  },
+  "reportEmail": {
+    "en": "Email for a reply (optional)",
+    "text": "Adresse e-mail pour vous répondre (facultatif)"
+  },
+  "reportScreenshots": {
+    "en": "Screenshots: paste from the clipboard (Ctrl+V), drop files here or choose them. Up to 6 PNG, JPEG, WebP or GIF images, 8 MB each.",
+    "text": "Captures d’écran : collez-les depuis le presse-papiers (Ctrl+V), déposez des fichiers ici ou choisissez-les. Jusqu’à 6 images PNG, JPEG, WebP ou GIF, de 8 Mo chacune."
+  },
+  "reportAddScreenshot": {
+    "en": "Choose images",
+    "text": "Choisir des images"
+  },
+  "reportShot": {
+    "en": "{name} · {size}",
+    "text": "{name} · {size}"
+  },
+  "reportRemove": {
+    "en": "Remove {name}",
+    "text": "Retirer {name}"
+  },
+  "reportLogs": {
+    "en": "Logs",
+    "text": "Journaux"
+  },
+  "reportClientLog": {
+    "en": "Log of this page — entries: {count}",
+    "text": "Journal de cette page — entrées : {count}"
+  },
+  "reportServerLog": {
+    "en": "Server log and system summary",
+    "text": "Journal du serveur et résumé du système"
+  },
+  "reportShow": {
+    "en": "Show what is attached",
+    "text": "Afficher ce qui est joint"
+  },
+  "reportLoading": {
+    "en": "Loading…",
+    "text": "Chargement…"
+  },
+  "reportTail": {
+    "en": "The last {count} lines are shown; the whole log is attached.",
+    "text": "Dernières lignes affichées : {count} ; le journal complet est joint."
+  },
+  "reportSend": {
+    "en": "Send",
+    "text": "Envoyer"
+  },
+  "reportSending": {
+    "en": "Sending…",
+    "text": "Envoi…"
+  },
+  "reportSent": {
+    "en": "Thank you! Your message was sent, reference {id}.",
+    "text": "Merci ! Votre message a été envoyé, référence {id}."
+  },
+  "reportClose": {
+    "en": "Close",
+    "text": "Fermer"
+  },
+  "reportMessageRequired": {
+    "en": "Describe the problem or the idea.",
+    "text": "Décrivez le problème ou l’idée."
+  },
+  "reportEmailInvalid": {
+    "en": "Check the email address.",
+    "text": "Vérifiez l’adresse e-mail."
+  },
+  "reportTooMany": {
+    "en": "At most 6 images.",
+    "text": "6 images au maximum."
+  },
+  "reportFileType": {
+    "en": "{name}: only PNG, JPEG, WebP or GIF images.",
+    "text": "{name} : uniquement des images PNG, JPEG, WebP ou GIF."
+  },
+  "reportFileTooLarge": {
+    "en": "{name} is larger than 8 MB.",
+    "text": "{name} dépasse 8 Mo."
+  },
+  "reportTooLarge": {
+    "en": "Everything together is over 15 MB: remove some images.",
+    "text": "L’ensemble dépasse 15 Mo : retirez des images."
+  },
+  "productName": {
+    "en": "ProAnima Arkvory",
+    "text": "ProAnima Arkvory"
+  },
+  "productShortName": {
+    "en": "Arkvory",
+    "text": "Arkvory"
+  },
+  "studioName": {
+    "en": "PROANIMA STUDIO",
+    "text": "PROANIMA STUDIO"
+  },
+  "copyright": {
+    "en": "© Ian Panaev · ProAnimaStudio",
+    "text": "© Ian Panaev · ProAnimaStudio"
+  },
+  "themeCurrent": {
+    "en": "Appearance: {value}",
+    "text": "Apparence : {value}"
+  },
+  "repositoryHint": {
+    "en": "After sign-in, the first repository available to you is selected.",
+    "text": "Après la connexion, le premier dépôt auquel vous avez accès est sélectionné."
+  },
+  "keySignIn": {
+    "en": "Connect with a service or automation key",
+    "text": "Se connecter avec une clé de service ou d’automatisation"
+  },
+  "signInFailed": {
+    "en": "Wrong username or password.",
+    "text": "Nom d’utilisateur ou mot de passe incorrect."
+  },
+  "currentPasswordWrong": {
+    "en": "The current password is wrong.",
+    "text": "Le mot de passe actuel est incorrect."
+  },
+  "sessionExpired": {
+    "en": "Your session has expired. Sign in again to continue.",
+    "text": "Votre session a expiré. Reconnectez-vous pour continuer."
+  },
+  "errorSignInRequired": {
+    "en": "Sign in or connect with a service key to continue.",
+    "text": "Connectez-vous ou utilisez une clé de service pour continuer."
+  },
+  "idempotencyHint": {
+    "en": "Prevents a retried upload from creating a second copy. It is sent as the Idempotency-Key of the request that creates the upload.",
+    "text": "Empêche qu’un téléversement relancé crée une seconde copie. La clé est envoyée comme Idempotency-Key de la requête qui crée le téléversement."
+  },
+  "idempotencyHelpLabel": {
+    "en": "About duplicate protection",
+    "text": "À propos de la protection contre les doublons"
+  },
+  "assetPathExample": {
+    "en": "releases/current.upack",
+    "text": "releases/current.upack"
+  },
+  "stageExample": {
+    "en": "release",
+    "text": "release"
+  },
+  "storageUsageUnlimited": {
+    "en": "Published {published} · unfinished uploads {pending} · awaiting cleanup {retired} · in use {total} · no quota",
+    "text": "Publié : {published} · téléversements inachevés : {pending} · en attente de nettoyage : {retired} · utilisé : {total} · aucun quota"
+  },
+  "storageQuotaInvalid": {
+    "en": "Enter the quota in GiB, for example 50 or 0.5.",
+    "text": "Saisissez le quota en Gio, par exemple 50 ou 0,5."
+  },
+  "storagePreviewItem": {
+    "en": "{name} · {id} · {size}",
+    "text": "{name} · {id} · {size}"
+  },
+  "attachmentVersion": {
+    "en": "Version {revision}",
+    "text": "Version {revision}"
+  },
+  "storageEventCode": {
+    "en": "· {level} · {code}",
+    "text": "· {level} · {code}"
+  },
+  "packageGroupHeading": {
+    "en": "{group} / {name}",
+    "text": "{group} / {name}"
+  },
+  "repositoryHelpLabel": {
+    "en": "About repository selection",
+    "text": "À propos du choix du dépôt"
+  },
+  "metadataFilterHelpLabel": {
+    "en": "About exact metadata",
+    "text": "À propos des métadonnées exactes"
+  },
+  "resumeHelpLabel": {
+    "en": "About resuming",
+    "text": "À propos de la reprise"
+  },
+  "downloadHelpLabel": {
+    "en": "About download recovery",
+    "text": "À propos de la reprise des téléchargements"
+  },
+  "updatePolicyHelpLabel": {
+    "en": "About update schedule",
+    "text": "À propos du calendrier des mises à jour"
+  },
+  "uploadHelpLabel": {
+    "en": "About upload ID",
+    "text": "À propos de l’ID de téléversement"
+  },
+  "repositoryModelHelpLabel": {
+    "en": "About repositories",
+    "text": "À propos des dépôts"
+  },
+  "servicePolicyHelpLabel": {
+    "en": "About service policy",
+    "text": "À propos de la politique du service"
+  },
+  "tokenSessionHelpLabel": {
+    "en": "About personal tokens",
+    "text": "À propos des jetons personnels"
+  },
+  "storageHelpLabel": {
+    "en": "About retention",
+    "text": "À propos de la rétention"
+  },
+  "cleanupHelpLabel": {
+    "en": "About physical cleanup",
+    "text": "À propos du nettoyage physique"
+  },
+  "promotionHelpLabel": {
+    "en": "About promotion",
+    "text": "À propos de la promotion"
+  },
+  "promoteMoveHelpLabel": {
+    "en": "About move",
+    "text": "À propos du déplacement"
+  },
+  "attachmentRecoveryHelpLabel": {
+    "en": "About attachment recovery",
+    "text": "À propos de la reprise des pièces jointes"
+  },
+  "helpHintLabel": {
+    "en": "About the operation catalog",
+    "text": "À propos du catalogue d’opérations"
+  },
+  "catalogSizeLabel": {
+    "en": "Size",
+    "text": "Taille"
+  },
+  "catalogPublishedLabel": {
+    "en": "Published",
+    "text": "Publié"
+  },
+  "grantRepository": {
+    "en": "{repository}:",
+    "text": "{repository} :"
+  },
+  "delegationGrantLine": {
+    "en": "{target}: {actions}",
+    "text": "{target} : {actions}"
+  },
+  "keyBindingLine": {
+    "en": "{repository}: {actions}",
+    "text": "{repository} : {actions}"
+  },
+  "serviceAuditLine": {
+    "en": "{action} · {actor} · {key}",
+    "text": "{action} · {actor} · {key}"
+  },
+  "updateHourOption": {
+    "en": "{hour}:00 UTC",
+    "text": "{hour}:00 UTC"
+  },
+  "helpOperationTitle": {
+    "en": "{method} {path}",
+    "text": "{method} {path}"
+  },
+  "helpOperationIdentity": {
+    "en": "{id} · {surface} · {visibility}",
+    "text": "{id} · {surface} · {visibility}"
+  },
+  "helpHintConnected": {
+    "en": "You are connected. Load the API operations your access allows.",
+    "text": "Connexion établie. Chargez les opérations d’API autorisées par votre accès."
+  },
+  "helpRemoteCliExample": {
+    "en": "arkvoryctl --help\narkvoryctl profile add production --server https://arkvory.example --token-file /private/arkvory.key\narkvoryctl doctor\narkvoryctl packages publish build.upack --label test\narkvoryctl download ARTIFACT_ID ./build.upack",
+    "text": "arkvoryctl --help\narkvoryctl profile add production --server https://arkvory.example --token-file /private/arkvory.key\narkvoryctl doctor\narkvoryctl packages publish build.upack --label test\narkvoryctl download ARTIFACT_ID ./build.upack"
+  },
+  "helpCliExample": {
+    "en": "arkvory help\narkvory status --root ROOT\narkvory update --root ROOT\narkvory configure --root ROOT --disable-updates\narkvory configure --root ROOT --pin --version 1.2.3",
+    "text": "arkvory help\narkvory status --root ROOT\narkvory update --root ROOT\narkvory configure --root ROOT --disable-updates\narkvory configure --root ROOT --pin --version 1.2.3"
+  },
+  "helpRecipesExample": {
+    "en": "GET /api/v1/capabilities\nGET /api/v1/repositories\nGET /api/v1/operations?repository=releases",
+    "text": "GET /api/v1/capabilities\nGET /api/v1/repositories\nGET /api/v1/operations?repository=releases"
+  },
+  "serviceEmpty": {
+    "en": "No service accounts yet.",
+    "text": "Aucun compte de service pour l’instant."
+  },
+  "serviceOwnerKeyHelpLabel": {
+    "en": "About the owner key",
+    "text": "À propos de la clé du propriétaire"
+  },
+  "serviceEmptyOwner": {
+    "en": "The owner key from the server file is meant for setup, not automation: create a service account below, then issue a key for it.",
+    "text": "La clé du propriétaire issue du fichier du serveur sert à la configuration, pas à l’automatisation : créez un compte de service ci-dessous, puis émettez une clé pour celui-ci."
+  },
+  "serviceEmptyDelegated": {
+    "en": "No service accounts are assigned to you yet. Ask the server owner to delegate one.",
+    "text": "Aucun compte de service ne vous est encore attribué. Demandez au propriétaire du serveur de vous en déléguer un."
+  },
+  "serviceAuditEmpty": {
+    "en": "No activity recorded yet.",
+    "text": "Aucune activité enregistrée pour l’instant."
+  },
+  "repositoryEmpty": {
+    "en": "No repositories are available to this account or key.",
+    "text": "Aucun dépôt n’est accessible à ce compte ou à cette clé."
+  },
+  "routeUnknown": {
+    "en": "This link does not match a console section. The artifact list is shown instead.",
+    "text": "Ce lien ne correspond à aucune section de la console. La liste des artefacts est affichée à la place."
+  },
+  "routeUnavailable": {
+    "en": "This section is not available to the current account or key. The artifact list is shown instead.",
+    "text": "Cette section n’est pas accessible au compte ou à la clé en cours. La liste des artefacts est affichée à la place."
+  },
+  "routeArtifactMissing": {
+    "en": "The linked artifact was not found or is not available to you.",
+    "text": "L’artefact indiqué par le lien est introuvable ou ne vous est pas accessible."
+  },
+  "routeSignIn": {
+    "en": "Sign in to open the linked page.",
+    "text": "Connectez-vous pour ouvrir la page indiquée par le lien."
+  },
+  "confirmCancel": {
+    "en": "Cancel",
+    "text": "Annuler"
+  },
+  "confirmDisableUser": {
+    "en": "Disable {name}? Active sessions end immediately and personal tokens stop working until the account is enabled again.",
+    "text": "Désactiver {name} ? Les sessions actives prennent fin immédiatement et les jetons personnels cessent de fonctionner jusqu’à la réactivation du compte."
+  },
+  "confirmRemoveMember": {
+    "en": "Remove {user} from {group}? They lose the repository access granted through this group.",
+    "text": "Retirer {user} de {group} ? Cette personne perd l’accès aux dépôts accordé par ce groupe."
+  },
+  "confirmRemoveGrant": {
+    "en": "Remove access of {group} to {repository}? Group members lose this access immediately.",
+    "text": "Retirer l’accès de {group} à {repository} ? Les membres du groupe perdent cet accès immédiatement."
+  },
+  "storageTitle": {
+    "en": "Storage & automatic cleanup",
+    "text": "Stockage et nettoyage automatique"
+  },
+  "storageHelp": {
+    "en": "Retention applies to registered UPack builds. Pinned builds, file history and protected labels survive. Save a disabled policy first to preview it; enabling starts automatic deletion. Disk space is reclaimed below without stopping Arkvory.",
+    "text": "La rétention s’applique aux builds UPack enregistrés. Les builds épinglés, l’historique des fichiers et les étiquettes protégées sont préservés. Enregistrez d’abord une politique désactivée pour en avoir un aperçu ; son activation lance la suppression automatique. L’espace disque est récupéré dans la section ci-dessous, sans arrêter Arkvory."
+  },
+  "storageRefresh": {
+    "en": "Reload settings & usage",
+    "text": "Recharger les paramètres et l’utilisation"
+  },
+  "storagePolicy": {
+    "en": "Retention policy",
+    "text": "Politique de rétention"
+  },
+  "storageGrouping": {
+    "en": "Count last N by",
+    "text": "Compter les N derniers par"
+  },
+  "storagePerChannel": {
+    "en": "Package and channel",
+    "text": "Paquet et canal"
+  },
+  "storagePerPackage": {
+    "en": "Package",
+    "text": "Paquet"
+  },
+  "storageGlobal": {
+    "en": "Whole repository",
+    "text": "Dépôt entier"
+  },
+  "storageKeep": {
+    "en": "Last N builds (default)",
+    "text": "N derniers builds (par défaut)"
+  },
+  "storageAge": {
+    "en": "Minimum age before deletion (hours)",
+    "text": "Âge minimal avant suppression (heures)"
+  },
+  "storageInterval": {
+    "en": "Cleanup interval (minutes)",
+    "text": "Intervalle de nettoyage (minutes)"
+  },
+  "storageQuota": {
+    "en": "Quota, GiB (empty = no repository limit)",
+    "text": "Quota, Gio (vide = aucune limite pour le dépôt)"
+  },
+  "storageProtected": {
+    "en": "Protected labels (comma separated)",
+    "text": "Étiquettes protégées (séparées par des virgules)"
+  },
+  "storageWarningPercent": {
+    "en": "Warning threshold (%)",
+    "text": "Seuil d’avertissement (%)"
+  },
+  "storageCriticalPercent": {
+    "en": "Critical threshold (%)",
+    "text": "Seuil critique (%)"
+  },
+  "storageChannels": {
+    "en": "Channel overrides: label=N, one per line",
+    "text": "Valeurs par canal : étiquette=N, une par ligne"
+  },
+  "storageEnabled": {
+    "en": "Enable automatic cleanup",
+    "text": "Activer le nettoyage automatique"
+  },
+  "storageAcknowledge": {
+    "en": "I understand that saving an enabled policy authorizes automatic deletion.",
+    "text": "Je comprends que l’enregistrement d’une politique activée autorise la suppression automatique."
+  },
+  "storageSave": {
+    "en": "Save policy",
+    "text": "Enregistrer la politique"
+  },
+  "storagePreview": {
+    "en": "Preview saved policy",
+    "text": "Aperçu de la politique enregistrée"
+  },
+  "storageEvents": {
+    "en": "Warnings, errors & storage events",
+    "text": "Avertissements, erreurs et événements de stockage"
+  },
+  "storageMore": {
+    "en": "Load next events",
+    "text": "Charger les événements suivants"
+  },
+  "storageRevision": {
+    "en": "Policy version {revision} · last cleanup deleted {count} builds",
+    "text": "Version de la politique {revision} · builds supprimés lors du dernier nettoyage : {count}"
+  },
+  "storageRunFailed": {
+    "en": "Automatic cleanup stopped: {code}. Check its authorizing key and storage health.",
+    "text": "Nettoyage automatique arrêté : {code}. Vérifiez la clé qui l’a autorisé et l’état du stockage."
+  },
+  "storageUsage": {
+    "en": "Published {published} · unfinished uploads {pending} · awaiting cleanup {retired} · in use {total} of {quota}",
+    "text": "Publié : {published} · téléversements inachevés : {pending} · en attente de nettoyage : {retired} · utilisé : {total} sur {quota}"
+  },
+  "storageNormal": {
+    "en": "Capacity is below warning thresholds, or no repository quota is set.",
+    "text": "La capacité est sous les seuils d’avertissement, ou aucun quota n’est défini pour le dépôt."
+  },
+  "storageWarning": {
+    "en": "Storage is approaching its quota. Review retention and schedule physical cleanup.",
+    "text": "Le stockage approche de son quota. Revoyez la rétention et planifiez un nettoyage physique."
+  },
+  "storageCritical": {
+    "en": "Storage is near or at its quota. New reservations that exceed the quota are rejected.",
+    "text": "Le stockage atteint ou va atteindre son quota. Les nouvelles réservations qui dépassent le quota sont rejetées."
+  },
+  "storageConfirmRequired": {
+    "en": "Automatic cleanup requires deletion permission and explicit acknowledgement.",
+    "text": "Le nettoyage automatique nécessite l’autorisation de suppression et une confirmation explicite."
+  },
+  "storageSaved": {
+    "en": "Policy saved. An enabled policy will run automatically.",
+    "text": "Politique enregistrée. Une politique activée s’exécutera automatiquement."
+  },
+  "storagePreviewCount": {
+    "en": "Saved policy: {count} deletion candidates in this batch.",
+    "text": "Politique enregistrée · candidats à la suppression dans ce lot : {count}."
+  },
+  "storagePreviewMore": {
+    "en": "Saved policy: {count} candidates shown; more remain.",
+    "text": "Politique enregistrée · candidats affichés : {count} ; il en reste d’autres."
+  },
+  "deletionTitle": {
+    "en": "Delete artifact",
+    "text": "Supprimer l’artefact"
+  },
+  "deletionHelp": {
+    "en": "Deletion removes this artifact from the catalog and prevents new downloads. It cannot be undone here. Existing file history, attachments and external references are protected. Disk space is reclaimed separately during maintenance.",
+    "text": "La suppression retire cet artefact du catalogue et empêche tout nouveau téléchargement. Elle ne peut pas être annulée ici. L’historique des fichiers, les pièces jointes et les références externes existants sont protégés. L’espace disque est récupéré séparément lors de la maintenance."
+  },
+  "deletionInspect": {
+    "en": "Check dependencies",
+    "text": "Vérifier les dépendances"
+  },
+  "deletionChecking": {
+    "en": "Checking dependencies…",
+    "text": "Vérification des dépendances…"
+  },
+  "deletionBlocked": {
+    "en": "Deletion is blocked by retained references.",
+    "text": "La suppression est bloquée par des références conservées."
+  },
+  "deletionReady": {
+    "en": "No blocking references. This explicit action permits deletion whatever the labels, release included. Dependencies and metadata will be checked again.",
+    "text": "Aucune référence bloquante. Cette action explicite autorise la suppression quelles que soient les étiquettes, release compris. Les dépendances et les métadonnées seront vérifiées à nouveau."
+  },
+  "deletionReference": {
+    "en": "An external service has pinned this artifact.",
+    "text": "Un service externe a épinglé cet artefact."
+  },
+  "deletionAsset": {
+    "en": "A file path or its history uses this artifact.",
+    "text": "Un chemin de fichier ou son historique utilise cet artefact."
+  },
+  "deletionAttachment": {
+    "en": "Another build lists this artifact as an attachment, now or in its history.",
+    "text": "Un autre build référence cet artefact comme pièce jointe, actuellement ou dans son historique."
+  },
+  "deletionLabel": {
+    "en": "A retention rule protects this label.",
+    "text": "Une règle de rétention protège cette étiquette."
+  },
+  "deletionStage": {
+    "en": "The artifact is promoted to a stage; remove the stage first.",
+    "text": "L’artefact est promu à une étape ; retirez d’abord l’étape."
+  },
+  "deletionConfirm": {
+    "en": "Paste the selected artifact ID to confirm deletion",
+    "text": "Collez l’ID de l’artefact sélectionné pour confirmer la suppression"
+  },
+  "deletionSubmit": {
+    "en": "Delete this artifact",
+    "text": "Supprimer cet artefact"
+  },
+  "deletionRecheck": {
+    "en": "The artifact changed or is protected. Check dependencies again before proceeding.",
+    "text": "L’artefact a changé ou est protégé. Vérifiez à nouveau les dépendances avant de continuer."
+  },
+  "deletionDone": {
+    "en": "Artifact deleted. Physical cleanup will run separately.",
+    "text": "Artefact supprimé. Le nettoyage physique s’exécutera séparément."
+  },
+  "deletionRefresh": {
+    "en": "Artifact deleted, but the catalog could not be refreshed. Reload the list.",
+    "text": "Artefact supprimé, mais le catalogue n’a pas pu être actualisé. Rechargez la liste."
+  },
+  "labelPresets": {
+    "en": "Common build labels",
+    "text": "Étiquettes de build courantes"
+  },
+  "labelsHelp": {
+    "en": "Use any labels. Presets can be combined; they do not move files or grant access.",
+    "text": "Utilisez les étiquettes de votre choix. Les suggestions peuvent être combinées ; les étiquettes ne déplacent pas les fichiers et n’accordent aucun accès."
+  },
+  "metadataFields": {
+    "en": "Build metadata",
+    "text": "Métadonnées du build"
+  },
+  "metadataAdd": {
+    "en": "Add field",
+    "text": "Ajouter un champ"
+  },
+  "metadataFilter": {
+    "en": "Exact metadata",
+    "text": "Métadonnées exactes"
+  },
+  "metadataFilterHint": {
+    "en": "Key and value match exactly, including case. An empty value matches an empty field.",
+    "text": "La clé et la valeur doivent correspondre exactement, casse comprise. Une valeur vide correspond à un champ vide."
+  },
+  "metadataKey": {
+    "en": "Key",
+    "text": "Clé"
+  },
+  "metadataValue": {
+    "en": "Value",
+    "text": "Valeur"
+  },
+  "metadataRemove": {
+    "en": "Remove field",
+    "text": "Supprimer le champ"
+  },
+  "metadataHelp": {
+    "en": "Up to 32 text fields. Examples: build.number, git.commit, target.os. Use a manifest for structured data.",
+    "text": "Jusqu’à 32 champs texte. Exemples : build.number, git.commit, target.os. Utilisez un manifeste pour les données structurées."
+  },
+  "metadataInvalid": {
+    "en": "Check metadata: unique keys, text values and a valid JSON object are required.",
+    "text": "Vérifiez les métadonnées : des clés uniques, des valeurs texte et un objet JSON valide sont requis."
+  },
+  "attachmentsTitle": {
+    "en": "Manifests & additional files",
+    "text": "Manifestes et fichiers supplémentaires"
+  },
+  "attachmentsHelp": {
+    "en": "Files belong to this build. Removing a link keeps the original file and its history.",
+    "text": "Les fichiers appartiennent à ce build. Retirer un lien conserve le fichier d’origine et son historique."
+  },
+  "attachmentsEmpty": {
+    "en": "No attachments yet.",
+    "text": "Aucune pièce jointe pour l’instant."
+  },
+  "attachmentCount": {
+    "en": "{count} / 32 files · version {revision}",
+    "text": "{count} / 32 fichiers · version {revision}"
+  },
+  "attachmentAdd": {
+    "en": "Add attachment",
+    "text": "Ajouter une pièce jointe"
+  },
+  "attachmentSource": {
+    "en": "Source",
+    "text": "Source"
+  },
+  "attachmentUpload": {
+    "en": "Upload file",
+    "text": "Téléverser un fichier"
+  },
+  "attachmentExisting": {
+    "en": "Link published artifact",
+    "text": "Lier un artefact publié"
+  },
+  "attachmentKind": {
+    "en": "Purpose",
+    "text": "Rôle"
+  },
+  "attachmentManifest": {
+    "en": "Manifest",
+    "text": "Manifeste"
+  },
+  "attachmentSbom": {
+    "en": "SBOM",
+    "text": "SBOM"
+  },
+  "attachmentSignature": {
+    "en": "Signature",
+    "text": "Signature"
+  },
+  "attachmentReport": {
+    "en": "Report",
+    "text": "Rapport"
+  },
+  "attachmentFile": {
+    "en": "File",
+    "text": "Fichier"
+  },
+  "attachmentChoose": {
+    "en": "Choose attachment",
+    "text": "Choisir une pièce jointe"
+  },
+  "attachmentName": {
+    "en": "Attachment name",
+    "text": "Nom de la pièce jointe"
+  },
+  "attachmentDescription": {
+    "en": "Description (optional)",
+    "text": "Description (facultative)"
+  },
+  "attachmentUnlink": {
+    "en": "Remove link",
+    "text": "Retirer le lien"
+  },
+  "attachmentReload": {
+    "en": "Reload attachments",
+    "text": "Recharger les pièces jointes"
+  },
+  "attachmentReloaded": {
+    "en": "Attachments reloaded. Your form is preserved.",
+    "text": "Pièces jointes rechargées. Votre formulaire est conservé."
+  },
+  "attachmentSaved": {
+    "en": "Attachments saved · version {revision}",
+    "text": "Pièces jointes enregistrées · version {revision}"
+  },
+  "attachmentHistory": {
+    "en": "Attachment history",
+    "text": "Historique des pièces jointes"
+  },
+  "attachmentHistoryEmpty": {
+    "en": "No changes yet.",
+    "text": "Aucune modification pour l’instant."
+  },
+  "attachmentRestore": {
+    "en": "Restore this set",
+    "text": "Restaurer cet ensemble"
+  },
+  "attachmentNew": {
+    "en": "Clear form",
+    "text": "Effacer le formulaire"
+  },
+  "attachmentRecovery": {
+    "en": "Upload recovery",
+    "text": "Reprise du téléversement"
+  },
+  "attachmentRecoveryHelp": {
+    "en": "Pause keeps this upload in the tab. Submit again to resume. If linking fails, the published file remains available by this ID; reload attachments before retrying. After closing the tab, use the Upload screen to resume by ID.",
+    "text": "La pause conserve ce téléversement dans l’onglet. Soumettez à nouveau le formulaire pour reprendre. Si la liaison échoue, le fichier publié reste disponible sous cet ID ; rechargez les pièces jointes avant de réessayer. Après la fermeture de l’onglet, utilisez l’écran « Téléversement » pour reprendre à partir de l’ID."
+  },
+  "attachmentProgress": {
+    "en": "Attachment upload progress",
+    "text": "Progression du téléversement de la pièce jointe"
+  },
+  "attachmentDuplicate": {
+    "en": "An attachment with this name already exists. Choose a different name or remove its link first.",
+    "text": "Une pièce jointe portant ce nom existe déjà. Choisissez un autre nom ou retirez d’abord son lien."
+  },
+  "navigationMenu": {
+    "en": "Sections",
+    "text": "Sections"
+  },
+  "downloadSettings": {
+    "en": "Queue settings",
+    "text": "Paramètres de la file"
+  },
+  "downloadHeld": {
+    "en": "Queue paused. New downloads will wait.",
+    "text": "File en pause. Les nouveaux téléchargements attendront."
+  },
+  "downloadEmptyTitle": {
+    "en": "No downloads yet",
+    "text": "Aucun téléchargement pour l’instant"
+  },
+  "technicalDetails": {
+    "en": "File identifier",
+    "text": "Identifiant du fichier"
+  },
+  "manageMembers": {
+    "en": "Manage group members",
+    "text": "Gérer les membres des groupes"
+  },
+  "manageGrants": {
+    "en": "Manage repository access",
+    "text": "Gérer l’accès aux dépôts"
+  },
+  "accountsHeading": {
+    "en": "Accounts",
+    "text": "Comptes"
+  },
+  "groupsHeading": {
+    "en": "Groups and permissions",
+    "text": "Groupes et autorisations"
+  },
+  "tableRegion": {
+    "en": "Results table — scroll horizontally for more columns",
+    "text": "Tableau des résultats — faites défiler horizontalement pour voir plus de colonnes"
+  },
+  "searchEmpty": {
+    "en": "This repository has no artifacts yet.",
+    "text": "Ce dépôt ne contient encore aucun artefact."
+  },
+  "searchEmptyTitle": {
+    "en": "No artifacts",
+    "text": "Aucun artefact"
+  },
+  "downloadCleanupFailed": {
+    "en": "Saved. Temporary cleanup failed; use Remove finished to retry.",
+    "text": "Enregistré. Le nettoyage des fichiers temporaires a échoué ; utilisez « Retirer les terminés » pour réessayer."
+  },
+  "downloads": {
+    "en": "Downloads",
+    "text": "Téléchargements"
+  },
+  "downloadRestore": {
+    "en": "Restore queue",
+    "text": "Restaurer la file"
+  },
+  "downloadRestored": {
+    "en": "Restored · choose a destination to resume",
+    "text": "Restauré · choisissez une destination pour reprendre"
+  },
+  "downloadRestoreReady": {
+    "en": "Queue restored. Resume each file to choose its destination.",
+    "text": "File restaurée. Reprenez chaque fichier pour choisir sa destination."
+  },
+  "downloadRestoreEmpty": {
+    "en": "No saved downloads for this connection.",
+    "text": "Aucun téléchargement enregistré pour cette connexion."
+  },
+  "downloadQueued": {
+    "en": "Waiting",
+    "text": "En attente"
+  },
+  "downloadRunning": {
+    "en": "Downloading",
+    "text": "Téléchargement"
+  },
+  "downloadRetrying": {
+    "en": "Retrying",
+    "text": "Nouvelle tentative"
+  },
+  "downloadPausing": {
+    "en": "Saving checkpoint…",
+    "text": "Enregistrement du point de reprise…"
+  },
+  "downloadPaused": {
+    "en": "Paused",
+    "text": "En pause"
+  },
+  "downloadSaving": {
+    "en": "Saving verified file…",
+    "text": "Enregistrement du fichier vérifié…"
+  },
+  "downloadCancelling": {
+    "en": "Cancelling…",
+    "text": "Annulation…"
+  },
+  "downloadCancelled": {
+    "en": "Cancelled",
+    "text": "Annulé"
+  },
+  "downloadCompleted": {
+    "en": "Verified and saved",
+    "text": "Vérifié et enregistré"
+  },
+  "downloadFailed": {
+    "en": "Failed",
+    "text": "Échec"
+  },
+  "downloadResume": {
+    "en": "Resume / retry",
+    "text": "Reprendre / réessayer"
+  },
+  "downloadCancel": {
+    "en": "Cancel",
+    "text": "Annuler"
+  },
+  "downloadsPause": {
+    "en": "Pause all",
+    "text": "Tout suspendre"
+  },
+  "downloadsResume": {
+    "en": "Resume queue",
+    "text": "Reprendre la file"
+  },
+  "downloadsClearWaiting": {
+    "en": "Cancel waiting",
+    "text": "Vider la file"
+  },
+  "downloadsCancel": {
+    "en": "Cancel all",
+    "text": "Tout annuler"
+  },
+  "downloadsClearFinished": {
+    "en": "Remove finished",
+    "text": "Retirer les terminés"
+  },
+  "downloadConcurrency": {
+    "en": "Parallel downloads",
+    "text": "Téléchargements parallèles"
+  },
+  "downloadInterval": {
+    "en": "Start interval, ms",
+    "text": "Intervalle de démarrage, ms"
+  },
+  "downloadWait": {
+    "en": "Queue wait limit, seconds",
+    "text": "Attente maximale dans la file, secondes"
+  },
+  "downloadApply": {
+    "en": "Apply limits",
+    "text": "Appliquer les limites"
+  },
+  "downloadPolicySaved": {
+    "en": "Queue limits updated. Downloads already running will continue.",
+    "text": "Limites de la file mises à jour. Les téléchargements déjà en cours continuent."
+  },
+  "downloadSummary": {
+    "en": "Active: {active} · Waiting: {waiting} · Total: {count}",
+    "text": "Actifs : {active} · En attente : {waiting} · Total : {count}"
+  },
+  "downloadBytes": {
+    "en": "{bytes} written",
+    "text": "{bytes} écrits"
+  },
+  "downloadRetryDelay": {
+    "en": "Retry delay: {seconds} s",
+    "text": "Délai avant nouvelle tentative : {seconds} s"
+  },
+  "downloadDuplicate": {
+    "en": "This destination is already in the queue. Remove its finished job first.",
+    "text": "Cette destination est déjà dans la file. Retirez d’abord sa tâche terminée."
+  },
+  "downloadEmpty": {
+    "en": "Choose Download next to a file in the catalog.",
+    "text": "Cliquez sur « Télécharger » à côté d’un fichier du catalogue."
+  },
+  "downloadAdded": {
+    "en": "Download added to the queue.",
+    "text": "Téléchargement ajouté à la file."
+  },
+  "downloadWaitTimeout": {
+    "en": "Queue wait expired. You can retry.",
+    "text": "Le délai d’attente dans la file a expiré. Vous pouvez réessayer."
+  },
+  "downloadQueueFull": {
+    "en": "Queue is full. Remove finished jobs to make room.",
+    "text": "La file est pleine. Retirez les tâches terminées pour faire de la place."
+  },
+  "downloadDiskFull": {
+    "en": "Browser storage is full. Cancel unused downloads to free staging space.",
+    "text": "Le stockage du navigateur est plein. Annulez les téléchargements inutiles pour libérer de l’espace temporaire."
+  },
+  "downloadNote": {
+    "en": "After a page reload, reconnect and restore the queue. Resume each file to choose its destination. Sealed segments remain in browser storage; credentials are not saved. The destination is replaced only after checksum verification. Browser storage needs space for the file.",
+    "text": "Après un rechargement de la page, reconnectez-vous et restaurez la file. Reprenez chaque fichier pour choisir sa destination. Les segments scellés restent dans le stockage du navigateur ; les identifiants ne sont pas enregistrés. La destination n’est remplacée qu’après vérification de la somme de contrôle. Le stockage du navigateur doit disposer de l’espace nécessaire pour le fichier."
+  },
+  "downloadState": {
+    "en": "State",
+    "text": "État"
+  },
+  "downloadProgress": {
+    "en": "Progress",
+    "text": "Progression"
+  },
+  "navigation": {
+    "en": "Workspace navigation",
+    "text": "Navigation de l’espace de travail"
+  },
+  "catalog": {
+    "en": "Artifacts",
+    "text": "Artefacts"
+  },
+  "packages": {
+    "en": "Packages",
+    "text": "Paquets"
+  },
+  "administration": {
+    "en": "Users and access",
+    "text": "Utilisateurs et accès"
+  },
+  "upload": {
+    "en": "Upload",
+    "text": "Téléversement"
+  },
+  "history": {
+    "en": "File history",
+    "text": "Historique des fichiers"
+  },
+  "metadata": {
+    "en": "Artifact details",
+    "text": "Détails de l’artefact"
+  },
+  "theme": {
+    "en": "Appearance",
+    "text": "Apparence"
+  },
+  "language": {
+    "en": "Language",
+    "text": "Langue"
+  },
+  "light": {
+    "en": "Light",
+    "text": "Clair"
+  },
+  "dark": {
+    "en": "Dark",
+    "text": "Sombre"
+  },
+  "system": {
+    "en": "System",
+    "text": "Système"
+  },
+  "connection": {
+    "en": "Repository connection",
+    "text": "Connexion au dépôt"
+  },
+  "repository": {
+    "en": "Repository",
+    "text": "Dépôt"
+  },
+  "serviceKey": {
+    "en": "Service key",
+    "text": "Clé de service"
+  },
+  "keyPlaceholder": {
+    "en": "Paste a service or automation key",
+    "text": "Collez une clé de service ou d’automatisation"
+  },
+  "connect": {
+    "en": "Connect",
+    "text": "Connecter"
+  },
+  "disconnect": {
+    "en": "Disconnect",
+    "text": "Se déconnecter"
+  },
+  "keyHint": {
+    "en": "The key stays in this tab. It is never saved in browser storage.",
+    "text": "La clé reste dans cet onglet. Elle n’est jamais enregistrée dans le stockage du navigateur."
+  },
+  "accountName": {
+    "en": "Username",
+    "text": "Nom d’utilisateur"
+  },
+  "password": {
+    "en": "Password",
+    "text": "Mot de passe"
+  },
+  "signIn": {
+    "en": "Sign in",
+    "text": "Se connecter"
+  },
+  "adminHint": {
+    "en": "Create accounts and grant repository access through groups.",
+    "text": "Créez des comptes et accordez l’accès aux dépôts au moyen de groupes."
+  },
+  "administrator": {
+    "en": "Administrator",
+    "text": "Administrateur"
+  },
+  "createUser": {
+    "en": "Create user",
+    "text": "Créer un utilisateur"
+  },
+  "accessGroup": {
+    "en": "Access group",
+    "text": "Groupe d’accès"
+  },
+  "createGroup": {
+    "en": "Create group",
+    "text": "Créer un groupe"
+  },
+  "addMember": {
+    "en": "Add to group",
+    "text": "Ajouter au groupe"
+  },
+  "removeMember": {
+    "en": "Remove from group",
+    "text": "Retirer du groupe"
+  },
+  "access": {
+    "en": "Access",
+    "text": "Accès"
+  },
+  "read": {
+    "en": "Read",
+    "text": "Lecture"
+  },
+  "write": {
+    "en": "Read and write",
+    "text": "Lecture et écriture"
+  },
+  "saveGrant": {
+    "en": "Save access",
+    "text": "Enregistrer l’accès"
+  },
+  "removeGrant": {
+    "en": "Remove access",
+    "text": "Retirer l’accès"
+  },
+  "members": {
+    "en": "Members",
+    "text": "Membres"
+  },
+  "grants": {
+    "en": "Grants",
+    "text": "Autorisations"
+  },
+  "packageGroup": {
+    "en": "UPack group",
+    "text": "Groupe UPack"
+  },
+  "packageName": {
+    "en": "Package name",
+    "text": "Nom du paquet"
+  },
+  "version": {
+    "en": "Version",
+    "text": "Version"
+  },
+  "sortBy": {
+    "en": "Sort by",
+    "text": "Trier par"
+  },
+  "direction": {
+    "en": "Order",
+    "text": "Ordre"
+  },
+  "ascending": {
+    "en": "Ascending",
+    "text": "Croissant"
+  },
+  "descending": {
+    "en": "Descending",
+    "text": "Décroissant"
+  },
+  "groupBy": {
+    "en": "Group by",
+    "text": "Regrouper par"
+  },
+  "noGrouping": {
+    "en": "No grouping",
+    "text": "Aucun regroupement"
+  },
+  "apply": {
+    "en": "Apply",
+    "text": "Appliquer"
+  },
+  "clearFilters": {
+    "en": "Reset",
+    "text": "Réinitialiser"
+  },
+  "packageFilterHint": {
+    "en": "Group and name are exact matches, ignoring letter case.",
+    "text": "Le groupe et le nom doivent correspondre exactement, sans tenir compte de la casse."
+  },
+  "applyFilters": {
+    "en": "Apply the filters to see packages.",
+    "text": "Appliquez les filtres pour afficher les paquets."
+  },
+  "apiAddressError": {
+    "en": "The Arkvory API address is invalid. Contact the UI administrator.",
+    "text": "L’adresse de l’API Arkvory n’est pas valide. Contactez l’administrateur de l’interface."
+  },
+  "noRepositoryAccess": {
+    "en": "This account or key cannot read any repositories. Ask an administrator for access.",
+    "text": "Ce compte ou cette clé ne peut lire aucun dépôt. Demandez l’accès à un administrateur."
+  },
+  "noPackages": {
+    "en": "No registered packages match these filters.",
+    "text": "Aucun paquet enregistré ne correspond à ces filtres."
+  },
+  "packageCount": {
+    "en": "{count} packages on this page",
+    "text": "Paquets sur cette page : {count}"
+  },
+  "pageNumber": {
+    "en": "Page {page}",
+    "text": "Page {page}"
+  },
+  "previousPage": {
+    "en": "Previous",
+    "text": "Précédent"
+  },
+  "nextPage": {
+    "en": "Next",
+    "text": "Suivant"
+  },
+  "accessSaved": {
+    "en": "Access updated",
+    "text": "Accès mis à jour"
+  },
+  "userCreated": {
+    "en": "User created",
+    "text": "Utilisateur créé"
+  },
+  "groupCreated": {
+    "en": "Group created",
+    "text": "Groupe créé"
+  },
+  "signedIn": {
+    "en": "Signed in as {name}",
+    "text": "Connecté en tant que {name}"
+  },
+  "accountStatus": {
+    "en": "Status",
+    "text": "Statut"
+  },
+  "enabled": {
+    "en": "Active",
+    "text": "Actif"
+  },
+  "disabled": {
+    "en": "Disabled",
+    "text": "Désactivé"
+  },
+  "disableUser": {
+    "en": "Disable",
+    "text": "Désactiver"
+  },
+  "enableUser": {
+    "en": "Enable",
+    "text": "Activer"
+  },
+  "newPassword": {
+    "en": "New password",
+    "text": "Nouveau mot de passe"
+  },
+  "currentPassword": {
+    "en": "Current password",
+    "text": "Mot de passe actuel"
+  },
+  "changeOwnPassword": {
+    "en": "Change my password",
+    "text": "Changer mon mot de passe"
+  },
+  "passwordChangedSignIn": {
+    "en": "Password changed. Sign in again.",
+    "text": "Mot de passe modifié. Reconnectez-vous."
+  },
+  "resetPassword": {
+    "en": "Reset password",
+    "text": "Réinitialiser le mot de passe"
+  },
+  "passwordChanged": {
+    "en": "Password changed; active sessions revoked",
+    "text": "Mot de passe modifié ; sessions actives révoquées"
+  },
+  "signUp": {
+    "en": "Sign up",
+    "text": "S’inscrire"
+  },
+  "registerAccount": {
+    "en": "Create account",
+    "text": "Créer un compte"
+  },
+  "accountRegistered": {
+    "en": "Account created and signed in.",
+    "text": "Compte créé et connexion établie."
+  },
+  "personalAccessTokens": {
+    "en": "Personal access tokens",
+    "text": "Jetons d’accès personnels"
+  },
+  "generateToken": {
+    "en": "Generate token",
+    "text": "Générer un jeton"
+  },
+  "tokenName": {
+    "en": "Token name",
+    "text": "Nom du jeton"
+  },
+  "tokenNamePlaceholder": {
+    "en": "e.g. External UI, CLI",
+    "text": "p. ex. Interface externe, CLI"
+  },
+  "tokenCreatedWarning": {
+    "en": "Save this token now. It will not be shown again.",
+    "text": "Enregistrez ce jeton maintenant. Il ne sera plus affiché."
+  },
+  "copyToken": {
+    "en": "Copy token",
+    "text": "Copier le jeton"
+  },
+  "tokenCopied": {
+    "en": "Token copied to clipboard.",
+    "text": "Jeton copié dans le presse-papiers."
+  },
+  "revokeToken": {
+    "en": "Revoke token",
+    "text": "Révoquer le jeton"
+  },
+  "noUserTokens": {
+    "en": "No personal access tokens generated yet.",
+    "text": "Aucun jeton d’accès personnel généré pour l’instant."
+  },
+  "tokenSessionOnly": {
+    "en": "Tokens are created and revoked from a password session only; a token cannot create tokens or administer accounts.",
+    "text": "Les jetons se créent et se révoquent uniquement depuis une session ouverte par mot de passe ; un jeton ne peut ni créer de jetons ni administrer des comptes."
+  },
+  "tokenExpiry": {
+    "en": "Expires after",
+    "text": "Expire après"
+  },
+  "tokenDays30": {
+    "en": "30 days",
+    "text": "30 jours"
+  },
+  "tokenDays90": {
+    "en": "90 days",
+    "text": "90 jours"
+  },
+  "tokenDays365": {
+    "en": "365 days",
+    "text": "365 jours"
+  },
+  "tokenScope": {
+    "en": "Access",
+    "text": "Accès"
+  },
+  "tokenScopeRead": {
+    "en": "Read only",
+    "text": "Lecture seule"
+  },
+  "tokenScopeReadWrite": {
+    "en": "Read and write",
+    "text": "Lecture et écriture"
+  },
+  "tokenPrefix": {
+    "en": "Prefix",
+    "text": "Préfixe"
+  },
+  "tokenCreated": {
+    "en": "Created",
+    "text": "Création"
+  },
+  "tokenExpires": {
+    "en": "Expires",
+    "text": "Expiration"
+  },
+  "tokenLastUsed": {
+    "en": "Last used",
+    "text": "Dernière utilisation"
+  },
+  "tokenStatus": {
+    "en": "Status",
+    "text": "Statut"
+  },
+  "tokenActive": {
+    "en": "Active",
+    "text": "Actif"
+  },
+  "tokenRevokedState": {
+    "en": "Revoked",
+    "text": "Révoqué"
+  },
+  "tokenExpired": {
+    "en": "Expired",
+    "text": "Expiré"
+  },
+  "tokenNeverUsed": {
+    "en": "Never",
+    "text": "Jamais"
+  },
+  "tokenNoExpiry": {
+    "en": "—",
+    "text": "—"
+  },
+  "tokenRevokeConfirm": {
+    "en": "Revoke “{name}”? Clients using it lose access immediately.",
+    "text": "Révoquer « {name} » ? Les clients qui l’utilisent perdent immédiatement l’accès."
+  },
+  "tokenRevokeConfirmSubmit": {
+    "en": "Revoke",
+    "text": "Révoquer"
+  },
+  "tokenRevokeCancel": {
+    "en": "Cancel",
+    "text": "Annuler"
+  },
+  "tokenCopyFailed": {
+    "en": "Copy failed. The token is selected; copy it manually.",
+    "text": "Échec de la copie. Le jeton est sélectionné ; copiez-le manuellement."
+  },
+  "connected": {
+    "en": "Connected",
+    "text": "Connecté"
+  },
+  "disconnected": {
+    "en": "Not connected",
+    "text": "Non connecté"
+  },
+  "uploadFile": {
+    "en": "Upload file",
+    "text": "Téléverser un fichier"
+  },
+  "search": {
+    "en": "Search",
+    "text": "Rechercher"
+  },
+  "searchPlaceholder": {
+    "en": "Name or metadata value…",
+    "text": "Nom ou valeur de métadonnée…"
+  },
+  "labelFilter": {
+    "en": "Filter by label",
+    "text": "Filtrer par étiquette"
+  },
+  "labelPlaceholder": {
+    "en": "Any label",
+    "text": "Toutes les étiquettes"
+  },
+  "name": {
+    "en": "File name",
+    "text": "Nom"
+  },
+  "actions": {
+    "en": "Actions",
+    "text": "Actions"
+  },
+  "open": {
+    "en": "Open",
+    "text": "Ouvrir"
+  },
+  "more": {
+    "en": "Load more",
+    "text": "Charger plus"
+  },
+  "loaded": {
+    "en": "{count} loaded",
+    "text": "Chargés : {count}"
+  },
+  "emptyTitle": {
+    "en": "Not connected",
+    "text": "Non connecté"
+  },
+  "emptyDescription": {
+    "en": "Sign in with your username and password, or connect with a service key.",
+    "text": "Connectez-vous avec votre nom d’utilisateur et votre mot de passe, ou utilisez une clé de service."
+  },
+  "noResultsTitle": {
+    "en": "No matching artifacts",
+    "text": "Aucun artefact correspondant"
+  },
+  "noResults": {
+    "en": "Change your search or clear the filters.",
+    "text": "Modifiez votre recherche ou effacez les filtres."
+  },
+  "catalogHint": {
+    "en": "Immutable content · Editable metadata",
+    "text": "Contenu immuable · Métadonnées modifiables"
+  },
+  "file": {
+    "en": "Choose a file",
+    "text": "Choisir un fichier"
+  },
+  "chooseFile": {
+    "en": "File to upload",
+    "text": "Fichier à téléverser"
+  },
+  "resumeTitle": {
+    "en": "Resume an upload",
+    "text": "Reprendre un téléversement"
+  },
+  "resumeHint": {
+    "en": "Have an upload ID? Select the same file and enter the ID below.",
+    "text": "Vous avez un ID de téléversement ? Sélectionnez le même fichier et saisissez l’ID ci-dessous."
+  },
+  "uploadId": {
+    "en": "Upload ID",
+    "text": "ID de téléversement"
+  },
+  "idempotency": {
+    "en": "Duplicate protection key",
+    "text": "Clé de protection contre les doublons"
+  },
+  "automatic": {
+    "en": "Generated automatically",
+    "text": "Générée automatiquement"
+  },
+  "startUpload": {
+    "en": "Upload / resume",
+    "text": "Téléverser / reprendre"
+  },
+  "pause": {
+    "en": "Pause",
+    "text": "Pause"
+  },
+  "newUpload": {
+    "en": "New upload",
+    "text": "Nouveau téléversement"
+  },
+  "uploadHint": {
+    "en": "Keep your upload ID to resume after closing this tab.",
+    "text": "Conservez votre ID de téléversement pour reprendre après la fermeture de cet onglet."
+  },
+  "transferTitle": {
+    "en": "Transfer status",
+    "text": "État du transfert"
+  },
+  "transferIdle": {
+    "en": "Waiting for a file",
+    "text": "En attente d’un fichier"
+  },
+  "hashing": {
+    "en": "Checking file integrity…",
+    "text": "Vérification de l’intégrité du fichier…"
+  },
+  "uploading": {
+    "en": "Uploading · {percent}%",
+    "text": "Téléversement · {percent} %"
+  },
+  "published": {
+    "en": "File published · {id}",
+    "text": "Fichier publié · {id}"
+  },
+  "paused": {
+    "en": "Transfer paused. You can resume it with the same file.",
+    "text": "Transfert en pause. Vous pouvez le reprendre avec le même fichier."
+  },
+  "selectArtifact": {
+    "en": "Select an artifact",
+    "text": "Sélectionnez un artefact"
+  },
+  "selectHint": {
+    "en": "Open a file in the catalog or history.",
+    "text": "Ouvrez un fichier dans le catalogue ou l’historique."
+  },
+  "backCatalog": {
+    "en": "Back to artifacts",
+    "text": "Retour aux artefacts"
+  },
+  "selected": {
+    "en": "Artifact ID",
+    "text": "ID de l’artefact"
+  },
+  "labels": {
+    "en": "Labels",
+    "text": "Étiquettes"
+  },
+  "collections": {
+    "en": "Collections",
+    "text": "Collections"
+  },
+  "commaHint": {
+    "en": "Separate with commas",
+    "text": "Séparez par des virgules"
+  },
+  "metadataJson": {
+    "en": "Metadata (JSON)",
+    "text": "Métadonnées (JSON)"
+  },
+  "save": {
+    "en": "Save changes",
+    "text": "Enregistrer les modifications"
+  },
+  "download": {
+    "en": "Download",
+    "text": "Télécharger"
+  },
+  "downloadLink": {
+    "en": "Download link",
+    "text": "Lien de téléchargement"
+  },
+  "downloadLinkCopied": {
+    "en": "Link copied. It opens only this file and works until {expires}.",
+    "text": "Lien copié. Il n’ouvre que ce fichier et reste valable jusqu’au {expires}."
+  },
+  "downloadLinkCopy": {
+    "en": "Copy the link below. It opens only this file and works until {expires}.",
+    "text": "Copiez le lien ci-dessous. Il n’ouvre que ce fichier et reste valable jusqu’au {expires}."
+  },
+  "register": {
+    "en": "Register UPack",
+    "text": "Enregistrer le paquet UPack"
+  },
+  "assetTitle": {
+    "en": "File reference",
+    "text": "Lien de fichier"
+  },
+  "assetHint": {
+    "en": "Assign this artifact to a path. The current link version protects against simultaneous changes: use 0 for a new path or the current version shown in the file history.",
+    "text": "Associez cet artefact à un chemin. La version actuelle du lien protège contre les modifications simultanées : indiquez 0 pour un nouveau chemin, sinon la version actuelle affichée dans l’historique du fichier."
+  },
+  "assetPath": {
+    "en": "File path",
+    "text": "Chemin du fichier"
+  },
+  "currentRevision": {
+    "en": "Current link version",
+    "text": "Version actuelle du lien"
+  },
+  "assign": {
+    "en": "Assign file",
+    "text": "Associer le fichier"
+  },
+  "historyLoad": {
+    "en": "Load history",
+    "text": "Charger l’historique"
+  },
+  "historyHint": {
+    "en": "Restoring creates a new version. Open any version to download its original file.",
+    "text": "La restauration crée une nouvelle version. Ouvrez n’importe quelle version pour télécharger son fichier d’origine."
+  },
+  "revision": {
+    "en": "Version",
+    "text": "Version"
+  },
+  "date": {
+    "en": "Created",
+    "text": "Création"
+  },
+  "actor": {
+    "en": "Author",
+    "text": "Auteur"
+  },
+  "source": {
+    "en": "Restored from",
+    "text": "Restaurée depuis"
+  },
+  "restore": {
+    "en": "Restore version {revision}",
+    "text": "Restaurer la version {revision}"
+  },
+  "historyMore": {
+    "en": "Older versions",
+    "text": "Versions plus anciennes"
+  },
+  "historyEmpty": {
+    "en": "Enter a file path to explore its history.",
+    "text": "Saisissez un chemin de fichier pour explorer son historique."
+  },
+  "historyCount": {
+    "en": "{count} versions loaded · current version {revision}",
+    "text": "Versions chargées : {count} · version actuelle {revision}"
+  },
+  "restored": {
+    "en": "Restored as version {revision}",
+    "text": "Restauré en tant que version {revision}"
+  },
+  "historyConflict": {
+    "en": "The file has changed. Reload history before restoring.",
+    "text": "Le fichier a changé. Rechargez l’historique avant de restaurer."
+  },
+  "ready": {
+    "en": "Connect a repository to begin.",
+    "text": "Connectez un dépôt pour commencer."
+  },
+  "searching": {
+    "en": "Loading artifacts…",
+    "text": "Chargement des artefacts…"
+  },
+  "revisionStatus": {
+    "en": "Details opened · version {revision}",
+    "text": "Détails ouverts · version {revision}"
+  },
+  "saved": {
+    "en": "Changes saved · version {revision}",
+    "text": "Modifications enregistrées · version {revision}"
+  },
+  "registered": {
+    "en": "Registered {name} {version}",
+    "text": "{name} {version} enregistré"
+  },
+  "assigned": {
+    "en": "File link saved · version {revision}",
+    "text": "Lien de fichier enregistré · version {revision}"
+  },
+  "chooseFileError": {
+    "en": "Choose a file first.",
+    "text": "Choisissez d’abord un fichier."
+  },
+  "fileTooLarge": {
+    "en": "The file exceeds the maximum size configured on the server.",
+    "text": "Le fichier dépasse la taille maximale configurée sur le serveur."
+  },
+  "uploadRunning": {
+    "en": "An upload is already in progress.",
+    "text": "Un téléversement est déjà en cours."
+  },
+  "selectError": {
+    "en": "Open an artifact first.",
+    "text": "Ouvrez d’abord un artefact."
+  },
+  "hashError": {
+    "en": "Could not read or verify the selected file. Please select it again.",
+    "text": "Impossible de lire ou de vérifier le fichier sélectionné. Sélectionnez-le à nouveau."
+  },
+  "saveUnsupported": {
+    "en": "Streaming save requires Chrome or Edge over HTTPS. Other clients can download through the SDK.",
+    "text": "L’enregistrement en continu nécessite Chrome ou Edge via HTTPS. Les autres clients peuvent télécharger via le SDK."
+  },
+  "mismatch": {
+    "en": "This file differs from the upload. Select the original file or start a new upload.",
+    "text": "Ce fichier diffère de celui du téléversement. Sélectionnez le fichier d’origine ou lancez un nouveau téléversement."
+  },
+  "errorGeneric": {
+    "en": "The operation could not be completed. Try again.",
+    "text": "L’opération n’a pas pu aboutir. Réessayez."
+  },
+  "errorUnauthorized": {
+    "en": "This key is not valid or was revoked. Enter a valid key.",
+    "text": "Cette clé n’est pas valide ou a été révoquée. Saisissez une clé valide."
+  },
+  "errorForbidden": {
+    "en": "You do not have permission for this operation.",
+    "text": "Vous n’avez pas l’autorisation d’effectuer cette opération."
+  },
+  "errorRateLimited": {
+    "en": "Too many sign-in attempts. Wait and try again.",
+    "text": "Trop de tentatives de connexion. Patientez, puis réessayez."
+  },
+  "errorNotFound": {
+    "en": "The requested file or version was not found.",
+    "text": "Le fichier ou la version demandés sont introuvables."
+  },
+  "errorConflict": {
+    "en": "The item has changed or the operation conflicts with its state. Refresh before trying again.",
+    "text": "L’élément a changé ou l’opération est incompatible avec son état. Actualisez avant de réessayer."
+  },
+  "errorInput": {
+    "en": "Check the entered values and try again.",
+    "text": "Vérifiez les valeurs saisies et réessayez."
+  },
+  "errorIntegrity": {
+    "en": "The file integrity check failed. Retry with the original file.",
+    "text": "La vérification d’intégrité du fichier a échoué. Réessayez avec le fichier d’origine."
+  },
+  "errorBusy": {
+    "en": "The service is busy. Try again shortly.",
+    "text": "Le service est occupé. Réessayez dans un instant."
+  },
+  "errorCapacity": {
+    "en": "A capacity limit has been reached.",
+    "text": "Une limite de capacité a été atteinte."
+  },
+  "cancelled": {
+    "en": "Operation cancelled.",
+    "text": "Opération annulée."
+  },
+  "publishedRefresh": {
+    "en": "File published, but the catalog could not refresh. Open Artifacts to refresh it.",
+    "text": "Fichier publié, mais le catalogue n’a pas pu être actualisé. Ouvrez « Artefacts » pour l’actualiser."
+  },
+  "skip": {
+    "en": "Skip to content",
+    "text": "Aller au contenu"
+  },
+  "noScript": {
+    "en": "Enable JavaScript to use the storage console.",
+    "text": "Activez JavaScript pour utiliser la console de stockage."
+  }
+}

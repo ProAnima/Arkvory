@@ -1,6 +1,6 @@
 import type { ArkvoryClient } from '@proanima/arkvory-sdk';
 import { element } from './dom.js';
-import { dateMessage, message } from './i18n.js';
+import { message } from './i18n.js';
 import { showFailure } from './feedback.js';
 
 /**
@@ -15,7 +15,6 @@ export function installDownloadLink(
   const button = element('download-link', HTMLButtonElement);
   const result = element('download-link-result', HTMLElement);
   const note = element('download-link-note', HTMLElement);
-  const expiry = element('download-link-expiry', HTMLElement);
   const url = element('download-link-url', HTMLInputElement);
   const clear = () => {
     result.hidden = true;
@@ -32,14 +31,18 @@ export function installDownloadLink(
         .writeText(link.url)
         .then(() => true)
         .catch(() => false);
-      message(note, copied ? 'downloadLinkCopied' : 'downloadLinkCopy');
-      dateMessage(expiry, link.expiresAt);
+      message(
+        note,
+        copied ? 'downloadLinkCopied' : 'downloadLinkCopy',
+        { expires: link.expiresAt },
+        [],
+        ['expires'],
+      );
       result.hidden = false;
       if (!copied) url.select();
     } catch (error) {
       result.hidden = false;
       url.value = '';
-      expiry.replaceChildren();
       showFailure(note, error);
     } finally {
       button.disabled = false;
