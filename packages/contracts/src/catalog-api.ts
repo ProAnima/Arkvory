@@ -17,7 +17,8 @@ const part = {
   required: ['index', 'size', 'sha256'],
   properties: {
     index: { type: 'integer', minimum: 0, maximum: 9999 },
-    size: { type: 'integer', minimum: 1, maximum: 8388608 },
+    // A part is 8 MiB at least and grows by doubling up to 1 GiB when an object needs it.
+    size: { type: 'integer', minimum: 1, maximum: 1073741824 },
     sha256: { type: 'string', pattern: '^[a-f0-9]{64}$' },
   },
 };
