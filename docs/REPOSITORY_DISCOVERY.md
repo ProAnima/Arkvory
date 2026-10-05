@@ -2,7 +2,7 @@
 
 Веб-интерфейс репозиториев и сервисного доступа: [WEB_ADMINISTRATION](WEB_ADMINISTRATION.md).
 
-Реализовано 2026-09-24. OpenAPI 3.0.3 / документ **0.8.0**, 108 операций с HEAD. Текущая схема БД — **12**; сам discovery не добавляет таблиц. [ADR 0021](adr/0021-repository-discovery.md).
+Реализовано 2026-09-24, схема БД тогда была **12** (сейчас **32**); сам discovery не добавляет таблиц. [ADR 0021](adr/0021-repository-discovery.md).
 
 ## Что представляет карточка
 
@@ -26,7 +26,7 @@
 
 Managed key требует **`repository.read`** в пересечении account policy и key bindings для этой области. Это 19-е repository permission: 18 существующих data actions сохраняются. Новое право позволяет открыть только карточку/список. Оно не даёт чтение bytes, packages/assets, публикацию, изменение repository или service administration. Content-only ключ сохраняет чтение известного объекта, даже если репозиторий отсутствует в discovery. Bootstrap/administrator и административное делегирование не предоставляют глобальный просмотр автоматически.
 
-Для file keys и пользовательских сессий возвращаются только собственные непустые coarse grants, уже доступные через `/auth/me`. В карточке `repository.read` обозначает разрешённое discovery этой области. Legacy `/auth/permissions` сохраняет прежние 18 actions и не получает новое имя автоматически, что важно для старого SDK. Empty grants перекрывают старые repositories, как и в существующем authorize; полномочия разных репозиториев не смешиваются.
+Для file keys и пользовательских сессий возвращаются только собственные непустые coarse grants, уже доступные через `/auth/me`. В карточке `repository.read` обозначает разрешённое discovery этой области. Legacy `/auth/permissions` выводится из прежних coarse grants по фиксированной таблице и не получает новые имена (`repository.read`, `artifact.delete`, `storage.read`, `storage.manage`, `diagnostics.read`) автоматически, что важно для старого SDK. Empty grants перекрывают старые repositories, как и в существующем authorize; полномочия разных репозиториев не смешиваются.
 
 Сохраняется прежнее различие: file key может иметь только `write` без `read`; пользовательский group access=`write` разрешается текущим identity adapter в read+write. Discovery отражает эти реальные права. Сервер по-прежнему авторизует каждую data operation отдельно. Permissions не заменяют gateway role, состояние upload, ownership и квоты: reader может показать разрешённую публикацию, но сам возвращает 405 на запись.
 
@@ -60,7 +60,7 @@ Domain содержит имя `repository.read` и прежние правил�
 
 Источник прав остаётся существующим authentication adapter PostgreSQL/file configuration. Новых таблиц, кеша и фиктивного RepositoryStore нет: карточки не требуют дополнительного I/O. Источник ограничен: до 64 managed bindings, до 10 000 текущих пользовательских grants; legacy key file ограничен 1 MiB. Формирование списка зависит от прав клиента, а не от размера всего blob/catalog storage. Фильтрация/объединение выполняются до пагинации над этим уже ограниченным authorization context. Глобальный SQL inventory не читается.
 
-Contracts задаёт независимые DTO/parser/OpenAPI; API routes разбирают transport; SDK использует только публичный wire contract. UI выбора репозитория в существующей консоли пока сохраняет свой `/auth/me` путь. Persisted registry, настройки, namespace selectors и upload intent остаются отдельными инкрементами.
+Contracts задаёт независимые DTO/parser/OpenAPI; API routes разбирают transport; SDK использует только публичный wire contract. Консоль выбирает репозитории через `client.repositories` (постраничные карточки; в список попадают репозитории с `artifact.list`), а не через `/auth/me`. Persisted registry, настройки, namespace selectors и upload intent остаются отдельными инкрементами.
 
 Проверки: `tests/repositories.test.mjs` и `tests/integration/repositories.test.mjs` — coarse mapping, managed opt-in, same-resource union, 10 000 grants, пагинация, wire validation, HTTP/SDK/HEAD, policy/expiry/revoke/rotation, group grants и reader. Наличие данных не раскрывает чужую область, а discovery-only key не проходит data/admin endpoints.
 

@@ -1,6 +1,6 @@
 # Доступ сервисов и жизненный цикл API-ключей
 
-Статус: **целевая модель с реализованным ограниченным профилем**, 2026-09-24. Работают [managed keys](SERVICE_KEYS.md) и [делегирование на точные аккаунты](SERVICE_DELEGATION.md): 19 repository permissions (18 data actions + repository.read), семь отдельных admin actions, ceiling, activation/rotation/revoke, CAS, SDK и проверки перед commit. Широкие system permissions, рекурсивное делегирование, notBefore, импорт старых identities и namespace selectors остаются проектом. Текущие лимиты и отличия задают runbooks. [Карта API](API_MAP.md), [план](API_EVOLUTION.md), [ADR 0016](adr/0016-service-access-and-api-evolution.md), принятый профиль [ADR 0019](adr/0019-scoped-service-administration.md).
+Статус: **целевая модель с реализованным ограниченным профилем**, 2026-09-24. Работают [managed keys](SERVICE_KEYS.md) и [делегирование на точные аккаунты](SERVICE_DELEGATION.md): 24 repository permissions (`repository.read`, 18 data actions и пять действий удаления, продвижения, хранилища и диагностики: `artifact.delete`, `artifact.promote`, `storage.read`, `storage.manage`, `diagnostics.read`), семь отдельных admin actions, ceiling, activation/rotation/revoke, CAS, SDK и проверки перед commit. Широкие system permissions, рекурсивное делегирование, notBefore, импорт старых identities и namespace selectors остаются проектом. Текущие лимиты и отличия задают runbooks. [Карта API](API_MAP.md), [план](API_EVOLUTION.md), [ADR 0016](adr/0016-service-access-and-api-evolution.md), принятый профиль [ADR 0019](adr/0019-scoped-service-administration.md).
 
 ## 1. Совместимый прежний профиль
 
@@ -59,7 +59,11 @@ Permissions аккаунта и ключа пересекаются **по де�
 | `annotation.read` / `annotation.write`            | Чтение / CAS-изменение метаданных, labels и collections. Редактирование не заменяет разрешение на скачивание.         |
 | `reference.write`                                 | Создание/снятие references своего аккаунта. Чужие ссылки не удаляются.                                                |
 | `audit.read`                                      | Аудит разрешённого репозитория; персональные и служебные поля определены отдельно.                                    |
-| `artifact.delete` / `retention.manage`            | Будущие удаление / политика хранения, с защитой references, readers и долговечности. Не часть обычного Publisher.     |
+| `artifact.delete`                                 | Логическое удаление, retention и включение очистки. Только managed key, не часть Publisher.                           |
+| `artifact.promote`                                | Продвижение артефакта между репозиториями; прежним принципалам — при read+write.                                      |
+| `storage.read` / `storage.manage`                 | Чтение / изменение политик хранения и очистки. Только managed key.                                                    |
+| `diagnostics.read`                                | События хранения и очистки репозитория. Только managed key.                                                           |
+| `retention.manage`                                | Будущая отдельная политика хранения.                                                                                  |
 | `event.read` / `webhook.manage`                   | Будущие журнал событий / подписки в разрешённом репозитории.                                                          |
 | `identity.read` / `identity.manage`               | Глобальное чтение / управление пользователями и группами.                                                             |
 | `service-account.read` / `service-account.manage` | Глобальное чтение / создание и отключение машинных identities. Не даёт права назначать data permissions.              |

@@ -9,8 +9,12 @@ Arkvory хранит большие файлы git-репозиториев (Git
 ```ini
 [lfs]
 	url = https://arkvory.example/lfs/games
+
+[lfs "https://arkvory.example/lfs/games"]
 	locksverify = true
 ```
+
+git-lfs читает `locksverify` не из общей секции `[lfs]`, а по ключу с адресом сервера `lfs.<url>.locksverify`, где `<url>` совпадает с `lfs.url`. Если git-lfs не подхватил её из `.lfsconfig`, задайте в локальной конфигурации: `git config lfs.https://arkvory.example/lfs/games.locksverify true`.
 
 `games` — репозиторий Arkvory. При первом обращении git спросит учётные данные: имя любое, пароль — ключ Arkvory (персональный токен пользователя или сервисный ключ для CI). Git Credential Manager запомнит их. Ключ только для чтения позволяет `clone` и `pull`. Для `push` и блокировок нужны права записи.
 
@@ -24,7 +28,7 @@ git lfs locks
 git lfs unlock Content/Maps/Level01.umap
 ```
 
-- `locksverify = true`: перед `push` git проверяет, не изменены ли файлы, заблокированные другими.
+- `locksverify = true` (для адреса сервера, см. выше): перед `push` git проверяет, не изменены ли файлы, заблокированные другими.
 - Владелец блокировки показывается по имени пользователя или сервисного аккаунта.
 - Снять чужую блокировку (`git lfs unlock --force`) может только тот, у кого есть право удаления артефактов в репозитории.
 - Unity и Unreal умеют работать с блокировками LFS через свои плагины контроля версий; Arkvory отвечает по стандартному протоколу.

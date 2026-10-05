@@ -22,7 +22,7 @@ groups:
           severity: warning
         annotations:
           summary: More than 5% of Arkvory responses are server errors
-          description: Correlate requestId in http.access and 5xx diagnostics; storage_full and dependency_unavailable point to disk or PostgreSQL.
+          description: Correlate requestId in http.access and in the failed-request log line, whose code is capacity_exceeded (disk or quota), unavailable (PostgreSQL or an interrupted operation) or internal; errorName, errno and sqlstate name the cause.
 
       - alert: ArkvorySlowMetadataRequests
         # Transfers of large files are excluded: their duration follows object size, not health.

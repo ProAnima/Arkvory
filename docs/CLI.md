@@ -173,7 +173,7 @@ arkvoryctl search --label staging --collection desktop
 ]
 ```
 
-`arkvoryctl attachments get ID` показывает текущую ревизию; `attachments set ID --revision N --file attachments.json` заменяет полный список. `attachments history ID` показывает последние изменения. Типы: `manifest`, `sbom`, `signature`, `report`, `file`. CLI обновляет аннотации и ссылки Arkvory; байты опубликованного UPack остаются неизменными. Чтобы встроить данные в `upack.json`, сформируйте архив перед загрузкой согласно [описанию сборок](BUILD_DETAILS.md).
+`arkvoryctl attachments get ID` показывает текущую ревизию; `attachments set ID --revision N --file attachments.json` заменяет полный список; файл — просто JSON-массив элементов `[{name, kind, artifactId, description}]`, тогда как тело HTTP PUT — объект `{expectedRevision, items}` (ревизию CLI берёт из `--revision`). `attachments history ID` показывает последние изменения. Типы: `manifest`, `sbom`, `signature`, `report`, `file`. CLI обновляет аннотации и ссылки Arkvory; байты опубликованного UPack остаются неизменными. Чтобы встроить данные в `upack.json`, сформируйте архив перед загрузкой согласно [описанию сборок](BUILD_DETAILS.md).
 
 Read current annotations or attachments, then submit the complete replacement with `--revision`. Conflicts never silently overwrite another client's changes. Upload attachment files first and reference their artifact IDs. Arkvory annotations do not rewrite an immutable published UPack archive.
 

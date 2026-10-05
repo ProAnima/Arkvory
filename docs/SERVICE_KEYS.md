@@ -2,7 +2,7 @@
 
 Веб-интерфейс репозиториев и сервисного доступа: [WEB_ADMINISTRATION](WEB_ADMINISTRATION.md).
 
-Первый профиль реализован 2026-09-24 в миграции 9; текущая схема — **12**. Machine identities, 19 permissions на точные репозитории, lifecycle, SDK и API/worker/reader enforcement дополнены [делегированным управлением](SERVICE_DELEGATION.md): семь admin actions, точные цели и ceiling. Selectors папок/групп, federation, transfer tickets и webhooks не включены. Решения: [ADR 0017](adr/0017-managed-service-keys.md), [ADR 0019](adr/0019-scoped-service-administration.md).
+Первый профиль реализован 2026-09-24 в миграции 9; на эту дату схема была **12**, сейчас — **32**. Machine identities, 24 permissions на точные репозитории, lifecycle, SDK и API/worker/reader enforcement дополнены [делегированным управлением](SERVICE_DELEGATION.md): семь admin actions, точные цели и ceiling. Selectors папок/групп, federation, transfer tickets и webhooks не включены. Решения: [ADR 0017](adr/0017-managed-service-keys.md), [ADR 0019](adr/0019-scoped-service-administration.md).
 
 ## Обновление и bootstrap
 
@@ -81,7 +81,7 @@ SDK также предоставляет serviceAccounts/serviceAccount/service
 
 ## Права и защита публикации
 
-Реализованные actions: `repository.read`, `artifact.read`, `artifact.list`, `content.read`, `upload.create`, `upload.read`, `upload.write`, `upload.complete`, `upload.cancel`, `job.read`, `package.read`, `package.publish`, `asset.read`, `asset.write`, `asset.restore`, `annotation.read`, `annotation.write`, `reference.write`, `audit.read`. Их привязка к методам — в [карте API](API_MAP.md). Остальные имена из целевой модели, включая system.observe, пока отклоняются. Семь administration actions, включая credential.manage, принимаются только отдельным delegation API, не в repository bindings. Wildcards и path selectors не поддерживаются.
+Реализованные actions: `repository.read`, `artifact.read`, `artifact.list`, `content.read`, `upload.create`, `upload.read`, `upload.write`, `upload.complete`, `upload.cancel`, `job.read`, `package.read`, `package.publish`, `asset.read`, `asset.write`, `asset.restore`, `annotation.read`, `annotation.write`, `reference.write`, `audit.read`, а также `artifact.delete`, `artifact.promote`, `storage.read`, `storage.manage`, `diagnostics.read` — всего 24. Их привязка к методам — в [карте API](API_MAP.md). Права `artifact.delete`, `storage.read`, `storage.manage` и `diagnostics.read` не имеют legacy-эквивалента: они никогда не выдаются парольным сессиям, персональным токенам, файловым ключам и ключу восстановления, только управляемым сервисным ключам (`artifact.promote` прежним принципалам даёт сочетание read и write). Остальные имена из целевой модели, включая system.observe, отклоняются. Семь administration actions, включая credential.manage, принимаются только отдельным delegation API, не в repository bindings. Wildcards и path selectors не поддерживаются.
 
 Эффективные права = пересечение account policy и key bindings по одной паре action/repository. Пустая policy запрещает data operations. Ключ не получает общий read/write; resolve для `packages/content` и `asset/content` требует content.read, а не право перечислять пакеты или файлы. Whole-file PUT требует upload.write **и** upload.complete; запись части — только upload.write. Метаданные и pointer mutations требуют указанных в карте дополнительных прав на источник. Ownership uploads/jobs/references остаётся отдельной проверкой.
 
