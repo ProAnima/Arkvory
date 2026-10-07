@@ -121,6 +121,16 @@ Restart-Service Arkvoryapi, Arkvoryworker, Arkvorybackup
 
 [ミラー](../operate/mirrors)を参照してください。
 
+## Webhook {#webhooks}
+
+| 変数                             | 読み取るプロセス | 既定値 | 意味                                                                                                                              |
+| -------------------------------- | ---------------- | ------ | --------------------------------------------------------------------------------------------------------------------------------- |
+| `ARKVORY_WEBHOOKS_FILE`          | ワーカー         | 未設定 | Webhook サブスクリプションを列挙する JSON ファイル（最大 16 件）。ない場合は Webhook は送信されません。                           |
+| `ARKVORY_WEBHOOKS_ALLOW_PRIVATE` | ワーカー         | 未設定 | 公開アドレスに加えて Webhook を受信できるネットワークを、カンマ区切りの CIDR 形式で指定します（最大 32 件）。例: `10.20.0.0/16`。 |
+| `ARKVORY_WEBHOOKS_CA_FILE`       | ワーカー         | 未設定 | 受信側向けの追加の認証局を含む PEM ファイルの絶対パス。TLS は常に検証されます。                                                   |
+
+参照: [Webhook](../protocols/webhooks)。
+
 ## 更新とハブ {#updates-and-the-hub}
 
 | 変数                         | 読み取るプロセス | 既定値                     | 意味                                                                                                                                                          |

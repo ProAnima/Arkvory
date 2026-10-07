@@ -20,6 +20,7 @@ title: العملاء والبروتوكولات
 | Git LFS                  | `/lfs/<repository>`                            | الملفات الكبيرة لمستودع git، وقفل الملفات لـ Unity وUnreal                                             | Basic مع المفتاح ككلمة مرور (git credential helper)، أو Bearer                     |
 | سجل npm                  | `/npm/<repository>/`                           | السجلات محددة النطاق (scoped registries) في Unity Package Manager، و`npm publish` و`npm install`       | Bearer (`_authToken` في `.npmrc`، و`token` في `.upmconfig.toml`)، أو Basic `_auth` |
 | الملفات الخام حسب المسار | `/api/v1/repositories/<repository>/raw/<path>` | طلب واحد بـ `curl -T` أو PowerShell                                                                    | `Authorization: Bearer <key>` فقط                                                  |
+| Webhook                  | عنوان URL للمستقبِل لديك                       | بدء نشر أو مهمة عندما يتغير مستودع                                                                     | توقيع HMAC لكل طلب                                                                 |
 
 تتبع المسارات تحت `/v2` و`/lfs` و`/npm` مواصفات بروتوكولاتها. وهي ليست جزءًا من وثيقة OpenAPI الخاصة بـ `/api/v1`، وتبلّغ عن الأخطاء بالصيغة التي يتوقعها عملاؤها.
 
@@ -90,4 +91,5 @@ title: العملاء والبروتوكولات
 - [Git LFS](./git-lfs)
 - [حزم Unity وnpm](./unity-npm)
 - [الملفات الخام](./raw-files)
+- [Webhook](./webhooks)
 - [نظرة عامة على API](../api/index) و[الأخطاء](../api/errors)

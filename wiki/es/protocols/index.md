@@ -20,6 +20,7 @@ Esta página enumera todas las formas de comunicarse con Arkvory, para qué sirv
 | Git LFS                        | `/lfs/<repository>`                            | Archivos grandes de un repositorio git, bloqueo de archivos para Unity y Unreal                              | Basic con la clave como contraseña (asistente de credenciales de git), o Bearer  |
 | Registro npm                   | `/npm/<repository>/`                           | Registros con ámbito (scoped registries) de Unity Package Manager, `npm publish` y `npm install`             | Bearer (`_authToken` en `.npmrc`, `token` en `.upmconfig.toml`), o Basic `_auth` |
 | Archivos raw por ruta          | `/api/v1/repositories/<repository>/raw/<path>` | Una sola solicitud con `curl -T` o PowerShell                                                                | Solo `Authorization: Bearer <key>`                                               |
+| Webhooks                       | La URL de su receptor                          | Iniciar un despliegue o una tarea cuando cambia un repositorio                                               | Firma HMAC de cada petición                                                      |
 
 Las rutas bajo `/v2`, `/lfs` y `/npm` siguen las especificaciones de sus protocolos. No forman parte del documento OpenAPI de `/api/v1` y notifican los errores en el formato que esperan sus clientes.
 
@@ -90,4 +91,5 @@ Consulte [Puertas de enlace de lectura](../operate/read-gateways) y [Espejos](..
 - [Git LFS](./git-lfs)
 - [Paquetes de Unity y npm](./unity-npm)
 - [Archivos raw](./raw-files)
+- [Webhooks](./webhooks)
 - [Resumen de la API](../api/index) y [Errores](../api/errors)

@@ -20,6 +20,7 @@ Arkvoryのストレージとアクセスモデルは1つですが、そこに到
 | Git LFS                     | `/lfs/<repository>`                            | gitリポジトリの大容量ファイル、UnityとUnreal向けのファイルロック                                   | キーをパスワードにしたBasic（gitの認証情報ヘルパー）、またはBearer                 |
 | npmレジストリ               | `/npm/<repository>/`                           | Unity Package Managerのスコープ付きレジストリ、`npm publish`と`npm install`                        | Bearer（`.npmrc`の`_authToken`、`.upmconfig.toml`の`token`）、またはBasicの`_auth` |
 | パス指定のRawファイル       | `/api/v1/repositories/<repository>/raw/<path>` | `curl -T`またはPowerShellによる1回のリクエスト                                                     | `Authorization: Bearer <key>`のみ                                                  |
+| Webhook                     | お客様の受信側 URL                             | リポジトリが変わったときにデプロイやジョブを開始する                                               | すべてのリクエストの HMAC 署名                                                     |
 
 `/v2`、`/lfs`、`/npm`以下のルートは、それぞれのプロトコルの仕様に従います。これらは`/api/v1`のOpenAPIドキュメントには含まれず、エラーはそれぞれのクライアントが期待する形式で返されます。
 
@@ -90,4 +91,5 @@ Arkvoryのストレージとアクセスモデルは1つですが、そこに到
 - [Git LFS](./git-lfs)
 - [Unityとnpmのパッケージ](./unity-npm)
 - [Rawファイル](./raw-files)
+- [Webhook](./webhooks)
 - [API概要](../api/index)と[エラー](../api/errors)

@@ -20,6 +20,7 @@ Arkvory에는 스토리지와 액세스 모델이 하나뿐이지만, 접근하�
 | Git LFS                  | `/lfs/<repository>`                            | git 리포지토리의 대용량 파일, Unity와 Unreal을 위한 파일 잠금              | 키를 비밀번호로 쓰는 Basic(git 자격 증명 도우미) 또는 Bearer                    |
 | npm 레지스트리           | `/npm/<repository>/`                           | Unity Package Manager의 범위 지정 레지스트리, `npm publish`, `npm install` | Bearer(`.npmrc`의 `_authToken`, `.upmconfig.toml`의 `token`) 또는 Basic `_auth` |
 | 경로 기반 원시 파일      | `/api/v1/repositories/<repository>/raw/<path>` | `curl -T` 또는 PowerShell을 사용한 단일 요청                               | `Authorization: Bearer <key>`만 허용                                            |
+| 웹훅                     | 내 수신자 URL                                  | 리포지토리가 바뀌면 배포나 작업 시작                                       | 모든 요청의 HMAC 서명                                                           |
 
 `/v2`, `/lfs`, `/npm` 아래의 경로는 각 프로토콜의 사양을 따릅니다. 이 경로는 `/api/v1`의 OpenAPI 문서에 포함되지 않으며, 오류를 해당 클라이언트가 기대하는 형식으로 보고합니다.
 
@@ -90,4 +91,5 @@ Arkvory에는 스토리지와 액세스 모델이 하나뿐이지만, 접근하�
 - [Git LFS](./git-lfs)
 - [Unity 및 npm 패키지](./unity-npm)
 - [원시 파일](./raw-files)
+- [웹훅](./webhooks)
 - [API 개요](../api/index) 및 [오류](../api/errors)

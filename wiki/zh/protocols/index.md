@@ -20,6 +20,7 @@ Arkvory 只有一套存储和一种访问模型，但有多种访问方式。每
 | Git LFS               | `/lfs/<repository>`                            | git 仓库的大文件，用于 Unity 和 Unreal 的文件锁                                           | Basic 认证，以密钥作为密码（git credential helper），或 Bearer                         |
 | npm 注册表            | `/npm/<repository>/`                           | Unity Package Manager 的作用域注册表（scoped registries）、`npm publish` 和 `npm install` | Bearer（`.npmrc` 中的 `_authToken`，`.upmconfig.toml` 中的 `token`），或 Basic `_auth` |
 | 按路径访问的原始文件  | `/api/v1/repositories/<repository>/raw/<path>` | 使用 `curl -T` 或 PowerShell 的单次请求                                                   | 仅支持 `Authorization: Bearer <key>`                                                   |
+| Webhook               | 你的接收方 URL                                 | 仓库变化时启动部署或作业                                                                  | 每个请求的 HMAC 签名                                                                   |
 
 `/v2`、`/lfs` 和 `/npm` 下的路由遵循各自协议的规范。它们不属于 `/api/v1` 的 OpenAPI 文档，并且以各自客户端所期望的格式报告错误。
 
@@ -90,4 +91,5 @@ Arkvory 只有一套存储和一种访问模型，但有多种访问方式。每
 - [Git LFS](./git-lfs)
 - [Unity 与 npm 包](./unity-npm)
 - [原始文件](./raw-files)
+- [Webhook](./webhooks)
 - [API 概览](../api/index)和[错误](../api/errors)

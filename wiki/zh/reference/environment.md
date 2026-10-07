@@ -121,6 +121,16 @@ Restart-Service Arkvoryapi, Arkvoryworker, Arkvorybackup
 
 参见[镜像](../operate/mirrors)。
 
+## Webhook {#webhooks}
+
+| 变量                             | 读取方 | 默认值 | 含义                                                                                                  |
+| -------------------------------- | ------ | ------ | ----------------------------------------------------------------------------------------------------- |
+| `ARKVORY_WEBHOOKS_FILE`          | worker | 未设置 | 列出 webhook 订阅的 JSON 文件（最多 16 个）。没有它就不会发送任何 webhook。                           |
+| `ARKVORY_WEBHOOKS_ALLOW_PRIVATE` | worker | 未设置 | 以逗号分隔的 CIDR 网络（最多 32 个），除公网地址外，这些网络也可以接收 webhook，例如 `10.20.0.0/16`。 |
+| `ARKVORY_WEBHOOKS_CA_FILE`       | worker | 未设置 | 包含接收方额外证书颁发机构的 PEM 文件的绝对路径。TLS 始终会被验证。                                   |
+
+参见 [Webhook](../protocols/webhooks)。
+
 ## 更新与中心（hub） {#updates-and-the-hub}
 
 | 变量                         | 读取方 | 默认值                     | 含义                                                                                                                                                                 |

@@ -20,6 +20,7 @@ title: Клиенты и протоколы
 | Git LFS                       | `/lfs/<репозиторий>`                            | Большие файлы репозитория git, блокировка файлов для Unity и Unreal                                              | Basic, где ключ служит паролем (помощник учётных данных git), или Bearer        |
 | Реестр npm                    | `/npm/<репозиторий>/`                           | Реестры с областью действия (scoped registries) в Unity Package Manager, `npm publish` и `npm install`           | Bearer (`_authToken` в `.npmrc`, `token` в `.upmconfig.toml`) или Basic `_auth` |
 | Обычные файлы по пути         | `/api/v1/repositories/<репозиторий>/raw/<путь>` | Один запрос через `curl -T` или PowerShell                                                                       | Только `Authorization: Bearer <ключ>`                                           |
+| Вебхуки                       | URL вашего получателя                           | Запуск развёртывания или задания при изменении репозитория                                                       | HMAC-подпись каждого запроса                                                    |
 
 Маршруты под `/v2`, `/lfs` и `/npm` следуют спецификациям своих протоколов. Они не входят в документ OpenAPI для `/api/v1` и сообщают об ошибках в формате, которого ждут их клиенты.
 
@@ -90,4 +91,5 @@ title: Клиенты и протоколы
 - [Git LFS](./git-lfs)
 - [Пакеты Unity и npm](./unity-npm)
 - [Обычные файлы](./raw-files)
+- [Вебхуки](./webhooks)
 - [Обзор API](../api/index) и [Ошибки](../api/errors)

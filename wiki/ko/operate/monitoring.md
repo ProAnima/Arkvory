@@ -99,12 +99,13 @@ scrape_configs:
 | `arkvory_completion_jobs`                                                                   | `state` (`queued`, `running`)                              | 데이터베이스의 업로드 완료 작업                                            |
 | `arkvory_completion_oldest_queued_seconds`                                                  |                                                            | 실행 가능한 가장 오래된 대기 작업의 대기 시간                              |
 | `arkvory_diagnostic_records_total`                                                          | `outcome` (`written`, `dropped`, `truncated`, `oversized`) | 결과별 로그 줄                                                             |
-| `arkvory_metrics_collection_failures_total`                                                 | `collector` (`jobs`, `backup`, `mirror`)                   | 데이터베이스 기반 메트릭 읽기 실패                                         |
+| `arkvory_metrics_collection_failures_total`                                                 | `collector` (`jobs`, `backup`, `mirror`, `webhook`)        | 데이터베이스 기반 메트릭 읽기 실패                                         |
 | `arkvory_backup_last_success_timestamp_seconds`                                             |                                                            | 가장 최근에 완료된 백업 지점의 스냅샷 시각                                 |
 | `arkvory_backup_agent_last_seen_timestamp_seconds`                                          |                                                            | 백업 에이전트의 마지막 하트비트                                            |
 | `arkvory_backup_warnings`                                                                   | `code`                                                     | 경고가 활성 상태이면 1, 그렇지 않으면 0                                    |
 | `arkvory_mirror_last_sync_timestamp_seconds`, `arkvory_mirror_last_check_timestamp_seconds` | `repository`, `mode`                                       | 원본과의 마지막 따라잡기와 피드의 마지막 읽기                              |
 | `arkvory_mirror_failing`                                                                    | `repository`, `mode`                                       | 마지막 동기화 시도가 실패했으면 1                                          |
+| `arkvory_webhook_failing`, `arkvory_webhook_last_success_timestamp_seconds`                 | `subscription`, `repository`                               | 웹훅 전달: 마지막 시도가 실패한 동안 1, 그리고 마지막 `2xx` 응답 시각      |
 | `arkvory_tls_certificate_expiry_timestamp_seconds`                                          |                                                            | 내장 HTTPS 인증서의 만료. 내장 HTTPS에서만 제공됩니다                      |
 | `arkvory_build_info`                                                                        | `service`, `version`                                       | 항상 1                                                                     |
 | `arkvory_process_start_time_seconds`, `arkvory_process_resident_memory_bytes`               |                                                            | 시작 시각과 상주 메모리                                                    |
@@ -165,6 +166,7 @@ API, 워커, 백업 에이전트, 유지 관리 도구는 표준 출력에 한 �
 | `backup.agent.started`, `backup.agent.standby`, `backup.agent.lease_lost`                             | info or warning                | 백업 에이전트의 상태                                                                                                                                                         |
 | `backup.request.failed`, `backup.request.requeued`, `backup.failed`                                   | error or warning               | 백업 작업이 실패했거나 다시 실행됩니다. 필드 `errorCode`                                                                                                                     |
 | `mirror.step_failed`, `mirror.recovered`                                                              | warning or info                | 미러 동기화 단계가 실패했거나(`errorCode`, `attempts`) 다시 작동합니다                                                                                                       |
+| `webhook.step_failed`, `webhook.recovered`                                                            | warning or info                | 웹훅 전달이 실패했거나(`subscription`, `errorCode`, `attempts`) 다시 정상이 됨                                                                                               |
 | `migrate.started`, `migrate.completed`, `migrate.failed`                                              | info or error                  | 업데이트의 데이터베이스 마이그레이션                                                                                                                                         |
 | `diagnostics.dropped`, `diagnostics.oversized`                                                        | warning                        | 로그 판독기가 너무 느리거나 줄이 너무 길어서 줄이 버려졌습니다                                                                                                               |
 
@@ -251,6 +253,7 @@ Select-String -Path "$root\logs\*.log" -Pattern 'REQUEST_ID'
 | `ArkvoryMirrorStale`                                            | 미러가 한 시간 동안 원본을 따라잡지 못함              | 경고       |
 | `ArkvoryMirrorFailing`                                          | 15분 동안 미러의 마지막 동기화 실패                   | 경고       |
 | `ArkvoryRestartLoop`                                            | API 프로세스가 30분 동안 3회 이상 다시 시작됨         | 경고       |
+| `ArkvoryWebhookFailing`                                         | 웹훅 전달이 15분째 실패하고 있음                      | 경고       |
 
 Arkvory가 데이터를 내보내지 않으므로 다음 경보는 직접 추가하세요:
 

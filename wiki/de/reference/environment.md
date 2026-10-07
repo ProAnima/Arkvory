@@ -121,6 +121,16 @@ Siehe [Backups](../operate/backups).
 
 Siehe [Spiegel](../operate/mirrors).
 
+## Webhooks {#webhooks}
+
+| Variable                         | Gelesen von | Standard      | Bedeutung                                                                                                                                        |
+| -------------------------------- | ----------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `ARKVORY_WEBHOOKS_FILE`          | Worker      | nicht gesetzt | JSON-Datei mit der Liste der Webhook-Abonnements (bis zu 16). Ohne sie werden keine Webhooks gesendet.                                           |
+| `ARKVORY_WEBHOOKS_ALLOW_PRIVATE` | Worker      | nicht gesetzt | Netze im CIDR-Format, durch Kommas getrennt (bis zu 32), die neben öffentlichen Adressen Webhooks empfangen dürfen, zum Beispiel `10.20.0.0/16`. |
+| `ARKVORY_WEBHOOKS_CA_FILE`       | Worker      | nicht gesetzt | Absoluter Pfad einer PEM-Datei mit zusätzlichen Zertifizierungsstellen für die Empfänger. TLS wird immer geprüft.                                |
+
+Siehe [Webhooks](../protocols/webhooks).
+
 ## Updates und der Hub {#updates-and-the-hub}
 
 | Variable                     | Gelesen von | Standard                   | Bedeutung                                                                                                                                                                                                                                           |

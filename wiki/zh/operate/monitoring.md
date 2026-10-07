@@ -88,26 +88,27 @@ scrape_configs:
 
 这些值属于进程，重启后会从零开始。发生这种情况时 `arkvory_process_start_time_seconds` 会改变。标签是有界的：`route` 是路由模板，绝不是 URL；`status_class` 是 `2xx`、`5xx` 等。
 
-| 指标                                                                                        | 标签                                                       | 含义                                                               |
-| ------------------------------------------------------------------------------------------- | ---------------------------------------------------------- | ------------------------------------------------------------------ |
-| `arkvory_http_requests_total`                                                               | `method`, `route`, `status_class`                          | 已完成的响应                                                       |
-| `arkvory_http_request_duration_seconds`                                                     | 相同                                                       | 从 5 毫秒到 1800 秒的时长直方图。包含已中止的传输                  |
-| `arkvory_http_request_bytes_total`, `arkvory_http_response_bytes_total`                     | `method`, `route`                                          | 套接字字节数，包含头部                                             |
-| `arkvory_http_requests_in_flight`                                                           |                                                            | 已准入且响应仍处于打开状态的请求                                   |
-| `arkvory_transfer_active`, `arkvory_transfer_queue_depth`                                   | `direction`                                                | 已准入的传输以及等待槽位的传输                                     |
-| `arkvory_transfer_admission_failures_total`                                                 | `direction`, `reason`                                      | 被准入拒绝的传输：`rejected`（队列已满）、`timed_out`、`cancelled` |
-| `arkvory_completion_jobs`                                                                   | `state` (`queued`, `running`)                              | 数据库中的上传完成作业                                             |
-| `arkvory_completion_oldest_queued_seconds`                                                  |                                                            | 最旧的、可运行的排队作业的等待时间                                 |
-| `arkvory_diagnostic_records_total`                                                          | `outcome` (`written`, `dropped`, `truncated`, `oversized`) | 按结果分类的日志行                                                 |
-| `arkvory_metrics_collection_failures_total`                                                 | `collector` (`jobs`, `backup`, `mirror`)                   | 读取由数据库支持的指标失败                                         |
-| `arkvory_backup_last_success_timestamp_seconds`                                             |                                                            | 最新完成的备份恢复点的快照时间                                     |
-| `arkvory_backup_agent_last_seen_timestamp_seconds`                                          |                                                            | 备份代理的最近一次心跳                                             |
-| `arkvory_backup_warnings`                                                                   | `code`                                                     | 警告处于活动状态时为 1，否则为 0                                   |
-| `arkvory_mirror_last_sync_timestamp_seconds`, `arkvory_mirror_last_check_timestamp_seconds` | `repository`, `mode`                                       | 与源的最近一次同步追平，以及对其馈送的最近一次读取                 |
-| `arkvory_mirror_failing`                                                                    | `repository`, `mode`                                       | 最近一次同步尝试失败期间为 1                                       |
-| `arkvory_tls_certificate_expiry_timestamp_seconds`                                          |                                                            | 内置 HTTPS 证书的到期时间。仅在启用内置 HTTPS 时存在               |
-| `arkvory_build_info`                                                                        | `service`, `version`                                       | 始终为 1                                                           |
-| `arkvory_process_start_time_seconds`, `arkvory_process_resident_memory_bytes`               |                                                            | 启动时间和常驻内存                                                 |
+| 指标                                                                                        | 标签                                                       | 含义                                                                |
+| ------------------------------------------------------------------------------------------- | ---------------------------------------------------------- | ------------------------------------------------------------------- |
+| `arkvory_http_requests_total`                                                               | `method`, `route`, `status_class`                          | 已完成的响应                                                        |
+| `arkvory_http_request_duration_seconds`                                                     | 相同                                                       | 从 5 毫秒到 1800 秒的时长直方图。包含已中止的传输                   |
+| `arkvory_http_request_bytes_total`, `arkvory_http_response_bytes_total`                     | `method`, `route`                                          | 套接字字节数，包含头部                                              |
+| `arkvory_http_requests_in_flight`                                                           |                                                            | 已准入且响应仍处于打开状态的请求                                    |
+| `arkvory_transfer_active`, `arkvory_transfer_queue_depth`                                   | `direction`                                                | 已准入的传输以及等待槽位的传输                                      |
+| `arkvory_transfer_admission_failures_total`                                                 | `direction`, `reason`                                      | 被准入拒绝的传输：`rejected`（队列已满）、`timed_out`、`cancelled`  |
+| `arkvory_completion_jobs`                                                                   | `state` (`queued`, `running`)                              | 数据库中的上传完成作业                                              |
+| `arkvory_completion_oldest_queued_seconds`                                                  |                                                            | 最旧的、可运行的排队作业的等待时间                                  |
+| `arkvory_diagnostic_records_total`                                                          | `outcome` (`written`, `dropped`, `truncated`, `oversized`) | 按结果分类的日志行                                                  |
+| `arkvory_metrics_collection_failures_total`                                                 | `collector` (`jobs`, `backup`, `mirror`, `webhook`)        | 读取由数据库支持的指标失败                                          |
+| `arkvory_backup_last_success_timestamp_seconds`                                             |                                                            | 最新完成的备份恢复点的快照时间                                      |
+| `arkvory_backup_agent_last_seen_timestamp_seconds`                                          |                                                            | 备份代理的最近一次心跳                                              |
+| `arkvory_backup_warnings`                                                                   | `code`                                                     | 警告处于活动状态时为 1，否则为 0                                    |
+| `arkvory_mirror_last_sync_timestamp_seconds`, `arkvory_mirror_last_check_timestamp_seconds` | `repository`, `mode`                                       | 与源的最近一次同步追平，以及对其馈送的最近一次读取                  |
+| `arkvory_mirror_failing`                                                                    | `repository`, `mode`                                       | 最近一次同步尝试失败期间为 1                                        |
+| `arkvory_webhook_failing`, `arkvory_webhook_last_success_timestamp_seconds`                 | `subscription`, `repository`                               | Webhook 投递：最后一次尝试失败时为 1，以及最后一次 `2xx` 响应的时间 |
+| `arkvory_tls_certificate_expiry_timestamp_seconds`                                          |                                                            | 内置 HTTPS 证书的到期时间。仅在启用内置 HTTPS 时存在                |
+| `arkvory_build_info`                                                                        | `service`, `version`                                       | 始终为 1                                                            |
+| `arkvory_process_start_time_seconds`, `arkvory_process_resident_memory_bytes`               |                                                            | 启动时间和常驻内存                                                  |
 
 由数据库支持的指标（完成、备份、镜像）最多每 5 秒读取一次。当读取失败时，服务器会省略这些指标，而不是显示旧值，并且 `arkvory_metrics_collection_failures_total` 会增长。
 
@@ -165,6 +166,7 @@ API、工作进程（worker）、备份代理和维护工具每行向标准输�
 | `backup.agent.started`, `backup.agent.standby`, `backup.agent.lease_lost`                             | info 或 warning              | 备份代理的状态                                                                                       |
 | `backup.request.failed`, `backup.request.requeued`, `backup.failed`                                   | error 或 warning             | 备份作业失败或重新运行。字段 `errorCode`                                                             |
 | `mirror.step_failed`, `mirror.recovered`                                                              | warning 或 info              | 镜像同步步骤失败（`errorCode`、`attempts`），或恢复正常                                              |
+| `webhook.step_failed`, `webhook.recovered`                                                            | warning 或 info              | Webhook 投递失败（`subscription`、`errorCode`、`attempts`）或已恢复                                  |
 | `migrate.started`, `migrate.completed`, `migrate.failed`                                              | info 或 error                | 一次更新的数据库迁移                                                                                 |
 | `diagnostics.dropped`, `diagnostics.oversized`                                                        | warning                      | 由于日志读取器太慢或某行太长，日志行被丢弃                                                           |
 
@@ -251,6 +253,7 @@ Select-String -Path "$root\logs\*.log" -Pattern 'REQUEST_ID'
 | `ArkvoryMirrorStale`                                            | 镜像已有一小时未追平其源                            | Warning           |
 | `ArkvoryMirrorFailing`                                          | 镜像的上次同步失败，持续 15 分钟                    | Warning           |
 | `ArkvoryRestartLoop`                                            | API 进程在 30 分钟内重启了 3 次或更多               | Warning           |
+| `ArkvoryWebhookFailing`                                         | Webhook 投递已连续失败 15 分钟                      | Warning           |
 
 请自行添加以下告警，因为 Arkvory 不导出这些数据：
 

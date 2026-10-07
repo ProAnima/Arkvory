@@ -121,6 +121,16 @@ Consulte [Backups](../operate/backups).
 
 Consulte [Espelhos](../operate/mirrors).
 
+## Webhooks {#webhooks}
+
+| Variável                         | Lida por | Padrão       | Significado                                                                                                                               |
+| -------------------------------- | -------- | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `ARKVORY_WEBHOOKS_FILE`          | worker   | não definida | Arquivo JSON com a lista de assinaturas de webhook (até 16). Sem ele, nenhum webhook é enviado.                                           |
+| `ARKVORY_WEBHOOKS_ALLOW_PRIVATE` | worker   | não definida | Redes em formato CIDR separadas por vírgulas (até 32) que podem receber webhooks além dos endereços públicos, por exemplo `10.20.0.0/16`. |
+| `ARKVORY_WEBHOOKS_CA_FILE`       | worker   | não definida | Caminho absoluto de um arquivo PEM com autoridades de certificação adicionais para os receptores. O TLS é sempre verificado.              |
+
+Veja [Webhooks](../protocols/webhooks).
+
 ## Atualizações e o hub {#updates-and-the-hub}
 
 | Variável                     | Lida por | Padrão                     | Significado                                                                                                                                   |

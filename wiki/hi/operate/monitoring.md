@@ -99,12 +99,13 @@ scrape_configs:
 | `arkvory_completion_jobs`                                                                   | `state` (`queued`, `running`)                              | डेटाबेस में अपलोड कंप्लीशन जॉब                                                           |
 | `arkvory_completion_oldest_queued_seconds`                                                  |                                                            | सबसे पुराने चलाए जा सकने वाले कतारबद्ध जॉब की प्रतीक्षा                                  |
 | `arkvory_diagnostic_records_total`                                                          | `outcome` (`written`, `dropped`, `truncated`, `oversized`) | परिणाम के अनुसार लॉग पंक्तियाँ                                                           |
-| `arkvory_metrics_collection_failures_total`                                                 | `collector` (`jobs`, `backup`, `mirror`)                   | डेटाबेस-आधारित मेट्रिक्स की विफल पढ़ाई                                                   |
+| `arkvory_metrics_collection_failures_total`                                                 | `collector` (`jobs`, `backup`, `mirror`, `webhook`)        | डेटाबेस-आधारित मेट्रिक्स की विफल पढ़ाई                                                   |
 | `arkvory_backup_last_success_timestamp_seconds`                                             |                                                            | सबसे नए पूर्ण बैकअप बिंदु का स्नैपशॉट समय                                                |
 | `arkvory_backup_agent_last_seen_timestamp_seconds`                                          |                                                            | बैकअप एजेंट की अंतिम हार्टबीट                                                            |
 | `arkvory_backup_warnings`                                                                   | `code`                                                     | चेतावनी सक्रिय होने पर 1, अन्यथा 0                                                       |
 | `arkvory_mirror_last_sync_timestamp_seconds`, `arkvory_mirror_last_check_timestamp_seconds` | `repository`, `mode`                                       | स्रोत के साथ अंतिम कैच-अप और उसके फ़ीड की अंतिम पढ़ाई                                    |
 | `arkvory_mirror_failing`                                                                    | `repository`, `mode`                                       | अंतिम सिंक्रनाइज़ेशन प्रयास विफल होने पर 1                                               |
+| `arkvory_webhook_failing`, `arkvory_webhook_last_success_timestamp_seconds`                 | `subscription`, `repository`                               | वेबहुक डिलीवरी: आख़िरी प्रयास विफल होने तक 1, और आख़िरी `2xx` उत्तर का समय               |
 | `arkvory_tls_certificate_expiry_timestamp_seconds`                                          |                                                            | अंतर्निहित HTTPS प्रमाणपत्र की समाप्ति। केवल अंतर्निहित HTTPS के साथ मौजूद               |
 | `arkvory_build_info`                                                                        | `service`, `version`                                       | हमेशा 1                                                                                  |
 | `arkvory_process_start_time_seconds`, `arkvory_process_resident_memory_bytes`               |                                                            | शुरुआत का समय और रेज़िडेंट मेमोरी                                                        |
@@ -165,6 +166,7 @@ API, वर्कर, बैकअप एजेंट और रखरखाव 
 | `backup.agent.started`, `backup.agent.standby`, `backup.agent.lease_lost`                             | info or warning                      | बैकअप एजेंट की स्थिति                                                                                                                 |
 | `backup.request.failed`, `backup.request.requeued`, `backup.failed`                                   | error or warning                     | बैकअप जॉब विफल हुआ या फिर चलता है। फ़ील्ड `errorCode`                                                                                 |
 | `mirror.step_failed`, `mirror.recovered`                                                              | warning or info                      | मिरर सिंक्रनाइज़ेशन का कोई चरण विफल हुआ (`errorCode`, `attempts`), या फिर काम करता है                                                 |
+| `webhook.step_failed`, `webhook.recovered`                                                            | warning or info                      | वेबहुक डिलीवरी विफल हुई (`subscription`, `errorCode`, `attempts`) या फिर से चल रही है                                                 |
 | `migrate.started`, `migrate.completed`, `migrate.failed`                                              | info or error                        | अपडेट का डेटाबेस माइग्रेशन                                                                                                            |
 | `diagnostics.dropped`, `diagnostics.oversized`                                                        | warning                              | पंक्तियाँ इसलिए छोड़ दी गईं क्योंकि लॉग पाठक बहुत धीमा है, या कोई पंक्ति बहुत लंबी थी                                                 |
 
@@ -251,6 +253,7 @@ Select-String -Path "$root\logs\*.log" -Pattern 'REQUEST_ID'
 | `ArkvoryMirrorStale`                                            | कोई मिरर एक घंटे से अपने स्रोत के साथ कैच-अप नहीं कर पाया                   | Warning           |
 | `ArkvoryMirrorFailing`                                          | किसी मिरर का अंतिम सिंक्रनाइज़ेशन 15 मिनट तक विफल रहा                       | Warning           |
 | `ArkvoryRestartLoop`                                            | API प्रोसेस 30 मिनट में 3 या अधिक बार रीस्टार्ट हुआ                         | Warning           |
+| `ArkvoryWebhookFailing`                                         | वेबहुक डिलीवरी 15 मिनट से विफल हो रही है                                    | Warning           |
 
 ये अलर्ट स्वयं जोड़ें, क्योंकि Arkvory वह डेटा एक्सपोर्ट नहीं करता:
 

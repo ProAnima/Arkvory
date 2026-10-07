@@ -20,6 +20,7 @@ Arkvory का स्टोरेज और एक्सेस मॉडल ए�
 | Git LFS                 | `/lfs/<repository>`                            | git रिपॉज़िटरी की बड़ी फ़ाइलें, Unity और Unreal के लिए फ़ाइल लॉकिंग                               | कुंजी को पासवर्ड बनाकर Basic (git credential helper), या Bearer                     |
 | npm रजिस्ट्री           | `/npm/<repository>/`                           | Unity Package Manager की स्कोप्ड रजिस्ट्री, `npm publish` और `npm install`                        | Bearer (`.npmrc` में `_authToken`, `.upmconfig.toml` में `token`), या Basic `_auth` |
 | पथ से रॉ फ़ाइलें        | `/api/v1/repositories/<repository>/raw/<path>` | `curl -T` या PowerShell से एक ही अनुरोध                                                           | केवल `Authorization: Bearer <key>`                                                  |
+| वेबहुक                  | आपके रिसीवर का URL                             | रिपॉज़िटरी बदलने पर डिप्लॉयमेंट या जॉब शुरू करना                                                  | हर अनुरोध का HMAC हस्ताक्षर                                                         |
 
 `/v2`, `/lfs` और `/npm` के रूट अपने प्रोटोकॉल के विनिर्देशों का पालन करते हैं। वे `/api/v1` के OpenAPI दस्तावेज़ का हिस्सा नहीं हैं, और त्रुटियाँ उसी फ़ॉर्मेट में बताते हैं जिसकी उनके क्लाइंट अपेक्षा करते हैं।
 
@@ -90,4 +91,5 @@ Arkvory का स्टोरेज और एक्सेस मॉडल ए�
 - [Git LFS](./git-lfs)
 - [Unity और npm पैकेज](./unity-npm)
 - [रॉ फ़ाइलें](./raw-files)
+- [वेबहुक](./webhooks)
 - [API का अवलोकन](../api/index) और [त्रुटियाँ](../api/errors)
