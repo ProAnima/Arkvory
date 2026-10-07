@@ -36,11 +36,13 @@ import {
   PostgresBackupRequests,
   PostgresBackupStatus,
   PostgresMirrorState,
+  PostgresWebhookState,
   PostgresTransferLinks,
 } from '@proanima/arkvory-infrastructure';
 import { AuthThrottle } from './auth-throttle.js';
 import { BackupMetrics } from './backup-metrics.js';
 import { MirrorMetrics } from './mirror-metrics.js';
+import { WebhookMetrics } from './webhook-metrics.js';
 import { createProtocolServices } from './protocol-services.js';
 import type {
   LocalBlobStore,
@@ -86,6 +88,8 @@ export function createApiServices(
     metricSources: {
       jobs,
       backup: new BackupMetrics(backupStatus, () => performance.now()),
+      // No rows without a webhooks file, so an installation without webhooks has no samples.
+      webhooks: new WebhookMetrics(new PostgresWebhookState(catalog.pool), () => performance.now()),
       // Only an installation with mirrors exposes mirror gauges.
       ...((options.mirrors ?? []).length > 0
         ? { mirrors: new MirrorMetrics(mirrors, () => performance.now()) }

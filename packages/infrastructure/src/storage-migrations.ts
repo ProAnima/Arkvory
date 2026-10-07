@@ -12,8 +12,9 @@ import { migrateTransferLinks } from './transfer-link-schema.js';
 import { migrateOciRegistry } from './oci-schema.js';
 import { migrateGitLfs } from './lfs-schema.js';
 import { migrateNpmRegistry } from './npm-schema.js';
+import { migrateWebhookState } from './webhook-schema.js';
 
-/** Steps of versions 15-32 in their historical order; each records its own version. */
+/** Steps of versions 15-33 in their historical order; each records its own version. */
 const storageSteps: readonly (readonly [number, (client: PoolClient) => Promise<void>])[] = [
   [15, migrateStoragePolicy],
   [16, migrateCleanup],
@@ -32,6 +33,7 @@ const storageSteps: readonly (readonly [number, (client: PoolClient) => Promise<
   [30, migrateOciRegistry],
   [31, migrateGitLfs],
   [32, migrateNpmRegistry],
+  [33, migrateWebhookState],
 ];
 
 /** upTo bounds the applied versions (restore of an older backup); the order never changes. */

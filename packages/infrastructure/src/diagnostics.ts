@@ -11,6 +11,7 @@ export type LogComponent =
   | 'maintenance'
   | 'backup'
   | 'mirror'
+  | 'webhook'
   | 'migrate'
   | 'process'
   | 'diagnostics';
@@ -39,6 +40,8 @@ export interface DiagnosticFields {
   method?: string;
   status?: number;
   repository?: string;
+  /** Webhook subscription id (ADR 0069); an operator-chosen name, never a URL. */
+  subscription?: string;
   durationMs?: number;
   bytesSent?: number;
   bytesReceived?: number;

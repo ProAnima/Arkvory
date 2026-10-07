@@ -6,6 +6,7 @@ import { AdmissionQueue, processIdentity } from '@proanima/arkvory-infrastructur
 import { ApiMetrics } from '../apps/api/dist/api-metrics.js';
 import { BackupMetrics } from '../apps/api/dist/backup-metrics.js';
 import { MirrorMetrics } from '../apps/api/dist/mirror-metrics.js';
+import { WebhookMetrics } from '../apps/api/dist/webhook-metrics.js';
 
 /** Every metric the API can expose, including histogram series and optional TLS/job sources. */
 async function exposedNames() {
@@ -82,6 +83,24 @@ async function exposedNames() {
               checkedAt: '2026-10-02T00:00:00.000Z',
               errorCode: null,
             },
+          },
+        ],
+      },
+      () => 0,
+    ),
+    webhooks: new WebhookMetrics(
+      {
+        all: async () => [
+          {
+            subscription: 'ci',
+            repository: 'releases',
+            cursor: '1',
+            failures: 0,
+            errorCode: null,
+            errorAt: null,
+            nextAttemptAt: null,
+            deliveredAt: '2026-10-07T00:00:00.000Z',
+            deliveredCount: 1,
           },
         ],
       },

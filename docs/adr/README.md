@@ -79,4 +79,4 @@ ADR нужен для изменения границ, публичных кон
 - [0066 — npm-реестр для Unity Package Manager](0066-npm-registry-for-unity.md)
 - [0067 — Самовосстановление служб: падение, потеря владения и зависание](0067-self-healing-services.md)
 - [0068 — Сайт документации и одиннадцать языков консоли](0068-documentation-site-and-languages.md)
-- [0069 — Вебхуки поверх ленты изменений (proposed)](0069-webhooks-over-change-feed.md)
+- [0069 — Вебхуки поверх ленты изменений](0069-webhooks-over-change-feed.md)

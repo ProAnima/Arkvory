@@ -15,6 +15,10 @@ import {
   PostgresIdentity,
   PostgresServices,
   readMirrorSettings,
+  readWebhookCertificates,
+  readWebhookSettings,
+  parseAllowedNetworks,
+  createEgressPolicy,
   startEventLoopWatchdog,
   trustMirrorCertificates,
   watchdogSeconds,
@@ -22,6 +26,7 @@ import {
 import type { LogLevel, PostgresJobLease } from '@proanima/arkvory-infrastructure';
 import { capacityBytes, workerResources } from './runtime.js';
 import { runMirrors } from './mirror-loop.js';
+import { runWebhooks } from './webhook-loop.js';
 import { processJob, retireExhausted } from './completion.js';
 
 let levelError: Error | undefined;
@@ -83,6 +88,12 @@ try {
   const mirrors = await readMirrorSettings(process.env['ARKVORY_MIRRORS_FILE']);
   // Before the first request to a source: fetch reads the default authorities per connection.
   await trustMirrorCertificates(process.env['ARKVORY_MIRRORS_CA_FILE']);
+  // Webhooks (ADR 0069): invalid files stop startup here, not at the first delivery.
+  const webhooks = await readWebhookSettings(process.env['ARKVORY_WEBHOOKS_FILE']);
+  const egress = createEgressPolicy(
+    parseAllowedNetworks(process.env['ARKVORY_WEBHOOKS_ALLOW_PRIVATE']),
+  );
+  const certificates = await readWebhookCertificates(process.env['ARKVORY_WEBHOOKS_CA_FILE']);
   // Mirror copies create uploads here, so they need the installation's capacity limit.
   const acquired = await workerResources(
     mirrors.length > 0 ? capacityBytes(process.env['ARKVORY_CAPACITY_BYTES']) : 0,
@@ -134,6 +145,14 @@ try {
     stop: stop.signal,
     diagnostics,
   });
+  const delivering = runWebhooks({
+    catalog,
+    webhooks,
+    egress,
+    ...(certificates ? { certificates } : {}),
+    stop: stop.signal,
+    diagnostics,
+  });
   try {
     while (!stop.signal.aborted && catalog.active) {
       await retireExhausted(jobs, diagnostics);
@@ -152,6 +171,7 @@ try {
     // Mirror loops end on the same stop signal or lost ownership; the pool closes after them.
     if (!stop.signal.aborted) stopWorker();
     await mirroring;
+    await delivering;
     clearInterval(recovery);
     await catalog.close();
   }

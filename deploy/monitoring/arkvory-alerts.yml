@@ -145,3 +145,12 @@ groups:
         annotations:
           summary: The Arkvory API restarted at least three times in 30 minutes
           description: Read api.ownership_lost, startup.failed and process.stalled in the journal. A suspended host or a jumping clock ends the process by design; PostgreSQL failovers and network breaks do too.
+
+      - alert: ArkvoryWebhookFailing
+        expr: max by (subscription) (arkvory_webhook_failing) == 1
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: Webhook {{ $labels.subscription }} keeps failing to reach its receiver
+          description: Read errorCode in the worker webhook.step_failed records (blocked - the address is not allowed, tls - certificate, timeout or network - the path, http_4xx or http_5xx - the receiver, secret - the secret file). Events wait in the change feed and are delivered in order when the receiver answers again.

@@ -48,6 +48,11 @@ export interface MetricSources {
     refresh(failed: () => void): Promise<void>;
     register(registry: MetricsRegistry): void;
   };
+  /** Webhook delivery gauges, same cache rules (ADR 0069). */
+  readonly webhooks?: {
+    refresh(failed: () => void): Promise<void>;
+    register(registry: MetricsRegistry): void;
+  };
   /** Monotonic milliseconds for durations and cache age. */
   readonly now: () => number;
   readonly startedAtSeconds: number;
@@ -102,6 +107,7 @@ export class ApiMetrics {
     this.registerJobs();
     sources.backup?.register(this.registry);
     sources.mirrors?.register(this.registry);
+    sources.webhooks?.register(this.registry);
   }
 
   observe(observed: ObservedResponse): void {
@@ -123,6 +129,9 @@ export class ApiMetrics {
       }),
       this.sources.mirrors?.refresh(() => {
         this.collectionFailures.inc({ collector: 'mirror' });
+      }),
+      this.sources.webhooks?.refresh(() => {
+        this.collectionFailures.inc({ collector: 'webhook' });
       }),
     ]);
     return this.registry.render();

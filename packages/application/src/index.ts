@@ -34,6 +34,8 @@ export * from './mirror-ports.js';
 export * from './mirror-sync.js';
 export * from './mirror-status.js';
 export * from './mirror-import.js';
+export * from './webhook-ports.js';
+export * from './webhook-delivery.js';
 export * from './download-links.js';
 export * from './oci-registry.js';
 export * from './raw-files.js';

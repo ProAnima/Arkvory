@@ -80,6 +80,20 @@ export { PostgresBackupStatus } from './backup-status.js';
 export { PostgresVaultLock, VAULT_LOCK } from './backup-vault-lock.js';
 export { PacedContentSource } from './backup-pacing.js';
 export { PostgresMirrorState, reopenMirrorUpload } from './mirror-state.js';
+export { PostgresWebhookFeed, PostgresWebhookState } from './webhook-state.js';
+export { readWebhookSettings, parseWebhookSettings } from './webhook-config.js';
+export { parseAllowedNetworks, readWebhookCertificates } from './webhook-config.js';
+export type { WebhookSettings } from './webhook-config.js';
+export { createEgressPolicy, resolveReceiver, systemResolver } from './webhook-egress.js';
+export type { EgressPolicy, Resolver, ResolvedReceiver } from './webhook-egress.js';
+export { HttpWebhookSender } from './webhook-sender.js';
+export {
+  MIN_WEBHOOK_SECRET_BYTES,
+  readWebhookSecrets,
+  signWebhook,
+  verifyWebhook,
+} from './webhook-signature.js';
+export type { WebhookVerification } from './webhook-signature.js';
 export {
   parseMirrorSettings,
   readMirrorSettings,
