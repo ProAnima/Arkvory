@@ -19,6 +19,7 @@ interface AgentRow {
   vault_free_bytes: string | null;
   vault_total_bytes: string | null;
   last_error: string | null;
+  vault_encrypted: boolean | null;
 }
 
 function agentRecord(row: AgentRow | undefined): BackupAgentRecord | null {
@@ -34,6 +35,7 @@ function agentRecord(row: AgentRow | undefined): BackupAgentRecord | null {
     freeBytes: row.vault_free_bytes,
     totalBytes: row.vault_total_bytes,
     lastError: row.last_error,
+    vaultEncrypted: row.vault_encrypted,
   };
 }
 
@@ -72,7 +74,8 @@ export class PostgresBackupStatus implements BackupStatusSource {
         `SELECT now() AS now, a.owner::text, a.heartbeat_at, a.version,
           COALESCE(a.vault_configured, false) AS vault_configured, a.vault_id::text,
           COALESCE(a.vault_available, false) AS vault_available,
-          a.vault_free_bytes::text, a.vault_total_bytes::text, a.last_error
+          a.vault_free_bytes::text, a.vault_total_bytes::text, a.last_error,
+          a.vault_encrypted
          FROM (SELECT 1) one LEFT JOIN arkvory_backup_agent a ON a.singleton`,
       )
     ).rows[0];

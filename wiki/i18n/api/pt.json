@@ -1039,6 +1039,7 @@
     "Smallest multipart segment.": "Menor segmento multipart.",
     "Snapshot time T; the age of a point counts from T.": "Horário T do snapshot; a idade de um ponto é contada a partir de T.",
     "Start of execution, or the request time while queued.": "Início da execução ou, enquanto na fila, o horário da solicitação.",
-    "Upload reservation time": "Hora da reserva do upload"
+    "Upload reservation time": "Hora da reserva do upload",
+    "Vault is encrypted (ADR 0070); null when unknown or not connected.": "O cofre está criptografado (ADR 0070); null quando desconhecido ou não conectado."
   }
 }

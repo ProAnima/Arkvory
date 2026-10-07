@@ -38,6 +38,8 @@ export interface BackupStatusView {
     readonly configured: boolean;
     readonly id: string | null;
     readonly available: boolean;
+    /** Null: unknown (ADR 0070). */
+    readonly encrypted: boolean | null;
     readonly freeBytes: string | null;
     readonly totalBytes: string | null;
   };
@@ -84,6 +86,8 @@ export function evaluateBackupStatus(snapshot: BackupStatusSnapshot): BackupStat
       configured: agent?.vaultConfigured === true,
       id: agent?.vaultId ?? null,
       available: online && agent?.vaultAvailable === true,
+      // The last known fact: an offline agent does not make the vault plain.
+      encrypted: agent?.vaultEncrypted ?? null,
       freeBytes,
       totalBytes,
     },

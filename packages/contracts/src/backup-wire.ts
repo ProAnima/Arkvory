@@ -94,6 +94,7 @@ export interface BackupStatusResponse {
     readonly configured: boolean;
     readonly id: string | null;
     readonly available: boolean;
+    readonly encrypted: boolean | null;
     readonly freeBytes: string | null;
     readonly totalBytes: string | null;
   };
@@ -264,6 +265,8 @@ export function readBackupStatus(value: unknown): BackupStatusResponse {
       configured: bool(vault['configured']),
       id: nullable(vault['id'], id),
       available: bool(vault['available']),
+      // Additive (ADR 0070): a server that predates the field sends none, read as unknown.
+      encrypted: vault['encrypted'] === undefined ? null : nullable(vault['encrypted'], bool),
       freeBytes: nullable(vault['freeBytes'], bytes),
       totalBytes: nullable(vault['totalBytes'], bytes),
     },

@@ -102,6 +102,10 @@ const status = object({
     configured: { type: 'boolean' },
     id: nullable(uuid),
     available: { type: 'boolean' },
+    encrypted: nullable({
+      type: 'boolean',
+      description: 'Vault is encrypted (ADR 0070); null when unknown or not connected.',
+    }),
     freeBytes: nullable(bytes),
     totalBytes: nullable(bytes),
   }),

@@ -1155,6 +1155,18 @@
     "en": "Unavailable",
     "text": "不可用"
   },
+  "backupVaultEncrypted": {
+    "en": "Encrypted",
+    "text": "已加密"
+  },
+  "backupVaultPlain": {
+    "en": "Not encrypted",
+    "text": "未加密"
+  },
+  "backupVaultPlainHint": {
+    "en": "Anyone who can read this disk or a copy of it can read the backups. Encrypt the volume, or create an encrypted vault for new backups.",
+    "text": "任何能读取此磁盘或其副本的人都能读取备份。请加密该卷，或为新的备份创建加密保管库。"
+  },
   "backupWarningsLabel": {
     "en": "Backup warnings",
     "text": "备份警告"

@@ -11,6 +11,14 @@ function keyFailure(error: unknown): string | null {
     ? error.code
     : null;
 }
+/** Encryption state from vault.json alone; null when the file cannot be read or parsed. */
+async function describedEncryption(vault: FileVault): Promise<boolean | null> {
+  try {
+    return (await vault.describe()).encryption !== 'none';
+  } catch {
+    return null;
+  }
+}
 /** Write checks are rarer than heartbeats: a sleeping backup disk is not woken every 30 s. */
 export const writeProbeIntervalMs = 10 * 60 * 1000;
 
@@ -29,6 +37,8 @@ export class VaultProbe {
   lastError: string | null = null;
   /** Why an encrypted vault cannot be opened; shown until a probe succeeds again. */
   private keyProblem: string | null = null;
+  /** Last known state of vault.json; kept while the vault is unreachable, null before any read. */
+  private encrypted: boolean | null = null;
 
   constructor(
     private readonly vault: FileVault | null,
@@ -42,6 +52,7 @@ export class VaultProbe {
         vaultConfigured: false,
         vaultId: null,
         vaultAvailable: false,
+        vaultEncrypted: null,
         freeBytes: null,
         totalBytes: null,
         lastError: this.lastError,
@@ -51,8 +62,10 @@ export class VaultProbe {
     }));
     const timeout = delay(probeTimeoutMs, undefined, { ref: false }).then(() => this.unavailable());
     return Promise.race([
-      probe.catch((error: unknown) => {
+      probe.catch(async (error: unknown) => {
         this.keyProblem = keyFailure(error);
+        // vault.json is readable without the key, so the flag survives the key failures.
+        if (this.keyProblem) this.encrypted = await describedEncryption(vault);
         return this.unavailable();
       }),
       timeout,
@@ -63,6 +76,7 @@ export class VaultProbe {
     const [identity, volume] = await Promise.all([vault.identity(), vault.volume()]);
     this.vaultId = identity.vaultId;
     this.keyProblem = null;
+    this.encrypted = identity.encryption !== 'none';
     const now = this.now();
     if (this.writtenAt === null || now - this.writtenAt >= writeProbeIntervalMs) {
       // A failed write keeps the vault unavailable until a later probe writes again.
@@ -74,6 +88,7 @@ export class VaultProbe {
       vaultConfigured: true,
       vaultId: identity.vaultId,
       vaultAvailable: true,
+      vaultEncrypted: this.encrypted,
       freeBytes: volume.freeBytes,
       totalBytes: volume.totalBytes,
       lastError: this.lastError,
@@ -85,6 +100,7 @@ export class VaultProbe {
       vaultConfigured: true,
       vaultId: this.vaultId,
       vaultAvailable: false,
+      vaultEncrypted: this.encrypted,
       freeBytes: null,
       totalBytes: null,
       lastError: this.keyProblem ?? this.lastError,

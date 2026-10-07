@@ -29,6 +29,7 @@ const facts = {
   vaultConfigured: false,
   vaultId: null,
   vaultAvailable: false,
+  vaultEncrypted: null,
   freeBytes: null,
   totalBytes: null,
   lastError: null,

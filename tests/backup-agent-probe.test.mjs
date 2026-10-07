@@ -32,7 +32,10 @@ function fakeVault() {
   const vault = {
     readOnly: false,
     writes: 0,
-    identity: async () => ({ vaultId: '00000000-0000-4000-8000-0000000000aa' }),
+    identity: async () => ({
+      vaultId: '00000000-0000-4000-8000-0000000000aa',
+      encryption: 'none',
+    }),
     volume: async () => ({ freeBytes: 10n, totalBytes: 20n }),
     writeProbe: async () => {
       vault.writes++;
@@ -61,6 +64,43 @@ test('available means writable: checked on the first heartbeat, then once per in
   vault.readOnly = false;
   assert.equal((await probe.facts()).vaultAvailable, true);
   assert.equal(vault.writes, 4);
+});
+
+test('the heartbeat says whether the vault is encrypted, also while the key fails', async (t) => {
+  const root = await workspace(t);
+  const plainPath = join(root, 'plain');
+  await FileVault.initialize(plainPath, {
+    vaultId: randomUUID(),
+    createdAt: new Date().toISOString(),
+  });
+  assert.equal(
+    (await new VaultProbe(await FileVault.open(plainPath)).facts()).vaultEncrypted,
+    false,
+  );
+  const path = join(root, 'vault');
+  const made = await FileVault.initializeEncrypted(path, {
+    vaultId: randomUUID(),
+    createdAt: new Date().toISOString(),
+  });
+  // vault.json needs no key: the flag is known although the vault stays unavailable.
+  const blind = await new VaultProbe(await FileVault.open(path)).facts();
+  assert.deepEqual([blind.vaultAvailable, blind.vaultEncrypted], [false, true]);
+  const keyFile = join(root, 'agent.key');
+  await writeFile(
+    keyFile,
+    `${made.agentKey}
+`,
+  );
+  const open = new VaultProbe(await FileVault.open(path, undefined, keyFileSource(keyFile)));
+  assert.deepEqual(
+    [(await open.facts()).vaultAvailable, (await open.facts()).vaultEncrypted],
+    [true, true],
+  );
+  // Unknown stays null: no vault configured, or a directory without vault.json.
+  assert.equal((await new VaultProbe(null).facts()).vaultEncrypted, null);
+  const empty = join(root, 'mount');
+  await mkdir(empty);
+  assert.equal((await new VaultProbe(await FileVault.open(empty)).facts()).vaultEncrypted, null);
 });
 
 test('an encrypted vault without its key is unavailable and the heartbeat names why', async (t) => {

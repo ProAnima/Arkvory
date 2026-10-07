@@ -124,6 +124,7 @@ test('plan edits are compare-and-swap with field details; status explains a fres
     configured: false,
     id: null,
     available: false,
+    encrypted: null,
     freeBytes: null,
     totalBytes: null,
   });

@@ -1155,6 +1155,18 @@
     "en": "Unavailable",
     "text": "उपलब्ध नहीं"
   },
+  "backupVaultEncrypted": {
+    "en": "Encrypted",
+    "text": "एन्क्रिप्टेड"
+  },
+  "backupVaultPlain": {
+    "en": "Not encrypted",
+    "text": "एन्क्रिप्टेड नहीं"
+  },
+  "backupVaultPlainHint": {
+    "en": "Anyone who can read this disk or a copy of it can read the backups. Encrypt the volume, or create an encrypted vault for new backups.",
+    "text": "जो भी इस डिस्क या उसकी प्रति को पढ़ सकता है, वह बैकअप भी पढ़ सकता है। वॉल्यूम को एन्क्रिप्ट करें या नई बैकअप प्रतियों के लिए एन्क्रिप्टेड वॉल्ट बनाएं।"
+  },
   "backupWarningsLabel": {
     "en": "Backup warnings",
     "text": "बैकअप चेतावनियाँ"

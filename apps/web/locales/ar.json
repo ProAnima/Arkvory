@@ -1155,6 +1155,18 @@
     "en": "Unavailable",
     "text": "غير متاح"
   },
+  "backupVaultEncrypted": {
+    "en": "Encrypted",
+    "text": "مشفّر"
+  },
+  "backupVaultPlain": {
+    "en": "Not encrypted",
+    "text": "غير مشفّر"
+  },
+  "backupVaultPlainHint": {
+    "en": "Anyone who can read this disk or a copy of it can read the backups. Encrypt the volume, or create an encrypted vault for new backups.",
+    "text": "يستطيع كل من يقرأ هذا القرص أو نسخة منه قراءة النسخ الاحتياطية. شفّر وحدة التخزين أو أنشئ خزنة مشفّرة للنسخ الجديدة."
+  },
   "backupWarningsLabel": {
     "en": "Backup warnings",
     "text": "تحذيرات النسخ الاحتياطي"

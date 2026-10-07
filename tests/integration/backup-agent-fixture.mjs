@@ -57,7 +57,7 @@ export async function agentRow(f) {
   return (
     await f.catalog.pool.query(
       `SELECT owner::text, generation::int, lease_until, heartbeat_at, vault_id::text,
-        vault_configured, vault_available, vault_free_bytes::text, version
+        vault_configured, vault_available, vault_encrypted, vault_free_bytes::text, version
        FROM arkvory_backup_agent WHERE singleton`,
     )
   ).rows[0];

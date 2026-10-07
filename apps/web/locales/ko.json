@@ -1155,6 +1155,18 @@
     "en": "Unavailable",
     "text": "사용할 수 없음"
   },
+  "backupVaultEncrypted": {
+    "en": "Encrypted",
+    "text": "암호화됨"
+  },
+  "backupVaultPlain": {
+    "en": "Not encrypted",
+    "text": "암호화되지 않음"
+  },
+  "backupVaultPlainHint": {
+    "en": "Anyone who can read this disk or a copy of it can read the backups. Encrypt the volume, or create an encrypted vault for new backups.",
+    "text": "이 디스크나 그 사본을 읽을 수 있는 사람은 백업도 읽을 수 있습니다. 볼륨을 암호화하거나 새 백업용 암호화된 볼트를 만드세요."
+  },
   "backupWarningsLabel": {
     "en": "Backup warnings",
     "text": "백업 경고"

@@ -77,6 +77,14 @@ export function vaultView(status: Pick<BackupStatusResponse, 'vault' | 'agent'>)
   return { kind: 'available', free: status.vault.freeBytes, total: status.vault.totalBytes };
 }
 
+export type VaultEncryption = 'encrypted' | 'plain' | 'unknown';
+
+/** Encryption is the last flag the agent reported (ADR 0070); null means nothing is known. */
+export function vaultEncryption(status: Pick<BackupStatusResponse, 'vault'>): VaultEncryption {
+  if (!status.vault.configured || status.vault.encrypted === null) return 'unknown';
+  return status.vault.encrypted ? 'encrypted' : 'plain';
+}
+
 export type Verification = 'none' | 'structural' | 'deep' | 'failed';
 
 /** A recorded verification error wins over the depth of the last successful check. */

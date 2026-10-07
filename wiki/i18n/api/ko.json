@@ -1039,6 +1039,7 @@
     "Smallest multipart segment.": "가장 작은 멀티파트 세그먼트입니다.",
     "Snapshot time T; the age of a point counts from T.": "스냅샷 시각 T. 지점의 경과 시간은 T부터 계산합니다.",
     "Start of execution, or the request time while queued.": "실행 시작 시각. 큐에 있는 동안은 요청 시각",
-    "Upload reservation time": "업로드 예약 시각"
+    "Upload reservation time": "업로드 예약 시각",
+    "Vault is encrypted (ADR 0070); null when unknown or not connected.": "볼트가 암호화되어 있는지 여부(ADR 0070). 알 수 없거나 연결되지 않았으면 null."
   }
 }

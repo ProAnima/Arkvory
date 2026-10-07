@@ -214,7 +214,7 @@ Não execute migrações do banco de dados nem as ferramentas offline `gc` e `sc
 [[ui:backups]] é visível para os administradores e para a chave de recuperação. As chaves de serviço e os tokens de acesso pessoal nunca a veem. A página mostra:
 
 - O estado: [[ui:backupStateOk]], [[ui:backupStateWarning]] ou [[ui:backupStateCritical]].
-- [[ui:backupNewest]] com a idade a partir de T, [[ui:backupNextRun]] com [[ui:backupOverdue]] quando uma execução está atrasada, [[ui:backupAgent]] com o último sinal e [[ui:backupVault]] com o espaço livre.
+- [[ui:backupNewest]] com a idade a partir de T, [[ui:backupNextRun]] com [[ui:backupOverdue]] quando uma execução está atrasada, [[ui:backupAgent]] com o último sinal e [[ui:backupVault]] com o espaço livre e se o cofre está criptografado ([[ui:backupVaultEncrypted]] ou [[ui:backupVaultPlain]]). Um cofre sem criptografia recebe uma dica, não um aviso.
 - A tarefa em execução no momento e, depois, os avisos, cada um com uma dica do que fazer.
 - [[ui:backupPoints]], com [[ui:backupSnapshot]], [[ui:backupCompleted]], [[ui:backupSize]], [[ui:backupFiles]], [[ui:backupVerification]] e a fixação.
 - [[ui:backupJobs]], com o tipo ([[ui:backupKindCapture]], [[ui:backupKindVerify]], [[ui:backupKindRetention]]), o estado, a etapa, os horários, o código de erro e o progresso.

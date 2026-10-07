@@ -3,7 +3,13 @@ import { element } from './dom.js';
 import { clearMessage, dateMessage, message, relativeMessage } from './i18n.js';
 import type { MessageKey } from './messages.js';
 import { helpText, node } from './management-dom.js';
-import { nextRun, overallState, progressPercent, vaultView } from './backup-model.js';
+import {
+  nextRun,
+  overallState,
+  progressPercent,
+  vaultEncryption,
+  vaultView,
+} from './backup-model.js';
 import { jobStateKeys, kindKeys, phaseKey, stateKeys, warningKeys } from './backup-labels.js';
 
 /** Drops every previous rendering (text key, date, relative time) of a reused node. */
@@ -57,6 +63,8 @@ export class BackupStatusView {
   private readonly seen = element('backup-agent-seen', HTMLTimeElement);
   private readonly version = element('backup-agent-version', HTMLSpanElement);
   private readonly vault = element('backup-vault', HTMLElement);
+  private readonly encryption = element('backup-vault-encryption', HTMLSpanElement);
+  private readonly plainHint = element('backup-vault-hint', HTMLSpanElement);
   private readonly running = element('backup-running', HTMLDivElement);
   private readonly runningKind = element('backup-running-kind', HTMLSpanElement);
   private readonly runningPhase = element('backup-running-phase', HTMLSpanElement);
@@ -102,7 +110,18 @@ export class BackupStatusView {
     else reset(this.version);
   }
 
+  private renderEncryption(status: BackupStatusResponse) {
+    const encryption = vaultEncryption(status);
+    if (encryption === 'unknown') reset(this.encryption);
+    else
+      show(this.encryption, encryption === 'plain' ? 'backupVaultPlain' : 'backupVaultEncrypted');
+    // A hint, not a warning: an unencrypted vault is a valid choice (ADR 0070).
+    if (encryption === 'plain') show(this.plainHint, 'backupVaultPlainHint');
+    else reset(this.plainHint);
+  }
+
   private renderVault(status: BackupStatusResponse) {
+    this.renderEncryption(status);
     const vault = vaultView(status);
     switch (vault.kind) {
       case 'available':
@@ -177,6 +196,7 @@ export class BackupStatusView {
     show(this.state, 'backupStateLoading');
     for (const target of [this.newest, this.next, this.agent, this.vault]) blank(target);
     for (const target of [this.nextUtc, this.seen, this.version, this.progressBytes]) reset(target);
+    for (const target of [this.encryption, this.plainHint]) reset(target);
     this.overdue.hidden = true;
     this.seenLabel.hidden = true;
     this.running.hidden = true;

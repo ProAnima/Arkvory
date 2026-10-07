@@ -1039,6 +1039,7 @@
     "Smallest multipart segment.": "分片上传的最小分片大小。",
     "Snapshot time T; the age of a point counts from T.": "快照时间 T；恢复点的存续时间从 T 起算。",
     "Start of execution, or the request time while queued.": "开始执行的时间，排队期间则为请求时间。",
-    "Upload reservation time": "上传预留时间"
+    "Upload reservation time": "上传预留时间",
+    "Vault is encrypted (ADR 0070); null when unknown or not connected.": "保管库是否已加密（ADR 0070）；未知或未连接时为 null。"
   }
 }

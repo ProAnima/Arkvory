@@ -32,6 +32,8 @@ export interface AgentHeartbeat {
   readonly vaultConfigured: boolean;
   readonly vaultId: string | null;
   readonly vaultAvailable: boolean;
+  /** From vault.json; null when it could not be read (ADR 0070). */
+  readonly vaultEncrypted: boolean | null;
   readonly freeBytes: bigint | null;
   readonly totalBytes: bigint | null;
   readonly lastError: string | null;
@@ -69,7 +71,7 @@ export class PostgresAgentLease {
       `UPDATE arkvory_backup_agent SET owner=$1, generation=generation+1,
         lease_until=now()+make_interval(secs=>$2), heartbeat_at=now(), started_at=now(),
         version=$3, vault_configured=$4, vault_id=$5, vault_available=$6, vault_free_bytes=$7,
-        vault_total_bytes=$8, last_error=$9
+        vault_total_bytes=$8, last_error=$9, vault_encrypted=$10
        WHERE singleton AND (owner IS NULL OR lease_until<now()) RETURNING generation::text`,
       [this.options.owner, this.options.leaseSeconds, this.options.version, ...values(facts)],
     );
@@ -89,7 +91,7 @@ export class PostgresAgentLease {
     const renewed = await this.pool.query(
       `UPDATE arkvory_backup_agent SET lease_until=now()+make_interval(secs=>$3),
         heartbeat_at=now(), vault_configured=$4, vault_id=$5, vault_available=$6,
-        vault_free_bytes=$7, vault_total_bytes=$8, last_error=$9
+        vault_free_bytes=$7, vault_total_bytes=$8, last_error=$9, vault_encrypted=$10
        WHERE singleton AND owner=$1 AND generation=$2 AND lease_until>now()`,
       [lease.owner, lease.generation, this.options.leaseSeconds, ...values(facts)],
     );
@@ -115,6 +117,7 @@ function values(facts: AgentHeartbeat): unknown[] {
     facts.freeBytes?.toString() ?? null,
     facts.totalBytes?.toString() ?? null,
     facts.lastError,
+    facts.vaultEncrypted,
   ];
 }
 

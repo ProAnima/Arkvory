@@ -1155,6 +1155,18 @@
     "en": "Unavailable",
     "text": "Nicht verfügbar"
   },
+  "backupVaultEncrypted": {
+    "en": "Encrypted",
+    "text": "Verschlüsselt"
+  },
+  "backupVaultPlain": {
+    "en": "Not encrypted",
+    "text": "Nicht verschlüsselt"
+  },
+  "backupVaultPlainHint": {
+    "en": "Anyone who can read this disk or a copy of it can read the backups. Encrypt the volume, or create an encrypted vault for new backups.",
+    "text": "Wer diese Platte oder eine Kopie davon lesen kann, kann die Backups lesen. Verschlüsseln Sie das Laufwerk oder legen Sie für neue Backups einen verschlüsselten Tresor an."
+  },
   "backupWarningsLabel": {
     "en": "Backup warnings",
     "text": "Backup-Warnungen"

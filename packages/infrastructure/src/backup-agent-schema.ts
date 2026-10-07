@@ -1,6 +1,7 @@
 import type { PoolClient } from 'pg';
 
 export const UNATTENDED_BACKUP_MIGRATION = 26;
+export const BACKUP_VAULT_ENCRYPTION_MIGRATION = 34;
 
 const planTable = `
     CREATE TABLE arkvory_backup_plan (
@@ -117,5 +118,27 @@ export async function migrateUnattendedBackups(client: PoolClient): Promise<void
     await client.query(statement);
   await client.query('INSERT INTO arkvory_migrations(version) VALUES($1)', [
     UNATTENDED_BACKUP_MIGRATION,
+  ]);
+}
+
+/**
+ * Version 34, expand-only (ADR 0070): whether the vault the agent reports is encrypted. NULL
+ * means unknown: no heartbeat yet, an agent that predates the column, or a vault.json the agent
+ * could not read. Older binaries never name the column, so they keep writing heartbeats.
+ */
+export async function migrateBackupVaultEncryption(client: PoolClient): Promise<void> {
+  if (
+    (
+      await client.query('SELECT version FROM arkvory_migrations WHERE version=$1', [
+        BACKUP_VAULT_ENCRYPTION_MIGRATION,
+      ])
+    ).rowCount
+  )
+    return;
+  await client.query(
+    'ALTER TABLE arkvory_backup_agent ADD COLUMN IF NOT EXISTS vault_encrypted boolean',
+  );
+  await client.query('INSERT INTO arkvory_migrations(version) VALUES($1)', [
+    BACKUP_VAULT_ENCRYPTION_MIGRATION,
   ]);
 }

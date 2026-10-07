@@ -214,7 +214,7 @@ Do not run database migrations or the offline tools `gc` and `scrub` during a ba
 [[ui:backups]] is visible to administrators and to the recovery key. Service keys and personal access tokens never see it. The page shows:
 
 - The state: [[ui:backupStateOk]], [[ui:backupStateWarning]] or [[ui:backupStateCritical]].
-- [[ui:backupNewest]] with its age from T, [[ui:backupNextRun]] with [[ui:backupOverdue]] when a run is late, [[ui:backupAgent]] with its last signal and [[ui:backupVault]] with the free space.
+- [[ui:backupNewest]] with its age from T, [[ui:backupNextRun]] with [[ui:backupOverdue]] when a run is late, [[ui:backupAgent]] with its last signal and [[ui:backupVault]] with the free space and whether the vault is encrypted ([[ui:backupVaultEncrypted]] or [[ui:backupVaultPlain]]). A plain vault also gets a hint, not a warning.
 - The job that runs now, then the warnings, each with a hint about what to do.
 - [[ui:backupPoints]], with [[ui:backupSnapshot]], [[ui:backupCompleted]], [[ui:backupSize]], [[ui:backupFiles]], [[ui:backupVerification]] and pinning.
 - [[ui:backupJobs]], with the kind ([[ui:backupKindCapture]], [[ui:backupKindVerify]], [[ui:backupKindRetention]]), the state, the phase, the times, the error code and the progress.

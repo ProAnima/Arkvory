@@ -73,6 +73,8 @@ export interface BackupAgentRecord {
   readonly freeBytes: string | null;
   readonly totalBytes: string | null;
   readonly lastError: string | null;
+  /** Null: unknown (old agent, unreadable vault.json). */
+  readonly vaultEncrypted: boolean | null;
 }
 
 /** One consistent read of everything the status and the metrics derive from. */

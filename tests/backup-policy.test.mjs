@@ -274,6 +274,7 @@ test('status view and wire readers agree; a stopped agent is offline at once', (
     vaultConfigured: true,
     vaultId: '00000000-0000-4000-8000-0000000000aa',
     vaultAvailable: true,
+    vaultEncrypted: true,
     freeBytes: '10',
     totalBytes: '100',
     lastError: null,
@@ -291,6 +292,9 @@ test('status view and wire readers agree; a stopped agent is offline at once', (
   const stopped = evaluateBackupStatus(snapshot);
   assert.equal(stopped.agent.online, false);
   assert.equal(stopped.vault.available, false);
+  // The flag is the last known fact, not a guess made from the agent being offline.
+  assert.equal(stopped.vault.encrypted, true);
+  assert.equal(evaluateBackupStatus({ ...snapshot, agent: null }).vault.encrypted, null);
   assert.equal(stopped.nextRunAt, T0 + DAY);
   const running = evaluateBackupStatus({ ...snapshot, agent: { ...agent, active: true } });
   assert.equal(running.agent.online, true);
@@ -304,6 +308,7 @@ test('status view and wire readers agree; a stopped agent is offline at once', (
       configured: true,
       id: agent.vaultId,
       available: true,
+      encrypted: false,
       freeBytes: '10',
       totalBytes: '100',
     },
@@ -315,6 +320,15 @@ test('status view and wire readers agree; a stopped agent is offline at once', (
     warnings: [{ code: 'no_backup_yet', severity: 'warning' }],
   });
   assert.equal(wire.plan.revision, 2);
+  assert.equal(wire.vault.encrypted, false);
+  // Additive: a server that predates the field is read as unknown; a non-boolean is refused.
+  const { encrypted: _omitted, ...oldVault } = wire.vault;
+  assert.equal(readBackupStatus({ ...wire, vault: oldVault }).vault.encrypted, null);
+  assert.equal(
+    readBackupStatus({ ...wire, vault: { ...oldVault, encrypted: null } }).vault.encrypted,
+    null,
+  );
+  assert.throws(() => readBackupStatus({ ...wire, vault: { ...wire.vault, encrypted: 'yes' } }));
   assert.throws(() => readBackupStatus({ ...wire, warnings: [{ code: 'other', severity: 'x' }] }));
   assert.throws(() => readBackupJobPage({ items: [], next: '../x' }));
   assert.throws(() => readBackupRetentionPreview({ keep: [{ id: 'x', reasons: [] }], delete: [] }));

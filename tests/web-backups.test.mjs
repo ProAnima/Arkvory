@@ -11,6 +11,7 @@ import {
   pollDelay,
   progressPercent,
   timeZones,
+  vaultEncryption,
   vaultView,
   verification,
   zoneOffset,
@@ -65,6 +66,14 @@ test('vault facts are unknown while the agent is offline, unless never configure
     free: '10',
     total: '100',
   });
+});
+
+test('encryption is shown only for a configured vault whose flag the agent reported', () => {
+  const status = (configured, encrypted) => ({ vault: { configured, encrypted } });
+  assert.equal(vaultEncryption(status(true, true)), 'encrypted');
+  assert.equal(vaultEncryption(status(true, false)), 'plain');
+  assert.equal(vaultEncryption(status(true, null)), 'unknown');
+  assert.equal(vaultEncryption(status(false, false)), 'unknown');
 });
 
 test('verification shows a failure before the depth of an earlier successful check', () => {

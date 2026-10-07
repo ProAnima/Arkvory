@@ -214,7 +214,7 @@ sudo mount -t cifs //nas/arkvory /mnt/backup/arkvory \
 Раздел [[ui:backups]] виден администраторам и ключу восстановления. Ключи сервисов и персональные токены доступа его не видят. На странице показаны:
 
 - Состояние: [[ui:backupStateOk]], [[ui:backupStateWarning]] или [[ui:backupStateCritical]].
-- [[ui:backupNewest]] с возрастом от T, [[ui:backupNextRun]] с пометкой [[ui:backupOverdue]], если запуск опаздывает, [[ui:backupAgent]] с последним сигналом и [[ui:backupVault]] со свободным местом.
+- [[ui:backupNewest]] с возрастом от T, [[ui:backupNextRun]] с пометкой [[ui:backupOverdue]], если запуск опаздывает, [[ui:backupAgent]] с последним сигналом и [[ui:backupVault]] со свободным местом и признаком шифрования ([[ui:backupVaultEncrypted]] или [[ui:backupVaultPlain]]). Для открытого хранилища показана подсказка, а не предупреждение.
 - Задание, которое выполняется сейчас, а затем предупреждения, каждое с подсказкой, что делать.
 - Список [[ui:backupPoints]] со столбцами [[ui:backupSnapshot]], [[ui:backupCompleted]], [[ui:backupSize]], [[ui:backupFiles]], [[ui:backupVerification]] и с закреплением.
 - Список [[ui:backupJobs]] с видом ([[ui:backupKindCapture]], [[ui:backupKindVerify]], [[ui:backupKindRetention]]), состоянием, этапом, временем, кодом ошибки и ходом выполнения.

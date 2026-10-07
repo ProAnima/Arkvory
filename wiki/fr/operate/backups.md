@@ -214,7 +214,7 @@ N’exécutez pas de migrations de base de données ni les outils hors ligne `gc
 [[ui:backups]] est visible par les administrateurs et par la clé de récupération. Les clés de service et les jetons d’accès personnels ne la voient jamais. La page affiche :
 
 - L’état : [[ui:backupStateOk]], [[ui:backupStateWarning]] ou [[ui:backupStateCritical]].
-- [[ui:backupNewest]] avec son âge depuis T, [[ui:backupNextRun]] avec [[ui:backupOverdue]] lorsqu’une exécution est en retard, [[ui:backupAgent]] avec son dernier signal et [[ui:backupVault]] avec l’espace libre.
+- [[ui:backupNewest]] avec son âge depuis T, [[ui:backupNextRun]] avec [[ui:backupOverdue]] lorsqu’une exécution est en retard, [[ui:backupAgent]] avec son dernier signal et [[ui:backupVault]] avec l’espace libre et l’indication de chiffrement ([[ui:backupVaultEncrypted]] ou [[ui:backupVaultPlain]]). Un coffre non chiffré reçoit une suggestion, pas un avertissement.
 - La tâche en cours, puis les avertissements, chacun avec une indication sur la marche à suivre.
 - [[ui:backupPoints]], avec [[ui:backupSnapshot]], [[ui:backupCompleted]], [[ui:backupSize]], [[ui:backupFiles]], [[ui:backupVerification]] et l’épinglage.
 - [[ui:backupJobs]], avec le type ([[ui:backupKindCapture]], [[ui:backupKindVerify]], [[ui:backupKindRetention]]), l’état, la phase, les heures, le code d’erreur et la progression.

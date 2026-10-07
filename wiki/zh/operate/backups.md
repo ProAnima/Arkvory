@@ -214,7 +214,7 @@ sudo mount -t cifs //nas/arkvory /mnt/backup/arkvory \
 [[ui:backups]] 对管理员和恢复密钥可见。服务密钥和个人访问令牌永远看不到它。该页面显示：
 
 - 状态：“[[ui:backupStateOk]]”“[[ui:backupStateWarning]]”或“[[ui:backupStateCritical]]”。
-- “[[ui:backupNewest]]”及其从 T 起的存在时间，“[[ui:backupNextRun]]”（运行延迟时带有“[[ui:backupOverdue]]”），“[[ui:backupAgent]]”及其最后一次信号，以及“[[ui:backupVault]]”及其可用空间。
+- “[[ui:backupNewest]]”及其从 T 起的存在时间，“[[ui:backupNextRun]]”（运行延迟时带有“[[ui:backupOverdue]]”），“[[ui:backupAgent]]”及其最后一次信号，以及“[[ui:backupVault]]”及其可用空间和是否加密（“[[ui:backupVaultEncrypted]]”或“[[ui:backupVaultPlain]]”）。未加密的保管库只显示提示，不产生警告。
 - 正在运行的任务，然后是警告，每条警告都附有应该怎么做的提示。
 - [[ui:backupPoints]]，包含“[[ui:backupSnapshot]]”“[[ui:backupCompleted]]”“[[ui:backupSize]]”“[[ui:backupFiles]]”“[[ui:backupVerification]]”和固定操作。
 - [[ui:backupJobs]]，包含类型（“[[ui:backupKindCapture]]”“[[ui:backupKindVerify]]”“[[ui:backupKindRetention]]”）、状态、阶段、时间、错误代码和进度。

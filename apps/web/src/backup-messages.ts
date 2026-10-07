@@ -27,6 +27,10 @@ export const backupEnglish = {
   backupVaultNotConfigured: 'Not configured',
   backupVaultUnknown: 'Unknown while the agent is offline',
   backupVaultUnavailable: 'Unavailable',
+  backupVaultEncrypted: 'Encrypted',
+  backupVaultPlain: 'Not encrypted',
+  backupVaultPlainHint:
+    'Anyone who can read this disk or a copy of it can read the backups. Encrypt the volume, or create an encrypted vault for new backups.',
   backupWarningsLabel: 'Backup warnings',
   backupSeverityWarning: 'Warning',
   backupSeverityCritical: 'Critical',
@@ -181,6 +185,10 @@ export const backupRussian: Record<keyof typeof backupEnglish, string> = {
   backupVaultNotConfigured: 'Не настроено',
   backupVaultUnknown: 'Неизвестно, пока агент не в сети',
   backupVaultUnavailable: 'Недоступно',
+  backupVaultEncrypted: 'Зашифровано',
+  backupVaultPlain: 'Не зашифровано',
+  backupVaultPlainHint:
+    'Кто может прочитать этот диск или его копию, прочтёт и резервные копии. Зашифруйте том или создайте зашифрованное хранилище для новых копий.',
   backupWarningsLabel: 'Предупреждения о копиях',
   backupSeverityWarning: 'Внимание',
   backupSeverityCritical: 'Критично',

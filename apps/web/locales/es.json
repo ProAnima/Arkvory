@@ -1155,6 +1155,18 @@
     "en": "Unavailable",
     "text": "No disponible"
   },
+  "backupVaultEncrypted": {
+    "en": "Encrypted",
+    "text": "Cifrado"
+  },
+  "backupVaultPlain": {
+    "en": "Not encrypted",
+    "text": "Sin cifrar"
+  },
+  "backupVaultPlainHint": {
+    "en": "Anyone who can read this disk or a copy of it can read the backups. Encrypt the volume, or create an encrypted vault for new backups.",
+    "text": "Quien pueda leer este disco o una copia suya puede leer las copias de seguridad. Cifre el volumen o cree un almacén cifrado para las copias nuevas."
+  },
   "backupWarningsLabel": {
     "en": "Backup warnings",
     "text": "Advertencias de copias de seguridad"

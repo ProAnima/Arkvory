@@ -5,7 +5,7 @@ import { migratePromotions } from './promotion-schema.js';
 import { migrateIdentitySecurity } from './identity-security-schema.js';
 import { migrateRequestCorrelation } from './correlation-schema.js';
 import { migrateBackups } from './backup-schema.js';
-import { migrateUnattendedBackups } from './backup-agent-schema.js';
+import { migrateBackupVaultEncryption, migrateUnattendedBackups } from './backup-agent-schema.js';
 import { migrateCatalogFeed } from './catalog-feed-schema.js';
 import { migrateMirrorState } from './mirror-schema.js';
 import { migrateTransferLinks } from './transfer-link-schema.js';
@@ -14,7 +14,7 @@ import { migrateGitLfs } from './lfs-schema.js';
 import { migrateNpmRegistry } from './npm-schema.js';
 import { migrateWebhookState } from './webhook-schema.js';
 
-/** Steps of versions 15-33 in their historical order; each records its own version. */
+/** Steps of versions 15-34 in their historical order; each records its own version. */
 const storageSteps: readonly (readonly [number, (client: PoolClient) => Promise<void>])[] = [
   [15, migrateStoragePolicy],
   [16, migrateCleanup],
@@ -34,6 +34,7 @@ const storageSteps: readonly (readonly [number, (client: PoolClient) => Promise<
   [31, migrateGitLfs],
   [32, migrateNpmRegistry],
   [33, migrateWebhookState],
+  [34, migrateBackupVaultEncryption],
 ];
 
 /** upTo bounds the applied versions (restore of an older backup); the order never changes. */

@@ -214,7 +214,7 @@ sudo mount -t cifs //nas/arkvory /mnt/backup/arkvory \
 [[ui:backups]] व्यवस्थापकों और recovery key को दिखता है। Service keys और personal access tokens इसे कभी नहीं देखते। पृष्ठ दिखाता है:
 
 - स्थिति: [[ui:backupStateOk]], [[ui:backupStateWarning]] या [[ui:backupStateCritical]]।
-- [[ui:backupNewest]] T से उसकी आयु के साथ, [[ui:backupNextRun]] और देर होने पर [[ui:backupOverdue]], [[ui:backupAgent]] उसके अंतिम संकेत के साथ और [[ui:backupVault]] खाली जगह के साथ।
+- [[ui:backupNewest]] T से उसकी आयु के साथ, [[ui:backupNextRun]] और देर होने पर [[ui:backupOverdue]], [[ui:backupAgent]] उसके अंतिम संकेत के साथ और [[ui:backupVault]] खाली जगह और एन्क्रिप्शन की स्थिति ([[ui:backupVaultEncrypted]] या [[ui:backupVaultPlain]]) के साथ। बिना एन्क्रिप्शन वाले वॉल्ट के लिए चेतावनी नहीं, केवल सुझाव दिखता है।
 - अभी चल रही जॉब, फिर चेतावनियाँ, हर एक के साथ क्या करना है इसका संकेत।
 - [[ui:backupPoints]], [[ui:backupSnapshot]], [[ui:backupCompleted]], [[ui:backupSize]], [[ui:backupFiles]], [[ui:backupVerification]] और pinning के साथ।
 - [[ui:backupJobs]], प्रकार ([[ui:backupKindCapture]], [[ui:backupKindVerify]], [[ui:backupKindRetention]]), स्थिति, चरण, समय, त्रुटि कोड और प्रगति के साथ।

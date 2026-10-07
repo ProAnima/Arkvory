@@ -1039,6 +1039,7 @@
     "Smallest multipart segment.": "Наименьшая часть при загрузке по частям.",
     "Snapshot time T; the age of a point counts from T.": "Время снимка T; возраст точки отсчитывается от T.",
     "Start of execution, or the request time while queued.": "Начало выполнения или время запроса, пока задание в очереди.",
-    "Upload reservation time": "Время резервирования загрузки"
+    "Upload reservation time": "Время резервирования загрузки",
+    "Vault is encrypted (ADR 0070); null when unknown or not connected.": "Хранилище зашифровано (ADR 0070); null, если неизвестно или не подключено."
   }
 }

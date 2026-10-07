@@ -214,7 +214,7 @@ Führen Sie während eines Backups keine Datenbankmigrationen oder die Offline-W
 [[ui:backups]] ist für Administratoren und den Wiederherstellungsschlüssel sichtbar. Dienstschlüssel und persönliche Zugriffstoken sehen sie nie. Die Seite zeigt:
 
 - Den Zustand: [[ui:backupStateOk]], [[ui:backupStateWarning]] oder [[ui:backupStateCritical]].
-- [[ui:backupNewest]] mit seinem Alter ab T, [[ui:backupNextRun]] mit [[ui:backupOverdue]], wenn ein Lauf überfällig ist, [[ui:backupAgent]] mit seinem letzten Signal und [[ui:backupVault]] mit dem freien Speicherplatz.
+- [[ui:backupNewest]] mit seinem Alter ab T, [[ui:backupNextRun]] mit [[ui:backupOverdue]], wenn ein Lauf überfällig ist, [[ui:backupAgent]] mit seinem letzten Signal und [[ui:backupVault]] mit dem freien Speicherplatz und der Angabe, ob es verschlüsselt ist ([[ui:backupVaultEncrypted]] oder [[ui:backupVaultPlain]]). Ein unverschlüsseltes Vault erhält einen Hinweis, keine Warnung.
 - Den Auftrag, der gerade läuft, dann die Warnungen, jede mit einem Hinweis, was zu tun ist.
 - [[ui:backupPoints]] mit [[ui:backupSnapshot]], [[ui:backupCompleted]], [[ui:backupSize]], [[ui:backupFiles]], [[ui:backupVerification]] und dem Anheften.
 - [[ui:backupJobs]] mit der Art ([[ui:backupKindCapture]], [[ui:backupKindVerify]], [[ui:backupKindRetention]]), dem Zustand, der Phase, den Zeiten, dem Fehlercode und dem Fortschritt.

@@ -1039,6 +1039,7 @@
     "Snapshot time T; the age of a point counts from T.": "Heure d’instantané T ; l’âge d’un point se compte à partir de T.",
     "Start of execution, or the request time while queued.": "Début de l’exécution, ou heure de la demande tant qu’elle est en file.",
     "Upload reservation time": "Heure de réservation du téléversement",
-    "Explicit IANA time zone, e.g. Europe/Moscow; validated by the server.": "Fuseau horaire IANA explicite, par exemple Europe/Moscow ; validé par le serveur."
+    "Explicit IANA time zone, e.g. Europe/Moscow; validated by the server.": "Fuseau horaire IANA explicite, par exemple Europe/Moscow ; validé par le serveur.",
+    "Vault is encrypted (ADR 0070); null when unknown or not connected.": "Le coffre est chiffré (ADR 0070) ; null si inconnu ou non connecté."
   }
 }

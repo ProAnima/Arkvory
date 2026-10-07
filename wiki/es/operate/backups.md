@@ -214,7 +214,7 @@ No ejecute migraciones de la base de datos ni las herramientas sin conexión `gc
 [[ui:backups]] es visible para los administradores y para la clave de recuperación. Las claves de servicio y los tokens de acceso personal nunca la ven. La página muestra:
 
 - El estado: [[ui:backupStateOk]], [[ui:backupStateWarning]] o [[ui:backupStateCritical]].
-- [[ui:backupNewest]] con su antigüedad desde T, [[ui:backupNextRun]] con [[ui:backupOverdue]] cuando una ejecución se retrasa, [[ui:backupAgent]] con su última señal y [[ui:backupVault]] con el espacio libre.
+- [[ui:backupNewest]] con su antigüedad desde T, [[ui:backupNextRun]] con [[ui:backupOverdue]] cuando una ejecución se retrasa, [[ui:backupAgent]] con su última señal y [[ui:backupVault]] con el espacio libre y si el almacén está cifrado ([[ui:backupVaultEncrypted]] o [[ui:backupVaultPlain]]). Un almacén sin cifrar recibe un aviso, no una advertencia.
 - La tarea que se ejecuta en este momento y, a continuación, las advertencias, cada una con una indicación de qué hacer.
 - [[ui:backupPoints]], con [[ui:backupSnapshot]], [[ui:backupCompleted]], [[ui:backupSize]], [[ui:backupFiles]], [[ui:backupVerification]] y la opción de fijar.
 - [[ui:backupJobs]], con el tipo ([[ui:backupKindCapture]], [[ui:backupKindVerify]], [[ui:backupKindRetention]]), el estado, la fase, las horas, el código de error y el progreso.

@@ -1155,6 +1155,18 @@
     "en": "Unavailable",
     "text": "利用不可"
   },
+  "backupVaultEncrypted": {
+    "en": "Encrypted",
+    "text": "暗号化済み"
+  },
+  "backupVaultPlain": {
+    "en": "Not encrypted",
+    "text": "暗号化なし"
+  },
+  "backupVaultPlainHint": {
+    "en": "Anyone who can read this disk or a copy of it can read the backups. Encrypt the volume, or create an encrypted vault for new backups.",
+    "text": "このディスクまたはそのコピーを読める人は、バックアップも読めます。ボリュームを暗号化するか、新しいバックアップ用に暗号化されたボールトを作成してください。"
+  },
   "backupWarningsLabel": {
     "en": "Backup warnings",
     "text": "バックアップの警告"

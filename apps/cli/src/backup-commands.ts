@@ -48,9 +48,15 @@ function statusText(status: BackupStatusResponse, language: Language): string {
           `, свободно ${formatBytes(vault.freeBytes)} из ${formatBytes(vault.totalBytes)}`,
         )
       : '';
+  const encryption =
+    vault.encrypted === null
+      ? ''
+      : `, ${vault.encrypted ? t('encrypted', 'зашифровано') : t('not encrypted', 'не зашифровано')}`;
   const vaultState = !vault.configured
     ? t('not configured', 'не настроено')
-    : (vault.available ? t('available', 'доступно') : t('unavailable', 'недоступно')) + space;
+    : (vault.available ? t('available', 'доступно') : t('unavailable', 'недоступно')) +
+      encryption +
+      space;
   const seen = agent.lastSeenAt
     ? ` (${t('last seen', 'последний сигнал')} ${agent.lastSeenAt})`
     : '';

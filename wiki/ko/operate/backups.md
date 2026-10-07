@@ -214,7 +214,7 @@ sudo mount -t cifs //nas/arkvory /mnt/backup/arkvory \
 [[ui:backups]] 섹션은 관리자와 복구 키에만 표시됩니다. 서비스 키와 개인용 액세스 토큰에는 표시되지 않습니다. 이 페이지에는 다음이 표시됩니다.
 
 - 상태: [[ui:backupStateOk]], [[ui:backupStateWarning]], [[ui:backupStateCritical]] 중 하나.
-- [[ui:backupNewest]] 항목(T부터 계산한 경과 시간 포함), [[ui:backupNextRun]] 항목(실행이 늦어지면 [[ui:backupOverdue]] 표시 포함), [[ui:backupAgent]] 항목(마지막 신호 포함), [[ui:backupVault]] 항목(여유 공간 포함).
+- [[ui:backupNewest]] 항목(T부터 계산한 경과 시간 포함), [[ui:backupNextRun]] 항목(실행이 늦어지면 [[ui:backupOverdue]] 표시 포함), [[ui:backupAgent]] 항목(마지막 신호 포함), [[ui:backupVault]] 항목(여유 공간과 암호화 여부 포함: [[ui:backupVaultEncrypted]] 또는 [[ui:backupVaultPlain]]). 암호화되지 않은 볼트에는 경고가 아닌 안내가 표시됩니다.
 - 현재 실행 중인 작업, 그리고 경고. 각 경고에는 무엇을 해야 하는지 알려 주는 안내가 있습니다.
 - [[ui:backupPoints]] 영역: [[ui:backupSnapshot]], [[ui:backupCompleted]], [[ui:backupSize]], [[ui:backupFiles]], [[ui:backupVerification]], 고정 상태가 표시됩니다.
 - [[ui:backupJobs]] 영역: 종류([[ui:backupKindCapture]], [[ui:backupKindVerify]], [[ui:backupKindRetention]]), 상태, 단계, 시각, 오류 코드, 진행률이 표시됩니다.
