@@ -195,6 +195,40 @@ curl -sS -o /dev/null -w '%{http_code}\n' -H "Authorization: Bearer $ARKVORY_KEY
 
 单个 `PUT` 没有续传：失败后会从第一个字节重新开始。请对中小型文件和脚本使用原始文件。对于大文件或慢速网络，请使用 [`arkvoryctl put`](./cli) 或 [SDK](./sdk)。它们按分片上传，失败后可继续，并校验 SHA-256。它们还会把文件存储为路径的修订版本。这些变量在[环境变量](../reference/environment#transfers-and-bandwidth)中描述。
 
+## Unity Addressables {#addressables}
+
+Addressables 通过普通的 `GET` 请求加载目录和 bundle，因此构建文件夹可以放在 raw 路径下。这适合内部构建、QA 和工具。不适合公共互联网上的玩家：读取 raw 始终需要密钥，下载链接 24 小时内过期，而发布客户端内的密钥并不是秘密。
+
+用 `arkvoryctl put` 上传该文件夹。字节未变的文件不会再次发送。每个构建使用一个文件夹，因为路径始终返回最新修订版本，旧目录不应遇到新的 bundle：
+
+```bash
+cd ServerData/StandaloneWindows64
+find . -type f | while read -r file; do
+  arkvoryctl put "$file" "addressables/game/$BUILD/StandaloneWindows64/${file#./}" || exit 1
+done
+```
+
+```powershell
+$root = (Resolve-Path .\ServerData\StandaloneWindows64).Path
+Get-ChildItem $root -Recurse -File | ForEach-Object {
+  $relative = $_.FullName.Substring($root.Length + 1) -replace '\\', '/'
+  arkvoryctl put $_.FullName "addressables/game/$env:BUILD/StandaloneWindows64/$relative"
+  if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+}
+```
+
+将 Addressables 配置文件中的远程加载路径设置为该文件夹的 raw 地址，例如 `https://arkvory.example/api/v1/repositories/releases/raw/addressables/game/<build>/[BuildTarget]`。给客户端一个只读密钥：具有读取权限的个人访问令牌，或具有 `content.read` 操作的服务密钥。raw 只接受 `Authorization` 头中的密钥，因此要在每个请求中设置它：
+
+```csharp
+Addressables.WebRequestOverride = request =>
+{
+    if (request.url.StartsWith("https://arkvory.example/"))
+        request.SetRequestHeader("Authorization", "Bearer " + readKey);
+};
+```
+
+在 Addressables 1.x 中该属性是 `Addressables.WebRequestOverride`；请在你的版本中核对名称。这是一种模式，而不是经过测试的集成。
+
 ## 故障排查 {#troubleshooting}
 
 错误是包含 `code`、`reason`、`message` 和 `requestId` 的 JSON 文档。参见[错误](../api/errors)。请把 `requestId` 提供给管理员，以便在服务器日志中查找该请求。

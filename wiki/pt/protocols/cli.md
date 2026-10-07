@@ -171,6 +171,71 @@ node ./arkvoryctl.mjs packages publish ./build.upack --label test --state ./job-
 
 Se o registro falhar depois do upload, o erro em JSON contém `stage: "register"` e o `artifactId`. Repita o mesmo comando. Registrar o mesmo artefato de novo é seguro.
 
+### Sistemas de CI {#ci-systems}
+
+Todos os sistemas abaixo fazem o mesmo: instalam um `arkvoryctl.mjs` fixado, pegam a chave do cofre de segredos do sistema e executam um comando. Fixe a versão e o SHA-256 para que um download alterado faça o job falhar. Use uma chave de serviço limitada ao repositório e às ações de que o job precisa ([Contas e chaves](../use/accounts)). O agente precisa do Node.js 24.
+
+```yaml
+# GitHub Actions: .github/workflows/publish.yml
+name: publish
+on:
+  push:
+    tags: ['v*']
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    env:
+      ARKVORY_BASE_URL: https://arkvory.example
+      ARKVORY_TOKEN: ${{ secrets.ARKVORY_KEY }}
+      ARKVORY_CLI_VERSION: '0.3.0'
+      ARKVORY_CLI_SHA256: 555af7e66e25447ba17ea0d3dc676f6d04b4b8adc47818d8c8bb548085752504
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Install arkvoryctl
+        run: |
+          curl -fsSL -o arkvoryctl.mjs "https://github.com/ProAnima/Arkvory/releases/download/v${ARKVORY_CLI_VERSION}/arkvoryctl.mjs"
+          echo "${ARKVORY_CLI_SHA256}  arkvoryctl.mjs" | sha256sum -c -
+      - name: Publish the build
+        run: node ./arkvoryctl.mjs put ./Build/Game.zip "builds/game/${GITHUB_REF_NAME}/Game.zip" --json
+```
+
+```yaml
+# GitLab CI: .gitlab-ci.yml (ARKVORY_TOKEN is a masked CI/CD variable)
+publish:
+  image: node:24
+  variables:
+    ARKVORY_BASE_URL: https://arkvory.example
+    ARKVORY_CLI_VERSION: '0.3.0'
+    ARKVORY_CLI_SHA256: 555af7e66e25447ba17ea0d3dc676f6d04b4b8adc47818d8c8bb548085752504
+  script:
+    - curl -fsSL -o arkvoryctl.mjs "https://github.com/ProAnima/Arkvory/releases/download/v${ARKVORY_CLI_VERSION}/arkvoryctl.mjs"
+    - echo "${ARKVORY_CLI_SHA256}  arkvoryctl.mjs" | sha256sum -c -
+    - node ./arkvoryctl.mjs put ./Build/Game.zip "builds/game/${CI_COMMIT_TAG}/Game.zip" --json
+```
+
+```groovy
+// Jenkins: Jenkinsfile. The agent has Node.js 24 and a checked arkvoryctl.mjs, installed as above.
+pipeline {
+  agent any
+  environment {
+    ARKVORY_BASE_URL = 'https://arkvory.example'
+    ARKVORY_TOKEN = credentials('arkvory-key')
+  }
+  stages {
+    stage('Publish') {
+      steps {
+        sh 'node ./arkvoryctl.mjs put ./Build/Game.zip "builds/game/${BUILD_NUMBER}/Game.zip" --json'
+      }
+    }
+  }
+}
+```
+
+Qualquer outro sistema, como TeamCity ou Buildkite, funciona do mesmo modo: defina `ARKVORY_BASE_URL` e `ARKVORY_TOKEN` a partir do seu cofre de segredos e execute o comando. Decida pelo [código de saída](#exit-codes).
+
 ## Saída {#output}
 
 - Os resultados são JSON em stdout. Sem `--json`, o JSON sai indentado. Os comandos de backup imprimem linhas legíveis, a menos que você adicione `--json`.

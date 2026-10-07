@@ -195,6 +195,40 @@ curl -sS -o /dev/null -w '%{http_code}\n' -H "Authorization: Bearer $ARKVORY_KEY
 
 एक अकेले `PUT` में resume नहीं होता: विफलता के बाद, यह पहले बाइट से फिर शुरू होता है। छोटी और मध्यम फ़ाइलों तथा स्क्रिप्ट के लिए रॉ फ़ाइलें इस्तेमाल करें। बड़ी फ़ाइलों या धीमे नेटवर्क के लिए, [`arkvoryctl put`](./cli) या [SDK](./sdk) इस्तेमाल करें। वे भागों में अपलोड करते हैं, विफलता के बाद जारी रखते हैं और SHA-256 जाँचते हैं। वे फ़ाइल को पथ के संशोधन के रूप में भी संग्रहीत करते हैं। वेरिएबल [एनवायरनमेंट वेरिएबल](../reference/environment#transfers-and-bandwidth) में वर्णित हैं।
 
+## Unity Addressables {#addressables}
+
+Addressables कैटलॉग और बंडल साधारण `GET` अनुरोधों से लोड करते हैं, इसलिए बिल्ड फ़ोल्डर raw पथ के नीचे रह सकता है। यह आंतरिक बिल्ड, QA और टूल के लिए उपयुक्त है। सार्वजनिक इंटरनेट पर खिलाड़ियों के लिए यह उपयुक्त नहीं है: raw पढ़ने के लिए हमेशा कुंजी चाहिए, डाउनलोड लिंक 24 घंटे में समाप्त हो जाता है, और जारी किए गए क्लाइंट के अंदर की कुंजी गोपनीय नहीं रहती।
+
+`arkvoryctl put` से फ़ोल्डर अपलोड करें। जिन फ़ाइलों के बाइट नहीं बदले, उन्हें दोबारा नहीं भेजा जाता। हर बिल्ड के लिए एक फ़ोल्डर इस्तेमाल करें, क्योंकि पथ हमेशा अपना नवीनतम संशोधन लौटाता है और पुराना कैटलॉग नए बंडलों से नहीं मिलना चाहिए:
+
+```bash
+cd ServerData/StandaloneWindows64
+find . -type f | while read -r file; do
+  arkvoryctl put "$file" "addressables/game/$BUILD/StandaloneWindows64/${file#./}" || exit 1
+done
+```
+
+```powershell
+$root = (Resolve-Path .\ServerData\StandaloneWindows64).Path
+Get-ChildItem $root -Recurse -File | ForEach-Object {
+  $relative = $_.FullName.Substring($root.Length + 1) -replace '\\', '/'
+  arkvoryctl put $_.FullName "addressables/game/$env:BUILD/StandaloneWindows64/$relative"
+  if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+}
+```
+
+Addressables प्रोफ़ाइल का रिमोट लोड पथ उस फ़ोल्डर के raw पते पर सेट करें, उदाहरण के लिए `https://arkvory.example/api/v1/repositories/releases/raw/addressables/game/<build>/[BuildTarget]`। क्लाइंट को केवल पढ़ने वाली कुंजी दें: पढ़ने की पहुँच वाला व्यक्तिगत एक्सेस टोकन, या `content.read` कार्रवाई वाली सेवा कुंजी। raw कुंजी केवल `Authorization` हेडर में स्वीकार करता है, इसलिए इसे हर अनुरोध में सेट करें:
+
+```csharp
+Addressables.WebRequestOverride = request =>
+{
+    if (request.url.StartsWith("https://arkvory.example/"))
+        request.SetRequestHeader("Authorization", "Bearer " + readKey);
+};
+```
+
+Addressables 1.x में यह प्रॉपर्टी `Addressables.WebRequestOverride` है; अपने संस्करण में नाम जाँचें। यह एक पैटर्न है, परीक्षित इंटीग्रेशन नहीं।
+
 ## समस्या निवारण {#troubleshooting}
 
 त्रुटियाँ `code`, `reason`, `message` और `requestId` वाले JSON दस्तावेज़ हैं। [त्रुटियाँ](../api/errors) देखें। सर्वर लॉग में अनुरोध खोजने के लिए अपने व्यवस्थापक को `requestId` दें।

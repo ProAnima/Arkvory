@@ -195,6 +195,40 @@ curl -sS -o /dev/null -w '%{http_code}\n' -H "Authorization: Bearer $ARKVORY_KEY
 
 하나의 `PUT`에는 재개가 없습니다. 실패하면 처음 바이트부터 다시 시작합니다. 원시 파일은 작은 파일과 중간 크기 파일, 그리고 스크립트에 사용하세요. 대용량 파일이나 느린 네트워크에는 [`arkvoryctl put`](./cli) 또는 [SDK](./sdk)를 사용하세요. 파트로 나누어 업로드하고, 실패 후 이어서 진행하며, SHA-256을 검사합니다. 또한 파일을 경로의 리비전으로 저장합니다. 변수에 대한 설명은 [환경 변수](../reference/environment#transfers-and-bandwidth)에 있습니다.
 
+## Unity Addressables {#addressables}
+
+Addressables는 일반 `GET` 요청으로 카탈로그와 번들을 불러오므로 빌드 폴더를 raw 경로 아래에 둘 수 있습니다. 내부 빌드, QA, 도구에 적합합니다. 공개 인터넷의 플레이어에게는 적합하지 않습니다. raw 읽기에는 항상 키가 필요하고, 다운로드 링크는 24시간 안에 만료되며, 배포된 클라이언트 안의 키는 비밀이 아니기 때문입니다.
+
+`arkvoryctl put`으로 폴더를 업로드하세요. 바이트가 바뀌지 않은 파일은 다시 보내지 않습니다. 경로는 항상 최신 리비전을 반환하고 오래된 카탈로그가 새 번들과 만나면 안 되므로, 빌드마다 폴더 하나를 사용하세요.
+
+```bash
+cd ServerData/StandaloneWindows64
+find . -type f | while read -r file; do
+  arkvoryctl put "$file" "addressables/game/$BUILD/StandaloneWindows64/${file#./}" || exit 1
+done
+```
+
+```powershell
+$root = (Resolve-Path .\ServerData\StandaloneWindows64).Path
+Get-ChildItem $root -Recurse -File | ForEach-Object {
+  $relative = $_.FullName.Substring($root.Length + 1) -replace '\\', '/'
+  arkvoryctl put $_.FullName "addressables/game/$env:BUILD/StandaloneWindows64/$relative"
+  if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+}
+```
+
+Addressables 프로필의 원격 로드 경로를 그 폴더의 raw 주소로 설정하세요. 예: `https://arkvory.example/api/v1/repositories/releases/raw/addressables/game/<build>/[BuildTarget]`. 클라이언트에는 읽기만 가능한 키를 주세요. 읽기 권한이 있는 개인용 액세스 토큰이나 `content.read` 동작이 있는 서비스 키입니다. raw는 `Authorization` 헤더의 키만 받으므로 모든 요청에 설정하세요.
+
+```csharp
+Addressables.WebRequestOverride = request =>
+{
+    if (request.url.StartsWith("https://arkvory.example/"))
+        request.SetRequestHeader("Authorization", "Bearer " + readKey);
+};
+```
+
+Addressables 1.x에서 이 속성은 `Addressables.WebRequestOverride`입니다. 사용 중인 버전에서 이름을 확인하세요. 이것은 검증된 통합이 아니라 하나의 패턴입니다.
+
 ## 문제 해결 {#troubleshooting}
 
 오류는 `code`, `reason`, `message`, `requestId`가 있는 JSON 문서입니다. [오류](../api/errors)를 참조하세요. 서버 로그에서 요청을 찾을 수 있도록 관리자에게 `requestId`를 알려 주세요.

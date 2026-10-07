@@ -195,6 +195,40 @@ A [read gateway](../operate/read-gateways) accepts `GET` and `HEAD` only. A [mir
 
 A single `PUT` has no resume: after a failure, it starts again from the first byte. Use raw files for small and medium files and for scripts. For large files or slow networks, use [`arkvoryctl put`](./cli) or the [SDK](./sdk). They upload in parts, continue after a failure and check the SHA-256. They also store the file as a revision of a path. The variables are described in [Environment variables](../reference/environment#transfers-and-bandwidth).
 
+## Unity Addressables {#addressables}
+
+Addressables load the catalog and the bundles with plain `GET` requests, so a build folder can live under a raw path. This suits internal builds, QA and tools. It does not suit players on the public internet: a raw read always needs a key, a download link expires within 24 hours, and a key inside a shipped player is not a secret.
+
+Upload the folder with `arkvoryctl put`. Files whose bytes did not change are not sent again. Use one folder per build, because a path always returns its newest revision, and an old catalog must not meet new bundles:
+
+```bash
+cd ServerData/StandaloneWindows64
+find . -type f | while read -r file; do
+  arkvoryctl put "$file" "addressables/game/$BUILD/StandaloneWindows64/${file#./}" || exit 1
+done
+```
+
+```powershell
+$root = (Resolve-Path .\ServerData\StandaloneWindows64).Path
+Get-ChildItem $root -Recurse -File | ForEach-Object {
+  $relative = $_.FullName.Substring($root.Length + 1) -replace '\\', '/'
+  arkvoryctl put $_.FullName "addressables/game/$env:BUILD/StandaloneWindows64/$relative"
+  if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+}
+```
+
+Set the remote load path of the Addressables profile to the raw address of that folder, for example `https://arkvory.example/api/v1/repositories/releases/raw/addressables/game/<build>/[BuildTarget]`. Give the player a key that can only read: a personal access token with read access, or a service key with the action `content.read`. Raw files accept the key only in the `Authorization` header, so set it on every request:
+
+```csharp
+Addressables.WebRequestOverride = request =>
+{
+    if (request.url.StartsWith("https://arkvory.example/"))
+        request.SetRequestHeader("Authorization", "Bearer " + readKey);
+};
+```
+
+The property is `Addressables.WebRequestOverride` in Addressables 1.x; check the name in your version. This is a pattern, not a tested integration.
+
 ## Troubleshooting {#troubleshooting}
 
 Errors are JSON documents with `code`, `reason`, `message` and `requestId`. See [Errors](../api/errors). Give the `requestId` to your administrator to find the request in the server log.

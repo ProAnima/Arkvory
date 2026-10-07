@@ -195,6 +195,40 @@ curl -sS -o /dev/null -w '%{http_code}\n' -H "Authorization: Bearer $ARKVORY_KEY
 
 У одиночного `PUT` нет продолжения: после сбоя он начинается с первого байта. Используйте обычные файлы для небольших и средних файлов и для скриптов. Для больших файлов или медленных сетей используйте [`arkvoryctl put`](./cli) или [SDK](./sdk). Они загружают по частям, продолжают после сбоя и проверяют SHA-256. Они также сохраняют файл как версию пути. Переменные описаны в разделе [Переменные окружения](../reference/environment#transfers-and-bandwidth).
 
+## Unity Addressables {#addressables}
+
+Addressables загружают каталог и бандлы обычными запросами `GET`, поэтому папка сборки может лежать по raw-пути. Это подходит для внутренних сборок, QA и инструментов. Это не подходит для игроков в открытом интернете: чтение raw всегда требует ключа, ссылка на скачивание живёт не дольше 24 часов, а ключ внутри выпущенного клиента не секрет.
+
+Загрузите папку командой `arkvoryctl put`. Файлы с неизменившимися байтами повторно не отправляются. Используйте отдельную папку на каждую сборку: путь всегда отдаёт новейшую версию, а старый каталог не должен встречаться с новыми бандлами:
+
+```bash
+cd ServerData/StandaloneWindows64
+find . -type f | while read -r file; do
+  arkvoryctl put "$file" "addressables/game/$BUILD/StandaloneWindows64/${file#./}" || exit 1
+done
+```
+
+```powershell
+$root = (Resolve-Path .\ServerData\StandaloneWindows64).Path
+Get-ChildItem $root -Recurse -File | ForEach-Object {
+  $relative = $_.FullName.Substring($root.Length + 1) -replace '\\', '/'
+  arkvoryctl put $_.FullName "addressables/game/$env:BUILD/StandaloneWindows64/$relative"
+  if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+}
+```
+
+Укажите в профиле Addressables удалённый путь загрузки — raw-адрес этой папки, например `https://arkvory.example/api/v1/repositories/releases/raw/addressables/game/<build>/[BuildTarget]`. Дайте клиенту ключ только на чтение: персональный токен доступа с чтением или ключ сервиса с действием `content.read`. Raw принимает ключ только в заголовке `Authorization`, поэтому задайте его в каждом запросе:
+
+```csharp
+Addressables.WebRequestOverride = request =>
+{
+    if (request.url.StartsWith("https://arkvory.example/"))
+        request.SetRequestHeader("Authorization", "Bearer " + readKey);
+};
+```
+
+В Addressables 1.x это свойство `Addressables.WebRequestOverride`; проверьте имя в своей версии. Это шаблон, а не проверенная интеграция.
+
 ## Устранение неполадок {#troubleshooting}
 
 Ошибки — это JSON-документы с `code`, `reason`, `message` и `requestId`. См. [Ошибки](../api/errors). Передайте `requestId` администратору, чтобы он нашёл запрос в журнале сервера.

@@ -195,6 +195,40 @@ Una [puerta de enlace de lectura](../operate/read-gateways) acepta solo `GET` y 
 
 Un solo `PUT` no tiene reanudación: tras un fallo, empieza de nuevo desde el primer byte. Use archivos raw para archivos pequeños y medianos y para scripts. Para archivos grandes o redes lentas, use [`arkvoryctl put`](./cli) o el [SDK](./sdk). Suben en partes, continúan tras un fallo y comprueban el SHA-256. También almacenan el archivo como una revisión de una ruta. Las variables se describen en [Variables de entorno](../reference/environment#transfers-and-bandwidth).
 
+## Unity Addressables {#addressables}
+
+Addressables cargan el catálogo y los bundles con peticiones `GET` normales, así que una carpeta de compilación puede estar bajo una ruta raw. Esto sirve para compilaciones internas, QA y herramientas. No sirve para jugadores en internet público: leer raw siempre requiere una clave, un enlace de descarga caduca en 24 horas y una clave dentro de un cliente distribuido no es secreta.
+
+Suba la carpeta con `arkvoryctl put`. Los archivos cuyos bytes no cambiaron no se vuelven a enviar. Use una carpeta por compilación, porque una ruta siempre devuelve su revisión más reciente y un catálogo antiguo no debe encontrarse con bundles nuevos:
+
+```bash
+cd ServerData/StandaloneWindows64
+find . -type f | while read -r file; do
+  arkvoryctl put "$file" "addressables/game/$BUILD/StandaloneWindows64/${file#./}" || exit 1
+done
+```
+
+```powershell
+$root = (Resolve-Path .\ServerData\StandaloneWindows64).Path
+Get-ChildItem $root -Recurse -File | ForEach-Object {
+  $relative = $_.FullName.Substring($root.Length + 1) -replace '\\', '/'
+  arkvoryctl put $_.FullName "addressables/game/$env:BUILD/StandaloneWindows64/$relative"
+  if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+}
+```
+
+Defina la ruta de carga remota del perfil de Addressables como la dirección raw de esa carpeta, por ejemplo `https://arkvory.example/api/v1/repositories/releases/raw/addressables/game/<build>/[BuildTarget]`. Dé al cliente una clave que solo pueda leer: un token de acceso personal con lectura o una clave de servicio con la acción `content.read`. Raw acepta la clave solo en el encabezado `Authorization`, así que añádala a cada petición:
+
+```csharp
+Addressables.WebRequestOverride = request =>
+{
+    if (request.url.StartsWith("https://arkvory.example/"))
+        request.SetRequestHeader("Authorization", "Bearer " + readKey);
+};
+```
+
+En Addressables 1.x la propiedad es `Addressables.WebRequestOverride`; compruebe el nombre en su versión. Es un patrón, no una integración probada.
+
 ## Solución de problemas {#troubleshooting}
 
 Los errores son documentos JSON con `code`, `reason`, `message` y `requestId`. Consulte [Errores](../api/errors). Dé el `requestId` a su administrador para encontrar la solicitud en el registro del servidor.

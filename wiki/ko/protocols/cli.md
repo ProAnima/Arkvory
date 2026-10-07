@@ -171,6 +171,71 @@ node ./arkvoryctl.mjs packages publish ./build.upack --label test --state ./job-
 
 업로드 후 등록에 실패하면 JSON 오류에 `stage: "register"`와 `artifactId`가 포함됩니다. 같은 명령을 다시 실행하세요. 같은 아티팩트를 다시 등록해도 안전합니다.
 
+### CI 시스템 {#ci-systems}
+
+아래 시스템은 모두 같은 일을 합니다. 버전을 고정한 `arkvoryctl.mjs`를 설치하고, 시스템의 비밀 저장소에서 키를 가져와 명령 하나를 실행합니다. 변경된 다운로드가 작업을 실패시키도록 버전과 SHA-256을 고정하세요. 리포지토리와 작업에 필요한 동작으로만 제한된 서비스 키를 사용하세요([계정과 키](../use/accounts)). 에이전트에는 Node.js 24가 필요합니다.
+
+```yaml
+# GitHub Actions: .github/workflows/publish.yml
+name: publish
+on:
+  push:
+    tags: ['v*']
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    env:
+      ARKVORY_BASE_URL: https://arkvory.example
+      ARKVORY_TOKEN: ${{ secrets.ARKVORY_KEY }}
+      ARKVORY_CLI_VERSION: '0.3.0'
+      ARKVORY_CLI_SHA256: 555af7e66e25447ba17ea0d3dc676f6d04b4b8adc47818d8c8bb548085752504
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Install arkvoryctl
+        run: |
+          curl -fsSL -o arkvoryctl.mjs "https://github.com/ProAnima/Arkvory/releases/download/v${ARKVORY_CLI_VERSION}/arkvoryctl.mjs"
+          echo "${ARKVORY_CLI_SHA256}  arkvoryctl.mjs" | sha256sum -c -
+      - name: Publish the build
+        run: node ./arkvoryctl.mjs put ./Build/Game.zip "builds/game/${GITHUB_REF_NAME}/Game.zip" --json
+```
+
+```yaml
+# GitLab CI: .gitlab-ci.yml (ARKVORY_TOKEN is a masked CI/CD variable)
+publish:
+  image: node:24
+  variables:
+    ARKVORY_BASE_URL: https://arkvory.example
+    ARKVORY_CLI_VERSION: '0.3.0'
+    ARKVORY_CLI_SHA256: 555af7e66e25447ba17ea0d3dc676f6d04b4b8adc47818d8c8bb548085752504
+  script:
+    - curl -fsSL -o arkvoryctl.mjs "https://github.com/ProAnima/Arkvory/releases/download/v${ARKVORY_CLI_VERSION}/arkvoryctl.mjs"
+    - echo "${ARKVORY_CLI_SHA256}  arkvoryctl.mjs" | sha256sum -c -
+    - node ./arkvoryctl.mjs put ./Build/Game.zip "builds/game/${CI_COMMIT_TAG}/Game.zip" --json
+```
+
+```groovy
+// Jenkins: Jenkinsfile. The agent has Node.js 24 and a checked arkvoryctl.mjs, installed as above.
+pipeline {
+  agent any
+  environment {
+    ARKVORY_BASE_URL = 'https://arkvory.example'
+    ARKVORY_TOKEN = credentials('arkvory-key')
+  }
+  stages {
+    stage('Publish') {
+      steps {
+        sh 'node ./arkvoryctl.mjs put ./Build/Game.zip "builds/game/${BUILD_NUMBER}/Game.zip" --json'
+      }
+    }
+  }
+}
+```
+
+TeamCity나 Buildkite 같은 다른 시스템도 같은 방식으로 동작합니다. 해당 시스템의 비밀 저장소에서 `ARKVORY_BASE_URL`과 `ARKVORY_TOKEN`을 설정하고 명령을 실행하세요. 결과는 [종료 코드](#exit-codes)로 판단하세요.
+
 ## 출력 {#output}
 
 - 결과는 stdout에 JSON으로 출력됩니다. `--json`을 지정하지 않으면 JSON이 들여쓰기되어 출력됩니다. 백업 명령은 `--json`을 추가하지 않는 한 읽기 쉬운 줄로 출력합니다.
