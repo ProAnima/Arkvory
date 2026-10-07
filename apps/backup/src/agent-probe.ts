@@ -1,7 +1,16 @@
 import { setTimeout as delay } from 'node:timers/promises';
+import { BackupFailure } from '@proanima/arkvory-domain';
 import type { AgentHeartbeat, FileVault } from '@proanima/arkvory-infrastructure';
 
 const probeTimeoutMs = 5000;
+
+/** The key problems of an encrypted vault (ADR 0070) are named in the heartbeat; others are not. */
+function keyFailure(error: unknown): string | null {
+  return error instanceof BackupFailure &&
+    (error.code === 'vault_key_missing' || error.code === 'vault_key_invalid')
+    ? error.code
+    : null;
+}
 /** Write checks are rarer than heartbeats: a sleeping backup disk is not woken every 30 s. */
 export const writeProbeIntervalMs = 10 * 60 * 1000;
 
@@ -18,6 +27,8 @@ export class VaultProbe {
   private writtenAt: number | null = null;
   /** Last failure code of the agent, reported with every heartbeat. */
   lastError: string | null = null;
+  /** Why an encrypted vault cannot be opened; shown until a probe succeeds again. */
+  private keyProblem: string | null = null;
 
   constructor(
     private readonly vault: FileVault | null,
@@ -39,12 +50,19 @@ export class VaultProbe {
       this.inflight = undefined;
     }));
     const timeout = delay(probeTimeoutMs, undefined, { ref: false }).then(() => this.unavailable());
-    return Promise.race([probe.catch(() => this.unavailable()), timeout]);
+    return Promise.race([
+      probe.catch((error: unknown) => {
+        this.keyProblem = keyFailure(error);
+        return this.unavailable();
+      }),
+      timeout,
+    ]);
   }
 
   private async probe(vault: FileVault): Promise<AgentHeartbeat> {
     const [identity, volume] = await Promise.all([vault.identity(), vault.volume()]);
     this.vaultId = identity.vaultId;
+    this.keyProblem = null;
     const now = this.now();
     if (this.writtenAt === null || now - this.writtenAt >= writeProbeIntervalMs) {
       // A failed write keeps the vault unavailable until a later probe writes again.
@@ -69,7 +87,7 @@ export class VaultProbe {
       vaultAvailable: false,
       freeBytes: null,
       totalBytes: null,
-      lastError: this.lastError,
+      lastError: this.keyProblem ?? this.lastError,
     };
   }
 }

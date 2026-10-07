@@ -25,6 +25,7 @@ function argumentsOf(args: string[]): Map<string, string> {
     'tls-off',
     'hub-off',
     'init-vault',
+    'vault-no-encryption',
     'backup-vault-off',
   ];
   const values = [
@@ -44,6 +45,7 @@ function argumentsOf(args: string[]): Map<string, string> {
     'update-channel',
     'statistics',
     'backup-vault',
+    'vault-key-file',
     'mirror',
     'mirror-upstream',
     'mirror-source',

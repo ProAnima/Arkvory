@@ -132,9 +132,47 @@ test('inventory entries carry decimal sizes within the object limit', () => {
 });
 
 test('operator arguments are strict and every failure code has a documented exit code', () => {
-  assert.deepEqual(parseArguments(['vault', 'init', 'D:/vault']), {
+  assert.deepEqual(parseArguments(['vault', 'init', 'D:/vault', '--no-encryption']), {
     kind: 'vault-init',
     vault: 'D:/vault',
+    encryption: { mode: 'none' },
+  });
+  assert.deepEqual(
+    parseArguments(['vault', 'init', 'D:/vault', '--kit-file', 'k', '--agent-key-file', 'a']),
+    {
+      kind: 'vault-init',
+      vault: 'D:/vault',
+      encryption: { mode: 'encrypted', kitFile: 'k', agentKeyFile: 'a' },
+    },
+  );
+  assert.deepEqual(
+    parseArguments([
+      'vault',
+      'key',
+      'rotate-agent',
+      '--vault',
+      'v',
+      '--key-file',
+      'k',
+      '--agent-key-file',
+      'n',
+    ]),
+    {
+      kind: 'vault-key',
+      vault: 'v',
+      keyFile: 'k',
+      operation: { action: 'rotate-agent', agentKeyFile: 'n' },
+    },
+  );
+  assert.deepEqual(parseArguments(['vault', 'key', 'list', '--vault', 'v']), {
+    kind: 'vault-key',
+    vault: 'v',
+    operation: { action: 'list' },
+  });
+  assert.deepEqual(parseArguments(['list', '--vault', 'v', '--key-file', 'k']), {
+    kind: 'list',
+    vault: 'v',
+    keyFile: 'k',
   });
   const point = id();
   assert.deepEqual(
@@ -154,12 +192,23 @@ test('operator arguments are strict and every failure code has a documented exit
     ['restore', '--vault', 'v', '--point', 'not-an-id', '--storage', 's'],
     ['verify', '--vault', 'v', '--unknown'],
     ['vault', 'remove', 'v'],
+    // The choice is explicit: a vault is encrypted with its two files, or plain on request.
+    ['vault', 'init', 'D:/vault'],
+    ['vault', 'init', 'D:/vault', '--kit-file', 'k'],
+    ['vault', 'init', 'D:/vault', '--no-encryption', '--kit-file', 'k'],
+    ['vault', 'key', 'list'],
+    ['vault', 'key', 'list', '--vault', 'v', '--slot', 'aaaaaaaaaaaaaaaa'],
+    ['vault', 'key', 'remove', '--vault', 'v', '--slot', 'not-a-slot'],
+    ['vault', 'key', 'add-recovery', '--vault', 'v'],
+    ['vault', 'key', 'drop', '--vault', 'v'],
     ['drop'],
   ])
     assert.throws(() => parseArguments(argv), { code: 'invalid_argument' });
   const exits = new Set(backupFailureCodes.map(exitCodeFor));
   assert.deepEqual([...exits].sort(), [1, 2, 3, 4, 5]);
   assert.equal(exitCodeFor('vault_missing'), 3);
+  assert.equal(exitCodeFor('vault_key_missing'), 3);
+  assert.equal(exitCodeFor('vault_key_invalid'), 3);
   assert.equal(exitCodeFor('integrity_mismatch'), 4);
   assert.equal(exitCodeFor('busy'), 5);
 });

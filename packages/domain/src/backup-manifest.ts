@@ -8,7 +8,11 @@ import { BackupFailure } from './backup.js';
  * never taken from a document; they are derived from validated identifiers and table names.
  */
 export const VAULT_FORMAT = 'arkvory-vault';
+/** Plain vault (ADR 0054). */
 export const VAULT_FORMAT_VERSION = 1;
+/** Encrypted vault (ADR 0070): AES-256-GCM files and key slots. */
+export const ENCRYPTED_VAULT_FORMAT_VERSION = 2;
+export const VAULT_ENCRYPTION = 'aes-256-gcm-v1';
 export const POINT_FORMAT = 'arkvory-backup-point';
 export const POINT_FORMAT_VERSION = 1;
 export const INVENTORY_FILE = 'inventory.ndjson';
@@ -24,11 +28,14 @@ const reasonPattern = /^[a-z0-9 ,.;:()/_'-]{1,160}$/;
 
 export interface VaultIdentity {
   readonly format: typeof VAULT_FORMAT;
-  readonly version: typeof VAULT_FORMAT_VERSION;
+  readonly version: typeof VAULT_FORMAT_VERSION | typeof ENCRYPTED_VAULT_FORMAT_VERSION;
   readonly vaultId: string;
   readonly createdAt: string;
-  /** B1 writes plain files; the volume itself must be encrypted and access-controlled. */
-  readonly encryption: 'none';
+  /**
+   * 'none': plain files, the volume itself must be encrypted and access-controlled (ADR 0054).
+   * Otherwise the content, the catalog and the manifests are encrypted (ADR 0070).
+   */
+  readonly encryption: 'none' | typeof VAULT_ENCRYPTION;
 }
 export interface InventoryEntry {
   readonly id: string;
@@ -125,15 +132,18 @@ export function tableFileName(name: string): string {
 
 export function parseVaultIdentity(value: unknown): VaultIdentity {
   const row = fields(value, ['format', 'version', 'vaultId', 'createdAt', 'encryption'], 'vault');
-  if (row['format'] !== VAULT_FORMAT || row['version'] !== VAULT_FORMAT_VERSION)
-    throw invalid('Unsupported vault format');
-  if (row['encryption'] !== 'none') throw invalid('Unsupported vault encryption');
+  if (row['format'] !== VAULT_FORMAT) throw invalid('Unsupported vault format');
+  // The version and the encryption go together: no other pair is a vault of this code.
+  const plain = row['version'] === VAULT_FORMAT_VERSION && row['encryption'] === 'none';
+  const encrypted =
+    row['version'] === ENCRYPTED_VAULT_FORMAT_VERSION && row['encryption'] === VAULT_ENCRYPTION;
+  if (!plain && !encrypted) throw invalid('Unsupported vault format');
   return {
     format: VAULT_FORMAT,
-    version: VAULT_FORMAT_VERSION,
+    version: plain ? VAULT_FORMAT_VERSION : ENCRYPTED_VAULT_FORMAT_VERSION,
     vaultId: identifier(row['vaultId'], 'vault id'),
     createdAt: timestamp(row['createdAt'], 'vault creation time'),
-    encryption: 'none',
+    encryption: plain ? 'none' : VAULT_ENCRYPTION,
   };
 }
 

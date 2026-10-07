@@ -13,12 +13,14 @@ import type { VaultContents } from './vault-location.js';
 export const containerVault = '/srv/arkvory-vault';
 /** Compose override with the vault bind mount; present only while a vault is configured. */
 export const vaultOverrideFile = 'config/compose.vault.yml';
+/** Agent key file for an encrypted vault, as the Compose backup container sees it. */
+export const containerVaultKey = '/run/arkvory/vault.key';
 
 /**
  * Bind mount of the host vault for the backup service and its one-shot ownership fix. No host
  * path is created: a missing directory fails the container instead of writing elsewhere.
  */
-export function vaultOverride(source: string): string {
+export function vaultOverride(source: string, keyFile = false): string {
   if (unsafePath(source)) throw new Error('Unsupported vault path');
   const mount = [
     '      - type: bind',
@@ -33,6 +35,8 @@ export function vaultOverride(source: string): string {
     '  backup:',
     '    volumes:',
     ...mount,
+    // The agent key is a file of the installation, not part of the vault (ADR 0070).
+    ...(keyFile ? [`      - ./config/backup/vault.key:${containerVaultKey}:ro`] : []),
     '  vault-owner:',
     '    volumes:',
     ...mount,
@@ -70,9 +74,13 @@ export function parseContents(output: string): VaultContents {
   const contents = record(value);
   const vaultId = contents['vaultId'];
   const valid = vaultId === null || (typeof vaultId === 'string' && isVaultId(vaultId));
-  if (!valid || typeof contents['empty'] !== 'boolean')
+  if (
+    !valid ||
+    typeof contents['empty'] !== 'boolean' ||
+    typeof contents['encrypted'] !== 'boolean'
+  )
     throw new Error('vault-inspect printed an invalid result');
-  return { vaultId, empty: contents['empty'] };
+  return { vaultId, encrypted: contents['encrypted'], empty: contents['empty'] };
 }
 
 /**
@@ -128,7 +136,7 @@ export class VaultAccess {
     return () => (previous === null ? remove(path) : atomicText(path, previous, 0o600));
   }
 
-  private async apply(vault: string | null): Promise<void> {
+  private async apply(vault: string | null, keyFile: boolean): Promise<void> {
     if (this.state.mode === 'systemd') return this.linux(vault);
     if (this.state.mode === 'windows') {
       if (vault) await this.windows(vault, false);
@@ -136,7 +144,7 @@ export class VaultAccess {
     }
     const path = join(this.root, vaultOverrideFile);
     if (vault === null) return remove(path);
-    await atomicText(path, vaultOverride(vault), 0o600);
+    await atomicText(path, vaultOverride(vault, keyFile), 0o600);
     // Docker Desktop reads bind mounts with its user's token (ADR 0050).
     if (process.platform === 'win32') await this.windows(vault, true);
     await this.compose(this.state.current, ['run', '--rm', '--no-deps', 'vault-owner']);
@@ -146,10 +154,13 @@ export class VaultAccess {
    * Opens `vault` (null: none) for the backup service and returns the way back. A step that
    * fails halfway (drop-in written, reload failed) is undone here, before the error propagates.
    */
-  async open(vault: string | null): Promise<() => Promise<void>> {
+  async open(
+    vault: string | null,
+    options: { readonly keyFile?: boolean } = {},
+  ): Promise<() => Promise<void>> {
     const restore = await this.snapshot();
     try {
-      await this.apply(vault);
+      await this.apply(vault, options.keyFile === true);
     } catch (error) {
       // A command that may still run is never raced; the operation lock stays for the operator.
       if (!isUnconfirmedTermination(error)) await restore().catch(() => undefined);
@@ -185,7 +196,11 @@ export class VaultAccess {
     }
   }
 
-  /** `vault init` of this release's backup CLI with the installation's runtime environment. */
+  /**
+   * `vault init` of this release's backup CLI with the installation's runtime environment. It
+   * creates a plain vault: configure asks for that explicitly (--vault-no-encryption), and an
+   * encrypted vault is made with `arkvory-backup vault init` and its key files (ADR 0070).
+   */
   async initialize(vault: string): Promise<void> {
     if (this.state.mode === 'compose')
       await this.compose(this.state.current, [

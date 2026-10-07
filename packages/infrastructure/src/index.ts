@@ -80,6 +80,25 @@ export { PostgresBackupStatus } from './backup-status.js';
 export { PostgresVaultLock, VAULT_LOCK } from './backup-vault-lock.js';
 export { PacedContentSource } from './backup-pacing.js';
 export { PostgresMirrorState, reopenMirrorUpload } from './mirror-state.js';
+export { VaultCipher, encryptedSize } from './vault-crypto.js';
+export type { FileCipher, VaultFileKind } from './vault-crypto.js';
+export {
+  addSlot,
+  findKey,
+  keyFileSource,
+  listSlots,
+  newKey,
+  parseKey,
+  removeSlot,
+  unlockWith,
+} from './vault-keys.js';
+export type { KeyKind, KeySlot, VaultKeySource } from './vault-keys.js';
+export {
+  addRecoveryKit,
+  initializeEncryptedVault,
+  recoveryKitText,
+  rotateAgentKey,
+} from './vault-setup.js';
 export { PostgresWebhookFeed, PostgresWebhookState } from './webhook-state.js';
 export { readWebhookSettings, parseWebhookSettings } from './webhook-config.js';
 export { parseAllowedNetworks, readWebhookCertificates } from './webhook-config.js';

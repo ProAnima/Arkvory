@@ -2,10 +2,19 @@ import { randomUUID } from 'node:crypto';
 import { BackupFailure } from '@proanima/arkvory-domain';
 import type { BackupManifest } from '@proanima/arkvory-domain';
 import { VerifyPoint } from '@proanima/arkvory-application';
-import { FileVault, requireSeparateTrees } from '@proanima/arkvory-infrastructure';
+import {
+  FileVault,
+  addRecoveryKit,
+  initializeEncryptedVault,
+  listSlots,
+  parseKey,
+  removeSlot,
+  requireSeparateTrees,
+  rotateAgentKey,
+} from '@proanima/arkvory-infrastructure';
 import type { BackupCommand } from './arguments.js';
 import type { CliContext } from './context.js';
-import { openVault } from './source.js';
+import { openVault, vaultKeys } from './source.js';
 
 export async function runVaultInit(
   command: Extract<BackupCommand, { kind: 'vault-init' }>,
@@ -17,15 +26,96 @@ export async function runVaultInit(
       { label: 'vault', path: command.vault },
       { label: 'storage root', path: storage },
     );
-  const identity = await FileVault.initialize(command.vault, {
-    vaultId: randomUUID(),
-    createdAt: new Date().toISOString(),
-  });
+  const created = { vaultId: randomUUID(), createdAt: new Date().toISOString() };
+  const encryption = command.encryption;
+  // An encrypted vault comes with the agent key and the recovery kit (ADR 0070); both
+  // are opened again before success is reported, and nothing is left behind if one fails.
+  const identity =
+    encryption.mode === 'none'
+      ? await FileVault.initialize(command.vault, created)
+      : await initializeEncryptedVault({
+          vault: command.vault,
+          ...created,
+          agentKeyFile: encryption.agentKeyFile,
+          kitFile: encryption.kitFile,
+          ...(storage ? { storageRoot: storage } : {}),
+        });
   context.logger.write({
     level: 'info',
     component: 'backup',
     code: 'backup.vault.initialized',
     vaultId: identity.vaultId,
+    encrypted: identity.encryption !== 'none',
+  });
+  return 0;
+}
+
+/** Administration of the key slots; keys are written to files and never to a log line. */
+export async function runVaultKey(
+  command: Extract<BackupCommand, { kind: 'vault-key' }>,
+  context: CliContext,
+): Promise<number> {
+  const { operation } = command;
+  const storage = context.env['ARKVORY_DATA_DIR'];
+  if (operation.action === 'list') {
+    const vault = await FileVault.open(command.vault);
+    const identity = await vault.describe();
+    if (identity.encryption === 'none')
+      throw new BackupFailure('invalid_argument', 'The vault is not encrypted');
+    for (const slot of await listSlots(vault.root))
+      context.logger.write({
+        level: 'info',
+        component: 'backup',
+        code: 'backup.vault.key',
+        vaultId: identity.vaultId,
+        slotId: slot.slotId,
+        keyKind: slot.kind,
+        createdAt: slot.createdAt,
+      });
+    return 0;
+  }
+  const keys = vaultKeys(command.keyFile, context.env);
+  const vault = await openVault(command.vault, undefined, keys);
+  const { vaultId, encryption } = await vault.identity();
+  if (encryption === 'none')
+    throw new BackupFailure('invalid_argument', 'The vault is not encrypted');
+  let slotId: string | undefined;
+  let keyKind: string | undefined;
+  switch (operation.action) {
+    case 'verify':
+      // The vault opened with this key: say which kind of key it is, not the key.
+      keyKind = parseKey((await keys?.read()) ?? '').kind;
+      break;
+    case 'add-recovery':
+      slotId = await addRecoveryKit(vault, operation.kitFile, storage);
+      keyKind = 'recovery';
+      break;
+    case 'rotate-agent': {
+      const rotated = await rotateAgentKey(vault, operation.agentKeyFile, storage);
+      slotId = rotated.added;
+      keyKind = 'agent';
+      for (const removed of rotated.removed)
+        context.logger.write({
+          level: 'info',
+          component: 'backup',
+          code: 'backup.vault.key.removed',
+          vaultId,
+          slotId: removed,
+        });
+      break;
+    }
+    case 'remove':
+      await removeSlot(vault.root, operation.slotId);
+      slotId = operation.slotId;
+      break;
+  }
+  context.logger.write({
+    level: 'info',
+    component: 'backup',
+    code: `backup.vault.key.${operation.action}`,
+    vaultId,
+    ...(slotId === undefined ? {} : { slotId }),
+    ...(keyKind === undefined ? {} : { keyKind }),
   });
   return 0;
 }
@@ -34,7 +124,7 @@ export async function runList(
   command: Extract<BackupCommand, { kind: 'list' }>,
   context: CliContext,
 ): Promise<number> {
-  const vault = await openVault(command.vault);
+  const vault = await openVault(command.vault, undefined, vaultKeys(command.keyFile, context.env));
   const manifests: BackupManifest[] = [];
   let damaged = 0;
   for (const pointId of await vault.pointIds()) {
@@ -82,7 +172,7 @@ export async function runVerify(
   command: Extract<BackupCommand, { kind: 'verify' }>,
   context: CliContext,
 ): Promise<number> {
-  const vault = await openVault(command.vault);
+  const vault = await openVault(command.vault, undefined, vaultKeys(command.keyFile, context.env));
   const results = await new VerifyPoint(vault).run(
     command.pointId === undefined
       ? { deep: command.deep }

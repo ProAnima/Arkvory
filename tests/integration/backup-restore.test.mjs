@@ -261,7 +261,7 @@ test('vaults without vault.json, overlapping trees and crafted manifests are ref
   assert.equal(record(missing, 'backup.failed').errorCode, 'vault_missing');
   assert.deepEqual(await readdir(mountPoint), []);
   const inside = join(f.directory, 'vault');
-  const init = await runBackup(['vault', 'init', inside], env);
+  const init = await runBackup(['vault', 'init', inside, '--no-encryption'], env);
   assert.equal(record(init, 'backup.failed').errorCode, 'unsafe_path');
   await assert.rejects(access(inside), { code: 'ENOENT' });
   await FileVault.initialize(inside, {

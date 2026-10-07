@@ -53,7 +53,7 @@ test('the backup agent is a supervised role and vault-init the only launcher com
   const vault = resolve('/srv/arkvory-vault');
   assert.deepEqual(roleCommand('vault-init', [vault]), {
     entry: 'apps/backup/dist/main.js',
-    argv: ['vault', 'init', vault],
+    argv: ['vault', 'init', vault, '--no-encryption'],
     service: false,
   });
   assert.equal(roleCommand('migrate').service, false);
@@ -95,7 +95,7 @@ test('the launcher runs the agent with its command and the installation environm
   const vault = join(root, 'vault');
   const initialize = launch(['vault-init', vault]);
   assert.equal(initialize.status, 0, initialize.stderr);
-  assert.deepEqual((await started()).argv, ['vault', 'init', vault]);
+  assert.deepEqual((await started()).argv, ['vault', 'init', vault, '--no-encryption']);
   assert.notEqual(launch(['backup', 'restore']).status, 0);
 });
 
@@ -219,23 +219,43 @@ test('the container reports vault contents as the vault owner sees them', async 
     spawnSync(process.execPath, [resolve('apps/deploy/dist/container.js'), 'vault-inspect', path], {
       encoding: 'utf8',
     });
-  assert.deepEqual(JSON.parse(inspect(vault).stdout), { vaultId: null, empty: true });
+  assert.deepEqual(JSON.parse(inspect(vault).stdout), {
+    vaultId: null,
+    encrypted: false,
+    empty: true,
+  });
   await writeFile(
     join(vault, 'vault.json'),
     JSON.stringify({ format: 'arkvory-vault', version: 1, vaultId }),
   );
-  assert.deepEqual(JSON.parse(inspect(vault).stdout), { vaultId, empty: false });
+  assert.deepEqual(JSON.parse(inspect(vault).stdout), { vaultId, encrypted: false, empty: false });
+  await writeFile(
+    join(vault, 'vault.json'),
+    JSON.stringify({ format: 'arkvory-vault', version: 2, vaultId, encryption: 'aes-256-gcm-v1' }),
+  );
+  assert.deepEqual(JSON.parse(inspect(vault).stdout), { vaultId, encrypted: true, empty: false });
   assert.notEqual(inspect('relative').status, 0);
 });
 
 test('inspection output is one validated line after any Compose messages', () => {
-  const line = JSON.stringify({ vaultId, empty: false });
+  const line = JSON.stringify({ vaultId, encrypted: false, empty: false });
   assert.deepEqual(parseContents(`Container backup-run Creating\n${line}\n`), {
     vaultId,
+    encrypted: false,
     empty: false,
   });
-  assert.deepEqual(parseContents('{"vaultId":null,"empty":true}'), { vaultId: null, empty: true });
-  for (const output of ['', 'not json', '{"vaultId":"x","empty":false}', '{"vaultId":null}'])
+  assert.deepEqual(parseContents('{"vaultId":null,"encrypted":true,"empty":true}'), {
+    vaultId: null,
+    encrypted: true,
+    empty: true,
+  });
+  for (const output of [
+    '',
+    'not json',
+    '{"vaultId":"x","encrypted":false,"empty":false}',
+    '{"vaultId":null}',
+    '{"vaultId":null,"empty":true}',
+  ])
     assert.throws(() => parseContents(output), /vault-inspect printed/);
 });
 
@@ -265,7 +285,7 @@ test('a Compose vault the host cannot read is read by the container user, then u
       // The bind mount exists exactly while the container looks at the vault.
       assert.match(await readFile(join(root, vaultOverrideFile), 'utf8'), /arkvory-vault/);
       calls.push(args.join(' '));
-      const result = JSON.stringify({ vaultId, empty: false });
+      const result = JSON.stringify({ vaultId, encrypted: false, empty: false });
       return `Container proanima-arkvory-backup-run Creating\n${result}\n`;
     },
   );
@@ -274,7 +294,7 @@ test('a Compose vault the host cannot read is read by the container user, then u
   // Restored here, not in t.after: after hooks run in registration order, after the removal.
   if (restricted) await chmod(vault, 0o000);
   try {
-    assert.deepEqual(await access.contents(vault), { vaultId, empty: false });
+    assert.deepEqual(await access.contents(vault), { vaultId, encrypted: false, empty: false });
   } finally {
     if (restricted) await chmod(vault, 0o700);
   }

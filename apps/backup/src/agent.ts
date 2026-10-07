@@ -16,6 +16,7 @@ import type {
 } from '@proanima/arkvory-application';
 import {
   FileVault,
+  keyFileSource,
   LocalBlobStore,
   PostgresAgentLease,
   PostgresBackupCatalog,
@@ -159,7 +160,13 @@ async function sourceInstance(config: AgentConfig): Promise<string> {
 /** Opens without reading vault.json: an unmounted vault is reported, not fatal at start. */
 async function agentVault(config: AgentConfig): Promise<FileVault | null> {
   if (config.vault === null) return null;
-  const vault = await FileVault.open(config.vault);
+  // The key file is read when the vault is first used: a missing key is a vault problem the
+  // heartbeat reports, not a reason for the agent to exit.
+  const vault = await FileVault.open(
+    config.vault,
+    undefined,
+    config.vaultKeyFile === null ? undefined : keyFileSource(config.vaultKeyFile),
+  );
   await requireSeparateTrees(
     { label: 'vault', path: vault.root },
     { label: 'storage root', path: config.source.dataDirectory },

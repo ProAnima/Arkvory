@@ -37,7 +37,12 @@ export function roleCommand(role: string, args: readonly string[] = []): RoleCom
     const [vault] = args;
     if (args.length !== 1 || !vault || !isAbsolute(vault))
       throw new Error('vault-init expects one absolute vault directory');
-    return { entry: 'apps/backup/dist/main.js', argv: ['vault', 'init', vault], service: false };
+    // Plain on purpose: configure refuses --init-vault without --vault-no-encryption (ADR 0070).
+    return {
+      entry: 'apps/backup/dist/main.js',
+      argv: ['vault', 'init', vault, '--no-encryption'],
+      service: false,
+    };
   }
   if (args.length) throw new Error('Service roles take no arguments');
   switch (role) {

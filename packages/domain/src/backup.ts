@@ -49,6 +49,8 @@ export const backupFailureCodes = [
   'unsafe_path',
   'upgrade_required',
   'vault_full',
+  'vault_key_invalid',
+  'vault_key_missing',
   'vault_missing',
 ] as const;
 export type BackupFailureCode = (typeof backupFailureCodes)[number];

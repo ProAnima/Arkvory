@@ -4,7 +4,8 @@ import { mkdtemp } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { INVENTORY_FILE, inventoryLine } from '@proanima/arkvory-domain';
-import { FileVault } from '@proanima/arkvory-infrastructure';
+import { FileVault, keyFileSource } from '@proanima/arkvory-infrastructure';
+import { writeFile } from 'node:fs/promises';
 import { removeTestDirectory } from './helpers.mjs';
 
 const never = { throwIfAborted() {} };
@@ -21,16 +22,29 @@ export const sourceId = randomUUID();
 export const time = (minutes, day = 2) =>
   new Date(Date.UTC(2026, 9, day, 2, minutes)).toISOString();
 
-/** An initialized vault in a temp directory removed after the test. */
-export async function vaultIn(t) {
+/**
+ * An initialized vault in a temp directory removed after the test. With `encrypted` the vault is
+ * created encrypted and opened with its agent key from a file (ADR 0070); `keys` then holds both.
+ */
+export async function vaultIn(t, { encrypted = false } = {}) {
   const directory = await mkdtemp(join(tmpdir(), 'arkvory-vault-maintenance-'));
   t.after(() => removeTestDirectory(directory));
   const path = join(directory, 'vault');
-  const identity = await FileVault.initialize(path, {
-    vaultId: randomUUID(),
-    createdAt: new Date().toISOString(),
-  });
-  return { vault: await FileVault.open(path), identity, path };
+  const created = { vaultId: randomUUID(), createdAt: new Date().toISOString() };
+  if (!encrypted) {
+    const identity = await FileVault.initialize(path, created);
+    return { vault: await FileVault.open(path), identity, path };
+  }
+  const made = await FileVault.initializeEncrypted(path, created);
+  const keyFile = join(directory, 'agent.key');
+  await writeFile(keyFile, made.agentKey + '\n');
+  const vault = await FileVault.open(path, undefined, keyFileSource(keyFile));
+  return {
+    vault,
+    identity: made.identity,
+    path,
+    keys: { agent: made.agentKey, recovery: made.recoveryKey, keyFile },
+  };
 }
 
 /** A blob stored once in the vault, as a capture would copy it. */

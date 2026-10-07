@@ -11,6 +11,7 @@ import {
   inspectVault,
   vaultContents,
 } from '../apps/deploy/dist/vault-location.js';
+import { vaultOverride } from '../apps/deploy/dist/vault-access.js';
 import { removeTestDirectory } from './helpers.mjs';
 
 const release = { version: '1.2.3', commit: 'c', schema: 26, archiveSha256: 'a', setupSha256: 's' };
@@ -45,10 +46,13 @@ const status = ({ online = true, configured = false, available = false, id = nul
 /** Fake service control; `reply` maps the calls so far to the agent's reported status. */
 function services(reply) {
   const calls = [];
+  const opened = [];
   return {
     calls,
     adopt: async (current) => calls.push(`adopt ${current.version}`),
-    openVault: async (vault) => {
+    opened,
+    openVault: async (vault, options) => {
+      opened.push(options ?? {});
       calls.push(vault === null ? 'open none' : 'open vault');
       return async () => calls.push('undo');
     },
@@ -83,7 +87,7 @@ test('an existing vault is used as is and confirmed by its own ID in the agent h
     control,
     { wait },
   );
-  assert.deepEqual(outcome, { vaultId, initialized: false });
+  assert.deepEqual(outcome, { vaultId, initialized: false, encrypted: false });
   assert.deepEqual(control.calls, ['adopt 1.2.3', 'open vault', 'restart']);
   const runtime = await runtimeOf(root);
   assert.equal(runtime.ARKVORY_BACKUP_VAULT, await realpath(vault));
@@ -99,7 +103,7 @@ test('--init-vault creates vault.json only in an empty directory and grants the 
   const outcome = await configureBackup(
     root,
     state('compose'),
-    { vault, initialize: true },
+    { vault, initialize: true, plain: true },
     control,
     { wait },
   );
@@ -233,7 +237,9 @@ test('a failure before the restart rolls back without restarting the agent', asy
     throw new Error('vault init failed (3)');
   };
   await assert.rejects(
-    configureBackup(root, state('windows'), { vault, initialize: true }, control, { wait }),
+    configureBackup(root, state('windows'), { vault, initialize: true, plain: true }, control, {
+      wait,
+    }),
     /previous configuration is restored \(vault init failed \(3\)\)/,
   );
   assert.deepEqual(control.calls, ['adopt 1.2.3', 'open vault', 'init', 'undo']);
@@ -251,7 +257,7 @@ test('turning the vault off requires the agent online without a vault', async (t
   const outcome = await configureBackup(root, state('systemd'), { disable: true }, control, {
     wait,
   });
-  assert.deepEqual(outcome, { vaultId: null, initialized: false });
+  assert.deepEqual(outcome, { vaultId: null, initialized: false, encrypted: false });
   assert.deepEqual(control.calls, ['adopt 1.2.3', 'open none', 'restart']);
   assert.equal((await runtimeOf(root)).ARKVORY_BACKUP_VAULT, undefined);
 });
@@ -303,10 +309,14 @@ test('inspection reports the canonical path, vault identity and emptiness', asyn
   assert.deepEqual(await inspectVault(vault, context), {
     path: await realpath(vault),
     vaultId: null,
+    encrypted: false,
     empty: true,
   });
   const vaultId = await vaultDocument(vault);
   assert.equal((await inspectVault(vault, context)).vaultId, vaultId);
+  assert.equal((await inspectVault(vault, context)).encrypted, false);
+  await encryptedVaultDocument(vault, vaultId);
+  assert.equal((await inspectVault(vault, context)).encrypted, true);
   await writeFile(join(vault, 'vault.json'), '{"format":"other"}');
   await assert.rejects(inspectVault(vault, context), /not an Arkvory vault/);
 });
@@ -341,4 +351,165 @@ test('a refused second vault rolls back to the first one by its ID, not to any v
     configureBackup(root, state('windows'), { vault: second }, services(report(false)), { wait }),
     /rollback incomplete: the backup agent did not report the previous configuration/,
   );
+});
+
+// --- encrypted vaults (ADR 0070) ---------------------------------------------------------------
+
+const agentKey = 'AK1-' + Array.from({ length: 14 }, () => 'ABCD').join('-');
+const recoveryKey = agentKey.replace('AK1', 'RK1');
+async function encryptedVaultDocument(path, vaultId = randomUUID()) {
+  const document = { format: 'arkvory-vault', version: 2, vaultId, encryption: 'aes-256-gcm-v1' };
+  await writeFile(join(path, 'vault.json'), JSON.stringify({ ...document, createdAt: 'now' }));
+  return vaultId;
+}
+async function keyFileIn(t, content) {
+  const folder = await directory(t, 'arkvory-key-');
+  const file = join(folder, 'agent.key');
+  await writeFile(file, content);
+  return file;
+}
+const ready = (vaultId) => () => status({ configured: true, available: true, id: vaultId });
+
+test('a new vault is not made plain by accident: --init-vault needs --vault-no-encryption', async (t) => {
+  const root = await installation(t);
+  const before = await readFile(join(root, 'config/runtime.json'), 'utf8');
+  const vault = await directory(t, 'arkvory-vault-');
+  const control = services(() => status());
+  await assert.rejects(
+    configureBackup(root, state('systemd'), { vault, initialize: true }, control, { wait }),
+    /only with --vault-no-encryption.*arkvory-backup vault init.*--vault-key-file/s,
+  );
+  for (const change of [
+    { vault, plain: true },
+    { vault, initialize: true, plain: true, keyFile: '/x/key' },
+    { vault, initialize: true, keyFile: '/x/key' },
+    { disable: true, keyFile: '/x/key' },
+    { disable: true, plain: true },
+  ])
+    await assert.rejects(configureBackup(root, state('systemd'), change, control, { wait }));
+  assert.deepEqual(control.calls, []);
+  assert.equal(await readFile(join(root, 'config/runtime.json'), 'utf8'), before);
+});
+
+test('an encrypted vault needs the agent key, never the recovery key', async (t) => {
+  const root = await installation(t);
+  const before = await readFile(join(root, 'config/runtime.json'), 'utf8');
+  const vault = await directory(t, 'arkvory-vault-');
+  await encryptedVaultDocument(vault);
+  const control = services(() => status());
+  const configure = (keyFile) =>
+    configureBackup(root, state('systemd'), { vault, ...(keyFile ? { keyFile } : {}) }, control, {
+      wait,
+    });
+  await assert.rejects(configure(undefined), /vault is encrypted: pass --vault-key-file/);
+  await assert.rejects(configure('relative.key'), /absolute path/);
+  await assert.rejects(configure(await keyFileIn(t, 'nothing useful\n')), /holds no agent key/);
+  await assert.rejects(
+    configure(await keyFileIn(t, 'Recovery key: ' + recoveryKey + '\n')),
+    /recovery key: it stays off this server/,
+  );
+  // A plain vault does not take a key.
+  const plain = await directory(t, 'arkvory-vault-');
+  await vaultDocument(plain);
+  await assert.rejects(
+    configureBackup(
+      root,
+      state('systemd'),
+      { vault: plain, keyFile: await keyFileIn(t, agentKey) },
+      control,
+      { wait },
+    ),
+    /not encrypted: do not pass --vault-key-file/,
+  );
+  await assert.rejects(
+    configureBackup(
+      root,
+      state('systemd'),
+      { vault: plain, initialize: true, plain: true },
+      control,
+      {
+        wait,
+      },
+    ),
+    /applies to a new vault/,
+  );
+  assert.deepEqual(control.calls, []);
+  assert.equal(await readFile(join(root, 'config/runtime.json'), 'utf8'), before);
+});
+
+test('an encrypted vault is installed with its key file; the heartbeat proves the key', async (t) => {
+  for (const mode of ['systemd', 'compose']) {
+    const root = await installation(t);
+    const vault = await directory(t, 'arkvory-vault-');
+    const vaultId = await encryptedVaultDocument(vault);
+    const control = services(ready(vaultId));
+    const keyFile = await keyFileIn(t, agentKey + '\n');
+    const outcome = await configureBackup(root, state(mode), { vault, keyFile }, control, { wait });
+    assert.deepEqual(outcome, { vaultId, initialized: false, encrypted: true });
+    assert.deepEqual(control.opened, [{ keyFile: true }]);
+    const runtime = await runtimeOf(root);
+    const installed = join(root, 'config/backup/vault.key');
+    assert.equal(await readFile(installed, 'utf8'), agentKey + '\n');
+    assert.equal(
+      runtime.ARKVORY_BACKUP_VAULT_KEY_FILE,
+      mode === 'compose' ? '/run/arkvory/vault.key' : installed,
+    );
+    assert.equal(
+      JSON.stringify(runtime).includes(agentKey),
+      false,
+      'the key is never in runtime.json',
+    );
+    // Turning the vault off removes the key from the installation as well.
+    const off = services(() => status({ configured: false }));
+    await configureBackup(root, state(mode), { disable: true }, off, { wait });
+    assert.equal((await runtimeOf(root)).ARKVORY_BACKUP_VAULT_KEY_FILE, undefined);
+    await assert.rejects(readFile(installed), { code: 'ENOENT' });
+  }
+});
+
+test('an agent that cannot open the vault rolls the key file and the settings back', async (t) => {
+  const root = await installation(t);
+  const vault = await directory(t, 'arkvory-vault-');
+  await encryptedVaultDocument(vault);
+  const before = await readFile(join(root, 'config/runtime.json'), 'utf8');
+  // The agent stays online but reports the vault unavailable: it could not open it with this key.
+  const control = services(() => status({ configured: true, available: false }));
+  await assert.rejects(
+    configureBackup(
+      root,
+      state('systemd'),
+      { vault, keyFile: await keyFileIn(t, agentKey) },
+      control,
+      { wait },
+    ),
+    /previous configuration is restored/,
+  );
+  assert.equal(await readFile(join(root, 'config/runtime.json'), 'utf8'), before);
+  await assert.rejects(readFile(join(root, 'config/backup/vault.key')), { code: 'ENOENT' });
+  assert.ok(control.calls.includes('undo'));
+
+  // A key file that was in place before comes back as it was.
+  await mkdir(join(root, 'config/backup'), { recursive: true });
+  await writeFile(join(root, 'config/backup/vault.key'), 'AK1-OLD-KEY\n');
+  const again = services(() => status({ configured: true, available: false }));
+  await assert.rejects(
+    configureBackup(
+      root,
+      state('systemd'),
+      { vault, keyFile: await keyFileIn(t, agentKey) },
+      again,
+      { wait },
+    ),
+    /previous configuration is restored/,
+  );
+  assert.equal(await readFile(join(root, 'config/backup/vault.key'), 'utf8'), 'AK1-OLD-KEY\n');
+});
+
+test('the Compose override mounts the agent key into the backup container only', () => {
+  const withKey = vaultOverride('/srv/vault', true);
+  assert.ok(withKey.includes('- ./config/backup/vault.key:/run/arkvory/vault.key:ro'));
+  const backup = withKey.slice(withKey.indexOf('  backup:'), withKey.indexOf('  vault-owner:'));
+  assert.ok(backup.includes('vault.key'));
+  assert.equal(withKey.slice(withKey.indexOf('  vault-owner:')).includes('vault.key'), false);
+  assert.equal(vaultOverride('/srv/vault').includes('vault.key'), false);
 });

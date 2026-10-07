@@ -19,7 +19,7 @@ import { exitCodeFor, parseArguments, usage } from './arguments.js';
 import type { BackupCommand } from './arguments.js';
 import { runCapture } from './capture-command.js';
 import { runRestore } from './restore-command.js';
-import { runList, runVaultInit, runVerify } from './vault-commands.js';
+import { runList, runVaultInit, runVaultKey, runVerify } from './vault-commands.js';
 import type { CliContext } from './context.js';
 import { runAgent } from './agent.js';
 import { agentConfig } from './config.js';
@@ -35,6 +35,10 @@ function watchdogSetting(value: string | undefined): number {
 const hints: Partial<Record<BackupFailureCode, string>> = {
   vault_missing:
     'The directory has no vault.json. Run "vault init" once, or mount the vault volume first.',
+  vault_key_missing:
+    'The vault is encrypted: give its key with --key-file or ARKVORY_BACKUP_VAULT_KEY_FILE (the agent key or the recovery key).',
+  vault_key_invalid:
+    'The key does not open this vault: check the file, the vault, or whether the key was removed.',
   unsafe_path: 'Keep the vault, the storage root and restore targets in separate directory trees.',
   target_not_empty: 'Restore writes only into an empty database and an empty storage directory.',
   schema_mismatch: 'Run migrate on the source, or restore with a release of the backup schema.',
@@ -72,6 +76,8 @@ function dispatch(command: Exclude<BackupCommand, { kind: 'help' }>, context: Cl
       return runAgentCommand(context);
     case 'vault-init':
       return runVaultInit(command, context);
+    case 'vault-key':
+      return runVaultKey(command, context);
     case 'capture':
       return runCapture(command, context);
     case 'list':

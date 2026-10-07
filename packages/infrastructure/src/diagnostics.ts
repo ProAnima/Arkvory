@@ -90,6 +90,11 @@ export interface DiagnosticFields {
   contentBytes?: string;
   problems?: number;
   subject?: string;
+  /** Key slot of an encrypted vault (ADR 0070): its id and kind, never a key. */
+  slotId?: string;
+  keyKind?: string;
+  createdAt?: string;
+  encrypted?: boolean;
   depth?: string;
   cancelledUploads?: number;
   failedJobs?: number;

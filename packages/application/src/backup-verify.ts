@@ -5,7 +5,7 @@ import {
   parseVaultJson,
   tableFileName,
 } from '@proanima/arkvory-domain';
-import type { BackupManifest } from '@proanima/arkvory-domain';
+import type { BackupManifest, InventoryEntry } from '@proanima/arkvory-domain';
 import type { Cancellation } from './ports.js';
 import type { ReadableVault } from './backup-ports.js';
 
@@ -41,6 +41,15 @@ class Problems {
     if (this.items.length < MAX_PROBLEMS) this.items.push({ code, subject });
     else this.truncated = true;
   }
+}
+
+/**
+ * A file of an encrypted vault that does not authenticate (changed, cut, swapped) fails its read
+ * with 'integrity_mismatch'; a plain vault reports the same damage as a digest that differs.
+ * Both are a problem of the point, not a reason to stop the verification.
+ */
+function isDamage(error: unknown): boolean {
+  return error instanceof BackupFailure && error.code === 'integrity_mismatch';
 }
 
 function invalidPoint(pointId: string, deep: boolean): PointVerification {
@@ -109,8 +118,9 @@ export class VerifyPoint {
     for (const table of manifest.tables) {
       cancellation.throwIfAborted();
       const name = tableFileName(table.name);
-      const digest = await this.vault.digest(manifest.pointId, name, cancellation);
-      if (!digest) problems.add('file_missing', name);
+      const digest = await this.digestOf(manifest.pointId, name, cancellation);
+      if (digest === 'damaged') problems.add('file_mismatch', name);
+      else if (!digest) problems.add('file_missing', name);
       else if (digest.sha256 !== table.sha256 || digest.bytes !== table.bytes)
         problems.add('file_mismatch', name);
       else if (digest.lines !== table.rows) problems.add('row_count_mismatch', name);
@@ -127,13 +137,35 @@ export class VerifyPoint {
     };
   }
 
+  private async digestOf(pointId: string, name: string, cancellation: Cancellation) {
+    try {
+      return await this.vault.digest(pointId, name, cancellation);
+    } catch (error) {
+      if (isDamage(error)) return 'damaged';
+      throw error;
+    }
+  }
+
+  private async blobHash(entry: InventoryEntry, cancellation: Cancellation) {
+    try {
+      return await this.vault.blobDigest(entry, cancellation);
+    } catch (error) {
+      if (isDamage(error)) return null;
+      throw error;
+    }
+  }
+
   private async inventory(
     manifest: BackupManifest,
     deep: boolean,
     problems: Problems,
     cancellation: Cancellation,
   ): Promise<number> {
-    const digest = await this.vault.digest(manifest.pointId, INVENTORY_FILE, cancellation);
+    const digest = await this.digestOf(manifest.pointId, INVENTORY_FILE, cancellation);
+    if (digest === 'damaged') {
+      problems.add('file_mismatch', INVENTORY_FILE);
+      return 0;
+    }
     if (!digest) {
       problems.add('file_missing', INVENTORY_FILE);
       return 0;
@@ -156,7 +188,7 @@ export class VerifyPoint {
       count++;
       bytes += BigInt(entry.size);
       if (!(await this.vault.hasBlob(entry))) problems.add('blob_missing', entry.id);
-      else if (deep && (await this.vault.blobDigest(entry, cancellation)) !== entry.sha256)
+      else if (deep && (await this.blobHash(entry, cancellation)) !== entry.sha256)
         problems.add('blob_mismatch', entry.id);
       this.options.progress?.({ blobs: count, bytes });
     }

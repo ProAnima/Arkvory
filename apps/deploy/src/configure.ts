@@ -12,7 +12,13 @@ import { configureWebhook } from './webhook-setup.js';
 import { hubSettings, hubUrl, saveHubSettings, writeRuntimeHub } from './hub-settings.js';
 
 const httpsOptions = ['tls-cert', 'tls-key', 'tls-off', 'listen-host'];
-const vaultOptions = ['backup-vault', 'init-vault', 'backup-vault-off'];
+const vaultOptions = [
+  'backup-vault',
+  'init-vault',
+  'backup-vault-off',
+  'vault-key-file',
+  'vault-no-encryption',
+];
 const updateOptions = [
   'disable-updates',
   'enable-updates',
@@ -70,12 +76,15 @@ async function configureHttps(root: string, state: Installation, options: Map<st
 
 async function configureVault(root: string, state: Installation, options: Map<string, string>) {
   const vault = options.get('backup-vault');
+  const keyFile = options.get('vault-key-file');
   const outcome = await configureBackup(
     root,
     state,
     {
       ...(vault ? { vault } : {}),
+      ...(keyFile ? { keyFile } : {}),
       initialize: options.has('init-vault'),
+      plain: options.has('vault-no-encryption'),
       disable: options.has('backup-vault-off'),
     },
     new Services(root, state),
@@ -83,7 +92,7 @@ async function configureVault(root: string, state: Installation, options: Map<st
   report(
     'info',
     outcome.vaultId
-      ? `Backup vault ${outcome.vaultId} is ${outcome.initialized ? 'initialized and ' : ''}in use; the agent reports it available`
+      ? `Backup vault ${outcome.vaultId} (${outcome.encrypted ? 'encrypted' : 'not encrypted'}) is ${outcome.initialized ? 'initialized and ' : ''}in use; the agent reports it available`
       : 'The backup vault is off; the agent runs and reports vault_not_configured',
   );
 }

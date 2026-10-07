@@ -173,19 +173,21 @@ SIGTERM/SIGINT переводит API в режим drain: `/health/status` и `
 
 Операторский CLI `arkvory-backup` (`apps/backup`) делает согласованную копию работающего экземпляра во встроенный файловый vault на отдельном диске или смонтированном NAS, проверяет её и восстанавливает в **пустую** БД и **пустой** каталог хранения. API и worker не останавливаются. Решение и протокол: [ADR 0054](adr/0054-built-in-backup-vault.md), [BACKUP_RECOVERY](BACKUP_RECOVERY.md). Это не PITR и не HA: точка содержит опубликованное состояние на момент T; незавершённые загрузки не восстанавливаются.
 
-**Обязанности оператора.** Vault не шифруется: в нём каталог, хеши паролей и все опубликованные файлы. Размещайте его только на зашифрованном томе (LUKS, BitLocker, шифрование NAS) с доступом лишь для учётной записи службы и администратора резервирования. Linux: `chown arkvory:arkvory /mnt/backup/arkvory && chmod 700 /mnt/backup/arkvory` (CLI создаёт каталоги 0700 и файлы 0600). Windows: режимы POSIX не действуют, ограничьте ACL: службы Arkvory работают от `NT AUTHORITY\LOCAL SERVICE`, например `icacls D:\Backup\Arkvory /inheritance:r /grant:r "*S-1-5-19:(OI)(CI)M" "*S-1-5-32-544:(OI)(CI)F" "*S-1-5-18:(OI)(CI)F"`. В установке это делает `arkvory configure --backup-vault` (раздел B2 ниже). Тот же физический диск, что и storage, не защищает от отказа диска.
+**Шифрование и обязанности оператора.** Vault по умолчанию шифруется ([ADR 0070](adr/0070-encrypted-backup-vault.md)): содержимое файлов, каталог и описания точек — AES-256-GCM по 1 МиБ с проверкой подлинности, ключ файла привязан к vault, виду и имени файла, поэтому подмена, усечение и перестановка файлов обнаруживаются. Видны только имена и размеры файлов и число точек. Vault без шифрования (`vault init <dir> --no-encryption`) хранит каталог, хеши паролей и все опубликованные файлы открытым текстом: его размещайте только на зашифрованном томе (LUKS, BitLocker, шифрование NAS) с доступом лишь для учётной записи службы и администратора резервирования; том нужен и зашифрованному vault как вторая линия защиты. Linux: `chown arkvory:arkvory /mnt/backup/arkvory && chmod 700 /mnt/backup/arkvory` (CLI создаёт каталоги 0700 и файлы 0600). Windows: режимы POSIX не действуют, ограничьте ACL: службы Arkvory работают от `NT AUTHORITY\LOCAL SERVICE`, например `icacls D:\Backup\Arkvory /inheritance:r /grant:r "*S-1-5-19:(OI)(CI)M" "*S-1-5-32-544:(OI)(CI)F" "*S-1-5-18:(OI)(CI)F"`. В установке это делает `arkvory configure --backup-vault` (раздел B2 ниже). Тот же физический диск, что и storage, не защищает от отказа диска.
 
 **Подготовка.** Все процессы (API, readers, worker, maintenance) обновлены до схемы релиза (`SCHEMA_VERSION` релиза, сейчас 33; B1 появилось в схеме 25, агент B2 — в 26; `npm run migrate`): процесс без маркера протокола backup даёт `upgrade_required`. Команды читают ту же конфигурацию, что API и worker: `ARKVORY_DATABASE_URL`, `ARKVORY_DATA_DIR`, `ARKVORY_STORAGE_RESERVE_BYTES`, `ARKVORY_LOG_LEVEL`. Дополнительно (ограниченные значения): `ARKVORY_BACKUP_LEASE_SECONDS` (60, 2–3600), `ARKVORY_BACKUP_SNAPSHOT_SECONDS` (1800, 60–86400 — предел барьера, snapshot и экспорта таблиц), `ARKVORY_BACKUP_BARRIER_SECONDS` (30, 1–600 — ожидание уже начатых удалений). В установленном релизе: `node releases/<version>/apps/backup/dist/main.js …` от имени учётной записи службы с её файлом окружения.
 
 ```sh
-npm run backup -- vault init /mnt/backup/arkvory          # один раз; каталог новый или пустой
-npm run backup -- capture --vault /mnt/backup/arkvory --idempotency-key nightly-2026-10-02
-npm run backup -- list --vault /mnt/backup/arkvory
-npm run backup -- verify --vault /mnt/backup/arkvory                 # хеши файлов и наличие blob
-npm run backup -- verify --vault /mnt/backup/arkvory --point <id> --deep   # читает каждый blob
+# один раз; каталог новый или пустой; kit и ключ агента — новые файлы вне vault и хранилища
+npm run backup -- vault init /mnt/backup/arkvory --kit-file /root/arkvory-recovery-kit.txt --agent-key-file /root/arkvory-agent.key
+npm run backup -- vault init /mnt/backup/plain --no-encryption     # vault без шифрования: выбор явный
+npm run backup -- capture --vault /mnt/backup/arkvory --key-file /root/arkvory-agent.key --idempotency-key nightly-2026-10-02
+npm run backup -- list --vault /mnt/backup/arkvory --key-file /root/arkvory-agent.key
+npm run backup -- verify --vault /mnt/backup/arkvory --key-file ...                 # хеши файлов и наличие blob
+npm run backup -- verify --vault /mnt/backup/arkvory --key-file ... --point <id> --deep   # читает каждый blob
 ```
 
-`vault init` создаёт `vault.json`. Без него `capture` ничего не пишет (`vault_missing`): так отключённый NAS не превращается в запись на локальный диск под точкой монтирования. Vault внутри `ARKVORY_DATA_DIR` (или наоборот, в том числе через symlink/junction) отклоняется (`unsafe_path`). Повтор `capture` с тем же `--idempotency-key` возвращает ту же точку или продолжает тот же job новой попыткой (до 5); без ключа каждый запуск — новый job. Одновременно идёт одна копия на БД; во время копии `npm run gc`/`scrub` получают отказ (`busy`), online GC откладывает только закреплённые файлы. Не запускайте миграции во время копии: DDL ждёт окончания экспорта таблиц. Если процесс копии умер, его pins и барьер остаются до истечения lease; следующий `capture` (любой ключ) снимает их через fencing.
+`vault init` создаёт `vault.json`; для зашифрованного vault — ещё ключи в `keys/`, файл ключа агента (`AK1-…`, одна строка, `--agent-key-file`) и **recovery kit** (`--kit-file`, текстовый файл с `RK1-…`): оба файла новые, вне vault и хранилища, права 0600, и `vault init` открывает vault каждым из них, прежде чем сообщить об успехе; при любой ошибке vault и файлы удаляются. **Kit храните вне сервера** (менеджер паролей, сейф): без него и без ключа агента vault не прочитать, а у держателя kit и копии vault есть всё содержимое. Ключ задаётся `--key-file` или `ARKVORY_BACKUP_VAULT_KEY_FILE` (файл службы или kit; в аргументах и журналах ключа нет). Слоты: `vault key list|verify|add-recovery|rotate-agent|remove` (последний слот и последний recovery-слот не удаляются; удаление слота не перешифровывает точки). Без ключа команды дают `vault_key_missing`, с неверным — `vault_key_invalid` (оба: код выхода 3). Без `vault.json` `capture` ничего не пишет (`vault_missing`): так отключённый NAS не превращается в запись на локальный диск под точкой монтирования. Vault внутри `ARKVORY_DATA_DIR` (или наоборот, в том числе через symlink/junction) отклоняется (`unsafe_path`). Повтор `capture` с тем же `--idempotency-key` возвращает ту же точку или продолжает тот же job новой попыткой (до 5); без ключа каждый запуск — новый job. Одновременно идёт одна копия на БД; во время копии `npm run gc`/`scrub` получают отказ (`busy`), online GC откладывает только закреплённые файлы. Не запускайте миграции во время копии: DDL ждёт окончания экспорта таблиц. Если процесс копии умер, его pins и барьер остаются до истечения lease; следующий `capture` (любой ключ) снимает их через fencing.
 
 **Пробное восстановление в чистую цель.** Создайте пустую БД (`CREATE DATABASE arkvory_restore OWNER arkvory;`) и выберите несуществующий или пустой каталог хранения на другом томе. Строку подключения передавайте через окружение, а не аргументом (виден в списке процессов):
 
@@ -216,34 +218,36 @@ npm run backup -- restore --vault /mnt/backup/arkvory --point <id> --storage /sr
 
 **Окружение агента.** Те же `ARKVORY_DATABASE_URL`, `ARKVORY_DATA_DIR`, `ARKVORY_STORAGE_RESERVE_BYTES`, `ARKVORY_LOG_LEVEL` и таймауты B1. Дополнительно:
 
-| Переменная                        | Значение                                                                                                   |
-| --------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `ARKVORY_BACKUP_VAULT`            | Каталог, созданный `vault init`. Без неё агент работает, сообщает `vault_not_configured`, задания — ошибка |
-| `ARKVORY_BACKUP_BYTES_PER_SECOND` | Ограничение полосы копирования, не меньше 65536; без значения — без ограничения                            |
-| `ARKVORY_BACKUP_POLL_SECONDS`     | Пауза между проверками очереди и расписания, 15 (1–3600)                                                   |
-| `ARKVORY_BACKUP_LEASE_SECONDS`    | Lease агента и копии, 60 (2–3600); heartbeat каждую треть, не реже 30 с                                    |
+| Переменная                        | Значение                                                                                                                                                                                                                                                                                              |
+| --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ARKVORY_BACKUP_VAULT`            | Каталог, созданный `vault init`. Без неё агент работает, сообщает `vault_not_configured`, задания — ошибка                                                                                                                                                                                            |
+| `ARKVORY_BACKUP_VAULT_KEY_FILE`   | Файл ключа агента (`AK1-…`) зашифрованного vault; агент читает его при открытии vault и держит мастер-ключ только в памяти. Нет файла или ключ неверный — vault недоступен: heartbeat `vaultAvailable=false`, `lastError` `vault_key_missing`/`vault_key_invalid`, предупреждение `vault_unavailable` |
+| `ARKVORY_BACKUP_BYTES_PER_SECOND` | Ограничение полосы копирования, не меньше 65536; без значения — без ограничения                                                                                                                                                                                                                       |
+| `ARKVORY_BACKUP_POLL_SECONDS`     | Пауза между проверками очереди и расписания, 15 (1–3600)                                                                                                                                                                                                                                              |
+| `ARKVORY_BACKUP_LEASE_SECONDS`    | Lease агента и копии, 60 (2–3600); heartbeat каждую треть, не реже 30 с                                                                                                                                                                                                                               |
 
 **Служба и vault в установке.** Установщики регистрируют агента третьей службой рядом с API и worker ([ADR 0057](adr/0057-backup-agent-service.md)): systemd `arkvory-backup`, Windows `Arkvorybackup`, сервис Compose `backup`. Автозапуск, восстановление после падения (через 10 с), остановка перед переключением релиза и запуск после API и worker выполняются так же, как у worker. Сбой агента не отменяет установку или обновление: установщик ждёт его heartbeat около 90 с и при отсутствии печатает WARN. Без vault агент работает и сообщает `vault_not_configured`. Vault подключает одна команда (от root или администратора, для Compose — от владельца установки):
 
 ```sh
-sudo arkvory configure --root /opt/proanima-arkvory --backup-vault /mnt/backup/arkvory --init-vault
+sudo arkvory configure --root /opt/proanima-arkvory --backup-vault /mnt/backup/arkvory --vault-key-file /root/arkvory-agent.key
+sudo arkvory configure --root /opt/proanima-arkvory --backup-vault /mnt/backup/plain --init-vault --vault-no-encryption
 sudo arkvory configure --root /opt/proanima-arkvory --backup-vault-off
 ```
 
 ```powershell
 $root = 'C:\ProgramData\ProAnima\Arkvory'
-& "$root\runtime\node.exe" "$root\manage.mjs" configure --root $root --backup-vault D:\Backup\Arkvory --init-vault
+& "$root\runtime\node.exe" "$root\manage.mjs" configure --root $root --backup-vault D:\Backup\Arkvory --vault-key-file C:\Private\arkvory-agent.key
 ```
 
 Порядок работы `configure --backup-vault`:
 
 1. Проверяет каталог до любых изменений: абсолютный путь, каталог существует и доступен для записи, после разрешения symlink, junction и 8.3 он вне корня установки и `ARKVORY_DATA_DIR` и не содержит их. На systemd vault не может лежать в /home, /root, /run/user, /tmp, /var/tmp: sandbox службы их не показывает.
-2. `--init-vault` создаёт `vault.json` только в пустом каталоге; существующий vault не инициализируется повторно. Без `vault.json` и без флага команда отказывает: так отключённый том NAS не принимается за пустой vault.
-3. Выдаёт доступ учётной записи службы (таблица ниже), записывает `ARKVORY_BACKUP_VAULT` в `config/runtime.json` и перезапускает только агента.
+2. Зашифрованный vault (по умолчанию) создан заранее `arkvory-backup vault init`; `--vault-key-file` передаёт ключ агента (`AK1-…`; recovery-ключ `RK1-…` команда отвергает: он не должен лежать на сервере). `--init-vault` создаёт `vault.json` только в пустом каталоге и только вместе с `--vault-no-encryption`: vault не становится открытым по умолчанию. Существующий vault не инициализируется повторно. Без `vault.json` и без флага команда отказывает: так отключённый том NAS не принимается за пустой vault.
+3. Выдаёт доступ учётной записи службы (таблица ниже), копирует ключ агента в `config/backup/vault.key` (root:arkvory 0640, Compose — 0644 и bind-mount только в контейнер `backup`), записывает `ARKVORY_BACKUP_VAULT` и `ARKVORY_BACKUP_VAULT_KEY_FILE` в `config/runtime.json` и перезапускает только агента. Верность ключа подтверждает сам агент: heartbeat «vault доступен» возможен только после расшифровки; иначе команда возвращает прежние `runtime.json`, ключ и доступ.
 4. Ждёт до 150 с, пока heartbeat агента не сообщит именно этот vault (ID из `vault.json`) доступным. Для проверки нужен `config/bootstrap-token.txt` с правом `backup.read`.
 5. При любой ошибке возвращает прежние `runtime.json` и доступ и перезапускает агента.
 
-`--backup-vault-off` убирает vault у агента, не трогая сам каталог и его права. Перезапуск прерывает идущую копию (`interrupted`), задание повторяется.
+`--backup-vault-off` убирает vault и файл ключа агента у агента, не трогая сам каталог и его права. Перезапуск прерывает идущую копию (`interrupted`), задание повторяется.
 
 | Установка     | Учётная запись службы                                              | Что делает configure                                                                                                                                                                      |
 | ------------- | ------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

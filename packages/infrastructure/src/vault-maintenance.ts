@@ -12,6 +12,7 @@ import {
 import type { BackupManifest, InventoryEntry, VaultIdentity } from '@proanima/arkvory-domain';
 import type { Cancellation, FileDigest, VaultListing } from '@proanima/arkvory-application';
 import { hasCode, syncDirectory } from './fs-durability.js';
+import type { FileCipher } from './vault-crypto.js';
 import { VAULT_DIRECTORY_MODE, encodeLines, readLines, writeDurably } from './vault-files.js';
 
 /** What maintenance needs from the file vault; implemented by FileVault. */
@@ -26,6 +27,8 @@ export interface MaintenanceVault {
     expected: { readonly sha256: string; readonly bytes: string },
     cancellation: Cancellation,
   ): AsyncIterable<string>;
+  /** Cipher of a temporary file of this run (ADR 0070); absent or undefined: written in plain. */
+  scratchCipher?(name: string): Promise<FileCipher | undefined>;
 }
 
 /** Inventories merged at once; more points are first reduced into sorted union files. */
@@ -140,23 +143,31 @@ async function* union(
     const reduced: (() => AsyncIterable<string>)[] = [];
     for (let start = 0; start < sources.length; start += MAX_FAN_IN) {
       const group = sources.slice(start, start + MAX_FAN_IN).map((open) => open());
-      const file = join(scratch, `union-${String(level)}-${String(start)}.ndjson`);
+      const name = `union-${String(level)}-${String(start)}.ndjson`;
+      const file = join(scratch, name);
+      const cipher = await vault.scratchCipher?.(name);
       const written = await writeDurably(file, encodeLines(mergeAscending(group)), {
         cancellation,
         countLines: true,
+        ...(cipher ? { cipher } : {}),
       });
-      reduced.push(() => idsOf(file, written));
+      reduced.push(() => idsOf(file, written, cipher));
     }
     sources = reduced;
   }
   yield* mergeAscending(sources.map((open) => open()));
 }
 
-function idsOf(file: string, written: FileDigest): AsyncIterable<string> {
+function idsOf(
+  file: string,
+  written: FileDigest,
+  cipher: FileCipher | undefined,
+): AsyncIterable<string> {
   return readLines(file, {
     maxLine: 64,
     cancellation: { throwIfAborted() {} },
     expected: { sha256: written.sha256, bytes: written.bytes },
+    ...(cipher ? { cipher } : {}),
   });
 }
 

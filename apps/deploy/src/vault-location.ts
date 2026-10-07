@@ -5,9 +5,13 @@ import { jsonFile } from './files.js';
 import type { Installation } from './model.js';
 import { record } from './model.js';
 
-/** What a vault directory holds: its vault ID (null without vault.json) and emptiness. */
+/**
+ * What a vault directory holds: its vault ID (null without vault.json), whether the vault is
+ * encrypted (ADR 0070) and whether the directory is empty.
+ */
 export interface VaultContents {
   readonly vaultId: string | null;
+  readonly encrypted: boolean;
   readonly empty: boolean;
 }
 /** A checked vault directory: its canonical path and contents. */
@@ -72,8 +76,10 @@ async function canonical(path: string): Promise<string> {
 export const isVaultId = (value: string) =>
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
 
-/** vault.json written by `vault init`; only its identity is read here. */
-export async function readVaultId(directory: string): Promise<string | null> {
+/** vault.json written by `vault init`; only its identity and its encryption are read here. */
+export async function readVaultId(
+  directory: string,
+): Promise<{ readonly vaultId: string; readonly encrypted: boolean } | null> {
   let document: unknown;
   try {
     document = await jsonFile(join(directory, 'vault.json'));
@@ -85,12 +91,19 @@ export async function readVaultId(directory: string): Promise<string | null> {
   if (vault['format'] !== 'arkvory-vault' || typeof vault['vaultId'] !== 'string')
     throw new Error('vault.json is not an Arkvory vault document');
   if (!isVaultId(vault['vaultId'])) throw new Error('vault.json has an invalid vault ID');
-  return vault['vaultId'];
+  return {
+    vaultId: vault['vaultId'],
+    encrypted: vault['encryption'] !== undefined && vault['encryption'] !== 'none',
+  };
 }
 
 export async function vaultContents(directory: string): Promise<VaultContents> {
-  const vaultId = await readVaultId(directory);
-  return { vaultId, empty: (await readdir(directory)).length === 0 };
+  const found = await readVaultId(directory);
+  return {
+    vaultId: found?.vaultId ?? null,
+    encrypted: found?.encrypted ?? false,
+    empty: (await readdir(directory)).length === 0,
+  };
 }
 
 /** The account running configure may not see into a vault another account owns. */

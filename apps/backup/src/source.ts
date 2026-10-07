@@ -15,9 +15,10 @@ import {
   appliedSchemaVersion,
   backupPool,
   claimBackupSource,
+  keyFileSource,
   requireSeparateTrees,
 } from '@proanima/arkvory-infrastructure';
-import type { BackupPool } from '@proanima/arkvory-infrastructure';
+import type { BackupPool, VaultKeySource } from '@proanima/arkvory-infrastructure';
 import type { SourceConfig } from './config.js';
 
 export interface CaptureSource {
@@ -65,9 +66,26 @@ export async function openCaptureSource(config: SourceConfig): Promise<CaptureSo
   }
 }
 
+/**
+ * The key of an encrypted vault (ADR 0070): the file of --key-file, else of
+ * ARKVORY_BACKUP_VAULT_KEY_FILE. Absent for a plain vault; reading is lazy, so a plain vault
+ * never touches it.
+ */
+export function vaultKeys(
+  keyFile: string | undefined,
+  env: NodeJS.ProcessEnv,
+): VaultKeySource | undefined {
+  const path = keyFile ?? env['ARKVORY_BACKUP_VAULT_KEY_FILE'];
+  return path === undefined || path === '' ? undefined : keyFileSource(path);
+}
+
 /** Opens a vault and proves its identity; refuses a vault overlapping the storage root. */
-export async function openVault(directory: string, storageRoot?: string): Promise<FileVault> {
-  const vault = await FileVault.open(directory);
+export async function openVault(
+  directory: string,
+  storageRoot?: string,
+  keys?: VaultKeySource,
+): Promise<FileVault> {
+  const vault = await FileVault.open(directory, undefined, keys);
   if (storageRoot !== undefined)
     await requireSeparateTrees(
       { label: 'vault', path: vault.root },

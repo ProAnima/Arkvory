@@ -1,20 +1,17 @@
-import { createHash, randomUUID } from 'node:crypto';
+import { randomUUID } from 'node:crypto';
 import { chmod, mkdir, open, readdir, rename, rm, stat, statfs } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import {
   BackupFailure,
-  INVENTORY_FILE,
+  ENCRYPTED_VAULT_FORMAT_VERSION,
+  VAULT_ENCRYPTION,
   VAULT_FORMAT,
   VAULT_FORMAT_VERSION,
   idPattern,
-  manifestDocument,
-  parseBackupManifest,
-  parseCommitRecord,
   parseVaultIdentity,
   parseVaultJson,
   requireId,
-  tableFileName,
 } from '@proanima/arkvory-domain';
 import type {
   BackupManifest,
@@ -32,20 +29,26 @@ import type {
 } from '@proanima/arkvory-application';
 import { hasCode, syncDirectory } from './fs-durability.js';
 import { canonicalPath } from './vault-paths.js';
+import { exists, missing, readDocument, readPoint } from './vault-point-reader.js';
 import { forgetPoint, pruneVault, sharedContentBytes, vaultListing } from './vault-maintenance.js';
+import { VaultCipher, encryptedSize } from './vault-crypto.js';
+import type { FileCipher, VaultFileKind } from './vault-crypto.js';
+import { createKeys, unlockWith } from './vault-keys.js';
+import type { VaultKeySource } from './vault-keys.js';
 import {
   VAULT_DIRECTORY_MODE,
   digestFile,
-  encodeLines,
   hashFile,
   readExactly,
   readLines,
   writeDurably,
 } from './vault-files.js';
+import { StagedPointDirectory, pointFileCipher, pointFileParts } from './vault-staged-point.js';
 
 /*
- * Layout (format 1):
+ * Layout (format 1, plain; format 2, encrypted, ADR 0070):
  *   vault.json                         identity; required before any read or write
+ *   keys/<slot>.json                   encrypted vault only: the master key wrapped by a slot key
  *   blobs/<first two hex>/<content id> immutable content, shared by all points
  *   points/<point id>/                 committed point: manifest.json, inventory.ndjson,
  *                                      tables/<table>.ndjson and COMMITTED (written last)
@@ -53,7 +56,6 @@ import {
  * Directories are never created recursively below the root, so a missing mount fails instead
  * of silently writing into an empty local mount point.
  */
-const MAX_DOCUMENT_BYTES = 4 * 1024 * 1024;
 const MAX_POINTS = 10000;
 const pointName = new RegExp(idPattern);
 const never: Cancellation = { throwIfAborted() {} };
@@ -69,63 +71,35 @@ export const defaultFileVaultOptions: FileVaultOptions = {
   maxLine: 16 * 1024 * 1024,
 };
 
-function missing(error: unknown): boolean {
-  return hasCode(error, 'ENOENT') || hasCode(error, 'ENOTDIR');
-}
 async function* once(chunk: Uint8Array): AsyncIterable<Uint8Array> {
   await Promise.resolve();
   yield chunk;
 }
-async function readDocument(path: string): Promise<Buffer> {
-  const handle = await open(path, 'r');
-  try {
-    if ((await handle.stat()).size > MAX_DOCUMENT_BYTES)
-      throw new BackupFailure('invalid_manifest', 'Vault document is too large');
-    return await handle.readFile();
-  } finally {
-    await handle.close();
-  }
-}
-async function exists(path: string): Promise<boolean> {
-  try {
-    await stat(path);
-    return true;
-  } catch (error) {
-    if (missing(error)) return false;
-    throw error;
-  }
-}
-/** The only point file names a caller may address; anything else is refused before access. */
-function pointFileParts(name: string): readonly string[] {
-  if (name === INVENTORY_FILE) return [INVENTORY_FILE];
-  const table = /^tables\/(arkvory_[a-z0-9_]{1,55})\.ndjson$/.exec(name)?.[1];
-  if (table !== undefined && tableFileName(table) === name) return ['tables', `${table}.ndjson`];
-  throw new BackupFailure('unsafe_path', 'Unexpected point file name');
-}
-
 /**
- * Built-in vault on a local disk or mounted NAS directory (ADR 0054); no encryption in B1.
- * Forget and prune (ADR 0056) run only under the exclusive vault lock of the caller.
+ * Built-in vault on a local disk or mounted NAS directory (ADR 0054). An encrypted vault
+ * (ADR 0070) needs a key source: the key is read when the vault is first used and the master key
+ * stays in memory only. Forget and prune (ADR 0056) run only under the exclusive vault lock.
  */
 export class FileVault implements CaptureVault, MaintainedVault {
+  private cipher: VaultCipher | null = null;
+
   private constructor(
     readonly root: string,
     private readonly options: FileVaultOptions,
+    private readonly keys: VaultKeySource | undefined,
   ) {}
 
   /** Opens without writing anything; identity() then proves the directory is a vault. */
   static async open(
     directory: string,
     options: FileVaultOptions = defaultFileVaultOptions,
+    keys?: VaultKeySource,
   ): Promise<FileVault> {
-    return new FileVault(await canonicalPath(directory), options);
+    return new FileVault(await canonicalPath(directory), options, keys);
   }
 
-  /** Creates a vault in a new or empty directory whose parent already exists. */
-  static async initialize(
-    directory: string,
-    identity: { readonly vaultId: string; readonly createdAt: string },
-  ): Promise<VaultIdentity> {
+  /** The directory of a new vault: created or empty, parent present, subfolders made. */
+  private static async prepare(directory: string): Promise<string> {
     const root = resolve(directory);
     try {
       await mkdir(root, { mode: VAULT_DIRECTORY_MODE });
@@ -140,13 +114,13 @@ export class FileVault implements CaptureVault, MaintainedVault {
     if (process.platform !== 'win32') await chmod(root, VAULT_DIRECTORY_MODE);
     for (const folder of [['blobs'], ['points'], ['points', '.staging']])
       await mkdir(join(root, ...folder), { mode: VAULT_DIRECTORY_MODE });
-    const document = {
-      format: VAULT_FORMAT,
-      version: VAULT_FORMAT_VERSION,
-      vaultId: identity.vaultId,
-      createdAt: identity.createdAt,
-      encryption: 'none',
-    };
+    return root;
+  }
+
+  private static async seal(
+    root: string,
+    document: Record<string, unknown>,
+  ): Promise<VaultIdentity> {
     const parsed = parseVaultIdentity(document);
     await writeDurably(
       join(root, 'vault.json'),
@@ -157,7 +131,48 @@ export class FileVault implements CaptureVault, MaintainedVault {
     return parsed;
   }
 
-  async identity(): Promise<VaultIdentity> {
+  /** Creates a plain vault in a new or empty directory whose parent already exists. */
+  static async initialize(
+    directory: string,
+    identity: { readonly vaultId: string; readonly createdAt: string },
+  ): Promise<VaultIdentity> {
+    const root = await FileVault.prepare(directory);
+    return FileVault.seal(root, {
+      format: VAULT_FORMAT,
+      version: VAULT_FORMAT_VERSION,
+      vaultId: identity.vaultId,
+      createdAt: identity.createdAt,
+      encryption: 'none',
+    });
+  }
+
+  /**
+   * Creates an encrypted vault (ADR 0070) and returns its two keys, the only time they exist
+   * outside a file the caller writes: one for the service, one for the recovery kit. vault.json
+   * comes last, so a vault that failed halfway is still not a vault.
+   */
+  static async initializeEncrypted(
+    directory: string,
+    identity: { readonly vaultId: string; readonly createdAt: string },
+  ): Promise<{
+    readonly identity: VaultIdentity;
+    readonly agentKey: string;
+    readonly recoveryKey: string;
+  }> {
+    const root = await FileVault.prepare(directory);
+    const keys = await createKeys(root, identity.vaultId, identity.createdAt);
+    const sealed = await FileVault.seal(root, {
+      format: VAULT_FORMAT,
+      version: ENCRYPTED_VAULT_FORMAT_VERSION,
+      vaultId: identity.vaultId,
+      createdAt: identity.createdAt,
+      encryption: VAULT_ENCRYPTION,
+    });
+    return { identity: sealed, agentKey: keys.agentKey, recoveryKey: keys.recoveryKey };
+  }
+
+  /** The identity as vault.json states it; no key is needed and none is read. */
+  async describe(): Promise<VaultIdentity> {
     let text: Buffer;
     try {
       text = await readDocument(join(this.root, 'vault.json'));
@@ -172,6 +187,43 @@ export class FileVault implements CaptureVault, MaintainedVault {
     return parseVaultIdentity(parseVaultJson(text.toString('utf8')));
   }
 
+  /**
+   * Proves the directory is a vault and, for an encrypted one, unlocks it: a missing key is
+   * `vault_key_missing`, a key that opens no slot `vault_key_invalid`.
+   */
+  async identity(): Promise<VaultIdentity> {
+    const identity = await this.describe();
+    if (identity.encryption === 'none') {
+      this.cipher = null;
+      return identity;
+    }
+    if (this.cipher?.vaultId !== identity.vaultId) {
+      if (this.keys === undefined)
+        throw new BackupFailure('vault_key_missing', 'The vault is encrypted and no key is given');
+      const master = await unlockWith(this.root, identity.vaultId, await this.keys.read());
+      this.cipher = new VaultCipher(master, identity.vaultId);
+    }
+    return identity;
+  }
+
+  /** The master key of an unlocked vault, for key administration only (new slots wrap it). */
+  async masterKey(): Promise<Buffer> {
+    await this.identity();
+    if (this.cipher === null)
+      throw new BackupFailure('invalid_argument', 'The vault is not encrypted');
+    return this.cipher.slotMaster();
+  }
+
+  private async fileCipher(kind: VaultFileKind, name: string): Promise<FileCipher | undefined> {
+    await this.identity();
+    return this.cipher?.forFile(kind, name);
+  }
+
+  /** Cipher of the temporary files of a prune run; undefined for a plain vault. */
+  scratchCipher(name: string): Promise<FileCipher | undefined> {
+    return this.fileCipher('scratch', `prune/${name}`);
+  }
+
   async stage(pointId: string, attempt: number): Promise<StagedPoint> {
     await this.identity();
     const staging = join(this.root, 'points', '.staging');
@@ -182,7 +234,13 @@ export class FileVault implements CaptureVault, MaintainedVault {
     const directory = join(staging, `${pointId}.${String(attempt)}.${randomUUID()}`);
     await mkdir(directory, { mode: VAULT_DIRECTORY_MODE });
     await mkdir(join(directory, 'tables'), { mode: VAULT_DIRECTORY_MODE });
-    return new StagedPointDirectory(this, directory, pointId, this.options.maxLine);
+    return new StagedPointDirectory({
+      directory,
+      pointId,
+      maxLine: this.options.maxLine,
+      cipher: this.cipher,
+      publish: (staged, id) => this.publish(staged, id),
+    });
   }
 
   private blobPath(id: string): string {
@@ -190,9 +248,11 @@ export class FileVault implements CaptureVault, MaintainedVault {
   }
 
   async hasBlob(entry: InventoryEntry): Promise<boolean> {
+    await this.identity();
+    const size = this.cipher ? encryptedSize(entry.size) : entry.size;
     try {
       const info = await stat(this.blobPath(entry.id));
-      return info.isFile() && info.size === entry.size;
+      return info.isFile() && info.size === size;
     } catch (error) {
       if (missing(error)) return false;
       throw error;
@@ -206,8 +266,10 @@ export class FileVault implements CaptureVault, MaintainedVault {
   ): Promise<void> {
     // Checked before every object: a volume that disappears mid-capture fails the write.
     await this.identity();
+    const cipher = this.cipher?.forFile('blob', entry.id);
+    const needed = BigInt(cipher ? encryptedSize(entry.size) : entry.size);
     const volume = await statfs(this.root, { bigint: true });
-    if (volume.bavail * volume.bsize < BigInt(entry.size) + BigInt(this.options.reserveBytes))
+    if (volume.bavail * volume.bsize < needed + BigInt(this.options.reserveBytes))
       throw new BackupFailure('vault_full', 'Not enough free space on the vault volume');
     const shard = join(this.root, 'blobs', entry.id.slice(0, 2));
     try {
@@ -215,7 +277,11 @@ export class FileVault implements CaptureVault, MaintainedVault {
     } catch (error) {
       if (!hasCode(error, 'EEXIST')) throw error;
     }
-    await writeDurably(this.blobPath(entry.id), source, { cancellation, expected: entry });
+    await writeDurably(this.blobPath(entry.id), source, {
+      cancellation,
+      expected: entry,
+      ...(cipher ? { cipher } : {}),
+    });
   }
 
   async pointIds(): Promise<readonly string[]> {
@@ -228,24 +294,8 @@ export class FileVault implements CaptureVault, MaintainedVault {
   }
 
   async point(pointId: string): Promise<BackupManifest | null> {
-    const directory = join(this.root, 'points', requireId(pointId));
-    if (!(await exists(directory))) return null;
-    let commitText: Buffer, manifestText: Buffer;
-    try {
-      commitText = await readDocument(join(directory, 'COMMITTED'));
-      manifestText = await readDocument(join(directory, 'manifest.json'));
-    } catch (error) {
-      if (missing(error)) throw new BackupFailure('invalid_manifest', 'Point is incomplete');
-      throw error;
-    }
-    const commit = parseCommitRecord(parseVaultJson(commitText.toString('utf8')));
-    const digest = createHash('sha256').update(manifestText).digest('hex');
-    if (commit.pointId !== pointId || commit.manifestSha256 !== digest)
-      throw new BackupFailure('invalid_manifest', 'Commit record does not match the manifest');
-    const manifest = parseBackupManifest(parseVaultJson(manifestText.toString('utf8')));
-    if (manifest.pointId !== pointId || manifest.vaultId !== (await this.identity()).vaultId)
-      throw new BackupFailure('invalid_manifest', 'Manifest belongs to another point or vault');
-    return manifest;
+    const identity = await this.identity();
+    return readPoint(this.root, pointId, identity, this.cipher);
   }
 
   pointPath(pointId: string, name: string): string {
@@ -257,28 +307,43 @@ export class FileVault implements CaptureVault, MaintainedVault {
     name: string,
     cancellation: Cancellation,
   ): Promise<FileDigest | null> {
-    return digestFile(this.pointPath(pointId, name), cancellation);
+    await this.identity();
+    return digestFile(
+      this.pointPath(pointId, name),
+      cancellation,
+      pointFileCipher(this.cipher, pointId, name),
+    );
   }
 
-  lines(
+  async *lines(
     pointId: string,
     name: string,
     expected: PointFile,
     cancellation: Cancellation,
   ): AsyncIterable<string> {
-    return readLines(this.pointPath(pointId, name), {
+    await this.identity();
+    const cipher = pointFileCipher(this.cipher, pointId, name);
+    yield* readLines(this.pointPath(pointId, name), {
       maxLine: this.options.maxLine,
       cancellation,
       expected,
+      ...(cipher ? { cipher } : {}),
     });
   }
 
-  blobDigest(entry: InventoryEntry, cancellation: Cancellation): Promise<string | null> {
-    return hashFile(this.blobPath(entry.id), entry.size, cancellation);
+  async blobDigest(entry: InventoryEntry, cancellation: Cancellation): Promise<string | null> {
+    await this.identity();
+    return hashFile(
+      this.blobPath(entry.id),
+      entry.size,
+      cancellation,
+      this.cipher?.forFile('blob', entry.id),
+    );
   }
 
-  readBlob(entry: InventoryEntry): AsyncIterable<Uint8Array> {
-    return readExactly(this.blobPath(entry.id), entry.size);
+  async *readBlob(entry: InventoryEntry): AsyncIterable<Uint8Array> {
+    await this.identity();
+    yield* readExactly(this.blobPath(entry.id), entry.size, this.cipher?.forFile('blob', entry.id));
   }
 
   listing(): Promise<VaultListing> {
@@ -335,53 +400,5 @@ export class FileVault implements CaptureVault, MaintainedVault {
     }
     await syncDirectory(join(this.root, 'points'));
     return 'committed';
-  }
-}
-
-class StagedPointDirectory implements StagedPoint {
-  private published = false;
-  constructor(
-    private readonly vault: FileVault,
-    private readonly directory: string,
-    private readonly pointId: string,
-    private readonly maxLine: number,
-  ) {}
-
-  async write(name: string, lines: AsyncIterable<string>, cancellation: Cancellation) {
-    return writeDurably(join(this.directory, ...pointFileParts(name)), encodeLines(lines), {
-      cancellation,
-      countLines: true,
-    });
-  }
-
-  lines(name: string, cancellation: Cancellation): AsyncIterable<string> {
-    return readLines(join(this.directory, ...pointFileParts(name)), {
-      maxLine: this.maxLine,
-      cancellation,
-    });
-  }
-
-  async commit(manifest: BackupManifest): Promise<'committed' | 'exists'> {
-    if (manifest.pointId !== this.pointId) throw new BackupFailure('unexpected', 'Wrong point');
-    const text = Buffer.from(JSON.stringify(manifestDocument(manifest), null, 2) + '\n');
-    const written = await writeDurably(join(this.directory, 'manifest.json'), once(text), {
-      cancellation: never,
-    });
-    // COMMITTED binds the directory to this exact manifest and is written last.
-    const record = { pointId: this.pointId, manifestSha256: written.sha256 };
-    await writeDurably(
-      join(this.directory, 'COMMITTED'),
-      once(Buffer.from(JSON.stringify(record) + '\n')),
-      { cancellation: never },
-    );
-    await syncDirectory(this.directory);
-    const outcome = await this.vault.publish(this.directory, this.pointId);
-    this.published = outcome === 'committed';
-    return outcome;
-  }
-
-  async discard(): Promise<void> {
-    if (this.published) return;
-    await rm(this.directory, { recursive: true, force: true, maxRetries: 3 });
   }
 }

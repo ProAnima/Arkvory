@@ -60,6 +60,8 @@ export interface AgentConfig {
   readonly source: SourceConfig;
   /** Initialized vault directory, or null until an operator configures one. */
   readonly vault: string | null;
+  /** File with the agent key for an encrypted vault (ADR 0070); null for a plain one. */
+  readonly vaultKeyFile: string | null;
   /** Copy bandwidth cap; null is unlimited. */
   readonly bytesPerSecond: number | null;
   readonly pollSeconds: number;
@@ -75,9 +77,11 @@ function bandwidth(raw: string | undefined): number | null {
 
 export function agentConfig(env: NodeJS.ProcessEnv): AgentConfig {
   const vault = env['ARKVORY_BACKUP_VAULT'];
+  const keyFile = env['ARKVORY_BACKUP_VAULT_KEY_FILE'];
   return {
     source: sourceConfig(env),
     vault: vault === undefined || vault === '' ? null : vault,
+    vaultKeyFile: keyFile === undefined || keyFile === '' ? null : keyFile,
     bytesPerSecond: bandwidth(env['ARKVORY_BACKUP_BYTES_PER_SECOND']),
     pollSeconds: bounded(env, 'ARKVORY_BACKUP_POLL_SECONDS', 15, 1, 3600),
   };

@@ -4,7 +4,7 @@ import { CaptureBackup } from '@proanima/arkvory-application';
 import type { BackupCommand } from './arguments.js';
 import type { CliContext } from './context.js';
 import { sourceConfig } from './config.js';
-import { captureDependencies, openCaptureSource, openVault } from './source.js';
+import { captureDependencies, openCaptureSource, openVault, vaultKeys } from './source.js';
 import { captureObserver } from './capture-progress.js';
 
 export async function runCapture(
@@ -12,7 +12,11 @@ export async function runCapture(
   context: CliContext,
 ): Promise<number> {
   const config = sourceConfig(context.env);
-  const vault = await openVault(command.vault, config.dataDirectory);
+  const vault = await openVault(
+    command.vault,
+    config.dataDirectory,
+    vaultKeys(command.keyFile, context.env),
+  );
   const { vaultId } = await vault.identity();
   const started = performance.now();
   const source = await openCaptureSource(config);

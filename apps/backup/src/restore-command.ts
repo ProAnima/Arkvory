@@ -13,7 +13,7 @@ import {
 import type { BackupCommand } from './arguments.js';
 import type { CliContext } from './context.js';
 import { databaseUrl, restoreReserveBytes } from './config.js';
-import { openVault } from './source.js';
+import { openVault, vaultKeys } from './source.js';
 
 type RestoreCommand = Extract<BackupCommand, { kind: 'restore' }>;
 
@@ -57,7 +57,7 @@ export async function runRestore(command: RestoreCommand, context: CliContext): 
     command.databaseUrl ?? context.env['ARKVORY_RESTORE_DATABASE_URL'],
     'restore database URL (--database-url or ARKVORY_RESTORE_DATABASE_URL)',
   );
-  const vault = await openVault(command.vault);
+  const vault = await openVault(command.vault, undefined, vaultKeys(command.keyFile, context.env));
   await requireSeparateTargets(command, vault.root, context.env);
   const started = performance.now();
   const pool = backupPool(url, 3);

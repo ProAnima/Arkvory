@@ -83,6 +83,8 @@ export function requestRetry(code: BackupFailureCode, attempts: number): 'requeu
     case 'unsafe_path':
     case 'upgrade_required':
     case 'vault_full':
+    case 'vault_key_invalid':
+    case 'vault_key_missing':
     case 'vault_missing':
       return 'fail';
   }

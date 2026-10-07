@@ -80,7 +80,7 @@ sudo dpkg --configure -a   # только deb: завершить настрой
 node <release>/arkvory-setup.mjs upgrade --root <root> --artifact <release> --backup-record <файл>
 ```
 
-После этого подключите vault (`configure --backup-vault … --init-vault`) и дождитесь первой копии: следующие смены схемы пройдут сами.
+После этого подключите vault (`configure --backup-vault … --vault-key-file …`) и дождитесь первой копии: следующие смены схемы пройдут сами.
 
 Этот путь проверяет гейт `deployment-stand` (`tests/deployment/upgrade-stand.mjs`). На хосте с systemd ставится `.deb` последнего опубликованного релиза, его хеш сверяется с `native-linux.json` того же релиза. Затем стенд проверяет:
 

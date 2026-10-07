@@ -179,8 +179,11 @@ export class Services implements BackupServiceControl {
       this.composeOutput(release, args),
     );
   }
-  openVault(vault: string | null): Promise<() => Promise<void>> {
-    return this.vaultAccess().open(vault);
+  openVault(
+    vault: string | null,
+    options: { readonly keyFile?: boolean } = {},
+  ): Promise<() => Promise<void>> {
+    return this.vaultAccess().open(vault, options);
   }
   initializeVault(vault: string): Promise<void> {
     return this.vaultAccess().initialize(vault);

@@ -21,10 +21,13 @@ configure      --enable-updates | --disable-updates | --pin --version X.Y.Z | --
                cannot be reached), anonymous statistics / Хаб обновлений, канал, статистика
                --tls-cert <pem> --tls-key <pem> [--listen-host <addr>] | --tls-off
                Built-in HTTPS; restarts, verifies, rolls back on failure / HTTPS с откатом
-               --backup-vault <absolute dir> [--init-vault] | --backup-vault-off
-               Vault of the backup agent: outside the root and storage, writable; --init-vault
-               creates vault.json only in an empty directory; restarts the agent, requires it
-               to report the vault, rolls back on failure / Vault агента копий с откатом
+               --backup-vault <absolute dir> [--vault-key-file <file>] | --backup-vault-off
+               --backup-vault <absolute dir> --init-vault --vault-no-encryption
+               Vault of the backup agent: outside the root and storage, writable; restarts the
+               agent, requires it to report the vault, rolls back on failure / Vault агента копий
+               An encrypted vault (the default) is made first with "arkvory-backup vault init
+               <dir> --kit-file <file> --agent-key-file <file>"; --vault-key-file gives the agent key (AK1-...) to install, never the recovery key. --init-vault makes a
+               vault without encryption only together with --vault-no-encryption
                --mirror <repo> --mirror-upstream <https://origin> [--mirror-source <repo>]
                --mirror-token-file <file> [--mirror-stages a,b] [--mirror-ca-file <pem>]
                | --mirror-detach <repo>
