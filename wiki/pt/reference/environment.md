@@ -100,15 +100,16 @@ O HTTPS integrado é para instalações nativas. Com o Docker Compose, use um pr
 
 ## Backups {#backups}
 
-| Variável                          | Lida por        | Padrão       | Significado                                                                                                                                                |
-| --------------------------------- | --------------- | ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ARKVORY_BACKUP_VAULT`            | agente          | não definida | Diretório de um vault inicializado. Sem ele, o agente é executado e informa que nenhum vault está configurado. `arkvory configure --backup-vault` o grava. |
-| `ARKVORY_BACKUP_BYTES_PER_SECOND` | agente          | sem limite   | Limite da taxa de cópia de um backup, no mínimo 65.536.                                                                                                    |
-| `ARKVORY_BACKUP_POLL_SECONDS`     | agente          | `15`         | Com que frequência o agente procura novas tarefas de backup, 1–3600 segundos.                                                                              |
-| `ARKVORY_BACKUP_LEASE_SECONDS`    | agente          | `60`         | Tempo de lease que impede que um segundo agente seja executado ao mesmo tempo, 2–3600 segundos.                                                            |
-| `ARKVORY_BACKUP_SNAPSHOT_SECONDS` | agente          | `1800`       | Limite de tempo para a parte de snapshot do banco de dados de um backup, 60–86.400 segundos.                                                               |
-| `ARKVORY_BACKUP_BARRIER_SECONDS`  | agente          | `30`         | Quanto tempo um backup espera por uma etapa de limpeza em execução, 1–600 segundos.                                                                        |
-| `ARKVORY_RESTORE_DATABASE_URL`    | comando restore | não definida | Banco de dados de destino de uma restauração. É mais seguro que `--database-url`, porque outros usuários não o veem na lista de processos.                 |
+| Variável                          | Lida por        | Padrão       | Significado                                                                                                                                                                                    |
+| --------------------------------- | --------------- | ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ARKVORY_BACKUP_VAULT`            | agente          | não definida | Diretório de um vault inicializado. Sem ele, o agente é executado e informa que nenhum vault está configurado. `arkvory configure --backup-vault` o grava.                                     |
+| `ARKVORY_BACKUP_VAULT_KEY_FILE`   | agente          | não definida | Arquivo com a chave do agente para um vault criptografado (`AK1-…`), ou um kit de recuperação. Os comandos também o aceitam como `--key-file`. `arkvory configure --vault-key-file` o escreve. |
+| `ARKVORY_BACKUP_BYTES_PER_SECOND` | agente          | sem limite   | Limite da taxa de cópia de um backup, no mínimo 65.536.                                                                                                                                        |
+| `ARKVORY_BACKUP_POLL_SECONDS`     | agente          | `15`         | Com que frequência o agente procura novas tarefas de backup, 1–3600 segundos.                                                                                                                  |
+| `ARKVORY_BACKUP_LEASE_SECONDS`    | agente          | `60`         | Tempo de lease que impede que um segundo agente seja executado ao mesmo tempo, 2–3600 segundos.                                                                                                |
+| `ARKVORY_BACKUP_SNAPSHOT_SECONDS` | agente          | `1800`       | Limite de tempo para a parte de snapshot do banco de dados de um backup, 60–86.400 segundos.                                                                                                   |
+| `ARKVORY_BACKUP_BARRIER_SECONDS`  | agente          | `30`         | Quanto tempo um backup espera por uma etapa de limpeza em execução, 1–600 segundos.                                                                                                            |
+| `ARKVORY_RESTORE_DATABASE_URL`    | comando restore | não definida | Banco de dados de destino de uma restauração. É mais seguro que `--database-url`, porque outros usuários não o veem na lista de processos.                                                     |
 
 Consulte [Backups](../operate/backups).
 

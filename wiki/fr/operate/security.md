@@ -17,7 +17,7 @@ Le projet indique qu’un modèle de menace et une revue de sécurité externe r
 4. Donnez à chaque outil ou système de CI son propre compte de service avec une clé dotée du minimum de droits. Voir [Clés et jetons](#keys).
 5. Laissez l’auto-enregistrement désactivé. Il est désactivé par défaut.
 6. Si un proxy inverse se trouve devant Arkvory, définissez `ARKVORY_TRUSTED_PROXIES`. Voir [Limites de connexion](#sign-in-limits).
-7. Placez le coffre de sauvegarde sur un volume chiffré que seuls le compte de service et l’administrateur des sauvegardes peuvent lire. Voir [Sauvegardes](./backups).
+7. Utilisez un vault chiffré (le choix par défaut) et gardez son kit de récupération hors du serveur. Placez-le aussi sur un volume chiffré que seuls le compte de service et l'administrateur des sauvegardes peuvent lire. Voir [Sauvegardes](./backups#encryption).
 8. Conservez des copies des fichiers de secrets en dehors du serveur. Voir [Sauvegarder vos secrets](#secret-backups).
 9. Connectez les métriques et les alertes. Voir [Supervision](./monitoring).
 
@@ -174,8 +174,9 @@ Les contrôles toutes les 6 heures s’exécutent aussi lorsque l’installation
 
 ## Sauvegarder vos secrets {#secret-backups}
 
-Le coffre de sauvegarde contient le catalogue, les hachages de mots de passe et tous les fichiers publiés. Il n’est pas chiffré. Il ne contient pas les fichiers de votre configuration. Conservez une seconde copie de ces fichiers dans un endroit chiffré en dehors du serveur :
+Le vault contient le catalogue, les empreintes de mots de passe et tous les fichiers publiés. Arkvory le chiffre à sa création, et son kit de récupération doit être gardé hors du serveur (voir [Sauvegardes](./backups#encryption)). Le vault ne contient pas les fichiers de votre configuration. Gardez une seconde copie de ces fichiers dans un endroit chiffré hors du serveur :
 
+- le kit de récupération du vault de sauvegarde : c'est le seul moyen de lire les sauvegardes si le serveur et son fichier de clé sont perdus ; gardez deux copies à deux endroits.
 - `config/keys.json` et `config/bootstrap-token.txt` (la clé de récupération),
 - `config/runtime.json`,
 - le certificat et la clé TLS,

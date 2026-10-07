@@ -197,10 +197,10 @@ El contenedor `backup` se ejecuta desde el principio. Sin un almacén, se ejecut
 2. Conéctelo:
 
    ```bash
-   sudo "$node" "$root/manage.mjs" configure --root "$root" --backup-vault /mnt/backup/arkvory --init-vault
+   sudo "$node" "$root/manage.mjs" configure --root "$root" --backup-vault /mnt/backup/arkvory --vault-key-file /root/arkvory-agent.key
    ```
 
-   El comando comprueba el directorio, escribe `config/compose.vault.yml`, asigna al usuario 1000 la propiedad del directorio, crea el almacén en un directorio vacío (`--init-vault`) y reinicia solo el contenedor de copias de seguridad. Tiene éxito cuando el agente informa de que el almacén está disponible. De lo contrario, restaura la configuración anterior.
+   El comando comprueba el directorio, escribe `config/compose.vault.yml`, asigna al usuario 1000 la propiedad del directorio, entrega al contenedor de copias el archivo de la clave del agente en solo lectura (`--vault-key-file`) y reinicia solo el contenedor de copias de seguridad. Tiene éxito cuando el agente informa de que el almacén está disponible. De lo contrario, restaura la configuración anterior.
 
 3. Para desconectar el almacén, ejecute el mismo comando con `--backup-vault-off`. El almacén en sí no se toca.
 

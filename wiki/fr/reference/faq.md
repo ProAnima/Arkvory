@@ -61,7 +61,7 @@ Vos fichiers et vos données restent sur votre serveur. Le serveur contacte le h
 
 ### Les sauvegardes s’exécutent-elles toutes seules ? {#automatic-backups}
 
-Pas avant que vous ne les configuriez. Connectez un stockage des sauvegardes avec `arkvory configure --backup-vault <folder> --init-vault`, puis activez la planification quotidienne dans [[ui:backupPlan]] dans [[ui:backups]]. Le plan commence à 02:00 UTC et conserve 7 points de restauration quotidiens, 4 hebdomadaires et 6 mensuels. Tant que la planification n’est pas activée, la console affiche l’avertissement indiquant que la planification quotidienne est désactivée. Voir [Sauvegardes](../operate/backups).
+Pas avant que vous ne les configuriez. Connectez un stockage des sauvegardes avec `arkvory configure --backup-vault <folder> --vault-key-file <file>`, puis activez la planification quotidienne dans [[ui:backupPlan]] dans [[ui:backups]]. Le plan commence à 02:00 UTC et conserve 7 points de restauration quotidiens, 4 hebdomadaires et 6 mensuels. Tant que la planification n’est pas activée, la console affiche l’avertissement indiquant que la planification quotidienne est désactivée. Voir [Sauvegardes](../operate/backups).
 
 ### Comment migrer vers un autre serveur ? {#move-server}
 

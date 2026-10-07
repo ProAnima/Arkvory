@@ -17,7 +17,7 @@ Das Projekt gibt an, dass ein Bedrohungsmodell und eine externe Sicherheitsprüf
 4. Geben Sie jedem Werkzeug oder CI-System ein eigenes Dienstkonto mit einem Schlüssel, der die wenigsten Rechte hat. Siehe [Schlüssel und Token](#keys).
 5. Lassen Sie die Selbstregistrierung aus. Sie ist standardmäßig aus.
 6. Wenn ein Reverse-Proxy vor Arkvory steht, setzen Sie `ARKVORY_TRUSTED_PROXIES`. Siehe [Anmeldegrenzen](#sign-in-limits).
-7. Legen Sie den Backup-Speicher auf einen verschlüsselten Datenträger, den nur das Dienstkonto und der Backup-Administrator lesen können. Siehe [Backups](./backups).
+7. Verwenden Sie ein verschlüsseltes Vault (die Voreinstellung) und bewahren Sie sein Recovery-Kit außerhalb des Servers auf. Legen Sie es außerdem auf ein verschlüsseltes Laufwerk, das nur das Dienstkonto und der Backup-Administrator lesen können. Siehe [Backups](./backups#encryption).
 8. Bewahren Sie Kopien der Geheimnisdateien außerhalb des Servers auf. Siehe [Sichern Sie Ihre Geheimnisse](#secret-backups).
 9. Verbinden Sie die Metriken und die Alarme. Siehe [Monitoring](./monitoring).
 
@@ -174,8 +174,9 @@ Die Prüfungen alle 6 Stunden laufen auch, wenn die automatische Installation au
 
 ## Sichern Sie Ihre Geheimnisse {#secret-backups}
 
-Der Backup-Speicher enthält den Katalog, die Passwort-Hashes und alle veröffentlichten Dateien. Er ist nicht verschlüsselt. Er enthält nicht die Dateien Ihrer Konfiguration. Bewahren Sie eine zweite Kopie dieser Dateien an einem verschlüsselten Ort außerhalb des Servers auf:
+Das Vault enthält den Katalog, die Passwort-Hashes und alle veröffentlichten Dateien. Arkvory verschlüsselt es bei der Erstellung, und sein Recovery-Kit muss außerhalb des Servers aufbewahrt werden (siehe [Backups](./backups#encryption)). Das Vault enthält nicht die Dateien Ihrer Konfiguration. Bewahren Sie eine zweite Kopie dieser Dateien an einem verschlüsselten Ort außerhalb des Servers auf:
 
+- das Recovery-Kit des Backup-Vaults: Es ist der einzige Weg, die Backups zu lesen, wenn der Server und seine Schlüsseldatei verloren sind; bewahren Sie zwei Kopien an zwei Orten auf.
 - `config/keys.json` und `config/bootstrap-token.txt` (der Wiederherstellungsschlüssel),
 - `config/runtime.json`,
 - das TLS-Zertifikat und den Schlüssel,

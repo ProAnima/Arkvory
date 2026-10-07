@@ -17,7 +17,7 @@ O projeto informa que um modelo de ameaças e uma revisão de segurança externa
 4. Dê a cada ferramenta ou sistema de CI sua própria conta de serviço, com uma chave que tenha o mínimo de direitos. Consulte [Chaves e tokens](#keys).
 5. Deixe o autorregistro desativado. Ele já vem desativado por padrão.
 6. Se houver um proxy reverso na frente do Arkvory, defina `ARKVORY_TRUSTED_PROXIES`. Consulte [Limites de login](#sign-in-limits).
-7. Coloque o armazenamento de backups (vault) em um volume criptografado que somente a conta de serviço e o administrador de backup possam ler. Consulte [Backups](./backups).
+7. Use um vault criptografado (o padrão) e guarde o kit de recuperação fora do servidor. Coloque-o também em um volume criptografado que somente a conta de serviço e o administrador de backups possam ler. Veja [Backups](./backups#encryption).
 8. Mantenha cópias dos arquivos de segredos fora do servidor. Consulte [Faça backup dos seus segredos](#secret-backups).
 9. Conecte as métricas e os alertas. Consulte [Monitoramento](./monitoring).
 
@@ -174,8 +174,9 @@ As verificações a cada 6 horas também acontecem quando a instalação automá
 
 ## Faça backup dos seus segredos {#secret-backups}
 
-O armazenamento de backups contém o catálogo, os hashes das senhas e todos os arquivos publicados. Não é criptografado. Não contém os arquivos de configuração. Mantenha uma segunda cópia destes arquivos em um local criptografado fora do servidor:
+O vault guarda o catálogo, os hashes de senhas e todos os arquivos publicados. O Arkvory o criptografa ao criá-lo, e o kit de recuperação deve ficar fora do servidor (veja [Backups](./backups#encryption)). O vault não guarda os arquivos da sua configuração. Guarde uma segunda cópia desses arquivos em um lugar criptografado fora do servidor:
 
+- o kit de recuperação do vault de backups: é a única forma de ler os backups se o servidor e o arquivo de chave dele forem perdidos; guarde duas cópias em dois lugares.
 - `config/keys.json` e `config/bootstrap-token.txt` (a chave de recuperação),
 - `config/runtime.json`,
 - o certificado e a chave TLS,

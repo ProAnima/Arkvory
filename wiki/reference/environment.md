@@ -100,15 +100,16 @@ Built-in HTTPS is for native installations. With Docker Compose, use a reverse p
 
 ## Backups {#backups}
 
-| Variable                          | Read by         | Default  | Meaning                                                                                                                                              |
-| --------------------------------- | --------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ARKVORY_BACKUP_VAULT`            | agent           | not set  | Directory of an initialized vault. Without it, the agent runs and reports that no vault is configured. `arkvory configure --backup-vault` writes it. |
-| `ARKVORY_BACKUP_BYTES_PER_SECOND` | agent           | no limit | Copy rate limit of a backup, at least 65 536.                                                                                                        |
-| `ARKVORY_BACKUP_POLL_SECONDS`     | agent           | `15`     | How often the agent checks for new backup jobs, 1–3600 seconds.                                                                                      |
-| `ARKVORY_BACKUP_LEASE_SECONDS`    | agent           | `60`     | Lease time that keeps a second agent from running at the same time, 2–3600 seconds.                                                                  |
-| `ARKVORY_BACKUP_SNAPSHOT_SECONDS` | agent           | `1800`   | Time limit for the database snapshot part of a backup, 60–86 400 seconds.                                                                            |
-| `ARKVORY_BACKUP_BARRIER_SECONDS`  | agent           | `30`     | How long a backup waits for a running cleanup step, 1–600 seconds.                                                                                   |
-| `ARKVORY_RESTORE_DATABASE_URL`    | restore command | not set  | Target database of a restore. It is safer than `--database-url`, because other users cannot see it in the process list.                              |
+| Variable                          | Read by         | Default  | Meaning                                                                                                                                                                 |
+| --------------------------------- | --------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ARKVORY_BACKUP_VAULT`            | agent           | not set  | Directory of an initialized vault. Without it, the agent runs and reports that no vault is configured. `arkvory configure --backup-vault` writes it.                    |
+| `ARKVORY_BACKUP_VAULT_KEY_FILE`   | agent           | not set  | File with the agent key for an encrypted vault (`AK1-…`), or a recovery kit. The commands also take it as `--key-file`. `arkvory configure --vault-key-file` writes it. |
+| `ARKVORY_BACKUP_BYTES_PER_SECOND` | agent           | no limit | Copy rate limit of a backup, at least 65 536.                                                                                                                           |
+| `ARKVORY_BACKUP_POLL_SECONDS`     | agent           | `15`     | How often the agent checks for new backup jobs, 1–3600 seconds.                                                                                                         |
+| `ARKVORY_BACKUP_LEASE_SECONDS`    | agent           | `60`     | Lease time that keeps a second agent from running at the same time, 2–3600 seconds.                                                                                     |
+| `ARKVORY_BACKUP_SNAPSHOT_SECONDS` | agent           | `1800`   | Time limit for the database snapshot part of a backup, 60–86 400 seconds.                                                                                               |
+| `ARKVORY_BACKUP_BARRIER_SECONDS`  | agent           | `30`     | How long a backup waits for a running cleanup step, 1–600 seconds.                                                                                                      |
+| `ARKVORY_RESTORE_DATABASE_URL`    | restore command | not set  | Target database of a restore. It is safer than `--database-url`, because other users cannot see it in the process list.                                                 |
 
 See [Backups](../operate/backups).
 

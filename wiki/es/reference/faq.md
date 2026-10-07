@@ -61,7 +61,7 @@ Sus archivos y datos permanecen en su servidor. El servidor contacta con el hub 
 
 ### ¿Las copias de seguridad se ejecutan solas? {#automatic-backups}
 
-No hasta que las configure. Conecte un almacén con `arkvory configure --backup-vault <folder> --init-vault` y luego active el programa diario en [[ui:backupPlan]] en [[ui:backups]]. El plan empieza a las 02:00 UTC y conserva 7 puntos de restauración diarios, 4 semanales y 6 mensuales. Hasta que el programa esté activado, la consola muestra el aviso de que el programa diario está desactivado. Véase [Copias de seguridad](../operate/backups).
+No hasta que las configure. Conecte un almacén con `arkvory configure --backup-vault <folder> --vault-key-file <file>` y luego active el programa diario en [[ui:backupPlan]] en [[ui:backups]]. El plan empieza a las 02:00 UTC y conserva 7 puntos de restauración diarios, 4 semanales y 6 mensuales. Hasta que el programa esté activado, la consola muestra el aviso de que el programa diario está desactivado. Véase [Copias de seguridad](../operate/backups).
 
 ### ¿Cómo me traslado a otro servidor? {#move-server}
 

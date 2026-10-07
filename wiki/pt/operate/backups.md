@@ -58,30 +58,67 @@ Um ponto de restauração não contém:
 
 Use um volume em outro disco ou em um NAS, para que a falha do disco de armazenamento não leve os backups junto. Um vault no mesmo disco físico do armazenamento protege contra erros, mas não contra a falha do disco.
 
-**O vault não é criptografado.** Ele guarda o catálogo, os hashes das senhas e todos os arquivos publicados. Coloque-o em um volume criptografado (LUKS, BitLocker, criptografia do NAS) e permita o acesso somente à conta do serviço e ao administrador de backup.
+**O vault é criptografado por padrão.** O Arkvory criptografa os arquivos, o catálogo e as descrições dos pontos (veja [Criptografar o vault](#encryption)). Um vault criado sem criptografia guarda o catálogo, os hashes de senhas e todos os arquivos publicados em texto claro: coloque-o em um volume criptografado (LUKS, BitLocker, criptografia do NAS) e permita o acesso apenas à conta de serviço e ao administrador de backups.
+
+### Criptografar o vault {#encryption}
+
+Um vault é criptografado quando é criado e continua assim. O Arkvory criptografa o conteúdo dos arquivos, o catálogo e as descrições dos pontos com AES-256-GCM e, ao ler o vault, detecta um arquivo alterado, cortado ou trocado. Ele não esconde os nomes dos arquivos, seus tamanhos nem o número de pontos.
+
+Crie o vault no servidor com o programa `arkvory-backup` (veja [Antes de começar](#restore-prepare)). Os dois arquivos devem ser novos e ficar fora do vault e do armazenamento:
+
+```bash
+arkvory-backup vault init /mnt/backup/arkvory \
+  --kit-file /root/arkvory-recovery-kit.txt \
+  --agent-key-file /root/arkvory-agent.key
+```
+
+1. O comando cria o vault com duas chaves: a chave do agente (`arkvory-agent.key`) e a chave de recuperação no kit de recuperação. Ele abre o vault com cada uma antes de informar o sucesso.
+2. Tire agora o kit de recuperação deste servidor: para um gerenciador de senhas ou um cofre. Sem o kit ou a chave do agente, ninguém consegue ler os backups, e ninguém consegue restaurá-los por você. Quem tiver o kit e uma cópia do vault consegue ler todos os backups nele.
+3. Conecte o vault com a chave do agente, como mostra a próxima seção, e apague a sua cópia do arquivo de chave. A instalação guarda a própria cópia em `config/backup/vault.key`, legível apenas pela conta de serviço.
+
+A chave de recuperação do kit abre somente este vault. Ela não é a chave de recuperação da instalação (`config/bootstrap-token.txt`).
+
+Verifique agora que o kit abre o vault, e de novo após cada mudança de chaves:
+
+```bash
+arkvory-backup vault key verify --vault /mnt/backup/arkvory --key-file /root/arkvory-recovery-kit.txt
+```
+
+Uma chave pertence a um slot, e cada slot abre o vault com a sua própria chave. Estes comandos alteram os slots. Nenhum deles mostra uma chave:
+
+| Comando                                                                  | Efeito                                                                                                           |
+| ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------- |
+| `vault key list --vault DIR`                                             | Lista os slots: id, tipo (`agent` ou `recovery`) e hora de criação. Não precisa de chave.                        |
+| `vault key add-recovery --vault DIR --key-file KEY --kit-file NEW`       | Adiciona um slot de recuperação e escreve o kit dele, para outra pessoa ou outro cofre.                          |
+| `vault key rotate-agent --vault DIR --key-file KEY --agent-key-file NEW` | Cria uma nova chave do agente e remove a antiga. Depois execute `arkvory configure` com o novo arquivo de chave. |
+| `vault key remove --vault DIR --key-file KEY --slot ID`                  | Remove um slot. O último slot e o último slot de recuperação permanecem.                                         |
+
+Remover um slot fecha o vault para quem tem somente aquela chave. Isso não criptografa de novo os pontos anteriores: quem copiou antes o vault e uma chave continua lendo essa cópia. Se uma chave pode ter vazado, crie um vault novo com chaves novas e comece lá novos pontos.
+
+Um vault sem criptografia é possível: `arkvory-backup vault init DIR --no-encryption`. Ele guarda o catálogo, os hashes de senhas e todos os arquivos em texto claro, por isso precisa de um volume criptografado e de acesso apenas para a conta de serviço.
 
 ### Conectar o vault {#connect-vault}
 
 Execute o comando como root ou como administrador, no servidor. Ele verifica o diretório antes de alterar qualquer coisa.
 
 ```bash
-sudo arkvory configure --root /opt/proanima-arkvory --backup-vault /mnt/backup/arkvory --init-vault
+sudo arkvory configure --root /opt/proanima-arkvory --backup-vault /mnt/backup/arkvory --vault-key-file /root/arkvory-agent.key
 ```
 
 ```powershell
 $root = 'C:\ProgramData\ProAnima\Arkvory'
-& 'C:\Program Files\ProAnima\Arkvory\arkvory.ps1' configure --root $root --backup-vault D:\Backup\Arkvory --init-vault
+& 'C:\Program Files\ProAnima\Arkvory\arkvory.ps1' configure --root $root --backup-vault D:\Backup\Arkvory --vault-key-file C:\Private\arkvory-agent.key
 ```
 
 Em uma instalação por script no Windows, inicie o `manage.mjs` como descrito em [Windows](../install/windows#manage-the-services).
 
 1. O comando verifica o caminho: absoluto, um diretório existente com permissão de gravação, fora da instalação e do armazenamento, e visível para o serviço.
-2. Com `--init-vault`, ele cria o `vault.json` em um diretório **vazio**. Ele nunca inicializa um diretório duas vezes. Sem o `vault.json` e sem a opção, ele recusa, para que um NAS que não está montado não seja confundido com um vault vazio.
-3. Ele dá acesso à conta do serviço, grava `ARKVORY_BACKUP_VAULT` em `config/runtime.json` e reinicia somente o agente.
+2. Um vault criptografado, o padrão, já existe: você o criou com `arkvory-backup vault init`, e `--vault-key-file` entrega ao serviço a sua chave (uma chave `AK1-…`, nunca a de recuperação). Com `--init-vault --vault-no-encryption` ele cria, em vez disso, um vault sem criptografia em um diretório **vazio**. Ele nunca inicializa um diretório duas vezes. Sem `vault.json` e sem `--init-vault`, ele recusa, para que um NAS não montado não seja tomado por um vault vazio.
+3. Ele dá acesso à conta de serviço, copia a chave para `config/backup/vault.key`, escreve `ARKVORY_BACKUP_VAULT` e `ARKVORY_BACKUP_VAULT_KEY_FILE` em `config/runtime.json` e reinicia somente o agente.
 4. Ele espera até 150 segundos até que o agente informe que este vault está disponível. Essa verificação lê o `config/bootstrap-token.txt`, então não exclua esse arquivo.
 5. Se algo falhar, ele restaura as configurações e o acesso anteriores e reinicia o agente.
 
-Para usar um vault que já existe, por exemplo em um servidor novo, omita `--init-vault`. Para desconectar o vault, use `--backup-vault-off`. Isso deixa o diretório e seus arquivos inalterados. Uma reinicialização interrompe um backup em execução, e o agente o repete.
+Para usar um vault que já existe, por exemplo em um servidor novo, informe a chave dele com `--vault-key-file` e omita `--init-vault`. Para desconectar o vault, use `--backup-vault-off`: o diretório e seus arquivos ficam inalterados e o arquivo de chave da instalação é removido. Uma reinicialização interrompe um backup em andamento, e o agente o repete.
 
 No Docker Compose, o vault é um bind mount definido em `config/compose.vault.yml`. Quando você executa comandos do Compose por conta própria, adicione `-f config/compose.vault.yml`. Sem isso, o `up` cria o contêiner do agente sem o vault.
 
@@ -186,18 +223,18 @@ Uma tarefa tem um destes estados: [[ui:backupJobQueued]], [[ui:backupJobRunning]
 
 ### Avisos {#warnings}
 
-| Código                 | Nível   | O que fazer                                                                                                                      |
-| ---------------------- | ------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `vault_not_configured` | Aviso   | Conecte um vault. Consulte [Conectar o vault](#connect-vault)                                                                    |
-| `agent_offline`        | Crítico | Sem sinal há 2 minutos. Inicie o serviço do agente e leia o log dele                                                             |
-| `schedule_disabled`    | Aviso   | Ative o plano se você precisa de backups diários                                                                                 |
-| `no_backup_yet`        | Aviso   | Crie o primeiro backup                                                                                                           |
-| `backup_stale`         | Crítico | O ponto mais recente tem mais de 26 horas e o plano está ativado. Leia os códigos de erro das tarefas e o log do agente          |
-| `last_run_failed`      | Aviso   | O último backup falhou. O código de erro está na lista de tarefas                                                                |
-| `vault_unavailable`    | Crítico | O volume não está montado, o `vault.json` não existe ou o vault não aceita gravação                                              |
-| `vault_low_space`      | Aviso   | Menos de 10% do volume está livre, ou menos que o dobro dos dados novos do último backup. Libere espaço ou mantenha menos pontos |
-| `verify_failed`        | Crítico | Um ponto falhou na verificação. Não altere o vault; investigue                                                                   |
-| `never_deep_verified`  | Aviso   | Nenhuma verificação completa há mais de 8 dias. Verifique se o agente está em execução ou inicie uma verificação completa        |
+| Código                 | Nível   | O que fazer                                                                                                                                                                                |
+| ---------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `vault_not_configured` | Aviso   | Conecte um vault. Consulte [Conectar o vault](#connect-vault)                                                                                                                              |
+| `agent_offline`        | Crítico | Sem sinal há 2 minutos. Inicie o serviço do agente e leia o log dele                                                                                                                       |
+| `schedule_disabled`    | Aviso   | Ative o plano se você precisa de backups diários                                                                                                                                           |
+| `no_backup_yet`        | Aviso   | Crie o primeiro backup                                                                                                                                                                     |
+| `backup_stale`         | Crítico | O ponto mais recente tem mais de 26 horas e o plano está ativado. Leia os códigos de erro das tarefas e o log do agente                                                                    |
+| `last_run_failed`      | Aviso   | O último backup falhou. O código de erro está na lista de tarefas                                                                                                                          |
+| `vault_unavailable`    | Crítico | O volume não está montado, falta `vault.json`, o vault não é gravável, ou um vault criptografado não tem uma chave válida (o log do agente diz `vault_key_missing` ou `vault_key_invalid`) |
+| `vault_low_space`      | Aviso   | Menos de 10% do volume está livre, ou menos que o dobro dos dados novos do último backup. Libere espaço ou mantenha menos pontos                                                           |
+| `verify_failed`        | Crítico | Um ponto falhou na verificação. Não altere o vault; investigue                                                                                                                             |
+| `never_deep_verified`  | Aviso   | Nenhuma verificação completa há mais de 8 dias. Verifique se o agente está em execução ou inicie uma verificação completa                                                                  |
 
 ### Com a CLI e a API {#status-cli}
 
@@ -226,6 +263,7 @@ Uma restauração grava em um banco de dados **vazio** e em um diretório de arm
 
 - **O release.** Use o release que criou o ponto ou um mais novo. Um ponto de um release mais novo é recusado com `schema_mismatch`.
 - **A conta.** Execute o comando com uma conta que possa ler o vault. No Linux, o vault pertence ao `arkvory` e tem o modo 0700, então use `sudo -u arkvory`. No Windows, use um PowerShell com privilégios elevados. O novo diretório de armazenamento precisa terminar como propriedade da conta que executará a API.
+- **A chave.** Um vault criptografado precisa da sua chave. Passe o kit de recuperação ou um arquivo de chave como `--key-file FILE` a cada comando abaixo, ou defina `ARKVORY_BACKUP_VAULT_KEY_FILE`. A chave é sempre um arquivo, nunca um argumento.
 - **O destino.** Crie um banco de dados vazio, por exemplo `CREATE DATABASE arkvory_restore OWNER arkvory;`. Escolha um diretório de armazenamento que não exista ou esteja vazio, em um volume diferente do vault e fora do armazenamento de origem.
 - **A URL do banco de dados.** Passe-a pelo ambiente, não como argumento, porque os argumentos ficam visíveis na lista de processos.
 
@@ -344,23 +382,25 @@ Leia o log do agente com `journalctl -u arkvory-backup` no Linux, em `logs\` na 
 
 ### Códigos de erro {#error-codes}
 
-| `errorCode`                                              | Saída | O que fazer                                                                                                      |
-| -------------------------------------------------------- | ----- | ---------------------------------------------------------------------------------------------------------------- |
-| `vault_missing`                                          | 3     | O diretório não tem `vault.json`. Monte o volume ou execute `vault init` uma vez                                 |
-| `unsafe_path`                                            | 3     | Mantenha o vault, o armazenamento e o destino da restauração em árvores de diretórios separadas                  |
-| `target_not_empty`                                       | 3     | A restauração grava somente em um banco de dados vazio e em um diretório vazio                                   |
-| `schema_mismatch`                                        | 3     | O ponto é mais novo que o release ou mais antigo que a restauração suportada. Use outro release                  |
-| `upgrade_required`                                       | 3     | Atualize todos os processos de API e de manutenção da instalação                                                 |
-| `point_not_found`, `storage_mismatch`                    | 3     | ID de ponto incorreto, ou o `ARKVORY_DATA_DIR` não é um diretório de armazenamento inicializado desta instalação |
-| `integrity_mismatch`, `invalid_manifest`, `blob_missing` | 4     | Deixe o vault inalterado. Execute `verify --deep` e investigue                                                   |
-| `busy`, `barrier_timeout`                                | 5     | Outra operação está em andamento. Tente de novo mais tarde                                                       |
-| `vault_full`, `storage_full`                             | 1     | Libere espaço. Os pontos anteriores estão intactos                                                               |
-| `attempts_exhausted`                                     | 3     | Esta solicitação usou as 5 tentativas dela. Inicie um novo backup                                                |
+| `errorCode`                                              | Saída | O que fazer                                                                                                                                             |
+| -------------------------------------------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `vault_missing`                                          | 3     | O diretório não tem `vault.json`. Monte o volume ou execute `vault init` uma vez                                                                        |
+| `vault_key_missing`                                      | 3     | O vault é criptografado e nenhuma chave foi informada. Use `--key-file FILE` ou `ARKVORY_BACKUP_VAULT_KEY_FILE`                                         |
+| `vault_key_invalid`                                      | 3     | A chave não abre este vault: verifique o arquivo, o vault ou se o slot foi removido. Um erro de digitação é detectado pela soma de verificação da chave |
+| `unsafe_path`                                            | 3     | Mantenha o vault, o armazenamento e o destino da restauração em árvores de diretórios separadas                                                         |
+| `target_not_empty`                                       | 3     | A restauração grava somente em um banco de dados vazio e em um diretório vazio                                                                          |
+| `schema_mismatch`                                        | 3     | O ponto é mais novo que o release ou mais antigo que a restauração suportada. Use outro release                                                         |
+| `upgrade_required`                                       | 3     | Atualize todos os processos de API e de manutenção da instalação                                                                                        |
+| `point_not_found`, `storage_mismatch`                    | 3     | ID de ponto incorreto, ou o `ARKVORY_DATA_DIR` não é um diretório de armazenamento inicializado desta instalação                                        |
+| `integrity_mismatch`, `invalid_manifest`, `blob_missing` | 4     | Deixe o vault inalterado. Execute `verify --deep` e investigue                                                                                          |
+| `busy`, `barrier_timeout`                                | 5     | Outra operação está em andamento. Tente de novo mais tarde                                                                                              |
+| `vault_full`, `storage_full`                             | 1     | Libere espaço. Os pontos anteriores estão intactos                                                                                                      |
+| `attempts_exhausted`                                     | 3     | Esta solicitação usou as 5 tentativas dela. Inicie um novo backup                                                                                       |
 
 ## Limites {#limits}
 
 - Um plano e um vault por instalação. O vault é um diretório em um disco ou em um compartilhamento montado, sem S3 e sem perfil offsite ou imutável.
-- O vault não é criptografado pelo Arkvory.
+- A criptografia esconde o conteúdo e o catálogo, não os nomes dos arquivos, seus tamanhos nem o número de pontos. Chaves perdidas significam backups perdidos. Remover um slot de chave não criptografa de novo os pontos anteriores.
 - Você não pode pausar nem cancelar uma tarefa de backup, e o console não tem um assistente de restauração nem um status de teste de restauração.
 - A restauração exige um destino vazio, e a troca para os dados restaurados é um passo manual.
 - O agente de backup não é um sistema de alta disponibilidade. Um segundo agente apenas espera como reserva.

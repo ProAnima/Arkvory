@@ -61,7 +61,7 @@ Your files and data stay on your server. The server contacts the ProAnimaStudio 
 
 ### Do backups run by themselves? {#automatic-backups}
 
-Not until you set them up. Connect a vault with `arkvory configure --backup-vault <folder> --init-vault`, then turn on the daily schedule in [[ui:backupPlan]] in [[ui:backups]]. The plan starts at 02:00 UTC and keeps 7 daily, 4 weekly and 6 monthly restore points. Until the schedule is on, the console shows the warning that the daily schedule is off. See [Backups](../operate/backups).
+Not until you set them up. Connect a vault with `arkvory configure --backup-vault <folder> --vault-key-file <file>`, then turn on the daily schedule in [[ui:backupPlan]] in [[ui:backups]]. The plan starts at 02:00 UTC and keeps 7 daily, 4 weekly and 6 monthly restore points. Until the schedule is on, the console shows the warning that the daily schedule is off. See [Backups](../operate/backups).
 
 ### How do I move to another server? {#move-server}
 

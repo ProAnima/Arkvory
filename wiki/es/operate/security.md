@@ -17,7 +17,7 @@ El proyecto declara que un modelo de amenazas y una revisión de seguridad exter
 4. Dé a cada herramienta o sistema de CI su propia cuenta de servicio con una clave que tenga los mínimos derechos. Consulte [Claves y tokens](#keys).
 5. Deje el autorregistro desactivado. Está desactivado de forma predeterminada.
 6. Si hay un proxy inverso delante de Arkvory, configure `ARKVORY_TRUSTED_PROXIES`. Consulte [Límites de inicio de sesión](#sign-in-limits).
-7. Ponga el almacén de copias de seguridad en un volumen cifrado que solo la cuenta de servicio y el administrador de copias puedan leer. Consulte [Copias de seguridad](./backups).
+7. Use un vault cifrado (el predeterminado) y guarde su kit de recuperación fuera del servidor. Póngalo además en un volumen cifrado que solo puedan leer la cuenta de servicio y el administrador de copias. Véase [Copias de seguridad](./backups#encryption).
 8. Conserve copias de los archivos secretos fuera del servidor. Consulte [Copie sus secretos](#secret-backups).
 9. Conecte las métricas y las alertas. Consulte [Monitorización](./monitoring).
 
@@ -174,8 +174,9 @@ Las comprobaciones cada 6 horas también se ejecutan cuando la instalación auto
 
 ## Copie sus secretos {#secret-backups}
 
-El almacén de copias de seguridad contiene el catálogo, los hashes de las contraseñas y todos los archivos publicados. No está cifrado. No contiene los archivos de su configuración. Conserve una segunda copia de estos archivos en un lugar cifrado fuera del servidor:
+El vault guarda el catálogo, los hashes de contraseñas y todos los archivos publicados. Arkvory lo cifra al crearlo, y su kit de recuperación debe guardarse fuera del servidor (véase [Copias de seguridad](./backups#encryption)). El vault no guarda los archivos de su configuración. Guarde una segunda copia de esos archivos en un lugar cifrado fuera del servidor:
 
+- el kit de recuperación del vault de copias: es la única forma de leer las copias si se pierden el servidor y su archivo de clave; guarde dos copias en dos lugares.
 - `config/keys.json` y `config/bootstrap-token.txt` (la clave de recuperación),
 - `config/runtime.json`,
 - el certificado y la clave TLS,

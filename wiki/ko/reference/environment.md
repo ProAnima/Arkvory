@@ -103,6 +103,7 @@ Restart-Service Arkvoryapi, Arkvoryworker, Arkvorybackup
 | 변수                              | 읽는 주체 | 기본값     | 의미                                                                                                                                                              |
 | --------------------------------- | --------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `ARKVORY_BACKUP_VAULT`            | 에이전트  | 설정 안 함 | 초기화된 보관소의 디렉터리. 설정하지 않으면 에이전트는 실행되지만 보관소가 구성되지 않았다고 보고합니다. `arkvory configure --backup-vault`가 이 값을 기록합니다. |
+| `ARKVORY_BACKUP_VAULT_KEY_FILE`   | 에이전트  | 설정 안 함 | 암호화된 vault용 에이전트 키(`AK1-…`)가 든 파일 또는 복구 키트. 명령은 이를 `--key-file`로도 받습니다. `arkvory configure --vault-key-file`이 씁니다.             |
 | `ARKVORY_BACKUP_BYTES_PER_SECOND` | 에이전트  | 제한 없음  | 백업의 복사 속도 제한, 최소 65 536.                                                                                                                               |
 | `ARKVORY_BACKUP_POLL_SECONDS`     | 에이전트  | `15`       | 에이전트가 새 백업 작업을 확인하는 주기, 1–3600초.                                                                                                                |
 | `ARKVORY_BACKUP_LEASE_SECONDS`    | 에이전트  | `60`       | 두 번째 에이전트가 동시에 실행되지 못하게 하는 리스 시간, 2–3600초.                                                                                               |

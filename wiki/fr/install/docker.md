@@ -197,10 +197,10 @@ Le conteneur `backup` s’exécute dès le départ. Sans coffre, il s’exécute
 2. Connectez-le :
 
    ```bash
-   sudo "$node" "$root/manage.mjs" configure --root "$root" --backup-vault /mnt/backup/arkvory --init-vault
+   sudo "$node" "$root/manage.mjs" configure --root "$root" --backup-vault /mnt/backup/arkvory --vault-key-file /root/arkvory-agent.key
    ```
 
-   La commande vérifie le répertoire, écrit `config/compose.vault.yml`, donne à l’utilisateur 1000 la propriété du répertoire, crée le coffre dans un répertoire vide (`--init-vault`) et ne redémarre que le conteneur de sauvegarde. Elle réussit lorsque l’agent signale le coffre comme disponible. Sinon, elle restaure la configuration précédente.
+   La commande vérifie le répertoire, écrit `config/compose.vault.yml`, donne à l’utilisateur 1000 la propriété du répertoire, transmet au conteneur de sauvegarde le fichier de la clé de l’agent en lecture seule (`--vault-key-file`) et ne redémarre que le conteneur de sauvegarde. Elle réussit lorsque l’agent signale le coffre comme disponible. Sinon, elle restaure la configuration précédente.
 
 3. Pour déconnecter le coffre, exécutez la même commande avec `--backup-vault-off`. Le coffre lui-même n’est pas touché.
 

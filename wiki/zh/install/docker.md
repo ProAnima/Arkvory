@@ -197,10 +197,10 @@ sudo "$node" "$root/manage.mjs" update --root "$root"
 2. 连接它：
 
    ```bash
-   sudo "$node" "$root/manage.mjs" configure --root "$root" --backup-vault /mnt/backup/arkvory --init-vault
+   sudo "$node" "$root/manage.mjs" configure --root "$root" --backup-vault /mnt/backup/arkvory --vault-key-file /root/arkvory-agent.key
    ```
 
-   该命令检查目录，写入 `config/compose.vault.yml`，将目录的所有权授予用户 1000，在空目录中创建备份存储（`--init-vault`），并仅重启备份容器。当代理报告备份存储可用时，命令成功。否则它会恢复之前的配置。
+   该命令检查目录，写入 `config/compose.vault.yml`，将目录的所有权授予用户 1000，以只读方式把代理密钥文件交给备份容器（`--vault-key-file`），并仅重启备份容器。当代理报告备份存储可用时，命令成功。否则它会恢复之前的配置。
 
 3. 要断开备份存储，请使用 `--backup-vault-off` 运行相同的命令。备份存储本身不会被改动。
 

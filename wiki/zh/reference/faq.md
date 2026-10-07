@@ -61,7 +61,7 @@ PostgreSQL，每个安装实例一个数据库。Windows 安装程序包含 Post
 
 ### 备份会自行运行吗？ {#automatic-backups}
 
-在您设置之前不会。使用 `arkvory configure --backup-vault <folder> --init-vault` 连接一个备份存储，然后在 [[ui:backups]] 中的 [[ui:backupPlan]] 开启每日计划。计划从 02:00 UTC 开始，保留 7 个每日、4 个每周和 6 个每月恢复点。在计划开启之前，控制台会显示每日计划已关闭的警告。参见[备份](../operate/backups)。
+在您设置之前不会。使用 `arkvory configure --backup-vault <folder> --vault-key-file <file>` 连接一个备份存储，然后在 [[ui:backups]] 中的 [[ui:backupPlan]] 开启每日计划。计划从 02:00 UTC 开始，保留 7 个每日、4 个每周和 6 个每月恢复点。在计划开启之前，控制台会显示每日计划已关闭的警告。参见[备份](../operate/backups)。
 
 ### 我如何迁移到另一台服务器？ {#move-server}
 

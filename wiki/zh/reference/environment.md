@@ -100,15 +100,16 @@ Restart-Service Arkvoryapi, Arkvoryworker, Arkvorybackup
 
 ## 备份 {#backups}
 
-| 变量                              | 读取方   | 默认值 | 含义                                                                                                                |
-| --------------------------------- | -------- | ------ | ------------------------------------------------------------------------------------------------------------------- |
-| `ARKVORY_BACKUP_VAULT`            | agent    | 未设置 | 已初始化的备份存储目录。没有它时，代理仍会运行，并报告未配置备份存储。`arkvory configure --backup-vault` 会写入它。 |
-| `ARKVORY_BACKUP_BYTES_PER_SECOND` | agent    | 无限制 | 备份的复制速率上限，至少为 65 536。                                                                                 |
-| `ARKVORY_BACKUP_POLL_SECONDS`     | agent    | `15`   | 代理多久检查一次新的备份任务，1–3600 秒。                                                                           |
-| `ARKVORY_BACKUP_LEASE_SECONDS`    | agent    | `60`   | 防止第二个代理同时运行的租约时长，2–3600 秒。                                                                       |
-| `ARKVORY_BACKUP_SNAPSHOT_SECONDS` | agent    | `1800` | 备份中数据库快照部分的时间上限，60–86 400 秒。                                                                      |
-| `ARKVORY_BACKUP_BARRIER_SECONDS`  | agent    | `30`   | 备份等待正在运行的清理步骤的时长，1–600 秒。                                                                        |
-| `ARKVORY_RESTORE_DATABASE_URL`    | 恢复命令 | 未设置 | 恢复的目标数据库。它比 `--database-url` 更安全，因为其他用户无法在进程列表中看到它。                                |
+| 变量                              | 读取方   | 默认值 | 含义                                                                                                                                 |
+| --------------------------------- | -------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `ARKVORY_BACKUP_VAULT`            | agent    | 未设置 | 已初始化的备份存储目录。没有它时，代理仍会运行，并报告未配置备份存储。`arkvory configure --backup-vault` 会写入它。                  |
+| `ARKVORY_BACKUP_VAULT_KEY_FILE`   | agent    | 未设置 | 包含加密 vault 代理密钥（`AK1-…`）的文件，或恢复套件。命令也接受它作为 `--key-file`。`arkvory configure --vault-key-file` 会写入它。 |
+| `ARKVORY_BACKUP_BYTES_PER_SECOND` | agent    | 无限制 | 备份的复制速率上限，至少为 65 536。                                                                                                  |
+| `ARKVORY_BACKUP_POLL_SECONDS`     | agent    | `15`   | 代理多久检查一次新的备份任务，1–3600 秒。                                                                                            |
+| `ARKVORY_BACKUP_LEASE_SECONDS`    | agent    | `60`   | 防止第二个代理同时运行的租约时长，2–3600 秒。                                                                                        |
+| `ARKVORY_BACKUP_SNAPSHOT_SECONDS` | agent    | `1800` | 备份中数据库快照部分的时间上限，60–86 400 秒。                                                                                       |
+| `ARKVORY_BACKUP_BARRIER_SECONDS`  | agent    | `30`   | 备份等待正在运行的清理步骤的时长，1–600 秒。                                                                                         |
+| `ARKVORY_RESTORE_DATABASE_URL`    | 恢复命令 | 未设置 | 恢复的目标数据库。它比 `--database-url` 更安全，因为其他用户无法在进程列表中看到它。                                                 |
 
 参见[备份](../operate/backups)。
 

@@ -197,10 +197,10 @@ Arkvory 컨테이너에 Docker 소켓을 주지 마세요.
 2. 연결하세요:
 
    ```bash
-   sudo "$node" "$root/manage.mjs" configure --root "$root" --backup-vault /mnt/backup/arkvory --init-vault
+   sudo "$node" "$root/manage.mjs" configure --root "$root" --backup-vault /mnt/backup/arkvory --vault-key-file /root/arkvory-agent.key
    ```
 
-   이 명령은 디렉터리를 확인하고, `config/compose.vault.yml`을 쓰고, 디렉터리의 소유권을 사용자 1000에 부여하고, 빈 디렉터리에 보관소를 만든 다음(`--init-vault`), 백업 컨테이너만 다시 시작합니다. 에이전트가 보관소를 사용 가능하다고 보고하면 성공합니다. 그렇지 않으면 이전 구성을 복원합니다.
+   이 명령은 디렉터리를 확인하고, `config/compose.vault.yml`을 쓰고, 디렉터리의 소유권을 사용자 1000에 부여하고, 에이전트 키 파일을 읽기 전용으로 백업 컨테이너에 전달하고(`--vault-key-file`), 백업 컨테이너만 다시 시작합니다. 에이전트가 보관소를 사용 가능하다고 보고하면 성공합니다. 그렇지 않으면 이전 구성을 복원합니다.
 
 3. 보관소 연결을 끊으려면 같은 명령을 `--backup-vault-off`와 함께 실행하세요. 보관소 자체는 건드리지 않습니다.
 

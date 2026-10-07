@@ -179,19 +179,20 @@ Get-NetTCPConnection -LocalPort 8080 | Select-Object LocalAddress, OwningProcess
 
 从 [[ui:backups]] 中的警告或 `arkvoryctl backup status` 开始，以及带有 `errorCode` 的日志事件 `backup.request.failed` 和 `backup.agent.failed`。参见[备份](./backups)。
 
-| 警告或消息                                                                          | 原因                                                      | 修复                                                                                      |
-| ----------------------------------------------------------------------------------- | --------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| `agent_offline`                                                                     | 备份服务已停止，或它无法启动                              | 启动 `arkvory-backup` 或 `Arkvorybackup`。阅读它的日志                                    |
-| `vault_unavailable`                                                                 | 备份存储卷未挂载、没有 `vault.json`，或服务账户无法写入它 | 在服务启动前挂载该卷。检查所有者和权限。在 Windows 上，如果卷是稍后挂载的，请重启备份代理 |
-| `The vault directory does not exist; create it or mount its volume first`           | 路径错误或卷缺失                                          | 创建或挂载该目录                                                                          |
-| `The vault directory is not writable`                                               | 服务账户没有写入权限                                      | 在 Linux 上以用户 `arkvory` 的 `uid` 和 `gid` 挂载共享。在 Windows 上使用本地或 iSCSI 卷  |
-| `The directory has no vault.json: mount the vault volume, or pass --init-vault ...` | 空目录可能是未挂载的共享，因此命令拒绝它                  | 挂载正确的卷，或传递 `--init-vault` 以新建一个空备份存储                                  |
-| `The vault must be outside the installation root and the storage directory`         | 备份存储与数据重叠                                        | 在另一个卷上选择单独的目录                                                                |
-| `Network share paths are not supported ...`                                         | Windows 上的 UNC 路径。`LocalService` 无法登录 SMB 共享   | 使用本地或 iSCSI 卷的驱动器盘符                                                           |
-| `The backup service cannot reach /home, /root, /run/user, /tmp or /var/tmp`         | systemd 沙箱隐藏了这些文件夹                              | 选择另一个目录                                                                            |
-| `vault_full`、`vault_low_space`                                                     | 备份存储卷几乎已满                                        | 释放空间或保留更少的恢复点。更早的恢复点保持完好                                          |
-| `last_run_failed`                                                                   | 最新备份失败                                              | 使用 `arkvoryctl backup jobs` 读取 `errorCode`                                            |
-| `verify_failed`                                                                     | 某个恢复点未通过检查                                      | 不要更改备份存储。保留它用于分析并报告                                                    |
+| 警告或消息                                                                          | 原因                                                      | 修复                                                                                                                |
+| ----------------------------------------------------------------------------------- | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `agent_offline`                                                                     | 备份服务已停止，或它无法启动                              | 启动 `arkvory-backup` 或 `Arkvorybackup`。阅读它的日志                                                              |
+| `vault_unavailable`                                                                 | 备份存储卷未挂载、没有 `vault.json`，或服务账户无法写入它 | 在服务启动前挂载该卷。检查所有者和权限。在 Windows 上，如果卷是稍后挂载的，请重启备份代理                           |
+| `The vault directory does not exist; create it or mount its volume first`           | 路径错误或卷缺失                                          | 创建或挂载该目录                                                                                                    |
+| `The vault directory is not writable`                                               | 服务账户没有写入权限                                      | 在 Linux 上以用户 `arkvory` 的 `uid` 和 `gid` 挂载共享。在 Windows 上使用本地或 iSCSI 卷                            |
+| `The directory has no vault.json: mount the vault volume, or pass --init-vault ...` | 空目录可能是未挂载的共享，因此命令拒绝它                  | 挂载正确的卷，或传递 `--init-vault --vault-no-encryption` 以新建一个空备份存储                                      |
+| `The vault must be outside the installation root and the storage directory`         | 备份存储与数据重叠                                        | 在另一个卷上选择单独的目录                                                                                          |
+| `Network share paths are not supported ...`                                         | Windows 上的 UNC 路径。`LocalService` 无法登录 SMB 共享   | 使用本地或 iSCSI 卷的驱动器盘符                                                                                     |
+| `The backup service cannot reach /home, /root, /run/user, /tmp or /var/tmp`         | systemd 沙箱隐藏了这些文件夹                              | 选择另一个目录                                                                                                      |
+| `vault_full`、`vault_low_space`                                                     | 备份存储卷几乎已满                                        | 释放空间或保留更少的恢复点。更早的恢复点保持完好                                                                    |
+| `vault_key_missing`, `vault_key_invalid`                                            | vault 已加密，而代理没有密钥或密钥错误                    | 用代理密钥运行 `arkvory configure --backup-vault DIR --vault-key-file FILE`。参见[加密 vault](./backups#encryption) |
+| `last_run_failed`                                                                   | 最新备份失败                                              | 使用 `arkvoryctl backup jobs` 读取 `errorCode`                                                                      |
+| `verify_failed`                                                                     | 某个恢复点未通过检查                                      | 不要更改备份存储。保留它用于分析并报告                                                                              |
 
 当备份代理在 150 秒内未报告新的备份存储时，`arkvory configure --backup-vault` 会恢复旧设置。更新会停止备份代理，因此当时正在运行的备份会在之后重复。当自动更新开启时，请将备份时间安排在更新时段之外（默认 03:00 UTC）。
 

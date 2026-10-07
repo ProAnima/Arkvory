@@ -58,30 +58,67 @@ Ein Wiederherstellungspunkt enthält nicht:
 
 Verwenden Sie ein Volume auf einem anderen Datenträger oder auf einem NAS, damit ein ausgefallener Speicherdatenträger die Backups nicht mitnimmt. Ein Backup-Speicher auf demselben physischen Datenträger wie der Speicher schützt vor Fehlern, nicht vor einem Datenträgerausfall.
 
-**Der Backup-Speicher ist nicht verschlüsselt.** Er enthält den Katalog, die Passwort-Hashes und jede veröffentlichte Datei. Legen Sie ihn auf ein verschlüsseltes Volume (LUKS, BitLocker, NAS-Verschlüsselung) und erlauben Sie den Zugriff nur dem Dienstkonto und dem Backup-Administrator.
+**Das Vault ist standardmäßig verschlüsselt.** Arkvory verschlüsselt die Dateien, den Katalog und die Beschreibungen der Punkte (siehe [Das Vault verschlüsseln](#encryption)). Ein Vault ohne Verschlüsselung enthält den Katalog, die Passwort-Hashes und alle veröffentlichten Dateien im Klartext: Legen Sie es auf ein verschlüsseltes Laufwerk (LUKS, BitLocker, NAS-Verschlüsselung) und erlauben Sie den Zugriff nur dem Dienstkonto und dem Backup-Administrator.
+
+### Das Vault verschlüsseln {#encryption}
+
+Ein Vault wird bei der Erstellung verschlüsselt und bleibt es. Arkvory verschlüsselt den Inhalt der Dateien, den Katalog und die Beschreibungen der Punkte mit AES-256-GCM und erkennt beim Lesen eine geänderte, abgeschnittene oder ausgetauschte Datei. Es verbirgt weder die Dateinamen noch ihre Größen noch die Anzahl der Punkte.
+
+Erstellen Sie das Vault auf dem Server mit dem Programm `arkvory-backup` (siehe [Bevor Sie beginnen](#restore-prepare)). Beide Dateien müssen neu sein und außerhalb von Vault und Speicher liegen:
+
+```bash
+arkvory-backup vault init /mnt/backup/arkvory \
+  --kit-file /root/arkvory-recovery-kit.txt \
+  --agent-key-file /root/arkvory-agent.key
+```
+
+1. Der Befehl erstellt das Vault mit zwei Schlüsseln: dem Agent-Schlüssel (`arkvory-agent.key`) und dem Wiederherstellungsschlüssel im Recovery-Kit. Vor der Erfolgsmeldung öffnet er das Vault mit jedem von ihnen.
+2. Bringen Sie das Recovery-Kit jetzt von diesem Server weg: in einen Passwortmanager oder einen Tresor. Ohne das Kit oder den Agent-Schlüssel kann niemand die Backups lesen, und niemand kann sie für Sie wiederherstellen. Wer das Kit und eine Kopie des Vaults hat, kann jedes darin enthaltene Backup lesen.
+3. Verbinden Sie das Vault mit dem Agent-Schlüssel, wie der nächste Abschnitt zeigt, und löschen Sie Ihre Kopie der Schlüsseldatei. Die Installation behält eine eigene Kopie in `config/backup/vault.key`, lesbar nur für das Dienstkonto.
+
+Der Wiederherstellungsschlüssel im Kit öffnet nur dieses Vault. Er ist nicht der Wiederherstellungsschlüssel der Installation (`config/bootstrap-token.txt`).
+
+Prüfen Sie jetzt, dass das Kit das Vault öffnet, und nach jeder Änderung der Schlüssel erneut:
+
+```bash
+arkvory-backup vault key verify --vault /mnt/backup/arkvory --key-file /root/arkvory-recovery-kit.txt
+```
+
+Ein Schlüssel gehört zu einem Slot, und jeder Slot öffnet das Vault mit seinem eigenen Schlüssel. Diese Befehle ändern die Slots. Keiner zeigt einen Schlüssel:
+
+| Befehl                                                                   | Wirkung                                                                                                                             |
+| ------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `vault key list --vault DIR`                                             | Listet die Slots: ID, Art (`agent` oder `recovery`) und Erstellungszeit. Braucht keinen Schlüssel.                                  |
+| `vault key add-recovery --vault DIR --key-file KEY --kit-file NEW`       | Fügt einen Recovery-Slot hinzu und schreibt dessen Kit, für eine andere Person oder einen anderen Tresor.                           |
+| `vault key rotate-agent --vault DIR --key-file KEY --agent-key-file NEW` | Erzeugt einen neuen Agent-Schlüssel und entfernt den alten. Führen Sie danach `arkvory configure` mit der neuen Schlüsseldatei aus. |
+| `vault key remove --vault DIR --key-file KEY --slot ID`                  | Entfernt einen Slot. Der letzte Slot und der letzte Recovery-Slot bleiben.                                                          |
+
+Das Entfernen eines Slots sperrt das Vault für jeden, der nur diesen Schlüssel hat. Es verschlüsselt die früheren Punkte nicht neu: Wer das Vault und einen Schlüssel früher kopiert hat, liest diese Kopie weiterhin. Wenn ein Schlüssel abgeflossen sein könnte, erstellen Sie ein neues Vault mit neuen Schlüsseln und beginnen dort neue Punkte.
+
+Ein Vault ohne Verschlüsselung ist möglich: `arkvory-backup vault init DIR --no-encryption`. Es enthält den Katalog, die Passwort-Hashes und alle Dateien im Klartext und braucht daher ein verschlüsseltes Laufwerk und Zugriff nur für das Dienstkonto.
 
 ### Den Backup-Speicher verbinden {#connect-vault}
 
 Führen Sie den Befehl als root oder als Administrator auf dem Server aus. Er prüft das Verzeichnis, bevor er etwas ändert.
 
 ```bash
-sudo arkvory configure --root /opt/proanima-arkvory --backup-vault /mnt/backup/arkvory --init-vault
+sudo arkvory configure --root /opt/proanima-arkvory --backup-vault /mnt/backup/arkvory --vault-key-file /root/arkvory-agent.key
 ```
 
 ```powershell
 $root = 'C:\ProgramData\ProAnima\Arkvory'
-& 'C:\Program Files\ProAnima\Arkvory\arkvory.ps1' configure --root $root --backup-vault D:\Backup\Arkvory --init-vault
+& 'C:\Program Files\ProAnima\Arkvory\arkvory.ps1' configure --root $root --backup-vault D:\Backup\Arkvory --vault-key-file C:\Private\arkvory-agent.key
 ```
 
 Bei einer Skript-Installation unter Windows starten Sie `manage.mjs` wie in [Windows](../install/windows#manage-the-services) beschrieben.
 
 1. Der Befehl prüft den Pfad: absolut, ein vorhandenes beschreibbares Verzeichnis, außerhalb der Installation und des Speichers und für den Dienst sichtbar.
-2. Mit `--init-vault` erstellt er `vault.json` in einem **leeren** Verzeichnis. Er initialisiert ein Verzeichnis nie zweimal. Ohne `vault.json` und ohne die Option lehnt er ab, damit ein nicht eingebundenes NAS nicht für einen leeren Backup-Speicher gehalten wird.
-3. Er gewährt dem Dienstkonto Zugriff, schreibt `ARKVORY_BACKUP_VAULT` in `config/runtime.json` und startet nur den Agent neu.
+2. Ein verschlüsseltes Vault, die Voreinstellung, existiert bereits: Sie haben es mit `arkvory-backup vault init` erstellt, und `--vault-key-file` gibt dem Dienst seinen Schlüssel (einen `AK1-…`-Schlüssel, nie den Wiederherstellungsschlüssel). Mit `--init-vault --vault-no-encryption` erstellt der Befehl stattdessen ein Vault ohne Verschlüsselung in einem **leeren** Verzeichnis. Ein Verzeichnis wird nie zweimal initialisiert. Ohne `vault.json` und ohne `--init-vault` verweigert er, damit ein nicht eingebundenes NAS nicht für ein leeres Vault gehalten wird.
+3. Er gibt dem Dienstkonto Zugriff, kopiert den Schlüssel nach `config/backup/vault.key`, schreibt `ARKVORY_BACKUP_VAULT` und `ARKVORY_BACKUP_VAULT_KEY_FILE` in `config/runtime.json` und startet nur den Agenten neu.
 4. Er wartet bis zu 150 Sekunden, bis der Agent diesen Backup-Speicher als verfügbar meldet. Diese Prüfung liest `config/bootstrap-token.txt`, löschen Sie diese Datei also nicht.
 5. Wenn etwas fehlschlägt, stellt er die vorherigen Einstellungen und den vorherigen Zugriff wieder her und startet den Agent neu.
 
-Um einen bereits vorhandenen Backup-Speicher zu verwenden, etwa auf einem neuen Server, lassen Sie `--init-vault` weg. Um den Backup-Speicher zu trennen, verwenden Sie `--backup-vault-off`. Das lässt das Verzeichnis und seine Dateien unverändert. Ein Neustart unterbricht ein laufendes Backup, und der Agent wiederholt es.
+Um ein bereits vorhandenes Vault zu verwenden, zum Beispiel auf einem neuen Server, geben Sie seinen Schlüssel mit `--vault-key-file` an und lassen `--init-vault` weg. Zum Trennen des Vaults verwenden Sie `--backup-vault-off`: Das Verzeichnis und seine Dateien bleiben unverändert, die Schlüsseldatei der Installation wird entfernt. Ein Neustart unterbricht ein laufendes Backup, und der Agent wiederholt es.
 
 In Docker Compose ist der Backup-Speicher ein Bind-Mount aus `config/compose.vault.yml`. Wenn Sie Compose-Befehle selbst ausführen, fügen Sie `-f config/compose.vault.yml` hinzu. Ohne die Datei erstellt `up` den Agent-Container ohne den Backup-Speicher.
 
@@ -186,18 +223,18 @@ Ein Auftrag hat einen dieser Zustände: [[ui:backupJobQueued]], [[ui:backupJobRu
 
 ### Warnungen {#warnings}
 
-| Code                   | Ebene    | Was zu tun ist                                                                                                                                                          |
-| ---------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `vault_not_configured` | Warnung  | Verbinden Sie einen Backup-Speicher. Siehe [Den Backup-Speicher verbinden](#connect-vault)                                                                              |
-| `agent_offline`        | Kritisch | Seit 2 Minuten kein Signal. Starten Sie den Agent-Dienst und lesen Sie sein Log                                                                                         |
-| `schedule_disabled`    | Warnung  | Schalten Sie den Plan ein, wenn Sie tägliche Backups brauchen                                                                                                           |
-| `no_backup_yet`        | Warnung  | Erstellen Sie das erste Backup                                                                                                                                          |
-| `backup_stale`         | Kritisch | Der neueste Punkt ist älter als 26 Stunden, während der Plan aktiv ist. Lesen Sie die Fehlercodes der Aufträge und das Agent-Log                                        |
-| `last_run_failed`      | Warnung  | Das letzte Backup ist fehlgeschlagen. Der Fehlercode steht in der Auftragsliste                                                                                         |
-| `vault_unavailable`    | Kritisch | Das Volume ist nicht eingebunden, `vault.json` fehlt oder der Backup-Speicher ist nicht beschreibbar                                                                    |
-| `vault_low_space`      | Warnung  | Weniger als 10 % des Volumes sind frei oder weniger als das Doppelte der neuen Daten des letzten Backups. Geben Sie Speicherplatz frei oder behalten Sie weniger Punkte |
-| `verify_failed`        | Kritisch | Ein Punkt hat die Prüfung nicht bestanden. Ändern Sie den Backup-Speicher nicht; untersuchen Sie die Ursache                                                            |
-| `never_deep_verified`  | Warnung  | Seit mehr als 8 Tagen keine vollständige Prüfung. Prüfen Sie, ob der Agent läuft, oder starten Sie eine vollständige Prüfung                                            |
+| Code                   | Ebene    | Was zu tun ist                                                                                                                                                                                                            |
+| ---------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `vault_not_configured` | Warnung  | Verbinden Sie einen Backup-Speicher. Siehe [Den Backup-Speicher verbinden](#connect-vault)                                                                                                                                |
+| `agent_offline`        | Kritisch | Seit 2 Minuten kein Signal. Starten Sie den Agent-Dienst und lesen Sie sein Log                                                                                                                                           |
+| `schedule_disabled`    | Warnung  | Schalten Sie den Plan ein, wenn Sie tägliche Backups brauchen                                                                                                                                                             |
+| `no_backup_yet`        | Warnung  | Erstellen Sie das erste Backup                                                                                                                                                                                            |
+| `backup_stale`         | Kritisch | Der neueste Punkt ist älter als 26 Stunden, während der Plan aktiv ist. Lesen Sie die Fehlercodes der Aufträge und das Agent-Log                                                                                          |
+| `last_run_failed`      | Warnung  | Das letzte Backup ist fehlgeschlagen. Der Fehlercode steht in der Auftragsliste                                                                                                                                           |
+| `vault_unavailable`    | Kritisch | Das Laufwerk ist nicht eingebunden, `vault.json` fehlt, das Vault ist nicht beschreibbar, oder ein verschlüsseltes Vault hat keinen gültigen Schlüssel (das Agent-Log nennt `vault_key_missing` oder `vault_key_invalid`) |
+| `vault_low_space`      | Warnung  | Weniger als 10 % des Volumes sind frei oder weniger als das Doppelte der neuen Daten des letzten Backups. Geben Sie Speicherplatz frei oder behalten Sie weniger Punkte                                                   |
+| `verify_failed`        | Kritisch | Ein Punkt hat die Prüfung nicht bestanden. Ändern Sie den Backup-Speicher nicht; untersuchen Sie die Ursache                                                                                                              |
+| `never_deep_verified`  | Warnung  | Seit mehr als 8 Tagen keine vollständige Prüfung. Prüfen Sie, ob der Agent läuft, oder starten Sie eine vollständige Prüfung                                                                                              |
 
 ### Mit der Kommandozeile und der API {#status-cli}
 
@@ -226,6 +263,7 @@ Eine Wiederherstellung schreibt in eine **leere** Datenbank und ein **leeres** S
 
 - **Das Release.** Verwenden Sie das Release, das den Punkt erzeugt hat, oder ein neueres. Ein Punkt aus einem neueren Release wird mit `schema_mismatch` abgelehnt.
 - **Das Konto.** Führen Sie den Befehl als ein Konto aus, das den Backup-Speicher lesen kann. Unter Linux gehört der Backup-Speicher `arkvory` und hat den Modus 0700, verwenden Sie also `sudo -u arkvory`. Unter Windows verwenden Sie eine erhöhte PowerShell. Das neue Speicherverzeichnis muss am Ende dem Konto gehören, das die API ausführen wird.
+- **Der Schlüssel.** Ein verschlüsseltes Vault braucht seinen Schlüssel. Geben Sie das Recovery-Kit oder eine Schlüsseldatei als `--key-file FILE` an jeden folgenden Befehl, oder setzen Sie `ARKVORY_BACKUP_VAULT_KEY_FILE`. Der Schlüssel ist immer eine Datei, nie ein Argument.
 - **Das Ziel.** Erstellen Sie eine leere Datenbank, zum Beispiel `CREATE DATABASE arkvory_restore OWNER arkvory;`. Wählen Sie ein Speicherverzeichnis, das nicht existiert oder leer ist, auf einem anderen Volume als der Backup-Speicher und nicht innerhalb des Quellspeichers.
 - **Die Datenbank-URL.** Übergeben Sie sie in der Umgebung, nicht als Argument, weil Argumente in der Prozessliste sichtbar sind.
 
@@ -344,23 +382,25 @@ Lesen Sie das Agent-Log unter Linux mit `journalctl -u arkvory-backup`, unter Wi
 
 ### Fehlercodes {#error-codes}
 
-| `errorCode`                                              | Exit | Was zu tun ist                                                                                                           |
-| -------------------------------------------------------- | ---- | ------------------------------------------------------------------------------------------------------------------------ |
-| `vault_missing`                                          | 3    | Das Verzeichnis hat kein `vault.json`. Binden Sie das Volume ein, oder führen Sie einmal `vault init` aus                |
-| `unsafe_path`                                            | 3    | Halten Sie den Backup-Speicher, den Speicher und das Wiederherstellungsziel in getrennten Verzeichnisbäumen              |
-| `target_not_empty`                                       | 3    | Eine Wiederherstellung schreibt nur in eine leere Datenbank und ein leeres Verzeichnis                                   |
-| `schema_mismatch`                                        | 3    | Der Punkt ist neuer als das Release oder älter als die unterstützte Wiederherstellung. Verwenden Sie ein anderes Release |
-| `upgrade_required`                                       | 3    | Aktualisieren Sie jeden API- und Wartungsprozess der Installation                                                        |
-| `point_not_found`, `storage_mismatch`                    | 3    | Falsche Punkt-ID, oder `ARKVORY_DATA_DIR` ist kein initialisiertes Speicherverzeichnis dieser Installation               |
-| `integrity_mismatch`, `invalid_manifest`, `blob_missing` | 4    | Lassen Sie den Backup-Speicher unverändert. Führen Sie `verify --deep` aus und untersuchen Sie die Ursache               |
-| `busy`, `barrier_timeout`                                | 5    | Eine andere Operation läuft. Versuchen Sie es später erneut                                                              |
-| `vault_full`, `storage_full`                             | 1    | Geben Sie Speicherplatz frei. Frühere Punkte sind unversehrt                                                             |
-| `attempts_exhausted`                                     | 3    | Diese Anfrage hat ihre 5 Versuche verbraucht. Starten Sie ein neues Backup                                               |
+| `errorCode`                                              | Exit | Was zu tun ist                                                                                                                                                        |
+| -------------------------------------------------------- | ---- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `vault_missing`                                          | 3    | Das Verzeichnis hat kein `vault.json`. Binden Sie das Volume ein, oder führen Sie einmal `vault init` aus                                                             |
+| `vault_key_missing`                                      | 3    | Das Vault ist verschlüsselt, und es wurde kein Schlüssel angegeben. Verwenden Sie `--key-file FILE` oder `ARKVORY_BACKUP_VAULT_KEY_FILE`                              |
+| `vault_key_invalid`                                      | 3    | Der Schlüssel öffnet dieses Vault nicht: Prüfen Sie die Datei, das Vault oder ob der Slot entfernt wurde. Ein Tippfehler wird an der Prüfsumme des Schlüssels erkannt |
+| `unsafe_path`                                            | 3    | Halten Sie den Backup-Speicher, den Speicher und das Wiederherstellungsziel in getrennten Verzeichnisbäumen                                                           |
+| `target_not_empty`                                       | 3    | Eine Wiederherstellung schreibt nur in eine leere Datenbank und ein leeres Verzeichnis                                                                                |
+| `schema_mismatch`                                        | 3    | Der Punkt ist neuer als das Release oder älter als die unterstützte Wiederherstellung. Verwenden Sie ein anderes Release                                              |
+| `upgrade_required`                                       | 3    | Aktualisieren Sie jeden API- und Wartungsprozess der Installation                                                                                                     |
+| `point_not_found`, `storage_mismatch`                    | 3    | Falsche Punkt-ID, oder `ARKVORY_DATA_DIR` ist kein initialisiertes Speicherverzeichnis dieser Installation                                                            |
+| `integrity_mismatch`, `invalid_manifest`, `blob_missing` | 4    | Lassen Sie den Backup-Speicher unverändert. Führen Sie `verify --deep` aus und untersuchen Sie die Ursache                                                            |
+| `busy`, `barrier_timeout`                                | 5    | Eine andere Operation läuft. Versuchen Sie es später erneut                                                                                                           |
+| `vault_full`, `storage_full`                             | 1    | Geben Sie Speicherplatz frei. Frühere Punkte sind unversehrt                                                                                                          |
+| `attempts_exhausted`                                     | 3    | Diese Anfrage hat ihre 5 Versuche verbraucht. Starten Sie ein neues Backup                                                                                            |
 
 ## Grenzen {#limits}
 
 - Ein Plan und ein Backup-Speicher pro Installation. Der Backup-Speicher ist ein Verzeichnis auf einem Datenträger oder auf einer eingebundenen Freigabe, ohne S3 und ohne Offsite- oder Immutable-Profil.
-- Der Backup-Speicher wird von Arkvory nicht verschlüsselt.
+- Die Verschlüsselung verbirgt Inhalt und Katalog, nicht die Dateinamen, ihre Größen oder die Anzahl der Punkte. Verlorene Schlüssel bedeuten verlorene Backups. Das Entfernen eines Schlüssel-Slots verschlüsselt frühere Punkte nicht neu.
 - Sie können einen Backup-Auftrag weder pausieren noch abbrechen, und die Konsole hat keinen Assistenten für die Wiederherstellung und keinen Status für Wiederherstellungstests.
 - Eine Wiederherstellung braucht ein leeres Ziel, und die Umschaltung auf wiederhergestellte Daten ist ein manueller Schritt.
 - Der Backup-Agent ist kein Hochverfügbarkeitssystem. Ein zweiter Agent wartet nur als Ersatz.

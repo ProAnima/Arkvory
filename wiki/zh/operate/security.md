@@ -17,7 +17,7 @@ description: '如何加固 Arkvory 服务器、其机密存放位置、哪些限
 4. 为每个工具或 CI 系统分配各自的服务账户，并授予权限最少的密钥。参见[密钥与令牌](#keys)。
 5. 保持自行注册关闭。它默认就是关闭的。
 6. 如果 Arkvory 前面有反向代理，请设置 `ARKVORY_TRUSTED_PROXIES`。参见[登录限制](#sign-in-limits)。
-7. 将备份存储放在加密卷上，只有服务账户和备份管理员可以读取。参见[备份](./backups)。
+7. 使用加密的 vault（默认），并把它的恢复套件保存在服务器之外。还要把 vault 放在只有服务账户和备份管理员能读取的加密卷上。参见[备份](./backups#encryption)。
 8. 在服务器之外保留机密文件的副本。参见[备份您的机密](#secret-backups)。
 9. 接入指标和告警。参见[监控](./monitoring)。
 
@@ -174,8 +174,9 @@ sudo arkvory configure --root /opt/proanima-arkvory --hub-off
 
 ## 备份您的机密 {#secret-backups}
 
-备份存储保存目录、密码哈希和所有已发布的文件。它未加密。它不保存您配置文件的内容。请在服务器之外的加密位置保留这些文件的第二份副本：
+vault 保存目录、密码哈希和所有已发布文件。Arkvory 在创建时对它加密，其恢复套件必须保存在服务器之外（参见[备份](./backups#encryption)）。vault 不包含你的配置文件。请在服务器之外的加密位置另存这些文件的第二份副本：
 
+- 备份 vault 的恢复套件：如果服务器及其密钥文件丢失，这是读取备份的唯一途径；请在两个地方保存两份。
 - `config/keys.json` 和 `config/bootstrap-token.txt`（恢复密钥），
 - `config/runtime.json`，
 - TLS 证书和密钥，

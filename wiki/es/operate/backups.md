@@ -58,30 +58,67 @@ Un punto de restauración no contiene:
 
 Use un volumen de otro disco, o de un NAS, para que el fallo del disco de almacenamiento no se lleve consigo las copias. Un almacén en el mismo disco físico que el almacenamiento protege de los errores, no del fallo del disco.
 
-**El almacén de copias no está cifrado.** Contiene el catálogo, los hashes de las contraseñas y todos los archivos publicados. Colóquelo en un volumen cifrado (LUKS, BitLocker, cifrado del NAS) y permita el acceso solo a la cuenta del servicio y al administrador de las copias.
+**El vault está cifrado por defecto.** Arkvory cifra los archivos, el catálogo y las descripciones de los puntos (véase [Cifrar el vault](#encryption)). Un vault creado sin cifrado guarda el catálogo, los hashes de contraseñas y todos los archivos publicados en claro: póngalo en un volumen cifrado (LUKS, BitLocker, cifrado del NAS) y permita el acceso solo a la cuenta de servicio y al administrador de copias.
+
+### Cifrar el vault {#encryption}
+
+Un vault se cifra al crearse y sigue así. Arkvory cifra el contenido de los archivos, el catálogo y las descripciones de los puntos con AES-256-GCM, y al leer el vault detecta un archivo modificado, cortado o sustituido. No oculta los nombres de los archivos, sus tamaños ni el número de puntos.
+
+Cree el vault en el servidor con el programa `arkvory-backup` (véase [Antes de empezar](#restore-prepare)). Los dos archivos deben ser nuevos y estar fuera del vault y del almacenamiento:
+
+```bash
+arkvory-backup vault init /mnt/backup/arkvory \
+  --kit-file /root/arkvory-recovery-kit.txt \
+  --agent-key-file /root/arkvory-agent.key
+```
+
+1. El comando crea el vault con dos claves: la clave del agente (`arkvory-agent.key`) y la clave de recuperación en el kit de recuperación. Abre el vault con cada una antes de informar del éxito.
+2. Saque ahora el kit de recuperación de este servidor: a un gestor de contraseñas o a una caja fuerte. Sin el kit o la clave del agente, nadie puede leer las copias y nadie puede restaurarlas por usted. Quien tenga el kit y una copia del vault puede leer todas las copias que contiene.
+3. Conecte el vault con la clave del agente, como muestra la sección siguiente, y borre su copia del archivo de clave. La instalación guarda su propia copia en `config/backup/vault.key`, legible solo por la cuenta de servicio.
+
+La clave de recuperación del kit abre solo este vault. No es la clave de recuperación de la instalación (`config/bootstrap-token.txt`).
+
+Compruebe que el kit abre el vault ahora y de nuevo tras cada cambio de claves:
+
+```bash
+arkvory-backup vault key verify --vault /mnt/backup/arkvory --key-file /root/arkvory-recovery-kit.txt
+```
+
+Una clave pertenece a una ranura, y cada ranura abre el vault con su propia clave. Estos comandos cambian las ranuras. Ninguno muestra una clave:
+
+| Comando                                                                  | Efecto                                                                                                                      |
+| ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------- |
+| `vault key list --vault DIR`                                             | Lista las ranuras: id, tipo (`agent` o `recovery`) y hora de creación. No necesita clave.                                   |
+| `vault key add-recovery --vault DIR --key-file KEY --kit-file NEW`       | Añade una ranura de recuperación y escribe su kit, para otra persona u otra caja fuerte.                                    |
+| `vault key rotate-agent --vault DIR --key-file KEY --agent-key-file NEW` | Crea una clave nueva del servicio y elimina la anterior. Después ejecute `arkvory configure` con el nuevo archivo de clave. |
+| `vault key remove --vault DIR --key-file KEY --slot ID`                  | Elimina una ranura. La última ranura y la última ranura de recuperación se conservan.                                       |
+
+Eliminar una ranura cierra el vault a quien solo tenga esa clave. No vuelve a cifrar los puntos anteriores: quien copió antes el vault y una clave sigue leyendo esa copia. Si una clave pudo filtrarse, cree un vault nuevo con claves nuevas y empiece allí nuevos puntos.
+
+Es posible un vault sin cifrado: `arkvory-backup vault init DIR --no-encryption`. Guarda el catálogo, los hashes de contraseñas y todos los archivos en claro, por lo que necesita un volumen cifrado y acceso solo para la cuenta de servicio.
 
 ### Conectar el almacén {#connect-vault}
 
 Ejecute el comando como root o como administrador, en el servidor. Comprueba el directorio antes de cambiar nada.
 
 ```bash
-sudo arkvory configure --root /opt/proanima-arkvory --backup-vault /mnt/backup/arkvory --init-vault
+sudo arkvory configure --root /opt/proanima-arkvory --backup-vault /mnt/backup/arkvory --vault-key-file /root/arkvory-agent.key
 ```
 
 ```powershell
 $root = 'C:\ProgramData\ProAnima\Arkvory'
-& 'C:\Program Files\ProAnima\Arkvory\arkvory.ps1' configure --root $root --backup-vault D:\Backup\Arkvory --init-vault
+& 'C:\Program Files\ProAnima\Arkvory\arkvory.ps1' configure --root $root --backup-vault D:\Backup\Arkvory --vault-key-file C:\Private\arkvory-agent.key
 ```
 
 En una instalación por scripts en Windows, inicie `manage.mjs` como se describe en [Windows](../install/windows#manage-the-services).
 
 1. El comando comprueba la ruta: absoluta, un directorio existente con permiso de escritura, fuera de la instalación y del almacenamiento, y visible para el servicio.
-2. Con `--init-vault`, crea `vault.json` en un directorio **vacío**. Nunca inicializa un directorio dos veces. Sin `vault.json` y sin la opción, se niega, para que un NAS que no está montado no se tome por un almacén vacío.
-3. Da acceso a la cuenta del servicio, escribe `ARKVORY_BACKUP_VAULT` en `config/runtime.json` y reinicia solo el agente.
+2. Un vault cifrado, el predeterminado, ya existe: lo creó con `arkvory-backup vault init`, y `--vault-key-file` entrega al servicio su clave (una clave `AK1-…`, nunca la de recuperación). Con `--init-vault --vault-no-encryption` crea en su lugar un vault sin cifrado en un directorio **vacío**. Nunca inicializa un directorio dos veces. Sin `vault.json` y sin `--init-vault` se niega, para no confundir un NAS no montado con un vault vacío.
+3. Da acceso a la cuenta de servicio, copia la clave a `config/backup/vault.key`, escribe `ARKVORY_BACKUP_VAULT` y `ARKVORY_BACKUP_VAULT_KEY_FILE` en `config/runtime.json` y reinicia solo el agente.
 4. Espera hasta 150 segundos a que el agente informe de que este almacén está disponible. Esta comprobación lee `config/bootstrap-token.txt`, por lo que no elimine ese archivo.
 5. Si algo falla, restaura la configuración y el acceso anteriores y reinicia el agente.
 
-Para usar un almacén que ya existe, por ejemplo en un servidor nuevo, omita `--init-vault`. Para desconectar el almacén, use `--backup-vault-off`. El directorio y sus archivos quedan sin cambios. Un reinicio interrumpe una copia en curso, y el agente la repite.
+Para usar un vault que ya existe, por ejemplo en un servidor nuevo, indique su clave con `--vault-key-file` y omita `--init-vault`. Para desconectar el vault, use `--backup-vault-off`: el directorio y sus archivos no cambian y se elimina el archivo de clave de la instalación. Un reinicio interrumpe una copia en curso, y el agente la repite.
 
 En Docker Compose, el almacén es un bind mount definido en `config/compose.vault.yml`. Cuando ejecute usted mismo los comandos de Compose, añada `-f config/compose.vault.yml`. Sin esa opción, `up` crea el contenedor del agente sin el almacén.
 
@@ -186,18 +223,18 @@ Una tarea tiene uno de estos estados: [[ui:backupJobQueued]], [[ui:backupJobRunn
 
 ### Advertencias {#warnings}
 
-| Código                 | Nivel       | Qué hacer                                                                                                                                |
-| ---------------------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| `vault_not_configured` | Advertencia | Conecte un almacén. Consulte [Conectar el almacén](#connect-vault)                                                                       |
-| `agent_offline`        | Crítico     | Sin señal durante 2 minutos. Inicie el servicio del agente y lea su registro                                                             |
-| `schedule_disabled`    | Advertencia | Active el plan si necesita copias diarias                                                                                                |
-| `no_backup_yet`        | Advertencia | Cree la primera copia                                                                                                                    |
-| `backup_stale`         | Crítico     | El punto más reciente tiene más de 26 horas y el plan está activado. Lea los códigos de error de las tareas y el registro del agente     |
-| `last_run_failed`      | Advertencia | La última copia falló. El código de error está en la lista de tareas                                                                     |
-| `vault_unavailable`    | Crítico     | El volumen no está montado, falta `vault.json` o el almacén no admite escritura                                                          |
-| `vault_low_space`      | Advertencia | Queda libre menos del 10 % del volumen, o menos del doble de los datos nuevos de la última copia. Libere espacio o conserve menos puntos |
-| `verify_failed`        | Crítico     | Un punto no superó la verificación. No cambie el almacén; investigue                                                                     |
-| `never_deep_verified`  | Advertencia | Hace más de 8 días que no hay una verificación completa. Compruebe que el agente se ejecuta o inicie una verificación completa           |
+| Código                 | Nivel       | Qué hacer                                                                                                                                                                                          |
+| ---------------------- | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `vault_not_configured` | Advertencia | Conecte un almacén. Consulte [Conectar el almacén](#connect-vault)                                                                                                                                 |
+| `agent_offline`        | Crítico     | Sin señal durante 2 minutos. Inicie el servicio del agente y lea su registro                                                                                                                       |
+| `schedule_disabled`    | Advertencia | Active el plan si necesita copias diarias                                                                                                                                                          |
+| `no_backup_yet`        | Advertencia | Cree la primera copia                                                                                                                                                                              |
+| `backup_stale`         | Crítico     | El punto más reciente tiene más de 26 horas y el plan está activado. Lea los códigos de error de las tareas y el registro del agente                                                               |
+| `last_run_failed`      | Advertencia | La última copia falló. El código de error está en la lista de tareas                                                                                                                               |
+| `vault_unavailable`    | Crítico     | El volumen no está montado, falta `vault.json`, el vault no admite escritura, o un vault cifrado no tiene una clave válida (el registro del agente dice `vault_key_missing` o `vault_key_invalid`) |
+| `vault_low_space`      | Advertencia | Queda libre menos del 10 % del volumen, o menos del doble de los datos nuevos de la última copia. Libere espacio o conserve menos puntos                                                           |
+| `verify_failed`        | Crítico     | Un punto no superó la verificación. No cambie el almacén; investigue                                                                                                                               |
+| `never_deep_verified`  | Advertencia | Hace más de 8 días que no hay una verificación completa. Compruebe que el agente se ejecuta o inicie una verificación completa                                                                     |
 
 ### Con la CLI y la API {#status-cli}
 
@@ -226,6 +263,7 @@ Una restauración escribe en una base de datos **vacía** y en un directorio de 
 
 - **La versión.** Use la versión que creó el punto o una más reciente. Un punto de una versión más reciente se rechaza con `schema_mismatch`.
 - **La cuenta.** Ejecute el comando con una cuenta que pueda leer el almacén. En Linux, el almacén pertenece a `arkvory` y tiene el modo 0700, así que use `sudo -u arkvory`. En Windows, use un PowerShell con privilegios elevados. El nuevo directorio de almacenamiento debe terminar siendo propiedad de la cuenta que ejecutará la API.
+- **La clave.** Un vault cifrado necesita su clave. Pase el kit de recuperación o un archivo de clave como `--key-file FILE` a cada comando siguiente, o defina `ARKVORY_BACKUP_VAULT_KEY_FILE`. La clave es siempre un archivo, nunca un argumento.
 - **El destino.** Cree una base de datos vacía, por ejemplo `CREATE DATABASE arkvory_restore OWNER arkvory;`. Elija un directorio de almacenamiento que no exista o esté vacío, en un volumen distinto del almacén de copias y fuera del almacenamiento de origen.
 - **La URL de la base de datos.** Pásela en el entorno, no como argumento, porque los argumentos son visibles en la lista de procesos.
 
@@ -344,23 +382,25 @@ Lea el registro del agente con `journalctl -u arkvory-backup` en Linux, en `logs
 
 ### Códigos de error {#error-codes}
 
-| `errorCode`                                              | Salida | Qué hacer                                                                                                                  |
-| -------------------------------------------------------- | ------ | -------------------------------------------------------------------------------------------------------------------------- |
-| `vault_missing`                                          | 3      | El directorio no tiene `vault.json`. Monte el volumen o ejecute `vault init` una vez                                       |
-| `unsafe_path`                                            | 3      | Mantenga el almacén de copias, el almacenamiento y el destino de la restauración en árboles de directorios separados       |
-| `target_not_empty`                                       | 3      | La restauración escribe solo en una base de datos vacía y en un directorio vacío                                           |
-| `schema_mismatch`                                        | 3      | El punto es más reciente que la versión o más antiguo que la restauración admitida. Use otra versión                       |
-| `upgrade_required`                                       | 3      | Actualice todos los procesos de la API y de mantenimiento de la instalación                                                |
-| `point_not_found`, `storage_mismatch`                    | 3      | El ID del punto es incorrecto, o `ARKVORY_DATA_DIR` no es un directorio de almacenamiento inicializado de esta instalación |
-| `integrity_mismatch`, `invalid_manifest`, `blob_missing` | 4      | Deje el almacén sin cambios. Ejecute `verify --deep` e investigue                                                          |
-| `busy`, `barrier_timeout`                                | 5      | Se ejecuta otra operación. Inténtelo más tarde                                                                             |
-| `vault_full`, `storage_full`                             | 1      | Libere espacio. Los puntos anteriores están intactos                                                                       |
-| `attempts_exhausted`                                     | 3      | Esta solicitud agotó sus 5 intentos. Inicie una copia nueva                                                                |
+| `errorCode`                                              | Salida | Qué hacer                                                                                                                                       |
+| -------------------------------------------------------- | ------ | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `vault_missing`                                          | 3      | El directorio no tiene `vault.json`. Monte el volumen o ejecute `vault init` una vez                                                            |
+| `vault_key_missing`                                      | 3      | El vault está cifrado y no se dio ninguna clave. Use `--key-file FILE` o `ARKVORY_BACKUP_VAULT_KEY_FILE`                                        |
+| `vault_key_invalid`                                      | 3      | La clave no abre este vault: compruebe el archivo, el vault o si se eliminó la ranura. Una errata se detecta por la suma de control de la clave |
+| `unsafe_path`                                            | 3      | Mantenga el almacén de copias, el almacenamiento y el destino de la restauración en árboles de directorios separados                            |
+| `target_not_empty`                                       | 3      | La restauración escribe solo en una base de datos vacía y en un directorio vacío                                                                |
+| `schema_mismatch`                                        | 3      | El punto es más reciente que la versión o más antiguo que la restauración admitida. Use otra versión                                            |
+| `upgrade_required`                                       | 3      | Actualice todos los procesos de la API y de mantenimiento de la instalación                                                                     |
+| `point_not_found`, `storage_mismatch`                    | 3      | El ID del punto es incorrecto, o `ARKVORY_DATA_DIR` no es un directorio de almacenamiento inicializado de esta instalación                      |
+| `integrity_mismatch`, `invalid_manifest`, `blob_missing` | 4      | Deje el almacén sin cambios. Ejecute `verify --deep` e investigue                                                                               |
+| `busy`, `barrier_timeout`                                | 5      | Se ejecuta otra operación. Inténtelo más tarde                                                                                                  |
+| `vault_full`, `storage_full`                             | 1      | Libere espacio. Los puntos anteriores están intactos                                                                                            |
+| `attempts_exhausted`                                     | 3      | Esta solicitud agotó sus 5 intentos. Inicie una copia nueva                                                                                     |
 
 ## Límites {#limits}
 
 - Un plan y un almacén por instalación. El almacén es un directorio en un disco o en un recurso compartido montado, sin S3 ni perfil externo o inmutable.
-- Arkvory no cifra el almacén.
+- El cifrado oculta el contenido y el catálogo, no los nombres de archivo, sus tamaños ni el número de puntos. Perder las claves es perder las copias. Eliminar una ranura de clave no vuelve a cifrar los puntos anteriores.
 - No se puede pausar ni cancelar una tarea de copia, y la consola no tiene un asistente de restauración ni el estado de las pruebas de restauración.
 - La restauración requiere un destino vacío, y el traspaso a los datos restaurados es un paso manual.
 - El agente de copias de seguridad no es un sistema de alta disponibilidad. Un segundo agente solo espera como reserva.

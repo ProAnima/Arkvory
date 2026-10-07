@@ -197,10 +197,10 @@ O contêiner `backup` é executado desde o início. Sem um vault, ele é executa
 2. Conecte-o:
 
    ```bash
-   sudo "$node" "$root/manage.mjs" configure --root "$root" --backup-vault /mnt/backup/arkvory --init-vault
+   sudo "$node" "$root/manage.mjs" configure --root "$root" --backup-vault /mnt/backup/arkvory --vault-key-file /root/arkvory-agent.key
    ```
 
-   O comando verifica o diretório, grava `config/compose.vault.yml`, dá ao usuário 1000 a propriedade do diretório, cria o vault em um diretório vazio (`--init-vault`) e reinicia apenas o contêiner de backup. Ele tem êxito quando o agente informa que o vault está disponível. Caso contrário, restaura a configuração anterior.
+   O comando verifica o diretório, grava `config/compose.vault.yml`, dá ao usuário 1000 a propriedade do diretório, entrega ao contêiner de backup o arquivo da chave do agente somente leitura (`--vault-key-file`) e reinicia apenas o contêiner de backup. Ele tem êxito quando o agente informa que o vault está disponível. Caso contrário, restaura a configuração anterior.
 
 3. Para desconectar o vault, execute o mesmo comando com `--backup-vault-off`. O vault em si não é tocado.
 

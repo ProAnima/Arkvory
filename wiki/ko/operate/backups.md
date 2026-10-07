@@ -58,30 +58,67 @@ description: 백업 보관소를 연결하고, 백업을 예약하고 검증하�
 
 스토리지 디스크가 고장 나도 백업이 함께 사라지지 않도록 다른 디스크나 NAS의 볼륨을 사용하세요. 스토리지와 같은 물리 디스크에 있는 백업 보관소는 실수로부터는 보호하지만 디스크 장애로부터는 보호하지 못합니다.
 
-**백업 보관소는 암호화되지 않습니다.** 카탈로그, 비밀번호 해시, 게시된 모든 파일이 들어 있습니다. 암호화된 볼륨(LUKS, BitLocker, NAS 암호화)에 두고, 서비스 계정과 백업 관리자에게만 접근을 허용하세요.
+**vault는 기본적으로 암호화됩니다.** Arkvory는 파일, 카탈로그, 복원 지점의 설명을 암호화합니다([vault 암호화](#encryption) 참고). 암호화 없이 만든 vault는 카탈로그, 비밀번호 해시, 게시된 모든 파일을 평문으로 보관합니다. 암호화된 볼륨(LUKS, BitLocker, NAS 암호화)에 두고 서비스 계정과 백업 관리자만 접근하게 하세요.
+
+### vault 암호화 {#encryption}
+
+vault는 만들 때 암호화되고 그대로 유지됩니다. Arkvory는 파일 내용, 카탈로그, 복원 지점의 설명을 AES-256-GCM으로 암호화하며, vault를 읽을 때 변경되거나 잘리거나 바뀐 파일을 찾아냅니다. 파일 이름, 크기, 복원 지점의 수는 숨기지 않습니다.
+
+서버에서 `arkvory-backup` 프로그램으로 vault를 만드세요([시작하기 전에](#restore-prepare) 참고). 두 파일은 모두 새 파일이어야 하며 vault와 스토리지 바깥에 있어야 합니다.
+
+```bash
+arkvory-backup vault init /mnt/backup/arkvory \
+  --kit-file /root/arkvory-recovery-kit.txt \
+  --agent-key-file /root/arkvory-agent.key
+```
+
+1. 이 명령은 두 개의 키로 vault를 만듭니다. 서비스의 키(`arkvory-agent.key`)와 복구 키트에 들어 있는 복구 키입니다. 성공을 알리기 전에 각 키로 vault를 열어 봅니다.
+2. 복구 키트를 지금 이 서버 밖으로 옮기세요. 비밀번호 관리자나 금고에 보관합니다. 키트나 에이전트 키가 없으면 아무도 백업을 읽을 수 없고, 대신 복원해 줄 수도 없습니다. 키트와 vault 사본을 가진 사람은 그 안의 모든 백업을 읽을 수 있습니다.
+3. 다음 절처럼 에이전트 키로 vault를 연결하고, 가지고 있던 키 파일 사본은 삭제하세요. 설치는 `config/backup/vault.key`에 자체 사본을 두며, 서비스 계정만 읽을 수 있습니다.
+
+키트의 복구 키는 이 vault만 엽니다. 설치의 복구 키(`config/bootstrap-token.txt`)가 아닙니다.
+
+키트가 vault를 여는지 지금 확인하고, 키를 바꿀 때마다 다시 확인하세요.
+
+```bash
+arkvory-backup vault key verify --vault /mnt/backup/arkvory --key-file /root/arkvory-recovery-kit.txt
+```
+
+키는 슬롯에 속하며, 각 슬롯은 자기 키로 vault를 엽니다. 다음 명령은 슬롯을 바꿉니다. 어느 것도 키를 보여 주지 않습니다.
+
+| 명령                                                                     | 효과                                                                                                   |
+| ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------ |
+| `vault key list --vault DIR`                                             | 슬롯을 나열합니다: ID, 종류(`agent` 또는 `recovery`), 생성 시각. 키가 필요 없습니다.                   |
+| `vault key add-recovery --vault DIR --key-file KEY --kit-file NEW`       | 복구 슬롯을 추가하고 그 키트를 씁니다. 다른 사람이나 다른 금고를 위한 것입니다.                        |
+| `vault key rotate-agent --vault DIR --key-file KEY --agent-key-file NEW` | 새 에이전트 키를 만들고 이전 키를 제거합니다. 그런 다음 새 키 파일로 `arkvory configure`를 실행하세요. |
+| `vault key remove --vault DIR --key-file KEY --slot ID`                  | 슬롯을 제거합니다. 마지막 슬롯과 마지막 복구 슬롯은 남습니다.                                          |
+
+슬롯을 제거하면 그 키만 가진 사람은 vault를 열 수 없게 됩니다. 이전 지점을 다시 암호화하지는 않습니다. 전에 vault와 키를 복사한 사람은 그 사본을 계속 읽을 수 있습니다. 키가 유출되었을 수 있다면 새 키로 새 vault를 만들고 거기서 새 지점을 시작하세요.
+
+암호화하지 않은 vault도 만들 수 있습니다: `arkvory-backup vault init DIR --no-encryption`. 카탈로그, 비밀번호 해시, 모든 파일을 평문으로 보관하므로 암호화된 볼륨과 서비스 계정 전용 접근이 필요합니다.
 
 ### 백업 보관소 연결 {#connect-vault}
 
 서버에서 root 또는 관리자로 명령을 실행하세요. 명령은 아무것도 바꾸기 전에 디렉터리를 검사합니다.
 
 ```bash
-sudo arkvory configure --root /opt/proanima-arkvory --backup-vault /mnt/backup/arkvory --init-vault
+sudo arkvory configure --root /opt/proanima-arkvory --backup-vault /mnt/backup/arkvory --vault-key-file /root/arkvory-agent.key
 ```
 
 ```powershell
 $root = 'C:\ProgramData\ProAnima\Arkvory'
-& 'C:\Program Files\ProAnima\Arkvory\arkvory.ps1' configure --root $root --backup-vault D:\Backup\Arkvory --init-vault
+& 'C:\Program Files\ProAnima\Arkvory\arkvory.ps1' configure --root $root --backup-vault D:\Backup\Arkvory --vault-key-file C:\Private\arkvory-agent.key
 ```
 
 Windows의 스크립트 설치에서는 [Windows](../install/windows#manage-the-services)에 설명된 대로 `manage.mjs`를 시작하세요.
 
 1. 명령은 경로를 확인합니다. 절대 경로여야 하고, 쓸 수 있는 기존 디렉터리여야 하며, 설치 디렉터리와 스토리지 밖에 있고, 서비스에서 보여야 합니다.
-2. `--init-vault`를 지정하면 **빈** 디렉터리에 `vault.json`을 만듭니다. 한 디렉터리를 두 번 초기화하지는 않습니다. `vault.json`도 없고 이 옵션도 없으면 명령은 거부합니다. 마운트되지 않은 NAS를 빈 백업 보관소로 착각하지 않게 하기 위해서입니다.
-3. 서비스 계정에 접근 권한을 주고, `config/runtime.json`에 `ARKVORY_BACKUP_VAULT`를 쓰고, 에이전트만 다시 시작합니다.
+2. 암호화된 vault(기본값)는 이미 있습니다. `arkvory-backup vault init`으로 만들었고, `--vault-key-file`이 서비스에 키를 전달합니다(`AK1-…` 키이며 복구 키는 절대 아닙니다). `--init-vault --vault-no-encryption`을 쓰면 대신 **빈** 디렉터리에 암호화되지 않은 vault를 만듭니다. 같은 디렉터리를 두 번 초기화하지 않습니다. `vault.json`도 `--init-vault`도 없으면 거부하므로, 마운트되지 않은 NAS를 빈 vault로 착각하지 않습니다.
+3. 서비스 계정에 접근 권한을 주고, 키를 `config/backup/vault.key`로 복사하고, `ARKVORY_BACKUP_VAULT`와 `ARKVORY_BACKUP_VAULT_KEY_FILE`을 `config/runtime.json`에 쓰고, 에이전트만 다시 시작합니다.
 4. 에이전트가 이 백업 보관소를 사용 가능하다고 보고할 때까지 최대 150초 기다립니다. 이 확인은 `config/bootstrap-token.txt`를 읽으므로 이 파일을 삭제하지 마세요.
 5. 어느 단계든 실패하면 이전 설정과 이전 접근 권한을 복원하고 에이전트를 다시 시작합니다.
 
-예를 들어 새 서버처럼 이미 있는 백업 보관소를 사용하려면 `--init-vault`를 생략하세요. 백업 보관소를 연결 해제하려면 `--backup-vault-off`를 사용하세요. 이때 디렉터리와 그 안의 파일은 그대로 남습니다. 다시 시작하면 실행 중인 백업이 중단되며, 에이전트가 그 백업을 다시 실행합니다.
+이미 있는 vault를 쓰려면(예: 새 서버에서) `--vault-key-file`로 그 키를 주고 `--init-vault`는 빼세요. vault 연결을 끊으려면 `--backup-vault-off`를 사용하세요. 디렉터리와 파일은 그대로 두고 설치의 키 파일은 삭제합니다. 재시작하면 실행 중인 백업이 중단되고, 에이전트가 다시 수행합니다.
 
 Docker Compose에서 백업 보관소는 `config/compose.vault.yml`에 정의된 바인드 마운트입니다. Compose 명령을 직접 실행할 때는 `-f config/compose.vault.yml`을 추가하세요. 추가하지 않으면 `up`이 백업 보관소 없이 에이전트 컨테이너를 만듭니다.
 
@@ -186,18 +223,18 @@ sudo mount -t cifs //nas/arkvory /mnt/backup/arkvory \
 
 ### 경고 {#warnings}
 
-| 코드                   | 수준 | 해야 할 일                                                                                                                     |
-| ---------------------- | ---- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `vault_not_configured` | 경고 | 백업 보관소를 연결하세요. [백업 보관소 연결](#connect-vault)을 참조하세요                                                      |
-| `agent_offline`        | 위험 | 2분 동안 신호가 없습니다. 에이전트 서비스를 시작하고 로그를 읽으세요                                                           |
-| `schedule_disabled`    | 경고 | 매일 백업이 필요하면 계획을 켜세요                                                                                             |
-| `no_backup_yet`        | 경고 | 첫 번째 백업을 만드세요                                                                                                        |
-| `backup_stale`         | 위험 | 계획이 켜져 있는데 가장 최신 지점이 26시간보다 오래되었습니다. 작업의 오류 코드와 에이전트 로그를 읽으세요                     |
-| `last_run_failed`      | 경고 | 마지막 백업이 실패했습니다. 오류 코드는 작업 목록에 있습니다                                                                   |
-| `vault_unavailable`    | 위험 | 볼륨이 마운트되지 않았거나, `vault.json`이 없거나, 백업 보관소에 쓸 수 없습니다                                                |
-| `vault_low_space`      | 경고 | 볼륨의 여유 공간이 10% 미만이거나 마지막 백업의 새 데이터 양의 두 배 미만입니다. 공간을 확보하거나 보관하는 지점 수를 줄이세요 |
-| `verify_failed`        | 위험 | 지점이 검증에 실패했습니다. 백업 보관소를 변경하지 말고 원인을 조사하세요                                                      |
-| `never_deep_verified`  | 경고 | 8일이 넘도록 전체 검증이 없습니다. 에이전트가 실행 중인지 확인하거나 전체 검증을 시작하세요                                    |
+| 코드                   | 수준 | 해야 할 일                                                                                                                                                                                |
+| ---------------------- | ---- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `vault_not_configured` | 경고 | 백업 보관소를 연결하세요. [백업 보관소 연결](#connect-vault)을 참조하세요                                                                                                                 |
+| `agent_offline`        | 위험 | 2분 동안 신호가 없습니다. 에이전트 서비스를 시작하고 로그를 읽으세요                                                                                                                      |
+| `schedule_disabled`    | 경고 | 매일 백업이 필요하면 계획을 켜세요                                                                                                                                                        |
+| `no_backup_yet`        | 경고 | 첫 번째 백업을 만드세요                                                                                                                                                                   |
+| `backup_stale`         | 위험 | 계획이 켜져 있는데 가장 최신 지점이 26시간보다 오래되었습니다. 작업의 오류 코드와 에이전트 로그를 읽으세요                                                                                |
+| `last_run_failed`      | 경고 | 마지막 백업이 실패했습니다. 오류 코드는 작업 목록에 있습니다                                                                                                                              |
+| `vault_unavailable`    | 위험 | 볼륨이 마운트되지 않았거나, `vault.json`이 없거나, vault에 쓸 수 없거나, 암호화된 vault에 유효한 키가 없습니다(에이전트 로그에 `vault_key_missing` 또는 `vault_key_invalid`가 표시됩니다) |
+| `vault_low_space`      | 경고 | 볼륨의 여유 공간이 10% 미만이거나 마지막 백업의 새 데이터 양의 두 배 미만입니다. 공간을 확보하거나 보관하는 지점 수를 줄이세요                                                            |
+| `verify_failed`        | 위험 | 지점이 검증에 실패했습니다. 백업 보관소를 변경하지 말고 원인을 조사하세요                                                                                                                 |
+| `never_deep_verified`  | 경고 | 8일이 넘도록 전체 검증이 없습니다. 에이전트가 실행 중인지 확인하거나 전체 검증을 시작하세요                                                                                               |
 
 ### CLI와 API로 {#status-cli}
 
@@ -226,6 +263,7 @@ Prometheus를 위해 API는 `arkvory_backup_last_success_timestamp_seconds`(가�
 
 - **릴리스.** 해당 지점을 만든 릴리스 또는 그보다 새로운 릴리스를 사용하세요. 더 새로운 릴리스에서 만든 지점은 `schema_mismatch`로 거부됩니다.
 - **계정.** 백업 보관소를 읽을 수 있는 계정으로 명령을 실행하세요. Linux에서 백업 보관소는 `arkvory` 소유이고 모드가 0700이므로 `sudo -u arkvory`를 사용하세요. Windows에서는 관리자 권한 PowerShell을 사용하세요. 새 스토리지 디렉터리는 결국 API를 실행할 계정의 소유가 되어야 합니다.
+- **키.** 암호화된 vault에는 키가 필요합니다. 아래의 모든 명령에 복구 키트나 키 파일을 `--key-file FILE`로 주거나 `ARKVORY_BACKUP_VAULT_KEY_FILE`을 설정하세요. 키는 언제나 파일이며 인수가 아닙니다.
 - **대상.** 빈 데이터베이스를 만드세요. 예: `CREATE DATABASE arkvory_restore OWNER arkvory;`. 스토리지 디렉터리는 존재하지 않거나 비어 있는 디렉터리로 고르세요. 백업 보관소와 다른 볼륨에 있어야 하고, 원본 스토리지 안에 있으면 안 됩니다.
 - **데이터베이스 URL.** 인수가 아니라 환경 변수로 전달하세요. 인수는 프로세스 목록에서 보이기 때문입니다.
 
@@ -344,23 +382,25 @@ Prometheus를 위해 API는 `arkvory_backup_last_success_timestamp_seconds`(가�
 
 ### 오류 코드 {#error-codes}
 
-| `errorCode`                                              | 종료 코드 | 해야 할 일                                                                                       |
-| -------------------------------------------------------- | --------- | ------------------------------------------------------------------------------------------------ |
-| `vault_missing`                                          | 3         | 디렉터리에 `vault.json`이 없습니다. 볼륨을 마운트하거나 `vault init`을 한 번 실행하세요          |
-| `unsafe_path`                                            | 3         | 백업 보관소, 스토리지, 복원 대상을 서로 다른 디렉터리 트리에 두세요                              |
-| `target_not_empty`                                       | 3         | 복원은 빈 데이터베이스와 빈 디렉터리에만 씁니다                                                  |
-| `schema_mismatch`                                        | 3         | 지점이 릴리스보다 새롭거나 지원되는 복원 범위보다 오래되었습니다. 다른 릴리스를 사용하세요       |
-| `upgrade_required`                                       | 3         | 설치 환경의 모든 API 및 유지 관리 프로세스를 업데이트하세요                                      |
-| `point_not_found`, `storage_mismatch`                    | 3         | 지점 ID가 잘못되었거나 `ARKVORY_DATA_DIR`이 이 설치 환경의 초기화된 스토리지 디렉터리가 아닙니다 |
-| `integrity_mismatch`, `invalid_manifest`, `blob_missing` | 4         | 백업 보관소를 그대로 두세요. `verify --deep`을 실행하고 원인을 조사하세요                        |
-| `busy`, `barrier_timeout`                                | 5         | 다른 작업이 실행 중입니다. 나중에 다시 시도하세요                                                |
-| `vault_full`, `storage_full`                             | 1         | 공간을 확보하세요. 이전 지점은 손상되지 않습니다                                                 |
-| `attempts_exhausted`                                     | 3         | 이 요청이 5번의 시도를 모두 사용했습니다. 새 백업을 시작하세요                                   |
+| `errorCode`                                              | 종료 코드 | 해야 할 일                                                                                                              |
+| -------------------------------------------------------- | --------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `vault_missing`                                          | 3         | 디렉터리에 `vault.json`이 없습니다. 볼륨을 마운트하거나 `vault init`을 한 번 실행하세요                                 |
+| `vault_key_missing`                                      | 3         | vault가 암호화되어 있는데 키가 주어지지 않았습니다. `--key-file FILE` 또는 `ARKVORY_BACKUP_VAULT_KEY_FILE`을 사용하세요 |
+| `vault_key_invalid`                                      | 3         | 이 키로는 vault를 열 수 없습니다. 파일, vault, 또는 슬롯이 제거되었는지 확인하세요. 오타는 키의 체크섬으로 발견됩니다   |
+| `unsafe_path`                                            | 3         | 백업 보관소, 스토리지, 복원 대상을 서로 다른 디렉터리 트리에 두세요                                                     |
+| `target_not_empty`                                       | 3         | 복원은 빈 데이터베이스와 빈 디렉터리에만 씁니다                                                                         |
+| `schema_mismatch`                                        | 3         | 지점이 릴리스보다 새롭거나 지원되는 복원 범위보다 오래되었습니다. 다른 릴리스를 사용하세요                              |
+| `upgrade_required`                                       | 3         | 설치 환경의 모든 API 및 유지 관리 프로세스를 업데이트하세요                                                             |
+| `point_not_found`, `storage_mismatch`                    | 3         | 지점 ID가 잘못되었거나 `ARKVORY_DATA_DIR`이 이 설치 환경의 초기화된 스토리지 디렉터리가 아닙니다                        |
+| `integrity_mismatch`, `invalid_manifest`, `blob_missing` | 4         | 백업 보관소를 그대로 두세요. `verify --deep`을 실행하고 원인을 조사하세요                                               |
+| `busy`, `barrier_timeout`                                | 5         | 다른 작업이 실행 중입니다. 나중에 다시 시도하세요                                                                       |
+| `vault_full`, `storage_full`                             | 1         | 공간을 확보하세요. 이전 지점은 손상되지 않습니다                                                                        |
+| `attempts_exhausted`                                     | 3         | 이 요청이 5번의 시도를 모두 사용했습니다. 새 백업을 시작하세요                                                          |
 
 ## 제한 사항 {#limits}
 
 - 설치 환경마다 계획 하나와 백업 보관소 하나만 사용할 수 있습니다. 백업 보관소는 디스크 또는 마운트된 공유에 있는 디렉터리이며, S3나 오프사이트, 변경 불가(immutable) 프로필은 없습니다.
-- 백업 보관소는 Arkvory가 암호화하지 않습니다.
+- 암호화는 내용과 카탈로그를 숨기지만 파일 이름, 크기, 복원 지점의 수는 숨기지 않습니다. 키를 잃으면 백업을 잃습니다. 키 슬롯을 제거해도 이전 지점이 다시 암호화되지는 않습니다.
 - 백업 작업을 일시 중지하거나 취소할 수 없으며, 콘솔에는 복원 마법사나 복원 테스트 상태가 없습니다.
 - 복원에는 빈 대상이 필요하며, 복원된 데이터로의 전환은 수동 단계입니다.
 - 백업 에이전트는 고가용성 시스템이 아닙니다. 두 번째 에이전트는 예비로 대기할 뿐입니다.

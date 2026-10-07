@@ -61,7 +61,7 @@ Seus arquivos e dados permanecem no seu servidor. O servidor contata o hub da Pr
 
 ### Os backups são executados sozinhos? {#automatic-backups}
 
-Não, até você configurá-los. Conecte um armazenamento de backups (vault) com `arkvory configure --backup-vault <folder> --init-vault` e depois ative o agendamento diário em [[ui:backupPlan]] em [[ui:backups]]. O plano começa às 02:00 UTC e mantém 7 pontos de restauração diários, 4 semanais e 6 mensais. Enquanto o agendamento estiver desativado, o console mostra o aviso de que o agendamento diário está desligado. Consulte [Backups](../operate/backups).
+Não, até você configurá-los. Conecte um armazenamento de backups (vault) com `arkvory configure --backup-vault <folder> --vault-key-file <file>` e depois ative o agendamento diário em [[ui:backupPlan]] em [[ui:backups]]. O plano começa às 02:00 UTC e mantém 7 pontos de restauração diários, 4 semanais e 6 mensais. Enquanto o agendamento estiver desativado, o console mostra o aviso de que o agendamento diário está desligado. Consulte [Backups](../operate/backups).
 
 ### Como mudo para outro servidor? {#move-server}
 

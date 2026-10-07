@@ -197,10 +197,10 @@ Der Container `backup` läuft von Anfang an. Ohne Backup-Speicher läuft er und 
 2. Verbinden Sie ihn:
 
    ```bash
-   sudo "$node" "$root/manage.mjs" configure --root "$root" --backup-vault /mnt/backup/arkvory --init-vault
+   sudo "$node" "$root/manage.mjs" configure --root "$root" --backup-vault /mnt/backup/arkvory --vault-key-file /root/arkvory-agent.key
    ```
 
-   Der Befehl prüft das Verzeichnis, schreibt `config/compose.vault.yml`, überträgt dem Benutzer 1000 den Besitz des Verzeichnisses, erstellt den Backup-Speicher in einem leeren Verzeichnis (`--init-vault`) und startet nur den Backup-Container neu. Er ist erfolgreich, wenn der Agent den Backup-Speicher als verfügbar meldet. Andernfalls stellt er die vorherige Konfiguration wieder her.
+   Der Befehl prüft das Verzeichnis, schreibt `config/compose.vault.yml`, überträgt dem Benutzer 1000 den Besitz des Verzeichnisses, übergibt dem Backup-Container die Datei mit dem Agent-Schlüssel schreibgeschützt (`--vault-key-file`) und startet nur den Backup-Container neu. Er ist erfolgreich, wenn der Agent den Backup-Speicher als verfügbar meldet. Andernfalls stellt er die vorherige Konfiguration wieder her.
 
 3. Um den Backup-Speicher zu trennen, führen Sie denselben Befehl mit `--backup-vault-off` aus. Der Backup-Speicher selbst wird nicht berührt.
 

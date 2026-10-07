@@ -17,7 +17,7 @@ The project states that a threat model and an external security review are still
 4. Give each tool or CI system its own service account with a key that has the fewest rights. See [Keys and tokens](#keys).
 5. Leave self-registration off. It is off by default.
 6. If a reverse proxy is in front of Arkvory, set `ARKVORY_TRUSTED_PROXIES`. See [Sign-in limits](#sign-in-limits).
-7. Put the backup vault on an encrypted volume that only the service account and the backup administrator can read. See [Backups](./backups).
+7. Make the backup vault encrypted (the default) and keep its recovery kit outside the server. Also put it on an encrypted volume that only the service account and the backup administrator can read. See [Backups](./backups#encryption).
 8. Keep copies of the secret files outside the server. See [Back up your secrets](#secret-backups).
 9. Connect the metrics and the alerts. See [Monitoring](./monitoring).
 
@@ -174,8 +174,9 @@ The checks every 6 hours also run when automatic installation is off. A server w
 
 ## Back up your secrets {#secret-backups}
 
-The backup vault holds the catalog, the password hashes and all published files. It is not encrypted. It does not hold the files of your configuration. Keep a second copy of these files in an encrypted place outside the server:
+The backup vault holds the catalog, the password hashes and all published files. Arkvory encrypts it when it is created, and its recovery kit must be kept outside the server (see [Backups](./backups#encryption)). The vault does not hold the files of your configuration. Keep a second copy of these files in an encrypted place outside the server:
 
+- the recovery kit of the backup vault: it is the only way to read the backups if the server and its key file are lost; keep two copies in two places.
 - `config/keys.json` and `config/bootstrap-token.txt` (the recovery key),
 - `config/runtime.json`,
 - the TLS certificate and key,

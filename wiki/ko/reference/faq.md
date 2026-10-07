@@ -61,7 +61,7 @@ PostgreSQL이며, 설치마다 데이터베이스 하나를 사용합니다. Win
 
 ### 백업은 스스로 실행되나요? {#automatic-backups}
 
-직접 설정하기 전에는 실행되지 않습니다. `arkvory configure --backup-vault <folder> --init-vault`로 보관소를 연결한 다음, [[ui:backups]]의 [[ui:backupPlan]]에서 매일 일정을 켜세요. 계획은 02:00 UTC에 시작하며 매일 7개, 매주 4개, 매월 6개의 복원 지점을 유지합니다. 일정이 켜지기 전까지 콘솔은 매일 일정이 꺼져 있다는 경고를 표시합니다. [백업](../operate/backups)을 참조하세요.
+직접 설정하기 전에는 실행되지 않습니다. `arkvory configure --backup-vault <folder> --vault-key-file <file>`로 보관소를 연결한 다음, [[ui:backups]]의 [[ui:backupPlan]]에서 매일 일정을 켜세요. 계획은 02:00 UTC에 시작하며 매일 7개, 매주 4개, 매월 6개의 복원 지점을 유지합니다. 일정이 켜지기 전까지 콘솔은 매일 일정이 꺼져 있다는 경고를 표시합니다. [백업](../operate/backups)을 참조하세요.
 
 ### 다른 서버로 어떻게 이동하나요? {#move-server}
 

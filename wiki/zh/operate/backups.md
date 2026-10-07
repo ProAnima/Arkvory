@@ -58,30 +58,67 @@ description: 连接备份存储，安排并验证备份，把恢复点恢复到�
 
 请使用另一块磁盘或 NAS 上的卷，这样存储磁盘故障时备份不会一起丢失。与存储位于同一块物理磁盘上的备份存储只能防止误操作，不能防止磁盘故障。
 
-**备份存储不加密。** 其中包含目录、密码哈希和每个已发布的文件。请把它放在加密卷上（LUKS、BitLocker、NAS 加密），并且只允许服务账户和备份管理员访问。
+**vault 默认加密。** Arkvory 会加密文件、目录和还原点的描述（参见[加密 vault](#encryption)）。未加密的 vault 以明文保存目录、密码哈希和所有已发布文件：请把它放在加密卷上（LUKS、BitLocker、NAS 加密），并只允许服务账户和备份管理员访问。
+
+### 加密 vault {#encryption}
+
+vault 在创建时加密，并一直保持加密。Arkvory 用 AES-256-GCM 加密文件内容、目录和还原点的描述，并在读取 vault 时发现被修改、被截断或被替换的文件。它不会隐藏文件名、文件大小和还原点数量。
+
+在服务器上用程序 `arkvory-backup` 创建 vault（参见[开始之前](#restore-prepare)）。两个文件都必须是新文件，并位于 vault 和存储目录之外：
+
+```bash
+arkvory-backup vault init /mnt/backup/arkvory \
+  --kit-file /root/arkvory-recovery-kit.txt \
+  --agent-key-file /root/arkvory-agent.key
+```
+
+1. 该命令会创建带有两把密钥的 vault：代理密钥（`arkvory-agent.key`）和恢复套件中的恢复密钥。报告成功之前，它会分别用这两把密钥打开 vault。
+2. 现在就把恢复套件移出这台服务器：放进密码管理器或保险柜。没有套件或代理密钥，任何人都无法读取备份，也没有人能替你恢复。拿到套件和 vault 副本的人可以读取其中的所有备份。
+3. 按下一节所示，用代理密钥连接 vault，并删除你手中的密钥文件副本。安装会在 `config/backup/vault.key` 保留自己的副本，只有服务账户可以读取。
+
+套件中的恢复密钥只能打开这个 vault。它不是安装的恢复密钥（`config/bootstrap-token.txt`）。
+
+现在检查套件能否打开 vault，并在每次更换密钥后再检查一次：
+
+```bash
+arkvory-backup vault key verify --vault /mnt/backup/arkvory --key-file /root/arkvory-recovery-kit.txt
+```
+
+密钥属于某个槽位，每个槽位用自己的密钥打开 vault。这些命令会更改槽位，它们都不会显示密钥：
+
+| 命令                                                                     | 作用                                                                     |
+| ------------------------------------------------------------------------ | ------------------------------------------------------------------------ |
+| `vault key list --vault DIR`                                             | 列出槽位：标识、类型（`agent` 或 `recovery`）和创建时间。不需要密钥。    |
+| `vault key add-recovery --vault DIR --key-file KEY --kit-file NEW`       | 添加一个恢复槽位并写入它的套件，供另一个人或另一个保险柜使用。           |
+| `vault key rotate-agent --vault DIR --key-file KEY --agent-key-file NEW` | 生成新的代理密钥并删除旧的。然后用新的密钥文件运行 `arkvory configure`。 |
+| `vault key remove --vault DIR --key-file KEY --slot ID`                  | 删除一个槽位。最后一个槽位和最后一个恢复槽位会保留。                     |
+
+删除槽位会让只持有该密钥的人无法再打开 vault。但它不会重新加密之前的还原点：此前复制了 vault 和某把密钥的人仍然可以读取那份副本。如果某把密钥可能已泄露，请用新密钥创建新的 vault，并在其中开始新的还原点。
+
+可以创建不加密的 vault：`arkvory-backup vault init DIR --no-encryption`。它以明文保存目录、密码哈希和所有文件，因此需要加密卷，并且只允许服务账户访问。
 
 ### 连接备份存储 {#connect-vault}
 
 请在服务器上以 root 或管理员身份运行该命令。命令会先检查目录，然后才做出更改。
 
 ```bash
-sudo arkvory configure --root /opt/proanima-arkvory --backup-vault /mnt/backup/arkvory --init-vault
+sudo arkvory configure --root /opt/proanima-arkvory --backup-vault /mnt/backup/arkvory --vault-key-file /root/arkvory-agent.key
 ```
 
 ```powershell
 $root = 'C:\ProgramData\ProAnima\Arkvory'
-& 'C:\Program Files\ProAnima\Arkvory\arkvory.ps1' configure --root $root --backup-vault D:\Backup\Arkvory --init-vault
+& 'C:\Program Files\ProAnima\Arkvory\arkvory.ps1' configure --root $root --backup-vault D:\Backup\Arkvory --vault-key-file C:\Private\arkvory-agent.key
 ```
 
 对于 Windows 上的脚本安装，请按 [Windows](../install/windows#manage-the-services) 中的说明启动 `manage.mjs`。
 
 1. 命令检查路径：必须是绝对路径，是已存在且可写的目录，位于安装目录和存储目录之外，并且对服务可见。
-2. 使用 `--init-vault` 时，它会在**空**目录中创建 `vault.json`。它绝不会对同一个目录初始化两次。既没有 `vault.json` 也没有该选项时，它会拒绝执行，以免把未挂载的 NAS 当作空的备份存储。
-3. 它为服务账户授予访问权限，把 `ARKVORY_BACKUP_VAULT` 写入 `config/runtime.json`，并且只重启代理。
+2. 加密的 vault（默认）已经存在：你用 `arkvory-backup vault init` 创建了它，`--vault-key-file` 把代理密钥交给服务（`AK1-…` 密钥，绝不是恢复密钥）。使用 `--init-vault --vault-no-encryption` 时，命令改为在**空**目录中创建不加密的 vault。它从不对同一目录初始化两次。没有 `vault.json` 且没有 `--init-vault` 时它会拒绝，以免把未挂载的 NAS 当成空 vault。
+3. 它授予服务账户访问权限，把密钥复制到 `config/backup/vault.key`，把 `ARKVORY_BACKUP_VAULT` 和 `ARKVORY_BACKUP_VAULT_KEY_FILE` 写入 `config/runtime.json`，并只重启代理。
 4. 它最多等待 150 秒，直到代理报告这个备份存储可用。这项检查会读取 `config/bootstrap-token.txt`，因此请不要删除该文件。
 5. 如果任何一步失败，它会恢复之前的设置和访问权限，并重启代理。
 
-若要使用已有的备份存储（例如在新服务器上），请省略 `--init-vault`。若要断开备份存储，请使用 `--backup-vault-off`。这样不会改动该目录及其中的文件。重启会中断正在运行的备份，代理会重新执行它。
+要使用已有的 vault，例如在新服务器上，请用 `--vault-key-file` 提供它的密钥，并省略 `--init-vault`。要断开 vault，请使用 `--backup-vault-off`：目录及其文件保持不变，安装中的密钥文件会被删除。重启会中断正在运行的备份，代理会重新执行。
 
 在 Docker Compose 中，备份存储是通过 `config/compose.vault.yml` 实现的绑定挂载。自行运行 Compose 命令时，请加上 `-f config/compose.vault.yml`。没有它时，`up` 创建的代理容器不带备份存储。
 
@@ -186,18 +223,18 @@ sudo mount -t cifs //nas/arkvory /mnt/backup/arkvory \
 
 ### 警告 {#warnings}
 
-| 代码                   | 级别 | 处理方法                                                                           |
-| ---------------------- | ---- | ---------------------------------------------------------------------------------- |
-| `vault_not_configured` | 警告 | 连接备份存储。参见[连接备份存储](#connect-vault)                                   |
-| `agent_offline`        | 严重 | 2 分钟内没有信号。启动代理服务并查看其日志                                         |
-| `schedule_disabled`    | 警告 | 如果需要每日备份，请开启计划                                                       |
-| `no_backup_yet`        | 警告 | 创建第一次备份                                                                     |
-| `backup_stale`         | 严重 | 计划开启时，最新的恢复点已超过 26 小时。请查看任务的错误代码和代理日志             |
-| `last_run_failed`      | 警告 | 上一次备份失败。错误代码在任务列表中                                               |
-| `vault_unavailable`    | 严重 | 卷未挂载、缺少 `vault.json`，或备份存储不可写                                      |
-| `vault_low_space`      | 警告 | 卷的可用空间不足 10%，或少于上一次备份新增数据的两倍。请释放空间或减少保留的恢复点 |
-| `verify_failed`        | 严重 | 某个恢复点未通过验证。请不要改动备份存储，先进行调查                               |
-| `never_deep_verified`  | 警告 | 超过 8 天没有进行完整验证。请检查代理是否在运行，或启动一次完整验证                |
+| 代码                   | 级别 | 处理方法                                                                                                                          |
+| ---------------------- | ---- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `vault_not_configured` | 警告 | 连接备份存储。参见[连接备份存储](#connect-vault)                                                                                  |
+| `agent_offline`        | 严重 | 2 分钟内没有信号。启动代理服务并查看其日志                                                                                        |
+| `schedule_disabled`    | 警告 | 如果需要每日备份，请开启计划                                                                                                      |
+| `no_backup_yet`        | 警告 | 创建第一次备份                                                                                                                    |
+| `backup_stale`         | 严重 | 计划开启时，最新的恢复点已超过 26 小时。请查看任务的错误代码和代理日志                                                            |
+| `last_run_failed`      | 警告 | 上一次备份失败。错误代码在任务列表中                                                                                              |
+| `vault_unavailable`    | 严重 | 卷未挂载、缺少 `vault.json`、vault 不可写，或加密的 vault 没有有效密钥（代理日志显示 `vault_key_missing` 或 `vault_key_invalid`） |
+| `vault_low_space`      | 警告 | 卷的可用空间不足 10%，或少于上一次备份新增数据的两倍。请释放空间或减少保留的恢复点                                                |
+| `verify_failed`        | 严重 | 某个恢复点未通过验证。请不要改动备份存储，先进行调查                                                                              |
+| `never_deep_verified`  | 警告 | 超过 8 天没有进行完整验证。请检查代理是否在运行，或启动一次完整验证                                                               |
 
 ### 使用 CLI 和 API {#status-cli}
 
@@ -226,6 +263,7 @@ arkvoryctl backup status --json || echo "backup problem"
 
 - **发行版。** 请使用生成该恢复点的发行版或更新的发行版。来自更新发行版的恢复点会以 `schema_mismatch` 被拒绝。
 - **账户。** 请使用能读取备份存储的账户运行命令。在 Linux 上，备份存储属于 `arkvory`，权限为 0700，因此请使用 `sudo -u arkvory`。在 Windows 上，请使用提升权限的 PowerShell。新的存储目录最终必须归运行 API 的账户所有。
+- **密钥。** 加密的 vault 需要它的密钥。请把恢复套件或密钥文件作为 `--key-file FILE` 传给下面的每条命令，或设置 `ARKVORY_BACKUP_VAULT_KEY_FILE`。密钥始终是文件，绝不是参数。
 - **目标。** 创建一个空数据库，例如 `CREATE DATABASE arkvory_restore OWNER arkvory;`。选择一个不存在或为空的存储目录，它必须位于与备份存储不同的卷上，且不在源存储内部。
 - **数据库 URL。** 请通过环境变量传递，不要作为参数传递，因为参数在进程列表中是可见的。
 
@@ -344,23 +382,25 @@ arkvoryctl backup status --json || echo "backup problem"
 
 ### 错误代码 {#error-codes}
 
-| `errorCode`                                              | 退出代码 | 处理方法                                                           |
-| -------------------------------------------------------- | -------- | ------------------------------------------------------------------ |
-| `vault_missing`                                          | 3        | 目录中没有 `vault.json`。请挂载卷，或运行一次 `vault init`         |
-| `unsafe_path`                                            | 3        | 请让备份存储、存储目录和恢复目标位于相互独立的目录树中             |
-| `target_not_empty`                                       | 3        | 恢复只会写入空数据库和空目录                                       |
-| `schema_mismatch`                                        | 3        | 恢复点比发行版更新，或比受支持的恢复版本更旧。请使用其他发行版     |
-| `upgrade_required`                                       | 3        | 请更新安装中的每个 API 和维护进程                                  |
-| `point_not_found`、`storage_mismatch`                    | 3        | 恢复点 ID 有误，或 `ARKVORY_DATA_DIR` 不是该安装已初始化的存储目录 |
-| `integrity_mismatch`、`invalid_manifest`、`blob_missing` | 4        | 保持备份存储不变。运行 `verify --deep` 并进行调查                  |
-| `busy`、`barrier_timeout`                                | 5        | 另一项操作正在运行。请稍后重试                                     |
-| `vault_full`、`storage_full`                             | 1        | 释放空间。之前的恢复点完好无损                                     |
-| `attempts_exhausted`                                     | 3        | 此请求已用完 5 次尝试。请启动一次新的备份                          |
+| `errorCode`                                              | 退出代码 | 处理方法                                                                                  |
+| -------------------------------------------------------- | -------- | ----------------------------------------------------------------------------------------- |
+| `vault_missing`                                          | 3        | 目录中没有 `vault.json`。请挂载卷，或运行一次 `vault init`                                |
+| `vault_key_missing`                                      | 3        | vault 已加密但没有提供密钥。使用 `--key-file FILE` 或 `ARKVORY_BACKUP_VAULT_KEY_FILE`     |
+| `vault_key_invalid`                                      | 3        | 该密钥无法打开这个 vault：请检查文件、vault，或槽位是否已被删除。笔误会被密钥的校验和发现 |
+| `unsafe_path`                                            | 3        | 请让备份存储、存储目录和恢复目标位于相互独立的目录树中                                    |
+| `target_not_empty`                                       | 3        | 恢复只会写入空数据库和空目录                                                              |
+| `schema_mismatch`                                        | 3        | 恢复点比发行版更新，或比受支持的恢复版本更旧。请使用其他发行版                            |
+| `upgrade_required`                                       | 3        | 请更新安装中的每个 API 和维护进程                                                         |
+| `point_not_found`、`storage_mismatch`                    | 3        | 恢复点 ID 有误，或 `ARKVORY_DATA_DIR` 不是该安装已初始化的存储目录                        |
+| `integrity_mismatch`、`invalid_manifest`、`blob_missing` | 4        | 保持备份存储不变。运行 `verify --deep` 并进行调查                                         |
+| `busy`、`barrier_timeout`                                | 5        | 另一项操作正在运行。请稍后重试                                                            |
+| `vault_full`、`storage_full`                             | 1        | 释放空间。之前的恢复点完好无损                                                            |
+| `attempts_exhausted`                                     | 3        | 此请求已用完 5 次尝试。请启动一次新的备份                                                 |
 
 ## 限制 {#limits}
 
 - 每个安装只有一个计划和一个备份存储。备份存储是磁盘或已挂载共享上的目录，不支持 S3，也没有异地或不可变的配置。
-- Arkvory 不会加密备份存储。
+- 加密隐藏内容和目录，但不隐藏文件名、文件大小和还原点数量。密钥丢失意味着备份丢失。删除密钥槽位不会重新加密之前的还原点。
 - 您无法暂停或取消备份任务，控制台也没有恢复向导，不显示恢复测试状态。
 - 恢复需要空的目标，切换到恢复后的数据是手动步骤。
 - 备份代理不是高可用系统。第二个代理只是作为备用等待。

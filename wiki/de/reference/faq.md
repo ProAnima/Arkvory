@@ -61,7 +61,7 @@ Ihre Dateien und Daten bleiben auf Ihrem Server. Der Server kontaktiert den Hub 
 
 ### Laufen Backups von selbst? {#automatic-backups}
 
-Erst wenn Sie sie einrichten. Verbinden Sie einen Backup-Speicher mit `arkvory configure --backup-vault <folder> --init-vault` und schalten Sie dann den täglichen Zeitplan in [[ui:backupPlan]] in [[ui:backups]] ein. Der Plan beginnt um 02:00 UTC und behält 7 tägliche, 4 wöchentliche und 6 monatliche Wiederherstellungspunkte. Solange der Zeitplan ausgeschaltet ist, zeigt die Konsole die Warnung, dass der tägliche Zeitplan aus ist. Siehe [Backups](../operate/backups).
+Erst wenn Sie sie einrichten. Verbinden Sie einen Backup-Speicher mit `arkvory configure --backup-vault <folder> --vault-key-file <file>` und schalten Sie dann den täglichen Zeitplan in [[ui:backupPlan]] in [[ui:backups]] ein. Der Plan beginnt um 02:00 UTC und behält 7 tägliche, 4 wöchentliche und 6 monatliche Wiederherstellungspunkte. Solange der Zeitplan ausgeschaltet ist, zeigt die Konsole die Warnung, dass der tägliche Zeitplan aus ist. Siehe [Backups](../operate/backups).
 
 ### Wie ziehe ich auf einen anderen Server um? {#move-server}
 
