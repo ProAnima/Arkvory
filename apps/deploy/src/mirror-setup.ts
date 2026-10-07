@@ -159,6 +159,19 @@ function entries(text: string | null): MirrorEntry[] {
   });
 }
 
+/** A token is a secret: in Compose only the container user reads it, never other host users. */
+function writeToken(
+  path: string,
+  secret: string,
+  state: Installation,
+  owner: FileOwner,
+  containerUser: number,
+) {
+  return state.mode === 'compose'
+    ? write(path, secret + '\n', { uid: containerUser, gid: containerUser }, 0o600)
+    : write(path, secret + '\n', owner, 0o640);
+}
+
 /**
  * Writes like runtime.json is owned: root:arkvory 0640 for systemd, readable by the container
  * user for Compose (the host config directory stays private), inherited ACLs on Windows.
@@ -282,11 +295,7 @@ export async function configureMirror(
       mode: state.mode === 'compose' ? 0o755 : 0o750,
     });
     if (process.platform !== 'win32') await chown(paths.directory, owner.uid, owner.gid);
-    // A token is a secret: in Compose only the container user reads it, never other host users.
-    const tokenOwner =
-      state.mode === 'compose' ? { uid: containerUser, gid: containerUser } : owner;
-    const tokenMode = state.mode === 'compose' ? 0o600 : mode;
-    if (secret !== null) await write(tokenPath, secret + '\n', tokenOwner, tokenMode);
+    if (secret !== null) await writeToken(tokenPath, secret, state, owner, containerUser);
     else await unlink(tokenPath).catch(() => undefined);
     if (next.length > 0)
       await write(paths.mirrors, JSON.stringify({ mirrors: next }, null, 2) + '\n', owner, mode);
