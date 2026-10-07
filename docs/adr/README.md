@@ -81,3 +81,4 @@ ADR нужен для изменения границ, публичных кон
 - [0068 — Сайт документации и одиннадцать языков консоли](0068-documentation-site-and-languages.md)
 - [0069 — Вебхуки поверх ленты изменений](0069-webhooks-over-change-feed.md)
 - [0070 — Шифрование vault резервных копий и recovery kit](0070-encrypted-backup-vault.md)
+- [0071 — S3-совместимый vault резервных копий (proposed)](0071-s3-backup-vault.md)
