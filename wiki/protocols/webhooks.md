@@ -21,8 +21,22 @@ The administrator sets subscriptions in a file. There is no API or console page 
 
 You need access to the server files and the right to restart the worker. See [Configuration](../install/configuration).
 
-1. Create a secret file with at least 16 random characters, for example `config/webhooks/ci.secret`. Only the service account may read it. The receiver needs the same secret.
-2. Write the subscription file, for example `config/webhooks/webhooks.json`:
+1. Create a file with the signing secret: at least 16 random printable characters, for example `/root/ci.secret`. The receiver needs the same secret.
+2. Run `configure` with the subscription. The command checks your input, copies the secret under `config/webhooks`, writes the subscription file and the setting, restarts the services, and restores the previous configuration when they do not become ready. It does not contact the receiver.
+
+```bash
+sudo arkvory configure --root /opt/proanima-arkvory \
+  --webhook ci --webhook-repository releases \
+  --webhook-url https://ci.example.com/hooks/arkvory \
+  --webhook-secret-file /root/ci.secret \
+  --webhook-actions artifact.publish
+```
+
+3. Look for `webhook.started` in the worker log, publish a file and watch your receiver.
+
+The command writes `config/webhooks/webhooks.json`, which you can also write by hand and name in `ARKVORY_WEBHOOKS_FILE`. Run the command again with the same name to change a subscription. `--webhook-detach ci` removes it: its files are deleted and its position is forgotten. One call changes one subscription and cannot be mixed with other `configure` options.
+
+The file has these fields:
 
 ```json
 {
@@ -38,11 +52,6 @@ You need access to the server files and the right to restart the worker. See [Co
 }
 ```
 
-3. Set `ARKVORY_WEBHOOKS_FILE` to the absolute path of that file in `config/runtime.json`, then restart the worker. See [Apply a change](../install/configuration#apply-change).
-4. Look for `webhook.started` in the worker log, publish a file and watch your receiver.
-
-A wrong file stops the worker at startup with `worker.unavailable`. Up to 16 subscriptions are allowed. A Compose installation needs the files mounted into the worker container by hand.
-
 | Field            | Meaning                                                                                                                                                                          |
 | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `id`             | Name of the subscription: 1 to 64 characters `a-z`, `0-9`, `_` and `-`. Its progress is kept under this name.                                                                    |
@@ -51,6 +60,8 @@ A wrong file stops the worker at startup with `worker.unavailable`. Up to 16 sub
 | `secretFile`     | Absolute path to the file with the signing secret.                                                                                                                               |
 | `nextSecretFile` | Optional second secret for a [rotation](#rotate-the-secret).                                                                                                                     |
 | `actions`        | Optional list of feed actions to send, for example `artifact.publish`, `artifact.delete`, `asset.replace`, `stage.add` and `package.register`. Without it, every action is sent. |
+
+A wrong file stops the worker at startup with `worker.unavailable`. Up to 16 subscriptions are allowed. On a Compose installation the command also mounts `config/webhooks` into the worker container.
 
 ## The request {#request}
 
@@ -131,15 +142,15 @@ def verify(secret: bytes, headers, raw_body: bytes) -> bool:
 
 ## Rotate the secret {#rotate-the-secret}
 
-1. Add `nextSecretFile` with the new secret and restart the worker. Every request now carries two signatures.
+1. Run the same command with `--webhook-secret-file` for the current secret and `--webhook-next-secret-file` for the new one. Every request now carries two signatures.
 2. Change the receiver to the new secret. A receiver that accepts either signature keeps working meanwhile.
-3. Put the new file in `secretFile`, remove `nextSecretFile` and restart the worker.
+3. Run the command again with the new secret file as `--webhook-secret-file` and without `--webhook-next-secret-file`.
 
 ## Private receivers and certificates {#private-receivers}
 
 - Arkvory refuses receivers on loopback, private, link-local and cloud metadata addresses, and names that resolve to them. This stops the server from being used to reach internal services.
-- To send to a receiver in your network, list the network in `ARKVORY_WEBHOOKS_ALLOW_PRIVATE`, for example `10.20.0.0/16`.
-- For a receiver whose certificate comes from your own authority, set `ARKVORY_WEBHOOKS_CA_FILE` to a PEM file with that authority. The certificate is always verified.
+- To send to a receiver in your network, add the network with `--webhook-allow-private`, for example `--webhook-allow-private 10.20.0.0/16` (`ARKVORY_WEBHOOKS_ALLOW_PRIVATE`). It stays until the last subscription is removed.
+- For a receiver whose certificate comes from your own authority, add a PEM file with that authority through `--webhook-ca-file` (`ARKVORY_WEBHOOKS_CA_FILE`). The certificate is always verified.
 
 ## Monitor webhooks {#monitor}
 

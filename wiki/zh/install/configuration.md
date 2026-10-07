@@ -25,6 +25,7 @@ Arkvory 有两类设置：
 | `config/hub.json`                                                              | 中心地址、更新通道和统计设置                                              | 使用 `configure`                            |
 | `config/install-id`                                                            | 随机的安装 ID，仅在开启统计时发送到中心                                   | 不要更改                                    |
 | `config/mirrors/`                                                              | 镜像列表以及工作进程用于源的密钥                                          | 使用 `configure --mirror`                   |
+| `config/webhooks/`                                                             | 订阅列表、签名密钥，以及 worker 使用的接收方证书颁发机构                  | 使用 `configure --webhook`                  |
 | `installation.json`                                                            | 模式、引擎、自动更新设置、版本固定和已安装的发行版                        | 仅使用命令                                  |
 | `github-token.txt`                                                             | 可选的 GitHub 令牌，用于下载发行版。参见[更新](./updates#hub-unreachable) | 手动                                        |
 | `config/compose.env`, `config/compose.vault.yml`, `config/compose.mirrors.yml` | 仅 Compose：容器镜像、备份存储挂载和镜像挂载                              | 仅使用命令                                  |
@@ -58,14 +59,15 @@ Arkvory 有两类设置：
 
 ### configure 命令 {#configure-command}
 
-一次调用更改一类设置。四类设置不能在一次调用中混合。
+一次调用更改一类设置。五类设置不能在一次调用中混合。
 
-| 类别     | 选项                                                                                                                                                                              | 效果                                                                           |
-| -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
-| HTTPS    | `--tls-cert FILE --tls-key FILE [--listen-host ADDRESS]`，或 `--tls-off [--listen-host ADDRESS]`                                                                                  | 打开或关闭内置 HTTPS。重启服务并检查就绪状态。参见 [HTTPS](./https)            |
-| 备份存储 | `--backup-vault DIRECTORY [--init-vault]`，或 `--backup-vault-off`                                                                                                                | 连接或断开备份存储。仅重启备份代理。参见[备份](../operate/backups)             |
-| 镜像     | `--mirror REPOSITORY --mirror-upstream URL --mirror-token-file FILE [--mirror-source REPOSITORY] [--mirror-stages LIST] [--mirror-ca-file FILE]`，或 `--mirror-detach REPOSITORY` | 使某个仓库成为镜像或导入目标，或恢复为普通仓库。参见[镜像](../operate/mirrors) |
-| 更新     | `--enable-updates`、`--disable-updates`、`--pin [--version X.Y.Z]`、`--unpin`、`--update-channel stable` 或 `beta`、`--statistics on` 或 `off`、`--hub-url URL`、`--hub-off`      | 更改更新策略。参见[更新](./updates)                                            |
+| 类别     | 选项                                                                                                                                                                                                                                     | 效果                                                                                             |
+| -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| HTTPS    | `--tls-cert FILE --tls-key FILE [--listen-host ADDRESS]`，或 `--tls-off [--listen-host ADDRESS]`                                                                                                                                         | 打开或关闭内置 HTTPS。重启服务并检查就绪状态。参见 [HTTPS](./https)                              |
+| 备份存储 | `--backup-vault DIRECTORY [--init-vault]`，或 `--backup-vault-off`                                                                                                                                                                       | 连接或断开备份存储。仅重启备份代理。参见[备份](../operate/backups)                               |
+| 镜像     | `--mirror REPOSITORY --mirror-upstream URL --mirror-token-file FILE [--mirror-source REPOSITORY] [--mirror-stages LIST] [--mirror-ca-file FILE]`，或 `--mirror-detach REPOSITORY`                                                        | 使某个仓库成为镜像或导入目标，或恢复为普通仓库。参见[镜像](../operate/mirrors)                   |
+| Webhook  | `--webhook ID --webhook-repository REPOSITORY --webhook-url URL --webhook-secret-file FILE [--webhook-next-secret-file FILE] [--webhook-actions LIST] [--webhook-allow-private LIST] [--webhook-ca-file FILE]`, or `--webhook-detach ID` | 添加、替换或删除一个 webhook 订阅。重启服务并检查就绪状态。参见 [Webhook](../protocols/webhooks) |
+| 更新     | `--enable-updates`、`--disable-updates`、`--pin [--version X.Y.Z]`、`--unpin`、`--update-channel stable` 或 `beta`、`--statistics on` 或 `off`、`--hub-url URL`、`--hub-off`                                                             | 更改更新策略。参见[更新](./updates)                                                              |
 
 HTTPS、备份存储和镜像更改会重启服务，并在更改不生效时恢复之前的配置。更新选项只重写 `installation.json` 和 `hub.json`；它们不会重启任何内容。文件路径必须是绝对路径。
 

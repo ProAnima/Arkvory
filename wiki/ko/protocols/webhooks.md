@@ -21,8 +21,22 @@ description: '리포지토리가 바뀌면 HTTP 요청을 받습니다. 구독�
 
 서버 파일에 접근할 수 있어야 하며 worker를 다시 시작할 권한이 필요합니다. [구성](../install/configuration)을 참고하세요.
 
-1. 무작위 문자 16자 이상으로 시크릿 파일을 만드세요. 예: `config/webhooks/ci.secret`. 서비스 계정만 읽을 수 있어야 합니다. 수신자도 같은 시크릿이 필요합니다.
-2. 구독 파일을 작성하세요. 예: `config/webhooks/webhooks.json`:
+1. 서명 시크릿이 든 파일을 만드세요. 무작위 출력 가능 문자 16자 이상이어야 합니다. 예: `/root/ci.secret`. 수신자도 같은 시크릿이 필요합니다.
+2. 구독 정보와 함께 `configure`를 실행하세요. 이 명령은 입력을 검사하고, 시크릿을 `config/webhooks`로 복사하고, 구독 파일과 설정을 쓰고, 서비스를 다시 시작하며, 서비스가 준비되지 않으면 이전 구성을 복원합니다. 수신자에게 연결하지는 않습니다.
+
+```bash
+sudo arkvory configure --root /opt/proanima-arkvory \
+  --webhook ci --webhook-repository releases \
+  --webhook-url https://ci.example.com/hooks/arkvory \
+  --webhook-secret-file /root/ci.secret \
+  --webhook-actions artifact.publish
+```
+
+3. worker 로그에서 `webhook.started`를 찾고, 파일을 게시한 뒤 수신자를 확인하세요.
+
+이 명령은 `config/webhooks/webhooks.json`을 씁니다. 직접 작성해 `ARKVORY_WEBHOOKS_FILE`에 지정해도 됩니다. 구독을 바꾸려면 같은 이름으로 명령을 다시 실행하세요. `--webhook-detach ci`는 구독을 제거합니다. 파일이 삭제되고 진행 위치는 잊혀집니다. 한 번의 호출은 구독 하나만 바꾸며 다른 `configure` 옵션과 섞을 수 없습니다.
+
+파일에는 다음 필드가 있습니다.
 
 ```json
 {
@@ -38,11 +52,6 @@ description: '리포지토리가 바뀌면 HTTP 요청을 받습니다. 구독�
 }
 ```
 
-3. `config/runtime.json`에서 `ARKVORY_WEBHOOKS_FILE`을 그 파일의 절대 경로로 설정하고 worker를 다시 시작하세요. [변경 적용](../install/configuration#apply-change)을 참고하세요.
-4. worker 로그에서 `webhook.started`를 찾고, 파일을 게시한 뒤 수신자를 확인하세요.
-
-잘못된 파일은 시작 시 `worker.unavailable`로 worker를 멈춥니다. 구독은 최대 16개까지 허용됩니다. Compose 설치에서는 파일을 worker 컨테이너에 직접 마운트해야 합니다.
-
 | 필드             | 의미                                                                                                                                                    |
 | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `id`             | 구독 이름: `a-z`, `0-9`, `_`, `-` 1~64자. 진행 상태가 이 이름으로 저장됩니다.                                                                           |
@@ -51,6 +60,8 @@ description: '리포지토리가 바뀌면 HTTP 요청을 받습니다. 구독�
 | `secretFile`     | 서명 시크릿이 들어 있는 파일의 절대 경로.                                                                                                               |
 | `nextSecretFile` | [교체](#rotate-the-secret)를 위한 선택적 두 번째 시크릿.                                                                                                |
 | `actions`        | 보낼 피드 동작의 선택적 목록. 예: `artifact.publish`, `artifact.delete`, `asset.replace`, `stage.add`, `package.register`. 없으면 모든 동작을 보냅니다. |
+
+잘못된 파일은 시작 시 `worker.unavailable`로 worker를 멈춥니다. 구독은 최대 16개까지 허용됩니다. Compose 설치에서는 이 명령이 `config/webhooks`도 worker 컨테이너에 마운트합니다.
 
 ## 요청 {#request}
 
@@ -131,15 +142,15 @@ def verify(secret: bytes, headers, raw_body: bytes) -> bool:
 
 ## 시크릿 교체 {#rotate-the-secret}
 
-1. 새 시크릿을 가리키는 `nextSecretFile`을 추가하고 worker를 다시 시작하세요. 이제 모든 요청에 서명이 두 개 들어갑니다.
+1. 같은 명령을 다시 실행하되, 현재 시크릿은 `--webhook-secret-file`로, 새 시크릿은 `--webhook-next-secret-file`로 지정하세요. 이제 모든 요청에 서명이 두 개 들어갑니다.
 2. 수신자를 새 시크릿으로 바꾸세요. 두 서명 중 어느 쪽이든 받아들이는 수신자는 그동안 계속 동작합니다.
-3. 새 파일을 `secretFile`에 넣고 `nextSecretFile`을 제거한 뒤 worker를 다시 시작하세요.
+3. 새 시크릿 파일을 `--webhook-secret-file`로 지정하고 `--webhook-next-secret-file`은 빼고 명령을 다시 실행하세요.
 
 ## 사설 수신자와 인증서 {#private-receivers}
 
 - Arkvory는 루프백, 사설, 링크 로컬, 클라우드 메타데이터 주소의 수신자와 그 주소로 확인되는 이름을 거부합니다. 서버가 내부 서비스에 접근하는 데 쓰이는 것을 막기 위해서입니다.
-- 내 네트워크의 수신자에게 보내려면 그 네트워크를 `ARKVORY_WEBHOOKS_ALLOW_PRIVATE`에 지정하세요. 예: `10.20.0.0/16`.
-- 수신자의 인증서가 자체 인증 기관에서 발급되었다면 `ARKVORY_WEBHOOKS_CA_FILE`을 그 기관이 담긴 PEM 파일로 설정하세요. 인증서는 항상 검증됩니다.
+- 내 네트워크의 수신자에게 보내려면 `--webhook-allow-private`로 그 네트워크를 추가하세요. 예: `--webhook-allow-private 10.20.0.0/16`(`ARKVORY_WEBHOOKS_ALLOW_PRIVATE`). 마지막 구독을 제거할 때까지 유지됩니다.
+- 수신자의 인증서가 자체 인증 기관에서 발급되었다면 `--webhook-ca-file`로 그 기관이 담긴 PEM 파일을 추가하세요(`ARKVORY_WEBHOOKS_CA_FILE`). 인증서는 항상 검증됩니다.
 
 ## 웹훅 모니터링 {#monitor}
 

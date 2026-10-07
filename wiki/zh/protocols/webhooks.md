@@ -21,8 +21,22 @@ Webhook 会在仓库发生变化时通知你的系统，这样它就不必轮询
 
 你需要能访问服务器文件，并有权重启 worker。参见[配置](../install/configuration)。
 
-1. 创建一个至少包含 16 个随机字符的密钥文件，例如 `config/webhooks/ci.secret`。只有服务账户可以读取它。接收方需要使用相同的密钥。
-2. 编写订阅文件，例如 `config/webhooks/webhooks.json`：
+1. 创建一个包含签名密钥的文件：至少 16 个随机的可打印字符，例如 `/root/ci.secret`。接收方需要使用相同的密钥。
+2. 用订阅信息运行 `configure`。该命令会检查你的输入，把密钥复制到 `config/webhooks`，写入订阅文件和设置，重启服务，并在服务未就绪时恢复之前的配置。它不会联系接收方。
+
+```bash
+sudo arkvory configure --root /opt/proanima-arkvory \
+  --webhook ci --webhook-repository releases \
+  --webhook-url https://ci.example.com/hooks/arkvory \
+  --webhook-secret-file /root/ci.secret \
+  --webhook-actions artifact.publish
+```
+
+3. 在 worker 日志中查找 `webhook.started`，发布一个文件，并观察你的接收方。
+
+该命令会写入 `config/webhooks/webhooks.json`，你也可以手工编写并在 `ARKVORY_WEBHOOKS_FILE` 中指定。要修改订阅，请用相同的名称再次运行该命令。`--webhook-detach ci` 会删除订阅：其文件被删除，其位置被遗忘。一次调用只修改一个订阅，不能与其他 `configure` 选项混用。
+
+文件包含以下字段：
 
 ```json
 {
@@ -38,11 +52,6 @@ Webhook 会在仓库发生变化时通知你的系统，这样它就不必轮询
 }
 ```
 
-3. 在 `config/runtime.json` 中把 `ARKVORY_WEBHOOKS_FILE` 设为该文件的绝对路径，然后重启 worker。参见[应用更改](../install/configuration#apply-change)。
-4. 在 worker 日志中查找 `webhook.started`，发布一个文件，并观察你的接收方。
-
-文件有误会使 worker 在启动时以 `worker.unavailable` 停止。最多允许 16 个订阅。Compose 安装需要手动把这些文件挂载到 worker 容器中。
-
 | 字段             | 含义                                                                                                                                                 |
 | ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `id`             | 订阅名称：1 到 64 个字符，可用 `a-z`、`0-9`、`_` 和 `-`。其进度按此名称保存。                                                                        |
@@ -51,6 +60,8 @@ Webhook 会在仓库发生变化时通知你的系统，这样它就不必轮询
 | `secretFile`     | 签名密钥文件的绝对路径。                                                                                                                             |
 | `nextSecretFile` | 可选的第二个密钥，用于[轮换](#rotate-the-secret)。                                                                                                   |
 | `actions`        | 可选的要发送的订阅源操作列表，例如 `artifact.publish`、`artifact.delete`、`asset.replace`、`stage.add` 和 `package.register`。不设置则发送所有操作。 |
+
+文件有误会使 worker 在启动时以 `worker.unavailable` 停止。最多允许 16 个订阅。在 Compose 安装中，该命令还会把 `config/webhooks` 挂载到 worker 容器中。
 
 ## 请求 {#request}
 
@@ -131,15 +142,15 @@ def verify(secret: bytes, headers, raw_body: bytes) -> bool:
 
 ## 轮换密钥 {#rotate-the-secret}
 
-1. 添加带有新密钥的 `nextSecretFile` 并重启 worker。此后每个请求都带有两个签名。
+1. 再次运行同一命令：用 `--webhook-secret-file` 指定当前密钥，用 `--webhook-next-secret-file` 指定新密钥。此后每个请求都带有两个签名。
 2. 把接收方切换到新密钥。在此期间，接受任一签名的接收方可继续工作。
-3. 把新文件放到 `secretFile`，删除 `nextSecretFile`，再重启 worker。
+3. 再次运行该命令，把新密钥文件作为 `--webhook-secret-file`，并去掉 `--webhook-next-secret-file`。
 
 ## 内部接收方与证书 {#private-receivers}
 
 - Arkvory 会拒绝位于环回、私有、链路本地和云元数据地址上的接收方，以及解析到这些地址的名称。这样服务器就不能被用来访问内部服务。
-- 要向你网络内的接收方发送，请把该网络写入 `ARKVORY_WEBHOOKS_ALLOW_PRIVATE`，例如 `10.20.0.0/16`。
-- 如果接收方的证书来自你自己的证书颁发机构，请把 `ARKVORY_WEBHOOKS_CA_FILE` 设为包含该机构的 PEM 文件。证书始终会被验证。
+- 要向你网络内的接收方发送，请用 `--webhook-allow-private` 添加该网络，例如 `--webhook-allow-private 10.20.0.0/16`（`ARKVORY_WEBHOOKS_ALLOW_PRIVATE`）。它会一直保留，直到删除最后一个订阅。
+- 如果接收方的证书来自你自己的证书颁发机构，请用 `--webhook-ca-file` 添加包含该机构的 PEM 文件（`ARKVORY_WEBHOOKS_CA_FILE`）。证书始终会被验证。
 
 ## 监控 webhook {#monitor}
 

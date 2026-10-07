@@ -21,8 +21,22 @@ O administrador define as assinaturas em um arquivo. Ainda não há API nem pág
 
 Você precisa de acesso aos arquivos do servidor e de permissão para reiniciar o worker. Veja [Configuração](../install/configuration).
 
-1. Crie um arquivo de segredo com pelo menos 16 caracteres aleatórios, por exemplo `config/webhooks/ci.secret`. Somente a conta de serviço pode lê-lo. O receptor precisa do mesmo segredo.
-2. Escreva o arquivo de assinaturas, por exemplo `config/webhooks/webhooks.json`:
+1. Crie um arquivo com o segredo de assinatura: pelo menos 16 caracteres imprimíveis aleatórios, por exemplo `/root/ci.secret`. O receptor precisa do mesmo segredo.
+2. Execute `configure` com a assinatura. O comando valida o que você informou, copia o segredo para `config/webhooks`, escreve o arquivo de assinaturas e a configuração, reinicia os serviços e restaura a configuração anterior se eles não ficarem prontos. Ele não contata o receptor.
+
+```bash
+sudo arkvory configure --root /opt/proanima-arkvory \
+  --webhook ci --webhook-repository releases \
+  --webhook-url https://ci.example.com/hooks/arkvory \
+  --webhook-secret-file /root/ci.secret \
+  --webhook-actions artifact.publish
+```
+
+3. Procure `webhook.started` no log do worker, publique um arquivo e observe o seu receptor.
+
+O comando escreve `config/webhooks/webhooks.json`, que você também pode escrever à mão e indicar em `ARKVORY_WEBHOOKS_FILE`. Para alterar uma assinatura, execute o comando de novo com o mesmo nome. `--webhook-detach ci` a remove: os arquivos dela são apagados e a posição é esquecida. Uma chamada altera uma assinatura e não pode ser combinada com outras opções de `configure`.
+
+O arquivo tem estes campos:
 
 ```json
 {
@@ -38,11 +52,6 @@ Você precisa de acesso aos arquivos do servidor e de permissão para reiniciar 
 }
 ```
 
-3. Defina `ARKVORY_WEBHOOKS_FILE` com o caminho absoluto desse arquivo em `config/runtime.json` e reinicie o worker. Veja [Aplicar uma alteração](../install/configuration#apply-change).
-4. Procure `webhook.started` no log do worker, publique um arquivo e observe o seu receptor.
-
-Um arquivo incorreto interrompe o worker na inicialização com `worker.unavailable`. São permitidas até 16 assinaturas. Uma instalação com Compose exige montar os arquivos no contêiner do worker manualmente.
-
 | Campo            | Significado                                                                                                                                                                           |
 | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `id`             | Nome da assinatura: de 1 a 64 caracteres `a-z`, `0-9`, `_` e `-`. O progresso dela é guardado com esse nome.                                                                          |
@@ -51,6 +60,8 @@ Um arquivo incorreto interrompe o worker na inicialização com `worker.unavaila
 | `secretFile`     | Caminho absoluto do arquivo com o segredo de assinatura.                                                                                                                              |
 | `nextSecretFile` | Segundo segredo opcional para uma [rotação](#rotate-the-secret).                                                                                                                      |
 | `actions`        | Lista opcional de ações do feed a enviar, por exemplo `artifact.publish`, `artifact.delete`, `asset.replace`, `stage.add` e `package.register`. Sem ela, todas as ações são enviadas. |
+
+Um arquivo incorreto interrompe o worker na inicialização com `worker.unavailable`. São permitidas até 16 assinaturas. Em uma instalação com Compose, o comando também monta `config/webhooks` no contêiner do worker.
 
 ## A requisição {#request}
 
@@ -131,15 +142,15 @@ def verify(secret: bytes, headers, raw_body: bytes) -> bool:
 
 ## Rotacionar o segredo {#rotate-the-secret}
 
-1. Adicione `nextSecretFile` com o novo segredo e reinicie o worker. Cada requisição passa a levar duas assinaturas.
+1. Execute o mesmo comando com `--webhook-secret-file` para o segredo atual e `--webhook-next-secret-file` para o novo. Cada requisição passa a levar duas assinaturas.
 2. Troque o receptor para o novo segredo. Um receptor que aceita qualquer uma das assinaturas continua funcionando nesse meio-tempo.
-3. Coloque o novo arquivo em `secretFile`, remova `nextSecretFile` e reinicie o worker.
+3. Execute o comando de novo com o arquivo do novo segredo em `--webhook-secret-file` e sem `--webhook-next-secret-file`.
 
 ## Receptores privados e certificados {#private-receivers}
 
 - O Arkvory recusa receptores em endereços loopback, privados, link-local e de metadados de nuvem, e nomes que resolvem para eles. Assim o servidor não pode ser usado para alcançar serviços internos.
-- Para enviar a um receptor da sua rede, liste a rede em `ARKVORY_WEBHOOKS_ALLOW_PRIVATE`, por exemplo `10.20.0.0/16`.
-- Se o certificado do receptor vem da sua própria autoridade, defina `ARKVORY_WEBHOOKS_CA_FILE` com um arquivo PEM dessa autoridade. O certificado é sempre verificado.
+- Para enviar a um receptor da sua rede, adicione a rede com `--webhook-allow-private`, por exemplo `--webhook-allow-private 10.20.0.0/16` (`ARKVORY_WEBHOOKS_ALLOW_PRIVATE`). Ela permanece até a última assinatura ser removida.
+- Se o certificado do receptor vem da sua própria autoridade, adicione um arquivo PEM dessa autoridade com `--webhook-ca-file` (`ARKVORY_WEBHOOKS_CA_FILE`). O certificado é sempre verificado.
 
 ## Monitorar webhooks {#monitor}
 

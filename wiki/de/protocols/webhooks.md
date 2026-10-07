@@ -21,8 +21,22 @@ Der Administrator legt die Abonnements in einer Datei fest. Eine API oder Konsol
 
 Sie brauchen Zugriff auf die Serverdateien und das Recht, den Worker neu zu starten. Siehe [Konfiguration](../install/configuration).
 
-1. Erstellen Sie eine Secret-Datei mit mindestens 16 zufälligen Zeichen, zum Beispiel `config/webhooks/ci.secret`. Nur das Dienstkonto darf sie lesen. Der Empfänger braucht dasselbe Secret.
-2. Schreiben Sie die Abonnement-Datei, zum Beispiel `config/webhooks/webhooks.json`:
+1. Erstellen Sie eine Datei mit dem Signatur-Secret: mindestens 16 zufällige druckbare Zeichen, zum Beispiel `/root/ci.secret`. Der Empfänger braucht dasselbe Secret.
+2. Führen Sie `configure` mit dem Abonnement aus. Der Befehl prüft Ihre Eingaben, kopiert das Secret nach `config/webhooks`, schreibt die Abonnement-Datei und die Einstellung, startet die Dienste neu und stellt die frühere Konfiguration wieder her, wenn sie nicht bereit werden. Der Empfänger wird nicht kontaktiert.
+
+```bash
+sudo arkvory configure --root /opt/proanima-arkvory \
+  --webhook ci --webhook-repository releases \
+  --webhook-url https://ci.example.com/hooks/arkvory \
+  --webhook-secret-file /root/ci.secret \
+  --webhook-actions artifact.publish
+```
+
+3. Suchen Sie `webhook.started` im Worker-Log, veröffentlichen Sie eine Datei und beobachten Sie Ihren Empfänger.
+
+Der Befehl schreibt `config/webhooks/webhooks.json`; Sie können die Datei auch von Hand schreiben und in `ARKVORY_WEBHOOKS_FILE` angeben. Um ein Abonnement zu ändern, führen Sie den Befehl mit demselben Namen erneut aus. `--webhook-detach ci` entfernt es: Seine Dateien werden gelöscht, seine Position wird vergessen. Ein Aufruf ändert ein Abonnement und lässt sich nicht mit anderen `configure`-Optionen mischen.
+
+Die Datei hat diese Felder:
 
 ```json
 {
@@ -38,11 +52,6 @@ Sie brauchen Zugriff auf die Serverdateien und das Recht, den Worker neu zu star
 }
 ```
 
-3. Setzen Sie `ARKVORY_WEBHOOKS_FILE` in `config/runtime.json` auf den absoluten Pfad dieser Datei und starten Sie den Worker neu. Siehe [Änderung anwenden](../install/configuration#apply-change).
-4. Suchen Sie `webhook.started` im Worker-Log, veröffentlichen Sie eine Datei und beobachten Sie Ihren Empfänger.
-
-Eine fehlerhafte Datei stoppt den Worker beim Start mit `worker.unavailable`. Erlaubt sind bis zu 16 Abonnements. Bei einer Compose-Installation müssen die Dateien von Hand in den Worker-Container eingebunden werden.
-
 | Feld             | Bedeutung                                                                                                                                                                                        |
 | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `id`             | Name des Abonnements: 1 bis 64 Zeichen `a-z`, `0-9`, `_` und `-`. Unter diesem Namen wird sein Fortschritt gespeichert.                                                                          |
@@ -51,6 +60,8 @@ Eine fehlerhafte Datei stoppt den Worker beim Start mit `worker.unavailable`. Er
 | `secretFile`     | Absoluter Pfad der Datei mit dem Signatur-Secret.                                                                                                                                                |
 | `nextSecretFile` | Optionales zweites Secret für eine [Rotation](#rotate-the-secret).                                                                                                                               |
 | `actions`        | Optionale Liste der zu sendenden Feed-Aktionen, zum Beispiel `artifact.publish`, `artifact.delete`, `asset.replace`, `stage.add` und `package.register`. Ohne sie werden alle Aktionen gesendet. |
+
+Eine fehlerhafte Datei stoppt den Worker beim Start mit `worker.unavailable`. Erlaubt sind bis zu 16 Abonnements. Bei einer Compose-Installation bindet der Befehl `config/webhooks` auch in den Worker-Container ein.
 
 ## Die Anfrage {#request}
 
@@ -131,15 +142,15 @@ def verify(secret: bytes, headers, raw_body: bytes) -> bool:
 
 ## Das Secret rotieren {#rotate-the-secret}
 
-1. Fügen Sie `nextSecretFile` mit dem neuen Secret hinzu und starten Sie den Worker neu. Jede Anfrage trägt nun zwei Signaturen.
+1. Führen Sie denselben Befehl mit `--webhook-secret-file` für das aktuelle und `--webhook-next-secret-file` für das neue Secret aus. Jede Anfrage trägt nun zwei Signaturen.
 2. Stellen Sie den Empfänger auf das neue Secret um. Ein Empfänger, der beide Signaturen akzeptiert, funktioniert in der Zwischenzeit weiter.
-3. Tragen Sie die neue Datei in `secretFile` ein, entfernen Sie `nextSecretFile` und starten Sie den Worker neu.
+3. Führen Sie den Befehl erneut aus, mit der neuen Secret-Datei als `--webhook-secret-file` und ohne `--webhook-next-secret-file`.
 
 ## Private Empfänger und Zertifikate {#private-receivers}
 
 - Arkvory lehnt Empfänger auf Loopback-, privaten, Link-Local- und Cloud-Metadaten-Adressen ab, ebenso Namen, die darauf auflösen. So lässt sich der Server nicht nutzen, um interne Dienste zu erreichen.
-- Um an einen Empfänger in Ihrem Netzwerk zu senden, tragen Sie das Netz in `ARKVORY_WEBHOOKS_ALLOW_PRIVATE` ein, zum Beispiel `10.20.0.0/16`.
-- Stammt das Zertifikat des Empfängers von Ihrer eigenen Zertifizierungsstelle, setzen Sie `ARKVORY_WEBHOOKS_CA_FILE` auf eine PEM-Datei mit dieser Stelle. Das Zertifikat wird immer geprüft.
+- Um an einen Empfänger in Ihrem Netzwerk zu senden, fügen Sie das Netz mit `--webhook-allow-private` hinzu, zum Beispiel `--webhook-allow-private 10.20.0.0/16` (`ARKVORY_WEBHOOKS_ALLOW_PRIVATE`). Es bleibt, bis das letzte Abonnement entfernt wird.
+- Stammt das Zertifikat des Empfängers von Ihrer eigenen Zertifizierungsstelle, fügen Sie mit `--webhook-ca-file` eine PEM-Datei mit dieser Stelle hinzu (`ARKVORY_WEBHOOKS_CA_FILE`). Das Zertifikat wird immer geprüft.
 
 ## Webhooks überwachen {#monitor}
 

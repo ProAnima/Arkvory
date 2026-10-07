@@ -25,6 +25,7 @@ Arkvory에는 두 종류의 설정이 있습니다:
 | `config/hub.json`                                                              | 허브 주소, 업데이트 채널, 통계 설정                                                              | `configure` 사용                             |
 | `config/install-id`                                                            | 무작위 설치 ID로, 통계가 켜져 있을 때만 허브로 전송됩니다                                        | 변경하지 마세요                              |
 | `config/mirrors/`                                                              | 미러 목록과 워커가 소스에 사용하는 키                                                            | `configure --mirror` 사용                    |
+| `config/webhooks/`                                                             | 구독 목록, 서명 시크릿, worker가 사용하는 수신자의 인증 기관                                     | `configure --webhook` 사용                   |
 | `installation.json`                                                            | 모드, 엔진, 자동 업데이트 설정, 버전 고정, 설치된 릴리스                                         | 명령으로만                                   |
 | `github-token.txt`                                                             | 릴리스 다운로드를 위한 선택적 GitHub 토큰. [업데이트](./updates#hub-unreachable) 참조            | 직접 편집                                    |
 | `config/compose.env`, `config/compose.vault.yml`, `config/compose.mirrors.yml` | Compose 전용: 이미지, 보관소 마운트, 미러 마운트                                                 | 명령으로만                                   |
@@ -58,14 +59,15 @@ Arkvory에는 두 종류의 설정이 있습니다:
 
 ### configure 명령 {#configure-command}
 
-한 번의 호출로 한 종류의 설정만 변경합니다. 네 가지 종류는 한 번의 호출에 섞을 수 없습니다.
+한 번의 호출로 한 종류의 설정만 변경합니다. 다섯 가지 종류는 한 번의 호출에 섞을 수 없습니다.
 
-| 종류        | 옵션                                                                                                                                                                                | 효과                                                                                                             |
-| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| HTTPS       | `--tls-cert FILE --tls-key FILE [--listen-host ADDRESS]`, 또는 `--tls-off [--listen-host ADDRESS]`                                                                                  | 내장 HTTPS를 켜거나 끕니다. 서비스를 다시 시작하고 준비 상태를 확인합니다. [HTTPS](./https)를 참조하세요         |
-| 백업 보관소 | `--backup-vault DIRECTORY [--init-vault]`, 또는 `--backup-vault-off`                                                                                                                | 보관소를 연결하거나 연결을 끊습니다. 백업 에이전트만 다시 시작합니다. [백업](../operate/backups)을 참조하세요    |
-| 미러        | `--mirror REPOSITORY --mirror-upstream URL --mirror-token-file FILE [--mirror-source REPOSITORY] [--mirror-stages LIST] [--mirror-ca-file FILE]`, 또는 `--mirror-detach REPOSITORY` | 리포지토리를 미러나 가져오기 대상으로 만들거나 다시 일반으로 되돌립니다. [미러](../operate/mirrors)를 참조하세요 |
-| 업데이트    | `--enable-updates`, `--disable-updates`, `--pin [--version X.Y.Z]`, `--unpin`, `--update-channel stable` 또는 `beta`, `--statistics on` 또는 `off`, `--hub-url URL`, `--hub-off`    | 업데이트 정책을 변경합니다. [업데이트](./updates)를 참조하세요                                                   |
+| 종류        | 옵션                                                                                                                                                                                                                                       | 효과                                                                                                                       |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
+| HTTPS       | `--tls-cert FILE --tls-key FILE [--listen-host ADDRESS]`, 또는 `--tls-off [--listen-host ADDRESS]`                                                                                                                                         | 내장 HTTPS를 켜거나 끕니다. 서비스를 다시 시작하고 준비 상태를 확인합니다. [HTTPS](./https)를 참조하세요                   |
+| 백업 보관소 | `--backup-vault DIRECTORY [--init-vault]`, 또는 `--backup-vault-off`                                                                                                                                                                       | 보관소를 연결하거나 연결을 끊습니다. 백업 에이전트만 다시 시작합니다. [백업](../operate/backups)을 참조하세요              |
+| 미러        | `--mirror REPOSITORY --mirror-upstream URL --mirror-token-file FILE [--mirror-source REPOSITORY] [--mirror-stages LIST] [--mirror-ca-file FILE]`, 또는 `--mirror-detach REPOSITORY`                                                        | 리포지토리를 미러나 가져오기 대상으로 만들거나 다시 일반으로 되돌립니다. [미러](../operate/mirrors)를 참조하세요           |
+| 웹훅        | `--webhook ID --webhook-repository REPOSITORY --webhook-url URL --webhook-secret-file FILE [--webhook-next-secret-file FILE] [--webhook-actions LIST] [--webhook-allow-private LIST] [--webhook-ca-file FILE]`, 또는 `--webhook-detach ID` | 웹훅 구독을 추가, 교체 또는 제거합니다. 서비스를 다시 시작하고 준비 상태를 확인합니다. 참고: [웹훅](../protocols/webhooks) |
+| 업데이트    | `--enable-updates`, `--disable-updates`, `--pin [--version X.Y.Z]`, `--unpin`, `--update-channel stable` 또는 `beta`, `--statistics on` 또는 `off`, `--hub-url URL`, `--hub-off`                                                           | 업데이트 정책을 변경합니다. [업데이트](./updates)를 참조하세요                                                             |
 
 HTTPS, 보관소, 미러 변경은 서비스를 다시 시작하며, 변경이 실패하면 이전 구성을 복원합니다. 업데이트 옵션은 `installation.json`과 `hub.json`만 다시 쓰며, 아무것도 다시 시작하지 않습니다. 파일 경로는 절대 경로입니다.
 

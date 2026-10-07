@@ -21,8 +21,22 @@ L'administrateur définit les abonnements dans un fichier. Il n'y a pas encore d
 
 Vous avez besoin d'un accès aux fichiers du serveur et du droit de redémarrer le worker. Voir [Configuration](../install/configuration).
 
-1. Créez un fichier de secret d'au moins 16 caractères aléatoires, par exemple `config/webhooks/ci.secret`. Seul le compte de service peut le lire. Le destinataire a besoin du même secret.
-2. Écrivez le fichier d'abonnements, par exemple `config/webhooks/webhooks.json` :
+1. Créez un fichier avec le secret de signature : au moins 16 caractères imprimables aléatoires, par exemple `/root/ci.secret`. Le destinataire a besoin du même secret.
+2. Lancez `configure` avec l'abonnement. La commande vérifie votre saisie, copie le secret dans `config/webhooks`, écrit le fichier d'abonnements et le réglage, redémarre les services et rétablit la configuration précédente s'ils ne deviennent pas prêts. Elle ne contacte pas le destinataire.
+
+```bash
+sudo arkvory configure --root /opt/proanima-arkvory \
+  --webhook ci --webhook-repository releases \
+  --webhook-url https://ci.example.com/hooks/arkvory \
+  --webhook-secret-file /root/ci.secret \
+  --webhook-actions artifact.publish
+```
+
+3. Cherchez `webhook.started` dans le journal du worker, publiez un fichier et regardez votre destinataire.
+
+La commande écrit `config/webhooks/webhooks.json`, que vous pouvez aussi écrire à la main et indiquer dans `ARKVORY_WEBHOOKS_FILE`. Pour modifier un abonnement, relancez la commande avec le même nom. `--webhook-detach ci` le supprime : ses fichiers sont effacés et sa position oubliée. Un appel modifie un abonnement et ne se combine pas avec d'autres options de `configure`.
+
+Le fichier comporte ces champs :
 
 ```json
 {
@@ -38,11 +52,6 @@ Vous avez besoin d'un accès aux fichiers du serveur et du droit de redémarrer 
 }
 ```
 
-3. Définissez `ARKVORY_WEBHOOKS_FILE` avec le chemin absolu de ce fichier dans `config/runtime.json`, puis redémarrez le worker. Voir [Appliquer un changement](../install/configuration#apply-change).
-4. Cherchez `webhook.started` dans le journal du worker, publiez un fichier et regardez votre destinataire.
-
-Un fichier incorrect arrête le worker au démarrage avec `worker.unavailable`. Jusqu'à 16 abonnements sont autorisés. Une installation Compose exige de monter les fichiers dans le conteneur du worker à la main.
-
 | Champ            | Signification                                                                                                                                                                                        |
 | ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `id`             | Nom de l'abonnement : 1 à 64 caractères `a-z`, `0-9`, `_` et `-`. Sa progression est conservée sous ce nom.                                                                                          |
@@ -51,6 +60,8 @@ Un fichier incorrect arrête le worker au démarrage avec `worker.unavailable`. 
 | `secretFile`     | Chemin absolu du fichier contenant le secret de signature.                                                                                                                                           |
 | `nextSecretFile` | Second secret facultatif pour une [rotation](#rotate-the-secret).                                                                                                                                    |
 | `actions`        | Liste facultative des actions du flux à envoyer, par exemple `artifact.publish`, `artifact.delete`, `asset.replace`, `stage.add` et `package.register`. Sans elle, toutes les actions sont envoyées. |
+
+Un fichier incorrect arrête le worker au démarrage avec `worker.unavailable`. Jusqu'à 16 abonnements sont autorisés. Sur une installation Compose, la commande monte aussi `config/webhooks` dans le conteneur du worker.
 
 ## La requête {#request}
 
@@ -131,15 +142,15 @@ def verify(secret: bytes, headers, raw_body: bytes) -> bool:
 
 ## Renouveler le secret {#rotate-the-secret}
 
-1. Ajoutez `nextSecretFile` avec le nouveau secret et redémarrez le worker. Chaque requête porte alors deux signatures.
+1. Relancez la même commande avec `--webhook-secret-file` pour le secret actuel et `--webhook-next-secret-file` pour le nouveau. Chaque requête porte alors deux signatures.
 2. Passez le destinataire au nouveau secret. Un destinataire qui accepte l'une ou l'autre signature continue de fonctionner entre-temps.
-3. Mettez le nouveau fichier dans `secretFile`, retirez `nextSecretFile` et redémarrez le worker.
+3. Relancez la commande avec le nouveau fichier de secret dans `--webhook-secret-file` et sans `--webhook-next-secret-file`.
 
 ## Destinataires privés et certificats {#private-receivers}
 
 - Arkvory refuse les destinataires sur des adresses loopback, privées, link-local et de métadonnées cloud, ainsi que les noms qui y mènent. Le serveur ne peut ainsi pas servir à atteindre des services internes.
-- Pour envoyer vers un destinataire de votre réseau, indiquez ce réseau dans `ARKVORY_WEBHOOKS_ALLOW_PRIVATE`, par exemple `10.20.0.0/16`.
-- Si le certificat du destinataire vient de votre propre autorité, définissez `ARKVORY_WEBHOOKS_CA_FILE` avec un fichier PEM de cette autorité. Le certificat est toujours vérifié.
+- Pour envoyer vers un destinataire de votre réseau, ajoutez ce réseau avec `--webhook-allow-private`, par exemple `--webhook-allow-private 10.20.0.0/16` (`ARKVORY_WEBHOOKS_ALLOW_PRIVATE`). Il reste jusqu'à la suppression du dernier abonnement.
+- Si le certificat du destinataire vient de votre propre autorité, ajoutez un fichier PEM de cette autorité avec `--webhook-ca-file` (`ARKVORY_WEBHOOKS_CA_FILE`). Le certificat est toujours vérifié.
 
 ## Surveiller les webhooks {#monitor}
 
