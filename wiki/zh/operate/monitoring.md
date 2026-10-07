@@ -250,15 +250,17 @@ Select-String -Path "$root\logs\*.log" -Pattern 'REQUEST_ID'
 | `ArkvoryBackupWarning`                                          | `vault_unavailable` 或 `verify_failed` 持续 10 分钟 | Critical          |
 | `ArkvoryMirrorStale`                                            | 镜像已有一小时未追平其源                            | Warning           |
 | `ArkvoryMirrorFailing`                                          | 镜像的上次同步失败，持续 15 分钟                    | Warning           |
+| `ArkvoryRestartLoop`                                            | API 进程在 30 分钟内重启了 3 次或更多               | Warning           |
 
 请自行添加以下告警，因为 Arkvory 不导出这些数据：
 
-| 告警                               | 来源                                                        | 原因                                           |
-| ---------------------------------- | ----------------------------------------------------------- | ---------------------------------------------- |
-| 存储卷、数据库卷和备份卷的可用空间 | `node_exporter`                                             | 磁盘写满会停止上传、数据库和备份               |
-| PostgreSQL 宕机或连接数过多        | `postgres_exporter`                                         | 数据库不可用期间，API 会退出并重启             |
-| 某个服务反复重启                   | `arkvory_process_start_time_seconds` 发生变化，或服务管理器 | 反复出现 `startup.failed` 或 `process.stalled` |
-| 公共状态不是 `ready`               | 对 `/health/status` 的外部探测                              | 从客户端角度看到的网络路径、代理和证书         |
+| 告警                               | 来源                           | 原因                                   |
+| ---------------------------------- | ------------------------------ | -------------------------------------- |
+| 存储卷、数据库卷和备份卷的可用空间 | `node_exporter`                | 磁盘写满会停止上传、数据库和备份       |
+| PostgreSQL 宕机或连接数过多        | `postgres_exporter`            | 数据库不可用期间，API 会退出并重启     |
+| 公共状态不是 `ready`               | 对 `/health/status` 的外部探测 | 从客户端角度看到的网络路径、代理和证书 |
+
+针对存储卷和 PostgreSQL，发行版在 `deploy/monitoring/arkvory-host-alerts.yml` 中提供了面向 `node_exporter` 和 `postgres_exporter` 的现成规则。加载该文件前，请把 `mountpoint` 表达式替换为你自己的存储卷。
 
 对告警测试一次。例如，停止 `arkvory-backup`：`ArkvoryBackupAgentOffline` 会在大约 7 到 8 分钟后触发（2 分钟没有心跳，规则中 5 分钟，再加上抓取间隔）。
 

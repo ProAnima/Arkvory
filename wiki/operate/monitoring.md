@@ -250,15 +250,17 @@ The release contains ready Prometheus rules in `releases/<version>/deploy/monito
 | `ArkvoryBackupWarning`                                          | `vault_unavailable` or `verify_failed` for 10 minutes                  | Critical          |
 | `ArkvoryMirrorStale`                                            | A mirror has not caught up with its source for an hour                 | Warning           |
 | `ArkvoryMirrorFailing`                                          | The last synchronization of a mirror failed, for 15 minutes            | Warning           |
+| `ArkvoryRestartLoop`                                            | The API process restarted 3 or more times in 30 minutes                | Warning           |
 
 Add these alerts yourself, because Arkvory does not export the data:
 
-| Alert                                                  | Source                                                                 | Why                                                                 |
-| ------------------------------------------------------ | ---------------------------------------------------------------------- | ------------------------------------------------------------------- |
-| Free space of the storage, database and backup volumes | `node_exporter`                                                        | A full disk stops uploads, the database and the backups             |
-| PostgreSQL is down or has too many connections         | `postgres_exporter`                                                    | The API exits and restarts while the database is away               |
-| A service restarts again and again                     | Change of `arkvory_process_start_time_seconds`, or the service manager | A repeated `startup.failed` or `process.stalled`                    |
-| The public status is not `ready`                       | An external probe of `/health/status`                                  | The network path, the proxy and the certificate, seen from a client |
+| Alert                                                  | Source                                | Why                                                                 |
+| ------------------------------------------------------ | ------------------------------------- | ------------------------------------------------------------------- |
+| Free space of the storage, database and backup volumes | `node_exporter`                       | A full disk stops uploads, the database and the backups             |
+| PostgreSQL is down or has too many connections         | `postgres_exporter`                   | The API exits and restarts while the database is away               |
+| The public status is not `ready`                       | An external probe of `/health/status` | The network path, the proxy and the certificate, seen from a client |
+
+For the volumes and for PostgreSQL the release contains ready rules for `node_exporter` and `postgres_exporter` in `deploy/monitoring/arkvory-host-alerts.yml`. Replace the `mountpoint` expressions with your own volumes before you load the file.
 
 Test an alert once. For example, stop `arkvory-backup`: `ArkvoryBackupAgentOffline` fires about 7 to 8 minutes later (2 minutes without heartbeat, 5 minutes in the rule, plus the scrape interval).
 

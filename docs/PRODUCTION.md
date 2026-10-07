@@ -42,8 +42,8 @@
 
 ## 6. Мониторинг и журналы
 
-- [ ] Prometheus собирает `GET /health/metrics` с ключом из п. 4 (job `arkvory`), подключены [правила оповещений](../deploy/monitoring/arkvory-alerts.yml): недоступность, 5xx, задержки, очередь завершения, допуск передач, журнал, срок сертификата, возраст копии, агент и предупреждения копий ([метрики](CORE_RUNBOOK.md#журналы-метрики-и-корреляция)).
-- [ ] Место на томах storage, vault и PostgreSQL контролируется node_exporter / postgres_exporter: метрик свободного места storage и БД у Arkvory нет, для vault есть только предупреждение `vault_low_space`.
+- [ ] Prometheus собирает `GET /health/metrics` с ключом из п. 4 (job `arkvory`), подключены [правила оповещений](../deploy/monitoring/arkvory-alerts.yml): недоступность, 5xx, задержки, очередь завершения, допуск передач, журнал, срок сертификата, возраст копии, агент, предупреждения копий и повторные перезапуски ([метрики](CORE_RUNBOOK.md#журналы-метрики-и-корреляция)).
+- [ ] Место на томах storage, vault и PostgreSQL контролируется node_exporter / postgres_exporter: метрик свободного места storage и БД у Arkvory нет, для vault есть только предупреждение `vault_low_space`. Готовые правила — [arkvory-host-alerts.yml](../deploy/monitoring/arkvory-host-alerts.yml); перед подключением замените в них `mountpoint` на свои тома.
 - [ ] Журналы собираются: journald (`arkvory-api`, `-worker`, `-backup`, `-update`) или `<root>/logs` на Windows (20 MiB × 5), Compose — `logs`. Ошибки клиентов ищутся по `requestId` из ответа или вывода CLI.
 - [ ] Оповещение проверено вживую: например, остановка `arkvory-backup` вызывает `ArkvoryBackupAgentOffline` примерно через 7–8 минут (2 минуты без heartbeat, затем `for: 5m` правила и интервал опроса Prometheus).
 

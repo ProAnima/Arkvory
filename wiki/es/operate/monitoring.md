@@ -250,15 +250,17 @@ La versión contiene reglas de Prometheus listas en `releases/<version>/deploy/m
 | `ArkvoryBackupWarning`                                          | `vault_unavailable` o `verify_failed` durante 10 minutos                        | Crítica              |
 | `ArkvoryMirrorStale`                                            | Un espejo no se ha puesto al día con su origen durante una hora                 | Advertencia          |
 | `ArkvoryMirrorFailing`                                          | La última sincronización de un espejo falló, durante 15 minutos                 | Advertencia          |
+| `ArkvoryRestartLoop`                                            | El proceso de la API se reinició 3 o más veces en 30 minutos                    | Advertencia          |
 
 Añada estas alertas usted mismo, porque Arkvory no exporta los datos:
 
-| Alerta                                                                                | Origen                                                                   | Por qué                                                                        |
-| ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------ |
-| Espacio libre de los volúmenes de almacenamiento, base de datos y copias de seguridad | `node_exporter`                                                          | Un disco lleno detiene las subidas, la base de datos y las copias de seguridad |
-| PostgreSQL está caído o tiene demasiadas conexiones                                   | `postgres_exporter`                                                      | La API sale y se reinicia mientras la base de datos no está disponible         |
-| Un servicio se reinicia una y otra vez                                                | Cambio de `arkvory_process_start_time_seconds`, o el gestor de servicios | Un `startup.failed` o `process.stalled` repetido                               |
-| El estado público no es `ready`                                                       | Una sonda externa de `/health/status`                                    | La ruta de red, el proxy y el certificado, vistos desde un cliente             |
+| Alerta                                                                                | Origen                                | Por qué                                                                        |
+| ------------------------------------------------------------------------------------- | ------------------------------------- | ------------------------------------------------------------------------------ |
+| Espacio libre de los volúmenes de almacenamiento, base de datos y copias de seguridad | `node_exporter`                       | Un disco lleno detiene las subidas, la base de datos y las copias de seguridad |
+| PostgreSQL está caído o tiene demasiadas conexiones                                   | `postgres_exporter`                   | La API sale y se reinicia mientras la base de datos no está disponible         |
+| El estado público no es `ready`                                                       | Una sonda externa de `/health/status` | La ruta de red, el proxy y el certificado, vistos desde un cliente             |
+
+Para los volúmenes y para PostgreSQL, la versión incluye reglas listas para `node_exporter` y `postgres_exporter` en `deploy/monitoring/arkvory-host-alerts.yml`. Sustituya las expresiones `mountpoint` por sus propios volúmenes antes de cargar el archivo.
 
 Pruebe una alerta una vez. Por ejemplo, detenga `arkvory-backup`: `ArkvoryBackupAgentOffline` se dispara unos 7 u 8 minutos después (2 minutos sin latido, 5 minutos en la regla, más el intervalo de recogida).
 

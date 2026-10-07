@@ -103,8 +103,15 @@ async function exposedNames() {
 
 test('alert rules reference only metrics the API exposes and carry severity and guidance', async () => {
   const document = parse(await readFile('deploy/monitoring/arkvory-alerts.yml', 'utf8'));
-  const rules = document.groups.flatMap((group) => group.rules);
+  const host = parse(await readFile('deploy/monitoring/arkvory-host-alerts.yml', 'utf8'));
+  const rules = [...document.groups, ...host.groups].flatMap((group) => group.rules);
   assert.ok(rules.length >= 8);
+  // Host rules read node_exporter and postgres_exporter: they must not pose as Arkvory metrics.
+  for (const rule of host.groups.flatMap((group) => group.rules))
+    assert.ok(
+      !/arkvory_[a-z_]+/.test(String(rule.expr)),
+      `${rule.alert} belongs in arkvory-alerts`,
+    );
   const names = await exposedNames();
   const alerts = new Set();
   for (const rule of rules) {

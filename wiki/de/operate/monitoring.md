@@ -250,15 +250,17 @@ Das Release enthält fertige Prometheus-Regeln in `releases/<version>/deploy/mon
 | `ArkvoryBackupWarning`                                          | `vault_unavailable` oder `verify_failed` über 10 Minuten                                       | Kritisch          |
 | `ArkvoryMirrorStale`                                            | Ein Spiegel hat eine Stunde lang nicht mit seiner Quelle aufgeholt                             | Warnung           |
 | `ArkvoryMirrorFailing`                                          | Die letzte Synchronisation eines Spiegels ist fehlgeschlagen, über 15 Minuten                  | Warnung           |
+| `ArkvoryRestartLoop`                                            | Der API-Prozess wurde in 30 Minuten 3-mal oder öfter neu gestartet                             | Warnung           |
 
 Fügen Sie diese Alarme selbst hinzu, weil Arkvory die Daten nicht exportiert:
 
-| Alarm                                                         | Quelle                                                                    | Warum                                                                   |
-| ------------------------------------------------------------- | ------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| Freier Platz der Speicher-, Datenbank- und Backup-Datenträger | `node_exporter`                                                           | Eine volle Festplatte stoppt Uploads, die Datenbank und die Backups     |
-| PostgreSQL ist ausgefallen oder hat zu viele Verbindungen     | `postgres_exporter`                                                       | Die API beendet sich und startet neu, solange die Datenbank weg ist     |
-| Ein Dienst startet immer wieder neu                           | Änderung von `arkvory_process_start_time_seconds`, oder der Dienstmanager | Ein wiederholtes `startup.failed` oder `process.stalled`                |
-| Der öffentliche Status ist nicht `ready`                      | Eine externe Sonde von `/health/status`                                   | Der Netzwerkpfad, der Proxy und das Zertifikat, aus Sicht eines Clients |
+| Alarm                                                         | Quelle                                  | Warum                                                                   |
+| ------------------------------------------------------------- | --------------------------------------- | ----------------------------------------------------------------------- |
+| Freier Platz der Speicher-, Datenbank- und Backup-Datenträger | `node_exporter`                         | Eine volle Festplatte stoppt Uploads, die Datenbank und die Backups     |
+| PostgreSQL ist ausgefallen oder hat zu viele Verbindungen     | `postgres_exporter`                     | Die API beendet sich und startet neu, solange die Datenbank weg ist     |
+| Der öffentliche Status ist nicht `ready`                      | Eine externe Sonde von `/health/status` | Der Netzwerkpfad, der Proxy und das Zertifikat, aus Sicht eines Clients |
+
+Für die Datenträger und für PostgreSQL enthält das Release fertige Regeln für `node_exporter` und `postgres_exporter` in `deploy/monitoring/arkvory-host-alerts.yml`. Ersetzen Sie die Ausdrücke für `mountpoint` durch Ihre eigenen Datenträger, bevor Sie die Datei laden.
 
 Testen Sie einen Alarm einmal. Stoppen Sie zum Beispiel `arkvory-backup`: `ArkvoryBackupAgentOffline` löst etwa 7 bis 8 Minuten später aus (2 Minuten ohne Heartbeat, 5 Minuten in der Regel, plus das Scrape-Intervall).
 

@@ -1,0 +1,48 @@
+# Prometheus alerting rules for the volumes and the PostgreSQL that an Arkvory server depends on.
+# Arkvory exports neither: these rules need node_exporter and postgres_exporter. Load them with
+# `rule_files:` next to arkvory-alerts.yml.
+# BEFORE LOADING: replace the mountpoint regular expression with the mount points of your storage
+# (ARKVORY_DATA_DIR), database and backup vault volumes, and set `instance` selectors if one
+# Prometheus scrapes more than one host.
+groups:
+  - name: arkvory-host
+    rules:
+      - alert: ArkvoryVolumeLow
+        # Uploads stop below ARKVORY_STORAGE_RESERVE_BYTES; leave room to react before that.
+        expr: |
+          node_filesystem_avail_bytes{mountpoint=~"/srv/arkvory.*|/var/lib/postgresql.*|/mnt/arkvory-vault.*"}
+            / node_filesystem_size_bytes{mountpoint=~"/srv/arkvory.*|/var/lib/postgresql.*|/mnt/arkvory-vault.*"} < 0.10
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: Volume {{ $labels.mountpoint }} has less than 10% free space
+          description: A full storage volume stops uploads, a full database volume stops the API, and a full vault stops backups. Free space or extend the volume.
+
+      - alert: ArkvoryVolumeFillingUp
+        expr: |
+          predict_linear(node_filesystem_avail_bytes{mountpoint=~"/srv/arkvory.*|/var/lib/postgresql.*|/mnt/arkvory-vault.*"}[6h], 3 * 86400) < 0
+        for: 1h
+        labels:
+          severity: warning
+        annotations:
+          summary: Volume {{ $labels.mountpoint }} is projected to fill within three days
+          description: The trend of the last six hours reaches zero free space. Plan a cleanup, a retention change or more disk.
+
+      - alert: ArkvoryPostgresDown
+        expr: pg_up == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: PostgreSQL does not answer the exporter
+          description: The Arkvory API exits and restarts while its database is away. Check the arkvory-database service and its disk.
+
+      - alert: ArkvoryPostgresConnectionsHigh
+        expr: sum(pg_stat_activity_count) / max(pg_settings_max_connections) > 0.8
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: PostgreSQL uses more than 80% of max_connections
+          description: Count the API pool, the write-lock pool, the worker and the backup agent, then raise max_connections or lower ARKVORY_DATABASE_POOL_SIZE and ARKVORY_MAX_UPLOADS.

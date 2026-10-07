@@ -250,15 +250,17 @@ Select-String -Path "$root\logs\*.log" -Pattern 'REQUEST_ID'
 | `ArkvoryBackupWarning`                                          | 10분 동안 `vault_unavailable` 또는 `verify_failed`    | 심각       |
 | `ArkvoryMirrorStale`                                            | 미러가 한 시간 동안 원본을 따라잡지 못함              | 경고       |
 | `ArkvoryMirrorFailing`                                          | 15분 동안 미러의 마지막 동기화 실패                   | 경고       |
+| `ArkvoryRestartLoop`                                            | API 프로세스가 30분 동안 3회 이상 다시 시작됨         | 경고       |
 
 Arkvory가 데이터를 내보내지 않으므로 다음 경보는 직접 추가하세요:
 
-| 경보                                          | 출처                                                            | 이유                                                     |
-| --------------------------------------------- | --------------------------------------------------------------- | -------------------------------------------------------- |
-| 스토리지, 데이터베이스, 백업 볼륨의 여유 공간 | `node_exporter`                                                 | 디스크가 가득 차면 업로드, 데이터베이스, 백업이 멈춥니다 |
-| PostgreSQL이 다운되었거나 연결이 너무 많음    | `postgres_exporter`                                             | 데이터베이스가 없으면 API가 종료되고 다시 시작됩니다     |
-| 서비스가 반복적으로 다시 시작됨               | `arkvory_process_start_time_seconds`의 변경, 또는 서비스 관리자 | `startup.failed` 또는 `process.stalled`의 반복           |
-| 공개 상태가 `ready`가 아님                    | `/health/status`의 외부 프로브                                  | 클라이언트에서 본 네트워크 경로, 프록시, 인증서          |
+| 경보                                          | 출처                           | 이유                                                     |
+| --------------------------------------------- | ------------------------------ | -------------------------------------------------------- |
+| 스토리지, 데이터베이스, 백업 볼륨의 여유 공간 | `node_exporter`                | 디스크가 가득 차면 업로드, 데이터베이스, 백업이 멈춥니다 |
+| PostgreSQL이 다운되었거나 연결이 너무 많음    | `postgres_exporter`            | 데이터베이스가 없으면 API가 종료되고 다시 시작됩니다     |
+| 공개 상태가 `ready`가 아님                    | `/health/status`의 외부 프로브 | 클라이언트에서 본 네트워크 경로, 프록시, 인증서          |
+
+볼륨과 PostgreSQL용으로, 릴리스에는 `node_exporter`와 `postgres_exporter`용 규칙이 `deploy/monitoring/arkvory-host-alerts.yml`에 준비되어 있습니다. 파일을 불러오기 전에 `mountpoint` 표현식을 사용 중인 볼륨으로 바꾸세요.
 
 경보를 한 번 테스트하세요. 예를 들어 `arkvory-backup`을 중지하면 `ArkvoryBackupAgentOffline`이 약 7~8분 후에 발생합니다(하트비트 없는 2분, 규칙의 5분, 스크레이프 간격 추가).
 

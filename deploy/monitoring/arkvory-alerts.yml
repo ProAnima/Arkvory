@@ -136,3 +136,12 @@ groups:
         annotations:
           summary: Synchronization of mirror {{ $labels.repository }} keeps failing
           description: mirror_mismatch - keep the copy and investigate the artifact; mirror_source_changed - detach before changing the source; otherwise the source, its key or the local disk.
+
+      - alert: ArkvoryRestartLoop
+        # A new start time means a new process: repeated ownership loss, startup.failed or process.stalled.
+        expr: changes(arkvory_process_start_time_seconds[30m]) >= 3
+        labels:
+          severity: warning
+        annotations:
+          summary: The Arkvory API restarted at least three times in 30 minutes
+          description: Read api.ownership_lost, startup.failed and process.stalled in the journal. A suspended host or a jumping clock ends the process by design; PostgreSQL failovers and network breaks do too.
