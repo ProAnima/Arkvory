@@ -115,8 +115,21 @@ async function follow(webhook: WebhookSettings, options: WebhookLoopOptions): Pr
   diagnostics.write({ level: 'info', ...fields, code: 'webhook.stopped' });
 }
 
-/** Every subscription runs its own loop; one failing receiver stops none of the others. */
+/**
+ * Every subscription runs its own loop; one failing receiver stops none of the others. The
+ * positions of subscriptions that are no longer configured are forgotten first (also when none
+ * is configured any more); a failing cleanup only leaves them for the next start.
+ */
 export async function runWebhooks(options: WebhookLoopOptions): Promise<void> {
+  await new PostgresWebhookState(options.catalog.pool)
+    .prune(options.webhooks.map((webhook) => webhook.id))
+    .catch(() => {
+      options.diagnostics.write({
+        level: 'warning',
+        component: 'webhook',
+        code: 'webhook.prune_failed',
+      });
+    });
   if (options.webhooks.length === 0) return;
   await Promise.all(options.webhooks.map((webhook) => follow(webhook, options)));
 }

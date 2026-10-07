@@ -116,9 +116,22 @@ test('the production worker delivers publications, restarts without repeating on
     ],
   }));
   const states = new PostgresWebhookState(f.catalog.pool);
+  // The state of a subscription that is no longer configured is forgotten at startup.
+  await states.save({
+    subscription: 'removed',
+    repository: 'releases',
+    cursor: '0',
+    failures: 3,
+    errorCode: 'timeout',
+    errorAt: new Date().toISOString(),
+    nextAttemptAt: new Date().toISOString(),
+    deliveredAt: null,
+    deliveredCount: 0,
+  });
   let running = worker(t, f, paths);
   // The worker records the head before anything counts as an event of the subscription.
   await until(async () => (await states.load('ci')) !== null, 'the first step', running);
+  assert.equal(await states.load('removed'), null, 'the removed subscription is forgotten');
 
   const first = await publish(f, 'first');
   await until(() => r.requests.length === 1, 'the first delivery', running);

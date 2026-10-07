@@ -67,6 +67,17 @@ export class PostgresWebhookState implements WebhookStateStore {
     return result.rows.map(decode);
   }
 
+  /**
+   * Forgets the subscriptions that are no longer configured, so that a removed one leaves no
+   * stale metric or alert behind. A subscription added again later starts at the feed head.
+   */
+  async prune(keep: readonly string[]): Promise<void> {
+    await this.pool.query(
+      'DELETE FROM arkvory_webhook_state WHERE subscription <> ALL($1::text[])',
+      [[...keep]],
+    );
+  }
+
   /** One writer per subscription (the worker that owns the storage), so a plain upsert suffices. */
   async save(state: WebhookState): Promise<void> {
     await this.pool.query(

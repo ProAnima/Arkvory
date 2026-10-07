@@ -17,6 +17,7 @@ import { backupStatus, reportBackupAgent } from './backup-probe.js';
 import type { BackupServiceControl } from './backup-setup.js';
 import { VaultAccess, vaultOverrideFile } from './vault-access.js';
 import { mirrorsOverrideFile } from './mirror-setup.js';
+import { webhooksOverrideFile } from './webhook-setup.js';
 import type { VaultContents } from './vault-location.js';
 import { runtimeEnvironment } from './runtime.js';
 import { setTimeout as delay } from 'node:timers/promises';
@@ -53,6 +54,9 @@ export class Services implements BackupServiceControl {
     // Mounts config/mirrors into API and worker while repositories are mirrored (ADR 0058).
     const mirrors = join(this.root, mirrorsOverrideFile);
     if (await exists(mirrors)) files.push('-f', mirrors);
+    // Mounts config/webhooks into the worker while webhooks are configured (ADR 0069).
+    const webhooks = join(this.root, webhooksOverrideFile);
+    if (await exists(webhooks)) files.push('-f', webhooks);
     return [
       'compose',
       '--project-name',

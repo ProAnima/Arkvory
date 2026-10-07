@@ -33,6 +33,13 @@ configure      --enable-updates | --disable-updates | --pin --version X.Y.Z | --
                (dev -> prod); checks the source, restarts, rolls back / Зеркало или импорт;
                --mirror-ca-file trusts the authority of a source with a corporate or
                self-signed certificate besides the defaults (TLS stays verified)
+               --webhook <id> --webhook-repository <repo> --webhook-url <https url>
+               --webhook-secret-file <file> [--webhook-next-secret-file <file>]
+               [--webhook-actions a,b] [--webhook-allow-private <cidr,..>] [--webhook-ca-file <pem>]
+               | --webhook-detach <id>
+               Delivers the change feed of a repository to a receiver, signed (HMAC-SHA256);
+               adds or replaces one subscription, copies the secret under config/webhooks,
+               restarts, rolls back / Вебхук на получателя с подписью и откатом
 
 Installation options:
   --artifact <directory>  Verified local release (offline)
@@ -50,6 +57,8 @@ Examples:
   arkvory configure --root /opt/proanima-arkvory --backup-vault /mnt/backup/arkvory --init-vault
   arkvory configure --root /opt/proanima-arkvory --mirror releases --mirror-upstream https://arkvory.example --mirror-token-file /root/mirror.key
   arkvory configure --root /opt/proanima-arkvory --mirror-detach releases
+  arkvory configure --root /opt/proanima-arkvory --webhook ci --webhook-repository releases --webhook-url https://ci.example.com/hooks/arkvory --webhook-secret-file /root/ci.secret
+  arkvory configure --root /opt/proanima-arkvory --webhook-detach ci
 
 Console / Консоль: http://127.0.0.1:8080/console/#onboarding
 API: /api/v1/capabilities, /api/v1/operations (authenticated / с авторизацией)

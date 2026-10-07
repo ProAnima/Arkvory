@@ -51,6 +51,15 @@ function argumentsOf(args: string[]): Map<string, string> {
     'mirror-stages',
     'mirror-ca-file',
     'mirror-detach',
+    'webhook',
+    'webhook-repository',
+    'webhook-url',
+    'webhook-secret-file',
+    'webhook-next-secret-file',
+    'webhook-actions',
+    'webhook-allow-private',
+    'webhook-ca-file',
+    'webhook-detach',
   ];
   for (let index = 0; index < args.length; index++) {
     const name = args[index]?.replace(/^--/, '');

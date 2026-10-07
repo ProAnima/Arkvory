@@ -8,6 +8,7 @@ import { report } from './output.js';
 import { Services } from './services.js';
 import { configureTls } from './tls-setup.js';
 import { configureMirror } from './mirror-setup.js';
+import { configureWebhook } from './webhook-setup.js';
 import { hubSettings, hubUrl, saveHubSettings, writeRuntimeHub } from './hub-settings.js';
 
 const httpsOptions = ['tls-cert', 'tls-key', 'tls-off', 'listen-host'];
@@ -31,6 +32,17 @@ const mirrorOptions = [
   'mirror-stages',
   'mirror-ca-file',
   'mirror-detach',
+];
+const webhookOptions = [
+  'webhook',
+  'webhook-repository',
+  'webhook-url',
+  'webhook-secret-file',
+  'webhook-next-secret-file',
+  'webhook-actions',
+  'webhook-allow-private',
+  'webhook-ca-file',
+  'webhook-detach',
 ];
 
 async function configureHttps(root: string, state: Installation, options: Map<string, string>) {
@@ -111,6 +123,43 @@ async function configureMirrors(root: string, state: Installation, options: Map<
   );
 }
 
+async function configureWebhooks(root: string, state: Installation, options: Map<string, string>) {
+  const value = (name: string) => options.get(name);
+  const id = value('webhook');
+  const repository = value('webhook-repository');
+  const url = value('webhook-url');
+  const secretFile = value('webhook-secret-file');
+  const nextSecretFile = value('webhook-next-secret-file');
+  const allowPrivate = value('webhook-allow-private');
+  const caFile = value('webhook-ca-file');
+  const detach = value('webhook-detach');
+  const actions = value('webhook-actions')
+    ?.split(',')
+    .map((action) => action.trim());
+  const outcome = await configureWebhook(
+    root,
+    state,
+    {
+      ...(id ? { id } : {}),
+      ...(repository ? { repository } : {}),
+      ...(url ? { url } : {}),
+      ...(secretFile ? { secretFile } : {}),
+      ...(nextSecretFile ? { nextSecretFile } : {}),
+      ...(actions ? { actions } : {}),
+      ...(allowPrivate ? { allowPrivate } : {}),
+      ...(caFile ? { caFile } : {}),
+      ...(detach ? { detach } : {}),
+    },
+    new Services(root, state),
+  );
+  report(
+    'info',
+    outcome === 'attached'
+      ? `Webhook ${id ?? ''} delivers the change feed of ${repository ?? ''} to its receiver; it sends only events from now on`
+      : `Webhook ${detach ?? ''} is removed; its position is forgotten`,
+  );
+}
+
 /** The hub of ADR 0060: address or off, update channel, anonymous statistics. */
 async function configureHub(root: string, options: Map<string, string>) {
   const url = options.get('hub-url'),
@@ -161,15 +210,16 @@ async function configureUpdates(root: string, state: Installation, options: Map<
 export async function configure(root: string, options: Map<string, string>): Promise<void> {
   const state = parseInstallation(await jsonFile(join(root, 'installation.json')));
   const used = (names: readonly string[]) => names.some((name) => options.has(name));
-  const groups = [httpsOptions, vaultOptions, mirrorOptions, updateOptions];
+  const groups = [httpsOptions, vaultOptions, mirrorOptions, webhookOptions, updateOptions];
   if (groups.filter(used).length > 1)
     throw new Error(
-      'Change HTTPS, the backup vault, mirrors and update policy in separate configure calls',
+      'Change HTTPS, the backup vault, mirrors, webhooks and update policy in separate configure calls',
     );
   const restarting = [
     [httpsOptions, configureHttps],
     [vaultOptions, configureVault],
     [mirrorOptions, configureMirrors],
+    [webhookOptions, configureWebhooks],
   ] as const;
   const change = restarting.find(([names]) => used(names));
   if (change) {

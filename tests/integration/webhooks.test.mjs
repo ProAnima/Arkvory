@@ -189,4 +189,13 @@ test('subscription state is stored per subscription and survives a restart of th
   );
   await store.save({ ...state, failures: 0, errorCode: null, errorAt: null, nextAttemptAt: null });
   assert.equal((await store.load('ci')).errorCode, null);
+
+  // A removed subscription is forgotten, so that it leaves no stale metric or alert behind.
+  await store.prune(['ci']);
+  assert.deepEqual(
+    (await store.all()).map((row) => row.subscription),
+    ['ci'],
+  );
+  await store.prune([]);
+  assert.deepEqual(await store.all(), []);
 });
