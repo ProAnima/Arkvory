@@ -4,7 +4,13 @@ import { BackupFailure } from '@proanima/arkvory-domain';
 import type { VaultIdentity } from '@proanima/arkvory-domain';
 import { FileVault } from './file-vault.js';
 import { hasCode } from './fs-durability.js';
-import { addSlot, keyFileSource, listSlots, removeSlot } from './vault-keys.js';
+import {
+  addSlot,
+  keyFileSource,
+  listSlots,
+  removeSlot,
+  withKeyAdministration,
+} from './vault-keys.js';
 import { requireSeparateTrees } from './vault-paths.js';
 
 /*
@@ -36,7 +42,10 @@ export function recoveryKitText(identity: VaultIdentity, key: string): string {
   ].join('\n');
 }
 
-/** A new file for a secret, owner-only; an existing file is never replaced. */
+/**
+ * A new file for a secret, owner-only; an existing file is never replaced or removed. A file
+ * this call created and could not finish is removed again, so a retry finds the path free.
+ */
 async function writeNewSecret(path: string, text: string): Promise<void> {
   let handle;
   try {
@@ -51,9 +60,12 @@ async function writeNewSecret(path: string, text: string): Promise<void> {
   try {
     await handle.writeFile(text);
     await handle.sync();
-  } finally {
-    await handle.close();
+  } catch (error) {
+    await handle.close().catch(() => undefined);
+    await removeIfPresent(path);
+    throw error;
   }
+  await handle.close();
 }
 
 async function removeIfPresent(path: string): Promise<void> {
@@ -118,7 +130,7 @@ export async function initializeEncryptedVault(options: {
 }
 
 /** Adds a recovery slot and writes its kit; the vault must be open with a key that unlocks it. */
-export async function addRecoveryKit(
+async function addRecoveryKitLocked(
   vault: FileVault,
   kitFile: string,
   storageRoot?: string,
@@ -133,12 +145,15 @@ export async function addRecoveryKit(
     'recovery',
     new Date().toISOString(),
   );
+  let written = false;
   try {
     await writeNewSecret(kitFile, recoveryKitText(identity, added.key));
+    written = true;
     await opens(vault.root, kitFile);
     return added.slot.slotId;
   } catch (error) {
-    await removeIfPresent(kitFile);
+    // Only a file this call wrote is removed: an existing kit may be the operator's only copy.
+    if (written) await removeIfPresent(kitFile);
     await removeSlot(vault.root, added.slot.slotId).catch(() => undefined);
     throw error;
   }
@@ -149,7 +164,7 @@ export async function addRecoveryKit(
  * the previous agent slots are removed. The master key does not change, so a running agent that
  * already unlocked the vault keeps working until it restarts with the new file.
  */
-export async function rotateAgentKey(
+async function rotateAgentKeyLocked(
   vault: FileVault,
   agentKeyFile: string,
   storageRoot?: string,
@@ -165,11 +180,13 @@ export async function rotateAgentKey(
     'agent',
     new Date().toISOString(),
   );
+  let written = false;
   try {
     await writeNewSecret(agentKeyFile, `${added.key}\n`);
+    written = true;
     await opens(vault.root, agentKeyFile);
   } catch (error) {
-    await removeIfPresent(agentKeyFile);
+    if (written) await removeIfPresent(agentKeyFile);
     await removeSlot(vault.root, added.slot.slotId).catch(() => undefined);
     throw error;
   }
@@ -179,4 +196,29 @@ export async function rotateAgentKey(
     removed.push(slot.slotId);
   }
   return { added: added.slot.slotId, removed };
+}
+
+/** Adds a recovery slot and its kit under the key administration lock. */
+export function addRecoveryKit(
+  vault: FileVault,
+  kitFile: string,
+  storageRoot?: string,
+): Promise<string> {
+  return withKeyAdministration(vault.root, () => addRecoveryKitLocked(vault, kitFile, storageRoot));
+}
+
+/** Replaces the agent access under the key administration lock. */
+export function rotateAgentKey(
+  vault: FileVault,
+  agentKeyFile: string,
+  storageRoot?: string,
+): Promise<{ readonly added: string; readonly removed: readonly string[] }> {
+  return withKeyAdministration(vault.root, () =>
+    rotateAgentKeyLocked(vault, agentKeyFile, storageRoot),
+  );
+}
+
+/** Revokes one slot under the key administration lock; the last slots are kept. */
+export function removeKeySlot(vault: FileVault, slotId: string): Promise<void> {
+  return withKeyAdministration(vault.root, () => removeSlot(vault.root, slotId));
 }

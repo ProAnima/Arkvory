@@ -76,6 +76,8 @@ function request(change: BackupChange): 'enable' | 'disable' {
 /** Where the service reads its key: on the host, or inside the Compose container. */
 const keyDirectory = 'config/backup';
 const keyName = 'vault.key';
+/** The user of the Compose containers, who owns the vault and reads the agent key file. */
+const CONTAINER_USER = 1000;
 
 /**
  * The agent key from the file the operator names (ADR 0070). Only an agent key
@@ -150,8 +152,11 @@ async function installKey(root: string, state: Installation, key: string): Promi
   await mkdir(directory, { recursive: true, mode: state.mode === 'compose' ? 0o755 : 0o750 });
   if (process.platform !== 'win32') await chown(directory, owner.uid, owner.gid);
   const path = join(directory, keyName);
-  await atomicText(path, key + '\n', state.mode === 'compose' ? 0o644 : 0o640);
-  if (process.platform !== 'win32') await chown(path, owner.uid, owner.gid);
+  // Compose: only the container user (uid 1000) reads the key; systemd: root:arkvory 0640.
+  const compose = state.mode === 'compose';
+  await atomicText(path, key + '\n', compose ? 0o600 : 0o640);
+  if (process.platform !== 'win32')
+    await chown(path, compose ? CONTAINER_USER : owner.uid, compose ? CONTAINER_USER : owner.gid);
 }
 
 async function readOptional(path: string): Promise<string | null> {
@@ -166,7 +171,15 @@ async function readOptional(path: string): Promise<string | null> {
 /** Puts the key file back as it was; a key file that did not exist is removed. */
 async function restoreKey(path: string, previous: string | null): Promise<void> {
   if (previous === null) await unlink(path).catch(() => undefined);
-  else await atomicText(path, previous, 0o600);
+  else {
+    // The new key replaced the file in place, so its mode and owner are the installed ones.
+    try {
+      await replaceText(path, previous);
+    } catch (error) {
+      if (!(error instanceof Error && 'code' in error && error.code === 'ENOENT')) throw error;
+      await atomicText(path, previous, 0o600);
+    }
+  }
 }
 
 /** The agent's own heartbeat proves the new configuration, never a stale one of its predecessor. */

@@ -1,4 +1,5 @@
-import { open, stat } from 'node:fs/promises';
+import { open, rename, stat } from 'node:fs/promises';
+import { setTimeout as delay } from 'node:timers/promises';
 import { join } from 'node:path';
 import {
   BackupFailure,
@@ -8,7 +9,7 @@ import {
   requireId,
 } from '@proanima/arkvory-domain';
 import type { BackupManifest, VaultIdentity } from '@proanima/arkvory-domain';
-import { hasCode } from './fs-durability.js';
+import { hasCode, syncDirectory } from './fs-durability.js';
 import type { VaultCipher } from './vault-crypto.js';
 import { manifestDigest } from './vault-staged-point.js';
 
@@ -75,4 +76,28 @@ export async function readPoint(
   if (manifest.pointId !== pointId || manifest.vaultId !== identity.vaultId)
     throw new BackupFailure('invalid_manifest', 'Manifest belongs to another point or vault');
   return manifest;
+}
+
+/** One directory rename publishes the point; a second publisher of the id sees `exists`. */
+export async function publishPoint(
+  root: string,
+  staged: string,
+  pointId: string,
+): Promise<'committed' | 'exists'> {
+  const target = join(root, 'points', requireId(pointId));
+  for (let attempt = 0; ; attempt++) {
+    if (await exists(target)) return 'exists';
+    try {
+      await rename(staged, target);
+      break;
+    } catch (error) {
+      if (await exists(target)) return 'exists';
+      // Windows may refuse a directory rename while a scanner briefly holds a handle.
+      const transient = ['EPERM', 'EBUSY', 'EACCES'].some((code) => hasCode(error, code));
+      if (!transient || attempt >= 4) throw error;
+      await delay(50 * 2 ** attempt);
+    }
+  }
+  await syncDirectory(join(root, 'points'));
+  return 'committed';
 }

@@ -1,5 +1,5 @@
 import { createCipheriv, createDecipheriv, createHash, hkdfSync, randomBytes } from 'node:crypto';
-import { mkdir, readdir, readFile, stat, unlink } from 'node:fs/promises';
+import { mkdir, open, readdir, readFile, stat, unlink } from 'node:fs/promises';
 import { join } from 'node:path';
 import { BackupFailure } from '@proanima/arkvory-domain';
 import { hasCode, syncDirectory } from './fs-durability.js';
@@ -281,6 +281,41 @@ export async function removeSlot(root: string, slotId: string): Promise<void> {
   await syncDirectory(join(root, KEYS_DIRECTORY));
 }
 
+const ADMIN_LOCK = '.admin.lock';
+const STALE_LOCK_MS = 10 * 60 * 1000;
+
+/**
+ * Key administration of one vault runs one at a time: two removals must not both pass the
+ * "last recovery slot" check. The lock is a file in the key directory created exclusively; one
+ * left by a crashed process is taken over after ten minutes.
+ */
+export async function withKeyAdministration<T>(root: string, work: () => Promise<T>): Promise<T> {
+  const path = join(root, KEYS_DIRECTORY, ADMIN_LOCK);
+  for (let attempt = 0; ; attempt++) {
+    try {
+      await (await open(path, 'wx', 0o600)).close();
+      break;
+    } catch (error) {
+      if (!hasCode(error, 'EEXIST')) throw error;
+      const age = await stat(path).then(
+        (info) => Date.now() - info.mtimeMs,
+        () => 0,
+      );
+      if (attempt > 0 || age < STALE_LOCK_MS)
+        throw new BackupFailure(
+          'invalid_argument',
+          'Another key administration of this vault is running (or remove keys/.admin.lock after a crash)',
+        );
+      await unlink(path).catch(() => undefined);
+    }
+  }
+  try {
+    return await work();
+  } finally {
+    await unlink(path).catch(() => undefined);
+  }
+}
+
 /** Where the key of an encrypted vault comes from: read when the vault is first used (ADR 0070). */
 export interface VaultKeySource {
   /** The key string; `vault_key_missing` when there is none, `vault_key_invalid` when it is no key. */
@@ -302,6 +337,8 @@ export function keyFileSource(path: string): VaultKeySource {
       } catch (error) {
         if (hasCode(error, 'ENOENT') || hasCode(error, 'ENOTDIR'))
           throw new BackupFailure('vault_key_missing', 'The vault key file does not exist');
+        if (hasCode(error, 'EACCES') || hasCode(error, 'EPERM'))
+          throw new BackupFailure('vault_key_missing', 'The vault key file cannot be read');
         throw error;
       }
       const key = findKey(text);

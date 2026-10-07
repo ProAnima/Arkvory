@@ -97,6 +97,7 @@ export {
   addRecoveryKit,
   initializeEncryptedVault,
   recoveryKitText,
+  removeKeySlot,
   rotateAgentKey,
 } from './vault-setup.js';
 export { PostgresWebhookFeed, PostgresWebhookState } from './webhook-state.js';

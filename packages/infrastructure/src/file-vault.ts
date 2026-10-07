@@ -1,7 +1,6 @@
 import { randomUUID } from 'node:crypto';
-import { chmod, mkdir, open, readdir, rename, rm, stat, statfs } from 'node:fs/promises';
+import { chmod, mkdir, open, readdir, rm, stat, statfs } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
-import { setTimeout as delay } from 'node:timers/promises';
 import {
   BackupFailure,
   ENCRYPTED_VAULT_FORMAT_VERSION,
@@ -29,11 +28,11 @@ import type {
 } from '@proanima/arkvory-application';
 import { hasCode, syncDirectory } from './fs-durability.js';
 import { canonicalPath } from './vault-paths.js';
-import { exists, missing, readDocument, readPoint } from './vault-point-reader.js';
+import { missing, publishPoint, readDocument, readPoint } from './vault-point-reader.js';
 import { forgetPoint, pruneVault, sharedContentBytes, vaultListing } from './vault-maintenance.js';
 import { VaultCipher, encryptedSize } from './vault-crypto.js';
 import type { FileCipher, VaultFileKind } from './vault-crypto.js';
-import { createKeys, unlockWith } from './vault-keys.js';
+import { createKeys, listSlots, unlockWith } from './vault-keys.js';
 import type { VaultKeySource } from './vault-keys.js';
 import {
   VAULT_DIRECTORY_MODE,
@@ -58,6 +57,8 @@ import { StagedPointDirectory, pointFileCipher, pointFileParts } from './vault-s
  */
 const MAX_POINTS = 10000;
 const pointName = new RegExp(idPattern);
+/** How long an unlocked vault trusts its key before the key file and the slot are checked again. */
+const RECHECK_MS = 60_000;
 const never: Cancellation = { throwIfAborted() {} };
 
 export interface FileVaultOptions {
@@ -82,6 +83,7 @@ async function* once(chunk: Uint8Array): AsyncIterable<Uint8Array> {
  */
 export class FileVault implements CaptureVault, MaintainedVault {
   private cipher: VaultCipher | null = null;
+  private unlockedAt = 0;
 
   private constructor(
     readonly root: string,
@@ -160,15 +162,22 @@ export class FileVault implements CaptureVault, MaintainedVault {
     readonly recoveryKey: string;
   }> {
     const root = await FileVault.prepare(directory);
-    const keys = await createKeys(root, identity.vaultId, identity.createdAt);
-    const sealed = await FileVault.seal(root, {
-      format: VAULT_FORMAT,
-      version: ENCRYPTED_VAULT_FORMAT_VERSION,
-      vaultId: identity.vaultId,
-      createdAt: identity.createdAt,
-      encryption: VAULT_ENCRYPTION,
-    });
-    return { identity: sealed, agentKey: keys.agentKey, recoveryKey: keys.recoveryKey };
+    try {
+      const keys = await createKeys(root, identity.vaultId, identity.createdAt);
+      const sealed = await FileVault.seal(root, {
+        format: VAULT_FORMAT,
+        version: ENCRYPTED_VAULT_FORMAT_VERSION,
+        vaultId: identity.vaultId,
+        createdAt: identity.createdAt,
+        encryption: VAULT_ENCRYPTION,
+      });
+      return { identity: sealed, agentKey: keys.agentKey, recoveryKey: keys.recoveryKey };
+    } catch (error) {
+      // The directory was empty before this call, so a retry needs it empty again.
+      for (const name of await readdir(root).catch(() => []))
+        await rm(join(root, name), { recursive: true, force: true });
+      throw error;
+    }
   }
 
   /** The identity as vault.json states it; no key is needed and none is read. */
@@ -194,14 +203,32 @@ export class FileVault implements CaptureVault, MaintainedVault {
   async identity(): Promise<VaultIdentity> {
     const identity = await this.describe();
     if (identity.encryption === 'none') {
+      // vault.json is not authenticated: a plain vault that still holds key slots, or that is
+      // opened with a key, was an encrypted one whose identity was rewritten (a downgrade).
+      if (this.keys !== undefined || (await listSlots(this.root)).length > 0)
+        throw new BackupFailure(
+          'integrity_mismatch',
+          'The vault is not encrypted but has key slots or was given a key: vault.json was changed',
+        );
       this.cipher = null;
       return identity;
     }
-    if (this.cipher?.vaultId !== identity.vaultId) {
+    // A key that was revoked or whose file was removed stops working within a minute, not at the
+    // next restart of a long-running agent.
+    const fresh =
+      this.cipher?.vaultId === identity.vaultId && Date.now() - this.unlockedAt < RECHECK_MS;
+    if (!fresh) {
       if (this.keys === undefined)
         throw new BackupFailure('vault_key_missing', 'The vault is encrypted and no key is given');
-      const master = await unlockWith(this.root, identity.vaultId, await this.keys.read());
-      this.cipher = new VaultCipher(master, identity.vaultId);
+      try {
+        const master = await unlockWith(this.root, identity.vaultId, await this.keys.read());
+        if (this.cipher?.vaultId !== identity.vaultId)
+          this.cipher = new VaultCipher(master, identity.vaultId);
+        this.unlockedAt = Date.now();
+      } catch (error) {
+        this.cipher = null;
+        throw error;
+      }
     }
     return identity;
   }
@@ -384,21 +411,6 @@ export class FileVault implements CaptureVault, MaintainedVault {
   /** One directory rename publishes the point; a second publisher of the id sees `exists`. */
   async publish(staged: string, pointId: string): Promise<'committed' | 'exists'> {
     await this.identity();
-    const target = join(this.root, 'points', requireId(pointId));
-    for (let attempt = 0; ; attempt++) {
-      if (await exists(target)) return 'exists';
-      try {
-        await rename(staged, target);
-        break;
-      } catch (error) {
-        if (await exists(target)) return 'exists';
-        // Windows may refuse a directory rename while a scanner briefly holds a handle.
-        const transient = ['EPERM', 'EBUSY', 'EACCES'].some((code) => hasCode(error, code));
-        if (!transient || attempt >= 4) throw error;
-        await delay(50 * 2 ** attempt);
-      }
-    }
-    await syncDirectory(join(this.root, 'points'));
-    return 'committed';
+    return publishPoint(this.root, staged, pointId);
   }
 }

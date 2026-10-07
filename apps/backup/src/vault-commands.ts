@@ -8,7 +8,7 @@ import {
   initializeEncryptedVault,
   listSlots,
   parseKey,
-  removeSlot,
+  removeKeySlot,
   requireSeparateTrees,
   rotateAgentKey,
 } from '@proanima/arkvory-infrastructure';
@@ -105,7 +105,7 @@ export async function runVaultKey(
       break;
     }
     case 'remove':
-      await removeSlot(vault.root, operation.slotId);
+      await removeKeySlot(vault, operation.slotId);
       slotId = operation.slotId;
       break;
   }
