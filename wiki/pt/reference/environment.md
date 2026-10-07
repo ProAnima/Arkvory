@@ -134,11 +134,11 @@ Veja [Webhooks](../protocols/webhooks).
 
 ## Atualizações e o hub {#updates-and-the-hub}
 
-| Variável                     | Lida por | Padrão                     | Significado                                                                                                                                   |
-| ---------------------------- | -------- | -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ARKVORY_HUB_URL`            | API      | `https://hub.proanima.net` | Endereço do hub da ProAnimaStudio, usado pelo feedback do console. Um valor vazio desativa o feedback. Somente HTTPS, ou HTTP no loopback.    |
-| `ARKVORY_HUB_PROJECT`        | API      | `arkvory`                  | Nome do projeto no hub.                                                                                                                       |
-| `ARKVORY_UPDATE_CONTROL_DIR` | API      | não definida               | Diretório que a API compartilha com o atualizador do host. Os instaladores o definem. Sem ele, o console não consegue solicitar atualizações. |
+| Variável                     | Lida por | Padrão                     | Significado                                                                                                                                                                                                                               |
+| ---------------------------- | -------- | -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ARKVORY_HUB_URL`            | API      | `https://hub.proanima.net` | Endereço do hub da ProAnimaStudio, usado somente pelo feedback do console (o hub de atualizações fica em `config/hub.json` e é alterado com `arkvory configure`). Um valor vazio desativa o feedback. Somente HTTPS, ou HTTP no loopback. |
+| `ARKVORY_HUB_PROJECT`        | API      | `arkvory`                  | Nome do projeto no hub.                                                                                                                                                                                                                   |
+| `ARKVORY_UPDATE_CONTROL_DIR` | API      | não definida               | Diretório que a API compartilha com o atualizador do host. Os instaladores o definem. Sem ele, o console não consegue solicitar atualizações.                                                                                             |
 
 Consulte [Atualizações](../install/updates).
 

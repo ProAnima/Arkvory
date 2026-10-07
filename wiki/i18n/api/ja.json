@@ -1040,6 +1040,6 @@
     "Snapshot time T; the age of a point counts from T.": "スナップショット時刻T。ポイントの経過期間はTから数えます。",
     "Start of execution, or the request time while queued.": "実行の開始時刻。キューで待機している間はリクエスト時刻。",
     "Upload reservation time": "アップロードの予約時刻",
-    "Vault is encrypted (ADR 0070); null when unknown or not connected.": "ボールトが暗号化されているか（ADR 0070）。不明または未接続の場合は null。"
+    "Vault is encrypted; null when unknown or not connected.": "ボールトが暗号化されているか。不明または未接続の場合は null。"
   }
 }

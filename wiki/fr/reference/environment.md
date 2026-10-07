@@ -134,11 +134,11 @@ Voir [Webhooks](../protocols/webhooks).
 
 ## Mises à jour et hub {#updates-and-the-hub}
 
-| Variable                     | Lue par | Valeur par défaut          | Signification                                                                                                                                                                |
-| ---------------------------- | ------- | -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ARKVORY_HUB_URL`            | API     | `https://hub.proanima.net` | Adresse du hub ProAnimaStudio, utilisée par les commentaires de la console. Une valeur vide désactive les commentaires. HTTPS uniquement, ou HTTP sur la boucle locale.      |
-| `ARKVORY_HUB_PROJECT`        | API     | `arkvory`                  | Nom du projet sur le hub.                                                                                                                                                    |
-| `ARKVORY_UPDATE_CONTROL_DIR` | API     | non défini                 | Répertoire que l’API partage avec l’outil de mise à jour de l’hôte. Les programmes d’installation le définissent. Sans lui, la console ne peut pas demander de mises à jour. |
+| Variable                     | Lue par | Valeur par défaut          | Signification                                                                                                                                                                                                                                                                             |
+| ---------------------------- | ------- | -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ARKVORY_HUB_URL`            | API     | `https://hub.proanima.net` | Adresse du hub ProAnimaStudio, utilisée uniquement par les commentaires de la console (le hub des mises à jour est enregistré dans `config/hub.json` et se modifie avec `arkvory configure`). Une valeur vide désactive les commentaires. HTTPS uniquement, ou HTTP sur la boucle locale. |
+| `ARKVORY_HUB_PROJECT`        | API     | `arkvory`                  | Nom du projet sur le hub.                                                                                                                                                                                                                                                                 |
+| `ARKVORY_UPDATE_CONTROL_DIR` | API     | non défini                 | Répertoire que l’API partage avec l’outil de mise à jour de l’hôte. Les programmes d’installation le définissent. Sans lui, la console ne peut pas demander de mises à jour.                                                                                                              |
 
 Voir [Mises à jour](../install/updates).
 

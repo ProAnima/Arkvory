@@ -74,7 +74,7 @@ The full walkthrough: [Quick start](https://proanima.github.io/Arkvory/guide/qui
 
 ## Limits
 
-One installation is one server with PostgreSQL and a local content directory: it is not a high-availability cluster. If the server stops, clients wait until it is back; use backups and, where needed, a mirror on a second site. Content storage is a local directory; S3 and encryption of the backup vault are not implemented.
+One installation is one server with PostgreSQL and a local content directory: it is not a high-availability cluster. If the server stops, clients wait until it is back; use backups and, where needed, a mirror on a second site. Content storage and the backup vault are local directories; S3 is not implemented. A new backup vault is encrypted by default, with a recovery kit kept off the server.
 
 ## For developers
 

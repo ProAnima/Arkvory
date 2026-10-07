@@ -1040,6 +1040,6 @@
     "Snapshot time T; the age of a point counts from T.": "وقت اللقطة T؛ ويُحتسب عمر النقطة منذ T.",
     "Start of execution, or the request time while queued.": "بداية التنفيذ، أو وقت الطلب ما دام في الطابور.",
     "Upload reservation time": "وقت حجز الرفع",
-    "Vault is encrypted (ADR 0070); null when unknown or not connected.": "هل الخزنة مشفّرة (ADR 0070)؛ القيمة null عند عدم المعرفة أو عدم الاتصال."
+    "Vault is encrypted; null when unknown or not connected.": "هل الخزنة مشفّرة؛ القيمة null عند عدم المعرفة أو عدم الاتصال."
   }
 }

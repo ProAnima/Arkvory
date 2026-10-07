@@ -1040,6 +1040,6 @@
     "Snapshot time T; the age of a point counts from T.": "स्नैपशॉट समय T; बिंदु की आयु T से गिनी जाती है।",
     "Start of execution, or the request time while queued.": "निष्पादन का आरंभ, या कतार में रहते समय अनुरोध का समय।",
     "Upload reservation time": "अपलोड आरक्षण का समय",
-    "Vault is encrypted (ADR 0070); null when unknown or not connected.": "वॉल्ट एन्क्रिप्टेड है या नहीं (ADR 0070); अज्ञात या कनेक्ट न होने पर null।"
+    "Vault is encrypted; null when unknown or not connected.": "वॉल्ट एन्क्रिप्टेड है या नहीं; अज्ञात या कनेक्ट न होने पर null।"
   }
 }

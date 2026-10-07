@@ -110,13 +110,13 @@ const verifiedBytes = await repository.artifacts.downloadVerified(artifactId, {
 
 ## Дальнейшее расширение — ещё не реализовано
 
-| Область            | Следующий самостоятельный контракт                                                                                              |
-| ------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
-| Catalog            | Реестр и настройки репозиториев, resolve exact/latest в метаданные, управляемые schemas/labels/collections, namespace selectors |
-| Transfers          | Долговечная общая очередь и её own/admin views, transfer tickets, динамические квоты, подтверждённые replicas                   |
-| Integration events | Авторизованный event cursor, затем outbox/webhooks с replay/deduplication и ограничениями egress                                |
-| Administration     | Импорт legacy ownership, делегированное identity administration, готовые версионированные роли                                  |
-| Operations         | Отдельное system.observe для подробной диагностики, retention dry-run/apply, проверенный backup/restore                         |
+| Область            | Следующий самостоятельный контракт                                                                                                                                                                                                                                                     |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Catalog            | Реестр и настройки репозиториев, resolve exact/latest в метаданные, управляемые schemas/labels/collections, namespace selectors                                                                                                                                                        |
+| Transfers          | Долговечная общая очередь и её own/admin views, transfer tickets, динамические квоты, подтверждённые replicas                                                                                                                                                                          |
+| Integration events | Частично: лента изменений репозитория (ADR 0058) и доставка вебхуков из файла оператора курсором по ней, с подписью, повторами, дедупликацией по `id` и защитой egress ([ADR 0069](adr/0069-webhooks-over-change-feed.md)). Запланированы API управления подписками и события identity |
+| Administration     | Импорт legacy ownership, делегированное identity administration, готовые версионированные роли                                                                                                                                                                                         |
+| Operations         | Отдельное system.observe для подробной диагностики, retention dry-run/apply, проверенный backup/restore                                                                                                                                                                                |
 
 Эти расширения не выдаются за работающие API. Текущий health/ready сохраняет прежний доступ любого действующего credential к агрегатам. Добавление новых административных или опасных операций требует отдельного действия, явной видимости, bounds, отрицательных тестов и документации, а не назначения через общий `write`.
 

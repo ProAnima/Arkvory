@@ -2,7 +2,7 @@
 
 Веб-интерфейс репозиториев и сервисного доступа: [WEB_ADMINISTRATION](WEB_ADMINISTRATION.md).
 
-Первый профиль реализован 2026-09-24 в миграции 9; на эту дату схема была **12**, сейчас — **32**. Machine identities, 24 permissions на точные репозитории, lifecycle, SDK и API/worker/reader enforcement дополнены [делегированным управлением](SERVICE_DELEGATION.md): семь admin actions, точные цели и ceiling. Selectors папок/групп, federation, transfer tickets и webhooks не включены. Решения: [ADR 0017](adr/0017-managed-service-keys.md), [ADR 0019](adr/0019-scoped-service-administration.md).
+Первый профиль реализован 2026-09-24 в миграции 9; на эту дату схема была **12**, сейчас — **34**. Machine identities, 24 permissions на точные репозитории, lifecycle, SDK и API/worker/reader enforcement дополнены [делегированным управлением](SERVICE_DELEGATION.md): семь admin actions, точные цели и ceiling. Selectors папок/групп, federation, transfer tickets и управление webhooks через API не включены (вебхуки задаёт оператор файлом, [ADR 0069](adr/0069-webhooks-over-change-feed.md)). Решения: [ADR 0017](adr/0017-managed-service-keys.md), [ADR 0019](adr/0019-scoped-service-administration.md).
 
 ## Обновление и bootstrap
 

@@ -1040,6 +1040,6 @@
     "Snapshot time T; the age of a point counts from T.": "Hora T de la instantánea; la antigüedad de un punto se cuenta desde T.",
     "Start of execution, or the request time while queued.": "Inicio de la ejecución, o la hora de la solicitud mientras está en cola.",
     "Upload reservation time": "Hora de reserva de la subida",
-    "Vault is encrypted (ADR 0070); null when unknown or not connected.": "El almacén está cifrado (ADR 0070); null si se desconoce o no está conectado."
+    "Vault is encrypted; null when unknown or not connected.": "El almacén está cifrado; null si se desconoce o no está conectado."
   }
 }
