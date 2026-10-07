@@ -102,7 +102,8 @@ export async function* encodeLines(lines: AsyncIterable<string>): AsyncIterable<
   if (pending.length) yield Buffer.from(pending.join('\n') + '\n');
 }
 
-function missing(error: unknown): boolean {
+/** The path or one of its parent directories does not exist. */
+export function missing(error: unknown): boolean {
   return hasCode(error, 'ENOENT') || hasCode(error, 'ENOTDIR');
 }
 

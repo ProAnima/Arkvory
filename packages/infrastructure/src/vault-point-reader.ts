@@ -11,13 +11,12 @@ import {
 import type { BackupManifest, VaultIdentity } from '@proanima/arkvory-domain';
 import { hasCode, syncDirectory } from './fs-durability.js';
 import type { VaultCipher } from './vault-crypto.js';
+import { missing } from './vault-files.js';
 import { manifestDigest } from './vault-staged-point.js';
 
 const MAX_DOCUMENT_BYTES = 4 * 1024 * 1024;
 
-export function missing(error: unknown): boolean {
-  return hasCode(error, 'ENOENT') || hasCode(error, 'ENOTDIR');
-}
+export { missing };
 
 export async function readDocument(path: string): Promise<Buffer> {
   const handle = await open(path, 'r');

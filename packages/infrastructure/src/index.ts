@@ -81,7 +81,7 @@ export { PostgresVaultLock, VAULT_LOCK } from './backup-vault-lock.js';
 export { PacedContentSource } from './backup-pacing.js';
 export { PostgresMirrorState, reopenMirrorUpload } from './mirror-state.js';
 export { VaultCipher, encryptedSize } from './vault-crypto.js';
-export type { FileCipher, VaultFileKind } from './vault-crypto.js';
+export type { FileCipher } from './vault-crypto.js';
 export {
   addSlot,
   findKey,
@@ -92,11 +92,10 @@ export {
   removeSlot,
   unlockWith,
 } from './vault-keys.js';
-export type { KeyKind, KeySlot, VaultKeySource } from './vault-keys.js';
+export type { VaultKeySource } from './vault-keys.js';
 export {
   addRecoveryKit,
   initializeEncryptedVault,
-  recoveryKitText,
   removeKeySlot,
   rotateAgentKey,
 } from './vault-setup.js';

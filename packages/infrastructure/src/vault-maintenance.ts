@@ -11,9 +11,16 @@ import {
 } from '@proanima/arkvory-domain';
 import type { BackupManifest, InventoryEntry, VaultIdentity } from '@proanima/arkvory-domain';
 import type { Cancellation, FileDigest, VaultListing } from '@proanima/arkvory-application';
-import { hasCode, syncDirectory } from './fs-durability.js';
+import { syncDirectory } from './fs-durability.js';
 import type { FileCipher } from './vault-crypto.js';
-import { VAULT_DIRECTORY_MODE, encodeLines, readLines, writeDurably } from './vault-files.js';
+import {
+  VAULT_DIRECTORY_MODE,
+  encodeLines,
+  missing,
+  readLines,
+  writeDurably,
+} from './vault-files.js';
+import { exists } from './vault-point-reader.js';
 
 /** What maintenance needs from the file vault; implemented by FileVault. */
 export interface MaintenanceVault {
@@ -37,18 +44,6 @@ const idName = new RegExp(idPattern);
 const shardName = /^[0-9a-f]{2}$/;
 const temporaryName = /^\..+\.tmp$/;
 
-function missing(error: unknown): boolean {
-  return hasCode(error, 'ENOENT') || hasCode(error, 'ENOTDIR');
-}
-async function exists(path: string): Promise<boolean> {
-  try {
-    await stat(path);
-    return true;
-  } catch (error) {
-    if (missing(error)) return false;
-    throw error;
-  }
-}
 /** Next value of an iterator, undefined at its end. */
 async function nextOf<T>(iterator: AsyncIterator<T>): Promise<T | undefined> {
   const result = await iterator.next();
