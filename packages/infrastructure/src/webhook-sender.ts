@@ -22,7 +22,7 @@ export interface HttpWebhookSenderOptions {
   readonly resolve?: Resolver;
   /** Extra certificate authorities of the receiver; TLS verification itself is never relaxed. */
   readonly ca?: readonly string[];
-  /** Whole delivery: connect, send, headers; 10 s by default. */
+  /** Whole delivery: name resolution, connect, send, headers; 10 s by default. */
   readonly timeoutMs?: number;
 }
 
@@ -59,7 +59,15 @@ export class HttpWebhookSender implements WebhookSender {
   async send(event: WebhookEvent, cancellation: Cancellation): Promise<void> {
     cancellation.throwIfAborted();
     const url = new URL(this.options.url);
-    const target = await resolveReceiver(url, this.options.policy, this.options.resolve);
+    // One budget for the whole delivery: what the lookup takes, the request no longer has.
+    const timeoutMs = this.options.timeoutMs ?? 10_000;
+    const started = performance.now();
+    const target = await resolveReceiver(
+      url,
+      this.options.policy,
+      this.options.resolve,
+      AbortSignal.timeout(timeoutMs),
+    );
     const secrets = await this.options.secrets();
     const body = JSON.stringify(event);
     const timestamp = this.options.nowSeconds();
@@ -89,15 +97,21 @@ export class HttpWebhookSender implements WebhookSender {
       // The name is only the TLS identity; the address was chosen above.
       ...(url.protocol === 'https:' ? { servername: url.hostname.replace(/^\[|\]$/g, '') } : {}),
     };
-    const status = await this.post(url.protocol === 'https:', options, body);
+    const left = timeoutMs - (performance.now() - started);
+    if (left <= 0) throw new WebhookFailure('timeout');
+    const status = await this.post(url.protocol === 'https:', options, body, left);
     cancellation.throwIfAborted();
     const failure = outcome(status);
     if (failure !== null) throw new WebhookFailure(failure);
   }
 
-  private post(secure: boolean, options: RequestOptions, body: string): Promise<number> {
+  private post(
+    secure: boolean,
+    options: RequestOptions,
+    body: string,
+    timeoutMs: number,
+  ): Promise<number> {
     return new Promise<number>((resolve, reject) => {
-      const timeoutMs = this.options.timeoutMs ?? 10_000;
       const call = (secure ? httpsRequest : httpRequest)(options, (response: IncomingMessage) => {
         let received = 0;
         response.on('data', (chunk: Buffer) => {

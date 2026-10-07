@@ -78,7 +78,12 @@ export class PostgresWebhookState implements WebhookStateStore {
     );
   }
 
-  /** One writer per subscription (the worker that owns the storage), so a plain upsert suffices. */
+  /**
+   * One writer per subscription: the worker that owns the storage. A worker that lost ownership
+   * may still finish a statement, so the cursor never moves back for the same repository: a
+   * stale save behind the current position is ignored rather than repeating delivered events.
+   * A subscription pointed at another repository is replaced as a whole.
+   */
   async save(state: WebhookState): Promise<void> {
     await this.pool.query(
       `INSERT INTO arkvory_webhook_state(subscription, repository, cursor, failures, error_code,
@@ -88,7 +93,9 @@ export class PostgresWebhookState implements WebhookStateStore {
          cursor=excluded.cursor, failures=excluded.failures, error_code=excluded.error_code,
          error_at=excluded.error_at, next_attempt_at=excluded.next_attempt_at,
          delivered_at=excluded.delivered_at, delivered_count=excluded.delivered_count,
-         updated_at=now()`,
+         updated_at=now()
+       WHERE arkvory_webhook_state.repository <> excluded.repository
+          OR arkvory_webhook_state.cursor <= excluded.cursor`,
       [
         state.subscription,
         state.repository,

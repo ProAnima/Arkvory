@@ -60,13 +60,16 @@ async function follow(webhook: WebhookSettings, options: WebhookLoopOptions): Pr
     now: () => new Date().toISOString(),
     random: Math.random,
   });
+  // Checked before every event: a worker that lost storage ownership to another one stops
+  // delivering at once, it does not finish the page in parallel with its successor.
   const cancellation = {
     throwIfAborted: () => {
       stop.throwIfAborted();
+      if (!catalog.active) throw new Error('Storage ownership lost');
     },
   };
-  // A function, not the property: the flag changes outside this loop.
-  const stopped = () => stop.aborted;
+  // A function, not the property: the flags change outside this loop.
+  const stopped = () => stop.aborted || !catalog.active;
   diagnostics.write({
     level: 'info',
     ...fields,
@@ -74,7 +77,7 @@ async function follow(webhook: WebhookSettings, options: WebhookLoopOptions): Pr
     code: 'webhook.started',
   });
   let failing = 0;
-  while (!stop.aborted && catalog.active) {
+  while (!stopped()) {
     try {
       const step = await delivery.step(cancellation);
       if (step === 'failed') {

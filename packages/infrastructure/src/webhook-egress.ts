@@ -12,8 +12,9 @@ export type Resolver = (hostname: string) => Promise<readonly ResolvedReceiver[]
 
 /**
  * Address ranges a webhook never reaches by default: loopback, link-local (cloud metadata is
- * 169.254.169.254), private, shared, documentation, multicast, reserved, and the IPv6 forms that
- * carry an IPv4 address (mapped, NAT64, 6to4, Teredo), which could smuggle a blocked target.
+ * 169.254.169.254), private, shared, documentation, multicast, reserved, the deprecated IPv6
+ * site-local range, and the IPv6 forms that carry an IPv4 address (IPv4-compatible, mapped,
+ * NAT64 well-known and local-use, 6to4, Teredo), which could smuggle a blocked target.
  */
 function deniedRanges(): BlockList {
   const list = new BlockList();
@@ -35,15 +36,17 @@ function deniedRanges(): BlockList {
   ] as const)
     list.addSubnet(address, bits, 'ipv4');
   for (const [address, bits] of [
-    ['::', 128],
-    ['::1', 128],
+    // ::/96 holds ::, ::1 and the deprecated IPv4-compatible form ::a.b.c.d.
+    ['::', 96],
     ['64:ff9b::', 96],
+    ['64:ff9b:1::', 48],
     ['100::', 64],
     ['2001::', 32],
     ['2001:db8::', 32],
     ['2002::', 16],
     ['fc00::', 7],
     ['fe80::', 10],
+    ['fec0::', 10],
     ['ff00::', 8],
   ] as const)
     list.addSubnet(address, bits, 'ipv6');
@@ -88,7 +91,7 @@ export function createEgressPolicy(allowed: readonly string[]): EgressPolicy {
 }
 
 /** Every address of the name, in the order the system resolver returns them. */
-export const systemResolver: Resolver = async (hostname) => {
+const systemResolver: Resolver = async (hostname) => {
   const records = await dnsLookup(hostname, { all: true, verbatim: true });
   return records.flatMap((record) =>
     record.family === 4 || record.family === 6
@@ -96,6 +99,31 @@ export const systemResolver: Resolver = async (hostname) => {
       : [],
   );
 };
+
+/**
+ * The answer of the resolver, or a `timeout` failure once the delivery deadline passes. The
+ * system resolver (getaddrinfo, which honours the hosts file) cannot be cancelled: a late answer
+ * is ignored and its thread ends within the timeouts of the host's resolver configuration.
+ */
+function resolveWithin(
+  resolve: Resolver,
+  host: string,
+  deadline: AbortSignal | undefined,
+): Promise<readonly ResolvedReceiver[]> {
+  if (deadline === undefined) return resolve(host);
+  if (deadline.aborted) return Promise.reject(new WebhookFailure('timeout'));
+  return new Promise((accept, reject) => {
+    const expire = () => {
+      reject(new WebhookFailure('timeout'));
+    };
+    deadline.addEventListener('abort', expire, { once: true });
+    resolve(host)
+      .then(accept, reject)
+      .finally(() => {
+        deadline.removeEventListener('abort', expire);
+      });
+  });
+}
 
 /** A plain-HTTP receiver on a loopback host (the one case config accepts) is reached as it is. */
 export function loopbackReceiver(url: URL): boolean {
@@ -109,12 +137,14 @@ export function loopbackReceiver(url: URL): boolean {
  * Resolves the receiver once and checks every address before any connection: one blocked record
  * refuses the delivery, so a name that mixes public and internal addresses cannot pick the
  * internal one later. The caller connects to the returned address, not to the name, so a DNS
- * answer that changes between check and connect gains nothing.
+ * answer that changes between check and connect gains nothing. `deadline` bounds the lookup by
+ * the budget of the delivery; when it fires first, the delivery fails with `timeout`.
  */
 export async function resolveReceiver(
   url: URL,
   policy: EgressPolicy,
   resolve: Resolver = systemResolver,
+  deadline?: AbortSignal,
 ): Promise<ResolvedReceiver> {
   const host = url.hostname.replace(/^\[|\]$/g, '');
   const literal = isIP(host);
@@ -122,9 +152,9 @@ export async function resolveReceiver(
   if (literal === 4 || literal === 6) records = [{ address: host, family: literal }];
   else {
     try {
-      records = await resolve(host);
-    } catch {
-      throw new WebhookFailure('network');
+      records = await resolveWithin(resolve, host, deadline);
+    } catch (error) {
+      throw error instanceof WebhookFailure ? error : new WebhookFailure('network');
     }
   }
   const first = records[0];

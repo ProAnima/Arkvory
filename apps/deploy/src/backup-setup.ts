@@ -3,7 +3,7 @@ import { isAbsolute, join } from 'node:path';
 import type { BackupStatusResponse } from '@proanima/arkvory-contracts';
 import { waitForBackup } from './backup-probe.js';
 import type { BackupWait } from './backup-probe.js';
-import { atomicText, replaceText } from './files.js';
+import { CONTAINER_USER, atomicText, readOptional, replaceText } from './files.js';
 import type { Installation, Release } from './model.js';
 import { isUnconfirmedTermination } from './process.js';
 import { runtimeEnvironment } from './runtime.js';
@@ -76,8 +76,6 @@ function request(change: BackupChange): 'enable' | 'disable' {
 /** Where the service reads its key: on the host, or inside the Compose container. */
 const keyDirectory = 'config/backup';
 const keyName = 'vault.key';
-/** The user of the Compose containers, who owns the vault and reads the agent key file. */
-const CONTAINER_USER = 1000;
 
 /**
  * The agent key from the file the operator names (ADR 0070). Only an agent key
@@ -157,15 +155,6 @@ async function installKey(root: string, state: Installation, key: string): Promi
   await atomicText(path, key + '\n', compose ? 0o600 : 0o640);
   if (process.platform !== 'win32')
     await chown(path, compose ? CONTAINER_USER : owner.uid, compose ? CONTAINER_USER : owner.gid);
-}
-
-async function readOptional(path: string): Promise<string | null> {
-  try {
-    return await readFile(path, 'utf8');
-  } catch (error) {
-    if (error instanceof Error && 'code' in error && error.code === 'ENOENT') return null;
-    throw error;
-  }
 }
 
 /** Puts the key file back as it was; a key file that did not exist is removed. */

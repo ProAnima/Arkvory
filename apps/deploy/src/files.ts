@@ -39,18 +39,88 @@ export async function jsonFile(path: string): Promise<unknown> {
 export async function atomicJson(path: string, value: unknown): Promise<void> {
   await atomicText(path, JSON.stringify(value, null, 2) + '\n');
 }
-export async function atomicText(path: string, value: string, mode = 0o644): Promise<void> {
+/** Owner of a file as `stat` reports it; applied with chown on POSIX, ignored on Windows. */
+export interface FileOwner {
+  readonly uid: number;
+  readonly gid: number;
+}
+/** The user of the Compose containers (`node` of the image, uid and gid 1000), who reads the secrets mounted for it. */
+export const CONTAINER_USER = 1000;
+
+/**
+ * Writes a file through a temporary sibling with this mode (and owner), so readers never see a
+ * partial file and the final name never exists with looser permissions. The temporary file may
+ * hold a secret, so it is removed when writing or renaming fails.
+ */
+export async function atomicText(
+  path: string,
+  value: string,
+  mode = 0o644,
+  owner?: FileOwner,
+): Promise<void> {
   const temporary = `${path}.${randomUUID()}.tmp`;
   const file = await open(temporary, 'wx', mode);
   try {
-    await file.writeFile(value);
-    await file.chmod(mode);
-    await file.sync();
-  } finally {
-    await file.close();
+    try {
+      await file.writeFile(value);
+      await file.chmod(mode);
+      if (owner && process.platform !== 'win32') await file.chown(owner.uid, owner.gid);
+      await file.sync();
+    } finally {
+      await file.close();
+    }
+    await rename(temporary, path);
+  } catch (error) {
+    await unlink(temporary).catch(() => undefined);
+    throw error;
   }
-  await rename(temporary, path);
   await syncDirectory(dirname(path));
+}
+/** Text of a file, or null when it does not exist; any other error is thrown. */
+export async function readOptional(path: string): Promise<string | null> {
+  try {
+    return await readFile(path, 'utf8');
+  } catch (error) {
+    if (error instanceof Error && 'code' in error && error.code === 'ENOENT') return null;
+    throw error;
+  }
+}
+/** A file as a rollback needs it back: text, mode and owner; null when it did not exist. */
+export interface FileSnapshot {
+  readonly text: string;
+  readonly mode: number;
+  readonly owner: FileOwner;
+}
+export async function snapshotFile(path: string): Promise<FileSnapshot | null> {
+  const text = await readOptional(path);
+  if (text === null) return null;
+  const info = await stat(path);
+  return { text, mode: info.mode & 0o777, owner: { uid: info.uid, gid: info.gid } };
+}
+/**
+ * Puts a file back as the snapshot saw it, with its mode and owner: a restored secret must stay
+ * readable by the account that read it before (the service group, or the container user). A file
+ * that did not exist is removed.
+ */
+export async function restoreFile(path: string, before: FileSnapshot | null): Promise<void> {
+  if (before === null) await unlink(path).catch(() => undefined);
+  else await atomicText(path, before.text, before.mode, before.owner);
+}
+/**
+ * A secret or key the operator names by absolute path: one line of 16 to 4000 printable ASCII
+ * characters in a file of at most 4 KiB. The value is never part of a message.
+ */
+export async function readSecretFile(
+  file: string | undefined,
+  option: string,
+  invalid = `--${option} must hold a secret of at least 16 printable characters`,
+): Promise<string> {
+  if (!file || !isAbsolute(file)) throw new Error(`--${option} must be an absolute path`);
+  const info = await stat(file);
+  if (!info.isFile() || info.size > 4096) throw new Error(invalid);
+  const value = (await readFile(file, 'utf8')).trim();
+  if (!/^[\x21-\x7e]{16,4000}$/.test(value)) throw new Error(invalid);
+  return value;
 }
 /**
  * Replaces an existing configuration file atomically and keeps its mode, owner and group. A new

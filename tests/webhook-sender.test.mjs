@@ -159,6 +159,41 @@ test('a slow receiver ends as a timeout, and a closed port as a network failure'
   );
 });
 
+test('name resolution counts against the same 10 s budget as the request', async (t) => {
+  const r = await receiver(t, () => ({ hang: true }));
+  const policy = createEgressPolicy(['127.0.0.0/8']);
+  // The lookup alone outlives the budget: the delivery ends without connecting.
+  const never = () => new Promise(() => undefined);
+  let started = performance.now();
+  assert.equal(
+    await failureOf(
+      sender(`http://hooks.invalid:${r.port}/`, { policy, resolve: never, timeoutMs: 200 }).send(
+        event,
+        live,
+      ),
+    ),
+    'timeout',
+  );
+  assert.ok(performance.now() - started < 2000);
+  assert.equal(r.requests.length, 0);
+  // A slow lookup leaves the request only the rest of the budget, not a fresh one.
+  const slow = () =>
+    new Promise((resolve) => setTimeout(() => resolve([{ address: '127.0.0.1', family: 4 }]), 400));
+  started = performance.now();
+  assert.equal(
+    await failureOf(
+      sender(`http://hooks.invalid:${r.port}/`, { policy, resolve: slow, timeoutMs: 600 }).send(
+        event,
+        live,
+      ),
+    ),
+    'timeout',
+  );
+  const elapsed = performance.now() - started;
+  // A fresh budget after the lookup would end at about 1000 ms.
+  assert.ok(elapsed < 900, `whole delivery bounded by its budget, took ${String(elapsed)} ms`);
+});
+
 test('a response body is read for at most 4 KiB and never changes the outcome', async (t) => {
   const r = await receiver(t, () => ({ status: 200, body: 'x'.repeat(5 * 1024 * 1024) }));
   await sender(`http://127.0.0.1:${r.port}/`).send(event, live);

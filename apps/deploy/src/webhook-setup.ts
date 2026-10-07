@@ -1,7 +1,16 @@
 import { chown, mkdir, readFile, stat, unlink } from 'node:fs/promises';
 import { BlockList, isIP } from 'node:net';
-import { isAbsolute, join } from 'node:path';
-import { atomicText, replaceText } from './files.js';
+import { join } from 'node:path';
+import {
+  CONTAINER_USER,
+  atomicText,
+  readOptional,
+  readSecretFile,
+  replaceText,
+  restoreFile,
+  snapshotFile,
+} from './files.js';
+import type { FileOwner, FileSnapshot } from './files.js';
 import type { Installation } from './model.js';
 import { runtimeEnvironment } from './runtime.js';
 import type { ServiceControl } from './tls-setup.js';
@@ -84,16 +93,6 @@ export function allowedNetworks(value: string): string {
   return networks.join(',');
 }
 
-async function secretOf(file: string | undefined, option: string): Promise<string> {
-  if (!file || !isAbsolute(file)) throw new Error(`--${option} must be an absolute path`);
-  const info = await stat(file);
-  if (!info.isFile() || info.size > 4096) throw new Error(`--${option} is not a secret file`);
-  const value = (await readFile(file, 'utf8')).trim();
-  if (!/^[\x21-\x7e]{16,4000}$/.test(value))
-    throw new Error(`--${option} must hold a secret of at least 16 printable characters`);
-  return value;
-}
-
 interface Layout {
   readonly directory: string;
   readonly webhooks: string;
@@ -114,15 +113,6 @@ function layout(root: string, state: Installation): Layout {
     seen: (file) =>
       state.mode === 'compose' ? `${containerDirectory}/${file}` : join(directory, file),
   };
-}
-
-async function optional(path: string): Promise<string | null> {
-  try {
-    return await readFile(path, 'utf8');
-  } catch (error) {
-    if (error instanceof Error && 'code' in error && error.code === 'ENOENT') return null;
-    throw error;
-  }
 }
 
 function entries(text: string | null): WebhookEntry[] {
@@ -159,15 +149,27 @@ function entries(text: string | null): WebhookEntry[] {
   });
 }
 
-/** Owned like runtime.json: root:arkvory 0640 for systemd, readable by the container for Compose. */
-async function write(
-  path: string,
-  value: string,
-  owner: { uid: number; gid: number },
-  mode: number,
-) {
-  await atomicText(path, value, mode);
-  if (process.platform !== 'win32') await chown(path, owner.uid, owner.gid);
+/** Mode and owner of the files a call writes; secrets are readable by the worker alone. */
+export interface WebhookFileAccess {
+  readonly settings: { readonly mode: number; readonly owner: FileOwner };
+  readonly secret: { readonly mode: number; readonly owner: FileOwner };
+}
+/**
+ * systemd: everything like runtime.json, root:arkvory 0640. Compose: the directory is 0755 for
+ * the bind mount, so the subscription file and the authorities stay 0644, while a secret is 0600
+ * of the container user (uid 1000), the one account that reads it inside the worker.
+ */
+export function webhookFileAccess(
+  mode: Installation['mode'],
+  runtime: FileOwner,
+  containerUser = CONTAINER_USER,
+): WebhookFileAccess {
+  if (mode !== 'compose')
+    return { settings: { mode: 0o640, owner: runtime }, secret: { mode: 0o640, owner: runtime } };
+  return {
+    settings: { mode: 0o644, owner: runtime },
+    secret: { mode: 0o600, owner: { uid: containerUser, gid: containerUser } },
+  };
 }
 
 /** The worker is the only reader, so only it gets the directory. */
@@ -182,15 +184,18 @@ function override(): string {
   ].join('\n');
 }
 
-/** Files a call may change, with their text before it (null: the file did not exist). */
-type Snapshot = ReadonlyMap<string, string | null>;
+/** Files a call may change, as they were before it (null: the file did not exist). */
+type Snapshot = ReadonlyMap<string, FileSnapshot | null>;
 
-/** runtime.json keeps its owner and mode (replaceText); the other files were created by this call. */
+/**
+ * Every file returns with its text, mode and owner, so the worker reads a restored secret as
+ * before. runtime.json first and unconditionally; the others best effort, so one failure does not
+ * leave runtime.json pointing at the refused configuration.
+ */
 async function restore(snapshot: Snapshot, runtime: string) {
-  for (const [path, text] of snapshot)
-    if (path === runtime && text !== null) await replaceText(path, text);
-    else if (text === null) await unlink(path).catch(() => undefined);
-    else await atomicText(path, text, 0o600).catch(() => undefined);
+  await restoreFile(runtime, snapshot.get(runtime) ?? null);
+  for (const [path, before] of snapshot)
+    if (path !== runtime) await restoreFile(path, before).catch(() => undefined);
 }
 
 interface Plan {
@@ -214,11 +219,11 @@ async function planAttach(
   const url = receiverUrl(change.url);
   const actions = actionList(change.actions);
   const secrets = new Map<string, string>([
-    [`${id}.secret`, await secretOf(change.secretFile, 'webhook-secret-file')],
+    [`${id}.secret`, await readSecretFile(change.secretFile, 'webhook-secret-file')],
   ]);
   const drop: string[] = [];
   if (change.nextSecretFile) {
-    const next = await secretOf(change.nextSecretFile, 'webhook-next-secret-file');
+    const next = await readSecretFile(change.nextSecretFile, 'webhook-next-secret-file');
     if (next === secrets.get(`${id}.secret`))
       throw new Error('--webhook-next-secret-file must differ from --webhook-secret-file');
     secrets.set(`${id}.next-secret`, next);
@@ -273,17 +278,21 @@ export async function configureWebhook(
   state: Installation,
   change: WebhookChange,
   services: ServiceControl,
+  /** The uid of the Compose containers; tests that do not run as root pass their own. */
+  containerUser = CONTAINER_USER,
 ): Promise<'attached' | 'detached'> {
   const paths = layout(root, state);
   const runtime = await readFile(paths.runtime, 'utf8');
-  const stored = await optional(paths.webhooks);
-  const bundle = await optional(paths.ca);
+  const stored = await readOptional(paths.webhooks);
+  const bundle = await readOptional(paths.ca);
   const current = entries(stored);
   const plan = change.detach
     ? planDetach(change, current, bundle)
     : await planAttach(change, current, paths, bundle);
   const owner = await stat(paths.runtime);
-  const mode = state.mode === 'compose' ? 0o644 : 0o640;
+  const access = webhookFileAccess(state.mode, owner, containerUser);
+  const settings = (path: string, text: string) =>
+    atomicText(path, text, access.settings.mode, access.settings.owner);
   const env = runtimeEnvironment(JSON.parse(runtime));
   // The settings that serve every subscription go with the last one.
   const last = plan.next.length === 0;
@@ -303,7 +312,7 @@ export async function configureWebhook(
     ...[...plan.secrets.keys(), ...plan.drop].map((file) => join(paths.directory, file)),
   ];
   const snapshot: Snapshot = new Map(
-    await Promise.all(touched.map(async (path) => [path, await optional(path)] as const)),
+    await Promise.all(touched.map(async (path) => [path, await snapshotFile(path)] as const)),
   );
   try {
     await mkdir(paths.directory, {
@@ -312,17 +321,16 @@ export async function configureWebhook(
     });
     if (process.platform !== 'win32') await chown(paths.directory, owner.uid, owner.gid);
     for (const [file, secret] of plan.secrets)
-      await write(join(paths.directory, file), secret + '\n', owner, mode);
+      await atomicText(
+        join(paths.directory, file),
+        secret + '\n',
+        access.secret.mode,
+        access.secret.owner,
+      );
     for (const file of plan.drop) await unlink(join(paths.directory, file)).catch(() => undefined);
     if (last) await unlink(paths.webhooks).catch(() => undefined);
-    else
-      await write(
-        paths.webhooks,
-        JSON.stringify({ webhooks: plan.next }, null, 2) + '\n',
-        owner,
-        mode,
-      );
-    if (bundleAfter !== null) await write(paths.ca, bundleAfter, owner, mode);
+    else await settings(paths.webhooks, JSON.stringify({ webhooks: plan.next }, null, 2) + '\n');
+    if (bundleAfter !== null) await settings(paths.ca, bundleAfter);
     else await unlink(paths.ca).catch(() => undefined);
     if (state.mode === 'compose') {
       if (last) await unlink(paths.override).catch(() => undefined);

@@ -134,3 +134,42 @@ test('plain HTTP to a loopback host is the one receiver that may stay on the mac
     'blocked',
   );
 });
+
+test('IPv4-compatible, local-use NAT64 and site-local IPv6 addresses are blocked too', () => {
+  for (const address of ['::7f00:1', '::a00:1', '::808:808', '64:ff9b:1::a00:1', 'fec0::1'])
+    assert.equal(open.permits(address, 6), false, address);
+  // Neighbours of the new ranges stay public, and IPv4 checks are not swallowed by ::/96.
+  assert.equal(open.permits('64:ff9c::1', 6), true);
+  assert.equal(open.permits('2606:4700::1', 6), true);
+  assert.equal(open.permits('8.8.8.8', 4), true);
+});
+
+test('a lookup that outlives the delivery deadline fails as a timeout, not later', async () => {
+  const hanging = () => new Promise(() => undefined);
+  const started = performance.now();
+  assert.equal(
+    await failureOf(
+      resolveReceiver(new URL('https://slow.example/'), open, hanging, AbortSignal.timeout(50)),
+    ),
+    'timeout',
+  );
+  assert.ok(performance.now() - started < 2000);
+  const expired = AbortSignal.abort();
+  assert.equal(
+    await failureOf(resolveReceiver(new URL('https://slow.example/'), open, hanging, expired)),
+    'timeout',
+  );
+  // An answer within the deadline is used as before.
+  const quick = async () => [{ address: '93.184.216.34', family: 4 }];
+  assert.equal(
+    (
+      await resolveReceiver(
+        new URL('https://hook.example/'),
+        open,
+        quick,
+        AbortSignal.timeout(5000),
+      )
+    ).address,
+    '93.184.216.34',
+  );
+});

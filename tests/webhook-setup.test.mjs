@@ -1,15 +1,27 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises';
+import { chmod, mkdir, mkdtemp, readFile, readdir, stat, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
   allowedNetworks,
-  configureWebhook,
+  configureWebhook as configure,
   receiverUrl,
+  webhookFileAccess,
 } from '../apps/deploy/dist/webhook-setup.js';
+import {
+  CONTAINER_USER,
+  atomicText,
+  restoreFile,
+  snapshotFile,
+} from '../apps/deploy/dist/files.js';
 import { removeTestDirectory } from './helpers.mjs';
 import { selfSignedCertificate } from './tls-certificate.mjs';
+
+// Compose secrets are chowned to the container user; a test that is not root can only own them.
+const containerUser = process.getuid?.() ?? CONTAINER_USER;
+const configureWebhook = (root, state, change, control) =>
+  configure(root, state, change, control, containerUser);
 
 const release = { version: '1.0.0', commit: 'c', schema: 33, archiveSha256: 'a', setupSha256: 's' };
 const secret = 'a-long-random-signing-secret-1';
@@ -160,6 +172,13 @@ test('Compose gets the worker mount and container paths, and loses them with the
   );
   const [hook] = (await json(join(f.root, 'config/webhooks/webhooks.json'))).webhooks;
   assert.equal(hook.secretFile, '/run/arkvory/webhooks/ci.secret');
+  if (posix) {
+    // The directory is 0755 for the bind mount: the secret itself is the container user's alone.
+    const secretPath = join(f.root, 'config/webhooks/ci.secret');
+    assert.equal(await modeOf(secretPath), 0o600);
+    assert.equal((await stat(secretPath)).uid, containerUser);
+    assert.equal(await modeOf(join(f.root, 'config/webhooks/webhooks.json')), 0o644);
+  }
   await configureWebhook(f.root, f.state, { detach: 'ci' }, services());
   assert.equal(await exists(join(f.root, 'config/compose.webhooks.yml')), false);
 });
@@ -296,4 +315,76 @@ test('the receiver rules match the worker: HTTPS, loopback over HTTP, nothing bu
   ])
     assert.throws(() => receiverUrl(bad), /--webhook-url/, String(bad));
   assert.equal(allowedNetworks(' 10.0.0.0/8 , ::1/128'), '10.0.0.0/8,::1/128');
+});
+
+const posix = process.platform !== 'win32';
+const modeOf = async (path) => (await stat(path)).mode & 0o777;
+
+test('Compose secrets belong to the container user alone; systemd keeps root:arkvory 0640', () => {
+  const runtime = { uid: 0, gid: 990 };
+  assert.deepEqual(webhookFileAccess('systemd', runtime), {
+    settings: { mode: 0o640, owner: runtime },
+    secret: { mode: 0o640, owner: runtime },
+  });
+  const compose = webhookFileAccess('compose', runtime);
+  assert.deepEqual(compose.secret, {
+    mode: 0o600,
+    owner: { uid: CONTAINER_USER, gid: CONTAINER_USER },
+  });
+  assert.equal(CONTAINER_USER, 1000);
+  assert.deepEqual(compose.settings, { mode: 0o644, owner: runtime });
+});
+
+test('a rollback puts every file back with its previous mode, not a narrower one', async (t) => {
+  const f = await installation(t);
+  await configureWebhook(f.root, f.state, subscription(f), services());
+  const directory = join(f.root, 'config/webhooks');
+  const files = ['webhooks.json', 'ci.secret'].map((name) => join(directory, name));
+  const before = await Promise.all(files.map((file) => readFile(file, 'utf8')));
+  if (posix) for (const file of files) assert.equal(await modeOf(file), 0o640, file);
+  await assert.rejects(
+    configureWebhook(
+      f.root,
+      f.state,
+      subscription(f, { url: 'https://ci.example.com/changed', secretFile: f.nextFile }),
+      services(1),
+    ),
+    /restored/,
+  );
+  for (const [index, file] of files.entries()) {
+    assert.equal(await readFile(file, 'utf8'), before[index], file);
+    // Before the fix a restored file came back 0600 and the arkvory group could not read it.
+    if (posix) assert.equal(await modeOf(file), 0o640, file);
+  }
+});
+
+test('file snapshots restore text and mode, and remove what did not exist', async (t) => {
+  const root = await mkdtemp(join(tmpdir(), 'arkvory-files-'));
+  t.after(() => removeTestDirectory(root));
+  const path = join(root, 'settings.json');
+  await writeFile(path, 'before');
+  await chmod(path, 0o640);
+  const snapshot = await snapshotFile(path);
+  assert.equal(snapshot.text, 'before');
+  await atomicText(path, 'after', 0o600);
+  await restoreFile(path, snapshot);
+  assert.equal(await readFile(path, 'utf8'), 'before');
+  if (posix) assert.equal(await modeOf(path), 0o640);
+  const absent = join(root, 'new.secret');
+  const none = await snapshotFile(absent);
+  assert.equal(none, null);
+  await atomicText(absent, 'secret', 0o600);
+  await restoreFile(absent, none);
+  assert.equal(await exists(absent), false);
+});
+
+test('a failed atomic write leaves no temporary file that could hold a secret', async (t) => {
+  const root = await mkdtemp(join(tmpdir(), 'arkvory-files-'));
+  t.after(() => removeTestDirectory(root));
+  // A directory in place of the target makes the final rename fail after the secret was written.
+  const target = join(root, 'ci.secret');
+  await mkdir(target);
+  await writeFile(join(target, 'keep'), '');
+  await assert.rejects(atomicText(target, 'a-long-random-signing-secret-1', 0o600));
+  assert.deepEqual(await readdir(root), ['ci.secret']);
 });

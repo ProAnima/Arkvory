@@ -1,6 +1,7 @@
 import { chown, mkdir, readFile, stat, unlink } from 'node:fs/promises';
-import { isAbsolute, join } from 'node:path';
-import { atomicText, replaceText } from './files.js';
+import { join } from 'node:path';
+import { atomicText, readSecretFile, replaceText, restoreFile, snapshotFile } from './files.js';
+import type { FileOwner, FileSnapshot } from './files.js';
 import type { Installation } from './model.js';
 import { runtimeEnvironment } from './runtime.js';
 import type { ServiceControl } from './tls-setup.js';
@@ -66,15 +67,6 @@ export function upstreamOrigin(value: string | undefined): string {
   return url.origin;
 }
 
-async function token(file: string | undefined): Promise<string> {
-  if (!file || !isAbsolute(file)) throw new Error('--mirror-token-file must be an absolute path');
-  const info = await stat(file);
-  if (!info.isFile() || info.size > 4096) throw new Error('The mirror key file is not a key');
-  const value = (await readFile(file, 'utf8')).trim();
-  if (!/^[\x21-\x7e]{16,4000}$/.test(value)) throw new Error('The mirror key file is not a key');
-  return value;
-}
-
 /** The public API of the source with the read-only key; the key never appears in a message. */
 export const fetchProbe: UpstreamProbe = async (upstream, source, secret) => {
   const call = async (path: string) => {
@@ -127,15 +119,6 @@ function layout(root: string, state: Installation): Layout {
   };
 }
 
-async function optional(path: string): Promise<string | null> {
-  try {
-    return await readFile(path, 'utf8');
-  } catch (error) {
-    if (error instanceof Error && 'code' in error && error.code === 'ENOENT') return null;
-    throw error;
-  }
-}
-
 function entries(text: string | null): MirrorEntry[] {
   if (text === null) return [];
   const document: unknown = JSON.parse(text);
@@ -173,14 +156,8 @@ function entries(text: string | null): MirrorEntry[] {
  * Writes like runtime.json is owned: root:arkvory 0640 for systemd, readable by the container
  * user for Compose (the host config directory stays private), inherited ACLs on Windows.
  */
-async function write(
-  path: string,
-  value: string,
-  owner: { uid: number; gid: number },
-  mode: number,
-) {
-  await atomicText(path, value, mode);
-  if (process.platform !== 'win32') await chown(path, owner.uid, owner.gid);
+function write(path: string, value: string, owner: FileOwner, mode: number) {
+  return atomicText(path, value, mode, owner);
 }
 
 function override(): string {
@@ -200,22 +177,22 @@ function override(): string {
 
 interface Snapshot {
   readonly runtime: string;
-  readonly mirrors: string | null;
-  readonly token: string | null;
-  readonly ca: string | null;
-  readonly override: string | null;
+  readonly mirrors: FileSnapshot | null;
+  readonly token: FileSnapshot | null;
+  readonly ca: FileSnapshot | null;
+  readonly override: FileSnapshot | null;
 }
 
+/** Each file returns with its text, mode and owner, so API and worker read it as before. */
 async function restore(paths: Layout, tokenPath: string, overridePath: string, before: Snapshot) {
   await replaceText(paths.runtime, before.runtime);
-  for (const [path, text] of [
+  for (const [path, file] of [
     [paths.mirrors, before.mirrors],
     [tokenPath, before.token],
     [paths.ca, before.ca],
     [overridePath, before.override],
   ] as const)
-    if (text === null) await unlink(path).catch(() => undefined);
-    else await atomicText(path, text, 0o600).catch(() => undefined);
+    await restoreFile(path, file).catch(() => undefined);
 }
 
 /**
@@ -234,21 +211,21 @@ export async function configureMirror(
   const paths = layout(root, state);
   const before: Snapshot = {
     runtime: await readFile(paths.runtime, 'utf8'),
-    mirrors: await optional(paths.mirrors),
+    mirrors: await snapshotFile(paths.mirrors),
     token: null,
-    ca: await optional(paths.ca),
-    override: await optional(join(root, mirrorsOverrideFile)),
+    ca: await snapshotFile(paths.ca),
+    override: await snapshotFile(join(root, mirrorsOverrideFile)),
   };
-  const current = entries(before.mirrors);
+  const current = entries(before.mirrors?.text ?? null);
   const target = repository(
     change.detach ?? change.repository,
     change.detach ? 'mirror-detach' : 'mirror',
   );
   const tokenPath = join(paths.directory, `${target}.token`);
-  const snapshot = { ...before, token: await optional(tokenPath) };
+  const snapshot = { ...before, token: await snapshotFile(tokenPath) };
   let next: MirrorEntry[];
   let secret: string | null = null;
-  let bundle = before.ca;
+  let bundle = before.ca?.text ?? null;
   if (change.detach) {
     if (!current.some((entry) => entry.repository === target))
       throw new Error(`${target} is not a mirrored repository`);
@@ -263,7 +240,11 @@ export async function configureMirror(
     )
       throw new Error(`${target} mirrors another source; detach it first`);
     const stages = stageList(change.stages);
-    secret = await token(change.tokenFile);
+    secret = await readSecretFile(
+      change.tokenFile,
+      'mirror-token-file',
+      'The mirror key file is not a key',
+    );
     if (change.caFile) bundle = mergeCertificates(bundle, await sourceCertificates(change.caFile));
     // The probe runs in this process: it trusts what the worker will trust, nothing more.
     if (bundle !== null) trustSourceCertificates(bundle);
