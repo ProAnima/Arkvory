@@ -52,14 +52,14 @@ Le fichier comporte ces champs :
 }
 ```
 
-| Champ            | Signification                                                                                                                                                                                        |
-| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `id`             | Nom de l'abonnement : 1 à 64 caractères `a-z`, `0-9`, `_` et `-`. Sa progression est conservée sous ce nom.                                                                                          |
-| `repository`     | Le dépôt dont le flux est envoyé.                                                                                                                                                                    |
-| `url`            | Le destinataire. HTTPS, sans nom d'utilisateur, query ni fragment, 2048 caractères au plus. HTTP en clair n'est permis que pour `localhost`, `127.0.0.1` et `[::1]`.                                 |
-| `secretFile`     | Chemin absolu du fichier contenant le secret de signature.                                                                                                                                           |
-| `nextSecretFile` | Second secret facultatif pour une [rotation](#rotate-the-secret).                                                                                                                                    |
-| `actions`        | Liste facultative des actions du flux à envoyer, par exemple `artifact.publish`, `artifact.delete`, `asset.replace`, `stage.add` et `package.register`. Sans elle, toutes les actions sont envoyées. |
+| Champ            | Signification                                                                                                                                                                                          |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `id`             | Nom de l'abonnement : 1 à 64 caractères `a-z`, `0-9`, `_` et `-`. Sa progression est conservée sous ce nom.                                                                                            |
+| `repository`     | Le dépôt dont le flux est envoyé.                                                                                                                                                                      |
+| `url`            | Le destinataire. HTTPS, sans nom d'utilisateur, query ni fragment, 2048 caractères au plus. HTTP en clair n'est permis que pour `localhost`, `127.0.0.1` et `[::1]`.                                   |
+| `secretFile`     | Chemin absolu du fichier contenant le secret de signature.                                                                                                                                             |
+| `nextSecretFile` | Second secret facultatif pour une [rotation](#rotate-the-secret).                                                                                                                                      |
+| `actions`        | Liste facultative des actions du flux à envoyer, par exemple `artifact.publish`, `artifact.delete`, `asset.replace`, `stage.added` et `package.register`. Sans elle, toutes les actions sont envoyées. |
 
 Un fichier incorrect arrête le worker au démarrage avec `worker.unavailable`. Jusqu'à 16 abonnements sont autorisés. Sur une installation Compose, la commande monte aussi `config/webhooks` dans le conteneur du worker.
 
@@ -154,20 +154,29 @@ def verify(secret: bytes, headers, raw_body: bytes) -> bool:
 
 ## Surveiller les webhooks {#monitor}
 
-Le worker écrit `webhook.step_failed` avec un `errorCode` quand une livraison échoue, et `webhook.recovered` quand elle refonctionne. Les métriques `arkvory_webhook_failing` et `arkvory_webhook_last_success_timestamp_seconds` et l'alerte `ArkvoryWebhookFailing` sont décrites dans [Surveillance](../operate/monitoring).
+Le worker écrit `webhook.step_failed` avec un `errorCode` quand une livraison échoue, et `webhook.recovered` quand elle refonctionne. Les métriques `arkvory_webhook_failing` et `arkvory_webhook_last_success_timestamp_seconds` et l'alerte `ArkvoryWebhookFailing` sont décrites dans [Surveillance](../operate/monitoring). `webhook.stopped` marque la fin de la boucle d'un abonnement : à l'arrêt ou quand le worker perd la propriété du stockage. `webhook.prune_failed` signifie que le worker n'a pas pu oublier les abonnements supprimés au démarrage ; il réessaie au démarrage suivant. Les codes `unavailable` et `internal` n'apparaissent que dans le journal, pas dans `arkvory_webhook_failing`.
+
+## Un abonnement qui n'avance plus {#stuck}
+
+Arkvory ne saute jamais un événement : c'est ce qui rend la livraison fiable. Un récepteur qui refuse sans cesse un même événement, par exemple avec `400` parce qu'il ne sait pas le lire, arrête donc tout son abonnement. Aucun événement suivant de cet abonnement n'est envoyé ; les autres abonnements continuent. Le worker écrit `webhook.step_failed` avec `http_4xx` et réessaie avec des pauses allant jusqu'à une heure, `arkvory_webhook_failing` vaut `1` et l'alerte `ArkvoryWebhookFailing` se déclenche au bout de 15 minutes.
+
+1. Corrigez le récepteur pour qu'il réponde `2xx` à l'événement. Arkvory l'envoie au prochain essai, au plus une heure plus tard environ, puis tous les événements en attente, dans l'ordre. Relancer `configure` avec le même nom et le même dépôt conserve la position.
+2. Si l'événement ne peut jamais être accepté, supprimez l'abonnement avec `--webhook-detach` et ajoutez-le de nouveau. Il repart de la fin du flux : les événements en attente ne sont **pas** envoyés. Lisez-les dans le [flux des changements](../api/reference/artifacts#listCatalogChanges) après le dernier `sequence` traité par votre récepteur.
 
 ## Dépannage {#troubleshooting}
 
-| `errorCode` | Cause et que faire                                                                                                                                                                  |
-| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `blocked`   | L'adresse du destinataire n'est pas autorisée (loopback, privée, link-local ou métadonnées). Utilisez une adresse publique ou ajoutez le réseau à `ARKVORY_WEBHOOKS_ALLOW_PRIVATE`. |
-| `timeout`   | Pas de réponse en 10 secondes. Répondez plus vite et mettez le travail en file.                                                                                                     |
-| `network`   | Connexion refusée, nom introuvable ou connexion réinitialisée. Vérifiez l'URL, le DNS et le pare-feu depuis le serveur.                                                             |
-| `tls`       | Le certificat n'est pas approuvé, a expiré ou porte un mauvais nom. Corrigez-le ou définissez `ARKVORY_WEBHOOKS_CA_FILE`.                                                           |
-| `redirect`  | Le destinataire a répondu `3xx`. Les redirections ne sont pas suivies : utilisez l'URL finale.                                                                                      |
-| `http_4xx`  | Le destinataire a refusé la requête. Vérifiez sa vérification de signature, son chemin et sa clé.                                                                                   |
-| `http_5xx`  | Le destinataire est en panne. Arkvory continue de réessayer, avec jusqu'à une heure entre les essais.                                                                               |
-| `secret`    | Le fichier de secret est absent, illisible ou plus court que 16 octets.                                                                                                             |
+| `errorCode`   | Cause et que faire                                                                                                                                                                  |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `blocked`     | L'adresse du destinataire n'est pas autorisée (loopback, privée, link-local ou métadonnées). Utilisez une adresse publique ou ajoutez le réseau à `ARKVORY_WEBHOOKS_ALLOW_PRIVATE`. |
+| `timeout`     | Pas de réponse en 10 secondes. Répondez plus vite et mettez le travail en file.                                                                                                     |
+| `network`     | Connexion refusée, nom introuvable ou connexion réinitialisée. Vérifiez l'URL, le DNS et le pare-feu depuis le serveur.                                                             |
+| `tls`         | Le certificat n'est pas approuvé, a expiré ou porte un mauvais nom. Corrigez-le ou définissez `ARKVORY_WEBHOOKS_CA_FILE`.                                                           |
+| `redirect`    | Le destinataire a répondu `3xx`. Les redirections ne sont pas suivies : utilisez l'URL finale.                                                                                      |
+| `http_4xx`    | Le destinataire a refusé la requête. Vérifiez sa vérification de signature, son chemin et sa clé.                                                                                   |
+| `http_5xx`    | Le destinataire est en panne. Arkvory continue de réessayer, avec jusqu'à une heure entre les essais.                                                                               |
+| `secret`      | Le fichier de secret est absent, illisible ou plus court que 16 octets.                                                                                                             |
+| `unavailable` | Le worker n'a pas pu lire le flux ou l'état de l'abonnement dans la base de données. Rien n'a été envoyé ; il réessaie après 5 secondes. Vérifiez la base de données.               |
+| `internal`    | Une erreur inattendue dans le worker. Rien n'a été envoyé ; il réessaie après 5 secondes. Signalez-la avec le journal du worker.                                                    |
 
 Rien n'arrive ? Vérifiez que `webhook.started` figure dans le journal du worker, que `ARKVORY_WEBHOOKS_FILE` est défini, le nom du dépôt et le filtre `actions`. Un nouvel abonnement n'envoie que les événements postérieurs à sa première étape.
 

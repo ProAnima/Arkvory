@@ -52,14 +52,14 @@ Die Datei hat diese Felder:
 }
 ```
 
-| Feld             | Bedeutung                                                                                                                                                                                        |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `id`             | Name des Abonnements: 1 bis 64 Zeichen `a-z`, `0-9`, `_` und `-`. Unter diesem Namen wird sein Fortschritt gespeichert.                                                                          |
-| `repository`     | Das Repository, dessen Feed gesendet wird.                                                                                                                                                       |
-| `url`            | Der Empfänger. HTTPS, ohne Benutzername, Query und Fragment, höchstens 2048 Zeichen. Unverschlüsseltes HTTP ist nur für `localhost`, `127.0.0.1` und `[::1]` erlaubt.                            |
-| `secretFile`     | Absoluter Pfad der Datei mit dem Signatur-Secret.                                                                                                                                                |
-| `nextSecretFile` | Optionales zweites Secret für eine [Rotation](#rotate-the-secret).                                                                                                                               |
-| `actions`        | Optionale Liste der zu sendenden Feed-Aktionen, zum Beispiel `artifact.publish`, `artifact.delete`, `asset.replace`, `stage.add` und `package.register`. Ohne sie werden alle Aktionen gesendet. |
+| Feld             | Bedeutung                                                                                                                                                                                          |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`             | Name des Abonnements: 1 bis 64 Zeichen `a-z`, `0-9`, `_` und `-`. Unter diesem Namen wird sein Fortschritt gespeichert.                                                                            |
+| `repository`     | Das Repository, dessen Feed gesendet wird.                                                                                                                                                         |
+| `url`            | Der Empfänger. HTTPS, ohne Benutzername, Query und Fragment, höchstens 2048 Zeichen. Unverschlüsseltes HTTP ist nur für `localhost`, `127.0.0.1` und `[::1]` erlaubt.                              |
+| `secretFile`     | Absoluter Pfad der Datei mit dem Signatur-Secret.                                                                                                                                                  |
+| `nextSecretFile` | Optionales zweites Secret für eine [Rotation](#rotate-the-secret).                                                                                                                                 |
+| `actions`        | Optionale Liste der zu sendenden Feed-Aktionen, zum Beispiel `artifact.publish`, `artifact.delete`, `asset.replace`, `stage.added` und `package.register`. Ohne sie werden alle Aktionen gesendet. |
 
 Eine fehlerhafte Datei stoppt den Worker beim Start mit `worker.unavailable`. Erlaubt sind bis zu 16 Abonnements. Bei einer Compose-Installation bindet der Befehl `config/webhooks` auch in den Worker-Container ein.
 
@@ -154,20 +154,29 @@ def verify(secret: bytes, headers, raw_body: bytes) -> bool:
 
 ## Webhooks überwachen {#monitor}
 
-Der Worker schreibt `webhook.step_failed` mit einem `errorCode`, wenn eine Zustellung fehlschlägt, und `webhook.recovered`, wenn sie wieder funktioniert. Die Metriken `arkvory_webhook_failing` und `arkvory_webhook_last_success_timestamp_seconds` und der Alarm `ArkvoryWebhookFailing` sind unter [Überwachung](../operate/monitoring) beschrieben.
+Der Worker schreibt `webhook.step_failed` mit einem `errorCode`, wenn eine Zustellung fehlschlägt, und `webhook.recovered`, wenn sie wieder funktioniert. Die Metriken `arkvory_webhook_failing` und `arkvory_webhook_last_success_timestamp_seconds` und der Alarm `ArkvoryWebhookFailing` sind unter [Überwachung](../operate/monitoring) beschrieben. `webhook.stopped` markiert das Ende der Schleife eines Abonnements: beim Herunterfahren oder wenn der Worker den Besitz des Speichers verliert. `webhook.prune_failed` bedeutet, dass der Worker entfernte Abonnements beim Start nicht vergessen konnte; er versucht es beim nächsten Start erneut. Die Codes `unavailable` und `internal` erscheinen nur im Protokoll, nicht in `arkvory_webhook_failing`.
+
+## Ein Abonnement, das nicht weiterkommt {#stuck}
+
+Arkvory überspringt nie ein Ereignis: Darauf beruht die Zuverlässigkeit der Zustellung. Ein Empfänger, der ein Ereignis immer wieder ablehnt, zum Beispiel mit `400`, weil er es nicht lesen kann, hält deshalb sein ganzes Abonnement an. Kein späteres Ereignis dieses Abonnements wird gesendet; andere Abonnements laufen weiter. Der Worker schreibt `webhook.step_failed` mit `http_4xx` und wiederholt mit Pausen bis zu einer Stunde, `arkvory_webhook_failing` ist `1`, und der Alarm `ArkvoryWebhookFailing` löst nach 15 Minuten aus.
+
+1. Korrigieren Sie den Empfänger, sodass er das Ereignis mit `2xx` beantwortet. Arkvory sendet es beim nächsten Versuch, spätestens etwa eine Stunde später, und danach alle wartenden Ereignisse der Reihe nach. Ein erneutes `configure` mit demselben Namen und Repository behält die Position.
+2. Kann das Ereignis nie angenommen werden, entfernen Sie das Abonnement mit `--webhook-detach` und fügen Sie es erneut hinzu. Es beginnt am Ende des Feeds: Die wartenden Ereignisse werden **nicht** gesendet. Lesen Sie sie aus dem [Änderungsfeed](../api/reference/artifacts#listCatalogChanges) nach der letzten `sequence`, die Ihr Empfänger verarbeitet hat.
 
 ## Fehlerbehebung {#troubleshooting}
 
-| `errorCode` | Ursache und was zu tun ist                                                                                                                                                                     |
-| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `blocked`   | Die Empfängeradresse ist nicht erlaubt (Loopback, privat, Link-Local oder Metadaten). Verwenden Sie eine öffentliche Adresse oder tragen Sie das Netz in `ARKVORY_WEBHOOKS_ALLOW_PRIVATE` ein. |
-| `timeout`   | Keine Antwort innerhalb von 10 Sekunden. Antworten Sie schneller und stellen Sie die Arbeit in eine Warteschlange.                                                                             |
-| `network`   | Verbindung abgelehnt, Name nicht gefunden oder Verbindung zurückgesetzt. Prüfen Sie URL, DNS und Firewall vom Server aus.                                                                      |
-| `tls`       | Das Zertifikat ist nicht vertrauenswürdig, abgelaufen oder hat den falschen Namen. Beheben Sie das oder setzen Sie `ARKVORY_WEBHOOKS_CA_FILE`.                                                 |
-| `redirect`  | Der Empfänger antwortete `3xx`. Weiterleitungen werden nicht verfolgt: Verwenden Sie die endgültige URL.                                                                                       |
-| `http_4xx`  | Der Empfänger hat die Anfrage abgelehnt. Prüfen Sie seine Signaturprüfung, seinen Pfad und seinen Schlüssel.                                                                                   |
-| `http_5xx`  | Der Empfänger ist ausgefallen. Arkvory versucht es weiter, mit bis zu einer Stunde Abstand.                                                                                                    |
-| `secret`    | Die Secret-Datei fehlt, ist nicht lesbar oder kürzer als 16 Bytes.                                                                                                                             |
+| `errorCode`   | Ursache und was zu tun ist                                                                                                                                                                     |
+| ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `blocked`     | Die Empfängeradresse ist nicht erlaubt (Loopback, privat, Link-Local oder Metadaten). Verwenden Sie eine öffentliche Adresse oder tragen Sie das Netz in `ARKVORY_WEBHOOKS_ALLOW_PRIVATE` ein. |
+| `timeout`     | Keine Antwort innerhalb von 10 Sekunden. Antworten Sie schneller und stellen Sie die Arbeit in eine Warteschlange.                                                                             |
+| `network`     | Verbindung abgelehnt, Name nicht gefunden oder Verbindung zurückgesetzt. Prüfen Sie URL, DNS und Firewall vom Server aus.                                                                      |
+| `tls`         | Das Zertifikat ist nicht vertrauenswürdig, abgelaufen oder hat den falschen Namen. Beheben Sie das oder setzen Sie `ARKVORY_WEBHOOKS_CA_FILE`.                                                 |
+| `redirect`    | Der Empfänger antwortete `3xx`. Weiterleitungen werden nicht verfolgt: Verwenden Sie die endgültige URL.                                                                                       |
+| `http_4xx`    | Der Empfänger hat die Anfrage abgelehnt. Prüfen Sie seine Signaturprüfung, seinen Pfad und seinen Schlüssel.                                                                                   |
+| `http_5xx`    | Der Empfänger ist ausgefallen. Arkvory versucht es weiter, mit bis zu einer Stunde Abstand.                                                                                                    |
+| `secret`      | Die Secret-Datei fehlt, ist nicht lesbar oder kürzer als 16 Bytes.                                                                                                                             |
+| `unavailable` | Der Worker konnte den Feed oder den Zustand des Abonnements nicht aus der Datenbank lesen. Nichts wurde gesendet; er versucht es nach 5 Sekunden erneut. Prüfen Sie die Datenbank.             |
+| `internal`    | Ein unerwarteter Fehler im Worker. Nichts wurde gesendet; er versucht es nach 5 Sekunden erneut. Melden Sie ihn mit dem Worker-Protokoll.                                                      |
 
 Es kommt nichts an? Prüfen Sie, ob `webhook.started` im Worker-Log steht, ob `ARKVORY_WEBHOOKS_FILE` gesetzt ist, den Namen des Repositorys und den Filter `actions`. Ein neues Abonnement sendet nur Ereignisse nach seinem ersten Schritt.
 

@@ -52,14 +52,14 @@ sudo arkvory configure --root /opt/proanima-arkvory \
 }
 ```
 
-| 字段             | 含义                                                                                                                                                 |
-| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `id`             | 订阅名称：1 到 64 个字符，可用 `a-z`、`0-9`、`_` 和 `-`。其进度按此名称保存。                                                                        |
-| `repository`     | 要发送其变更订阅源的仓库。                                                                                                                           |
-| `url`            | 接收方。使用 HTTPS，不含用户名、query 或 fragment，最长 2048 个字符。仅 `localhost`、`127.0.0.1` 和 `[::1]` 允许使用明文 HTTP。                      |
-| `secretFile`     | 签名密钥文件的绝对路径。                                                                                                                             |
-| `nextSecretFile` | 可选的第二个密钥，用于[轮换](#rotate-the-secret)。                                                                                                   |
-| `actions`        | 可选的要发送的订阅源操作列表，例如 `artifact.publish`、`artifact.delete`、`asset.replace`、`stage.add` 和 `package.register`。不设置则发送所有操作。 |
+| 字段             | 含义                                                                                                                                                   |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `id`             | 订阅名称：1 到 64 个字符，可用 `a-z`、`0-9`、`_` 和 `-`。其进度按此名称保存。                                                                          |
+| `repository`     | 要发送其变更订阅源的仓库。                                                                                                                             |
+| `url`            | 接收方。使用 HTTPS，不含用户名、query 或 fragment，最长 2048 个字符。仅 `localhost`、`127.0.0.1` 和 `[::1]` 允许使用明文 HTTP。                        |
+| `secretFile`     | 签名密钥文件的绝对路径。                                                                                                                               |
+| `nextSecretFile` | 可选的第二个密钥，用于[轮换](#rotate-the-secret)。                                                                                                     |
+| `actions`        | 可选的要发送的订阅源操作列表，例如 `artifact.publish`、`artifact.delete`、`asset.replace`、`stage.added` 和 `package.register`。不设置则发送所有操作。 |
 
 文件有误会使 worker 在启动时以 `worker.unavailable` 停止。最多允许 16 个订阅。在 Compose 安装中，该命令还会把 `config/webhooks` 挂载到 worker 容器中。
 
@@ -154,20 +154,29 @@ def verify(secret: bytes, headers, raw_body: bytes) -> bool:
 
 ## 监控 webhook {#monitor}
 
-投递失败时 worker 会写入带有 `errorCode` 的 `webhook.step_failed`，恢复后写入 `webhook.recovered`。指标 `arkvory_webhook_failing` 和 `arkvory_webhook_last_success_timestamp_seconds` 以及告警 `ArkvoryWebhookFailing` 见[监控](../operate/monitoring)。
+投递失败时 worker 会写入带有 `errorCode` 的 `webhook.step_failed`，恢复后写入 `webhook.recovered`。指标 `arkvory_webhook_failing` 和 `arkvory_webhook_last_success_timestamp_seconds` 以及告警 `ArkvoryWebhookFailing` 见[监控](../operate/monitoring)。`webhook.stopped` 表示订阅循环结束：在停止时，或 worker 失去存储所有权时。`webhook.prune_failed` 表示 worker 启动时未能忘记已删除的订阅；下次启动时会再试。代码 `unavailable` 和 `internal` 只出现在日志中，不反映在 `arkvory_webhook_failing` 中。
+
+## 订阅停滞不前 {#stuck}
+
+Arkvory 从不跳过事件：投递的可靠性正建立在这一点上。因此，接收方如果一再拒绝同一个事件，例如因无法解析而返回 `400`，就会让整个订阅停下来。该订阅之后的事件都不会发送；其他订阅照常工作。worker 写入带有 `http_4xx` 的 `webhook.step_failed`，并以最长一小时的间隔重试，`arkvory_webhook_failing` 为 `1`，告警 `ArkvoryWebhookFailing` 在 15 分钟后触发。
+
+1. 修复接收方，使其对该事件返回 `2xx`。Arkvory 会在下一次重试时发送它（最晚约一小时后），然后按顺序发送所有等待中的事件。用相同的名称和仓库再次运行 `configure` 会保留位置。
+2. 如果该事件永远无法被接受，用 `--webhook-detach` 删除订阅后重新添加。它从订阅源末尾开始：等待中的事件**不会**发送。请从[变更订阅源](../api/reference/artifacts#listCatalogChanges)中读取接收方处理过的最后一个 `sequence` 之后的事件。
 
 ## 故障排除 {#troubleshooting}
 
-| `errorCode` | 原因与处理方法                                                                                                        |
-| ----------- | --------------------------------------------------------------------------------------------------------------------- |
-| `blocked`   | 接收方地址不被允许（环回、私有、链路本地或元数据）。请使用公网地址，或把该网络加入 `ARKVORY_WEBHOOKS_ALLOW_PRIVATE`。 |
-| `timeout`   | 10 秒内没有响应。请更快响应，并把工作放入队列。                                                                       |
-| `network`   | 连接被拒绝、找不到名称或连接被重置。请从服务器检查 URL、DNS 和防火墙。                                                |
-| `tls`       | 证书不受信任、已过期或名称不符。请修正，或设置 `ARKVORY_WEBHOOKS_CA_FILE`。                                           |
-| `redirect`  | 接收方返回了 `3xx`。不会跟随重定向：请使用最终 URL。                                                                  |
-| `http_4xx`  | 接收方拒绝了请求。请检查它的签名校验、路径和密钥。                                                                    |
-| `http_5xx`  | 接收方出错。Arkvory 会持续重试，间隔最长一小时。                                                                      |
-| `secret`    | 密钥文件不存在、无法读取或短于 16 字节。                                                                              |
+| `errorCode`   | 原因与处理方法                                                                                                        |
+| ------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `blocked`     | 接收方地址不被允许（环回、私有、链路本地或元数据）。请使用公网地址，或把该网络加入 `ARKVORY_WEBHOOKS_ALLOW_PRIVATE`。 |
+| `timeout`     | 10 秒内没有响应。请更快响应，并把工作放入队列。                                                                       |
+| `network`     | 连接被拒绝、找不到名称或连接被重置。请从服务器检查 URL、DNS 和防火墙。                                                |
+| `tls`         | 证书不受信任、已过期或名称不符。请修正，或设置 `ARKVORY_WEBHOOKS_CA_FILE`。                                           |
+| `redirect`    | 接收方返回了 `3xx`。不会跟随重定向：请使用最终 URL。                                                                  |
+| `http_4xx`    | 接收方拒绝了请求。请检查它的签名校验、路径和密钥。                                                                    |
+| `http_5xx`    | 接收方出错。Arkvory 会持续重试，间隔最长一小时。                                                                      |
+| `secret`      | 密钥文件不存在、无法读取或短于 16 字节。                                                                              |
+| `unavailable` | worker 无法从数据库读取订阅源或订阅状态。没有发送任何内容；5 秒后重试。请检查数据库。                                 |
+| `internal`    | worker 中出现意外错误。没有发送任何内容；5 秒后重试。请附上 worker 日志报告此问题。                                   |
 
 什么都没收到？请检查 worker 日志中是否有 `webhook.started`，`ARKVORY_WEBHOOKS_FILE` 是否已设置，仓库名称以及 `actions` 过滤器。新订阅只发送其第一步之后的事件。
 

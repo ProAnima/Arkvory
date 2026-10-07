@@ -52,14 +52,14 @@ O arquivo tem estes campos:
 }
 ```
 
-| Campo            | Significado                                                                                                                                                                           |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `id`             | Nome da assinatura: de 1 a 64 caracteres `a-z`, `0-9`, `_` e `-`. O progresso dela é guardado com esse nome.                                                                          |
-| `repository`     | O repositório cujo feed é enviado.                                                                                                                                                    |
-| `url`            | O receptor. HTTPS, sem nome de usuário, query nem fragmento, até 2048 caracteres. HTTP simples só é permitido para `localhost`, `127.0.0.1` e `[::1]`.                                |
-| `secretFile`     | Caminho absoluto do arquivo com o segredo de assinatura.                                                                                                                              |
-| `nextSecretFile` | Segundo segredo opcional para uma [rotação](#rotate-the-secret).                                                                                                                      |
-| `actions`        | Lista opcional de ações do feed a enviar, por exemplo `artifact.publish`, `artifact.delete`, `asset.replace`, `stage.add` e `package.register`. Sem ela, todas as ações são enviadas. |
+| Campo            | Significado                                                                                                                                                                             |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`             | Nome da assinatura: de 1 a 64 caracteres `a-z`, `0-9`, `_` e `-`. O progresso dela é guardado com esse nome.                                                                            |
+| `repository`     | O repositório cujo feed é enviado.                                                                                                                                                      |
+| `url`            | O receptor. HTTPS, sem nome de usuário, query nem fragmento, até 2048 caracteres. HTTP simples só é permitido para `localhost`, `127.0.0.1` e `[::1]`.                                  |
+| `secretFile`     | Caminho absoluto do arquivo com o segredo de assinatura.                                                                                                                                |
+| `nextSecretFile` | Segundo segredo opcional para uma [rotação](#rotate-the-secret).                                                                                                                        |
+| `actions`        | Lista opcional de ações do feed a enviar, por exemplo `artifact.publish`, `artifact.delete`, `asset.replace`, `stage.added` e `package.register`. Sem ela, todas as ações são enviadas. |
 
 Um arquivo incorreto interrompe o worker na inicialização com `worker.unavailable`. São permitidas até 16 assinaturas. Em uma instalação com Compose, o comando também monta `config/webhooks` no contêiner do worker.
 
@@ -154,20 +154,29 @@ def verify(secret: bytes, headers, raw_body: bytes) -> bool:
 
 ## Monitorar webhooks {#monitor}
 
-O worker escreve `webhook.step_failed` com um `errorCode` quando uma entrega falha e `webhook.recovered` quando volta a funcionar. As métricas `arkvory_webhook_failing` e `arkvory_webhook_last_success_timestamp_seconds` e o alerta `ArkvoryWebhookFailing` estão descritos em [Monitoramento](../operate/monitoring).
+O worker escreve `webhook.step_failed` com um `errorCode` quando uma entrega falha e `webhook.recovered` quando volta a funcionar. As métricas `arkvory_webhook_failing` e `arkvory_webhook_last_success_timestamp_seconds` e o alerta `ArkvoryWebhookFailing` estão descritos em [Monitoramento](../operate/monitoring). `webhook.stopped` marca o fim do ciclo de uma assinatura: ao parar ou quando o worker perde a posse do armazenamento. `webhook.prune_failed` significa que o worker não conseguiu esquecer as assinaturas removidas ao iniciar; ele tenta de novo no próximo início. Os códigos `unavailable` e `internal` aparecem só no log, não em `arkvory_webhook_failing`.
+
+## Uma assinatura que não avança {#stuck}
+
+O Arkvory nunca pula um evento: é isso que torna a entrega confiável. Por isso, um receptor que recusa repetidamente um evento, por exemplo com `400` porque não consegue interpretá-lo, para toda a sua assinatura. Nenhum evento posterior dessa assinatura é enviado; as outras assinaturas continuam funcionando. O worker escreve `webhook.step_failed` com `http_4xx` e tenta de novo com pausas de até uma hora, `arkvory_webhook_failing` fica em `1` e o alerta `ArkvoryWebhookFailing` dispara após 15 minutos.
+
+1. Corrija o receptor para que ele responda ao evento com `2xx`. O Arkvory o envia na próxima tentativa, no máximo cerca de uma hora depois, e em seguida todos os eventos em espera, em ordem. Executar `configure` de novo com o mesmo nome e repositório mantém a posição.
+2. Se o evento nunca puder ser aceito, remova a assinatura com `--webhook-detach` e adicione-a de novo. Ela começa no fim do feed: os eventos em espera **não** são enviados. Leia-os no [feed de mudanças](../api/reference/artifacts#listCatalogChanges) depois do último `sequence` que seu receptor processou.
 
 ## Solução de problemas {#troubleshooting}
 
-| `errorCode` | Causa e o que fazer                                                                                                                                                    |
-| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `blocked`   | O endereço do receptor não é permitido (loopback, privado, link-local ou de metadados). Use um endereço público ou adicione a rede a `ARKVORY_WEBHOOKS_ALLOW_PRIVATE`. |
-| `timeout`   | Sem resposta em 10 segundos. Responda mais rápido e coloque o trabalho em fila.                                                                                        |
-| `network`   | Conexão recusada, nome não encontrado ou conexão redefinida. Verifique a URL, o DNS e o firewall a partir do servidor.                                                 |
-| `tls`       | O certificado não é confiável, expirou ou tem o nome errado. Corrija-o ou defina `ARKVORY_WEBHOOKS_CA_FILE`.                                                           |
-| `redirect`  | O receptor respondeu `3xx`. Redirecionamentos não são seguidos: use a URL final.                                                                                       |
-| `http_4xx`  | O receptor recusou a requisição. Verifique a checagem de assinatura, o caminho e a chave dele.                                                                         |
-| `http_5xx`  | O receptor falhou. O Arkvory continua tentando, com até uma hora entre as tentativas.                                                                                  |
-| `secret`    | O arquivo de segredo não existe, não pode ser lido ou tem menos de 16 bytes.                                                                                           |
+| `errorCode`   | Causa e o que fazer                                                                                                                                                    |
+| ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `blocked`     | O endereço do receptor não é permitido (loopback, privado, link-local ou de metadados). Use um endereço público ou adicione a rede a `ARKVORY_WEBHOOKS_ALLOW_PRIVATE`. |
+| `timeout`     | Sem resposta em 10 segundos. Responda mais rápido e coloque o trabalho em fila.                                                                                        |
+| `network`     | Conexão recusada, nome não encontrado ou conexão redefinida. Verifique a URL, o DNS e o firewall a partir do servidor.                                                 |
+| `tls`         | O certificado não é confiável, expirou ou tem o nome errado. Corrija-o ou defina `ARKVORY_WEBHOOKS_CA_FILE`.                                                           |
+| `redirect`    | O receptor respondeu `3xx`. Redirecionamentos não são seguidos: use a URL final.                                                                                       |
+| `http_4xx`    | O receptor recusou a requisição. Verifique a checagem de assinatura, o caminho e a chave dele.                                                                         |
+| `http_5xx`    | O receptor falhou. O Arkvory continua tentando, com até uma hora entre as tentativas.                                                                                  |
+| `secret`      | O arquivo de segredo não existe, não pode ser lido ou tem menos de 16 bytes.                                                                                           |
+| `unavailable` | O worker não conseguiu ler o feed ou o estado da assinatura no banco de dados. Nada foi enviado; ele tenta de novo após 5 segundos. Verifique o banco de dados.        |
+| `internal`    | Um erro inesperado no worker. Nada foi enviado; ele tenta de novo após 5 segundos. Relate-o junto com o log do worker.                                                 |
 
 Nada chega? Verifique se `webhook.started` está no log do worker, se `ARKVORY_WEBHOOKS_FILE` está definido, o nome do repositório e o filtro `actions`. Uma assinatura nova envia apenas eventos posteriores ao seu primeiro passo.
 

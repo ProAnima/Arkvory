@@ -2,7 +2,7 @@
 
 Уведомления и управление обновлением: `GET/HEAD /api/v1/system/updates`, `POST /api/v1/system/updates/requests`, только глобальный administrator. API публикует ограниченный запрос для привилегированного планировщика; `202` не означает завершённую установку. [UPDATES](UPDATES.md), [ADR 0038](adr/0038-update-notifications-and-control.md).
 
-Документ задаёт целевые правила API. Реализованные native сценарии и ограничения: [CORE_RUNBOOK](CORE_RUNBOOK.md), [LIFECYCLE_AND_CATALOG](LIFECYCLE_AND_CATALOG.md). OpenAPI доступна по `/api/v1/openapi.json`; схемы и проверка ответов SDK находятся в contracts. Управление пользователями, группами и сервисными ключами реализовано. Профиль сервисов включает 24 repository permissions (первый профиль — 18, список в [SERVICE_KEYS](SERVICE_KEYS.md)) и отдельного bootstrap-оператора. Делегирование на точные аккаунты уже реализовано: [контракт](SERVICE_DELEGATION.md). Распределённые transfers, schemas и events/webhooks остаются запланированными. Файловый каталог дополнен [отдельным cursor API](ASSET_PAGINATION.md).
+Документ задаёт целевые правила API. Реализованные native сценарии и ограничения: [CORE_RUNBOOK](CORE_RUNBOOK.md), [LIFECYCLE_AND_CATALOG](LIFECYCLE_AND_CATALOG.md). OpenAPI доступна по `/api/v1/openapi.json`; схемы и проверка ответов SDK находятся в contracts. Управление пользователями, группами и сервисными ключами реализовано. Профиль сервисов включает 24 repository permissions (первый профиль — 18, список в [SERVICE_KEYS](SERVICE_KEYS.md)) и отдельного bootstrap-оператора. Делегирование на точные аккаунты уже реализовано: [контракт](SERVICE_DELEGATION.md). Лента изменений репозитория (`GET R/changes`, [ADR 0058](adr/0058-pull-mirrors.md)) и вебхуки поверх неё ([ADR 0069](adr/0069-webhooks-over-change-feed.md)) реализованы; распределённые transfers, schemas и API управления подписками (`R/webhooks`) остаются запланированными. Файловый каталог дополнен [отдельным cursor API](ASSET_PAGINATION.md).
 
 Полная [карта API](API_MAP.md) связывает текущие методы, права, ответы и ограничения. Проект расширения: [сервисные аккаунты, permissions и ключи](API_ACCESS.md), [масштабирование и этапы внедрения](API_EVOLUTION.md). Проектные маршруты и policies не входят в работающую OpenAPI до реализации.
 
@@ -93,7 +93,7 @@ Git LFS ([ADR 0065](adr/0065-git-lfs.md)): `/lfs/<repository>` — batch API, б
 
 Запросы с origin самого API проходят без настройки CORS, поэтому встроенная консоль работает при пустом `ARKVORY_CORS_ORIGINS`. Сравнение собственного origin использует Host запроса; на reverse proxy передавайте исходный Host клиента. Разный порт означает другой origin и требует явного разрешения.
 
-Webhooks подписываются, могут дублироваться и повторяются через outbox. Event ID обеспечивает дедупликацию; API позволяет восстановить состояние при пропущенных событиях.
+Webhooks подписываются HMAC-SHA256, доставляются at-least-once и могут дублироваться; источник — лента изменений репозитория с курсором подписки, отдельного outbox нет ([ADR 0069](adr/0069-webhooks-over-change-feed.md)). Event ID (`<repository>:<sequence>`) обеспечивает дедупликацию; лента и обычные маршруты чтения позволяют восстановить состояние при пропущенных событиях.
 
 ## Эталонные источники
 

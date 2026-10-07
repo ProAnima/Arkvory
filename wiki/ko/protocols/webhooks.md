@@ -52,14 +52,14 @@ sudo arkvory configure --root /opt/proanima-arkvory \
 }
 ```
 
-| 필드             | 의미                                                                                                                                                    |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `id`             | 구독 이름: `a-z`, `0-9`, `_`, `-` 1~64자. 진행 상태가 이 이름으로 저장됩니다.                                                                           |
-| `repository`     | 피드를 보낼 리포지토리.                                                                                                                                 |
-| `url`            | 수신자. HTTPS이며 사용자 이름, query, fragment가 없어야 하고 2048자 이하입니다. 일반 HTTP는 `localhost`, `127.0.0.1`, `[::1]`에서만 허용됩니다.         |
-| `secretFile`     | 서명 시크릿이 들어 있는 파일의 절대 경로.                                                                                                               |
-| `nextSecretFile` | [교체](#rotate-the-secret)를 위한 선택적 두 번째 시크릿.                                                                                                |
-| `actions`        | 보낼 피드 동작의 선택적 목록. 예: `artifact.publish`, `artifact.delete`, `asset.replace`, `stage.add`, `package.register`. 없으면 모든 동작을 보냅니다. |
+| 필드             | 의미                                                                                                                                                      |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`             | 구독 이름: `a-z`, `0-9`, `_`, `-` 1~64자. 진행 상태가 이 이름으로 저장됩니다.                                                                             |
+| `repository`     | 피드를 보낼 리포지토리.                                                                                                                                   |
+| `url`            | 수신자. HTTPS이며 사용자 이름, query, fragment가 없어야 하고 2048자 이하입니다. 일반 HTTP는 `localhost`, `127.0.0.1`, `[::1]`에서만 허용됩니다.           |
+| `secretFile`     | 서명 시크릿이 들어 있는 파일의 절대 경로.                                                                                                                 |
+| `nextSecretFile` | [교체](#rotate-the-secret)를 위한 선택적 두 번째 시크릿.                                                                                                  |
+| `actions`        | 보낼 피드 동작의 선택적 목록. 예: `artifact.publish`, `artifact.delete`, `asset.replace`, `stage.added`, `package.register`. 없으면 모든 동작을 보냅니다. |
 
 잘못된 파일은 시작 시 `worker.unavailable`로 worker를 멈춥니다. 구독은 최대 16개까지 허용됩니다. Compose 설치에서는 이 명령이 `config/webhooks`도 worker 컨테이너에 마운트합니다.
 
@@ -154,20 +154,29 @@ def verify(secret: bytes, headers, raw_body: bytes) -> bool:
 
 ## 웹훅 모니터링 {#monitor}
 
-전달이 실패하면 worker가 `errorCode`가 포함된 `webhook.step_failed`를, 다시 정상이 되면 `webhook.recovered`를 기록합니다. 지표 `arkvory_webhook_failing`, `arkvory_webhook_last_success_timestamp_seconds`와 알림 `ArkvoryWebhookFailing`은 [모니터링](../operate/monitoring)에 설명되어 있습니다.
+전달이 실패하면 worker가 `errorCode`가 포함된 `webhook.step_failed`를, 다시 정상이 되면 `webhook.recovered`를 기록합니다. 지표 `arkvory_webhook_failing`, `arkvory_webhook_last_success_timestamp_seconds`와 알림 `ArkvoryWebhookFailing`은 [모니터링](../operate/monitoring)에 설명되어 있습니다. `webhook.stopped`는 구독 루프의 끝을 나타냅니다. 종료할 때나 worker가 스토리지 소유권을 잃었을 때 기록됩니다. `webhook.prune_failed`는 worker가 시작할 때 삭제된 구독을 잊지 못했다는 뜻이며, 다음 시작 때 다시 시도합니다. `unavailable`과 `internal` 코드는 로그에만 나타나고 `arkvory_webhook_failing`에는 반영되지 않습니다.
+
+## 진행되지 않는 구독 {#stuck}
+
+Arkvory는 이벤트를 절대 건너뛰지 않으며, 전달의 신뢰성은 여기에 기반합니다. 따라서 수신자가 한 이벤트를 계속 거부하면(예: 해석할 수 없어 `400`으로 응답) 그 구독 전체가 멈춥니다. 그 구독의 이후 이벤트는 전송되지 않으며, 다른 구독은 계속 동작합니다. worker는 `http_4xx`와 함께 `webhook.step_failed`를 기록하고 최대 한 시간 간격으로 재시도하며, `arkvory_webhook_failing`은 `1`이 되고 경보 `ArkvoryWebhookFailing`은 15분 후에 발생합니다.
+
+1. 수신자가 그 이벤트에 `2xx`로 응답하도록 고칩니다. Arkvory는 다음 재시도 때(늦어도 약 한 시간 후) 그것을 보내고, 이어서 대기 중인 모든 이벤트를 순서대로 보냅니다. 같은 이름과 저장소로 `configure`를 다시 실행하면 위치가 유지됩니다.
+2. 그 이벤트를 결코 받아들일 수 없다면 `--webhook-detach`로 구독을 삭제한 뒤 다시 추가합니다. 구독은 피드의 끝에서 시작하므로 대기 중인 이벤트는 전송되지 **않습니다**. 수신자가 마지막으로 처리한 `sequence` 이후의 이벤트는 [변경 피드](../api/reference/artifacts#listCatalogChanges)에서 읽으세요.
 
 ## 문제 해결 {#troubleshooting}
 
-| `errorCode` | 원인과 조치                                                                                                                                                 |
-| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `blocked`   | 수신자 주소가 허용되지 않습니다(루프백, 사설, 링크 로컬 또는 메타데이터). 공인 주소를 쓰거나 해당 네트워크를 `ARKVORY_WEBHOOKS_ALLOW_PRIVATE`에 추가하세요. |
-| `timeout`   | 10초 안에 응답이 없습니다. 더 빠르게 응답하고 작업을 큐에 넣으세요.                                                                                         |
-| `network`   | 연결이 거부되었거나 이름을 찾을 수 없거나 연결이 재설정되었습니다. 서버에서 URL, DNS, 방화벽을 확인하세요.                                                  |
-| `tls`       | 인증서를 신뢰할 수 없거나 만료되었거나 이름이 맞지 않습니다. 고치거나 `ARKVORY_WEBHOOKS_CA_FILE`을 설정하세요.                                              |
-| `redirect`  | 수신자가 `3xx`로 응답했습니다. 리디렉션은 따라가지 않으니 최종 URL을 사용하세요.                                                                            |
-| `http_4xx`  | 수신자가 요청을 거부했습니다. 수신자의 서명 검사, 경로, 키를 확인하세요.                                                                                    |
-| `http_5xx`  | 수신자에 장애가 있습니다. Arkvory는 최대 한 시간 간격으로 계속 다시 시도합니다.                                                                             |
-| `secret`    | 시크릿 파일이 없거나 읽을 수 없거나 16바이트보다 짧습니다.                                                                                                  |
+| `errorCode`   | 원인과 조치                                                                                                                                                 |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `blocked`     | 수신자 주소가 허용되지 않습니다(루프백, 사설, 링크 로컬 또는 메타데이터). 공인 주소를 쓰거나 해당 네트워크를 `ARKVORY_WEBHOOKS_ALLOW_PRIVATE`에 추가하세요. |
+| `timeout`     | 10초 안에 응답이 없습니다. 더 빠르게 응답하고 작업을 큐에 넣으세요.                                                                                         |
+| `network`     | 연결이 거부되었거나 이름을 찾을 수 없거나 연결이 재설정되었습니다. 서버에서 URL, DNS, 방화벽을 확인하세요.                                                  |
+| `tls`         | 인증서를 신뢰할 수 없거나 만료되었거나 이름이 맞지 않습니다. 고치거나 `ARKVORY_WEBHOOKS_CA_FILE`을 설정하세요.                                              |
+| `redirect`    | 수신자가 `3xx`로 응답했습니다. 리디렉션은 따라가지 않으니 최종 URL을 사용하세요.                                                                            |
+| `http_4xx`    | 수신자가 요청을 거부했습니다. 수신자의 서명 검사, 경로, 키를 확인하세요.                                                                                    |
+| `http_5xx`    | 수신자에 장애가 있습니다. Arkvory는 최대 한 시간 간격으로 계속 다시 시도합니다.                                                                             |
+| `secret`      | 시크릿 파일이 없거나 읽을 수 없거나 16바이트보다 짧습니다.                                                                                                  |
+| `unavailable` | worker가 데이터베이스에서 피드나 구독 상태를 읽지 못했습니다. 아무것도 전송되지 않았으며 5초 후 다시 시도합니다. 데이터베이스를 확인하세요.                 |
+| `internal`    | worker에서 예기치 않은 오류가 발생했습니다. 아무것도 전송되지 않았으며 5초 후 다시 시도합니다. worker 로그와 함께 보고하세요.                               |
 
 아무것도 오지 않나요? worker 로그에 `webhook.started`가 있는지, `ARKVORY_WEBHOOKS_FILE`이 설정되었는지, 리포지토리 이름과 `actions` 필터를 확인하세요. 새 구독은 첫 단계 이후의 이벤트만 보냅니다.
 

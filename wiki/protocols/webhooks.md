@@ -52,14 +52,14 @@ The file has these fields:
 }
 ```
 
-| Field            | Meaning                                                                                                                                                                          |
-| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `id`             | Name of the subscription: 1 to 64 characters `a-z`, `0-9`, `_` and `-`. Its progress is kept under this name.                                                                    |
-| `repository`     | The repository whose feed is sent.                                                                                                                                               |
-| `url`            | The receiver. HTTPS, with no user name, query or fragment, up to 2048 characters. Plain HTTP is allowed only for `localhost`, `127.0.0.1` and `[::1]`.                           |
-| `secretFile`     | Absolute path to the file with the signing secret.                                                                                                                               |
-| `nextSecretFile` | Optional second secret for a [rotation](#rotate-the-secret).                                                                                                                     |
-| `actions`        | Optional list of feed actions to send, for example `artifact.publish`, `artifact.delete`, `asset.replace`, `stage.add` and `package.register`. Without it, every action is sent. |
+| Field            | Meaning                                                                                                                                                                            |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`             | Name of the subscription: 1 to 64 characters `a-z`, `0-9`, `_` and `-`. Its progress is kept under this name.                                                                      |
+| `repository`     | The repository whose feed is sent.                                                                                                                                                 |
+| `url`            | The receiver. HTTPS, with no user name, query or fragment, up to 2048 characters. Plain HTTP is allowed only for `localhost`, `127.0.0.1` and `[::1]`.                             |
+| `secretFile`     | Absolute path to the file with the signing secret.                                                                                                                                 |
+| `nextSecretFile` | Optional second secret for a [rotation](#rotate-the-secret).                                                                                                                       |
+| `actions`        | Optional list of feed actions to send, for example `artifact.publish`, `artifact.delete`, `asset.replace`, `stage.added` and `package.register`. Without it, every action is sent. |
 
 A wrong file stops the worker at startup with `worker.unavailable`. Up to 16 subscriptions are allowed. On a Compose installation the command also mounts `config/webhooks` into the worker container.
 
@@ -154,20 +154,29 @@ def verify(secret: bytes, headers, raw_body: bytes) -> bool:
 
 ## Monitor webhooks {#monitor}
 
-The worker writes `webhook.step_failed` with an `errorCode` when a delivery fails, and `webhook.recovered` when it works again. The metrics `arkvory_webhook_failing` and `arkvory_webhook_last_success_timestamp_seconds` and the alert `ArkvoryWebhookFailing` are described in [Monitoring](../operate/monitoring).
+The worker writes `webhook.step_failed` with an `errorCode` when a delivery fails, and `webhook.recovered` when it works again. The metrics `arkvory_webhook_failing` and `arkvory_webhook_last_success_timestamp_seconds` and the alert `ArkvoryWebhookFailing` are described in [Monitoring](../operate/monitoring). `webhook.stopped` marks the end of a subscription's loop, at shutdown or when the worker loses storage ownership. `webhook.prune_failed` means the worker could not forget removed subscriptions at startup; it tries again at the next start. The codes `unavailable` and `internal` appear only in the log, not in `arkvory_webhook_failing`.
+
+## A subscription that does not move {#stuck}
+
+Arkvory never skips an event: that is what makes delivery reliable. A receiver that keeps refusing one event, for example with `400` because it cannot parse it, therefore stops its whole subscription. No later event of that subscription is sent; other subscriptions keep working. The worker writes `webhook.step_failed` with `http_4xx` and retries up to one hour apart, `arkvory_webhook_failing` is `1`, and the alert `ArkvoryWebhookFailing` fires after 15 minutes.
+
+1. Fix the receiver so that it answers the event with `2xx`. Arkvory sends it at the next retry, at most about an hour later, and then every waiting event in order. Running `configure` again with the same name and repository keeps the position.
+2. If the event can never be accepted, remove the subscription with `--webhook-detach` and add it again. It starts at the end of the feed: the waiting events are **not** sent. Read them from the [change feed](../api/reference/artifacts#listCatalogChanges) after the last `sequence` your receiver handled.
 
 ## Troubleshooting {#troubleshooting}
 
-| `errorCode` | Cause and what to do                                                                                                                                          |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `blocked`   | The receiver address is not allowed (loopback, private, link-local or metadata). Use a public address or add the network to `ARKVORY_WEBHOOKS_ALLOW_PRIVATE`. |
-| `timeout`   | No answer within 10 seconds. Answer faster and queue the work.                                                                                                |
-| `network`   | Connection refused, name not found or connection reset. Check the URL, the DNS and the firewall from the server.                                              |
-| `tls`       | The certificate is not trusted, expired or has the wrong name. Fix it, or set `ARKVORY_WEBHOOKS_CA_FILE`.                                                     |
-| `redirect`  | The receiver answered `3xx`. Redirects are not followed: use the final URL.                                                                                   |
-| `http_4xx`  | The receiver refused the request. Check its signature check, its path and its key.                                                                            |
-| `http_5xx`  | The receiver failed. Arkvory keeps retrying, up to one hour apart.                                                                                            |
-| `secret`    | The secret file is missing, unreadable or shorter than 16 bytes.                                                                                              |
+| `errorCode`   | Cause and what to do                                                                                                                                          |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `blocked`     | The receiver address is not allowed (loopback, private, link-local or metadata). Use a public address or add the network to `ARKVORY_WEBHOOKS_ALLOW_PRIVATE`. |
+| `timeout`     | No answer within 10 seconds. Answer faster and queue the work.                                                                                                |
+| `network`     | Connection refused, name not found or connection reset. Check the URL, the DNS and the firewall from the server.                                              |
+| `tls`         | The certificate is not trusted, expired or has the wrong name. Fix it, or set `ARKVORY_WEBHOOKS_CA_FILE`.                                                     |
+| `redirect`    | The receiver answered `3xx`. Redirects are not followed: use the final URL.                                                                                   |
+| `http_4xx`    | The receiver refused the request. Check its signature check, its path and its key.                                                                            |
+| `http_5xx`    | The receiver failed. Arkvory keeps retrying, up to one hour apart.                                                                                            |
+| `secret`      | The secret file is missing, unreadable or shorter than 16 bytes.                                                                                              |
+| `unavailable` | The worker could not read the feed or the subscription state from the database. Nothing was sent; it tries again after 5 seconds. Check the database.         |
+| `internal`    | An unexpected error in the worker. Nothing was sent; it tries again after 5 seconds. Report it with the worker log.                                           |
 
 Nothing arrives? Check that `webhook.started` is in the worker log, that `ARKVORY_WEBHOOKS_FILE` is set, the name of the repository and the `actions` filter. A new subscription sends only events after its first step.
 
