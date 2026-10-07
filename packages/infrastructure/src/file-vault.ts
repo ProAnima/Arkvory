@@ -72,6 +72,17 @@ export const defaultFileVaultOptions: FileVaultOptions = {
   maxLine: 16 * 1024 * 1024,
 };
 
+/** A regular file of exactly `size` bytes; false when absent. */
+async function isFileOfSize(path: string, size: number): Promise<boolean> {
+  try {
+    const info = await stat(path);
+    return info.isFile() && info.size === size;
+  } catch (error) {
+    if (missing(error)) return false;
+    throw error;
+  }
+}
+
 async function* once(chunk: Uint8Array): AsyncIterable<Uint8Array> {
   await Promise.resolve();
   yield chunk;
@@ -201,49 +212,61 @@ export class FileVault implements CaptureVault, MaintainedVault {
    * `vault_key_missing`, a key that opens no slot `vault_key_invalid`.
    */
   async identity(): Promise<VaultIdentity> {
+    return (await this.unlocked()).identity;
+  }
+
+  /**
+   * The identity and the cipher of this call. Every operation takes the cipher from here, never
+   * from a field read after another await: an encrypted vault always yields a cipher or fails,
+   * so nothing is ever written or read in the clear because a concurrent check failed.
+   */
+  private async unlocked(): Promise<{
+    readonly identity: VaultIdentity;
+    readonly cipher: VaultCipher | null;
+  }> {
     const identity = await this.describe();
     if (identity.encryption === 'none') {
-      // vault.json is not authenticated: a plain vault that still holds key slots, or that is
-      // opened with a key, was an encrypted one whose identity was rewritten (a downgrade).
-      if (this.keys !== undefined || (await listSlots(this.root)).length > 0)
+      // vault.json is not authenticated: a plain vault that still holds key slots was an
+      // encrypted one whose identity was rewritten (a downgrade).
+      if ((await listSlots(this.root)).length > 0)
         throw new BackupFailure(
           'integrity_mismatch',
-          'The vault is not encrypted but has key slots or was given a key: vault.json was changed',
+          'The vault is not encrypted but has key slots: vault.json was changed',
         );
-      this.cipher = null;
-      return identity;
+      // A key for a plain vault is a configuration error, or a downgrade that also removed the
+      // slots; either way the key holder expects encryption and nothing is written.
+      if (this.keys !== undefined)
+        throw new BackupFailure(
+          'vault_key_invalid',
+          'The vault is not encrypted but a key is configured: remove the key setting for this vault',
+        );
+      return { identity, cipher: null };
     }
     // A key that was revoked or whose file was removed stops working within a minute, not at the
-    // next restart of a long-running agent.
-    const fresh =
-      this.cipher?.vaultId === identity.vaultId && Date.now() - this.unlockedAt < RECHECK_MS;
-    if (!fresh) {
+    // next restart of a long-running agent. A failed check keeps nothing usable: the next call
+    // checks again instead of trusting the earlier unlock.
+    let cipher = this.cipher?.vaultId === identity.vaultId ? this.cipher : null;
+    if (cipher === null || Date.now() - this.unlockedAt >= RECHECK_MS) {
       if (this.keys === undefined)
         throw new BackupFailure('vault_key_missing', 'The vault is encrypted and no key is given');
-      try {
-        const master = await unlockWith(this.root, identity.vaultId, await this.keys.read());
-        if (this.cipher?.vaultId !== identity.vaultId)
-          this.cipher = new VaultCipher(master, identity.vaultId);
-        this.unlockedAt = Date.now();
-      } catch (error) {
-        this.cipher = null;
-        throw error;
-      }
+      this.unlockedAt = 0;
+      const master = await unlockWith(this.root, identity.vaultId, await this.keys.read());
+      cipher ??= new VaultCipher(master, identity.vaultId);
+      this.cipher = cipher;
+      this.unlockedAt = Date.now();
     }
-    return identity;
+    return { identity, cipher };
   }
 
   /** The master key of an unlocked vault, for key administration only (new slots wrap it). */
   async masterKey(): Promise<Buffer> {
-    await this.identity();
-    if (this.cipher === null)
-      throw new BackupFailure('invalid_argument', 'The vault is not encrypted');
-    return this.cipher.slotMaster();
+    const { cipher } = await this.unlocked();
+    if (cipher === null) throw new BackupFailure('invalid_argument', 'The vault is not encrypted');
+    return cipher.slotMaster();
   }
 
   private async fileCipher(kind: VaultFileKind, name: string): Promise<FileCipher | undefined> {
-    await this.identity();
-    return this.cipher?.forFile(kind, name);
+    return (await this.unlocked()).cipher?.forFile(kind, name);
   }
 
   /** Cipher of the temporary files of a prune run; undefined for a plain vault. */
@@ -252,7 +275,7 @@ export class FileVault implements CaptureVault, MaintainedVault {
   }
 
   async stage(pointId: string, attempt: number): Promise<StagedPoint> {
-    await this.identity();
+    const { cipher } = await this.unlocked();
     const staging = join(this.root, 'points', '.staging');
     // Leftovers of earlier attempts of the same point are never visible and may be dropped.
     for (const name of await readdir(staging))
@@ -265,7 +288,7 @@ export class FileVault implements CaptureVault, MaintainedVault {
       directory,
       pointId,
       maxLine: this.options.maxLine,
-      cipher: this.cipher,
+      cipher,
       publish: (staged, id) => this.publish(staged, id),
     });
   }
@@ -275,15 +298,8 @@ export class FileVault implements CaptureVault, MaintainedVault {
   }
 
   async hasBlob(entry: InventoryEntry): Promise<boolean> {
-    await this.identity();
-    const size = this.cipher ? encryptedSize(entry.size) : entry.size;
-    try {
-      const info = await stat(this.blobPath(entry.id));
-      return info.isFile() && info.size === size;
-    } catch (error) {
-      if (missing(error)) return false;
-      throw error;
-    }
+    const { cipher } = await this.unlocked();
+    return isFileOfSize(this.blobPath(entry.id), cipher ? encryptedSize(entry.size) : entry.size);
   }
 
   async putBlob(
@@ -292,8 +308,7 @@ export class FileVault implements CaptureVault, MaintainedVault {
     cancellation: Cancellation,
   ): Promise<void> {
     // Checked before every object: a volume that disappears mid-capture fails the write.
-    await this.identity();
-    const cipher = this.cipher?.forFile('blob', entry.id);
+    const cipher = (await this.unlocked()).cipher?.forFile('blob', entry.id);
     const needed = BigInt(cipher ? encryptedSize(entry.size) : entry.size);
     const volume = await statfs(this.root, { bigint: true });
     if (volume.bavail * volume.bsize < needed + BigInt(this.options.reserveBytes))
@@ -321,8 +336,8 @@ export class FileVault implements CaptureVault, MaintainedVault {
   }
 
   async point(pointId: string): Promise<BackupManifest | null> {
-    const identity = await this.identity();
-    return readPoint(this.root, pointId, identity, this.cipher);
+    const { identity, cipher } = await this.unlocked();
+    return readPoint(this.root, pointId, identity, cipher);
   }
 
   pointPath(pointId: string, name: string): string {
@@ -334,11 +349,11 @@ export class FileVault implements CaptureVault, MaintainedVault {
     name: string,
     cancellation: Cancellation,
   ): Promise<FileDigest | null> {
-    await this.identity();
+    const { cipher } = await this.unlocked();
     return digestFile(
       this.pointPath(pointId, name),
       cancellation,
-      pointFileCipher(this.cipher, pointId, name),
+      pointFileCipher(cipher, pointId, name),
     );
   }
 
@@ -348,8 +363,7 @@ export class FileVault implements CaptureVault, MaintainedVault {
     expected: PointFile,
     cancellation: Cancellation,
   ): AsyncIterable<string> {
-    await this.identity();
-    const cipher = pointFileCipher(this.cipher, pointId, name);
+    const cipher = pointFileCipher((await this.unlocked()).cipher, pointId, name);
     yield* readLines(this.pointPath(pointId, name), {
       maxLine: this.options.maxLine,
       cancellation,
@@ -359,18 +373,18 @@ export class FileVault implements CaptureVault, MaintainedVault {
   }
 
   async blobDigest(entry: InventoryEntry, cancellation: Cancellation): Promise<string | null> {
-    await this.identity();
+    const { cipher } = await this.unlocked();
     return hashFile(
       this.blobPath(entry.id),
       entry.size,
       cancellation,
-      this.cipher?.forFile('blob', entry.id),
+      cipher?.forFile('blob', entry.id),
     );
   }
 
   async *readBlob(entry: InventoryEntry): AsyncIterable<Uint8Array> {
-    await this.identity();
-    yield* readExactly(this.blobPath(entry.id), entry.size, this.cipher?.forFile('blob', entry.id));
+    const { cipher } = await this.unlocked();
+    yield* readExactly(this.blobPath(entry.id), entry.size, cipher?.forFile('blob', entry.id));
   }
 
   listing(): Promise<VaultListing> {

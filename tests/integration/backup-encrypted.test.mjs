@@ -248,7 +248,23 @@ test('key slots are listed, added, rotated and removed without ever printing a k
     newKey,
   ]);
   assert.equal(rotated.code, 0, rotated.stdout + rotated.stderr);
-  assert.equal(record(rotated, 'backup.vault.key.removed') !== undefined, true);
+  // The previous agent slot stays until the new key is installed: the old key still opens.
+  const previous = record(rotated, 'backup.vault.key.previous');
+  assert.match(previous.slotId, /^[0-9a-f]{16}$/);
+  const stillOpens = await runBackup(['list', '--vault', vault, '--key-file', keyFile]);
+  assert.equal(stillOpens.code, 0, stillOpens.stdout + stillOpens.stderr);
+  const removed = await runBackup([
+    'vault',
+    'key',
+    'remove',
+    '--vault',
+    vault,
+    '--key-file',
+    kitFile,
+    '--slot',
+    previous.slotId,
+  ]);
+  assert.equal(removed.code, 0, removed.stdout + removed.stderr);
   for (const secret of [
     await readFile(newKey, 'utf8'),
     await readFile(secondKit, 'utf8'),

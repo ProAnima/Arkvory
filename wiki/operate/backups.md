@@ -86,12 +86,12 @@ arkvory-backup vault key verify --vault /mnt/backup/arkvory --key-file /root/ark
 
 A key belongs to a slot, and every slot opens the vault with its own key. These commands change the slots. None of them shows a key:
 
-| Command                                                                  | Effect                                                                                             |
-| ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
-| `vault key list --vault DIR`                                             | Lists the slots: id, kind (`agent` or `recovery`) and creation time. Needs no key.                 |
-| `vault key add-recovery --vault DIR --key-file KEY --kit-file NEW`       | Adds a recovery slot and writes its kit, for another person or another safe.                       |
-| `vault key rotate-agent --vault DIR --key-file KEY --agent-key-file NEW` | Makes a new agent key and removes the old one. Then run `arkvory configure` with the new key file. |
-| `vault key remove --vault DIR --key-file KEY --slot ID`                  | Removes a slot. The last slot and the last recovery slot stay.                                     |
+| Command                                                                  | Effect                                                                                                                                                                                                             |
+| ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `vault key list --vault DIR`                                             | Lists the slots: id, kind (`agent` or `recovery`) and creation time. Needs no key.                                                                                                                                 |
+| `vault key add-recovery --vault DIR --key-file KEY --kit-file NEW`       | Adds a recovery slot and writes its kit, for another person or another safe.                                                                                                                                       |
+| `vault key rotate-agent --vault DIR --key-file KEY --agent-key-file NEW` | Makes a new agent key file and slot. The old agent key keeps working: run `arkvory configure` with the new key file, then remove the old slot (`backup.vault.key.previous` in the output) with `vault key remove`. |
+| `vault key remove --vault DIR --key-file KEY --slot ID`                  | Removes a slot. The last slot and the last recovery slot stay.                                                                                                                                                     |
 
 Removing a slot closes the vault to anyone who has only that key. It does not encrypt the earlier points again: whoever copied the vault and a key before still reads that copy. If a key may have leaked, make a new vault with new keys and start new points there.
 

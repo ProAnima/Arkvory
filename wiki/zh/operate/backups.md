@@ -86,12 +86,12 @@ arkvory-backup vault key verify --vault /mnt/backup/arkvory --key-file /root/ark
 
 密钥属于某个槽位，每个槽位用自己的密钥打开 vault。这些命令会更改槽位，它们都不会显示密钥：
 
-| 命令                                                                     | 作用                                                                     |
-| ------------------------------------------------------------------------ | ------------------------------------------------------------------------ |
-| `vault key list --vault DIR`                                             | 列出槽位：标识、类型（`agent` 或 `recovery`）和创建时间。不需要密钥。    |
-| `vault key add-recovery --vault DIR --key-file KEY --kit-file NEW`       | 添加一个恢复槽位并写入它的套件，供另一个人或另一个保险柜使用。           |
-| `vault key rotate-agent --vault DIR --key-file KEY --agent-key-file NEW` | 生成新的代理密钥并删除旧的。然后用新的密钥文件运行 `arkvory configure`。 |
-| `vault key remove --vault DIR --key-file KEY --slot ID`                  | 删除一个槽位。最后一个槽位和最后一个恢复槽位会保留。                     |
+| 命令                                                                     | 作用                                                                                                                                                                     |
+| ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `vault key list --vault DIR`                                             | 列出槽位：标识、类型（`agent` 或 `recovery`）和创建时间。不需要密钥。                                                                                                    |
+| `vault key add-recovery --vault DIR --key-file KEY --kit-file NEW`       | 添加一个恢复槽位并写入它的套件，供另一个人或另一个保险柜使用。                                                                                                           |
+| `vault key rotate-agent --vault DIR --key-file KEY --agent-key-file NEW` | 生成新的代理密钥文件和槽位。旧的代理密钥仍然可用：用新的密钥文件运行 `arkvory configure`，然后用 `vault key remove` 删除旧槽位（输出中的 `backup.vault.key.previous`）。 |
+| `vault key remove --vault DIR --key-file KEY --slot ID`                  | 删除一个槽位。最后一个槽位和最后一个恢复槽位会保留。                                                                                                                     |
 
 删除槽位会让只持有该密钥的人无法再打开 vault。但它不会重新加密之前的还原点：此前复制了 vault 和某把密钥的人仍然可以读取那份副本。如果某把密钥可能已泄露，请用新密钥创建新的 vault，并在其中开始新的还原点。
 

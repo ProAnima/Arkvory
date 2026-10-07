@@ -141,7 +141,7 @@ function unwrap(vaultId: string, slot: KeySlot, key: Buffer): Buffer | null {
   }
 }
 
-export function parseSlot(text: string): KeySlot {
+function parseSlot(text: string): KeySlot {
   let value: unknown;
   try {
     value = JSON.parse(text);
@@ -238,9 +238,9 @@ export async function addSlot(
   master: Buffer,
   kind: KeyKind,
   now: string,
+  key: { readonly text: string; readonly bytes: Buffer } = newKey(kind),
 ): Promise<{ readonly slot: KeySlot; readonly key: string }> {
   const slotId = randomBytes(8).toString('hex');
-  const key = newKey(kind);
   const slot: KeySlot = {
     slotId,
     kind,
@@ -282,7 +282,6 @@ export async function removeSlot(root: string, slotId: string): Promise<void> {
 }
 
 const ADMIN_LOCK = '.admin.lock';
-const STALE_LOCK_MS = 10 * 60 * 1000;
 
 /**
  * Key administration of one vault runs one at a time: two removals must not both pass the
@@ -291,23 +290,22 @@ const STALE_LOCK_MS = 10 * 60 * 1000;
  */
 export async function withKeyAdministration<T>(root: string, work: () => Promise<T>): Promise<T> {
   const path = join(root, KEYS_DIRECTORY, ADMIN_LOCK);
-  for (let attempt = 0; ; attempt++) {
-    try {
-      await (await open(path, 'wx', 0o600)).close();
-      break;
-    } catch (error) {
-      if (!hasCode(error, 'EEXIST')) throw error;
-      const age = await stat(path).then(
-        (info) => Date.now() - info.mtimeMs,
-        () => 0,
+  try {
+    await (await open(path, 'wx', 0o600)).close();
+  } catch (error) {
+    // No automatic takeover: two processes could both judge a lock stale and both proceed, and
+    // the clock of a NAS that stamps the file is not ours. A lock left by a crash is removed by
+    // the operator, who knows that no other administration runs.
+    if (hasCode(error, 'EEXIST'))
+      throw new BackupFailure(
+        'busy',
+        'Another key administration of this vault is running. If none is (after a crash), delete keys/.admin.lock in the vault and retry',
       );
-      if (attempt > 0 || age < STALE_LOCK_MS)
-        throw new BackupFailure(
-          'invalid_argument',
-          'Another key administration of this vault is running (or remove keys/.admin.lock after a crash)',
-        );
-      await unlink(path).catch(() => undefined);
-    }
+    if (hasCode(error, 'EROFS') || hasCode(error, 'EACCES') || hasCode(error, 'EPERM'))
+      throw new BackupFailure('unavailable', 'The key directory of the vault cannot be written', {
+        cause: error,
+      });
+    throw error;
   }
   try {
     return await work();

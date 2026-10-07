@@ -57,7 +57,7 @@ Examples:
   arkvory update --root /opt/proanima-arkvory --artifact /media/release
   arkvory configure --root /opt/proanima-arkvory --disable-updates
   arkvory configure --root /opt/proanima-arkvory --tls-cert /etc/arkvory/fullchain.pem --tls-key /etc/arkvory/privkey.pem --listen-host 0.0.0.0
-  arkvory configure --root /opt/proanima-arkvory --backup-vault /mnt/backup/arkvory --init-vault
+  arkvory configure --root /opt/proanima-arkvory --backup-vault /mnt/backup/arkvory --vault-key-file /root/arkvory-agent.key
   arkvory configure --root /opt/proanima-arkvory --mirror releases --mirror-upstream https://arkvory.example --mirror-token-file /root/mirror.key
   arkvory configure --root /opt/proanima-arkvory --mirror-detach releases
   arkvory configure --root /opt/proanima-arkvory --webhook ci --webhook-repository releases --webhook-url https://ci.example.com/hooks/arkvory --webhook-secret-file /root/ci.secret

@@ -13,7 +13,7 @@ export interface BackupTable {
 export const MINIMUM_RESTORE_SCHEMA = 25;
 
 /**
- * Every Arkvory table of schema 33 is either exported here, in foreign-key-safe load order, or
+ * Every Arkvory table of schema 34 is either exported here, in foreign-key-safe load order, or
  * excluded below with a reason. A migration that adds a table must extend one of the lists;
  * capture refuses an unlisted table and tests compare both lists with a migrated database.
  */

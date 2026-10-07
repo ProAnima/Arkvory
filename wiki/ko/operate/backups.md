@@ -86,12 +86,12 @@ arkvory-backup vault key verify --vault /mnt/backup/arkvory --key-file /root/ark
 
 키는 슬롯에 속하며, 각 슬롯은 자기 키로 vault를 엽니다. 다음 명령은 슬롯을 바꿉니다. 어느 것도 키를 보여 주지 않습니다.
 
-| 명령                                                                     | 효과                                                                                                   |
-| ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------ |
-| `vault key list --vault DIR`                                             | 슬롯을 나열합니다: ID, 종류(`agent` 또는 `recovery`), 생성 시각. 키가 필요 없습니다.                   |
-| `vault key add-recovery --vault DIR --key-file KEY --kit-file NEW`       | 복구 슬롯을 추가하고 그 키트를 씁니다. 다른 사람이나 다른 금고를 위한 것입니다.                        |
-| `vault key rotate-agent --vault DIR --key-file KEY --agent-key-file NEW` | 새 에이전트 키를 만들고 이전 키를 제거합니다. 그런 다음 새 키 파일로 `arkvory configure`를 실행하세요. |
-| `vault key remove --vault DIR --key-file KEY --slot ID`                  | 슬롯을 제거합니다. 마지막 슬롯과 마지막 복구 슬롯은 남습니다.                                          |
+| 명령                                                                     | 효과                                                                                                                                                                                                       |
+| ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `vault key list --vault DIR`                                             | 슬롯을 나열합니다: ID, 종류(`agent` 또는 `recovery`), 생성 시각. 키가 필요 없습니다.                                                                                                                       |
+| `vault key add-recovery --vault DIR --key-file KEY --kit-file NEW`       | 복구 슬롯을 추가하고 그 키트를 씁니다. 다른 사람이나 다른 금고를 위한 것입니다.                                                                                                                            |
+| `vault key rotate-agent --vault DIR --key-file KEY --agent-key-file NEW` | 새 에이전트 키 파일과 슬롯을 만듭니다. 이전 에이전트 키는 계속 동작합니다. 새 키 파일로 `arkvory configure`를 실행한 다음 `vault key remove`로 이전 슬롯(출력의 `backup.vault.key.previous`)을 제거하세요. |
+| `vault key remove --vault DIR --key-file KEY --slot ID`                  | 슬롯을 제거합니다. 마지막 슬롯과 마지막 복구 슬롯은 남습니다.                                                                                                                                              |
 
 슬롯을 제거하면 그 키만 가진 사람은 vault를 열 수 없게 됩니다. 이전 지점을 다시 암호화하지는 않습니다. 전에 vault와 키를 복사한 사람은 그 사본을 계속 읽을 수 있습니다. 키가 유출되었을 수 있다면 새 키로 새 vault를 만들고 거기서 새 지점을 시작하세요.
 

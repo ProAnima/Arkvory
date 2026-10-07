@@ -94,13 +94,15 @@ export async function runVaultKey(
       const rotated = await rotateAgentKey(vault, operation.agentKeyFile, storage);
       slotId = rotated.added;
       keyKind = 'agent';
-      for (const removed of rotated.removed)
+      // The previous agent slots stay until the new key file is installed for the agent; the
+      // operator then removes them with `vault key remove --slot`.
+      for (const previous of rotated.previous)
         context.logger.write({
-          level: 'info',
+          level: 'warning',
           component: 'backup',
-          code: 'backup.vault.key.removed',
+          code: 'backup.vault.key.previous',
           vaultId,
-          slotId: removed,
+          slotId: previous,
         });
       break;
     }

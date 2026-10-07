@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
@@ -14,6 +14,11 @@ import {
   rotateAgentKey,
 } from '@proanima/arkvory-infrastructure';
 import { removeTestDirectory } from './helpers.mjs';
+
+const live = { throwIfAborted() {} };
+async function* lines(values) {
+  for (const value of values) yield value;
+}
 
 async function setup(t) {
   const root = await mkdtemp(join(tmpdir(), 'arkvory-vault-hardening-'));
@@ -54,8 +59,45 @@ test('a vault.json rewritten as plain is refused while key slots exist or a key 
   await assert.rejects(withKey.identity(), { code: 'integrity_mismatch' });
   const withoutKey = await FileVault.open(vault);
   await assert.rejects(withoutKey.identity(), { code: 'integrity_mismatch' });
+  // Slots removed too: the configured key still refuses the vault, with an actionable code.
   await rm(join(vault, 'keys'), { recursive: true });
-  await assert.rejects(withKey.identity(), { code: 'integrity_mismatch' });
+  await assert.rejects(withKey.identity(), { code: 'vault_key_invalid' });
+  assert.equal((await withoutKey.identity()).encryption, 'none');
+});
+
+test('a failed key check never lets an encrypted vault write in the clear', async (t) => {
+  const { vault, agentKeyFile, opened } = await setup(t);
+  await opened.identity();
+  const key = await readFile(agentKeyFile, 'utf8');
+  await rm(agentKeyFile);
+  const real = Date.now;
+  t.mock.method(Date, 'now', () => real() + 61_000);
+  await assert.rejects(opened.identity(), { code: 'vault_key_missing' });
+  // Every operation checks again instead of falling back to "no cipher".
+  await assert.rejects(opened.stage(randomUUID(), 1), { code: 'vault_key_missing' });
+  await assert.rejects(opened.scratchCipher('x'), { code: 'vault_key_missing' });
+  await writeFile(agentKeyFile, key);
+  const staged = await opened.stage(randomUUID(), 1);
+  const written = await staged.write('inventory.ndjson', lines(['{"plain":"MARKER-7c1"}']), live);
+  assert.equal(written.lines, 1);
+  const stagingRoot = join(vault, 'points', '.staging');
+  for (const name of await readdir(stagingRoot))
+    for (const file of await readdir(join(stagingRoot, name)).catch(() => []))
+      if (file.endsWith('.ndjson'))
+        assert.equal(
+          (await readFile(join(stagingRoot, name, file), 'utf8')).includes('MARKER-7c1'),
+          false,
+        );
+  await staged.discard();
+});
+
+test('a lock left by a crash is reported, and works again once the operator removes it', async (t) => {
+  const { vault, root, opened } = await setup(t);
+  await writeFile(join(vault, 'keys', '.admin.lock'), '');
+  await assert.rejects(addRecoveryKit(opened, join(root, 'kit2.txt')), { code: 'busy' });
+  await rm(join(vault, 'keys', '.admin.lock'));
+  await addRecoveryKit(opened, join(root, 'kit2.txt'));
+  assert.equal((await listSlots(vault)).filter((slot) => slot.kind === 'recovery').length, 2);
 });
 
 test('two removals of different recovery slots never leave the vault without one', async (t) => {
@@ -70,18 +112,24 @@ test('two removals of different recovery slots never leave the vault without one
   await addRecoveryKit(opened, join(root, 'kit3.txt'));
 });
 
-test('a revoked agent key stops working in a running vault within the recheck interval', async (t) => {
-  const { vault, root, agentKeyFile, opened } = await setup(t);
+test('a rotation keeps the running agent working; removing the old slot revokes it within a minute', async (t) => {
+  const { vault, root, opened } = await setup(t);
   await opened.identity();
-  await rotateAgentKey(opened, join(root, 'agent2.key'));
+  const rotated = await rotateAgentKey(opened, join(root, 'agent2.key'));
+  assert.equal(rotated.previous.length, 1);
+  const real = Date.now;
+  let shift = 61_000;
+  t.mock.method(Date, 'now', () => real() + shift);
+  // The old slot stays, so the agent that still reads the old file keeps working after a recheck.
+  await opened.identity();
+  await removeKeySlot(opened, rotated.previous[0]);
   // Not rechecked yet: the unlocked vault keeps working for up to a minute.
   await opened.identity();
-  const real = Date.now;
-  t.mock.method(Date, 'now', () => real() + 61_000);
+  shift = 2 * 61_000;
+  await assert.rejects(opened.identity(), { code: 'vault_key_invalid' });
   await assert.rejects(opened.identity(), { code: 'vault_key_invalid' });
   const next = await FileVault.open(vault, undefined, keyFileSource(join(root, 'agent2.key')));
   await next.identity();
-  void agentKeyFile;
 });
 
 test('a key file that cannot be read is a missing key, not an unexpected failure', async (t) => {

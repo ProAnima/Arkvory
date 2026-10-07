@@ -104,7 +104,7 @@ const status = object({
     available: { type: 'boolean' },
     encrypted: nullable({
       type: 'boolean',
-      description: 'Vault is encrypted (ADR 0070); null when unknown or not connected.',
+      description: 'Vault is encrypted; null when unknown or not connected.',
     }),
     freeBytes: nullable(bytes),
     totalBytes: nullable(bytes),

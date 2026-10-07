@@ -8,9 +8,11 @@ import {
   addSlot,
   keyFileSource,
   listSlots,
+  newKey,
   removeSlot,
   withKeyAdministration,
 } from './vault-keys.js';
+import type { KeyKind } from './vault-keys.js';
 import { requireSeparateTrees } from './vault-paths.js';
 
 /*
@@ -129,6 +131,42 @@ export async function initializeEncryptedVault(options: {
   }
 }
 
+/**
+ * Writes a new secret file for a new slot key, then the slot, then opens the vault with the file.
+ * The file comes first: a crash in between leaves a file whose key opens nothing, never a slot
+ * whose key nobody holds (an orphan recovery slot would satisfy the "last recovery slot" rule).
+ */
+async function addSlotWithFile(
+  vault: FileVault,
+  kind: KeyKind,
+  file: string,
+  text: (identity: VaultIdentity, key: string) => string,
+): Promise<string> {
+  const identity = await vault.identity();
+  const master = await vault.masterKey();
+  const key = newKey(kind);
+  await writeNewSecret(file, text(identity, key.text));
+  let slotId: string | undefined;
+  try {
+    const added = await addSlot(
+      vault.root,
+      identity.vaultId,
+      master,
+      kind,
+      new Date().toISOString(),
+      key,
+    );
+    slotId = added.slot.slotId;
+    await opens(vault.root, file);
+    return slotId;
+  } catch (error) {
+    // Only the file this call wrote is removed: an existing file was refused by writeNewSecret.
+    await removeIfPresent(file);
+    if (slotId !== undefined) await removeSlot(vault.root, slotId).catch(() => undefined);
+    throw error;
+  }
+}
+
 /** Adds a recovery slot and writes its kit; the vault must be open with a key that unlocks it. */
 async function addRecoveryKitLocked(
   vault: FileVault,
@@ -136,66 +174,25 @@ async function addRecoveryKitLocked(
   storageRoot?: string,
 ): Promise<string> {
   await separate({ label: 'recovery kit', path: kitFile }, vault.root, storageRoot);
-  const identity = await vault.identity();
-  const master = await vault.masterKey();
-  const added = await addSlot(
-    vault.root,
-    identity.vaultId,
-    master,
-    'recovery',
-    new Date().toISOString(),
-  );
-  let written = false;
-  try {
-    await writeNewSecret(kitFile, recoveryKitText(identity, added.key));
-    written = true;
-    await opens(vault.root, kitFile);
-    return added.slot.slotId;
-  } catch (error) {
-    // Only a file this call wrote is removed: an existing kit may be the operator's only copy.
-    if (written) await removeIfPresent(kitFile);
-    await removeSlot(vault.root, added.slot.slotId).catch(() => undefined);
-    throw error;
-  }
+  return addSlotWithFile(vault, 'recovery', kitFile, recoveryKitText);
 }
 
 /**
- * Replaces the access of the agent: a new agent slot and key file, opened with, and only then
- * the previous agent slots are removed. The master key does not change, so a running agent that
- * already unlocked the vault keeps working until it restarts with the new file.
+ * Gives the agent a new key: a new agent slot and key file, opened with. The previous agent slots
+ * stay, because the running agent still reads its old key file and would stop within a minute;
+ * the operator installs the new file (arkvory configure --vault-key-file) and then removes the
+ * returned previous slots with `vault key remove`.
  */
 async function rotateAgentKeyLocked(
   vault: FileVault,
   agentKeyFile: string,
   storageRoot?: string,
-): Promise<{ readonly added: string; readonly removed: readonly string[] }> {
+): Promise<{ readonly added: string; readonly previous: readonly string[] }> {
   await separate({ label: 'key file', path: agentKeyFile }, vault.root, storageRoot);
-  const identity = await vault.identity();
-  const master = await vault.masterKey();
   const before = await listSlots(vault.root);
-  const added = await addSlot(
-    vault.root,
-    identity.vaultId,
-    master,
-    'agent',
-    new Date().toISOString(),
-  );
-  let written = false;
-  try {
-    await writeNewSecret(agentKeyFile, `${added.key}\n`);
-    written = true;
-    await opens(vault.root, agentKeyFile);
-  } catch (error) {
-    if (written) await removeIfPresent(agentKeyFile);
-    await removeSlot(vault.root, added.slot.slotId).catch(() => undefined);
-    throw error;
-  }
-  const removed: string[] = [];
-  for (const slot of before.filter((candidate) => candidate.kind === 'agent')) {
-    await removeSlot(vault.root, slot.slotId);
-    removed.push(slot.slotId);
-  }
-  return { added: added.slot.slotId, removed };
+  const added = await addSlotWithFile(vault, 'agent', agentKeyFile, (_, key) => `${key}\n`);
+  const previous = before.filter((slot) => slot.kind === 'agent').map((slot) => slot.slotId);
+  return { added, previous };
 }
 
 /** Adds a recovery slot and its kit under the key administration lock. */
@@ -212,7 +209,7 @@ export function rotateAgentKey(
   vault: FileVault,
   agentKeyFile: string,
   storageRoot?: string,
-): Promise<{ readonly added: string; readonly removed: readonly string[] }> {
+): Promise<{ readonly added: string; readonly previous: readonly string[] }> {
   return withKeyAdministration(vault.root, () =>
     rotateAgentKeyLocked(vault, agentKeyFile, storageRoot),
   );

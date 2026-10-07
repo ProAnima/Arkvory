@@ -7,7 +7,10 @@ const probeTimeoutMs = 5000;
 /** The key problems of an encrypted vault (ADR 0070) are named in the heartbeat; others are not. */
 function keyFailure(error: unknown): string | null {
   return error instanceof BackupFailure &&
-    (error.code === 'vault_key_missing' || error.code === 'vault_key_invalid')
+    (error.code === 'vault_key_missing' ||
+      error.code === 'vault_key_invalid' ||
+      // A plain vault.json over key slots: a downgrade, reported like a key failure.
+      error.code === 'integrity_mismatch')
     ? error.code
     : null;
 }
