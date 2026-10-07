@@ -14,6 +14,7 @@ import {
   verifyWebhook,
 } from '@proanima/arkvory-infrastructure';
 import { setup, create, base } from './fixture.mjs';
+import { removeTestDirectory } from '../helpers.mjs';
 
 const live = { throwIfAborted() {} };
 
@@ -51,6 +52,7 @@ async function receiver(t, answer) {
 
 async function subscription(t, f, url, clock) {
   const directory = await mkdtemp(join(tmpdir(), 'arkvory-webhook-'));
+  t.after(() => removeTestDirectory(directory));
   const secretFile = join(directory, 'secret');
   const secret = 'integration-signing-secret-0001';
   await writeFile(secretFile, secret);

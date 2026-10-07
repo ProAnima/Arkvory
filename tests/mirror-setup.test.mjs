@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, stat, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createServer } from 'node:http';
@@ -8,6 +8,9 @@ import { createServer as createHttpsServer } from 'node:https';
 import { once } from 'node:events';
 import { configureMirror, fetchProbe, upstreamOrigin } from '../apps/deploy/dist/mirror-setup.js';
 import { removeTestDirectory } from './helpers.mjs';
+
+/** Compose files are owned by the container user; a test that is not root can only use its own. */
+const containerUser = process.getuid?.() ?? 1000;
 import { selfSignedCertificate } from './tls-certificate.mjs';
 
 const release = { version: '1.0.0', commit: 'c', schema: 28, archiveSha256: 'a', setupSha256: 's' };
@@ -99,9 +102,22 @@ test('import mode keeps its stages and refuses invalid ones before any request',
 
 test('Compose sees the files inside the containers through a generated mount', async (t) => {
   const { root, tokenFile, state } = await installation(t, 'compose');
-  await configureMirror(root, state, attach(tokenFile), services(), async () => undefined);
+  await configureMirror(
+    root,
+    state,
+    attach(tokenFile),
+    services(),
+    async () => undefined,
+    containerUser,
+  );
   const runtime = await json(join(root, 'config/runtime.json'));
   assert.equal(runtime.ARKVORY_MIRRORS_FILE, '/run/arkvory/mirrors/mirrors.json');
+  // The token is a secret: only the container user reads it.
+  if (process.platform !== 'win32') {
+    const token = await stat(join(root, 'config/mirrors/releases.token'));
+    assert.equal(token.mode & 0o777, 0o600);
+    assert.equal(token.uid, containerUser);
+  }
   const mirrors = await json(join(root, 'config/mirrors/mirrors.json'));
   assert.equal(mirrors.mirrors[0].tokenFile, '/run/arkvory/mirrors/releases.token');
   const override = await readFile(join(root, 'config/compose.mirrors.yml'), 'utf8');

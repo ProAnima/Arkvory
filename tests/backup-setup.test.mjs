@@ -14,6 +14,9 @@ import {
 import { vaultOverride } from '../apps/deploy/dist/vault-access.js';
 import { removeTestDirectory } from './helpers.mjs';
 
+/** Compose files are owned by the container user; a test that is not root can only use its own. */
+const containerUser = process.getuid?.() ?? 1000;
+
 const release = { version: '1.2.3', commit: 'c', schema: 26, archiveSha256: 'a', setupSha256: 's' };
 const wait = { attempts: 3, intervalMs: 1 };
 
@@ -444,7 +447,10 @@ test('an encrypted vault is installed with its key file; the heartbeat proves th
     const vaultId = await encryptedVaultDocument(vault);
     const control = services(ready(vaultId));
     const keyFile = await keyFileIn(t, agentKey + '\n');
-    const outcome = await configureBackup(root, state(mode), { vault, keyFile }, control, { wait });
+    const outcome = await configureBackup(root, state(mode), { vault, keyFile }, control, {
+      wait,
+      containerUser,
+    });
     assert.deepEqual(outcome, { vaultId, initialized: false, encrypted: true });
     assert.deepEqual(control.opened, [{ keyFile: true }]);
     const runtime = await runtimeOf(root);

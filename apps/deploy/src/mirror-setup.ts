@@ -1,6 +1,13 @@
 import { chown, mkdir, readFile, stat, unlink } from 'node:fs/promises';
 import { join } from 'node:path';
-import { atomicText, readSecretFile, replaceText, restoreFile, snapshotFile } from './files.js';
+import {
+  CONTAINER_USER,
+  atomicText,
+  readSecretFile,
+  replaceText,
+  restoreFile,
+  snapshotFile,
+} from './files.js';
 import type { FileOwner, FileSnapshot } from './files.js';
 import type { Installation } from './model.js';
 import { runtimeEnvironment } from './runtime.js';
@@ -207,6 +214,8 @@ export async function configureMirror(
   change: MirrorChange,
   services: ServiceControl,
   probe: UpstreamProbe = fetchProbe,
+  /** The uid of the Compose containers; tests that do not run as root pass their own. */
+  containerUser = CONTAINER_USER,
 ): Promise<'attached' | 'detached'> {
   const paths = layout(root, state);
   const before: Snapshot = {
@@ -273,7 +282,11 @@ export async function configureMirror(
       mode: state.mode === 'compose' ? 0o755 : 0o750,
     });
     if (process.platform !== 'win32') await chown(paths.directory, owner.uid, owner.gid);
-    if (secret !== null) await write(tokenPath, secret + '\n', owner, mode);
+    // A token is a secret: in Compose only the container user reads it, never other host users.
+    const tokenOwner =
+      state.mode === 'compose' ? { uid: containerUser, gid: containerUser } : owner;
+    const tokenMode = state.mode === 'compose' ? 0o600 : mode;
+    if (secret !== null) await write(tokenPath, secret + '\n', tokenOwner, tokenMode);
     else await unlink(tokenPath).catch(() => undefined);
     if (next.length > 0)
       await write(paths.mirrors, JSON.stringify({ mirrors: next }, null, 2) + '\n', owner, mode);

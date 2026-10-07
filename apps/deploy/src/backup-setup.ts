@@ -59,7 +59,9 @@ function request(change: BackupChange): 'enable' | 'disable' {
       change.plain ||
       change.keyFile !== undefined
     )
-      throw new Error('Use either --backup-vault <dir> [--init-vault] or --backup-vault-off');
+      throw new Error(
+        'Use either --backup-vault <dir> [--vault-key-file <file> | --init-vault --vault-no-encryption] or --backup-vault-off',
+      );
     return 'disable';
   }
   if (change.vault === undefined)
@@ -117,7 +119,7 @@ async function checkedVault(
   );
   if (location.vaultId === null && !change.initialize)
     throw new Error(
-      'The directory has no vault.json: mount the vault volume, or pass --init-vault to create a vault in this empty directory',
+      'The directory has no vault.json: mount the vault volume, or create the vault first with "arkvory-backup vault init <dir> --kit-file <file> --agent-key-file <file>" (or pass --init-vault --vault-no-encryption for a vault without encryption)',
     );
   if (location.vaultId === null && !location.empty)
     throw new Error('--init-vault needs an empty directory; this one has files but no vault.json');
@@ -144,17 +146,22 @@ async function checkedVault(
  * Installs the agent key like runtime.json is installed: root:arkvory 0640 for systemd,
  * readable by the container user for Compose, inherited ACLs on Windows.
  */
-async function installKey(root: string, state: Installation, key: string): Promise<void> {
+async function installKey(
+  root: string,
+  state: Installation,
+  key: string,
+  containerUser: number,
+): Promise<void> {
   const owner = await stat(join(root, 'config/runtime.json'));
   const directory = join(root, keyDirectory);
   await mkdir(directory, { recursive: true, mode: state.mode === 'compose' ? 0o755 : 0o750 });
   if (process.platform !== 'win32') await chown(directory, owner.uid, owner.gid);
   const path = join(directory, keyName);
-  // Compose: only the container user (uid 1000) reads the key; systemd: root:arkvory 0640.
+  // Compose: only the container user reads the key; systemd: root:arkvory 0640.
   const compose = state.mode === 'compose';
   await atomicText(path, key + '\n', compose ? 0o600 : 0o640);
   if (process.platform !== 'win32')
-    await chown(path, compose ? CONTAINER_USER : owner.uid, compose ? CONTAINER_USER : owner.gid);
+    await chown(path, compose ? containerUser : owner.uid, compose ? containerUser : owner.gid);
 }
 
 /** Puts the key file back as it was; a key file that did not exist is removed. */
@@ -260,7 +267,12 @@ export async function configureBackup(
   state: Installation,
   change: BackupChange,
   control: BackupServiceControl,
-  options: { readonly wait?: BackupWait; readonly platform?: NodeJS.Platform } = {},
+  options: {
+    readonly wait?: BackupWait;
+    readonly platform?: NodeJS.Platform;
+    /** The uid of the Compose containers; tests that do not run as root pass their own. */
+    readonly containerUser?: number;
+  } = {},
 ): Promise<BackupOutcome> {
   const kind = request(change);
   const path = join(root, 'config/runtime.json');
@@ -295,7 +307,7 @@ export async function configureBackup(
     }
     if (key !== null) {
       progress.key = { path: keyPath, previous: await readOptional(keyPath) };
-      await installKey(root, state, key);
+      await installKey(root, state, key, options.containerUser ?? CONTAINER_USER);
     }
     await replaceText(path, JSON.stringify(next, null, 2) + '\n');
     progress.restarted = true;
