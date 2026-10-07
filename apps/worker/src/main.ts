@@ -4,6 +4,7 @@ import { StorageService } from '@proanima/arkvory-application';
 import { ArkvoryError } from '@proanima/arkvory-domain';
 import {
   DiagnosticLogger,
+  databasePlaintextExposed,
   failureCause,
   installCrashHandlers,
   parseLogLevel,
@@ -118,6 +119,12 @@ try {
       currentLease = lease;
     },
   };
+  if (databasePlaintextExposed(process.env['ARKVORY_DATABASE_URL'] ?? ''))
+    diagnostics.write({
+      level: 'warning',
+      component: 'worker',
+      code: 'database.plaintext_exposed',
+    });
   diagnostics.write({ level: 'info', component: 'worker', code: 'worker.started' });
   const mirroring = runMirrors({
     catalog,

@@ -1,6 +1,7 @@
 export * from './local-blobs.js';
 export * from './routed-blobs.js';
 export * from './postgres-catalog.js';
+export { databasePlaintextExposed } from './database-transport.js';
 export * from './migrations.js';
 export { SCHEMA_VERSION } from './schema-version.js';
 export * from './operations.js';

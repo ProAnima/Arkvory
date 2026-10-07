@@ -19,6 +19,8 @@ npm start
 
 Можно использовать существующую отдельную PostgreSQL: укажите `ARKVORY_DATABASE_URL` в `.env` вместо запуска compose. Migrate запускается явно и повторяется безопасно. Миграции схемы 1–7 транзакционные; миграция 8 строит шесть индексов каталога через `CREATE INDEX CONCURRENTLY` вне транзакции и продолжает после прерывания. Запланируйте место под индексы, WAL и временные файлы, затем дождитесь завершения команды перед запуском нового кода. Для production позже потребуется разделить роль миграций и runtime-role с минимальными правами. [Замер и решение](adr/0014-online-package-page-indexes.md).
 
+**TLS до PostgreSQL.** Для БД на другом хосте добавьте параметры в `ARKVORY_DATABASE_URL`: `?sslmode=verify-full` (сертификат сервера проверяется по системным CA) или `?sslmode=verify-full&sslrootcert=/путь/ca.pem` для собственного CA; `require`, `verify-ca` и `prefer` драйвер `pg` сейчас трактует как `verify-full`. Без `sslmode` или с `disable`/`allow` каталог, хеши и параметры передаются открытым текстом. Для не-loopback адреса API и worker при запуске пишут `database.plaintext_exposed`; URL и пароль в запись не попадают. Поведение проверено на PostgreSQL 18.4 с `ssl=on`: без `sslmode` — `ssl = false`; `verify-full` без доверия к CA — отказ; с `sslrootcert` — `ssl = true`.
+
 API слушает `127.0.0.1:8080`. В другом терминале:
 
 ```sh

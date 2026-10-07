@@ -1,5 +1,6 @@
 import {
   DiagnosticLogger,
+  databasePlaintextExposed,
   failureCause,
   installCrashHandlers,
   parseLogLevel,
@@ -91,6 +92,12 @@ try {
     await app.close();
     throw error;
   }
+  if (databasePlaintextExposed(config.databaseUrl))
+    diagnostics.write({
+      level: 'warning',
+      component: 'process',
+      code: 'database.plaintext_exposed',
+    });
   const bound = app.server.address();
   diagnostics.write({
     level: 'info',
