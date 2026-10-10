@@ -150,7 +150,7 @@ Richten Sie Ihre Clients und den DNS-Namen auf die virtuelle Adresse.
 
 ## Täglicher Betrieb {#operation}
 
-Führen Sie diese Befehle als root auf dem aktiven Server aus, auf dem das Volume eingehängt ist.
+Führen Sie diese Befehle als root aus. `cluster-status` und `cluster-single-copy` lesen das Volume, führen Sie sie daher auf dem aktiven Server aus; die übrigen funktionieren auf jedem Datenserver.
 
 | Befehl                                                                    | Was er tut                                                                                                        |
 | ------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |

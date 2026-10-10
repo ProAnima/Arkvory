@@ -99,6 +99,21 @@ test('the launcher runs the agent with its command and the installation environm
   assert.notEqual(launch(['backup', 'restore']).status, 0);
 });
 
+test('a requested stop ends a service role with 0, before or after its own handler', async (t) => {
+  const { root, release: directory_ } = await launcherFixture(t);
+  const entry = join(directory_, 'apps/backup/dist/main.js');
+  const launch = () =>
+    spawnSync(process.execPath, [resolve('apps/deploy/dist/launch.js'), root, 'backup'], {
+      encoding: 'utf8',
+    });
+  // The role handles the signal, finishes its work and returns: a clean stop.
+  await writeFile(entry, "process.on('SIGTERM', () => {});\nprocess.emit('SIGTERM');\n");
+  assert.equal(launch().status, 0);
+  // The signal arrives before the role has a handler: the process ends at once, cleanly.
+  await writeFile(entry, "process.emit('SIGTERM');\nsetTimeout(() => {}, 60000);\n");
+  assert.equal(launch().status, 0);
+});
+
 test('Compose runs the agent read-only on storage, without keys, ports or the API', async () => {
   const compose = parse(await readFile('deploy/compose.yml', 'utf8'), { merge: true });
   const backup = compose.services.backup;

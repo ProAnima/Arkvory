@@ -150,7 +150,7 @@ Dirigez vos clients et votre nom DNS vers l’adresse virtuelle.
 
 ## Exploitation courante {#operation}
 
-Exécutez ces commandes en tant que root sur le serveur actif, où le volume est monté.
+Exécutez ces commandes en tant que root. `cluster-status` et `cluster-single-copy` lisent le volume : lancez-les sur le serveur actif ; les autres fonctionnent sur n’importe quel serveur de données.
 
 | Commande                                                                  | Ce qu’elle fait                                                                                                   |
 | ------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |

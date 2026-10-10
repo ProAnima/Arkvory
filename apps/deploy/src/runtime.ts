@@ -72,11 +72,21 @@ export async function runRole(
   const entry = join(directory, selected.entry);
   // Entries parse process.argv like their own executables (the backup CLI reads its command).
   process.argv.splice(1, process.argv.length - 1, entry, ...selected.argv);
-  // A lost worker lease can finish normally. Treat unexpected service exit as failure for Windows SCM.
-  if (selected.service)
+  // A lost worker lease can finish normally. Treat unexpected service exit as failure for Windows SCM;
+  // a requested stop (SIGTERM/SIGINT, which every service role handles) ends with 0, so systemd
+  // and Pacemaker see a clean stop.
+  if (selected.service) {
+    let stopRequested = false;
+    for (const signal of ['SIGTERM', 'SIGINT'] as const)
+      process.on(signal, () => {
+        stopRequested = true;
+        // Before the role installs its own handler, the request ends the process at once.
+        if (process.listenerCount(signal) === 1) process.exit(0);
+      });
     process.once('beforeExit', () => {
-      process.exitCode = 1;
+      if (!stopRequested) process.exitCode = 1;
     });
+  }
   await import(pathToFileURL(entry).href);
 }
 export async function launch(root: string, role: string, args: readonly string[] = []) {

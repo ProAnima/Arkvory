@@ -150,7 +150,7 @@ Point your clients and DNS name at the virtual address.
 
 ## Day-to-day operation {#operation}
 
-Run these commands as root on the active server, where the volume is mounted.
+Run these commands as root. `cluster-status` and `cluster-single-copy` read the volume, so run them on the active server; the others work on any data server.
 
 | Command                                                                   | What it does                                                                                      |
 | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |

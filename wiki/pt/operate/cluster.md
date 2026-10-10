@@ -150,7 +150,7 @@ Aponte os seus clientes e o nome DNS para o endereço virtual.
 
 ## Operação diária {#operation}
 
-Execute estes comandos como root no servidor ativo, onde o volume está montado.
+Execute estes comandos como root. `cluster-status` e `cluster-single-copy` leem o volume, por isso execute-os no servidor ativo; os demais funcionam em qualquer servidor de dados.
 
 | Comando                                                                   | O que faz                                                                                                      |
 | ------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
