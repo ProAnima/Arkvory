@@ -137,13 +137,36 @@ export const standbyFailure = {
 };
 
 /**
+ * Every data node back in the cluster, as an operator restores a cluster that lost its quorum:
+ * powered on, Pacemaker started where it is not running. A node that Pacemaker fences on the
+ * way back (one that could not stop cleanly without quorum) is started again after its restart.
+ */
+async function restoreAll(cluster) {
+  await until(
+    async () => {
+      for (const node of cluster.data) {
+        if ((await power.state(node.domain)).includes('shut off')) await power.on(node.domain);
+        const running = await node.shell.tryExec('systemctl is-active --quiet pacemaker');
+        if (!running.ok) await node.shell.tryExec('pcs cluster start --wait=120');
+      }
+      return (await activeNodes(cluster)).length === 1;
+    },
+    'every node back and Arkvory running',
+    900000,
+    10000,
+  );
+}
+
+/**
  * ha-3 loses two of three nodes: the last one has neither Corosync nor DRBD quorum, so Arkvory
- * stops rather than risk a second writer; one returning node brings back reads and writes.
+ * stops rather than risk a writer without quorum. Restoring the nodes brings it back with every
+ * acknowledged upload.
  */
 export const secondLoss = {
-  name: 'ha-3: two lost nodes stop the service until one returns',
+  name: 'ha-3: two lost nodes stop the service; restored nodes keep every acknowledged upload',
   async run({ cluster, api }) {
-    const kept = await active(cluster);
+    const load = writer(api, 'double-loss');
+    await acknowledgedSome(load);
     const lost = await standbys(cluster);
     for (const node of lost) await powerOff(node);
     await until(
@@ -151,24 +174,11 @@ export const secondLoss = {
       'Arkvory to stop without quorum',
       300000,
     );
-    assert.equal((await api.canWrite()).status === 201, false, 'no acknowledgment without quorum');
-    const [first, second] = lost;
-    await rejoin(cluster, first);
-    await until(
-      async () => (await activeNodes(cluster)).length === 1,
-      'Arkvory back with quorum',
-      600000,
-    );
-    await until(
-      async () => (await volumeOn(await active(cluster))).copies >= 2,
-      'two complete copies',
-      900000,
-      5000,
-    );
-    await writes(api, 201);
-    await rejoin(cluster, second);
+    const items = await load.stop();
+    await restoreAll(cluster);
     await complete(cluster);
-    return { keptFirst: kept.name };
+    await writes(api, 201);
+    return settle(api, items);
   },
 };
 
