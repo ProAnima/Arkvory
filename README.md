@@ -25,6 +25,7 @@ It is a standalone product with its own HTTP API, command-line client and TypeSc
 - **Metadata.** Labels, text metadata, collections and attachments: manifests, SBOMs, signatures, reports.
 - **Retention.** Keep the last N builds of each package, set quotas and warnings, and free disk space in the background without stopping the server.
 - **Backups.** A backup agent copies the database and all content to another disk or a network share on a schedule, verifies the copies and restores into an empty target.
+- **High availability on one site.** Two or three Linux servers keep one synchronous copy of all data (DRBD, Pacemaker, mandatory fencing): when the active server fails, another takes over, and a write is acknowledged only when it is on two complete copies.
 - **Mirrors and read gateways.** A second installation keeps a read-only copy of repositories and serves it when the first site is lost; extra download processes share one bandwidth budget.
 - **Runs by itself.** Windows services, Linux packages or Docker Compose. Services restart after a crash or a hang; signed stable updates install by hand or in a maintenance hour, behind a fresh verified backup, with rollback.
 - **A console in eleven languages.** English, Russian, Spanish, French, German, Portuguese, Chinese, Japanese, Korean, Hindi and Arabic, light and dark. The documentation is in the same languages.
@@ -70,11 +71,11 @@ The full walkthrough: [Quick start](https://proanima.github.io/Arkvory/guide/qui
 
 ## Documentation
 
-**[proanima.github.io/Arkvory](https://proanima.github.io/Arkvory/)** — installation, everyday work, clients and protocols, operation (backups, mirrors, storage, monitoring, security, troubleshooting) and the HTTP API reference generated from the contract the server enforces. With search, in the eleven languages of the console. The engineering documents (architecture, contracts, decisions) are in Russian in [`docs/`](docs/) and in the site's developers' section.
+**[proanima.github.io/Arkvory](https://proanima.github.io/Arkvory/)** — installation, everyday work, clients and protocols, operation (backups, mirrors, the high-availability cluster, storage, monitoring, security, troubleshooting) and the HTTP API reference generated from the contract the server enforces. With search, in the eleven languages of the console. The engineering documents (architecture, contracts, decisions) are in Russian in [`docs/`](docs/) and in the site's developers' section.
 
 ## Limits
 
-One installation is one server with PostgreSQL and a local content directory: it is not a high-availability cluster. If the server stops, clients wait until it is back; use backups and, where needed, a mirror on a second site. Content storage and the backup vault are local directories; S3 is not implemented. A new backup vault is encrypted by default, with a recovery kit kept off the server.
+A standalone installation is one server with PostgreSQL and a local content directory: if it stops, clients wait until it is back. A high-availability cluster needs Linux servers on one site with DRBD 9, Pacemaker and a fence device for each server; Windows and Docker Compose stay standalone. Neither protects against the loss of a site: use backups and, where needed, a mirror on a second site. Content storage and the backup vault are local directories; S3 is not implemented. A new backup vault is encrypted by default, with a recovery kit kept off the server.
 
 ## For developers
 
