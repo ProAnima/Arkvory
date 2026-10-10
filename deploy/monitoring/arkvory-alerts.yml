@@ -154,3 +154,29 @@ groups:
         annotations:
           summary: Webhook {{ $labels.subscription }} keeps failing to reach its receiver
           description: Read errorCode in the worker webhook.step_failed records (blocked - the address is not allowed, tls - certificate, timeout or network - the path, http_4xx or http_5xx - the receiver, secret - the secret file). Events wait in the change feed and are delivered in order when the receiver answers again.
+
+      - alert: ArkvoryReplicationDegraded
+        # HA cluster (ADR 0072): writes are refused with replication_degraded while copies are short.
+        expr: max(arkvory_replication_copies) < max(arkvory_replication_required_copies)
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: The HA cluster has fewer complete copies than writes need; writes are stopped
+          description: Downloads keep working. Run arkvory cluster-status and pcs status on the active node; bring the peer back (writes resume after its resynchronization) or, only when waiting is worse than a single copy, record a decision with arkvory cluster-single-copy.
+
+      - alert: ArkvorySingleCopyWrites
+        expr: max(arkvory_replication_required_copies) == 1
+        labels:
+          severity: warning
+        annotations:
+          summary: An operator decision lets the HA cluster acknowledge writes with a single copy
+          description: A loss of the active node now loses acknowledged writes. Return the peer and end the decision with arkvory cluster-single-copy --off; it also ends by itself at its time.
+
+      - alert: ArkvoryReplicationCheckFailing
+        expr: increase(arkvory_replication_check_failures_total[5m]) > 0
+        labels:
+          severity: critical
+        annotations:
+          summary: Arkvory cannot read the state of its copies and refuses writes
+          description: Check the arkvory-replica service and its socket /run/arkvory/replica.sock on the active node (journalctl -u arkvory-replica); drbdsetup must answer within 1.5 seconds.

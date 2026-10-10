@@ -161,6 +161,8 @@ test('the replica service answers fresh state, and 503 when the kernel state can
       : join(tmpdir(), `arkvory-replica-${randomUUID()}.sock`);
   let volume = { role: 'Primary', copies: 2 };
   let failing = false;
+  let decision = null;
+  let withdrawn = 0;
   const settings = { profile: 'ha-2', resource: 'arkvory', requiredCopies: 2, socket: '/run/x' };
   const server = replicaServer(
     async () => {
@@ -168,7 +170,12 @@ test('the replica service answers fresh state, and 503 when the kernel state can
       return volume;
     },
     settings,
-    async () => null,
+    async () => decision,
+    () => Date.parse('2026-10-10T00:00:00Z'),
+    async () => {
+      decision = null;
+      withdrawn++;
+    },
   );
   server.listen(path);
   await once(server, 'listening');
@@ -194,6 +201,23 @@ test('the replica service answers fresh state, and 503 when the kernel state can
     required: 2,
     singleCopyUntil: null,
   });
+  // An operator accepts one copy; it ends by itself once the copy is back.
+  decision = {
+    until: '2026-10-11T00:00:00.000Z',
+    reason: 'peer disk replaced',
+    decidedAt: '2026-10-10T00:00:00.000Z',
+  };
+  assert.deepEqual(JSON.parse((await get()).body), {
+    copies: 1,
+    required: 1,
+    singleCopyUntil: '2026-10-11T00:00:00.000Z',
+  });
+  assert.equal(withdrawn, 0);
+  volume = { role: 'Primary', copies: 2 };
+  assert.equal(JSON.parse((await get()).body).required, 1);
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(withdrawn, 1);
+  assert.equal(JSON.parse((await get()).body).required, 2);
   failing = true;
   assert.equal((await get()).status, 503);
   assert.equal((await get('/other')).status, 404);

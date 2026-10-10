@@ -46,15 +46,34 @@ export async function writeNodeMarker(marker: NodeMarker): Promise<void> {
  * move the node. The group is unmanaged around the change and handed back after readiness.
  */
 export async function pacemakerHandsOff(): Promise<void> {
-  const marker = await nodeMarker();
-  if (marker) await command('pcs', ['resource', 'unmanage', marker.resource]);
+  const resource = await managedResource();
+  if (resource) await command('pcs', ['resource', 'unmanage', resource]);
 }
 
 export async function pacemakerTakesBack(): Promise<void> {
+  const resource = await managedResource();
+  if (!resource) return;
+  await command('pcs', ['resource', 'cleanup', resource]);
+  await command('pcs', ['resource', 'manage', resource]);
+}
+
+/**
+ * The group Pacemaker manages on this node, if any. While nodes are prepared, before the
+ * cluster runs or the group exists, nothing is handed over; a failing query of a running
+ * cluster is an error, never a reason to skip.
+ */
+async function managedResource(): Promise<string | null> {
   const marker = await nodeMarker();
-  if (!marker) return;
-  await command('pcs', ['resource', 'cleanup', marker.resource]);
-  await command('pcs', ['resource', 'manage', marker.resource]);
+  if (!marker) return null;
+  const running = await command('systemctl', ['is-active', '--quiet', 'pacemaker']).then(
+    () => true,
+    () => false,
+  );
+  if (!running) return null;
+  const resources = await commandOutput('crm_resource', ['--list-raw']);
+  return resources.split('\n').some((line) => line.trim() === marker.resource)
+    ? marker.resource
+    : null;
 }
 
 /** The root must be the mount of a DRBD device: otherwise nothing is replicated. */

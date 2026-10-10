@@ -103,3 +103,109 @@ test('the replica unit runs as root, hands the socket to the arkvory group and h
   );
   assert.ok(!unit.includes('[Install]'), 'Pacemaker starts it; nothing enables it');
 });
+
+const { clusterChecks, clusterNodes, locatedOn } =
+  await import('../apps/deploy/dist/cluster-ops.js');
+const drbdStatus = (peerDisk) =>
+  JSON.stringify([
+    {
+      name: 'arkvory',
+      role: 'Primary',
+      devices: [{ volume: 0, 'disk-state': 'UpToDate' }],
+      connections: [
+        {
+          'peer-node-id': 1,
+          name: 'node-b',
+          'connection-state': 'Connected',
+          peer_devices: [
+            {
+              volume: 0,
+              'replication-state': 'Established',
+              'peer-disk-state': peerDisk,
+              'peer-client': false,
+            },
+          ],
+        },
+      ],
+    },
+  ]);
+// Outputs of the Pacemaker, Corosync and DRBD tools on a healthy ha-2 node.
+const healthy = {
+  'corosync-quorumtool -s': 'Quorum provider:  corosync_votequorum\nQuorate:          Yes\n',
+  'crm_attribute stonith-enabled': 'true\n',
+  'crm_attribute no-quorum-policy': 'stop\n',
+  'crm_node -l': '1 node-a member\n2 node-b member\n',
+  'stonith_admin --list node-a': 'fence-node-a\n1 fence device found\n',
+  'stonith_admin --list node-b': 'fence-node-b\n1 fence device found\n',
+  'drbdsetup show arkvory':
+    'resource arkvory {\n  options {\n    quorum majority;\n  }\n  net {\n    fencing resource-and-stonith;\n  }\n}\n',
+  'drbdsetup status --json arkvory': drbdStatus('UpToDate'),
+  'crm_resource --resource arkvory --locate': 'resource arkvory is running on: node-a\n',
+};
+const toolOf = (outputs) => async (executable, args) => {
+  const key =
+    executable === 'crm_attribute' ? `crm_attribute ${args[3]}` : [executable, ...args].join(' ');
+  if (!(key in outputs)) throw new Error(`${key} failed`);
+  return outputs[key];
+};
+
+test('cluster-check passes a cluster that fences every node, has quorum and both copies', async () => {
+  const results = await clusterChecks(toolOf(healthy), 'arkvory');
+  assert.deepEqual(
+    results.filter((result) => !result.ok),
+    [],
+  );
+  assert.deepEqual(
+    results.map((result) => result.name),
+    [
+      'quorum',
+      'stonith-enabled',
+      'no-quorum-policy',
+      'fence node-a',
+      'fence node-b',
+      'drbd quorum',
+      'drbd fencing',
+      'complete copies',
+      'active node',
+    ],
+  );
+});
+
+test('cluster-check fails disabled fencing, an unfenceable node, lost quorum and a missing copy', async () => {
+  const broken = {
+    ...healthy,
+    'corosync-quorumtool -s': 'Quorate:          No\n',
+    'crm_attribute stonith-enabled': 'false\n',
+    'crm_attribute no-quorum-policy': 'ignore\n',
+    'stonith_admin --list node-b': '0 fence devices found\n',
+    'drbdsetup show arkvory': 'resource arkvory {\n}\n',
+    'drbdsetup status --json arkvory': drbdStatus('Inconsistent'),
+    'crm_resource --resource arkvory --locate': '',
+  };
+  const failed = (await clusterChecks(toolOf(broken), 'arkvory'))
+    .filter((result) => !result.ok)
+    .map((result) => result.name);
+  assert.deepEqual(failed, [
+    'quorum',
+    'stonith-enabled',
+    'no-quorum-policy',
+    'fence node-b',
+    'drbd quorum',
+    'drbd fencing',
+    'complete copies',
+    'active node',
+  ]);
+  // Unset properties are Pacemaker's safe defaults, not failures.
+  const {
+    ['crm_attribute stonith-enabled']: _s,
+    ['crm_attribute no-quorum-policy']: _p,
+    ...unset
+  } = healthy;
+  assert.ok((await clusterChecks(toolOf(unset), 'arkvory')).every((result) => result.ok));
+});
+
+test('cluster tool output: node names and where the group runs', () => {
+  assert.deepEqual(clusterNodes('1 node-a member\n2 node-b lost\n\n'), ['node-a', 'node-b']);
+  assert.deepEqual(locatedOn('resource arkvory is running on: node-b\n'), ['node-b']);
+  assert.deepEqual(locatedOn('resource arkvory is NOT running\n'), []);
+});

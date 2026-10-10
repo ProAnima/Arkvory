@@ -14,6 +14,7 @@ import { warnEngineAutostart } from './engine-autostart.js';
 import { clusterStatus, decideSingleCopy, serveReplica } from './replica-service.js';
 import { joinNode } from './cluster-node.js';
 import { writePlan } from './cluster-plan-files.js';
+import { checkCluster, fenceTest, switchover } from './cluster-ops.js';
 
 function argumentsOf(args: string[]): Map<string, string> {
   const options = new Map<string, string>();
@@ -79,6 +80,8 @@ function argumentsOf(args: string[]): Map<string, string> {
     'drbd-port',
     'filesystem',
     'output',
+    'to',
+    'node',
   ];
   for (let index = 0; index < args.length; index++) {
     const name = args[index]?.replace(/^--/, '');
@@ -133,6 +136,10 @@ async function main(): Promise<void> {
   const options = argumentsOf(process.argv.slice(3));
   // Planning needs no installation: it may run on a workstation.
   if (operation === 'cluster-plan') return writePlan(options);
+  // Pacemaker operations act on the cluster, not on an installation's files.
+  if (operation === 'cluster-check') return checkCluster();
+  if (operation === 'cluster-switchover') return switchover(options.get('to'));
+  if (operation === 'cluster-fence-test') return fenceTest(options.get('node'));
   const rawRoot = options.get('root');
   if (!rawRoot) throw new Error('Specify --root (absolute installation directory)');
   const root = resolve(rawRoot);

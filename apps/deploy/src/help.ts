@@ -21,6 +21,10 @@ cluster-single-copy  --until <ISO time, at most 7 days> --reason <text> | --off
                      Acknowledge writes with ONE copy until then; a second failure loses them
                      / Подтверждать запись одной копией до срока; второй отказ их потеряет
 cluster-replica      The arkvory-replica service (Pacemaker starts it) / Служба состояния копий
+cluster-check        Quorum, fencing of every node, DRBD quorum and fencing, both copies
+                     / Проверка кластера
+cluster-switchover   --to <node>  Planned move of Arkvory; needs both copies / Плановое переключение
+cluster-fence-test   --node <standby>  Fence a standby to prove its device / Проверка fencing
 cluster-node         [--cluster-resource r] On another data node, with the volume mounted:
                      the same accounts and units, none enabled / Подготовить другой узел
 cluster-plan         --cluster ha-2|ha-3 --nodes a=10.0.0.1,b=10.0.0.2[,c=…] [--witness w=10.0.0.3]

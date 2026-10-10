@@ -66,12 +66,14 @@ export async function readVolume(resource: string): Promise<VolumeState> {
  * The `arkvory-replica` service: `GET /state` on a local socket answers the copies the kernel
  * reports after the request arrived (FreshReads) and the copies a write needs, lowered to one by
  * a valid operator decision. Any failure answers 503: the API then refuses to acknowledge.
+ * A decision ends once the copies are back: a later loss must stop writes again, not inherit it.
  */
 export function replicaServer(
   read: () => Promise<VolumeState>,
   settings: ClusterSettings,
   decision: () => Promise<SingleCopyDecision | null>,
   now: () => number = Date.now,
+  withdraw: () => Promise<void> = () => Promise.resolve(),
 ): Server {
   const reads = new FreshReads(read);
   return createServer((request, response) => {
@@ -82,6 +84,13 @@ export function replicaServer(
     Promise.all([reads.get(), decision()])
       .then(([volume, chosen]) => {
         const body = replicaAnswer(volume.copies, settings.requiredCopies, chosen, now());
+        if (chosen && volume.copies >= settings.requiredCopies)
+          void withdraw().then(
+            () => {
+              report('info', 'Copies are back: the single-copy decision has ended');
+            },
+            () => undefined,
+          );
         response.writeHead(200, { 'content-type': 'application/json' });
         response.end(JSON.stringify(body));
       })
@@ -103,6 +112,8 @@ export async function serveReplica(root: string): Promise<void> {
     () => readVolume(settings.resource),
     settings,
     () => readDecision(root),
+    Date.now,
+    () => rm(decisionFile(root), { force: true }),
   );
   await new Promise<void>((resolve, reject) => {
     server.once('error', reject);
@@ -141,7 +152,7 @@ export async function decideSingleCopy(
   options: ReadonlyMap<string, string>,
   now = Date.now(),
 ): Promise<void> {
-  parseCluster(await jsonFile(clusterFile(root)));
+  const settings = parseCluster(await jsonFile(clusterFile(root)));
   if (options.has('off')) {
     await rm(decisionFile(root), { force: true });
     report('warning', 'Single-copy decision withdrawn: writes need every required copy again');
@@ -150,6 +161,11 @@ export async function decideSingleCopy(
   const until = Date.parse(options.get('until') ?? '');
   if (Number.isNaN(until) || until <= now || until - now > MAX_SINGLE_COPY_MS)
     throw new Error('--until must be a time in the next 7 days (ISO 8601)');
+  // The decision ends when the copies are back, so it is taken only while they are missing.
+  if ((await readVolume(settings.resource)).copies >= settings.requiredCopies)
+    throw new Error(
+      'Every required copy is complete; a single-copy decision applies only after a loss',
+    );
   const decision = parseDecision({
     until: new Date(until).toISOString(),
     reason: options.get('reason') ?? '',
