@@ -3534,5 +3534,17 @@
   "noScript": {
     "en": "Enable JavaScript to use the storage console.",
     "text": "Active JavaScript para usar la consola de almacenamiento."
+  },
+  "replicationDegraded": {
+    "en": "Writes are stopped: {copies} of {required} required copies are complete. Downloads keep working; writes resume after the copy is back.",
+    "text": "Las escrituras están detenidas: {copies} de {required} copias requeridas están completas. Las descargas siguen funcionando; las escrituras se reanudan cuando vuelve la copia."
+  },
+  "replicationUnknown": {
+    "en": "Writes are stopped: the cluster cannot read the state of its copies. Downloads keep working.",
+    "text": "Las escrituras están detenidas: el clúster no puede leer el estado de sus copias. Las descargas siguen funcionando."
+  },
+  "replicationSingleCopy": {
+    "en": "Writes are acknowledged with a single copy until {until} by an operator decision.",
+    "text": "Por decisión de un operador, las escrituras se confirman con una sola copia hasta {until}."
   }
 }

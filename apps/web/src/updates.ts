@@ -5,11 +5,13 @@ import { element } from './dom.js';
 import { clearMessage, message } from './i18n.js';
 import { showView } from './shell.js';
 import { UpdateView } from './update-view.js';
+import { ReplicationBanner } from './replication-banner.js';
 import type { MessageKey } from './messages.js';
 import { errorKey, showFailure } from './feedback.js';
 
 class UpdateConsole {
   private readonly view = new UpdateView();
+  private readonly replication: ReplicationBanner;
   private snapshot: UpdateSnapshot | null = null;
   private selected: UpdateSnapshot['latest'] = null;
   private generation = 0;
@@ -18,6 +20,7 @@ class UpdateConsole {
   private busy = false;
   private timer: ReturnType<typeof setTimeout> | undefined;
   constructor(private readonly client: ArkvoryClient) {
+    this.replication = new ReplicationBanner(client);
     const v = this.view;
     v.form.addEventListener('input', () => {
       this.dirty = true;
@@ -126,6 +129,7 @@ class UpdateConsole {
     this.busy = false;
     this.view.nav.hidden = true;
     this.view.banner.hidden = true;
+    this.replication.clear();
     clearMessage(this.view.output);
     this.view.clear();
     this.view.dialog.close();
@@ -133,6 +137,7 @@ class UpdateConsole {
   }
   connect(administrator: boolean) {
     this.clear();
+    this.replication.connect(administrator);
     if (administrator) {
       this.active = true;
       this.view.nav.hidden = false;

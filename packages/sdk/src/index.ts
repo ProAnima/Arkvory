@@ -22,4 +22,6 @@ export type { CreateTokenOptions } from './identity-api.js';
 export { BackupApi } from './backup-api.js';
 export { FeedbackApi } from './feedback-api.js';
 export { RawApi } from './raw-api.js';
+export { ReplicationApi, readReplication } from './replication-api.js';
+export type { Replication, ReplicationCopies } from './replication-api.js';
 export type { BackupPageQuery } from './backup-api.js';

@@ -3534,5 +3534,17 @@
   "noScript": {
     "en": "Enable JavaScript to use the storage console.",
     "text": "请启用 JavaScript 以使用存储控制台。"
+  },
+  "replicationDegraded": {
+    "en": "Writes are stopped: {copies} of {required} required copies are complete. Downloads keep working; writes resume after the copy is back.",
+    "text": "写入已停止：所需 {required} 份副本中完整的只有 {copies} 份。下载照常进行；副本恢复后写入会自动继续。"
+  },
+  "replicationUnknown": {
+    "en": "Writes are stopped: the cluster cannot read the state of its copies. Downloads keep working.",
+    "text": "写入已停止：集群无法读取副本状态。下载照常进行。"
+  },
+  "replicationSingleCopy": {
+    "en": "Writes are acknowledged with a single copy until {until} by an operator decision.",
+    "text": "根据运维人员的决定，在 {until} 之前写入只需一份副本即可确认。"
   }
 }

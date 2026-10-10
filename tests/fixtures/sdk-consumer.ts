@@ -76,6 +76,8 @@ export type UnchangedKeys = Assert<
       | 'createDownloadLink'
       // ADR 0064: raw files by path as the additive namespace `raw`.
       | 'raw'
+      // ADR 0072: HA cluster copies from readiness as the additive namespace `replication`.
+      | 'replication'
     >,
     keyof LegacyClient
   >

@@ -3534,5 +3534,17 @@
   "noScript": {
     "en": "Enable JavaScript to use the storage console.",
     "text": "स्टोरेज कंसोल का उपयोग करने के लिए JavaScript सक्षम करें।"
+  },
+  "replicationDegraded": {
+    "en": "Writes are stopped: {copies} of {required} required copies are complete. Downloads keep working; writes resume after the copy is back.",
+    "text": "लेखन रुका हुआ है: आवश्यक {required} में से {copies} प्रतियाँ पूर्ण हैं। डाउनलोड चलते रहेंगे; प्रति लौटने पर लेखन फिर शुरू होगा।"
+  },
+  "replicationUnknown": {
+    "en": "Writes are stopped: the cluster cannot read the state of its copies. Downloads keep working.",
+    "text": "लेखन रुका हुआ है: क्लस्टर अपनी प्रतियों की स्थिति नहीं पढ़ पा रहा। डाउनलोड चलते रहेंगे।"
+  },
+  "replicationSingleCopy": {
+    "en": "Writes are acknowledged with a single copy until {until} by an operator decision.",
+    "text": "ऑपरेटर के निर्णय से {until} तक लेखन एक ही प्रति के साथ पुष्ट होता है।"
   }
 }

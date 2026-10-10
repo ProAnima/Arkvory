@@ -3534,5 +3534,17 @@
   "noScript": {
     "en": "Enable JavaScript to use the storage console.",
     "text": "스토리지 콘솔을 사용하려면 JavaScript를 켜세요."
+  },
+  "replicationDegraded": {
+    "en": "Writes are stopped: {copies} of {required} required copies are complete. Downloads keep working; writes resume after the copy is back.",
+    "text": "쓰기가 중지되었습니다: 필요한 복사본 {required}개 중 {copies}개만 완전합니다. 다운로드는 계속되며 복사본이 돌아오면 쓰기가 재개됩니다."
+  },
+  "replicationUnknown": {
+    "en": "Writes are stopped: the cluster cannot read the state of its copies. Downloads keep working.",
+    "text": "쓰기가 중지되었습니다: 클러스터가 복사본 상태를 읽을 수 없습니다. 다운로드는 계속됩니다."
+  },
+  "replicationSingleCopy": {
+    "en": "Writes are acknowledged with a single copy until {until} by an operator decision.",
+    "text": "운영자 결정에 따라 {until}까지 쓰기가 복사본 하나로 확인됩니다."
   }
 }

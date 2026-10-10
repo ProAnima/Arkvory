@@ -3534,5 +3534,17 @@
   "noScript": {
     "en": "Enable JavaScript to use the storage console.",
     "text": "مكّن JavaScript لاستخدام وحدة تحكم التخزين."
+  },
+  "replicationDegraded": {
+    "en": "Writes are stopped: {copies} of {required} required copies are complete. Downloads keep working; writes resume after the copy is back.",
+    "text": "الكتابة متوقفة: {copies} من {required} نسخ مطلوبة مكتملة. تستمر التنزيلات؛ وتُستأنف الكتابة عند عودة النسخة."
+  },
+  "replicationUnknown": {
+    "en": "Writes are stopped: the cluster cannot read the state of its copies. Downloads keep working.",
+    "text": "الكتابة متوقفة: لا يستطيع العنقود قراءة حالة نسخه. تستمر التنزيلات."
+  },
+  "replicationSingleCopy": {
+    "en": "Writes are acknowledged with a single copy until {until} by an operator decision.",
+    "text": "بقرار من المشغّل، تُؤكَّد الكتابة بنسخة واحدة حتى {until}."
   }
 }

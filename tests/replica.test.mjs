@@ -32,3 +32,22 @@ test('only a well-formed answer of the replica helper is a state the server acts
   ])
     assert.throws(() => parseReplicaCopies(answer), JSON.stringify(answer));
 });
+
+test('the SDK tells a standalone server, unknown copies and known copies apart', async () => {
+  const { readReplication } = await import('../packages/sdk/dist/index.js');
+  assert.deepEqual(readReplication(undefined), { kind: 'standalone' });
+  assert.deepEqual(readReplication(null), { kind: 'unknown' });
+  assert.deepEqual(readReplication({ copies: 1, required: 2, singleCopyUntil: null }), {
+    kind: 'known',
+    copies: 1,
+    required: 2,
+    singleCopyUntil: null,
+  });
+  for (const invalid of [
+    { copies: 1.5, required: 2, singleCopyUntil: null },
+    { copies: 1, required: 0, singleCopyUntil: null },
+    { copies: 1, required: 2, singleCopyUntil: 'soon' },
+    'two',
+  ])
+    assert.throws(() => readReplication(invalid), /Invalid|object/);
+});

@@ -1,5 +1,6 @@
 import { DiscoveryApi } from './discovery-api.js';
 import { UpdatesApi } from './updates-api.js';
+import { ReplicationApi } from './replication-api.js';
 import { FeedbackApi } from './feedback-api.js';
 import { AccountClient } from './account-client.js';
 import { CatalogApi } from './catalog-api.js';
@@ -48,6 +49,8 @@ export class ArkvoryClient extends AccountClient {
   readonly identity: IdentityClient;
   readonly administration: AdministrationClient;
   readonly updates: UpdatesApi;
+  /** Copies of an HA cluster from readiness (ADR 0072); standalone servers have none. */
+  readonly replication: ReplicationApi;
   /** Stages, promotion between repositories and version resolution. */
   readonly promotions: PromotionsApi;
   /** Instance backups: status, plan, jobs, points; system permissions backup.read/manage. */
@@ -59,6 +62,7 @@ export class ArkvoryClient extends AccountClient {
     const http = new HttpTransport(baseUrl, token, policy);
     super(http);
     this.updates = new UpdatesApi(http);
+    this.replication = new ReplicationApi(http);
     this.promotions = new PromotionsApi(http);
     this.backup = new BackupApi(http);
     this.feedback = new FeedbackApi(http);
