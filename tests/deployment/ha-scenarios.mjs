@@ -152,7 +152,7 @@ export const standbyFailure = {
  * powered on, Pacemaker started where it is not running. A node that Pacemaker fences on the
  * way back (one that could not stop cleanly without quorum) is started again after its restart.
  */
-async function restoreAll(cluster) {
+async function restoreAll(cluster, api) {
   await until(
     async () => {
       for (const node of cluster.data) {
@@ -160,7 +160,12 @@ async function restoreAll(cluster) {
         const running = await node.shell.tryExec('systemctl is-active --quiet pacemaker');
         if (!running.ok) await node.shell.tryExec('pcs cluster start --wait=120');
       }
-      return (await activeNodes(cluster)).length === 1;
+      // A node without quorum keeps reporting the group it failed to stop: judge by quorum,
+      // Pacemaker on every node and Arkvory answering through the virtual address.
+      for (const node of cluster.data)
+        if (!(await node.shell.tryExec('systemctl is-active --quiet pacemaker')).ok) return false;
+      const quorum = await cluster.data[0].shell.tryExec('corosync-quorumtool -s');
+      return /Quorate:\s+Yes/.test(quorum.output) && (await api.ready()).status === 200;
     },
     'every node back and Arkvory running',
     900000,
@@ -186,7 +191,7 @@ export const secondLoss = {
       300000,
     );
     const items = await load.stop();
-    await restoreAll(cluster);
+    await restoreAll(cluster, api);
     await complete(cluster);
     await writes(api, 201);
     return settle(api, items);
@@ -200,9 +205,9 @@ export const singleCopy = {
     await powerOff(standby);
     await writes(api, 503);
     const primary = await active(cluster);
-    const until = new Date(Date.now() + 3600000).toISOString();
+    const deadline = new Date(Date.now() + 3600000).toISOString();
     await primary.shell.exec(
-      `arkvory cluster-single-copy --root ${ROOT} --until ${until} --reason 'ha stand: peer disk replaced'`,
+      `arkvory cluster-single-copy --root ${ROOT} --until ${deadline} --reason 'ha stand: peer disk replaced'`,
     );
     await writes(api, 201);
     const ready = await api.ready();
@@ -312,10 +317,10 @@ export const fencingFailure = {
       await powerOff(lost);
       // Long enough for Pacemaker to have failed over had it not required fencing.
       await new Promise((resolve) => setTimeout(resolve, 90000));
-      assert.deepEqual(
-        await activeNodes(cluster),
-        [],
-        'nothing runs while the lost node is not fenced',
+      // Until the lost node is fenced, Pacemaker still counts the group as running there.
+      assert.ok(
+        !(await activeNodes(cluster)).includes(survivor.name),
+        'no failover while the lost node is not fenced',
       );
       assert.equal((await api.ready()).status, 0);
       assert.match(
