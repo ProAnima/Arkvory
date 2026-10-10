@@ -141,7 +141,11 @@ async function plan(cluster, work) {
     (_, command, node) =>
       `${command} ip=${HOST_ADDRESS} username=arkvoryfence identity_file=/root/.ssh/fence_key plug=arkvory-ha-${node}`,
   );
-  assert.ok(!/<[^>]*>/.test(pacemaker), 'every placeholder of the plan is filled');
+  const commands = pacemaker.split('\n').filter((line) => !line.startsWith('#'));
+  assert.ok(
+    commands.every((line) => !/<[^>]*>/.test(line)),
+    'every placeholder of the plan is filled',
+  );
   return { resource: join(work, 'arkvory.res'), pacemaker };
 }
 
