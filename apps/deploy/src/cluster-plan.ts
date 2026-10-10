@@ -77,6 +77,12 @@ export function drbdResource(input: ClusterPlanInput): string {
     '    protocol C;',
     '    fencing resource-and-stonith;',
     '  }',
+    // A returning copy must catch up under write load: the default floor (250 KiB/s) would keep
+    // the cluster on fewer copies for hours. Tune both rates to the replication link.
+    '  disk {',
+    '    c-min-rate 20M;',
+    '    c-max-rate 1G;',
+    '  }',
     '  handlers {',
     '    fence-peer "/usr/lib/drbd/crm-fence-peer.9.sh";',
     '    unfence-peer "/usr/lib/drbd/crm-unfence-peer.9.sh";',

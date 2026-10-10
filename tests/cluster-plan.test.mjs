@@ -27,6 +27,7 @@ test('ha-2 plan: witness is diskless, gets the next node id and is not a Pacemak
     'on-no-quorum io-error;',
     'protocol C;',
     'fencing resource-and-stonith;',
+    'c-min-rate 20M;',
     'hosts node-a node-b witness;',
     'address 10.0.0.3:7789;\n    disk none;',
   ])

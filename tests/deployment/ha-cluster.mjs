@@ -281,7 +281,7 @@ export async function diagnostics(cluster) {
   for (const node of cluster?.all ?? []) {
     if (!node.shell) continue;
     const report = await node.shell.tryExec(
-      'pcs status --full; drbdsetup status --verbose; journalctl -n 80 --no-pager -u arkvory-api -u arkvory-replica -u pacemaker -u corosync',
+      'pcs status --full; drbdsetup status --verbose --statistics; dmesg | grep -i drbd | tail -n 40; journalctl -n 80 --no-pager -u arkvory-api -u arkvory-replica -u pacemaker -u corosync',
     );
     console.error(`--- ${node.name}\n${report.output}`);
   }
