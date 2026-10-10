@@ -70,10 +70,9 @@ async function managedResource(): Promise<string | null> {
     () => false,
   );
   if (!running) return null;
-  const resources = await commandOutput('crm_resource', ['--list-raw']);
-  return resources.split('\n').some((line) => line.trim() === marker.resource)
-    ? marker.resource
-    : null;
+  // The group as configured: `crm_resource --list-raw` names its members, not the group.
+  const resources = await commandOutput('cibadmin', ['--query', '--scope', 'resources']);
+  return resources.includes(`<group id="${marker.resource}"`) ? marker.resource : null;
 }
 
 /** The root must be the mount of a DRBD device: otherwise nothing is replicated. */

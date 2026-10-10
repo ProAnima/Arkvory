@@ -178,7 +178,15 @@ export const singleCopy = {
     assert.match((await api.metrics()).text, /arkvory_replication_required_copies(\{[^}]*\})? 1\b/);
     await rejoin(cluster, standby);
     await complete(cluster);
-    await primary.shell.exec(`test ! -e ${ROOT}/config/single-copy.json`);
+    // The replica service ends the decision on its next reading of complete copies.
+    await until(
+      async () => {
+        await api.ready();
+        return (await primary.shell.tryExec(`test ! -e ${ROOT}/config/single-copy.json`)).ok;
+      },
+      'the single-copy decision to end',
+      60000,
+    );
     assert.equal((await api.ready()).json.replication.required, 2, 'the decision ended by itself');
   },
 };

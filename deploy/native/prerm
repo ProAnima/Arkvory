@@ -2,6 +2,12 @@
 set -eu
 # Package upgrades preserve running services until the journalled updater switches code.
 case "${1:-}" in upgrade|1) exit 0 ;; esac
+# On an HA cluster node (ADR 0072) Pacemaker owns the services: stopping them here would read as
+# a failure. Remove the node from the cluster first (pcs cluster node remove).
+if [ -f /etc/proanima-arkvory/cluster.json ]; then
+  echo 'Arkvory: cluster node; services are left to Pacemaker'
+  exit 0
+fi
 for unit in arkvory-backup arkvory-worker arkvory-api arkvory-database arkvory-update.timer; do
   if systemctl cat "$unit" >/dev/null 2>&1; then
     systemctl disable --now "$unit"
