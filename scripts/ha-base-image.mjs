@@ -27,6 +27,8 @@ const PACKAGES = [
   'corosync-qnetd',
   'fence-agents',
   'resource-agents-base',
+  // Filesystem is not among the base agents on Ubuntu 24.04.
+  'resource-agents-extra',
   'postgresql',
   'python3',
   'libatomic1',
