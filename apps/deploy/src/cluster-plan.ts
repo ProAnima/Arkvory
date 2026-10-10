@@ -84,7 +84,9 @@ export function drbdResource(input: ClusterPlanInput): string {
     '    c-max-rate 1G;',
     '  }',
     '  handlers {',
-    '    fence-peer "/usr/lib/drbd/crm-fence-peer.9.sh";',
+    // Pacemaker promotes only after the fence is confirmed; the handler's default 90 s wait for
+    // the peer to look fenced would only delay the promotion (and outlast its timeout).
+    '    fence-peer "/usr/lib/drbd/crm-fence-peer.9.sh --timeout 20";',
     '    unfence-peer "/usr/lib/drbd/crm-unfence-peer.9.sh";',
     '  }',
     ...input.nodes.map((node) => host(node, input.disk)),

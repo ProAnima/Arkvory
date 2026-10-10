@@ -277,6 +277,8 @@ export const activeFailure = {
     await powerOff(lost);
     const seconds = await readRecovery(api, since);
     (timings.activeLosses ??= []).push({ node: lost.name, readRecoverySeconds: seconds });
+    // Fencing, promotion and the services take well under a minute (ADR 0072, stand results).
+    assert.ok(seconds < 60, `reads returned after ${String(seconds)} s`);
     // Where the failover spends its time: quorum, fencing, DRBD promotion, the services.
     const taken = await active(cluster);
     step(
