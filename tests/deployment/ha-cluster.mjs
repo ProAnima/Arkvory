@@ -230,8 +230,9 @@ async function pacemaker(cluster, keys, script) {
   );
   if (cluster.witness)
     await cluster.witness.shell.exec(
-      // The Debian and Ubuntu package initializes the device with its own certificates.
-      'pcs qdevice destroy net && pcs qdevice setup model net --enable --start',
+      // The Debian and Ubuntu package has initialized the device for its own service account;
+      // `pcs qdevice setup` would recreate it owned by root, which the service cannot read.
+      'systemctl enable --now corosync-qnetd',
     );
   await first.shell.exec('cat > /root/pacemaker.sh', { input: script });
   await first.shell.exec('cd /root && sh -x pacemaker.sh');
