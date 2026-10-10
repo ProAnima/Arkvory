@@ -153,6 +153,9 @@ async function main(): Promise<void> {
   // Long-running or read-only: outside the installation lock (ADR 0072).
   if (operation === 'cluster-replica') return serveReplica(root);
   if (operation === 'cluster-status') return clusterStatus(root);
+  // The decision file is written atomically and touches no deployment state: an update holding
+  // the installation lock must not keep an operator from deciding during an incident.
+  if (operation === 'cluster-single-copy') return decideSingleCopy(root, options);
   if (await capturedUpdater(operation, options, root)) return;
   await exclusive(root, async () => {
     switch (operation) {
@@ -216,9 +219,6 @@ async function main(): Promise<void> {
         break;
       case 'cluster-node':
         await joinNode(root, options.get('cluster-resource') ?? 'arkvory');
-        break;
-      case 'cluster-single-copy':
-        await decideSingleCopy(root, options);
         break;
       default:
         throw new Error('Commands: install, status, update, configure, recover, upgrade');
