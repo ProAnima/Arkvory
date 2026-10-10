@@ -242,7 +242,13 @@ export const singleCopy = {
       'the single-copy decision to end',
       60000,
     );
-    assert.equal((await api.ready()).json.replication.required, 2, 'the decision ended by itself');
+    // The reading that ended the decision was answered with it; readiness keeps a 1 s snapshot.
+    await until(
+      async () => (await api.ready()).json?.replication?.required === 2,
+      'writes to need two copies again',
+      30000,
+      1000,
+    );
   },
 };
 
