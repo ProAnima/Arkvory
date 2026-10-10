@@ -90,27 +90,44 @@ async function writes(api, expected) {
   });
 }
 
+/** Runs `work` over the items, a few at a time. */
+async function inParallel(items, work, width = 8) {
+  const queue = [...items];
+  await Promise.all(
+    Array.from({ length: width }, async () => {
+      for (let item = queue.shift(); item; item = queue.shift()) await work(item);
+    }),
+  );
+}
+
 /** Every acknowledged upload reads back intact; the others are confirmed by a retry now. */
 async function settle(api, items) {
-  for (const item of items.filter((entry) => entry.acknowledged)) {
+  const acknowledged = items.filter((entry) => entry.acknowledged);
+  const retried = items.filter((entry) => !entry.acknowledged);
+  step(`reading back ${String(acknowledged.length)} acknowledged uploads`);
+  await inParallel(acknowledged, async (item) => {
     const read = await api.read(item);
     assert.deepEqual(
       read,
       { status: 200, sha256: item.sha256 },
       `acknowledged ${item.name} survived`,
     );
-  }
-  for (const item of items.filter((entry) => !entry.acknowledged)) {
-    await until(
-      async () => (await api.upload(item)).acknowledged,
-      `a retry to confirm ${item.name}`,
-      900000,
-      3000,
-    );
-    assert.equal((await api.read(item)).sha256, item.sha256);
-  }
-  const acknowledged = items.filter((entry) => entry.last?.status === 503).length;
-  return { total: items.length, refusedOnce: acknowledged };
+  });
+  step(`confirming ${String(retried.length)} unacknowledged uploads by retry`);
+  await inParallel(
+    retried,
+    async (item) => {
+      await until(
+        async () => (await api.upload(item)).acknowledged,
+        `a retry to confirm ${item.name}`,
+        900000,
+        3000,
+      );
+      assert.equal((await api.read(item)).sha256, item.sha256);
+    },
+    4,
+  );
+  return { acknowledged: acknowledged.length, retried: retried.length };
 }
 
 async function readRecovery(api, since) {
