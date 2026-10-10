@@ -4,8 +4,10 @@ root=/opt/proanima-arkvory
 setup='/usr/lib/proanima-arkvory/arkvory-setup.mjs'
 case "${1:-help}" in
   help|--help|-h) exec /usr/lib/proanima-arkvory/node "$setup" help ;;
-  # The HA cluster plan (ADR 0072) is made before the replicated volume that will hold the
-  # installation exists: it runs from the package files.
-  cluster-plan) exec /usr/lib/proanima-arkvory/node "$setup" "$@" ;;
+  # HA cluster commands (ADR 0072) that act on Pacemaker run from the package files: the plan
+  # exists before the replicated volume, and a switchover unmounts the volume this command
+  # would otherwise run from.
+  cluster-plan|cluster-check|cluster-switchover|cluster-fence-test)
+    exec /usr/lib/proanima-arkvory/node "$setup" "$@" ;;
 esac
 exec "$root/runtime/node" "$root/manage.mjs" "$@"
