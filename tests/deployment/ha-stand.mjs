@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { requireDisposableHost } from './disposable-host.mjs';
 import { baseImage, fencingAccount, keys, removeGuests } from './ha-vms.mjs';
-import { buildCluster, diagnostics, ROOT } from './ha-cluster.mjs';
+import { buildCluster, diagnostics, ROOT, until } from './ha-cluster.mjs';
 import { client } from './ha-load.mjs';
 import {
   active,
@@ -94,6 +94,12 @@ async function runSuite({ profile, scenarios }, base, identity, next) {
     console.log(`HA stand ${profile}: building the cluster`);
     cluster = await buildCluster({ profile, base, keys: identity, artifact });
     const api = client({ host: '192.168.122.100', ca: cluster.tls.ca, token: cluster.token });
+    // The virtual address comes up last in the group: scenarios start once writes go through it.
+    await until(
+      async () => (await api.canWrite()).status === 201,
+      'writes through the virtual address',
+      300000,
+    );
     const context = { cluster, api, next, timings: {} };
     for (const scenario of scenarios) {
       const started = Date.now();

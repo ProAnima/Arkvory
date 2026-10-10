@@ -10,6 +10,18 @@ import { bigItem, writer } from './ha-load.mjs';
 
 const BIG = Number(process.env.ARKVORY_HA_BIG_BYTES ?? 5 * 1024 ** 3);
 
+/** A few acknowledged uploads before a failure: the scenario then has something to lose. */
+const acknowledgedSome = (load) =>
+  until(
+    () => load.items.filter((item) => item.acknowledged).length >= 3,
+    'acknowledged uploads before the failure',
+    120000,
+    500,
+  ).catch((error) => {
+    const last = load.items.slice(-4).map((item) => item.last);
+    throw new Error(`${error.message}; last answers ${JSON.stringify(last)}`);
+  });
+
 export async function active(cluster) {
   const names = await activeNodes(cluster);
   assert.equal(names.length, 1, `exactly one active node (${names.join(', ')})`);
@@ -104,7 +116,7 @@ export const standbyFailure = {
   name: 'standby lost during writes: refused writes, working reads, automatic return',
   async run({ cluster, api }) {
     const load = writer(api, 'standby-loss');
-    await new Promise((resolve) => setTimeout(resolve, 5000));
+    await acknowledgedSome(load);
     const [standby] = await standbys(cluster);
     await powerOff(standby);
     if (cluster.profile === 'ha-2') {
@@ -302,7 +314,7 @@ export const updateAndSwitchover = {
   name: 'release update in the cluster, then a planned switchover',
   async run({ cluster, api, next }) {
     const before = writer(api, 'before-update');
-    await new Promise((resolve) => setTimeout(resolve, 5000));
+    await acknowledgedSome(before);
     const kept = await before.stop();
     const primary = await active(cluster);
     for (const node of cluster.data) await node.shell.copy(next.path, '/stand/next.deb');
@@ -327,7 +339,7 @@ export const fullResync = {
   name: 'full resynchronization of a node under read load',
   async run({ cluster, api }) {
     const load = writer(api, 'resync-source');
-    await new Promise((resolve) => setTimeout(resolve, 5000));
+    await acknowledgedSome(load);
     const items = (await load.stop()).filter((item) => item.acknowledged);
     const [standby] = await standbys(cluster);
     await standby.shell.exec('drbdadm invalidate arkvory');
