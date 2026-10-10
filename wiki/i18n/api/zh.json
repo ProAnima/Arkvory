@@ -1018,7 +1018,8 @@
       "login_attempts": "登录尝试次数过多；请等待。",
       "registration_attempts": "注册尝试次数过多；请等待。",
       "password_attempts": "密码尝试次数过多；请等待。",
-      "feedback_attempts": "反馈报告过多；请等待。"
+      "feedback_attempts": "反馈报告过多；请等待。",
+      "replication_degraded": "HA 集群中完整副本的数量少于写入所需，因此更改未被确认；请在 Retry-After 之后重试。下载仍可正常进行。"
     }
   },
   "fields": {

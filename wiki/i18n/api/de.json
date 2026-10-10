@@ -1018,7 +1018,8 @@
       "login_attempts": "Zu viele Anmeldeversuche; warten Sie.",
       "registration_attempts": "Zu viele Registrierungsversuche; warten Sie.",
       "password_attempts": "Zu viele Passwortversuche; warten Sie.",
-      "feedback_attempts": "Zu viele Feedback-Meldungen; warten Sie."
+      "feedback_attempts": "Zu viele Feedback-Meldungen; warten Sie.",
+      "replication_degraded": "Ein HA-Cluster hat weniger vollständige Kopien, als ein Schreibvorgang braucht; die Änderung wurde nicht bestätigt. Nach Retry-After wiederholen. Downloads funktionieren weiter."
     }
   },
   "fields": {

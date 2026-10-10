@@ -41,3 +41,4 @@ export * from './oci-registry.js';
 export * from './raw-files.js';
 export * from './git-lfs.js';
 export * from './npm-registry.js';
+export type { ReplicaState } from './replica.js';

@@ -1018,7 +1018,8 @@
       "login_attempts": "Demasiados intentos de inicio de sesión; espere.",
       "registration_attempts": "Demasiados intentos de registro; espere.",
       "password_attempts": "Demasiados intentos de contraseña; espere.",
-      "feedback_attempts": "Demasiados envíos de comentarios; espere."
+      "feedback_attempts": "Demasiados envíos de comentarios; espere.",
+      "replication_degraded": "Un clúster HA tiene menos copias completas de las que necesita una escritura, por lo que el cambio no se confirmó; repítalo después de Retry-After. Las descargas siguen funcionando."
     }
   },
   "fields": {

@@ -11,6 +11,8 @@ export const errorEnglish = {
     'Feedback is turned off on this server. Write to info@proanima.net instead.',
   errorHubUnreachable:
     'The server cannot reach ProAnimaStudio right now. Try again later or write to info@proanima.net.',
+  errorReplicationDegraded:
+    'The cluster is missing a copy of the data, so changes are paused. Downloads still work; try again later.',
   errorFeedbackLimited: 'Too many messages from this server. Wait a few minutes and try again.',
   errorReadOnly:
     'This address only serves downloads. Make changes through the main Arkvory address.',
@@ -84,6 +86,8 @@ export const errorRussian: Record<keyof typeof errorEnglish, string> = {
   errorFeedbackDisabled: 'Обратная связь на этом сервере выключена. Напишите на info@proanima.net.',
   errorHubUnreachable:
     'Сервер сейчас не может связаться с ProAnimaStudio. Повторите позже или напишите на info@proanima.net.',
+  errorReplicationDegraded:
+    'В кластере не хватает копии данных, поэтому изменения приостановлены. Скачивание работает; повторите позже.',
   errorFeedbackLimited: 'Слишком много сообщений с этого сервера. Подождите несколько минут.',
   errorReadOnly: 'Этот адрес только раздаёт файлы. Вносите изменения через основной адрес Arkvory.',
   errorRouteMissing:

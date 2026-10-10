@@ -48,6 +48,11 @@ export interface MetricSources {
     refresh(failed: () => void): Promise<void>;
     register(registry: MetricsRegistry): void;
   };
+  /** Copies of an HA cluster volume and refused writes (ADR 0072). */
+  readonly replica?: {
+    refresh(failed: () => void): Promise<void>;
+    register(registry: MetricsRegistry): void;
+  };
   /** Webhook delivery gauges, same cache rules (ADR 0069). */
   readonly webhooks?: {
     refresh(failed: () => void): Promise<void>;
@@ -108,6 +113,7 @@ export class ApiMetrics {
     sources.backup?.register(this.registry);
     sources.mirrors?.register(this.registry);
     sources.webhooks?.register(this.registry);
+    sources.replica?.register(this.registry);
   }
 
   observe(observed: ObservedResponse): void {
@@ -132,6 +138,9 @@ export class ApiMetrics {
       }),
       this.sources.webhooks?.refresh(() => {
         this.collectionFailures.inc({ collector: 'webhook' });
+      }),
+      this.sources.replica?.refresh(() => {
+        this.collectionFailures.inc({ collector: 'replica' });
       }),
     ]);
     return this.registry.render();

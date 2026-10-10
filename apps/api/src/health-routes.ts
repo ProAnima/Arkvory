@@ -9,6 +9,7 @@ import type {
   BandwidthGovernor,
 } from '@proanima/arkvory-infrastructure';
 import { ReadinessProbe } from './readiness.js';
+import type { ReplicaGuard } from './replica-guard.js';
 
 interface Health {
   catalog: Pick<PostgresCatalog, 'ready'>;
@@ -27,6 +28,7 @@ export function registerHealthRoutes(
   app: FastifyInstance,
   dependencies: Health,
   draining: () => boolean,
+  replica?: ReplicaGuard,
 ) {
   const { catalog, blobs, role, lease, available } = dependencies;
   const { uploadGate, downloadGate, uploadBandwidth, downloadBandwidth } = dependencies.transfers;
@@ -63,9 +65,15 @@ export function registerHealthRoutes(
     }
     if (!available())
       throw new ArkvoryError('unavailable', 'Gateway ownership or download lease lost');
+    // Missing copies stop writes, not the node: readiness stays 200 so the cluster manager
+    // does not move a healthy writer, and writable says whether writes are acknowledged.
+    if (replica) await replica.refresh();
+    const replication = replica ? (replica.snapshot ?? null) : undefined;
+    if (replica && (!replication || replication.copies < replication.required)) writable = false;
     return {
       status: 'ready',
       writable,
+      ...(replication === undefined ? {} : { replication }),
       role,
       sharedDownloads: lease?.snapshot ?? null,
       transfers: {

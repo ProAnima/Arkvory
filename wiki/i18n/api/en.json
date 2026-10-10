@@ -1018,7 +1018,8 @@
       "login_attempts": "Too many sign-in attempts; wait.",
       "registration_attempts": "Too many registration attempts; wait.",
       "password_attempts": "Too many password attempts; wait.",
-      "feedback_attempts": "Too many feedback reports; wait."
+      "feedback_attempts": "Too many feedback reports; wait.",
+      "replication_degraded": "An HA cluster has fewer complete copies than a write needs, so the change was not acknowledged; repeat after Retry-After. Downloads still work."
     }
   }
 }

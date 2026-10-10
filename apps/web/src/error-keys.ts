@@ -77,6 +77,7 @@ const byReason: Readonly<Record<string, Readonly<Record<string, MessageKey>>>> =
   unavailable: {
     feedback_disabled: 'errorFeedbackDisabled',
     hub_unreachable: 'errorHubUnreachable',
+    replication_degraded: 'errorReplicationDegraded',
   },
 };
 const byCode: Readonly<Record<string, MessageKey>> = {

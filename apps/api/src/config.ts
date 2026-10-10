@@ -53,6 +53,11 @@ export interface ServerConfig extends UploadTimeoutOptions, OperabilityOptions {
    * the studio hub on unless ARKVORY_HUB_URL is set empty.
    */
   readonly hub?: FeedbackHub | null;
+  /**
+   * The replica helper's socket of an HA cluster node (ADR 0072). Set: a write is acknowledged
+   * only with enough complete copies. Absent: standalone, one copy by design.
+   */
+  readonly replicaSocket?: string;
 }
 
 /** Startup logs may print these messages: they name the variable, never its value or path. */
@@ -184,6 +189,7 @@ export async function loadConfig(env: NodeJS.ProcessEnv): Promise<ServerConfig> 
     ...readHub(env),
     corsOrigins: parseCorsOrigins(env['ARKVORY_CORS_ORIGINS']),
     webDirectory: env['ARKVORY_WEB_DIR'] ?? 'apps/web/public',
+    ...(env['ARKVORY_REPLICA_SOCKET'] ? { replicaSocket: env['ARKVORY_REPLICA_SOCKET'] } : {}),
     ...(env['ARKVORY_UPDATE_CONTROL_DIR']
       ? { updateControlDirectory: env['ARKVORY_UPDATE_CONTROL_DIR'] }
       : {}),

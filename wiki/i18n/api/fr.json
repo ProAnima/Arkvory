@@ -1018,7 +1018,8 @@
       "login_attempts": "Trop de tentatives de connexion ; attendez.",
       "registration_attempts": "Trop de tentatives d’inscription ; attendez.",
       "password_attempts": "Trop de tentatives de mot de passe ; attendez.",
-      "feedback_attempts": "Trop d’envois de commentaires ; attendez."
+      "feedback_attempts": "Trop d’envois de commentaires ; attendez.",
+      "replication_degraded": "Un cluster HA a moins de copies complètes qu'il n'en faut pour une écriture : la modification n'a pas été confirmée ; réessayez après Retry-After. Les téléchargements fonctionnent toujours."
     }
   },
   "fields": {

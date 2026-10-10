@@ -1018,7 +1018,8 @@
       "login_attempts": "Tentativas de login demais; aguarde.",
       "registration_attempts": "Tentativas de registro demais; aguarde.",
       "password_attempts": "Tentativas de senha demais; aguarde.",
-      "feedback_attempts": "Relatos de feedback demais; aguarde."
+      "feedback_attempts": "Relatos de feedback demais; aguarde.",
+      "replication_degraded": "Um cluster HA tem menos cópias completas do que uma gravação exige, por isso a alteração não foi confirmada; repita após Retry-After. Os downloads continuam funcionando."
     }
   },
   "fields": {

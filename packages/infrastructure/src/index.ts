@@ -118,3 +118,4 @@ export {
   trustMirrorCertificates,
 } from './mirror-config.js';
 export type { MirrorSettings } from './mirror-config.js';
+export { SocketReplicaState, parseReplicaCopies } from './replica-socket.js';

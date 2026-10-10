@@ -1018,7 +1018,8 @@
       "login_attempts": "로그인 시도가 너무 많습니다. 기다립니다.",
       "registration_attempts": "등록 시도가 너무 많습니다. 기다립니다.",
       "password_attempts": "비밀번호 시도가 너무 많습니다. 기다립니다.",
-      "feedback_attempts": "피드백 보고가 너무 많습니다. 기다립니다."
+      "feedback_attempts": "피드백 보고가 너무 많습니다. 기다립니다.",
+      "replication_degraded": "HA 클러스터의 완전한 사본 수가 쓰기에 필요한 수보다 적어 변경이 확인되지 않았습니다. Retry-After 이후 다시 시도하세요. 다운로드는 계속 사용할 수 있습니다."
     }
   },
   "fields": {

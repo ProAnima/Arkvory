@@ -82,3 +82,4 @@ ADR нужен для изменения границ, публичных кон
 - [0069 — Вебхуки поверх ленты изменений](0069-webhooks-over-change-feed.md)
 - [0070 — Шифрование vault резервных копий и recovery kit](0070-encrypted-backup-vault.md)
 - [0071 — S3-совместимый vault резервных копий (proposed)](0071-s3-backup-vault.md)
+- [0072 — HA на одной площадке: active/passive на синхронной реплике тома](0072-single-site-ha.md)

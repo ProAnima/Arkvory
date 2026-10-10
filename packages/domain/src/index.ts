@@ -46,3 +46,5 @@ export type {
   DetailProblem,
   ErrorExtra,
 } from './errors.js';
+export { acknowledges } from './replica.js';
+export type { ReplicaCopies } from './replica.js';

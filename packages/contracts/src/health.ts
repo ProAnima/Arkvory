@@ -65,6 +65,18 @@ export const readinessSchema = {
     },
     status: { type: 'string', enum: ['ready'] },
     writable: { type: 'boolean' },
+    // HA cluster (ADR 0072): complete copies of the volume; absent on a standalone server.
+    replication: {
+      type: 'object',
+      nullable: true,
+      additionalProperties: false,
+      required: ['copies', 'required', 'singleCopyUntil'],
+      properties: {
+        copies: { type: 'integer', minimum: 0, maximum: 16 },
+        required: { type: 'integer', minimum: 1, maximum: 16 },
+        singleCopyUntil: { type: 'string', format: 'date-time', nullable: true },
+      },
+    },
     transfers: {
       type: 'object',
       additionalProperties: false,

@@ -27,6 +27,8 @@ import { registerAccessLog } from './access-log.js';
 import { RequestDrain } from './drain.js';
 import { ApiMetrics, registerMetrics } from './api-metrics.js';
 import type { MetricSources } from './api-metrics.js';
+import { registerReplicaGuard, replicaGuardFor } from './replica-guard.js';
+import type { ReplicaGuard } from './replica-guard.js';
 
 export interface ServerLifecycle {
   onOwnershipLost?: () => void;
@@ -79,9 +81,11 @@ function processMetrics(
   sources: Pick<MetricSources, 'identity' | 'transfers' | 'diagnostics' | 'jobs' | 'backup'>,
   activeRequests: () => number,
   certificate: { readonly notAfterMs: number } | undefined,
+  replica: ReplicaGuard | undefined,
 ): ApiMetrics {
   return new ApiMetrics({
     ...sources,
+    ...(replica ? { replica } : {}),
     activeRequests,
     now: () => performance.now(),
     startedAtSeconds: Math.round(Date.now() / 1000 - process.uptime()),
@@ -136,6 +140,7 @@ export async function createServer(config: ServerConfig, lifecycle: ServerLifecy
       ...(config.mirrors ? { mirrors: config.mirrors } : {}),
     });
     const context = createRequestContext(config.maxRequests, services.mirrors.readOnlyRepositories);
+    const replica = replicaGuardFor(config.replicaSocket, runtime.role);
     const responses = new ResponseDiagnostics(diagnostics, services.storagePolicies, context);
     // Guard registration precedes feature routes and background startup.
     registerContractGuard(app);
@@ -155,6 +160,7 @@ export async function createServer(config: ServerConfig, lifecycle: ServerLifecy
         { identity, transfers: runtime.transfers, diagnostics, ...services.metricSources },
         () => drain.activeRequests,
         certificate,
+        replica,
       ),
       () => performance.now(),
     );
@@ -174,8 +180,9 @@ export async function createServer(config: ServerConfig, lifecycle: ServerLifecy
       registerOwner: runtime.transfers.registerOwner,
       drain,
     });
+    registerReplicaGuard(app, replica);
     registerHttpErrors(app, context);
-    registerHealthRoutes(app, runtime, () => drain.isDraining);
+    registerHealthRoutes(app, runtime, () => drain.isDraining, replica);
     registerUpdateRoutes(app, context.principal, config.updateControlDirectory);
     registerFeedback(app, context.principal, {
       hub: config.hub ?? null,

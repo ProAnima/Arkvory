@@ -27,6 +27,10 @@
     "en": "The server cannot reach ProAnimaStudio right now. Try again later or write to info@proanima.net.",
     "text": "Der Server erreicht ProAnimaStudio derzeit nicht. Versuchen Sie es später erneut oder schreiben Sie an info@proanima.net."
   },
+  "errorReplicationDegraded": {
+    "en": "The cluster is missing a copy of the data, so changes are paused. Downloads still work; try again later.",
+    "text": "Dem Cluster fehlt eine Kopie der Daten, daher sind Änderungen pausiert. Downloads funktionieren weiter; versuchen Sie es später erneut."
+  },
   "errorFeedbackLimited": {
     "en": "Too many messages from this server. Wait a few minutes and try again.",
     "text": "Zu viele Nachrichten von diesem Server. Warten Sie einige Minuten und versuchen Sie es erneut."
