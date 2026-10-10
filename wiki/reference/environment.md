@@ -132,6 +132,14 @@ See [Mirrors](../operate/mirrors).
 
 See [Webhooks](../protocols/webhooks).
 
+## HA cluster {#cluster}
+
+| Variable                 | Read by | Default | Meaning                                                                                                                                                                             |
+| ------------------------ | ------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ARKVORY_REPLICA_SOCKET` | API     | not set | Socket of the `arkvory-replica` service. `arkvory configure --cluster` sets it. With it, a write gets 2xx only when the required copies are complete. Not set: a standalone server. |
+
+See [High availability cluster](../operate/cluster).
+
 ## Updates and the hub {#updates-and-the-hub}
 
 | Variable                     | Read by | Default                    | Meaning                                                                                                                                                                                                                       |

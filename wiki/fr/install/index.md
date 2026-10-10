@@ -11,7 +11,7 @@ Arkvory s’exécute sur un seul serveur. Chaque installation comprend les même
 - **Agent de sauvegarde** : effectue des sauvegardes planifiées vers un stockage des sauvegardes.
 - **PostgreSQL** : la base de données du catalogue.
 
-Le contenu des fichiers est stocké sur un disque local du serveur. Cette configuration n’est pas un système à haute disponibilité. Une mise à jour ou une panne du serveur provoque une courte interruption, et les clients reprennent leurs transferts.
+Le contenu des fichiers est stocké sur un disque local du serveur. Un serveur seul n’est pas un système à haute disponibilité : une mise à jour ou une panne du serveur provoque une courte interruption, et les clients reprennent leurs transferts. Pour deux ou trois serveurs Linux qui conservent une copie synchrone et se relaient, voir [Cluster à haute disponibilité](../operate/cluster).
 
 ## Options d’installation {#installation-options}
 

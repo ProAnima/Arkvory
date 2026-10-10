@@ -30,6 +30,7 @@ export const SECTIONS: readonly Section[] = [
       'backups',
       'mirrors',
       'read-gateways',
+      'cluster',
       'storage',
       'monitoring',
       'self-healing',

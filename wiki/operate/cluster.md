@@ -47,7 +47,7 @@ An administrator signed in to the console sees a banner while writes are stopped
 - Two or three data servers with the same Linux distribution, the same Arkvory package version and a disk (or logical volume) of the full size for the volume on each. Plan for the whole storage plus the database.
 - For `ha-2`, a third small server as the witness. It needs no disk for data and does not run Arkvory.
 - A network between the servers with low latency. Every write waits for the other servers, so the latency adds to each write. Use a dedicated link when you can.
-- DRBD 9 (the kernel module and `drbd-utils` 9; many distributions ship the older 8.4 module, so use LINBIT packages), `pacemaker`, `pcs`, `corosync`, `resource-agents`, the fence agents for your hardware. For `ha-2`: `corosync-qdevice` on the data servers and `corosync-qnetd` on the witness.
+- DRBD 9 (the kernel module and `drbd-utils` 9; many distributions ship the older 8.4 module, so use LINBIT packages), `pacemaker`, `pcs`, `corosync`, `resource-agents` (on Ubuntu, `resource-agents-base` and `resource-agents-extra`), the fence agents for your hardware. For `ha-2`: `corosync-qdevice` on the data servers and `corosync-qnetd` on the witness.
 - A fence device for each data server and the credentials for it.
 - A free IP address in the servers' network. Clients connect to this virtual address.
 - A TLS certificate for the virtual address. Keep the certificate and the key on the volume, so every server finds them at the same path.
@@ -81,6 +81,8 @@ The commands below use the default resource name `arkvory`, the installation dir
    ```
 
    On the witness, also run `systemctl enable drbd@arkvory.service` so that the tiebreaker comes back after a restart.
+
+   The plan lets a returning copy resynchronize at 20 MB/s at least, even under write load, and at 1 GB/s at most. Set `c-min-rate` and `c-max-rate` in the `disk` section to what your replication link carries.
 
 4. On the first data server, make it primary, create the file system and mount it. With new empty disks, skip the initial synchronization first:
 
@@ -124,7 +126,7 @@ The commands below use the default resource name `arkvory`, the installation dir
 
    `cluster-node` creates the service accounts with the same user and group IDs as on the first server (the files on the volume belong to them) and installs the same services, none of them started automatically. If an account already exists with other IDs, the command stops and tells you which IDs to set.
 
-8. Set up the Corosync cluster with `pcs` on the data servers (`pcs host auth`, `pcs cluster setup`, `pcs cluster start --all`). On Debian and Ubuntu, first run `pcs cluster destroy` on each data server: the packages install a sample Corosync configuration that `pcs` takes for an existing cluster. Do not run `pcs cluster enable`: a server that was fenced should rejoin only when you start it. For `ha-2`, also authenticate the witness and run `pcs qdevice setup model net --enable --start` on it.
+8. Set up the Corosync cluster with `pcs` on the data servers (`pcs host auth`, `pcs cluster setup`, `pcs cluster start --all`). On Debian and Ubuntu, first run `pcs cluster destroy` on each data server: the packages install a sample Corosync configuration that `pcs` takes for an existing cluster. Do not run `pcs cluster enable`: a server that was fenced should rejoin only when you start it. For `ha-2`, also authenticate the witness and run `pcs qdevice setup model net --enable --start` on it. On Debian and Ubuntu the package has already set the quorum device up for its own service account: run `systemctl enable --now corosync-qnetd` there instead.
 
 9. Open `/root/arkvory-plan/pacemaker.sh`. Replace each `<agent parameters: …>` with the parameters of your fence device: its address, the login, the password file or key, and the plug or port of that server. Then run the script on one data server:
 
@@ -176,18 +178,21 @@ Do not start or stop the Arkvory services with `systemctl` on a cluster server. 
 
 ## Failures {#failures}
 
-| What happens                       | `ha-2`                                                                                    | `ha-3`                                                            |
-| ---------------------------------- | ----------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
-| A standby server fails             | Fenced. Reads continue, writes get 503 `replication_degraded`                             | Fenced. Reads and writes continue                                 |
-| The active server fails            | Fenced, Arkvory starts on the other server. Reads return, writes wait for the second copy | Fenced, Arkvory starts on another server. Reads and writes return |
-| Network split between data servers | The witness gives the quorum to one side; the other side is fenced. Never two writers     | The majority side continues; the other server is fenced           |
-| Fencing does not work              | No failover. Arkvory stays stopped until fencing succeeds                                 | The same                                                          |
+| What happens                                                    | `ha-2`                                                                                                          | `ha-3`                                                            |
+| --------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| A standby server fails                                          | Fenced. Reads continue, writes get 503 `replication_degraded`                                                   | Fenced. Reads and writes continue                                 |
+| The active server fails                                         | Fenced, Arkvory starts on the other server. Reads return, writes wait for the second copy                       | Fenced, Arkvory starts on another server. Reads and writes return |
+| Network split between data servers                              | The witness gives the quorum to one side; the other side is fenced. Never two writers                           | The majority side continues; the other server is fenced           |
+| Two of three members fail (ha-2: a data server and the witness) | The last server has no quorum: Arkvory stops. Never a writer without quorum. Bring the servers back (see below) | The same for two data servers                                     |
+| Fencing does not work                                           | No failover. Arkvory stays stopped until fencing succeeds                                                       | The same                                                          |
 
 To bring a fenced server back:
 
 1. Repair the cause and start the server.
 2. Run `pcs cluster start` on it.
 3. The volume resynchronizes the changed blocks. Writes resume by themselves when every copy needed is complete again; `arkvory cluster-status` shows the progress.
+
+After a loss of quorum, start the cluster on every server that is back. Pacemaker runs Arkvory again on the server with the newest copy. The server that lost the quorum last may be fenced once more on the way back, because it could not stop cleanly: start the cluster on it again after its restart.
 
 When fencing failed and you repaired it, clear the failed attempts on a running server so that Pacemaker tries again: `pcs stonith history cleanup <server>` and `pcs resource cleanup`.
 

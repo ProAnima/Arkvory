@@ -11,7 +11,7 @@ Arkvory runs on one server. Every installation has the same parts:
 - **Backup agent**: makes scheduled backups into a backup vault.
 - **PostgreSQL**: the database for the catalog.
 
-File content is stored on a local disk of the server. This setup is not a high-availability system. An update or a server failure causes a short interruption, and clients resume their transfers.
+File content is stored on a local disk of the server. A single server is not a high-availability system: an update or a server failure causes a short interruption, and clients resume their transfers. For two or three Linux servers that keep a synchronous copy and take over from each other, see [High availability cluster](../operate/cluster).
 
 ## Installation options {#installation-options}
 

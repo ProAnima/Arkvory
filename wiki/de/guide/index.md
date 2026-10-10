@@ -65,7 +65,7 @@ Sie können es auf drei Arten installieren:
 
 Standardmäßig lauscht der Server nur auf `127.0.0.1:8080`. Richten Sie [HTTPS](../install/https) ein, bevor sich andere Rechner verbinden.
 
-Eine Installation ist ein Server. Sie ist kein Hochverfügbarkeits-Cluster: Fällt der Server aus, warten die Clients, bis er wieder erreichbar ist. Nutzen Sie [Backups](../operate/backups) und bei Bedarf [Spiegel](../operate/mirrors) an einem zweiten Standort.
+Eine Installation ist ein Server: Fällt er aus, warten die Clients, bis er wieder erreichbar ist. Unter Linux übernimmt ein [Hochverfügbarkeits-Cluster](../operate/cluster) aus zwei oder drei Servern, wenn einer ausfällt. Nutzen Sie [Backups](../operate/backups) und bei Bedarf [Spiegel](../operate/mirrors) an einem zweiten Standort.
 
 ## Wie es weitergeht {#where-to-go-next}
 

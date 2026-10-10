@@ -11,7 +11,7 @@ O Arkvory é executado em um único servidor. Toda instalação tem as mesmas pa
 - **Agente de backup**: faz backups agendados em um armazenamento de backups (vault).
 - **PostgreSQL**: o banco de dados do catálogo.
 
-O conteúdo dos arquivos fica em um disco local do servidor. Essa configuração não é um sistema de alta disponibilidade. Uma atualização ou uma falha do servidor causa uma breve interrupção, e os clientes retomam as transferências.
+O conteúdo dos arquivos fica em um disco local do servidor. Um único servidor não é um sistema de alta disponibilidade: uma atualização ou uma falha do servidor causa uma breve interrupção, e os clientes retomam as transferências. Para dois ou três servidores Linux que mantêm uma cópia síncrona e assumem o lugar um do outro, consulte [Cluster de alta disponibilidade](../operate/cluster).
 
 ## Opções de instalação {#installation-options}
 

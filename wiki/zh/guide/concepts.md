@@ -20,7 +20,7 @@ description: 文档其余部分使用的概念，从安装和仓库到访问、�
 
 文件内容保存在服务器的本地目录中，而不是数据库中。所有部件都位于**安装根目录**（Windows 上是 `C:\ProgramData\ProAnima\Arkvory`，Linux 上是 `/opt/proanima-arkvory`）。服务无需用户登录即可启动，并会在崩溃或卡死后重启（[自愈](../operate/self-healing)）。
 
-安装实例不是高可用集群。如果服务器停止，客户端会等待，然后继续它们的传输。参见[选择安装方式](../install/index)。
+安装实例不是高可用集群。如果服务器停止，客户端会等待，然后继续它们的传输。参见[选择安装方式](../install/index)。在 Linux 上，两到三台服务器可以组成[高可用集群](../operate/cluster)。
 
 ## 仓库 {#repositories}
 

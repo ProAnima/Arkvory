@@ -20,7 +20,7 @@ Uma instalação é um servidor. Ela executa três serviços do Arkvory ao lado 
 
 O conteúdo dos arquivos fica em um diretório local do servidor, não no banco de dados. Todas as partes ficam na **raiz da instalação** (`C:\ProgramData\ProAnima\Arkvory` no Windows, `/opt/proanima-arkvory` no Linux). Os serviços iniciam sem um usuário conectado e reiniciam após uma falha ou um travamento ([Autorrecuperação](../operate/self-healing)).
 
-Uma instalação não é um cluster de alta disponibilidade. Se o servidor parar, os clientes esperam e depois continuam suas transferências. Consulte [Escolher uma instalação](../install/index).
+Uma instalação não é um cluster de alta disponibilidade. Se o servidor parar, os clientes esperam e depois continuam suas transferências. Consulte [Escolher uma instalação](../install/index). No Linux, dois ou três servidores podem formar um [cluster de alta disponibilidade](../operate/cluster).
 
 ## Repositórios {#repositories}
 

@@ -65,7 +65,7 @@ Você pode instalá-lo de três maneiras:
 
 Por padrão, o servidor escuta somente em `127.0.0.1:8080`. Antes de outras máquinas se conectarem, configure o [HTTPS](../install/https).
 
-Uma instalação é um único servidor. Não é um cluster de alta disponibilidade: se o servidor parar, os clientes esperam até que ele volte. Use [backups](../operate/backups) e, se necessário, [espelhos](../operate/mirrors) em um segundo site.
+Uma instalação é um único servidor: se ele parar, os clientes esperam até que volte. No Linux, um [cluster de alta disponibilidade](../operate/cluster) de dois ou três servidores assume o lugar quando um deles falha. Use [backups](../operate/backups) e, se necessário, [espelhos](../operate/mirrors) em um segundo site.
 
 ## Para onde ir em seguida {#where-to-go-next}
 

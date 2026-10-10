@@ -132,6 +132,14 @@ Consulte [Espelhos](../operate/mirrors).
 
 Veja [Webhooks](../protocols/webhooks).
 
+## Cluster de alta disponibilidade {#cluster}
+
+| Variável                 | Lida por | Padrão       | Significado                                                                                                                                                                                           |
+| ------------------------ | -------- | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ARKVORY_REPLICA_SOCKET` | API      | não definida | Socket do serviço `arkvory-replica`. `arkvory configure --cluster` a define. Com ela, uma gravação recebe 2xx somente quando as cópias exigidas estão completas. Não definida: servidor independente. |
+
+Veja [Cluster de alta disponibilidade](../operate/cluster).
+
 ## Atualizações e o hub {#updates-and-the-hub}
 
 | Variável                     | Lida por | Padrão                     | Significado                                                                                                                                                                                                                               |

@@ -65,7 +65,7 @@ You can install it in three ways:
 
 By default, the server listens only on `127.0.0.1:8080`. Before other machines connect, set up [HTTPS](../install/https).
 
-One installation is one server. It is not a high-availability cluster: if the server stops, clients wait until it is back. Use [backups](../operate/backups) and, if needed, [mirrors](../operate/mirrors) on a second site.
+A standard installation is one server: if it stops, clients wait until it is back. On Linux, a [high availability cluster](../operate/cluster) of two or three servers takes over when one fails. Use [backups](../operate/backups) and, if needed, [mirrors](../operate/mirrors) on a second site.
 
 ## Where to go next {#where-to-go-next}
 

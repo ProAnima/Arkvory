@@ -20,7 +20,7 @@ One installation is one server. It runs three Arkvory services next to one Postg
 
 File content lives in a local directory of the server, not in the database. All parts live in the **installation root** (`C:\ProgramData\ProAnima\Arkvory` on Windows, `/opt/proanima-arkvory` on Linux). The services start without a signed-in user and restart after a crash or a hang ([Self-healing](../operate/self-healing)).
 
-An installation is not a high-availability cluster. If the server stops, clients wait and then continue their transfers. See [Choose an installation](../install/index).
+A single-server installation is not highly available. If the server stops, clients wait and then continue their transfers. See [Choose an installation](../install/index). On Linux, two or three servers can form a [high availability cluster](../operate/cluster).
 
 ## Repositories {#repositories}
 

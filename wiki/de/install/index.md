@@ -11,7 +11,7 @@ Arkvory läuft auf einem Server. Jede Installation besteht aus denselben Teilen:
 - **Backup-Agent**: erstellt geplante Backups in einem Backup-Speicher.
 - **PostgreSQL**: die Datenbank für den Katalog.
 
-Dateiinhalte liegen auf einem lokalen Datenträger des Servers. Diese Konfiguration ist kein Hochverfügbarkeitssystem. Ein Update oder ein Serverausfall führt zu einer kurzen Unterbrechung, danach setzen die Clients ihre Übertragungen fort.
+Dateiinhalte liegen auf einem lokalen Datenträger des Servers. Ein einzelner Server ist kein Hochverfügbarkeitssystem: Ein Update oder ein Serverausfall führt zu einer kurzen Unterbrechung, danach setzen die Clients ihre Übertragungen fort. Für zwei oder drei Linux-Server, die eine synchrone Kopie halten und einander ablösen, siehe [Hochverfügbarkeits-Cluster](../operate/cluster).
 
 ## Installationsoptionen {#installation-options}
 

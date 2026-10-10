@@ -132,6 +132,14 @@ Restart-Service Arkvoryapi, Arkvoryworker, Arkvorybackup
 
 参见 [Webhook](../protocols/webhooks)。
 
+## 高可用集群 {#cluster}
+
+| 变量                     | 读取方 | 默认值 | 含义                                                                                                                                         |
+| ------------------------ | ------ | ------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ARKVORY_REPLICA_SOCKET` | API    | 未设置 | `arkvory-replica` 服务的套接字。`arkvory configure --cluster` 会设置它。设置后，只有所需副本都完整时，写入才会得到 2xx。未设置：独立服务器。 |
+
+参见 [高可用集群](../operate/cluster)。
+
 ## 更新与中心（hub） {#updates-and-the-hub}
 
 | 变量                         | 读取方 | 默认值                     | 含义                                                                                                                                                                 |
