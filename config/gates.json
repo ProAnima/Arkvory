@@ -13,7 +13,10 @@
       "deployment-containers",
       "native-install",
       "deployment-stand",
-      "deployment-nas"
+      "deployment-nas",
+      "deployment-ha",
+      "deployment-ha-operations",
+      "deployment-ha-three"
     ],
     "release": [
       "static",
@@ -29,7 +32,10 @@
       "deployment-containers",
       "native-install",
       "deployment-stand",
-      "deployment-nas"
+      "deployment-nas",
+      "deployment-ha",
+      "deployment-ha-operations",
+      "deployment-ha-three"
     ],
     "large": ["large-full", "large-multipart"]
   },
@@ -182,6 +188,27 @@
       "timeoutSeconds": 1500,
       "entries": ["tests/deployment/nas-stand.mjs"],
       "kind": "scenario"
+    },
+    "deployment-ha": {
+      "needs": ["native-package"],
+      "timeoutSeconds": 1800,
+      "entries": ["tests/deployment/ha-stand.mjs"],
+      "args": ["failures"],
+      "kind": "scenario"
+    },
+    "deployment-ha-operations": {
+      "needs": ["native-package"],
+      "timeoutSeconds": 1800,
+      "entries": ["tests/deployment/ha-stand.mjs"],
+      "args": ["operations"],
+      "kind": "scenario"
+    },
+    "deployment-ha-three": {
+      "needs": ["native-package"],
+      "timeoutSeconds": 1800,
+      "entries": ["tests/deployment/ha-stand.mjs"],
+      "args": ["three-nodes"],
+      "kind": "scenario"
     }
   },
   "spawnedHelpers": [
@@ -204,7 +231,10 @@
     "native-package",
     "native-install",
     "deployment-stand",
-    "deployment-nas"
+    "deployment-nas",
+    "deployment-ha",
+    "deployment-ha-operations",
+    "deployment-ha-three"
   ],
   "releaseTasks": ["large-full", "large-multipart"]
 }

@@ -57,7 +57,13 @@ test('ha-3 plan: three data nodes decide by majority, without a quorum device', 
     ),
   );
   assert.ok(!pacemaker.includes('quorum device'));
-  assert.equal(pacemaker.match(/pcs stonith create/g)?.length, 3);
+  assert.equal(pacemaker.match(/ stonith create /g)?.length, 3);
+  // Resources and constraints reach the cluster in one push, never one by one.
+  const lines = pacemaker.split('\n').filter((line) => line.startsWith('pcs '));
+  assert.deepEqual(
+    lines.filter((line) => !line.startsWith('pcs -f arkvory.cib.xml ')),
+    ['pcs cluster cib arkvory.cib.xml', 'pcs cluster cib-push arkvory.cib.xml --config'],
+  );
 });
 
 test('plans that cannot fence or decide a partition are refused', () => {

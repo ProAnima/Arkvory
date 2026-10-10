@@ -329,6 +329,152 @@ jobs:
         if: ${{ always() }}
         run: node scripts/ci-report.mjs
 
+  ha-base:
+    name: HA guest base image (DRBD 9, Pacemaker)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: '24'
+          cache: npm
+      # The runner is disposable: the stand needs a hypervisor, libvirt and SSH for fence_virsh.
+      - run: |
+          sudo apt-get update
+          sudo apt-get install -y rpm postgresql qemu-system-x86 qemu-utils libvirt-daemon-system virtinst cloud-image-utils openssh-server
+          sudo chmod 666 /dev/kvm
+          sudo virsh net-start default || true
+      # The guest base image (packages and the DRBD 9 module), rebuilt only when ha-base.mjs changes.
+      - name: Cache the HA guest base image
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: .cache/ha-stand/base-*.qcow2
+          key: ha-base-v1-${{ hashFiles('scripts/ha-base-image.mjs') }}
+      - run: node scripts/ha-base-image.mjs
+
+  ha-failures:
+    name: HA stand - node, power, network and fencing failures (ADR 0072)
+    needs: [ha-base]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Cache verified native dependency archives
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: .cache/native-downloads
+          key: native-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/native-dependencies.mjs') }}
+        env:
+          SEGMENT_DOWNLOAD_TIMEOUT_MINS: '2'
+      # The runner is disposable: the stand needs a hypervisor, libvirt and SSH for fence_virsh.
+      - run: |
+          sudo apt-get update
+          sudo apt-get install -y rpm postgresql qemu-system-x86 qemu-utils libvirt-daemon-system virtinst cloud-image-utils openssh-server
+          sudo chmod 666 /dev/kvm
+          sudo virsh net-start default || true
+      # The guest base image (packages and the DRBD 9 module), rebuilt only when ha-base.mjs changes.
+      - name: Cache the HA guest base image
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: .cache/ha-stand/base-*.qcow2
+          key: ha-base-v1-${{ hashFiles('scripts/ha-base-image.mjs') }}
+      - run: npm run gate -- deployment-ha
+        env:
+          ARKVORY_HA_IMAGES: /mnt/arkvory-ha
+      - name: Publish gate report
+        if: ${{ always() }}
+        run: node scripts/ci-report.mjs
+
+  ha-operations:
+    name: HA stand - update, switchover, full resynchronization (ADR 0072)
+    needs: [ha-base]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Cache verified native dependency archives
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: .cache/native-downloads
+          key: native-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/native-dependencies.mjs') }}
+        env:
+          SEGMENT_DOWNLOAD_TIMEOUT_MINS: '2'
+      # The runner is disposable: the stand needs a hypervisor, libvirt and SSH for fence_virsh.
+      - run: |
+          sudo apt-get update
+          sudo apt-get install -y rpm postgresql qemu-system-x86 qemu-utils libvirt-daemon-system virtinst cloud-image-utils openssh-server
+          sudo chmod 666 /dev/kvm
+          sudo virsh net-start default || true
+      # The guest base image (packages and the DRBD 9 module), rebuilt only when ha-base.mjs changes.
+      - name: Cache the HA guest base image
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: .cache/ha-stand/base-*.qcow2
+          key: ha-base-v1-${{ hashFiles('scripts/ha-base-image.mjs') }}
+      - run: npm run gate -- deployment-ha-operations
+        env:
+          ARKVORY_HA_IMAGES: /mnt/arkvory-ha
+      - name: Publish gate report
+        if: ${{ always() }}
+        run: node scripts/ci-report.mjs
+
+  ha-three:
+    name: HA stand - three data nodes (ADR 0072)
+    needs: [ha-base]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Cache verified native dependency archives
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: .cache/native-downloads
+          key: native-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/native-dependencies.mjs') }}
+        env:
+          SEGMENT_DOWNLOAD_TIMEOUT_MINS: '2'
+      # The runner is disposable: the stand needs a hypervisor, libvirt and SSH for fence_virsh.
+      - run: |
+          sudo apt-get update
+          sudo apt-get install -y rpm postgresql qemu-system-x86 qemu-utils libvirt-daemon-system virtinst cloud-image-utils openssh-server
+          sudo chmod 666 /dev/kvm
+          sudo virsh net-start default || true
+      # The guest base image (packages and the DRBD 9 module), rebuilt only when ha-base.mjs changes.
+      - name: Cache the HA guest base image
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: .cache/ha-stand/base-*.qcow2
+          key: ha-base-v1-${{ hashFiles('scripts/ha-base-image.mjs') }}
+      - run: npm run gate -- deployment-ha-three
+        env:
+          ARKVORY_HA_IMAGES: /mnt/arkvory-ha
+      - name: Publish gate report
+        if: ${{ always() }}
+        run: node scripts/ci-report.mjs
+
   verdict:
     name: Arkvory merge gate
     if: ${{ always() }}
@@ -344,6 +490,10 @@ jobs:
         native,
         stand,
         nas,
+        ha-base,
+        ha-failures,
+        ha-operations,
+        ha-three,
       ]
     runs-on: ubuntu-24.04
     timeout-minutes: 2

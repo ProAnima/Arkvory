@@ -67,6 +67,44 @@ export const notExecuted = [
     reason: 'Needs cifs/nfs/nfsd kernel modules on the Docker host; runs on a GitHub runner',
   },
   {
+    // HA clusters (ADR 0072) need KVM guests with their own kernels (DRBD 9) and real fencing
+    // through libvirt; a gate never installs a hypervisor on a workstation.
+    gate: 'deployment-ha',
+    platform: 'win32',
+    kind: 'gap',
+    reason: 'Needs KVM guests with DRBD 9 and fence_virsh; runs on a GitHub runner',
+  },
+  {
+    gate: 'deployment-ha',
+    platform: 'linux',
+    kind: 'gap',
+    reason: 'Needs KVM guests with DRBD 9 and fence_virsh; runs on a GitHub runner',
+  },
+  {
+    gate: 'deployment-ha-operations',
+    platform: 'win32',
+    kind: 'gap',
+    reason: 'Needs KVM guests with DRBD 9 and fence_virsh; runs on a GitHub runner',
+  },
+  {
+    gate: 'deployment-ha-operations',
+    platform: 'linux',
+    kind: 'gap',
+    reason: 'Needs KVM guests with DRBD 9 and fence_virsh; runs on a GitHub runner',
+  },
+  {
+    gate: 'deployment-ha-three',
+    platform: 'win32',
+    kind: 'gap',
+    reason: 'Needs KVM guests with DRBD 9 and fence_virsh; runs on a GitHub runner',
+  },
+  {
+    gate: 'deployment-ha-three',
+    platform: 'linux',
+    kind: 'gap',
+    reason: 'Needs KVM guests with DRBD 9 and fence_virsh; runs on a GitHub runner',
+  },
+  {
     // Two hosts with systemd and the native .deb: Linux containers on the same engine.
     gate: 'deployment-stand',
     platform: 'win32',

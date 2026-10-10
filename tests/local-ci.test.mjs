@@ -31,8 +31,9 @@ const host = { os: 'Windows_NT 10', node: 'v24', docker: '29' };
 test('every required gate runs in a local lane or is declared not executed', () => {
   assert.deepEqual(uncoveredGates(registry, 'verify'), []);
   assert.deepEqual(uncoveredGates(registry, 'release'), []);
-  // Real gaps: service installs on Windows, Compose on a Linux host and the NAS stand, whose
-  // SMB/NFS mounts need kernel modules a gate never loads on a workstation; the rest is covered.
+  // Real gaps: service installs on Windows, Compose on a Linux host, the NAS stand, whose
+  // SMB/NFS mounts need kernel modules a gate never loads on a workstation, and the HA stands,
+  // which need KVM guests; the rest is covered.
   assert.deepEqual(
     notExecuted
       .filter((entry) => entry.kind === 'gap')
@@ -42,6 +43,12 @@ test('every required gate runs in a local lane or is declared not executed', () 
       'native-install:win32',
       'deployment-nas:win32',
       'deployment-nas:linux',
+      'deployment-ha:win32',
+      'deployment-ha:linux',
+      'deployment-ha-operations:win32',
+      'deployment-ha-operations:linux',
+      'deployment-ha-three:win32',
+      'deployment-ha-three:linux',
       'deployment-containers:linux',
     ],
   );
