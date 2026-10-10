@@ -139,7 +139,7 @@ async function plan(cluster, work) {
   const pacemaker = (await readFile(join(work, 'pacemaker.sh'), 'utf8')).replace(
     /(stonith create fence-(\S+) fence_virsh pcmk_host_list=\S+) <[^>]*>/g,
     (_, command, node) =>
-      `${command} ip=${HOST_ADDRESS} username=arkvoryfence identity_file=/root/.ssh/fence_key plug=arkvory-ha-${node}`,
+      `${command} ip=${HOST_ADDRESS} username=arkvoryfence identity_file=/root/.ssh/fence_key use_sudo=1 plug=arkvory-ha-${node}`,
   );
   const commands = pacemaker.split('\n').filter((line) => !line.startsWith('#'));
   assert.ok(

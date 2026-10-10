@@ -58,6 +58,12 @@ export async function fencingAccount(fencePublic) {
     sudo: true,
     input: 'uri_default = "qemu:///system"\n',
   });
+  // fence_virsh with use_sudo: the account runs virsh, and only virsh, as root.
+  await run('tee', ['/etc/sudoers.d/arkvoryfence'], {
+    sudo: true,
+    input: 'arkvoryfence ALL=(root) NOPASSWD: /usr/bin/virsh\n',
+  });
+  await run('chmod', ['0440', '/etc/sudoers.d/arkvoryfence'], { sudo: true });
   await run('tee', [`${home}/.ssh/authorized_keys.enabled`], {
     sudo: true,
     input: `${fencePublic}\n`,
