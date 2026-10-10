@@ -113,7 +113,7 @@ export function pacemakerCommands(input: ClusterPlanInput): string {
       : []),
     'set -eu',
     ...(input.witness
-      ? [`pcs quorum device add model net host=${input.witness.address} algorithm=ffsplit`]
+      ? [`pcs quorum device add model net host=${input.witness.name} algorithm=ffsplit`]
       : []),
     `pcs cluster cib ${r}.cib.xml`,
     `${cib} property set stonith-enabled=true`,

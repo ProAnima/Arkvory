@@ -33,7 +33,7 @@ test('ha-2 plan: witness is diskless, gets the next node id and is not a Pacemak
     assert.ok(resource.includes(line), line);
   const pacemaker = pacemakerCommands(input);
   assert.ok(pacemaker.includes('stonith-enabled=true'));
-  assert.ok(pacemaker.includes('host=10.0.0.3 algorithm=ffsplit'));
+  assert.ok(pacemaker.includes('host=witness algorithm=ffsplit'));
   assert.ok(pacemaker.includes('clone-max=2'));
   assert.ok(!pacemaker.includes('fence-witness'), 'the witness is never fenced by Pacemaker');
   assert.ok(pacemaker.includes('directory=/opt/proanima-arkvory fstype=xfs'));
