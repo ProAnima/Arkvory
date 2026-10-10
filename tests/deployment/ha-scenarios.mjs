@@ -282,7 +282,7 @@ export const activeFailure = {
     step(
       (
         await taken.shell.tryExec(
-          "journalctl --since '-8min' -o short-precise | grep -Ei 'quorum|qdevice|fenc|stonith|promot|drbd|Result of (start|promote)|Filesystem|arkvory-(database|api)' | grep -v 'monitor' | tail -n 80",
+          "journalctl --since '-8min' -o short-precise | grep -Ei 'fence-peer|crm-fence|promot|stonith|fenced|votequorum|qdevice|Quorate|Result of (start|promote)' | grep -v monitor | head -n 120; grep -n 'timeout' /usr/lib/drbd/crm-fence-peer.9.sh | head -n 20",
         )
       ).output,
     );
