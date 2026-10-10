@@ -277,6 +277,15 @@ export const activeFailure = {
     await powerOff(lost);
     const seconds = await readRecovery(api, since);
     (timings.activeLosses ??= []).push({ node: lost.name, readRecoverySeconds: seconds });
+    // Where the failover spends its time: quorum, fencing, DRBD promotion, the services.
+    const taken = await active(cluster);
+    step(
+      (
+        await taken.shell.tryExec(
+          "journalctl --since '-8min' -o short-precise | grep -Ei 'quorum|qdevice|fenc|stonith|promot|drbd|Result of (start|promote)|Filesystem|arkvory-(database|api)' | grep -v 'monitor' | tail -n 80",
+        )
+      ).output,
+    );
     await sending;
     if (cluster.profile === 'ha-2') await writes(api, 503);
     else await writes(api, 201);
