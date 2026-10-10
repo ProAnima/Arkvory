@@ -168,7 +168,8 @@ export function writer(api, label, { concurrency = 4 } = {}) {
       };
       items.push(item);
       await api.upload(item);
-      if (!item.acknowledged) await new Promise((resolve) => setTimeout(resolve, 500));
+      // A steady stream (about 2 MB/s in all), not a flood the returning copy must catch up with.
+      await new Promise((resolve) => setTimeout(resolve, item.acknowledged ? 250 : 500));
     }
   };
   const loops = Array.from({ length: concurrency }, loop);
