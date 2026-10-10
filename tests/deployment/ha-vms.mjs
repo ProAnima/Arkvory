@@ -89,10 +89,14 @@ export async function setFencing(enabled) {
 export async function createGuest(base, guest, publicKey) {
   const domain = `arkvory-ha-${guest.name}`;
   await run('mkdir', ['-p', images], { sudo: true });
+  // The hypervisor's account reads the backing image: keep a copy beside the guests' disks,
+  // not in the runner's home directory.
+  const backing = `${images}/base.qcow2`;
+  if (!existsSync(backing)) await run('cp', [base, backing], { sudo: true });
   const system = `${images}/${guest.name}.qcow2`;
   const data = `${images}/${guest.name}-data.raw`;
   const seed = `${images}/${guest.name}-seed.iso`;
-  await run('qemu-img', ['create', '-f', 'qcow2', '-F', 'qcow2', '-b', base, system], {
+  await run('qemu-img', ['create', '-f', 'qcow2', '-F', 'qcow2', '-b', backing, system], {
     sudo: true,
   });
   if (guest.dataGiB)
