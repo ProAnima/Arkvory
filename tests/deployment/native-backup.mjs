@@ -36,6 +36,7 @@ export async function exerciseInstalledBackup(root, vault, token, run) {
           '--backup-vault',
           vault,
           '--init-vault',
+          '--vault-no-encryption',
         ])
       : run('sudo', [
           'arkvory',
@@ -45,6 +46,7 @@ export async function exerciseInstalledBackup(root, vault, token, run) {
           '--backup-vault',
           vault,
           '--init-vault',
+          '--vault-no-encryption',
         ]);
   const result = await exerciseBackupAgent(token.trim(), async () => {
     configure();

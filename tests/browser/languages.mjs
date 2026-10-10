@@ -76,7 +76,12 @@ export async function exerciseLanguageMenu(page) {
   assert.equal(await loaded('#language img.flag'), true, 'the current flag loads');
   await button.click();
   assert.equal(await list.evaluate((node) => node.matches(':popover-open')), true);
-  assert.equal(await button.getAttribute('aria-expanded'), 'true');
+  // The menu reacts to the toggle event, a task after the popover opens (slower on Linux CI).
+  await page.waitForFunction(
+    () =>
+      document.querySelector('#language')?.getAttribute('aria-expanded') === 'true' &&
+      document.activeElement?.dataset.lang === 'en',
+  );
   await page.screenshot({ path: 'test-results/console-language-menu.png' });
   assert.equal(await list.locator('[role=menuitemradio]').count(), LANGUAGES.length);
   assert.equal(await loaded('#language-list img.flag'), true, 'every flag loads');

@@ -60,7 +60,16 @@ try {
     return status.agent.online && status.vault.available && status.vault.id !== null;
   };
   const capture = async (vault, share, exportPath) => {
-    app.exec(['arkvory', 'configure', '--root', root, '--backup-vault', vault, '--init-vault']);
+    app.exec([
+      'arkvory',
+      'configure',
+      '--root',
+      root,
+      '--backup-vault',
+      vault,
+      '--init-vault',
+      '--vault-no-encryption',
+    ]);
     await until(vaultReady, `the agent to report the vault on ${share}`);
     const point = app.probe('backup-capture', onApp);
     assert.ok(point.blobs >= 1, `the point on ${share} holds the published blob`);
@@ -100,6 +109,7 @@ try {
         '--backup-vault',
         '/mnt/smb-vault',
         '--init-vault',
+        '--vault-no-encryption',
       ]),
     (error) => {
       console.log(`Refused as expected: ${String(error.stderr).trim().split('\n').at(-1)}`);

@@ -26,6 +26,17 @@ async function directory(t, prefix) {
   return path;
 }
 
+/**
+ * A vault directory the systemd-mode agent may reach: on Linux the temporary tree is hidden by
+ * the agent's sandbox (configure refuses it), so these vaults live in shared memory instead.
+ */
+async function systemdVault(t) {
+  const parent = process.platform === 'linux' ? '/dev/shm' : tmpdir();
+  const path = await mkdtemp(join(parent, 'arkvory-vault-'));
+  t.after(() => removeTestDirectory(path));
+  return path;
+}
+
 async function installation(t) {
   const root = await directory(t, 'arkvory-backup-setup-');
   await mkdir(join(root, 'config'));
@@ -376,7 +387,7 @@ const ready = (vaultId) => () => status({ configured: true, available: true, id:
 test('a new vault is not made plain by accident: --init-vault needs --vault-no-encryption', async (t) => {
   const root = await installation(t);
   const before = await readFile(join(root, 'config/runtime.json'), 'utf8');
-  const vault = await directory(t, 'arkvory-vault-');
+  const vault = await systemdVault(t);
   const control = services(() => status());
   await assert.rejects(
     configureBackup(root, state('systemd'), { vault, initialize: true }, control, { wait }),
@@ -397,7 +408,7 @@ test('a new vault is not made plain by accident: --init-vault needs --vault-no-e
 test('an encrypted vault needs the agent key, never the recovery key', async (t) => {
   const root = await installation(t);
   const before = await readFile(join(root, 'config/runtime.json'), 'utf8');
-  const vault = await directory(t, 'arkvory-vault-');
+  const vault = await systemdVault(t);
   await encryptedVaultDocument(vault);
   const control = services(() => status());
   const configure = (keyFile) =>
@@ -412,7 +423,7 @@ test('an encrypted vault needs the agent key, never the recovery key', async (t)
     /recovery key: it stays off this server/,
   );
   // A plain vault does not take a key.
-  const plain = await directory(t, 'arkvory-vault-');
+  const plain = await systemdVault(t);
   await vaultDocument(plain);
   await assert.rejects(
     configureBackup(
@@ -443,7 +454,7 @@ test('an encrypted vault needs the agent key, never the recovery key', async (t)
 test('an encrypted vault is installed with its key file; the heartbeat proves the key', async (t) => {
   for (const mode of ['systemd', 'compose']) {
     const root = await installation(t);
-    const vault = await directory(t, 'arkvory-vault-');
+    const vault = await systemdVault(t);
     const vaultId = await encryptedVaultDocument(vault);
     const control = services(ready(vaultId));
     const keyFile = await keyFileIn(t, agentKey + '\n');
@@ -475,7 +486,7 @@ test('an encrypted vault is installed with its key file; the heartbeat proves th
 
 test('an agent that cannot open the vault rolls the key file and the settings back', async (t) => {
   const root = await installation(t);
-  const vault = await directory(t, 'arkvory-vault-');
+  const vault = await systemdVault(t);
   await encryptedVaultDocument(vault);
   const before = await readFile(join(root, 'config/runtime.json'), 'utf8');
   // The agent stays online but reports the vault unavailable: it could not open it with this key.

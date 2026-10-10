@@ -171,7 +171,7 @@ try {
   await exerciseImageRegistry(token, temporary);
   await mkdir(vault);
   const capture = await exerciseBackupAgent(token, async () => {
-    manage(['configure', '--backup-vault', vault, '--init-vault']);
+    manage(['configure', '--backup-vault', vault, '--init-vault', '--vault-no-encryption']);
   });
   vaultId = capture.vaultId;
   // The point is visible to the agent exactly where it wrote it: committed in the host vault.
