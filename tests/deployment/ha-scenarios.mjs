@@ -316,6 +316,10 @@ export const partition = {
       `Arkvory on ${winner.name} only`,
       300000,
     );
+    // The network is repaired: the rules stay on the node that set them when that node won.
+    await other.shell.tryExec(
+      `iptables -D INPUT -s ${primary.address} -j DROP; iptables -D OUTPUT -d ${primary.address} -j DROP`,
+    );
     loser.lostBoot = boots[loser.name];
     await rejoin(cluster, loser);
     await complete(cluster);
