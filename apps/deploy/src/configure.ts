@@ -10,7 +10,9 @@ import { configureTls } from './tls-setup.js';
 import { configureMirror } from './mirror-setup.js';
 import { configureWebhook } from './webhook-setup.js';
 import { hubSettings, hubUrl, saveHubSettings, writeRuntimeHub } from './hub-settings.js';
+import { clusterChange, configureCluster } from './cluster-setup.js';
 
+const clusterOptions = ['cluster', 'cluster-resource'];
 const httpsOptions = ['tls-cert', 'tls-key', 'tls-off', 'listen-host'];
 const vaultOptions = [
   'backup-vault',
@@ -219,12 +221,24 @@ async function configureUpdates(root: string, state: Installation, options: Map<
 export async function configure(root: string, options: Map<string, string>): Promise<void> {
   const state = parseInstallation(await jsonFile(join(root, 'installation.json')));
   const used = (names: readonly string[]) => names.some((name) => options.has(name));
-  const groups = [httpsOptions, vaultOptions, mirrorOptions, webhookOptions, updateOptions];
+  const groups = [
+    clusterOptions,
+    httpsOptions,
+    vaultOptions,
+    mirrorOptions,
+    webhookOptions,
+    updateOptions,
+  ];
   if (groups.filter(used).length > 1)
     throw new Error(
-      'Change HTTPS, the backup vault, mirrors, webhooks and update policy in separate configure calls',
+      'Change the cluster, HTTPS, the backup vault, mirrors, webhooks and update policy in separate configure calls',
     );
   const restarting = [
+    [
+      clusterOptions,
+      (root: string, state: Installation, options: Map<string, string>) =>
+        configureCluster(root, state, clusterChange(options), new Services(root, state)),
+    ],
     [httpsOptions, configureHttps],
     [vaultOptions, configureVault],
     [mirrorOptions, configureMirrors],

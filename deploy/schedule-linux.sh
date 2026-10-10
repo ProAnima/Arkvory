@@ -30,4 +30,5 @@ Persistent=true
 WantedBy=timers.target
 EOF
 systemctl daemon-reload
-systemctl enable --now arkvory-update.timer
+# On an HA node Pacemaker owns autostart (ADR 0072): start only.
+if [ -f /etc/proanima-arkvory/cluster.json ]; then systemctl start arkvory-update.timer; else systemctl enable --now arkvory-update.timer; fi

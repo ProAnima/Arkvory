@@ -1,4 +1,5 @@
 import { join } from 'node:path';
+import { pacemakerHandsOff, pacemakerTakesBack } from './cluster-node.js';
 import { access, readFile } from 'node:fs/promises';
 import type { BackupStatusResponse } from '@proanima/arkvory-contracts';
 import { provisionDatabase, databaseSettings } from './managed-database.js';
@@ -105,6 +106,8 @@ export class Services implements BackupServiceControl {
   }
   /** Stops the agent first: its running phase ends as `interrupted` and the job is queued again. */
   async stop(): Promise<void> {
+    // On an HA node Pacemaker must not take the stop for a failure (ADR 0072).
+    if (this.state.mode === 'systemd') await pacemakerHandsOff();
     const backup = await backupRunning(this.backup);
     if (this.state.mode === 'compose')
       await this.compose(this.state.current, [
@@ -207,6 +210,7 @@ export class Services implements BackupServiceControl {
           : 0;
         if (consecutive >= 3) {
           await this.workerRunning();
+          if (this.state.mode === 'systemd') await pacemakerTakesBack();
           return;
         }
       } catch (error) {

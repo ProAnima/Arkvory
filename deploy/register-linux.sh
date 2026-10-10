@@ -73,4 +73,5 @@ WantedBy=multi-user.target
 EOF
 done
 systemctl daemon-reload
-systemctl enable "$prefix-api" "$prefix-worker" "$prefix-backup"
+# On an HA node Pacemaker owns autostart (ADR 0072).
+if [ ! -f /etc/proanima-arkvory/cluster.json ]; then systemctl enable "$prefix-api" "$prefix-worker" "$prefix-backup"; fi

@@ -20,7 +20,16 @@ cluster-status       HA cluster (ADR 0072): role, complete copies, copies a writ
 cluster-single-copy  --until <ISO time, at most 7 days> --reason <text> | --off
                      Acknowledge writes with ONE copy until then; a second failure loses them
                      / Подтверждать запись одной копией до срока; второй отказ их потеряет
-cluster-replica      The arkvory-replica service (systemd runs it) / Служба состояния копий
+cluster-replica      The arkvory-replica service (Pacemaker starts it) / Служба состояния копий
+cluster-node         [--cluster-resource r] On another data node, with the volume mounted:
+                     the same accounts and units, none enabled / Подготовить другой узел
+cluster-plan         --cluster ha-2|ha-3 --nodes a=10.0.0.1,b=10.0.0.2[,c=…] [--witness w=10.0.0.3]
+                     --disk /dev/vg/arkvory --fence-agent fence_ipmilan --virtual-ip 10.0.0.10/24
+                     --output <dir> [--cluster-resource r] [--drbd-minor 0] [--drbd-port 7789]
+                     [--filesystem xfs|ext4]  DRBD resource and Pacemaker commands to review
+                     / Конфигурация DRBD и Pacemaker для проверки и применения
+configure      --cluster ha-2|ha-3 [--cluster-resource r]: on the primary of a replicated volume,
+               acknowledge writes only with two complete copies (ADR 0072) / Режим HA-кластера
 configure      --enable-updates | --disable-updates | --pin --version X.Y.Z | --unpin
                --hub-url <https://origin> | --hub-off, --update-channel stable|beta,
                --statistics on|off: updates approved in the ProAnimaStudio hub (GitHub when it

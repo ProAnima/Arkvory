@@ -2,6 +2,12 @@
 set -eu
 root=/opt/proanima-arkvory
 payload=/usr/lib/proanima-arkvory
+# A standby HA node (ADR 0072) has the installation on the volume mounted elsewhere: only the
+# package files change here; the primary applies the release.
+if [ -f /etc/proanima-arkvory/cluster.json ] && ! mountpoint -q "$root"; then
+  echo 'Arkvory: standby cluster node; the release is applied on the primary'
+  exit 0
+fi
 mkdir -p "$root/runtime"
 if [ ! -f "$root/installation.json" ]; then chmod 0700 "$root"; fi
 if [ ! -f "$root/runtime/node" ]; then install -m 0755 "$payload/node" "$root/runtime/node"; fi

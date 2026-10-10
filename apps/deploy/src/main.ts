@@ -12,6 +12,8 @@ import { runWithLogFile } from './log-file.js';
 import { configure } from './configure.js';
 import { warnEngineAutostart } from './engine-autostart.js';
 import { clusterStatus, decideSingleCopy, serveReplica } from './replica-service.js';
+import { joinNode } from './cluster-node.js';
+import { writePlan } from './cluster-plan-files.js';
 
 function argumentsOf(args: string[]): Map<string, string> {
   const options = new Map<string, string>();
@@ -66,6 +68,17 @@ function argumentsOf(args: string[]): Map<string, string> {
     'webhook-detach',
     'until',
     'reason',
+    'cluster',
+    'cluster-resource',
+    'nodes',
+    'witness',
+    'disk',
+    'fence-agent',
+    'virtual-ip',
+    'drbd-minor',
+    'drbd-port',
+    'filesystem',
+    'output',
   ];
   for (let index = 0; index < args.length; index++) {
     const name = args[index]?.replace(/^--/, '');
@@ -118,6 +131,8 @@ async function main(): Promise<void> {
     return;
   }
   const options = argumentsOf(process.argv.slice(3));
+  // Planning needs no installation: it may run on a workstation.
+  if (operation === 'cluster-plan') return writePlan(options);
   const rawRoot = options.get('root');
   if (!rawRoot) throw new Error('Specify --root (absolute installation directory)');
   const root = resolve(rawRoot);
@@ -191,6 +206,9 @@ async function main(): Promise<void> {
         break;
       case 'configure':
         await configure(root, options);
+        break;
+      case 'cluster-node':
+        await joinNode(root, options.get('cluster-resource') ?? 'arkvory');
         break;
       case 'cluster-single-copy':
         await decideSingleCopy(root, options);

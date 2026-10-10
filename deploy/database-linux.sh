@@ -37,4 +37,5 @@ UMask=0077
 WantedBy=multi-user.target
 EOF
 systemctl daemon-reload
-systemctl enable --now arkvory-database
+# On an HA node Pacemaker owns autostart (ADR 0072): start only.
+if [ -f /etc/proanima-arkvory/cluster.json ]; then systemctl start arkvory-database; else systemctl enable --now arkvory-database; fi
