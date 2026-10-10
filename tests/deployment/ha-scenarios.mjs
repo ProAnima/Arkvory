@@ -124,15 +124,39 @@ export const standbyFailure = {
   },
 };
 
+/**
+ * ha-3 loses two of three nodes: the last one has neither Corosync nor DRBD quorum, so Arkvory
+ * stops rather than risk a second writer; one returning node brings back reads and writes.
+ */
 export const secondLoss = {
-  name: 'ha-3: a second lost node stops writes until a copy returns',
+  name: 'ha-3: two lost nodes stop the service until one returns',
   async run({ cluster, api }) {
+    const kept = await active(cluster);
     const lost = await standbys(cluster);
     for (const node of lost) await powerOff(node);
-    await writes(api, 503);
-    for (const node of lost) await rejoin(cluster, node);
-    await complete(cluster);
+    await until(
+      async () => (await api.ready()).status !== 200,
+      'Arkvory to stop without quorum',
+      300000,
+    );
+    assert.equal((await api.canWrite()).status === 201, false, 'no acknowledgment without quorum');
+    const [first, second] = lost;
+    await rejoin(cluster, first);
+    await until(
+      async () => (await activeNodes(cluster)).length === 1,
+      'Arkvory back with quorum',
+      600000,
+    );
+    await until(
+      async () => (await volumeOn(await active(cluster))).copies >= 2,
+      'two complete copies',
+      900000,
+      5000,
+    );
     await writes(api, 201);
+    await rejoin(cluster, second);
+    await complete(cluster);
+    return { keptFirst: kept.name };
   },
 };
 
