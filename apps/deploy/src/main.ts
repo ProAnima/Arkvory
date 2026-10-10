@@ -11,6 +11,7 @@ import { report } from './output.js';
 import { runWithLogFile } from './log-file.js';
 import { configure } from './configure.js';
 import { warnEngineAutostart } from './engine-autostart.js';
+import { clusterStatus, decideSingleCopy, serveReplica } from './replica-service.js';
 
 function argumentsOf(args: string[]): Map<string, string> {
   const options = new Map<string, string>();
@@ -27,6 +28,7 @@ function argumentsOf(args: string[]): Map<string, string> {
     'init-vault',
     'vault-no-encryption',
     'backup-vault-off',
+    'off',
   ];
   const values = [
     'root',
@@ -62,6 +64,8 @@ function argumentsOf(args: string[]): Map<string, string> {
     'webhook-allow-private',
     'webhook-ca-file',
     'webhook-detach',
+    'until',
+    'reason',
   ];
   for (let index = 0; index < args.length; index++) {
     const name = args[index]?.replace(/^--/, '');
@@ -124,6 +128,9 @@ async function main(): Promise<void> {
     await warnEngineAutostart(state);
     return;
   }
+  // Long-running or read-only: outside the installation lock (ADR 0072).
+  if (operation === 'cluster-replica') return serveReplica(root);
+  if (operation === 'cluster-status') return clusterStatus(root);
   if (await capturedUpdater(operation, options, root)) return;
   await exclusive(root, async () => {
     switch (operation) {
@@ -184,6 +191,9 @@ async function main(): Promise<void> {
         break;
       case 'configure':
         await configure(root, options);
+        break;
+      case 'cluster-single-copy':
+        await decideSingleCopy(root, options);
         break;
       default:
         throw new Error('Commands: install, status, update, configure, recover, upgrade');

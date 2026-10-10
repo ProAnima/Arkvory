@@ -15,6 +15,12 @@ update         Update; a schema change first captures and verifies a backup in t
 upgrade        Schema change without the built-in vault; --backup-record required / Вручную
 recover        Finish an interrupted update: back before a migration, forward after it
                / Завершить прерванное обновление
+cluster-status       HA cluster (ADR 0072): role, complete copies, copies a write needs
+                     / HA-кластер: роль, полные копии, сколько нужно для записи
+cluster-single-copy  --until <ISO time, at most 7 days> --reason <text> | --off
+                     Acknowledge writes with ONE copy until then; a second failure loses them
+                     / Подтверждать запись одной копией до срока; второй отказ их потеряет
+cluster-replica      The arkvory-replica service (systemd runs it) / Служба состояния копий
 configure      --enable-updates | --disable-updates | --pin --version X.Y.Z | --unpin
                --hub-url <https://origin> | --hub-off, --update-channel stable|beta,
                --statistics on|off: updates approved in the ProAnimaStudio hub (GitHub when it
