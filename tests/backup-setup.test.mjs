@@ -1,7 +1,16 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
-import { mkdir, mkdtemp, readFile, realpath, symlink, unlink, writeFile } from 'node:fs/promises';
+import {
+  mkdir,
+  mkdtemp,
+  readFile,
+  realpath,
+  rm,
+  symlink,
+  unlink,
+  writeFile,
+} from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, parse } from 'node:path';
 import { configureBackup } from '../apps/deploy/dist/backup-setup.js';
@@ -33,7 +42,10 @@ async function directory(t, prefix) {
 async function systemdVault(t) {
   const parent = process.platform === 'linux' ? '/dev/shm' : tmpdir();
   const path = await mkdtemp(join(parent, 'arkvory-vault-'));
-  t.after(() => removeTestDirectory(path));
+  // removeTestDirectory guards the temporary tree; this one is removed by its exact prefix.
+  t.after(() =>
+    parent === '/dev/shm' ? rm(path, { recursive: true, force: true }) : removeTestDirectory(path),
+  );
   return path;
 }
 

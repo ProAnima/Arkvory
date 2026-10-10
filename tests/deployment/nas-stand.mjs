@@ -59,7 +59,8 @@ try {
     const status = app.probe('backup-status', onApp);
     return status.agent.online && status.vault.available && status.vault.id !== null;
   };
-  const capture = async (vault, share, exportPath) => {
+  // `create`: a new plain vault; otherwise the vault already on the share is used as is.
+  const capture = async (vault, share, exportPath, create = true) => {
     app.exec([
       'arkvory',
       'configure',
@@ -67,8 +68,7 @@ try {
       root,
       '--backup-vault',
       vault,
-      '--init-vault',
-      '--vault-no-encryption',
+      ...(create ? ['--init-vault', '--vault-no-encryption'] : []),
     ]);
     await until(vaultReady, `the agent to report the vault on ${share}`);
     const point = app.probe('backup-capture', onApp);
@@ -119,7 +119,10 @@ try {
   assert.equal(app.probe('backup-status', onApp).vault.configured, false);
   app.exec(['umount', '/mnt/smb-vault']);
   smb(`uid=${uid},gid=${gid},file_mode=0600,dir_mode=0700,`);
-  const onSmb = await capture('/mnt/smb-vault', 'SMB', '/export/smb');
+  // The refused attempt created the vault before the agent failed to open it; configure keeps
+  // it, and asking to create it again is refused. The operator connects the existing vault.
+  nas.exec(['test', '-f', '/export/smb/vault.json']);
+  const onSmb = await capture('/mnt/smb-vault', 'SMB', '/export/smb', false);
 
   // NFS 4: ownership as on a local disk.
   app.exec(['mount', '-t', 'nfs4', 'nas:/nfs', '/mnt/nfs-vault']);
