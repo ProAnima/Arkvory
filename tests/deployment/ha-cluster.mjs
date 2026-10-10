@@ -213,11 +213,14 @@ async function pacemaker(cluster, keys, script) {
     await node.shell.exec('chpasswd', { input: `hacluster:${password}\n` });
     await node.shell.exec('systemctl enable --now pcsd');
   }
-  for (const node of cluster.data)
+  for (const node of cluster.data) {
     await node.shell.exec(
       `install -d -m 0700 /root/.ssh && cat > /root/.ssh/fence_key && chmod 0600 /root/.ssh/fence_key && ssh-keyscan -H ${HOST_ADDRESS} >> /root/.ssh/known_hosts`,
       { input: keys.fence },
     );
+    // Debian and Ubuntu packages ship a sample corosync.conf, which pcs takes for a cluster.
+    await node.shell.exec('pcs cluster destroy');
+  }
   const [first] = cluster.data;
   await first.shell.exec(
     `pcs host auth ${cluster.all.map((node) => node.name).join(' ')} -u hacluster -p ${password}`,
