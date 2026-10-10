@@ -105,11 +105,20 @@ async function tls(work) {
   return { ca: await readFile(at('ca.crt'), 'utf8'), cert: at('tls.crt'), key: at('tls.key') };
 }
 
+/** The package files on every data node, unconfigured: nothing is installed before the volume. */
+async function unpack(cluster, artifact) {
+  for (const node of cluster.data) {
+    await node.shell.exec('mkdir -p /stand');
+    await node.shell.copy(artifact, '/stand/Arkvory-amd64.deb');
+    await node.shell.exec('dpkg --unpack /stand/Arkvory-amd64.deb');
+  }
+}
+
+/** `arkvory cluster-plan` on the first node, with the site's fence parameters filled in. */
 async function plan(cluster, work) {
   const { data, witness } = cluster;
-  await run(process.execPath, [
-    'apps/deploy/dist/main.js',
-    'cluster-plan',
+  const [first] = data;
+  const options = [
     '--cluster',
     cluster.profile,
     '--nodes',
@@ -122,8 +131,11 @@ async function plan(cluster, work) {
     '--virtual-ip',
     `${VIP}/24`,
     '--output',
-    work,
-  ]);
+    '/root/plan',
+  ];
+  await first.shell.exec(`arkvory cluster-plan ${options.join(' ')}`);
+  await first.shell.fetch('/root/plan/arkvory.res', join(work, 'arkvory.res'));
+  await first.shell.fetch('/root/plan/pacemaker.sh', join(work, 'pacemaker.sh'));
   const pacemaker = (await readFile(join(work, 'pacemaker.sh'), 'utf8')).replace(
     /(stonith create fence-(\S+) fence_virsh pcmk_host_list=\S+) <[^>]*>/g,
     (_, command, node) =>
@@ -160,13 +172,12 @@ async function volume(cluster, resourceFile) {
   );
 }
 
-async function installFirst(cluster, artifact, certificates) {
+async function installFirst(cluster, certificates) {
   const [first] = cluster.data;
-  await first.shell.exec('mkdir -p /stand');
-  await first.shell.copy(artifact, '/stand/Arkvory-amd64.deb');
   await first.shell.copy(certificates.cert, '/stand/tls.crt');
   await first.shell.copy(certificates.key, '/stand/tls.key');
-  await first.shell.exec('dpkg -i /stand/Arkvory-amd64.deb');
+  // The unpacked package installs into the mounted volume.
+  await first.shell.exec('dpkg --configure proanima-arkvory');
   // TLS material on the volume: every node that becomes active finds it at the same path.
   await first.shell.exec(
     `install -d -m 0750 -o root -g arkvory ${ROOT}/config/tls && install -m 0644 /stand/tls.crt ${ROOT}/config/tls/tls.crt && install -m 0640 -g arkvory /stand/tls.key ${ROOT}/config/tls/tls.key`,
@@ -180,14 +191,13 @@ async function installFirst(cluster, artifact, certificates) {
 }
 
 /** Each other data node gets the package while the volume is mounted there once. */
-async function joinOthers(cluster, artifact) {
+async function joinOthers(cluster) {
   for (const node of cluster.data.slice(1)) {
     await node.shell.exec(
-      `drbdadm primary arkvory && mkdir -p ${ROOT} /stand && mount /dev/drbd0 ${ROOT}`,
+      `drbdadm primary arkvory && mkdir -p ${ROOT} && mount /dev/drbd0 ${ROOT}`,
     );
-    await node.shell.copy(artifact, '/stand/Arkvory-amd64.deb');
     await node.shell.exec(
-      `dpkg --unpack /stand/Arkvory-amd64.deb && arkvory cluster-node --root ${ROOT} --cluster-resource arkvory && dpkg --configure proanima-arkvory`,
+      `arkvory cluster-node --root ${ROOT} --cluster-resource arkvory && dpkg --configure proanima-arkvory`,
     );
     await node.shell.exec(`${STOP_ALL} && umount ${ROOT} && drbdadm secondary arkvory`);
   }
@@ -241,11 +251,12 @@ export async function buildCluster({ profile, base, keys, artifact }) {
     ),
   );
   const work = await mkdtemp(join(tmpdir(), 'arkvory-ha-plan-'));
+  await unpack(cluster, artifact);
   const files = await plan(cluster, work);
   cluster.tls = await tls(work);
   await volume(cluster, files.resource);
-  await installFirst(cluster, artifact, cluster.tls);
-  await joinOthers(cluster, artifact);
+  await installFirst(cluster, cluster.tls);
+  await joinOthers(cluster);
   await pacemaker(cluster, keys, files.pacemaker);
   cluster.node = (name) => cluster.all.find((node) => node.name === name);
   // The operator's acceptance check of a new cluster: quorum, fencing, DRBD, both copies.

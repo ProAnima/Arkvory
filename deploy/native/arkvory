@@ -1,5 +1,11 @@
 #!/bin/sh
 set -eu
 root=/opt/proanima-arkvory
-case "${1:-help}" in help|--help|-h) exec /usr/lib/proanima-arkvory/node /usr/lib/proanima-arkvory/arkvory-setup.mjs help ;; esac
+setup='/usr/lib/proanima-arkvory/arkvory-setup.mjs'
+case "${1:-help}" in
+  help|--help|-h) exec /usr/lib/proanima-arkvory/node "$setup" help ;;
+  # The HA cluster plan (ADR 0072) is made before the replicated volume that will hold the
+  # installation exists: it runs from the package files.
+  cluster-plan) exec /usr/lib/proanima-arkvory/node "$setup" "$@" ;;
+esac
 exec "$root/runtime/node" "$root/manage.mjs" "$@"

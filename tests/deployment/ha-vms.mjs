@@ -195,5 +195,6 @@ export function ssh(key, address) {
       }
     },
     copy: (from, to) => run('scp', [...base, '-q', from, `root@${address}:${to}`]),
+    fetch: (from, to) => run('scp', [...base, '-q', `root@${address}:${from}`, to]),
   };
 }
