@@ -229,7 +229,10 @@ async function pacemaker(cluster, keys, script) {
     `pcs cluster setup arkvory ${cluster.data.map((node) => `${node.name} addr=${node.address}`).join(' ')} --start --wait=180`,
   );
   if (cluster.witness)
-    await cluster.witness.shell.exec('pcs qdevice setup model net --enable --start');
+    await cluster.witness.shell.exec(
+      // The Debian and Ubuntu package initializes the device with its own certificates.
+      'pcs qdevice destroy net && pcs qdevice setup model net --enable --start',
+    );
   await first.shell.exec('cat > /root/pacemaker.sh', { input: script });
   await first.shell.exec('cd /root && sh -x pacemaker.sh');
   await until(
