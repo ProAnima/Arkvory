@@ -356,7 +356,7 @@ jobs:
       - run: node scripts/ha-base-image.mjs
 
   ha-failures:
-    name: HA stand - node, power, network and fencing failures (ADR 0072)
+    name: HA stand - lost standby, single copy, network partition (ADR 0072)
     needs: [ha-base]
     runs-on: ubuntu-24.04
     timeout-minutes: 45
@@ -389,6 +389,46 @@ jobs:
           path: .cache/ha-stand/base-*.qcow2
           key: ha-base-v1-${{ hashFiles('scripts/ha-base-image.mjs') }}
       - run: npm run gate -- deployment-ha
+        env:
+          ARKVORY_HA_IMAGES: /mnt/arkvory-ha
+      - name: Publish gate report
+        if: ${{ always() }}
+        run: node scripts/ci-report.mjs
+
+  ha-power:
+    name: HA stand - power loss during a large upload, failed fencing (ADR 0072)
+    needs: [ha-base]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Cache verified native dependency archives
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: .cache/native-downloads
+          key: native-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/native-dependencies.mjs') }}
+        env:
+          SEGMENT_DOWNLOAD_TIMEOUT_MINS: '2'
+      # The runner is disposable: the stand needs a hypervisor, libvirt and SSH for fence_virsh.
+      - run: |
+          sudo apt-get update
+          sudo apt-get install -y rpm postgresql qemu-system-x86 qemu-utils libvirt-daemon-system virtinst cloud-image-utils openssh-server
+          sudo chmod 666 /dev/kvm
+          sudo virsh net-start default || true
+      # The guest base image (packages and the DRBD 9 module), rebuilt only when ha-base.mjs changes.
+      - name: Cache the HA guest base image
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: .cache/ha-stand/base-*.qcow2
+          key: ha-base-v1-${{ hashFiles('scripts/ha-base-image.mjs') }}
+      - run: npm run gate -- deployment-ha-power
         env:
           ARKVORY_HA_IMAGES: /mnt/arkvory-ha
       - name: Publish gate report
@@ -492,6 +532,7 @@ jobs:
         nas,
         ha-base,
         ha-failures,
+        ha-power,
         ha-operations,
         ha-three,
       ]

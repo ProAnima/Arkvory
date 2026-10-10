@@ -81,6 +81,18 @@ export const notExecuted = [
     reason: 'Needs KVM guests with DRBD 9 and fence_virsh; runs on a GitHub runner',
   },
   {
+    gate: 'deployment-ha-power',
+    platform: 'win32',
+    kind: 'gap',
+    reason: 'Needs KVM guests with DRBD 9 and fence_virsh; runs on a GitHub runner',
+  },
+  {
+    gate: 'deployment-ha-power',
+    platform: 'linux',
+    kind: 'gap',
+    reason: 'Needs KVM guests with DRBD 9 and fence_virsh; runs on a GitHub runner',
+  },
+  {
     gate: 'deployment-ha-operations',
     platform: 'win32',
     kind: 'gap',

@@ -35,8 +35,14 @@ const standbys = async (cluster) => {
 
 const bootId = (node) => node.shell.exec('cat /proc/sys/kernel/random/boot_id');
 
+/** Progress in the gate log: a stand that waits shows what it waits for. */
+const step = (text) => {
+  console.log(`  ${new Date().toISOString()} ${text}`);
+};
+
 /** Loses a node as a power failure would and remembers its boot to see the fence restart it. */
 async function powerOff(node) {
+  step(`power off ${node.name}`);
   node.lostBoot = await bootId(node);
   await power.off(node.domain);
 }
@@ -52,11 +58,13 @@ async function rejoin(cluster, node) {
     600000,
     5000,
   );
+  step(`${node.name} restarted; starting the cluster there`);
   await node.shell.exec('pcs cluster start --wait=180');
 }
 
 async function complete(cluster) {
   const expected = cluster.data.length;
+  step(`waiting for ${String(expected)} complete copies`);
   await until(
     async () => (await volumeOn(await active(cluster))).copies === expected,
     `${String(expected)} complete copies`,
@@ -66,6 +74,7 @@ async function complete(cluster) {
 }
 
 async function writes(api, expected) {
+  step(`waiting for writes to answer ${String(expected)}`);
   let last;
   await until(
     async () => {
@@ -74,9 +83,11 @@ async function writes(api, expected) {
         ? last.status === 201
         : last.status === 503 && last.reason === 'replication_degraded';
     },
-    `writes to answer ${String(expected)} (last ${JSON.stringify(last)})`,
+    `writes to answer ${String(expected)}`,
     600000,
-  );
+  ).catch((error) => {
+    throw new Error(`${error.message}; last answer ${JSON.stringify(last)}`);
+  });
 }
 
 /** Every acknowledged upload reads back intact; the others are confirmed by a retry now. */
@@ -225,7 +236,14 @@ export const activeFailure = {
     const sending = api.upload(big, (sent) => {
       if (sent >= BIG / 2) half();
     });
-    await halfway;
+    // The upload may end before halfway (refused or failed): never wait for a half that is not coming.
+    await Promise.race([
+      halfway,
+      sending.then((item) => {
+        throw new Error(`The large upload ended early: ${JSON.stringify(item.last)}`);
+      }),
+    ]);
+    step('the large upload is halfway');
     const lost = await active(cluster);
     const since = Date.now();
     await powerOff(lost);

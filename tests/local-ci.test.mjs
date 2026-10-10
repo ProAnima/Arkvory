@@ -45,6 +45,8 @@ test('every required gate runs in a local lane or is declared not executed', () 
       'deployment-nas:linux',
       'deployment-ha:win32',
       'deployment-ha:linux',
+      'deployment-ha-power:win32',
+      'deployment-ha-power:linux',
       'deployment-ha-operations:win32',
       'deployment-ha-operations:linux',
       'deployment-ha-three:win32',

@@ -189,6 +189,10 @@ async function installFirst(cluster, certificates) {
   await first.shell.exec(
     `arkvory configure --root ${ROOT} --tls-cert ${ROOT}/config/tls/tls.crt --tls-key ${ROOT}/config/tls/tls.key --listen-host 0.0.0.0`,
   );
+  // The stand's clients share one key: let it run the writer's and the large upload at once.
+  await first.shell.exec(
+    `python3 -c "import json,sys; p=sys.argv[1]; r=json.load(open(p)); r.update(ARKVORY_MAX_UPLOADS='8', ARKVORY_MAX_UPLOADS_PER_PRINCIPAL='8'); json.dump(r, open(p, 'w'), indent=2)" ${ROOT}/config/runtime.json`,
+  );
   await first.shell.exec(`arkvory configure --root ${ROOT} --cluster ${cluster.profile}`);
   cluster.token = (await first.shell.exec(`cat ${ROOT}/config/bootstrap-token.txt`)).trim();
   await first.shell.exec(`${STOP_ALL} && umount ${ROOT} && drbdadm secondary arkvory`);

@@ -9,7 +9,6 @@ import { baseImage, fencingAccount, keys, removeGuests } from './ha-vms.mjs';
 import { buildCluster, diagnostics, ROOT, until } from './ha-cluster.mjs';
 import { client } from './ha-load.mjs';
 import {
-  active,
   activeFailure,
   fencingFailure,
   fullResync,
@@ -54,38 +53,17 @@ async function nextRelease(work) {
   return { version: next, path: join(output, 'Arkvory-amd64.deb') };
 }
 
+// Each suite fits the 30-minute gate limit with its own cluster build (about 5 minutes).
 const suites = {
-  failures: {
-    profile: 'ha-2',
-    scenarios: [standbyFailure, singleCopy, activeFailure, partition, fencingFailure],
-  },
-  operations: {
-    profile: 'ha-2',
-    scenarios: [
-      activeFailure,
-      updateAndSwitchover,
-      fullResync,
-      { name: 'the active node fails again, now on the other side', run: reverseFailure },
-    ],
-  },
+  failures: { profile: 'ha-2', scenarios: [standbyFailure, singleCopy, partition] },
+  power: { profile: 'ha-2', scenarios: [activeFailure, fencingFailure] },
+  // After the switchover the other node is active: its power loss is scenario 1 in reverse.
+  operations: { profile: 'ha-2', scenarios: [updateAndSwitchover, fullResync, activeFailure] },
   'three-nodes': { profile: 'ha-3', scenarios: [standbyFailure, secondLoss, activeFailure] },
 };
 const selected = suites[suite];
 if (!selected)
   throw new Error(`Unknown HA stand suite "${suite}": ${Object.keys(suites).join(', ')}`);
-
-/** Scenario 1 in the other direction: the node that took over loses power this time. */
-async function reverseFailure(context) {
-  const first = context.timings.activeLosses?.[0]?.node;
-  const current = await active(context.cluster);
-  if (current.name === first) {
-    const [other] = context.cluster.data.filter((node) => node !== current);
-    await current.shell.exec(`arkvory cluster-switchover --root ${ROOT} --to ${other.name}`);
-  }
-  const result = await activeFailure.run(context);
-  assert.notEqual(context.timings.activeLosses.at(-1).node, first);
-  return result;
-}
 
 async function runSuite({ profile, scenarios }, base, identity, next) {
   let cluster;
