@@ -89,7 +89,8 @@ export class PostgresCatalog implements Catalog {
     if (!Number.isSafeInteger(poolSize) || poolSize < 4 || poolSize > 200)
       throw new Error('Invalid database pool size');
     this.pool = catalogPool(connectionString, poolSize);
-    this.sessions = catalogPool(connectionString, 3);
+    // Ownership, pins and the lease, plus room for a lost session to reconnect while the old one drains.
+    this.sessions = catalogPool(connectionString, 8);
     this.locks = catalogPool(connectionString, maxWriters);
   }
 
