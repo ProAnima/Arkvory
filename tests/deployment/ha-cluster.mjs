@@ -278,7 +278,8 @@ export async function buildCluster({ profile, base, keys, artifact }) {
     cluster.all.map((node) =>
       node.shell.exec(
         'systemctl disable --now unattended-upgrades apt-daily.timer apt-daily-upgrade.timer; ' +
-          "while pgrep -x dpkg >/dev/null || pgrep -x apt-get >/dev/null || pgrep -f '[u]nattended-upgrade' >/dev/null; do sleep 2; done",
+          // dpkg holds an fcntl lock: waiting for it is exact, matching process names is not.
+          'python3 -c \'import fcntl; fcntl.lockf(open("/var/lib/dpkg/lock-frontend", "w"), fcntl.LOCK_EX)\'',
       ),
     ),
   );
