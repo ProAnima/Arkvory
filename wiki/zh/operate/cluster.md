@@ -109,7 +109,7 @@ Arkvory 集群在站点中的某台服务器故障时仍能继续工作。两到
 6. 在第一台服务器上停止 Arkvory 并释放卷：
 
    ```bash
-   systemctl stop arkvory-update.timer arkvory-backup arkvory-worker arkvory-api arkvory-replica arkvory-database
+   systemctl stop arkvory-update.timer arkvory-update arkvory-backup arkvory-worker arkvory-api arkvory-replica arkvory-database
    umount /opt/proanima-arkvory && drbdadm secondary arkvory
    ```
 
@@ -120,7 +120,7 @@ Arkvory 集群在站点中的某台服务器故障时仍能继续工作。两到
    mkdir -p /opt/proanima-arkvory && mount /dev/drbd0 /opt/proanima-arkvory
    arkvory cluster-node --root /opt/proanima-arkvory --cluster-resource arkvory
    dpkg --configure proanima-arkvory
-   systemctl stop arkvory-update.timer arkvory-backup arkvory-worker arkvory-api arkvory-replica arkvory-database
+   systemctl stop arkvory-update.timer arkvory-update arkvory-backup arkvory-worker arkvory-api arkvory-replica arkvory-database
    umount /opt/proanima-arkvory && drbdadm secondary arkvory
    ```
 

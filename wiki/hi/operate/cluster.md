@@ -109,7 +109,7 @@ description: 'एक साइट के दो या तीन Linux सर्
 6. पहले सर्वर पर Arkvory रोकें और वॉल्यूम छोड़ दें:
 
    ```bash
-   systemctl stop arkvory-update.timer arkvory-backup arkvory-worker arkvory-api arkvory-replica arkvory-database
+   systemctl stop arkvory-update.timer arkvory-update arkvory-backup arkvory-worker arkvory-api arkvory-replica arkvory-database
    umount /opt/proanima-arkvory && drbdadm secondary arkvory
    ```
 
@@ -120,7 +120,7 @@ description: 'एक साइट के दो या तीन Linux सर्
    mkdir -p /opt/proanima-arkvory && mount /dev/drbd0 /opt/proanima-arkvory
    arkvory cluster-node --root /opt/proanima-arkvory --cluster-resource arkvory
    dpkg --configure proanima-arkvory
-   systemctl stop arkvory-update.timer arkvory-backup arkvory-worker arkvory-api arkvory-replica arkvory-database
+   systemctl stop arkvory-update.timer arkvory-update arkvory-backup arkvory-worker arkvory-api arkvory-replica arkvory-database
    umount /opt/proanima-arkvory && drbdadm secondary arkvory
    ```
 

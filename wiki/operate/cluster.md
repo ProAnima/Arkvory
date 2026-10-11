@@ -109,7 +109,7 @@ The commands below use the default resource name `arkvory`, the installation dir
 6. Stop Arkvory on the first server and release the volume:
 
    ```bash
-   systemctl stop arkvory-update.timer arkvory-backup arkvory-worker arkvory-api arkvory-replica arkvory-database
+   systemctl stop arkvory-update.timer arkvory-update arkvory-backup arkvory-worker arkvory-api arkvory-replica arkvory-database
    umount /opt/proanima-arkvory && drbdadm secondary arkvory
    ```
 
@@ -120,7 +120,7 @@ The commands below use the default resource name `arkvory`, the installation dir
    mkdir -p /opt/proanima-arkvory && mount /dev/drbd0 /opt/proanima-arkvory
    arkvory cluster-node --root /opt/proanima-arkvory --cluster-resource arkvory
    dpkg --configure proanima-arkvory
-   systemctl stop arkvory-update.timer arkvory-backup arkvory-worker arkvory-api arkvory-replica arkvory-database
+   systemctl stop arkvory-update.timer arkvory-update arkvory-backup arkvory-worker arkvory-api arkvory-replica arkvory-database
    umount /opt/proanima-arkvory && drbdadm secondary arkvory
    ```
 

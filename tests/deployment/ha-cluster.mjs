@@ -16,7 +16,7 @@ import { createGuest, HOST_ADDRESS, run, ssh } from './ha-vms.mjs';
 export const ROOT = '/opt/proanima-arkvory';
 export const VIP = '192.168.122.100';
 const STOP_ALL =
-  'systemctl stop arkvory-update.timer arkvory-backup arkvory-worker arkvory-api arkvory-replica arkvory-database';
+  'systemctl stop arkvory-update.timer arkvory-update arkvory-backup arkvory-worker arkvory-api arkvory-replica arkvory-database';
 
 export function layout(profile) {
   const names = profile === 'ha-2' ? ['node-a', 'node-b'] : ['node-a', 'node-b', 'node-c'];
@@ -217,6 +217,14 @@ async function pacemaker(cluster, keys, script) {
     await node.shell.exec('chpasswd', { input: `hacluster:${password}\n` });
     await node.shell.exec('systemctl enable --now pcsd');
   }
+  // pcsd answers a moment after systemd reports it started.
+  for (const node of cluster.all)
+    await until(
+      async () => (await node.shell.exec('ss -Hltn sport = :2224')).length > 0,
+      `pcsd on ${node.name}`,
+      120000,
+      1000,
+    );
   for (const node of cluster.data) {
     await node.shell.exec(
       `install -d -m 0700 /root/.ssh && cat > /root/.ssh/fence_key && chmod 0600 /root/.ssh/fence_key && ssh-keyscan -H ${HOST_ADDRESS} >> /root/.ssh/known_hosts`,

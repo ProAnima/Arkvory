@@ -109,7 +109,7 @@ Los comandos siguientes usan el nombre de recurso predeterminado `arkvory`, el d
 6. Detenga Arkvory en el primer servidor y libere el volumen:
 
    ```bash
-   systemctl stop arkvory-update.timer arkvory-backup arkvory-worker arkvory-api arkvory-replica arkvory-database
+   systemctl stop arkvory-update.timer arkvory-update arkvory-backup arkvory-worker arkvory-api arkvory-replica arkvory-database
    umount /opt/proanima-arkvory && drbdadm secondary arkvory
    ```
 
@@ -120,7 +120,7 @@ Los comandos siguientes usan el nombre de recurso predeterminado `arkvory`, el d
    mkdir -p /opt/proanima-arkvory && mount /dev/drbd0 /opt/proanima-arkvory
    arkvory cluster-node --root /opt/proanima-arkvory --cluster-resource arkvory
    dpkg --configure proanima-arkvory
-   systemctl stop arkvory-update.timer arkvory-backup arkvory-worker arkvory-api arkvory-replica arkvory-database
+   systemctl stop arkvory-update.timer arkvory-update arkvory-backup arkvory-worker arkvory-api arkvory-replica arkvory-database
    umount /opt/proanima-arkvory && drbdadm secondary arkvory
    ```
 

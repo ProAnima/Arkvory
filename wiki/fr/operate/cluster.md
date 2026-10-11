@@ -109,7 +109,7 @@ Les commandes ci-dessous utilisent le nom de ressource par défaut `arkvory`, le
 6. Arrêtez Arkvory sur le premier serveur et libérez le volume :
 
    ```bash
-   systemctl stop arkvory-update.timer arkvory-backup arkvory-worker arkvory-api arkvory-replica arkvory-database
+   systemctl stop arkvory-update.timer arkvory-update arkvory-backup arkvory-worker arkvory-api arkvory-replica arkvory-database
    umount /opt/proanima-arkvory && drbdadm secondary arkvory
    ```
 
@@ -120,7 +120,7 @@ Les commandes ci-dessous utilisent le nom de ressource par défaut `arkvory`, le
    mkdir -p /opt/proanima-arkvory && mount /dev/drbd0 /opt/proanima-arkvory
    arkvory cluster-node --root /opt/proanima-arkvory --cluster-resource arkvory
    dpkg --configure proanima-arkvory
-   systemctl stop arkvory-update.timer arkvory-backup arkvory-worker arkvory-api arkvory-replica arkvory-database
+   systemctl stop arkvory-update.timer arkvory-update arkvory-backup arkvory-worker arkvory-api arkvory-replica arkvory-database
    umount /opt/proanima-arkvory && drbdadm secondary arkvory
    ```
 
