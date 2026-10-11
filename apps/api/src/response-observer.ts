@@ -38,6 +38,10 @@ export function observeResponses(
     const started = now();
     const socket: unknown = request.raw.socket;
     const written = counter(socket, 'bytesWritten');
+    // One close listener per concern (metrics, request budget, drain, abort signal, download
+    // release, pins…), a fixed number per response, never per chunk: more than Node's warning
+    // threshold of 10 on a download, which is not a leak.
+    reply.raw.setMaxListeners(32);
     reply.raw.once('close', () => {
       const writtenAfter = counter(socket, 'bytesWritten');
       const read = counter(socket, 'bytesRead');
