@@ -192,14 +192,23 @@ export function ssh(key, address) {
     'LogLevel=ERROR',
     '-o',
     'ConnectTimeout=5',
+    // A guest that loses power mid-session must not hold a probe until the command timeout.
+    '-o',
+    'ServerAliveInterval=5',
+    '-o',
+    'ServerAliveCountMax=2',
     '-o',
     'BatchMode=yes',
   ];
   return {
     exec: (script, { input } = {}) => run('ssh', [...base, `root@${address}`, script], { input }),
-    async tryExec(script) {
+    /** A probe: failures and hangs (bounded by timeoutMs) are results, not errors. */
+    async tryExec(script, { timeoutMs = 60000 } = {}) {
       try {
-        return { ok: true, output: await run('ssh', [...base, `root@${address}`, script]) };
+        return {
+          ok: true,
+          output: await run('ssh', [...base, `root@${address}`, script], { timeoutMs }),
+        };
       } catch (error) {
         return { ok: false, output: String(error.stderr ?? error.message) };
       }

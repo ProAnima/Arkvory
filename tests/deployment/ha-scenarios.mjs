@@ -175,7 +175,8 @@ async function restoreAll(cluster, api) {
       for (const node of cluster.data) {
         if ((await power.state(node.domain)).includes('shut off')) await power.on(node.domain);
         const running = await node.shell.tryExec('systemctl is-active --quiet pacemaker');
-        if (!running.ok) await node.shell.tryExec('pcs cluster start --wait=120');
+        if (!running.ok)
+          await node.shell.tryExec('pcs cluster start --wait=120', { timeoutMs: 180000 });
       }
       // A node without quorum keeps reporting the group it failed to stop: judge by quorum,
       // Pacemaker on every node and Arkvory answering through the virtual address.
