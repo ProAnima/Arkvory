@@ -112,7 +112,16 @@ test('a trusted request ID is stored with the job and repeated on every worker l
   assert.ok(result.records.some((r) => r.code === 'worker.started'));
   const quiet = await worker(f, { ARKVORY_LOG_LEVEL: 'warning' });
   assert.equal(quiet.code, 0, quiet.output);
-  assert.equal(quiet.records.length, 0, 'info and debug lines are filtered');
+  // Warnings may appear (a loaded host stalls the event loop); info and debug never do.
+  assert.deepEqual(
+    quiet.records.filter((r) => r.level === 'info' || r.level === 'debug'),
+    [],
+    `info and debug lines are filtered: ${JSON.stringify(quiet.records)}`,
+  );
+  assert.ok(
+    quiet.records.every((r) => r.level === 'warning' || r.level === 'error'),
+    JSON.stringify(quiet.records),
+  );
   const invalid = await worker(f, { ARKVORY_LOG_LEVEL: 'verbose' });
   assert.equal(invalid.code, 1);
   assert.equal(
