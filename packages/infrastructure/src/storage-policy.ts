@@ -35,14 +35,26 @@ function snapshot(row?: PolicyRow): StoragePolicySnapshot {
     lastError: row?.last_error ?? null,
   };
 }
-// Ranking is by publication time, not semantic version. A build belonging to several
-// identities/channels survives if ANY bucket needs it. Unknown labels share the default bucket.
-const rankedSql =
+/** $5 groups and $6 names: the packages a scoped ranking covers, pairwise. */
+const scopePairs = 'SELECT lower(g),lower(n) FROM unnest($5::text[],$6::text[]) s(g,n)';
+/** Their versions, each package found through the identity index rather than a scan. */
+const scopedPackages = `(SELECT p.* FROM unnest($5::text[],$6::text[]) s(g,n)
+  CROSS JOIN LATERAL (SELECT * FROM arkvory_packages x WHERE x.repository=$1
+    AND lower(x.package_group)=lower(s.g) AND lower(x.name)=lower(s.n)) p)`;
+/**
+ * Ranking is by publication time, not semantic version. A build belonging to several
+ * identities/channels survives if ANY bucket needs it. Unknown labels share the default bucket.
+ * Scoped, the ranking covers only the given packages, and an artifact that also belongs to a
+ * package outside them is skipped: its rank there is unknown. The packages of every drafted
+ * candidate are in scope, so no candidate is skipped this way.
+ */
+const rankedSql = (scoped: boolean) =>
   `WITH identities AS (
   SELECT DISTINCT u.id,u.published_at,
     CASE WHEN $2::jsonb->>'grouping'='repository' THEN '' ELSE lower(p.package_group)||'/'||lower(p.name) END AS identity,
     COALESCE(a.labels,u.descriptor->'labels','[]'::jsonb) AS labels
-  FROM arkvory_packages p JOIN arkvory_uploads u ON u.id=p.artifact_id AND u.repository=p.repository
+  FROM ${scoped ? scopedPackages : 'arkvory_packages'} p
+  JOIN arkvory_uploads u ON u.id=p.artifact_id AND u.repository=p.repository
   LEFT JOIN arkvory_annotations a ON a.artifact_id=u.id
   WHERE u.repository=$1 AND u.status='available'
 ), buckets AS (
@@ -62,7 +74,26 @@ SELECT * FROM (` +
   candidateSql +
   ` AND u.id IN(SELECT id FROM eligible) AND u.published_at<$4::timestamptz) q
 WHERE NOT referenced AND NOT asset AND NOT attached AND NOT labelled
+${
+  scoped
+    ? `AND NOT EXISTS(SELECT 1 FROM arkvory_packages o WHERE o.repository=$1 AND o.artifact_id=q.id
+      AND (lower(o.package_group),lower(o.name)) NOT IN (${scopePairs}))`
+    : ''
+}
 ORDER BY published_at,id LIMIT 101`;
+
+/** The packages of the given artifacts, as the $5/$6 pair of a scoped ranking. */
+async function packagesOf(pool: Pool, repository: string, ids: readonly string[]) {
+  const rows = (
+    await pool.query<{ package_group: string; name: string }>(
+      `SELECT DISTINCT package_group, name FROM arkvory_packages
+       WHERE repository=$1 AND artifact_id=ANY($2::uuid[])`,
+      [repository, ids],
+    )
+  ).rows;
+  return { groups: rows.map((row) => row.package_group), names: rows.map((row) => row.name) };
+}
+type Scope = Awaited<ReturnType<typeof packagesOf>>;
 
 export class PostgresStoragePolicy implements StoragePolicyStore {
   constructor(private readonly pool: Pool) {}
@@ -129,7 +160,12 @@ export class PostgresStoragePolicy implements StoragePolicyStore {
   async usage(repository: string) {
     return repositoryUsage(this.pool, repository, (await this.get(repository)).policy);
   }
-  private async candidates(c: Pool | PoolClient, repository: string, policy: StoragePolicy) {
+  private async candidates(
+    c: Pool | PoolClient,
+    repository: string,
+    policy: StoragePolicy,
+    scope: Scope | null = null,
+  ) {
     const clock = (
       await c.query<{ cutoff: Date }>(
         "SELECT clock_timestamp()-($1::integer * interval '1 hour') AS cutoff",
@@ -138,11 +174,12 @@ export class PostgresStoragePolicy implements StoragePolicyStore {
     ).rows[0];
     if (!clock) throw new ArkvoryError('unavailable', 'Storage clock unavailable');
     const rows = (
-      await c.query<CandidateRow>(rankedSql, [
+      await c.query<CandidateRow>(rankedSql(scope !== null), [
         repository,
         JSON.stringify(policy),
         policy.protectedLabels,
         clock.cutoff.toISOString(),
+        ...(scope ? [scope.groups, scope.names] : []),
       ])
     ).rows;
     return {
@@ -151,15 +188,36 @@ export class PostgresStoragePolicy implements StoragePolicyStore {
       cutoff: clock.cutoff.toISOString(),
     };
   }
-  async preview(repository: string) {
+  /** Policy and candidates of one snapshot, without the catalog lock. */
+  private async draft(repository: string) {
     return this.transaction(async (c) => {
       await c.query('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY');
       const current = snapshot(await this.row(c, repository));
-      const result = await this.candidates(c, repository, current.policy);
-      return { revision: current.revision, items: result.items, hasMore: result.hasMore };
+      return { current, ...(await this.candidates(c, repository, current.policy)) };
     });
   }
+  async preview(repository: string) {
+    const draft = await this.draft(repository);
+    return { revision: draft.current.revision, items: draft.items, hasMore: draft.hasMore };
+  }
+  /**
+   * Ranking a whole repository takes about a second per 100 000 artifacts, and the catalog lock
+   * holds every publication to the repository meanwhile (ADR 0075). So the full ranking runs
+   * first, on a snapshot without the lock, and only names the packages to look at; under the lock
+   * the ranking repeats for those packages alone and decides. A change between the two only
+   * moves what the second one finds, never what it may delete. Grouping by repository has one
+   * bucket for everything, so there the locked ranking stays whole.
+   */
   async run(access: MutationAccess, revision: number, automatic = false) {
+    const draft = await this.draft(access.repository);
+    const scope =
+      draft.current.revision === revision && draft.current.policy.grouping !== 'repository'
+        ? await packagesOf(
+            this.pool,
+            access.repository,
+            draft.items.map((item) => item.id),
+          )
+        : null;
     return this.transaction(async (c) => {
       await lockServiceAccess(c, access);
       await lockCatalogMutation(c, access.repository);
@@ -181,7 +239,7 @@ export class PostgresStoragePolicy implements StoragePolicyStore {
         ).rows[0]?.due;
         if (!due) return { items: [] };
       }
-      const chosen = await this.candidates(c, access.repository, current.policy);
+      const chosen = await this.candidates(c, access.repository, current.policy, scope);
       const items: DeletionResult[] = [];
       for (const item of chosen.items)
         items.push(
@@ -196,7 +254,11 @@ export class PostgresStoragePolicy implements StoragePolicyStore {
       await c.query(
         `UPDATE arkvory_storage_policies SET last_run_at=clock_timestamp(),last_deleted=$2,last_error=NULL,
         next_run_at=clock_timestamp()+($3::integer * interval '1 minute') WHERE repository=$1`,
-        [access.repository, deleted, chosen.hasMore ? 1 : current.policy.intervalMinutes],
+        [
+          access.repository,
+          deleted,
+          chosen.hasMore || draft.hasMore ? 1 : current.policy.intervalMinutes,
+        ],
       );
       if (deleted)
         await this.record(c, access.repository, 'info', 'retention.completed', {

@@ -1,11 +1,13 @@
+import { createHash } from 'node:crypto';
 import { Readable } from 'node:stream';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
-import { ArkvoryError, npmPackument } from '@proanima/arkvory-domain';
+import { ArkvoryError, npmInstallPackument, npmPackument } from '@proanima/arkvory-domain';
 import type { NpmRegistry, NpmSearchItem } from '@proanima/arkvory-application';
 import { UploadReceiver } from './upload-lifetime.js';
 import type { ProtocolTransfers } from './protocol-transfers.js';
 import { registerNpmErrors } from './npm-errors.js';
 import { publicOrigin } from './public-origin.js';
+import { matchesEtag } from './range.js';
 
 interface Npm extends ProtocolTransfers {
   readonly npm: NpmRegistry;
@@ -78,6 +80,38 @@ const searchObject = (item: NpmSearchItem) => ({
   searchScore: 1,
 });
 
+const INSTALL_TYPE = 'application/vnd.npm.install-v1+json';
+
+/**
+ * A packument with an ETag of its bytes (ADR 0075): a client that already holds this exact
+ * document gets 304 and no body. The tag covers the tarball origin and the chosen format, and
+ * `Vary: Accept` keeps a cache from serving one format for the other.
+ */
+async function sendPackument(s: Npm, request: Request, reply: FastifyReply, name: string) {
+  const { versions, tags } = await s.npm.packument(
+    s.principal(request),
+    request.params.repository,
+    name,
+  );
+  const install = (request.headers.accept ?? '').includes(INSTALL_TYPE);
+  const tarballs = `${base(request)}/${name}/-/`;
+  const body = JSON.stringify(
+    install
+      ? npmInstallPackument(name, versions, tags, tarballs)
+      : npmPackument(name, versions, tags, tarballs),
+  );
+  const etag = `"${createHash('sha256').update(body).digest('base64url')}"`;
+  // CORS may have set `Vary: Origin` already; add to it rather than replace it.
+  const vary = reply.getHeader('Vary');
+  reply
+    .header('ETag', etag)
+    .header('Vary', typeof vary === 'string' && vary !== '' ? `${vary}, Accept` : 'Accept');
+  if (matchesEtag(request.headers['if-none-match'], etag)) return reply.code(304).send();
+  return reply
+    .type(install ? `${INSTALL_TYPE}; charset=utf-8` : 'application/json; charset=utf-8')
+    .send(body);
+}
+
 /** A dist-tag body: a JSON string of at most a few hundred bytes. */
 async function smallJson(body: unknown): Promise<unknown> {
   if (!(body instanceof Readable)) return undefined;
@@ -101,12 +135,8 @@ async function read(s: Npm, request: Request, reply: FastifyReply, target: NpmTa
   const principal = s.principal(request);
   const { repository } = request.params;
   switch (target.kind) {
-    case 'package': {
-      const { versions, tags } = await s.npm.packument(principal, repository, target.name);
-      return reply.send(
-        npmPackument(target.name, versions, tags, `${base(request)}/${target.name}/-/`),
-      );
-    }
+    case 'package':
+      return sendPackument(s, request, reply, target.name);
     case 'tarball': {
       const artifactId = await s.npm.tarball(principal, repository, target.name, target.file);
       return s.sendContent(request, reply, repository, artifactId);

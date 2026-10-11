@@ -150,10 +150,31 @@ test('npm publishes, tags, searches and installs a Unity package from Arkvory', 
     headers: f.headers,
   });
   assert.equal((await listed.json()).total, 1);
-  const packument = await (
-    await fetch(`${registry}com.proanima.tools`, { headers: f.headers })
-  ).json();
+  const full = await fetch(`${registry}com.proanima.tools`, { headers: f.headers });
+  const packument = await full.json();
   assert.equal(packument.versions['1.0.0'].unity, '2022.3');
+  // An unchanged packument answers 304; the install format is another document with its own tag.
+  const etag = full.headers.get('etag');
+  assert.match(etag, /^"[\w-]{43}"$/);
+  assert.match(full.headers.get('vary'), /Accept/);
+  const again = await fetch(`${registry}com.proanima.tools`, {
+    headers: { ...f.headers, 'if-none-match': etag },
+  });
+  assert.equal(again.status, 304);
+  assert.equal((await again.text()).length, 0);
+  const install = await fetch(`${registry}com.proanima.tools`, {
+    headers: {
+      ...f.headers,
+      accept: 'application/vnd.npm.install-v1+json; q=1.0, application/json; q=0.8, */*',
+      'if-none-match': etag,
+    },
+  });
+  assert.equal(install.status, 200);
+  assert.match(install.headers.get('content-type'), /^application\/vnd\.npm\.install-v1\+json/);
+  const abbreviated = await install.json();
+  assert.equal(abbreviated.versions['1.0.0'].displayName, undefined);
+  assert.equal(abbreviated.versions['1.1.0'].dist.shasum, packument.versions['1.1.0'].dist.shasum);
+  assert.equal(abbreviated['dist-tags'].latest, packument['dist-tags'].latest);
   assert.equal(packument.versions['1.1.0'].displayName, 'Arkvory Tools');
   assert.equal(
     packument.versions['1.1.0'].dist.shasum,

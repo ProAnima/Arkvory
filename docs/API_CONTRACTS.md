@@ -83,7 +83,7 @@ Multipart-сессия сохраняет состояние вне памяти
 
 Raw-файлы ([ADR 0064](adr/0064-raw-files-by-path.md)): `PUT /api/v1/repositories/{r}/raw/{path}` сохраняет тело как новую ревизию пути одним запросом. С `X-Checksum-Sha256` и `Content-Length` — один проход, без них — через временный файл. Те же байты повторно дают `200 created:false` без новой ревизии; `If-None-Match: *` — только создание (`409 already_exists`). `GET|HEAD` того же адреса отдаёт текущую ревизию с Range и ETag. Тело любого типа хранится как байты.
 
-npm-реестр ([ADR 0066](adr/0066-npm-registry-for-unity.md)): `/npm/<repository>/` — packument, tarball, `npm publish`, dist-tags и `/-/v1/search` протокола npm для Unity Package Manager и npm. Ошибки — `{error, code, request_id}`. В OpenAPI `/api/v1` не входит. Вход — ключом Arkvory как токеном npm (`Bearer`) или паролем Basic.
+npm-реестр ([ADR 0066](adr/0066-npm-registry-for-unity.md)): `/npm/<repository>/` — packument (с `ETag`/304 и сокращённым форматом `application/vnd.npm.install-v1+json`, [ADR 0075](adr/0075-catalog-query-bounds.md)), tarball, `npm publish`, dist-tags и `/-/v1/search` протокола npm для Unity Package Manager и npm. Ошибки — `{error, code, request_id}`. В OpenAPI `/api/v1` не входит. Вход — ключом Arkvory как токеном npm (`Bearer`) или паролем Basic.
 
 Git LFS ([ADR 0065](adr/0065-git-lfs.md)): `/lfs/<repository>` — batch API, базовая передача и File Locking API спецификации git-lfs, со своим документом ошибок `{message, request_id}`. В OpenAPI `/api/v1` не входит. Вход — ключом Arkvory как паролем Basic (хранилище учётных данных git) или Bearer.
 

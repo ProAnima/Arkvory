@@ -168,6 +168,29 @@ test('last N per package/channel preserves multi-channel, protected, pinned and 
   );
 });
 
+test('a run decides under the lock per package, and keeps a build that another package still needs', async (t) => {
+  const f = await setup(t),
+    a = await access(f);
+  const oldest = await build(f, 'one', 30),
+    shared = await build(f, 'one', 20),
+    newest = await build(f, 'one', 5);
+  // `shared` is also the only build of `two`: ranking `one` alone would see it as surplus.
+  await f.catalog.pool.query(
+    `INSERT INTO arkvory_packages(repository,package_group,name,version,artifact_id,manifest)
+     VALUES('releases','team','two','2.0.0',$1,'{}')`,
+    [shared],
+  );
+  await a.client.setStoragePolicy('releases', 0, policy({ grouping: 'package' }));
+  const run = await a.client.runStoragePolicy('releases', 1);
+  assert.deepEqual(
+    run.items.map((i) => [i.id, i.outcome]),
+    [[oldest, 'deleted']],
+  );
+  for (const id of [shared, newest])
+    assert.equal((await f.catalog.get('releases', id)).status, 'available');
+  assert.equal((await a.client.runStoragePolicy('releases', 1)).items.length, 0);
+});
+
 test('quota reserves concurrently, replays existing upload and retains cancelled bytes until GC', async (t) => {
   const f = await setup(t),
     a = await access(f);

@@ -196,6 +196,68 @@ export function npmPackument(
   };
 }
 
+/** The package.json fields npm's install format keeps; the rest only describes the package. */
+const INSTALL_FIELDS = [
+  'dependencies',
+  'optionalDependencies',
+  'devDependencies',
+  'bundleDependencies',
+  'peerDependencies',
+  'peerDependenciesMeta',
+  'acceptDependencies',
+  'bin',
+  'directories',
+  'engines',
+  'cpu',
+  'os',
+  'libc',
+  'deprecated',
+  'funding',
+  'license',
+  '_hasShrinkwrap',
+  'hasInstallScript',
+] as const;
+
+/**
+ * The abbreviated packument npm asks for with `Accept: application/vnd.npm.install-v1+json`
+ * (ADR 0075): what dependency resolution needs, without readmes, scripts or times per version.
+ */
+export function npmInstallPackument(
+  name: string,
+  versions: readonly NpmVersionRecord[],
+  tags: Readonly<Record<string, string>>,
+  tarballBase: string,
+) {
+  return {
+    name,
+    modified: versions
+      .map((item) => item.publishedAt)
+      .sort()
+      .at(-1),
+    'dist-tags': tags,
+    versions: Object.fromEntries(
+      versions.map((item) => [
+        item.version,
+        {
+          ...Object.fromEntries(
+            INSTALL_FIELDS.filter((field) => field in item.manifest).map((field) => [
+              field,
+              item.manifest[field],
+            ]),
+          ),
+          name,
+          version: item.version,
+          dist: {
+            tarball: tarballBase + item.file,
+            shasum: item.shasum,
+            integrity: item.integrity,
+          },
+        },
+      ]),
+    ),
+  };
+}
+
 export interface NpmFeedDetail {
   readonly name: string;
   readonly version: string | null;

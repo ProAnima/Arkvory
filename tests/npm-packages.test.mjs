@@ -5,6 +5,7 @@ import { gzipSync } from 'node:zlib';
 import { GzipNpmTarballInspector, NpmPublishBody } from '@proanima/arkvory-infrastructure';
 import { tar, tarEntry as entry } from './npm-fixtures.mjs';
 import {
+  npmInstallPackument,
   npmIntegrityMatches,
   npmPackument,
   parseNpmDetail,
@@ -184,6 +185,45 @@ test('a packument serves each manifest with the registry name, version and dist'
     integrity: 'sha512-x',
   });
   assert.equal(packument.time['1.0.0'], '2026-10-04T10:00:00.000Z');
+});
+
+test('the install packument keeps what resolution needs and drops descriptions', () => {
+  const versions = [
+    {
+      version: '1.0.0',
+      manifest: {
+        name: 'spoofed',
+        readme: 'long text',
+        scripts: { test: 'x' },
+        dependencies: { a: '^1.0.0' },
+        engines: { node: '>=20' },
+        hasInstallScript: true,
+      },
+      file: 'tools-1.0.0.tgz',
+      shasum: 'a'.repeat(40),
+      integrity: 'sha512-x',
+      publishedAt: '2026-10-04T10:00:00.000Z',
+    },
+    {
+      version: '1.1.0',
+      manifest: {},
+      file: 'tools-1.1.0.tgz',
+      shasum: 'b'.repeat(40),
+      integrity: 'sha512-y',
+      publishedAt: '2026-10-05T10:00:00.000Z',
+    },
+  ];
+  const packument = npmInstallPackument('tools', versions, { latest: '1.1.0' }, 'https://h/-/');
+  assert.equal(packument.modified, '2026-10-05T10:00:00.000Z');
+  assert.deepEqual(packument.versions['1.0.0'], {
+    dependencies: { a: '^1.0.0' },
+    engines: { node: '>=20' },
+    hasInstallScript: true,
+    name: 'tools',
+    version: '1.0.0',
+    dist: { tarball: 'https://h/-/tools-1.0.0.tgz', shasum: 'a'.repeat(40), integrity: 'sha512-x' },
+  });
+  assert.deepEqual(Object.keys(packument.versions['1.1.0']), ['name', 'version', 'dist']);
 });
 
 test('a tarball is read to its end: a second or linked manifest is refused, as npm keeps the last', async () => {
