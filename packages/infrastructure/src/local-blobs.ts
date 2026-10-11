@@ -5,7 +5,13 @@ import { ArkvoryError, MAX_PARTS, requireId } from '@proanima/arkvory-domain';
 import type { ArtifactDescriptor, UploadPart } from '@proanima/arkvory-domain';
 import type { BlobStore, Cancellation } from '@proanima/arkvory-application';
 import { hasCode, syncDirectory } from './fs-durability.js';
-import { streamFile, verifyFile } from './blob-files.js';
+import {
+  adoptStagedFile,
+  internalChunkBytes,
+  stagedFileOf,
+  streamFile,
+  verifyFile,
+} from './blob-files.js';
 
 /** Free space kept for the database, logs and the OS; ARKVORY_STORAGE_RESERVE_BYTES. */
 export const defaultStorageReserveBytes = 1024 ** 3;
@@ -102,6 +108,8 @@ export class LocalBlobStore implements BlobStore {
     cancellation: Cancellation,
     target = this.blob(id),
   ): Promise<void> {
+    const staged = stagedFileOf(source);
+    if (staged && (await adoptStagedFile(staged, expected, target, cancellation))) return;
     const directory = this.staging(id);
     await mkdir(directory, { recursive: true });
     await syncDirectory(join(this.root, 'staging'));
@@ -249,7 +257,8 @@ export class LocalBlobStore implements BlobStore {
   }
 
   async *readParts(id: string, parts: readonly UploadPart[]): AsyncIterable<Uint8Array> {
-    for (const part of parts) yield* streamFile(this.partPath(id, part), part.size);
+    for (const part of parts)
+      yield* streamFile(this.partPath(id, part), part.size, undefined, internalChunkBytes);
   }
 
   async collect(id: string, removeContent: boolean, cancellation: Cancellation): Promise<void> {

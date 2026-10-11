@@ -102,3 +102,68 @@ test('short blob reads fail for full content, Range and multipart assembly', asy
   await truncate(join(root, 'parts', id, `0-${part.sha256}`), 4);
   await assert.rejects(consume(store.readParts(id, [part])), { code: 'integrity_mismatch' });
 });
+
+test('a staged file becomes the blob without a copy, only with its own measured bytes', async (t) => {
+  const { stagedFile } = await import('../packages/infrastructure/dist/blob-files.js');
+  const { stat, mkdir } = await import('node:fs/promises');
+  const { root, store } = await fixture(t);
+  await mkdir(join(root, 'raw-staging'));
+  const stage = async (data) => {
+    const path = join(root, 'raw-staging', randomUUID());
+    await writeFile(path, data, { mode: 0o600 });
+    return path;
+  };
+  const data = Buffer.from('staged and adopted bytes');
+  const expected = descriptor(data);
+  const measured = { size: expected.size, sha256: expected.sha256 };
+  // Measured while staging: adopted as is, a second name of the same file.
+  const path = await stage(data);
+  const id = randomUUID();
+  await store.put(
+    id,
+    expected,
+    stagedFile(path, () => chunks(data), measured),
+    cancellation,
+  );
+  const [staged, blob] = await Promise.all([
+    stat(path, { bigint: true }),
+    stat(join(root, 'blobs', id), { bigint: true }),
+  ]);
+  assert.equal(blob.ino, staged.ino, 'no copy');
+  assert.deepEqual(await readFile(join(root, 'blobs', id)), data);
+  // Not measured (an appended OCI blob): hashed once in place, then adopted.
+  const unmeasured = await stage(data);
+  const second = randomUUID();
+  await store.put(
+    second,
+    expected,
+    stagedFile(unmeasured, () => chunks(data)),
+    cancellation,
+  );
+  assert.equal(
+    (await stat(join(root, 'blobs', second), { bigint: true })).ino,
+    (await stat(unmeasured, { bigint: true })).ino,
+  );
+  // Bytes that differ from the declaration never become a blob.
+  const other = Buffer.from('staged and adopted bytez');
+  for (const [file, staged] of [
+    [await stage(other), (p) => stagedFile(p, () => chunks(other))],
+    [await stage(data), (p) => stagedFile(p, () => chunks(data), { ...measured, size: 1 })],
+  ]) {
+    const refused = randomUUID();
+    await assert.rejects(store.put(refused, expected, staged(file), cancellation), {
+      code: 'integrity_mismatch',
+    });
+    await assert.rejects(stat(join(root, 'blobs', refused)), { code: 'ENOENT' });
+  }
+  // No staged file (an empty OCI blob): written from the stream as before.
+  const empty = Buffer.alloc(0);
+  const third = randomUUID();
+  await store.put(
+    third,
+    descriptor(empty),
+    stagedFile(join(root, 'raw-staging', 'missing'), () => chunks(empty)),
+    cancellation,
+  );
+  assert.equal((await readFile(join(root, 'blobs', third))).length, 0);
+});

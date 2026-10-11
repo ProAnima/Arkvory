@@ -119,3 +119,5 @@ export {
 } from './mirror-config.js';
 export type { MirrorSettings } from './mirror-config.js';
 export { SocketReplicaState, parseReplicaCopies } from './replica-socket.js';
+export { stagedFile } from './blob-files.js';
+export type { StagedFile } from './blob-files.js';

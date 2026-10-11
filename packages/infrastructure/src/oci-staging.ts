@@ -1,4 +1,5 @@
 import { createReadStream } from 'node:fs';
+import { stagedFile } from './blob-files.js';
 import { mkdir, open, readdir, rm, stat } from 'node:fs/promises';
 import type { FileHandle } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
@@ -79,7 +80,12 @@ export class FileOciStaging implements OciStaging {
     }
   }
 
-  async *read(id: string): AsyncIterable<Uint8Array> {
+  /** The staged blob; the artifact store verifies it in place and adopts it (ADR 0074). */
+  read(id: string): AsyncIterable<Uint8Array> {
+    return stagedFile(this.path(id), () => this.bytes(id));
+  }
+
+  private async *bytes(id: string): AsyncIterable<Uint8Array> {
     const stream = createReadStream(this.path(id), { highWaterMark: writeBytes });
     try {
       for await (const chunk of stream) {

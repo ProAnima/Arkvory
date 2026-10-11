@@ -28,6 +28,7 @@ import {
   PostgresStages,
   ZipManifestReader,
   reopenMirrorUpload,
+  stagedFile,
 } from '@proanima/arkvory-infrastructure';
 import type {
   LocalBlobStore,
@@ -39,20 +40,31 @@ const absent = (error: unknown) => error instanceof ArkvoryError && error.code =
 async function* nothing(): AsyncIterable<Uint8Array> {}
 const now = () => new Date().toISOString();
 
-/** Writes one source range to `file` and returns its SHA-256; parts are hashed before upload. */
-async function stagePart(content: AsyncIterable<Uint8Array>, file: string): Promise<string> {
+/**
+ * Writes one source range to `file` and returns its size and SHA-256: parts are hashed before
+ * upload, and the store adopts the file as the part instead of copying it (ADR 0074).
+ */
+async function stagePart(
+  content: AsyncIterable<Uint8Array>,
+  file: string,
+): Promise<{ size: number; sha256: string }> {
   const hash = createHash('sha256');
-  const handle = await open(file, 'w', 0o600);
+  // A new file every time: once adopted, the old name shares its bytes with the stored part,
+  // and truncating it in place would change the part.
+  await rm(file, { force: true });
+  const handle = await open(file, 'wx', 0o600);
+  let size = 0;
   try {
     for await (const chunk of content) {
       hash.update(chunk);
       await handle.write(chunk);
+      size += chunk.byteLength;
     }
     await handle.sync();
   } finally {
     await handle.close();
   }
-  return hash.digest('hex');
+  return { size, sha256: hash.digest('hex') };
 }
 
 /**
@@ -182,14 +194,14 @@ export class ServiceMirrorTarget implements MirrorTarget {
       const end = Math.min(descriptor.size, start + partBytes) - 1;
       const file = join(this.staging, `${id}.${String(index)}`);
       try {
-        const sha256 = await stagePart(await source.content(artifact, start, end, c), file);
+        const measured = await stagePart(await source.content(artifact, start, end, c), file);
         await storage.uploadPart(
           this.principal,
           this.repository,
           id,
           index,
-          sha256,
-          createReadStream(file),
+          measured.sha256,
+          stagedFile(file, () => createReadStream(file), measured),
           c,
         );
       } finally {

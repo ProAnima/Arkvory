@@ -5,6 +5,7 @@ import { join, resolve } from 'node:path';
 import { ArkvoryError, requireId } from '@proanima/arkvory-domain';
 import type { Cancellation, RawStaging } from '@proanima/arkvory-application';
 import { hasCode } from './fs-durability.js';
+import { stagedFile } from './blob-files.js';
 
 const spaceCheckBytes = 64 * 1024 ** 2;
 const ioBytes = 1024 * 1024;
@@ -12,11 +13,13 @@ const ioBytes = 1024 * 1024;
 /**
  * Raw uploads without a checksum (ADR 0064), one file each under `<data>/raw-staging`, on the
  * volume of the artifact store so that its free-space reserve covers them; hashed while written.
- * Not durable: the artifact store copies and verifies the bytes, and a crash only leaves a file
- * that `prune` removes.
+ * Not synced while written: the artifact store syncs the file and adopts it as the blob, with
+ * the size and SHA-256 measured here (ADR 0074); a crash only leaves a file that `prune` removes.
  */
 export class FileRawStaging implements RawStaging {
   private readonly root: string;
+  /** Size and SHA-256 measured while each staged file was written, until it is removed. */
+  private readonly measured = new Map<string, { size: number; sha256: string }>();
   constructor(
     dataDirectory: string,
     private readonly space: (bytes: number) => Promise<void>,
@@ -62,10 +65,17 @@ export class FileRawStaging implements RawStaging {
       throw error;
     }
     await handle.close();
-    return { id, size, sha256: hash.digest('hex') };
+    const sha256 = hash.digest('hex');
+    this.measured.set(id, { size, sha256 });
+    return { id, size, sha256 };
   }
 
-  async *read(id: string): AsyncIterable<Uint8Array> {
+  /** The staged bytes; the artifact store adopts the file itself (ADR 0074). */
+  read(id: string): AsyncIterable<Uint8Array> {
+    return stagedFile(this.path(id), () => this.bytes(id), this.measured.get(id));
+  }
+
+  private async *bytes(id: string): AsyncIterable<Uint8Array> {
     const stream = createReadStream(this.path(id), { highWaterMark: ioBytes });
     try {
       for await (const chunk of stream) {
@@ -78,6 +88,7 @@ export class FileRawStaging implements RawStaging {
   }
 
   async remove(id: string): Promise<void> {
+    this.measured.delete(id);
     await rm(this.path(id), { force: true });
   }
 
