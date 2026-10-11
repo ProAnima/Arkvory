@@ -113,6 +113,8 @@ Arkvory has no downgrade command. The command refuses an older version. The prev
 
 A crash or a power loss during an update leaves two things: the lock `operation.lock` and the record `journal.json` in the installation root. New updates and most commands refuse to run until you recover. Never delete the lock before you know the state.
 
+When no update was in progress (the journal is complete or missing) and the process that held the lock no longer runs, for example a stopped update check or, on a [cluster](../operate/cluster), a lock taken on the server that was fenced, the next command removes the lock by itself and logs a warning.
+
 1. Stop the update timer, so that no new run starts. On Linux: `sudo systemctl stop arkvory-update.timer`. On Windows: `Disable-ScheduledTask -TaskName ProAnimaArkvoryUpdate`. In a Compose installation without the timer, stop your scheduled job.
 2. Make sure that no updater process runs. Save `journal.json` and the logs.
 3. Only then delete `operation.lock`.

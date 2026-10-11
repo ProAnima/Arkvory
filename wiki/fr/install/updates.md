@@ -113,6 +113,8 @@ Arkvory n’a pas de commande de rétrogradation. La commande refuse une version
 
 Un plantage ou une coupure de courant pendant une mise à jour laisse deux éléments : le verrou `operation.lock` et l’enregistrement `journal.json` dans la racine d’installation. Les nouvelles mises à jour et la plupart des commandes refusent de s’exécuter jusqu’à la récupération. Ne supprimez jamais le verrou avant de connaître l’état.
 
+Si aucune mise à jour n’était en cours (le journal est terminé ou absent) et que le processus qui détenait le verrou ne s’exécute plus, par exemple une vérification des mises à jour arrêtée ou, dans un [cluster](../operate/cluster), un verrou pris sur le serveur isolé, la commande suivante retire le verrou d’elle-même et consigne un avertissement.
+
 1. Arrêtez le minuteur de mise à jour, afin qu’aucune nouvelle exécution ne démarre. Sous Linux : `sudo systemctl stop arkvory-update.timer`. Sous Windows : `Disable-ScheduledTask -TaskName ProAnimaArkvoryUpdate`. Dans une installation Compose sans minuteur, arrêtez votre tâche planifiée.
 2. Assurez-vous qu’aucun processus de mise à jour ne s’exécute. Sauvegardez `journal.json` et les journaux.
 3. Ne supprimez `operation.lock` qu’ensuite.

@@ -1,5 +1,6 @@
 import { resolve, join } from 'node:path';
-import { exclusive, jsonFile } from './files.js';
+import { jsonFile } from './files.js';
+import { exclusive } from './operation-lock.js';
 import { parseInstallation } from './model.js';
 import { install, update, recover, upgrade, finishInstall, checkJournal } from './operations.js';
 import { Services } from './services.js';

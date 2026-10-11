@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, readFile, access } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
+import { mkdtemp, readFile, access, writeFile } from 'node:fs/promises';
+import { hostname, tmpdir } from 'node:os';
+import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { setTimeout as delay } from 'node:timers/promises';
@@ -11,7 +12,7 @@ import {
   DeploymentCommandTimeout,
   isUnconfirmedTermination,
 } from '../apps/deploy/dist/process.js';
-import { exclusive } from '../apps/deploy/dist/files.js';
+import { exclusive, staleLock } from '../apps/deploy/dist/operation-lock.js';
 import { removeTestDirectory } from './helpers.mjs';
 
 const helper = fileURLToPath(new URL('./deployment/process-child.mjs', import.meta.url));
@@ -112,4 +113,39 @@ test('captured commands return stdout, keep failures and refuse unbounded output
   await assert.rejects(node('process.exit(3)'), /Deployment command failed \(3\)/);
   // A result line is small; a command that keeps printing is a broken contract.
   await assert.rejects(node('process.stdout.write("x".repeat(70000))'), /more output/);
+});
+
+test('a lock left by a process that no longer runs is taken over; anything uncertain stays locked', async (t) => {
+  const root = await mkdtemp(join(tmpdir(), 'arkvory-process-stale-'));
+  t.after(() => removeTestDirectory(root));
+  // A pid that existed and is gone now.
+  const gone = spawnSync(process.execPath, ['-e', 'process.stdout.write(String(process.pid))'], {
+    encoding: 'utf8',
+  }).stdout;
+  const lock = (fields) => JSON.stringify({ pid: Number(gone), host: hostname(), ...fields });
+  assert.equal(await staleLock(root, lock({}), false), true, 'its process is gone');
+  assert.equal(await staleLock(root, lock({ pid: process.pid }), false), false, 'still running');
+  assert.equal(
+    await staleLock(root, lock({ preserved: true }), false),
+    false,
+    'kept for an operator',
+  );
+  assert.equal(
+    await staleLock(root, JSON.stringify({ pid: Number(gone) }), false),
+    false,
+    'older release',
+  );
+  assert.equal(await staleLock(root, '', false), false, 'still being written');
+  // Another host: stale only on an HA node, where the old active node has been fenced.
+  assert.equal(await staleLock(root, lock({ host: 'node-b' }), false), false);
+  assert.equal(await staleLock(root, lock({ host: 'node-b' }), true), true);
+  // An interrupted deployment always waits for an operator.
+  await writeFile(join(root, 'journal.json'), JSON.stringify({ phase: 'switching' }));
+  assert.equal(await staleLock(root, lock({}), false), false);
+  assert.equal(await staleLock(root, lock({ host: 'node-b' }), true), false);
+  await writeFile(join(root, 'journal.json'), JSON.stringify({ phase: 'committed' }));
+  // exclusive() takes over the stale lock and leaves none behind.
+  await writeFile(join(root, 'operation.lock'), lock({}));
+  assert.equal(await exclusive(root, async () => 'ran'), 'ran');
+  await assert.rejects(access(join(root, 'operation.lock')), { code: 'ENOENT' });
 });

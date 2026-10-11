@@ -113,6 +113,8 @@ Arkvory no tiene ningún comando de degradación. El comando rechaza una versió
 
 Una caída o una pérdida de energía durante una actualización deja dos cosas: el bloqueo `operation.lock` y el registro `journal.json` en la raíz de la instalación. Las actualizaciones nuevas y la mayoría de los comandos se niegan a ejecutarse hasta que recupere. Nunca elimine el bloqueo antes de conocer el estado.
 
+Si no había ninguna actualización en curso (el registro está completo o no existe) y el proceso que tomó el bloqueo ya no se ejecuta, por ejemplo una comprobación de actualizaciones detenida o, en un [clúster](../operate/cluster), un bloqueo tomado en el servidor aislado, el siguiente comando quita el bloqueo por sí mismo y registra una advertencia.
+
 1. Detenga el temporizador de actualización, para que no se inicie ninguna ejecución nueva. En Linux: `sudo systemctl stop arkvory-update.timer`. En Windows: `Disable-ScheduledTask -TaskName ProAnimaArkvoryUpdate`. En una instalación de Compose sin el temporizador, detenga su tarea programada.
 2. Asegúrese de que no se ejecute ningún proceso de actualización. Guarde `journal.json` y los registros.
 3. Solo entonces elimine `operation.lock`.

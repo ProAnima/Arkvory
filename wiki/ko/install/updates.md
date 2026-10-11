@@ -113,6 +113,8 @@ Arkvory에는 다운그레이드 명령이 없습니다. 이 명령은 오래된
 
 업데이트 중 충돌이나 정전이 발생하면 설치 루트에 잠금 `operation.lock`과 기록 `journal.json` 두 가지가 남습니다. 복구하기 전까지 새 업데이트와 대부분의 명령은 실행을 거부합니다. 상태를 알기 전에는 잠금을 삭제하지 마세요.
 
+진행 중인 업데이트가 없었고(저널이 완료되었거나 없음) 잠금을 잡은 프로세스가 더 이상 실행되지 않으면, 예를 들어 중지된 업데이트 확인이나 [클러스터](../operate/cluster)에서 격리된 서버가 잡은 잠금이면, 다음 명령이 잠금을 스스로 제거하고 경고를 기록합니다.
+
 1. 새 실행이 시작되지 않도록 업데이트 타이머를 중지하세요. Linux에서는 `sudo systemctl stop arkvory-update.timer`. Windows에서는 `Disable-ScheduledTask -TaskName ProAnimaArkvoryUpdate`. 타이머가 없는 Compose 설치에서는 예약 작업을 중지하세요.
 2. 업데이터 프로세스가 실행되고 있지 않은지 확인하세요. `journal.json`과 로그를 저장하세요.
 3. 그런 다음에야 `operation.lock`을 삭제하세요.

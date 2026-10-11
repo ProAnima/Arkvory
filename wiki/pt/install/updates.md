@@ -113,6 +113,8 @@ O Arkvory não tem comando de downgrade. O comando recusa uma versão mais antig
 
 Uma falha ou uma perda de energia durante uma atualização deixa duas coisas: o bloqueio `operation.lock` e o registro `journal.json` na raiz da instalação. Novas atualizações e a maioria dos comandos se recusam a executar até que você recupere. Nunca exclua o bloqueio antes de saber o estado.
 
+Se nenhuma atualização estava em andamento (o registro está completo ou ausente) e o processo que tomou o bloqueio não está mais em execução, por exemplo uma verificação de atualizações interrompida ou, em um [cluster](../operate/cluster), um bloqueio tomado no servidor isolado, o próximo comando remove o bloqueio sozinho e registra um aviso.
+
 1. Pare o timer de atualização, para que nenhuma nova execução comece. No Linux: `sudo systemctl stop arkvory-update.timer`. No Windows: `Disable-ScheduledTask -TaskName ProAnimaArkvoryUpdate`. Em uma instalação Compose sem o timer, pare sua tarefa agendada.
 2. Certifique-se de que nenhum processo do atualizador esteja em execução. Salve `journal.json` e os logs.
 3. Só então exclua `operation.lock`.

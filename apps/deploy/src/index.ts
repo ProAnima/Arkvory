@@ -2,4 +2,5 @@ export { parseRelease, parseInstallation, updateDecision, newer } from './model.
 export type { Release, Installation } from './model.js';
 export { applyUpdate } from './update.js';
 export type { UpdatePort } from './update.js';
-export { inside, atomicJson, exclusive } from './files.js';
+export { inside, atomicJson } from './files.js';
+export { exclusive } from './operation-lock.js';

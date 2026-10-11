@@ -113,6 +113,8 @@ Arkvory hat keinen Downgrade-Befehl. Der Befehl lehnt eine ältere Version ab. D
 
 Ein Absturz oder ein Stromausfall während eines Updates hinterlässt zwei Dinge: die Sperre `operation.lock` und den Datensatz `journal.json` im Installationsverzeichnis. Neue Updates und die meisten Befehle weigern sich zu laufen, bis Sie wiederherstellen. Löschen Sie die Sperre nie, bevor Sie den Zustand kennen.
 
+Lief kein Update (das Journal ist abgeschlossen oder fehlt) und läuft der Prozess, der die Sperre hielt, nicht mehr, zum Beispiel eine gestoppte Update-Prüfung oder in einem [Cluster](../operate/cluster) eine Sperre des abgeschotteten Servers, entfernt der nächste Befehl die Sperre selbst und protokolliert eine Warnung.
+
 1. Stoppen Sie den Update-Timer, damit kein neuer Lauf startet. Unter Linux: `sudo systemctl stop arkvory-update.timer`. Unter Windows: `Disable-ScheduledTask -TaskName ProAnimaArkvoryUpdate`. Stoppen Sie bei einer Compose-Installation ohne den Timer Ihre geplante Aufgabe.
 2. Stellen Sie sicher, dass kein Updater-Prozess läuft. Sichern Sie `journal.json` und die Protokolle.
 3. Löschen Sie erst dann `operation.lock`.

@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import { Services } from '../apps/deploy/dist/services.js';
 import { localApiHost } from '../apps/deploy/dist/health.js';
 import { DeploymentCommandTimeout } from '../apps/deploy/dist/process.js';
-import { exclusive } from '../apps/deploy/dist/files.js';
+import { exclusive } from '../apps/deploy/dist/operation-lock.js';
 import { removeTestDirectory } from './helpers.mjs';
 
 async function fixture(t, failure) {

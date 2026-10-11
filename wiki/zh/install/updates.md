@@ -113,6 +113,8 @@ Arkvory 没有降级命令。该命令会拒绝较旧的版本。之前的版本
 
 更新期间发生崩溃或断电会留下两样东西：锁 `operation.lock` 和安装根目录中的记录 `journal.json`。在您恢复之前，新的更新和大多数命令都会拒绝运行。在了解状态之前，切勿删除该锁。
 
+如果当时没有正在进行的更新（日志已完成或不存在），且持有锁的进程已不再运行，例如被停止的更新检查，或在[集群](../operate/cluster)中由被隔离的服务器持有的锁，下一条命令会自行移除该锁并记录一条警告。
+
 1. 停止更新计时器，以便不会启动新的运行。在 Linux 上：`sudo systemctl stop arkvory-update.timer`。在 Windows 上：`Disable-ScheduledTask -TaskName ProAnimaArkvoryUpdate`。在没有计时器的 Compose 安装中，停止您计划的任务。
 2. 确保没有更新程序进程在运行。保存 `journal.json` 和日志。
 3. 只有在此之后才删除 `operation.lock`。

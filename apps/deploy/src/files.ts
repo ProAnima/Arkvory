@@ -1,7 +1,6 @@
 import { constants } from 'node:fs';
 import {
   open,
-  mkdir,
   readFile,
   rename,
   unlink,
@@ -11,9 +10,8 @@ import {
   chmod,
   access,
 } from 'node:fs/promises';
-import { dirname, join, resolve, relative, isAbsolute } from 'node:path';
+import { dirname, resolve, relative, isAbsolute } from 'node:path';
 import { randomUUID } from 'node:crypto';
-import { isUnconfirmedTermination } from './process.js';
 
 export function inside(root: string, ...parts: string[]): string {
   const path = resolve(root, ...parts);
@@ -170,28 +168,5 @@ export async function syncDirectory(path: string): Promise<void> {
     } finally {
       await directory.close();
     }
-  }
-}
-export async function exclusive<T>(root: string, work: () => Promise<T>): Promise<T> {
-  await mkdir(root, { recursive: true });
-  const path = join(root, 'operation.lock');
-  const lock = await open(path, 'wx', 0o600).catch(() => {
-    throw new Error(
-      'Installation is locked. After a crash, stop the updater and inspect journal.json before removing operation.lock',
-    );
-  });
-  let preserveLock = false;
-  try {
-    await lock.writeFile(JSON.stringify({ pid: process.pid, startedAt: new Date().toISOString() }));
-    await lock.sync();
-    return await work();
-  } catch (error) {
-    // Unconfirmed descendants may still mutate installation state. Only operator reconciliation
-    // can release this barrier; a timeout must not silently permit another deployment.
-    preserveLock = isUnconfirmedTermination(error);
-    throw error;
-  } finally {
-    await lock.close();
-    if (!preserveLock) await unlink(path);
   }
 }
