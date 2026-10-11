@@ -116,9 +116,10 @@ test('package queries are strict and resolution skips versions outside range or 
   const versions = ['2.0.0-rc.1', '1.4.0', '1.3.0', '0.9.0'];
   const pages = [];
   const store = {
-    async candidates(_repository, query, offset, limit) {
+    async candidates(_repository, query, cursor, limit) {
+      const offset = cursor === null ? 0 : Number(cursor);
       pages.push([query.stage, offset, limit]);
-      return versions.slice(offset, offset + limit).map((version, index) => ({
+      const items = versions.slice(offset, offset + limit).map((version, index) => ({
         group: '',
         name: 'app',
         version,
@@ -128,6 +129,10 @@ test('package queries are strict and resolution skips versions outside range or 
         publishedAt: new Date(0).toISOString(),
         stagedAt: null,
       }));
+      return {
+        items,
+        cursor: offset + limit < versions.length ? String(offset + limit) : null,
+      };
     },
     async exact() {
       return null;

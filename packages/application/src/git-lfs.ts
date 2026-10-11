@@ -27,6 +27,8 @@ export interface LfsIndex {
     repository: string,
     oid: string,
   ): Promise<{ readonly artifactId: string; readonly size: number } | null>;
+  /** Sizes of the available objects among `oids`, in one lookup (a batch names up to 1000). */
+  sizes(repository: string, oids: readonly string[]): Promise<ReadonlyMap<string, number>>;
   /** Points the oid at the artifact that now holds it, replacing a vanished one. */
   addObject(actor: Principal, repository: string, oid: string, artifactId: string): Promise<void>;
 }
@@ -79,11 +81,15 @@ export class GitLfs {
     if (request.operation === 'download')
       authorizeAction(principal, repository, 'content.read', ['read']);
     else authorizeAction(principal, repository, 'upload.create', ['write']);
-    const objects: LfsObjectState[] = [];
-    for (const { oid, size } of request.objects) {
-      const stored = await this.index.object(repository, oid);
-      objects.push({ oid, size, present: stored !== null && stored.size === size });
-    }
+    const sizes = await this.index.sizes(
+      repository,
+      request.objects.map((object) => object.oid),
+    );
+    const objects: LfsObjectState[] = request.objects.map(({ oid, size }) => ({
+      oid,
+      size,
+      present: sizes.get(oid) === size,
+    }));
     return { operation: request.operation, objects };
   }
 

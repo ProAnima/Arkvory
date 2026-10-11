@@ -29,6 +29,17 @@ export class PostgresLfsIndex implements LfsIndex {
     return row ? { artifactId: row.artifact_id, size: Number(row.size) } : null;
   }
 
+  async sizes(repository: string, oids: readonly string[]): Promise<ReadonlyMap<string, number>> {
+    if (oids.length === 0) return new Map();
+    const result = await this.pool.query<{ oid: string; size: string }>(
+      `SELECT l.oid, u.size::text FROM arkvory_lfs_objects l
+       JOIN arkvory_uploads u ON u.id=l.artifact_id AND u.status='available'
+       WHERE l.repository=$1 AND l.oid=ANY($2::text[])`,
+      [repository, oids],
+    );
+    return new Map(result.rows.map((row) => [row.oid, Number(row.size)]));
+  }
+
   async addObject(
     actor: Principal,
     repository: string,

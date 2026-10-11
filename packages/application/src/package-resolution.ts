@@ -30,13 +30,17 @@ export interface PackageQuery {
   readonly order: 'version' | 'promoted';
 }
 export interface PackageCandidateStore {
-  /** Live registered versions ordered by SemVer or, with a stage, by promotion time; newest first. */
+  /**
+   * Live registered versions ordered by SemVer or, with a stage, by promotion time; newest first.
+   * A page continues after `cursor` (null for the first); the returned cursor is opaque and null
+   * after the last page.
+   */
   candidates(
     repository: string,
     query: Pick<PackageQuery, 'group' | 'name' | 'stage' | 'order'>,
-    offset: number,
+    cursor: string | null,
     limit: number,
-  ): Promise<readonly PackageCandidate[]>;
+  ): Promise<{ readonly items: readonly PackageCandidate[]; readonly cursor: string | null }>;
   exact(
     repository: string,
     query: Pick<PackageQuery, 'group' | 'name' | 'stage'> & { version: string },
@@ -115,13 +119,15 @@ export class PackageResolver {
   }
 
   private async scan(repository: string, query: PackageQuery, range: VersionRange) {
-    for (let offset = 0; offset < SCAN_LIMIT; offset += 200) {
-      const page = await this.store.candidates(repository, query, offset, 200);
-      for (const candidate of page) {
+    let cursor: string | null = null;
+    for (let seen = 0; seen < SCAN_LIMIT; seen += 200) {
+      const page = await this.store.candidates(repository, query, cursor, 200);
+      for (const candidate of page.items) {
         const version = parseSemVer(candidate.version);
         if (version && satisfies(version, range, query.prerelease)) return candidate;
       }
-      if (page.length < 200) return null;
+      if (page.cursor === null) return null;
+      cursor = page.cursor;
     }
     return null;
   }
