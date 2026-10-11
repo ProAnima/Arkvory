@@ -267,8 +267,15 @@ export const activeFailure = {
     // The upload may end before halfway (refused or failed): never wait for a half that is not coming.
     await Promise.race([
       halfway,
-      sending.then((item) => {
-        throw new Error(`The large upload ended early: ${JSON.stringify(item.last)}`);
+      sending.then(async (item) => {
+        // What the API saw: refusals and errors of the last minutes, not every access line.
+        const node = await active(cluster);
+        const seen = await node.shell.tryExec(
+          "journalctl -u arkvory-api --since '-3min' -o cat | grep -v '\"status\":20' | tail -n 40",
+        );
+        throw new Error(
+          `The large upload ended early: ${JSON.stringify(item.last)}\n${seen.output}`,
+        );
       }),
     ]);
     step('the large upload is halfway');
