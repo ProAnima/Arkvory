@@ -7,14 +7,13 @@ import { text } from '@proanima/arkvory-contracts';
 import { element } from './dom.js';
 import { installAssetHistory } from './asset-history.js';
 import { initializeLanguage, message } from './i18n.js';
-import { feedback, UiError, showFailure } from './feedback.js';
+import { feedback, UiError } from './feedback.js';
 import { initializeShell, setArtifactRoute, showView } from './shell.js';
 import { installConnectionState } from './connection-state.js';
 import { installDeepLinks } from './deep-links.js';
 import { formatRoute } from './routes.js';
 import { installPackageView } from './packages.js';
 import { installAdministration } from './administration.js';
-import { hashFile } from './file-hash.js';
 import { installAnnotationEditor } from './annotation-editor.js';
 import { installBuildAttachments } from './build-attachments.js';
 import { installArtifactDeletion } from './artifact-deletion.js';
@@ -23,10 +22,9 @@ import { installArtifactSummary } from './artifact-summary.js';
 import { installDownloads } from './downloads.js';
 import { installUpdates } from './updates.js';
 import { installBackups } from './backups.js';
-import { installUploadControls } from './upload-controls.js';
+import { installUploadForm } from './upload-form.js';
 import { installUserTokens } from './user-tokens.js';
 import { installAuthConsole } from './auth-console.js';
-import { exceedsServerLimit } from './server-limits.js';
 import { artifactRow } from './artifact-row.js';
 import { withFieldErrors } from './field-errors.js';
 import { installClientLog } from './client-log.js';
@@ -37,9 +35,7 @@ installClientLog();
 const token = element('token', HTMLInputElement),
   repository = element('repository', HTMLInputElement),
   output = element('status', HTMLOutputElement),
-  rows = element('artifacts', HTMLTableSectionElement),
-  uploadId = element('upload-id', HTMLInputElement),
-  progress = element('progress', HTMLProgressElement);
+  rows = element('artifacts', HTMLTableSectionElement);
 const apiBaseUrl =
   document.querySelector<HTMLMetaElement>('meta[name="arkvory-api-base-url"]')?.content.trim() ||
   location.origin;
@@ -54,7 +50,7 @@ try {
   throw new Error('Invalid Arkvory API base URL');
 }
 const management = new ManagementConsole(apiBaseUrl, token, (id, storage) => {
-  if (stop) return;
+  if (upload.running()) return;
   run(async () => {
     const administrator = !element('admin-nav', HTMLButtonElement).hidden;
     const identity = token.value;
@@ -93,18 +89,23 @@ const deletion = installArtifactDeletion(client, async () => {
     feedback(output, 'deletionRefresh', {}, 'error');
   }
 });
-let stop: AbortController | undefined;
-const uploadBusy = installUploadControls(() => stop !== undefined || attachments.isUploading());
 let selected: { repository: string; id: string; revision: number; name: string } | undefined;
 let selectionGeneration = 0;
 let listGeneration = 0;
-const transferStatus = element('transfer-status', HTMLOutputElement);
 let repositoryEdited = false;
 let authenticationGeneration = 0;
 const repositoryOptions = element('repository-options', HTMLElement);
 // Bound after sign-in handling is installed; only password sessions can expire in place.
 let expireSession: (error: unknown) => boolean = () => false;
 const run = consoleRunner(output, (error) => expireSession(error));
+const upload = installUploadForm({
+  client,
+  repository,
+  output,
+  run,
+  list: () => list(),
+  busyElsewhere: () => attachments.isUploading(),
+});
 const backups = installBackups(apiBaseUrl, token, (error) => expireSession(error));
 const summary = installArtifactSummary(client, output);
 const promotion = installPromotionPanel(client, run, () => {
@@ -319,7 +320,7 @@ const auth = installAuthConsole({
   setRepositoryEdited: (val) => {
     repositoryEdited = val;
   },
-  getStopSignal: () => stop,
+  getStopSignal: () => upload.signal(),
 });
 expireSession = (error) => {
   if (state.credential() !== 'session') return false;
@@ -333,71 +334,6 @@ element('search', HTMLFormElement).onsubmit = (event) => {
 installCatalogFilter(() => {
   run(() => list());
 });
-element('cancel', HTMLButtonElement).onclick = () => stop?.abort();
-element('upload', HTMLFormElement).onsubmit = (event) => {
-  event.preventDefault();
-  run(async () => {
-    if (stop) throw new UiError('uploadRunning');
-    const file = element('file', HTMLInputElement).files?.[0];
-    if (!file) throw new UiError('chooseFileError');
-    if (await exceedsServerLimit(client, file.size)) throw new UiError('fileTooLarge');
-    const repo = repository.value;
-    stop = new AbortController();
-    uploadBusy(true);
-    progress.max = Math.max(1, file.size);
-    progress.value = 0;
-    try {
-      if (!uploadId.value) {
-        const sha256 = await hashFile(file, stop.signal, (bytes) => {
-          progress.value = bytes;
-          feedback(transferStatus, 'hashing');
-        });
-        const key = element('idempotency', HTMLInputElement);
-        if (!key.value) key.value = crypto.randomUUID();
-        const upload = await client.create(
-          repo,
-          key.value,
-          { name: file.name, size: String(file.size), sha256, labels: [], metadata: {} },
-          stop.signal,
-        );
-        uploadId.value = upload.id;
-      }
-      const result = await client.resume(repo, uploadId.value, file, {
-        signal: stop.signal,
-        onProgress: (bytes) => {
-          progress.value = bytes;
-          feedback(transferStatus, 'uploading', { percent: Math.round((bytes / file.size) * 100) });
-        },
-      });
-      progress.value = progress.max;
-      feedback(transferStatus, 'published', { id: result.id }, 'success');
-      try {
-        await list();
-        feedback(output, 'published', { id: result.id }, 'success');
-      } catch {
-        feedback(output, 'publishedRefresh');
-      }
-    } catch (error) {
-      if (stop.signal.aborted) {
-        feedback(transferStatus, 'paused');
-        return;
-      }
-      showFailure(transferStatus, error);
-      throw error;
-    } finally {
-      stop = undefined;
-      uploadBusy(false);
-    }
-  });
-};
-element('new-upload', HTMLButtonElement).onclick = () => {
-  if (!stop) {
-    uploadId.value = '';
-    element('idempotency', HTMLInputElement).value = '';
-    progress.value = 0;
-    feedback(transferStatus, 'transferIdle');
-  }
-};
 const annotationFields = {
   '/value/labels': 'labels',
   '/value/metadata': 'metadata',

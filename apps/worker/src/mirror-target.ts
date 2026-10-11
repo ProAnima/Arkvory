@@ -156,7 +156,13 @@ export class ServiceMirrorTarget implements MirrorTarget {
     // that was published and then deleted here cannot be reopened.
     if (
       (upload.status === 'cancelled' || Date.parse(upload.expiresAt) <= Date.now()) &&
-      !(await reopenMirrorUpload(this.catalog.pool, this.repository, id, this.principal.id))
+      !(await reopenMirrorUpload(
+        this.catalog.pool,
+        this.repository,
+        id,
+        this.principal.id,
+        this.catalog.capacityBytes,
+      ))
     )
       // Deleted here after the source deleted it: a source restored from an older backup lists
       // it again. Failing would stop the seed for good; the deletion stands and it is skipped.
@@ -171,7 +177,13 @@ export class ServiceMirrorTarget implements MirrorTarget {
     } catch (error) {
       // Parts that do not add up to the source SHA-256 are copied again by the next step.
       if (error instanceof ArkvoryError && error.code === 'integrity_mismatch')
-        await reopenMirrorUpload(this.catalog.pool, this.repository, id, this.principal.id);
+        await reopenMirrorUpload(
+          this.catalog.pool,
+          this.repository,
+          id,
+          this.principal.id,
+          this.catalog.capacityBytes,
+        );
       throw error;
     }
     return descriptor.size;
@@ -254,7 +266,13 @@ export class ServiceMirrorTarget implements MirrorTarget {
     if (upload.status === 'available') return 'present';
     if (upload.status === 'pending') return 'partial';
     // Cancelled by cleanup before the copy completed is unfinished, not deleted: copy reopens it.
-    return (await reopenMirrorUpload(this.catalog.pool, this.repository, id, this.principal.id))
+    return (await reopenMirrorUpload(
+      this.catalog.pool,
+      this.repository,
+      id,
+      this.principal.id,
+      this.catalog.capacityBytes,
+    ))
       ? 'partial'
       : 'deleted';
   }

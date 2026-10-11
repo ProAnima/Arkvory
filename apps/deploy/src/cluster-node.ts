@@ -1,4 +1,4 @@
-import { copyFile, mkdir, readdir, rm } from 'node:fs/promises';
+import { copyFile, mkdir, readFile, readdir, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { atomicJson, atomicText, exists, jsonFile } from './files.js';
 import { command, commandOutput } from './process.js';
@@ -12,6 +12,7 @@ export const NODE_MARKER = '/etc/proanima-arkvory/cluster.json';
 const UNITS = '/etc/systemd/system';
 /** Every unit Pacemaker starts in the group; none of them is enabled on a cluster node. */
 export const CLUSTER_UNITS = [
+  'arkvory-units.service',
   'arkvory-database.service',
   'arkvory-replica.service',
   'arkvory-api.service',
@@ -114,25 +115,93 @@ RestartSec=2
 `;
 }
 
+/** The first unit of the group: brings this node's units up to the volume's before the rest. */
+export function unitsUnit(root: string): string {
+  return `[Unit]
+Description=ProAnima Arkvory units of the active node (ADR 0072)
+# Arkvory installation: ${root}
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+User=root
+ExecStart=/usr/bin/arkvory cluster-units --root ${root}
+`;
+}
+
+/** Copies when the bytes differ; true when it copied. */
+async function copyChanged(from: string, to: string): Promise<boolean> {
+  const [source, target] = await Promise.all([readFile(from), readFile(to).catch(() => null)]);
+  if (target !== null && source.equals(target)) return false;
+  await copyFile(from, to);
+  return true;
+}
+
+/**
+ * The Arkvory units of one directory into another, drop-ins included; a drop-in the source no
+ * longer has is removed. Returns whether anything changed.
+ */
+export async function mirrorUnits(from: string, to: string): Promise<boolean> {
+  let changed = false;
+  for (const entry of await readdir(from, { withFileTypes: true })) {
+    if (!entry.name.startsWith('arkvory-')) continue;
+    if (!entry.isDirectory()) {
+      changed = (await copyChanged(join(from, entry.name), join(to, entry.name))) || changed;
+      continue;
+    }
+    await mkdir(join(to, entry.name), { recursive: true });
+    const dropIns = await readdir(join(from, entry.name));
+    for (const dropIn of dropIns)
+      changed =
+        (await copyChanged(join(from, entry.name, dropIn), join(to, entry.name, dropIn))) ||
+        changed;
+    for (const stale of await readdir(join(to, entry.name)))
+      if (!dropIns.includes(stale)) {
+        await rm(join(to, entry.name, stale), { force: true });
+        changed = true;
+      }
+  }
+  return changed;
+}
+
 /**
  * What every other node needs, kept on the volume: the accounts' ids (files on the volume are
- * owned by them) and the units, so a standby starts exactly what the primary ran.
+ * owned by them) and the units, so a standby starts exactly what the primary ran. Written when
+ * the cluster is configured and after every later operation on the active node (an update, a
+ * backup vault configured afterwards), so a failover never starts older units than those.
  */
 export async function writeNodeKit(root: string): Promise<void> {
   const accounts: Record<string, { uid: number; gid: number }> = {};
   for (const account of ACCOUNTS)
     accounts[account] = { uid: await idOf('-u', account), gid: await idOf('-g', account) };
   await mkdir(join(kit(root), 'units'), { recursive: true });
-  await atomicJson(join(kit(root), 'accounts.json'), accounts);
-  await atomicText(join(UNITS, 'arkvory-replica.service'), replicaUnit(root));
-  for (const name of await readdir(UNITS))
-    if (name.startsWith('arkvory-') && (await exists(join(UNITS, name))))
-      if (name.endsWith('.d'))
-        for (const dropIn of await readdir(join(UNITS, name))) {
-          await mkdir(join(kit(root), 'units', name), { recursive: true });
-          await copyFile(join(UNITS, name, dropIn), join(kit(root), 'units', name, dropIn));
-        }
-      else await copyFile(join(UNITS, name), join(kit(root), 'units', name));
+  // Unchanged files are not written again: this runs after every update check.
+  const written = await readFile(join(kit(root), 'accounts.json'), 'utf8').catch(() => '');
+  if (written !== JSON.stringify(accounts, null, 2) + '\n')
+    await atomicJson(join(kit(root), 'accounts.json'), accounts);
+  for (const [name, text] of [
+    ['arkvory-replica.service', replicaUnit(root)],
+    ['arkvory-units.service', unitsUnit(root)],
+  ] as const)
+    if ((await readFile(join(UNITS, name), 'utf8').catch(() => '')) !== text)
+      await atomicText(join(UNITS, name), text);
+  await mirrorUnits(UNITS, join(kit(root), 'units'));
+}
+
+/** After an operation on the active node of a cluster: the kit follows what it changed. */
+export async function refreshNodeKit(root: string): Promise<void> {
+  const marker = await nodeMarker();
+  if (marker?.root === root && (await exists(join(kit(root), 'accounts.json'))))
+    await writeNodeKit(root);
+}
+
+/**
+ * `arkvory cluster-units` (the arkvory-units service, first in the group after the file system):
+ * this node's units become those on the volume, so the node that takes over runs what the
+ * previous active node ran, settings changed after it joined included.
+ */
+export async function syncUnits(root: string): Promise<void> {
+  if (await mirrorUnits(join(kit(root), 'units'), UNITS))
+    await command('systemctl', ['daemon-reload']);
 }
 
 /** Units installed on a cluster node: none enabled, Pacemaker starts them. */
@@ -191,15 +260,7 @@ export async function joinNode(root: string, resource: string): Promise<void> {
       );
     await ensureAccount(account, ids);
   }
-  for (const entry of await readdir(join(kit(root), 'units'), { withFileTypes: true }))
-    if (entry.isDirectory()) {
-      await mkdir(join(UNITS, entry.name), { recursive: true });
-      for (const dropIn of await readdir(join(kit(root), 'units', entry.name)))
-        await copyFile(
-          join(kit(root), 'units', entry.name, dropIn),
-          join(UNITS, entry.name, dropIn),
-        );
-    } else await copyFile(join(kit(root), 'units', entry.name), join(UNITS, entry.name));
+  await mirrorUnits(join(kit(root), 'units'), UNITS);
   await disableAutostart();
   await writeNodeMarker({ root, resource });
   report(
@@ -214,5 +275,6 @@ export async function leaveCluster(root: string): Promise<void> {
   await rm(join(root, 'config', 'cluster.json'), { force: true });
   await command('systemctl', ['stop', 'arkvory-replica']).catch(() => undefined);
   await rm(join(UNITS, 'arkvory-replica.service'), { force: true });
+  await rm(join(UNITS, 'arkvory-units.service'), { force: true });
   await command('systemctl', ['daemon-reload']);
 }

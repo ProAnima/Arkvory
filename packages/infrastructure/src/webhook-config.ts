@@ -120,22 +120,24 @@ export async function readWebhookSettings(
 }
 
 /**
- * Certificate authorities for receivers: the defaults of this process plus the PEM file of
+ * Certificate authorities for receivers: `defaults` plus the PEM file of
  * `ARKVORY_WEBHOOKS_CA_FILE` (a corporate CA of an internal receiver). Passed as `ca`, which
- * replaces the store of a request, hence the defaults are included. Absent: undefined, so the
- * request keeps its default store. TLS verification itself is never relaxed.
+ * replaces the store of a request. The worker passes the defaults it had before it trusted the
+ * mirror authorities (ADR 0069): those are for mirror sources, never for receivers. TLS
+ * verification itself is never relaxed.
  */
 export async function readWebhookCertificates(
   path: string | undefined,
-): Promise<readonly string[] | undefined> {
-  if (path === undefined || path === '') return undefined;
+  defaults: readonly string[] = getCACertificates('default'),
+): Promise<readonly string[]> {
+  if (path === undefined || path === '') return defaults;
   if (!isAbsolute(path)) throw new Error('Invalid ARKVORY_WEBHOOKS_CA_FILE');
   const blocks =
     (await readFile(path, 'utf8')).match(
       /-----BEGIN CERTIFICATE-----[\s\S]+?-----END CERTIFICATE-----/g,
     ) ?? [];
   if (blocks.length === 0) throw new Error('ARKVORY_WEBHOOKS_CA_FILE holds no certificates');
-  return [...getCACertificates('default'), ...blocks];
+  return [...defaults, ...blocks];
 }
 
 /**

@@ -6,6 +6,7 @@ import { join } from 'node:path';
 import {
   parseAllowedNetworks,
   parseWebhookSettings,
+  readWebhookCertificates,
   readWebhookSettings,
 } from '@proanima/arkvory-infrastructure';
 
@@ -101,4 +102,16 @@ test('allowed networks are CIDR ranges; nothing configured allows nothing', () =
     '10.0.0.0/x',
   ])
     assert.throws(() => parseAllowedNetworks(bad), /ARKVORY_WEBHOOKS_ALLOW_PRIVATE/, bad);
+});
+
+test('receivers trust the authorities they are given, not what the process trusts later', async (t) => {
+  const directory = await mkdtemp(join(tmpdir(), 'arkvory-webhook-ca-'));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const pem = (name) => `-----BEGIN CERTIFICATE-----\n${name}\n-----END CERTIFICATE-----`;
+  // The worker passes the defaults it had before it trusted the mirror authorities.
+  const before = [pem('SYSTEM')];
+  assert.deepEqual(await readWebhookCertificates(undefined, before), before);
+  const file = join(directory, 'receivers.pem');
+  await writeFile(file, pem('RECEIVER'));
+  assert.deepEqual(await readWebhookCertificates(file, before), [pem('SYSTEM'), pem('RECEIVER')]);
 });

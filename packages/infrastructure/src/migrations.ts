@@ -97,14 +97,21 @@ const catalogIndexMigrations = [
   },
 ] as const;
 
-async function migrateCatalogIndexes(pool: Pool, upTo: number): Promise<void> {
-  // Index builds can exceed the short request timeout on the runtime catalog pool.
-  const migrationPool = new Pool({
+/**
+ * One connection without the short request timeouts of the runtime pools: index builds and the
+ * recounts of data migrations (the upload counters of migration 35 sum every upload) can take
+ * minutes on a large catalog.
+ */
+const migrationPoolOf = (pool: Pool) =>
+  new Pool({
     ...pool.options,
     max: 1,
     statement_timeout: 10 * 60 * 1000,
     query_timeout: 11 * 60 * 1000,
   });
+
+async function migrateCatalogIndexes(pool: Pool, upTo: number): Promise<void> {
+  const migrationPool = migrationPoolOf(pool);
   let client: PoolClient | undefined;
   let unusable = false;
   let locked = false;
@@ -184,6 +191,11 @@ export interface MigrateOptions {
    * run followed by an unbounded one reaches the same schema as a fresh migration.
    */
   readonly upTo?: number;
+  /**
+   * Where the schema transaction connects; by default a connection of its own without the short
+   * request timeouts of `pool`. A given one is not closed here.
+   */
+  readonly schemaPool?: Pick<Pool, 'connect'>;
 }
 
 /**
@@ -195,7 +207,13 @@ export async function migrate(pool: Pool, options: MigrateOptions = {}): Promise
   const upTo = options.upTo ?? SCHEMA_VERSION;
   if (!Number.isSafeInteger(upTo) || upTo < 1 || upTo > SCHEMA_VERSION)
     throw new Error('Migration bound is outside the versions of this release');
-  const client = await pool.connect();
+  const owned = options.schemaPool ? undefined : migrationPoolOf(pool);
+  owned?.on('error', () => undefined);
+  const schemaPool = options.schemaPool ?? owned ?? pool;
+  const client = await schemaPool.connect().catch(async (error: unknown) => {
+    await owned?.end();
+    throw error;
+  });
   let unusable = false;
   try {
     await client.query('BEGIN');
@@ -216,6 +234,7 @@ export async function migrate(pool: Pool, options: MigrateOptions = {}): Promise
     throw error;
   } finally {
     client.release(unusable);
+    await owned?.end();
   }
   await migrateCatalogIndexes(pool, upTo);
 }

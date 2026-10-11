@@ -1,4 +1,4 @@
-import { ArkvoryError, requireAssetPath } from '@proanima/arkvory-domain';
+import { ArkvoryError, authorizeAction, requireAssetPath } from '@proanima/arkvory-domain';
 import type { Principal } from '@proanima/arkvory-domain';
 import type { ArtifactCatalog } from './catalog.js';
 import type { Cancellation } from './ports.js';
@@ -67,6 +67,14 @@ export class RawFiles {
     cancellation: Cancellation,
   ): Promise<RawFile> {
     requireAssetPath(path);
+    // Before any byte is read: a reader must not fill staging, nor see an unchanged file succeed.
+    for (const action of [
+      'upload.create',
+      'upload.write',
+      'upload.complete',
+      'asset.write',
+    ] as const)
+      authorizeAction(principal, repository, action, ['write']);
     const current = await this.current(principal, repository, path);
     if (current && upload.createOnly)
       throw new ArkvoryError('conflict', 'The file path exists', { reason: 'already_exists' });

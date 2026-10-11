@@ -6,6 +6,7 @@ import { randomUUID } from 'node:crypto';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
+  completeCopies,
   FreshReads,
   parseDecision,
   replicaAnswer,
@@ -25,6 +26,24 @@ const peer = (state, disk, replication = 'Established', client = false) => ({
 const status = (disk, ...connections) => [
   { name: 'arkvory', role: 'Primary', devices: [{ volume: 0, 'disk-state': disk }], connections },
 ];
+
+test('a switchover target is named only when it holds a complete copy itself', () => {
+  // ha-3: node-c still resynchronizes while this node and node-b are complete.
+  const syncing = {
+    ...peer('Connected', 'Inconsistent', 'SyncSource'),
+    'peer-node-id': 2,
+    name: 'node-c',
+  };
+  const copies = completeCopies(
+    status('UpToDate', peer('Connected', 'UpToDate'), syncing),
+    'arkvory',
+  );
+  assert.deepEqual(copies, { role: 'Primary', local: true, peers: ['node-b'] });
+  assert.ok(
+    !copies.peers.includes('node-c'),
+    'two complete copies elsewhere do not make node-c one',
+  );
+});
 
 test('complete copies are the local disk and every connected, replicating, up-to-date peer', () => {
   const witness = peer('Connected', 'Diskless', 'Established', true);

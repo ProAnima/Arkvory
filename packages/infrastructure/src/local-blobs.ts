@@ -92,6 +92,7 @@ export class LocalBlobStore implements BlobStore {
     source: AsyncIterable<Uint8Array>,
     cancellation: Cancellation,
   ): Promise<void> {
+    if (await this.adopt(source, expected, this.blob(id), cancellation)) return;
     this.reservedBytes += expected.size;
     try {
       await this.checkSpace(this.reservedBytes);
@@ -101,6 +102,17 @@ export class LocalBlobStore implements BlobStore {
     }
   }
 
+  /** A staged file on this volume needs no new space: it becomes the blob itself (ADR 0074). */
+  private async adopt(
+    source: AsyncIterable<Uint8Array>,
+    expected: ArtifactDescriptor,
+    target: string,
+    cancellation: Cancellation,
+  ): Promise<boolean> {
+    const staged = stagedFileOf(source);
+    return staged !== null && (await adoptStagedFile(staged, expected, target, cancellation));
+  }
+
   private async write(
     id: string,
     expected: ArtifactDescriptor,
@@ -108,8 +120,6 @@ export class LocalBlobStore implements BlobStore {
     cancellation: Cancellation,
     target = this.blob(id),
   ): Promise<void> {
-    const staged = stagedFileOf(source);
-    if (staged && (await adoptStagedFile(staged, expected, target, cancellation))) return;
     const directory = this.staging(id);
     await mkdir(directory, { recursive: true });
     await syncDirectory(join(this.root, 'staging'));
@@ -241,16 +251,18 @@ export class LocalBlobStore implements BlobStore {
     const path = this.partPath(id, part);
     await mkdir(dirname(path), { recursive: true });
     await syncDirectory(join(this.root, 'parts'));
+    const descriptor = {
+      name: 'part',
+      size: part.size,
+      sha256: part.sha256,
+      labels: [],
+      metadata: {},
+    };
+    if (await this.adopt(source, descriptor, path, cancellation)) return;
     this.reservedBytes += part.size;
     try {
       await this.checkSpace(this.reservedBytes);
-      await this.write(
-        id,
-        { name: 'part', size: part.size, sha256: part.sha256, labels: [], metadata: {} },
-        source,
-        cancellation,
-        path,
-      );
+      await this.write(id, descriptor, source, cancellation, path);
     } finally {
       this.reservedBytes -= part.size;
     }

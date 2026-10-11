@@ -1,6 +1,7 @@
 import type { Pool } from 'pg';
 import { ArkvoryError } from '@proanima/arkvory-domain';
 import { uploadLockKey } from './content-pins.js';
+import { lockReservations, requireRoom } from './upload-bytes.js';
 import type {
   MirrorPhase,
   MirrorSeedStep,
@@ -101,13 +102,15 @@ export class PostgresMirrorState implements MirrorStateStore {
  * so the row is reused instead of recreated; parts are written again and overwrite their files.
  * Only an upload of `owner` that was never published is touched: a copy deleted here stays
  * deleted. The upload lock, which online cleanup holds while it reclaims old parts, keeps both
- * from overlapping; a busy lock is retried by the next step.
+ * from overlapping; a busy lock is retried by the next step. An upload whose bytes cleanup had
+ * already released takes them again only within capacity and quota, as a new upload would.
  */
 export async function reopenMirrorUpload(
   pool: Pool,
   repository: string,
   id: string,
   owner: string,
+  capacityBytes: number,
 ): Promise<boolean> {
   const client = await pool.connect();
   let broken = false;
@@ -118,6 +121,15 @@ export async function reopenMirrorUpload(
       [uploadLockKey(id)],
     );
     if (!lock.rows[0]?.acquired) throw new ArkvoryError('busy', 'Upload is being modified');
+    const released = await client.query<{ size: string }>(
+      'SELECT size::text FROM arkvory_uploads WHERE repository=$1 AND id=$2 AND reclaimed',
+      [repository, id],
+    );
+    const size = released.rows[0]?.size;
+    if (size !== undefined) {
+      await lockReservations(client);
+      await requireRoom(client, repository, Number(size), capacityBytes);
+    }
     const reopened = await client.query(
       `UPDATE arkvory_uploads SET status='pending', cancelled_at=NULL, reclaimed=false,
          temp_cleaned=false, expires_at=now()+interval '7 days'

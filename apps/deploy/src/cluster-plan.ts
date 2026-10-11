@@ -28,7 +28,11 @@ export interface ClusterPlanInput {
 }
 
 const NAME = /^[a-z][a-z0-9-]{0,62}$/;
-const ADDRESS = /^[0-9a-fA-F.:]{3,45}$/;
+/** IPv4 only: DRBD writes IPv6 differently, and IPaddr2 is the IPv4 agent. */
+const ipv4 = (value: string) =>
+  /^\d{1,3}(\.\d{1,3}){3}$/.test(value) && value.split('.').every((part) => Number(part) <= 255);
+const within = (value: number, low: number, high: number) =>
+  Number.isInteger(value) && value >= low && value <= high;
 const AGENT = /^fence_[a-z0-9_]{2,40}$/;
 
 export function checkPlan(input: ClusterPlanInput): void {
@@ -44,17 +48,18 @@ export function checkPlan(input: ClusterPlanInput): void {
     throw new Error('Node names repeat');
   if (new Set(all.map((node) => node.id)).size !== all.length) throw new Error('Node ids repeat');
   for (const node of all)
-    if (!NAME.test(node.name) || !ADDRESS.test(node.address) || node.id < 0 || node.id > 31)
+    if (!NAME.test(node.name) || !ipv4(node.address) || !within(node.id, 0, 31))
       throw new Error(`Invalid node ${node.name}`);
   if (!NAME.test(input.resource)) throw new Error('Invalid resource name');
   if (!/^\/dev\/[A-Za-z0-9/_.-]+$/.test(input.disk)) throw new Error('Invalid backing disk');
-  if (!input.root.startsWith('/') || /[\s"'$`\\]/.test(input.root))
+  // Written unquoted into pacemaker.sh: only characters a shell takes literally.
+  if (!/^\/[A-Za-z0-9/_.-]+$/.test(input.root) || input.root.split('/').includes('..'))
     throw new Error('Invalid installation root');
   if (!AGENT.test(input.fenceAgent))
     throw new Error('A fence agent (fence_ipmilan, fence_redfish, fence_pve…) is required');
-  if (!ADDRESS.test(input.virtualIp) || input.netmask < 1 || input.netmask > 128)
+  if (!ipv4(input.virtualIp) || !within(input.netmask, 1, 32))
     throw new Error('Invalid virtual address');
-  if (input.minor < 0 || input.minor > 1048575 || input.port < 1024 || input.port > 65535)
+  if (!within(input.minor, 0, 1048575) || !within(input.port, 1024, 65535))
     throw new Error('Invalid DRBD minor or port');
 }
 
@@ -132,6 +137,7 @@ export function pacemakerCommands(input: ClusterPlanInput): string {
     ),
     `${cib} resource create ${r}-drbd ocf:linbit:drbd drbd_resource=${r} op monitor interval=15s role=Promoted op monitor interval=29s role=Unpromoted promotable promoted-max=1 promoted-node-max=1 clone-max=${String(input.nodes.length)} clone-node-max=1 notify=true`,
     `${cib} resource create ${r}-fs ocf:heartbeat:Filesystem device=/dev/drbd${String(input.minor)} directory=${input.root} fstype=${input.filesystem} --group ${r}`,
+    `${cib} resource create ${r}-units systemd:arkvory-units --group ${r}`,
     `${cib} resource create ${r}-database systemd:arkvory-database op monitor interval=15s --group ${r}`,
     `${cib} resource create ${r}-replica systemd:arkvory-replica op monitor interval=15s --group ${r}`,
     ...['api', 'worker', 'backup'].map(

@@ -216,6 +216,51 @@ async function restore(paths: Layout, tokenPath: string, overridePath: string, b
 }
 
 /**
+ * The mirror list with `target` attached, its key and the merged authorities. The source is
+ * probed with the key first: nothing is written for a source that refuses it.
+ */
+async function attachment(
+  change: MirrorChange,
+  target: string,
+  current: readonly MirrorEntry[],
+  paths: ReturnType<typeof layout>,
+  authorities: string | null,
+  probe: UpstreamProbe,
+): Promise<{ next: MirrorEntry[]; secret: string | null; bundle: string | null }> {
+  const upstream = upstreamOrigin(change.upstream);
+  const sourceRepository = repository(change.sourceRepository ?? target, 'mirror-source');
+  const existing = current.find((entry) => entry.repository === target);
+  if (
+    existing &&
+    (existing.upstream !== upstream || existing.sourceRepository !== sourceRepository)
+  )
+    throw new Error(`${target} mirrors another source; detach it first`);
+  const stages = stageList(change.stages);
+  const secret = await readSecretFile(
+    change.tokenFile,
+    'mirror-token-file',
+    'The mirror key file is not a key',
+  );
+  let bundle = authorities;
+  if (change.caFile) bundle = mergeCertificates(bundle, await sourceCertificates(change.caFile));
+  // The probe runs in this process: it trusts what the worker will trust, nothing more.
+  if (bundle !== null) trustSourceCertificates(bundle);
+  await probe(upstream, sourceRepository, secret);
+  const entry: MirrorEntry = {
+    repository: target,
+    upstream,
+    sourceRepository,
+    tokenFile: paths.seen(`${target}.token`),
+    ...(stages ? { stages } : {}),
+  };
+  return {
+    next: [...current.filter((item) => item.repository !== target), entry],
+    secret,
+    bundle,
+  };
+}
+
+/**
  * Attaches a mirrored repository (or replaces its key) or detaches one, then restarts API and
  * worker and requires readiness. The source is checked with the key before anything changes.
  * Any failure restores runtime.json, the mirrors file, the key and the Compose override and
@@ -253,32 +298,8 @@ export async function configureMirror(
       throw new Error(`${target} is not a mirrored repository`);
     next = current.filter((entry) => entry.repository !== target);
   } else {
-    const upstream = upstreamOrigin(change.upstream);
-    const sourceRepository = repository(change.sourceRepository ?? target, 'mirror-source');
-    const existing = current.find((entry) => entry.repository === target);
-    if (
-      existing &&
-      (existing.upstream !== upstream || existing.sourceRepository !== sourceRepository)
-    )
-      throw new Error(`${target} mirrors another source; detach it first`);
-    const stages = stageList(change.stages);
-    secret = await readSecretFile(
-      change.tokenFile,
-      'mirror-token-file',
-      'The mirror key file is not a key',
-    );
-    if (change.caFile) bundle = mergeCertificates(bundle, await sourceCertificates(change.caFile));
-    // The probe runs in this process: it trusts what the worker will trust, nothing more.
-    if (bundle !== null) trustSourceCertificates(bundle);
-    await probe(upstream, sourceRepository, secret);
-    const entry = {
-      repository: target,
-      upstream,
-      sourceRepository,
-      tokenFile: paths.seen(`${target}.token`),
-      ...(stages ? { stages } : {}),
-    };
-    next = [...current.filter((item) => item.repository !== target), entry];
+    const attached = await attachment(change, target, current, paths, bundle, probe);
+    ({ next, secret, bundle } = attached);
   }
   const owner = await stat(paths.runtime);
   const mode = state.mode === 'compose' ? 0o644 : 0o640;

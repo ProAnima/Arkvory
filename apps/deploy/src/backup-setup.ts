@@ -164,18 +164,30 @@ async function installKey(
     await chown(path, compose ? containerUser : owner.uid, compose ? containerUser : owner.gid);
 }
 
+interface KeySnapshot {
+  readonly path: string;
+  /** The text before, null if there was no key file. */
+  readonly previous: string | null;
+  /** Its mode and owner, so the agent can read it again; null if there was no key file. */
+  readonly owner: { readonly mode: number; readonly uid: number; readonly gid: number } | null;
+}
+
+async function snapshotKey(path: string): Promise<KeySnapshot> {
+  const previous = await readOptional(path);
+  if (previous === null) return { path, previous, owner: null };
+  const { mode, uid, gid } = await stat(path);
+  return { path, previous, owner: { mode: mode & 0o777, uid, gid } };
+}
+
 /** Puts the key file back as it was; a key file that did not exist is removed. */
-async function restoreKey(path: string, previous: string | null): Promise<void> {
-  if (previous === null) await unlink(path).catch(() => undefined);
-  else {
-    // The new key replaced the file in place, so its mode and owner are the installed ones.
-    try {
-      await replaceText(path, previous);
-    } catch (error) {
-      if (!(error instanceof Error && 'code' in error && error.code === 'ENOENT')) throw error;
-      await atomicText(path, previous, 0o600);
-    }
+async function restoreKey(key: KeySnapshot): Promise<void> {
+  if (key.previous === null || key.owner === null) {
+    await unlink(key.path).catch(() => undefined);
+    return;
   }
+  // Written anew with the mode and owner it had: the agent's group must read it again.
+  await atomicText(key.path, key.previous, key.owner.mode);
+  if (process.platform !== 'win32') await chown(key.path, key.owner.uid, key.owner.gid);
 }
 
 /** The agent's own heartbeat proves the new configuration, never a stale one of its predecessor. */
@@ -190,8 +202,8 @@ function accepted(vaultId: string | null) {
 interface Progress {
   undo: (() => Promise<void>) | null;
   restarted: boolean;
-  /** Set once the key file was written: its text before, null if there was none. */
-  key?: { readonly path: string; readonly previous: string | null };
+  /** Set once the key file was written: the file as it was before. */
+  key?: KeySnapshot;
 }
 
 /**
@@ -232,7 +244,7 @@ async function rollback(
     runtimeEnvironment(JSON.parse(previous.text))['ARKVORY_BACKUP_VAULT'] !== undefined;
   const steps = [() => replaceText(path, previous.text)];
   const key = progress.key;
-  if (key) steps.push(() => restoreKey(key.path, key.previous));
+  if (key) steps.push(() => restoreKey(key));
   if (progress.undo) steps.push(progress.undo);
   if (progress.restarted)
     steps.push(
@@ -306,7 +318,7 @@ export async function configureBackup(
       if (vaultId === null) throw new Error('vault init did not create vault.json');
     }
     if (key !== null) {
-      progress.key = { path: keyPath, previous: await readOptional(keyPath) };
+      progress.key = await snapshotKey(keyPath);
       await installKey(root, state, key, options.containerUser ?? CONTAINER_USER);
     }
     await replaceText(path, JSON.stringify(next, null, 2) + '\n');

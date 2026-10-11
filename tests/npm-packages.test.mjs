@@ -236,6 +236,20 @@ test('a tarball is read to its end: a second or linked manifest is refused, as n
     tar(entry('package/package.json', manifest()), entry('other/./package.json', manifest())),
   );
   await assert.rejects(inspect(dotted), /more than one package\.json/);
+  // One zero block is no end for node-tar: the entry after it is extracted, so it is read.
+  const afterZeroBlock = gzipSync(
+    tar(
+      entry('package/package.json', manifest()),
+      Buffer.alloc(512),
+      entry('package/package.json', manifest({ version: '6.6.6' })),
+    ),
+  );
+  await assert.rejects(inspect(afterZeroBlock), /more than one package\.json/);
+  // node-tar on Windows reads a backslash as a separator.
+  const backslash = gzipSync(
+    tar(entry('package/package.json', manifest()), entry('package\\package.json', manifest())),
+  );
+  await assert.rejects(inspect(backslash), /more than one package\.json/);
   const linked = gzipSync(
     tar(entry('package/package.json', Buffer.alloc(0), '2'), entry('x/package.json', manifest())),
   );

@@ -7,6 +7,7 @@ import {
   readFile,
   realpath,
   rm,
+  stat,
   symlink,
   unlink,
   writeFile,
@@ -519,7 +520,7 @@ test('an agent that cannot open the vault rolls the key file and the settings ba
 
   // A key file that was in place before comes back as it was.
   await mkdir(join(root, 'config/backup'), { recursive: true });
-  await writeFile(join(root, 'config/backup/vault.key'), 'AK1-OLD-KEY\n');
+  await writeFile(join(root, 'config/backup/vault.key'), 'AK1-OLD-KEY\n', { mode: 0o640 });
   const again = services(() => status({ configured: true, available: false }));
   await assert.rejects(
     configureBackup(
@@ -532,6 +533,9 @@ test('an agent that cannot open the vault rolls the key file and the settings ba
     /previous configuration is restored/,
   );
   assert.equal(await readFile(join(root, 'config/backup/vault.key'), 'utf8'), 'AK1-OLD-KEY\n');
+  // With its mode: the agent's group reads it again (systemd: root:arkvory 0640).
+  if (process.platform !== 'win32')
+    assert.equal((await stat(join(root, 'config/backup/vault.key'))).mode & 0o777, 0o640);
 });
 
 test('the Compose override mounts the agent key into the backup container only', () => {

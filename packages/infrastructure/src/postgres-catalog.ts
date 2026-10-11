@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { reservedBytesSql } from './upload-bytes.js';
+import { lockReservations, requireRoom } from './upload-bytes.js';
 import { Pool } from 'pg';
 import {
   ArkvoryError,
@@ -143,8 +143,7 @@ export class PostgresCatalog implements Catalog {
     let unusable = false;
     try {
       await client.query('BEGIN');
-      // Serialize only reservations, never byte transfers.
-      await client.query('SELECT pg_advisory_xact_lock(18471, 2)');
+      await lockReservations(client);
       await lockServiceAccess(client, input.access);
       const existing = await client.query<Record<string, unknown>>(
         'SELECT * FROM arkvory_uploads WHERE repository=$1 AND owner=$2 AND idempotency_key=$3',
@@ -161,30 +160,7 @@ export class PostgresCatalog implements Catalog {
         return upload;
       }
       // Capacity counts retained bytes only; catalog entries have no fixed count ceiling.
-      const totals = await client.query<{ bytes: string }>(
-        `SELECT (${reservedBytesSql})::text AS bytes`,
-      );
-      const total = totals.rows[0];
-      if (
-        !total ||
-        BigInt(total.bytes) + BigInt(input.descriptor.size) > BigInt(this.capacityBytes)
-      )
-        throw new ArkvoryError('capacity_exceeded', 'Catalog capacity exceeded', {
-          reason: 'catalog_limit',
-        });
-      const quota = (
-        await client.query<{ quota: string | null; used: string }>(
-          `
-        SELECT p.policy->>'quotaBytes' AS quota,
-        (${reservedBytesSql} WHERE repository=$1)::text AS used
-        FROM arkvory_storage_policies p WHERE p.repository=$1`,
-          [input.repository],
-        )
-      ).rows[0];
-      if (quota?.quota && BigInt(quota.used) + BigInt(input.descriptor.size) > BigInt(quota.quota))
-        throw new ArkvoryError('capacity_exceeded', 'Repository storage quota exceeded', {
-          reason: 'storage_quota',
-        });
+      await requireRoom(client, input.repository, input.descriptor.size, this.capacityBytes);
       const inserted = await client.query<Record<string, unknown>>(
         'INSERT INTO arkvory_uploads(id,repository,owner,idempotency_key,descriptor,size,created_at,storage_backend,part_bytes) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *',
         [

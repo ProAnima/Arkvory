@@ -91,6 +91,25 @@ test('manifests yield the digests the registry must hold; type and shape are che
       manifests: [digest('e'), digest('f')],
     },
   );
+  // A Windows base layer or a non-distributable one is never pushed: no blob to require.
+  const foreign = image({
+    layers: [
+      {
+        digest: digest('d'),
+        mediaType: 'application/vnd.docker.image.rootfs.foreign.diff.tar.gzip',
+        urls: ['https://mcr.microsoft.com/v2/a'],
+      },
+      {
+        digest: digest('e'),
+        mediaType: 'application/vnd.oci.image.layer.nondistributable.v1.tar+gzip',
+      },
+      { digest: digest('f'), mediaType: 'application/vnd.oci.image.layer.v1.tar+gzip' },
+    ],
+  });
+  assert.deepEqual(parseOciManifest(foreign, foreign.length, undefined).blobs, [
+    digest('c'),
+    digest('f'),
+  ]);
   const docker = image({ mediaType: 'application/vnd.docker.distribution.manifest.v2+json' });
   assert.equal(
     parseOciManifest(docker, docker.length, undefined).mediaType,
@@ -208,4 +227,23 @@ test('requests on one upload are serialized; a mismatching digest cancels its ar
     ['cancel', 'artifact'],
   ]);
   assert.ok(!calls.some(([name]) => name === 'blob' || name === 'end'), 'the upload stays open');
+});
+
+test('finishing cuts bytes an interrupted chunk left past the received size', async () => {
+  const appended = [];
+  const { registry: r, calls } = registry({
+    staging: {
+      append: async (id, offset, source, limit) => {
+        let size = offset;
+        for await (const chunk of source) size += chunk.length;
+        appended.push([id, offset, size, limit]);
+        return size;
+      },
+    },
+    storage: { upload: async () => {} },
+  });
+  await r.finish(principal, path, digest('a'), never);
+  // The upload received 4 bytes: the staged file is cut there before the store reads it.
+  assert.deepEqual(appended, [[path.id, 4, 4, 4]]);
+  assert.deepEqual(calls[0], ['create', `oci-${path.id}`, '4', 'a'.repeat(64)]);
 });

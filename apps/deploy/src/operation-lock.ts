@@ -1,4 +1,5 @@
-import { mkdir, open, readFile, unlink, writeFile } from 'node:fs/promises';
+import { randomUUID } from 'node:crypto';
+import { link, mkdir, open, readFile, rename, unlink, writeFile } from 'node:fs/promises';
 import { hostname } from 'node:os';
 import { join } from 'node:path';
 import { setTimeout as sleep } from 'node:timers/promises';
@@ -10,10 +11,26 @@ import { isUnconfirmedTermination } from './process.js';
 const LOCKED =
   'Installation is locked. After a crash, stop the updater and inspect journal.json before removing operation.lock';
 const SETTLED = ['committed', 'rolled-back', 'recovered'];
+/**
+ * Operations whose interruption leaves nothing half done outside the journal: the update steps
+ * record every change there, and the others change nothing that a rerun does not redo. An
+ * interrupted `configure`, `install` or `cluster-node` may leave half-written settings, so its
+ * lock waits for an operator.
+ */
+const JOURNALED = new Set([
+  'updates-poll',
+  'updates-reset',
+  'updates-connect',
+  'update',
+  'recover',
+  'upgrade',
+  'apply-installer',
+]);
 
 interface LockOwner {
   readonly pid: number;
   readonly host: string;
+  readonly journaled: boolean;
 }
 
 function owner(text: string): LockOwner | null {
@@ -23,7 +40,12 @@ function owner(text: string): LockOwner | null {
     if (!Number.isSafeInteger(value['pid']) || value['preserved'] === true) return null;
     // Locks of earlier releases carry no host and no preserved mark: an operator handles them.
     if (typeof value['host'] !== 'string') return null;
-    return { pid: value['pid'] as number, host: value['host'] };
+    const operation = value['operation'];
+    return {
+      pid: value['pid'] as number,
+      host: value['host'],
+      journaled: typeof operation === 'string' && JOURNALED.has(operation),
+    };
   } catch {
     // Empty while its writer is still writing it, or damaged: never treated as stale.
     return null;
@@ -55,7 +77,8 @@ async function settled(root: string): Promise<boolean> {
  * Whether the lock is left by a process that cannot run any more and that changed nothing an
  * operator must inspect: its process is gone on this host, or, on a node of an HA cluster
  * (ADR 0072), it was taken on another node, which Pacemaker fenced before this one mounted the
- * volume. An interrupted deployment (journal not settled) always keeps the lock.
+ * volume. An interrupted deployment (journal not settled), or an operation that keeps no
+ * journal, always keeps the lock.
  */
 export async function staleLock(
   root: string,
@@ -64,7 +87,7 @@ export async function staleLock(
   here = hostname(),
 ): Promise<boolean> {
   const held = owner(text);
-  if (!held || !(await settled(root))) return false;
+  if (!held?.journaled || !(await settled(root))) return false;
   if (held.host === here) return !alive(held.pid);
   return clusterNode;
 }
@@ -73,22 +96,37 @@ async function releaseStale(root: string, path: string): Promise<boolean> {
   const text = await readFile(path, 'utf8').catch(() => '');
   const clusterNode = process.platform !== 'win32' && (await exists(NODE_MARKER));
   if (!(await staleLock(root, text, clusterNode))) return false;
-  // Re-read right before removing: never remove a lock another process has just taken.
-  if ((await readFile(path, 'utf8').catch(() => '')) !== text) return false;
-  await unlink(path).catch(() => undefined);
+  // Moved aside in one step: of two processes that found it stale, only one moves it.
+  const aside = `${path}.${randomUUID()}`;
+  try {
+    await rename(path, aside);
+  } catch {
+    return false;
+  }
+  const moved = await readFile(aside, 'utf8').catch(() => '');
+  if (moved !== text) {
+    // A process took the lock after it was read: give it back (without replacing a newer one).
+    await link(aside, path).catch(() => undefined);
+    await unlink(aside).catch(() => undefined);
+    return false;
+  }
+  await unlink(aside).catch(() => undefined);
   report('warning', `Removed the operation lock of a process that no longer runs: ${text}`);
   return true;
 }
 
 /**
  * A lock that its holder will release by itself: a running operation, or one still writing the
- * lock. A preserved lock or an unsettled journal waits for an operator instead.
+ * lock. A preserved lock, an unsettled journal or a holder that is gone waits for an operator.
  */
 async function transient(root: string, text: string): Promise<boolean> {
   if (text === '') return true;
   try {
     const value = JSON.parse(text) as Record<string, unknown>;
     if (value['preserved'] === true) return false;
+    const pid = value['pid'];
+    if (value['host'] === hostname() && Number.isSafeInteger(pid) && !alive(pid as number))
+      return false;
   } catch {
     return false;
   }
@@ -119,14 +157,25 @@ async function acquire(root: string, path: string, waitMs: number) {
  * operation holds normally (an update check started by the timer, say) is waited for that long;
  * an operator's command then does not fail on a check that ends in seconds.
  */
-export async function exclusive<T>(root: string, work: () => Promise<T>, waitMs = 0): Promise<T> {
+export async function exclusive<T>(
+  root: string,
+  work: () => Promise<T>,
+  waitMs = 0,
+  /** Recorded in the lock: it decides whether a lock its process left is taken over. */
+  operation = 'unknown',
+): Promise<T> {
   await mkdir(root, { recursive: true });
   const path = join(root, 'operation.lock');
   const lock = await acquire(root, path, waitMs);
   let preserveLock = false;
   try {
     await lock.writeFile(
-      JSON.stringify({ pid: process.pid, host: hostname(), startedAt: new Date().toISOString() }),
+      JSON.stringify({
+        pid: process.pid,
+        host: hostname(),
+        operation,
+        startedAt: new Date().toISOString(),
+      }),
     );
     await lock.sync();
     return await work();

@@ -1,4 +1,5 @@
 import type { PoolClient } from 'pg';
+import { ArkvoryError } from '@proanima/arkvory-domain';
 
 /*
  * Retained bytes per repository and upload status (ADR 0073). Capacity and quota checks read
@@ -80,3 +81,40 @@ export async function migrateUploadBytes(client: PoolClient): Promise<void> {
 
 /** Retained bytes of all repositories, or of one, as SQL (a small table, any number of uploads). */
 export const reservedBytesSql = 'SELECT COALESCE(sum(bytes),0) FROM arkvory_upload_bytes';
+
+/** Serializes reservations, never byte transfers: held while room is checked and taken. */
+export async function lockReservations(client: PoolClient): Promise<void> {
+  await client.query('SELECT pg_advisory_xact_lock(18471, 2)');
+}
+
+/**
+ * Refuses `size` more retained bytes beyond the installation's capacity or the repository's
+ * quota. The caller holds the reservation lock until it has counted them.
+ */
+export async function requireRoom(
+  client: PoolClient,
+  repository: string,
+  size: number,
+  capacityBytes: number,
+): Promise<void> {
+  const totals = await client.query<{ bytes: string }>(
+    `SELECT (${reservedBytesSql})::text AS bytes`,
+  );
+  const total = totals.rows[0];
+  if (!total || BigInt(total.bytes) + BigInt(size) > BigInt(capacityBytes))
+    throw new ArkvoryError('capacity_exceeded', 'Catalog capacity exceeded', {
+      reason: 'catalog_limit',
+    });
+  const quota = (
+    await client.query<{ quota: string | null; used: string }>(
+      `SELECT p.policy->>'quotaBytes' AS quota,
+        (${reservedBytesSql} WHERE repository=$1)::text AS used
+       FROM arkvory_storage_policies p WHERE p.repository=$1`,
+      [repository],
+    )
+  ).rows[0];
+  if (quota?.quota && BigInt(quota.used) + BigInt(size) > BigInt(quota.quota))
+    throw new ArkvoryError('capacity_exceeded', 'Repository storage quota exceeded', {
+      reason: 'storage_quota',
+    });
+}

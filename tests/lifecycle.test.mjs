@@ -7,12 +7,20 @@ import {
   partSize,
   checkParts,
   requireAssetPath,
+  requireLockPath,
 } from '@proanima/arkvory-domain';
 
 test('asset paths preserve valid Unicode and reject unpaired surrogates before encoding', () => {
   assert.equal(requireAssetPath('builds/🚀/данные.zip'), 'builds/🚀/данные.zip');
   for (const path of ['builds/\ud800.zip', 'builds/\udfff.zip'])
     assert.throws(() => requireAssetPath(path), { code: 'invalid_input' });
+});
+
+test('a git-lfs lock path may hold what git allows; dot segments and control bytes are refused', () => {
+  for (const path of ['Art/a:b.psd', 'Art/a\\b.psd', 'Art/модель.fbx'])
+    assert.equal(requireLockPath(path), path);
+  for (const path of ['', '/Art/a.psd', 'Art/../a.psd', 'Art//a.psd', 'Art/a\u0001.psd', 42])
+    assert.throws(() => requireLockPath(path), { status: 422 });
 });
 
 test('cleanup never releases a reservation when byte deletion fails', async () => {

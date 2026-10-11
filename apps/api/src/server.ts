@@ -1,3 +1,4 @@
+import type { FastifyInstance } from 'fastify';
 import { DiagnosticLogger, processIdentity } from '@proanima/arkvory-infrastructure';
 import type { PostgresCatalog, ProcessIdentity } from '@proanima/arkvory-infrastructure';
 import type { ServerConfig } from './config.js';
@@ -114,6 +115,75 @@ function processLog(config: ServerConfig, lifecycle: ServerLifecycle, identity: 
   return { diagnostics, recentLog };
 }
 
+/**
+ * The access log and the metrics. Registered before the security hooks, so both observe every
+ * response, rejections included.
+ */
+function registerObservation(
+  app: FastifyInstance,
+  parts: Omit<RouteParts, 'recentLog' | 'policy'> & {
+    readonly certificate: ReturnType<Awaited<ReturnType<typeof prepareTls>>['attach']>;
+  },
+) {
+  const { config, runtime, services, context, drain, identity, diagnostics } = parts;
+  // loadConfig enables it by default; embedded/test servers opt in explicitly.
+  if (config.accessLog === true)
+    registerAccessLog(app, {
+      writer: diagnostics,
+      principal: context.peekPrincipal,
+      now: () => performance.now(),
+    });
+  registerMetrics(
+    app,
+    processMetrics(
+      { identity, transfers: runtime.transfers, diagnostics, ...services.metricSources },
+      () => drain.activeRequests,
+      { certificate: parts.certificate, replica: parts.replica, catalog: runtime.catalog },
+    ),
+    () => performance.now(),
+  );
+}
+
+/** What the registrations below share with createServer. */
+interface RouteParts {
+  readonly config: ServerConfig;
+  readonly runtime: ApiRuntime;
+  readonly services: ReturnType<typeof createApiServices>;
+  readonly context: ReturnType<typeof createRequestContext>;
+  readonly replica: ReturnType<typeof replicaGuardFor>;
+  readonly drain: RequestDrain;
+  readonly identity: ProcessIdentity;
+  readonly recentLog: ReturnType<typeof processLog>['recentLog'];
+  readonly policy: ReturnType<typeof resolveUploadTimeouts>;
+  readonly diagnostics: DiagnosticLogger;
+}
+
+/** Routes after the security hooks: errors, health, updates, feedback, the API and the console. */
+function registerRoutes(app: FastifyInstance, parts: RouteParts) {
+  const { config, runtime, services, context, replica, drain } = parts;
+  registerReplicaGuard(app, replica);
+  registerHttpErrors(app, context);
+  registerHealthRoutes(app, runtime, () => drain.isDraining, replica);
+  registerUpdateRoutes(app, context.principal, config.updateControlDirectory);
+  registerFeedback(app, context.principal, {
+    hub: config.hub ?? null,
+    version: parts.identity.version,
+    log: parts.recentLog,
+    mirrors: services.mirrors,
+    updates: new UpdateControl(config.updateControlDirectory),
+  });
+  registerApiRoutes(app, {
+    services,
+    context,
+    transfers: runtime.transfers,
+    available: runtime.available,
+    role: runtime.role,
+    policy: parts.policy,
+    diagnostics: parts.diagnostics,
+  });
+  if (runtime.role === 'api') registerConsole(app, config.webDirectory ?? 'apps/web/public');
+}
+
 export async function createServer(config: ServerConfig, lifecycle: ServerLifecycle = {}) {
   const policy = resolveUploadTimeouts(config);
   const tls = await prepareTls(config);
@@ -154,23 +224,17 @@ export async function createServer(config: ServerConfig, lifecycle: ServerLifecy
     registerContractGuard(app);
     // Collects routes like the guard does, for the 405 Allow answer of unmatched requests.
     registerNotFound(app, context, runtime.role);
-    // loadConfig enables it by default; embedded/test servers opt in explicitly.
-    if (config.accessLog === true)
-      registerAccessLog(app, {
-        writer: diagnostics,
-        principal: context.peekPrincipal,
-        now: () => performance.now(),
-      });
-    // Observes every response, including rejections by the security hooks registered below.
-    registerMetrics(
-      app,
-      processMetrics(
-        { identity, transfers: runtime.transfers, diagnostics, ...services.metricSources },
-        () => drain.activeRequests,
-        { certificate, replica, catalog: runtime.catalog },
-      ),
-      () => performance.now(),
-    );
+    registerObservation(app, {
+      config,
+      runtime,
+      services,
+      context,
+      replica,
+      drain,
+      identity,
+      diagnostics,
+      certificate,
+    });
     registerCors(app, config.corsOrigins ?? []);
     background = registerMaintenance(app, runtime, services, responses, diagnostics);
     app.addHook('onResponse', async (request, reply) => {
@@ -187,27 +251,18 @@ export async function createServer(config: ServerConfig, lifecycle: ServerLifecy
       registerOwner: runtime.transfers.registerOwner,
       drain,
     });
-    registerReplicaGuard(app, replica);
-    registerHttpErrors(app, context);
-    registerHealthRoutes(app, runtime, () => drain.isDraining, replica);
-    registerUpdateRoutes(app, context.principal, config.updateControlDirectory);
-    registerFeedback(app, context.principal, {
-      hub: config.hub ?? null,
-      version: identity.version,
-      log: recentLog,
-      mirrors: services.mirrors,
-      updates: new UpdateControl(config.updateControlDirectory),
-    });
-    registerApiRoutes(app, {
+    registerRoutes(app, {
+      config,
+      runtime,
       services,
       context,
-      transfers: runtime.transfers,
-      available: runtime.available,
-      role: runtime.role,
+      replica,
+      drain,
+      identity,
+      recentLog,
       policy,
       diagnostics,
     });
-    if (runtime.role === 'api') registerConsole(app, config.webDirectory ?? 'apps/web/public');
     return await app;
   } catch (error) {
     // Route/configuration failures after acquiring ownership must not strand pools or leases.

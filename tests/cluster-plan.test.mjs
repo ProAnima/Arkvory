@@ -3,7 +3,11 @@ import assert from 'node:assert/strict';
 import { checkPlan, drbdResource, pacemakerCommands } from '../apps/deploy/dist/cluster-plan.js';
 import { parseNodes, planInput } from '../apps/deploy/dist/cluster-plan-files.js';
 import { clusterChange } from '../apps/deploy/dist/cluster-setup.js';
-import { replicaUnit } from '../apps/deploy/dist/cluster-node.js';
+import { mirrorUnits, replicaUnit, unitsUnit } from '../apps/deploy/dist/cluster-node.js';
+import { mkdir, mkdtemp, readFile, readdir, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { removeTestDirectory } from './helpers.mjs';
 
 const options = (extra = {}) =>
   new Map(
@@ -40,9 +44,18 @@ test('ha-2 plan: witness is diskless, gets the next node id and is not a Pacemak
   assert.ok(!pacemaker.includes('fence-witness'), 'the witness is never fenced by Pacemaker');
   assert.ok(pacemaker.includes('directory=/opt/proanima-arkvory fstype=xfs'));
   // The group starts in order: the filesystem first, the address last.
-  const order = ['-fs ', '-database ', '-replica ', '-api ', '-worker ', '-backup ', '-ip '].map(
-    (name) => pacemaker.indexOf(`arkvory${name}`),
-  );
+  // The units of the volume come right after it is mounted, before anything they describe.
+  const order = [
+    '-fs ',
+    '-units ',
+    '-database ',
+    '-replica ',
+    '-api ',
+    '-worker ',
+    '-backup ',
+    '-ip ',
+  ].map((name) => pacemaker.indexOf(`arkvory${name}`));
+  assert.ok(order.every((index) => index > 0));
   assert.deepEqual(
     order,
     [...order].sort((a, b) => a - b),
@@ -74,7 +87,19 @@ test('plans that cannot fence or decide a partition are refused', () => {
   assert.throws(() => checkPlan({ ...ha2, profile: 'ha-3' }), /exactly 3/);
   assert.throws(() => checkPlan({ ...ha2, fenceAgent: '' }), /fence agent/);
   assert.throws(() => checkPlan({ ...ha2, fenceAgent: 'fence_x; rm -rf /' }), /fence agent/);
-  assert.throws(() => checkPlan({ ...ha2, root: '/opt/a b' }), /installation root/);
+  for (const root of ['/opt/a b', '/opt/a;reboot', '/opt/a|b', '/opt/a&b', '/opt/../etc'])
+    assert.throws(() => checkPlan({ ...ha2, root }), /installation root/, root);
+  // Numbers that are no numbers, and IPv6 (DRBD and IPaddr2 take it differently): refused.
+  for (const extra of [
+    { 'drbd-minor': 'x' },
+    { 'drbd-port': '7789.5' },
+    { 'virtual-ip': '10.0.0.10/x' },
+    { 'virtual-ip': '10.0.0.10/33' },
+    { 'virtual-ip': 'fd00::10/64' },
+    { nodes: 'node-a=fd00::1,node-b=fd00::2' },
+    { nodes: 'node-a=10.0.0.256,node-b=10.0.0.2' },
+  ])
+    assert.throws(() => checkPlan(planInput(options(extra))), /Invalid/, JSON.stringify(extra));
   assert.throws(() => checkPlan({ ...ha2, disk: '/dev/sda;reboot' }), /backing disk/);
   assert.throws(
     () => checkPlan(planInput(options({ nodes: 'node-a=10.0.0.1,node-a=10.0.0.2' }))),
@@ -216,4 +241,28 @@ test('cluster tool output: node names and where the group runs', () => {
   assert.deepEqual(clusterNodes('1 node-a member\n2 node-b lost\n\n'), ['node-a', 'node-b']);
   assert.deepEqual(locatedOn('resource arkvory is running on: node-b\n'), ['node-b']);
   assert.deepEqual(locatedOn('resource arkvory is NOT running\n'), []);
+});
+
+test('a node takes the units on the volume: changed files, new drop-ins, removed drop-ins', async (t) => {
+  const root = await mkdtemp(join(tmpdir(), 'arkvory-units-'));
+  t.after(() => removeTestDirectory(root));
+  const kit = join(root, 'kit');
+  const units = join(root, 'units');
+  await mkdir(join(kit, 'arkvory-backup.service.d'), { recursive: true });
+  await mkdir(join(units, 'arkvory-backup.service.d'), { recursive: true });
+  await writeFile(join(kit, 'arkvory-api.service'), 'api v2');
+  await writeFile(join(kit, 'arkvory-backup.service.d', 'arkvory-vault.conf'), 'vault');
+  await writeFile(join(units, 'arkvory-api.service'), 'api v1');
+  await writeFile(join(units, 'arkvory-backup.service.d', 'old.conf'), 'gone on the volume');
+  await writeFile(join(units, 'other.service'), 'not ours');
+  assert.equal(await mirrorUnits(kit, units), true);
+  assert.equal(await readFile(join(units, 'arkvory-api.service'), 'utf8'), 'api v2');
+  assert.deepEqual(await readdir(join(units, 'arkvory-backup.service.d')), ['arkvory-vault.conf']);
+  assert.equal(await readFile(join(units, 'other.service'), 'utf8'), 'not ours');
+  // Nothing changed: no reload is asked for.
+  assert.equal(await mirrorUnits(kit, units), false);
+  const unit = unitsUnit('/opt/proanima-arkvory');
+  assert.ok(unit.includes('Type=oneshot\nRemainAfterExit=yes'));
+  assert.ok(unit.includes('ExecStart=/usr/bin/arkvory cluster-units --root /opt/proanima-arkvory'));
+  assert.ok(!unit.includes('[Install]'), 'Pacemaker starts it; nothing enables it');
 });

@@ -1,6 +1,6 @@
 import { open, rename, stat } from 'node:fs/promises';
 import { setTimeout as delay } from 'node:timers/promises';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import {
   BackupFailure,
   parseBackupManifest,
@@ -98,5 +98,7 @@ export async function publishPoint(
     }
   }
   await syncDirectory(join(root, 'points'));
+  // The rename removed the staged entry too; its directory is synced like the target's.
+  await syncDirectory(dirname(staged));
   return 'committed';
 }

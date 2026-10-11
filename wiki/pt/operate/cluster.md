@@ -12,7 +12,7 @@ O cluster protege contra a perda de um servidor, de um disco ou de um link de re
 ## Como funciona {#how-it-works}
 
 - **Um volume, cópias síncronas.** O DRBD 9 copia cada gravação do volume para os outros servidores antes de a gravação terminar (protocolo C). Toda a instalação fica no volume: o banco de dados, o armazenamento, a configuração e as versões. O catálogo e os bytes dos arquivos nunca divergem.
-- **O Pacemaker decide onde o Arkvory executa.** Corosync e Pacemaker mantêm o quórum, escolhem o servidor ativo e iniciam, em ordem: o volume, o sistema de arquivos, o banco de dados, `arkvory-replica`, a API, o worker, o agente de backup, o timer de atualização e um endereço IP virtual. O Arkvory não tem eleição própria.
+- **O Pacemaker decide onde o Arkvory executa.** Corosync e Pacemaker mantêm o quórum, escolhem o servidor ativo e iniciam, em ordem: o volume, o sistema de arquivos, os serviços como o volume os guarda (`arkvory-units`), o banco de dados, `arkvory-replica`, a API, o worker, o agente de backup, o timer de atualização e um endereço IP virtual. O Arkvory não tem eleição própria.
 - **O fencing é obrigatório.** Antes de outro servidor assumir, o Pacemaker desliga o servidor com falha por meio de um dispositivo de energia (IPMI, iDRAC, iLO, Redfish, uma PDU) ou de um hipervisor. Sem fencing, dois servidores poderiam gravar ao mesmo tempo. Um cluster sem fencing não inicia.
 - **Duas cópias para cada gravação confirmada.** O Arkvory responde a uma gravação com sucesso somente quando ela está em pelo menos duas cópias completas (veja [Gravações e cópias](#writes)). Quando falta uma cópia, as gravações param e as leituras continuam.
 
@@ -71,7 +71,7 @@ Os comandos abaixo usam o nome de recurso padrão `arkvory`, o diretório de ins
      --virtual-ip 10.0.0.100/24 --output /root/arkvory-plan
    ```
 
-   Para `ha-3`, liste três servidores em `--nodes` e omita `--witness`. Opcional: `--cluster-resource`, `--drbd-minor` (padrão 0), `--drbd-port` (padrão 7789), `--filesystem` (`xfs` ou `ext4`, padrão `xfs`). Os nomes devem ser os nomes de host dos servidores.
+   Para `ha-3`, liste três servidores em `--nodes` e omita `--witness`. Opcional: `--cluster-resource`, `--drbd-minor` (padrão 0), `--drbd-port` (padrão 7789), `--filesystem` (`xfs` ou `ext4`, padrão `xfs`). Os nomes devem ser os nomes de host dos servidores. Os endereços são IPv4.
 
 3. Copie `arkvory.res` para `/etc/drbd.d/` em cada servidor, inclusive na testemunha. Crie os metadados nos servidores de dados e ative o recurso em todos:
 
@@ -124,7 +124,7 @@ Os comandos abaixo usam o nome de recurso padrão `arkvory`, o diretório de ins
    umount /opt/proanima-arkvory && drbdadm secondary arkvory
    ```
 
-   `cluster-node` cria as contas de serviço com os mesmos IDs de usuário e de grupo do primeiro servidor (os arquivos do volume pertencem a elas) e instala os mesmos serviços, nenhum deles iniciado automaticamente. Se uma conta já existir com outros IDs, o comando para e informa quais IDs definir.
+   `cluster-node` cria as contas de serviço com os mesmos IDs de usuário e de grupo do primeiro servidor (os arquivos do volume pertencem a elas) e instala os mesmos serviços, nenhum deles iniciado automaticamente. Se uma conta já existir com outros IDs, o comando para e informa quais IDs definir. Cada vez que um servidor se torna ativo, o `arkvory-units` primeiro obtém os serviços do volume, de modo que configurações alteradas depois no servidor ativo (um armazenamento de backups, por exemplo) também valem após um failover.
 
 8. Configure o cluster Corosync com o `pcs` nos servidores de dados (`pcs host auth`, `pcs cluster setup`, `pcs cluster start --all`). No Debian e no Ubuntu, execute antes `pcs cluster destroy` em cada servidor de dados: os pacotes instalam uma configuração de exemplo do Corosync que o `pcs` toma por um cluster existente. Não execute `pcs cluster enable`: um servidor que foi isolado só deve voltar a entrar quando você o iniciar. Para `ha-2`, autentique também a testemunha e execute nela `pcs qdevice setup model net --enable --start`. No Debian e no Ubuntu o pacote já configurou o dispositivo de quórum para a sua própria conta de serviço: execute ali, em vez disso, `systemctl enable --now corosync-qnetd`.
 
@@ -164,7 +164,7 @@ Execute estes comandos como root. `cluster-status` e `cluster-single-copy` leem 
 
 ### Switchover planejado {#switchover}
 
-`cluster-switchover` pede ao Pacemaker que mova o grupo, espera até 5 minutos até que o Arkvory execute no destino e então remove a regra de posicionamento temporária. As conexões com o servidor antigo caem durante a mudança; os clientes repetem as requisições. O Arkvory nunca volta sozinho.
+`cluster-switchover` pede ao Pacemaker que mova o grupo, espera até 5 minutos até que o Arkvory execute no destino e então remove a regra de posicionamento temporária. Ele é recusado enquanto o destino não tiver uma cópia completa própria, por exemplo enquanto ressincroniza. As conexões com o servidor antigo caem durante a mudança; os clientes repetem as requisições. O Arkvory nunca volta sozinho.
 
 ### Teste de fencing {#fence-test}
 
@@ -172,7 +172,7 @@ Execute estes comandos como root. `cluster-status` e `cluster-single-copy` leem 
 
 ### Atualizações {#updates}
 
-Instale um novo pacote em cada servidor de dados. Nos servidores em espera, o pacote apenas substitui os arquivos do programa, porque a versão fica no volume. No servidor ativo, o pacote aplica a versão: o Arkvory diz ao Pacemaker para deixar o grupo em paz, para os serviços, migra, inicia-os, espera até ficarem prontos e devolve o grupo. As atualizações automáticas funcionam do mesmo modo no servidor ativo.
+Instale um novo pacote em cada servidor de dados. Nos servidores em espera, o pacote apenas substitui os arquivos do programa, porque a versão fica no volume. No servidor ativo, o pacote aplica a versão: o Arkvory diz ao Pacemaker para deixar o grupo em paz, para os serviços, migra, inicia-os, espera até ficarem prontos e devolve o grupo. As atualizações automáticas funcionam do mesmo modo no servidor ativo. Se tanto a atualização quanto o seu rollback falharem, o grupo fica sem gerenciamento e o Pacemaker não faz failover: corrija a causa e então execute `pcs resource cleanup arkvory` e `pcs resource manage arkvory`.
 
 Não inicie nem pare os serviços do Arkvory com `systemctl` em um servidor do cluster. O Pacemaker entenderia isso como uma falha. Use `pcs resource disable arkvory` e `pcs resource enable arkvory` para uma parada planejada de todo o serviço.
 

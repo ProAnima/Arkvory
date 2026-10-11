@@ -60,6 +60,51 @@ function historyRow(item: AssetRevisionResponse, snapshot: HistoryView, actions:
   return row;
 }
 
+/** Restores an older revision of the shown path, then reloads the history from its top. */
+function restoreRevision(
+  parts: {
+    readonly client: ArkvoryClient;
+    readonly state: HistoryState;
+    readonly status: HTMLOutputElement;
+    readonly run: (action: () => Promise<void>) => void;
+    readonly load: () => Promise<void>;
+  },
+  item: Parameters<HistoryActions['restore']>[0],
+  snapshot: Parameters<HistoryActions['restore']>[1],
+  button: HTMLButtonElement,
+) {
+  const { client, state, status, run, load } = parts;
+  run(async () => {
+    if (state.pending || state.view !== snapshot) return;
+    const controller = new AbortController();
+    state.pending = controller;
+    button.disabled = true;
+    try {
+      const result = await client.restoreAsset(
+        snapshot.repository,
+        snapshot.path,
+        item.revision,
+        snapshot.revision,
+        controller.signal,
+      );
+      if (controller.signal.aborted) return;
+      state.pending = undefined;
+      await load();
+      if (showsPath(state, snapshot))
+        feedback(status, 'restored', { revision: result.revision }, 'success');
+    } catch (error) {
+      if (controller.signal.aborted) return;
+      // The history view has its own wording for a stale path; the reference still shows.
+      if (error instanceof ArkvoryHttpError && error.code === 'conflict')
+        showFailure(status, error, 'historyConflict');
+      else throw error;
+    } finally {
+      if (state.pending === controller) state.pending = undefined;
+      button.disabled = false;
+    }
+  });
+}
+
 export function installAssetHistory(
   client: ArkvoryClient,
   repository: HTMLInputElement,
@@ -85,35 +130,7 @@ export function installAssetHistory(
     open,
     run,
     restore: (item, snapshot, button) => {
-      run(async () => {
-        if (state.pending || state.view !== snapshot) return;
-        const controller = new AbortController();
-        state.pending = controller;
-        button.disabled = true;
-        try {
-          const result = await client.restoreAsset(
-            snapshot.repository,
-            snapshot.path,
-            item.revision,
-            snapshot.revision,
-            controller.signal,
-          );
-          if (controller.signal.aborted) return;
-          state.pending = undefined;
-          await load();
-          if (showsPath(state, snapshot))
-            feedback(status, 'restored', { revision: result.revision }, 'success');
-        } catch (error) {
-          if (controller.signal.aborted) return;
-          // The history view has its own wording for a stale path; the reference still shows.
-          if (error instanceof ArkvoryHttpError && error.code === 'conflict')
-            showFailure(status, error, 'historyConflict');
-          else throw error;
-        } finally {
-          if (state.pending === controller) state.pending = undefined;
-          button.disabled = false;
-        }
-      });
+      restoreRevision({ client, state, status, run, load }, item, snapshot, button);
     },
   };
   async function load(before?: number) {

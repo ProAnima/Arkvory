@@ -13,7 +13,7 @@ import { runWithLogFile } from './log-file.js';
 import { configure } from './configure.js';
 import { warnEngineAutostart } from './engine-autostart.js';
 import { clusterStatus, decideSingleCopy, serveReplica } from './replica-service.js';
-import { joinNode } from './cluster-node.js';
+import { joinNode, refreshNodeKit, syncUnits } from './cluster-node.js';
 import { writePlan } from './cluster-plan-files.js';
 import { checkCluster, fenceTest, switchover } from './cluster-ops.js';
 
@@ -126,6 +126,82 @@ async function capturedUpdater(
   process.exitCode = code;
   return true;
 }
+async function connectUpdates(root: string): Promise<void> {
+  await checkJournal(root);
+  await prepareUpdateControl(root);
+  const state = parseInstallation(await jsonFile(join(root, 'installation.json')));
+  const services = new Services(root, state);
+  await services.stop();
+  await services.provision(state.current);
+  await services.start(state.current);
+  await services.healthy();
+  await services.confirmBackup(state.current);
+  await services.schedule(state.current);
+}
+
+/** The native installer's step: finish the same release, or update to a new one. */
+async function applyInstaller(root: string, options: Map<string, string>): Promise<void> {
+  const state = parseInstallation(await jsonFile(join(root, 'installation.json')));
+  if (state.mode !== (process.platform === 'win32' ? 'windows' : 'systemd'))
+    throw new Error('Native installer cannot change deployment mode');
+  const artifact = options.get('artifact');
+  if (!artifact) throw new Error('Installer requires local release artifact');
+  const candidate = await jsonFile(join(artifact, 'arkvory-release.json'));
+  const { parseRelease } = await import('./model.js');
+  const next = parseRelease(candidate);
+  if (next.version === state.current.version) {
+    if (
+      next.archiveSha256 !== state.current.archiveSha256 ||
+      next.setupSha256 !== state.current.setupSha256
+    )
+      throw new Error('Installed version cannot be replaced with different bytes');
+    await finishInstall(root);
+  } else await update(root, options);
+}
+
+/** The operations that change an installation; each runs under its operation lock. */
+async function locked(operation: string, root: string, options: Map<string, string>) {
+  switch (operation) {
+    case 'updates-poll':
+      await pollUpdates(root);
+      break;
+    case 'updates-reset':
+      await resetUpdateRequest(root);
+      break;
+    case 'updates-connect':
+      await connectUpdates(root);
+      break;
+    case 'install':
+      await install(root, options);
+      if (options.get('owner-file')) await createOwner(root, options.get('owner-file') ?? '');
+      break;
+    case 'finish-install':
+      await finishInstall(root);
+      if (options.get('owner-file')) await createOwner(root, options.get('owner-file') ?? '');
+      break;
+    case 'apply-installer':
+      await applyInstaller(root, options);
+      break;
+    case 'update':
+      await update(root, options);
+      break;
+    case 'recover':
+      await recover(root);
+      break;
+    case 'upgrade':
+      await upgrade(root, options);
+      break;
+    case 'configure':
+      await configure(root, options);
+      break;
+    case 'cluster-node':
+      await joinNode(root, options.get('cluster-resource') ?? 'arkvory');
+      break;
+    default:
+      throw new Error('Commands: install, status, update, configure, recover, upgrade');
+  }
+}
+
 async function main(): Promise<void> {
   if (Number(process.versions.node.split('.')[0]) !== 24)
     throw new Error('Arkvory requires Node.js 24 LTS');
@@ -154,6 +230,7 @@ async function main(): Promise<void> {
   // Long-running or read-only: outside the installation lock (ADR 0072).
   if (operation === 'cluster-replica') return serveReplica(root);
   if (operation === 'cluster-status') return clusterStatus(root);
+  if (operation === 'cluster-units') return syncUnits(root);
   // The decision file is written atomically and touches no deployment state: an update holding
   // the installation lock must not keep an operator from deciding during an incident.
   if (operation === 'cluster-single-copy') return decideSingleCopy(root, options);
@@ -163,73 +240,11 @@ async function main(): Promise<void> {
   await exclusive(
     root,
     async () => {
-      switch (operation) {
-        case 'updates-poll':
-          await pollUpdates(root);
-          break;
-        case 'updates-reset':
-          await resetUpdateRequest(root);
-          break;
-        case 'updates-connect': {
-          await checkJournal(root);
-          await prepareUpdateControl(root);
-          const state = parseInstallation(await jsonFile(join(root, 'installation.json')));
-          const services = new Services(root, state);
-          await services.stop();
-          await services.provision(state.current);
-          await services.start(state.current);
-          await services.healthy();
-          await services.confirmBackup(state.current);
-          await services.schedule(state.current);
-          break;
-        }
-        case 'install':
-          await install(root, options);
-          if (options.get('owner-file')) await createOwner(root, options.get('owner-file') ?? '');
-          break;
-        case 'finish-install':
-          await finishInstall(root);
-          if (options.get('owner-file')) await createOwner(root, options.get('owner-file') ?? '');
-          break;
-        case 'apply-installer': {
-          const state = parseInstallation(await jsonFile(join(root, 'installation.json')));
-          if (state.mode !== (process.platform === 'win32' ? 'windows' : 'systemd'))
-            throw new Error('Native installer cannot change deployment mode');
-          const artifact = options.get('artifact');
-          if (!artifact) throw new Error('Installer requires local release artifact');
-          const candidate = await jsonFile(join(artifact, 'arkvory-release.json'));
-          const { parseRelease } = await import('./model.js');
-          const next = parseRelease(candidate);
-          if (next.version === state.current.version) {
-            if (
-              next.archiveSha256 !== state.current.archiveSha256 ||
-              next.setupSha256 !== state.current.setupSha256
-            )
-              throw new Error('Installed version cannot be replaced with different bytes');
-            await finishInstall(root);
-          } else await update(root, options);
-          break;
-        }
-        case 'update':
-          await update(root, options);
-          break;
-        case 'recover':
-          await recover(root);
-          break;
-        case 'upgrade':
-          await upgrade(root, options);
-          break;
-        case 'configure':
-          await configure(root, options);
-          break;
-        case 'cluster-node':
-          await joinNode(root, options.get('cluster-resource') ?? 'arkvory');
-          break;
-        default:
-          throw new Error('Commands: install, status, update, configure, recover, upgrade');
-      }
+      await locked(operation, root, options);
+      await refreshNodeKit(root);
     },
     waitMs,
+    operation,
   );
 }
 main().catch((error: unknown) => {

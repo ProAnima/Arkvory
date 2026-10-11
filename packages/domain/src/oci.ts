@@ -126,6 +126,13 @@ export interface OciManifest {
 }
 
 const isIndex = (type: string) => type.endsWith('index.v1+json') || type.endsWith('list.v2+json');
+/** A layer a registry does not hold: a Docker foreign layer or an OCI non-distributable one. */
+function external(layer: unknown): boolean {
+  if (!layer || typeof layer !== 'object') return false;
+  const type = 'mediaType' in layer && typeof layer.mediaType === 'string' ? layer.mediaType : '';
+  return /\.foreign\.|\.nondistributable\./.test(type);
+}
+
 function descriptors(value: unknown, field: string): string[] {
   if (value === undefined) return [];
   if (!Array.isArray(value)) throw new OciError('MANIFEST_INVALID', `${field} must be a list`);
@@ -195,7 +202,11 @@ export function parseOciManifest(
     return { mediaType, ...indexEntries('manifests' in document ? document.manifests : undefined) };
   const config = 'config' in document ? descriptors([document.config], 'config') : [];
   if (config.length !== 1) throw new OciError('MANIFEST_INVALID', 'Image manifest needs a config');
-  const layers = descriptors('layers' in document ? document.layers : [], 'layers');
+  const listed = 'layers' in document ? document.layers : [];
+  descriptors(listed, 'layers');
+  // Foreign and non-distributable layers come from their `urls`; clients never push them.
+  const pushed = Array.isArray(listed) ? listed.filter((layer: unknown) => !external(layer)) : [];
+  const layers = descriptors(pushed, 'layers');
   return { mediaType, blobs: [...new Set([...config, ...layers])], manifests: [] };
 }
 

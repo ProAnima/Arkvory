@@ -12,7 +12,7 @@ Arkvory 集群在站点中的某台服务器故障时仍能继续工作。两到
 ## 工作原理 {#how-it-works}
 
 - **一个卷，同步副本。** DRBD 9 会在写入完成之前，把卷上的每次写入复制到其他服务器（协议 C）。整个安装都位于该卷上：数据库、存储、配置和各个发布版本。目录与文件字节永远不会分叉。
-- **Pacemaker 决定 Arkvory 在哪里运行。** Corosync 和 Pacemaker 维持仲裁，选出活动服务器，并按顺序启动：卷、文件系统、数据库、`arkvory-replica`、API、worker、备份代理、更新定时器和一个虚拟 IP 地址。Arkvory 自身没有选举机制。
+- **Pacemaker 决定 Arkvory 在哪里运行。** Corosync 和 Pacemaker 维持仲裁，选出活动服务器，并按顺序启动：卷、文件系统、按卷上保存的状态恢复的服务（`arkvory-units`）、数据库、`arkvory-replica`、API、worker、备份代理、更新定时器和一个虚拟 IP 地址。Arkvory 自身没有选举机制。
 - **隔离是强制的。** 在另一台服务器接管之前，Pacemaker 会通过电源设备（IPMI、iDRAC、iLO、Redfish、PDU）或虚拟机管理程序关闭故障服务器。没有隔离，两台服务器可能同时写入。没有隔离的集群无法启动。
 - **每次已确认的写入都有两份副本。** 只有当写入已存在于至少两份完整副本上时，Arkvory 才会以成功响应写入（参见[写入与副本](#writes)）。缺少副本时，写入停止，读取继续。
 
@@ -71,7 +71,7 @@ Arkvory 集群在站点中的某台服务器故障时仍能继续工作。两到
      --virtual-ip 10.0.0.100/24 --output /root/arkvory-plan
    ```
 
-   对于 `ha-3`，在 `--nodes` 中列出三台服务器，并省略 `--witness`。可选项：`--cluster-resource`、`--drbd-minor`（默认 0）、`--drbd-port`（默认 7789）、`--filesystem`（`xfs` 或 `ext4`，默认 `xfs`）。名称必须是服务器的主机名。
+   对于 `ha-3`，在 `--nodes` 中列出三台服务器，并省略 `--witness`。可选项：`--cluster-resource`、`--drbd-minor`（默认 0）、`--drbd-port`（默认 7789）、`--filesystem`（`xfs` 或 `ext4`，默认 `xfs`）。名称必须是服务器的主机名。地址为 IPv4。
 
 3. 把 `arkvory.res` 复制到每台服务器（包括见证节点）的 `/etc/drbd.d/`。在数据服务器上创建元数据，并在所有服务器上启动资源：
 
@@ -124,7 +124,7 @@ Arkvory 集群在站点中的某台服务器故障时仍能继续工作。两到
    umount /opt/proanima-arkvory && drbdadm secondary arkvory
    ```
 
-   `cluster-node` 会创建与第一台服务器用户 ID 和组 ID 相同的服务账户（卷上的文件归它们所有），并安装相同的服务，这些服务都不会自动启动。如果某个账户已存在但 ID 不同，命令会停止并告诉你应设置哪些 ID。
+   `cluster-node` 会创建与第一台服务器用户 ID 和组 ID 相同的服务账户（卷上的文件归它们所有），并安装相同的服务，这些服务都不会自动启动。如果某个账户已存在但 ID 不同，命令会停止并告诉你应设置哪些 ID。每当一台服务器成为活动服务器时，`arkvory-units` 会先从卷上获取服务，因此之后在活动服务器上更改的设置（例如备份存储）在故障切换后同样生效。
 
 8. 在数据服务器上用 `pcs` 设置 Corosync 集群（`pcs host auth`、`pcs cluster setup`、`pcs cluster start --all`）。在 Debian 和 Ubuntu 上，请先在每台数据服务器上运行 `pcs cluster destroy`：软件包会安装一份示例 Corosync 配置，`pcs` 会把它当作已有的集群。不要运行 `pcs cluster enable`：被隔离的服务器应当只在你启动它时才重新加入。对于 `ha-2`，还要对见证节点进行认证，并在其上运行 `pcs qdevice setup model net --enable --start`。在 Debian 和 Ubuntu 上，软件包已经为其自身的服务账户设置好了仲裁设备：请改为在那里运行 `systemctl enable --now corosync-qnetd`。
 
@@ -164,7 +164,7 @@ Arkvory 集群在站点中的某台服务器故障时仍能继续工作。两到
 
 ### 计划切换 {#switchover}
 
-`cluster-switchover` 请求 Pacemaker 迁移该组，最多等待 5 分钟，直到 Arkvory 在目标服务器上运行，然后移除临时的放置规则。迁移期间到旧服务器的连接会断开；客户端会重复其请求。Arkvory 绝不会自行切回。
+`cluster-switchover` 请求 Pacemaker 迁移该组，最多等待 5 分钟，直到 Arkvory 在目标服务器上运行，然后移除临时的放置规则。当目标服务器没有自己的完整副本时（例如正在重新同步），该命令会被拒绝。迁移期间到旧服务器的连接会断开；客户端会重复其请求。Arkvory 绝不会自行切回。
 
 ### 隔离测试 {#fence-test}
 
@@ -172,7 +172,7 @@ Arkvory 集群在站点中的某台服务器故障时仍能继续工作。两到
 
 ### 更新 {#updates}
 
-在每台数据服务器上安装新软件包。在备用服务器上，软件包只替换程序文件，因为发布版本位于卷上。在活动服务器上，软件包会应用该发布版本：Arkvory 通知 Pacemaker 不要动这个组，停止服务，迁移，启动服务，等待它们就绪，然后把组交还。自动更新在活动服务器上的工作方式相同。
+在每台数据服务器上安装新软件包。在备用服务器上，软件包只替换程序文件，因为发布版本位于卷上。在活动服务器上，软件包会应用该发布版本：Arkvory 通知 Pacemaker 不要动这个组，停止服务，迁移，启动服务，等待它们就绪，然后把组交还。自动更新在活动服务器上的工作方式相同。如果更新及其回滚都失败，该组会保持非托管状态，Pacemaker 不会进行故障切换：请先排除原因，然后运行 `pcs resource cleanup arkvory` 和 `pcs resource manage arkvory`。
 
 不要在集群服务器上用 `systemctl` 启动或停止 Arkvory 服务。Pacemaker 会把这当作故障。需要有计划地停止整个服务时，请使用 `pcs resource disable arkvory` 和 `pcs resource enable arkvory`。
 

@@ -126,6 +126,24 @@ test('any media type is stored as bytes; access and paths are checked', async (t
     body: json,
   });
   assert.equal(denied.status, 403);
+  // A reader never gets a write answered, not even for the bytes the path already holds.
+  const unchangedByReader = await fetch(url('config/settings.json'), {
+    method: 'PUT',
+    headers: {
+      ...f.readerHeaders,
+      'x-checksum-sha256': sha(json),
+      'content-length': String(json.length),
+    },
+    body: json,
+  });
+  assert.equal(unchangedByReader.status, 403);
+  const stagedByReader = await fetch(url('logs/reader.log'), {
+    method: 'PUT',
+    headers: f.readerHeaders,
+    body: new Blob([randomBytes(70_000)]).stream(),
+    duplex: 'half',
+  });
+  assert.equal(stagedByReader.status, 403);
   const anonymous = await fetch(url('config/settings.json'));
   assert.equal(anonymous.status, 401);
   // Dot segments never arrive: URL parsers (curl, fetch) resolve them before sending.

@@ -7,7 +7,6 @@ import {
   VAULT_ENCRYPTION,
   VAULT_FORMAT,
   VAULT_FORMAT_VERSION,
-  idPattern,
   parseVaultIdentity,
   parseVaultJson,
   requireId,
@@ -33,6 +32,7 @@ import { forgetPoint, pruneVault, sharedContentBytes, vaultListing } from './vau
 import { VaultCipher, encryptedSize } from './vault-crypto.js';
 import type { FileCipher, VaultFileKind } from './vault-crypto.js';
 import { createKeys, listSlots, unlockWith } from './vault-keys.js';
+import { listPointIds, writeVaultBlob } from './vault-blobs.js';
 import type { VaultKeySource } from './vault-keys.js';
 import {
   VAULT_DIRECTORY_MODE,
@@ -55,8 +55,6 @@ import { StagedPointDirectory, pointFileCipher, pointFileParts } from './vault-s
  * Directories are never created recursively below the root, so a missing mount fails instead
  * of silently writing into an empty local mount point.
  */
-const MAX_POINTS = 10000;
-const pointName = new RegExp(idPattern);
 /** How long an unlocked vault trusts its key before the key file and the slot are checked again. */
 const RECHECK_MS = 60_000;
 const never: Cancellation = { throwIfAborted() {} };
@@ -307,32 +305,17 @@ export class FileVault implements CaptureVault, MaintainedVault {
     source: AsyncIterable<Uint8Array>,
     cancellation: Cancellation,
   ): Promise<void> {
-    // Checked before every object: a volume that disappears mid-capture fails the write.
     const cipher = (await this.unlocked()).cipher?.forFile('blob', entry.id);
-    const needed = BigInt(cipher ? encryptedSize(entry.size) : entry.size);
-    const volume = await statfs(this.root, { bigint: true });
-    if (volume.bavail * volume.bsize < needed + BigInt(this.options.reserveBytes))
-      throw new BackupFailure('vault_full', 'Not enough free space on the vault volume');
-    const shard = join(this.root, 'blobs', entry.id.slice(0, 2));
-    try {
-      await mkdir(shard, { mode: VAULT_DIRECTORY_MODE });
-    } catch (error) {
-      if (!hasCode(error, 'EEXIST')) throw error;
-    }
-    await writeDurably(this.blobPath(entry.id), source, {
+    await writeVaultBlob(this.root, this.blobPath(entry.id), entry, source, {
+      cipher,
+      reserveBytes: this.options.reserveBytes,
       cancellation,
-      expected: entry,
-      ...(cipher ? { cipher } : {}),
     });
   }
 
   async pointIds(): Promise<readonly string[]> {
     await this.identity();
-    const names = await readdir(join(this.root, 'points'));
-    return names
-      .filter((name) => pointName.test(name))
-      .sort()
-      .slice(0, MAX_POINTS);
+    return listPointIds(this.root);
   }
 
   async point(pointId: string): Promise<BackupManifest | null> {

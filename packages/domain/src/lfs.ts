@@ -70,14 +70,20 @@ export function parseLfsBatch(value: unknown, maxObjectBytes: number): LfsBatchR
   return { operation, objects };
 }
 
-/** A lock path: a file path of the git repository, under the same rules as file paths here. */
+/**
+ * A lock path: a file path of the git repository as git-lfs sends it, with `/` between
+ * segments. Unlike paths stored here it may hold `:` and `\`, which git allows on Linux and
+ * macOS; it only names the lock.
+ */
 export function requireLockPath(value: unknown): string {
   if (typeof value !== 'string') throw new LfsError(422, 'path is required');
   try {
-    return requireAssetPath(value);
+    // The rules of stored paths, without the two characters that only a file system refuses.
+    requireAssetPath(value.replaceAll(':', '_').replaceAll('\\', '_'));
   } catch {
     throw new LfsError(422, 'Invalid lock path');
   }
+  return value;
 }
 
 /** `refs/heads/…` as git-lfs sends it; locks are per repository, the ref is only reported. */

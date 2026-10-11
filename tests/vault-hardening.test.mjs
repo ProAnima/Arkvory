@@ -138,3 +138,11 @@ test('a key file that cannot be read is a missing key, not an unexpected failure
     code: 'vault_key_missing',
   });
 });
+
+test('a vault with more points than a listing holds refuses to list instead of cutting it', async (t) => {
+  const { vault, opened } = await setup(t);
+  const { mkdir } = await import('node:fs/promises');
+  // Prune keeps only the blobs of listed points: a cut list would delete those of the rest.
+  for (let index = 0; index <= 10000; index++) await mkdir(join(vault, 'points', randomUUID()));
+  await assert.rejects(opened.pointIds(), /more than 10000 points/);
+});

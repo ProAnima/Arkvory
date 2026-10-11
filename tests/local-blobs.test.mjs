@@ -118,6 +118,7 @@ test('a staged file becomes the blob without a copy, only with its own measured 
   const measured = { size: expected.size, sha256: expected.sha256 };
   // Measured while staging: adopted as is, a second name of the same file.
   const path = await stage(data);
+  const staged = await stat(path, { bigint: true });
   const id = randomUUID();
   await store.put(
     id,
@@ -125,14 +126,17 @@ test('a staged file becomes the blob without a copy, only with its own measured 
     stagedFile(path, () => chunks(data), measured),
     cancellation,
   );
-  const [staged, blob] = await Promise.all([
-    stat(path, { bigint: true }),
-    stat(join(root, 'blobs', id), { bigint: true }),
-  ]);
+  const blob = await stat(join(root, 'blobs', id), { bigint: true });
   assert.equal(blob.ino, staged.ino, 'no copy');
   assert.deepEqual(await readFile(join(root, 'blobs', id)), data);
+  // The staged name is gone: a retried write through it makes a new file, the blob stays.
+  await assert.rejects(stat(path), { code: 'ENOENT' });
+  await writeFile(path, 'a retry of the last chunk', { flag: 'w' });
+  assert.deepEqual(await readFile(join(root, 'blobs', id)), data);
+  assert.equal(blob.nlink, 1n, 'no other name reaches the published bytes');
   // Not measured (an appended OCI blob): hashed once in place, then adopted.
   const unmeasured = await stage(data);
+  const unmeasuredIno = (await stat(unmeasured, { bigint: true })).ino;
   const second = randomUUID();
   await store.put(
     second,
@@ -140,10 +144,7 @@ test('a staged file becomes the blob without a copy, only with its own measured 
     stagedFile(unmeasured, () => chunks(data)),
     cancellation,
   );
-  assert.equal(
-    (await stat(join(root, 'blobs', second), { bigint: true })).ino,
-    (await stat(unmeasured, { bigint: true })).ino,
-  );
+  assert.equal((await stat(join(root, 'blobs', second), { bigint: true })).ino, unmeasuredIno);
   // Bytes that differ from the declaration never become a blob.
   const other = Buffer.from('staged and adopted bytez');
   for (const [file, staged] of [
@@ -155,7 +156,14 @@ test('a staged file becomes the blob without a copy, only with its own measured 
       code: 'integrity_mismatch',
     });
     await assert.rejects(stat(join(root, 'blobs', refused)), { code: 'ENOENT' });
+    // A refused file is back under its staged name: the upload may still be completed.
+    assert.ok((await stat(file)).isFile());
   }
+  const { readdir } = await import('node:fs/promises');
+  assert.deepEqual(
+    (await readdir(join(root, 'raw-staging'))).filter((name) => name.includes('.adopting-')),
+    [],
+  );
   // No staged file (an empty OCI blob): written from the stream as before.
   const empty = Buffer.alloc(0);
   const third = randomUUID();
@@ -166,4 +174,30 @@ test('a staged file becomes the blob without a copy, only with its own measured 
     cancellation,
   );
   assert.equal((await readFile(join(root, 'blobs', third))).length, 0);
+});
+
+test('adopting a staged file needs no free space; copying the same bytes does', async (t) => {
+  const { stagedFile } = await import('../packages/infrastructure/dist/blob-files.js');
+  const { mkdir } = await import('node:fs/promises');
+  const root = await mkdtemp(join(tmpdir(), 'arkvory-blob-full-'));
+  t.after(() => removeTestDirectory(root));
+  // A reserve no volume has: every write that needs new space is refused.
+  const store = new LocalBlobStore(root, Number.MAX_SAFE_INTEGER);
+  await store.initialize();
+  await mkdir(join(root, 'raw-staging'));
+  const data = Buffer.from('bytes already on this volume');
+  const path = join(root, 'raw-staging', randomUUID());
+  await writeFile(path, data, { mode: 0o600 });
+  const expected = descriptor(data);
+  const id = randomUUID();
+  await store.put(
+    id,
+    expected,
+    stagedFile(path, () => chunks(data)),
+    cancellation,
+  );
+  assert.deepEqual(await readFile(join(root, 'blobs', id)), data);
+  await assert.rejects(store.put(randomUUID(), expected, chunks(data), cancellation), {
+    code: 'capacity_exceeded',
+  });
 });

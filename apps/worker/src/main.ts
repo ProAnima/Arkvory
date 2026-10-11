@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { getCACertificates } from 'node:tls';
 import { setTimeout as delay } from 'node:timers/promises';
 import { StorageService } from '@proanima/arkvory-application';
 import { ArkvoryError } from '@proanima/arkvory-domain';
@@ -86,6 +87,8 @@ try {
   const keyFile = process.env['ARKVORY_KEYS_FILE'];
   if (!keyFile) throw new Error('ARKVORY_KEYS_FILE is required');
   const mirrors = await readMirrorSettings(process.env['ARKVORY_MIRRORS_FILE']);
+  // Receivers trust what this process trusted before the mirror authorities were added.
+  const receiverAuthorities = getCACertificates('default');
   // Before the first request to a source: fetch reads the default authorities per connection.
   await trustMirrorCertificates(process.env['ARKVORY_MIRRORS_CA_FILE']);
   // Webhooks (ADR 0069): invalid files stop startup here, not at the first delivery.
@@ -93,7 +96,10 @@ try {
   const egress = createEgressPolicy(
     parseAllowedNetworks(process.env['ARKVORY_WEBHOOKS_ALLOW_PRIVATE']),
   );
-  const certificates = await readWebhookCertificates(process.env['ARKVORY_WEBHOOKS_CA_FILE']);
+  const certificates = await readWebhookCertificates(
+    process.env['ARKVORY_WEBHOOKS_CA_FILE'],
+    receiverAuthorities,
+  );
   // Mirror copies create uploads here, so they need the installation's capacity limit.
   const acquired = await workerResources(
     mirrors.length > 0 ? capacityBytes(process.env['ARKVORY_CAPACITY_BYTES']) : 0,
@@ -152,7 +158,7 @@ try {
     catalog,
     webhooks,
     egress,
-    ...(certificates ? { certificates } : {}),
+    certificates,
     stop: stop.signal,
     diagnostics,
   });

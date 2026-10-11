@@ -18,6 +18,6 @@ test('a failed migration rollback destroys its connection instead of returning a
       };
     },
   };
-  await assert.rejects(migrate(pool), (error) => error === failure);
+  await assert.rejects(migrate(pool, { schemaPool: pool }), (error) => error === failure);
   assert.equal(destroyed, true);
 });

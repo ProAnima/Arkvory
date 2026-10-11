@@ -1,6 +1,6 @@
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { createReadStream } from 'node:fs';
-import { link, open, stat } from 'node:fs/promises';
+import { link, open, rename, stat, unlink } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import { ArkvoryError } from '@proanima/arkvory-domain';
 import type { ArtifactDescriptor } from '@proanima/arkvory-domain';
@@ -89,8 +89,13 @@ export async function verifyFile(
  * A staged file on this volume becomes the blob by a second directory entry, not a copy
  * (ADR 0074). Its bytes are trusted only with the size and SHA-256 its staging area measured
  * while writing them; otherwise they are hashed once here. The file is synced before it
- * becomes visible. The caller removes the staged name afterwards and never writes through it
- * again. Returns false when the file is elsewhere (another volume, or none): then it is copied.
+ * becomes visible. Returns false when the file is elsewhere (another volume, or none): then it
+ * is copied.
+ *
+ * First the staged name moves to a private one, so nothing that opens the staged name later
+ * (a retried append, say) reaches the published bytes: it finds no file, or a new one. The
+ * private name is removed once the blob holds the file; when adoption fails before that, the
+ * file returns to the staged name unless a new file took it meanwhile.
  */
 export async function adoptStagedFile(
   staged: StagedFile,
@@ -106,20 +111,45 @@ export async function adoptStagedFile(
     throw error;
   }
   if (!file.isFile() || file.dev !== (await stat(dirname(target))).dev) return false;
+  const claimed = `${staged.stagedPath}.adopting-${randomUUID()}`;
+  try {
+    await rename(staged.stagedPath, claimed);
+  } catch (error) {
+    if (hasCode(error, 'ENOENT')) return false;
+    throw error;
+  }
+  try {
+    await adoptClaimed(claimed, staged.measured, expected, target, cancellation);
+  } catch (error) {
+    await link(claimed, staged.stagedPath).catch(() => undefined);
+    await unlink(claimed).catch(() => undefined);
+    throw error;
+  }
+  await unlink(claimed).catch(() => undefined);
+  return true;
+}
+
+async function adoptClaimed(
+  path: string,
+  measured: StagedFile['measured'],
+  expected: ArtifactDescriptor,
+  target: string,
+  cancellation: Cancellation,
+): Promise<void> {
+  const file = await stat(path);
   if (file.size !== expected.size)
     throw new ArkvoryError(
       'integrity_mismatch',
       'Uploaded size or SHA-256 differs from declaration',
     );
-  const { measured } = staged;
-  if (!measured) await verifyFile(staged.stagedPath, expected, cancellation);
+  if (!measured) await verifyFile(path, expected, cancellation);
   else if (measured.size !== expected.size || measured.sha256 !== expected.sha256)
     throw new ArkvoryError(
       'integrity_mismatch',
       'Uploaded size or SHA-256 differs from declaration',
     );
   // Write access: Windows flushes a file only through a handle that may write it.
-  const handle = await open(staged.stagedPath, 'r+');
+  const handle = await open(path, 'r+');
   try {
     await handle.sync();
   } finally {
@@ -127,11 +157,10 @@ export async function adoptStagedFile(
   }
   cancellation.throwIfAborted();
   try {
-    await link(staged.stagedPath, target);
+    await link(path, target);
   } catch (error) {
     if (!hasCode(error, 'EEXIST')) throw error;
     await verifyFile(target, expected, cancellation);
   }
   await syncDirectory(dirname(target));
-  return true;
 }

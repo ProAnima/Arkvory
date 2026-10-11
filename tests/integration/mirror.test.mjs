@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { randomBytes, randomUUID } from 'node:crypto';
+import { reopenMirrorUpload } from '@proanima/arkvory-infrastructure';
 import { base } from './fixture.mjs';
 import { call, content, key, never, pair, publish, upack } from './mirror-fixture.mjs';
 
@@ -161,6 +162,18 @@ test('a copy cancelled by cleanup while the source was away resumes; write grant
     `UPDATE arkvory_uploads SET status='cancelled', cancelled_at=now(), reclaimed=true,
        temp_cleaned=true, expires_at=now()-interval '1 day' WHERE id=$1`,
     [id],
+  );
+  // Its bytes were released: taking them again needs room, as a new upload would.
+  const row = (
+    await p.catalog.pool.query('SELECT repository, owner FROM arkvory_uploads WHERE id=$1', [id])
+  ).rows[0];
+  await assert.rejects(reopenMirrorUpload(p.catalog.pool, row.repository, id, row.owner, 1024), {
+    code: 'capacity_exceeded',
+  });
+  assert.equal(
+    (await p.catalog.pool.query('SELECT status FROM arkvory_uploads WHERE id=$1', [id])).rows[0]
+      .status,
+    'cancelled',
   );
   await p.settle();
   assert.deepEqual(await content(mirror, `/artifacts/${id}/content`), large);

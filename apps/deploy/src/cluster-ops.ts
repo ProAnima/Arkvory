@@ -1,14 +1,14 @@
 import { setTimeout as delay } from 'node:timers/promises';
 import { commandOutput } from './process.js';
 import { report } from './output.js';
-import { volumeState } from './replica-state.js';
+import { completeCopies, volumeState } from './replica-state.js';
 import { nodeMarker } from './cluster-node.js';
 
 /** Runs a cluster tool and returns its output; rejects on a non-zero exit. */
-export type Tool = (executable: string, args: string[]) => Promise<string>;
+export type Tool = (executable: string, args: string[], timeoutMs?: number) => Promise<string>;
 
-export const systemTool: Tool = (executable, args) =>
-  commandOutput(executable, args, undefined, undefined, { timeoutMs: 30000 });
+export const systemTool: Tool = (executable, args, timeoutMs = 30000) =>
+  commandOutput(executable, args, undefined, undefined, { timeoutMs });
 
 export interface CheckResult {
   readonly name: string;
@@ -143,7 +143,8 @@ async function waitFor(condition: () => Promise<boolean>, timeoutMs: number, wha
 /**
  * `arkvory cluster-switchover --to <node>`: a planned move of the active role. Pacemaker moves the
  * group by a temporary location constraint, which is cleared once Arkvory runs there; refused
- * unless both copies are complete, so the target holds every acknowledged write.
+ * unless the target itself holds a complete copy, so it holds every acknowledged write. (In ha-3
+ * two other complete copies would not do: the target may still be resynchronizing.)
  */
 export async function switchover(
   target: string | undefined,
@@ -155,12 +156,16 @@ export async function switchover(
     throw new Error(`${target} is not a cluster node`);
   const located = locatedOn(await tool('crm_resource', ['--resource', resource, '--locate']));
   if (located.includes(target)) throw new Error(`Arkvory already runs on ${target}`);
-  const volume = volumeState(
+  const copies = completeCopies(
     JSON.parse(await tool('drbdsetup', ['status', '--json', resource])),
     resource,
   );
-  if (volume.copies < 2)
-    throw new Error('A switchover needs both copies complete; wait for the resynchronization');
+  const here = (await tool('crm_node', ['-n'])).trim();
+  const complete = target === here ? copies.local : copies.peers.includes(target);
+  if (!complete || (copies.local ? 1 : 0) + copies.peers.length < 2)
+    throw new Error(
+      `${target} has no complete copy yet; wait for the resynchronization before a switchover`,
+    );
   await tool('crm_resource', ['--resource', resource, '--move', '--node', target]);
   try {
     await waitFor(
@@ -189,6 +194,7 @@ export async function fenceTest(node: string | undefined, tool: Tool = systemToo
     throw new Error(`${node} is not a cluster node`);
   if (locatedOn(await tool('crm_resource', ['--resource', resource, '--locate'])).includes(node))
     throw new Error(`${node} runs Arkvory; fence a standby or switch over first`);
-  await tool('stonith_admin', ['--reboot', node, '--timeout', '120']);
+  // The fencer may take its whole 120 s (IPMI and Redfish reboots are slow): wait for its answer.
+  await tool('stonith_admin', ['--reboot', node, '--timeout', '120'], 150_000);
   report('info', `${node} was fenced; it rejoins after its restart and resynchronizes`);
 }

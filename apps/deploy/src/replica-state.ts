@@ -22,12 +22,16 @@ const entries = (value: unknown, what: string): Entry[] => {
   });
 };
 
-export function volumeState(status: unknown, resource: string): VolumeState {
+/** Which nodes hold a complete copy: this one, and the peers by their DRBD connection name. */
+export function completeCopies(
+  status: unknown,
+  resource: string,
+): { readonly role: string; readonly local: boolean; readonly peers: readonly string[] } {
   const found = entries(status, 'resources').find((entry) => entry['name'] === resource);
   if (!found) throw new Error(`drbdsetup status: resource ${resource} is not configured`);
   const devices = entries(found['devices'], 'devices');
   if (devices.length === 0) throw new Error(`drbdsetup status: ${resource} has no volumes`);
-  const local = devices.every((device) => device['disk-state'] === 'UpToDate') ? 1 : 0;
+  const local = devices.every((device) => device['disk-state'] === 'UpToDate');
   const peers = entries(found['connections'] ?? [], 'connections').filter((connection) => {
     if (connection['connection-state'] !== 'Connected') return false;
     const volumes = entries(connection['peer_devices'] ?? [], 'peer devices');
@@ -40,9 +44,15 @@ export function volumeState(status: unknown, resource: string): VolumeState {
           volume['peer-client'] !== true,
       )
     );
-  }).length;
+  });
   const role = typeof found['role'] === 'string' ? found['role'] : 'Unknown';
-  return { role, copies: local + peers };
+  const names = peers.map((peer) => (typeof peer['name'] === 'string' ? peer['name'] : ''));
+  return { role, local, peers: names };
+}
+
+export function volumeState(status: unknown, resource: string): VolumeState {
+  const { role, local, peers } = completeCopies(status, resource);
+  return { role, copies: (local ? 1 : 0) + peers.length };
 }
 
 /** An operator's time-limited decision to acknowledge writes with one copy. */

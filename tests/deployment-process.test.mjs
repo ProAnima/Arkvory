@@ -122,8 +122,12 @@ test('a lock left by a process that no longer runs is taken over; anything uncer
   const gone = spawnSync(process.execPath, ['-e', 'process.stdout.write(String(process.pid))'], {
     encoding: 'utf8',
   }).stdout;
-  const lock = (fields) => JSON.stringify({ pid: Number(gone), host: hostname(), ...fields });
+  const lock = (fields) =>
+    JSON.stringify({ pid: Number(gone), host: hostname(), operation: 'updates-poll', ...fields });
   assert.equal(await staleLock(root, lock({}), false), true, 'its process is gone');
+  // configure keeps no journal: what it left half written waits for an operator.
+  for (const operation of ['configure', 'install', 'cluster-node', undefined])
+    assert.equal(await staleLock(root, lock({ operation }), false), false, String(operation));
   assert.equal(await staleLock(root, lock({ pid: process.pid }), false), false, 'still running');
   assert.equal(
     await staleLock(root, lock({ preserved: true }), false),
@@ -148,6 +152,26 @@ test('a lock left by a process that no longer runs is taken over; anything uncer
   await writeFile(join(root, 'operation.lock'), lock({}));
   assert.equal(await exclusive(root, async () => 'ran'), 'ran');
   await assert.rejects(access(join(root, 'operation.lock')), { code: 'ENOENT' });
+  // Two processes that find it stale at once: one takes it over, the other waits its turn.
+  await writeFile(join(root, 'operation.lock'), lock({}));
+  let inside = 0;
+  let overlapped = false;
+  const work = async () => {
+    inside += 1;
+    if (inside > 1) overlapped = true;
+    await delay(50);
+    inside -= 1;
+  };
+  await Promise.all([exclusive(root, work, 5000), exclusive(root, work, 5000)]);
+  assert.equal(overlapped, false);
+  // An interrupted configure is not waited for and not taken over.
+  await writeFile(join(root, 'operation.lock'), lock({ operation: 'configure' }));
+  const started = Date.now();
+  await assert.rejects(
+    exclusive(root, async () => {}, 10_000),
+    /Installation is locked/,
+  );
+  assert.ok(Date.now() - started < 2000);
 });
 
 test('an operator command waits for a running operation; a lock kept for an operator refuses at once', async (t) => {

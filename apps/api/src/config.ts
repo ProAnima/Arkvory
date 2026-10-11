@@ -124,19 +124,55 @@ async function readMirrors(env: NodeJS.ProcessEnv): Promise<readonly MirrorConfi
   );
 }
 
+function requiredIn(env: NodeJS.ProcessEnv, name: string): string {
+  const value = env[name];
+  if (!value) throw new Error(`Missing ${name}`);
+  return value;
+}
+function integerIn(env: NodeJS.ProcessEnv, name: string, fallback: number, maximum: number) {
+  const raw = env[name];
+  const result = raw === undefined ? fallback : Number(raw);
+  if (!Number.isSafeInteger(result) || result < 1 || result > maximum)
+    throw new Error(`Invalid ${name}`);
+  return result;
+}
+
+/** The download share of a gateway cluster; undefined for a single writer. */
+function readSharedDownloads(
+  env: NodeJS.ProcessEnv,
+  role: 'api' | 'reader',
+): SharedDownloadPolicy | undefined {
+  const clusterFields = [
+    'ARKVORY_GATEWAY_SLOTS',
+    'ARKVORY_GATEWAY_SLOT',
+    'ARKVORY_SHARED_DOWNLOAD_BYTES_PER_SECOND',
+    'ARKVORY_SHARED_DOWNLOAD_BYTES_PER_SECOND_PER_PRINCIPAL',
+  ];
+  if (!clusterFields.some((name) => env[name] !== undefined)) {
+    if (role === 'reader') throw new Error('Read gateway requires shared download configuration');
+    return undefined;
+  }
+  const slot = requiredIn(env, 'ARKVORY_GATEWAY_SLOT');
+  if (!/^(0|[1-9][0-9]?)$/.test(slot)) throw new Error('Invalid ARKVORY_GATEWAY_SLOT');
+  const sharedDownloads = {
+    slot: Number(slot),
+    slots: integerIn(env, 'ARKVORY_GATEWAY_SLOTS', 0, 16),
+    bytesPerSecond: byteRate(env, 'ARKVORY_SHARED_DOWNLOAD_BYTES_PER_SECOND'),
+    perPrincipalBytesPerSecond: byteRate(
+      env,
+      'ARKVORY_SHARED_DOWNLOAD_BYTES_PER_SECOND_PER_PRINCIPAL',
+    ),
+  };
+  downloadShare(sharedDownloads);
+  if ((role === 'api') !== (sharedDownloads.slot === 0))
+    throw new Error('Writer must use slot zero; readers use other slots');
+  return sharedDownloads;
+}
+
 export async function loadConfig(env: NodeJS.ProcessEnv): Promise<ServerConfig> {
-  const required = (name: string): string => {
-    const value = env[name];
-    if (!value) throw new Error(`Missing ${name}`);
-    return value;
-  };
-  const number = (name: string, fallback: number, maximum: number): number => {
-    const raw = env[name];
-    const result = raw === undefined ? fallback : Number(raw);
-    if (!Number.isSafeInteger(result) || result < 1 || result > maximum)
-      throw new Error(`Invalid ${name}`);
-    return result;
-  };
+  const required = (name: string) => requiredIn(env, name);
+  const number = (name: string, fallback: number, maximum: number) =>
+    integerIn(env, name, fallback, maximum);
   const databaseUrl = required('ARKVORY_DATABASE_URL');
   if (!/^postgres(?:ql)?:\/\//.test(databaseUrl))
     throw new ArkvoryError(
@@ -151,28 +187,7 @@ export async function loadConfig(env: NodeJS.ProcessEnv): Promise<ServerConfig> 
   const rate = (name: string) => byteRate(env, name);
   const role = env['ARKVORY_ROLE'] ?? 'api';
   if (role !== 'api' && role !== 'reader') throw new Error('Invalid ARKVORY_ROLE');
-  let sharedDownloads: SharedDownloadPolicy | undefined;
-  const clusterFields = [
-    'ARKVORY_GATEWAY_SLOTS',
-    'ARKVORY_GATEWAY_SLOT',
-    'ARKVORY_SHARED_DOWNLOAD_BYTES_PER_SECOND',
-    'ARKVORY_SHARED_DOWNLOAD_BYTES_PER_SECOND_PER_PRINCIPAL',
-  ];
-  if (clusterFields.some((name) => env[name] !== undefined)) {
-    const slot = required('ARKVORY_GATEWAY_SLOT');
-    if (!/^(0|[1-9][0-9]?)$/.test(slot)) throw new Error('Invalid ARKVORY_GATEWAY_SLOT');
-    sharedDownloads = {
-      slot: Number(slot),
-      slots: number('ARKVORY_GATEWAY_SLOTS', 0, 16),
-      bytesPerSecond: rate('ARKVORY_SHARED_DOWNLOAD_BYTES_PER_SECOND'),
-      perPrincipalBytesPerSecond: rate('ARKVORY_SHARED_DOWNLOAD_BYTES_PER_SECOND_PER_PRINCIPAL'),
-    };
-    downloadShare(sharedDownloads);
-    if ((role === 'api') !== (sharedDownloads.slot === 0))
-      throw new Error('Writer must use slot zero; readers use other slots');
-  }
-  if (role === 'reader' && !sharedDownloads)
-    throw new Error('Read gateway requires shared download configuration');
+  const sharedDownloads = readSharedDownloads(env, role);
   return {
     ...readUploadTimeouts(env),
     ...readOperability(env, { maxUploads, maxDownloads }),

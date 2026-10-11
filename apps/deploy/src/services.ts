@@ -25,7 +25,7 @@ import { setTimeout as delay } from 'node:timers/promises';
 import { healthReady } from './health.js';
 import { localTarget } from './local-api.js';
 import type { LocalTarget } from './local-api.js';
-import { windowsAdministrator } from './preflight.js';
+import { scheduleUpdater } from './updater-schedule.js';
 import { report } from './output.js';
 
 export class Services implements BackupServiceControl {
@@ -282,49 +282,8 @@ export class Services implements BackupServiceControl {
         'process.exit(0)',
       ]);
   }
-  async schedule(release: Release): Promise<void> {
-    const windows = process.platform === 'win32';
-    const manual =
-      'Register the host updater as administrator, or schedule updates-poll under the container engine owner.';
-    if (!windows) {
-      try {
-        await access('/run/systemd/system');
-      } catch {
-        report(
-          'warning',
-          'Host updater needs an external scheduler: run updates-poll every minute.',
-        );
-        return;
-      }
-      if (process.getuid?.() !== 0) {
-        report('warning', manual);
-        return;
-      }
-    } else if (this.state.mode === 'compose' && !(await windowsAdministrator())) {
-      // Same contract as a docker-group user on Linux: no SYSTEM task without elevation.
-      report('warning', manual);
-      return;
-    }
-    const script = join(
-      this.root,
-      'releases',
-      release.version,
-      'deploy',
-      windows ? 'schedule-windows.ps1' : 'schedule-linux.sh',
-    );
-    if (windows)
-      await command('powershell.exe', [
-        '-NoProfile',
-        '-NonInteractive',
-        '-ExecutionPolicy',
-        'Bypass',
-        '-File',
-        script,
-        '-Root',
-        this.root,
-        '-Node',
-        process.execPath,
-      ]);
-    else await command('bash', [script, this.root, process.execPath]);
+
+  schedule(release: Release): Promise<void> {
+    return scheduleUpdater(this.root, this.state, release);
   }
 }

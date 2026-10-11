@@ -1,9 +1,9 @@
 import { open, readdir, rm } from 'node:fs/promises';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { BackupFailure } from '@proanima/arkvory-domain';
 import type { VaultIdentity } from '@proanima/arkvory-domain';
 import { FileVault } from './file-vault.js';
-import { hasCode } from './fs-durability.js';
+import { hasCode, syncDirectory } from './fs-durability.js';
 import {
   addSlot,
   keyFileSource,
@@ -68,6 +68,8 @@ async function writeNewSecret(path: string, text: string): Promise<void> {
     throw error;
   }
   await handle.close();
+  // The key outlives a power loss together with the vault that needs it.
+  await syncDirectory(dirname(path));
 }
 
 async function removeIfPresent(path: string): Promise<void> {

@@ -12,7 +12,7 @@ Arkvory 클러스터는 사이트의 서버 한 대가 장애를 일으켜도 �
 ## 동작 방식 {#how-it-works}
 
 - **하나의 볼륨, 동기 복사본.** DRBD 9는 볼륨의 모든 쓰기를 쓰기가 완료되기 전에 다른 서버로 복사합니다(프로토콜 C). 설치 전체가 볼륨 위에 있습니다. 데이터베이스, 스토리지, 구성, 릴리스가 모두 포함됩니다. 카탈로그와 파일 바이트는 서로 어긋나지 않습니다.
-- **Pacemaker가 Arkvory를 실행할 위치를 결정합니다.** Corosync와 Pacemaker가 쿼럼을 유지하고, 활성 서버를 고르며, 다음 순서로 시작합니다. 볼륨, 파일 시스템, 데이터베이스, `arkvory-replica`, API, 워커, 백업 에이전트, 업데이트 타이머, 가상 IP 주소. Arkvory에는 자체 선출이 없습니다.
+- **Pacemaker가 Arkvory를 실행할 위치를 결정합니다.** Corosync와 Pacemaker가 쿼럼을 유지하고, 활성 서버를 고르며, 다음 순서로 시작합니다. 볼륨, 파일 시스템, 볼륨에 보관된 그대로의 서비스(`arkvory-units`), 데이터베이스, `arkvory-replica`, API, 워커, 백업 에이전트, 업데이트 타이머, 가상 IP 주소. Arkvory에는 자체 선출이 없습니다.
 - **펜싱은 필수입니다.** 다른 서버가 인계받기 전에 Pacemaker는 전원 장치(IPMI, iDRAC, iLO, Redfish, PDU) 또는 하이퍼바이저를 통해 장애 서버의 전원을 끕니다. 펜싱이 없으면 두 서버가 동시에 쓸 수 있습니다. 펜싱이 없는 클러스터는 시작되지 않습니다.
 - **확인된 모든 쓰기에 복사본 두 개.** Arkvory는 쓰기가 완전한 복사본 두 개 이상에 있을 때만 성공으로 응답합니다([쓰기와 복사본](#writes) 참조). 복사본이 없으면 쓰기는 멈추고 읽기는 계속됩니다.
 
@@ -71,7 +71,7 @@ Arkvory 클러스터는 사이트의 서버 한 대가 장애를 일으켜도 �
      --virtual-ip 10.0.0.100/24 --output /root/arkvory-plan
    ```
 
-   `ha-3`의 경우 `--nodes`에 서버 세 대를 나열하고 `--witness`는 생략합니다. 선택 사항: `--cluster-resource`, `--drbd-minor`(기본값 0), `--drbd-port`(기본값 7789), `--filesystem`(`xfs` 또는 `ext4`, 기본값 `xfs`). 이름은 서버의 호스트 이름이어야 합니다.
+   `ha-3`의 경우 `--nodes`에 서버 세 대를 나열하고 `--witness`는 생략합니다. 선택 사항: `--cluster-resource`, `--drbd-minor`(기본값 0), `--drbd-port`(기본값 7789), `--filesystem`(`xfs` 또는 `ext4`, 기본값 `xfs`). 이름은 서버의 호스트 이름이어야 합니다. 주소는 IPv4입니다.
 
 3. 감시 서버를 포함한 모든 서버의 `/etc/drbd.d/`에 `arkvory.res`를 복사합니다. 데이터 서버에서 메타데이터를 만들고 모든 서버에서 리소스를 올립니다.
 
@@ -124,7 +124,7 @@ Arkvory 클러스터는 사이트의 서버 한 대가 장애를 일으켜도 �
    umount /opt/proanima-arkvory && drbdadm secondary arkvory
    ```
 
-   `cluster-node`는 첫 번째 서버와 같은 사용자 ID와 그룹 ID로 서비스 계정을 만들고(볼륨의 파일은 이 계정의 소유입니다) 같은 서비스를 설치하며, 어느 것도 자동으로 시작되지 않습니다. 이미 다른 ID로 계정이 있으면 명령이 멈추고 설정해야 할 ID를 알려 줍니다.
+   `cluster-node`는 첫 번째 서버와 같은 사용자 ID와 그룹 ID로 서비스 계정을 만들고(볼륨의 파일은 이 계정의 소유입니다) 같은 서비스를 설치하며, 어느 것도 자동으로 시작되지 않습니다. 이미 다른 ID로 계정이 있으면 명령이 멈추고 설정해야 할 ID를 알려 줍니다. 서버가 활성이 될 때마다 `arkvory-units`가 먼저 볼륨에서 서비스를 가져오므로, 나중에 활성 서버에서 변경한 설정(예: 백업 보관소)도 장애 조치 후에 적용됩니다.
 
 8. 데이터 서버에서 `pcs`로 Corosync 클러스터를 설정합니다(`pcs host auth`, `pcs cluster setup`, `pcs cluster start --all`). Debian과 Ubuntu에서는 먼저 각 데이터 서버에서 `pcs cluster destroy`를 실행하십시오. 패키지가 샘플 Corosync 구성을 설치하는데, `pcs`가 이를 기존 클러스터로 간주하기 때문입니다. `pcs cluster enable`은 실행하지 마십시오. 펜싱된 서버는 사용자가 시작할 때만 다시 합류해야 합니다. `ha-2`의 경우 감시 서버도 인증하고 그 서버에서 `pcs qdevice setup model net --enable --start`를 실행하십시오. Debian과 Ubuntu에서는 패키지가 이미 자체 서비스 계정용으로 쿼럼 장치를 설정해 두었으므로, 그곳에서는 대신 `systemctl enable --now corosync-qnetd`를 실행하십시오.
 
@@ -164,7 +164,7 @@ root로 다음 명령을 실행하십시오. `cluster-status`와 `cluster-single
 
 ### 계획된 스위치오버 {#switchover}
 
-`cluster-switchover`는 Pacemaker에 그룹을 옮기도록 요청하고, Arkvory가 대상에서 실행될 때까지 최대 5분을 기다린 다음 임시 배치 규칙을 제거합니다. 이동하는 동안 이전 서버로의 연결이 끊기며, 클라이언트는 요청을 반복합니다. Arkvory는 스스로 되돌아가지 않습니다.
+`cluster-switchover`는 Pacemaker에 그룹을 옮기도록 요청하고, Arkvory가 대상에서 실행될 때까지 최대 5분을 기다린 다음 임시 배치 규칙을 제거합니다. 대상에 자체 완전한 복사본이 없는 동안(예: 재동기화 중)에는 거부됩니다. 이동하는 동안 이전 서버로의 연결이 끊기며, 클라이언트는 요청을 반복합니다. Arkvory는 스스로 되돌아가지 않습니다.
 
 ### 펜싱 테스트 {#fence-test}
 
@@ -172,7 +172,7 @@ root로 다음 명령을 실행하십시오. `cluster-status`와 `cluster-single
 
 ### 업데이트 {#updates}
 
-모든 데이터 서버에 새 패키지를 설치하십시오. 대기 서버에서는 릴리스가 볼륨에 있으므로 패키지가 프로그램 파일만 교체합니다. 활성 서버에서는 패키지가 릴리스를 적용합니다. Arkvory가 Pacemaker에 그룹을 건드리지 말라고 알리고, 서비스를 중지하고, 마이그레이션하고, 서비스를 시작하고, 준비될 때까지 기다린 다음 그룹을 돌려줍니다. 활성 서버에서는 자동 업데이트도 같은 방식으로 동작합니다.
+모든 데이터 서버에 새 패키지를 설치하십시오. 대기 서버에서는 릴리스가 볼륨에 있으므로 패키지가 프로그램 파일만 교체합니다. 활성 서버에서는 패키지가 릴리스를 적용합니다. Arkvory가 Pacemaker에 그룹을 건드리지 말라고 알리고, 서비스를 중지하고, 마이그레이션하고, 서비스를 시작하고, 준비될 때까지 기다린 다음 그룹을 돌려줍니다. 활성 서버에서는 자동 업데이트도 같은 방식으로 동작합니다. 업데이트와 그 롤백이 모두 실패하면 그룹은 관리되지 않는 상태로 남고 Pacemaker는 장애 조치를 하지 않습니다. 원인을 해결한 다음 `pcs resource cleanup arkvory`와 `pcs resource manage arkvory`를 실행하십시오.
 
 클러스터 서버에서 `systemctl`로 Arkvory 서비스를 시작하거나 중지하지 마십시오. Pacemaker가 이를 장애로 간주합니다. 전체 서비스를 계획적으로 중지하려면 `pcs resource disable arkvory`와 `pcs resource enable arkvory`를 사용하십시오.
 

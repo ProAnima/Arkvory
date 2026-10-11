@@ -87,6 +87,9 @@ export interface OciStaging {
   prune(seconds: number): Promise<void>;
 }
 
+/** An empty source: appending it only cuts the staged file at its offset. */
+async function* noBytes(): AsyncIterable<Uint8Array> {}
+
 type Storage = Pick<StorageService, 'artifact' | 'cancel' | 'create' | 'download' | 'upload'>;
 type UploadPath = { readonly repository: string; readonly image: string; readonly id: string };
 const hex = (digest: string) => digest.slice('sha256:'.length);
@@ -221,8 +224,17 @@ export class OciRegistry {
       const state = await this.upload(principal, path);
       authorizeAction(principal, path.repository, 'upload.complete', ['write']);
       const known = await this.index.blob(path.repository, digest);
-      if (!known || !(await this.available(principal, path.repository, known)))
+      if (!known || !(await this.available(principal, path.repository, known))) {
+        // Bytes past `received`, left by an interrupted PATCH, are not part of the blob.
+        await this.staging.append(
+          state.id,
+          state.received,
+          noBytes(),
+          state.received,
+          cancellation,
+        );
         await this.storeBlob(principal, state, digest, cancellation);
+      }
       await this.staging.remove(state.id);
       await this.index.endUpload(state.id);
     });
