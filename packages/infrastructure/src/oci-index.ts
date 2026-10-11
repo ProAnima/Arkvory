@@ -1,4 +1,5 @@
 import type { Pool, PoolClient } from 'pg';
+import { reservedBytesSql } from './upload-bytes.js';
 import {
   OciError,
   isOciDigest,
@@ -253,13 +254,12 @@ export class PostgresOciIndex implements OciIndex {
   async stagingRoom(repository: string, upload: string): Promise<number> {
     const result = await this.pool.query<{ total: string; repository: string | null }>(
       `SELECT
-         ($3::bigint - (SELECT COALESCE(sum(size),0) FROM arkvory_uploads WHERE NOT reclaimed)
+         ($3::bigint - (${reservedBytesSql})
            - (SELECT COALESCE(sum(received),0) FROM arkvory_oci_uploads WHERE id<>$2))::text
            AS total,
          ((SELECT (policy->>'quotaBytes')::numeric FROM arkvory_storage_policies
             WHERE repository=$1)
-           - (SELECT COALESCE(sum(size),0) FROM arkvory_uploads
-              WHERE repository=$1 AND NOT reclaimed)
+           - (${reservedBytesSql} WHERE repository=$1)
            - (SELECT COALESCE(sum(received),0) FROM arkvory_oci_uploads
               WHERE repository=$1 AND id<>$2))::text AS repository`,
       [repository, upload, String(this.capacityBytes)],

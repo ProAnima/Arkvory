@@ -353,3 +353,13 @@ test('a staged point is invisible until one atomic publication and never alters 
   await assert.rejects(vault.point(pointId), { code: 'invalid_manifest' });
   assert.ok(new BackupFailure('busy', 'x') instanceof Error);
 });
+
+test('every table the release excludes from a backup has a reason the manifest accepts', async () => {
+  const { excludedTables } = await import('../packages/infrastructure/dist/backup-tables.js');
+  const document = manifestDocument(manifest({ excludedTables: [...excludedTables] }));
+  // A reason the manifest refuses would fail every capture at its last step.
+  assert.deepEqual(
+    parseBackupManifest(JSON.parse(JSON.stringify(document))).excludedTables,
+    excludedTables,
+  );
+});

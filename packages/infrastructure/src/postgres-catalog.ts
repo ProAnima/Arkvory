@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { reservedBytesSql } from './upload-bytes.js';
 import { Pool } from 'pg';
 import {
   ArkvoryError,
@@ -57,6 +58,8 @@ function catalogPool(connectionString: string, max: number): Pool {
     connectionTimeoutMillis: 5000,
     statement_timeout: 10000,
     query_timeout: 15000,
+    // A transaction left open by a stuck caller is ended by the server, releasing its locks.
+    idle_in_transaction_session_timeout: 60000,
     keepAlive: true,
     keepAliveInitialDelayMillis: 10000,
   });
@@ -67,11 +70,16 @@ function catalogPool(connectionString: string, max: number): Pool {
 
 export class PostgresCatalog implements Catalog {
   readonly pool: Pool;
+  /**
+   * Long-lived sessions (storage ownership, download pins, the gateway lease): kept apart so they
+   * never take the connections of request queries (ADR 0073).
+   */
+  readonly sessions: Pool;
   private readonly locks: Pool;
   private claim: StorageOwnership | undefined;
   private claimAttempted = false;
   private claiming = false;
-  /** poolSize bounds query connections; ownership, lease and pin sessions hold up to three. */
+  /** poolSize bounds query connections; ownership, lease and pin sessions use `sessions`. */
   constructor(
     connectionString: string,
     readonly capacityBytes: number,
@@ -81,7 +89,24 @@ export class PostgresCatalog implements Catalog {
     if (!Number.isSafeInteger(poolSize) || poolSize < 4 || poolSize > 200)
       throw new Error('Invalid database pool size');
     this.pool = catalogPool(connectionString, poolSize);
+    this.sessions = catalogPool(connectionString, 3);
     this.locks = catalogPool(connectionString, maxWriters);
+  }
+
+  /** Connections of each pool: a growing waiting count means the pool is too small (ADR 0073). */
+  poolStats(): readonly { pool: string; connections: number; idle: number; waiting: number }[] {
+    return (
+      [
+        ['queries', this.pool],
+        ['sessions', this.sessions],
+        ['locks', this.locks],
+      ] as const
+    ).map(([pool, p]) => ({
+      pool,
+      connections: p.totalCount,
+      idle: p.idleCount,
+      waiting: p.waitingCount,
+    }));
   }
 
   get active(): boolean {
@@ -100,7 +125,7 @@ export class PostgresCatalog implements Catalog {
     this.claimAttempted = true;
     this.claiming = true;
     try {
-      this.claim = await claimStorageSession(this.pool, storageId, role, sharedDownloads);
+      this.claim = await claimStorageSession(this.sessions, storageId, role, sharedDownloads);
     } finally {
       this.claiming = false;
     }
@@ -136,7 +161,7 @@ export class PostgresCatalog implements Catalog {
       }
       // Capacity counts retained bytes only; catalog entries have no fixed count ceiling.
       const totals = await client.query<{ bytes: string }>(
-        'SELECT COALESCE(SUM(size), 0)::text AS bytes FROM arkvory_uploads WHERE NOT reclaimed',
+        `SELECT (${reservedBytesSql})::text AS bytes`,
       );
       const total = totals.rows[0];
       if (
@@ -150,7 +175,7 @@ export class PostgresCatalog implements Catalog {
         await client.query<{ quota: string | null; used: string }>(
           `
         SELECT p.policy->>'quotaBytes' AS quota,
-        (SELECT COALESCE(sum(size),0)::text FROM arkvory_uploads WHERE repository=$1 AND NOT reclaimed) AS used
+        (${reservedBytesSql} WHERE repository=$1)::text AS used
         FROM arkvory_storage_policies p WHERE p.repository=$1`,
           [input.repository],
         )
@@ -320,6 +345,6 @@ export class PostgresCatalog implements Catalog {
   }
   async close(): Promise<void> {
     await this.claim?.close();
-    await Promise.all([this.pool.end(), this.locks.end()]);
+    await Promise.all([this.pool.end(), this.sessions.end(), this.locks.end()]);
   }
 }

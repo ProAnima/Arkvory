@@ -283,7 +283,11 @@ test('migration preserves old asset history without inventing authors or timesta
   await assign(f, id, 0);
   await f.app.close();
   await f.catalog.pool.query(
-    `DROP TABLE arkvory_webhook_state;
+    `DROP TRIGGER arkvory_count_upload_bytes ON arkvory_uploads;
+     DROP FUNCTION arkvory_count_upload_bytes();
+     DROP FUNCTION arkvory_add_upload_bytes(varchar, text, bigint);
+     DROP TABLE arkvory_upload_bytes;
+     DROP TABLE arkvory_webhook_state;
      DROP TABLE arkvory_npm_tags, arkvory_npm_versions;
      DROP TABLE arkvory_lfs_locks, arkvory_lfs_objects;
      DROP TABLE arkvory_oci_uploads, arkvory_oci_references, arkvory_oci_tags,

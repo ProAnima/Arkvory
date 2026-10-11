@@ -3,7 +3,7 @@ import { ArkvoryError, capacityState } from '@proanima/arkvory-domain';
 import type { StoragePolicy } from '@proanima/arkvory-domain';
 import type { StorageEvent, StorageUsage } from '@proanima/arkvory-application';
 
-/** Bytes of a repository by upload state; reserved counts everything not yet reclaimed. */
+/** Bytes of a repository by upload state; reserved counts everything not yet reclaimed (ADR 0073). */
 export async function repositoryUsage(
   c: Pool | PoolClient,
   repository: string,
@@ -12,10 +12,10 @@ export async function repositoryUsage(
   const row = (
     await c.query<{ published: string; pending: string; retired: string; reserved: string }>(
       `SELECT
-    COALESCE(sum(size) FILTER(WHERE status='available' AND NOT reclaimed),0)::text AS published,
-    COALESCE(sum(size) FILTER(WHERE status='pending' AND NOT reclaimed),0)::text AS pending,
-    COALESCE(sum(size) FILTER(WHERE status='cancelled' AND NOT reclaimed),0)::text AS retired,
-    COALESCE(sum(size) FILTER(WHERE NOT reclaimed),0)::text AS reserved FROM arkvory_uploads WHERE repository=$1`,
+    COALESCE(sum(bytes) FILTER(WHERE status='available'),0)::text AS published,
+    COALESCE(sum(bytes) FILTER(WHERE status='pending'),0)::text AS pending,
+    COALESCE(sum(bytes) FILTER(WHERE status='cancelled'),0)::text AS retired,
+    COALESCE(sum(bytes),0)::text AS reserved FROM arkvory_upload_bytes WHERE repository=$1`,
       [repository],
     )
   ).rows[0];

@@ -1,4 +1,5 @@
 import type { PoolClient } from 'pg';
+import { recountUploadBytes } from './upload-bytes.js';
 import type { RestoreNormalization } from '@proanima/arkvory-application';
 
 /** Version of the transformation below; recorded in the security journal of the target. */
@@ -34,6 +35,11 @@ export async function normalizeRestore(
   );
   await client.query(`DELETE FROM arkvory_parts p USING arkvory_uploads u
     WHERE p.upload_id=u.id AND u.status<>'available'`);
+  // Counted by the trigger during the load; counted again from the rows when the schema has it.
+  const counts = await client.query<{ t: string | null }>(
+    "SELECT to_regclass('arkvory_upload_bytes')::text AS t",
+  );
+  if (counts.rows[0]?.t) await client.query(recountUploadBytes);
   const failedJobs = await count(
     `UPDATE arkvory_jobs SET status='failed', error_code='conflict', lease_until=NULL
      WHERE status IN ('queued','running')`,
