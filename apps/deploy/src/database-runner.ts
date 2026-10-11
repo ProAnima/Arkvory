@@ -69,6 +69,9 @@ export async function runDatabase(root: string): Promise<void> {
       'unix_socket_directories=',
       '-c',
       'password_encryption=scram-sha-256',
+      // API, write locks, worker, backup agent and read gateways share it (ADR 0073).
+      '-c',
+      'max_connections=200',
     ],
     { stdio: 'inherit', windowsHide: true },
   );

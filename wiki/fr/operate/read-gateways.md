@@ -30,7 +30,7 @@ Les autorisations de dépôt sont vérifiées à chaque lecture, comme sur le pr
 - **Les mêmes clés de service.** Donnez à chaque processus le même contenu de `ARKVORY_KEYS_FILE`, afin que les clés de fichier et leurs ID correspondent. Les clés de service gérées vivent dans la base de données, elles correspondent donc d’elles-mêmes.
 - **Son propre port.** Chaque processus sur le même hôte a besoin de son propre `ARKVORY_PORT`.
 - **Une vue en lecture seule des fichiers.** Lorsque vous le pouvez, montez le répertoire de stockage en lecture seule pour la passerelle. Le refus HTTP ne remplace pas les droits du système d’exploitation. Notez que la passerelle écrit quand même dans la base de données : les baux, les diagnostics de stockage, l’heure de dernière utilisation des jetons d’accès personnels et les verrous qui protègent les fichiers en cours de lecture.
-- **Connexions à la base de données.** Chaque passerelle a besoin d’une connexion de plus que `ARKVORY_DATABASE_POOL_SIZE`. Comptez-les dans `max_connections` de PostgreSQL.
+- **Connexions à la base de données.** Chaque passerelle a besoin de trois connexions de plus que `ARKVORY_DATABASE_POOL_SIZE`. Comptez-les dans `max_connections` de PostgreSQL.
 
 ## Exécuter une passerelle {#run}
 

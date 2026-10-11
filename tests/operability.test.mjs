@@ -240,7 +240,7 @@ test('public readiness is single-flight, cached and reports draining immediately
 test('operability settings validate pool, request budget, reserve, access log and drain window', async () => {
   const transfers = { maxUploads: 2, maxDownloads: 16 };
   assert.deepEqual(readOperability({}, transfers), {
-    databasePoolSize: 10,
+    databasePoolSize: 20,
     maxRequests: 128,
     storageReserveBytes: 1024 ** 3,
     accessLog: true,

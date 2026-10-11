@@ -47,7 +47,7 @@ Restart-Service Arkvoryapi, Arkvoryworker, Arkvorybackup
 | `ARKVORY_HOST`               | API                                           | `127.0.0.1`       | 待ち受けるアドレス。インストーラーは`127.0.0.1`を書き込みます。Docker Composeではコンテナー内で`0.0.0.0`になり、ポートはホストのループバックでのみ公開されます。 |
 | `ARKVORY_PORT`               | API                                           | `8080`            | TCPポート。1〜65535。                                                                                                                                            |
 | `ARKVORY_WEB_DIR`            | API                                           | `apps/web/public` | Webコンソールのファイルがあるディレクトリ。ランチャーが、起動のたびに現在のリリースを指すように設定します。                                                      |
-| `ARKVORY_DATABASE_POOL_SIZE` | API                                           | `10`              | APIの接続プールのサイズ。4〜200。3つまでの接続は、常に使用中です。                                                                                               |
+| `ARKVORY_DATABASE_POOL_SIZE` | API                                           | `20`              | API のクエリ用接続プールのサイズ（4–200）。長時間のセッションは 3 接続の別プールを使います。                                                                     |
 
 ## ストレージと制限 {#storage-and-limits}
 
@@ -63,9 +63,9 @@ Restart-Service Arkvoryapi, Arkvoryworker, Arkvorybackup
 
 | 変数                                              | 読み取るプロセス | 既定値    | 意味                                                                                                                                                                                              |
 | ------------------------------------------------- | ---------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ARKVORY_MAX_UPLOADS`                             | API              | `2`       | 同時に実行されるアップロードの数。1〜32。                                                                                                                                                         |
+| `ARKVORY_MAX_UPLOADS`                             | API              | `8`       | 同時に実行されるアップロードの数。1〜32。                                                                                                                                                         |
 | `ARKVORY_MAX_DOWNLOADS`                           | API              | `16`      | 同時に実行されるダウンロードの数。1〜256。                                                                                                                                                        |
-| `ARKVORY_MAX_UPLOADS_PER_PRINCIPAL`               | API              | `1`       | 1つのアカウントまたはキーが同時に実行できるアップロードの数。アップロード全体の上限以下。                                                                                                         |
+| `ARKVORY_MAX_UPLOADS_PER_PRINCIPAL`               | API              | `4`       | 1つのアカウントまたはキーが同時に実行できるアップロードの数。アップロード全体の上限以下。                                                                                                         |
 | `ARKVORY_MAX_DOWNLOADS_PER_PRINCIPAL`             | API              | `4`       | 1つのアカウントまたはキーが同時に実行できるダウンロードの数。ダウンロード全体の上限以下。                                                                                                         |
 | `ARKVORY_TRANSFER_QUEUE_LIMIT`                    | API              | `64`      | 空きスロットを待てる転送の数。1〜1024。                                                                                                                                                           |
 | `ARKVORY_TRANSFER_QUEUE_PER_PRINCIPAL`            | API              | `8`       | 1つのアカウントまたはキーの、待機中の転送の数。キューの上限以下。                                                                                                                                 |

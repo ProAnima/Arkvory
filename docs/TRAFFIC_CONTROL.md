@@ -6,9 +6,9 @@
 
 | Переменная                                      | По умолчанию         | Значение                                   |
 | ----------------------------------------------- | -------------------- | ------------------------------------------ |
-| ARKVORY_MAX_UPLOADS                             | 2                    | Активные изменяющие upload-сценарии, 1..32 |
+| ARKVORY_MAX_UPLOADS                             | 8                    | Активные изменяющие upload-сценарии, 1..32 |
 | ARKVORY_MAX_DOWNLOADS                           | 16                   | Активные downloads, 1..256                 |
-| ARKVORY_MAX_UPLOADS_PER_PRINCIPAL               | 1                    | Не больше ARKVORY_MAX_UPLOADS              |
+| ARKVORY_MAX_UPLOADS_PER_PRINCIPAL               | min(4, uploads)      | Не больше ARKVORY_MAX_UPLOADS              |
 | ARKVORY_MAX_DOWNLOADS_PER_PRINCIPAL             | min(4, maxDownloads) | Не больше ARKVORY_MAX_DOWNLOADS            |
 | ARKVORY_UPLOAD_BYTES_PER_SECOND                 | 0                    | Общая скорость приёма payload              |
 | ARKVORY_DOWNLOAD_BYTES_PER_SECOND               | 0                    | Общая скорость выдачи payload              |

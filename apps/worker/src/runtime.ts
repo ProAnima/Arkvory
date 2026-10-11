@@ -13,7 +13,7 @@ export function capacityBytes(value: string | undefined): number {
   return Number(value);
 }
 
-export async function resources(role: 'worker' | 'maintenance', capacity = 0) {
+export async function resources(role: 'worker' | 'maintenance', capacity = 0, writers = 2) {
   const databaseUrl = process.env['ARKVORY_DATABASE_URL'];
   const root = process.env['ARKVORY_DATA_DIR'];
   if (!databaseUrl || !root)
@@ -22,7 +22,7 @@ export async function resources(role: 'worker' | 'maintenance', capacity = 0) {
     root,
     storageReserveBytes(process.env['ARKVORY_STORAGE_RESERVE_BYTES']),
   );
-  const catalog = new PostgresCatalog(databaseUrl, capacity, 2);
+  const catalog = new PostgresCatalog(databaseUrl, capacity, writers);
   try {
     await catalog.ready();
     await blobs.ready();
@@ -47,11 +47,12 @@ export async function workerResources(
   stop: AbortSignal,
   onStandby: () => void,
   retryMs = standbyRetryMs,
+  writers = 2,
 ): Promise<Awaited<ReturnType<typeof resources>> | null> {
   let reported = false;
   while (!stop.aborted) {
     try {
-      return await resources('worker', capacity);
+      return await resources('worker', capacity, writers);
     } catch (error) {
       if (!(error instanceof WorkerSingletonBusy)) throw error;
       if (!reported) onStandby();

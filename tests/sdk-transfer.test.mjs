@@ -387,3 +387,39 @@ test('large uploads complete through the worker and surface a failed job', async
   };
   await assert.rejects(completeWithWorker(waiting, attempts, 'releases', 'u', stop.signal, 1));
 });
+
+test('retries after Retry-After are spread, so refused clients do not return in step', async () => {
+  const { retryDelay } = await import('../packages/sdk/dist/transfer.js');
+  const policy = { baseDelayMs: 100, maxDelayMs: 10000 };
+  // Never before the server's time; up to half of it later, never beyond the policy.
+  assert.equal(
+    retryDelay(policy, 1, 2000, () => 0),
+    2000,
+  );
+  assert.equal(
+    retryDelay(policy, 1, 2000, () => 0.999999),
+    2999,
+  );
+  assert.equal(
+    retryDelay({ baseDelayMs: 100, maxDelayMs: 2500 }, 1, 2000, () => 0.9),
+    2500,
+  );
+  // A Retry-After above the policy stays above it: the caller gives up instead of retrying early.
+  assert.equal(
+    retryDelay({ baseDelayMs: 100, maxDelayMs: 1000 }, 1, 120000, () => 0),
+    120000,
+  );
+  const spread = new Set(
+    Array.from({ length: 50 }, () => retryDelay(policy, 1, 2000, Math.random)),
+  );
+  assert.ok(spread.size > 10, 'clients refused together come back at different times');
+  // Without Retry-After: jittered exponential backoff.
+  assert.equal(
+    retryDelay(policy, 3, 0, () => 0),
+    200,
+  );
+  assert.equal(
+    retryDelay(policy, 3, 0, () => 1),
+    400,
+  );
+});

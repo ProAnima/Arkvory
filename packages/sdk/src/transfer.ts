@@ -170,21 +170,39 @@ export class TransferAttempts {
         this.retries >= this.policy.maxRetries
       )
         throw failure;
-      const backoff = Math.min(
-        this.policy.maxDelayMs,
-        this.policy.baseDelayMs * 2 ** (attempt - 1),
-      );
-      const wait = Math.max(
-        Math.floor(backoff / 2 + (Math.random() * backoff) / 2),
+      const wait = retryDelay(
+        this.policy,
+        attempt,
         failure instanceof ArkvoryHttpError ? (failure.retryAfterMs ?? 0) : 0,
+        Math.random,
       );
-      // Never retry earlier than Retry-After to fit our local budget.
       if (wait > this.policy.maxDelayMs) throw failure;
       this.retries++;
       this.options.onRetry?.({ attempt, delayMs: wait });
       await delay(wait, this.options.signal);
     }
   }
+}
+
+/**
+ * Pause before retry `attempt`: jittered exponential backoff, never earlier than the server's
+ * Retry-After and jittered after it too, or every client the server refused returns at once.
+ * A result above maxDelayMs means the retry does not fit the policy.
+ */
+export function retryDelay(
+  policy: { readonly baseDelayMs: number; readonly maxDelayMs: number },
+  attempt: number,
+  retryAfterMs: number,
+  random: () => number,
+): number {
+  const backoff = Math.min(policy.maxDelayMs, policy.baseDelayMs * 2 ** (attempt - 1));
+  const jittered = Math.floor(backoff / 2 + (random() * backoff) / 2);
+  if (retryAfterMs <= 0) return jittered;
+  const after = Math.min(
+    Math.max(retryAfterMs, policy.maxDelayMs),
+    Math.floor(retryAfterMs + (random() * retryAfterMs) / 2),
+  );
+  return Math.max(jittered, after);
 }
 
 export async function readNetwork(

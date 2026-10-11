@@ -58,6 +58,13 @@ export interface MetricSources {
     refresh(failed: () => void): Promise<void>;
     register(registry: MetricsRegistry): void;
   };
+  /** Connections of the database pools, sampled at scrape time. */
+  readonly databasePools?: () => readonly {
+    readonly pool: string;
+    readonly connections: number;
+    readonly idle: number;
+    readonly waiting: number;
+  }[];
   /** Monotonic milliseconds for durations and cache age. */
   readonly now: () => number;
   readonly startedAtSeconds: number;
@@ -110,6 +117,7 @@ export class ApiMetrics {
     this.registerTls();
     this.registerTransfers();
     this.registerJobs();
+    this.registerDatabasePools();
     sources.backup?.register(this.registry);
     sources.mirrors?.register(this.registry);
     sources.webhooks?.register(this.registry);
@@ -167,6 +175,28 @@ export class ApiMetrics {
         this.refreshing = undefined;
       });
     return this.refreshing;
+  }
+
+  private registerDatabasePools(): void {
+    const pools = this.sources.databasePools;
+    if (!pools) return;
+    for (const [name, help, field] of [
+      ['arkvory_database_pool_connections', 'Open connections of a database pool.', 'connections'],
+      ['arkvory_database_pool_idle', 'Idle connections of a database pool.', 'idle'],
+      [
+        'arkvory_database_pool_waiting',
+        'Callers waiting for a connection of a database pool; above zero for long, the pool is too small.',
+        'waiting',
+      ],
+    ] as const)
+      this.registry.sampled({
+        name,
+        help,
+        type: 'gauge',
+        labels: ['pool'],
+        collect: () =>
+          pools().map((sample) => ({ labels: { pool: sample.pool }, value: sample[field] })),
+      });
   }
 
   private registerTls(): void {

@@ -145,7 +145,7 @@ export async function loadConfig(env: NodeJS.ProcessEnv): Promise<ServerConfig> 
     );
   const keys = await readKeys(required('ARKVORY_KEYS_FILE'));
   const mirrors = await readMirrors(env);
-  const maxUploads = number('ARKVORY_MAX_UPLOADS', 2, 32);
+  const maxUploads = number('ARKVORY_MAX_UPLOADS', 8, 32);
   const maxDownloads = number('ARKVORY_MAX_DOWNLOADS', 16, 256);
   const transferQueueLimit = number('ARKVORY_TRANSFER_QUEUE_LIMIT', 64, 1024);
   const rate = (name: string) => byteRate(env, name);
@@ -206,7 +206,11 @@ export async function loadConfig(env: NodeJS.ProcessEnv): Promise<ServerConfig> 
       transferQueueLimit,
     ),
     transferQueueTimeoutMs: number('ARKVORY_TRANSFER_QUEUE_TIMEOUT_MS', 20000, 120000),
-    maxUploadsPerPrincipal: number('ARKVORY_MAX_UPLOADS_PER_PRINCIPAL', 1, maxUploads),
+    maxUploadsPerPrincipal: number(
+      'ARKVORY_MAX_UPLOADS_PER_PRINCIPAL',
+      Math.min(4, maxUploads),
+      maxUploads,
+    ),
     maxDownloadsPerPrincipal: number(
       'ARKVORY_MAX_DOWNLOADS_PER_PRINCIPAL',
       Math.min(4, maxDownloads),

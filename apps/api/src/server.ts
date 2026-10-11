@@ -1,5 +1,5 @@
 import { DiagnosticLogger, processIdentity } from '@proanima/arkvory-infrastructure';
-import type { ProcessIdentity } from '@proanima/arkvory-infrastructure';
+import type { PostgresCatalog, ProcessIdentity } from '@proanima/arkvory-infrastructure';
 import type { ServerConfig } from './config.js';
 import { ApiRuntime } from './api-runtime.js';
 import { createApiServices } from './api-services.js';
@@ -80,11 +80,19 @@ function registerMaintenance(
 function processMetrics(
   sources: Pick<MetricSources, 'identity' | 'transfers' | 'diagnostics' | 'jobs' | 'backup'>,
   activeRequests: () => number,
-  certificate: { readonly notAfterMs: number } | undefined,
-  replica: ReplicaGuard | undefined,
+  {
+    certificate,
+    replica,
+    catalog,
+  }: {
+    readonly certificate: { readonly notAfterMs: number } | undefined;
+    readonly replica: ReplicaGuard | undefined;
+    readonly catalog: Pick<PostgresCatalog, 'poolStats'>;
+  },
 ): ApiMetrics {
   return new ApiMetrics({
     ...sources,
+    databasePools: () => catalog.poolStats(),
     ...(replica ? { replica } : {}),
     activeRequests,
     now: () => performance.now(),
@@ -159,8 +167,7 @@ export async function createServer(config: ServerConfig, lifecycle: ServerLifecy
       processMetrics(
         { identity, transfers: runtime.transfers, diagnostics, ...services.metricSources },
         () => drain.activeRequests,
-        certificate,
-        replica,
+        { certificate, replica, catalog: runtime.catalog },
       ),
       () => performance.now(),
     );

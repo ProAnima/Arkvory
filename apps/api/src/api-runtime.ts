@@ -38,11 +38,11 @@ export class ApiRuntime {
       config.databaseUrl,
       config.capacityBytes,
       config.maxUploads,
-      config.databasePoolSize ?? 10,
+      config.databasePoolSize ?? 20,
     );
-    this.pins = new PostgresContentPins(this.catalog.pool);
+    this.pins = new PostgresContentPins(this.catalog.sessions);
     this.lease = config.sharedDownloads
-      ? new PostgresDownloadLease(this.catalog.pool, config.sharedDownloads)
+      ? new PostgresDownloadLease(this.catalog.sessions, config.sharedDownloads)
       : undefined;
   }
 

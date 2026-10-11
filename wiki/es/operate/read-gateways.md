@@ -30,7 +30,7 @@ Los permisos de los repositorios se comprueban en cada lectura, igual que en el 
 - **Las mismas claves de servicio.** Dé a cada proceso el mismo contenido de `ARKVORY_KEYS_FILE`, para que las claves de archivo y sus ID coincidan. Las claves de servicio administradas están en la base de datos, así que coinciden por sí solas.
 - **Un puerto propio.** Cada proceso del mismo equipo necesita su propio `ARKVORY_PORT`.
 - **Una vista de solo lectura de los archivos.** Cuando pueda, monte el directorio de almacenamiento en modo de solo lectura para la puerta de enlace. El rechazo HTTP no sustituye a los permisos del sistema operativo. Tenga en cuenta que la puerta de enlace sigue escribiendo en la base de datos: los leases, los diagnósticos del almacenamiento, la hora del último uso de los tokens personales y los bloqueos que protegen los archivos que se están leyendo.
-- **Conexiones a la base de datos.** Cada puerta de enlace necesita una conexión más que `ARKVORY_DATABASE_POOL_SIZE`. Inclúyalas en `max_connections` de PostgreSQL.
+- **Conexiones a la base de datos.** Cada puerta de enlace necesita tres conexiones más que `ARKVORY_DATABASE_POOL_SIZE`. Inclúyalas en `max_connections` de PostgreSQL.
 
 ## Ejecutar una puerta de enlace {#run}
 

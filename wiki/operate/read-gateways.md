@@ -30,7 +30,7 @@ Repository permissions are checked on every read, as on the writer. Sessions, pe
 - **The same service keys.** Give every process the same `ARKVORY_KEYS_FILE` content, so the file keys and their IDs match. Managed service keys live in the database, so they match by themselves.
 - **Own port.** Every process on the same host needs its own `ARKVORY_PORT`.
 - **A read-only view of the files.** Where you can, mount the storage directory read-only for the gateway. The HTTP refusal does not replace operating system rights. Note that the gateway still writes to the database: leases, storage diagnostics, the last-use time of personal tokens and the locks that protect files being read.
-- **Database connections.** Every gateway needs one more connection than `ARKVORY_DATABASE_POOL_SIZE`. Count them in `max_connections` of PostgreSQL.
+- **Database connections.** Every gateway needs three more connections than `ARKVORY_DATABASE_POOL_SIZE`. Count them in `max_connections` of PostgreSQL.
 
 ## Run a gateway {#run}
 

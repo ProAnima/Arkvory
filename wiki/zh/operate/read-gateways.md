@@ -30,7 +30,7 @@ description: '在同一台服务器和存储上运行额外的仅下载 API 进�
 - **相同的服务密钥。** 为每个进程提供相同的 `ARKVORY_KEYS_FILE` 内容，使文件密钥及其 ID 一致。受管服务密钥存放在数据库中，因此它们自身就是一致的。
 - **独立端口。** 同一主机上的每个进程都需要自己的 `ARKVORY_PORT`。
 - **文件的只读视图。** 如果可以，请为网关以只读方式挂载存储目录。HTTP 拒绝不能替代操作系统权限。请注意，网关仍会写入数据库：租约、存储诊断、个人令牌的最后使用时间，以及保护正在读取的文件的锁。
-- **数据库连接。** 每个网关需要比 `ARKVORY_DATABASE_POOL_SIZE` 多一个连接。请把它们计入 PostgreSQL 的 `max_connections`。
+- **数据库连接。** 每个网关需要比 `ARKVORY_DATABASE_POOL_SIZE` 多三个连接。请把它们计入 PostgreSQL 的 `max_connections`。
 
 ## 运行网关 {#run}
 

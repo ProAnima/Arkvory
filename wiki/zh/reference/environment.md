@@ -47,7 +47,7 @@ Restart-Service Arkvoryapi, Arkvoryworker, Arkvorybackup
 | `ARKVORY_HOST`               | API                      | `127.0.0.1`       | 监听的地址。安装程序写入 `127.0.0.1`；在 Docker Compose 中，容器内为 `0.0.0.0`，端口只发布在主机的回环地址上。 |
 | `ARKVORY_PORT`               | API                      | `8080`            | TCP 端口，1–65535。                                                                                            |
 | `ARKVORY_WEB_DIR`            | API                      | `apps/web/public` | 包含 Web 控制台文件的目录。启动器每次启动时都会把它设置为当前发行版。                                          |
-| `ARKVORY_DATABASE_POOL_SIZE` | API                      | `10`              | API 连接池的大小，4–200。最多有三个连接始终处于占用状态。                                                      |
+| `ARKVORY_DATABASE_POOL_SIZE` | API                      | `20`              | API 查询连接池的大小，4–200。长时间会话使用单独的 3 个连接的池。                                               |
 
 ## 存储与限制 {#storage-and-limits}
 
@@ -63,9 +63,9 @@ Restart-Service Arkvoryapi, Arkvoryworker, Arkvorybackup
 
 | 变量                                              | 读取方 | 默认值    | 含义                                                                                                                |
 | ------------------------------------------------- | ------ | --------- | ------------------------------------------------------------------------------------------------------------------- |
-| `ARKVORY_MAX_UPLOADS`                             | API    | `2`       | 同时运行的上传数，1–32。                                                                                            |
+| `ARKVORY_MAX_UPLOADS`                             | API    | `8`       | 同时运行的上传数，1–32。                                                                                            |
 | `ARKVORY_MAX_DOWNLOADS`                           | API    | `16`      | 同时运行的下载数，1–256。                                                                                           |
-| `ARKVORY_MAX_UPLOADS_PER_PRINCIPAL`               | API    | `1`       | 单个账户或密钥同时进行的上传数，不超过上传总数限制。                                                                |
+| `ARKVORY_MAX_UPLOADS_PER_PRINCIPAL`               | API    | `4`       | 单个账户或密钥同时进行的上传数，不超过上传总数限制。                                                                |
 | `ARKVORY_MAX_DOWNLOADS_PER_PRINCIPAL`             | API    | `4`       | 单个账户或密钥同时进行的下载数，不超过下载总数限制。                                                                |
 | `ARKVORY_TRANSFER_QUEUE_LIMIT`                    | API    | `64`      | 可以等待空闲槽位的传输数，1–1024。                                                                                  |
 | `ARKVORY_TRANSFER_QUEUE_PER_PRINCIPAL`            | API    | `8`       | 单个账户或密钥的等待中传输数，不超过队列上限。                                                                      |

@@ -24,7 +24,7 @@ import {
   watchdogSeconds,
 } from '@proanima/arkvory-infrastructure';
 import type { LogLevel, PostgresJobLease } from '@proanima/arkvory-infrastructure';
-import { capacityBytes, workerResources } from './runtime.js';
+import { capacityBytes, standbyRetryMs, workerResources } from './runtime.js';
 import { runMirrors } from './mirror-loop.js';
 import { runWebhooks } from './webhook-loop.js';
 import { processJob, retireExhausted } from './completion.js';
@@ -101,6 +101,9 @@ try {
     () => {
       diagnostics.write({ level: 'info', component: 'worker', code: 'worker.standby' });
     },
+    standbyRetryMs,
+    // Every mirror holds a write lock for a whole part copy: one connection each (ADR 0073).
+    2 + Math.min(mirrors.length, 16),
   );
   if (!acquired) throw new StoppedOnStandby();
   const { catalog, blobs } = acquired;

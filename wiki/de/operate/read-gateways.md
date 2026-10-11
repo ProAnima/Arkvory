@@ -30,7 +30,7 @@ Repository-Berechtigungen werden bei jedem Lesezugriff geprüft, wie auf dem Wri
 - **Dieselben Dienstschlüssel.** Geben Sie jedem Prozess denselben Inhalt von `ARKVORY_KEYS_FILE`, damit die Dateischlüssel und ihre IDs übereinstimmen. Verwaltete Dienstschlüssel liegen in der Datenbank und stimmen von selbst überein.
 - **Eigener Port.** Jeder Prozess auf demselben Host braucht seinen eigenen `ARKVORY_PORT`.
 - **Eine schreibgeschützte Sicht auf die Dateien.** Binden Sie das Speicherverzeichnis, wo möglich, für das Gateway schreibgeschützt ein. Die HTTP-Ablehnung ersetzt keine Betriebssystemrechte. Beachten Sie, dass das Gateway weiterhin in die Datenbank schreibt: Leases, Speicherdiagnosen, die letzte Verwendungszeit persönlicher Token und die Sperren, die Dateien während des Lesens schützen.
-- **Datenbankverbindungen.** Jedes Gateway braucht eine Verbindung mehr als `ARKVORY_DATABASE_POOL_SIZE`. Zählen Sie sie in `max_connections` von PostgreSQL ein.
+- **Datenbankverbindungen.** Jedes Gateway braucht drei Verbindungen mehr als `ARKVORY_DATABASE_POOL_SIZE`. Zählen Sie sie in `max_connections` von PostgreSQL ein.
 
 ## Ein Gateway ausführen {#run}
 

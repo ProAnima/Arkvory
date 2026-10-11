@@ -30,7 +30,7 @@ As permissões de repositório são verificadas a cada leitura, como no escritor
 - **As mesmas chaves de serviço.** Dê a todos os processos o mesmo conteúdo de `ARKVORY_KEYS_FILE`, para que as chaves de arquivo e seus IDs coincidam. As chaves de serviço gerenciadas vivem no banco de dados, então coincidem por si sós.
 - **Porta própria.** Todo processo no mesmo host precisa de sua própria `ARKVORY_PORT`.
 - **Uma visão somente leitura dos arquivos.** Onde puder, monte o diretório de armazenamento como somente leitura para o gateway. A recusa HTTP não substitui os direitos do sistema operacional. Observe que o gateway ainda grava no banco de dados: leases, diagnósticos de armazenamento, o horário de último uso de tokens pessoais e os bloqueios que protegem arquivos que estão sendo lidos.
-- **Conexões de banco de dados.** Todo gateway precisa de uma conexão a mais que `ARKVORY_DATABASE_POOL_SIZE`. Conte-as em `max_connections` do PostgreSQL.
+- **Conexões de banco de dados.** Todo gateway precisa de três conexões a mais que `ARKVORY_DATABASE_POOL_SIZE`. Conte-as em `max_connections` do PostgreSQL.
 
 ## Executar um gateway {#run}
 

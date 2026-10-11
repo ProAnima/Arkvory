@@ -49,7 +49,7 @@ export function readOperability(
   if (maxRequests <= transferSlots)
     throw new Error('ARKVORY_MAX_REQUESTS must exceed ARKVORY_MAX_UPLOADS + ARKVORY_MAX_DOWNLOADS');
   return {
-    databasePoolSize: integer(env, 'ARKVORY_DATABASE_POOL_SIZE', 10, 4, 200),
+    databasePoolSize: integer(env, 'ARKVORY_DATABASE_POOL_SIZE', 20, 4, 200),
     maxRequests,
     storageReserveBytes: storageReserveBytes(env['ARKVORY_STORAGE_RESERVE_BYTES']),
     accessLog: flag(env, 'ARKVORY_ACCESS_LOG', true),
