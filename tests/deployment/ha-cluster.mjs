@@ -273,6 +273,15 @@ export async function buildCluster({ profile, base, keys, artifact }) {
       ),
     ),
   );
+  // Ubuntu's own package updates hold the dpkg lock at random times; the stand installs Arkvory.
+  await Promise.all(
+    cluster.all.map((node) =>
+      node.shell.exec(
+        'systemctl disable --now unattended-upgrades apt-daily.timer apt-daily-upgrade.timer; ' +
+          "while pgrep -x dpkg >/dev/null || pgrep -x apt-get >/dev/null || pgrep -f '[u]nattended-upgrade' >/dev/null; do sleep 2; done",
+      ),
+    ),
+  );
   const work = await mkdtemp(join(tmpdir(), 'arkvory-ha-plan-'));
   await unpack(cluster, artifact);
   const files = await plan(cluster, work);
