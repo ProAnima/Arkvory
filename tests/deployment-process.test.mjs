@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, readFile, access, writeFile } from 'node:fs/promises';
+import { mkdtemp, readFile, access, unlink, writeFile } from 'node:fs/promises';
 import { hostname, tmpdir } from 'node:os';
 import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
@@ -148,4 +148,43 @@ test('a lock left by a process that no longer runs is taken over; anything uncer
   await writeFile(join(root, 'operation.lock'), lock({}));
   assert.equal(await exclusive(root, async () => 'ran'), 'ran');
   await assert.rejects(access(join(root, 'operation.lock')), { code: 'ENOENT' });
+});
+
+test('an operator command waits for a running operation; a lock kept for an operator refuses at once', async (t) => {
+  const root = await mkdtemp(join(tmpdir(), 'arkvory-process-wait-'));
+  t.after(() => removeTestDirectory(root));
+  const path = join(root, 'operation.lock');
+  const running = JSON.stringify({ pid: process.pid, host: hostname() });
+  await writeFile(path, running);
+  // Without a wait, as the update timer's tick runs: refused.
+  await assert.rejects(
+    exclusive(root, async () => {}),
+    /Installation is locked/,
+  );
+  // The running operation ends within the wait: the command then runs.
+  const ended = delay(800).then(() => unlink(path));
+  assert.equal(await exclusive(root, async () => 'ran', 10_000), 'ran');
+  await ended;
+  // Kept for an operator, or after an interrupted deployment: no wait helps.
+  await writeFile(path, JSON.stringify({ pid: process.pid, host: hostname(), preserved: true }));
+  let started = Date.now();
+  await assert.rejects(
+    exclusive(root, async () => {}, 10_000),
+    /Installation is locked/,
+  );
+  assert.ok(Date.now() - started < 2000);
+  await writeFile(path, running);
+  await writeFile(join(root, 'journal.json'), JSON.stringify({ phase: 'switching' }));
+  started = Date.now();
+  await assert.rejects(
+    exclusive(root, async () => {}, 10_000),
+    /Installation is locked/,
+  );
+  assert.ok(Date.now() - started < 2000);
+  // A wait has an end.
+  await writeFile(join(root, 'journal.json'), JSON.stringify({ phase: 'committed' }));
+  await assert.rejects(
+    exclusive(root, async () => {}, 600),
+    /Installation is locked/,
+  );
 });

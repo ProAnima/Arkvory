@@ -1,6 +1,7 @@
 import { mkdir, open, readFile, unlink, writeFile } from 'node:fs/promises';
 import { hostname } from 'node:os';
 import { join } from 'node:path';
+import { setTimeout as sleep } from 'node:timers/promises';
 import { exists } from './files.js';
 import { NODE_MARKER } from './cluster-node.js';
 import { report } from './output.js';
@@ -79,18 +80,49 @@ async function releaseStale(root: string, path: string): Promise<boolean> {
   return true;
 }
 
-export async function exclusive<T>(root: string, work: () => Promise<T>): Promise<T> {
+/**
+ * A lock that its holder will release by itself: a running operation, or one still writing the
+ * lock. A preserved lock or an unsettled journal waits for an operator instead.
+ */
+async function transient(root: string, text: string): Promise<boolean> {
+  if (text === '') return true;
+  try {
+    const value = JSON.parse(text) as Record<string, unknown>;
+    if (value['preserved'] === true) return false;
+  } catch {
+    return false;
+  }
+  return settled(root);
+}
+
+async function acquire(root: string, path: string, waitMs: number) {
+  const deadline = Date.now() + waitMs;
+  let told = false;
+  for (;;) {
+    try {
+      return await open(path, 'wx', 0o600);
+    } catch (error) {
+      if (!(error instanceof Error && 'code' in error && error.code === 'EEXIST'))
+        throw new Error(LOCKED, { cause: error });
+    }
+    if (await releaseStale(root, path)) continue;
+    const text = await readFile(path, 'utf8').catch(() => '');
+    if (Date.now() >= deadline || !(await transient(root, text))) throw new Error(LOCKED);
+    if (!told) report('info', 'Waiting for another Arkvory operation on this installation to end');
+    told = true;
+    await sleep(500);
+  }
+}
+
+/**
+ * Runs `work` under the installation's operation lock. With `waitMs`, a lock that another
+ * operation holds normally (an update check started by the timer, say) is waited for that long;
+ * an operator's command then does not fail on a check that ends in seconds.
+ */
+export async function exclusive<T>(root: string, work: () => Promise<T>, waitMs = 0): Promise<T> {
   await mkdir(root, { recursive: true });
   const path = join(root, 'operation.lock');
-  const take = () => open(path, 'wx', 0o600);
-  const lock = await take()
-    .catch(async () => {
-      if (await releaseStale(root, path)) return take();
-      throw new Error(LOCKED);
-    })
-    .catch(() => {
-      throw new Error(LOCKED);
-    });
+  const lock = await acquire(root, path, waitMs);
   let preserveLock = false;
   try {
     await lock.writeFile(
