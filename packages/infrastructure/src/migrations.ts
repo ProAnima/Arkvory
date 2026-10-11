@@ -43,6 +43,18 @@ const packagePageIndexes = [
 
 const catalogIndexMigrations = [
   {
+    // ADR 0075: cleanup asks whether anything references an artifact, and promotion finds the
+    // package of an artifact; neither matched the leading columns of the primary keys.
+    version: 36,
+    indexes: [
+      { name: 'arkvory_references_artifact', definition: 'ON arkvory_references(artifact_id)' },
+      {
+        name: 'arkvory_packages_artifact',
+        definition: 'ON arkvory_packages(repository, artifact_id)',
+      },
+    ],
+  },
+  {
     version: 17,
     indexes: [
       {

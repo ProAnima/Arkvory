@@ -19,6 +19,7 @@ export async function recordStorageEvent(
     (SELECT sequence FROM arkvory_storage_events WHERE repository=$1 ORDER BY sequence DESC OFFSET 1000 LIMIT 1)`,
     [repository],
   );
+  // Global bound as a distance in sequence numbers: one index read instead of 20000.
   await c.query(`DELETE FROM arkvory_storage_events WHERE sequence <=
-    (SELECT sequence FROM arkvory_storage_events ORDER BY sequence DESC OFFSET 20000 LIMIT 1)`);
+    (SELECT max(sequence) FROM arkvory_storage_events) - 20000`);
 }

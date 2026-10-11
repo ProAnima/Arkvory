@@ -50,7 +50,12 @@ export class PostgresUserTokens {
     const row = result.rows[0];
     if (!row) return null;
     void this.pool
-      .query('UPDATE arkvory_user_tokens SET last_used_at=now() WHERE id=$1', [row.id])
+      // At most once a minute: CI agents sharing a token would otherwise rewrite one row on every
+      // request. The time is informational and never decides access.
+      .query(
+        "UPDATE arkvory_user_tokens SET last_used_at=now() WHERE id=$1 AND (last_used_at IS NULL OR last_used_at<now()-interval '1 minute')",
+        [row.id],
+      )
       .catch(() => undefined);
     return { userId: row.user_id, scope: scope(row.scope) };
   }

@@ -47,7 +47,11 @@ export async function recordServiceEvent(
     'INSERT INTO arkvory_service_audit(actor,action,account_id,key_id) VALUES($1,$2,$3,$4)',
     [actor, action, accountId, keyId ?? null],
   );
-  // Bounded operational history; export before retention removes older events.
+  // Bounded operational history; export before retention removes older events. The bound is a
+  // distance in sequence numbers (rollbacks leave gaps, so at most 100000 rows stay): max() reads
+  // one index entry where OFFSET 100000 walked them all on every mutation.
   await client.query(`DELETE FROM arkvory_service_audit WHERE sequence IN
-      (SELECT sequence FROM arkvory_service_audit ORDER BY sequence DESC OFFSET 100000 LIMIT 1000)`);
+      (SELECT sequence FROM arkvory_service_audit
+       WHERE sequence <= (SELECT max(sequence) FROM arkvory_service_audit) - 100000
+       ORDER BY sequence LIMIT 1000)`);
 }
