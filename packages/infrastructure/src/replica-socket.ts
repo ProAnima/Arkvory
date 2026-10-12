@@ -23,10 +23,13 @@ function peer(value: unknown): ReplicaPeer {
   return { name, connected, disk, complete, witness };
 }
 
-/** The optional details of a cluster helper of this release; earlier helpers send none. */
+/**
+ * The optional details of a cluster helper of this release, for the console only: earlier
+ * helpers send none, and details that do not parse (a 64-character host name, a peer without a
+ * name) are left out rather than turning the copies, which gate writes, into an unknown state.
+ */
 function details(value: Record<string, unknown>): Partial<ReplicaCopies> {
   const { node, profile, peers } = value;
-  if (node === undefined && profile === undefined && peers === undefined) return {};
   if (
     typeof node !== 'string' ||
     !NAME.test(node) ||
@@ -34,8 +37,12 @@ function details(value: Record<string, unknown>): Partial<ReplicaCopies> {
     !Array.isArray(peers) ||
     peers.length > MAX_COPIES
   )
-    throw new Error('Replica cluster details are invalid');
-  return { node, profile, peers: peers.map(peer) };
+    return {};
+  try {
+    return { node, profile, peers: peers.map(peer) };
+  } catch {
+    return {};
+  }
 }
 const MAX_COPIES = 16;
 

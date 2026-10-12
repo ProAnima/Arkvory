@@ -106,8 +106,12 @@ export function nextSteps(root: string, change: ClusterChange): string {
   return [
     `Writes are now acknowledged only with 2 complete copies (${change.profile}). Next:`,
     `  1. On this node, release the volume:  arkvory cluster-release --root ${root}`,
-    `  2. On each other data node in turn:   arkvory cluster-node --root ${root}${resource} && dpkg --configure proanima-arkvory`,
+    `  2. On each other data node in turn:   arkvory cluster-node --root ${root}${resource}`,
+    '     then, with the .deb package only:  dpkg --configure proanima-arkvory',
     '  3. Set up Corosync with pcs (pcs host auth, pcs cluster setup, pcs cluster start --all)',
+    ...(change.profile === 'ha-2'
+      ? ['     and on the witness:              systemctl enable --now corosync-qnetd']
+      : []),
     '  4. Fill the fence parameters in pacemaker.sh of your plan and run it on one data node',
     `  5. On the active node:                  arkvory cluster-check --root ${root}`,
   ].join('\n');

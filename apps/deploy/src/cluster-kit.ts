@@ -29,18 +29,21 @@ async function unitTexts(directory: string): Promise<Record<string, string>> {
       units[entry.name] = await readFile(join(directory, entry.name), 'utf8');
       continue;
     }
+    // Only finished drop-ins: a script's leftover `*.conf.tmp` is no part of the units.
     for (const dropIn of await readdir(join(directory, entry.name)))
-      units[`${entry.name}/${dropIn}`] = await readFile(
-        join(directory, entry.name, dropIn),
-        'utf8',
-      );
+      if (dropIn.endsWith('.conf'))
+        units[`${entry.name}/${dropIn}`] = await readFile(
+          join(directory, entry.name, dropIn),
+          'utf8',
+        );
   }
   return units;
 }
 
 /** `arkvory cluster-kit --output <file>` on the active node. */
 export async function writeKitFile(root: string, output: string): Promise<void> {
-  const settings = (await jsonFile(join(root, 'config', 'cluster.json'))) as {
+  // On a standby the volume is not mounted: the friendly refusal, not a missing file.
+  const settings = (await jsonFile(join(root, 'config', 'cluster.json')).catch(() => null)) as {
     resource?: unknown;
   } | null;
   if (typeof settings?.resource !== 'string')
@@ -69,9 +72,19 @@ export async function readKitFile(file: string): Promise<NodeKit> {
     throw new Error(`${file} is no node kit`, { cause: error });
   }
   const kit = value as Partial<NodeKit> | null;
-  const accountsValid = Object.values(kit?.accounts ?? {}).every(
-    (ids) => Number.isInteger(ids.uid) && Number.isInteger(ids.gid),
-  );
+  const id = (value: unknown) => Number.isInteger(value) && (value as number) >= 1;
+  const accounts: unknown = kit?.accounts;
+  const accountsValid =
+    typeof accounts === 'object' &&
+    accounts !== null &&
+    !Array.isArray(accounts) &&
+    Object.values(accounts).every(
+      (ids: unknown) =>
+        typeof ids === 'object' &&
+        ids !== null &&
+        id((ids as Record<string, unknown>)['uid']) &&
+        id((ids as Record<string, unknown>)['gid']),
+    );
   const unitsValid = Object.entries(kit?.units ?? {}).every(
     ([path, text]) => unitPath.test(path) && typeof text === 'string',
   );

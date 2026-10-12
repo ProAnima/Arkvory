@@ -13,7 +13,9 @@ esac
 # A standby of a cluster has no release of its own: it lives on the volume of the active node.
 if [ ! -x "$root/runtime/node" ] && [ -f /etc/proanima-arkvory/cluster.json ]; then
   echo "This is a standby node of an Arkvory cluster: the volume and the release are on the active node." >&2
-  echo "Run the command there (find it with: crm_resource --resource arkvory --locate)." >&2
+  # The resource is the cluster's own name, kept in the node marker (arkvory by default).
+  resource=$(sed -n 's/.*"resource"[[:space:]]*:[[:space:]]*"\([a-z][a-z0-9-]*\)".*/\1/p' /etc/proanima-arkvory/cluster.json | head -n 1)
+  echo "Run the command there (find it with: crm_resource --resource ${resource:-arkvory} --locate)." >&2
   exit 2
 fi
 exec "$root/runtime/node" "$root/manage.mjs" "$@"
