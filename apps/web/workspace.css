@@ -486,6 +486,6 @@ output:not(.status-bar output):not(.transfer-card output):not(:empty) {
   font-size: var(--text-sm);
 }
 /* Nothing more to load: no inactive button under the rows. */
-.catalog-footer:has(#more:disabled) {
+.catalog-footer[data-done='true'] {
   display: none;
 }

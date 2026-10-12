@@ -1963,10 +1963,6 @@
     "en": "Mirrors guide",
     "text": "دليل المرايا"
   },
-  "mirrorsUnavailable": {
-    "en": "Cannot load the mirrors. Retrying automatically.",
-    "text": "تعذّر تحميل المرايا. تجري إعادة المحاولة تلقائيًا."
-  },
   "errorMirrorReadOnly": {
     "en": "This repository is a mirror of another installation and cannot be changed here. Make the change on the source; the mirror follows by itself.",
     "text": "هذا المستودع مرآة لتثبيت آخر ولا يمكن تغييره هنا. أجرِ التغيير على المصدر؛ وستتبعه المرآة تلقائيًا."
@@ -2090,6 +2086,10 @@
   "clusterUnknown": {
     "en": "The state of the copies cannot be read, so writes are paused. On the serving node, check:",
     "text": "تتعذّر قراءة حالة النسخ، لذا الكتابة متوقفة مؤقتًا. على العقدة التي تخدم، تحقّق من:"
+  },
+  "clusterPartial": {
+    "en": "Writes continue, but a node has no complete copy. Return it or replace it before another failure; on the serving node, check:",
+    "text": "الكتابة مستمرة، لكن عقدة ليست لديها نسخة كاملة. أعدها أو استبدلها قبل عطل آخر؛ على العقدة التي تخدم، تحقّق من:"
   },
   "clusterOld": {
     "en": "Node details appear after every node runs this release. Copies and writes above are current.",

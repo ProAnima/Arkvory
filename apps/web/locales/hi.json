@@ -1963,10 +1963,6 @@
     "en": "Mirrors guide",
     "text": "मिरर गाइड"
   },
-  "mirrorsUnavailable": {
-    "en": "Cannot load the mirrors. Retrying automatically.",
-    "text": "मिरर लोड नहीं हो सके। अपने-आप फिर प्रयास किया जा रहा है।"
-  },
   "errorMirrorReadOnly": {
     "en": "This repository is a mirror of another installation and cannot be changed here. Make the change on the source; the mirror follows by itself.",
     "text": "यह रिपॉज़िटरी किसी दूसरे इंस्टॉलेशन का मिरर है, इसलिए इसे यहाँ बदला नहीं जा सकता। बदलाव स्रोत पर करें; मिरर उसे अपने-आप ले लेगा।"
@@ -2090,6 +2086,10 @@
   "clusterUnknown": {
     "en": "The state of the copies cannot be read, so writes are paused. On the serving node, check:",
     "text": "प्रतियों की स्थिति पढ़ी नहीं जा सकती, इसलिए लेखन रोका गया है। सेवा दे रहे नोड पर जाँचें:"
+  },
+  "clusterPartial": {
+    "en": "Writes continue, but a node has no complete copy. Return it or replace it before another failure; on the serving node, check:",
+    "text": "लेखन जारी है, लेकिन एक नोड के पास पूरी प्रति नहीं है। अगली विफलता से पहले उसे वापस लाएँ या बदलें; सेवा दे रहे नोड पर जाँचें:"
   },
   "clusterOld": {
     "en": "Node details appear after every node runs this release. Copies and writes above are current.",

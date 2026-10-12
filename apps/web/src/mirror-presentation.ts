@@ -74,3 +74,9 @@ export function hostOf(upstream: string): string {
     return upstream;
   }
 }
+
+/** The stages of an import as a list in the page's language (“a, b or c”): any one of them counts. */
+export function stageList(stages: readonly string[]): string {
+  const language = typeof document === 'undefined' ? 'en' : document.documentElement.lang || 'en';
+  return new Intl.ListFormat(language, { type: 'disjunction' }).format(stages);
+}

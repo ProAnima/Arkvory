@@ -1963,10 +1963,6 @@
     "en": "Mirrors guide",
     "text": "镜像指南"
   },
-  "mirrorsUnavailable": {
-    "en": "Cannot load the mirrors. Retrying automatically.",
-    "text": "无法加载镜像。正在自动重试。"
-  },
   "errorMirrorReadOnly": {
     "en": "This repository is a mirror of another installation and cannot be changed here. Make the change on the source; the mirror follows by itself.",
     "text": "此仓库是另一个安装实例的镜像，不能在这里更改。请在源上进行更改；镜像会自动跟进。"
@@ -2090,6 +2086,10 @@
   "clusterUnknown": {
     "en": "The state of the copies cannot be read, so writes are paused. On the serving node, check:",
     "text": "无法读取副本状态，因此写入已暂停。请在当前服务节点上检查："
+  },
+  "clusterPartial": {
+    "en": "Writes continue, but a node has no complete copy. Return it or replace it before another failure; on the serving node, check:",
+    "text": "写入仍在继续，但有一个节点没有完整副本。请在再次发生故障之前恢复或替换该节点；请在当前服务节点上检查："
   },
   "clusterOld": {
     "en": "Node details appear after every node runs this release. Copies and writes above are current.",

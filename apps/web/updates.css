@@ -3,7 +3,8 @@
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  padding: var(--space-2) var(--space-2) var(--space-2) var(--space-4);
+  padding-block: var(--space-2);
+  padding-inline: var(--space-4) var(--space-2);
   margin-bottom: var(--section-gap);
   border: var(--border-width) solid var(--color-info-border);
   border-radius: var(--radius-card);

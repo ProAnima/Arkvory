@@ -3,7 +3,7 @@ import type { ArkvoryClient } from '@proanima/arkvory-sdk';
 import type { RepositoryMirrorResponse } from '@proanima/arkvory-contracts';
 import { element } from './dom.js';
 import { message, relativeMessage } from './i18n.js';
-import { hostOf, mirrorState } from './mirror-presentation.js';
+import { hostOf, mirrorState, stageList } from './mirror-presentation.js';
 import { mirrorReasonView } from './mirror-reason.js';
 
 /** The badge follows the server's synchronization without a reload. */
@@ -33,6 +33,7 @@ export function installMirrorStatus(client: ArkvoryClient) {
     container.hidden = true;
     problem.hidden = true;
     problem.replaceChildren();
+    delete problem.dataset['code'];
     mirrored(false);
   };
   const render = (status: RepositoryMirrorResponse) => {
@@ -45,7 +46,7 @@ export function installMirrorStatus(client: ArkvoryClient) {
       // An import target is an ordinary repository: its own uploads stay possible.
       message(badge, failing ? 'mirrorImportFailing' : 'mirrorImport');
       message(source, 'mirrorImportDetails', {
-        stages: status.stages.join(', '),
+        stages: stageList(status.stages),
         source: status.sourceRepository,
         upstream,
       });
@@ -58,9 +59,14 @@ export function installMirrorStatus(client: ArkvoryClient) {
     }
     if (status.syncedAt) relativeMessage(synced, status.syncedAt);
     else message(synced, 'mirrorNever');
-    const reason = mirrorReasonView(status);
-    problem.replaceChildren(...(reason ? [reason] : []));
-    problem.hidden = reason === null;
+    // A live region: rebuilt, and so announced again, only when the reason changes.
+    const code = status.errorCode ?? '';
+    if (problem.dataset['code'] !== code) {
+      problem.dataset['code'] = code;
+      const reason = mirrorReasonView(status);
+      problem.replaceChildren(...(reason ? [reason] : []));
+    }
+    problem.hidden = status.errorCode === null;
     container.hidden = false;
     mirrored(!importing);
   };
@@ -83,10 +89,20 @@ export function installMirrorStatus(client: ArkvoryClient) {
       void poll(repository, current).catch(() => undefined);
     }, REFRESH_MS);
   };
+  let shown = '';
   return {
-    clear,
-    async connect(repository: string) {
+    clear() {
+      shown = '';
       clear();
+    },
+    async connect(repository: string) {
+      // The same repository again (a search reconnects it): the badge stays as it is and only
+      // its polling starts over, so the stop reason is not announced once more.
+      if (repository === shown && !container.hidden) {
+        generation++;
+        clearTimeout(timer);
+      } else clear();
+      shown = repository;
       await poll(repository, generation);
     },
   };

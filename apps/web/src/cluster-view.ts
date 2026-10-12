@@ -21,8 +21,11 @@ function cell(key: MessageKey, params: Readonly<Record<string, string>> = {}) {
 }
 
 /** An example end of a single-copy decision, in UTC as the command requires; people edit it. */
+// On the hour: the command does not change under the reader's eyes with every refresh.
 const hoursFrom = (now: number, hours: number) =>
-  new Date(now + hours * 3600000).toISOString().replace(/\.\d{3}Z$/, 'Z');
+  new Date(Math.ceil((now + hours * 3600000) / 3600000) * 3600000)
+    .toISOString()
+    .replace(/\.\d{3}Z$/, 'Z');
 
 /** The next step for the state the cluster is in, with the command to run on the serving node. */
 function nextStep(
@@ -47,6 +50,13 @@ function nextStep(
       command: `arkvory cluster-single-copy --root ${ROOT} --off`,
       replace: false,
     };
+  // ha-3 keeps writing with two copies; the third node still has to come back.
+  if (state.cluster?.peers.some((peer) => !peer.witness && !peer.complete))
+    return {
+      key: 'clusterPartial',
+      command: `arkvory cluster-status --root ${ROOT}`,
+      replace: true,
+    };
   const target = state.cluster?.peers.find((peer) => peer.complete && !peer.witness)?.name;
   return {
     key: 'clusterHealthy',
@@ -64,7 +74,10 @@ export class ClusterView {
   private readonly status = element('cluster-status', HTMLOutputElement);
   render(state: Replication | null, administrator: boolean) {
     this.nav.hidden = !administrator || state === null || state.kind === 'standalone';
-    if (this.nav.hidden || state === null || state.kind === 'standalone') return;
+    if (this.nav.hidden || state === null || state.kind === 'standalone') {
+      this.leave();
+      return;
+    }
     this.status.hidden = true;
     const known = state.kind === 'known' ? state : null;
     const cluster = known?.cluster ?? null;
@@ -82,7 +95,9 @@ export class ClusterView {
     element('cluster-old', HTMLElement).hidden = known === null || cluster !== null;
     const step = nextStep(state, Date.now());
     message(element('cluster-step', HTMLElement), step.key);
-    element('cluster-command', HTMLElement).textContent = step.command;
+    // Written only when it changes: a selection made to copy it survives the refresh.
+    const command = element('cluster-command', HTMLElement);
+    if (command.textContent !== step.command) command.textContent = step.command;
     element('cluster-replace', HTMLElement).hidden = !step.replace;
   }
   unavailable() {
@@ -92,7 +107,14 @@ export class ClusterView {
   }
   clear() {
     this.nav.hidden = true;
-    if (!element('cluster-panel', HTMLElement).hidden) showView('catalog');
+    this.leave();
+  }
+  /** The page has nothing to show: leave it, unless someone is typing into the connection. */
+  private leave() {
+    const typing =
+      document.activeElement instanceof HTMLElement &&
+      document.activeElement.closest('#connection-card') !== null;
+    if (!element('cluster-panel', HTMLElement).hidden && !typing) showView('catalog');
   }
   private writes(known: Known | null) {
     const writes = element('cluster-writes', HTMLElement);
