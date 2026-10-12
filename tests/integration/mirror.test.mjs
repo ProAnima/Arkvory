@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { randomBytes, randomUUID } from 'node:crypto';
 import { reopenMirrorUpload } from '@proanima/arkvory-infrastructure';
 import { base } from './fixture.mjs';
-import { call, content, key, never, pair, publish, upack } from './mirror-fixture.mjs';
+import { call, content, importer, key, never, pair, publish, upack } from './mirror-fixture.mjs';
 
 test('a mirror seeds, follows the feed and serves artifacts, packages, paths and stages', async (t) => {
   const p = await pair(t);
@@ -253,4 +253,80 @@ test('dev to prod: versions given the release stage are taken over once and stay
   assert.equal(status.mode, 'import');
   assert.deepEqual(status.stages, ['release']);
   assert.equal(status.copiedArtifacts, 2);
+});
+
+test('staging and prod import from each other by stage; a deletion on either side stays', async (t) => {
+  // Prod takes `release` from staging; staging takes `hotfix` from prod. Same repository name.
+  const p = await pair(t, ['release']);
+  const { source: staging, mirror: prod } = p;
+  const prodUrl = await prod.app.listen({ host: '127.0.0.1', port: 0 });
+  const back = await importer(t, staging, prodUrl, prod.readerHeaders.authorization.slice(7), [
+    'hotfix',
+  ]);
+  const settleBoth = async () => {
+    await p.settle();
+    await back.settle();
+    await p.settle();
+  };
+
+  const built = await publish(staging, Buffer.from('built on staging'), 'app-1.bin');
+  await call(staging, 'PUT', `/artifacts/${built}/stages/release`, {});
+  const hotfix = await publish(prod, Buffer.from('hotfix built on prod'), 'app-1-hotfix.bin');
+  await call(prod, 'PUT', `/artifacts/${hotfix}/stages/hotfix`, {});
+  await settleBoth();
+  assert.deepEqual(
+    await content(prod, `/artifacts/${built}/content`),
+    Buffer.from('built on staging'),
+  );
+  assert.deepEqual(
+    await content(staging, `/artifacts/${hotfix}/content`),
+    Buffer.from('hotfix built on prod'),
+  );
+  // Nothing goes round in circles: each side holds each version once, under one ID.
+  assert.deepEqual(
+    (await call(staging, 'GET', `/artifacts/${hotfix}/stages`)).json().items.map((s) => s.stage),
+    ['hotfix'],
+  );
+
+  // A staging build that prod marks hotfix comes back as itself: staging only gains the stage.
+  const shared = await publish(staging, Buffer.from('shared build'), 'app-2.bin');
+  await call(staging, 'PUT', `/artifacts/${shared}/stages/release`, {});
+  await p.settle();
+  await call(prod, 'PUT', `/artifacts/${shared}/stages/hotfix`, {});
+  await settleBoth();
+  assert.deepEqual(
+    (await call(staging, 'GET', `/artifacts/${shared}/stages`)).json().items.map((s) => s.stage),
+    ['hotfix', 'release'],
+  );
+
+  // Staging deletes its build (a staged version is protected: the stage goes first); prod keeps
+  // its copy and even marks it hotfix later.
+  await call(staging, 'DELETE', `/artifacts/${built}/stages/release`, undefined, 204);
+  const removed = await staging.app.inject({
+    method: 'DELETE',
+    url: `${base}/artifacts/${built}`,
+    headers: await p.deleter(),
+    payload: { expectedAnnotationRevision: 0 },
+  });
+  assert.equal(removed.json().outcome, 'deleted', removed.body);
+  await call(prod, 'PUT', `/artifacts/${built}/stages/hotfix`, {});
+  await settleBoth();
+  await call(staging, 'GET', `/artifacts/${built}`, undefined, 404);
+  assert.deepEqual(
+    await content(prod, `/artifacts/${built}/content`),
+    Buffer.from('built on staging'),
+  );
+
+  // A new first fill of staging (other stages) walks prod's listing again: still not back.
+  await back.settle(['hotfix', 'release']);
+  await call(staging, 'GET', `/artifacts/${built}`, undefined, 404);
+
+  // Prod deletes the hotfix; staging's copy is its own and stays.
+  await p.target.remove(hotfix);
+  await settleBoth();
+  await call(prod, 'GET', `/artifacts/${hotfix}`, undefined, 404);
+  assert.deepEqual(
+    await content(staging, `/artifacts/${hotfix}/content`),
+    Buffer.from('hotfix built on prod'),
+  );
 });

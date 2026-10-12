@@ -168,6 +168,14 @@ sudo arkvory configure --root /opt/proanima-arkvory \
 - Les données de registre d’images de conteneurs, Git LFS et npm ne sont pas transférées.
 - Un changement d’étapes démarre un nouveau remplissage initial. Il ne fait qu’ajouter et ignore ce qui est déjà présent.
 
+Deux installations peuvent importer l’une depuis l’autre. Par exemple, la production reprend `release` depuis la préproduction, et la préproduction reprend `hotfix` depuis la production. Une version garde son ID des deux côtés, donc rien n’est copié deux fois ni ne tourne en boucle :
+
+- Une version créée en préproduction qui revient de la production reçoit seulement la nouvelle étape.
+- Une version supprimée d’un côté n’est jamais réimportée depuis l’autre, même si l’autre côté lui attribue une étape plus tard.
+- Une suppression n’est jamais transmise : l’autre côté garde sa copie jusqu’à ce que vous la supprimiez là aussi.
+
+Utilisez des étapes différentes pour les deux sens. Avec la même étape dans les deux sens, son retrait d’un côté peut être annulé par l’import depuis l’autre côté.
+
 La console affiche le badge [[ui:mirrorImport]], ou [[ui:mirrorImportFailing]] lorsque la dernière tentative a échoué. La clé sur la source a besoin des mêmes autorisations en lecture seule que pour un miroir.
 
 ## Basculer lorsque la source est perdue {#failover}

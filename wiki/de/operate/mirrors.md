@@ -168,6 +168,14 @@ sudo arkvory configure --root /opt/proanima-arkvory \
 - Container-Image-, Git-LFS- und npm-Registry-Daten werden nicht übernommen.
 - Eine Änderung der Stufen startet eine neue Erstbefüllung. Sie fügt nur hinzu und überspringt, was bereits vorhanden ist.
 
+Zwei Installationen können voneinander importieren. Zum Beispiel übernimmt die Produktion `release` vom Staging, und das Staging übernimmt `hotfix` von der Produktion. Eine Version behält auf beiden Seiten ihre ID, daher wird nichts doppelt kopiert oder im Kreis geschickt:
+
+- Eine auf dem Staging erstellte Version, die von der Produktion zurückkommt, erhält nur die neue Stufe.
+- Eine auf einer Seite gelöschte Version wird nie wieder von der anderen importiert, auch wenn die andere Seite ihr später eine Stufe gibt.
+- Eine Löschung wird nie weitergegeben: Die andere Seite behält ihre Kopie, bis Sie sie auch dort löschen.
+
+Verwenden Sie für die beiden Richtungen unterschiedliche Stufen. Mit derselben Stufe in beiden Richtungen kann das Entfernen auf einer Seite durch den Import von der anderen Seite rückgängig gemacht werden.
+
 Die Konsole zeigt das Badge [[ui:mirrorImport]] oder [[ui:mirrorImportFailing]], wenn der letzte Versuch fehlgeschlagen ist. Der Schlüssel auf der Quelle braucht dieselben schreibgeschützten Berechtigungen wie für einen Spiegel.
 
 ## Umschalten, wenn die Quelle verloren geht {#failover}

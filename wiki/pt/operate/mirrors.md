@@ -168,6 +168,14 @@ sudo arkvory configure --root /opt/proanima-arkvory \
 - Os dados de imagens de contêiner, de Git LFS e do registro npm não são transferidos.
 - Uma alteração dos estágios inicia um novo primeiro preenchimento. Ele apenas adiciona e ignora o que já existe.
 
+Duas instalações podem importar uma da outra. Por exemplo, a produção recebe `release` do staging, e o staging recebe `hotfix` da produção. Uma versão mantém o mesmo ID nos dois lados, então nada é copiado duas vezes nem fica circulando:
+
+- Uma versão criada no staging que volta da produção só recebe o novo estágio.
+- Uma versão excluída em um lado nunca é importada de novo do outro, mesmo que o outro lado lhe atribua um estágio depois.
+- Uma exclusão nunca é repassada: o outro lado mantém sua cópia até que você a exclua lá também.
+
+Use estágios diferentes para as duas direções. Com o mesmo estágio nas duas direções, a remoção dele em um lado pode ser desfeita pela importação do outro lado.
+
 O console mostra o selo [[ui:mirrorImport]] ou [[ui:mirrorImportFailing]] quando a última tentativa falhou. A chave na origem precisa das mesmas permissões somente de leitura que para um espelho.
 
 ## Fazer o failover quando a origem é perdida {#failover}

@@ -262,7 +262,7 @@ export class ServiceMirrorTarget implements MirrorTarget {
 
   async local(id: string): Promise<'absent' | 'partial' | 'present' | 'deleted'> {
     const upload = await this.uploadOf(this.storage(id), id);
-    if (!upload) return 'absent';
+    if (!upload) return this.foreign(id);
     if (upload.status === 'available') return 'present';
     if (upload.status === 'pending') return 'partial';
     // Cancelled by cleanup before the copy completed is unfinished, not deleted: copy reopens it.
@@ -275,6 +275,22 @@ export class ServiceMirrorTarget implements MirrorTarget {
     ))
       ? 'partial'
       : 'deleted';
+  }
+
+  /**
+   * An ID this synchronization did not upload. Two installations that import from each other
+   * share IDs: a version made here comes back from the other side under its own ID. Published
+   * here, it is present; anything else (deleted here, an upload of someone else, or the ID of an
+   * artifact in another repository) is never taken over, and never created a second time.
+   */
+  private async foreign(id: string): Promise<'absent' | 'present' | 'deleted'> {
+    const found = await this.catalog.pool.query<{ repository: string; status: string }>(
+      'SELECT repository, status FROM arkvory_uploads WHERE id=$1',
+      [id],
+    );
+    const row = found.rows[0];
+    if (!row) return 'absent';
+    return row.repository === this.repository && row.status === 'available' ? 'present' : 'deleted';
   }
 
   async adopt(

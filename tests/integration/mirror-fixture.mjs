@@ -205,6 +205,40 @@ export async function pair(t, stages) {
   return { source, mirror, catalog, target, port, counted, make, settle, deleter };
 }
 
+/**
+ * Import by stage into `installation` (any test installation) from the API at `upstream`, the
+ * worker side driven step by step like `pair`: for an import in the other direction as well.
+ */
+export async function importer(t, installation, upstream, readerToken, stages) {
+  const { dataDirectory, databaseUrl, capacityBytes } = installation.config;
+  const blobs = new LocalBlobStore(dataDirectory, 0);
+  const catalog = new PostgresCatalog(databaseUrl, capacityBytes, 2);
+  const pins = new PostgresContentPins(catalog.pool);
+  const stop = new AbortController();
+  t.after(async () => {
+    stop.abort();
+    await pins.close();
+    await catalog.close();
+  });
+  await catalog.claimStorage(await blobs.identity(), 'worker');
+  const target = new ServiceMirrorTarget('releases', catalog, blobs, dataDirectory, pins);
+  /** Other stages than the first ones start a new first fill, as a changed configuration does. */
+  const settle = async (now = stages) => {
+    const worker = new StageImport({
+      repository: 'releases',
+      source: [upstream, 'releases', ...now].join('|'),
+      upstream: new SdkMirrorSource(upstream, 'releases', () => readerToken, stop.signal),
+      target,
+      states: new PostgresMirrorState(catalog.pool),
+      now: () => new Date().toISOString(),
+      stages: now,
+    });
+    for (let step = 0; step < 200; step++) if ((await worker.step(never)) === 'idle') return;
+    throw new Error('The import did not catch up');
+  };
+  return { target, settle };
+}
+
 export const content = async (f, url) => {
   const response = await f.app.inject({ url: `${base}${url}`, headers: f.readerHeaders });
   assert.equal(response.statusCode, 200, response.body);

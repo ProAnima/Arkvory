@@ -168,6 +168,14 @@ sudo arkvory configure --root /opt/proanima-arkvory \
 - Container image, Git LFS and npm registry data are not carried over.
 - A change of stages starts a new first fill. It only adds, and it skips what is already there.
 
+Two installations can import from each other. For example, production takes `release` from staging, and staging takes `hotfix` from production. A version keeps its ID on both sides, so nothing is copied twice or goes round in circles:
+
+- A version made on staging that comes back from production only gets the new stage.
+- A version deleted on one side is never imported again from the other, even when the other side gives it a stage later.
+- A deletion is never passed on: the other side keeps its copy until you delete it there too.
+
+Use different stages for the two directions. With the same stage in both directions, removing it on one side can be undone by the import from the other side.
+
 The console shows the badge [[ui:mirrorImport]], or [[ui:mirrorImportFailing]] when the last attempt failed. The key on the source needs the same read-only permissions as for a mirror.
 
 ## Fail over when the source is lost {#failover}
