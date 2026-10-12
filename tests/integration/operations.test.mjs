@@ -31,7 +31,9 @@ test('operation discovery is authenticated, paginated after visibility filtering
     (await all(reader)).every(
       (o) =>
         !['repository', 'owned-resource'].includes(o.visibility) ||
-        o.operationId.startsWith('listRepositories'),
+        // Discoveries over the repositories the caller may see, like the Mirrors page's list.
+        o.operationId.startsWith('listRepositories') ||
+        o.operationId.startsWith('listMirrors'),
     ),
   );
   const r = await f.app.inject({

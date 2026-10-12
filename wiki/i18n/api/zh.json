@@ -951,6 +951,14 @@
       },
       "summary": "预览反馈附件",
       "description": "返回当 `serverLog` 为 true 时 `sendFeedback` 会附上的两段文本：本服务器日志的近期记录，以及不含地址、名称或机密值的系统摘要（版本、操作系统、更新和镜像状态）。发送前请先展示给管理员。"
+    },
+    "listMirrors": {
+      "en": {
+        "summary": "List the mirrors and imports of this installation",
+        "description": "Returns, for every repository this server mirrors or imports from another Arkvory and the caller may read, the same state as the mirror status of one repository: source, `mode`, `phase`, `cursor` and `head`, `caughtUp`, the last check, sync and error, and the artifacts and bytes copied. Repositories the caller cannot read are left out; an installation without mirrors answers an empty list."
+      },
+      "summary": "列出此安装的镜像和导入",
+      "description": "对于此服务器从另一个 Arkvory 镜像或导入、且调用方可读取的每个仓库，返回与单个仓库镜像状态相同的信息：来源、`mode`、`phase`、`cursor` 和 `head`、`caughtUp`、最近一次检查、同步和错误，以及已复制的制品数和字节数。调用方无法读取的仓库会被省略；没有镜像的安装返回空列表。"
     }
   },
   "errors": {

@@ -1811,25 +1811,317 @@
     "en": "Last synchronized:",
     "text": "पिछला सिंक:"
   },
-  "mirrorError": {
-    "en": "The last attempt failed ({code}); downloads keep working.",
-    "text": "पिछला प्रयास विफल रहा ({code}); डाउनलोड काम करते रहेंगे।"
-  },
   "mirrorNever": {
     "en": "not yet",
     "text": "अभी तक नहीं"
   },
   "mirrorImport": {
-    "en": "Imports",
+    "en": "Import",
     "text": "आयात"
   },
   "mirrorImportFailing": {
-    "en": "Imports · sync error",
+    "en": "Import · sync error",
     "text": "आयात · सिंक त्रुटि"
   },
   "mirrorImportDetails": {
     "en": "Versions marked {stages} in “{source}” on {upstream} are copied here automatically. Later changes and deletions there do not affect them.",
     "text": "{upstream} पर “{source}” में {stages} से चिह्नित संस्करण अपने-आप यहाँ कॉपी हो जाते हैं। वहाँ बाद में होने वाले बदलावों और हटाए जाने का उन पर कोई असर नहीं पड़ता।"
+  },
+  "mirrorProblem": {
+    "en": "Synchronization stopped. Downloads keep working.",
+    "text": "सिंक रुक गया है। डाउनलोड चलते रहेंगे।"
+  },
+  "mirrorFixLink": {
+    "en": "What to do",
+    "text": "क्या करें"
+  },
+  "mirrorReasonUnauthorized": {
+    "en": "The source no longer accepts this server’s key. An administrator gives the mirror a new key:",
+    "text": "स्रोत अब इस सर्वर की कुंजी स्वीकार नहीं करता। व्यवस्थापक मिरर को नई कुंजी देता है:"
+  },
+  "mirrorReasonForbidden": {
+    "en": "The key of this mirror cannot read “{source}” on {upstream}. Give it read access there.",
+    "text": "इस मिरर की कुंजी {upstream} पर “{source}” को नहीं पढ़ सकती। वहाँ इसे पढ़ने की अनुमति दें।"
+  },
+  "mirrorReasonNotFound": {
+    "en": "{upstream} has no repository “{source}”. Check that it was not renamed or deleted there.",
+    "text": "{upstream} पर “{source}” नाम की कोई रिपॉज़िटरी नहीं है। जाँचें कि वहाँ उसका नाम बदला या उसे हटाया तो नहीं गया।"
+  },
+  "mirrorReasonUnreachable": {
+    "en": "{upstream} cannot be reached. The server keeps retrying; check the network and that the source is running.",
+    "text": "{upstream} से संपर्क नहीं हो पा रहा। सर्वर प्रयास करता रहता है; नेटवर्क जाँचें और यह भी कि स्रोत चल रहा है।"
+  },
+  "mirrorReasonCertificate": {
+    "en": "The certificate of {upstream} is not trusted here. Add its certificate authority:",
+    "text": "{upstream} का प्रमाणपत्र यहाँ विश्वसनीय नहीं माना जाता। उसका प्रमाणपत्र प्राधिकरण जोड़ें:"
+  },
+  "mirrorReasonCapacity": {
+    "en": "This server has no room for the next file. Free space or raise the storage limit; copying resumes by itself.",
+    "text": "इस सर्वर पर अगली फ़ाइल के लिए जगह नहीं है। जगह खाली करें या स्टोरेज सीमा बढ़ाएँ; कॉपी करना अपने-आप फिर शुरू होगा।"
+  },
+  "mirrorReasonSourceBehind": {
+    "en": "The source was restored from a backup, so the mirror reads it again. Nothing to do: this clears once it has caught up.",
+    "text": "स्रोत को बैकअप से पुनर्स्थापित किया गया है, इसलिए मिरर उसे फिर से पढ़ रहा है। कुछ करने की ज़रूरत नहीं: बराबरी पर आते ही यह संदेश हट जाएगा।"
+  },
+  "mirrorReasonMismatch": {
+    "en": "A file here differs from the source under the same ID. Find out why before deleting either copy.",
+    "text": "यहाँ की एक फ़ाइल उसी ID वाली स्रोत की फ़ाइल से अलग है। किसी भी कॉपी को हटाने से पहले कारण पता करें।"
+  },
+  "mirrorReasonSourceChanged": {
+    "en": "This repository already holds a copy of another source. Mirror the new source into a new repository.",
+    "text": "इस रिपॉज़िटरी में पहले से किसी दूसरे स्रोत की कॉपी है। नए स्रोत को किसी नई रिपॉज़िटरी में मिरर करें।"
+  },
+  "mirrorReasonDeleteBlocked": {
+    "en": "The source deleted a file that is still used here, for example by a file path. It stays here.",
+    "text": "स्रोत ने एक ऐसी फ़ाइल हटाई है जिसका यहाँ अभी भी उपयोग हो रहा है, उदाहरण के लिए किसी फ़ाइल पथ द्वारा। वह यहाँ बनी रहती है।"
+  },
+  "mirrorReasonDetached": {
+    "en": "This repository was detached and has changes of its own; it is never synchronized again. Mirror the source into a new repository.",
+    "text": "यह रिपॉज़िटरी अलग कर दी गई है और इसमें अपने बदलाव हैं; यह फिर कभी सिंक नहीं होगी। स्रोत को किसी नई रिपॉज़िटरी में मिरर करें।"
+  },
+  "mirrorReasonPackage": {
+    "en": "A version of the source has a package version that this repository holds with other bytes. Remove the stage or the version on the source, or publish it under another version.",
+    "text": "स्रोत के एक संस्करण में ऐसा पैकेज संस्करण है जिसे यह रिपॉज़िटरी अलग बाइट्स के साथ रखती है। स्रोत पर स्टेज या संस्करण हटाएँ, या उसे किसी दूसरे संस्करण के रूप में प्रकाशित करें।"
+  },
+  "mirrorReasonIdTaken": {
+    "en": "A file of the source is held by another repository here. One source repository can fill only one repository.",
+    "text": "स्रोत की एक फ़ाइल यहाँ की किसी दूसरी रिपॉज़िटरी में पहले से है। स्रोत की एक रिपॉज़िटरी केवल एक ही रिपॉज़िटरी भर सकती है।"
+  },
+  "mirrorReasonOther": {
+    "en": "The last attempt failed ({code}). The server retries by itself; its log names the cause.",
+    "text": "पिछला प्रयास विफल रहा ({code})। सर्वर अपने-आप फिर प्रयास करेगा; उसके लॉग में कारण लिखा है।"
+  },
+  "mirrors": {
+    "en": "Mirrors",
+    "text": "मिरर"
+  },
+  "mirrorsIntro": {
+    "en": "Repositories this server copies from other Arkvory installations. The server keeps them in sync by itself; this page refreshes on its own.",
+    "text": "वे रिपॉज़िटरी जिन्हें यह सर्वर दूसरे Arkvory इंस्टॉलेशन से कॉपी करता है। सर्वर उन्हें अपने-आप सिंक में रखता है; यह पेज अपने-आप रीफ़्रेश होता है।"
+  },
+  "mirrorsRepository": {
+    "en": "Repository",
+    "text": "रिपॉज़िटरी"
+  },
+  "mirrorsSource": {
+    "en": "Source",
+    "text": "स्रोत"
+  },
+  "mirrorsState": {
+    "en": "State",
+    "text": "स्थिति"
+  },
+  "mirrorsLastSync": {
+    "en": "Last synchronized",
+    "text": "पिछला सिंक"
+  },
+  "mirrorsCopied": {
+    "en": "Copied",
+    "text": "कॉपी किया गया"
+  },
+  "mirrorsCopiedValue": {
+    "en": "{count} files · {size}",
+    "text": "{count} फ़ाइलें · {size}"
+  },
+  "mirrorsSourceValue": {
+    "en": "“{source}” on {upstream}",
+    "text": "{upstream} पर “{source}”"
+  },
+  "mirrorsModeMirror": {
+    "en": "Read-only mirror",
+    "text": "केवल-पढ़ने योग्य मिरर"
+  },
+  "mirrorsModeImport": {
+    "en": "Imports versions marked {stages}",
+    "text": "{stages} से चिह्नित संस्करण आयात करता है"
+  },
+  "mirrorStateSynced": {
+    "en": "In sync",
+    "text": "सिंक में"
+  },
+  "mirrorStateBehind": {
+    "en": "Catching up",
+    "text": "बराबरी पर आ रहा है"
+  },
+  "mirrorStatePending": {
+    "en": "Starting",
+    "text": "शुरू हो रहा है"
+  },
+  "mirrorStateSeeding": {
+    "en": "First copy",
+    "text": "पहली कॉपी"
+  },
+  "mirrorStateFailing": {
+    "en": "Sync error",
+    "text": "सिंक त्रुटि"
+  },
+  "mirrorsEmptyTitle": {
+    "en": "No mirrors on this server",
+    "text": "इस सर्वर पर कोई मिरर नहीं है"
+  },
+  "mirrorsEmpty": {
+    "en": "A mirror keeps a copy of a repository of another installation: a second site, or staging to production. An administrator sets one up with “arkvory configure --mirror”.",
+    "text": "मिरर किसी दूसरे इंस्टॉलेशन की रिपॉज़िटरी की कॉपी रखता है: दूसरी साइट, या स्टेजिंग से प्रोडक्शन। व्यवस्थापक इसे “arkvory configure --mirror” से सेट करता है।"
+  },
+  "mirrorsGuide": {
+    "en": "Mirrors guide",
+    "text": "मिरर गाइड"
+  },
+  "mirrorsUnavailable": {
+    "en": "Cannot load the mirrors. Retrying automatically.",
+    "text": "मिरर लोड नहीं हो सके। अपने-आप फिर प्रयास किया जा रहा है।"
+  },
+  "errorMirrorReadOnly": {
+    "en": "This repository is a mirror of another installation and cannot be changed here. Make the change on the source; the mirror follows by itself.",
+    "text": "यह रिपॉज़िटरी किसी दूसरे इंस्टॉलेशन का मिरर है, इसलिए इसे यहाँ बदला नहीं जा सकता। बदलाव स्रोत पर करें; मिरर उसे अपने-आप ले लेगा।"
+  },
+  "cluster": {
+    "en": "Cluster",
+    "text": "क्लस्टर"
+  },
+  "clusterIntro": {
+    "en": "This server runs as a high-availability cluster: every write is kept on more than one node before it is confirmed. This page refreshes on its own.",
+    "text": "यह सर्वर उच्च उपलब्धता वाले क्लस्टर के रूप में चलता है: हर लेखन की पुष्टि से पहले उसे एक से अधिक नोड पर रखा जाता है। यह पेज अपने-आप रीफ़्रेश होता है।"
+  },
+  "clusterProfile": {
+    "en": "Layout",
+    "text": "संरचना"
+  },
+  "clusterProfileTwo": {
+    "en": "Two data nodes and a witness",
+    "text": "दो डेटा नोड और एक विटनेस"
+  },
+  "clusterProfileThree": {
+    "en": "Three data nodes",
+    "text": "तीन डेटा नोड"
+  },
+  "clusterActive": {
+    "en": "Serving now",
+    "text": "अभी सेवा दे रहा है"
+  },
+  "clusterCopies": {
+    "en": "Complete copies",
+    "text": "पूर्ण प्रतियाँ"
+  },
+  "clusterCopiesValue": {
+    "en": "{copies} of {required} required",
+    "text": "आवश्यक {required} में से {copies}"
+  },
+  "clusterWrites": {
+    "en": "Writes",
+    "text": "लेखन"
+  },
+  "clusterWritesOn": {
+    "en": "Accepted",
+    "text": "स्वीकार हो रहा है"
+  },
+  "clusterWritesOff": {
+    "en": "Stopped",
+    "text": "रुका हुआ"
+  },
+  "clusterWritesSingle": {
+    "en": "Accepted with one copy until {until}",
+    "text": "{until} तक एक प्रति के साथ स्वीकार हो रहा है"
+  },
+  "clusterNodes": {
+    "en": "Other nodes",
+    "text": "अन्य नोड"
+  },
+  "clusterNode": {
+    "en": "Node",
+    "text": "नोड"
+  },
+  "clusterRole": {
+    "en": "Role",
+    "text": "भूमिका"
+  },
+  "clusterConnection": {
+    "en": "Connection",
+    "text": "कनेक्शन"
+  },
+  "clusterCopy": {
+    "en": "Copy",
+    "text": "प्रति"
+  },
+  "clusterRoleData": {
+    "en": "Data copy",
+    "text": "डेटा प्रति"
+  },
+  "clusterRoleWitness": {
+    "en": "Witness (votes, holds no data)",
+    "text": "विटनेस (वोट देता है, डेटा नहीं रखता)"
+  },
+  "clusterConnected": {
+    "en": "Connected",
+    "text": "कनेक्टेड"
+  },
+  "clusterDisconnected": {
+    "en": "Not connected",
+    "text": "कनेक्ट नहीं"
+  },
+  "clusterCopyComplete": {
+    "en": "Complete",
+    "text": "पूर्ण"
+  },
+  "clusterCopySyncing": {
+    "en": "Catching up",
+    "text": "बराबरी पर आ रही है"
+  },
+  "clusterCopyMissing": {
+    "en": "Missing",
+    "text": "मौजूद नहीं"
+  },
+  "clusterCopyNone": {
+    "en": "—",
+    "text": "—"
+  },
+  "clusterNoPeers": {
+    "en": "No other node is configured or connected.",
+    "text": "कोई अन्य नोड कॉन्फ़िगर या कनेक्ट नहीं है।"
+  },
+  "clusterNextStep": {
+    "en": "Next step",
+    "text": "अगला कदम"
+  },
+  "clusterHealthy": {
+    "en": "Every copy is complete: a node can fail without losing confirmed writes. Before maintenance of the serving node, move Arkvory to another node. On the serving node, run:",
+    "text": "सभी प्रतियाँ पूर्ण हैं: कोई नोड विफल हो जाए तो भी पुष्ट लेखन नहीं खोएँगे। सेवा दे रहे नोड के रखरखाव से पहले Arkvory को किसी दूसरे नोड पर ले जाएँ। सेवा दे रहे नोड पर चलाएँ:"
+  },
+  "clusterDegraded": {
+    "en": "Writes are stopped until the missing copy is back; downloads keep working. Bring the node back, or replace it with a new one (see the guide). Only if you accept losing writes on a second failure, allow one copy for a limited time. On the serving node, run:",
+    "text": "गायब प्रति लौटने तक लेखन रुका हुआ है; डाउनलोड चलते रहेंगे। नोड को वापस लाएँ, या उसे नए नोड से बदलें (गाइड देखें)। केवल तभी, जब आप दूसरी विफलता पर लेखन खोना स्वीकार करते हों, सीमित समय के लिए एक प्रति की अनुमति दें। सेवा दे रहे नोड पर चलाएँ:"
+  },
+  "clusterSingle": {
+    "en": "Writes are confirmed with one copy: a second failure loses them. The decision ends by itself once the copy is back. To end it now, on the serving node run:",
+    "text": "लेखन एक ही प्रति के साथ पुष्ट हो रहा है: दूसरी विफलता होने पर वह खो जाएगा। प्रति लौटते ही यह निर्णय अपने-आप समाप्त हो जाता है। इसे अभी समाप्त करने के लिए, सेवा दे रहे नोड पर चलाएँ:"
+  },
+  "clusterUnknown": {
+    "en": "The server cannot read the state of its copies, so writes are stopped. On the serving node, check the arkvory-replica service:",
+    "text": "सर्वर अपनी प्रतियों की स्थिति नहीं पढ़ पा रहा, इसलिए लेखन रुका हुआ है। सेवा दे रहे नोड पर arkvory-replica सेवा जाँचें:"
+  },
+  "clusterOld": {
+    "en": "Node details appear after every node runs this release. Copies and writes above are current.",
+    "text": "नोड का विवरण तब दिखेगा जब सभी नोड यह रिलीज़ चलाने लगेंगे। ऊपर दी गई प्रतियों और लेखन की जानकारी वर्तमान है।"
+  },
+  "clusterGuide": {
+    "en": "Cluster guide",
+    "text": "क्लस्टर गाइड"
+  },
+  "clusterReplaceGuide": {
+    "en": "Replace a node",
+    "text": "नोड बदलें"
+  },
+  "clusterUnavailable": {
+    "en": "Cannot read the cluster state. Retrying automatically.",
+    "text": "क्लस्टर की स्थिति नहीं पढ़ी जा सकी। अपने-आप फिर प्रयास किया जा रहा है।"
+  },
+  "clusterOpen": {
+    "en": "Open the cluster page",
+    "text": "क्लस्टर पेज खोलें"
+  },
+  "replicationReaders": {
+    "en": "Uploads are paused while the server restores a copy of its data. Downloads keep working.",
+    "text": "सर्वर अपने डेटा की एक प्रति पुनर्स्थापित कर रहा है, इसलिए अपलोड रुके हुए हैं। डाउनलोड चलते रहेंगे।"
   },
   "reportOpen": {
     "en": "Feedback",

@@ -13,6 +13,8 @@ export const errorEnglish = {
     'The server cannot reach ProAnimaStudio right now. Try again later or write to info@proanima.net.',
   errorReplicationDegraded:
     'The cluster is missing a copy of the data, so changes are paused. Downloads still work; try again later.',
+  errorMirrorReadOnly:
+    'This repository is a mirror of another installation and cannot be changed here. Make the change on the source; the mirror follows by itself.',
   errorFeedbackLimited: 'Too many messages from this server. Wait a few minutes and try again.',
   errorReadOnly:
     'This address only serves downloads. Make changes through the main Arkvory address.',
@@ -88,6 +90,8 @@ export const errorRussian: Record<keyof typeof errorEnglish, string> = {
     'Сервер сейчас не может связаться с ProAnimaStudio. Повторите позже или напишите на info@proanima.net.',
   errorReplicationDegraded:
     'В кластере не хватает копии данных, поэтому изменения приостановлены. Скачивание работает; повторите позже.',
+  errorMirrorReadOnly:
+    'Этот репозиторий — зеркало другой установки, здесь его менять нельзя. Внесите изменение в источнике; зеркало подтянет его само.',
   errorFeedbackLimited: 'Слишком много сообщений с этого сервера. Подождите несколько минут.',
   errorReadOnly: 'Этот адрес только раздаёт файлы. Вносите изменения через основной адрес Arkvory.',
   errorRouteMissing:

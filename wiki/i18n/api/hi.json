@@ -951,6 +951,14 @@
       },
       "summary": "फ़ीडबैक अटैचमेंट का पूर्वावलोकन करें",
       "description": "वे दो पाठ लौटाता है जो `serverLog` true होने पर `sendFeedback` संलग्न करता है: इस सर्वर के लॉग के हाल के रिकॉर्ड और एक सिस्टम सारांश (संस्करण, ऑपरेटिंग सिस्टम, अपडेट और मिरर की स्थितियाँ), बिना पतों, नामों या गोपनीय मानों के। भेजने से पहले उन्हें व्यवस्थापक को दिखाएँ।"
+    },
+    "listMirrors": {
+      "en": {
+        "summary": "List the mirrors and imports of this installation",
+        "description": "Returns, for every repository this server mirrors or imports from another Arkvory and the caller may read, the same state as the mirror status of one repository: source, `mode`, `phase`, `cursor` and `head`, `caughtUp`, the last check, sync and error, and the artifacts and bytes copied. Repositories the caller cannot read are left out; an installation without mirrors answers an empty list."
+      },
+      "summary": "इस इंस्टॉलेशन के मिरर और इम्पोर्ट की सूची",
+      "description": "हर उस रिपॉज़िटरी के लिए जिसे यह सर्वर किसी दूसरे Arkvory से मिरर या इम्पोर्ट करता है और जिसे कॉलर पढ़ सकता है, एक रिपॉज़िटरी की मिरर स्थिति जैसी ही जानकारी लौटाता है: स्रोत, `mode`, `phase`, `cursor` और `head`, `caughtUp`, पिछली जाँच, सिंक और त्रुटि, और कॉपी किए गए आर्टिफ़ैक्ट व बाइट। जिन रिपॉज़िटरी को कॉलर नहीं पढ़ सकता, वे छोड़ दी जाती हैं; बिना मिरर वाला इंस्टॉलेशन खाली सूची लौटाता है।"
     }
   },
   "errors": {

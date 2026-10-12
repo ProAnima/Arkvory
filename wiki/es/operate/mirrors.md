@@ -78,7 +78,14 @@ Indique un repositorio por comando. No puede combinar un cambio de espejo con ca
 
 En Docker Compose, el comando escribe además `config/compose.mirrors.yml`, que monta los archivos del espejo en los contenedores de la API y del worker. Añádalo a los comandos de Compose que ejecute usted mismo.
 
-Repita el comando con un `--mirror-token-file` nuevo para sustituir la clave de un repositorio. El worker vuelve a leer el archivo de la clave después de cada fallo, por lo que una clave nueva funciona sin reiniciar. Un repositorio que ya replica un origen rechaza otro origen con el mensaje `NAME mirrors another source; detach it first`.
+Para sustituir la clave de un repositorio, repita el comando solo con `--mirror` y el nuevo `--mirror-token-file`. El origen, las etapas y las entidades de certificación se mantienen, y un espejo nunca se convierte en una importación por repetir el comando. El worker vuelve a leer el archivo de la clave después de cada fallo, por lo que una clave nueva funciona sin reiniciar.
+
+```bash
+sudo arkvory configure --root /opt/proanima-arkvory \
+  --mirror releases --mirror-token-file /root/new-mirror-releases.key
+```
+
+Cuando el origen rechaza la clave, el comando se detiene antes de cambiar nada e indica el motivo: la clave no se acepta (401), no tiene permiso para leer el repositorio (403) o el repositorio no existe en el origen (404). Un repositorio que ya replica un origen rechaza otro origen con el mensaje `NAME mirrors another source; detach it first`.
 
 En la instalación del espejo, dé acceso al repositorio a las personas y las herramientas. Un repositorio existe en cuanto lo nombra un permiso o una política de servicio. Use [[ui:manageGrants]] en [[ui:administration]] para las personas y una política de servicio para las herramientas. Los permisos del origen no se trasladan.
 
@@ -107,13 +114,19 @@ Si la clave del origen se revoca o el origen no está accesible, el espejo sigue
 
 ### En la consola {#status-console}
 
-Conecte la consola de la instalación del espejo al repositorio espejo. Sobre el catálogo, una insignia muestra el estado:
+[[ui:mirrors]] en el menú enumera cada espejo e importación cuyo repositorio puede leer, con su origen, su estado, la última sincronización y lo que se ha copiado. Los administradores ven siempre la página; mientras no hay ningún espejo, explica cómo configurar uno. La página se actualiza sola cada 20 segundos.
 
-- [[ui:mirrorBadge]] significa que el espejo está al día.
-- [[ui:mirrorBehind]] significa que todavía está copiando o que aún no ha empezado.
-- [[ui:mirrorFailing]] significa que el último intento falló. Las descargas siguen funcionando.
+| Estado                    | Significado                                                                                    |
+| ------------------------- | ---------------------------------------------------------------------------------------------- |
+| [[ui:mirrorStateSynced]]  | Al día con el origen                                                                           |
+| [[ui:mirrorStateBehind]]  | Copiando los cambios que el origen hizo desde la última comprobación                           |
+| [[ui:mirrorStatePending]] | Configurado, y el worker aún no ha llegado a él                                                |
+| [[ui:mirrorStateSeeding]] | La carga inicial, o una nueva después de restaurar el origen                                   |
+| [[ui:mirrorStateFailing]] | El último intento falló. Las descargas siguen funcionando y el worker lo reintenta por sí solo |
 
-Abra la ayuda de la insignia ([[ui:mirrorHelpLabel]]) para ver el origen, la hora de la última sincronización y el código de error. La consola oculta los botones de subida y de cambio en un repositorio espejo.
+Cuando la sincronización se ha detenido, la página indica el motivo y qué hacer a continuación, y muestra el comando que lo corrige cuando existe, por ejemplo una clave nueva después de que el origen rechazara la anterior. Los textos siguen los [códigos de error](#error-codes).
+
+Conectada a un repositorio espejo, la consola muestra además una insignia sobre el catálogo: [[ui:mirrorBadge]], [[ui:mirrorBehind]] o [[ui:mirrorFailing]]. Mientras la sincronización está detenida, debajo aparecen el motivo y el siguiente paso, y la insignia sigue al servidor sin recargar la página. Abra la ayuda de la insignia ([[ui:mirrorHelpLabel]]) para ver el origen y la hora de la última sincronización. La consola oculta los botones de subida y de cambio en un repositorio espejo.
 
 ### Con la API {#status-api}
 
@@ -130,17 +143,19 @@ Abra la ayuda de la insignia ([[ui:mirrorHelpLabel]]) para ver el origen, la hor
 
 ### Códigos de error {#error-codes}
 
-| `errorCode`               | Significado y qué hacer                                                                                                                                                                                                                                         |
-| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `mirror_mismatch`         | El mismo ID de artefacto tiene contenido distinto en el origen. El espejo conserva su archivo. Investigue el artefacto; no elimine ninguna de las copias hasta conocer la causa                                                                                 |
-| `mirror_source_changed`   | El repositorio ya contiene una copia de otro origen. Desvincúlelo o replique el origen nuevo en un repositorio nuevo                                                                                                                                            |
-| `mirror_source_behind`    | El origen se restauró o se reinstaló: el cambio en la posición del espejo no es el que este aplicó allí. El espejo lee el origen de nuevo y el código desaparece cuando se pone al día. Los archivos que le faltan al origen restaurado permanecen en el espejo |
-| `mirror_delete_blocked`   | El origen eliminó un archivo que el espejo no puede eliminar porque algo aquí todavía lo usa, como una referencia o el historial de una ruta de archivo                                                                                                         |
-| `mirror_detached`         | El repositorio se desvinculó y tiene cambios propios. No se vuelve a sincronizar nunca. Refleje el origen en un repositorio nuevo                                                                                                                               |
-| `mirror_package_conflict` | Una versión del origen tiene una versión de paquete (grupo, nombre y versión) que este repositorio guarda con otros bytes. No se cambia nada. Retire la etapa o la versión en el origen, o publíquela con otra versión                                          |
-| `mirror_id_taken`         | Otro repositorio de esta instalación guarda un artefacto del origen. Un repositorio de origen solo puede llenar un repositorio aquí                                                                                                                             |
-| `mirror_failed`           | Un fallo sin un código más específico. Lea el registro del worker                                                                                                                                                                                               |
-| otros códigos             | El código de la solicitud que falló, por ejemplo `unauthorized` cuando se revocó la clave o `capacity_exceeded` cuando el espejo está lleno                                                                                                                     |
+| `errorCode`               | Significado y qué hacer                                                                                                                                                                                                                                                                  |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `mirror_mismatch`         | El mismo ID de artefacto tiene contenido distinto en el origen. El espejo conserva su archivo. Investigue el artefacto; no elimine ninguna de las copias hasta conocer la causa                                                                                                          |
+| `mirror_source_changed`   | El repositorio ya contiene una copia de otro origen. Desvincúlelo o replique el origen nuevo en un repositorio nuevo                                                                                                                                                                     |
+| `mirror_source_behind`    | El origen se restauró o se reinstaló: el cambio en la posición del espejo no es el que este aplicó allí. El espejo lee el origen de nuevo y el código desaparece cuando se pone al día. Los archivos que le faltan al origen restaurado permanecen en el espejo                          |
+| `mirror_delete_blocked`   | El origen eliminó un archivo que el espejo no puede eliminar porque algo aquí todavía lo usa, como una referencia o el historial de una ruta de archivo                                                                                                                                  |
+| `mirror_detached`         | El repositorio se desvinculó y tiene cambios propios. No se vuelve a sincronizar nunca. Refleje el origen en un repositorio nuevo                                                                                                                                                        |
+| `mirror_package_conflict` | Una versión del origen tiene una versión de paquete (grupo, nombre y versión) que este repositorio guarda con otros bytes. No se cambia nada. Retire la etapa o la versión en el origen, o publíquela con otra versión                                                                   |
+| `mirror_id_taken`         | Otro repositorio de esta instalación guarda un artefacto del origen. Un repositorio de origen solo puede llenar un repositorio aquí                                                                                                                                                      |
+| `mirror_unreachable`      | No se puede contactar con el origen: la conexión se rechaza o se agota el tiempo de espera, o el nombre no se resuelve. El worker lo reintenta por sí solo. Compruebe la red, el cortafuegos y que el origen esté en marcha                                                              |
+| `mirror_certificate`      | El certificado del origen no es de confianza, ha caducado o no coincide con su nombre. Añada su entidad con `--mirror-ca-file` (consulte [HTTPS con su propia entidad de certificación](#ca-file))                                                                                       |
+| `mirror_failed`           | Un fallo sin un código más específico. Lea el registro del worker                                                                                                                                                                                                                        |
+| otros códigos             | El código de la solicitud que falló: `unauthorized` cuando el origen ya no acepta la clave (dé una nueva al espejo), `forbidden` cuando la clave no puede leer el repositorio, `not_found` cuando el repositorio de origen ya no existe, `capacity_exceeded` cuando el espejo está lleno |
 
 El registro del worker (`component` es `mirror`) contiene `mirror.started`, `mirror.step_failed` con `errorCode` y `attempts`, `mirror.recovered` y `mirror.stopped`.
 
@@ -202,10 +217,10 @@ Es una conmutación manual para dos instalaciones independientes en dos sitios. 
 3. Desvincule cada repositorio espejo en el espejo. Se convierte en un repositorio normal con permiso de escritura, con los mismos ID de artefacto y todos sus datos.
 
    ```bash
-   sudo arkvory configure --root /opt/proanima-arkvory --mirror-detach releases
+   sudo arkvory configure --root /opt/proanima-arkvory --mirror-detach releases,prod
    ```
 
-   El comando reinicia la API y el worker, así que espere una breve interrupción.
+   Indique varios repositorios separados por comas, o `all` para todos los espejos e importaciones. El comando reinicia la API y el worker una sola vez, así que espere una breve interrupción.
 
 4. Dirija al espejo los clientes que escriben, mediante DNS o la configuración de su CI.
 5. Suba y descargue un archivo de control en el espejo.

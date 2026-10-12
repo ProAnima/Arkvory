@@ -951,6 +951,14 @@
       },
       "summary": "Prévisualiser les pièces jointes des commentaires",
       "description": "Renvoie les deux textes que `sendFeedback` joint lorsque `serverLog` vaut true : les enregistrements récents du journal de ce serveur et un résumé du système (versions, système d’exploitation, états des mises à jour et des miroirs) sans adresses, noms ni secrets. Montrez-les à l’administrateur avant l’envoi."
+    },
+    "listMirrors": {
+      "en": {
+        "summary": "List the mirrors and imports of this installation",
+        "description": "Returns, for every repository this server mirrors or imports from another Arkvory and the caller may read, the same state as the mirror status of one repository: source, `mode`, `phase`, `cursor` and `head`, `caughtUp`, the last check, sync and error, and the artifacts and bytes copied. Repositories the caller cannot read are left out; an installation without mirrors answers an empty list."
+      },
+      "summary": "Lister les miroirs et imports de cette installation",
+      "description": "Pour chaque dépôt que ce serveur reflète ou importe depuis un autre Arkvory et que l’appelant peut lire, renvoie le même état que le statut de miroir d’un dépôt : source, `mode`, `phase`, `cursor` et `head`, `caughtUp`, la dernière vérification, synchronisation et erreur, ainsi que les artefacts et octets copiés. Les dépôts que l’appelant ne peut pas lire sont omis ; une installation sans miroir répond par une liste vide."
     }
   },
   "errors": {

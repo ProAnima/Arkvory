@@ -78,7 +78,14 @@ $root = 'C:\ProgramData\ProAnima\Arkvory'
 
 在 Docker Compose 中，命令还会写入 `config/compose.mirrors.yml`，它把仓库镜像文件挂载到 API 和 worker 容器中。请把它加入您自己运行的 Compose 命令。
 
-使用新的 `--mirror-token-file` 重复运行命令，即可更换某个仓库的密钥。worker 在每次失败之后都会重新读取密钥文件，因此新密钥无需重启即可生效。已经在镜像某个源的仓库，会拒绝另一个源，并给出消息 `NAME mirrors another source; detach it first`。
+若要更换某个仓库的密钥，请只带 `--mirror` 和新的 `--mirror-token-file` 重复运行命令。源、阶段和证书颁发机构保持不变，重复运行命令也绝不会把仓库镜像变成导入。worker 在每次失败之后都会重新读取密钥文件，因此新密钥无需重启即可生效。
+
+```bash
+sudo arkvory configure --root /opt/proanima-arkvory \
+  --mirror releases --mirror-token-file /root/new-mirror-releases.key
+```
+
+如果源拒绝该密钥，命令会在做出任何更改之前停止，并说明原因：密钥不被接受（401）、密钥无权读取该仓库（403），或该仓库在源上不存在（404）。已经在镜像某个源的仓库，会拒绝另一个源，并给出消息 `NAME mirrors another source; detach it first`。
 
 在镜像端，请为人员和工具授予对该仓库的访问权限。只要有授权或服务策略提到某个仓库，它就存在了。人员使用 [[ui:administration]] 中的 [[ui:manageGrants]]，工具使用服务策略。源上的权限不会带过来。
 
@@ -107,13 +114,19 @@ $root = 'C:\ProgramData\ProAnima\Arkvory'
 
 ### 在控制台中 {#status-console}
 
-把镜像端的控制台连接到做了镜像的仓库。目录上方的徽标显示状态：
+菜单中的 [[ui:mirrors]] 列出您有权读取其仓库的每个仓库镜像和导入，以及它的源、状态、上次同步时间和已复制的内容。管理员总能看到该页面；还没有仓库镜像时，页面会说明如何设置。该页面每 20 秒自动刷新一次。
 
-- [[ui:mirrorBadge]] 表示仓库镜像已追平。
-- [[ui:mirrorBehind]] 表示它仍在复制，或尚未开始。
-- [[ui:mirrorFailing]] 表示上一次尝试失败。下载仍然可用。
+| 状态                      | 含义                                            |
+| ------------------------- | ----------------------------------------------- |
+| [[ui:mirrorStateSynced]]  | 已与源追平                                      |
+| [[ui:mirrorStateBehind]]  | 正在复制源自上次检查以来做出的更改              |
+| [[ui:mirrorStatePending]] | 已配置，worker 尚未处理到它                     |
+| [[ui:mirrorStateSeeding]] | 首次填充，或源被恢复后的重新填充                |
+| [[ui:mirrorStateFailing]] | 上一次尝试失败。下载仍然可用，worker 会自行重试 |
 
-打开徽标的帮助（[[ui:mirrorHelpLabel]]），可以查看源、上次同步的时间和错误代码。控制台会在做了镜像的仓库中隐藏上传和更改按钮。
+当同步停止时，页面会说明原因和下一步该做什么，并在有修复命令时显示该命令，例如在源拒绝旧密钥后设置新密钥。这些文本与[错误代码](#error-codes)相对应。
+
+连接到做了镜像的仓库时，控制台还会在目录上方显示一个徽标：[[ui:mirrorBadge]]、[[ui:mirrorBehind]] 或 [[ui:mirrorFailing]]。同步停止期间，徽标下方会显示原因和下一步操作，并且徽标无需重新加载即可跟随服务器状态更新。打开徽标的帮助（[[ui:mirrorHelpLabel]]），可以查看源和上次同步的时间。控制台会在做了镜像的仓库中隐藏上传和更改按钮。
 
 ### 使用 API {#status-api}
 
@@ -130,17 +143,19 @@ $root = 'C:\ProgramData\ProAnima\Arkvory'
 
 ### 错误代码 {#error-codes}
 
-| `errorCode`               | 含义和处理方法                                                                                                                                               |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `mirror_mismatch`         | 同一个制品 ID 在源上的内容不同。仓库镜像保留自己的文件。请调查该制品；在查明原因之前，不要删除任何一份副本                                                   |
-| `mirror_source_changed`   | 该仓库已经保存了另一个源的副本。请分离它，或把新的源镜像到新的仓库中                                                                                         |
-| `mirror_source_behind`    | 源已被恢复或重新安装：仓库镜像所在位置上的更改并不是它在那里应用的更改。仓库镜像会重新读取源，追平之后该代码会清除。恢复后的源所缺少的文件会保留在仓库镜像上 |
-| `mirror_delete_blocked`   | 源删除了一个镜像端无法删除的文件，因为这里仍有内容在使用它，例如引用或文件路径历史记录                                                                       |
-| `mirror_detached`         | 该仓库已被分离，并且有自己的更改。它永远不会再被同步。请把源镜像到一个新仓库中                                                                               |
-| `mirror_package_conflict` | 源的某个版本包含一个包版本（组、名称和版本），而此仓库以不同的字节内容保存着该包版本。不会做任何更改。请在源上移除该阶段或该版本，或以另一个版本号发布它     |
-| `mirror_id_taken`         | 源的某个制品由此安装的另一个仓库持有。一个源仓库在这里只能填充一个仓库                                                                                       |
-| `mirror_failed`           | 没有更具体代码的失败。请查看 worker 日志                                                                                                                     |
-| 其他代码                  | 失败请求的代码，例如密钥被撤销时的 `unauthorized`，或仓库镜像已满时的 `capacity_exceeded`                                                                    |
+| `errorCode`               | 含义和处理方法                                                                                                                                                                        |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `mirror_mismatch`         | 同一个制品 ID 在源上的内容不同。仓库镜像保留自己的文件。请调查该制品；在查明原因之前，不要删除任何一份副本                                                                            |
+| `mirror_source_changed`   | 该仓库已经保存了另一个源的副本。请分离它，或把新的源镜像到新的仓库中                                                                                                                  |
+| `mirror_source_behind`    | 源已被恢复或重新安装：仓库镜像所在位置上的更改并不是它在那里应用的更改。仓库镜像会重新读取源，追平之后该代码会清除。恢复后的源所缺少的文件会保留在仓库镜像上                          |
+| `mirror_delete_blocked`   | 源删除了一个镜像端无法删除的文件，因为这里仍有内容在使用它，例如引用或文件路径历史记录                                                                                                |
+| `mirror_detached`         | 该仓库已被分离，并且有自己的更改。它永远不会再被同步。请把源镜像到一个新仓库中                                                                                                        |
+| `mirror_package_conflict` | 源的某个版本包含一个包版本（组、名称和版本），而此仓库以不同的字节内容保存着该包版本。不会做任何更改。请在源上移除该阶段或该版本，或以另一个版本号发布它                              |
+| `mirror_id_taken`         | 源的某个制品由此安装的另一个仓库持有。一个源仓库在这里只能填充一个仓库                                                                                                                |
+| `mirror_unreachable`      | 无法连接到源：连接被拒绝或超时，或名称无法解析。worker 会自行重试。请检查网络、防火墙以及源是否正在运行                                                                               |
+| `mirror_certificate`      | 源的证书不受信任、已过期或与其名称不匹配。请用 `--mirror-ca-file` 添加其颁发机构（参见[使用自有证书颁发机构的 HTTPS](#ca-file)）                                                      |
+| `mirror_failed`           | 没有更具体代码的失败。请查看 worker 日志                                                                                                                                              |
+| 其他代码                  | 失败请求的代码：源不再接受密钥时为 `unauthorized`（请为仓库镜像提供新密钥），密钥无权读取该仓库时为 `forbidden`，源仓库已不存在时为 `not_found`，仓库镜像已满时为 `capacity_exceeded` |
 
 worker 日志（`component` 为 `mirror`）包含 `mirror.started`、带有 `errorCode` 和 `attempts` 的 `mirror.step_failed`、`mirror.recovered` 和 `mirror.stopped`。
 
@@ -202,10 +217,10 @@ sudo arkvory configure --root /opt/proanima-arkvory \
 3. 在镜像端分离每个做了镜像的仓库。它会变成一个普通的可写仓库，制品 ID 和所有数据都保持不变。
 
    ```bash
-   sudo arkvory configure --root /opt/proanima-arkvory --mirror-detach releases
+   sudo arkvory configure --root /opt/proanima-arkvory --mirror-detach releases,prod
    ```
 
-   该命令会重启 API 和 worker，因此会出现短暂中断。
+   可以用逗号分隔列出多个仓库，或用 `all` 表示所有仓库镜像和导入。该命令只重启 API 和 worker 一次，因此会出现短暂中断。
 
 4. 通过 DNS 或您的 CI 配置，让写入的客户端指向镜像端。
 5. 在镜像端上传并下载一个对照文件。

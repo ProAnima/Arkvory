@@ -62,6 +62,8 @@ Los comandos siguientes usan el nombre de recurso predeterminado `arkvory`, el d
    dpkg --unpack Arkvory-amd64.deb
    ```
 
+   Con el paquete RPM, instale los archivos sin ejecutar sus scripts: `rpm -i --noscripts Arkvory-x86_64.rpm`. En el primer servidor, en cambio, instale el paquete de forma normal en el paso 5, así que genere el plan del paso 2 en otro servidor de datos.
+
 2. En un servidor de datos, genere el plan. Escribe el recurso DRBD y los comandos de Pacemaker en un directorio para que los revise:
 
    ```bash
@@ -93,7 +95,7 @@ Los comandos siguientes usan el nombre de recurso predeterminado `arkvory`, el d
    mkdir -p /opt/proanima-arkvory && mount /dev/drbd0 /opt/proanima-arkvory
    ```
 
-5. Instale Arkvory en el volumen montado, coloque los archivos TLS en el volumen y active el modo clúster:
+5. Instale Arkvory en el volumen montado (con RPM: `rpm -i Arkvory-x86_64.rpm` en lugar de `dpkg --configure`), coloque los archivos TLS en el volumen y active el modo clúster:
 
    ```bash
    dpkg --configure proanima-arkvory
@@ -109,22 +111,19 @@ Los comandos siguientes usan el nombre de recurso predeterminado `arkvory`, el d
 6. Detenga Arkvory en el primer servidor y libere el volumen:
 
    ```bash
-   systemctl stop arkvory-update.timer arkvory-update arkvory-backup arkvory-worker arkvory-api arkvory-replica arkvory-database
-   umount /opt/proanima-arkvory && drbdadm secondary arkvory
+   arkvory cluster-release --root /opt/proanima-arkvory
    ```
 
-7. En cada uno de los demás servidores de datos, por turno, tome el volumen, prepare el servidor y libere de nuevo el volumen:
+   El comando detiene los servicios de Arkvory en orden, desmonta el volumen y convierte este servidor en secundario.
+
+7. En cada uno de los demás servidores de datos, por turno, prepare el servidor:
 
    ```bash
-   drbdadm primary arkvory
-   mkdir -p /opt/proanima-arkvory && mount /dev/drbd0 /opt/proanima-arkvory
-   arkvory cluster-node --root /opt/proanima-arkvory --cluster-resource arkvory
-   dpkg --configure proanima-arkvory
-   systemctl stop arkvory-update.timer arkvory-update arkvory-backup arkvory-worker arkvory-api arkvory-replica arkvory-database
-   umount /opt/proanima-arkvory && drbdadm secondary arkvory
+   arkvory cluster-node --root /opt/proanima-arkvory
+   dpkg --configure proanima-arkvory   # solo .deb; con RPM no hace falta nada más
    ```
 
-   `cluster-node` crea las cuentas de servicio con los mismos ID de usuario y de grupo que en el primer servidor (los archivos del volumen les pertenecen) e instala los mismos servicios, ninguno de ellos con arranque automático. Si ya existe una cuenta con otros ID, el comando se detiene e indica qué ID debe establecer. Cada vez que un servidor pasa a estar activo, `arkvory-units` toma primero los servicios del volumen, de modo que los ajustes cambiados después en el servidor activo (un almacén de copias, por ejemplo) también se aplican tras una conmutación.
+   `cluster-node` toma el volumen, lee de él el nombre del recurso, prepara el servidor y vuelve a liberar el volumen. `--cluster-resource` solo hace falta cuando el recurso no se llama `arkvory`. Se niega mientras Pacemaker gestiona el grupo de Arkvory, porque entonces el volumen pertenece al clúster: para añadir un servidor a un clúster en marcha, siga [Sustituir un servidor](#replace-node). `cluster-node` crea las cuentas de servicio con los mismos ID de usuario y de grupo que en el primer servidor (los archivos del volumen les pertenecen) e instala los mismos servicios, ninguno de ellos con arranque automático. Si ya existe una cuenta con otros ID, el comando se detiene e indica qué ID debe establecer. Cada vez que un servidor pasa a estar activo, `arkvory-units` toma primero los servicios del volumen, de modo que los ajustes cambiados después en el servidor activo (un almacén de copias, por ejemplo) también se aplican tras una conmutación.
 
 8. Configure el clúster Corosync con `pcs` en los servidores de datos (`pcs host auth`, `pcs cluster setup`, `pcs cluster start --all`). En Debian y Ubuntu, ejecute antes `pcs cluster destroy` en cada servidor de datos: los paquetes instalan una configuración de ejemplo de Corosync que `pcs` toma por un clúster existente. No ejecute `pcs cluster enable`: un servidor que fue aislado debe volver a unirse solo cuando usted lo inicie. Para `ha-2`, autentique también el testigo y ejecute en él `pcs qdevice setup model net --enable --start`. En Debian y Ubuntu el paquete ya ha configurado el dispositivo de quórum para su propia cuenta de servicio: ejecute allí en su lugar `systemctl enable --now corosync-qnetd`.
 
@@ -152,15 +151,23 @@ Apunte sus clientes y el nombre DNS a la dirección virtual.
 
 Ejecute estos comandos como root. `cluster-status` y `cluster-single-copy` leen el volumen, así que ejecútelos en el servidor activo; los demás funcionan en cualquier servidor de datos.
 
-| Comando                                                                   | Qué hace                                                                                                 |
-| ------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| `arkvory cluster-status --root <dir>`                                     | Perfil, rol de este servidor, copias completas y requeridas y cualquier decisión del operador, como JSON |
-| `arkvory cluster-check --root <dir>`                                      | Todas las comprobaciones de un clúster sano; termina con un error cuando una falla                       |
-| `arkvory cluster-switchover --root <dir> --to <server>`                   | Traslado planificado de Arkvory a otro servidor de datos; se rechaza si alguna copia no está completa    |
-| `arkvory cluster-fence-test --root <dir> --node <standby>`                | Aísla un servidor en espera para demostrar su dispositivo de fencing; el servidor activo se rechaza      |
-| `arkvory cluster-single-copy --root <dir> --until <time> --reason <text>` | Acepta escrituras con una sola copia hasta una hora; consulte [Copia única](#single-copy)                |
+| Comando                                                                   | Qué hace                                                                                                                      |
+| ------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `arkvory cluster-status --root <dir>`                                     | Perfil, rol de este servidor, copias completas y requeridas y cualquier decisión del operador, como JSON                      |
+| `arkvory cluster-check --root <dir>`                                      | Todas las comprobaciones de un clúster sano; termina con un error cuando una falla                                            |
+| `arkvory cluster-switchover --root <dir> --to <server>`                   | Traslado planificado de Arkvory a otro servidor de datos; se rechaza si alguna copia no está completa                         |
+| `arkvory cluster-fence-test --root <dir> --node <standby> [--yes]`        | Aísla un servidor en espera para demostrar su dispositivo de fencing; el servidor activo se rechaza                           |
+| `arkvory cluster-single-copy --root <dir> --until <time> --reason <text>` | Acepta escrituras con una sola copia hasta una hora; consulte [Copia única](#single-copy)                                     |
+| `arkvory cluster-kit --root <dir> --output <file>`                        | En el servidor activo: el archivo que necesita un servidor nuevo para unirse; consulte [Sustituir un servidor](#replace-node) |
+| `arkvory cluster-node --root <dir> --kit <file>`                          | En un servidor nuevo: lo une con ese archivo, sin tomar el volumen                                                            |
 
 `pcs status` muestra el clúster tal como lo ve Pacemaker.
+
+### En la consola {#console}
+
+Los administradores encuentran [[ui:cluster]] en el menú de una instalación en clúster. La página muestra la topología, el servidor que da servicio ahora, las copias completas, si se aceptan escrituras y cada uno de los demás servidores con su conexión y su copia ([[ui:clusterCopyComplete]], [[ui:clusterCopySyncing]] o [[ui:clusterCopyMissing]]). Debajo, [[ui:clusterNextStep]] indica el único paso que corresponde al estado actual, con su comando: una conmutación planificada mientras todo está completo, recuperar o sustituir un servidor mientras falta una copia, y cómo terminar una decisión de copia única. La página se actualiza sola cada 15 segundos.
+
+Cuando las escrituras se detienen, un aviso en todas las pantallas lo indica; los administradores pueden abrir la página desde él. Las personas sin administración solo ven que las subidas están en pausa mientras las descargas siguen funcionando.
 
 ### Conmutación planificada {#switchover}
 
@@ -168,7 +175,7 @@ Ejecute estos comandos como root. `cluster-status` y `cluster-single-copy` leen 
 
 ### Prueba de fencing {#fence-test}
 
-`cluster-fence-test` reinicia un servidor en espera mediante su dispositivo de fencing. Tras el reinicio, inicie el clúster en ese servidor con `pcs cluster start`. Los servicios del clúster no se inician solos tras un reinicio (paso 8 de [Crear un clúster](#build)), por lo que un servidor aislado nunca se vuelve a unir sin usted.
+`cluster-fence-test` ejecuta primero las comprobaciones de `cluster-check` y se niega cuando una falla. En `ha-2`, aislar el único servidor en espera detiene las escrituras hasta que vuelve, por lo que el comando pide además `--yes`. Reinicia el servidor en espera mediante su dispositivo de fencing. Tras el reinicio, inicie el clúster en ese servidor con `pcs cluster start`. Los servicios del clúster no se inician solos tras un reinicio (paso 8 de [Crear un clúster](#build)), por lo que un servidor aislado nunca se vuelve a unir sin usted.
 
 ### Actualizaciones {#updates}
 
@@ -196,6 +203,37 @@ Tras una pérdida de quórum, inicie el clúster en cada servidor que haya vuelt
 
 Cuando el fencing falló y usted lo reparó, limpie los intentos fallidos en un servidor en marcha para que Pacemaker lo intente de nuevo: `pcs stonith history cleanup <server>` y `pcs resource cleanup`.
 
+### Sustituir un servidor {#replace-node}
+
+Cuando un servidor de datos se pierde definitivamente, sustitúyalo por uno nuevo con el mismo nombre y la misma dirección. Arkvory sigue dando servicio en el servidor activo todo el tiempo; las escrituras se reanudan en cuanto la nueva copia está completa.
+
+1. En el servidor nuevo, instale la misma distribución de Linux, DRBD, Pacemaker y los agentes de fencing, y desempaquete la misma versión del paquete de Arkvory que en el paso 1 de [Crear un clúster](#build). Para `ha-2`, instale también `corosync-qdevice`.
+2. En el servidor activo, escriba el archivo que necesita el servidor nuevo: el nombre del recurso, los ID de las cuentas de servicio y los servicios.
+
+   ```bash
+   arkvory cluster-kit --root /opt/proanima-arkvory --output /root/arkvory-node.kit
+   ```
+
+   Cópielo al servidor nuevo por un canal seguro. No contiene ningún secreto, pero describe el clúster.
+
+3. En el servidor nuevo, únalo con el archivo. No necesita el volumen:
+
+   ```bash
+   arkvory cluster-node --root /opt/proanima-arkvory --kit /root/arkvory-node.kit
+   dpkg --configure proanima-arkvory   # solo .deb
+   ```
+
+4. Copie `/etc/drbd.d/arkvory.res` desde otro servidor de datos, cree los metadatos y levante el recurso. La nueva copia empieza a llenarse desde el servidor activo:
+
+   ```bash
+   drbdadm create-md arkvory
+   drbdadm up arkvory
+   ```
+
+5. Sustituya el miembro del clúster: en el servidor activo, ejecute `pcs host auth <server>`, `pcs cluster node remove <server>` y después `pcs cluster node add <server> addr=<address> --start`. El dispositivo de fencing del servidor conserva su configuración cuando el servidor nuevo responde a los mismos ajustes del dispositivo; si no, actualícelo con `pcs stonith update`.
+6. Siga [[ui:cluster]] en la consola o `arkvory cluster-status`: el servidor muestra [[ui:clusterCopySyncing]] hasta que su copia está completa. Después, las escrituras se reanudan solas.
+7. Demuestre el dispositivo de fencing del servidor nuevo con `arkvory cluster-fence-test --node <server> --yes` y ejecute `arkvory cluster-check`.
+
 ### Copia única {#single-copy}
 
 Cuando un servidor de datos permanece ausente mucho tiempo (por ejemplo, por la sustitución de un disco) y las escrituras detenidas cuestan más que el riesgo, un operador puede aceptar escrituras con una copia durante un tiempo limitado:
@@ -204,14 +242,14 @@ Cuando un servidor de datos permanece ausente mucho tiempo (por ejemplo, por la 
 arkvory cluster-single-copy --root /opt/proanima-arkvory --until 2026-10-12T18:00:00Z --reason "disk replacement on node-b"
 ```
 
-- La hora debe estar dentro de los próximos 7 días. El comando solo funciona mientras faltan copias.
+- La hora debe estar dentro de los próximos 7 días y llevar su zona: `Z` para UTC o un desfase como `+03:00`. Sin zona el comando se niega, porque el servidor activo la interpretaría en su propia hora local. El comando solo funciona mientras faltan copias.
 - Mientras la decisión está activa, la pérdida del servidor activo pierde las escrituras confirmadas después de ella.
 - El aviso de la consola, la métrica `arkvory_replication_required_copies` y la alerta `ArkvorySingleCopyWrites` muestran la decisión.
 - Termina a su hora, con `--off`, o por sí sola en cuanto todas las copias vuelven a estar completas. Una pérdida posterior detiene las escrituras de nuevo.
 
 ## Monitorización {#monitoring}
 
-`GET /health/ready` sigue siendo 200 en el servidor activo mientras las escrituras están detenidas, de modo que un monitor no mueve un servidor sano. Su campo `writable` es `false` y el campo `replication` muestra `copies`, `required` y `singleCopyUntil`; `replication` es `null` cuando no se pueden leer las copias. Los servidores independientes no tienen el campo `replication`.
+`GET /health/ready` sigue siendo 200 en el servidor activo mientras las escrituras están detenidas, de modo que un monitor no mueve un servidor sano. Su campo `writable` es `false` y el campo `replication` muestra `copies`, `required` y `singleCopyUntil`; `replication` es `null` cuando no se pueden leer las copias. Para los administradores incluye además `node` (el servidor que responde), `profile` y `peers`, los demás servidores con su conexión y su copia, que muestra la [página de la consola](#console). Los servidores independientes no tienen el campo `replication`.
 
 | Métrica                                    | Significado                                                                   |
 | ------------------------------------------ | ----------------------------------------------------------------------------- |

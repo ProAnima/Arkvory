@@ -163,7 +163,7 @@ function registerRoutes(app: FastifyInstance, parts: RouteParts) {
   const { config, runtime, services, context, replica, drain } = parts;
   registerReplicaGuard(app, replica);
   registerHttpErrors(app, context);
-  registerHealthRoutes(app, runtime, () => drain.isDraining, replica);
+  registerHealthRoutes(app, runtime, () => drain.isDraining, replica, context.principal);
   registerUpdateRoutes(app, context.principal, config.updateControlDirectory);
   registerFeedback(app, context.principal, {
     hub: config.hub ?? null,

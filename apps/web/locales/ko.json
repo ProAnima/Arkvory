@@ -1811,25 +1811,317 @@
     "en": "Last synchronized:",
     "text": "마지막 동기화:"
   },
-  "mirrorError": {
-    "en": "The last attempt failed ({code}); downloads keep working.",
-    "text": "마지막 시도가 실패했습니다({code}). 다운로드는 계속 사용할 수 있습니다."
-  },
   "mirrorNever": {
     "en": "not yet",
     "text": "아직 없음"
   },
   "mirrorImport": {
-    "en": "Imports",
+    "en": "Import",
     "text": "가져오기"
   },
   "mirrorImportFailing": {
-    "en": "Imports · sync error",
+    "en": "Import · sync error",
     "text": "가져오기 · 동기화 오류"
   },
   "mirrorImportDetails": {
     "en": "Versions marked {stages} in “{source}” on {upstream} are copied here automatically. Later changes and deletions there do not affect them.",
     "text": "{upstream}의 “{source}”에서 {stages} 스테이지로 표시된 버전은 이곳으로 자동 복사됩니다. 이후 원본에서 변경하거나 삭제해도 복사된 버전에는 영향이 없습니다."
+  },
+  "mirrorProblem": {
+    "en": "Synchronization stopped. Downloads keep working.",
+    "text": "동기화가 중지되었습니다. 다운로드는 계속 작동합니다."
+  },
+  "mirrorFixLink": {
+    "en": "What to do",
+    "text": "해결 방법"
+  },
+  "mirrorReasonUnauthorized": {
+    "en": "The source no longer accepts this server’s key. An administrator gives the mirror a new key:",
+    "text": "원본이 이 서버의 키를 더 이상 허용하지 않습니다. 관리자가 미러에 새 키를 발급합니다:"
+  },
+  "mirrorReasonForbidden": {
+    "en": "The key of this mirror cannot read “{source}” on {upstream}. Give it read access there.",
+    "text": "이 미러의 키로는 {upstream}의 “{source}”을(를) 읽을 수 없습니다. 원본에서 이 키에 읽기 권한을 부여하세요."
+  },
+  "mirrorReasonNotFound": {
+    "en": "{upstream} has no repository “{source}”. Check that it was not renamed or deleted there.",
+    "text": "{upstream}에 “{source}” 리포지토리가 없습니다. 원본에서 이름이 바뀌거나 삭제되지 않았는지 확인하세요."
+  },
+  "mirrorReasonUnreachable": {
+    "en": "{upstream} cannot be reached. The server keeps retrying; check the network and that the source is running.",
+    "text": "{upstream}에 연결할 수 없습니다. 서버가 계속 재시도합니다. 네트워크와 원본이 실행 중인지 확인하세요."
+  },
+  "mirrorReasonCertificate": {
+    "en": "The certificate of {upstream} is not trusted here. Add its certificate authority:",
+    "text": "{upstream}의 인증서를 여기서 신뢰하지 않습니다. 해당 인증 기관을 추가하세요:"
+  },
+  "mirrorReasonCapacity": {
+    "en": "This server has no room for the next file. Free space or raise the storage limit; copying resumes by itself.",
+    "text": "이 서버에 다음 파일을 저장할 공간이 없습니다. 공간을 확보하거나 저장소 한도를 늘리세요. 복사는 자동으로 다시 시작됩니다."
+  },
+  "mirrorReasonSourceBehind": {
+    "en": "The source was restored from a backup, so the mirror reads it again. Nothing to do: this clears once it has caught up.",
+    "text": "원본이 백업에서 복원되어 미러가 원본을 다시 읽고 있습니다. 조치할 필요는 없으며, 따라잡으면 이 메시지가 사라집니다."
+  },
+  "mirrorReasonMismatch": {
+    "en": "A file here differs from the source under the same ID. Find out why before deleting either copy.",
+    "text": "여기 있는 파일이 같은 ID의 원본 파일과 다릅니다. 어느 사본이든 삭제하기 전에 원인을 확인하세요."
+  },
+  "mirrorReasonSourceChanged": {
+    "en": "This repository already holds a copy of another source. Mirror the new source into a new repository.",
+    "text": "이 리포지토리에는 이미 다른 원본의 사본이 있습니다. 새 원본은 새 리포지토리로 미러링하세요."
+  },
+  "mirrorReasonDeleteBlocked": {
+    "en": "The source deleted a file that is still used here, for example by a file path. It stays here.",
+    "text": "원본에서 삭제한 파일이 여기서는 아직 사용되고 있습니다(예: 파일 경로). 이 파일은 여기에 남습니다."
+  },
+  "mirrorReasonDetached": {
+    "en": "This repository was detached and has changes of its own; it is never synchronized again. Mirror the source into a new repository.",
+    "text": "이 리포지토리는 분리되었고 자체 변경 사항이 있으므로 다시는 동기화되지 않습니다. 원본은 새 리포지토리로 미러링하세요."
+  },
+  "mirrorReasonPackage": {
+    "en": "A version of the source has a package version that this repository holds with other bytes. Remove the stage or the version on the source, or publish it under another version.",
+    "text": "원본의 한 버전에 있는 패키지 버전을 이 리포지토리가 다른 바이트로 보관하고 있습니다. 원본에서 스테이지나 버전을 제거하거나, 다른 버전으로 게시하세요."
+  },
+  "mirrorReasonIdTaken": {
+    "en": "A file of the source is held by another repository here. One source repository can fill only one repository.",
+    "text": "원본의 파일을 이 서버의 다른 리포지토리가 이미 보관하고 있습니다. 원본 리포지토리 하나는 리포지토리 하나만 채울 수 있습니다."
+  },
+  "mirrorReasonOther": {
+    "en": "The last attempt failed ({code}). The server retries by itself; its log names the cause.",
+    "text": "마지막 시도가 실패했습니다({code}). 서버가 자동으로 재시도하며, 원인은 서버 로그에 기록됩니다."
+  },
+  "mirrors": {
+    "en": "Mirrors",
+    "text": "미러"
+  },
+  "mirrorsIntro": {
+    "en": "Repositories this server copies from other Arkvory installations. The server keeps them in sync by itself; this page refreshes on its own.",
+    "text": "이 서버가 다른 Arkvory 설치 환경에서 복사하는 리포지토리입니다. 서버가 자동으로 동기화를 유지하며, 이 페이지도 자동으로 새로 고쳐집니다."
+  },
+  "mirrorsRepository": {
+    "en": "Repository",
+    "text": "리포지토리"
+  },
+  "mirrorsSource": {
+    "en": "Source",
+    "text": "원본"
+  },
+  "mirrorsState": {
+    "en": "State",
+    "text": "상태"
+  },
+  "mirrorsLastSync": {
+    "en": "Last synchronized",
+    "text": "마지막 동기화"
+  },
+  "mirrorsCopied": {
+    "en": "Copied",
+    "text": "복사됨"
+  },
+  "mirrorsCopiedValue": {
+    "en": "{count} files · {size}",
+    "text": "파일 {count}개 · {size}"
+  },
+  "mirrorsSourceValue": {
+    "en": "“{source}” on {upstream}",
+    "text": "{upstream}의 “{source}”"
+  },
+  "mirrorsModeMirror": {
+    "en": "Read-only mirror",
+    "text": "읽기 전용 미러"
+  },
+  "mirrorsModeImport": {
+    "en": "Imports versions marked {stages}",
+    "text": "{stages} 스테이지로 표시된 버전 가져오기"
+  },
+  "mirrorStateSynced": {
+    "en": "In sync",
+    "text": "동기화됨"
+  },
+  "mirrorStateBehind": {
+    "en": "Catching up",
+    "text": "따라잡는 중"
+  },
+  "mirrorStatePending": {
+    "en": "Starting",
+    "text": "시작 중"
+  },
+  "mirrorStateSeeding": {
+    "en": "First copy",
+    "text": "첫 복사"
+  },
+  "mirrorStateFailing": {
+    "en": "Sync error",
+    "text": "동기화 오류"
+  },
+  "mirrorsEmptyTitle": {
+    "en": "No mirrors on this server",
+    "text": "이 서버에 미러가 없습니다"
+  },
+  "mirrorsEmpty": {
+    "en": "A mirror keeps a copy of a repository of another installation: a second site, or staging to production. An administrator sets one up with “arkvory configure --mirror”.",
+    "text": "미러는 다른 설치 환경의 리포지토리 사본을 보관합니다. 예를 들어 두 번째 사이트나 스테이징에서 프로덕션으로의 전달에 사용합니다. 관리자가 “arkvory configure --mirror”로 설정합니다."
+  },
+  "mirrorsGuide": {
+    "en": "Mirrors guide",
+    "text": "미러 가이드"
+  },
+  "mirrorsUnavailable": {
+    "en": "Cannot load the mirrors. Retrying automatically.",
+    "text": "미러를 불러올 수 없습니다. 자동으로 다시 시도하는 중입니다."
+  },
+  "errorMirrorReadOnly": {
+    "en": "This repository is a mirror of another installation and cannot be changed here. Make the change on the source; the mirror follows by itself.",
+    "text": "이 리포지토리는 다른 설치 환경의 미러이므로 여기서 변경할 수 없습니다. 원본에서 변경하세요. 미러에는 자동으로 반영됩니다."
+  },
+  "cluster": {
+    "en": "Cluster",
+    "text": "클러스터"
+  },
+  "clusterIntro": {
+    "en": "This server runs as a high-availability cluster: every write is kept on more than one node before it is confirmed. This page refreshes on its own.",
+    "text": "이 서버는 고가용성 클러스터로 실행됩니다. 모든 쓰기는 확인되기 전에 둘 이상의 노드에 저장됩니다. 이 페이지는 자동으로 새로 고쳐집니다."
+  },
+  "clusterProfile": {
+    "en": "Layout",
+    "text": "구성"
+  },
+  "clusterProfileTwo": {
+    "en": "Two data nodes and a witness",
+    "text": "데이터 노드 2개와 위트니스"
+  },
+  "clusterProfileThree": {
+    "en": "Three data nodes",
+    "text": "데이터 노드 3개"
+  },
+  "clusterActive": {
+    "en": "Serving now",
+    "text": "현재 서비스 중"
+  },
+  "clusterCopies": {
+    "en": "Complete copies",
+    "text": "완전한 복사본"
+  },
+  "clusterCopiesValue": {
+    "en": "{copies} of {required} required",
+    "text": "필요한 {required}개 중 {copies}개"
+  },
+  "clusterWrites": {
+    "en": "Writes",
+    "text": "쓰기"
+  },
+  "clusterWritesOn": {
+    "en": "Accepted",
+    "text": "허용됨"
+  },
+  "clusterWritesOff": {
+    "en": "Stopped",
+    "text": "중지됨"
+  },
+  "clusterWritesSingle": {
+    "en": "Accepted with one copy until {until}",
+    "text": "{until}까지 복사본 하나로 허용됨"
+  },
+  "clusterNodes": {
+    "en": "Other nodes",
+    "text": "다른 노드"
+  },
+  "clusterNode": {
+    "en": "Node",
+    "text": "노드"
+  },
+  "clusterRole": {
+    "en": "Role",
+    "text": "역할"
+  },
+  "clusterConnection": {
+    "en": "Connection",
+    "text": "연결"
+  },
+  "clusterCopy": {
+    "en": "Copy",
+    "text": "복사본"
+  },
+  "clusterRoleData": {
+    "en": "Data copy",
+    "text": "데이터 복사본"
+  },
+  "clusterRoleWitness": {
+    "en": "Witness (votes, holds no data)",
+    "text": "위트니스(투표만 하며 데이터는 보관하지 않음)"
+  },
+  "clusterConnected": {
+    "en": "Connected",
+    "text": "연결됨"
+  },
+  "clusterDisconnected": {
+    "en": "Not connected",
+    "text": "연결되지 않음"
+  },
+  "clusterCopyComplete": {
+    "en": "Complete",
+    "text": "완전함"
+  },
+  "clusterCopySyncing": {
+    "en": "Catching up",
+    "text": "따라잡는 중"
+  },
+  "clusterCopyMissing": {
+    "en": "Missing",
+    "text": "없음"
+  },
+  "clusterCopyNone": {
+    "en": "—",
+    "text": "—"
+  },
+  "clusterNoPeers": {
+    "en": "No other node is configured or connected.",
+    "text": "구성되었거나 연결된 다른 노드가 없습니다."
+  },
+  "clusterNextStep": {
+    "en": "Next step",
+    "text": "다음 단계"
+  },
+  "clusterHealthy": {
+    "en": "Every copy is complete: a node can fail without losing confirmed writes. Before maintenance of the serving node, move Arkvory to another node. On the serving node, run:",
+    "text": "모든 복사본이 완전합니다. 노드 하나가 장애를 일으켜도 확인된 쓰기는 손실되지 않습니다. 서비스 중인 노드를 유지 관리하기 전에 Arkvory를 다른 노드로 옮기세요. 서비스 중인 노드에서 다음을 실행하세요:"
+  },
+  "clusterDegraded": {
+    "en": "Writes are stopped until the missing copy is back; downloads keep working. Bring the node back, or replace it with a new one (see the guide). Only if you accept losing writes on a second failure, allow one copy for a limited time. On the serving node, run:",
+    "text": "누락된 복사본이 돌아올 때까지 쓰기가 중지됩니다. 다운로드는 계속 작동합니다. 노드를 복구하거나 새 노드로 교체하세요(가이드 참조). 두 번째 장애 시 쓰기 손실을 감수할 수 있는 경우에만 제한된 시간 동안 복사본 하나를 허용하세요. 서비스 중인 노드에서 다음을 실행하세요:"
+  },
+  "clusterSingle": {
+    "en": "Writes are confirmed with one copy: a second failure loses them. The decision ends by itself once the copy is back. To end it now, on the serving node run:",
+    "text": "쓰기가 복사본 하나로 확인되고 있습니다. 두 번째 장애가 발생하면 손실됩니다. 이 결정은 복사본이 돌아오면 자동으로 종료됩니다. 지금 종료하려면 서비스 중인 노드에서 다음을 실행하세요:"
+  },
+  "clusterUnknown": {
+    "en": "The server cannot read the state of its copies, so writes are stopped. On the serving node, check the arkvory-replica service:",
+    "text": "서버가 복사본 상태를 읽을 수 없어 쓰기가 중지되었습니다. 서비스 중인 노드에서 arkvory-replica 서비스를 확인하세요:"
+  },
+  "clusterOld": {
+    "en": "Node details appear after every node runs this release. Copies and writes above are current.",
+    "text": "노드 세부 정보는 모든 노드가 이 릴리스를 실행한 후에 표시됩니다. 위의 복사본과 쓰기 정보는 최신입니다."
+  },
+  "clusterGuide": {
+    "en": "Cluster guide",
+    "text": "클러스터 가이드"
+  },
+  "clusterReplaceGuide": {
+    "en": "Replace a node",
+    "text": "노드 교체"
+  },
+  "clusterUnavailable": {
+    "en": "Cannot read the cluster state. Retrying automatically.",
+    "text": "클러스터 상태를 읽을 수 없습니다. 자동으로 다시 시도하는 중입니다."
+  },
+  "clusterOpen": {
+    "en": "Open the cluster page",
+    "text": "클러스터 페이지 열기"
+  },
+  "replicationReaders": {
+    "en": "Uploads are paused while the server restores a copy of its data. Downloads keep working.",
+    "text": "서버가 데이터 복사본을 복원하는 동안 업로드가 일시 중지됩니다. 다운로드는 계속 작동합니다."
   },
   "reportOpen": {
     "en": "Feedback",

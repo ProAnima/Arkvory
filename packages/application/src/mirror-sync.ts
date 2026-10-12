@@ -152,10 +152,35 @@ export async function reseed(
 export const seedProgress = (state: MirrorState): Partial<MirrorState> =>
   state.errorCode === 'mirror_source_behind' ? {} : { errorCode: null, errorAt: null };
 
-/** Machine code of a failed step: the failure's own code, else a constant. */
+const codeOf = (value: unknown): unknown =>
+  typeof value === 'object' && value !== null && 'code' in value ? value.code : null;
+/** Codes of the platform's TLS checks: the source's certificate is not trusted here. */
+const CERTIFICATE = /^(CERT_|DEPTH_ZERO_|SELF_SIGNED_|UNABLE_TO_(GET_ISSUER|VERIFY)|ERR_TLS_CERT)/;
+/** Codes of a connection that failed or broke: the source cannot be reached from here. */
+const UNREACHABLE =
+  /^(ECONN|ENOTFOUND|EAI_AGAIN|ETIMEDOUT|EHOSTUNREACH|ENETUNREACH|EPIPE|UND_ERR_)/;
+
+/**
+ * Machine code of a failed step: the failure's own code; a failed connection (the platform's
+ * code sits on the error or its cause) as `mirror_unreachable` or, for an untrusted certificate,
+ * `mirror_certificate`, so the status says what to fix; else a constant.
+ */
 export function mirrorErrorCode(error: unknown): string {
-  const code = typeof error === 'object' && error !== null && 'code' in error ? error.code : null;
-  return typeof code === 'string' && /^[a-z][a-z0-9_]{0,63}$/.test(code) ? code : 'mirror_failed';
+  const code = codeOf(error);
+  if (typeof code === 'string' && /^[a-z][a-z0-9_]{0,63}$/.test(code)) return code;
+  // fetch wraps the platform's error, and a client may wrap fetch's: a short chain of causes.
+  let platform: string | undefined;
+  let connection = false;
+  for (let link = error, depth = 0; link instanceof Error && depth < 4; depth++) {
+    const own = codeOf(link);
+    if (typeof own === 'string') platform ??= own;
+    connection ||= ['ArkvoryNetworkError', 'TimeoutError'].includes(link.name);
+    link = link.cause;
+  }
+  if (platform !== undefined && CERTIFICATE.test(platform)) return 'mirror_certificate';
+  if (connection || (platform !== undefined && UNREACHABLE.test(platform)))
+    return 'mirror_unreachable';
+  return 'mirror_failed';
 }
 
 /**

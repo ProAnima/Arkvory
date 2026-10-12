@@ -62,6 +62,8 @@ Arkvory 集群在站点中的某台服务器故障时仍能继续工作。两到
    dpkg --unpack Arkvory-amd64.deb
    ```
 
+   使用 RPM 软件包时，请安装文件但不运行其脚本：`rpm -i --noscripts Arkvory-x86_64.rpm`。在第一台服务器上，你改为在第 5 步中正常安装该软件包，因此请在另一台数据服务器上完成第 2 步的方案。
+
 2. 在一台数据服务器上生成方案。它会把 DRBD 资源和 Pacemaker 命令写入一个目录，供你审阅：
 
    ```bash
@@ -93,7 +95,7 @@ Arkvory 集群在站点中的某台服务器故障时仍能继续工作。两到
    mkdir -p /opt/proanima-arkvory && mount /dev/drbd0 /opt/proanima-arkvory
    ```
 
-5. 把 Arkvory 安装到已挂载的卷中，把 TLS 文件放到卷上，并启用集群模式：
+5. 把 Arkvory 安装到已挂载的卷中（使用 RPM 时，用 `rpm -i Arkvory-x86_64.rpm` 代替 `dpkg --configure`），把 TLS 文件放到卷上，并启用集群模式：
 
    ```bash
    dpkg --configure proanima-arkvory
@@ -109,22 +111,19 @@ Arkvory 集群在站点中的某台服务器故障时仍能继续工作。两到
 6. 在第一台服务器上停止 Arkvory 并释放卷：
 
    ```bash
-   systemctl stop arkvory-update.timer arkvory-update arkvory-backup arkvory-worker arkvory-api arkvory-replica arkvory-database
-   umount /opt/proanima-arkvory && drbdadm secondary arkvory
+   arkvory cluster-release --root /opt/proanima-arkvory
    ```
 
-7. 依次在其他每台数据服务器上，接管卷、准备服务器，然后再次释放卷：
+   该命令按顺序停止 Arkvory 服务，卸载卷，并把此服务器设为从节点（secondary）。
+
+7. 依次在其他每台数据服务器上准备服务器：
 
    ```bash
-   drbdadm primary arkvory
-   mkdir -p /opt/proanima-arkvory && mount /dev/drbd0 /opt/proanima-arkvory
-   arkvory cluster-node --root /opt/proanima-arkvory --cluster-resource arkvory
-   dpkg --configure proanima-arkvory
-   systemctl stop arkvory-update.timer arkvory-update arkvory-backup arkvory-worker arkvory-api arkvory-replica arkvory-database
-   umount /opt/proanima-arkvory && drbdadm secondary arkvory
+   arkvory cluster-node --root /opt/proanima-arkvory
+   dpkg --configure proanima-arkvory   # 仅限 .deb；使用 RPM 时无需其他操作
    ```
 
-   `cluster-node` 会创建与第一台服务器用户 ID 和组 ID 相同的服务账户（卷上的文件归它们所有），并安装相同的服务，这些服务都不会自动启动。如果某个账户已存在但 ID 不同，命令会停止并告诉你应设置哪些 ID。每当一台服务器成为活动服务器时，`arkvory-units` 会先从卷上获取服务，因此之后在活动服务器上更改的设置（例如备份存储）在故障切换后同样生效。
+   `cluster-node` 会接管卷，从卷中读取资源名，准备服务器，然后再次释放卷。只有当资源名不是 `arkvory` 时才需要 `--cluster-resource`。当 Pacemaker 正在管理 Arkvory 组时，该命令会拒绝执行，因为此时卷归集群所有：要向正在运行的集群添加服务器，请按[更换服务器](#replace-node)中的说明操作。`cluster-node` 会创建与第一台服务器用户 ID 和组 ID 相同的服务账户（卷上的文件归它们所有），并安装相同的服务，这些服务都不会自动启动。如果某个账户已存在但 ID 不同，命令会停止并告诉你应设置哪些 ID。每当一台服务器成为活动服务器时，`arkvory-units` 会先从卷上获取服务，因此之后在活动服务器上更改的设置（例如备份存储）在故障切换后同样生效。
 
 8. 在数据服务器上用 `pcs` 设置 Corosync 集群（`pcs host auth`、`pcs cluster setup`、`pcs cluster start --all`）。在 Debian 和 Ubuntu 上，请先在每台数据服务器上运行 `pcs cluster destroy`：软件包会安装一份示例 Corosync 配置，`pcs` 会把它当作已有的集群。不要运行 `pcs cluster enable`：被隔离的服务器应当只在你启动它时才重新加入。对于 `ha-2`，还要对见证节点进行认证，并在其上运行 `pcs qdevice setup model net --enable --start`。在 Debian 和 Ubuntu 上，软件包已经为其自身的服务账户设置好了仲裁设备：请改为在那里运行 `systemctl enable --now corosync-qnetd`。
 
@@ -157,10 +156,18 @@ Arkvory 集群在站点中的某台服务器故障时仍能继续工作。两到
 | `arkvory cluster-status --root <dir>`                                     | 以 JSON 输出配置、此服务器的角色、完整副本数与所需副本数，以及任何操作员决定 |
 | `arkvory cluster-check --root <dir>`                                      | 健康集群的全部检查；某项失败时以错误退出                                     |
 | `arkvory cluster-switchover --root <dir> --to <server>`                   | 有计划地把 Arkvory 迁移到另一台数据服务器；除非每份副本都完整，否则被拒绝    |
-| `arkvory cluster-fence-test --root <dir> --node <standby>`                | 隔离一台备用服务器以验证其隔离设备；活动服务器会被拒绝                       |
+| `arkvory cluster-fence-test --root <dir> --node <standby> [--yes]`        | 隔离一台备用服务器以验证其隔离设备；活动服务器会被拒绝                       |
 | `arkvory cluster-single-copy --root <dir> --until <time> --reason <text>` | 在某个时间之前接受只有一份副本的写入；参见[单副本](#single-copy)             |
+| `arkvory cluster-kit --root <dir> --output <file>`                        | 在活动服务器上：生成新服务器加入所需的文件；参见[更换服务器](#replace-node)  |
+| `arkvory cluster-node --root <dir> --kit <file>`                          | 在新服务器上：用该文件加入集群，无需接管卷                                   |
 
 `pcs status` 显示 Pacemaker 所看到的集群状态。
+
+### 在控制台中 {#console}
+
+在集群安装中，管理员可以在菜单中找到 [[ui:cluster]]。该页面显示集群布局、当前提供服务的服务器、完整副本数、是否接受写入，以及其他每台服务器的连接状态和副本状态（[[ui:clusterCopyComplete]]、[[ui:clusterCopySyncing]] 或 [[ui:clusterCopyMissing]]）。下方的 [[ui:clusterNextStep]] 给出适合当前状态的那一步操作及其命令：一切完整时进行计划切换；缺少副本时让服务器恢复或更换它；以及如何结束单副本决定。该页面每 15 秒自动刷新一次。
+
+写入停止时，每个界面上都会出现一条横幅说明这一点；管理员可以从横幅打开该页面。没有管理权限的用户只会看到上传暂停，而下载仍然正常。
 
 ### 计划切换 {#switchover}
 
@@ -168,7 +175,7 @@ Arkvory 集群在站点中的某台服务器故障时仍能继续工作。两到
 
 ### 隔离测试 {#fence-test}
 
-`cluster-fence-test` 通过备用服务器的隔离设备将其重启。重启后，用 `pcs cluster start` 在该服务器上启动集群。集群服务在重启后不会自行启动（参见[搭建集群](#build)的第 8 步），因此被隔离的服务器没有你的操作就永远不会重新加入。
+`cluster-fence-test` 首先运行 `cluster-check` 的各项检查，某项失败时拒绝执行。在 `ha-2` 中，隔离唯一的备用服务器会使写入停止，直到它恢复，因此该命令还要求提供 `--yes`。它通过备用服务器的隔离设备将其重启。重启后，用 `pcs cluster start` 在该服务器上启动集群。集群服务在重启后不会自行启动（参见[搭建集群](#build)的第 8 步），因此被隔离的服务器没有你的操作就永远不会重新加入。
 
 ### 更新 {#updates}
 
@@ -196,6 +203,37 @@ Arkvory 集群在站点中的某台服务器故障时仍能继续工作。两到
 
 当隔离失败而你已将其修复后，请在一台正在运行的服务器上清除失败的尝试，让 Pacemaker 重试：`pcs stonith history cleanup <server>` 和 `pcs resource cleanup`。
 
+### 更换服务器 {#replace-node}
+
+当一台数据服务器永久丢失时，请用一台使用相同名称和地址的新服务器替换它。在此期间，Arkvory 始终在活动服务器上提供服务；新副本完整后，写入即恢复。
+
+1. 在新服务器上，安装相同的 Linux 发行版、DRBD、Pacemaker 和隔离代理，并像[搭建集群](#build)的第 1 步那样解包相同版本的 Arkvory 软件包。对于 `ha-2`，还要安装 `corosync-qdevice`。
+2. 在活动服务器上，写出新服务器所需的文件：资源名、服务账户的 ID 和服务。
+
+   ```bash
+   arkvory cluster-kit --root /opt/proanima-arkvory --output /root/arkvory-node.kit
+   ```
+
+   通过安全通道把它复制到新服务器。该文件不包含机密，但它描述了集群。
+
+3. 在新服务器上，用该文件加入集群。它不需要卷：
+
+   ```bash
+   arkvory cluster-node --root /opt/proanima-arkvory --kit /root/arkvory-node.kit
+   dpkg --configure proanima-arkvory   # 仅限 .deb
+   ```
+
+4. 从另一台数据服务器复制 `/etc/drbd.d/arkvory.res`，然后创建元数据并启动资源。新副本开始从活动服务器填充：
+
+   ```bash
+   drbdadm create-md arkvory
+   drbdadm up arkvory
+   ```
+
+5. 更换集群成员：在活动服务器上运行 `pcs host auth <server>`、`pcs cluster node remove <server>`，然后运行 `pcs cluster node add <server> addr=<address> --start`。如果新服务器响应相同的设备设置，该服务器的隔离设备会保留其配置；否则请用 `pcs stonith update` 更新它。
+6. 在控制台的 [[ui:cluster]] 或通过 `arkvory cluster-status` 观察：在副本完整之前，该服务器显示 [[ui:clusterCopySyncing]]。之后写入会自动恢复。
+7. 用 `arkvory cluster-fence-test --node <server> --yes` 验证新服务器的隔离设备，并运行 `arkvory cluster-check`。
+
 ### 单副本 {#single-copy}
 
 当某台数据服务器长时间缺席（例如更换磁盘），并且停止写入的代价超过风险时，操作员可以在有限时间内接受只有一份副本的写入：
@@ -204,14 +242,14 @@ Arkvory 集群在站点中的某台服务器故障时仍能继续工作。两到
 arkvory cluster-single-copy --root /opt/proanima-arkvory --until 2026-10-12T18:00:00Z --reason "disk replacement on node-b"
 ```
 
-- 时间必须在未来 7 天以内。该命令仅在缺少副本时才有效。
+- 时间必须在未来 7 天以内，并带有时区：`Z` 表示 UTC，或使用 `+03:00` 这样的偏移量。没有时区时命令会拒绝执行，因为活动服务器会按其本地时间解读该时间。该命令仅在缺少副本时才有效。
 - 决定生效期间，如果活动服务器丢失，此后已确认的写入也会随之丢失。
 - 控制台横幅、指标 `arkvory_replication_required_copies` 和告警 `ArkvorySingleCopyWrites` 会显示该决定。
 - 它会在到期时间结束，也可用 `--off` 结束，或在每份副本再次完整时自动结束。之后若再出现丢失，写入会再次停止。
 
 ## 监控 {#monitoring}
 
-在写入停止期间，活动服务器上的 `GET /health/ready` 仍返回 200，因此监控不会移动健康的服务器。其字段 `writable` 为 `false`，字段 `replication` 显示 `copies`、`required` 和 `singleCopyUntil`；无法读取副本时，`replication` 为 `null`。独立服务器没有 `replication` 字段。
+在写入停止期间，活动服务器上的 `GET /health/ready` 仍返回 200，因此监控不会移动健康的服务器。其字段 `writable` 为 `false`，字段 `replication` 显示 `copies`、`required` 和 `singleCopyUntil`；无法读取副本时，`replication` 为 `null`。对管理员，它还包含 `node`（作出响应的服务器）、`profile` 和 `peers`（其他服务器及其连接和副本），[控制台页面](#console)显示的正是这些信息。独立服务器没有 `replication` 字段。
 
 | 指标                                       | 含义                                        |
 | ------------------------------------------ | ------------------------------------------- |

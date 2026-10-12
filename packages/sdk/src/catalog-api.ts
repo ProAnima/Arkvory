@@ -9,6 +9,7 @@ import {
   readPackageList,
   readArtifactSearchPage,
   readCatalogChangePage,
+  readMirrorList,
   readRepositoryMirror,
 } from '@proanima/arkvory-contracts';
 import type {
@@ -171,6 +172,10 @@ export class CatalogApi {
         query.signal,
       ),
     );
+  }
+  /** Every mirror and import of the installation that this caller may read. */
+  async mirrors(signal?: AbortSignal) {
+    return readMirrorList(await this.http.call('/api/v1/mirrors', 'GET', undefined, signal));
   }
   /** Synchronization of a mirrored repository; 404 (ArkvoryHttpError) for an ordinary one. */
   async mirror(repository: string, signal?: AbortSignal) {

@@ -62,6 +62,8 @@ The commands below use the default resource name `arkvory`, the installation dir
    dpkg --unpack Arkvory-amd64.deb
    ```
 
+   With the RPM package, install the files without running its scripts: `rpm -i --noscripts Arkvory-x86_64.rpm`. On the first server you install the package normally in step 5 instead, so make the plan in step 2 on another data server.
+
 2. On one data server, make the plan. It writes the DRBD resource and the Pacemaker commands into a directory for you to review:
 
    ```bash
@@ -93,7 +95,7 @@ The commands below use the default resource name `arkvory`, the installation dir
    mkdir -p /opt/proanima-arkvory && mount /dev/drbd0 /opt/proanima-arkvory
    ```
 
-5. Install Arkvory into the mounted volume, put the TLS files on the volume and turn on the cluster mode:
+5. Install Arkvory into the mounted volume (with RPM: `rpm -i Arkvory-x86_64.rpm` instead of `dpkg --configure`), put the TLS files on the volume and turn on the cluster mode:
 
    ```bash
    dpkg --configure proanima-arkvory
@@ -109,22 +111,19 @@ The commands below use the default resource name `arkvory`, the installation dir
 6. Stop Arkvory on the first server and release the volume:
 
    ```bash
-   systemctl stop arkvory-update.timer arkvory-update arkvory-backup arkvory-worker arkvory-api arkvory-replica arkvory-database
-   umount /opt/proanima-arkvory && drbdadm secondary arkvory
+   arkvory cluster-release --root /opt/proanima-arkvory
    ```
 
-7. On each other data server in turn, take the volume, prepare the server and release the volume again:
+   The command stops the Arkvory services in order, unmounts the volume and makes this server secondary.
+
+7. On each other data server in turn, prepare the server:
 
    ```bash
-   drbdadm primary arkvory
-   mkdir -p /opt/proanima-arkvory && mount /dev/drbd0 /opt/proanima-arkvory
-   arkvory cluster-node --root /opt/proanima-arkvory --cluster-resource arkvory
-   dpkg --configure proanima-arkvory
-   systemctl stop arkvory-update.timer arkvory-update arkvory-backup arkvory-worker arkvory-api arkvory-replica arkvory-database
-   umount /opt/proanima-arkvory && drbdadm secondary arkvory
+   arkvory cluster-node --root /opt/proanima-arkvory
+   dpkg --configure proanima-arkvory   # .deb only; with RPM nothing else is needed
    ```
 
-   `cluster-node` creates the service accounts with the same user and group IDs as on the first server (the files on the volume belong to them) and installs the same services, none of them started automatically. If an account already exists with other IDs, the command stops and tells you which IDs to set. Each time a server becomes active, `arkvory-units` first takes the services from the volume, so settings changed later on the active server (a backup vault, for example) also apply after a failover.
+   `cluster-node` takes the volume, reads the resource name from it, prepares the server and releases the volume again. `--cluster-resource` is needed only when the resource is not named `arkvory`. It refuses while Pacemaker manages the Arkvory group, because then the volume belongs to the cluster: add a server to a running cluster as described in [Replace a server](#replace-node). `cluster-node` creates the service accounts with the same user and group IDs as on the first server (the files on the volume belong to them) and installs the same services, none of them started automatically. If an account already exists with other IDs, the command stops and tells you which IDs to set. Each time a server becomes active, `arkvory-units` first takes the services from the volume, so settings changed later on the active server (a backup vault, for example) also apply after a failover.
 
 8. Set up the Corosync cluster with `pcs` on the data servers (`pcs host auth`, `pcs cluster setup`, `pcs cluster start --all`). On Debian and Ubuntu, first run `pcs cluster destroy` on each data server: the packages install a sample Corosync configuration that `pcs` takes for an existing cluster. Do not run `pcs cluster enable`: a server that was fenced should rejoin only when you start it. For `ha-2`, also authenticate the witness and run `pcs qdevice setup model net --enable --start` on it. On Debian and Ubuntu the package has already set the quorum device up for its own service account: run `systemctl enable --now corosync-qnetd` there instead.
 
@@ -157,10 +156,18 @@ Run these commands as root. `cluster-status` and `cluster-single-copy` read the 
 | `arkvory cluster-status --root <dir>`                                     | Profile, the role of this server, complete and required copies and any operator decision, as JSON |
 | `arkvory cluster-check --root <dir>`                                      | All checks of a healthy cluster; exits with an error when one fails                               |
 | `arkvory cluster-switchover --root <dir> --to <server>`                   | Planned move of Arkvory to another data server; refused unless every copy is complete             |
-| `arkvory cluster-fence-test --root <dir> --node <standby>`                | Fences a standby server to prove its fence device; the active server is refused                   |
+| `arkvory cluster-fence-test --root <dir> --node <standby> [--yes]`        | Fences a standby server to prove its fence device; the active server is refused                   |
 | `arkvory cluster-single-copy --root <dir> --until <time> --reason <text>` | Accepts writes with a single copy until a time; see [Single copy](#single-copy)                   |
+| `arkvory cluster-kit --root <dir> --output <file>`                        | On the active server: the file a new server needs to join; see [Replace a server](#replace-node)  |
+| `arkvory cluster-node --root <dir> --kit <file>`                          | On a new server: joins it with that file, without taking the volume                               |
 
 `pcs status` shows the cluster as Pacemaker sees it.
+
+### In the console {#console}
+
+Administrators find [[ui:cluster]] in the menu of a cluster installation. The page shows the layout, the server that serves now, the complete copies, whether writes are accepted, and every other server with its connection and its copy ([[ui:clusterCopyComplete]], [[ui:clusterCopySyncing]] or [[ui:clusterCopyMissing]]). Below, [[ui:clusterNextStep]] gives the one step that fits the current state with its command: a planned switchover while everything is complete, bringing a server back or replacing it while a copy is missing, and how to end a single-copy decision. The page refreshes by itself every 15 seconds.
+
+When writes stop, a banner on every screen says so; administrators can open the page from it. People without administration see only that uploads pause while downloads keep working.
 
 ### Planned switchover {#switchover}
 
@@ -168,7 +175,7 @@ Run these commands as root. `cluster-status` and `cluster-single-copy` read the 
 
 ### Fencing test {#fence-test}
 
-`cluster-fence-test` restarts a standby through its fence device. After the restart, start the cluster on that server with `pcs cluster start`. The cluster services do not start on their own after a restart (step 8 of [Build a cluster](#build)), so a server that was fenced never rejoins without you.
+`cluster-fence-test` first runs the checks of `cluster-check` and refuses when one fails. In `ha-2` fencing the only standby stops writes until it is back, so the command also asks for `--yes`. It restarts the standby through its fence device. After the restart, start the cluster on that server with `pcs cluster start`. The cluster services do not start on their own after a restart (step 8 of [Build a cluster](#build)), so a server that was fenced never rejoins without you.
 
 ### Updates {#updates}
 
@@ -196,6 +203,37 @@ After a loss of quorum, start the cluster on every server that is back. Pacemake
 
 When fencing failed and you repaired it, clear the failed attempts on a running server so that Pacemaker tries again: `pcs stonith history cleanup <server>` and `pcs resource cleanup`.
 
+### Replace a server {#replace-node}
+
+When a data server is lost for good, replace it with a new one under the same name and address. Arkvory keeps serving on the active server the whole time; writes resume once the new copy is complete.
+
+1. On the new server, install the same Linux distribution, DRBD, Pacemaker and the fence agents, and unpack the same Arkvory package version as in step 1 of [Build a cluster](#build). For `ha-2`, also install `corosync-qdevice`.
+2. On the active server, write the file that the new server needs: the resource name, the IDs of the service accounts and the services.
+
+   ```bash
+   arkvory cluster-kit --root /opt/proanima-arkvory --output /root/arkvory-node.kit
+   ```
+
+   Copy it to the new server over a secure channel. It holds no secret, but it describes the cluster.
+
+3. On the new server, join with the file. It does not need the volume:
+
+   ```bash
+   arkvory cluster-node --root /opt/proanima-arkvory --kit /root/arkvory-node.kit
+   dpkg --configure proanima-arkvory   # .deb only
+   ```
+
+4. Copy `/etc/drbd.d/arkvory.res` from another data server, then create the metadata and bring the resource up. The new copy starts to fill from the active server:
+
+   ```bash
+   drbdadm create-md arkvory
+   drbdadm up arkvory
+   ```
+
+5. Replace the cluster member: on the active server, run `pcs host auth <server>`, `pcs cluster node remove <server>`, then `pcs cluster node add <server> addr=<address> --start`. The fence device of the server keeps its configuration when the new server answers to the same device settings; otherwise update it with `pcs stonith update`.
+6. Watch [[ui:cluster]] in the console or `arkvory cluster-status`: the server shows [[ui:clusterCopySyncing]] until its copy is complete. Then writes resume by themselves.
+7. Prove the fence device of the new server with `arkvory cluster-fence-test --node <server> --yes`, and run `arkvory cluster-check`.
+
 ### Single copy {#single-copy}
 
 When a data server stays away for long (a disk replacement, for example), and stopped writes cost more than the risk, an operator can accept writes with one copy for a limited time:
@@ -204,14 +242,14 @@ When a data server stays away for long (a disk replacement, for example), and st
 arkvory cluster-single-copy --root /opt/proanima-arkvory --until 2026-10-12T18:00:00Z --reason "disk replacement on node-b"
 ```
 
-- The time must be within the next 7 days. The command works only while copies are missing.
+- The time must be within the next 7 days and carry its zone: `Z` for UTC or an offset such as `+03:00`. Without a zone the command refuses, because the active server would read it in its own local time. The command works only while copies are missing.
 - While the decision is active, a loss of the active server loses the writes acknowledged after it.
 - The console banner, the metric `arkvory_replication_required_copies` and the alert `ArkvorySingleCopyWrites` show the decision.
 - It ends at its time, with `--off`, or by itself as soon as every copy is complete again. A later loss stops writes again.
 
 ## Monitoring {#monitoring}
 
-`GET /health/ready` stays 200 on the active server while writes are stopped, so a monitor does not move a healthy server. Its field `writable` is `false` and the field `replication` shows `copies`, `required` and `singleCopyUntil`; `replication` is `null` when the copies cannot be read. Standalone servers have no `replication` field.
+`GET /health/ready` stays 200 on the active server while writes are stopped, so a monitor does not move a healthy server. Its field `writable` is `false` and the field `replication` shows `copies`, `required` and `singleCopyUntil`; `replication` is `null` when the copies cannot be read. For administrators it also has `node` (the server that answers), `profile` and `peers`, the other servers with their connection and copy, which the [console page](#console) shows. Standalone servers have no `replication` field.
 
 | Metric                                     | Meaning                                                     |
 | ------------------------------------------ | ----------------------------------------------------------- |

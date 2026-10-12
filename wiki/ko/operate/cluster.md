@@ -62,6 +62,8 @@ Arkvory 클러스터는 사이트의 서버 한 대가 장애를 일으켜도 �
    dpkg --unpack Arkvory-amd64.deb
    ```
 
+   RPM 패키지에서는 스크립트를 실행하지 않고 파일만 설치합니다: `rpm -i --noscripts Arkvory-x86_64.rpm`. 첫 번째 서버에서는 대신 5단계에서 패키지를 정상적으로 설치하므로, 2단계의 계획은 다른 데이터 서버에서 만드십시오.
+
 2. 데이터 서버 한 대에서 계획을 만듭니다. DRBD 리소스와 Pacemaker 명령을 검토할 수 있도록 디렉터리에 씁니다.
 
    ```bash
@@ -93,7 +95,7 @@ Arkvory 클러스터는 사이트의 서버 한 대가 장애를 일으켜도 �
    mkdir -p /opt/proanima-arkvory && mount /dev/drbd0 /opt/proanima-arkvory
    ```
 
-5. 마운트된 볼륨에 Arkvory를 설치하고, TLS 파일을 볼륨에 두고, 클러스터 모드를 켭니다.
+5. 마운트된 볼륨에 Arkvory를 설치하고(RPM에서는 `dpkg --configure` 대신 `rpm -i Arkvory-x86_64.rpm`), TLS 파일을 볼륨에 두고, 클러스터 모드를 켭니다.
 
    ```bash
    dpkg --configure proanima-arkvory
@@ -109,22 +111,19 @@ Arkvory 클러스터는 사이트의 서버 한 대가 장애를 일으켜도 �
 6. 첫 번째 서버에서 Arkvory를 중지하고 볼륨을 해제합니다.
 
    ```bash
-   systemctl stop arkvory-update.timer arkvory-update arkvory-backup arkvory-worker arkvory-api arkvory-replica arkvory-database
-   umount /opt/proanima-arkvory && drbdadm secondary arkvory
+   arkvory cluster-release --root /opt/proanima-arkvory
    ```
 
-7. 나머지 각 데이터 서버에서 차례로 볼륨을 가져와 서버를 준비하고 볼륨을 다시 해제합니다.
+   이 명령은 Arkvory 서비스를 순서대로 중지하고, 볼륨을 마운트 해제한 다음 이 서버를 세컨더리로 만듭니다.
+
+7. 나머지 각 데이터 서버에서 차례로 서버를 준비합니다.
 
    ```bash
-   drbdadm primary arkvory
-   mkdir -p /opt/proanima-arkvory && mount /dev/drbd0 /opt/proanima-arkvory
-   arkvory cluster-node --root /opt/proanima-arkvory --cluster-resource arkvory
-   dpkg --configure proanima-arkvory
-   systemctl stop arkvory-update.timer arkvory-update arkvory-backup arkvory-worker arkvory-api arkvory-replica arkvory-database
-   umount /opt/proanima-arkvory && drbdadm secondary arkvory
+   arkvory cluster-node --root /opt/proanima-arkvory
+   dpkg --configure proanima-arkvory   # .deb 전용. RPM에서는 다른 작업이 필요 없습니다
    ```
 
-   `cluster-node`는 첫 번째 서버와 같은 사용자 ID와 그룹 ID로 서비스 계정을 만들고(볼륨의 파일은 이 계정의 소유입니다) 같은 서비스를 설치하며, 어느 것도 자동으로 시작되지 않습니다. 이미 다른 ID로 계정이 있으면 명령이 멈추고 설정해야 할 ID를 알려 줍니다. 서버가 활성이 될 때마다 `arkvory-units`가 먼저 볼륨에서 서비스를 가져오므로, 나중에 활성 서버에서 변경한 설정(예: 백업 보관소)도 장애 조치 후에 적용됩니다.
+   `cluster-node`는 볼륨을 가져와 볼륨에서 리소스 이름을 읽고, 서버를 준비한 다음 볼륨을 다시 해제합니다. `--cluster-resource`는 리소스 이름이 `arkvory`가 아닐 때만 필요합니다. Pacemaker가 Arkvory 그룹을 관리하는 동안에는 볼륨이 클러스터에 속하므로 이 명령은 거부됩니다. 실행 중인 클러스터에 서버를 추가하려면 [서버 교체](#replace-node)에 설명된 대로 하십시오. `cluster-node`는 첫 번째 서버와 같은 사용자 ID와 그룹 ID로 서비스 계정을 만들고(볼륨의 파일은 이 계정의 소유입니다) 같은 서비스를 설치하며, 어느 것도 자동으로 시작되지 않습니다. 이미 다른 ID로 계정이 있으면 명령이 멈추고 설정해야 할 ID를 알려 줍니다. 서버가 활성이 될 때마다 `arkvory-units`가 먼저 볼륨에서 서비스를 가져오므로, 나중에 활성 서버에서 변경한 설정(예: 백업 보관소)도 장애 조치 후에 적용됩니다.
 
 8. 데이터 서버에서 `pcs`로 Corosync 클러스터를 설정합니다(`pcs host auth`, `pcs cluster setup`, `pcs cluster start --all`). Debian과 Ubuntu에서는 먼저 각 데이터 서버에서 `pcs cluster destroy`를 실행하십시오. 패키지가 샘플 Corosync 구성을 설치하는데, `pcs`가 이를 기존 클러스터로 간주하기 때문입니다. `pcs cluster enable`은 실행하지 마십시오. 펜싱된 서버는 사용자가 시작할 때만 다시 합류해야 합니다. `ha-2`의 경우 감시 서버도 인증하고 그 서버에서 `pcs qdevice setup model net --enable --start`를 실행하십시오. Debian과 Ubuntu에서는 패키지가 이미 자체 서비스 계정용으로 쿼럼 장치를 설정해 두었으므로, 그곳에서는 대신 `systemctl enable --now corosync-qnetd`를 실행하십시오.
 
@@ -152,15 +151,23 @@ Arkvory 클러스터는 사이트의 서버 한 대가 장애를 일으켜도 �
 
 root로 다음 명령을 실행하십시오. `cluster-status`와 `cluster-single-copy`는 볼륨을 읽으므로 활성 서버에서 실행하고, 나머지는 어느 데이터 서버에서나 동작합니다.
 
-| 명령                                                                      | 기능                                                                               |
-| ------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| `arkvory cluster-status --root <dir>`                                     | 프로필, 이 서버의 역할, 완전한 복사본 수와 필요한 수, 운영자 결정을 JSON으로 출력  |
-| `arkvory cluster-check --root <dir>`                                      | 정상 클러스터의 모든 점검을 수행하며, 하나라도 실패하면 오류로 종료                |
-| `arkvory cluster-switchover --root <dir> --to <server>`                   | Arkvory를 다른 데이터 서버로 계획적으로 이동. 모든 복사본이 완전하지 않으면 거부됨 |
-| `arkvory cluster-fence-test --root <dir> --node <standby>`                | 대기 서버를 펜싱하여 펜스 장치를 검증. 활성 서버는 거부됨                          |
-| `arkvory cluster-single-copy --root <dir> --until <time> --reason <text>` | 지정한 시각까지 복사본 하나로 쓰기를 허용. [단일 복사본](#single-copy) 참조        |
+| 명령                                                                      | 기능                                                                                     |
+| ------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `arkvory cluster-status --root <dir>`                                     | 프로필, 이 서버의 역할, 완전한 복사본 수와 필요한 수, 운영자 결정을 JSON으로 출력        |
+| `arkvory cluster-check --root <dir>`                                      | 정상 클러스터의 모든 점검을 수행하며, 하나라도 실패하면 오류로 종료                      |
+| `arkvory cluster-switchover --root <dir> --to <server>`                   | Arkvory를 다른 데이터 서버로 계획적으로 이동. 모든 복사본이 완전하지 않으면 거부됨       |
+| `arkvory cluster-fence-test --root <dir> --node <standby> [--yes]`        | 대기 서버를 펜싱하여 펜스 장치를 검증. 활성 서버는 거부됨                                |
+| `arkvory cluster-single-copy --root <dir> --until <time> --reason <text>` | 지정한 시각까지 복사본 하나로 쓰기를 허용. [단일 복사본](#single-copy) 참조              |
+| `arkvory cluster-kit --root <dir> --output <file>`                        | 활성 서버에서: 새 서버가 합류하는 데 필요한 파일을 작성. [서버 교체](#replace-node) 참조 |
+| `arkvory cluster-node --root <dir> --kit <file>`                          | 새 서버에서: 볼륨을 가져오지 않고 그 파일로 서버를 합류시킴                              |
 
 `pcs status`는 Pacemaker가 보는 클러스터를 보여 줍니다.
+
+### 콘솔에서 {#console}
+
+관리자는 클러스터 설치의 메뉴에서 [[ui:cluster]]를 찾을 수 있습니다. 이 페이지는 구성, 현재 서비스 중인 서버, 완전한 복사본, 쓰기 허용 여부, 그리고 다른 모든 서버의 연결과 복사본 상태([[ui:clusterCopyComplete]], [[ui:clusterCopySyncing]] 또는 [[ui:clusterCopyMissing]])를 보여 줍니다. 그 아래의 [[ui:clusterNextStep]]은 현재 상태에 맞는 한 단계를 명령과 함께 안내합니다. 모든 것이 완전할 때는 계획된 스위치오버, 복사본이 없을 때는 서버를 되살리거나 교체하는 방법, 그리고 단일 복사본 결정을 끝내는 방법입니다. 페이지는 15초마다 저절로 새로 고쳐집니다.
+
+쓰기가 멈추면 모든 화면의 배너가 이를 알립니다. 관리자는 배너에서 이 페이지를 열 수 있습니다. 관리 권한이 없는 사용자에게는 다운로드는 계속 동작하고 업로드만 일시 중지된다는 사실만 표시됩니다.
 
 ### 계획된 스위치오버 {#switchover}
 
@@ -168,7 +175,7 @@ root로 다음 명령을 실행하십시오. `cluster-status`와 `cluster-single
 
 ### 펜싱 테스트 {#fence-test}
 
-`cluster-fence-test`는 대기 서버를 펜스 장치로 재시작합니다. 재시작 후 그 서버에서 `pcs cluster start`로 클러스터를 시작하십시오. 클러스터 서비스는 재시작 후 자동으로 시작되지 않으므로([클러스터 구축](#build)의 8단계) 펜싱된 서버는 사용자 없이는 다시 합류하지 않습니다.
+`cluster-fence-test`는 먼저 `cluster-check`의 점검을 실행하고, 하나라도 실패하면 거부합니다. `ha-2`에서는 유일한 대기 서버를 펜싱하면 그 서버가 돌아올 때까지 쓰기가 멈추므로, 이 명령은 `--yes`도 요구합니다. 명령은 대기 서버를 펜스 장치로 재시작합니다. 재시작 후 그 서버에서 `pcs cluster start`로 클러스터를 시작하십시오. 클러스터 서비스는 재시작 후 자동으로 시작되지 않으므로([클러스터 구축](#build)의 8단계) 펜싱된 서버는 사용자 없이는 다시 합류하지 않습니다.
 
 ### 업데이트 {#updates}
 
@@ -196,6 +203,37 @@ root로 다음 명령을 실행하십시오. `cluster-status`와 `cluster-single
 
 펜싱이 실패했다가 수리한 경우에는 Pacemaker가 다시 시도하도록 실행 중인 서버에서 실패한 시도를 정리하십시오: `pcs stonith history cleanup <server>`와 `pcs resource cleanup`.
 
+### 서버 교체 {#replace-node}
+
+데이터 서버를 영구히 잃었다면 같은 이름과 주소를 가진 새 서버로 교체하십시오. 그동안 Arkvory는 활성 서버에서 계속 서비스하며, 새 복사본이 완전해지면 쓰기가 재개됩니다.
+
+1. 새 서버에 같은 Linux 배포판, DRBD, Pacemaker, 펜스 에이전트를 설치하고, [클러스터 구축](#build)의 1단계처럼 같은 버전의 Arkvory 패키지 압축을 풉니다. `ha-2`의 경우 `corosync-qdevice`도 설치하십시오.
+2. 활성 서버에서 새 서버에 필요한 파일을 작성합니다. 리소스 이름, 서비스 계정의 ID, 서비스가 포함됩니다.
+
+   ```bash
+   arkvory cluster-kit --root /opt/proanima-arkvory --output /root/arkvory-node.kit
+   ```
+
+   보안 채널로 새 서버에 복사하십시오. 비밀 정보는 없지만 클러스터 구성을 담고 있습니다.
+
+3. 새 서버에서 이 파일로 합류합니다. 볼륨은 필요하지 않습니다.
+
+   ```bash
+   arkvory cluster-node --root /opt/proanima-arkvory --kit /root/arkvory-node.kit
+   dpkg --configure proanima-arkvory   # .deb 전용
+   ```
+
+4. 다른 데이터 서버에서 `/etc/drbd.d/arkvory.res`를 복사한 다음 메타데이터를 만들고 리소스를 올립니다. 새 복사본이 활성 서버로부터 채워지기 시작합니다.
+
+   ```bash
+   drbdadm create-md arkvory
+   drbdadm up arkvory
+   ```
+
+5. 클러스터 구성원을 교체합니다. 활성 서버에서 `pcs host auth <server>`, `pcs cluster node remove <server>`를 실행한 다음 `pcs cluster node add <server> addr=<address> --start`를 실행하십시오. 새 서버가 같은 장치 설정에 응답하면 그 서버의 펜스 장치는 구성을 유지합니다. 그렇지 않으면 `pcs stonith update`로 갱신하십시오.
+6. 콘솔의 [[ui:cluster]] 또는 `arkvory cluster-status`를 지켜보십시오. 복사본이 완전해질 때까지 서버는 [[ui:clusterCopySyncing]]으로 표시됩니다. 그런 다음 쓰기가 저절로 재개됩니다.
+7. `arkvory cluster-fence-test --node <server> --yes`로 새 서버의 펜스 장치를 검증하고 `arkvory cluster-check`를 실행하십시오.
+
 ### 단일 복사본 {#single-copy}
 
 데이터 서버가 오랫동안 빠져 있고(예: 디스크 교체) 쓰기 중단의 비용이 위험보다 클 때, 운영자는 제한된 시간 동안 복사본 하나로 쓰기를 허용할 수 있습니다.
@@ -204,14 +242,14 @@ root로 다음 명령을 실행하십시오. `cluster-status`와 `cluster-single
 arkvory cluster-single-copy --root /opt/proanima-arkvory --until 2026-10-12T18:00:00Z --reason "disk replacement on node-b"
 ```
 
-- 시각은 앞으로 7일 이내여야 합니다. 이 명령은 복사본이 부족한 동안에만 동작합니다.
+- 시각은 앞으로 7일 이내여야 하며 시간대를 포함해야 합니다. UTC는 `Z`, 또는 `+03:00` 같은 오프셋입니다. 시간대가 없으면 활성 서버가 자신의 현지 시각으로 해석하게 되므로 명령이 거부됩니다. 이 명령은 복사본이 부족한 동안에만 동작합니다.
 - 결정이 활성인 동안 활성 서버를 잃으면 그 이후에 확인된 쓰기를 잃게 됩니다.
 - 콘솔 배너, 메트릭 `arkvory_replication_required_copies`, 알림 `ArkvorySingleCopyWrites`가 이 결정을 보여 줍니다.
 - 결정은 지정한 시각에, `--off`로, 또는 모든 복사본이 다시 완전해지는 즉시 저절로 끝납니다. 이후에 다시 손실이 생기면 쓰기가 다시 멈춥니다.
 
 ## 모니터링 {#monitoring}
 
-쓰기가 멈춘 동안에도 활성 서버의 `GET /health/ready`는 200을 유지하므로 모니터가 정상 서버를 옮기지 않습니다. `writable` 필드는 `false`이고 `replication` 필드는 `copies`, `required`, `singleCopyUntil`을 보여 줍니다. 복사본을 읽을 수 없으면 `replication`은 `null`입니다. 독립 서버에는 `replication` 필드가 없습니다.
+쓰기가 멈춘 동안에도 활성 서버의 `GET /health/ready`는 200을 유지하므로 모니터가 정상 서버를 옮기지 않습니다. `writable` 필드는 `false`이고 `replication` 필드는 `copies`, `required`, `singleCopyUntil`을 보여 줍니다. 복사본을 읽을 수 없으면 `replication`은 `null`입니다. 관리자에게는 `node`(응답한 서버), `profile`, 그리고 `peers`도 포함됩니다. `peers`는 다른 서버와 그 연결 및 복사본 상태이며, [콘솔 페이지](#console)가 이를 보여 줍니다. 독립 서버에는 `replication` 필드가 없습니다.
 
 | 메트릭                                     | 의미                                                  |
 | ------------------------------------------ | ----------------------------------------------------- |

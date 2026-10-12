@@ -2,11 +2,28 @@ import { record } from '@proanima/arkvory-contracts';
 import { ArkvoryClientError } from './transfer.js';
 import type { HttpPort } from './http-transport.js';
 
+/** A DRBD peer of the node that serves (ADR 0072). */
+export interface ReplicationPeer {
+  readonly name: string;
+  readonly connected: boolean;
+  /** DRBD's disk state, e.g. UpToDate, Inconsistent, Diskless, DUnknown. */
+  readonly disk: string;
+  /** Holds every acknowledged write. */
+  readonly complete: boolean;
+  /** The diskless tiebreaker of ha-2: a vote, no copy. */
+  readonly witness: boolean;
+}
 export interface ReplicationCopies {
   readonly copies: number;
   readonly required: number;
   /** An operator allowed writes with fewer copies until then (ADR 0072). */
   readonly singleCopyUntil: string | null;
+  /** The node that serves, its profile and its peers; null from a server of an earlier release. */
+  readonly cluster: {
+    readonly node: string;
+    readonly profile: 'ha-2' | 'ha-3';
+    readonly peers: readonly ReplicationPeer[];
+  } | null;
 }
 
 /**
@@ -24,6 +41,34 @@ const count = (value: unknown, minimum: number) => {
   return value;
 };
 
+const invalid = () => new ArkvoryClientError('invalid_response', 'Invalid replication state');
+
+function readPeer(value: unknown): ReplicationPeer {
+  const p = record(value);
+  const { name, connected, disk, complete, witness } = p;
+  if (
+    typeof name !== 'string' ||
+    typeof connected !== 'boolean' ||
+    typeof disk !== 'string' ||
+    typeof complete !== 'boolean' ||
+    typeof witness !== 'boolean'
+  )
+    throw invalid();
+  return { name, connected, disk, complete, witness };
+}
+
+function readCluster(r: Record<string, unknown>): ReplicationCopies['cluster'] {
+  const { node, profile, peers } = r;
+  if (node === undefined) return null;
+  if (
+    typeof node !== 'string' ||
+    (profile !== 'ha-2' && profile !== 'ha-3') ||
+    !Array.isArray(peers)
+  )
+    throw invalid();
+  return { node, profile, peers: (peers as readonly unknown[]).map(readPeer) };
+}
+
 export function readReplication(value: unknown): Replication {
   if (value === undefined) return { kind: 'standalone' };
   if (value === null) return { kind: 'unknown' };
@@ -36,6 +81,7 @@ export function readReplication(value: unknown): Replication {
     copies: count(r['copies'], 0),
     required: count(r['required'], 1),
     singleCopyUntil: until,
+    cluster: readCluster(r),
   };
 }
 

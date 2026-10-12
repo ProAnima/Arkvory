@@ -10,6 +10,8 @@ const restricted: Partial<Record<View, string>> = {
   administration: 'admin-nav',
   repositories: 'repositories-nav',
   services: 'services-nav',
+  mirrors: 'mirrors-nav',
+  cluster: 'cluster-nav',
   updates: 'updates-nav',
   backups: 'backups-nav',
 };

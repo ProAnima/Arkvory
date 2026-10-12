@@ -951,6 +951,14 @@
       },
       "summary": "معاينة مرفقات الملاحظات",
       "description": "يعيد النصّين اللذين يرفقهما `sendFeedback` عندما تكون `serverLog` هي true: السجلات الأخيرة لسجل هذا الخادم وملخصًا للنظام (الإصدارات ونظام التشغيل وحالتا التحديث والمرآة) دون عناوين أو أسماء أو أسرار. اعرضهما على المسؤول قبل الإرسال."
+    },
+    "listMirrors": {
+      "en": {
+        "summary": "List the mirrors and imports of this installation",
+        "description": "Returns, for every repository this server mirrors or imports from another Arkvory and the caller may read, the same state as the mirror status of one repository: source, `mode`, `phase`, `cursor` and `head`, `caughtUp`, the last check, sync and error, and the artifacts and bytes copied. Repositories the caller cannot read are left out; an installation without mirrors answers an empty list."
+      },
+      "summary": "سرد المرايا والاستيرادات في هذا التثبيت",
+      "description": "يعيد لكل مستودع يعكسه هذا الخادم أو يستورده من Arkvory آخر ويمكن للمستدعي قراءته الحالةَ نفسها التي تعيدها حالة مرآة مستودع واحد: المصدر و`mode` و`phase` و`cursor` و`head` و`caughtUp` وآخر فحص ومزامنة وخطأ، وعدد العناصر والبايتات المنسوخة. تُستبعد المستودعات التي لا يمكن للمستدعي قراءتها؛ ويجيب تثبيت بلا مرايا بقائمة فارغة."
     }
   },
   "errors": {

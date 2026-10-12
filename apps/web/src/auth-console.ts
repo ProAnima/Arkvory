@@ -22,7 +22,8 @@ export interface AuthConsoleContext {
   resetHistory: () => void;
   downloads: { reset: () => void };
   administration: { show: () => void; refresh: () => Promise<void> };
-  updates: { connect: (admin: boolean) => void };
+  /** Settles once the screens that follow the role know whether their entries show. */
+  updates: { connect: (admin: boolean) => Promise<void> };
   management: { connect: () => Promise<void> };
   backups: { connect: () => Promise<void> };
   userTokens: { show: () => void; hide: () => void; refresh: () => Promise<void> };
@@ -61,9 +62,9 @@ const passwordFields = {
   '/newPassword': 'own-new-password',
 };
 
-/** Restricted screens appear once both management and backup permissions are known. */
-async function connectManagement(ctx: AuthConsoleContext): Promise<void> {
-  await Promise.all([ctx.management.connect(), ctx.backups.connect()]);
+/** Restricted screens appear once management, backup and role-following screens are known. */
+async function connectManagement(ctx: AuthConsoleContext, signed: Promise<void>): Promise<void> {
+  await Promise.all([ctx.management.connect(), ctx.backups.connect(), signed]);
 }
 
 function signedOut(ctx: AuthConsoleContext) {
@@ -128,8 +129,7 @@ function createAuthSessionHandler(ctx: AuthConsoleContext): AuthHandler {
       repositoryOptions,
       ctx.isRepositoryEdited(),
     );
-    ctx.updates.connect(me.administrator);
-    const managed = connectManagement(ctx);
+    const managed = connectManagement(ctx, ctx.updates.connect(me.administrator));
     element('change-password', HTMLFormElement).hidden = false;
     ctx.userTokens.show();
     void ctx.userTokens.refresh();
@@ -163,8 +163,7 @@ function bindSessionLifecycle(ctx: AuthConsoleContext): void {
       const session = me.credential === 'session';
       ctx.session(session ? 'session' : 'key');
       if (me.administrator) ctx.administration.show();
-      ctx.updates.connect(me.administrator);
-      const managed = connectManagement(ctx);
+      const managed = connectManagement(ctx, ctx.updates.connect(me.administrator));
       element('change-password', HTMLFormElement).hidden = !session;
       if (session) {
         ctx.userTokens.show();

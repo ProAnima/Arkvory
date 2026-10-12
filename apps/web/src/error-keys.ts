@@ -45,6 +45,7 @@ const byReason: Readonly<Record<string, Readonly<Record<string, MessageKey>>>> =
     idempotency_mismatch: 'errorIdempotency',
     already_exists: 'errorAlreadyExists',
     stage_limit: 'errorStageLimit',
+    mirror_read_only: 'errorMirrorReadOnly',
   },
   forbidden: {
     read_only_token: 'errorReadOnlyToken',

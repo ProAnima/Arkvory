@@ -36,8 +36,9 @@ export class ArkvoryHttpError extends Error {
 }
 
 export class ArkvoryNetworkError extends Error {
-  constructor() {
-    super('Arkvory connection interrupted');
+  /** `cause`: the platform's failure, when there is one (its code tells refused from untrusted). */
+  constructor(cause?: unknown) {
+    super('Arkvory connection interrupted', cause === undefined ? undefined : { cause });
     this.name = 'ArkvoryNetworkError';
   }
 }
@@ -211,9 +212,9 @@ export async function readNetwork(
 ) {
   try {
     return await reader.read();
-  } catch {
+  } catch (error) {
     signal?.throwIfAborted();
-    throw new ArkvoryNetworkError();
+    throw new ArkvoryNetworkError(error);
   }
 }
 

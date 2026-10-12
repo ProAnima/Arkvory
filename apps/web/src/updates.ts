@@ -135,14 +135,16 @@ class UpdateConsole {
     this.view.dialog.close();
     if (!element('updates-panel', HTMLElement).hidden) showView('catalog');
   }
-  connect(administrator: boolean) {
+  /** Settles once the replication state decides whether the Cluster entry shows. */
+  connect(administrator: boolean): Promise<void> {
     this.clear();
-    this.replication.connect(administrator);
+    const replication = this.replication.connect(administrator);
     if (administrator) {
       this.active = true;
       this.view.nav.hidden = false;
       void this.poll(this.generation);
     }
+    return replication;
   }
 }
 export function installUpdates(client: ArkvoryClient) {

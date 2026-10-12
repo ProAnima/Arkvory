@@ -951,6 +951,14 @@
       },
       "summary": "フィードバックの添付内容のプレビュー",
       "description": "`serverLog`がtrueのときに`sendFeedback`が添付する2つのテキストを返します。このサーバーのログの最近のレコードと、アドレス、名前、シークレットを含まないシステムの概要（バージョン、オペレーティングシステム、アップデートとミラーの状態）です。送信する前に管理者に見せてください。"
+    },
+    "listMirrors": {
+      "en": {
+        "summary": "List the mirrors and imports of this installation",
+        "description": "Returns, for every repository this server mirrors or imports from another Arkvory and the caller may read, the same state as the mirror status of one repository: source, `mode`, `phase`, `cursor` and `head`, `caughtUp`, the last check, sync and error, and the artifacts and bytes copied. Repositories the caller cannot read are left out; an installation without mirrors answers an empty list."
+      },
+      "summary": "このインストールのミラーとインポートの一覧",
+      "description": "このサーバーが別のArkvoryからミラーまたはインポートしており、呼び出し元が読み取れる各リポジトリについて、1つのリポジトリのミラー状態と同じ情報を返します：ミラー元、`mode`、`phase`、`cursor`と`head`、`caughtUp`、前回の確認・同期・エラー、コピーされたアーティファクトとバイトの数。呼び出し元が読み取れないリポジトリは省かれます。ミラーのないインストールは空のリストで応答します。"
     }
   },
   "errors": {

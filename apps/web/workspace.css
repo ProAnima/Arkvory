@@ -408,7 +408,8 @@ output:not(.status-bar output):not(.transfer-card output):not(:empty) {
   color: var(--color-success);
 }
 .mirror-state[data-state='behind'] > .badge,
-.mirror-state[data-state='pending'] > .badge {
+.mirror-state[data-state='pending'] > .badge,
+.mirror-state[data-state='seeding'] > .badge {
   color: var(--color-warning);
 }
 .mirror-state[data-state='failing'] > .badge {

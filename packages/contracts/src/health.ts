@@ -75,6 +75,25 @@ export const readinessSchema = {
         copies: { type: 'integer', minimum: 0, maximum: 16 },
         required: { type: 'integer', minimum: 1, maximum: 16 },
         singleCopyUntil: { type: 'string', format: 'date-time', nullable: true },
+        // The node that serves, the profile and every DRBD peer, for the console's cluster view.
+        node: { type: 'string', maxLength: 63 },
+        profile: { type: 'string', enum: ['ha-2', 'ha-3'] },
+        peers: {
+          type: 'array',
+          maxItems: 16,
+          items: {
+            type: 'object',
+            additionalProperties: false,
+            required: ['name', 'connected', 'disk', 'complete', 'witness'],
+            properties: {
+              name: { type: 'string', maxLength: 63 },
+              connected: { type: 'boolean' },
+              disk: { type: 'string', maxLength: 24 },
+              complete: { type: 'boolean' },
+              witness: { type: 'boolean' },
+            },
+          },
+        },
       },
     },
     transfers: {

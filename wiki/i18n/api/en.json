@@ -951,6 +951,14 @@
       },
       "summary": "Preview the feedback attachments",
       "description": "Returns the two texts that `sendFeedback` attaches when `serverLog` is true: the recent records of this server's log and a system summary (versions, operating system, update and mirror states) without addresses, names or secrets. Show them to the administrator before sending."
+    },
+    "listMirrors": {
+      "en": {
+        "summary": "Every mirror and import of this installation whose repository the caller may read (ADR 0058)",
+        "description": ""
+      },
+      "summary": "List the mirrors and imports of this installation",
+      "description": "Returns, for every repository this server mirrors or imports from another Arkvory and the caller may read, the same state as the mirror status of one repository: source, `mode`, `phase`, `cursor` and `head`, `caughtUp`, the last check, sync and error, and the artifacts and bytes copied. Repositories the caller cannot read are left out; an installation without mirrors answers an empty list."
     }
   },
   "errors": {

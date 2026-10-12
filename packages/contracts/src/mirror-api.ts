@@ -71,6 +71,14 @@ function oneOf<T extends string>(value: unknown, allowed: readonly T[]): T {
   return found;
 }
 
+/** Every mirror and import of the installation the caller may read (ADR 0058). */
+export interface MirrorListResponse {
+  readonly items: readonly RepositoryMirrorResponse[];
+}
+export function readMirrorList(value: unknown): MirrorListResponse {
+  return { items: items(record(value)['items']).map(readRepositoryMirror) };
+}
+
 export function readRepositoryMirror(value: unknown): RepositoryMirrorResponse {
   const row = record(value);
   return {
@@ -165,6 +173,28 @@ const mirrorSchema = {
   },
 };
 export const mirrorPaths: Record<string, Record<string, unknown>> = {
+  '/api/v1/mirrors': {
+    get: {
+      summary:
+        'Every mirror and import of this installation whose repository the caller may read (ADR 0058)',
+      responses: {
+        200: {
+          description: 'Success',
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                additionalProperties: false,
+                required: ['items'],
+                properties: { items: { type: 'array', maxItems: 64, items: mirrorSchema } },
+              },
+            },
+          },
+        },
+        default: { description: 'Native error object' },
+      },
+    },
+  },
   '/api/v1/repositories/{repository}/mirror': {
     parameters: [repository],
     get: {

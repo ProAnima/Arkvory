@@ -42,11 +42,32 @@ test('the SDK tells a standalone server, unknown copies and known copies apart',
     copies: 1,
     required: 2,
     singleCopyUntil: null,
+    cluster: null,
   });
+  const peer = {
+    name: 'node-b',
+    connected: false,
+    disk: 'DUnknown',
+    complete: false,
+    witness: false,
+  };
+  assert.deepEqual(
+    readReplication({
+      copies: 1,
+      required: 2,
+      singleCopyUntil: null,
+      node: 'node-a',
+      profile: 'ha-2',
+      peers: [peer],
+    }).cluster,
+    { node: 'node-a', profile: 'ha-2', peers: [peer] },
+  );
   for (const invalid of [
     { copies: 1.5, required: 2, singleCopyUntil: null },
     { copies: 1, required: 0, singleCopyUntil: null },
     { copies: 1, required: 2, singleCopyUntil: 'soon' },
+    { copies: 1, required: 2, singleCopyUntil: null, node: 'a', profile: 'ha-5', peers: [] },
+    { copies: 1, required: 2, singleCopyUntil: null, node: 'a', profile: 'ha-2', peers: [{}] },
     'two',
   ])
     assert.throws(() => readReplication(invalid), /Invalid|object/);

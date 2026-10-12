@@ -10,6 +10,15 @@
 export interface VolumeState {
   readonly role: string;
   readonly copies: number;
+  /** Every DRBD peer, for the console's cluster view. */
+  readonly peers?: readonly PeerState[];
+}
+export interface PeerState {
+  readonly name: string;
+  readonly connected: boolean;
+  readonly disk: string;
+  readonly complete: boolean;
+  readonly witness: boolean;
 }
 
 type Entry = Record<string, unknown>;
@@ -61,7 +70,25 @@ export function peerNames(status: unknown, resource: string): string[] {
 
 export function volumeState(status: unknown, resource: string): VolumeState {
   const { role, local, peers } = completeCopies(status, resource);
-  return { role, copies: (local ? 1 : 0) + peers.length };
+  return { role, copies: (local ? 1 : 0) + peers.length, peers: peerStates(status, resource) };
+}
+
+/** Each peer by name: whether it is connected, its disk, and whether its copy is complete. */
+function peerStates(status: unknown, resource: string): PeerState[] {
+  const complete = completeCopies(status, resource).peers;
+  const found = entries(status, 'resources').find((entry) => entry['name'] === resource);
+  return entries(found?.['connections'] ?? [], 'connections').map((connection) => {
+    const name = typeof connection['name'] === 'string' ? connection['name'] : '';
+    const volumes = entries(connection['peer_devices'] ?? [], 'peer devices');
+    const disk = volumes[0]?.['peer-disk-state'];
+    return {
+      name,
+      connected: connection['connection-state'] === 'Connected',
+      disk: typeof disk === 'string' ? disk : 'DUnknown',
+      complete: complete.includes(name),
+      witness: volumes.some((volume) => volume['peer-client'] === true) || disk === 'Diskless',
+    };
+  });
 }
 
 /** An operator's time-limited decision to acknowledge writes with one copy. */

@@ -1811,25 +1811,317 @@
     "en": "Last synchronized:",
     "text": "最終同期："
   },
-  "mirrorError": {
-    "en": "The last attempt failed ({code}); downloads keep working.",
-    "text": "前回の試行は失敗しました（{code}）。ダウンロードは引き続き利用できます。"
-  },
   "mirrorNever": {
     "en": "not yet",
     "text": "未実施"
   },
   "mirrorImport": {
-    "en": "Imports",
+    "en": "Import",
     "text": "インポート"
   },
   "mirrorImportFailing": {
-    "en": "Imports · sync error",
+    "en": "Import · sync error",
     "text": "インポート · 同期エラー"
   },
   "mirrorImportDetails": {
     "en": "Versions marked {stages} in “{source}” on {upstream} are copied here automatically. Later changes and deletions there do not affect them.",
     "text": "{upstream}にある「{source}」で{stages}が付いたバージョンは、自動的にここにコピーされます。コピー元でのその後の変更や削除は、これらのバージョンに影響しません。"
+  },
+  "mirrorProblem": {
+    "en": "Synchronization stopped. Downloads keep working.",
+    "text": "同期が停止しています。ダウンロードは引き続き利用できます。"
+  },
+  "mirrorFixLink": {
+    "en": "What to do",
+    "text": "対処方法"
+  },
+  "mirrorReasonUnauthorized": {
+    "en": "The source no longer accepts this server’s key. An administrator gives the mirror a new key:",
+    "text": "コピー元がこのサーバーのキーを受け付けなくなりました。管理者がミラーに新しいキーを発行します："
+  },
+  "mirrorReasonForbidden": {
+    "en": "The key of this mirror cannot read “{source}” on {upstream}. Give it read access there.",
+    "text": "このミラーのキーでは{upstream}にある「{source}」を読み取れません。コピー元でこのキーに読み取り権限を付与してください。"
+  },
+  "mirrorReasonNotFound": {
+    "en": "{upstream} has no repository “{source}”. Check that it was not renamed or deleted there.",
+    "text": "{upstream}にリポジトリ「{source}」がありません。コピー元で名前が変更されたり削除されたりしていないか確認してください。"
+  },
+  "mirrorReasonUnreachable": {
+    "en": "{upstream} cannot be reached. The server keeps retrying; check the network and that the source is running.",
+    "text": "{upstream}に接続できません。サーバーは再試行を続けます。ネットワークと、コピー元が稼働しているかを確認してください。"
+  },
+  "mirrorReasonCertificate": {
+    "en": "The certificate of {upstream} is not trusted here. Add its certificate authority:",
+    "text": "{upstream}の証明書はここでは信頼されていません。その証明機関を追加してください："
+  },
+  "mirrorReasonCapacity": {
+    "en": "This server has no room for the next file. Free space or raise the storage limit; copying resumes by itself.",
+    "text": "このサーバーには次のファイルを保存する空きがありません。空き容量を確保するか、ストレージの上限を引き上げてください。コピーは自動的に再開します。"
+  },
+  "mirrorReasonSourceBehind": {
+    "en": "The source was restored from a backup, so the mirror reads it again. Nothing to do: this clears once it has caught up.",
+    "text": "コピー元がバックアップから復元されたため、ミラーはコピー元を読み直しています。対処は不要です。追いつけばこの表示は消えます。"
+  },
+  "mirrorReasonMismatch": {
+    "en": "A file here differs from the source under the same ID. Find out why before deleting either copy.",
+    "text": "ここにあるファイルが、同じIDのコピー元のファイルと異なります。どちらかのコピーを削除する前に原因を調べてください。"
+  },
+  "mirrorReasonSourceChanged": {
+    "en": "This repository already holds a copy of another source. Mirror the new source into a new repository.",
+    "text": "このリポジトリには既に別のコピー元のコピーがあります。新しいコピー元は新しいリポジトリにミラーしてください。"
+  },
+  "mirrorReasonDeleteBlocked": {
+    "en": "The source deleted a file that is still used here, for example by a file path. It stays here.",
+    "text": "コピー元で削除されたファイルが、ここではまだ使われています（ファイルパスなど）。このファイルはここに残ります。"
+  },
+  "mirrorReasonDetached": {
+    "en": "This repository was detached and has changes of its own; it is never synchronized again. Mirror the source into a new repository.",
+    "text": "このリポジトリは切り離されており、独自の変更があります。今後同期されることはありません。コピー元は新しいリポジトリにミラーしてください。"
+  },
+  "mirrorReasonPackage": {
+    "en": "A version of the source has a package version that this repository holds with other bytes. Remove the stage or the version on the source, or publish it under another version.",
+    "text": "コピー元のあるバージョンのパッケージバージョンが、このリポジトリでは別のバイト内容で保存されています。コピー元でステージかバージョンを削除するか、別のバージョンで公開してください。"
+  },
+  "mirrorReasonIdTaken": {
+    "en": "A file of the source is held by another repository here. One source repository can fill only one repository.",
+    "text": "コピー元のファイルは、このサーバーの別のリポジトリが既に保持しています。1つのコピー元リポジトリから取り込めるリポジトリは1つだけです。"
+  },
+  "mirrorReasonOther": {
+    "en": "The last attempt failed ({code}). The server retries by itself; its log names the cause.",
+    "text": "前回の試行は失敗しました（{code}）。サーバーが自動的に再試行します。原因はサーバーのログに記録されています。"
+  },
+  "mirrors": {
+    "en": "Mirrors",
+    "text": "ミラー"
+  },
+  "mirrorsIntro": {
+    "en": "Repositories this server copies from other Arkvory installations. The server keeps them in sync by itself; this page refreshes on its own.",
+    "text": "このサーバーが他のArkvoryインストール環境からコピーしているリポジトリです。サーバーが自動的に同期を維持し、このページも自動的に更新されます。"
+  },
+  "mirrorsRepository": {
+    "en": "Repository",
+    "text": "リポジトリ"
+  },
+  "mirrorsSource": {
+    "en": "Source",
+    "text": "コピー元"
+  },
+  "mirrorsState": {
+    "en": "State",
+    "text": "状態"
+  },
+  "mirrorsLastSync": {
+    "en": "Last synchronized",
+    "text": "最終同期"
+  },
+  "mirrorsCopied": {
+    "en": "Copied",
+    "text": "コピー済み"
+  },
+  "mirrorsCopiedValue": {
+    "en": "{count} files · {size}",
+    "text": "{count} ファイル · {size}"
+  },
+  "mirrorsSourceValue": {
+    "en": "“{source}” on {upstream}",
+    "text": "{upstream}の「{source}」"
+  },
+  "mirrorsModeMirror": {
+    "en": "Read-only mirror",
+    "text": "読み取り専用ミラー"
+  },
+  "mirrorsModeImport": {
+    "en": "Imports versions marked {stages}",
+    "text": "{stages}が付いたバージョンをインポート"
+  },
+  "mirrorStateSynced": {
+    "en": "In sync",
+    "text": "同期済み"
+  },
+  "mirrorStateBehind": {
+    "en": "Catching up",
+    "text": "追従中"
+  },
+  "mirrorStatePending": {
+    "en": "Starting",
+    "text": "開始中"
+  },
+  "mirrorStateSeeding": {
+    "en": "First copy",
+    "text": "初回コピー"
+  },
+  "mirrorStateFailing": {
+    "en": "Sync error",
+    "text": "同期エラー"
+  },
+  "mirrorsEmptyTitle": {
+    "en": "No mirrors on this server",
+    "text": "このサーバーにミラーはありません"
+  },
+  "mirrorsEmpty": {
+    "en": "A mirror keeps a copy of a repository of another installation: a second site, or staging to production. An administrator sets one up with “arkvory configure --mirror”.",
+    "text": "ミラーは、別のインストール環境のリポジトリのコピーを保持します。用途は第2拠点や、ステージングから本番への受け渡しなどです。管理者が「arkvory configure --mirror」で設定します。"
+  },
+  "mirrorsGuide": {
+    "en": "Mirrors guide",
+    "text": "ミラーのガイド"
+  },
+  "mirrorsUnavailable": {
+    "en": "Cannot load the mirrors. Retrying automatically.",
+    "text": "ミラーを読み込めません。自動的に再試行しています。"
+  },
+  "errorMirrorReadOnly": {
+    "en": "This repository is a mirror of another installation and cannot be changed here. Make the change on the source; the mirror follows by itself.",
+    "text": "このリポジトリは別のインストール環境のミラーのため、ここでは変更できません。コピー元で変更してください。ミラーには自動的に反映されます。"
+  },
+  "cluster": {
+    "en": "Cluster",
+    "text": "クラスター"
+  },
+  "clusterIntro": {
+    "en": "This server runs as a high-availability cluster: every write is kept on more than one node before it is confirmed. This page refreshes on its own.",
+    "text": "このサーバーは高可用性クラスターとして動作しています。すべての書き込みは、確認される前に複数のノードに保存されます。このページは自動的に更新されます。"
+  },
+  "clusterProfile": {
+    "en": "Layout",
+    "text": "構成"
+  },
+  "clusterProfileTwo": {
+    "en": "Two data nodes and a witness",
+    "text": "データノード2台とウィットネス"
+  },
+  "clusterProfileThree": {
+    "en": "Three data nodes",
+    "text": "データノード3台"
+  },
+  "clusterActive": {
+    "en": "Serving now",
+    "text": "現在のサービスノード"
+  },
+  "clusterCopies": {
+    "en": "Complete copies",
+    "text": "完全なコピー"
+  },
+  "clusterCopiesValue": {
+    "en": "{copies} of {required} required",
+    "text": "必要な {required} 個のうち {copies} 個"
+  },
+  "clusterWrites": {
+    "en": "Writes",
+    "text": "書き込み"
+  },
+  "clusterWritesOn": {
+    "en": "Accepted",
+    "text": "受付中"
+  },
+  "clusterWritesOff": {
+    "en": "Stopped",
+    "text": "停止中"
+  },
+  "clusterWritesSingle": {
+    "en": "Accepted with one copy until {until}",
+    "text": "{until} まで 1 つのコピーで受付中"
+  },
+  "clusterNodes": {
+    "en": "Other nodes",
+    "text": "他のノード"
+  },
+  "clusterNode": {
+    "en": "Node",
+    "text": "ノード"
+  },
+  "clusterRole": {
+    "en": "Role",
+    "text": "役割"
+  },
+  "clusterConnection": {
+    "en": "Connection",
+    "text": "接続"
+  },
+  "clusterCopy": {
+    "en": "Copy",
+    "text": "コピー"
+  },
+  "clusterRoleData": {
+    "en": "Data copy",
+    "text": "データのコピー"
+  },
+  "clusterRoleWitness": {
+    "en": "Witness (votes, holds no data)",
+    "text": "ウィットネス（投票のみ、データは保持しない）"
+  },
+  "clusterConnected": {
+    "en": "Connected",
+    "text": "接続済み"
+  },
+  "clusterDisconnected": {
+    "en": "Not connected",
+    "text": "未接続"
+  },
+  "clusterCopyComplete": {
+    "en": "Complete",
+    "text": "完全"
+  },
+  "clusterCopySyncing": {
+    "en": "Catching up",
+    "text": "追従中"
+  },
+  "clusterCopyMissing": {
+    "en": "Missing",
+    "text": "なし"
+  },
+  "clusterCopyNone": {
+    "en": "—",
+    "text": "—"
+  },
+  "clusterNoPeers": {
+    "en": "No other node is configured or connected.",
+    "text": "他のノードは構成されていないか、接続されていません。"
+  },
+  "clusterNextStep": {
+    "en": "Next step",
+    "text": "次の手順"
+  },
+  "clusterHealthy": {
+    "en": "Every copy is complete: a node can fail without losing confirmed writes. Before maintenance of the serving node, move Arkvory to another node. On the serving node, run:",
+    "text": "すべてのコピーが完全です。ノードが1台故障しても、確認済みの書き込みは失われません。サービス中のノードを保守する前に、Arkvoryを別のノードに移してください。サービス中のノードで次を実行します："
+  },
+  "clusterDegraded": {
+    "en": "Writes are stopped until the missing copy is back; downloads keep working. Bring the node back, or replace it with a new one (see the guide). Only if you accept losing writes on a second failure, allow one copy for a limited time. On the serving node, run:",
+    "text": "不足しているコピーが戻るまで書き込みは停止します。ダウンロードは引き続き利用できます。ノードを復旧するか、新しいノードに置き換えてください（ガイドを参照）。2度目の障害で書き込みが失われることを許容できる場合に限り、期限付きで1つのコピーを許可してください。サービス中のノードで次を実行します："
+  },
+  "clusterSingle": {
+    "en": "Writes are confirmed with one copy: a second failure loses them. The decision ends by itself once the copy is back. To end it now, on the serving node run:",
+    "text": "書き込みは1つのコピーで確認されています。2度目の障害が起きると失われます。この判断はコピーが戻ると自動的に終了します。今すぐ終了するには、サービス中のノードで次を実行します："
+  },
+  "clusterUnknown": {
+    "en": "The server cannot read the state of its copies, so writes are stopped. On the serving node, check the arkvory-replica service:",
+    "text": "サーバーがコピーの状態を読み取れないため、書き込みは停止しています。サービス中のノードでarkvory-replicaサービスを確認してください："
+  },
+  "clusterOld": {
+    "en": "Node details appear after every node runs this release. Copies and writes above are current.",
+    "text": "ノードの詳細は、すべてのノードがこのリリースで動作すると表示されます。上のコピーと書き込みの情報は最新です。"
+  },
+  "clusterGuide": {
+    "en": "Cluster guide",
+    "text": "クラスターのガイド"
+  },
+  "clusterReplaceGuide": {
+    "en": "Replace a node",
+    "text": "ノードの置き換え"
+  },
+  "clusterUnavailable": {
+    "en": "Cannot read the cluster state. Retrying automatically.",
+    "text": "クラスターの状態を読み取れません。自動的に再試行しています。"
+  },
+  "clusterOpen": {
+    "en": "Open the cluster page",
+    "text": "クラスターのページを開く"
+  },
+  "replicationReaders": {
+    "en": "Uploads are paused while the server restores a copy of its data. Downloads keep working.",
+    "text": "サーバーがデータのコピーを復元している間、アップロードは一時停止しています。ダウンロードは引き続き利用できます。"
   },
   "reportOpen": {
     "en": "Feedback",

@@ -10,7 +10,16 @@ const SCRIPT = {
   hi: /\p{Script=Devanagari}/u,
   ar: /\p{Script=Arabic}/u,
 };
-const VIEWS = ['catalog', 'upload', 'downloads', 'packages', 'history', 'metadata', 'help'];
+const VIEWS = [
+  'catalog',
+  'upload',
+  'downloads',
+  'packages',
+  'history',
+  'metadata',
+  'mirrors',
+  'help',
+];
 
 /**
  * Every language the console fetches (English and Russian are checked with every width and

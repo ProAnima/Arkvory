@@ -119,6 +119,21 @@ test('a mirror seeds, follows the feed and serves artifacts, packages, paths and
       headers: mirror.headers,
     });
     assert.notEqual(plain.statusCode, 200);
+    // The Mirrors page lists what the caller may read, and nothing for anyone else.
+    const listed = await mirror.app.inject({
+      url: '/api/v1/mirrors',
+      headers: mirror.readerHeaders,
+    });
+    assert.equal(listed.statusCode, 200, listed.body);
+    assert.deepEqual(
+      listed.json().items.map((item) => [item.repository, item.mode, item.phase]),
+      [['releases', 'mirror', 'following']],
+    );
+    const hidden = await mirror.app.inject({
+      url: '/api/v1/mirrors',
+      headers: mirror.outsiderHeaders,
+    });
+    assert.deepEqual(hidden.json(), { items: [] });
   }
 });
 

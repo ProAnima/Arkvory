@@ -1811,25 +1811,317 @@
     "en": "Last synchronized:",
     "text": "Última sincronização:"
   },
-  "mirrorError": {
-    "en": "The last attempt failed ({code}); downloads keep working.",
-    "text": "A última tentativa falhou ({code}); os downloads continuam funcionando."
-  },
   "mirrorNever": {
     "en": "not yet",
     "text": "ainda não houve"
   },
   "mirrorImport": {
-    "en": "Imports",
-    "text": "Importações"
+    "en": "Import",
+    "text": "Importação"
   },
   "mirrorImportFailing": {
-    "en": "Imports · sync error",
-    "text": "Importações · erro de sincronização"
+    "en": "Import · sync error",
+    "text": "Importação · erro de sincronização"
   },
   "mirrorImportDetails": {
     "en": "Versions marked {stages} in “{source}” on {upstream} are copied here automatically. Later changes and deletions there do not affect them.",
     "text": "As versões marcadas com {stages} no repositório “{source}” de {upstream} são copiadas para cá automaticamente. Alterações e exclusões posteriores na origem não as afetam."
+  },
+  "mirrorProblem": {
+    "en": "Synchronization stopped. Downloads keep working.",
+    "text": "A sincronização parou. Os downloads continuam funcionando."
+  },
+  "mirrorFixLink": {
+    "en": "What to do",
+    "text": "O que fazer"
+  },
+  "mirrorReasonUnauthorized": {
+    "en": "The source no longer accepts this server’s key. An administrator gives the mirror a new key:",
+    "text": "A origem não aceita mais a chave deste servidor. Um administrador dá ao espelho uma nova chave:"
+  },
+  "mirrorReasonForbidden": {
+    "en": "The key of this mirror cannot read “{source}” on {upstream}. Give it read access there.",
+    "text": "A chave deste espelho não consegue ler “{source}” em {upstream}. Conceda a ela acesso de leitura lá."
+  },
+  "mirrorReasonNotFound": {
+    "en": "{upstream} has no repository “{source}”. Check that it was not renamed or deleted there.",
+    "text": "{upstream} não tem o repositório “{source}”. Verifique se ele não foi renomeado ou excluído lá."
+  },
+  "mirrorReasonUnreachable": {
+    "en": "{upstream} cannot be reached. The server keeps retrying; check the network and that the source is running.",
+    "text": "{upstream} está inacessível. O servidor continua tentando; verifique a rede e se a origem está em execução."
+  },
+  "mirrorReasonCertificate": {
+    "en": "The certificate of {upstream} is not trusted here. Add its certificate authority:",
+    "text": "O certificado de {upstream} não é confiável aqui. Adicione a autoridade de certificação dele:"
+  },
+  "mirrorReasonCapacity": {
+    "en": "This server has no room for the next file. Free space or raise the storage limit; copying resumes by itself.",
+    "text": "Este servidor não tem espaço para o próximo arquivo. Libere espaço ou aumente o limite de armazenamento; a cópia será retomada sozinha."
+  },
+  "mirrorReasonSourceBehind": {
+    "en": "The source was restored from a backup, so the mirror reads it again. Nothing to do: this clears once it has caught up.",
+    "text": "A origem foi restaurada de um backup, então o espelho a lê novamente. Nada a fazer: o aviso some quando ele alcançar a origem."
+  },
+  "mirrorReasonMismatch": {
+    "en": "A file here differs from the source under the same ID. Find out why before deleting either copy.",
+    "text": "Um arquivo aqui difere do da origem com o mesmo ID. Descubra o motivo antes de excluir qualquer uma das cópias."
+  },
+  "mirrorReasonSourceChanged": {
+    "en": "This repository already holds a copy of another source. Mirror the new source into a new repository.",
+    "text": "Este repositório já guarda uma cópia de outra origem. Espelhe a nova origem em um novo repositório."
+  },
+  "mirrorReasonDeleteBlocked": {
+    "en": "The source deleted a file that is still used here, for example by a file path. It stays here.",
+    "text": "A origem excluiu um arquivo que ainda é usado aqui, por exemplo por um caminho de arquivo. Ele permanece aqui."
+  },
+  "mirrorReasonDetached": {
+    "en": "This repository was detached and has changes of its own; it is never synchronized again. Mirror the source into a new repository.",
+    "text": "Este repositório foi desvinculado e tem alterações próprias; ele nunca mais será sincronizado. Espelhe a origem em um novo repositório."
+  },
+  "mirrorReasonPackage": {
+    "en": "A version of the source has a package version that this repository holds with other bytes. Remove the stage or the version on the source, or publish it under another version.",
+    "text": "Uma versão da origem tem uma versão de pacote que este repositório guarda com outros bytes. Remova o estágio ou a versão na origem, ou publique-a com outra versão."
+  },
+  "mirrorReasonIdTaken": {
+    "en": "A file of the source is held by another repository here. One source repository can fill only one repository.",
+    "text": "Um arquivo da origem já pertence a outro repositório deste servidor. Um repositório de origem só pode preencher um repositório."
+  },
+  "mirrorReasonOther": {
+    "en": "The last attempt failed ({code}). The server retries by itself; its log names the cause.",
+    "text": "A última tentativa falhou ({code}). O servidor tentará novamente sozinho; o log dele indica a causa."
+  },
+  "mirrors": {
+    "en": "Mirrors",
+    "text": "Espelhos"
+  },
+  "mirrorsIntro": {
+    "en": "Repositories this server copies from other Arkvory installations. The server keeps them in sync by itself; this page refreshes on its own.",
+    "text": "Repositórios que este servidor copia de outras instalações do Arkvory. O servidor os mantém sincronizados sozinho; esta página se atualiza sozinha."
+  },
+  "mirrorsRepository": {
+    "en": "Repository",
+    "text": "Repositório"
+  },
+  "mirrorsSource": {
+    "en": "Source",
+    "text": "Origem"
+  },
+  "mirrorsState": {
+    "en": "State",
+    "text": "Estado"
+  },
+  "mirrorsLastSync": {
+    "en": "Last synchronized",
+    "text": "Última sincronização"
+  },
+  "mirrorsCopied": {
+    "en": "Copied",
+    "text": "Copiado"
+  },
+  "mirrorsCopiedValue": {
+    "en": "{count} files · {size}",
+    "text": "{count} arquivos · {size}"
+  },
+  "mirrorsSourceValue": {
+    "en": "“{source}” on {upstream}",
+    "text": "“{source}” em {upstream}"
+  },
+  "mirrorsModeMirror": {
+    "en": "Read-only mirror",
+    "text": "Espelho somente leitura"
+  },
+  "mirrorsModeImport": {
+    "en": "Imports versions marked {stages}",
+    "text": "Importa versões marcadas com {stages}"
+  },
+  "mirrorStateSynced": {
+    "en": "In sync",
+    "text": "Sincronizado"
+  },
+  "mirrorStateBehind": {
+    "en": "Catching up",
+    "text": "Atualizando"
+  },
+  "mirrorStatePending": {
+    "en": "Starting",
+    "text": "Iniciando"
+  },
+  "mirrorStateSeeding": {
+    "en": "First copy",
+    "text": "Primeira cópia"
+  },
+  "mirrorStateFailing": {
+    "en": "Sync error",
+    "text": "Erro de sincronização"
+  },
+  "mirrorsEmptyTitle": {
+    "en": "No mirrors on this server",
+    "text": "Nenhum espelho neste servidor"
+  },
+  "mirrorsEmpty": {
+    "en": "A mirror keeps a copy of a repository of another installation: a second site, or staging to production. An administrator sets one up with “arkvory configure --mirror”.",
+    "text": "Um espelho mantém uma cópia de um repositório de outra instalação: um segundo site, ou de homologação para produção. Um administrador o configura com “arkvory configure --mirror”."
+  },
+  "mirrorsGuide": {
+    "en": "Mirrors guide",
+    "text": "Guia de espelhos"
+  },
+  "mirrorsUnavailable": {
+    "en": "Cannot load the mirrors. Retrying automatically.",
+    "text": "Não foi possível carregar os espelhos. Tentando novamente automaticamente."
+  },
+  "errorMirrorReadOnly": {
+    "en": "This repository is a mirror of another installation and cannot be changed here. Make the change on the source; the mirror follows by itself.",
+    "text": "Este repositório é um espelho de outra instalação e não pode ser alterado aqui. Faça a alteração na origem; o espelho a acompanhará sozinho."
+  },
+  "cluster": {
+    "en": "Cluster",
+    "text": "Cluster"
+  },
+  "clusterIntro": {
+    "en": "This server runs as a high-availability cluster: every write is kept on more than one node before it is confirmed. This page refreshes on its own.",
+    "text": "Este servidor funciona como um cluster de alta disponibilidade: cada gravação é mantida em mais de um nó antes de ser confirmada. Esta página se atualiza sozinha."
+  },
+  "clusterProfile": {
+    "en": "Layout",
+    "text": "Topologia"
+  },
+  "clusterProfileTwo": {
+    "en": "Two data nodes and a witness",
+    "text": "Dois nós de dados e uma testemunha"
+  },
+  "clusterProfileThree": {
+    "en": "Three data nodes",
+    "text": "Três nós de dados"
+  },
+  "clusterActive": {
+    "en": "Serving now",
+    "text": "Atendendo agora"
+  },
+  "clusterCopies": {
+    "en": "Complete copies",
+    "text": "Cópias completas"
+  },
+  "clusterCopiesValue": {
+    "en": "{copies} of {required} required",
+    "text": "{copies} de {required} necessárias"
+  },
+  "clusterWrites": {
+    "en": "Writes",
+    "text": "Gravações"
+  },
+  "clusterWritesOn": {
+    "en": "Accepted",
+    "text": "Aceitas"
+  },
+  "clusterWritesOff": {
+    "en": "Stopped",
+    "text": "Paradas"
+  },
+  "clusterWritesSingle": {
+    "en": "Accepted with one copy until {until}",
+    "text": "Aceitas com uma cópia até {until}"
+  },
+  "clusterNodes": {
+    "en": "Other nodes",
+    "text": "Outros nós"
+  },
+  "clusterNode": {
+    "en": "Node",
+    "text": "Nó"
+  },
+  "clusterRole": {
+    "en": "Role",
+    "text": "Função"
+  },
+  "clusterConnection": {
+    "en": "Connection",
+    "text": "Conexão"
+  },
+  "clusterCopy": {
+    "en": "Copy",
+    "text": "Cópia"
+  },
+  "clusterRoleData": {
+    "en": "Data copy",
+    "text": "Cópia de dados"
+  },
+  "clusterRoleWitness": {
+    "en": "Witness (votes, holds no data)",
+    "text": "Testemunha (vota, não guarda dados)"
+  },
+  "clusterConnected": {
+    "en": "Connected",
+    "text": "Conectado"
+  },
+  "clusterDisconnected": {
+    "en": "Not connected",
+    "text": "Desconectado"
+  },
+  "clusterCopyComplete": {
+    "en": "Complete",
+    "text": "Completa"
+  },
+  "clusterCopySyncing": {
+    "en": "Catching up",
+    "text": "Atualizando"
+  },
+  "clusterCopyMissing": {
+    "en": "Missing",
+    "text": "Ausente"
+  },
+  "clusterCopyNone": {
+    "en": "—",
+    "text": "—"
+  },
+  "clusterNoPeers": {
+    "en": "No other node is configured or connected.",
+    "text": "Nenhum outro nó está configurado ou conectado."
+  },
+  "clusterNextStep": {
+    "en": "Next step",
+    "text": "Próximo passo"
+  },
+  "clusterHealthy": {
+    "en": "Every copy is complete: a node can fail without losing confirmed writes. Before maintenance of the serving node, move Arkvory to another node. On the serving node, run:",
+    "text": "Todas as cópias estão completas: um nó pode falhar sem perder gravações confirmadas. Antes da manutenção do nó que está atendendo, mova o Arkvory para outro nó. No nó que está atendendo, execute:"
+  },
+  "clusterDegraded": {
+    "en": "Writes are stopped until the missing copy is back; downloads keep working. Bring the node back, or replace it with a new one (see the guide). Only if you accept losing writes on a second failure, allow one copy for a limited time. On the serving node, run:",
+    "text": "As gravações estão paradas até a cópia ausente voltar; os downloads continuam funcionando. Recupere o nó ou substitua-o por um novo (consulte o guia). Somente se você aceitar perder gravações em uma segunda falha, permita uma única cópia por tempo limitado. No nó que está atendendo, execute:"
+  },
+  "clusterSingle": {
+    "en": "Writes are confirmed with one copy: a second failure loses them. The decision ends by itself once the copy is back. To end it now, on the serving node run:",
+    "text": "As gravações são confirmadas com uma única cópia: uma segunda falha as perderia. A decisão termina sozinha quando a cópia voltar. Para encerrá-la agora, no nó que está atendendo execute:"
+  },
+  "clusterUnknown": {
+    "en": "The server cannot read the state of its copies, so writes are stopped. On the serving node, check the arkvory-replica service:",
+    "text": "O servidor não consegue ler o estado das cópias, por isso as gravações estão paradas. No nó que está atendendo, verifique o serviço arkvory-replica:"
+  },
+  "clusterOld": {
+    "en": "Node details appear after every node runs this release. Copies and writes above are current.",
+    "text": "Os detalhes dos nós aparecem quando todos os nós executarem esta versão. As cópias e gravações acima estão atualizadas."
+  },
+  "clusterGuide": {
+    "en": "Cluster guide",
+    "text": "Guia do cluster"
+  },
+  "clusterReplaceGuide": {
+    "en": "Replace a node",
+    "text": "Substituir um nó"
+  },
+  "clusterUnavailable": {
+    "en": "Cannot read the cluster state. Retrying automatically.",
+    "text": "Não foi possível ler o estado do cluster. Tentando novamente automaticamente."
+  },
+  "clusterOpen": {
+    "en": "Open the cluster page",
+    "text": "Abrir a página do cluster"
+  },
+  "replicationReaders": {
+    "en": "Uploads are paused while the server restores a copy of its data. Downloads keep working.",
+    "text": "Os uploads estão pausados enquanto o servidor restaura uma cópia dos dados. Os downloads continuam funcionando."
   },
   "reportOpen": {
     "en": "Feedback",

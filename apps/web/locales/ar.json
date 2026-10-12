@@ -1811,25 +1811,317 @@
     "en": "Last synchronized:",
     "text": "آخر مزامنة:"
   },
-  "mirrorError": {
-    "en": "The last attempt failed ({code}); downloads keep working.",
-    "text": "فشلت المحاولة الأخيرة ({code})؛ ويستمر التنزيل في العمل."
-  },
   "mirrorNever": {
     "en": "not yet",
     "text": "ليس بعد"
   },
   "mirrorImport": {
-    "en": "Imports",
+    "en": "Import",
     "text": "استيراد"
   },
   "mirrorImportFailing": {
-    "en": "Imports · sync error",
+    "en": "Import · sync error",
     "text": "استيراد · خطأ في المزامنة"
   },
   "mirrorImportDetails": {
     "en": "Versions marked {stages} in “{source}” on {upstream} are copied here automatically. Later changes and deletions there do not affect them.",
     "text": "تُنسخ إلى هنا تلقائيًا الإصدارات التي تحمل المراحل {stages} في «{source}» على {upstream}. ولا تتأثر بالتغييرات أو عمليات الحذف اللاحقة هناك."
+  },
+  "mirrorProblem": {
+    "en": "Synchronization stopped. Downloads keep working.",
+    "text": "توقفت المزامنة. تستمر التنزيلات في العمل."
+  },
+  "mirrorFixLink": {
+    "en": "What to do",
+    "text": "ما العمل"
+  },
+  "mirrorReasonUnauthorized": {
+    "en": "The source no longer accepts this server’s key. An administrator gives the mirror a new key:",
+    "text": "لم يعد المصدر يقبل مفتاح هذا الخادم. يمنح المسؤول المرآة مفتاحًا جديدًا:"
+  },
+  "mirrorReasonForbidden": {
+    "en": "The key of this mirror cannot read “{source}” on {upstream}. Give it read access there.",
+    "text": "لا يستطيع مفتاح هذه المرآة قراءة «{source}» على {upstream}. امنحه صلاحية القراءة هناك."
+  },
+  "mirrorReasonNotFound": {
+    "en": "{upstream} has no repository “{source}”. Check that it was not renamed or deleted there.",
+    "text": "لا يوجد على {upstream} مستودع باسم «{source}». تحقّق من أنه لم تُغيَّر تسميته أو يُحذف هناك."
+  },
+  "mirrorReasonUnreachable": {
+    "en": "{upstream} cannot be reached. The server keeps retrying; check the network and that the source is running.",
+    "text": "تعذّر الوصول إلى {upstream}. يواصل الخادم المحاولة؛ تحقّق من الشبكة ومن أن المصدر يعمل."
+  },
+  "mirrorReasonCertificate": {
+    "en": "The certificate of {upstream} is not trusted here. Add its certificate authority:",
+    "text": "شهادة {upstream} غير موثوق بها هنا. أضف جهة إصدار الشهادات الخاصة بها:"
+  },
+  "mirrorReasonCapacity": {
+    "en": "This server has no room for the next file. Free space or raise the storage limit; copying resumes by itself.",
+    "text": "لا توجد مساحة على هذا الخادم للملف التالي. حرّر مساحة أو ارفع حد التخزين؛ وسيُستأنف النسخ تلقائيًا."
+  },
+  "mirrorReasonSourceBehind": {
+    "en": "The source was restored from a backup, so the mirror reads it again. Nothing to do: this clears once it has caught up.",
+    "text": "استُعيد المصدر من نسخة احتياطية، لذا تقرؤه المرآة من جديد. لا حاجة إلى أي إجراء: تختفي هذه الرسالة بعد أن تلحق المرآة به."
+  },
+  "mirrorReasonMismatch": {
+    "en": "A file here differs from the source under the same ID. Find out why before deleting either copy.",
+    "text": "يختلف ملف هنا عن ملف المصدر الذي يحمل المعرّف نفسه. اعرف السبب قبل حذف أي من النسختين."
+  },
+  "mirrorReasonSourceChanged": {
+    "en": "This repository already holds a copy of another source. Mirror the new source into a new repository.",
+    "text": "يحتفظ هذا المستودع بالفعل بنسخة من مصدر آخر. انسخ المصدر الجديد كمرآة إلى مستودع جديد."
+  },
+  "mirrorReasonDeleteBlocked": {
+    "en": "The source deleted a file that is still used here, for example by a file path. It stays here.",
+    "text": "حذف المصدر ملفًا لا يزال مستخدمًا هنا، مثلًا في مسار ملف. لذا يبقى هنا."
+  },
+  "mirrorReasonDetached": {
+    "en": "This repository was detached and has changes of its own; it is never synchronized again. Mirror the source into a new repository.",
+    "text": "فُصل هذا المستودع وفيه تغييرات خاصة به؛ ولن تتم مزامنته مجددًا أبدًا. انسخ المصدر كمرآة إلى مستودع جديد."
+  },
+  "mirrorReasonPackage": {
+    "en": "A version of the source has a package version that this repository holds with other bytes. Remove the stage or the version on the source, or publish it under another version.",
+    "text": "في إصدار من المصدر إصدار حزمة يحتفظ به هذا المستودع ببايتات مختلفة. أزل المرحلة أو الإصدار على المصدر، أو انشره برقم إصدار آخر."
+  },
+  "mirrorReasonIdTaken": {
+    "en": "A file of the source is held by another repository here. One source repository can fill only one repository.",
+    "text": "ملف من المصدر يحتفظ به مستودع آخر على هذا الخادم. لا يمكن لمستودع مصدر واحد أن يملأ إلا مستودعًا واحدًا."
+  },
+  "mirrorReasonOther": {
+    "en": "The last attempt failed ({code}). The server retries by itself; its log names the cause.",
+    "text": "فشلت المحاولة الأخيرة ({code}). سيعيد الخادم المحاولة تلقائيًا؛ ويذكر سجله السبب."
+  },
+  "mirrors": {
+    "en": "Mirrors",
+    "text": "المرايا"
+  },
+  "mirrorsIntro": {
+    "en": "Repositories this server copies from other Arkvory installations. The server keeps them in sync by itself; this page refreshes on its own.",
+    "text": "مستودعات ينسخها هذا الخادم من تثبيتات Arkvory أخرى. يُبقيها الخادم متزامنة تلقائيًا؛ وتتحدّث هذه الصفحة من تلقاء نفسها."
+  },
+  "mirrorsRepository": {
+    "en": "Repository",
+    "text": "المستودع"
+  },
+  "mirrorsSource": {
+    "en": "Source",
+    "text": "المصدر"
+  },
+  "mirrorsState": {
+    "en": "State",
+    "text": "الحالة"
+  },
+  "mirrorsLastSync": {
+    "en": "Last synchronized",
+    "text": "آخر مزامنة"
+  },
+  "mirrorsCopied": {
+    "en": "Copied",
+    "text": "المنسوخ"
+  },
+  "mirrorsCopiedValue": {
+    "en": "{count} files · {size}",
+    "text": "{count} ملف · {size}"
+  },
+  "mirrorsSourceValue": {
+    "en": "“{source}” on {upstream}",
+    "text": "«{source}» على {upstream}"
+  },
+  "mirrorsModeMirror": {
+    "en": "Read-only mirror",
+    "text": "مرآة للقراءة فقط"
+  },
+  "mirrorsModeImport": {
+    "en": "Imports versions marked {stages}",
+    "text": "تستورد الإصدارات التي تحمل {stages}"
+  },
+  "mirrorStateSynced": {
+    "en": "In sync",
+    "text": "متزامنة"
+  },
+  "mirrorStateBehind": {
+    "en": "Catching up",
+    "text": "تلحق بالمصدر"
+  },
+  "mirrorStatePending": {
+    "en": "Starting",
+    "text": "قيد البدء"
+  },
+  "mirrorStateSeeding": {
+    "en": "First copy",
+    "text": "النسخ الأول"
+  },
+  "mirrorStateFailing": {
+    "en": "Sync error",
+    "text": "خطأ في المزامنة"
+  },
+  "mirrorsEmptyTitle": {
+    "en": "No mirrors on this server",
+    "text": "لا توجد مرايا على هذا الخادم"
+  },
+  "mirrorsEmpty": {
+    "en": "A mirror keeps a copy of a repository of another installation: a second site, or staging to production. An administrator sets one up with “arkvory configure --mirror”.",
+    "text": "تحتفظ المرآة بنسخة من مستودع في تثبيت آخر: موقع ثانٍ، أو من بيئة الاختبار إلى بيئة الإنتاج. يُعدّها المسؤول باستخدام «arkvory configure --mirror»."
+  },
+  "mirrorsGuide": {
+    "en": "Mirrors guide",
+    "text": "دليل المرايا"
+  },
+  "mirrorsUnavailable": {
+    "en": "Cannot load the mirrors. Retrying automatically.",
+    "text": "تعذّر تحميل المرايا. تجري إعادة المحاولة تلقائيًا."
+  },
+  "errorMirrorReadOnly": {
+    "en": "This repository is a mirror of another installation and cannot be changed here. Make the change on the source; the mirror follows by itself.",
+    "text": "هذا المستودع مرآة لتثبيت آخر ولا يمكن تغييره هنا. أجرِ التغيير على المصدر؛ وستتبعه المرآة تلقائيًا."
+  },
+  "cluster": {
+    "en": "Cluster",
+    "text": "العنقود"
+  },
+  "clusterIntro": {
+    "en": "This server runs as a high-availability cluster: every write is kept on more than one node before it is confirmed. This page refreshes on its own.",
+    "text": "يعمل هذا الخادم كعنقود عالي التوفر: تُحفظ كل عملية كتابة على أكثر من عقدة قبل تأكيدها. تتحدّث هذه الصفحة من تلقاء نفسها."
+  },
+  "clusterProfile": {
+    "en": "Layout",
+    "text": "البنية"
+  },
+  "clusterProfileTwo": {
+    "en": "Two data nodes and a witness",
+    "text": "عقدتا بيانات وشاهد"
+  },
+  "clusterProfileThree": {
+    "en": "Three data nodes",
+    "text": "ثلاث عقد بيانات"
+  },
+  "clusterActive": {
+    "en": "Serving now",
+    "text": "تخدم الآن"
+  },
+  "clusterCopies": {
+    "en": "Complete copies",
+    "text": "النسخ المكتملة"
+  },
+  "clusterCopiesValue": {
+    "en": "{copies} of {required} required",
+    "text": "{copies} من {required} مطلوبة"
+  },
+  "clusterWrites": {
+    "en": "Writes",
+    "text": "الكتابة"
+  },
+  "clusterWritesOn": {
+    "en": "Accepted",
+    "text": "مقبولة"
+  },
+  "clusterWritesOff": {
+    "en": "Stopped",
+    "text": "متوقفة"
+  },
+  "clusterWritesSingle": {
+    "en": "Accepted with one copy until {until}",
+    "text": "مقبولة بنسخة واحدة حتى {until}"
+  },
+  "clusterNodes": {
+    "en": "Other nodes",
+    "text": "العقد الأخرى"
+  },
+  "clusterNode": {
+    "en": "Node",
+    "text": "العقدة"
+  },
+  "clusterRole": {
+    "en": "Role",
+    "text": "الدور"
+  },
+  "clusterConnection": {
+    "en": "Connection",
+    "text": "الاتصال"
+  },
+  "clusterCopy": {
+    "en": "Copy",
+    "text": "النسخة"
+  },
+  "clusterRoleData": {
+    "en": "Data copy",
+    "text": "نسخة بيانات"
+  },
+  "clusterRoleWitness": {
+    "en": "Witness (votes, holds no data)",
+    "text": "شاهد (يصوّت ولا يحتفظ ببيانات)"
+  },
+  "clusterConnected": {
+    "en": "Connected",
+    "text": "متصلة"
+  },
+  "clusterDisconnected": {
+    "en": "Not connected",
+    "text": "غير متصلة"
+  },
+  "clusterCopyComplete": {
+    "en": "Complete",
+    "text": "مكتملة"
+  },
+  "clusterCopySyncing": {
+    "en": "Catching up",
+    "text": "تلحق بالركب"
+  },
+  "clusterCopyMissing": {
+    "en": "Missing",
+    "text": "مفقودة"
+  },
+  "clusterCopyNone": {
+    "en": "—",
+    "text": "—"
+  },
+  "clusterNoPeers": {
+    "en": "No other node is configured or connected.",
+    "text": "لا توجد عقدة أخرى مُعدّة أو متصلة."
+  },
+  "clusterNextStep": {
+    "en": "Next step",
+    "text": "الخطوة التالية"
+  },
+  "clusterHealthy": {
+    "en": "Every copy is complete: a node can fail without losing confirmed writes. Before maintenance of the serving node, move Arkvory to another node. On the serving node, run:",
+    "text": "كل النسخ مكتملة: يمكن أن تتعطل عقدة دون فقدان أي كتابة مؤكدة. قبل صيانة العقدة التي تخدم، انقل Arkvory إلى عقدة أخرى. على العقدة التي تخدم، شغّل:"
+  },
+  "clusterDegraded": {
+    "en": "Writes are stopped until the missing copy is back; downloads keep working. Bring the node back, or replace it with a new one (see the guide). Only if you accept losing writes on a second failure, allow one copy for a limited time. On the serving node, run:",
+    "text": "الكتابة متوقفة حتى تعود النسخة المفقودة؛ وتستمر التنزيلات في العمل. أعد العقدة أو استبدل بها عقدة جديدة (راجع الدليل). لا تسمح بنسخة واحدة لمدة محدودة إلا إذا كنت تقبل فقدان الكتابات عند عطل ثانٍ. على العقدة التي تخدم، شغّل:"
+  },
+  "clusterSingle": {
+    "en": "Writes are confirmed with one copy: a second failure loses them. The decision ends by itself once the copy is back. To end it now, on the serving node run:",
+    "text": "تُؤكَّد الكتابة بنسخة واحدة: عطل ثانٍ يُفقدها. ينتهي القرار تلقائيًا بعد عودة النسخة. لإنهائه الآن، شغّل على العقدة التي تخدم:"
+  },
+  "clusterUnknown": {
+    "en": "The server cannot read the state of its copies, so writes are stopped. On the serving node, check the arkvory-replica service:",
+    "text": "لا يستطيع الخادم قراءة حالة نسخه، لذا الكتابة متوقفة. على العقدة التي تخدم، تحقّق من الخدمة arkvory-replica:"
+  },
+  "clusterOld": {
+    "en": "Node details appear after every node runs this release. Copies and writes above are current.",
+    "text": "تظهر تفاصيل العقد بعد أن تعمل كل العقد بهذا الإصدار. معلومات النسخ والكتابة أعلاه محدّثة."
+  },
+  "clusterGuide": {
+    "en": "Cluster guide",
+    "text": "دليل العنقود"
+  },
+  "clusterReplaceGuide": {
+    "en": "Replace a node",
+    "text": "استبدال عقدة"
+  },
+  "clusterUnavailable": {
+    "en": "Cannot read the cluster state. Retrying automatically.",
+    "text": "تعذّرت قراءة حالة العنقود. تجري إعادة المحاولة تلقائيًا."
+  },
+  "clusterOpen": {
+    "en": "Open the cluster page",
+    "text": "فتح صفحة العنقود"
+  },
+  "replicationReaders": {
+    "en": "Uploads are paused while the server restores a copy of its data. Downloads keep working.",
+    "text": "عمليات الرفع متوقفة مؤقتًا بينما يستعيد الخادم نسخة من بياناته. تستمر التنزيلات في العمل."
   },
   "reportOpen": {
     "en": "Feedback",

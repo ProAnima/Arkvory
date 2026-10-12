@@ -32,6 +32,9 @@ export function registerMirrorRoutes(
   mirrors: MirrorStatus,
   principal: (request: FastifyRequest) => Principal,
 ) {
+  app.get('/api/v1/mirrors', async (request) => ({
+    items: (await mirrors.list(principal(request))).map(mirrorResponse),
+  }));
   app.get<{ Params: { repository: string } }>(
     '/api/v1/repositories/:repository/mirror',
     async (request) =>

@@ -47,4 +47,4 @@ export type {
   ErrorExtra,
 } from './errors.js';
 export { acknowledges } from './replica.js';
-export type { ReplicaCopies } from './replica.js';
+export type { ReplicaCopies, ReplicaPeer } from './replica.js';

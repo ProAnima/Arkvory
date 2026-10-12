@@ -198,15 +198,17 @@ Get-NetTCPConnection -LocalPort 8080 | Select-Object LocalAddress, OwningProcess
 
 ## 镜像不同步 {#mirror-not-syncing}
 
-查看仓库上的徽标 [[ui:mirrorFailing]]、`GET /api/v1/repositories/{repository}/mirror` 和工作进程事件 `mirror.step_failed`。下载会基于已复制的内容继续工作。参见[镜像](./mirrors)。
+在控制台中打开 [[ui:mirrors]]：停止的镜像会显示原因、下一步操作，以及在有修复命令时显示该命令。同样的状态也可以在 `GET /api/v1/repositories/{repository}/mirror` 和工作进程事件 `mirror.step_failed` 中查看。下载会基于已复制的内容继续工作。参见[镜像](./mirrors)。
 
-| `errorCode`                                                     | 原因                                             | 修复                                                                                                                       |
-| --------------------------------------------------------------- | ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
-| `mirror_failed`，或源返回的代码如 `unauthorized` 或 `forbidden` | 源不可达、它的密钥错误或已过期，或它缺少某项权限 | 使用该密钥测试源。使用 `arkvory configure --mirror ... --mirror-token-file` 替换密钥。工作进程在每次失败后都会再次读取密钥 |
-| `mirror_mismatch`                                               | 同一个 ID 在源处有不同的内容                     | 保留副本。调查该制品                                                                                                       |
-| `mirror_source_changed`                                         | 该仓库已经持有另一个源的副本                     | 使用 `--mirror-detach` 解除，并把新源镜像到新仓库中                                                                        |
-| `mirror_source_behind`                                          | 源被恢复或重新安装                               | 它会自行重新播种，该代码随后消失                                                                                           |
-| 证书错误                                                        | 源使用公司或自签名证书                           | 向 `arkvory configure` 传递 `--mirror-ca-file`。该检查绝不会关闭                                                           |
+| `errorCode`                   | 原因                                                   | 修复                                                                                                                                     |
+| ----------------------------- | ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `mirror_unreachable`          | 源没有响应：连接被拒绝、超时或名称无法解析             | 检查网络、防火墙和源。工作进程会自行重试                                                                                                 |
+| `unauthorized` 或 `forbidden` | 源拒绝该密钥，或该密钥无权读取该仓库                   | 使用 `arkvory configure --mirror NAME --mirror-token-file FILE` 替换密钥，或在源上为它授予读取权限。工作进程在每次失败后都会再次读取密钥 |
+| `mirror_failed`               | 没有更具体代码的失败                                   | 查看工作进程日志                                                                                                                         |
+| `mirror_mismatch`             | 同一个 ID 在源处有不同的内容                           | 保留副本。调查该制品                                                                                                                     |
+| `mirror_source_changed`       | 该仓库已经持有另一个源的副本                           | 使用 `--mirror-detach` 解除，并把新源镜像到新仓库中                                                                                      |
+| `mirror_source_behind`        | 源被恢复或重新安装                                     | 它会自行重新播种，该代码随后消失                                                                                                         |
+| `mirror_certificate`          | 源使用公司或自签名证书，或其证书已过期或与其名称不匹配 | 向 `arkvory configure` 传递 `--mirror-ca-file`。该检查绝不会关闭                                                                         |
 
 源需要一个带有镜像数据源的版本。工作进程在失败后等待 2 秒，以倍增方式最长到 5 分钟。`ArkvoryMirrorStale` 在整整一小时没有追赶后触发。
 

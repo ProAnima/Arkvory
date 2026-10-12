@@ -1,10 +1,42 @@
 import { request } from 'node:http';
-import type { ReplicaCopies } from '@proanima/arkvory-domain';
+import type { ReplicaCopies, ReplicaPeer } from '@proanima/arkvory-domain';
 import type { ReplicaState } from '@proanima/arkvory-application';
 
 /** More than enough for one local answer; a slower helper means the state is unknown. */
 const TIMEOUT_MS = 2000;
-const MAX_BODY = 4096;
+const MAX_BODY = 8192;
+const NAME = /^[A-Za-z0-9][A-Za-z0-9._-]{0,62}$/;
+
+function peer(value: unknown): ReplicaPeer {
+  if (typeof value !== 'object' || value === null) throw new Error('Replica peer is invalid');
+  const { name, connected, disk, complete, witness } = value as Record<string, unknown>;
+  if (
+    typeof name !== 'string' ||
+    !NAME.test(name) ||
+    typeof connected !== 'boolean' ||
+    typeof disk !== 'string' ||
+    !/^[A-Za-z]{1,24}$/.test(disk) ||
+    typeof complete !== 'boolean' ||
+    typeof witness !== 'boolean'
+  )
+    throw new Error('Replica peer is invalid');
+  return { name, connected, disk, complete, witness };
+}
+
+/** The optional details of a cluster helper of this release; earlier helpers send none. */
+function details(value: Record<string, unknown>): Partial<ReplicaCopies> {
+  const { node, profile, peers } = value;
+  if (node === undefined && profile === undefined && peers === undefined) return {};
+  if (
+    typeof node !== 'string' ||
+    !NAME.test(node) ||
+    (profile !== 'ha-2' && profile !== 'ha-3') ||
+    !Array.isArray(peers) ||
+    peers.length > MAX_COPIES
+  )
+    throw new Error('Replica cluster details are invalid');
+  return { node, profile, peers: peers.map(peer) };
+}
 const MAX_COPIES = 16;
 
 const count = (value: unknown, minimum: number) =>
@@ -21,7 +53,12 @@ export function parseReplicaCopies(value: unknown): ReplicaCopies {
     (typeof singleCopyUntil !== 'string' || Number.isNaN(Date.parse(singleCopyUntil)))
   )
     throw new Error('Replica decision time is invalid');
-  return { copies: copies as number, required: required as number, singleCopyUntil };
+  return {
+    copies: copies as number,
+    required: required as number,
+    singleCopyUntil,
+    ...details(value as Record<string, unknown>),
+  };
 }
 
 /**

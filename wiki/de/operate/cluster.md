@@ -62,6 +62,8 @@ Die folgenden Befehle verwenden den Standard-Ressourcennamen `arkvory`, das Inst
    dpkg --unpack Arkvory-amd64.deb
    ```
 
+   Mit dem RPM-Paket installieren Sie die Dateien, ohne seine Skripte auszuführen: `rpm -i --noscripts Arkvory-x86_64.rpm`. Auf dem ersten Server installieren Sie das Paket stattdessen in Schritt 5 regulär; erstellen Sie den Plan in Schritt 2 daher auf einem anderen Datenserver.
+
 2. Erstellen Sie auf einem Datenserver den Plan. Er schreibt die DRBD-Ressource und die Pacemaker-Befehle in ein Verzeichnis, das Sie prüfen können:
 
    ```bash
@@ -93,7 +95,7 @@ Die folgenden Befehle verwenden den Standard-Ressourcennamen `arkvory`, das Inst
    mkdir -p /opt/proanima-arkvory && mount /dev/drbd0 /opt/proanima-arkvory
    ```
 
-5. Installieren Sie Arkvory in das eingehängte Volume, legen Sie die TLS-Dateien auf dem Volume ab und schalten Sie den Cluster-Modus ein:
+5. Installieren Sie Arkvory in das eingehängte Volume (mit RPM: `rpm -i Arkvory-x86_64.rpm` statt `dpkg --configure`), legen Sie die TLS-Dateien auf dem Volume ab und schalten Sie den Cluster-Modus ein:
 
    ```bash
    dpkg --configure proanima-arkvory
@@ -109,22 +111,19 @@ Die folgenden Befehle verwenden den Standard-Ressourcennamen `arkvory`, das Inst
 6. Stoppen Sie Arkvory auf dem ersten Server und geben Sie das Volume frei:
 
    ```bash
-   systemctl stop arkvory-update.timer arkvory-update arkvory-backup arkvory-worker arkvory-api arkvory-replica arkvory-database
-   umount /opt/proanima-arkvory && drbdadm secondary arkvory
+   arkvory cluster-release --root /opt/proanima-arkvory
    ```
 
-7. Übernehmen Sie auf jedem weiteren Datenserver nacheinander das Volume, bereiten Sie den Server vor und geben Sie das Volume wieder frei:
+   Der Befehl stoppt die Arkvory-Dienste in der richtigen Reihenfolge, hängt das Volume aus und macht diesen Server zum Secondary.
+
+7. Bereiten Sie nacheinander jeden weiteren Datenserver vor:
 
    ```bash
-   drbdadm primary arkvory
-   mkdir -p /opt/proanima-arkvory && mount /dev/drbd0 /opt/proanima-arkvory
-   arkvory cluster-node --root /opt/proanima-arkvory --cluster-resource arkvory
-   dpkg --configure proanima-arkvory
-   systemctl stop arkvory-update.timer arkvory-update arkvory-backup arkvory-worker arkvory-api arkvory-replica arkvory-database
-   umount /opt/proanima-arkvory && drbdadm secondary arkvory
+   arkvory cluster-node --root /opt/proanima-arkvory
+   dpkg --configure proanima-arkvory   # nur .deb; mit RPM ist nichts weiter nötig
    ```
 
-   `cluster-node` legt die Dienstkonten mit denselben Benutzer- und Gruppen-IDs wie auf dem ersten Server an (die Dateien auf dem Volume gehören ihnen) und installiert dieselben Dienste, von denen keiner automatisch startet. Existiert bereits ein Konto mit anderen IDs, bricht der Befehl ab und nennt Ihnen die zu setzenden IDs. Jedes Mal, wenn ein Server aktiv wird, übernimmt `arkvory-units` zuerst die Dienste vom Volume, sodass später auf dem aktiven Server geänderte Einstellungen (zum Beispiel ein Backup-Speicher) auch nach einem Failover gelten.
+   `cluster-node` übernimmt das Volume, liest den Ressourcennamen daraus, bereitet den Server vor und gibt das Volume wieder frei. `--cluster-resource` ist nur nötig, wenn die Ressource nicht `arkvory` heißt. Der Befehl wird abgelehnt, solange Pacemaker die Arkvory-Gruppe verwaltet, weil das Volume dann dem Cluster gehört: Fügen Sie einen Server einem laufenden Cluster so hinzu, wie in [Einen Server ersetzen](#replace-node) beschrieben. `cluster-node` legt die Dienstkonten mit denselben Benutzer- und Gruppen-IDs wie auf dem ersten Server an (die Dateien auf dem Volume gehören ihnen) und installiert dieselben Dienste, von denen keiner automatisch startet. Existiert bereits ein Konto mit anderen IDs, bricht der Befehl ab und nennt Ihnen die zu setzenden IDs. Jedes Mal, wenn ein Server aktiv wird, übernimmt `arkvory-units` zuerst die Dienste vom Volume, sodass später auf dem aktiven Server geänderte Einstellungen (zum Beispiel ein Backup-Speicher) auch nach einem Failover gelten.
 
 8. Richten Sie den Corosync-Cluster mit `pcs` auf den Datenservern ein (`pcs host auth`, `pcs cluster setup`, `pcs cluster start --all`). Führen Sie unter Debian und Ubuntu zuerst `pcs cluster destroy` auf jedem Datenserver aus: Die Pakete installieren eine Corosync-Beispielkonfiguration, die `pcs` für einen bestehenden Cluster hält. Führen Sie `pcs cluster enable` nicht aus: Ein Server, der per Fencing isoliert wurde, soll sich erst wieder anschließen, wenn Sie ihn starten. Authentifizieren Sie für `ha-2` auch den Zeugen und führen Sie auf ihm `pcs qdevice setup model net --enable --start` aus. Unter Debian und Ubuntu hat das Paket das Quorum-Gerät bereits für sein eigenes Dienstkonto eingerichtet: Führen Sie dort stattdessen `systemctl enable --now corosync-qnetd` aus.
 
@@ -152,15 +151,23 @@ Richten Sie Ihre Clients und den DNS-Namen auf die virtuelle Adresse.
 
 Führen Sie diese Befehle als root aus. `cluster-status` und `cluster-single-copy` lesen das Volume, führen Sie sie daher auf dem aktiven Server aus; die übrigen funktionieren auf jedem Datenserver.
 
-| Befehl                                                                    | Was er tut                                                                                                        |
-| ------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| `arkvory cluster-status --root <dir>`                                     | Profil, Rolle dieses Servers, vollständige und erforderliche Kopien und jede Operator-Entscheidung, als JSON      |
-| `arkvory cluster-check --root <dir>`                                      | Alle Prüfungen eines gesunden Clusters; endet mit einem Fehler, wenn eine fehlschlägt                             |
-| `arkvory cluster-switchover --root <dir> --to <server>`                   | Geplanter Umzug von Arkvory auf einen anderen Datenserver; abgelehnt, solange nicht jede Kopie vollständig ist    |
-| `arkvory cluster-fence-test --root <dir> --node <standby>`                | Isoliert einen Standby-Server per Fencing, um sein Fence-Gerät zu beweisen; der aktive Server wird abgelehnt      |
-| `arkvory cluster-single-copy --root <dir> --until <time> --reason <text>` | Akzeptiert Schreibvorgänge mit einer einzelnen Kopie bis zu einem Zeitpunkt; siehe [Einzelne Kopie](#single-copy) |
+| Befehl                                                                    | Was er tut                                                                                                                  |
+| ------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `arkvory cluster-status --root <dir>`                                     | Profil, Rolle dieses Servers, vollständige und erforderliche Kopien und jede Operator-Entscheidung, als JSON                |
+| `arkvory cluster-check --root <dir>`                                      | Alle Prüfungen eines gesunden Clusters; endet mit einem Fehler, wenn eine fehlschlägt                                       |
+| `arkvory cluster-switchover --root <dir> --to <server>`                   | Geplanter Umzug von Arkvory auf einen anderen Datenserver; abgelehnt, solange nicht jede Kopie vollständig ist              |
+| `arkvory cluster-fence-test --root <dir> --node <standby> [--yes]`        | Isoliert einen Standby-Server per Fencing, um sein Fence-Gerät zu beweisen; der aktive Server wird abgelehnt                |
+| `arkvory cluster-single-copy --root <dir> --until <time> --reason <text>` | Akzeptiert Schreibvorgänge mit einer einzelnen Kopie bis zu einem Zeitpunkt; siehe [Einzelne Kopie](#single-copy)           |
+| `arkvory cluster-kit --root <dir> --output <file>`                        | Auf dem aktiven Server: die Datei, die ein neuer Server zum Beitreten braucht; siehe [Einen Server ersetzen](#replace-node) |
+| `arkvory cluster-node --root <dir> --kit <file>`                          | Auf einem neuen Server: lässt ihn mit dieser Datei beitreten, ohne das Volume zu übernehmen                                 |
 
 `pcs status` zeigt den Cluster so, wie Pacemaker ihn sieht.
+
+### In der Konsole {#console}
+
+Administratoren finden [[ui:cluster]] im Menü einer Cluster-Installation. Die Seite zeigt den Aufbau, den Server, der gerade bedient, die vollständigen Kopien, ob Schreibvorgänge angenommen werden, und jeden weiteren Server mit seiner Verbindung und seiner Kopie ([[ui:clusterCopyComplete]], [[ui:clusterCopySyncing]] oder [[ui:clusterCopyMissing]]). Darunter nennt [[ui:clusterNextStep]] den einen Schritt, der zum aktuellen Zustand passt, mit seinem Befehl: einen geplanten Switchover, solange alles vollständig ist, das Zurückholen oder Ersetzen eines Servers, solange eine Kopie fehlt, und wie eine Einzelkopie-Entscheidung beendet wird. Die Seite aktualisiert sich alle 15 Sekunden von selbst.
+
+Wenn Schreibvorgänge stoppen, weist ein Banner auf jeder Seite darauf hin; Administratoren können die Seite von dort aus öffnen. Personen ohne Administrationsrechte sehen nur, dass Uploads pausieren, während Downloads weiter funktionieren.
 
 ### Geplanter Switchover {#switchover}
 
@@ -168,7 +175,7 @@ Führen Sie diese Befehle als root aus. `cluster-status` und `cluster-single-cop
 
 ### Fencing-Test {#fence-test}
 
-`cluster-fence-test` startet einen Standby-Server über sein Fence-Gerät neu. Starten Sie nach dem Neustart den Cluster auf diesem Server mit `pcs cluster start`. Die Cluster-Dienste starten nach einem Neustart nicht von selbst (Schritt 8 von [Einen Cluster aufbauen](#build)), ein per Fencing isolierter Server schließt sich also nie ohne Ihr Zutun wieder an.
+`cluster-fence-test` führt zuerst die Prüfungen von `cluster-check` aus und lehnt ab, wenn eine fehlschlägt. In `ha-2` stoppt das Fencing des einzigen Standby-Servers die Schreibvorgänge, bis er zurück ist, deshalb verlangt der Befehl zusätzlich `--yes`. Er startet den Standby-Server über sein Fence-Gerät neu. Starten Sie nach dem Neustart den Cluster auf diesem Server mit `pcs cluster start`. Die Cluster-Dienste starten nach einem Neustart nicht von selbst (Schritt 8 von [Einen Cluster aufbauen](#build)), ein per Fencing isolierter Server schließt sich also nie ohne Ihr Zutun wieder an.
 
 ### Updates {#updates}
 
@@ -196,6 +203,37 @@ Starten Sie nach einem Quorum-Verlust den Cluster auf jedem Server, der zurück 
 
 Ist das Fencing fehlgeschlagen und haben Sie es repariert, löschen Sie die fehlgeschlagenen Versuche auf einem laufenden Server, damit Pacemaker es erneut versucht: `pcs stonith history cleanup <server>` und `pcs resource cleanup`.
 
+### Einen Server ersetzen {#replace-node}
+
+Ist ein Datenserver endgültig verloren, ersetzen Sie ihn durch einen neuen mit demselben Namen und derselben Adresse. Arkvory bedient die ganze Zeit über weiter vom aktiven Server; Schreibvorgänge setzen wieder ein, sobald die neue Kopie vollständig ist.
+
+1. Installieren Sie auf dem neuen Server dieselbe Linux-Distribution, DRBD, Pacemaker und die Fence-Agenten und entpacken Sie dieselbe Arkvory-Paketversion wie in Schritt 1 von [Einen Cluster aufbauen](#build). Installieren Sie für `ha-2` zusätzlich `corosync-qdevice`.
+2. Schreiben Sie auf dem aktiven Server die Datei, die der neue Server braucht: den Ressourcennamen, die IDs der Dienstkonten und die Dienste.
+
+   ```bash
+   arkvory cluster-kit --root /opt/proanima-arkvory --output /root/arkvory-node.kit
+   ```
+
+   Kopieren Sie sie über einen sicheren Kanal auf den neuen Server. Sie enthält kein Geheimnis, beschreibt aber den Cluster.
+
+3. Treten Sie auf dem neuen Server mit der Datei bei. Das Volume wird dafür nicht gebraucht:
+
+   ```bash
+   arkvory cluster-node --root /opt/proanima-arkvory --kit /root/arkvory-node.kit
+   dpkg --configure proanima-arkvory   # nur .deb
+   ```
+
+4. Kopieren Sie `/etc/drbd.d/arkvory.res` von einem anderen Datenserver, erstellen Sie dann die Metadaten und fahren Sie die Ressource hoch. Die neue Kopie beginnt, sich vom aktiven Server aus zu füllen:
+
+   ```bash
+   drbdadm create-md arkvory
+   drbdadm up arkvory
+   ```
+
+5. Ersetzen Sie das Cluster-Mitglied: Führen Sie auf dem aktiven Server `pcs host auth <server>`, `pcs cluster node remove <server>` und dann `pcs cluster node add <server> addr=<address> --start` aus. Das Fence-Gerät des Servers behält seine Konfiguration, wenn der neue Server auf dieselben Geräteeinstellungen antwortet; andernfalls aktualisieren Sie es mit `pcs stonith update`.
+6. Beobachten Sie [[ui:cluster]] in der Konsole oder `arkvory cluster-status`: Der Server zeigt [[ui:clusterCopySyncing]], bis seine Kopie vollständig ist. Dann setzen Schreibvorgänge von selbst wieder ein.
+7. Beweisen Sie das Fence-Gerät des neuen Servers mit `arkvory cluster-fence-test --node <server> --yes` und führen Sie `arkvory cluster-check` aus.
+
 ### Einzelne Kopie {#single-copy}
 
 Bleibt ein Datenserver lange aus (zum Beispiel bei einem Datenträgertausch) und kosten gestoppte Schreibvorgänge mehr als das Risiko, kann ein Operator für begrenzte Zeit Schreibvorgänge mit einer Kopie akzeptieren:
@@ -204,14 +242,14 @@ Bleibt ein Datenserver lange aus (zum Beispiel bei einem Datenträgertausch) und
 arkvory cluster-single-copy --root /opt/proanima-arkvory --until 2026-10-12T18:00:00Z --reason "disk replacement on node-b"
 ```
 
-- Der Zeitpunkt muss innerhalb der nächsten 7 Tage liegen. Der Befehl funktioniert nur, solange Kopien fehlen.
+- Der Zeitpunkt muss innerhalb der nächsten 7 Tage liegen und seine Zeitzone angeben: `Z` für UTC oder einen Versatz wie `+03:00`. Ohne Zeitzone lehnt der Befehl ab, weil der aktive Server den Zeitpunkt sonst in seiner eigenen Ortszeit lesen würde. Der Befehl funktioniert nur, solange Kopien fehlen.
 - Solange die Entscheidung aktiv ist, gehen beim Ausfall des aktiven Servers die danach bestätigten Schreibvorgänge verloren.
 - Das Konsolen-Banner, die Metrik `arkvory_replication_required_copies` und der Alarm `ArkvorySingleCopyWrites` zeigen die Entscheidung an.
 - Sie endet zu ihrem Zeitpunkt, mit `--off` oder von selbst, sobald alle Kopien wieder vollständig sind. Ein späterer Verlust stoppt die Schreibvorgänge erneut.
 
 ## Monitoring {#monitoring}
 
-`GET /health/ready` bleibt auf dem aktiven Server 200, während Schreibvorgänge gestoppt sind, damit ein Monitor einen gesunden Server nicht verschiebt. Sein Feld `writable` ist `false`, und das Feld `replication` zeigt `copies`, `required` und `singleCopyUntil`; `replication` ist `null`, wenn die Kopien nicht gelesen werden können. Eigenständige Server haben kein Feld `replication`.
+`GET /health/ready` bleibt auf dem aktiven Server 200, während Schreibvorgänge gestoppt sind, damit ein Monitor einen gesunden Server nicht verschiebt. Sein Feld `writable` ist `false`, und das Feld `replication` zeigt `copies`, `required` und `singleCopyUntil`; `replication` ist `null`, wenn die Kopien nicht gelesen werden können. Für Administratoren enthält es außerdem `node` (den antwortenden Server), `profile` und `peers`, die übrigen Server mit ihrer Verbindung und Kopie, die die [Konsolenseite](#console) anzeigt. Eigenständige Server haben kein Feld `replication`.
 
 | Metrik                                     | Bedeutung                                                                            |
 | ------------------------------------------ | ------------------------------------------------------------------------------------ |

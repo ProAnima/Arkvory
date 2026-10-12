@@ -78,7 +78,14 @@ Give one repository to one command. You cannot combine a mirror change with chan
 
 In Docker Compose, the command also writes `config/compose.mirrors.yml`, which mounts the mirror files into the API and worker containers. Add it to Compose commands that you run yourself.
 
-Repeat the command with a new `--mirror-token-file` to replace the key of a repository. The worker reads the key file again after every failure, so a new key works without a restart. A repository that already mirrors one source refuses another source with the message `NAME mirrors another source; detach it first`.
+To replace the key of a repository, repeat the command with only `--mirror` and the new `--mirror-token-file`. The source, the stages and the certificate authorities stay as they are, and a mirror never turns into an import by a repeated command. The worker reads the key file again after every failure, so a new key works without a restart.
+
+```bash
+sudo arkvory configure --root /opt/proanima-arkvory \
+  --mirror releases --mirror-token-file /root/new-mirror-releases.key
+```
+
+When the source refuses the key, the command stops before it changes anything and says why: the key is not accepted (401), it may not read the repository (403), or the repository does not exist on the source (404). A repository that already mirrors one source refuses another source with the message `NAME mirrors another source; detach it first`.
 
 On the mirror installation, give people and tools access to the repository. A repository exists as soon as a grant or a service policy names it. Use [[ui:manageGrants]] in [[ui:administration]] for people, and a service policy for tools. The permissions of the source do not carry over.
 
@@ -107,13 +114,19 @@ If the source key is revoked or the source is unreachable, the mirror keeps serv
 
 ### In the console {#status-console}
 
-Connect the console of the mirror installation to the mirrored repository. Above the catalog a badge shows the state:
+[[ui:mirrors]] in the menu lists every mirror and import whose repository you may read, with its source, state, last synchronization and what was copied. Administrators always see the page; while there is no mirror it says how to set one up. The page refreshes by itself every 20 seconds.
 
-- [[ui:mirrorBadge]] means the mirror is caught up.
-- [[ui:mirrorBehind]] means it is still copying, or it has not started yet.
-- [[ui:mirrorFailing]] means the last attempt failed. Downloads keep working.
+| State                     | Meaning                                                                           |
+| ------------------------- | --------------------------------------------------------------------------------- |
+| [[ui:mirrorStateSynced]]  | Caught up with the source                                                         |
+| [[ui:mirrorStateBehind]]  | Copying changes that the source made since the last check                         |
+| [[ui:mirrorStatePending]] | Configured, and the worker has not reached it yet                                 |
+| [[ui:mirrorStateSeeding]] | The first fill, or a new one after the source was restored                        |
+| [[ui:mirrorStateFailing]] | The last attempt failed. Downloads keep working, and the worker retries by itself |
 
-Open the help of the badge ([[ui:mirrorHelpLabel]]) to see the source, the time of the last synchronization and the error code. The console hides the upload and change buttons in a mirrored repository.
+When the synchronization stopped, the page says why and what to do next, and shows the command that fixes it when there is one, for example a new key after the source refused the old one. The texts follow the [error codes](#error-codes).
+
+Connected to a mirrored repository, the console also shows a badge above the catalog: [[ui:mirrorBadge]], [[ui:mirrorBehind]] or [[ui:mirrorFailing]]. The reason and the next step appear under it while the synchronization is stopped, and the badge follows the server without a reload. Open the help of the badge ([[ui:mirrorHelpLabel]]) to see the source and the time of the last synchronization. The console hides the upload and change buttons in a mirrored repository.
 
 ### With the API {#status-api}
 
@@ -130,17 +143,19 @@ Open the help of the badge ([[ui:mirrorHelpLabel]]) to see the source, the time 
 
 ### Error codes {#error-codes}
 
-| `errorCode`               | Meaning and what to do                                                                                                                                                                                                                                  |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `mirror_mismatch`         | The same artifact ID has different content on the source. The mirror keeps its file. Investigate the artifact; do not delete either copy before you know the cause                                                                                      |
-| `mirror_source_changed`   | The repository already holds a copy of another source. Detach it, or mirror the new source into a new repository                                                                                                                                        |
-| `mirror_source_behind`    | The source was restored or reinstalled: the change at the position of the mirror is not the one it applied there. The mirror reads the source again, and the code clears when it has caught up. Files that the restored source lacks stay on the mirror |
-| `mirror_delete_blocked`   | The source deleted a file that the mirror cannot delete, because something here still uses it, such as a reference or a file path history                                                                                                               |
-| `mirror_detached`         | The repository was detached and has changes of its own. It is never synchronized again. Mirror the source into a new repository                                                                                                                         |
-| `mirror_package_conflict` | A version of the source has a package version (group, name and version) that this repository holds with other bytes. Nothing is changed. Remove the stage or the version on the source, or publish it under another version                             |
-| `mirror_id_taken`         | An artifact of the source is held by another repository of this installation. One source repository can fill only one repository here                                                                                                                   |
-| `mirror_failed`           | A failure without a more specific code. Read the worker log                                                                                                                                                                                             |
-| other codes               | The code of the failed request, for example `unauthorized` when the key was revoked or `capacity_exceeded` when the mirror is full                                                                                                                      |
+| `errorCode`               | Meaning and what to do                                                                                                                                                                                                                                                  |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `mirror_mismatch`         | The same artifact ID has different content on the source. The mirror keeps its file. Investigate the artifact; do not delete either copy before you know the cause                                                                                                      |
+| `mirror_source_changed`   | The repository already holds a copy of another source. Detach it, or mirror the new source into a new repository                                                                                                                                                        |
+| `mirror_source_behind`    | The source was restored or reinstalled: the change at the position of the mirror is not the one it applied there. The mirror reads the source again, and the code clears when it has caught up. Files that the restored source lacks stay on the mirror                 |
+| `mirror_delete_blocked`   | The source deleted a file that the mirror cannot delete, because something here still uses it, such as a reference or a file path history                                                                                                                               |
+| `mirror_detached`         | The repository was detached and has changes of its own. It is never synchronized again. Mirror the source into a new repository                                                                                                                                         |
+| `mirror_package_conflict` | A version of the source has a package version (group, name and version) that this repository holds with other bytes. Nothing is changed. Remove the stage or the version on the source, or publish it under another version                                             |
+| `mirror_id_taken`         | An artifact of the source is held by another repository of this installation. One source repository can fill only one repository here                                                                                                                                   |
+| `mirror_unreachable`      | The source cannot be reached: the connection is refused or times out, or the name does not resolve. The worker retries by itself. Check the network, the firewall and that the source is running                                                                        |
+| `mirror_certificate`      | The certificate of the source is not trusted, has expired or does not match its name. Add its authority with `--mirror-ca-file` (see [HTTPS with your own certificate authority](#ca-file))                                                                             |
+| `mirror_failed`           | A failure without a more specific code. Read the worker log                                                                                                                                                                                                             |
+| other codes               | The code of the failed request: `unauthorized` when the source no longer accepts the key (give the mirror a new one), `forbidden` when the key may not read the repository, `not_found` when the source repository is gone, `capacity_exceeded` when the mirror is full |
 
 The worker log (`component` is `mirror`) has `mirror.started`, `mirror.step_failed` with `errorCode` and `attempts`, `mirror.recovered` and `mirror.stopped`.
 
@@ -202,10 +217,10 @@ This is a manual switch for two independent installations on two sites. It is no
 3. Detach each mirrored repository on the mirror. It becomes an ordinary writable repository with the same artifact IDs and all its data.
 
    ```bash
-   sudo arkvory configure --root /opt/proanima-arkvory --mirror-detach releases
+   sudo arkvory configure --root /opt/proanima-arkvory --mirror-detach releases,prod
    ```
 
-   The command restarts the API and the worker, so expect a short interruption.
+   Name several repositories separated by commas, or `all` for every mirror and import. The command restarts the API and the worker once, so expect a short interruption.
 
 4. Point the clients that write at the mirror, through DNS or the configuration of your CI.
 5. Upload and download a control file on the mirror.

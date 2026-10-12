@@ -70,6 +70,8 @@ export type UnchangedKeys = Assert<
       // ADR 0058: the repository change feed that mirrors follow and the mirror status.
       | 'catalogChanges'
       | 'repositoryMirror'
+      // ADR 0058: every mirror and import the caller can see, for the console's Mirrors page.
+      | 'mirrors'
       // ADR 0060: feedback to ProAnimaStudio as the additive namespace `feedback`.
       | 'feedback'
       // ADR 0062: short-lived download links.

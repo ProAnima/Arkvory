@@ -1811,25 +1811,317 @@
     "en": "Last synchronized:",
     "text": "上次同步："
   },
-  "mirrorError": {
-    "en": "The last attempt failed ({code}); downloads keep working.",
-    "text": "上次尝试失败（{code}）；下载仍可正常进行。"
-  },
   "mirrorNever": {
     "en": "not yet",
     "text": "尚未同步"
   },
   "mirrorImport": {
-    "en": "Imports",
+    "en": "Import",
     "text": "导入"
   },
   "mirrorImportFailing": {
-    "en": "Imports · sync error",
+    "en": "Import · sync error",
     "text": "导入 · 同步错误"
   },
   "mirrorImportDetails": {
     "en": "Versions marked {stages} in “{source}” on {upstream} are copied here automatically. Later changes and deletions there do not affect them.",
     "text": "{upstream} 上“{source}”中标记为 {stages} 的版本会自动复制到这里。之后源仓库中的更改和删除不会影响这些版本。"
+  },
+  "mirrorProblem": {
+    "en": "Synchronization stopped. Downloads keep working.",
+    "text": "同步已停止。下载仍可正常使用。"
+  },
+  "mirrorFixLink": {
+    "en": "What to do",
+    "text": "处理方法"
+  },
+  "mirrorReasonUnauthorized": {
+    "en": "The source no longer accepts this server’s key. An administrator gives the mirror a new key:",
+    "text": "源不再接受此服务器的密钥。请管理员为镜像颁发新密钥："
+  },
+  "mirrorReasonForbidden": {
+    "en": "The key of this mirror cannot read “{source}” on {upstream}. Give it read access there.",
+    "text": "此镜像的密钥无法读取 {upstream} 上的“{source}”。请在那里为它授予读取权限。"
+  },
+  "mirrorReasonNotFound": {
+    "en": "{upstream} has no repository “{source}”. Check that it was not renamed or deleted there.",
+    "text": "{upstream} 上没有仓库“{source}”。请检查它是否在那里被重命名或删除。"
+  },
+  "mirrorReasonUnreachable": {
+    "en": "{upstream} cannot be reached. The server keeps retrying; check the network and that the source is running.",
+    "text": "无法连接 {upstream}。服务器会持续重试；请检查网络以及源是否在运行。"
+  },
+  "mirrorReasonCertificate": {
+    "en": "The certificate of {upstream} is not trusted here. Add its certificate authority:",
+    "text": "此处不信任 {upstream} 的证书。请添加其证书颁发机构："
+  },
+  "mirrorReasonCapacity": {
+    "en": "This server has no room for the next file. Free space or raise the storage limit; copying resumes by itself.",
+    "text": "此服务器没有空间存放下一个文件。请释放空间或提高存储限制；复制会自动继续。"
+  },
+  "mirrorReasonSourceBehind": {
+    "en": "The source was restored from a backup, so the mirror reads it again. Nothing to do: this clears once it has caught up.",
+    "text": "源已从备份恢复，因此镜像正在重新读取它。无需任何操作：追上后此提示会消失。"
+  },
+  "mirrorReasonMismatch": {
+    "en": "A file here differs from the source under the same ID. Find out why before deleting either copy.",
+    "text": "此处的一个文件与源中相同 ID 的文件不同。删除任一副本之前，请先查明原因。"
+  },
+  "mirrorReasonSourceChanged": {
+    "en": "This repository already holds a copy of another source. Mirror the new source into a new repository.",
+    "text": "此仓库已保存另一个源的副本。请将新源镜像到一个新仓库。"
+  },
+  "mirrorReasonDeleteBlocked": {
+    "en": "The source deleted a file that is still used here, for example by a file path. It stays here.",
+    "text": "源删除了一个此处仍在使用的文件，例如被某个文件路径使用。该文件会保留在这里。"
+  },
+  "mirrorReasonDetached": {
+    "en": "This repository was detached and has changes of its own; it is never synchronized again. Mirror the source into a new repository.",
+    "text": "此仓库已被分离并有自己的更改；它将不再同步。请将源镜像到一个新仓库。"
+  },
+  "mirrorReasonPackage": {
+    "en": "A version of the source has a package version that this repository holds with other bytes. Remove the stage or the version on the source, or publish it under another version.",
+    "text": "源的某个版本带有一个包版本，而此仓库以不同的字节保存了该包版本。请在源上移除该阶段或该版本，或以其他版本发布。"
+  },
+  "mirrorReasonIdTaken": {
+    "en": "A file of the source is held by another repository here. One source repository can fill only one repository.",
+    "text": "源中的一个文件已由此服务器上的另一个仓库保存。一个源仓库只能填充一个仓库。"
+  },
+  "mirrorReasonOther": {
+    "en": "The last attempt failed ({code}). The server retries by itself; its log names the cause.",
+    "text": "上次尝试失败（{code}）。服务器会自动重试；其日志中写明了原因。"
+  },
+  "mirrors": {
+    "en": "Mirrors",
+    "text": "镜像"
+  },
+  "mirrorsIntro": {
+    "en": "Repositories this server copies from other Arkvory installations. The server keeps them in sync by itself; this page refreshes on its own.",
+    "text": "此服务器从其他 Arkvory 安装实例复制的仓库。服务器会自动保持它们同步；此页面会自动刷新。"
+  },
+  "mirrorsRepository": {
+    "en": "Repository",
+    "text": "仓库"
+  },
+  "mirrorsSource": {
+    "en": "Source",
+    "text": "源"
+  },
+  "mirrorsState": {
+    "en": "State",
+    "text": "状态"
+  },
+  "mirrorsLastSync": {
+    "en": "Last synchronized",
+    "text": "上次同步"
+  },
+  "mirrorsCopied": {
+    "en": "Copied",
+    "text": "已复制"
+  },
+  "mirrorsCopiedValue": {
+    "en": "{count} files · {size}",
+    "text": "{count} 个文件 · {size}"
+  },
+  "mirrorsSourceValue": {
+    "en": "“{source}” on {upstream}",
+    "text": "{upstream} 上的“{source}”"
+  },
+  "mirrorsModeMirror": {
+    "en": "Read-only mirror",
+    "text": "只读镜像"
+  },
+  "mirrorsModeImport": {
+    "en": "Imports versions marked {stages}",
+    "text": "导入标记为 {stages} 的版本"
+  },
+  "mirrorStateSynced": {
+    "en": "In sync",
+    "text": "已同步"
+  },
+  "mirrorStateBehind": {
+    "en": "Catching up",
+    "text": "正在追赶"
+  },
+  "mirrorStatePending": {
+    "en": "Starting",
+    "text": "正在启动"
+  },
+  "mirrorStateSeeding": {
+    "en": "First copy",
+    "text": "首次复制"
+  },
+  "mirrorStateFailing": {
+    "en": "Sync error",
+    "text": "同步错误"
+  },
+  "mirrorsEmptyTitle": {
+    "en": "No mirrors on this server",
+    "text": "此服务器上没有镜像"
+  },
+  "mirrorsEmpty": {
+    "en": "A mirror keeps a copy of a repository of another installation: a second site, or staging to production. An administrator sets one up with “arkvory configure --mirror”.",
+    "text": "镜像保存另一个安装实例中某个仓库的副本，例如第二个站点，或从预发布环境到生产环境。管理员使用“arkvory configure --mirror”进行设置。"
+  },
+  "mirrorsGuide": {
+    "en": "Mirrors guide",
+    "text": "镜像指南"
+  },
+  "mirrorsUnavailable": {
+    "en": "Cannot load the mirrors. Retrying automatically.",
+    "text": "无法加载镜像。正在自动重试。"
+  },
+  "errorMirrorReadOnly": {
+    "en": "This repository is a mirror of another installation and cannot be changed here. Make the change on the source; the mirror follows by itself.",
+    "text": "此仓库是另一个安装实例的镜像，不能在这里更改。请在源上进行更改；镜像会自动跟进。"
+  },
+  "cluster": {
+    "en": "Cluster",
+    "text": "集群"
+  },
+  "clusterIntro": {
+    "en": "This server runs as a high-availability cluster: every write is kept on more than one node before it is confirmed. This page refreshes on its own.",
+    "text": "此服务器以高可用集群方式运行：每次写入在确认之前都会保存在多个节点上。此页面会自动刷新。"
+  },
+  "clusterProfile": {
+    "en": "Layout",
+    "text": "布局"
+  },
+  "clusterProfileTwo": {
+    "en": "Two data nodes and a witness",
+    "text": "两个数据节点和一个见证节点"
+  },
+  "clusterProfileThree": {
+    "en": "Three data nodes",
+    "text": "三个数据节点"
+  },
+  "clusterActive": {
+    "en": "Serving now",
+    "text": "当前服务节点"
+  },
+  "clusterCopies": {
+    "en": "Complete copies",
+    "text": "完整副本"
+  },
+  "clusterCopiesValue": {
+    "en": "{copies} of {required} required",
+    "text": "{copies} / 所需 {required}"
+  },
+  "clusterWrites": {
+    "en": "Writes",
+    "text": "写入"
+  },
+  "clusterWritesOn": {
+    "en": "Accepted",
+    "text": "接受"
+  },
+  "clusterWritesOff": {
+    "en": "Stopped",
+    "text": "已停止"
+  },
+  "clusterWritesSingle": {
+    "en": "Accepted with one copy until {until}",
+    "text": "在 {until} 之前以一份副本接受"
+  },
+  "clusterNodes": {
+    "en": "Other nodes",
+    "text": "其他节点"
+  },
+  "clusterNode": {
+    "en": "Node",
+    "text": "节点"
+  },
+  "clusterRole": {
+    "en": "Role",
+    "text": "角色"
+  },
+  "clusterConnection": {
+    "en": "Connection",
+    "text": "连接"
+  },
+  "clusterCopy": {
+    "en": "Copy",
+    "text": "副本"
+  },
+  "clusterRoleData": {
+    "en": "Data copy",
+    "text": "数据副本"
+  },
+  "clusterRoleWitness": {
+    "en": "Witness (votes, holds no data)",
+    "text": "见证节点（参与投票，不保存数据）"
+  },
+  "clusterConnected": {
+    "en": "Connected",
+    "text": "已连接"
+  },
+  "clusterDisconnected": {
+    "en": "Not connected",
+    "text": "未连接"
+  },
+  "clusterCopyComplete": {
+    "en": "Complete",
+    "text": "完整"
+  },
+  "clusterCopySyncing": {
+    "en": "Catching up",
+    "text": "正在追赶"
+  },
+  "clusterCopyMissing": {
+    "en": "Missing",
+    "text": "缺失"
+  },
+  "clusterCopyNone": {
+    "en": "—",
+    "text": "—"
+  },
+  "clusterNoPeers": {
+    "en": "No other node is configured or connected.",
+    "text": "没有配置或连接其他节点。"
+  },
+  "clusterNextStep": {
+    "en": "Next step",
+    "text": "下一步"
+  },
+  "clusterHealthy": {
+    "en": "Every copy is complete: a node can fail without losing confirmed writes. Before maintenance of the serving node, move Arkvory to another node. On the serving node, run:",
+    "text": "所有副本均完整：任一节点故障都不会丢失已确认的写入。维护当前服务节点之前，请将 Arkvory 迁移到其他节点。在当前服务节点上运行："
+  },
+  "clusterDegraded": {
+    "en": "Writes are stopped until the missing copy is back; downloads keep working. Bring the node back, or replace it with a new one (see the guide). Only if you accept losing writes on a second failure, allow one copy for a limited time. On the serving node, run:",
+    "text": "在缺失的副本恢复之前，写入已停止；下载仍可正常使用。请恢复该节点，或用新节点替换它（参见指南）。只有在您能接受第二次故障时丢失写入的情况下，才允许在有限时间内使用一份副本。在当前服务节点上运行："
+  },
+  "clusterSingle": {
+    "en": "Writes are confirmed with one copy: a second failure loses them. The decision ends by itself once the copy is back. To end it now, on the serving node run:",
+    "text": "写入以一份副本确认：再发生一次故障就会丢失这些写入。副本恢复后，此决定会自动结束。要立即结束，请在当前服务节点上运行："
+  },
+  "clusterUnknown": {
+    "en": "The server cannot read the state of its copies, so writes are stopped. On the serving node, check the arkvory-replica service:",
+    "text": "服务器无法读取其副本的状态，因此写入已停止。请在当前服务节点上检查 arkvory-replica 服务："
+  },
+  "clusterOld": {
+    "en": "Node details appear after every node runs this release. Copies and writes above are current.",
+    "text": "所有节点都运行此版本后，才会显示节点详情。上方的副本和写入信息是最新的。"
+  },
+  "clusterGuide": {
+    "en": "Cluster guide",
+    "text": "集群指南"
+  },
+  "clusterReplaceGuide": {
+    "en": "Replace a node",
+    "text": "替换节点"
+  },
+  "clusterUnavailable": {
+    "en": "Cannot read the cluster state. Retrying automatically.",
+    "text": "无法读取集群状态。正在自动重试。"
+  },
+  "clusterOpen": {
+    "en": "Open the cluster page",
+    "text": "打开集群页面"
+  },
+  "replicationReaders": {
+    "en": "Uploads are paused while the server restores a copy of its data. Downloads keep working.",
+    "text": "服务器正在恢复其数据的副本，上传已暂停。下载仍可正常使用。"
   },
   "reportOpen": {
     "en": "Feedback",

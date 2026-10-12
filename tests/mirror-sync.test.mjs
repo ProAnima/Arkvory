@@ -224,6 +224,27 @@ test('a state of another source is never continued', async () => {
   assert.equal(mirrorErrorCode(new Error('plain')), 'mirror_failed');
   assert.equal(mirrorErrorCode({ code: 'Bad Code' }), 'mirror_failed');
   assert.equal(mirrorErrorCode({ code: 'not_found' }), 'not_found');
+  // fetch fails with a TypeError whose cause carries the platform's code.
+  const failed = (code) =>
+    new TypeError('fetch failed', { cause: Object.assign(new Error(), { code }) });
+  assert.equal(mirrorErrorCode(failed('ECONNREFUSED')), 'mirror_unreachable');
+  assert.equal(mirrorErrorCode(failed('ENOTFOUND')), 'mirror_unreachable');
+  assert.equal(mirrorErrorCode(failed('UND_ERR_CONNECT_TIMEOUT')), 'mirror_unreachable');
+  assert.equal(mirrorErrorCode(failed('SELF_SIGNED_CERT_IN_CHAIN')), 'mirror_certificate');
+  assert.equal(mirrorErrorCode(failed('UNABLE_TO_VERIFY_LEAF_SIGNATURE')), 'mirror_certificate');
+  assert.equal(mirrorErrorCode(failed('ERR_TLS_CERT_ALTNAME_INVALID')), 'mirror_certificate');
+  assert.equal(
+    mirrorErrorCode(Object.assign(new Error('t'), { name: 'TimeoutError' })),
+    'mirror_unreachable',
+  );
+  assert.equal(mirrorErrorCode(failed('EWHATEVER')), 'mirror_failed');
+  // The SDK's connection failure, with and without the platform's cause.
+  const network = (cause) =>
+    Object.assign(new Error('Arkvory connection interrupted', { cause }), {
+      name: 'ArkvoryNetworkError',
+    });
+  assert.equal(mirrorErrorCode(network(undefined)), 'mirror_unreachable');
+  assert.equal(mirrorErrorCode(network(failed('CERT_HAS_EXPIRED'))), 'mirror_certificate');
 });
 
 test('another stage list of the same source seeds again and keeps the copy counters', async () => {

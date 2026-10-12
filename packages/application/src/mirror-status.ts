@@ -37,6 +37,19 @@ export class MirrorStatus {
     );
   }
 
+  /** The mirrors whose repository the principal may read; others are left out, not refused. */
+  async list(principal: Principal): Promise<readonly MirrorStatusEntry[]> {
+    const visible = this.mirrors.filter((mirror) => {
+      try {
+        authorizeAction(principal, mirror.repository, 'repository.read', ['read']);
+        return true;
+      } catch {
+        return false;
+      }
+    });
+    return Promise.all(visible.map((mirror) => this.get(principal, mirror.repository)));
+  }
+
   async get(principal: Principal, repository: string): Promise<MirrorStatusEntry> {
     authorizeAction(principal, repository, 'repository.read', ['read']);
     const mirror = this.mirrors.find((entry) => entry.repository === repository);

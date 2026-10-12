@@ -78,7 +78,14 @@ Geben Sie einer Kommandozeile ein Repository. Sie können eine Spiegel-Änderung
 
 In Docker Compose schreibt der Befehl außerdem `config/compose.mirrors.yml`, das die Spiegeldateien in die API- und Worker-Container einbindet. Fügen Sie es Compose-Befehlen hinzu, die Sie selbst ausführen.
 
-Wiederholen Sie den Befehl mit einer neuen `--mirror-token-file`, um den Schlüssel eines Repositorys zu ersetzen. Der Worker liest die Schlüsseldatei nach jedem Fehler erneut, ein neuer Schlüssel funktioniert also ohne Neustart. Ein Repository, das bereits eine Quelle spiegelt, lehnt eine andere Quelle mit der Meldung `NAME mirrors another source; detach it first` ab.
+Um den Schlüssel eines Repositorys zu ersetzen, wiederholen Sie den Befehl nur mit `--mirror` und der neuen `--mirror-token-file`. Die Quelle, die Stufen und die Zertifizierungsstellen bleiben unverändert, und ein Spiegel wird durch einen wiederholten Befehl nie zu einem Import. Der Worker liest die Schlüsseldatei nach jedem Fehler erneut, ein neuer Schlüssel funktioniert also ohne Neustart.
+
+```bash
+sudo arkvory configure --root /opt/proanima-arkvory \
+  --mirror releases --mirror-token-file /root/new-mirror-releases.key
+```
+
+Lehnt die Quelle den Schlüssel ab, bricht der Befehl ab, bevor er etwas ändert, und nennt den Grund: Der Schlüssel wird nicht akzeptiert (401), er darf das Repository nicht lesen (403), oder das Repository existiert auf der Quelle nicht (404). Ein Repository, das bereits eine Quelle spiegelt, lehnt eine andere Quelle mit der Meldung `NAME mirrors another source; detach it first` ab.
 
 Geben Sie auf der Spiegel-Installation Personen und Werkzeugen Zugriff auf das Repository. Ein Repository existiert, sobald eine Berechtigung oder eine Dienstrichtlinie es nennt. Verwenden Sie [[ui:manageGrants]] in [[ui:administration]] für Personen und eine Dienstrichtlinie für Werkzeuge. Die Berechtigungen der Quelle werden nicht übernommen.
 
@@ -107,13 +114,19 @@ Wenn der Quellschlüssel widerrufen wird oder die Quelle nicht erreichbar ist, l
 
 ### In der Konsole {#status-console}
 
-Verbinden Sie die Konsole der Spiegel-Installation mit dem gespiegelten Repository. Über dem Katalog zeigt ein Badge den Zustand:
+[[ui:mirrors]] im Menü listet jeden Spiegel und jeden Import auf, deren Repository Sie lesen dürfen, mit Quelle, Zustand, letzter Synchronisierung und dem, was kopiert wurde. Administratoren sehen die Seite immer; solange es keinen Spiegel gibt, erklärt sie, wie man einen einrichtet. Die Seite aktualisiert sich alle 20 Sekunden von selbst.
 
-- [[ui:mirrorBadge]] bedeutet, der Spiegel hat aufgeholt.
-- [[ui:mirrorBehind]] bedeutet, er kopiert noch oder hat noch nicht begonnen.
-- [[ui:mirrorFailing]] bedeutet, der letzte Versuch ist fehlgeschlagen. Downloads funktionieren weiter.
+| Zustand                   | Bedeutung                                                                                                           |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| [[ui:mirrorStateSynced]]  | Hat mit der Quelle aufgeholt                                                                                        |
+| [[ui:mirrorStateBehind]]  | Kopiert Änderungen, die die Quelle seit der letzten Prüfung vorgenommen hat                                         |
+| [[ui:mirrorStatePending]] | Konfiguriert, und der Worker hat ihn noch nicht erreicht                                                            |
+| [[ui:mirrorStateSeeding]] | Die Erstbefüllung, oder eine neue, nachdem die Quelle wiederhergestellt wurde                                       |
+| [[ui:mirrorStateFailing]] | Der letzte Versuch ist fehlgeschlagen. Downloads funktionieren weiter, und der Worker versucht es von selbst erneut |
 
-Öffnen Sie die Hilfe des Badges ([[ui:mirrorHelpLabel]]), um die Quelle, die Zeit der letzten Synchronisierung und den Fehlercode zu sehen. Die Konsole verbirgt die Upload- und Änderungsschaltflächen in einem gespiegelten Repository.
+Wenn die Synchronisierung gestoppt ist, nennt die Seite den Grund und den nächsten Schritt und zeigt den Befehl, der das Problem behebt, sofern es einen gibt, zum Beispiel einen neuen Schlüssel, nachdem die Quelle den alten abgelehnt hat. Die Texte folgen den [Fehlercodes](#error-codes).
+
+Mit einem gespiegelten Repository verbunden, zeigt die Konsole außerdem ein Badge über dem Katalog: [[ui:mirrorBadge]], [[ui:mirrorBehind]] oder [[ui:mirrorFailing]]. Solange die Synchronisierung gestoppt ist, erscheinen darunter der Grund und der nächste Schritt, und das Badge folgt dem Server ohne Neuladen. Öffnen Sie die Hilfe des Badges ([[ui:mirrorHelpLabel]]), um die Quelle und die Zeit der letzten Synchronisierung zu sehen. Die Konsole verbirgt die Upload- und Änderungsschaltflächen in einem gespiegelten Repository.
 
 ### Mit der API {#status-api}
 
@@ -130,17 +143,19 @@ Verbinden Sie die Konsole der Spiegel-Installation mit dem gespiegelten Reposito
 
 ### Fehlercodes {#error-codes}
 
-| `errorCode`               | Bedeutung und was zu tun ist                                                                                                                                                                                                                                                                                     |
-| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `mirror_mismatch`         | Dieselbe Artefakt-ID hat auf der Quelle anderen Inhalt. Der Spiegel behält seine Datei. Untersuchen Sie das Artefakt; löschen Sie keine der beiden Kopien, bevor Sie die Ursache kennen                                                                                                                          |
-| `mirror_source_changed`   | Das Repository enthält bereits eine Kopie einer anderen Quelle. Trennen Sie es, oder spiegeln Sie die neue Quelle in ein neues Repository                                                                                                                                                                        |
-| `mirror_source_behind`    | Die Quelle wurde wiederhergestellt oder neu installiert: Die Änderung an der Position des Spiegels ist nicht die, die er dort angewendet hat. Der Spiegel liest die Quelle erneut, und der Code verschwindet, wenn er aufgeholt hat. Dateien, die der wiederhergestellten Quelle fehlen, bleiben auf dem Spiegel |
-| `mirror_delete_blocked`   | Die Quelle hat eine Datei gelöscht, die der Spiegel nicht löschen kann, weil hier noch etwas sie verwendet, etwa eine Referenz oder ein Dateipfadverlauf                                                                                                                                                         |
-| `mirror_detached`         | Das Repository wurde getrennt und hat eigene Änderungen. Es wird nie wieder synchronisiert. Spiegeln Sie die Quelle in ein neues Repository                                                                                                                                                                      |
-| `mirror_package_conflict` | Eine Version der Quelle hat eine Paketversion (Gruppe, Name und Version), die dieses Repository mit anderen Bytes hält. Es wird nichts geändert. Entfernen Sie die Stufe oder die Version auf der Quelle, oder veröffentlichen Sie sie unter einer anderen Version                                               |
-| `mirror_id_taken`         | Ein Artefakt der Quelle wird von einem anderen Repository dieser Installation gehalten. Ein Quell-Repository kann hier nur ein Repository füllen                                                                                                                                                                 |
-| `mirror_failed`           | Ein Fehler ohne spezifischeren Code. Lesen Sie das Worker-Log                                                                                                                                                                                                                                                    |
-| andere Codes              | Der Code der fehlgeschlagenen Anfrage, zum Beispiel `unauthorized`, wenn der Schlüssel widerrufen wurde, oder `capacity_exceeded`, wenn der Spiegel voll ist                                                                                                                                                     |
+| `errorCode`               | Bedeutung und was zu tun ist                                                                                                                                                                                                                                                                                                 |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `mirror_mismatch`         | Dieselbe Artefakt-ID hat auf der Quelle anderen Inhalt. Der Spiegel behält seine Datei. Untersuchen Sie das Artefakt; löschen Sie keine der beiden Kopien, bevor Sie die Ursache kennen                                                                                                                                      |
+| `mirror_source_changed`   | Das Repository enthält bereits eine Kopie einer anderen Quelle. Trennen Sie es, oder spiegeln Sie die neue Quelle in ein neues Repository                                                                                                                                                                                    |
+| `mirror_source_behind`    | Die Quelle wurde wiederhergestellt oder neu installiert: Die Änderung an der Position des Spiegels ist nicht die, die er dort angewendet hat. Der Spiegel liest die Quelle erneut, und der Code verschwindet, wenn er aufgeholt hat. Dateien, die der wiederhergestellten Quelle fehlen, bleiben auf dem Spiegel             |
+| `mirror_delete_blocked`   | Die Quelle hat eine Datei gelöscht, die der Spiegel nicht löschen kann, weil hier noch etwas sie verwendet, etwa eine Referenz oder ein Dateipfadverlauf                                                                                                                                                                     |
+| `mirror_detached`         | Das Repository wurde getrennt und hat eigene Änderungen. Es wird nie wieder synchronisiert. Spiegeln Sie die Quelle in ein neues Repository                                                                                                                                                                                  |
+| `mirror_package_conflict` | Eine Version der Quelle hat eine Paketversion (Gruppe, Name und Version), die dieses Repository mit anderen Bytes hält. Es wird nichts geändert. Entfernen Sie die Stufe oder die Version auf der Quelle, oder veröffentlichen Sie sie unter einer anderen Version                                                           |
+| `mirror_id_taken`         | Ein Artefakt der Quelle wird von einem anderen Repository dieser Installation gehalten. Ein Quell-Repository kann hier nur ein Repository füllen                                                                                                                                                                             |
+| `mirror_unreachable`      | Die Quelle ist nicht erreichbar: Die Verbindung wird abgelehnt oder läuft in eine Zeitüberschreitung, oder der Name wird nicht aufgelöst. Der Worker versucht es von selbst erneut. Prüfen Sie das Netzwerk, die Firewall und ob die Quelle läuft                                                                            |
+| `mirror_certificate`      | Das Zertifikat der Quelle ist nicht vertrauenswürdig, abgelaufen oder passt nicht zu ihrem Namen. Fügen Sie seine Zertifizierungsstelle mit `--mirror-ca-file` hinzu (siehe [HTTPS mit eigener Zertifizierungsstelle](#ca-file))                                                                                             |
+| `mirror_failed`           | Ein Fehler ohne spezifischeren Code. Lesen Sie das Worker-Log                                                                                                                                                                                                                                                                |
+| andere Codes              | Der Code der fehlgeschlagenen Anfrage: `unauthorized`, wenn die Quelle den Schlüssel nicht mehr akzeptiert (geben Sie dem Spiegel einen neuen), `forbidden`, wenn der Schlüssel das Repository nicht lesen darf, `not_found`, wenn das Quell-Repository nicht mehr existiert, `capacity_exceeded`, wenn der Spiegel voll ist |
 
 Das Worker-Log (`component` ist `mirror`) enthält `mirror.started`, `mirror.step_failed` mit `errorCode` und `attempts`, `mirror.recovered` und `mirror.stopped`.
 
@@ -202,10 +217,10 @@ Dies ist ein manuelles Umschalten für zwei unabhängige Installationen an zwei 
 3. Trennen Sie jedes gespiegelte Repository auf dem Spiegel. Es wird ein gewöhnliches beschreibbares Repository mit denselben Artefakt-IDs und allen seinen Daten.
 
    ```bash
-   sudo arkvory configure --root /opt/proanima-arkvory --mirror-detach releases
+   sudo arkvory configure --root /opt/proanima-arkvory --mirror-detach releases,prod
    ```
 
-   Der Befehl startet die API und den Worker neu, rechnen Sie also mit einer kurzen Unterbrechung.
+   Nennen Sie mehrere Repositorys durch Kommas getrennt, oder `all` für jeden Spiegel und jeden Import. Der Befehl startet die API und den Worker einmal neu, rechnen Sie also mit einer kurzen Unterbrechung.
 
 4. Richten Sie die schreibenden Clients über DNS oder die Konfiguration Ihrer CI auf den Spiegel.
 5. Laden Sie eine Kontrolldatei auf den Spiegel hoch und wieder herunter.

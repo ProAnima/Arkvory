@@ -73,6 +73,31 @@ test('a write is acknowledged only with enough complete copies, read after it co
   assert.equal(ready.statusCode, 200);
   assert.equal(ready.json().writable, false);
   assert.deepEqual(ready.json().replication, one);
+  // The cluster page's details reach administrators; other keys see only the copies.
+  const peer = {
+    name: 'node-b',
+    connected: false,
+    disk: 'DUnknown',
+    complete: false,
+    witness: false,
+  };
+  replica.set({ ...one, node: 'node-a', profile: 'ha-2', peers: [peer] });
+  await new Promise((resolve) => setTimeout(resolve, 1100));
+  const detailed = await f.app.inject({ method: 'GET', url: '/health/ready', headers: f.headers });
+  assert.deepEqual(detailed.json().replication, {
+    ...one,
+    node: 'node-a',
+    profile: 'ha-2',
+    peers: [peer],
+  });
+  const reader = await f.app.inject({
+    method: 'GET',
+    url: '/health/ready',
+    headers: f.readerHeaders,
+  });
+  assert.equal(reader.statusCode, 200, reader.body);
+  assert.deepEqual(reader.json().replication, one);
+  replica.set(one);
 
   // A copy lost while the write ran: the write completed, its success is not sent; a retry with
   // the same idempotency key after the copy returned is acknowledged.

@@ -951,6 +951,14 @@
       },
       "summary": "Feedback-Anhänge in der Vorschau anzeigen",
       "description": "Liefert die beiden Texte, die `sendFeedback` anhängt, wenn `serverLog` true ist: die jüngsten Einträge des Logs dieses Servers und eine Systemzusammenfassung (Versionen, Betriebssystem, Update- und Spiegelzustände) ohne Adressen, Namen oder Geheimnisse. Zeigen Sie sie dem Administrator vor dem Senden an."
+    },
+    "listMirrors": {
+      "en": {
+        "summary": "List the mirrors and imports of this installation",
+        "description": "Returns, for every repository this server mirrors or imports from another Arkvory and the caller may read, the same state as the mirror status of one repository: source, `mode`, `phase`, `cursor` and `head`, `caughtUp`, the last check, sync and error, and the artifacts and bytes copied. Repositories the caller cannot read are left out; an installation without mirrors answers an empty list."
+      },
+      "summary": "Spiegel und Importe dieser Installation auflisten",
+      "description": "Liefert für jedes Repository, das dieser Server aus einem anderen Arkvory spiegelt oder importiert und das der Aufrufer lesen darf, denselben Zustand wie der Spiegelstatus eines Repositorys: Quelle, `mode`, `phase`, `cursor` und `head`, `caughtUp`, letzte Prüfung, Synchronisation und Fehler sowie die kopierten Artefakte und Bytes. Repositorys, die der Aufrufer nicht lesen darf, werden ausgelassen; eine Installation ohne Spiegel antwortet mit einer leeren Liste."
     }
   },
   "errors": {

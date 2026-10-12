@@ -21,6 +21,7 @@ import { installPromotionPanel } from './promotion-panel.js';
 import { installArtifactSummary } from './artifact-summary.js';
 import { installDownloads } from './downloads.js';
 import { installUpdates } from './updates.js';
+import { MirrorsPage } from './mirrors-page.js';
 import { installBackups } from './backups.js';
 import { installUploadForm } from './upload-form.js';
 import { installUserTokens } from './user-tokens.js';
@@ -49,7 +50,8 @@ try {
   feedback(output, 'apiAddressError', {}, 'error');
   throw new Error('Invalid Arkvory API base URL');
 }
-const management = new ManagementConsole(apiBaseUrl, token, (id, storage) => {
+/** Opens a repository in the catalog, from Repositories (or its storage) and from Mirrors. */
+function openRepository(id: string, storage = false) {
   if (upload.running()) return;
   run(async () => {
     const administrator = !element('admin-nav', HTMLButtonElement).hidden;
@@ -64,14 +66,23 @@ const management = new ManagementConsole(apiBaseUrl, token, (id, storage) => {
     else await list();
     if (token.value !== identity || repository.value !== id) return;
     if (administrator) administration.show();
-    updates.connect(administrator);
+    void connectSigned(administrator);
     void management.connect();
     void backups.connect();
   });
-});
+}
+const management = new ManagementConsole(apiBaseUrl, token, openRepository);
 const repositoryStorage = installRepositoryStorage(client);
 const state = installConnectionState(repositoryStorage, repository);
 const updates = installUpdates(client);
+const mirrors = new MirrorsPage(client, (id) => {
+  openRepository(id);
+});
+/** Screens that follow the signed-in role; settles once their navigation entries are known. */
+async function connectSigned(administrator: boolean) {
+  report.connect(administrator);
+  await Promise.all([updates.connect(administrator), mirrors.connect(administrator)]);
+}
 const report = installReportDialog(client);
 const downloadLink = installDownloadLink(client, () => selected);
 const downloads = installDownloads(apiBaseUrl, token);
@@ -187,6 +198,7 @@ function clearCatalog() {
   clearPackages();
   administration.clear();
   updates.clear();
+  mirrors.clear();
   report.clear();
   management.clear();
   backups.clear();
@@ -301,12 +313,7 @@ const auth = installAuthConsole({
   downloads,
   administration,
   // Signed in: update notifications and the feedback form follow the same role.
-  updates: {
-    connect: (admin: boolean) => {
-      updates.connect(admin);
-      report.connect(admin);
-    },
-  },
+  updates: { connect: connectSigned },
   backups,
   management,
   userTokens,

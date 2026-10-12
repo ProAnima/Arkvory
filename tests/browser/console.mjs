@@ -18,6 +18,7 @@ import { exerciseErrorFeedback } from './errors.mjs';
 import { exerciseDesktopDensity } from './density.mjs';
 import { exerciseBackups } from './backups.mjs';
 import { exerciseMirror } from './mirror.mjs';
+import { exerciseCluster } from './cluster.mjs';
 import { exerciseLanguageMenu, exerciseLanguages } from './languages.mjs';
 import { chromium } from 'playwright';
 import { chooseLanguage } from './language.mjs';
@@ -238,6 +239,7 @@ try {
           'history',
           'metadata',
           'administration',
+          'mirrors',
         ]) {
           await go(view);
           const overflow = await page.evaluate(
@@ -302,8 +304,9 @@ try {
   await exerciseDesktopDensity(browser, origin, f);
   // It exhausts the sign-in budget of this server's loopback client.
   await exerciseErrorFeedback(browser, origin, f);
-  // Last: it restarts the server with the repository as a mirror.
+  // Last: they restart the server with the repository as a mirror, then as an HA cluster.
   await exerciseMirror(browser, f);
+  await exerciseCluster(browser, f);
   assert.deepEqual(errors, []);
   console.log(
     'PASS console: API upload/download, metadata, history, users, search/reset, keyboard menu, 7 views × 4 widths × RU/EN × light/dark, 9 more languages × 2 widths',

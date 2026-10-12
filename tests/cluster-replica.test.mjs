@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { once } from 'node:events';
 import { request } from 'node:http';
 import { randomUUID } from 'node:crypto';
-import { tmpdir } from 'node:os';
+import { hostname, tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
   completeCopies,
@@ -46,14 +46,22 @@ test('a switchover target is named only when it holds a complete copy itself', (
 });
 
 test('complete copies are the local disk and every connected, replicating, up-to-date peer', () => {
-  const witness = peer('Connected', 'Diskless', 'Established', true);
-  // ha-2 healthy: both disks, the witness does not count.
+  const witness = { ...peer('Connected', 'Diskless', 'Established', true), name: 'witness' };
+  // ha-2 healthy: both disks, the witness does not count but is shown as one.
   assert.deepEqual(
     volumeState(status('UpToDate', peer('Connected', 'UpToDate'), witness), 'arkvory'),
     {
       role: 'Primary',
       copies: 2,
+      peers: [
+        { name: 'node-b', connected: true, disk: 'UpToDate', complete: true, witness: false },
+        { name: 'witness', connected: true, disk: 'Diskless', complete: false, witness: true },
+      ],
     },
+  );
+  assert.deepEqual(
+    volumeState(status('UpToDate', peer('Connecting', 'DUnknown')), 'arkvory').peers,
+    [{ name: 'node-b', connected: false, disk: 'DUnknown', complete: false, witness: false }],
   );
   // The peer is gone (or IO is frozen while DRBD fences it): one copy.
   assert.equal(
@@ -178,7 +186,10 @@ test('the replica service answers fresh state, and 503 when the kernel state can
     process.platform === 'win32'
       ? `\\\\.\\pipe\\arkvory-replica-${randomUUID()}`
       : join(tmpdir(), `arkvory-replica-${randomUUID()}.sock`);
-  let volume = { role: 'Primary', copies: 2 };
+  const peers = [
+    { name: 'node-b', connected: true, disk: 'UpToDate', complete: true, witness: false },
+  ];
+  let volume = { role: 'Primary', copies: 2, peers };
   let failing = false;
   let decision = null;
   let withdrawn = 0;
@@ -209,16 +220,23 @@ test('the replica service answers fresh state, and 503 when the kernel state can
       call.on('error', reject);
       call.end();
     });
+  // The cluster view's details ride along; the API decides on copies and required only.
   assert.deepEqual(JSON.parse((await get()).body), {
     copies: 2,
     required: 2,
     singleCopyUntil: null,
+    node: hostname(),
+    profile: 'ha-2',
+    peers,
   });
   volume = { role: 'Primary', copies: 1 };
   assert.deepEqual(JSON.parse((await get()).body), {
     copies: 1,
     required: 2,
     singleCopyUntil: null,
+    node: hostname(),
+    profile: 'ha-2',
+    peers: [],
   });
   // An operator accepts one copy; it ends by itself once the copy is back.
   decision = {
@@ -230,6 +248,9 @@ test('the replica service answers fresh state, and 503 when the kernel state can
     copies: 1,
     required: 1,
     singleCopyUntil: '2026-10-11T00:00:00.000Z',
+    node: hostname(),
+    profile: 'ha-2',
+    peers: [],
   });
   assert.equal(withdrawn, 0);
   volume = { role: 'Primary', copies: 2 };

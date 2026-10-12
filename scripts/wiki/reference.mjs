@@ -103,6 +103,7 @@ export function pageOf(operation) {
   const rest = operation.path.replace(/^\/api\/v1\/repositories\/\{repository\}/, '');
   if (operation.path.startsWith('/api/v1/links') || rest.startsWith('/links')) return 'links';
   if (operation.path.startsWith('/api/v1/jobs')) return 'uploads';
+  if (operation.path === '/api/v1/mirrors') return 'mirrors';
   if (/\/attachments/.test(rest)) return 'attachments';
   if (/\/stages|\/promotion|\/promote|\/resolve/.test(rest)) return 'promotion';
   if (/^\/(storage|retention)|\/deletion$/.test(rest)) return 'storage';

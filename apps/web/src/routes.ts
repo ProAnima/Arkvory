@@ -4,6 +4,8 @@ export const views = [
   'services',
   'packages',
   'administration',
+  'mirrors',
+  'cluster',
   'updates',
   'backups',
   'upload',

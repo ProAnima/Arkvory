@@ -9,6 +9,7 @@ import { backupEnglish } from './backup-messages.js';
 import { promotionEnglish } from './promotion-messages.js';
 import { errorEnglish } from './error-messages.js';
 import { mirrorEnglish } from './mirror-messages.js';
+import { clusterEnglish } from './cluster-messages.js';
 import { reportEnglish } from './report-messages.js';
 export const en = {
   ...errorEnglish,
@@ -21,6 +22,7 @@ export const en = {
   ...backupEnglish,
   ...promotionEnglish,
   ...mirrorEnglish,
+  ...clusterEnglish,
   ...reportEnglish,
   ...consoleEnglish,
   storageTitle: 'Storage & automatic cleanup',

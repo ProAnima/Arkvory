@@ -1,0 +1,48 @@
+/* Mirrors and Cluster pages (ADR 0058, ADR 0072): states in words and color, next steps in view. */
+#mirrors-panel,
+#cluster-panel {
+  display: grid;
+  gap: var(--space-6);
+}
+.mirror-problem-slot {
+  padding: var(--space-2) var(--panel-padding) 0;
+}
+.mirror-problem {
+  display: grid;
+  gap: var(--space-1);
+  justify-items: start;
+  margin-top: var(--space-2);
+  padding-inline-start: var(--space-3);
+  border-inline-start: var(--border-width) solid var(--color-error);
+}
+.mirror-problem p {
+  margin: 0;
+}
+.mirror-command,
+.cluster-command {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.mirror-badge[data-state='synced'],
+.cluster-writes[data-state='on'],
+.cluster-table td[data-state='on'] {
+  color: var(--color-success);
+}
+.mirror-badge:is([data-state='behind'], [data-state='pending'], [data-state='seeding']) {
+  color: var(--color-warning);
+}
+.mirror-badge[data-state='failing'],
+.cluster-writes[data-state='off'],
+.cluster-table td[data-state='off'] {
+  color: var(--color-error);
+}
+.mirrors-table td,
+.cluster-table td {
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+.mirrors-table td:first-child > button {
+  white-space: nowrap;
+}

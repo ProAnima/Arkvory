@@ -127,6 +127,9 @@ export class ArkvoryClient extends AccountClient {
   catalogChanges(...args: Parameters<CatalogApi['changes']>) {
     return this.catalog.changes(...args);
   }
+  mirrors(...args: Parameters<CatalogApi['mirrors']>) {
+    return this.catalog.mirrors(...args);
+  }
   repositoryMirror(...args: Parameters<CatalogApi['mirror']>) {
     return this.catalog.mirror(...args);
   }

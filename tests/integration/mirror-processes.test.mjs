@@ -157,6 +157,8 @@ test('two installations over TLS: the production worker mirrors, survives an out
   const second = randomBytes(64 * 1024);
   const secondId = await publish(source, second, 'second.bin');
   await until(async () => (await status(mirror)).errorCode !== null, 'a failure', running);
+  // Named for what to fix: the console tells to check the network, not to read a log.
+  assert.equal((await status(mirror)).errorCode, 'mirror_unreachable');
   assert.deepEqual(await served(mirror, firstId), first);
   assert.equal(await served(mirror, secondId), null);
 

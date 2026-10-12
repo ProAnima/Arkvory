@@ -951,6 +951,14 @@
       },
       "summary": "Просмотреть вложения обратной связи",
       "description": "Возвращает два текста, которые `sendFeedback` прикладывает при `serverLog`, равном true: последние записи журнала этого сервера и системную сводку (версии, операционная система, состояния обновления и зеркал) без адресов, имён и секретов. Покажите их администратору перед отправкой."
+    },
+    "listMirrors": {
+      "en": {
+        "summary": "List the mirrors and imports of this installation",
+        "description": "Returns, for every repository this server mirrors or imports from another Arkvory and the caller may read, the same state as the mirror status of one repository: source, `mode`, `phase`, `cursor` and `head`, `caughtUp`, the last check, sync and error, and the artifacts and bytes copied. Repositories the caller cannot read are left out; an installation without mirrors answers an empty list."
+      },
+      "summary": "Перечислить зеркала и импорты этой установки",
+      "description": "Для каждого репозитория, который этот сервер зеркалирует или импортирует из другого Arkvory и который вызывающий может читать, возвращает то же состояние, что и статус зеркала одного репозитория: источник, `mode`, `phase`, `cursor` и `head`, `caughtUp`, последние проверку, синхронизацию и ошибку, число скопированных артефактов и байтов. Репозитории, которые вызывающий читать не может, пропускаются; установка без зеркал отвечает пустым списком."
     }
   },
   "errors": {

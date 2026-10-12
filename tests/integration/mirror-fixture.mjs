@@ -69,12 +69,12 @@ export const call = async (f, method, url, payload, expected = 200) => {
   return response;
 };
 
-export const key = (id, permissions, administrator = false) => {
+export const key = (id, permissions, administrator = false, repositories = ['releases']) => {
   const token = `${id}-${randomUUID()}${randomUUID()}`;
   const sha256 = createHash('sha256').update(token).digest('hex');
   return {
     token,
-    entry: { sha256, principal: { id, repositories: ['releases'], permissions, administrator } },
+    entry: { sha256, principal: { id, repositories, permissions, administrator } },
   };
 };
 
@@ -96,6 +96,7 @@ export async function mirrorInstance(t, upstream, stages) {
   const directory = await mkdtemp(join(tmpdir(), 'arkvory-mirror-'));
   const writer = key('mirror-writer', ['read', 'write'], true);
   const reader = key('mirror-reader', ['read']);
+  const outsider = key('mirror-outsider', ['read'], false, ['other']);
   const config = {
     databaseUrl: url.toString(),
     dataDirectory: directory,
@@ -104,7 +105,7 @@ export async function mirrorInstance(t, upstream, stages) {
     capacityBytes: 16 * 1024 ** 3,
     maxUploads: 2,
     maxDownloads: 2,
-    keys: [writer.entry, reader.entry],
+    keys: [writer.entry, reader.entry, outsider.entry],
     mirrors: [
       {
         repository: 'releases',
@@ -134,6 +135,7 @@ export async function mirrorInstance(t, upstream, stages) {
     directory,
     headers: { authorization: `Bearer ${writer.token}` },
     readerHeaders: { authorization: `Bearer ${reader.token}` },
+    outsiderHeaders: { authorization: `Bearer ${outsider.token}` },
     release: (close) => closers.push(close),
   };
 }

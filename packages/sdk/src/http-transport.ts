@@ -95,10 +95,10 @@ export class HttpTransport implements HttpPort {
       credentials: 'omit',
       cache: 'no-store',
       ...(signal ? { signal } : {}),
-    }).catch(() => {
+    }).catch((error: unknown) => {
       observe();
       signal?.throwIfAborted();
-      throw new ArkvoryNetworkError();
+      throw new ArkvoryNetworkError(error);
     });
     observe(response);
     if (signal) this.responseSignals.set(response, signal);

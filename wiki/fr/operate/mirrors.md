@@ -78,7 +78,14 @@ Donnez un seul dépôt à une seule commande. Vous ne pouvez pas combiner une mo
 
 Dans Docker Compose, la commande écrit aussi `config/compose.mirrors.yml`, qui monte les fichiers de miroir dans les conteneurs de l’API et du worker. Ajoutez-la aux commandes Compose que vous exécutez vous-même.
 
-Répétez la commande avec un nouveau `--mirror-token-file` pour remplacer la clé d’un dépôt. Le worker relit le fichier de clé après chaque échec, donc une nouvelle clé fonctionne sans redémarrage. Un dépôt qui met déjà en miroir une source refuse une autre source avec le message `NAME mirrors another source; detach it first`.
+Pour remplacer la clé d’un dépôt, répétez la commande avec seulement `--mirror` et le nouveau `--mirror-token-file`. La source, les étapes et les autorités de certification restent inchangées, et une commande répétée ne transforme jamais un miroir en import. Le worker relit le fichier de clé après chaque échec, donc une nouvelle clé fonctionne sans redémarrage.
+
+```bash
+sudo arkvory configure --root /opt/proanima-arkvory \
+  --mirror releases --mirror-token-file /root/new-mirror-releases.key
+```
+
+Lorsque la source refuse la clé, la commande s’arrête avant de modifier quoi que ce soit et indique pourquoi : la clé n’est pas acceptée (401), elle n’a pas le droit de lire le dépôt (403), ou le dépôt n’existe pas sur la source (404). Un dépôt qui met déjà en miroir une source refuse une autre source avec le message `NAME mirrors another source; detach it first`.
 
 Sur l’installation miroir, donnez aux personnes et aux outils l’accès au dépôt. Un dépôt existe dès qu’une autorisation ou une politique de service le nomme. Utilisez [[ui:manageGrants]] dans [[ui:administration]] pour les personnes, et une politique de service pour les outils. Les autorisations de la source ne sont pas transférées.
 
@@ -107,13 +114,19 @@ Si la clé de la source est révoquée ou si la source est inaccessible, le miro
 
 ### Dans la console {#status-console}
 
-Connectez la console de l’installation miroir au dépôt mis en miroir. Au-dessus du catalogue, un badge indique l’état :
+[[ui:mirrors]] dans le menu liste chaque miroir et chaque import dont vous pouvez lire le dépôt, avec sa source, son état, sa dernière synchronisation et ce qui a été copié. Les administrateurs voient toujours la page ; tant qu’il n’y a aucun miroir, elle explique comment en configurer un. La page se rafraîchit d’elle-même toutes les 20 secondes.
 
-- [[ui:mirrorBadge]] signifie que le miroir est à jour.
-- [[ui:mirrorBehind]] signifie qu’il copie encore, ou qu’il n’a pas encore commencé.
-- [[ui:mirrorFailing]] signifie que la dernière tentative a échoué. Les téléchargements continuent de fonctionner.
+| État                      | Signification                                                                                                    |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| [[ui:mirrorStateSynced]]  | À jour avec la source                                                                                            |
+| [[ui:mirrorStateBehind]]  | Copie les changements effectués par la source depuis la dernière vérification                                    |
+| [[ui:mirrorStatePending]] | Configuré, et le worker ne l’a pas encore atteint                                                                |
+| [[ui:mirrorStateSeeding]] | Le remplissage initial, ou un nouveau remplissage après la restauration de la source                             |
+| [[ui:mirrorStateFailing]] | La dernière tentative a échoué. Les téléchargements continuent de fonctionner, et le worker réessaie de lui-même |
 
-Ouvrez l’aide du badge ([[ui:mirrorHelpLabel]]) pour voir la source, l’heure de la dernière synchronisation et le code d’erreur. La console masque les boutons de téléversement et de modification dans un dépôt mis en miroir.
+Lorsque la synchronisation s’est arrêtée, la page indique pourquoi et quoi faire ensuite, et affiche la commande qui corrige le problème lorsqu’il y en a une, par exemple une nouvelle clé après que la source a refusé l’ancienne. Les textes suivent les [codes d’erreur](#error-codes).
+
+Connectée à un dépôt mis en miroir, la console affiche aussi un badge au-dessus du catalogue : [[ui:mirrorBadge]], [[ui:mirrorBehind]] ou [[ui:mirrorFailing]]. La raison et l’étape suivante apparaissent en dessous tant que la synchronisation est arrêtée, et le badge suit le serveur sans rechargement. Ouvrez l’aide du badge ([[ui:mirrorHelpLabel]]) pour voir la source et l’heure de la dernière synchronisation. La console masque les boutons de téléversement et de modification dans un dépôt mis en miroir.
 
 ### Avec l’API {#status-api}
 
@@ -130,17 +143,19 @@ Ouvrez l’aide du badge ([[ui:mirrorHelpLabel]]) pour voir la source, l’heure
 
 ### Codes d’erreur {#error-codes}
 
-| `errorCode`               | Signification et marche à suivre                                                                                                                                                                                                                             |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `mirror_mismatch`         | Le même ID d’artefact a un contenu différent sur la source. Le miroir conserve son fichier. Enquêtez sur l’artefact ; ne supprimez aucune des deux copies avant d’en connaître la cause                                                                      |
-| `mirror_source_changed`   | Le dépôt contient déjà une copie d’une autre source. Détachez-le, ou mettez en miroir la nouvelle source dans un nouveau dépôt                                                                                                                               |
-| `mirror_source_behind`    | La source a été restaurée ou réinstallée : le changement à la position du miroir n’est pas celui qu’il y a appliqué. Le miroir relit la source, et le code disparaît lorsqu’il est à jour. Les fichiers absents de la source restaurée restent sur le miroir |
-| `mirror_delete_blocked`   | La source a supprimé un fichier que le miroir ne peut pas supprimer, car quelque chose ici l’utilise encore, comme une référence ou un historique de chemin de fichier                                                                                       |
-| `mirror_detached`         | Le dépôt a été détaché et a ses propres changements. Il n’est plus jamais synchronisé. Mettez la source en miroir dans un nouveau dépôt                                                                                                                      |
-| `mirror_package_conflict` | Une version de la source a une version de paquet (groupe, nom et version) que ce dépôt détient avec d’autres octets. Rien n’est modifié. Retirez l’étape ou la version sur la source, ou publiez-la sous une autre version                                   |
-| `mirror_id_taken`         | Un artefact de la source est détenu par un autre dépôt de cette installation. Un dépôt source ne peut remplir qu’un seul dépôt ici                                                                                                                           |
-| `mirror_failed`           | Un échec sans code plus précis. Lisez le journal du worker                                                                                                                                                                                                   |
-| autres codes              | Le code de la requête échouée, par exemple `unauthorized` lorsque la clé a été révoquée ou `capacity_exceeded` lorsque le miroir est plein                                                                                                                   |
+| `errorCode`               | Signification et marche à suivre                                                                                                                                                                                                                                                            |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `mirror_mismatch`         | Le même ID d’artefact a un contenu différent sur la source. Le miroir conserve son fichier. Enquêtez sur l’artefact ; ne supprimez aucune des deux copies avant d’en connaître la cause                                                                                                     |
+| `mirror_source_changed`   | Le dépôt contient déjà une copie d’une autre source. Détachez-le, ou mettez en miroir la nouvelle source dans un nouveau dépôt                                                                                                                                                              |
+| `mirror_source_behind`    | La source a été restaurée ou réinstallée : le changement à la position du miroir n’est pas celui qu’il y a appliqué. Le miroir relit la source, et le code disparaît lorsqu’il est à jour. Les fichiers absents de la source restaurée restent sur le miroir                                |
+| `mirror_delete_blocked`   | La source a supprimé un fichier que le miroir ne peut pas supprimer, car quelque chose ici l’utilise encore, comme une référence ou un historique de chemin de fichier                                                                                                                      |
+| `mirror_detached`         | Le dépôt a été détaché et a ses propres changements. Il n’est plus jamais synchronisé. Mettez la source en miroir dans un nouveau dépôt                                                                                                                                                     |
+| `mirror_package_conflict` | Une version de la source a une version de paquet (groupe, nom et version) que ce dépôt détient avec d’autres octets. Rien n’est modifié. Retirez l’étape ou la version sur la source, ou publiez-la sous une autre version                                                                  |
+| `mirror_id_taken`         | Un artefact de la source est détenu par un autre dépôt de cette installation. Un dépôt source ne peut remplir qu’un seul dépôt ici                                                                                                                                                          |
+| `mirror_unreachable`      | La source est injoignable : la connexion est refusée ou expire, ou le nom ne se résout pas. Le worker réessaie de lui-même. Vérifiez le réseau, le pare-feu et que la source est en marche                                                                                                  |
+| `mirror_certificate`      | Le certificat de la source n’est pas approuvé, a expiré ou ne correspond pas à son nom. Ajoutez son autorité avec `--mirror-ca-file` (voir [HTTPS avec votre propre autorité de certification](#ca-file))                                                                                   |
+| `mirror_failed`           | Un échec sans code plus précis. Lisez le journal du worker                                                                                                                                                                                                                                  |
+| autres codes              | Le code de la requête échouée : `unauthorized` lorsque la source n’accepte plus la clé (donnez-en une nouvelle au miroir), `forbidden` lorsque la clé n’a pas le droit de lire le dépôt, `not_found` lorsque le dépôt source n’existe plus, `capacity_exceeded` lorsque le miroir est plein |
 
 Le journal du worker (`component` vaut `mirror`) contient `mirror.started`, `mirror.step_failed` avec `errorCode` et `attempts`, `mirror.recovered` et `mirror.stopped`.
 
@@ -202,10 +217,10 @@ Il s’agit d’un basculement manuel pour deux installations indépendantes sur
 3. Détachez chaque dépôt mis en miroir sur le miroir. Il devient un dépôt ordinaire accessible en écriture avec les mêmes ID d’artefact et toutes ses données.
 
    ```bash
-   sudo arkvory configure --root /opt/proanima-arkvory --mirror-detach releases
+   sudo arkvory configure --root /opt/proanima-arkvory --mirror-detach releases,prod
    ```
 
-   La commande redémarre l’API et le worker, attendez-vous donc à une courte interruption.
+   Indiquez plusieurs dépôts séparés par des virgules, ou `all` pour tous les miroirs et imports. La commande redémarre l’API et le worker une seule fois, attendez-vous donc à une courte interruption.
 
 4. Faites pointer les clients qui écrivent vers le miroir, via le DNS ou la configuration de votre CI.
 5. Téléversez et téléchargez un fichier de contrôle sur le miroir.

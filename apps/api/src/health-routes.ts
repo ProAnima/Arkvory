@@ -1,5 +1,6 @@
-import type { FastifyInstance } from 'fastify';
+import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { ArkvoryError } from '@proanima/arkvory-domain';
+import type { Principal, ReplicaCopies } from '@proanima/arkvory-domain';
 import { readinessSchema, healthStatusSchema } from '@proanima/arkvory-contracts';
 import type {
   LocalBlobStore,
@@ -29,6 +30,7 @@ export function registerHealthRoutes(
   dependencies: Health,
   draining: () => boolean,
   replica?: ReplicaGuard,
+  principal?: (request: FastifyRequest) => Principal,
 ) {
   const { catalog, blobs, role, lease, available } = dependencies;
   const { uploadGate, downloadGate, uploadBandwidth, downloadBandwidth } = dependencies.transfers;
@@ -52,7 +54,13 @@ export function registerHealthRoutes(
       return { status };
     },
   );
-  app.get('/health/ready', { schema: { response: { 200: readinessSchema } } }, async () => {
+  // Node and peer names are for the administrators' cluster page, not for every key holder.
+  const visible = (copies: ReplicaCopies | null, request: FastifyRequest) => {
+    if (!copies || principal?.(request).administrator === true) return copies;
+    const { copies: count, required, singleCopyUntil } = copies;
+    return { copies: count, required, singleCopyUntil };
+  };
+  app.get('/health/ready', { schema: { response: { 200: readinessSchema } } }, async (request) => {
     if (draining()) throw new ArkvoryError('unavailable', 'Server is draining');
     await catalog.ready();
     await blobs.ready();
@@ -73,7 +81,7 @@ export function registerHealthRoutes(
     return {
       status: 'ready',
       writable,
-      ...(replication === undefined ? {} : { replication }),
+      ...(replication === undefined ? {} : { replication: visible(replication, request) }),
       role,
       sharedDownloads: lease?.snapshot ?? null,
       transfers: {

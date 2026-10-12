@@ -119,6 +119,20 @@ add(
   'read',
 );
 add(
+  '/api/v1/mirrors',
+  'get',
+  'listMirrors',
+  'Catalog',
+  {
+    kind: 'repository-discovery',
+    action: 'repository.read',
+    resource: 'visible-repositories',
+    legacy: 'own-nonempty-grants',
+    invisible: 'omit',
+  },
+  'read',
+);
+add(
   root,
   'get',
   'getRepository',

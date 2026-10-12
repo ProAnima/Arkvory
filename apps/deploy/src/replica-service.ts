@@ -1,6 +1,7 @@
 import { createServer } from 'node:http';
 import type { Server } from 'node:http';
 import { rm } from 'node:fs/promises';
+import { hostname } from 'node:os';
 import { join } from 'node:path';
 import { atomicJson, jsonFile, exists } from './files.js';
 import { commandOutput } from './process.js';
@@ -83,7 +84,13 @@ export function replicaServer(
     }
     Promise.all([reads.get(), decision()])
       .then(([volume, chosen]) => {
-        const body = replicaAnswer(volume.copies, settings.requiredCopies, chosen, now());
+        const body = {
+          ...replicaAnswer(volume.copies, settings.requiredCopies, chosen, now()),
+          // For the console's cluster view: the API never decides on these.
+          node: hostname(),
+          profile: settings.profile,
+          peers: volume.peers ?? [],
+        };
         if (chosen && volume.copies >= settings.requiredCopies)
           void withdraw().then(
             () => {
