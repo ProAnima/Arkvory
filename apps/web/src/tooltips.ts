@@ -1,3 +1,4 @@
+import { icon } from './icons.js';
 import { isMessageKey } from './messages.js';
 import { t } from './i18n.js';
 
@@ -59,10 +60,7 @@ function trigger(label: Parameters<typeof t>[0], tipId: string): HTMLButtonEleme
   button.dataset['i18nLabel'] = label;
   button.setAttribute('aria-label', t(label));
   button.setAttribute('aria-describedby', tipId);
-  const icon = document.createElement('span');
-  icon.setAttribute('aria-hidden', 'true');
-  icon.textContent = '?';
-  button.append(icon);
+  button.append(icon('help'));
   return button;
 }
 

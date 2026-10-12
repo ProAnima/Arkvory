@@ -17,14 +17,9 @@ button.help-trigger {
   color: var(--color-muted);
   border-radius: var(--radius-pill);
 }
-.help-trigger span {
-  display: grid;
-  place-items: center;
+.help-trigger .action-icon {
   width: var(--help-icon);
   height: var(--help-icon);
-  border: var(--border-width) solid currentColor;
-  border-radius: var(--radius-pill);
-  font-size: var(--text-xs);
 }
 button.help-trigger:focus-visible {
   background: var(--color-info-bg);

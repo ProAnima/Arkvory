@@ -59,13 +59,15 @@ button[data-icon-only] > .action-label {
 .preferences select {
   min-height: var(--control-height);
 }
+/* Centered in its 32px button, in the same color as the icons beside it. */
 .preferences .preference-icon {
   position: absolute;
-  inset: 0 auto 0 var(--space-3);
+  inset: 0;
   display: flex;
   align-items: center;
+  justify-content: center;
   pointer-events: none;
-  color: var(--color-muted);
+  color: var(--color-text);
   width: auto;
   height: auto;
   overflow: visible;
@@ -255,7 +257,7 @@ button[data-icon-only] > .action-label {
     justify-content: center;
     padding-inline: 0;
   }
-  [data-navigation='compact'] nav button span {
+  [data-navigation='compact'] nav button span[data-i18n] {
     position: absolute;
     width: 1px;
     height: 1px;
