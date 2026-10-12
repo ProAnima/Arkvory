@@ -61,6 +61,7 @@ export {
   excludedTables,
   unregisteredTables,
   presentTablesQuery,
+  tablesAt,
 } from './backup-tables.js';
 export { PostgresSnapshotSource, defaultSnapshotOptions } from './backup-snapshot.js';
 export type { SnapshotOptions } from './backup-snapshot.js';

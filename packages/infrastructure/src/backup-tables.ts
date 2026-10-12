@@ -7,6 +7,8 @@ export interface BackupTable {
   readonly key: readonly string[];
   /** Self-references, loaded as NULL first and set once the whole table exists. */
   readonly deferred?: readonly string[];
+  /** The schema that created the table; absent means it existed at MINIMUM_RESTORE_SCHEMA. */
+  readonly since?: number;
 }
 
 /** Oldest schema whose tables and normalization this release can restore (ADR 0054). */
@@ -51,22 +53,34 @@ export const exportedTables: readonly BackupTable[] = [
   { name: 'arkvory_promotions', key: ['target_artifact_id'] },
   { name: 'arkvory_security_audit', key: ['id'] },
   // The feed cursor belongs to the mirrored data: restored together, the mirror continues.
-  { name: 'arkvory_mirror_state', key: ['repository'] },
+  { name: 'arkvory_mirror_state', key: ['repository'], since: 28 },
   // Versions an import took over: with the catalog, so a restored import does not repeat them.
-  { name: 'arkvory_mirror_adoptions', key: ['repository', 'artifact_id'] },
+  { name: 'arkvory_mirror_adoptions', key: ['repository', 'artifact_id'], since: 37 },
   // The container registry rows name artifacts restored above (ADR 0063).
-  { name: 'arkvory_oci_blobs', key: ['repository', 'digest'] },
-  { name: 'arkvory_oci_manifests', key: ['repository', 'image', 'digest'] },
-  { name: 'arkvory_oci_tags', key: ['repository', 'image', 'tag'] },
-  { name: 'arkvory_oci_references', key: ['repository', 'image', 'manifest', 'target'] },
+  { name: 'arkvory_oci_blobs', key: ['repository', 'digest'], since: 30 },
+  { name: 'arkvory_oci_manifests', key: ['repository', 'image', 'digest'], since: 30 },
+  { name: 'arkvory_oci_tags', key: ['repository', 'image', 'tag'], since: 30 },
+  {
+    name: 'arkvory_oci_references',
+    key: ['repository', 'image', 'manifest', 'target'],
+    since: 30,
+  },
   // Git LFS objects name artifacts restored above; locks are the team's coordination (ADR 0065).
-  { name: 'arkvory_lfs_objects', key: ['repository', 'oid'] },
-  { name: 'arkvory_lfs_locks', key: ['id'] },
-  { name: 'arkvory_npm_versions', key: ['repository', 'name', 'version'] },
-  { name: 'arkvory_npm_tags', key: ['repository', 'name', 'tag'] },
+  { name: 'arkvory_lfs_objects', key: ['repository', 'oid'], since: 31 },
+  { name: 'arkvory_lfs_locks', key: ['id'], since: 31 },
+  { name: 'arkvory_npm_versions', key: ['repository', 'name', 'version'], since: 32 },
+  { name: 'arkvory_npm_tags', key: ['repository', 'name', 'tag'], since: 32 },
   // The delivery cursor belongs to the feed it follows: restored together, no event repeats or is lost.
-  { name: 'arkvory_webhook_state', key: ['subscription'] },
+  { name: 'arkvory_webhook_state', key: ['subscription'], since: 33 },
 ];
+
+/**
+ * The tables a point of `schema` holds: a restore prepares that schema, loads these, and the
+ * migrations after it create the later tables (and backfill them) on the restored data.
+ */
+export function tablesAt(schema: number): readonly BackupTable[] {
+  return exportedTables.filter((table) => (table.since ?? MINIMUM_RESTORE_SCHEMA) <= schema);
+}
 
 export const excludedTables: readonly ExcludedTable[] = [
   { name: 'arkvory_migrations', reason: 'schema history; restore migrates the target itself' },

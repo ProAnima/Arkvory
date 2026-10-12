@@ -8,7 +8,7 @@ import type {
 } from '@proanima/arkvory-application';
 import { migrate } from './migrations.js';
 import { inTransaction } from './pg-transaction.js';
-import { exportedTables, presentTablesQuery, quoteIdentifier } from './backup-tables.js';
+import { presentTablesQuery, quoteIdentifier, tablesAt } from './backup-tables.js';
 import type { BackupTable } from './backup-tables.js';
 import { normalizeRestore } from './backup-normalize.js';
 
@@ -65,11 +65,12 @@ export class PostgresRestoreDatabase implements RestoreDatabase {
     cancellation: Cancellation,
   ): Promise<RestoreNormalization & { readonly rows: number }> {
     const sources = new Map(input.tables.map((table) => [table.name, table]));
-    // Schema 25 exports exactly the registry; a manifest with another table set is foreign.
+    // A point holds exactly the tables of its schema; another table set is foreign.
+    const restored = tablesAt(input.schemaVersion);
     if (
       sources.size !== input.tables.length ||
-      sources.size !== exportedTables.length ||
-      exportedTables.some((table) => !sources.has(table.name))
+      sources.size !== restored.length ||
+      restored.some((table) => !sources.has(table.name))
     )
       throw new BackupFailure('invalid_manifest', 'Point tables differ from the restore registry');
     return inTransaction(this.pool, async (client) => {
@@ -80,7 +81,7 @@ export class PostgresRestoreDatabase implements RestoreDatabase {
       if (applied.rows[0]?.version !== input.schemaVersion)
         throw new BackupFailure('schema_mismatch', 'Target schema differs from the backup');
       let rows = 0;
-      for (const table of exportedTables) {
+      for (const table of restored) {
         const source = sources.get(table.name);
         if (!source) throw new BackupFailure('invalid_manifest', 'Missing table');
         const loaded = await this.loadTable(client, table, source, cancellation);
@@ -88,12 +89,12 @@ export class PostgresRestoreDatabase implements RestoreDatabase {
           throw new BackupFailure('integrity_mismatch', 'Row count differs from the manifest');
         rows += loaded;
       }
-      for (const table of exportedTables) {
+      for (const table of restored) {
         const source = sources.get(table.name);
         if (source && table.deferred?.length)
           await this.updateDeferred(client, table, source, cancellation);
       }
-      for (const table of exportedTables) await resetSequences(client, table.name);
+      for (const table of restored) await resetSequences(client, table.name);
       const normalization = await normalizeRestore(client, input);
       return { ...normalization, rows };
     });

@@ -15,7 +15,7 @@ import {
 import { join } from 'node:path';
 import { Pool } from 'pg';
 import { ArkvoryClient } from '@proanima/arkvory-sdk';
-import { FileVault } from '@proanima/arkvory-infrastructure';
+import { FileVault, PostgresRestoreDatabase, tablesAt } from '@proanima/arkvory-infrastructure';
 import { createServer } from '../../apps/api/dist/index.js';
 import { setup, create, base } from './fixture.mjs';
 import {
@@ -317,4 +317,45 @@ test('vaults without vault.json, overlapping trees and crafted manifests are ref
       .rows[0].n,
     0,
   );
+});
+
+// The point taken just before an upgrade has the schema of the release before: the tables a
+// later migration added are not in it. Restore loads what the point has, then migrates.
+test('a point of an older schema restores; the migrations after it create the later tables', async (t) => {
+  const database = await temporaryDatabase(t);
+  // Closed before the helper drops the database, which ends any session still open on it.
+  const pool = new Pool({ connectionString: database.url, max: 2 });
+  pool.on('error', () => undefined);
+  const target = new PostgresRestoreDatabase(pool);
+  const tables = tablesAt(36).map((table) => ({
+    name: table.name,
+    rows: 0,
+    lines: async function* () {},
+  }));
+  assert.ok(tables.some((table) => table.name === 'arkvory_mirror_state'));
+  assert.ok(!tables.some((table) => table.name === 'arkvory_mirror_adoptions'));
+  assert.ok(!tablesAt(27).some((table) => table.name === 'arkvory_mirror_state'));
+  await target.prepare(36);
+  const point = {
+    schemaVersion: 36,
+    pointId: randomUUID(),
+    storageId: randomUUID(),
+    restoredAt: new Date().toISOString(),
+  };
+  // The registry of this release is not what a schema-36 point holds.
+  await assert.rejects(
+    target.load(
+      { ...point, tables: tablesAt(37).map((table) => ({ ...tables[0], name: table.name })) },
+      new AbortController().signal,
+    ),
+    { code: 'invalid_manifest' },
+  );
+  const loaded = await target.load({ ...point, tables }, new AbortController().signal);
+  assert.equal(loaded.rows, 0);
+  await target.finish();
+  const created = await pool.query(
+    "SELECT to_regclass('arkvory_mirror_adoptions') IS NOT NULL AS present, (SELECT max(version) FROM arkvory_migrations) AS version",
+  );
+  assert.deepEqual(created.rows[0], { present: true, version: 37 });
+  await pool.end();
 });
