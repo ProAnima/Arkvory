@@ -331,7 +331,11 @@ test('the Pacemaker script stops on an unfilled fence placeholder and adds the w
   const push = lines.findIndex((line) => line.startsWith('pcs cluster cib-push'));
   const witness = lines.findIndex((line) => line.includes('pcs quorum device add'));
   assert.ok(witness > push, 'the quorum device follows the configuration');
-  assert.match(lines[witness], /^pcs quorum status \| grep -q Qdevice \|\| pcs quorum device add/);
+  // Not `pcs quorum status | grep Qdevice`: its membership table always has that column header.
+  assert.match(
+    lines[witness],
+    /^pcs quorum config \| grep -q '\^Device:' \|\| pcs quorum device add/,
+  );
 });
 
 test('plans refuse a virtual address of a node, repeated addresses and a resource configure refuses', () => {

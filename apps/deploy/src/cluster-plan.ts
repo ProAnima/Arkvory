@@ -159,10 +159,12 @@ export function pacemakerCommands(input: ClusterPlanInput): string {
     `${cib} constraint order promote ${r}-drbd-clone then start ${r}`,
     `${cib} resource defaults update resource-stickiness=200`,
     `pcs cluster cib-push ${r}.cib.xml --config`,
-    // After the push and only once: a second run must not fail on a device added before.
+    // After the push and only once: a second run must not fail on a device added before. The
+    // configuration names a device only when there is one; the status output always has a
+    // "Qdevice" column header, so it cannot tell.
     ...(input.witness
       ? [
-          `pcs quorum status | grep -q Qdevice || pcs quorum device add model net host=${input.witness.name} algorithm=ffsplit`,
+          `pcs quorum config | grep -q '^Device:' || pcs quorum device add model net host=${input.witness.name} algorithm=ffsplit`,
         ]
       : []),
     '',
