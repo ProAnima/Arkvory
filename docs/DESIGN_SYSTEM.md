@@ -28,7 +28,7 @@
 
 Состояния имеют по три роли: цвет текста, тонированный фон и рамку — `--color-success*`, `--color-warning*`, `--color-error*`, `--color-info-bg`/`--color-info-border`. Контраст цвета состояния на своём фоне проверяется тестом в обеих темах. Значок (`.badge[data-tone]`, состояния зеркал и подключения) и баннер (`.update-banner[data-tone]` со значком `alert`/`info`) берут все три роли: состояние видно и словом, и фоном, а не одним цветом текста.
 
-Геометрия: отступы `--space-*` идут по сетке 4 px (4, 8, 12, 16, 20, 24, 32, 40, 48); `--radius-*` (8 px у полей и кнопок, 12 px у карточек), `--border-width`, `--control-height`, `--icon-size`, `--topbar-height` (общая высота верхней полосы и строки бренда, чтобы их нижние границы совпадали), `--sidebar-width`, `--aside-width`, `--page-gutter`, `--panel-padding`. Типографика: `--font-*`, шкала `--text-*` 12/13/14/16/20 px, `--weight-*`, `--leading-*`, `--tracking-*`. Эффекты: `--shadow-*`, `--motion-*`, `--opacity-disabled`, `--z-*`.
+Геометрия: отступы `--space-*` идут по сетке 4 px (4, 8, 12, 16, 20, 24, 32, 40, 48); `--radius-*` (8 px у полей и кнопок, 12 px у карточек), `--border-width`, `--control-height`, `--icon-size`, `--topbar-height` (общая высота верхней полосы и строки бренда, чтобы их нижние границы совпадали), `--sidebar-width`, `--aside-width`, `--page-gutter`, `--panel-padding`. Типографика: `--font-*`, шкала `--text-*` 12/13/14/16/20 px (и 18 px у названия продукта, `--text-brand`), `--weight-*`, `--leading-*`, `--tracking-*`. Эффекты: `--shadow-*`, `--motion-*`, `--opacity-disabled`, `--z-*`.
 
 Плотность рассчитана на рабочий инструмент:
 

@@ -210,7 +210,7 @@ Beginnen Sie mit der Warnung in [[ui:backups]] oder `arkvoryctl backup status` u
 | `mirror_source_behind`          | Die Quelle wurde wiederhergestellt oder neu installiert                                                                               | Es füllt sich von selbst wieder auf, und der Code verschwindet                                                                                                                                   |
 | `mirror_certificate`            | Die Quelle verwendet ein Firmen- oder selbstsigniertes Zertifikat, oder ihr Zertifikat ist abgelaufen oder passt nicht zu ihrem Namen | Übergeben Sie `--mirror-ca-file` an `arkvory configure`. Die Prüfung wird nie abgeschaltet                                                                                                       |
 
-Die Quelle braucht ein Release mit dem Spiegel-Feed. Der Worker wartet nach einem Fehler 2 Sekunden, was sich auf bis zu 5 Minuten verdoppelt. `ArkvoryMirrorStale` löst nach einer Stunde ohne Aufholen aus.
+Weitere Codes und was zu tun ist: [Spiegel, Fehlercodes](./mirrors#error-codes). Die Quelle braucht ein Release mit dem Spiegel-Feed. Der Worker wartet nach einem Fehler 2 Sekunden, was sich auf bis zu 5 Minuten verdoppelt. `ArkvoryMirrorStale` löst nach einer Stunde und einer Viertelstunde ohne Aufholen aus.
 
 ## Ein Update ist fehlgeschlagen {#update-failed}
 

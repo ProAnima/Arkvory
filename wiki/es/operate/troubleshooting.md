@@ -210,7 +210,7 @@ Abra [[ui:mirrors]] en la consola: un espejo detenido muestra el motivo, el sigu
 | `mirror_source_behind`       | El origen se restauró o se reinstaló                                                                            | Se vuelve a sembrar por sí solo y el código desaparece                                                                                                                          |
 | `mirror_certificate`         | El origen usa un certificado de empresa o autofirmado, o su certificado ha caducado o no coincide con su nombre | Pase `--mirror-ca-file` a `arkvory configure`. La comprobación nunca se desactiva                                                                                               |
 
-El origen necesita una versión con el feed de espejo. El worker espera 2 segundos tras un fallo, duplicándose hasta 5 minutos. `ArkvoryMirrorStale` se dispara tras una hora sin una puesta al día.
+Otros códigos y qué hacer con ellos: [Espejos, códigos de error](./mirrors#error-codes). El origen necesita una versión con el feed de espejo. El worker espera 2 segundos tras un fallo, duplicándose hasta 5 minutos. `ArkvoryMirrorStale` se dispara tras una hora y cuarto sin una puesta al día.
 
 ## Una actualización falló {#update-failed}
 

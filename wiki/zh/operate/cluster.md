@@ -106,7 +106,7 @@ Arkvory 集群在站点中的某台服务器故障时仍能继续工作。两到
    arkvory configure --root /opt/proanima-arkvory --cluster ha-2
    ```
 
-   `configure --cluster` 会检查安装目录是否是已挂载的 DRBD 设备、此服务器是否为主节点，以及每份副本是否完整。它会启动 `arkvory-replica`，让 Arkvory 只在有两份完整副本时才确认写入，并关闭 Arkvory 服务的自动启动：从现在起由 Pacemaker 启动它们。如果某一步失败，会恢复独立配置。
+   `configure --cluster` 会检查安装目录是否是已挂载的 DRBD 设备、此服务器是否为主节点，以及是否至少有两份副本完整。它会启动 `arkvory-replica`，让 Arkvory 只在有两份完整副本时才确认写入，并关闭 Arkvory 服务的自动启动：从现在起由 Pacemaker 启动它们。如果某一步失败，会恢复独立配置。
 
 6. 在第一台服务器上停止 Arkvory 并释放卷：
 
@@ -123,7 +123,7 @@ Arkvory 集群在站点中的某台服务器故障时仍能继续工作。两到
    dpkg --configure proanima-arkvory   # 仅限 .deb；使用 RPM 时无需其他操作
    ```
 
-   `cluster-node` 会接管卷，从卷中读取资源名，准备服务器，然后再次释放卷。只有当资源名不是 `arkvory` 时才需要 `--cluster-resource`。当 Pacemaker 正在管理 Arkvory 组时，该命令会拒绝执行，因为此时卷归集群所有：要向正在运行的集群添加服务器，请按[更换服务器](#replace-node)中的说明操作。`cluster-node` 会创建与第一台服务器用户 ID 和组 ID 相同的服务账户（卷上的文件归它们所有），并安装相同的服务，这些服务都不会自动启动。如果某个账户已存在但 ID 不同，命令会停止并告诉你应设置哪些 ID。每当一台服务器成为活动服务器时，`arkvory-units` 会先从卷上获取服务，因此之后在活动服务器上更改的设置（例如备份存储）在故障切换后同样生效。
+   `cluster-node` 会接管卷，准备服务器，然后再次释放卷，某一步失败时也是如此；报告的是第一个错误。只有当资源名不是 `arkvory` 时才需要 `--cluster-resource`。在已挂载卷并正在为集群提供服务的服务器上（请先用 `cluster-release` 释放卷），以及当 Pacemaker 正在管理 Arkvory 组时，该命令会拒绝执行，因为此时卷归集群所有：要向正在运行的集群添加服务器，请按[更换服务器](#replace-node)中的说明操作。`cluster-node` 会创建与第一台服务器用户 ID 和组 ID 相同的服务账户（卷上的文件归它们所有），并安装相同的服务，这些服务都不会自动启动。如果某个账户已存在但 ID 不同，命令会停止并告诉你应设置哪些 ID。每当一台服务器成为活动服务器时，`arkvory-units` 会先从卷上获取服务，因此之后在活动服务器上更改的设置（例如备份存储）在故障切换后同样生效。
 
 8. 在数据服务器上用 `pcs` 设置 Corosync 集群（`pcs host auth`、`pcs cluster setup`、`pcs cluster start --all`）。在 Debian 和 Ubuntu 上，请先在每台数据服务器上运行 `pcs cluster destroy`：软件包会安装一份示例 Corosync 配置，`pcs` 会把它当作已有的集群。不要运行 `pcs cluster enable`：被隔离的服务器应当只在你启动它时才重新加入。对于 `ha-2`，还要对见证节点进行认证，并在其上运行 `pcs qdevice setup model net --enable --start`。在 Debian 和 Ubuntu 上，软件包已经为其自身的服务账户设置好了仲裁设备：请改为在那里运行 `systemctl enable --now corosync-qnetd`。
 
@@ -141,7 +141,7 @@ Arkvory 集群在站点中的某台服务器故障时仍能继续工作。两到
     arkvory cluster-check --root /opt/proanima-arkvory
     ```
 
-    该命令检查仲裁、隔离是否已启用、每台服务器是否有隔离设备、DRBD 的仲裁与隔离设置、每份副本是否完整，以及 Arkvory 是否恰好运行在一台服务器上。某项检查失败时，命令会以错误退出。
+    该命令检查仲裁、隔离是否已启用、每台服务器是否有隔离设备、DRBD 的仲裁与隔离设置、是否至少有两份副本完整，以及 Arkvory 是否恰好运行在一台服务器上。某项检查失败时，命令会以错误退出。
 
 11. 验证一次隔离：隔离每台备用服务器并让它恢复（参见[隔离测试](#fence-test)）。
 
@@ -149,23 +149,23 @@ Arkvory 集群在站点中的某台服务器故障时仍能继续工作。两到
 
 ## 日常运维 {#operation}
 
-请以 root 身份运行这些命令。`cluster-status` 和 `cluster-single-copy` 需要读取卷，因此请在活动服务器上运行；其余命令可在任一数据服务器上运行。
+请以 root 身份运行这些命令。`cluster-status`、`cluster-single-copy` 和 `cluster-kit` 需要读取卷，因此请在活动服务器上运行；`cluster-check`、`cluster-switchover` 和 `cluster-fence-test` 可在任一数据服务器上运行。
 
-| 命令                                                                      | 作用                                                                         |
-| ------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
-| `arkvory cluster-status --root <dir>`                                     | 以 JSON 输出配置、此服务器的角色、完整副本数与所需副本数，以及任何操作员决定 |
-| `arkvory cluster-check --root <dir>`                                      | 健康集群的全部检查；某项失败时以错误退出                                     |
-| `arkvory cluster-switchover --root <dir> --to <server>`                   | 有计划地把 Arkvory 迁移到另一台数据服务器；除非每份副本都完整，否则被拒绝    |
-| `arkvory cluster-fence-test --root <dir> --node <standby> [--yes]`        | 隔离一台备用服务器以验证其隔离设备；活动服务器会被拒绝                       |
-| `arkvory cluster-single-copy --root <dir> --until <time> --reason <text>` | 在某个时间之前接受只有一份副本的写入；参见[单副本](#single-copy)             |
-| `arkvory cluster-kit --root <dir> --output <file>`                        | 在活动服务器上：生成新服务器加入所需的文件；参见[更换服务器](#replace-node)  |
-| `arkvory cluster-node --root <dir> --kit <file>`                          | 在新服务器上：用该文件加入集群，无需接管卷                                   |
+| 命令                                                                      | 作用                                                                              |
+| ------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| `arkvory cluster-status --root <dir>`                                     | 以 JSON 输出配置、此服务器的角色、完整副本数与所需副本数，以及任何操作员决定      |
+| `arkvory cluster-check --root <dir>`                                      | 健康集群的全部检查；某项失败时以错误退出                                          |
+| `arkvory cluster-switchover --root <dir> --to <server>`                   | 有计划地把 Arkvory 迁移到另一台数据服务器；除非目标服务器持有完整副本，否则被拒绝 |
+| `arkvory cluster-fence-test --root <dir> --node <standby> [--yes]`        | 隔离一台备用服务器以验证其隔离设备；活动服务器会被拒绝                            |
+| `arkvory cluster-single-copy --root <dir> --until <time> --reason <text>` | 在某个时间之前接受只有一份副本的写入；参见[单副本](#single-copy)                  |
+| `arkvory cluster-kit --root <dir> --output <file>`                        | 在活动服务器上：生成新服务器加入所需的文件；参见[更换服务器](#replace-node)       |
+| `arkvory cluster-node --root <dir> --kit <file>`                          | 在新服务器上：用该文件加入集群，无需接管卷                                        |
 
 `pcs status` 显示 Pacemaker 所看到的集群状态。
 
 ### 在控制台中 {#console}
 
-在集群安装中，管理员可以在菜单中找到 [[ui:cluster]]。该页面显示集群布局、当前提供服务的服务器、完整副本数、是否接受写入，以及其他每台服务器的连接状态和副本状态（[[ui:clusterCopyComplete]]、[[ui:clusterCopySyncing]] 或 [[ui:clusterCopyMissing]]）。下方的 [[ui:clusterNextStep]] 给出适合当前状态的那一步操作及其命令：一切完整时进行计划切换；缺少副本时让服务器恢复或更换它；以及如何结束单副本决定。该页面每 15 秒自动刷新一次。
+在集群安装中，管理员可以在菜单中找到 [[ui:cluster]]。该页面显示集群布局、当前提供服务的服务器、完整副本数、是否接受写入，以及其他每台服务器的连接状态和副本状态（[[ui:clusterCopyComplete]]、[[ui:clusterCopySyncing]] 或 [[ui:clusterCopyMissing]]）。下方的 [[ui:clusterNextStep]] 给出适合当前状态的那一步操作及其命令：一切完整时进行计划切换；缺少副本时让服务器恢复或更换它（在 `ha-3` 中写入仍以两份副本继续时也是如此）；以及如何结束单副本决定。该页面每 15 秒自动刷新一次。
 
 写入停止时，每个界面上都会出现一条横幅说明这一点；管理员可以从横幅打开该页面。没有管理权限的用户只会看到上传暂停，而下载仍然正常。
 

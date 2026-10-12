@@ -59,7 +59,7 @@ Arkvory 有两类设置：
 
 ### configure 命令 {#configure-command}
 
-一次调用更改一类设置。五类设置不能在一次调用中混合。
+一次调用更改一类设置。六类设置不能在一次调用中混合。
 
 | 类别     | 选项                                                                                                                                                                                                                                                                                     | 效果                                                                                             |
 | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
@@ -67,6 +67,7 @@ Arkvory 有两类设置：
 | 备份存储 | `--backup-vault DIRECTORY [--vault-key-file FILE \| --init-vault --vault-no-encryption]`，或 `--backup-vault-off`                                                                                                                                                                        | 连接或断开备份存储。仅重启备份代理。参见[备份](../operate/backups)                               |
 | 镜像     | `--mirror REPOSITORY --mirror-upstream URL --mirror-token-file FILE [--mirror-source REPOSITORY] [--mirror-stages LIST] [--mirror-ca-file FILE]`，或用 `--mirror REPOSITORY --mirror-token-file FILE` 设置新密钥，或 `--mirror-detach REPOSITORY[,REPOSITORY…]` 或 `--mirror-detach all` | 使某个仓库成为镜像或导入目标，或恢复为普通仓库。参见[镜像](../operate/mirrors)                   |
 | Webhook  | `--webhook ID --webhook-repository REPOSITORY --webhook-url URL --webhook-secret-file FILE [--webhook-next-secret-file FILE] [--webhook-actions LIST] [--webhook-allow-private LIST] [--webhook-ca-file FILE]`, or `--webhook-detach ID`                                                 | 添加、替换或删除一个 webhook 订阅。重启服务并检查就绪状态。参见 [Webhook](../protocols/webhooks) |
+| 集群     | `--cluster ha-2` 或 `ha-3` `[--cluster-resource NAME]`                                                                                                                                                                                                                                   | 在复制卷的主节点上：开启集群模式。参见[高可用集群](../operate/cluster#build)                     |
 | 更新     | `--enable-updates`、`--disable-updates`、`--pin [--version X.Y.Z]`、`--unpin`、`--update-channel stable` 或 `beta`、`--statistics on` 或 `off`、`--hub-url URL`、`--hub-off`                                                                                                             | 更改更新策略。参见[更新](./updates)                                                              |
 
 HTTPS、备份存储和镜像更改会重启服务，并在更改不生效时恢复之前的配置。更新选项只重写 `installation.json` 和 `hub.json`；它们不会重启任何内容。文件路径必须是绝对路径。
