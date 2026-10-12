@@ -80,12 +80,15 @@ export async function exerciseCluster(browser, f) {
 
     // The peer is lost: the banner names it and leads to the page with the next step.
     answer = degraded;
+    // From another screen: on the Cluster page itself the banner offers no way to it.
+    await page.locator('[data-nav=catalog]').click();
     await page.reload();
     await connectWithKey(page, f.headers.authorization.slice(7));
     await page.locator('#replication-banner').waitFor();
     assert.match(await page.locator('#replication-notice').innerText(), /1 of 2 required/);
     await page.locator('#replication-open').click();
     await page.locator('#cluster-writes[data-state=off]').waitFor();
+    assert.equal(await page.locator('#replication-open').isVisible(), false);
     assert.match(
       await page.locator('#cluster-command').innerText(),
       /^arkvory cluster-single-copy --root \/opt\/proanima-arkvory --until \d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z --reason "<why>"$/,
