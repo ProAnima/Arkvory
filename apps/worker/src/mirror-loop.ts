@@ -9,7 +9,7 @@ import type {
   PostgresCatalog,
 } from '@proanima/arkvory-infrastructure';
 import { SdkMirrorSource } from './mirror-source.js';
-import { ServiceMirrorTarget } from './mirror-target.js';
+import { ServiceMirrorTarget, clearMirrorStaging } from './mirror-target.js';
 
 export interface MirrorLoopOptions {
   readonly catalog: PostgresCatalog;
@@ -108,6 +108,12 @@ async function follow(
  * their own and are closed when all loops have ended, before the caller closes the catalog.
  */
 export async function runMirrors(options: MirrorLoopOptions): Promise<void> {
+  // Before any loop: a mirror detached since the last start is never followed from its cursor,
+  // and part files a crash left behind are no copy's any more (each copy writes its own anew).
+  await new PostgresMirrorState(options.catalog.pool).markDetached(
+    options.mirrors.map((mirror) => mirror.repository),
+  );
+  await clearMirrorStaging(options.dataDirectory);
   if (options.mirrors.length === 0) return;
   const pins = new PostgresContentPins(options.catalog.pool);
   try {

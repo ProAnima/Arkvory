@@ -74,18 +74,33 @@ export interface MirrorTarget {
   /** Deletes like a client deletion (tombstone, then GC); absence is success. */
   remove(id: string): Promise<void>;
   annotate(id: string, annotation: MirrorAnnotation): Promise<void>;
+  /**
+   * Registers the local copy as a UPack package when its bytes are one. Bytes that are no UPack
+   * are skipped; a package version this repository holds with other bytes is a MirrorFailure
+   * `mirror_package_conflict`: clients asking for that version would get the other bytes.
+   */
   register(id: string): Promise<void>;
   /**
-   * Import mode: completes a taken-over version without overriding local decisions. The
-   * annotation applies only while the local one was never changed, the bytes register as UPack
-   * when they are one and are not registered yet, stages are only added. Repeatable after a crash.
+   * Import mode: completes a taken-over version without overriding local decisions, then records
+   * it as taken over. The annotation applies only while the local one was never changed, the
+   * bytes register as UPack (as `register`), stages are only added. Repeatable after a crash.
    */
   adopt(
     id: string,
     annotation: MirrorAnnotation | null,
     stages: readonly MirrorStage[],
   ): Promise<void>;
-  /** Local copy of a source ID: `deleted` means removed here, never to be imported again. */
+  /** Import mode: adds stages the version lacks; never removes one. */
+  addStages(id: string, stages: readonly MirrorStage[]): Promise<void>;
+  /**
+   * Import mode: whether the present version is settled here, taken over by an earlier import
+   * or made on this installation. Its local stages and annotations are this installation's.
+   */
+  settled(id: string): Promise<boolean>;
+  /**
+   * Local copy of a source ID: `deleted` means removed here, never to be imported again. An ID
+   * held by another repository here is a MirrorFailure `mirror_id_taken`.
+   */
   local(id: string): Promise<'absent' | 'partial' | 'present' | 'deleted'>;
   stages(id: string, stages: readonly MirrorStage[]): Promise<void>;
   asset(asset: MirrorAsset): Promise<void>;
@@ -126,6 +141,10 @@ export interface MirrorState {
   readonly errorAt: string | null;
   readonly copiedArtifacts: number;
   readonly copiedBytes: string;
+  /** `action|artifact|detail` of the feed entry at the cursor; null until it was read once. */
+  readonly anchor: string | null;
+  /** When the repository was detached from its mirror; a detached mirror is never followed. */
+  readonly detachedAt: string | null;
 }
 export interface MirrorStateStore {
   load(repository: string): Promise<MirrorState | null>;
@@ -139,7 +158,10 @@ export class MirrorFailure extends Error {
       | 'mirror_mismatch'
       | 'mirror_source_changed'
       | 'mirror_upload_cancelled'
-      | 'mirror_delete_blocked',
+      | 'mirror_delete_blocked'
+      | 'mirror_detached'
+      | 'mirror_package_conflict'
+      | 'mirror_id_taken',
     message: string,
   ) {
     super(message);

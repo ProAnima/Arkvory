@@ -130,14 +130,17 @@ Ouvrez l’aide du badge ([[ui:mirrorHelpLabel]]) pour voir la source, l’heure
 
 ### Codes d’erreur {#error-codes}
 
-| `errorCode`             | Signification et marche à suivre                                                                                                                                                                                            |
-| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `mirror_mismatch`       | Le même ID d’artefact a un contenu différent sur la source. Le miroir conserve son fichier. Enquêtez sur l’artefact ; ne supprimez aucune des deux copies avant d’en connaître la cause                                     |
-| `mirror_source_changed` | Le dépôt contient déjà une copie d’une autre source. Détachez-le, ou mettez en miroir la nouvelle source dans un nouveau dépôt                                                                                              |
-| `mirror_source_behind`  | La source a été restaurée ou réinstallée, et son flux est en retard par rapport au miroir. Le miroir le relit, et le code disparaît lorsqu’il est à jour. Les fichiers absents de la source restaurée restent sur le miroir |
-| `mirror_delete_blocked` | La source a supprimé un fichier que le miroir ne peut pas supprimer, car quelque chose ici l’utilise encore, comme une référence ou un historique de chemin de fichier                                                      |
-| `mirror_failed`         | Un échec sans code plus précis. Lisez le journal du worker                                                                                                                                                                  |
-| autres codes            | Le code de la requête échouée, par exemple `unauthorized` lorsque la clé a été révoquée ou `capacity_exceeded` lorsque le miroir est plein                                                                                  |
+| `errorCode`               | Signification et marche à suivre                                                                                                                                                                                                                             |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `mirror_mismatch`         | Le même ID d’artefact a un contenu différent sur la source. Le miroir conserve son fichier. Enquêtez sur l’artefact ; ne supprimez aucune des deux copies avant d’en connaître la cause                                                                      |
+| `mirror_source_changed`   | Le dépôt contient déjà une copie d’une autre source. Détachez-le, ou mettez en miroir la nouvelle source dans un nouveau dépôt                                                                                                                               |
+| `mirror_source_behind`    | La source a été restaurée ou réinstallée : le changement à la position du miroir n’est pas celui qu’il y a appliqué. Le miroir relit la source, et le code disparaît lorsqu’il est à jour. Les fichiers absents de la source restaurée restent sur le miroir |
+| `mirror_delete_blocked`   | La source a supprimé un fichier que le miroir ne peut pas supprimer, car quelque chose ici l’utilise encore, comme une référence ou un historique de chemin de fichier                                                                                       |
+| `mirror_detached`         | Le dépôt a été détaché et a ses propres changements. Il n’est plus jamais synchronisé. Mettez la source en miroir dans un nouveau dépôt                                                                                                                      |
+| `mirror_package_conflict` | Une version de la source a une version de paquet (groupe, nom et version) que ce dépôt détient avec d’autres octets. Rien n’est modifié. Retirez l’étape ou la version sur la source, ou publiez-la sous une autre version                                   |
+| `mirror_id_taken`         | Un artefact de la source est détenu par un autre dépôt de cette installation. Un dépôt source ne peut remplir qu’un seul dépôt ici                                                                                                                           |
+| `mirror_failed`           | Un échec sans code plus précis. Lisez le journal du worker                                                                                                                                                                                                   |
+| autres codes              | Le code de la requête échouée, par exemple `unauthorized` lorsque la clé a été révoquée ou `capacity_exceeded` lorsque le miroir est plein                                                                                                                   |
 
 Le journal du worker (`component` vaut `mirror`) contient `mirror.started`, `mirror.step_failed` avec `errorCode` et `attempts`, `mirror.recovered` et `mirror.stopped`.
 
@@ -163,10 +166,11 @@ sudo arkvory configure --root /opt/proanima-arkvory \
 
 - Vous listez 1 à 16 noms d’étapes différents, séparés par des virgules.
 - Une version est copiée une seule fois, avec le même ID, les mêmes octets, les mêmes étiquettes et le même enregistrement UPack, et avec les étapes correspondantes.
-- Ensuite, elle appartient à cette installation. Les modifications, le retrait d’étape et la suppression sur la source ne l’atteignent pas. Une version que vous supprimez ici n’est jamais réimportée.
+- Ensuite, elle appartient à cette installation. Les modifications, le retrait d’étape et la suppression sur la source ne l’atteignent pas. Une version que vous supprimez ici n’est jamais réimportée. Une étape que vous retirez ici reste retirée. Lorsque la source attribue plus tard à la version une autre étape configurée, seule cette étape est ajoutée.
 - Les téléversements et la politique de stockage du dépôt fonctionnent normalement.
 - Les données de registre d’images de conteneurs, Git LFS et npm ne sont pas transférées.
-- Un changement d’étapes démarre un nouveau remplissage initial. Il ne fait qu’ajouter et ignore ce qui est déjà présent.
+- Un changement d’étapes démarre un nouveau remplissage initial. Il n’apporte que les versions qui ne sont pas encore ici et laisse telles quelles celles qui y sont.
+- Une version de la source dont ce dépôt détient déjà la version de paquet avec d’autres octets arrête l’import avec `mirror_package_conflict`. Les clients continuent de recevoir la version qui est ici.
 
 Deux installations peuvent importer l’une depuis l’autre. Par exemple, la production reprend `release` depuis la préproduction, et la préproduction reprend `hotfix` depuis la production. Une version garde son ID des deux côtés, donc rien n’est copié deux fois ni ne tourne en boucle :
 
@@ -174,7 +178,7 @@ Deux installations peuvent importer l’une depuis l’autre. Par exemple, la pr
 - Une version supprimée d’un côté n’est jamais réimportée depuis l’autre, même si l’autre côté lui attribue une étape plus tard.
 - Une suppression n’est jamais transmise : l’autre côté garde sa copie jusqu’à ce que vous la supprimiez là aussi.
 
-Utilisez des étapes différentes pour les deux sens. Avec la même étape dans les deux sens, son retrait d’un côté peut être annulé par l’import depuis l’autre côté.
+Utilisez des étapes différentes pour les deux sens. Avec la même étape dans les deux sens, une étape que vous retirez d’un côté revient lorsque l’autre côté attribue de nouveau cette étape à la version.
 
 La console affiche le badge [[ui:mirrorImport]], ou [[ui:mirrorImportFailing]] lorsque la dernière tentative a échoué. La clé sur la source a besoin des mêmes autorisations en lecture seule que pour un miroir.
 
@@ -212,7 +216,7 @@ Ce que voient les clients :
 - Après le détachement, les écritures fonctionnent. Le badge disparaît.
 - Les clés et les mots de passe de la source ne fonctionnent pas sur le miroir, sauf si vous y avez créé les mêmes comptes.
 
-Il n’y a pas de retour en arrière. Ne rattachez pas un dépôt détaché comme miroir. Pour faire revenir l’ancienne source, videz-la ou réinstallez-la et attachez les dépôts du nouveau primaire comme miroirs. N’exécutez jamais l’ancienne source et le nouveau primaire côte à côte avec les écritures activées.
+Il n’y a pas de retour en arrière. Un dépôt détaché ne peut pas être rattaché comme miroir : sa synchronisation s’arrête avec `mirror_detached`. Pour faire revenir l’ancienne source, videz-la ou réinstallez-la et attachez les dépôts du nouveau primaire comme miroirs. N’exécutez jamais l’ancienne source et le nouveau primaire côte à côte avec les écritures activées.
 
 ### Répéter l’exercice {#failover-rehearse}
 
@@ -224,6 +228,8 @@ Répétez la bascule chaque trimestre et après les mises à jour. Détachez un 
 - Le miroir n’est pas une sauvegarde. Il n’a pas de copie des comptes, des clés ou des autorisations, et il ne copie pas les références, les pièces jointes, les pistes d’audit ni les politiques de stockage.
 - Le mode import ne copie pas les images de conteneurs, Git LFS ni les données npm.
 - Une synchronisation ne fait qu’ajouter et mettre à jour. Après une restauration de la source, les fichiers que la source a perdus restent sur le miroir.
+- Un dépôt source remplit un seul dépôt d’une installation : les ID d’artefact sont les mêmes des deux côtés, donc un second miroir ou import de ce dépôt est refusé lors de sa configuration.
+- Après une restauration de l’installation miroir depuis une sauvegarde, les versions importées puis supprimées après la prise de la sauvegarde peuvent être importées de nouveau.
 - Les deux installations sont mises à jour séparément. La source doit offrir le flux de changements des miroirs.
 - L’ensemble des autorités de confiance de la source s’applique à tout le worker.
 - Il n’y a pas de basculement automatique, pas de fencing de l’ancienne source ni de synchronisation inverse.

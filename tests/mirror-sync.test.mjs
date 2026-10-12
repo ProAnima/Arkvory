@@ -12,6 +12,22 @@ const descriptor = (size = 1) => ({
 });
 
 /** A source with artifacts, packages, paths and a feed; every read is logged in order. */
+/**
+ * The feed as a real source keeps it: its head is the sequence of an entry. A test's head without
+ * an entry of its own gets one that synchronization ignores (an owner reference).
+ */
+const heads = new WeakMap();
+const feedOf = (owner, feed, head) => {
+  // A real feed only grows: every head a test has shown stays an entry of it.
+  const seen = heads.get(owner) ?? new Set();
+  heads.set(owner, seen);
+  if (head !== '0') seen.add(head);
+  const missing = [...seen]
+    .filter((sequence) => !feed.some((item) => item.sequence === sequence))
+    .map((sequence) => ({ sequence, action: 'reference.add', artifactId: 'noise', detail: null }));
+  return [...feed, ...missing].sort((a, b) => (BigInt(a.sequence) < BigInt(b.sequence) ? -1 : 1));
+};
+
 function source(initial = {}) {
   const s = {
     log: [],
@@ -32,7 +48,9 @@ function source(initial = {}) {
   s.port = {
     changes: async (after) => {
       s.log.push(`changes ${after}`);
-      const items = s.feed.filter((item) => BigInt(item.sequence) > BigInt(after));
+      const items = feedOf(s, s.feed, s.head).filter(
+        (item) => BigInt(item.sequence) > BigInt(after),
+      );
       return { items, head: s.head, next: null };
     },
     artifacts: async (after) => page([...s.artifacts.values()], after),
@@ -220,12 +238,43 @@ test('another stage list of the same source seeds again and keeps the copy count
   assert.ok(t.log.includes('copy a'), 'the new seed re-read the source');
 });
 
+/** The source is restored from a backup: entries after `head` are gone, numbers repeat. */
+function restore(s, head, feed = []) {
+  heads.delete(s);
+  s.feed = feed;
+  s.head = head;
+}
+
+test('a restored source whose new entries passed the cursor is recognised by the entry at the cursor', async () => {
+  const st = states();
+  const s = source({ artifacts: ['a'], head: '9' });
+  await settle(mirror(s, target(), st));
+  assert.equal(st.rows.get('releases').anchor, 'reference.add|noise|');
+  // Restored to sequence 4, then busy: its new entries took 5 to 12 before the mirror looked.
+  s.artifacts.set('late', {
+    id: 'late',
+    descriptor: { name: 'f', size: 1, sha256: 'b'.repeat(64) },
+  });
+  restore(s, '12', [
+    { sequence: '9', action: 'artifact.publish', artifactId: 'late', detail: null },
+    { sequence: '12', action: 'annotations.replace', artifactId: 'late', detail: null },
+  ]);
+  const t = target();
+  const sync = mirror(s, t, st);
+  assert.equal(await sync.step(never), 'progress');
+  assert.equal(st.rows.get('releases').phase, 'seeding', 'the head alone would not have told');
+  assert.equal(st.rows.get('releases').errorCode, 'mirror_source_behind');
+  await settle(sync);
+  assert.ok(t.log.includes('copy late'), 'the entry under the old cursor is not lost');
+  assert.equal(st.rows.get('releases').cursor, '12');
+});
+
 test('a source restored behind the cursor is seeded again, and the status says why', async () => {
   const st = states();
   const s = source({ artifacts: ['a'], head: '9' });
   await settle(mirror(s, target(), st));
   assert.equal(st.rows.get('releases').cursor, '9');
-  s.head = '4';
+  restore(s, '4');
   const sync = mirror(s, target(), st);
   assert.equal(await sync.step(never), 'progress');
   const reseeded = st.rows.get('releases');

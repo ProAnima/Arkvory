@@ -1,5 +1,13 @@
 import type { MirrorState } from './mirror-ports.js';
-import { recordFailure, reseedBehind, stateFor, stopped } from './mirror-sync.js';
+import {
+  changesAfter,
+  feedAnchor,
+  recordFailure,
+  reseed,
+  seedProgress,
+  stateFor,
+  stopped,
+} from './mirror-sync.js';
 import type { MirrorStep, MirrorSyncDependencies } from './mirror-sync.js';
 import type { Cancellation } from './ports.js';
 
@@ -64,6 +72,7 @@ export class StageImport {
       await this.save({
         phase: 'following',
         cursor: state.seedHead,
+        anchor: null,
         seedStep: null,
         seedAfter: null,
         seedHead: null,
@@ -71,47 +80,62 @@ export class StageImport {
       return 'progress';
     }
     const page = await this.d.upstream.staged(stage, after === '' ? null : after, cancellation);
-    for (const id of page.items) await this.take(id, cancellation);
+    for (const id of page.items) await this.take(id, null, cancellation);
     await this.save({
       seedAfter: page.next === null ? `${String(Number(index) + 1)}|` : `${index}|${page.next}`,
+      ...seedProgress(state),
     });
     return 'progress';
   }
 
   private async follow(state: MirrorState, cancellation: Cancellation): Promise<MirrorStep> {
-    const page = await this.d.upstream.changes(state.cursor, cancellation);
-    const reseeded = await reseedBehind(this.d, state, page.head);
-    if (reseeded) {
-      this.state = reseeded;
+    const read = await changesAfter(this.d.upstream, state, cancellation);
+    if (!read) {
+      this.state = await reseed(this.d, state);
       return 'progress';
     }
-    await this.save({ head: page.head, checkedAt: this.d.now() });
-    for (const change of page.items) {
-      const wanted =
-        change.action === 'stage.add' &&
-        change.detail !== null &&
-        this.d.stages.includes(change.detail);
-      if (wanted) await this.take(change.artifactId, cancellation);
-      await this.save({ cursor: change.sequence });
+    const { page, items, anchor } = read;
+    await this.save({ head: page.head, checkedAt: this.d.now(), anchor });
+    for (const change of items) {
+      const stage = change.action === 'stage.add' ? change.detail : null;
+      if (stage !== null && this.d.stages.includes(stage))
+        await this.take(change.artifactId, stage, cancellation);
+      await this.save({ cursor: change.sequence, anchor: feedAnchor(change) });
     }
     if (page.next !== null) return 'progress';
     await this.save({ syncedAt: this.d.now(), errorCode: null, errorAt: null });
-    return page.items.length > 0 ? 'progress' : 'idle';
+    return items.length > 0 ? 'progress' : 'idle';
   }
 
   /**
-   * Takes one version over; a copy deleted here stays deleted. A version already here is only
-   * completed (adopt is repeatable), so a crash between the bytes and the stages heals itself.
+   * Takes one version over; a copy deleted here stays deleted. A version settled here (taken over
+   * before, or made here and back from the other side of a two-way import) keeps its own stages
+   * and annotations: a seed passes it, and a promotion on the source adds only the stage it names
+   * (`promoted`). A copy whose completion a crash interrupted is completed (adopt is repeatable).
    */
-  private async take(id: string, cancellation: Cancellation): Promise<void> {
+  private async take(
+    id: string,
+    promoted: string | null,
+    cancellation: Cancellation,
+  ): Promise<void> {
     const { upstream, target } = this.d;
     const local = await target.local(id);
     if (local === 'deleted') return;
+    const settled = local === 'present' && (await target.settled(id));
+    if (settled && promoted === null) return;
     const artifact = await upstream.artifact(id, cancellation);
     if (!artifact) return;
     const stages = (await upstream.stages(id, cancellation)).filter((entry) =>
       this.d.stages.includes(entry.stage),
     );
+    if (settled) {
+      // Only a stage the source still carries: removed again before this ran, it was withdrawn.
+      await target.addStages(
+        id,
+        stages.filter((entry) => entry.stage === promoted),
+      );
+      return;
+    }
     // The stage was removed before this import ran: the version was not promoted after all.
     if (stages.length === 0) return;
     const copied = local === 'present' ? 0 : await target.copy(artifact, upstream, cancellation);

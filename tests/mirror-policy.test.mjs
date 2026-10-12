@@ -36,6 +36,19 @@ test('mirror settings accept an HTTPS origin and refuse anything that would leak
   ])
     assert.throws(() => parseMirrorSettings({ mirrors: [entry(change)] }), new RegExp(field));
   assert.throws(() => parseMirrorSettings({ mirrors: [entry(), entry()] }), /duplicate repository/);
+  // One source repository fills one repository: IDs are global, a second copy would skip them.
+  assert.throws(
+    () =>
+      parseMirrorSettings({
+        mirrors: [entry(), entry({ repository: 'prod', stages: ['release'] })],
+      }),
+    /source repository taken twice/,
+  );
+  assert.equal(
+    parseMirrorSettings({ mirrors: [entry(), entry({ repository: 'b', sourceRepository: 'b' })] })
+      .length,
+    2,
+  );
   assert.throws(() => parseMirrorSettings({ mirrors: [], extra: true }), /unknown field/);
   assert.deepEqual(parseMirrorSettings({ mirrors: [] }), []);
   // Import mode: stages are product stage names, distinct, 1 to 16.

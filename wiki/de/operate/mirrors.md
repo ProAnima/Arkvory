@@ -130,14 +130,17 @@ Verbinden Sie die Konsole der Spiegel-Installation mit dem gespiegelten Reposito
 
 ### Fehlercodes {#error-codes}
 
-| `errorCode`             | Bedeutung und was zu tun ist                                                                                                                                                                                                                                |
-| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `mirror_mismatch`       | Dieselbe Artefakt-ID hat auf der Quelle anderen Inhalt. Der Spiegel behält seine Datei. Untersuchen Sie das Artefakt; löschen Sie keine der beiden Kopien, bevor Sie die Ursache kennen                                                                     |
-| `mirror_source_changed` | Das Repository enthält bereits eine Kopie einer anderen Quelle. Trennen Sie es, oder spiegeln Sie die neue Quelle in ein neues Repository                                                                                                                   |
-| `mirror_source_behind`  | Die Quelle wurde wiederhergestellt oder neu installiert, und ihr Feed liegt hinter dem Spiegel. Der Spiegel liest ihn erneut, und der Code verschwindet, wenn er aufgeholt hat. Dateien, die der wiederhergestellten Quelle fehlen, bleiben auf dem Spiegel |
-| `mirror_delete_blocked` | Die Quelle hat eine Datei gelöscht, die der Spiegel nicht löschen kann, weil hier noch etwas sie verwendet, etwa eine Referenz oder ein Dateipfadverlauf                                                                                                    |
-| `mirror_failed`         | Ein Fehler ohne spezifischeren Code. Lesen Sie das Worker-Log                                                                                                                                                                                               |
-| andere Codes            | Der Code der fehlgeschlagenen Anfrage, zum Beispiel `unauthorized`, wenn der Schlüssel widerrufen wurde, oder `capacity_exceeded`, wenn der Spiegel voll ist                                                                                                |
+| `errorCode`               | Bedeutung und was zu tun ist                                                                                                                                                                                                                                                                                     |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `mirror_mismatch`         | Dieselbe Artefakt-ID hat auf der Quelle anderen Inhalt. Der Spiegel behält seine Datei. Untersuchen Sie das Artefakt; löschen Sie keine der beiden Kopien, bevor Sie die Ursache kennen                                                                                                                          |
+| `mirror_source_changed`   | Das Repository enthält bereits eine Kopie einer anderen Quelle. Trennen Sie es, oder spiegeln Sie die neue Quelle in ein neues Repository                                                                                                                                                                        |
+| `mirror_source_behind`    | Die Quelle wurde wiederhergestellt oder neu installiert: Die Änderung an der Position des Spiegels ist nicht die, die er dort angewendet hat. Der Spiegel liest die Quelle erneut, und der Code verschwindet, wenn er aufgeholt hat. Dateien, die der wiederhergestellten Quelle fehlen, bleiben auf dem Spiegel |
+| `mirror_delete_blocked`   | Die Quelle hat eine Datei gelöscht, die der Spiegel nicht löschen kann, weil hier noch etwas sie verwendet, etwa eine Referenz oder ein Dateipfadverlauf                                                                                                                                                         |
+| `mirror_detached`         | Das Repository wurde getrennt und hat eigene Änderungen. Es wird nie wieder synchronisiert. Spiegeln Sie die Quelle in ein neues Repository                                                                                                                                                                      |
+| `mirror_package_conflict` | Eine Version der Quelle hat eine Paketversion (Gruppe, Name und Version), die dieses Repository mit anderen Bytes hält. Es wird nichts geändert. Entfernen Sie die Stufe oder die Version auf der Quelle, oder veröffentlichen Sie sie unter einer anderen Version                                               |
+| `mirror_id_taken`         | Ein Artefakt der Quelle wird von einem anderen Repository dieser Installation gehalten. Ein Quell-Repository kann hier nur ein Repository füllen                                                                                                                                                                 |
+| `mirror_failed`           | Ein Fehler ohne spezifischeren Code. Lesen Sie das Worker-Log                                                                                                                                                                                                                                                    |
+| andere Codes              | Der Code der fehlgeschlagenen Anfrage, zum Beispiel `unauthorized`, wenn der Schlüssel widerrufen wurde, oder `capacity_exceeded`, wenn der Spiegel voll ist                                                                                                                                                     |
 
 Das Worker-Log (`component` ist `mirror`) enthält `mirror.started`, `mirror.step_failed` mit `errorCode` und `attempts`, `mirror.recovered` und `mirror.stopped`.
 
@@ -163,10 +166,11 @@ sudo arkvory configure --root /opt/proanima-arkvory \
 
 - Sie listen 1 bis 16 verschiedene Stufennamen auf, durch Kommas getrennt.
 - Eine Version wird einmal kopiert, mit derselben ID, denselben Bytes, Labels und derselben UPack-Registrierung sowie mit den passenden Stufen.
-- Danach gehört sie dieser Installation. Änderungen, Stufenentfernung und Löschung auf der Quelle erreichen sie nicht. Eine Version, die Sie hier löschen, wird nie wieder importiert.
+- Danach gehört sie dieser Installation. Änderungen, Stufenentfernung und Löschung auf der Quelle erreichen sie nicht. Eine Version, die Sie hier löschen, wird nie wieder importiert. Eine Stufe, die Sie hier entfernen, bleibt entfernt. Wenn die Quelle der Version später eine andere konfigurierte Stufe gibt, wird nur diese Stufe hinzugefügt.
 - Uploads und die Speicherrichtlinie des Repositorys funktionieren wie gewohnt.
 - Container-Image-, Git-LFS- und npm-Registry-Daten werden nicht übernommen.
-- Eine Änderung der Stufen startet eine neue Erstbefüllung. Sie fügt nur hinzu und überspringt, was bereits vorhanden ist.
+- Eine Änderung der Stufen startet eine neue Erstbefüllung. Sie bringt nur Versionen, die noch nicht hier sind, und lässt die vorhandenen unverändert.
+- Eine Version der Quelle, deren Paketversion dieses Repository bereits mit anderen Bytes hält, stoppt den Import mit `mirror_package_conflict`. Clients erhalten weiterhin die Version, die hier ist.
 
 Zwei Installationen können voneinander importieren. Zum Beispiel übernimmt die Produktion `release` vom Staging, und das Staging übernimmt `hotfix` von der Produktion. Eine Version behält auf beiden Seiten ihre ID, daher wird nichts doppelt kopiert oder im Kreis geschickt:
 
@@ -174,7 +178,7 @@ Zwei Installationen können voneinander importieren. Zum Beispiel übernimmt die
 - Eine auf einer Seite gelöschte Version wird nie wieder von der anderen importiert, auch wenn die andere Seite ihr später eine Stufe gibt.
 - Eine Löschung wird nie weitergegeben: Die andere Seite behält ihre Kopie, bis Sie sie auch dort löschen.
 
-Verwenden Sie für die beiden Richtungen unterschiedliche Stufen. Mit derselben Stufe in beiden Richtungen kann das Entfernen auf einer Seite durch den Import von der anderen Seite rückgängig gemacht werden.
+Verwenden Sie für die beiden Richtungen unterschiedliche Stufen. Mit derselben Stufe in beiden Richtungen kehrt eine Stufe, die Sie auf einer Seite entfernen, zurück, wenn die andere Seite der Version die Stufe erneut gibt.
 
 Die Konsole zeigt das Badge [[ui:mirrorImport]] oder [[ui:mirrorImportFailing]], wenn der letzte Versuch fehlgeschlagen ist. Der Schlüssel auf der Quelle braucht dieselben schreibgeschützten Berechtigungen wie für einen Spiegel.
 
@@ -212,7 +216,7 @@ Was Clients sehen:
 - Nach dem Trennen funktionieren Schreibzugriffe. Das Badge verschwindet.
 - Die Schlüssel und Passwörter der Quelle funktionieren auf dem Spiegel nicht, es sei denn, Sie haben dort dieselben Konten erstellt.
 
-Es gibt keinen Weg zurück. Hängen Sie ein getrenntes Repository nicht wieder als Spiegel an. Um die alte Quelle zurückzubringen, leeren Sie sie, oder installieren Sie sie neu und hängen Sie die Repositorys des neuen Primärsystems als Spiegel an. Betreiben Sie die alte Quelle und das neue Primärsystem niemals gleichzeitig mit aktivierten Schreibzugriffen.
+Es gibt keinen Weg zurück. Ein getrenntes Repository kann nicht wieder als Spiegel angehängt werden: Seine Synchronisierung stoppt mit `mirror_detached`. Um die alte Quelle zurückzubringen, leeren Sie sie, oder installieren Sie sie neu und hängen Sie die Repositorys des neuen Primärsystems als Spiegel an. Betreiben Sie die alte Quelle und das neue Primärsystem niemals gleichzeitig mit aktivierten Schreibzugriffen.
 
 ### Üben {#failover-rehearse}
 
@@ -224,6 +228,8 @@ Es gibt keinen Weg zurück. Hängen Sie ein getrenntes Repository nicht wieder a
 - Der Spiegel ist kein Backup. Er hat keine Kopie von Konten, Schlüsseln oder Berechtigungen und kopiert keine Referenzen, Anhänge, Audit-Trails oder Speicherrichtlinien.
 - Der Importmodus kopiert keine Container-Images, Git-LFS- oder npm-Daten.
 - Eine Synchronisierung fügt nur hinzu und aktualisiert. Nach einer Wiederherstellung der Quelle bleiben Dateien, die die Quelle verloren hat, auf dem Spiegel.
+- Ein Quell-Repository füllt ein Repository einer Installation: Die Artefakt-IDs sind auf beiden Seiten gleich, daher wird ein zweiter Spiegel oder Import davon bei der Konfiguration abgelehnt.
+- Nach einer Wiederherstellung der Spiegel-Installation aus einem Backup können Versionen, die nach dem Erstellen des Backups importiert und gelöscht wurden, erneut importiert werden.
 - Beide Installationen werden eigenständig aktualisiert. Die Quelle muss den Change-Feed für Spiegel anbieten.
 - Der Satz vertrauenswürdiger Zertifizierungsstellen der Quelle gilt für den ganzen Worker.
 - Es gibt kein automatisches Failover, kein Fencing der alten Quelle und keine Rücksynchronisierung.

@@ -135,7 +135,7 @@ groups:
           severity: warning
         annotations:
           summary: Synchronization of mirror {{ $labels.repository }} keeps failing
-          description: mirror_mismatch - keep the copy and investigate the artifact; mirror_source_changed - detach before changing the source; otherwise the source, its key or the local disk.
+          description: Read errorCode in GET /api/v1/repositories/{repository}/mirror. mirror_mismatch - keep the copy and investigate the artifact; mirror_source_changed - detach before changing the source; mirror_detached - mirror into a new repository; mirror_package_conflict - remove the stage or the version on the source; mirror_id_taken - one source repository fills one repository here; mirror_delete_blocked or integrity_mismatch - investigate that artifact, nothing after it is applied meanwhile; otherwise the source, its key or the local disk.
 
       - alert: ArkvoryRestartLoop
         # A new start time means a new process: repeated ownership loss, startup.failed or process.stalled.

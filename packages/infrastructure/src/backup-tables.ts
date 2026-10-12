@@ -13,7 +13,7 @@ export interface BackupTable {
 export const MINIMUM_RESTORE_SCHEMA = 25;
 
 /**
- * Every Arkvory table of schema 36 is either exported here, in foreign-key-safe load order, or
+ * Every Arkvory table of schema 37 is either exported here, in foreign-key-safe load order, or
  * excluded below with a reason. A migration that adds a table must extend one of the lists;
  * capture refuses an unlisted table and tests compare both lists with a migrated database.
  */
@@ -52,6 +52,8 @@ export const exportedTables: readonly BackupTable[] = [
   { name: 'arkvory_security_audit', key: ['id'] },
   // The feed cursor belongs to the mirrored data: restored together, the mirror continues.
   { name: 'arkvory_mirror_state', key: ['repository'] },
+  // Versions an import took over: with the catalog, so a restored import does not repeat them.
+  { name: 'arkvory_mirror_adoptions', key: ['repository', 'artifact_id'] },
   // The container registry rows name artifacts restored above (ADR 0063).
   { name: 'arkvory_oci_blobs', key: ['repository', 'digest'] },
   { name: 'arkvory_oci_manifests', key: ['repository', 'image', 'digest'] },

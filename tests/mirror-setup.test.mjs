@@ -178,6 +178,17 @@ test('inputs are refused before any request: origin, repository, key file and so
     ),
     /another source; detach it first/,
   );
+  // The same source repository into a second repository: its versions would all be skipped.
+  await assert.rejects(
+    configureMirror(
+      root,
+      state,
+      { ...attach(tokenFile), repository: 'prod', sourceRepository: 'releases' },
+      services(),
+      never,
+    ),
+    /releases already takes releases from this source/,
+  );
 });
 
 test('the probe asks the source for the mirror feed with the key and never echoes the key', async (t) => {

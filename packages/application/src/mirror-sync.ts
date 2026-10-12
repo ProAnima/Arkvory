@@ -4,6 +4,7 @@ import { MirrorFailure } from './mirror-ports.js';
 import { applyRegistryChange, isRegistryChange } from './mirror-registry.js';
 import type {
   MirrorArtifact,
+  MirrorFeedPage,
   MirrorSource,
   MirrorState,
   MirrorStateStore,
@@ -41,15 +42,22 @@ export function sourceOrigin(source: string): string {
 
 /**
  * The stored state for this source. Another source string starts a new seed, which re-reads the
- * source and skips what is here (the copy counters carry over). A mirror refuses another
- * upstream or source repository (`anyOrigin` false): it already holds a copy of the other one.
+ * source and skips what is here (the copy counters and the last synchronization carry over). A
+ * mirror refuses another upstream or source repository (`anyOrigin` false): it already holds a
+ * copy of the other one. A mirror detached since holds changes of its own and is never followed
+ * again; an import, which only adds, starts over.
  */
 export async function stateFor(
   d: Pick<MirrorSyncDependencies, 'repository' | 'source' | 'states'>,
   loaded: MirrorState | null,
   anyOrigin: boolean,
 ): Promise<MirrorState> {
-  if (loaded?.source === d.source) return loaded;
+  if (loaded?.detachedAt != null && !anyOrigin)
+    throw new MirrorFailure(
+      'mirror_detached',
+      'This repository was detached from its mirror and holds changes of its own; mirror the source into a new repository',
+    );
+  if (loaded?.source === d.source && loaded.detachedAt === null) return loaded;
   if (loaded && !anyOrigin && sourceOrigin(loaded.source) !== sourceOrigin(d.source))
     throw new MirrorFailure(
       'mirror_source_changed',
@@ -57,7 +65,13 @@ export async function stateFor(
     );
   const fresh = {
     ...initialMirrorState(d.repository, d.source),
-    ...(loaded ? { copiedArtifacts: loaded.copiedArtifacts, copiedBytes: loaded.copiedBytes } : {}),
+    ...(loaded
+      ? {
+          copiedArtifacts: loaded.copiedArtifacts,
+          copiedBytes: loaded.copiedBytes,
+          syncedAt: loaded.syncedAt,
+        }
+      : {}),
   };
   await d.states.save(fresh);
   return fresh;
@@ -79,27 +93,64 @@ export async function recordFailure(
   return failed;
 }
 
+/** What names a feed entry besides its sequence, which a restored source hands out again. */
+export const feedAnchor = (entry: CatalogFeedEntry) =>
+  `${entry.action}|${entry.artifactId}|${entry.detail ?? ''}`;
+
 /**
- * A source whose feed head is below the applied cursor was restored or reinstalled: its newer
- * events would reuse sequences the mirror has passed. Seed again (the seed re-reads the source
- * and never deletes here) and say why in the status until the mirror has caught up.
+ * The feed after the cursor, read from the entry at the cursor itself (ADR 0058, 2026-10-12). A
+ * source restored from a backup, or replaced by another installation, hands out sequence numbers
+ * the mirror has passed; a check of the head alone misses that once new entries passed the
+ * cursor. The entry at the cursor tells whether this is still the history the mirror follows:
+ * null when it is not, and the caller seeds again.
  */
-export async function reseedBehind(
+export async function changesAfter(
+  upstream: MirrorSource,
+  state: MirrorState,
+  cancellation: Cancellation,
+): Promise<{
+  readonly page: MirrorFeedPage;
+  readonly items: readonly CatalogFeedEntry[];
+  readonly anchor: string | null;
+} | null> {
+  if (state.cursor === '0') {
+    const page = await upstream.changes('0', cancellation);
+    return { page, items: page.items, anchor: null };
+  }
+  const page = await upstream.changes((BigInt(state.cursor) - 1n).toString(), cancellation);
+  const [first, ...items] = page.items;
+  if (first?.sequence !== state.cursor) return null;
+  const anchor = feedAnchor(first);
+  if (state.anchor !== null && state.anchor !== anchor) return null;
+  return { page, items, anchor };
+}
+
+/**
+ * The source was restored or replaced: seed again (the seed re-reads the source and never deletes
+ * here) and say why in the status until the mirror has caught up.
+ */
+export async function reseed(
   d: Pick<MirrorSyncDependencies, 'repository' | 'source' | 'states' | 'now'>,
   state: MirrorState,
-  head: string,
-): Promise<MirrorState | null> {
-  if (BigInt(head) >= BigInt(state.cursor)) return null;
+): Promise<MirrorState> {
   const reseeded = {
     ...initialMirrorState(d.repository, d.source),
     copiedArtifacts: state.copiedArtifacts,
     copiedBytes: state.copiedBytes,
+    syncedAt: state.syncedAt,
     errorCode: 'mirror_source_behind',
     errorAt: d.now(),
   };
   await d.states.save(reseeded);
   return reseeded;
 }
+
+/**
+ * A seed step that succeeded clears an earlier failure; `mirror_source_behind` stays until the
+ * mirror has caught up, because it says why the seed runs.
+ */
+export const seedProgress = (state: MirrorState): Partial<MirrorState> =>
+  state.errorCode === 'mirror_source_behind' ? {} : { errorCode: null, errorAt: null };
 
 /** Machine code of a failed step: the failure's own code, else a constant. */
 export function mirrorErrorCode(error: unknown): string {
@@ -153,7 +204,13 @@ export class MirrorSync {
     if (state.seedHead === null) {
       // The head first: changes after it are replayed, so none during the seed is lost.
       const { head } = await upstream.changes('0', cancellation);
-      await this.save({ seedHead: head, seedStep: 'artifacts', seedAfter: null, head });
+      await this.save({
+        seedHead: head,
+        seedStep: 'artifacts',
+        seedAfter: null,
+        head,
+        ...seedProgress(state),
+      });
       return 'progress';
     }
     if (state.seedStep === 'artifacts') {
@@ -168,31 +225,43 @@ export class MirrorSync {
     } else {
       const page = await upstream.assets(state.seedAfter, cancellation);
       for (const asset of page.items) await this.syncAsset(asset.path, cancellation);
-      if (page.next !== null) await this.save({ seedAfter: page.next });
-      else await this.save({ phase: 'following', cursor: '0', seedStep: null, seedAfter: null });
+      if (page.next !== null) await this.save({ seedAfter: page.next, ...seedProgress(state) });
+      else
+        await this.save({
+          phase: 'following',
+          cursor: '0',
+          anchor: null,
+          seedStep: null,
+          seedAfter: null,
+          ...seedProgress(state),
+        });
     }
     return 'progress';
   }
 
   private async advance(next: string | null, following: 'packages' | 'assets') {
-    await this.save(next === null ? { seedStep: following, seedAfter: null } : { seedAfter: next });
+    const progress = seedProgress(await this.current());
+    await this.save(
+      next === null
+        ? { seedStep: following, seedAfter: null, ...progress }
+        : { seedAfter: next, ...progress },
+    );
   }
 
   private async follow(state: MirrorState, cancellation: Cancellation): Promise<MirrorStep> {
-    const page = await this.d.upstream.changes(state.cursor, cancellation);
-    const reseeded = await reseedBehind(this.d, state, page.head);
-    if (reseeded) {
-      this.state = reseeded;
+    const read = await changesAfter(this.d.upstream, state, cancellation);
+    if (!read) {
+      this.state = await reseed(this.d, state);
       return 'progress';
     }
-    await this.save({ head: page.head, checkedAt: this.d.now() });
-    for (const change of page.items) {
+    const { page, items, anchor } = read;
+    await this.save({ head: page.head, checkedAt: this.d.now(), anchor });
+    for (const change of items) {
       const replay = state.seedHead !== null && BigInt(change.sequence) <= BigInt(state.seedHead);
       if (!replay || isRegistryChange(change.action)) await this.apply(change, cancellation);
+      const at = { cursor: change.sequence, anchor: feedAnchor(change) };
       await this.save(
-        replay && change.sequence === state.seedHead
-          ? { cursor: change.sequence, seedHead: null }
-          : { cursor: change.sequence },
+        replay && change.sequence === state.seedHead ? { ...at, seedHead: null } : at,
       );
     }
     if (page.next !== null) return 'progress';
@@ -202,12 +271,14 @@ export class MirrorSync {
     const reached = seedHead !== null && BigInt(cursor) < BigInt(seedHead) ? seedHead : cursor;
     await this.save({
       cursor: reached,
+      // An entry not read yet: it is named when the next page starts from it.
+      ...(reached === cursor ? {} : { anchor: null }),
       syncedAt: this.d.now(),
       errorCode: null,
       errorAt: null,
       seedHead: null,
     });
-    return page.items.length > 0 ? 'progress' : 'idle';
+    return items.length > 0 ? 'progress' : 'idle';
   }
 
   private async apply(change: CatalogFeedEntry, cancellation: Cancellation): Promise<void> {
@@ -221,7 +292,9 @@ export class MirrorSync {
     }
     // Publication, annotations, stages, promotion and any newer action: re-read the artifact.
     const present = await this.refresh(change.artifactId, cancellation);
-    if (present && change.action === 'package.register')
+    // A promotion into the source repository copies its package registration without a
+    // package.register entry: register what was received, as the source holds it registered.
+    if (present && (change.action === 'package.register' || change.action === 'artifact.receive'))
       await this.d.target.register(change.artifactId);
   }
 
@@ -279,5 +352,7 @@ export function initialMirrorState(repository: string, source: string): MirrorSt
     errorAt: null,
     copiedArtifacts: 0,
     copiedBytes: '0',
+    anchor: null,
+    detachedAt: null,
   };
 }

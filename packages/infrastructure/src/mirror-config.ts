@@ -101,6 +101,10 @@ export function parseMirrorSettings(value: unknown): readonly MirrorSettings[] {
   const mirrors = entries.map(entry);
   if (new Set(mirrors.map((mirror) => mirror.repository)).size !== mirrors.length)
     fail('duplicate repository');
+  // Artifact IDs are global: the copies of one source repository can live in one repository
+  // here only. A second mirror or import of it would skip every version the first one holds.
+  const sources = mirrors.map((mirror) => `${mirror.upstream}|${mirror.sourceRepository}`);
+  if (new Set(sources).size !== sources.length) fail('source repository taken twice');
   return mirrors;
 }
 

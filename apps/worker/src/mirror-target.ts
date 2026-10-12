@@ -19,6 +19,7 @@ import type {
 } from '@proanima/arkvory-application';
 import { ArkvoryError, descriptorWire } from '@proanima/arkvory-domain';
 import { MirrorRegistryRows } from './mirror-registry-rows.js';
+import { MirrorAdoption, idHolder, idTaken } from './mirror-adoption.js';
 import type { Principal, Upload } from '@proanima/arkvory-domain';
 import {
   PostgresBrowse,
@@ -67,6 +68,11 @@ async function stagePart(
   return { size, sha256: hash.digest('hex') };
 }
 
+/** Part files of copies in progress; only a worker that runs no copy yet may clear them. */
+export async function clearMirrorStaging(dataDirectory: string): Promise<void> {
+  await rm(join(dataDirectory, 'mirror-staging'), { recursive: true, force: true });
+}
+
 /**
  * The local mirrored repository (ADR 0058), changed through the same use cases as a client
  * would, by a service principal that only this worker holds: grants, validation, journal and
@@ -80,6 +86,7 @@ export class ServiceMirrorTarget implements MirrorTarget {
   private readonly staging: string;
   private readonly registry: MirrorRegistryRows;
   private readonly lfs: PostgresLfsIndex;
+  private readonly adoption: MirrorAdoption;
 
   constructor(
     private readonly repository: string,
@@ -112,6 +119,13 @@ export class ServiceMirrorTarget implements MirrorTarget {
     this.staging = join(dataDirectory, 'mirror-staging');
     this.registry = new MirrorRegistryRows(repository, pool, this.principal, storage);
     this.lfs = new PostgresLfsIndex(pool);
+    this.adoption = new MirrorAdoption(
+      repository,
+      pool,
+      this.principal,
+      this.browse,
+      this.promotion,
+    );
   }
 
   /** The copy keeps the source ID: the storage service of one artifact issues exactly it. */
@@ -136,6 +150,12 @@ export class ServiceMirrorTarget implements MirrorTarget {
     const { id, descriptor } = artifact;
     const storage = this.storage(id);
     const found = await this.uploadOf(storage, id);
+    if (!found) {
+      // Not uploaded by this synchronization: never a second row for the same ID.
+      const holder = await idHolder(this.catalog.pool, id);
+      if (holder && holder.repository !== this.repository) throw idTaken(id, holder.repository);
+      if (holder) return null;
+    }
     const upload =
       found ??
       (await storage.create(
@@ -183,6 +203,7 @@ export class ServiceMirrorTarget implements MirrorTarget {
           id,
           this.principal.id,
           this.catalog.capacityBytes,
+          true,
         );
       throw error;
     }
@@ -256,13 +277,13 @@ export class ServiceMirrorTarget implements MirrorTarget {
       await this.browse.annotate(this.principal, this.repository, id, current.revision, value);
   }
 
-  async register(id: string): Promise<void> {
-    await this.browse.register(this.principal, this.repository, id);
+  register(id: string): Promise<void> {
+    return this.adoption.register(id);
   }
 
   async local(id: string): Promise<'absent' | 'partial' | 'present' | 'deleted'> {
     const upload = await this.uploadOf(this.storage(id), id);
-    if (!upload) return this.foreign(id);
+    if (!upload) return this.adoption.foreign(id);
     if (upload.status === 'available') return 'present';
     if (upload.status === 'pending') return 'partial';
     // Cancelled by cleanup before the copy completed is unfinished, not deleted: copy reopens it.
@@ -277,46 +298,20 @@ export class ServiceMirrorTarget implements MirrorTarget {
       : 'deleted';
   }
 
-  /**
-   * An ID this synchronization did not upload. Two installations that import from each other
-   * share IDs: a version made here comes back from the other side under its own ID. Published
-   * here, it is present; anything else (deleted here, an upload of someone else, or the ID of an
-   * artifact in another repository) is never taken over, and never created a second time.
-   */
-  private async foreign(id: string): Promise<'absent' | 'present' | 'deleted'> {
-    const found = await this.catalog.pool.query<{ repository: string; status: string }>(
-      'SELECT repository, status FROM arkvory_uploads WHERE id=$1',
-      [id],
-    );
-    const row = found.rows[0];
-    if (!row) return 'absent';
-    return row.repository === this.repository && row.status === 'available' ? 'present' : 'deleted';
-  }
-
-  async adopt(
+  adopt(
     id: string,
     annotation: MirrorAnnotation | null,
     stages: readonly MirrorStage[],
   ): Promise<void> {
-    if (annotation) {
-      // Revision 0: nobody here has edited the annotations yet, so the source's apply.
-      const current = await this.browse.annotation(this.principal, this.repository, id);
-      if (current.revision === 0)
-        await this.browse.annotate(this.principal, this.repository, id, 0, annotation);
-    }
-    try {
-      await this.browse.register(this.principal, this.repository, id);
-    } catch (error) {
-      // Not a UPack, or this installation has the identity from another artifact already.
-      const skipped =
-        error instanceof ArkvoryError &&
-        (error.code === 'invalid_input' || error.reason === 'version_exists');
-      if (!skipped) throw error;
-    }
-    const current = await this.promotion.stages(this.principal, this.repository, id);
-    for (const { stage, comment } of stages)
-      if (!current.some((entry) => entry.stage === stage))
-        await this.promotion.setStage(this.principal, this.repository, id, stage, comment);
+    return this.adoption.adopt(id, annotation, stages);
+  }
+
+  addStages(id: string, stages: readonly MirrorStage[]): Promise<void> {
+    return this.adoption.addStages(id, stages);
+  }
+
+  settled(id: string): Promise<boolean> {
+    return this.adoption.settled(id);
   }
 
   async stages(id: string, wanted: readonly MirrorStage[]): Promise<void> {

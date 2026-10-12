@@ -235,6 +235,17 @@ async function attachment(
     (existing.upstream !== upstream || existing.sourceRepository !== sourceRepository)
   )
     throw new Error(`${target} mirrors another source; detach it first`);
+  // Artifact IDs are global: one source repository fills one repository here.
+  const taken = current.find(
+    (entry) =>
+      entry.repository !== target &&
+      entry.upstream === upstream &&
+      entry.sourceRepository === sourceRepository,
+  );
+  if (taken)
+    throw new Error(
+      `${taken.repository} already takes ${sourceRepository} from this source; one source repository can fill one repository here`,
+    );
   const stages = stageList(change.stages);
   const secret = await readSecretFile(
     change.tokenFile,

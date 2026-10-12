@@ -4,15 +4,16 @@ import { createHash } from 'node:crypto';
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
+import { SCHEMA_VERSION } from '@proanima/arkvory-infrastructure';
 import { standImage, standNetwork } from './stand-hosts.mjs';
 
 /*
  * Upgrade stand (docs/UPDATES.md): a Linux host with systemd installs the latest published
  * release from its .deb and gets content. The candidate's .deb is then installed over it as an
- * operator would: without a backup vault the package refuses before any change and the old
- * release keeps serving; with a vault and a first backup its postinst captures and verifies a
- * fresh backup, migrates and starts the candidate. The content stays and the candidate's
- * protocols work on the migrated schema. The previous release comes from
+ * operator would. When the schema changes, without a backup vault the package refuses before any
+ * change and the old release keeps serving; with a vault and a first backup its postinst captures
+ * and verifies a fresh backup, migrates and starts the candidate. Without a schema change the
+ * update needs no backup. The content stays and the candidate's protocols work on its schema. The previous release comes from
  * ARKVORY_PREVIOUS_RELEASE (a folder of its assets) or from the latest GitHub release, checked
  * against that release's native-linux.json.
  */
@@ -35,7 +36,9 @@ async function previousRelease(work) {
   assert.equal(sha256(deb), listing.files['Arkvory-amd64.deb'], 'previous release .deb checksum');
   const path = join(work, 'previous.deb');
   await writeFile(path, deb);
-  return { version: listing.version, path };
+  const manifest = JSON.parse((await read('arkvory-release.json')).toString('utf8'));
+  assert.ok(Number.isSafeInteger(manifest.schema), 'previous release schema');
+  return { version: listing.version, path, schema: manifest.schema };
 }
 
 const newer = (version, than) => {
@@ -101,11 +104,14 @@ try {
   ];
 
   // A schema change without a backup vault: refused before any change, the old release serves.
-  const refused = failureOf(() => host.exec(['dpkg', '-i', '/stand/candidate.deb']));
-  assert.match(String(refused), /No backup vault is configured/);
-  host.probe('ready', on);
-  for (const item of kept)
-    assert.equal(host.probe('content', { ...on, id: item.id }).sha256, item.sha256);
+  const migrates = SCHEMA_VERSION > previous.schema;
+  if (migrates) {
+    const refused = failureOf(() => host.exec(['dpkg', '-i', '/stand/candidate.deb']));
+    assert.match(String(refused), /No backup vault is configured/);
+    host.probe('ready', on);
+    for (const item of kept)
+      assert.equal(host.probe('content', { ...on, id: item.id }).sha256, item.sha256);
+  }
 
   // The operator's path: a vault and its first backup, then the candidate again.
   host.exec(['mkdir', '-p', '/var/lib/arkvory-vault']);
@@ -120,7 +126,8 @@ try {
   ]);
   host.probe('backup-capture', on);
   const installed = host.exec(['dpkg', '-i', '/stand/candidate.deb']);
-  assert.match(installed, /with a database migration/);
+  if (migrates) assert.match(installed, /with a database migration/);
+  else assert.doesNotMatch(installed, /with a database migration/);
   assert.equal(version(), release.version);
   host.probe('ready', on);
   for (const item of kept)
@@ -133,7 +140,7 @@ try {
   assert.deepEqual(host.probe('protocols', on), { raw: true, lfs: true, npm: '1.0.0' });
   passed = true;
   console.log(
-    `Upgrade stand: ${previous.version} .deb with content, refusal without a vault, migration behind a verified backup to ${release.version}, content kept, image registry, raw files, Git LFS and npm passed`,
+    `Upgrade stand: ${previous.version} .deb with content, ${migrates ? 'refusal without a vault, migration behind a verified backup' : 'update without a schema change'} to ${release.version}, content kept, image registry, raw files, Git LFS and npm passed`,
   );
 } catch (error) {
   for (const host of stand.hosts) console.error(`--- ${host.name}\n${host.journal()}`);

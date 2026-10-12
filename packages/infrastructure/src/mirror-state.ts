@@ -24,10 +24,13 @@ interface StateRow {
   error_at: Date | null;
   copied_artifacts: string;
   copied_bytes: string;
+  anchor: string | null;
+  detached_at: Date | null;
 }
 
 const columns = `repository, source, phase, seed_step, seed_after, seed_head::text, cursor::text,
-  head::text, checked_at, synced_at, error_code, error_at, copied_artifacts::text, copied_bytes::text`;
+  head::text, checked_at, synced_at, error_code, error_at, copied_artifacts::text, copied_bytes::text,
+  anchor, detached_at`;
 const iso = (value: Date | null) => (value ? value.toISOString() : null);
 
 function decode(row: StateRow): MirrorState {
@@ -46,10 +49,12 @@ function decode(row: StateRow): MirrorState {
     errorAt: iso(row.error_at),
     copiedArtifacts: Number(row.copied_artifacts),
     copiedBytes: row.copied_bytes,
+    anchor: row.anchor,
+    detachedAt: iso(row.detached_at),
   };
 }
 
-/** Synchronization state of mirrored repositories (schema 28, ADR 0058). */
+/** Synchronization state of mirrored repositories (schemas 28 and 37, ADR 0058). */
 export class PostgresMirrorState implements MirrorStateStore {
   constructor(private readonly pool: Pool) {}
 
@@ -67,14 +72,15 @@ export class PostgresMirrorState implements MirrorStateStore {
     await this.pool.query(
       `INSERT INTO arkvory_mirror_state(repository, source, phase, seed_step, seed_after, seed_head,
          cursor, head, checked_at, synced_at, error_code, error_at, copied_artifacts, copied_bytes,
-         updated_at)
-       VALUES($1,$2,$3,$4,$5,$6::bigint,$7::bigint,$8::bigint,$9,$10,$11,$12,$13::bigint,$14::bigint,now())
+         anchor, detached_at, updated_at)
+       VALUES($1,$2,$3,$4,$5,$6::bigint,$7::bigint,$8::bigint,$9,$10,$11,$12,$13::bigint,$14::bigint,
+         $15,$16,now())
        ON CONFLICT (repository) DO UPDATE SET source=excluded.source, phase=excluded.phase,
          seed_step=excluded.seed_step, seed_after=excluded.seed_after, seed_head=excluded.seed_head,
          cursor=excluded.cursor, head=excluded.head, checked_at=excluded.checked_at,
          synced_at=excluded.synced_at, error_code=excluded.error_code, error_at=excluded.error_at,
          copied_artifacts=excluded.copied_artifacts, copied_bytes=excluded.copied_bytes,
-         updated_at=now()`,
+         anchor=excluded.anchor, detached_at=excluded.detached_at, updated_at=now()`,
       [
         state.repository,
         state.source,
@@ -90,16 +96,33 @@ export class PostgresMirrorState implements MirrorStateStore {
         state.errorAt,
         String(state.copiedArtifacts),
         state.copiedBytes,
+        state.anchor,
+        state.detachedAt,
       ],
+    );
+  }
+
+  /**
+   * Marks the mirrors of repositories that are no longer configured as detached (a detach removes
+   * the configuration): writes there since belong to this installation, so that state is never
+   * followed again. Called by the worker that owns the storage before its mirrors start.
+   */
+  async markDetached(configured: readonly string[]): Promise<void> {
+    await this.pool.query(
+      `UPDATE arkvory_mirror_state SET detached_at=now(), updated_at=now()
+       WHERE detached_at IS NULL AND NOT (repository = ANY($1::text[]))`,
+      [configured],
     );
   }
 }
 
 /**
- * Gives an unfinished upload of the mirror a fresh lifetime without its recorded parts: one that
- * expired while the source was unreachable (still pending, or already cancelled by online
- * cleanup), or whose parts did not add up to the source SHA-256. The artifact ID is the source's,
- * so the row is reused instead of recreated; parts are written again and overwrite their files.
+ * Gives an unfinished upload of the mirror a fresh lifetime: one that expired while the source
+ * was unreachable (still pending, or already cancelled by online cleanup), or whose parts did not
+ * add up to the source SHA-256. The artifact ID is the source's, so the row is reused instead of
+ * recreated. A pending upload keeps its recorded parts, so a copy longer than an upload's
+ * lifetime still finishes; cleanup reclaimed the parts of a cancelled one, and `discardParts`
+ * drops parts that added up to other bytes. Dropped parts are written again.
  * Only an upload of `owner` that was never published is touched: a copy deleted here stays
  * deleted. The upload lock, which online cleanup holds while it reclaims old parts, keeps both
  * from overlapping; a busy lock is retried by the next step. An upload whose bytes cleanup had
@@ -111,6 +134,7 @@ export async function reopenMirrorUpload(
   id: string,
   owner: string,
   capacityBytes: number,
+  discardParts = false,
 ): Promise<boolean> {
   const client = await pool.connect();
   let broken = false;
@@ -121,14 +145,15 @@ export async function reopenMirrorUpload(
       [uploadLockKey(id)],
     );
     if (!lock.rows[0]?.acquired) throw new ArkvoryError('busy', 'Upload is being modified');
-    const released = await client.query<{ size: string }>(
-      'SELECT size::text FROM arkvory_uploads WHERE repository=$1 AND id=$2 AND reclaimed',
-      [repository, id],
-    );
-    const size = released.rows[0]?.size;
-    if (size !== undefined) {
+    const before = (
+      await client.query<{ size: string; status: string; reclaimed: boolean }>(
+        'SELECT size::text, status, reclaimed FROM arkvory_uploads WHERE repository=$1 AND id=$2',
+        [repository, id],
+      )
+    ).rows[0];
+    if (before?.reclaimed) {
       await lockReservations(client);
-      await requireRoom(client, repository, Number(size), capacityBytes);
+      await requireRoom(client, repository, Number(before.size), capacityBytes);
     }
     const reopened = await client.query(
       `UPDATE arkvory_uploads SET status='pending', cancelled_at=NULL, reclaimed=false,
@@ -139,7 +164,7 @@ export async function reopenMirrorUpload(
        RETURNING id`,
       [repository, id, owner],
     );
-    if (reopened.rowCount === 1)
+    if (reopened.rowCount === 1 && (discardParts || before?.status !== 'pending'))
       await client.query('DELETE FROM arkvory_parts WHERE upload_id=$1', [id]);
     await client.query('COMMIT');
     return reopened.rowCount === 1;

@@ -130,14 +130,17 @@ Abra a ajuda do selo ([[ui:mirrorHelpLabel]]) para ver a origem, o horário da �
 
 ### Códigos de erro {#error-codes}
 
-| `errorCode`             | Significado e o que fazer                                                                                                                                                                                               |
-| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `mirror_mismatch`       | O mesmo ID de artefato tem conteúdo diferente na origem. O espelho mantém o arquivo dele. Investigue o artefato; não exclua nenhuma das cópias antes de saber a causa                                                   |
-| `mirror_source_changed` | O repositório já contém uma cópia de outra origem. Desanexe-o ou espelhe a nova origem em um novo repositório                                                                                                           |
-| `mirror_source_behind`  | A origem foi restaurada ou reinstalada, e o feed dela está atrás do espelho. O espelho o lê de novo, e o código desaparece quando ele estiver em dia. Os arquivos que a origem restaurada não tem permanecem no espelho |
-| `mirror_delete_blocked` | A origem excluiu um arquivo que o espelho não consegue excluir, porque algo aqui ainda o usa, como uma referência ou o histórico de um caminho de arquivo                                                               |
-| `mirror_failed`         | Uma falha sem um código mais específico. Leia o log do worker                                                                                                                                                           |
-| outros códigos          | O código da solicitação que falhou, por exemplo `unauthorized` quando a chave foi revogada ou `capacity_exceeded` quando o espelho está cheio                                                                           |
+| `errorCode`               | Significado e o que fazer                                                                                                                                                                                                                                |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `mirror_mismatch`         | O mesmo ID de artefato tem conteúdo diferente na origem. O espelho mantém o arquivo dele. Investigue o artefato; não exclua nenhuma das cópias antes de saber a causa                                                                                    |
+| `mirror_source_changed`   | O repositório já contém uma cópia de outra origem. Desanexe-o ou espelhe a nova origem em um novo repositório                                                                                                                                            |
+| `mirror_source_behind`    | A origem foi restaurada ou reinstalada: a alteração na posição do espelho não é a que ele aplicou ali. O espelho lê a origem de novo, e o código desaparece quando ele estiver em dia. Os arquivos que a origem restaurada não tem permanecem no espelho |
+| `mirror_delete_blocked`   | A origem excluiu um arquivo que o espelho não consegue excluir, porque algo aqui ainda o usa, como uma referência ou o histórico de um caminho de arquivo                                                                                                |
+| `mirror_detached`         | O repositório foi desanexado e tem alterações próprias. Ele nunca mais é sincronizado. Espelhe a origem em um repositório novo                                                                                                                           |
+| `mirror_package_conflict` | Uma versão da origem tem uma versão de pacote (grupo, nome e versão) que este repositório guarda com outros bytes. Nada é alterado. Remova o estágio ou a versão na origem, ou publique-a com outra versão                                               |
+| `mirror_id_taken`         | Um artefato da origem está em outro repositório desta instalação. Um repositório de origem só pode preencher um repositório aqui                                                                                                                         |
+| `mirror_failed`           | Uma falha sem um código mais específico. Leia o log do worker                                                                                                                                                                                            |
+| outros códigos            | O código da solicitação que falhou, por exemplo `unauthorized` quando a chave foi revogada ou `capacity_exceeded` quando o espelho está cheio                                                                                                            |
 
 O log do worker (`component` é `mirror`) tem `mirror.started`, `mirror.step_failed` com `errorCode` e `attempts`, `mirror.recovered` e `mirror.stopped`.
 
@@ -163,10 +166,11 @@ sudo arkvory configure --root /opt/proanima-arkvory \
 
 - Você lista de 1 a 16 nomes de estágio diferentes, separados por vírgulas.
 - Uma versão é copiada uma só vez, com o mesmo ID, os mesmos bytes, os mesmos rótulos e o mesmo registro UPack, e com os estágios correspondentes.
-- Depois disso, ela pertence a esta instalação. As alterações, a remoção de estágios e as exclusões na origem não chegam a ela. Uma versão que você exclui aqui nunca é importada de novo.
+- Depois disso, ela pertence a esta instalação. As alterações, a remoção de estágios e as exclusões na origem não chegam a ela. Uma versão que você exclui aqui nunca é importada de novo. Um estágio que você remove aqui continua removido. Quando a origem depois atribui à versão outro estágio configurado, só esse estágio é adicionado.
 - Os uploads e a política de armazenamento do repositório funcionam normalmente.
 - Os dados de imagens de contêiner, de Git LFS e do registro npm não são transferidos.
-- Uma alteração dos estágios inicia um novo primeiro preenchimento. Ele apenas adiciona e ignora o que já existe.
+- Uma alteração dos estágios inicia um novo primeiro preenchimento. Ele só traz as versões que ainda não estão aqui e deixa como estão as que já estão.
+- Uma versão da origem cuja versão de pacote este repositório já guarda com outros bytes interrompe a importação com `mirror_package_conflict`. Os clientes continuam recebendo a versão que está aqui.
 
 Duas instalações podem importar uma da outra. Por exemplo, a produção recebe `release` do staging, e o staging recebe `hotfix` da produção. Uma versão mantém o mesmo ID nos dois lados, então nada é copiado duas vezes nem fica circulando:
 
@@ -174,7 +178,7 @@ Duas instalações podem importar uma da outra. Por exemplo, a produção recebe
 - Uma versão excluída em um lado nunca é importada de novo do outro, mesmo que o outro lado lhe atribua um estágio depois.
 - Uma exclusão nunca é repassada: o outro lado mantém sua cópia até que você a exclua lá também.
 
-Use estágios diferentes para as duas direções. Com o mesmo estágio nas duas direções, a remoção dele em um lado pode ser desfeita pela importação do outro lado.
+Use estágios diferentes para as duas direções. Com o mesmo estágio nas duas direções, um estágio que você remove em um lado volta quando o outro lado atribui esse estágio à versão de novo.
 
 O console mostra o selo [[ui:mirrorImport]] ou [[ui:mirrorImportFailing]] quando a última tentativa falhou. A chave na origem precisa das mesmas permissões somente de leitura que para um espelho.
 
@@ -212,7 +216,7 @@ O que os clientes veem:
 - Depois de desanexar, as gravações funcionam. O selo desaparece.
 - As chaves e as senhas da origem não funcionam no espelho, a menos que você tenha criado as mesmas contas nele.
 
-Não há volta. Não anexe de novo como espelho um repositório desanexado. Para trazer a origem antiga de volta, limpe-a ou instale-a do zero e anexe os repositórios do novo primário como espelhos. Nunca execute a origem antiga e o novo primário lado a lado com as gravações ativadas.
+Não há volta. Um repositório desanexado não pode ser anexado de novo como espelho: a sincronização dele para com `mirror_detached`. Para trazer a origem antiga de volta, limpe-a ou instale-a do zero e anexe os repositórios do novo primário como espelhos. Nunca execute a origem antiga e o novo primário lado a lado com as gravações ativadas.
 
 ### Ensaiar {#failover-rehearse}
 
@@ -224,6 +228,8 @@ Ensaie a troca a cada trimestre e depois das atualizações. Desanexe um reposit
 - O espelho não é um backup. Ele não tem cópia de contas, chaves nem permissões de acesso, e não copia referências, anexos, registros de auditoria nem políticas de armazenamento.
 - O modo de importação não copia imagens de contêiner, Git LFS nem dados do npm.
 - Uma sincronização apenas adiciona e atualiza. Depois de uma restauração da origem, os arquivos que a origem perdeu permanecem no espelho.
+- Um repositório de origem preenche um repositório de uma instalação: os IDs de artefato são os mesmos nos dois lados, então um segundo espelho ou importação dele é recusado ao ser configurado.
+- Depois de restaurar a instalação do espelho a partir de um backup, as versões que foram importadas e excluídas após o backup podem ser importadas de novo.
 - As duas instalações são atualizadas por conta própria. A origem precisa oferecer o feed de alterações do espelho.
 - O conjunto de autoridades confiáveis da origem vale para o worker inteiro.
 - Não há failover automático, nem isolamento (fencing) da origem antiga, nem sincronização reversa.

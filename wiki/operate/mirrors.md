@@ -130,14 +130,17 @@ Open the help of the badge ([[ui:mirrorHelpLabel]]) to see the source, the time 
 
 ### Error codes {#error-codes}
 
-| `errorCode`             | Meaning and what to do                                                                                                                                                                                   |
-| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `mirror_mismatch`       | The same artifact ID has different content on the source. The mirror keeps its file. Investigate the artifact; do not delete either copy before you know the cause                                       |
-| `mirror_source_changed` | The repository already holds a copy of another source. Detach it, or mirror the new source into a new repository                                                                                         |
-| `mirror_source_behind`  | The source was restored or reinstalled, and its feed is behind the mirror. The mirror reads it again, and the code clears when it has caught up. Files that the restored source lacks stay on the mirror |
-| `mirror_delete_blocked` | The source deleted a file that the mirror cannot delete, because something here still uses it, such as a reference or a file path history                                                                |
-| `mirror_failed`         | A failure without a more specific code. Read the worker log                                                                                                                                              |
-| other codes             | The code of the failed request, for example `unauthorized` when the key was revoked or `capacity_exceeded` when the mirror is full                                                                       |
+| `errorCode`               | Meaning and what to do                                                                                                                                                                                                                                  |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `mirror_mismatch`         | The same artifact ID has different content on the source. The mirror keeps its file. Investigate the artifact; do not delete either copy before you know the cause                                                                                      |
+| `mirror_source_changed`   | The repository already holds a copy of another source. Detach it, or mirror the new source into a new repository                                                                                                                                        |
+| `mirror_source_behind`    | The source was restored or reinstalled: the change at the position of the mirror is not the one it applied there. The mirror reads the source again, and the code clears when it has caught up. Files that the restored source lacks stay on the mirror |
+| `mirror_delete_blocked`   | The source deleted a file that the mirror cannot delete, because something here still uses it, such as a reference or a file path history                                                                                                               |
+| `mirror_detached`         | The repository was detached and has changes of its own. It is never synchronized again. Mirror the source into a new repository                                                                                                                         |
+| `mirror_package_conflict` | A version of the source has a package version (group, name and version) that this repository holds with other bytes. Nothing is changed. Remove the stage or the version on the source, or publish it under another version                             |
+| `mirror_id_taken`         | An artifact of the source is held by another repository of this installation. One source repository can fill only one repository here                                                                                                                   |
+| `mirror_failed`           | A failure without a more specific code. Read the worker log                                                                                                                                                                                             |
+| other codes               | The code of the failed request, for example `unauthorized` when the key was revoked or `capacity_exceeded` when the mirror is full                                                                                                                      |
 
 The worker log (`component` is `mirror`) has `mirror.started`, `mirror.step_failed` with `errorCode` and `attempts`, `mirror.recovered` and `mirror.stopped`.
 
@@ -163,10 +166,11 @@ sudo arkvory configure --root /opt/proanima-arkvory \
 
 - You list 1 to 16 different stage names, separated by commas.
 - A version is copied once, with the same ID, bytes, labels and UPack registration, and with the matching stages.
-- After that it belongs to this installation. Changes, stage removal and deletion on the source do not reach it. A version that you delete here is never imported again.
+- After that it belongs to this installation. Changes, stage removal and deletion on the source do not reach it. A version that you delete here is never imported again. A stage that you remove here stays removed. When the source later gives the version another configured stage, only that stage is added.
 - Uploads and the storage policy of the repository work as usual.
 - Container image, Git LFS and npm registry data are not carried over.
-- A change of stages starts a new first fill. It only adds, and it skips what is already there.
+- A change of stages starts a new first fill. It only brings versions that are not here yet, and leaves the ones that are here as they are.
+- A version of the source whose package version this repository already holds with other bytes stops the import with `mirror_package_conflict`. Clients keep getting the version that is here.
 
 Two installations can import from each other. For example, production takes `release` from staging, and staging takes `hotfix` from production. A version keeps its ID on both sides, so nothing is copied twice or goes round in circles:
 
@@ -174,7 +178,7 @@ Two installations can import from each other. For example, production takes `rel
 - A version deleted on one side is never imported again from the other, even when the other side gives it a stage later.
 - A deletion is never passed on: the other side keeps its copy until you delete it there too.
 
-Use different stages for the two directions. With the same stage in both directions, removing it on one side can be undone by the import from the other side.
+Use different stages for the two directions. With the same stage in both directions, a stage that you remove on one side comes back when the other side gives that version the stage again.
 
 The console shows the badge [[ui:mirrorImport]], or [[ui:mirrorImportFailing]] when the last attempt failed. The key on the source needs the same read-only permissions as for a mirror.
 
@@ -212,7 +216,7 @@ What clients see:
 - After the detach, writes work. The badge disappears.
 - The keys and passwords of the source do not work on the mirror unless you created the same accounts there.
 
-There is no way back. Do not attach a detached repository as a mirror again. To bring the old source back, clear it or install it anew and attach the repositories of the new primary as mirrors. Never run the old source and the new primary side by side with writes enabled.
+There is no way back. A detached repository cannot be attached as a mirror again: its synchronization stops with `mirror_detached`. To bring the old source back, clear it or install it anew and attach the repositories of the new primary as mirrors. Never run the old source and the new primary side by side with writes enabled.
 
 ### Rehearse {#failover-rehearse}
 
@@ -224,6 +228,8 @@ Rehearse the switch every quarter and after updates. Detach one repository on a 
 - The mirror is not a backup. It has no copy of accounts, keys or grants, and it does not copy references, attachments, audit trails or storage policies.
 - Import mode does not copy container images, Git LFS or npm data.
 - A synchronization only adds and updates. After a restore of the source, files that the source lost stay on the mirror.
+- One source repository fills one repository of an installation: artifact IDs are the same on both sides, so a second mirror or import of it is refused when it is configured.
+- After a restore of the mirror installation from a backup, versions that were imported and deleted after the backup was taken can be imported again.
 - Both installations are updated on their own. The source must offer the mirror change feed.
 - The set of trusted authorities of the source applies to the whole worker.
 - There is no automatic failover, no fencing of the old source and no reverse synchronization.
