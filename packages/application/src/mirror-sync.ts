@@ -1,6 +1,6 @@
 import type { CatalogFeedEntry } from './catalog-ports.js';
 import type { Cancellation } from './ports.js';
-import { MirrorFailure } from './mirror-ports.js';
+import { MirrorFailure, mirrorPrincipalId } from './mirror-ports.js';
 import { applyRegistryChange, isRegistryChange } from './mirror-registry.js';
 import type {
   MirrorArtifact,
@@ -52,6 +52,12 @@ export async function stateFor(
   loaded: MirrorState | null,
   anyOrigin: boolean,
 ): Promise<MirrorState> {
+  if (
+    loaded?.detachedAt != null &&
+    !anyOrigin &&
+    (await d.states.reattach(d.repository, mirrorPrincipalId(d.repository)))
+  )
+    return { ...loaded, detachedAt: null };
   if (loaded?.detachedAt != null && !anyOrigin)
     throw new MirrorFailure(
       'mirror_detached',

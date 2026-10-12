@@ -6,6 +6,7 @@ import {
   ArtifactCatalog,
   ArtifactPromotion,
   MirrorFailure,
+  mirrorPrincipalId,
   StorageService,
 } from '@proanima/arkvory-application';
 import type {
@@ -19,11 +20,12 @@ import type {
 } from '@proanima/arkvory-application';
 import { ArkvoryError, descriptorWire } from '@proanima/arkvory-domain';
 import { MirrorRegistryRows } from './mirror-registry-rows.js';
-import { MirrorAdoption, idHolder, idTaken } from './mirror-adoption.js';
+import { MirrorAdoption, idTaken } from './mirror-adoption.js';
 import type { Principal, Upload } from '@proanima/arkvory-domain';
 import {
   PostgresBrowse,
   PostgresLfsIndex,
+  PostgresMirrorAdoptions,
   PostgresPromotions,
   PostgresRetention,
   PostgresStages,
@@ -98,7 +100,7 @@ export class ServiceMirrorTarget implements MirrorTarget {
   ) {
     this.principal = {
       credential: 'file-key',
-      id: `mirror:${repository}`,
+      id: mirrorPrincipalId(repository),
       repositories: [repository],
       permissions: ['read', 'write'],
     };
@@ -121,7 +123,7 @@ export class ServiceMirrorTarget implements MirrorTarget {
     this.lfs = new PostgresLfsIndex(pool);
     this.adoption = new MirrorAdoption(
       repository,
-      pool,
+      new PostgresMirrorAdoptions(pool),
       this.principal,
       this.browse,
       this.promotion,
@@ -152,7 +154,7 @@ export class ServiceMirrorTarget implements MirrorTarget {
     const found = await this.uploadOf(storage, id);
     if (!found) {
       // Not uploaded by this synchronization: never a second row for the same ID.
-      const holder = await idHolder(this.catalog.pool, id);
+      const holder = await this.adoption.holder(id);
       if (holder && holder.repository !== this.repository) throw idTaken(id, holder.repository);
       if (holder) return null;
     }
