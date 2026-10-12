@@ -14,8 +14,10 @@ html {
 }
 body {
   margin: 0;
-  font-size: var(--text-md);
+  font-size: var(--text-base);
   letter-spacing: var(--tracking-normal);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 ::selection {
   background: var(--color-selection);
@@ -28,6 +30,12 @@ select,
 textarea {
   font: inherit;
   color: inherit;
+}
+/* A field shows what was typed, not the weight of the label around it. */
+input,
+select,
+textarea {
+  font-weight: var(--weight-normal);
 }
 button,
 input,
@@ -59,22 +67,26 @@ button {
   align-items: center;
   justify-content: center;
   gap: var(--space-2);
-  padding: var(--space-2) var(--space-4);
+  padding: var(--space-1) var(--space-3);
   border: var(--border-width) solid transparent;
   border-radius: var(--radius-control);
   background: var(--color-raised);
-  font-weight: var(--weight-semibold);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  line-height: var(--leading-tight);
   cursor: pointer;
   user-select: none;
 }
 button.primary {
   background: var(--color-accent);
   color: var(--color-on-accent);
+  font-weight: var(--weight-semibold);
   box-shadow: var(--shadow-accent);
 }
 button.secondary {
   background: var(--color-surface);
   border-color: var(--color-border);
+  box-shadow: var(--shadow-control);
 }
 button.ghost {
   background: transparent;
@@ -98,7 +110,7 @@ button.ghost {
 }
 button.small {
   min-height: var(--control-small-height);
-  font-size: var(--text-sm);
+  padding-inline: var(--space-2);
 }
 button:disabled {
   opacity: var(--opacity-disabled);
@@ -111,8 +123,38 @@ button:disabled {
 :where(h1, main):focus {
   outline: none;
 }
+/* Links read as links in both themes; the brand and navigation keep their own color. */
 a {
+  color: var(--color-nav-text);
+  text-decoration-thickness: from-font;
+  text-underline-offset: 0.2em;
+}
+.brand,
+.skip {
   color: inherit;
+  text-decoration: none;
+}
+@media (hover: hover) and (pointer: fine) {
+  a:hover {
+    text-decoration-thickness: var(--focus-width);
+  }
+}
+/* Commands and paths to copy: a quiet block that wraps rather than widening the page. */
+:where(pre) {
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-control);
+  background: var(--color-subtle);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  line-height: var(--leading-relaxed);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+:where(code) {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
 }
 h1,
 h2,
@@ -120,6 +162,7 @@ h3,
 p {
   margin: 0;
 }
+/* Page title, then a card's title, then a part of a card. */
 h1 {
   font-size: var(--text-display);
   font-weight: var(--weight-semibold);
@@ -127,12 +170,15 @@ h1 {
   letter-spacing: var(--tracking-tight);
 }
 h2 {
-  font-size: var(--text-base);
-  font-weight: var(--weight-semibold);
-}
-h3 {
   font-size: var(--text-lg);
   font-weight: var(--weight-semibold);
+  line-height: var(--leading-tight);
+  letter-spacing: var(--tracking-tight);
+}
+h3 {
+  font-size: var(--text-base);
+  font-weight: var(--weight-semibold);
+  line-height: var(--leading-tight);
 }
 svg {
   width: var(--icon-size);

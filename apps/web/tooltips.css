@@ -4,6 +4,11 @@
   vertical-align: middle;
   flex-shrink: 0;
 }
+/* In a toolbar the help sits on the controls' center line, wherever the row aligns them. */
+:is(.search-form, .button-row, .section-heading) .help-tooltip {
+  min-height: var(--control-height);
+  align-items: center;
+}
 button.help-trigger {
   min-height: var(--help-target);
   width: var(--help-target);

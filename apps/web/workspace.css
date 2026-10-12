@@ -20,21 +20,18 @@
   padding-block: var(--space-3);
   border-top: var(--border-width) solid var(--color-border);
 }
-.disclosure > summary {
+/* Every expandable section opens with the same chevron; the connection card has its own. */
+details:not(.connection) > summary {
   display: flex;
   align-items: center;
   gap: var(--space-3);
   list-style: none;
-  color: var(--color-muted);
-  font-size: var(--text-sm);
-  font-weight: var(--weight-medium);
   min-height: var(--control-small-height);
-  align-content: center;
 }
-.disclosure > summary::-webkit-details-marker {
+details:not(.connection) > summary::-webkit-details-marker {
   display: none;
 }
-.disclosure > summary::before {
+details:not(.connection) > summary::before {
   content: '';
   width: var(--disclosure-size);
   height: var(--disclosure-size);
@@ -44,12 +41,17 @@
   transition: transform var(--motion-fast) var(--motion-ease);
   flex-shrink: 0;
 }
-.disclosure[open] > summary::before {
+details:not(.connection)[open] > summary::before {
   transform: rotate(var(--disclosure-open));
 }
 /* Right to left a closed section's arrow points left, the way the text reads. */
-:root[dir='rtl'] .disclosure:not([open]) > summary::before {
+:root[dir='rtl'] details:not(.connection, [open]) > summary::before {
   transform: rotate(calc(180deg + var(--disclosure-closed)));
+}
+.disclosure > summary {
+  color: var(--color-muted);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
 }
 .disclosure[open] > summary {
   color: var(--color-text);
@@ -149,11 +151,22 @@ label:has(> input[type='checkbox']) {
 }
 .catalog-table th:last-child {
   width: var(--table-actions-width);
+  text-align: end;
 }
+/* Row actions sit at the row's end, under their column header. */
 .catalog-actions {
   display: flex;
   flex-wrap: wrap;
+  justify-content: flex-end;
   gap: var(--space-2);
+}
+/* The count closes the toolbar; loading more sits centered under the rows. */
+.catalog-count {
+  margin-inline-start: auto;
+  white-space: nowrap;
+}
+.catalog-footer {
+  justify-content: center;
 }
 .catalog-actions button,
 .download-actions button {
@@ -227,6 +240,7 @@ output:not(.status-bar output):not(.transfer-card output):not(:empty) {
   }
   .mobile-menu {
     display: inline-flex;
+    align-self: center;
   }
   #workspace-navigation {
     grid-column: 1 / -1;
@@ -242,12 +256,30 @@ output:not(.status-bar output):not(.transfer-card output):not(:empty) {
     min-width: 0;
     min-height: var(--control-height);
   }
+  /* The title keeps its row with the preferences; the primary action takes the next one. */
+  .topbar {
+    padding-block: var(--space-2);
+  }
   .topbar h1 {
-    flex-basis: 100%;
+    font-size: var(--text-lg);
     white-space: normal;
   }
   .topbar .heading-action {
-    flex: 1;
+    order: 1;
+    flex: 1 1 100%;
+  }
+  .topbar #report-open {
+    position: relative;
+    width: var(--control-height);
+    padding: 0;
+  }
+  .topbar #report-open > .action-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
   .connection > summary {
     flex-wrap: wrap;
@@ -404,16 +436,24 @@ output:not(.status-bar output):not(.transfer-card output):not(:empty) {
   gap: var(--space-2);
   padding: var(--space-2) var(--panel-padding) 0;
 }
-.mirror-state[data-state='synced'] > .badge {
+/* One look for a mirror's state wherever it shows: the catalog badge and the Mirrors page. */
+:is(.mirror-state[data-state='synced'] > .badge, .mirror-badge[data-state='synced']) {
   color: var(--color-success);
+  background: var(--color-success-bg);
+  border-color: var(--color-success-border);
 }
-.mirror-state[data-state='behind'] > .badge,
-.mirror-state[data-state='pending'] > .badge,
-.mirror-state[data-state='seeding'] > .badge {
+:is(
+  .mirror-state:is([data-state='behind'], [data-state='pending'], [data-state='seeding']) > .badge,
+  .mirror-badge:is([data-state='behind'], [data-state='pending'], [data-state='seeding'])
+) {
   color: var(--color-warning);
+  background: var(--color-warning-bg);
+  border-color: var(--color-warning-border);
 }
-.mirror-state[data-state='failing'] > .badge {
+:is(.mirror-state[data-state='failing'] > .badge, .mirror-badge[data-state='failing']) {
   color: var(--color-error);
+  background: var(--color-error-bg);
+  border-color: var(--color-error-border);
 }
 /* Nobody uploads into a mirror; the server refuses it anyway (409 mirror_read_only). */
 :root[data-mirror='true'] #heading-upload,

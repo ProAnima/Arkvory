@@ -88,7 +88,7 @@ export class MirrorsPage {
   private row(item: RepositoryMirrorResponse) {
     const repository = document.createElement('button');
     repository.type = 'button';
-    repository.className = 'secondary small';
+    repository.className = 'link-button';
     // The name is the accessible name: opening the repository is what a name link does here.
     repository.textContent = item.repository;
     repository.onclick = () => {

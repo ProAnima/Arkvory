@@ -207,7 +207,7 @@
         <h1 id="page-title" tabindex="-1" data-i18n="catalog">Артефакты</h1>
         <button
           id="heading-upload"
-          class="primary small heading-action"
+          class="primary heading-action"
           type="button"
           data-go="upload"
           data-i18n="uploadFile"
@@ -217,7 +217,7 @@
         <div class="preferences">
           <button
             id="report-open"
-            class="secondary small"
+            class="secondary"
             type="button"
             aria-haspopup="dialog"
             data-i18n="reportOpen"
@@ -452,8 +452,15 @@
             >Подключите репозиторий, чтобы начать.</output
           ><span id="request-id" class="error-ref"></span>
         </div>
-        <aside id="replication-banner" class="update-banner" role="alert" hidden>
-          <strong id="replication-notice"></strong>
+        <aside
+          id="replication-banner"
+          class="update-banner"
+          data-tone="warning"
+          role="alert"
+          hidden
+        >
+          <span class="banner-icon" data-icon="alert" aria-hidden="true"></span
+          ><strong id="replication-notice"></strong>
           <button
             id="replication-open"
             type="button"
@@ -465,8 +472,9 @@
             Открыть страницу кластера
           </button>
         </aside>
-        <aside id="update-banner" class="update-banner" aria-live="polite" hidden>
-          <strong id="update-notice"></strong>
+        <aside id="update-banner" class="update-banner" data-tone="info" aria-live="polite" hidden>
+          <span class="banner-icon" data-icon="info" aria-hidden="true"></span
+          ><strong id="update-notice"></strong>
           <button type="button" class="secondary" data-go="updates" data-i18n="updateOpen">
             Посмотреть обновление
           </button>
@@ -1212,12 +1220,16 @@
             ><button
               id="search-clear"
               type="button"
-              class="ghost"
+              class="secondary"
               data-i18n="clearFilters"
               disabled
             >
               Сбросить</button
-            ><span id="catalog-count" class="badge" data-i18n="loaded" data-param-count="0"
+            ><span
+              id="catalog-count"
+              class="catalog-count hint"
+              data-i18n="loaded"
+              data-param-count="0"
               >Загружено: 0</span
             ><span class="hint" data-i18n="catalogHint" data-help="catalogHelpLabel"
               >Неизменяемые файлы · Редактируемые метаданные</span
@@ -1265,10 +1277,13 @@
               Введите токен или войдите по паролю.
             </p>
           </div>
-          <div class="table-footer" tabindex="0" role="region" data-i18n-label="tableRegion">
-            <button id="more" class="secondary small" disabled data-i18n="more">
-              Загрузить ещё
-            </button>
+          <div
+            class="table-footer catalog-footer"
+            tabindex="0"
+            role="region"
+            data-i18n-label="tableRegion"
+          >
+            <button id="more" class="secondary" disabled data-i18n="more">Загрузить ещё</button>
           </div>
         </section>
         <section

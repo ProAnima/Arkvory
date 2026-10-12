@@ -2,7 +2,14 @@
 #mirrors-panel,
 #cluster-panel {
   display: grid;
-  gap: var(--space-6);
+  gap: var(--space-4);
+}
+#mirrors-panel > .card > * + *,
+#cluster-panel > .card > * + * {
+  margin-top: var(--space-4);
+}
+.cluster-facts dd {
+  margin-bottom: 0;
 }
 .mirror-problem-slot {
   padding: var(--space-2) var(--panel-padding) 0;
@@ -18,22 +25,20 @@
 .mirror-problem p {
   margin: 0;
 }
-.mirror-command,
-.cluster-command {
-  font-family: var(--font-mono);
+.mirror-command {
+  display: block;
+  padding: var(--space-2) var(--space-3);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-control);
+  background: var(--color-subtle);
   font-size: var(--text-sm);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
-.mirror-badge[data-state='synced'],
 .cluster-writes[data-state='on'],
 .cluster-table td[data-state='on'] {
   color: var(--color-success);
 }
-.mirror-badge:is([data-state='behind'], [data-state='pending'], [data-state='seeding']) {
-  color: var(--color-warning);
-}
-.mirror-badge[data-state='failing'],
 .cluster-writes[data-state='off'],
 .cluster-table td[data-state='off'] {
   color: var(--color-error);
@@ -45,4 +50,8 @@
 }
 .mirrors-table td:first-child > button {
   white-space: nowrap;
+}
+/* On the Cluster page itself the banner needs no way to it. */
+body:has(#cluster-panel:not([hidden])) #replication-open {
+  display: none;
 }

@@ -92,6 +92,13 @@ test('both themes meet text contrast requirements and components use centralized
       ['text', 'input'],
       ['on-accent', 'accent-hover'],
       ['on-selection', 'selection'],
+      // Tinted state surfaces: a badge or notice reads in its own color on its own ground.
+      ['success', 'success-bg'],
+      ['warning', 'warning-bg'],
+      ['error', 'error-bg'],
+      ['text', 'info-bg'],
+      ['text', 'subtle'],
+      ['muted', 'subtle'],
     ]) {
       const a = luminance(value(`--color-${fg}`)),
         b = luminance(value(`--color-${bg}`));

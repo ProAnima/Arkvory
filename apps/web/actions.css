@@ -71,11 +71,15 @@ button[data-icon-only] > .action-label {
   overflow: visible;
   clip-path: none;
 }
+/* Looks like the buttons beside it, not like a text field. */
 .preferences .theme-control select {
   width: var(--control-height);
   appearance: none;
   color: transparent;
   padding: 0;
+  border-color: var(--color-border);
+  background: var(--color-surface);
+  cursor: pointer;
 }
 .theme-control option {
   color: var(--color-text);
@@ -225,16 +229,27 @@ button[data-icon-only] > .action-label {
 }
 @media (min-width: 761px) {
   /* The rail keeps room for a classic scrollbar in short windows without a horizontal one. */
-  [data-navigation='compact'] .sidebar {
-    padding-inline: var(--space-1);
+  [data-navigation='compact'] nav {
+    padding-inline: var(--space-2);
   }
   [data-navigation='compact'] .brand {
     padding: 0;
     justify-content: center;
   }
-  [data-navigation='compact'] .brand > span,
-  [data-navigation='compact'] .nav-group-label {
+  [data-navigation='compact'] .brand > span {
     display: none;
+  }
+  /* In the rail a group's name becomes a thin divider; screen readers still hear it. */
+  [data-navigation='compact'] .nav-group-label {
+    height: 0;
+    padding: 0;
+    margin: var(--space-2) var(--space-2);
+    overflow: hidden;
+    border-top: var(--border-width) solid var(--color-border);
+  }
+  [data-navigation='compact'] .nav-group-label:first-child {
+    margin-block: 0;
+    border-top: 0;
   }
   [data-navigation='compact'] nav button {
     justify-content: center;
@@ -250,6 +265,10 @@ button[data-icon-only] > .action-label {
   [data-navigation='compact'] .sidebar-bottom {
     padding-inline: 0;
     align-self: center;
+  }
+  [data-navigation='compact'] .nav-group-label + button,
+  [data-navigation='compact'] nav > button:first-child {
+    margin-top: var(--space-1);
   }
 }
 @media (prefers-reduced-motion: reduce) {

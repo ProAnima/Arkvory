@@ -7,16 +7,18 @@
   }
 }
 @media (max-width: 760px) {
+  /* One row: the brand and the menu button; the menu opens below it. */
   .sidebar {
     position: static;
     width: 100%;
-    padding: var(--space-4);
+    padding: 0 var(--page-gutter);
     border-inline-end: 0;
     border-bottom: var(--border-width) solid var(--color-border);
-    gap: var(--space-4);
+    column-gap: var(--space-3);
   }
   .brand {
     padding: 0;
+    border-bottom: 0;
   }
   .brand small,
   .sidebar-bottom,
@@ -26,6 +28,7 @@
   nav {
     display: flex;
     gap: var(--space-1);
+    padding: 0 0 var(--space-3);
     overflow-x: auto;
   }
   nav button {

@@ -15,7 +15,6 @@ const compact: Partial<Record<MessageKey, IconName>> = {
   downloadsClearFinished: 'check',
   previousPage: 'back',
   nextPage: 'next',
-  more: 'next',
   historyMore: 'back',
   managementReload: 'refresh',
   managementMore: 'next',
@@ -84,6 +83,10 @@ const labeled: Partial<Record<MessageKey, IconName>> = {
   repositoryOpen: 'open',
   repositoryStorage: 'settings',
   helpLoad: 'refresh',
+  reportOpen: 'message',
+  more: 'down',
+  clusterOpen: 'next',
+  updateOpen: 'next',
 };
 
 /** Preserve the button and label nodes: localization must not disturb focus or handlers. */

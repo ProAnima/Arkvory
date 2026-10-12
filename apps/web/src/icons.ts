@@ -31,6 +31,10 @@ const paths = {
   collapse: 'M3 3h18v18H3ZM9 3v18m8-13-4 4 4 4',
   expand: 'M3 3h18v18H3ZM9 3v18m4-13 4 4-4 4',
   menu: 'M4 6h16M4 12h16M4 18h16',
+  alert:
+    'M10.3 4 2.5 18a2 2 0 0 0 1.7 3h15.6a2 2 0 0 0 1.7-3L13.7 4a2 2 0 0 0-3.4 0ZM12 9v4m0 4h.01',
+  info: 'M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0ZM12 16v-4m0-4h.01',
+  message: 'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z',
 } as const;
 export type IconName = keyof typeof paths;
 export function initializeStaticIcons() {

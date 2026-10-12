@@ -6,7 +6,11 @@
 .guide-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-3);
+  gap: var(--space-4);
+}
+/* A guide card's title is the card's own heading, as large as any card title. */
+.guide-grid .card > h3 {
+  font-size: var(--text-lg);
 }
 .guide-grid .card {
   padding: var(--panel-padding);
