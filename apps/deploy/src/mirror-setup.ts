@@ -23,11 +23,14 @@ export interface MirrorChange {
   /** Import mode: an ordinary repository taking over versions with these stages. */
   readonly stages?: readonly string[];
   /**
-   * PEM with the authorities of mirror sources (corporate or self-signed); replaces the stored
-   * bundle, which serves every mirror of the installation.
+   * PEM with the authorities of mirror sources (corporate or self-signed); added to the stored
+   * bundle, which serves every mirror of the installation (a certificate held already is kept once).
    */
   readonly caFile?: string;
-  /** Turns a mirrored repository into an ordinary, writable one. */
+  /**
+   * Turns mirrored repositories into ordinary, writable ones: one name, a comma-separated list
+   * or `all`, with one restart for all of them (a failover detaches every repository).
+   */
   readonly detach?: string;
 }
 interface MirrorEntry {
@@ -74,6 +77,17 @@ export function upstreamOrigin(value: string | undefined): string {
   return url.origin;
 }
 
+/** What a refusal of the source means for the operator, with the next step. */
+function refusal(status: number, path: string, source: string): string {
+  if (status === 401)
+    return 'The source does not accept this key: it is unknown there, revoked or not activated yet. Issue a read-only key on the source and pass its file again';
+  if (status === 403)
+    return `The key may not read ${source} on the source: grant it read access to that repository (artifacts, packages, stages, paths and content)`;
+  if (status === 404 && path.includes('/repositories/'))
+    return `The source has no repository ${source}; check --mirror-source`;
+  return `The source refused ${path.split('?')[0] ?? path} (${String(status)})`;
+}
+
 /** The public API of the source with the read-only key; the key never appears in a message. */
 export const fetchProbe: UpstreamProbe = async (upstream, source, secret) => {
   const call = async (path: string) => {
@@ -89,10 +103,7 @@ export const fetchProbe: UpstreamProbe = async (upstream, source, secret) => {
         cause: error,
       });
     }
-    if (!response.ok)
-      throw new Error(
-        `The source refused ${path.split('?')[0] ?? path} (${String(response.status)})`,
-      );
+    if (!response.ok) throw new Error(refusal(response.status, path, source));
     return response.json();
   };
   const capabilities = await call('/api/v1/capabilities');
@@ -198,21 +209,42 @@ function override(): string {
 interface Snapshot {
   readonly runtime: string;
   readonly mirrors: FileSnapshot | null;
-  readonly token: FileSnapshot | null;
   readonly ca: FileSnapshot | null;
   readonly override: FileSnapshot | null;
 }
+interface TokenFile {
+  readonly path: string;
+  readonly before: FileSnapshot | null;
+}
 
 /** Each file returns with its text, mode and owner, so API and worker read it as before. */
-async function restore(paths: Layout, tokenPath: string, overridePath: string, before: Snapshot) {
+async function restore(
+  paths: Layout,
+  tokens: readonly TokenFile[],
+  overridePath: string,
+  before: Snapshot,
+) {
   await replaceText(paths.runtime, before.runtime);
   for (const [path, file] of [
     [paths.mirrors, before.mirrors],
-    [tokenPath, before.token],
+    ...tokens.map((token) => [token.path, token.before] as const),
     [paths.ca, before.ca],
     [overridePath, before.override],
   ] as const)
     await restoreFile(path, file).catch(() => undefined);
+}
+
+/** The repositories a detach names: one, a list or `all`; each must be attached. */
+function detachTargets(value: string, current: readonly MirrorEntry[]): readonly string[] {
+  const names =
+    value === 'all'
+      ? current.map((entry) => entry.repository)
+      : value.split(',').map((name) => repository(name.trim(), 'mirror-detach'));
+  if (names.length === 0) throw new Error('No repository is attached as a mirror');
+  for (const name of names)
+    if (!current.some((entry) => entry.repository === name))
+      throw new Error(`${name} is not a mirrored repository`);
+  return [...new Set(names)];
 }
 
 /**
@@ -227,14 +259,23 @@ async function attachment(
   authorities: string | null,
   probe: UpstreamProbe,
 ): Promise<{ next: MirrorEntry[]; secret: string | null; bundle: string | null }> {
-  const upstream = upstreamOrigin(change.upstream);
-  const sourceRepository = repository(change.sourceRepository ?? target, 'mirror-source');
   const existing = current.find((entry) => entry.repository === target);
+  // A new key for an attached repository needs only --mirror and --mirror-token-file: the
+  // source, its repository and the mode come from the entry, and are never changed by omission.
+  const upstream = upstreamOrigin(change.upstream ?? existing?.upstream);
+  const sourceRepository = repository(
+    change.sourceRepository ?? existing?.sourceRepository ?? target,
+    'mirror-source',
+  );
   if (
     existing &&
     (existing.upstream !== upstream || existing.sourceRepository !== sourceRepository)
   )
     throw new Error(`${target} mirrors another source; detach it first`);
+  if (existing && existing.stages === undefined && change.stages !== undefined)
+    throw new Error(
+      `${target} is a read-only mirror; an import needs a repository of its own (detach this one first, or import into another repository)`,
+    );
   // Artifact IDs are global: one source repository fills one repository here.
   const taken = current.find(
     (entry) =>
@@ -246,7 +287,7 @@ async function attachment(
     throw new Error(
       `${taken.repository} already takes ${sourceRepository} from this source; one source repository can fill one repository here`,
     );
-  const stages = stageList(change.stages);
+  const stages = stageList(change.stages ?? existing?.stages);
   const secret = await readSecretFile(
     change.tokenFile,
     'mirror-token-file',
@@ -290,26 +331,24 @@ export async function configureMirror(
   const before: Snapshot = {
     runtime: await readFile(paths.runtime, 'utf8'),
     mirrors: await snapshotFile(paths.mirrors),
-    token: null,
     ca: await snapshotFile(paths.ca),
     override: await snapshotFile(join(root, mirrorsOverrideFile)),
   };
   const current = entries(before.mirrors?.text ?? null);
-  const target = repository(
-    change.detach ?? change.repository,
-    change.detach ? 'mirror-detach' : 'mirror',
-  );
-  const tokenPath = join(paths.directory, `${target}.token`);
-  const snapshot = { ...before, token: await snapshotFile(tokenPath) };
+  const targets = change.detach
+    ? detachTargets(change.detach, current)
+    : [repository(change.repository, 'mirror')];
+  const tokens: TokenFile[] = [];
+  for (const name of targets) {
+    const path = join(paths.directory, `${name}.token`);
+    tokens.push({ path, before: await snapshotFile(path) });
+  }
   let next: MirrorEntry[];
   let secret: string | null = null;
   let bundle = before.ca?.text ?? null;
-  if (change.detach) {
-    if (!current.some((entry) => entry.repository === target))
-      throw new Error(`${target} is not a mirrored repository`);
-    next = current.filter((entry) => entry.repository !== target);
-  } else {
-    const attached = await attachment(change, target, current, paths, bundle, probe);
+  if (change.detach) next = current.filter((entry) => !targets.includes(entry.repository));
+  else {
+    const attached = await attachment(change, targets[0] ?? '', current, paths, bundle, probe);
     ({ next, secret, bundle } = attached);
   }
   const owner = await stat(paths.runtime);
@@ -327,8 +366,9 @@ export async function configureMirror(
       mode: state.mode === 'compose' ? 0o755 : 0o750,
     });
     if (process.platform !== 'win32') await chown(paths.directory, owner.uid, owner.gid);
-    if (secret !== null) await writeToken(tokenPath, secret, state, owner, containerUser);
-    else await unlink(tokenPath).catch(() => undefined);
+    for (const { path } of tokens)
+      if (secret !== null) await writeToken(path, secret, state, owner, containerUser);
+      else await unlink(path).catch(() => undefined);
     if (next.length > 0)
       await write(paths.mirrors, JSON.stringify({ mirrors: next }, null, 2) + '\n', owner, mode);
     else await unlink(paths.mirrors).catch(() => undefined);
@@ -344,7 +384,7 @@ export async function configureMirror(
     await services.healthy();
     return change.detach ? 'detached' : 'attached';
   } catch (error) {
-    await restore(paths, tokenPath, join(root, mirrorsOverrideFile), snapshot);
+    await restore(paths, tokens, join(root, mirrorsOverrideFile), before);
     await services.stop();
     await services.start(state.current);
     await services.healthy();

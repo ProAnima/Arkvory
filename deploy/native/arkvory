@@ -4,10 +4,16 @@ root=/opt/proanima-arkvory
 setup='/usr/lib/proanima-arkvory/arkvory-setup.mjs'
 case "${1:-help}" in
   help|--help|-h) exec /usr/lib/proanima-arkvory/node "$setup" help ;;
-  # HA cluster commands (ADR 0072) that act on Pacemaker run from the package files: the plan
-  # exists before the replicated volume, and a switchover unmounts the volume this command
-  # would otherwise run from.
-  cluster-plan|cluster-check|cluster-switchover|cluster-fence-test)
+  # HA cluster commands (ADR 0072) that run from the package files: the plan exists before the
+  # replicated volume, a switchover or a release unmounts the volume this command would
+  # otherwise run from, and a node that joins has no volume mounted yet.
+  cluster-plan|cluster-check|cluster-switchover|cluster-fence-test|cluster-node|cluster-release|cluster-kit)
     exec /usr/lib/proanima-arkvory/node "$setup" "$@" ;;
 esac
+# A standby of a cluster has no release of its own: it lives on the volume of the active node.
+if [ ! -x "$root/runtime/node" ] && [ -f /etc/proanima-arkvory/cluster.json ]; then
+  echo "This is a standby node of an Arkvory cluster: the volume and the release are on the active node." >&2
+  echo "Run the command there (find it with: crm_resource --resource arkvory --locate)." >&2
+  exit 2
+fi
 exec "$root/runtime/node" "$root/manage.mjs" "$@"

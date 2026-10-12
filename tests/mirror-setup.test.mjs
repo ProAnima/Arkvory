@@ -212,7 +212,7 @@ test('the probe asks the source for the mirror feed with the key and never echoe
   ]);
   mode = 'refused';
   await assert.rejects(fetchProbe(origin, 'releases', key), (error) => {
-    assert.match(error.message, /refused \/api\/v1\/capabilities \(401\)/);
+    assert.match(error.message, /does not accept this key/);
     assert.ok(!error.message.includes(key));
     return true;
   });
@@ -278,4 +278,91 @@ test('a source with a self-signed certificate is reached only with its authority
   assert.equal(await configureMirror(root, state, { detach: 'builds' }, services()), 'detached');
   assert.equal((await json(join(root, 'config/runtime.json'))).ARKVORY_MIRRORS_CA_FILE, undefined);
   await assert.rejects(readFile(stored), { code: 'ENOENT' });
+});
+
+test('a new key needs only the repository: source and stages stay, the mode never changes', async (t) => {
+  const { root, tokenFile, state } = await installation(t);
+  const ok = async () => undefined;
+  await configureMirror(root, state, { ...attach(tokenFile), stages: ['release'] }, services(), ok);
+  const rotated = join(root, 'rotated.key');
+  await writeFile(rotated, 'arkvory_' + 'r'.repeat(40));
+  const probes = [];
+  await configureMirror(
+    root,
+    state,
+    { repository: 'releases', tokenFile: rotated },
+    services(),
+    async (...args) => {
+      probes.push(args);
+    },
+  );
+  assert.deepEqual(probes, [['https://arkvory.example', 'releases', 'arkvory_' + 'r'.repeat(40)]]);
+  const [entry] = (await json(join(root, 'config/mirrors/mirrors.json'))).mirrors;
+  assert.deepEqual(entry.stages, ['release'], 'still an import, not a read-only mirror');
+  assert.equal(
+    (await readFile(join(root, 'config/mirrors/releases.token'), 'utf8')).trim(),
+    'arkvory_' + 'r'.repeat(40),
+  );
+  // A mirror never becomes an import by a re-run.
+  await configureMirror(root, state, { ...attach(tokenFile), repository: 'other' }, services(), ok);
+  await assert.rejects(
+    configureMirror(
+      root,
+      state,
+      { repository: 'other', tokenFile, stages: ['release'] },
+      services(),
+      ok,
+    ),
+    /read-only mirror; an import needs a repository of its own/,
+  );
+});
+
+test('several repositories or all are detached with one restart', async (t) => {
+  const { root, tokenFile, state } = await installation(t);
+  const ok = async () => undefined;
+  for (const repository of ['a', 'b', 'c'])
+    await configureMirror(
+      root,
+      state,
+      { ...attach(tokenFile), repository, sourceRepository: repository },
+      services(),
+      ok,
+    );
+  const control = services();
+  assert.equal(await configureMirror(root, state, { detach: 'a, b' }, control), 'detached');
+  assert.deepEqual(control.calls, ['stop', 'start', 'healthy']);
+  assert.deepEqual(
+    (await json(join(root, 'config/mirrors/mirrors.json'))).mirrors.map((m) => m.repository),
+    ['c'],
+  );
+  await assert.rejects(configureMirror(root, state, { detach: 'c,x' }, services()), /x is not/);
+  assert.equal(await configureMirror(root, state, { detach: 'all' }, services()), 'detached');
+  assert.equal((await json(join(root, 'config/runtime.json'))).ARKVORY_MIRRORS_FILE, undefined);
+  for (const repository of ['a', 'b', 'c'])
+    await assert.rejects(readFile(join(root, `config/mirrors/${repository}.token`)), {
+      code: 'ENOENT',
+    });
+});
+
+test('a refusal of the source says what to do: revoked key, missing grant, missing repository', async (t) => {
+  for (const [status, expected] of [
+    [401, /does not accept this key/],
+    [403, /may not read releases on the source: grant it read access/],
+    [404, /has no repository releases/],
+  ]) {
+    const server = createServer((request, response) => {
+      if (request.url === '/api/v1/capabilities') {
+        response.setHeader('content-type', 'application/json');
+        response.end(JSON.stringify({ features: { mirrorFeed: true } }));
+      } else {
+        response.statusCode = status;
+        response.end('{}');
+      }
+    });
+    server.listen(0, '127.0.0.1');
+    await once(server, 'listening');
+    t.after(() => server.close());
+    const { port } = server.address();
+    await assert.rejects(fetchProbe(`http://127.0.0.1:${String(port)}`, 'releases', key), expected);
+  }
 });

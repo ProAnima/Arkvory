@@ -164,7 +164,10 @@ const drbdStatus = (peerDisk) =>
   ]);
 // Outputs of the Pacemaker, Corosync and DRBD tools on a healthy ha-2 node.
 const healthy = {
-  'corosync-quorumtool -s': 'Quorum provider:  corosync_votequorum\nQuorate:          Yes\n',
+  'corosync-quorumtool -s':
+    'Quorum provider:  corosync_votequorum\nExpected votes:   3\nQuorate:          Yes\nFlags:            Quorate Qdevice\n',
+  'crm_node -n': 'node-a\n',
+  'timedatectl show -p NTPSynchronized --value': 'yes\n',
   'crm_attribute stonith-enabled': 'true\n',
   'crm_attribute no-quorum-policy': 'stop\n',
   'crm_node -l': '1 node-a member\n2 node-b member\n',
@@ -192,6 +195,11 @@ test('cluster-check passes a cluster that fences every node, has quorum and both
     results.map((result) => result.name),
     [
       'quorum',
+      'data nodes',
+      'votes',
+      'names agree',
+      'clock synchronized',
+      'witness',
       'stonith-enabled',
       'no-quorum-policy',
       'fence node-a',
@@ -207,7 +215,11 @@ test('cluster-check passes a cluster that fences every node, has quorum and both
 test('cluster-check fails disabled fencing, an unfenceable node, lost quorum and a missing copy', async () => {
   const broken = {
     ...healthy,
-    'corosync-quorumtool -s': 'Quorate:          No\n',
+    // Two nodes without the witness's vote, and node-b known to Pacemaker under another name.
+    'corosync-quorumtool -s': 'Expected votes:   2\nQuorate:          No\nFlags:\n',
+    'crm_node -l': '1 node-a member\n2 nodeb member\n',
+    'stonith_admin --list nodeb': '0 fence devices found\n',
+    'timedatectl show -p NTPSynchronized --value': 'no\n',
     'crm_attribute stonith-enabled': 'false\n',
     'crm_attribute no-quorum-policy': 'ignore\n',
     'stonith_admin --list node-b': '0 fence devices found\n',
@@ -220,9 +232,13 @@ test('cluster-check fails disabled fencing, an unfenceable node, lost quorum and
     .map((result) => result.name);
   assert.deepEqual(failed, [
     'quorum',
+    'votes',
+    'names agree',
+    'clock synchronized',
+    'witness',
     'stonith-enabled',
     'no-quorum-policy',
-    'fence node-b',
+    'fence nodeb',
     'drbd quorum',
     'drbd fencing',
     'complete copies',
@@ -265,4 +281,86 @@ test('a node takes the units on the volume: changed files, new drop-ins, removed
   assert.ok(unit.includes('Type=oneshot\nRemainAfterExit=yes'));
   assert.ok(unit.includes('ExecStart=/usr/bin/arkvory cluster-units --root /opt/proanima-arkvory'));
   assert.ok(!unit.includes('[Install]'), 'Pacemaker starts it; nothing enables it');
+});
+
+test('a node kit carries the resource, account ids and units, and refuses anything else', async (t) => {
+  const { writeKitFile, readKitFile, installKitUnits } =
+    await import('../apps/deploy/dist/cluster-kit.js');
+  const root = await mkdtemp(join(tmpdir(), 'arkvory-kit-'));
+  t.after(() => removeTestDirectory(root));
+  await mkdir(join(root, 'config', 'cluster', 'units', 'arkvory-backup.service.d'), {
+    recursive: true,
+  });
+  await writeFile(join(root, 'config', 'cluster.json'), JSON.stringify({ resource: 'arkvory' }));
+  await writeFile(
+    join(root, 'config', 'cluster', 'accounts.json'),
+    JSON.stringify({ arkvory: { uid: 990, gid: 990 }, 'arkvory-db': { uid: 991, gid: 991 } }),
+  );
+  await writeFile(join(root, 'config', 'cluster', 'units', 'arkvory-api.service'), 'api unit');
+  await writeFile(
+    join(root, 'config', 'cluster', 'units', 'arkvory-backup.service.d', 'arkvory-vault.conf'),
+    'vault drop-in',
+  );
+  const file = join(root, 'node.kit');
+  await writeKitFile(root, file);
+  // Never over an existing file: a kit is written once, on purpose.
+  await assert.rejects(writeKitFile(root, file), { code: 'EEXIST' });
+  const kit = await readKitFile(file);
+  assert.equal(kit.resource, 'arkvory');
+  assert.deepEqual(kit.accounts.arkvory, { uid: 990, gid: 990 });
+  const units = join(root, 'installed');
+  await installKitUnits(kit, units);
+  assert.equal(
+    await readFile(join(units, 'arkvory-backup.service.d', 'arkvory-vault.conf'), 'utf8'),
+    'vault drop-in',
+  );
+  // A unit path that leaves the units directory, or another format, is refused before anything.
+  const bad = join(root, 'bad.kit');
+  await writeFile(bad, JSON.stringify({ ...kit, units: { '../../etc/passwd': 'x' } }));
+  await assert.rejects(readKitFile(bad), /no node kit/);
+  await writeFile(bad, JSON.stringify({ ...kit, format: 'other' }));
+  await assert.rejects(readKitFile(bad), /no node kit/);
+});
+
+test('the Pacemaker script stops on an unfilled fence placeholder and adds the witness once', () => {
+  const script = pacemakerCommands(planInput(options()));
+  const lines = script.split('\n');
+  const guard = lines.findIndex((line) => line.includes("grep -q '<agent'' parameters'"));
+  const firstPcs = lines.findIndex((line) => line.startsWith('pcs '));
+  assert.ok(guard > 0 && guard < firstPcs, 'the guard runs before any change');
+  const push = lines.findIndex((line) => line.startsWith('pcs cluster cib-push'));
+  const witness = lines.findIndex((line) => line.includes('pcs quorum device add'));
+  assert.ok(witness > push, 'the quorum device follows the configuration');
+  assert.match(lines[witness], /^pcs quorum status \| grep -q Qdevice \|\| pcs quorum device add/);
+});
+
+test('plans refuse a virtual address of a node, repeated addresses and a resource configure refuses', () => {
+  assert.throws(
+    () => checkPlan(planInput(options({ 'virtual-ip': '10.0.0.1/24' }))),
+    /virtual address must differ/,
+  );
+  assert.throws(
+    () => checkPlan(planInput(options({ nodes: 'node-a=10.0.0.1,node-b=10.0.0.1' }))),
+    /addresses repeat/,
+  );
+  assert.throws(
+    () => checkPlan(planInput(options({ 'cluster-resource': 'r'.repeat(40) }))),
+    /Invalid resource name/,
+  );
+});
+
+test('configure --cluster prints the commands that follow, in order', async () => {
+  const { nextSteps } = await import('../apps/deploy/dist/cluster-setup.js');
+  const text = nextSteps('/opt/proanima-arkvory', { profile: 'ha-2', resource: 'arkvory' });
+  const order = [
+    'cluster-release',
+    'cluster-node',
+    'pcs cluster setup',
+    'pacemaker.sh',
+    'cluster-check',
+  ].map((step) => text.indexOf(step));
+  assert.ok(
+    order.every((index, position) => index > 0 && (position === 0 || index > order[position - 1])),
+  );
+  assert.ok(!text.includes('--cluster-resource'), 'the default resource needs no flag');
 });

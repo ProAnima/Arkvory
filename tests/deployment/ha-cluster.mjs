@@ -15,8 +15,6 @@ import { createGuest, HOST_ADDRESS, run, ssh } from './ha-vms.mjs';
  */
 export const ROOT = '/opt/proanima-arkvory';
 export const VIP = '192.168.122.100';
-const STOP_ALL =
-  'systemctl stop arkvory-update.timer arkvory-update arkvory-backup arkvory-worker arkvory-api arkvory-replica arkvory-database';
 
 export function layout(profile) {
   const names = profile === 'ha-2' ? ['node-a', 'node-b'] : ['node-a', 'node-b', 'node-c'];
@@ -195,19 +193,21 @@ async function installFirst(cluster, certificates) {
   );
   await first.shell.exec(`arkvory configure --root ${ROOT} --cluster ${cluster.profile}`);
   cluster.token = (await first.shell.exec(`cat ${ROOT}/config/bootstrap-token.txt`)).trim();
-  await first.shell.exec(`${STOP_ALL} && umount ${ROOT} && drbdadm secondary arkvory`);
+  // The operator's step: one command stops Arkvory, unmounts the volume and makes it secondary.
+  await first.shell.exec(`arkvory cluster-release --root ${ROOT}`);
 }
 
-/** Each other data node gets the package while the volume is mounted there once. */
+/**
+ * Each other data node joins with one command: cluster-node takes the volume, makes the accounts
+ * and units, and releases it; the package then finishes as a standby's.
+ */
 async function joinOthers(cluster) {
   for (const node of cluster.data.slice(1)) {
     await node.shell.exec(
-      `drbdadm primary arkvory && mkdir -p ${ROOT} && mount /dev/drbd0 ${ROOT}`,
+      `arkvory cluster-node --root ${ROOT} && dpkg --configure proanima-arkvory`,
     );
-    await node.shell.exec(
-      `arkvory cluster-node --root ${ROOT} --cluster-resource arkvory && dpkg --configure proanima-arkvory`,
-    );
-    await node.shell.exec(`${STOP_ALL} && umount ${ROOT} && drbdadm secondary arkvory`);
+    const mounted = await node.shell.tryExec(`mountpoint -q ${ROOT}`);
+    if (mounted.ok) throw new Error(`cluster-node left the volume mounted on ${node.name}`);
   }
 }
 
@@ -293,6 +293,16 @@ export async function buildCluster({ profile, base, keys, artifact }) {
   await pacemaker(cluster, keys, files.pacemaker);
   cluster.node = (name) => cluster.all.find((node) => node.name === name);
   // The operator's acceptance check of a new cluster: quorum, fencing, DRBD, both copies.
+  // cluster-check requires synchronized clocks; fresh guests reach their NTP server in seconds.
+  for (const node of cluster.data)
+    await until(
+      async () =>
+        (await node.shell.tryExec('timedatectl show -p NTPSynchronized --value')).output.trim() ===
+        'yes',
+      `the clock of ${node.name} to synchronize`,
+      180000,
+      3000,
+    );
   const [running] = await activeNodes(cluster);
   console.log(await cluster.node(running).shell.exec(`arkvory cluster-check --root ${ROOT}`));
   return cluster;

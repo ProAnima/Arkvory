@@ -158,7 +158,11 @@ export async function decideSingleCopy(
     report('warning', 'Single-copy decision withdrawn: writes need every required copy again');
     return;
   }
-  const until = Date.parse(options.get('until') ?? '');
+  const text = options.get('until') ?? '';
+  // Without a zone the time would be read on the active node's clock in its local zone.
+  if (!/(Z|[+-]\d{2}:\d{2})$/.test(text))
+    throw new Error('--until needs a time zone: 2026-10-14T18:00:00Z or 2026-10-14T21:00:00+03:00');
+  const until = Date.parse(text);
   if (Number.isNaN(until) || until <= now || until - now > MAX_SINGLE_COPY_MS)
     throw new Error('--until must be a time in the next 7 days (ISO 8601)');
   // The decision ends when the copies are back, so it is taken only while they are missing.

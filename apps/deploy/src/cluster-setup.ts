@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { atomicJson, replaceText } from './files.js';
+import { atomicJson, exists, replaceText } from './files.js';
 import type { Installation } from './model.js';
 import { command } from './process.js';
 import { report } from './output.js';
@@ -9,6 +9,7 @@ import type { ServiceControl } from './tls-setup.js';
 import { clusterFile, readVolume } from './replica-service.js';
 import type { ClusterSettings } from './replica-service.js';
 import {
+  NODE_MARKER,
   disableAutostart,
   leaveCluster,
   replicatedMount,
@@ -45,6 +46,11 @@ export async function configureCluster(
 ): Promise<void> {
   if (state.mode !== 'systemd')
     throw new Error('HA clusters are for native Linux installations (ADR 0072)');
+  // A second run would roll a working node back to standalone on any failure.
+  if ((await exists(NODE_MARKER)) || (await exists(clusterFile(root))))
+    throw new Error(
+      'This installation is a cluster node already; configure --cluster runs once, on the first node. Check it with "arkvory cluster-check"',
+    );
   await replicatedMount(root);
   const volume = await readVolume(change.resource);
   if (volume.role !== 'Primary') throw new Error(`${change.resource} is not primary on this node`);
@@ -91,8 +97,18 @@ export async function configureCluster(
       { cause: error },
     );
   }
-  report(
-    'info',
-    `Writes are acknowledged with ${String(settings.requiredCopies)} complete copies. Next: on every other data node, mount the volume during a planned switchover and run "arkvory cluster-node --root ${root} --cluster-resource ${change.resource}"; then apply "arkvory cluster-plan" with Pacemaker.`,
-  );
+  report('info', nextSteps(root, change));
+}
+
+/** The literal commands that follow, in the order of the cluster page (wiki operate/cluster). */
+export function nextSteps(root: string, change: ClusterChange): string {
+  const resource = change.resource === 'arkvory' ? '' : ` --cluster-resource ${change.resource}`;
+  return [
+    `Writes are now acknowledged only with 2 complete copies (${change.profile}). Next:`,
+    `  1. On this node, release the volume:  arkvory cluster-release --root ${root}`,
+    `  2. On each other data node in turn:   arkvory cluster-node --root ${root}${resource} && dpkg --configure proanima-arkvory`,
+    '  3. Set up Corosync with pcs (pcs host auth, pcs cluster setup, pcs cluster start --all)',
+    '  4. Fill the fence parameters in pacemaker.sh of your plan and run it on one data node',
+    `  5. On the active node:                  arkvory cluster-check --root ${root}`,
+  ].join('\n');
 }

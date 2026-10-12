@@ -3,6 +3,8 @@ import { join } from 'node:path';
 import { atomicJson, atomicText, exists, jsonFile } from './files.js';
 import { command, commandOutput } from './process.js';
 import { report } from './output.js';
+import { installKitUnits, readKitFile } from './cluster-kit.js';
+import { mounted, releaseVolume, takeVolume } from './cluster-volume.js';
 
 /**
  * A node of an HA cluster (ADR 0072) is marked outside the replicated volume: install, update and
@@ -242,31 +244,75 @@ async function ensureAccount(account: string, ids: { uid: number; gid: number })
     );
 }
 
-/**
- * `arkvory cluster-node`: prepares another data node while the volume is mounted on it (during a
- * planned switchover): the same accounts with the same ids, the same units, none enabled.
- */
-export async function joinNode(root: string, resource: string): Promise<void> {
-  await replicatedMount(root);
-  const accounts = (await jsonFile(join(kit(root), 'accounts.json'))) as Record<
-    string,
-    { uid: number; gid: number } | undefined
-  >;
+type Accounts = Readonly<
+  Record<string, { readonly uid: number; readonly gid: number } | undefined>
+>;
+
+/** The same accounts with the same ids and the same units as the cluster, none enabled. */
+async function prepareNode(accounts: Accounts, install: (units: string) => Promise<unknown>) {
   for (const account of ACCOUNTS) {
     const ids = accounts[account];
     if (!ids || !Number.isInteger(ids.uid) || !Number.isInteger(ids.gid))
       throw new Error(
-        `The volume has no ids of ${account}; run configure --cluster on the primary`,
+        `The cluster has no ids of ${account}; run configure --cluster on the first node`,
       );
     await ensureAccount(account, ids);
   }
-  await mirrorUnits(join(kit(root), 'units'), UNITS);
+  await install(UNITS);
   await disableAutostart();
-  await writeNodeMarker({ root, resource });
-  report(
-    'info',
-    `This node can run ${resource}; Pacemaker starts Arkvory where the volume is primary`,
-  );
+}
+
+/** The cluster settings on the mounted volume; a volume not yet clustered says so. */
+async function volumeSettings(root: string): Promise<{ readonly resource: string }> {
+  const settings = (await jsonFile(join(root, 'config', 'cluster.json')).catch(() => null)) as {
+    resource?: unknown;
+  } | null;
+  if (typeof settings?.resource !== 'string')
+    throw new Error(
+      'The volume is not a cluster yet: run "arkvory configure --cluster" on the first node',
+    );
+  return { resource: settings.resource };
+}
+
+/**
+ * `arkvory cluster-node`: prepares another data node, the same accounts with the same ids and
+ * the same units, none enabled. With `--kit` (written by cluster-kit on the active node) the
+ * volume is not needed, so a replacement node joins while the active node keeps serving. Without,
+ * while the cluster is built (Pacemaker does not manage it yet), the node takes the volume, reads
+ * what it needs and releases it again; a volume that is mounted here already stays mounted.
+ */
+export async function joinNode(
+  root: string,
+  resource: string | undefined,
+  kitFile?: string,
+): Promise<void> {
+  if (kitFile !== undefined) {
+    const nodeKit = await readKitFile(kitFile);
+    if (resource !== undefined && resource !== nodeKit.resource)
+      throw new Error(`The kit is of ${nodeKit.resource}, not of ${resource}`);
+    if (nodeKit.root !== root) throw new Error(`The kit is for --root ${nodeKit.root}`);
+    await prepareNode(nodeKit.accounts, (units) => installKitUnits(nodeKit, units));
+    await writeNodeMarker({ root, resource: nodeKit.resource });
+    report('info', `This node can run ${nodeKit.resource} once DRBD and Pacemaker know it`);
+    return;
+  }
+  const name = resource ?? 'arkvory';
+  const own = !(await mounted(root));
+  if (own) await takeVolume(root, name);
+  try {
+    await replicatedMount(root);
+    const settings = await volumeSettings(root);
+    if (settings.resource !== name)
+      throw new Error(
+        `The volume belongs to ${settings.resource}; pass --cluster-resource ${settings.resource}`,
+      );
+    const accounts = (await jsonFile(join(kit(root), 'accounts.json'))) as Accounts;
+    await prepareNode(accounts, (units) => mirrorUnits(join(kit(root), 'units'), units));
+    await writeNodeMarker({ root, resource: name });
+  } finally {
+    if (own) await releaseVolume(root, name);
+  }
+  report('info', `This node can run ${name}; Pacemaker starts Arkvory where the volume is primary`);
 }
 
 /** Undoes the node marker and the replica unit; used when configuring a cluster fails. */

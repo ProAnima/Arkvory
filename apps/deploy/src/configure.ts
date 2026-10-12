@@ -229,6 +229,10 @@ export async function configure(root: string, options: Map<string, string>): Pro
     webhookOptions,
     updateOptions,
   ];
+  if (!groups.some(used))
+    throw new Error(
+      'Nothing to configure: name a change, for example --mirror or --tls-cert (arkvory help)',
+    );
   if (groups.filter(used).length > 1)
     throw new Error(
       'Change the cluster, HTTPS, the backup vault, mirrors, webhooks and update policy in separate configure calls',

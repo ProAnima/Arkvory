@@ -13,7 +13,9 @@ import { runWithLogFile } from './log-file.js';
 import { configure } from './configure.js';
 import { warnEngineAutostart } from './engine-autostart.js';
 import { clusterStatus, decideSingleCopy, serveReplica } from './replica-service.js';
-import { joinNode, refreshNodeKit, syncUnits } from './cluster-node.js';
+import { joinNode, nodeMarker, refreshNodeKit, syncUnits } from './cluster-node.js';
+import { releaseVolume } from './cluster-volume.js';
+import { writeKitFile } from './cluster-kit.js';
 import { writePlan } from './cluster-plan-files.js';
 import { checkCluster, fenceTest, switchover } from './cluster-ops.js';
 
@@ -33,6 +35,7 @@ function argumentsOf(args: string[]): Map<string, string> {
     'vault-no-encryption',
     'backup-vault-off',
     'off',
+    'yes',
   ];
   const values = [
     'root',
@@ -83,6 +86,7 @@ function argumentsOf(args: string[]): Map<string, string> {
     'output',
     'to',
     'node',
+    'kit',
   ];
   for (let index = 0; index < args.length; index++) {
     const name = args[index]?.replace(/^--/, '');
@@ -194,11 +198,75 @@ async function locked(operation: string, root: string, options: Map<string, stri
     case 'configure':
       await configure(root, options);
       break;
-    case 'cluster-node':
-      await joinNode(root, options.get('cluster-resource') ?? 'arkvory');
-      break;
     default:
-      throw new Error('Commands: install, status, update, configure, recover, upgrade');
+      throw new Error(`Unknown command ${operation}`);
+  }
+}
+
+/** Every command `main` accepts; anything else is refused before it touches an installation. */
+const COMMANDS = new Set([
+  'install',
+  'finish-install',
+  'apply-installer',
+  'status',
+  'update',
+  'recover',
+  'upgrade',
+  'configure',
+  'updates-poll',
+  'updates-reset',
+  'updates-connect',
+  'cluster-plan',
+  'cluster-check',
+  'cluster-switchover',
+  'cluster-fence-test',
+  'cluster-status',
+  'cluster-single-copy',
+  'cluster-replica',
+  'cluster-units',
+  'cluster-node',
+  'cluster-release',
+  'cluster-kit',
+]);
+
+/**
+ * Cluster commands on one node that run outside the installation lock (ADR 0072): long-running
+ * services, reads, an operator's decision during an incident, and the steps that take or release
+ * the volume, whose root may not be mounted here (the lock lives on the volume).
+ */
+async function nodeOperation(
+  operation: string,
+  root: string,
+  options: Map<string, string>,
+): Promise<boolean> {
+  const resource = options.get('cluster-resource');
+  switch (operation) {
+    case 'cluster-replica':
+      await serveReplica(root);
+      return true;
+    case 'cluster-status':
+      await clusterStatus(root);
+      return true;
+    case 'cluster-units':
+      await syncUnits(root);
+      return true;
+    case 'cluster-single-copy':
+      await decideSingleCopy(root, options);
+      return true;
+    case 'cluster-node':
+      await joinNode(root, resource, options.get('kit'));
+      return true;
+    case 'cluster-release':
+      await releaseVolume(root, (await nodeMarker())?.resource ?? resource ?? 'arkvory');
+      return true;
+    case 'cluster-kit': {
+      const output = options.get('output');
+      if (!output) throw new Error('cluster-kit needs --output <file>');
+      await writeKitFile(root, output);
+      return true;
+    }
+    default:
+      return false;
   }
 }
 
@@ -210,13 +278,15 @@ async function main(): Promise<void> {
     console.log(deploymentHelp());
     return;
   }
+  if (!COMMANDS.has(operation))
+    throw new Error(`Unknown command ${operation}; "arkvory help" lists every command`);
   const options = argumentsOf(process.argv.slice(3));
   // Planning needs no installation: it may run on a workstation.
   if (operation === 'cluster-plan') return writePlan(options);
   // Pacemaker operations act on the cluster, not on an installation's files.
   if (operation === 'cluster-check') return checkCluster();
   if (operation === 'cluster-switchover') return switchover(options.get('to'));
-  if (operation === 'cluster-fence-test') return fenceTest(options.get('node'));
+  if (operation === 'cluster-fence-test') return fenceTest(options.get('node'), options.has('yes'));
   const rawRoot = options.get('root');
   if (!rawRoot) throw new Error('Specify --root (absolute installation directory)');
   const root = resolve(rawRoot);
@@ -227,13 +297,7 @@ async function main(): Promise<void> {
     await warnEngineAutostart(state);
     return;
   }
-  // Long-running or read-only: outside the installation lock (ADR 0072).
-  if (operation === 'cluster-replica') return serveReplica(root);
-  if (operation === 'cluster-status') return clusterStatus(root);
-  if (operation === 'cluster-units') return syncUnits(root);
-  // The decision file is written atomically and touches no deployment state: an update holding
-  // the installation lock must not keep an operator from deciding during an incident.
-  if (operation === 'cluster-single-copy') return decideSingleCopy(root, options);
+  if (await nodeOperation(operation, root, options)) return;
   if (await capturedUpdater(operation, options, root)) return;
   // The timer's own tick tries again in a minute; an operator's command waits for it instead.
   const waitMs = operation === 'updates-poll' ? 0 : 120_000;

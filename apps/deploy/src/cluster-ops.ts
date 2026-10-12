@@ -1,7 +1,8 @@
 import { setTimeout as delay } from 'node:timers/promises';
 import { commandOutput } from './process.js';
 import { report } from './output.js';
-import { completeCopies, volumeState } from './replica-state.js';
+import { completeCopies, peerNames, volumeState } from './replica-state.js';
+
 import { nodeMarker } from './cluster-node.js';
 
 /** Runs a cluster tool and returns its output; rejects on a non-zero exit. */
@@ -85,6 +86,49 @@ async function replicationChecks(tool: Tool, resource: string): Promise<CheckRes
   ];
 }
 
+/**
+ * The shape of the cluster: 2 data nodes with a quorum device (ha-2) or 3 (ha-3), so 3 votes
+ * either way; Pacemaker's names are this node's and DRBD's peers'; clocks follow NTP (the
+ * single-copy decision on the volume is judged by the active node's clock).
+ */
+async function shapeChecks(tool: Tool, resource: string, quorum: string): Promise<CheckResult[]> {
+  const nodes = clusterNodes(await tool('crm_node', ['-l']));
+  const votes = /Expected votes:\s+(\d+)/.exec(quorum)?.[1] ?? 'unknown';
+  const here = (await tool('crm_node', ['-n'])).trim();
+  const peers = peerNames(
+    JSON.parse(await tool('drbdsetup', ['status', '--json', resource])),
+    resource,
+  );
+  const strangers = nodes.filter((node) => node !== here && !peers.includes(node));
+  const synced = (
+    await tool('timedatectl', ['show', '-p', 'NTPSynchronized', '--value']).catch(() => 'unknown')
+  ).trim();
+  const results: CheckResult[] = [
+    {
+      name: 'data nodes',
+      ok: nodes.length === 2 || nodes.length === 3,
+      detail: `${String(nodes.length)} (ha-2 has 2 and a witness, ha-3 has 3)`,
+    },
+    { name: 'votes', ok: votes === '3', detail: `${votes} expected, 3 needed` },
+    {
+      name: 'names agree',
+      ok: strangers.length === 0,
+      detail:
+        strangers.length === 0
+          ? 'Pacemaker and DRBD know the same nodes'
+          : `${strangers.join(', ')} not in DRBD resource ${resource}: names must equal the host names`,
+    },
+    { name: 'clock synchronized', ok: synced === 'yes', detail: `NTPSynchronized=${synced}` },
+  ];
+  if (nodes.length === 2)
+    results.push({
+      name: 'witness',
+      ok: /Flags:.*\bQdevice\b/.test(quorum),
+      detail: /Flags:.*\bQdevice\b/.test(quorum) ? 'quorum device votes' : 'no quorum device vote',
+    });
+  return results;
+}
+
 /** Every requirement of ADR 0072 a running cluster must meet; one failed check fails the whole. */
 export async function clusterChecks(tool: Tool, resource: string): Promise<CheckResult[]> {
   const results: CheckResult[] = [];
@@ -94,6 +138,11 @@ export async function clusterChecks(tool: Tool, resource: string): Promise<Check
     ok: /Quorate:\s+Yes/.test(quorum),
     detail: /Quorate:\s+(\S+)/.exec(quorum)?.[1] ?? 'unknown',
   });
+  try {
+    results.push(...(await shapeChecks(tool, resource, quorum)));
+  } catch (error) {
+    results.push({ name: 'cluster shape', ok: false, detail: failed(error) });
+  }
   for (const part of [() => fencingChecks(tool), () => replicationChecks(tool, resource)])
     try {
       results.push(...(await part()));
@@ -161,6 +210,11 @@ export async function switchover(
     resource,
   );
   const here = (await tool('crm_node', ['-n'])).trim();
+  const status: unknown = JSON.parse(await tool('drbdsetup', ['status', '--json', resource]));
+  if (target !== here && !peerNames(status, resource).includes(target))
+    throw new Error(
+      `${target} is no DRBD peer of ${resource}: the Pacemaker and DRBD node names must equal the host names (arkvory cluster-check)`,
+    );
   const complete = target === here ? copies.local : copies.peers.includes(target);
   if (!complete || (copies.local ? 1 : 0) + copies.peers.length < 2)
     throw new Error(
@@ -187,13 +241,27 @@ export async function switchover(
  * `arkvory cluster-fence-test --node <node>`: fences a standby to prove its fence device works.
  * The active node is refused: fencing it is a failover, which cluster-switchover does safely.
  */
-export async function fenceTest(node: string | undefined, tool: Tool = systemTool): Promise<void> {
+export async function fenceTest(
+  node: string | undefined,
+  confirmed: boolean,
+  tool: Tool = systemTool,
+): Promise<void> {
   const { resource } = await requireMarker();
   if (!node) throw new Error('--node names the standby to fence');
-  if (!clusterNodes(await tool('crm_node', ['-l'])).includes(node))
-    throw new Error(`${node} is not a cluster node`);
+  const nodes = clusterNodes(await tool('crm_node', ['-l']));
+  if (!nodes.includes(node)) throw new Error(`${node} is not a cluster node`);
   if (locatedOn(await tool('crm_resource', ['--resource', resource, '--locate'])).includes(node))
     throw new Error(`${node} runs Arkvory; fence a standby or switch over first`);
+  // With a vote missing already, fencing one more node loses the quorum and stops the service.
+  const failing = (await clusterChecks(tool, resource)).filter((check) => !check.ok);
+  if (failing.length > 0)
+    throw new Error(
+      `Fix the cluster before a fencing test: ${failing.map((check) => check.name).join(', ')} failed (arkvory cluster-check)`,
+    );
+  if (nodes.length === 2 && !confirmed)
+    throw new Error(
+      `In ha-2 writes stop (503) until ${node} is back and resynchronized; repeat with --yes to fence it`,
+    );
   // The fencer may take its whole 120 s (IPMI and Redfish reboots are slow): wait for its answer.
   await tool('stonith_admin', ['--reboot', node, '--timeout', '120'], 150_000);
   report('info', `${node} was fenced; it rejoins after its restart and resynchronizes`);

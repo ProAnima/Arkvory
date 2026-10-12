@@ -50,6 +50,15 @@ export function completeCopies(
   return { role, local, peers: names };
 }
 
+/** The DRBD peers of the resource by their connection name, connected or not. */
+export function peerNames(status: unknown, resource: string): string[] {
+  const found = entries(status, 'resources').find((entry) => entry['name'] === resource);
+  if (!found) throw new Error(`drbdsetup status: resource ${resource} is not configured`);
+  return entries(found['connections'] ?? [], 'connections')
+    .map((connection) => connection['name'])
+    .filter((name): name is string => typeof name === 'string');
+}
+
 export function volumeState(status: unknown, resource: string): VolumeState {
   const { role, local, peers } = completeCopies(status, resource);
   return { role, copies: (local ? 1 : 0) + peers.length };

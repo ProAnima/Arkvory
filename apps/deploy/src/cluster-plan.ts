@@ -34,6 +34,8 @@ const ipv4 = (value: string) =>
 const within = (value: number, low: number, high: number) =>
   Number.isInteger(value) && value >= low && value <= high;
 const AGENT = /^fence_[a-z0-9_]{2,40}$/;
+/** The rule of configure --cluster and cluster-node: the plan never names what they refuse. */
+const RESOURCE = /^[a-z][a-z0-9-]{0,30}$/;
 
 export function checkPlan(input: ClusterPlanInput): void {
   const data = input.profile === 'ha-2' ? 2 : 3;
@@ -47,10 +49,15 @@ export function checkPlan(input: ClusterPlanInput): void {
   if (new Set(all.map((node) => node.name)).size !== all.length)
     throw new Error('Node names repeat');
   if (new Set(all.map((node) => node.id)).size !== all.length) throw new Error('Node ids repeat');
+  if (new Set(all.map((node) => node.address)).size !== all.length)
+    throw new Error('Node addresses repeat');
+  if (all.some((node) => node.address === input.virtualIp))
+    throw new Error('The virtual address must differ from every node address');
   for (const node of all)
     if (!NAME.test(node.name) || !ipv4(node.address) || !within(node.id, 0, 31))
       throw new Error(`Invalid node ${node.name}`);
-  if (!NAME.test(input.resource)) throw new Error('Invalid resource name');
+  if (!RESOURCE.test(input.resource))
+    throw new Error('Invalid resource name: a lower-case letter, then up to 30 of a-z, 0-9 and -');
   if (!/^\/dev\/[A-Za-z0-9/_.-]+$/.test(input.disk)) throw new Error('Invalid backing disk');
   // Written unquoted into pacemaker.sh: only characters a shell takes literally.
   if (!/^\/[A-Za-z0-9/_.-]+$/.test(input.root) || input.root.split('/').includes('..'))
@@ -125,9 +132,11 @@ export function pacemakerCommands(input: ClusterPlanInput): string {
         ]
       : []),
     'set -eu',
-    ...(input.witness
-      ? [`pcs quorum device add model net host=${input.witness.name} algorithm=ffsplit`]
-      : []),
+    // Split so that this line itself never matches: only an unfilled placeholder stops the script.
+    "if grep -q '<agent'' parameters' \"$0\"; then",
+    "  echo 'Fill the fence agent parameters of every node in this script first' >&2",
+    '  exit 1',
+    'fi',
     `pcs cluster cib ${r}.cib.xml`,
     `${cib} property set stonith-enabled=true`,
     `${cib} property set no-quorum-policy=stop`,
@@ -150,6 +159,12 @@ export function pacemakerCommands(input: ClusterPlanInput): string {
     `${cib} constraint order promote ${r}-drbd-clone then start ${r}`,
     `${cib} resource defaults update resource-stickiness=200`,
     `pcs cluster cib-push ${r}.cib.xml --config`,
+    // After the push and only once: a second run must not fail on a device added before.
+    ...(input.witness
+      ? [
+          `pcs quorum status | grep -q Qdevice || pcs quorum device add model net host=${input.witness.name} algorithm=ffsplit`,
+        ]
+      : []),
     '',
   ];
   return lines.join('\n');
