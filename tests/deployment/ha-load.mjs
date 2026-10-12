@@ -100,7 +100,12 @@ export function client({ host, ca, token }) {
    */
   async function upload(item, onSent = () => {}) {
     item.sha256 ??= await digest(bytes(item.name, item.size));
-    const created = await create(item);
+    // Node keeps HTTPS connections alive: after a failover a pooled one still leads to the old
+    // node and is reset when reused. Like the SDK, repeat the create (its idempotency key makes
+    // that safe) instead of counting a reset before any byte was accepted as a failed upload.
+    let created = await create(item);
+    for (let attempt = 1; created.status === 0 && attempt < 3; attempt++)
+      created = await create(item);
     if (created.status !== 201) return settle(item, created);
     item.id = created.json.id;
     if (created.json.status === 'available') return settle(item, created);

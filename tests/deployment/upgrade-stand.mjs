@@ -123,6 +123,8 @@ try {
     '--backup-vault',
     '/var/lib/arkvory-vault',
     '--init-vault',
+    // Since 0.4.0 a vault is encrypted unless asked otherwise; 0.3.0 knows no such flag.
+    ...(newer(previous.version, '0.3.99') ? ['--vault-no-encryption'] : []),
   ]);
   host.probe('backup-capture', on);
   const installed = host.exec(['dpkg', '-i', '/stand/candidate.deb']);
