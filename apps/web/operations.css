@@ -2,7 +2,7 @@
 #mirrors-panel,
 #cluster-panel {
   display: grid;
-  gap: var(--space-4);
+  gap: var(--section-gap);
 }
 #mirrors-panel > .card > * + *,
 #cluster-panel > .card > * + * {

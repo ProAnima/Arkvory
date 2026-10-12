@@ -58,7 +58,8 @@ export async function exerciseCatalogUsability(page, go) {
     page.locator('#search button').first().click(),
   ]);
   await page.locator('#search-clear').click();
-  await page.locator('#status[data-i18n=loaded]').waitFor();
+  // Loaded rows are progress, not news: the status text follows without raising the bar.
+  await page.locator('#status[data-i18n=loaded]').waitFor({ state: 'attached' });
   const failed = page.waitForEvent('requestfailed', (r) => r.url().includes('q=stale-request'));
   release();
   await failed;

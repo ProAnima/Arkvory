@@ -1895,10 +1895,6 @@
     "en": "Mirrors",
     "text": "미러"
   },
-  "mirrorsIntro": {
-    "en": "Repositories this server copies from other Arkvory installations. The server keeps them in sync by itself; this page refreshes on its own.",
-    "text": "이 서버가 다른 Arkvory 설치 환경에서 복사하는 리포지토리입니다. 서버가 자동으로 동기화를 유지하며, 이 페이지도 자동으로 새로 고쳐집니다."
-  },
   "mirrorsRepository": {
     "en": "Repository",
     "text": "리포지토리"
@@ -1960,8 +1956,8 @@
     "text": "이 서버에 미러가 없습니다"
   },
   "mirrorsEmpty": {
-    "en": "A mirror keeps a copy of a repository of another installation: a second site, or staging to production. An administrator sets one up with “arkvory configure --mirror”.",
-    "text": "미러는 다른 설치 환경의 리포지토리 사본을 보관합니다. 예를 들어 두 번째 사이트나 스테이징에서 프로덕션으로의 전달에 사용합니다. 관리자가 “arkvory configure --mirror”로 설정합니다."
+    "en": "A mirror copies a repository from another installation: a second site, or staging to production. Set one up with “arkvory configure --mirror”.",
+    "text": "미러는 다른 설치 환경의 리포지토리를 복사합니다. 예를 들어 두 번째 사이트나 스테이징에서 프로덕션으로의 전달에 사용합니다. “arkvory configure --mirror”로 설정하세요."
   },
   "mirrorsGuide": {
     "en": "Mirrors guide",
@@ -1978,10 +1974,6 @@
   "cluster": {
     "en": "Cluster",
     "text": "클러스터"
-  },
-  "clusterIntro": {
-    "en": "This server runs as a high-availability cluster: every write is kept on more than one node before it is confirmed. This page refreshes on its own.",
-    "text": "이 서버는 고가용성 클러스터로 실행됩니다. 모든 쓰기는 확인되기 전에 둘 이상의 노드에 저장됩니다. 이 페이지는 자동으로 새로 고쳐집니다."
   },
   "clusterProfile": {
     "en": "Layout",
@@ -2084,20 +2076,20 @@
     "text": "다음 단계"
   },
   "clusterHealthy": {
-    "en": "Every copy is complete: a node can fail without losing confirmed writes. Before maintenance of the serving node, move Arkvory to another node. On the serving node, run:",
-    "text": "모든 복사본이 완전합니다. 노드 하나가 장애를 일으켜도 확인된 쓰기는 손실되지 않습니다. 서비스 중인 노드를 유지 관리하기 전에 Arkvory를 다른 노드로 옮기세요. 서비스 중인 노드에서 다음을 실행하세요:"
+    "en": "All copies are complete. Before maintaining the serving node, move Arkvory away from it:",
+    "text": "모든 복사본이 완전합니다. 서비스 중인 노드를 유지 관리하기 전에 Arkvory를 그 노드에서 옮기세요:"
   },
   "clusterDegraded": {
-    "en": "Writes are stopped until the missing copy is back; downloads keep working. Bring the node back, or replace it with a new one (see the guide). Only if you accept losing writes on a second failure, allow one copy for a limited time. On the serving node, run:",
-    "text": "누락된 복사본이 돌아올 때까지 쓰기가 중지됩니다. 다운로드는 계속 작동합니다. 노드를 복구하거나 새 노드로 교체하세요(가이드 참조). 두 번째 장애 시 쓰기 손실을 감수할 수 있는 경우에만 제한된 시간 동안 복사본 하나를 허용하세요. 서비스 중인 노드에서 다음을 실행하세요:"
+    "en": "Writes are paused until the copy is back: return the node or replace it. To accept writes with one copy for a while (a second failure loses them), on the serving node:",
+    "text": "복사본이 돌아올 때까지 쓰기가 일시 중지됩니다. 노드를 복구하거나 교체하세요. 한동안 복사본 하나로 쓰기를 받으려면(두 번째 장애 시 손실됨) 서비스 중인 노드에서:"
   },
   "clusterSingle": {
-    "en": "Writes are confirmed with one copy: a second failure loses them. The decision ends by itself once the copy is back. To end it now, on the serving node run:",
-    "text": "쓰기가 복사본 하나로 확인되고 있습니다. 두 번째 장애가 발생하면 손실됩니다. 이 결정은 복사본이 돌아오면 자동으로 종료됩니다. 지금 종료하려면 서비스 중인 노드에서 다음을 실행하세요:"
+    "en": "Writes are confirmed with one copy until the copy is back. To end it now, on the serving node:",
+    "text": "복사본이 돌아올 때까지 쓰기가 복사본 하나로 확인됩니다. 지금 종료하려면 서비스 중인 노드에서:"
   },
   "clusterUnknown": {
-    "en": "The server cannot read the state of its copies, so writes are stopped. On the serving node, check the arkvory-replica service:",
-    "text": "서버가 복사본 상태를 읽을 수 없어 쓰기가 중지되었습니다. 서비스 중인 노드에서 arkvory-replica 서비스를 확인하세요:"
+    "en": "The state of the copies cannot be read, so writes are paused. On the serving node, check:",
+    "text": "복사본 상태를 읽을 수 없어 쓰기가 일시 중지되었습니다. 서비스 중인 노드에서 확인하세요:"
   },
   "clusterOld": {
     "en": "Node details appear after every node runs this release. Copies and writes above are current.",
@@ -3828,12 +3820,12 @@
     "text": "스토리지 콘솔을 사용하려면 JavaScript를 켜세요."
   },
   "replicationDegraded": {
-    "en": "Writes are stopped: {copies} of {required} required copies are complete. Downloads keep working; writes resume after the copy is back.",
-    "text": "쓰기가 중지되었습니다: 필요한 복사본 {required}개 중 {copies}개만 완전합니다. 다운로드는 계속되며 복사본이 돌아오면 쓰기가 재개됩니다."
+    "en": "Writes are paused: {copies} of {required} copies are complete. Downloads keep working.",
+    "text": "쓰기가 일시 중지되었습니다: 복사본 {required}개 중 {copies}개가 완전합니다. 다운로드는 계속됩니다."
   },
   "replicationUnknown": {
-    "en": "Writes are stopped: the cluster cannot read the state of its copies. Downloads keep working.",
-    "text": "쓰기가 중지되었습니다: 클러스터가 복사본 상태를 읽을 수 없습니다. 다운로드는 계속됩니다."
+    "en": "Writes are paused: the state of the copies cannot be read. Downloads keep working.",
+    "text": "쓰기가 일시 중지되었습니다: 복사본 상태를 읽을 수 없습니다. 다운로드는 계속됩니다."
   },
   "replicationSingleCopy": {
     "en": "Writes are acknowledged with a single copy until {until} by an operator decision.",

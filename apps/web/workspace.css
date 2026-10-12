@@ -161,6 +161,9 @@ label:has(> input[type='checkbox']) {
   gap: var(--space-2);
 }
 /* The count closes the toolbar; loading more sits centered under the rows. */
+.search-form > .hint:has(.help-tooltip) {
+  flex: 0 0 auto;
+}
 .catalog-count {
   margin-inline-start: auto;
   white-space: nowrap;
@@ -298,6 +301,10 @@ output:not(.status-bar output):not(.transfer-card output):not(:empty) {
     width: 100%;
     min-height: var(--control-height);
   }
+  /* Both filters take full rows; the actions, the count and help share the last one. */
+  #search > label {
+    flex: 1 1 100%;
+  }
   .artifact-id {
     display: none;
   }
@@ -325,7 +332,14 @@ output:not(.status-bar output):not(.transfer-card output):not(:empty) {
 }
 .build-attachments,
 .artifact-deletion {
-  margin-top: var(--space-6);
+  margin-top: var(--section-gap);
+}
+/* A repository without file paths offers no path form: the editor takes the whole width. */
+#editor:has(#asset[hidden]) {
+  grid-template-columns: minmax(0, 1fr);
+}
+#editor > aside:has(> #asset[hidden]) {
+  display: none;
 }
 #attachment-fields {
   min-width: 0;
@@ -470,4 +484,8 @@ output:not(.status-bar output):not(.transfer-card output):not(:empty) {
   width: 100%;
   font-family: var(--font-mono);
   font-size: var(--text-sm);
+}
+/* Nothing more to load: no inactive button under the rows. */
+.catalog-footer:has(#more:disabled) {
+  display: none;
 }

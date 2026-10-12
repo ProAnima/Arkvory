@@ -548,7 +548,6 @@
         </section>
         <section id="mirrors-panel" data-view="mirrors" aria-labelledby="page-title" hidden>
           <div class="card padded">
-            <p class="hint" data-i18n="mirrorsIntro"></p>
             <div
               id="mirrors-table"
               class="table"
@@ -588,7 +587,6 @@
         </section>
         <section id="cluster-panel" data-view="cluster" aria-labelledby="page-title" hidden>
           <div class="card padded">
-            <p class="hint" data-i18n="clusterIntro"></p>
             <dl class="update-facts cluster-facts">
               <div>
                 <dt data-i18n="clusterProfile">Схема</dt>
@@ -1228,6 +1226,7 @@
             ><span
               id="catalog-count"
               class="catalog-count hint"
+              aria-live="polite"
               data-i18n="loaded"
               data-param-count="0"
               >Загружено: 0</span
@@ -1918,6 +1917,15 @@ GET /api/v1/operations?repository=releases</code></pre>
                   </div>
                   <button class="secondary" data-i18n="stageAdd">Добавить стадию</button>
                 </form>
+                <h3 data-i18n="promotionHistory">История</h3>
+                <ol id="promotion-history" class="promotion-history"></ol>
+                <button
+                  id="promotion-more"
+                  type="button"
+                  class="ghost small"
+                  data-i18n="promotionMore"
+                  hidden
+                ></button>
               </div>
               <form id="promote-form" class="stack" hidden>
                 <h3 data-i18n="promoteTitle">Продвинуть в репозиторий</h3>
@@ -1937,23 +1945,16 @@ GET /api/v1/operations?repository=releases</code></pre>
                   ><span data-i18n="promoteComment">Комментарий</span
                   ><input id="promote-comment" maxlength="1024"
                 /></label>
-                <label class="check"
-                  ><input id="promote-move" type="checkbox" /><span data-i18n="promoteMove"></span
-                ></label>
-                <p class="hint" data-i18n="promoteMoveHint" data-help="promoteMoveHelpLabel"></p>
+                <div class="inline">
+                  <label class="check"
+                    ><input id="promote-move" type="checkbox" /><span data-i18n="promoteMove"></span
+                  ></label>
+                  <p class="hint" data-i18n="promoteMoveHint" data-help="promoteMoveHelpLabel"></p>
+                </div>
                 <button class="primary" data-i18n="promoteSubmit">Продвинуть</button>
               </form>
             </div>
             <output id="promotion-status" role="status" aria-live="polite"></output>
-            <h3 data-i18n="promotionHistory">История</h3>
-            <ol id="promotion-history" class="promotion-history"></ol>
-            <button
-              id="promotion-more"
-              type="button"
-              class="ghost small"
-              data-i18n="promotionMore"
-              hidden
-            ></button>
           </section>
           <details id="artifact-deletion" class="card padded artifact-deletion" hidden>
             <summary data-i18n="deletionTitle">Удаление артефакта</summary>

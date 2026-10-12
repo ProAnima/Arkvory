@@ -46,9 +46,9 @@ export const updateEnglish = {
   updateConnection:
     'Cannot contact Arkvory. Retrying automatically; do not submit another installation request.',
   replicationDegraded:
-    'Writes are stopped: {copies} of {required} required copies are complete. Downloads keep working; writes resume after the copy is back.',
+    'Writes are paused: {copies} of {required} copies are complete. Downloads keep working.',
   replicationUnknown:
-    'Writes are stopped: the cluster cannot read the state of its copies. Downloads keep working.',
+    'Writes are paused: the state of the copies cannot be read. Downloads keep working.',
   replicationSingleCopy:
     'Writes are acknowledged with a single copy until {until} by an operator decision.',
 };
@@ -101,8 +101,7 @@ export const updateRussian: Record<keyof typeof updateEnglish, string> = {
   updateConnection:
     'Нет связи с Arkvory. Подключение повторяется автоматически; не отправляйте запрос установки повторно.',
   replicationDegraded:
-    'Запись остановлена: полных копий {copies} из {required} требуемых. Скачивание работает; запись возобновится после возврата копии.',
-  replicationUnknown:
-    'Запись остановлена: кластер не может прочитать состояние копий. Скачивание работает.',
+    'Запись приостановлена: полных копий {copies} из {required}. Скачивание работает.',
+  replicationUnknown: 'Запись приостановлена: состояние копий неизвестно. Скачивание работает.',
   replicationSingleCopy: 'По решению оператора запись подтверждается одной копией до {until}.',
 };

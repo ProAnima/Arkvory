@@ -1895,10 +1895,6 @@
     "en": "Mirrors",
     "text": "Miroirs"
   },
-  "mirrorsIntro": {
-    "en": "Repositories this server copies from other Arkvory installations. The server keeps them in sync by itself; this page refreshes on its own.",
-    "text": "Dépôts que ce serveur copie depuis d’autres installations Arkvory. Le serveur les maintient synchronisés de lui-même ; cette page s’actualise toute seule."
-  },
   "mirrorsRepository": {
     "en": "Repository",
     "text": "Dépôt"
@@ -1960,8 +1956,8 @@
     "text": "Aucun miroir sur ce serveur"
   },
   "mirrorsEmpty": {
-    "en": "A mirror keeps a copy of a repository of another installation: a second site, or staging to production. An administrator sets one up with “arkvory configure --mirror”.",
-    "text": "Un miroir conserve une copie d’un dépôt d’une autre installation : un second site, ou de la préproduction vers la production. Un administrateur le configure avec « arkvory configure --mirror »."
+    "en": "A mirror copies a repository from another installation: a second site, or staging to production. Set one up with “arkvory configure --mirror”.",
+    "text": "Un miroir copie un dépôt d’une autre installation : un second site, ou de la préproduction vers la production. Configurez-le avec « arkvory configure --mirror »."
   },
   "mirrorsGuide": {
     "en": "Mirrors guide",
@@ -1978,10 +1974,6 @@
   "cluster": {
     "en": "Cluster",
     "text": "Cluster"
-  },
-  "clusterIntro": {
-    "en": "This server runs as a high-availability cluster: every write is kept on more than one node before it is confirmed. This page refreshes on its own.",
-    "text": "Ce serveur fonctionne en cluster haute disponibilité : chaque écriture est conservée sur plus d’un nœud avant d’être confirmée. Cette page s’actualise toute seule."
   },
   "clusterProfile": {
     "en": "Layout",
@@ -2084,20 +2076,20 @@
     "text": "Étape suivante"
   },
   "clusterHealthy": {
-    "en": "Every copy is complete: a node can fail without losing confirmed writes. Before maintenance of the serving node, move Arkvory to another node. On the serving node, run:",
-    "text": "Toutes les copies sont complètes : un nœud peut tomber en panne sans perte d’écritures confirmées. Avant la maintenance du nœud en service, déplacez Arkvory vers un autre nœud. Sur le nœud en service, exécutez :"
+    "en": "All copies are complete. Before maintaining the serving node, move Arkvory away from it:",
+    "text": "Toutes les copies sont complètes. Avant la maintenance du nœud en service, déplacez Arkvory hors de ce nœud :"
   },
   "clusterDegraded": {
-    "en": "Writes are stopped until the missing copy is back; downloads keep working. Bring the node back, or replace it with a new one (see the guide). Only if you accept losing writes on a second failure, allow one copy for a limited time. On the serving node, run:",
-    "text": "Les écritures sont arrêtées jusqu’au retour de la copie manquante ; les téléchargements continuent. Rétablissez le nœud ou remplacez-le par un nouveau (voir le guide). Seulement si vous acceptez de perdre des écritures en cas de seconde panne, autorisez une seule copie pour une durée limitée. Sur le nœud en service, exécutez :"
+    "en": "Writes are paused until the copy is back: return the node or replace it. To accept writes with one copy for a while (a second failure loses them), on the serving node:",
+    "text": "Les écritures sont suspendues jusqu’au retour de la copie : rétablissez le nœud ou remplacez-le. Pour accepter des écritures avec une seule copie pendant un temps (une seconde panne les ferait perdre), sur le nœud en service :"
   },
   "clusterSingle": {
-    "en": "Writes are confirmed with one copy: a second failure loses them. The decision ends by itself once the copy is back. To end it now, on the serving node run:",
-    "text": "Les écritures sont confirmées avec une seule copie : une seconde panne les ferait perdre. La décision prend fin d’elle-même au retour de la copie. Pour y mettre fin maintenant, exécutez sur le nœud en service :"
+    "en": "Writes are confirmed with one copy until the copy is back. To end it now, on the serving node:",
+    "text": "Les écritures sont confirmées avec une seule copie jusqu’au retour de la copie. Pour y mettre fin maintenant, sur le nœud en service :"
   },
   "clusterUnknown": {
-    "en": "The server cannot read the state of its copies, so writes are stopped. On the serving node, check the arkvory-replica service:",
-    "text": "Le serveur ne peut pas lire l’état de ses copies, les écritures sont donc arrêtées. Sur le nœud en service, vérifiez le service arkvory-replica :"
+    "en": "The state of the copies cannot be read, so writes are paused. On the serving node, check:",
+    "text": "L’état des copies ne peut pas être lu, les écritures sont donc suspendues. Sur le nœud en service, vérifiez :"
   },
   "clusterOld": {
     "en": "Node details appear after every node runs this release. Copies and writes above are current.",
@@ -3828,12 +3820,12 @@
     "text": "Activez JavaScript pour utiliser la console de stockage."
   },
   "replicationDegraded": {
-    "en": "Writes are stopped: {copies} of {required} required copies are complete. Downloads keep working; writes resume after the copy is back.",
-    "text": "Les écritures sont arrêtées : {copies} copies complètes sur {required} requises. Les téléchargements continuent ; les écritures reprennent au retour de la copie."
+    "en": "Writes are paused: {copies} of {required} copies are complete. Downloads keep working.",
+    "text": "Les écritures sont suspendues : {copies} copies complètes sur {required}. Les téléchargements continuent."
   },
   "replicationUnknown": {
-    "en": "Writes are stopped: the cluster cannot read the state of its copies. Downloads keep working.",
-    "text": "Les écritures sont arrêtées : le cluster ne peut pas lire l’état de ses copies. Les téléchargements continuent."
+    "en": "Writes are paused: the state of the copies cannot be read. Downloads keep working.",
+    "text": "Les écritures sont suspendues : l’état des copies ne peut pas être lu. Les téléchargements continuent."
   },
   "replicationSingleCopy": {
     "en": "Writes are acknowledged with a single copy until {until} by an operator decision.",

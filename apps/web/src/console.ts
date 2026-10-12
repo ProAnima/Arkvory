@@ -7,7 +7,7 @@ import { text } from '@proanima/arkvory-contracts';
 import { element } from './dom.js';
 import { installAssetHistory } from './asset-history.js';
 import { initializeLanguage, message } from './i18n.js';
-import { feedback, UiError } from './feedback.js';
+import { feedback, quietFeedback, UiError } from './feedback.js';
 import { initializeShell, setArtifactRoute, showView } from './shell.js';
 import { installConnectionState } from './connection-state.js';
 import { installDeepLinks } from './deep-links.js';
@@ -158,7 +158,7 @@ async function openArtifact(repo: string, id: string, name: string) {
   const route = formatRoute({ kind: 'artifact', repository: repo, id });
   setArtifactRoute(route);
   showView('metadata', { route });
-  feedback(output, 'revisionStatus', { revision: a.revision });
+  quietFeedback(output, 'revisionStatus', { revision: a.revision });
   promotion.open(repo, id, operations);
   await summary.open(repo, id);
   await attachments.open(repo, id, operations);
@@ -235,7 +235,7 @@ async function list(after?: string) {
   panel.setAttribute('aria-busy', 'true');
   if (searchButton) searchButton.disabled = true;
   moreButton.disabled = true;
-  feedback(output, 'searching');
+  quietFeedback(output, 'searching');
   try {
     const page = await client.search(repo, {
       ...catalogFilter(),
@@ -271,7 +271,7 @@ async function list(after?: string) {
       filtered ? 'noResults' : 'searchEmpty',
     );
     message(element('catalog-count', HTMLSpanElement), 'loaded', { count: rows.rows.length });
-    feedback(output, 'loaded', { count: rows.rows.length });
+    quietFeedback(output, 'loaded', { count: rows.rows.length });
   } catch (error) {
     if (generation !== listGeneration) return;
     moreButton.disabled = wasDisabled;

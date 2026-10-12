@@ -57,11 +57,18 @@
   .eyebrow {
     display: none;
   }
-  .connection > summary {
-    align-items: start;
-  }
+  .connection > summary,
   .connection-heading {
-    align-items: start;
+    align-items: center;
+  }
+  /* Connected: the repository name says it; the caption would push the state to a new line. */
+  .connection-heading:has(#connection-repository:not([hidden])) > [data-i18n='connection'] {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
   /* Phone sign-in stacks fields and gives every button a full row: labels never split. */
   .sign-in-form > label,

@@ -2,7 +2,7 @@
 #backups-panel {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: var(--space-4);
+  gap: var(--section-gap);
 }
 .backup-summary > * + * {
   margin-top: var(--space-4);

@@ -52,7 +52,7 @@
   --control-height: 2rem;
   --control-small-height: 1.75rem;
   --icon-size: 1rem;
-  --nav-height: 2.25rem;
+  --nav-height: 2rem;
   --help-target: 1.5rem;
   --help-icon: 0.9375rem;
   --checkbox-size: 1rem;
@@ -71,10 +71,12 @@
   /* Layout. The top bar and the brand row share one height, so their borders meet. */
   --sidebar-width: 14rem;
   --sidebar-rail-width: 3.5rem;
-  --topbar-height: 3.5rem;
+  --topbar-height: 3.25rem;
   --content-max: 92rem;
-  --page-gutter: clamp(1rem, 2vw, 2rem);
-  --panel-padding: 1.25rem;
+  --page-gutter: clamp(1rem, 2vw, 1.5rem);
+  --panel-padding: 1rem;
+  /* One rhythm between the cards and notices of a screen. */
+  --section-gap: var(--space-3);
   --aside-width: 21rem;
 
   /* Component sizes. */
@@ -240,8 +242,8 @@
 @media (max-width: 760px) {
   :root {
     --page-gutter: 0.75rem;
-    --panel-padding: 1rem;
-    --topbar-height: 3.25rem;
+    --panel-padding: 0.75rem;
+    --topbar-height: 3rem;
   }
 }
 /* The compact desktop rail narrows the sidebar; the phone layout keeps the full-width menu. */

@@ -1895,10 +1895,6 @@
     "en": "Mirrors",
     "text": "Spiegel"
   },
-  "mirrorsIntro": {
-    "en": "Repositories this server copies from other Arkvory installations. The server keeps them in sync by itself; this page refreshes on its own.",
-    "text": "Repositorys, die dieser Server aus anderen Arkvory-Installationen kopiert. Der Server hält sie selbst synchron; diese Seite aktualisiert sich von selbst."
-  },
   "mirrorsRepository": {
     "en": "Repository",
     "text": "Repository"
@@ -1960,8 +1956,8 @@
     "text": "Keine Spiegel auf diesem Server"
   },
   "mirrorsEmpty": {
-    "en": "A mirror keeps a copy of a repository of another installation: a second site, or staging to production. An administrator sets one up with “arkvory configure --mirror”.",
-    "text": "Ein Spiegel hält eine Kopie eines Repositorys einer anderen Installation: ein zweiter Standort oder Staging zu Produktion. Ein Administrator richtet ihn mit „arkvory configure --mirror“ ein."
+    "en": "A mirror copies a repository from another installation: a second site, or staging to production. Set one up with “arkvory configure --mirror”.",
+    "text": "Ein Spiegel kopiert ein Repository einer anderen Installation: ein zweiter Standort oder Staging zu Produktion. Einrichten mit „arkvory configure --mirror“."
   },
   "mirrorsGuide": {
     "en": "Mirrors guide",
@@ -1978,10 +1974,6 @@
   "cluster": {
     "en": "Cluster",
     "text": "Cluster"
-  },
-  "clusterIntro": {
-    "en": "This server runs as a high-availability cluster: every write is kept on more than one node before it is confirmed. This page refreshes on its own.",
-    "text": "Dieser Server läuft als Hochverfügbarkeitscluster: Jeder Schreibzugriff wird auf mehr als einem Knoten gespeichert, bevor er bestätigt wird. Diese Seite aktualisiert sich von selbst."
   },
   "clusterProfile": {
     "en": "Layout",
@@ -2084,20 +2076,20 @@
     "text": "Nächster Schritt"
   },
   "clusterHealthy": {
-    "en": "Every copy is complete: a node can fail without losing confirmed writes. Before maintenance of the serving node, move Arkvory to another node. On the serving node, run:",
-    "text": "Alle Kopien sind vollständig: Ein Knoten kann ausfallen, ohne dass bestätigte Schreibzugriffe verloren gehen. Verlagern Sie Arkvory vor der Wartung des bedienenden Knotens auf einen anderen Knoten. Führen Sie auf dem bedienenden Knoten aus:"
+    "en": "All copies are complete. Before maintaining the serving node, move Arkvory away from it:",
+    "text": "Alle Kopien sind vollständig. Verlagern Sie Arkvory vor der Wartung des bedienenden Knotens von diesem weg:"
   },
   "clusterDegraded": {
-    "en": "Writes are stopped until the missing copy is back; downloads keep working. Bring the node back, or replace it with a new one (see the guide). Only if you accept losing writes on a second failure, allow one copy for a limited time. On the serving node, run:",
-    "text": "Schreibzugriffe sind angehalten, bis die fehlende Kopie zurück ist; Downloads funktionieren weiter. Bringen Sie den Knoten zurück oder ersetzen Sie ihn durch einen neuen (siehe Anleitung). Nur wenn Sie den Verlust von Schreibzugriffen bei einem zweiten Ausfall in Kauf nehmen, erlauben Sie befristet eine einzige Kopie. Führen Sie auf dem bedienenden Knoten aus:"
+    "en": "Writes are paused until the copy is back: return the node or replace it. To accept writes with one copy for a while (a second failure loses them), on the serving node:",
+    "text": "Schreibzugriffe sind pausiert, bis die Kopie zurück ist: Bringen Sie den Knoten zurück oder ersetzen Sie ihn. Um vorübergehend Schreibzugriffe mit einer Kopie anzunehmen (ein zweiter Ausfall lässt sie verloren gehen), auf dem bedienenden Knoten:"
   },
   "clusterSingle": {
-    "en": "Writes are confirmed with one copy: a second failure loses them. The decision ends by itself once the copy is back. To end it now, on the serving node run:",
-    "text": "Schreibzugriffe werden mit einer Kopie bestätigt: Ein zweiter Ausfall lässt sie verloren gehen. Die Entscheidung endet von selbst, sobald die Kopie zurück ist. Um sie jetzt zu beenden, führen Sie auf dem bedienenden Knoten aus:"
+    "en": "Writes are confirmed with one copy until the copy is back. To end it now, on the serving node:",
+    "text": "Schreibzugriffe werden mit einer Kopie bestätigt, bis die Kopie zurück ist. Um das jetzt zu beenden, auf dem bedienenden Knoten:"
   },
   "clusterUnknown": {
-    "en": "The server cannot read the state of its copies, so writes are stopped. On the serving node, check the arkvory-replica service:",
-    "text": "Der Server kann den Zustand seiner Kopien nicht lesen, daher sind Schreibzugriffe angehalten. Prüfen Sie auf dem bedienenden Knoten den Dienst arkvory-replica:"
+    "en": "The state of the copies cannot be read, so writes are paused. On the serving node, check:",
+    "text": "Der Zustand der Kopien kann nicht gelesen werden, daher sind Schreibzugriffe pausiert. Prüfen Sie auf dem bedienenden Knoten:"
   },
   "clusterOld": {
     "en": "Node details appear after every node runs this release. Copies and writes above are current.",
@@ -3828,12 +3820,12 @@
     "text": "Aktivieren Sie JavaScript, um die Speicherkonsole zu verwenden."
   },
   "replicationDegraded": {
-    "en": "Writes are stopped: {copies} of {required} required copies are complete. Downloads keep working; writes resume after the copy is back.",
-    "text": "Schreibzugriffe sind angehalten: {copies} von {required} erforderlichen Kopien sind vollständig. Downloads funktionieren weiter; Schreibzugriffe werden fortgesetzt, sobald die Kopie zurück ist."
+    "en": "Writes are paused: {copies} of {required} copies are complete. Downloads keep working.",
+    "text": "Schreibzugriffe sind pausiert: {copies} von {required} Kopien sind vollständig. Downloads funktionieren weiter."
   },
   "replicationUnknown": {
-    "en": "Writes are stopped: the cluster cannot read the state of its copies. Downloads keep working.",
-    "text": "Schreibzugriffe sind angehalten: Der Cluster kann den Zustand seiner Kopien nicht lesen. Downloads funktionieren weiter."
+    "en": "Writes are paused: the state of the copies cannot be read. Downloads keep working.",
+    "text": "Schreibzugriffe sind pausiert: Der Zustand der Kopien kann nicht gelesen werden. Downloads funktionieren weiter."
   },
   "replicationSingleCopy": {
     "en": "Writes are acknowledged with a single copy until {until} by an operator decision.",

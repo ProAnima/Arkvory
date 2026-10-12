@@ -44,8 +44,6 @@ export const mirrorEnglish = {
     'The last attempt failed ({code}). The server retries by itself; its log names the cause.',
   // The Mirrors page.
   mirrors: 'Mirrors',
-  mirrorsIntro:
-    'Repositories this server copies from other Arkvory installations. The server keeps them in sync by itself; this page refreshes on its own.',
   mirrorsRepository: 'Repository',
   mirrorsSource: 'Source',
   mirrorsState: 'State',
@@ -62,7 +60,7 @@ export const mirrorEnglish = {
   mirrorStateFailing: 'Sync error',
   mirrorsEmptyTitle: 'No mirrors on this server',
   mirrorsEmpty:
-    'A mirror keeps a copy of a repository of another installation: a second site, or staging to production. An administrator sets one up with “arkvory configure --mirror”.',
+    'A mirror copies a repository from another installation: a second site, or staging to production. Set one up with “arkvory configure --mirror”.',
   mirrorsGuide: 'Mirrors guide',
   mirrorsUnavailable: 'Cannot load the mirrors. Retrying automatically.',
 };
@@ -111,8 +109,6 @@ export const mirrorRussian: Record<keyof typeof mirrorEnglish, string> = {
   mirrorReasonOther:
     'Последняя попытка не удалась ({code}). Сервер повторит сам; причина — в его журнале.',
   mirrors: 'Зеркала',
-  mirrorsIntro:
-    'Репозитории, которые этот сервер копирует из других установок Arkvory. Сервер сам поддерживает их актуальными; страница обновляется сама.',
   mirrorsRepository: 'Репозиторий',
   mirrorsSource: 'Источник',
   mirrorsState: 'Состояние',
@@ -129,7 +125,7 @@ export const mirrorRussian: Record<keyof typeof mirrorEnglish, string> = {
   mirrorStateFailing: 'Ошибка синхронизации',
   mirrorsEmptyTitle: 'На этом сервере нет зеркал',
   mirrorsEmpty:
-    'Зеркало хранит копию репозитория другой установки: вторая площадка или путь со стейджинга в прод. Администратор настраивает его командой «arkvory configure --mirror».',
+    'Зеркало копирует репозиторий другой установки: вторая площадка или путь из стейджинга в прод. Настраивается командой «arkvory configure --mirror».',
   mirrorsGuide: 'Руководство по зеркалам',
   mirrorsUnavailable: 'Не удалось загрузить зеркала. Повторяем автоматически.',
 };

@@ -35,7 +35,7 @@
 .promotion-layout {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--promotion-column-min)), 1fr));
-  gap: var(--space-6);
+  gap: var(--space-4) var(--space-8);
 }
 .stage-list {
   display: flex;

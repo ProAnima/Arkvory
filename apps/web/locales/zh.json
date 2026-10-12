@@ -1895,10 +1895,6 @@
     "en": "Mirrors",
     "text": "镜像"
   },
-  "mirrorsIntro": {
-    "en": "Repositories this server copies from other Arkvory installations. The server keeps them in sync by itself; this page refreshes on its own.",
-    "text": "此服务器从其他 Arkvory 安装实例复制的仓库。服务器会自动保持它们同步；此页面会自动刷新。"
-  },
   "mirrorsRepository": {
     "en": "Repository",
     "text": "仓库"
@@ -1960,8 +1956,8 @@
     "text": "此服务器上没有镜像"
   },
   "mirrorsEmpty": {
-    "en": "A mirror keeps a copy of a repository of another installation: a second site, or staging to production. An administrator sets one up with “arkvory configure --mirror”.",
-    "text": "镜像保存另一个安装实例中某个仓库的副本，例如第二个站点，或从预发布环境到生产环境。管理员使用“arkvory configure --mirror”进行设置。"
+    "en": "A mirror copies a repository from another installation: a second site, or staging to production. Set one up with “arkvory configure --mirror”.",
+    "text": "镜像复制另一个安装实例中的仓库，例如第二个站点，或从预发布环境到生产环境。使用“arkvory configure --mirror”进行设置。"
   },
   "mirrorsGuide": {
     "en": "Mirrors guide",
@@ -1978,10 +1974,6 @@
   "cluster": {
     "en": "Cluster",
     "text": "集群"
-  },
-  "clusterIntro": {
-    "en": "This server runs as a high-availability cluster: every write is kept on more than one node before it is confirmed. This page refreshes on its own.",
-    "text": "此服务器以高可用集群方式运行：每次写入在确认之前都会保存在多个节点上。此页面会自动刷新。"
   },
   "clusterProfile": {
     "en": "Layout",
@@ -2084,20 +2076,20 @@
     "text": "下一步"
   },
   "clusterHealthy": {
-    "en": "Every copy is complete: a node can fail without losing confirmed writes. Before maintenance of the serving node, move Arkvory to another node. On the serving node, run:",
-    "text": "所有副本均完整：任一节点故障都不会丢失已确认的写入。维护当前服务节点之前，请将 Arkvory 迁移到其他节点。在当前服务节点上运行："
+    "en": "All copies are complete. Before maintaining the serving node, move Arkvory away from it:",
+    "text": "所有副本均完整。维护当前服务节点之前，请将 Arkvory 迁出该节点："
   },
   "clusterDegraded": {
-    "en": "Writes are stopped until the missing copy is back; downloads keep working. Bring the node back, or replace it with a new one (see the guide). Only if you accept losing writes on a second failure, allow one copy for a limited time. On the serving node, run:",
-    "text": "在缺失的副本恢复之前，写入已停止；下载仍可正常使用。请恢复该节点，或用新节点替换它（参见指南）。只有在您能接受第二次故障时丢失写入的情况下，才允许在有限时间内使用一份副本。在当前服务节点上运行："
+    "en": "Writes are paused until the copy is back: return the node or replace it. To accept writes with one copy for a while (a second failure loses them), on the serving node:",
+    "text": "写入已暂停，直到副本恢复：请恢复该节点或替换它。如需暂时以一份副本接受写入（再发生一次故障就会丢失这些写入），请在当前服务节点上运行："
   },
   "clusterSingle": {
-    "en": "Writes are confirmed with one copy: a second failure loses them. The decision ends by itself once the copy is back. To end it now, on the serving node run:",
-    "text": "写入以一份副本确认：再发生一次故障就会丢失这些写入。副本恢复后，此决定会自动结束。要立即结束，请在当前服务节点上运行："
+    "en": "Writes are confirmed with one copy until the copy is back. To end it now, on the serving node:",
+    "text": "副本恢复之前，写入以一份副本确认。要立即结束，请在当前服务节点上运行："
   },
   "clusterUnknown": {
-    "en": "The server cannot read the state of its copies, so writes are stopped. On the serving node, check the arkvory-replica service:",
-    "text": "服务器无法读取其副本的状态，因此写入已停止。请在当前服务节点上检查 arkvory-replica 服务："
+    "en": "The state of the copies cannot be read, so writes are paused. On the serving node, check:",
+    "text": "无法读取副本状态，因此写入已暂停。请在当前服务节点上检查："
   },
   "clusterOld": {
     "en": "Node details appear after every node runs this release. Copies and writes above are current.",
@@ -3828,12 +3820,12 @@
     "text": "请启用 JavaScript 以使用存储控制台。"
   },
   "replicationDegraded": {
-    "en": "Writes are stopped: {copies} of {required} required copies are complete. Downloads keep working; writes resume after the copy is back.",
-    "text": "写入已停止：所需 {required} 份副本中完整的只有 {copies} 份。下载照常进行；副本恢复后写入会自动继续。"
+    "en": "Writes are paused: {copies} of {required} copies are complete. Downloads keep working.",
+    "text": "写入已暂停：所需 {required} 份副本中已完整 {copies} 份。下载照常进行。"
   },
   "replicationUnknown": {
-    "en": "Writes are stopped: the cluster cannot read the state of its copies. Downloads keep working.",
-    "text": "写入已停止：集群无法读取副本状态。下载照常进行。"
+    "en": "Writes are paused: the state of the copies cannot be read. Downloads keep working.",
+    "text": "写入已暂停：无法读取副本状态。下载照常进行。"
   },
   "replicationSingleCopy": {
     "en": "Writes are acknowledged with a single copy until {until} by an operator decision.",

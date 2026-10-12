@@ -1895,10 +1895,6 @@
     "en": "Mirrors",
     "text": "ミラー"
   },
-  "mirrorsIntro": {
-    "en": "Repositories this server copies from other Arkvory installations. The server keeps them in sync by itself; this page refreshes on its own.",
-    "text": "このサーバーが他のArkvoryインストール環境からコピーしているリポジトリです。サーバーが自動的に同期を維持し、このページも自動的に更新されます。"
-  },
   "mirrorsRepository": {
     "en": "Repository",
     "text": "リポジトリ"
@@ -1960,8 +1956,8 @@
     "text": "このサーバーにミラーはありません"
   },
   "mirrorsEmpty": {
-    "en": "A mirror keeps a copy of a repository of another installation: a second site, or staging to production. An administrator sets one up with “arkvory configure --mirror”.",
-    "text": "ミラーは、別のインストール環境のリポジトリのコピーを保持します。用途は第2拠点や、ステージングから本番への受け渡しなどです。管理者が「arkvory configure --mirror」で設定します。"
+    "en": "A mirror copies a repository from another installation: a second site, or staging to production. Set one up with “arkvory configure --mirror”.",
+    "text": "ミラーは別のインストール環境のリポジトリをコピーします。用途は第2拠点や、ステージングから本番への受け渡しなどです。「arkvory configure --mirror」で設定します。"
   },
   "mirrorsGuide": {
     "en": "Mirrors guide",
@@ -1978,10 +1974,6 @@
   "cluster": {
     "en": "Cluster",
     "text": "クラスター"
-  },
-  "clusterIntro": {
-    "en": "This server runs as a high-availability cluster: every write is kept on more than one node before it is confirmed. This page refreshes on its own.",
-    "text": "このサーバーは高可用性クラスターとして動作しています。すべての書き込みは、確認される前に複数のノードに保存されます。このページは自動的に更新されます。"
   },
   "clusterProfile": {
     "en": "Layout",
@@ -2084,20 +2076,20 @@
     "text": "次の手順"
   },
   "clusterHealthy": {
-    "en": "Every copy is complete: a node can fail without losing confirmed writes. Before maintenance of the serving node, move Arkvory to another node. On the serving node, run:",
-    "text": "すべてのコピーが完全です。ノードが1台故障しても、確認済みの書き込みは失われません。サービス中のノードを保守する前に、Arkvoryを別のノードに移してください。サービス中のノードで次を実行します："
+    "en": "All copies are complete. Before maintaining the serving node, move Arkvory away from it:",
+    "text": "すべてのコピーが完全です。サービス中のノードを保守する前に、Arkvoryをそのノードから移してください："
   },
   "clusterDegraded": {
-    "en": "Writes are stopped until the missing copy is back; downloads keep working. Bring the node back, or replace it with a new one (see the guide). Only if you accept losing writes on a second failure, allow one copy for a limited time. On the serving node, run:",
-    "text": "不足しているコピーが戻るまで書き込みは停止します。ダウンロードは引き続き利用できます。ノードを復旧するか、新しいノードに置き換えてください（ガイドを参照）。2度目の障害で書き込みが失われることを許容できる場合に限り、期限付きで1つのコピーを許可してください。サービス中のノードで次を実行します："
+    "en": "Writes are paused until the copy is back: return the node or replace it. To accept writes with one copy for a while (a second failure loses them), on the serving node:",
+    "text": "コピーが戻るまで書き込みは一時停止します。ノードを復旧するか、置き換えてください。一時的に1つのコピーで書き込みを受け付けるには（2度目の障害で失われます）、サービス中のノードで："
   },
   "clusterSingle": {
-    "en": "Writes are confirmed with one copy: a second failure loses them. The decision ends by itself once the copy is back. To end it now, on the serving node run:",
-    "text": "書き込みは1つのコピーで確認されています。2度目の障害が起きると失われます。この判断はコピーが戻ると自動的に終了します。今すぐ終了するには、サービス中のノードで次を実行します："
+    "en": "Writes are confirmed with one copy until the copy is back. To end it now, on the serving node:",
+    "text": "コピーが戻るまで、書き込みは1つのコピーで確認されます。今すぐ終了するには、サービス中のノードで："
   },
   "clusterUnknown": {
-    "en": "The server cannot read the state of its copies, so writes are stopped. On the serving node, check the arkvory-replica service:",
-    "text": "サーバーがコピーの状態を読み取れないため、書き込みは停止しています。サービス中のノードでarkvory-replicaサービスを確認してください："
+    "en": "The state of the copies cannot be read, so writes are paused. On the serving node, check:",
+    "text": "コピーの状態を読み取れないため、書き込みは一時停止しています。サービス中のノードで確認してください："
   },
   "clusterOld": {
     "en": "Node details appear after every node runs this release. Copies and writes above are current.",
@@ -3828,12 +3820,12 @@
     "text": "ストレージコンソールを使用するには、JavaScriptを有効にしてください。"
   },
   "replicationDegraded": {
-    "en": "Writes are stopped: {copies} of {required} required copies are complete. Downloads keep working; writes resume after the copy is back.",
-    "text": "書き込みは停止中です: 必要な {required} 個のコピーのうち完全なのは {copies} 個です。ダウンロードは継続し、コピーが戻ると書き込みは再開します。"
+    "en": "Writes are paused: {copies} of {required} copies are complete. Downloads keep working.",
+    "text": "書き込みは一時停止中です: 完全なコピーは {required} 個中 {copies} 個です。ダウンロードは継続します。"
   },
   "replicationUnknown": {
-    "en": "Writes are stopped: the cluster cannot read the state of its copies. Downloads keep working.",
-    "text": "書き込みは停止中です: クラスターがコピーの状態を読み取れません。ダウンロードは継続します。"
+    "en": "Writes are paused: the state of the copies cannot be read. Downloads keep working.",
+    "text": "書き込みは一時停止中です: コピーの状態を読み取れません。ダウンロードは継続します。"
   },
   "replicationSingleCopy": {
     "en": "Writes are acknowledged with a single copy until {until} by an operator decision.",

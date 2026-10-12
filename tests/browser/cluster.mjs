@@ -85,7 +85,10 @@ export async function exerciseCluster(browser, f) {
     await page.reload();
     await connectWithKey(page, f.headers.authorization.slice(7));
     await page.locator('#replication-banner').waitFor();
-    assert.match(await page.locator('#replication-notice').innerText(), /1 of 2 required/);
+    assert.match(
+      await page.locator('#replication-notice').innerText(),
+      /1 of 2 copies are complete/,
+    );
     await page.locator('#replication-open').click();
     await page.locator('#cluster-writes[data-state=off]').waitFor();
     assert.equal(await page.locator('#replication-open').isVisible(), false);

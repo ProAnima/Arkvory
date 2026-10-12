@@ -1895,10 +1895,6 @@
     "en": "Mirrors",
     "text": "मिरर"
   },
-  "mirrorsIntro": {
-    "en": "Repositories this server copies from other Arkvory installations. The server keeps them in sync by itself; this page refreshes on its own.",
-    "text": "वे रिपॉज़िटरी जिन्हें यह सर्वर दूसरे Arkvory इंस्टॉलेशन से कॉपी करता है। सर्वर उन्हें अपने-आप सिंक में रखता है; यह पेज अपने-आप रीफ़्रेश होता है।"
-  },
   "mirrorsRepository": {
     "en": "Repository",
     "text": "रिपॉज़िटरी"
@@ -1960,8 +1956,8 @@
     "text": "इस सर्वर पर कोई मिरर नहीं है"
   },
   "mirrorsEmpty": {
-    "en": "A mirror keeps a copy of a repository of another installation: a second site, or staging to production. An administrator sets one up with “arkvory configure --mirror”.",
-    "text": "मिरर किसी दूसरे इंस्टॉलेशन की रिपॉज़िटरी की कॉपी रखता है: दूसरी साइट, या स्टेजिंग से प्रोडक्शन। व्यवस्थापक इसे “arkvory configure --mirror” से सेट करता है।"
+    "en": "A mirror copies a repository from another installation: a second site, or staging to production. Set one up with “arkvory configure --mirror”.",
+    "text": "मिरर किसी दूसरे इंस्टॉलेशन की रिपॉज़िटरी कॉपी करता है: दूसरी साइट, या स्टेजिंग से प्रोडक्शन। इसे “arkvory configure --mirror” से सेट करें।"
   },
   "mirrorsGuide": {
     "en": "Mirrors guide",
@@ -1978,10 +1974,6 @@
   "cluster": {
     "en": "Cluster",
     "text": "क्लस्टर"
-  },
-  "clusterIntro": {
-    "en": "This server runs as a high-availability cluster: every write is kept on more than one node before it is confirmed. This page refreshes on its own.",
-    "text": "यह सर्वर उच्च उपलब्धता वाले क्लस्टर के रूप में चलता है: हर लेखन की पुष्टि से पहले उसे एक से अधिक नोड पर रखा जाता है। यह पेज अपने-आप रीफ़्रेश होता है।"
   },
   "clusterProfile": {
     "en": "Layout",
@@ -2084,20 +2076,20 @@
     "text": "अगला कदम"
   },
   "clusterHealthy": {
-    "en": "Every copy is complete: a node can fail without losing confirmed writes. Before maintenance of the serving node, move Arkvory to another node. On the serving node, run:",
-    "text": "सभी प्रतियाँ पूर्ण हैं: कोई नोड विफल हो जाए तो भी पुष्ट लेखन नहीं खोएँगे। सेवा दे रहे नोड के रखरखाव से पहले Arkvory को किसी दूसरे नोड पर ले जाएँ। सेवा दे रहे नोड पर चलाएँ:"
+    "en": "All copies are complete. Before maintaining the serving node, move Arkvory away from it:",
+    "text": "सभी प्रतियाँ पूर्ण हैं। सेवा दे रहे नोड के रखरखाव से पहले Arkvory को उससे हटाएँ:"
   },
   "clusterDegraded": {
-    "en": "Writes are stopped until the missing copy is back; downloads keep working. Bring the node back, or replace it with a new one (see the guide). Only if you accept losing writes on a second failure, allow one copy for a limited time. On the serving node, run:",
-    "text": "गायब प्रति लौटने तक लेखन रुका हुआ है; डाउनलोड चलते रहेंगे। नोड को वापस लाएँ, या उसे नए नोड से बदलें (गाइड देखें)। केवल तभी, जब आप दूसरी विफलता पर लेखन खोना स्वीकार करते हों, सीमित समय के लिए एक प्रति की अनुमति दें। सेवा दे रहे नोड पर चलाएँ:"
+    "en": "Writes are paused until the copy is back: return the node or replace it. To accept writes with one copy for a while (a second failure loses them), on the serving node:",
+    "text": "प्रति लौटने तक लेखन रोका गया है: नोड को वापस लाएँ या उसे बदलें। कुछ समय के लिए एक प्रति के साथ लेखन स्वीकार करने के लिए (दूसरी विफलता पर वह खो जाएगा), सेवा दे रहे नोड पर:"
   },
   "clusterSingle": {
-    "en": "Writes are confirmed with one copy: a second failure loses them. The decision ends by itself once the copy is back. To end it now, on the serving node run:",
-    "text": "लेखन एक ही प्रति के साथ पुष्ट हो रहा है: दूसरी विफलता होने पर वह खो जाएगा। प्रति लौटते ही यह निर्णय अपने-आप समाप्त हो जाता है। इसे अभी समाप्त करने के लिए, सेवा दे रहे नोड पर चलाएँ:"
+    "en": "Writes are confirmed with one copy until the copy is back. To end it now, on the serving node:",
+    "text": "प्रति लौटने तक लेखन एक ही प्रति के साथ पुष्ट होता है। इसे अभी समाप्त करने के लिए, सेवा दे रहे नोड पर:"
   },
   "clusterUnknown": {
-    "en": "The server cannot read the state of its copies, so writes are stopped. On the serving node, check the arkvory-replica service:",
-    "text": "सर्वर अपनी प्रतियों की स्थिति नहीं पढ़ पा रहा, इसलिए लेखन रुका हुआ है। सेवा दे रहे नोड पर arkvory-replica सेवा जाँचें:"
+    "en": "The state of the copies cannot be read, so writes are paused. On the serving node, check:",
+    "text": "प्रतियों की स्थिति पढ़ी नहीं जा सकती, इसलिए लेखन रोका गया है। सेवा दे रहे नोड पर जाँचें:"
   },
   "clusterOld": {
     "en": "Node details appear after every node runs this release. Copies and writes above are current.",
@@ -3828,12 +3820,12 @@
     "text": "स्टोरेज कंसोल का उपयोग करने के लिए JavaScript सक्षम करें।"
   },
   "replicationDegraded": {
-    "en": "Writes are stopped: {copies} of {required} required copies are complete. Downloads keep working; writes resume after the copy is back.",
-    "text": "लेखन रुका हुआ है: आवश्यक {required} में से {copies} प्रतियाँ पूर्ण हैं। डाउनलोड चलते रहेंगे; प्रति लौटने पर लेखन फिर शुरू होगा।"
+    "en": "Writes are paused: {copies} of {required} copies are complete. Downloads keep working.",
+    "text": "लेखन रोका गया है: {required} में से {copies} प्रतियाँ पूर्ण हैं। डाउनलोड चलते रहेंगे।"
   },
   "replicationUnknown": {
-    "en": "Writes are stopped: the cluster cannot read the state of its copies. Downloads keep working.",
-    "text": "लेखन रुका हुआ है: क्लस्टर अपनी प्रतियों की स्थिति नहीं पढ़ पा रहा। डाउनलोड चलते रहेंगे।"
+    "en": "Writes are paused: the state of the copies cannot be read. Downloads keep working.",
+    "text": "लेखन रोका गया है: प्रतियों की स्थिति पढ़ी नहीं जा सकती। डाउनलोड चलते रहेंगे।"
   },
   "replicationSingleCopy": {
     "en": "Writes are acknowledged with a single copy until {until} by an operator decision.",

@@ -25,6 +25,19 @@ export function feedback(
   message(node, key, params);
   clearReference(node);
 }
+/**
+ * Progress the screen already shows (a search running, rows loaded, an artifact opened): the
+ * status text follows, but the bar is not raised for it. Results and failures use feedback.
+ */
+export function quietFeedback(
+  node: HTMLElement,
+  key: MessageKey,
+  params: Readonly<Record<string, string | number>> = {},
+) {
+  node.dataset['tone'] = 'info';
+  message(node, key, params);
+  clearReference(node);
+}
 /** The one way to show a failure: localized text plus request ID and Retry-After if known. */
 export function showFailure(node: HTMLElement, error: unknown, key = errorKey(error)) {
   feedback(node, key, {}, 'error');

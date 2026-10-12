@@ -167,7 +167,7 @@ nav button[aria-current='page']:hover {
   background: var(--color-surface);
 }
 main {
-  padding: var(--space-5) var(--page-gutter) var(--space-6);
+  padding: var(--space-4) var(--page-gutter) var(--space-6);
   width: 100%;
   max-width: var(--content-max);
   margin-inline: auto;

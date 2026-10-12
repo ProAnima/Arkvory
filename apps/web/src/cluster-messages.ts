@@ -1,8 +1,6 @@
 /** The Cluster page of an HA installation (ADR 0072). */
 export const clusterEnglish = {
   cluster: 'Cluster',
-  clusterIntro:
-    'This server runs as a high-availability cluster: every write is kept on more than one node before it is confirmed. This page refreshes on its own.',
   clusterProfile: 'Layout',
   clusterProfileTwo: 'Two data nodes and a witness',
   clusterProfileThree: 'Three data nodes',
@@ -29,13 +27,13 @@ export const clusterEnglish = {
   clusterNoPeers: 'No other node is configured or connected.',
   clusterNextStep: 'Next step',
   clusterHealthy:
-    'Every copy is complete: a node can fail without losing confirmed writes. Before maintenance of the serving node, move Arkvory to another node. On the serving node, run:',
+    'All copies are complete. Before maintaining the serving node, move Arkvory away from it:',
   clusterDegraded:
-    'Writes are stopped until the missing copy is back; downloads keep working. Bring the node back, or replace it with a new one (see the guide). Only if you accept losing writes on a second failure, allow one copy for a limited time. On the serving node, run:',
+    'Writes are paused until the copy is back: return the node or replace it. To accept writes with one copy for a while (a second failure loses them), on the serving node:',
   clusterSingle:
-    'Writes are confirmed with one copy: a second failure loses them. The decision ends by itself once the copy is back. To end it now, on the serving node run:',
+    'Writes are confirmed with one copy until the copy is back. To end it now, on the serving node:',
   clusterUnknown:
-    'The server cannot read the state of its copies, so writes are stopped. On the serving node, check the arkvory-replica service:',
+    'The state of the copies cannot be read, so writes are paused. On the serving node, check:',
   clusterOld:
     'Node details appear after every node runs this release. Copies and writes above are current.',
   clusterGuide: 'Cluster guide',
@@ -48,8 +46,6 @@ export const clusterEnglish = {
 
 export const clusterRussian: Record<keyof typeof clusterEnglish, string> = {
   cluster: 'Кластер',
-  clusterIntro:
-    'Сервер работает как кластер высокой доступности: каждая запись хранится больше чем на одном узле, прежде чем подтверждается. Страница обновляется сама.',
   clusterProfile: 'Схема',
   clusterProfileTwo: 'Два узла с данными и свидетель',
   clusterProfileThree: 'Три узла с данными',
@@ -75,14 +71,13 @@ export const clusterRussian: Record<keyof typeof clusterEnglish, string> = {
   clusterCopyNone: '—',
   clusterNoPeers: 'Другие узлы не настроены или не подключены.',
   clusterNextStep: 'Что дальше',
-  clusterHealthy:
-    'Все копии полные: отказ узла не теряет подтверждённых записей. Перед обслуживанием рабочего узла перенесите Arkvory на другой узел. На рабочем узле выполните:',
+  clusterHealthy: 'Все копии полные. Перед обслуживанием рабочего узла перенесите с него Arkvory:',
   clusterDegraded:
-    'Запись остановлена, пока не вернётся недостающая копия; скачивание работает. Верните узел или замените его новым (см. руководство). Только если вы готовы потерять записи при втором отказе, разрешите одну копию на ограниченное время. На рабочем узле выполните:',
+    'Запись приостановлена до возврата копии: верните узел или замените его. Чтобы временно принимать запись с одной копией (второй отказ её потеряет), на рабочем узле:',
   clusterSingle:
-    'Записи подтверждаются одной копией: второй отказ их потеряет. Решение закончится само, когда копия вернётся. Чтобы закончить сейчас, на рабочем узле выполните:',
+    'Запись подтверждается одной копией, пока копия не вернётся. Чтобы закончить сейчас, на рабочем узле:',
   clusterUnknown:
-    'Сервер не может прочитать состояние копий, поэтому запись остановлена. На рабочем узле проверьте службу arkvory-replica:',
+    'Состояние копий не читается, поэтому запись приостановлена. На рабочем узле проверьте:',
   clusterOld:
     'Сведения об узлах появятся, когда все узлы обновятся до этого выпуска. Копии и запись выше актуальны.',
   clusterGuide: 'Руководство по кластеру',

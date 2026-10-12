@@ -1895,10 +1895,6 @@
     "en": "Mirrors",
     "text": "المرايا"
   },
-  "mirrorsIntro": {
-    "en": "Repositories this server copies from other Arkvory installations. The server keeps them in sync by itself; this page refreshes on its own.",
-    "text": "مستودعات ينسخها هذا الخادم من تثبيتات Arkvory أخرى. يُبقيها الخادم متزامنة تلقائيًا؛ وتتحدّث هذه الصفحة من تلقاء نفسها."
-  },
   "mirrorsRepository": {
     "en": "Repository",
     "text": "المستودع"
@@ -1960,8 +1956,8 @@
     "text": "لا توجد مرايا على هذا الخادم"
   },
   "mirrorsEmpty": {
-    "en": "A mirror keeps a copy of a repository of another installation: a second site, or staging to production. An administrator sets one up with “arkvory configure --mirror”.",
-    "text": "تحتفظ المرآة بنسخة من مستودع في تثبيت آخر: موقع ثانٍ، أو من بيئة الاختبار إلى بيئة الإنتاج. يُعدّها المسؤول باستخدام «arkvory configure --mirror»."
+    "en": "A mirror copies a repository from another installation: a second site, or staging to production. Set one up with “arkvory configure --mirror”.",
+    "text": "تنسخ المرآة مستودعًا من تثبيت آخر: موقع ثانٍ، أو من بيئة الاختبار إلى بيئة الإنتاج. أعِدّها باستخدام «arkvory configure --mirror»."
   },
   "mirrorsGuide": {
     "en": "Mirrors guide",
@@ -1978,10 +1974,6 @@
   "cluster": {
     "en": "Cluster",
     "text": "العنقود"
-  },
-  "clusterIntro": {
-    "en": "This server runs as a high-availability cluster: every write is kept on more than one node before it is confirmed. This page refreshes on its own.",
-    "text": "يعمل هذا الخادم كعنقود عالي التوفر: تُحفظ كل عملية كتابة على أكثر من عقدة قبل تأكيدها. تتحدّث هذه الصفحة من تلقاء نفسها."
   },
   "clusterProfile": {
     "en": "Layout",
@@ -2084,20 +2076,20 @@
     "text": "الخطوة التالية"
   },
   "clusterHealthy": {
-    "en": "Every copy is complete: a node can fail without losing confirmed writes. Before maintenance of the serving node, move Arkvory to another node. On the serving node, run:",
-    "text": "كل النسخ مكتملة: يمكن أن تتعطل عقدة دون فقدان أي كتابة مؤكدة. قبل صيانة العقدة التي تخدم، انقل Arkvory إلى عقدة أخرى. على العقدة التي تخدم، شغّل:"
+    "en": "All copies are complete. Before maintaining the serving node, move Arkvory away from it:",
+    "text": "كل النسخ مكتملة. قبل صيانة العقدة التي تخدم، انقل Arkvory عنها:"
   },
   "clusterDegraded": {
-    "en": "Writes are stopped until the missing copy is back; downloads keep working. Bring the node back, or replace it with a new one (see the guide). Only if you accept losing writes on a second failure, allow one copy for a limited time. On the serving node, run:",
-    "text": "الكتابة متوقفة حتى تعود النسخة المفقودة؛ وتستمر التنزيلات في العمل. أعد العقدة أو استبدل بها عقدة جديدة (راجع الدليل). لا تسمح بنسخة واحدة لمدة محدودة إلا إذا كنت تقبل فقدان الكتابات عند عطل ثانٍ. على العقدة التي تخدم، شغّل:"
+    "en": "Writes are paused until the copy is back: return the node or replace it. To accept writes with one copy for a while (a second failure loses them), on the serving node:",
+    "text": "الكتابة متوقفة مؤقتًا حتى تعود النسخة: أعد العقدة أو استبدلها. لقبول الكتابة بنسخة واحدة لفترة (عطل ثانٍ يُفقدها)، على العقدة التي تخدم:"
   },
   "clusterSingle": {
-    "en": "Writes are confirmed with one copy: a second failure loses them. The decision ends by itself once the copy is back. To end it now, on the serving node run:",
-    "text": "تُؤكَّد الكتابة بنسخة واحدة: عطل ثانٍ يُفقدها. ينتهي القرار تلقائيًا بعد عودة النسخة. لإنهائه الآن، شغّل على العقدة التي تخدم:"
+    "en": "Writes are confirmed with one copy until the copy is back. To end it now, on the serving node:",
+    "text": "تُؤكَّد الكتابة بنسخة واحدة حتى تعود النسخة. لإنهاء ذلك الآن، على العقدة التي تخدم:"
   },
   "clusterUnknown": {
-    "en": "The server cannot read the state of its copies, so writes are stopped. On the serving node, check the arkvory-replica service:",
-    "text": "لا يستطيع الخادم قراءة حالة نسخه، لذا الكتابة متوقفة. على العقدة التي تخدم، تحقّق من الخدمة arkvory-replica:"
+    "en": "The state of the copies cannot be read, so writes are paused. On the serving node, check:",
+    "text": "تتعذّر قراءة حالة النسخ، لذا الكتابة متوقفة مؤقتًا. على العقدة التي تخدم، تحقّق من:"
   },
   "clusterOld": {
     "en": "Node details appear after every node runs this release. Copies and writes above are current.",
@@ -3828,12 +3820,12 @@
     "text": "مكّن JavaScript لاستخدام وحدة تحكم التخزين."
   },
   "replicationDegraded": {
-    "en": "Writes are stopped: {copies} of {required} required copies are complete. Downloads keep working; writes resume after the copy is back.",
-    "text": "الكتابة متوقفة: {copies} من {required} نسخ مطلوبة مكتملة. تستمر التنزيلات؛ وتُستأنف الكتابة عند عودة النسخة."
+    "en": "Writes are paused: {copies} of {required} copies are complete. Downloads keep working.",
+    "text": "الكتابة متوقفة مؤقتًا: {copies} من {required} نسخ مكتملة. تستمر التنزيلات."
   },
   "replicationUnknown": {
-    "en": "Writes are stopped: the cluster cannot read the state of its copies. Downloads keep working.",
-    "text": "الكتابة متوقفة: لا يستطيع العنقود قراءة حالة نسخه. تستمر التنزيلات."
+    "en": "Writes are paused: the state of the copies cannot be read. Downloads keep working.",
+    "text": "الكتابة متوقفة مؤقتًا: تتعذّر قراءة حالة النسخ. تستمر التنزيلات."
   },
   "replicationSingleCopy": {
     "en": "Writes are acknowledged with a single copy until {until} by an operator decision.",
