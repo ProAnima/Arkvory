@@ -78,7 +78,7 @@ Give one repository to one command. You cannot combine a mirror change with chan
 
 In Docker Compose, the command also writes `config/compose.mirrors.yml`, which mounts the mirror files into the API and worker containers. Add it to Compose commands that you run yourself.
 
-To replace the key of a repository, repeat the command with only `--mirror` and the new `--mirror-token-file`. The source, the stages and the certificate authorities stay as they are, and a mirror never turns into an import by a repeated command. The worker reads the key file again after every failure, so a new key works without a restart.
+To replace the key of a repository, repeat the command with only `--mirror` and the new `--mirror-token-file`. The source, the stages and the certificate authorities stay as they are, and a mirror never turns into an import by a repeated command. The command restarts the API and the worker. The worker also reads the key file again after every failure, so a key file replaced by hand works without a restart.
 
 ```bash
 sudo arkvory configure --root /opt/proanima-arkvory \
@@ -143,19 +143,19 @@ Connected to a mirrored repository, the console also shows a badge above the cat
 
 ### Error codes {#error-codes}
 
-| `errorCode`               | Meaning and what to do                                                                                                                                                                                                                                                  |
-| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `mirror_mismatch`         | The same artifact ID has different content on the source. The mirror keeps its file. Investigate the artifact; do not delete either copy before you know the cause                                                                                                      |
-| `mirror_source_changed`   | The repository already holds a copy of another source. Detach it, or mirror the new source into a new repository                                                                                                                                                        |
-| `mirror_source_behind`    | The source was restored or reinstalled: the change at the position of the mirror is not the one it applied there. The mirror reads the source again, and the code clears when it has caught up. Files that the restored source lacks stay on the mirror                 |
-| `mirror_delete_blocked`   | The source deleted a file that the mirror cannot delete, because something here still uses it, such as a reference or a file path history                                                                                                                               |
-| `mirror_detached`         | The repository was detached and has changes of its own. It is never synchronized again. Mirror the source into a new repository                                                                                                                                         |
-| `mirror_package_conflict` | A version of the source has a package version (group, name and version) that this repository holds with other bytes. Nothing is changed. Remove the stage or the version on the source, or publish it under another version                                             |
-| `mirror_id_taken`         | An artifact of the source is held by another repository of this installation. One source repository can fill only one repository here                                                                                                                                   |
-| `mirror_unreachable`      | The source cannot be reached: the connection is refused or times out, or the name does not resolve. The worker retries by itself. Check the network, the firewall and that the source is running                                                                        |
-| `mirror_certificate`      | The certificate of the source is not trusted, has expired or does not match its name. Add its authority with `--mirror-ca-file` (see [HTTPS with your own certificate authority](#ca-file))                                                                             |
-| `mirror_failed`           | A failure without a more specific code. Read the worker log                                                                                                                                                                                                             |
-| other codes               | The code of the failed request: `unauthorized` when the source no longer accepts the key (give the mirror a new one), `forbidden` when the key may not read the repository, `not_found` when the source repository is gone, `capacity_exceeded` when the mirror is full |
+| `errorCode`               | Meaning and what to do                                                                                                                                                                                                                                                                                                             |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `mirror_mismatch`         | The same artifact ID has different content on the source. The mirror keeps its file. Investigate the artifact; do not delete either copy before you know the cause                                                                                                                                                                 |
+| `mirror_source_changed`   | The repository already holds a copy of another source. Detach it, or mirror the new source into a new repository                                                                                                                                                                                                                   |
+| `mirror_source_behind`    | The source was restored or reinstalled: the change at the position of the mirror is not the one it applied there. The mirror reads the source again, and the code clears when it has caught up. Files that the restored source lacks stay on the mirror                                                                            |
+| `mirror_delete_blocked`   | The source deleted a file that the mirror cannot delete, because something here still uses it, such as a reference or a file path history                                                                                                                                                                                          |
+| `mirror_detached`         | The repository was detached and has changes of its own. It is never synchronized again. Mirror the source into a new repository                                                                                                                                                                                                    |
+| `mirror_package_conflict` | A version of the source has a package version (group, name and version) that this repository holds with other bytes. The package version here stays what clients get; the copied file stays without a package registration until you delete it. Remove the stage or the version on the source, or publish it under another version |
+| `mirror_id_taken`         | An artifact of the source is held by another repository of this installation. One source repository can fill only one repository here                                                                                                                                                                                              |
+| `mirror_unreachable`      | The source cannot be reached: the connection is refused or times out, or the name does not resolve. The worker retries by itself. Check the network, the firewall and that the source is running                                                                                                                                   |
+| `mirror_certificate`      | The certificate of the source is not trusted, has expired or does not match its name. Add its authority with `--mirror-ca-file` (see [HTTPS with your own certificate authority](#ca-file))                                                                                                                                        |
+| `mirror_failed`           | A failure without a more specific code. Read the worker log                                                                                                                                                                                                                                                                        |
+| other codes               | The code of the failed request: `unauthorized` when the source no longer accepts the key (give the mirror a new one), `forbidden` when the key may not read the repository, `not_found` when the source repository is gone, `capacity_exceeded` when the mirror is full                                                            |
 
 The worker log (`component` is `mirror`) has `mirror.started`, `mirror.step_failed` with `errorCode` and `attempts`, `mirror.recovered` and `mirror.stopped`.
 
@@ -165,9 +165,9 @@ The API of the mirror installation exposes three metrics for each mirrored repos
 
 - `arkvory_mirror_last_sync_timestamp_seconds`: the last time the mirror was caught up.
 - `arkvory_mirror_last_check_timestamp_seconds`: the last time it read the feed.
-- `arkvory_mirror_failing`: 1 while the last attempt failed.
+- `arkvory_mirror_failing`: 1 while the last attempt failed; not while the mirror reads a restored source again (`mirror_source_behind`).
 
-The ready-made Prometheus rules are `ArkvoryMirrorStale` (not caught up for more than an hour) and `ArkvoryMirrorFailing` (the failure lasts 15 minutes). See [Monitoring](./monitoring). A mirror that the worker has not reached yet has no sync time, so the stale rule does not fire before its first synchronization.
+The ready-made Prometheus rules are `ArkvoryMirrorStale` (not caught up for more than an hour, for 15 minutes) and `ArkvoryMirrorFailing` (the failure lasts 15 minutes). See [Monitoring](./monitoring). A mirror that the worker has not reached yet has no sync time, so the stale rule does not fire before its first synchronization.
 
 ## Import by stage {#import}
 
@@ -242,8 +242,9 @@ Rehearse the switch every quarter and after updates. Detach one repository on a 
 - A mirror is read-only until you detach it. A detached repository cannot return to being a mirror.
 - The mirror is not a backup. It has no copy of accounts, keys or grants, and it does not copy references, attachments, audit trails or storage policies.
 - Import mode does not copy container images, Git LFS or npm data.
-- A synchronization only adds and updates. After a restore of the source, files that the source lost stay on the mirror.
-- One source repository fills one repository of an installation: artifact IDs are the same on both sides, so a second mirror or import of it is refused when it is configured.
+- A new first fill only adds and updates: after a restore of the source, files that the source lost stay on the mirror.
+- One source repository fills one repository of an installation: artifact IDs are the same on both sides, so a second mirror or import of it is refused when it is configured. For the same reason, two installations that import from each other must use the same repository name on both sides: a version that came from the other side cannot be taken into a different repository here, and the import stops with `mirror_id_taken`.
+- A version whose package version is already held here with other bytes is copied, then the import stops with `mirror_package_conflict`. The copy stays in the repository without a package registration until you delete it.
 - After a restore of the mirror installation from a backup, versions that were imported and deleted after the backup was taken can be imported again.
 - Both installations are updated on their own. The source must offer the mirror change feed.
 - The set of trusted authorities of the source applies to the whole worker.

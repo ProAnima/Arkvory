@@ -71,11 +71,20 @@ function target() {
 
 function states() {
   const rows = new Map();
+  // Repositories changed here since their detach, as the journal would tell.
+  const changed = new Set();
   return {
     rows,
+    changed,
     load: async (repository) => rows.get(repository) ?? null,
     save: async (state) => {
       rows.set(state.repository, { ...state });
+    },
+    reattach: async (repository) => {
+      const row = rows.get(repository);
+      if (!row?.detachedAt || changed.has(repository)) return false;
+      rows.set(repository, { ...row, detachedAt: null });
+      return true;
     },
   };
 }

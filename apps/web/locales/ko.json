@@ -1963,10 +1963,6 @@
     "en": "Mirrors guide",
     "text": "미러 가이드"
   },
-  "mirrorsUnavailable": {
-    "en": "Cannot load the mirrors. Retrying automatically.",
-    "text": "미러를 불러올 수 없습니다. 자동으로 다시 시도하는 중입니다."
-  },
   "errorMirrorReadOnly": {
     "en": "This repository is a mirror of another installation and cannot be changed here. Make the change on the source; the mirror follows by itself.",
     "text": "이 리포지토리는 다른 설치 환경의 미러이므로 여기서 변경할 수 없습니다. 원본에서 변경하세요. 미러에는 자동으로 반영됩니다."
@@ -2090,6 +2086,10 @@
   "clusterUnknown": {
     "en": "The state of the copies cannot be read, so writes are paused. On the serving node, check:",
     "text": "복사본 상태를 읽을 수 없어 쓰기가 일시 중지되었습니다. 서비스 중인 노드에서 확인하세요:"
+  },
+  "clusterPartial": {
+    "en": "Writes continue, but a node has no complete copy. Return it or replace it before another failure; on the serving node, check:",
+    "text": "쓰기는 계속되지만 완전한 복사본이 없는 노드가 있습니다. 다음 장애 전에 복구하거나 교체하세요. 서비스 중인 노드에서 확인하세요:"
   },
   "clusterOld": {
     "en": "Node details appear after every node runs this release. Copies and writes above are current.",

@@ -15,6 +15,10 @@
 button[data-action-icon] {
   max-width: 100%;
 }
+/* Right to left, forward and back point the way the page reads. */
+:root[dir='rtl'] :is([data-action-icon='next'], [data-action-icon='back']) > .action-icon {
+  transform: scaleX(-1);
+}
 .action-label {
   min-width: 0;
   overflow-wrap: break-word;

@@ -210,7 +210,7 @@ Open [[ui:mirrors]] in the console: a stopped mirror shows the reason, the next 
 | `mirror_source_behind`        | The source was restored or reinstalled                                                                      | It seeds again by itself and the code disappears                                                                                                                          |
 | `mirror_certificate`          | The source uses a company or self-signed certificate, or its certificate expired or does not match its name | Pass `--mirror-ca-file` to `arkvory configure`. The check is never turned off                                                                                             |
 
-The source needs a release with the mirror feed. The worker waits 2 seconds after a failure, doubling up to 5 minutes. `ArkvoryMirrorStale` fires after an hour without a catch-up.
+Other codes and what to do about them: [Mirrors, error codes](./mirrors#error-codes). The source needs a release with the mirror feed. The worker waits 2 seconds after a failure, doubling up to 5 minutes. `ArkvoryMirrorStale` fires after an hour and a quarter without a catch-up.
 
 ## An update failed {#update-failed}
 

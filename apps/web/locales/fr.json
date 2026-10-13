@@ -1963,10 +1963,6 @@
     "en": "Mirrors guide",
     "text": "Guide des miroirs"
   },
-  "mirrorsUnavailable": {
-    "en": "Cannot load the mirrors. Retrying automatically.",
-    "text": "Impossible de charger les miroirs. Nouvelle tentative automatique."
-  },
   "errorMirrorReadOnly": {
     "en": "This repository is a mirror of another installation and cannot be changed here. Make the change on the source; the mirror follows by itself.",
     "text": "Ce dépôt est un miroir d’une autre installation et ne peut pas être modifié ici. Effectuez la modification à la source ; le miroir suivra de lui-même."
@@ -2090,6 +2086,10 @@
   "clusterUnknown": {
     "en": "The state of the copies cannot be read, so writes are paused. On the serving node, check:",
     "text": "L’état des copies ne peut pas être lu, les écritures sont donc suspendues. Sur le nœud en service, vérifiez :"
+  },
+  "clusterPartial": {
+    "en": "Writes continue, but a node has no complete copy. Return it or replace it before another failure; on the serving node, check:",
+    "text": "Les écritures continuent, mais un nœud n’a pas de copie complète. Rétablissez-le ou remplacez-le avant une autre panne ; sur le nœud en service, vérifiez :"
   },
   "clusterOld": {
     "en": "Node details appear after every node runs this release. Copies and writes above are current.",

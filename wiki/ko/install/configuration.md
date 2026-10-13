@@ -59,7 +59,7 @@ Arkvory에는 두 종류의 설정이 있습니다:
 
 ### configure 명령 {#configure-command}
 
-한 번의 호출로 한 종류의 설정만 변경합니다. 다섯 가지 종류는 한 번의 호출에 섞을 수 없습니다.
+한 번의 호출로 한 종류의 설정만 변경합니다. 여섯 가지 종류는 한 번의 호출에 섞을 수 없습니다.
 
 | 종류        | 옵션                                                                                                                                                                                                                                                                                           | 효과                                                                                                                       |
 | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
@@ -67,6 +67,7 @@ Arkvory에는 두 종류의 설정이 있습니다:
 | 백업 보관소 | `--backup-vault DIRECTORY [--vault-key-file FILE \| --init-vault --vault-no-encryption]`, 또는 `--backup-vault-off`                                                                                                                                                                            | 보관소를 연결하거나 연결을 끊습니다. 백업 에이전트만 다시 시작합니다. [백업](../operate/backups)을 참조하세요              |
 | 미러        | `--mirror REPOSITORY --mirror-upstream URL --mirror-token-file FILE [--mirror-source REPOSITORY] [--mirror-stages LIST] [--mirror-ca-file FILE]`, 또는 새 키의 경우 `--mirror REPOSITORY --mirror-token-file FILE`, 또는 `--mirror-detach REPOSITORY[,REPOSITORY…]` 또는 `--mirror-detach all` | 리포지토리를 미러나 가져오기 대상으로 만들거나 다시 일반으로 되돌립니다. [미러](../operate/mirrors)를 참조하세요           |
 | 웹훅        | `--webhook ID --webhook-repository REPOSITORY --webhook-url URL --webhook-secret-file FILE [--webhook-next-secret-file FILE] [--webhook-actions LIST] [--webhook-allow-private LIST] [--webhook-ca-file FILE]`, 또는 `--webhook-detach ID`                                                     | 웹훅 구독을 추가, 교체 또는 제거합니다. 서비스를 다시 시작하고 준비 상태를 확인합니다. 참고: [웹훅](../protocols/webhooks) |
+| 클러스터    | `--cluster ha-2` 또는 `ha-3` `[--cluster-resource NAME]`                                                                                                                                                                                                                                       | 복제된 볼륨의 프라이머리에서: 클러스터 모드를 켭니다. [고가용성 클러스터](../operate/cluster#build)를 참조하세요           |
 | 업데이트    | `--enable-updates`, `--disable-updates`, `--pin [--version X.Y.Z]`, `--unpin`, `--update-channel stable` 또는 `beta`, `--statistics on` 또는 `off`, `--hub-url URL`, `--hub-off`                                                                                                               | 업데이트 정책을 변경합니다. [업데이트](./updates)를 참조하세요                                                             |
 
 HTTPS, 보관소, 미러 변경은 서비스를 다시 시작하며, 변경이 실패하면 이전 구성을 복원합니다. 업데이트 옵션은 `installation.json`과 `hub.json`만 다시 쓰며, 아무것도 다시 시작하지 않습니다. 파일 경로는 절대 경로입니다.

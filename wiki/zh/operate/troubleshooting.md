@@ -210,7 +210,7 @@ Get-NetTCPConnection -LocalPort 8080 | Select-Object LocalAddress, OwningProcess
 | `mirror_source_behind`        | 源被恢复或重新安装                                     | 它会自行重新播种，该代码随后消失                                                                                                         |
 | `mirror_certificate`          | 源使用公司或自签名证书，或其证书已过期或与其名称不匹配 | 向 `arkvory configure` 传递 `--mirror-ca-file`。该检查绝不会关闭                                                                         |
 
-源需要一个带有镜像数据源的版本。工作进程在失败后等待 2 秒，以倍增方式最长到 5 分钟。`ArkvoryMirrorStale` 在整整一小时没有追赶后触发。
+其他代码及处理方法：[镜像，错误代码](./mirrors#error-codes)。源需要一个带有镜像数据源的版本。工作进程在失败后等待 2 秒，以倍增方式最长到 5 分钟。`ArkvoryMirrorStale` 在 1 小时 15 分钟没有追赶后触发。
 
 ## 更新失败 {#update-failed}
 

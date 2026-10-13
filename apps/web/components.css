@@ -149,6 +149,12 @@ button.link-button {
   font-weight: var(--weight-semibold);
   text-align: start;
 }
+/* On touch a name is a full target, like every other control. */
+@media (pointer: coarse) {
+  button.link-button {
+    min-height: var(--control-small-height);
+  }
+}
 @media (hover: hover) and (pointer: fine) {
   button.link-button:hover:where(:not(:disabled)) {
     background: transparent;

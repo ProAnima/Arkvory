@@ -4,7 +4,7 @@ import { atomicJson, atomicText, exists, jsonFile } from './files.js';
 import { command, commandOutput } from './process.js';
 import { report } from './output.js';
 import { installKitUnits, readKitFile } from './cluster-kit.js';
-import { mounted, releaseVolume, takeVolume } from './cluster-volume.js';
+import { JOIN_WITH_KIT, mounted, releaseVolume, takeVolume } from './cluster-volume.js';
 
 /**
  * A node of an HA cluster (ADR 0072) is marked outside the replicated volume: install, update and
@@ -297,8 +297,15 @@ export async function joinNode(
     return;
   }
   const name = resource ?? 'arkvory';
-  const own = !(await mounted(root));
-  if (own) await takeVolume(root, name);
+  // Mounted here already: a node of the cluster holds it (release first), or an earlier run
+  // failed before it released it; that one is taken over and released at the end.
+  const held = await mounted(root);
+  if (held && (await exists(NODE_MARKER)))
+    throw new Error(
+      `This node holds the volume as a cluster node: run "arkvory cluster-release --root ${root}" first`,
+    );
+  if (!held) await takeVolume(root, name, JOIN_WITH_KIT);
+  let failure: Error | undefined;
   try {
     await replicatedMount(root);
     const settings = await volumeSettings(root);
@@ -309,9 +316,20 @@ export async function joinNode(
     const accounts = (await jsonFile(join(kit(root), 'accounts.json'))) as Accounts;
     await prepareNode(accounts, (units) => mirrorUnits(join(kit(root), 'units'), units));
     await writeNodeMarker({ root, resource: name });
-  } finally {
-    if (own) await releaseVolume(root, name);
+  } catch (error) {
+    failure = error instanceof Error ? error : new Error(String(error));
   }
+  // The volume is released whatever happened, and the first failure is the one reported.
+  try {
+    await releaseVolume(root, name, JOIN_WITH_KIT);
+  } catch (error) {
+    if (failure === undefined) throw error;
+    report(
+      'warning',
+      `Releasing the volume failed too: ${error instanceof Error ? error.message : 'unknown'}`,
+    );
+  }
+  if (failure !== undefined) throw failure;
   report('info', `This node can run ${name}; Pacemaker starts Arkvory where the volume is primary`);
 }
 

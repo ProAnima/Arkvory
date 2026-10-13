@@ -210,7 +210,7 @@ Get-NetTCPConnection -LocalPort 8080 | Select-Object LocalAddress, OwningProcess
 | `mirror_source_behind`          | 원본이 복원되거나 재설치됨                                                                 | 스스로 다시 시드하며 코드가 사라집니다                                                                                                                  |
 | `mirror_certificate`            | 원본이 회사 또는 자체 서명 인증서를 사용하거나, 인증서가 만료되었거나 이름과 일치하지 않음 | `arkvory configure`에 `--mirror-ca-file`을 전달하세요. 검사는 절대 꺼지지 않습니다                                                                      |
 
-원본에는 미러 피드가 있는 릴리스가 필요합니다. 워커는 실패 후 2초를 기다리며 최대 5분까지 두 배로 늘립니다. `ArkvoryMirrorStale`은 따라잡기 없이 한 시간이 지나면 발생합니다.
+다른 코드와 대처 방법: [미러, 오류 코드](./mirrors#error-codes). 원본에는 미러 피드가 있는 릴리스가 필요합니다. 워커는 실패 후 2초를 기다리며 최대 5분까지 두 배로 늘립니다. `ArkvoryMirrorStale`은 따라잡기 없이 한 시간 15분이 지나면 발생합니다.
 
 ## 업데이트 실패 {#update-failed}
 

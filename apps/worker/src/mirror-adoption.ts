@@ -1,29 +1,13 @@
-import type { Pool } from 'pg';
 import { MirrorFailure } from '@proanima/arkvory-application';
 import type {
   ArtifactCatalog,
   ArtifactPromotion,
+  MirrorAdoptionStore,
   MirrorAnnotation,
   MirrorStage,
 } from '@proanima/arkvory-application';
 import { ArkvoryError } from '@proanima/arkvory-domain';
 import type { Principal } from '@proanima/arkvory-domain';
-
-/** Where an artifact ID lives on this installation; IDs are global, one repository holds one. */
-export async function idHolder(
-  pool: Pool,
-  id: string,
-): Promise<{
-  readonly repository: string;
-  readonly status: string;
-  readonly owner: string;
-} | null> {
-  const found = await pool.query<{ repository: string; status: string; owner: string }>(
-    'SELECT repository, status, owner FROM arkvory_uploads WHERE id=$1',
-    [id],
-  );
-  return found.rows[0] ?? null;
-}
 
 export const idTaken = (id: string, repository: string) =>
   new MirrorFailure(
@@ -40,7 +24,7 @@ export const idTaken = (id: string, repository: string) =>
 export class MirrorAdoption {
   constructor(
     private readonly repository: string,
-    private readonly pool: Pool,
+    private readonly store: MirrorAdoptionStore,
     private readonly principal: Principal,
     private readonly browse: ArtifactCatalog,
     private readonly promotion: ArtifactPromotion,
@@ -84,22 +68,12 @@ export class MirrorAdoption {
     }
     await this.register(id);
     await this.addStages(id, stages);
-    await this.pool.query(
-      `INSERT INTO arkvory_mirror_adoptions(repository, artifact_id) VALUES($1, $2)
-       ON CONFLICT DO NOTHING`,
-      [this.repository, id],
-    );
+    await this.store.record(this.repository, id);
   }
 
   /** Taken over by an earlier import, or made here (not uploaded by the synchronization). */
   async settled(id: string): Promise<boolean> {
-    const found = await this.pool.query<{ settled: boolean }>(
-      `SELECT EXISTS(SELECT 1 FROM arkvory_mirror_adoptions WHERE repository=$1 AND artifact_id=$2)
-         OR EXISTS(SELECT 1 FROM arkvory_uploads WHERE repository=$1 AND id=$2 AND owner<>$3)
-         AS settled`,
-      [this.repository, id, this.principal.id],
-    );
-    return found.rows[0]?.settled === true;
+    return this.store.settled(this.repository, id, this.principal.id);
   }
 
   /**
@@ -108,8 +82,13 @@ export class MirrorAdoption {
    * here, it is present; deleted here or unfinished by someone else, it is never taken over and
    * never created a second time. Held by another repository, it is a failure that says so.
    */
+  /** Who holds an ID here, for a copy that finds no upload of its own. */
+  holder(id: string) {
+    return this.store.holder(id);
+  }
+
   async foreign(id: string): Promise<'absent' | 'present' | 'deleted'> {
-    const holder = await idHolder(this.pool, id);
+    const holder = await this.store.holder(id);
     if (!holder) return 'absent';
     if (holder.repository !== this.repository) throw idTaken(id, holder.repository);
     return holder.status === 'available' ? 'present' : 'deleted';

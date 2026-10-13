@@ -61,6 +61,7 @@ export {
   excludedTables,
   unregisteredTables,
   presentTablesQuery,
+  tablesAt,
 } from './backup-tables.js';
 export { PostgresSnapshotSource, defaultSnapshotOptions } from './backup-snapshot.js';
 export type { SnapshotOptions } from './backup-snapshot.js';
@@ -80,6 +81,7 @@ export { PostgresBackupStatus } from './backup-status.js';
 export { PostgresVaultLock, VAULT_LOCK } from './backup-vault-lock.js';
 export { PacedContentSource } from './backup-pacing.js';
 export { PostgresMirrorState, reopenMirrorUpload } from './mirror-state.js';
+export { PostgresMirrorAdoptions } from './mirror-adoptions.js';
 export { VaultCipher, encryptedSize } from './vault-crypto.js';
 export type { FileCipher } from './vault-crypto.js';
 export {

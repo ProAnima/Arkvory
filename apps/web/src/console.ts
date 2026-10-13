@@ -188,7 +188,9 @@ function clearCatalog() {
   ))
     button.disabled = false;
   rows.replaceChildren();
-  element('more', HTMLButtonElement).disabled = true;
+  const more = element('more', HTMLButtonElement);
+  more.disabled = true;
+  if (more.parentElement) more.parentElement.dataset['done'] = 'true';
   element('catalog-empty', HTMLDivElement).hidden = false;
   message(element('catalog-count', HTMLSpanElement), 'loaded', { count: 0 });
   message(element('empty-title', HTMLHeadingElement), 'emptyTitle');
@@ -257,6 +259,8 @@ async function list(after?: string) {
       );
     const more = element('more', HTMLButtonElement);
     more.disabled = page.next === null;
+    // Hidden only when nothing is left: disabled while loading, it keeps its place.
+    if (more.parentElement) more.parentElement.dataset['done'] = String(page.next === null);
     more.onclick = () => {
       if (page.next) run(() => list(page.next ?? undefined));
     };

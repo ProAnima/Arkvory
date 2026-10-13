@@ -149,6 +149,28 @@ export interface MirrorState {
 export interface MirrorStateStore {
   load(repository: string): Promise<MirrorState | null>;
   save(state: MirrorState): Promise<void>;
+  /**
+   * Clears the detach mark of a repository nobody but `synchronizer` changed since the mark:
+   * the detach never took effect (it was rolled back, or the worker briefly ran without the
+   * mirror), so following on from the cursor mixes nothing. True when it was cleared.
+   */
+  reattach(repository: string, synchronizer: string): Promise<boolean>;
+}
+/** The principal a synchronization writes as; its own changes do not count as local ones. */
+export const mirrorPrincipalId = (repository: string) => `mirror:${repository}`;
+/** Where an artifact ID lives on this installation; IDs are global, one repository holds one. */
+export interface ArtifactHolder {
+  readonly repository: string;
+  readonly status: string;
+  readonly owner: string;
+}
+/** The catalog's record of what an import took over (ADR 0058). */
+export interface MirrorAdoptionStore {
+  holder(id: string): Promise<ArtifactHolder | null>;
+  /** Idempotent: a repeated copy after a crash records the same version once. */
+  record(repository: string, id: string): Promise<void>;
+  /** Taken over by an earlier import, or made here by anyone but the synchronizing principal. */
+  settled(repository: string, id: string, synchronizer: string): Promise<boolean>;
 }
 
 /** A synchronization stop with a machine code, recorded in the state and the status API. */

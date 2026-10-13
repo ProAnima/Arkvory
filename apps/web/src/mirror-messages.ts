@@ -62,7 +62,6 @@ export const mirrorEnglish = {
   mirrorsEmpty:
     'A mirror copies a repository from another installation: a second site, or staging to production. Set one up with “arkvory configure --mirror”.',
   mirrorsGuide: 'Mirrors guide',
-  mirrorsUnavailable: 'Cannot load the mirrors. Retrying automatically.',
 };
 
 export const mirrorRussian: Record<keyof typeof mirrorEnglish, string> = {
@@ -127,5 +126,4 @@ export const mirrorRussian: Record<keyof typeof mirrorEnglish, string> = {
   mirrorsEmpty:
     'Зеркало копирует репозиторий другой установки: вторая площадка или путь из стейджинга в прод. Настраивается командой «arkvory configure --mirror».',
   mirrorsGuide: 'Руководство по зеркалам',
-  mirrorsUnavailable: 'Не удалось загрузить зеркала. Повторяем автоматически.',
 };

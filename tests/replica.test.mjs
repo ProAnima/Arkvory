@@ -3,6 +3,28 @@ import assert from 'node:assert/strict';
 import { acknowledges } from '../packages/domain/dist/index.js';
 import { parseReplicaCopies } from '../packages/infrastructure/dist/index.js';
 
+test('cluster details that do not parse are left out; the copies still decide the writes', () => {
+  const copies = { copies: 2, required: 2, singleCopyUntil: null };
+  const peer = {
+    name: 'node-b',
+    connected: true,
+    disk: 'UpToDate',
+    complete: true,
+    witness: false,
+  };
+  // A 64-character host name, a peer without a name: shown nowhere, never a refusal of writes.
+  for (const details of [
+    { node: 'n'.repeat(64), profile: 'ha-2', peers: [peer] },
+    { node: 'node-a', profile: 'ha-2', peers: [{ ...peer, name: '' }] },
+    { node: 'node-a', profile: 'ha-9', peers: [] },
+  ])
+    assert.deepEqual(parseReplicaCopies({ ...copies, ...details }), copies);
+  assert.deepEqual(
+    parseReplicaCopies({ ...copies, node: 'node-a', profile: 'ha-2', peers: [peer] }),
+    { ...copies, node: 'node-a', profile: 'ha-2', peers: [peer] },
+  );
+});
+
 test('a write is acknowledged only when the complete copies reach the required number', () => {
   assert.equal(acknowledges({ copies: 2, required: 2, singleCopyUntil: null }), true);
   assert.equal(acknowledges({ copies: 3, required: 2, singleCopyUntil: null }), true);

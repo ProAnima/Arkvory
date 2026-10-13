@@ -210,7 +210,7 @@ Ouvrez [[ui:mirrors]] dans la console : un miroir arrêté affiche la raison, l�
 | `mirror_source_behind`        | La source a été restaurée ou réinstallée                                                                              | Il réamorce de lui-même et le code disparaît                                                                                                                                |
 | `mirror_certificate`          | La source utilise un certificat d’entreprise ou auto-signé, ou son certificat a expiré ou ne correspond pas à son nom | Passez `--mirror-ca-file` à `arkvory configure`. La vérification n’est jamais désactivée                                                                                    |
 
-La source a besoin d’une version avec le flux de miroir. Le worker attend 2 secondes après un échec, en doublant jusqu’à 5 minutes. `ArkvoryMirrorStale` se déclenche après une heure sans rattrapage.
+Autres codes et que faire : [Miroirs, codes d’erreur](./mirrors#error-codes). La source a besoin d’une version avec le flux de miroir. Le worker attend 2 secondes après un échec, en doublant jusqu’à 5 minutes. `ArkvoryMirrorStale` se déclenche après une heure et quart sans rattrapage.
 
 ## Une mise à jour a échoué {#update-failed}
 

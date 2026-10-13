@@ -74,7 +74,13 @@ export class MirrorMetrics {
     gauge(
       'arkvory_mirror_failing',
       'Mirror synchronization: 1 while the last attempt failed, 0 otherwise.',
-      (entry) => (entry.state ? (entry.state.errorCode === null ? 0 : 1) : null),
+      // A restored source being read again is no failure: the alert would page for a long seed.
+      (entry) =>
+        entry.state
+          ? entry.state.errorCode === null || entry.state.errorCode === 'mirror_source_behind'
+            ? 0
+            : 1
+          : null,
     );
   }
 }

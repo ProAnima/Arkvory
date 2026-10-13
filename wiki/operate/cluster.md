@@ -106,7 +106,7 @@ The commands below use the default resource name `arkvory`, the installation dir
    arkvory configure --root /opt/proanima-arkvory --cluster ha-2
    ```
 
-   `configure --cluster` checks that the installation directory is the mounted DRBD device, that this server is primary and that every copy is complete. It starts `arkvory-replica`, makes Arkvory acknowledge writes only with two complete copies and turns off the automatic start of the Arkvory services: from now on Pacemaker starts them. If a step fails, the standalone configuration is restored.
+   `configure --cluster` checks that the installation directory is the mounted DRBD device, that this server is primary and that at least two copies are complete. It starts `arkvory-replica`, makes Arkvory acknowledge writes only with two complete copies and turns off the automatic start of the Arkvory services: from now on Pacemaker starts them. If a step fails, the standalone configuration is restored.
 
 6. Stop Arkvory on the first server and release the volume:
 
@@ -123,7 +123,7 @@ The commands below use the default resource name `arkvory`, the installation dir
    dpkg --configure proanima-arkvory   # .deb only; with RPM nothing else is needed
    ```
 
-   `cluster-node` takes the volume, reads the resource name from it, prepares the server and releases the volume again. `--cluster-resource` is needed only when the resource is not named `arkvory`. It refuses while Pacemaker manages the Arkvory group, because then the volume belongs to the cluster: add a server to a running cluster as described in [Replace a server](#replace-node). `cluster-node` creates the service accounts with the same user and group IDs as on the first server (the files on the volume belong to them) and installs the same services, none of them started automatically. If an account already exists with other IDs, the command stops and tells you which IDs to set. Each time a server becomes active, `arkvory-units` first takes the services from the volume, so settings changed later on the active server (a backup vault, for example) also apply after a failover.
+   `cluster-node` takes the volume, prepares the server and releases the volume again, also when a step fails; the first error is the one reported. `--cluster-resource` is needed only when the resource is not named `arkvory`. It refuses on a server that already serves the cluster with the volume mounted (release it with `cluster-release` first), and while Pacemaker manages the Arkvory group, because then the volume belongs to the cluster: add a server to a running cluster as described in [Replace a server](#replace-node). `cluster-node` creates the service accounts with the same user and group IDs as on the first server (the files on the volume belong to them) and installs the same services, none of them started automatically. If an account already exists with other IDs, the command stops and tells you which IDs to set. Each time a server becomes active, `arkvory-units` first takes the services from the volume, so settings changed later on the active server (a backup vault, for example) also apply after a failover.
 
 8. Set up the Corosync cluster with `pcs` on the data servers (`pcs host auth`, `pcs cluster setup`, `pcs cluster start --all`). On Debian and Ubuntu, first run `pcs cluster destroy` on each data server: the packages install a sample Corosync configuration that `pcs` takes for an existing cluster. Do not run `pcs cluster enable`: a server that was fenced should rejoin only when you start it. For `ha-2`, also authenticate the witness and run `pcs qdevice setup model net --enable --start` on it. On Debian and Ubuntu the package has already set the quorum device up for its own service account: run `systemctl enable --now corosync-qnetd` there instead.
 
@@ -141,7 +141,7 @@ The commands below use the default resource name `arkvory`, the installation dir
     arkvory cluster-check --root /opt/proanima-arkvory
     ```
 
-    The command checks the quorum, that fencing is enabled, that every server has a fence device, the DRBD quorum and fencing settings, that every copy is complete and that Arkvory runs on exactly one server. It exits with an error when a check fails.
+    The command checks the quorum, that fencing is enabled, that every server has a fence device, the DRBD quorum and fencing settings, that at least two copies are complete and that Arkvory runs on exactly one server. It exits with an error when a check fails.
 
 11. Prove fencing once: fence each standby server and let it come back (see [Fencing test](#fence-test)).
 
@@ -149,13 +149,13 @@ Point your clients and DNS name at the virtual address.
 
 ## Day-to-day operation {#operation}
 
-Run these commands as root. `cluster-status` and `cluster-single-copy` read the volume, so run them on the active server; the others work on any data server.
+Run these commands as root. `cluster-status`, `cluster-single-copy` and `cluster-kit` read the volume, so run them on the active server; `cluster-check`, `cluster-switchover` and `cluster-fence-test` work on any data server.
 
 | Command                                                                   | What it does                                                                                      |
 | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
 | `arkvory cluster-status --root <dir>`                                     | Profile, the role of this server, complete and required copies and any operator decision, as JSON |
 | `arkvory cluster-check --root <dir>`                                      | All checks of a healthy cluster; exits with an error when one fails                               |
-| `arkvory cluster-switchover --root <dir> --to <server>`                   | Planned move of Arkvory to another data server; refused unless every copy is complete             |
+| `arkvory cluster-switchover --root <dir> --to <server>`                   | Planned move of Arkvory to another data server; refused unless the target holds a complete copy   |
 | `arkvory cluster-fence-test --root <dir> --node <standby> [--yes]`        | Fences a standby server to prove its fence device; the active server is refused                   |
 | `arkvory cluster-single-copy --root <dir> --until <time> --reason <text>` | Accepts writes with a single copy until a time; see [Single copy](#single-copy)                   |
 | `arkvory cluster-kit --root <dir> --output <file>`                        | On the active server: the file a new server needs to join; see [Replace a server](#replace-node)  |
@@ -165,7 +165,7 @@ Run these commands as root. `cluster-status` and `cluster-single-copy` read the 
 
 ### In the console {#console}
 
-Administrators find [[ui:cluster]] in the menu of a cluster installation. The page shows the layout, the server that serves now, the complete copies, whether writes are accepted, and every other server with its connection and its copy ([[ui:clusterCopyComplete]], [[ui:clusterCopySyncing]] or [[ui:clusterCopyMissing]]). Below, [[ui:clusterNextStep]] gives the one step that fits the current state with its command: a planned switchover while everything is complete, bringing a server back or replacing it while a copy is missing, and how to end a single-copy decision. The page refreshes by itself every 15 seconds.
+Administrators find [[ui:cluster]] in the menu of a cluster installation. The page shows the layout, the server that serves now, the complete copies, whether writes are accepted, and every other server with its connection and its copy ([[ui:clusterCopyComplete]], [[ui:clusterCopySyncing]] or [[ui:clusterCopyMissing]]). Below, [[ui:clusterNextStep]] gives the one step that fits the current state with its command: a planned switchover while everything is complete, bringing a server back or replacing it while a copy is missing (also in `ha-3` while writes go on with two copies), and how to end a single-copy decision. The page refreshes by itself every 15 seconds.
 
 When writes stop, a banner on every screen says so; administrators can open the page from it. People without administration see only that uploads pause while downloads keep working.
 

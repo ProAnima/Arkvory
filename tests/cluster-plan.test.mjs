@@ -320,6 +320,24 @@ test('a node kit carries the resource, account ids and units, and refuses anythi
   await assert.rejects(readKitFile(bad), /no node kit/);
   await writeFile(bad, JSON.stringify({ ...kit, format: 'other' }));
   await assert.rejects(readKitFile(bad), /no node kit/);
+  // Account ids are positive integers in an object: no TypeError, no root id handed to groupadd.
+  for (const accounts of [{ arkvory: null }, [], 'x', { arkvory: { uid: 0, gid: 990 } }]) {
+    await writeFile(bad, JSON.stringify({ ...kit, accounts }));
+    await assert.rejects(readKitFile(bad), /no node kit/, JSON.stringify(accounts));
+  }
+  // A script's unfinished drop-in is no part of the kit, and does not spoil it.
+  await writeFile(
+    join(root, 'config', 'cluster', 'units', 'arkvory-backup.service.d', 'arkvory-vault.conf.tmp'),
+    'half written',
+  );
+  const again = join(root, 'again.kit');
+  await writeKitFile(root, again);
+  const units2 = Object.keys((await readKitFile(again)).units);
+  assert.ok(!units2.some((path) => path.endsWith('.tmp')), units2.join());
+  // On a standby the volume is not mounted: the refusal says where to run it.
+  const standby = await mkdtemp(join(tmpdir(), 'arkvory-standby-'));
+  t.after(() => removeTestDirectory(standby));
+  await assert.rejects(writeKitFile(standby, join(standby, 'x.kit')), /on the active node/);
 });
 
 test('the Pacemaker script stops on an unfilled fence placeholder and adds the witness once', () => {
@@ -367,4 +385,11 @@ test('configure --cluster prints the commands that follow, in order', async () =
     order.every((index, position) => index > 0 && (position === 0 || index > order[position - 1])),
   );
   assert.ok(!text.includes('--cluster-resource'), 'the default resource needs no flag');
+  // dpkg is a step of its own, for .deb hosts: on RPM the node is ready after cluster-node.
+  assert.ok(!/cluster-node[^\n]*dpkg/.test(text), text);
+  assert.match(text, /\.deb package only:\s+dpkg --configure proanima-arkvory/);
+  // The witness of ha-2 needs its quorum service before pacemaker.sh adds the device.
+  assert.match(text, /systemctl enable --now corosync-qnetd/);
+  const three = nextSteps('/opt/proanima-arkvory', { profile: 'ha-3', resource: 'arkvory' });
+  assert.ok(!three.includes('corosync-qnetd'), 'ha-3 has no witness');
 });

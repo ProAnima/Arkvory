@@ -34,6 +34,8 @@ export const clusterEnglish = {
     'Writes are confirmed with one copy until the copy is back. To end it now, on the serving node:',
   clusterUnknown:
     'The state of the copies cannot be read, so writes are paused. On the serving node, check:',
+  clusterPartial:
+    'Writes continue, but a node has no complete copy. Return it or replace it before another failure; on the serving node, check:',
   clusterOld:
     'Node details appear after every node runs this release. Copies and writes above are current.',
   clusterGuide: 'Cluster guide',
@@ -64,10 +66,10 @@ export const clusterRussian: Record<keyof typeof clusterEnglish, string> = {
   clusterRoleData: 'Копия данных',
   clusterRoleWitness: 'Свидетель (голосует, данных не хранит)',
   clusterConnected: 'Есть',
-  clusterDisconnected: 'Нет',
+  clusterDisconnected: 'Нет связи',
   clusterCopyComplete: 'Полная',
   clusterCopySyncing: 'Догоняет',
-  clusterCopyMissing: 'Нет',
+  clusterCopyMissing: 'Отсутствует',
   clusterCopyNone: '—',
   clusterNoPeers: 'Другие узлы не настроены или не подключены.',
   clusterNextStep: 'Что дальше',
@@ -78,6 +80,8 @@ export const clusterRussian: Record<keyof typeof clusterEnglish, string> = {
     'Запись подтверждается одной копией, пока копия не вернётся. Чтобы закончить сейчас, на рабочем узле:',
   clusterUnknown:
     'Состояние копий не читается, поэтому запись приостановлена. На рабочем узле проверьте:',
+  clusterPartial:
+    'Запись идёт, но у одного узла нет полной копии. Верните его или замените до следующего отказа; на рабочем узле проверьте:',
   clusterOld:
     'Сведения об узлах появятся, когда все узлы обновятся до этого выпуска. Копии и запись выше актуальны.',
   clusterGuide: 'Руководство по кластеру',

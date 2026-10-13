@@ -149,7 +149,10 @@ test('the production worker delivers publications, restarts without repeating on
     true,
   );
 
-  // The worker dies; an event happens meanwhile; the restarted worker delivers it exactly once.
+  // The worker dies once it has recorded the first delivery; an event happens meanwhile; the
+  // restarted worker delivers it exactly once. Killed between the receiver's answer and that
+  // record, it would send the first event again under the same id: at-least-once (ADR 0069).
+  await until(async () => (await states.load('ci'))?.deliveredCount === 1, 'the record', running);
   await running.stop();
   const second = await publish(f, 'second');
   running = worker(t, f, paths);

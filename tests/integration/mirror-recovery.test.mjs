@@ -72,7 +72,22 @@ test('a mirror detached since is never followed again from its old position', as
   await publish(p.source, Buffer.from('before the detach'), 'a.bin');
   await p.settle();
   // A detach removes the configuration; the worker marks the state when it starts without it.
-  await new PostgresMirrorState(p.catalog.pool).markDetached([]);
+  const states = new PostgresMirrorState(p.catalog.pool);
+  await states.markDetached([]);
+  // Rolled back before anyone wrote here (a failed configure restores the files): it follows on.
+  await p.settle();
+  assert.equal((await call(p.mirror, 'GET', '/mirror')).json().errorCode, null);
+  // Detached for real: the repository took a change of its own, so it never follows again.
+  await states.markDetached([]);
+  const [{ artifact_id: id }] = (
+    await p.catalog.pool.query(
+      "SELECT artifact_id FROM arkvory_audit WHERE repository='releases' LIMIT 1",
+    )
+  ).rows;
+  await p.catalog.pool.query(
+    `INSERT INTO arkvory_audit(repository, actor, action, artifact_id) VALUES('releases', 'operator', 'annotations.replace', $1)`,
+    [id],
+  );
   await assert.rejects(p.settle(), failsWith('mirror_detached'));
   assert.equal((await call(p.mirror, 'GET', '/mirror')).json().errorCode, 'mirror_detached');
 });

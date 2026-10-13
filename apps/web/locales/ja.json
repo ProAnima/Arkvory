@@ -1963,10 +1963,6 @@
     "en": "Mirrors guide",
     "text": "ミラーのガイド"
   },
-  "mirrorsUnavailable": {
-    "en": "Cannot load the mirrors. Retrying automatically.",
-    "text": "ミラーを読み込めません。自動的に再試行しています。"
-  },
   "errorMirrorReadOnly": {
     "en": "This repository is a mirror of another installation and cannot be changed here. Make the change on the source; the mirror follows by itself.",
     "text": "このリポジトリは別のインストール環境のミラーのため、ここでは変更できません。コピー元で変更してください。ミラーには自動的に反映されます。"
@@ -2090,6 +2086,10 @@
   "clusterUnknown": {
     "en": "The state of the copies cannot be read, so writes are paused. On the serving node, check:",
     "text": "コピーの状態を読み取れないため、書き込みは一時停止しています。サービス中のノードで確認してください："
+  },
+  "clusterPartial": {
+    "en": "Writes continue, but a node has no complete copy. Return it or replace it before another failure; on the serving node, check:",
+    "text": "書き込みは続いていますが、完全なコピーを持たないノードがあります。次の障害の前に復旧するか置き換えてください。サービス中のノードで確認してください："
   },
   "clusterOld": {
     "en": "Node details appear after every node runs this release. Copies and writes above are current.",

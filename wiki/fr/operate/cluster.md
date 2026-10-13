@@ -106,7 +106,7 @@ Les commandes ci-dessous utilisent le nom de ressource par défaut `arkvory`, le
    arkvory configure --root /opt/proanima-arkvory --cluster ha-2
    ```
 
-   `configure --cluster` vérifie que le répertoire d’installation est le périphérique DRBD monté, que ce serveur est primaire et que chaque copie est complète. Il démarre `arkvory-replica`, fait en sorte qu’Arkvory n’acquitte les écritures qu’avec deux copies complètes et désactive le démarrage automatique des services Arkvory : désormais, c’est Pacemaker qui les démarre. Si une étape échoue, la configuration autonome est rétablie.
+   `configure --cluster` vérifie que le répertoire d’installation est le périphérique DRBD monté, que ce serveur est primaire et qu’au moins deux copies sont complètes. Il démarre `arkvory-replica`, fait en sorte qu’Arkvory n’acquitte les écritures qu’avec deux copies complètes et désactive le démarrage automatique des services Arkvory : désormais, c’est Pacemaker qui les démarre. Si une étape échoue, la configuration autonome est rétablie.
 
 6. Arrêtez Arkvory sur le premier serveur et libérez le volume :
 
@@ -123,7 +123,7 @@ Les commandes ci-dessous utilisent le nom de ressource par défaut `arkvory`, le
    dpkg --configure proanima-arkvory   # .deb uniquement ; avec RPM, rien d’autre n’est nécessaire
    ```
 
-   `cluster-node` prend le volume, y lit le nom de la ressource, prépare le serveur et libère de nouveau le volume. `--cluster-resource` n’est nécessaire que si la ressource ne s’appelle pas `arkvory`. La commande refuse de s’exécuter tant que Pacemaker gère le groupe Arkvory, car le volume appartient alors au cluster : ajoutez un serveur à un cluster en marche comme décrit dans [Remplacer un serveur](#replace-node). `cluster-node` crée les comptes de service avec les mêmes ID d’utilisateur et de groupe que sur le premier serveur (les fichiers du volume leur appartiennent) et installe les mêmes services, dont aucun ne démarre automatiquement. Si un compte existe déjà avec d’autres ID, la commande s’arrête et indique quels ID définir. Chaque fois qu’un serveur devient actif, `arkvory-units` reprend d’abord les services depuis le volume, de sorte que les réglages modifiés ensuite sur le serveur actif (un stockage des sauvegardes, par exemple) s’appliquent aussi après un basculement.
+   `cluster-node` prend le volume, prépare le serveur et libère de nouveau le volume, même lorsqu’une étape échoue ; c’est la première erreur qui est signalée. `--cluster-resource` n’est nécessaire que si la ressource ne s’appelle pas `arkvory`. La commande refuse de s’exécuter sur un serveur qui sert déjà le cluster avec le volume monté (libérez-le d’abord avec `cluster-release`), et tant que Pacemaker gère le groupe Arkvory, car le volume appartient alors au cluster : ajoutez un serveur à un cluster en marche comme décrit dans [Remplacer un serveur](#replace-node). `cluster-node` crée les comptes de service avec les mêmes ID d’utilisateur et de groupe que sur le premier serveur (les fichiers du volume leur appartiennent) et installe les mêmes services, dont aucun ne démarre automatiquement. Si un compte existe déjà avec d’autres ID, la commande s’arrête et indique quels ID définir. Chaque fois qu’un serveur devient actif, `arkvory-units` reprend d’abord les services depuis le volume, de sorte que les réglages modifiés ensuite sur le serveur actif (un stockage des sauvegardes, par exemple) s’appliquent aussi après un basculement.
 
 8. Configurez le cluster Corosync avec `pcs` sur les serveurs de données (`pcs host auth`, `pcs cluster setup`, `pcs cluster start --all`). Sur Debian et Ubuntu, exécutez d’abord `pcs cluster destroy` sur chaque serveur de données : les paquets installent un exemple de configuration Corosync que `pcs` prend pour un cluster existant. N’exécutez pas `pcs cluster enable` : un serveur qui a été isolé ne doit rejoindre le cluster que lorsque vous le démarrez. Pour `ha-2`, authentifiez aussi le témoin et exécutez dessus `pcs qdevice setup model net --enable --start`. Sur Debian et Ubuntu, le paquet a déjà configuré le dispositif de quorum pour son propre compte de service : exécutez plutôt `systemctl enable --now corosync-qnetd` à cet endroit.
 
@@ -141,7 +141,7 @@ Les commandes ci-dessous utilisent le nom de ressource par défaut `arkvory`, le
     arkvory cluster-check --root /opt/proanima-arkvory
     ```
 
-    La commande vérifie le quorum, que le fencing est activé, que chaque serveur a un dispositif de fencing, les paramètres de quorum et de fencing de DRBD, que chaque copie est complète et qu’Arkvory s’exécute sur exactement un serveur. Elle se termine par une erreur lorsqu’une vérification échoue.
+    La commande vérifie le quorum, que le fencing est activé, que chaque serveur a un dispositif de fencing, les paramètres de quorum et de fencing de DRBD, qu’au moins deux copies sont complètes et qu’Arkvory s’exécute sur exactement un serveur. Elle se termine par une erreur lorsqu’une vérification échoue.
 
 11. Prouvez le fencing une fois : isolez chaque serveur de secours et laissez-le revenir (voir [Test de fencing](#fence-test)).
 
@@ -149,13 +149,13 @@ Dirigez vos clients et votre nom DNS vers l’adresse virtuelle.
 
 ## Exploitation courante {#operation}
 
-Exécutez ces commandes en tant que root. `cluster-status` et `cluster-single-copy` lisent le volume : lancez-les sur le serveur actif ; les autres fonctionnent sur n’importe quel serveur de données.
+Exécutez ces commandes en tant que root. `cluster-status`, `cluster-single-copy` et `cluster-kit` lisent le volume : lancez-les sur le serveur actif ; `cluster-check`, `cluster-switchover` et `cluster-fence-test` fonctionnent sur n’importe quel serveur de données.
 
 | Commande                                                                  | Ce qu’elle fait                                                                                                                           |
 | ------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
 | `arkvory cluster-status --root <dir>`                                     | Profil, rôle de ce serveur, copies complètes et requises et toute décision d’opérateur, en JSON                                           |
 | `arkvory cluster-check --root <dir>`                                      | Toutes les vérifications d’un cluster sain ; se termine par une erreur lorsqu’une échoue                                                  |
-| `arkvory cluster-switchover --root <dir> --to <server>`                   | Déplacement planifié d’Arkvory vers un autre serveur de données ; refusé tant que chaque copie n’est pas complète                         |
+| `arkvory cluster-switchover --root <dir> --to <server>`                   | Déplacement planifié d’Arkvory vers un autre serveur de données ; refusé tant que la cible ne détient pas de copie complète               |
 | `arkvory cluster-fence-test --root <dir> --node <standby> [--yes]`        | Isole un serveur de secours pour prouver son dispositif de fencing ; le serveur actif est refusé                                          |
 | `arkvory cluster-single-copy --root <dir> --until <time> --reason <text>` | Accepte les écritures avec une seule copie jusqu’à une heure donnée ; voir [Copie unique](#single-copy)                                   |
 | `arkvory cluster-kit --root <dir> --output <file>`                        | Sur le serveur actif : le fichier dont un nouveau serveur a besoin pour rejoindre le cluster ; voir [Remplacer un serveur](#replace-node) |
@@ -165,7 +165,7 @@ Exécutez ces commandes en tant que root. `cluster-status` et `cluster-single-co
 
 ### Dans la console {#console}
 
-Les administrateurs trouvent [[ui:cluster]] dans le menu d’une installation en cluster. La page montre la topologie, le serveur qui sert actuellement, les copies complètes, si les écritures sont acceptées, ainsi que chacun des autres serveurs avec sa connexion et sa copie ([[ui:clusterCopyComplete]], [[ui:clusterCopySyncing]] ou [[ui:clusterCopyMissing]]). En dessous, [[ui:clusterNextStep]] indique l’unique étape adaptée à l’état actuel, avec sa commande : un basculement planifié lorsque tout est complet, la remise en service ou le remplacement d’un serveur lorsqu’une copie manque, et la manière de mettre fin à une décision de copie unique. La page se rafraîchit d’elle-même toutes les 15 secondes.
+Les administrateurs trouvent [[ui:cluster]] dans le menu d’une installation en cluster. La page montre la topologie, le serveur qui sert actuellement, les copies complètes, si les écritures sont acceptées, ainsi que chacun des autres serveurs avec sa connexion et sa copie ([[ui:clusterCopyComplete]], [[ui:clusterCopySyncing]] ou [[ui:clusterCopyMissing]]). En dessous, [[ui:clusterNextStep]] indique l’unique étape adaptée à l’état actuel, avec sa commande : un basculement planifié lorsque tout est complet, la remise en service ou le remplacement d’un serveur lorsqu’une copie manque (également en `ha-3` tant que les écritures continuent avec deux copies), et la manière de mettre fin à une décision de copie unique. La page se rafraîchit d’elle-même toutes les 15 secondes.
 
 Lorsque les écritures s’arrêtent, une bannière l’indique sur chaque écran ; les administrateurs peuvent ouvrir la page depuis celle-ci. Les personnes sans droits d’administration voient seulement que les téléversements sont suspendus tandis que les téléchargements continuent de fonctionner.
 

@@ -98,11 +98,20 @@ function target() {
 
 function states() {
   const rows = new Map();
+  // Repositories changed here since their detach, as the journal would tell.
+  const changed = new Set();
   return {
     rows,
+    changed,
     load: async (repository) => rows.get(repository) ?? null,
     save: async (state) => {
       rows.set(state.repository, { ...state });
+    },
+    reattach: async (repository) => {
+      const row = rows.get(repository);
+      if (!row?.detachedAt || changed.has(repository)) return false;
+      rows.set(repository, { ...row, detachedAt: null });
+      return true;
     },
   };
 }
@@ -387,4 +396,24 @@ test('a copy deleted here is skipped, not retried forever, when a restored sourc
   assert.equal(state.copiedArtifacts, 2);
   assert.ok(!t.log.includes('register b'), 'nothing is recorded for the deleted copy');
   assert.ok(!t.log.some((line) => line.startsWith('annotate b')));
+});
+
+test('a detach nobody acted on is undone; one with changes of its own here is final', async () => {
+  const st = states();
+  const s = source({ artifacts: ['a'], head: '1' });
+  await settle(mirror(s, target(), st));
+  // A detach that was rolled back: marked, but nothing changed here since.
+  st.rows.set('releases', { ...st.rows.get('releases'), detachedAt: '2026-10-12T10:00:00.000Z' });
+  s.feed.push({ sequence: '2', action: 'annotations.replace', artifactId: 'a', detail: null });
+  s.head = '2';
+  await settle(mirror(s, target(), st));
+  assert.equal(st.rows.get('releases').detachedAt, null);
+  assert.equal(st.rows.get('releases').cursor, '2', 'followed on from its cursor');
+  // Detached for real: the repository took changes of its own, so it is never followed again.
+  st.rows.set('releases', { ...st.rows.get('releases'), detachedAt: '2026-10-12T11:00:00.000Z' });
+  st.changed.add('releases');
+  await assert.rejects(
+    mirror(s, target(), st).step(never),
+    (error) => error instanceof MirrorFailure && error.code === 'mirror_detached',
+  );
 });
