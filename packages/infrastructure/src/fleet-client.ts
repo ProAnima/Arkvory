@@ -133,7 +133,7 @@ export function readSiteCertificate(origin: string): Promise<FleetCertificate> {
  */
 export function siteRequest(
   endpoint: FleetEndpoint,
-  method: 'GET' | 'POST',
+  method: 'GET' | 'POST' | 'PUT',
   path: string,
   options: {
     readonly key?: string;

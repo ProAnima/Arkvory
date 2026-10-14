@@ -30,6 +30,7 @@ import { registerConsole } from './console.js';
 import { maintainStorage } from './storage-maintenance.js';
 import { resolveUploadTimeouts } from './upload-policy.js';
 import { registerUpdateRoutes } from './update-routes.js';
+import { registerDownloadSettingsRoutes } from './download-settings-routes.js';
 import { UpdateControl } from './update-control.js';
 import { registerFeedback } from './feedback-routes.js';
 import { registerTopologyRoutes } from './topology-routes.js';
@@ -66,6 +67,7 @@ function registerMaintenance(
     role: runtime.role,
     available: runtime.available,
     fleet: () => fleet.pollAll(),
+    settings: () => runtime.downloadSettings.sync(),
     maintain: async () => {
       try {
         await maintainStorage(
@@ -196,6 +198,7 @@ function registerRoutes(app: FastifyInstance, parts: RouteParts) {
   registerHttpErrors(app, context);
   registerHealthRoutes(app, runtime, () => drain.isDraining, replica, context.principal);
   registerUpdateRoutes(app, context.principal, config.updateControlDirectory);
+  registerDownloadSettingsRoutes(app, context.principal, runtime.downloadSettings);
   registerFleetControlRoutes(app, context.principal, parts.fleetControl);
   registerFleetRoutes(app, context.principal, {
     trust: parts.fleetTrust,

@@ -4198,5 +4198,129 @@
   "fleetNoRepositories": {
     "en": "The site has no repositories.",
     "text": "El sitio no tiene repositorios."
+  },
+  "fleetSettings": {
+    "en": "Settings",
+    "text": "Ajustes"
+  },
+  "fleetSettingsOf": {
+    "en": "Settings: {name}",
+    "text": "Ajustes: {name}"
+  },
+  "fleetThisSettings": {
+    "en": "Settings of this site",
+    "text": "Ajustes de este sitio"
+  },
+  "fleetQueueSettings": {
+    "en": "Download queue",
+    "text": "Cola de descargas"
+  },
+  "fleetQueueHint": {
+    "en": "An empty field keeps the value of the server’s environment, shown in grey. Saved settings apply at once, without a restart; active downloads keep their places. Read gateways keep their environment.",
+    "text": "Un campo vacío mantiene el valor del entorno del servidor, mostrado en gris. Los ajustes guardados se aplican al instante, sin reiniciar; las descargas activas conservan su lugar. Las pasarelas de lectura mantienen su entorno."
+  },
+  "fleetStrategy": {
+    "en": "Strategy",
+    "text": "Estrategia"
+  },
+  "fleetStrategyOrdered": {
+    "en": "In order of arrival",
+    "text": "Por orden de llegada"
+  },
+  "fleetStrategySmallest": {
+    "en": "Smallest first",
+    "text": "Primero los más pequeños"
+  },
+  "fleetStrategyShared": {
+    "en": "Shared, without a queue",
+    "text": "Compartida, sin cola"
+  },
+  "fleetDefault": {
+    "en": "Default: {value}",
+    "text": "Por defecto: {value}"
+  },
+  "fleetSessions": {
+    "en": "Downloads at once",
+    "text": "Descargas simultáneas"
+  },
+  "fleetReserve": {
+    "en": "Places kept for people",
+    "text": "Plazas reservadas para personas"
+  },
+  "fleetPerPrincipal": {
+    "en": "Downloads at once per client",
+    "text": "Descargas simultáneas por cliente"
+  },
+  "fleetIdle": {
+    "en": "Pause that frees a place, s",
+    "text": "Pausa que libera una plaza, s"
+  },
+  "fleetAging": {
+    "en": "Wait that raises a class, min (0: off)",
+    "text": "Espera que sube de clase, min (0: desactivado)"
+  },
+  "fleetRanges": {
+    "en": "Parallel ranges per download",
+    "text": "Rangos paralelos por descarga"
+  },
+  "fleetSessionMin": {
+    "en": "Queue files from, MiB",
+    "text": "Poner en cola archivos desde, MiB"
+  },
+  "fleetPreempt": {
+    "en": "Ask downloads to yield to a higher class",
+    "text": "Pedir a las descargas que cedan ante una clase superior"
+  },
+  "fleetPreemptOn": {
+    "en": "Yes",
+    "text": "Sí"
+  },
+  "fleetPreemptOff": {
+    "en": "No",
+    "text": "No"
+  },
+  "fleetWeights": {
+    "en": "Weights of classes",
+    "text": "Pesos de las clases"
+  },
+  "fleetWeightInteractive": {
+    "en": "People",
+    "text": "Personas"
+  },
+  "fleetWeightRelease": {
+    "en": "Releases",
+    "text": "Versiones"
+  },
+  "fleetWeightBulk": {
+    "en": "Bulk",
+    "text": "Masivas"
+  },
+  "fleetWeightBackground": {
+    "en": "Background",
+    "text": "En segundo plano"
+  },
+  "fleetQueueSave": {
+    "en": "Save queue settings",
+    "text": "Guardar ajustes de la cola"
+  },
+  "fleetQueueReset": {
+    "en": "Back to defaults",
+    "text": "Volver a los valores por defecto"
+  },
+  "fleetQueueSaved": {
+    "en": "Saved. The queue works with the new settings now.",
+    "text": "Guardado. La cola ya funciona con los nuevos ajustes."
+  },
+  "fleetQueueChanged": {
+    "en": "Changed by {who}",
+    "text": "Cambiado por {who}"
+  },
+  "fleetQueueProblem": {
+    "en": "Saved settings do not fit this server and are not used: {problem}",
+    "text": "Los ajustes guardados no encajan en este servidor y no se usan: {problem}"
+  },
+  "fleetQueueConflict": {
+    "en": "Someone changed the settings meanwhile. The form shows them now: check and save again.",
+    "text": "Alguien cambió los ajustes mientras tanto. El formulario los muestra ahora: revíselos y guarde de nuevo."
   }
 }

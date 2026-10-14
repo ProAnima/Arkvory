@@ -1,5 +1,6 @@
 import { DiscoveryApi } from './discovery-api.js';
 import { UpdatesApi } from './updates-api.js';
+import { DownloadSettingsApi } from './download-settings-api.js';
 import { FleetApi } from './fleet-api.js';
 import { ReplicationApi } from './replication-api.js';
 import { FeedbackApi } from './feedback-api.js';
@@ -50,6 +51,8 @@ export class ArkvoryClient extends AccountClient {
   readonly identity: IdentityClient;
   readonly administration: AdministrationClient;
   readonly updates: UpdatesApi;
+  /** Download queue settings changed without a restart (ADR 0076, stage 3). */
+  readonly downloadSettings: DownloadSettingsApi;
   /** The fleet of ADR 0077: sites, pairing, topology. */
   readonly fleet: FleetApi;
   /** Copies of an HA cluster from readiness (ADR 0072); standalone servers have none. */
@@ -65,6 +68,7 @@ export class ArkvoryClient extends AccountClient {
     const http = new HttpTransport(baseUrl, token, policy);
     super(http);
     this.updates = new UpdatesApi(http);
+    this.downloadSettings = new DownloadSettingsApi(http);
     this.fleet = new FleetApi(http);
     this.replication = new ReplicationApi(http);
     this.promotions = new PromotionsApi(http);

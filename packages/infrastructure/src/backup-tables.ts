@@ -102,6 +102,11 @@ export const excludedTables: readonly ExcludedTable[] = [
     reason: 'signs download queue tickets of the source; a restore makes its own',
   },
   { name: 'arkvory_download_policy', reason: 'gateway topology is configured on the target' },
+  {
+    name: 'arkvory_download_settings',
+    reason:
+      'download queue settings fit the hardware and link of the source; set again on the target',
+  },
   { name: 'arkvory_backup_jobs', reason: 'backup state of the source instance' },
   { name: 'arkvory_backup_pins', reason: 'backup state of the source instance' },
   { name: 'arkvory_backup_barrier', reason: 'backup state of the source instance' },

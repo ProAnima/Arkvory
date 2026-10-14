@@ -140,6 +140,8 @@ HTTPS、备份存储和镜像更改会重启服务，并在更改不生效时恢
 
 API 前面的代理必须允许请求的持续时间至少与 `ARKVORY_UPLOAD_DEADLINE_MS` 一样长。参见 [HTTPS](./https#reverse-proxy)。所有其他限制，例如等待队列和每账户速率，见[环境变量](../reference/environment#transfers-and-bandwidth)。
 
+下载队列的值（策略、同时下载数、保留、权重等）也可以在不重启的情况下修改：[[ui:fleet]] → [[ui:fleetThisSettings]]，或 `PUT /api/v1/system/downloads/settings`。在写入进程上，保存的值优先于这些变量；参见[站点](../operate/sites#site-settings)。
+
 ### 备份和镜像 {#backups-mirrors}
 
 两者都使用 `configure`。`--backup-vault` 会写入 `ARKVORY_BACKUP_VAULT`，授予服务账户对该目录的访问权限，仅重启备份代理，并且只有当代理报告备份存储可用时才保留该更改。备份存储必须位于安装根目录之外和存储之外。`--mirror` 会写入 `ARKVORY_MIRRORS_FILE` 和密钥文件，重启 API 和工作进程，并在更改任何内容之前用您的密钥检查源。

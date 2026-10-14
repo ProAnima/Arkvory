@@ -10,7 +10,7 @@ Um **site** é uma instalação do Arkvory: a principal, um espelho em outro loc
 ## Como funciona {#how-it-works}
 
 - O controlador mantém uma lista de sites. Ele lê cada site a cada 30 segundos por HTTPS e guarda a última resposta, então um site que para de responder ainda mostra seu último estado conhecido.
-- Ao ser pareado, o site dá ao site controlador uma chave própria, a **chave de frota**. Ela alcança apenas o que o controlador precisa: o estado do site e as descrições do seu catálogo. Não pode baixar bytes de arquivos, alterar nada nem ler contas e chaves.
+- Ao ser pareado, o site dá ao site controlador uma chave própria, a **chave de frota**. Ela alcança apenas o que o controlador precisa: o estado do site, as descrições do seu catálogo e duas configurações: a fila de downloads e as solicitações de atualização. Não pode baixar bytes de arquivos, gravar em repositórios nem ler ou alterar contas e chaves.
 - O controlador guarda as chaves de frota seladas com uma chave do seu diretório de dados (`fleet.key`). O banco de dados e seus backups sozinhos não as revelam. Depois de uma restauração, pareie os sites de novo.
 - Cada site mostra quais controladores o gerenciam e pode revogá-los a qualquer momento.
 
@@ -55,6 +55,15 @@ A partir daí o controlador confia exatamente nesse certificado. Quando o site r
 
 O controlador lê isso no site com sua chave de frota e mostra a resposta como o site a deu. Só trafegam descrições: nomes, tamanhos, rótulos, estágios, caminhos e revisões. Para baixar um arquivo, use o próprio site.
 
+## Configurações de um site {#site-settings}
+
+[[ui:fleetSettings]] na linha de um site abre suas configurações abaixo da lista; [[ui:fleetThisSettings]] abre o mesmo cartão para este site. O cartão tem duas partes:
+
+- **[[ui:fleetQueueSettings]]**: quantos downloads correm ao mesmo tempo, lugares reservados para pessoas, a estratégia, os pesos das classes e os demais valores da fila do [controle de tráfego](../reference/environment#transfers-and-bandwidth). Um campo vazio mantém o valor do ambiente do site, mostrado em cinza. [[ui:fleetQueueSave]] aplica os valores na hora, sem reiniciar: novas decisões os seguem e downloads ativos mantêm seus lugares. [[ui:fleetQueueReset]] volta ao ambiente.
+- **[[ui:updates]]**: a versão instalada e a mais recente, a instalação automática e a hora de manutenção, [[ui:updateCheck]] e [[ui:updateInstall]]. O atualizador do site pega uma solicitação em até um minuto; até lá o cartão a mostra como aceita.
+
+Cada alteração leva a revisão de onde partiu. Se alguém alterou as configurações nesse meio-tempo, o site recusa a alteração e o cartão mostra os valores atuais: confira e salve de novo. O site registra quem alterou sua fila: a chave do controlador e o nome do administrador dele.
+
 ## Quem gerencia este site {#managed-by}
 
 Em [[ui:fleetThisSite]], cada site lista os controladores que o gerenciam: nome, quem os pareou, quando e a última solicitação. [[ui:fleetRevoke]] recusa a chave do controlador na hora.
@@ -68,6 +77,6 @@ Em [[ui:fleetThisSite]], cada site lista os controladores que o gerenciam: nome,
 
 ## Limites {#limits}
 
-- A página mostra o estado dos sites. Espelhos, atualizações, a fila de downloads e a HA são configurados em cada site, no seu console ou com `arkvory configure`; alterá-los a partir do controlador vem a seguir.
+- Espelhos e HA ainda são configurados em cada site, com seu console ou `arkvory configure`; alterá-los a partir do controlador é o próximo passo. Gateways de leitura mantêm a fila de downloads do seu ambiente.
 - Um controlador gerencia até 256 sites e lê no máximo oito ao mesmo tempo.
 - O controlador guarda uma chave de cada site que gerencia: proteja os administradores globais e o diretório de dados dele com o mesmo cuidado que os próprios sites.

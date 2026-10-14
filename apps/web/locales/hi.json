@@ -4198,5 +4198,129 @@
   "fleetNoRepositories": {
     "en": "The site has no repositories.",
     "text": "साइट पर कोई रिपॉजिटरी नहीं है।"
+  },
+  "fleetSettings": {
+    "en": "Settings",
+    "text": "सेटिंग"
+  },
+  "fleetSettingsOf": {
+    "en": "Settings: {name}",
+    "text": "सेटिंग: {name}"
+  },
+  "fleetThisSettings": {
+    "en": "Settings of this site",
+    "text": "इस साइट की सेटिंग"
+  },
+  "fleetQueueSettings": {
+    "en": "Download queue",
+    "text": "डाउनलोड कतार"
+  },
+  "fleetQueueHint": {
+    "en": "An empty field keeps the value of the server’s environment, shown in grey. Saved settings apply at once, without a restart; active downloads keep their places. Read gateways keep their environment.",
+    "text": "खाली फ़ील्ड सर्वर के एनवायरनमेंट का मान रखता है, जो धूसर रंग में दिखता है। सहेजी गई सेटिंग तुरंत, बिना रीस्टार्ट लागू होती हैं; सक्रिय डाउनलोड अपनी जगह रखते हैं। रीड गेटवे अपना एनवायरनमेंट रखते हैं।"
+  },
+  "fleetStrategy": {
+    "en": "Strategy",
+    "text": "रणनीति"
+  },
+  "fleetStrategyOrdered": {
+    "en": "In order of arrival",
+    "text": "आने के क्रम में"
+  },
+  "fleetStrategySmallest": {
+    "en": "Smallest first",
+    "text": "छोटी फ़ाइलें पहले"
+  },
+  "fleetStrategyShared": {
+    "en": "Shared, without a queue",
+    "text": "साझा, बिना कतार"
+  },
+  "fleetDefault": {
+    "en": "Default: {value}",
+    "text": "डिफ़ॉल्ट: {value}"
+  },
+  "fleetSessions": {
+    "en": "Downloads at once",
+    "text": "एक साथ डाउनलोड"
+  },
+  "fleetReserve": {
+    "en": "Places kept for people",
+    "text": "लोगों के लिए आरक्षित जगहें"
+  },
+  "fleetPerPrincipal": {
+    "en": "Downloads at once per client",
+    "text": "प्रति क्लाइंट एक साथ डाउनलोड"
+  },
+  "fleetIdle": {
+    "en": "Pause that frees a place, s",
+    "text": "जगह खाली करने वाला विराम, सेकंड"
+  },
+  "fleetAging": {
+    "en": "Wait that raises a class, min (0: off)",
+    "text": "श्रेणी बढ़ाने वाली प्रतीक्षा, मिनट (0: बंद)"
+  },
+  "fleetRanges": {
+    "en": "Parallel ranges per download",
+    "text": "प्रति डाउनलोड समानांतर रेंज"
+  },
+  "fleetSessionMin": {
+    "en": "Queue files from, MiB",
+    "text": "इस आकार से फ़ाइलें कतार में, MiB"
+  },
+  "fleetPreempt": {
+    "en": "Ask downloads to yield to a higher class",
+    "text": "डाउनलोड से उच्च श्रेणी के लिए जगह छोड़ने को कहें"
+  },
+  "fleetPreemptOn": {
+    "en": "Yes",
+    "text": "हाँ"
+  },
+  "fleetPreemptOff": {
+    "en": "No",
+    "text": "नहीं"
+  },
+  "fleetWeights": {
+    "en": "Weights of classes",
+    "text": "श्रेणियों के भार"
+  },
+  "fleetWeightInteractive": {
+    "en": "People",
+    "text": "लोग"
+  },
+  "fleetWeightRelease": {
+    "en": "Releases",
+    "text": "रिलीज़"
+  },
+  "fleetWeightBulk": {
+    "en": "Bulk",
+    "text": "थोक"
+  },
+  "fleetWeightBackground": {
+    "en": "Background",
+    "text": "पृष्ठभूमि"
+  },
+  "fleetQueueSave": {
+    "en": "Save queue settings",
+    "text": "कतार सेटिंग सहेजें"
+  },
+  "fleetQueueReset": {
+    "en": "Back to defaults",
+    "text": "डिफ़ॉल्ट पर लौटें"
+  },
+  "fleetQueueSaved": {
+    "en": "Saved. The queue works with the new settings now.",
+    "text": "सहेजा गया। कतार अब नई सेटिंग से चल रही है।"
+  },
+  "fleetQueueChanged": {
+    "en": "Changed by {who}",
+    "text": "बदलने वाले: {who}"
+  },
+  "fleetQueueProblem": {
+    "en": "Saved settings do not fit this server and are not used: {problem}",
+    "text": "सहेजी गई सेटिंग इस सर्वर पर फिट नहीं होतीं और उपयोग नहीं हो रहीं: {problem}"
+  },
+  "fleetQueueConflict": {
+    "en": "Someone changed the settings meanwhile. The form shows them now: check and save again.",
+    "text": "इस बीच किसी ने सेटिंग बदल दीं। फ़ॉर्म अब उन्हें दिखा रहा है: जाँचें और फिर से सहेजें।"
   }
 }

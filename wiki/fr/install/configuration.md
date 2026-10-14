@@ -140,6 +140,8 @@ Les limites appartiennent à un processus d’API. Un débit de `0` signifie auc
 
 Un proxy devant l’API doit autoriser une requête d’une durée au moins égale à `ARKVORY_UPLOAD_DEADLINE_MS`. Voir [HTTPS](./https#reverse-proxy). Toutes les autres limites, comme la file d’attente et les débits par compte, se trouvent dans [Variables d’environnement](../reference/environment#transfers-and-bandwidth).
 
+Les valeurs de la file de téléchargements (stratégie, téléchargements simultanés, réserve, poids et les autres) se modifient aussi sans redémarrage : [[ui:fleet]] → [[ui:fleetThisSettings]], ou `PUT /api/v1/system/downloads/settings`. Les valeurs enregistrées l’emportent sur ces variables sur le processus d’écriture ; voir [Sites](../operate/sites#site-settings).
+
 ### Sauvegardes et miroirs {#backups-mirrors}
 
 Utilisez `configure` pour les deux. `--backup-vault` écrit `ARKVORY_BACKUP_VAULT`, accorde au compte de service l’accès au répertoire, redémarre uniquement l’agent de sauvegarde et ne conserve la modification que lorsque l’agent signale le coffre comme disponible. Le coffre doit se trouver en dehors de la racine d’installation et du stockage. `--mirror` écrit `ARKVORY_MIRRORS_FILE` et les fichiers de clés, redémarre l’API et le processus de traitement (worker), et vérifie la source avec votre clé avant de modifier quoi que ce soit.

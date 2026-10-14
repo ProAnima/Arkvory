@@ -1047,6 +1047,30 @@
       },
       "summary": "サイトのカタログを読む",
       "description": "カタログの読み取りを 1 回、管理対象サイトに渡し、その応答をそのまま返します：リポジトリ、検索、アーティファクト、注釈、ステージ、パッケージ、ファイルのページと履歴、ストレージ使用量、ミラーの状態。`path` はクエリ付きのサイトのルートです。その他のルートとファイルのバイトは 400 で拒否されます。"
+    },
+    "changeFleetSite": {
+      "en": {
+        "summary": "Change a setting of a site",
+        "description": "Passes one change to a managed site and returns its answer unchanged. `path` is one of: `/api/v1/system/downloads/settings` (download queue settings, sent as PUT) or `/api/v1/system/updates/requests` (an update request, sent as POST). The body goes to the site as it is; the site checks the revision or request id, so a repeated change does not apply twice. Other paths are refused with 400."
+      },
+      "summary": "サイトの設定を変更する",
+      "description": "変更を 1 つ管理対象サイトに渡し、その応答をそのまま返します。`path` は次のいずれかのルートです：`/api/v1/system/downloads/settings`（ダウンロードキューの設定、PUT で送信）または `/api/v1/system/updates/requests`（更新リクエスト、POST で送信）。本文はそのままサイトに届きます。サイトがリビジョンまたはリクエスト id を確認するため、繰り返された変更が二重に適用されることはありません。その他のパスは 400 で拒否されます。"
+    },
+    "getDownloadSettings": {
+      "en": {
+        "summary": "Read download queue settings",
+        "description": "Returns the changed values (`overrides`), what the environment of the server sets (`defaults`) and what the queue uses now (`effective`), with the revision to pass back when changing. `problem` names why saved settings do not fit this server; the queue then runs on the defaults."
+      },
+      "summary": "ダウンロードキューの設定を読む",
+      "description": "変更された値（`overrides`）、サーバーの環境が定める値（`defaults`）、キューが現在使っている値（`effective`）と、変更時に返すリビジョンを返します。`problem` は保存された設定がこのサーバーに合わない理由を示します。その場合キューは既定値で動作します。"
+    },
+    "changeDownloadSettings": {
+      "en": {
+        "summary": "Change download queue settings",
+        "description": "Saves `overrides` over the environment of the server and applies them without a restart: new decisions follow them at once, active downloads keep their places. The values given replace all earlier changes; `{}` returns to the environment. Settings that cannot run here are refused with 400 naming the field; a stale `expectedRevision` gets 409. Read gateways keep their environment."
+      },
+      "summary": "ダウンロードキューの設定を変更する",
+      "description": "`overrides` をサーバーの環境の上に保存し、再起動なしで適用します。新しい判断はすぐにそれに従い、進行中のダウンロードは場所を保ちます。渡した値はそれまでの変更をすべて置き換え、`{}` で環境の値に戻ります。このサーバーで動作できない設定はフィールド名付きの 400 で拒否され、古い `expectedRevision` は 409 になります。読み取りゲートウェイは自身の環境を保ちます。"
     }
   },
   "errors": {

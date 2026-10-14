@@ -140,6 +140,8 @@ The limits belong to one API process. A rate of `0` means no limit.
 
 A proxy in front of the API must allow a request at least as long as `ARKVORY_UPLOAD_DEADLINE_MS`. See [HTTPS](./https#reverse-proxy). All other limits, such as the waiting queue and the per-account rates, are in [Environment variables](../reference/environment#transfers-and-bandwidth).
 
+The download queue values (strategy, downloads at once, reserve, weights and the others) can also be changed without a restart: [[ui:fleet]] → [[ui:fleetThisSettings]], or `PUT /api/v1/system/downloads/settings`. Saved values take precedence over these variables on the writer; see [Sites](../operate/sites#site-settings).
+
 ### Backups and mirrors {#backups-mirrors}
 
 Use `configure` for both. `--backup-vault` writes `ARKVORY_BACKUP_VAULT`, grants the service account access to the directory, restarts the backup agent only, and keeps the change only when the agent reports the vault as available. The vault must be outside the installation root and outside the storage. `--mirror` writes `ARKVORY_MIRRORS_FILE` and the key files, restarts the API and the worker, and checks the source with your key before it changes anything.

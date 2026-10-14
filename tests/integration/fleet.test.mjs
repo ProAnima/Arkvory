@@ -68,7 +68,7 @@ test('a site pairs with a controller once by code; the fleet key reaches only it
     ['POST', '/api/v1/repositories/releases/uploads'],
     ['POST', '/api/v1/system/fleet/pairings'],
     ['GET', '/api/v1/system/fleet/controllers'],
-    ['GET', '/api/v1/system/updates'],
+    ['GET', '/api/v1/mirrors'],
   ]) {
     const refused = await call(method, url, fleet);
     assert.equal(refused.statusCode, 403, `${method} ${url}`);
@@ -252,7 +252,7 @@ test('a controller browses the catalog of a site, metadata only, never bytes (AD
   for (const path of [
     `${base}/artifacts/${id}/content`,
     `${base}/asset/content?path=tools/setup.bin`,
-    '/api/v1/system/updates',
+    '/api/v1/system/fleet/controllers',
     `${base}/../../system/updates`,
     '/api/v1/repositories/releases/uploads',
     'api/v1/repositories',
@@ -265,6 +265,77 @@ test('a controller browses the catalog of a site, metadata only, never bytes (AD
       await controller.app.inject({
         url: `/api/v1/fleet/sites/${managed.id}/read?path=%2Fapi%2Fv1%2Frepositories`,
         headers: controller.readerHeaders,
+      })
+    ).statusCode,
+    403,
+  );
+});
+
+test('a controller changes the download queue of a site, revision-protected and named (ADR 0077, F3)', async (t) => {
+  const site = await setup(t, { siteName: 'Branch' });
+  const controller = await separateInstance(t, { siteName: 'Main' });
+  const address = await site.listen();
+  const { code } = (
+    await site.app.inject({
+      method: 'POST',
+      url: '/api/v1/system/fleet/pairings',
+      headers: site.headers,
+    })
+  ).json();
+  const managed = (
+    await controller.app.inject({
+      method: 'POST',
+      url: '/api/v1/fleet/sites',
+      headers: controller.headers,
+      payload: { url: address, fingerprint: null, code },
+    })
+  ).json();
+  const origin = await controller.app.listen({ host: '127.0.0.1', port: 0 });
+  const client = new ArkvoryClient(origin, () => controller.headers.authorization.slice(7));
+  const remote = client.fleet.site(managed.id).downloadSettings;
+  const before = await remote.get();
+  assert.equal(before.revision, 0);
+  const saved = await remote.change({ expectedRevision: 0, overrides: { sessions: 2 } });
+  assert.equal(saved.effective.sessions, 2);
+  assert.equal(saved.updatedBy, `fleet:${saved.updatedBy.slice(6)}`);
+  assert.ok(saved.actor, 'the administrator of the controller is named on the site');
+  // The site's own view agrees, and a stale revision is the site's own conflict.
+  const local = (
+    await site.app.inject({ url: '/api/v1/system/downloads/settings', headers: site.headers })
+  ).json();
+  assert.equal(local.revision, 1);
+  assert.equal(local.actor, saved.actor);
+  await assert.rejects(remote.change({ expectedRevision: 0, overrides: {} }), {
+    code: 'conflict',
+  });
+  // Only the listed changes pass, with their own method; the update mailbox is not set up here.
+  const change = (path, payload = {}) =>
+    controller.app.inject({
+      method: 'POST',
+      url: `/api/v1/fleet/sites/${managed.id}/change?path=${encodeURIComponent(path)}`,
+      headers: controller.headers,
+      payload,
+    });
+  for (const path of [
+    '/api/v1/system/fleet/pairings',
+    '/api/v1/repositories/releases/uploads',
+    '/api/v1/system/downloads/settings?x=1',
+    '/api/v1/system/updates',
+  ])
+    assert.equal((await change(path)).statusCode, 400, path);
+  const update = await change('/api/v1/system/updates/requests', {
+    id: '00000000-0000-4000-8000-000000000001',
+    expectedRevision: 0,
+    kind: 'check',
+  });
+  assert.equal(update.statusCode, 503, update.body);
+  assert.equal(
+    (
+      await controller.app.inject({
+        method: 'POST',
+        url: `/api/v1/fleet/sites/${managed.id}/change?path=${encodeURIComponent('/api/v1/system/downloads/settings')}`,
+        headers: controller.readerHeaders,
+        payload: { expectedRevision: 1, overrides: {} },
       })
     ).statusCode,
     403,

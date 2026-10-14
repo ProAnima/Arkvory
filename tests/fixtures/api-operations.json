@@ -70,6 +70,7 @@
   "GET /api/v1/service-accounts/{id}/audit getServiceAudit",
   "GET /api/v1/service-accounts/{id}/keys listServiceKeys",
   "GET /api/v1/service-accounts/{id}/policy getServicePolicy",
+  "GET /api/v1/system/downloads/settings getDownloadSettings",
   "GET /api/v1/system/fleet/controllers listFleetControllers",
   "GET /api/v1/system/topology getSystemTopology",
   "GET /api/v1/system/updates getSystemUpdates",
@@ -139,6 +140,7 @@
   "HEAD /api/v1/service-accounts/{id}/audit getServiceAuditHead",
   "HEAD /api/v1/service-accounts/{id}/keys listServiceKeysHead",
   "HEAD /api/v1/service-accounts/{id}/policy getServicePolicyHead",
+  "HEAD /api/v1/system/downloads/settings getDownloadSettingsHead",
   "HEAD /api/v1/system/fleet/controllers listFleetControllersHead",
   "HEAD /api/v1/system/topology getSystemTopologyHead",
   "HEAD /api/v1/system/updates getSystemUpdatesHead",
@@ -165,6 +167,7 @@
   "POST /api/v1/feedback sendFeedback",
   "POST /api/v1/fleet/sites addFleetSite",
   "POST /api/v1/fleet/sites/probe probeFleetSite",
+  "POST /api/v1/fleet/sites/{id}/change changeFleetSite",
   "POST /api/v1/fleet/sites/{id}/refresh refreshFleetSite",
   "POST /api/v1/repositories/{repository}/artifacts/{id}/links createDownloadLink",
   "POST /api/v1/repositories/{repository}/artifacts/{id}/package registerPackage",
@@ -198,5 +201,6 @@
   "PUT /api/v1/repositories/{repository}/storage/policy setStoragePolicy",
   "PUT /api/v1/repositories/{repository}/uploads/{id}/content putUploadContent",
   "PUT /api/v1/repositories/{repository}/uploads/{id}/parts/{index} putUploadPart",
-  "PUT /api/v1/service-accounts/{id}/policy setServicePolicy"
+  "PUT /api/v1/service-accounts/{id}/policy setServicePolicy",
+  "PUT /api/v1/system/downloads/settings changeDownloadSettings"
 ]

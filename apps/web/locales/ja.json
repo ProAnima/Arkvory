@@ -4198,5 +4198,129 @@
   "fleetNoRepositories": {
     "en": "The site has no repositories.",
     "text": "サイトにリポジトリがありません。"
+  },
+  "fleetSettings": {
+    "en": "Settings",
+    "text": "設定"
+  },
+  "fleetSettingsOf": {
+    "en": "Settings: {name}",
+    "text": "設定: {name}"
+  },
+  "fleetThisSettings": {
+    "en": "Settings of this site",
+    "text": "このサイトの設定"
+  },
+  "fleetQueueSettings": {
+    "en": "Download queue",
+    "text": "ダウンロードキュー"
+  },
+  "fleetQueueHint": {
+    "en": "An empty field keeps the value of the server’s environment, shown in grey. Saved settings apply at once, without a restart; active downloads keep their places. Read gateways keep their environment.",
+    "text": "空のフィールドはサーバーの環境の値を保ち、灰色で表示されます。保存した設定は再起動なしですぐに適用され、進行中のダウンロードは場所を保ちます。読み取りゲートウェイは自身の環境を保ちます。"
+  },
+  "fleetStrategy": {
+    "en": "Strategy",
+    "text": "戦略"
+  },
+  "fleetStrategyOrdered": {
+    "en": "In order of arrival",
+    "text": "到着順"
+  },
+  "fleetStrategySmallest": {
+    "en": "Smallest first",
+    "text": "小さいものから"
+  },
+  "fleetStrategyShared": {
+    "en": "Shared, without a queue",
+    "text": "共有、キューなし"
+  },
+  "fleetDefault": {
+    "en": "Default: {value}",
+    "text": "既定値: {value}"
+  },
+  "fleetSessions": {
+    "en": "Downloads at once",
+    "text": "同時ダウンロード数"
+  },
+  "fleetReserve": {
+    "en": "Places kept for people",
+    "text": "人のために確保する枠"
+  },
+  "fleetPerPrincipal": {
+    "en": "Downloads at once per client",
+    "text": "クライアントごとの同時ダウンロード数"
+  },
+  "fleetIdle": {
+    "en": "Pause that frees a place, s",
+    "text": "枠を空ける一時停止、秒"
+  },
+  "fleetAging": {
+    "en": "Wait that raises a class, min (0: off)",
+    "text": "クラスを上げる待ち時間、分（0: オフ）"
+  },
+  "fleetRanges": {
+    "en": "Parallel ranges per download",
+    "text": "ダウンロードごとの並列範囲"
+  },
+  "fleetSessionMin": {
+    "en": "Queue files from, MiB",
+    "text": "このサイズからキューに入れる、MiB"
+  },
+  "fleetPreempt": {
+    "en": "Ask downloads to yield to a higher class",
+    "text": "より高いクラスに譲るようダウンロードに求める"
+  },
+  "fleetPreemptOn": {
+    "en": "Yes",
+    "text": "はい"
+  },
+  "fleetPreemptOff": {
+    "en": "No",
+    "text": "いいえ"
+  },
+  "fleetWeights": {
+    "en": "Weights of classes",
+    "text": "クラスの重み"
+  },
+  "fleetWeightInteractive": {
+    "en": "People",
+    "text": "人"
+  },
+  "fleetWeightRelease": {
+    "en": "Releases",
+    "text": "リリース"
+  },
+  "fleetWeightBulk": {
+    "en": "Bulk",
+    "text": "一括"
+  },
+  "fleetWeightBackground": {
+    "en": "Background",
+    "text": "バックグラウンド"
+  },
+  "fleetQueueSave": {
+    "en": "Save queue settings",
+    "text": "キューの設定を保存"
+  },
+  "fleetQueueReset": {
+    "en": "Back to defaults",
+    "text": "既定値に戻す"
+  },
+  "fleetQueueSaved": {
+    "en": "Saved. The queue works with the new settings now.",
+    "text": "保存しました。キューはすでに新しい設定で動作しています。"
+  },
+  "fleetQueueChanged": {
+    "en": "Changed by {who}",
+    "text": "変更者: {who}"
+  },
+  "fleetQueueProblem": {
+    "en": "Saved settings do not fit this server and are not used: {problem}",
+    "text": "保存された設定はこのサーバーに合わないため使われていません: {problem}"
+  },
+  "fleetQueueConflict": {
+    "en": "Someone changed the settings meanwhile. The form shows them now: check and save again.",
+    "text": "その間に誰かが設定を変更しました。フォームには現在の設定が表示されています。確認してもう一度保存してください。"
   }
 }

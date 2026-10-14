@@ -49,6 +49,18 @@ export class HttpFleetSiteClient implements FleetSiteClient {
     return siteRequest(endpoint, 'GET', path, { key, actor, maxBytes: 16 * 1024 * 1024 });
   }
 
+  /** A change on the site: revision- or id-protected there, so it is sent once, never retried. */
+  async change(
+    endpoint: FleetEndpointView,
+    key: string,
+    actor: string,
+    method: 'PUT' | 'POST',
+    path: string,
+    body: unknown,
+  ) {
+    return siteRequest(endpoint, method, path, { key, actor, body });
+  }
+
   async topology(endpoint: FleetEndpointView, key: string, actor: string): Promise<unknown> {
     const answer = await siteRequest(endpoint, 'GET', '/api/v1/system/topology', { key, actor });
     if (answer.status !== 200) throw new FleetFailure('invalid', answer.status);

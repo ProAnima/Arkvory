@@ -1047,6 +1047,30 @@
       },
       "summary": "Leer el catálogo de un sitio",
       "description": "Pasa una lectura del catálogo a un sitio gestionado y devuelve su respuesta sin cambios: repositorios, búsqueda, artefactos, anotaciones, etapas, paquetes, páginas e historial de archivos, uso de almacenamiento, estado del espejo. `path` es la ruta del sitio con su consulta. Otras rutas y los bytes de archivos se rechazan con 400."
+    },
+    "changeFleetSite": {
+      "en": {
+        "summary": "Change a setting of a site",
+        "description": "Passes one change to a managed site and returns its answer unchanged. `path` is one of: `/api/v1/system/downloads/settings` (download queue settings, sent as PUT) or `/api/v1/system/updates/requests` (an update request, sent as POST). The body goes to the site as it is; the site checks the revision or request id, so a repeated change does not apply twice. Other paths are refused with 400."
+      },
+      "summary": "Cambiar un ajuste de un sitio",
+      "description": "Pasa un cambio a un sitio gestionado y devuelve su respuesta sin cambios. `path` es una de estas rutas: `/api/v1/system/downloads/settings` (ajustes de la cola de descargas, enviado como PUT) o `/api/v1/system/updates/requests` (una solicitud de actualización, enviada como POST). El cuerpo llega al sitio tal cual; el sitio comprueba la revisión o el id de la solicitud, así que un cambio repetido no se aplica dos veces. Otras rutas se rechazan con 400."
+    },
+    "getDownloadSettings": {
+      "en": {
+        "summary": "Read download queue settings",
+        "description": "Returns the changed values (`overrides`), what the environment of the server sets (`defaults`) and what the queue uses now (`effective`), with the revision to pass back when changing. `problem` names why saved settings do not fit this server; the queue then runs on the defaults."
+      },
+      "summary": "Leer los ajustes de la cola de descargas",
+      "description": "Devuelve los valores cambiados (`overrides`), lo que fija el entorno del servidor (`defaults`) y lo que usa la cola ahora (`effective`), con la revisión que hay que enviar al cambiar. `problem` indica por qué los ajustes guardados no encajan en este servidor; entonces la cola funciona con los valores por defecto."
+    },
+    "changeDownloadSettings": {
+      "en": {
+        "summary": "Change download queue settings",
+        "description": "Saves `overrides` over the environment of the server and applies them without a restart: new decisions follow them at once, active downloads keep their places. The values given replace all earlier changes; `{}` returns to the environment. Settings that cannot run here are refused with 400 naming the field; a stale `expectedRevision` gets 409. Read gateways keep their environment."
+      },
+      "summary": "Cambiar los ajustes de la cola de descargas",
+      "description": "Guarda `overrides` sobre el entorno del servidor y los aplica sin reiniciar: las nuevas decisiones los siguen de inmediato y las descargas activas conservan su lugar. Los valores enviados reemplazan todos los cambios anteriores; `{}` vuelve al entorno. Los ajustes que no pueden funcionar aquí se rechazan con 400 indicando el campo; una `expectedRevision` desactualizada recibe 409. Las pasarelas de lectura conservan su entorno."
     }
   },
   "errors": {

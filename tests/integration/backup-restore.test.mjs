@@ -356,6 +356,6 @@ test('a point of an older schema restores; the migrations after it create the la
   const created = await pool.query(
     "SELECT to_regclass('arkvory_mirror_adoptions') IS NOT NULL AS present, (SELECT max(version) FROM arkvory_migrations) AS version",
   );
-  assert.deepEqual(created.rows[0], { present: true, version: 39 });
+  assert.deepEqual(created.rows[0], { present: true, version: 40 });
   await pool.end();
 });

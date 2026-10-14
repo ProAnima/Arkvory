@@ -1047,6 +1047,30 @@
       },
       "summary": "Read the catalog of a site",
       "description": "Passes one catalog read to a managed site and returns its answer unchanged: repositories, search, artifacts, annotations, stages, packages, file pages and history, storage usage, mirror state. `path` is the site route with its query. Other routes and file bytes are refused with 400."
+    },
+    "changeFleetSite": {
+      "en": {
+        "summary": "Change a setting of a managed site through this installation: the body goes to the site, its answer comes back unchanged",
+        "description": ""
+      },
+      "summary": "Change a setting of a site",
+      "description": "Passes one change to a managed site and returns its answer unchanged. `path` is one of: `/api/v1/system/downloads/settings` (download queue settings, sent as PUT) or `/api/v1/system/updates/requests` (an update request, sent as POST). The body goes to the site as it is; the site checks the revision or request id, so a repeated change does not apply twice. Other paths are refused with 400."
+    },
+    "getDownloadSettings": {
+      "en": {
+        "summary": "Read the download queue settings: changed values, defaults and what runs now",
+        "description": ""
+      },
+      "summary": "Read download queue settings",
+      "description": "Returns the changed values (`overrides`), what the environment of the server sets (`defaults`) and what the queue uses now (`effective`), with the revision to pass back when changing. `problem` names why saved settings do not fit this server; the queue then runs on the defaults."
+    },
+    "changeDownloadSettings": {
+      "en": {
+        "summary": "Change the download queue settings without a restart; the values given replace all earlier changes",
+        "description": ""
+      },
+      "summary": "Change download queue settings",
+      "description": "Saves `overrides` over the environment of the server and applies them without a restart: new decisions follow them at once, active downloads keep their places. The values given replace all earlier changes; `{}` returns to the environment. Settings that cannot run here are refused with 400 naming the field; a stale `expectedRevision` gets 409. Read gateways keep their environment."
     }
   },
   "errors": {

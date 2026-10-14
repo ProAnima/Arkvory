@@ -595,6 +595,89 @@
             </div>
             <output id="fleet-status" class="hint" aria-live="polite" hidden></output>
           </div>
+          <div id="fleet-settings" class="card padded" hidden>
+            <div class="fleet-head">
+              <h2 id="fleet-settings-title"></h2>
+              <button
+                type="button"
+                id="fleet-settings-close"
+                class="secondary"
+                data-i18n="fleetContentClose"
+              >
+                Закрыть
+              </button>
+            </div>
+            <h3 data-i18n="fleetQueueSettings">Очередь скачиваний</h3>
+            <p class="hint" data-i18n="fleetQueueHint"></p>
+            <form id="fleet-queue-form" class="fleet-settings" novalidate>
+              <div id="fleet-queue-fields" class="fleet-fields"></div>
+              <fieldset>
+                <legend data-i18n="fleetWeights">Веса классов</legend>
+                <div id="fleet-queue-weights" class="fleet-fields"></div>
+              </fieldset>
+              <p class="button-row">
+                <button id="fleet-queue-save" data-i18n="fleetQueueSave">Сохранить</button>
+                <button
+                  type="button"
+                  id="fleet-queue-reset"
+                  class="secondary"
+                  data-i18n="fleetQueueReset"
+                >
+                  Вернуть значения по умолчанию
+                </button>
+              </p>
+              <p id="fleet-queue-changed" class="hint"></p>
+              <output id="fleet-queue-status" class="hint" aria-live="polite" hidden></output>
+            </form>
+            <h3 data-i18n="updates">Обновления</h3>
+            <dl class="update-facts">
+              <div>
+                <dt data-i18n="updateCurrent">Установленная версия</dt>
+                <dd id="fleet-update-current">—</dd>
+              </div>
+              <div>
+                <dt data-i18n="updateLatest">Последний стабильный релиз</dt>
+                <dd id="fleet-update-latest">—</dd>
+              </div>
+              <div>
+                <dt data-i18n="updateChecked">Последняя проверка</dt>
+                <dd id="fleet-update-checked">—</dd>
+              </div>
+            </dl>
+            <form id="fleet-update-form" class="fleet-settings" novalidate>
+              <label class="check"
+                ><input id="fleet-update-automatic" type="checkbox" /><span
+                  data-i18n="updateAutomatic"
+                  >Устанавливать автоматически</span
+                ></label
+              >
+              <label
+                ><span data-i18n="updateHour">Час обслуживания (UTC)</span
+                ><select id="fleet-update-hour"></select
+              ></label>
+              <p class="button-row">
+                <button data-i18n="updateSave">Сохранить</button>
+                <button
+                  type="button"
+                  id="fleet-update-check"
+                  class="secondary"
+                  data-i18n="updateCheck"
+                >
+                  Проверить сейчас
+                </button>
+                <button
+                  type="button"
+                  id="fleet-update-install"
+                  class="secondary"
+                  data-i18n="updateInstall"
+                  hidden
+                >
+                  Установить обновление
+                </button>
+              </p>
+              <output id="fleet-update-status" class="hint" aria-live="polite" hidden></output>
+            </form>
+          </div>
           <div id="fleet-content" class="card padded" hidden>
             <div class="fleet-head">
               <h2 id="fleet-content-title"></h2>
@@ -757,6 +840,14 @@
                 data-i18n="fleetMakeCode"
               >
                 Создать код сопряжения
+              </button>
+              <button
+                type="button"
+                id="fleet-self-settings"
+                class="secondary"
+                data-i18n="fleetThisSettings"
+              >
+                Настройки этой площадки
               </button>
             </p>
             <div id="fleet-code-box" class="fleet-code" aria-live="polite" hidden>

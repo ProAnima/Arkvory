@@ -4198,5 +4198,129 @@
   "fleetNoRepositories": {
     "en": "The site has no repositories.",
     "text": "사이트에 저장소가 없습니다."
+  },
+  "fleetSettings": {
+    "en": "Settings",
+    "text": "설정"
+  },
+  "fleetSettingsOf": {
+    "en": "Settings: {name}",
+    "text": "설정: {name}"
+  },
+  "fleetThisSettings": {
+    "en": "Settings of this site",
+    "text": "이 사이트의 설정"
+  },
+  "fleetQueueSettings": {
+    "en": "Download queue",
+    "text": "다운로드 대기열"
+  },
+  "fleetQueueHint": {
+    "en": "An empty field keeps the value of the server’s environment, shown in grey. Saved settings apply at once, without a restart; active downloads keep their places. Read gateways keep their environment.",
+    "text": "빈 필드는 서버 환경의 값을 유지하며 회색으로 표시됩니다. 저장한 설정은 재시작 없이 즉시 적용되며, 진행 중인 다운로드는 자리를 유지합니다. 읽기 게이트웨이는 자신의 환경을 유지합니다."
+  },
+  "fleetStrategy": {
+    "en": "Strategy",
+    "text": "전략"
+  },
+  "fleetStrategyOrdered": {
+    "en": "In order of arrival",
+    "text": "도착 순서대로"
+  },
+  "fleetStrategySmallest": {
+    "en": "Smallest first",
+    "text": "작은 파일 먼저"
+  },
+  "fleetStrategyShared": {
+    "en": "Shared, without a queue",
+    "text": "공유, 대기열 없음"
+  },
+  "fleetDefault": {
+    "en": "Default: {value}",
+    "text": "기본값: {value}"
+  },
+  "fleetSessions": {
+    "en": "Downloads at once",
+    "text": "동시 다운로드"
+  },
+  "fleetReserve": {
+    "en": "Places kept for people",
+    "text": "사람을 위해 남겨 둔 자리"
+  },
+  "fleetPerPrincipal": {
+    "en": "Downloads at once per client",
+    "text": "클라이언트당 동시 다운로드"
+  },
+  "fleetIdle": {
+    "en": "Pause that frees a place, s",
+    "text": "자리를 비우는 일시 정지, 초"
+  },
+  "fleetAging": {
+    "en": "Wait that raises a class, min (0: off)",
+    "text": "등급을 올리는 대기, 분 (0: 끔)"
+  },
+  "fleetRanges": {
+    "en": "Parallel ranges per download",
+    "text": "다운로드당 병렬 범위"
+  },
+  "fleetSessionMin": {
+    "en": "Queue files from, MiB",
+    "text": "이 크기부터 대기열에 넣기, MiB"
+  },
+  "fleetPreempt": {
+    "en": "Ask downloads to yield to a higher class",
+    "text": "다운로드에 더 높은 등급에 양보하도록 요청"
+  },
+  "fleetPreemptOn": {
+    "en": "Yes",
+    "text": "예"
+  },
+  "fleetPreemptOff": {
+    "en": "No",
+    "text": "아니요"
+  },
+  "fleetWeights": {
+    "en": "Weights of classes",
+    "text": "등급별 가중치"
+  },
+  "fleetWeightInteractive": {
+    "en": "People",
+    "text": "사람"
+  },
+  "fleetWeightRelease": {
+    "en": "Releases",
+    "text": "릴리스"
+  },
+  "fleetWeightBulk": {
+    "en": "Bulk",
+    "text": "대량"
+  },
+  "fleetWeightBackground": {
+    "en": "Background",
+    "text": "백그라운드"
+  },
+  "fleetQueueSave": {
+    "en": "Save queue settings",
+    "text": "대기열 설정 저장"
+  },
+  "fleetQueueReset": {
+    "en": "Back to defaults",
+    "text": "기본값으로 되돌리기"
+  },
+  "fleetQueueSaved": {
+    "en": "Saved. The queue works with the new settings now.",
+    "text": "저장되었습니다. 대기열이 이제 새 설정으로 동작합니다."
+  },
+  "fleetQueueChanged": {
+    "en": "Changed by {who}",
+    "text": "변경한 사람: {who}"
+  },
+  "fleetQueueProblem": {
+    "en": "Saved settings do not fit this server and are not used: {problem}",
+    "text": "저장된 설정이 이 서버에 맞지 않아 사용되지 않습니다: {problem}"
+  },
+  "fleetQueueConflict": {
+    "en": "Someone changed the settings meanwhile. The form shows them now: check and save again.",
+    "text": "그동안 누군가 설정을 변경했습니다. 양식에 현재 설정이 표시됩니다. 확인 후 다시 저장하세요."
   }
 }

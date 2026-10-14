@@ -140,6 +140,8 @@ Los límites pertenecen a un proceso de la API. Una tasa de `0` significa sin l�
 
 Un proxy delante de la API debe permitir una solicitud al menos tan larga como `ARKVORY_UPLOAD_DEADLINE_MS`. Consulte [HTTPS](./https#reverse-proxy). Todos los demás límites, como la cola de espera y las tasas por cuenta, están en [Variables de entorno](../reference/environment#transfers-and-bandwidth).
 
+Los valores de la cola de descargas (estrategia, descargas simultáneas, reserva, pesos y los demás) también se pueden cambiar sin reiniciar: [[ui:fleet]] → [[ui:fleetThisSettings]], o `PUT /api/v1/system/downloads/settings`. Los valores guardados prevalecen sobre estas variables en el proceso de escritura; vea [Sitios](../operate/sites#site-settings).
+
 ### Copias de seguridad y espejos {#backups-mirrors}
 
 Use `configure` para ambos. `--backup-vault` escribe `ARKVORY_BACKUP_VAULT`, concede a la cuenta de servicio acceso al directorio, reinicia solo el agente de copias de seguridad y conserva el cambio solo cuando el agente informa que el almacén está disponible. El almacén debe estar fuera de la raíz de la instalación y fuera del almacenamiento. `--mirror` escribe `ARKVORY_MIRRORS_FILE` y los archivos de claves, reinicia la API y el worker, y comprueba el origen con su clave antes de cambiar nada.

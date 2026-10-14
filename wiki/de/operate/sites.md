@@ -10,7 +10,7 @@ Ein **Standort** ist eine Arkvory-Installation: die Hauptinstallation, ein Spieg
 ## So funktioniert es {#how-it-works}
 
 - Der Controller führt eine Liste der Standorte. Er liest jeden Standort alle 30 Sekunden über HTTPS und behält die letzte Antwort, sodass ein Standort, der nicht mehr antwortet, seinen letzten bekannten Zustand weiter zeigt.
-- Beim Koppeln gibt der Standort dem steuernden Standort einen eigenen Schlüssel, den **Flottenschlüssel**. Er reicht nur so weit, wie der steuernde Standort es braucht: den Zustand des Standorts und die Beschreibungen in seinem Katalog. Dateibytes herunterladen, etwas ändern oder Konten und Schlüssel lesen kann er nicht.
+- Beim Koppeln gibt der Standort dem steuernden Standort einen eigenen Schlüssel, den **Flottenschlüssel**. Er reicht nur so weit, wie der steuernde Standort es braucht: den Zustand des Standorts, die Beschreibungen in seinem Katalog und zwei Einstellungen: die Download-Warteschlange und Update-Anfragen. Dateibytes herunterladen, in Repositorys schreiben oder Konten und Schlüssel lesen oder ändern kann er nicht.
 - Der Controller bewahrt die Flottenschlüssel versiegelt mit einem Schlüssel in seinem Datenverzeichnis auf (`fleet.key`). Die Datenbank und ihre Sicherungen allein verraten sie nicht. Koppeln Sie die Standorte nach einer Wiederherstellung neu.
 - Jeder Standort zeigt, welche Controller ihn verwalten, und kann sie jederzeit widerrufen.
 
@@ -55,6 +55,15 @@ Danach vertraut der Controller genau diesem Zertifikat. Bekommt der Standort ein
 
 Der steuernde Standort liest dies mit seinem Flottenschlüssel auf dem Standort und zeigt die Antwort so, wie der Standort sie gegeben hat. Nur Beschreibungen werden übertragen: Namen, Größen, Labels, Stufen, Pfade und Revisionen. Um eine Datei herunterzuladen, verwenden Sie den Standort selbst.
 
+## Einstellungen eines Standorts {#site-settings}
+
+[[ui:fleetSettings]] in der Zeile eines Standorts öffnet unter der Liste seine Einstellungen; [[ui:fleetThisSettings]] öffnet dieselbe Karte für diesen Standort. Die Karte hat zwei Teile:
+
+- **[[ui:fleetQueueSettings]]**: wie viele Downloads gleichzeitig laufen, für Menschen reservierte Plätze, die Strategie, die Gewichte der Klassen und die übrigen Werte der Warteschlange aus der [Verkehrssteuerung](../reference/environment#transfers-and-bandwidth). Ein leeres Feld behält den Wert aus der Umgebung des Standorts, grau angezeigt. [[ui:fleetQueueSave]] wendet die Werte sofort an, ohne Neustart: neue Entscheidungen folgen ihnen, aktive Downloads behalten ihre Plätze. [[ui:fleetQueueReset]] kehrt zur Umgebung zurück.
+- **[[ui:updates]]**: installierte und neueste Version, automatische Installation und Wartungsstunde, [[ui:updateCheck]] und [[ui:updateInstall]]. Der Updater des Standorts übernimmt eine Anfrage innerhalb einer Minute; bis dahin zeigt die Karte sie als angenommen.
+
+Jede Änderung trägt die Revision, von der sie ausgeht. Hat jemand die Einstellungen inzwischen geändert, lehnt der Standort die Änderung ab und die Karte zeigt die aktuellen Werte: prüfen und erneut speichern. Der Standort hält fest, wer seine Warteschlange geändert hat: den Schlüssel des steuernden Standorts und den Namen seines Administrators.
+
 ## Wer diesen Standort verwaltet {#managed-by}
 
 Unter [[ui:fleetThisSite]] listet jeder Standort die Controller, die ihn verwalten: Name, wer sie gekoppelt hat, wann, und ihre letzte Anfrage. [[ui:fleetRevoke]] lehnt den Schlüssel des Controllers sofort ab.
@@ -68,6 +77,6 @@ Unter [[ui:fleetThisSite]] listet jeder Standort die Controller, die ihn verwalt
 
 ## Grenzen {#limits}
 
-- Die Seite zeigt den Zustand der Standorte. Spiegel, Updates, die Download-Warteschlange und HA werden an jedem Standort eingerichtet, in seiner Konsole oder mit `arkvory configure`; sie vom Controller aus zu ändern, folgt als Nächstes.
+- Spiegel und HA werden weiterhin an jedem Standort eingerichtet, in seiner Konsole oder mit `arkvory configure`; sie vom Controller aus zu ändern, folgt als Nächstes. Lese-Gateways behalten die Download-Warteschlange ihrer Umgebung.
 - Ein Controller verwaltet bis zu 256 Standorte und liest höchstens acht gleichzeitig.
 - Der Controller hält einen Schlüssel zu jedem verwalteten Standort: schützen Sie seine globalen Administratoren und sein Datenverzeichnis so sorgfältig wie die Standorte selbst.
