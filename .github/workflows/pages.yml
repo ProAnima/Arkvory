@@ -2,6 +2,9 @@ name: Documentation site
 
 # The wiki (wiki/) on GitHub Pages: https://proanima.github.io/Arkvory/. Built from main only;
 # the same build is the `docs` gate of check.yml, so a change that breaks it never reaches main.
+# Publishing is the owner's decision: it runs once Pages is enabled for the repository (Settings,
+# Pages, source GitHub Actions) and the repository variable ARKVORY_PAGES is `true`. Until then
+# main is not marked red for a site that is not meant to exist yet.
 on:
   push:
     branches: [main]
@@ -17,9 +20,13 @@ concurrency:
 jobs:
   build:
     name: Build the documentation
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && vars.ARKVORY_PAGES == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
+    # configure-pages reads the Pages site of the repository.
+    permissions:
+      contents: read
+      pages: read
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
@@ -41,7 +48,7 @@ jobs:
   deploy:
     name: Publish to GitHub Pages
     needs: build
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && vars.ARKVORY_PAGES == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     # Only this job may write the site; it runs no repository code.

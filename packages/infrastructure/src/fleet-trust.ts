@@ -1,6 +1,6 @@
 import { createHash, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
 import type { Pool } from 'pg';
-import { ArkvoryError, type Principal } from '@proanima/arkvory-domain';
+import { isFleetName, ArkvoryError, type Principal } from '@proanima/arkvory-domain';
 
 /** Pairing codes live ten minutes and are shown once. */
 const CODE_MS = 10 * 60 * 1000;
@@ -51,8 +51,11 @@ export class PostgresFleetTrust {
     if (typeof code !== 'string' || normal(code).length !== 12)
       throw new ArkvoryError('invalid_input', 'Invalid pairing code');
     const trimmed = typeof name === 'string' ? name.trim() : '';
-    if (!trimmed || trimmed.length > 63 || Array.from(trimmed).some((c) => c.charCodeAt(0) < 32))
-      throw new ArkvoryError('invalid_input', 'Controller name must have 1 to 63 characters');
+    if (!isFleetName(trimmed))
+      throw new ArkvoryError(
+        'invalid_input',
+        'Controller name must have 1 to 63 characters without control codes',
+      );
     const used = await this.pool.query<{ created_by: string }>(
       'DELETE FROM arkvory_fleet_pairings WHERE code_sha256 = $1 AND expires_at >= now() RETURNING created_by',
       [digest(normal(code))],

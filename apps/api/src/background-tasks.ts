@@ -35,15 +35,19 @@ function repeat(
       });
   }, every);
   timer.unref();
-  return async () => {
-    clearInterval(timer);
-    await running;
+  // Two steps for shutdown: every timer stops first, then the running rounds are awaited, so no
+  // task starts a new round while another one is being waited for.
+  return {
+    cancel: () => {
+      clearInterval(timer);
+    },
+    finished: () => running ?? Promise.resolve(),
   };
 }
 
 /** Timers own no storage; shutdown drains bounded work before the pool is closed. */
 export function registerBackgroundTasks(app: FastifyInstance, tasks: Tasks) {
-  const stops: (() => Promise<void>)[] = [];
+  const stops: ReturnType<typeof repeat>[] = [];
   let stopping: Promise<void> | undefined;
   const writer = (every: number, run: (() => Promise<void>) | undefined, failure: Failure) => {
     if (tasks.role !== 'api' || !run) return;
@@ -84,7 +88,8 @@ export function registerBackgroundTasks(app: FastifyInstance, tasks: Tasks) {
   });
   const drain = async () => {
     try {
-      for (const stop of stops) await stop();
+      for (const stop of stops) stop.cancel();
+      await Promise.all(stops.map((stop) => stop.finished()));
       // One final batch only; stdout already contains all accepted diagnostics.
       await tasks.flush();
     } finally {

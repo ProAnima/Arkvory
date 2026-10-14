@@ -3,6 +3,20 @@
  * last read from each site. Times are milliseconds of the caller's clock; nothing here reads one.
  */
 
+/**
+ * The name of an installation in the fleet: any script, no control codes (C0, DEL, C1), 1 to 63
+ * code points. The same rule on the site that names itself and on the controller that stores it.
+ */
+export function isFleetName(value: unknown): value is string {
+  return (
+    typeof value === 'string' &&
+    value.trim() === value &&
+    !/[\u0000-\u001f\u007f-\u009f]/.test(value) &&
+    Array.from(value).length >= 1 &&
+    Array.from(value).length <= 63
+  );
+}
+
 export interface HealthMirror {
   readonly repository: string;
   /** The source as the mirror stores it; compared by `siteOrigin`. */

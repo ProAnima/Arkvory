@@ -1,11 +1,23 @@
 import { createCipheriv, createDecipheriv, randomBytes } from 'node:crypto';
-import { readFile, writeFile } from 'node:fs/promises';
+import { link, open, readFile, unlink } from 'node:fs/promises';
+import { dirname } from 'node:path';
 
 /**
  * Seals the keys of a controller's sites (ADR 0077) with AES-256-GCM under a key kept outside
  * the database, in `ARKVORY_FLEET_KEY_FILE`. A database dump or backup alone reveals no site key.
  * The site id is bound as additional data: a sealed key moved to another row does not open.
  */
+/** Makes a new directory entry durable; Windows has no directory handles to sync. */
+async function syncDirectory(directory: string) {
+  if (process.platform === 'win32') return;
+  const handle = await open(directory, 'r');
+  try {
+    await handle.sync();
+  } finally {
+    await handle.close();
+  }
+}
+
 export class FleetSeal {
   private constructor(private readonly key: Buffer) {}
 
@@ -28,10 +40,23 @@ export class FleetSeal {
    * on an HA cluster it moves with the data, and it is outside the database and its backups.
    */
   static async loadOrCreate(path: string): Promise<FleetSeal> {
+    // A complete, flushed temporary file linked to the name: a crash or a full disk never leaves
+    // an empty key that would stop every later start, and a second process sees the whole key.
+    const temporary = `${path}.${randomBytes(8).toString('hex')}.tmp`;
+    const file = await open(temporary, 'wx', 0o600);
     try {
-      await writeFile(path, `${randomBytes(32).toString('hex')}\n`, { flag: 'wx', mode: 0o600 });
-    } catch (error) {
-      if (!(error instanceof Error && 'code' in error && error.code === 'EEXIST')) throw error;
+      await file.writeFile(`${randomBytes(32).toString('hex')}\n`);
+      await file.sync();
+      await file.close();
+      try {
+        await link(temporary, path);
+        await syncDirectory(dirname(path));
+      } catch (error) {
+        if (!(error instanceof Error && 'code' in error && error.code === 'EEXIST')) throw error;
+      }
+    } finally {
+      await file.close().catch(() => undefined);
+      await unlink(temporary).catch(() => undefined);
     }
     return FleetSeal.fromFile(path);
   }
