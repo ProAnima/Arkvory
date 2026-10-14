@@ -140,6 +140,8 @@ Linux에서 서비스는 권한 없는 계정으로 실행되며, 일반적으�
 
 API 앞의 프록시는 최소한 `ARKVORY_UPLOAD_DEADLINE_MS`만큼 긴 요청을 허용해야 합니다. [HTTPS](./https#reverse-proxy)를 참조하세요. 대기 큐와 계정별 속도 같은 다른 모든 한도는 [환경 변수](../reference/environment#transfers-and-bandwidth)에 있습니다.
 
+다운로드 대기열 값(전략, 동시 다운로드, 예약, 가중치 등)은 재시작 없이도 변경할 수 있습니다: [[ui:fleet]] → [[ui:fleetThisSettings]], 또는 `PUT /api/v1/system/downloads/settings`. 쓰기 프로세스에서는 저장된 값이 이 변수보다 우선합니다. [사이트](../operate/sites#site-settings)를 참고하세요.
+
 ### 백업과 미러 {#backups-mirrors}
 
 두 가지 모두 `configure`를 사용하세요. `--backup-vault`는 `ARKVORY_BACKUP_VAULT`를 쓰고, 서비스 계정에 디렉터리 접근 권한을 부여하고, 백업 에이전트만 다시 시작하며, 에이전트가 보관소를 사용 가능하다고 보고할 때만 변경을 유지합니다. 보관소는 설치 루트 밖과 스토리지 밖에 있어야 합니다. `--mirror`는 `ARKVORY_MIRRORS_FILE`과 키 파일을 쓰고, API와 워커를 다시 시작하며, 아무것도 변경하기 전에 사용자의 키로 소스를 확인합니다.

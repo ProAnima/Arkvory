@@ -1047,6 +1047,30 @@
       },
       "summary": "Lire le catalogue d’un site",
       "description": "Transmet une lecture du catalogue à un site géré et renvoie sa réponse telle quelle : dépôts, recherche, artefacts, annotations, étapes, paquets, pages et historique des fichiers, espace utilisé, état du miroir. `path` est la route du site avec sa requête. Les autres routes et les octets des fichiers sont refusés avec 400."
+    },
+    "changeFleetSite": {
+      "en": {
+        "summary": "Change a setting of a site",
+        "description": "Passes one change to a managed site and returns its answer unchanged. `path` is one of: `/api/v1/system/downloads/settings` (download queue settings, sent as PUT) or `/api/v1/system/updates/requests` (an update request, sent as POST). The body goes to the site as it is; the site checks the revision or request id, so a repeated change does not apply twice. Other paths are refused with 400."
+      },
+      "summary": "Modifier un réglage d’un site",
+      "description": "Transmet une modification à un site géré et renvoie sa réponse telle quelle. `path` est l’une de ces routes : `/api/v1/system/downloads/settings` (réglages de la file de téléchargements, envoyé en PUT) ou `/api/v1/system/updates/requests` (une demande de mise à jour, envoyée en POST). Le corps est transmis tel quel ; le site vérifie la révision ou l’id de la demande, une modification répétée ne s’applique donc pas deux fois. Les autres chemins sont refusés avec 400."
+    },
+    "getDownloadSettings": {
+      "en": {
+        "summary": "Read download queue settings",
+        "description": "Returns the changed values (`overrides`), what the environment of the server sets (`defaults`) and what the queue uses now (`effective`), with the revision to pass back when changing. `problem` names why saved settings do not fit this server; the queue then runs on the defaults."
+      },
+      "summary": "Lire les réglages de la file de téléchargements",
+      "description": "Renvoie les valeurs modifiées (`overrides`), ce que fixe l’environnement du serveur (`defaults`) et ce que la file utilise maintenant (`effective`), avec la révision à renvoyer lors d’une modification. `problem` indique pourquoi les réglages enregistrés ne conviennent pas à ce serveur ; la file fonctionne alors avec les valeurs par défaut."
+    },
+    "changeDownloadSettings": {
+      "en": {
+        "summary": "Change download queue settings",
+        "description": "Saves `overrides` over the environment of the server and applies them without a restart: new decisions follow them at once, active downloads keep their places. The values given replace all earlier changes; `{}` returns to the environment. Settings that cannot run here are refused with 400 naming the field; a stale `expectedRevision` gets 409. Read gateways keep their environment."
+      },
+      "summary": "Modifier les réglages de la file de téléchargements",
+      "description": "Enregistre `overrides` par-dessus l’environnement du serveur et les applique sans redémarrage : les nouvelles décisions les suivent aussitôt, les téléchargements actifs gardent leur place. Les valeurs transmises remplacent toutes les modifications précédentes ; `{}` revient à l’environnement. Des réglages qui ne peuvent pas fonctionner ici sont refusés avec 400 en nommant le champ ; une `expectedRevision` périmée reçoit 409. Les passerelles de lecture gardent leur environnement."
     }
   },
   "errors": {

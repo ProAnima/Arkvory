@@ -4198,5 +4198,137 @@
   "fleetNoRepositories": {
     "en": "The site has no repositories.",
     "text": "لا توجد مستودعات في الموقع."
+  },
+  "fleetSettings": {
+    "en": "Settings",
+    "text": "الإعدادات"
+  },
+  "fleetSettingsOf": {
+    "en": "Settings: {name}",
+    "text": "الإعدادات: {name}"
+  },
+  "fleetThisSettings": {
+    "en": "Settings of this site",
+    "text": "إعدادات هذا الموقع"
+  },
+  "fleetQueueSettings": {
+    "en": "Download queue",
+    "text": "طابور التنزيلات"
+  },
+  "fleetQueueHint": {
+    "en": "An empty field keeps the value of the server’s environment, shown in grey. Saved settings apply at once, without a restart; active downloads keep their places. Read gateways keep their environment.",
+    "text": "يحتفظ الحقل الفارغ بقيمة بيئة الخادم، المعروضة بالرمادي. تسري الإعدادات المحفوظة فورًا دون إعادة تشغيل؛ وتحتفظ التنزيلات النشطة بأماكنها. تحتفظ بوابات القراءة ببيئتها."
+  },
+  "fleetStrategy": {
+    "en": "Strategy",
+    "text": "الاستراتيجية"
+  },
+  "fleetStrategyOrdered": {
+    "en": "In order of arrival",
+    "text": "حسب ترتيب الوصول"
+  },
+  "fleetStrategySmallest": {
+    "en": "Smallest first",
+    "text": "الأصغر أولًا"
+  },
+  "fleetStrategyShared": {
+    "en": "Shared, without a queue",
+    "text": "مشتركة، دون طابور"
+  },
+  "fleetDefault": {
+    "en": "Default: {value}",
+    "text": "الافتراضي: {value}"
+  },
+  "fleetSessions": {
+    "en": "Downloads at once",
+    "text": "التنزيلات المتزامنة"
+  },
+  "fleetReserve": {
+    "en": "Places kept for people",
+    "text": "أماكن محجوزة للأشخاص"
+  },
+  "fleetPerPrincipal": {
+    "en": "Downloads at once per client",
+    "text": "التنزيلات المتزامنة لكل عميل"
+  },
+  "fleetIdle": {
+    "en": "Pause that frees a place, s",
+    "text": "التوقف الذي يحرر مكانًا، ثانية"
+  },
+  "fleetAging": {
+    "en": "Wait that raises a class, min (0: off)",
+    "text": "الانتظار الذي يرفع الفئة، دقيقة (0: إيقاف)"
+  },
+  "fleetRanges": {
+    "en": "Parallel ranges per download",
+    "text": "النطاقات المتوازية لكل تنزيل"
+  },
+  "fleetSessionMin": {
+    "en": "Queue files from, MiB",
+    "text": "وضع الملفات في الطابور بدءًا من، MiB"
+  },
+  "fleetPreempt": {
+    "en": "Ask downloads to yield to a higher class",
+    "text": "طلب تنازل التنزيلات لفئة أعلى"
+  },
+  "fleetPreemptOn": {
+    "en": "Yes",
+    "text": "نعم"
+  },
+  "fleetPreemptOff": {
+    "en": "No",
+    "text": "لا"
+  },
+  "fleetWeights": {
+    "en": "Weights of classes",
+    "text": "أوزان الفئات"
+  },
+  "fleetWeightInteractive": {
+    "en": "People",
+    "text": "الأشخاص"
+  },
+  "fleetWeightRelease": {
+    "en": "Releases",
+    "text": "الإصدارات"
+  },
+  "fleetWeightBulk": {
+    "en": "Bulk",
+    "text": "الجماعية"
+  },
+  "fleetWeightBackground": {
+    "en": "Background",
+    "text": "الخلفية"
+  },
+  "fleetQueueSave": {
+    "en": "Save queue settings",
+    "text": "حفظ إعدادات الطابور"
+  },
+  "fleetQueueReset": {
+    "en": "Back to defaults",
+    "text": "العودة إلى القيم الافتراضية"
+  },
+  "fleetQueueSaved": {
+    "en": "Saved. The queue works with the new settings now.",
+    "text": "تم الحفظ. يعمل الطابور الآن بالإعدادات الجديدة."
+  },
+  "fleetQueueChanged": {
+    "en": "Changed by {who}",
+    "text": "غيّرها: {who}"
+  },
+  "fleetQueueProblem": {
+    "en": "Saved settings do not fit this server and are not used: {problem}",
+    "text": "الإعدادات المحفوظة لا تناسب هذا الخادم ولا تُستخدم: {problem}"
+  },
+  "fleetQueueConflict": {
+    "en": "Someone changed the settings meanwhile. The form shows them now: check and save again.",
+    "text": "غيّر أحدهم الإعدادات في هذه الأثناء. يعرضها النموذج الآن: راجعها واحفظ مرة أخرى."
+  },
+  "fleetQueueInvalid": {
+    "en": "Every number must be whole. Correct the marked fields and save again.",
+    "text": "يجب أن يكون كل رقم عددًا صحيحًا. صحّح الحقول المحددة واحفظ مرة أخرى."
+  },
+  "fleetQueuePerRequest": {
+    "en": "The strategy is shared: downloads are admitted one request at a time by the limits of the environment, and the session settings below wait unused until another strategy is chosen.",
+    "text": "الاستراتيجية مشتركة: تُقبل التنزيلات طلبًا طلبًا ضمن حدود البيئة، ولا تُستخدم إعدادات الجلسات أدناه حتى تُختار استراتيجية أخرى."
   }
 }

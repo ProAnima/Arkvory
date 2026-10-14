@@ -1047,6 +1047,30 @@
       },
       "summary": "Katalog eines Standorts lesen",
       "description": "Leitet einen Katalog-Lesezugriff an einen verwalteten Standort weiter und gibt dessen Antwort unverändert zurück: Repositorys, Suche, Artefakte, Annotationen, Stufen, Pakete, Dateiseiten und -verlauf, Speicherbelegung, Spiegelzustand. `path` ist die Route des Standorts mit ihrer Abfrage. Andere Routen und Dateibytes werden mit 400 abgelehnt."
+    },
+    "changeFleetSite": {
+      "en": {
+        "summary": "Change a setting of a site",
+        "description": "Passes one change to a managed site and returns its answer unchanged. `path` is one of: `/api/v1/system/downloads/settings` (download queue settings, sent as PUT) or `/api/v1/system/updates/requests` (an update request, sent as POST). The body goes to the site as it is; the site checks the revision or request id, so a repeated change does not apply twice. Other paths are refused with 400."
+      },
+      "summary": "Eine Einstellung eines Standorts ändern",
+      "description": "Leitet eine Änderung an einen verwalteten Standort weiter und gibt dessen Antwort unverändert zurück. `path` ist eine dieser Routen: `/api/v1/system/downloads/settings` (Einstellungen der Download-Warteschlange, als PUT gesendet) oder `/api/v1/system/updates/requests` (eine Update-Anfrage, als POST gesendet). Der Body geht unverändert an den Standort; der Standort prüft Revision oder Anfrage-ID, daher wird eine wiederholte Änderung nicht doppelt angewendet. Andere Pfade werden mit 400 abgelehnt."
+    },
+    "getDownloadSettings": {
+      "en": {
+        "summary": "Read download queue settings",
+        "description": "Returns the changed values (`overrides`), what the environment of the server sets (`defaults`) and what the queue uses now (`effective`), with the revision to pass back when changing. `problem` names why saved settings do not fit this server; the queue then runs on the defaults."
+      },
+      "summary": "Einstellungen der Download-Warteschlange lesen",
+      "description": "Gibt die geänderten Werte (`overrides`), die Werte aus der Umgebung des Servers (`defaults`) und das, was die Warteschlange jetzt verwendet (`effective`), zurück, dazu die Revision für eine Änderung. `problem` nennt, warum gespeicherte Einstellungen nicht zu diesem Server passen; die Warteschlange läuft dann mit den Standardwerten."
+    },
+    "changeDownloadSettings": {
+      "en": {
+        "summary": "Change download queue settings",
+        "description": "Saves `overrides` over the environment of the server and applies them without a restart: new decisions follow them at once, active downloads keep their places. The values given replace all earlier changes; `{}` returns to the environment. Settings that cannot run here are refused with 400 naming the field; a stale `expectedRevision` gets 409. Read gateways keep their environment."
+      },
+      "summary": "Einstellungen der Download-Warteschlange ändern",
+      "description": "Speichert `overrides` über der Umgebung des Servers und wendet sie ohne Neustart an: neue Entscheidungen folgen ihnen sofort, aktive Downloads behalten ihre Plätze. Die angegebenen Werte ersetzen alle früheren Änderungen; `{}` kehrt zur Umgebung zurück. Einstellungen, die hier nicht laufen können, werden mit 400 und dem Feldnamen abgelehnt; eine veraltete `expectedRevision` erhält 409. Lese-Gateways behalten ihre Umgebung."
     }
   },
   "errors": {

@@ -4198,5 +4198,137 @@
   "fleetNoRepositories": {
     "en": "The site has no repositories.",
     "text": "O site não tem repositórios."
+  },
+  "fleetSettings": {
+    "en": "Settings",
+    "text": "Configurações"
+  },
+  "fleetSettingsOf": {
+    "en": "Settings: {name}",
+    "text": "Configurações: {name}"
+  },
+  "fleetThisSettings": {
+    "en": "Settings of this site",
+    "text": "Configurações deste site"
+  },
+  "fleetQueueSettings": {
+    "en": "Download queue",
+    "text": "Fila de downloads"
+  },
+  "fleetQueueHint": {
+    "en": "An empty field keeps the value of the server’s environment, shown in grey. Saved settings apply at once, without a restart; active downloads keep their places. Read gateways keep their environment.",
+    "text": "Um campo vazio mantém o valor do ambiente do servidor, mostrado em cinza. As configurações salvas valem na hora, sem reiniciar; downloads ativos mantêm seus lugares. Gateways de leitura mantêm seu ambiente."
+  },
+  "fleetStrategy": {
+    "en": "Strategy",
+    "text": "Estratégia"
+  },
+  "fleetStrategyOrdered": {
+    "en": "In order of arrival",
+    "text": "Por ordem de chegada"
+  },
+  "fleetStrategySmallest": {
+    "en": "Smallest first",
+    "text": "Menores primeiro"
+  },
+  "fleetStrategyShared": {
+    "en": "Shared, without a queue",
+    "text": "Compartilhada, sem fila"
+  },
+  "fleetDefault": {
+    "en": "Default: {value}",
+    "text": "Padrão: {value}"
+  },
+  "fleetSessions": {
+    "en": "Downloads at once",
+    "text": "Downloads simultâneos"
+  },
+  "fleetReserve": {
+    "en": "Places kept for people",
+    "text": "Lugares reservados para pessoas"
+  },
+  "fleetPerPrincipal": {
+    "en": "Downloads at once per client",
+    "text": "Downloads simultâneos por cliente"
+  },
+  "fleetIdle": {
+    "en": "Pause that frees a place, s",
+    "text": "Pausa que libera um lugar, s"
+  },
+  "fleetAging": {
+    "en": "Wait that raises a class, min (0: off)",
+    "text": "Espera que sobe a classe, min (0: desligado)"
+  },
+  "fleetRanges": {
+    "en": "Parallel ranges per download",
+    "text": "Intervalos paralelos por download"
+  },
+  "fleetSessionMin": {
+    "en": "Queue files from, MiB",
+    "text": "Enfileirar arquivos a partir de, MiB"
+  },
+  "fleetPreempt": {
+    "en": "Ask downloads to yield to a higher class",
+    "text": "Pedir aos downloads que cedam a uma classe superior"
+  },
+  "fleetPreemptOn": {
+    "en": "Yes",
+    "text": "Sim"
+  },
+  "fleetPreemptOff": {
+    "en": "No",
+    "text": "Não"
+  },
+  "fleetWeights": {
+    "en": "Weights of classes",
+    "text": "Pesos das classes"
+  },
+  "fleetWeightInteractive": {
+    "en": "People",
+    "text": "Pessoas"
+  },
+  "fleetWeightRelease": {
+    "en": "Releases",
+    "text": "Versões"
+  },
+  "fleetWeightBulk": {
+    "en": "Bulk",
+    "text": "Em massa"
+  },
+  "fleetWeightBackground": {
+    "en": "Background",
+    "text": "Em segundo plano"
+  },
+  "fleetQueueSave": {
+    "en": "Save queue settings",
+    "text": "Salvar configurações da fila"
+  },
+  "fleetQueueReset": {
+    "en": "Back to defaults",
+    "text": "Voltar aos padrões"
+  },
+  "fleetQueueSaved": {
+    "en": "Saved. The queue works with the new settings now.",
+    "text": "Salvo. A fila já funciona com as novas configurações."
+  },
+  "fleetQueueChanged": {
+    "en": "Changed by {who}",
+    "text": "Alterado por {who}"
+  },
+  "fleetQueueProblem": {
+    "en": "Saved settings do not fit this server and are not used: {problem}",
+    "text": "As configurações salvas não servem para este servidor e não são usadas: {problem}"
+  },
+  "fleetQueueConflict": {
+    "en": "Someone changed the settings meanwhile. The form shows them now: check and save again.",
+    "text": "Alguém alterou as configurações nesse meio-tempo. O formulário as mostra agora: confira e salve de novo."
+  },
+  "fleetQueueInvalid": {
+    "en": "Every number must be whole. Correct the marked fields and save again.",
+    "text": "Todos os números devem ser inteiros. Corrija os campos marcados e salve de novo."
+  },
+  "fleetQueuePerRequest": {
+    "en": "The strategy is shared: downloads are admitted one request at a time by the limits of the environment, and the session settings below wait unused until another strategy is chosen.",
+    "text": "A estratégia é compartilhada: os downloads são admitidos uma solicitação por vez dentro dos limites do ambiente, e as configurações de sessão abaixo ficam sem uso até que outra estratégia seja escolhida."
   }
 }

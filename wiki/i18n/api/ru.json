@@ -1047,6 +1047,30 @@
       },
       "summary": "Прочитать каталог площадки",
       "description": "Передаёт одно чтение каталога управляемой площадке и возвращает её ответ без изменений: репозитории, поиск, артефакты, аннотации, стадии, пакеты, страницы и история файлов, занятое место, состояние зеркала. `path` — маршрут площадки с параметрами запроса. Другие маршруты и байты файлов отклоняются с 400."
+    },
+    "changeFleetSite": {
+      "en": {
+        "summary": "Change a setting of a site",
+        "description": "Passes one change to a managed site and returns its answer unchanged. `path` is one of: `/api/v1/system/downloads/settings` (download queue settings, sent as PUT) or `/api/v1/system/updates/requests` (an update request, sent as POST). The body goes to the site as it is; the site checks the revision or request id, so a repeated change does not apply twice. Other paths are refused with 400."
+      },
+      "summary": "Изменить настройку площадки",
+      "description": "Передаёт одно изменение управляемой площадке и возвращает её ответ без изменений. `path` — один из маршрутов: `/api/v1/system/downloads/settings` (настройки очереди скачиваний, отправляется как PUT) или `/api/v1/system/updates/requests` (запрос обновления, отправляется как POST). Тело уходит на площадку как есть; площадка проверяет ревизию или id запроса, поэтому повтор не применяется дважды. Другие пути отклоняются с 400."
+    },
+    "getDownloadSettings": {
+      "en": {
+        "summary": "Read download queue settings",
+        "description": "Returns the changed values (`overrides`), what the environment of the server sets (`defaults`) and what the queue uses now (`effective`), with the revision to pass back when changing. `problem` names why saved settings do not fit this server; the queue then runs on the defaults."
+      },
+      "summary": "Прочитать настройки очереди скачиваний",
+      "description": "Возвращает изменённые значения (`overrides`), значения из окружения сервера (`defaults`) и то, что очередь использует сейчас (`effective`), а также ревизию, которую нужно передать при изменении. `problem` объясняет, почему сохранённые настройки не подходят этому серверу; тогда очередь работает на значениях по умолчанию."
+    },
+    "changeDownloadSettings": {
+      "en": {
+        "summary": "Change download queue settings",
+        "description": "Saves `overrides` over the environment of the server and applies them without a restart: new decisions follow them at once, active downloads keep their places. The values given replace all earlier changes; `{}` returns to the environment. Settings that cannot run here are refused with 400 naming the field; a stale `expectedRevision` gets 409. Read gateways keep their environment."
+      },
+      "summary": "Изменить настройки очереди скачиваний",
+      "description": "Сохраняет `overrides` поверх окружения сервера и применяет их без перезапуска: новые решения сразу следуют им, активные скачивания сохраняют места. Переданные значения заменяют все прежние изменения; `{}` возвращает к окружению. Настройки, которые не могут работать на этом сервере, отклоняются с 400 и именем поля; устаревшая `expectedRevision` получает 409. Шлюзы чтения сохраняют своё окружение."
     }
   },
   "errors": {

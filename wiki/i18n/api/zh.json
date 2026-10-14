@@ -1047,6 +1047,30 @@
       },
       "summary": "读取站点目录",
       "description": "将一次目录读取转发给受管站点，并原样返回其应答：仓库、搜索、制品、注释、阶段、包、文件页面和历史、存储用量、镜像状态。`path` 是站点路由及其查询。其他路由和文件字节以 400 拒绝。"
+    },
+    "changeFleetSite": {
+      "en": {
+        "summary": "Change a setting of a site",
+        "description": "Passes one change to a managed site and returns its answer unchanged. `path` is one of: `/api/v1/system/downloads/settings` (download queue settings, sent as PUT) or `/api/v1/system/updates/requests` (an update request, sent as POST). The body goes to the site as it is; the site checks the revision or request id, so a repeated change does not apply twice. Other paths are refused with 400."
+      },
+      "summary": "更改站点的设置",
+      "description": "将一次更改转发给受管站点，并原样返回其应答。`path` 为以下路由之一：`/api/v1/system/downloads/settings`（下载队列设置，以 PUT 发送）或 `/api/v1/system/updates/requests`（更新请求，以 POST 发送）。请求体原样发送到站点；站点检查修订号或请求 id，因此重复的更改不会应用两次。其他路径以 400 拒绝。"
+    },
+    "getDownloadSettings": {
+      "en": {
+        "summary": "Read download queue settings",
+        "description": "Returns the changed values (`overrides`), what the environment of the server sets (`defaults`) and what the queue uses now (`effective`), with the revision to pass back when changing. `problem` names why saved settings do not fit this server; the queue then runs on the defaults."
+      },
+      "summary": "读取下载队列设置",
+      "description": "返回已更改的值（`overrides`）、服务器环境设定的值（`defaults`）以及队列当前使用的值（`effective`），并附带更改时需传回的修订号。`problem` 说明已保存的设置为何不适用于此服务器；此时队列按默认值运行。"
+    },
+    "changeDownloadSettings": {
+      "en": {
+        "summary": "Change download queue settings",
+        "description": "Saves `overrides` over the environment of the server and applies them without a restart: new decisions follow them at once, active downloads keep their places. The values given replace all earlier changes; `{}` returns to the environment. Settings that cannot run here are refused with 400 naming the field; a stale `expectedRevision` gets 409. Read gateways keep their environment."
+      },
+      "summary": "更改下载队列设置",
+      "description": "将 `overrides` 保存在服务器环境之上，并在不重启的情况下应用：新的决策立即遵循它们，正在进行的下载保留其位置。所给的值替换之前的所有更改；`{}` 恢复为环境值。无法在此运行的设置以 400 拒绝并指出字段；过期的 `expectedRevision` 得到 409。只读网关保留其环境。"
     }
   },
   "errors": {

@@ -1047,6 +1047,30 @@
       },
       "summary": "قراءة فهرس موقع",
       "description": "يمرّر قراءة واحدة للفهرس إلى موقع مُدار ويعيد إجابته دون تغيير: المستودعات، والبحث، والعناصر، والتعليقات، والمراحل، والحزم، وصفحات الملفات وسجلها، واستخدام التخزين، وحالة المرآة. `path` هو مسار الموقع مع استعلامه. تُرفض المسارات الأخرى وبايتات الملفات بالرمز 400."
+    },
+    "changeFleetSite": {
+      "en": {
+        "summary": "Change a setting of a site",
+        "description": "Passes one change to a managed site and returns its answer unchanged. `path` is one of: `/api/v1/system/downloads/settings` (download queue settings, sent as PUT) or `/api/v1/system/updates/requests` (an update request, sent as POST). The body goes to the site as it is; the site checks the revision or request id, so a repeated change does not apply twice. Other paths are refused with 400."
+      },
+      "summary": "تغيير إعداد في موقع",
+      "description": "يمرّر تغييرًا واحدًا إلى موقع مُدار ويعيد إجابته دون تغيير. `path` أحد المسارين: `/api/v1/system/downloads/settings` (إعدادات طابور التنزيلات، يُرسل بطريقة PUT) أو `/api/v1/system/updates/requests` (طلب تحديث، يُرسل بطريقة POST). يصل المتن إلى الموقع كما هو؛ يتحقق الموقع من المراجعة أو معرّف الطلب، فلا يُطبَّق التغيير المكرر مرتين. تُرفض المسارات الأخرى بالرمز 400."
+    },
+    "getDownloadSettings": {
+      "en": {
+        "summary": "Read download queue settings",
+        "description": "Returns the changed values (`overrides`), what the environment of the server sets (`defaults`) and what the queue uses now (`effective`), with the revision to pass back when changing. `problem` names why saved settings do not fit this server; the queue then runs on the defaults."
+      },
+      "summary": "قراءة إعدادات طابور التنزيلات",
+      "description": "يعيد القيم المغيّرة (`overrides`) وما تحدده بيئة الخادم (`defaults`) وما يستخدمه الطابور الآن (`effective`)، مع المراجعة التي تُعاد عند التغيير. يذكر `problem` سبب عدم ملاءمة الإعدادات المحفوظة لهذا الخادم؛ عندها يعمل الطابور بالقيم الافتراضية."
+    },
+    "changeDownloadSettings": {
+      "en": {
+        "summary": "Change download queue settings",
+        "description": "Saves `overrides` over the environment of the server and applies them without a restart: new decisions follow them at once, active downloads keep their places. The values given replace all earlier changes; `{}` returns to the environment. Settings that cannot run here are refused with 400 naming the field; a stale `expectedRevision` gets 409. Read gateways keep their environment."
+      },
+      "summary": "تغيير إعدادات طابور التنزيلات",
+      "description": "يحفظ `overrides` فوق بيئة الخادم ويطبقها دون إعادة تشغيل: تتبعها القرارات الجديدة فورًا وتحتفظ التنزيلات النشطة بأماكنها. تستبدل القيم المرسلة كل التغييرات السابقة؛ و`{}` يعيد إلى قيم البيئة. تُرفض الإعدادات التي لا يمكن تشغيلها هنا بالرمز 400 مع اسم الحقل؛ وتتلقى `expectedRevision` القديمة الرمز 409. تحتفظ بوابات القراءة ببيئتها."
     }
   },
   "errors": {

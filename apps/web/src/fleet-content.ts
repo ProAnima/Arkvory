@@ -47,8 +47,9 @@ export class FleetContent {
       void this.load();
     };
     this.repository.onchange = () => void this.load();
-    this.artifactsMore.onclick = () => void this.guard(this.generation, () => this.moreArtifacts());
-    this.filesMore.onclick = () => void this.guard(this.generation, () => this.moreFiles());
+    this.artifactsMore.onclick = () =>
+      void this.more(this.artifactsMore, () => this.moreArtifacts());
+    this.filesMore.onclick = () => void this.more(this.filesMore, () => this.moreFiles());
   }
 
   async open(id: string, name: string) {
@@ -168,6 +169,16 @@ export class FleetContent {
     const row = document.createElement('tr');
     row.append(text(item.path), text(String(item.revision)), text(item.artifactId));
     return row;
+  }
+
+  /** One page at a time: a second click cannot fetch the same page twice. */
+  private async more(button: HTMLButtonElement, next: () => Promise<void>) {
+    button.disabled = true;
+    try {
+      await this.guard(this.generation, next);
+    } finally {
+      button.disabled = false;
+    }
   }
 
   private async guard(generation: number, run: () => Promise<void>) {

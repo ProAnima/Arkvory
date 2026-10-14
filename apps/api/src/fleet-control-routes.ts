@@ -9,7 +9,12 @@ import {
   type FleetSiteClient,
   type FleetSiteStore,
 } from '@proanima/arkvory-application';
-import { isFleetReadPath, readTopology, record } from '@proanima/arkvory-contracts';
+import {
+  fleetChangeMethod,
+  isFleetReadPath,
+  readTopology,
+  record,
+} from '@proanima/arkvory-contracts';
 
 /** A person who is the global administrator here; a fleet key never manages other sites. */
 function administrator(actor: Principal) {
@@ -27,6 +32,8 @@ function validating(client: FleetSiteClient): FleetSiteClient {
     certificate: (origin) => client.certificate(origin),
     enroll: (endpoint, code, name) => client.enroll(endpoint, code, name),
     read: (endpoint, key, actor, path) => client.read(endpoint, key, actor, path),
+    change: (endpoint, key, actor, method, path, payload) =>
+      client.change(endpoint, key, actor, method, path, payload),
     topology: async (endpoint: FleetEndpointView, key: string, actor: string) => {
       const body = await client.topology(endpoint, key, actor);
       try {
@@ -120,6 +127,26 @@ export function registerFleetControlRoutes(
       if (typeof path !== 'string' || Object.keys(query).length !== 1)
         throw new ArkvoryError('invalid_input', 'path is the only read option');
       const answer = await control.read(siteId(request.params.id), path, actor.id, isFleetReadPath);
+      return reply.code(answer.status).send(answer.body);
+    },
+  );
+  // A change of a site's settings (stage F3): the body goes to the site as it is, and the site's
+  // answer comes back as it is, a revision conflict included.
+  app.post<{ Params: { id: string }; Querystring: unknown }>(
+    '/api/v1/fleet/sites/:id/change',
+    async (request, reply) => {
+      const actor = administrator(principal(request));
+      const query = record(request.query);
+      const path = query['path'];
+      if (typeof path !== 'string' || Object.keys(query).length !== 1)
+        throw new ArkvoryError('invalid_input', 'path is the only change option');
+      const answer = await control.change(
+        siteId(request.params.id),
+        path,
+        body(request),
+        actor.id,
+        fleetChangeMethod,
+      );
       return reply.code(answer.status).send(answer.body);
     },
   );

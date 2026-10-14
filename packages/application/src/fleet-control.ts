@@ -60,6 +60,15 @@ export interface FleetSiteClient {
     actor: string,
     path: string,
   ): Promise<{ readonly status: number; readonly body: unknown }>;
+  /** A change of `path` on the site with its key, sent once. */
+  change(
+    endpoint: FleetEndpointView,
+    key: string,
+    actor: string,
+    method: 'PUT' | 'POST',
+    path: string,
+    body: unknown,
+  ): Promise<{ readonly status: number; readonly body: unknown }>;
 }
 export interface FleetKeySeal {
   seal(siteId: string, key: string): Uint8Array;
@@ -79,12 +88,17 @@ const failureState = (error: unknown): FleetObservation['state'] => {
 
 /** Sites polled at once: a slow site must not hold the others. */
 const CONCURRENCY = 8;
+/** Reads and changes passed to sites at once: per site and in all. */
+const PER_SITE = 4;
+const IN_FLIGHT = 16;
 
 /**
  * The controller's side of the fleet (ADR 0077): get to know a site, pair with it, read every
  * site's state in the background, forget a site. Only a global administrator reaches it.
  */
 export class FleetControl {
+  private readonly inFlight = new Map<string, number>();
+  private total = 0;
   constructor(
     private readonly sites: FleetSiteStore,
     private readonly client: FleetSiteClient,
@@ -182,11 +196,48 @@ export class FleetControl {
   async read(id: string, path: string, actor: string, allowed: (path: string) => boolean) {
     if (!allowed(path))
       throw new ArkvoryError('invalid_input', 'Only catalog metadata of a site can be read');
+    return this.forward(id, (site, key) => this.client.read(site, key, actor, path));
+  }
+
+  /**
+   * Passes one change to a site (stage F3); `methodOf` names the method of an allowed path. The
+   * site checks the revision or id of the change, so its answer, a conflict too, is returned.
+   */
+  async change(
+    id: string,
+    path: string,
+    body: unknown,
+    actor: string,
+    methodOf: (path: string) => 'PUT' | 'POST' | undefined,
+  ) {
+    const method = methodOf(path);
+    if (!method)
+      throw new ArkvoryError('invalid_input', 'Only the listed settings of a site can be changed');
+    return this.forward(id, (site, key) =>
+      this.client.change(site, key, actor, method, path, body),
+    );
+  }
+
+  private async forward(
+    id: string,
+    send: (
+      site: FleetEndpointView,
+      key: string,
+    ) => Promise<{ readonly status: number; readonly body: unknown }>,
+  ) {
     const site = await this.sites.get(id);
     if (!site) throw new ArkvoryError('not_found', 'Site not found');
     const key = this.sealer().open(site.id, site.sealedKey);
+    // Answers of up to 16 MiB are held in memory: few at once per site and in all.
+    const running = this.inFlight.get(id) ?? 0;
+    if (running >= PER_SITE || this.total >= IN_FLIGHT)
+      throw new ArkvoryError('busy', 'Too many requests to sites at once; retry shortly', {
+        retryAfterSeconds: 1,
+      });
+    this.inFlight.set(id, running + 1);
+    this.total++;
     try {
-      return await this.client.read(site, key, actor, path);
+      return await send(site, key);
     } catch (error) {
       const state = failureState(error);
       if (state === 'revoked')
@@ -194,10 +245,15 @@ export class FleetControl {
           reason: 'state_conflict',
         });
       if (state === 'refused')
-        throw new ArkvoryError('forbidden', 'The site refused this read', {
+        throw new ArkvoryError('forbidden', 'The site refused this request', {
           reason: 'permission_missing',
         });
       throw new ArkvoryError('unavailable', `The site could not be read: ${state}`);
+    } finally {
+      this.total--;
+      const left = (this.inFlight.get(id) ?? 1) - 1;
+      if (left > 0) this.inFlight.set(id, left);
+      else this.inFlight.delete(id);
     }
   }
 

@@ -15,6 +15,7 @@ export * from './admission.js';
 export * from './download-scheduler.js';
 export * from './download-tickets.js';
 export * from './fleet-trust.js';
+export * from './download-settings-store.js';
 export * from './fleet-seal.js';
 export * from './fleet-client.js';
 export * from './fleet-registry.js';

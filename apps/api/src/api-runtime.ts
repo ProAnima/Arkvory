@@ -5,7 +5,9 @@ import {
   PostgresCatalog,
   PostgresDownloadLease,
   PostgresContentPins,
+  PostgresDownloadSettings,
 } from '@proanima/arkvory-infrastructure';
+import { DownloadSettingsControl } from '@proanima/arkvory-application';
 import type { ServerConfig } from './config.js';
 import { createTransferControls } from './transfer-controls.js';
 
@@ -28,6 +30,7 @@ export class ApiRuntime {
   readonly blobs: LocalBlobStore;
   readonly pins: PostgresContentPins;
   readonly lease: PostgresDownloadLease | undefined;
+  readonly downloadSettings: DownloadSettingsControl;
   private closing: Promise<void> | undefined;
   private stopped = false;
 
@@ -46,6 +49,15 @@ export class ApiRuntime {
     this.lease = config.sharedDownloads
       ? new PostgresDownloadLease(this.catalog.sessions, config.sharedDownloads)
       : undefined;
+    // Saved queue settings run on writers; read gateways keep their environment until the
+    // shared queue of ADR 0076 stage 4, as their queues are per process.
+    const scheduler = this.transfers.downloadScheduler;
+    this.downloadSettings = new DownloadSettingsControl(
+      new PostgresDownloadSettings(this.catalog.pool),
+      scheduler.policy,
+      this.role === 'api' ? scheduler : { configure: () => undefined },
+      { applies: this.role === 'api', gateways: config.sharedDownloads !== undefined },
+    );
   }
 
   readonly available = () => !this.stopped && this.catalog.active && (this.lease?.active ?? true);
@@ -65,6 +77,9 @@ export class ApiRuntime {
       // made by a writer yet simply issues none.
       const key = await loadDownloadTicketKey(this.catalog.pool, this.role === 'api');
       if (key) this.transfers.downloadScheduler.useTickets(new DownloadTickets(key));
+      // The environment runs until the record is read: a database hiccup here must not stop the
+      // start, the background task retries every 10 seconds and reports a failure.
+      if (this.role === 'api') await this.downloadSettings.sync().catch(() => undefined);
     } catch (error) {
       await this.close();
       throw error;

@@ -132,3 +132,23 @@ body:has(#cluster-panel:not([hidden])) #replication-open {
 .fleet-code > p {
   margin: var(--space-2) 0 0;
 }
+.fleet-settings {
+  display: grid;
+  gap: var(--space-3);
+}
+.fleet-settings fieldset {
+  margin: 0;
+  padding: var(--space-3);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-control);
+}
+.fleet-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--sign-in-field-min)), 1fr));
+  gap: var(--space-3);
+}
+.fleet-fields > label {
+  display: grid;
+  gap: var(--space-1);
+  align-content: end;
+}

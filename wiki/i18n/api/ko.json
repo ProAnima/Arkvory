@@ -1047,6 +1047,30 @@
       },
       "summary": "사이트 카탈로그 읽기",
       "description": "카탈로그 읽기 한 번을 관리 사이트에 전달하고 그 응답을 그대로 반환합니다: 저장소, 검색, 아티팩트, 주석, 단계, 패키지, 파일 페이지와 기록, 저장소 사용량, 미러 상태. `path`는 쿼리를 포함한 사이트 경로입니다. 다른 경로와 파일 바이트는 400으로 거부됩니다."
+    },
+    "changeFleetSite": {
+      "en": {
+        "summary": "Change a setting of a site",
+        "description": "Passes one change to a managed site and returns its answer unchanged. `path` is one of: `/api/v1/system/downloads/settings` (download queue settings, sent as PUT) or `/api/v1/system/updates/requests` (an update request, sent as POST). The body goes to the site as it is; the site checks the revision or request id, so a repeated change does not apply twice. Other paths are refused with 400."
+      },
+      "summary": "사이트 설정 변경",
+      "description": "변경 하나를 관리 사이트에 전달하고 그 응답을 그대로 반환합니다. `path`는 다음 경로 중 하나입니다: `/api/v1/system/downloads/settings`(다운로드 대기열 설정, PUT으로 전송) 또는 `/api/v1/system/updates/requests`(업데이트 요청, POST로 전송). 본문은 그대로 사이트에 전달되며, 사이트가 리비전이나 요청 id를 확인하므로 반복된 변경은 두 번 적용되지 않습니다. 다른 경로는 400으로 거부됩니다."
+    },
+    "getDownloadSettings": {
+      "en": {
+        "summary": "Read download queue settings",
+        "description": "Returns the changed values (`overrides`), what the environment of the server sets (`defaults`) and what the queue uses now (`effective`), with the revision to pass back when changing. `problem` names why saved settings do not fit this server; the queue then runs on the defaults."
+      },
+      "summary": "다운로드 대기열 설정 읽기",
+      "description": "변경된 값(`overrides`), 서버 환경이 정한 값(`defaults`), 대기열이 지금 사용하는 값(`effective`)과 변경할 때 다시 보낼 리비전을 반환합니다. `problem`은 저장된 설정이 이 서버에 맞지 않는 이유를 알려 주며, 이때 대기열은 기본값으로 동작합니다."
+    },
+    "changeDownloadSettings": {
+      "en": {
+        "summary": "Change download queue settings",
+        "description": "Saves `overrides` over the environment of the server and applies them without a restart: new decisions follow them at once, active downloads keep their places. The values given replace all earlier changes; `{}` returns to the environment. Settings that cannot run here are refused with 400 naming the field; a stale `expectedRevision` gets 409. Read gateways keep their environment."
+      },
+      "summary": "다운로드 대기열 설정 변경",
+      "description": "`overrides`를 서버 환경 위에 저장하고 재시작 없이 적용합니다: 새로운 결정은 즉시 이를 따르고, 진행 중인 다운로드는 자리를 유지합니다. 전달한 값은 이전의 모든 변경을 대체하며, `{}`는 환경값으로 되돌립니다. 이 서버에서 동작할 수 없는 설정은 필드 이름과 함께 400으로 거부되고, 오래된 `expectedRevision`은 409를 받습니다. 읽기 게이트웨이는 자신의 환경을 유지합니다."
     }
   },
   "errors": {

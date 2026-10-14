@@ -17,6 +17,9 @@ export const fleetReadRoutes = [
   '/api/v1/repositories/:repository/asset/history',
   '/api/v1/repositories/:repository/storage/usage',
   '/api/v1/repositories/:repository/mirror',
+  // Stage F3: what the changes below need to be made with the current revision.
+  '/api/v1/system/downloads/settings',
+  '/api/v1/system/updates',
 ] as const;
 
 /** One path segment: percent-encoded text without a slash, a dot segment or a control. */
@@ -32,6 +35,24 @@ const patterns = fleetReadRoutes.map(
 export function isFleetReadPath(path: string): boolean {
   if (path.length > 2048 || !path.startsWith('/api/v1/') || path.includes('#')) return false;
   const [route = ''] = path.split('?', 1);
-  if (/(^|\/)\.{1,2}(\/|$)|%2e%2e|%2f|\\/i.test(route)) return false;
+  // Any spelling of a dot segment (`.`, `..`, `%2e`, `.%2E`): URL parsing on the way to the site
+  // would remove it, and the site would get another path than the one checked here.
+  if (route.split('/').some((part) => /^(?:\.|%2e){1,2}$/i.test(part))) return false;
+  if (/%2f|%5c|\\/i.test(route)) return false;
   return patterns.some((pattern) => pattern.test(route));
+}
+
+/**
+ * What a controller may change on a site (ADR 0077, stage F3), each with its one method. Both
+ * are revision- or id-protected on the site, so a repeated request cannot apply twice.
+ */
+export const fleetChangeRoutes = [
+  ['PUT', '/api/v1/system/downloads/settings'],
+  ['POST', '/api/v1/system/updates/requests'],
+] as const;
+export type FleetChangeMethod = (typeof fleetChangeRoutes)[number][0];
+
+/** The method of a change route, or undefined: exact paths only, without a query. */
+export function fleetChangeMethod(path: string): FleetChangeMethod | undefined {
+  return fleetChangeRoutes.find(([, route]) => route === path)?.[0];
 }

@@ -140,6 +140,8 @@ Die Limits gelten für einen API-Prozess. Eine Rate von `0` bedeutet kein Limit.
 
 Ein Proxy vor der API muss eine Anfrage mindestens so lange zulassen wie `ARKVORY_UPLOAD_DEADLINE_MS`. Siehe [HTTPS](./https#reverse-proxy). Alle anderen Limits, etwa die Warteschlange und die Raten pro Konto, stehen unter [Umgebungsvariablen](../reference/environment#transfers-and-bandwidth).
 
+Die Werte der Download-Warteschlange (Strategie, gleichzeitige Downloads, Reserve, Gewichte und die übrigen) lassen sich auch ohne Neustart ändern: [[ui:fleet]] → [[ui:fleetThisSettings]] oder `PUT /api/v1/system/downloads/settings`. Gespeicherte Werte haben auf dem Schreibprozess Vorrang vor diesen Variablen; siehe [Standorte](../operate/sites#site-settings).
+
 ### Backups und Spiegel {#backups-mirrors}
 
 Verwenden Sie `configure` für beides. `--backup-vault` schreibt `ARKVORY_BACKUP_VAULT`, gewährt dem Dienstkonto Zugriff auf das Verzeichnis, startet nur den Backup-Agent neu und behält die Änderung nur, wenn der Agent den Backup-Speicher als verfügbar meldet. Der Backup-Speicher muss außerhalb des Installationsverzeichnisses und außerhalb des Speichers liegen. `--mirror` schreibt `ARKVORY_MIRRORS_FILE` und die Schlüsseldateien, startet die API und den Worker neu und prüft die Quelle mit Ihrem Schlüssel, bevor es etwas ändert.

@@ -4198,5 +4198,137 @@
   "fleetNoRepositories": {
     "en": "The site has no repositories.",
     "text": "该站点没有仓库。"
+  },
+  "fleetSettings": {
+    "en": "Settings",
+    "text": "设置"
+  },
+  "fleetSettingsOf": {
+    "en": "Settings: {name}",
+    "text": "设置：{name}"
+  },
+  "fleetThisSettings": {
+    "en": "Settings of this site",
+    "text": "本站点的设置"
+  },
+  "fleetQueueSettings": {
+    "en": "Download queue",
+    "text": "下载队列"
+  },
+  "fleetQueueHint": {
+    "en": "An empty field keeps the value of the server’s environment, shown in grey. Saved settings apply at once, without a restart; active downloads keep their places. Read gateways keep their environment.",
+    "text": "留空的字段保留服务器环境中的值，以灰色显示。保存的设置立即生效，无需重启；正在进行的下载保留其位置。只读网关保留其环境。"
+  },
+  "fleetStrategy": {
+    "en": "Strategy",
+    "text": "策略"
+  },
+  "fleetStrategyOrdered": {
+    "en": "In order of arrival",
+    "text": "按到达顺序"
+  },
+  "fleetStrategySmallest": {
+    "en": "Smallest first",
+    "text": "小文件优先"
+  },
+  "fleetStrategyShared": {
+    "en": "Shared, without a queue",
+    "text": "共享，不排队"
+  },
+  "fleetDefault": {
+    "en": "Default: {value}",
+    "text": "默认：{value}"
+  },
+  "fleetSessions": {
+    "en": "Downloads at once",
+    "text": "同时下载数"
+  },
+  "fleetReserve": {
+    "en": "Places kept for people",
+    "text": "为人员保留的位置"
+  },
+  "fleetPerPrincipal": {
+    "en": "Downloads at once per client",
+    "text": "每个客户端的同时下载数"
+  },
+  "fleetIdle": {
+    "en": "Pause that frees a place, s",
+    "text": "释放位置的暂停时长，秒"
+  },
+  "fleetAging": {
+    "en": "Wait that raises a class, min (0: off)",
+    "text": "提升类别的等待时长，分钟（0：关闭）"
+  },
+  "fleetRanges": {
+    "en": "Parallel ranges per download",
+    "text": "每个下载的并行区段数"
+  },
+  "fleetSessionMin": {
+    "en": "Queue files from, MiB",
+    "text": "从此大小起排队，MiB"
+  },
+  "fleetPreempt": {
+    "en": "Ask downloads to yield to a higher class",
+    "text": "要求下载让位于更高类别"
+  },
+  "fleetPreemptOn": {
+    "en": "Yes",
+    "text": "是"
+  },
+  "fleetPreemptOff": {
+    "en": "No",
+    "text": "否"
+  },
+  "fleetWeights": {
+    "en": "Weights of classes",
+    "text": "类别权重"
+  },
+  "fleetWeightInteractive": {
+    "en": "People",
+    "text": "人员"
+  },
+  "fleetWeightRelease": {
+    "en": "Releases",
+    "text": "发布"
+  },
+  "fleetWeightBulk": {
+    "en": "Bulk",
+    "text": "批量"
+  },
+  "fleetWeightBackground": {
+    "en": "Background",
+    "text": "后台"
+  },
+  "fleetQueueSave": {
+    "en": "Save queue settings",
+    "text": "保存队列设置"
+  },
+  "fleetQueueReset": {
+    "en": "Back to defaults",
+    "text": "恢复默认值"
+  },
+  "fleetQueueSaved": {
+    "en": "Saved. The queue works with the new settings now.",
+    "text": "已保存。队列现已按新设置运行。"
+  },
+  "fleetQueueChanged": {
+    "en": "Changed by {who}",
+    "text": "修改者：{who}"
+  },
+  "fleetQueueProblem": {
+    "en": "Saved settings do not fit this server and are not used: {problem}",
+    "text": "已保存的设置不适用于此服务器，未被使用：{problem}"
+  },
+  "fleetQueueConflict": {
+    "en": "Someone changed the settings meanwhile. The form shows them now: check and save again.",
+    "text": "在此期间有人修改了设置。表单现在显示的是当前设置：请检查后再次保存。"
+  },
+  "fleetQueueInvalid": {
+    "en": "Every number must be whole. Correct the marked fields and save again.",
+    "text": "所有数字必须为整数。请更正标记的字段后再次保存。"
+  },
+  "fleetQueuePerRequest": {
+    "en": "The strategy is shared: downloads are admitted one request at a time by the limits of the environment, and the session settings below wait unused until another strategy is chosen.",
+    "text": "当前为共享策略：下载按单个请求在环境限制内准入，下方的会话设置在选择其他策略之前不会使用。"
   }
 }

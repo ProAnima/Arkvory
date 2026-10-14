@@ -140,6 +140,8 @@ Os limites pertencem a um processo da API. Uma taxa de `0` significa sem limite.
 
 Um proxy na frente da API deve permitir uma solicitação pelo menos tão longa quanto `ARKVORY_UPLOAD_DEADLINE_MS`. Consulte [HTTPS](./https#reverse-proxy). Todos os outros limites, como a fila de espera e as taxas por conta, estão em [Variáveis de ambiente](../reference/environment#transfers-and-bandwidth).
 
+Os valores da fila de downloads (estratégia, downloads simultâneos, reserva, pesos e os demais) também podem ser alterados sem reiniciar: [[ui:fleet]] → [[ui:fleetThisSettings]], ou `PUT /api/v1/system/downloads/settings`. Os valores salvos prevalecem sobre estas variáveis no processo de gravação; veja [Sites](../operate/sites#site-settings).
+
 ### Backups e espelhos {#backups-mirrors}
 
 Use `configure` para ambos. `--backup-vault` grava `ARKVORY_BACKUP_VAULT`, concede à conta de serviço acesso ao diretório, reinicia apenas o agente de backup e mantém a alteração somente quando o agente informa que o vault está disponível. O vault deve ficar fora da raiz da instalação e fora do armazenamento. `--mirror` grava `ARKVORY_MIRRORS_FILE` e os arquivos de chave, reinicia a API e o worker, e verifica a origem com sua chave antes de alterar qualquer coisa.

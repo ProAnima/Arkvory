@@ -4,7 +4,7 @@ import type { Principal } from '@proanima/arkvory-domain';
 import { readFile } from 'node:fs/promises';
 import { certificateFingerprint } from '@proanima/arkvory-infrastructure';
 import type { PostgresFleetTrust } from '@proanima/arkvory-infrastructure';
-import { fleetReadRoutes, record } from '@proanima/arkvory-contracts';
+import { fleetChangeRoutes, fleetReadRoutes, record } from '@proanima/arkvory-contracts';
 
 /**
  * Routes a fleet key may call (ADR 0077): what a controller needs, nothing else. Every other
@@ -14,6 +14,8 @@ export const fleetKeyRoutes: ReadonlySet<string> = new Set([
   'GET /api/v1/system/topology',
   // Stage F2: catalog metadata, read only; the key holds read grants and nothing else.
   ...fleetReadRoutes.map((route) => `GET ${route}`),
+  // Stage F3: the listed settings, each protected by a revision or a request id on this site.
+  ...fleetChangeRoutes.map(([method, route]) => `${method} ${route}`),
 ]);
 
 /** The global administrator of this site, by a person's credential: not by a fleet key. */
