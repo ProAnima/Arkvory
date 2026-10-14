@@ -4330,5 +4330,201 @@
   "fleetQueuePerRequest": {
     "en": "The strategy is shared: downloads are admitted one request at a time by the limits of the environment, and the session settings below wait unused until another strategy is chosen.",
     "text": "रणनीति साझा है: डाउनलोड एनवायरनमेंट की सीमाओं के भीतर एक-एक अनुरोध पर स्वीकार होते हैं, और नीचे की सत्र सेटिंग तब तक उपयोग नहीं होतीं जब तक दूसरी रणनीति न चुनी जाए।"
+  },
+  "fleetAgent": {
+    "en": "Mirrors and cluster",
+    "text": "मिरर और क्लस्टर"
+  },
+  "fleetAgentHint": {
+    "en": "These changes are applied by the site’s agent with its own checks and rollback, within a minute; the list below shows how each ended.",
+    "text": "ये बदलाव साइट का एजेंट अपनी जाँचों और रोलबैक के साथ एक मिनट के भीतर लागू करता है; नीचे की सूची दिखाती है कि हर बदलाव का क्या हुआ।"
+  },
+  "fleetAgentMissing": {
+    "en": "The site’s agent does not report in: connect it on the site with updates-connect, or update the site to a release that applies these changes.",
+    "text": "साइट का एजेंट जवाब नहीं दे रहा है: साइट पर updates-connect से उसे कनेक्ट करें, या साइट को ऐसे रिलीज़ में अपडेट करें जो ये बदलाव लागू करता हो।"
+  },
+  "fleetMirrorRepository": {
+    "en": "Repository",
+    "text": "रिपॉजिटरी"
+  },
+  "fleetMirrorSource": {
+    "en": "Source",
+    "text": "स्रोत"
+  },
+  "fleetMirrorPhase": {
+    "en": "State",
+    "text": "स्थिति"
+  },
+  "fleetMirrorNone": {
+    "en": "The site has no mirrors or imports.",
+    "text": "साइट पर कोई मिरर या आयात नहीं है।"
+  },
+  "fleetMirrorKey": {
+    "en": "Source key",
+    "text": "स्रोत कुंजी"
+  },
+  "fleetMirrorKeySave": {
+    "en": "Replace key",
+    "text": "कुंजी बदलें"
+  },
+  "fleetMirrorKeyFor": {
+    "en": "New source key for {repository}",
+    "text": "{repository} के लिए नई स्रोत कुंजी"
+  },
+  "fleetMirrorAttach": {
+    "en": "Attach a mirror or an import",
+    "text": "मिरर या आयात जोड़ें"
+  },
+  "fleetMirrorUpstream": {
+    "en": "Source address",
+    "text": "स्रोत का पता"
+  },
+  "fleetMirrorSourceRepository": {
+    "en": "Source repository",
+    "text": "स्रोत रिपॉजिटरी"
+  },
+  "fleetMirrorStages": {
+    "en": "Import stages, comma-separated",
+    "text": "आयात स्टेज, अल्पविराम से अलग"
+  },
+  "fleetMirrorCertificate": {
+    "en": "Authority certificate of the source (PEM)",
+    "text": "स्रोत का प्रमाणपत्र प्राधिकरण प्रमाणपत्र (PEM)"
+  },
+  "fleetMirrorAttachHint": {
+    "en": "Without stages the repository mirrors the source read-only; with stages it is an ordinary repository that takes over versions with those stages. The source is checked with the key before anything changes.",
+    "text": "स्टेज के बिना रिपॉजिटरी स्रोत को केवल-पढ़ने के लिए मिरर करती है; स्टेज के साथ यह एक सामान्य रिपॉजिटरी है जो उन स्टेज वाले संस्करण ले लेती है। कुछ भी बदलने से पहले स्रोत की कुंजी से जाँच होती है।"
+  },
+  "fleetMirrorAttachButton": {
+    "en": "Attach",
+    "text": "जोड़ें"
+  },
+  "fleetMirrorDetach": {
+    "en": "Detach",
+    "text": "अलग करें"
+  },
+  "fleetMirrorDetachConfirm": {
+    "en": "Detach the mirror {repository}? It becomes an ordinary writable repository and keeps every artifact.",
+    "text": "मिरर {repository} को अलग करें? यह एक सामान्य लिखने योग्य रिपॉजिटरी बन जाएगी और सभी आर्टिफ़ैक्ट रखेगी।"
+  },
+  "fleetMirrorImport": {
+    "en": "Import",
+    "text": "आयात"
+  },
+  "fleetMirrorMirror": {
+    "en": "Mirror",
+    "text": "मिरर"
+  },
+  "fleetMirrorInvalid": {
+    "en": "Check the fields: an HTTPS address of the source, repository names and up to 16 stages.",
+    "text": "फ़ील्ड जाँचें: स्रोत का HTTPS पता, रिपॉजिटरी के नाम और अधिकतम 16 स्टेज।"
+  },
+  "fleetCluster": {
+    "en": "HA cluster",
+    "text": "HA क्लस्टर"
+  },
+  "fleetClusterState": {
+    "en": "Active node: {node}. Copies: {copies} of {required}.",
+    "text": "सक्रिय नोड: {node}। प्रतियाँ: {required} में से {copies}।"
+  },
+  "fleetSwitchoverNode": {
+    "en": "Move to node",
+    "text": "नोड पर ले जाएँ"
+  },
+  "fleetSwitchoverConfirm": {
+    "en": "Node name again",
+    "text": "नोड का नाम दोबारा"
+  },
+  "fleetSwitchover": {
+    "en": "Switch over",
+    "text": "स्विच करें"
+  },
+  "fleetSwitchoverTyped": {
+    "en": "Type the name of the target node again to confirm.",
+    "text": "पुष्टि के लिए लक्ष्य नोड का नाम दोबारा लिखें।"
+  },
+  "fleetSwitchoverAsk": {
+    "en": "Move Arkvory to {node}? Requests are interrupted for a short time while the node takes over.",
+    "text": "Arkvory को {node} पर ले जाएँ? नोड के कार्यभार संभालने तक अनुरोध थोड़ी देर के लिए रुकेंगे।"
+  },
+  "fleetSingleUntil": {
+    "en": "One copy until",
+    "text": "एक प्रति, इस समय तक"
+  },
+  "fleetSingleReason": {
+    "en": "Reason",
+    "text": "कारण"
+  },
+  "fleetSingleOn": {
+    "en": "Accept writes with one copy",
+    "text": "एक प्रति के साथ लेखन स्वीकार करें"
+  },
+  "fleetSingleOff": {
+    "en": "Withdraw the decision",
+    "text": "निर्णय वापस लें"
+  },
+  "fleetSingleInvalid": {
+    "en": "Give a time and a reason.",
+    "text": "समय और कारण दें।"
+  },
+  "fleetSingleAsk": {
+    "en": "Acknowledge writes with ONE copy until {until}? A second failure in that time loses them.",
+    "text": "{until} तक लेखन केवल एक प्रति के साथ पुष्ट करें? उस दौरान दूसरी विफलता होने पर वह लेखन खो जाएगा।"
+  },
+  "fleetRequests": {
+    "en": "Requests to the agent",
+    "text": "एजेंट को अनुरोध"
+  },
+  "fleetRequestKind": {
+    "en": "Change",
+    "text": "बदलाव"
+  },
+  "fleetRequestBy": {
+    "en": "Who",
+    "text": "किसने"
+  },
+  "fleetRequestAt": {
+    "en": "When",
+    "text": "कब"
+  },
+  "fleetKindAttach": {
+    "en": "Attach mirror",
+    "text": "मिरर जोड़ना"
+  },
+  "fleetKindKey": {
+    "en": "Replace key",
+    "text": "कुंजी बदलना"
+  },
+  "fleetKindDetach": {
+    "en": "Detach mirror",
+    "text": "मिरर अलग करना"
+  },
+  "fleetKindSwitchover": {
+    "en": "Switchover",
+    "text": "स्विचओवर"
+  },
+  "fleetKindSingleCopy": {
+    "en": "Single copy",
+    "text": "एक प्रति"
+  },
+  "fleetChangePending": {
+    "en": "Waiting for the agent",
+    "text": "एजेंट की प्रतीक्षा"
+  },
+  "fleetChangeApplying": {
+    "en": "Applying",
+    "text": "लागू हो रहा है"
+  },
+  "fleetChangeDone": {
+    "en": "Done",
+    "text": "पूर्ण"
+  },
+  "fleetChangeFailed": {
+    "en": "Failed",
+    "text": "विफल"
+  },
+  "fleetChangeQueued": {
+    "en": "Queued. The site’s agent applies it within a minute.",
+    "text": "कतार में है। साइट का एजेंट इसे एक मिनट के भीतर लागू करेगा।"
   }
 }

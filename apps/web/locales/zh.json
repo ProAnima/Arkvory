@@ -4330,5 +4330,201 @@
   "fleetQueuePerRequest": {
     "en": "The strategy is shared: downloads are admitted one request at a time by the limits of the environment, and the session settings below wait unused until another strategy is chosen.",
     "text": "当前为共享策略：下载按单个请求在环境限制内准入，下方的会话设置在选择其他策略之前不会使用。"
+  },
+  "fleetAgent": {
+    "en": "Mirrors and cluster",
+    "text": "镜像和集群"
+  },
+  "fleetAgentHint": {
+    "en": "These changes are applied by the site’s agent with its own checks and rollback, within a minute; the list below shows how each ended.",
+    "text": "这些更改由站点的代理在一分钟内应用，代理会自行检查并在需要时回滚；下方列表显示每项更改的结果。"
+  },
+  "fleetAgentMissing": {
+    "en": "The site’s agent does not report in: connect it on the site with updates-connect, or update the site to a release that applies these changes.",
+    "text": "站点的代理没有响应：请在站点上用 updates-connect 连接它，或将站点更新到能应用这些更改的版本。"
+  },
+  "fleetMirrorRepository": {
+    "en": "Repository",
+    "text": "仓库"
+  },
+  "fleetMirrorSource": {
+    "en": "Source",
+    "text": "源"
+  },
+  "fleetMirrorPhase": {
+    "en": "State",
+    "text": "状态"
+  },
+  "fleetMirrorNone": {
+    "en": "The site has no mirrors or imports.",
+    "text": "该站点没有镜像或导入。"
+  },
+  "fleetMirrorKey": {
+    "en": "Source key",
+    "text": "源密钥"
+  },
+  "fleetMirrorKeySave": {
+    "en": "Replace key",
+    "text": "更换密钥"
+  },
+  "fleetMirrorKeyFor": {
+    "en": "New source key for {repository}",
+    "text": "{repository} 的新源密钥"
+  },
+  "fleetMirrorAttach": {
+    "en": "Attach a mirror or an import",
+    "text": "接入镜像或导入"
+  },
+  "fleetMirrorUpstream": {
+    "en": "Source address",
+    "text": "源地址"
+  },
+  "fleetMirrorSourceRepository": {
+    "en": "Source repository",
+    "text": "源仓库"
+  },
+  "fleetMirrorStages": {
+    "en": "Import stages, comma-separated",
+    "text": "导入阶段，以逗号分隔"
+  },
+  "fleetMirrorCertificate": {
+    "en": "Authority certificate of the source (PEM)",
+    "text": "源的证书颁发机构证书（PEM）"
+  },
+  "fleetMirrorAttachHint": {
+    "en": "Without stages the repository mirrors the source read-only; with stages it is an ordinary repository that takes over versions with those stages. The source is checked with the key before anything changes.",
+    "text": "不设阶段时，仓库以只读方式镜像源；设置阶段时，它是普通仓库，会接收带有这些阶段的版本。在进行任何更改之前，会先用密钥检查源。"
+  },
+  "fleetMirrorAttachButton": {
+    "en": "Attach",
+    "text": "接入"
+  },
+  "fleetMirrorDetach": {
+    "en": "Detach",
+    "text": "断开"
+  },
+  "fleetMirrorDetachConfirm": {
+    "en": "Detach the mirror {repository}? It becomes an ordinary writable repository and keeps every artifact.",
+    "text": "断开镜像 {repository}？它将变为可写的普通仓库，并保留所有制品。"
+  },
+  "fleetMirrorImport": {
+    "en": "Import",
+    "text": "导入"
+  },
+  "fleetMirrorMirror": {
+    "en": "Mirror",
+    "text": "镜像"
+  },
+  "fleetMirrorInvalid": {
+    "en": "Check the fields: an HTTPS address of the source, repository names and up to 16 stages.",
+    "text": "请检查字段：源的 HTTPS 地址、仓库名称以及最多 16 个阶段。"
+  },
+  "fleetCluster": {
+    "en": "HA cluster",
+    "text": "HA 集群"
+  },
+  "fleetClusterState": {
+    "en": "Active node: {node}. Copies: {copies} of {required}.",
+    "text": "活动节点：{node}。副本：{copies}/{required}。"
+  },
+  "fleetSwitchoverNode": {
+    "en": "Move to node",
+    "text": "迁移到节点"
+  },
+  "fleetSwitchoverConfirm": {
+    "en": "Node name again",
+    "text": "再次输入节点名称"
+  },
+  "fleetSwitchover": {
+    "en": "Switch over",
+    "text": "切换"
+  },
+  "fleetSwitchoverTyped": {
+    "en": "Type the name of the target node again to confirm.",
+    "text": "请再次输入目标节点名称以确认。"
+  },
+  "fleetSwitchoverAsk": {
+    "en": "Move Arkvory to {node}? Requests are interrupted for a short time while the node takes over.",
+    "text": "将 Arkvory 迁移到 {node}？节点接管期间请求会短暂中断。"
+  },
+  "fleetSingleUntil": {
+    "en": "One copy until",
+    "text": "一份副本截至"
+  },
+  "fleetSingleReason": {
+    "en": "Reason",
+    "text": "原因"
+  },
+  "fleetSingleOn": {
+    "en": "Accept writes with one copy",
+    "text": "以一份副本接受写入"
+  },
+  "fleetSingleOff": {
+    "en": "Withdraw the decision",
+    "text": "撤回决定"
+  },
+  "fleetSingleInvalid": {
+    "en": "Give a time and a reason.",
+    "text": "请填写时间和原因。"
+  },
+  "fleetSingleAsk": {
+    "en": "Acknowledge writes with ONE copy until {until}? A second failure in that time loses them.",
+    "text": "在 {until} 之前仅以一份副本确认写入？在此期间再发生一次故障将导致这些写入丢失。"
+  },
+  "fleetRequests": {
+    "en": "Requests to the agent",
+    "text": "发给代理的请求"
+  },
+  "fleetRequestKind": {
+    "en": "Change",
+    "text": "更改"
+  },
+  "fleetRequestBy": {
+    "en": "Who",
+    "text": "操作人"
+  },
+  "fleetRequestAt": {
+    "en": "When",
+    "text": "时间"
+  },
+  "fleetKindAttach": {
+    "en": "Attach mirror",
+    "text": "接入镜像"
+  },
+  "fleetKindKey": {
+    "en": "Replace key",
+    "text": "更换密钥"
+  },
+  "fleetKindDetach": {
+    "en": "Detach mirror",
+    "text": "断开镜像"
+  },
+  "fleetKindSwitchover": {
+    "en": "Switchover",
+    "text": "切换"
+  },
+  "fleetKindSingleCopy": {
+    "en": "Single copy",
+    "text": "单副本"
+  },
+  "fleetChangePending": {
+    "en": "Waiting for the agent",
+    "text": "等待代理"
+  },
+  "fleetChangeApplying": {
+    "en": "Applying",
+    "text": "正在应用"
+  },
+  "fleetChangeDone": {
+    "en": "Done",
+    "text": "完成"
+  },
+  "fleetChangeFailed": {
+    "en": "Failed",
+    "text": "失败"
+  },
+  "fleetChangeQueued": {
+    "en": "Queued. The site’s agent applies it within a minute.",
+    "text": "已加入队列。站点的代理会在一分钟内应用。"
   }
 }

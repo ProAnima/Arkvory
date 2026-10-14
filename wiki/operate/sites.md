@@ -10,7 +10,7 @@ A **site** is one Arkvory installation: the main one, a mirror in another locati
 ## How it works {#how-it-works}
 
 - The controller keeps a list of sites. It reads every site every 30 seconds over HTTPS and keeps the last answer, so a site that stops answering still shows its last known state.
-- When a site is paired, it gives the controller a key of its own, a **fleet key**. The fleet key reaches only what a controller needs: the state of the site, the descriptions in its catalog, and two settings: the download queue and update requests. It cannot download file bytes, write to repositories, or read or change accounts and keys.
+- When a site is paired, it gives the controller a key of its own, a **fleet key**. The fleet key reaches only what a controller needs: the state of the site, the descriptions in its catalog, and the listed changes: the download queue, update requests, and mirror and HA changes for the site's agent. It cannot download file bytes, write to repositories, or read or change accounts and keys.
 - The controller keeps the fleet keys sealed with a key in its data directory (`fleet.key`). The database and its backups alone do not reveal them. After a restore, pair the sites again.
 - Every site shows which controllers manage it and can revoke them at any time.
 
@@ -57,10 +57,11 @@ The controller reads these on the site with its fleet key and shows the answer a
 
 ## Settings of a site {#site-settings}
 
-[[ui:fleetSettings]] in the row of a site opens its settings below the list; [[ui:fleetThisSettings]] opens the same card for this site. The card has two parts:
+[[ui:fleetSettings]] in the row of a site opens its settings below the list; [[ui:fleetThisSettings]] opens the same card for this site. The card has three parts:
 
 - **[[ui:fleetQueueSettings]]**: how many downloads run at once, places kept for people, the strategy, class weights and the other queue values of [Traffic control](../reference/environment#transfers-and-bandwidth). An empty field keeps the value of the site's environment, shown in grey. [[ui:fleetQueueSave]] applies the values at once, without a restart: new decisions follow them, active downloads keep their places. [[ui:fleetQueueReset]] returns to the environment.
 - **[[ui:updates]]**: the installed and the latest version, automatic installation and the maintenance hour, [[ui:updateCheck]] and [[ui:updateInstall]]. The site's updater takes a request within a minute; the card shows it as accepted until then.
+- **[[ui:fleetAgent]]**: the site's mirrors and imports with [[ui:fleetMirrorKeySave]] and [[ui:fleetMirrorDetach]], [[ui:fleetMirrorAttach]] with the source key, and on an HA cluster [[ui:fleetSwitchover]] to a node with a complete copy (the node name typed twice) and the single-copy decision. The site's agent applies each request within a minute with the checks and rollback of `arkvory configure` and `cluster-*`; [[ui:fleetRequests]] shows how each ended. The source key goes to the agent once, in a file of its own, and is never shown again. The agent is the updater of the site: connect it with `updates-connect`.
 
 Each change carries the revision it was made from. If someone changed the settings meanwhile, the site refuses the change and the card shows the current values: check them and save again. The site records who changed its queue: the controller's key and the name of its administrator.
 
@@ -77,6 +78,6 @@ Under [[ui:fleetThisSite]], every site lists the controllers that manage it: the
 
 ## Limits {#limits}
 
-- Mirrors and HA are still configured on each site, with its console or `arkvory configure`; changing them from the controller comes next. Read gateways keep the download queue of their environment.
+- Fencing tests and adding or removing cluster nodes stay local commands on the nodes. Read gateways keep the download queue of their environment.
 - A controller manages up to 256 sites and reads at most eight at a time.
 - The controller holds a key to every site it manages: protect its global administrators and its data directory as carefully as the sites themselves.

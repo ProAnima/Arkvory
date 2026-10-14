@@ -10,7 +10,7 @@ Un **sitio** es una instalación de Arkvory: la principal, un espejo en otra ubi
 ## Cómo funciona {#how-it-works}
 
 - El controlador guarda una lista de sitios. Lee cada sitio cada 30 segundos por HTTPS y conserva la última respuesta, así que un sitio que deja de responder sigue mostrando su último estado conocido.
-- Al emparejarse, el sitio da al sitio de control una clave propia, la **clave de flota**. Solo alcanza lo que el sitio de control necesita: el estado del sitio, las descripciones de su catálogo y dos ajustes: la cola de descargas y las solicitudes de actualización. No puede descargar bytes de archivos, escribir en repositorios ni leer o cambiar cuentas y claves.
+- Al emparejarse, el sitio da al sitio de control una clave propia, la **clave de flota**. Solo alcanza lo que el sitio de control necesita: el estado del sitio, las descripciones de su catálogo y los cambios indicados: la cola de descargas, las solicitudes de actualización y los cambios de espejos y HA para el agente del sitio. No puede descargar bytes de archivos, escribir en repositorios ni leer o cambiar cuentas y claves.
 - El controlador guarda las claves de flota selladas con una clave de su directorio de datos (`fleet.key`). La base de datos y sus copias de seguridad por sí solas no las revelan. Tras una restauración, empareje los sitios de nuevo.
 - Cada sitio muestra qué controladores lo gestionan y puede revocarlos en cualquier momento.
 
@@ -57,10 +57,11 @@ El sitio de control lo lee en el sitio con su clave de flota y muestra la respue
 
 ## Ajustes de un sitio {#site-settings}
 
-[[ui:fleetSettings]] en la fila de un sitio abre sus ajustes bajo la lista; [[ui:fleetThisSettings]] abre la misma tarjeta para este sitio. La tarjeta tiene dos partes:
+[[ui:fleetSettings]] en la fila de un sitio abre sus ajustes bajo la lista; [[ui:fleetThisSettings]] abre la misma tarjeta para este sitio. La tarjeta tiene tres partes:
 
 - **[[ui:fleetQueueSettings]]**: cuántas descargas van a la vez, plazas reservadas para personas, la estrategia, los pesos de las clases y los demás valores de la cola de [Control de tráfico](../reference/environment#transfers-and-bandwidth). Un campo vacío mantiene el valor del entorno del sitio, mostrado en gris. [[ui:fleetQueueSave]] aplica los valores al instante, sin reiniciar: las nuevas decisiones los siguen y las descargas activas conservan su lugar. [[ui:fleetQueueReset]] vuelve al entorno.
 - **[[ui:updates]]**: la versión instalada y la última, la instalación automática y la hora de mantenimiento, [[ui:updateCheck]] e [[ui:updateInstall]]. El actualizador del sitio toma una solicitud en menos de un minuto; hasta entonces la tarjeta la muestra como aceptada.
+- **[[ui:fleetAgent]]**: los espejos e importaciones del sitio con [[ui:fleetMirrorKeySave]] y [[ui:fleetMirrorDetach]], [[ui:fleetMirrorAttach]] con la clave de origen y, en un clúster HA, [[ui:fleetSwitchover]] a un nodo con copia completa (el nombre del nodo se escribe dos veces) y la decisión de una sola copia. El agente del sitio aplica cada solicitud en menos de un minuto con las comprobaciones y la reversión de `arkvory configure` y `cluster-*`; [[ui:fleetRequests]] muestra cómo terminó cada una. La clave de origen llega al agente una vez, en un archivo propio, y no vuelve a mostrarse. El agente es el actualizador del sitio: conéctelo con `updates-connect`.
 
 Cada cambio lleva la revisión de la que parte. Si alguien cambió los ajustes mientras tanto, el sitio rechaza el cambio y la tarjeta muestra los valores actuales: revíselos y guarde de nuevo. El sitio registra quién cambió su cola: la clave del sitio de control y el nombre de su administrador.
 
@@ -77,6 +78,6 @@ En [[ui:fleetThisSite]], cada sitio enumera los controladores que lo gestionan: 
 
 ## Límites {#limits}
 
-- Los espejos y la HA se siguen configurando en cada sitio, con su consola o `arkvory configure`; cambiarlos desde el sitio de control es el siguiente paso. Las pasarelas de lectura mantienen la cola de descargas de su entorno.
+- Las pruebas de aislamiento y añadir o retirar nodos del clúster siguen siendo comandos locales en los nodos. Las pasarelas de lectura mantienen la cola de descargas de su entorno.
 - Un controlador gestiona hasta 256 sitios y lee como mucho ocho a la vez.
 - El controlador tiene una clave de cada sitio que gestiona: proteja a sus administradores globales y su directorio de datos con el mismo cuidado que los propios sitios.

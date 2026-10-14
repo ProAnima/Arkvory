@@ -20,6 +20,7 @@ export const fleetReadRoutes = [
   // Stage F3: what the changes below need to be made with the current revision.
   '/api/v1/system/downloads/settings',
   '/api/v1/system/updates',
+  '/api/v1/system/changes',
 ] as const;
 
 /** One path segment: percent-encoded text without a slash, a dot segment or a control. */
@@ -49,6 +50,7 @@ export function isFleetReadPath(path: string): boolean {
 export const fleetChangeRoutes = [
   ['PUT', '/api/v1/system/downloads/settings'],
   ['POST', '/api/v1/system/updates/requests'],
+  ['POST', '/api/v1/system/changes'],
 ] as const;
 export type FleetChangeMethod = (typeof fleetChangeRoutes)[number][0];
 

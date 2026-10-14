@@ -4330,5 +4330,201 @@
   "fleetQueuePerRequest": {
     "en": "The strategy is shared: downloads are admitted one request at a time by the limits of the environment, and the session settings below wait unused until another strategy is chosen.",
     "text": "戦略は共有です。ダウンロードは環境の制限内でリクエストごとに受け付けられ、下のセッション設定は別の戦略を選ぶまで使われません。"
+  },
+  "fleetAgent": {
+    "en": "Mirrors and cluster",
+    "text": "ミラーとクラスター"
+  },
+  "fleetAgentHint": {
+    "en": "These changes are applied by the site’s agent with its own checks and rollback, within a minute; the list below shows how each ended.",
+    "text": "これらの変更は、サイトのエージェントが独自のチェックとロールバックを伴って1分以内に適用します。下の一覧で各変更の結果を確認できます。"
+  },
+  "fleetAgentMissing": {
+    "en": "The site’s agent does not report in: connect it on the site with updates-connect, or update the site to a release that applies these changes.",
+    "text": "サイトのエージェントから応答がありません。サイトで updates-connect を使って接続するか、これらの変更を適用できるリリースにサイトを更新してください。"
+  },
+  "fleetMirrorRepository": {
+    "en": "Repository",
+    "text": "リポジトリ"
+  },
+  "fleetMirrorSource": {
+    "en": "Source",
+    "text": "コピー元"
+  },
+  "fleetMirrorPhase": {
+    "en": "State",
+    "text": "状態"
+  },
+  "fleetMirrorNone": {
+    "en": "The site has no mirrors or imports.",
+    "text": "このサイトにはミラーもインポートもありません。"
+  },
+  "fleetMirrorKey": {
+    "en": "Source key",
+    "text": "コピー元のキー"
+  },
+  "fleetMirrorKeySave": {
+    "en": "Replace key",
+    "text": "キーを置き換える"
+  },
+  "fleetMirrorKeyFor": {
+    "en": "New source key for {repository}",
+    "text": "{repository} のコピー元の新しいキー"
+  },
+  "fleetMirrorAttach": {
+    "en": "Attach a mirror or an import",
+    "text": "ミラーまたはインポートを接続"
+  },
+  "fleetMirrorUpstream": {
+    "en": "Source address",
+    "text": "コピー元のアドレス"
+  },
+  "fleetMirrorSourceRepository": {
+    "en": "Source repository",
+    "text": "コピー元のリポジトリ"
+  },
+  "fleetMirrorStages": {
+    "en": "Import stages, comma-separated",
+    "text": "インポートするステージ（カンマ区切り）"
+  },
+  "fleetMirrorCertificate": {
+    "en": "Authority certificate of the source (PEM)",
+    "text": "コピー元の証明機関の証明書（PEM）"
+  },
+  "fleetMirrorAttachHint": {
+    "en": "Without stages the repository mirrors the source read-only; with stages it is an ordinary repository that takes over versions with those stages. The source is checked with the key before anything changes.",
+    "text": "ステージを指定しない場合、リポジトリはコピー元を読み取り専用でミラーします。ステージを指定すると、それらのステージが付いたバージョンを取り込む通常のリポジトリになります。変更の前に、キーでコピー元を確認します。"
+  },
+  "fleetMirrorAttachButton": {
+    "en": "Attach",
+    "text": "接続"
+  },
+  "fleetMirrorDetach": {
+    "en": "Detach",
+    "text": "切り離す"
+  },
+  "fleetMirrorDetachConfirm": {
+    "en": "Detach the mirror {repository}? It becomes an ordinary writable repository and keeps every artifact.",
+    "text": "ミラー {repository} を切り離しますか？書き込み可能な通常のリポジトリになり、すべてのアーティファクトは保持されます。"
+  },
+  "fleetMirrorImport": {
+    "en": "Import",
+    "text": "インポート"
+  },
+  "fleetMirrorMirror": {
+    "en": "Mirror",
+    "text": "ミラー"
+  },
+  "fleetMirrorInvalid": {
+    "en": "Check the fields: an HTTPS address of the source, repository names and up to 16 stages.",
+    "text": "フィールドを確認してください：コピー元の HTTPS アドレス、リポジトリ名、最大16個のステージ。"
+  },
+  "fleetCluster": {
+    "en": "HA cluster",
+    "text": "HA クラスター"
+  },
+  "fleetClusterState": {
+    "en": "Active node: {node}. Copies: {copies} of {required}.",
+    "text": "アクティブノード：{node}。コピー：{copies}/{required}。"
+  },
+  "fleetSwitchoverNode": {
+    "en": "Move to node",
+    "text": "移行先ノード"
+  },
+  "fleetSwitchoverConfirm": {
+    "en": "Node name again",
+    "text": "ノード名をもう一度"
+  },
+  "fleetSwitchover": {
+    "en": "Switch over",
+    "text": "切り替える"
+  },
+  "fleetSwitchoverTyped": {
+    "en": "Type the name of the target node again to confirm.",
+    "text": "確認のため、移行先ノードの名前をもう一度入力してください。"
+  },
+  "fleetSwitchoverAsk": {
+    "en": "Move Arkvory to {node}? Requests are interrupted for a short time while the node takes over.",
+    "text": "Arkvory を {node} に移しますか？ノードが引き継ぐ間、リクエストが短時間中断されます。"
+  },
+  "fleetSingleUntil": {
+    "en": "One copy until",
+    "text": "1つのコピーでの期限"
+  },
+  "fleetSingleReason": {
+    "en": "Reason",
+    "text": "理由"
+  },
+  "fleetSingleOn": {
+    "en": "Accept writes with one copy",
+    "text": "1つのコピーで書き込みを受け付ける"
+  },
+  "fleetSingleOff": {
+    "en": "Withdraw the decision",
+    "text": "決定を取り消す"
+  },
+  "fleetSingleInvalid": {
+    "en": "Give a time and a reason.",
+    "text": "日時と理由を入力してください。"
+  },
+  "fleetSingleAsk": {
+    "en": "Acknowledge writes with ONE copy until {until}? A second failure in that time loses them.",
+    "text": "{until} まで書き込みを1つのコピーだけで確認しますか？その間に2回目の障害が起きると、それらの書き込みは失われます。"
+  },
+  "fleetRequests": {
+    "en": "Requests to the agent",
+    "text": "エージェントへのリクエスト"
+  },
+  "fleetRequestKind": {
+    "en": "Change",
+    "text": "変更"
+  },
+  "fleetRequestBy": {
+    "en": "Who",
+    "text": "実行者"
+  },
+  "fleetRequestAt": {
+    "en": "When",
+    "text": "日時"
+  },
+  "fleetKindAttach": {
+    "en": "Attach mirror",
+    "text": "ミラーの接続"
+  },
+  "fleetKindKey": {
+    "en": "Replace key",
+    "text": "キーの置き換え"
+  },
+  "fleetKindDetach": {
+    "en": "Detach mirror",
+    "text": "ミラーの切り離し"
+  },
+  "fleetKindSwitchover": {
+    "en": "Switchover",
+    "text": "切り替え"
+  },
+  "fleetKindSingleCopy": {
+    "en": "Single copy",
+    "text": "単一コピー"
+  },
+  "fleetChangePending": {
+    "en": "Waiting for the agent",
+    "text": "エージェントを待機中"
+  },
+  "fleetChangeApplying": {
+    "en": "Applying",
+    "text": "適用中"
+  },
+  "fleetChangeDone": {
+    "en": "Done",
+    "text": "完了"
+  },
+  "fleetChangeFailed": {
+    "en": "Failed",
+    "text": "失敗"
+  },
+  "fleetChangeQueued": {
+    "en": "Queued. The site’s agent applies it within a minute.",
+    "text": "キューに追加しました。サイトのエージェントが1分以内に適用します。"
   }
 }

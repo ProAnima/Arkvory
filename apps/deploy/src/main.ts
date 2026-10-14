@@ -6,6 +6,7 @@ import { install, update, recover, upgrade, finishInstall, checkJournal } from '
 import { Services } from './services.js';
 import { deploymentHelp } from './help.js';
 import { createOwner } from './owner.js';
+import { pollChanges } from './site-changes.js';
 import { pollUpdates, resetUpdateRequest } from './update-control.js';
 import { prepareUpdateControl } from './update-setup.js';
 import { report } from './output.js';
@@ -166,9 +167,14 @@ async function applyInstaller(root: string, options: Map<string, string>): Promi
 /** The operations that change an installation; each runs under its operation lock. */
 async function locked(operation: string, root: string, options: Map<string, string>) {
   switch (operation) {
-    case 'updates-poll':
-      await pollUpdates(root);
+    case 'updates-poll': {
+      // Site changes (ADR 0077) share the tick and the lock; one failing does not stop the other.
+      const failures: unknown[] = [];
+      for (const poll of [pollUpdates, pollChanges])
+        await poll(root).catch((error: unknown) => failures.push(error));
+      if (failures.length) throw failures[0];
       break;
+    }
     case 'updates-reset':
       await resetUpdateRequest(root);
       break;

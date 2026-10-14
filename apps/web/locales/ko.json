@@ -4330,5 +4330,201 @@
   "fleetQueuePerRequest": {
     "en": "The strategy is shared: downloads are admitted one request at a time by the limits of the environment, and the session settings below wait unused until another strategy is chosen.",
     "text": "전략이 공유입니다: 다운로드는 환경의 한도 안에서 요청 단위로 허용되며, 아래 세션 설정은 다른 전략을 선택할 때까지 사용되지 않습니다."
+  },
+  "fleetAgent": {
+    "en": "Mirrors and cluster",
+    "text": "미러와 클러스터"
+  },
+  "fleetAgentHint": {
+    "en": "These changes are applied by the site’s agent with its own checks and rollback, within a minute; the list below shows how each ended.",
+    "text": "이 변경 사항은 사이트의 에이전트가 자체 검사와 롤백을 거쳐 1분 이내에 적용합니다. 아래 목록에서 각 변경의 결과를 볼 수 있습니다."
+  },
+  "fleetAgentMissing": {
+    "en": "The site’s agent does not report in: connect it on the site with updates-connect, or update the site to a release that applies these changes.",
+    "text": "사이트의 에이전트가 응답하지 않습니다. 사이트에서 updates-connect로 연결하거나, 이 변경 사항을 적용하는 릴리스로 사이트를 업데이트하세요."
+  },
+  "fleetMirrorRepository": {
+    "en": "Repository",
+    "text": "저장소"
+  },
+  "fleetMirrorSource": {
+    "en": "Source",
+    "text": "원본"
+  },
+  "fleetMirrorPhase": {
+    "en": "State",
+    "text": "상태"
+  },
+  "fleetMirrorNone": {
+    "en": "The site has no mirrors or imports.",
+    "text": "사이트에 미러나 가져오기가 없습니다."
+  },
+  "fleetMirrorKey": {
+    "en": "Source key",
+    "text": "원본 키"
+  },
+  "fleetMirrorKeySave": {
+    "en": "Replace key",
+    "text": "키 교체"
+  },
+  "fleetMirrorKeyFor": {
+    "en": "New source key for {repository}",
+    "text": "{repository}의 새 원본 키"
+  },
+  "fleetMirrorAttach": {
+    "en": "Attach a mirror or an import",
+    "text": "미러 또는 가져오기 연결"
+  },
+  "fleetMirrorUpstream": {
+    "en": "Source address",
+    "text": "원본 주소"
+  },
+  "fleetMirrorSourceRepository": {
+    "en": "Source repository",
+    "text": "원본 저장소"
+  },
+  "fleetMirrorStages": {
+    "en": "Import stages, comma-separated",
+    "text": "가져올 스테이지(쉼표로 구분)"
+  },
+  "fleetMirrorCertificate": {
+    "en": "Authority certificate of the source (PEM)",
+    "text": "원본의 인증 기관 인증서(PEM)"
+  },
+  "fleetMirrorAttachHint": {
+    "en": "Without stages the repository mirrors the source read-only; with stages it is an ordinary repository that takes over versions with those stages. The source is checked with the key before anything changes.",
+    "text": "스테이지가 없으면 저장소는 원본을 읽기 전용으로 미러링합니다. 스테이지가 있으면 해당 스테이지의 버전을 가져오는 일반 저장소가 됩니다. 변경하기 전에 키로 원본을 확인합니다."
+  },
+  "fleetMirrorAttachButton": {
+    "en": "Attach",
+    "text": "연결"
+  },
+  "fleetMirrorDetach": {
+    "en": "Detach",
+    "text": "분리"
+  },
+  "fleetMirrorDetachConfirm": {
+    "en": "Detach the mirror {repository}? It becomes an ordinary writable repository and keeps every artifact.",
+    "text": "미러 {repository}를 분리할까요? 쓰기 가능한 일반 저장소가 되며 모든 아티팩트를 유지합니다."
+  },
+  "fleetMirrorImport": {
+    "en": "Import",
+    "text": "가져오기"
+  },
+  "fleetMirrorMirror": {
+    "en": "Mirror",
+    "text": "미러"
+  },
+  "fleetMirrorInvalid": {
+    "en": "Check the fields: an HTTPS address of the source, repository names and up to 16 stages.",
+    "text": "필드를 확인하세요: 원본의 HTTPS 주소, 저장소 이름, 최대 16개의 스테이지."
+  },
+  "fleetCluster": {
+    "en": "HA cluster",
+    "text": "HA 클러스터"
+  },
+  "fleetClusterState": {
+    "en": "Active node: {node}. Copies: {copies} of {required}.",
+    "text": "활성 노드: {node}. 사본: {copies}/{required}."
+  },
+  "fleetSwitchoverNode": {
+    "en": "Move to node",
+    "text": "이동할 노드"
+  },
+  "fleetSwitchoverConfirm": {
+    "en": "Node name again",
+    "text": "노드 이름 다시 입력"
+  },
+  "fleetSwitchover": {
+    "en": "Switch over",
+    "text": "전환"
+  },
+  "fleetSwitchoverTyped": {
+    "en": "Type the name of the target node again to confirm.",
+    "text": "확인하려면 대상 노드 이름을 다시 입력하세요."
+  },
+  "fleetSwitchoverAsk": {
+    "en": "Move Arkvory to {node}? Requests are interrupted for a short time while the node takes over.",
+    "text": "Arkvory를 {node}로 이동할까요? 노드가 넘겨받는 동안 요청이 잠시 중단됩니다."
+  },
+  "fleetSingleUntil": {
+    "en": "One copy until",
+    "text": "복사본 하나 유지 기한"
+  },
+  "fleetSingleReason": {
+    "en": "Reason",
+    "text": "사유"
+  },
+  "fleetSingleOn": {
+    "en": "Accept writes with one copy",
+    "text": "복사본 하나로 쓰기 허용"
+  },
+  "fleetSingleOff": {
+    "en": "Withdraw the decision",
+    "text": "결정 철회"
+  },
+  "fleetSingleInvalid": {
+    "en": "Give a time and a reason.",
+    "text": "시간과 사유를 입력하세요."
+  },
+  "fleetSingleAsk": {
+    "en": "Acknowledge writes with ONE copy until {until}? A second failure in that time loses them.",
+    "text": "{until}까지 쓰기를 복사본 하나만으로 확인할까요? 그동안 두 번째 장애가 나면 해당 쓰기를 잃습니다."
+  },
+  "fleetRequests": {
+    "en": "Requests to the agent",
+    "text": "에이전트에 보낸 요청"
+  },
+  "fleetRequestKind": {
+    "en": "Change",
+    "text": "변경"
+  },
+  "fleetRequestBy": {
+    "en": "Who",
+    "text": "요청자"
+  },
+  "fleetRequestAt": {
+    "en": "When",
+    "text": "시각"
+  },
+  "fleetKindAttach": {
+    "en": "Attach mirror",
+    "text": "미러 연결"
+  },
+  "fleetKindKey": {
+    "en": "Replace key",
+    "text": "키 교체"
+  },
+  "fleetKindDetach": {
+    "en": "Detach mirror",
+    "text": "미러 분리"
+  },
+  "fleetKindSwitchover": {
+    "en": "Switchover",
+    "text": "전환"
+  },
+  "fleetKindSingleCopy": {
+    "en": "Single copy",
+    "text": "단일 복사본"
+  },
+  "fleetChangePending": {
+    "en": "Waiting for the agent",
+    "text": "에이전트 대기 중"
+  },
+  "fleetChangeApplying": {
+    "en": "Applying",
+    "text": "적용 중"
+  },
+  "fleetChangeDone": {
+    "en": "Done",
+    "text": "완료"
+  },
+  "fleetChangeFailed": {
+    "en": "Failed",
+    "text": "실패"
+  },
+  "fleetChangeQueued": {
+    "en": "Queued. The site’s agent applies it within a minute.",
+    "text": "대기열에 추가되었습니다. 사이트의 에이전트가 1분 이내에 적용합니다."
   }
 }

@@ -1071,6 +1071,22 @@
       },
       "summary": "تغيير إعدادات طابور التنزيلات",
       "description": "يحفظ `overrides` فوق بيئة الخادم ويطبقها دون إعادة تشغيل: تتبعها القرارات الجديدة فورًا وتحتفظ التنزيلات النشطة بأماكنها. تستبدل القيم المرسلة كل التغييرات السابقة؛ و`{}` يعيد إلى قيم البيئة. تُرفض الإعدادات التي لا يمكن تشغيلها هنا بالرمز 400 مع اسم الحقل؛ وتتلقى `expectedRevision` القديمة الرمز 409. تحتفظ بوابات القراءة ببيئتها."
+    },
+    "getSiteChanges": {
+      "en": {
+        "summary": "Read site changes",
+        "description": "Returns whether the site’s agent reports in (`agent`), the pending request and the 20 newest with their state: `pending`, `applying`, `done` or `failed` with a reason. Source keys never appear here."
+      },
+      "summary": "قراءة تغييرات الموقع",
+      "description": "يعيد ما إذا كان وكيل الموقع يُبلغ (`agent`)، والطلب المعلّق، وأحدث 20 طلبًا مع حالتها: `pending` أو `applying` أو `done` أو `failed` مع السبب. لا تظهر مفاتيح المصادر هنا أبدًا."
+    },
+    "requestSiteChange": {
+      "en": {
+        "summary": "Queue a site change",
+        "description": "Queues one change for the site’s agent, which applies it within a minute with the checks and rollback of `arkvory configure` and `cluster-*`: attach a mirror or an import, replace its source key, detach mirrors, switch the active HA node (the node name typed twice) or decide single-copy writes. `id` is chosen by the client; repeating it does not queue the change again. `key` is the source key of `mirror-attach` and `mirror-key` only: it goes to the agent in its own 0600 file and is never returned. 202 means queued, not applied."
+      },
+      "summary": "وضع تغيير للموقع في الطابور",
+      "description": "يضع تغييرًا واحدًا لوكيل الموقع، فيطبقه خلال دقيقة بفحوص `arkvory configure` و`cluster-*` وتراجعها: ربط مرآة أو استيراد، أو استبدال مفتاح مصدرها، أو فصل المرايا، أو تبديل عقدة HA النشطة (يُكتب اسم العقدة مرتين)، أو تقرير الكتابة بنسخة واحدة. يختار العميل `id`؛ وتكراره لا يضع التغيير مرة أخرى. `key` هو مفتاح المصدر لـ`mirror-attach` و`mirror-key` فقط: يصل إلى الوكيل في ملف 0600 خاص به ولا يُعاد أبدًا. يعني 202 أنه في الطابور لا أنه طُبّق."
     }
   },
   "errors": {

@@ -4330,5 +4330,201 @@
   "fleetQueuePerRequest": {
     "en": "The strategy is shared: downloads are admitted one request at a time by the limits of the environment, and the session settings below wait unused until another strategy is chosen.",
     "text": "La stratégie est partagée : les téléchargements sont admis requête par requête dans les limites de l’environnement, et les réglages de session ci-dessous restent inutilisés tant qu’une autre stratégie n’est pas choisie."
+  },
+  "fleetAgent": {
+    "en": "Mirrors and cluster",
+    "text": "Miroirs et cluster"
+  },
+  "fleetAgentHint": {
+    "en": "These changes are applied by the site’s agent with its own checks and rollback, within a minute; the list below shows how each ended.",
+    "text": "Ces changements sont appliqués par l’agent du site, avec ses propres vérifications et retour arrière, en moins d’une minute ; la liste ci-dessous indique l’issue de chacun."
+  },
+  "fleetAgentMissing": {
+    "en": "The site’s agent does not report in: connect it on the site with updates-connect, or update the site to a release that applies these changes.",
+    "text": "L’agent du site ne se manifeste pas : connectez-le sur le site avec updates-connect, ou mettez à jour le site vers une version qui applique ces changements."
+  },
+  "fleetMirrorRepository": {
+    "en": "Repository",
+    "text": "Dépôt"
+  },
+  "fleetMirrorSource": {
+    "en": "Source",
+    "text": "Source"
+  },
+  "fleetMirrorPhase": {
+    "en": "State",
+    "text": "État"
+  },
+  "fleetMirrorNone": {
+    "en": "The site has no mirrors or imports.",
+    "text": "Le site n’a ni miroir ni importation."
+  },
+  "fleetMirrorKey": {
+    "en": "Source key",
+    "text": "Clé de la source"
+  },
+  "fleetMirrorKeySave": {
+    "en": "Replace key",
+    "text": "Remplacer la clé"
+  },
+  "fleetMirrorKeyFor": {
+    "en": "New source key for {repository}",
+    "text": "Nouvelle clé de la source pour {repository}"
+  },
+  "fleetMirrorAttach": {
+    "en": "Attach a mirror or an import",
+    "text": "Rattacher un miroir ou une importation"
+  },
+  "fleetMirrorUpstream": {
+    "en": "Source address",
+    "text": "Adresse de la source"
+  },
+  "fleetMirrorSourceRepository": {
+    "en": "Source repository",
+    "text": "Dépôt de la source"
+  },
+  "fleetMirrorStages": {
+    "en": "Import stages, comma-separated",
+    "text": "Étapes d’importation, séparées par des virgules"
+  },
+  "fleetMirrorCertificate": {
+    "en": "Authority certificate of the source (PEM)",
+    "text": "Certificat de l’autorité de la source (PEM)"
+  },
+  "fleetMirrorAttachHint": {
+    "en": "Without stages the repository mirrors the source read-only; with stages it is an ordinary repository that takes over versions with those stages. The source is checked with the key before anything changes.",
+    "text": "Sans étapes, le dépôt reflète la source en lecture seule ; avec des étapes, c’est un dépôt ordinaire qui reprend les versions portant ces étapes. La source est vérifiée avec la clé avant toute modification."
+  },
+  "fleetMirrorAttachButton": {
+    "en": "Attach",
+    "text": "Rattacher"
+  },
+  "fleetMirrorDetach": {
+    "en": "Detach",
+    "text": "Détacher"
+  },
+  "fleetMirrorDetachConfirm": {
+    "en": "Detach the mirror {repository}? It becomes an ordinary writable repository and keeps every artifact.",
+    "text": "Détacher le miroir {repository} ? Il devient un dépôt ordinaire accessible en écriture et conserve tous ses artefacts."
+  },
+  "fleetMirrorImport": {
+    "en": "Import",
+    "text": "Importation"
+  },
+  "fleetMirrorMirror": {
+    "en": "Mirror",
+    "text": "Miroir"
+  },
+  "fleetMirrorInvalid": {
+    "en": "Check the fields: an HTTPS address of the source, repository names and up to 16 stages.",
+    "text": "Vérifiez les champs : une adresse HTTPS de la source, des noms de dépôt et jusqu’à 16 étapes."
+  },
+  "fleetCluster": {
+    "en": "HA cluster",
+    "text": "Cluster HA"
+  },
+  "fleetClusterState": {
+    "en": "Active node: {node}. Copies: {copies} of {required}.",
+    "text": "Nœud actif : {node}. Copies : {copies} sur {required}."
+  },
+  "fleetSwitchoverNode": {
+    "en": "Move to node",
+    "text": "Basculer vers le nœud"
+  },
+  "fleetSwitchoverConfirm": {
+    "en": "Node name again",
+    "text": "Nom du nœud à nouveau"
+  },
+  "fleetSwitchover": {
+    "en": "Switch over",
+    "text": "Basculer"
+  },
+  "fleetSwitchoverTyped": {
+    "en": "Type the name of the target node again to confirm.",
+    "text": "Saisissez à nouveau le nom du nœud cible pour confirmer."
+  },
+  "fleetSwitchoverAsk": {
+    "en": "Move Arkvory to {node}? Requests are interrupted for a short time while the node takes over.",
+    "text": "Basculer Arkvory vers {node} ? Les requêtes sont brièvement interrompues pendant que le nœud prend le relais."
+  },
+  "fleetSingleUntil": {
+    "en": "One copy until",
+    "text": "Une seule copie jusqu’au"
+  },
+  "fleetSingleReason": {
+    "en": "Reason",
+    "text": "Motif"
+  },
+  "fleetSingleOn": {
+    "en": "Accept writes with one copy",
+    "text": "Accepter les écritures avec une seule copie"
+  },
+  "fleetSingleOff": {
+    "en": "Withdraw the decision",
+    "text": "Retirer la décision"
+  },
+  "fleetSingleInvalid": {
+    "en": "Give a time and a reason.",
+    "text": "Indiquez une heure et un motif."
+  },
+  "fleetSingleAsk": {
+    "en": "Acknowledge writes with ONE copy until {until}? A second failure in that time loses them.",
+    "text": "Confirmer les écritures avec UNE seule copie jusqu’au {until} ? Une seconde panne pendant ce temps les fait perdre."
+  },
+  "fleetRequests": {
+    "en": "Requests to the agent",
+    "text": "Requêtes à l’agent"
+  },
+  "fleetRequestKind": {
+    "en": "Change",
+    "text": "Changement"
+  },
+  "fleetRequestBy": {
+    "en": "Who",
+    "text": "Qui"
+  },
+  "fleetRequestAt": {
+    "en": "When",
+    "text": "Quand"
+  },
+  "fleetKindAttach": {
+    "en": "Attach mirror",
+    "text": "Rattacher un miroir"
+  },
+  "fleetKindKey": {
+    "en": "Replace key",
+    "text": "Remplacer la clé"
+  },
+  "fleetKindDetach": {
+    "en": "Detach mirror",
+    "text": "Détacher un miroir"
+  },
+  "fleetKindSwitchover": {
+    "en": "Switchover",
+    "text": "Basculement"
+  },
+  "fleetKindSingleCopy": {
+    "en": "Single copy",
+    "text": "Copie unique"
+  },
+  "fleetChangePending": {
+    "en": "Waiting for the agent",
+    "text": "En attente de l’agent"
+  },
+  "fleetChangeApplying": {
+    "en": "Applying",
+    "text": "Application en cours"
+  },
+  "fleetChangeDone": {
+    "en": "Done",
+    "text": "Terminé"
+  },
+  "fleetChangeFailed": {
+    "en": "Failed",
+    "text": "Échec"
+  },
+  "fleetChangeQueued": {
+    "en": "Queued. The site’s agent applies it within a minute.",
+    "text": "En file d’attente. L’agent du site l’applique en moins d’une minute."
   }
 }

@@ -238,6 +238,19 @@ export async function switchover(
 }
 
 /**
+ * Ends a switchover a stopped agent left behind (ADR 0077, stage F3): the agent runs on the
+ * active node and a switchover moves it, so the next tick on the new node finishes the request.
+ * The move constraint is cleared either way; whether Arkvory reached `target` is the outcome.
+ */
+export async function finishSwitchover(target: string, tool: Tool = systemTool): Promise<boolean> {
+  const { resource } = await requireMarker();
+  await tool('crm_resource', ['--resource', resource, '--clear']);
+  return locatedOn(await tool('crm_resource', ['--resource', resource, '--locate'])).includes(
+    target,
+  );
+}
+
+/**
  * `arkvory cluster-fence-test --node <node>`: fences a standby to prove its fence device works.
  * The active node is refused: fencing it is a failover, which cluster-switchover does safely.
  */

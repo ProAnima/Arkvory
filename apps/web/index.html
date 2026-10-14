@@ -678,6 +678,127 @@
               </p>
               <output id="fleet-update-status" class="hint" aria-live="polite" hidden></output>
             </form>
+            <h3 data-i18n="fleetAgent">Зеркала и кластер</h3>
+            <p class="hint" data-i18n="fleetAgentHint"></p>
+            <p id="fleet-agent-missing" class="hint" data-i18n="fleetAgentMissing" hidden></p>
+            <div class="table" tabindex="0" role="region" data-i18n-label="tableRegion">
+              <table class="fleet-table">
+                <thead>
+                  <tr>
+                    <th scope="col" data-i18n="fleetMirrorRepository">Репозиторий</th>
+                    <th scope="col" data-i18n="fleetMirrorSource">Источник</th>
+                    <th scope="col" data-i18n="fleetMirrorPhase">Состояние</th>
+                    <th scope="col" data-i18n="fleetActions">Действия</th>
+                  </tr>
+                </thead>
+                <tbody id="fleet-mirror-rows"></tbody>
+              </table>
+            </div>
+            <p id="fleet-mirror-empty" class="hint" data-i18n="fleetMirrorNone" hidden></p>
+            <form id="fleet-mirror-key-form" class="fleet-settings" novalidate hidden>
+              <p id="fleet-mirror-key-title"></p>
+              <label
+                ><span data-i18n="fleetMirrorKey">Ключ источника</span
+                ><input id="fleet-mirror-key" type="password" autocomplete="off" required
+              /></label>
+              <p class="button-row">
+                <button data-i18n="fleetMirrorKeySave">Заменить ключ</button>
+                <button
+                  type="button"
+                  id="fleet-mirror-key-cancel"
+                  class="secondary"
+                  data-i18n="updateCancel"
+                >
+                  Отмена
+                </button>
+              </p>
+            </form>
+            <details>
+              <summary data-i18n="fleetMirrorAttach">Подключить зеркало или импорт</summary>
+              <form id="fleet-mirror-form" class="fleet-settings" novalidate>
+                <div class="fleet-fields">
+                  <label
+                    ><span data-i18n="fleetMirrorRepository">Репозиторий</span
+                    ><input id="fleet-mirror-repository" required autocomplete="off"
+                  /></label>
+                  <label
+                    ><span data-i18n="fleetMirrorUpstream">Адрес источника</span
+                    ><input id="fleet-mirror-upstream" type="url" required
+                  /></label>
+                  <label
+                    ><span data-i18n="fleetMirrorSourceRepository">Репозиторий источника</span
+                    ><input id="fleet-mirror-source" autocomplete="off"
+                  /></label>
+                  <label
+                    ><span data-i18n="fleetMirrorStages">Стадии импорта через запятую</span
+                    ><input id="fleet-mirror-stages" autocomplete="off"
+                  /></label>
+                  <label
+                    ><span data-i18n="fleetMirrorKey">Ключ источника</span
+                    ><input id="fleet-mirror-new-key" type="password" autocomplete="off" required
+                  /></label>
+                </div>
+                <label
+                  ><span data-i18n="fleetMirrorCertificate">Сертификат центра источника (PEM)</span
+                  ><textarea id="fleet-mirror-certificate" rows="3" spellcheck="false"></textarea>
+                </label>
+                <p class="hint" data-i18n="fleetMirrorAttachHint"></p>
+                <p class="button-row">
+                  <button data-i18n="fleetMirrorAttachButton">Подключить</button>
+                </p>
+              </form>
+            </details>
+            <div id="fleet-cluster" class="fleet-settings" hidden>
+              <h4 data-i18n="fleetCluster">Кластер HA</h4>
+              <p id="fleet-cluster-state"></p>
+              <form id="fleet-switchover-form" class="fleet-fields" novalidate>
+                <label
+                  ><span data-i18n="fleetSwitchoverNode">Перевести на узел</span
+                  ><select id="fleet-switchover-node"></select
+                ></label>
+                <label
+                  ><span data-i18n="fleetSwitchoverConfirm">Имя узла ещё раз</span
+                  ><input id="fleet-switchover-confirm" autocomplete="off"
+                /></label>
+                <p class="button-row"><button data-i18n="fleetSwitchover">Переключить</button></p>
+              </form>
+              <form id="fleet-single-form" class="fleet-fields" novalidate>
+                <label
+                  ><span data-i18n="fleetSingleUntil">Одна копия до</span
+                  ><input id="fleet-single-until" type="datetime-local"
+                /></label>
+                <label
+                  ><span data-i18n="fleetSingleReason">Причина</span
+                  ><input id="fleet-single-reason" maxlength="200" autocomplete="off"
+                /></label>
+                <p class="button-row">
+                  <button data-i18n="fleetSingleOn">Принимать запись с одной копией</button>
+                  <button
+                    type="button"
+                    id="fleet-single-off"
+                    class="secondary"
+                    data-i18n="fleetSingleOff"
+                  >
+                    Отменить решение
+                  </button>
+                </p>
+              </form>
+            </div>
+            <h4 data-i18n="fleetRequests">Запросы к агенту</h4>
+            <div class="table" tabindex="0" role="region" data-i18n-label="tableRegion">
+              <table class="fleet-table">
+                <thead>
+                  <tr>
+                    <th scope="col" data-i18n="fleetRequestKind">Изменение</th>
+                    <th scope="col" data-i18n="fleetState">Состояние</th>
+                    <th scope="col" data-i18n="fleetRequestBy">Кто</th>
+                    <th scope="col" data-i18n="fleetRequestAt">Когда</th>
+                  </tr>
+                </thead>
+                <tbody id="fleet-change-rows"></tbody>
+              </table>
+            </div>
+            <output id="fleet-agent-status" class="hint" aria-live="polite" hidden></output>
           </div>
           <div id="fleet-content" class="card padded" hidden>
             <div class="fleet-head">
