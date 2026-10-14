@@ -999,6 +999,46 @@
       },
       "summary": "与控制站点配对",
       "description": "用一个有效的配对码一次性换取集群密钥。控制站点通过固定在管理员确认的指纹上的 TLS 调用它。密钥只返回一次，只能访问控制站点所需的路由。"
+    },
+    "listFleetSites": {
+      "en": {
+        "summary": "List the managed sites",
+        "description": "Lists the sites this installation manages (ADR 0077) with what each last reported: `state` (`ok`, or why it was not read: `unreachable`, `certificate`, `revoked`, `invalid`, `refused`), when it was last seen, and its last `topology`. Sites are read every 30 seconds in the background. A site key is never returned."
+      },
+      "summary": "列出受管站点",
+      "description": "列出本安装管理的站点（ADR 0077）及每个站点最后报告的内容：`state`（`ok`，或未能读取的原因：`unreachable`、`certificate`、`revoked`、`invalid`、`refused`）、最后一次可见的时间以及最后的 `topology`。站点每 30 秒在后台读取一次。从不返回站点密钥。"
+    },
+    "addFleetSite": {
+      "en": {
+        "summary": "Pair with a site",
+        "description": "Pairs with a site: the controller connects again, the certificate must still have the `fingerprint` the administrator confirmed (null for HTTP on loopback), the pairing `code` made on the site is traded for a key, and the key is sealed with `ARKVORY_FLEET_KEY_FILE`. The site is read once before the answer. Without the key file the answer is 503."
+      },
+      "summary": "与站点配对",
+      "description": "与站点配对：控制站点重新连接，证书必须仍具有管理员确认的 `fingerprint`（loopback 上的 HTTP 为 null），在站点上生成的配对 `code` 被换成密钥，密钥用 `ARKVORY_FLEET_KEY_FILE` 封存。应答前读取一次站点。没有密钥文件时应答 503。"
+    },
+    "probeFleetSite": {
+      "en": {
+        "summary": "Read the certificate of a site",
+        "description": "Connects to the address and reads the certificate the site presents, without sending anything: compare its `fingerprint` with the one the site's administrator sees before you pair."
+      },
+      "summary": "读取站点证书",
+      "description": "连接到该地址并读取站点出示的证书，不发送任何内容：配对前将其 `fingerprint` 与站点管理员看到的指纹进行比较。"
+    },
+    "removeFleetSite": {
+      "en": {
+        "summary": "Forget a site",
+        "description": "Forgets a site and its sealed key here. Revoke this controller on the site as well; until then the key stays valid there."
+      },
+      "summary": "忘记站点",
+      "description": "在此处删除站点及其封存的密钥。也请在站点上撤销此控制站点；在此之前密钥在那里仍然有效。"
+    },
+    "refreshFleetSite": {
+      "en": {
+        "summary": "Read a site now",
+        "description": "Reads the site now instead of waiting for the next round and returns it with the new state."
+      },
+      "summary": "立即读取站点",
+      "description": "立即读取站点而不等待下一轮，并返回其新状态。"
     }
   },
   "errors": {

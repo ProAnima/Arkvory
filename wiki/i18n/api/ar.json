@@ -999,6 +999,46 @@
       },
       "summary": "الاقتران بوحدة تحكم",
       "description": "يستبدل رمز اقتران صالحًا بمفتاح أسطول مرة واحدة. تستدعيه وحدة التحكم عبر TLS مثبّت على البصمة التي أكدها المسؤول. يُعاد المفتاح مرة واحدة ولا يصل إلا إلى المسارات التي تحتاجها وحدة التحكم."
+    },
+    "listFleetSites": {
+      "en": {
+        "summary": "List the managed sites",
+        "description": "Lists the sites this installation manages (ADR 0077) with what each last reported: `state` (`ok`, or why it was not read: `unreachable`, `certificate`, `revoked`, `invalid`, `refused`), when it was last seen, and its last `topology`. Sites are read every 30 seconds in the background. A site key is never returned."
+      },
+      "summary": "سرد المواقع المُدارة",
+      "description": "يسرد المواقع التي يديرها هذا التثبيت (ADR 0077) وآخر ما أبلغ عنه كل منها: `state` (`ok` أو سبب تعذّر القراءة: `unreachable` أو `certificate` أو `revoked` أو `invalid` أو `refused`) ووقت آخر ظهور وآخر `topology`. تُقرأ المواقع كل 30 ثانية في الخلفية. لا يُعاد مفتاح الموقع أبدًا."
+    },
+    "addFleetSite": {
+      "en": {
+        "summary": "Pair with a site",
+        "description": "Pairs with a site: the controller connects again, the certificate must still have the `fingerprint` the administrator confirmed (null for HTTP on loopback), the pairing `code` made on the site is traded for a key, and the key is sealed with `ARKVORY_FLEET_KEY_FILE`. The site is read once before the answer. Without the key file the answer is 503."
+      },
+      "summary": "الاقتران بموقع",
+      "description": "يقترن بموقع: تتصل وحدة التحكم من جديد، ويجب أن تبقى للشهادة `fingerprint` التي أكدها المسؤول (null لـ HTTP على loopback)، ويُستبدل `code` الاقتران المُنشأ على الموقع بمفتاح يُختم بـ `ARKVORY_FLEET_KEY_FILE`. يُقرأ الموقع مرة واحدة قبل الرد. بدون ملف المفتاح يكون الرد 503."
+    },
+    "probeFleetSite": {
+      "en": {
+        "summary": "Read the certificate of a site",
+        "description": "Connects to the address and reads the certificate the site presents, without sending anything: compare its `fingerprint` with the one the site's administrator sees before you pair."
+      },
+      "summary": "قراءة شهادة موقع",
+      "description": "يتصل بالعنوان ويقرأ شهادة الموقع دون إرسال أي شيء: قارن `fingerprint` بما يراه مسؤول الموقع قبل الاقتران."
+    },
+    "removeFleetSite": {
+      "en": {
+        "summary": "Forget a site",
+        "description": "Forgets a site and its sealed key here. Revoke this controller on the site as well; until then the key stays valid there."
+      },
+      "summary": "نسيان موقع",
+      "description": "يحذف هنا الموقع ومفتاحه المختوم. أبطِل وحدة التحكم هذه على الموقع أيضًا؛ حتى ذلك الحين يبقى المفتاح صالحًا هناك."
+    },
+    "refreshFleetSite": {
+      "en": {
+        "summary": "Read a site now",
+        "description": "Reads the site now instead of waiting for the next round and returns it with the new state."
+      },
+      "summary": "قراءة موقع الآن",
+      "description": "يقرأ الموقع الآن بدل انتظار الجولة التالية ويعيده بحالته الجديدة."
     }
   },
   "errors": {

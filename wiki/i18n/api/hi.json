@@ -999,6 +999,46 @@
       },
       "summary": "नियंत्रक से युग्मित करें",
       "description": "एक वैध युग्मन कोड को एक बार फ़्लीट कुंजी से बदलता है। नियंत्रक इसे व्यवस्थापक द्वारा पुष्टि किए गए फ़िंगरप्रिंट पर पिन किए TLS से बुलाता है। कुंजी एक बार लौटाई जाती है और केवल नियंत्रक के लिए ज़रूरी रूट तक पहुँचती है।"
+    },
+    "listFleetSites": {
+      "en": {
+        "summary": "List the managed sites",
+        "description": "Lists the sites this installation manages (ADR 0077) with what each last reported: `state` (`ok`, or why it was not read: `unreachable`, `certificate`, `revoked`, `invalid`, `refused`), when it was last seen, and its last `topology`. Sites are read every 30 seconds in the background. A site key is never returned."
+      },
+      "summary": "प्रबंधित साइटों की सूची",
+      "description": "इस इंस्टॉलेशन द्वारा प्रबंधित साइटें (ADR 0077) और हर साइट की अंतिम रिपोर्ट: `state` (`ok`, या न पढ़े जाने का कारण: `unreachable`, `certificate`, `revoked`, `invalid`, `refused`), अंतिम बार कब दिखी, और उसकी अंतिम `topology`। साइटें हर 30 सेकंड पृष्ठभूमि में पढ़ी जाती हैं। साइट की कुंजी कभी नहीं लौटाई जाती।"
+    },
+    "addFleetSite": {
+      "en": {
+        "summary": "Pair with a site",
+        "description": "Pairs with a site: the controller connects again, the certificate must still have the `fingerprint` the administrator confirmed (null for HTTP on loopback), the pairing `code` made on the site is traded for a key, and the key is sealed with `ARKVORY_FLEET_KEY_FILE`. The site is read once before the answer. Without the key file the answer is 503."
+      },
+      "summary": "साइट से युग्मित करें",
+      "description": "साइट से युग्मन: नियंत्रक फिर से जुड़ता है, प्रमाणपत्र में अब भी व्यवस्थापक द्वारा पुष्टि किया `fingerprint` होना चाहिए (loopback पर HTTP के लिए null), साइट पर बना युग्मन `code` कुंजी से बदला जाता है, और कुंजी `ARKVORY_FLEET_KEY_FILE` से सील होती है। उत्तर से पहले साइट एक बार पढ़ी जाती है। कुंजी फ़ाइल के बिना उत्तर 503 है।"
+    },
+    "probeFleetSite": {
+      "en": {
+        "summary": "Read the certificate of a site",
+        "description": "Connects to the address and reads the certificate the site presents, without sending anything: compare its `fingerprint` with the one the site's administrator sees before you pair."
+      },
+      "summary": "साइट का प्रमाणपत्र पढ़ें",
+      "description": "पते से जुड़कर साइट का प्रमाणपत्र पढ़ता है, कुछ भी भेजे बिना: युग्मन से पहले उसका `fingerprint` साइट के व्यवस्थापक को दिखने वाले से मिलाएँ।"
+    },
+    "removeFleetSite": {
+      "en": {
+        "summary": "Forget a site",
+        "description": "Forgets a site and its sealed key here. Revoke this controller on the site as well; until then the key stays valid there."
+      },
+      "summary": "साइट भूल जाएँ",
+      "description": "यहाँ साइट और उसकी सील की हुई कुंजी हटाता है। साइट पर भी इस नियंत्रक को रद्द करें; तब तक कुंजी वहाँ मान्य रहती है।"
+    },
+    "refreshFleetSite": {
+      "en": {
+        "summary": "Read a site now",
+        "description": "Reads the site now instead of waiting for the next round and returns it with the new state."
+      },
+      "summary": "साइट अभी पढ़ें",
+      "description": "अगले दौर की प्रतीक्षा किए बिना साइट अभी पढ़ता है और नई स्थिति के साथ लौटाता है।"
     }
   },
   "errors": {

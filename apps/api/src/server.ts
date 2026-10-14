@@ -1,9 +1,14 @@
 import type { FastifyInstance } from 'fastify';
 import {
   DiagnosticLogger,
+  FleetSeal,
+  HttpFleetSiteClient,
+  PostgresFleetRegistry,
   PostgresFleetTrust,
   processIdentity,
 } from '@proanima/arkvory-infrastructure';
+import type { FleetControl } from '@proanima/arkvory-application';
+import { createFleetControl, registerFleetControlRoutes } from './fleet-control-routes.js';
 import type { PostgresCatalog, ProcessIdentity } from '@proanima/arkvory-infrastructure';
 import type { ServerConfig } from './config.js';
 import { ApiRuntime } from './api-runtime.js';
@@ -54,10 +59,12 @@ function registerMaintenance(
   services: ReturnType<typeof createApiServices>,
   responses: ResponseDiagnostics,
   diagnostics: DiagnosticLogger,
+  fleet: FleetControl,
 ) {
   return registerBackgroundTasks(app, {
     role: runtime.role,
     available: runtime.available,
+    fleet: () => fleet.pollAll(),
     maintain: async () => {
       try {
         await maintainStorage(
@@ -163,6 +170,7 @@ interface RouteParts {
   readonly policy: ReturnType<typeof resolveUploadTimeouts>;
   readonly diagnostics: DiagnosticLogger;
   readonly fleetTrust: PostgresFleetTrust;
+  readonly fleetControl: FleetControl;
 }
 
 /** Routes after the security hooks: errors, health, updates, feedback, the API and the console. */
@@ -172,6 +180,7 @@ function registerRoutes(app: FastifyInstance, parts: RouteParts) {
   registerHttpErrors(app, context);
   registerHealthRoutes(app, runtime, () => drain.isDraining, replica, context.principal);
   registerUpdateRoutes(app, context.principal, config.updateControlDirectory);
+  registerFleetControlRoutes(app, context.principal, parts.fleetControl);
   registerFleetRoutes(app, context.principal, {
     trust: parts.fleetTrust,
     name: config.siteName ?? 'arkvory',
@@ -244,6 +253,12 @@ export async function createServer(config: ServerConfig, lifecycle: ServerLifecy
     const context = createRequestContext(config.maxRequests, services.mirrors.readOnlyRepositories);
     const replica = replicaGuardFor(config.replicaSocket, runtime.role);
     const fleetTrust = new PostgresFleetTrust(runtime.catalog.pool);
+    const fleetControl = createFleetControl({
+      store: new PostgresFleetRegistry(runtime.catalog.pool),
+      client: new HttpFleetSiteClient(),
+      seal: config.fleetKeyFile ? await FleetSeal.fromFile(config.fleetKeyFile) : undefined,
+      controllerName: config.siteName ?? 'arkvory',
+    });
     const responses = new ResponseDiagnostics(diagnostics, services.storagePolicies, context);
     // Guard registration precedes feature routes and background startup.
     registerContractGuard(app);
@@ -260,9 +275,10 @@ export async function createServer(config: ServerConfig, lifecycle: ServerLifecy
       diagnostics,
       certificate,
       fleetTrust,
+      fleetControl,
     });
     registerCors(app, config.corsOrigins ?? []);
-    background = registerMaintenance(app, runtime, services, responses, diagnostics);
+    background = registerMaintenance(app, runtime, services, responses, diagnostics, fleetControl);
     app.addHook('onResponse', async (request, reply) => {
       responses.record(request, reply);
     });
@@ -290,6 +306,7 @@ export async function createServer(config: ServerConfig, lifecycle: ServerLifecy
       policy,
       diagnostics,
       fleetTrust,
+      fleetControl,
     });
     return await app;
   } catch (error) {

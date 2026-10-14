@@ -12,6 +12,7 @@ export type LogComponent =
   | 'backup'
   | 'mirror'
   | 'webhook'
+  | 'fleet'
   | 'migrate'
   | 'process'
   | 'diagnostics';

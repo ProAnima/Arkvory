@@ -999,6 +999,46 @@
       },
       "summary": "Сопрячь с управляющей площадкой",
       "description": "Один раз обменивает действующий код сопряжения на ключ управления. Управляющая площадка вызывает его по TLS, закреплённому на отпечатке, который подтвердил администратор. Ключ возвращается один раз и открывает только нужные управляющей площадке маршруты."
+    },
+    "listFleetSites": {
+      "en": {
+        "summary": "List the managed sites",
+        "description": "Lists the sites this installation manages (ADR 0077) with what each last reported: `state` (`ok`, or why it was not read: `unreachable`, `certificate`, `revoked`, `invalid`, `refused`), when it was last seen, and its last `topology`. Sites are read every 30 seconds in the background. A site key is never returned."
+      },
+      "summary": "Список управляемых площадок",
+      "description": "Перечисляет площадки, которыми управляет эта установка (ADR 0077), и что каждая сообщила последней: `state` (`ok` или почему не прочитана: `unreachable`, `certificate`, `revoked`, `invalid`, `refused`), когда отвечала последний раз и последнюю `topology`. Площадки опрашиваются в фоне каждые 30 секунд. Ключ площадки не возвращается никогда."
+    },
+    "addFleetSite": {
+      "en": {
+        "summary": "Pair with a site",
+        "description": "Pairs with a site: the controller connects again, the certificate must still have the `fingerprint` the administrator confirmed (null for HTTP on loopback), the pairing `code` made on the site is traded for a key, and the key is sealed with `ARKVORY_FLEET_KEY_FILE`. The site is read once before the answer. Without the key file the answer is 503."
+      },
+      "summary": "Подключить площадку",
+      "description": "Подключает площадку: управляющая площадка соединяется заново, сертификат должен по-прежнему иметь подтверждённый администратором `fingerprint` (null для HTTP на loopback), код сопряжения `code`, созданный на площадке, обменивается на ключ, ключ запечатывается `ARKVORY_FLEET_KEY_FILE`. До ответа площадка читается один раз. Без файла ключа ответ — 503."
+    },
+    "probeFleetSite": {
+      "en": {
+        "summary": "Read the certificate of a site",
+        "description": "Connects to the address and reads the certificate the site presents, without sending anything: compare its `fingerprint` with the one the site's administrator sees before you pair."
+      },
+      "summary": "Прочитать сертификат площадки",
+      "description": "Соединяется с адресом и читает сертификат площадки, ничего не отправляя: сравните его `fingerprint` с тем, что видит администратор площадки, перед сопряжением."
+    },
+    "removeFleetSite": {
+      "en": {
+        "summary": "Forget a site",
+        "description": "Forgets a site and its sealed key here. Revoke this controller on the site as well; until then the key stays valid there."
+      },
+      "summary": "Забыть площадку",
+      "description": "Удаляет площадку и её запечатанный ключ здесь. Отзовите эту управляющую площадку и на самой площадке: до тех пор ключ там действует."
+    },
+    "refreshFleetSite": {
+      "en": {
+        "summary": "Read a site now",
+        "description": "Reads the site now instead of waiting for the next round and returns it with the new state."
+      },
+      "summary": "Прочитать площадку сейчас",
+      "description": "Читает площадку сейчас, не дожидаясь следующего круга, и возвращает её с новым состоянием."
     }
   },
   "errors": {

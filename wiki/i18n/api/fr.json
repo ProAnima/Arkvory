@@ -999,6 +999,46 @@
       },
       "summary": "S’appairer à un contrôleur",
       "description": "Échange une seule fois un code d’appairage valide contre une clé de flotte. Le contrôleur l’appelle par TLS épinglé sur l’empreinte confirmée par l’administrateur. La clé est renvoyée une fois et n’atteint que les routes dont un contrôleur a besoin."
+    },
+    "listFleetSites": {
+      "en": {
+        "summary": "List the managed sites",
+        "description": "Lists the sites this installation manages (ADR 0077) with what each last reported: `state` (`ok`, or why it was not read: `unreachable`, `certificate`, `revoked`, `invalid`, `refused`), when it was last seen, and its last `topology`. Sites are read every 30 seconds in the background. A site key is never returned."
+      },
+      "summary": "Lister les sites gérés",
+      "description": "Liste les sites que gère cette installation (ADR 0077) avec ce que chacun a signalé en dernier : `state` (`ok`, ou pourquoi il n’a pas été lu : `unreachable`, `certificate`, `revoked`, `invalid`, `refused`), quand il a été vu pour la dernière fois et sa dernière `topology`. Les sites sont lus toutes les 30 secondes en arrière-plan. La clé d’un site n’est jamais renvoyée."
+    },
+    "addFleetSite": {
+      "en": {
+        "summary": "Pair with a site",
+        "description": "Pairs with a site: the controller connects again, the certificate must still have the `fingerprint` the administrator confirmed (null for HTTP on loopback), the pairing `code` made on the site is traded for a key, and the key is sealed with `ARKVORY_FLEET_KEY_FILE`. The site is read once before the answer. Without the key file the answer is 503."
+      },
+      "summary": "S’appairer avec un site",
+      "description": "Appaire un site : le contrôleur se reconnecte, le certificat doit toujours avoir l’`fingerprint` confirmée par l’administrateur (null pour HTTP en loopback), le `code` d’appairage créé sur le site est échangé contre une clé, scellée avec `ARKVORY_FLEET_KEY_FILE`. Le site est lu une fois avant la réponse. Sans fichier de clé, la réponse est 503."
+    },
+    "probeFleetSite": {
+      "en": {
+        "summary": "Read the certificate of a site",
+        "description": "Connects to the address and reads the certificate the site presents, without sending anything: compare its `fingerprint` with the one the site's administrator sees before you pair."
+      },
+      "summary": "Lire le certificat d’un site",
+      "description": "Se connecte à l’adresse et lit le certificat du site sans rien envoyer : comparez son `fingerprint` avec celle que voit l’administrateur du site avant l’appairage."
+    },
+    "removeFleetSite": {
+      "en": {
+        "summary": "Forget a site",
+        "description": "Forgets a site and its sealed key here. Revoke this controller on the site as well; until then the key stays valid there."
+      },
+      "summary": "Oublier un site",
+      "description": "Oublie ici un site et sa clé scellée. Révoquez aussi ce contrôleur sur le site ; jusque-là, la clé y reste valable."
+    },
+    "refreshFleetSite": {
+      "en": {
+        "summary": "Read a site now",
+        "description": "Reads the site now instead of waiting for the next round and returns it with the new state."
+      },
+      "summary": "Lire un site maintenant",
+      "description": "Lit le site maintenant au lieu d’attendre le prochain tour et le renvoie avec son nouvel état."
     }
   },
   "errors": {

@@ -999,6 +999,46 @@
       },
       "summary": "Parear com um controlador",
       "description": "Troca uma vez um código de pareamento válido por uma chave de frota. O controlador o chama por TLS fixado na impressão digital que o administrador confirmou. A chave é retornada uma vez e alcança só as rotas de que um controlador precisa."
+    },
+    "listFleetSites": {
+      "en": {
+        "summary": "List the managed sites",
+        "description": "Lists the sites this installation manages (ADR 0077) with what each last reported: `state` (`ok`, or why it was not read: `unreachable`, `certificate`, `revoked`, `invalid`, `refused`), when it was last seen, and its last `topology`. Sites are read every 30 seconds in the background. A site key is never returned."
+      },
+      "summary": "Listar os sites gerenciados",
+      "description": "Lista os sites que esta instalação gerencia (ADR 0077) com o que cada um informou por último: `state` (`ok`, ou por que não foi lido: `unreachable`, `certificate`, `revoked`, `invalid`, `refused`), quando foi visto pela última vez e sua última `topology`. Os sites são lidos a cada 30 segundos em segundo plano. A chave de um site nunca é retornada."
+    },
+    "addFleetSite": {
+      "en": {
+        "summary": "Pair with a site",
+        "description": "Pairs with a site: the controller connects again, the certificate must still have the `fingerprint` the administrator confirmed (null for HTTP on loopback), the pairing `code` made on the site is traded for a key, and the key is sealed with `ARKVORY_FLEET_KEY_FILE`. The site is read once before the answer. Without the key file the answer is 503."
+      },
+      "summary": "Parear com um site",
+      "description": "Pareia um site: o controlador conecta de novo, o certificado precisa ainda ter a `fingerprint` que o administrador confirmou (null para HTTP em loopback), o `code` de pareamento criado no site é trocado por uma chave, e a chave é selada com `ARKVORY_FLEET_KEY_FILE`. O site é lido uma vez antes da resposta. Sem o arquivo de chave a resposta é 503."
+    },
+    "probeFleetSite": {
+      "en": {
+        "summary": "Read the certificate of a site",
+        "description": "Connects to the address and reads the certificate the site presents, without sending anything: compare its `fingerprint` with the one the site's administrator sees before you pair."
+      },
+      "summary": "Ler o certificado de um site",
+      "description": "Conecta ao endereço e lê o certificado do site sem enviar nada: compare sua `fingerprint` com a que o administrador do site vê antes de parear."
+    },
+    "removeFleetSite": {
+      "en": {
+        "summary": "Forget a site",
+        "description": "Forgets a site and its sealed key here. Revoke this controller on the site as well; until then the key stays valid there."
+      },
+      "summary": "Esquecer um site",
+      "description": "Esquece aqui um site e sua chave selada. Revogue também este controlador no site; até lá a chave continua válida lá."
+    },
+    "refreshFleetSite": {
+      "en": {
+        "summary": "Read a site now",
+        "description": "Reads the site now instead of waiting for the next round and returns it with the new state."
+      },
+      "summary": "Ler um site agora",
+      "description": "Lê o site agora em vez de esperar a próxima rodada e o retorna com o novo estado."
     }
   },
   "errors": {

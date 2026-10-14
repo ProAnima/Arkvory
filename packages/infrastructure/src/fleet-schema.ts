@@ -37,7 +37,9 @@ export async function migrateFleet(client: PoolClient): Promise<void> {
       id uuid PRIMARY KEY,
       name varchar(63) NOT NULL,
       url varchar(255) NOT NULL UNIQUE,
-      pin char(64) NOT NULL,
+      -- SHA-256 of the pinned certificate's public key and the certificate; none on loopback HTTP.
+      pin char(64),
+      certificate text CHECK (certificate IS NULL OR length(certificate) <= 16384),
       key_box bytea NOT NULL,
       added_by varchar(160) NOT NULL,
       added_at timestamptz NOT NULL DEFAULT now(),

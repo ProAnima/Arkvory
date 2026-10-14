@@ -999,6 +999,46 @@
       },
       "summary": "コントローラーとペアリング",
       "description": "有効なペアリングコードを一度だけフリートキーと交換します。コントローラーは管理者が確認したフィンガープリントに固定した TLS で呼び出します。キーは一度だけ返され、コントローラーに必要なルートにだけ届きます。"
+    },
+    "listFleetSites": {
+      "en": {
+        "summary": "List the managed sites",
+        "description": "Lists the sites this installation manages (ADR 0077) with what each last reported: `state` (`ok`, or why it was not read: `unreachable`, `certificate`, `revoked`, `invalid`, `refused`), when it was last seen, and its last `topology`. Sites are read every 30 seconds in the background. A site key is never returned."
+      },
+      "summary": "管理しているサイトの一覧",
+      "description": "このインストールが管理するサイト（ADR 0077）と、各サイトが最後に報告した内容：`state`（`ok`、または読めなかった理由：`unreachable`、`certificate`、`revoked`、`invalid`、`refused`）、最後に確認できた時刻、最後の `topology`。サイトはバックグラウンドで30秒ごとに読み取ります。サイトのキーは返しません。"
+    },
+    "addFleetSite": {
+      "en": {
+        "summary": "Pair with a site",
+        "description": "Pairs with a site: the controller connects again, the certificate must still have the `fingerprint` the administrator confirmed (null for HTTP on loopback), the pairing `code` made on the site is traded for a key, and the key is sealed with `ARKVORY_FLEET_KEY_FILE`. The site is read once before the answer. Without the key file the answer is 503."
+      },
+      "summary": "サイトとペアリング",
+      "description": "サイトとペアリングします：コントローラーが再接続し、証明書は管理者が確認した `fingerprint` のままでなければなりません（loopback の HTTP は null）。サイトで作成したペアリング `code` をキーと交換し、キーは `ARKVORY_FLEET_KEY_FILE` で封印します。応答の前にサイトを一度読み取ります。キーファイルがなければ応答は 503 です。"
+    },
+    "probeFleetSite": {
+      "en": {
+        "summary": "Read the certificate of a site",
+        "description": "Connects to the address and reads the certificate the site presents, without sending anything: compare its `fingerprint` with the one the site's administrator sees before you pair."
+      },
+      "summary": "サイトの証明書を読む",
+      "description": "アドレスに接続し、何も送らずにサイトの証明書を読みます：ペアリング前に `fingerprint` をサイトの管理者が見ているものと比べてください。"
+    },
+    "removeFleetSite": {
+      "en": {
+        "summary": "Forget a site",
+        "description": "Forgets a site and its sealed key here. Revoke this controller on the site as well; until then the key stays valid there."
+      },
+      "summary": "サイトを忘れる",
+      "description": "ここでサイトと封印されたキーを削除します。サイト側でもこのコントローラーを取り消してください。それまでキーはそこで有効です。"
+    },
+    "refreshFleetSite": {
+      "en": {
+        "summary": "Read a site now",
+        "description": "Reads the site now instead of waiting for the next round and returns it with the new state."
+      },
+      "summary": "今すぐサイトを読む",
+      "description": "次の巡回を待たずに今サイトを読み、新しい状態で返します。"
     }
   },
   "errors": {

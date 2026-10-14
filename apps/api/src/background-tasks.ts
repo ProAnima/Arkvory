@@ -7,6 +7,8 @@ interface Tasks {
   available: () => boolean;
   maintain: () => Promise<void>;
   collect?: () => Promise<void>;
+  /** Reads the managed sites (ADR 0077); writer only, one round at a time. */
+  fleet?: () => Promise<void>;
   flush: () => Promise<void>;
   close: () => void;
   diagnostics: Pick<DiagnosticLogger, 'write'>;
@@ -17,6 +19,8 @@ export function registerBackgroundTasks(app: FastifyInstance, tasks: Tasks) {
   let maintenance: Promise<void> | undefined;
   let flushing: Promise<void> | undefined;
   let collecting: Promise<void> | undefined;
+  let polling: Promise<void> | undefined;
+  let fleetTimer: ReturnType<typeof setInterval> | undefined;
   let collectionTimer: ReturnType<typeof setInterval> | undefined;
   let timer: ReturnType<typeof setInterval> | undefined;
   let flushTimer: ReturnType<typeof setInterval> | undefined;
@@ -40,6 +44,25 @@ export function registerBackgroundTasks(app: FastifyInstance, tasks: Tasks) {
           });
       }, 5000);
       collectionTimer.unref();
+    }
+    const fleet = tasks.fleet;
+    if (tasks.role === 'api' && fleet) {
+      fleetTimer = setInterval(() => {
+        if (polling || !tasks.available()) return;
+        polling = fleet()
+          .catch((error: unknown) => {
+            tasks.diagnostics.write({
+              level: 'warning',
+              component: 'fleet',
+              code: 'fleet.poll_failed',
+              ...failureCause(error),
+            });
+          })
+          .finally(() => {
+            polling = undefined;
+          });
+      }, 30000);
+      fleetTimer.unref();
     }
     if (tasks.role === 'api')
       timer = setInterval(() => {
@@ -72,8 +95,10 @@ export function registerBackgroundTasks(app: FastifyInstance, tasks: Tasks) {
     clearInterval(timer);
     clearInterval(flushTimer);
     clearInterval(collectionTimer);
+    clearInterval(fleetTimer);
     try {
       await collecting;
+      await polling;
       await maintenance;
       await flushing;
       // One final batch only; stdout already contains all accepted diagnostics.

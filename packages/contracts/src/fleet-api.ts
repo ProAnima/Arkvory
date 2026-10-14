@@ -13,6 +13,11 @@ export const fleetOperations = [
     'idempotent',
   ],
   ['/system/fleet/enrollment', 'post', 'enrollFleetController', 'public', 'never-automatic'],
+  ['/fleet/sites', 'get', 'listFleetSites', 'administrator', 'read'],
+  ['/fleet/sites', 'post', 'addFleetSite', 'administrator', 'never-automatic'],
+  ['/fleet/sites/probe', 'post', 'probeFleetSite', 'administrator', 'idempotent'],
+  ['/fleet/sites/{id}', 'delete', 'removeFleetSite', 'administrator', 'idempotent'],
+  ['/fleet/sites/{id}/refresh', 'post', 'refreshFleetSite', 'administrator', 'idempotent'],
 ] as const;
 
 const object = (properties: Record<string, unknown>, optional: readonly string[] = []) => ({
@@ -95,7 +100,96 @@ const controller = object({
 });
 const json = (schema: unknown) => ({ 'application/json': { schema } });
 
+const fingerprint = { type: 'string', pattern: '^[0-9a-f]{64}$' };
+const siteId = { type: 'string', format: 'uuid' };
+/** A managed site as the controller shows it: never its key. */
+export const fleetSiteSchema = object({
+  id: siteId,
+  name: text,
+  url: text,
+  fingerprint: nullable(fingerprint),
+  addedBy: text,
+  addedAt: time,
+  seenAt: nullable(time),
+  state: {
+    type: 'string',
+    enum: ['pending', 'ok', 'unreachable', 'certificate', 'revoked', 'invalid', 'refused'],
+  },
+  error: nullable(text),
+  topology: nullable(topologySchema),
+});
+const idParameter = {
+  name: 'id',
+  in: 'path',
+  required: true,
+  schema: siteId,
+};
+
 export const fleetPaths = {
+  '/api/v1/fleet/sites': {
+    get: {
+      summary: 'List the sites this installation manages, with the state each last reported',
+      responses: {
+        200: {
+          description: 'Sites by name',
+          content: json(
+            object({ items: { type: 'array', maxItems: 256, items: fleetSiteSchema } }),
+          ),
+        },
+      },
+    },
+    post: {
+      summary:
+        'Pair with a site: its certificate must match the confirmed fingerprint, the code is traded for a key that stays sealed here',
+      requestBody: {
+        required: true,
+        content: json(
+          object({
+            url: text,
+            fingerprint: nullable(fingerprint),
+            code: { type: 'string', maxLength: 32 },
+          }),
+        ),
+      },
+      responses: { 201: { description: 'Paired and read once', content: json(fleetSiteSchema) } },
+    },
+  },
+  '/api/v1/fleet/sites/probe': {
+    post: {
+      summary:
+        'Read the certificate a site presents, to compare its fingerprint with the one the site shows before pairing',
+      requestBody: { required: true, content: json(object({ url: text })) },
+      responses: {
+        200: {
+          description: 'Null certificate for plain HTTP on loopback',
+          content: json(
+            object({
+              url: text,
+              certificate: nullable(
+                object({ fingerprint, subject: text, issuer: text, validTo: time }),
+              ),
+            }),
+          ),
+        },
+      },
+    },
+  },
+  '/api/v1/fleet/sites/{id}': {
+    parameters: [idParameter],
+    delete: {
+      summary: 'Forget a site here; revoke this controller on the site as well',
+      responses: { 204: { description: 'Forgotten' } },
+    },
+  },
+  '/api/v1/fleet/sites/{id}/refresh': {
+    parameters: [idParameter],
+    post: {
+      summary: 'Read a site now instead of waiting for the next background round',
+      responses: {
+        200: { description: 'The site after reading it', content: json(fleetSiteSchema) },
+      },
+    },
+  },
   '/api/v1/system/fleet/pairings': {
     post: {
       summary:

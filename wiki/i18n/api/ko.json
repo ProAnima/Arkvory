@@ -999,6 +999,46 @@
       },
       "summary": "컨트롤러와 페어링",
       "description": "유효한 페어링 코드를 한 번 플릿 키로 교환합니다. 컨트롤러는 관리자가 확인한 지문에 고정된 TLS로 호출합니다. 키는 한 번만 반환되며 컨트롤러에 필요한 경로에만 접근합니다."
+    },
+    "listFleetSites": {
+      "en": {
+        "summary": "List the managed sites",
+        "description": "Lists the sites this installation manages (ADR 0077) with what each last reported: `state` (`ok`, or why it was not read: `unreachable`, `certificate`, `revoked`, `invalid`, `refused`), when it was last seen, and its last `topology`. Sites are read every 30 seconds in the background. A site key is never returned."
+      },
+      "summary": "관리되는 사이트 목록",
+      "description": "이 설치가 관리하는 사이트(ADR 0077)와 각 사이트가 마지막으로 보고한 내용: `state`(`ok` 또는 읽지 못한 이유: `unreachable`, `certificate`, `revoked`, `invalid`, `refused`), 마지막으로 확인된 시각, 마지막 `topology`. 사이트는 백그라운드에서 30초마다 읽습니다. 사이트 키는 절대 반환하지 않습니다."
+    },
+    "addFleetSite": {
+      "en": {
+        "summary": "Pair with a site",
+        "description": "Pairs with a site: the controller connects again, the certificate must still have the `fingerprint` the administrator confirmed (null for HTTP on loopback), the pairing `code` made on the site is traded for a key, and the key is sealed with `ARKVORY_FLEET_KEY_FILE`. The site is read once before the answer. Without the key file the answer is 503."
+      },
+      "summary": "사이트와 페어링",
+      "description": "사이트와 페어링합니다: 컨트롤러가 다시 연결하고, 인증서는 여전히 관리자가 확인한 `fingerprint`를 가져야 하며(loopback의 HTTP는 null), 사이트에서 만든 페어링 `code`를 키로 교환하고, 키는 `ARKVORY_FLEET_KEY_FILE`로 봉인됩니다. 응답 전에 사이트를 한 번 읽습니다. 키 파일이 없으면 응답은 503입니다."
+    },
+    "probeFleetSite": {
+      "en": {
+        "summary": "Read the certificate of a site",
+        "description": "Connects to the address and reads the certificate the site presents, without sending anything: compare its `fingerprint` with the one the site's administrator sees before you pair."
+      },
+      "summary": "사이트 인증서 읽기",
+      "description": "주소에 연결해 아무것도 보내지 않고 사이트의 인증서를 읽습니다: 페어링 전에 `fingerprint`를 사이트 관리자가 보는 값과 비교하세요."
+    },
+    "removeFleetSite": {
+      "en": {
+        "summary": "Forget a site",
+        "description": "Forgets a site and its sealed key here. Revoke this controller on the site as well; until then the key stays valid there."
+      },
+      "summary": "사이트 잊기",
+      "description": "여기서 사이트와 봉인된 키를 삭제합니다. 사이트에서도 이 컨트롤러를 철회하세요. 그때까지 키는 그곳에서 유효합니다."
+    },
+    "refreshFleetSite": {
+      "en": {
+        "summary": "Read a site now",
+        "description": "Reads the site now instead of waiting for the next round and returns it with the new state."
+      },
+      "summary": "지금 사이트 읽기",
+      "description": "다음 차례를 기다리지 않고 지금 사이트를 읽어 새 상태로 반환합니다."
     }
   },
   "errors": {

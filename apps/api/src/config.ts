@@ -42,6 +42,8 @@ export interface ServerConfig extends UploadTimeoutOptions, OperabilityOptions {
   readonly downloadHoldSeconds?: number;
   /** ADR 0077: how this installation is named in a fleet; the host name by default. */
   readonly siteName?: string;
+  /** ADR 0077: seals the keys of managed sites; without it this installation manages none. */
+  readonly fleetKeyFile?: string;
   readonly uploadBytesPerSecond?: number;
   readonly downloadBytesPerSecond?: number;
   readonly uploadBytesPerSecondPerPrincipal?: number;
@@ -220,6 +222,7 @@ export async function loadConfig(env: NodeJS.ProcessEnv): Promise<ServerConfig> 
       ? { updateControlDirectory: env['ARKVORY_UPDATE_CONTROL_DIR'] }
       : {}),
     siteName: readSiteName(env),
+    ...(env['ARKVORY_FLEET_KEY_FILE'] ? { fleetKeyFile: env['ARKVORY_FLEET_KEY_FILE'] } : {}),
     host: env['ARKVORY_HOST'] ?? '127.0.0.1',
     port: number('ARKVORY_PORT', 8080, 65535),
     ...readTls(env),

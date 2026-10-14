@@ -999,6 +999,46 @@
       },
       "summary": "Mit einem Controller koppeln",
       "description": "Tauscht einen gültigen Kopplungscode einmal gegen einen Flottenschlüssel. Der Controller ruft dies über TLS auf, das auf den vom Administrator bestätigten Fingerabdruck festgelegt ist. Der Schlüssel wird einmal zurückgegeben und erreicht nur die Routen, die ein Controller braucht."
+    },
+    "listFleetSites": {
+      "en": {
+        "summary": "List the managed sites",
+        "description": "Lists the sites this installation manages (ADR 0077) with what each last reported: `state` (`ok`, or why it was not read: `unreachable`, `certificate`, `revoked`, `invalid`, `refused`), when it was last seen, and its last `topology`. Sites are read every 30 seconds in the background. A site key is never returned."
+      },
+      "summary": "Verwaltete Standorte auflisten",
+      "description": "Listet die Standorte, die diese Installation verwaltet (ADR 0077), mit dem, was jeder zuletzt gemeldet hat: `state` (`ok` oder warum er nicht gelesen wurde: `unreachable`, `certificate`, `revoked`, `invalid`, `refused`), wann er zuletzt gesehen wurde, und seine letzte `topology`. Standorte werden alle 30 Sekunden im Hintergrund gelesen. Ein Standortschlüssel wird nie zurückgegeben."
+    },
+    "addFleetSite": {
+      "en": {
+        "summary": "Pair with a site",
+        "description": "Pairs with a site: the controller connects again, the certificate must still have the `fingerprint` the administrator confirmed (null for HTTP on loopback), the pairing `code` made on the site is traded for a key, and the key is sealed with `ARKVORY_FLEET_KEY_FILE`. The site is read once before the answer. Without the key file the answer is 503."
+      },
+      "summary": "Mit einem Standort koppeln",
+      "description": "Koppelt einen Standort: der Controller verbindet sich erneut, das Zertifikat muss noch den vom Administrator bestätigten `fingerprint` haben (null für HTTP auf Loopback), der am Standort erstellte Kopplungs-`code` wird gegen einen Schlüssel getauscht und dieser mit `ARKVORY_FLEET_KEY_FILE` versiegelt. Vor der Antwort wird der Standort einmal gelesen. Ohne Schlüsseldatei lautet die Antwort 503."
+    },
+    "probeFleetSite": {
+      "en": {
+        "summary": "Read the certificate of a site",
+        "description": "Connects to the address and reads the certificate the site presents, without sending anything: compare its `fingerprint` with the one the site's administrator sees before you pair."
+      },
+      "summary": "Zertifikat eines Standorts lesen",
+      "description": "Verbindet sich mit der Adresse und liest das Zertifikat des Standorts, ohne etwas zu senden: vergleichen Sie seinen `fingerprint` vor dem Koppeln mit dem, den der Administrator des Standorts sieht."
+    },
+    "removeFleetSite": {
+      "en": {
+        "summary": "Forget a site",
+        "description": "Forgets a site and its sealed key here. Revoke this controller on the site as well; until then the key stays valid there."
+      },
+      "summary": "Standort vergessen",
+      "description": "Vergisst hier einen Standort und seinen versiegelten Schlüssel. Widerrufen Sie diesen Controller auch am Standort; bis dahin bleibt der Schlüssel dort gültig."
+    },
+    "refreshFleetSite": {
+      "en": {
+        "summary": "Read a site now",
+        "description": "Reads the site now instead of waiting for the next round and returns it with the new state."
+      },
+      "summary": "Standort jetzt lesen",
+      "description": "Liest den Standort jetzt, statt auf die nächste Runde zu warten, und gibt ihn mit dem neuen Zustand zurück."
     }
   },
   "errors": {
