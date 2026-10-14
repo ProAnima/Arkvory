@@ -82,10 +82,32 @@ export interface TransferPolicy {
   readonly attemptTimeoutMs?: number;
   readonly baseDelayMs?: number;
   readonly maxDelayMs?: number;
+  /** Default of TransferOptions.waitLimitMs for every operation of a client. */
+  readonly waitLimitMs?: number;
+  /** Default of TransferOptions.onWait for every operation of a client. */
+  readonly onWait?: TransferOptions['onWait'];
 }
 export interface TransferOptions {
   readonly signal?: AbortSignal;
   readonly onRetry?: (event: { attempt: number; delayMs: number }) => void;
+  /**
+   * How long one operation may wait in total for a server that answered `busy` (503) or
+   * `rate_limited` (429) with Retry-After. Unset: as long as the server asks (ADR 0076); the
+   * signal still cancels. Such waits never use the retry budget, which is for failures.
+   */
+  readonly waitLimitMs?: number;
+  /** Called before each wait the server asked for, e.g. to show that the download is queued. */
+  readonly onWait?: (event: { delayMs: number; waitedMs: number }) => void;
+}
+
+/** The server's own "come later": its queue or limit is full, nothing failed (ADR 0076). */
+export function serverAskedToWait(failure: unknown): failure is ArkvoryHttpError {
+  return (
+    failure instanceof ArkvoryHttpError &&
+    failure.retryAfterMs !== undefined &&
+    ((failure.status === 503 && failure.code === 'busy') ||
+      (failure.status === 429 && failure.code === 'rate_limited'))
+  );
 }
 
 function bounded(value: number | undefined, fallback: number, min: number, max: number) {
@@ -103,6 +125,10 @@ export function transferPolicy(policy: TransferPolicy) {
     attemptTimeoutMs: bounded(policy.attemptTimeoutMs, 120_000, 1, 1_800_000),
     baseDelayMs,
     maxDelayMs: bounded(policy.maxDelayMs, 60_000, baseDelayMs, 60_000),
+    ...(policy.waitLimitMs === undefined
+      ? {}
+      : { waitLimitMs: bounded(policy.waitLimitMs, 0, 0, Number.MAX_SAFE_INTEGER) }),
+    ...(policy.onWait ? { onWait: policy.onWait } : {}),
   };
 }
 
@@ -134,6 +160,7 @@ export async function delay(ms: number, signal?: AbortSignal) {
 /** Only wrap explicitly idempotent operations. Includes response-body consumption. */
 export class TransferAttempts {
   private retries = 0;
+  private waitedMs = 0;
   constructor(
     private readonly policy: ReturnType<typeof transferPolicy>,
     private readonly options: TransferOptions,
@@ -161,6 +188,12 @@ export class TransferAttempts {
         clearTimeout(timer);
       }
       this.options.signal?.throwIfAborted();
+      if (serverAskedToWait(failure)) {
+        await this.waitAsAsked(failure);
+        // Waiting is no attempt: the request's own attempts stay for real failures.
+        attempt--;
+        continue;
+      }
       // 500 internal is a server defect, not a transient state: it is never retried.
       const retryable =
         failure instanceof ArkvoryNetworkError ||
@@ -183,6 +216,23 @@ export class TransferAttempts {
       await delay(wait, this.options.signal);
     }
   }
+
+  private async waitAsAsked(failure: ArkvoryHttpError): Promise<void> {
+    const wait = waitDelay(this.policy.baseDelayMs, failure.retryAfterMs ?? 0, Math.random);
+    const limit = this.options.waitLimitMs ?? this.policy.waitLimitMs;
+    if (limit !== undefined && this.waitedMs + wait > limit) throw failure;
+    (this.options.onWait ?? this.policy.onWait)?.({ delayMs: wait, waitedMs: this.waitedMs });
+    await delay(wait, this.options.signal);
+    this.waitedMs += wait;
+  }
+}
+
+/**
+ * Waits as long as the server asked, plus up to half of it at random so refused clients spread
+ * out, and at least the base delay so a zero Retry-After does not spin.
+ */
+export function waitDelay(baseDelayMs: number, retryAfterMs: number, random: () => number) {
+  return Math.max(baseDelayMs, Math.floor(retryAfterMs + (random() * retryAfterMs) / 2));
 }
 
 /**

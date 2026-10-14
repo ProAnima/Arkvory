@@ -265,6 +265,41 @@ test('bounded retries, Retry-After, cancellation and attempt deadlines', async (
   });
 });
 
+test('a busy server is waited for as long as it asks, without using the retry budget', async (t) => {
+  const bytes = Buffer.from('queued download'),
+    meta = artifact(bytes);
+  let refusals = 0;
+  const busy = (res) => {
+    res.writeHead(503, { 'content-type': 'application/json', 'Retry-After': '0' });
+    res.end(JSON.stringify({ code: 'busy', message: 'Transfer queue is full', requestId: 'r' }));
+  };
+  // 25 refusals: more than maxAttempts (3) and maxRetries (20) together would allow.
+  const { client } = await serve(t, (req, res) => {
+    if (!req.url.endsWith('/content')) return res.end(JSON.stringify(meta));
+    if (refusals < 25) {
+      refusals++;
+      return busy(res);
+    }
+    res.end(range(req, res, bytes, meta));
+  });
+  const waits = [];
+  const stream = await client.downloadVerified('releases', meta.id, {
+    onWait: (event) => waits.push(event),
+    onRetry: () => assert.fail('a wait the server asked for is no retry'),
+  });
+  assert.deepEqual(await contents(stream), bytes);
+  assert.equal(waits.length, 25);
+  assert.ok(
+    waits.every((event, index) => index === 0 || event.waitedMs >= waits[index - 1].waitedMs),
+  );
+  // The caller's limit still ends it, with the server's own answer.
+  refusals = 0;
+  await assert.rejects(
+    client.downloadVerified('releases', meta.id, { waitLimitMs: 0 }).then(contents),
+    { status: 503, code: 'busy' },
+  );
+});
+
 test('one download shares the retry budget across all ranges', async (t) => {
   const bytes = Buffer.alloc(partBytes + 1, 0x49),
     meta = artifact(bytes),

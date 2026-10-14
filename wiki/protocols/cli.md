@@ -58,18 +58,19 @@ The server URL must use HTTPS. Plain HTTP is allowed only for `localhost`, `127.
 
 ## Global options {#global-options}
 
-| Option                     | Default          | Meaning                                                                                       |
-| -------------------------- | ---------------- | --------------------------------------------------------------------------------------------- |
-| `--profile NAME`           | active profile   | Profile for this command only                                                                 |
-| `--repository NAME`        | from the profile | Repository for this command only                                                              |
-| `--json`                   | off              | One compact JSON result on stdout; errors as JSON on stderr                                   |
-| `--lang en` or `--lang ru` | from `LANG`      | Language of help and messages                                                                 |
-| `--timeout MS`             | 60000            | Limit for management requests (1 to 3600000)                                                  |
-| `--attempt-timeout MS`     | 120000           | Limit for one transfer attempt (1 to 1800000)                                                 |
-| `--retries N`              | 20               | Network retries for one operation (0 to 100); `0` turns them off                              |
-| `--verbose`                | off              | One stderr line per HTTP request: method, path, status, time, request ID. No headers or keys. |
-| `--help`, `--version`      |                  | Help; client version as JSON                                                                  |
-| `--`                       |                  | Ends options, for file names that start with `-`                                              |
+| Option                     | Default          | Meaning                                                                                                             |
+| -------------------------- | ---------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `--profile NAME`           | active profile   | Profile for this command only                                                                                       |
+| `--repository NAME`        | from the profile | Repository for this command only                                                                                    |
+| `--json`                   | off              | One compact JSON result on stdout; errors as JSON on stderr                                                         |
+| `--lang en` or `--lang ru` | from `LANG`      | Language of help and messages                                                                                       |
+| `--timeout MS`             | 60000            | Limit for management requests (1 to 3600000)                                                                        |
+| `--attempt-timeout MS`     | 120000           | Limit for one transfer attempt (1 to 1800000)                                                                       |
+| `--retries N`              | 20               | Network retries for one operation (0 to 100); `0` turns them off                                                    |
+| `--wait-limit MS`          | none             | How long one operation may wait in total for a busy server. Without it, the client waits as long as the server asks |
+| `--verbose`                | off              | One stderr line per HTTP request: method, path, status, time, request ID. No headers or keys.                       |
+| `--help`, `--version`      |                  | Help; client version as JSON                                                                                        |
+| `--`                       |                  | Ends options, for file names that start with `-`                                                                    |
 
 Each option may appear once. Unknown options are refused.
 
@@ -257,7 +258,7 @@ Any other system, such as TeamCity or Buildkite, works the same way: set `ARKVOR
 | 9    | `backup status`: a critical backup warning is active                     |
 | 130  | Interrupted                                                              |
 
-The client retries only network failures and HTTP 408, 429, 502, 503 and 504, within `--retries`.
+The client retries only network failures and HTTP 408, 429, 502, 503 and 504, within `--retries`. A busy server (503 `busy`, 429 `rate_limited`) is no failure: the client waits as long as the server asks in `Retry-After`, prints how long on stderr and does not count these waits against `--retries`. `--wait-limit` caps the total wait.
 
 ## Troubleshooting {#troubleshooting}
 

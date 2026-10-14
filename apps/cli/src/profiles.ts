@@ -117,6 +117,19 @@ export function verboseLine(event: RequestEvent): void {
     `arkvoryctl: ${event.method} ${sanitize(event.path, 512)} ${status} ${String(event.durationMs)} ms${id}\n`,
   );
 }
+/** A busy server asked to come back later (ADR 0076): say so, the command is not stuck. */
+function waitLine(language: Arguments['language']) {
+  const seconds = (ms: number) => String(Math.max(1, Math.round(ms / 1000)));
+  return (event: { delayMs: number; waitedMs: number }) => {
+    process.stderr.write(
+      language === 'ru'
+        ? `arkvoryctl: сервер занят, ждём ${seconds(event.delayMs)} с (уже ждали ${seconds(event.waitedMs)} с)
+`
+        : `arkvoryctl: server busy, waiting ${seconds(event.delayMs)} s (waited ${seconds(event.waitedMs)} s so far)
+`,
+    );
+  };
+}
 export async function connection(args: Arguments, signal: AbortSignal) {
   const config = await configuration();
   const name = args.options.get('profile') ?? config.active;
@@ -141,6 +154,10 @@ export async function connection(args: Arguments, signal: AbortSignal) {
       requestTimeoutMs: numericOption(args, 'timeout', 60000, 1, 3600000),
       attemptTimeoutMs: numericOption(args, 'attempt-timeout', 120000, 1, 1800000),
       maxRetries: numericOption(args, 'retries', 20, 0, 100),
+      ...(args.options.has('wait-limit')
+        ? { waitLimitMs: numericOption(args, 'wait-limit', 0, 0, Number.MAX_SAFE_INTEGER) }
+        : {}),
+      onWait: waitLine(args.language),
       ...(args.options.has('verbose') ? { onRequest: verboseLine } : {}),
     }),
     server,

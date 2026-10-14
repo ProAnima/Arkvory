@@ -153,7 +153,7 @@ The form [[ui:welcomeOwner]] works only while the server has no accounts at all.
 
 ## Busy, rate limited, unavailable {#retry-after}
 
-The codes `busy`, `unavailable` and `rate_limited` are temporary. The answer has the header `Retry-After` and the field `retryAfterSeconds`. Wait that long. The SDK and the command-line client repeat these answers a limited number of times.
+The codes `busy`, `unavailable` and `rate_limited` are temporary. The answer has the header `Retry-After` and the field `retryAfterSeconds`. Wait that long. For `busy`, the server derives the time from the queue ahead and how fast places free up, so a long queue sends clients away for longer. The SDK and the command-line client wait for `busy` and `rate_limited` as long as the server asks (cap it with `--wait-limit` or `waitLimitMs`) and repeat other answers a limited number of times.
 
 | Answer                             | Cause                                                                                                                                    | What to do                                                                                                                                                 |
 | ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
