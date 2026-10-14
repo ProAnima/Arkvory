@@ -1,81 +1,11 @@
-import { ArkvoryError } from './artifact.js';
-
-/** Priority classes, highest first (ADR 0076). */
-export const downloadClasses = ['interactive', 'release', 'bulk', 'background'] as const;
-export type DownloadClass = (typeof downloadClasses)[number];
-export const downloadStrategies = ['ordered', 'smallest-first', 'shared'] as const;
-export type DownloadStrategy = (typeof downloadStrategies)[number];
-
-export interface DownloadSchedulePolicy {
-  readonly strategy: DownloadStrategy;
-  /** Sessions that move bytes at once. */
-  readonly slots: number;
-  readonly weights: Readonly<Record<DownloadClass, number>>;
-  /** Slots only `interactive` may take, so people are served during a mass update. */
-  readonly interactiveReserve: number;
-  /** Active sessions of one principal while sessions of other principals wait. */
-  readonly perPrincipalActive: number;
-  readonly maxSessions: number;
-  readonly maxSessionsPerPrincipal: number;
-  /** A pause between ranges longer than this frees the place of an active session. */
-  readonly idleMs: number;
-  /** Each such wait lifts a waiting session one class higher, so nobody starves. */
-  readonly agingMs: number;
-}
+import {
+  downloadClasses,
+  type DownloadClass,
+  type DownloadSchedulePolicy,
+} from './download-policy.js';
 
 const second = 1000;
 const minute = 60 * second;
-export const DEFAULT_DOWNLOAD_WEIGHTS: Readonly<Record<DownloadClass, number>> = {
-  interactive: 8,
-  release: 4,
-  bulk: 2,
-  background: 1,
-};
-
-/** The safe defaults of ADR 0076 for `slots` sessions; every field can be overridden. */
-export function downloadSchedulePolicy(
-  slots: number,
-  overrides: Partial<DownloadSchedulePolicy> = {},
-): DownloadSchedulePolicy {
-  const policy: DownloadSchedulePolicy = {
-    strategy: 'ordered',
-    slots,
-    weights: DEFAULT_DOWNLOAD_WEIGHTS,
-    interactiveReserve: slots > 1 ? 1 : 0,
-    perPrincipalActive: Math.min(4, slots),
-    maxSessions: 65536,
-    maxSessionsPerPrincipal: 4096,
-    idleMs: 30 * second,
-    agingMs: 15 * minute,
-    ...overrides,
-  };
-  const counts = [policy.slots, policy.perPrincipalActive, policy.maxSessions];
-  const valid =
-    downloadStrategies.includes(policy.strategy) &&
-    counts.every((value) => Number.isSafeInteger(value) && value >= 1) &&
-    Number.isSafeInteger(policy.interactiveReserve) &&
-    policy.interactiveReserve >= 0 &&
-    policy.interactiveReserve < policy.slots &&
-    policy.perPrincipalActive <= policy.slots &&
-    Number.isSafeInteger(policy.maxSessionsPerPrincipal) &&
-    policy.maxSessionsPerPrincipal >= 1 &&
-    policy.maxSessionsPerPrincipal <= policy.maxSessions &&
-    policy.maxSessions <= 1_048_576 &&
-    [policy.idleMs, policy.agingMs].every((ms) => Number.isSafeInteger(ms) && ms >= second) &&
-    downloadClasses.every((name) => {
-      const weight = policy.weights[name];
-      return Number.isSafeInteger(weight) && weight >= 1 && weight <= 1000;
-    });
-  if (!valid) throw new ArkvoryError('invalid_input', 'Invalid download schedule');
-  return policy;
-}
-
-/** A caller may ask for a lower class than its own, never a higher one. */
-export function requestedDownloadClass(own: DownloadClass, asked: unknown): DownloadClass {
-  if (typeof asked !== 'string') return own;
-  const index = downloadClasses.findIndex((name) => name === asked);
-  return index > downloadClasses.indexOf(own) ? (downloadClasses[index] ?? own) : own;
-}
 
 export interface WaitingDownload {
   readonly principal: string;
@@ -88,9 +18,13 @@ export interface WaitingDownload {
 
 /** The class a waiting session competes in after aging. */
 export function agedClassIndex(item: WaitingDownload, policy: DownloadSchedulePolicy, now: number) {
+  const own = downloadClasses.indexOf(item.class);
+  if (policy.agingMs === 0 || own <= RELEASE) return own;
   const steps = Math.floor(Math.max(0, now - item.queuedAt) / policy.agingMs);
-  return Math.max(0, downloadClasses.indexOf(item.class) - steps);
+  // Aging stops at `release`: the lane of people stays theirs.
+  return Math.max(RELEASE, own - steps);
 }
+const RELEASE = downloadClasses.indexOf('release');
 
 /**
  * The order in which waiting sessions get places. Classes alternate by weight (stride
@@ -131,27 +65,33 @@ export function orderWaitingDownloads<T extends WaitingDownload>(
   return order;
 }
 
-/** Principals in turn by their earliest arrival; each principal's sessions in arrival order. */
+/**
+ * Principals in turn by their earliest arrival; each principal's sessions in arrival order. A
+ * session's round is its place among its principal's sessions, so one sort orders them all:
+ * O(n log n) however the sessions are spread over principals.
+ */
 function inTurns<T extends WaitingDownload>(group: T[]): T[] {
-  const byPrincipal = new Map<string, T[]>();
-  for (const item of [...group].sort((a, b) => a.seq - b.seq)) {
-    const queue = byPrincipal.get(item.principal);
-    if (queue) queue.push(item);
-    else byPrincipal.set(item.principal, [item]);
+  const sorted = [...group].sort((a, b) => a.seq - b.seq);
+  const first = new Map<string, number>();
+  const counts = new Map<string, number>();
+  const rounds = new Map<T, number>();
+  for (const item of sorted) {
+    if (!first.has(item.principal)) first.set(item.principal, item.seq);
+    const round = counts.get(item.principal) ?? 0;
+    counts.set(item.principal, round + 1);
+    rounds.set(item, round);
   }
-  const queues = [...byPrincipal.values()];
-  const result: T[] = [];
-  for (let round = 0; result.length < group.length; round++)
-    for (const queue of queues) {
-      const item = queue[round];
-      if (item) result.push(item);
-    }
-  return result;
+  const key = (item: T) => [rounds.get(item) ?? 0, first.get(item.principal) ?? 0] as const;
+  return sorted.sort((a, b) => {
+    const [roundA, firstA] = key(a);
+    const [roundB, firstB] = key(b);
+    return roundA - roundB || firstA - firstB;
+  });
 }
 
 /**
  * When each waiting session should start, in milliseconds from now: places free up as the
- * active sessions' remaining bytes drain, each place moving `bytesPerSecond / places`. A min-heap
+ * active sessions' remaining bytes drain, the link shared by the downloads that run. A min-heap
  * of the places' free times keeps this O(n log places). Undefined without a measured rate.
  */
 export function estimateDownloadStarts(
@@ -161,7 +101,10 @@ export function estimateDownloadStarts(
   bytesPerSecond: number,
 ): (number | undefined)[] {
   if (!(bytesPerSecond > 0) || places < 1) return waitingSizes.map(() => undefined);
-  const perPlace = bytesPerSecond / places / second;
+  // The link is shared by the downloads that run, not by the places: near the end of a queue
+  // fewer run, each faster.
+  const running = Math.min(places, activeRemaining.length + waitingSizes.length);
+  const perPlace = bytesPerSecond / Math.max(1, running) / second;
   const heap: number[] = [];
   const busy = [...activeRemaining].sort((a, b) => a - b);
   for (let index = 0; index < places; index++) push(heap, (busy[index] ?? 0) / perPlace);

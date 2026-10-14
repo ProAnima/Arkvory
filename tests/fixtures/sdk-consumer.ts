@@ -98,6 +98,7 @@ export type ObserverIsOptional = Assert<
 // ADR 0051: ArkvoryHttpError keeps its constructor and fields and adds serverMessage, reason,
 // details and retryAfterSeconds; local failures become ArkvoryClientError, still an Error with
 // the previous message text. Exhaustive consumers of `code` must tolerate new values.
+// ADR 0076 adds `queue`: the place of a download in the server's queue (503 download_queued).
 interface LegacyHttpError extends Error {
   readonly status: number;
   readonly code: string;
@@ -110,7 +111,7 @@ export type HttpErrorStillReadable = Assert<
 export type HttpErrorAdditions = Assert<
   Equal<
     Exclude<keyof ArkvoryHttpError, keyof LegacyHttpError>,
-    'serverMessage' | 'reason' | 'details' | 'retryAfterSeconds'
+    'serverMessage' | 'reason' | 'details' | 'retryAfterSeconds' | 'queue'
   >
 >;
 export type ClientErrorIsError = Assert<ArkvoryClientError extends Error ? true : false>;

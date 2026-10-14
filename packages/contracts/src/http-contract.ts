@@ -39,21 +39,35 @@ export const downloadHeaders = [
           ? 'Exact strong ETag; a mismatch causes a full response.'
           : 'Matching ETag returns 304, including HEAD.',
   })),
-  priorityHeader(),
+  ...queueRequestHeaders(),
 ];
-/** ADR 0076: a client may queue its download in a lower class than its own, never a higher one. */
-export function priorityHeader() {
-  return {
-    name: 'Arkvory-Priority',
-    in: 'header',
-    required: false,
-    schema: { type: 'string', enum: ['interactive', 'release', 'bulk', 'background'] },
-    description:
-      'Download class for the queue; only a class lower than the caller own one is applied (people: interactive, services: release).',
-  };
+/** ADR 0076: the client's id of one download and the class it queues in. */
+export function queueRequestHeaders() {
+  return [
+    {
+      name: 'Arkvory-Download-Id',
+      in: 'header',
+      required: false,
+      schema: { type: 'string', pattern: '^[A-Za-z0-9_-]{16,64}$' },
+      description:
+        'The client own id of one download, the same on every range of it: the queue keys the session by it instead of the client address, answers a waiting request at once with 503 download_queued, and may ask it to yield its place at a range boundary. Without it, a waiting request is held until its turn for a bounded time.',
+    },
+    {
+      name: 'Arkvory-Download-Class',
+      in: 'header',
+      required: false,
+      schema: { type: 'string', enum: ['interactive', 'release', 'bulk', 'background'] },
+      description:
+        'Queue class of the download. Only a class lower than the caller own one applies (people: interactive, services and links: release); an unknown value is 400. The response names the class applied.',
+    },
+  ];
 }
 /** Headers of 503 busy with reason download_queued (ADR 0076). */
 export const queueHeaders = {
+  'Arkvory-Download-Class': {
+    description: 'The class the download queues in.',
+    schema: { type: 'string', enum: ['interactive', 'release', 'bulk', 'background'] },
+  },
   'Arkvory-Queue-Position': {
     description: 'Place in the download queue; 1 is next.',
     schema: { type: 'integer', minimum: 1 },

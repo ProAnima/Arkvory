@@ -68,6 +68,7 @@ arkvoryctl doctor
 | `--attempt-timeout MS`     | 120000       | 单次传输尝试的时限（1 到 1800000）                                                      |
 | `--retries N`              | 20           | 单个操作的网络重试次数（0 到 100）；`0` 表示关闭重试                                    |
 | `--wait-limit MS`          | 无           | 单个操作等待繁忙服务器的总时长上限。不设置时，客户端按服务器要求的时间等待              |
+| `--class CLASS`            |              | 下载的队列类别：`release`、`bulk` 或 `background`。只能降低你的类别                     |
 | `--verbose`                | 关闭         | 每个 HTTP 请求向 stderr 输出一行：方法、路径、状态、耗时、请求 ID。不包含请求头或密钥。 |
 | `--help`、`--version`      |              | 帮助；以 JSON 形式输出客户端版本                                                        |
 | `--`                       |              | 结束选项，用于以 `-` 开头的文件名                                                       |

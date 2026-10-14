@@ -12,7 +12,7 @@ import {
   supplementalPaths,
   nativeErrorSchema,
   nativeErrorResponse,
-  priorityHeader,
+  queueRequestHeaders,
 } from './http-contract.js';
 import { composeApiPaths } from './openapi-compose.js';
 import { delegationPaths } from './delegation-api.js';
@@ -230,7 +230,7 @@ const baseDocument = {
             in: 'header',
             schema: { type: 'string' },
           })),
-          priorityHeader(),
+          ...queueRequestHeaders(),
           downloadLinkParameter,
         ],
         responses: byteResponses,

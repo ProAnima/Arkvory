@@ -1,7 +1,7 @@
 import { homedir } from 'node:os';
 import { join, resolve, dirname } from 'node:path';
 import { ArkvoryClient } from '@proanima/arkvory-sdk';
-import type { RequestEvent } from '@proanima/arkvory-sdk';
+import type { DownloadClass, RequestEvent, WaitEvent } from '@proanima/arkvory-sdk';
 import { record, text } from '@proanima/arkvory-contracts';
 import { CliError, sanitize } from './errors.js';
 import {
@@ -120,15 +120,38 @@ export function verboseLine(event: RequestEvent): void {
 /** A busy server asked to come back later (ADR 0076): say so, the command is not stuck. */
 function waitLine(language: Arguments['language']) {
   const seconds = (ms: number) => String(Math.max(1, Math.round(ms / 1000)));
-  return (event: { delayMs: number; waitedMs: number }) => {
+  const clock = (at: Date) => at.toTimeString().slice(0, 5);
+  return (event: WaitEvent) => {
+    const ru = language === 'ru';
+    const queue = event.queue;
+    const place = queue
+      ? [
+          ru ? 'в очереди' : 'queued',
+          ...(queue.position === undefined
+            ? []
+            : [ru ? `${String(queue.position)}-м` : `#${String(queue.position)}`]),
+          ...(queue.startsAt === undefined
+            ? []
+            : [ru ? `начало ≈ ${clock(queue.startsAt)}` : `start ≈ ${clock(queue.startsAt)}`]),
+        ].join(', ')
+      : ru
+        ? 'сервер занят'
+        : 'server busy';
     process.stderr.write(
-      language === 'ru'
-        ? `arkvoryctl: сервер занят, ждём ${seconds(event.delayMs)} с (уже ждали ${seconds(event.waitedMs)} с)
+      ru
+        ? `arkvoryctl: ${place}; проверим через ${seconds(event.delayMs)} с (ждём ${seconds(event.waitedMs)} с)
 `
-        : `arkvoryctl: server busy, waiting ${seconds(event.delayMs)} s (waited ${seconds(event.waitedMs)} s so far)
+        : `arkvoryctl: ${place}; checking again in ${seconds(event.delayMs)} s (waited ${seconds(event.waitedMs)} s)
 `,
     );
   };
+}
+const downloadClasses: readonly DownloadClass[] = ['interactive', 'release', 'bulk', 'background'];
+function downloadClass(args: Arguments): DownloadClass {
+  const value = args.options.get('class');
+  const known = downloadClasses.find((name) => name === value);
+  if (!known) throw new CliError('invalid_class');
+  return known;
 }
 export async function connection(args: Arguments, signal: AbortSignal) {
   const config = await configuration();
@@ -162,5 +185,6 @@ export async function connection(args: Arguments, signal: AbortSignal) {
     }),
     server,
     repository,
+    ...(args.options.has('class') ? { downloadClass: downloadClass(args) } : {}),
   };
 }

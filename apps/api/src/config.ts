@@ -4,9 +4,9 @@ import { isIP } from 'node:net';
 import {
   ArkvoryError,
   MAX_OBJECT_BYTES,
-  downloadStrategies,
-  type DownloadStrategy,
+  type DownloadSchedulePolicy,
 } from '@proanima/arkvory-domain';
+import { readDownloadQueue } from './download-config.js';
 import { parseKeys, downloadShare, readMirrorSettings } from '@proanima/arkvory-infrastructure';
 import type { MirrorConfiguration } from '@proanima/arkvory-application';
 import type { SharedDownloadPolicy } from '@proanima/arkvory-infrastructure';
@@ -36,8 +36,9 @@ export interface ServerConfig extends UploadTimeoutOptions, OperabilityOptions {
   readonly transferQueueTimeoutMs?: number;
   readonly maxUploadsPerPrincipal?: number;
   readonly maxDownloadsPerPrincipal?: number;
-  /** ADR 0076: `ordered` by default; `shared` keeps admission per request. */
-  readonly downloadStrategy?: DownloadStrategy;
+  /** ADR 0076: the download queue; absent, the defaults for `maxDownloads`. */
+  readonly downloadQueue?: DownloadSchedulePolicy;
+  readonly downloadHoldSeconds?: number;
   readonly uploadBytesPerSecond?: number;
   readonly downloadBytesPerSecond?: number;
   readonly uploadBytesPerSecondPerPrincipal?: number;
@@ -242,15 +243,17 @@ export async function loadConfig(env: NodeJS.ProcessEnv): Promise<ServerConfig> 
     downloadBytesPerSecond: rate('ARKVORY_DOWNLOAD_BYTES_PER_SECOND'),
     uploadBytesPerSecondPerPrincipal: rate('ARKVORY_UPLOAD_BYTES_PER_SECOND_PER_PRINCIPAL'),
     downloadBytesPerSecondPerPrincipal: rate('ARKVORY_DOWNLOAD_BYTES_PER_SECOND_PER_PRINCIPAL'),
-    downloadStrategy: readDownloadStrategy(env),
+    ...readDownloadQueue(env, {
+      maxDownloads,
+      perPrincipal: number(
+        'ARKVORY_MAX_DOWNLOADS_PER_PRINCIPAL',
+        Math.min(4, maxDownloads),
+        maxDownloads,
+      ),
+      holdSeconds: number('ARKVORY_TRANSFER_QUEUE_TIMEOUT_MS', 20000, 120000) / 1000,
+      gateways: sharedDownloads !== undefined,
+    }),
   };
-}
-
-function readDownloadStrategy(env: NodeJS.ProcessEnv): DownloadStrategy {
-  const value = env['ARKVORY_DOWNLOAD_STRATEGY'] ?? 'ordered';
-  const strategy = downloadStrategies.find((name) => name === value);
-  if (!strategy) throw new Error('Invalid ARKVORY_DOWNLOAD_STRATEGY');
-  return strategy;
 }
 
 function readIdentityExposure(env: NodeJS.ProcessEnv) {

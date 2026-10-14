@@ -103,14 +103,15 @@ test('series cap folds new label sets into one "other" series and counts the ove
 
 const sessions = {
   snapshot: {
-    strategy: 'ordered',
-    capacity: 2,
     active: 1,
     waiting: { interactive: 0, release: 3, bulk: 7, background: 0 },
+    oldestWaitSeconds: 42,
     bytesPerSecond: 1000,
     admitted: 4,
     queued: 10,
     completed: 2,
+    released: 1,
+    yielded: 1,
     noShows: 1,
     refused: 0,
   },
@@ -192,9 +193,10 @@ test('HTTP metrics label route templates, methods and status classes, never raw 
   assert.equal(find('arkvory_completion_oldest_queued_seconds', {})?.value, 12.5);
   assert.equal(find('arkvory_diagnostic_records_total', { outcome: 'dropped' })?.value, 2);
   assert.equal(find('arkvory_transfer_queue_depth', { direction: 'download' })?.value, 0);
-  assert.equal(find('arkvory_download_sessions', { state: 'waiting', class: 'bulk' })?.value, 7);
-  assert.equal(find('arkvory_download_sessions', { state: 'active', class: 'all' })?.value, 1);
-  assert.equal(find('arkvory_download_session_events_total', { event: 'no_show' })?.value, 1);
+  assert.equal(find('arkvory_download_sessions_waiting', { class: 'bulk' })?.value, 7);
+  assert.equal(find('arkvory_download_sessions_active', {})?.value, 1);
+  assert.equal(find('arkvory_download_queue_oldest_wait_seconds', {})?.value, 42);
+  assert.equal(find('arkvory_download_session_events_total', { event: 'yielded' })?.value, 1);
 });
 
 test('transfer gauges follow admission state and the label set stays bounded', async (t) => {

@@ -1,79 +1,108 @@
 import { ArkvoryError } from './artifact.js';
 import {
+  downloadClasses,
+  type DownloadClass,
+  type DownloadSchedulePolicy,
+} from './download-policy.js';
+import {
   downloadCheckDelay,
   downloadNoShowAfter,
   estimateDownloadStarts,
   orderWaitingDownloads,
   MIN_DOWNLOAD_CHECK_MS,
-  type DownloadClass,
-  type DownloadSchedulePolicy,
 } from './download-schedule.js';
+import { DownloadOccupancy } from './download-occupancy.js';
+import { DownloadRate } from './download-rate.js';
+import { DownloadResumes } from './download-resumes.js';
 
 export interface DownloadSessionRequest {
-  /** Who and what: principal, object and client address for sessions without a ticket. */
+  /** Who and what: principal, object, and the client's download id or else its address. */
   readonly key: string;
   readonly principal: string;
   readonly class: DownloadClass;
   readonly size: number;
+  /** The client sent its own download id: it follows the queue protocol and may yield. */
+  readonly queueAware: boolean;
 }
 
 export type DownloadDecision =
   | { readonly state: 'active' }
   | {
       readonly state: 'queued';
-      /** 1 is next. */
-      readonly position: number;
-      /** Epoch milliseconds of the clock passed in; absent until a rate is measured. */
+      /** 1 is next; absent until the next tick placed a new session. */
+      readonly position?: number;
+      /** Clock of the caller; absent until a rate is measured. Never in the past. */
       readonly startsAt?: number;
       readonly checkAt: number;
     };
+
+/** How a response ended: sent to its end, and whether it covered the object's last byte. */
+export interface DownloadResponseEnd {
+  readonly finished: boolean;
+  readonly reachedEnd: boolean;
+}
 
 interface Session {
   readonly key: string;
   readonly principal: string;
   readonly class: DownloadClass;
   readonly size: number;
+  readonly queueAware: boolean;
   readonly seq: number;
-  readonly queuedAt: number;
+  queuedAt: number;
   state: 'waiting' | 'active';
   /** Responses streaming now; the place is freed only when none are. */
   inFlight: number;
   served: number;
+  /** A response delivered the last byte: with all bytes served, the download is complete. */
+  sawEnd: boolean;
+  startedAt: number;
   /** Waiting: no-show deadline. Active without responses: when its place is freed. */
   expiresAt: number;
-  position: number;
+  position: number | undefined;
   startsAt: number | undefined;
   checkAt: number;
+  /** Among the first in line at the last tick: may take a free place when it comes. */
+  claimable: boolean;
 }
 
-const RATE_SECONDS = 60;
+/** Places of sessions finishing within this time already count as free for the next in line. */
+const HANDOVER_MS = 5000;
+/** How soon a client that may take a place should come. */
+const CLAIM_CHECK_MS = 1000;
+/** A session keeps its place at least this long before it can be asked to yield. */
+const MIN_HOLD_MS = 60_000;
 
 /**
  * Download sessions of one process (ADR 0076): a place covers a whole download, not one range.
- * Time comes from the caller, so the rules are deterministic; `plan` is the one scheduler tick
- * that frees idle places, drops no-shows, hands free places on and refreshes estimates. Every
- * structure is bounded by the policy; nothing here keeps a timer.
+ * Time comes from the caller, so the rules are deterministic. No place is held for an absent
+ * client: `plan`, the scheduler tick, marks the first in line, and whichever of them comes first
+ * takes a free place. Every structure is bounded by the policy; nothing here keeps a timer.
  */
 export class DownloadSessions {
   private readonly sessions = new Map<string, Session>();
-  private readonly perPrincipal = new Map<string, number>();
-  /** Active places in total, outside the interactive reserve and per principal. */
-  private active = 0;
-  private shared = 0;
-  private readonly activeOf = new Map<string, number>();
-  private waitingCount = 0;
-  private readonly waitingOf: Record<DownloadClass, number> = {
-    interactive: 0,
-    release: 0,
-    bulk: 0,
-    background: 0,
-  };
+  private readonly owned = new Map<string, number>();
+  private readonly places = new DownloadOccupancy();
+  private readonly rate = new DownloadRate();
+  private readonly resumes: DownloadResumes;
   private seq = 0;
   private draining = false;
-  /** Bytes served per second over the last minute, by second. */
-  private readonly rate = new Map<number, number>();
-  private readonly counters = { admitted: 0, queued: 0, completed: 0, noShows: 0, refused: 0 };
-  constructor(private current: DownloadSchedulePolicy) {}
+  /** Principals first in line at the last tick: their share then binds the others. */
+  private readonly claimants = new Set<string>();
+  /** The head of the queue waits with no place free: one active session may yield to it. */
+  private pressure: { classIndex: number; principal: string } | undefined;
+  private readonly counters = {
+    admitted: 0,
+    queued: 0,
+    completed: 0,
+    noShows: 0,
+    released: 0,
+    yielded: 0,
+    refused: 0,
+  };
+  constructor(private current: DownloadSchedulePolicy) {
+    this.resumes = new DownloadResumes(() => this.current.maxSessions);
+  }
 
   get policy() {
     return this.current;
@@ -90,110 +119,95 @@ export class DownloadSessions {
    */
   request(request: DownloadSessionRequest, now: number): DownloadDecision {
     const known = this.sessions.get(request.key);
-    if (known?.state === 'active') {
-      known.inFlight++;
-      return { state: 'active' };
-    }
-    if (known) return this.queued(known, now);
+    if (known?.state === 'active') return this.continueActive(known, now);
     if (this.draining) throw busy('Server is stopping; retry later', MIN_DOWNLOAD_CHECK_MS);
-    const owned = this.perPrincipal.get(request.principal) ?? 0;
-    if (
-      this.sessions.size >= this.current.maxSessions ||
-      owned >= this.current.maxSessionsPerPrincipal
-    ) {
-      this.counters.refused++;
-      throw busy('Download queue is full', 60_000);
-    }
-    const session: Session = {
-      ...request,
-      seq: ++this.seq,
-      queuedAt: now,
-      state: 'waiting',
-      inFlight: 0,
-      served: 0,
-      expiresAt: now,
-      position: this.waitingCount + 1,
-      startsAt: undefined,
-      checkAt: now,
-    };
-    this.sessions.set(session.key, session);
-    this.perPrincipal.set(session.principal, owned + 1);
-    this.waitingCount++;
-    this.waitingOf[session.class]++;
-    // A free place goes to it at once when nobody else waits, even beyond its principal's share,
-    // and to a person when no other person waits: the reserve is theirs.
-    const first =
-      this.waitingCount === 1 ||
-      (session.class === 'interactive' && this.waitingOf.interactive === 1);
-    if (first && this.placeFor(session, false)) {
-      this.activate(session, now);
-      session.inFlight++;
-      return { state: 'active' };
-    }
-    this.counters.queued++;
-    session.checkAt = now + downloadCheckDelay(undefined, session.position, session.seq);
-    return this.queued(session, now);
+    if (!known) return this.open(request, now);
+    if (known.claimable && this.places.fits(known, this.current, this.strictFor(known)))
+      return this.admit(known, now);
+    return this.queued(known, now);
   }
 
   /** Bytes delivered for an active session; feeds the measured rate and its remaining size. */
   progress(key: string, bytes: number, now: number) {
     const session = this.sessions.get(key);
     if (session) session.served += bytes;
-    const at = Math.floor(now / 1000);
-    this.rate.set(at, (this.rate.get(at) ?? 0) + bytes);
-    if (this.rate.size > RATE_SECONDS) this.forgetRate(at);
+    this.rate.add(bytes, now);
   }
 
-  /** A response ended. Reaching the last byte with nothing else in flight completes the session. */
-  end(key: string, reachedEnd: boolean, now: number) {
+  /** A response ended; the download is complete once every byte was served and none is in flight. */
+  end(key: string, how: DownloadResponseEnd, now: number) {
     const session = this.sessions.get(key);
     if (session?.state !== 'active' || session.inFlight === 0) return;
     session.inFlight--;
+    if (how.finished && how.reachedEnd) session.sawEnd = true;
     session.expiresAt = now + this.current.idleMs;
-    if (reachedEnd && session.inFlight === 0) {
+    if (session.inFlight === 0 && session.sawEnd && session.served >= session.size) {
       this.counters.completed++;
       this.remove(session);
     }
   }
 
-  /** The scheduler tick: frees idle places, drops no-shows, fills places, refreshes estimates. */
+  /** The scheduler tick: frees idle places, drops no-shows, marks the next in line, estimates. */
   plan(now: number) {
-    for (const session of this.sessions.values())
-      if (session.inFlight === 0 && now > session.expiresAt) {
-        if (session.state === 'waiting' || session.served === 0) this.counters.noShows++;
-        this.remove(session);
-      }
+    this.expire(now);
+    this.resumes.prune(now);
+    this.claimants.clear();
+    this.pressure = undefined;
+    if (this.draining) return;
     const order = orderWaitingDownloads(
       [...this.sessions.values()].filter((session) => session.state === 'waiting'),
       this.current,
       now,
     );
-    const placed = new Set<Session>();
-    for (const strict of [true, false])
-      for (const session of order)
-        if (!placed.has(session) && this.placeFor(session, strict)) {
-          this.activate(session, now);
-          placed.add(session);
-        }
-    this.estimate(
-      order.filter((session) => !placed.has(session)),
-      now,
-    );
+    const marked = this.markClaimants(order, now);
+    const head = order[0];
+    // No place is free: the head may get one that an active session yields at a range boundary;
+    // it takes it once the next tick marks it free.
+    if (marked === 0 && head && this.current.preempt) {
+      this.claimants.add(head.principal);
+      this.pressure = { classIndex: classIndex(head.class), principal: head.principal };
+    }
+    this.estimate(order, now);
   }
 
-  /** New sessions are refused; active ones finish, waiting ones are told to come back. */
+  /**
+   * Marks the first in line who may take a place: twice the free places, so whoever of them
+   * comes first takes one and an absent client holds none. Places of sessions about to finish
+   * count as free. People may use the reserve, the others only the places outside it.
+   */
+  private markClaimants(order: Session[], now: number) {
+    const soon = this.finishingSoon(now);
+    const free = this.places.free(this.current);
+    let all = 2 * (free.all + soon);
+    let shared = 2 * (free.shared + soon);
+    let marked = 0;
+    for (const session of order) {
+      const person = session.class === 'interactive';
+      session.claimable = all > 0 && (person || shared > 0);
+      if (!session.claimable) continue;
+      all--;
+      if (!person) shared--;
+      marked++;
+      this.claimants.add(session.principal);
+    }
+    return marked;
+  }
+
+  /** New sessions and waiting ones are refused; active ones finish. No place is handed on. */
   drain() {
     this.draining = true;
   }
 
   snapshot(now: number) {
-    const waiting = { ...this.waitingOf };
+    let oldest = now;
+    for (const session of this.sessions.values())
+      if (session.state === 'waiting') oldest = Math.min(oldest, session.queuedAt);
     return {
-      strategy: this.current.strategy,
-      capacity: this.current.slots,
-      active: this.active,
-      waiting,
-      bytesPerSecond: Math.round(this.bytesPerSecond(now)),
+      active: this.places.active,
+      waiting: { ...this.places.waitingOf },
+      oldestWaitSeconds: Math.floor((now - oldest) / 1000),
+      bytesPerSecond: Math.round(this.rate.capacity(now)),
+      resumable: this.resumes.size,
       ...this.counters,
     };
   }
@@ -202,95 +216,187 @@ export class DownloadSessions {
     return this.sessions.size === 0;
   }
 
+  private continueActive(session: Session, now: number): DownloadDecision {
+    if (session.inFlight >= this.current.rangesPerSession)
+      throw busy('Too many ranges of one download at once', 1000);
+    if (session.inFlight === 0 && this.shouldYield(session, now)) {
+      this.yieldPlace(session, now);
+      return this.queued(session, now);
+    }
+    session.inFlight++;
+    return { state: 'active' };
+  }
+
+  private open(request: DownloadSessionRequest, now: number): DownloadDecision {
+    const owned = this.owned.get(request.principal) ?? 0;
+    if (
+      this.sessions.size >= this.current.maxSessions ||
+      owned >= this.current.maxSessionsPerPrincipal
+    ) {
+      this.counters.refused++;
+      throw busy('Download queue is full', 60_000);
+    }
+    const resumed = this.resumes.take(request.key, now);
+    const session: Session = {
+      ...request,
+      seq: resumed?.seq ?? ++this.seq,
+      queuedAt: resumed?.queuedAt ?? now,
+      state: 'waiting',
+      inFlight: 0,
+      served: resumed?.served ?? 0,
+      sawEnd: resumed?.sawEnd ?? false,
+      startedAt: now,
+      expiresAt: now,
+      position: undefined,
+      startsAt: undefined,
+      checkAt: now + MIN_DOWNLOAD_CHECK_MS,
+      claimable: false,
+    };
+    this.sessions.set(session.key, session);
+    this.owned.set(session.principal, owned + 1);
+    this.places.wait(session);
+    // A free place goes to it at once when nobody else waits, even beyond its principal's share;
+    // to a person when no other person waits, the reserve is theirs; and to a download that only
+    // paused, which keeps its turn.
+    const alone =
+      this.places.waiting === 1 ||
+      (session.class === 'interactive' && this.places.waitingOf.interactive === 1);
+    if ((alone || resumed) && this.places.fits(session, this.current, !alone))
+      return this.admit(session, now);
+    this.counters.queued++;
+    return this.queued(session, now);
+  }
+
+  private admit(session: Session, now: number): DownloadDecision {
+    this.places.leave(session);
+    this.places.occupy(session);
+    session.state = 'active';
+    session.claimable = false;
+    session.startedAt = now;
+    session.expiresAt = now + this.current.idleMs;
+    session.inFlight++;
+    this.counters.admitted++;
+    return { state: 'active' };
+  }
+
   private queued(session: Session, now: number): DownloadDecision {
-    const delay = Math.max(MIN_DOWNLOAD_CHECK_MS, session.checkAt - now);
-    // A told client is expected back by then; it keeps its place until that deadline.
+    const floor = session.claimable ? CLAIM_CHECK_MS : MIN_DOWNLOAD_CHECK_MS;
+    const delay = Math.max(floor, session.checkAt - now);
+    // A told client is expected back by then; until that deadline it keeps its turn.
     session.expiresAt = Math.max(session.expiresAt, now + downloadNoShowAfter(delay));
     return {
       state: 'queued',
-      position: session.position,
-      ...(session.startsAt === undefined ? {} : { startsAt: session.startsAt }),
+      ...(session.position === undefined ? {} : { position: session.position }),
+      ...(session.startsAt === undefined ? {} : { startsAt: Math.max(now, session.startsAt) }),
       checkAt: now + delay,
     };
   }
 
+  /** The share of a principal binds while another principal is first in line. */
+  private strictFor(session: Session) {
+    for (const principal of this.claimants) if (principal !== session.principal) return true;
+    return false;
+  }
+
   /**
-   * Whether a place is free for this session: within the slots, outside the interactive reserve
-   * unless it is interactive, and, when `strict`, within its principal's share.
+   * Whether this session, between two ranges, gives its place to the head of the queue: only a
+   * client of the queue protocol, after holding the place a minute, when the head is of a higher
+   * class or of a principal below its share while this one is above it.
    */
-  private placeFor(session: Session, strict: boolean) {
-    if (this.active >= this.current.slots) return false;
+  private shouldYield(session: Session, now: number) {
+    const pressure = this.pressure;
     if (
-      session.class !== 'interactive' &&
-      this.shared >= this.current.slots - this.current.interactiveReserve
+      !pressure ||
+      !session.queueAware ||
+      session.class === 'interactive' ||
+      pressure.principal === session.principal ||
+      now - session.startedAt < MIN_HOLD_MS
     )
       return false;
-    return !strict || (this.activeOf.get(session.principal) ?? 0) < this.current.perPrincipalActive;
+    const share = this.current.perPrincipalActive;
+    return (
+      classIndex(session.class) > pressure.classIndex ||
+      (this.places.of(session.principal) > share && this.places.of(pressure.principal) < share)
+    );
   }
 
-  private activate(session: Session, now: number) {
-    session.state = 'active';
-    this.waitingCount--;
-    this.waitingOf[session.class]--;
-    this.active++;
-    if (session.class !== 'interactive') this.shared++;
-    this.activeOf.set(session.principal, (this.activeOf.get(session.principal) ?? 0) + 1);
-    this.counters.admitted++;
-    // A promoted client is not connected: the place waits for it until its no-show deadline.
-    session.expiresAt = Math.max(session.expiresAt, now + this.current.idleMs);
+  private yieldPlace(session: Session, now: number) {
+    this.places.vacate(session);
+    this.places.wait(session);
+    session.state = 'waiting';
+    // A fresh wait: aging must not lift it straight back over the one it yielded to.
+    session.queuedAt = now;
+    session.claimable = false;
+    session.position = undefined;
+    session.checkAt = now + MIN_DOWNLOAD_CHECK_MS;
+    this.pressure = undefined;
+    this.counters.yielded++;
   }
 
-  private estimate(waiting: Session[], now: number) {
+  private expire(now: number) {
+    for (const session of this.sessions.values()) {
+      if (session.inFlight > 0 || now <= session.expiresAt) continue;
+      if (session.state === 'waiting') this.counters.noShows++;
+      else {
+        this.counters.released++;
+        if (session.served < session.size) this.resumes.keep(session.key, session, now);
+      }
+      this.remove(session);
+    }
+  }
+
+  /** Sessions streaming now that will have sent their last byte within HANDOVER_MS. */
+  private finishingSoon(now: number) {
+    let streaming = 0;
+    for (const session of this.sessions.values()) if (session.inFlight > 0) streaming++;
+    const perSession = this.rate.capacity(now) / Math.max(1, streaming);
+    if (perSession === 0) return 0;
+    let soon = 0;
+    for (const session of this.sessions.values())
+      if (
+        session.inFlight > 0 &&
+        (session.size - session.served) / perSession <= HANDOVER_MS / 1000
+      )
+        soon++;
+    return soon;
+  }
+
+  private estimate(order: Session[], now: number) {
     const remaining: number[] = [];
     for (const session of this.sessions.values())
       if (session.state === 'active') remaining.push(Math.max(0, session.size - session.served));
     const starts = estimateDownloadStarts(
       remaining,
-      waiting.map((session) => session.size),
+      order.map((session) => Math.max(0, session.size - session.served)),
       this.current.slots - this.current.interactiveReserve,
-      this.bytesPerSecond(now),
+      this.rate.capacity(now),
     );
-    waiting.forEach((session, index) => {
+    order.forEach((session, index) => {
       const startsIn = starts[index];
       session.position = index + 1;
       session.startsAt = startsIn === undefined ? undefined : now + startsIn;
-      session.checkAt = now + downloadCheckDelay(startsIn, session.position, session.seq);
+      // Those who may take a place check sooner, down to a second: a place may free early.
+      const delay = downloadCheckDelay(startsIn, session.position, session.seq);
+      session.checkAt =
+        now +
+        (session.claimable
+          ? Math.max(CLAIM_CHECK_MS, Math.min(delay, (startsIn ?? 0) / 2))
+          : delay);
     });
-  }
-
-  /** Bytes per second over the last minute, from the first second with traffic in it. */
-  private bytesPerSecond(now: number) {
-    const at = Math.floor(now / 1000);
-    this.forgetRate(at);
-    let total = 0;
-    let oldest = at;
-    for (const [stamp, bytes] of this.rate) {
-      total += bytes;
-      oldest = Math.min(oldest, stamp);
-    }
-    return total / (at - oldest + 1);
-  }
-
-  private forgetRate(at: number) {
-    for (const stamp of this.rate.keys()) if (stamp <= at - RATE_SECONDS) this.rate.delete(stamp);
   }
 
   private remove(session: Session) {
     this.sessions.delete(session.key);
-    if (session.state === 'waiting') {
-      this.waitingCount--;
-      this.waitingOf[session.class]--;
-    } else {
-      this.active--;
-      if (session.class !== 'interactive') this.shared--;
-      const own = (this.activeOf.get(session.principal) ?? 1) - 1;
-      if (own === 0) this.activeOf.delete(session.principal);
-      else this.activeOf.set(session.principal, own);
-    }
-    const owned = (this.perPrincipal.get(session.principal) ?? 1) - 1;
-    if (owned === 0) this.perPrincipal.delete(session.principal);
-    else this.perPrincipal.set(session.principal, owned);
+    if (session.state === 'waiting') this.places.leave(session);
+    else this.places.vacate(session);
+    const owned = (this.owned.get(session.principal) ?? 1) - 1;
+    if (owned === 0) this.owned.delete(session.principal);
+    else this.owned.set(session.principal, owned);
   }
+}
+
+function classIndex(name: DownloadClass) {
+  return downloadClasses.indexOf(name);
 }
 
 function busy(message: string, retryMs: number) {

@@ -20,6 +20,9 @@ async function exposedNames() {
         snapshot: {
           active: 0,
           waiting: { interactive: 0, release: 0, bulk: 0, background: 0 },
+          oldestWaitSeconds: 0,
+          released: 0,
+          yielded: 0,
           admitted: 0,
           queued: 0,
           completed: 0,

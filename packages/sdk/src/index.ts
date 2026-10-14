@@ -12,6 +12,9 @@ export type {
   TransferOptions,
   ClientErrorCode,
   HttpErrorDetails,
+  DownloadClass,
+  DownloadQueuePlace,
+  WaitEvent,
 } from './transfer.js';
 export type { RequestEvent } from './http-transport.js';
 export type { RepositoryClient } from './repository-client.js';

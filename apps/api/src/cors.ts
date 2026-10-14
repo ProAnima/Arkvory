@@ -9,7 +9,8 @@ const headers = [
   'range',
   'if-range',
   'if-none-match',
-  'arkvory-priority',
+  'arkvory-download-id',
+  'arkvory-download-class',
 ] as const;
 const exposed = [
   'X-Request-Id',
@@ -20,6 +21,7 @@ const exposed = [
   'Content-Disposition',
   'Location',
   'Retry-After',
+  'Arkvory-Download-Class',
   'Arkvory-Queue-Position',
   'Arkvory-Starts-At',
 ] as const;

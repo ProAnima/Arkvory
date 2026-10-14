@@ -1,8 +1,10 @@
+import { createHash } from 'node:crypto';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import {
   ArkvoryError,
   requestedDownloadClass,
   type DownloadClass,
+  type DownloadResponseEnd,
   type Principal,
 } from '@proanima/arkvory-domain';
 import type { AdmissionQueue, DownloadScheduler } from '@proanima/arkvory-infrastructure';
@@ -10,14 +12,11 @@ import type { AdmissionQueue, DownloadScheduler } from '@proanima/arkvory-infras
 /** One admitted response: bytes it sent and how it ended. `end` is idempotent. */
 export interface ContentAdmission {
   progress(bytes: number): void;
-  end(reachedEnd: boolean): void;
+  end(how: DownloadResponseEnd): void;
 }
 
-/**
- * Objects up to this size are admitted per request: a couple of ranges, done in moments, they
- * must not queue behind whole multi-gigabyte downloads (ADR 0076).
- */
-export const SESSION_THRESHOLD_BYTES = 16 * 1024 * 1024;
+/** A client's own id for one download: the session key instead of its address (ADR 0076). */
+const downloadId = /^[A-Za-z0-9_-]{16,64}$/;
 
 /** People queue as interactive, services and links as release (ADR 0076). */
 function ownClass(principal: Principal): DownloadClass {
@@ -26,23 +25,43 @@ function ownClass(principal: Principal): DownloadClass {
     : 'release';
 }
 
+/**
+ * Who a download counts for. A link is its own principal, not its issuer: everyone with links
+ * of one person would otherwise share that person's turn and session limit.
+ */
+function queuePrincipal(request: FastifyRequest, principal: Principal) {
+  const query: unknown = request.query;
+  const token =
+    typeof query === 'object' && query !== null && 'token' in query ? query.token : undefined;
+  return principal.credential === 'transfer-token' && typeof token === 'string'
+    ? `link:${createHash('sha256').update(token).digest('hex').slice(0, 32)}`
+    : principal.id;
+}
+
+function header(request: FastifyRequest, name: string): string | undefined {
+  const value = request.headers[name];
+  if (Array.isArray(value)) throw new ArkvoryError('invalid_input', `Repeated ${name} header`);
+  return value;
+}
+
 interface AdmissionServices {
   readonly downloadGate: Pick<AdmissionQueue, 'acquire'>;
-  readonly downloadScheduler: Pick<DownloadScheduler, 'admit' | 'policy'>;
-  readonly now?: () => number;
-  /** Tests lower it; production uses SESSION_THRESHOLD_BYTES. */
-  readonly sessionThresholdBytes?: number;
+  readonly downloadScheduler: Pick<
+    DownloadScheduler,
+    'admit' | 'admitHeld' | 'policy' | 'wallClock'
+  >;
 }
 
 /**
- * Admits one content response. Large objects belong to a download session keyed by principal,
- * object and client address, so the ranges of one download pass once it has its place; a
- * waiting session is answered 503 busy (download_queued) with its place, expected start and when
- * to come back. Small objects and the `shared` strategy keep admission per request.
+ * Admits one content response. Objects above `sessionMinBytes` belong to a download session
+ * keyed by principal, object and the client's `Arkvory-Download-Id` (else its address), so the
+ * ranges of one download pass once it has its place. A waiting client of the queue protocol is
+ * answered at once with 503 busy (download_queued), its place, expected start and when to come
+ * back; another client is held until its turn for a bounded time first. Small objects and the
+ * `shared` strategy keep admission per request.
  */
 export function createDownloadAdmission(services: AdmissionServices) {
-  const now = services.now ?? Date.now;
-  const threshold = services.sessionThresholdBytes ?? SESSION_THRESHOLD_BYTES;
+  const scheduler = services.downloadScheduler;
   return async (
     request: FastifyRequest,
     reply: FastifyReply,
@@ -51,24 +70,48 @@ export function createDownloadAdmission(services: AdmissionServices) {
     size: number,
     signal: AbortSignal,
   ): Promise<ContentAdmission> => {
-    if (size <= threshold || services.downloadScheduler.policy.strategy === 'shared') {
+    const id = header(request, 'arkvory-download-id');
+    if (id !== undefined && !downloadId.test(id))
+      throw new ArkvoryError(
+        'invalid_input',
+        'Arkvory-Download-Id must be 16 to 64 characters of A-Z, a-z, 0-9, _ and -',
+      );
+    const downloadClass = requestedDownloadClass(
+      ownClass(principal),
+      header(request, 'arkvory-download-class'),
+    );
+    const policy = scheduler.policy;
+    if (size <= policy.sessionMinBytes || policy.strategy === 'shared') {
       const release = await services.downloadGate.acquire(principal.id, signal);
       return { progress: () => undefined, end: release };
     }
-    const admission = services.downloadScheduler.admit({
-      key: `${principal.id}\n${objectId}\n${request.ip}`,
-      principal: principal.id,
-      class: requestedDownloadClass(ownClass(principal), request.headers['arkvory-priority']),
+    const who = queuePrincipal(request, principal);
+    const session = {
+      key: `${who}\n${objectId}\n${id ?? `ip:${request.ip}`}`,
+      principal: who,
+      class: downloadClass,
       size,
-    });
+      queueAware: id !== undefined,
+    };
+    reply.header('Arkvory-Download-Class', downloadClass);
+    const admission = session.queueAware
+      ? scheduler.admit(session)
+      : await scheduler.admitHeld(session, signal);
     if (admission.state === 'active') return admission.lease;
     reply.removeHeader('ETag');
-    reply.header('Arkvory-Queue-Position', String(admission.position));
+    if (admission.position !== undefined)
+      reply.header('Arkvory-Queue-Position', String(admission.position));
     if (admission.startsAt !== undefined)
-      reply.header('Arkvory-Starts-At', new Date(admission.startsAt).toISOString());
+      reply.header(
+        'Arkvory-Starts-At',
+        new Date(scheduler.wallClock(admission.startsAt)).toISOString(),
+      );
     throw new ArkvoryError('busy', 'Download is queued', {
       reason: 'download_queued',
-      retryAfterSeconds: Math.max(1, Math.ceil((admission.checkAt - now()) / 1000)),
+      retryAfterSeconds: Math.max(
+        1,
+        Math.ceil((scheduler.wallClock(admission.checkAt) - Date.now()) / 1000),
+      ),
     });
   };
 }

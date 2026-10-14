@@ -119,7 +119,7 @@ export function createContentSender(dependencies: ContentServices) {
       streaming = true;
       return await reply.send(stream);
     } catch (error) {
-      admission?.end(false);
+      admission?.end({ finished: false, reachedEnd: false });
       throw error;
     } finally {
       if (!streaming) await pin?.release();
@@ -129,8 +129,9 @@ export function createContentSender(dependencies: ContentServices) {
   return sendContent;
 }
 /**
- * Reports read bytes to the admission and ends it when the response closes. The download is
- * complete only when this response covered the last byte, read it all and finished writing.
+ * Reports read bytes to the admission and ends it when the response closes: whether it was sent
+ * to its end and whether it covered the object's last byte. The session decides from all its
+ * responses whether the download is complete.
  */
 function meteredContent(
   source: AsyncIterable<Uint8Array>,
@@ -142,7 +143,7 @@ function meteredContent(
   let finished = false;
   reply.raw.once('finish', () => (finished = true));
   reply.raw.once('close', () => {
-    admission.end(toEnd && drained && finished);
+    admission.end({ finished: drained && finished, reachedEnd: toEnd });
   });
   return (async function* () {
     for await (const chunk of source) {

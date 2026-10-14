@@ -263,28 +263,36 @@ export class ApiMetrics {
     });
   }
 
-  /** Download sessions of ADR 0076, by state and class; aggregates only. */
+  /** Download sessions of ADR 0076; aggregates only. */
   private registerDownloadSessions(): void {
     const scheduler = this.sources.transfers.downloadScheduler;
     this.registry.sampled({
-      name: 'arkvory_download_sessions',
-      help: 'Download sessions holding a place (active) or waiting for one, by class.',
+      name: 'arkvory_download_sessions_active',
+      help: 'Download sessions holding a place.',
       type: 'gauge',
-      labels: ['state', 'class'],
+      labels: [],
+      collect: () => [{ labels: {}, value: scheduler.snapshot.active }],
+    });
+    this.registry.sampled({
+      name: 'arkvory_download_sessions_waiting',
+      help: 'Download sessions waiting for a place, by class.',
+      type: 'gauge',
+      labels: ['class'],
       collect: () => {
-        const { active, waiting } = scheduler.snapshot;
-        return [
-          { labels: { state: 'active', class: 'all' }, value: active },
-          ...downloadClasses.map((name) => ({
-            labels: { state: 'waiting', class: name },
-            value: waiting[name],
-          })),
-        ];
+        const { waiting } = scheduler.snapshot;
+        return downloadClasses.map((name) => ({ labels: { class: name }, value: waiting[name] }));
       },
     });
     this.registry.sampled({
+      name: 'arkvory_download_queue_oldest_wait_seconds',
+      help: 'How long the longest waiting download session has waited.',
+      type: 'gauge',
+      labels: [],
+      collect: () => [{ labels: {}, value: scheduler.snapshot.oldestWaitSeconds }],
+    });
+    this.registry.sampled({
       name: 'arkvory_download_session_events_total',
-      help: 'Download sessions admitted, queued, completed, dropped as no-shows or refused as over the limit.',
+      help: 'Download sessions admitted, queued, completed, released after a pause, yielded at a range boundary, dropped as no-shows or refused over the limit.',
       type: 'counter',
       labels: ['event'],
       collect: () => {
@@ -293,6 +301,8 @@ export class ApiMetrics {
           { labels: { event: 'admitted' }, value: snapshot.admitted },
           { labels: { event: 'queued' }, value: snapshot.queued },
           { labels: { event: 'completed' }, value: snapshot.completed },
+          { labels: { event: 'released' }, value: snapshot.released },
+          { labels: { event: 'yielded' }, value: snapshot.yielded },
           { labels: { event: 'no_show' }, value: snapshot.noShows },
           { labels: { event: 'refused' }, value: snapshot.refused },
         ];

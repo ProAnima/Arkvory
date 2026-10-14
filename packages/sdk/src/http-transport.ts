@@ -6,6 +6,7 @@ import {
   retryAfter,
   readNetwork,
   releaseReader,
+  type DownloadQueuePlace,
 } from './transfer.js';
 export interface HttpPort {
   request(path: string, init?: RequestInit, signal?: AbortSignal): Promise<Response>;
@@ -145,6 +146,7 @@ export class HttpTransport implements HttpPort {
             serverMessage: parsed.message,
             ...(parsed.reason === undefined ? {} : { reason: parsed.reason }),
             ...(parsed.details ? { details: parsed.details } : {}),
+            ...queuePlace(response.headers),
           }
         : {},
     );
@@ -191,4 +193,14 @@ export class HttpTransport implements HttpPort {
       signal,
     );
   }
+}
+
+/** The queue headers of ADR 0076; malformed values are left out, never guessed. */
+function queuePlace(headers: Headers): { queue?: DownloadQueuePlace } {
+  const position = Number(headers.get('arkvory-queue-position') ?? '');
+  const starts = Date.parse(headers.get('arkvory-starts-at') ?? '');
+  const queue: { position?: number; startsAt?: Date } = {};
+  if (Number.isSafeInteger(position) && position >= 1) queue.position = position;
+  if (Number.isFinite(starts)) queue.startsAt = new Date(starts);
+  return queue.position === undefined && queue.startsAt === undefined ? {} : { queue };
 }

@@ -120,6 +120,47 @@ test('CLI download publishes only a verified stream and never replaces a destina
   await assert.rejects(download(input), { code: 'destination_exists' });
 });
 
+test('CLI --class reaches the download and only known classes are accepted', async (t) => {
+  const directory = await mkdtemp(join(tmpdir(), 'arkvory-cli-'));
+  t.after(() => removeTestDirectory(directory));
+  const bytes = Buffer.from('bulk payload');
+  let asked;
+  const client = {
+    async artifact() {
+      return {
+        descriptor: {
+          size: String(bytes.length),
+          sha256: createHash('sha256').update(bytes).digest('hex'),
+        },
+      };
+    },
+    async downloadVerified(repository, id, options) {
+      asked = options.downloadClass;
+      return new ReadableStream({
+        start(controller) {
+          controller.enqueue(bytes);
+          controller.close();
+        },
+      });
+    },
+  };
+  await download({
+    client,
+    output: join(directory, 'out.bin'),
+    server: 'https://arkvory.example/',
+    repository: 'releases',
+    id: 'artifact',
+    signal: new AbortController().signal,
+    progress() {},
+    downloadClass: 'bulk',
+  });
+  assert.equal(asked, 'bulk');
+  assert.equal(
+    parseArguments(['download', 'a', 'b', '--class', 'bulk']).options.get('class'),
+    'bulk',
+  );
+});
+
 test('CLI bounded local reads and concurrent checkpoint ownership fail closed', async (t) => {
   const directory = await mkdtemp(join(tmpdir(), 'arkvory-cli-'));
   t.after(() => removeTestDirectory(directory));

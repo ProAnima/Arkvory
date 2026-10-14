@@ -5,6 +5,18 @@ export interface HttpErrorDetails {
   readonly serverMessage?: string;
   readonly reason?: string;
   readonly details?: readonly ErrorDetailResponse[];
+  readonly queue?: DownloadQueuePlace;
+}
+
+/** Queue classes of downloads, highest first (ADR 0076). */
+export type DownloadClass = 'interactive' | 'release' | 'bulk' | 'background';
+
+/** A queued download's place, from Arkvory-Queue-Position and Arkvory-Starts-At (ADR 0076). */
+export interface DownloadQueuePlace {
+  /** 1 is next. */
+  readonly position?: number;
+  /** The server's estimate of when the download starts. */
+  readonly startsAt?: Date;
 }
 
 /**
@@ -16,6 +28,8 @@ export class ArkvoryHttpError extends Error {
   readonly serverMessage: string;
   readonly reason: string | undefined;
   readonly details: readonly ErrorDetailResponse[];
+  /** For 503 busy with reason download_queued: the place in the server's download queue. */
+  readonly queue: DownloadQueuePlace | undefined;
   constructor(
     readonly status: number,
     readonly code: string,
@@ -28,6 +42,7 @@ export class ArkvoryHttpError extends Error {
     this.serverMessage = extra.serverMessage ?? '';
     this.reason = extra.reason;
     this.details = extra.details ?? [];
+    this.queue = extra.queue;
   }
   /** Whole seconds of Retry-After or of the body's retryAfterSeconds, when the server sent one. */
   get retryAfterSeconds(): number | undefined {
@@ -87,6 +102,13 @@ export interface TransferPolicy {
   /** Default of TransferOptions.onWait for every operation of a client. */
   readonly onWait?: TransferOptions['onWait'];
 }
+/** A wait the server asked for; `queue` is set when the download waits in its queue. */
+export interface WaitEvent {
+  readonly delayMs: number;
+  readonly waitedMs: number;
+  readonly queue?: DownloadQueuePlace;
+}
+
 export interface TransferOptions {
   readonly signal?: AbortSignal;
   readonly onRetry?: (event: { attempt: number; delayMs: number }) => void;
@@ -97,7 +119,7 @@ export interface TransferOptions {
    */
   readonly waitLimitMs?: number;
   /** Called before each wait the server asked for, e.g. to show that the download is queued. */
-  readonly onWait?: (event: { delayMs: number; waitedMs: number }) => void;
+  readonly onWait?: (event: WaitEvent) => void;
 }
 
 /** The server's own "come later": its queue or limit is full, nothing failed (ADR 0076). */
@@ -221,7 +243,11 @@ export class TransferAttempts {
     const wait = waitDelay(this.policy.baseDelayMs, failure.retryAfterMs ?? 0, Math.random);
     const limit = this.options.waitLimitMs ?? this.policy.waitLimitMs;
     if (limit !== undefined && this.waitedMs + wait > limit) throw failure;
-    (this.options.onWait ?? this.policy.onWait)?.({ delayMs: wait, waitedMs: this.waitedMs });
+    (this.options.onWait ?? this.policy.onWait)?.({
+      delayMs: wait,
+      waitedMs: this.waitedMs,
+      ...(failure.queue ? { queue: failure.queue } : {}),
+    });
     await delay(wait, this.options.signal);
     this.waitedMs += wait;
   }

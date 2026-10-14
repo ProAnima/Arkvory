@@ -300,6 +300,60 @@ test('a busy server is waited for as long as it asks, without using the retry bu
   );
 });
 
+test('a queued download keeps one id over its ranges and hears its place and start', async (t) => {
+  const bytes = Buffer.alloc(partBytes + 1, 0x4a),
+    meta = artifact(bytes),
+    ids = new Set(),
+    classes = new Set();
+  const startsAt = '2030-01-02T03:04:05.000Z';
+  let refusals = 0;
+  const { client } = await serve(t, (req, res) => {
+    if (!req.url.endsWith('/content')) return res.end(JSON.stringify(meta));
+    ids.add(req.headers['arkvory-download-id']);
+    classes.add(req.headers['arkvory-download-class']);
+    if (refusals < 2) {
+      refusals++;
+      res.writeHead(503, {
+        'content-type': 'application/json',
+        'Retry-After': '0',
+        'Arkvory-Queue-Position': '7',
+        'Arkvory-Starts-At': startsAt,
+      });
+      return res.end(
+        JSON.stringify({
+          code: 'busy',
+          reason: 'download_queued',
+          message: 'Download is queued',
+          requestId: 'r',
+        }),
+      );
+    }
+    res.end(range(req, res, bytes, meta));
+  });
+  const waits = [];
+  const stream = await client.downloadVerified('releases', meta.id, {
+    downloadClass: 'bulk',
+    onWait: (event) => waits.push(event),
+  });
+  assert.deepEqual(await contents(stream), bytes);
+  // Every range of the download, refused or served, carries the same id and class.
+  assert.equal(ids.size, 1);
+  assert.match([...ids][0], /^[A-Za-z0-9_-]{16,64}$/);
+  assert.deepEqual([...classes], ['bulk']);
+  assert.equal(waits.length, 2);
+  assert.equal(waits[0].queue.position, 7);
+  assert.equal(waits[0].queue.startsAt.toISOString(), startsAt);
+  // Another download is another id; a resumed one passes its own id again.
+  await contents(await client.downloadVerified('releases', meta.id));
+  assert.equal(ids.size, 2);
+  const resumed = 'job-0123456789abcdef';
+  await contents(await client.downloadVerified('releases', meta.id, { downloadId: resumed }));
+  assert.ok(ids.has(resumed));
+  await assert.rejects(client.downloadVerified('releases', meta.id, { downloadId: 'short' }), {
+    code: 'invalid_argument',
+  });
+});
+
 test('one download shares the retry budget across all ranges', async (t) => {
   const bytes = Buffer.alloc(partBytes + 1, 0x49),
     meta = artifact(bytes),

@@ -29,10 +29,16 @@ export function createTransferControls(config: ServerConfig, available: () => bo
   );
   // Whole downloads of large objects queue as sessions (ADR 0076); small ones use downloadGate.
   const downloadScheduler = new DownloadScheduler(
-    downloadSchedulePolicy(config.maxDownloads, {
-      strategy: config.downloadStrategy ?? 'ordered',
-      perPrincipalActive: config.maxDownloadsPerPrincipal ?? Math.min(4, config.maxDownloads),
-    }),
+    config.downloadQueue ??
+      downloadSchedulePolicy(config.maxDownloads, {
+        strategy: config.sharedDownloads ? 'shared' : 'ordered',
+        perPrincipalActive: config.maxDownloadsPerPrincipal ?? Math.min(4, config.maxDownloads),
+      }),
+    {
+      limit: config.transferQueueLimit ?? 64,
+      timeoutMs:
+        (config.downloadHoldSeconds ?? (config.transferQueueTimeoutMs ?? 20000) / 1000) * 1000,
+    },
   );
   // Anonymous hashing: one active and four queued per client address, so one source cannot
   // occupy both slots or the whole queue.
