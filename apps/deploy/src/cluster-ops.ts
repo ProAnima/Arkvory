@@ -198,6 +198,8 @@ async function waitFor(condition: () => Promise<boolean>, timeoutMs: number, wha
 export async function switchover(
   target: string | undefined,
   tool: Tool = systemTool,
+  /** Runs right before `--move`; a failure here refuses the switchover with nothing changed. */
+  beforeMove: () => Promise<void> = () => Promise.resolve(),
 ): Promise<void> {
   const { resource } = await requireMarker();
   if (!target) throw new Error('--to names the node to move Arkvory to');
@@ -220,6 +222,7 @@ export async function switchover(
     throw new Error(
       `${target} has no complete copy yet; wait for the resynchronization before a switchover`,
     );
+  await beforeMove();
   await tool('crm_resource', ['--resource', resource, '--move', '--node', target]);
   // Once the move constraint exists, a failure leaves a move to finish; before, nothing changed.
   try {

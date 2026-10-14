@@ -13,10 +13,11 @@ import {
 } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { pollChanges, resetChanges } from '../apps/deploy/dist/site-changes.js';
+import { execFileSync } from 'node:child_process';
+import { pollChanges, requestDigest, resetChanges } from '../apps/deploy/dist/site-changes.js';
 import { SwitchoverIncomplete } from '../apps/deploy/dist/cluster-ops.js';
 import { link } from 'node:fs/promises';
-import { SiteChangeControl } from '../apps/api/dist/site-change-control.js';
+import { digestOf, SiteChangeControl } from '../apps/api/dist/site-change-control.js';
 import { readSiteChange } from '../packages/contracts/dist/index.js';
 import { removeTestDirectory } from './helpers.mjs';
 
@@ -60,9 +61,9 @@ function actions({ fail, mirrors = [], finish = async () => true, switchover } =
       calls.push({ mirror: change });
       if (fail) throw new Error(fail);
     },
-    switchover: async (node) => {
+    switchover: async (node, mark) => {
       calls.push({ switchover: node });
-      if (switchover) await switchover();
+      if (switchover) await switchover(mark);
     },
     finishSwitchover: async (node) => {
       calls.push({ finish: node });
@@ -184,12 +185,25 @@ test('a hostile inbox: links, directories and leftovers never reach a key or sto
   const root = await site(t);
   const api = new SiteChangeControl(join(root, 'updates'));
   await pollChanges(root, actions());
-  // A directory where the request goes: removed, refused, and the agent keeps reporting.
+  // A directory where the request goes: refused where it lies, never taken into the root and
+  // never removed recursively (a subdirectory could become a link to a root-owned tree).
   await mkdir(join(root, 'updates/inbox/change.json/nested'), { recursive: true });
-  await pollChanges(root, actions());
-  assert.deepEqual(await readdir(join(root, 'updates/inbox')), []);
+  const victim = join(root, 'victim');
+  await mkdir(victim);
+  await writeFile(join(victim, 'precious'), 'keep');
+  if (posix) await symlink(victim, join(root, 'updates/inbox/change.json/link'));
+  const refused = actions();
+  await pollChanges(root, refused);
+  assert.equal(refused.calls.length, 0);
+  assert.deepEqual(await readdir(join(root, 'updates/inbox/change.json/nested')), []);
+  assert.equal(await readFile(join(victim, 'precious'), 'utf8'), 'keep');
   assert.ok(!(await readdir(root)).includes('change-request.json'));
   assert.equal((await api.status()).agent, true);
+  await rm(join(root, 'updates/inbox/change.json'), { recursive: true });
+  // An empty directory is only an empty name: removed without descending.
+  await mkdir(join(root, 'updates/inbox/change.json'));
+  await pollChanges(root, actions());
+  assert.deepEqual(await readdir(join(root, 'updates/inbox')), []);
   // A directory as the key of a request: no key, the attach is refused with a code.
   await api.request(id(5), attach, key, 'admin');
   await rm(join(root, `updates/inbox/${id(5)}.key`), { force: true });
@@ -292,6 +306,8 @@ test('a switchover is finished on the new node, retried while young, and judged 
       }),
     );
   await claimed(3);
+  // The marker written right before `--move`: a move constraint may exist.
+  await writeFile(join(root, 'change-moving'), id(3));
   // Pacemaker is busy right after the move: tried again on the next tick.
   await pollChanges(
     root,
@@ -305,6 +321,7 @@ test('a switchover is finished on the new node, retried while young, and judged 
   await pollChanges(root, actions());
   assert.equal((await status(root)).recent[0].state, 'done');
   assert.ok(!(await readdir(root)).includes('change-request.json'));
+  assert.ok(!(await readdir(root)).includes('change-moving'));
   // Moved, but clearing the constraint failed: it is done, as Arkvory runs on the target.
   const api = new SiteChangeControl(join(root, 'updates'));
   await api.request(
@@ -322,6 +339,104 @@ test('a switchover is finished on the new node, retried while young, and judged 
     }),
   );
   assert.equal((await status(root)).recent[0].state, 'done');
+});
+
+test('a switchover killed before its move is interrupted, never cleared', async (t) => {
+  const root = await site(t);
+  const api = new SiteChangeControl(join(root, 'updates'));
+  await pollChanges(root, actions());
+  const change = readSiteChange({ kind: 'cluster-switchover', node: 'node-b', confirm: 'node-b' });
+  // The move marker is written right before the move, for this request only.
+  await api.request(id(1), change, undefined, 'admin');
+  const moving = actions({
+    switchover: async (mark) => {
+      await mark();
+      assert.equal(await readFile(join(root, 'change-moving'), 'utf8'), id(1));
+    },
+  });
+  await pollChanges(root, moving);
+  assert.equal((await status(root)).recent[0].state, 'done');
+  // Claimed and killed before the marker (a stale marker of another request does not count).
+  await writeFile(join(root, 'change-moving'), id(9));
+  await writeFile(
+    join(root, 'change-request.json'),
+    JSON.stringify({
+      id: id(2),
+      digest: 'b'.repeat(64),
+      requestedAt: new Date().toISOString(),
+      actor: 'admin',
+      change,
+    }),
+  );
+  const agent = actions();
+  await pollChanges(root, agent);
+  assert.deepEqual(agent.calls, [], 'no finish, so no crm_resource --clear');
+  const after = await status(root);
+  assert.equal(after.blocked, 'interrupted');
+  assert.equal(after.recent[0].error, 'interrupted');
+});
+
+test('the agent recomputes the digest and refuses a request or key swapped in the inbox', async (t) => {
+  const root = await site(t);
+  const api = new SiteChangeControl(join(root, 'updates'));
+  await pollChanges(root, actions());
+  // The API and the agent hash the same text.
+  for (const [change, secret] of [
+    [attach, key],
+    [detach, undefined],
+  ])
+    assert.equal(digestOf(change, secret), requestDigest(change, secret ?? null));
+  // Another change under the id and digest of a detach.
+  await api.request(id(1), detach, undefined, 'admin');
+  const inbox = join(root, 'updates/inbox/change.json');
+  const sent = JSON.parse(await readFile(inbox, 'utf8'));
+  await rm(inbox);
+  await writeFile(
+    inbox,
+    JSON.stringify({ ...sent, change: { kind: 'mirror-detach', repositories: ['other'] } }),
+  );
+  const agent = actions({ mirrors: ['imports', 'other'] });
+  await pollChanges(root, agent);
+  assert.equal(agent.calls.length, 0);
+  assert.equal((await api.status()).recent[0].error, 'digest_mismatch');
+  // Another key beside an attach: never sent to the source.
+  await api.request(id(2), attach, key, 'admin');
+  const keyFile = join(root, `updates/inbox/${id(2)}.key`);
+  await rm(keyFile);
+  await writeFile(keyFile, 'attacker_' + 'z'.repeat(40));
+  const attacked = actions();
+  await pollChanges(root, attacked);
+  assert.equal(attacked.calls.length, 0);
+  assert.equal((await api.status()).recent[0].error, 'digest_mismatch');
+});
+
+test('no change is applied over an unsettled deployment journal', async (t) => {
+  const root = await site(t);
+  const api = new SiteChangeControl(join(root, 'updates'));
+  await pollChanges(root, actions());
+  await api.request(id(1), detach, undefined, 'admin');
+  await writeFile(join(root, 'journal.json'), JSON.stringify({ phase: 'switching' }));
+  const agent = actions({ mirrors: ['imports'] });
+  await assert.rejects(pollChanges(root, agent), /Interrupted deployment/);
+  assert.equal(agent.calls.length, 0);
+  assert.ok((await readdir(join(root, 'updates/inbox'))).includes('change.json'));
+  await writeFile(join(root, 'journal.json'), JSON.stringify({ phase: 'committed' }));
+  await pollChanges(root, agent);
+  assert.equal(agent.calls.length, 1);
+});
+
+test('a FIFO in the inbox blocks neither the API nor the agent', async (t) => {
+  // mkfifo exists on POSIX hosts only; Windows has no named pipes in a directory.
+  if (process.platform === 'win32') return;
+  const root = await site(t);
+  const api = new SiteChangeControl(join(root, 'updates'));
+  await pollChanges(root, actions());
+  execFileSync('mkfifo', [join(root, 'updates/inbox/change.json')]);
+  const listed = await api.status();
+  assert.equal(listed.pending, null);
+  assert.equal(listed.agent, true);
+  await pollChanges(root, actions());
+  assert.deepEqual(await readdir(join(root, 'updates/inbox')), []);
 });
 
 test("a switchover refused before its move never clears the operator's constraints", async (t) => {
@@ -396,14 +511,35 @@ test('an unreadable status blocks until reset; reset ends what was left applying
   const root = await site(t);
   const api = new SiteChangeControl(join(root, 'updates'));
   await pollChanges(root, actions());
-  await writeFile(
-    join(root, 'updates/status/changes.json'),
-    JSON.stringify({ heartbeatAt: new Date().toISOString(), recent: [{ id: 'x' }] }),
-  );
-  await pollChanges(root, actions());
+  const unreadable = JSON.stringify({
+    heartbeatAt: new Date().toISOString(),
+    recent: [{ id: 'x' }],
+  });
+  await writeFile(join(root, 'updates/status/changes.json'), unreadable);
+  // A switchover claimed and moving when the status became unreadable: kept for the operator.
+  const claim = JSON.stringify({
+    id: id(8),
+    digest: 'd'.repeat(64),
+    requestedAt: new Date().toISOString(),
+    actor: 'admin',
+    change: { kind: 'cluster-switchover', node: 'node-b', confirm: 'node-b' },
+  });
+  await writeFile(join(root, 'change-request.json'), claim);
+  await writeFile(join(root, 'change-moving'), id(8));
+  const agent = actions();
+  for (let tick = 0; tick < 2; tick++) await pollChanges(root, agent);
+  assert.deepEqual(agent.calls, []);
   const blocked = JSON.parse(await readFile(join(root, 'updates/status/changes.json'), 'utf8'));
   assert.equal(blocked.blocked, 'unreadable');
+  assert.equal(
+    await readFile(join(root, 'updates/status/changes.json.unreadable'), 'utf8'),
+    unreadable,
+    'the original is kept aside, not overwritten by the heartbeat',
+  );
+  assert.equal(await readFile(join(root, 'change-request.json'), 'utf8'), claim);
+  assert.equal((await api.status()).agent, true);
   await resetChanges(root);
+  assert.ok(!(await readdir(root)).includes('change-moving'));
   assert.equal((await api.status()).blocked, null);
   // A switchover whose retries an operator cut short ends as interrupted, not "applying".
   await writeFile(

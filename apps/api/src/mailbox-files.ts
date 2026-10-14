@@ -6,11 +6,16 @@ import { randomUUID } from 'node:crypto';
 const missing = (error: unknown) =>
   error instanceof Error && 'code' in error && error.code === 'ENOENT';
 
-/** A regular file of the host mailbox up to `limit` bytes, never through a link; null if absent. */
+/**
+ * A regular file of the host mailbox up to `limit` bytes, never through a link; null if absent.
+ * The inbox is writable by anyone who can reach it: a FIFO placed there would block a plain open
+ * (and a thread of the pool with it) until a writer comes, so it opens without waiting and is
+ * refused by the type check.
+ */
 export async function mailboxJson(path: string, limit = 16384): Promise<unknown> {
   let file;
   try {
-    file = await open(path, constants.O_RDONLY | constants.O_NOFOLLOW);
+    file = await open(path, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
   } catch (error) {
     if (missing(error)) return null;
     throw error;

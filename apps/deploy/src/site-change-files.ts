@@ -1,6 +1,7 @@
 import { constants } from 'node:fs';
-import { lstat, open, readdir, rename, rm, writeFile } from 'node:fs/promises';
-import { join } from 'node:path';
+import { lstat, open, readdir, rename, rmdir, unlink, writeFile } from 'node:fs/promises';
+import { randomUUID } from 'node:crypto';
+import { dirname, join } from 'node:path';
 import { readSiteChangeStatus } from '@proanima/arkvory-contracts';
 import type { SiteChangeStatus } from '@proanima/arkvory-contracts';
 import { jsonFile } from './files.js';
@@ -19,6 +20,8 @@ export function mailbox(root: string) {
     status: join(root, 'updates/status/changes.json'),
     claimed: join(root, 'change-request.json'),
     claimedKey: join(root, 'change.key'),
+    /** The id of a claimed switchover whose `--move` may have been issued. */
+    moving: join(root, 'change-moving'),
   };
 }
 export type Mailbox = ReturnType<typeof mailbox>;
@@ -32,15 +35,34 @@ export const missing = (error: unknown) =>
   error instanceof Error && 'code' in error && error.code === 'ENOENT';
 
 /**
+ * Removes one name without ever descending: a link or any other non-directory loses its name
+ * only (`unlink` never follows the last component), a directory goes only when empty. Nothing
+ * from the inbox is removed recursively: the API (or whoever writes the inbox) could swap a
+ * subdirectory for a link to `/etc` while root walks the tree.
+ */
+async function removeName(path: string): Promise<void> {
+  const info = await lstat(path).catch(() => null);
+  if (!info) return;
+  await (info.isDirectory() ? rmdir(path) : unlink(path)).catch(() => undefined);
+}
+
+/**
  * Moves `from` to `to`, then checks what arrived: anything but a regular file with one name is
- * removed and refused. False when nothing was there.
+ * refused. Anything else than a regular file is refused before the move, so a directory is never
+ * taken into the root; one swapped in between is put back into the inbox under a name the sweep
+ * removes (empty) or leaves. False when nothing was there.
  */
 export async function claim(from: string, to: string): Promise<boolean> {
-  // The API links a complete temporary file to the name and removes the temporary right after:
-  // two names mean it is still publishing. Taken on the next tick, not refused.
   const before = await lstat(from).catch(() => null);
   if (!before) return false;
-  if (before.isFile() && before.nlink > 1) return false;
+  if (!before.isFile()) {
+    // A link, FIFO or socket loses its name; a directory goes only when empty.
+    await removeName(from);
+    throw new Error(`${from} is not a regular file; refused`);
+  }
+  // The API links a complete temporary file to the name and removes the temporary right after:
+  // two names mean it is still publishing. Taken on the next tick, not refused.
+  if (before.nlink > 1) return false;
   try {
     await rename(from, to);
   } catch (error) {
@@ -49,8 +71,10 @@ export async function claim(from: string, to: string): Promise<boolean> {
   }
   const info = await lstat(to);
   if (!info.isFile() || info.nlink !== 1) {
-    await rm(to, { recursive: true, force: true });
-    throw new Error(`${from} was not a regular file; removed`);
+    if (info.isDirectory())
+      await rename(to, join(dirname(from), `.refused-${randomUUID()}.tmp`)).catch(() => undefined);
+    else await removeName(to);
+    throw new Error(`${from} was not a regular file; refused`);
   }
   return true;
 }
@@ -104,12 +128,44 @@ export async function sweep(box: Mailbox, now: number): Promise<void> {
     if (!name.endsWith('.key') && !(name.startsWith('.') && name.endsWith('.tmp'))) continue;
     const path = join(box.inbox, name);
     const info = await lstat(path).catch(() => null);
-    if (info && now - info.mtimeMs > LEFTOVER_MS)
-      await rm(path, { recursive: true, force: true }).catch(() => undefined);
+    if (info && now - info.mtimeMs > LEFTOVER_MS) await removeName(path);
   }
 }
 
 /** Every step on its own: one that fails does not keep the others, nor the key, from going. */
 export async function removeAll(paths: readonly string[]): Promise<void> {
-  for (const path of paths) await rm(path, { recursive: true, force: true }).catch(() => undefined);
+  for (const path of paths) await removeName(path);
+}
+
+/**
+ * Written and synced right before `crm_resource --move`: only a claim with this marker may have
+ * left a move constraint, so only then may a later tick clear it. Without it the agent was killed
+ * before the move and `--clear` would drop the operator's own constraints.
+ */
+export async function markMoving(path: string, id: string): Promise<void> {
+  const file = await open(path, 'w', 0o600);
+  try {
+    await file.writeFile(id);
+    await file.sync();
+  } finally {
+    await file.close();
+  }
+}
+
+export async function movingFor(path: string, id: string): Promise<boolean> {
+  try {
+    return (await readClaimed(path, 64)).trim() === id;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * A status this release cannot read is kept for an operator: moved aside once (a later one does
+ * not replace the first), so the heartbeat written next does not destroy what it said.
+ */
+export async function keepUnreadable(path: string): Promise<void> {
+  const aside = `${path}.unreadable`;
+  if (await lstat(aside).catch(() => null)) return;
+  await rename(path, aside).catch(() => undefined);
 }
