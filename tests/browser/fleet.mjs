@@ -44,8 +44,11 @@ export async function exerciseFleet(browser, f, cleanup) {
     await connectWithKey(page, f.headers.authorization.slice(7));
     await page.locator('[data-nav=fleet]').click();
     await page.locator('#fleet-empty').waitFor();
-    assert.match(await page.locator('#fleet-self').innerText(), /^Main, version /);
-    assert.equal(await page.locator('#fleet-controllers-empty').isVisible(), true);
+    // This site's own line arrives with its own request, after the empty list.
+    await page.waitForFunction(() =>
+      /^Main, version /.test(document.querySelector('#fleet-self')?.textContent ?? ''),
+    );
+    await page.locator('#fleet-controllers-empty').waitFor();
     // Check the address: plain HTTP on loopback has no certificate to compare.
     await page.locator('#fleet-url').fill(siteAddress);
     await page.locator('#fleet-check').click();
