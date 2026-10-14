@@ -14,6 +14,8 @@ import {
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pollChanges, resetChanges } from '../apps/deploy/dist/site-changes.js';
+import { SwitchoverIncomplete } from '../apps/deploy/dist/cluster-ops.js';
+import { link } from 'node:fs/promises';
 import { SiteChangeControl } from '../apps/api/dist/site-change-control.js';
 import { readSiteChange } from '../packages/contracts/dist/index.js';
 import { removeTestDirectory } from './helpers.mjs';
@@ -315,9 +317,116 @@ test('a switchover is finished on the new node, retried while young, and judged 
     root,
     actions({
       switchover: async () => {
-        throw new Error('clear failed');
+        throw new SwitchoverIncomplete(new Error('clear failed'));
       },
     }),
   );
   assert.equal((await status(root)).recent[0].state, 'done');
+});
+
+test("a switchover refused before its move never clears the operator's constraints", async (t) => {
+  const root = await site(t);
+  const api = new SiteChangeControl(join(root, 'updates'));
+  await pollChanges(root, actions());
+  const change = readSiteChange({ kind: 'cluster-switchover', node: 'node-b', confirm: 'node-b' });
+  await api.request(id(1), change, undefined, 'admin');
+  const agent = actions({
+    switchover: async () => {
+      throw new Error('node-b has no complete copy yet');
+    },
+  });
+  await pollChanges(root, agent);
+  assert.deepEqual(
+    agent.calls,
+    [{ switchover: 'node-b' }],
+    'no finish, so no crm_resource --clear',
+  );
+  assert.equal((await api.status()).recent[0].error, 'switchover_failed');
+});
+
+test('races at the slot: a request still being published, a stale key, a claim already done', async (t) => {
+  const root = await site(t);
+  const api = new SiteChangeControl(join(root, 'updates'));
+  await pollChanges(root, actions());
+  // The API links the request and has not removed its temporary name yet: taken next tick.
+  await api.request(id(1), detach, undefined, 'admin');
+  const temporary = join(root, 'updates/inbox/.publishing.tmp');
+  await link(join(root, 'updates/inbox/change.json'), temporary);
+  const early = actions({ mirrors: ['imports'] });
+  await pollChanges(root, early);
+  assert.equal(early.calls.length, 0);
+  assert.ok((await readdir(join(root, 'updates/inbox'))).includes('change.json'));
+  await rm(temporary);
+  await pollChanges(root, actions({ mirrors: ['imports'] }));
+  assert.equal((await api.status()).recent[0].state, 'done');
+  // A key of this id left by an earlier attempt is not removed by a refused one.
+  const stale = join(root, `updates/inbox/${id(2)}.key`);
+  await writeFile(stale, key);
+  await writeFile(join(root, 'updates/inbox/change.json'), 'taken by another process');
+  await assert.rejects(api.request(id(2), attach, key, 'admin'), { code: 'busy' });
+  assert.equal(await readFile(stale, 'utf8'), key);
+  await rm(join(root, 'updates/inbox/change.json'));
+  // The same id with another key is another request.
+  await api.request(id(3), attach, key, 'admin');
+  await assert.rejects(api.request(id(3), attach, key.replace('k', 'z'), 'admin'), {
+    reason: 'idempotency_mismatch',
+  });
+  await pollChanges(root, actions());
+  // Killed after recording "done", before dropping the claim: no false interruption.
+  const done = (await status(root)).recent.find((item) => item.id === id(3));
+  await writeFile(
+    join(root, 'change-request.json'),
+    JSON.stringify({
+      id: id(3),
+      digest: done.digest,
+      requestedAt: done.requestedAt,
+      actor: done.actor,
+      change: attach,
+    }),
+  );
+  await pollChanges(root, actions());
+  assert.equal((await api.status()).blocked, null);
+  // Names with astral characters are cut by UTF-16 units, never into a broken request.
+  await api.request(id(4), detach, undefined, '😀'.repeat(150));
+  const pending = (await api.status()).pending;
+  assert.ok(pending.actor.length <= 200 && !/[\ud800-\udbff]$/.test(pending.actor));
+});
+
+test('an unreadable status blocks until reset; reset ends what was left applying', async (t) => {
+  const root = await site(t);
+  const api = new SiteChangeControl(join(root, 'updates'));
+  await pollChanges(root, actions());
+  await writeFile(
+    join(root, 'updates/status/changes.json'),
+    JSON.stringify({ heartbeatAt: new Date().toISOString(), recent: [{ id: 'x' }] }),
+  );
+  await pollChanges(root, actions());
+  const blocked = JSON.parse(await readFile(join(root, 'updates/status/changes.json'), 'utf8'));
+  assert.equal(blocked.blocked, 'unreadable');
+  await resetChanges(root);
+  assert.equal((await api.status()).blocked, null);
+  // A switchover whose retries an operator cut short ends as interrupted, not "applying".
+  await writeFile(
+    join(root, 'updates/status/changes.json'),
+    JSON.stringify({
+      heartbeatAt: new Date().toISOString(),
+      blocked: null,
+      recent: [
+        {
+          id: id(9),
+          digest: 'c'.repeat(64),
+          kind: 'cluster-switchover',
+          state: 'applying',
+          error: null,
+          actor: 'admin',
+          requestedAt: new Date().toISOString(),
+          finishedAt: null,
+        },
+      ],
+    }),
+  );
+  await resetChanges(root);
+  const record = (await api.status()).recent[0];
+  assert.equal(record.state, 'failed');
+  assert.equal(record.error, 'interrupted');
 });

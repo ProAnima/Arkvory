@@ -36,6 +36,11 @@ export const missing = (error: unknown) =>
  * removed and refused. False when nothing was there.
  */
 export async function claim(from: string, to: string): Promise<boolean> {
+  // The API links a complete temporary file to the name and removes the temporary right after:
+  // two names mean it is still publishing. Taken on the next tick, not refused.
+  const before = await lstat(from).catch(() => null);
+  if (!before) return false;
+  if (before.isFile() && before.nlink > 1) return false;
   try {
     await rename(from, to);
   } catch (error) {

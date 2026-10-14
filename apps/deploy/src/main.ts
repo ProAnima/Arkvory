@@ -7,6 +7,7 @@ import { Services } from './services.js';
 import { deploymentHelp } from './help.js';
 import { createOwner } from './owner.js';
 import { pollChanges, resetChanges } from './site-changes.js';
+import { isUnconfirmedTermination } from './process.js';
 import { pollUpdates, resetUpdateRequest } from './update-control.js';
 import { prepareUpdateControl } from './update-setup.js';
 import { report } from './output.js';
@@ -172,7 +173,9 @@ async function locked(operation: string, root: string, options: Map<string, stri
       const failures: unknown[] = [];
       for (const poll of [pollUpdates, pollChanges])
         await poll(root).catch((error: unknown) => failures.push(error));
-      if (failures.length) throw failures[0];
+      // A command that may still run keeps the lock: its failure is the one that counts.
+      const kept = failures.find((failure) => isUnconfirmedTermination(failure));
+      if (failures.length) throw kept ?? failures[0];
       break;
     }
     case 'changes-reset':

@@ -139,8 +139,11 @@ export class AgentPanel {
       const busy =
         changes.agent &&
         (changes.pending !== null || changes.recent.some((item) => item.state === 'applying'));
-      if (busy || !topology)
+      if (busy || !topology) {
+        // Cleared right before arming: two refreshes in flight still leave one follower.
+        clearTimeout(this.timer);
         this.timer = setTimeout(() => void this.refresh(generation, !busy), FOLLOW_MS);
+      }
     } catch (error) {
       if (generation !== this.generation) return;
       this.status.hidden = false;

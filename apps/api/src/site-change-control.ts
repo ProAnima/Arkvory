@@ -20,9 +20,21 @@ const STALE_MS = 5 * 60000;
 
 const needsKey = (change: SiteChange) =>
   change.kind === 'mirror-attach' || change.kind === 'mirror-key';
-/** The change as one string: the same change always gives the same digest. */
-const digestOf = (change: SiteChange) =>
-  createHash('sha256').update(JSON.stringify(change)).digest('hex');
+/**
+ * The change and its key as one digest: the same id with another change or another key is
+ * another request, refused instead of silently keeping the first.
+ */
+const digestOf = (change: SiteChange, key: unknown) =>
+  createHash('sha256')
+    .update(JSON.stringify(change))
+    .update(typeof key === 'string' ? `\n${createHash('sha256').update(key).digest('hex')}` : '')
+    .digest('hex');
+/** At most `limit` UTF-16 units, never half of a surrogate pair. */
+function cut(text: string, limit: number) {
+  if (text.length <= limit) return text;
+  const end = /[\ud800-\udbff]/.test(text.charAt(limit - 1)) ? limit - 1 : limit;
+  return text.slice(0, end);
+}
 
 /**
  * Site changes for the privileged agent (ADR 0077, stage F3) in the updater mailbox of ADR 0038:
@@ -40,25 +52,43 @@ export class SiteChangeControl {
   async status() {
     if (!this.directory)
       return { agent: false, updating: false, blocked: null, pending: null, recent: [] };
-    const status = await mailboxJson(join(this.directory, 'status/changes.json'), STATUS_LIMIT);
-    const pending = await mailboxJson(join(this.directory, 'inbox/change.json'), REQUEST_LIMIT);
-    const snapshot = await mailboxJson(join(this.directory, 'status/snapshot.json'));
-    const read = status === null ? null : readSiteChangeStatus(status);
-    const request = pending === null ? null : readSiteChangeRequest(pending);
-    const update = snapshot === null ? null : readUpdateSnapshot(snapshot);
+    const directory = this.directory;
+    // Anyone who can write the inbox can put anything there: what does not read is no request
+    // (the slot still refuses a second one), never a failed status page.
+    const quietly = async <T>(path: string, limit: number, read: (value: unknown) => T) => {
+      try {
+        const value = await mailboxJson(join(directory, path), limit);
+        return value === null ? null : read(value);
+      } catch {
+        return undefined;
+      }
+    };
+    const read = await quietly('status/changes.json', STATUS_LIMIT, readSiteChangeStatus);
+    const request = await quietly('inbox/change.json', REQUEST_LIMIT, readSiteChangeRequest);
+    const update = await quietly('status/snapshot.json', 16384, readUpdateSnapshot);
     const fresh = (at: string) => this.now() - Date.parse(at) <= STALE_MS;
     return {
-      agent: read !== null && fresh(read.heartbeatAt),
+      agent: read !== null && read !== undefined && fresh(read.heartbeatAt),
       // The agent installs an update in the same tick: changes wait meanwhile.
-      updating: update !== null && update.phase === 'updating' && fresh(update.heartbeatAt),
-      blocked: read?.blocked ?? null,
-      pending: request && {
-        id: request.id,
-        digest: request.digest,
-        kind: request.change.kind,
-        actor: request.actor,
-        requestedAt: request.requestedAt,
-      },
+      // An image pull or a migration writes no heartbeat for a while: the phase is what counts,
+      // within the six hours an update may take at most.
+      updating:
+        update !== null &&
+        update !== undefined &&
+        update.phase === 'updating' &&
+        this.now() - Date.parse(update.heartbeatAt) <= 6 * 3600000,
+      // A status this release cannot read is a barrier too, as the agent treats it.
+      blocked: read === undefined ? ('unreadable' as const) : (read?.blocked ?? null),
+      pending:
+        request === undefined
+          ? null
+          : request && {
+              id: request.id,
+              digest: request.digest,
+              kind: request.change.kind,
+              actor: request.actor,
+              requestedAt: request.requestedAt,
+            },
       recent: read?.recent ?? [],
     };
   }
@@ -70,7 +100,7 @@ export class SiteChangeControl {
   }
 
   private async queue(id: string, change: SiteChange, key: unknown, actor: string) {
-    const digest = digestOf(change);
+    const digest = digestOf(change, key);
     const status = await this.status();
     const known = [status.pending, ...status.recent].find((item) => item?.id === id);
     if (known) {
@@ -98,7 +128,7 @@ export class SiteChangeControl {
       id,
       digest,
       requestedAt: new Date(this.now()).toISOString(),
-      actor: Array.from(actor).slice(0, SITE_CHANGE_ACTOR_LENGTH).join(''),
+      actor: cut(actor, SITE_CHANGE_ACTOR_LENGTH),
       change,
     });
     return this.write(request, typeof key === 'string' ? key : null);
@@ -121,11 +151,10 @@ export class SiteChangeControl {
   private async write(request: SiteChangeRequest, key: string | null) {
     const inbox = join(this.directory ?? '', 'inbox');
     const keyFile = `${request.id}.key`;
-    // An existing key of this id is a retry of this same request: it is kept as it is.
-    if (key !== null) await publish(inbox, keyFile, key, 0o600);
+    // An existing key of this id is another attempt's: kept, and never removed by this one.
+    const created = key !== null && (await publish(inbox, keyFile, key, 0o600));
     if (!(await publish(inbox, 'change.json', JSON.stringify(request), 0o644))) {
-      // Only the key this request wrote is removed, never another one.
-      if (key !== null) await rm(join(inbox, keyFile), { force: true });
+      if (created) await rm(join(inbox, keyFile), { force: true });
       throw new ArkvoryError('busy', 'A site change is pending');
     }
     return { id: request.id };

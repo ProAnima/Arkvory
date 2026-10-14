@@ -12,11 +12,12 @@ import { parseInstallation } from './model.js';
 import type { Installation } from './model.js';
 import { attachedMirrors, configureMirror } from './mirror-setup.js';
 import type { MirrorChange } from './mirror-setup.js';
-import { finishSwitchover, switchover } from './cluster-ops.js';
+import { finishSwitchover, switchover, SwitchoverIncomplete } from './cluster-ops.js';
 import { decideSingleCopy } from './replica-service.js';
 import { Services } from './services.js';
 import { report } from './output.js';
 import { isUnconfirmedTermination } from './process.js';
+import { checkJournal } from './operations.js';
 import {
   claim,
   KEY_LIMIT,
@@ -134,8 +135,9 @@ async function apply(
       try {
         await actions.switchover(change.node);
       } catch (error) {
-        // The move may have succeeded while clearing its constraint failed: the outcome is
-        // where Arkvory runs now.
+        // Refused before the move: nothing to finish, and clearing would drop the operator's
+        // own constraints. After the move the outcome is where Arkvory runs now.
+        if (!(error instanceof SwitchoverIncomplete)) throw error;
         if (!(await actions.finishSwitchover(change.node).catch(() => false))) throw error;
       }
       return;
@@ -186,6 +188,9 @@ async function claimedRequest(box: Mailbox): Promise<SiteChangeRequest | null> {
 async function resume(tick: Tick): Promise<'go' | 'retry' | 'blocked'> {
   const request = await claimedRequest(tick.box);
   if (!request) return 'go';
+  // Killed after recording the outcome, before dropping the claim: nothing is left to do.
+  const known = tick.status.recent.find((item) => item.id === request.id);
+  if (known && (known.state === 'done' || known.state === 'failed')) return 'go';
   if (request.change.kind !== 'cluster-switchover') {
     await save(tick, record(request, 'failed', 'interrupted'), 'interrupted');
     return 'blocked';
@@ -251,11 +256,14 @@ async function run(tick: Tick, request: SiteChangeRequest, secret: string | null
     report('info', `Applied ${request.change.kind} ${request.id} for ${request.actor}`);
   } catch (error) {
     const unconfirmed = isUnconfirmedTermination(error);
+    // Recording must not replace the error: an unconfirmed one keeps the installation lock.
     await save(
       tick,
       record(request, 'failed', unconfirmed ? 'interrupted' : failureOf(request.change, error)),
       unconfirmed ? 'interrupted' : tick.status.blocked,
-    );
+    ).catch((failure: unknown) => {
+      report('warning', `Could not record change ${request.id}: ${message(failure)}`);
+    });
     // The agent's own words stay in its log on this site; the status carries a code.
     report('warning', `Change ${request.change.kind} ${request.id} failed: ${message(error)}`);
     // A command that may still run keeps the installation lock for an operator.
@@ -275,7 +283,7 @@ export async function pollChanges(
 ): Promise<void> {
   const box = mailbox(root);
   if (!(await exists(join(root, 'updates/status')))) return;
-  const tick: Tick = { root, box, actions, now, status: await readStatus(box.status) };
+  const tick: Tick = { root, box, actions, now, status: await statusOrBlocked(box) };
   // The claim outlives the tick only for a switchover to finish on the next one; a process
   // killed mid-change leaves it too, and the next tick blocks on it.
   let keep = false;
@@ -289,15 +297,44 @@ export async function pollChanges(
     if (taken) await run(tick, taken.request, taken.secret);
   } finally {
     await removeAll([box.claimedKey, ...(keep ? [] : [box.claimed])]);
-    await save(tick);
+    // The heartbeat must not hide the error of the tick, nor a lock-keeping one.
+    await save(tick).catch((failure: unknown) => {
+      report('warning', `Could not write the change status: ${message(failure)}`);
+    });
   }
 }
 
-/** `arkvory changes-reset`: after checking the site, lets the agent take changes again. */
+/**
+ * The status as written, or, when this release cannot read it (written by another version, or
+ * damaged), an empty one that blocks until an operator looked: the barrier is never lost.
+ */
+async function statusOrBlocked(box: Mailbox): Promise<SiteChangeStatus> {
+  try {
+    return await readStatus(box.status);
+  } catch (error) {
+    report('warning', `The change status cannot be read: ${message(error)}`);
+    return { heartbeatAt: new Date(0).toISOString(), blocked: 'unreadable', recent: [] };
+  }
+}
+
+/**
+ * `arkvory changes-reset`: after checking the site, lets the agent take changes again. A change
+ * left `applying` (a switchover whose retries were cut short) ends as interrupted, so no console
+ * follows it forever.
+ */
 export async function resetChanges(root: string): Promise<void> {
+  await checkJournal(root);
   const box = mailbox(root);
-  const status = await readStatus(box.status);
+  const status = await statusOrBlocked(box);
   await removeAll([box.claimed, box.claimedKey]);
-  await writeStatus(box.status, { ...status, blocked: null });
+  await writeStatus(box.status, {
+    heartbeatAt: new Date().toISOString(),
+    blocked: null,
+    recent: status.recent.map((item) =>
+      item.state === 'applying' || item.state === 'pending'
+        ? { ...item, state: 'failed', error: 'interrupted', finishedAt: new Date().toISOString() }
+        : item,
+    ),
+  });
   report('info', 'Site changes are taken again');
 }

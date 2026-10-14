@@ -50,6 +50,8 @@ export async function publish(
       if (error instanceof Error && 'code' in error && error.code === 'EEXIST') return false;
       throw error;
     }
+    // One name as soon as possible: the agent takes a file with two names for one still written.
+    await unlink(temporary).catch(() => undefined);
     if (process.platform !== 'win32') {
       const parent = await open(directory, 'r');
       try {
@@ -61,6 +63,6 @@ export async function publish(
     return true;
   } finally {
     await file.close();
-    await unlink(temporary);
+    await unlink(temporary).catch(() => undefined);
   }
 }

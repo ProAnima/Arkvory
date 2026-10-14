@@ -221,20 +221,36 @@ export async function switchover(
       `${target} has no complete copy yet; wait for the resynchronization before a switchover`,
     );
   await tool('crm_resource', ['--resource', resource, '--move', '--node', target]);
+  // Once the move constraint exists, a failure leaves a move to finish; before, nothing changed.
   try {
-    await waitFor(
-      async () =>
-        locatedOn(
-          await tool('crm_resource', ['--resource', resource, '--locate']).catch(() => ''),
-        ).includes(target),
-      300000,
-      `${resource} on ${target}`,
-    );
-  } finally {
-    // The constraint would pin Arkvory to the target and block a later failover back.
-    await tool('crm_resource', ['--resource', resource, '--clear']);
+    try {
+      await waitFor(
+        async () =>
+          locatedOn(
+            await tool('crm_resource', ['--resource', resource, '--locate']).catch(() => ''),
+          ).includes(target),
+        300000,
+        `${resource} on ${target}`,
+      );
+    } finally {
+      // The constraint would pin Arkvory to the target and block a later failover back.
+      await tool('crm_resource', ['--resource', resource, '--clear']);
+    }
+  } catch (error) {
+    throw new SwitchoverIncomplete(error);
   }
   report('info', `Arkvory runs on ${target}`);
+}
+
+/**
+ * A switchover that failed once `--move` was issued: only such a failure leaves a move to finish.
+ * A refusal before it (not a node, no complete copy) must not clear the operator's constraints.
+ */
+export class SwitchoverIncomplete extends Error {
+  constructor(cause: unknown) {
+    super(cause instanceof Error ? cause.message : 'Switchover did not complete', { cause });
+    this.name = 'SwitchoverIncomplete';
+  }
 }
 
 /**
