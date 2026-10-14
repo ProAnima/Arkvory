@@ -24,7 +24,7 @@ For Docker, see [Docker Compose](./docker). For a first walk through the console
 | Dependencies of the `.rpm` | `postgresql-server` 16 or later, `systemd`, `python3`, `ca-certificates`, `glibc` 2.28 or later, `libstdc++`, `libatomic`                                                                                                                                                |
 | PostgreSQL programs        | Version 16 to 19. The installation step searches `/usr/lib/postgresql/*/bin`, `/usr/pgsql-*/bin`, `/usr/bin` and `/usr/lib/pgsql/bin` and takes the highest version it finds. If your distribution offers only an older version, add a newer PostgreSQL repository first |
 | Account                    | `root`, or a user that can run `sudo`                                                                                                                                                                                                                                    |
-| Free ports                 | 8080 and 54329 on `127.0.0.1`                                                                                                                                                                                                                                            |
+| Free ports                 | 8080, and 54329 or one of 45329-45348, on `127.0.0.1`                                                                                                                                                                                                                    |
 | File storage               | A local file system that supports hard links. Do not use a network share                                                                                                                                                                                                 |
 
 The package contains Node.js 24. Installing it needs no internet access beyond what your package manager uses for the dependencies.
@@ -96,10 +96,10 @@ A service that stops without your request starts again after 10 seconds. A proce
 
 ### Ports {#ports}
 
-| Port      | Use                            | Exposure                                               |
-| --------- | ------------------------------ | ------------------------------------------------------ |
-| 8080/TCP  | API and console                | `127.0.0.1` only, until you configure [HTTPS](./https) |
-| 54329/TCP | The managed PostgreSQL cluster | `127.0.0.1` only. The number is fixed                  |
+| Port      | Use                            | Exposure                                                                                                                         |
+| --------- | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
+| 8080/TCP  | API and console                | `127.0.0.1` only, until you configure [HTTPS](./https)                                                                           |
+| 54329/TCP | The managed PostgreSQL cluster | `127.0.0.1` only. When 54329 is taken at installation, the first free one of 45329-45348; it is kept in `database/settings.json` |
 
 ## First start and onboarding {#first-start}
 

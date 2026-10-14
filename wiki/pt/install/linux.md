@@ -24,7 +24,7 @@ Para Docker, consulte [Docker Compose](./docker). Para um primeiro contato com o
 | Dependências do `.rpm`    | `postgresql-server` 16 ou posterior, `systemd`, `python3`, `ca-certificates`, `glibc` 2.28 ou posterior, `libstdc++`, `libatomic`                                                                                                                                                                |
 | Programas do PostgreSQL   | Versão 16 a 19. A etapa de instalação procura em `/usr/lib/postgresql/*/bin`, `/usr/pgsql-*/bin`, `/usr/bin` e `/usr/lib/pgsql/bin` e usa a versão mais alta que encontrar. Se sua distribuição oferecer apenas uma versão mais antiga, adicione primeiro um repositório PostgreSQL mais recente |
 | Conta                     | `root`, ou um usuário que possa executar `sudo`                                                                                                                                                                                                                                                  |
-| Portas livres             | 8080 e 54329 em `127.0.0.1`                                                                                                                                                                                                                                                                      |
+| Portas livres             | 8080, e 54329 ou uma de 45329-45348, em `127.0.0.1`                                                                                                                                                                                                                                              |
 | Armazenamento de arquivos | Um sistema de arquivos local que ofereça suporte a links físicos (hard links). Não use um compartilhamento de rede                                                                                                                                                                               |
 
 O pacote contém o Node.js 24. A instalação dele não precisa de acesso à internet além do que o gerenciador de pacotes usa para as dependências.
@@ -96,10 +96,10 @@ Um serviço que para sem a sua solicitação inicia novamente após 10 segundos.
 
 ### Portas {#ports}
 
-| Porta     | Uso                             | Exposição                                                 |
-| --------- | ------------------------------- | --------------------------------------------------------- |
-| 8080/TCP  | API e console                   | Somente `127.0.0.1`, até você configurar [HTTPS](./https) |
-| 54329/TCP | O cluster PostgreSQL gerenciado | Somente `127.0.0.1`. O número é fixo                      |
+| Porta     | Uso                             | Exposição                                                                                                                                    |
+| --------- | ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| 8080/TCP  | API e console                   | Somente `127.0.0.1`, até você configurar [HTTPS](./https)                                                                                    |
+| 54329/TCP | O cluster PostgreSQL gerenciado | Somente `127.0.0.1`. Quando 54329 está ocupada na instalação, a primeira livre de 45329-45348; ela fica guardada em `database/settings.json` |
 
 ## Primeira inicialização e primeiros passos {#first-start}
 
