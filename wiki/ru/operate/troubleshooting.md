@@ -45,7 +45,7 @@ Get-NetTCPConnection -LocalPort 8080 | Select-Object LocalAddress, OwningProcess
 | `database does not exist`                                          | Базы данных, названной в URL, нет                                           |
 | `database role lacks a required privilege`                         | Роль не может создавать или изменять таблицы                                |
 
-**Исправление.** Запустите PostgreSQL или исправьте `ARKVORY_DATABASE_URL` в `config/runtime.json` и перезапустите службы. Управляемая база данных слушает `127.0.0.1:54329` (служба `Arkvorydatabase` в Windows, `arkvory-database` в Linux). Службы поднимаются сами, когда база данных отвечает. Не удаляйте папку `database/`.
+**Исправление.** Запустите PostgreSQL или исправьте `ARKVORY_DATABASE_URL` в `config/runtime.json` и перезапустите службы. Управляемая база данных слушает `127.0.0.1` на порту из `ARKVORY_DATABASE_URL` (служба `Arkvorydatabase` в Windows, `arkvory-database` в Linux). Службы поднимаются сами, когда база данных отвечает. Не удаляйте папку `database/`. Строка журнала `could not bind IPv4 address "127.0.0.1": Permission denied` в Windows означает, что Windows зарезервировала этот порт при загрузке (`netsh int ipv4 show excludedportrange protocol=tcp` выводит зарезервированные диапазоны); новые установки в Windows занимают порт ниже этого диапазона.
 
 ### База данных и программа не согласуются {#migrations}
 

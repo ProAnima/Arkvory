@@ -45,7 +45,7 @@ Get-NetTCPConnection -LocalPort 8080 | Select-Object LocalAddress, OwningProcess
 | `database does not exist`                                              | URL में नामित डेटाबेस मौजूद नहीं है                                       |
 | `database role lacks a required privilege`                             | भूमिका टेबल बना या बदल नहीं सकती                                          |
 
-**समाधान।** PostgreSQL शुरू करें, या `config/runtime.json` में `ARKVORY_DATABASE_URL` ठीक करें और सेवाएँ फिर से शुरू करें। प्रबंधित डेटाबेस `127.0.0.1:54329` पर सुनता है (Windows पर सेवा `Arkvorydatabase`, Linux पर `arkvory-database`)। डेटाबेस के जवाब देने पर सेवाएँ खुद शुरू हो जाती हैं। `database/` फ़ोल्डर न हटाएँ।
+**समाधान।** PostgreSQL शुरू करें, या `config/runtime.json` में `ARKVORY_DATABASE_URL` ठीक करें और सेवाएँ फिर से शुरू करें। प्रबंधित डेटाबेस `127.0.0.1` पर `ARKVORY_DATABASE_URL` में दिए पोर्ट पर सुनता है (Windows पर सेवा `Arkvorydatabase`, Linux पर `arkvory-database`)। डेटाबेस के जवाब देने पर सेवाएँ खुद शुरू हो जाती हैं। `database/` फ़ोल्डर न हटाएँ। Windows पर लॉग लाइन `could not bind IPv4 address "127.0.0.1": Permission denied` का अर्थ है कि Windows ने बूट के समय वह पोर्ट आरक्षित कर लिया है (`netsh int ipv4 show excludedportrange protocol=tcp` आरक्षित श्रेणियाँ दिखाता है); Windows पर नए इंस्टॉलेशन उस श्रेणी से नीचे का पोर्ट लेते हैं।
 
 ### डेटाबेस और प्रोग्राम में मतभेद है {#migrations}
 

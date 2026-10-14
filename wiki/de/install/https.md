@@ -21,7 +21,7 @@ Eine neue Installation lauscht auf `127.0.0.1:8080` über unverschlüsseltes HTT
 
 - Besorgen Sie sich ein Zertifikat für den Namen, den die Clients verwenden, bei einer Zertifizierungsstelle, der die Clients vertrauen, zum Beispiel mit certbot, win-acme oder Ihrer Unternehmens-CA. Sie brauchen das Zertifikat mit seiner Kette und den privaten Schlüssel, beide als PEM-Dateien. Der Schlüssel darf kein Passwort haben.
 - Erstellen Sie einen DNS-Namen, der auf den Server zeigt.
-- Öffnen Sie in der Firewall nur den HTTPS-Port und nur für die Netzwerke Ihrer Clients. Öffnen Sie niemals den Datenbankport 54329.
+- Öffnen Sie in der Firewall nur den HTTPS-Port und nur für die Netzwerke Ihrer Clients. Öffnen Sie niemals den Datenbankport (54329 oder 45329-45348).
 
 ## Eingebautes TLS {#built-in-tls}
 

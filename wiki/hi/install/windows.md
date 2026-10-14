@@ -48,14 +48,14 @@ Windows पर Arkvory चलाने के तीन तरीके है�
 
 ## ग्राफ़िकल इंस्टॉलर क्या बनाता है {#what-the-graphical-installer-creates}
 
-| मद                        | स्थान या मान                                                                  |
-| ------------------------- | ----------------------------------------------------------------------------- |
-| प्रोग्राम फ़ाइलें         | `C:\Program Files\ProAnima\Arkvory`                                           |
-| डेटा, कॉन्फ़िगरेशन और लॉग | `C:\ProgramData\ProAnima\Arkvory` (इंस्टॉलेशन रूट)                            |
-| डेटाबेस                   | रूट के `database\` में PostgreSQL 18.4, `127.0.0.1:54329` पर                  |
-| कंसोल                     | `http://127.0.0.1:8080/console/`                                              |
-| पुनर्प्राप्ति कुंजी       | रूट में `config\bootstrap-token.txt`                                          |
-| अपडेट टास्क               | Task Scheduler में `ProAnimaArkvoryUpdate`। हर मिनट SYSTEM के रूप में चलता है |
+| मद                        | स्थान या मान                                                                             |
+| ------------------------- | ---------------------------------------------------------------------------------------- |
+| प्रोग्राम फ़ाइलें         | `C:\Program Files\ProAnima\Arkvory`                                                      |
+| डेटा, कॉन्फ़िगरेशन और लॉग | `C:\ProgramData\ProAnima\Arkvory` (इंस्टॉलेशन रूट)                                       |
+| डेटाबेस                   | रूट के `database\` में PostgreSQL 18.4, `127.0.0.1` पर 45329-45348 के पहले खाली पोर्ट पर |
+| कंसोल                     | `http://127.0.0.1:8080/console/`                                                         |
+| पुनर्प्राप्ति कुंजी       | रूट में `config\bootstrap-token.txt`                                                     |
+| अपडेट टास्क               | Task Scheduler में `ProAnimaArkvoryUpdate`। हर मिनट SYSTEM के रूप में चलता है            |
 
 ### सेवाएँ {#services}
 

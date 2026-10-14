@@ -48,14 +48,14 @@ O instalador exclui o arquivo do proprietário depois de criar a conta. Nunca pa
 
 ## O que o instalador gráfico cria {#what-the-graphical-installer-creates}
 
-| Item                       | Local ou valor                                                                     |
-| -------------------------- | ---------------------------------------------------------------------------------- |
-| Arquivos do programa       | `C:\Program Files\ProAnima\Arkvory`                                                |
-| Dados, configuração e logs | `C:\ProgramData\ProAnima\Arkvory` (a raiz da instalação)                           |
-| Banco de dados             | PostgreSQL 18.4 em `database\` da raiz, em `127.0.0.1:54329`                       |
-| Console                    | `http://127.0.0.1:8080/console/`                                                   |
-| Chave de recuperação       | `config\bootstrap-token.txt` na raiz                                               |
-| Tarefa de atualização      | `ProAnimaArkvoryUpdate` no Agendador de Tarefas. Executa a cada minuto como SYSTEM |
+| Item                       | Local ou valor                                                                                 |
+| -------------------------- | ---------------------------------------------------------------------------------------------- |
+| Arquivos do programa       | `C:\Program Files\ProAnima\Arkvory`                                                            |
+| Dados, configuração e logs | `C:\ProgramData\ProAnima\Arkvory` (a raiz da instalação)                                       |
+| Banco de dados             | PostgreSQL 18.4 em `database\` da raiz, em `127.0.0.1`, na primeira porta livre de 45329-45348 |
+| Console                    | `http://127.0.0.1:8080/console/`                                                               |
+| Chave de recuperação       | `config\bootstrap-token.txt` na raiz                                                           |
+| Tarefa de atualização      | `ProAnimaArkvoryUpdate` no Agendador de Tarefas. Executa a cada minuto como SYSTEM             |
 
 ### Serviços {#services}
 

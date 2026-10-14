@@ -48,14 +48,14 @@ El instalador elimina el archivo del propietario después de crear la cuenta. No
 
 ## Qué crea el instalador gráfico {#what-the-graphical-installer-creates}
 
-| Elemento                         | Ubicación o valor                                                                       |
-| -------------------------------- | --------------------------------------------------------------------------------------- |
-| Archivos del programa            | `C:\Program Files\ProAnima\Arkvory`                                                     |
-| Datos, configuración y registros | `C:\ProgramData\ProAnima\Arkvory` (la raíz de la instalación)                           |
-| Base de datos                    | PostgreSQL 18.4 en `database\` de la raíz, en `127.0.0.1:54329`                         |
-| Consola                          | `http://127.0.0.1:8080/console/`                                                        |
-| Clave de recuperación            | `config\bootstrap-token.txt` en la raíz                                                 |
-| Tarea de actualización           | `ProAnimaArkvoryUpdate` en el Programador de tareas. Se ejecuta cada minuto como SYSTEM |
+| Elemento                         | Ubicación o valor                                                                                   |
+| -------------------------------- | --------------------------------------------------------------------------------------------------- |
+| Archivos del programa            | `C:\Program Files\ProAnima\Arkvory`                                                                 |
+| Datos, configuración y registros | `C:\ProgramData\ProAnima\Arkvory` (la raíz de la instalación)                                       |
+| Base de datos                    | PostgreSQL 18.4 en `database\` de la raíz, en `127.0.0.1`, en el primer puerto libre de 45329-45348 |
+| Consola                          | `http://127.0.0.1:8080/console/`                                                                    |
+| Clave de recuperación            | `config\bootstrap-token.txt` en la raíz                                                             |
+| Tarea de actualización           | `ProAnimaArkvoryUpdate` en el Programador de tareas. Se ejecuta cada minuto como SYSTEM             |
 
 ### Servicios {#services}
 

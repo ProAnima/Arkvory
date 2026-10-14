@@ -21,7 +21,7 @@ Una instalación nueva escucha en `127.0.0.1:8080` por HTTP sin cifrar. Solo los
 
 - Obtenga un certificado para el nombre que usan los clientes, de una autoridad en la que confíen los clientes, por ejemplo con certbot, win-acme o su autoridad corporativa. Necesita el certificado con su cadena y la clave privada, ambos como archivos PEM. La clave no debe tener contraseña.
 - Cree un nombre DNS que apunte al servidor.
-- Abra solo el puerto HTTPS en el firewall, y solo a las redes de sus clientes. Nunca abra el puerto 54329 de la base de datos.
+- Abra solo el puerto HTTPS en el firewall, y solo a las redes de sus clientes. Nunca abra el puerto de la base de datos (54329 o 45329-45348).
 
 ## TLS integrado {#built-in-tls}
 

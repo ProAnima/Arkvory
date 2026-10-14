@@ -21,7 +21,7 @@ Une nouvelle installation écoute sur `127.0.0.1:8080` en HTTP simple. Seuls les
 
 - Obtenez un certificat pour le nom qu’utilisent les clients, auprès d’une autorité à laquelle les clients font confiance, par exemple avec certbot, win-acme ou votre autorité d’entreprise. Vous avez besoin du certificat avec sa chaîne et de la clé privée, tous deux au format PEM. La clé ne doit pas avoir de mot de passe.
 - Créez un nom DNS qui pointe vers le serveur.
-- N’ouvrez dans le pare-feu que le port HTTPS, et uniquement vers les réseaux de vos clients. N’ouvrez jamais le port de base de données 54329.
+- N’ouvrez dans le pare-feu que le port HTTPS, et uniquement vers les réseaux de vos clients. N’ouvrez jamais le port de base de données (54329 ou 45329-45348).
 
 ## TLS intégré {#built-in-tls}
 

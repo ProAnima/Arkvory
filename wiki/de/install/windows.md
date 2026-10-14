@@ -48,14 +48,14 @@ Der Installer löscht die Besitzerdatei, nachdem er das Konto erstellt hat. Übe
 
 ## Was der grafische Installer erstellt {#what-the-graphical-installer-creates}
 
-| Element                             | Ort oder Wert                                                                         |
-| ----------------------------------- | ------------------------------------------------------------------------------------- |
-| Programmdateien                     | `C:\Program Files\ProAnima\Arkvory`                                                   |
-| Daten, Konfiguration und Protokolle | `C:\ProgramData\ProAnima\Arkvory` (das Installationsverzeichnis)                      |
-| Datenbank                           | PostgreSQL 18.4 in `database\` des Installationsverzeichnisses, auf `127.0.0.1:54329` |
-| Konsole                             | `http://127.0.0.1:8080/console/`                                                      |
-| Wiederherstellungsschlüssel         | `config\bootstrap-token.txt` im Installationsverzeichnis                              |
-| Update-Aufgabe                      | `ProAnimaArkvoryUpdate` in der Aufgabenplanung. Läuft jede Minute als SYSTEM          |
+| Element                             | Ort oder Wert                                                                                                         |
+| ----------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| Programmdateien                     | `C:\Program Files\ProAnima\Arkvory`                                                                                   |
+| Daten, Konfiguration und Protokolle | `C:\ProgramData\ProAnima\Arkvory` (das Installationsverzeichnis)                                                      |
+| Datenbank                           | PostgreSQL 18.4 in `database\` des Installationsverzeichnisses, auf `127.0.0.1` am ersten freien Port aus 45329-45348 |
+| Konsole                             | `http://127.0.0.1:8080/console/`                                                                                      |
+| Wiederherstellungsschlüssel         | `config\bootstrap-token.txt` im Installationsverzeichnis                                                              |
+| Update-Aufgabe                      | `ProAnimaArkvoryUpdate` in der Aufgabenplanung. Läuft jede Minute als SYSTEM                                          |
 
 ### Dienste {#services}
 

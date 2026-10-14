@@ -48,14 +48,14 @@ Le programme d’installation supprime le fichier du propriétaire après avoir 
 
 ## Ce que crée le programme d’installation graphique {#what-the-graphical-installer-creates}
 
-| Élément                            | Emplacement ou valeur                                                                               |
-| ---------------------------------- | --------------------------------------------------------------------------------------------------- |
-| Fichiers du programme              | `C:\Program Files\ProAnima\Arkvory`                                                                 |
-| Données, configuration et journaux | `C:\ProgramData\ProAnima\Arkvory` (la racine d’installation)                                        |
-| Base de données                    | PostgreSQL 18.4 dans `database\` de la racine, sur `127.0.0.1:54329`                                |
-| Console                            | `http://127.0.0.1:8080/console/`                                                                    |
-| Clé de récupération                | `config\bootstrap-token.txt` dans la racine                                                         |
-| Tâche de mise à jour               | `ProAnimaArkvoryUpdate` dans le Planificateur de tâches. S’exécute chaque minute en tant que SYSTEM |
+| Élément                            | Emplacement ou valeur                                                                                |
+| ---------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| Fichiers du programme              | `C:\Program Files\ProAnima\Arkvory`                                                                  |
+| Données, configuration et journaux | `C:\ProgramData\ProAnima\Arkvory` (la racine d’installation)                                         |
+| Base de données                    | PostgreSQL 18.4 dans `database\` de la racine, sur `127.0.0.1`, au premier port libre de 45329-45348 |
+| Console                            | `http://127.0.0.1:8080/console/`                                                                     |
+| Clé de récupération                | `config\bootstrap-token.txt` dans la racine                                                          |
+| Tâche de mise à jour               | `ProAnimaArkvoryUpdate` dans le Planificateur de tâches. S’exécute chaque minute en tant que SYSTEM  |
 
 ### Services {#services}
 

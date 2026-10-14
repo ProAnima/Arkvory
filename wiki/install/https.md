@@ -21,7 +21,7 @@ A new installation listens on `127.0.0.1:8080` over plain HTTP. Only programs on
 
 - Get a certificate for the name that clients use, from an authority that clients trust, for example with certbot, win-acme or your corporate authority. You need the certificate with its chain and the private key, both as PEM files. The key must have no password.
 - Create a DNS name that points to the server.
-- Open only the HTTPS port in the firewall, and only to the networks of your clients. Never open the database port 54329.
+- Open only the HTTPS port in the firewall, and only to the networks of your clients. Never open the database port (54329 or 45329-45348).
 
 ## Built-in TLS {#built-in-tls}
 

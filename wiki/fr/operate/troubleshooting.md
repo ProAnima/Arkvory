@@ -45,7 +45,7 @@ Pour changer le port, modifiez `ARKVORY_PORT` dans `config/runtime.json` et red�
 | `database does not exist`                                            | La base de données nommée dans l’URL est absente                           |
 | `database role lacks a required privilege`                           | Le rôle ne peut pas créer ni modifier les tables                           |
 
-**Correction.** Démarrez PostgreSQL, ou corrigez `ARKVORY_DATABASE_URL` dans `config/runtime.json` et redémarrez les services. La base de données gérée écoute sur `127.0.0.1:54329` (service `Arkvorydatabase` sous Windows, `arkvory-database` sous Linux). Les services remontent d’eux-mêmes lorsque la base de données répond. Ne supprimez pas le dossier `database/`.
+**Correction.** Démarrez PostgreSQL, ou corrigez `ARKVORY_DATABASE_URL` dans `config/runtime.json` et redémarrez les services. La base de données gérée écoute sur `127.0.0.1`, sur le port indiqué dans `ARKVORY_DATABASE_URL` (service `Arkvorydatabase` sous Windows, `arkvory-database` sous Linux). Les services remontent d’eux-mêmes lorsque la base de données répond. Ne supprimez pas le dossier `database/`. Une ligne de journal `could not bind IPv4 address "127.0.0.1": Permission denied` sous Windows signifie que Windows a réservé ce port au démarrage (`netsh int ipv4 show excludedportrange protocol=tcp` liste les plages réservées) ; les nouvelles installations sous Windows prennent un port en dessous de cette plage.
 
 ### La base de données et le programme sont en désaccord {#migrations}
 

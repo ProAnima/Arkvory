@@ -45,7 +45,7 @@ Get-NetTCPConnection -LocalPort 8080 | Select-Object LocalAddress, OwningProcess
 | `database does not exist`                                            | URL 中指定的数据库不存在                            |
 | `database role lacks a required privilege`                           | 该角色无法创建或更改表                              |
 
-**修复。** 启动 PostgreSQL，或更正 `config/runtime.json` 中的 `ARKVORY_DATABASE_URL` 并重启服务。受管数据库在 `127.0.0.1:54329` 上监听（Windows 上的服务为 `Arkvorydatabase`，Linux 上为 `arkvory-database`）。当数据库应答时，服务会自行启动。不要删除 `database/` 文件夹。
+**修复。** 启动 PostgreSQL，或更正 `config/runtime.json` 中的 `ARKVORY_DATABASE_URL` 并重启服务。受管数据库在 `127.0.0.1` 上监听 `ARKVORY_DATABASE_URL` 中的端口（Windows 上的服务为 `Arkvorydatabase`，Linux 上为 `arkvory-database`）。当数据库应答时，服务会自行启动。不要删除 `database/` 文件夹。如果 Windows 上的日志出现 `could not bind IPv4 address "127.0.0.1": Permission denied`，说明 Windows 在启动时保留了该端口（`netsh int ipv4 show excludedportrange protocol=tcp` 会列出保留的范围）；Windows 上的新安装会使用低于该范围的端口。
 
 ### 数据库与程序不一致 {#migrations}
 
