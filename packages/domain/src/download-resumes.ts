@@ -1,6 +1,7 @@
 /** What a download that lost its place keeps for its return. */
 export interface DownloadResume {
   readonly seq: number;
+  readonly arrival: number;
   readonly queuedAt: number;
   readonly served: number;
   readonly sawEnd: boolean;

@@ -208,3 +208,41 @@ test('a second client waits its turn for a large object and downloads it whole o
   assert.equal(state.completed, 2);
   assert.equal(state.refused, 0);
 });
+
+test('a queued download keeps its turn over a server restart with its ticket (ADR 0076)', async (t) => {
+  const f = await setup(t, { maxDownloads: 1 });
+  const bytes = Buffer.alloc(17 * 1024 ** 2 + 3, 0x52),
+    id = (await create(f, bytes)).json().id;
+  await f.app.inject({
+    method: 'PUT',
+    url: `${base}/uploads/${id}/content`,
+    headers: { ...f.headers, 'content-type': 'application/octet-stream' },
+    payload: bytes,
+  });
+  const url = `${base}/artifacts/${id}/content`;
+  const ask = (download, extra = {}) =>
+    f.app.inject({
+      url,
+      headers: { ...f.headers, 'arkvory-download-id': download.padEnd(16, '0'), ...extra },
+    });
+  // The holder keeps the only place with a range; the early one queues and gets its ticket.
+  assert.equal((await ask('holder', { range: 'bytes=0-9' })).statusCode, 206);
+  const early = await ask('early');
+  assert.equal(early.statusCode, 503);
+  const ticket = early.headers['arkvory-queue-ticket'];
+  assert.match(ticket, /^1\./);
+  // The server restarts; a later client asks the new process first.
+  await f.restart();
+  assert.equal((await ask('holder', { range: 'bytes=0-9' })).statusCode, 206);
+  assert.equal((await ask('late')).statusCode, 503);
+  assert.equal((await ask('early', { 'arkvory-queue-ticket': ticket })).statusCode, 503);
+  await new Promise((resolve) => setTimeout(resolve, 1200));
+  const position = async (download, extra) =>
+    (await ask(download, extra)).headers['arkvory-queue-position'];
+  assert.equal(await position('early', { 'arkvory-queue-ticket': ticket }), '1');
+  assert.equal(await position('late'), '2');
+  // A ticket of another download moves nothing.
+  assert.equal((await ask('thief', { 'arkvory-queue-ticket': ticket })).statusCode, 503);
+  await new Promise((resolve) => setTimeout(resolve, 1200));
+  assert.equal(await position('thief'), '3');
+});

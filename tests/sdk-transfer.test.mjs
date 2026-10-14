@@ -354,6 +354,59 @@ test('a queued download keeps one id over its ranges and hears its place and sta
   });
 });
 
+test('a download sends back its queue ticket and keeps to its window', async (t) => {
+  const bytes = Buffer.from('ticketed download'),
+    meta = artifact(bytes),
+    tickets = [];
+  let refusals = 0;
+  const startsAt = new Date(Date.now() + 60_000).toISOString();
+  const { client } = await serve(t, (req, res) => {
+    if (!req.url.endsWith('/content')) return res.end(JSON.stringify(meta));
+    tickets.push(req.headers['arkvory-queue-ticket']);
+    if (refusals < 2) {
+      refusals++;
+      res.writeHead(503, {
+        'content-type': 'application/json',
+        'Retry-After': '0',
+        'Arkvory-Queue-Ticket': `1.abc.${String(refusals).repeat(43)}`,
+        'Arkvory-Starts-At': startsAt,
+      });
+      return res.end(
+        JSON.stringify({ code: 'busy', reason: 'download_queued', message: 'q', requestId: 'r' }),
+      );
+    }
+    res.end(range(req, res, bytes, meta));
+  });
+  // The first request carries the ticket a caller saved; each next one the newest from the server.
+  await contents(
+    await client.downloadVerified('releases', meta.id, {
+      queueTicket: '1.saved.' + 's'.repeat(43),
+    }),
+  );
+  assert.deepEqual(tickets, [
+    '1.saved.' + 's'.repeat(43),
+    `1.abc.${'1'.repeat(43)}`,
+    `1.abc.${'2'.repeat(43)}`,
+  ]);
+  // The queue would start it in a minute; the caller cannot wait that long.
+  refusals = 0;
+  await assert.rejects(
+    client
+      .downloadVerified('releases', meta.id, { notAfter: new Date(Date.now() + 10_000) })
+      .then(contents),
+    { code: 'queue_deadline' },
+  );
+  // Nothing is asked before the window opens.
+  refusals = 2;
+  tickets.length = 0;
+  const started = Date.now();
+  await contents(
+    await client.downloadVerified('releases', meta.id, { notBefore: new Date(started + 300) }),
+  );
+  assert.ok(Date.now() - started >= 290);
+  assert.equal(tickets.length, 1);
+});
+
 test('one download shares the retry budget across all ranges', async (t) => {
   const bytes = Buffer.alloc(partBytes + 1, 0x49),
     meta = artifact(bytes),

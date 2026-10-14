@@ -14,6 +14,7 @@ import {
 } from './local-files.js';
 import { option, validateCommand, word, numericOption } from './arguments.js';
 import type { Arguments } from './arguments.js';
+import { downloadWindow } from './time-window.js';
 
 interface Profile {
   server: string;
@@ -186,5 +187,6 @@ export async function connection(args: Arguments, signal: AbortSignal) {
     server,
     repository,
     ...(args.options.has('class') ? { downloadClass: downloadClass(args) } : {}),
+    ...downloadWindow(args),
   };
 }

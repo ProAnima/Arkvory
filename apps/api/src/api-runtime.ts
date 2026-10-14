@@ -1,5 +1,7 @@
 import {
+  DownloadTickets,
   LocalBlobStore,
+  loadDownloadTicketKey,
   PostgresCatalog,
   PostgresDownloadLease,
   PostgresContentPins,
@@ -59,6 +61,10 @@ export class ApiRuntime {
         this.lease !== undefined,
       );
       await this.lease?.start();
+      // Queue tickets keep a download's turn over a restart (ADR 0076); a reader without a key
+      // made by a writer yet simply issues none.
+      const key = await loadDownloadTicketKey(this.catalog.pool, this.role === 'api');
+      if (key) this.transfers.downloadScheduler.useTickets(new DownloadTickets(key));
     } catch (error) {
       await this.close();
       throw error;

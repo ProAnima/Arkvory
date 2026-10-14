@@ -23,6 +23,11 @@ export interface DownloadSessionRequest {
   readonly size: number;
   /** The client sent its own download id: it follows the queue protocol and may yield. */
   readonly queueAware: boolean;
+  /**
+   * When this download first came, from a verified queue ticket after a restart: it takes its
+   * old turn. The caller checks the ticket; a time in the future is taken as now.
+   */
+  readonly arrivedAt?: number;
 }
 
 export type DownloadDecision =
@@ -49,6 +54,8 @@ interface Session {
   readonly size: number;
   readonly queueAware: boolean;
   readonly seq: number;
+  /** First arrival; the order of the queue. Kept when the session yields or pauses. */
+  readonly arrival: number;
   queuedAt: number;
   state: 'waiting' | 'active';
   /** Responses streaming now; the place is freed only when none are. */
@@ -216,6 +223,11 @@ export class DownloadSessions {
     return this.sessions.size === 0;
   }
 
+  /** When the session of `key` first came, for its queue ticket; undefined without one. */
+  arrivalOf(key: string) {
+    return this.sessions.get(key)?.arrival;
+  }
+
   private continueActive(session: Session, now: number): DownloadDecision {
     if (session.inFlight >= this.current.rangesPerSession)
       throw busy('Too many ranges of one download at once', 1000);
@@ -237,9 +249,16 @@ export class DownloadSessions {
       throw busy('Download queue is full', 60_000);
     }
     const resumed = this.resumes.take(request.key, now);
+    const arrival = Math.min(now, resumed?.arrival ?? request.arrivedAt ?? now);
     const session: Session = {
-      ...request,
+      key: request.key,
+      principal: request.principal,
+      class: request.class,
+      size: request.size,
+      queueAware: request.queueAware,
       seq: resumed?.seq ?? ++this.seq,
+      arrival,
+      // A download back from a restart keeps its turn but starts aging afresh.
       queuedAt: resumed?.queuedAt ?? now,
       state: 'waiting',
       inFlight: 0,

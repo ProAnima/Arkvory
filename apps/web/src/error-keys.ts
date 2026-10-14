@@ -121,6 +121,8 @@ const clientKeys: Readonly<Record<ClientErrorCode, MessageKey>> = {
   file_changed: 'mismatch',
   upload_cancelled: 'errorUploadState',
   completion_failed: 'errorCompletionFailed',
+  // The console sets no download window; another caller's is a busy server too.
+  queue_deadline: 'errorBusy',
 };
 
 /** 401: the typed password, the page credential, or the request's lack of one. */

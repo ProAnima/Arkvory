@@ -13,6 +13,7 @@ export * from './browse.js';
 export * from './upack.js';
 export * from './admission.js';
 export * from './download-scheduler.js';
+export * from './download-tickets.js';
 export * from './bandwidth.js';
 export * from './download-lease.js';
 export * from './identity.js';

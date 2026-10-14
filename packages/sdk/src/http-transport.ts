@@ -199,8 +199,10 @@ export class HttpTransport implements HttpPort {
 function queuePlace(headers: Headers): { queue?: DownloadQueuePlace } {
   const position = Number(headers.get('arkvory-queue-position') ?? '');
   const starts = Date.parse(headers.get('arkvory-starts-at') ?? '');
-  const queue: { position?: number; startsAt?: Date } = {};
+  const ticket = headers.get('arkvory-queue-ticket') ?? undefined;
+  const queue: { position?: number; startsAt?: Date; ticket?: string } = {};
   if (Number.isSafeInteger(position) && position >= 1) queue.position = position;
   if (Number.isFinite(starts)) queue.startsAt = new Date(starts);
-  return queue.position === undefined && queue.startsAt === undefined ? {} : { queue };
+  if (ticket) queue.ticket = ticket;
+  return Object.keys(queue).length === 0 ? {} : { queue };
 }

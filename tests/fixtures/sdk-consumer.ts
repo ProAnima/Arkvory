@@ -126,6 +126,8 @@ export type ClientErrorCodes = Assert<
     | 'file_changed'
     | 'upload_cancelled'
     | 'completion_failed'
+    // ADR 0076: a download the server's queue would start after the caller's notAfter.
+    | 'queue_deadline'
   >
 >;
 export function legacyHttpError(): Error {

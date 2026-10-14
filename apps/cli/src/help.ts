@@ -48,6 +48,8 @@ ${ru ? 'ОБЩИЕ ПАРАМЕТРЫ' : 'GLOBAL OPTIONS'}
   --timeout MS (60000)  --attempt-timeout MS (120000)  --retries N (20)
   --wait-limit MS  ${ru ? 'сколько ждать занятый сервер (по умолчанию — сколько он просит)' : 'how long to wait for a busy server (default: as long as it asks)'}
   --class CLASS    ${ru ? 'класс очереди скачивания: release, bulk или background (только понижает)' : 'download queue class: release, bulk or background (only lowers yours)'}
+  --not-before T   ${ru ? 'не начинать скачивание раньше T (RFC 3339 или ЧЧ:ММ)' : 'do not start a download before T (RFC 3339 or HH:MM)'}
+  --not-after T    ${ru ? 'прекратить, если очередь начнёт скачивание позже T' : 'give up if the queue would start the download after T'}
   --verbose  ${ru ? 'метод, путь, статус, время и ID запроса в stderr (без ключей)' : 'method, path, status, duration and request ID on stderr (no credentials)'}
   -- ${ru ? 'завершает разбор параметров (для имён файлов с дефисом)' : 'ends option parsing (for filenames starting with a dash)'}
 

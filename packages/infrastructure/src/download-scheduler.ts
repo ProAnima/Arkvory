@@ -5,15 +5,21 @@ import {
   type DownloadSchedulePolicy,
   type DownloadSessionRequest,
 } from '@proanima/arkvory-domain';
+import type { DownloadTickets } from './download-tickets.js';
 
 /** One response of an active session; `end` is idempotent. */
 export interface DownloadLease {
   progress(bytes: number): void;
   end(how: DownloadResponseEnd): void;
 }
-export type DownloadAdmission =
+/** `ticket`: the queue ticket the client should send back, when tickets are on. */
+export type DownloadAdmission = (
   | { readonly state: 'active'; readonly lease: DownloadLease }
-  | Exclude<DownloadDecision, { state: 'active' }>;
+  | Exclude<DownloadDecision, { state: 'active' }>
+) & { readonly ticket?: string };
+
+/** A request with the queue ticket the client sent, if any. */
+export type TicketedRequest = DownloadSessionRequest & { readonly ticket?: string };
 
 /** Scheduler tick: frequent enough for prompt hand-over, rare enough to cost nothing. */
 const TICK_MS = 500;
@@ -37,6 +43,7 @@ export class DownloadScheduler {
   private held = 0;
   private closed = false;
   private tickMs = 0;
+  private tickets: DownloadTickets | undefined;
   constructor(
     policy: DownloadSchedulePolicy,
     private readonly hold: { readonly limit: number; readonly timeoutMs: number } = {
@@ -44,6 +51,8 @@ export class DownloadScheduler {
       timeoutMs: 20000,
     },
     private readonly now: () => number = monotonic,
+    /** Wall-clock epoch milliseconds: tickets and Arkvory-Starts-At speak it. */
+    private readonly wall: () => number = Date.now,
   ) {
     this.sessions = new DownloadSessions(policy);
     this.timer = setInterval(() => {
@@ -60,9 +69,25 @@ export class DownloadScheduler {
     this.sessions.configure(policy);
   }
 
-  admit(request: DownloadSessionRequest): DownloadAdmission {
-    const decision = this.sessions.request(request, this.now());
-    return decision.state === 'active' ? this.lease(request.key) : decision;
+  /** Signs and reads queue tickets from now on; without it there are none. */
+  useTickets(tickets: DownloadTickets) {
+    this.tickets = tickets;
+  }
+
+  admit(request: TicketedRequest): DownloadAdmission {
+    const { ticket, ...session } = request;
+    const arrivedAt = this.tickets?.read(session.key, ticket, this.wall());
+    const decision = this.sessions.request(
+      arrivedAt === undefined
+        ? session
+        : { ...session, arrivedAt: this.now() - (this.wall() - arrivedAt) },
+      this.now(),
+    );
+    const admission = decision.state === 'active' ? this.lease(session.key) : decision;
+    const arrival = this.sessions.arrivalOf(session.key);
+    return this.tickets && arrival !== undefined
+      ? { ...admission, ticket: this.tickets.issue(session.key, this.wallClock(arrival)) }
+      : admission;
   }
 
   /**
@@ -70,10 +95,7 @@ export class DownloadScheduler {
    * gets its place, the hold time ends or the signal aborts. Beyond the held-request limit, or
    * without a hold time, it answers at once.
    */
-  async admitHeld(
-    request: DownloadSessionRequest,
-    signal: AbortSignal,
-  ): Promise<DownloadAdmission> {
+  async admitHeld(request: TicketedRequest, signal: AbortSignal): Promise<DownloadAdmission> {
     let admission = this.admit(request);
     if (admission.state === 'active' || this.held >= this.hold.limit) return admission;
     const until = this.now() + this.hold.timeoutMs;
@@ -97,9 +119,14 @@ export class DownloadScheduler {
     for (const wake of [...this.ticks]) wake();
   }
 
+  /** Milliseconds from now to a time of this scheduler's clock. */
+  until(at: number) {
+    return at - this.now();
+  }
+
   /** Converts a time of this scheduler's clock to wall-clock epoch milliseconds. */
   wallClock(at: number) {
-    return Date.now() + (at - this.now());
+    return this.wall() + (at - this.now());
   }
 
   get snapshot() {

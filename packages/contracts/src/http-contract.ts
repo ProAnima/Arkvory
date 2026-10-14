@@ -53,6 +53,14 @@ export function queueRequestHeaders() {
         'The client own id of one download, the same on every range of it: the queue keys the session by it instead of the client address, answers a waiting request at once with 503 download_queued, and may ask it to yield its place at a range boundary. Without it, a waiting request is held until its turn for a bounded time.',
     },
     {
+      name: 'Arkvory-Queue-Ticket',
+      in: 'header',
+      required: false,
+      schema: { type: 'string', maxLength: 80 },
+      description:
+        'The last Arkvory-Queue-Ticket the server sent for this download: after a server restart the download takes its old turn. A ticket that is wrong, expired or of another download is ignored.',
+    },
+    {
       name: 'Arkvory-Download-Class',
       in: 'header',
       required: false,
@@ -64,6 +72,11 @@ export function queueRequestHeaders() {
 }
 /** Headers of 503 busy with reason download_queued (ADR 0076). */
 export const queueHeaders = {
+  'Arkvory-Queue-Ticket': {
+    description:
+      'Signed proof of when this download first queued, valid for a day; send it back with the next requests of the download.',
+    schema: { type: 'string' },
+  },
   'Arkvory-Download-Class': {
     description: 'The class the download queues in.',
     schema: { type: 'string', enum: ['interactive', 'release', 'bulk', 'background'] },

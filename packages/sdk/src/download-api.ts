@@ -1,4 +1,4 @@
-import { ArkvoryClientError, TransferAttempts } from './transfer.js';
+import { ArkvoryClientError, ArkvoryHttpError, TransferAttempts, delay } from './transfer.js';
 import type { DownloadClass, TransferOptions } from './transfer.js';
 import { verifiedDownload } from './verified-download.js';
 import type { HttpPort } from './http-transport.js';
@@ -63,7 +63,10 @@ export class DownloadApi {
    * Its ranges carry one Arkvory-Download-Id, so the server queues them as one download (ADR
    * 0076). Pass the same `downloadId` when resuming the same download, so it keeps its place
    * instead of queueing as another one; `downloadClass` may lower the class it queues in, e.g.
-   * `bulk` for a mass update.
+   * `bulk` for a mass update. The queue ticket the server sends is sent back with every further
+   * range, so a server restart does not cost the download its turn; `queueTicket` passes one
+   * saved by an earlier process. A window: nothing is asked before `notBefore`, and a download
+   * the queue would start after `notAfter` ends with `queue_deadline` instead of waiting.
    */
   async downloadVerified(
     repository: string,
@@ -72,14 +75,20 @@ export class DownloadApi {
       prefix?: Blob;
       downloadId?: string;
       downloadClass?: DownloadClass;
+      queueTicket?: string;
+      notBefore?: Date;
+      notAfter?: Date;
     } = {},
   ): Promise<ReadableStream<Uint8Array>> {
     if (options.downloadId !== undefined && !downloadIdPattern.test(options.downloadId))
       throw new ArkvoryClientError('invalid_argument', 'Invalid download id');
-    const queue = {
-      'Arkvory-Download-Id': options.downloadId ?? newDownloadId(),
-      ...(options.downloadClass ? { 'Arkvory-Download-Class': options.downloadClass } : {}),
-    };
+    const queue = new QueueHeaders(
+      options.downloadId ?? newDownloadId(),
+      options.downloadClass,
+      options.queueTicket,
+      options.notAfter,
+    );
+    if (options.notBefore) await delay(options.notBefore.getTime() - Date.now(), options.signal);
     const controller = new AbortController();
     const signal = options.signal
       ? AbortSignal.any([options.signal, controller.signal])
@@ -95,16 +104,18 @@ export class DownloadApi {
       signal,
       controller,
       (start, end, attemptSignal) =>
-        this.http.request(
-          repositoryPath(repository, `artifacts/${encodeURIComponent(id)}/content`),
-          {
-            headers: {
-              Range: `bytes=${String(start)}-${String(end)}`,
-              'If-Range': `"sha256:${artifact.descriptor.sha256}"`,
-              ...queue,
+        queue.track(
+          this.http.request(
+            repositoryPath(repository, `artifacts/${encodeURIComponent(id)}/content`),
+            {
+              headers: {
+                Range: `bytes=${String(start)}-${String(end)}`,
+                'If-Range': `"sha256:${artifact.descriptor.sha256}"`,
+                ...queue.headers(),
+              },
             },
-          },
-          attemptSignal,
+            attemptSignal,
+          ),
         ),
     );
   }
@@ -115,4 +126,41 @@ export const downloadIdPattern = /^[A-Za-z0-9_-]{16,64}$/;
 /** A fresh id for one download: 32 hex characters. */
 export function newDownloadId() {
   return crypto.randomUUID().replaceAll('-', '');
+}
+
+/** The queue headers of one download; keeps the newest ticket the server sent (ADR 0076). */
+class QueueHeaders {
+  constructor(
+    private readonly id: string,
+    private readonly downloadClass: DownloadClass | undefined,
+    private ticket: string | undefined,
+    private readonly notAfter: Date | undefined,
+  ) {}
+
+  headers(): Record<string, string> {
+    return {
+      'Arkvory-Download-Id': this.id,
+      ...(this.downloadClass ? { 'Arkvory-Download-Class': this.downloadClass } : {}),
+      ...(this.ticket ? { 'Arkvory-Queue-Ticket': this.ticket } : {}),
+    };
+  }
+
+  async track(response: Promise<Response>): Promise<Response> {
+    try {
+      const answered = await response;
+      this.ticket = answered.headers.get('arkvory-queue-ticket') ?? this.ticket;
+      return answered;
+    } catch (error) {
+      if (error instanceof ArkvoryHttpError && error.queue) {
+        this.ticket = error.queue.ticket ?? this.ticket;
+        const start = error.queue.startsAt?.getTime() ?? Date.now();
+        if (this.notAfter && Math.max(start, Date.now()) > this.notAfter.getTime())
+          throw new ArkvoryClientError(
+            'queue_deadline',
+            `The download would start after ${this.notAfter.toISOString()}`,
+          );
+      }
+      throw error;
+    }
+  }
 }

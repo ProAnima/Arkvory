@@ -29,6 +29,8 @@ const values = new Set([
   'retries',
   'wait-limit',
   'class',
+  'not-before',
+  'not-after',
   'to',
   'stage',
   'comment',
@@ -101,6 +103,8 @@ export function validateCommand(args: Arguments, words: number, allowed: readonl
         'retries',
         'wait-limit',
         'class',
+        'not-before',
+        'not-after',
         'verbose',
         ...allowed,
       ].includes(key)

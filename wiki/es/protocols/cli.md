@@ -69,6 +69,8 @@ La URL del servidor debe usar HTTPS. Se permite HTTP sin cifrar solo para `local
 | `--retries N`             | 20                   | Reintentos de red de una operación (0 a 100); `0` los desactiva                                                        |
 | `--wait-limit MS`         | ninguno              | Cuánto puede esperar en total una operación a un servidor ocupado. Sin ella, el cliente espera lo que pida el servidor |
 | `--class CLASS`           |                      | Clase de cola de las descargas: `release`, `bulk` o `background`. Solo puede bajar su clase                            |
+| `--not-before T`          |                      | No empezar una descarga antes de T: RFC 3339 o `HH:MM`, la próxima vez que el reloj lo marque                          |
+| `--not-after T`           |                      | Desistir con el código 4 si la cola empezaría la descarga después de T                                                 |
 | `--verbose`               | desactivado          | Una línea en stderr por cada solicitud HTTP: método, ruta, estado, tiempo, ID de solicitud. Sin cabeceras ni claves.   |
 | `--help`, `--version`     |                      | Ayuda; versión del cliente como JSON                                                                                   |
 | `--`                      |                      | Termina las opciones, para nombres de archivo que empiezan por `-`                                                     |

@@ -13,6 +13,11 @@ export interface WaitingDownload {
   readonly size: number;
   /** Arrival order: lower came first. */
   readonly seq: number;
+  /**
+   * When it first came, in the caller's clock: the order of arrival. A ticket can restore it after
+   * a restart, so it may be earlier than sessions with a lower `seq`. Absent: `seq` alone.
+   */
+  readonly arrival?: number;
   readonly queuedAt: number;
 }
 
@@ -41,7 +46,7 @@ export function orderWaitingDownloads<T extends WaitingDownload>(
   for (const item of waiting) groups[agedClassIndex(item, policy, now)]?.push(item);
   const lanes = groups.map((group) =>
     policy.strategy === 'smallest-first'
-      ? group.sort((a, b) => a.size - b.size || a.seq - b.seq)
+      ? group.sort((a, b) => a.size - b.size || cameFirst(a, b))
       : inTurns(group),
   );
   const passes = downloadClasses.map(() => 0);
@@ -65,22 +70,27 @@ export function orderWaitingDownloads<T extends WaitingDownload>(
   return order;
 }
 
+/** Arrival order: by arrival time, then by sequence. */
+function cameFirst(a: WaitingDownload, b: WaitingDownload) {
+  return (a.arrival ?? 0) - (b.arrival ?? 0) || a.seq - b.seq;
+}
+
 /**
  * Principals in turn by their earliest arrival; each principal's sessions in arrival order. A
  * session's round is its place among its principal's sessions, so one sort orders them all:
  * O(n log n) however the sessions are spread over principals.
  */
 function inTurns<T extends WaitingDownload>(group: T[]): T[] {
-  const sorted = [...group].sort((a, b) => a.seq - b.seq);
+  const sorted = [...group].sort(cameFirst);
   const first = new Map<string, number>();
   const counts = new Map<string, number>();
   const rounds = new Map<T, number>();
-  for (const item of sorted) {
-    if (!first.has(item.principal)) first.set(item.principal, item.seq);
+  sorted.forEach((item, index) => {
+    if (!first.has(item.principal)) first.set(item.principal, index);
     const round = counts.get(item.principal) ?? 0;
     counts.set(item.principal, round + 1);
     rounds.set(item, round);
-  }
+  });
   const key = (item: T) => [rounds.get(item) ?? 0, first.get(item.principal) ?? 0] as const;
   return sorted.sort((a, b) => {
     const [roundA, firstA] = key(a);

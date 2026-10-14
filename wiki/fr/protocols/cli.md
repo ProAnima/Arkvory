@@ -69,6 +69,8 @@ L’URL du serveur doit utiliser HTTPS. HTTP simple n’est autorisé que pour `
 | `--retries N`              | 20                | Nouvelles tentatives réseau pour une opération (0 à 100) ; `0` les désactive                                                                               |
 | `--wait-limit MS`          | aucune            | Durée totale pendant laquelle une opération peut attendre un serveur occupé. Sans cette option, le client attend aussi longtemps que le serveur le demande |
 | `--class CLASS`            |                   | Classe de file des téléchargements : `release`, `bulk` ou `background`. Elle ne peut que baisser votre classe                                              |
+| `--not-before T`           |                   | Ne pas commencer un téléchargement avant T : RFC 3339 ou `HH:MM`, la prochaine fois que l’horloge l’indique                                                |
+| `--not-after T`            |                   | Abandonner avec le code 4 si la file commencerait le téléchargement après T                                                                                |
 | `--verbose`                | désactivé         | Une ligne stderr par requête HTTP : méthode, chemin, statut, durée, ID de requête. Ni en-têtes ni clés.                                                    |
 | `--help`, `--version`      |                   | Aide ; version du client en JSON                                                                                                                           |
 | `--`                       |                   | Termine les options, pour les noms de fichiers qui commencent par `-`                                                                                      |

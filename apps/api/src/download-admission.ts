@@ -48,7 +48,7 @@ interface AdmissionServices {
   readonly downloadGate: Pick<AdmissionQueue, 'acquire'>;
   readonly downloadScheduler: Pick<
     DownloadScheduler,
-    'admit' | 'admitHeld' | 'policy' | 'wallClock'
+    'admit' | 'admitHeld' | 'policy' | 'wallClock' | 'until'
   >;
 }
 
@@ -93,10 +93,13 @@ export function createDownloadAdmission(services: AdmissionServices) {
       size,
       queueAware: id !== undefined,
     };
+    const ticket = header(request, 'arkvory-queue-ticket');
     reply.header('Arkvory-Download-Class', downloadClass);
+    const asked = ticket === undefined ? session : { ...session, ticket };
     const admission = session.queueAware
-      ? scheduler.admit(session)
-      : await scheduler.admitHeld(session, signal);
+      ? scheduler.admit(asked)
+      : await scheduler.admitHeld(asked, signal);
+    if (admission.ticket !== undefined) reply.header('Arkvory-Queue-Ticket', admission.ticket);
     if (admission.state === 'active') return admission.lease;
     reply.removeHeader('ETag');
     if (admission.position !== undefined)
@@ -108,10 +111,7 @@ export function createDownloadAdmission(services: AdmissionServices) {
       );
     throw new ArkvoryError('busy', 'Download is queued', {
       reason: 'download_queued',
-      retryAfterSeconds: Math.max(
-        1,
-        Math.ceil((scheduler.wallClock(admission.checkAt) - Date.now()) / 1000),
-      ),
+      retryAfterSeconds: Math.max(1, Math.ceil(scheduler.until(admission.checkAt) / 1000)),
     });
   };
 }
