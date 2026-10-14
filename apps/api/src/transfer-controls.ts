@@ -1,4 +1,10 @@
-import { AdmissionQueue, BandwidthGovernor, downloadShare } from '@proanima/arkvory-infrastructure';
+import { downloadSchedulePolicy } from '@proanima/arkvory-domain';
+import {
+  AdmissionQueue,
+  BandwidthGovernor,
+  DownloadScheduler,
+  downloadShare,
+} from '@proanima/arkvory-infrastructure';
 import type { ServerConfig } from './config.js';
 
 export function createTransferControls(config: ServerConfig, available: () => boolean) {
@@ -20,6 +26,19 @@ export function createTransferControls(config: ServerConfig, available: () => bo
     config.transferQueuePerPrincipal ?? Math.min(8, config.transferQueueLimit ?? 64),
     config.transferQueueTimeoutMs ?? 20000,
     config.maxDownloadsPerPrincipal ?? Math.min(4, config.maxDownloads),
+  );
+  // Whole downloads of large objects queue as sessions (ADR 0076); small ones use downloadGate.
+  const downloadScheduler = new DownloadScheduler(
+    config.downloadQueue ??
+      downloadSchedulePolicy(config.maxDownloads, {
+        strategy: config.sharedDownloads ? 'shared' : 'ordered',
+        perPrincipalActive: config.maxDownloadsPerPrincipal ?? Math.min(4, config.maxDownloads),
+      }),
+    {
+      limit: config.transferQueueLimit ?? 64,
+      timeoutMs:
+        (config.downloadHoldSeconds ?? (config.transferQueueTimeoutMs ?? 20000) / 1000) * 1000,
+    },
   );
   // Anonymous hashing: one active and four queued per client address, so one source cannot
   // occupy both slots or the whole queue.
@@ -51,6 +70,7 @@ export function createTransferControls(config: ServerConfig, available: () => bo
   return {
     uploadGate,
     downloadGate,
+    downloadScheduler,
     loginGate,
     accountGate,
     uploadBandwidth,
@@ -62,11 +82,13 @@ export function createTransferControls(config: ServerConfig, available: () => bo
     drain: () => {
       uploadGate.drain();
       downloadGate.drain();
+      downloadScheduler.drain();
       loginGate.drain();
     },
     close: () => {
       uploadGate.close();
       downloadGate.close();
+      downloadScheduler.close();
       loginGate.close();
       accountGate.close();
       uploadBandwidth.close();

@@ -1021,6 +1021,7 @@
       "queue_full": "طابور النقل ممتلئ.",
       "transfer_limit": "لدى المستدعي أقصى عدد مسموح به من عمليات النقل.",
       "request_limit": "يعالج الخادم أقصى عدد من الطلبات يقبله.",
+      "download_queued": "ينتظر التنزيل في الطابور؛ أعد الطلب بعد Retry-After. يبيّن Arkvory-Queue-Position وArkvory-Starts-At الترتيب وموعد البدء المتوقع.",
       "feedback_disabled": "الملاحظات معطّلة على هذا الخادم.",
       "hub_unreachable": "تعذّر الوصول إلى مركز التحديثات.",
       "login_attempts": "محاولات تسجيل دخول كثيرة جدًا؛ انتظر.",

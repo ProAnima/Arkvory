@@ -1021,6 +1021,7 @@
       "queue_full": "전송 큐가 가득 찼습니다.",
       "transfer_limit": "호출자가 허용된 수만큼의 전송을 이미 진행 중입니다.",
       "request_limit": "서버가 수용하는 만큼의 요청을 이미 처리하고 있습니다.",
+      "download_queued": "다운로드가 대기열에서 기다리고 있습니다. Retry-After 이후에 다시 요청하세요. Arkvory-Queue-Position과 Arkvory-Starts-At이 순서와 예상 시작 시각을 알려 줍니다.",
       "feedback_disabled": "이 서버에서는 피드백이 꺼져 있습니다.",
       "hub_unreachable": "업데이트 허브에 연결할 수 없습니다.",
       "login_attempts": "로그인 시도가 너무 많습니다. 기다립니다.",

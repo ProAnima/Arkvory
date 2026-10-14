@@ -1021,6 +1021,7 @@
       "queue_full": "A fila de transferências está cheia.",
       "transfer_limit": "O chamador já tem o número máximo permitido de transferências.",
       "request_limit": "O servidor já atende o número máximo de solicitações que admite.",
+      "download_queued": "O download aguarda na fila; volte após Retry-After. Arkvory-Queue-Position e Arkvory-Starts-At informam a posição e o início previsto.",
       "feedback_disabled": "O feedback está desativado neste servidor.",
       "hub_unreachable": "Não é possível alcançar o hub de atualização.",
       "login_attempts": "Tentativas de login demais; aguarde.",

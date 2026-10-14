@@ -16,6 +16,20 @@ async function exposedNames() {
     transfers: {
       uploadGate: new AdmissionQueue(1, 1, 1, 1000, 1),
       downloadGate: new AdmissionQueue(1, 1, 1, 1000, 1),
+      downloadScheduler: {
+        snapshot: {
+          active: 0,
+          waiting: { interactive: 0, release: 0, bulk: 0, background: 0 },
+          oldestWaitSeconds: 0,
+          released: 0,
+          yielded: 0,
+          admitted: 0,
+          queued: 0,
+          completed: 0,
+          noShows: 0,
+          refused: 0,
+        },
+      },
     },
     activeRequests: () => 0,
     diagnostics: { counters: { written: 0, dropped: 0, truncated: 0, oversized: 0 } },

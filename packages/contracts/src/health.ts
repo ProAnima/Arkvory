@@ -44,11 +44,75 @@ const bandwidth = {
     grantedBytes: { type: 'string', pattern: '^(0|[1-9][0-9]*)$' },
   },
 } as const;
+const classCounts = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['interactive', 'release', 'bulk', 'background'],
+  properties: { interactive: count, release: count, bulk: count, background: count },
+} as const;
+/** The download queue's effective settings: what the environment configured. */
+const queueSettings = {
+  type: 'object',
+  additionalProperties: false,
+  required: [
+    'strategy',
+    'sessions',
+    'reserve',
+    'perPrincipal',
+    'weights',
+    'sessionMinBytes',
+    'idleSeconds',
+    'agingMinutes',
+    'preempt',
+    'rangesPerSession',
+    'queueLimit',
+    'queuePerPrincipal',
+    'holdSeconds',
+  ],
+  properties: {
+    strategy: { type: 'string', enum: ['ordered', 'smallest-first', 'shared'] },
+    sessions: count,
+    reserve: count,
+    perPrincipal: count,
+    weights: classCounts,
+    sessionMinBytes: count,
+    idleSeconds: count,
+    agingMinutes: count,
+    preempt: { type: 'boolean' },
+    rangesPerSession: count,
+    queueLimit: count,
+    queuePerPrincipal: count,
+    holdSeconds: count,
+  },
+} as const;
+/** Download sessions of ADR 0076: aggregates only, no session ids or principals. */
+const sessions = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['active', 'waiting', 'oldestWaitSeconds', 'bytesPerSecond', 'settings'],
+  properties: {
+    active: count,
+    waiting: classCounts,
+    oldestWaitSeconds: count,
+    bytesPerSecond: count,
+    resumable: count,
+    held: count,
+    tickMilliseconds: { type: 'number', minimum: 0 },
+    admitted: count,
+    queued: count,
+    completed: count,
+    noShows: count,
+    released: count,
+    yielded: count,
+    refused: count,
+    settings: queueSettings,
+  },
+} as const;
 const direction = {
   type: 'object',
   additionalProperties: false,
   required: ['admission', 'bandwidth'],
-  properties: { admission, bandwidth },
+  properties: { admission, bandwidth, sessions },
 } as const;
 export const readinessSchema = {
   type: 'object',

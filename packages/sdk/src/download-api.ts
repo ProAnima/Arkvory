@@ -1,5 +1,5 @@
 import { ArkvoryClientError, TransferAttempts } from './transfer.js';
-import type { TransferOptions } from './transfer.js';
+import type { DownloadClass, TransferOptions } from './transfer.js';
 import { verifiedDownload } from './verified-download.js';
 import type { HttpPort } from './http-transport.js';
 import { repositoryPath } from './http-transport.js';
@@ -60,12 +60,26 @@ export class DownloadApi {
   }
   /** A verified suffix stream. Supply an immutable saved prefix to resume after a process restart.
    * Commit the destination only when this stream closes successfully, never after the last write.
+   * Its ranges carry one Arkvory-Download-Id, so the server queues them as one download (ADR
+   * 0076). Pass the same `downloadId` when resuming the same download, so it keeps its place
+   * instead of queueing as another one; `downloadClass` may lower the class it queues in, e.g.
+   * `bulk` for a mass update.
    */
   async downloadVerified(
     repository: string,
     id: string,
-    options: TransferOptions & { prefix?: Blob } = {},
+    options: TransferOptions & {
+      prefix?: Blob;
+      downloadId?: string;
+      downloadClass?: DownloadClass;
+    } = {},
   ): Promise<ReadableStream<Uint8Array>> {
+    if (options.downloadId !== undefined && !downloadIdPattern.test(options.downloadId))
+      throw new ArkvoryClientError('invalid_argument', 'Invalid download id');
+    const queue = {
+      'Arkvory-Download-Id': options.downloadId ?? newDownloadId(),
+      ...(options.downloadClass ? { 'Arkvory-Download-Class': options.downloadClass } : {}),
+    };
     const controller = new AbortController();
     const signal = options.signal
       ? AbortSignal.any([options.signal, controller.signal])
@@ -87,10 +101,18 @@ export class DownloadApi {
             headers: {
               Range: `bytes=${String(start)}-${String(end)}`,
               'If-Range': `"sha256:${artifact.descriptor.sha256}"`,
+              ...queue,
             },
           },
           attemptSignal,
         ),
     );
   }
+}
+
+/** The form of Arkvory-Download-Id the server accepts. */
+export const downloadIdPattern = /^[A-Za-z0-9_-]{16,64}$/;
+/** A fresh id for one download: 32 hex characters. */
+export function newDownloadId() {
+  return crypto.randomUUID().replaceAll('-', '');
 }

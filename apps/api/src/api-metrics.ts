@@ -1,7 +1,9 @@
 import type { FastifyInstance } from 'fastify';
 import { MetricsRegistry } from '@proanima/arkvory-infrastructure';
+import { downloadClasses } from '@proanima/arkvory-domain';
 import type {
   AdmissionQueue,
+  DownloadScheduler,
   Counter,
   DiagnosticLogger,
   GaugeSample,
@@ -33,6 +35,7 @@ export interface MetricSources {
   readonly transfers: {
     readonly uploadGate: Pick<AdmissionQueue, 'snapshot'>;
     readonly downloadGate: Pick<AdmissionQueue, 'snapshot'>;
+    readonly downloadScheduler: Pick<DownloadScheduler, 'snapshot'>;
   };
   /** Admitted non-health requests (graceful drain tracking). */
   readonly activeRequests: () => number;
@@ -260,7 +263,55 @@ export class ApiMetrics {
     });
   }
 
+  /** Download sessions of ADR 0076; aggregates only. */
+  private registerDownloadSessions(): void {
+    const scheduler = this.sources.transfers.downloadScheduler;
+    this.registry.sampled({
+      name: 'arkvory_download_sessions_active',
+      help: 'Download sessions holding a place.',
+      type: 'gauge',
+      labels: [],
+      collect: () => [{ labels: {}, value: scheduler.snapshot.active }],
+    });
+    this.registry.sampled({
+      name: 'arkvory_download_sessions_waiting',
+      help: 'Download sessions waiting for a place, by class.',
+      type: 'gauge',
+      labels: ['class'],
+      collect: () => {
+        const { waiting } = scheduler.snapshot;
+        return downloadClasses.map((name) => ({ labels: { class: name }, value: waiting[name] }));
+      },
+    });
+    this.registry.sampled({
+      name: 'arkvory_download_queue_oldest_wait_seconds',
+      help: 'How long the longest waiting download session has waited.',
+      type: 'gauge',
+      labels: [],
+      collect: () => [{ labels: {}, value: scheduler.snapshot.oldestWaitSeconds }],
+    });
+    this.registry.sampled({
+      name: 'arkvory_download_session_events_total',
+      help: 'Download sessions admitted, queued, completed, released after a pause, yielded at a range boundary, dropped as no-shows or refused over the limit.',
+      type: 'counter',
+      labels: ['event'],
+      collect: () => {
+        const snapshot = scheduler.snapshot;
+        return [
+          { labels: { event: 'admitted' }, value: snapshot.admitted },
+          { labels: { event: 'queued' }, value: snapshot.queued },
+          { labels: { event: 'completed' }, value: snapshot.completed },
+          { labels: { event: 'released' }, value: snapshot.released },
+          { labels: { event: 'yielded' }, value: snapshot.yielded },
+          { labels: { event: 'no_show' }, value: snapshot.noShows },
+          { labels: { event: 'refused' }, value: snapshot.refused },
+        ];
+      },
+    });
+  }
+
   private registerTransfers(): void {
+    this.registerDownloadSessions();
     const { uploadGate, downloadGate } = this.sources.transfers;
     const gates = [
       ['upload', uploadGate],

@@ -57,7 +57,7 @@ export const errorReasons = {
     'transfer_limit',
   ],
   integrity_mismatch: [],
-  busy: ['request_limit'],
+  busy: ['request_limit', 'download_queued'],
   unavailable: ['feedback_disabled', 'hub_unreachable', 'replication_degraded'],
   rate_limited: [
     'login_attempts',

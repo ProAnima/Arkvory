@@ -126,16 +126,17 @@ Mantenha `ARKVORY_DATA_DIR` onde o instalador o colocou. As unidades do Linux po
 
 Os limites pertencem a um processo da API. Uma taxa de `0` significa sem limite.
 
-| Variável                              | Padrão    | Significado                                                       |
-| ------------------------------------- | --------- | ----------------------------------------------------------------- |
-| `ARKVORY_MAX_UPLOADS`                 | `2`       | Uploads simultâneos, 1 a 32                                       |
-| `ARKVORY_MAX_DOWNLOADS`               | `16`      | Downloads simultâneos, 1 a 256                                    |
-| `ARKVORY_MAX_UPLOADS_PER_PRINCIPAL`   | `1`       | Uploads simultâneos de uma conta ou chave                         |
-| `ARKVORY_MAX_DOWNLOADS_PER_PRINCIPAL` | `4`       | Downloads simultâneos de uma conta ou chave                       |
-| `ARKVORY_UPLOAD_BYTES_PER_SECOND`     | `0`       | Taxa total de upload em bytes por segundo                         |
-| `ARKVORY_DOWNLOAD_BYTES_PER_SECOND`   | `0`       | Taxa total de download em bytes por segundo                       |
-| `ARKVORY_UPLOAD_DEADLINE_MS`          | `1800000` | O tempo máximo de uma solicitação de upload, 30 minutos           |
-| `ARKVORY_UPLOAD_IDLE_TIMEOUT_MS`      | `30000`   | Uma solicitação de upload que não envia dados por esse tempo para |
+| Variável                              | Padrão    | Significado                                                                                                        |
+| ------------------------------------- | --------- | ------------------------------------------------------------------------------------------------------------------ |
+| `ARKVORY_MAX_UPLOADS`                 | `2`       | Uploads simultâneos, 1 a 32                                                                                        |
+| `ARKVORY_MAX_DOWNLOADS`               | `16`      | Downloads simultâneos, 1 a 256                                                                                     |
+| `ARKVORY_MAX_UPLOADS_PER_PRINCIPAL`   | `1`       | Uploads simultâneos de uma conta ou chave                                                                          |
+| `ARKVORY_MAX_DOWNLOADS_PER_PRINCIPAL` | `4`       | Downloads simultâneos de uma conta ou chave                                                                        |
+| `ARKVORY_DOWNLOAD_STRATEGY`           | `ordered` | Ordem da fila de downloads: `ordered` (classes e revezamento), `smallest-first` ou `shared` (sem fila, como antes) |
+| `ARKVORY_UPLOAD_BYTES_PER_SECOND`     | `0`       | Taxa total de upload em bytes por segundo                                                                          |
+| `ARKVORY_DOWNLOAD_BYTES_PER_SECOND`   | `0`       | Taxa total de download em bytes por segundo                                                                        |
+| `ARKVORY_UPLOAD_DEADLINE_MS`          | `1800000` | O tempo máximo de uma solicitação de upload, 30 minutos                                                            |
+| `ARKVORY_UPLOAD_IDLE_TIMEOUT_MS`      | `30000`   | Uma solicitação de upload que não envia dados por esse tempo para                                                  |
 
 Um proxy na frente da API deve permitir uma solicitação pelo menos tão longa quanto `ARKVORY_UPLOAD_DEADLINE_MS`. Consulte [HTTPS](./https#reverse-proxy). Todos os outros limites, como a fila de espera e as taxas por conta, estão em [Variáveis de ambiente](../reference/environment#transfers-and-bandwidth).
 

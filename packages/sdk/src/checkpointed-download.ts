@@ -1,6 +1,7 @@
 import type { ArkvoryClient } from './client.js';
 import type { DownloadJob } from './download-queue.js';
 import { ArkvoryIntegrityError, releaseReader } from './transfer.js';
+import { downloadIdPattern, newDownloadId } from './download-api.js';
 
 /** Per-job private staging. A checkpoint becomes readable only after writer.close(). */
 export interface DownloadStorage {
@@ -20,6 +21,9 @@ export function checkpointedDownload(
   artifactId: string,
   storage: DownloadStorage,
 ): DownloadJob {
+  // One id for every run of this job, so a resumed download continues its place in the
+  // server's queue (ADR 0076). A job id that persists across reloads keeps it across reloads.
+  const downloadId = downloadIdPattern.test(id) ? id : newDownloadId();
   return {
     id,
     discard: () => storage.discard(),
@@ -31,6 +35,7 @@ export function checkpointedDownload(
       const stream = await client
         .downloadVerified(repository, artifactId, {
           prefix,
+          downloadId,
           signal: context.signal,
           onRetry: (event) => {
             context.retry(event);

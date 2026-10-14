@@ -1021,6 +1021,7 @@
       "queue_full": "La cola de transferencias está llena.",
       "transfer_limit": "El solicitante ya tiene el máximo de transferencias permitidas.",
       "request_limit": "El servidor ya atiende el máximo de solicitudes que admite.",
+      "download_queued": "La descarga espera en la cola; vuelva tras Retry-After. Arkvory-Queue-Position y Arkvory-Starts-At indican el puesto y el inicio previsto.",
       "feedback_disabled": "Los comentarios están desactivados en este servidor.",
       "hub_unreachable": "No se puede contactar con el hub de actualizaciones.",
       "login_attempts": "Demasiados intentos de inicio de sesión; espere.",

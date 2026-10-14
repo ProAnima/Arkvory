@@ -1021,6 +1021,7 @@
       "queue_full": "传输队列已满。",
       "transfer_limit": "调用方的传输数已达允许的上限。",
       "request_limit": "服务器处理的请求数已达其准入的上限。",
+      "download_queued": "下载正在队列中等待；请在 Retry-After 之后再来。Arkvory-Queue-Position 和 Arkvory-Starts-At 给出位置和预计开始时间。",
       "feedback_disabled": "此服务器已关闭反馈功能。",
       "hub_unreachable": "无法连接更新中心（hub）。",
       "login_attempts": "登录尝试次数过多；请等待。",

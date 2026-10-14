@@ -4,6 +4,7 @@ import {
   contentResponses,
   downloadHeaders,
   nativeErrorResponse,
+  queueHeaders,
   requestIdHeader,
 } from './http-contract.js';
 import { retryAfterHeader } from './errors.js';
@@ -77,11 +78,19 @@ function operationResponses(
         Allow: { schema: { type: 'string', enum: ['GET, HEAD'] } },
       },
     };
-  responses['503'] = {
-    ...nativeErrorResponse,
-    description: 'Unavailable or busy; reconcile mutation state before retry.',
-    headers: retryHeaders,
-  };
+  responses['503'] =
+    content && method === 'get'
+      ? {
+          ...nativeErrorResponse,
+          description:
+            'Unavailable or busy. busy with reason download_queued: the download waits in the queue; come back after Retry-After with the same credential (ADR 0076).',
+          headers: { ...retryHeaders, ...queueHeaders },
+        }
+      : {
+          ...nativeErrorResponse,
+          description: 'Unavailable or busy; reconcile mutation state before retry.',
+          headers: retryHeaders,
+        };
   if (throttled.has(policy.operationId))
     responses['429'] = {
       ...nativeErrorResponse,

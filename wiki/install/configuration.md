@@ -126,16 +126,17 @@ Keep `ARKVORY_DATA_DIR` where the installer put it. The Linux units can write on
 
 The limits belong to one API process. A rate of `0` means no limit.
 
-| Variable                              | Default   | Meaning                                                  |
-| ------------------------------------- | --------- | -------------------------------------------------------- |
-| `ARKVORY_MAX_UPLOADS`                 | `2`       | Uploads at the same time, 1 to 32                        |
-| `ARKVORY_MAX_DOWNLOADS`               | `16`      | Downloads at the same time, 1 to 256                     |
-| `ARKVORY_MAX_UPLOADS_PER_PRINCIPAL`   | `1`       | Uploads of one account or key at the same time           |
-| `ARKVORY_MAX_DOWNLOADS_PER_PRINCIPAL` | `4`       | Downloads of one account or key at the same time         |
-| `ARKVORY_UPLOAD_BYTES_PER_SECOND`     | `0`       | Total upload rate in bytes per second                    |
-| `ARKVORY_DOWNLOAD_BYTES_PER_SECOND`   | `0`       | Total download rate in bytes per second                  |
-| `ARKVORY_UPLOAD_DEADLINE_MS`          | `1800000` | The longest time of one upload request, 30 minutes       |
-| `ARKVORY_UPLOAD_IDLE_TIMEOUT_MS`      | `30000`   | An upload request that sends no data for this time stops |
+| Variable                              | Default   | Meaning                                                                                                        |
+| ------------------------------------- | --------- | -------------------------------------------------------------------------------------------------------------- |
+| `ARKVORY_MAX_UPLOADS`                 | `2`       | Uploads at the same time, 1 to 32                                                                              |
+| `ARKVORY_MAX_DOWNLOADS`               | `16`      | Downloads at the same time, 1 to 256                                                                           |
+| `ARKVORY_MAX_UPLOADS_PER_PRINCIPAL`   | `1`       | Uploads of one account or key at the same time                                                                 |
+| `ARKVORY_MAX_DOWNLOADS_PER_PRINCIPAL` | `4`       | Downloads of one account or key at the same time                                                               |
+| `ARKVORY_DOWNLOAD_STRATEGY`           | `ordered` | Order of the download queue: `ordered` (classes and turns), `smallest-first` or `shared` (no queue, as before) |
+| `ARKVORY_UPLOAD_BYTES_PER_SECOND`     | `0`       | Total upload rate in bytes per second                                                                          |
+| `ARKVORY_DOWNLOAD_BYTES_PER_SECOND`   | `0`       | Total download rate in bytes per second                                                                        |
+| `ARKVORY_UPLOAD_DEADLINE_MS`          | `1800000` | The longest time of one upload request, 30 minutes                                                             |
+| `ARKVORY_UPLOAD_IDLE_TIMEOUT_MS`      | `30000`   | An upload request that sends no data for this time stops                                                       |
 
 A proxy in front of the API must allow a request at least as long as `ARKVORY_UPLOAD_DEADLINE_MS`. See [HTTPS](./https#reverse-proxy). All other limits, such as the waiting queue and the per-account rates, are in [Environment variables](../reference/environment#transfers-and-bandwidth).
 

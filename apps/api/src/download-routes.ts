@@ -5,7 +5,6 @@ import type {
   StorageService,
 } from '@proanima/arkvory-application';
 import type {
-  AdmissionQueue,
   BandwidthGovernor,
   DiagnosticLogger,
   PostgresContentPins,
@@ -15,10 +14,11 @@ import type { RequestContext } from './request-context.js';
 import { downloadStream } from './download-stream.js';
 import { matchesEtag, parseRange } from './range.js';
 import { sendFailure } from './http-errors.js';
+import type { ContentAdmission, DownloadAdmission } from './download-admission.js';
 
 interface ContentServices {
   service: Pick<StorageService, 'download'>;
-  downloadGate: Pick<AdmissionQueue, 'acquire'>;
+  admit: DownloadAdmission;
   downloadBandwidth: Pick<BandwidthGovernor, 'stream'>;
   diagnostics: Pick<DiagnosticLogger, 'write'>;
   principal: RequestContext['principal'];
@@ -26,23 +26,15 @@ interface ContentServices {
   pins: Pick<PostgresContentPins, 'acquire'>;
 }
 export function createContentSender(dependencies: ContentServices) {
-  const { service, downloadGate, downloadBandwidth, diagnostics, principal, signal, pins } =
-    dependencies;
+  const { service, admit, downloadBandwidth, diagnostics, principal, signal, pins } = dependencies;
   const sendContent = async (
     request: FastifyRequest,
     reply: FastifyReply,
     repository: string,
     id: string,
   ) => {
-    const releaseSlot = await downloadGate.acquire(principal(request).id, signal(request, reply));
-    let released = false;
-    const release = (): void => {
-      if (!released) {
-        releaseSlot();
-        released = true;
-      }
-    };
-    reply.raw.once('close', release);
+    // Admission comes after authorization and metadata: refused, 304 and HEAD take no place.
+    let admission: ContentAdmission | undefined;
     let pin: Awaited<ReturnType<PostgresContentPins['acquire']>> | undefined;
     let streaming = false;
     try {
@@ -88,10 +80,25 @@ export function createContentSender(dependencies: ContentServices) {
           .header('Content-Length', String(range.end - range.start + 1));
       else reply.header('Content-Length', String(size));
       if (request.method === 'HEAD') return await reply.send();
+      const admitted = await admit(
+        request,
+        reply,
+        principal(request),
+        id,
+        size,
+        signal(request, reply),
+      );
+      admission = admitted;
+      const metered = meteredContent(
+        result.read(range.kind === 'partial' ? range : undefined),
+        admitted,
+        reply,
+        range.kind !== 'partial' || range.end === size - 1,
+      );
       const stream = downloadStream(
         protectedContent(
           downloadBandwidth.stream(
-            protectedContent(result.read(range.kind === 'partial' ? range : undefined), pin.check),
+            protectedContent(metered, pin.check),
             principal(request).id,
             signal(request, reply),
           ),
@@ -112,7 +119,7 @@ export function createContentSender(dependencies: ContentServices) {
       streaming = true;
       return await reply.send(stream);
     } catch (error) {
-      release();
+      admission?.end({ finished: false, reachedEnd: false });
       throw error;
     } finally {
       if (!streaming) await pin?.release();
@@ -120,6 +127,31 @@ export function createContentSender(dependencies: ContentServices) {
   };
 
   return sendContent;
+}
+/**
+ * Reports read bytes to the admission and ends it when the response closes: whether it was sent
+ * to its end and whether it covered the object's last byte. The session decides from all its
+ * responses whether the download is complete.
+ */
+function meteredContent(
+  source: AsyncIterable<Uint8Array>,
+  admission: ContentAdmission,
+  reply: FastifyReply,
+  toEnd: boolean,
+) {
+  let drained = false;
+  let finished = false;
+  reply.raw.once('finish', () => (finished = true));
+  reply.raw.once('close', () => {
+    admission.end({ finished: drained && finished, reachedEnd: toEnd });
+  });
+  return (async function* () {
+    for await (const chunk of source) {
+      admission.progress(chunk.byteLength);
+      yield chunk;
+    }
+    drained = true;
+  })();
 }
 async function* protectedContent(source: AsyncIterable<Uint8Array>, check: () => void) {
   check();

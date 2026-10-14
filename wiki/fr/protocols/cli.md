@@ -68,6 +68,7 @@ L’URL du serveur doit utiliser HTTPS. HTTP simple n’est autorisé que pour `
 | `--attempt-timeout MS`     | 120000            | Limite d’une tentative de transfert (1 à 1800000)                                                                                                          |
 | `--retries N`              | 20                | Nouvelles tentatives réseau pour une opération (0 à 100) ; `0` les désactive                                                                               |
 | `--wait-limit MS`          | aucune            | Durée totale pendant laquelle une opération peut attendre un serveur occupé. Sans cette option, le client attend aussi longtemps que le serveur le demande |
+| `--class CLASS`            |                   | Classe de file des téléchargements : `release`, `bulk` ou `background`. Elle ne peut que baisser votre classe                                              |
 | `--verbose`                | désactivé         | Une ligne stderr par requête HTTP : méthode, chemin, statut, durée, ID de requête. Ni en-têtes ni clés.                                                    |
 | `--help`, `--version`      |                   | Aide ; version du client en JSON                                                                                                                           |
 | `--`                       |                   | Termine les options, pour les noms de fichiers qui commencent par `-`                                                                                      |

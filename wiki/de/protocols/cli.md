@@ -68,6 +68,7 @@ Die Server-URL muss HTTPS verwenden. Unverschlüsseltes HTTP ist nur für `local
 | `--attempt-timeout MS`       | 120000         | Limit für einen Übertragungsversuch (1 bis 1800000)                                                                                             |
 | `--retries N`                | 20             | Netzwerkwiederholungen für einen Vorgang (0 bis 100); `0` schaltet sie aus                                                                      |
 | `--wait-limit MS`            | keines         | Wie lange ein Vorgang insgesamt auf einen beschäftigten Server warten darf. Ohne die Option wartet der Client so lange, wie der Server verlangt |
+| `--class CLASS`              |                | Warteschlangenklasse von Downloads: `release`, `bulk` oder `background`. Sie kann Ihre Klasse nur senken                                        |
 | `--verbose`                  | aus            | Eine stderr-Zeile pro HTTP-Anfrage: Methode, Pfad, Status, Zeit, Anfrage-ID. Keine Header und keine Schlüssel.                                  |
 | `--help`, `--version`        |                | Hilfe; Client-Version als JSON                                                                                                                  |
 | `--`                         |                | Beendet die Optionen, für Dateinamen, die mit `-` beginnen                                                                                      |

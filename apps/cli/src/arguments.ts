@@ -28,6 +28,7 @@ const values = new Set([
   'attempt-timeout',
   'retries',
   'wait-limit',
+  'class',
   'to',
   'stage',
   'comment',
@@ -99,6 +100,7 @@ export function validateCommand(args: Arguments, words: number, allowed: readonl
         'attempt-timeout',
         'retries',
         'wait-limit',
+        'class',
         'verbose',
         ...allowed,
       ].includes(key)

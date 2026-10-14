@@ -1,7 +1,12 @@
 import { readFile } from 'node:fs/promises';
 import type { FeedbackHub } from './feedback.js';
 import { isIP } from 'node:net';
-import { ArkvoryError, MAX_OBJECT_BYTES } from '@proanima/arkvory-domain';
+import {
+  ArkvoryError,
+  MAX_OBJECT_BYTES,
+  type DownloadSchedulePolicy,
+} from '@proanima/arkvory-domain';
+import { readDownloadQueue } from './download-config.js';
 import { parseKeys, downloadShare, readMirrorSettings } from '@proanima/arkvory-infrastructure';
 import type { MirrorConfiguration } from '@proanima/arkvory-application';
 import type { SharedDownloadPolicy } from '@proanima/arkvory-infrastructure';
@@ -31,6 +36,9 @@ export interface ServerConfig extends UploadTimeoutOptions, OperabilityOptions {
   readonly transferQueueTimeoutMs?: number;
   readonly maxUploadsPerPrincipal?: number;
   readonly maxDownloadsPerPrincipal?: number;
+  /** ADR 0076: the download queue; absent, the defaults for `maxDownloads`. */
+  readonly downloadQueue?: DownloadSchedulePolicy;
+  readonly downloadHoldSeconds?: number;
   readonly uploadBytesPerSecond?: number;
   readonly downloadBytesPerSecond?: number;
   readonly uploadBytesPerSecondPerPrincipal?: number;
@@ -235,6 +243,16 @@ export async function loadConfig(env: NodeJS.ProcessEnv): Promise<ServerConfig> 
     downloadBytesPerSecond: rate('ARKVORY_DOWNLOAD_BYTES_PER_SECOND'),
     uploadBytesPerSecondPerPrincipal: rate('ARKVORY_UPLOAD_BYTES_PER_SECOND_PER_PRINCIPAL'),
     downloadBytesPerSecondPerPrincipal: rate('ARKVORY_DOWNLOAD_BYTES_PER_SECOND_PER_PRINCIPAL'),
+    ...readDownloadQueue(env, {
+      maxDownloads,
+      perPrincipal: number(
+        'ARKVORY_MAX_DOWNLOADS_PER_PRINCIPAL',
+        Math.min(4, maxDownloads),
+        maxDownloads,
+      ),
+      holdSeconds: number('ARKVORY_TRANSFER_QUEUE_TIMEOUT_MS', 20000, 120000) / 1000,
+      gateways: sharedDownloads !== undefined,
+    }),
   };
 }
 

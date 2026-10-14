@@ -2,7 +2,7 @@ import { openAsBlob } from 'node:fs';
 import { open, link, unlink, lstat } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { ArkvoryIntegrityError } from '@proanima/arkvory-sdk';
-import type { ArkvoryClient } from '@proanima/arkvory-sdk';
+import type { ArkvoryClient, DownloadClass } from '@proanima/arkvory-sdk';
 import { record } from '@proanima/arkvory-contracts';
 import { exists, exclusive, readJson, saveJson, syncDirectory } from './local-files.js';
 import { CliError } from './errors.js';
@@ -16,6 +16,8 @@ interface DownloadInput {
   signal: AbortSignal;
   progress: (bytes: number, total: number) => void;
   requestTimeoutMs?: number;
+  /** `--class`: queue the download in a lower class (ADR 0076). */
+  downloadClass?: DownloadClass;
 }
 export async function download(input: DownloadInput) {
   const output = resolve(input.output),
@@ -64,6 +66,7 @@ export async function download(input: DownloadInput) {
     const stream = await input.client.downloadVerified(input.repository, input.id, {
       prefix,
       signal: input.signal,
+      ...(input.downloadClass ? { downloadClass: input.downloadClass } : {}),
     });
     await appendVerified(stream, partial, prefix.size, total, input);
     input.signal.throwIfAborted();

@@ -126,16 +126,17 @@ Laissez `ARKVORY_DATA_DIR` là où l’installateur l’a placé. Les unités Li
 
 Les limites appartiennent à un processus d’API. Un débit de `0` signifie aucune limite.
 
-| Variable                              | Valeur par défaut | Signification                                                                     |
-| ------------------------------------- | ----------------- | --------------------------------------------------------------------------------- |
-| `ARKVORY_MAX_UPLOADS`                 | `2`               | Téléversements simultanés, de 1 à 32                                              |
-| `ARKVORY_MAX_DOWNLOADS`               | `16`              | Téléchargements simultanés, de 1 à 256                                            |
-| `ARKVORY_MAX_UPLOADS_PER_PRINCIPAL`   | `1`               | Téléversements simultanés d’un même compte ou d’une même clé                      |
-| `ARKVORY_MAX_DOWNLOADS_PER_PRINCIPAL` | `4`               | Téléchargements simultanés d’un même compte ou d’une même clé                     |
-| `ARKVORY_UPLOAD_BYTES_PER_SECOND`     | `0`               | Débit total de téléversement en octets par seconde                                |
-| `ARKVORY_DOWNLOAD_BYTES_PER_SECOND`   | `0`               | Débit total de téléchargement en octets par seconde                               |
-| `ARKVORY_UPLOAD_DEADLINE_MS`          | `1800000`         | La durée maximale d’une requête de téléversement, 30 minutes                      |
-| `ARKVORY_UPLOAD_IDLE_TIMEOUT_MS`      | `30000`           | Une requête de téléversement qui n’envoie aucune donnée pendant ce délai s’arrête |
+| Variable                              | Valeur par défaut | Signification                                                                                                                     |
+| ------------------------------------- | ----------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `ARKVORY_MAX_UPLOADS`                 | `2`               | Téléversements simultanés, de 1 à 32                                                                                              |
+| `ARKVORY_MAX_DOWNLOADS`               | `16`              | Téléchargements simultanés, de 1 à 256                                                                                            |
+| `ARKVORY_MAX_UPLOADS_PER_PRINCIPAL`   | `1`               | Téléversements simultanés d’un même compte ou d’une même clé                                                                      |
+| `ARKVORY_MAX_DOWNLOADS_PER_PRINCIPAL` | `4`               | Téléchargements simultanés d’un même compte ou d’une même clé                                                                     |
+| `ARKVORY_DOWNLOAD_STRATEGY`           | `ordered`         | Ordre de la file des téléchargements : `ordered` (classes et tour de rôle), `smallest-first` ou `shared` (sans file, comme avant) |
+| `ARKVORY_UPLOAD_BYTES_PER_SECOND`     | `0`               | Débit total de téléversement en octets par seconde                                                                                |
+| `ARKVORY_DOWNLOAD_BYTES_PER_SECOND`   | `0`               | Débit total de téléchargement en octets par seconde                                                                               |
+| `ARKVORY_UPLOAD_DEADLINE_MS`          | `1800000`         | La durée maximale d’une requête de téléversement, 30 minutes                                                                      |
+| `ARKVORY_UPLOAD_IDLE_TIMEOUT_MS`      | `30000`           | Une requête de téléversement qui n’envoie aucune donnée pendant ce délai s’arrête                                                 |
 
 Un proxy devant l’API doit autoriser une requête d’une durée au moins égale à `ARKVORY_UPLOAD_DEADLINE_MS`. Voir [HTTPS](./https#reverse-proxy). Toutes les autres limites, comme la file d’attente et les débits par compte, se trouvent dans [Variables d’environnement](../reference/environment#transfers-and-bandwidth).
 
