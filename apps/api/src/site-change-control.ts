@@ -7,6 +7,7 @@ import {
   readSiteChangeStatus,
   readUpdateSnapshot,
   SITE_CHANGE_ACTOR_LENGTH,
+  siteChangeDigestText,
 } from '@proanima/arkvory-contracts';
 import type { SiteChange, SiteChangeRequest } from '@proanima/arkvory-contracts';
 import { ArkvoryError } from '@proanima/arkvory-domain';
@@ -20,15 +21,14 @@ const STALE_MS = 5 * 60000;
 
 const needsKey = (change: SiteChange) =>
   change.kind === 'mirror-attach' || change.kind === 'mirror-key';
+const sha256 = (text: string) => createHash('sha256').update(text).digest('hex');
 /**
  * The change and its key as one digest: the same id with another change or another key is
- * another request, refused instead of silently keeping the first.
+ * another request, refused instead of silently keeping the first. The agent recomputes it from
+ * the same text (`siteChangeDigestText`) and refuses a request that does not match.
  */
-const digestOf = (change: SiteChange, key: unknown) =>
-  createHash('sha256')
-    .update(JSON.stringify(change))
-    .update(typeof key === 'string' ? `\n${createHash('sha256').update(key).digest('hex')}` : '')
-    .digest('hex');
+export const digestOf = (change: SiteChange, key: unknown) =>
+  sha256(siteChangeDigestText(change, typeof key === 'string' ? sha256(key) : null));
 /** At most `limit` UTF-16 units, never half of a surrogate pair. */
 function cut(text: string, limit: number) {
   if (text.length <= limit) return text;

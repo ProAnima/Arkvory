@@ -88,6 +88,7 @@ export const siteChangeErrors = [
   'switchover_failed',
   'single_copy_failed',
   'unreadable',
+  'digest_mismatch',
 ] as const;
 export type SiteChangeError = (typeof siteChangeErrors)[number];
 /**
@@ -186,6 +187,16 @@ export function readSiteChange(value: unknown): SiteChange {
     default:
       throw problem('Unknown change');
   }
+}
+
+/**
+ * The text whose SHA-256 is a request's `digest`: the change in its canonical form (the field
+ * order of `readSiteChange`) and, when a key goes with it, a line with the key's SHA-256 (hex).
+ * The API and the agent hash this same text; the agent refuses a request that does not match,
+ * so a change or key swapped in the writable inbox is never applied under another's id.
+ */
+export function siteChangeDigestText(change: SiteChange, keySha256: string | null): string {
+  return JSON.stringify(readSiteChange(change)) + (keySha256 === null ? '' : `\n${keySha256}`);
 }
 
 /** The source key of a mirror: printable ASCII without spaces, as `--mirror-token-file` wants. */

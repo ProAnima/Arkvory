@@ -1,5 +1,10 @@
+import { createHash } from 'node:crypto';
 import { join } from 'node:path';
-import { readSiteChangeRequest, siteChangeTtlMs } from '@proanima/arkvory-contracts';
+import {
+  readSiteChangeRequest,
+  siteChangeDigestText,
+  siteChangeTtlMs,
+} from '@proanima/arkvory-contracts';
 import type {
   SiteChange,
   SiteChangeError,
@@ -12,7 +17,7 @@ import { parseInstallation } from './model.js';
 import type { Installation } from './model.js';
 import { attachedMirrors, configureMirror } from './mirror-setup.js';
 import type { MirrorChange } from './mirror-setup.js';
-import { finishSwitchover, switchover, SwitchoverIncomplete } from './cluster-ops.js';
+import { finishSwitchover, switchover, SwitchoverIncomplete, systemTool } from './cluster-ops.js';
 import { decideSingleCopy } from './replica-service.js';
 import { Services } from './services.js';
 import { report } from './output.js';
@@ -20,8 +25,11 @@ import { isUnconfirmedTermination } from './process.js';
 import { checkJournal } from './operations.js';
 import {
   claim,
+  keepUnreadable,
   KEY_LIMIT,
   mailbox,
+  markMoving,
+  movingFor,
   readClaimed,
   readStatus,
   removeAll,
@@ -35,7 +43,8 @@ import {
 export interface ChangeActions {
   mirror(state: Installation, change: MirrorChange): Promise<unknown>;
   attached(state: Installation): Promise<readonly string[]>;
-  switchover(node: string): Promise<void>;
+  /** `moving` runs right before the move constraint is set: it records that a move may exist. */
+  switchover(node: string, moving: () => Promise<void>): Promise<void>;
   /** Clears a switchover's move constraint; true when Arkvory runs on `node`. */
   finishSwitchover(node: string): Promise<boolean>;
   singleCopy(options: ReadonlyMap<string, string>): Promise<void>;
@@ -45,7 +54,7 @@ export function systemActions(root: string): ChangeActions {
   return {
     mirror: (state, change) => configureMirror(root, state, change, new Services(root, state)),
     attached: (state) => attachedMirrors(root, state),
-    switchover: (node) => switchover(node),
+    switchover: (node, moving) => switchover(node, systemTool, moving),
     finishSwitchover: (node) => finishSwitchover(node),
     singleCopy: (options) => decideSingleCopy(root, options),
   };
@@ -125,6 +134,7 @@ async function apply(
   change: SiteChange,
   actions: ChangeActions,
   secret: string | null,
+  moving: () => Promise<void>,
 ) {
   switch (change.kind) {
     case 'mirror-attach':
@@ -133,7 +143,7 @@ async function apply(
       return applyMirror(root, change, actions, secret);
     case 'cluster-switchover':
       try {
-        await actions.switchover(change.node);
+        await actions.switchover(change.node, moving);
       } catch (error) {
         // Refused before the move: nothing to finish, and clearing would drop the operator's
         // own constraints. After the move the outcome is where Arkvory runs now.
@@ -191,7 +201,12 @@ async function resume(tick: Tick): Promise<'go' | 'retry' | 'blocked'> {
   // Killed after recording the outcome, before dropping the claim: nothing is left to do.
   const known = tick.status.recent.find((item) => item.id === request.id);
   if (known && (known.state === 'done' || known.state === 'failed')) return 'go';
-  if (request.change.kind !== 'cluster-switchover') {
+  // A switchover killed before its marker never issued `--move`: there is no constraint of
+  // its own to clear, and `--clear` would drop the operator's. Interrupted like any other.
+  if (
+    request.change.kind !== 'cluster-switchover' ||
+    !(await movingFor(tick.box.moving, request.id))
+  ) {
     await save(tick, record(request, 'failed', 'interrupted'), 'interrupted');
     return 'blocked';
   }
@@ -240,8 +255,27 @@ async function next(
   return { request, secret };
 }
 
+const sha256 = (text: string) => createHash('sha256').update(text).digest('hex');
+/** The digest the API wrote (ADR 0077), recomputed from the change and the key that arrived. */
+export const requestDigest = (change: SiteChange, secret: string | null) =>
+  sha256(siteChangeDigestText(change, secret === null ? null : sha256(secret)));
+/**
+ * The inbox is writable by more than the API: a request or key replaced there would carry the
+ * id of another. A missing key of a change that needs one is left to `key_missing`; any key that
+ * did arrive must be the one the digest names.
+ */
+const tampered = (request: SiteChangeRequest, secret: string | null) => {
+  const needsKey = request.change.kind === 'mirror-attach' || request.change.kind === 'mirror-key';
+  return (secret !== null || !needsKey) && requestDigest(request.change, secret) !== request.digest;
+};
+
 async function run(tick: Tick, request: SiteChangeRequest, secret: string | null) {
   if (tick.status.recent.some((item) => item.id === request.id)) return;
+  if (tampered(request, secret)) {
+    await save(tick, record(request, 'failed', 'digest_mismatch'));
+    report('warning', `Refused change ${request.id}: its digest does not match`);
+    return;
+  }
   // Too old, or from a clock far ahead: decided about a site that may have changed since.
   const age = tick.now() - Date.parse(request.requestedAt);
   if (Math.abs(age) > siteChangeTtlMs(request.change.kind)) {
@@ -251,7 +285,9 @@ async function run(tick: Tick, request: SiteChangeRequest, secret: string | null
   // Recorded before applying: a switchover stops this agent, the next tick finishes it.
   await save(tick, record(request, 'applying'));
   try {
-    await apply(tick.root, request.change, tick.actions, secret);
+    await apply(tick.root, request.change, tick.actions, secret, () =>
+      markMoving(tick.box.moving, request.id),
+    );
     await save(tick, record(request, 'done'));
     report('info', `Applied ${request.change.kind} ${request.id} for ${request.actor}`);
   } catch (error) {
@@ -283,20 +319,26 @@ export async function pollChanges(
 ): Promise<void> {
   const box = mailbox(root);
   if (!(await exists(join(root, 'updates/status')))) return;
+  // A deployment left half done (an update killed mid-way) is no installation to change: its
+  // recovery comes first, as for `changes-reset`.
+  await checkJournal(root);
   const tick: Tick = { root, box, actions, now, status: await statusOrBlocked(box) };
   // The claim outlives the tick only for a switchover to finish on the next one; a process
   // killed mid-change leaves it too, and the next tick blocks on it.
   let keep = false;
   try {
     await sweep(box, now());
-    if (tick.status.blocked !== null) return;
+    // Behind a barrier the claim stays as found (an unreadable status may hide a switchover
+    // still to finish): only `changes-reset`, after an operator looked, removes it.
+    keep = tick.status.blocked !== null;
+    if (keep) return;
     const resumed = await resume(tick);
     keep = resumed === 'retry';
     if (resumed !== 'go') return;
     const taken = await next(tick);
     if (taken) await run(tick, taken.request, taken.secret);
   } finally {
-    await removeAll([box.claimedKey, ...(keep ? [] : [box.claimed])]);
+    await removeAll([box.claimedKey, ...(keep ? [] : [box.claimed, box.moving])]);
     // The heartbeat must not hide the error of the tick, nor a lock-keeping one.
     await save(tick).catch((failure: unknown) => {
       report('warning', `Could not write the change status: ${message(failure)}`);
@@ -306,13 +348,15 @@ export async function pollChanges(
 
 /**
  * The status as written, or, when this release cannot read it (written by another version, or
- * damaged), an empty one that blocks until an operator looked: the barrier is never lost.
+ * damaged), an empty one that blocks until an operator looked: the barrier is never lost, and
+ * the original is kept beside it (`changes.json.unreadable`) instead of being overwritten.
  */
 async function statusOrBlocked(box: Mailbox): Promise<SiteChangeStatus> {
   try {
     return await readStatus(box.status);
   } catch (error) {
     report('warning', `The change status cannot be read: ${message(error)}`);
+    await keepUnreadable(box.status);
     return { heartbeatAt: new Date(0).toISOString(), blocked: 'unreadable', recent: [] };
   }
 }
@@ -326,7 +370,7 @@ export async function resetChanges(root: string): Promise<void> {
   await checkJournal(root);
   const box = mailbox(root);
   const status = await statusOrBlocked(box);
-  await removeAll([box.claimed, box.claimedKey]);
+  await removeAll([box.claimed, box.claimedKey, box.moving]);
   await writeStatus(box.status, {
     heartbeatAt: new Date().toISOString(),
     blocked: null,

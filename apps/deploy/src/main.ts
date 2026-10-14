@@ -171,8 +171,11 @@ async function locked(operation: string, root: string, options: Map<string, stri
     case 'updates-poll': {
       // Site changes (ADR 0077) share the tick and the lock; one failing does not stop the other.
       const failures: unknown[] = [];
-      for (const poll of [pollUpdates, pollChanges])
-        await poll(root).catch((error: unknown) => failures.push(error));
+      await pollUpdates(root).catch((error: unknown) => failures.push(error));
+      // An update command that may still run leaves the installation in an unknown state:
+      // no change is applied over it (pollChanges checks the journal for a settled one).
+      if (!failures.some((failure) => isUnconfirmedTermination(failure)))
+        await pollChanges(root).catch((error: unknown) => failures.push(error));
       // A command that may still run keeps the lock: its failure is the one that counts.
       const kept = failures.find((failure) => isUnconfirmedTermination(failure));
       if (failures.length) throw kept ?? failures[0];
