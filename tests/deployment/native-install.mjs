@@ -117,7 +117,16 @@ try {
   }
   const configuration = JSON.parse(await read(join(root, 'config/runtime.json')));
   await exerciseRemoteAccess();
-  assert.ok(configuration.ARKVORY_DATABASE_URL.includes('127.0.0.1:54329/arkvory'));
+  // The managed database listens on loopback at the port chosen during installation: on Windows
+  // below the range the system reserves at boot, elsewhere 54329 when it is free.
+  const database = new URL(configuration.ARKVORY_DATABASE_URL);
+  assert.equal(database.hostname, '127.0.0.1');
+  assert.equal(database.pathname, '/arkvory');
+  const port = Number(database.port);
+  assert.ok(
+    windows ? port >= 45329 && port < 45349 : port === 54329 || (port >= 45329 && port < 45349),
+    database.port,
+  );
   const pg = windows ? join(root, 'runtime/postgres/bin/psql.exe') : 'psql';
   const restricted = execFileSync(
     pg,
@@ -126,7 +135,7 @@ try {
       env: {
         ...env,
         PGHOST: '127.0.0.1',
-        PGPORT: '54329',
+        PGPORT: database.port,
         PGUSER: 'arkvory',
         PGDATABASE: 'arkvory',
         PGPASSWORD: new URL(configuration.ARKVORY_DATABASE_URL).password,
