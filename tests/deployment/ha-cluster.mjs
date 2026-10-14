@@ -103,12 +103,32 @@ async function tls(work) {
   return { ca: await readFile(at('ca.crt'), 'utf8'), cert: at('tls.crt'), key: at('tls.key') };
 }
 
+/**
+ * `dpkg` once the package manager's lock is free. Ubuntu's own services (apt-daily, cloud-init,
+ * packagekit) take the lock at random times, also after the stand stopped them once; a busy lock
+ * is waited for, up to ten minutes, any other failure fails at once.
+ */
+export async function dpkg(node, args, timeoutMs = 600000) {
+  await until(
+    async () => {
+      const answer = await node.shell.tryExec(`dpkg ${args}`, { timeoutMs: 300000 });
+      if (answer.ok) return true;
+      if (/lock-frontend|frontend lock|dpkg status database is locked/i.test(answer.output))
+        return false;
+      throw new Error(`dpkg ${args} failed on ${node.name}: ${answer.output}`);
+    },
+    `dpkg ${args} on ${node.name}`,
+    timeoutMs,
+    5000,
+  );
+}
+
 /** The package files on every data node, unconfigured: nothing is installed before the volume. */
 async function unpack(cluster, artifact) {
   for (const node of cluster.data) {
     await node.shell.exec('mkdir -p /stand');
     await node.shell.copy(artifact, '/stand/Arkvory-amd64.deb');
-    await node.shell.exec('dpkg --unpack /stand/Arkvory-amd64.deb');
+    await dpkg(node, '--unpack /stand/Arkvory-amd64.deb');
   }
 }
 
@@ -179,7 +199,7 @@ async function installFirst(cluster, certificates) {
   await first.shell.copy(certificates.cert, '/stand/tls.crt');
   await first.shell.copy(certificates.key, '/stand/tls.key');
   // The unpacked package installs into the mounted volume.
-  await first.shell.exec('dpkg --configure proanima-arkvory');
+  await dpkg(first, '--configure proanima-arkvory');
   // TLS material on the volume: every node that becomes active finds it at the same path.
   await first.shell.exec(
     `install -d -m 0750 -o root -g arkvory ${ROOT}/config/tls && install -m 0644 /stand/tls.crt ${ROOT}/config/tls/tls.crt && install -m 0640 -g arkvory /stand/tls.key ${ROOT}/config/tls/tls.key`,
@@ -203,9 +223,8 @@ async function installFirst(cluster, certificates) {
  */
 async function joinOthers(cluster) {
   for (const node of cluster.data.slice(1)) {
-    await node.shell.exec(
-      `arkvory cluster-node --root ${ROOT} && dpkg --configure proanima-arkvory`,
-    );
+    await node.shell.exec(`arkvory cluster-node --root ${ROOT}`);
+    await dpkg(node, '--configure proanima-arkvory');
     const mounted = await node.shell.tryExec(`mountpoint -q ${ROOT}`);
     if (mounted.ok) throw new Error(`cluster-node left the volume mounted on ${node.name}`);
   }
@@ -277,7 +296,8 @@ export async function buildCluster({ profile, base, keys, artifact }) {
   await Promise.all(
     cluster.all.map((node) =>
       node.shell.exec(
-        'systemctl disable --now unattended-upgrades apt-daily.timer apt-daily-upgrade.timer; ' +
+        // Masked, not only disabled: a unit already queued would start again after the wait.
+        'systemctl mask --now unattended-upgrades apt-daily.service apt-daily.timer apt-daily-upgrade.service apt-daily-upgrade.timer packagekit.service 2>/dev/null; ' +
           // dpkg holds an fcntl lock: waiting for it is exact, matching process names is not.
           'python3 -c \'import fcntl; fcntl.lockf(open("/var/lib/dpkg/lock-frontend", "w"), fcntl.LOCK_EX)\'',
       ),
