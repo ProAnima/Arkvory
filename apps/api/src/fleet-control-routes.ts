@@ -2,6 +2,7 @@ import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { randomUUID } from 'node:crypto';
 import { ArkvoryError, retentionObject } from '@proanima/arkvory-domain';
 import type { Principal } from '@proanima/arkvory-domain';
+import type { FleetOverviewSource } from './fleet-overview.js';
 import {
   FleetControl,
   type FleetEndpointView,
@@ -9,7 +10,12 @@ import {
   type FleetSiteClient,
   type FleetSiteStore,
 } from '@proanima/arkvory-application';
-import { isFleetReadPath, readTopology, record } from '@proanima/arkvory-contracts';
+import {
+  fleetChangeMethod,
+  isFleetReadPath,
+  readTopology,
+  record,
+} from '@proanima/arkvory-contracts';
 
 /** A person who is the global administrator here; a fleet key never manages other sites. */
 function administrator(actor: Principal) {
@@ -27,6 +33,8 @@ function validating(client: FleetSiteClient): FleetSiteClient {
     certificate: (origin) => client.certificate(origin),
     enroll: (endpoint, code, name) => client.enroll(endpoint, code, name),
     read: (endpoint, key, actor, path) => client.read(endpoint, key, actor, path),
+    change: (endpoint, key, actor, method, path, payload) =>
+      client.change(endpoint, key, actor, method, path, payload),
     topology: async (endpoint: FleetEndpointView, key: string, actor: string) => {
       const body = await client.topology(endpoint, key, actor);
       try {
@@ -74,7 +82,16 @@ export function registerFleetControlRoutes(
   app: FastifyInstance,
   principal: (request: FastifyRequest) => Principal,
   control: FleetControl,
+  overview?: Pick<FleetOverviewSource, 'overview'>,
 ) {
+  // Alerts and links of every site (stage F4): built on the writer, which reads the sites.
+  app.get('/api/v1/fleet/overview', async (request) => {
+    administrator(principal(request));
+    retentionObject(request.query, []);
+    if (!overview)
+      throw new ArkvoryError('unavailable', 'The fleet overview is built by the writer');
+    return overview.overview();
+  });
   app.get('/api/v1/fleet/sites', async (request) => {
     administrator(principal(request));
     retentionObject(request.query, []);
@@ -120,6 +137,26 @@ export function registerFleetControlRoutes(
       if (typeof path !== 'string' || Object.keys(query).length !== 1)
         throw new ArkvoryError('invalid_input', 'path is the only read option');
       const answer = await control.read(siteId(request.params.id), path, actor.id, isFleetReadPath);
+      return reply.code(answer.status).send(answer.body);
+    },
+  );
+  // A change of a site's settings (stage F3): the body goes to the site as it is, and the site's
+  // answer comes back as it is, a revision conflict included.
+  app.post<{ Params: { id: string }; Querystring: unknown }>(
+    '/api/v1/fleet/sites/:id/change',
+    async (request, reply) => {
+      const actor = administrator(principal(request));
+      const query = record(request.query);
+      const path = query['path'];
+      if (typeof path !== 'string' || Object.keys(query).length !== 1)
+        throw new ArkvoryError('invalid_input', 'path is the only change option');
+      const answer = await control.change(
+        siteId(request.params.id),
+        path,
+        body(request),
+        actor.id,
+        fleetChangeMethod,
+      );
       return reply.code(answer.status).send(answer.body);
     },
   );

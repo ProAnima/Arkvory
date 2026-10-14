@@ -1047,6 +1047,54 @@
       },
       "summary": "साइट का कैटलॉग पढ़ें",
       "description": "एक कैटलॉग पठन को प्रबंधित साइट तक पहुँचाता है और उसका उत्तर बिना बदले लौटाता है: रिपॉजिटरी, खोज, आर्टिफ़ैक्ट, एनोटेशन, चरण, पैकेज, फ़ाइल पेज और इतिहास, संग्रहण उपयोग, मिरर स्थिति। `path` साइट का रूट और उसकी क्वेरी है। अन्य रूट और फ़ाइल बाइट 400 के साथ अस्वीकार होते हैं।"
+    },
+    "changeFleetSite": {
+      "en": {
+        "summary": "Change a setting of a site",
+        "description": "Passes one change to a managed site and returns its answer unchanged. `path` is one of: `/api/v1/system/downloads/settings` (download queue settings, sent as PUT) or `/api/v1/system/updates/requests` (an update request, sent as POST). The body goes to the site as it is; the site checks the revision or request id, so a repeated change does not apply twice. Other paths are refused with 400."
+      },
+      "summary": "साइट की सेटिंग बदलें",
+      "description": "एक बदलाव को प्रबंधित साइट तक पहुँचाता है और उसका उत्तर बिना बदले लौटाता है। `path` इनमें से एक रूट है: `/api/v1/system/downloads/settings` (डाउनलोड कतार सेटिंग, PUT के रूप में भेजी जाती है) या `/api/v1/system/updates/requests` (अपडेट अनुरोध, POST के रूप में भेजा जाता है)। बॉडी साइट को जैसी है वैसी जाती है; साइट संशोधन या अनुरोध id जाँचती है, इसलिए दोहराया गया बदलाव दो बार लागू नहीं होता। अन्य पथ 400 के साथ अस्वीकार होते हैं।"
+    },
+    "getDownloadSettings": {
+      "en": {
+        "summary": "Read download queue settings",
+        "description": "Returns the changed values (`overrides`), what the environment of the server sets (`defaults`) and what the queue uses now (`effective`), with the revision to pass back when changing. `problem` names why saved settings do not fit this server; the queue then runs on the defaults."
+      },
+      "summary": "डाउनलोड कतार सेटिंग पढ़ें",
+      "description": "बदले गए मान (`overrides`), सर्वर के एनवायरनमेंट के मान (`defaults`) और कतार अभी जो उपयोग कर रही है (`effective`) लौटाता है, साथ में बदलाव के समय वापस भेजने वाला संशोधन। `problem` बताता है कि सहेजी गई सेटिंग इस सर्वर पर क्यों नहीं चलतीं; तब कतार डिफ़ॉल्ट मानों पर चलती है।"
+    },
+    "changeDownloadSettings": {
+      "en": {
+        "summary": "Change download queue settings",
+        "description": "Saves `overrides` over the environment of the server and applies them without a restart: new decisions follow them at once, active downloads keep their places. The values given replace all earlier changes; `{}` returns to the environment. Settings that cannot run here are refused with 400 naming the field; a stale `expectedRevision` gets 409. Read gateways keep their environment."
+      },
+      "summary": "डाउनलोड कतार सेटिंग बदलें",
+      "description": "`overrides` को सर्वर के एनवायरनमेंट के ऊपर सहेजता है और बिना रीस्टार्ट लागू करता है: नए निर्णय तुरंत इनका पालन करते हैं, सक्रिय डाउनलोड अपनी जगह रखते हैं। दिए गए मान पहले के सभी बदलावों को बदल देते हैं; `{}` एनवायरनमेंट पर लौटाता है। जो सेटिंग यहाँ नहीं चल सकतीं वे फ़ील्ड के नाम के साथ 400 से अस्वीकार होती हैं; पुराना `expectedRevision` 409 पाता है। रीड गेटवे अपना एनवायरनमेंट रखते हैं।"
+    },
+    "getSiteChanges": {
+      "en": {
+        "summary": "Read site changes",
+        "description": "Returns whether the site’s agent reports in (`agent`), the pending request and the 20 newest with their state: `pending`, `applying`, `done` or `failed` with a reason. Source keys never appear here."
+      },
+      "summary": "साइट के बदलाव पढ़ें",
+      "description": "लौटाता है कि साइट का एजेंट रिपोर्ट कर रहा है या नहीं (`agent`), लंबित अनुरोध और 20 सबसे नए अनुरोध उनकी स्थिति के साथ: `pending`, `applying`, `done` या कारण सहित `failed`। स्रोत कुंजियाँ यहाँ कभी नहीं दिखतीं।"
+    },
+    "requestSiteChange": {
+      "en": {
+        "summary": "Queue a site change",
+        "description": "Queues one change for the site’s agent, which applies it within a minute with the checks and rollback of `arkvory configure` and `cluster-*`: attach a mirror or an import, replace its source key, detach mirrors, switch the active HA node (the node name typed twice) or decide single-copy writes. `id` is chosen by the client; repeating it does not queue the change again. `key` is the source key of `mirror-attach` and `mirror-key` only: it goes to the agent in its own 0600 file and is never returned. 202 means queued, not applied."
+      },
+      "summary": "साइट का बदलाव कतार में डालें",
+      "description": "साइट के एजेंट के लिए एक बदलाव कतार में डालता है, जो उसे एक मिनट के भीतर `arkvory configure` और `cluster-*` की जाँच और रोलबैक के साथ लागू करता है: मिरर या इम्पोर्ट जोड़ना, उसकी स्रोत कुंजी बदलना, मिरर हटाना, सक्रिय HA नोड बदलना (नोड का नाम दो बार लिखा जाता है) या एक प्रति से लेखन का निर्णय। `id` क्लाइंट चुनता है; उसे दोहराने से बदलाव फिर से कतार में नहीं जाता। `key` केवल `mirror-attach` और `mirror-key` की स्रोत कुंजी है: यह एजेंट तक अपनी 0600 फ़ाइल में जाती है और कभी लौटाई नहीं जाती। 202 का अर्थ कतार में है, लागू नहीं।"
+    },
+    "getFleetOverview": {
+      "en": {
+        "summary": "Read the fleet overview",
+        "description": "Alerts across the managed sites and this installation, most severe first (`critical`, `warning`, `info`), and the mirror links between them. Built from the last background reads, at most once per 5 seconds. A source no managed site answers at is `external:<origin>`; this installation is `self` and meets the links to it only when `ARKVORY_SITE_URL` is set. Answered by the writer only."
+      },
+      "summary": "साइटों का अवलोकन पढ़ें",
+      "description": "प्रबंधित साइटों और इस इंस्टॉलेशन की चेतावनियाँ, सबसे गंभीर पहले (`critical`, `warning`, `info`), और उनके बीच मिरर संबंध। पिछली पृष्ठभूमि रीड से बनता है, अधिकतम हर 5 सेकंड में एक बार। जिस स्रोत के पते पर कोई प्रबंधित साइट उत्तर नहीं देती वह `external:<origin>` है; यह इंस्टॉलेशन `self` है और इसकी ओर के संबंध केवल `ARKVORY_SITE_URL` सेट होने पर दिखते हैं। केवल लेखन प्रक्रिया उत्तर देती है।"
     }
   },
   "errors": {

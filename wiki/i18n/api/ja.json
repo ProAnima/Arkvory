@@ -1047,6 +1047,54 @@
       },
       "summary": "サイトのカタログを読む",
       "description": "カタログの読み取りを 1 回、管理対象サイトに渡し、その応答をそのまま返します：リポジトリ、検索、アーティファクト、注釈、ステージ、パッケージ、ファイルのページと履歴、ストレージ使用量、ミラーの状態。`path` はクエリ付きのサイトのルートです。その他のルートとファイルのバイトは 400 で拒否されます。"
+    },
+    "changeFleetSite": {
+      "en": {
+        "summary": "Change a setting of a site",
+        "description": "Passes one change to a managed site and returns its answer unchanged. `path` is one of: `/api/v1/system/downloads/settings` (download queue settings, sent as PUT) or `/api/v1/system/updates/requests` (an update request, sent as POST). The body goes to the site as it is; the site checks the revision or request id, so a repeated change does not apply twice. Other paths are refused with 400."
+      },
+      "summary": "サイトの設定を変更する",
+      "description": "変更を 1 つ管理対象サイトに渡し、その応答をそのまま返します。`path` は次のいずれかのルートです：`/api/v1/system/downloads/settings`（ダウンロードキューの設定、PUT で送信）または `/api/v1/system/updates/requests`（更新リクエスト、POST で送信）。本文はそのままサイトに届きます。サイトがリビジョンまたはリクエスト id を確認するため、繰り返された変更が二重に適用されることはありません。その他のパスは 400 で拒否されます。"
+    },
+    "getDownloadSettings": {
+      "en": {
+        "summary": "Read download queue settings",
+        "description": "Returns the changed values (`overrides`), what the environment of the server sets (`defaults`) and what the queue uses now (`effective`), with the revision to pass back when changing. `problem` names why saved settings do not fit this server; the queue then runs on the defaults."
+      },
+      "summary": "ダウンロードキューの設定を読む",
+      "description": "変更された値（`overrides`）、サーバーの環境が定める値（`defaults`）、キューが現在使っている値（`effective`）と、変更時に返すリビジョンを返します。`problem` は保存された設定がこのサーバーに合わない理由を示します。その場合キューは既定値で動作します。"
+    },
+    "changeDownloadSettings": {
+      "en": {
+        "summary": "Change download queue settings",
+        "description": "Saves `overrides` over the environment of the server and applies them without a restart: new decisions follow them at once, active downloads keep their places. The values given replace all earlier changes; `{}` returns to the environment. Settings that cannot run here are refused with 400 naming the field; a stale `expectedRevision` gets 409. Read gateways keep their environment."
+      },
+      "summary": "ダウンロードキューの設定を変更する",
+      "description": "`overrides` をサーバーの環境の上に保存し、再起動なしで適用します。新しい判断はすぐにそれに従い、進行中のダウンロードは場所を保ちます。渡した値はそれまでの変更をすべて置き換え、`{}` で環境の値に戻ります。このサーバーで動作できない設定はフィールド名付きの 400 で拒否され、古い `expectedRevision` は 409 になります。読み取りゲートウェイは自身の環境を保ちます。"
+    },
+    "getSiteChanges": {
+      "en": {
+        "summary": "Read site changes",
+        "description": "Returns whether the site’s agent reports in (`agent`), the pending request and the 20 newest with their state: `pending`, `applying`, `done` or `failed` with a reason. Source keys never appear here."
+      },
+      "summary": "サイトの変更を読む",
+      "description": "サイトのエージェントが報告しているか（`agent`）、待機中のリクエスト、最新 20 件とその状態（`pending`、`applying`、`done`、または理由付きの `failed`）を返します。ソースキーがここに現れることはありません。"
+    },
+    "requestSiteChange": {
+      "en": {
+        "summary": "Queue a site change",
+        "description": "Queues one change for the site’s agent, which applies it within a minute with the checks and rollback of `arkvory configure` and `cluster-*`: attach a mirror or an import, replace its source key, detach mirrors, switch the active HA node (the node name typed twice) or decide single-copy writes. `id` is chosen by the client; repeating it does not queue the change again. `key` is the source key of `mirror-attach` and `mirror-key` only: it goes to the agent in its own 0600 file and is never returned. 202 means queued, not applied."
+      },
+      "summary": "サイトの変更をキューに入れる",
+      "description": "サイトのエージェント向けに変更を 1 つキューに入れます。エージェントは 1 分以内に `arkvory configure` と `cluster-*` の検査とロールバック付きで適用します：ミラーまたはインポートの接続、ソースキーの交換、ミラーの切り離し、アクティブな HA ノードの切り替え（ノード名を 2 回入力）、単一コピー書き込みの決定。`id` はクライアントが選び、繰り返しても再度キューに入りません。`key` は `mirror-attach` と `mirror-key` のソースキーのみで、専用の 0600 ファイルでエージェントに渡り、返されることはありません。202 はキュー投入済みであり、適用済みではありません。"
+    },
+    "getFleetOverview": {
+      "en": {
+        "summary": "Read the fleet overview",
+        "description": "Alerts across the managed sites and this installation, most severe first (`critical`, `warning`, `info`), and the mirror links between them. Built from the last background reads, at most once per 5 seconds. A source no managed site answers at is `external:<origin>`; this installation is `self` and meets the links to it only when `ARKVORY_SITE_URL` is set. Answered by the writer only."
+      },
+      "summary": "サイトの概要を読む",
+      "description": "管理対象サイトとこのインストールのアラート（重大なものから `critical`、`warning`、`info`）と、それらの間のミラーのリンク。直近のバックグラウンド読み取りから最大 5 秒に 1 回作成されます。どの管理対象サイトもそのアドレスで応答しないソースは `external:<origin>`、このインストールは `self` で、`ARKVORY_SITE_URL` を設定したときだけこのインストールへのリンクが現れます。書き込みプロセスのみが応答します。"
     }
   },
   "errors": {

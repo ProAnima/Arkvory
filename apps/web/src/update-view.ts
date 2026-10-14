@@ -11,7 +11,8 @@ const errors: Record<NonNullable<UpdateSnapshot['error']>, MessageKey> = {
   maintenance_required: 'updateMaintenance',
   recovery_required: 'updateRecovery',
 };
-function newer(candidate: string, current: string) {
+/** Whether `candidate` is a later X.Y.Z than `current`: never offer a downgrade. */
+export function newer(candidate: string, current: string) {
   const a = candidate.split('.').map(Number),
     b = current.split('.').map(Number);
   for (let i = 0; i < 3; i++) if (a[i] !== b[i]) return Number(a[i]) > Number(b[i]);

@@ -1047,6 +1047,54 @@
       },
       "summary": "Katalog eines Standorts lesen",
       "description": "Leitet einen Katalog-Lesezugriff an einen verwalteten Standort weiter und gibt dessen Antwort unverändert zurück: Repositorys, Suche, Artefakte, Annotationen, Stufen, Pakete, Dateiseiten und -verlauf, Speicherbelegung, Spiegelzustand. `path` ist die Route des Standorts mit ihrer Abfrage. Andere Routen und Dateibytes werden mit 400 abgelehnt."
+    },
+    "changeFleetSite": {
+      "en": {
+        "summary": "Change a setting of a site",
+        "description": "Passes one change to a managed site and returns its answer unchanged. `path` is one of: `/api/v1/system/downloads/settings` (download queue settings, sent as PUT) or `/api/v1/system/updates/requests` (an update request, sent as POST). The body goes to the site as it is; the site checks the revision or request id, so a repeated change does not apply twice. Other paths are refused with 400."
+      },
+      "summary": "Eine Einstellung eines Standorts ändern",
+      "description": "Leitet eine Änderung an einen verwalteten Standort weiter und gibt dessen Antwort unverändert zurück. `path` ist eine dieser Routen: `/api/v1/system/downloads/settings` (Einstellungen der Download-Warteschlange, als PUT gesendet) oder `/api/v1/system/updates/requests` (eine Update-Anfrage, als POST gesendet). Der Body geht unverändert an den Standort; der Standort prüft Revision oder Anfrage-ID, daher wird eine wiederholte Änderung nicht doppelt angewendet. Andere Pfade werden mit 400 abgelehnt."
+    },
+    "getDownloadSettings": {
+      "en": {
+        "summary": "Read download queue settings",
+        "description": "Returns the changed values (`overrides`), what the environment of the server sets (`defaults`) and what the queue uses now (`effective`), with the revision to pass back when changing. `problem` names why saved settings do not fit this server; the queue then runs on the defaults."
+      },
+      "summary": "Einstellungen der Download-Warteschlange lesen",
+      "description": "Gibt die geänderten Werte (`overrides`), die Werte aus der Umgebung des Servers (`defaults`) und das, was die Warteschlange jetzt verwendet (`effective`), zurück, dazu die Revision für eine Änderung. `problem` nennt, warum gespeicherte Einstellungen nicht zu diesem Server passen; die Warteschlange läuft dann mit den Standardwerten."
+    },
+    "changeDownloadSettings": {
+      "en": {
+        "summary": "Change download queue settings",
+        "description": "Saves `overrides` over the environment of the server and applies them without a restart: new decisions follow them at once, active downloads keep their places. The values given replace all earlier changes; `{}` returns to the environment. Settings that cannot run here are refused with 400 naming the field; a stale `expectedRevision` gets 409. Read gateways keep their environment."
+      },
+      "summary": "Einstellungen der Download-Warteschlange ändern",
+      "description": "Speichert `overrides` über der Umgebung des Servers und wendet sie ohne Neustart an: neue Entscheidungen folgen ihnen sofort, aktive Downloads behalten ihre Plätze. Die angegebenen Werte ersetzen alle früheren Änderungen; `{}` kehrt zur Umgebung zurück. Einstellungen, die hier nicht laufen können, werden mit 400 und dem Feldnamen abgelehnt; eine veraltete `expectedRevision` erhält 409. Lese-Gateways behalten ihre Umgebung."
+    },
+    "getSiteChanges": {
+      "en": {
+        "summary": "Read site changes",
+        "description": "Returns whether the site’s agent reports in (`agent`), the pending request and the 20 newest with their state: `pending`, `applying`, `done` or `failed` with a reason. Source keys never appear here."
+      },
+      "summary": "Änderungen des Standorts lesen",
+      "description": "Gibt zurück, ob sich der Agent des Standorts meldet (`agent`), die wartende Anfrage und die 20 neuesten mit ihrem Zustand: `pending`, `applying`, `done` oder `failed` mit Grund. Quellschlüssel erscheinen hier nie."
+    },
+    "requestSiteChange": {
+      "en": {
+        "summary": "Queue a site change",
+        "description": "Queues one change for the site’s agent, which applies it within a minute with the checks and rollback of `arkvory configure` and `cluster-*`: attach a mirror or an import, replace its source key, detach mirrors, switch the active HA node (the node name typed twice) or decide single-copy writes. `id` is chosen by the client; repeating it does not queue the change again. `key` is the source key of `mirror-attach` and `mirror-key` only: it goes to the agent in its own 0600 file and is never returned. 202 means queued, not applied."
+      },
+      "summary": "Eine Änderung des Standorts einreihen",
+      "description": "Reiht eine Änderung für den Agenten des Standorts ein, der sie innerhalb einer Minute mit den Prüfungen und dem Rollback von `arkvory configure` und `cluster-*` anwendet: einen Spiegel oder Import anbinden, seinen Quellschlüssel ersetzen, Spiegel lösen, den aktiven HA-Knoten wechseln (Knotenname zweimal eingegeben) oder Schreibvorgänge mit einer Kopie beschließen. `id` wählt der Client; eine Wiederholung reiht die Änderung nicht erneut ein. `key` ist der Quellschlüssel nur für `mirror-attach` und `mirror-key`: er geht in einer eigenen 0600-Datei an den Agenten und wird nie zurückgegeben. 202 bedeutet eingereiht, nicht angewendet."
+    },
+    "getFleetOverview": {
+      "en": {
+        "summary": "Read the fleet overview",
+        "description": "Alerts across the managed sites and this installation, most severe first (`critical`, `warning`, `info`), and the mirror links between them. Built from the last background reads, at most once per 5 seconds. A source no managed site answers at is `external:<origin>`; this installation is `self` and meets the links to it only when `ARKVORY_SITE_URL` is set. Answered by the writer only."
+      },
+      "summary": "Übersicht der Standorte lesen",
+      "description": "Warnungen über die verwalteten Standorte und diese Installation, die schwersten zuerst (`critical`, `warning`, `info`), und die Spiegelverbindungen zwischen ihnen. Aus den letzten Hintergrundabfragen erstellt, höchstens alle 5 Sekunden. Eine Quelle, an deren Adresse kein verwalteter Standort antwortet, ist `external:<origin>`; diese Installation ist `self` und erhält Verbindungen zu ihr nur, wenn `ARKVORY_SITE_URL` gesetzt ist. Nur der Schreibprozess antwortet."
     }
   },
   "errors": {

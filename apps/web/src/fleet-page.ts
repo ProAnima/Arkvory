@@ -1,7 +1,7 @@
 import type { ArkvoryClient } from '@proanima/arkvory-sdk';
 import type { FleetSite } from '@proanima/arkvory-contracts';
 import { element } from './dom.js';
-import { clearMessage, message, relativeMessage } from './i18n.js';
+import { clearMessage, message, relativeMessage, t } from './i18n.js';
 import { onViewOpen } from './shell.js';
 import { feedback, showFailure } from './feedback.js';
 import { confirmAction } from './confirm-dialog.js';
@@ -17,6 +17,8 @@ import {
 } from './fleet-presentation.js';
 import { FleetPairingCard } from './fleet-pairing.js';
 import { FleetContent } from './fleet-content.js';
+import { FleetSettings } from './fleet-settings.js';
+import { FleetOverviewPanel } from './fleet-overview-panel.js';
 
 /** While the page is open it follows the background reads of the server. */
 const REFRESH_MS = 30000;
@@ -65,6 +67,8 @@ export class FleetPage {
   private readonly shown = new Map<string, Row>();
   private readonly pairing: FleetPairingCard;
   private readonly content: FleetContent;
+  private readonly settings = new FleetSettings();
+  private readonly overview = new FleetOverviewPanel();
   private generation = 0;
   private timer: ReturnType<typeof setTimeout> | undefined;
   constructor(private readonly client: ArkvoryClient) {
@@ -74,6 +78,17 @@ export class FleetPage {
       void this.refresh(this.generation);
       void this.pairing.open();
     });
+    // This site's own settings, through its own API: the same card as for a managed site.
+    element('fleet-self-settings', HTMLButtonElement).onclick = () => {
+      void this.settings.open({
+        id: '',
+        name: t('fleetThisSite'),
+        downloadSettings: client.downloadSettings,
+        updates: client.updates,
+        changes: client.siteChanges,
+        topology: () => client.fleet.topology(),
+      });
+    };
     element('fleet-read-all', HTMLButtonElement).onclick = () => {
       void this.readAll();
     };
@@ -93,6 +108,8 @@ export class FleetPage {
     this.rows.replaceChildren();
     this.pairing.clear();
     this.content.clear();
+    this.settings.clear();
+    this.overview.clear();
   }
 
   private schedule(generation: number) {
@@ -106,10 +123,16 @@ export class FleetPage {
 
   private async refresh(generation: number) {
     try {
-      const sites = await this.client.fleet.sites();
+      // The overview is built from the same reads; a failure of it never hides the list.
+      const [sites, overview] = await Promise.all([
+        this.client.fleet.sites(),
+        this.client.fleet.overview().catch(() => null),
+      ]);
       if (generation !== this.generation) return;
       this.status.hidden = true;
       this.render(sites);
+      if (overview) this.overview.show(overview, sites);
+      else this.overview.clear();
     } catch (error) {
       if (generation !== this.generation) return;
       this.status.hidden = false;
@@ -165,6 +188,18 @@ export class FleetPage {
     const queue = node('span');
     const seen = node('span');
     const browse = this.action('fleetContent', () => this.content.open(site.id, name.textContent));
+    const configure = this.action('fleetSettings', () => {
+      const remote = this.client.fleet.site(site.id);
+      return this.settings.open({
+        id: site.id,
+        name: name.textContent,
+        downloadSettings: remote.downloadSettings,
+        updates: remote.updates,
+        changes: remote.changes,
+        // Read now, not the last poll: a change just applied must show.
+        topology: () => this.client.fleet.refresh(site.id).then((read) => read.topology),
+      });
+    });
     const read = this.action('fleetReadSite', async () => {
       await this.client.fleet.refresh(site.id);
       await this.refresh(this.generation);
@@ -176,12 +211,13 @@ export class FleetPage {
         return;
       await this.client.fleet.remove(site.id);
       if (this.content.current === site.id) this.content.clear();
+      if (this.settings.current === site.id) this.settings.clear();
       feedback(this.status, 'fleetRemoved', {}, 'success');
       this.status.hidden = false;
       await this.refresh(this.generation);
     });
     const actions = node('div', 'button-row compact');
-    actions.append(browse, read, remove);
+    actions.append(browse, configure, read, remove);
     const row = document.createElement('tr');
     row.append(
       cell(name, url),
@@ -212,7 +248,7 @@ export class FleetPage {
   }
 
   private action(
-    key: 'fleetContent' | 'fleetReadSite' | 'fleetRemoveSite',
+    key: 'fleetContent' | 'fleetSettings' | 'fleetReadSite' | 'fleetRemoveSite',
     run: () => Promise<void>,
   ) {
     const button = document.createElement('button');

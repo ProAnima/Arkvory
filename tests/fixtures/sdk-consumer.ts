@@ -82,6 +82,8 @@ export type UnchangedKeys = Assert<
       | 'replication'
       // ADR 0077: sites, pairing and topology as the additive namespace `fleet`.
       | 'fleet'
+      | 'downloadSettings'
+      | 'siteChanges'
     >,
     keyof LegacyClient
   >

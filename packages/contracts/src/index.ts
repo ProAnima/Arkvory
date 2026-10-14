@@ -26,7 +26,13 @@ export * from './updates.js';
 export * from './backup-wire.js';
 export * from './mirror-api.js';
 export * from './fleet.js';
-export { fleetReadRoutes, isFleetReadPath } from './fleet-read.js';
+export {
+  fleetChangeMethod,
+  fleetChangeRoutes,
+  fleetReadRoutes,
+  isFleetReadPath,
+  type FleetChangeMethod,
+} from './fleet-read.js';
 export { fleetOperations, topologySchema } from './fleet-api.js';
 export * from './feedback-api.js';
 export * from './download-link-api.js';
@@ -53,3 +59,36 @@ export type {
   ErrorDetailResponse,
   NativeErrorResponse,
 } from './errors.js';
+export {
+  downloadSettingsOperations,
+  readDownloadSettings,
+  type DownloadOverrides as DownloadSettingOverrides,
+  type DownloadSettingValues,
+  type DownloadSettings,
+  type DownloadSettingsChange,
+} from './download-settings-api.js';
+export {
+  isSourceKey,
+  readSiteChange,
+  readSiteChangeRequest,
+  readSiteChangeStatus,
+  siteChangeKinds,
+  siteChangeErrors,
+  siteChangeTtlMs,
+  SITE_CHANGE_ACTOR_LENGTH,
+  type SiteChangeError,
+  type SiteChange,
+  type SiteChangeKind,
+  type SiteChangeRecord,
+  type SiteChangeRequest,
+  type SiteChangeState,
+  type SiteChangeStatus,
+} from './site-changes.js';
+export {
+  fleetAlertKinds,
+  fleetAlertSeverities,
+  readFleetOverview,
+  type FleetOverview,
+  type FleetOverviewAlert,
+  type FleetOverviewLink,
+} from './fleet-overview.js';

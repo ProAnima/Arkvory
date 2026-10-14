@@ -1,5 +1,7 @@
 import {
+  fleetChangeMethod,
   readFleetControllers,
+  readFleetOverview,
   readFleetPairing,
   readFleetProbe,
   readFleetSite,
@@ -11,6 +13,11 @@ import { ArkvoryClientError } from './transfer.js';
 import { CatalogApi } from './catalog-api.js';
 import { DiscoveryApi } from './discovery-api.js';
 import { AssetsApi } from './assets-api.js';
+import { UpdatesApi } from './updates-api.js';
+import { DownloadSettingsApi } from './download-settings-api.js';
+import { SiteChangesApi } from './site-changes-api.js';
+
+const absolute = (path: string) => (path.startsWith('/') ? path : `/${path}`);
 
 const site = (id: string) => `/api/v1/fleet/sites/${encodeURIComponent(id)}`;
 
@@ -23,6 +30,12 @@ export class FleetApi {
 
   async topology(signal?: AbortSignal) {
     return readTopology(await this.http.call('/api/v1/system/topology', 'GET', undefined, signal));
+  }
+  /** What needs attention across the sites and who feeds whom (stage F4). */
+  async overview(signal?: AbortSignal) {
+    return readFleetOverview(
+      await this.http.call('/api/v1/fleet/overview', 'GET', undefined, signal),
+    );
   }
   async sites(signal?: AbortSignal) {
     return readFleetSites(await this.http.call('/api/v1/fleet/sites', 'GET', undefined, signal));
@@ -59,10 +72,13 @@ export class FleetApi {
    * the same calls and validating readers as for this installation's own catalog, GET only.
    */
   site(id: string) {
-    const port = new SiteReadPort(this.http, id);
+    const port = new SitePort(this.http, id);
     const discovery = new DiscoveryApi(port);
     const catalog = new CatalogApi(port);
     const assets = new AssetsApi(port);
+    const updates = new UpdatesApi(port);
+    const downloads = new DownloadSettingsApi(port);
+    const changes = new SiteChangesApi(port);
     return {
       repositories: discovery.repositories.bind(discovery),
       repository: discovery.repository.bind(discovery),
@@ -74,6 +90,13 @@ export class FleetApi {
       assetPage: assets.assetPage.bind(assets),
       asset: assets.asset.bind(assets),
       assetHistory: assets.assetHistory.bind(assets),
+      /** Stage F3: the site's updater and its download queue settings. */
+      updates: { status: updates.status.bind(updates), request: updates.request.bind(updates) },
+      changes: { status: changes.status.bind(changes), request: changes.request.bind(changes) },
+      downloadSettings: {
+        get: downloads.get.bind(downloads),
+        change: downloads.change.bind(downloads),
+      },
     };
   }
   async revokeController(id: string, signal?: AbortSignal) {
@@ -90,21 +113,24 @@ export class FleetApi {
  * A port that sends every read to `GET /api/v1/fleet/sites/{id}/read?path=…` of this
  * installation. Anything but GET is refused before a request is made.
  */
-class SiteReadPort implements HttpPort {
+/**
+ * The HTTP of one managed site through this installation: reads go through `/read`, the listed
+ * changes through `/change` with the method the site expects. Anything else is refused here.
+ */
+class SitePort implements HttpPort {
   constructor(
     private readonly http: HttpPort,
     private readonly id: string,
   ) {}
 
-  private through(path: string) {
-    const absolute = path.startsWith('/') ? path : `/${path}`;
-    return `/api/v1/fleet/sites/${encodeURIComponent(this.id)}/read?path=${encodeURIComponent(absolute)}`;
+  private through(kind: 'read' | 'change', path: string) {
+    return `/api/v1/fleet/sites/${encodeURIComponent(this.id)}/${kind}?path=${encodeURIComponent(path)}`;
   }
 
   request(path: string, init: RequestInit = {}, signal?: AbortSignal) {
     if ((init.method ?? 'GET') !== 'GET' || init.body !== undefined)
-      return Promise.reject(new ArkvoryClientError('invalid_argument', 'A site is read only here'));
-    return this.http.request(this.through(path), { method: 'GET' }, signal);
+      return Promise.reject(new ArkvoryClientError('invalid_argument', 'Only reads stream here'));
+    return this.http.request(this.through('read', absolute(path)), { method: 'GET' }, signal);
   }
 
   json(response: Response, signal?: AbortSignal, maxBytes?: number) {
@@ -112,8 +138,11 @@ class SiteReadPort implements HttpPort {
   }
 
   async call(path: string, method = 'GET', body?: unknown, signal?: AbortSignal) {
-    if (method !== 'GET' || body !== undefined)
-      throw new ArkvoryClientError('invalid_argument', 'A site is read only here');
-    return this.http.call(this.through(path), 'GET', undefined, signal);
+    const target = absolute(path);
+    if (method === 'GET' && body === undefined)
+      return this.http.call(this.through('read', target), 'GET', undefined, signal);
+    if (fleetChangeMethod(target) !== method)
+      throw new ArkvoryClientError('invalid_argument', 'This cannot be changed on a site here');
+    return this.http.call(this.through('change', target), 'POST', body, signal);
   }
 }

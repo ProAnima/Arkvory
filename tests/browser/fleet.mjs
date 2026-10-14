@@ -44,8 +44,11 @@ export async function exerciseFleet(browser, f, cleanup) {
     await connectWithKey(page, f.headers.authorization.slice(7));
     await page.locator('[data-nav=fleet]').click();
     await page.locator('#fleet-empty').waitFor();
-    assert.match(await page.locator('#fleet-self').innerText(), /^Main, version /);
-    assert.equal(await page.locator('#fleet-controllers-empty').isVisible(), true);
+    // This site's own line arrives with its own request, after the empty list.
+    await page.waitForFunction(() =>
+      /^Main, version /.test(document.querySelector('#fleet-self')?.textContent ?? ''),
+    );
+    await page.locator('#fleet-controllers-empty').waitFor();
     // Check the address: plain HTTP on loopback has no certificate to compare.
     await page.locator('#fleet-url').fill(siteAddress);
     await page.locator('#fleet-check').click();
@@ -78,6 +81,15 @@ export async function exerciseFleet(browser, f, cleanup) {
     assert.equal(await row.locator('.fleet-badge').getAttribute('data-state'), 'ok');
     // The site key never reaches the page.
     assert.doesNotMatch(await page.content(), /afk_/);
+    // The state of the cluster: nothing to attend to, both sites on the map, no links yet.
+    await page.locator('#fleet-overview:not([hidden])').waitFor();
+    await page.locator('#fleet-alerts-none:not([hidden])').waitFor();
+    assert.equal(await page.locator('#fleet-map .fleet-map-node').count(), 2);
+    assert.deepEqual(await page.locator('#fleet-map .fleet-map-node title').allTextContents(), [
+      'This site',
+      'Branch',
+    ]);
+    assert.equal(await page.locator('#fleet-links-none').isVisible(), true);
     // The content of the site, read through this installation: descriptions, never bytes.
     const bytes = Buffer.from('branch tool');
     const id = (await create(site, bytes)).json().id;
@@ -106,6 +118,46 @@ export async function exerciseFleet(browser, f, cleanup) {
     await page.locator('#fleet-files-empty').waitFor();
     await page.locator('#fleet-content-close').click();
     assert.equal(await page.locator('#fleet-content').isVisible(), false);
+    // Settings of the site through this installation: the queue changes without a restart.
+    await row.getByRole('button', { name: 'Settings' }).click();
+    await page.locator('#fleet-settings').waitFor();
+    assert.equal(await page.locator('#fleet-settings-title').innerText(), 'Settings: Branch');
+    const sessions = page.getByLabel('Downloads at once', { exact: true });
+    await page.waitForFunction(() =>
+      document.querySelector('#fleet-queue-fields input')?.getAttribute('placeholder'),
+    );
+    assert.match((await sessions.getAttribute('placeholder')) ?? '', /^[0-9]+$/);
+    await sessions.fill('3');
+    await page.locator('#fleet-queue-save').click();
+    await page.locator('#fleet-queue-status[data-tone=success]').waitFor();
+    const stored = (
+      await site.app.inject({ url: '/api/v1/system/downloads/settings', headers: site.headers })
+    ).json();
+    assert.equal(stored.effective.sessions, 3);
+    assert.ok(stored.actor, 'the site names who changed it');
+    assert.match(await page.locator('#fleet-queue-changed').innerText(), /^Changed by /);
+    // This test site has no host updater: the card says so instead of offering requests.
+    await page.locator('#fleet-update-status:not([hidden])').waitFor();
+    assert.match(await page.locator('#fleet-update-status').innerText(), /not connected/);
+    assert.equal(await page.locator('#fleet-update-check').isDisabled(), true);
+    // Nor an agent for mirror and HA changes: the card says how to connect one.
+    await page.locator('#fleet-agent-missing:not([hidden])').waitFor();
+    assert.match(await page.locator('#fleet-agent-missing').innerText(), /updates-connect/);
+    assert.equal(await page.locator('#fleet-mirror-empty').isVisible(), true);
+    assert.equal(await page.locator('#fleet-cluster').isVisible(), false);
+    await page.locator('#fleet-queue-reset').click();
+    await page.waitForFunction(() =>
+      [...document.querySelectorAll('#fleet-queue-fields input')].every(
+        (input) => input instanceof HTMLInputElement && input.value === '',
+      ),
+    );
+    // The same card for this site, through its own API.
+    await page.locator('#fleet-self-settings').click();
+    await page.waitForFunction(
+      () => document.querySelector('#fleet-settings-title')?.textContent === 'Settings: This site',
+    );
+    await page.locator('#fleet-settings-close').click();
+    assert.equal(await page.locator('#fleet-settings').isVisible(), false);
     // This site's own pairing code.
     await page.locator('#fleet-make-code').click();
     await page.locator('#fleet-code-box').waitFor();
@@ -138,6 +190,6 @@ export async function exerciseFleet(browser, f, cleanup) {
     await context.close();
   }
   console.log(
-    'PASS sites: check, pair by code, site state, content, own code, remove, RU/EN, 390px',
+    'PASS sites: check, pair by code, site state, overview and map, content, settings, own code, remove, RU/EN, 390px',
   );
 }

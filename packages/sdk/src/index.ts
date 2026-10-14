@@ -25,6 +25,8 @@ export type { IdentityClient, AdministrationClient } from './management-client.j
 export type { CreateTokenOptions } from './identity-api.js';
 export { BackupApi } from './backup-api.js';
 export { FleetApi } from './fleet-api.js';
+export { DownloadSettingsApi } from './download-settings-api.js';
+export { SiteChangesApi, type SiteChanges } from './site-changes-api.js';
 export { FeedbackApi } from './feedback-api.js';
 export { RawApi } from './raw-api.js';
 export { ReplicationApi, readReplication } from './replication-api.js';

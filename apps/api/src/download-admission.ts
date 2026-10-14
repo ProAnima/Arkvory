@@ -80,11 +80,15 @@ export function createDownloadAdmission(services: AdmissionServices) {
       ownClass(principal),
       header(request, 'arkvory-download-class'),
     );
-    const policy = scheduler.policy;
-    if (size <= policy.sessionMinBytes || policy.strategy === 'shared') {
+    // Per request under `shared` and for small objects; read again after a hold, as the
+    // settings may change while the server runs (ADR 0076, stage 3).
+    const perRequest = () =>
+      size <= scheduler.policy.sessionMinBytes || scheduler.policy.strategy === 'shared';
+    const gate = async () => {
       const release = await services.downloadGate.acquire(principal.id, signal);
       return { progress: () => undefined, end: release };
-    }
+    };
+    if (perRequest()) return gate();
     const who = queuePrincipal(request, principal);
     const session = {
       key: `${who}\n${objectId}\n${id ?? `ip:${request.ip}`}`,
@@ -101,6 +105,7 @@ export function createDownloadAdmission(services: AdmissionServices) {
       : await scheduler.admitHeld(asked, signal);
     if (admission.ticket !== undefined) reply.header('Arkvory-Queue-Ticket', admission.ticket);
     if (admission.state === 'active') return admission.lease;
+    if (perRequest()) return gate();
     reply.removeHeader('ETag');
     if (admission.position !== undefined)
       reply.header('Arkvory-Queue-Position', String(admission.position));

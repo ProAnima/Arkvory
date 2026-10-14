@@ -16,6 +16,7 @@ import { migrateWebhookState } from './webhook-schema.js';
 import { migrateUploadBytes } from './upload-bytes.js';
 import { migrateDownloadTickets } from './download-tickets.js';
 import { migrateFleet } from './fleet-schema.js';
+import { migrateDownloadSettings } from './download-settings-store.js';
 
 /** Steps of versions 15-39 (36 is an index step) in their historical order; each records its own version. */
 const storageSteps: readonly (readonly [number, (client: PoolClient) => Promise<void>])[] = [
@@ -42,6 +43,7 @@ const storageSteps: readonly (readonly [number, (client: PoolClient) => Promise<
   [37, migrateMirrorRecovery],
   [38, migrateDownloadTickets],
   [39, migrateFleet],
+  [40, migrateDownloadSettings],
 ];
 
 /** upTo bounds the applied versions (restore of an older backup); the order never changes. */

@@ -4198,5 +4198,481 @@
   "fleetNoRepositories": {
     "en": "The site has no repositories.",
     "text": "该站点没有仓库。"
+  },
+  "fleetSettings": {
+    "en": "Settings",
+    "text": "设置"
+  },
+  "fleetSettingsOf": {
+    "en": "Settings: {name}",
+    "text": "设置：{name}"
+  },
+  "fleetThisSettings": {
+    "en": "Settings of this site",
+    "text": "本站点的设置"
+  },
+  "fleetQueueSettings": {
+    "en": "Download queue",
+    "text": "下载队列"
+  },
+  "fleetQueueHint": {
+    "en": "An empty field keeps the value of the server’s environment, shown in grey. Saved settings apply at once, without a restart; active downloads keep their places. Read gateways keep their environment.",
+    "text": "留空的字段保留服务器环境中的值，以灰色显示。保存的设置立即生效，无需重启；正在进行的下载保留其位置。只读网关保留其环境。"
+  },
+  "fleetStrategy": {
+    "en": "Strategy",
+    "text": "策略"
+  },
+  "fleetStrategyOrdered": {
+    "en": "In order of arrival",
+    "text": "按到达顺序"
+  },
+  "fleetStrategySmallest": {
+    "en": "Smallest first",
+    "text": "小文件优先"
+  },
+  "fleetStrategyShared": {
+    "en": "Shared, without a queue",
+    "text": "共享，不排队"
+  },
+  "fleetDefault": {
+    "en": "Default: {value}",
+    "text": "默认：{value}"
+  },
+  "fleetSessions": {
+    "en": "Downloads at once",
+    "text": "同时下载数"
+  },
+  "fleetReserve": {
+    "en": "Places kept for people",
+    "text": "为人员保留的位置"
+  },
+  "fleetPerPrincipal": {
+    "en": "Downloads at once per client",
+    "text": "每个客户端的同时下载数"
+  },
+  "fleetIdle": {
+    "en": "Pause that frees a place, s",
+    "text": "释放位置的暂停时长，秒"
+  },
+  "fleetAging": {
+    "en": "Wait that raises a class, min (0: off)",
+    "text": "提升类别的等待时长，分钟（0：关闭）"
+  },
+  "fleetRanges": {
+    "en": "Parallel ranges per download",
+    "text": "每个下载的并行区段数"
+  },
+  "fleetSessionMin": {
+    "en": "Queue files from, MiB",
+    "text": "从此大小起排队，MiB"
+  },
+  "fleetPreempt": {
+    "en": "Ask downloads to yield to a higher class",
+    "text": "要求下载让位于更高类别"
+  },
+  "fleetPreemptOn": {
+    "en": "Yes",
+    "text": "是"
+  },
+  "fleetPreemptOff": {
+    "en": "No",
+    "text": "否"
+  },
+  "fleetWeights": {
+    "en": "Weights of classes",
+    "text": "类别权重"
+  },
+  "fleetWeightInteractive": {
+    "en": "People",
+    "text": "人员"
+  },
+  "fleetWeightRelease": {
+    "en": "Releases",
+    "text": "发布"
+  },
+  "fleetWeightBulk": {
+    "en": "Bulk",
+    "text": "批量"
+  },
+  "fleetWeightBackground": {
+    "en": "Background",
+    "text": "后台"
+  },
+  "fleetQueueSave": {
+    "en": "Save queue settings",
+    "text": "保存队列设置"
+  },
+  "fleetQueueReset": {
+    "en": "Back to defaults",
+    "text": "恢复默认值"
+  },
+  "fleetQueueSaved": {
+    "en": "Saved. The queue works with the new settings now.",
+    "text": "已保存。队列现已按新设置运行。"
+  },
+  "fleetQueueChanged": {
+    "en": "Changed by {who}",
+    "text": "修改者：{who}"
+  },
+  "fleetQueueProblem": {
+    "en": "Saved settings do not fit this server and are not used: {problem}",
+    "text": "已保存的设置不适用于此服务器，未被使用：{problem}"
+  },
+  "fleetQueueConflict": {
+    "en": "Someone changed the settings meanwhile. The form shows them now: check and save again.",
+    "text": "在此期间有人修改了设置。表单现在显示的是当前设置：请检查后再次保存。"
+  },
+  "fleetQueueInvalid": {
+    "en": "Every number must be whole. Correct the marked fields and save again.",
+    "text": "所有数字必须为整数。请更正标记的字段后再次保存。"
+  },
+  "fleetQueuePerRequest": {
+    "en": "The strategy is shared: downloads are admitted one request at a time by the limits of the environment, and the session settings below wait unused until another strategy is chosen.",
+    "text": "当前为共享策略：下载按单个请求在环境限制内准入，下方的会话设置在选择其他策略之前不会使用。"
+  },
+  "fleetAgent": {
+    "en": "Mirrors and cluster",
+    "text": "镜像和集群"
+  },
+  "fleetAgentHint": {
+    "en": "These changes are applied by the site’s agent with its own checks and rollback, within a minute; the list below shows how each ended.",
+    "text": "这些更改由站点的代理在一分钟内应用，代理会自行检查并在需要时回滚；下方列表显示每项更改的结果。"
+  },
+  "fleetAgentMissing": {
+    "en": "The site’s agent does not report in: connect it on the site with updates-connect, or update the site to a release that applies these changes.",
+    "text": "站点的代理没有响应：请在站点上用 updates-connect 连接它，或将站点更新到能应用这些更改的版本。"
+  },
+  "fleetMirrorRepository": {
+    "en": "Repository",
+    "text": "仓库"
+  },
+  "fleetMirrorSource": {
+    "en": "Source",
+    "text": "源"
+  },
+  "fleetMirrorPhase": {
+    "en": "State",
+    "text": "状态"
+  },
+  "fleetMirrorNone": {
+    "en": "The site has no mirrors or imports.",
+    "text": "该站点没有镜像或导入。"
+  },
+  "fleetMirrorKey": {
+    "en": "Source key",
+    "text": "源密钥"
+  },
+  "fleetMirrorKeySave": {
+    "en": "Replace key",
+    "text": "更换密钥"
+  },
+  "fleetMirrorKeyFor": {
+    "en": "New source key for {repository}",
+    "text": "{repository} 的新源密钥"
+  },
+  "fleetMirrorAttach": {
+    "en": "Attach a mirror or an import",
+    "text": "接入镜像或导入"
+  },
+  "fleetMirrorUpstream": {
+    "en": "Source address",
+    "text": "源地址"
+  },
+  "fleetMirrorSourceRepository": {
+    "en": "Source repository",
+    "text": "源仓库"
+  },
+  "fleetMirrorStages": {
+    "en": "Import stages, comma-separated",
+    "text": "导入阶段，以逗号分隔"
+  },
+  "fleetMirrorAttachHint": {
+    "en": "Attaches a new repository. Without stages it mirrors the source read-only; with stages it is an ordinary repository that takes over versions with those stages. The source is checked with the key before anything changes. An authority certificate of a source is set on the site itself.",
+    "text": "接入一个新仓库。不设阶段时，它以只读方式镜像源；设置阶段时，它是普通仓库，会接收带有这些阶段的版本。在进行任何更改之前，会先用密钥检查源。源的证书颁发机构证书在站点本身上设置。"
+  },
+  "fleetMirrorAttachButton": {
+    "en": "Attach",
+    "text": "接入"
+  },
+  "fleetMirrorDetach": {
+    "en": "Detach",
+    "text": "断开"
+  },
+  "fleetMirrorDetachConfirm": {
+    "en": "Detach the mirror {repository}? It becomes an ordinary writable repository and keeps every artifact.",
+    "text": "断开镜像 {repository}？它将变为可写的普通仓库，并保留所有制品。"
+  },
+  "fleetMirrorImport": {
+    "en": "Import",
+    "text": "导入"
+  },
+  "fleetMirrorMirror": {
+    "en": "Mirror",
+    "text": "镜像"
+  },
+  "fleetMirrorInvalid": {
+    "en": "Check the fields: an HTTPS address of the source, repository names and up to 16 stages.",
+    "text": "请检查字段：源的 HTTPS 地址、仓库名称以及最多 16 个阶段。"
+  },
+  "fleetCluster": {
+    "en": "HA cluster",
+    "text": "HA 集群"
+  },
+  "fleetClusterState": {
+    "en": "Active node: {node}. Copies: {copies} of {required}.",
+    "text": "活动节点：{node}。副本：{copies}/{required}。"
+  },
+  "fleetSwitchoverNode": {
+    "en": "Move to node",
+    "text": "迁移到节点"
+  },
+  "fleetSwitchoverConfirm": {
+    "en": "Node name again",
+    "text": "再次输入节点名称"
+  },
+  "fleetSwitchover": {
+    "en": "Switch over",
+    "text": "切换"
+  },
+  "fleetSwitchoverTyped": {
+    "en": "Type the name of the target node again to confirm.",
+    "text": "请再次输入目标节点名称以确认。"
+  },
+  "fleetSwitchoverAsk": {
+    "en": "Move Arkvory to {node}? Requests are interrupted for a short time while the node takes over.",
+    "text": "将 Arkvory 迁移到 {node}？节点接管期间请求会短暂中断。"
+  },
+  "fleetSingleUntil": {
+    "en": "One copy until",
+    "text": "一份副本截至"
+  },
+  "fleetSingleReason": {
+    "en": "Reason",
+    "text": "原因"
+  },
+  "fleetSingleOn": {
+    "en": "Accept writes with one copy",
+    "text": "以一份副本接受写入"
+  },
+  "fleetSingleOff": {
+    "en": "Withdraw the decision",
+    "text": "撤回决定"
+  },
+  "fleetSingleInvalid": {
+    "en": "Give a time and a reason.",
+    "text": "请填写时间和原因。"
+  },
+  "fleetSingleAsk": {
+    "en": "Acknowledge writes with ONE copy until {until}? A second failure in that time loses them.",
+    "text": "在 {until} 之前仅以一份副本确认写入？在此期间再发生一次故障将导致这些写入丢失。"
+  },
+  "fleetRequests": {
+    "en": "Requests to the agent",
+    "text": "发给代理的请求"
+  },
+  "fleetRequestKind": {
+    "en": "Change",
+    "text": "更改"
+  },
+  "fleetRequestBy": {
+    "en": "Who",
+    "text": "操作人"
+  },
+  "fleetRequestAt": {
+    "en": "When",
+    "text": "时间"
+  },
+  "fleetKindAttach": {
+    "en": "Attach mirror",
+    "text": "接入镜像"
+  },
+  "fleetKindKey": {
+    "en": "Replace key",
+    "text": "更换密钥"
+  },
+  "fleetKindDetach": {
+    "en": "Detach mirror",
+    "text": "断开镜像"
+  },
+  "fleetKindSwitchover": {
+    "en": "Switchover",
+    "text": "切换"
+  },
+  "fleetKindSingleCopy": {
+    "en": "Single copy",
+    "text": "单副本"
+  },
+  "fleetChangePending": {
+    "en": "Waiting for the agent",
+    "text": "等待代理"
+  },
+  "fleetChangeApplying": {
+    "en": "Applying",
+    "text": "正在应用"
+  },
+  "fleetChangeDone": {
+    "en": "Done",
+    "text": "完成"
+  },
+  "fleetChangeFailed": {
+    "en": "Failed",
+    "text": "失败"
+  },
+  "fleetChangeQueued": {
+    "en": "Queued. The site’s agent applies it within a minute.",
+    "text": "已加入队列。站点的代理会在一分钟内应用。"
+  },
+  "fleetAgentUpdating": {
+    "en": "The site is installing an update: changes wait until it is done.",
+    "text": "站点正在安装更新：更改将等待更新完成。"
+  },
+  "fleetAgentBlocked": {
+    "en": "A change was interrupted half done on the site. The agent takes no other until an administrator of the site checked it and ran arkvory changes-reset there.",
+    "text": "站点上的一项更改中途中断。在站点管理员检查并在该站点上运行 arkvory changes-reset 之前，代理不会接收其他更改。"
+  },
+  "fleetSingleOffAsk": {
+    "en": "Withdraw the single-copy decision? While copies are still missing, writes stop until they are back.",
+    "text": "撤回单副本决定？在副本仍然缺失期间，写入将停止，直到副本恢复。"
+  },
+  "fleetErrorExpired": {
+    "en": "Expired before the agent took it.",
+    "text": "在代理接收之前已过期。"
+  },
+  "fleetErrorInterrupted": {
+    "en": "Interrupted; the site needs checking.",
+    "text": "已中断；需要检查站点。"
+  },
+  "fleetErrorKeyMissing": {
+    "en": "The source key did not arrive.",
+    "text": "源密钥未送达。"
+  },
+  "fleetErrorNotMirror": {
+    "en": "Not a mirror of this site.",
+    "text": "不是此站点的镜像。"
+  },
+  "fleetErrorAttached": {
+    "en": "Already a mirror or an import: replace its key or detach it first.",
+    "text": "已是镜像或导入：请更换其密钥，或先将其断开。"
+  },
+  "fleetErrorMirror": {
+    "en": "The mirror change failed; the agent restored the previous configuration. Details are in the agent log on the site.",
+    "text": "镜像更改失败；代理已恢复之前的配置。详细信息见站点上的代理日志。"
+  },
+  "fleetErrorSwitchover": {
+    "en": "The switchover failed. Details are in the agent log on the site.",
+    "text": "切换失败。详细信息见站点上的代理日志。"
+  },
+  "fleetErrorSingleCopy": {
+    "en": "The single-copy decision failed. Details are in the agent log on the site.",
+    "text": "单副本决定失败。详细信息见站点上的代理日志。"
+  },
+  "fleetErrorUnreadable": {
+    "en": "The request could not be read.",
+    "text": "无法读取请求。"
+  },
+  "fleetOverview": {
+    "en": "State of the cluster",
+    "text": "集群状态"
+  },
+  "fleetAlertsNone": {
+    "en": "Nothing needs attention: every site answers, has its copies and keeps its mirrors up to date.",
+    "text": "无需处理：每个站点都有应答，副本齐全，镜像保持最新。"
+  },
+  "fleetMap": {
+    "en": "Links",
+    "text": "关联"
+  },
+  "fleetMapHint": {
+    "en": "Sources this installation does not manage are shown by their address. If one of them is this installation, set ARKVORY_SITE_URL to the address the sites use for it.",
+    "text": "本安装未管理的源以地址显示。如果其中之一就是本安装，请将 ARKVORY_SITE_URL 设置为各站点访问它所用的地址。"
+  },
+  "fleetLinkFrom": {
+    "en": "Source",
+    "text": "源"
+  },
+  "fleetLinkTo": {
+    "en": "Site",
+    "text": "站点"
+  },
+  "fleetLinkBehind": {
+    "en": "Behind",
+    "text": "落后"
+  },
+  "fleetLinksNone": {
+    "en": "No site mirrors or imports from another.",
+    "text": "没有站点镜像或导入其他站点。"
+  },
+  "fleetLinkFailing": {
+    "en": "Failing",
+    "text": "故障"
+  },
+  "fleetLagValue": {
+    "en": "{lag} changes",
+    "text": "{lag} 项更改"
+  },
+  "fleetSeverityCritical": {
+    "en": "Critical",
+    "text": "严重"
+  },
+  "fleetSeverityWarning": {
+    "en": "Warning",
+    "text": "警告"
+  },
+  "fleetSeverityInfo": {
+    "en": "Note",
+    "text": "提示"
+  },
+  "fleetAlertUnreachable": {
+    "en": "does not answer.",
+    "text": "没有应答。"
+  },
+  "fleetAlertCertificate": {
+    "en": "presents another certificate: pair it again if it was renewed.",
+    "text": "出示了另一张证书：如果证书已续签，请重新配对该站点。"
+  },
+  "fleetAlertRevoked": {
+    "en": "revoked this controller: pair it again with a new code.",
+    "text": "撤销了此控制站点：请用新代码重新配对。"
+  },
+  "fleetAlertRefused": {
+    "en": "refuses this controller: pair it again with a new code.",
+    "text": "拒绝此控制站点：请用新代码重新配对。"
+  },
+  "fleetAlertInvalid": {
+    "en": "answers in a way this release does not read: update both.",
+    "text": "的应答本版本无法理解：请同时升级两者。"
+  },
+  "fleetAlertStale": {
+    "en": "was not read for over a minute and a half: check the controller’s background reads.",
+    "text": "已超过一分半钟未被读取：请检查控制站点的后台读取。"
+  },
+  "fleetAlertNotWritable": {
+    "en": "refuses writes: check its database and disk.",
+    "text": "拒绝写入：请检查其数据库和磁盘。"
+  },
+  "fleetAlertCopies": {
+    "en": "lacks copies of its data: writes are paused until they are back.",
+    "text": "的数据副本不足：写入已暂停，直到副本恢复。"
+  },
+  "fleetAlertSingleCopy": {
+    "en": "acknowledges writes with one copy by an operator’s decision.",
+    "text": "根据运维人员的决定，以一份副本确认写入。"
+  },
+  "fleetAlertMirrorFailing": {
+    "en": "mirror {subject} keeps failing.",
+    "text": "的镜像 {subject} 持续失败。"
+  },
+  "fleetAlertMirrorLag": {
+    "en": "mirror {subject} is far behind its source.",
+    "text": "的镜像 {subject} 远远落后于源。"
+  },
+  "fleetAlertUpdatesFailed": {
+    "en": "its updater reports a failure.",
+    "text": "的更新程序报告了故障。"
+  },
+  "fleetAlertVersionSkew": {
+    "en": "runs another version than this controller.",
+    "text": "运行的版本与此控制站点不同。"
   }
 }

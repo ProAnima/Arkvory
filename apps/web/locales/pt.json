@@ -4198,5 +4198,481 @@
   "fleetNoRepositories": {
     "en": "The site has no repositories.",
     "text": "O site não tem repositórios."
+  },
+  "fleetSettings": {
+    "en": "Settings",
+    "text": "Configurações"
+  },
+  "fleetSettingsOf": {
+    "en": "Settings: {name}",
+    "text": "Configurações: {name}"
+  },
+  "fleetThisSettings": {
+    "en": "Settings of this site",
+    "text": "Configurações deste site"
+  },
+  "fleetQueueSettings": {
+    "en": "Download queue",
+    "text": "Fila de downloads"
+  },
+  "fleetQueueHint": {
+    "en": "An empty field keeps the value of the server’s environment, shown in grey. Saved settings apply at once, without a restart; active downloads keep their places. Read gateways keep their environment.",
+    "text": "Um campo vazio mantém o valor do ambiente do servidor, mostrado em cinza. As configurações salvas valem na hora, sem reiniciar; downloads ativos mantêm seus lugares. Gateways de leitura mantêm seu ambiente."
+  },
+  "fleetStrategy": {
+    "en": "Strategy",
+    "text": "Estratégia"
+  },
+  "fleetStrategyOrdered": {
+    "en": "In order of arrival",
+    "text": "Por ordem de chegada"
+  },
+  "fleetStrategySmallest": {
+    "en": "Smallest first",
+    "text": "Menores primeiro"
+  },
+  "fleetStrategyShared": {
+    "en": "Shared, without a queue",
+    "text": "Compartilhada, sem fila"
+  },
+  "fleetDefault": {
+    "en": "Default: {value}",
+    "text": "Padrão: {value}"
+  },
+  "fleetSessions": {
+    "en": "Downloads at once",
+    "text": "Downloads simultâneos"
+  },
+  "fleetReserve": {
+    "en": "Places kept for people",
+    "text": "Lugares reservados para pessoas"
+  },
+  "fleetPerPrincipal": {
+    "en": "Downloads at once per client",
+    "text": "Downloads simultâneos por cliente"
+  },
+  "fleetIdle": {
+    "en": "Pause that frees a place, s",
+    "text": "Pausa que libera um lugar, s"
+  },
+  "fleetAging": {
+    "en": "Wait that raises a class, min (0: off)",
+    "text": "Espera que sobe a classe, min (0: desligado)"
+  },
+  "fleetRanges": {
+    "en": "Parallel ranges per download",
+    "text": "Intervalos paralelos por download"
+  },
+  "fleetSessionMin": {
+    "en": "Queue files from, MiB",
+    "text": "Enfileirar arquivos a partir de, MiB"
+  },
+  "fleetPreempt": {
+    "en": "Ask downloads to yield to a higher class",
+    "text": "Pedir aos downloads que cedam a uma classe superior"
+  },
+  "fleetPreemptOn": {
+    "en": "Yes",
+    "text": "Sim"
+  },
+  "fleetPreemptOff": {
+    "en": "No",
+    "text": "Não"
+  },
+  "fleetWeights": {
+    "en": "Weights of classes",
+    "text": "Pesos das classes"
+  },
+  "fleetWeightInteractive": {
+    "en": "People",
+    "text": "Pessoas"
+  },
+  "fleetWeightRelease": {
+    "en": "Releases",
+    "text": "Versões"
+  },
+  "fleetWeightBulk": {
+    "en": "Bulk",
+    "text": "Em massa"
+  },
+  "fleetWeightBackground": {
+    "en": "Background",
+    "text": "Em segundo plano"
+  },
+  "fleetQueueSave": {
+    "en": "Save queue settings",
+    "text": "Salvar configurações da fila"
+  },
+  "fleetQueueReset": {
+    "en": "Back to defaults",
+    "text": "Voltar aos padrões"
+  },
+  "fleetQueueSaved": {
+    "en": "Saved. The queue works with the new settings now.",
+    "text": "Salvo. A fila já funciona com as novas configurações."
+  },
+  "fleetQueueChanged": {
+    "en": "Changed by {who}",
+    "text": "Alterado por {who}"
+  },
+  "fleetQueueProblem": {
+    "en": "Saved settings do not fit this server and are not used: {problem}",
+    "text": "As configurações salvas não servem para este servidor e não são usadas: {problem}"
+  },
+  "fleetQueueConflict": {
+    "en": "Someone changed the settings meanwhile. The form shows them now: check and save again.",
+    "text": "Alguém alterou as configurações nesse meio-tempo. O formulário as mostra agora: confira e salve de novo."
+  },
+  "fleetQueueInvalid": {
+    "en": "Every number must be whole. Correct the marked fields and save again.",
+    "text": "Todos os números devem ser inteiros. Corrija os campos marcados e salve de novo."
+  },
+  "fleetQueuePerRequest": {
+    "en": "The strategy is shared: downloads are admitted one request at a time by the limits of the environment, and the session settings below wait unused until another strategy is chosen.",
+    "text": "A estratégia é compartilhada: os downloads são admitidos uma solicitação por vez dentro dos limites do ambiente, e as configurações de sessão abaixo ficam sem uso até que outra estratégia seja escolhida."
+  },
+  "fleetAgent": {
+    "en": "Mirrors and cluster",
+    "text": "Espelhos e cluster"
+  },
+  "fleetAgentHint": {
+    "en": "These changes are applied by the site’s agent with its own checks and rollback, within a minute; the list below shows how each ended.",
+    "text": "Estas alterações são aplicadas pelo agente do site, com verificações e reversão próprias, em até um minuto; a lista abaixo mostra como cada uma terminou."
+  },
+  "fleetAgentMissing": {
+    "en": "The site’s agent does not report in: connect it on the site with updates-connect, or update the site to a release that applies these changes.",
+    "text": "O agente do site não responde: conecte-o no site com updates-connect ou atualize o site para uma versão que aplique estas alterações."
+  },
+  "fleetMirrorRepository": {
+    "en": "Repository",
+    "text": "Repositório"
+  },
+  "fleetMirrorSource": {
+    "en": "Source",
+    "text": "Origem"
+  },
+  "fleetMirrorPhase": {
+    "en": "State",
+    "text": "Estado"
+  },
+  "fleetMirrorNone": {
+    "en": "The site has no mirrors or imports.",
+    "text": "O site não tem espelhos nem importações."
+  },
+  "fleetMirrorKey": {
+    "en": "Source key",
+    "text": "Chave da origem"
+  },
+  "fleetMirrorKeySave": {
+    "en": "Replace key",
+    "text": "Substituir chave"
+  },
+  "fleetMirrorKeyFor": {
+    "en": "New source key for {repository}",
+    "text": "Nova chave da origem para {repository}"
+  },
+  "fleetMirrorAttach": {
+    "en": "Attach a mirror or an import",
+    "text": "Conectar um espelho ou uma importação"
+  },
+  "fleetMirrorUpstream": {
+    "en": "Source address",
+    "text": "Endereço da origem"
+  },
+  "fleetMirrorSourceRepository": {
+    "en": "Source repository",
+    "text": "Repositório da origem"
+  },
+  "fleetMirrorStages": {
+    "en": "Import stages, comma-separated",
+    "text": "Estágios de importação, separados por vírgula"
+  },
+  "fleetMirrorAttachHint": {
+    "en": "Attaches a new repository. Without stages it mirrors the source read-only; with stages it is an ordinary repository that takes over versions with those stages. The source is checked with the key before anything changes. An authority certificate of a source is set on the site itself.",
+    "text": "Conecta um novo repositório. Sem estágios, ele espelha a origem somente para leitura; com estágios, é um repositório comum que recebe as versões com esses estágios. A origem é verificada com a chave antes de qualquer alteração. O certificado da autoridade de uma origem é definido no próprio site."
+  },
+  "fleetMirrorAttachButton": {
+    "en": "Attach",
+    "text": "Conectar"
+  },
+  "fleetMirrorDetach": {
+    "en": "Detach",
+    "text": "Desconectar"
+  },
+  "fleetMirrorDetachConfirm": {
+    "en": "Detach the mirror {repository}? It becomes an ordinary writable repository and keeps every artifact.",
+    "text": "Desconectar o espelho {repository}? Ele vira um repositório comum com gravação e mantém todos os artefatos."
+  },
+  "fleetMirrorImport": {
+    "en": "Import",
+    "text": "Importação"
+  },
+  "fleetMirrorMirror": {
+    "en": "Mirror",
+    "text": "Espelho"
+  },
+  "fleetMirrorInvalid": {
+    "en": "Check the fields: an HTTPS address of the source, repository names and up to 16 stages.",
+    "text": "Verifique os campos: um endereço HTTPS da origem, nomes de repositório e até 16 estágios."
+  },
+  "fleetCluster": {
+    "en": "HA cluster",
+    "text": "Cluster HA"
+  },
+  "fleetClusterState": {
+    "en": "Active node: {node}. Copies: {copies} of {required}.",
+    "text": "Nó ativo: {node}. Cópias: {copies} de {required}."
+  },
+  "fleetSwitchoverNode": {
+    "en": "Move to node",
+    "text": "Mover para o nó"
+  },
+  "fleetSwitchoverConfirm": {
+    "en": "Node name again",
+    "text": "Nome do nó novamente"
+  },
+  "fleetSwitchover": {
+    "en": "Switch over",
+    "text": "Comutar"
+  },
+  "fleetSwitchoverTyped": {
+    "en": "Type the name of the target node again to confirm.",
+    "text": "Digite o nome do nó de destino novamente para confirmar."
+  },
+  "fleetSwitchoverAsk": {
+    "en": "Move Arkvory to {node}? Requests are interrupted for a short time while the node takes over.",
+    "text": "Mover o Arkvory para {node}? As solicitações são interrompidas por pouco tempo enquanto o nó assume."
+  },
+  "fleetSingleUntil": {
+    "en": "One copy until",
+    "text": "Uma cópia até"
+  },
+  "fleetSingleReason": {
+    "en": "Reason",
+    "text": "Motivo"
+  },
+  "fleetSingleOn": {
+    "en": "Accept writes with one copy",
+    "text": "Aceitar gravações com uma cópia"
+  },
+  "fleetSingleOff": {
+    "en": "Withdraw the decision",
+    "text": "Retirar a decisão"
+  },
+  "fleetSingleInvalid": {
+    "en": "Give a time and a reason.",
+    "text": "Informe um horário e um motivo."
+  },
+  "fleetSingleAsk": {
+    "en": "Acknowledge writes with ONE copy until {until}? A second failure in that time loses them.",
+    "text": "Confirmar gravações com UMA cópia até {until}? Uma segunda falha nesse período as perde."
+  },
+  "fleetRequests": {
+    "en": "Requests to the agent",
+    "text": "Solicitações ao agente"
+  },
+  "fleetRequestKind": {
+    "en": "Change",
+    "text": "Alteração"
+  },
+  "fleetRequestBy": {
+    "en": "Who",
+    "text": "Quem"
+  },
+  "fleetRequestAt": {
+    "en": "When",
+    "text": "Quando"
+  },
+  "fleetKindAttach": {
+    "en": "Attach mirror",
+    "text": "Conectar espelho"
+  },
+  "fleetKindKey": {
+    "en": "Replace key",
+    "text": "Substituir chave"
+  },
+  "fleetKindDetach": {
+    "en": "Detach mirror",
+    "text": "Desconectar espelho"
+  },
+  "fleetKindSwitchover": {
+    "en": "Switchover",
+    "text": "Comutação"
+  },
+  "fleetKindSingleCopy": {
+    "en": "Single copy",
+    "text": "Cópia única"
+  },
+  "fleetChangePending": {
+    "en": "Waiting for the agent",
+    "text": "Aguardando o agente"
+  },
+  "fleetChangeApplying": {
+    "en": "Applying",
+    "text": "Aplicando"
+  },
+  "fleetChangeDone": {
+    "en": "Done",
+    "text": "Concluído"
+  },
+  "fleetChangeFailed": {
+    "en": "Failed",
+    "text": "Falhou"
+  },
+  "fleetChangeQueued": {
+    "en": "Queued. The site’s agent applies it within a minute.",
+    "text": "Na fila. O agente do site aplica em até um minuto."
+  },
+  "fleetAgentUpdating": {
+    "en": "The site is installing an update: changes wait until it is done.",
+    "text": "O site está instalando uma atualização: as alterações aguardam até que ela termine."
+  },
+  "fleetAgentBlocked": {
+    "en": "A change was interrupted half done on the site. The agent takes no other until an administrator of the site checked it and ran arkvory changes-reset there.",
+    "text": "Uma alteração foi interrompida pela metade no site. O agente não assume nenhuma outra até que um administrador do site a verifique e execute arkvory changes-reset nele."
+  },
+  "fleetSingleOffAsk": {
+    "en": "Withdraw the single-copy decision? While copies are still missing, writes stop until they are back.",
+    "text": "Retirar a decisão de cópia única? Enquanto ainda faltarem cópias, as gravações param até que elas voltem."
+  },
+  "fleetErrorExpired": {
+    "en": "Expired before the agent took it.",
+    "text": "Expirou antes de o agente assumi-la."
+  },
+  "fleetErrorInterrupted": {
+    "en": "Interrupted; the site needs checking.",
+    "text": "Interrompida; o site precisa ser verificado."
+  },
+  "fleetErrorKeyMissing": {
+    "en": "The source key did not arrive.",
+    "text": "A chave da origem não chegou."
+  },
+  "fleetErrorNotMirror": {
+    "en": "Not a mirror of this site.",
+    "text": "Não é um espelho deste site."
+  },
+  "fleetErrorAttached": {
+    "en": "Already a mirror or an import: replace its key or detach it first.",
+    "text": "Já é um espelho ou uma importação: substitua a chave ou desconecte-o primeiro."
+  },
+  "fleetErrorMirror": {
+    "en": "The mirror change failed; the agent restored the previous configuration. Details are in the agent log on the site.",
+    "text": "A alteração do espelho falhou; o agente restaurou a configuração anterior. Os detalhes estão no log do agente no site."
+  },
+  "fleetErrorSwitchover": {
+    "en": "The switchover failed. Details are in the agent log on the site.",
+    "text": "A comutação falhou. Os detalhes estão no log do agente no site."
+  },
+  "fleetErrorSingleCopy": {
+    "en": "The single-copy decision failed. Details are in the agent log on the site.",
+    "text": "A decisão de cópia única falhou. Os detalhes estão no log do agente no site."
+  },
+  "fleetErrorUnreadable": {
+    "en": "The request could not be read.",
+    "text": "Não foi possível ler a solicitação."
+  },
+  "fleetOverview": {
+    "en": "State of the cluster",
+    "text": "Estado do cluster"
+  },
+  "fleetAlertsNone": {
+    "en": "Nothing needs attention: every site answers, has its copies and keeps its mirrors up to date.",
+    "text": "Nada precisa de atenção: todos os sites respondem, têm suas cópias e mantêm seus espelhos em dia."
+  },
+  "fleetMap": {
+    "en": "Links",
+    "text": "Vínculos"
+  },
+  "fleetMapHint": {
+    "en": "Sources this installation does not manage are shown by their address. If one of them is this installation, set ARKVORY_SITE_URL to the address the sites use for it.",
+    "text": "As origens que esta instalação não gerencia aparecem pelo endereço. Se uma delas for esta instalação, defina ARKVORY_SITE_URL com o endereço que os sites usam para acessá-la."
+  },
+  "fleetLinkFrom": {
+    "en": "Source",
+    "text": "Origem"
+  },
+  "fleetLinkTo": {
+    "en": "Site",
+    "text": "Site"
+  },
+  "fleetLinkBehind": {
+    "en": "Behind",
+    "text": "Atraso"
+  },
+  "fleetLinksNone": {
+    "en": "No site mirrors or imports from another.",
+    "text": "Nenhum site tem espelhos nem importações de outro."
+  },
+  "fleetLinkFailing": {
+    "en": "Failing",
+    "text": "Com falha"
+  },
+  "fleetLagValue": {
+    "en": "{lag} changes",
+    "text": "{lag} alterações"
+  },
+  "fleetSeverityCritical": {
+    "en": "Critical",
+    "text": "Crítico"
+  },
+  "fleetSeverityWarning": {
+    "en": "Warning",
+    "text": "Aviso"
+  },
+  "fleetSeverityInfo": {
+    "en": "Note",
+    "text": "Nota"
+  },
+  "fleetAlertUnreachable": {
+    "en": "does not answer.",
+    "text": "não responde."
+  },
+  "fleetAlertCertificate": {
+    "en": "presents another certificate: pair it again if it was renewed.",
+    "text": "apresenta outro certificado: se foi renovado, pareie o site de novo."
+  },
+  "fleetAlertRevoked": {
+    "en": "revoked this controller: pair it again with a new code.",
+    "text": "revogou este controlador: pareie o site de novo com um novo código."
+  },
+  "fleetAlertRefused": {
+    "en": "refuses this controller: pair it again with a new code.",
+    "text": "recusa este controlador: pareie o site de novo com um novo código."
+  },
+  "fleetAlertInvalid": {
+    "en": "answers in a way this release does not read: update both.",
+    "text": "responde de um jeito que esta versão não entende: atualize os dois."
+  },
+  "fleetAlertStale": {
+    "en": "was not read for over a minute and a half: check the controller’s background reads.",
+    "text": "não é lido há mais de um minuto e meio: verifique as leituras em segundo plano do controlador."
+  },
+  "fleetAlertNotWritable": {
+    "en": "refuses writes: check its database and disk.",
+    "text": "recusa gravações: verifique o banco de dados e o disco dele."
+  },
+  "fleetAlertCopies": {
+    "en": "lacks copies of its data: writes are paused until they are back.",
+    "text": "não tem todas as cópias dos dados: as gravações estão pausadas até que voltem."
+  },
+  "fleetAlertSingleCopy": {
+    "en": "acknowledges writes with one copy by an operator’s decision.",
+    "text": "confirma as gravações com uma única cópia por decisão de um operador."
+  },
+  "fleetAlertMirrorFailing": {
+    "en": "mirror {subject} keeps failing.",
+    "text": "o espelho {subject} falha repetidamente."
+  },
+  "fleetAlertMirrorLag": {
+    "en": "mirror {subject} is far behind its source.",
+    "text": "o espelho {subject} está muito atrás da origem."
+  },
+  "fleetAlertUpdatesFailed": {
+    "en": "its updater reports a failure.",
+    "text": "seu atualizador informa uma falha."
+  },
+  "fleetAlertVersionSkew": {
+    "en": "runs another version than this controller.",
+    "text": "executa uma versão diferente da deste controlador."
   }
 }

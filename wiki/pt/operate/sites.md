@@ -7,10 +7,43 @@ description: Veja todas as instalações do seu cluster em um só lugar, pareie 
 
 Um **site** é uma instalação do Arkvory: a principal, um espelho em outro local, uma instalação que importa versões de outra. Em [[ui:fleet]], uma instalação, o **controlador**, mostra cada site que gerencia: se responde, sua versão, suas cópias de HA e gateways de leitura, seus espelhos e quanto estão atrasados, e sua fila de downloads. Só administradores globais veem a página.
 
+## Estado do cluster {#overview}
+
+A página começa com [[ui:fleetOverview]]: o que precisa de atenção nos sites e qual site alimenta qual. O controlador o monta a partir das últimas leituras dos sites, no máximo uma vez a cada 5 segundos, e inclui a si mesmo como “este site”.
+
+### Alertas {#alerts}
+
+Cada alerta nomeia o site e o problema. Os mais graves vêm primeiro: [[ui:fleetSeverityCritical]], depois [[ui:fleetSeverityWarning]], depois [[ui:fleetSeverityInfo]]. Quando nada precisa de atenção, a lista diz isso.
+
+| Alerta                                    | Gravidade                    | Quando                                                                                                        | O que fazer                                                                             |
+| ----------------------------------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| Inacessível                               | [[ui:fleetSeverityCritical]] | Sem resposta por 2 minutos. Uma leitura com falha não é alerta                                                | Verifique o site e a rede                                                               |
+| Certificado, revogado, recusado, inválido | [[ui:fleetSeverityCritical]] | Imediatamente, com o [estado](#states) de mesmo nome                                                          | Pareie de novo ou atualize as duas instalações                                          |
+| Desatualizado                             | [[ui:fleetSeverityWarning]]  | O site respondia, mas não é lido há mais de 90 segundos: as leituras em segundo plano do controlador travaram | Verifique o processo da API do controlador                                              |
+| Sem gravação                              | [[ui:fleetSeverityCritical]] | Um processo de gravação recusa gravações sem estar em drenagem                                                | Verifique o banco de dados e o disco dele                                               |
+| Cópias                                    | [[ui:fleetSeverityCritical]] | Faltam cópias dos dados de um site de HA; as gravações pausam até elas voltarem                               | Traga o nó ausente de volta, veja [Cluster de alta disponibilidade](./cluster#failures) |
+| Cópia única                               | [[ui:fleetSeverityWarning]]  | Faltam cópias, mas um operador aceitou [uma única cópia](./cluster#single-copy) até um horário                | Traga o nó ausente de volta antes desse horário                                         |
+| Falha do espelho                          | [[ui:fleetSeverityWarning]]  | A última sincronização de um espelho falhou. Ler de novo uma origem restaurada não conta                      | Leia o [código de erro](./mirrors#error-codes) do espelho                               |
+| Espelho atrasado                          | [[ui:fleetSeverityWarning]]  | Um espelho está `ARKVORY_FLEET_LAG_ALERT` alterações (1000 por padrão) ou mais atrás da sua origem            | Verifique a origem, a rede e o espelho                                                  |
+| Falha de atualização                      | [[ui:fleetSeverityWarning]]  | O atualizador do site relata uma falha                                                                        | Abra [[ui:updates]] nas [configurações do site](#site-settings)                         |
+| Outra versão                              | [[ui:fleetSeverityInfo]]     | O site executa outra versão que o controlador                                                                 | Atualize os sites para a mesma versão                                                   |
+
+### Ligações {#map}
+
+[[ui:fleetMap]] mostra qual site alimenta qual. Cada espelho e importação é uma seta do site de origem para o site que mantém o espelho.
+
+- Uma origem em cujo endereço nenhum site gerenciado responde é desenhada pelo endereço, com borda tracejada. Se essa origem for o próprio controlador, defina `ARKVORY_SITE_URL`, veja [Configurações](#settings).
+- Uma ligação com falha fica tracejada em vermelho.
+- O número em uma ligação é quantas alterações o espelho está atrás da sua origem.
+
+Abaixo do mapa, uma tabela lista os mesmos dados: [[ui:fleetLinkFrom]], [[ui:fleetLinkTo]], [[ui:fleetMirrorRepository]], [[ui:fleetMirrorSourceRepository]] e [[ui:fleetLinkBehind]].
+
+Administradores globais do controlador obtêm os mesmos alertas e ligações com `GET /api/v1/fleet/overview`, ou no SDK com `client.fleet.overview()`. Para o Prometheus, o controlador exporta o estado dos seus sites e o número de alertas: veja [Monitoramento](./monitoring#metrics).
+
 ## Como funciona {#how-it-works}
 
 - O controlador mantém uma lista de sites. Ele lê cada site a cada 30 segundos por HTTPS e guarda a última resposta, então um site que para de responder ainda mostra seu último estado conhecido.
-- Ao ser pareado, o site dá ao site controlador uma chave própria, a **chave de frota**. Ela alcança apenas o que o controlador precisa: o estado do site e as descrições do seu catálogo. Não pode baixar bytes de arquivos, alterar nada nem ler contas e chaves.
+- Ao ser pareado, o site dá ao site controlador uma chave própria, a **chave de frota**. Ela alcança apenas o que o controlador precisa: o estado do site, as descrições do seu catálogo e as alterações listadas: a fila de downloads, as solicitações de atualização e as alterações de espelhos e HA para o agente do site. Não pode baixar bytes de arquivos, gravar em repositórios nem ler ou alterar contas e chaves.
 - O controlador guarda as chaves de frota seladas com uma chave do seu diretório de dados (`fleet.key`). O banco de dados e seus backups sozinhos não as revelam. Depois de uma restauração, pareie os sites de novo.
 - Cada site mostra quais controladores o gerenciam e pode revogá-los a qualquer momento.
 
@@ -55,19 +88,33 @@ A partir daí o controlador confia exatamente nesse certificado. Quando o site r
 
 O controlador lê isso no site com sua chave de frota e mostra a resposta como o site a deu. Só trafegam descrições: nomes, tamanhos, rótulos, estágios, caminhos e revisões. Para baixar um arquivo, use o próprio site.
 
+## Configurações de um site {#site-settings}
+
+[[ui:fleetSettings]] na linha de um site abre suas configurações abaixo da lista; [[ui:fleetThisSettings]] abre o mesmo cartão para este site. O cartão tem três partes:
+
+- **[[ui:fleetQueueSettings]]**: quantos downloads correm ao mesmo tempo, lugares reservados para pessoas, a estratégia, os pesos das classes e os demais valores da fila do [controle de tráfego](../reference/environment#transfers-and-bandwidth). Um campo vazio mantém o valor do ambiente do site, mostrado em cinza. [[ui:fleetQueueSave]] aplica os valores na hora, sem reiniciar: novas decisões os seguem e downloads ativos mantêm seus lugares. [[ui:fleetQueueReset]] volta ao ambiente.
+- **[[ui:updates]]**: a versão instalada e a mais recente, a instalação automática e a hora de manutenção, [[ui:updateCheck]] e [[ui:updateInstall]]. O atualizador do site pega uma solicitação em até um minuto; até lá o cartão a mostra como aceita.
+- **[[ui:fleetAgent]]**: os espelhos e importações do site com [[ui:fleetMirrorKeySave]] e [[ui:fleetMirrorDetach]], [[ui:fleetMirrorAttach]] com a chave de origem e, num cluster HA, [[ui:fleetSwitchover]] para um nó com cópia completa (nome do nó digitado duas vezes) e a decisão de uma cópia. O agente do site aplica cada solicitação em até um minuto com as verificações e a reversão de `arkvory configure` e `cluster-*`; [[ui:fleetRequests]] mostra como cada uma terminou. A chave de origem vai ao agente uma vez, num arquivo próprio, e nunca mais é mostrada. O agente é o atualizador do site: conecte-o com `updates-connect`.
+
+Cada alteração leva a revisão de onde partiu. Se alguém alterou as configurações nesse meio-tempo, o site recusa a alteração e o cartão mostra os valores atuais: confira e salve de novo. O site registra quem alterou sua fila: a chave do controlador e o nome do administrador dele.
+
+A partir do controlador, um espelho ou uma importação só é conectado como repositório novo, e o certificado da autoridade de uma origem é definido no próprio site (`arkvory configure --mirror-ca-file`): aquilo em que um site confia nunca muda remotamente. A lista de solicitações mostra com um código como cada alteração terminou; as palavras do próprio agente ficam no log dele no site. Se uma alteração foi interrompida no meio, o agente não pega outra até que um administrador do site a verifique e execute lá `arkvory changes-reset --root <raiz>`.
+
 ## Quem gerencia este site {#managed-by}
 
 Em [[ui:fleetThisSite]], cada site lista os controladores que o gerenciam: nome, quem os pareou, quando e a última solicitação. [[ui:fleetRevoke]] recusa a chave do controlador na hora.
 
 ## Configurações {#settings}
 
-| Variável                 | Padrão                            | Significado                                                                                         |
-| ------------------------ | --------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `ARKVORY_SITE_NAME`      | o nome do host                    | Como esta instalação se chama em outros sites                                                       |
-| `ARKVORY_FLEET_KEY_FILE` | `fleet.key` no diretório de dados | A chave que sela as chaves dos sites gerenciados; criada no primeiro início do processo de gravação |
+| Variável                  | Padrão                            | Significado                                                                                                                                                                                         |
+| ------------------------- | --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ARKVORY_SITE_NAME`       | o nome do host                    | Como esta instalação se chama em outros sites                                                                                                                                                       |
+| `ARKVORY_FLEET_KEY_FILE`  | `fleet.key` no diretório de dados | A chave que sela as chaves dos sites gerenciados; criada no primeiro início do processo de gravação                                                                                                 |
+| `ARKVORY_SITE_URL`        | não definida                      | O endereço `https://host[:port]` pelo qual outros sites chegam a esta instalação. Com ele, espelhos cuja origem é esta instalação ligam a ela em [[ui:fleetMap]]. Um valor inválido impede o início |
+| `ARKVORY_FLEET_LAG_ALERT` | `1000`                            | Alterações de atraso em relação à origem a partir das quais um espelho de um site gerenciado gera alerta; número inteiro, 1 ou mais                                                                 |
 
 ## Limites {#limits}
 
-- A página mostra o estado dos sites. Espelhos, atualizações, a fila de downloads e a HA são configurados em cada site, no seu console ou com `arkvory configure`; alterá-los a partir do controlador vem a seguir.
+- Testes de isolamento e a adição ou remoção de nós do cluster continuam sendo comandos locais nos nós. Gateways de leitura mantêm a fila de downloads do seu ambiente.
 - Um controlador gerencia até 256 sites e lê no máximo oito ao mesmo tempo.
 - O controlador guarda uma chave de cada site que gerencia: proteja os administradores globais e o diretório de dados dele com o mesmo cuidado que os próprios sites.

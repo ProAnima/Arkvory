@@ -114,6 +114,10 @@ scrape_configs:
 | `arkvory_build_info`                                                                               | `service`, `version`                                       | हमेशा 1                                                                                                                                      |
 | `arkvory_process_start_time_seconds`, `arkvory_process_resident_memory_bytes`                      |                                                            | शुरुआत का समय और रेज़िडेंट मेमोरी                                                                                                            |
 | `arkvory_database_pool_connections`, `arkvory_database_pool_idle`, `arkvory_database_pool_waiting` | `pool` (`queries`, `sessions`, `locks`)                    | डेटाबेस पूल कनेक्शन: खुले, खाली और प्रतीक्षारत; प्रतीक्षा लंबे समय तक शून्य से अधिक हो तो पूल छोटा है                                        |
+| `arkvory_fleet_site_up`                                                                            | `site`, `name`                                             | नियंत्रक पर: प्रबंधित साइट ने पिछली बार पढ़ने पर उत्तर दिया तो 1, अन्यथा 0                                                                   |
+| `arkvory_fleet_site_last_seen_timestamp_seconds`                                                   | `site`, `name`                                             | नियंत्रक पर: प्रबंधित साइट ने आख़िरी बार कब उत्तर दिया                                                                                       |
+| `arkvory_fleet_mirror_lag_changes`                                                                 | `site`, `repository`                                       | नियंत्रक पर: प्रबंधित साइट का मिरर अपने स्रोत से कितने बदलाव पीछे है                                                                         |
+| `arkvory_fleet_alerts`                                                                             | `severity`, `kind`                                         | नियंत्रक पर: [साइटें](./sites#alerts) पेज के अलर्ट, यह इंस्टॉलेशन शामिल                                                                      |
 
 डेटाबेस-आधारित मेट्रिक्स (कंप्लीशन, बैकअप, मिरर) अधिकतम हर 5 सेकंड में पढ़े जाते हैं। जब कोई पढ़ाई विफल होती है, तो सर्वर पुराने मान दिखाने के बजाय इन मेट्रिक्स को छोड़ देता है, और `arkvory_metrics_collection_failures_total` बढ़ जाता है।
 
@@ -242,23 +246,26 @@ Select-String -Path "$root\logs\*.log" -Pattern 'REQUEST_ID'
 
 रिलीज़ में `releases/<version>/deploy/monitoring/arkvory-alerts.yml` में तैयार Prometheus नियम हैं। फ़ाइल को `prometheus.yml` में `rule_files` में जोड़ें। सीमाएँ शुरुआती बिंदु हैं। उन्हें अपने मापे गए ट्रैफ़िक के अनुसार समायोजित करें।
 
-| अलर्ट                                                           | शर्त                                                                        | गंभीरता           |
-| --------------------------------------------------------------- | --------------------------------------------------------------------------- | ----------------- |
-| `ArkvoryDown`                                                   | स्क्रेप 2 मिनट तक विफल रहता है                                              | Critical          |
-| `ArkvoryHighServerErrorRate`                                    | 10 मिनट तक 5 % से अधिक उत्तर 5xx हैं                                        | Warning           |
-| `ArkvorySlowMetadataRequests`                                   | 15 मिनट तक कंट्रोल अनुरोधों का 99वाँ पर्सेंटाइल 2 s से ऊपर है               | Warning           |
-| `ArkvoryCompletionBacklog`                                      | सबसे पुराना कतारबद्ध कंप्लीशन जॉब 10 मिनट से अधिक प्रतीक्षा करता है         | Warning           |
-| `ArkvoryTransferAdmissionRejections`                            | 15 मिनट तक प्रति सेकंड 0.1 से अधिक अस्वीकृत या टाइमआउट ट्रांसफ़र            | Warning           |
-| `ArkvoryDiagnosticsDropped`                                     | पिछले 15 मिनटों में लॉग पंक्तियाँ छोड़ी गईं                                 | Warning           |
-| `ArkvoryMetricsCollectionFailing`                               | कोई डेटाबेस-आधारित मेट्रिक पढ़ी नहीं जा सकी                                 | Warning           |
-| `ArkvoryTlsCertificateExpiring`, `ArkvoryTlsCertificateExpired` | अंतर्निहित प्रमाणपत्र 14 दिनों से कम में समाप्त हो रहा है, या समाप्त हो गया | Warning, critical |
-| `ArkvoryBackupStale`                                            | सबसे नया बिंदु 26 घंटे से पुराना है                                         | Critical          |
-| `ArkvoryBackupAgentOffline`                                     | 2 मिनट से अधिक समय तक कोई हार्टबीट नहीं, 5 मिनट तक                          | Critical          |
-| `ArkvoryBackupWarning`                                          | 10 मिनट तक `vault_unavailable` या `verify_failed`                           | Critical          |
-| `ArkvoryMirrorStale`                                            | कोई मिरर एक घंटे से अपने स्रोत के साथ कैच-अप नहीं कर पाया                   | Warning           |
-| `ArkvoryMirrorFailing`                                          | किसी मिरर का अंतिम सिंक्रनाइज़ेशन 15 मिनट तक विफल रहा                       | Warning           |
-| `ArkvoryRestartLoop`                                            | API प्रोसेस 30 मिनट में 3 या अधिक बार रीस्टार्ट हुआ                         | Warning           |
-| `ArkvoryWebhookFailing`                                         | वेबहुक डिलीवरी 15 मिनट से विफल हो रही है                                    | Warning           |
+| अलर्ट                                                           | शर्त                                                                           | गंभीरता           |
+| --------------------------------------------------------------- | ------------------------------------------------------------------------------ | ----------------- |
+| `ArkvoryDown`                                                   | स्क्रेप 2 मिनट तक विफल रहता है                                                 | Critical          |
+| `ArkvoryHighServerErrorRate`                                    | 10 मिनट तक 5 % से अधिक उत्तर 5xx हैं                                           | Warning           |
+| `ArkvorySlowMetadataRequests`                                   | 15 मिनट तक कंट्रोल अनुरोधों का 99वाँ पर्सेंटाइल 2 s से ऊपर है                  | Warning           |
+| `ArkvoryCompletionBacklog`                                      | सबसे पुराना कतारबद्ध कंप्लीशन जॉब 10 मिनट से अधिक प्रतीक्षा करता है            | Warning           |
+| `ArkvoryTransferAdmissionRejections`                            | 15 मिनट तक प्रति सेकंड 0.1 से अधिक अस्वीकृत या टाइमआउट ट्रांसफ़र               | Warning           |
+| `ArkvoryDiagnosticsDropped`                                     | पिछले 15 मिनटों में लॉग पंक्तियाँ छोड़ी गईं                                    | Warning           |
+| `ArkvoryMetricsCollectionFailing`                               | कोई डेटाबेस-आधारित मेट्रिक पढ़ी नहीं जा सकी                                    | Warning           |
+| `ArkvoryTlsCertificateExpiring`, `ArkvoryTlsCertificateExpired` | अंतर्निहित प्रमाणपत्र 14 दिनों से कम में समाप्त हो रहा है, या समाप्त हो गया    | Warning, critical |
+| `ArkvoryBackupStale`                                            | सबसे नया बिंदु 26 घंटे से पुराना है                                            | Critical          |
+| `ArkvoryBackupAgentOffline`                                     | 2 मिनट से अधिक समय तक कोई हार्टबीट नहीं, 5 मिनट तक                             | Critical          |
+| `ArkvoryBackupWarning`                                          | 10 मिनट तक `vault_unavailable` या `verify_failed`                              | Critical          |
+| `ArkvoryMirrorStale`                                            | कोई मिरर एक घंटे से अपने स्रोत के साथ कैच-अप नहीं कर पाया                      | Warning           |
+| `ArkvoryMirrorFailing`                                          | किसी मिरर का अंतिम सिंक्रनाइज़ेशन 15 मिनट तक विफल रहा                          | Warning           |
+| `ArkvoryRestartLoop`                                            | API प्रोसेस 30 मिनट में 3 या अधिक बार रीस्टार्ट हुआ                            | Warning           |
+| `ArkvoryWebhookFailing`                                         | वेबहुक डिलीवरी 15 मिनट से विफल हो रही है                                       | Warning           |
+| `ArkvoryFleetSiteDown`                                          | कोई प्रबंधित साइट 5 मिनट तक नियंत्रक को उत्तर नहीं देती                        | Critical          |
+| `ArkvoryFleetMirrorBehind`                                      | किसी प्रबंधित साइट का मिरर 30 मिनट तक अपने स्रोत से 1000 या अधिक बदलाव पीछे है | Warning           |
+| `ArkvoryFleetCritical`                                          | नियंत्रक का साइटें पेज 5 मिनट तक गंभीर अलर्ट दिखाता है                         | Critical          |
 
 ये अलर्ट स्वयं जोड़ें, क्योंकि Arkvory वह डेटा एक्सपोर्ट नहीं करता:
 

@@ -1047,6 +1047,54 @@
       },
       "summary": "Leer el catálogo de un sitio",
       "description": "Pasa una lectura del catálogo a un sitio gestionado y devuelve su respuesta sin cambios: repositorios, búsqueda, artefactos, anotaciones, etapas, paquetes, páginas e historial de archivos, uso de almacenamiento, estado del espejo. `path` es la ruta del sitio con su consulta. Otras rutas y los bytes de archivos se rechazan con 400."
+    },
+    "changeFleetSite": {
+      "en": {
+        "summary": "Change a setting of a site",
+        "description": "Passes one change to a managed site and returns its answer unchanged. `path` is one of: `/api/v1/system/downloads/settings` (download queue settings, sent as PUT) or `/api/v1/system/updates/requests` (an update request, sent as POST). The body goes to the site as it is; the site checks the revision or request id, so a repeated change does not apply twice. Other paths are refused with 400."
+      },
+      "summary": "Cambiar un ajuste de un sitio",
+      "description": "Pasa un cambio a un sitio gestionado y devuelve su respuesta sin cambios. `path` es una de estas rutas: `/api/v1/system/downloads/settings` (ajustes de la cola de descargas, enviado como PUT) o `/api/v1/system/updates/requests` (una solicitud de actualización, enviada como POST). El cuerpo llega al sitio tal cual; el sitio comprueba la revisión o el id de la solicitud, así que un cambio repetido no se aplica dos veces. Otras rutas se rechazan con 400."
+    },
+    "getDownloadSettings": {
+      "en": {
+        "summary": "Read download queue settings",
+        "description": "Returns the changed values (`overrides`), what the environment of the server sets (`defaults`) and what the queue uses now (`effective`), with the revision to pass back when changing. `problem` names why saved settings do not fit this server; the queue then runs on the defaults."
+      },
+      "summary": "Leer los ajustes de la cola de descargas",
+      "description": "Devuelve los valores cambiados (`overrides`), lo que fija el entorno del servidor (`defaults`) y lo que usa la cola ahora (`effective`), con la revisión que hay que enviar al cambiar. `problem` indica por qué los ajustes guardados no encajan en este servidor; entonces la cola funciona con los valores por defecto."
+    },
+    "changeDownloadSettings": {
+      "en": {
+        "summary": "Change download queue settings",
+        "description": "Saves `overrides` over the environment of the server and applies them without a restart: new decisions follow them at once, active downloads keep their places. The values given replace all earlier changes; `{}` returns to the environment. Settings that cannot run here are refused with 400 naming the field; a stale `expectedRevision` gets 409. Read gateways keep their environment."
+      },
+      "summary": "Cambiar los ajustes de la cola de descargas",
+      "description": "Guarda `overrides` sobre el entorno del servidor y los aplica sin reiniciar: las nuevas decisiones los siguen de inmediato y las descargas activas conservan su lugar. Los valores enviados reemplazan todos los cambios anteriores; `{}` vuelve al entorno. Los ajustes que no pueden funcionar aquí se rechazan con 400 indicando el campo; una `expectedRevision` desactualizada recibe 409. Las pasarelas de lectura conservan su entorno."
+    },
+    "getSiteChanges": {
+      "en": {
+        "summary": "Read site changes",
+        "description": "Returns whether the site’s agent reports in (`agent`), the pending request and the 20 newest with their state: `pending`, `applying`, `done` or `failed` with a reason. Source keys never appear here."
+      },
+      "summary": "Leer los cambios del sitio",
+      "description": "Devuelve si el agente del sitio responde (`agent`), la solicitud pendiente y las 20 más recientes con su estado: `pending`, `applying`, `done` o `failed` con el motivo. Las claves de origen nunca aparecen aquí."
+    },
+    "requestSiteChange": {
+      "en": {
+        "summary": "Queue a site change",
+        "description": "Queues one change for the site’s agent, which applies it within a minute with the checks and rollback of `arkvory configure` and `cluster-*`: attach a mirror or an import, replace its source key, detach mirrors, switch the active HA node (the node name typed twice) or decide single-copy writes. `id` is chosen by the client; repeating it does not queue the change again. `key` is the source key of `mirror-attach` and `mirror-key` only: it goes to the agent in its own 0600 file and is never returned. 202 means queued, not applied."
+      },
+      "summary": "Poner en cola un cambio del sitio",
+      "description": "Pone en cola un cambio para el agente del sitio, que lo aplica en menos de un minuto con las comprobaciones y la reversión de `arkvory configure` y `cluster-*`: conectar un espejo o una importación, sustituir su clave de origen, desconectar espejos, cambiar el nodo HA activo (el nombre del nodo se escribe dos veces) o decidir escrituras con una copia. `id` lo elige el cliente; repetirlo no vuelve a poner el cambio en cola. `key` es la clave de origen solo de `mirror-attach` y `mirror-key`: llega al agente en su propio archivo 0600 y nunca se devuelve. 202 significa en cola, no aplicado."
+    },
+    "getFleetOverview": {
+      "en": {
+        "summary": "Read the fleet overview",
+        "description": "Alerts across the managed sites and this installation, most severe first (`critical`, `warning`, `info`), and the mirror links between them. Built from the last background reads, at most once per 5 seconds. A source no managed site answers at is `external:<origin>`; this installation is `self` and meets the links to it only when `ARKVORY_SITE_URL` is set. Answered by the writer only."
+      },
+      "summary": "Leer el resumen de los sitios",
+      "description": "Alertas de los sitios gestionados y de esta instalación, las más graves primero (`critical`, `warning`, `info`), y los vínculos de espejo entre ellos. Se construye con las últimas lecturas en segundo plano, como mucho una vez cada 5 segundos. Un origen en cuya dirección no responde ningún sitio gestionado es `external:<origin>`; esta instalación es `self` y los vínculos hacia ella solo aparecen con `ARKVORY_SITE_URL` definido. Solo responde el proceso de escritura."
     }
   },
   "errors": {

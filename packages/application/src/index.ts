@@ -43,3 +43,4 @@ export * from './git-lfs.js';
 export * from './npm-registry.js';
 export type { ReplicaState } from './replica.js';
 export * from './fleet-control.js';
+export * from './download-settings.js';

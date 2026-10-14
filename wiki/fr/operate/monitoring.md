@@ -114,6 +114,10 @@ Les valeurs appartiennent au processus et repartent de zéro après un redémarr
 | `arkvory_build_info`                                                                               | `service`, `version`                                       | Toujours 1                                                                                                                                                                          |
 | `arkvory_process_start_time_seconds`, `arkvory_process_resident_memory_bytes`                      |                                                            | Heure de démarrage et mémoire résidente                                                                                                                                             |
 | `arkvory_database_pool_connections`, `arkvory_database_pool_idle`, `arkvory_database_pool_waiting` | `pool` (`queries`, `sessions`, `locks`)                    | Connexions des pools de la base de données : ouvertes, libres et en attente ; une attente durable signifie que le pool est trop petit                                               |
+| `arkvory_fleet_site_up`                                                                            | `site`, `name`                                             | Sur un contrôleur : 1 si la dernière lecture du site géré a obtenu une réponse, 0 sinon                                                                                             |
+| `arkvory_fleet_site_last_seen_timestamp_seconds`                                                   | `site`, `name`                                             | Sur un contrôleur : dernière réponse du site géré                                                                                                                                   |
+| `arkvory_fleet_mirror_lag_changes`                                                                 | `site`, `repository`                                       | Sur un contrôleur : retard, en changements, d’un miroir d’un site géré sur sa source                                                                                                |
+| `arkvory_fleet_alerts`                                                                             | `severity`, `kind`                                         | Sur un contrôleur : alertes de la page [Sites](./sites#alerts), cette installation comprise                                                                                         |
 
 Les métriques adossées à la base de données (finalisation, sauvegarde, miroir) sont lues au plus toutes les 5 secondes. Lorsqu’une lecture échoue, le serveur omet ces métriques au lieu d’afficher d’anciennes valeurs, et `arkvory_metrics_collection_failures_total` augmente.
 
@@ -242,23 +246,26 @@ La métrique `arkvory_backup_warnings` porte les mêmes codes. L’âge d’une 
 
 La version contient des règles Prometheus prêtes dans `releases/<version>/deploy/monitoring/arkvory-alerts.yml`. Ajoutez le fichier à `rule_files` dans `prometheus.yml`. Les seuils sont des points de départ. Ajustez-les selon le trafic que vous mesurez.
 
-| Alerte                                                          | Condition                                                                | Gravité                 |
-| --------------------------------------------------------------- | ------------------------------------------------------------------------ | ----------------------- |
-| `ArkvoryDown`                                                   | Le scrape échoue pendant 2 minutes                                       | Critique                |
-| `ArkvoryHighServerErrorRate`                                    | Plus de 5 % des réponses sont des 5xx pendant 10 minutes                 | Avertissement           |
-| `ArkvorySlowMetadataRequests`                                   | Le 99e centile des requêtes de gestion dépasse 2 s pendant 15 minutes    | Avertissement           |
-| `ArkvoryCompletionBacklog`                                      | La plus ancienne tâche de finalisation en file attend plus de 10 minutes | Avertissement           |
-| `ArkvoryTransferAdmissionRejections`                            | Plus de 0,1 transfert refusé ou expiré par seconde pendant 15 minutes    | Avertissement           |
-| `ArkvoryDiagnosticsDropped`                                     | Des lignes de journal ont été écartées dans les 15 dernières minutes     | Avertissement           |
-| `ArkvoryMetricsCollectionFailing`                               | Une métrique adossée à la base de données n’a pas pu être lue            | Avertissement           |
-| `ArkvoryTlsCertificateExpiring`, `ArkvoryTlsCertificateExpired` | Le certificat intégré expire dans moins de 14 jours, ou a expiré         | Avertissement, critique |
-| `ArkvoryBackupStale`                                            | Le point le plus récent date de plus de 26 heures                        | Critique                |
-| `ArkvoryBackupAgentOffline`                                     | Aucun battement de cœur pendant plus de 2 minutes, pendant 5 minutes     | Critique                |
-| `ArkvoryBackupWarning`                                          | `vault_unavailable` ou `verify_failed` pendant 10 minutes                | Critique                |
-| `ArkvoryMirrorStale`                                            | Un miroir n’a pas rattrapé sa source pendant une heure                   | Avertissement           |
-| `ArkvoryMirrorFailing`                                          | La dernière synchronisation d’un miroir a échoué, pendant 15 minutes     | Avertissement           |
-| `ArkvoryRestartLoop`                                            | Le processus de l'API a redémarré 3 fois ou plus en 30 minutes           | Avertissement           |
-| `ArkvoryWebhookFailing`                                         | Une livraison de webhook échoue depuis 15 minutes                        | Avertissement           |
+| Alerte                                                          | Condition                                                                                      | Gravité                 |
+| --------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- | ----------------------- |
+| `ArkvoryDown`                                                   | Le scrape échoue pendant 2 minutes                                                             | Critique                |
+| `ArkvoryHighServerErrorRate`                                    | Plus de 5 % des réponses sont des 5xx pendant 10 minutes                                       | Avertissement           |
+| `ArkvorySlowMetadataRequests`                                   | Le 99e centile des requêtes de gestion dépasse 2 s pendant 15 minutes                          | Avertissement           |
+| `ArkvoryCompletionBacklog`                                      | La plus ancienne tâche de finalisation en file attend plus de 10 minutes                       | Avertissement           |
+| `ArkvoryTransferAdmissionRejections`                            | Plus de 0,1 transfert refusé ou expiré par seconde pendant 15 minutes                          | Avertissement           |
+| `ArkvoryDiagnosticsDropped`                                     | Des lignes de journal ont été écartées dans les 15 dernières minutes                           | Avertissement           |
+| `ArkvoryMetricsCollectionFailing`                               | Une métrique adossée à la base de données n’a pas pu être lue                                  | Avertissement           |
+| `ArkvoryTlsCertificateExpiring`, `ArkvoryTlsCertificateExpired` | Le certificat intégré expire dans moins de 14 jours, ou a expiré                               | Avertissement, critique |
+| `ArkvoryBackupStale`                                            | Le point le plus récent date de plus de 26 heures                                              | Critique                |
+| `ArkvoryBackupAgentOffline`                                     | Aucun battement de cœur pendant plus de 2 minutes, pendant 5 minutes                           | Critique                |
+| `ArkvoryBackupWarning`                                          | `vault_unavailable` ou `verify_failed` pendant 10 minutes                                      | Critique                |
+| `ArkvoryMirrorStale`                                            | Un miroir n’a pas rattrapé sa source pendant une heure                                         | Avertissement           |
+| `ArkvoryMirrorFailing`                                          | La dernière synchronisation d’un miroir a échoué, pendant 15 minutes                           | Avertissement           |
+| `ArkvoryRestartLoop`                                            | Le processus de l'API a redémarré 3 fois ou plus en 30 minutes                                 | Avertissement           |
+| `ArkvoryWebhookFailing`                                         | Une livraison de webhook échoue depuis 15 minutes                                              | Avertissement           |
+| `ArkvoryFleetSiteDown`                                          | Un site géré ne répond pas au contrôleur pendant 5 minutes                                     | Critique                |
+| `ArkvoryFleetMirrorBehind`                                      | Un miroir d’un site géré a 1000 changements de retard ou plus sur sa source pendant 30 minutes | Avertissement           |
+| `ArkvoryFleetCritical`                                          | La page Sites du contrôleur affiche des alertes critiques pendant 5 minutes                    | Critique                |
 
 Ajoutez vous-même ces alertes, car Arkvory n’exporte pas les données :
 

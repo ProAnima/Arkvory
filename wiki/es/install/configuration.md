@@ -44,16 +44,16 @@ Todos los comandos necesitan derechos de administrador y la opción `--root` con
 
 `arkvory help` lista los comandos sin necesidad de derechos especiales. Los ejemplos de este sitio usan la forma corta `arkvory <command>`.
 
-| Comando                         | Uso                                                                                                                                                              |
-| ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `status`                        | Muestra el modo de instalación, el motor, el ajuste de actualización automática, la fijación de versión y la versión instalada                                   |
-| `configure`                     | Cambia una política. Consulte [El comando configure](#configure-command)                                                                                         |
-| `update`                        | Instala ahora una versión estable más reciente. Consulte [Actualizaciones](./updates)                                                                            |
-| `upgrade`                       | Instala una versión que cambia el esquema de la base de datos con un registro de copia de seguridad propio. Consulte [Actualizaciones](./updates#manual-upgrade) |
-| `recover`                       | Termina una actualización interrumpida. Consulte [Actualizaciones](./updates#recover-update)                                                                     |
-| `finish-install`                | Continúa una primera instalación interrumpida                                                                                                                    |
-| `updates-connect`               | Conecta la consola y el temporizador de actualizaciones, y registra los servicios que le faltan a una instalación antigua                                        |
-| `updates-poll`, `updates-reset` | Los ejecuta el temporizador de actualizaciones y sirven para la recuperación. Consulte [Actualizaciones](./updates#recover-update)                               |
+| Comando                                          | Uso                                                                                                                                                              |
+| ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `status`                                         | Muestra el modo de instalación, el motor, el ajuste de actualización automática, la fijación de versión y la versión instalada                                   |
+| `configure`                                      | Cambia una política. Consulte [El comando configure](#configure-command)                                                                                         |
+| `update`                                         | Instala ahora una versión estable más reciente. Consulte [Actualizaciones](./updates)                                                                            |
+| `upgrade`                                        | Instala una versión que cambia el esquema de la base de datos con un registro de copia de seguridad propio. Consulte [Actualizaciones](./updates#manual-upgrade) |
+| `recover`                                        | Termina una actualización interrumpida. Consulte [Actualizaciones](./updates#recover-update)                                                                     |
+| `finish-install`                                 | Continúa una primera instalación interrumpida                                                                                                                    |
+| `updates-connect`                                | Conecta la consola y el temporizador de actualizaciones, y registra los servicios que le faltan a una instalación antigua                                        |
+| `updates-poll`, `updates-reset`, `changes-reset` | Los ejecuta el temporizador de actualizaciones y sirven para la recuperación. Consulte [Actualizaciones](./updates#recover-update)                               |
 
 Solo se ejecuta un comando a la vez. Un segundo comando se detiene con `Installation is locked`. Nunca ponga una clave ni una contraseña en una opción de comando: use archivos.
 
@@ -139,6 +139,8 @@ Los límites pertenecen a un proceso de la API. Una tasa de `0` significa sin l�
 | `ARKVORY_UPLOAD_IDLE_TIMEOUT_MS`      | `30000`              | Una solicitud de subida que no envía datos durante este tiempo se detiene                                      |
 
 Un proxy delante de la API debe permitir una solicitud al menos tan larga como `ARKVORY_UPLOAD_DEADLINE_MS`. Consulte [HTTPS](./https#reverse-proxy). Todos los demás límites, como la cola de espera y las tasas por cuenta, están en [Variables de entorno](../reference/environment#transfers-and-bandwidth).
+
+Los valores de la cola de descargas (estrategia, descargas simultáneas, reserva, pesos y los demás) también se pueden cambiar sin reiniciar: [[ui:fleet]] → [[ui:fleetThisSettings]], o `PUT /api/v1/system/downloads/settings`. Los valores guardados prevalecen sobre estas variables en el proceso de escritura; vea [Sitios](../operate/sites#site-settings).
 
 ### Copias de seguridad y espejos {#backups-mirrors}
 

@@ -4198,5 +4198,481 @@
   "fleetNoRepositories": {
     "en": "The site has no repositories.",
     "text": "사이트에 저장소가 없습니다."
+  },
+  "fleetSettings": {
+    "en": "Settings",
+    "text": "설정"
+  },
+  "fleetSettingsOf": {
+    "en": "Settings: {name}",
+    "text": "설정: {name}"
+  },
+  "fleetThisSettings": {
+    "en": "Settings of this site",
+    "text": "이 사이트의 설정"
+  },
+  "fleetQueueSettings": {
+    "en": "Download queue",
+    "text": "다운로드 대기열"
+  },
+  "fleetQueueHint": {
+    "en": "An empty field keeps the value of the server’s environment, shown in grey. Saved settings apply at once, without a restart; active downloads keep their places. Read gateways keep their environment.",
+    "text": "빈 필드는 서버 환경의 값을 유지하며 회색으로 표시됩니다. 저장한 설정은 재시작 없이 즉시 적용되며, 진행 중인 다운로드는 자리를 유지합니다. 읽기 게이트웨이는 자신의 환경을 유지합니다."
+  },
+  "fleetStrategy": {
+    "en": "Strategy",
+    "text": "전략"
+  },
+  "fleetStrategyOrdered": {
+    "en": "In order of arrival",
+    "text": "도착 순서대로"
+  },
+  "fleetStrategySmallest": {
+    "en": "Smallest first",
+    "text": "작은 파일 먼저"
+  },
+  "fleetStrategyShared": {
+    "en": "Shared, without a queue",
+    "text": "공유, 대기열 없음"
+  },
+  "fleetDefault": {
+    "en": "Default: {value}",
+    "text": "기본값: {value}"
+  },
+  "fleetSessions": {
+    "en": "Downloads at once",
+    "text": "동시 다운로드"
+  },
+  "fleetReserve": {
+    "en": "Places kept for people",
+    "text": "사람을 위해 남겨 둔 자리"
+  },
+  "fleetPerPrincipal": {
+    "en": "Downloads at once per client",
+    "text": "클라이언트당 동시 다운로드"
+  },
+  "fleetIdle": {
+    "en": "Pause that frees a place, s",
+    "text": "자리를 비우는 일시 정지, 초"
+  },
+  "fleetAging": {
+    "en": "Wait that raises a class, min (0: off)",
+    "text": "등급을 올리는 대기, 분 (0: 끔)"
+  },
+  "fleetRanges": {
+    "en": "Parallel ranges per download",
+    "text": "다운로드당 병렬 범위"
+  },
+  "fleetSessionMin": {
+    "en": "Queue files from, MiB",
+    "text": "이 크기부터 대기열에 넣기, MiB"
+  },
+  "fleetPreempt": {
+    "en": "Ask downloads to yield to a higher class",
+    "text": "다운로드에 더 높은 등급에 양보하도록 요청"
+  },
+  "fleetPreemptOn": {
+    "en": "Yes",
+    "text": "예"
+  },
+  "fleetPreemptOff": {
+    "en": "No",
+    "text": "아니요"
+  },
+  "fleetWeights": {
+    "en": "Weights of classes",
+    "text": "등급별 가중치"
+  },
+  "fleetWeightInteractive": {
+    "en": "People",
+    "text": "사람"
+  },
+  "fleetWeightRelease": {
+    "en": "Releases",
+    "text": "릴리스"
+  },
+  "fleetWeightBulk": {
+    "en": "Bulk",
+    "text": "대량"
+  },
+  "fleetWeightBackground": {
+    "en": "Background",
+    "text": "백그라운드"
+  },
+  "fleetQueueSave": {
+    "en": "Save queue settings",
+    "text": "대기열 설정 저장"
+  },
+  "fleetQueueReset": {
+    "en": "Back to defaults",
+    "text": "기본값으로 되돌리기"
+  },
+  "fleetQueueSaved": {
+    "en": "Saved. The queue works with the new settings now.",
+    "text": "저장되었습니다. 대기열이 이제 새 설정으로 동작합니다."
+  },
+  "fleetQueueChanged": {
+    "en": "Changed by {who}",
+    "text": "변경한 사람: {who}"
+  },
+  "fleetQueueProblem": {
+    "en": "Saved settings do not fit this server and are not used: {problem}",
+    "text": "저장된 설정이 이 서버에 맞지 않아 사용되지 않습니다: {problem}"
+  },
+  "fleetQueueConflict": {
+    "en": "Someone changed the settings meanwhile. The form shows them now: check and save again.",
+    "text": "그동안 누군가 설정을 변경했습니다. 양식에 현재 설정이 표시됩니다. 확인 후 다시 저장하세요."
+  },
+  "fleetQueueInvalid": {
+    "en": "Every number must be whole. Correct the marked fields and save again.",
+    "text": "모든 숫자는 정수여야 합니다. 표시된 필드를 고치고 다시 저장하세요."
+  },
+  "fleetQueuePerRequest": {
+    "en": "The strategy is shared: downloads are admitted one request at a time by the limits of the environment, and the session settings below wait unused until another strategy is chosen.",
+    "text": "전략이 공유입니다: 다운로드는 환경의 한도 안에서 요청 단위로 허용되며, 아래 세션 설정은 다른 전략을 선택할 때까지 사용되지 않습니다."
+  },
+  "fleetAgent": {
+    "en": "Mirrors and cluster",
+    "text": "미러와 클러스터"
+  },
+  "fleetAgentHint": {
+    "en": "These changes are applied by the site’s agent with its own checks and rollback, within a minute; the list below shows how each ended.",
+    "text": "이 변경 사항은 사이트의 에이전트가 자체 검사와 롤백을 거쳐 1분 이내에 적용합니다. 아래 목록에서 각 변경의 결과를 볼 수 있습니다."
+  },
+  "fleetAgentMissing": {
+    "en": "The site’s agent does not report in: connect it on the site with updates-connect, or update the site to a release that applies these changes.",
+    "text": "사이트의 에이전트가 응답하지 않습니다. 사이트에서 updates-connect로 연결하거나, 이 변경 사항을 적용하는 릴리스로 사이트를 업데이트하세요."
+  },
+  "fleetMirrorRepository": {
+    "en": "Repository",
+    "text": "저장소"
+  },
+  "fleetMirrorSource": {
+    "en": "Source",
+    "text": "원본"
+  },
+  "fleetMirrorPhase": {
+    "en": "State",
+    "text": "상태"
+  },
+  "fleetMirrorNone": {
+    "en": "The site has no mirrors or imports.",
+    "text": "사이트에 미러나 가져오기가 없습니다."
+  },
+  "fleetMirrorKey": {
+    "en": "Source key",
+    "text": "원본 키"
+  },
+  "fleetMirrorKeySave": {
+    "en": "Replace key",
+    "text": "키 교체"
+  },
+  "fleetMirrorKeyFor": {
+    "en": "New source key for {repository}",
+    "text": "{repository}의 새 원본 키"
+  },
+  "fleetMirrorAttach": {
+    "en": "Attach a mirror or an import",
+    "text": "미러 또는 가져오기 연결"
+  },
+  "fleetMirrorUpstream": {
+    "en": "Source address",
+    "text": "원본 주소"
+  },
+  "fleetMirrorSourceRepository": {
+    "en": "Source repository",
+    "text": "원본 저장소"
+  },
+  "fleetMirrorStages": {
+    "en": "Import stages, comma-separated",
+    "text": "가져올 스테이지(쉼표로 구분)"
+  },
+  "fleetMirrorAttachHint": {
+    "en": "Attaches a new repository. Without stages it mirrors the source read-only; with stages it is an ordinary repository that takes over versions with those stages. The source is checked with the key before anything changes. An authority certificate of a source is set on the site itself.",
+    "text": "새 저장소를 연결합니다. 스테이지가 없으면 원본을 읽기 전용으로 미러링합니다. 스테이지가 있으면 해당 스테이지의 버전을 가져오는 일반 저장소가 됩니다. 변경하기 전에 키로 원본을 확인합니다. 원본의 인증 기관 인증서는 사이트 자체에서 설정합니다."
+  },
+  "fleetMirrorAttachButton": {
+    "en": "Attach",
+    "text": "연결"
+  },
+  "fleetMirrorDetach": {
+    "en": "Detach",
+    "text": "분리"
+  },
+  "fleetMirrorDetachConfirm": {
+    "en": "Detach the mirror {repository}? It becomes an ordinary writable repository and keeps every artifact.",
+    "text": "미러 {repository}를 분리할까요? 쓰기 가능한 일반 저장소가 되며 모든 아티팩트를 유지합니다."
+  },
+  "fleetMirrorImport": {
+    "en": "Import",
+    "text": "가져오기"
+  },
+  "fleetMirrorMirror": {
+    "en": "Mirror",
+    "text": "미러"
+  },
+  "fleetMirrorInvalid": {
+    "en": "Check the fields: an HTTPS address of the source, repository names and up to 16 stages.",
+    "text": "필드를 확인하세요: 원본의 HTTPS 주소, 저장소 이름, 최대 16개의 스테이지."
+  },
+  "fleetCluster": {
+    "en": "HA cluster",
+    "text": "HA 클러스터"
+  },
+  "fleetClusterState": {
+    "en": "Active node: {node}. Copies: {copies} of {required}.",
+    "text": "활성 노드: {node}. 사본: {copies}/{required}."
+  },
+  "fleetSwitchoverNode": {
+    "en": "Move to node",
+    "text": "이동할 노드"
+  },
+  "fleetSwitchoverConfirm": {
+    "en": "Node name again",
+    "text": "노드 이름 다시 입력"
+  },
+  "fleetSwitchover": {
+    "en": "Switch over",
+    "text": "전환"
+  },
+  "fleetSwitchoverTyped": {
+    "en": "Type the name of the target node again to confirm.",
+    "text": "확인하려면 대상 노드 이름을 다시 입력하세요."
+  },
+  "fleetSwitchoverAsk": {
+    "en": "Move Arkvory to {node}? Requests are interrupted for a short time while the node takes over.",
+    "text": "Arkvory를 {node}로 이동할까요? 노드가 넘겨받는 동안 요청이 잠시 중단됩니다."
+  },
+  "fleetSingleUntil": {
+    "en": "One copy until",
+    "text": "복사본 하나 유지 기한"
+  },
+  "fleetSingleReason": {
+    "en": "Reason",
+    "text": "사유"
+  },
+  "fleetSingleOn": {
+    "en": "Accept writes with one copy",
+    "text": "복사본 하나로 쓰기 허용"
+  },
+  "fleetSingleOff": {
+    "en": "Withdraw the decision",
+    "text": "결정 철회"
+  },
+  "fleetSingleInvalid": {
+    "en": "Give a time and a reason.",
+    "text": "시간과 사유를 입력하세요."
+  },
+  "fleetSingleAsk": {
+    "en": "Acknowledge writes with ONE copy until {until}? A second failure in that time loses them.",
+    "text": "{until}까지 쓰기를 복사본 하나만으로 확인할까요? 그동안 두 번째 장애가 나면 해당 쓰기를 잃습니다."
+  },
+  "fleetRequests": {
+    "en": "Requests to the agent",
+    "text": "에이전트에 보낸 요청"
+  },
+  "fleetRequestKind": {
+    "en": "Change",
+    "text": "변경"
+  },
+  "fleetRequestBy": {
+    "en": "Who",
+    "text": "요청자"
+  },
+  "fleetRequestAt": {
+    "en": "When",
+    "text": "시각"
+  },
+  "fleetKindAttach": {
+    "en": "Attach mirror",
+    "text": "미러 연결"
+  },
+  "fleetKindKey": {
+    "en": "Replace key",
+    "text": "키 교체"
+  },
+  "fleetKindDetach": {
+    "en": "Detach mirror",
+    "text": "미러 분리"
+  },
+  "fleetKindSwitchover": {
+    "en": "Switchover",
+    "text": "전환"
+  },
+  "fleetKindSingleCopy": {
+    "en": "Single copy",
+    "text": "단일 복사본"
+  },
+  "fleetChangePending": {
+    "en": "Waiting for the agent",
+    "text": "에이전트 대기 중"
+  },
+  "fleetChangeApplying": {
+    "en": "Applying",
+    "text": "적용 중"
+  },
+  "fleetChangeDone": {
+    "en": "Done",
+    "text": "완료"
+  },
+  "fleetChangeFailed": {
+    "en": "Failed",
+    "text": "실패"
+  },
+  "fleetChangeQueued": {
+    "en": "Queued. The site’s agent applies it within a minute.",
+    "text": "대기열에 추가되었습니다. 사이트의 에이전트가 1분 이내에 적용합니다."
+  },
+  "fleetAgentUpdating": {
+    "en": "The site is installing an update: changes wait until it is done.",
+    "text": "사이트에서 업데이트를 설치하는 중입니다. 완료될 때까지 변경 사항이 대기합니다."
+  },
+  "fleetAgentBlocked": {
+    "en": "A change was interrupted half done on the site. The agent takes no other until an administrator of the site checked it and ran arkvory changes-reset there.",
+    "text": "사이트에서 변경이 도중에 중단되었습니다. 사이트 관리자가 확인하고 그곳에서 arkvory changes-reset을 실행할 때까지 에이전트는 다른 변경을 받지 않습니다."
+  },
+  "fleetSingleOffAsk": {
+    "en": "Withdraw the single-copy decision? While copies are still missing, writes stop until they are back.",
+    "text": "단일 복사본 결정을 철회할까요? 복사본이 아직 부족한 동안에는 복사본이 돌아올 때까지 쓰기가 중지됩니다."
+  },
+  "fleetErrorExpired": {
+    "en": "Expired before the agent took it.",
+    "text": "에이전트가 받기 전에 만료되었습니다."
+  },
+  "fleetErrorInterrupted": {
+    "en": "Interrupted; the site needs checking.",
+    "text": "중단되었습니다. 사이트를 확인해야 합니다."
+  },
+  "fleetErrorKeyMissing": {
+    "en": "The source key did not arrive.",
+    "text": "원본 키가 도착하지 않았습니다."
+  },
+  "fleetErrorNotMirror": {
+    "en": "Not a mirror of this site.",
+    "text": "이 사이트의 미러가 아닙니다."
+  },
+  "fleetErrorAttached": {
+    "en": "Already a mirror or an import: replace its key or detach it first.",
+    "text": "이미 미러 또는 가져오기입니다. 키를 교체하거나 먼저 분리하세요."
+  },
+  "fleetErrorMirror": {
+    "en": "The mirror change failed; the agent restored the previous configuration. Details are in the agent log on the site.",
+    "text": "미러 변경에 실패했습니다. 에이전트가 이전 구성을 복원했습니다. 자세한 내용은 사이트의 에이전트 로그에 있습니다."
+  },
+  "fleetErrorSwitchover": {
+    "en": "The switchover failed. Details are in the agent log on the site.",
+    "text": "전환에 실패했습니다. 자세한 내용은 사이트의 에이전트 로그에 있습니다."
+  },
+  "fleetErrorSingleCopy": {
+    "en": "The single-copy decision failed. Details are in the agent log on the site.",
+    "text": "단일 복사본 결정에 실패했습니다. 자세한 내용은 사이트의 에이전트 로그에 있습니다."
+  },
+  "fleetErrorUnreadable": {
+    "en": "The request could not be read.",
+    "text": "요청을 읽을 수 없습니다."
+  },
+  "fleetOverview": {
+    "en": "State of the cluster",
+    "text": "클러스터 상태"
+  },
+  "fleetAlertsNone": {
+    "en": "Nothing needs attention: every site answers, has its copies and keeps its mirrors up to date.",
+    "text": "주의가 필요한 항목이 없습니다. 모든 사이트가 응답하고, 사본을 갖추고 있으며, 미러가 최신 상태입니다."
+  },
+  "fleetMap": {
+    "en": "Links",
+    "text": "연결"
+  },
+  "fleetMapHint": {
+    "en": "Sources this installation does not manage are shown by their address. If one of them is this installation, set ARKVORY_SITE_URL to the address the sites use for it.",
+    "text": "이 설치가 관리하지 않는 원본은 주소로 표시됩니다. 그중 하나가 이 설치라면 ARKVORY_SITE_URL을 사이트들이 이 설치에 접근하는 주소로 설정하세요."
+  },
+  "fleetLinkFrom": {
+    "en": "Source",
+    "text": "원본"
+  },
+  "fleetLinkTo": {
+    "en": "Site",
+    "text": "사이트"
+  },
+  "fleetLinkBehind": {
+    "en": "Behind",
+    "text": "뒤처짐"
+  },
+  "fleetLinksNone": {
+    "en": "No site mirrors or imports from another.",
+    "text": "다른 사이트를 미러링하거나 가져오는 사이트가 없습니다."
+  },
+  "fleetLinkFailing": {
+    "en": "Failing",
+    "text": "실패 중"
+  },
+  "fleetLagValue": {
+    "en": "{lag} changes",
+    "text": "변경 {lag}건"
+  },
+  "fleetSeverityCritical": {
+    "en": "Critical",
+    "text": "심각"
+  },
+  "fleetSeverityWarning": {
+    "en": "Warning",
+    "text": "경고"
+  },
+  "fleetSeverityInfo": {
+    "en": "Note",
+    "text": "참고"
+  },
+  "fleetAlertUnreachable": {
+    "en": "does not answer.",
+    "text": "에서 응답이 없습니다."
+  },
+  "fleetAlertCertificate": {
+    "en": "presents another certificate: pair it again if it was renewed.",
+    "text": "에서 다른 인증서를 제시합니다. 갱신되었다면 사이트를 다시 페어링하세요."
+  },
+  "fleetAlertRevoked": {
+    "en": "revoked this controller: pair it again with a new code.",
+    "text": "에서 이 컨트롤러를 철회했습니다. 새 코드로 다시 페어링하세요."
+  },
+  "fleetAlertRefused": {
+    "en": "refuses this controller: pair it again with a new code.",
+    "text": "에서 이 컨트롤러를 거부합니다. 새 코드로 다시 페어링하세요."
+  },
+  "fleetAlertInvalid": {
+    "en": "answers in a way this release does not read: update both.",
+    "text": "의 응답을 이 릴리스가 이해하지 못합니다. 둘 다 업데이트하세요."
+  },
+  "fleetAlertStale": {
+    "en": "was not read for over a minute and a half: check the controller’s background reads.",
+    "text": "의 상태를 1분 30초 넘게 읽지 못했습니다. 컨트롤러의 백그라운드 읽기를 확인하세요."
+  },
+  "fleetAlertNotWritable": {
+    "en": "refuses writes: check its database and disk.",
+    "text": "에서 쓰기를 거부합니다. 데이터베이스와 디스크를 확인하세요."
+  },
+  "fleetAlertCopies": {
+    "en": "lacks copies of its data: writes are paused until they are back.",
+    "text": "의 데이터 사본이 부족합니다. 사본이 복구될 때까지 쓰기가 일시 중지됩니다."
+  },
+  "fleetAlertSingleCopy": {
+    "en": "acknowledges writes with one copy by an operator’s decision.",
+    "text": "에서 운영자 결정에 따라 복사본 하나로 쓰기를 확인합니다."
+  },
+  "fleetAlertMirrorFailing": {
+    "en": "mirror {subject} keeps failing.",
+    "text": "의 미러 {subject}에서 실패가 계속됩니다."
+  },
+  "fleetAlertMirrorLag": {
+    "en": "mirror {subject} is far behind its source.",
+    "text": "의 미러 {subject}이(가) 원본보다 크게 뒤처졌습니다."
+  },
+  "fleetAlertUpdatesFailed": {
+    "en": "its updater reports a failure.",
+    "text": "의 업데이터가 실패를 보고합니다."
+  },
+  "fleetAlertVersionSkew": {
+    "en": "runs another version than this controller.",
+    "text": "에서 이 컨트롤러와 다른 버전을 실행합니다."
   }
 }

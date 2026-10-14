@@ -1,4 +1,5 @@
 import { readinessSchema } from './health.js';
+import { fleetOverviewSchema } from './fleet-overview.js';
 
 /** Fleet operations of ADR 0077: [path, method, operationId, access, retry]. */
 export const fleetOperations = [
@@ -14,11 +15,13 @@ export const fleetOperations = [
   ],
   ['/system/fleet/enrollment', 'post', 'enrollFleetController', 'public', 'never-automatic'],
   ['/fleet/sites', 'get', 'listFleetSites', 'administrator', 'read'],
+  ['/fleet/overview', 'get', 'getFleetOverview', 'administrator', 'read'],
   ['/fleet/sites', 'post', 'addFleetSite', 'administrator', 'never-automatic'],
   ['/fleet/sites/probe', 'post', 'probeFleetSite', 'administrator', 'idempotent'],
   ['/fleet/sites/{id}', 'delete', 'removeFleetSite', 'administrator', 'idempotent'],
   ['/fleet/sites/{id}/refresh', 'post', 'refreshFleetSite', 'administrator', 'idempotent'],
   ['/fleet/sites/{id}/read', 'get', 'readFleetSite', 'administrator', 'read'],
+  ['/fleet/sites/{id}/change', 'post', 'changeFleetSite', 'administrator', 'never-automatic'],
 ] as const;
 
 const object = (properties: Record<string, unknown>, optional: readonly string[] = []) => ({
@@ -127,6 +130,18 @@ const idParameter = {
 };
 
 export const fleetPaths = {
+  '/api/v1/fleet/overview': {
+    get: {
+      summary:
+        'Read what needs attention across the managed sites and which site feeds which, from their last reads',
+      responses: {
+        200: {
+          description: 'Alerts, most severe first, and mirror links',
+          content: json(fleetOverviewSchema),
+        },
+      },
+    },
+  },
   '/api/v1/fleet/sites': {
     get: {
       summary: 'List the sites this installation manages, with the state each last reported',
@@ -190,7 +205,7 @@ export const fleetPaths = {
         in: 'query',
         required: true,
         description:
-          'A read route of the site with its query, from the fixed list of catalog metadata routes: repositories, search, artifacts, annotations, stages, packages, file pages and history, storage usage, mirror state. Never file bytes.',
+          'A read route of the site with its query, from a fixed list: catalog metadata (repositories, search, artifacts, annotations, stages, packages, file pages and history, storage usage, mirror state), download queue settings and update state. Never file bytes.',
         schema: { type: 'string', maxLength: 2048, pattern: '^/api/v1/' },
       },
     ],
@@ -200,6 +215,37 @@ export const fleetPaths = {
       responses: {
         200: {
           description: "The site's own answer, unchanged",
+          content: json({ type: 'object', additionalProperties: true }),
+        },
+      },
+    },
+  },
+  '/api/v1/fleet/sites/{id}/change': {
+    parameters: [
+      idParameter,
+      {
+        name: 'path',
+        in: 'query',
+        required: true,
+        description:
+          'A change route of the site, from a fixed list: PUT /api/v1/system/downloads/settings, POST /api/v1/system/updates/requests.',
+        schema: { type: 'string', maxLength: 2048, pattern: '^/api/v1/' },
+      },
+    ],
+    post: {
+      summary:
+        'Change a setting of a managed site through this installation: the body goes to the site, its answer comes back unchanged',
+      requestBody: {
+        required: true,
+        content: json({ type: 'object', additionalProperties: true }),
+      },
+      responses: {
+        200: {
+          description: "The site's own answer to a settings change, unchanged",
+          content: json({ type: 'object', additionalProperties: true }),
+        },
+        202: {
+          description: "The site's own answer to a queued update request, unchanged",
           content: json({ type: 'object', additionalProperties: true }),
         },
       },

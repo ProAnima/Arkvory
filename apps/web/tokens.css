@@ -88,6 +88,7 @@
   --empty-copy-width: 28rem;
   /* A form of a few fields, such as pairing a site: wide enough for a fingerprint. */
   --form-width: 42rem;
+  --fleet-map-height: 28rem;
   --empty-icon-size: 2.5rem;
   --update-dialog-width: 36rem;
   --table-actions-width: 9rem;

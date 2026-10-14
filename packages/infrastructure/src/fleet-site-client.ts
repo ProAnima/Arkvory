@@ -28,8 +28,16 @@ export class HttpFleetSiteClient implements FleetSiteClient {
     const answer = await siteRequest(endpoint, 'POST', '/api/v1/system/fleet/enrollment', {
       body: { code, name: controllerName },
     });
+    // A used or expired code is 401 (revoked); a busy or failing site is not a refused code.
     if (answer.status !== 201)
-      throw new FleetFailure(answer.status === 400 ? 'invalid' : 'revoked', answer.status);
+      throw new FleetFailure(
+        answer.status === 400
+          ? 'invalid'
+          : answer.status === 429 || answer.status >= 500
+            ? 'unreachable'
+            : 'revoked',
+        answer.status,
+      );
     const key = field(answer.body, 'key');
     const site = field(answer.body, 'site');
     const name = field(site, 'name');
@@ -38,7 +46,9 @@ export class HttpFleetSiteClient implements FleetSiteClient {
       typeof key !== 'string' ||
       !/^afk_[A-Za-z0-9_-]{43}$/.test(key) ||
       typeof name !== 'string' ||
-      typeof version !== 'string'
+      !/^[\x20-\x7e]{1,63}$/.test(name) ||
+      typeof version !== 'string' ||
+      !/^[0-9A-Za-z.+-]{1,64}$/.test(version)
     )
       throw new FleetFailure('invalid', answer.status);
     return { key, name, version };
@@ -46,7 +56,24 @@ export class HttpFleetSiteClient implements FleetSiteClient {
 
   /** A catalog read the controller checked against the list; the site checks it again. */
   async read(endpoint: FleetEndpointView, key: string, actor: string, path: string) {
-    return siteRequest(endpoint, 'GET', path, { key, actor, maxBytes: 16 * 1024 * 1024 });
+    return siteRequest(endpoint, 'GET', path, {
+      key,
+      actor,
+      maxBytes: 16 * 1024 * 1024,
+      deadlineMs: 60_000,
+    });
+  }
+
+  /** A change on the site: revision- or id-protected there, so it is sent once, never retried. */
+  async change(
+    endpoint: FleetEndpointView,
+    key: string,
+    actor: string,
+    method: 'PUT' | 'POST',
+    path: string,
+    body: unknown,
+  ) {
+    return siteRequest(endpoint, method, path, { key, actor, body });
   }
 
   async topology(endpoint: FleetEndpointView, key: string, actor: string): Promise<unknown> {

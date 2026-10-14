@@ -44,16 +44,16 @@ Arkvory 有两类设置：
 
 `arkvory help` 无需特殊权限即可列出命令。本站示例使用简写形式 `arkvory <command>`。
 
-| 命令                            | 用途                                                                                   |
-| ------------------------------- | -------------------------------------------------------------------------------------- |
-| `status`                        | 显示安装模式、引擎、自动更新设置、固定和已安装的发行版                                 |
-| `configure`                     | 更改策略。参见 [configure 命令](#configure-command)                                    |
-| `update`                        | 立即安装较新的稳定版。参见[更新](./updates)                                            |
-| `upgrade`                       | 使用您自己的备份记录安装会更改数据库架构的发行版。参见[更新](./updates#manual-upgrade) |
-| `recover`                       | 完成被中断的更新。参见[更新](./updates#recover-update)                                 |
-| `finish-install`                | 继续被中断的首次安装                                                                   |
-| `updates-connect`               | 连接控制台和更新计时器，并注册旧安装缺少的服务                                         |
-| `updates-poll`, `updates-reset` | 由更新计时器运行，也用于恢复。参见[更新](./updates#recover-update)                     |
+| 命令                                             | 用途                                                                                   |
+| ------------------------------------------------ | -------------------------------------------------------------------------------------- |
+| `status`                                         | 显示安装模式、引擎、自动更新设置、固定和已安装的发行版                                 |
+| `configure`                                      | 更改策略。参见 [configure 命令](#configure-command)                                    |
+| `update`                                         | 立即安装较新的稳定版。参见[更新](./updates)                                            |
+| `upgrade`                                        | 使用您自己的备份记录安装会更改数据库架构的发行版。参见[更新](./updates#manual-upgrade) |
+| `recover`                                        | 完成被中断的更新。参见[更新](./updates#recover-update)                                 |
+| `finish-install`                                 | 继续被中断的首次安装                                                                   |
+| `updates-connect`                                | 连接控制台和更新计时器，并注册旧安装缺少的服务                                         |
+| `updates-poll`, `updates-reset`, `changes-reset` | 由更新计时器运行，也用于恢复。参见[更新](./updates#recover-update)                     |
 
 同一时间只运行一个命令。第二个命令会以 `Installation is locked` 停止。切勿将密钥或密码放入命令选项中：请使用文件。
 
@@ -139,6 +139,8 @@ HTTPS、备份存储和镜像更改会重启服务，并在更改不生效时恢
 | `ARKVORY_UPLOAD_IDLE_TIMEOUT_MS`      | `30000`   | 上传请求在此期间未发送任何数据则停止                                                        |
 
 API 前面的代理必须允许请求的持续时间至少与 `ARKVORY_UPLOAD_DEADLINE_MS` 一样长。参见 [HTTPS](./https#reverse-proxy)。所有其他限制，例如等待队列和每账户速率，见[环境变量](../reference/environment#transfers-and-bandwidth)。
+
+下载队列的值（策略、同时下载数、保留、权重等）也可以在不重启的情况下修改：[[ui:fleet]] → [[ui:fleetThisSettings]]，或 `PUT /api/v1/system/downloads/settings`。在写入进程上，保存的值优先于这些变量；参见[站点](../operate/sites#site-settings)。
 
 ### 备份和镜像 {#backups-mirrors}
 

@@ -1047,6 +1047,54 @@
       },
       "summary": "Ler o catálogo de um site",
       "description": "Repassa uma leitura do catálogo a um site gerenciado e devolve a resposta dele sem alterações: repositórios, busca, artefatos, anotações, estágios, pacotes, páginas e histórico de arquivos, uso de armazenamento, estado do espelho. `path` é a rota do site com sua consulta. Outras rotas e bytes de arquivos são recusados com 400."
+    },
+    "changeFleetSite": {
+      "en": {
+        "summary": "Change a setting of a site",
+        "description": "Passes one change to a managed site and returns its answer unchanged. `path` is one of: `/api/v1/system/downloads/settings` (download queue settings, sent as PUT) or `/api/v1/system/updates/requests` (an update request, sent as POST). The body goes to the site as it is; the site checks the revision or request id, so a repeated change does not apply twice. Other paths are refused with 400."
+      },
+      "summary": "Alterar uma configuração de um site",
+      "description": "Repassa uma alteração a um site gerenciado e devolve a resposta dele sem alterações. `path` é uma destas rotas: `/api/v1/system/downloads/settings` (configurações da fila de downloads, enviada como PUT) ou `/api/v1/system/updates/requests` (uma solicitação de atualização, enviada como POST). O corpo vai ao site como está; o site verifica a revisão ou o id da solicitação, então uma alteração repetida não é aplicada duas vezes. Outros caminhos são recusados com 400."
+    },
+    "getDownloadSettings": {
+      "en": {
+        "summary": "Read download queue settings",
+        "description": "Returns the changed values (`overrides`), what the environment of the server sets (`defaults`) and what the queue uses now (`effective`), with the revision to pass back when changing. `problem` names why saved settings do not fit this server; the queue then runs on the defaults."
+      },
+      "summary": "Ler as configurações da fila de downloads",
+      "description": "Retorna os valores alterados (`overrides`), o que o ambiente do servidor define (`defaults`) e o que a fila usa agora (`effective`), com a revisão a enviar ao alterar. `problem` diz por que as configurações salvas não servem para este servidor; a fila então funciona com os padrões."
+    },
+    "changeDownloadSettings": {
+      "en": {
+        "summary": "Change download queue settings",
+        "description": "Saves `overrides` over the environment of the server and applies them without a restart: new decisions follow them at once, active downloads keep their places. The values given replace all earlier changes; `{}` returns to the environment. Settings that cannot run here are refused with 400 naming the field; a stale `expectedRevision` gets 409. Read gateways keep their environment."
+      },
+      "summary": "Alterar as configurações da fila de downloads",
+      "description": "Salva `overrides` sobre o ambiente do servidor e os aplica sem reiniciar: novas decisões os seguem de imediato e downloads ativos mantêm seus lugares. Os valores enviados substituem todas as alterações anteriores; `{}` volta ao ambiente. Configurações que não podem funcionar aqui são recusadas com 400 indicando o campo; uma `expectedRevision` desatualizada recebe 409. Gateways de leitura mantêm seu ambiente."
+    },
+    "getSiteChanges": {
+      "en": {
+        "summary": "Read site changes",
+        "description": "Returns whether the site’s agent reports in (`agent`), the pending request and the 20 newest with their state: `pending`, `applying`, `done` or `failed` with a reason. Source keys never appear here."
+      },
+      "summary": "Ler as alterações do site",
+      "description": "Retorna se o agente do site responde (`agent`), a solicitação pendente e as 20 mais recentes com seu estado: `pending`, `applying`, `done` ou `failed` com o motivo. Chaves de origem nunca aparecem aqui."
+    },
+    "requestSiteChange": {
+      "en": {
+        "summary": "Queue a site change",
+        "description": "Queues one change for the site’s agent, which applies it within a minute with the checks and rollback of `arkvory configure` and `cluster-*`: attach a mirror or an import, replace its source key, detach mirrors, switch the active HA node (the node name typed twice) or decide single-copy writes. `id` is chosen by the client; repeating it does not queue the change again. `key` is the source key of `mirror-attach` and `mirror-key` only: it goes to the agent in its own 0600 file and is never returned. 202 means queued, not applied."
+      },
+      "summary": "Enfileirar uma alteração do site",
+      "description": "Enfileira uma alteração para o agente do site, que a aplica em até um minuto com as verificações e a reversão de `arkvory configure` e `cluster-*`: conectar um espelho ou uma importação, substituir sua chave de origem, desconectar espelhos, trocar o nó HA ativo (nome do nó digitado duas vezes) ou decidir gravações com uma cópia. `id` é escolhido pelo cliente; repeti-lo não enfileira a alteração de novo. `key` é a chave de origem apenas de `mirror-attach` e `mirror-key`: vai ao agente em um arquivo 0600 próprio e nunca é devolvida. 202 significa enfileirado, não aplicado."
+    },
+    "getFleetOverview": {
+      "en": {
+        "summary": "Read the fleet overview",
+        "description": "Alerts across the managed sites and this installation, most severe first (`critical`, `warning`, `info`), and the mirror links between them. Built from the last background reads, at most once per 5 seconds. A source no managed site answers at is `external:<origin>`; this installation is `self` and meets the links to it only when `ARKVORY_SITE_URL` is set. Answered by the writer only."
+      },
+      "summary": "Ler a visão geral dos sites",
+      "description": "Alertas dos sites gerenciados e desta instalação, os mais graves primeiro (`critical`, `warning`, `info`), e os vínculos de espelho entre eles. Montada a partir das últimas leituras em segundo plano, no máximo uma vez a cada 5 segundos. Uma origem em cujo endereço nenhum site gerenciado responde é `external:<origin>`; esta instalação é `self` e só recebe vínculos quando `ARKVORY_SITE_URL` está definido. Somente o processo de gravação responde."
     }
   },
   "errors": {

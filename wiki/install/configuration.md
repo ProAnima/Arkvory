@@ -44,16 +44,16 @@ All commands need administrator rights and the option `--root` with the installa
 
 `arkvory help` lists the commands without special rights. The examples on this site use the short form `arkvory <command>`.
 
-| Command                         | Use                                                                                                                           |
-| ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `status`                        | Shows the installation mode, the engine, the automatic update setting, the pin and the installed release                      |
-| `configure`                     | Changes a policy. See [The configure command](#configure-command)                                                             |
-| `update`                        | Installs a newer stable release now. See [Updates](./updates)                                                                 |
-| `upgrade`                       | Installs a release that changes the database schema with a backup record of your own. See [Updates](./updates#manual-upgrade) |
-| `recover`                       | Finishes an interrupted update. See [Updates](./updates#recover-update)                                                       |
-| `finish-install`                | Continues an interrupted first installation                                                                                   |
-| `updates-connect`               | Connects the console and the update timer, and registers services that an old installation lacks                              |
-| `updates-poll`, `updates-reset` | Run by the update timer and for recovery. See [Updates](./updates#recover-update)                                             |
+| Command                                          | Use                                                                                                                           |
+| ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
+| `status`                                         | Shows the installation mode, the engine, the automatic update setting, the pin and the installed release                      |
+| `configure`                                      | Changes a policy. See [The configure command](#configure-command)                                                             |
+| `update`                                         | Installs a newer stable release now. See [Updates](./updates)                                                                 |
+| `upgrade`                                        | Installs a release that changes the database schema with a backup record of your own. See [Updates](./updates#manual-upgrade) |
+| `recover`                                        | Finishes an interrupted update. See [Updates](./updates#recover-update)                                                       |
+| `finish-install`                                 | Continues an interrupted first installation                                                                                   |
+| `updates-connect`                                | Connects the console and the update timer, and registers services that an old installation lacks                              |
+| `updates-poll`, `updates-reset`, `changes-reset` | Run by the update timer and for recovery. See [Updates](./updates#recover-update)                                             |
 
 Only one command runs at a time. A second command stops with `Installation is locked`. Never put a key or a password in a command option: use files.
 
@@ -139,6 +139,8 @@ The limits belong to one API process. A rate of `0` means no limit.
 | `ARKVORY_UPLOAD_IDLE_TIMEOUT_MS`      | `30000`   | An upload request that sends no data for this time stops                                                       |
 
 A proxy in front of the API must allow a request at least as long as `ARKVORY_UPLOAD_DEADLINE_MS`. See [HTTPS](./https#reverse-proxy). All other limits, such as the waiting queue and the per-account rates, are in [Environment variables](../reference/environment#transfers-and-bandwidth).
+
+The download queue values (strategy, downloads at once, reserve, weights and the others) can also be changed without a restart: [[ui:fleet]] → [[ui:fleetThisSettings]], or `PUT /api/v1/system/downloads/settings`. Saved values take precedence over these variables on the writer; see [Sites](../operate/sites#site-settings).
 
 ### Backups and mirrors {#backups-mirrors}
 

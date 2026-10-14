@@ -44,16 +44,16 @@ Arkvory에는 두 종류의 설정이 있습니다:
 
 `arkvory help`는 특별한 권한 없이 명령을 나열합니다. 이 사이트의 예제에서는 짧은 형식 `arkvory <command>`를 사용합니다.
 
-| 명령                            | 용도                                                                                                                             |
-| ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `status`                        | 설치 모드, 엔진, 자동 업데이트 설정, 고정, 설치된 릴리스를 표시합니다                                                            |
-| `configure`                     | 정책을 변경합니다. [configure 명령](#configure-command)을 참조하세요                                                             |
-| `update`                        | 더 새로운 안정 릴리스를 지금 설치합니다. [업데이트](./updates)를 참조하세요                                                      |
-| `upgrade`                       | 데이터베이스 스키마를 변경하는 릴리스를 직접 만든 백업 기록과 함께 설치합니다. [업데이트](./updates#manual-upgrade)를 참조하세요 |
-| `recover`                       | 중단된 업데이트를 완료합니다. [업데이트](./updates#recover-update)를 참조하세요                                                  |
-| `finish-install`                | 중단된 최초 설치를 계속합니다                                                                                                    |
-| `updates-connect`               | 콘솔과 업데이트 타이머를 연결하고, 오래된 설치에 없는 서비스를 등록합니다                                                        |
-| `updates-poll`, `updates-reset` | 업데이트 타이머가 실행하며 복구에도 사용됩니다. [업데이트](./updates#recover-update)를 참조하세요                                |
+| 명령                                             | 용도                                                                                                                             |
+| ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
+| `status`                                         | 설치 모드, 엔진, 자동 업데이트 설정, 고정, 설치된 릴리스를 표시합니다                                                            |
+| `configure`                                      | 정책을 변경합니다. [configure 명령](#configure-command)을 참조하세요                                                             |
+| `update`                                         | 더 새로운 안정 릴리스를 지금 설치합니다. [업데이트](./updates)를 참조하세요                                                      |
+| `upgrade`                                        | 데이터베이스 스키마를 변경하는 릴리스를 직접 만든 백업 기록과 함께 설치합니다. [업데이트](./updates#manual-upgrade)를 참조하세요 |
+| `recover`                                        | 중단된 업데이트를 완료합니다. [업데이트](./updates#recover-update)를 참조하세요                                                  |
+| `finish-install`                                 | 중단된 최초 설치를 계속합니다                                                                                                    |
+| `updates-connect`                                | 콘솔과 업데이트 타이머를 연결하고, 오래된 설치에 없는 서비스를 등록합니다                                                        |
+| `updates-poll`, `updates-reset`, `changes-reset` | 업데이트 타이머가 실행하며 복구에도 사용됩니다. [업데이트](./updates#recover-update)를 참조하세요                                |
 
 한 번에 하나의 명령만 실행됩니다. 두 번째 명령은 `Installation is locked`와 함께 중지됩니다. 명령 옵션에 키나 비밀번호를 넣지 마세요: 파일을 사용하세요.
 
@@ -139,6 +139,8 @@ Linux에서 서비스는 권한 없는 계정으로 실행되며, 일반적으�
 | `ARKVORY_UPLOAD_IDLE_TIMEOUT_MS`      | `30000`   | 이 시간 동안 데이터를 보내지 않는 업로드 요청은 중단됩니다                                               |
 
 API 앞의 프록시는 최소한 `ARKVORY_UPLOAD_DEADLINE_MS`만큼 긴 요청을 허용해야 합니다. [HTTPS](./https#reverse-proxy)를 참조하세요. 대기 큐와 계정별 속도 같은 다른 모든 한도는 [환경 변수](../reference/environment#transfers-and-bandwidth)에 있습니다.
+
+다운로드 대기열 값(전략, 동시 다운로드, 예약, 가중치 등)은 재시작 없이도 변경할 수 있습니다: [[ui:fleet]] → [[ui:fleetThisSettings]], 또는 `PUT /api/v1/system/downloads/settings`. 쓰기 프로세스에서는 저장된 값이 이 변수보다 우선합니다. [사이트](../operate/sites#site-settings)를 참고하세요.
 
 ### 백업과 미러 {#backups-mirrors}
 

@@ -75,13 +75,19 @@ export class PostgresFleetTrust {
   async resolve(key: string): Promise<Principal | null> {
     if (!key.startsWith(FLEET_KEY_PREFIX)) return null;
     const hash = digest(key);
-    const found = await this.pool.query<{ id: string; key_sha256: Buffer }>(
-      `UPDATE arkvory_fleet_controllers SET used_at = now()
-       WHERE key_sha256 = $1 AND revoked_at IS NULL RETURNING id, key_sha256`,
+    const found = await this.pool.query<{ id: string; key_sha256: Buffer; stale: boolean }>(
+      `SELECT id, key_sha256, used_at IS NULL OR used_at < now() - interval '60 seconds' AS stale
+       FROM arkvory_fleet_controllers WHERE key_sha256 = $1 AND revoked_at IS NULL`,
       [hash],
     );
     const row = found.rows[0];
     if (!row || !timingSafeEqual(row.key_sha256, hash)) return null;
+    // Once a minute is enough to show when a controller last called; parallel reads of one
+    // controller do not queue on the row.
+    if (row.stale)
+      await this.pool.query('UPDATE arkvory_fleet_controllers SET used_at = now() WHERE id = $1', [
+        row.id,
+      ]);
     const repositories = await this.repositories();
     return {
       credential: 'fleet-key',

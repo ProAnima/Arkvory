@@ -44,16 +44,16 @@ Alle Befehle benötigen Administratorrechte und die Option `--root` mit dem Inst
 
 `arkvory help` listet die Befehle ohne besondere Rechte auf. Die Beispiele auf dieser Seite verwenden die Kurzform `arkvory <command>`.
 
-| Befehl                          | Verwendung                                                                                                                            |
-| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| `status`                        | Zeigt den Installationsmodus, die Engine, die Einstellung für automatische Updates, das Anheften und das installierte Release         |
-| `configure`                     | Ändert eine Richtlinie. Siehe [Der Befehl configure](#configure-command)                                                              |
-| `update`                        | Installiert jetzt ein neueres stabiles Release. Siehe [Updates](./updates)                                                            |
-| `upgrade`                       | Installiert ein Release, das das Datenbankschema ändert, mit einem eigenen Backup-Nachweis. Siehe [Updates](./updates#manual-upgrade) |
-| `recover`                       | Schließt ein unterbrochenes Update ab. Siehe [Updates](./updates#recover-update)                                                      |
-| `finish-install`                | Setzt eine unterbrochene Erstinstallation fort                                                                                        |
-| `updates-connect`               | Verbindet die Konsole und den Update-Timer und registriert Dienste, die einer alten Installation fehlen                               |
-| `updates-poll`, `updates-reset` | Werden vom Update-Timer und zur Wiederherstellung ausgeführt. Siehe [Updates](./updates#recover-update)                               |
+| Befehl                                           | Verwendung                                                                                                                            |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `status`                                         | Zeigt den Installationsmodus, die Engine, die Einstellung für automatische Updates, das Anheften und das installierte Release         |
+| `configure`                                      | Ändert eine Richtlinie. Siehe [Der Befehl configure](#configure-command)                                                              |
+| `update`                                         | Installiert jetzt ein neueres stabiles Release. Siehe [Updates](./updates)                                                            |
+| `upgrade`                                        | Installiert ein Release, das das Datenbankschema ändert, mit einem eigenen Backup-Nachweis. Siehe [Updates](./updates#manual-upgrade) |
+| `recover`                                        | Schließt ein unterbrochenes Update ab. Siehe [Updates](./updates#recover-update)                                                      |
+| `finish-install`                                 | Setzt eine unterbrochene Erstinstallation fort                                                                                        |
+| `updates-connect`                                | Verbindet die Konsole und den Update-Timer und registriert Dienste, die einer alten Installation fehlen                               |
+| `updates-poll`, `updates-reset`, `changes-reset` | Werden vom Update-Timer und zur Wiederherstellung ausgeführt. Siehe [Updates](./updates#recover-update)                               |
 
 Es läuft immer nur ein Befehl gleichzeitig. Ein zweiter Befehl bricht mit `Installation is locked` ab. Geben Sie niemals einen Schlüssel oder ein Passwort in einer Befehlsoption an: Verwenden Sie Dateien.
 
@@ -139,6 +139,8 @@ Die Limits gelten für einen API-Prozess. Eine Rate von `0` bedeutet kein Limit.
 | `ARKVORY_UPLOAD_IDLE_TIMEOUT_MS`      | `30000`   | Eine Upload-Anfrage, die so lange keine Daten sendet, wird beendet                                                                      |
 
 Ein Proxy vor der API muss eine Anfrage mindestens so lange zulassen wie `ARKVORY_UPLOAD_DEADLINE_MS`. Siehe [HTTPS](./https#reverse-proxy). Alle anderen Limits, etwa die Warteschlange und die Raten pro Konto, stehen unter [Umgebungsvariablen](../reference/environment#transfers-and-bandwidth).
+
+Die Werte der Download-Warteschlange (Strategie, gleichzeitige Downloads, Reserve, Gewichte und die übrigen) lassen sich auch ohne Neustart ändern: [[ui:fleet]] → [[ui:fleetThisSettings]] oder `PUT /api/v1/system/downloads/settings`. Gespeicherte Werte haben auf dem Schreibprozess Vorrang vor diesen Variablen; siehe [Standorte](../operate/sites#site-settings).
 
 ### Backups und Spiegel {#backups-mirrors}
 

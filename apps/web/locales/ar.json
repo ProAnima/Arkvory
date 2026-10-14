@@ -4198,5 +4198,481 @@
   "fleetNoRepositories": {
     "en": "The site has no repositories.",
     "text": "لا توجد مستودعات في الموقع."
+  },
+  "fleetSettings": {
+    "en": "Settings",
+    "text": "الإعدادات"
+  },
+  "fleetSettingsOf": {
+    "en": "Settings: {name}",
+    "text": "الإعدادات: {name}"
+  },
+  "fleetThisSettings": {
+    "en": "Settings of this site",
+    "text": "إعدادات هذا الموقع"
+  },
+  "fleetQueueSettings": {
+    "en": "Download queue",
+    "text": "طابور التنزيلات"
+  },
+  "fleetQueueHint": {
+    "en": "An empty field keeps the value of the server’s environment, shown in grey. Saved settings apply at once, without a restart; active downloads keep their places. Read gateways keep their environment.",
+    "text": "يحتفظ الحقل الفارغ بقيمة بيئة الخادم، المعروضة بالرمادي. تسري الإعدادات المحفوظة فورًا دون إعادة تشغيل؛ وتحتفظ التنزيلات النشطة بأماكنها. تحتفظ بوابات القراءة ببيئتها."
+  },
+  "fleetStrategy": {
+    "en": "Strategy",
+    "text": "الاستراتيجية"
+  },
+  "fleetStrategyOrdered": {
+    "en": "In order of arrival",
+    "text": "حسب ترتيب الوصول"
+  },
+  "fleetStrategySmallest": {
+    "en": "Smallest first",
+    "text": "الأصغر أولًا"
+  },
+  "fleetStrategyShared": {
+    "en": "Shared, without a queue",
+    "text": "مشتركة، دون طابور"
+  },
+  "fleetDefault": {
+    "en": "Default: {value}",
+    "text": "الافتراضي: {value}"
+  },
+  "fleetSessions": {
+    "en": "Downloads at once",
+    "text": "التنزيلات المتزامنة"
+  },
+  "fleetReserve": {
+    "en": "Places kept for people",
+    "text": "أماكن محجوزة للأشخاص"
+  },
+  "fleetPerPrincipal": {
+    "en": "Downloads at once per client",
+    "text": "التنزيلات المتزامنة لكل عميل"
+  },
+  "fleetIdle": {
+    "en": "Pause that frees a place, s",
+    "text": "التوقف الذي يحرر مكانًا، ثانية"
+  },
+  "fleetAging": {
+    "en": "Wait that raises a class, min (0: off)",
+    "text": "الانتظار الذي يرفع الفئة، دقيقة (0: إيقاف)"
+  },
+  "fleetRanges": {
+    "en": "Parallel ranges per download",
+    "text": "النطاقات المتوازية لكل تنزيل"
+  },
+  "fleetSessionMin": {
+    "en": "Queue files from, MiB",
+    "text": "وضع الملفات في الطابور بدءًا من، MiB"
+  },
+  "fleetPreempt": {
+    "en": "Ask downloads to yield to a higher class",
+    "text": "طلب تنازل التنزيلات لفئة أعلى"
+  },
+  "fleetPreemptOn": {
+    "en": "Yes",
+    "text": "نعم"
+  },
+  "fleetPreemptOff": {
+    "en": "No",
+    "text": "لا"
+  },
+  "fleetWeights": {
+    "en": "Weights of classes",
+    "text": "أوزان الفئات"
+  },
+  "fleetWeightInteractive": {
+    "en": "People",
+    "text": "الأشخاص"
+  },
+  "fleetWeightRelease": {
+    "en": "Releases",
+    "text": "الإصدارات"
+  },
+  "fleetWeightBulk": {
+    "en": "Bulk",
+    "text": "الجماعية"
+  },
+  "fleetWeightBackground": {
+    "en": "Background",
+    "text": "الخلفية"
+  },
+  "fleetQueueSave": {
+    "en": "Save queue settings",
+    "text": "حفظ إعدادات الطابور"
+  },
+  "fleetQueueReset": {
+    "en": "Back to defaults",
+    "text": "العودة إلى القيم الافتراضية"
+  },
+  "fleetQueueSaved": {
+    "en": "Saved. The queue works with the new settings now.",
+    "text": "تم الحفظ. يعمل الطابور الآن بالإعدادات الجديدة."
+  },
+  "fleetQueueChanged": {
+    "en": "Changed by {who}",
+    "text": "غيّرها: {who}"
+  },
+  "fleetQueueProblem": {
+    "en": "Saved settings do not fit this server and are not used: {problem}",
+    "text": "الإعدادات المحفوظة لا تناسب هذا الخادم ولا تُستخدم: {problem}"
+  },
+  "fleetQueueConflict": {
+    "en": "Someone changed the settings meanwhile. The form shows them now: check and save again.",
+    "text": "غيّر أحدهم الإعدادات في هذه الأثناء. يعرضها النموذج الآن: راجعها واحفظ مرة أخرى."
+  },
+  "fleetQueueInvalid": {
+    "en": "Every number must be whole. Correct the marked fields and save again.",
+    "text": "يجب أن يكون كل رقم عددًا صحيحًا. صحّح الحقول المحددة واحفظ مرة أخرى."
+  },
+  "fleetQueuePerRequest": {
+    "en": "The strategy is shared: downloads are admitted one request at a time by the limits of the environment, and the session settings below wait unused until another strategy is chosen.",
+    "text": "الاستراتيجية مشتركة: تُقبل التنزيلات طلبًا طلبًا ضمن حدود البيئة، ولا تُستخدم إعدادات الجلسات أدناه حتى تُختار استراتيجية أخرى."
+  },
+  "fleetAgent": {
+    "en": "Mirrors and cluster",
+    "text": "المرايا والعنقود"
+  },
+  "fleetAgentHint": {
+    "en": "These changes are applied by the site’s agent with its own checks and rollback, within a minute; the list below shows how each ended.",
+    "text": "يطبّق وكيل الموقع هذه التغييرات خلال دقيقة، مع فحوصه الخاصة والتراجع عند الحاجة؛ وتعرض القائمة أدناه نتيجة كل تغيير."
+  },
+  "fleetAgentMissing": {
+    "en": "The site’s agent does not report in: connect it on the site with updates-connect, or update the site to a release that applies these changes.",
+    "text": "وكيل الموقع لا يستجيب: صِله على الموقع باستخدام updates-connect، أو حدّث الموقع إلى إصدار يطبّق هذه التغييرات."
+  },
+  "fleetMirrorRepository": {
+    "en": "Repository",
+    "text": "المستودع"
+  },
+  "fleetMirrorSource": {
+    "en": "Source",
+    "text": "المصدر"
+  },
+  "fleetMirrorPhase": {
+    "en": "State",
+    "text": "الحالة"
+  },
+  "fleetMirrorNone": {
+    "en": "The site has no mirrors or imports.",
+    "text": "لا توجد في الموقع مرايا ولا عمليات استيراد."
+  },
+  "fleetMirrorKey": {
+    "en": "Source key",
+    "text": "مفتاح المصدر"
+  },
+  "fleetMirrorKeySave": {
+    "en": "Replace key",
+    "text": "استبدال المفتاح"
+  },
+  "fleetMirrorKeyFor": {
+    "en": "New source key for {repository}",
+    "text": "مفتاح مصدر جديد لـ {repository}"
+  },
+  "fleetMirrorAttach": {
+    "en": "Attach a mirror or an import",
+    "text": "ربط مرآة أو استيراد"
+  },
+  "fleetMirrorUpstream": {
+    "en": "Source address",
+    "text": "عنوان المصدر"
+  },
+  "fleetMirrorSourceRepository": {
+    "en": "Source repository",
+    "text": "مستودع المصدر"
+  },
+  "fleetMirrorStages": {
+    "en": "Import stages, comma-separated",
+    "text": "مراحل الاستيراد، مفصولة بفواصل"
+  },
+  "fleetMirrorAttachHint": {
+    "en": "Attaches a new repository. Without stages it mirrors the source read-only; with stages it is an ordinary repository that takes over versions with those stages. The source is checked with the key before anything changes. An authority certificate of a source is set on the site itself.",
+    "text": "يربط مستودعًا جديدًا. من دون مراحل يعكس المصدر للقراءة فقط؛ ومع المراحل يكون مستودعًا عاديًا يأخذ الإصدارات التي تحمل تلك المراحل. يُفحص المصدر بالمفتاح قبل أي تغيير. تُضبط شهادة جهة إصدار الشهادات للمصدر على الموقع نفسه."
+  },
+  "fleetMirrorAttachButton": {
+    "en": "Attach",
+    "text": "ربط"
+  },
+  "fleetMirrorDetach": {
+    "en": "Detach",
+    "text": "فصل"
+  },
+  "fleetMirrorDetachConfirm": {
+    "en": "Detach the mirror {repository}? It becomes an ordinary writable repository and keeps every artifact.",
+    "text": "فصل المرآة {repository}؟ ستصبح مستودعًا عاديًا قابلًا للكتابة وتحتفظ بكل المُخرَجات."
+  },
+  "fleetMirrorImport": {
+    "en": "Import",
+    "text": "استيراد"
+  },
+  "fleetMirrorMirror": {
+    "en": "Mirror",
+    "text": "مرآة"
+  },
+  "fleetMirrorInvalid": {
+    "en": "Check the fields: an HTTPS address of the source, repository names and up to 16 stages.",
+    "text": "تحقق من الحقول: عنوان HTTPS للمصدر، وأسماء المستودعات، وما يصل إلى 16 مرحلة."
+  },
+  "fleetCluster": {
+    "en": "HA cluster",
+    "text": "عنقود HA"
+  },
+  "fleetClusterState": {
+    "en": "Active node: {node}. Copies: {copies} of {required}.",
+    "text": "العقدة النشطة: {node}. النسخ: {copies} من {required}."
+  },
+  "fleetSwitchoverNode": {
+    "en": "Move to node",
+    "text": "النقل إلى العقدة"
+  },
+  "fleetSwitchoverConfirm": {
+    "en": "Node name again",
+    "text": "اسم العقدة مرة أخرى"
+  },
+  "fleetSwitchover": {
+    "en": "Switch over",
+    "text": "تبديل"
+  },
+  "fleetSwitchoverTyped": {
+    "en": "Type the name of the target node again to confirm.",
+    "text": "اكتب اسم العقدة الهدف مرة أخرى للتأكيد."
+  },
+  "fleetSwitchoverAsk": {
+    "en": "Move Arkvory to {node}? Requests are interrupted for a short time while the node takes over.",
+    "text": "نقل Arkvory إلى {node}؟ تنقطع الطلبات لوقت قصير ريثما تتولى العقدة العمل."
+  },
+  "fleetSingleUntil": {
+    "en": "One copy until",
+    "text": "نسخة واحدة حتى"
+  },
+  "fleetSingleReason": {
+    "en": "Reason",
+    "text": "السبب"
+  },
+  "fleetSingleOn": {
+    "en": "Accept writes with one copy",
+    "text": "قبول الكتابة بنسخة واحدة"
+  },
+  "fleetSingleOff": {
+    "en": "Withdraw the decision",
+    "text": "سحب القرار"
+  },
+  "fleetSingleInvalid": {
+    "en": "Give a time and a reason.",
+    "text": "حدّد وقتًا وسببًا."
+  },
+  "fleetSingleAsk": {
+    "en": "Acknowledge writes with ONE copy until {until}? A second failure in that time loses them.",
+    "text": "تأكيد الكتابة بنسخة واحدة فقط حتى {until}؟ عطل ثانٍ خلال هذه المدة يُفقدها."
+  },
+  "fleetRequests": {
+    "en": "Requests to the agent",
+    "text": "الطلبات إلى الوكيل"
+  },
+  "fleetRequestKind": {
+    "en": "Change",
+    "text": "التغيير"
+  },
+  "fleetRequestBy": {
+    "en": "Who",
+    "text": "مَن"
+  },
+  "fleetRequestAt": {
+    "en": "When",
+    "text": "متى"
+  },
+  "fleetKindAttach": {
+    "en": "Attach mirror",
+    "text": "ربط مرآة"
+  },
+  "fleetKindKey": {
+    "en": "Replace key",
+    "text": "استبدال المفتاح"
+  },
+  "fleetKindDetach": {
+    "en": "Detach mirror",
+    "text": "فصل مرآة"
+  },
+  "fleetKindSwitchover": {
+    "en": "Switchover",
+    "text": "التبديل"
+  },
+  "fleetKindSingleCopy": {
+    "en": "Single copy",
+    "text": "نسخة واحدة"
+  },
+  "fleetChangePending": {
+    "en": "Waiting for the agent",
+    "text": "في انتظار الوكيل"
+  },
+  "fleetChangeApplying": {
+    "en": "Applying",
+    "text": "قيد التطبيق"
+  },
+  "fleetChangeDone": {
+    "en": "Done",
+    "text": "تم"
+  },
+  "fleetChangeFailed": {
+    "en": "Failed",
+    "text": "فشل"
+  },
+  "fleetChangeQueued": {
+    "en": "Queued. The site’s agent applies it within a minute.",
+    "text": "في قائمة الانتظار. يطبّقه وكيل الموقع خلال دقيقة."
+  },
+  "fleetAgentUpdating": {
+    "en": "The site is installing an update: changes wait until it is done.",
+    "text": "يثبّت الموقع تحديثًا: تنتظر التغييرات حتى ينتهي."
+  },
+  "fleetAgentBlocked": {
+    "en": "A change was interrupted half done on the site. The agent takes no other until an administrator of the site checked it and ran arkvory changes-reset there.",
+    "text": "انقطع تغيير في منتصفه على الموقع. لن يأخذ الوكيل تغييرًا آخر حتى يفحصه مسؤول الموقع ويشغّل هناك arkvory changes-reset."
+  },
+  "fleetSingleOffAsk": {
+    "en": "Withdraw the single-copy decision? While copies are still missing, writes stop until they are back.",
+    "text": "سحب قرار النسخة الواحدة؟ ما دامت النسخ ناقصة، تتوقف الكتابة حتى تعود."
+  },
+  "fleetErrorExpired": {
+    "en": "Expired before the agent took it.",
+    "text": "انتهت صلاحيته قبل أن يأخذه الوكيل."
+  },
+  "fleetErrorInterrupted": {
+    "en": "Interrupted; the site needs checking.",
+    "text": "انقطع؛ يلزم فحص الموقع."
+  },
+  "fleetErrorKeyMissing": {
+    "en": "The source key did not arrive.",
+    "text": "لم يصل مفتاح المصدر."
+  },
+  "fleetErrorNotMirror": {
+    "en": "Not a mirror of this site.",
+    "text": "ليس مرآة لهذا الموقع."
+  },
+  "fleetErrorAttached": {
+    "en": "Already a mirror or an import: replace its key or detach it first.",
+    "text": "مرآة أو استيراد بالفعل: استبدل مفتاحه أو افصله أولًا."
+  },
+  "fleetErrorMirror": {
+    "en": "The mirror change failed; the agent restored the previous configuration. Details are in the agent log on the site.",
+    "text": "فشل تغيير المرآة؛ أعاد الوكيل الإعداد السابق. التفاصيل في سجل الوكيل على الموقع."
+  },
+  "fleetErrorSwitchover": {
+    "en": "The switchover failed. Details are in the agent log on the site.",
+    "text": "فشل التبديل. التفاصيل في سجل الوكيل على الموقع."
+  },
+  "fleetErrorSingleCopy": {
+    "en": "The single-copy decision failed. Details are in the agent log on the site.",
+    "text": "فشل قرار النسخة الواحدة. التفاصيل في سجل الوكيل على الموقع."
+  },
+  "fleetErrorUnreadable": {
+    "en": "The request could not be read.",
+    "text": "تعذّرت قراءة الطلب."
+  },
+  "fleetOverview": {
+    "en": "State of the cluster",
+    "text": "حالة المجموعة"
+  },
+  "fleetAlertsNone": {
+    "en": "Nothing needs attention: every site answers, has its copies and keeps its mirrors up to date.",
+    "text": "لا شيء يحتاج إلى انتباه: كل المواقع تردّ، ونسخها مكتملة، ومراياها محدَّثة."
+  },
+  "fleetMap": {
+    "en": "Links",
+    "text": "الروابط"
+  },
+  "fleetMapHint": {
+    "en": "Sources this installation does not manage are shown by their address. If one of them is this installation, set ARKVORY_SITE_URL to the address the sites use for it.",
+    "text": "تُعرض المصادر التي لا يديرها هذا التثبيت بعناوينها. إن كان أحدها هو هذا التثبيت، فاضبط ARKVORY_SITE_URL على العنوان الذي تستخدمه المواقع للوصول إليه."
+  },
+  "fleetLinkFrom": {
+    "en": "Source",
+    "text": "المصدر"
+  },
+  "fleetLinkTo": {
+    "en": "Site",
+    "text": "الموقع"
+  },
+  "fleetLinkBehind": {
+    "en": "Behind",
+    "text": "التأخر"
+  },
+  "fleetLinksNone": {
+    "en": "No site mirrors or imports from another.",
+    "text": "لا توجد مرايا ولا عمليات استيراد بين المواقع."
+  },
+  "fleetLinkFailing": {
+    "en": "Failing",
+    "text": "متعطل"
+  },
+  "fleetLagValue": {
+    "en": "{lag} changes",
+    "text": "التغييرات: {lag}"
+  },
+  "fleetSeverityCritical": {
+    "en": "Critical",
+    "text": "حرج"
+  },
+  "fleetSeverityWarning": {
+    "en": "Warning",
+    "text": "تحذير"
+  },
+  "fleetSeverityInfo": {
+    "en": "Note",
+    "text": "ملاحظة"
+  },
+  "fleetAlertUnreachable": {
+    "en": "does not answer.",
+    "text": "لا يردّ."
+  },
+  "fleetAlertCertificate": {
+    "en": "presents another certificate: pair it again if it was renewed.",
+    "text": "يقدّم شهادة أخرى: إن جُدّدت فأعد اقتران الموقع."
+  },
+  "fleetAlertRevoked": {
+    "en": "revoked this controller: pair it again with a new code.",
+    "text": "أبطل وحدة التحكم هذه: أعد الاقتران برمز جديد."
+  },
+  "fleetAlertRefused": {
+    "en": "refuses this controller: pair it again with a new code.",
+    "text": "يرفض وحدة التحكم هذه: أعد الاقتران برمز جديد."
+  },
+  "fleetAlertInvalid": {
+    "en": "answers in a way this release does not read: update both.",
+    "text": "يردّ بطريقة لا يفهمها هذا الإصدار: حدّث الاثنين."
+  },
+  "fleetAlertStale": {
+    "en": "was not read for over a minute and a half: check the controller’s background reads.",
+    "text": "لم يُقرأ منذ أكثر من دقيقة ونصف: تحقّق من القراءة في الخلفية على وحدة التحكم."
+  },
+  "fleetAlertNotWritable": {
+    "en": "refuses writes: check its database and disk.",
+    "text": "يرفض الكتابة: تحقّق من قاعدة بياناته وقرصه."
+  },
+  "fleetAlertCopies": {
+    "en": "lacks copies of its data: writes are paused until they are back.",
+    "text": "تنقصه نسخ من بياناته: الكتابة متوقفة مؤقتًا حتى تعود."
+  },
+  "fleetAlertSingleCopy": {
+    "en": "acknowledges writes with one copy by an operator’s decision.",
+    "text": "يؤكّد الكتابة بنسخة واحدة بقرار من المشغّل."
+  },
+  "fleetAlertMirrorFailing": {
+    "en": "mirror {subject} keeps failing.",
+    "text": "المرآة {subject} تفشل باستمرار."
+  },
+  "fleetAlertMirrorLag": {
+    "en": "mirror {subject} is far behind its source.",
+    "text": "المرآة {subject} متأخرة كثيرًا عن مصدرها."
+  },
+  "fleetAlertUpdatesFailed": {
+    "en": "its updater reports a failure.",
+    "text": "أداة التحديث لديه تُبلغ عن فشل."
+  },
+  "fleetAlertVersionSkew": {
+    "en": "runs another version than this controller.",
+    "text": "يعمل بإصدار مختلف عن إصدار وحدة التحكم هذه."
   }
 }
