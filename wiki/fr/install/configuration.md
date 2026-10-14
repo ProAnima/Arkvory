@@ -104,10 +104,10 @@ Il n’existe pas de réglage pour une URL publique. Le serveur construit les li
 
 ### Base de données {#database}
 
-| Variable                     | Valeur par défaut          | Signification                                                                         |
-| ---------------------------- | -------------------------- | ------------------------------------------------------------------------------------- |
-| `ARKVORY_DATABASE_URL`       | définie par l’installateur | L’URL de connexion PostgreSQL. Une base de données gérée écoute sur `127.0.0.1:54329` |
-| `ARKVORY_DATABASE_POOL_SIZE` | `10`                       | La taille du pool de connexions de l’API, de 4 à 200                                  |
+| Variable                     | Valeur par défaut          | Signification                                                                                                              |
+| ---------------------------- | -------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `ARKVORY_DATABASE_URL`       | définie par l’installateur | L’URL de connexion PostgreSQL. Une base de données gérée écoute sur `127.0.0.1`, sur le port choisi lors de l’installation |
+| `ARKVORY_DATABASE_POOL_SIZE` | `10`                       | La taille du pool de connexions de l’API, de 4 à 200                                                                       |
 
 Ne pointez pas une installation vers une autre base de données. Les fichiers stockés et le catalogue vont ensemble. Passer à une nouvelle base de données est une restauration à partir d’une sauvegarde : voir [Sauvegardes](../operate/backups). Pour un PostgreSQL externe, définissez `max_connections` assez haut pour le pool de l’API, une connexion par téléversement simultané pour les verrous d’écriture, 5 pour le processus de traitement (worker) et les connexions de l’agent de sauvegarde.
 

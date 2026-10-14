@@ -104,10 +104,10 @@ Es gibt keine Einstellung für eine öffentliche URL. Der Server erzeugt absolut
 
 ### Datenbank {#database}
 
-| Variable                     | Standard              | Bedeutung                                                                               |
-| ---------------------------- | --------------------- | --------------------------------------------------------------------------------------- |
-| `ARKVORY_DATABASE_URL`       | vom Installer gesetzt | Die PostgreSQL-Verbindungs-URL. Eine verwaltete Datenbank lauscht auf `127.0.0.1:54329` |
-| `ARKVORY_DATABASE_POOL_SIZE` | `10`                  | Die Größe des Verbindungspools der API, von 4 bis 200                                   |
+| Variable                     | Standard              | Bedeutung                                                                                                                     |
+| ---------------------------- | --------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `ARKVORY_DATABASE_URL`       | vom Installer gesetzt | Die PostgreSQL-Verbindungs-URL. Eine verwaltete Datenbank lauscht auf `127.0.0.1` auf dem bei der Installation gewählten Port |
+| `ARKVORY_DATABASE_POOL_SIZE` | `10`                  | Die Größe des Verbindungspools der API, von 4 bis 200                                                                         |
 
 Richten Sie eine Installation nicht auf eine andere Datenbank. Die gespeicherten Dateien und der Katalog gehören zusammen. Der Umzug auf eine neue Datenbank ist eine Wiederherstellung aus einem Backup: siehe [Backups](../operate/backups). Setzen Sie bei einem externen PostgreSQL `max_connections` hoch genug für den Pool der API, eine Verbindung pro gleichzeitigem Upload für Schreibsperren, 5 für den Worker und die Verbindungen des Backup-Agents.
 

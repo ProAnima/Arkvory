@@ -21,7 +21,7 @@ Uma nova instalação escuta em `127.0.0.1:8080` por HTTP simples. Somente progr
 
 - Obtenha um certificado para o nome usado pelos clientes, de uma autoridade em que confiem, por exemplo com certbot, win-acme ou sua autoridade corporativa. Você precisa do certificado com sua cadeia e da chave privada em arquivos PEM. A chave não pode ter senha.
 - Crie um nome DNS que aponte para o servidor.
-- Abra somente a porta HTTPS no firewall, e só para as redes dos clientes. Nunca abra a porta do banco de dados 54329.
+- Abra somente a porta HTTPS no firewall, e só para as redes dos clientes. Nunca abra a porta do banco de dados (54329 ou 45329-45348).
 
 ## TLS integrado {#built-in-tls}
 

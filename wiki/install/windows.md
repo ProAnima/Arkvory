@@ -48,14 +48,14 @@ The installer deletes the owner file after it creates the account. Never pass a 
 
 ## What the graphical installer creates {#what-the-graphical-installer-creates}
 
-| Item                         | Location or value                                                      |
-| ---------------------------- | ---------------------------------------------------------------------- |
-| Program files                | `C:\Program Files\ProAnima\Arkvory`                                    |
-| Data, configuration and logs | `C:\ProgramData\ProAnima\Arkvory` (the installation root)              |
-| Database                     | PostgreSQL 18.4 in `database\` of the root, on `127.0.0.1:54329`       |
-| Console                      | `http://127.0.0.1:8080/console/`                                       |
-| Recovery key                 | `config\bootstrap-token.txt` in the root                               |
-| Update task                  | `ProAnimaArkvoryUpdate` in Task Scheduler. Runs every minute as SYSTEM |
+| Item                         | Location or value                                                                                |
+| ---------------------------- | ------------------------------------------------------------------------------------------------ |
+| Program files                | `C:\Program Files\ProAnima\Arkvory`                                                              |
+| Data, configuration and logs | `C:\ProgramData\ProAnima\Arkvory` (the installation root)                                        |
+| Database                     | PostgreSQL 18.4 in `database\` of the root, on `127.0.0.1` at the first free port of 45329-45348 |
+| Console                      | `http://127.0.0.1:8080/console/`                                                                 |
+| Recovery key                 | `config\bootstrap-token.txt` in the root                                                         |
+| Update task                  | `ProAnimaArkvoryUpdate` in Task Scheduler. Runs every minute as SYSTEM                           |
 
 ### Services {#services}
 

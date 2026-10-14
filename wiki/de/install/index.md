@@ -80,11 +80,11 @@ Ohne Internetzugang installieren und aktualisieren Sie aus einer lokalen Kopie e
 
 ## Ports {#ports}
 
-| Port      | Dienst                                                               | Standardmäßige Erreichbarkeit                                                                                                                                              |
-| --------- | -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 8080/TCP  | API und Konsole (HTTP oder HTTPS mit integriertem TLS)               | Nur `127.0.0.1`. Eine native Installation kann nach der HTTPS-Konfiguration auch auf anderen Adressen lauschen. Compose veröffentlicht den Port immer auf `127.0.0.1:8080` |
-| 54329/TCP | Verwaltete PostgreSQL des grafischen Installers und der Linux-Pakete | Nur `127.0.0.1`                                                                                                                                                            |
-| 5432/TCP  | PostgreSQL-Container einer Compose-Installation                      | Nicht veröffentlicht. Nur innerhalb des Compose-Netzwerks erreichbar                                                                                                       |
+| Port                           | Dienst                                                                                                                                                         | Standardmäßige Erreichbarkeit                                                                                                                                              |
+| ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 8080/TCP                       | API und Konsole (HTTP oder HTTPS mit integriertem TLS)                                                                                                         | Nur `127.0.0.1`. Eine native Installation kann nach der HTTPS-Konfiguration auch auf anderen Adressen lauschen. Compose veröffentlicht den Port immer auf `127.0.0.1:8080` |
+| 54329/TCP oder 45329-45348/TCP | Verwaltete PostgreSQL des grafischen Installers und der Linux-Pakete; bei der Installation wird der erste freie Port belegt, unter Windows unterhalb von 49152 | Nur `127.0.0.1`                                                                                                                                                            |
+| 5432/TCP                       | PostgreSQL-Container einer Compose-Installation                                                                                                                | Nicht veröffentlicht. Nur innerhalb des Compose-Netzwerks erreichbar                                                                                                       |
 
 Öffnen Sie für Client-Netzwerke nur den HTTPS-Port. Öffnen Sie nie den Datenbank-Port.
 

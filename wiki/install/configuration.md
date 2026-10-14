@@ -104,10 +104,10 @@ There is no setting for a public URL. The server builds absolute links, such as 
 
 ### Database {#database}
 
-| Variable                     | Default              | Meaning                                                                        |
-| ---------------------------- | -------------------- | ------------------------------------------------------------------------------ |
-| `ARKVORY_DATABASE_URL`       | set by the installer | The PostgreSQL connection URL. A managed database listens on `127.0.0.1:54329` |
-| `ARKVORY_DATABASE_POOL_SIZE` | `10`                 | The size of the API connection pool, from 4 to 200                             |
+| Variable                     | Default              | Meaning                                                                                                         |
+| ---------------------------- | -------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `ARKVORY_DATABASE_URL`       | set by the installer | The PostgreSQL connection URL. A managed database listens on `127.0.0.1` at the port chosen during installation |
+| `ARKVORY_DATABASE_POOL_SIZE` | `10`                 | The size of the API connection pool, from 4 to 200                                                              |
 
 Do not point an installation at another database. The stored files and the catalog belong together. Moving to a new database is a restore from a backup: see [Backups](../operate/backups). For an external PostgreSQL, set `max_connections` high enough for the API pool, one connection per concurrent upload for write locks, 5 for the worker and the connections of the backup agent.
 

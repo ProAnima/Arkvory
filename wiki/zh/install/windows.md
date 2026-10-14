@@ -50,14 +50,14 @@ title: Windows
 
 ## 图形安装程序创建的内容 {#what-the-graphical-installer-creates}
 
-| 项目             | 位置或值                                                                                 |
-| ---------------- | ---------------------------------------------------------------------------------------- |
-| 程序文件         | `C:\Program Files\ProAnima\Arkvory`                                                      |
-| 数据、配置和日志 | `C:\ProgramData\ProAnima\Arkvory`（安装根目录）                                          |
-| 数据库           | PostgreSQL 18.4，位于根目录的 `database\` 中，监听 `127.0.0.1:54329`                     |
-| 控制台           | `http://127.0.0.1:8080/console/`                                                         |
-| 恢复密钥         | 根目录中的 `config\bootstrap-token.txt`                                                  |
-| 更新任务         | 任务计划程序（Task Scheduler）中的 `ProAnimaArkvoryUpdate`。以 SYSTEM 身份每分钟运行一次 |
+| 项目             | 位置或值                                                                                       |
+| ---------------- | ---------------------------------------------------------------------------------------------- |
+| 程序文件         | `C:\Program Files\ProAnima\Arkvory`                                                            |
+| 数据、配置和日志 | `C:\ProgramData\ProAnima\Arkvory`（安装根目录）                                                |
+| 数据库           | PostgreSQL 18.4，位于根目录的 `database\` 中，监听 `127.0.0.1` 上 45329-45348 中第一个空闲端口 |
+| 控制台           | `http://127.0.0.1:8080/console/`                                                               |
+| 恢复密钥         | 根目录中的 `config\bootstrap-token.txt`                                                        |
+| 更新任务         | 任务计划程序（Task Scheduler）中的 `ProAnimaArkvoryUpdate`。以 SYSTEM 身份每分钟运行一次       |
 
 ### 服务 {#services}
 

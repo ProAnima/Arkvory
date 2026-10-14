@@ -48,14 +48,14 @@ Microsoft 런타임 때문에 다시 시작해야 한다고 Setup이 알려 주�
 
 ## 그래픽 설치 프로그램이 만드는 항목 {#what-the-graphical-installer-creates}
 
-| 항목               | 위치 또는 값                                                             |
-| ------------------ | ------------------------------------------------------------------------ |
-| 프로그램 파일      | `C:\Program Files\ProAnima\Arkvory`                                      |
-| 데이터, 구성, 로그 | `C:\ProgramData\ProAnima\Arkvory`(설치 루트)                             |
-| 데이터베이스       | 루트의 `database\`에 있는 PostgreSQL 18.4, `127.0.0.1:54329`             |
-| 콘솔               | `http://127.0.0.1:8080/console/`                                         |
-| 복구 키            | 루트의 `config\bootstrap-token.txt`                                      |
-| 업데이트 작업      | 작업 스케줄러의 `ProAnimaArkvoryUpdate`. SYSTEM 계정으로 매분 실행됩니다 |
+| 항목               | 위치 또는 값                                                                            |
+| ------------------ | --------------------------------------------------------------------------------------- |
+| 프로그램 파일      | `C:\Program Files\ProAnima\Arkvory`                                                     |
+| 데이터, 구성, 로그 | `C:\ProgramData\ProAnima\Arkvory`(설치 루트)                                            |
+| 데이터베이스       | 루트의 `database\`에 있는 PostgreSQL 18.4, `127.0.0.1`의 45329-45348 중 첫 번째 빈 포트 |
+| 콘솔               | `http://127.0.0.1:8080/console/`                                                        |
+| 복구 키            | 루트의 `config\bootstrap-token.txt`                                                     |
+| 업데이트 작업      | 작업 스케줄러의 `ProAnimaArkvoryUpdate`. SYSTEM 계정으로 매분 실행됩니다                |
 
 ### 서비스 {#services}
 
