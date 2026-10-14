@@ -959,6 +959,46 @@
       },
       "summary": "سرد المرايا والاستيرادات في هذا التثبيت",
       "description": "يعيد لكل مستودع يعكسه هذا الخادم أو يستورده من Arkvory آخر ويمكن للمستدعي قراءته الحالةَ نفسها التي تعيدها حالة مرآة مستودع واحد: المصدر و`mode` و`phase` و`cursor` و`head` و`caughtUp` وآخر فحص ومزامنة وخطأ، وعدد العناصر والبايتات المنسوخة. تُستبعد المستودعات التي لا يمكن للمستدعي قراءتها؛ ويجيب تثبيت بلا مرايا بقائمة فارغة."
+    },
+    "getSystemTopology": {
+      "en": {
+        "summary": "Get this site for the fleet console",
+        "description": "Returns this installation as one site of a fleet (ADR 0077): its name, version, schema and role, whether it is available and writable, the HA copies and nodes, the read gateways from their leases, every mirror and import with its phase, last sync and `lagChanges` (changes of the source not applied yet), the host updater state and the download queue. Only the global administrator of the site or a controller paired with it may read it."
+      },
+      "summary": "جلب هذا الموقع لوحدة تحكم الأسطول",
+      "description": "يعيد هذا التثبيت بوصفه موقعًا واحدًا من أسطول (ADR 0077): الاسم والإصدار والمخطط والدور، وهل هو متاح ويقبل الكتابة، ونسخ HA وعقدها، وبوابات القراءة حسب عقودها، وكل مرآة واستيراد مع مرحلتها وآخر مزامنة و`lagChanges` (تغييرات المصدر التي لم تُطبَّق بعد)، وحالة وكيل التحديث وطابور التنزيل. لا يقرأه إلا المسؤول العام للموقع أو وحدة تحكم مقترنة به."
+    },
+    "createFleetPairing": {
+      "en": {
+        "summary": "Make a pairing code",
+        "description": "Makes a one-time code, valid ten minutes, that the administrator of a controller types in to manage this site. The code is shown once; it is stored only as a hash. Only the global administrator of the site may make one."
+      },
+      "summary": "إنشاء رمز اقتران",
+      "description": "ينشئ رمزًا لمرة واحدة صالحًا عشر دقائق يُدخله مسؤول وحدة التحكم لإدارة هذا الموقع. يُعرض الرمز مرة واحدة ويُحفظ كتجزئة فقط. لا ينشئه إلا المسؤول العام للموقع."
+    },
+    "listFleetControllers": {
+      "en": {
+        "summary": "List the controllers of this site",
+        "description": "Lists the controllers that may manage this site: their name, who paired them, when, and when their key was last used."
+      },
+      "summary": "سرد وحدات التحكم لهذا الموقع",
+      "description": "يسرد وحدات التحكم التي يحق لها إدارة هذا الموقع: الاسم ومن أقرنها ومتى وآخر استخدام لمفتاحها."
+    },
+    "revokeFleetController": {
+      "en": {
+        "summary": "Revoke a controller",
+        "description": "Revokes a controller: its fleet key is refused at once. To manage the site again it must pair with a new code."
+      },
+      "summary": "إبطال وحدة تحكم",
+      "description": "يبطل وحدة تحكم: يُرفض مفتاح الأسطول الخاص بها فورًا. لإدارة الموقع من جديد يلزم اقتران برمز جديد."
+    },
+    "enrollFleetController": {
+      "en": {
+        "summary": "Pair with a controller",
+        "description": "Trades a live pairing code for a fleet key, once. The controller calls it over TLS it has pinned to the fingerprint the administrator confirmed. The key is returned once and reaches only the routes a controller needs."
+      },
+      "summary": "الاقتران بوحدة تحكم",
+      "description": "يستبدل رمز اقتران صالحًا بمفتاح أسطول مرة واحدة. تستدعيه وحدة التحكم عبر TLS مثبّت على البصمة التي أكدها المسؤول. يُعاد المفتاح مرة واحدة ولا يصل إلا إلى المسارات التي تحتاجها وحدة التحكم."
     }
   },
   "errors": {

@@ -959,6 +959,46 @@
       },
       "summary": "列出此安装的镜像和导入",
       "description": "对于此服务器从另一个 Arkvory 镜像或导入、且调用方可读取的每个仓库，返回与单个仓库镜像状态相同的信息：来源、`mode`、`phase`、`cursor` 和 `head`、`caughtUp`、最近一次检查、同步和错误，以及已复制的制品数和字节数。调用方无法读取的仓库会被省略；没有镜像的安装返回空列表。"
+    },
+    "getSystemTopology": {
+      "en": {
+        "summary": "Get this site for the fleet console",
+        "description": "Returns this installation as one site of a fleet (ADR 0077): its name, version, schema and role, whether it is available and writable, the HA copies and nodes, the read gateways from their leases, every mirror and import with its phase, last sync and `lagChanges` (changes of the source not applied yet), the host updater state and the download queue. Only the global administrator of the site or a controller paired with it may read it."
+      },
+      "summary": "获取本站点供集群控制台使用",
+      "description": "把本安装作为集群中的一个站点返回（ADR 0077）：名称、版本、架构和角色，是否可用、是否可写，HA 副本和节点，按租约列出的只读网关，每个镜像和导入及其阶段、最后同步时间和 `lagChanges`（源中尚未应用的变更），更新代理状态和下载队列。只有站点的全局管理员或已配对的控制站点可以读取。"
+    },
+    "createFleetPairing": {
+      "en": {
+        "summary": "Make a pairing code",
+        "description": "Makes a one-time code, valid ten minutes, that the administrator of a controller types in to manage this site. The code is shown once; it is stored only as a hash. Only the global administrator of the site may make one."
+      },
+      "summary": "创建配对码",
+      "description": "创建一个一次性、十分钟有效的代码，控制站点的管理员输入它即可管理本站点。代码只显示一次，只以哈希形式保存。只有站点的全局管理员可以创建。"
+    },
+    "listFleetControllers": {
+      "en": {
+        "summary": "List the controllers of this site",
+        "description": "Lists the controllers that may manage this site: their name, who paired them, when, and when their key was last used."
+      },
+      "summary": "列出本站点的控制站点",
+      "description": "列出可以管理本站点的控制站点：名称、由谁配对、何时配对，以及其密钥最后一次使用的时间。"
+    },
+    "revokeFleetController": {
+      "en": {
+        "summary": "Revoke a controller",
+        "description": "Revokes a controller: its fleet key is refused at once. To manage the site again it must pair with a new code."
+      },
+      "summary": "撤销控制站点",
+      "description": "撤销一个控制站点：其集群密钥立即被拒绝。要再次管理本站点，必须用新代码重新配对。"
+    },
+    "enrollFleetController": {
+      "en": {
+        "summary": "Pair with a controller",
+        "description": "Trades a live pairing code for a fleet key, once. The controller calls it over TLS it has pinned to the fingerprint the administrator confirmed. The key is returned once and reaches only the routes a controller needs."
+      },
+      "summary": "与控制站点配对",
+      "description": "用一个有效的配对码一次性换取集群密钥。控制站点通过固定在管理员确认的指纹上的 TLS 调用它。密钥只返回一次，只能访问控制站点所需的路由。"
     }
   },
   "errors": {

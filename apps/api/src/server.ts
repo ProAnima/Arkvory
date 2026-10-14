@@ -1,5 +1,9 @@
 import type { FastifyInstance } from 'fastify';
-import { DiagnosticLogger, processIdentity } from '@proanima/arkvory-infrastructure';
+import {
+  DiagnosticLogger,
+  PostgresFleetTrust,
+  processIdentity,
+} from '@proanima/arkvory-infrastructure';
 import type { PostgresCatalog, ProcessIdentity } from '@proanima/arkvory-infrastructure';
 import type { ServerConfig } from './config.js';
 import { ApiRuntime } from './api-runtime.js';
@@ -23,6 +27,7 @@ import { registerUpdateRoutes } from './update-routes.js';
 import { UpdateControl } from './update-control.js';
 import { registerFeedback } from './feedback-routes.js';
 import { registerTopologyRoutes } from './topology-routes.js';
+import { registerFleetRoutes } from './fleet-routes.js';
 import { RecentLog } from './recent-log.js';
 import { registerOwnershipRecovery } from './ownership-recovery.js';
 import { registerAccessLog } from './access-log.js';
@@ -157,6 +162,7 @@ interface RouteParts {
   readonly recentLog: ReturnType<typeof processLog>['recentLog'];
   readonly policy: ReturnType<typeof resolveUploadTimeouts>;
   readonly diagnostics: DiagnosticLogger;
+  readonly fleetTrust: PostgresFleetTrust;
 }
 
 /** Routes after the security hooks: errors, health, updates, feedback, the API and the console. */
@@ -166,6 +172,11 @@ function registerRoutes(app: FastifyInstance, parts: RouteParts) {
   registerHttpErrors(app, context);
   registerHealthRoutes(app, runtime, () => drain.isDraining, replica, context.principal);
   registerUpdateRoutes(app, context.principal, config.updateControlDirectory);
+  registerFleetRoutes(app, context.principal, {
+    trust: parts.fleetTrust,
+    name: config.siteName ?? 'arkvory',
+    version: parts.identity.version,
+  });
   registerTopologyRoutes(app, context.principal, {
     siteName: config.siteName ?? 'arkvory',
     version: parts.identity.version,
@@ -232,6 +243,7 @@ export async function createServer(config: ServerConfig, lifecycle: ServerLifecy
     });
     const context = createRequestContext(config.maxRequests, services.mirrors.readOnlyRepositories);
     const replica = replicaGuardFor(config.replicaSocket, runtime.role);
+    const fleetTrust = new PostgresFleetTrust(runtime.catalog.pool);
     const responses = new ResponseDiagnostics(diagnostics, services.storagePolicies, context);
     // Guard registration precedes feature routes and background startup.
     registerContractGuard(app);
@@ -247,6 +259,7 @@ export async function createServer(config: ServerConfig, lifecycle: ServerLifecy
       identity,
       diagnostics,
       certificate,
+      fleetTrust,
     });
     registerCors(app, config.corsOrigins ?? []);
     background = registerMaintenance(app, runtime, services, responses, diagnostics);
@@ -261,6 +274,7 @@ export async function createServer(config: ServerConfig, lifecycle: ServerLifecy
       identity: services.identity,
       serviceAccounts: services.serviceAccounts,
       links: services.links,
+      fleet: fleetTrust,
       registerOwner: runtime.transfers.registerOwner,
       drain,
     });
@@ -275,6 +289,7 @@ export async function createServer(config: ServerConfig, lifecycle: ServerLifecy
       recentLog,
       policy,
       diagnostics,
+      fleetTrust,
     });
     return await app;
   } catch (error) {

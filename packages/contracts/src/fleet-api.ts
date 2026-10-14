@@ -3,6 +3,16 @@ import { readinessSchema } from './health.js';
 /** Fleet operations of ADR 0077: [path, method, operationId, access, retry]. */
 export const fleetOperations = [
   ['/system/topology', 'get', 'getSystemTopology', 'administrator', 'read'],
+  ['/system/fleet/pairings', 'post', 'createFleetPairing', 'administrator', 'never-automatic'],
+  ['/system/fleet/controllers', 'get', 'listFleetControllers', 'administrator', 'read'],
+  [
+    '/system/fleet/controllers/{id}',
+    'delete',
+    'revokeFleetController',
+    'administrator',
+    'idempotent',
+  ],
+  ['/system/fleet/enrollment', 'post', 'enrollFleetController', 'public', 'never-automatic'],
 ] as const;
 
 const object = (properties: Record<string, unknown>, optional: readonly string[] = []) => ({
@@ -76,7 +86,80 @@ export const topologySchema = object({
   downloads,
 });
 
+const controller = object({
+  id: { type: 'string', format: 'uuid' },
+  name: text,
+  pairedBy: text,
+  pairedAt: time,
+  usedAt: nullable(time),
+});
+const json = (schema: unknown) => ({ 'application/json': { schema } });
+
 export const fleetPaths = {
+  '/api/v1/system/fleet/pairings': {
+    post: {
+      summary:
+        'Make a one-time pairing code, valid ten minutes, that lets a controller manage this site',
+      responses: {
+        201: {
+          description: 'The code is shown once; give it to the administrator of the controller',
+          content: json(
+            object({
+              code: { type: 'string', pattern: '^[0-9A-Z]{4}-[0-9A-Z]{4}-[0-9A-Z]{4}$' },
+              expiresAt: time,
+            }),
+          ),
+        },
+      },
+    },
+  },
+  '/api/v1/system/fleet/controllers': {
+    get: {
+      summary: 'List the controllers that manage this site',
+      responses: {
+        200: {
+          description: 'Live controllers, oldest first',
+          content: json(object({ items: { type: 'array', maxItems: 100, items: controller } })),
+        },
+      },
+    },
+  },
+  '/api/v1/system/fleet/controllers/{id}': {
+    parameters: [
+      { name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } },
+    ],
+    delete: {
+      summary: 'Revoke a controller: its fleet key is refused at once',
+      responses: { 204: { description: 'Revoked' } },
+    },
+  },
+  '/api/v1/system/fleet/enrollment': {
+    post: {
+      summary:
+        'Trade a pairing code for a fleet key, once. Called by the controller over TLS it has pinned',
+      security: [],
+      requestBody: {
+        required: true,
+        content: json(
+          object({
+            code: { type: 'string', maxLength: 32 },
+            name: { type: 'string', minLength: 1, maxLength: 63 },
+          }),
+        ),
+      },
+      responses: {
+        201: {
+          description: 'The key is returned once and never shown again',
+          content: json(
+            object({
+              key: { type: 'string', pattern: '^afk_[A-Za-z0-9_-]{43}$' },
+              site: object({ name: text, version: text }),
+            }),
+          ),
+        },
+      },
+    },
+  },
   '/api/v1/system/topology': {
     get: {
       summary:

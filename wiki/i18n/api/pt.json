@@ -959,6 +959,46 @@
       },
       "summary": "Listar os espelhos e importações desta instalação",
       "description": "Para cada repositório que este servidor espelha ou importa de outro Arkvory e que o chamador pode ler, devolve o mesmo estado do status de espelho de um repositório: origem, `mode`, `phase`, `cursor` e `head`, `caughtUp`, a última verificação, sincronização e erro, e os artefatos e bytes copiados. Repositórios que o chamador não pode ler são omitidos; uma instalação sem espelhos responde com uma lista vazia."
+    },
+    "getSystemTopology": {
+      "en": {
+        "summary": "Get this site for the fleet console",
+        "description": "Returns this installation as one site of a fleet (ADR 0077): its name, version, schema and role, whether it is available and writable, the HA copies and nodes, the read gateways from their leases, every mirror and import with its phase, last sync and `lagChanges` (changes of the source not applied yet), the host updater state and the download queue. Only the global administrator of the site or a controller paired with it may read it."
+      },
+      "summary": "Obter este site para o console da frota",
+      "description": "Retorna esta instalação como um site de uma frota (ADR 0077): nome, versão, esquema e papel, se está disponível e aceita gravações, as cópias e nós de HA, os gateways de leitura pelas suas concessões, cada espelho e importação com fase, última sincronização e `lagChanges` (alterações da origem ainda não aplicadas), o estado do agente de atualização e a fila de downloads. Só o administrador global do site ou um controlador pareado pode lê-lo."
+    },
+    "createFleetPairing": {
+      "en": {
+        "summary": "Make a pairing code",
+        "description": "Makes a one-time code, valid ten minutes, that the administrator of a controller types in to manage this site. The code is shown once; it is stored only as a hash. Only the global administrator of the site may make one."
+      },
+      "summary": "Criar um código de pareamento",
+      "description": "Cria um código de uso único, válido por dez minutos, que o administrador de um controlador digita para gerenciar este site. O código é mostrado uma vez e guardado apenas como hash. Só o administrador global do site pode criá-lo."
+    },
+    "listFleetControllers": {
+      "en": {
+        "summary": "List the controllers of this site",
+        "description": "Lists the controllers that may manage this site: their name, who paired them, when, and when their key was last used."
+      },
+      "summary": "Listar os controladores do site",
+      "description": "Lista os controladores que podem gerenciar este site: nome, quem os pareou, quando e quando sua chave foi usada pela última vez."
+    },
+    "revokeFleetController": {
+      "en": {
+        "summary": "Revoke a controller",
+        "description": "Revokes a controller: its fleet key is refused at once. To manage the site again it must pair with a new code."
+      },
+      "summary": "Revogar um controlador",
+      "description": "Revoga um controlador: sua chave de frota é recusada na hora. Para gerenciar o site de novo, ele precisa parear com um novo código."
+    },
+    "enrollFleetController": {
+      "en": {
+        "summary": "Pair with a controller",
+        "description": "Trades a live pairing code for a fleet key, once. The controller calls it over TLS it has pinned to the fingerprint the administrator confirmed. The key is returned once and reaches only the routes a controller needs."
+      },
+      "summary": "Parear com um controlador",
+      "description": "Troca uma vez um código de pareamento válido por uma chave de frota. O controlador o chama por TLS fixado na impressão digital que o administrador confirmou. A chave é retornada uma vez e alcança só as rotas de que um controlador precisa."
     }
   },
   "errors": {
