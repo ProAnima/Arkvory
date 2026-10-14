@@ -2,6 +2,7 @@ import { openAsBlob } from 'node:fs';
 import { open, link, unlink, lstat } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { ArkvoryIntegrityError } from '@proanima/arkvory-sdk';
+import { newDownloadId } from '@proanima/arkvory-sdk';
 import type { ArkvoryClient, DownloadClass } from '@proanima/arkvory-sdk';
 import { record } from '@proanima/arkvory-contracts';
 import { exists, exclusive, readJson, saveJson, syncDirectory } from './local-files.js';
@@ -18,7 +19,11 @@ interface DownloadInput {
   requestTimeoutMs?: number;
   /** `--class`: queue the download in a lower class (ADR 0076). */
   downloadClass?: DownloadClass;
+  /** `--not-before` and `--not-after`: the window the download may start in. */
+  notBefore?: Date;
+  notAfter?: Date;
 }
+const downloadIdForm = /^[A-Za-z0-9_-]{16,64}$/;
 export async function download(input: DownloadInput) {
   const output = resolve(input.output),
     state = output + '.arkvory-download.json';
@@ -32,13 +37,19 @@ export async function download(input: DownloadInput) {
       repository: input.repository,
       id: input.id,
     };
+    // The download id lives in the checkpoint, so a new process continues the same download in
+    // the server's queue (ADR 0076). Checkpoints of older versions get one on first use.
+    let downloadId = newDownloadId();
     if (await exists(state)) {
       const saved = record(await readJson(state));
       for (const [key, value] of Object.entries(checkpoint))
         if (saved[key] !== value) throw new CliError('checkpoint_mismatch', 6);
+      const kept = saved['downloadId'];
+      if (typeof kept === 'string' && downloadIdForm.test(kept)) downloadId = kept;
+      else await saveJson(state, { ...checkpoint, downloadId });
     } else {
       if (await exists(partial)) throw new CliError('orphan_partial', 6);
-      await saveJson(state, checkpoint);
+      await saveJson(state, { ...checkpoint, downloadId });
     }
     if (!(await exists(partial))) {
       const created = await open(partial, 'wx', 0o600);
@@ -66,7 +77,10 @@ export async function download(input: DownloadInput) {
     const stream = await input.client.downloadVerified(input.repository, input.id, {
       prefix,
       signal: input.signal,
+      downloadId,
       ...(input.downloadClass ? { downloadClass: input.downloadClass } : {}),
+      ...(input.notBefore ? { notBefore: input.notBefore } : {}),
+      ...(input.notAfter ? { notAfter: input.notAfter } : {}),
     });
     await appendVerified(stream, partial, prefix.size, total, input);
     input.signal.throwIfAborted();

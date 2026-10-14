@@ -11,6 +11,7 @@ const headers = [
   'if-none-match',
   'arkvory-download-id',
   'arkvory-download-class',
+  'arkvory-queue-ticket',
 ] as const;
 const exposed = [
   'X-Request-Id',
@@ -22,6 +23,7 @@ const exposed = [
   'Location',
   'Retry-After',
   'Arkvory-Download-Class',
+  'Arkvory-Queue-Ticket',
   'Arkvory-Queue-Position',
   'Arkvory-Starts-At',
 ] as const;

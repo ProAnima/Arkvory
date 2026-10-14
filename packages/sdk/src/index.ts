@@ -1,6 +1,7 @@
 export * from './client.js';
 export * from './download-queue.js';
 export * from './checkpointed-download.js';
+export { newDownloadId, downloadIdPattern } from './download-api.js';
 export {
   ArkvoryHttpError,
   ArkvoryNetworkError,

@@ -69,6 +69,8 @@ The server URL must use HTTPS. Plain HTTP is allowed only for `localhost`, `127.
 | `--retries N`              | 20               | Network retries for one operation (0 to 100); `0` turns them off                                                    |
 | `--wait-limit MS`          | none             | How long one operation may wait in total for a busy server. Without it, the client waits as long as the server asks |
 | `--class CLASS`            |                  | Queue class of downloads: `release`, `bulk` or `background`. It can only lower your class                           |
+| `--not-before T`           |                  | Do not start a download before T: RFC 3339 or `HH:MM`, the next time the clock shows it                             |
+| `--not-after T`            |                  | Give up with exit code 4 if the queue would start the download after T                                              |
 | `--verbose`                | off              | One stderr line per HTTP request: method, path, status, time, request ID. No headers or keys.                       |
 | `--help`, `--version`      |                  | Help; client version as JSON                                                                                        |
 | `--`                       |                  | Ends options, for file names that start with `-`                                                                    |

@@ -88,6 +88,10 @@ export const excludedTables: readonly ExcludedTable[] = [
   { name: 'arkvory_user_sessions', reason: 'ephemeral sign-in sessions are never restored' },
   { name: 'arkvory_transfer_links', reason: 'download links live at most a day; never restored' },
   { name: 'arkvory_gateway_leases', reason: 'runtime ownership of gateway slots' },
+  {
+    name: 'arkvory_download_ticket_key',
+    reason: 'signs download queue tickets of the source; a restore makes its own',
+  },
   { name: 'arkvory_download_policy', reason: 'gateway topology is configured on the target' },
   { name: 'arkvory_backup_jobs', reason: 'backup state of the source instance' },
   { name: 'arkvory_backup_pins', reason: 'backup state of the source instance' },

@@ -17,6 +17,8 @@ export interface DownloadQueuePlace {
   readonly position?: number;
   /** The server's estimate of when the download starts. */
   readonly startsAt?: Date;
+  /** Opaque proof of the download's turn; send it back (ADR 0076). */
+  readonly ticket?: string;
 }
 
 /**
@@ -74,7 +76,9 @@ export type ClientErrorCode =
   | 'size_mismatch'
   | 'file_changed'
   | 'upload_cancelled'
-  | 'completion_failed';
+  | 'completion_failed'
+  /** ADR 0076: the server's queue would start the download after the caller's `notAfter`. */
+  | 'queue_deadline';
 
 /** Machine-coded local failure; `message` keeps the previous English text for old callers. */
 export class ArkvoryClientError extends Error {

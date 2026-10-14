@@ -59,6 +59,8 @@ const clientExit: Readonly<Record<ClientErrorCode, number>> = {
   file_changed: 6,
   upload_cancelled: 6,
   completion_failed: 4,
+  // The server's queue would start the download after --not-after: like a timeout.
+  queue_deadline: 4,
 };
 
 // C0/C1 controls (terminal escapes), zero-width, line separators and bidirectional overrides.

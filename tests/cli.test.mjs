@@ -7,6 +7,7 @@ import { createHash } from 'node:crypto';
 import { parseArguments } from '../apps/cli/dist/arguments.js';
 import { upload } from '../apps/cli/dist/upload.js';
 import { download } from '../apps/cli/dist/download.js';
+import { moment } from '../apps/cli/dist/time-window.js';
 import { exclusive, readSmall } from '../apps/cli/dist/local-files.js';
 import { ArkvoryClient, ArkvoryIntegrityError } from '@proanima/arkvory-sdk';
 import { createServer } from 'node:http';
@@ -159,6 +160,63 @@ test('CLI --class reaches the download and only known classes are accepted', asy
     parseArguments(['download', 'a', 'b', '--class', 'bulk']).options.get('class'),
     'bulk',
   );
+});
+
+test('CLI download windows read RFC 3339 or the next HH:MM', () => {
+  const now = new Date(2026, 9, 14, 23, 0);
+  assert.equal(
+    moment('2026-10-15T06:00:00Z', now, 'not-after').toISOString(),
+    '2026-10-15T06:00:00.000Z',
+  );
+  const tonight = moment('23:30', now, 'not-before');
+  assert.deepEqual([tonight.getDate(), tonight.getHours(), tonight.getMinutes()], [14, 23, 30]);
+  const tomorrow = moment('22:00', now, 'not-before');
+  assert.deepEqual([tomorrow.getDate(), tomorrow.getHours()], [15, 22]);
+  for (const wrong of ['24:00', '7:00', 'tonight', '2026-10-15'])
+    assert.throws(() => moment(wrong, now, 'not-before'), { code: 'invalid_not_before' });
+});
+
+test('CLI keeps one download id in its checkpoint across processes', async (t) => {
+  const directory = await mkdtemp(join(tmpdir(), 'arkvory-cli-'));
+  t.after(() => removeTestDirectory(directory));
+  const bytes = Buffer.from('resumed payload');
+  const ids = [];
+  let fail = true;
+  const client = {
+    async artifact() {
+      return {
+        descriptor: {
+          size: String(bytes.length),
+          sha256: createHash('sha256').update(bytes).digest('hex'),
+        },
+      };
+    },
+    async downloadVerified(repository, id, options) {
+      ids.push(options.downloadId);
+      if (fail) throw new Error('connection lost');
+      return new ReadableStream({
+        start(controller) {
+          controller.enqueue(bytes);
+          controller.close();
+        },
+      });
+    },
+  };
+  const input = {
+    client,
+    output: join(directory, 'out.bin'),
+    server: 'https://arkvory.example/',
+    repository: 'releases',
+    id: 'artifact',
+    signal: new AbortController().signal,
+    progress() {},
+  };
+  await assert.rejects(download(input), /connection lost/);
+  fail = false;
+  await download(input);
+  assert.equal(ids.length, 2);
+  assert.match(ids[0], /^[A-Za-z0-9_-]{16,64}$/);
+  assert.equal(ids[1], ids[0], 'a new process continues the same download');
 });
 
 test('CLI bounded local reads and concurrent checkpoint ownership fail closed', async (t) => {

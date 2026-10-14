@@ -69,6 +69,8 @@ Die Server-URL muss HTTPS verwenden. Unverschlüsseltes HTTP ist nur für `local
 | `--retries N`                | 20             | Netzwerkwiederholungen für einen Vorgang (0 bis 100); `0` schaltet sie aus                                                                      |
 | `--wait-limit MS`            | keines         | Wie lange ein Vorgang insgesamt auf einen beschäftigten Server warten darf. Ohne die Option wartet der Client so lange, wie der Server verlangt |
 | `--class CLASS`              |                | Warteschlangenklasse von Downloads: `release`, `bulk` oder `background`. Sie kann Ihre Klasse nur senken                                        |
+| `--not-before T`             |                | Einen Download nicht vor T beginnen: RFC 3339 oder `HH:MM`, der nächste solche Zeitpunkt                                                        |
+| `--not-after T`              |                | Mit Exit-Code 4 aufgeben, wenn die Warteschlange den Download erst nach T beginnen würde                                                        |
 | `--verbose`                  | aus            | Eine stderr-Zeile pro HTTP-Anfrage: Methode, Pfad, Status, Zeit, Anfrage-ID. Keine Header und keine Schlüssel.                                  |
 | `--help`, `--version`        |                | Hilfe; Client-Version als JSON                                                                                                                  |
 | `--`                         |                | Beendet die Optionen, für Dateinamen, die mit `-` beginnen                                                                                      |

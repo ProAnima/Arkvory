@@ -14,8 +14,9 @@ import { migrateGitLfs } from './lfs-schema.js';
 import { migrateNpmRegistry } from './npm-schema.js';
 import { migrateWebhookState } from './webhook-schema.js';
 import { migrateUploadBytes } from './upload-bytes.js';
+import { migrateDownloadTickets } from './download-tickets.js';
 
-/** Steps of versions 15-37 (36 is an index step) in their historical order; each records its own version. */
+/** Steps of versions 15-38 (36 is an index step) in their historical order; each records its own version. */
 const storageSteps: readonly (readonly [number, (client: PoolClient) => Promise<void>])[] = [
   [15, migrateStoragePolicy],
   [16, migrateCleanup],
@@ -38,6 +39,7 @@ const storageSteps: readonly (readonly [number, (client: PoolClient) => Promise<
   [34, migrateBackupVaultEncryption],
   [35, migrateUploadBytes],
   [37, migrateMirrorRecovery],
+  [38, migrateDownloadTickets],
 ];
 
 /** upTo bounds the applied versions (restore of an older backup); the order never changes. */
