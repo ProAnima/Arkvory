@@ -959,6 +959,86 @@
       },
       "summary": "このインストールのミラーとインポートの一覧",
       "description": "このサーバーが別のArkvoryからミラーまたはインポートしており、呼び出し元が読み取れる各リポジトリについて、1つのリポジトリのミラー状態と同じ情報を返します：ミラー元、`mode`、`phase`、`cursor`と`head`、`caughtUp`、前回の確認・同期・エラー、コピーされたアーティファクトとバイトの数。呼び出し元が読み取れないリポジトリは省かれます。ミラーのないインストールは空のリストで応答します。"
+    },
+    "getSystemTopology": {
+      "en": {
+        "summary": "Get this site for the fleet console",
+        "description": "Returns this installation as one site of a fleet (ADR 0077): its name, version, schema and role, whether it is available and writable, the HA copies and nodes, the read gateways from their leases, every mirror and import with its phase, last sync and `lagChanges` (changes of the source not applied yet), the host updater state and the download queue. Only the global administrator of the site or a controller paired with it may read it."
+      },
+      "summary": "フリートコンソール用にこのサイトを取得",
+      "description": "このインストールをフリートの1サイトとして返します（ADR 0077）：名前、バージョン、スキーマと役割、利用可能か・書き込み可能か、HA のコピーとノード、リースに基づく読み取りゲートウェイ、各ミラーとインポートのフェーズ・最終同期・`lagChanges`（まだ適用されていない元の変更）、更新エージェントの状態とダウンロードキュー。サイトのグローバル管理者かペアリング済みのコントローラーだけが読めます。"
+    },
+    "createFleetPairing": {
+      "en": {
+        "summary": "Make a pairing code",
+        "description": "Makes a one-time code, valid ten minutes, that the administrator of a controller types in to manage this site. The code is shown once; it is stored only as a hash. Only the global administrator of the site may make one."
+      },
+      "summary": "ペアリングコードを作成",
+      "description": "コントローラーの管理者がこのサイトを管理するために入力する、10分間有効な使い捨てコードを作成します。コードは一度だけ表示され、ハッシュとしてのみ保存されます。作成できるのはサイトのグローバル管理者だけです。"
+    },
+    "listFleetControllers": {
+      "en": {
+        "summary": "List the controllers of this site",
+        "description": "Lists the controllers that may manage this site: their name, who paired them, when, and when their key was last used."
+      },
+      "summary": "このサイトのコントローラー一覧",
+      "description": "このサイトを管理できるコントローラーを一覧表示します：名前、誰がいつペアリングしたか、キーが最後に使われた時刻。"
+    },
+    "revokeFleetController": {
+      "en": {
+        "summary": "Revoke a controller",
+        "description": "Revokes a controller: its fleet key is refused at once. To manage the site again it must pair with a new code."
+      },
+      "summary": "コントローラーを取り消す",
+      "description": "コントローラーを取り消します：そのフリートキーは直ちに拒否されます。再びサイトを管理するには新しいコードでペアリングが必要です。"
+    },
+    "enrollFleetController": {
+      "en": {
+        "summary": "Pair with a controller",
+        "description": "Trades a live pairing code for a fleet key, once. The controller calls it over TLS it has pinned to the fingerprint the administrator confirmed. The key is returned once and reaches only the routes a controller needs."
+      },
+      "summary": "コントローラーとペアリング",
+      "description": "有効なペアリングコードを一度だけフリートキーと交換します。コントローラーは管理者が確認したフィンガープリントに固定した TLS で呼び出します。キーは一度だけ返され、コントローラーに必要なルートにだけ届きます。"
+    },
+    "listFleetSites": {
+      "en": {
+        "summary": "List the managed sites",
+        "description": "Lists the sites this installation manages (ADR 0077) with what each last reported: `state` (`ok`, or why it was not read: `unreachable`, `certificate`, `revoked`, `invalid`, `refused`), when it was last seen, and its last `topology`. Sites are read every 30 seconds in the background. A site key is never returned."
+      },
+      "summary": "管理しているサイトの一覧",
+      "description": "このインストールが管理するサイト（ADR 0077）と、各サイトが最後に報告した内容：`state`（`ok`、または読めなかった理由：`unreachable`、`certificate`、`revoked`、`invalid`、`refused`）、最後に確認できた時刻、最後の `topology`。サイトはバックグラウンドで30秒ごとに読み取ります。サイトのキーは返しません。"
+    },
+    "addFleetSite": {
+      "en": {
+        "summary": "Pair with a site",
+        "description": "Pairs with a site: the controller connects again, the certificate must still have the `fingerprint` the administrator confirmed (null for HTTP on loopback), the pairing `code` made on the site is traded for a key, and the key is sealed with `ARKVORY_FLEET_KEY_FILE`. The site is read once before the answer. Without the key file the answer is 503."
+      },
+      "summary": "サイトとペアリング",
+      "description": "サイトとペアリングします：コントローラーが再接続し、証明書は管理者が確認した `fingerprint` のままでなければなりません（loopback の HTTP は null）。サイトで作成したペアリング `code` をキーと交換し、キーは `ARKVORY_FLEET_KEY_FILE` で封印します。応答の前にサイトを一度読み取ります。キーファイルがなければ応答は 503 です。"
+    },
+    "probeFleetSite": {
+      "en": {
+        "summary": "Read the certificate of a site",
+        "description": "Connects to the address and reads the certificate the site presents, without sending anything: compare its `fingerprint` with the one the site's administrator sees before you pair."
+      },
+      "summary": "サイトの証明書を読む",
+      "description": "アドレスに接続し、何も送らずにサイトの証明書を読みます：ペアリング前に `fingerprint` をサイトの管理者が見ているものと比べてください。"
+    },
+    "removeFleetSite": {
+      "en": {
+        "summary": "Forget a site",
+        "description": "Forgets a site and its sealed key here. Revoke this controller on the site as well; until then the key stays valid there."
+      },
+      "summary": "サイトを忘れる",
+      "description": "ここでサイトと封印されたキーを削除します。サイト側でもこのコントローラーを取り消してください。それまでキーはそこで有効です。"
+    },
+    "refreshFleetSite": {
+      "en": {
+        "summary": "Read a site now",
+        "description": "Reads the site now instead of waiting for the next round and returns it with the new state."
+      },
+      "summary": "今すぐサイトを読む",
+      "description": "次の巡回を待たずに今サイトを読み、新しい状態で返します。"
     }
   },
   "errors": {

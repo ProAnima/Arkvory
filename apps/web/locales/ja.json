@@ -3830,5 +3830,293 @@
   "replicationSingleCopy": {
     "en": "Writes are acknowledged with a single copy until {until} by an operator decision.",
     "text": "オペレーターの判断により、{until} まで書き込みは 1 つのコピーで確認されます。"
+  },
+  "fleet": {
+    "en": "Sites",
+    "text": "サイト"
+  },
+  "fleetIntro": {
+    "en": "Every installation of your cluster in one place: this site and the sites it manages. Sites are read every 30 seconds.",
+    "text": "クラスターのすべてのインストールを一か所で：このサイトと、このサイトが管理するサイト。サイトは30秒ごとに読み取ります。"
+  },
+  "fleetReadAll": {
+    "en": "Read all now",
+    "text": "すべて今すぐ読む"
+  },
+  "fleetSite": {
+    "en": "Site",
+    "text": "サイト"
+  },
+  "fleetState": {
+    "en": "State",
+    "text": "状態"
+  },
+  "fleetVersion": {
+    "en": "Version",
+    "text": "バージョン"
+  },
+  "fleetCopies": {
+    "en": "HA and gateways",
+    "text": "HA とゲートウェイ"
+  },
+  "fleetMirrors": {
+    "en": "Mirrors",
+    "text": "ミラー"
+  },
+  "fleetQueue": {
+    "en": "Download queue",
+    "text": "ダウンロードキュー"
+  },
+  "fleetSeen": {
+    "en": "Last answer",
+    "text": "最後の応答"
+  },
+  "fleetActions": {
+    "en": "Actions",
+    "text": "操作"
+  },
+  "fleetStateOk": {
+    "en": "Working",
+    "text": "稼働中"
+  },
+  "fleetStatePending": {
+    "en": "Not read yet",
+    "text": "未読み取り"
+  },
+  "fleetStateUnreachable": {
+    "en": "Unreachable",
+    "text": "到達不能"
+  },
+  "fleetStateCertificate": {
+    "en": "Certificate changed",
+    "text": "証明書が変更"
+  },
+  "fleetStateRevoked": {
+    "en": "Access revoked",
+    "text": "アクセス取り消し"
+  },
+  "fleetStateInvalid": {
+    "en": "Unexpected answer",
+    "text": "想定外の応答"
+  },
+  "fleetStateRefused": {
+    "en": "Refused",
+    "text": "拒否"
+  },
+  "fleetHintUnreachable": {
+    "en": "No answer. The last known state is shown.",
+    "text": "応答がありません。最後に分かった状態を表示しています。"
+  },
+  "fleetHintCertificate": {
+    "en": "The site presents another certificate than the one confirmed. If it was renewed, remove the site and pair it again.",
+    "text": "サイトが確認済みとは別の証明書を提示しています。更新された場合は、サイトを削除して再度ペアリングしてください。"
+  },
+  "fleetHintRevoked": {
+    "en": "The administrator of the site revoked this controller. Pair again with a new code.",
+    "text": "サイトの管理者がこのコントローラーを取り消しました。新しいコードで再度ペアリングしてください。"
+  },
+  "fleetHintInvalid": {
+    "en": "The site answered in a way this release does not understand: update both.",
+    "text": "このリリースが理解できない形でサイトが応答しました：両方を更新してください。"
+  },
+  "fleetHintRefused": {
+    "en": "The site refused the request. Pair again with a new code.",
+    "text": "サイトが要求を拒否しました。新しいコードで再度ペアリングしてください。"
+  },
+  "fleetRoleApi": {
+    "en": "writer",
+    "text": "書き込み"
+  },
+  "fleetRoleReader": {
+    "en": "read gateway",
+    "text": "読み取りゲートウェイ"
+  },
+  "fleetCopiesValue": {
+    "en": "Copies: {copies} of {required}",
+    "text": "コピー：{copies}/{required}"
+  },
+  "fleetCopiesNone": {
+    "en": "One server",
+    "text": "サーバー1台"
+  },
+  "fleetGatewaysValue": {
+    "en": "Read gateways: {active}",
+    "text": "読み取りゲートウェイ：{active}"
+  },
+  "fleetMirrorsNone": {
+    "en": "None",
+    "text": "なし"
+  },
+  "fleetMirrorsCurrent": {
+    "en": "{count}, up to date",
+    "text": "{count}、最新"
+  },
+  "fleetMirrorsBehind": {
+    "en": "{count}, behind by {lag}",
+    "text": "{count}、遅れ {lag}"
+  },
+  "fleetMirrorsFailing": {
+    "en": "{count}, stopped: {failing}",
+    "text": "{count}、停止：{failing}"
+  },
+  "fleetQueueValue": {
+    "en": "Active {active}, waiting {waiting}",
+    "text": "実行中 {active}、待機 {waiting}"
+  },
+  "fleetQueueShared": {
+    "en": "No queue",
+    "text": "キューなし"
+  },
+  "fleetNever": {
+    "en": "Never",
+    "text": "なし"
+  },
+  "fleetReadSite": {
+    "en": "Read now",
+    "text": "今すぐ読む"
+  },
+  "fleetRemoveSite": {
+    "en": "Remove",
+    "text": "削除"
+  },
+  "fleetRemoveConfirm": {
+    "en": "Stop managing {name} from here? Revoke this controller on the site as well; until then its key stays valid there.",
+    "text": "ここから {name} の管理をやめますか？サイト側でもこのコントローラーを取り消してください。それまでキーはそこで有効です。"
+  },
+  "fleetRemoved": {
+    "en": "The site was removed.",
+    "text": "サイトを削除しました。"
+  },
+  "fleetEmptyTitle": {
+    "en": "No sites yet",
+    "text": "サイトはまだありません"
+  },
+  "fleetEmpty": {
+    "en": "Pair a site below: make a pairing code in the console of that site, then enter its address and the code here.",
+    "text": "下でサイトをペアリングします：そのサイトのコンソールでペアリングコードを作成し、ここにアドレスとコードを入力してください。"
+  },
+  "fleetAdd": {
+    "en": "Pair a site",
+    "text": "サイトをペアリング"
+  },
+  "fleetAddress": {
+    "en": "Site address",
+    "text": "サイトのアドレス"
+  },
+  "fleetAddressHint": {
+    "en": "The https:// address of its API, for example https://branch.example:8443",
+    "text": "API の https:// アドレス。例：https://branch.example:8443"
+  },
+  "fleetCheck": {
+    "en": "Check",
+    "text": "確認"
+  },
+  "fleetChecking": {
+    "en": "Connecting…",
+    "text": "接続中…"
+  },
+  "fleetFingerprint": {
+    "en": "Certificate fingerprint (SHA-256)",
+    "text": "証明書のフィンガープリント（SHA-256）"
+  },
+  "fleetSubject": {
+    "en": "Issued to",
+    "text": "発行先"
+  },
+  "fleetValidTo": {
+    "en": "Valid until",
+    "text": "有効期限"
+  },
+  "fleetPlain": {
+    "en": "Plain HTTP on this computer: there is no certificate to check.",
+    "text": "このコンピューター上の平文 HTTP：確認する証明書はありません。"
+  },
+  "fleetCompare": {
+    "en": "Compare this fingerprint with the one the site's console shows beside its pairing code. Pair only if they are the same.",
+    "text": "このフィンガープリントを、サイトのコンソールがペアリングコードの横に表示するものと比べてください。同じ場合にだけペアリングしてください。"
+  },
+  "fleetCode": {
+    "en": "Pairing code",
+    "text": "ペアリングコード"
+  },
+  "fleetPair": {
+    "en": "Pair",
+    "text": "ペアリング"
+  },
+  "fleetPairing": {
+    "en": "Pairing…",
+    "text": "ペアリング中…"
+  },
+  "fleetPaired": {
+    "en": "{name} is paired.",
+    "text": "{name} をペアリングしました。"
+  },
+  "fleetNoKeyFile": {
+    "en": "This installation cannot keep site keys: ARKVORY_FLEET_KEY_FILE is not configured.",
+    "text": "このインストールはサイトのキーを保持できません：ARKVORY_FLEET_KEY_FILE が設定されていません。"
+  },
+  "fleetThisSite": {
+    "en": "This site",
+    "text": "このサイト"
+  },
+  "fleetManagedBy": {
+    "en": "Managed from",
+    "text": "管理元"
+  },
+  "fleetManagedNone": {
+    "en": "No other site manages this one.",
+    "text": "このサイトを管理している他のサイトはありません。"
+  },
+  "fleetController": {
+    "en": "Controller",
+    "text": "コントローラー"
+  },
+  "fleetPairedBy": {
+    "en": "Paired by",
+    "text": "ペアリングした人"
+  },
+  "fleetPairedAt": {
+    "en": "Paired",
+    "text": "ペアリング日時"
+  },
+  "fleetUsedAt": {
+    "en": "Last request",
+    "text": "最後の要求"
+  },
+  "fleetRevoke": {
+    "en": "Revoke",
+    "text": "取り消す"
+  },
+  "fleetRevokeConfirm": {
+    "en": "Revoke {name}? It will no longer see or manage this site.",
+    "text": "{name} を取り消しますか？このサイトを見ることも管理することもできなくなります。"
+  },
+  "fleetRevoked": {
+    "en": "The controller was revoked.",
+    "text": "コントローラーを取り消しました。"
+  },
+  "fleetMakeCode": {
+    "en": "Make a pairing code",
+    "text": "ペアリングコードを作成"
+  },
+  "fleetCodeFingerprint": {
+    "en": "The fingerprint the controller must see: {fingerprint}",
+    "text": "コントローラーに表示されるべきフィンガープリント：{fingerprint}"
+  },
+  "fleetCodeProxy": {
+    "en": "TLS ends at a proxy: the controller must see the fingerprint of the certificate the proxy presents.",
+    "text": "TLS はプロキシで終端しています：コントローラーにはプロキシが提示する証明書のフィンガープリントが表示されるはずです。"
+  },
+  "fleetGuide": {
+    "en": "How sites, pairing and keys work",
+    "text": "サイト、ペアリング、キーの仕組み"
+  },
+  "fleetSelfValue": {
+    "en": "{name}, version {version}",
+    "text": "{name}、バージョン {version}"
+  },
+  "fleetCodeUntil": {
+    "en": "Valid until {until}. It is shown once: give it to the administrator of the controller.",
+    "text": "{until} まで有効。一度だけ表示されます：コントローラーの管理者に渡してください。"
   }
 }

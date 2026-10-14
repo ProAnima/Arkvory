@@ -1,6 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import type { FeedbackHub } from './feedback.js';
 import { isIP } from 'node:net';
+import { hostname } from 'node:os';
 import {
   ArkvoryError,
   MAX_OBJECT_BYTES,
@@ -39,6 +40,10 @@ export interface ServerConfig extends UploadTimeoutOptions, OperabilityOptions {
   /** ADR 0076: the download queue; absent, the defaults for `maxDownloads`. */
   readonly downloadQueue?: DownloadSchedulePolicy;
   readonly downloadHoldSeconds?: number;
+  /** ADR 0077: how this installation is named in a fleet; the host name by default. */
+  readonly siteName?: string;
+  /** ADR 0077: seals the keys of managed sites; without it this installation manages none. */
+  readonly fleetKeyFile?: string;
   readonly uploadBytesPerSecond?: number;
   readonly downloadBytesPerSecond?: number;
   readonly uploadBytesPerSecondPerPrincipal?: number;
@@ -216,6 +221,8 @@ export async function loadConfig(env: NodeJS.ProcessEnv): Promise<ServerConfig> 
     ...(env['ARKVORY_UPDATE_CONTROL_DIR']
       ? { updateControlDirectory: env['ARKVORY_UPDATE_CONTROL_DIR'] }
       : {}),
+    siteName: readSiteName(env),
+    ...(env['ARKVORY_FLEET_KEY_FILE'] ? { fleetKeyFile: env['ARKVORY_FLEET_KEY_FILE'] } : {}),
     host: env['ARKVORY_HOST'] ?? '127.0.0.1',
     port: number('ARKVORY_PORT', 8080, 65535),
     ...readTls(env),
@@ -254,6 +261,14 @@ export async function loadConfig(env: NodeJS.ProcessEnv): Promise<ServerConfig> 
       gateways: sharedDownloads !== undefined,
     }),
   };
+}
+
+/** 1 to 63 printable characters without control codes; the host name when unset. */
+function readSiteName(env: NodeJS.ProcessEnv): string {
+  const name = (env['ARKVORY_SITE_NAME'] ?? hostname()).trim();
+  if (!name || name.length > 63 || Array.from(name).some((c) => c.charCodeAt(0) < 32))
+    throw new Error('Invalid ARKVORY_SITE_NAME: 1 to 63 printable characters');
+  return name;
 }
 
 function readIdentityExposure(env: NodeJS.ProcessEnv) {

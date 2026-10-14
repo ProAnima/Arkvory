@@ -25,6 +25,8 @@ export * from './cleanup.js';
 export * from './updates.js';
 export * from './backup-wire.js';
 export * from './mirror-api.js';
+export * from './fleet.js';
+export { fleetOperations, topologySchema } from './fleet-api.js';
 export * from './feedback-api.js';
 export * from './download-link-api.js';
 export * from './raw-api.js';

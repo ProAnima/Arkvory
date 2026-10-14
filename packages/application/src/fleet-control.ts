@@ -1,0 +1,229 @@
+import { ArkvoryError } from '@proanima/arkvory-domain';
+
+/** A site as the controller keeps it (ADR 0077); `sealedKey` never leaves this layer. */
+export interface FleetSiteRecord {
+  readonly id: string;
+  readonly name: string;
+  readonly url: string;
+  readonly pin: string | null;
+  readonly certificate: string | null;
+  readonly sealedKey: Uint8Array;
+  readonly addedBy: string;
+  readonly addedAt: string;
+  readonly seenAt: string | null;
+  readonly state: string;
+  readonly error: string | null;
+  readonly topology: unknown;
+}
+/** The outcome of one poll: `ok` with the topology, or why the site was not read. */
+export interface FleetObservation {
+  readonly state: 'ok' | 'unreachable' | 'certificate' | 'revoked' | 'invalid' | 'refused';
+  readonly error: string | null;
+  readonly topology?: unknown;
+  readonly name?: string;
+}
+export interface FleetSiteStore {
+  list(): Promise<readonly FleetSiteRecord[]>;
+  get(id: string): Promise<FleetSiteRecord | null>;
+  add(
+    site: Omit<FleetSiteRecord, 'addedAt' | 'seenAt' | 'state' | 'error' | 'topology'>,
+  ): Promise<void>;
+  observe(id: string, observation: FleetObservation): Promise<void>;
+  remove(id: string): Promise<void>;
+}
+export interface FleetEndpointView {
+  readonly url: string;
+  readonly pin: string | null;
+  readonly certificate: string | null;
+}
+export interface SiteCertificateView {
+  readonly pin: string;
+  readonly certificate: string;
+  readonly subject: string;
+  readonly issuer: string;
+  readonly validTo: string;
+}
+/** How the controller talks to sites; failures carry a `code` of FleetObservation states. */
+export interface FleetSiteClient {
+  origin(url: unknown): string;
+  certificate(origin: string): Promise<SiteCertificateView | null>;
+  enroll(
+    endpoint: FleetEndpointView,
+    code: string,
+    controllerName: string,
+  ): Promise<{ readonly key: string; readonly name: string; readonly version: string }>;
+  topology(endpoint: FleetEndpointView, key: string, actor: string): Promise<unknown>;
+}
+export interface FleetKeySeal {
+  seal(siteId: string, key: string): Uint8Array;
+  open(siteId: string, box: Uint8Array): string;
+}
+
+const failureState = (error: unknown): FleetObservation['state'] => {
+  const code = error && typeof error === 'object' && 'code' in error ? error.code : undefined;
+  return code === 'unreachable' ||
+    code === 'certificate' ||
+    code === 'revoked' ||
+    code === 'invalid' ||
+    code === 'refused'
+    ? code
+    : 'invalid';
+};
+
+/** Sites polled at once: a slow site must not hold the others. */
+const CONCURRENCY = 8;
+
+/**
+ * The controller's side of the fleet (ADR 0077): get to know a site, pair with it, read every
+ * site's state in the background, forget a site. Only a global administrator reaches it.
+ */
+export class FleetControl {
+  constructor(
+    private readonly sites: FleetSiteStore,
+    private readonly client: FleetSiteClient,
+    private readonly seal: FleetKeySeal | undefined,
+    private readonly ids: () => string,
+    private readonly controllerName: string,
+  ) {}
+
+  private sealer(): FleetKeySeal {
+    if (!this.seal)
+      throw new ArkvoryError('unavailable', 'ARKVORY_FLEET_KEY_FILE is not configured');
+    return this.seal;
+  }
+
+  /** The certificate a site presents, for the administrator to compare before pairing. */
+  async probe(url: unknown) {
+    const origin = this.origin(url);
+    const certificate = await this.reach(() => this.client.certificate(origin));
+    return { url: origin, certificate };
+  }
+
+  /**
+   * Pairs with a site: its certificate must still be the one the administrator confirmed, the
+   * code is traded for a key, the key is sealed and the site read once.
+   */
+  async add(input: { url: unknown; pin: unknown; code: unknown; actor: string }) {
+    const seal = this.sealer();
+    const origin = this.origin(input.url);
+    // Before the code is spent: a site paired once is not paired again by mistake.
+    if ((await this.sites.list()).some((site) => site.url === origin))
+      throw new ArkvoryError('conflict', 'This site is already managed here', {
+        reason: 'already_exists',
+      });
+    const certificate = await this.reach(() => this.client.certificate(origin));
+    const pin = certificate?.pin ?? null;
+    if (pin !== (typeof input.pin === 'string' ? input.pin.toLowerCase() : null))
+      throw new ArkvoryError('conflict', 'The site presents another certificate than confirmed', {
+        reason: 'state_conflict',
+      });
+    if (typeof input.code !== 'string')
+      throw new ArkvoryError('invalid_input', 'Pairing code required');
+    const endpoint = { url: origin, pin, certificate: certificate?.certificate ?? null };
+    const enrolled = await this.reach(() =>
+      this.client.enroll(endpoint, input.code as string, this.controllerName),
+    );
+    const id = this.ids();
+    await this.sites.add({
+      id,
+      name: enrolled.name,
+      url: origin,
+      pin,
+      certificate: endpoint.certificate,
+      sealedKey: seal.seal(id, enrolled.key),
+      addedBy: input.actor,
+    });
+    await this.poll(id, input.actor);
+    return this.view(id);
+  }
+
+  async list() {
+    return (await this.sites.list()).map(present);
+  }
+
+  async view(id: string) {
+    const site = await this.sites.get(id);
+    if (!site) throw new ArkvoryError('not_found', 'Site not found');
+    return present(site);
+  }
+
+  async remove(id: string) {
+    await this.sites.remove(id);
+  }
+
+  /** Reads one site now and records the outcome; never throws for the site's failure. */
+  async poll(id: string, actor = 'fleet') {
+    const site = await this.sites.get(id);
+    if (!site) throw new ArkvoryError('not_found', 'Site not found');
+    let observation: FleetObservation;
+    try {
+      const key = this.sealer().open(site.id, site.sealedKey);
+      const topology = await this.client.topology(site, key, actor);
+      const name = siteName(topology);
+      observation = { state: 'ok', error: null, topology, ...(name ? { name } : {}) };
+    } catch (error) {
+      const state = failureState(error);
+      observation = { state, error: state };
+    }
+    await this.sites.observe(id, observation);
+  }
+
+  /** Reads every site, at most CONCURRENCY at once. */
+  async pollAll() {
+    const queue = [...(await this.sites.list())];
+    const workers = Array.from({ length: Math.min(CONCURRENCY, queue.length) }, async () => {
+      for (let site = queue.shift(); site; site = queue.shift()) await this.poll(site.id);
+    });
+    await Promise.all(workers);
+  }
+
+  private origin(url: unknown) {
+    try {
+      return this.client.origin(url);
+    } catch {
+      throw new ArkvoryError(
+        'invalid_input',
+        'A site address is https://host[:port], or http:// on loopback only',
+      );
+    }
+  }
+
+  /** Site failures become answers the console can explain, not internal errors. */
+  private async reach<T>(action: () => Promise<T>): Promise<T> {
+    try {
+      return await action();
+    } catch (error) {
+      if (error instanceof ArkvoryError) throw error;
+      const state = failureState(error);
+      if (state === 'revoked')
+        throw new ArkvoryError('unauthorized', 'The site refused the pairing code', {
+          reason: 'credential_invalid',
+        });
+      throw new ArkvoryError('unavailable', `The site could not be reached: ${state}`);
+    }
+  }
+}
+
+function siteName(topology: unknown): string | undefined {
+  if (!topology || typeof topology !== 'object' || !('site' in topology)) return undefined;
+  const site = topology.site;
+  return site && typeof site === 'object' && 'name' in site && typeof site.name === 'string'
+    ? site.name
+    : undefined;
+}
+
+/** What the console sees of a site: no key, no certificate body. */
+function present(site: FleetSiteRecord) {
+  return {
+    id: site.id,
+    name: site.name,
+    url: site.url,
+    fingerprint: site.pin,
+    addedBy: site.addedBy,
+    addedAt: site.addedAt,
+    seenAt: site.seenAt,
+    state: site.state,
+    error: site.error,
+    topology: site.topology,
+  };
+}

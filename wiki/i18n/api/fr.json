@@ -959,6 +959,86 @@
       },
       "summary": "Lister les miroirs et imports de cette installation",
       "description": "Pour chaque dépôt que ce serveur reflète ou importe depuis un autre Arkvory et que l’appelant peut lire, renvoie le même état que le statut de miroir d’un dépôt : source, `mode`, `phase`, `cursor` et `head`, `caughtUp`, la dernière vérification, synchronisation et erreur, ainsi que les artefacts et octets copiés. Les dépôts que l’appelant ne peut pas lire sont omis ; une installation sans miroir répond par une liste vide."
+    },
+    "getSystemTopology": {
+      "en": {
+        "summary": "Get this site for the fleet console",
+        "description": "Returns this installation as one site of a fleet (ADR 0077): its name, version, schema and role, whether it is available and writable, the HA copies and nodes, the read gateways from their leases, every mirror and import with its phase, last sync and `lagChanges` (changes of the source not applied yet), the host updater state and the download queue. Only the global administrator of the site or a controller paired with it may read it."
+      },
+      "summary": "Lire ce site pour la console de flotte",
+      "description": "Renvoie cette installation comme un site d’une flotte (ADR 0077) : nom, version, schéma et rôle, disponibilité et acceptation des écritures, copies et nœuds HA, passerelles de lecture d’après leurs baux, chaque miroir et import avec sa phase, sa dernière synchronisation et `lagChanges` (changements de la source pas encore appliqués), l’état de l’agent de mise à jour et la file des téléchargements. Seul l’administrateur global du site ou un contrôleur appairé peut le lire."
+    },
+    "createFleetPairing": {
+      "en": {
+        "summary": "Make a pairing code",
+        "description": "Makes a one-time code, valid ten minutes, that the administrator of a controller types in to manage this site. The code is shown once; it is stored only as a hash. Only the global administrator of the site may make one."
+      },
+      "summary": "Créer un code d’appairage",
+      "description": "Crée un code à usage unique, valable dix minutes, que l’administrateur d’un contrôleur saisit pour gérer ce site. Le code est affiché une fois et n’est conservé que sous forme d’empreinte. Seul l’administrateur global du site peut le créer."
+    },
+    "listFleetControllers": {
+      "en": {
+        "summary": "List the controllers of this site",
+        "description": "Lists the controllers that may manage this site: their name, who paired them, when, and when their key was last used."
+      },
+      "summary": "Lister les contrôleurs du site",
+      "description": "Liste les contrôleurs autorisés à gérer ce site : nom, qui les a appairés, quand, et quand leur clé a servi pour la dernière fois."
+    },
+    "revokeFleetController": {
+      "en": {
+        "summary": "Revoke a controller",
+        "description": "Revokes a controller: its fleet key is refused at once. To manage the site again it must pair with a new code."
+      },
+      "summary": "Révoquer un contrôleur",
+      "description": "Révoque un contrôleur : sa clé de flotte est refusée immédiatement. Pour gérer à nouveau le site, il doit être appairé avec un nouveau code."
+    },
+    "enrollFleetController": {
+      "en": {
+        "summary": "Pair with a controller",
+        "description": "Trades a live pairing code for a fleet key, once. The controller calls it over TLS it has pinned to the fingerprint the administrator confirmed. The key is returned once and reaches only the routes a controller needs."
+      },
+      "summary": "S’appairer à un contrôleur",
+      "description": "Échange une seule fois un code d’appairage valide contre une clé de flotte. Le contrôleur l’appelle par TLS épinglé sur l’empreinte confirmée par l’administrateur. La clé est renvoyée une fois et n’atteint que les routes dont un contrôleur a besoin."
+    },
+    "listFleetSites": {
+      "en": {
+        "summary": "List the managed sites",
+        "description": "Lists the sites this installation manages (ADR 0077) with what each last reported: `state` (`ok`, or why it was not read: `unreachable`, `certificate`, `revoked`, `invalid`, `refused`), when it was last seen, and its last `topology`. Sites are read every 30 seconds in the background. A site key is never returned."
+      },
+      "summary": "Lister les sites gérés",
+      "description": "Liste les sites que gère cette installation (ADR 0077) avec ce que chacun a signalé en dernier : `state` (`ok`, ou pourquoi il n’a pas été lu : `unreachable`, `certificate`, `revoked`, `invalid`, `refused`), quand il a été vu pour la dernière fois et sa dernière `topology`. Les sites sont lus toutes les 30 secondes en arrière-plan. La clé d’un site n’est jamais renvoyée."
+    },
+    "addFleetSite": {
+      "en": {
+        "summary": "Pair with a site",
+        "description": "Pairs with a site: the controller connects again, the certificate must still have the `fingerprint` the administrator confirmed (null for HTTP on loopback), the pairing `code` made on the site is traded for a key, and the key is sealed with `ARKVORY_FLEET_KEY_FILE`. The site is read once before the answer. Without the key file the answer is 503."
+      },
+      "summary": "S’appairer avec un site",
+      "description": "Appaire un site : le contrôleur se reconnecte, le certificat doit toujours avoir l’`fingerprint` confirmée par l’administrateur (null pour HTTP en loopback), le `code` d’appairage créé sur le site est échangé contre une clé, scellée avec `ARKVORY_FLEET_KEY_FILE`. Le site est lu une fois avant la réponse. Sans fichier de clé, la réponse est 503."
+    },
+    "probeFleetSite": {
+      "en": {
+        "summary": "Read the certificate of a site",
+        "description": "Connects to the address and reads the certificate the site presents, without sending anything: compare its `fingerprint` with the one the site's administrator sees before you pair."
+      },
+      "summary": "Lire le certificat d’un site",
+      "description": "Se connecte à l’adresse et lit le certificat du site sans rien envoyer : comparez son `fingerprint` avec celle que voit l’administrateur du site avant l’appairage."
+    },
+    "removeFleetSite": {
+      "en": {
+        "summary": "Forget a site",
+        "description": "Forgets a site and its sealed key here. Revoke this controller on the site as well; until then the key stays valid there."
+      },
+      "summary": "Oublier un site",
+      "description": "Oublie ici un site et sa clé scellée. Révoquez aussi ce contrôleur sur le site ; jusque-là, la clé y reste valable."
+    },
+    "refreshFleetSite": {
+      "en": {
+        "summary": "Read a site now",
+        "description": "Reads the site now instead of waiting for the next round and returns it with the new state."
+      },
+      "summary": "Lire un site maintenant",
+      "description": "Lit le site maintenant au lieu d’attendre le prochain tour et le renvoie avec son nouvel état."
     }
   },
   "errors": {

@@ -959,6 +959,86 @@
       },
       "summary": "Перечислить зеркала и импорты этой установки",
       "description": "Для каждого репозитория, который этот сервер зеркалирует или импортирует из другого Arkvory и который вызывающий может читать, возвращает то же состояние, что и статус зеркала одного репозитория: источник, `mode`, `phase`, `cursor` и `head`, `caughtUp`, последние проверку, синхронизацию и ошибку, число скопированных артефактов и байтов. Репозитории, которые вызывающий читать не может, пропускаются; установка без зеркал отвечает пустым списком."
+    },
+    "getSystemTopology": {
+      "en": {
+        "summary": "Get this site for the fleet console",
+        "description": "Returns this installation as one site of a fleet (ADR 0077): its name, version, schema and role, whether it is available and writable, the HA copies and nodes, the read gateways from their leases, every mirror and import with its phase, last sync and `lagChanges` (changes of the source not applied yet), the host updater state and the download queue. Only the global administrator of the site or a controller paired with it may read it."
+      },
+      "summary": "Получить площадку для единой консоли",
+      "description": "Возвращает установку как одну площадку парка (ADR 0077): имя, версию, схему и роль, доступна ли она и принимает ли запись, копии и узлы HA, шлюзы чтения по их арендам, каждое зеркало и импорт с фазой, последней синхронизацией и `lagChanges` (ещё не применённые изменения источника), состояние агента обновлений и очередь скачиваний. Читать может только глобальный администратор площадки или сопряжённый с ней управляющий."
+    },
+    "createFleetPairing": {
+      "en": {
+        "summary": "Make a pairing code",
+        "description": "Makes a one-time code, valid ten minutes, that the administrator of a controller types in to manage this site. The code is shown once; it is stored only as a hash. Only the global administrator of the site may make one."
+      },
+      "summary": "Создать код сопряжения",
+      "description": "Создаёт одноразовый код на десять минут, который администратор управляющей площадки вводит, чтобы управлять этой. Код показывается один раз и хранится только как хеш. Создать его может только глобальный администратор площадки."
+    },
+    "listFleetControllers": {
+      "en": {
+        "summary": "List the controllers of this site",
+        "description": "Lists the controllers that may manage this site: their name, who paired them, when, and when their key was last used."
+      },
+      "summary": "Список управляющих площадки",
+      "description": "Перечисляет управляющие площадки, которым разрешено управлять этой: имя, кто сопряг, когда и когда ключ использовался последний раз."
+    },
+    "revokeFleetController": {
+      "en": {
+        "summary": "Revoke a controller",
+        "description": "Revokes a controller: its fleet key is refused at once. To manage the site again it must pair with a new code."
+      },
+      "summary": "Отозвать управляющую площадку",
+      "description": "Отзывает управляющую площадку: её ключ сразу перестаёт приниматься. Чтобы снова управлять площадкой, нужно сопряжение с новым кодом."
+    },
+    "enrollFleetController": {
+      "en": {
+        "summary": "Pair with a controller",
+        "description": "Trades a live pairing code for a fleet key, once. The controller calls it over TLS it has pinned to the fingerprint the administrator confirmed. The key is returned once and reaches only the routes a controller needs."
+      },
+      "summary": "Сопрячь с управляющей площадкой",
+      "description": "Один раз обменивает действующий код сопряжения на ключ управления. Управляющая площадка вызывает его по TLS, закреплённому на отпечатке, который подтвердил администратор. Ключ возвращается один раз и открывает только нужные управляющей площадке маршруты."
+    },
+    "listFleetSites": {
+      "en": {
+        "summary": "List the managed sites",
+        "description": "Lists the sites this installation manages (ADR 0077) with what each last reported: `state` (`ok`, or why it was not read: `unreachable`, `certificate`, `revoked`, `invalid`, `refused`), when it was last seen, and its last `topology`. Sites are read every 30 seconds in the background. A site key is never returned."
+      },
+      "summary": "Список управляемых площадок",
+      "description": "Перечисляет площадки, которыми управляет эта установка (ADR 0077), и что каждая сообщила последней: `state` (`ok` или почему не прочитана: `unreachable`, `certificate`, `revoked`, `invalid`, `refused`), когда отвечала последний раз и последнюю `topology`. Площадки опрашиваются в фоне каждые 30 секунд. Ключ площадки не возвращается никогда."
+    },
+    "addFleetSite": {
+      "en": {
+        "summary": "Pair with a site",
+        "description": "Pairs with a site: the controller connects again, the certificate must still have the `fingerprint` the administrator confirmed (null for HTTP on loopback), the pairing `code` made on the site is traded for a key, and the key is sealed with `ARKVORY_FLEET_KEY_FILE`. The site is read once before the answer. Without the key file the answer is 503."
+      },
+      "summary": "Подключить площадку",
+      "description": "Подключает площадку: управляющая площадка соединяется заново, сертификат должен по-прежнему иметь подтверждённый администратором `fingerprint` (null для HTTP на loopback), код сопряжения `code`, созданный на площадке, обменивается на ключ, ключ запечатывается `ARKVORY_FLEET_KEY_FILE`. До ответа площадка читается один раз. Без файла ключа ответ — 503."
+    },
+    "probeFleetSite": {
+      "en": {
+        "summary": "Read the certificate of a site",
+        "description": "Connects to the address and reads the certificate the site presents, without sending anything: compare its `fingerprint` with the one the site's administrator sees before you pair."
+      },
+      "summary": "Прочитать сертификат площадки",
+      "description": "Соединяется с адресом и читает сертификат площадки, ничего не отправляя: сравните его `fingerprint` с тем, что видит администратор площадки, перед сопряжением."
+    },
+    "removeFleetSite": {
+      "en": {
+        "summary": "Forget a site",
+        "description": "Forgets a site and its sealed key here. Revoke this controller on the site as well; until then the key stays valid there."
+      },
+      "summary": "Забыть площадку",
+      "description": "Удаляет площадку и её запечатанный ключ здесь. Отзовите эту управляющую площадку и на самой площадке: до тех пор ключ там действует."
+    },
+    "refreshFleetSite": {
+      "en": {
+        "summary": "Read a site now",
+        "description": "Reads the site now instead of waiting for the next round and returns it with the new state."
+      },
+      "summary": "Прочитать площадку сейчас",
+      "description": "Читает площадку сейчас, не дожидаясь следующего круга, и возвращает её с новым состоянием."
     }
   },
   "errors": {

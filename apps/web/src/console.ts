@@ -22,6 +22,7 @@ import { installArtifactSummary } from './artifact-summary.js';
 import { installDownloads } from './downloads.js';
 import { installUpdates } from './updates.js';
 import { MirrorsPage } from './mirrors-page.js';
+import { FleetPage } from './fleet-page.js';
 import { installBackups } from './backups.js';
 import { installUploadForm } from './upload-form.js';
 import { installUserTokens } from './user-tokens.js';
@@ -78,9 +79,11 @@ const updates = installUpdates(client);
 const mirrors = new MirrorsPage(client, (id) => {
   openRepository(id);
 });
+const fleet = new FleetPage(client);
 /** Screens that follow the signed-in role; settles once their navigation entries are known. */
 async function connectSigned(administrator: boolean) {
   report.connect(administrator);
+  fleet.connect(administrator);
   await Promise.all([updates.connect(administrator), mirrors.connect(administrator)]);
 }
 const report = installReportDialog(client);
@@ -201,6 +204,7 @@ function clearCatalog() {
   administration.clear();
   updates.clear();
   mirrors.clear();
+  fleet.clear();
   report.clear();
   management.clear();
   backups.clear();

@@ -18,6 +18,7 @@ import { exerciseErrorFeedback } from './errors.mjs';
 import { exerciseDesktopDensity } from './density.mjs';
 import { exerciseBackups } from './backups.mjs';
 import { exerciseMirror } from './mirror.mjs';
+import { exerciseFleet } from './fleet.mjs';
 import { exerciseCluster } from './cluster.mjs';
 import { exerciseLanguageMenu, exerciseLanguages } from './languages.mjs';
 import { chromium } from 'playwright';
@@ -304,7 +305,9 @@ try {
   await exerciseDesktopDensity(browser, origin, f);
   // It exhausts the sign-in budget of this server's loopback client.
   await exerciseErrorFeedback(browser, origin, f);
-  // Last: they restart the server with the repository as a mirror, then as an HA cluster.
+  // Last: they restart the server as a fleet controller, with the repository as a mirror,
+  // then as an HA cluster.
+  await exerciseFleet(browser, f, cleanup);
   await exerciseMirror(browser, f);
   await exerciseCluster(browser, f);
   assert.deepEqual(errors, []);

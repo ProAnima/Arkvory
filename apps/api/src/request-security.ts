@@ -7,7 +7,9 @@ import type {
   DownloadLinks,
   IdentityService,
 } from '@proanima/arkvory-application';
-import type { PostgresServices } from '@proanima/arkvory-infrastructure';
+import { FLEET_KEY_PREFIX } from '@proanima/arkvory-infrastructure';
+import type { PostgresFleetTrust, PostgresServices } from '@proanima/arkvory-infrastructure';
+import { fleetKeyRoutes } from './fleet-routes.js';
 import type { ServerConfig } from './config.js';
 import type { RequestContext } from './request-context.js';
 import { LoginAdmission } from './login-admission.js';
@@ -24,6 +26,7 @@ interface Security {
   available: () => boolean;
   identity: Pick<IdentityService, 'resolve' | 'rejection'>;
   serviceAccounts: Pick<PostgresServices, 'resolve' | 'rejection'>;
+  fleet: Pick<PostgresFleetTrust, 'resolve'>;
   links: Pick<DownloadLinks, 'principal' | 'rejection'>;
   context: Pick<RequestContext, 'signal' | 'countRequest' | 'authenticate'>;
   registerOwner: (id: string) => void;
@@ -62,9 +65,14 @@ function pathOf(request: FastifyRequest): { repository: string; id: string } {
     id: typeof id === 'string' ? id : '',
   };
 }
-/** Service key, file key, session or personal token from the Authorization header. */
+/** Service key, fleet key, file key, session or personal token from the Authorization header. */
 async function bearerPrincipal(
-  { config, identity, serviceAccounts }: Pick<Security, 'config' | 'identity' | 'serviceAccounts'>,
+  {
+    config,
+    identity,
+    serviceAccounts,
+    fleet,
+  }: Pick<Security, 'config' | 'identity' | 'serviceAccounts' | 'fleet'>,
   token: string,
   activation: boolean,
 ): Promise<Principal | null> {
@@ -77,6 +85,7 @@ async function bearerPrincipal(
       );
   if (token.length < 32 || token.length > 512) return null;
   if (token.startsWith('arkvory_')) return serviceAccounts.resolve(token, activation);
+  if (token.startsWith(FLEET_KEY_PREFIX)) return fleet.resolve(token);
   return key ? { ...key.principal, credential: 'file-key' } : identity.resolve(token);
 }
 /** A download link authenticates its own artifact's content (ADR 0062); true when handled. */
@@ -116,6 +125,17 @@ function credentialOf(request: FastifyRequest): string {
   if (isRegistry(request) || isLfs(request) || isNpm(request)) return registryCredential(auth);
   return auth?.startsWith('Bearer ') ? auth.slice(7) : '';
 }
+/** A fleet key (ADR 0077) reaches only its listed routes; true when it was refused. */
+async function outsideFleetRoutes(request: FastifyRequest, reply: FastifyReply, actor: Principal) {
+  if (actor.credential !== 'fleet-key') return false;
+  if (fleetKeyRoutes.has(`${request.method} ${request.routeOptions.url ?? ''}`)) return false;
+  await refuse(request, reply, {
+    code: 'forbidden',
+    message: 'A fleet key may not call this route',
+    reason: 'permission_missing',
+  });
+  return true;
+}
 // Public probes manage their own availability answer and never touch credentials.
 const publicPaths = new Set(['/health/live', '/health/status']);
 export function registerRequestSecurity(app: FastifyInstance, dependencies: Security) {
@@ -152,7 +172,9 @@ export function registerRequestSecurity(app: FastifyInstance, dependencies: Secu
     if (request.routeOptions.url === '/api/v1/auth/options') return;
     if (
       request.routeOptions.url === '/api/v1/auth/login' ||
-      request.routeOptions.url === '/api/v1/auth/register'
+      request.routeOptions.url === '/api/v1/auth/register' ||
+      // The pairing code is the credential of a fleet enrollment (ADR 0077).
+      request.routeOptions.url === '/api/v1/system/fleet/enrollment'
     ) {
       if (role === 'reader')
         await reply.code(405).header('Allow', 'GET, HEAD').send({
@@ -184,6 +206,7 @@ export function registerRequestSecurity(app: FastifyInstance, dependencies: Secu
       return;
     }
     context.authenticate(request, authenticated);
+    if (await outsideFleetRoutes(request, reply, authenticated)) return;
     if (authenticated.id.startsWith('user:') || authenticated.managed) {
       registerOwner(authenticated.id);
     }

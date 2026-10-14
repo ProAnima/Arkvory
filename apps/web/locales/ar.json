@@ -3830,5 +3830,293 @@
   "replicationSingleCopy": {
     "en": "Writes are acknowledged with a single copy until {until} by an operator decision.",
     "text": "بقرار من المشغّل، تُؤكَّد الكتابة بنسخة واحدة حتى {until}."
+  },
+  "fleet": {
+    "en": "Sites",
+    "text": "المواقع"
+  },
+  "fleetIntro": {
+    "en": "Every installation of your cluster in one place: this site and the sites it manages. Sites are read every 30 seconds.",
+    "text": "كل تثبيتات المجموعة في مكان واحد: هذا الموقع والمواقع التي يديرها. تُقرأ المواقع كل 30 ثانية."
+  },
+  "fleetReadAll": {
+    "en": "Read all now",
+    "text": "قراءة الكل الآن"
+  },
+  "fleetSite": {
+    "en": "Site",
+    "text": "الموقع"
+  },
+  "fleetState": {
+    "en": "State",
+    "text": "الحالة"
+  },
+  "fleetVersion": {
+    "en": "Version",
+    "text": "الإصدار"
+  },
+  "fleetCopies": {
+    "en": "HA and gateways",
+    "text": "HA والبوابات"
+  },
+  "fleetMirrors": {
+    "en": "Mirrors",
+    "text": "المرايا"
+  },
+  "fleetQueue": {
+    "en": "Download queue",
+    "text": "طابور التنزيل"
+  },
+  "fleetSeen": {
+    "en": "Last answer",
+    "text": "آخر رد"
+  },
+  "fleetActions": {
+    "en": "Actions",
+    "text": "الإجراءات"
+  },
+  "fleetStateOk": {
+    "en": "Working",
+    "text": "يعمل"
+  },
+  "fleetStatePending": {
+    "en": "Not read yet",
+    "text": "لم يُقرأ بعد"
+  },
+  "fleetStateUnreachable": {
+    "en": "Unreachable",
+    "text": "لا يمكن الوصول"
+  },
+  "fleetStateCertificate": {
+    "en": "Certificate changed",
+    "text": "تغيّرت الشهادة"
+  },
+  "fleetStateRevoked": {
+    "en": "Access revoked",
+    "text": "أُبطل الوصول"
+  },
+  "fleetStateInvalid": {
+    "en": "Unexpected answer",
+    "text": "رد غير متوقع"
+  },
+  "fleetStateRefused": {
+    "en": "Refused",
+    "text": "مرفوض"
+  },
+  "fleetHintUnreachable": {
+    "en": "No answer. The last known state is shown.",
+    "text": "لا رد. تُعرض آخر حالة معروفة."
+  },
+  "fleetHintCertificate": {
+    "en": "The site presents another certificate than the one confirmed. If it was renewed, remove the site and pair it again.",
+    "text": "يقدّم الموقع شهادة غير التي أُكّدت. إن جُدّدت فاحذف الموقع وأعد الاقتران."
+  },
+  "fleetHintRevoked": {
+    "en": "The administrator of the site revoked this controller. Pair again with a new code.",
+    "text": "أبطل مسؤول الموقع وحدة التحكم هذه. أعد الاقتران برمز جديد."
+  },
+  "fleetHintInvalid": {
+    "en": "The site answered in a way this release does not understand: update both.",
+    "text": "ردّ الموقع بطريقة لا يفهمها هذا الإصدار: حدّث الاثنين."
+  },
+  "fleetHintRefused": {
+    "en": "The site refused the request. Pair again with a new code.",
+    "text": "رفض الموقع الطلب. أعد الاقتران برمز جديد."
+  },
+  "fleetRoleApi": {
+    "en": "writer",
+    "text": "كتابة"
+  },
+  "fleetRoleReader": {
+    "en": "read gateway",
+    "text": "بوابة قراءة"
+  },
+  "fleetCopiesValue": {
+    "en": "Copies: {copies} of {required}",
+    "text": "النسخ: {copies} من {required}"
+  },
+  "fleetCopiesNone": {
+    "en": "One server",
+    "text": "خادم واحد"
+  },
+  "fleetGatewaysValue": {
+    "en": "Read gateways: {active}",
+    "text": "بوابات القراءة: {active}"
+  },
+  "fleetMirrorsNone": {
+    "en": "None",
+    "text": "لا شيء"
+  },
+  "fleetMirrorsCurrent": {
+    "en": "{count}, up to date",
+    "text": "{count}، محدّثة"
+  },
+  "fleetMirrorsBehind": {
+    "en": "{count}, behind by {lag}",
+    "text": "{count}، متأخرة {lag}"
+  },
+  "fleetMirrorsFailing": {
+    "en": "{count}, stopped: {failing}",
+    "text": "{count}، المتوقفة: {failing}"
+  },
+  "fleetQueueValue": {
+    "en": "Active {active}, waiting {waiting}",
+    "text": "نشطة {active}، منتظرة {waiting}"
+  },
+  "fleetQueueShared": {
+    "en": "No queue",
+    "text": "بلا طابور"
+  },
+  "fleetNever": {
+    "en": "Never",
+    "text": "أبدًا"
+  },
+  "fleetReadSite": {
+    "en": "Read now",
+    "text": "اقرأ الآن"
+  },
+  "fleetRemoveSite": {
+    "en": "Remove",
+    "text": "إزالة"
+  },
+  "fleetRemoveConfirm": {
+    "en": "Stop managing {name} from here? Revoke this controller on the site as well; until then its key stays valid there.",
+    "text": "إيقاف إدارة {name} من هنا؟ أبطِل وحدة التحكم هذه على الموقع أيضًا؛ حتى ذلك الحين يبقى مفتاحها صالحًا هناك."
+  },
+  "fleetRemoved": {
+    "en": "The site was removed.",
+    "text": "أُزيل الموقع."
+  },
+  "fleetEmptyTitle": {
+    "en": "No sites yet",
+    "text": "لا مواقع بعد"
+  },
+  "fleetEmpty": {
+    "en": "Pair a site below: make a pairing code in the console of that site, then enter its address and the code here.",
+    "text": "اقرن موقعًا أدناه: أنشئ رمز اقتران في وحدة تحكم ذلك الموقع، ثم أدخل هنا عنوانه والرمز."
+  },
+  "fleetAdd": {
+    "en": "Pair a site",
+    "text": "اقتران موقع"
+  },
+  "fleetAddress": {
+    "en": "Site address",
+    "text": "عنوان الموقع"
+  },
+  "fleetAddressHint": {
+    "en": "The https:// address of its API, for example https://branch.example:8443",
+    "text": "عنوان https:// لواجهة API الخاصة به، مثل https://branch.example:8443"
+  },
+  "fleetCheck": {
+    "en": "Check",
+    "text": "تحقق"
+  },
+  "fleetChecking": {
+    "en": "Connecting…",
+    "text": "جارٍ الاتصال…"
+  },
+  "fleetFingerprint": {
+    "en": "Certificate fingerprint (SHA-256)",
+    "text": "بصمة الشهادة (SHA-256)"
+  },
+  "fleetSubject": {
+    "en": "Issued to",
+    "text": "صادرة إلى"
+  },
+  "fleetValidTo": {
+    "en": "Valid until",
+    "text": "صالحة حتى"
+  },
+  "fleetPlain": {
+    "en": "Plain HTTP on this computer: there is no certificate to check.",
+    "text": "HTTP عادي على هذا الحاسوب: لا شهادة للتحقق منها."
+  },
+  "fleetCompare": {
+    "en": "Compare this fingerprint with the one the site's console shows beside its pairing code. Pair only if they are the same.",
+    "text": "قارن هذه البصمة بالتي تعرضها وحدة تحكم الموقع بجانب رمز الاقتران. اقترن فقط إن كانتا متطابقتين."
+  },
+  "fleetCode": {
+    "en": "Pairing code",
+    "text": "رمز الاقتران"
+  },
+  "fleetPair": {
+    "en": "Pair",
+    "text": "اقتران"
+  },
+  "fleetPairing": {
+    "en": "Pairing…",
+    "text": "جارٍ الاقتران…"
+  },
+  "fleetPaired": {
+    "en": "{name} is paired.",
+    "text": "اقترن {name}."
+  },
+  "fleetNoKeyFile": {
+    "en": "This installation cannot keep site keys: ARKVORY_FLEET_KEY_FILE is not configured.",
+    "text": "لا يستطيع هذا التثبيت حفظ مفاتيح المواقع: لم يُضبط ARKVORY_FLEET_KEY_FILE."
+  },
+  "fleetThisSite": {
+    "en": "This site",
+    "text": "هذا الموقع"
+  },
+  "fleetManagedBy": {
+    "en": "Managed from",
+    "text": "يُدار من"
+  },
+  "fleetManagedNone": {
+    "en": "No other site manages this one.",
+    "text": "لا يدير هذا الموقع أي موقع آخر."
+  },
+  "fleetController": {
+    "en": "Controller",
+    "text": "وحدة التحكم"
+  },
+  "fleetPairedBy": {
+    "en": "Paired by",
+    "text": "اقترنه"
+  },
+  "fleetPairedAt": {
+    "en": "Paired",
+    "text": "وقت الاقتران"
+  },
+  "fleetUsedAt": {
+    "en": "Last request",
+    "text": "آخر طلب"
+  },
+  "fleetRevoke": {
+    "en": "Revoke",
+    "text": "إبطال"
+  },
+  "fleetRevokeConfirm": {
+    "en": "Revoke {name}? It will no longer see or manage this site.",
+    "text": "إبطال {name}؟ لن تتمكن بعد ذلك من رؤية هذا الموقع أو إدارته."
+  },
+  "fleetRevoked": {
+    "en": "The controller was revoked.",
+    "text": "أُبطلت وحدة التحكم."
+  },
+  "fleetMakeCode": {
+    "en": "Make a pairing code",
+    "text": "إنشاء رمز اقتران"
+  },
+  "fleetCodeFingerprint": {
+    "en": "The fingerprint the controller must see: {fingerprint}",
+    "text": "البصمة التي يجب أن تراها وحدة التحكم: {fingerprint}"
+  },
+  "fleetCodeProxy": {
+    "en": "TLS ends at a proxy: the controller must see the fingerprint of the certificate the proxy presents.",
+    "text": "ينتهي TLS عند وكيل: يجب أن ترى وحدة التحكم بصمة الشهادة التي يقدّمها الوكيل."
+  },
+  "fleetGuide": {
+    "en": "How sites, pairing and keys work",
+    "text": "كيف تعمل المواقع والاقتران والمفاتيح"
+  },
+  "fleetSelfValue": {
+    "en": "{name}, version {version}",
+    "text": "{name}، الإصدار {version}"
+  },
+  "fleetCodeUntil": {
+    "en": "Valid until {until}. It is shown once: give it to the administrator of the controller.",
+    "text": "صالح حتى {until}. يُعرض مرة واحدة: سلّمه لمسؤول وحدة التحكم."
   }
 }

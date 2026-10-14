@@ -3830,5 +3830,293 @@
   "replicationSingleCopy": {
     "en": "Writes are acknowledged with a single copy until {until} by an operator decision.",
     "text": "根据运维人员的决定，在 {until} 之前写入只需一份副本即可确认。"
+  },
+  "fleet": {
+    "en": "Sites",
+    "text": "站点"
+  },
+  "fleetIntro": {
+    "en": "Every installation of your cluster in one place: this site and the sites it manages. Sites are read every 30 seconds.",
+    "text": "集群的所有安装集中在一处：本站点以及它管理的站点。每 30 秒读取一次站点。"
+  },
+  "fleetReadAll": {
+    "en": "Read all now",
+    "text": "立即读取全部"
+  },
+  "fleetSite": {
+    "en": "Site",
+    "text": "站点"
+  },
+  "fleetState": {
+    "en": "State",
+    "text": "状态"
+  },
+  "fleetVersion": {
+    "en": "Version",
+    "text": "版本"
+  },
+  "fleetCopies": {
+    "en": "HA and gateways",
+    "text": "HA 和网关"
+  },
+  "fleetMirrors": {
+    "en": "Mirrors",
+    "text": "镜像"
+  },
+  "fleetQueue": {
+    "en": "Download queue",
+    "text": "下载队列"
+  },
+  "fleetSeen": {
+    "en": "Last answer",
+    "text": "最后应答"
+  },
+  "fleetActions": {
+    "en": "Actions",
+    "text": "操作"
+  },
+  "fleetStateOk": {
+    "en": "Working",
+    "text": "正常"
+  },
+  "fleetStatePending": {
+    "en": "Not read yet",
+    "text": "尚未读取"
+  },
+  "fleetStateUnreachable": {
+    "en": "Unreachable",
+    "text": "无法访问"
+  },
+  "fleetStateCertificate": {
+    "en": "Certificate changed",
+    "text": "证书已变更"
+  },
+  "fleetStateRevoked": {
+    "en": "Access revoked",
+    "text": "访问已撤销"
+  },
+  "fleetStateInvalid": {
+    "en": "Unexpected answer",
+    "text": "意外应答"
+  },
+  "fleetStateRefused": {
+    "en": "Refused",
+    "text": "已拒绝"
+  },
+  "fleetHintUnreachable": {
+    "en": "No answer. The last known state is shown.",
+    "text": "没有应答。显示最后已知的状态。"
+  },
+  "fleetHintCertificate": {
+    "en": "The site presents another certificate than the one confirmed. If it was renewed, remove the site and pair it again.",
+    "text": "站点出示的证书与已确认的不同。如果证书已续签，请移除站点并重新配对。"
+  },
+  "fleetHintRevoked": {
+    "en": "The administrator of the site revoked this controller. Pair again with a new code.",
+    "text": "站点管理员撤销了此控制站点。请用新代码重新配对。"
+  },
+  "fleetHintInvalid": {
+    "en": "The site answered in a way this release does not understand: update both.",
+    "text": "站点的应答本版本无法理解：请同时升级两者。"
+  },
+  "fleetHintRefused": {
+    "en": "The site refused the request. Pair again with a new code.",
+    "text": "站点拒绝了请求。请用新代码重新配对。"
+  },
+  "fleetRoleApi": {
+    "en": "writer",
+    "text": "写入"
+  },
+  "fleetRoleReader": {
+    "en": "read gateway",
+    "text": "只读网关"
+  },
+  "fleetCopiesValue": {
+    "en": "Copies: {copies} of {required}",
+    "text": "副本：{copies}/{required}"
+  },
+  "fleetCopiesNone": {
+    "en": "One server",
+    "text": "单台服务器"
+  },
+  "fleetGatewaysValue": {
+    "en": "Read gateways: {active}",
+    "text": "只读网关：{active}"
+  },
+  "fleetMirrorsNone": {
+    "en": "None",
+    "text": "无"
+  },
+  "fleetMirrorsCurrent": {
+    "en": "{count}, up to date",
+    "text": "{count} 个，已同步"
+  },
+  "fleetMirrorsBehind": {
+    "en": "{count}, behind by {lag}",
+    "text": "{count} 个，落后 {lag}"
+  },
+  "fleetMirrorsFailing": {
+    "en": "{count}, stopped: {failing}",
+    "text": "{count} 个，已停止：{failing}"
+  },
+  "fleetQueueValue": {
+    "en": "Active {active}, waiting {waiting}",
+    "text": "活动 {active}，等待 {waiting}"
+  },
+  "fleetQueueShared": {
+    "en": "No queue",
+    "text": "无队列"
+  },
+  "fleetNever": {
+    "en": "Never",
+    "text": "从未"
+  },
+  "fleetReadSite": {
+    "en": "Read now",
+    "text": "立即读取"
+  },
+  "fleetRemoveSite": {
+    "en": "Remove",
+    "text": "移除"
+  },
+  "fleetRemoveConfirm": {
+    "en": "Stop managing {name} from here? Revoke this controller on the site as well; until then its key stays valid there.",
+    "text": "不再从这里管理 {name}？也请在该站点上撤销此控制站点；在此之前其密钥在那里仍然有效。"
+  },
+  "fleetRemoved": {
+    "en": "The site was removed.",
+    "text": "站点已移除。"
+  },
+  "fleetEmptyTitle": {
+    "en": "No sites yet",
+    "text": "还没有站点"
+  },
+  "fleetEmpty": {
+    "en": "Pair a site below: make a pairing code in the console of that site, then enter its address and the code here.",
+    "text": "在下方配对站点：在该站点的控制台中生成配对码，然后在这里输入其地址和代码。"
+  },
+  "fleetAdd": {
+    "en": "Pair a site",
+    "text": "配对站点"
+  },
+  "fleetAddress": {
+    "en": "Site address",
+    "text": "站点地址"
+  },
+  "fleetAddressHint": {
+    "en": "The https:// address of its API, for example https://branch.example:8443",
+    "text": "其 API 的 https:// 地址，例如 https://branch.example:8443"
+  },
+  "fleetCheck": {
+    "en": "Check",
+    "text": "检查"
+  },
+  "fleetChecking": {
+    "en": "Connecting…",
+    "text": "正在连接…"
+  },
+  "fleetFingerprint": {
+    "en": "Certificate fingerprint (SHA-256)",
+    "text": "证书指纹（SHA-256）"
+  },
+  "fleetSubject": {
+    "en": "Issued to",
+    "text": "颁发给"
+  },
+  "fleetValidTo": {
+    "en": "Valid until",
+    "text": "有效期至"
+  },
+  "fleetPlain": {
+    "en": "Plain HTTP on this computer: there is no certificate to check.",
+    "text": "本机上的明文 HTTP：没有证书需要检查。"
+  },
+  "fleetCompare": {
+    "en": "Compare this fingerprint with the one the site's console shows beside its pairing code. Pair only if they are the same.",
+    "text": "将此指纹与站点控制台在配对码旁显示的指纹进行比较。只有两者一致时才配对。"
+  },
+  "fleetCode": {
+    "en": "Pairing code",
+    "text": "配对码"
+  },
+  "fleetPair": {
+    "en": "Pair",
+    "text": "配对"
+  },
+  "fleetPairing": {
+    "en": "Pairing…",
+    "text": "正在配对…"
+  },
+  "fleetPaired": {
+    "en": "{name} is paired.",
+    "text": "{name} 已配对。"
+  },
+  "fleetNoKeyFile": {
+    "en": "This installation cannot keep site keys: ARKVORY_FLEET_KEY_FILE is not configured.",
+    "text": "本安装无法保存站点密钥：未配置 ARKVORY_FLEET_KEY_FILE。"
+  },
+  "fleetThisSite": {
+    "en": "This site",
+    "text": "本站点"
+  },
+  "fleetManagedBy": {
+    "en": "Managed from",
+    "text": "管理者"
+  },
+  "fleetManagedNone": {
+    "en": "No other site manages this one.",
+    "text": "没有其他站点管理本站点。"
+  },
+  "fleetController": {
+    "en": "Controller",
+    "text": "控制站点"
+  },
+  "fleetPairedBy": {
+    "en": "Paired by",
+    "text": "配对人"
+  },
+  "fleetPairedAt": {
+    "en": "Paired",
+    "text": "配对时间"
+  },
+  "fleetUsedAt": {
+    "en": "Last request",
+    "text": "最后请求"
+  },
+  "fleetRevoke": {
+    "en": "Revoke",
+    "text": "撤销"
+  },
+  "fleetRevokeConfirm": {
+    "en": "Revoke {name}? It will no longer see or manage this site.",
+    "text": "撤销 {name}？它将无法再查看或管理本站点。"
+  },
+  "fleetRevoked": {
+    "en": "The controller was revoked.",
+    "text": "控制站点已撤销。"
+  },
+  "fleetMakeCode": {
+    "en": "Make a pairing code",
+    "text": "生成配对码"
+  },
+  "fleetCodeFingerprint": {
+    "en": "The fingerprint the controller must see: {fingerprint}",
+    "text": "控制站点应看到的指纹：{fingerprint}"
+  },
+  "fleetCodeProxy": {
+    "en": "TLS ends at a proxy: the controller must see the fingerprint of the certificate the proxy presents.",
+    "text": "TLS 在代理处终止：控制站点应看到代理所出示证书的指纹。"
+  },
+  "fleetGuide": {
+    "en": "How sites, pairing and keys work",
+    "text": "站点、配对和密钥的工作方式"
+  },
+  "fleetSelfValue": {
+    "en": "{name}, version {version}",
+    "text": "{name}，版本 {version}"
+  },
+  "fleetCodeUntil": {
+    "en": "Valid until {until}. It is shown once: give it to the administrator of the controller.",
+    "text": "有效期至 {until}。只显示一次：请交给控制站点的管理员。"
   }
 }

@@ -84,6 +84,20 @@ export const key = (id, permissions, administrator = false, repositories = ['rel
  * the right order: server, pools, then the database and the storage directory.
  */
 export async function mirrorInstance(t, upstream, stages) {
+  return separateInstance(t, {
+    mirrors: [
+      {
+        repository: 'releases',
+        upstream,
+        sourceRepository: 'releases',
+        ...(stages ? { stages } : {}),
+      },
+    ],
+  });
+}
+
+/** Another installation: its own database and storage, with `extra` server settings. */
+export async function separateInstance(t, extra = {}) {
   const connectionString = process.env.ARKVORY_TEST_DATABASE_URL;
   if (!connectionString) throw new Error('ARKVORY_TEST_DATABASE_URL is required');
   const url = new URL(connectionString);
@@ -106,14 +120,7 @@ export async function mirrorInstance(t, upstream, stages) {
     maxUploads: 2,
     maxDownloads: 2,
     keys: [writer.entry, reader.entry, outsider.entry],
-    mirrors: [
-      {
-        repository: 'releases',
-        upstream,
-        sourceRepository: 'releases',
-        ...(stages ? { stages } : {}),
-      },
-    ],
+    ...extra,
   };
   const migrations = new PostgresCatalog(config.databaseUrl, 0, 1);
   const closers = [() => migrations.close()];
