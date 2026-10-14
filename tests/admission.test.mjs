@@ -77,6 +77,9 @@ test('a refused client is told to come back after the queue ahead of it, not eve
   assert.equal(spread.retryAfterSeconds(), 25);
   const slow = new AdmissionQueue(1, 4, 4, 120000, 1, { now: () => 0, random: () => 1 });
   assert.equal(slow.retryAfterSeconds(), 150);
+  // Releases older than a minute no longer count: after an idle hour there is no rate.
+  now = 3_600_000;
+  assert.equal(gate.retryAfterSeconds(), 20);
   release();
   for (const waiter of waiters) (await waiter)();
   gate.close();

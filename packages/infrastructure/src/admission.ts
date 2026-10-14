@@ -8,6 +8,8 @@ export interface AdmissionClock {
 const systemClock: AdmissionClock = { now: () => performance.now(), random: Math.random };
 /** Releases remembered for the rate: enough for a stable estimate, bounded memory. */
 const RATE_SAMPLES = 256;
+/** Only the last minute counts: releases from an idle hour ago would make the rate look slow. */
+const RATE_WINDOW_MS = 60000;
 /** A refused client comes back no sooner than this and no later than this (seconds). */
 const MIN_RETRY_SECONDS = 2;
 const MAX_RETRY_SECONDS = 600;
@@ -161,10 +163,13 @@ export class AdmissionQueue {
    * When a refused request should come back (ADR 0076): the requests already waiting, plus this
    * one, divided by the measured rate at which places free up, so a long queue sends clients
    * away for longer instead of every two seconds. Up to a quarter more at random spreads
-   * clients that do not add their own jitter. Without a measured rate, one wait timeout.
+   * clients that do not add their own jitter. Without releases in the last minute, one wait
+   * timeout.
    */
   retryAfterSeconds(): number {
     const now = this.clock.now();
+    while (this.releases[0] !== undefined && now - this.releases[0] > RATE_WINDOW_MS)
+      this.releases.shift();
     const oldest = this.releases[0];
     const span = oldest === undefined ? 0 : (now - oldest) / 1000;
     const perSecond = span >= 1 ? this.releases.length / span : 0;
