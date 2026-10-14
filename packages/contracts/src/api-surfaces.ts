@@ -60,6 +60,7 @@ export function apiClassification(policy: OperationPolicy): {
   let surface: ApiSurface;
   switch (policy.tag) {
     case 'Updates':
+    case 'Fleet':
     case 'Backups':
       surface = 'administration';
       break;

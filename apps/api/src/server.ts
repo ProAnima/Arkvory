@@ -22,6 +22,7 @@ import { resolveUploadTimeouts } from './upload-policy.js';
 import { registerUpdateRoutes } from './update-routes.js';
 import { UpdateControl } from './update-control.js';
 import { registerFeedback } from './feedback-routes.js';
+import { registerTopologyRoutes } from './topology-routes.js';
 import { RecentLog } from './recent-log.js';
 import { registerOwnershipRecovery } from './ownership-recovery.js';
 import { registerAccessLog } from './access-log.js';
@@ -165,6 +166,18 @@ function registerRoutes(app: FastifyInstance, parts: RouteParts) {
   registerHttpErrors(app, context);
   registerHealthRoutes(app, runtime, () => drain.isDraining, replica, context.principal);
   registerUpdateRoutes(app, context.principal, config.updateControlDirectory);
+  registerTopologyRoutes(app, context.principal, {
+    siteName: config.siteName ?? 'arkvory',
+    version: parts.identity.version,
+    role: runtime.role,
+    available: runtime.available,
+    draining: () => drain.isDraining,
+    replica,
+    mirrors: services.mirrors,
+    updates: new UpdateControl(config.updateControlDirectory),
+    downloads: runtime.transfers.downloadScheduler,
+    pool: runtime.catalog.pool,
+  });
   registerFeedback(app, context.principal, {
     hub: config.hub ?? null,
     version: parts.identity.version,

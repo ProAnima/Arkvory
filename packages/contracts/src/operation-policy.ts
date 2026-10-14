@@ -8,6 +8,7 @@ import { accountAdministrationOperations } from './account-operation-policies.js
 import { backupOperations } from './backup-api.js';
 import { feedbackOperations } from './feedback-api.js';
 import { updateOperations } from './updates-api.js';
+import { fleetOperations } from './fleet-api.js';
 import type { BackupPermissionName } from './backup-wire.js';
 import type { servicePermissionNames } from './service-api.js';
 import type { AdministrationPermission } from './delegation-api.js';
@@ -100,6 +101,7 @@ add('/health/live', 'get', 'getLiveness', 'System', { kind: 'public' }, 'read');
 add('/health/status', 'get', 'getReadinessStatus', 'System', { kind: 'public' }, 'read');
 for (const [tag, operations] of [
   ['Updates', updateOperations],
+  ['Fleet', fleetOperations],
   ['Feedback', feedbackOperations],
 ] as const)
   for (const [path, method, id, kind, retry] of operations)
