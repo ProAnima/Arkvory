@@ -165,9 +165,28 @@ export function retryAfter(value: string | null): number | undefined {
   return Number.isFinite(date) ? Math.max(0, date - Date.now()) : undefined;
 }
 
+/** setTimeout fires at once for a longer time: it counts milliseconds in 32 signed bits. */
+const MAX_TIMER_MS = 2 ** 31 - 1;
+/**
+ * The longest single wait a server's Retry-After may ask: a huge value (a proxy's, or a mistake)
+ * must not park a transfer for days; the client asks again after this and learns anew.
+ */
+const MAX_ASKED_WAIT_MS = 60 * 60 * 1000;
+
+/** Waits `ms` (any length, e.g. until a `notBefore` days ahead) or until the signal aborts. */
 export async function delay(ms: number, signal?: AbortSignal) {
   signal?.throwIfAborted();
-  await new Promise<void>((resolve, reject) => {
+  let left = Number.isNaN(ms) ? 0 : Math.max(0, ms);
+  do {
+    signal?.throwIfAborted();
+    const step = Math.min(left, MAX_TIMER_MS);
+    await sleep(step, signal);
+    left -= step;
+  } while (left > 0);
+}
+
+function sleep(ms: number, signal?: AbortSignal) {
+  return new Promise<void>((resolve, reject) => {
     const abort = () => {
       clearTimeout(timer);
       const reason: unknown = signal?.reason;
@@ -244,7 +263,8 @@ export class TransferAttempts {
   }
 
   private async waitAsAsked(failure: ArkvoryHttpError): Promise<void> {
-    const wait = waitDelay(this.policy.baseDelayMs, failure.retryAfterMs ?? 0, Math.random);
+    const asked = Math.min(failure.retryAfterMs ?? 0, MAX_ASKED_WAIT_MS);
+    const wait = waitDelay(this.policy.baseDelayMs, asked, Math.random);
     const limit = this.options.waitLimitMs ?? this.policy.waitLimitMs;
     if (limit !== undefined && this.waitedMs + wait > limit) throw failure;
     (this.options.onWait ?? this.policy.onWait)?.({

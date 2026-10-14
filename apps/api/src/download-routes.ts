@@ -86,6 +86,9 @@ export function createContentSender(dependencies: ContentServices) {
         principal(request),
         id,
         size,
+        range.kind === 'partial'
+          ? { start: range.start, end: range.end, open: openEnded(request.headers.range) }
+          : { start: 0, end: size - 1, open: true },
         signal(request, reply),
       );
       admission = admitted;
@@ -93,7 +96,6 @@ export function createContentSender(dependencies: ContentServices) {
         result.read(range.kind === 'partial' ? range : undefined),
         admitted,
         reply,
-        range.kind !== 'partial' || range.end === size - 1,
       );
       const stream = downloadStream(
         protectedContent(
@@ -119,7 +121,7 @@ export function createContentSender(dependencies: ContentServices) {
       streaming = true;
       return await reply.send(stream);
     } catch (error) {
-      admission?.end({ finished: false, reachedEnd: false });
+      admission?.end({ finished: false });
       throw error;
     } finally {
       if (!streaming) await pin?.release();
@@ -128,22 +130,26 @@ export function createContentSender(dependencies: ContentServices) {
 
   return sendContent;
 }
+/** `bytes=X-`: from X to the end without naming it, as a resuming tool asks (ADR 0076). */
+function openEnded(value: string | undefined) {
+  return value !== undefined && /^bytes=[0-9]+-$/.test(value);
+}
+
 /**
- * Reports read bytes to the admission and ends it when the response closes: whether it was sent
- * to its end and whether it covered the object's last byte. The session decides from all its
- * responses whether the download is complete.
+ * Reports read bytes to the admission and ends it when the response closes: `finished` only when
+ * the whole range was read and handed to the socket, so an aborted range never counts as
+ * delivered. The session decides from its delivered ranges whether the download is complete.
  */
 function meteredContent(
   source: AsyncIterable<Uint8Array>,
   admission: ContentAdmission,
   reply: FastifyReply,
-  toEnd: boolean,
 ) {
   let drained = false;
   let finished = false;
   reply.raw.once('finish', () => (finished = true));
   reply.raw.once('close', () => {
-    admission.end({ finished: drained && finished, reachedEnd: toEnd });
+    admission.end({ finished: drained && finished });
   });
   return (async function* () {
     for await (const chunk of source) {

@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { request as httpRequest } from 'node:http';
 import Fastify from 'fastify';
 import { downloadSchedulePolicy } from '@proanima/arkvory-domain';
 import {
@@ -65,6 +66,7 @@ async function server(t, { policy = {}, holdMs = 0, slots = 1 } = {}) {
     app.inject({ method, url: path, remoteAddress: address, headers });
   return {
     get,
+    app,
     scheduler,
     as(next) {
       principal = next;
@@ -174,4 +176,47 @@ test('small objects and the shared strategy keep admission per request', async (
   for (const address of ['10.0.0.1', '10.0.0.2', '10.0.0.3'])
     assert.equal((await s.get(address, { range: 'bytes=0-9' })).statusCode, 206);
   assert.equal(s.scheduler.snapshot.admitted, 0);
+  // Per-request admission also names the class the download runs in.
+  const bulk = await s.get('10.0.0.4', { 'arkvory-download-class': 'bulk' });
+  assert.equal(bulk.statusCode, 200);
+  assert.equal(bulk.headers['arkvory-download-class'], 'bulk');
+});
+
+test('a tool resuming from an offset completes its download with that one range', async (t) => {
+  const s = await server(t);
+  const resumed = await s.get('10.0.0.1', { range: 'bytes=3000-' });
+  assert.equal(resumed.statusCode, 206);
+  assert.equal(resumed.rawPayload.length, bytes.length - 3000);
+  const snapshot = s.scheduler.snapshot;
+  assert.equal(snapshot.completed, 1);
+  assert.equal(snapshot.active, 0, 'the place is free at once, not after idling');
+  // A bounded read of the tail (a ZIP directory) does not end a download.
+  assert.equal((await s.get('10.0.0.2', { range: 'bytes=4000-4095' })).statusCode, 206);
+  assert.equal(s.scheduler.snapshot.active, 1);
+});
+
+/** Requests over a socket with headers exactly as listed: inject cannot repeat one. */
+async function rawGets(app, ...lists) {
+  const address = await app.listen({ host: '127.0.0.1', port: 0 });
+  const one = (headers) =>
+    new Promise((resolve, reject) => {
+      const asked = httpRequest(`${address}${url}`, { headers }, (answer) => {
+        answer.resume();
+        answer.on('end', () => resolve(answer.statusCode));
+      });
+      asked.on('error', reject);
+      asked.end();
+    });
+  const statuses = [];
+  for (const headers of lists) statuses.push(await one(headers));
+  return statuses;
+}
+
+test('a repeated queue header is refused even when Node joins it into one value', async (t) => {
+  const s = await server(t);
+  // Node joins unknown repeated headers with ", ": the parsed value is one string, which for a
+  // ticket was only an unreadable ticket. A raw header list gets no Host added; HTTP/1.1 needs it.
+  const once = ['Host', 'localhost', 'Arkvory-Queue-Ticket', '2.a.b.c'];
+  const twice = [...once, 'arkvory-queue-ticket', '2.a.b.c'];
+  assert.deepEqual(await rawGets(s.app, once, twice), [200, 400]);
 });

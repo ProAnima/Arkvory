@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  DownloadCoverage,
   DownloadSessions,
   downloadSchedulePolicy,
   downloadCheckDelay,
@@ -17,15 +18,11 @@ const session = (key, extra = {}) => ({
   size: extra.size ?? 100,
   queueAware: extra.queueAware ?? true,
 });
-const whole = { finished: true, reachedEnd: true };
-const middle = { finished: true, reachedEnd: false };
-
-/** Reads a whole object in one response. */
-function complete(sessions, request, now) {
-  assert.equal(sessions.request(request, now).state, 'active');
-  sessions.progress(request.key, request.size, now);
-  sessions.end(request.key, whole, now);
-}
+/** A response of `range` sent to its end; `open` for `bytes=X-` or no Range at all. */
+const sent = (start, end, open = false) => ({ finished: true, range: { start, end, open } });
+/** A whole object of 100 bytes, and a range in its middle. */
+const whole = sent(0, 99, true);
+const middle = sent(0, 9);
 
 test('a mass update is served whole downloads at a time and every place is returned', () => {
   const sessions = new DownloadSessions(downloadSchedulePolicy(2));
@@ -90,36 +87,113 @@ test('people get the reserved place during a mass update; the reserve needs four
   assert.equal(downloadSchedulePolicy(4).interactiveReserve, 1);
 });
 
+/** Asks for `[start, end]` of `request` and sends it to its end. */
+function read(sessions, request, start, end, open = false, now = 0) {
+  const range = { start, end, open };
+  assert.equal(sessions.request({ ...request, range }, now).state, 'active');
+  sessions.progress(request.key, end - start + 1, now);
+  sessions.end(request.key, { finished: true, range }, now);
+}
+
 test('reading the last range first does not finish a download; all its bytes do', () => {
   const sessions = new DownloadSessions(downloadSchedulePolicy(1));
   const zip = session('zip', { size: 100 });
-  assert.equal(sessions.request(zip, 0).state, 'active');
-  sessions.progress('zip', 10, 0);
-  sessions.end('zip', whole, 0);
+  // `bytes=-10` or `bytes=90-99`: a bounded read of the tail says nothing of the start.
+  read(sessions, zip, 90, 99);
   assert.equal(sessions.snapshot(0).active, 1, 'the central directory is not the whole file');
-  assert.equal(sessions.request(zip, 0).state, 'active');
-  sessions.progress('zip', 90, 0);
-  sessions.end('zip', middle, 0);
+  read(sessions, zip, 0, 49);
+  assert.equal(sessions.snapshot(0).active, 1, 'bytes 50 to 89 are missing');
+  read(sessions, zip, 50, 89);
   assert.equal(sessions.snapshot(0).completed, 1);
   assert.equal(sessions.idle, true);
 });
 
-test('a download that paused keeps its turn and its progress when it comes back', () => {
+test('delivered ranges merge, stay bounded and never cover a byte that was not sent', () => {
+  const coverage = new DownloadCoverage();
+  coverage.add(10, 19);
+  coverage.add(0, 9);
+  coverage.add(30, 39);
+  assert.equal(coverage.size, 2, 'adjacent ranges are one');
+  assert.equal(coverage.covers(0, 19), true);
+  assert.equal(coverage.covers(0, 39), false, 'bytes 20 to 29 are missing');
+  assert.equal(coverage.bytesFrom(5), 25);
+  coverage.add(15, 35);
+  assert.equal(coverage.covers(0, 39), true);
+  // Scattered ranges: at most 64 are kept; the smallest go, so coverage only shrinks.
+  const scattered = new DownloadCoverage();
+  for (let index = 0; index < 100; index++) scattered.add(index * 10, index * 10 + (index % 5));
+  assert.equal(scattered.size, 64);
+  assert.equal(scattered.covers(0, 999), false);
+  scattered.add(0, 999);
+  assert.equal(scattered.size, 1);
+  assert.equal(scattered.covers(0, 999), true);
+});
+
+test('a download resumed from an offset completes without the bytes before it', () => {
+  const sessions = new DownloadSessions(downloadSchedulePolicy(1));
+  // curl -C - and wget -c ask `bytes=X-`: one response to the end is the whole download.
+  read(sessions, session('curl', { size: 100 }), 60, 99, true);
+  assert.equal(sessions.snapshot(0).completed, 1);
+  // The SDK resumes with bounded ranges from its offset; its last range ends the download.
+  read(sessions, session('sdk', { size: 100 }), 40, 69);
+  assert.equal(sessions.snapshot(0).active, 1);
+  read(sessions, session('sdk', { size: 100 }), 70, 99);
+  assert.equal(sessions.snapshot(0).completed, 2);
+  assert.equal(sessions.idle, true);
+});
+
+test('an aborted range delivers nothing; the session completes only with every range in', () => {
+  const sessions = new DownloadSessions(downloadSchedulePolicy(1, { rangesPerSession: 4 }));
+  const big = session('big', { size: 100 });
+  const range = (start, end) => ({ start, end, open: false });
+  // Two ranges at once: the second aborts after streaming most of its bytes.
+  assert.equal(sessions.request({ ...big, range: range(0, 49) }, 0).state, 'active');
+  assert.equal(sessions.request({ ...big, range: range(50, 99) }, 0).state, 'active');
+  sessions.progress('big', 50, 0);
+  sessions.progress('big', 45, 0);
+  sessions.end('big', { finished: false, range: range(50, 99) }, 0);
+  sessions.end('big', { finished: true, range: range(0, 49) }, 0);
+  assert.equal(sessions.snapshot(0).active, 1, 'the aborted range is not delivered');
+  read(sessions, big, 50, 99);
+  assert.equal(sessions.snapshot(0).completed, 1);
+});
+
+test('a download that paused keeps its turn and its delivered ranges when it comes back', () => {
   const policy = downloadSchedulePolicy(1, { idleMs: 30000 });
   const sessions = new DownloadSessions(policy);
-  assert.equal(sessions.request(session('big', { size: 1000 }), 0).state, 'active');
-  sessions.progress('big', 900, 0);
-  sessions.end('big', middle, 0);
-  sessions.request(session('later', { principal: 'other' }), 1000);
+  const big = session('big', { size: 1000 });
+  read(sessions, big, 0, 899);
+  const later = session('later', { principal: 'other' });
+  for (let at = 1000; at <= 31000; at += 2000) sessions.request(later, at);
   sessions.plan(31000);
   const snapshot = sessions.snapshot(31000);
   assert.equal(snapshot.released, 1);
   assert.equal(snapshot.resumable, 1);
-  // It returns while the other one waits: it was there first and takes the free place.
-  assert.equal(sessions.request(session('big', { size: 1000 }), 32000).state, 'active');
-  sessions.progress('big', 100, 32000);
-  sessions.end('big', whole, 32000);
-  assert.equal(sessions.snapshot(32000).completed, 1);
+  // It returns while the other one waits: no place at once, but its arrival is kept, so it is
+  // among the first in line at the next tick.
+  assert.equal(sessions.request(big, 32000).state, 'queued');
+  sessions.plan(32500);
+  read(sessions, big, 900, 999, false, 32500);
+  assert.equal(sessions.snapshot(32500).completed, 1, 'its first 900 bytes still count');
+});
+
+test('a resumed download is not admitted ahead of one that came before it', () => {
+  const sessions = new DownloadSessions(downloadSchedulePolicy(1, { idleMs: 30000 }));
+  const paused = session('paused', { principal: 'b', size: 1000 });
+  read(sessions, paused, 0, 99);
+  // A download back from a restart with a ticket: it came before the paused one.
+  const early = { ...session('early', { principal: 'a' }), arrivedAt: -60_000 };
+  for (let at = 1000; at <= 29000; at += 2000) {
+    sessions.plan(at);
+    assert.equal(sessions.request(early, at).state, 'queued');
+  }
+  sessions.plan(31000);
+  assert.equal(sessions.snapshot(31000).resumable, 1);
+  // The place is free; the paused one comes back first but waits in line.
+  assert.equal(sessions.request(paused, 31100).state, 'queued');
+  assert.equal(sessions.request(early, 31200).state, 'active');
+  sessions.plan(31500);
+  assert.equal(sessions.request(paused, 31500).position, 1);
 });
 
 test('one session runs a bounded number of ranges at once', () => {

@@ -565,3 +565,45 @@ test('retries after Retry-After are spread, so refused clients do not return in 
     400,
   );
 });
+
+test('waits longer than a timer can hold are waited in steps, not fired at once', async (t) => {
+  const { delay } = await import('../packages/sdk/dist/transfer.js');
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  const flush = () => new Promise((resolve) => setImmediate(resolve));
+  let done = false;
+  // A `notBefore` 60 days ahead: setTimeout alone would fire it after a millisecond.
+  const waiting = delay(60 * 24 * 3600 * 1000).then(() => (done = true));
+  for (let step = 0; step < 2; step++) {
+    t.mock.timers.tick(2 ** 31 - 1);
+    await flush();
+    assert.equal(done, false);
+  }
+  t.mock.timers.tick(60 * 24 * 3600 * 1000 - 2 * (2 ** 31 - 1) - 1);
+  await flush();
+  assert.equal(done, false);
+  t.mock.timers.tick(1);
+  await waiting;
+  assert.equal(done, true);
+});
+
+test('a huge Retry-After is waited for at most an hour before asking again', async () => {
+  const { TransferAttempts, transferPolicy } = await import('../packages/sdk/dist/transfer.js');
+  const stop = new AbortController();
+  const waits = [];
+  const attempts = new TransferAttempts(transferPolicy({}), {
+    signal: stop.signal,
+    onWait: (event) => {
+      waits.push(event.delayMs);
+      stop.abort(new Error('stop'));
+    },
+  });
+  const tenDays = 10 * 24 * 3600 * 1000;
+  await assert.rejects(
+    attempts.run(async () => {
+      throw new ArkvoryHttpError(503, 'busy', 'r', tenDays);
+    }),
+    /stop/,
+  );
+  assert.equal(waits.length, 1);
+  assert.ok(waits[0] >= 3600 * 1000 && waits[0] <= 1.5 * 3600 * 1000, String(waits[0]));
+});
