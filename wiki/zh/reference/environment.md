@@ -61,22 +61,23 @@ Restart-Service Arkvoryapi, Arkvoryworker, Arkvorybackup
 
 这些限制属于单个 API 进程。速率以字节/秒为单位：`0` 表示不限制，其他任何值必须在 65 536 到 1 TiB 之间。
 
-| 变量                                              | 读取方 | 默认值    | 含义                                                                                                                |
-| ------------------------------------------------- | ------ | --------- | ------------------------------------------------------------------------------------------------------------------- |
-| `ARKVORY_MAX_UPLOADS`                             | API    | `8`       | 同时运行的上传数，1–32。                                                                                            |
-| `ARKVORY_MAX_DOWNLOADS`                           | API    | `16`      | 同时运行的下载数，1–256。                                                                                           |
-| `ARKVORY_MAX_UPLOADS_PER_PRINCIPAL`               | API    | `4`       | 单个账户或密钥同时进行的上传数，不超过上传总数限制。                                                                |
-| `ARKVORY_MAX_DOWNLOADS_PER_PRINCIPAL`             | API    | `4`       | 单个账户或密钥同时进行的下载数，不超过下载总数限制。                                                                |
-| `ARKVORY_TRANSFER_QUEUE_LIMIT`                    | API    | `64`      | 可以等待空闲槽位的传输数，1–1024。                                                                                  |
-| `ARKVORY_TRANSFER_QUEUE_PER_PRINCIPAL`            | API    | `8`       | 单个账户或密钥的等待中传输数，不超过队列上限。                                                                      |
-| `ARKVORY_TRANSFER_QUEUE_TIMEOUT_MS`               | API    | `20000`   | 传输可以在队列中等待的时长，1–120 000 ms。                                                                          |
-| `ARKVORY_MAX_REQUESTS`                            | API    | `128`     | 同时处理的已认证请求数，1–4096。它必须大于上传数加下载数。如果未设置且传输限制较高，默认值为上传数加下载数再加 64。 |
-| `ARKVORY_UPLOAD_BYTES_PER_SECOND`                 | API    | `0`       | 进程的总上传速率。                                                                                                  |
-| `ARKVORY_DOWNLOAD_BYTES_PER_SECOND`               | API    | `0`       | 进程的总下载速率。                                                                                                  |
-| `ARKVORY_UPLOAD_BYTES_PER_SECOND_PER_PRINCIPAL`   | API    | `0`       | 单个账户或密钥在其所有连接上的上传速率。                                                                            |
-| `ARKVORY_DOWNLOAD_BYTES_PER_SECOND_PER_PRINCIPAL` | API    | `0`       | 单个账户或密钥在其所有连接上的下载速率。                                                                            |
-| `ARKVORY_UPLOAD_IDLE_TIMEOUT_MS`                  | API    | `30000`   | 在这段时间内没有发送任何数据的上传请求会被停止，1–1 800 000 ms。                                                    |
-| `ARKVORY_UPLOAD_DEADLINE_MS`                      | API    | `1800000` | 单个上传请求的最长时间，1–1 800 000 ms。它不能短于空闲超时。                                                        |
+| 变量                                              | 读取方 | 默认值    | 含义                                                                                                                                                                   |
+| ------------------------------------------------- | ------ | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ARKVORY_MAX_UPLOADS`                             | API    | `8`       | 同时运行的上传数，1–32。                                                                                                                                               |
+| `ARKVORY_MAX_DOWNLOADS`                           | API    | `16`      | 同时运行的下载数，1–256。                                                                                                                                              |
+| `ARKVORY_MAX_UPLOADS_PER_PRINCIPAL`               | API    | `4`       | 单个账户或密钥同时进行的上传数，不超过上传总数限制。                                                                                                                   |
+| `ARKVORY_MAX_DOWNLOADS_PER_PRINCIPAL`             | API    | `4`       | 单个账户或密钥同时进行的下载数，不超过下载总数限制。                                                                                                                   |
+| `ARKVORY_DOWNLOAD_STRATEGY`                       | API    | `ordered` | 下载队列如何安排超过 16 MiB 的对象的完整下载：`ordered`（优先级类别，各主体轮流）、`smallest-first`（小对象优先）或 `shared`（不排队：每个请求单独准入，与以前相同）。 |
+| `ARKVORY_TRANSFER_QUEUE_LIMIT`                    | API    | `64`      | 可以等待空闲槽位的传输数，1–1024。                                                                                                                                     |
+| `ARKVORY_TRANSFER_QUEUE_PER_PRINCIPAL`            | API    | `8`       | 单个账户或密钥的等待中传输数，不超过队列上限。                                                                                                                         |
+| `ARKVORY_TRANSFER_QUEUE_TIMEOUT_MS`               | API    | `20000`   | 传输可以在队列中等待的时长，1–120 000 ms。                                                                                                                             |
+| `ARKVORY_MAX_REQUESTS`                            | API    | `128`     | 同时处理的已认证请求数，1–4096。它必须大于上传数加下载数。如果未设置且传输限制较高，默认值为上传数加下载数再加 64。                                                    |
+| `ARKVORY_UPLOAD_BYTES_PER_SECOND`                 | API    | `0`       | 进程的总上传速率。                                                                                                                                                     |
+| `ARKVORY_DOWNLOAD_BYTES_PER_SECOND`               | API    | `0`       | 进程的总下载速率。                                                                                                                                                     |
+| `ARKVORY_UPLOAD_BYTES_PER_SECOND_PER_PRINCIPAL`   | API    | `0`       | 单个账户或密钥在其所有连接上的上传速率。                                                                                                                               |
+| `ARKVORY_DOWNLOAD_BYTES_PER_SECOND_PER_PRINCIPAL` | API    | `0`       | 单个账户或密钥在其所有连接上的下载速率。                                                                                                                               |
+| `ARKVORY_UPLOAD_IDLE_TIMEOUT_MS`                  | API    | `30000`   | 在这段时间内没有发送任何数据的上传请求会被停止，1–1 800 000 ms。                                                                                                       |
+| `ARKVORY_UPLOAD_DEADLINE_MS`                      | API    | `1800000` | 单个上传请求的最长时间，1–1 800 000 ms。它不能短于空闲超时。                                                                                                           |
 
 ## 网络、HTTPS 与浏览器 {#network-https-and-browsers}
 

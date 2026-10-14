@@ -1,7 +1,9 @@
 import type { FastifyInstance } from 'fastify';
 import { MetricsRegistry } from '@proanima/arkvory-infrastructure';
+import { downloadClasses } from '@proanima/arkvory-domain';
 import type {
   AdmissionQueue,
+  DownloadScheduler,
   Counter,
   DiagnosticLogger,
   GaugeSample,
@@ -33,6 +35,7 @@ export interface MetricSources {
   readonly transfers: {
     readonly uploadGate: Pick<AdmissionQueue, 'snapshot'>;
     readonly downloadGate: Pick<AdmissionQueue, 'snapshot'>;
+    readonly downloadScheduler: Pick<DownloadScheduler, 'snapshot'>;
   };
   /** Admitted non-health requests (graceful drain tracking). */
   readonly activeRequests: () => number;
@@ -260,7 +263,45 @@ export class ApiMetrics {
     });
   }
 
+  /** Download sessions of ADR 0076, by state and class; aggregates only. */
+  private registerDownloadSessions(): void {
+    const scheduler = this.sources.transfers.downloadScheduler;
+    this.registry.sampled({
+      name: 'arkvory_download_sessions',
+      help: 'Download sessions holding a place (active) or waiting for one, by class.',
+      type: 'gauge',
+      labels: ['state', 'class'],
+      collect: () => {
+        const { active, waiting } = scheduler.snapshot;
+        return [
+          { labels: { state: 'active', class: 'all' }, value: active },
+          ...downloadClasses.map((name) => ({
+            labels: { state: 'waiting', class: name },
+            value: waiting[name],
+          })),
+        ];
+      },
+    });
+    this.registry.sampled({
+      name: 'arkvory_download_session_events_total',
+      help: 'Download sessions admitted, queued, completed, dropped as no-shows or refused as over the limit.',
+      type: 'counter',
+      labels: ['event'],
+      collect: () => {
+        const snapshot = scheduler.snapshot;
+        return [
+          { labels: { event: 'admitted' }, value: snapshot.admitted },
+          { labels: { event: 'queued' }, value: snapshot.queued },
+          { labels: { event: 'completed' }, value: snapshot.completed },
+          { labels: { event: 'no_show' }, value: snapshot.noShows },
+          { labels: { event: 'refused' }, value: snapshot.refused },
+        ];
+      },
+    });
+  }
+
   private registerTransfers(): void {
+    this.registerDownloadSessions();
     const { uploadGate, downloadGate } = this.sources.transfers;
     const gates = [
       ['upload', uploadGate],

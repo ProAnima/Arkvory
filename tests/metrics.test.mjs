@@ -101,6 +101,21 @@ test('series cap folds new label sets into one "other" series and counts the ove
   );
 });
 
+const sessions = {
+  snapshot: {
+    strategy: 'ordered',
+    capacity: 2,
+    active: 1,
+    waiting: { interactive: 0, release: 3, bulk: 7, background: 0 },
+    bytesPerSecond: 1000,
+    admitted: 4,
+    queued: 10,
+    completed: 2,
+    noShows: 1,
+    refused: 0,
+  },
+};
+
 async function instrumented(t) {
   const app = createHttpServer();
   const uploadGate = new AdmissionQueue(1, 4, 4, 1000, 1);
@@ -108,7 +123,7 @@ async function instrumented(t) {
   let clock = 0;
   const metrics = new ApiMetrics({
     identity: processIdentity('api', '9.8.7', 1, 'metrics-host'),
-    transfers: { uploadGate, downloadGate },
+    transfers: { uploadGate, downloadGate, downloadScheduler: sessions },
     activeRequests: () => 3,
     diagnostics: { counters: { written: 10, dropped: 2, truncated: 1, oversized: 0 } },
     jobs: { backlog: async () => ({ queued: 5, running: 1, oldestQueuedSeconds: 12.5 }) },
@@ -177,6 +192,9 @@ test('HTTP metrics label route templates, methods and status classes, never raw 
   assert.equal(find('arkvory_completion_oldest_queued_seconds', {})?.value, 12.5);
   assert.equal(find('arkvory_diagnostic_records_total', { outcome: 'dropped' })?.value, 2);
   assert.equal(find('arkvory_transfer_queue_depth', { direction: 'download' })?.value, 0);
+  assert.equal(find('arkvory_download_sessions', { state: 'waiting', class: 'bulk' })?.value, 7);
+  assert.equal(find('arkvory_download_sessions', { state: 'active', class: 'all' })?.value, 1);
+  assert.equal(find('arkvory_download_session_events_total', { event: 'no_show' })?.value, 1);
 });
 
 test('transfer gauges follow admission state and the label set stays bounded', async (t) => {
@@ -203,8 +221,11 @@ test('transfer gauges follow admission state and the label set stays bounded', a
   );
   // The complete label vocabulary: no identifiers of artifacts, keys, principals or requests.
   const allowed = new Set([
+    // Download session classes and events: fixed vocabularies of ADR 0076.
+    'class',
     'collector',
     'direction',
+    'event',
     'le',
     'method',
     'metric',
@@ -235,6 +256,7 @@ test('built-in HTTPS exposes the certificate expiry; without it the series is ab
     transfers: {
       uploadGate: new AdmissionQueue(1, 4, 4, 1000, 1),
       downloadGate: new AdmissionQueue(1, 4, 4, 1000, 1),
+      downloadScheduler: sessions,
     },
     activeRequests: () => 0,
     diagnostics: { counters: { written: 0, dropped: 0, truncated: 0, oversized: 0 } },

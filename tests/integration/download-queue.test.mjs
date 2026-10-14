@@ -155,3 +155,56 @@ test('configured server admission exposes queue bounds and rejects a waiting dow
   abort.abort();
   await first.body.cancel().catch(() => {});
 });
+
+test('a second client waits its turn for a large object and downloads it whole once the place frees (ADR 0076)', async (t) => {
+  const f = await setup(t, { maxDownloads: 1 });
+  // Above the session threshold: the download is one session, not one admission per range.
+  const bytes = Buffer.alloc(17 * 1024 ** 2 + 7, 0x51),
+    id = (await create(f, bytes)).json().id;
+  assert.equal(
+    (
+      await f.app.inject({
+        method: 'PUT',
+        url: `${base}/uploads/${id}/content`,
+        headers: { ...f.headers, 'content-type': 'application/octet-stream' },
+        payload: bytes,
+      })
+    ).statusCode,
+    200,
+  );
+  const address = await f.listen();
+  const first = new ArkvoryClient(address, () => f.headers.authorization.slice(7));
+  const second = new ArkvoryClient(address, () => f.readerHeaders.authorization.slice(7));
+  const holding = (await first.downloadVerified('releases', id)).getReader();
+  const head = await holding.read();
+  assert.equal(head.done, false);
+  const waits = [];
+  // The stream asks for its first range when read: read it in the background.
+  const downloaded = (async () => {
+    const reader = (
+      await second.downloadVerified('releases', id, { onWait: (event) => waits.push(event) })
+    ).getReader();
+    const parts = [];
+    for (let chunk = await reader.read(); !chunk.done; chunk = await reader.read())
+      parts.push(chunk.value);
+    return Buffer.concat(parts);
+  })();
+  const sessions = async () =>
+    (await f.app.inject({ url: '/health/ready', headers: f.headers })).json().transfers.downloads
+      .sessions;
+  // The first download holds the only place; the second is queued.
+  for (let tries = 0; (await sessions()).waiting.release === 0; tries++) {
+    assert.ok(tries < 100, 'the second download was never queued');
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  }
+  let received = head.value.length;
+  for (let chunk = await holding.read(); !chunk.done; chunk = await holding.read())
+    received += chunk.value.length;
+  assert.equal(received, bytes.length);
+  assert.deepEqual(await downloaded, bytes);
+  assert.ok(waits.length >= 1, 'the queued client was told to wait');
+  const state = await sessions();
+  assert.equal(state.active, 0);
+  assert.equal(state.completed, 2);
+  assert.equal(state.refused, 0);
+});

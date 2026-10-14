@@ -155,12 +155,13 @@ Get-NetTCPConnection -LocalPort 8080 | Select-Object LocalAddress, OwningProcess
 
 代码 `busy`、`unavailable` 和 `rate_limited` 是临时的。应答带有响应头 `Retry-After` 和字段 `retryAfterSeconds`。请等待这么长时间。对于 `busy`，服务器根据前面的队列以及位置释放的速度计算等待时间，因此队列越长，客户端被要求等待的时间越长。SDK 和命令行客户端遇到 `busy` 和 `rate_limited` 时会按服务器要求的时间等待（可用 `--wait-limit` 或 `waitLimitMs` 设置上限），其他应答则有限次地重复。
 
-| 应答                             | 原因                                                                                                  | 处理方式                                                                                                                                    |
-| -------------------------------- | ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| 503 `busy`，原因 `request_limit` | 服务器同时处理 `ARKVORY_MAX_REQUESTS` 个请求（默认 128）                                              | 等待。只有在内存充足时才提高限制。检查 `arkvory_http_requests_in_flight`                                                                    |
-| 503 `busy`                       | 传输队列已满、某个传输等待时间超过 `ARKVORY_TRANSFER_QUEUE_TIMEOUT_MS`（20 秒），或服务器在停止前排空 | 等待并重试。如果频繁发生，请提高 `ARKVORY_MAX_UPLOADS` 或 `ARKVORY_MAX_DOWNLOADS`。`arkvory_transfer_admission_failures_total` 统计拒绝次数 |
-| 503 `unavailable`                | 数据库重启、进程失去了存储所有权，或中心（hub）不可达（`hub_unreachable`）                            | 等待。服务会自行重启。参见[自愈](./self-healing)                                                                                            |
-| 429 `rate_limited`               | 登录、注册、密码或反馈尝试过多                                                                        | 等待。参见[尝试次数过多](#too-many-attempts)                                                                                                |
+| 应答                               | 原因                                                                                                  | 处理方式                                                                                                                                    |
+| ---------------------------------- | ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| 503 `busy`，原因 `request_limit`   | 服务器同时处理 `ARKVORY_MAX_REQUESTS` 个请求（默认 128）                                              | 等待。只有在内存充足时才提高限制。检查 `arkvory_http_requests_in_flight`                                                                    |
+| 503 `busy`，原因 `download_queued` | 大对象的下载正在队列中等待；`Arkvory-Queue-Position` 和 `Arkvory-Starts-At` 给出位置和预计开始时间    | 无需操作：SDK 和 `arkvoryctl` 会等待并继续。其他客户端在 `Retry-After` 之后使用同一密钥从同一地址重试                                       |
+| 503 `busy`                         | 传输队列已满、某个传输等待时间超过 `ARKVORY_TRANSFER_QUEUE_TIMEOUT_MS`（20 秒），或服务器在停止前排空 | 等待并重试。如果频繁发生，请提高 `ARKVORY_MAX_UPLOADS` 或 `ARKVORY_MAX_DOWNLOADS`。`arkvory_transfer_admission_failures_total` 统计拒绝次数 |
+| 503 `unavailable`                  | 数据库重启、进程失去了存储所有权，或中心（hub）不可达（`hub_unreachable`）                            | 等待。服务会自行重启。参见[自愈](./self-healing)                                                                                            |
+| 429 `rate_limited`                 | 登录、注册、密码或反馈尝试过多                                                                        | 等待。参见[尝试次数过多](#too-many-attempts)                                                                                                |
 
 500 `internal` 没有 `Retry-After`。不要盲目重复它。在日志中搜索它的请求 ID 并报告。
 

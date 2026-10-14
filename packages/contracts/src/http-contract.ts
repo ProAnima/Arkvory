@@ -27,17 +27,43 @@ export const contentResponses = {
     },
   },
 };
-export const downloadHeaders = ['Range', 'If-Range', 'If-None-Match'].map((name) => ({
-  name,
-  in: 'header',
-  schema: { type: 'string' },
-  description:
-    name === 'Range'
-      ? 'Single bytes range; multi-range is unsupported. HEAD ignores Range.'
-      : name === 'If-Range'
-        ? 'Exact strong ETag; a mismatch causes a full response.'
-        : 'Matching ETag returns 304, including HEAD.',
-}));
+export const downloadHeaders = [
+  ...['Range', 'If-Range', 'If-None-Match'].map((name) => ({
+    name,
+    in: 'header',
+    schema: { type: 'string' },
+    description:
+      name === 'Range'
+        ? 'Single bytes range; multi-range is unsupported. HEAD ignores Range.'
+        : name === 'If-Range'
+          ? 'Exact strong ETag; a mismatch causes a full response.'
+          : 'Matching ETag returns 304, including HEAD.',
+  })),
+  priorityHeader(),
+];
+/** ADR 0076: a client may queue its download in a lower class than its own, never a higher one. */
+export function priorityHeader() {
+  return {
+    name: 'Arkvory-Priority',
+    in: 'header',
+    required: false,
+    schema: { type: 'string', enum: ['interactive', 'release', 'bulk', 'background'] },
+    description:
+      'Download class for the queue; only a class lower than the caller own one is applied (people: interactive, services: release).',
+  };
+}
+/** Headers of 503 busy with reason download_queued (ADR 0076). */
+export const queueHeaders = {
+  'Arkvory-Queue-Position': {
+    description: 'Place in the download queue; 1 is next.',
+    schema: { type: 'integer', minimum: 1 },
+  },
+  'Arkvory-Starts-At': {
+    description:
+      'Estimated start of the download (RFC 3339); absent until the server measured its rate.',
+    schema: { type: 'string', format: 'date-time' },
+  },
+};
 const repository = {
   name: 'repository',
   in: 'path',

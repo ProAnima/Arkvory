@@ -126,16 +126,17 @@ Linux에서 서비스는 권한 없는 계정으로 실행되며, 일반적으�
 
 한도는 API 프로세스 하나에 속합니다. 속도 `0`은 제한 없음을 의미합니다.
 
-| 변수                                  | 기본값    | 의미                                                       |
-| ------------------------------------- | --------- | ---------------------------------------------------------- |
-| `ARKVORY_MAX_UPLOADS`                 | `2`       | 동시 업로드 수, 1~32                                       |
-| `ARKVORY_MAX_DOWNLOADS`               | `16`      | 동시 다운로드 수, 1~256                                    |
-| `ARKVORY_MAX_UPLOADS_PER_PRINCIPAL`   | `1`       | 하나의 계정 또는 키의 동시 업로드 수                       |
-| `ARKVORY_MAX_DOWNLOADS_PER_PRINCIPAL` | `4`       | 하나의 계정 또는 키의 동시 다운로드 수                     |
-| `ARKVORY_UPLOAD_BYTES_PER_SECOND`     | `0`       | 초당 총 업로드 속도(바이트)                                |
-| `ARKVORY_DOWNLOAD_BYTES_PER_SECOND`   | `0`       | 초당 총 다운로드 속도(바이트)                              |
-| `ARKVORY_UPLOAD_DEADLINE_MS`          | `1800000` | 업로드 요청 하나의 최대 시간, 30분                         |
-| `ARKVORY_UPLOAD_IDLE_TIMEOUT_MS`      | `30000`   | 이 시간 동안 데이터를 보내지 않는 업로드 요청은 중단됩니다 |
+| 변수                                  | 기본값    | 의미                                                                                                     |
+| ------------------------------------- | --------- | -------------------------------------------------------------------------------------------------------- |
+| `ARKVORY_MAX_UPLOADS`                 | `2`       | 동시 업로드 수, 1~32                                                                                     |
+| `ARKVORY_MAX_DOWNLOADS`               | `16`      | 동시 다운로드 수, 1~256                                                                                  |
+| `ARKVORY_MAX_UPLOADS_PER_PRINCIPAL`   | `1`       | 하나의 계정 또는 키의 동시 업로드 수                                                                     |
+| `ARKVORY_MAX_DOWNLOADS_PER_PRINCIPAL` | `4`       | 하나의 계정 또는 키의 동시 다운로드 수                                                                   |
+| `ARKVORY_DOWNLOAD_STRATEGY`           | `ordered` | 다운로드 대기열 순서: `ordered`(클래스와 차례), `smallest-first` 또는 `shared`(대기열 없음, 이전과 동일) |
+| `ARKVORY_UPLOAD_BYTES_PER_SECOND`     | `0`       | 초당 총 업로드 속도(바이트)                                                                              |
+| `ARKVORY_DOWNLOAD_BYTES_PER_SECOND`   | `0`       | 초당 총 다운로드 속도(바이트)                                                                            |
+| `ARKVORY_UPLOAD_DEADLINE_MS`          | `1800000` | 업로드 요청 하나의 최대 시간, 30분                                                                       |
+| `ARKVORY_UPLOAD_IDLE_TIMEOUT_MS`      | `30000`   | 이 시간 동안 데이터를 보내지 않는 업로드 요청은 중단됩니다                                               |
 
 API 앞의 프록시는 최소한 `ARKVORY_UPLOAD_DEADLINE_MS`만큼 긴 요청을 허용해야 합니다. [HTTPS](./https#reverse-proxy)를 참조하세요. 대기 큐와 계정별 속도 같은 다른 모든 한도는 [환경 변수](../reference/environment#transfers-and-bandwidth)에 있습니다.
 

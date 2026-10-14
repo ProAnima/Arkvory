@@ -39,14 +39,18 @@ async function fixture(t, { download, bandwidth, check, signal, read } = {}) {
         };
       },
     },
-    downloadGate: {
-      async acquire() {
-        slots++;
-        return () => {
+    async admit() {
+      slots++;
+      let ended = false;
+      return {
+        progress() {},
+        end() {
+          if (ended) return;
+          ended = true;
           slots--;
           slotReleased.resolve();
-        };
-      },
+        },
+      };
     },
     downloadBandwidth: governor,
     diagnostics: {

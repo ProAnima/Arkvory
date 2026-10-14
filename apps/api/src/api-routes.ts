@@ -6,6 +6,7 @@ import type { TransferControls } from './transfer-controls.js';
 import type { resolveUploadTimeouts } from './upload-policy.js';
 import { createUploadAdmission } from './upload-admission.js';
 import { createContentSender, registerDownloadRoutes } from './download-routes.js';
+import { createDownloadAdmission } from './download-admission.js';
 import { registerArtifactRoutes } from './artifact-routes.js';
 import { registerOperationRoutes } from './operation-routes.js';
 import { registerIdentityRoutes } from './identity-routes.js';
@@ -56,7 +57,7 @@ export function registerApiRoutes(app: FastifyInstance, dependencies: Compositio
   registerLinkRoutes(app, s.links, principal);
   const sendContent = createContentSender({
     service: s.service,
-    downloadGate: transfers.downloadGate,
+    admit: createDownloadAdmission(transfers),
     downloadBandwidth: transfers.downloadBandwidth,
     principal,
     signal,

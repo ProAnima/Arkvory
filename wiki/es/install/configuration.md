@@ -126,16 +126,17 @@ Mantenga `ARKVORY_DATA_DIR` donde lo puso el instalador. Las unidades de Linux s
 
 Los límites pertenecen a un proceso de la API. Una tasa de `0` significa sin límite.
 
-| Variable                              | Valor predeterminado | Significado                                                               |
-| ------------------------------------- | -------------------- | ------------------------------------------------------------------------- |
-| `ARKVORY_MAX_UPLOADS`                 | `2`                  | Subidas al mismo tiempo, de 1 a 32                                        |
-| `ARKVORY_MAX_DOWNLOADS`               | `16`                 | Descargas al mismo tiempo, de 1 a 256                                     |
-| `ARKVORY_MAX_UPLOADS_PER_PRINCIPAL`   | `1`                  | Subidas simultáneas de una cuenta o clave                                 |
-| `ARKVORY_MAX_DOWNLOADS_PER_PRINCIPAL` | `4`                  | Descargas simultáneas de una cuenta o clave                               |
-| `ARKVORY_UPLOAD_BYTES_PER_SECOND`     | `0`                  | Tasa de subida total en bytes por segundo                                 |
-| `ARKVORY_DOWNLOAD_BYTES_PER_SECOND`   | `0`                  | Tasa de descarga total en bytes por segundo                               |
-| `ARKVORY_UPLOAD_DEADLINE_MS`          | `1800000`            | El tiempo máximo de una solicitud de subida, 30 minutos                   |
-| `ARKVORY_UPLOAD_IDLE_TIMEOUT_MS`      | `30000`              | Una solicitud de subida que no envía datos durante este tiempo se detiene |
+| Variable                              | Valor predeterminado | Significado                                                                                                    |
+| ------------------------------------- | -------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `ARKVORY_MAX_UPLOADS`                 | `2`                  | Subidas al mismo tiempo, de 1 a 32                                                                             |
+| `ARKVORY_MAX_DOWNLOADS`               | `16`                 | Descargas al mismo tiempo, de 1 a 256                                                                          |
+| `ARKVORY_MAX_UPLOADS_PER_PRINCIPAL`   | `1`                  | Subidas simultáneas de una cuenta o clave                                                                      |
+| `ARKVORY_MAX_DOWNLOADS_PER_PRINCIPAL` | `4`                  | Descargas simultáneas de una cuenta o clave                                                                    |
+| `ARKVORY_DOWNLOAD_STRATEGY`           | `ordered`            | Orden de la cola de descargas: `ordered` (clases y turnos), `smallest-first` o `shared` (sin cola, como antes) |
+| `ARKVORY_UPLOAD_BYTES_PER_SECOND`     | `0`                  | Tasa de subida total en bytes por segundo                                                                      |
+| `ARKVORY_DOWNLOAD_BYTES_PER_SECOND`   | `0`                  | Tasa de descarga total en bytes por segundo                                                                    |
+| `ARKVORY_UPLOAD_DEADLINE_MS`          | `1800000`            | El tiempo máximo de una solicitud de subida, 30 minutos                                                        |
+| `ARKVORY_UPLOAD_IDLE_TIMEOUT_MS`      | `30000`              | Una solicitud de subida que no envía datos durante este tiempo se detiene                                      |
 
 Un proxy delante de la API debe permitir una solicitud al menos tan larga como `ARKVORY_UPLOAD_DEADLINE_MS`. Consulte [HTTPS](./https#reverse-proxy). Todos los demás límites, como la cola de espera y las tasas por cuenta, están en [Variables de entorno](../reference/environment#transfers-and-bandwidth).
 

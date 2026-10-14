@@ -1021,6 +1021,7 @@
       "queue_full": "転送キューが満杯です。",
       "transfer_limit": "呼び出し元がすでに許可された数の転送を行っています。",
       "request_limit": "サーバーが受け入れる数のリクエストをすでに処理しています。",
+      "download_queued": "ダウンロードはキューで待機中です。Retry-After の後に再度リクエストしてください。Arkvory-Queue-Position と Arkvory-Starts-At が順番と開始予定を示します。",
       "feedback_disabled": "このサーバーではフィードバックが無効になっています。",
       "hub_unreachable": "アップデートハブに接続できません。",
       "login_attempts": "サインインの試行が多すぎます。しばらく待ってください。",

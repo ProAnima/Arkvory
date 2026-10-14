@@ -9,6 +9,7 @@ const headers = [
   'range',
   'if-range',
   'if-none-match',
+  'arkvory-priority',
 ] as const;
 const exposed = [
   'X-Request-Id',
@@ -19,6 +20,8 @@ const exposed = [
   'Content-Disposition',
   'Location',
   'Retry-After',
+  'Arkvory-Queue-Position',
+  'Arkvory-Starts-At',
 ] as const;
 
 export function parseCorsOrigins(value: unknown): readonly string[] {

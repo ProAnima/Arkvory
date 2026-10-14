@@ -26,6 +26,7 @@ It is a standalone product with its own HTTP API, command-line client and TypeSc
 - **Retention.** Keep the last N builds of each package, set quotas and warnings, and free disk space in the background without stopping the server.
 - **Backups.** A backup agent copies the database and all content to another disk or a network share on a schedule, verifies the copies and restores into an empty target.
 - **High availability on one site.** Two or three Linux servers keep one synchronous copy of all data (DRBD, Pacemaker, mandatory fencing): when the active server fails, another takes over, and a write is acknowledged only when it is on two complete copies.
+- **Mass updates without failures.** When a thousand clients fetch a large update at once, whole downloads queue in order: each client learns its place and the expected start, waits instead of failing, and people in the console are served first.
 - **Mirrors and read gateways.** A second installation keeps a read-only copy of repositories and serves it when the first site is lost; extra download processes share one bandwidth budget.
 - **Runs by itself.** Windows services, Linux packages or Docker Compose. Services restart after a crash or a hang; signed stable updates install by hand or in a maintenance hour, behind a fresh verified backup, with rollback.
 - **A console in eleven languages.** English, Russian, Spanish, French, German, Portuguese, Chinese, Japanese, Korean, Hindi and Arabic, light and dark. The documentation is in the same languages.

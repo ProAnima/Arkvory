@@ -44,11 +44,34 @@ const bandwidth = {
     grantedBytes: { type: 'string', pattern: '^(0|[1-9][0-9]*)$' },
   },
 } as const;
+/** Download sessions of ADR 0076: aggregates only, no session ids or principals. */
+const sessions = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['strategy', 'capacity', 'active', 'waiting', 'bytesPerSecond'],
+  properties: {
+    strategy: { type: 'string', enum: ['ordered', 'smallest-first', 'shared'] },
+    capacity: count,
+    active: count,
+    waiting: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['interactive', 'release', 'bulk', 'background'],
+      properties: { interactive: count, release: count, bulk: count, background: count },
+    },
+    bytesPerSecond: count,
+    admitted: count,
+    queued: count,
+    completed: count,
+    noShows: count,
+    refused: count,
+  },
+} as const;
 const direction = {
   type: 'object',
   additionalProperties: false,
   required: ['admission', 'bandwidth'],
-  properties: { admission, bandwidth },
+  properties: { admission, bandwidth, sessions },
 } as const;
 export const readinessSchema = {
   type: 'object',

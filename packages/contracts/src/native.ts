@@ -8,7 +8,12 @@ import { identityPaths } from './identity-api.js';
 import { securityAuditPaths } from './security-audit.js';
 import { readinessSchema } from './health.js';
 import { servicePaths } from './service-api.js';
-import { supplementalPaths, nativeErrorSchema, nativeErrorResponse } from './http-contract.js';
+import {
+  supplementalPaths,
+  nativeErrorSchema,
+  nativeErrorResponse,
+  priorityHeader,
+} from './http-contract.js';
 import { composeApiPaths } from './openapi-compose.js';
 import { delegationPaths } from './delegation-api.js';
 import { repositoryPaths } from './repositories.js';
@@ -225,6 +230,7 @@ const baseDocument = {
             in: 'header',
             schema: { type: 'string' },
           })),
+          priorityHeader(),
           downloadLinkParameter,
         ],
         responses: byteResponses,

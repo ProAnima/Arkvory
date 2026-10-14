@@ -1021,6 +1021,7 @@
       "queue_full": "The transfer queue is full.",
       "transfer_limit": "The caller has as many transfers as allowed.",
       "request_limit": "The server handles as many requests as it admits.",
+      "download_queued": "The download waits in the queue; come back after Retry-After. Arkvory-Queue-Position and Arkvory-Starts-At tell the place and the expected start.",
       "feedback_disabled": "Feedback is turned off on this server.",
       "hub_unreachable": "The update hub cannot be reached.",
       "login_attempts": "Too many sign-in attempts; wait.",

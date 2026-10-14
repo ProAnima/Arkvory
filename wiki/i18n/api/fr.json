@@ -1021,6 +1021,7 @@
       "queue_full": "La file de transfert est pleine.",
       "transfer_limit": "L’appelant a déjà le nombre maximal de transferts autorisés.",
       "request_limit": "Le serveur traite déjà autant de requêtes qu’il en admet.",
+      "download_queued": "Le téléchargement attend dans la file ; revenez après Retry-After. Arkvory-Queue-Position et Arkvory-Starts-At indiquent la place et le début prévu.",
       "feedback_disabled": "Les commentaires sont désactivés sur ce serveur.",
       "hub_unreachable": "Le hub de mises à jour est injoignable.",
       "login_attempts": "Trop de tentatives de connexion ; attendez.",

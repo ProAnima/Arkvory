@@ -1021,6 +1021,7 @@
       "queue_full": "Die Transfer-Warteschlange ist voll.",
       "transfer_limit": "Der Aufrufer hat so viele Transfers, wie erlaubt sind.",
       "request_limit": "Der Server bearbeitet so viele Anfragen, wie er zulässt.",
+      "download_queued": "Der Download wartet in der Warteschlange; nach Retry-After erneut anfragen. Arkvory-Queue-Position und Arkvory-Starts-At nennen Platz und erwarteten Beginn.",
       "feedback_disabled": "Feedback ist auf diesem Server abgeschaltet.",
       "hub_unreachable": "Der Update-Hub ist nicht erreichbar.",
       "login_attempts": "Zu viele Anmeldeversuche; warten Sie.",

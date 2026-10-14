@@ -126,16 +126,17 @@ HTTPS、备份存储和镜像更改会重启服务，并在更改不生效时恢
 
 这些限制属于单个 API 进程。速率 `0` 表示无限制。
 
-| 变量                                  | 默认值    | 含义                                 |
-| ------------------------------------- | --------- | ------------------------------------ |
-| `ARKVORY_MAX_UPLOADS`                 | `2`       | 同时进行的上传数，1 到 32            |
-| `ARKVORY_MAX_DOWNLOADS`               | `16`      | 同时进行的下载数，1 到 256           |
-| `ARKVORY_MAX_UPLOADS_PER_PRINCIPAL`   | `1`       | 一个账户或密钥同时进行的上传数       |
-| `ARKVORY_MAX_DOWNLOADS_PER_PRINCIPAL` | `4`       | 一个账户或密钥同时进行的下载数       |
-| `ARKVORY_UPLOAD_BYTES_PER_SECOND`     | `0`       | 总上传速率，以字节/秒为单位          |
-| `ARKVORY_DOWNLOAD_BYTES_PER_SECOND`   | `0`       | 总下载速率，以字节/秒为单位          |
-| `ARKVORY_UPLOAD_DEADLINE_MS`          | `1800000` | 单个上传请求的最长时间，30 分钟      |
-| `ARKVORY_UPLOAD_IDLE_TIMEOUT_MS`      | `30000`   | 上传请求在此期间未发送任何数据则停止 |
+| 变量                                  | 默认值    | 含义                                                                                        |
+| ------------------------------------- | --------- | ------------------------------------------------------------------------------------------- |
+| `ARKVORY_MAX_UPLOADS`                 | `2`       | 同时进行的上传数，1 到 32                                                                   |
+| `ARKVORY_MAX_DOWNLOADS`               | `16`      | 同时进行的下载数，1 到 256                                                                  |
+| `ARKVORY_MAX_UPLOADS_PER_PRINCIPAL`   | `1`       | 一个账户或密钥同时进行的上传数                                                              |
+| `ARKVORY_MAX_DOWNLOADS_PER_PRINCIPAL` | `4`       | 一个账户或密钥同时进行的下载数                                                              |
+| `ARKVORY_DOWNLOAD_STRATEGY`           | `ordered` | 下载队列的顺序：`ordered`（按类别轮流）、`smallest-first` 或 `shared`（不排队，与以前相同） |
+| `ARKVORY_UPLOAD_BYTES_PER_SECOND`     | `0`       | 总上传速率，以字节/秒为单位                                                                 |
+| `ARKVORY_DOWNLOAD_BYTES_PER_SECOND`   | `0`       | 总下载速率，以字节/秒为单位                                                                 |
+| `ARKVORY_UPLOAD_DEADLINE_MS`          | `1800000` | 单个上传请求的最长时间，30 分钟                                                             |
+| `ARKVORY_UPLOAD_IDLE_TIMEOUT_MS`      | `30000`   | 上传请求在此期间未发送任何数据则停止                                                        |
 
 API 前面的代理必须允许请求的持续时间至少与 `ARKVORY_UPLOAD_DEADLINE_MS` 一样长。参见 [HTTPS](./https#reverse-proxy)。所有其他限制，例如等待队列和每账户速率，见[环境变量](../reference/environment#transfers-and-bandwidth)。
 

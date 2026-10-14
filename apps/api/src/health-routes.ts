@@ -7,6 +7,7 @@ import type {
   PostgresCatalog,
   PostgresDownloadLease,
   AdmissionQueue,
+  DownloadScheduler,
   BandwidthGovernor,
 } from '@proanima/arkvory-infrastructure';
 import { ReadinessProbe } from './readiness.js';
@@ -21,6 +22,7 @@ interface Health {
   transfers: {
     uploadGate: Pick<AdmissionQueue, 'snapshot'>;
     downloadGate: Pick<AdmissionQueue, 'snapshot'>;
+    downloadScheduler: Pick<DownloadScheduler, 'snapshot'>;
     uploadBandwidth: Pick<BandwidthGovernor, 'snapshot'>;
     downloadBandwidth: Pick<BandwidthGovernor, 'snapshot'>;
   };
@@ -33,7 +35,8 @@ export function registerHealthRoutes(
   principal?: (request: FastifyRequest) => Principal,
 ) {
   const { catalog, blobs, role, lease, available } = dependencies;
-  const { uploadGate, downloadGate, uploadBandwidth, downloadBandwidth } = dependencies.transfers;
+  const { uploadGate, downloadGate, downloadScheduler, uploadBandwidth, downloadBandwidth } =
+    dependencies.transfers;
   const probe = new ReadinessProbe(
     async () => {
       await catalog.ready();
@@ -86,7 +89,11 @@ export function registerHealthRoutes(
       sharedDownloads: lease?.snapshot ?? null,
       transfers: {
         uploads: { admission: uploadGate.snapshot, bandwidth: uploadBandwidth.snapshot },
-        downloads: { admission: downloadGate.snapshot, bandwidth: downloadBandwidth.snapshot },
+        downloads: {
+          admission: downloadGate.snapshot,
+          bandwidth: downloadBandwidth.snapshot,
+          sessions: downloadScheduler.snapshot,
+        },
       },
     };
   });
