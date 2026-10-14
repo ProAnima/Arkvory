@@ -1087,6 +1087,14 @@
       },
       "summary": "将站点更改加入队列",
       "description": "为站点代理加入一项更改，代理在一分钟内以 `arkvory configure` 和 `cluster-*` 的检查与回滚应用它：连接镜像或导入、替换其源密钥、断开镜像、切换活动 HA 节点（节点名称输入两次）或决定单副本写入。`id` 由客户端选择；重复它不会再次加入队列。`key` 仅用于 `mirror-attach` 和 `mirror-key` 的源密钥：它以单独的 0600 文件交给代理，永不返回。202 表示已入队，而非已应用。"
+    },
+    "getFleetOverview": {
+      "en": {
+        "summary": "Read the fleet overview",
+        "description": "Alerts across the managed sites and this installation, most severe first (`critical`, `warning`, `info`), and the mirror links between them. Built from the last background reads, at most once per 5 seconds. A source no managed site answers at is `external:<origin>`; this installation is `self` and meets the links to it only when `ARKVORY_SITE_URL` is set. Answered by the writer only."
+      },
+      "summary": "读取站点概览",
+      "description": "受管站点和本安装的告警，最严重的在前（`critical`、`warning`、`info`），以及它们之间的镜像关联。根据最近的后台读取构建，最多每 5 秒一次。没有受管站点在其地址上应答的源记为 `external:<origin>`；本安装为 `self`，只有设置了 `ARKVORY_SITE_URL` 时才会出现指向它的关联。仅由写入进程应答。"
     }
   },
   "errors": {

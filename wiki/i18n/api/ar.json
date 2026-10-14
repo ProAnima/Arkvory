@@ -1087,6 +1087,14 @@
       },
       "summary": "وضع تغيير للموقع في الطابور",
       "description": "يضع تغييرًا واحدًا لوكيل الموقع، فيطبقه خلال دقيقة بفحوص `arkvory configure` و`cluster-*` وتراجعها: ربط مرآة أو استيراد، أو استبدال مفتاح مصدرها، أو فصل المرايا، أو تبديل عقدة HA النشطة (يُكتب اسم العقدة مرتين)، أو تقرير الكتابة بنسخة واحدة. يختار العميل `id`؛ وتكراره لا يضع التغيير مرة أخرى. `key` هو مفتاح المصدر لـ`mirror-attach` و`mirror-key` فقط: يصل إلى الوكيل في ملف 0600 خاص به ولا يُعاد أبدًا. يعني 202 أنه في الطابور لا أنه طُبّق."
+    },
+    "getFleetOverview": {
+      "en": {
+        "summary": "Read the fleet overview",
+        "description": "Alerts across the managed sites and this installation, most severe first (`critical`, `warning`, `info`), and the mirror links between them. Built from the last background reads, at most once per 5 seconds. A source no managed site answers at is `external:<origin>`; this installation is `self` and meets the links to it only when `ARKVORY_SITE_URL` is set. Answered by the writer only."
+      },
+      "summary": "قراءة نظرة عامة على المواقع",
+      "description": "تنبيهات المواقع المُدارة وهذا التثبيت، الأشد أولًا (`critical` و`warning` و`info`)، وروابط المرايا بينها. تُبنى من آخر القراءات في الخلفية، مرة كل 5 ثوانٍ على الأكثر. المصدر الذي لا يجيب على عنوانه أي موقع مُدار هو `external:<origin>`؛ وهذا التثبيت هو `self` ولا تظهر الروابط إليه إلا عند ضبط `ARKVORY_SITE_URL`. تجيب عملية الكتابة فقط."
     }
   },
   "errors": {

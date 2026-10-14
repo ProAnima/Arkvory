@@ -1,6 +1,7 @@
 import {
   fleetChangeMethod,
   readFleetControllers,
+  readFleetOverview,
   readFleetPairing,
   readFleetProbe,
   readFleetSite,
@@ -29,6 +30,12 @@ export class FleetApi {
 
   async topology(signal?: AbortSignal) {
     return readTopology(await this.http.call('/api/v1/system/topology', 'GET', undefined, signal));
+  }
+  /** What needs attention across the sites and who feeds whom (stage F4). */
+  async overview(signal?: AbortSignal) {
+    return readFleetOverview(
+      await this.http.call('/api/v1/fleet/overview', 'GET', undefined, signal),
+    );
   }
   async sites(signal?: AbortSignal) {
     return readFleetSites(await this.http.call('/api/v1/fleet/sites', 'GET', undefined, signal));

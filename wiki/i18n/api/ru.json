@@ -1087,6 +1087,14 @@
       },
       "summary": "Поставить изменение площадки в очередь",
       "description": "Ставит одно изменение для агента площадки; он применяет его в течение минуты с проверками и откатом `arkvory configure` и `cluster-*`: подключить зеркало или импорт, заменить ключ источника, отключить зеркала, перевести активный узел HA (имя узла вводится дважды) или принять запись с одной копией. `id` выбирает клиент; повтор не ставит изменение второй раз. `key` — ключ источника только для `mirror-attach` и `mirror-key`: он уходит агенту отдельным файлом 0600 и никогда не возвращается. 202 означает «в очереди», а не «применено»."
+    },
+    "getFleetOverview": {
+      "en": {
+        "summary": "Read the fleet overview",
+        "description": "Alerts across the managed sites and this installation, most severe first (`critical`, `warning`, `info`), and the mirror links between them. Built from the last background reads, at most once per 5 seconds. A source no managed site answers at is `external:<origin>`; this installation is `self` and meets the links to it only when `ARKVORY_SITE_URL` is set. Answered by the writer only."
+      },
+      "summary": "Прочитать обзор площадок",
+      "description": "Оповещения по управляемым площадкам и этой установке, самые серьёзные первыми (`critical`, `warning`, `info`), и связи зеркал между ними. Строится по последним фоновым опросам, не чаще раза в 5 секунд. Источник, по адресу которого не отвечает ни одна управляемая площадка, — `external:<origin>`; эта установка — `self`, и связи к ней видны только при заданном `ARKVORY_SITE_URL`. Отвечает только процесс записи."
     }
   },
   "errors": {

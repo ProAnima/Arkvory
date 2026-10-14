@@ -81,6 +81,15 @@ export async function exerciseFleet(browser, f, cleanup) {
     assert.equal(await row.locator('.fleet-badge').getAttribute('data-state'), 'ok');
     // The site key never reaches the page.
     assert.doesNotMatch(await page.content(), /afk_/);
+    // The state of the cluster: nothing to attend to, both sites on the map, no links yet.
+    await page.locator('#fleet-overview:not([hidden])').waitFor();
+    await page.locator('#fleet-alerts-none:not([hidden])').waitFor();
+    assert.equal(await page.locator('#fleet-map .fleet-map-node').count(), 2);
+    assert.deepEqual(await page.locator('#fleet-map .fleet-map-node title').allTextContents(), [
+      'This site',
+      'Branch',
+    ]);
+    assert.equal(await page.locator('#fleet-links-none').isVisible(), true);
     // The content of the site, read through this installation: descriptions, never bytes.
     const bytes = Buffer.from('branch tool');
     const id = (await create(site, bytes)).json().id;
@@ -181,6 +190,6 @@ export async function exerciseFleet(browser, f, cleanup) {
     await context.close();
   }
   console.log(
-    'PASS sites: check, pair by code, site state, content, settings, own code, remove, RU/EN, 390px',
+    'PASS sites: check, pair by code, site state, overview and map, content, settings, own code, remove, RU/EN, 390px',
   );
 }

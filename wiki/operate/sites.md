@@ -7,6 +7,39 @@ description: See every installation of your cluster in one place, pair sites wit
 
 A **site** is one Arkvory installation: the main one, a mirror in another location, an installation that imports versions from another. On [[ui:fleet]], one installation, the **controller**, shows every site it manages: whether it answers, its version, its HA copies and read gateways, its mirrors and how far behind they are, and its download queue. Only global administrators see the page.
 
+## State of the cluster {#overview}
+
+The page starts with [[ui:fleetOverview]]: what needs attention across the sites, and which site feeds which. The controller builds it from the last reads of the sites, at most once every 5 seconds, and lists itself as "this site".
+
+### Alerts {#alerts}
+
+Each alert names the site and the problem. The most severe come first: [[ui:fleetSeverityCritical]], then [[ui:fleetSeverityWarning]], then [[ui:fleetSeverityInfo]]. When nothing needs attention, the list says so.
+
+| Alert                                  | Severity                     | When                                                                                                      | What to do                                                        |
+| -------------------------------------- | ---------------------------- | --------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| Unreachable                            | [[ui:fleetSeverityCritical]] | No answer for 2 minutes. One failed read is no alert                                                      | Check the site and the network                                    |
+| Certificate, revoked, refused, invalid | [[ui:fleetSeverityCritical]] | At once, with the [state](#states) of the same name                                                       | Pair again, or update both installations                          |
+| Stale                                  | [[ui:fleetSeverityWarning]]  | The site answered, but was not read for over 90 seconds: the background reads of the controller are stuck | Check the API process of the controller                           |
+| Not writable                           | [[ui:fleetSeverityCritical]] | A writer refuses writes and is not draining                                                               | Check its database and its disk                                   |
+| Copies                                 | [[ui:fleetSeverityCritical]] | An HA site lacks copies of its data; writes pause until they are back                                     | Bring the missing node back, see [HA cluster](./cluster#failures) |
+| Single copy                            | [[ui:fleetSeverityWarning]]  | Copies are lacking, but an operator accepted [one copy](./cluster#single-copy) until a set time           | Bring the missing node back before that time                      |
+| Mirror failing                         | [[ui:fleetSeverityWarning]]  | The last synchronization of a mirror failed. Reading a restored source again does not count               | Read the [error code](./mirrors#error-codes) of the mirror        |
+| Mirror behind                          | [[ui:fleetSeverityWarning]]  | A mirror is `ARKVORY_FLEET_LAG_ALERT` changes (1000 by default) or more behind its source                 | Check the source, the network and the mirror                      |
+| Updates failed                         | [[ui:fleetSeverityWarning]]  | The updater of the site reports a failure                                                                 | Open [[ui:updates]] in the [settings of the site](#site-settings) |
+| Version skew                           | [[ui:fleetSeverityInfo]]     | The site runs another version than the controller                                                         | Update the sites to the same release                              |
+
+### Links {#map}
+
+[[ui:fleetMap]] shows which site feeds which. Every mirror and import is an arrow from the source site to the site that holds the mirror.
+
+- A source at whose address no managed site answers is drawn by its address, with a dashed border. If that source is the controller itself, set `ARKVORY_SITE_URL`, see [Settings](#settings).
+- A failing link is dashed red.
+- The number on a link is how many changes the mirror is behind its source.
+
+Below the map, a table lists the same facts: [[ui:fleetLinkFrom]], [[ui:fleetLinkTo]], [[ui:fleetMirrorRepository]], [[ui:fleetMirrorSourceRepository]] and [[ui:fleetLinkBehind]].
+
+Global administrators of the controller get the same alerts and links from `GET /api/v1/fleet/overview`, or from the SDK with `client.fleet.overview()`. For Prometheus, the controller exports the state of its sites and the number of alerts: see [Monitoring](./monitoring#metrics).
+
 ## How it works {#how-it-works}
 
 - The controller keeps a list of sites. It reads every site every 30 seconds over HTTPS and keeps the last answer, so a site that stops answering still shows its last known state.
@@ -73,10 +106,12 @@ Under [[ui:fleetThisSite]], every site lists the controllers that manage it: the
 
 ## Settings {#settings}
 
-| Variable                 | Default                           | Meaning                                                                             |
-| ------------------------ | --------------------------------- | ----------------------------------------------------------------------------------- |
-| `ARKVORY_SITE_NAME`      | the host name                     | How this installation is named on other sites                                       |
-| `ARKVORY_FLEET_KEY_FILE` | `fleet.key` in the data directory | The key that seals the keys of managed sites; made on the first start of the writer |
+| Variable                  | Default                           | Meaning                                                                                                                                                                                          |
+| ------------------------- | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `ARKVORY_SITE_NAME`       | the host name                     | How this installation is named on other sites                                                                                                                                                    |
+| `ARKVORY_FLEET_KEY_FILE`  | `fleet.key` in the data directory | The key that seals the keys of managed sites; made on the first start of the writer                                                                                                              |
+| `ARKVORY_SITE_URL`        | not set                           | The `https://host[:port]` address other sites use to reach this installation. With it, mirrors whose source is this installation link to it on [[ui:fleetMap]]. An invalid value stops the start |
+| `ARKVORY_FLEET_LAG_ALERT` | `1000`                            | Changes behind its source at which a mirror of a managed site alerts; a whole number, 1 or more                                                                                                  |
 
 ## Limits {#limits}
 

@@ -35,7 +35,8 @@ import { registerSiteChangeRoutes } from './site-change-routes.js';
 import { SiteChangeControl } from './site-change-control.js';
 import { UpdateControl } from './update-control.js';
 import { registerFeedback } from './feedback-routes.js';
-import { registerTopologyRoutes } from './topology-routes.js';
+import { collectTopology, registerTopologyRoutes, type TopologyParts } from './topology-routes.js';
+import { FleetOverviewSource } from './fleet-overview.js';
 import { registerFleetRoutes } from './fleet-routes.js';
 import { RecentLog } from './recent-log.js';
 import { registerOwnershipRecovery } from './ownership-recovery.js';
@@ -97,7 +98,10 @@ function registerMaintenance(
 
 /** Process clocks and sizes of the metrics; the server passes only its own sources. */
 function processMetrics(
-  sources: Pick<MetricSources, 'identity' | 'transfers' | 'diagnostics' | 'jobs' | 'backup'>,
+  sources: Pick<
+    MetricSources,
+    'identity' | 'transfers' | 'diagnostics' | 'jobs' | 'backup' | 'fleet'
+  >,
   activeRequests: () => number,
   {
     certificate,
@@ -154,12 +158,54 @@ function registerObservation(
   registerMetrics(
     app,
     processMetrics(
-      { identity, transfers: runtime.transfers, diagnostics, ...services.metricSources },
+      {
+        identity,
+        transfers: runtime.transfers,
+        diagnostics,
+        ...services.metricSources,
+        ...(parts.fleetOverview ? { fleet: parts.fleetOverview } : {}),
+      },
       () => drain.activeRequests,
       { certificate: parts.certificate, replica: parts.replica, catalog: runtime.catalog },
     ),
     () => performance.now(),
   );
+}
+
+/** What this installation reports of itself: the topology route and the fleet overview. */
+function topologyParts(
+  parts: Pick<RouteParts, 'config' | 'runtime' | 'services' | 'replica' | 'drain' | 'identity'>,
+): TopologyParts {
+  return {
+    siteName: parts.config.siteName ?? 'arkvory',
+    version: parts.identity.version,
+    role: parts.runtime.role,
+    available: parts.runtime.available,
+    draining: () => parts.drain.isDraining,
+    replica: parts.replica,
+    mirrors: parts.services.mirrors,
+    updates: new UpdateControl(parts.config.updateControlDirectory),
+    downloads: parts.runtime.transfers.downloadScheduler,
+    pool: parts.runtime.catalog.pool,
+  };
+}
+
+/** The controller's overview of its sites (stage F4); read gateways manage no sites. */
+function fleetOverviewFor(
+  parts: Pick<
+    RouteParts,
+    'config' | 'runtime' | 'services' | 'replica' | 'drain' | 'identity' | 'fleetControl'
+  >,
+): FleetOverviewSource | undefined {
+  if (parts.runtime.role !== 'api') return undefined;
+  const self = topologyParts(parts);
+  return new FleetOverviewSource(parts.fleetControl, () => collectTopology(self), {
+    name: parts.config.siteName ?? 'arkvory',
+    version: parts.identity.version,
+    url: parts.config.siteUrl ?? null,
+    lagLimit: parts.config.fleetLagAlert ?? 1000n,
+    now: Date.now,
+  });
 }
 
 /** What the registrations below share with createServer. */
@@ -176,6 +222,7 @@ interface RouteParts {
   readonly diagnostics: DiagnosticLogger;
   readonly fleetTrust: PostgresFleetTrust;
   readonly fleetControl: FleetControl;
+  readonly fleetOverview: FleetOverviewSource | undefined;
 }
 
 /** The controller side of ADR 0077; the writer keeps the seal key, read gateways manage no sites. */
@@ -206,25 +253,14 @@ function registerRoutes(app: FastifyInstance, parts: RouteParts) {
     context.principal,
     new SiteChangeControl(config.updateControlDirectory),
   );
-  registerFleetControlRoutes(app, context.principal, parts.fleetControl);
+  registerFleetControlRoutes(app, context.principal, parts.fleetControl, parts.fleetOverview);
   registerFleetRoutes(app, context.principal, {
     trust: parts.fleetTrust,
     name: config.siteName ?? 'arkvory',
     version: parts.identity.version,
     ...(config.tls ? { certificateFile: config.tls.certificateFile } : {}),
   });
-  registerTopologyRoutes(app, context.principal, {
-    siteName: config.siteName ?? 'arkvory',
-    version: parts.identity.version,
-    role: runtime.role,
-    available: runtime.available,
-    draining: () => drain.isDraining,
-    replica,
-    mirrors: services.mirrors,
-    updates: new UpdateControl(config.updateControlDirectory),
-    downloads: runtime.transfers.downloadScheduler,
-    pool: runtime.catalog.pool,
-  });
+  registerTopologyRoutes(app, context.principal, topologyParts(parts));
   registerFeedback(app, context.principal, {
     hub: config.hub ?? null,
     version: parts.identity.version,
@@ -281,6 +317,8 @@ export async function createServer(config: ServerConfig, lifecycle: ServerLifecy
     const replica = replicaGuardFor(config.replicaSocket, runtime.role);
     const fleetTrust = new PostgresFleetTrust(runtime.catalog.pool);
     const fleetControl = await fleetControlFor(config, runtime);
+    const fleet = { config, runtime, services, replica, drain, identity, fleetControl };
+    const fleetOverview = fleetOverviewFor(fleet);
     const responses = new ResponseDiagnostics(diagnostics, services.storagePolicies, context);
     // Guard registration precedes feature routes and background startup.
     registerContractGuard(app);
@@ -298,6 +336,7 @@ export async function createServer(config: ServerConfig, lifecycle: ServerLifecy
       certificate,
       fleetTrust,
       fleetControl,
+      fleetOverview,
     });
     registerCors(app, config.corsOrigins ?? []);
     background = registerMaintenance(app, runtime, services, responses, diagnostics, fleetControl);
@@ -329,6 +368,7 @@ export async function createServer(config: ServerConfig, lifecycle: ServerLifecy
       diagnostics,
       fleetTrust,
       fleetControl,
+      fleetOverview,
     });
     return await app;
   } catch (error) {

@@ -1087,6 +1087,14 @@
       },
       "summary": "Eine Änderung des Standorts einreihen",
       "description": "Reiht eine Änderung für den Agenten des Standorts ein, der sie innerhalb einer Minute mit den Prüfungen und dem Rollback von `arkvory configure` und `cluster-*` anwendet: einen Spiegel oder Import anbinden, seinen Quellschlüssel ersetzen, Spiegel lösen, den aktiven HA-Knoten wechseln (Knotenname zweimal eingegeben) oder Schreibvorgänge mit einer Kopie beschließen. `id` wählt der Client; eine Wiederholung reiht die Änderung nicht erneut ein. `key` ist der Quellschlüssel nur für `mirror-attach` und `mirror-key`: er geht in einer eigenen 0600-Datei an den Agenten und wird nie zurückgegeben. 202 bedeutet eingereiht, nicht angewendet."
+    },
+    "getFleetOverview": {
+      "en": {
+        "summary": "Read the fleet overview",
+        "description": "Alerts across the managed sites and this installation, most severe first (`critical`, `warning`, `info`), and the mirror links between them. Built from the last background reads, at most once per 5 seconds. A source no managed site answers at is `external:<origin>`; this installation is `self` and meets the links to it only when `ARKVORY_SITE_URL` is set. Answered by the writer only."
+      },
+      "summary": "Übersicht der Standorte lesen",
+      "description": "Warnungen über die verwalteten Standorte und diese Installation, die schwersten zuerst (`critical`, `warning`, `info`), und die Spiegelverbindungen zwischen ihnen. Aus den letzten Hintergrundabfragen erstellt, höchstens alle 5 Sekunden. Eine Quelle, an deren Adresse kein verwalteter Standort antwortet, ist `external:<origin>`; diese Installation ist `self` und erhält Verbindungen zu ihr nur, wenn `ARKVORY_SITE_URL` gesetzt ist. Nur der Schreibprozess antwortet."
     }
   },
   "errors": {

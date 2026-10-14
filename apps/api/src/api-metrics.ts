@@ -56,6 +56,11 @@ export interface MetricSources {
     refresh(failed: () => void): Promise<void>;
     register(registry: MetricsRegistry): void;
   };
+  /** Gauges of the managed sites on a controller (ADR 0077, stage F4), same cache rules. */
+  readonly fleet?: {
+    refresh(failed: () => void): Promise<void>;
+    register(registry: MetricsRegistry): void;
+  };
   /** Webhook delivery gauges, same cache rules (ADR 0069). */
   readonly webhooks?: {
     refresh(failed: () => void): Promise<void>;
@@ -123,6 +128,7 @@ export class ApiMetrics {
     this.registerDatabasePools();
     sources.backup?.register(this.registry);
     sources.mirrors?.register(this.registry);
+    sources.fleet?.register(this.registry);
     sources.webhooks?.register(this.registry);
     sources.replica?.register(this.registry);
   }
@@ -146,6 +152,9 @@ export class ApiMetrics {
       }),
       this.sources.mirrors?.refresh(() => {
         this.collectionFailures.inc({ collector: 'mirror' });
+      }),
+      this.sources.fleet?.refresh(() => {
+        this.collectionFailures.inc({ collector: 'fleet' });
       }),
       this.sources.webhooks?.refresh(() => {
         this.collectionFailures.inc({ collector: 'webhook' });

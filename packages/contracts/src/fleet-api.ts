@@ -1,4 +1,5 @@
 import { readinessSchema } from './health.js';
+import { fleetOverviewSchema } from './fleet-overview.js';
 
 /** Fleet operations of ADR 0077: [path, method, operationId, access, retry]. */
 export const fleetOperations = [
@@ -14,6 +15,7 @@ export const fleetOperations = [
   ],
   ['/system/fleet/enrollment', 'post', 'enrollFleetController', 'public', 'never-automatic'],
   ['/fleet/sites', 'get', 'listFleetSites', 'administrator', 'read'],
+  ['/fleet/overview', 'get', 'getFleetOverview', 'administrator', 'read'],
   ['/fleet/sites', 'post', 'addFleetSite', 'administrator', 'never-automatic'],
   ['/fleet/sites/probe', 'post', 'probeFleetSite', 'administrator', 'idempotent'],
   ['/fleet/sites/{id}', 'delete', 'removeFleetSite', 'administrator', 'idempotent'],
@@ -128,6 +130,18 @@ const idParameter = {
 };
 
 export const fleetPaths = {
+  '/api/v1/fleet/overview': {
+    get: {
+      summary:
+        'Read what needs attention across the managed sites and which site feeds which, from their last reads',
+      responses: {
+        200: {
+          description: 'Alerts, most severe first, and mirror links',
+          content: json(fleetOverviewSchema),
+        },
+      },
+    },
+  },
   '/api/v1/fleet/sites': {
     get: {
       summary: 'List the sites this installation manages, with the state each last reported',

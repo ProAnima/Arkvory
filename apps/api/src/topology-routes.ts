@@ -49,7 +49,8 @@ function lag(head: string | null, cursor: string): string | null {
   return behind > 0n ? behind.toString() : '0';
 }
 
-async function topology(parts: TopologyParts): Promise<SiteTopology> {
+/** What this installation reports of itself; the fleet overview reads it too (stage F4). */
+export async function collectTopology(parts: TopologyParts): Promise<SiteTopology> {
   const [snapshot, mirrors, leases] = await Promise.all([
     parts.updates.status().catch(() => ({ snapshot: null })),
     parts.mirrors.all(),
@@ -118,7 +119,7 @@ export function registerTopologyRoutes(
     async (request) => {
       administrator(principal(request));
       retentionObject(request.query, []);
-      return topology(parts);
+      return collectTopology(parts);
     },
   );
 }

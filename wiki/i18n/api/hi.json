@@ -1087,6 +1087,14 @@
       },
       "summary": "साइट का बदलाव कतार में डालें",
       "description": "साइट के एजेंट के लिए एक बदलाव कतार में डालता है, जो उसे एक मिनट के भीतर `arkvory configure` और `cluster-*` की जाँच और रोलबैक के साथ लागू करता है: मिरर या इम्पोर्ट जोड़ना, उसकी स्रोत कुंजी बदलना, मिरर हटाना, सक्रिय HA नोड बदलना (नोड का नाम दो बार लिखा जाता है) या एक प्रति से लेखन का निर्णय। `id` क्लाइंट चुनता है; उसे दोहराने से बदलाव फिर से कतार में नहीं जाता। `key` केवल `mirror-attach` और `mirror-key` की स्रोत कुंजी है: यह एजेंट तक अपनी 0600 फ़ाइल में जाती है और कभी लौटाई नहीं जाती। 202 का अर्थ कतार में है, लागू नहीं।"
+    },
+    "getFleetOverview": {
+      "en": {
+        "summary": "Read the fleet overview",
+        "description": "Alerts across the managed sites and this installation, most severe first (`critical`, `warning`, `info`), and the mirror links between them. Built from the last background reads, at most once per 5 seconds. A source no managed site answers at is `external:<origin>`; this installation is `self` and meets the links to it only when `ARKVORY_SITE_URL` is set. Answered by the writer only."
+      },
+      "summary": "साइटों का अवलोकन पढ़ें",
+      "description": "प्रबंधित साइटों और इस इंस्टॉलेशन की चेतावनियाँ, सबसे गंभीर पहले (`critical`, `warning`, `info`), और उनके बीच मिरर संबंध। पिछली पृष्ठभूमि रीड से बनता है, अधिकतम हर 5 सेकंड में एक बार। जिस स्रोत के पते पर कोई प्रबंधित साइट उत्तर नहीं देती वह `external:<origin>` है; यह इंस्टॉलेशन `self` है और इसकी ओर के संबंध केवल `ARKVORY_SITE_URL` सेट होने पर दिखते हैं। केवल लेखन प्रक्रिया उत्तर देती है।"
     }
   },
   "errors": {

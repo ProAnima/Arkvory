@@ -18,6 +18,7 @@ import {
 import { FleetPairingCard } from './fleet-pairing.js';
 import { FleetContent } from './fleet-content.js';
 import { FleetSettings } from './fleet-settings.js';
+import { FleetOverviewPanel } from './fleet-overview-panel.js';
 
 /** While the page is open it follows the background reads of the server. */
 const REFRESH_MS = 30000;
@@ -67,6 +68,7 @@ export class FleetPage {
   private readonly pairing: FleetPairingCard;
   private readonly content: FleetContent;
   private readonly settings = new FleetSettings();
+  private readonly overview = new FleetOverviewPanel();
   private generation = 0;
   private timer: ReturnType<typeof setTimeout> | undefined;
   constructor(private readonly client: ArkvoryClient) {
@@ -107,6 +109,7 @@ export class FleetPage {
     this.pairing.clear();
     this.content.clear();
     this.settings.clear();
+    this.overview.clear();
   }
 
   private schedule(generation: number) {
@@ -120,10 +123,16 @@ export class FleetPage {
 
   private async refresh(generation: number) {
     try {
-      const sites = await this.client.fleet.sites();
+      // The overview is built from the same reads; a failure of it never hides the list.
+      const [sites, overview] = await Promise.all([
+        this.client.fleet.sites(),
+        this.client.fleet.overview().catch(() => null),
+      ]);
       if (generation !== this.generation) return;
       this.status.hidden = true;
       this.render(sites);
+      if (overview) this.overview.show(overview, sites);
+      else this.overview.clear();
     } catch (error) {
       if (generation !== this.generation) return;
       this.status.hidden = false;

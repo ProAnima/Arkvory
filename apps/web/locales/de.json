@@ -4570,5 +4570,109 @@
   "fleetErrorUnreadable": {
     "en": "The request could not be read.",
     "text": "Die Anfrage konnte nicht gelesen werden."
+  },
+  "fleetOverview": {
+    "en": "State of the cluster",
+    "text": "Zustand des Clusters"
+  },
+  "fleetAlertsNone": {
+    "en": "Nothing needs attention: every site answers, has its copies and keeps its mirrors up to date.",
+    "text": "Nichts erfordert Aufmerksamkeit: Jeder Standort antwortet, hat seine Kopien und hält seine Spiegel aktuell."
+  },
+  "fleetMap": {
+    "en": "Links",
+    "text": "Verbindungen"
+  },
+  "fleetMapHint": {
+    "en": "Sources this installation does not manage are shown by their address. If one of them is this installation, set ARKVORY_SITE_URL to the address the sites use for it.",
+    "text": "Quellen, die diese Installation nicht verwaltet, werden mit ihrer Adresse angezeigt. Ist eine davon diese Installation, setzen Sie ARKVORY_SITE_URL auf die Adresse, unter der die Standorte sie erreichen."
+  },
+  "fleetLinkFrom": {
+    "en": "Source",
+    "text": "Quelle"
+  },
+  "fleetLinkTo": {
+    "en": "Site",
+    "text": "Standort"
+  },
+  "fleetLinkBehind": {
+    "en": "Behind",
+    "text": "Rückstand"
+  },
+  "fleetLinksNone": {
+    "en": "No site mirrors or imports from another.",
+    "text": "Kein Standort spiegelt oder importiert von einem anderen."
+  },
+  "fleetLinkFailing": {
+    "en": "Failing",
+    "text": "Gestört"
+  },
+  "fleetLagValue": {
+    "en": "{lag} changes",
+    "text": "{lag} Änderungen"
+  },
+  "fleetSeverityCritical": {
+    "en": "Critical",
+    "text": "Kritisch"
+  },
+  "fleetSeverityWarning": {
+    "en": "Warning",
+    "text": "Warnung"
+  },
+  "fleetSeverityInfo": {
+    "en": "Note",
+    "text": "Hinweis"
+  },
+  "fleetAlertUnreachable": {
+    "en": "does not answer.",
+    "text": "antwortet nicht."
+  },
+  "fleetAlertCertificate": {
+    "en": "presents another certificate: pair it again if it was renewed.",
+    "text": "zeigt ein anderes Zertifikat: Wurde es erneuert, koppeln Sie den Standort neu."
+  },
+  "fleetAlertRevoked": {
+    "en": "revoked this controller: pair it again with a new code.",
+    "text": "hat diesen Controller widerrufen: Koppeln Sie den Standort mit einem neuen Code neu."
+  },
+  "fleetAlertRefused": {
+    "en": "refuses this controller: pair it again with a new code.",
+    "text": "lehnt diesen Controller ab: Koppeln Sie den Standort mit einem neuen Code neu."
+  },
+  "fleetAlertInvalid": {
+    "en": "answers in a way this release does not read: update both.",
+    "text": "antwortet so, dass diese Version es nicht versteht: Aktualisieren Sie beide."
+  },
+  "fleetAlertStale": {
+    "en": "was not read for over a minute and a half: check the controller’s background reads.",
+    "text": "wurde seit über anderthalb Minuten nicht gelesen: Prüfen Sie das Lesen im Hintergrund auf dem Controller."
+  },
+  "fleetAlertNotWritable": {
+    "en": "refuses writes: check its database and disk.",
+    "text": "lehnt Schreibzugriffe ab: Prüfen Sie seine Datenbank und seinen Datenträger."
+  },
+  "fleetAlertCopies": {
+    "en": "lacks copies of its data: writes are paused until they are back.",
+    "text": "hat nicht alle Kopien seiner Daten: Schreibzugriffe sind pausiert, bis sie wieder da sind."
+  },
+  "fleetAlertSingleCopy": {
+    "en": "acknowledges writes with one copy by an operator’s decision.",
+    "text": "bestätigt Schreibzugriffe auf Entscheidung eines Operators mit einer einzigen Kopie."
+  },
+  "fleetAlertMirrorFailing": {
+    "en": "mirror {subject} keeps failing.",
+    "text": "Spiegel {subject} schlägt wiederholt fehl."
+  },
+  "fleetAlertMirrorLag": {
+    "en": "mirror {subject} is far behind its source.",
+    "text": "Spiegel {subject} liegt weit hinter seiner Quelle zurück."
+  },
+  "fleetAlertUpdatesFailed": {
+    "en": "its updater reports a failure.",
+    "text": "sein Updater meldet einen Fehler."
+  },
+  "fleetAlertVersionSkew": {
+    "en": "runs another version than this controller.",
+    "text": "läuft mit einer anderen Version als dieser Controller."
   }
 }

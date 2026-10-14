@@ -31,6 +31,7 @@ export * from './lfs.js';
 export * from './npm.js';
 export * from './download-policy.js';
 export * from './download-overrides.js';
+export * from './fleet-health.js';
 export * from './download-schedule.js';
 export * from './download-sessions.js';
 export {

@@ -4570,5 +4570,109 @@
   "fleetErrorUnreadable": {
     "en": "The request could not be read.",
     "text": "リクエストを読み取れませんでした。"
+  },
+  "fleetOverview": {
+    "en": "State of the cluster",
+    "text": "クラスターの状態"
+  },
+  "fleetAlertsNone": {
+    "en": "Nothing needs attention: every site answers, has its copies and keeps its mirrors up to date.",
+    "text": "対応が必要なものはありません：すべてのサイトが応答し、コピーがそろい、ミラーは最新の状態です。"
+  },
+  "fleetMap": {
+    "en": "Links",
+    "text": "リンク"
+  },
+  "fleetMapHint": {
+    "en": "Sources this installation does not manage are shown by their address. If one of them is this installation, set ARKVORY_SITE_URL to the address the sites use for it.",
+    "text": "このインストールが管理していないコピー元はアドレスで表示されます。そのいずれかがこのインストール自身である場合は、ARKVORY_SITE_URL に各サイトがここへアクセスするアドレスを設定してください。"
+  },
+  "fleetLinkFrom": {
+    "en": "Source",
+    "text": "コピー元"
+  },
+  "fleetLinkTo": {
+    "en": "Site",
+    "text": "サイト"
+  },
+  "fleetLinkBehind": {
+    "en": "Behind",
+    "text": "遅れ"
+  },
+  "fleetLinksNone": {
+    "en": "No site mirrors or imports from another.",
+    "text": "他のサイトをミラーまたはインポートしているサイトはありません。"
+  },
+  "fleetLinkFailing": {
+    "en": "Failing",
+    "text": "障害"
+  },
+  "fleetLagValue": {
+    "en": "{lag} changes",
+    "text": "{lag} 件の変更"
+  },
+  "fleetSeverityCritical": {
+    "en": "Critical",
+    "text": "重大"
+  },
+  "fleetSeverityWarning": {
+    "en": "Warning",
+    "text": "警告"
+  },
+  "fleetSeverityInfo": {
+    "en": "Note",
+    "text": "情報"
+  },
+  "fleetAlertUnreachable": {
+    "en": "does not answer.",
+    "text": "から応答がありません。"
+  },
+  "fleetAlertCertificate": {
+    "en": "presents another certificate: pair it again if it was renewed.",
+    "text": "が別の証明書を提示しています。更新された場合は、サイトを再度ペアリングしてください。"
+  },
+  "fleetAlertRevoked": {
+    "en": "revoked this controller: pair it again with a new code.",
+    "text": "がこのコントローラーを取り消しました。新しいコードで再度ペアリングしてください。"
+  },
+  "fleetAlertRefused": {
+    "en": "refuses this controller: pair it again with a new code.",
+    "text": "がこのコントローラーを拒否しています。新しいコードで再度ペアリングしてください。"
+  },
+  "fleetAlertInvalid": {
+    "en": "answers in a way this release does not read: update both.",
+    "text": "の応答をこのリリースは理解できません。両方を更新してください。"
+  },
+  "fleetAlertStale": {
+    "en": "was not read for over a minute and a half: check the controller’s background reads.",
+    "text": "の状態を1分半以上読み取れていません。コントローラーのバックグラウンド読み取りを確認してください。"
+  },
+  "fleetAlertNotWritable": {
+    "en": "refuses writes: check its database and disk.",
+    "text": "が書き込みを拒否しています。データベースとディスクを確認してください。"
+  },
+  "fleetAlertCopies": {
+    "en": "lacks copies of its data: writes are paused until they are back.",
+    "text": "のデータのコピーが不足しています。コピーが戻るまで書き込みは一時停止されます。"
+  },
+  "fleetAlertSingleCopy": {
+    "en": "acknowledges writes with one copy by an operator’s decision.",
+    "text": "はオペレーターの判断により、1つのコピーで書き込みを確認しています。"
+  },
+  "fleetAlertMirrorFailing": {
+    "en": "mirror {subject} keeps failing.",
+    "text": "のミラー {subject} で失敗が続いています。"
+  },
+  "fleetAlertMirrorLag": {
+    "en": "mirror {subject} is far behind its source.",
+    "text": "のミラー {subject} がコピー元から大きく遅れています。"
+  },
+  "fleetAlertUpdatesFailed": {
+    "en": "its updater reports a failure.",
+    "text": "のアップデーターが失敗を報告しています。"
+  },
+  "fleetAlertVersionSkew": {
+    "en": "runs another version than this controller.",
+    "text": "はこのコントローラーとは異なるバージョンで動作しています。"
   }
 }
