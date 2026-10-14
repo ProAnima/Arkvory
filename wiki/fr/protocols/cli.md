@@ -58,18 +58,19 @@ L’URL du serveur doit utiliser HTTPS. HTTP simple n’est autorisé que pour `
 
 ## Options globales {#global-options}
 
-| Option                     | Valeur par défaut | Signification                                                                                           |
-| -------------------------- | ----------------- | ------------------------------------------------------------------------------------------------------- |
-| `--profile NAME`           | profil actif      | Profil pour cette seule commande                                                                        |
-| `--repository NAME`        | celui du profil   | Dépôt pour cette seule commande                                                                         |
-| `--json`                   | désactivé         | Un résultat JSON compact sur stdout ; erreurs en JSON sur stderr                                        |
-| `--lang en` ou `--lang ru` | selon `LANG`      | Langue de l’aide et des messages                                                                        |
-| `--timeout MS`             | 60000             | Limite pour les requêtes de gestion (1 à 3600000)                                                       |
-| `--attempt-timeout MS`     | 120000            | Limite d’une tentative de transfert (1 à 1800000)                                                       |
-| `--retries N`              | 20                | Nouvelles tentatives réseau pour une opération (0 à 100) ; `0` les désactive                            |
-| `--verbose`                | désactivé         | Une ligne stderr par requête HTTP : méthode, chemin, statut, durée, ID de requête. Ni en-têtes ni clés. |
-| `--help`, `--version`      |                   | Aide ; version du client en JSON                                                                        |
-| `--`                       |                   | Termine les options, pour les noms de fichiers qui commencent par `-`                                   |
+| Option                     | Valeur par défaut | Signification                                                                                                                                              |
+| -------------------------- | ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--profile NAME`           | profil actif      | Profil pour cette seule commande                                                                                                                           |
+| `--repository NAME`        | celui du profil   | Dépôt pour cette seule commande                                                                                                                            |
+| `--json`                   | désactivé         | Un résultat JSON compact sur stdout ; erreurs en JSON sur stderr                                                                                           |
+| `--lang en` ou `--lang ru` | selon `LANG`      | Langue de l’aide et des messages                                                                                                                           |
+| `--timeout MS`             | 60000             | Limite pour les requêtes de gestion (1 à 3600000)                                                                                                          |
+| `--attempt-timeout MS`     | 120000            | Limite d’une tentative de transfert (1 à 1800000)                                                                                                          |
+| `--retries N`              | 20                | Nouvelles tentatives réseau pour une opération (0 à 100) ; `0` les désactive                                                                               |
+| `--wait-limit MS`          | aucune            | Durée totale pendant laquelle une opération peut attendre un serveur occupé. Sans cette option, le client attend aussi longtemps que le serveur le demande |
+| `--verbose`                | désactivé         | Une ligne stderr par requête HTTP : méthode, chemin, statut, durée, ID de requête. Ni en-têtes ni clés.                                                    |
+| `--help`, `--version`      |                   | Aide ; version du client en JSON                                                                                                                           |
+| `--`                       |                   | Termine les options, pour les noms de fichiers qui commencent par `-`                                                                                      |
 
 Chaque option ne peut apparaître qu’une fois. Les options inconnues sont refusées.
 
@@ -257,7 +258,7 @@ Tout autre système, comme TeamCity ou Buildkite, fonctionne de la même façon 
 | 9    | `backup status` : un avertissement critique de sauvegarde est actif                     |
 | 130  | Interrompu                                                                              |
 
-Le client ne réessaie que les échecs réseau et les codes HTTP 408, 429, 502, 503 et 504, dans la limite de `--retries`.
+Le client ne réessaie que les échecs réseau et les codes HTTP 408, 429, 502, 503 et 504, dans la limite de `--retries`. Un serveur occupé (503 `busy`, 429 `rate_limited`) n’est pas un échec : le client attend aussi longtemps que le serveur le demande dans `Retry-After`, affiche la durée sur stderr et ne décompte pas ces attentes de `--retries`. `--wait-limit` plafonne l’attente totale.
 
 ## Dépannage {#troubleshooting}
 

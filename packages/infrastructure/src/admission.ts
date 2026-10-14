@@ -1,5 +1,17 @@
 import { ArkvoryError } from '@proanima/arkvory-domain';
 
+/** The clock and randomness of an estimate; tests pass fixed ones. */
+export interface AdmissionClock {
+  now(): number;
+  random(): number;
+}
+const systemClock: AdmissionClock = { now: () => performance.now(), random: Math.random };
+/** Releases remembered for the rate: enough for a stable estimate, bounded memory. */
+const RATE_SAMPLES = 256;
+/** A refused client comes back no sooner than this and no later than this (seconds). */
+const MIN_RETRY_SECONDS = 2;
+const MAX_RETRY_SECONDS = 600;
+
 interface Waiter {
   owner: string;
   resolve: (release: () => void) => void;
@@ -17,12 +29,15 @@ export class AdmissionQueue {
   private cancelled = 0;
   private lastOwner = '';
   private readonly waiting: Waiter[] = [];
+  /** Times of the latest releases, oldest first: the rate at which places free up. */
+  private readonly releases: number[] = [];
   constructor(
     private readonly slots: number,
     private readonly maxWaiting = 64,
     private readonly perOwner = 8,
     private readonly timeoutMs = 20000,
     private readonly maxActivePerOwner = slots,
+    private readonly clock: AdmissionClock = systemClock,
   ) {
     if (
       [slots, maxWaiting, perOwner, timeoutMs, maxActivePerOwner].some(
@@ -54,7 +69,9 @@ export class AdmissionQueue {
     if (this.closed) throw new ArkvoryError('unavailable', 'Gateway is closing');
     if (this.draining) {
       this.rejected++;
-      throw new ArkvoryError('busy', 'Gateway is draining; retry later');
+      throw new ArkvoryError('busy', 'Gateway is draining; retry later', {
+        retryAfterSeconds: MIN_RETRY_SECONDS,
+      });
     }
     if (this.active < this.slots && this.waiting.length === 0 && this.ownerAvailable(owner)) {
       this.activate(owner);
@@ -66,7 +83,9 @@ export class AdmissionQueue {
       this.waiting.filter((item) => item.owner === owner).length >= this.perOwner
     ) {
       this.rejected++;
-      throw new ArkvoryError('busy', 'Transfer queue is full');
+      throw new ArkvoryError('busy', 'Transfer queue is full', {
+        retryAfterSeconds: this.retryAfterSeconds(),
+      });
     }
     return new Promise((resolve, reject) => {
       const remove = (error: Error) => {
@@ -81,7 +100,11 @@ export class AdmissionQueue {
       };
       const timer = setTimeout(() => {
         this.timedOut++;
-        remove(new ArkvoryError('busy', 'Transfer admission timed out'));
+        remove(
+          new ArkvoryError('busy', 'Transfer admission timed out', {
+            retryAfterSeconds: this.retryAfterSeconds(),
+          }),
+        );
       }, this.timeoutMs);
       const waiter: Waiter = {
         owner,
@@ -126,11 +149,29 @@ export class AdmissionQueue {
       if (released) return;
       released = true;
       this.active--;
+      this.releases.push(this.clock.now());
+      if (this.releases.length > RATE_SAMPLES) this.releases.shift();
       const count = (this.activeOwners.get(owner) ?? 1) - 1;
       if (count === 0) this.activeOwners.delete(owner);
       else this.activeOwners.set(owner, count);
       this.dispatch();
     };
+  }
+  /**
+   * When a refused request should come back (ADR 0076): the requests already waiting, plus this
+   * one, divided by the measured rate at which places free up, so a long queue sends clients
+   * away for longer instead of every two seconds. Up to a quarter more at random spreads
+   * clients that do not add their own jitter. Without a measured rate, one wait timeout.
+   */
+  retryAfterSeconds(): number {
+    const now = this.clock.now();
+    const oldest = this.releases[0];
+    const span = oldest === undefined ? 0 : (now - oldest) / 1000;
+    const perSecond = span >= 1 ? this.releases.length / span : 0;
+    const ahead = this.waiting.length + 1;
+    const estimate = perSecond > 0 ? ahead / perSecond : this.timeoutMs / 1000;
+    const spread = estimate * (1 + this.clock.random() / 4);
+    return Math.ceil(Math.min(MAX_RETRY_SECONDS, Math.max(MIN_RETRY_SECONDS, spread)));
   }
   /** Rejects queued and future admissions; active slots finish and release normally. */
   drain() {
@@ -138,7 +179,11 @@ export class AdmissionQueue {
     for (const waiter of this.waiting.splice(0)) {
       waiter.cleanup();
       this.rejected++;
-      waiter.reject(new ArkvoryError('busy', 'Gateway is draining; retry later'));
+      waiter.reject(
+        new ArkvoryError('busy', 'Gateway is draining; retry later', {
+          retryAfterSeconds: MIN_RETRY_SECONDS,
+        }),
+      );
     }
   }
   get idle(): boolean {

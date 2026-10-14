@@ -58,18 +58,19 @@ Die Server-URL muss HTTPS verwenden. Unverschlüsseltes HTTP ist nur für `local
 
 ## Globale Optionen {#global-options}
 
-| Option                       | Standard       | Bedeutung                                                                                                      |
-| ---------------------------- | -------------- | -------------------------------------------------------------------------------------------------------------- |
-| `--profile NAME`             | aktives Profil | Profil nur für diesen Befehl                                                                                   |
-| `--repository NAME`          | aus dem Profil | Repository nur für diesen Befehl                                                                               |
-| `--json`                     | aus            | Ein kompaktes JSON-Ergebnis auf stdout; Fehler als JSON auf stderr                                             |
-| `--lang en` oder `--lang ru` | aus `LANG`     | Sprache von Hilfe und Meldungen                                                                                |
-| `--timeout MS`               | 60000          | Limit für Verwaltungsanfragen (1 bis 3600000)                                                                  |
-| `--attempt-timeout MS`       | 120000         | Limit für einen Übertragungsversuch (1 bis 1800000)                                                            |
-| `--retries N`                | 20             | Netzwerkwiederholungen für einen Vorgang (0 bis 100); `0` schaltet sie aus                                     |
-| `--verbose`                  | aus            | Eine stderr-Zeile pro HTTP-Anfrage: Methode, Pfad, Status, Zeit, Anfrage-ID. Keine Header und keine Schlüssel. |
-| `--help`, `--version`        |                | Hilfe; Client-Version als JSON                                                                                 |
-| `--`                         |                | Beendet die Optionen, für Dateinamen, die mit `-` beginnen                                                     |
+| Option                       | Standard       | Bedeutung                                                                                                                                       |
+| ---------------------------- | -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--profile NAME`             | aktives Profil | Profil nur für diesen Befehl                                                                                                                    |
+| `--repository NAME`          | aus dem Profil | Repository nur für diesen Befehl                                                                                                                |
+| `--json`                     | aus            | Ein kompaktes JSON-Ergebnis auf stdout; Fehler als JSON auf stderr                                                                              |
+| `--lang en` oder `--lang ru` | aus `LANG`     | Sprache von Hilfe und Meldungen                                                                                                                 |
+| `--timeout MS`               | 60000          | Limit für Verwaltungsanfragen (1 bis 3600000)                                                                                                   |
+| `--attempt-timeout MS`       | 120000         | Limit für einen Übertragungsversuch (1 bis 1800000)                                                                                             |
+| `--retries N`                | 20             | Netzwerkwiederholungen für einen Vorgang (0 bis 100); `0` schaltet sie aus                                                                      |
+| `--wait-limit MS`            | keines         | Wie lange ein Vorgang insgesamt auf einen beschäftigten Server warten darf. Ohne die Option wartet der Client so lange, wie der Server verlangt |
+| `--verbose`                  | aus            | Eine stderr-Zeile pro HTTP-Anfrage: Methode, Pfad, Status, Zeit, Anfrage-ID. Keine Header und keine Schlüssel.                                  |
+| `--help`, `--version`        |                | Hilfe; Client-Version als JSON                                                                                                                  |
+| `--`                         |                | Beendet die Optionen, für Dateinamen, die mit `-` beginnen                                                                                      |
 
 Jede Option darf nur einmal vorkommen. Unbekannte Optionen werden abgelehnt.
 
@@ -257,7 +258,7 @@ Jedes andere System, etwa TeamCity oder Buildkite, funktioniert genauso: Setzen 
 | 9    | `backup status`: Eine kritische Backup-Warnung ist aktiv                                       |
 | 130  | Unterbrochen                                                                                   |
 
-Der Client wiederholt nur bei Netzwerkfehlern und den HTTP-Statuscodes 408, 429, 502, 503 und 504, innerhalb von `--retries`.
+Der Client wiederholt nur bei Netzwerkfehlern und den HTTP-Statuscodes 408, 429, 502, 503 und 504, innerhalb von `--retries`. Ein beschäftigter Server (503 `busy`, 429 `rate_limited`) ist kein Fehler: Der Client wartet so lange, wie der Server in `Retry-After` verlangt, gibt die Wartezeit auf stderr aus und rechnet diese Wartezeiten nicht auf `--retries` an. `--wait-limit` begrenzt die gesamte Wartezeit.
 
 ## Fehlerbehebung {#troubleshooting}
 

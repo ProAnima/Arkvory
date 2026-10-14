@@ -58,18 +58,19 @@ A URL do servidor deve usar HTTPS. HTTP simples é permitido somente para `local
 
 ## Opções globais {#global-options}
 
-| Opção                      | Padrão       | Significado                                                                                                             |
-| -------------------------- | ------------ | ----------------------------------------------------------------------------------------------------------------------- |
-| `--profile NAME`           | perfil ativo | Perfil somente para este comando                                                                                        |
-| `--repository NAME`        | do perfil    | Repositório somente para este comando                                                                                   |
-| `--json`                   | desativada   | Um único resultado JSON compacto em stdout; erros em JSON em stderr                                                     |
-| `--lang en` ou `--lang ru` | de `LANG`    | Idioma da ajuda e das mensagens                                                                                         |
-| `--timeout MS`             | 60000        | Limite para solicitações de gerenciamento (1 a 3600000)                                                                 |
-| `--attempt-timeout MS`     | 120000       | Limite de uma tentativa de transferência (1 a 1800000)                                                                  |
-| `--retries N`              | 20           | Novas tentativas de rede para uma operação (0 a 100); `0` as desativa                                                   |
-| `--verbose`                | desativada   | Uma linha em stderr por solicitação HTTP: método, caminho, status, tempo, ID da solicitação. Sem cabeçalhos nem chaves. |
-| `--help`, `--version`      |              | Ajuda; versão do cliente em JSON                                                                                        |
-| `--`                       |              | Encerra as opções, para nomes de arquivo que começam com `-`                                                            |
+| Opção                      | Padrão       | Significado                                                                                                                  |
+| -------------------------- | ------------ | ---------------------------------------------------------------------------------------------------------------------------- |
+| `--profile NAME`           | perfil ativo | Perfil somente para este comando                                                                                             |
+| `--repository NAME`        | do perfil    | Repositório somente para este comando                                                                                        |
+| `--json`                   | desativada   | Um único resultado JSON compacto em stdout; erros em JSON em stderr                                                          |
+| `--lang en` ou `--lang ru` | de `LANG`    | Idioma da ajuda e das mensagens                                                                                              |
+| `--timeout MS`             | 60000        | Limite para solicitações de gerenciamento (1 a 3600000)                                                                      |
+| `--attempt-timeout MS`     | 120000       | Limite de uma tentativa de transferência (1 a 1800000)                                                                       |
+| `--retries N`              | 20           | Novas tentativas de rede para uma operação (0 a 100); `0` as desativa                                                        |
+| `--wait-limit MS`          | nenhum       | Quanto tempo uma operação pode esperar no total por um servidor ocupado. Sem ela, o cliente espera o quanto o servidor pedir |
+| `--verbose`                | desativada   | Uma linha em stderr por solicitação HTTP: método, caminho, status, tempo, ID da solicitação. Sem cabeçalhos nem chaves.      |
+| `--help`, `--version`      |              | Ajuda; versão do cliente em JSON                                                                                             |
+| `--`                       |              | Encerra as opções, para nomes de arquivo que começam com `-`                                                                 |
 
 Cada opção pode aparecer uma vez. Opções desconhecidas são recusadas.
 
@@ -257,7 +258,7 @@ Qualquer outro sistema, como TeamCity ou Buildkite, funciona do mesmo modo: defi
 | 9      | `backup status`: há um aviso crítico de backup ativo                              |
 | 130    | Interrompido                                                                      |
 
-O cliente repete a tentativa apenas em falhas de rede e em HTTP 408, 429, 502, 503 e 504, dentro do limite de `--retries`.
+O cliente repete a tentativa apenas em falhas de rede e em HTTP 408, 429, 502, 503 e 504, dentro do limite de `--retries`. Um servidor ocupado (503 `busy`, 429 `rate_limited`) não é uma falha: o cliente espera o quanto o servidor pedir em `Retry-After`, mostra quanto tempo em stderr e não conta essas esperas em `--retries`. `--wait-limit` limita a espera total.
 
 ## Solução de problemas {#troubleshooting}
 

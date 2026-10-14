@@ -153,7 +153,7 @@ Le formulaire [[ui:welcomeOwner]] ne fonctionne que tant que le serveur n’a au
 
 ## Occupé, limité, indisponible {#retry-after}
 
-Les codes `busy`, `unavailable` et `rate_limited` sont temporaires. La réponse contient l’en-tête `Retry-After` et le champ `retryAfterSeconds`. Attendez ce délai. Le SDK et le client en ligne de commande répètent ces réponses un nombre limité de fois.
+Les codes `busy`, `unavailable` et `rate_limited` sont temporaires. La réponse contient l’en-tête `Retry-After` et le champ `retryAfterSeconds`. Attendez ce délai. Pour `busy`, le serveur calcule ce délai à partir de la file d’attente devant et de la vitesse à laquelle les places se libèrent : une longue file renvoie donc les clients plus longtemps. Le SDK et le client en ligne de commande attendent pour `busy` et `rate_limited` aussi longtemps que le serveur le demande (plafonnez-le avec `--wait-limit` ou `waitLimitMs`) et répètent les autres réponses un nombre limité de fois.
 
 | Réponse                            | Cause                                                                                                                                                                    | Que faire                                                                                                                                                          |
 | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |

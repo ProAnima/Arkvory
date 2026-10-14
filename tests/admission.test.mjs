@@ -51,3 +51,33 @@ test('per-principal active cap leaves free slots usable by other clients and clo
   gate.close();
   await assert.rejects(gate.acquire('a'), { code: 'unavailable' });
 });
+
+test('a refused client is told to come back after the queue ahead of it, not every two seconds', async () => {
+  let now = 0;
+  const clock = { now: () => now, random: () => 0 };
+  const gate = new AdmissionQueue(1, 4, 4, 20000, 1, clock);
+  // No measured rate yet: one wait timeout.
+  assert.equal(gate.retryAfterSeconds(), 20);
+  // Ten releases over ten seconds: one place a second.
+  for (let i = 0; i < 10; i++) {
+    now = i * 1000;
+    (await gate.acquire('a'))();
+  }
+  now = 10000;
+  const release = await gate.acquire('a');
+  const waiters = [1, 2, 3, 4].map(() => gate.acquire(`w${String(Math.random())}`));
+  // Four waiting plus this one, at one a second: five seconds.
+  await assert.rejects(gate.acquire('late'), (error) => {
+    assert.equal(error.code, 'busy');
+    assert.equal(error.retryAfterSeconds, 5);
+    return true;
+  });
+  // Bounds: never below 2 s, never above 10 minutes, a quarter more at most at random.
+  const spread = new AdmissionQueue(1, 4, 4, 20000, 1, { now: () => now, random: () => 1 });
+  assert.equal(spread.retryAfterSeconds(), 25);
+  const slow = new AdmissionQueue(1, 4, 4, 120000, 1, { now: () => 0, random: () => 1 });
+  assert.equal(slow.retryAfterSeconds(), 150);
+  release();
+  for (const waiter of waiters) (await waiter)();
+  gate.close();
+});
