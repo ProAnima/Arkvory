@@ -135,19 +135,16 @@ test('a controller pairs with a site, keeps its state, and sees a revocation (AD
     204,
   );
   assert.deepEqual((await on(controller, 'GET', '/api/v1/fleet/sites')).json().items, []);
-  // Readers and fleet keys never manage sites; without a key file nothing is paired.
+  // Readers never manage sites.
   assert.equal(
-    (await controller.app.inject({ url: '/api/v1/fleet/sites', headers: controller.readerHeaders }))
-      .statusCode,
+    (
+      await controller.app.inject({
+        url: '/api/v1/fleet/sites',
+        headers: controller.readerHeaders,
+      })
+    ).statusCode,
     403,
   );
-  const plain = await on(site, 'POST', '/api/v1/fleet/sites', {
-    url: address,
-    fingerprint: null,
-    code: 'X',
-  });
-  assert.equal(plain.statusCode, 503);
-  assert.match(plain.json().message, /ARKVORY_FLEET_KEY_FILE/);
 });
 
 test('over HTTPS the controller trusts exactly the certificate the administrator confirmed (ADR 0077)', async (t) => {
@@ -176,7 +173,10 @@ test('over HTTPS the controller trusts exactly the certificate the administrator
     await on(controller, 'POST', '/api/v1/fleet/sites/probe', { url: address })
   ).json();
   assert.match(probe.certificate.fingerprint, /^[0-9a-f]{64}$/);
-  const { code } = (await on(site, 'POST', '/api/v1/system/fleet/pairings')).json();
+  const pairing = (await on(site, 'POST', '/api/v1/system/fleet/pairings')).json();
+  const { code } = pairing;
+  // The site shows the same fingerprint beside its code: the administrator compares the two.
+  assert.equal(pairing.fingerprint, probe.certificate.fingerprint);
   // Another fingerprint than the one the site presents: nothing is sent, the code stays usable.
   const forged = await on(controller, 'POST', '/api/v1/fleet/sites', {
     url: address,

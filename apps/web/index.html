@@ -119,6 +119,10 @@
           <span class="nav-icon" data-icon="mirror" aria-hidden="true"></span>
           <span data-i18n="mirrors">Зеркала</span>
         </button>
+        <button type="button" id="fleet-nav" data-nav="fleet" aria-controls="fleet-panel" hidden>
+          <span class="nav-icon" data-icon="sites" aria-hidden="true"></span>
+          <span data-i18n="fleet">Площадки</span>
+        </button>
         <button
           type="button"
           id="cluster-nav"
@@ -547,6 +551,148 @@
                 data-docs="operate/mirrors"
                 data-i18n="mirrorsGuide"
                 href="https://proanima.github.io/Arkvory/operate/mirrors"
+                target="_blank"
+                rel="noopener noreferrer"
+              ></a>
+            </p>
+          </div>
+        </section>
+        <section id="fleet-panel" data-view="fleet" aria-labelledby="page-title" hidden>
+          <div class="card padded">
+            <div class="fleet-head">
+              <p class="hint" data-i18n="fleetIntro"></p>
+              <button type="button" id="fleet-read-all" class="secondary" data-i18n="fleetReadAll">
+                Опросить все
+              </button>
+            </div>
+            <div
+              id="fleet-table"
+              class="table"
+              tabindex="0"
+              role="region"
+              data-i18n-label="tableRegion"
+              hidden
+            >
+              <table class="fleet-table">
+                <thead>
+                  <tr>
+                    <th scope="col" data-i18n="fleetSite">Площадка</th>
+                    <th scope="col" data-i18n="fleetState">Состояние</th>
+                    <th scope="col" data-i18n="fleetVersion">Версия</th>
+                    <th scope="col" data-i18n="fleetCopies">HA и шлюзы</th>
+                    <th scope="col" data-i18n="fleetMirrors">Зеркала</th>
+                    <th scope="col" data-i18n="fleetQueue">Очередь скачиваний</th>
+                    <th scope="col" data-i18n="fleetSeen">Последний ответ</th>
+                    <th scope="col" data-i18n="fleetActions">Действия</th>
+                  </tr>
+                </thead>
+                <tbody id="fleet-rows"></tbody>
+              </table>
+            </div>
+            <div id="fleet-empty" class="empty-state compact-empty" hidden>
+              <h3 data-i18n="fleetEmptyTitle">Площадок пока нет</h3>
+              <p data-i18n="fleetEmpty"></p>
+            </div>
+            <output id="fleet-status" class="hint" aria-live="polite" hidden></output>
+          </div>
+          <div class="card padded">
+            <h2 data-i18n="fleetAdd">Подключить площадку</h2>
+            <form id="fleet-add" class="fleet-add" novalidate>
+              <label for="fleet-url" data-i18n="fleetAddress">Адрес площадки</label>
+              <input
+                id="fleet-url"
+                type="url"
+                inputmode="url"
+                autocomplete="off"
+                spellcheck="false"
+                required
+                aria-describedby="fleet-url-hint"
+              />
+              <p id="fleet-url-hint" class="hint" data-i18n="fleetAddressHint"></p>
+              <p class="button-row">
+                <button type="button" id="fleet-check" class="secondary" data-i18n="fleetCheck">
+                  Проверить
+                </button>
+              </p>
+              <div id="fleet-probe" hidden>
+                <dl id="fleet-certificate" class="update-facts fleet-certificate">
+                  <div>
+                    <dt data-i18n="fleetFingerprint">Отпечаток сертификата (SHA-256)</dt>
+                    <dd><code id="fleet-fingerprint" class="fingerprint"></code></dd>
+                  </div>
+                  <div>
+                    <dt data-i18n="fleetSubject">Выдан</dt>
+                    <dd id="fleet-subject"></dd>
+                  </div>
+                  <div>
+                    <dt data-i18n="fleetValidTo">Действует до</dt>
+                    <dd id="fleet-valid"></dd>
+                  </div>
+                </dl>
+                <p id="fleet-compare" class="hint"></p>
+                <label for="fleet-code" data-i18n="fleetCode">Код сопряжения</label>
+                <input
+                  id="fleet-code"
+                  autocomplete="off"
+                  spellcheck="false"
+                  autocapitalize="characters"
+                  maxlength="32"
+                  required
+                />
+                <p class="button-row">
+                  <button type="submit" id="fleet-pair" data-i18n="fleetPair">Подключить</button>
+                </p>
+              </div>
+              <output id="fleet-add-status" class="hint" aria-live="polite" hidden></output>
+            </form>
+          </div>
+          <div class="card padded">
+            <h2 data-i18n="fleetThisSite">Эта площадка</h2>
+            <p id="fleet-self" class="fleet-self"></p>
+            <h3 data-i18n="fleetManagedBy">Кто управляет этой площадкой</h3>
+            <div
+              id="fleet-controllers-table"
+              class="table"
+              tabindex="0"
+              role="region"
+              data-i18n-label="tableRegion"
+              hidden
+            >
+              <table>
+                <thead>
+                  <tr>
+                    <th scope="col" data-i18n="fleetController">Управляющая площадка</th>
+                    <th scope="col" data-i18n="fleetPairedBy">Подключил</th>
+                    <th scope="col" data-i18n="fleetPairedAt">Подключена</th>
+                    <th scope="col" data-i18n="fleetUsedAt">Последний запрос</th>
+                    <th scope="col" data-i18n="fleetActions">Действия</th>
+                  </tr>
+                </thead>
+                <tbody id="fleet-controllers"></tbody>
+              </table>
+            </div>
+            <p id="fleet-controllers-empty" class="hint" data-i18n="fleetManagedNone" hidden></p>
+            <p class="button-row">
+              <button
+                type="button"
+                id="fleet-make-code"
+                class="secondary"
+                data-i18n="fleetMakeCode"
+              >
+                Создать код сопряжения
+              </button>
+            </p>
+            <div id="fleet-code-box" class="fleet-code" aria-live="polite" hidden>
+              <code id="fleet-code-value"></code>
+              <p id="fleet-code-until"></p>
+              <p id="fleet-code-fingerprint" class="hint"></p>
+            </div>
+            <output id="fleet-self-status" class="hint" aria-live="polite" hidden></output>
+            <p>
+              <a
+                data-docs="operate/sites"
+                data-i18n="fleetGuide"
+                href="https://proanima.github.io/Arkvory/operate/sites"
                 target="_blank"
                 rel="noopener noreferrer"
               ></a>

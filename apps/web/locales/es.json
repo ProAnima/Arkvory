@@ -3830,5 +3830,293 @@
   "replicationSingleCopy": {
     "en": "Writes are acknowledged with a single copy until {until} by an operator decision.",
     "text": "Por decisión de un operador, las escrituras se confirman con una sola copia hasta {until}."
+  },
+  "fleet": {
+    "en": "Sites",
+    "text": "Sitios"
+  },
+  "fleetIntro": {
+    "en": "Every installation of your cluster in one place: this site and the sites it manages. Sites are read every 30 seconds.",
+    "text": "Todas las instalaciones de su clúster en un solo lugar: este sitio y los sitios que gestiona. Los sitios se leen cada 30 segundos."
+  },
+  "fleetReadAll": {
+    "en": "Read all now",
+    "text": "Leer todos ahora"
+  },
+  "fleetSite": {
+    "en": "Site",
+    "text": "Sitio"
+  },
+  "fleetState": {
+    "en": "State",
+    "text": "Estado"
+  },
+  "fleetVersion": {
+    "en": "Version",
+    "text": "Versión"
+  },
+  "fleetCopies": {
+    "en": "HA and gateways",
+    "text": "HA y pasarelas"
+  },
+  "fleetMirrors": {
+    "en": "Mirrors",
+    "text": "Espejos"
+  },
+  "fleetQueue": {
+    "en": "Download queue",
+    "text": "Cola de descargas"
+  },
+  "fleetSeen": {
+    "en": "Last answer",
+    "text": "Última respuesta"
+  },
+  "fleetActions": {
+    "en": "Actions",
+    "text": "Acciones"
+  },
+  "fleetStateOk": {
+    "en": "Working",
+    "text": "Funciona"
+  },
+  "fleetStatePending": {
+    "en": "Not read yet",
+    "text": "Aún no leído"
+  },
+  "fleetStateUnreachable": {
+    "en": "Unreachable",
+    "text": "Inaccesible"
+  },
+  "fleetStateCertificate": {
+    "en": "Certificate changed",
+    "text": "Certificado cambiado"
+  },
+  "fleetStateRevoked": {
+    "en": "Access revoked",
+    "text": "Acceso revocado"
+  },
+  "fleetStateInvalid": {
+    "en": "Unexpected answer",
+    "text": "Respuesta inesperada"
+  },
+  "fleetStateRefused": {
+    "en": "Refused",
+    "text": "Rechazado"
+  },
+  "fleetHintUnreachable": {
+    "en": "No answer. The last known state is shown.",
+    "text": "Sin respuesta. Se muestra el último estado conocido."
+  },
+  "fleetHintCertificate": {
+    "en": "The site presents another certificate than the one confirmed. If it was renewed, remove the site and pair it again.",
+    "text": "El sitio presenta otro certificado que el confirmado. Si se renovó, quite el sitio y empareje de nuevo."
+  },
+  "fleetHintRevoked": {
+    "en": "The administrator of the site revoked this controller. Pair again with a new code.",
+    "text": "El administrador del sitio revocó este controlador. Empareje de nuevo con un código nuevo."
+  },
+  "fleetHintInvalid": {
+    "en": "The site answered in a way this release does not understand: update both.",
+    "text": "El sitio respondió de una forma que esta versión no entiende: actualice ambos."
+  },
+  "fleetHintRefused": {
+    "en": "The site refused the request. Pair again with a new code.",
+    "text": "El sitio rechazó la solicitud. Empareje de nuevo con un código nuevo."
+  },
+  "fleetRoleApi": {
+    "en": "writer",
+    "text": "escritura"
+  },
+  "fleetRoleReader": {
+    "en": "read gateway",
+    "text": "pasarela de lectura"
+  },
+  "fleetCopiesValue": {
+    "en": "Copies: {copies} of {required}",
+    "text": "Copias: {copies} de {required}"
+  },
+  "fleetCopiesNone": {
+    "en": "One server",
+    "text": "Un servidor"
+  },
+  "fleetGatewaysValue": {
+    "en": "Read gateways: {active}",
+    "text": "Pasarelas de lectura: {active}"
+  },
+  "fleetMirrorsNone": {
+    "en": "None",
+    "text": "Ninguno"
+  },
+  "fleetMirrorsCurrent": {
+    "en": "{count}, up to date",
+    "text": "{count}, al día"
+  },
+  "fleetMirrorsBehind": {
+    "en": "{count}, behind by {lag}",
+    "text": "{count}, retraso {lag}"
+  },
+  "fleetMirrorsFailing": {
+    "en": "{count}, stopped: {failing}",
+    "text": "{count}, detenidos: {failing}"
+  },
+  "fleetQueueValue": {
+    "en": "Active {active}, waiting {waiting}",
+    "text": "Activas {active}, en espera {waiting}"
+  },
+  "fleetQueueShared": {
+    "en": "No queue",
+    "text": "Sin cola"
+  },
+  "fleetNever": {
+    "en": "Never",
+    "text": "Nunca"
+  },
+  "fleetReadSite": {
+    "en": "Read now",
+    "text": "Leer ahora"
+  },
+  "fleetRemoveSite": {
+    "en": "Remove",
+    "text": "Quitar"
+  },
+  "fleetRemoveConfirm": {
+    "en": "Stop managing {name} from here? Revoke this controller on the site as well; until then its key stays valid there.",
+    "text": "¿Dejar de gestionar {name} desde aquí? Revoque también este controlador en el sitio; hasta entonces su clave sigue válida allí."
+  },
+  "fleetRemoved": {
+    "en": "The site was removed.",
+    "text": "Se quitó el sitio."
+  },
+  "fleetEmptyTitle": {
+    "en": "No sites yet",
+    "text": "Aún no hay sitios"
+  },
+  "fleetEmpty": {
+    "en": "Pair a site below: make a pairing code in the console of that site, then enter its address and the code here.",
+    "text": "Empareje un sitio abajo: cree un código de emparejamiento en la consola de ese sitio e introduzca aquí su dirección y el código."
+  },
+  "fleetAdd": {
+    "en": "Pair a site",
+    "text": "Emparejar un sitio"
+  },
+  "fleetAddress": {
+    "en": "Site address",
+    "text": "Dirección del sitio"
+  },
+  "fleetAddressHint": {
+    "en": "The https:// address of its API, for example https://branch.example:8443",
+    "text": "La dirección https:// de su API, por ejemplo https://branch.example:8443"
+  },
+  "fleetCheck": {
+    "en": "Check",
+    "text": "Comprobar"
+  },
+  "fleetChecking": {
+    "en": "Connecting…",
+    "text": "Conectando…"
+  },
+  "fleetFingerprint": {
+    "en": "Certificate fingerprint (SHA-256)",
+    "text": "Huella del certificado (SHA-256)"
+  },
+  "fleetSubject": {
+    "en": "Issued to",
+    "text": "Emitido para"
+  },
+  "fleetValidTo": {
+    "en": "Valid until",
+    "text": "Válido hasta"
+  },
+  "fleetPlain": {
+    "en": "Plain HTTP on this computer: there is no certificate to check.",
+    "text": "HTTP simple en este equipo: no hay certificado que comprobar."
+  },
+  "fleetCompare": {
+    "en": "Compare this fingerprint with the one the site's console shows beside its pairing code. Pair only if they are the same.",
+    "text": "Compare esta huella con la que muestra la consola del sitio junto a su código de emparejamiento. Empareje solo si son iguales."
+  },
+  "fleetCode": {
+    "en": "Pairing code",
+    "text": "Código de emparejamiento"
+  },
+  "fleetPair": {
+    "en": "Pair",
+    "text": "Emparejar"
+  },
+  "fleetPairing": {
+    "en": "Pairing…",
+    "text": "Emparejando…"
+  },
+  "fleetPaired": {
+    "en": "{name} is paired.",
+    "text": "{name} está emparejado."
+  },
+  "fleetNoKeyFile": {
+    "en": "This installation cannot keep site keys: ARKVORY_FLEET_KEY_FILE is not configured.",
+    "text": "Esta instalación no puede guardar claves de sitios: ARKVORY_FLEET_KEY_FILE no está configurado."
+  },
+  "fleetThisSite": {
+    "en": "This site",
+    "text": "Este sitio"
+  },
+  "fleetManagedBy": {
+    "en": "Managed from",
+    "text": "Gestionado desde"
+  },
+  "fleetManagedNone": {
+    "en": "No other site manages this one.",
+    "text": "Ningún otro sitio gestiona este."
+  },
+  "fleetController": {
+    "en": "Controller",
+    "text": "Controlador"
+  },
+  "fleetPairedBy": {
+    "en": "Paired by",
+    "text": "Emparejado por"
+  },
+  "fleetPairedAt": {
+    "en": "Paired",
+    "text": "Emparejado"
+  },
+  "fleetUsedAt": {
+    "en": "Last request",
+    "text": "Última solicitud"
+  },
+  "fleetRevoke": {
+    "en": "Revoke",
+    "text": "Revocar"
+  },
+  "fleetRevokeConfirm": {
+    "en": "Revoke {name}? It will no longer see or manage this site.",
+    "text": "¿Revocar {name}? Ya no verá ni gestionará este sitio."
+  },
+  "fleetRevoked": {
+    "en": "The controller was revoked.",
+    "text": "Se revocó el controlador."
+  },
+  "fleetMakeCode": {
+    "en": "Make a pairing code",
+    "text": "Crear un código de emparejamiento"
+  },
+  "fleetCodeFingerprint": {
+    "en": "The fingerprint the controller must see: {fingerprint}",
+    "text": "La huella que debe ver el controlador: {fingerprint}"
+  },
+  "fleetCodeProxy": {
+    "en": "TLS ends at a proxy: the controller must see the fingerprint of the certificate the proxy presents.",
+    "text": "TLS termina en un proxy: el controlador debe ver la huella del certificado que presenta el proxy."
+  },
+  "fleetGuide": {
+    "en": "How sites, pairing and keys work",
+    "text": "Cómo funcionan los sitios, el emparejamiento y las claves"
+  },
+  "fleetSelfValue": {
+    "en": "{name}, version {version}",
+    "text": "{name}, versión {version}"
+  },
+  "fleetCodeUntil": {
+    "en": "Valid until {until}. It is shown once: give it to the administrator of the controller.",
+    "text": "Válido hasta {until}. Se muestra una vez: entréguelo al administrador del controlador."
   }
 }

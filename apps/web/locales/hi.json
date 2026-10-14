@@ -3830,5 +3830,293 @@
   "replicationSingleCopy": {
     "en": "Writes are acknowledged with a single copy until {until} by an operator decision.",
     "text": "ऑपरेटर के निर्णय से {until} तक लेखन एक ही प्रति के साथ पुष्ट होता है।"
+  },
+  "fleet": {
+    "en": "Sites",
+    "text": "साइटें"
+  },
+  "fleetIntro": {
+    "en": "Every installation of your cluster in one place: this site and the sites it manages. Sites are read every 30 seconds.",
+    "text": "आपके क्लस्टर के सभी इंस्टॉलेशन एक जगह: यह साइट और जिन साइटों को यह प्रबंधित करती है। साइटें हर 30 सेकंड पढ़ी जाती हैं।"
+  },
+  "fleetReadAll": {
+    "en": "Read all now",
+    "text": "सभी अभी पढ़ें"
+  },
+  "fleetSite": {
+    "en": "Site",
+    "text": "साइट"
+  },
+  "fleetState": {
+    "en": "State",
+    "text": "स्थिति"
+  },
+  "fleetVersion": {
+    "en": "Version",
+    "text": "संस्करण"
+  },
+  "fleetCopies": {
+    "en": "HA and gateways",
+    "text": "HA और गेटवे"
+  },
+  "fleetMirrors": {
+    "en": "Mirrors",
+    "text": "मिरर"
+  },
+  "fleetQueue": {
+    "en": "Download queue",
+    "text": "डाउनलोड कतार"
+  },
+  "fleetSeen": {
+    "en": "Last answer",
+    "text": "अंतिम उत्तर"
+  },
+  "fleetActions": {
+    "en": "Actions",
+    "text": "क्रियाएँ"
+  },
+  "fleetStateOk": {
+    "en": "Working",
+    "text": "चल रही है"
+  },
+  "fleetStatePending": {
+    "en": "Not read yet",
+    "text": "अभी पढ़ी नहीं गई"
+  },
+  "fleetStateUnreachable": {
+    "en": "Unreachable",
+    "text": "पहुँच से बाहर"
+  },
+  "fleetStateCertificate": {
+    "en": "Certificate changed",
+    "text": "प्रमाणपत्र बदला"
+  },
+  "fleetStateRevoked": {
+    "en": "Access revoked",
+    "text": "पहुँच रद्द"
+  },
+  "fleetStateInvalid": {
+    "en": "Unexpected answer",
+    "text": "अप्रत्याशित उत्तर"
+  },
+  "fleetStateRefused": {
+    "en": "Refused",
+    "text": "अस्वीकृत"
+  },
+  "fleetHintUnreachable": {
+    "en": "No answer. The last known state is shown.",
+    "text": "कोई उत्तर नहीं। अंतिम ज्ञात स्थिति दिखाई गई है।"
+  },
+  "fleetHintCertificate": {
+    "en": "The site presents another certificate than the one confirmed. If it was renewed, remove the site and pair it again.",
+    "text": "साइट पुष्टि किए गए प्रमाणपत्र से अलग प्रमाणपत्र दिखा रही है। यदि वह नवीनीकृत हुआ है, तो साइट हटाकर फिर से युग्मित करें।"
+  },
+  "fleetHintRevoked": {
+    "en": "The administrator of the site revoked this controller. Pair again with a new code.",
+    "text": "साइट के व्यवस्थापक ने इस नियंत्रक को रद्द किया है। नए कोड से फिर से युग्मित करें।"
+  },
+  "fleetHintInvalid": {
+    "en": "The site answered in a way this release does not understand: update both.",
+    "text": "साइट ने ऐसा उत्तर दिया जिसे यह संस्करण नहीं समझता: दोनों को अपडेट करें।"
+  },
+  "fleetHintRefused": {
+    "en": "The site refused the request. Pair again with a new code.",
+    "text": "साइट ने अनुरोध अस्वीकार किया। नए कोड से फिर से युग्मित करें।"
+  },
+  "fleetRoleApi": {
+    "en": "writer",
+    "text": "लेखन"
+  },
+  "fleetRoleReader": {
+    "en": "read gateway",
+    "text": "रीड गेटवे"
+  },
+  "fleetCopiesValue": {
+    "en": "Copies: {copies} of {required}",
+    "text": "प्रतियाँ: {required} में से {copies}"
+  },
+  "fleetCopiesNone": {
+    "en": "One server",
+    "text": "एक सर्वर"
+  },
+  "fleetGatewaysValue": {
+    "en": "Read gateways: {active}",
+    "text": "रीड गेटवे: {active}"
+  },
+  "fleetMirrorsNone": {
+    "en": "None",
+    "text": "कोई नहीं"
+  },
+  "fleetMirrorsCurrent": {
+    "en": "{count}, up to date",
+    "text": "{count}, अद्यतन"
+  },
+  "fleetMirrorsBehind": {
+    "en": "{count}, behind by {lag}",
+    "text": "{count}, पीछे {lag}"
+  },
+  "fleetMirrorsFailing": {
+    "en": "{count}, stopped: {failing}",
+    "text": "{count}, रुके: {failing}"
+  },
+  "fleetQueueValue": {
+    "en": "Active {active}, waiting {waiting}",
+    "text": "सक्रिय {active}, प्रतीक्षारत {waiting}"
+  },
+  "fleetQueueShared": {
+    "en": "No queue",
+    "text": "कोई कतार नहीं"
+  },
+  "fleetNever": {
+    "en": "Never",
+    "text": "कभी नहीं"
+  },
+  "fleetReadSite": {
+    "en": "Read now",
+    "text": "अभी पढ़ें"
+  },
+  "fleetRemoveSite": {
+    "en": "Remove",
+    "text": "हटाएँ"
+  },
+  "fleetRemoveConfirm": {
+    "en": "Stop managing {name} from here? Revoke this controller on the site as well; until then its key stays valid there.",
+    "text": "{name} को यहाँ से प्रबंधित करना बंद करें? साइट पर भी इस नियंत्रक को रद्द करें; तब तक उसकी कुंजी वहाँ मान्य रहती है।"
+  },
+  "fleetRemoved": {
+    "en": "The site was removed.",
+    "text": "साइट हटा दी गई।"
+  },
+  "fleetEmptyTitle": {
+    "en": "No sites yet",
+    "text": "अभी कोई साइट नहीं"
+  },
+  "fleetEmpty": {
+    "en": "Pair a site below: make a pairing code in the console of that site, then enter its address and the code here.",
+    "text": "नीचे साइट युग्मित करें: उस साइट के कंसोल में युग्मन कोड बनाएँ, फिर यहाँ उसका पता और कोड डालें।"
+  },
+  "fleetAdd": {
+    "en": "Pair a site",
+    "text": "साइट युग्मित करें"
+  },
+  "fleetAddress": {
+    "en": "Site address",
+    "text": "साइट का पता"
+  },
+  "fleetAddressHint": {
+    "en": "The https:// address of its API, for example https://branch.example:8443",
+    "text": "उसके API का https:// पता, जैसे https://branch.example:8443"
+  },
+  "fleetCheck": {
+    "en": "Check",
+    "text": "जाँचें"
+  },
+  "fleetChecking": {
+    "en": "Connecting…",
+    "text": "जुड़ रहा है…"
+  },
+  "fleetFingerprint": {
+    "en": "Certificate fingerprint (SHA-256)",
+    "text": "प्रमाणपत्र फ़िंगरप्रिंट (SHA-256)"
+  },
+  "fleetSubject": {
+    "en": "Issued to",
+    "text": "किसे जारी"
+  },
+  "fleetValidTo": {
+    "en": "Valid until",
+    "text": "मान्य तक"
+  },
+  "fleetPlain": {
+    "en": "Plain HTTP on this computer: there is no certificate to check.",
+    "text": "इस कंप्यूटर पर सादा HTTP: जाँचने के लिए कोई प्रमाणपत्र नहीं।"
+  },
+  "fleetCompare": {
+    "en": "Compare this fingerprint with the one the site's console shows beside its pairing code. Pair only if they are the same.",
+    "text": "इस फ़िंगरप्रिंट की तुलना उससे करें जो साइट का कंसोल युग्मन कोड के पास दिखाता है। केवल समान होने पर युग्मित करें।"
+  },
+  "fleetCode": {
+    "en": "Pairing code",
+    "text": "युग्मन कोड"
+  },
+  "fleetPair": {
+    "en": "Pair",
+    "text": "युग्मित करें"
+  },
+  "fleetPairing": {
+    "en": "Pairing…",
+    "text": "युग्मित हो रहा है…"
+  },
+  "fleetPaired": {
+    "en": "{name} is paired.",
+    "text": "{name} युग्मित है।"
+  },
+  "fleetNoKeyFile": {
+    "en": "This installation cannot keep site keys: ARKVORY_FLEET_KEY_FILE is not configured.",
+    "text": "यह इंस्टॉलेशन साइट कुंजियाँ नहीं रख सकता: ARKVORY_FLEET_KEY_FILE कॉन्फ़िगर नहीं है।"
+  },
+  "fleetThisSite": {
+    "en": "This site",
+    "text": "यह साइट"
+  },
+  "fleetManagedBy": {
+    "en": "Managed from",
+    "text": "प्रबंधित करता है"
+  },
+  "fleetManagedNone": {
+    "en": "No other site manages this one.",
+    "text": "कोई अन्य साइट इसे प्रबंधित नहीं करती।"
+  },
+  "fleetController": {
+    "en": "Controller",
+    "text": "नियंत्रक"
+  },
+  "fleetPairedBy": {
+    "en": "Paired by",
+    "text": "युग्मित किया"
+  },
+  "fleetPairedAt": {
+    "en": "Paired",
+    "text": "युग्मित"
+  },
+  "fleetUsedAt": {
+    "en": "Last request",
+    "text": "अंतिम अनुरोध"
+  },
+  "fleetRevoke": {
+    "en": "Revoke",
+    "text": "रद्द करें"
+  },
+  "fleetRevokeConfirm": {
+    "en": "Revoke {name}? It will no longer see or manage this site.",
+    "text": "{name} को रद्द करें? वह इस साइट को अब न देख पाएगा न प्रबंधित कर पाएगा।"
+  },
+  "fleetRevoked": {
+    "en": "The controller was revoked.",
+    "text": "नियंत्रक रद्द किया गया।"
+  },
+  "fleetMakeCode": {
+    "en": "Make a pairing code",
+    "text": "युग्मन कोड बनाएँ"
+  },
+  "fleetCodeFingerprint": {
+    "en": "The fingerprint the controller must see: {fingerprint}",
+    "text": "नियंत्रक को दिखने वाला फ़िंगरप्रिंट: {fingerprint}"
+  },
+  "fleetCodeProxy": {
+    "en": "TLS ends at a proxy: the controller must see the fingerprint of the certificate the proxy presents.",
+    "text": "TLS प्रॉक्सी पर समाप्त होता है: नियंत्रक को प्रॉक्सी द्वारा दिखाए प्रमाणपत्र का फ़िंगरप्रिंट दिखना चाहिए।"
+  },
+  "fleetGuide": {
+    "en": "How sites, pairing and keys work",
+    "text": "साइटें, युग्मन और कुंजियाँ कैसे काम करती हैं"
+  },
+  "fleetSelfValue": {
+    "en": "{name}, version {version}",
+    "text": "{name}, संस्करण {version}"
+  },
+  "fleetCodeUntil": {
+    "en": "Valid until {until}. It is shown once: give it to the administrator of the controller.",
+    "text": "{until} तक मान्य। यह एक बार दिखता है: इसे नियंत्रक के व्यवस्थापक को दें।"
   }
 }

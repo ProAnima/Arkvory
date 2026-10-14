@@ -80,6 +80,8 @@ export type UnchangedKeys = Assert<
       | 'raw'
       // ADR 0072: HA cluster copies from readiness as the additive namespace `replication`.
       | 'replication'
+      // ADR 0077: sites, pairing and topology as the additive namespace `fleet`.
+      | 'fleet'
     >,
     keyof LegacyClient
   >

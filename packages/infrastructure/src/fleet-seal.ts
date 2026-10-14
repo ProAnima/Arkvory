@@ -1,5 +1,5 @@
 import { createCipheriv, createDecipheriv, randomBytes } from 'node:crypto';
-import { readFile } from 'node:fs/promises';
+import { readFile, writeFile } from 'node:fs/promises';
 
 /**
  * Seals the keys of a controller's sites (ADR 0077) with AES-256-GCM under a key kept outside
@@ -20,6 +20,20 @@ export class FleetSeal {
     if (key?.length !== 32)
       throw new Error('Invalid ARKVORY_FLEET_KEY_FILE: 32 bytes as hex or base64');
     return new FleetSeal(key);
+  }
+
+  /**
+   * The key at `path`, made on first use: 32 random bytes as hex, mode 0600, created exclusively
+   * so two processes starting at once keep one key. The default path is in the data directory:
+   * on an HA cluster it moves with the data, and it is outside the database and its backups.
+   */
+  static async loadOrCreate(path: string): Promise<FleetSeal> {
+    try {
+      await writeFile(path, `${randomBytes(32).toString('hex')}\n`, { flag: 'wx', mode: 0o600 });
+    } catch (error) {
+      if (!(error instanceof Error && 'code' in error && error.code === 'EEXIST')) throw error;
+    }
+    return FleetSeal.fromFile(path);
   }
 
   static fromKey(key: Buffer): FleetSeal {

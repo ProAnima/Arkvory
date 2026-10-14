@@ -1,6 +1,8 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { ArkvoryError, retentionObject } from '@proanima/arkvory-domain';
 import type { Principal } from '@proanima/arkvory-domain';
+import { readFile } from 'node:fs/promises';
+import { certificateFingerprint } from '@proanima/arkvory-infrastructure';
 import type { PostgresFleetTrust } from '@proanima/arkvory-infrastructure';
 import { record } from '@proanima/arkvory-contracts';
 
@@ -23,12 +25,28 @@ function siteAdministrator(actor: Principal) {
 export function registerFleetRoutes(
   app: FastifyInstance,
   principal: (request: FastifyRequest) => Principal,
-  site: { readonly trust: PostgresFleetTrust; readonly name: string; readonly version: string },
+  site: {
+    readonly trust: PostgresFleetTrust;
+    readonly name: string;
+    readonly version: string;
+    /** Built-in HTTPS: the certificate whose fingerprint the controller must see. */
+    readonly certificateFile?: string;
+  },
 ) {
+  /** Read at each request: a renewed certificate shows its new fingerprint. */
+  const fingerprint = async () => {
+    if (!site.certificateFile) return null;
+    try {
+      return certificateFingerprint(await readFile(site.certificateFile, 'utf8'));
+    } catch {
+      return null;
+    }
+  };
   app.post('/api/v1/system/fleet/pairings', async (request, reply) => {
     const actor = siteAdministrator(principal(request));
     retentionObject(request.query, []);
-    return reply.code(201).send(await site.trust.createPairing(actor.id));
+    const pairing = await site.trust.createPairing(actor.id);
+    return reply.code(201).send({ ...pairing, fingerprint: await fingerprint() });
   });
   app.get('/api/v1/system/fleet/controllers', async (request) => {
     siteAdministrator(principal(request));

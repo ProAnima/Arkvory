@@ -25,6 +25,18 @@ test('a sealed site key opens only for its site and only intact', async () => {
   await assert.rejects(FleetSeal.fromFile(short), /ARKVORY_FLEET_KEY_FILE/);
 });
 
+test('the seal key is made once on first use, also by two processes at once', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'arkvory-seal-'));
+  const path = join(directory, 'fleet.key');
+  const [first, second] = await Promise.all([
+    FleetSeal.loadOrCreate(path),
+    FleetSeal.loadOrCreate(path),
+  ]);
+  const box = first.seal('site', 'afk_secret');
+  assert.equal(second.open('site', box), 'afk_secret', 'both processes hold the same key');
+  assert.equal((await FleetSeal.loadOrCreate(path)).open('site', box), 'afk_secret');
+});
+
 test('a site address is an HTTPS origin, or HTTP on loopback only', () => {
   assert.equal(siteOrigin('https://branch.example:8443/'), 'https://branch.example:8443');
   assert.equal(siteOrigin(' http://127.0.0.1:8080 '), 'http://127.0.0.1:8080');

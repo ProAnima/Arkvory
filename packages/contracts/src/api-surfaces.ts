@@ -60,9 +60,12 @@ export function apiClassification(policy: OperationPolicy): {
   let surface: ApiSurface;
   switch (policy.tag) {
     case 'Updates':
-    case 'Fleet':
     case 'Backups':
       surface = 'administration';
+      break;
+    // ADR 0077: trading a pairing code for a key is a credential exchange, like signing in.
+    case 'Fleet':
+      surface = access.kind === 'public' ? 'identity' : 'administration';
       break;
     case 'System':
       surface =

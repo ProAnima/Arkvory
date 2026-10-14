@@ -201,6 +201,8 @@ export const fleetPaths = {
             object({
               code: { type: 'string', pattern: '^[0-9A-Z]{4}-[0-9A-Z]{4}-[0-9A-Z]{4}$' },
               expiresAt: time,
+              // This site's certificate with built-in HTTPS; null behind a TLS proxy.
+              fingerprint: nullable(fingerprint),
             }),
           ),
         },

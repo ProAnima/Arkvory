@@ -29,6 +29,7 @@ export const SECTIONS: readonly Section[] = [
     pages: [
       'backups',
       'mirrors',
+      'sites',
       'read-gateways',
       'cluster',
       'storage',

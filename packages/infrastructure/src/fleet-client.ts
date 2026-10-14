@@ -19,7 +19,7 @@ export class FleetFailure extends Error {
 /** Where a site answers and the certificate pinned for it; plain HTTP only on loopback. */
 export interface FleetEndpoint {
   readonly url: string;
-  /** SHA-256 of the certificate's public key, hexadecimal; null for loopback HTTP. */
+  /** SHA-256 of the certificate, hexadecimal; null for loopback HTTP. */
   readonly pin: string | null;
   /** The pinned certificate, PEM: the one trust anchor of requests to the site. */
   readonly certificate: string | null;
@@ -64,9 +64,19 @@ const actorHeader = (actor: string) =>
     .join('')
     .slice(0, 160);
 
-/** SHA-256 of the public key; empty when the certificate has none, which never matches a pin. */
+/**
+ * SHA-256 of the whole certificate, as browsers and `openssl x509 -fingerprint -sha256` show it:
+ * the administrator can compare it anywhere. Empty without a certificate: never a pin.
+ */
 const pinOf = (certificate: PeerCertificate) =>
-  certificate.pubkey ? createHash('sha256').update(certificate.pubkey).digest('hex') : '';
+  Object.keys(certificate).length === 0
+    ? ''
+    : createHash('sha256').update(certificate.raw).digest('hex');
+
+/** The fingerprint of a PEM certificate in the same form, for a site to show its own. */
+export function certificateFingerprint(pemText: string): string {
+  return new X509Certificate(pemText).fingerprint256.replaceAll(':', '').toLowerCase();
+}
 const pem = (raw: Buffer) =>
   `-----BEGIN CERTIFICATE-----\n${raw
     .toString('base64')

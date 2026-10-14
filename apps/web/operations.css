@@ -1,10 +1,12 @@
 /* Mirrors and Cluster pages (ADR 0058, ADR 0072): states in words and color, next steps in view. */
 #mirrors-panel,
+#fleet-panel,
 #cluster-panel {
   display: grid;
   gap: var(--section-gap);
 }
 #mirrors-panel > .card > * + *,
+#fleet-panel > .card > * + *,
 #cluster-panel > .card > * + * {
   margin-top: var(--space-4);
 }
@@ -54,4 +56,79 @@
 /* On the Cluster page itself the banner needs no way to it. */
 body:has(#cluster-panel:not([hidden])) #replication-open {
   display: none;
+}
+
+/* Sites (ADR 0077): every installation of the cluster, its state at a glance. */
+.fleet-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+.fleet-head > p {
+  flex: 1 1 var(--empty-copy-width);
+  margin: 0;
+}
+.fleet-table td {
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+.fleet-table td:last-child .button-row {
+  flex-wrap: nowrap;
+}
+.fleet-table td:first-child {
+  min-width: var(--sign-in-field-min);
+}
+.fleet-table td:first-child > strong {
+  overflow-wrap: normal;
+}
+.fleet-url {
+  font-family: var(--font-mono);
+}
+.fleet-badge[data-state='ok'] {
+  color: var(--color-success);
+  background: var(--color-success-bg);
+  border-color: var(--color-success-border);
+}
+.fleet-badge:is([data-state='pending'], [data-state='unreachable']) {
+  color: var(--color-warning);
+  background: var(--color-warning-bg);
+  border-color: var(--color-warning-border);
+}
+.fleet-badge:is(
+  [data-state='certificate'],
+  [data-state='revoked'],
+  [data-state='invalid'],
+  [data-state='refused']
+) {
+  color: var(--color-error);
+  background: var(--color-error-bg);
+  border-color: var(--color-error-border);
+}
+.fleet-add {
+  display: grid;
+  gap: var(--space-2);
+  max-width: var(--form-width);
+}
+.fingerprint {
+  font-family: var(--font-mono);
+  overflow-wrap: anywhere;
+  user-select: all;
+}
+.fleet-code {
+  padding: var(--space-3);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-control);
+  background: var(--color-bg);
+}
+.fleet-code > code {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: var(--text-lg);
+  letter-spacing: var(--tracking-label);
+  user-select: all;
+}
+.fleet-code > p {
+  margin: var(--space-2) 0 0;
 }

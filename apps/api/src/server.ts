@@ -1,3 +1,4 @@
+import { join } from 'node:path';
 import type { FastifyInstance } from 'fastify';
 import {
   DiagnosticLogger,
@@ -173,6 +174,21 @@ interface RouteParts {
   readonly fleetControl: FleetControl;
 }
 
+/** The controller side of ADR 0077; the writer keeps the seal key, read gateways manage no sites. */
+async function fleetControlFor(config: ServerConfig, runtime: ApiRuntime): Promise<FleetControl> {
+  return createFleetControl({
+    store: new PostgresFleetRegistry(runtime.catalog.pool),
+    client: new HttpFleetSiteClient(),
+    seal:
+      runtime.role === 'api'
+        ? await FleetSeal.loadOrCreate(
+            config.fleetKeyFile ?? join(config.dataDirectory, 'fleet.key'),
+          )
+        : undefined,
+    controllerName: config.siteName ?? 'arkvory',
+  });
+}
+
 /** Routes after the security hooks: errors, health, updates, feedback, the API and the console. */
 function registerRoutes(app: FastifyInstance, parts: RouteParts) {
   const { config, runtime, services, context, replica, drain } = parts;
@@ -185,6 +201,7 @@ function registerRoutes(app: FastifyInstance, parts: RouteParts) {
     trust: parts.fleetTrust,
     name: config.siteName ?? 'arkvory',
     version: parts.identity.version,
+    ...(config.tls ? { certificateFile: config.tls.certificateFile } : {}),
   });
   registerTopologyRoutes(app, context.principal, {
     siteName: config.siteName ?? 'arkvory',
@@ -253,12 +270,7 @@ export async function createServer(config: ServerConfig, lifecycle: ServerLifecy
     const context = createRequestContext(config.maxRequests, services.mirrors.readOnlyRepositories);
     const replica = replicaGuardFor(config.replicaSocket, runtime.role);
     const fleetTrust = new PostgresFleetTrust(runtime.catalog.pool);
-    const fleetControl = createFleetControl({
-      store: new PostgresFleetRegistry(runtime.catalog.pool),
-      client: new HttpFleetSiteClient(),
-      seal: config.fleetKeyFile ? await FleetSeal.fromFile(config.fleetKeyFile) : undefined,
-      controllerName: config.siteName ?? 'arkvory',
-    });
+    const fleetControl = await fleetControlFor(config, runtime);
     const responses = new ResponseDiagnostics(diagnostics, services.storagePolicies, context);
     // Guard registration precedes feature routes and background startup.
     registerContractGuard(app);

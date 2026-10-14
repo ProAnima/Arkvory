@@ -86,6 +86,8 @@
   --empty-height: 10rem;
   --compact-empty-height: 7rem;
   --empty-copy-width: 28rem;
+  /* A form of a few fields, such as pairing a site: wide enough for a fingerprint. */
+  --form-width: 42rem;
   --empty-icon-size: 2.5rem;
   --update-dialog-width: 36rem;
   --table-actions-width: 9rem;

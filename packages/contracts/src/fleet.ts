@@ -180,3 +180,104 @@ export function readTopology(value: unknown): SiteTopology {
     },
   };
 }
+
+/** A managed site as the controller shows it (ADR 0077). */
+export interface FleetSite {
+  readonly id: string;
+  readonly name: string;
+  readonly url: string;
+  readonly fingerprint: string | null;
+  readonly addedBy: string;
+  readonly addedAt: string;
+  readonly seenAt: string | null;
+  readonly state:
+    'pending' | 'ok' | 'unreachable' | 'certificate' | 'revoked' | 'invalid' | 'refused';
+  readonly error: string | null;
+  readonly topology: SiteTopology | null;
+}
+export interface FleetProbe {
+  readonly url: string;
+  readonly certificate: {
+    readonly fingerprint: string;
+    readonly subject: string;
+    readonly issuer: string;
+    readonly validTo: string;
+  } | null;
+}
+export interface FleetPairing {
+  readonly code: string;
+  readonly expiresAt: string;
+  /** This site's certificate fingerprint with built-in HTTPS; null behind a TLS proxy. */
+  readonly fingerprint: string | null;
+}
+export interface FleetController {
+  readonly id: string;
+  readonly name: string;
+  readonly pairedBy: string;
+  readonly pairedAt: string;
+  readonly usedAt: string | null;
+}
+
+const siteStates = [
+  'pending',
+  'ok',
+  'unreachable',
+  'certificate',
+  'revoked',
+  'invalid',
+  'refused',
+] as const;
+
+export function readFleetSite(value: unknown): FleetSite {
+  const row = record(value);
+  return {
+    id: text(row['id']),
+    name: text(row['name']),
+    url: text(row['url']),
+    fingerprint: nullable(row['fingerprint'], text),
+    addedBy: text(row['addedBy']),
+    addedAt: text(row['addedAt']),
+    seenAt: nullable(row['seenAt'], text),
+    state: oneOf(row['state'], siteStates),
+    error: nullable(row['error'], text),
+    topology: nullable(row['topology'], readTopology),
+  };
+}
+export function readFleetSites(value: unknown): readonly FleetSite[] {
+  return items(record(value)['items']).map(readFleetSite);
+}
+export function readFleetProbe(value: unknown): FleetProbe {
+  const row = record(value);
+  return {
+    url: text(row['url']),
+    certificate: nullable(row['certificate'], (entry) => {
+      const certificate = record(entry);
+      return {
+        fingerprint: text(certificate['fingerprint']),
+        subject: text(certificate['subject']),
+        issuer: text(certificate['issuer']),
+        validTo: text(certificate['validTo']),
+      };
+    }),
+  };
+}
+export function readFleetPairing(value: unknown): FleetPairing {
+  const row = record(value);
+  return {
+    code: text(row['code']),
+    expiresAt: text(row['expiresAt']),
+    fingerprint: nullable(row['fingerprint'], text),
+  };
+}
+export function readFleetControllers(value: unknown): readonly FleetController[] {
+  return items(record(value)['items']).map((entry) => {
+    const row = record(entry);
+    return {
+      id: text(row['id']),
+      name: text(row['name']),
+      pairedBy: text(row['pairedBy']),
+      pairedAt: text(row['pairedAt']),
+      usedAt: nullable(row['usedAt'], text),
+    };
+  });
+}
