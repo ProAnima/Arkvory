@@ -5,6 +5,7 @@ import { hostname } from 'node:os';
 import {
   ArkvoryError,
   MAX_OBJECT_BYTES,
+  isControl,
   isFleetName,
   siteOrigin,
   type DownloadSchedulePolicy,
@@ -306,7 +307,8 @@ function readFleetMap(env: NodeJS.ProcessEnv) {
 
 /** The host name made a fleet name: control codes dropped, cut to 63 code points. */
 function siteNameOf(value: string): string {
-  return Array.from(value.replace(/[\u0000-\u001f\u007f-\u009f]/g, ''))
+  return Array.from(value)
+    .filter((character) => !isControl(character))
     .slice(0, 63)
     .join('')
     .trim();

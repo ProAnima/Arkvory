@@ -109,18 +109,18 @@ async function tls(work) {
  * is waited for, up to ten minutes, any other failure fails at once.
  */
 export async function dpkg(node, args, timeoutMs = 600000) {
-  await until(
-    async () => {
-      const answer = await node.shell.tryExec(`dpkg ${args}`, { timeoutMs: 300000 });
-      if (answer.ok) return true;
-      if (/lock-frontend|frontend lock|dpkg status database is locked/i.test(answer.output))
-        return false;
+  // Its own loop, not until(): until() retries every error, and a failing postinst must fail
+  // the stand at once with its output, not pass on a lucky second try.
+  const deadline = Date.now() + timeoutMs;
+  for (;;) {
+    const answer = await node.shell.tryExec(`dpkg ${args}`, { timeoutMs: 300000 });
+    if (answer.ok) return;
+    if (!/lock-frontend|frontend lock|dpkg status database is locked/i.test(answer.output))
       throw new Error(`dpkg ${args} failed on ${node.name}: ${answer.output}`);
-    },
-    `dpkg ${args} on ${node.name}`,
-    timeoutMs,
-    5000,
-  );
+    if (Date.now() > deadline)
+      throw new Error(`dpkg lock on ${node.name} stayed busy: ${answer.output}`);
+    await new Promise((resolve) => setTimeout(resolve, 5000));
+  }
 }
 
 /** The package files on every data node, unconfigured: nothing is installed before the volume. */

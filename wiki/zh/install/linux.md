@@ -262,7 +262,7 @@ sudo "$root/runtime/node-v24.21.0-linux-x64/bin/node" "$root/manage.mjs" status 
 | `Installation is locked`                                            | 某个操作正在运行或已崩溃。请停止更新计时器，读取根目录中的 `journal.json`，在了解状态之前不要删除 `operation.lock`。参见[更新](./updates#recover-update)                                                                                                               |
 | `database/bootstrap-started` 存在，但 `database/initialized` 不存在 | 数据库创建被中断。不要删除集群，也不要手动重复 SQL。修复原因并运行 `sudo arkvory finish-install --root /opt/proanima-arkvory`                                                                                                                                          |
 | 服务无法启动                                                        | `journalctl -u arkvory-api -n 100`。启动失败会打印一条 JSON 记录，其中的 `reason` 指明设置名，而不是其值                                                                                                                                                               |
-| 端口 8080 被占用                                                    | 另一个程序正在使用它。释放该端口，或在 `config/runtime.json` 中设置 `ARKVORY_PORT`。参见[配置](./configuration#address-and-port)。数据库端口 54329 无法更改                                                                                                            |
+| 端口 8080 被占用                                                    | 另一个程序正在使用它。释放该端口，或在 `config/runtime.json` 中设置 `ARKVORY_PORT`。参见[配置](./configuration#address-and-port)。数据库端口是安装时选定的端口（54329 或 45329-45348），它不会自行改变                                                                 |
 
 如果安装在写入 `installation.json` 之后停止，您也可以重复软件包的配置步骤：在 Debian 和 Ubuntu 上运行 `sudo dpkg --configure -a`，或在 RPM 系统上再次安装同一软件包。
 

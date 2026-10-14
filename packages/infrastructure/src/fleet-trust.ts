@@ -10,7 +10,7 @@ export const FLEET_KEY_PREFIX = 'afk_';
 
 const digest = (value: string) => createHash('sha256').update(value).digest();
 
-/** `XXXX-XXXX-XXXX`: 60 random bits; with a ten-minute life and throttled enrollment, enough. */
+/** `XXXX-XXXX-XXXX`: 60 random bits; with a ten-minute life and single-use enrollment, enough. */
 function pairingCode(): string {
   const bytes = randomBytes(12);
   const letters = Array.from(bytes, (byte) => ALPHABET[byte % 32] ?? '0').join('');
@@ -104,8 +104,9 @@ export class PostgresFleetTrust {
   }
 
   /**
-   * Repositories that hold anything: the distinct names of the catalog journal, read by skipping
-   * along its index (one lookup per repository, not a scan of the journal). At most 1000.
+   * Repositories of the site: those that hold anything (the distinct names of the catalog
+   * journal, read by skipping along its index: one lookup per repository, not a scan) and those
+   * granted to a group, so an empty repository is readable too. At most 1000, by name.
    */
   private async repositories(): Promise<readonly string[]> {
     const rows = await this.pool.query<{ repository: string }>(
@@ -115,7 +116,10 @@ export class PostgresFleetTrust {
          SELECT (SELECT min(repository) FROM arkvory_audit WHERE repository > names.repository)
          FROM names WHERE names.repository IS NOT NULL
        )
-       SELECT repository FROM names WHERE repository IS NOT NULL LIMIT 1000`,
+       SELECT repository FROM names WHERE repository IS NOT NULL
+       UNION
+       SELECT repository FROM arkvory_group_grants
+       ORDER BY repository LIMIT 1000`,
     );
     return rows.rows.map((row) => row.repository);
   }

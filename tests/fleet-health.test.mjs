@@ -224,3 +224,21 @@ test('a fleet of 256 sites with 64 mirrors each evaluates in well under a poll p
   assert.equal(alerts.length, 256 * 54, 'lag 1000..6300 on 54 of 64 mirrors');
   assert.ok(performance.now() - started < 1000);
 });
+
+test('a fleet name: any script, no control codes, 63 code points, as typed', async () => {
+  const { isFleetName } = await import('../packages/domain/dist/index.js');
+  for (const name of ['Branch', 'Филиал-1', '北京 站点', 'é'.repeat(63), '😀'.repeat(63)])
+    assert.equal(isFleetName(name), true, name);
+  for (const name of [
+    '',
+    ' padded',
+    'a\u0000b',
+    'tab\tname',
+    'del\u007f',
+    'c1\u0085',
+    'x'.repeat(64),
+    '😀'.repeat(64),
+    7,
+  ])
+    assert.equal(isFleetName(name), false, JSON.stringify(name));
+});

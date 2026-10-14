@@ -8,13 +8,15 @@
  * code points. The same rule on the site that names itself and on the controller that stores it.
  */
 export function isFleetName(value: unknown): value is string {
-  return (
-    typeof value === 'string' &&
-    value.trim() === value &&
-    !/[\u0000-\u001f\u007f-\u009f]/.test(value) &&
-    Array.from(value).length >= 1 &&
-    Array.from(value).length <= 63
-  );
+  if (typeof value !== 'string' || value.trim() !== value) return false;
+  const points = Array.from(value);
+  return points.length >= 1 && points.length <= 63 && !points.some(isControl);
+}
+
+/** C0 controls, DEL and C1 controls: never part of a name shown to people. */
+export function isControl(character: string): boolean {
+  const code = character.codePointAt(0) ?? 0;
+  return code < 0x20 || (code >= 0x7f && code <= 0x9f);
 }
 
 export interface HealthMirror {
