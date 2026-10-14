@@ -53,6 +53,13 @@ export interface FleetSiteClient {
     controllerName: string,
   ): Promise<{ readonly key: string; readonly name: string; readonly version: string }>;
   topology(endpoint: FleetEndpointView, key: string, actor: string): Promise<unknown>;
+  /** A GET of `path` on the site with its key; the answer's status and JSON body. */
+  read(
+    endpoint: FleetEndpointView,
+    key: string,
+    actor: string,
+    path: string,
+  ): Promise<{ readonly status: number; readonly body: unknown }>;
 }
 export interface FleetKeySeal {
   seal(siteId: string, key: string): Uint8Array;
@@ -166,6 +173,32 @@ export class FleetControl {
       observation = { state, error: state };
     }
     await this.sites.observe(id, observation);
+  }
+
+  /**
+   * Reads catalog metadata of a site with its key. `allowed` is the fixed list of read paths: a
+   * path outside it is refused here, before the site is asked.
+   */
+  async read(id: string, path: string, actor: string, allowed: (path: string) => boolean) {
+    if (!allowed(path))
+      throw new ArkvoryError('invalid_input', 'Only catalog metadata of a site can be read');
+    const site = await this.sites.get(id);
+    if (!site) throw new ArkvoryError('not_found', 'Site not found');
+    const key = this.sealer().open(site.id, site.sealedKey);
+    try {
+      return await this.client.read(site, key, actor, path);
+    } catch (error) {
+      const state = failureState(error);
+      if (state === 'revoked')
+        throw new ArkvoryError('conflict', 'The site revoked this controller: pair it again', {
+          reason: 'state_conflict',
+        });
+      if (state === 'refused')
+        throw new ArkvoryError('forbidden', 'The site refused this read', {
+          reason: 'permission_missing',
+        });
+      throw new ArkvoryError('unavailable', `The site could not be read: ${state}`);
+    }
   }
 
   /** Reads every site, at most CONCURRENCY at once. */

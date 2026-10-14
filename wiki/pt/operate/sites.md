@@ -10,7 +10,7 @@ Um **site** é uma instalação do Arkvory: a principal, um espelho em outro loc
 ## Como funciona {#how-it-works}
 
 - O controlador mantém uma lista de sites. Ele lê cada site a cada 30 segundos por HTTPS e guarda a última resposta, então um site que para de responder ainda mostra seu último estado conhecido.
-- Ao parear, o site dá ao controlador uma chave própria, uma **chave de frota**. Ela só alcança o que um controlador precisa: hoje, o estado do site. Não lê nem altera repositórios, arquivos, contas ou chaves.
+- Ao ser pareado, o site dá ao site controlador uma chave própria, a **chave de frota**. Ela alcança apenas o que o controlador precisa: o estado do site e as descrições do seu catálogo. Não pode baixar bytes de arquivos, alterar nada nem ler contas e chaves.
 - O controlador guarda as chaves de frota seladas com uma chave do seu diretório de dados (`fleet.key`). O banco de dados e seus backups sozinhos não as revelam. Depois de uma restauração, pareie os sites de novo.
 - Cada site mostra quais controladores o gerenciam e pode revogá-los a qualquer momento.
 
@@ -48,6 +48,12 @@ A partir daí o controlador confia exatamente nesse certificado. Quando o site r
 - **[[ui:fleetSeen]]**: quando o site respondeu pela última vez.
 
 [[ui:fleetReadAll]] lê todos os sites agora em vez de esperar a próxima rodada. [[ui:fleetRemoveSite]] esquece um site aqui; revogue também o controlador no site, porque até lá a chave continua válida lá.
+
+## Conteúdo de um site {#content}
+
+[[ui:fleetContent]] na linha de um site abre abaixo da lista seus repositórios, artefatos e arquivos. Escolha um repositório; [[ui:fleetFind]] procura artefatos por nome ou rótulo e lista os arquivos cujo caminho começa com o que você digitou. [[ui:fleetMore]] lê a próxima página.
+
+O controlador lê isso no site com sua chave de frota e mostra a resposta como o site a deu. Só trafegam descrições: nomes, tamanhos, rótulos, estágios, caminhos e revisões. Para baixar um arquivo, use o próprio site.
 
 ## Quem gerencia este site {#managed-by}
 

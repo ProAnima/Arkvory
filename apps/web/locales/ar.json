@@ -4118,5 +4118,85 @@
   "fleetCodeUntil": {
     "en": "Valid until {until}. It is shown once: give it to the administrator of the controller.",
     "text": "صالح حتى {until}. يُعرض مرة واحدة: سلّمه لمسؤول وحدة التحكم."
+  },
+  "fleetContent": {
+    "en": "Content",
+    "text": "المحتوى"
+  },
+  "fleetContentOf": {
+    "en": "Content of {name}",
+    "text": "محتوى {name}"
+  },
+  "fleetContentHint": {
+    "en": "Repositories, artifacts and files of the site, read through this installation. Only descriptions travel here: download files on the site itself.",
+    "text": "مستودعات الموقع وعناصره وملفاته، مقروءة عبر هذا التثبيت. تصل الأوصاف فقط: نزّل الملفات من الموقع نفسه."
+  },
+  "fleetContentClose": {
+    "en": "Close",
+    "text": "إغلاق"
+  },
+  "fleetRepository": {
+    "en": "Repository",
+    "text": "المستودع"
+  },
+  "fleetQuery": {
+    "en": "Name, label or path",
+    "text": "الاسم أو الوسم أو المسار"
+  },
+  "fleetFind": {
+    "en": "Find",
+    "text": "بحث"
+  },
+  "fleetArtifacts": {
+    "en": "Artifacts",
+    "text": "العناصر"
+  },
+  "fleetArtifactName": {
+    "en": "Name",
+    "text": "الاسم"
+  },
+  "fleetArtifactSize": {
+    "en": "Size",
+    "text": "الحجم"
+  },
+  "fleetArtifactPublished": {
+    "en": "Published",
+    "text": "تاريخ النشر"
+  },
+  "fleetArtifactLabels": {
+    "en": "Labels and stages",
+    "text": "الوسوم والمراحل"
+  },
+  "fleetArtifactsEmpty": {
+    "en": "No artifacts found.",
+    "text": "لم يُعثر على عناصر."
+  },
+  "fleetFiles": {
+    "en": "Files",
+    "text": "الملفات"
+  },
+  "fleetFilePath": {
+    "en": "Path",
+    "text": "المسار"
+  },
+  "fleetFileRevision": {
+    "en": "Revision",
+    "text": "المراجعة"
+  },
+  "fleetFileArtifact": {
+    "en": "Artifact",
+    "text": "العنصر"
+  },
+  "fleetFilesEmpty": {
+    "en": "No files found.",
+    "text": "لم يُعثر على ملفات."
+  },
+  "fleetMore": {
+    "en": "Show more",
+    "text": "عرض المزيد"
+  },
+  "fleetNoRepositories": {
+    "en": "The site has no repositories.",
+    "text": "لا توجد مستودعات في الموقع."
   }
 }

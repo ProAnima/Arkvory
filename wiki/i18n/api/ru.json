@@ -1039,6 +1039,14 @@
       },
       "summary": "Прочитать площадку сейчас",
       "description": "Читает площадку сейчас, не дожидаясь следующего круга, и возвращает её с новым состоянием."
+    },
+    "readFleetSite": {
+      "en": {
+        "summary": "Read the catalog of a site",
+        "description": "Passes one catalog read to a managed site and returns its answer unchanged: repositories, search, artifacts, annotations, stages, packages, file pages and history, storage usage, mirror state. `path` is the site route with its query. Other routes and file bytes are refused with 400."
+      },
+      "summary": "Прочитать каталог площадки",
+      "description": "Передаёт одно чтение каталога управляемой площадке и возвращает её ответ без изменений: репозитории, поиск, артефакты, аннотации, стадии, пакеты, страницы и история файлов, занятое место, состояние зеркала. `path` — маршрут площадки с параметрами запроса. Другие маршруты и байты файлов отклоняются с 400."
     }
   },
   "errors": {

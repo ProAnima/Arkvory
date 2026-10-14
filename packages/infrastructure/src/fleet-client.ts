@@ -141,6 +141,8 @@ export function siteRequest(
     readonly signal?: AbortSignal;
     /** The controller's administrator acting, for the site's audit; not a credential. */
     readonly actor?: string;
+    /** Largest answer read; catalog pages are larger than state. */
+    readonly maxBytes?: number;
   } = {},
 ): Promise<{ readonly status: number; readonly body: unknown }> {
   const url = new URL(path, endpoint.url);
@@ -184,7 +186,7 @@ export function siteRequest(
         let size = 0;
         response.on('data', (chunk: Buffer) => {
           size += chunk.length;
-          if (size > LIMIT_BYTES) {
+          if (size > (options.maxBytes ?? LIMIT_BYTES)) {
             response.destroy();
             settle(new FleetFailure('invalid'));
           } else chunks.push(chunk);

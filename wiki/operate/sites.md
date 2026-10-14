@@ -10,7 +10,7 @@ A **site** is one Arkvory installation: the main one, a mirror in another locati
 ## How it works {#how-it-works}
 
 - The controller keeps a list of sites. It reads every site every 30 seconds over HTTPS and keeps the last answer, so a site that stops answering still shows its last known state.
-- When a site is paired, it gives the controller a key of its own, a **fleet key**. The fleet key reaches only what a controller needs: today, the state of the site. It cannot read or change repositories, files, accounts or keys.
+- When a site is paired, it gives the controller a key of its own, a **fleet key**. The fleet key reaches only what a controller needs: the state of the site and the descriptions in its catalog. It cannot download file bytes, change anything, or read accounts and keys.
 - The controller keeps the fleet keys sealed with a key in its data directory (`fleet.key`). The database and its backups alone do not reveal them. After a restore, pair the sites again.
 - Every site shows which controllers manage it and can revoke them at any time.
 
@@ -48,6 +48,12 @@ From then on, the controller trusts exactly that certificate. When the site gets
 - **[[ui:fleetSeen]]**: when the site last answered.
 
 [[ui:fleetReadAll]] reads every site now instead of waiting for the next round. [[ui:fleetRemoveSite]] forgets a site here; revoke the controller on the site as well, because until then its key stays valid there.
+
+## Content of a site {#content}
+
+[[ui:fleetContent]] in the row of a site opens its repositories, artifacts and files below the list. Choose a repository; [[ui:fleetFind]] searches artifacts by name or label and lists files under a path that starts with what you typed. [[ui:fleetMore]] reads the next page.
+
+The controller reads these on the site with its fleet key and shows the answer as the site gave it. Only descriptions travel: names, sizes, labels, stages, paths and revisions. To download a file, use the site itself.
 
 ## Who manages this site {#managed-by}
 

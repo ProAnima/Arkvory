@@ -4118,5 +4118,85 @@
   "fleetCodeUntil": {
     "en": "Valid until {until}. It is shown once: give it to the administrator of the controller.",
     "text": "{until} まで有効。一度だけ表示されます：コントローラーの管理者に渡してください。"
+  },
+  "fleetContent": {
+    "en": "Content",
+    "text": "コンテンツ"
+  },
+  "fleetContentOf": {
+    "en": "Content of {name}",
+    "text": "{name} のコンテンツ"
+  },
+  "fleetContentHint": {
+    "en": "Repositories, artifacts and files of the site, read through this installation. Only descriptions travel here: download files on the site itself.",
+    "text": "このインストール経由で読み取ったサイトのリポジトリ、アーティファクト、ファイル。ここに届くのは説明だけです。ファイルはサイト自体でダウンロードしてください。"
+  },
+  "fleetContentClose": {
+    "en": "Close",
+    "text": "閉じる"
+  },
+  "fleetRepository": {
+    "en": "Repository",
+    "text": "リポジトリ"
+  },
+  "fleetQuery": {
+    "en": "Name, label or path",
+    "text": "名前、ラベル、パス"
+  },
+  "fleetFind": {
+    "en": "Find",
+    "text": "検索"
+  },
+  "fleetArtifacts": {
+    "en": "Artifacts",
+    "text": "アーティファクト"
+  },
+  "fleetArtifactName": {
+    "en": "Name",
+    "text": "名前"
+  },
+  "fleetArtifactSize": {
+    "en": "Size",
+    "text": "サイズ"
+  },
+  "fleetArtifactPublished": {
+    "en": "Published",
+    "text": "公開日時"
+  },
+  "fleetArtifactLabels": {
+    "en": "Labels and stages",
+    "text": "ラベルとステージ"
+  },
+  "fleetArtifactsEmpty": {
+    "en": "No artifacts found.",
+    "text": "アーティファクトが見つかりません。"
+  },
+  "fleetFiles": {
+    "en": "Files",
+    "text": "ファイル"
+  },
+  "fleetFilePath": {
+    "en": "Path",
+    "text": "パス"
+  },
+  "fleetFileRevision": {
+    "en": "Revision",
+    "text": "リビジョン"
+  },
+  "fleetFileArtifact": {
+    "en": "Artifact",
+    "text": "アーティファクト"
+  },
+  "fleetFilesEmpty": {
+    "en": "No files found.",
+    "text": "ファイルが見つかりません。"
+  },
+  "fleetMore": {
+    "en": "Show more",
+    "text": "さらに表示"
+  },
+  "fleetNoRepositories": {
+    "en": "The site has no repositories.",
+    "text": "サイトにリポジトリがありません。"
   }
 }

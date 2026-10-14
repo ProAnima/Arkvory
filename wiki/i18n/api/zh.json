@@ -1039,6 +1039,14 @@
       },
       "summary": "立即读取站点",
       "description": "立即读取站点而不等待下一轮，并返回其新状态。"
+    },
+    "readFleetSite": {
+      "en": {
+        "summary": "Read the catalog of a site",
+        "description": "Passes one catalog read to a managed site and returns its answer unchanged: repositories, search, artifacts, annotations, stages, packages, file pages and history, storage usage, mirror state. `path` is the site route with its query. Other routes and file bytes are refused with 400."
+      },
+      "summary": "读取站点目录",
+      "description": "将一次目录读取转发给受管站点，并原样返回其应答：仓库、搜索、制品、注释、阶段、包、文件页面和历史、存储用量、镜像状态。`path` 是站点路由及其查询。其他路由和文件字节以 400 拒绝。"
     }
   },
   "errors": {

@@ -1039,6 +1039,14 @@
       },
       "summary": "साइट अभी पढ़ें",
       "description": "अगले दौर की प्रतीक्षा किए बिना साइट अभी पढ़ता है और नई स्थिति के साथ लौटाता है।"
+    },
+    "readFleetSite": {
+      "en": {
+        "summary": "Read the catalog of a site",
+        "description": "Passes one catalog read to a managed site and returns its answer unchanged: repositories, search, artifacts, annotations, stages, packages, file pages and history, storage usage, mirror state. `path` is the site route with its query. Other routes and file bytes are refused with 400."
+      },
+      "summary": "साइट का कैटलॉग पढ़ें",
+      "description": "एक कैटलॉग पठन को प्रबंधित साइट तक पहुँचाता है और उसका उत्तर बिना बदले लौटाता है: रिपॉजिटरी, खोज, आर्टिफ़ैक्ट, एनोटेशन, चरण, पैकेज, फ़ाइल पेज और इतिहास, संग्रहण उपयोग, मिरर स्थिति। `path` साइट का रूट और उसकी क्वेरी है। अन्य रूट और फ़ाइल बाइट 400 के साथ अस्वीकार होते हैं।"
     }
   },
   "errors": {

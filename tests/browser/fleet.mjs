@@ -6,11 +6,12 @@ import { join } from 'node:path';
 import { connectWithKey } from './session.mjs';
 import { chooseLanguage } from './language.mjs';
 import { separateInstance } from '../integration/mirror-fixture.mjs';
+import { base, create } from '../integration/fixture.mjs';
 
 /**
  * The Sites page (ADR 0077) on two real installations: this server becomes a controller (a key
  * file to seal site keys), a second installation is the site. The administrator checks the
- * address, pairs with the code the site made, sees the site's state, makes a code for this
+ * address, pairs with the code the site made, sees the site's state and content, makes a code for this
  * site and removes the site again. Restarts the shared server: runs before the mirror scenario.
  */
 export async function exerciseFleet(browser, f, cleanup) {
@@ -77,6 +78,34 @@ export async function exerciseFleet(browser, f, cleanup) {
     assert.equal(await row.locator('.fleet-badge').getAttribute('data-state'), 'ok');
     // The site key never reaches the page.
     assert.doesNotMatch(await page.content(), /afk_/);
+    // The content of the site, read through this installation: descriptions, never bytes.
+    const bytes = Buffer.from('branch tool');
+    const id = (await create(site, bytes)).json().id;
+    await site.app.inject({
+      method: 'PUT',
+      url: `${base}/uploads/${id}/content`,
+      headers: { ...site.headers, 'content-type': 'application/octet-stream' },
+      payload: bytes,
+    });
+    await site.app.inject({
+      method: 'PUT',
+      url: `${base}/asset`,
+      headers: site.headers,
+      payload: { path: 'tools/branch.bin', artifactId: id, expectedRevision: 0 },
+    });
+    await row.getByRole('button', { name: 'Content' }).click();
+    await page.locator('#fleet-file-rows tr').first().waitFor();
+    assert.equal(await page.locator('#fleet-content-title').innerText(), 'Content of Branch');
+    assert.equal(await page.locator('#fleet-repository').inputValue(), 'releases');
+    assert.ok((await page.locator('#fleet-file-rows').innerText()).includes('tools/branch.bin'));
+    assert.ok((await page.locator('#fleet-file-rows').innerText()).includes(id));
+    assert.equal(await page.locator(`#fleet-artifact-rows td[title="${id}"]`).count(), 1);
+    await page.locator('#fleet-query').fill('nothing-like-this');
+    await page.locator('#fleet-content-filter button').click();
+    await page.locator('#fleet-artifacts-empty').waitFor();
+    await page.locator('#fleet-files-empty').waitFor();
+    await page.locator('#fleet-content-close').click();
+    assert.equal(await page.locator('#fleet-content').isVisible(), false);
     // This site's own pairing code.
     await page.locator('#fleet-make-code').click();
     await page.locator('#fleet-code-box').waitFor();
@@ -108,5 +137,7 @@ export async function exerciseFleet(browser, f, cleanup) {
   } finally {
     await context.close();
   }
-  console.log('PASS sites: check, pair by code, site state, own code, remove, RU/EN, 390px');
+  console.log(
+    'PASS sites: check, pair by code, site state, content, own code, remove, RU/EN, 390px',
+  );
 }

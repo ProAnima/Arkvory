@@ -4118,5 +4118,85 @@
   "fleetCodeUntil": {
     "en": "Valid until {until}. It is shown once: give it to the administrator of the controller.",
     "text": "{until}까지 유효합니다. 한 번만 표시되니 컨트롤러 관리자에게 전달하세요."
+  },
+  "fleetContent": {
+    "en": "Content",
+    "text": "콘텐츠"
+  },
+  "fleetContentOf": {
+    "en": "Content of {name}",
+    "text": "{name}의 콘텐츠"
+  },
+  "fleetContentHint": {
+    "en": "Repositories, artifacts and files of the site, read through this installation. Only descriptions travel here: download files on the site itself.",
+    "text": "이 설치를 통해 읽은 사이트의 저장소, 아티팩트, 파일입니다. 여기에는 설명만 전달됩니다. 파일은 사이트에서 직접 다운로드하세요."
+  },
+  "fleetContentClose": {
+    "en": "Close",
+    "text": "닫기"
+  },
+  "fleetRepository": {
+    "en": "Repository",
+    "text": "저장소"
+  },
+  "fleetQuery": {
+    "en": "Name, label or path",
+    "text": "이름, 레이블 또는 경로"
+  },
+  "fleetFind": {
+    "en": "Find",
+    "text": "찾기"
+  },
+  "fleetArtifacts": {
+    "en": "Artifacts",
+    "text": "아티팩트"
+  },
+  "fleetArtifactName": {
+    "en": "Name",
+    "text": "이름"
+  },
+  "fleetArtifactSize": {
+    "en": "Size",
+    "text": "크기"
+  },
+  "fleetArtifactPublished": {
+    "en": "Published",
+    "text": "게시됨"
+  },
+  "fleetArtifactLabels": {
+    "en": "Labels and stages",
+    "text": "레이블 및 단계"
+  },
+  "fleetArtifactsEmpty": {
+    "en": "No artifacts found.",
+    "text": "아티팩트가 없습니다."
+  },
+  "fleetFiles": {
+    "en": "Files",
+    "text": "파일"
+  },
+  "fleetFilePath": {
+    "en": "Path",
+    "text": "경로"
+  },
+  "fleetFileRevision": {
+    "en": "Revision",
+    "text": "리비전"
+  },
+  "fleetFileArtifact": {
+    "en": "Artifact",
+    "text": "아티팩트"
+  },
+  "fleetFilesEmpty": {
+    "en": "No files found.",
+    "text": "파일이 없습니다."
+  },
+  "fleetMore": {
+    "en": "Show more",
+    "text": "더 보기"
+  },
+  "fleetNoRepositories": {
+    "en": "The site has no repositories.",
+    "text": "사이트에 저장소가 없습니다."
   }
 }

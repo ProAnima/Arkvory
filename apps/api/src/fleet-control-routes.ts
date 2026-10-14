@@ -9,7 +9,7 @@ import {
   type FleetSiteClient,
   type FleetSiteStore,
 } from '@proanima/arkvory-application';
-import { readTopology, record } from '@proanima/arkvory-contracts';
+import { isFleetReadPath, readTopology, record } from '@proanima/arkvory-contracts';
 
 /** A person who is the global administrator here; a fleet key never manages other sites. */
 function administrator(actor: Principal) {
@@ -26,6 +26,7 @@ function validating(client: FleetSiteClient): FleetSiteClient {
     origin: (url) => client.origin(url),
     certificate: (origin) => client.certificate(origin),
     enroll: (endpoint, code, name) => client.enroll(endpoint, code, name),
+    read: (endpoint, key, actor, path) => client.read(endpoint, key, actor, path),
     topology: async (endpoint: FleetEndpointView, key: string, actor: string) => {
       const body = await client.topology(endpoint, key, actor);
       try {
@@ -108,6 +109,20 @@ export function registerFleetControlRoutes(
     await control.remove(siteId(request.params.id));
     return reply.code(204).send();
   });
+  // The site's own answer, status and body unchanged: the console reads it with the same readers
+  // as its own catalog. Only GETs of the fixed metadata routes are forwarded.
+  app.get<{ Params: { id: string }; Querystring: unknown }>(
+    '/api/v1/fleet/sites/:id/read',
+    async (request, reply) => {
+      const actor = administrator(principal(request));
+      const query = record(request.query);
+      const path = query['path'];
+      if (typeof path !== 'string' || Object.keys(query).length !== 1)
+        throw new ArkvoryError('invalid_input', 'path is the only read option');
+      const answer = await control.read(siteId(request.params.id), path, actor.id, isFleetReadPath);
+      return reply.code(answer.status).send(answer.body);
+    },
+  );
   app.post<{ Params: { id: string } }>('/api/v1/fleet/sites/:id/refresh', async (request) => {
     const actor = administrator(principal(request));
     const id = siteId(request.params.id);

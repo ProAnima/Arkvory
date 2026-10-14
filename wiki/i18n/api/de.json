@@ -1039,6 +1039,14 @@
       },
       "summary": "Standort jetzt lesen",
       "description": "Liest den Standort jetzt, statt auf die nächste Runde zu warten, und gibt ihn mit dem neuen Zustand zurück."
+    },
+    "readFleetSite": {
+      "en": {
+        "summary": "Read the catalog of a site",
+        "description": "Passes one catalog read to a managed site and returns its answer unchanged: repositories, search, artifacts, annotations, stages, packages, file pages and history, storage usage, mirror state. `path` is the site route with its query. Other routes and file bytes are refused with 400."
+      },
+      "summary": "Katalog eines Standorts lesen",
+      "description": "Leitet einen Katalog-Lesezugriff an einen verwalteten Standort weiter und gibt dessen Antwort unverändert zurück: Repositorys, Suche, Artefakte, Annotationen, Stufen, Pakete, Dateiseiten und -verlauf, Speicherbelegung, Spiegelzustand. `path` ist die Route des Standorts mit ihrer Abfrage. Andere Routen und Dateibytes werden mit 400 abgelehnt."
     }
   },
   "errors": {

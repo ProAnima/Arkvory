@@ -1039,6 +1039,14 @@
       },
       "summary": "지금 사이트 읽기",
       "description": "다음 차례를 기다리지 않고 지금 사이트를 읽어 새 상태로 반환합니다."
+    },
+    "readFleetSite": {
+      "en": {
+        "summary": "Read the catalog of a site",
+        "description": "Passes one catalog read to a managed site and returns its answer unchanged: repositories, search, artifacts, annotations, stages, packages, file pages and history, storage usage, mirror state. `path` is the site route with its query. Other routes and file bytes are refused with 400."
+      },
+      "summary": "사이트 카탈로그 읽기",
+      "description": "카탈로그 읽기 한 번을 관리 사이트에 전달하고 그 응답을 그대로 반환합니다: 저장소, 검색, 아티팩트, 주석, 단계, 패키지, 파일 페이지와 기록, 저장소 사용량, 미러 상태. `path`는 쿼리를 포함한 사이트 경로입니다. 다른 경로와 파일 바이트는 400으로 거부됩니다."
     }
   },
   "errors": {

@@ -16,6 +16,7 @@ import {
   type Line,
 } from './fleet-presentation.js';
 import { FleetPairingCard } from './fleet-pairing.js';
+import { FleetContent } from './fleet-content.js';
 
 /** While the page is open it follows the background reads of the server. */
 const REFRESH_MS = 30000;
@@ -63,9 +64,11 @@ export class FleetPage {
   private readonly status = element('fleet-status', HTMLOutputElement);
   private readonly shown = new Map<string, Row>();
   private readonly pairing: FleetPairingCard;
+  private readonly content: FleetContent;
   private generation = 0;
   private timer: ReturnType<typeof setTimeout> | undefined;
   constructor(private readonly client: ArkvoryClient) {
+    this.content = new FleetContent(client);
     this.pairing = new FleetPairingCard(client, () => this.refresh(this.generation));
     onViewOpen('fleet', () => {
       void this.refresh(this.generation);
@@ -89,6 +92,7 @@ export class FleetPage {
     this.shown.clear();
     this.rows.replaceChildren();
     this.pairing.clear();
+    this.content.clear();
   }
 
   private schedule(generation: number) {
@@ -160,6 +164,7 @@ export class FleetPage {
     const mirrors = node('span');
     const queue = node('span');
     const seen = node('span');
+    const browse = this.action('fleetContent', () => this.content.open(site.id, name.textContent));
     const read = this.action('fleetReadSite', async () => {
       await this.client.fleet.refresh(site.id);
       await this.refresh(this.generation);
@@ -170,12 +175,13 @@ export class FleetPage {
       )
         return;
       await this.client.fleet.remove(site.id);
+      if (this.content.current === site.id) this.content.clear();
       feedback(this.status, 'fleetRemoved', {}, 'success');
       this.status.hidden = false;
       await this.refresh(this.generation);
     });
     const actions = node('div', 'button-row compact');
-    actions.append(read, remove);
+    actions.append(browse, read, remove);
     const row = document.createElement('tr');
     row.append(
       cell(name, url),
@@ -205,7 +211,10 @@ export class FleetPage {
     return created;
   }
 
-  private action(key: 'fleetReadSite' | 'fleetRemoveSite', run: () => Promise<void>) {
+  private action(
+    key: 'fleetContent' | 'fleetReadSite' | 'fleetRemoveSite',
+    run: () => Promise<void>,
+  ) {
     const button = document.createElement('button');
     button.type = 'button';
     button.className = 'secondary small';

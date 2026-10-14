@@ -4118,5 +4118,85 @@
   "fleetCodeUntil": {
     "en": "Valid until {until}. It is shown once: give it to the administrator of the controller.",
     "text": "有效期至 {until}。只显示一次：请交给控制站点的管理员。"
+  },
+  "fleetContent": {
+    "en": "Content",
+    "text": "内容"
+  },
+  "fleetContentOf": {
+    "en": "Content of {name}",
+    "text": "{name} 的内容"
+  },
+  "fleetContentHint": {
+    "en": "Repositories, artifacts and files of the site, read through this installation. Only descriptions travel here: download files on the site itself.",
+    "text": "通过本安装读取的站点仓库、制品和文件。这里只传输描述：请在站点本身下载文件。"
+  },
+  "fleetContentClose": {
+    "en": "Close",
+    "text": "关闭"
+  },
+  "fleetRepository": {
+    "en": "Repository",
+    "text": "仓库"
+  },
+  "fleetQuery": {
+    "en": "Name, label or path",
+    "text": "名称、标签或路径"
+  },
+  "fleetFind": {
+    "en": "Find",
+    "text": "查找"
+  },
+  "fleetArtifacts": {
+    "en": "Artifacts",
+    "text": "制品"
+  },
+  "fleetArtifactName": {
+    "en": "Name",
+    "text": "名称"
+  },
+  "fleetArtifactSize": {
+    "en": "Size",
+    "text": "大小"
+  },
+  "fleetArtifactPublished": {
+    "en": "Published",
+    "text": "发布时间"
+  },
+  "fleetArtifactLabels": {
+    "en": "Labels and stages",
+    "text": "标签和阶段"
+  },
+  "fleetArtifactsEmpty": {
+    "en": "No artifacts found.",
+    "text": "未找到制品。"
+  },
+  "fleetFiles": {
+    "en": "Files",
+    "text": "文件"
+  },
+  "fleetFilePath": {
+    "en": "Path",
+    "text": "路径"
+  },
+  "fleetFileRevision": {
+    "en": "Revision",
+    "text": "修订"
+  },
+  "fleetFileArtifact": {
+    "en": "Artifact",
+    "text": "制品"
+  },
+  "fleetFilesEmpty": {
+    "en": "No files found.",
+    "text": "未找到文件。"
+  },
+  "fleetMore": {
+    "en": "Show more",
+    "text": "显示更多"
+  },
+  "fleetNoRepositories": {
+    "en": "The site has no repositories.",
+    "text": "该站点没有仓库。"
   }
 }

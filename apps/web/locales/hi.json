@@ -4118,5 +4118,85 @@
   "fleetCodeUntil": {
     "en": "Valid until {until}. It is shown once: give it to the administrator of the controller.",
     "text": "{until} तक मान्य। यह एक बार दिखता है: इसे नियंत्रक के व्यवस्थापक को दें।"
+  },
+  "fleetContent": {
+    "en": "Content",
+    "text": "सामग्री"
+  },
+  "fleetContentOf": {
+    "en": "Content of {name}",
+    "text": "{name} की सामग्री"
+  },
+  "fleetContentHint": {
+    "en": "Repositories, artifacts and files of the site, read through this installation. Only descriptions travel here: download files on the site itself.",
+    "text": "इस इंस्टॉलेशन के माध्यम से पढ़े गए साइट के रिपॉजिटरी, आर्टिफ़ैक्ट और फ़ाइलें। यहाँ केवल विवरण आते हैं: फ़ाइलें साइट पर ही डाउनलोड करें।"
+  },
+  "fleetContentClose": {
+    "en": "Close",
+    "text": "बंद करें"
+  },
+  "fleetRepository": {
+    "en": "Repository",
+    "text": "रिपॉजिटरी"
+  },
+  "fleetQuery": {
+    "en": "Name, label or path",
+    "text": "नाम, लेबल या पथ"
+  },
+  "fleetFind": {
+    "en": "Find",
+    "text": "खोजें"
+  },
+  "fleetArtifacts": {
+    "en": "Artifacts",
+    "text": "आर्टिफ़ैक्ट"
+  },
+  "fleetArtifactName": {
+    "en": "Name",
+    "text": "नाम"
+  },
+  "fleetArtifactSize": {
+    "en": "Size",
+    "text": "आकार"
+  },
+  "fleetArtifactPublished": {
+    "en": "Published",
+    "text": "प्रकाशित"
+  },
+  "fleetArtifactLabels": {
+    "en": "Labels and stages",
+    "text": "लेबल और चरण"
+  },
+  "fleetArtifactsEmpty": {
+    "en": "No artifacts found.",
+    "text": "कोई आर्टिफ़ैक्ट नहीं मिला।"
+  },
+  "fleetFiles": {
+    "en": "Files",
+    "text": "फ़ाइलें"
+  },
+  "fleetFilePath": {
+    "en": "Path",
+    "text": "पथ"
+  },
+  "fleetFileRevision": {
+    "en": "Revision",
+    "text": "संशोधन"
+  },
+  "fleetFileArtifact": {
+    "en": "Artifact",
+    "text": "आर्टिफ़ैक्ट"
+  },
+  "fleetFilesEmpty": {
+    "en": "No files found.",
+    "text": "कोई फ़ाइल नहीं मिली।"
+  },
+  "fleetMore": {
+    "en": "Show more",
+    "text": "और दिखाएँ"
+  },
+  "fleetNoRepositories": {
+    "en": "The site has no repositories.",
+    "text": "साइट पर कोई रिपॉजिटरी नहीं है।"
   }
 }

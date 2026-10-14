@@ -10,7 +10,7 @@ Ein **Standort** ist eine Arkvory-Installation: die Hauptinstallation, ein Spieg
 ## So funktioniert es {#how-it-works}
 
 - Der Controller führt eine Liste der Standorte. Er liest jeden Standort alle 30 Sekunden über HTTPS und behält die letzte Antwort, sodass ein Standort, der nicht mehr antwortet, seinen letzten bekannten Zustand weiter zeigt.
-- Beim Koppeln gibt der Standort dem Controller einen eigenen Schlüssel, einen **Flottenschlüssel**. Er erreicht nur, was ein Controller braucht: derzeit den Zustand des Standorts. Repositories, Dateien, Konten und Schlüssel kann er weder lesen noch ändern.
+- Beim Koppeln gibt der Standort dem steuernden Standort einen eigenen Schlüssel, den **Flottenschlüssel**. Er reicht nur so weit, wie der steuernde Standort es braucht: den Zustand des Standorts und die Beschreibungen in seinem Katalog. Dateibytes herunterladen, etwas ändern oder Konten und Schlüssel lesen kann er nicht.
 - Der Controller bewahrt die Flottenschlüssel versiegelt mit einem Schlüssel in seinem Datenverzeichnis auf (`fleet.key`). Die Datenbank und ihre Sicherungen allein verraten sie nicht. Koppeln Sie die Standorte nach einer Wiederherstellung neu.
 - Jeder Standort zeigt, welche Controller ihn verwalten, und kann sie jederzeit widerrufen.
 
@@ -48,6 +48,12 @@ Danach vertraut der Controller genau diesem Zertifikat. Bekommt der Standort ein
 - **[[ui:fleetSeen]]**: wann der Standort zuletzt geantwortet hat.
 
 [[ui:fleetReadAll]] liest alle Standorte sofort, statt auf die nächste Runde zu warten. [[ui:fleetRemoveSite]] vergisst einen Standort hier; widerrufen Sie den Controller auch am Standort, denn bis dahin bleibt sein Schlüssel dort gültig.
+
+## Inhalt eines Standorts {#content}
+
+[[ui:fleetContent]] in der Zeile eines Standorts öffnet unter der Liste seine Repositorys, Artefakte und Dateien. Wählen Sie ein Repository; [[ui:fleetFind]] sucht Artefakte nach Name oder Label und listet Dateien, deren Pfad mit dem Eingegebenen beginnt. [[ui:fleetMore]] liest die nächste Seite.
+
+Der steuernde Standort liest dies mit seinem Flottenschlüssel auf dem Standort und zeigt die Antwort so, wie der Standort sie gegeben hat. Nur Beschreibungen werden übertragen: Namen, Größen, Labels, Stufen, Pfade und Revisionen. Um eine Datei herunterzuladen, verwenden Sie den Standort selbst.
 
 ## Wer diesen Standort verwaltet {#managed-by}
 

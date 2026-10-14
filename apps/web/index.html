@@ -595,6 +595,83 @@
             </div>
             <output id="fleet-status" class="hint" aria-live="polite" hidden></output>
           </div>
+          <div id="fleet-content" class="card padded" hidden>
+            <div class="fleet-head">
+              <h2 id="fleet-content-title"></h2>
+              <button
+                type="button"
+                id="fleet-content-close"
+                class="secondary"
+                data-i18n="fleetContentClose"
+              >
+                Закрыть
+              </button>
+            </div>
+            <p class="hint" data-i18n="fleetContentHint"></p>
+            <form id="fleet-content-filter" class="search-form compact-filter">
+              <label
+                ><span data-i18n="fleetRepository">Репозиторий</span
+                ><select id="fleet-repository"></select
+              ></label>
+              <label
+                ><span class="sr-only" data-i18n="fleetQuery">Имя или метка</span
+                ><input
+                  id="fleet-query"
+                  type="search"
+                  data-i18n-placeholder="fleetQuery"
+                  placeholder="Имя или метка"
+              /></label>
+              <button class="secondary" data-i18n="fleetFind">Найти</button>
+            </form>
+            <output id="fleet-content-status" class="hint" aria-live="polite" hidden></output>
+            <h3 data-i18n="fleetArtifacts">Артефакты</h3>
+            <div class="table" tabindex="0" role="region" data-i18n-label="tableRegion">
+              <table class="fleet-table">
+                <thead>
+                  <tr>
+                    <th scope="col" data-i18n="fleetArtifactName">Имя</th>
+                    <th scope="col" data-i18n="fleetArtifactSize">Размер</th>
+                    <th scope="col" data-i18n="fleetArtifactPublished">Опубликован</th>
+                    <th scope="col" data-i18n="fleetArtifactLabels">Метки и стадии</th>
+                  </tr>
+                </thead>
+                <tbody id="fleet-artifact-rows"></tbody>
+              </table>
+            </div>
+            <p id="fleet-artifacts-empty" class="hint" data-i18n="fleetArtifactsEmpty" hidden></p>
+            <button
+              type="button"
+              id="fleet-artifacts-more"
+              class="secondary"
+              data-i18n="fleetMore"
+              hidden
+            >
+              Показать ещё
+            </button>
+            <h3 data-i18n="fleetFiles">Файлы</h3>
+            <div class="table" tabindex="0" role="region" data-i18n-label="tableRegion">
+              <table class="fleet-table">
+                <thead>
+                  <tr>
+                    <th scope="col" data-i18n="fleetFilePath">Путь</th>
+                    <th scope="col" data-i18n="fleetFileRevision">Ревизия</th>
+                    <th scope="col" data-i18n="fleetFileArtifact">Артефакт</th>
+                  </tr>
+                </thead>
+                <tbody id="fleet-file-rows"></tbody>
+              </table>
+            </div>
+            <p id="fleet-files-empty" class="hint" data-i18n="fleetFilesEmpty" hidden></p>
+            <button
+              type="button"
+              id="fleet-files-more"
+              class="secondary"
+              data-i18n="fleetMore"
+              hidden
+            >
+              Показать ещё
+            </button>
+          </div>
           <div class="card padded">
             <h2 data-i18n="fleetAdd">Подключить площадку</h2>
             <form id="fleet-add" class="fleet-add" novalidate>

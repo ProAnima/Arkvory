@@ -4118,5 +4118,85 @@
   "fleetCodeUntil": {
     "en": "Valid until {until}. It is shown once: give it to the administrator of the controller.",
     "text": "Válido até {until}. É mostrado uma vez: entregue-o ao administrador do controlador."
+  },
+  "fleetContent": {
+    "en": "Content",
+    "text": "Conteúdo"
+  },
+  "fleetContentOf": {
+    "en": "Content of {name}",
+    "text": "Conteúdo de {name}"
+  },
+  "fleetContentHint": {
+    "en": "Repositories, artifacts and files of the site, read through this installation. Only descriptions travel here: download files on the site itself.",
+    "text": "Repositórios, artefatos e arquivos do site, lidos por meio desta instalação. Só as descrições trafegam aqui: baixe os arquivos no próprio site."
+  },
+  "fleetContentClose": {
+    "en": "Close",
+    "text": "Fechar"
+  },
+  "fleetRepository": {
+    "en": "Repository",
+    "text": "Repositório"
+  },
+  "fleetQuery": {
+    "en": "Name, label or path",
+    "text": "Nome, rótulo ou caminho"
+  },
+  "fleetFind": {
+    "en": "Find",
+    "text": "Buscar"
+  },
+  "fleetArtifacts": {
+    "en": "Artifacts",
+    "text": "Artefatos"
+  },
+  "fleetArtifactName": {
+    "en": "Name",
+    "text": "Nome"
+  },
+  "fleetArtifactSize": {
+    "en": "Size",
+    "text": "Tamanho"
+  },
+  "fleetArtifactPublished": {
+    "en": "Published",
+    "text": "Publicado"
+  },
+  "fleetArtifactLabels": {
+    "en": "Labels and stages",
+    "text": "Rótulos e estágios"
+  },
+  "fleetArtifactsEmpty": {
+    "en": "No artifacts found.",
+    "text": "Nenhum artefato encontrado."
+  },
+  "fleetFiles": {
+    "en": "Files",
+    "text": "Arquivos"
+  },
+  "fleetFilePath": {
+    "en": "Path",
+    "text": "Caminho"
+  },
+  "fleetFileRevision": {
+    "en": "Revision",
+    "text": "Revisão"
+  },
+  "fleetFileArtifact": {
+    "en": "Artifact",
+    "text": "Artefato"
+  },
+  "fleetFilesEmpty": {
+    "en": "No files found.",
+    "text": "Nenhum arquivo encontrado."
+  },
+  "fleetMore": {
+    "en": "Show more",
+    "text": "Mostrar mais"
+  },
+  "fleetNoRepositories": {
+    "en": "The site has no repositories.",
+    "text": "O site não tem repositórios."
   }
 }
