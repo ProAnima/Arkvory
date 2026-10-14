@@ -306,6 +306,26 @@ export const activeFailure = {
   },
 };
 
+/**
+ * What each side of a partition decided, when no fence came: quorum, the fence history and the
+ * last fencer and quorum records, and the power state of both guests on the host.
+ */
+async function partitionDiagnostics(nodes) {
+  for (const node of nodes) {
+    step(
+      `${node.name}: ${(await power.state(node.domain).catch((error) => String(error))).trim()}`,
+    );
+    step(
+      (
+        await node.shell.tryExec(
+          'corosync-quorumtool -s; stonith_admin --history "*" --verbose; crm_mon -1 --show-detail; journalctl --since "-10min" -o short-precise | grep -Ei "fence|stonith|quorum|qdevice|votequorum" | tail -n 80',
+          { timeoutMs: 30000 },
+        )
+      ).output,
+    );
+  }
+}
+
 export const partition = {
   name: 'network partition between data nodes: one active, the other fenced',
   async run({ cluster, api }) {
@@ -317,18 +337,26 @@ export const partition = {
       `iptables -I INPUT -s ${primary.address} -j DROP && iptables -I OUTPUT -d ${primary.address} -j DROP`,
     );
     let loser;
-    await until(
-      async () => {
-        for (const node of [primary, other]) {
-          const boot = await node.shell.tryExec('cat /proc/sys/kernel/random/boot_id');
-          if (boot.ok && boot.output !== boots[node.name]) loser = node;
-        }
-        return loser !== undefined;
-      },
-      'fencing to restart the losing side',
-      300000,
-      3000,
-    );
+    // A fence is a reboot or a power-off: fence_virsh reports success once the node is off,
+    // and a node that stays off is fenced as well (rejoin powers it on, as an operator would).
+    try {
+      await until(
+        async () => {
+          for (const node of [primary, other]) {
+            if ((await power.state(node.domain)).includes('shut off')) loser = node;
+            const boot = await node.shell.tryExec('cat /proc/sys/kernel/random/boot_id');
+            if (boot.ok && boot.output !== boots[node.name]) loser = node;
+          }
+          return loser !== undefined;
+        },
+        'fencing to restart or power off the losing side',
+        420000,
+        3000,
+      );
+    } catch (error) {
+      await partitionDiagnostics([primary, other]);
+      throw error;
+    }
     const winner = loser === primary ? other : primary;
     await until(
       async () => (await activeNodes(cluster)).join() === winner.name,
