@@ -1087,6 +1087,14 @@
       },
       "summary": "Poner en cola un cambio del sitio",
       "description": "Pone en cola un cambio para el agente del sitio, que lo aplica en menos de un minuto con las comprobaciones y la reversión de `arkvory configure` y `cluster-*`: conectar un espejo o una importación, sustituir su clave de origen, desconectar espejos, cambiar el nodo HA activo (el nombre del nodo se escribe dos veces) o decidir escrituras con una copia. `id` lo elige el cliente; repetirlo no vuelve a poner el cambio en cola. `key` es la clave de origen solo de `mirror-attach` y `mirror-key`: llega al agente en su propio archivo 0600 y nunca se devuelve. 202 significa en cola, no aplicado."
+    },
+    "getFleetOverview": {
+      "en": {
+        "summary": "Read the fleet overview",
+        "description": "Alerts across the managed sites and this installation, most severe first (`critical`, `warning`, `info`), and the mirror links between them. Built from the last background reads, at most once per 5 seconds. A source no managed site answers at is `external:<origin>`; this installation is `self` and meets the links to it only when `ARKVORY_SITE_URL` is set. Answered by the writer only."
+      },
+      "summary": "Leer el resumen de los sitios",
+      "description": "Alertas de los sitios gestionados y de esta instalación, las más graves primero (`critical`, `warning`, `info`), y los vínculos de espejo entre ellos. Se construye con las últimas lecturas en segundo plano, como mucho una vez cada 5 segundos. Un origen en cuya dirección no responde ningún sitio gestionado es `external:<origin>`; esta instalación es `self` y los vínculos hacia ella solo aparecen con `ARKVORY_SITE_URL` definido. Solo responde el proceso de escritura."
     }
   },
   "errors": {

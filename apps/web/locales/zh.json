@@ -4570,5 +4570,109 @@
   "fleetErrorUnreadable": {
     "en": "The request could not be read.",
     "text": "无法读取请求。"
+  },
+  "fleetOverview": {
+    "en": "State of the cluster",
+    "text": "集群状态"
+  },
+  "fleetAlertsNone": {
+    "en": "Nothing needs attention: every site answers, has its copies and keeps its mirrors up to date.",
+    "text": "无需处理：每个站点都有应答，副本齐全，镜像保持最新。"
+  },
+  "fleetMap": {
+    "en": "Links",
+    "text": "关联"
+  },
+  "fleetMapHint": {
+    "en": "Sources this installation does not manage are shown by their address. If one of them is this installation, set ARKVORY_SITE_URL to the address the sites use for it.",
+    "text": "本安装未管理的源以地址显示。如果其中之一就是本安装，请将 ARKVORY_SITE_URL 设置为各站点访问它所用的地址。"
+  },
+  "fleetLinkFrom": {
+    "en": "Source",
+    "text": "源"
+  },
+  "fleetLinkTo": {
+    "en": "Site",
+    "text": "站点"
+  },
+  "fleetLinkBehind": {
+    "en": "Behind",
+    "text": "落后"
+  },
+  "fleetLinksNone": {
+    "en": "No site mirrors or imports from another.",
+    "text": "没有站点镜像或导入其他站点。"
+  },
+  "fleetLinkFailing": {
+    "en": "Failing",
+    "text": "故障"
+  },
+  "fleetLagValue": {
+    "en": "{lag} changes",
+    "text": "{lag} 项更改"
+  },
+  "fleetSeverityCritical": {
+    "en": "Critical",
+    "text": "严重"
+  },
+  "fleetSeverityWarning": {
+    "en": "Warning",
+    "text": "警告"
+  },
+  "fleetSeverityInfo": {
+    "en": "Note",
+    "text": "提示"
+  },
+  "fleetAlertUnreachable": {
+    "en": "does not answer.",
+    "text": "没有应答。"
+  },
+  "fleetAlertCertificate": {
+    "en": "presents another certificate: pair it again if it was renewed.",
+    "text": "出示了另一张证书：如果证书已续签，请重新配对该站点。"
+  },
+  "fleetAlertRevoked": {
+    "en": "revoked this controller: pair it again with a new code.",
+    "text": "撤销了此控制站点：请用新代码重新配对。"
+  },
+  "fleetAlertRefused": {
+    "en": "refuses this controller: pair it again with a new code.",
+    "text": "拒绝此控制站点：请用新代码重新配对。"
+  },
+  "fleetAlertInvalid": {
+    "en": "answers in a way this release does not read: update both.",
+    "text": "的应答本版本无法理解：请同时升级两者。"
+  },
+  "fleetAlertStale": {
+    "en": "was not read for over a minute and a half: check the controller’s background reads.",
+    "text": "已超过一分半钟未被读取：请检查控制站点的后台读取。"
+  },
+  "fleetAlertNotWritable": {
+    "en": "refuses writes: check its database and disk.",
+    "text": "拒绝写入：请检查其数据库和磁盘。"
+  },
+  "fleetAlertCopies": {
+    "en": "lacks copies of its data: writes are paused until they are back.",
+    "text": "的数据副本不足：写入已暂停，直到副本恢复。"
+  },
+  "fleetAlertSingleCopy": {
+    "en": "acknowledges writes with one copy by an operator’s decision.",
+    "text": "根据运维人员的决定，以一份副本确认写入。"
+  },
+  "fleetAlertMirrorFailing": {
+    "en": "mirror {subject} keeps failing.",
+    "text": "的镜像 {subject} 持续失败。"
+  },
+  "fleetAlertMirrorLag": {
+    "en": "mirror {subject} is far behind its source.",
+    "text": "的镜像 {subject} 远远落后于源。"
+  },
+  "fleetAlertUpdatesFailed": {
+    "en": "its updater reports a failure.",
+    "text": "的更新程序报告了故障。"
+  },
+  "fleetAlertVersionSkew": {
+    "en": "runs another version than this controller.",
+    "text": "运行的版本与此控制站点不同。"
   }
 }

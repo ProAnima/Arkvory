@@ -1087,6 +1087,14 @@
       },
       "summary": "Queue a site change",
       "description": "Queues one change for the site’s agent, which applies it within a minute with the checks and rollback of `arkvory configure` and `cluster-*`: attach a mirror or an import, replace its source key, detach mirrors, switch the active HA node (the node name typed twice) or decide single-copy writes. `id` is chosen by the client; repeating it does not queue the change again. `key` is the source key of `mirror-attach` and `mirror-key` only: it goes to the agent in its own 0600 file and is never returned. 202 means queued, not applied."
+    },
+    "getFleetOverview": {
+      "en": {
+        "summary": "Read what needs attention across the managed sites and which site feeds which, from their last reads",
+        "description": ""
+      },
+      "summary": "Read the fleet overview",
+      "description": "Alerts across the managed sites and this installation, most severe first (`critical`, `warning`, `info`), and the mirror links between them. Built from the last background reads, at most once per 5 seconds. A source no managed site answers at is `external:<origin>`; this installation is `self` and meets the links to it only when `ARKVORY_SITE_URL` is set. Answered by the writer only."
     }
   },
   "errors": {

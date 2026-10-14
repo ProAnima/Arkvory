@@ -152,3 +152,80 @@ body:has(#cluster-panel:not([hidden])) #replication-open {
   gap: var(--space-1);
   align-content: end;
 }
+
+/* The fleet at a glance (ADR 0077, stage F4): alerts by severity, the map of who feeds whom. */
+.fleet-alerts {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.fleet-alerts > li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2);
+  padding-inline-start: var(--space-3);
+  border-inline-start: var(--border-width) solid var(--color-border);
+  overflow-wrap: anywhere;
+}
+.fleet-alerts > li[data-severity='critical'] {
+  border-inline-start-color: var(--color-error);
+}
+.fleet-alerts > li[data-severity='warning'] {
+  border-inline-start-color: var(--color-warning);
+}
+.fleet-alerts > li[data-severity='critical'] > .badge {
+  color: var(--color-error);
+  background: var(--color-error-bg);
+  border-color: var(--color-error-border);
+}
+.fleet-alerts > li[data-severity='warning'] > .badge {
+  color: var(--color-warning);
+  background: var(--color-warning-bg);
+  border-color: var(--color-warning-border);
+}
+.fleet-map-frame {
+  overflow: auto;
+  max-height: var(--fleet-map-height);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-control);
+  background: var(--color-bg);
+}
+.fleet-map {
+  display: block;
+  font-size: var(--text-sm);
+}
+.fleet-map-node rect {
+  fill: var(--color-subtle);
+  stroke: var(--color-border);
+}
+.fleet-map-node text {
+  fill: var(--color-text);
+}
+.fleet-map-node[data-state='external'] rect {
+  stroke-dasharray: 4 3;
+}
+.fleet-map-node[data-severity='warning'] rect {
+  fill: var(--color-warning-bg);
+  stroke: var(--color-warning-border);
+}
+.fleet-map-node[data-severity='critical'] rect {
+  fill: var(--color-error-bg);
+  stroke: var(--color-error-border);
+}
+.fleet-map-link path {
+  fill: none;
+  stroke: var(--color-muted);
+}
+.fleet-map-link.failing path {
+  stroke: var(--color-error);
+  stroke-dasharray: 6 4;
+}
+.fleet-map-link text {
+  fill: var(--color-muted);
+}
+.fleet-map-arrowhead {
+  fill: var(--color-muted);
+}

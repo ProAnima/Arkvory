@@ -114,6 +114,10 @@ Values belong to the process and start from zero after a restart. `arkvory_proce
 | `arkvory_build_info`                                                                               | `service`, `version`                                       | Always 1                                                                                                                                                     |
 | `arkvory_process_start_time_seconds`, `arkvory_process_resident_memory_bytes`                      |                                                            | Start time and resident memory                                                                                                                               |
 | `arkvory_database_pool_connections`, `arkvory_database_pool_idle`, `arkvory_database_pool_waiting` | `pool` (`queries`, `sessions`, `locks`)                    | Database pool connections: open, idle and callers waiting; waiting above zero for long means the pool is too small                                           |
+| `arkvory_fleet_site_up`                                                                            | `site`, `name`                                             | On a controller: 1 when the last read of the managed site answered, 0 otherwise                                                                              |
+| `arkvory_fleet_site_last_seen_timestamp_seconds`                                                   | `site`, `name`                                             | On a controller: when the managed site last answered                                                                                                         |
+| `arkvory_fleet_mirror_lag_changes`                                                                 | `site`, `repository`                                       | On a controller: how many changes a mirror of a managed site is behind its source                                                                            |
+| `arkvory_fleet_alerts`                                                                             | `severity`, `kind`                                         | On a controller: alerts of the [Sites](./sites#alerts) page, this installation included                                                                      |
 
 The database-backed metrics (completion, backup, mirror) are read at most every 5 seconds. When a read fails, the server leaves these metrics out instead of showing old values, and `arkvory_metrics_collection_failures_total` grows.
 
@@ -242,23 +246,26 @@ The metric `arkvory_backup_warnings` carries the same codes. The age of a backup
 
 The release contains ready Prometheus rules in `releases/<version>/deploy/monitoring/arkvory-alerts.yml`. Add the file to `rule_files` in `prometheus.yml`. The thresholds are starting points. Tune them with the traffic that you measure.
 
-| Alert                                                           | Condition                                                              | Severity          |
-| --------------------------------------------------------------- | ---------------------------------------------------------------------- | ----------------- |
-| `ArkvoryDown`                                                   | The scrape fails for 2 minutes                                         | Critical          |
-| `ArkvoryHighServerErrorRate`                                    | More than 5 % of responses are 5xx for 10 minutes                      | Warning           |
-| `ArkvorySlowMetadataRequests`                                   | The 99th percentile of control requests is above 2 s for 15 minutes    | Warning           |
-| `ArkvoryCompletionBacklog`                                      | The oldest queued completion job waits more than 10 minutes            | Warning           |
-| `ArkvoryTransferAdmissionRejections`                            | More than 0.1 refused or timed-out transfers per second for 15 minutes | Warning           |
-| `ArkvoryDiagnosticsDropped`                                     | Log lines were discarded in the last 15 minutes                        | Warning           |
-| `ArkvoryMetricsCollectionFailing`                               | A database-backed metric could not be read                             | Warning           |
-| `ArkvoryTlsCertificateExpiring`, `ArkvoryTlsCertificateExpired` | The built-in certificate expires in less than 14 days, or has expired  | Warning, critical |
-| `ArkvoryBackupStale`                                            | The newest point is older than 26 hours                                | Critical          |
-| `ArkvoryBackupAgentOffline`                                     | No heartbeat for more than 2 minutes, for 5 minutes                    | Critical          |
-| `ArkvoryBackupWarning`                                          | `vault_unavailable` or `verify_failed` for 10 minutes                  | Critical          |
-| `ArkvoryMirrorStale`                                            | A mirror has not caught up with its source for an hour                 | Warning           |
-| `ArkvoryMirrorFailing`                                          | The last synchronization of a mirror failed, for 15 minutes            | Warning           |
-| `ArkvoryRestartLoop`                                            | The API process restarted 3 or more times in 30 minutes                | Warning           |
-| `ArkvoryWebhookFailing`                                         | A webhook delivery has failed for 15 minutes                           | Warning           |
+| Alert                                                           | Condition                                                                           | Severity          |
+| --------------------------------------------------------------- | ----------------------------------------------------------------------------------- | ----------------- |
+| `ArkvoryDown`                                                   | The scrape fails for 2 minutes                                                      | Critical          |
+| `ArkvoryHighServerErrorRate`                                    | More than 5 % of responses are 5xx for 10 minutes                                   | Warning           |
+| `ArkvorySlowMetadataRequests`                                   | The 99th percentile of control requests is above 2 s for 15 minutes                 | Warning           |
+| `ArkvoryCompletionBacklog`                                      | The oldest queued completion job waits more than 10 minutes                         | Warning           |
+| `ArkvoryTransferAdmissionRejections`                            | More than 0.1 refused or timed-out transfers per second for 15 minutes              | Warning           |
+| `ArkvoryDiagnosticsDropped`                                     | Log lines were discarded in the last 15 minutes                                     | Warning           |
+| `ArkvoryMetricsCollectionFailing`                               | A database-backed metric could not be read                                          | Warning           |
+| `ArkvoryTlsCertificateExpiring`, `ArkvoryTlsCertificateExpired` | The built-in certificate expires in less than 14 days, or has expired               | Warning, critical |
+| `ArkvoryBackupStale`                                            | The newest point is older than 26 hours                                             | Critical          |
+| `ArkvoryBackupAgentOffline`                                     | No heartbeat for more than 2 minutes, for 5 minutes                                 | Critical          |
+| `ArkvoryBackupWarning`                                          | `vault_unavailable` or `verify_failed` for 10 minutes                               | Critical          |
+| `ArkvoryMirrorStale`                                            | A mirror has not caught up with its source for an hour                              | Warning           |
+| `ArkvoryMirrorFailing`                                          | The last synchronization of a mirror failed, for 15 minutes                         | Warning           |
+| `ArkvoryRestartLoop`                                            | The API process restarted 3 or more times in 30 minutes                             | Warning           |
+| `ArkvoryWebhookFailing`                                         | A webhook delivery has failed for 15 minutes                                        | Warning           |
+| `ArkvoryFleetSiteDown`                                          | A managed site does not answer the controller for 5 minutes                         | Critical          |
+| `ArkvoryFleetMirrorBehind`                                      | A mirror of a managed site is 1000 or more changes behind its source for 30 minutes | Warning           |
+| `ArkvoryFleetCritical`                                          | The Sites page of the controller shows critical alerts for 5 minutes                | Critical          |
 
 Add these alerts yourself, because Arkvory does not export the data:
 

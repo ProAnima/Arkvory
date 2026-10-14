@@ -5,6 +5,7 @@ import { hostname } from 'node:os';
 import {
   ArkvoryError,
   MAX_OBJECT_BYTES,
+  siteOrigin,
   type DownloadSchedulePolicy,
 } from '@proanima/arkvory-domain';
 import { readDownloadQueue } from './download-config.js';
@@ -44,6 +45,10 @@ export interface ServerConfig extends UploadTimeoutOptions, OperabilityOptions {
   readonly siteName?: string;
   /** ADR 0077: seals the keys of managed sites; without it this installation manages none. */
   readonly fleetKeyFile?: string;
+  /** Where other sites reach this installation: links the fleet map to it (ADR 0077, F4). */
+  readonly siteUrl?: string;
+  /** Changes behind its source at which a mirror of a managed site alerts. */
+  readonly fleetLagAlert?: bigint;
   readonly uploadBytesPerSecond?: number;
   readonly downloadBytesPerSecond?: number;
   readonly uploadBytesPerSecondPerPrincipal?: number;
@@ -223,6 +228,7 @@ export async function loadConfig(env: NodeJS.ProcessEnv): Promise<ServerConfig> 
       : {}),
     siteName: readSiteName(env),
     ...(env['ARKVORY_FLEET_KEY_FILE'] ? { fleetKeyFile: env['ARKVORY_FLEET_KEY_FILE'] } : {}),
+    ...readFleetMap(env),
     host: env['ARKVORY_HOST'] ?? '127.0.0.1',
     port: number('ARKVORY_PORT', 8080, 65535),
     ...readTls(env),
@@ -269,6 +275,23 @@ function readSiteName(env: NodeJS.ProcessEnv): string {
   if (!name || name.length > 63 || Array.from(name).some((c) => c.charCodeAt(0) < 32))
     throw new Error('Invalid ARKVORY_SITE_NAME: 1 to 63 printable characters');
   return name;
+}
+
+/** The fleet map and alerts of a controller; both optional, both checked at start. */
+function readFleetMap(env: NodeJS.ProcessEnv) {
+  const url = env['ARKVORY_SITE_URL'];
+  const origin = url === undefined ? undefined : siteOrigin(url);
+  if (origin === null)
+    throw new Error(
+      'Invalid ARKVORY_SITE_URL: https://host[:port] where other sites reach this one',
+    );
+  const lag = env['ARKVORY_FLEET_LAG_ALERT'];
+  if (lag !== undefined && !/^[1-9][0-9]{0,15}$/.test(lag))
+    throw new Error('Invalid ARKVORY_FLEET_LAG_ALERT: a whole number of changes, 1 or more');
+  return {
+    ...(origin === undefined ? {} : { siteUrl: origin }),
+    ...(lag === undefined ? {} : { fleetLagAlert: BigInt(lag) }),
+  };
 }
 
 function readIdentityExposure(env: NodeJS.ProcessEnv) {

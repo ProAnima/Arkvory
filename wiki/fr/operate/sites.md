@@ -7,6 +7,39 @@ description: Voir toutes les installations de votre cluster au même endroit, ap
 
 Un **site** est une installation Arkvory : la principale, un miroir sur un autre emplacement, une installation qui importe des versions d’une autre. Sur [[ui:fleet]], une installation, le **contrôleur**, affiche chaque site qu’il gère : s’il répond, sa version, ses copies HA et passerelles de lecture, ses miroirs et leur retard, et sa file des téléchargements. Seuls les administrateurs globaux voient la page.
 
+## État du cluster {#overview}
+
+La page commence par [[ui:fleetOverview]] : ce qui demande de l’attention sur les sites et quel site alimente quel autre. Le contrôleur l’établit à partir des dernières lectures des sites, au plus une fois toutes les 5 secondes, et s’y inclut comme « ce site ».
+
+### Alertes {#alerts}
+
+Chaque alerte nomme le site et le problème. Les plus graves viennent en premier : [[ui:fleetSeverityCritical]], puis [[ui:fleetSeverityWarning]], puis [[ui:fleetSeverityInfo]]. Quand rien ne demande d’attention, la liste le dit.
+
+| Alerte                                | Gravité                      | Quand                                                                                                                        | Que faire                                                                          |
+| ------------------------------------- | ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| Injoignable                           | [[ui:fleetSeverityCritical]] | Pas de réponse pendant 2 minutes. Une seule lecture échouée n’est pas une alerte                                             | Vérifier le site et le réseau                                                      |
+| Certificat, révoqué, refusé, invalide | [[ui:fleetSeverityCritical]] | Immédiatement, avec l’[état](#states) du même nom                                                                            | Appairer de nouveau, ou mettre les deux installations à jour                       |
+| Périmé                                | [[ui:fleetSeverityWarning]]  | Le site répondait, mais n’a pas été lu depuis plus de 90 secondes : les lectures en arrière-plan du contrôleur sont bloquées | Vérifier le processus API du contrôleur                                            |
+| Écriture impossible                   | [[ui:fleetSeverityCritical]] | Un processus d’écriture refuse les écritures sans être en cours de vidage                                                    | Vérifier sa base de données et son disque                                          |
+| Copies                                | [[ui:fleetSeverityCritical]] | Il manque des copies des données d’un site HA ; les écritures sont suspendues jusqu’à leur retour                            | Ramener le nœud manquant, voir [Cluster à haute disponibilité](./cluster#failures) |
+| Copie unique                          | [[ui:fleetSeverityWarning]]  | Des copies manquent, mais un opérateur a accepté [une seule copie](./cluster#single-copy) jusqu’à une heure donnée           | Ramener le nœud manquant avant cette heure                                         |
+| Miroir en échec                       | [[ui:fleetSeverityWarning]]  | La dernière synchronisation d’un miroir a échoué. Relire une source restaurée ne compte pas                                  | Lire le [code d’erreur](./mirrors#error-codes) du miroir                           |
+| Miroir en retard                      | [[ui:fleetSeverityWarning]]  | Un miroir a `ARKVORY_FLEET_LAG_ALERT` changements (1000 par défaut) ou plus de retard sur sa source                          | Vérifier la source, le réseau et le miroir                                         |
+| Mises à jour en échec                 | [[ui:fleetSeverityWarning]]  | Le programme de mise à jour du site signale un échec                                                                         | Ouvrir [[ui:updates]] dans les [réglages du site](#site-settings)                  |
+| Autre version                         | [[ui:fleetSeverityInfo]]     | Le site exécute une autre version que le contrôleur                                                                          | Mettre les sites à la même version                                                 |
+
+### Liens {#map}
+
+[[ui:fleetMap]] montre quel site alimente quel autre. Chaque miroir et chaque import est une flèche du site source vers le site qui porte le miroir.
+
+- Une source à l’adresse de laquelle aucun site géré ne répond est dessinée par son adresse, avec une bordure en tirets. Si cette source est le contrôleur lui-même, définissez `ARKVORY_SITE_URL`, voir [Réglages](#settings).
+- Un lien en échec est en tirets rouges.
+- Le nombre sur un lien indique de combien de changements le miroir est en retard sur sa source.
+
+Sous la carte, un tableau reprend les mêmes informations : [[ui:fleetLinkFrom]], [[ui:fleetLinkTo]], [[ui:fleetMirrorRepository]], [[ui:fleetMirrorSourceRepository]] et [[ui:fleetLinkBehind]].
+
+Les administrateurs globaux du contrôleur obtiennent les mêmes alertes et liens par `GET /api/v1/fleet/overview`, ou dans le SDK avec `client.fleet.overview()`. Pour Prometheus, le contrôleur exporte l’état de ses sites et le nombre d’alertes : voir [Supervision](./monitoring#metrics).
+
 ## Fonctionnement {#how-it-works}
 
 - Le contrôleur tient une liste de sites. Il lit chaque site toutes les 30 secondes en HTTPS et garde la dernière réponse : un site qui ne répond plus affiche encore son dernier état connu.
@@ -73,10 +106,12 @@ Sous [[ui:fleetThisSite]], chaque site liste les contrôleurs qui le gèrent : n
 
 ## Réglages {#settings}
 
-| Variable                 | Par défaut                                | Signification                                                                                   |
-| ------------------------ | ----------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| `ARKVORY_SITE_NAME`      | le nom d’hôte                             | Le nom de cette installation sur les autres sites                                               |
-| `ARKVORY_FLEET_KEY_FILE` | `fleet.key` dans le répertoire de données | La clé qui scelle les clés des sites gérés ; créée au premier démarrage du processus d’écriture |
+| Variable                  | Par défaut                                | Signification                                                                                                                                                                                                                   |
+| ------------------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ARKVORY_SITE_NAME`       | le nom d’hôte                             | Le nom de cette installation sur les autres sites                                                                                                                                                                               |
+| `ARKVORY_FLEET_KEY_FILE`  | `fleet.key` dans le répertoire de données | La clé qui scelle les clés des sites gérés ; créée au premier démarrage du processus d’écriture                                                                                                                                 |
+| `ARKVORY_SITE_URL`        | non défini                                | L’adresse `https://host[:port]` par laquelle les autres sites joignent cette installation. Avec elle, les miroirs dont la source est cette installation la relient sur [[ui:fleetMap]]. Une valeur invalide arrête le démarrage |
+| `ARKVORY_FLEET_LAG_ALERT` | `1000`                                    | Retard sur sa source, en changements, à partir duquel un miroir d’un site géré déclenche une alerte ; nombre entier, 1 ou plus                                                                                                  |
 
 ## Limites {#limits}
 

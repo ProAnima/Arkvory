@@ -558,6 +558,33 @@
           </div>
         </section>
         <section id="fleet-panel" data-view="fleet" aria-labelledby="page-title" hidden>
+          <div id="fleet-overview" class="card padded" hidden>
+            <h2 data-i18n="fleetOverview">Состояние кластера</h2>
+            <ul id="fleet-alerts" class="fleet-alerts"></ul>
+            <p id="fleet-alerts-none" class="hint" data-i18n="fleetAlertsNone" hidden></p>
+            <h3 data-i18n="fleetMap">Связи</h3>
+            <p id="fleet-map-hint" class="hint" data-i18n="fleetMapHint" hidden></p>
+            <div class="fleet-map-frame">
+              <svg id="fleet-map" class="fleet-map" aria-hidden="true" focusable="false"></svg>
+            </div>
+            <div class="table" tabindex="0" role="region" data-i18n-label="tableRegion">
+              <table class="fleet-table">
+                <thead>
+                  <tr>
+                    <th scope="col" data-i18n="fleetLinkFrom">Источник</th>
+                    <th scope="col" data-i18n="fleetLinkTo">Площадка</th>
+                    <th scope="col" data-i18n="fleetMirrorRepository">Репозиторий</th>
+                    <th scope="col" data-i18n="fleetMirrorSourceRepository">
+                      Репозиторий источника
+                    </th>
+                    <th scope="col" data-i18n="fleetLinkBehind">Отставание</th>
+                  </tr>
+                </thead>
+                <tbody id="fleet-link-rows"></tbody>
+              </table>
+            </div>
+            <p id="fleet-links-none" class="hint" data-i18n="fleetLinksNone" hidden></p>
+          </div>
           <div class="card padded">
             <div class="fleet-head">
               <p class="hint" data-i18n="fleetIntro"></p>

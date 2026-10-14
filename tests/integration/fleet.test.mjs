@@ -411,3 +411,66 @@ test('a controller queues a mirror change for the agent of a site; the key goes 
   assert.equal(typo.statusCode, 400);
   assert.deepEqual((await readdir(join(mailbox, 'inbox'))).sort(), [`${id}.key`, 'change.json']);
 });
+
+test('the controller sums up its sites: alerts, links and fleet gauges (ADR 0077, F4)', async (t) => {
+  const site = await setup(t, { siteName: 'Branch' });
+  const controller = await separateInstance(t, {
+    siteName: 'Main',
+    siteUrl: 'https://main.example',
+    fleetLagAlert: 5n,
+  });
+  const address = await site.listen();
+  const { code } = (
+    await site.app.inject({
+      method: 'POST',
+      url: '/api/v1/system/fleet/pairings',
+      headers: site.headers,
+    })
+  ).json();
+  const managed = (
+    await controller.app.inject({
+      method: 'POST',
+      url: '/api/v1/fleet/sites',
+      headers: controller.headers,
+      payload: { url: address, fingerprint: null, code },
+    })
+  ).json();
+  await controller.app.inject({
+    method: 'POST',
+    url: `/api/v1/fleet/sites/${managed.id}/refresh`,
+    headers: controller.headers,
+  });
+  const read = await controller.app.inject({
+    url: '/api/v1/fleet/overview',
+    headers: controller.headers,
+  });
+  assert.equal(read.statusCode, 200, read.body);
+  const overview = read.json();
+  assert.deepEqual(overview.self, {
+    name: 'Main',
+    version: overview.self.version,
+    url: 'https://main.example',
+  });
+  assert.deepEqual(overview.alerts, []);
+  assert.deepEqual(overview.links, []);
+  assert.equal(
+    (
+      await controller.app.inject({
+        url: '/api/v1/fleet/overview',
+        headers: controller.readerHeaders,
+      })
+    ).statusCode,
+    403,
+  );
+  const metrics = (
+    await controller.app.inject({ url: '/health/metrics', headers: controller.headers })
+  ).body;
+  assert.match(
+    metrics,
+    new RegExp(`arkvory_fleet_site_up\{site="${managed.id}",name="Branch"\} 1`),
+  );
+  assert.match(
+    metrics,
+    /arkvory_fleet_site_last_seen_timestamp_seconds\{site="[^"]+",name="Branch"\} \d+/,
+  );
+});

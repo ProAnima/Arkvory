@@ -7,6 +7,7 @@ import { ApiMetrics } from '../apps/api/dist/api-metrics.js';
 import { BackupMetrics } from '../apps/api/dist/backup-metrics.js';
 import { MirrorMetrics } from '../apps/api/dist/mirror-metrics.js';
 import { WebhookMetrics } from '../apps/api/dist/webhook-metrics.js';
+import { FleetOverviewSource } from '../apps/api/dist/fleet-overview.js';
 import { ReplicaGuard } from '../apps/api/dist/replica-guard.js';
 
 /** Every metric the API can expose, including histogram series and optional TLS/job sources. */
@@ -120,6 +121,59 @@ async function exposedNames() {
         ],
       },
       () => 0,
+    ),
+    // A controller with one site that answers and has a mirror: every fleet series is present.
+    fleet: new FleetOverviewSource(
+      {
+        list: async () => [
+          {
+            id: '11111111-1111-4111-8111-111111111111',
+            name: 'Branch',
+            url: 'https://branch.example',
+            fingerprint: null,
+            addedBy: 'admin',
+            addedAt: '2026-10-02T00:00:00.000Z',
+            seenAt: '2026-10-02T00:00:00.000Z',
+            state: 'ok',
+            error: null,
+            topology: {
+              collectedAt: '2026-10-02T00:00:00.000Z',
+              site: { name: 'Branch', version: '0.9.0', schema: 40, role: 'api' },
+              health: { available: true, writable: true, draining: false },
+              replication: null,
+              gateways: [],
+              mirrors: [
+                {
+                  repository: 'releases',
+                  mode: 'mirror',
+                  upstream: 'https://main.example',
+                  sourceRepository: 'releases',
+                  phase: 'following',
+                  errorCode: null,
+                  checkedAt: null,
+                  syncedAt: null,
+                  lagChanges: '3',
+                  copiedArtifacts: 0,
+                  copiedBytes: '0',
+                },
+              ],
+              updates: null,
+              downloads: {
+                strategy: 'ordered',
+                sessions: 16,
+                active: 0,
+                waiting: 0,
+                oldestWaitSeconds: 0,
+                bytesPerSecond: 0,
+              },
+            },
+          },
+        ],
+      },
+      async () => {
+        throw new Error('not needed: the site above is enough');
+      },
+      { name: 'Main', version: '1.0.0', url: null, lagLimit: 1000n, now: () => 0 },
     ),
     now: () => 0,
     startedAtSeconds: 0,

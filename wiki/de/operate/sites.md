@@ -7,6 +7,39 @@ description: Alle Installationen Ihres Clusters an einem Ort sehen, Standorte mi
 
 Ein **Standort** ist eine Arkvory-Installation: die Hauptinstallation, ein Spiegel an einem anderen Ort, eine Installation, die Versionen aus einer anderen importiert. Auf [[ui:fleet]] zeigt eine Installation, der **Controller**, jeden Standort, den er verwaltet: ob er antwortet, seine Version, seine HA-Kopien und Lese-Gateways, seine Spiegel und wie weit sie zurückliegen, und seine Download-Warteschlange. Nur globale Administratoren sehen die Seite.
 
+## Zustand des Clusters {#overview}
+
+Die Seite beginnt mit [[ui:fleetOverview]]: was an den Standorten Aufmerksamkeit braucht und welcher Standort welchen speist. Der Controller erstellt diesen Überblick aus dem letzten Lesen der Standorte, höchstens alle 5 Sekunden, und führt sich selbst als „dieser Standort“.
+
+### Alarme {#alerts}
+
+Jeder Alarm nennt den Standort und das Problem. Die schwersten stehen oben: [[ui:fleetSeverityCritical]], dann [[ui:fleetSeverityWarning]], dann [[ui:fleetSeverityInfo]]. Braucht nichts Aufmerksamkeit, sagt die Liste das.
+
+| Alarm                                       | Schweregrad                  | Wann                                                                                                                      | Was tun                                                                                  |
+| ------------------------------------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| Nicht erreichbar                            | [[ui:fleetSeverityCritical]] | 2 Minuten keine Antwort. Ein einzelnes fehlgeschlagenes Lesen ist kein Alarm                                              | Standort und Netz prüfen                                                                 |
+| Zertifikat, widerrufen, abgelehnt, ungültig | [[ui:fleetSeverityCritical]] | Sofort, mit dem [Zustand](#states) gleichen Namens                                                                        | Neu koppeln oder beide Installationen aktualisieren                                      |
+| Veraltet                                    | [[ui:fleetSeverityWarning]]  | Der Standort hat geantwortet, wurde aber über 90 Sekunden nicht gelesen: das Lesen im Hintergrund des Controllers hängt   | Den API-Prozess des Controllers prüfen                                                   |
+| Nicht beschreibbar                          | [[ui:fleetSeverityCritical]] | Ein Schreibprozess lehnt Schreibvorgänge ab, ohne auszulaufen                                                             | Seine Datenbank und seinen Datenträger prüfen                                            |
+| Kopien                                      | [[ui:fleetSeverityCritical]] | Einem HA-Standort fehlen Kopien seiner Daten; Schreibvorgänge pausieren, bis sie zurück sind                              | Den fehlenden Knoten zurückholen, siehe [Hochverfügbarkeits-Cluster](./cluster#failures) |
+| Einzelne Kopie                              | [[ui:fleetSeverityWarning]]  | Kopien fehlen, aber ein Operator hat [eine Kopie](./cluster#single-copy) bis zu einem Zeitpunkt akzeptiert                | Den fehlenden Knoten vor diesem Zeitpunkt zurückholen                                    |
+| Spiegel fehlerhaft                          | [[ui:fleetSeverityWarning]]  | Die letzte Synchronisation eines Spiegels ist fehlgeschlagen. Erneutes Lesen einer wiederhergestellten Quelle zählt nicht | Den [Fehlercode](./mirrors#error-codes) des Spiegels lesen                               |
+| Spiegel im Rückstand                        | [[ui:fleetSeverityWarning]]  | Ein Spiegel liegt `ARKVORY_FLEET_LAG_ALERT` Änderungen (standardmäßig 1000) oder mehr hinter seiner Quelle                | Quelle, Netz und Spiegel prüfen                                                          |
+| Updates fehlgeschlagen                      | [[ui:fleetSeverityWarning]]  | Der Updater des Standorts meldet einen Fehler                                                                             | [[ui:updates]] in den [Einstellungen des Standorts](#site-settings) öffnen               |
+| Andere Version                              | [[ui:fleetSeverityInfo]]     | Auf dem Standort läuft eine andere Version als auf dem Controller                                                         | Die Standorte auf dieselbe Version aktualisieren                                         |
+
+### Verbindungen {#map}
+
+[[ui:fleetMap]] zeigt, welcher Standort welchen speist. Jeder Spiegel und jeder Import ist ein Pfeil vom Quellstandort zum Standort, der den Spiegel hält.
+
+- Eine Quelle, unter deren Adresse kein verwalteter Standort antwortet, erscheint mit ihrer Adresse und gestricheltem Rahmen. Ist diese Quelle der Controller selbst, setzen Sie `ARKVORY_SITE_URL`, siehe [Einstellungen](#settings).
+- Eine fehlerhafte Verbindung ist rot gestrichelt.
+- Die Zahl an einer Verbindung gibt an, um wie viele Änderungen der Spiegel hinter seiner Quelle liegt.
+
+Unter der Karte listet eine Tabelle dieselben Angaben: [[ui:fleetLinkFrom]], [[ui:fleetLinkTo]], [[ui:fleetMirrorRepository]], [[ui:fleetMirrorSourceRepository]] und [[ui:fleetLinkBehind]].
+
+Globale Administratoren des Controllers erhalten dieselben Alarme und Verbindungen über `GET /api/v1/fleet/overview` oder im SDK mit `client.fleet.overview()`. Für Prometheus exportiert der Controller den Zustand seiner Standorte und die Zahl der Alarme, siehe [Monitoring](./monitoring#metrics).
+
 ## So funktioniert es {#how-it-works}
 
 - Der Controller führt eine Liste der Standorte. Er liest jeden Standort alle 30 Sekunden über HTTPS und behält die letzte Antwort, sodass ein Standort, der nicht mehr antwortet, seinen letzten bekannten Zustand weiter zeigt.
@@ -73,10 +106,12 @@ Unter [[ui:fleetThisSite]] listet jeder Standort die Controller, die ihn verwalt
 
 ## Einstellungen {#settings}
 
-| Variable                 | Standard                        | Bedeutung                                                                                                          |
-| ------------------------ | ------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| `ARKVORY_SITE_NAME`      | der Hostname                    | Wie diese Installation auf anderen Standorten heißt                                                                |
-| `ARKVORY_FLEET_KEY_FILE` | `fleet.key` im Datenverzeichnis | Der Schlüssel, der die Schlüssel verwalteter Standorte versiegelt; beim ersten Start des Schreibprozesses erstellt |
+| Variable                  | Standard                        | Bedeutung                                                                                                                                                                                                                   |
+| ------------------------- | ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ARKVORY_SITE_NAME`       | der Hostname                    | Wie diese Installation auf anderen Standorten heißt                                                                                                                                                                         |
+| `ARKVORY_FLEET_KEY_FILE`  | `fleet.key` im Datenverzeichnis | Der Schlüssel, der die Schlüssel verwalteter Standorte versiegelt; beim ersten Start des Schreibprozesses erstellt                                                                                                          |
+| `ARKVORY_SITE_URL`        | nicht gesetzt                   | Die Adresse `https://host[:port]`, unter der andere Standorte diese Installation erreichen. Damit führen Spiegel, deren Quelle diese Installation ist, auf [[ui:fleetMap]] zu ihr. Ein ungültiger Wert verhindert den Start |
+| `ARKVORY_FLEET_LAG_ALERT` | `1000`                          | Ab wie vielen Änderungen Rückstand zur Quelle ein Spiegel eines verwalteten Standorts alarmiert; ganze Zahl, 1 oder mehr                                                                                                    |
 
 ## Grenzen {#limits}
 

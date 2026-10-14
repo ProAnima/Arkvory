@@ -2,6 +2,7 @@ import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { randomUUID } from 'node:crypto';
 import { ArkvoryError, retentionObject } from '@proanima/arkvory-domain';
 import type { Principal } from '@proanima/arkvory-domain';
+import type { FleetOverviewSource } from './fleet-overview.js';
 import {
   FleetControl,
   type FleetEndpointView,
@@ -81,7 +82,16 @@ export function registerFleetControlRoutes(
   app: FastifyInstance,
   principal: (request: FastifyRequest) => Principal,
   control: FleetControl,
+  overview?: Pick<FleetOverviewSource, 'overview'>,
 ) {
+  // Alerts and links of every site (stage F4): built on the writer, which reads the sites.
+  app.get('/api/v1/fleet/overview', async (request) => {
+    administrator(principal(request));
+    retentionObject(request.query, []);
+    if (!overview)
+      throw new ArkvoryError('unavailable', 'The fleet overview is built by the writer');
+    return overview.overview();
+  });
   app.get('/api/v1/fleet/sites', async (request) => {
     administrator(principal(request));
     retentionObject(request.query, []);

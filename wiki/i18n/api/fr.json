@@ -1087,6 +1087,14 @@
       },
       "summary": "Mettre en file une modification du site",
       "description": "Met en file une modification pour l’agent du site, qui l’applique en moins d’une minute avec les vérifications et le retour arrière de `arkvory configure` et `cluster-*` : rattacher un miroir ou un import, remplacer sa clé de source, détacher des miroirs, basculer le nœud HA actif (nom du nœud saisi deux fois) ou décider des écritures avec une seule copie. `id` est choisi par le client ; le répéter ne remet pas la modification en file. `key` est la clé de source de `mirror-attach` et `mirror-key` uniquement : elle va à l’agent dans son propre fichier 0600 et n’est jamais renvoyée. 202 signifie en file, pas appliqué."
+    },
+    "getFleetOverview": {
+      "en": {
+        "summary": "Read the fleet overview",
+        "description": "Alerts across the managed sites and this installation, most severe first (`critical`, `warning`, `info`), and the mirror links between them. Built from the last background reads, at most once per 5 seconds. A source no managed site answers at is `external:<origin>`; this installation is `self` and meets the links to it only when `ARKVORY_SITE_URL` is set. Answered by the writer only."
+      },
+      "summary": "Lire la vue d’ensemble des sites",
+      "description": "Les alertes des sites gérés et de cette installation, les plus graves d’abord (`critical`, `warning`, `info`), et les liens de miroir entre eux. Construite à partir des dernières lectures en arrière-plan, au plus une fois toutes les 5 secondes. Une source à l’adresse de laquelle aucun site géré ne répond est `external:<origin>` ; cette installation est `self` et ne reçoit les liens vers elle que si `ARKVORY_SITE_URL` est défini. Seul le processus d’écriture répond."
     }
   },
   "errors": {

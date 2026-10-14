@@ -4570,5 +4570,109 @@
   "fleetErrorUnreadable": {
     "en": "The request could not be read.",
     "text": "अनुरोध पढ़ा नहीं जा सका।"
+  },
+  "fleetOverview": {
+    "en": "State of the cluster",
+    "text": "क्लस्टर की स्थिति"
+  },
+  "fleetAlertsNone": {
+    "en": "Nothing needs attention: every site answers, has its copies and keeps its mirrors up to date.",
+    "text": "किसी चीज़ पर ध्यान देने की ज़रूरत नहीं: हर साइट उत्तर दे रही है, उसकी प्रतियाँ पूरी हैं और उसके मिरर अद्यतन हैं।"
+  },
+  "fleetMap": {
+    "en": "Links",
+    "text": "संबंध"
+  },
+  "fleetMapHint": {
+    "en": "Sources this installation does not manage are shown by their address. If one of them is this installation, set ARKVORY_SITE_URL to the address the sites use for it.",
+    "text": "जिन स्रोतों को यह इंस्टॉलेशन प्रबंधित नहीं करता, वे अपने पते से दिखाए जाते हैं। यदि उनमें से कोई यही इंस्टॉलेशन है, तो ARKVORY_SITE_URL को उस पते पर सेट करें जिससे साइटें इस तक पहुँचती हैं।"
+  },
+  "fleetLinkFrom": {
+    "en": "Source",
+    "text": "स्रोत"
+  },
+  "fleetLinkTo": {
+    "en": "Site",
+    "text": "साइट"
+  },
+  "fleetLinkBehind": {
+    "en": "Behind",
+    "text": "पीछे"
+  },
+  "fleetLinksNone": {
+    "en": "No site mirrors or imports from another.",
+    "text": "कोई साइट किसी अन्य साइट से मिरर या आयात नहीं करती।"
+  },
+  "fleetLinkFailing": {
+    "en": "Failing",
+    "text": "विफल"
+  },
+  "fleetLagValue": {
+    "en": "{lag} changes",
+    "text": "{lag} बदलाव"
+  },
+  "fleetSeverityCritical": {
+    "en": "Critical",
+    "text": "गंभीर"
+  },
+  "fleetSeverityWarning": {
+    "en": "Warning",
+    "text": "चेतावनी"
+  },
+  "fleetSeverityInfo": {
+    "en": "Note",
+    "text": "सूचना"
+  },
+  "fleetAlertUnreachable": {
+    "en": "does not answer.",
+    "text": "से उत्तर नहीं मिल रहा है।"
+  },
+  "fleetAlertCertificate": {
+    "en": "presents another certificate: pair it again if it was renewed.",
+    "text": "दूसरा प्रमाणपत्र दिखा रही है: यदि वह नवीनीकृत हुआ है, तो साइट को फिर से युग्मित करें।"
+  },
+  "fleetAlertRevoked": {
+    "en": "revoked this controller: pair it again with a new code.",
+    "text": "ने इस नियंत्रक को रद्द कर दिया है: नए कोड से साइट को फिर से युग्मित करें।"
+  },
+  "fleetAlertRefused": {
+    "en": "refuses this controller: pair it again with a new code.",
+    "text": "इस नियंत्रक को अस्वीकार कर रही है: नए कोड से साइट को फिर से युग्मित करें।"
+  },
+  "fleetAlertInvalid": {
+    "en": "answers in a way this release does not read: update both.",
+    "text": "ऐसा उत्तर दे रही है जिसे यह संस्करण नहीं समझता: दोनों को अपडेट करें।"
+  },
+  "fleetAlertStale": {
+    "en": "was not read for over a minute and a half: check the controller’s background reads.",
+    "text": "को डेढ़ मिनट से अधिक समय से पढ़ा नहीं गया: नियंत्रक की पृष्ठभूमि रीडिंग जाँचें।"
+  },
+  "fleetAlertNotWritable": {
+    "en": "refuses writes: check its database and disk.",
+    "text": "लेखन अस्वीकार कर रही है: उसका डेटाबेस और डिस्क जाँचें।"
+  },
+  "fleetAlertCopies": {
+    "en": "lacks copies of its data: writes are paused until they are back.",
+    "text": "के डेटा की प्रतियाँ कम हैं: प्रतियाँ लौटने तक लेखन रोका गया है।"
+  },
+  "fleetAlertSingleCopy": {
+    "en": "acknowledges writes with one copy by an operator’s decision.",
+    "text": "ऑपरेटर के निर्णय से एक ही प्रति के साथ लेखन पुष्ट कर रही है।"
+  },
+  "fleetAlertMirrorFailing": {
+    "en": "mirror {subject} keeps failing.",
+    "text": "का मिरर {subject} बार-बार विफल हो रहा है।"
+  },
+  "fleetAlertMirrorLag": {
+    "en": "mirror {subject} is far behind its source.",
+    "text": "का मिरर {subject} अपने स्रोत से बहुत पीछे है।"
+  },
+  "fleetAlertUpdatesFailed": {
+    "en": "its updater reports a failure.",
+    "text": "का अपडेटर विफलता की सूचना दे रहा है।"
+  },
+  "fleetAlertVersionSkew": {
+    "en": "runs another version than this controller.",
+    "text": "इस नियंत्रक से अलग संस्करण चला रही है।"
   }
 }

@@ -114,6 +114,10 @@ Werte gehören zum Prozess und beginnen nach einem Neustart bei null. `arkvory_p
 | `arkvory_build_info`                                                                               | `service`, `version`                                       | Immer 1                                                                                                                                                                 |
 | `arkvory_process_start_time_seconds`, `arkvory_process_resident_memory_bytes`                      |                                                            | Startzeit und residenter Speicher                                                                                                                                       |
 | `arkvory_database_pool_connections`, `arkvory_database_pool_idle`, `arkvory_database_pool_waiting` | `pool` (`queries`, `sessions`, `locks`)                    | Verbindungen der Datenbankpools: offen, frei und wartend; dauerhaft wartende Aufrufer bedeuten, dass der Pool zu klein ist                                              |
+| `arkvory_fleet_site_up`                                                                            | `site`, `name`                                             | Auf einem Controller: 1, wenn der verwaltete Standort beim letzten Lesen geantwortet hat, sonst 0                                                                       |
+| `arkvory_fleet_site_last_seen_timestamp_seconds`                                                   | `site`, `name`                                             | Auf einem Controller: wann der verwaltete Standort zuletzt geantwortet hat                                                                                              |
+| `arkvory_fleet_mirror_lag_changes`                                                                 | `site`, `repository`                                       | Auf einem Controller: um wie viele Änderungen ein Spiegel eines verwalteten Standorts hinter seiner Quelle liegt                                                        |
+| `arkvory_fleet_alerts`                                                                             | `severity`, `kind`                                         | Auf einem Controller: Alarme der Seite [Standorte](./sites#alerts), diese Installation eingeschlossen                                                                   |
 
 Die datenbankgestützten Metriken (Abschluss, Backup, Spiegel) werden höchstens alle 5 Sekunden gelesen. Wenn ein Lesevorgang fehlschlägt, lässt der Server diese Metriken weg, statt alte Werte zu zeigen, und `arkvory_metrics_collection_failures_total` wächst.
 
@@ -242,23 +246,26 @@ Die Metrik `arkvory_backup_warnings` trägt dieselben Codes. Das Alter eines Bac
 
 Das Release enthält fertige Prometheus-Regeln in `releases/<version>/deploy/monitoring/arkvory-alerts.yml`. Fügen Sie die Datei zu `rule_files` in `prometheus.yml` hinzu. Die Schwellen sind Ausgangspunkte. Stimmen Sie sie mit dem Verkehr ab, den Sie messen.
 
-| Alarm                                                           | Bedingung                                                                                      | Schweregrad       |
-| --------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- | ----------------- |
-| `ArkvoryDown`                                                   | Das Scraping schlägt 2 Minuten lang fehl                                                       | Kritisch          |
-| `ArkvoryHighServerErrorRate`                                    | Mehr als 5 % der Antworten sind 10 Minuten lang 5xx                                            | Warnung           |
-| `ArkvorySlowMetadataRequests`                                   | Das 99. Perzentil der Steueranforderungen liegt 15 Minuten lang über 2 s                       | Warnung           |
-| `ArkvoryCompletionBacklog`                                      | Der älteste eingereihte Abschlussauftrag wartet mehr als 10 Minuten                            | Warnung           |
-| `ArkvoryTransferAdmissionRejections`                            | Mehr als 0,1 abgelehnte oder zeitlich überschrittene Übertragungen pro Sekunde über 15 Minuten | Warnung           |
-| `ArkvoryDiagnosticsDropped`                                     | In den letzten 15 Minuten wurden Logzeilen verworfen                                           | Warnung           |
-| `ArkvoryMetricsCollectionFailing`                               | Eine datenbankgestützte Metrik konnte nicht gelesen werden                                     | Warnung           |
-| `ArkvoryTlsCertificateExpiring`, `ArkvoryTlsCertificateExpired` | Das integrierte Zertifikat läuft in weniger als 14 Tagen ab oder ist abgelaufen                | Warnung, kritisch |
-| `ArkvoryBackupStale`                                            | Der neueste Punkt ist älter als 26 Stunden                                                     | Kritisch          |
-| `ArkvoryBackupAgentOffline`                                     | Mehr als 2 Minuten kein Heartbeat, über 5 Minuten                                              | Kritisch          |
-| `ArkvoryBackupWarning`                                          | `vault_unavailable` oder `verify_failed` über 10 Minuten                                       | Kritisch          |
-| `ArkvoryMirrorStale`                                            | Ein Spiegel hat eine Stunde lang nicht mit seiner Quelle aufgeholt                             | Warnung           |
-| `ArkvoryMirrorFailing`                                          | Die letzte Synchronisation eines Spiegels ist fehlgeschlagen, über 15 Minuten                  | Warnung           |
-| `ArkvoryRestartLoop`                                            | Der API-Prozess wurde in 30 Minuten 3-mal oder öfter neu gestartet                             | Warnung           |
-| `ArkvoryWebhookFailing`                                         | Eine Webhook-Zustellung schlägt seit 15 Minuten fehl                                           | Warnung           |
+| Alarm                                                           | Bedingung                                                                                                    | Schweregrad       |
+| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ | ----------------- |
+| `ArkvoryDown`                                                   | Das Scraping schlägt 2 Minuten lang fehl                                                                     | Kritisch          |
+| `ArkvoryHighServerErrorRate`                                    | Mehr als 5 % der Antworten sind 10 Minuten lang 5xx                                                          | Warnung           |
+| `ArkvorySlowMetadataRequests`                                   | Das 99. Perzentil der Steueranforderungen liegt 15 Minuten lang über 2 s                                     | Warnung           |
+| `ArkvoryCompletionBacklog`                                      | Der älteste eingereihte Abschlussauftrag wartet mehr als 10 Minuten                                          | Warnung           |
+| `ArkvoryTransferAdmissionRejections`                            | Mehr als 0,1 abgelehnte oder zeitlich überschrittene Übertragungen pro Sekunde über 15 Minuten               | Warnung           |
+| `ArkvoryDiagnosticsDropped`                                     | In den letzten 15 Minuten wurden Logzeilen verworfen                                                         | Warnung           |
+| `ArkvoryMetricsCollectionFailing`                               | Eine datenbankgestützte Metrik konnte nicht gelesen werden                                                   | Warnung           |
+| `ArkvoryTlsCertificateExpiring`, `ArkvoryTlsCertificateExpired` | Das integrierte Zertifikat läuft in weniger als 14 Tagen ab oder ist abgelaufen                              | Warnung, kritisch |
+| `ArkvoryBackupStale`                                            | Der neueste Punkt ist älter als 26 Stunden                                                                   | Kritisch          |
+| `ArkvoryBackupAgentOffline`                                     | Mehr als 2 Minuten kein Heartbeat, über 5 Minuten                                                            | Kritisch          |
+| `ArkvoryBackupWarning`                                          | `vault_unavailable` oder `verify_failed` über 10 Minuten                                                     | Kritisch          |
+| `ArkvoryMirrorStale`                                            | Ein Spiegel hat eine Stunde lang nicht mit seiner Quelle aufgeholt                                           | Warnung           |
+| `ArkvoryMirrorFailing`                                          | Die letzte Synchronisation eines Spiegels ist fehlgeschlagen, über 15 Minuten                                | Warnung           |
+| `ArkvoryRestartLoop`                                            | Der API-Prozess wurde in 30 Minuten 3-mal oder öfter neu gestartet                                           | Warnung           |
+| `ArkvoryWebhookFailing`                                         | Eine Webhook-Zustellung schlägt seit 15 Minuten fehl                                                         | Warnung           |
+| `ArkvoryFleetSiteDown`                                          | Ein verwalteter Standort antwortet dem Controller 5 Minuten lang nicht                                       | Kritisch          |
+| `ArkvoryFleetMirrorBehind`                                      | Ein Spiegel eines verwalteten Standorts liegt 30 Minuten lang 1000 oder mehr Änderungen hinter seiner Quelle | Warnung           |
+| `ArkvoryFleetCritical`                                          | Die Seite „Standorte“ des Controllers zeigt 5 Minuten lang kritische Alarme                                  | Kritisch          |
 
 Fügen Sie diese Alarme selbst hinzu, weil Arkvory die Daten nicht exportiert:
 

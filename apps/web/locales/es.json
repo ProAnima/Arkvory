@@ -4570,5 +4570,109 @@
   "fleetErrorUnreadable": {
     "en": "The request could not be read.",
     "text": "No se pudo leer la solicitud."
+  },
+  "fleetOverview": {
+    "en": "State of the cluster",
+    "text": "Estado del clúster"
+  },
+  "fleetAlertsNone": {
+    "en": "Nothing needs attention: every site answers, has its copies and keeps its mirrors up to date.",
+    "text": "Nada requiere atención: todos los sitios responden, tienen sus copias y mantienen sus espejos al día."
+  },
+  "fleetMap": {
+    "en": "Links",
+    "text": "Vínculos"
+  },
+  "fleetMapHint": {
+    "en": "Sources this installation does not manage are shown by their address. If one of them is this installation, set ARKVORY_SITE_URL to the address the sites use for it.",
+    "text": "Los orígenes que esta instalación no gestiona se muestran por su dirección. Si uno de ellos es esta instalación, defina ARKVORY_SITE_URL con la dirección que usan los sitios para llegar a ella."
+  },
+  "fleetLinkFrom": {
+    "en": "Source",
+    "text": "Origen"
+  },
+  "fleetLinkTo": {
+    "en": "Site",
+    "text": "Sitio"
+  },
+  "fleetLinkBehind": {
+    "en": "Behind",
+    "text": "Retraso"
+  },
+  "fleetLinksNone": {
+    "en": "No site mirrors or imports from another.",
+    "text": "Ningún sitio tiene espejos ni importaciones de otro."
+  },
+  "fleetLinkFailing": {
+    "en": "Failing",
+    "text": "Con fallos"
+  },
+  "fleetLagValue": {
+    "en": "{lag} changes",
+    "text": "{lag} cambios"
+  },
+  "fleetSeverityCritical": {
+    "en": "Critical",
+    "text": "Crítico"
+  },
+  "fleetSeverityWarning": {
+    "en": "Warning",
+    "text": "Advertencia"
+  },
+  "fleetSeverityInfo": {
+    "en": "Note",
+    "text": "Nota"
+  },
+  "fleetAlertUnreachable": {
+    "en": "does not answer.",
+    "text": "no responde."
+  },
+  "fleetAlertCertificate": {
+    "en": "presents another certificate: pair it again if it was renewed.",
+    "text": "presenta otro certificado: si se renovó, empareje el sitio de nuevo."
+  },
+  "fleetAlertRevoked": {
+    "en": "revoked this controller: pair it again with a new code.",
+    "text": "revocó este controlador: empareje el sitio de nuevo con un código nuevo."
+  },
+  "fleetAlertRefused": {
+    "en": "refuses this controller: pair it again with a new code.",
+    "text": "rechaza este controlador: empareje el sitio de nuevo con un código nuevo."
+  },
+  "fleetAlertInvalid": {
+    "en": "answers in a way this release does not read: update both.",
+    "text": "responde de una forma que esta versión no entiende: actualice ambos."
+  },
+  "fleetAlertStale": {
+    "en": "was not read for over a minute and a half: check the controller’s background reads.",
+    "text": "no se ha leído en más de un minuto y medio: compruebe las lecturas en segundo plano del controlador."
+  },
+  "fleetAlertNotWritable": {
+    "en": "refuses writes: check its database and disk.",
+    "text": "rechaza escrituras: compruebe su base de datos y su disco."
+  },
+  "fleetAlertCopies": {
+    "en": "lacks copies of its data: writes are paused until they are back.",
+    "text": "no tiene todas las copias de sus datos: las escrituras están en pausa hasta que vuelvan."
+  },
+  "fleetAlertSingleCopy": {
+    "en": "acknowledges writes with one copy by an operator’s decision.",
+    "text": "confirma las escrituras con una sola copia por decisión de un operador."
+  },
+  "fleetAlertMirrorFailing": {
+    "en": "mirror {subject} keeps failing.",
+    "text": "el espejo {subject} falla una y otra vez."
+  },
+  "fleetAlertMirrorLag": {
+    "en": "mirror {subject} is far behind its source.",
+    "text": "el espejo {subject} va muy por detrás de su origen."
+  },
+  "fleetAlertUpdatesFailed": {
+    "en": "its updater reports a failure.",
+    "text": "su actualizador informa de un fallo."
+  },
+  "fleetAlertVersionSkew": {
+    "en": "runs another version than this controller.",
+    "text": "ejecuta una versión distinta de la de este controlador."
   }
 }

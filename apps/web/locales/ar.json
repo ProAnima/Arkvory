@@ -4570,5 +4570,109 @@
   "fleetErrorUnreadable": {
     "en": "The request could not be read.",
     "text": "تعذّرت قراءة الطلب."
+  },
+  "fleetOverview": {
+    "en": "State of the cluster",
+    "text": "حالة المجموعة"
+  },
+  "fleetAlertsNone": {
+    "en": "Nothing needs attention: every site answers, has its copies and keeps its mirrors up to date.",
+    "text": "لا شيء يحتاج إلى انتباه: كل المواقع تردّ، ونسخها مكتملة، ومراياها محدَّثة."
+  },
+  "fleetMap": {
+    "en": "Links",
+    "text": "الروابط"
+  },
+  "fleetMapHint": {
+    "en": "Sources this installation does not manage are shown by their address. If one of them is this installation, set ARKVORY_SITE_URL to the address the sites use for it.",
+    "text": "تُعرض المصادر التي لا يديرها هذا التثبيت بعناوينها. إن كان أحدها هو هذا التثبيت، فاضبط ARKVORY_SITE_URL على العنوان الذي تستخدمه المواقع للوصول إليه."
+  },
+  "fleetLinkFrom": {
+    "en": "Source",
+    "text": "المصدر"
+  },
+  "fleetLinkTo": {
+    "en": "Site",
+    "text": "الموقع"
+  },
+  "fleetLinkBehind": {
+    "en": "Behind",
+    "text": "التأخر"
+  },
+  "fleetLinksNone": {
+    "en": "No site mirrors or imports from another.",
+    "text": "لا توجد مرايا ولا عمليات استيراد بين المواقع."
+  },
+  "fleetLinkFailing": {
+    "en": "Failing",
+    "text": "متعطل"
+  },
+  "fleetLagValue": {
+    "en": "{lag} changes",
+    "text": "التغييرات: {lag}"
+  },
+  "fleetSeverityCritical": {
+    "en": "Critical",
+    "text": "حرج"
+  },
+  "fleetSeverityWarning": {
+    "en": "Warning",
+    "text": "تحذير"
+  },
+  "fleetSeverityInfo": {
+    "en": "Note",
+    "text": "ملاحظة"
+  },
+  "fleetAlertUnreachable": {
+    "en": "does not answer.",
+    "text": "لا يردّ."
+  },
+  "fleetAlertCertificate": {
+    "en": "presents another certificate: pair it again if it was renewed.",
+    "text": "يقدّم شهادة أخرى: إن جُدّدت فأعد اقتران الموقع."
+  },
+  "fleetAlertRevoked": {
+    "en": "revoked this controller: pair it again with a new code.",
+    "text": "أبطل وحدة التحكم هذه: أعد الاقتران برمز جديد."
+  },
+  "fleetAlertRefused": {
+    "en": "refuses this controller: pair it again with a new code.",
+    "text": "يرفض وحدة التحكم هذه: أعد الاقتران برمز جديد."
+  },
+  "fleetAlertInvalid": {
+    "en": "answers in a way this release does not read: update both.",
+    "text": "يردّ بطريقة لا يفهمها هذا الإصدار: حدّث الاثنين."
+  },
+  "fleetAlertStale": {
+    "en": "was not read for over a minute and a half: check the controller’s background reads.",
+    "text": "لم يُقرأ منذ أكثر من دقيقة ونصف: تحقّق من القراءة في الخلفية على وحدة التحكم."
+  },
+  "fleetAlertNotWritable": {
+    "en": "refuses writes: check its database and disk.",
+    "text": "يرفض الكتابة: تحقّق من قاعدة بياناته وقرصه."
+  },
+  "fleetAlertCopies": {
+    "en": "lacks copies of its data: writes are paused until they are back.",
+    "text": "تنقصه نسخ من بياناته: الكتابة متوقفة مؤقتًا حتى تعود."
+  },
+  "fleetAlertSingleCopy": {
+    "en": "acknowledges writes with one copy by an operator’s decision.",
+    "text": "يؤكّد الكتابة بنسخة واحدة بقرار من المشغّل."
+  },
+  "fleetAlertMirrorFailing": {
+    "en": "mirror {subject} keeps failing.",
+    "text": "المرآة {subject} تفشل باستمرار."
+  },
+  "fleetAlertMirrorLag": {
+    "en": "mirror {subject} is far behind its source.",
+    "text": "المرآة {subject} متأخرة كثيرًا عن مصدرها."
+  },
+  "fleetAlertUpdatesFailed": {
+    "en": "its updater reports a failure.",
+    "text": "أداة التحديث لديه تُبلغ عن فشل."
+  },
+  "fleetAlertVersionSkew": {
+    "en": "runs another version than this controller.",
+    "text": "يعمل بإصدار مختلف عن إصدار وحدة التحكم هذه."
   }
 }

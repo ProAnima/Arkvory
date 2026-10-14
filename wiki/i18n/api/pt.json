@@ -1087,6 +1087,14 @@
       },
       "summary": "Enfileirar uma alteração do site",
       "description": "Enfileira uma alteração para o agente do site, que a aplica em até um minuto com as verificações e a reversão de `arkvory configure` e `cluster-*`: conectar um espelho ou uma importação, substituir sua chave de origem, desconectar espelhos, trocar o nó HA ativo (nome do nó digitado duas vezes) ou decidir gravações com uma cópia. `id` é escolhido pelo cliente; repeti-lo não enfileira a alteração de novo. `key` é a chave de origem apenas de `mirror-attach` e `mirror-key`: vai ao agente em um arquivo 0600 próprio e nunca é devolvida. 202 significa enfileirado, não aplicado."
+    },
+    "getFleetOverview": {
+      "en": {
+        "summary": "Read the fleet overview",
+        "description": "Alerts across the managed sites and this installation, most severe first (`critical`, `warning`, `info`), and the mirror links between them. Built from the last background reads, at most once per 5 seconds. A source no managed site answers at is `external:<origin>`; this installation is `self` and meets the links to it only when `ARKVORY_SITE_URL` is set. Answered by the writer only."
+      },
+      "summary": "Ler a visão geral dos sites",
+      "description": "Alertas dos sites gerenciados e desta instalação, os mais graves primeiro (`critical`, `warning`, `info`), e os vínculos de espelho entre eles. Montada a partir das últimas leituras em segundo plano, no máximo uma vez a cada 5 segundos. Uma origem em cujo endereço nenhum site gerenciado responde é `external:<origin>`; esta instalação é `self` e só recebe vínculos quando `ARKVORY_SITE_URL` está definido. Somente o processo de gravação responde."
     }
   },
   "errors": {

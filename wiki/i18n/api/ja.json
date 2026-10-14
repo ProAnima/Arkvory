@@ -1087,6 +1087,14 @@
       },
       "summary": "サイトの変更をキューに入れる",
       "description": "サイトのエージェント向けに変更を 1 つキューに入れます。エージェントは 1 分以内に `arkvory configure` と `cluster-*` の検査とロールバック付きで適用します：ミラーまたはインポートの接続、ソースキーの交換、ミラーの切り離し、アクティブな HA ノードの切り替え（ノード名を 2 回入力）、単一コピー書き込みの決定。`id` はクライアントが選び、繰り返しても再度キューに入りません。`key` は `mirror-attach` と `mirror-key` のソースキーのみで、専用の 0600 ファイルでエージェントに渡り、返されることはありません。202 はキュー投入済みであり、適用済みではありません。"
+    },
+    "getFleetOverview": {
+      "en": {
+        "summary": "Read the fleet overview",
+        "description": "Alerts across the managed sites and this installation, most severe first (`critical`, `warning`, `info`), and the mirror links between them. Built from the last background reads, at most once per 5 seconds. A source no managed site answers at is `external:<origin>`; this installation is `self` and meets the links to it only when `ARKVORY_SITE_URL` is set. Answered by the writer only."
+      },
+      "summary": "サイトの概要を読む",
+      "description": "管理対象サイトとこのインストールのアラート（重大なものから `critical`、`warning`、`info`）と、それらの間のミラーのリンク。直近のバックグラウンド読み取りから最大 5 秒に 1 回作成されます。どの管理対象サイトもそのアドレスで応答しないソースは `external:<origin>`、このインストールは `self` で、`ARKVORY_SITE_URL` を設定したときだけこのインストールへのリンクが現れます。書き込みプロセスのみが応答します。"
     }
   },
   "errors": {
