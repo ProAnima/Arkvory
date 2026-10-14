@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readTopology } from '@proanima/arkvory-contracts';
-import { setup } from './fixture.mjs';
+import { setup, create, base } from './fixture.mjs';
+import { ArkvoryClient } from '@proanima/arkvory-sdk';
 import { separateInstance } from './mirror-fixture.mjs';
 
 test('an installation describes itself to the fleet console; only its administrator may read it (ADR 0077)', async (t) => {
@@ -59,8 +60,12 @@ test('a site pairs with a controller once by code; the fleet key reaches only it
   assert.equal(again.statusCode, 401);
   const fleet = { authorization: `Bearer ${key}` };
   assert.equal((await call('GET', '/api/v1/system/topology', fleet)).statusCode, 200);
+  // Catalog metadata is readable (F2); bytes, writes and the rest of the API are not.
+  assert.equal((await call('GET', '/api/v1/repositories', fleet)).statusCode, 200);
   for (const [method, url] of [
-    ['GET', '/api/v1/repositories'],
+    ['GET', '/api/v1/repositories/releases/artifacts/x/content'],
+    ['GET', '/api/v1/repositories/releases/asset/content?path=a'],
+    ['POST', '/api/v1/repositories/releases/uploads'],
     ['POST', '/api/v1/system/fleet/pairings'],
     ['GET', '/api/v1/system/fleet/controllers'],
     ['GET', '/api/v1/system/updates'],
@@ -193,4 +198,75 @@ test('over HTTPS the controller trusts exactly the certificate the administrator
   assert.equal(added.json().state, 'ok');
   assert.equal(added.json().fingerprint, probe.certificate.fingerprint);
   assert.equal(added.json().topology.site.name, 'Secure');
+});
+
+test('a controller browses the catalog of a site, metadata only, never bytes (ADR 0077, F2)', async (t) => {
+  const site = await setup(t, { siteName: 'Branch' });
+  const controller = await separateInstance(t, { siteName: 'Main' });
+  const bytes = Buffer.from('site content');
+  const id = (await create(site, bytes)).json().id;
+  await site.app.inject({
+    method: 'PUT',
+    url: `${base}/uploads/${id}/content`,
+    headers: { ...site.headers, 'content-type': 'application/octet-stream' },
+    payload: bytes,
+  });
+  await site.app.inject({
+    method: 'PUT',
+    url: `${base}/asset`,
+    headers: site.headers,
+    payload: { path: 'tools/setup.bin', artifactId: id, expectedRevision: 0 },
+  });
+  const address = await site.listen();
+  const { code } = (
+    await site.app.inject({
+      method: 'POST',
+      url: '/api/v1/system/fleet/pairings',
+      headers: site.headers,
+    })
+  ).json();
+  const managed = (
+    await controller.app.inject({
+      method: 'POST',
+      url: '/api/v1/fleet/sites',
+      headers: controller.headers,
+      payload: { url: address, fingerprint: null, code },
+    })
+  ).json();
+  const origin = await controller.app.listen({ host: '127.0.0.1', port: 0 });
+  const client = new ArkvoryClient(origin, () => controller.headers.authorization.slice(7));
+  const remote = client.fleet.site(managed.id);
+  const repositories = await remote.repositories();
+  assert.ok(repositories.items.some((repository) => repository.id === 'releases'));
+  const found = await remote.search('releases');
+  assert.ok(found.items.some((item) => item.id === id));
+  assert.equal((await remote.artifact('releases', id)).id, id);
+  const files = await remote.assetPage('releases');
+  assert.ok(files.items.some((entry) => entry.path === 'tools/setup.bin'));
+  // Only the listed metadata routes pass the controller: no bytes, no other API, no dot segments.
+  const read = (path) =>
+    controller.app.inject({
+      url: `/api/v1/fleet/sites/${managed.id}/read?path=${encodeURIComponent(path)}`,
+      headers: controller.headers,
+    });
+  for (const path of [
+    `${base}/artifacts/${id}/content`,
+    `${base}/asset/content?path=tools/setup.bin`,
+    '/api/v1/system/updates',
+    `${base}/../../system/updates`,
+    '/api/v1/repositories/releases/uploads',
+    'api/v1/repositories',
+  ])
+    assert.equal((await read(path)).statusCode, 400, path);
+  assert.equal((await read(`${base}/artifacts/${id}`)).statusCode, 200);
+  // Only a global administrator of the controller reads sites.
+  assert.equal(
+    (
+      await controller.app.inject({
+        url: `/api/v1/fleet/sites/${managed.id}/read?path=%2Fapi%2Fv1%2Frepositories`,
+        headers: controller.readerHeaders,
+      })
+    ).statusCode,
+    403,
+  );
 });

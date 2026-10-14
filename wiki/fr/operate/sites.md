@@ -10,7 +10,7 @@ Un **site** est une installation Arkvory : la principale, un miroir sur un autre
 ## Fonctionnement {#how-it-works}
 
 - Le contrôleur tient une liste de sites. Il lit chaque site toutes les 30 secondes en HTTPS et garde la dernière réponse : un site qui ne répond plus affiche encore son dernier état connu.
-- À l’appairage, le site donne au contrôleur une clé propre, une **clé de flotte**. Elle n’atteint que ce dont un contrôleur a besoin : aujourd’hui, l’état du site. Elle ne peut ni lire ni modifier les dépôts, fichiers, comptes ou clés.
+- Lors du couplage, le site donne au site de contrôle une clé propre, la **clé de flotte**. Elle n’atteint que ce dont le site de contrôle a besoin : l’état du site et les descriptions de son catalogue. Elle ne peut ni télécharger les octets des fichiers, ni rien modifier, ni lire les comptes et les clés.
 - Le contrôleur conserve les clés de flotte scellées par une clé de son répertoire de données (`fleet.key`). La base de données et ses sauvegardes seules ne les révèlent pas. Après une restauration, appairez de nouveau les sites.
 - Chaque site montre quels contrôleurs le gèrent et peut les révoquer à tout moment.
 
@@ -48,6 +48,12 @@ Le contrôleur fait ensuite confiance à exactement ce certificat. Quand le site
 - **[[ui:fleetSeen]]** : quand le site a répondu pour la dernière fois.
 
 [[ui:fleetReadAll]] lit tous les sites tout de suite au lieu d’attendre le prochain tour. [[ui:fleetRemoveSite]] oublie un site ici ; révoquez aussi le contrôleur sur le site, car jusque-là sa clé y reste valable.
+
+## Contenu d’un site {#content}
+
+[[ui:fleetContent]] dans la ligne d’un site ouvre sous la liste ses dépôts, artefacts et fichiers. Choisissez un dépôt ; [[ui:fleetFind]] cherche les artefacts par nom ou étiquette et liste les fichiers dont le chemin commence par ce que vous avez saisi. [[ui:fleetMore]] lit la page suivante.
+
+Le site de contrôle les lit sur le site avec sa clé de flotte et affiche la réponse telle que le site l’a donnée. Seules les descriptions transitent : noms, tailles, étiquettes, étapes, chemins et révisions. Pour télécharger un fichier, utilisez le site lui-même.
 
 ## Qui gère ce site {#managed-by}
 

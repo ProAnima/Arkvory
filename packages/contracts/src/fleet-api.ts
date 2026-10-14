@@ -18,6 +18,7 @@ export const fleetOperations = [
   ['/fleet/sites/probe', 'post', 'probeFleetSite', 'administrator', 'idempotent'],
   ['/fleet/sites/{id}', 'delete', 'removeFleetSite', 'administrator', 'idempotent'],
   ['/fleet/sites/{id}/refresh', 'post', 'refreshFleetSite', 'administrator', 'idempotent'],
+  ['/fleet/sites/{id}/read', 'get', 'readFleetSite', 'administrator', 'read'],
 ] as const;
 
 const object = (properties: Record<string, unknown>, optional: readonly string[] = []) => ({
@@ -179,6 +180,29 @@ export const fleetPaths = {
     delete: {
       summary: 'Forget a site here; revoke this controller on the site as well',
       responses: { 204: { description: 'Forgotten' } },
+    },
+  },
+  '/api/v1/fleet/sites/{id}/read': {
+    parameters: [
+      idParameter,
+      {
+        name: 'path',
+        in: 'query',
+        required: true,
+        description:
+          'A read route of the site with its query, from the fixed list of catalog metadata routes: repositories, search, artifacts, annotations, stages, packages, file pages and history, storage usage, mirror state. Never file bytes.',
+        schema: { type: 'string', maxLength: 2048, pattern: '^/api/v1/' },
+      },
+    ],
+    get: {
+      summary:
+        'Read catalog metadata of a managed site through this installation, with the key it holds for the site',
+      responses: {
+        200: {
+          description: "The site's own answer, unchanged",
+          content: json({ type: 'object', additionalProperties: true }),
+        },
+      },
     },
   },
   '/api/v1/fleet/sites/{id}/refresh': {

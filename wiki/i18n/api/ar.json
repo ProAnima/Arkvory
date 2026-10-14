@@ -1039,6 +1039,14 @@
       },
       "summary": "قراءة موقع الآن",
       "description": "يقرأ الموقع الآن بدل انتظار الجولة التالية ويعيده بحالته الجديدة."
+    },
+    "readFleetSite": {
+      "en": {
+        "summary": "Read the catalog of a site",
+        "description": "Passes one catalog read to a managed site and returns its answer unchanged: repositories, search, artifacts, annotations, stages, packages, file pages and history, storage usage, mirror state. `path` is the site route with its query. Other routes and file bytes are refused with 400."
+      },
+      "summary": "قراءة فهرس موقع",
+      "description": "يمرّر قراءة واحدة للفهرس إلى موقع مُدار ويعيد إجابته دون تغيير: المستودعات، والبحث، والعناصر، والتعليقات، والمراحل، والحزم، وصفحات الملفات وسجلها، واستخدام التخزين، وحالة المرآة. `path` هو مسار الموقع مع استعلامه. تُرفض المسارات الأخرى وبايتات الملفات بالرمز 400."
     }
   },
   "errors": {

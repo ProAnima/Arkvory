@@ -44,6 +44,11 @@ export class HttpFleetSiteClient implements FleetSiteClient {
     return { key, name, version };
   }
 
+  /** A catalog read the controller checked against the list; the site checks it again. */
+  async read(endpoint: FleetEndpointView, key: string, actor: string, path: string) {
+    return siteRequest(endpoint, 'GET', path, { key, actor, maxBytes: 16 * 1024 * 1024 });
+  }
+
   async topology(endpoint: FleetEndpointView, key: string, actor: string): Promise<unknown> {
     const answer = await siteRequest(endpoint, 'GET', '/api/v1/system/topology', { key, actor });
     if (answer.status !== 200) throw new FleetFailure('invalid', answer.status);

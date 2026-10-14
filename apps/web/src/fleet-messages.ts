@@ -81,6 +81,27 @@ export const fleetEnglish = {
   fleetCodeProxy:
     'TLS ends at a proxy: the controller must see the fingerprint of the certificate the proxy presents.',
   fleetGuide: 'How sites, pairing and keys work',
+  fleetContent: 'Content',
+  fleetContentOf: 'Content of {name}',
+  fleetContentHint:
+    'Repositories, artifacts and files of the site, read through this installation. Only descriptions travel here: download files on the site itself.',
+  fleetContentClose: 'Close',
+  fleetRepository: 'Repository',
+  fleetQuery: 'Name, label or path',
+  fleetFind: 'Find',
+  fleetArtifacts: 'Artifacts',
+  fleetArtifactName: 'Name',
+  fleetArtifactSize: 'Size',
+  fleetArtifactPublished: 'Published',
+  fleetArtifactLabels: 'Labels and stages',
+  fleetArtifactsEmpty: 'No artifacts found.',
+  fleetFiles: 'Files',
+  fleetFilePath: 'Path',
+  fleetFileRevision: 'Revision',
+  fleetFileArtifact: 'Artifact',
+  fleetFilesEmpty: 'No files found.',
+  fleetMore: 'Show more',
+  fleetNoRepositories: 'The site has no repositories.',
 } as const;
 
 export const fleetRussian: Record<keyof typeof fleetEnglish, string> = {
@@ -165,4 +186,25 @@ export const fleetRussian: Record<keyof typeof fleetEnglish, string> = {
   fleetCodeProxy:
     'TLS завершается на прокси: управляющая площадка должна увидеть отпечаток сертификата прокси.',
   fleetGuide: 'Как устроены площадки, сопряжение и ключи',
+  fleetContent: 'Содержимое',
+  fleetContentOf: 'Содержимое: {name}',
+  fleetContentHint:
+    'Репозитории, артефакты и файлы площадки, прочитанные через эту установку. Сюда передаются только описания: файлы скачивайте на самой площадке.',
+  fleetContentClose: 'Закрыть',
+  fleetRepository: 'Репозиторий',
+  fleetQuery: 'Имя, метка или путь',
+  fleetFind: 'Найти',
+  fleetArtifacts: 'Артефакты',
+  fleetArtifactName: 'Имя',
+  fleetArtifactSize: 'Размер',
+  fleetArtifactPublished: 'Опубликован',
+  fleetArtifactLabels: 'Метки и стадии',
+  fleetArtifactsEmpty: 'Артефакты не найдены.',
+  fleetFiles: 'Файлы',
+  fleetFilePath: 'Путь',
+  fleetFileRevision: 'Ревизия',
+  fleetFileArtifact: 'Артефакт',
+  fleetFilesEmpty: 'Файлы не найдены.',
+  fleetMore: 'Показать ещё',
+  fleetNoRepositories: 'На площадке нет репозиториев.',
 };

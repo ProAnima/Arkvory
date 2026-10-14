@@ -10,7 +10,7 @@ Un **sitio** es una instalación de Arkvory: la principal, un espejo en otra ubi
 ## Cómo funciona {#how-it-works}
 
 - El controlador guarda una lista de sitios. Lee cada sitio cada 30 segundos por HTTPS y conserva la última respuesta, así que un sitio que deja de responder sigue mostrando su último estado conocido.
-- Al emparejarse, el sitio da al controlador una clave propia, una **clave de flota**. Solo alcanza lo que necesita un controlador: hoy, el estado del sitio. No puede leer ni cambiar repositorios, archivos, cuentas ni claves.
+- Al emparejarse, el sitio da al sitio de control una clave propia, la **clave de flota**. Solo alcanza lo que el sitio de control necesita: el estado del sitio y las descripciones de su catálogo. No puede descargar bytes de archivos, cambiar nada ni leer cuentas y claves.
 - El controlador guarda las claves de flota selladas con una clave de su directorio de datos (`fleet.key`). La base de datos y sus copias de seguridad por sí solas no las revelan. Tras una restauración, empareje los sitios de nuevo.
 - Cada sitio muestra qué controladores lo gestionan y puede revocarlos en cualquier momento.
 
@@ -48,6 +48,12 @@ A partir de ahí, el controlador confía exactamente en ese certificado. Cuando 
 - **[[ui:fleetSeen]]**: cuándo respondió el sitio por última vez.
 
 [[ui:fleetReadAll]] lee todos los sitios ahora en lugar de esperar a la siguiente ronda. [[ui:fleetRemoveSite]] olvida un sitio aquí; revoque también el controlador en el sitio, porque hasta entonces su clave sigue válida allí.
+
+## Contenido de un sitio {#content}
+
+[[ui:fleetContent]] en la fila de un sitio abre bajo la lista sus repositorios, artefactos y archivos. Elija un repositorio; [[ui:fleetFind]] busca artefactos por nombre o etiqueta y muestra los archivos cuya ruta empieza por lo escrito. [[ui:fleetMore]] lee la página siguiente.
+
+El sitio de control lo lee en el sitio con su clave de flota y muestra la respuesta tal como la dio el sitio. Solo viajan descripciones: nombres, tamaños, etiquetas, etapas, rutas y revisiones. Para descargar un archivo, use el propio sitio.
 
 ## Quién gestiona este sitio {#managed-by}
 

@@ -1039,6 +1039,14 @@
       },
       "summary": "Ler um site agora",
       "description": "Lê o site agora em vez de esperar a próxima rodada e o retorna com o novo estado."
+    },
+    "readFleetSite": {
+      "en": {
+        "summary": "Read the catalog of a site",
+        "description": "Passes one catalog read to a managed site and returns its answer unchanged: repositories, search, artifacts, annotations, stages, packages, file pages and history, storage usage, mirror state. `path` is the site route with its query. Other routes and file bytes are refused with 400."
+      },
+      "summary": "Ler o catálogo de um site",
+      "description": "Repassa uma leitura do catálogo a um site gerenciado e devolve a resposta dele sem alterações: repositórios, busca, artefatos, anotações, estágios, pacotes, páginas e histórico de arquivos, uso de armazenamento, estado do espelho. `path` é a rota do site com sua consulta. Outras rotas e bytes de arquivos são recusados com 400."
     }
   },
   "errors": {

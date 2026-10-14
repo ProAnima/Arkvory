@@ -82,13 +82,33 @@ export class PostgresFleetTrust {
     );
     const row = found.rows[0];
     if (!row || !timingSafeEqual(row.key_sha256, hash)) return null;
+    const repositories = await this.repositories();
     return {
       credential: 'fleet-key',
       id: `fleet:${row.id}`,
       administrator: true,
       repositories: [],
       permissions: [],
+      // Read, never write: a controller browses catalog metadata (ADR 0077, stage F2).
+      grants: repositories.map((repository) => ({ repository, permissions: ['read'] })),
     };
+  }
+
+  /**
+   * Repositories that hold anything: the distinct names of the catalog journal, read by skipping
+   * along its index (one lookup per repository, not a scan of the journal). At most 1000.
+   */
+  private async repositories(): Promise<readonly string[]> {
+    const rows = await this.pool.query<{ repository: string }>(
+      `WITH RECURSIVE names(repository) AS (
+         SELECT min(repository) FROM arkvory_audit
+         UNION ALL
+         SELECT (SELECT min(repository) FROM arkvory_audit WHERE repository > names.repository)
+         FROM names WHERE names.repository IS NOT NULL
+       )
+       SELECT repository FROM names WHERE repository IS NOT NULL LIMIT 1000`,
+    );
+    return rows.rows.map((row) => row.repository);
   }
 
   async controllers(): Promise<readonly FleetController[]> {
