@@ -14,6 +14,7 @@ import { DiscoveryApi } from './discovery-api.js';
 import { AssetsApi } from './assets-api.js';
 import { UpdatesApi } from './updates-api.js';
 import { DownloadSettingsApi } from './download-settings-api.js';
+import { SiteChangesApi } from './site-changes-api.js';
 
 const absolute = (path: string) => (path.startsWith('/') ? path : `/${path}`);
 
@@ -70,6 +71,7 @@ export class FleetApi {
     const assets = new AssetsApi(port);
     const updates = new UpdatesApi(port);
     const downloads = new DownloadSettingsApi(port);
+    const changes = new SiteChangesApi(port);
     return {
       repositories: discovery.repositories.bind(discovery),
       repository: discovery.repository.bind(discovery),
@@ -83,6 +85,7 @@ export class FleetApi {
       assetHistory: assets.assetHistory.bind(assets),
       /** Stage F3: the site's updater and its download queue settings. */
       updates: { status: updates.status.bind(updates), request: updates.request.bind(updates) },
+      changes: { status: changes.status.bind(changes), request: changes.request.bind(changes) },
       downloadSettings: {
         get: downloads.get.bind(downloads),
         change: downloads.change.bind(downloads),

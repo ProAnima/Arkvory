@@ -1071,6 +1071,22 @@
       },
       "summary": "Change download queue settings",
       "description": "Saves `overrides` over the environment of the server and applies them without a restart: new decisions follow them at once, active downloads keep their places. The values given replace all earlier changes; `{}` returns to the environment. Settings that cannot run here are refused with 400 naming the field; a stale `expectedRevision` gets 409. Read gateways keep their environment."
+    },
+    "getSiteChanges": {
+      "en": {
+        "summary": "Read the changes queued for the site agent and how the recent ones ended",
+        "description": ""
+      },
+      "summary": "Read site changes",
+      "description": "Returns whether the site’s agent reports in (`agent`), the pending request and the 20 newest with their state: `pending`, `applying`, `done` or `failed` with a reason. Source keys never appear here."
+    },
+    "requestSiteChange": {
+      "en": {
+        "summary": "Queue a change of mirrors or HA for the site agent; accepted does not mean applied",
+        "description": ""
+      },
+      "summary": "Queue a site change",
+      "description": "Queues one change for the site’s agent, which applies it within a minute with the checks and rollback of `arkvory configure` and `cluster-*`: attach a mirror or an import, replace its source key, detach mirrors, switch the active HA node (the node name typed twice) or decide single-copy writes. `id` is chosen by the client; repeating it does not queue the change again. `key` is the source key of `mirror-attach` and `mirror-key` only: it goes to the agent in its own 0600 file and is never returned. 202 means queued, not applied."
     }
   },
   "errors": {

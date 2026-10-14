@@ -1071,6 +1071,22 @@
       },
       "summary": "Изменить настройки очереди скачиваний",
       "description": "Сохраняет `overrides` поверх окружения сервера и применяет их без перезапуска: новые решения сразу следуют им, активные скачивания сохраняют места. Переданные значения заменяют все прежние изменения; `{}` возвращает к окружению. Настройки, которые не могут работать на этом сервере, отклоняются с 400 и именем поля; устаревшая `expectedRevision` получает 409. Шлюзы чтения сохраняют своё окружение."
+    },
+    "getSiteChanges": {
+      "en": {
+        "summary": "Read site changes",
+        "description": "Returns whether the site’s agent reports in (`agent`), the pending request and the 20 newest with their state: `pending`, `applying`, `done` or `failed` with a reason. Source keys never appear here."
+      },
+      "summary": "Прочитать изменения площадки",
+      "description": "Возвращает, отвечает ли агент площадки (`agent`), ожидающий запрос и 20 последних с состоянием: `pending`, `applying`, `done` или `failed` с причиной. Ключей источников здесь нет никогда."
+    },
+    "requestSiteChange": {
+      "en": {
+        "summary": "Queue a site change",
+        "description": "Queues one change for the site’s agent, which applies it within a minute with the checks and rollback of `arkvory configure` and `cluster-*`: attach a mirror or an import, replace its source key, detach mirrors, switch the active HA node (the node name typed twice) or decide single-copy writes. `id` is chosen by the client; repeating it does not queue the change again. `key` is the source key of `mirror-attach` and `mirror-key` only: it goes to the agent in its own 0600 file and is never returned. 202 means queued, not applied."
+      },
+      "summary": "Поставить изменение площадки в очередь",
+      "description": "Ставит одно изменение для агента площадки; он применяет его в течение минуты с проверками и откатом `arkvory configure` и `cluster-*`: подключить зеркало или импорт, заменить ключ источника, отключить зеркала, перевести активный узел HA (имя узла вводится дважды) или принять запись с одной копией. `id` выбирает клиент; повтор не ставит изменение второй раз. `key` — ключ источника только для `mirror-attach` и `mirror-key`: он уходит агенту отдельным файлом 0600 и никогда не возвращается. 202 означает «в очереди», а не «применено»."
     }
   },
   "errors": {

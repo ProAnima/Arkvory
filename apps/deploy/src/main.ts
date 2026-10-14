@@ -6,6 +6,8 @@ import { install, update, recover, upgrade, finishInstall, checkJournal } from '
 import { Services } from './services.js';
 import { deploymentHelp } from './help.js';
 import { createOwner } from './owner.js';
+import { pollChanges, resetChanges } from './site-changes.js';
+import { isUnconfirmedTermination } from './process.js';
 import { pollUpdates, resetUpdateRequest } from './update-control.js';
 import { prepareUpdateControl } from './update-setup.js';
 import { report } from './output.js';
@@ -166,8 +168,18 @@ async function applyInstaller(root: string, options: Map<string, string>): Promi
 /** The operations that change an installation; each runs under its operation lock. */
 async function locked(operation: string, root: string, options: Map<string, string>) {
   switch (operation) {
-    case 'updates-poll':
-      await pollUpdates(root);
+    case 'updates-poll': {
+      // Site changes (ADR 0077) share the tick and the lock; one failing does not stop the other.
+      const failures: unknown[] = [];
+      for (const poll of [pollUpdates, pollChanges])
+        await poll(root).catch((error: unknown) => failures.push(error));
+      // A command that may still run keeps the lock: its failure is the one that counts.
+      const kept = failures.find((failure) => isUnconfirmedTermination(failure));
+      if (failures.length) throw kept ?? failures[0];
+      break;
+    }
+    case 'changes-reset':
+      await resetChanges(root);
       break;
     case 'updates-reset':
       await resetUpdateRequest(root);
@@ -215,6 +227,7 @@ const COMMANDS = new Set([
   'configure',
   'updates-poll',
   'updates-reset',
+  'changes-reset',
   'updates-connect',
   'cluster-plan',
   'cluster-check',

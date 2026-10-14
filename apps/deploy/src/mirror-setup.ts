@@ -20,6 +20,11 @@ export interface MirrorChange {
   readonly upstream?: string;
   readonly sourceRepository?: string;
   readonly tokenFile?: string;
+  /**
+   * The key itself, already read and checked by the caller (the site agent reads it from the
+   * mailbox without following links): no path is opened for it.
+   */
+  readonly secret?: string;
   /** Import mode: an ordinary repository taking over versions with these stages. */
   readonly stages?: readonly string[];
   /**
@@ -135,6 +140,15 @@ function layout(root: string, state: Installation): Layout {
     seen: (name) =>
       state.mode === 'compose' ? `${containerDirectory}/${name}` : join(directory, name),
   };
+}
+
+/** The repositories attached as mirrors or imports now, from the installation's mirror file. */
+export async function attachedMirrors(
+  root: string,
+  state: Installation,
+): Promise<readonly string[]> {
+  const file = await snapshotFile(layout(root, state).mirrors);
+  return entries(file?.text ?? null).map((entry) => entry.repository);
 }
 
 function entries(text: string | null): MirrorEntry[] {
@@ -288,11 +302,13 @@ async function attachment(
       `${taken.repository} already takes ${sourceRepository} from this source; one source repository can fill one repository here`,
     );
   const stages = stageList(change.stages ?? existing?.stages);
-  const secret = await readSecretFile(
-    change.tokenFile,
-    'mirror-token-file',
-    'The mirror key file is not a key',
-  );
+  const secret =
+    change.secret ??
+    (await readSecretFile(
+      change.tokenFile,
+      'mirror-token-file',
+      'The mirror key file is not a key',
+    ));
   let bundle = authorities;
   if (change.caFile) bundle = mergeCertificates(bundle, await sourceCertificates(change.caFile));
   // The probe runs in this process: it trusts what the worker will trust, nothing more.

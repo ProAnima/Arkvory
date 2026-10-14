@@ -44,16 +44,16 @@ Todos os comandos exigem direitos de administrador e a opção `--root` com a ra
 
 `arkvory help` lista os comandos sem direitos especiais. Os exemplos neste site usam a forma curta `arkvory <command>`.
 
-| Comando                         | Uso                                                                                                                                            |
-| ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| `status`                        | Mostra o modo de instalação, o motor, a configuração de atualização automática, a fixação e a versão instalada                                 |
-| `configure`                     | Altera uma política. Consulte [O comando configure](#configure-command)                                                                        |
-| `update`                        | Instala agora uma versão estável mais recente. Consulte [Atualizações](./updates)                                                              |
-| `upgrade`                       | Instala uma versão que altera o esquema do banco de dados com um registro de backup próprio. Consulte [Atualizações](./updates#manual-upgrade) |
-| `recover`                       | Conclui uma atualização interrompida. Consulte [Atualizações](./updates#recover-update)                                                        |
-| `finish-install`                | Continua uma primeira instalação interrompida                                                                                                  |
-| `updates-connect`               | Conecta o console e o temporizador de atualizações, e registra serviços que faltam em uma instalação antiga                                    |
-| `updates-poll`, `updates-reset` | Executados pelo temporizador de atualizações e para recuperação. Consulte [Atualizações](./updates#recover-update)                             |
+| Comando                                          | Uso                                                                                                                                            |
+| ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `status`                                         | Mostra o modo de instalação, o motor, a configuração de atualização automática, a fixação e a versão instalada                                 |
+| `configure`                                      | Altera uma política. Consulte [O comando configure](#configure-command)                                                                        |
+| `update`                                         | Instala agora uma versão estável mais recente. Consulte [Atualizações](./updates)                                                              |
+| `upgrade`                                        | Instala uma versão que altera o esquema do banco de dados com um registro de backup próprio. Consulte [Atualizações](./updates#manual-upgrade) |
+| `recover`                                        | Conclui uma atualização interrompida. Consulte [Atualizações](./updates#recover-update)                                                        |
+| `finish-install`                                 | Continua uma primeira instalação interrompida                                                                                                  |
+| `updates-connect`                                | Conecta o console e o temporizador de atualizações, e registra serviços que faltam em uma instalação antiga                                    |
+| `updates-poll`, `updates-reset`, `changes-reset` | Executados pelo temporizador de atualizações e para recuperação. Consulte [Atualizações](./updates#recover-update)                             |
 
 Apenas um comando é executado por vez. Um segundo comando para com `Installation is locked`. Nunca coloque uma chave ou uma senha em uma opção de comando: use arquivos.
 

@@ -67,3 +67,20 @@ export {
   type DownloadSettings,
   type DownloadSettingsChange,
 } from './download-settings-api.js';
+export {
+  isSourceKey,
+  readSiteChange,
+  readSiteChangeRequest,
+  readSiteChangeStatus,
+  siteChangeKinds,
+  siteChangeErrors,
+  siteChangeTtlMs,
+  SITE_CHANGE_ACTOR_LENGTH,
+  type SiteChangeError,
+  type SiteChange,
+  type SiteChangeKind,
+  type SiteChangeRecord,
+  type SiteChangeRequest,
+  type SiteChangeState,
+  type SiteChangeStatus,
+} from './site-changes.js';

@@ -4,6 +4,9 @@ import { readTopology } from '@proanima/arkvory-contracts';
 import { setup, create, base } from './fixture.mjs';
 import { ArkvoryClient } from '@proanima/arkvory-sdk';
 import { separateInstance } from './mirror-fixture.mjs';
+import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
 test('an installation describes itself to the fleet console; only its administrator may read it (ADR 0077)', async (t) => {
   const f = await setup(t, { siteName: 'Main site' });
@@ -340,4 +343,71 @@ test('a controller changes the download queue of a site, revision-protected and 
     ).statusCode,
     403,
   );
+});
+
+test('a controller queues a mirror change for the agent of a site; the key goes in its own file', async (t) => {
+  // The updater mailbox of the site with an agent that reported in a moment ago.
+  const mailbox = await mkdtemp(join(tmpdir(), 'arkvory-fleet-mailbox-'));
+  t.after(() => rm(mailbox, { recursive: true, force: true }));
+  await mkdir(join(mailbox, 'status'));
+  await mkdir(join(mailbox, 'inbox'));
+  await writeFile(
+    join(mailbox, 'status/changes.json'),
+    JSON.stringify({ heartbeatAt: new Date().toISOString(), recent: [] }),
+  );
+  const site = await setup(t, { siteName: 'Branch', updateControlDirectory: mailbox });
+  const controller = await separateInstance(t, { siteName: 'Main' });
+  const address = await site.listen();
+  const { code } = (
+    await site.app.inject({
+      method: 'POST',
+      url: '/api/v1/system/fleet/pairings',
+      headers: site.headers,
+    })
+  ).json();
+  const managed = (
+    await controller.app.inject({
+      method: 'POST',
+      url: '/api/v1/fleet/sites',
+      headers: controller.headers,
+      payload: { url: address, fingerprint: null, code },
+    })
+  ).json();
+  const origin = await controller.app.listen({ host: '127.0.0.1', port: 0 });
+  const client = new ArkvoryClient(origin, () => controller.headers.authorization.slice(7));
+  const changes = client.fleet.site(managed.id).changes;
+  assert.equal((await changes.status()).agent, true);
+  const key = 'arkvory_' + 'z'.repeat(40);
+  const id = '00000000-0000-4000-8000-0000000000aa';
+  await changes.request({
+    id,
+    key,
+    change: {
+      kind: 'mirror-attach',
+      repository: 'imports',
+      upstream: 'https://source.example',
+      sourceRepository: 'releases',
+      stages: ['tested'],
+    },
+  });
+  const queued = JSON.parse(await readFile(join(mailbox, 'inbox/change.json'), 'utf8'));
+  assert.equal(queued.id, id);
+  assert.match(queued.actor, /\(fleet:[0-9a-f-]+\)$/);
+  assert.equal(await readFile(join(mailbox, `inbox/${id}.key`), 'utf8'), key);
+  assert.doesNotMatch(JSON.stringify(queued), /zzzz/);
+  const seen = await changes.status();
+  assert.equal(seen.pending?.id, id);
+  assert.doesNotMatch(JSON.stringify(seen), /zzzz/);
+  // A switchover is never one click: the node is typed twice, checked by both sides.
+  const typo = await controller.app.inject({
+    method: 'POST',
+    url: `/api/v1/fleet/sites/${managed.id}/change?path=${encodeURIComponent('/api/v1/system/changes')}`,
+    headers: controller.headers,
+    payload: {
+      id: '00000000-0000-4000-8000-0000000000ab',
+      change: { kind: 'cluster-switchover', node: 'node-b', confirm: 'node-c' },
+    },
+  });
+  assert.equal(typo.statusCode, 400);
+  assert.deepEqual((await readdir(join(mailbox, 'inbox'))).sort(), [`${id}.key`, 'change.json']);
 });

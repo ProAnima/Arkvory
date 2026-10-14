@@ -7,11 +7,8 @@ import {
   retentionObject,
 } from '@proanima/arkvory-domain';
 import type { Principal } from '@proanima/arkvory-domain';
-import type {
-  DownloadSettingsAuthor,
-  DownloadSettingsControl,
-  DownloadSettingsView,
-} from '@proanima/arkvory-application';
+import { fleetAuthor } from './fleet-actor.js';
+import type { DownloadSettingsControl, DownloadSettingsView } from '@proanima/arkvory-application';
 import { record } from '@proanima/arkvory-contracts';
 
 const ROUTE = '/api/v1/system/downloads/settings';
@@ -21,19 +18,6 @@ function administrator(actor: Principal) {
     throw new ArkvoryError('forbidden', 'Administrator required', {
       reason: 'administrator_required',
     });
-}
-
-/**
- * Who changes the settings: the caller, and for a fleet key the administrator of the controller
- * it names (ADR 0077). The name is recorded, never trusted for access.
- */
-function author(request: FastifyRequest, actor: Principal): DownloadSettingsAuthor {
-  const header = request.headers['arkvory-fleet-actor'];
-  const named =
-    actor.credential === 'fleet-key' && typeof header === 'string'
-      ? header.replace(/[^\x20-\x7e]/g, '?').slice(0, 160)
-      : '';
-  return { id: actor.id, actor: named || null };
 }
 
 function change(body: unknown) {
@@ -85,6 +69,6 @@ export function registerDownloadSettingsRoutes(
     administrator(actor);
     retentionObject(request.query, []);
     const { expected, overrides } = change(request.body);
-    return wire(await control.change(expected, overrides, author(request, actor)));
+    return wire(await control.change(expected, overrides, fleetAuthor(request, actor)));
   });
 }

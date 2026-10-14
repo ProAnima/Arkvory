@@ -221,20 +221,49 @@ export async function switchover(
       `${target} has no complete copy yet; wait for the resynchronization before a switchover`,
     );
   await tool('crm_resource', ['--resource', resource, '--move', '--node', target]);
+  // Once the move constraint exists, a failure leaves a move to finish; before, nothing changed.
   try {
-    await waitFor(
-      async () =>
-        locatedOn(
-          await tool('crm_resource', ['--resource', resource, '--locate']).catch(() => ''),
-        ).includes(target),
-      300000,
-      `${resource} on ${target}`,
-    );
-  } finally {
-    // The constraint would pin Arkvory to the target and block a later failover back.
-    await tool('crm_resource', ['--resource', resource, '--clear']);
+    try {
+      await waitFor(
+        async () =>
+          locatedOn(
+            await tool('crm_resource', ['--resource', resource, '--locate']).catch(() => ''),
+          ).includes(target),
+        300000,
+        `${resource} on ${target}`,
+      );
+    } finally {
+      // The constraint would pin Arkvory to the target and block a later failover back.
+      await tool('crm_resource', ['--resource', resource, '--clear']);
+    }
+  } catch (error) {
+    throw new SwitchoverIncomplete(error);
   }
   report('info', `Arkvory runs on ${target}`);
+}
+
+/**
+ * A switchover that failed once `--move` was issued: only such a failure leaves a move to finish.
+ * A refusal before it (not a node, no complete copy) must not clear the operator's constraints.
+ */
+export class SwitchoverIncomplete extends Error {
+  constructor(cause: unknown) {
+    super(cause instanceof Error ? cause.message : 'Switchover did not complete', { cause });
+    this.name = 'SwitchoverIncomplete';
+  }
+}
+
+/**
+ * Ends a switchover a stopped agent left behind (ADR 0077, stage F3): the agent runs on the
+ * active node and a switchover moves it, so the next tick on the new node finishes the request.
+ * The move constraint is cleared either way; whether Arkvory reached `target` is the outcome.
+ */
+export async function finishSwitchover(target: string, tool: Tool = systemTool): Promise<boolean> {
+  const { resource } = await requireMarker();
+  await tool('crm_resource', ['--resource', resource, '--clear']);
+  return locatedOn(await tool('crm_resource', ['--resource', resource, '--locate'])).includes(
+    target,
+  );
 }
 
 /**

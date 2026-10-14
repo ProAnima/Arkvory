@@ -131,6 +131,11 @@ export async function exerciseFleet(browser, f, cleanup) {
     await page.locator('#fleet-update-status:not([hidden])').waitFor();
     assert.match(await page.locator('#fleet-update-status').innerText(), /not connected/);
     assert.equal(await page.locator('#fleet-update-check').isDisabled(), true);
+    // Nor an agent for mirror and HA changes: the card says how to connect one.
+    await page.locator('#fleet-agent-missing:not([hidden])').waitFor();
+    assert.match(await page.locator('#fleet-agent-missing').innerText(), /updates-connect/);
+    assert.equal(await page.locator('#fleet-mirror-empty').isVisible(), true);
+    assert.equal(await page.locator('#fleet-cluster').isVisible(), false);
     await page.locator('#fleet-queue-reset').click();
     await page.waitForFunction(() =>
       [...document.querySelectorAll('#fleet-queue-fields input')].every(

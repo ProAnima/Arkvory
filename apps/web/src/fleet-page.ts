@@ -83,6 +83,8 @@ export class FleetPage {
         name: t('fleetThisSite'),
         downloadSettings: client.downloadSettings,
         updates: client.updates,
+        changes: client.siteChanges,
+        topology: () => client.fleet.topology(),
       });
     };
     element('fleet-read-all', HTMLButtonElement).onclick = () => {
@@ -184,6 +186,9 @@ export class FleetPage {
         name: name.textContent,
         downloadSettings: remote.downloadSettings,
         updates: remote.updates,
+        changes: remote.changes,
+        // Read now, not the last poll: a change just applied must show.
+        topology: () => this.client.fleet.refresh(site.id).then((read) => read.topology),
       });
     });
     const read = this.action('fleetReadSite', async () => {

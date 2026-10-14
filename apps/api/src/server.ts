@@ -31,6 +31,8 @@ import { maintainStorage } from './storage-maintenance.js';
 import { resolveUploadTimeouts } from './upload-policy.js';
 import { registerUpdateRoutes } from './update-routes.js';
 import { registerDownloadSettingsRoutes } from './download-settings-routes.js';
+import { registerSiteChangeRoutes } from './site-change-routes.js';
+import { SiteChangeControl } from './site-change-control.js';
 import { UpdateControl } from './update-control.js';
 import { registerFeedback } from './feedback-routes.js';
 import { registerTopologyRoutes } from './topology-routes.js';
@@ -199,6 +201,11 @@ function registerRoutes(app: FastifyInstance, parts: RouteParts) {
   registerHealthRoutes(app, runtime, () => drain.isDraining, replica, context.principal);
   registerUpdateRoutes(app, context.principal, config.updateControlDirectory);
   registerDownloadSettingsRoutes(app, context.principal, runtime.downloadSettings);
+  registerSiteChangeRoutes(
+    app,
+    context.principal,
+    new SiteChangeControl(config.updateControlDirectory),
+  );
   registerFleetControlRoutes(app, context.principal, parts.fleetControl);
   registerFleetRoutes(app, context.principal, {
     trust: parts.fleetTrust,

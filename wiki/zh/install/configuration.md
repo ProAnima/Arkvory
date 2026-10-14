@@ -44,16 +44,16 @@ Arkvory 有两类设置：
 
 `arkvory help` 无需特殊权限即可列出命令。本站示例使用简写形式 `arkvory <command>`。
 
-| 命令                            | 用途                                                                                   |
-| ------------------------------- | -------------------------------------------------------------------------------------- |
-| `status`                        | 显示安装模式、引擎、自动更新设置、固定和已安装的发行版                                 |
-| `configure`                     | 更改策略。参见 [configure 命令](#configure-command)                                    |
-| `update`                        | 立即安装较新的稳定版。参见[更新](./updates)                                            |
-| `upgrade`                       | 使用您自己的备份记录安装会更改数据库架构的发行版。参见[更新](./updates#manual-upgrade) |
-| `recover`                       | 完成被中断的更新。参见[更新](./updates#recover-update)                                 |
-| `finish-install`                | 继续被中断的首次安装                                                                   |
-| `updates-connect`               | 连接控制台和更新计时器，并注册旧安装缺少的服务                                         |
-| `updates-poll`, `updates-reset` | 由更新计时器运行，也用于恢复。参见[更新](./updates#recover-update)                     |
+| 命令                                             | 用途                                                                                   |
+| ------------------------------------------------ | -------------------------------------------------------------------------------------- |
+| `status`                                         | 显示安装模式、引擎、自动更新设置、固定和已安装的发行版                                 |
+| `configure`                                      | 更改策略。参见 [configure 命令](#configure-command)                                    |
+| `update`                                         | 立即安装较新的稳定版。参见[更新](./updates)                                            |
+| `upgrade`                                        | 使用您自己的备份记录安装会更改数据库架构的发行版。参见[更新](./updates#manual-upgrade) |
+| `recover`                                        | 完成被中断的更新。参见[更新](./updates#recover-update)                                 |
+| `finish-install`                                 | 继续被中断的首次安装                                                                   |
+| `updates-connect`                                | 连接控制台和更新计时器，并注册旧安装缺少的服务                                         |
+| `updates-poll`, `updates-reset`, `changes-reset` | 由更新计时器运行，也用于恢复。参见[更新](./updates#recover-update)                     |
 
 同一时间只运行一个命令。第二个命令会以 `Installation is locked` 停止。切勿将密钥或密码放入命令选项中：请使用文件。
 

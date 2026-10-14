@@ -10,7 +10,7 @@ Un **site** est une installation Arkvory : la principale, un miroir sur un autre
 ## Fonctionnement {#how-it-works}
 
 - Le contrôleur tient une liste de sites. Il lit chaque site toutes les 30 secondes en HTTPS et garde la dernière réponse : un site qui ne répond plus affiche encore son dernier état connu.
-- Lors du couplage, le site donne au site de contrôle une clé propre, la **clé de flotte**. Elle n’atteint que ce dont le site de contrôle a besoin : l’état du site, les descriptions de son catalogue et deux réglages : la file de téléchargements et les demandes de mise à jour. Elle ne peut ni télécharger les octets des fichiers, ni écrire dans les dépôts, ni lire ou modifier les comptes et les clés.
+- Lors du couplage, le site donne au site de contrôle une clé propre, la **clé de flotte**. Elle n’atteint que ce dont le site de contrôle a besoin : l’état du site, les descriptions de son catalogue et les modifications listées : la file de téléchargements, les demandes de mise à jour et les modifications de miroirs et de HA pour l’agent du site. Elle ne peut ni télécharger les octets des fichiers, ni écrire dans les dépôts, ni lire ou modifier les comptes et les clés.
 - Le contrôleur conserve les clés de flotte scellées par une clé de son répertoire de données (`fleet.key`). La base de données et ses sauvegardes seules ne les révèlent pas. Après une restauration, appairez de nouveau les sites.
 - Chaque site montre quels contrôleurs le gèrent et peut les révoquer à tout moment.
 
@@ -57,12 +57,15 @@ Le site de contrôle les lit sur le site avec sa clé de flotte et affiche la r�
 
 ## Réglages d’un site {#site-settings}
 
-[[ui:fleetSettings]] dans la ligne d’un site ouvre ses réglages sous la liste ; [[ui:fleetThisSettings]] ouvre la même carte pour ce site. La carte a deux parties :
+[[ui:fleetSettings]] dans la ligne d’un site ouvre ses réglages sous la liste ; [[ui:fleetThisSettings]] ouvre la même carte pour ce site. La carte a trois parties :
 
 - **[[ui:fleetQueueSettings]]** : combien de téléchargements tournent à la fois, les places réservées aux personnes, la stratégie, les poids des classes et les autres valeurs de la file du [contrôle du trafic](../reference/environment#transfers-and-bandwidth). Un champ vide garde la valeur de l’environnement du site, affichée en gris. [[ui:fleetQueueSave]] applique les valeurs aussitôt, sans redémarrage : les nouvelles décisions les suivent, les téléchargements actifs gardent leur place. [[ui:fleetQueueReset]] revient à l’environnement.
 - **[[ui:updates]]** : la version installée et la dernière, l’installation automatique et l’heure de maintenance, [[ui:updateCheck]] et [[ui:updateInstall]]. Le programme de mise à jour du site prend une demande en moins d’une minute ; d’ici là la carte l’affiche comme acceptée.
+- **[[ui:fleetAgent]]** : les miroirs et imports du site avec [[ui:fleetMirrorKeySave]] et [[ui:fleetMirrorDetach]], [[ui:fleetMirrorAttach]] avec la clé de source et, sur un cluster HA, [[ui:fleetSwitchover]] vers un nœud qui a une copie complète (nom du nœud saisi deux fois) ainsi que la décision d’une seule copie. L’agent du site applique chaque demande en moins d’une minute avec les vérifications et le retour arrière de `arkvory configure` et `cluster-*` ; [[ui:fleetRequests]] montre comment chacune s’est terminée. La clé de source va à l’agent une seule fois, dans un fichier à part, et n’est plus jamais affichée. L’agent est le programme de mise à jour du site : connectez-le avec `updates-connect`.
 
 Chaque modification porte la révision dont elle part. Si quelqu’un a modifié les réglages entre-temps, le site refuse la modification et la carte affiche les valeurs actuelles : vérifiez-les et enregistrez à nouveau. Le site note qui a modifié sa file : la clé du site de contrôle et le nom de son administrateur.
+
+Depuis le site de contrôle, un miroir ou un import n’est rattaché que comme nouveau dépôt, et le certificat de l’autorité d’une source se règle sur le site lui-même (`arkvory configure --mirror-ca-file`) : ce à quoi un site fait confiance ne change jamais à distance. La liste des demandes montre par un code comment chaque modification s’est terminée ; les propres mots de l’agent restent dans son journal sur le site. Si une modification a été interrompue à mi-chemin, l’agent n’en prend aucune autre tant qu’un administrateur du site ne l’a pas vérifié et n’y a pas lancé `arkvory changes-reset --root <racine>`.
 
 ## Qui gère ce site {#managed-by}
 
@@ -77,6 +80,6 @@ Sous [[ui:fleetThisSite]], chaque site liste les contrôleurs qui le gèrent : n
 
 ## Limites {#limits}
 
-- Les miroirs et la HA se configurent encore sur chaque site, avec sa console ou `arkvory configure` ; les modifier depuis le site de contrôle est la prochaine étape. Les passerelles de lecture gardent la file de téléchargements de leur environnement.
+- Les tests d’isolement et l’ajout ou le retrait de nœuds du cluster restent des commandes locales sur les nœuds. Les passerelles de lecture gardent la file de téléchargements de leur environnement.
 - Un contrôleur gère jusqu’à 256 sites et en lit au plus huit à la fois.
 - Le contrôleur détient une clé de chaque site qu’il gère : protégez ses administrateurs globaux et son répertoire de données aussi soigneusement que les sites eux-mêmes.

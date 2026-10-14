@@ -44,16 +44,16 @@ Toutes les commandes requièrent des droits d’administrateur et l’option `--
 
 `arkvory help` liste les commandes sans droits particuliers. Les exemples de ce site utilisent la forme courte `arkvory <command>`.
 
-| Commande                        | Utilisation                                                                                                                                                              |
-| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `status`                        | Affiche le mode d’installation, le moteur, le réglage des mises à jour automatiques, l’épinglage et la version installée                                                 |
-| `configure`                     | Modifie une politique. Voir [La commande configure](#configure-command)                                                                                                  |
-| `update`                        | Installe immédiatement une version stable plus récente. Voir [Mises à jour](./updates)                                                                                   |
-| `upgrade`                       | Installe une version qui modifie le schéma de la base de données avec un enregistrement de sauvegarde qui vous est propre. Voir [Mises à jour](./updates#manual-upgrade) |
-| `recover`                       | Termine une mise à jour interrompue. Voir [Mises à jour](./updates#recover-update)                                                                                       |
-| `finish-install`                | Poursuit une première installation interrompue                                                                                                                           |
-| `updates-connect`               | Connecte la console et le minuteur de mise à jour, et enregistre les services qui manquent à une ancienne installation                                                   |
-| `updates-poll`, `updates-reset` | Exécutées par le minuteur de mise à jour et pour la récupération. Voir [Mises à jour](./updates#recover-update)                                                          |
+| Commande                                         | Utilisation                                                                                                                                                              |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `status`                                         | Affiche le mode d’installation, le moteur, le réglage des mises à jour automatiques, l’épinglage et la version installée                                                 |
+| `configure`                                      | Modifie une politique. Voir [La commande configure](#configure-command)                                                                                                  |
+| `update`                                         | Installe immédiatement une version stable plus récente. Voir [Mises à jour](./updates)                                                                                   |
+| `upgrade`                                        | Installe une version qui modifie le schéma de la base de données avec un enregistrement de sauvegarde qui vous est propre. Voir [Mises à jour](./updates#manual-upgrade) |
+| `recover`                                        | Termine une mise à jour interrompue. Voir [Mises à jour](./updates#recover-update)                                                                                       |
+| `finish-install`                                 | Poursuit une première installation interrompue                                                                                                                           |
+| `updates-connect`                                | Connecte la console et le minuteur de mise à jour, et enregistre les services qui manquent à une ancienne installation                                                   |
+| `updates-poll`, `updates-reset`, `changes-reset` | Exécutées par le minuteur de mise à jour et pour la récupération. Voir [Mises à jour](./updates#recover-update)                                                          |
 
 Une seule commande s’exécute à la fois. Une seconde commande s’arrête avec `Installation is locked`. Ne mettez jamais une clé ni un mot de passe dans une option de commande : utilisez des fichiers.
 

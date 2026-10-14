@@ -40,6 +40,8 @@ updates-connect Connect console notifications and host scheduler; registers miss
                (backup agent after an update from 0.2) / Подключить обновления и недостающие службы
 updates-poll    Process one update-control tick / Проверка и обработка очереди
 updates-reset   Clear an interrupted request after reconciliation / Снять запрос после проверки
+changes-reset   Take site changes again after an interrupted one was checked
+               / Снова принимать изменения площадки после проверки прерванного
 update         Update; a schema change first captures and verifies a backup in the vault
                / Обновить; при смене схемы сначала проверенная копия
 upgrade        Schema change without the built-in vault; --backup-record required / Вручную
