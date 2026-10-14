@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { power, setFencing } from './ha-vms.mjs';
-import { activeNodes, ROOT, until, volumeOn } from './ha-cluster.mjs';
+import { activeNodes, dpkg, ROOT, until, volumeOn } from './ha-cluster.mjs';
 import { bigItem, writer } from './ha-load.mjs';
 
 /*
@@ -398,8 +398,8 @@ export const updateAndSwitchover = {
     const primary = await active(cluster);
     for (const node of cluster.data) await node.shell.copy(next.path, '/stand/next.deb');
     // Standby nodes only take the package files: the release lives on the volume.
-    for (const node of await standbys(cluster)) await node.shell.exec('dpkg -i /stand/next.deb');
-    await primary.shell.exec('dpkg -i /stand/next.deb');
+    for (const node of await standbys(cluster)) await dpkg(node, '-i /stand/next.deb');
+    await dpkg(primary, '-i /stand/next.deb');
     const installation = JSON.parse(await primary.shell.exec(`cat ${ROOT}/installation.json`));
     assert.equal(installation.current.version, next.version);
     const managed = await primary.shell.tryExec(
