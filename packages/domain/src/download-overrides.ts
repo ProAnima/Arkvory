@@ -155,3 +155,16 @@ export function readDownloadOverrides(value: unknown): DownloadOverrides {
     if (found[name] !== undefined) result[name] = whole(found[name], name, minimum, maximum);
   return result;
 }
+
+/**
+ * Stored overrides as this release understands them: fields of a newer release are left out (it
+ * may have saved them before a rollback); the known ones must still be valid.
+ */
+export function knownDownloadOverrides(value: unknown): DownloadOverrides {
+  if (typeof value !== 'object' || value === null || Array.isArray(value))
+    return readDownloadOverrides(value);
+  const known = Object.entries(value).filter(([name]) =>
+    downloadSettingNames.some((item) => item === name),
+  );
+  return readDownloadOverrides(Object.fromEntries(known));
+}

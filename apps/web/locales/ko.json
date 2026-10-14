@@ -4322,5 +4322,13 @@
   "fleetQueueConflict": {
     "en": "Someone changed the settings meanwhile. The form shows them now: check and save again.",
     "text": "그동안 누군가 설정을 변경했습니다. 양식에 현재 설정이 표시됩니다. 확인 후 다시 저장하세요."
+  },
+  "fleetQueueInvalid": {
+    "en": "Every number must be whole. Correct the marked fields and save again.",
+    "text": "모든 숫자는 정수여야 합니다. 표시된 필드를 고치고 다시 저장하세요."
+  },
+  "fleetQueuePerRequest": {
+    "en": "The strategy is shared: downloads are admitted one request at a time by the limits of the environment, and the session settings below wait unused until another strategy is chosen.",
+    "text": "전략이 공유입니다: 다운로드는 환경의 한도 안에서 요청 단위로 허용되며, 아래 세션 설정은 다른 전략을 선택할 때까지 사용되지 않습니다."
   }
 }

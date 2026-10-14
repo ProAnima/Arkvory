@@ -1,5 +1,5 @@
 import { createHash, X509Certificate } from 'node:crypto';
-import { request as httpRequest } from 'node:http';
+import { request as httpRequest, type IncomingMessage } from 'node:http';
 import { request as httpsRequest } from 'node:https';
 import { connect, type PeerCertificate } from 'node:tls';
 import { isIP } from 'node:net';
@@ -34,6 +34,8 @@ export interface FleetCertificate {
 
 const LIMIT_BYTES = 1024 * 1024;
 const TIMEOUT_MS = 10_000;
+/** The whole exchange, not only a quiet socket: a site dripping bytes cannot hold a round. */
+const DEADLINE_MS = 15_000;
 const loopback = new Set(['127.0.0.1', 'localhost', '[::1]', '::1']);
 
 /** `https://host[:port]` without path, query or credentials; HTTP only for loopback. */
@@ -98,6 +100,14 @@ export function readSiteCertificate(origin: string): Promise<FleetCertificate> {
       rejectUnauthorized: false,
       timeout: TIMEOUT_MS,
     });
+    const deadline = setTimeout(() => {
+      socket.destroy();
+      reject(new FleetFailure('unreachable'));
+    }, DEADLINE_MS);
+    deadline.unref();
+    socket.once('close', () => {
+      clearTimeout(deadline);
+    });
     socket.once('secureConnect', () => {
       const peer = socket.getPeerCertificate(false);
       socket.destroy();
@@ -106,15 +116,23 @@ export function readSiteCertificate(origin: string): Promise<FleetCertificate> {
         reject(new FleetFailure('certificate'));
         return;
       }
-      const raw = peer.raw;
-      const parsed = new X509Certificate(raw);
-      resolve({
-        pin: pinOf(peer),
-        certificate: pem(raw),
-        subject: parsed.subject,
-        issuer: parsed.issuer,
-        validTo: new Date(parsed.validTo).toISOString(),
-      });
+      // A listener runs outside the promise: a certificate Node cannot read must reject here,
+      // not throw out of the event loop.
+      try {
+        const raw = peer.raw;
+        const parsed = new X509Certificate(raw);
+        const validTo = new Date(parsed.validTo);
+        if (!Number.isFinite(validTo.getTime())) throw new Error('Unreadable validity');
+        resolve({
+          pin: pinOf(peer),
+          certificate: pem(raw),
+          subject: parsed.subject.slice(0, 1024),
+          issuer: parsed.issuer.slice(0, 1024),
+          validTo: validTo.toISOString(),
+        });
+      } catch {
+        reject(new FleetFailure('certificate'));
+      }
     });
     socket.once('timeout', () => {
       socket.destroy();
@@ -123,6 +141,46 @@ export function readSiteCertificate(origin: string): Promise<FleetCertificate> {
     socket.once('error', () => {
       reject(new FleetFailure('unreachable'));
     });
+  });
+}
+
+/** The answer of a site: bounded, a refusal by its status whatever its body, else JSON. */
+function readAnswer(
+  response: IncomingMessage,
+  maxBytes: number,
+  resolve: (answer: { readonly status: number; readonly body: unknown }) => void,
+  settle: (failure: FleetFailure) => void,
+) {
+  const chunks: Buffer[] = [];
+  let size = 0;
+  response.on('data', (chunk: Buffer) => {
+    size += chunk.length;
+    if (size > maxBytes) {
+      response.destroy();
+      settle(new FleetFailure('invalid'));
+    } else chunks.push(chunk);
+  });
+  response.once('end', () => {
+    const status = response.statusCode ?? 0;
+    if (status === 401) {
+      settle(new FleetFailure('revoked', status));
+      return;
+    }
+    if (status === 403) {
+      settle(new FleetFailure('refused', status));
+      return;
+    }
+    let body: unknown;
+    try {
+      body = chunks.length ? JSON.parse(Buffer.concat(chunks).toString('utf8')) : null;
+    } catch {
+      settle(new FleetFailure('invalid', status));
+      return;
+    }
+    resolve({ status, body });
+  });
+  response.once('error', () => {
+    settle(new FleetFailure('unreachable'));
   });
 }
 
@@ -143,6 +201,8 @@ export function siteRequest(
     readonly actor?: string;
     /** Largest answer read; catalog pages are larger than state. */
     readonly maxBytes?: number;
+    /** The longest the whole exchange may take; larger answers get longer. */
+    readonly deadlineMs?: number;
   } = {},
 ): Promise<{ readonly status: number; readonly body: unknown }> {
   const url = new URL(path, endpoint.url);
@@ -182,36 +242,20 @@ export function siteRequest(
           : {}),
       },
       (response) => {
-        const chunks: Buffer[] = [];
-        let size = 0;
-        response.on('data', (chunk: Buffer) => {
-          size += chunk.length;
-          if (size > (options.maxBytes ?? LIMIT_BYTES)) {
-            response.destroy();
-            settle(new FleetFailure('invalid'));
-          } else chunks.push(chunk);
-        });
-        response.once('end', () => {
-          const status = response.statusCode ?? 0;
-          let body: unknown;
-          try {
-            body = chunks.length ? JSON.parse(Buffer.concat(chunks).toString('utf8')) : null;
-          } catch {
-            settle(new FleetFailure('invalid', status));
-            return;
-          }
-          if (status === 401) settle(new FleetFailure('revoked', status));
-          else if (status === 403) settle(new FleetFailure('refused', status));
-          else resolve({ status, body });
-        });
-        response.once('error', () => {
-          settle(new FleetFailure('unreachable'));
-        });
+        readAnswer(response, options.maxBytes ?? LIMIT_BYTES, resolve, settle);
       },
     );
     request.once('timeout', () => {
       request.destroy();
       settle(new FleetFailure('unreachable'));
+    });
+    const deadline = setTimeout(() => {
+      request.destroy();
+      settle(new FleetFailure('unreachable'));
+    }, options.deadlineMs ?? DEADLINE_MS);
+    deadline.unref();
+    request.once('close', () => {
+      clearTimeout(deadline);
     });
     request.once('error', (error: Error & { code?: string }) => {
       const tls =

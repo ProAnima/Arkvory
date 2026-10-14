@@ -1,5 +1,5 @@
 import type { Pool, PoolClient } from 'pg';
-import { readDownloadOverrides, type DownloadOverrides } from '@proanima/arkvory-domain';
+import type { DownloadOverrides } from '@proanima/arkvory-domain';
 import type {
   DownloadSettingsAuthor,
   DownloadSettingsStore,
@@ -52,8 +52,9 @@ function stored(row: Row | undefined): StoredDownloadSettings {
   if (!row) return none;
   return {
     revision: Number(row.revision),
-    // Written by this code after validation; read again so a hand edit cannot smuggle a field.
-    overrides: readDownloadOverrides(row.overrides),
+    // As stored: the application reads it leniently, so a row of a newer release or a hand edit
+    // turns into a reported problem instead of a server that cannot start.
+    overrides: row.overrides,
     updatedAt: row.updated_at,
     updatedBy: row.updated_by,
     actor: row.actor,

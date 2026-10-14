@@ -62,6 +62,7 @@ const wire = (view: DownloadSettingsView) => ({
   overrides: view.overrides,
   defaults: view.defaults,
   effective: view.effective,
+  admission: view.admission,
   updatedAt: view.updatedAt?.toISOString() ?? null,
   updatedBy: view.updatedBy,
   actor: view.actor,

@@ -4322,5 +4322,13 @@
   "fleetQueueConflict": {
     "en": "Someone changed the settings meanwhile. The form shows them now: check and save again.",
     "text": "Alguien cambió los ajustes mientras tanto. El formulario los muestra ahora: revíselos y guarde de nuevo."
+  },
+  "fleetQueueInvalid": {
+    "en": "Every number must be whole. Correct the marked fields and save again.",
+    "text": "Todos los números deben ser enteros. Corrija los campos marcados y guarde de nuevo."
+  },
+  "fleetQueuePerRequest": {
+    "en": "The strategy is shared: downloads are admitted one request at a time by the limits of the environment, and the session settings below wait unused until another strategy is chosen.",
+    "text": "La estrategia es compartida: las descargas se admiten de una solicitud en una dentro de los límites del entorno, y los ajustes de sesión de abajo no se usan hasta elegir otra estrategia."
   }
 }

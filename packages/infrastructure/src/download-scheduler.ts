@@ -101,7 +101,11 @@ export class DownloadScheduler {
     const until = this.now() + this.hold.timeoutMs;
     this.held++;
     try {
-      while (admission.state !== 'active' && !this.closed && this.now() < until) {
+      // Settings changed while held (stage 3): an object no longer queued leaves at once, and the
+      // caller admits it per request.
+      const queued = () =>
+        this.policy.strategy !== 'shared' && request.size > this.policy.sessionMinBytes;
+      while (admission.state !== 'active' && !this.closed && this.now() < until && queued()) {
         await this.nextTick(signal);
         admission = this.admit(request);
       }

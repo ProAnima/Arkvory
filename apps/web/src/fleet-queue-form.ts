@@ -94,7 +94,8 @@ export class QueueSettingsForm {
   private readonly weights = new Map<Weight, HTMLInputElement>();
   private readonly minimum = number(0, 1_000_000);
   private port: QueueSettingsPort | null = null;
-  private revision = 0;
+  /** Null until the site's settings are shown: nothing can be saved over unknown settings. */
+  private revision: number | null = null;
   private generation = 0;
 
   constructor() {
@@ -107,8 +108,14 @@ export class QueueSettingsForm {
     for (const [name, key] of classes) this.weights.set(name, field(weights, key, number(1, 1000)));
     this.form.onsubmit = (event) => {
       event.preventDefault();
-      void this.save(this.overrides());
+      const overrides = this.overrides();
+      if (overrides) void this.save(overrides);
+      else {
+        this.status.hidden = false;
+        feedback(this.status, 'fleetQueueInvalid', {}, 'error');
+      }
     };
+    this.ready(false);
     element('fleet-queue-reset', HTMLButtonElement).onclick = () => {
       void this.save({});
     };
@@ -116,6 +123,8 @@ export class QueueSettingsForm {
 
   async open(port: QueueSettingsPort) {
     this.port = port;
+    this.revision = null;
+    this.ready(false);
     this.status.hidden = true;
     const generation = ++this.generation;
     try {
@@ -129,13 +138,23 @@ export class QueueSettingsForm {
   clear() {
     this.generation++;
     this.port = null;
+    this.revision = null;
+    this.ready(false);
     this.form.reset();
     this.status.hidden = true;
     clearMessage(this.changed);
   }
 
+  private ready(on: boolean) {
+    element('fleet-queue-save', HTMLButtonElement).disabled = !on;
+    element('fleet-queue-reset', HTMLButtonElement).disabled = !on;
+  }
+
   private show(settings: DownloadSettings) {
     this.revision = settings.revision;
+    this.ready(true);
+    // Under `shared` the session settings wait unused: say so rather than let them look live.
+    element('fleet-queue-admission', HTMLElement).hidden = settings.admission !== 'per-request';
     const { overrides, defaults } = settings;
     this.strategy.value = overrides.strategy ?? '';
     this.label(this.strategy, defaults.strategy);
@@ -175,7 +194,16 @@ export class QueueSettingsForm {
     if (option) message(option, 'fleetDefault', { value: known?.text ?? value });
   }
 
-  private overrides(): DownloadSettingOverrides {
+  /** Null when a field holds something that is not a whole number: never sent as "default". */
+  private overrides(): DownloadSettingOverrides | null {
+    const inputs = [...this.numbers.values(), this.minimum, ...this.weights.values()];
+    if (
+      inputs.some(
+        (input) =>
+          input.validity.badInput || (input.value !== '' && !Number.isInteger(Number(input.value))),
+      )
+    )
+      return null;
     const result: { -readonly [K in keyof DownloadSettingValues]?: DownloadSettingValues[K] } = {};
     const strategy = strategies.find(([value]) => value === this.strategy.value);
     if (strategy) result.strategy = strategy[0];
@@ -202,12 +230,12 @@ export class QueueSettingsForm {
 
   private async save(overrides: DownloadSettingOverrides) {
     const port = this.port;
-    if (!port) return;
+    const revision = this.revision;
+    if (!port || revision === null) return;
     const generation = this.generation;
-    const button = element('fleet-queue-save', HTMLButtonElement);
-    button.disabled = true;
+    this.ready(false);
     try {
-      const saved = await port.change({ expectedRevision: this.revision, overrides });
+      const saved = await port.change({ expectedRevision: revision, overrides });
       if (generation !== this.generation) return;
       this.show(saved);
       this.status.hidden = false;
@@ -221,7 +249,7 @@ export class QueueSettingsForm {
         feedback(this.status, 'fleetQueueConflict', {}, 'error');
       } else this.fail(error);
     } finally {
-      button.disabled = false;
+      if (generation === this.generation && this.revision !== null) this.ready(true);
     }
   }
 

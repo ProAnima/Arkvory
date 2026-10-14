@@ -56,6 +56,7 @@ export class ApiRuntime {
       new PostgresDownloadSettings(this.catalog.pool),
       scheduler.policy,
       this.role === 'api' ? scheduler : { configure: () => undefined },
+      { applies: this.role === 'api', gateways: config.sharedDownloads !== undefined },
     );
   }
 
@@ -76,7 +77,9 @@ export class ApiRuntime {
       // made by a writer yet simply issues none.
       const key = await loadDownloadTicketKey(this.catalog.pool, this.role === 'api');
       if (key) this.transfers.downloadScheduler.useTickets(new DownloadTickets(key));
-      if (this.role === 'api') await this.downloadSettings.sync();
+      // The environment runs until the record is read: a database hiccup here must not stop the
+      // start, the background task retries every 10 seconds and reports a failure.
+      if (this.role === 'api') await this.downloadSettings.sync().catch(() => undefined);
     } catch (error) {
       await this.close();
       throw error;

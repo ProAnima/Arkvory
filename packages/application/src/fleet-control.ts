@@ -88,12 +88,17 @@ const failureState = (error: unknown): FleetObservation['state'] => {
 
 /** Sites polled at once: a slow site must not hold the others. */
 const CONCURRENCY = 8;
+/** Reads and changes passed to sites at once: per site and in all. */
+const PER_SITE = 4;
+const IN_FLIGHT = 16;
 
 /**
  * The controller's side of the fleet (ADR 0077): get to know a site, pair with it, read every
  * site's state in the background, forget a site. Only a global administrator reaches it.
  */
 export class FleetControl {
+  private readonly inFlight = new Map<string, number>();
+  private total = 0;
   constructor(
     private readonly sites: FleetSiteStore,
     private readonly client: FleetSiteClient,
@@ -223,6 +228,14 @@ export class FleetControl {
     const site = await this.sites.get(id);
     if (!site) throw new ArkvoryError('not_found', 'Site not found');
     const key = this.sealer().open(site.id, site.sealedKey);
+    // Answers of up to 16 MiB are held in memory: few at once per site and in all.
+    const running = this.inFlight.get(id) ?? 0;
+    if (running >= PER_SITE || this.total >= IN_FLIGHT)
+      throw new ArkvoryError('busy', 'Too many requests to sites at once; retry shortly', {
+        retryAfterSeconds: 1,
+      });
+    this.inFlight.set(id, running + 1);
+    this.total++;
     try {
       return await send(site, key);
     } catch (error) {
@@ -236,6 +249,11 @@ export class FleetControl {
           reason: 'permission_missing',
         });
       throw new ArkvoryError('unavailable', `The site could not be read: ${state}`);
+    } finally {
+      this.total--;
+      const left = (this.inFlight.get(id) ?? 1) - 1;
+      if (left > 0) this.inFlight.set(id, left);
+      else this.inFlight.delete(id);
     }
   }
 

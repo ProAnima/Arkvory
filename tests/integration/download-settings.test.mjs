@@ -15,6 +15,8 @@ test('download queue settings change without a restart, revision-protected, admi
   assert.deepEqual(initial.overrides, {});
   assert.deepEqual(initial.effective, initial.defaults);
   assert.equal(initial.updatedBy, null);
+  assert.equal(initial.admission, 'sessions');
+  assert.equal(initial.problem, null);
   assert.equal((await call('GET', f.readerHeaders)).statusCode, 403);
   assert.equal(
     (await call('PUT', f.readerHeaders, { expectedRevision: 0, overrides: {} })).statusCode,

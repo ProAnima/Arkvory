@@ -4322,5 +4322,13 @@
   "fleetQueueConflict": {
     "en": "Someone changed the settings meanwhile. The form shows them now: check and save again.",
     "text": "在此期间有人修改了设置。表单现在显示的是当前设置：请检查后再次保存。"
+  },
+  "fleetQueueInvalid": {
+    "en": "Every number must be whole. Correct the marked fields and save again.",
+    "text": "所有数字必须为整数。请更正标记的字段后再次保存。"
+  },
+  "fleetQueuePerRequest": {
+    "en": "The strategy is shared: downloads are admitted one request at a time by the limits of the environment, and the session settings below wait unused until another strategy is chosen.",
+    "text": "当前为共享策略：下载按单个请求在环境限制内准入，下方的会话设置在选择其他策略之前不会使用。"
   }
 }

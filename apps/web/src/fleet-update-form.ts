@@ -3,6 +3,7 @@ import { element } from './dom.js';
 import { message, relativeMessage } from './i18n.js';
 import { feedback, showFailure } from './feedback.js';
 import { confirmAction } from './confirm-dialog.js';
+import { newer } from './update-view.js';
 
 /** The updater of this installation or of a managed site through it (ADR 0038, ADR 0077). */
 export interface UpdatesPort {
@@ -66,10 +67,11 @@ export class UpdateSettingsForm {
     }
   }
 
+  /** Nothing of the previous site stays on screen or in a later request. */
   clear() {
     this.generation++;
     this.port = null;
-    this.snapshot = null;
+    this.show(null, false);
     this.status.hidden = true;
   }
 
@@ -85,8 +87,12 @@ export class UpdateSettingsForm {
     const checked = element('fleet-update-checked', HTMLElement);
     if (snapshot?.checkedAt) relativeMessage(checked, snapshot.checkedAt);
     else message(checked, 'updateUnknown');
-    this.install.hidden = !snapshot?.latest || snapshot.latest.version === snapshot.currentVersion;
+    const latest = snapshot?.latest;
+    this.install.hidden =
+      !snapshot || !latest || !newer(latest.version, snapshot.currentVersion) || !!snapshot.pin;
     if (!snapshot) {
+      this.automatic.checked = false;
+      this.hour.value = '0';
       this.status.hidden = false;
       feedback(this.status, 'updateUnavailable', {}, 'error');
       return;
@@ -102,9 +108,22 @@ export class UpdateSettingsForm {
   private async installLatest() {
     const latest = this.snapshot?.latest;
     const snapshot = this.snapshot;
+    const generation = this.generation;
     if (!latest || !snapshot) return;
-    if (!(await confirmAction('updateConfirm', { version: latest.version }, 'updateConfirmButton')))
-      return;
+    // A schema change installs behind a verified backup on the site (ADR 0059): say so first.
+    const details = document.createElement('p');
+    message(
+      details,
+      latest.schema !== snapshot.currentSchema ? 'updateMigration' : 'updateConfirmHelp',
+    );
+    const confirmed = await confirmAction(
+      'updateConfirm',
+      { version: latest.version },
+      'updateConfirmButton',
+      details,
+    );
+    // Another site may have been opened while the dialog was up: never send this one there.
+    if (!confirmed || generation !== this.generation) return;
     await this.send({
       id: crypto.randomUUID(),
       kind: 'apply',
@@ -130,6 +149,7 @@ export class UpdateSettingsForm {
   }
 
   private fail(error: unknown) {
+    this.show(null, false);
     this.status.hidden = false;
     showFailure(this.status, error);
   }

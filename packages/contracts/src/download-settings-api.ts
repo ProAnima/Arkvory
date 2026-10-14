@@ -35,6 +35,8 @@ export interface DownloadSettings {
   readonly overrides: DownloadOverrides;
   readonly defaults: DownloadSettingValues;
   readonly effective: DownloadSettingValues;
+  /** `per-request` under `shared`: the session settings wait unused. */
+  readonly admission: 'sessions' | 'per-request';
   readonly updatedAt: string | null;
   readonly updatedBy: string | null;
   readonly actor: string | null;
@@ -77,12 +79,23 @@ const settingsSchema = object(
     overrides,
     defaults: values,
     effective: values,
+    admission: { type: 'string', enum: ['sessions', 'per-request'] },
     updatedAt: { type: 'string', format: 'date-time', nullable: true },
     updatedBy: nullableText,
     actor: nullableText,
     problem: nullableText,
   },
-  ['revision', 'overrides', 'defaults', 'effective', 'updatedAt', 'updatedBy', 'actor', 'problem'],
+  [
+    'revision',
+    'overrides',
+    'defaults',
+    'effective',
+    'admission',
+    'updatedAt',
+    'updatedBy',
+    'actor',
+    'problem',
+  ],
 );
 const json = (schema: unknown) => ({ 'application/json': { schema } });
 
@@ -145,9 +158,7 @@ function readValues(value: unknown): DownloadSettingValues {
 }
 function readOverrides(value: unknown): DownloadOverrides {
   const row = record(value);
-  const names = Object.keys(valueProperties);
-  if (!Object.keys(row).every((name) => names.includes(name)))
-    throw new Error('Unknown download setting');
+  // Settings a newer server knows are left out, not refused: the contract grows additively.
   const result: { -readonly [K in keyof DownloadSettingValues]?: DownloadSettingValues[K] } = {};
   if (row['strategy'] !== undefined)
     result.strategy = oneOf(row['strategy'], downloadStrategyNames);
@@ -174,6 +185,7 @@ export function readDownloadSettings(value: unknown): DownloadSettings {
     overrides: readOverrides(row['overrides']),
     defaults: readValues(row['defaults']),
     effective: readValues(row['effective']),
+    admission: oneOf(row['admission'], ['sessions', 'per-request'] as const),
     updatedAt: optionalText(row['updatedAt']),
     updatedBy: optionalText(row['updatedBy']),
     actor: optionalText(row['actor']),

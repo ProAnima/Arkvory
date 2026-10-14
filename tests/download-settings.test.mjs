@@ -145,3 +145,67 @@ test('sync applies what another writer saved once, and falls back to the default
   assert.match(view.problem, /interactiveReserve/);
   assert.deepEqual(view.effective, view.defaults);
 });
+
+test('a stored row of a newer release or a bad hand edit is a problem, never a stopped server', async () => {
+  const queue = target();
+  const row = (overrides) => ({
+    read: async () => ({ revision: 3, overrides, updatedAt: null, updatedBy: 'a', actor: null }),
+    write: async () => null,
+  });
+  // A field this release does not know is left out; the known ones still apply.
+  const newer = new DownloadSettingsControl(row({ sessions: 4, windows: [] }), base, queue);
+  await newer.sync();
+  assert.equal(queue.applied.at(-1).slots, 4);
+  const shown = await newer.view();
+  assert.deepEqual(shown.overrides, { sessions: 4 });
+  assert.equal(shown.problem, null);
+  // A known field out of range: the environment runs and the reason is shown.
+  const broken = new DownloadSettingsControl(row({ sessions: 0 }), base, target());
+  await broken.sync();
+  const view = await broken.view();
+  assert.match(view.problem, /sessions/);
+  assert.deepEqual(view.effective, view.defaults);
+});
+
+test('a late read of an older revision never replaces a newer change', async () => {
+  const store = memoryStore();
+  const queue = target();
+  const control = new DownloadSettingsControl(store, base, queue);
+  const old = await store.read();
+  await control.change(0, { sessions: 5 }, { id: 'admin', actor: null });
+  // A read of revision 0 that started before the change arrives after it.
+  store.read = async () => old;
+  await control.sync();
+  await control.view();
+  assert.equal(queue.applied.at(-1).slots, 5);
+});
+
+test('conflicts and refusals leave the queue as it runs; gateways keep shared admission', async () => {
+  const store = memoryStore();
+  const queue = target();
+  const control = new DownloadSettingsControl(store, base, queue, {
+    applies: true,
+    gateways: true,
+  });
+  await assert.rejects(
+    control.change(0, { strategy: 'ordered' }, { id: 'admin', actor: null }),
+    failure('/overrides/strategy', 'invalid'),
+  );
+  await control.change(0, { strategy: 'shared', sessions: 6 }, { id: 'admin', actor: null });
+  const runs = queue.applied.length;
+  await assert.rejects(control.change(0, { sessions: 2 }, { id: 'admin', actor: null }), {
+    code: 'conflict',
+  });
+  assert.equal(queue.applied.length, runs);
+  const view = await control.view();
+  assert.equal(view.admission, 'per-request', 'shared admits per request: sessions wait unused');
+  // A read gateway shows what it runs, its environment, and refuses changes.
+  const reader = new DownloadSettingsControl(store, base, target(), {
+    applies: false,
+    gateways: true,
+  });
+  const seen = await reader.view();
+  assert.deepEqual(seen.effective, seen.defaults);
+  assert.match(seen.problem, /read gateway/);
+  await assert.rejects(reader.change(1, {}, { id: 'admin', actor: null }), { code: 'read_only' });
+});

@@ -135,6 +135,9 @@ export const fleetEnglish = {
   fleetQueueProblem: 'Saved settings do not fit this server and are not used: {problem}',
   fleetQueueConflict:
     'Someone changed the settings meanwhile. The form shows them now: check and save again.',
+  fleetQueuePerRequest:
+    'The strategy is shared: downloads are admitted one request at a time by the limits of the environment, and the session settings below wait unused until another strategy is chosen.',
+  fleetQueueInvalid: 'Every number must be whole. Correct the marked fields and save again.',
 } as const;
 
 export const fleetRussian: Record<keyof typeof fleetEnglish, string> = {
@@ -273,4 +276,7 @@ export const fleetRussian: Record<keyof typeof fleetEnglish, string> = {
   fleetQueueProblem: 'Сохранённые настройки не подходят этому серверу и не используются: {problem}',
   fleetQueueConflict:
     'Кто-то изменил настройки за это время. Форма показывает их сейчас: проверьте и сохраните снова.',
+  fleetQueuePerRequest:
+    'Стратегия общая: скачивания допускаются по одному запросу в пределах ограничений окружения, а настройки сессий ниже не используются, пока не выбрана другая стратегия.',
+  fleetQueueInvalid: 'Все числа должны быть целыми. Исправьте отмеченные поля и сохраните снова.',
 };

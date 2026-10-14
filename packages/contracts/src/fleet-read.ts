@@ -35,7 +35,10 @@ const patterns = fleetReadRoutes.map(
 export function isFleetReadPath(path: string): boolean {
   if (path.length > 2048 || !path.startsWith('/api/v1/') || path.includes('#')) return false;
   const [route = ''] = path.split('?', 1);
-  if (/(^|\/)\.{1,2}(\/|$)|%2e%2e|%2f|\\/i.test(route)) return false;
+  // Any spelling of a dot segment (`.`, `..`, `%2e`, `.%2E`): URL parsing on the way to the site
+  // would remove it, and the site would get another path than the one checked here.
+  if (route.split('/').some((part) => /^(?:\.|%2e){1,2}$/i.test(part))) return false;
+  if (/%2f|%5c|\\/i.test(route)) return false;
   return patterns.some((pattern) => pattern.test(route));
 }
 

@@ -4322,5 +4322,13 @@
   "fleetQueueConflict": {
     "en": "Someone changed the settings meanwhile. The form shows them now: check and save again.",
     "text": "غيّر أحدهم الإعدادات في هذه الأثناء. يعرضها النموذج الآن: راجعها واحفظ مرة أخرى."
+  },
+  "fleetQueueInvalid": {
+    "en": "Every number must be whole. Correct the marked fields and save again.",
+    "text": "يجب أن يكون كل رقم عددًا صحيحًا. صحّح الحقول المحددة واحفظ مرة أخرى."
+  },
+  "fleetQueuePerRequest": {
+    "en": "The strategy is shared: downloads are admitted one request at a time by the limits of the environment, and the session settings below wait unused until another strategy is chosen.",
+    "text": "الاستراتيجية مشتركة: تُقبل التنزيلات طلبًا طلبًا ضمن حدود البيئة، ولا تُستخدم إعدادات الجلسات أدناه حتى تُختار استراتيجية أخرى."
   }
 }

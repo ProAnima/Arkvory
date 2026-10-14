@@ -4322,5 +4322,13 @@
   "fleetQueueConflict": {
     "en": "Someone changed the settings meanwhile. The form shows them now: check and save again.",
     "text": "इस बीच किसी ने सेटिंग बदल दीं। फ़ॉर्म अब उन्हें दिखा रहा है: जाँचें और फिर से सहेजें।"
+  },
+  "fleetQueueInvalid": {
+    "en": "Every number must be whole. Correct the marked fields and save again.",
+    "text": "हर संख्या पूर्णांक होनी चाहिए। चिह्नित फ़ील्ड ठीक करें और फिर से सहेजें।"
+  },
+  "fleetQueuePerRequest": {
+    "en": "The strategy is shared: downloads are admitted one request at a time by the limits of the environment, and the session settings below wait unused until another strategy is chosen.",
+    "text": "रणनीति साझा है: डाउनलोड एनवायरनमेंट की सीमाओं के भीतर एक-एक अनुरोध पर स्वीकार होते हैं, और नीचे की सत्र सेटिंग तब तक उपयोग नहीं होतीं जब तक दूसरी रणनीति न चुनी जाए।"
   }
 }
