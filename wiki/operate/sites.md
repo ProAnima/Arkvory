@@ -65,6 +65,8 @@ The controller reads these on the site with its fleet key and shows the answer a
 
 Each change carries the revision it was made from. If someone changed the settings meanwhile, the site refuses the change and the card shows the current values: check them and save again. The site records who changed its queue: the controller's key and the name of its administrator.
 
+From the controller a mirror or an import is attached only as a new repository, and the authority certificate of a source is set on the site itself (`arkvory configure --mirror-ca-file`): what a site trusts never changes remotely. The request list shows how each change ended as a code; the agent's own words stay in its log on the site. If a change was interrupted half done, the agent takes no other until an administrator of the site checked it and ran `arkvory changes-reset --root <root>` there.
+
 ## Who manages this site {#managed-by}
 
 Under [[ui:fleetThisSite]], every site lists the controllers that manage it: their name, who paired them, when, and their last request. [[ui:fleetRevoke]] refuses the controller's key at once.

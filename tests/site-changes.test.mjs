@@ -1,14 +1,25 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdir, mkdtemp, readFile, readdir, stat, writeFile } from 'node:fs/promises';
+import {
+  mkdir,
+  mkdtemp,
+  readFile,
+  readdir,
+  rm,
+  stat,
+  symlink,
+  utimes,
+  writeFile,
+} from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { pollChanges } from '../apps/deploy/dist/site-changes.js';
+import { pollChanges, resetChanges } from '../apps/deploy/dist/site-changes.js';
 import { SiteChangeControl } from '../apps/api/dist/site-change-control.js';
 import { readSiteChange } from '../packages/contracts/dist/index.js';
 import { removeTestDirectory } from './helpers.mjs';
 
 const key = 'arkvory_' + 'k'.repeat(40);
+const posix = process.platform !== 'win32';
 
 /** An installation with the updater mailbox of ADR 0038, as updates-connect leaves it. */
 async function site(t) {
@@ -37,22 +48,23 @@ async function site(t) {
   return root;
 }
 
-/** What the agent would do, recorded; the key file is read while it exists. */
-function actions(fail) {
+/** What the agent would do, recorded; `mirrors` are the repositories attached now. */
+function actions({ fail, mirrors = [], finish = async () => true, switchover } = {}) {
   const calls = [];
   return {
     calls,
+    attached: async () => mirrors,
     mirror: async (_state, change) => {
-      const secret = change.tokenFile ? (await readFile(change.tokenFile, 'utf8')).trim() : null;
-      calls.push({ mirror: { ...change, tokenFile: undefined }, secret });
+      calls.push({ mirror: change });
       if (fail) throw new Error(fail);
     },
     switchover: async (node) => {
       calls.push({ switchover: node });
+      if (switchover) await switchover();
     },
     finishSwitchover: async (node) => {
       calls.push({ finish: node });
-      return true;
+      return finish();
     },
     singleCopy: async (options) => {
       calls.push({ singleCopy: Object.fromEntries(options) });
@@ -62,92 +74,65 @@ function actions(fail) {
 
 const attach = readSiteChange({
   kind: 'mirror-attach',
-  repository: 'releases',
+  repository: 'imports',
   upstream: 'https://source.example',
   sourceRepository: 'releases',
   stages: ['tested'],
-  certificate: null,
 });
-const id = (n) => `00000000-0000-4000-8000-00000000000${String(n)}`;
+const detach = readSiteChange({ kind: 'mirror-detach', repositories: ['imports'] });
+const id = (n) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
+const status = async (root) =>
+  JSON.parse(await readFile(join(root, 'updates/status/changes.json'), 'utf8'));
 
 test('a mirror change goes through the mailbox once; its key never stays or shows', async (t) => {
   const root = await site(t);
   const api = new SiteChangeControl(join(root, 'updates'));
   await assert.rejects(api.request(id(1), attach, key, 'admin'), { code: 'unavailable' });
-  // The agent's first tick reports in; from then on requests are taken.
   await pollChanges(root, actions());
   assert.equal((await api.status()).agent, true);
   await assert.rejects(api.request(id(1), attach, undefined, 'admin'), { code: 'invalid_input' });
   await assert.rejects(api.request(id(1), attach, 'short', 'admin'), { code: 'invalid_input' });
   assert.deepEqual(await api.request(id(1), attach, key, 'admin'), { id: id(1) });
-  if (process.platform !== 'win32')
-    assert.equal((await stat(join(root, 'updates/inbox/change.key'))).mode & 0o777, 0o600);
-  const pending = await api.status();
-  assert.deepEqual(pending.pending?.id, id(1));
-  assert.doesNotMatch(JSON.stringify(pending), new RegExp(key));
-  // The same id again is the same request; another one waits for the slot.
+  // The key is named after its request: no other request can take it.
+  const keyFile = join(root, `updates/inbox/${id(1)}.key`);
+  if (posix) assert.equal((await stat(keyFile)).mode & 0o777, 0o600);
+  assert.doesNotMatch(JSON.stringify(await api.status()), /kkkk/);
+  // The same id with the same change is the same request; with another change, refused.
   assert.deepEqual(await api.request(id(1), attach, key, 'admin'), { id: id(1) });
-  await assert.rejects(api.request(id(2), attach, key, 'admin'), { code: 'busy' });
+  await assert.rejects(api.request(id(1), detach, undefined, 'admin'), {
+    code: 'conflict',
+    reason: 'idempotency_mismatch',
+  });
+  await assert.rejects(api.request(id(2), detach, undefined, 'admin'), { code: 'busy' });
   const agent = actions();
   await pollChanges(root, agent);
   assert.equal(agent.calls.length, 1);
-  assert.equal(agent.calls[0].secret, key);
+  assert.equal(agent.calls[0].mirror.secret, key, 'the key is passed as a value, never as a path');
+  assert.equal(agent.calls[0].mirror.tokenFile, undefined);
   assert.deepEqual(agent.calls[0].mirror.stages, ['tested']);
   const done = await api.status();
   assert.equal(done.pending, null);
   assert.equal(done.recent[0].state, 'done');
-  assert.equal(done.recent[0].actor, 'admin');
-  // Nothing of the request or its key is left anywhere.
   assert.deepEqual(await readdir(join(root, 'updates/inbox')), []);
   const files = await readdir(root);
   assert.ok(!files.includes('change.key') && !files.includes('change-request.json'));
-  for (const name of ['updates/status/changes.json'])
-    assert.doesNotMatch(await readFile(join(root, name), 'utf8'), new RegExp(key));
-  // Repeating a finished request does not queue it again.
+  assert.doesNotMatch(await readFile(join(root, 'updates/status/changes.json'), 'utf8'), /kkkk/);
+  // A finished request is known by its id and digest.
   assert.deepEqual(await api.request(id(1), attach, key, 'admin'), { id: id(1) });
-  assert.equal((await api.status()).pending, null);
+  await assert.rejects(api.request(id(1), detach, undefined, 'admin'), { code: 'conflict' });
 });
 
-test('a failed change is recorded with its reason; an old request expires', async (t) => {
-  const root = await site(t);
-  let now = Date.parse('2026-10-14T12:00:00Z');
-  const api = new SiteChangeControl(join(root, 'updates'), () => now);
-  await pollChanges(root, actions(), () => now);
-  const detach = readSiteChange({ kind: 'mirror-detach', repositories: ['releases'] });
-  await api.request(id(1), detach, undefined, 'admin');
-  await pollChanges(root, actions('releases is not a mirrored repository'), () => now);
-  const failed = (await api.status()).recent[0];
-  assert.equal(failed.state, 'failed');
-  assert.match(failed.error, /not a mirrored repository/);
-  await api.request(id(2), detach, undefined, 'admin');
-  now += 6 * 60 * 1000;
-  const agent = actions();
-  await pollChanges(root, agent, () => now);
-  assert.equal(agent.calls.length, 0, 'an expired request is never applied');
-  assert.match((await api.status()).recent[0].error, /expired/);
-});
-
-test('a switchover the agent did not see end is finished by the next tick', async (t) => {
-  const root = await site(t);
-  // The agent took the request and was stopped by the move itself.
-  await writeFile(
-    join(root, 'change-request.json'),
-    JSON.stringify({
-      id: id(3),
-      requestedAt: new Date().toISOString(),
-      actor: 'Ann (fleet:1)',
-      change: { kind: 'cluster-switchover', node: 'node-b', confirm: 'node-b' },
-    }),
+test('remote changes never widen what a site trusts or name all its mirrors at once', () => {
+  assert.throws(
+    () => readSiteChange({ ...attach, certificate: '-----BEGIN CERTIFICATE-----' }),
+    /Unknown field/,
   );
-  const agent = actions();
-  await pollChanges(root, agent);
-  assert.deepEqual(agent.calls, [{ finish: 'node-b' }]);
-  const status = JSON.parse(await readFile(join(root, 'updates/status/changes.json'), 'utf8'));
-  assert.equal(status.recent[0].state, 'done');
-  assert.equal(status.recent[0].kind, 'cluster-switchover');
-});
-
-test('changes are read strictly: a switchover repeats its node, keys only with mirrors', () => {
+  for (const repositories of [['all'], ['a', 'a'], []])
+    assert.throws(() => readSiteChange({ kind: 'mirror-detach', repositories }), /repositories/);
+  assert.throws(
+    () => readSiteChange({ kind: 'single-copy', until: '2026-10-14T18:00', reason: 'x' }),
+    /zone/,
+  );
   assert.throws(
     () => readSiteChange({ kind: 'cluster-switchover', node: 'node-b', confirm: 'node-c' }),
     /repeat the node/,
@@ -163,17 +148,176 @@ test('changes are read strictly: a switchover repeats its node, keys only with m
     /HTTPS origin/,
   );
   assert.throws(() => readSiteChange({ kind: 'shell', command: 'rm' }), /Unknown change/);
-  assert.throws(
-    () => readSiteChange({ kind: 'mirror-key', repository: 'r', key: 'secret' }),
-    /Unknown field/,
-  );
+});
+
+test('the agent refuses what does not fit the site and says why in a code', async (t) => {
+  const root = await site(t);
+  const api = new SiteChangeControl(join(root, 'updates'));
+  await pollChanges(root, actions());
+  const outcome = async (n, change, extra, agent, secret) => {
+    await api.request(id(n), change, secret, 'admin');
+    await pollChanges(root, agent ?? actions(extra));
+    return (await api.status()).recent[0];
+  };
   assert.equal(
-    readSiteChange({
-      kind: 'mirror-attach',
-      repository: 'r',
-      upstream: 'HTTPS://Source.Example/',
-      sourceRepository: 'r',
-    }).upstream,
-    'https://source.example',
+    (await outcome(1, attach, { mirrors: ['imports'] }, undefined, key)).error,
+    'already_attached',
   );
+  assert.equal((await outcome(2, detach, { mirrors: [] })).error, 'not_a_mirror');
+  const keyChange = readSiteChange({ kind: 'mirror-key', repository: 'imports' });
+  assert.equal(
+    (await outcome(3, keyChange, { mirrors: [] }, undefined, key)).error,
+    'not_a_mirror',
+  );
+  const failing = await outcome(4, detach, {
+    mirrors: ['imports'],
+    fail: 'probe of https://10.0.0.5 refused: /etc/x',
+  });
+  assert.equal(failing.error, 'mirror_failed');
+  // The agent's own words (hosts, files) stay in its log on the site.
+  assert.doesNotMatch(JSON.stringify(await status(root)), /10\.0\.0\.5|\/etc\/x/);
+});
+
+test('a hostile inbox: links, directories and leftovers never reach a key or stop the agent', async (t) => {
+  const root = await site(t);
+  const api = new SiteChangeControl(join(root, 'updates'));
+  await pollChanges(root, actions());
+  // A directory where the request goes: removed, refused, and the agent keeps reporting.
+  await mkdir(join(root, 'updates/inbox/change.json/nested'), { recursive: true });
+  await pollChanges(root, actions());
+  assert.deepEqual(await readdir(join(root, 'updates/inbox')), []);
+  assert.ok(!(await readdir(root)).includes('change-request.json'));
+  assert.equal((await api.status()).agent, true);
+  // A directory as the key of a request: no key, the attach is refused with a code.
+  await api.request(id(5), attach, key, 'admin');
+  await rm(join(root, `updates/inbox/${id(5)}.key`), { force: true });
+  await mkdir(join(root, `updates/inbox/${id(5)}.key`));
+  await pollChanges(root, actions());
+  assert.equal((await api.status()).recent[0].error, 'key_missing');
+  if (posix) {
+    // A link to a root-only file as the key: never followed, never read, never sent.
+    const secret = join(root, 'host-secret');
+    await writeFile(secret, 'host-password-of-sixteen-chars', { mode: 0o600 });
+    await api.request(id(6), attach, key, 'admin');
+    await rm(join(root, `updates/inbox/${id(6)}.key`), { force: true });
+    await symlink(secret, join(root, `updates/inbox/${id(6)}.key`));
+    const agent = actions();
+    await pollChanges(root, agent);
+    assert.equal(agent.calls.length, 0);
+    assert.equal((await api.status()).recent[0].error, 'key_missing');
+    assert.equal(await readFile(secret, 'utf8'), 'host-password-of-sixteen-chars');
+  }
+  // Keys whose request never came go after an hour; fresh ones stay for their request.
+  const old = join(root, `updates/inbox/${id(7)}.key`);
+  const fresh = join(root, `updates/inbox/${id(8)}.key`);
+  await writeFile(old, key);
+  await writeFile(fresh, key);
+  await writeFile(join(root, 'updates/inbox/.left.tmp'), key);
+  const hourAgo = new Date(Date.now() - 2 * 3600000);
+  await utimes(old, hourAgo, hourAgo);
+  await utimes(join(root, 'updates/inbox/.left.tmp'), hourAgo, hourAgo);
+  await pollChanges(root, actions());
+  assert.deepEqual(await readdir(join(root, 'updates/inbox')), [`${id(8)}.key`]);
+});
+
+test('names, clocks and sizes at their limits', async (t) => {
+  const root = await site(t);
+  let now = Date.parse('2026-10-14T12:00:00Z');
+  const api = new SiteChangeControl(join(root, 'updates'), () => now);
+  await pollChanges(root, actions(), () => now);
+  // A long administrator name is cut, never a request nobody can read.
+  await api.request(id(1), detach, undefined, `${'Ä'.repeat(300)} (fleet:1)`);
+  assert.equal((await api.status()).pending.actor.length, 200);
+  await pollChanges(root, actions({ mirrors: ['imports'] }), () => now);
+  // A request from a clock far ahead expires like an old one.
+  await api.request(id(2), detach, undefined, 'admin');
+  now -= 31 * 60 * 1000;
+  const agent = actions({ mirrors: ['imports'] });
+  await pollChanges(root, agent, () => now);
+  assert.equal(agent.calls.length, 0);
+  assert.equal((await api.status()).recent[0].error, 'expired');
+  now += 31 * 60 * 1000;
+  await pollChanges(root, actions(), () => now);
+  // Twenty records with the longest names stay readable.
+  for (let n = 10; n < 32; n++) {
+    await api.request(id(n), detach, undefined, 'x'.repeat(400));
+    await pollChanges(root, actions({ fail: 'e'.repeat(5000) }), () => now);
+  }
+  const listed = await api.status();
+  assert.equal(listed.recent.length, 20);
+  assert.ok((await stat(join(root, 'updates/status/changes.json'))).size < 16384);
+});
+
+test('an interrupted change blocks the queue until an operator resets it', async (t) => {
+  const root = await site(t);
+  const api = new SiteChangeControl(join(root, 'updates'));
+  await pollChanges(root, actions());
+  // The agent took a detach and was killed in the middle of it.
+  await writeFile(
+    join(root, 'change-request.json'),
+    JSON.stringify({
+      id: id(1),
+      digest: 'a'.repeat(64),
+      requestedAt: new Date().toISOString(),
+      actor: 'admin',
+      change: { kind: 'mirror-detach', repositories: ['imports'] },
+    }),
+  );
+  await pollChanges(root, actions());
+  const blocked = await api.status();
+  assert.equal(blocked.blocked, 'interrupted');
+  assert.equal(blocked.recent[0].error, 'interrupted');
+  await assert.rejects(api.request(id(2), detach, undefined, 'admin'), {
+    code: 'conflict',
+    reason: 'state_conflict',
+  });
+  await resetChanges(root);
+  assert.equal((await api.status()).blocked, null);
+  assert.deepEqual(await api.request(id(2), detach, undefined, 'admin'), { id: id(2) });
+});
+
+test('a switchover is finished on the new node, retried while young, and judged by where Arkvory runs', async (t) => {
+  const root = await site(t);
+  const claimed = (n) =>
+    writeFile(
+      join(root, 'change-request.json'),
+      JSON.stringify({
+        id: id(n),
+        digest: 'b'.repeat(64),
+        requestedAt: new Date().toISOString(),
+        actor: 'Ann (fleet:1)',
+        change: { kind: 'cluster-switchover', node: 'node-b', confirm: 'node-b' },
+      }),
+    );
+  await claimed(3);
+  // Pacemaker is busy right after the move: tried again on the next tick.
+  await pollChanges(
+    root,
+    actions({
+      finish: async () => {
+        throw new Error('crm busy');
+      },
+    }),
+  );
+  assert.ok((await readdir(root)).includes('change-request.json'));
+  await pollChanges(root, actions());
+  assert.equal((await status(root)).recent[0].state, 'done');
+  assert.ok(!(await readdir(root)).includes('change-request.json'));
+  // Moved, but clearing the constraint failed: it is done, as Arkvory runs on the target.
+  const api = new SiteChangeControl(join(root, 'updates'));
+  await api.request(
+    id(4),
+    readSiteChange({ kind: 'cluster-switchover', node: 'node-b', confirm: 'node-b' }),
+    undefined,
+    'admin',
+  );
+  await pollChanges(
+    root,
+    actions({
+      switchover: async () => {
+        throw new Error('clear failed');
+      },
+    }),
+  );
+  assert.equal((await status(root)).recent[0].state, 'done');
 });

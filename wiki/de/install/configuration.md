@@ -44,16 +44,16 @@ Alle Befehle benötigen Administratorrechte und die Option `--root` mit dem Inst
 
 `arkvory help` listet die Befehle ohne besondere Rechte auf. Die Beispiele auf dieser Seite verwenden die Kurzform `arkvory <command>`.
 
-| Befehl                          | Verwendung                                                                                                                            |
-| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| `status`                        | Zeigt den Installationsmodus, die Engine, die Einstellung für automatische Updates, das Anheften und das installierte Release         |
-| `configure`                     | Ändert eine Richtlinie. Siehe [Der Befehl configure](#configure-command)                                                              |
-| `update`                        | Installiert jetzt ein neueres stabiles Release. Siehe [Updates](./updates)                                                            |
-| `upgrade`                       | Installiert ein Release, das das Datenbankschema ändert, mit einem eigenen Backup-Nachweis. Siehe [Updates](./updates#manual-upgrade) |
-| `recover`                       | Schließt ein unterbrochenes Update ab. Siehe [Updates](./updates#recover-update)                                                      |
-| `finish-install`                | Setzt eine unterbrochene Erstinstallation fort                                                                                        |
-| `updates-connect`               | Verbindet die Konsole und den Update-Timer und registriert Dienste, die einer alten Installation fehlen                               |
-| `updates-poll`, `updates-reset` | Werden vom Update-Timer und zur Wiederherstellung ausgeführt. Siehe [Updates](./updates#recover-update)                               |
+| Befehl                                           | Verwendung                                                                                                                            |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `status`                                         | Zeigt den Installationsmodus, die Engine, die Einstellung für automatische Updates, das Anheften und das installierte Release         |
+| `configure`                                      | Ändert eine Richtlinie. Siehe [Der Befehl configure](#configure-command)                                                              |
+| `update`                                         | Installiert jetzt ein neueres stabiles Release. Siehe [Updates](./updates)                                                            |
+| `upgrade`                                        | Installiert ein Release, das das Datenbankschema ändert, mit einem eigenen Backup-Nachweis. Siehe [Updates](./updates#manual-upgrade) |
+| `recover`                                        | Schließt ein unterbrochenes Update ab. Siehe [Updates](./updates#recover-update)                                                      |
+| `finish-install`                                 | Setzt eine unterbrochene Erstinstallation fort                                                                                        |
+| `updates-connect`                                | Verbindet die Konsole und den Update-Timer und registriert Dienste, die einer alten Installation fehlen                               |
+| `updates-poll`, `updates-reset`, `changes-reset` | Werden vom Update-Timer und zur Wiederherstellung ausgeführt. Siehe [Updates](./updates#recover-update)                               |
 
 Es läuft immer nur ein Befehl gleichzeitig. Ein zweiter Befehl bricht mit `Installation is locked` ab. Geben Sie niemals einen Schlüssel oder ein Passwort in einer Befehlsoption an: Verwenden Sie Dateien.
 

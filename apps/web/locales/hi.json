@@ -4387,13 +4387,9 @@
     "en": "Import stages, comma-separated",
     "text": "आयात स्टेज, अल्पविराम से अलग"
   },
-  "fleetMirrorCertificate": {
-    "en": "Authority certificate of the source (PEM)",
-    "text": "स्रोत का प्रमाणपत्र प्राधिकरण प्रमाणपत्र (PEM)"
-  },
   "fleetMirrorAttachHint": {
-    "en": "Without stages the repository mirrors the source read-only; with stages it is an ordinary repository that takes over versions with those stages. The source is checked with the key before anything changes.",
-    "text": "स्टेज के बिना रिपॉजिटरी स्रोत को केवल-पढ़ने के लिए मिरर करती है; स्टेज के साथ यह एक सामान्य रिपॉजिटरी है जो उन स्टेज वाले संस्करण ले लेती है। कुछ भी बदलने से पहले स्रोत की कुंजी से जाँच होती है।"
+    "en": "Attaches a new repository. Without stages it mirrors the source read-only; with stages it is an ordinary repository that takes over versions with those stages. The source is checked with the key before anything changes. An authority certificate of a source is set on the site itself.",
+    "text": "एक नई रिपॉजिटरी जोड़ता है। स्टेज के बिना यह स्रोत को केवल-पढ़ने के लिए मिरर करती है; स्टेज के साथ यह एक सामान्य रिपॉजिटरी है जो उन स्टेज वाले संस्करण ले लेती है। कुछ भी बदलने से पहले स्रोत की कुंजी से जाँच होती है। स्रोत का प्रमाणपत्र प्राधिकरण प्रमाणपत्र साइट पर ही सेट किया जाता है।"
   },
   "fleetMirrorAttachButton": {
     "en": "Attach",
@@ -4526,5 +4522,53 @@
   "fleetChangeQueued": {
     "en": "Queued. The site’s agent applies it within a minute.",
     "text": "कतार में है। साइट का एजेंट इसे एक मिनट के भीतर लागू करेगा।"
+  },
+  "fleetAgentUpdating": {
+    "en": "The site is installing an update: changes wait until it is done.",
+    "text": "साइट एक अपडेट इंस्टॉल कर रही है: बदलाव उसके पूरा होने तक प्रतीक्षा करेंगे।"
+  },
+  "fleetAgentBlocked": {
+    "en": "A change was interrupted half done on the site. The agent takes no other until an administrator of the site checked it and ran arkvory changes-reset there.",
+    "text": "साइट पर एक बदलाव बीच में ही बाधित हो गया। जब तक साइट का व्यवस्थापक उसे जाँचकर वहाँ arkvory changes-reset नहीं चला देता, तब तक एजेंट कोई और बदलाव नहीं लेगा।"
+  },
+  "fleetSingleOffAsk": {
+    "en": "Withdraw the single-copy decision? While copies are still missing, writes stop until they are back.",
+    "text": "एक प्रति का निर्णय वापस लें? जब तक प्रतियाँ कम हैं, उनके वापस आने तक लेखन रुका रहेगा।"
+  },
+  "fleetErrorExpired": {
+    "en": "Expired before the agent took it.",
+    "text": "एजेंट के लेने से पहले ही समय-सीमा समाप्त हो गई।"
+  },
+  "fleetErrorInterrupted": {
+    "en": "Interrupted; the site needs checking.",
+    "text": "बाधित; साइट की जाँच आवश्यक है।"
+  },
+  "fleetErrorKeyMissing": {
+    "en": "The source key did not arrive.",
+    "text": "स्रोत कुंजी नहीं पहुँची।"
+  },
+  "fleetErrorNotMirror": {
+    "en": "Not a mirror of this site.",
+    "text": "यह इस साइट का मिरर नहीं है।"
+  },
+  "fleetErrorAttached": {
+    "en": "Already a mirror or an import: replace its key or detach it first.",
+    "text": "पहले से एक मिरर या आयात है: इसकी कुंजी बदलें या पहले इसे अलग करें।"
+  },
+  "fleetErrorMirror": {
+    "en": "The mirror change failed; the agent restored the previous configuration. Details are in the agent log on the site.",
+    "text": "मिरर का बदलाव विफल रहा; एजेंट ने पिछला कॉन्फ़िगरेशन बहाल कर दिया। विवरण साइट पर एजेंट के लॉग में है।"
+  },
+  "fleetErrorSwitchover": {
+    "en": "The switchover failed. Details are in the agent log on the site.",
+    "text": "स्विचओवर विफल रहा। विवरण साइट पर एजेंट के लॉग में है।"
+  },
+  "fleetErrorSingleCopy": {
+    "en": "The single-copy decision failed. Details are in the agent log on the site.",
+    "text": "एक प्रति का निर्णय विफल रहा। विवरण साइट पर एजेंट के लॉग में है।"
+  },
+  "fleetErrorUnreadable": {
+    "en": "The request could not be read.",
+    "text": "अनुरोध पढ़ा नहीं जा सका।"
   }
 }

@@ -4387,13 +4387,9 @@
     "en": "Import stages, comma-separated",
     "text": "Etapas de importación, separadas por comas"
   },
-  "fleetMirrorCertificate": {
-    "en": "Authority certificate of the source (PEM)",
-    "text": "Certificado de la autoridad del origen (PEM)"
-  },
   "fleetMirrorAttachHint": {
-    "en": "Without stages the repository mirrors the source read-only; with stages it is an ordinary repository that takes over versions with those stages. The source is checked with the key before anything changes.",
-    "text": "Sin etapas, el repositorio refleja el origen en solo lectura; con etapas, es un repositorio normal que recoge las versiones con esas etapas. El origen se comprueba con la clave antes de cambiar nada."
+    "en": "Attaches a new repository. Without stages it mirrors the source read-only; with stages it is an ordinary repository that takes over versions with those stages. The source is checked with the key before anything changes. An authority certificate of a source is set on the site itself.",
+    "text": "Conecta un repositorio nuevo. Sin etapas, refleja el origen en solo lectura; con etapas, es un repositorio normal que recoge las versiones con esas etapas. El origen se comprueba con la clave antes de cambiar nada. El certificado de la autoridad de un origen se configura en el propio sitio."
   },
   "fleetMirrorAttachButton": {
     "en": "Attach",
@@ -4526,5 +4522,53 @@
   "fleetChangeQueued": {
     "en": "Queued. The site’s agent applies it within a minute.",
     "text": "En cola. El agente del sitio lo aplica en menos de un minuto."
+  },
+  "fleetAgentUpdating": {
+    "en": "The site is installing an update: changes wait until it is done.",
+    "text": "El sitio está instalando una actualización: los cambios esperan hasta que termine."
+  },
+  "fleetAgentBlocked": {
+    "en": "A change was interrupted half done on the site. The agent takes no other until an administrator of the site checked it and ran arkvory changes-reset there.",
+    "text": "Un cambio se interrumpió a medias en el sitio. El agente no toma ningún otro hasta que un administrador del sitio lo revise y ejecute allí arkvory changes-reset."
+  },
+  "fleetSingleOffAsk": {
+    "en": "Withdraw the single-copy decision? While copies are still missing, writes stop until they are back.",
+    "text": "¿Retirar la decisión de copia única? Mientras sigan faltando copias, las escrituras se detienen hasta que vuelvan."
+  },
+  "fleetErrorExpired": {
+    "en": "Expired before the agent took it.",
+    "text": "Expiró antes de que el agente lo tomara."
+  },
+  "fleetErrorInterrupted": {
+    "en": "Interrupted; the site needs checking.",
+    "text": "Interrumpido; hay que revisar el sitio."
+  },
+  "fleetErrorKeyMissing": {
+    "en": "The source key did not arrive.",
+    "text": "La clave del origen no llegó."
+  },
+  "fleetErrorNotMirror": {
+    "en": "Not a mirror of this site.",
+    "text": "No es un espejo de este sitio."
+  },
+  "fleetErrorAttached": {
+    "en": "Already a mirror or an import: replace its key or detach it first.",
+    "text": "Ya es un espejo o una importación: reemplace su clave o desconéctelo primero."
+  },
+  "fleetErrorMirror": {
+    "en": "The mirror change failed; the agent restored the previous configuration. Details are in the agent log on the site.",
+    "text": "El cambio del espejo falló; el agente restauró la configuración anterior. Los detalles están en el registro del agente en el sitio."
+  },
+  "fleetErrorSwitchover": {
+    "en": "The switchover failed. Details are in the agent log on the site.",
+    "text": "La conmutación falló. Los detalles están en el registro del agente en el sitio."
+  },
+  "fleetErrorSingleCopy": {
+    "en": "The single-copy decision failed. Details are in the agent log on the site.",
+    "text": "La decisión de copia única falló. Los detalles están en el registro del agente en el sitio."
+  },
+  "fleetErrorUnreadable": {
+    "en": "The request could not be read.",
+    "text": "No se pudo leer la solicitud."
   }
 }

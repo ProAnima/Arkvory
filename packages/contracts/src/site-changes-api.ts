@@ -1,4 +1,4 @@
-import { siteChangeKinds } from './site-changes.js';
+import { siteChangeErrors, siteChangeKinds } from './site-changes.js';
 
 /** Site changes of ADR 0077 stage F3: [path, method, operationId, access, retry]. */
 export const siteChangeOperations = [
@@ -33,7 +33,6 @@ const change = {
           maxItems: 16,
           items: { type: 'string', pattern: '^[a-z0-9][a-z0-9_.-]{0,31}$' },
         },
-        certificate: { ...text(65536), nullable: true },
       },
       ['kind', 'repository', 'upstream', 'sourceRepository'],
     ),
@@ -53,9 +52,10 @@ const change = {
 const kinds = { type: 'string', enum: siteChangeKinds };
 const entry = object({
   id,
+  digest: { type: 'string', pattern: '^[0-9a-f]{64}$' },
   kind: kinds,
   state: { type: 'string', enum: ['pending', 'applying', 'done', 'failed'] },
-  error: { ...text(500), nullable: true },
+  error: { type: 'string', nullable: true, enum: [...siteChangeErrors, null] },
   actor: text(200),
   requestedAt: time,
   finishedAt: { ...time, nullable: true },
@@ -72,6 +72,8 @@ export const siteChangePaths = {
           content: json(
             object({
               agent: { type: 'boolean' },
+              updating: { type: 'boolean' },
+              blocked: { type: 'string', nullable: true, enum: [...siteChangeErrors, null] },
               pending: {
                 ...object({ id, kind: kinds, actor: text(200), requestedAt: time }),
                 nullable: true,

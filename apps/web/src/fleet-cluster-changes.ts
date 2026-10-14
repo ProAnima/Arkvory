@@ -26,7 +26,7 @@ export class ClusterChanges {
       void this.singleCopy();
     };
     element('fleet-single-off', HTMLButtonElement).onclick = () => {
-      void this.submit({ kind: 'single-copy', until: null, reason: 'withdrawn' });
+      void this.withdraw();
     };
   }
 
@@ -65,6 +65,12 @@ export class ClusterChanges {
     if (!(await confirmAction('fleetSwitchoverAsk', { node }, 'fleetSwitchover'))) return;
     if (await this.submit({ kind: 'cluster-switchover', node, confirm: node }))
       this.confirm.value = '';
+  }
+
+  /** In a cluster still short of copies this stops writes again: asked first. */
+  private async withdraw() {
+    if (!(await confirmAction('fleetSingleOffAsk', {}, 'fleetSingleOff'))) return;
+    await this.submit({ kind: 'single-copy', until: null, reason: 'withdrawn' });
   }
 
   private async singleCopy() {

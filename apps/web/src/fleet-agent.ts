@@ -1,4 +1,4 @@
-import type { SiteChange, SiteTopology } from '@proanima/arkvory-contracts';
+import type { SiteChange, SiteChangeError, SiteTopology } from '@proanima/arkvory-contracts';
 import type { SiteChanges } from '@proanima/arkvory-sdk';
 import { element } from './dom.js';
 import { message, relativeMessage } from './i18n.js';
@@ -25,6 +25,17 @@ const kinds: Record<SiteChange['kind'], MessageKey> = {
   'mirror-detach': 'fleetKindDetach',
   'cluster-switchover': 'fleetKindSwitchover',
   'single-copy': 'fleetKindSingleCopy',
+};
+const errors: Record<SiteChangeError, MessageKey> = {
+  expired: 'fleetErrorExpired',
+  interrupted: 'fleetErrorInterrupted',
+  key_missing: 'fleetErrorKeyMissing',
+  not_a_mirror: 'fleetErrorNotMirror',
+  already_attached: 'fleetErrorAttached',
+  mirror_failed: 'fleetErrorMirror',
+  switchover_failed: 'fleetErrorSwitchover',
+  single_copy_failed: 'fleetErrorSingleCopy',
+  unreadable: 'fleetErrorUnreadable',
 };
 const states: Record<SiteChanges['recent'][number]['state'], MessageKey> = {
   pending: 'fleetChangePending',
@@ -75,7 +86,8 @@ export class AgentPanel {
     this.status.hidden = true;
     this.mirrors.clear();
     this.cluster.clear();
-    element('fleet-agent-missing', HTMLElement).hidden = true;
+    for (const id of ['fleet-agent-missing', 'fleet-agent-updating', 'fleet-agent-blocked'])
+      element(id, HTMLElement).hidden = true;
   }
 
   private async submit(change: SiteChange, key?: string): Promise<boolean> {
@@ -104,14 +116,18 @@ export class AgentPanel {
 
   private async refresh(generation: number, topology: boolean) {
     const target = this.target;
-    if (!target) return;
+    if (!target || generation !== this.generation) return;
+    // One follower at a time: a submit while following replaces the timer, never adds one.
+    clearTimeout(this.timer);
     try {
       const [changes, state] = await Promise.all([
         target.changes.status(),
         topology ? target.topology() : Promise.resolve(undefined),
       ]);
       if (generation !== this.generation) return;
-      element('fleet-agent-missing', HTMLElement).hidden = changes.agent;
+      element('fleet-agent-missing', HTMLElement).hidden = changes.agent || changes.updating;
+      element('fleet-agent-updating', HTMLElement).hidden = !changes.updating;
+      element('fleet-agent-blocked', HTMLElement).hidden = changes.blocked === null;
       this.render(changes);
       if (state !== undefined) {
         this.mirrors.show(state?.mirrors ?? []);
@@ -119,8 +135,10 @@ export class AgentPanel {
       }
       // A pending or running request is followed until the agent reports how it ended; then
       // the site's state is read again, as a change moved it.
+      // Without an agent nothing moves: no point looking every five seconds.
       const busy =
-        changes.pending !== null || changes.recent.some((item) => item.state === 'applying');
+        changes.agent &&
+        (changes.pending !== null || changes.recent.some((item) => item.state === 'applying'));
       if (busy || !topology)
         this.timer = setTimeout(() => void this.refresh(generation, !busy), FOLLOW_MS);
     } catch (error) {
@@ -140,7 +158,12 @@ export class AgentPanel {
       message(kind, kinds[item.kind]);
       const state = document.createElement('td');
       message(state, states[item.state]);
-      if (item.error) state.append(document.createElement('br'), item.error);
+      if (item.error) {
+        const reason = document.createElement('div');
+        reason.className = 'hint';
+        message(reason, errors[item.error]);
+        state.append(reason);
+      }
       const when = document.createElement('td');
       relativeMessage(when, item.requestedAt);
       row.append(kind, state, cell(item.actor), when);

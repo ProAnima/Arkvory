@@ -5,13 +5,22 @@ import {
   siteChangeKinds,
   text,
 } from '@proanima/arkvory-contracts';
-import type { SiteChange, SiteChangeKind, SiteChangeRecord } from '@proanima/arkvory-contracts';
+import type {
+  SiteChange,
+  SiteChangeError,
+  SiteChangeKind,
+  SiteChangeRecord,
+} from '@proanima/arkvory-contracts';
 import { ArkvoryClientError } from './transfer.js';
 import type { HttpPort } from './http-transport.js';
 
 export interface SiteChanges {
   /** Whether the site's agent reports in; without it nothing queued is applied. */
   readonly agent: boolean;
+  /** The site installs an update: changes wait until it is done. */
+  readonly updating: boolean;
+  /** A change was interrupted half done: none is taken until `arkvory changes-reset` there. */
+  readonly blocked: SiteChangeError | null;
   readonly pending: {
     readonly id: string;
     readonly kind: SiteChangeKind;
@@ -37,14 +46,18 @@ export class SiteChangesApi {
   async status(signal?: AbortSignal): Promise<SiteChanges> {
     const row = record(await this.http.call('/api/v1/system/changes', 'GET', undefined, signal));
     const pending = row['pending'] === null ? null : record(row['pending']);
-    const { recent } = readSiteChangeStatus({
+    const { recent, blocked } = readSiteChangeStatus({
       heartbeatAt: new Date(0).toISOString(),
+      blocked: row['blocked'] ?? null,
       recent: row['recent'],
     });
     if (typeof row['agent'] !== 'boolean')
       throw new ArkvoryClientError('invalid_response', 'Invalid change status');
     return {
       agent: row['agent'],
+      // Older sites do not report it: no update is known then.
+      updating: row['updating'] === true,
+      blocked,
       pending: pending && {
         id: text(pending['id']),
         kind: kindOf(pending['kind']),

@@ -65,6 +65,8 @@ Der steuernde Standort liest dies mit seinem Flottenschlüssel auf dem Standort 
 
 Jede Änderung trägt die Revision, von der sie ausgeht. Hat jemand die Einstellungen inzwischen geändert, lehnt der Standort die Änderung ab und die Karte zeigt die aktuellen Werte: prüfen und erneut speichern. Der Standort hält fest, wer seine Warteschlange geändert hat: den Schlüssel des steuernden Standorts und den Namen seines Administrators.
 
+Vom steuernden Standort aus wird ein Spiegel oder Import nur als neues Repository angebunden, und das Zertifikat der Zertifizierungsstelle einer Quelle wird am Standort selbst gesetzt (`arkvory configure --mirror-ca-file`): Was ein Standort vertraut, ändert sich nie aus der Ferne. Die Anfrageliste zeigt als Code, wie jede Änderung endete; die eigenen Worte des Agenten bleiben in seinem Protokoll am Standort. Wurde eine Änderung auf halbem Weg unterbrochen, übernimmt der Agent keine andere, bis ein Administrator des Standorts ihn geprüft und dort `arkvory changes-reset --root <Wurzel>` ausgeführt hat.
+
 ## Wer diesen Standort verwaltet {#managed-by}
 
 Unter [[ui:fleetThisSite]] listet jeder Standort die Controller, die ihn verwalten: Name, wer sie gekoppelt hat, wann, und ihre letzte Anfrage. [[ui:fleetRevoke]] lehnt den Schlüssel des Controllers sofort ab.

@@ -65,6 +65,8 @@ Le site de contrôle les lit sur le site avec sa clé de flotte et affiche la r�
 
 Chaque modification porte la révision dont elle part. Si quelqu’un a modifié les réglages entre-temps, le site refuse la modification et la carte affiche les valeurs actuelles : vérifiez-les et enregistrez à nouveau. Le site note qui a modifié sa file : la clé du site de contrôle et le nom de son administrateur.
 
+Depuis le site de contrôle, un miroir ou un import n’est rattaché que comme nouveau dépôt, et le certificat de l’autorité d’une source se règle sur le site lui-même (`arkvory configure --mirror-ca-file`) : ce à quoi un site fait confiance ne change jamais à distance. La liste des demandes montre par un code comment chaque modification s’est terminée ; les propres mots de l’agent restent dans son journal sur le site. Si une modification a été interrompue à mi-chemin, l’agent n’en prend aucune autre tant qu’un administrateur du site ne l’a pas vérifié et n’y a pas lancé `arkvory changes-reset --root <racine>`.
+
 ## Qui gère ce site {#managed-by}
 
 Sous [[ui:fleetThisSite]], chaque site liste les contrôleurs qui le gèrent : nom, qui les a appairés, quand, et leur dernière requête. [[ui:fleetRevoke]] refuse immédiatement la clé du contrôleur.

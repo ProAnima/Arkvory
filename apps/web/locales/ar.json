@@ -4387,13 +4387,9 @@
     "en": "Import stages, comma-separated",
     "text": "مراحل الاستيراد، مفصولة بفواصل"
   },
-  "fleetMirrorCertificate": {
-    "en": "Authority certificate of the source (PEM)",
-    "text": "شهادة جهة إصدار الشهادات للمصدر (PEM)"
-  },
   "fleetMirrorAttachHint": {
-    "en": "Without stages the repository mirrors the source read-only; with stages it is an ordinary repository that takes over versions with those stages. The source is checked with the key before anything changes.",
-    "text": "من دون مراحل يعكس المستودع المصدر للقراءة فقط؛ ومع المراحل يكون مستودعًا عاديًا يأخذ الإصدارات التي تحمل تلك المراحل. يُفحص المصدر بالمفتاح قبل أي تغيير."
+    "en": "Attaches a new repository. Without stages it mirrors the source read-only; with stages it is an ordinary repository that takes over versions with those stages. The source is checked with the key before anything changes. An authority certificate of a source is set on the site itself.",
+    "text": "يربط مستودعًا جديدًا. من دون مراحل يعكس المصدر للقراءة فقط؛ ومع المراحل يكون مستودعًا عاديًا يأخذ الإصدارات التي تحمل تلك المراحل. يُفحص المصدر بالمفتاح قبل أي تغيير. تُضبط شهادة جهة إصدار الشهادات للمصدر على الموقع نفسه."
   },
   "fleetMirrorAttachButton": {
     "en": "Attach",
@@ -4526,5 +4522,53 @@
   "fleetChangeQueued": {
     "en": "Queued. The site’s agent applies it within a minute.",
     "text": "في قائمة الانتظار. يطبّقه وكيل الموقع خلال دقيقة."
+  },
+  "fleetAgentUpdating": {
+    "en": "The site is installing an update: changes wait until it is done.",
+    "text": "يثبّت الموقع تحديثًا: تنتظر التغييرات حتى ينتهي."
+  },
+  "fleetAgentBlocked": {
+    "en": "A change was interrupted half done on the site. The agent takes no other until an administrator of the site checked it and ran arkvory changes-reset there.",
+    "text": "انقطع تغيير في منتصفه على الموقع. لن يأخذ الوكيل تغييرًا آخر حتى يفحصه مسؤول الموقع ويشغّل هناك arkvory changes-reset."
+  },
+  "fleetSingleOffAsk": {
+    "en": "Withdraw the single-copy decision? While copies are still missing, writes stop until they are back.",
+    "text": "سحب قرار النسخة الواحدة؟ ما دامت النسخ ناقصة، تتوقف الكتابة حتى تعود."
+  },
+  "fleetErrorExpired": {
+    "en": "Expired before the agent took it.",
+    "text": "انتهت صلاحيته قبل أن يأخذه الوكيل."
+  },
+  "fleetErrorInterrupted": {
+    "en": "Interrupted; the site needs checking.",
+    "text": "انقطع؛ يلزم فحص الموقع."
+  },
+  "fleetErrorKeyMissing": {
+    "en": "The source key did not arrive.",
+    "text": "لم يصل مفتاح المصدر."
+  },
+  "fleetErrorNotMirror": {
+    "en": "Not a mirror of this site.",
+    "text": "ليس مرآة لهذا الموقع."
+  },
+  "fleetErrorAttached": {
+    "en": "Already a mirror or an import: replace its key or detach it first.",
+    "text": "مرآة أو استيراد بالفعل: استبدل مفتاحه أو افصله أولًا."
+  },
+  "fleetErrorMirror": {
+    "en": "The mirror change failed; the agent restored the previous configuration. Details are in the agent log on the site.",
+    "text": "فشل تغيير المرآة؛ أعاد الوكيل الإعداد السابق. التفاصيل في سجل الوكيل على الموقع."
+  },
+  "fleetErrorSwitchover": {
+    "en": "The switchover failed. Details are in the agent log on the site.",
+    "text": "فشل التبديل. التفاصيل في سجل الوكيل على الموقع."
+  },
+  "fleetErrorSingleCopy": {
+    "en": "The single-copy decision failed. Details are in the agent log on the site.",
+    "text": "فشل قرار النسخة الواحدة. التفاصيل في سجل الوكيل على الموقع."
+  },
+  "fleetErrorUnreadable": {
+    "en": "The request could not be read.",
+    "text": "تعذّرت قراءة الطلب."
   }
 }

@@ -1,31 +1,41 @@
-import { rename, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import {
-  readSiteChangeRequest,
-  readSiteChangeStatus,
-  SITE_CHANGE_TTL_MS,
-} from '@proanima/arkvory-contracts';
+import { readSiteChangeRequest, siteChangeTtlMs } from '@proanima/arkvory-contracts';
 import type {
   SiteChange,
+  SiteChangeError,
   SiteChangeRecord,
   SiteChangeRequest,
   SiteChangeStatus,
 } from '@proanima/arkvory-contracts';
-import { atomicJson, exists, jsonFile } from './files.js';
+import { exists, jsonFile } from './files.js';
 import { parseInstallation } from './model.js';
 import type { Installation } from './model.js';
-import { configureMirror } from './mirror-setup.js';
+import { attachedMirrors, configureMirror } from './mirror-setup.js';
 import type { MirrorChange } from './mirror-setup.js';
 import { finishSwitchover, switchover } from './cluster-ops.js';
 import { decideSingleCopy } from './replica-service.js';
 import { Services } from './services.js';
 import { report } from './output.js';
+import { isUnconfirmedTermination } from './process.js';
+import {
+  claim,
+  KEY_LIMIT,
+  mailbox,
+  readClaimed,
+  readStatus,
+  removeAll,
+  REQUEST_LIMIT,
+  sweep,
+  writeStatus,
+  type Mailbox,
+} from './site-change-files.js';
 
 /** What applies a change; tests pass their own. */
 export interface ChangeActions {
   mirror(state: Installation, change: MirrorChange): Promise<unknown>;
+  attached(state: Installation): Promise<readonly string[]>;
   switchover(node: string): Promise<void>;
-  /** Clears a switchover a stopped agent left; true when Arkvory runs on `node`. */
+  /** Clears a switchover's move constraint; true when Arkvory runs on `node`. */
   finishSwitchover(node: string): Promise<boolean>;
   singleCopy(options: ReadonlyMap<string, string>): Promise<void>;
 }
@@ -33,94 +43,101 @@ export interface ChangeActions {
 export function systemActions(root: string): ChangeActions {
   return {
     mirror: (state, change) => configureMirror(root, state, change, new Services(root, state)),
+    attached: (state) => attachedMirrors(root, state),
     switchover: (node) => switchover(node),
     finishSwitchover: (node) => finishSwitchover(node),
     singleCopy: (options) => decideSingleCopy(root, options),
   };
 }
 
-/** The API's side of the mailbox lives in `updates/inbox`; claimed files only in the root. */
-const files = (root: string) => ({
-  request: join(root, 'updates/inbox/change.json'),
-  key: join(root, 'updates/inbox/change.key'),
-  status: join(root, 'updates/status/changes.json'),
-  claimed: join(root, 'change-request.json'),
-  claimedKey: join(root, 'change.key'),
-  certificate: join(root, 'change-ca.pem'),
-});
-
-const missing = (error: unknown) =>
-  error instanceof Error && 'code' in error && error.code === 'ENOENT';
-/** Messages of configure and cluster commands name files and nodes, never keys. */
-const reason = (error: unknown) =>
+const message = (error: unknown) =>
   (error instanceof Error ? error.message : 'failed').replace(/\s+/g, ' ').slice(0, 300);
 
-async function claim(from: string, to: string): Promise<boolean> {
-  try {
-    await rename(from, to);
-    return true;
-  } catch (error) {
-    if (missing(error)) return false;
-    throw error;
-  }
-}
-
-async function readStatus(path: string): Promise<SiteChangeStatus> {
-  try {
-    return readSiteChangeStatus(await jsonFile(path));
-  } catch (error) {
-    if (missing(error)) return { heartbeatAt: new Date(0).toISOString(), recent: [] };
-    throw error;
-  }
-}
-
-function record(request: SiteChangeRequest, state: SiteChangeRecord['state'], error?: string) {
+function record(
+  request: SiteChangeRequest,
+  state: SiteChangeRecord['state'],
+  error: SiteChangeError | null = null,
+): SiteChangeRecord {
   return {
     id: request.id,
+    digest: request.digest,
     kind: request.change.kind,
     state,
-    error: error ?? null,
+    error,
     actor: request.actor,
     requestedAt: request.requestedAt,
     finishedAt: state === 'done' || state === 'failed' ? new Date().toISOString() : null,
-  } satisfies SiteChangeRecord;
+  };
+}
+
+/** A refusal the agent decided itself, with the code the status carries. */
+class Refused extends Error {
+  constructor(readonly code: SiteChangeError) {
+    super(code);
+  }
+}
+const failureOf = (change: SiteChange, error: unknown): SiteChangeError =>
+  error instanceof Refused
+    ? error.code
+    : change.kind === 'cluster-switchover'
+      ? 'switchover_failed'
+      : change.kind === 'single-copy'
+        ? 'single_copy_failed'
+        : 'mirror_failed';
+
+const installation = async (root: string) =>
+  parseInstallation(await jsonFile(join(root, 'installation.json')));
+
+async function applyMirror(
+  root: string,
+  change: Extract<SiteChange, { kind: 'mirror-attach' | 'mirror-key' | 'mirror-detach' }>,
+  actions: ChangeActions,
+  secret: string | null,
+) {
+  const state = await installation(root);
+  const attached = await actions.attached(state);
+  if (change.kind === 'mirror-detach') {
+    if (!change.repositories.every((name) => attached.includes(name)))
+      throw new Refused('not_a_mirror');
+    await actions.mirror(state, { detach: change.repositories.join(',') });
+    return;
+  }
+  if (secret === null) throw new Refused('key_missing');
+  if (change.kind === 'mirror-key') {
+    if (!attached.includes(change.repository)) throw new Refused('not_a_mirror');
+    await actions.mirror(state, { repository: change.repository, secret });
+    return;
+  }
+  // A new repository only: a mode or a source is never changed by a remote omission.
+  if (attached.includes(change.repository)) throw new Refused('already_attached');
+  await actions.mirror(state, {
+    repository: change.repository,
+    upstream: change.upstream,
+    sourceRepository: change.sourceRepository,
+    secret,
+    ...(change.stages ? { stages: change.stages } : {}),
+  });
 }
 
 async function apply(
   root: string,
   change: SiteChange,
   actions: ChangeActions,
-  paths: ReturnType<typeof files>,
+  secret: string | null,
 ) {
-  const state = () =>
-    jsonFile(join(root, 'installation.json')).then((value) => parseInstallation(value));
   switch (change.kind) {
-    case 'mirror-attach': {
-      if (!(await exists(paths.claimedKey))) throw new Error('The source key did not arrive');
-      if (change.certificate !== null)
-        await writeFile(paths.certificate, change.certificate, { mode: 0o600 });
-      await actions.mirror(await state(), {
-        repository: change.repository,
-        upstream: change.upstream,
-        sourceRepository: change.sourceRepository,
-        tokenFile: paths.claimedKey,
-        ...(change.stages ? { stages: change.stages } : {}),
-        ...(change.certificate !== null ? { caFile: paths.certificate } : {}),
-      });
-      return;
-    }
+    case 'mirror-attach':
     case 'mirror-key':
-      if (!(await exists(paths.claimedKey))) throw new Error('The source key did not arrive');
-      await actions.mirror(await state(), {
-        repository: change.repository,
-        tokenFile: paths.claimedKey,
-      });
-      return;
     case 'mirror-detach':
-      await actions.mirror(await state(), { detach: change.repositories.join(',') });
-      return;
+      return applyMirror(root, change, actions, secret);
     case 'cluster-switchover':
-      await actions.switchover(change.node);
+      try {
+        await actions.switchover(change.node);
+      } catch (error) {
+        // The move may have succeeded while clearing its constraint failed: the outcome is
+        // where Arkvory runs now.
+        if (!(await actions.finishSwitchover(change.node).catch(() => false))) throw error;
+      }
       return;
     case 'single-copy':
       await actions.singleCopy(
@@ -134,89 +151,153 @@ async function apply(
   }
 }
 
+interface Tick {
+  readonly root: string;
+  readonly box: Mailbox;
+  readonly actions: ChangeActions;
+  readonly now: () => number;
+  status: SiteChangeStatus;
+}
+
+async function save(tick: Tick, entry?: SiteChangeRecord, blocked = tick.status.blocked) {
+  const recent = entry
+    ? [entry, ...tick.status.recent.filter((item) => item.id !== entry.id)].slice(0, 20)
+    : tick.status.recent;
+  tick.status = { heartbeatAt: new Date(tick.now()).toISOString(), blocked, recent };
+  await writeStatus(tick.box.status, tick.status);
+}
+
+/** The request this agent claimed before and did not finish, if any. */
+async function claimedRequest(box: Mailbox): Promise<SiteChangeRequest | null> {
+  if (!(await exists(box.claimed))) return null;
+  try {
+    return readSiteChangeRequest(JSON.parse(await readClaimed(box.claimed, REQUEST_LIMIT)));
+  } catch {
+    await removeAll([box.claimed]);
+    return null;
+  }
+}
+
+/**
+ * A request claimed and not finished. A switchover moves this agent with Arkvory: the next tick,
+ * on the new node, finishes it, retrying while the request is young. Anything else stopped half
+ * done blocks further changes until an operator checked the site (`arkvory changes-reset`).
+ */
+async function resume(tick: Tick): Promise<'go' | 'retry' | 'blocked'> {
+  const request = await claimedRequest(tick.box);
+  if (!request) return 'go';
+  if (request.change.kind !== 'cluster-switchover') {
+    await save(tick, record(request, 'failed', 'interrupted'), 'interrupted');
+    return 'blocked';
+  }
+  try {
+    const moved = await tick.actions.finishSwitchover(request.change.node);
+    await save(
+      tick,
+      record(request, moved ? 'done' : 'failed', moved ? null : 'switchover_failed'),
+    );
+  } catch (error) {
+    report('warning', `Switchover ${request.id} not finished yet: ${message(error)}`);
+    if (tick.now() - Date.parse(request.requestedAt) < siteChangeTtlMs(request.change.kind))
+      return 'retry';
+    await save(tick, record(request, 'failed', 'switchover_failed'));
+  }
+  return 'go';
+}
+
+/** Claims the next request with its own key; null when there is none or it was refused. */
+async function next(
+  tick: Tick,
+): Promise<{ request: SiteChangeRequest; secret: string | null } | null> {
+  const { box } = tick;
+  try {
+    if (!(await claim(box.request, box.claimed))) return null;
+  } catch (error) {
+    report('warning', `Refused a change request: ${message(error)}`);
+    return null;
+  }
+  let request: SiteChangeRequest;
+  try {
+    request = readSiteChangeRequest(JSON.parse(await readClaimed(box.claimed, REQUEST_LIMIT)));
+  } catch (error) {
+    report('warning', `Dropped an unreadable change request: ${message(error)}`);
+    return null;
+  }
+  let secret: string | null = null;
+  try {
+    if (await claim(box.key(request.id), box.claimedKey)) {
+      secret = (await readClaimed(box.claimedKey, KEY_LIMIT)).trim();
+      if (!/^[\x21-\x7e]{16,4000}$/.test(secret)) secret = null;
+    }
+  } catch (error) {
+    report('warning', `Refused the key of ${request.id}: ${message(error)}`);
+  }
+  return { request, secret };
+}
+
+async function run(tick: Tick, request: SiteChangeRequest, secret: string | null) {
+  if (tick.status.recent.some((item) => item.id === request.id)) return;
+  // Too old, or from a clock far ahead: decided about a site that may have changed since.
+  const age = tick.now() - Date.parse(request.requestedAt);
+  if (Math.abs(age) > siteChangeTtlMs(request.change.kind)) {
+    await save(tick, record(request, 'failed', 'expired'));
+    return;
+  }
+  // Recorded before applying: a switchover stops this agent, the next tick finishes it.
+  await save(tick, record(request, 'applying'));
+  try {
+    await apply(tick.root, request.change, tick.actions, secret);
+    await save(tick, record(request, 'done'));
+    report('info', `Applied ${request.change.kind} ${request.id} for ${request.actor}`);
+  } catch (error) {
+    const unconfirmed = isUnconfirmedTermination(error);
+    await save(
+      tick,
+      record(request, 'failed', unconfirmed ? 'interrupted' : failureOf(request.change, error)),
+      unconfirmed ? 'interrupted' : tick.status.blocked,
+    );
+    // The agent's own words stay in its log on this site; the status carries a code.
+    report('warning', `Change ${request.change.kind} ${request.id} failed: ${message(error)}`);
+    // A command that may still run keeps the installation lock for an operator.
+    if (unconfirmed) throw error;
+  }
+}
+
 /**
  * One tick of the site's change mailbox (ADR 0077, stage F3), under the installation lock after
- * the update tick. One request at a time; its id is remembered, so a repeated request is not
- * applied twice. The source key, when any, is read from its own file and removed in every case.
+ * the update tick: one request at a time, its id remembered, its key read once and removed
+ * whatever happens. The heartbeat is written on every tick that reaches the end.
  */
 export async function pollChanges(
   root: string,
   actions: ChangeActions = systemActions(root),
   now: () => number = Date.now,
 ): Promise<void> {
-  const paths = files(root);
+  const box = mailbox(root);
   if (!(await exists(join(root, 'updates/status')))) return;
-  let status = await readStatus(paths.status);
-  const save = async (entry?: SiteChangeRecord) => {
-    const recent = entry
-      ? [entry, ...status.recent.filter((item) => item.id !== entry.id)].slice(0, 20)
-      : status.recent;
-    status = { heartbeatAt: new Date(now()).toISOString(), recent };
-    await atomicJson(paths.status, status);
-  };
+  const tick: Tick = { root, box, actions, now, status: await readStatus(box.status) };
+  // The claim outlives the tick only for a switchover to finish on the next one; a process
+  // killed mid-change leaves it too, and the next tick blocks on it.
+  let keep = false;
   try {
-    await resume(paths, actions, save);
-    if (!(await claim(paths.request, paths.claimed))) return;
-    await claim(paths.key, paths.claimedKey);
-    let request: SiteChangeRequest;
-    try {
-      request = readSiteChangeRequest(await jsonFile(paths.claimed));
-    } catch (error) {
-      report('warning', `Dropped an unreadable change request: ${reason(error)}`);
-      return;
-    }
-    if (status.recent.some((item) => item.id === request.id)) return;
-    if (now() - Date.parse(request.requestedAt) > SITE_CHANGE_TTL_MS) {
-      await save(record(request, 'failed', 'The request expired before the agent took it'));
-      return;
-    }
-    // Recorded before applying: a switchover stops this agent, the next tick finishes it.
-    await save(record(request, 'applying'));
-    try {
-      await apply(root, request.change, actions, paths);
-      await save(record(request, 'done'));
-      report('info', `Applied ${request.change.kind} ${request.id} for ${request.actor}`);
-    } catch (error) {
-      await save(record(request, 'failed', reason(error)));
-      report('warning', `Change ${request.change.kind} ${request.id} failed: ${reason(error)}`);
-    }
+    await sweep(box, now());
+    if (tick.status.blocked !== null) return;
+    const resumed = await resume(tick);
+    keep = resumed === 'retry';
+    if (resumed !== 'go') return;
+    const taken = await next(tick);
+    if (taken) await run(tick, taken.request, taken.secret);
   } finally {
-    // The key never outlives the tick, whatever happened.
-    await rm(paths.claimedKey, { force: true });
-    await rm(paths.certificate, { force: true });
-    await rm(paths.claimed, { force: true });
-    await save();
+    await removeAll([box.claimedKey, ...(keep ? [] : [box.claimed])]);
+    await save(tick);
   }
 }
 
-/** A request this agent claimed and did not finish: a switchover moved it, or it stopped. */
-async function resume(
-  paths: ReturnType<typeof files>,
-  actions: ChangeActions,
-  save: (entry: SiteChangeRecord) => Promise<void>,
-) {
-  if (!(await exists(paths.claimed))) return;
-  let request: SiteChangeRequest;
-  try {
-    request = readSiteChangeRequest(await jsonFile(paths.claimed));
-  } catch {
-    await rm(paths.claimed, { force: true });
-    return;
-  }
-  if (request.change.kind === 'cluster-switchover') {
-    const moved = await actions.finishSwitchover(request.change.node);
-    await save(
-      moved
-        ? record(request, 'done')
-        : record(request, 'failed', `Arkvory did not move to ${request.change.node}`),
-    );
-  } else
-    await save(
-      record(
-        request,
-        'failed',
-        'The agent stopped while applying; check the configuration with arkvory status',
-      ),
-    );
-  await rm(paths.claimed, { force: true });
+/** `arkvory changes-reset`: after checking the site, lets the agent take changes again. */
+export async function resetChanges(root: string): Promise<void> {
+  const box = mailbox(root);
+  const status = await readStatus(box.status);
+  await removeAll([box.claimed, box.claimedKey]);
+  await writeStatus(box.status, { ...status, blocked: null });
+  report('info', 'Site changes are taken again');
 }

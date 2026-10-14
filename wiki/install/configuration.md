@@ -44,16 +44,16 @@ All commands need administrator rights and the option `--root` with the installa
 
 `arkvory help` lists the commands without special rights. The examples on this site use the short form `arkvory <command>`.
 
-| Command                         | Use                                                                                                                           |
-| ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `status`                        | Shows the installation mode, the engine, the automatic update setting, the pin and the installed release                      |
-| `configure`                     | Changes a policy. See [The configure command](#configure-command)                                                             |
-| `update`                        | Installs a newer stable release now. See [Updates](./updates)                                                                 |
-| `upgrade`                       | Installs a release that changes the database schema with a backup record of your own. See [Updates](./updates#manual-upgrade) |
-| `recover`                       | Finishes an interrupted update. See [Updates](./updates#recover-update)                                                       |
-| `finish-install`                | Continues an interrupted first installation                                                                                   |
-| `updates-connect`               | Connects the console and the update timer, and registers services that an old installation lacks                              |
-| `updates-poll`, `updates-reset` | Run by the update timer and for recovery. See [Updates](./updates#recover-update)                                             |
+| Command                                          | Use                                                                                                                           |
+| ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
+| `status`                                         | Shows the installation mode, the engine, the automatic update setting, the pin and the installed release                      |
+| `configure`                                      | Changes a policy. See [The configure command](#configure-command)                                                             |
+| `update`                                         | Installs a newer stable release now. See [Updates](./updates)                                                                 |
+| `upgrade`                                        | Installs a release that changes the database schema with a backup record of your own. See [Updates](./updates#manual-upgrade) |
+| `recover`                                        | Finishes an interrupted update. See [Updates](./updates#recover-update)                                                       |
+| `finish-install`                                 | Continues an interrupted first installation                                                                                   |
+| `updates-connect`                                | Connects the console and the update timer, and registers services that an old installation lacks                              |
+| `updates-poll`, `updates-reset`, `changes-reset` | Run by the update timer and for recovery. See [Updates](./updates#recover-update)                                             |
 
 Only one command runs at a time. A second command stops with `Installation is locked`. Never put a key or a password in a command option: use files.
 

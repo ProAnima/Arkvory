@@ -4387,13 +4387,9 @@
     "en": "Import stages, comma-separated",
     "text": "Importstufen, durch Kommas getrennt"
   },
-  "fleetMirrorCertificate": {
-    "en": "Authority certificate of the source (PEM)",
-    "text": "Zertifikat der Zertifizierungsstelle der Quelle (PEM)"
-  },
   "fleetMirrorAttachHint": {
-    "en": "Without stages the repository mirrors the source read-only; with stages it is an ordinary repository that takes over versions with those stages. The source is checked with the key before anything changes.",
-    "text": "Ohne Stufen spiegelt das Repository die Quelle schreibgeschützt; mit Stufen ist es ein gewöhnliches Repository, das Versionen mit diesen Stufen übernimmt. Die Quelle wird mit dem Schlüssel geprüft, bevor sich etwas ändert."
+    "en": "Attaches a new repository. Without stages it mirrors the source read-only; with stages it is an ordinary repository that takes over versions with those stages. The source is checked with the key before anything changes. An authority certificate of a source is set on the site itself.",
+    "text": "Bindet ein neues Repository an. Ohne Stufen spiegelt es die Quelle schreibgeschützt; mit Stufen ist es ein gewöhnliches Repository, das Versionen mit diesen Stufen übernimmt. Die Quelle wird mit dem Schlüssel geprüft, bevor sich etwas ändert. Das Zertifikat der Zertifizierungsstelle einer Quelle wird am Standort selbst festgelegt."
   },
   "fleetMirrorAttachButton": {
     "en": "Attach",
@@ -4526,5 +4522,53 @@
   "fleetChangeQueued": {
     "en": "Queued. The site’s agent applies it within a minute.",
     "text": "Eingereiht. Der Agent des Standorts wendet die Änderung innerhalb einer Minute an."
+  },
+  "fleetAgentUpdating": {
+    "en": "The site is installing an update: changes wait until it is done.",
+    "text": "Der Standort installiert ein Update: Änderungen warten, bis es abgeschlossen ist."
+  },
+  "fleetAgentBlocked": {
+    "en": "A change was interrupted half done on the site. The agent takes no other until an administrator of the site checked it and ran arkvory changes-reset there.",
+    "text": "Eine Änderung wurde am Standort mittendrin unterbrochen. Der Agent übernimmt keine weitere, bis ein Administrator des Standorts sie geprüft und dort arkvory changes-reset ausgeführt hat."
+  },
+  "fleetSingleOffAsk": {
+    "en": "Withdraw the single-copy decision? While copies are still missing, writes stop until they are back.",
+    "text": "Entscheidung über eine einzelne Kopie zurücknehmen? Solange noch Kopien fehlen, werden Schreibzugriffe angehalten, bis sie wieder da sind."
+  },
+  "fleetErrorExpired": {
+    "en": "Expired before the agent took it.",
+    "text": "Abgelaufen, bevor der Agent die Änderung übernommen hat."
+  },
+  "fleetErrorInterrupted": {
+    "en": "Interrupted; the site needs checking.",
+    "text": "Unterbrochen; der Standort muss geprüft werden."
+  },
+  "fleetErrorKeyMissing": {
+    "en": "The source key did not arrive.",
+    "text": "Der Schlüssel der Quelle ist nicht angekommen."
+  },
+  "fleetErrorNotMirror": {
+    "en": "Not a mirror of this site.",
+    "text": "Kein Spiegel dieses Standorts."
+  },
+  "fleetErrorAttached": {
+    "en": "Already a mirror or an import: replace its key or detach it first.",
+    "text": "Bereits ein Spiegel oder Import: Ersetzen Sie seinen Schlüssel oder trennen Sie ihn zuerst."
+  },
+  "fleetErrorMirror": {
+    "en": "The mirror change failed; the agent restored the previous configuration. Details are in the agent log on the site.",
+    "text": "Die Änderung des Spiegels ist fehlgeschlagen; der Agent hat die vorherige Konfiguration wiederhergestellt. Details stehen im Protokoll des Agenten am Standort."
+  },
+  "fleetErrorSwitchover": {
+    "en": "The switchover failed. Details are in the agent log on the site.",
+    "text": "Die Umschaltung ist fehlgeschlagen. Details stehen im Protokoll des Agenten am Standort."
+  },
+  "fleetErrorSingleCopy": {
+    "en": "The single-copy decision failed. Details are in the agent log on the site.",
+    "text": "Die Entscheidung über eine einzelne Kopie ist fehlgeschlagen. Details stehen im Protokoll des Agenten am Standort."
+  },
+  "fleetErrorUnreadable": {
+    "en": "The request could not be read.",
+    "text": "Die Anfrage konnte nicht gelesen werden."
   }
 }

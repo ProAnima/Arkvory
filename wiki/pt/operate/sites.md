@@ -65,6 +65,8 @@ O controlador lê isso no site com sua chave de frota e mostra a resposta como o
 
 Cada alteração leva a revisão de onde partiu. Se alguém alterou as configurações nesse meio-tempo, o site recusa a alteração e o cartão mostra os valores atuais: confira e salve de novo. O site registra quem alterou sua fila: a chave do controlador e o nome do administrador dele.
 
+A partir do controlador, um espelho ou uma importação só é conectado como repositório novo, e o certificado da autoridade de uma origem é definido no próprio site (`arkvory configure --mirror-ca-file`): aquilo em que um site confia nunca muda remotamente. A lista de solicitações mostra com um código como cada alteração terminou; as palavras do próprio agente ficam no log dele no site. Se uma alteração foi interrompida no meio, o agente não pega outra até que um administrador do site a verifique e execute lá `arkvory changes-reset --root <raiz>`.
+
 ## Quem gerencia este site {#managed-by}
 
 Em [[ui:fleetThisSite]], cada site lista os controladores que o gerenciam: nome, quem os pareou, quando e a última solicitação. [[ui:fleetRevoke]] recusa a chave do controlador na hora.

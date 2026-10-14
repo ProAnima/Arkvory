@@ -20,6 +20,7 @@ const SETTLED = ['committed', 'rolled-back', 'recovered'];
 const JOURNALED = new Set([
   'updates-poll',
   'updates-reset',
+  'changes-reset',
   'updates-connect',
   'update',
   'recover',

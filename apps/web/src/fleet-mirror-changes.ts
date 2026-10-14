@@ -109,7 +109,6 @@ export class MirrorChanges {
   private async attach() {
     const value = (id: string) => element(id, HTMLInputElement).value.trim();
     const stages = value('fleet-mirror-stages');
-    const certificate = element('fleet-mirror-certificate', HTMLTextAreaElement).value.trim();
     const key = element('fleet-mirror-new-key', HTMLInputElement);
     let change;
     try {
@@ -119,7 +118,6 @@ export class MirrorChanges {
         upstream: value('fleet-mirror-upstream'),
         sourceRepository: value('fleet-mirror-source') || value('fleet-mirror-repository'),
         stages: stages ? stages.split(',').map((stage) => stage.trim()) : null,
-        certificate: certificate || null,
       });
     } catch {
       this.status.hidden = false;

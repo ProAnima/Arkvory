@@ -4387,13 +4387,9 @@
     "en": "Import stages, comma-separated",
     "text": "가져올 스테이지(쉼표로 구분)"
   },
-  "fleetMirrorCertificate": {
-    "en": "Authority certificate of the source (PEM)",
-    "text": "원본의 인증 기관 인증서(PEM)"
-  },
   "fleetMirrorAttachHint": {
-    "en": "Without stages the repository mirrors the source read-only; with stages it is an ordinary repository that takes over versions with those stages. The source is checked with the key before anything changes.",
-    "text": "스테이지가 없으면 저장소는 원본을 읽기 전용으로 미러링합니다. 스테이지가 있으면 해당 스테이지의 버전을 가져오는 일반 저장소가 됩니다. 변경하기 전에 키로 원본을 확인합니다."
+    "en": "Attaches a new repository. Without stages it mirrors the source read-only; with stages it is an ordinary repository that takes over versions with those stages. The source is checked with the key before anything changes. An authority certificate of a source is set on the site itself.",
+    "text": "새 저장소를 연결합니다. 스테이지가 없으면 원본을 읽기 전용으로 미러링합니다. 스테이지가 있으면 해당 스테이지의 버전을 가져오는 일반 저장소가 됩니다. 변경하기 전에 키로 원본을 확인합니다. 원본의 인증 기관 인증서는 사이트 자체에서 설정합니다."
   },
   "fleetMirrorAttachButton": {
     "en": "Attach",
@@ -4526,5 +4522,53 @@
   "fleetChangeQueued": {
     "en": "Queued. The site’s agent applies it within a minute.",
     "text": "대기열에 추가되었습니다. 사이트의 에이전트가 1분 이내에 적용합니다."
+  },
+  "fleetAgentUpdating": {
+    "en": "The site is installing an update: changes wait until it is done.",
+    "text": "사이트에서 업데이트를 설치하는 중입니다. 완료될 때까지 변경 사항이 대기합니다."
+  },
+  "fleetAgentBlocked": {
+    "en": "A change was interrupted half done on the site. The agent takes no other until an administrator of the site checked it and ran arkvory changes-reset there.",
+    "text": "사이트에서 변경이 도중에 중단되었습니다. 사이트 관리자가 확인하고 그곳에서 arkvory changes-reset을 실행할 때까지 에이전트는 다른 변경을 받지 않습니다."
+  },
+  "fleetSingleOffAsk": {
+    "en": "Withdraw the single-copy decision? While copies are still missing, writes stop until they are back.",
+    "text": "단일 복사본 결정을 철회할까요? 복사본이 아직 부족한 동안에는 복사본이 돌아올 때까지 쓰기가 중지됩니다."
+  },
+  "fleetErrorExpired": {
+    "en": "Expired before the agent took it.",
+    "text": "에이전트가 받기 전에 만료되었습니다."
+  },
+  "fleetErrorInterrupted": {
+    "en": "Interrupted; the site needs checking.",
+    "text": "중단되었습니다. 사이트를 확인해야 합니다."
+  },
+  "fleetErrorKeyMissing": {
+    "en": "The source key did not arrive.",
+    "text": "원본 키가 도착하지 않았습니다."
+  },
+  "fleetErrorNotMirror": {
+    "en": "Not a mirror of this site.",
+    "text": "이 사이트의 미러가 아닙니다."
+  },
+  "fleetErrorAttached": {
+    "en": "Already a mirror or an import: replace its key or detach it first.",
+    "text": "이미 미러 또는 가져오기입니다. 키를 교체하거나 먼저 분리하세요."
+  },
+  "fleetErrorMirror": {
+    "en": "The mirror change failed; the agent restored the previous configuration. Details are in the agent log on the site.",
+    "text": "미러 변경에 실패했습니다. 에이전트가 이전 구성을 복원했습니다. 자세한 내용은 사이트의 에이전트 로그에 있습니다."
+  },
+  "fleetErrorSwitchover": {
+    "en": "The switchover failed. Details are in the agent log on the site.",
+    "text": "전환에 실패했습니다. 자세한 내용은 사이트의 에이전트 로그에 있습니다."
+  },
+  "fleetErrorSingleCopy": {
+    "en": "The single-copy decision failed. Details are in the agent log on the site.",
+    "text": "단일 복사본 결정에 실패했습니다. 자세한 내용은 사이트의 에이전트 로그에 있습니다."
+  },
+  "fleetErrorUnreadable": {
+    "en": "The request could not be read.",
+    "text": "요청을 읽을 수 없습니다."
   }
 }

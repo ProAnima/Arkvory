@@ -65,6 +65,8 @@ El sitio de control lo lee en el sitio con su clave de flota y muestra la respue
 
 Cada cambio lleva la revisión de la que parte. Si alguien cambió los ajustes mientras tanto, el sitio rechaza el cambio y la tarjeta muestra los valores actuales: revíselos y guarde de nuevo. El sitio registra quién cambió su cola: la clave del sitio de control y el nombre de su administrador.
 
+Desde el sitio de control un espejo o una importación solo se conecta como repositorio nuevo, y el certificado de la autoridad de un origen se configura en el propio sitio (`arkvory configure --mirror-ca-file`): aquello en lo que confía un sitio nunca cambia en remoto. La lista de solicitudes muestra con un código cómo terminó cada cambio; las palabras del agente quedan en su registro en el sitio. Si un cambio se interrumpió a medias, el agente no toma otro hasta que un administrador del sitio lo revise y ejecute allí `arkvory changes-reset --root <raíz>`.
+
 ## Quién gestiona este sitio {#managed-by}
 
 En [[ui:fleetThisSite]], cada sitio enumera los controladores que lo gestionan: nombre, quién los emparejó, cuándo y su última solicitud. [[ui:fleetRevoke]] rechaza la clave del controlador de inmediato.

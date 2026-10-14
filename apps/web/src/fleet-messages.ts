@@ -154,9 +154,6 @@ export const fleetEnglish = {
   fleetMirrorUpstream: 'Source address',
   fleetMirrorSourceRepository: 'Source repository',
   fleetMirrorStages: 'Import stages, comma-separated',
-  fleetMirrorCertificate: 'Authority certificate of the source (PEM)',
-  fleetMirrorAttachHint:
-    'Without stages the repository mirrors the source read-only; with stages it is an ordinary repository that takes over versions with those stages. The source is checked with the key before anything changes.',
   fleetMirrorAttachButton: 'Attach',
   fleetMirrorDetach: 'Detach',
   fleetMirrorDetachConfirm:
@@ -194,6 +191,24 @@ export const fleetEnglish = {
   fleetChangeDone: 'Done',
   fleetChangeFailed: 'Failed',
   fleetChangeQueued: 'Queued. The site’s agent applies it within a minute.',
+  fleetMirrorAttachHint:
+    'Attaches a new repository. Without stages it mirrors the source read-only; with stages it is an ordinary repository that takes over versions with those stages. The source is checked with the key before anything changes. An authority certificate of a source is set on the site itself.',
+  fleetAgentUpdating: 'The site is installing an update: changes wait until it is done.',
+  fleetAgentBlocked:
+    'A change was interrupted half done on the site. The agent takes no other until an administrator of the site checked it and ran arkvory changes-reset there.',
+  fleetSingleOffAsk:
+    'Withdraw the single-copy decision? While copies are still missing, writes stop until they are back.',
+  fleetErrorExpired: 'Expired before the agent took it.',
+  fleetErrorInterrupted: 'Interrupted; the site needs checking.',
+  fleetErrorKeyMissing: 'The source key did not arrive.',
+  fleetErrorNotMirror: 'Not a mirror of this site.',
+  fleetErrorAttached: 'Already a mirror or an import: replace its key or detach it first.',
+  fleetErrorMirror:
+    'The mirror change failed; the agent restored the previous configuration. Details are in the agent log on the site.',
+  fleetErrorSwitchover: 'The switchover failed. Details are in the agent log on the site.',
+  fleetErrorSingleCopy:
+    'The single-copy decision failed. Details are in the agent log on the site.',
+  fleetErrorUnreadable: 'The request could not be read.',
 } as const;
 
 export const fleetRussian: Record<keyof typeof fleetEnglish, string> = {
@@ -351,9 +366,6 @@ export const fleetRussian: Record<keyof typeof fleetEnglish, string> = {
   fleetMirrorUpstream: 'Адрес источника',
   fleetMirrorSourceRepository: 'Репозиторий источника',
   fleetMirrorStages: 'Стадии импорта через запятую',
-  fleetMirrorCertificate: 'Сертификат центра источника (PEM)',
-  fleetMirrorAttachHint:
-    'Без стадий репозиторий зеркалирует источник только для чтения; со стадиями это обычный репозиторий, который забирает версии с этими стадиями. Источник проверяется с ключом до любых изменений.',
   fleetMirrorAttachButton: 'Подключить',
   fleetMirrorDetach: 'Отключить',
   fleetMirrorDetachConfirm:
@@ -390,4 +402,22 @@ export const fleetRussian: Record<keyof typeof fleetEnglish, string> = {
   fleetChangeDone: 'Готово',
   fleetChangeFailed: 'Не удалось',
   fleetChangeQueued: 'Поставлено в очередь. Агент площадки применит изменение в течение минуты.',
+  fleetMirrorAttachHint:
+    'Подключает новый репозиторий. Без стадий он зеркалирует источник только для чтения; со стадиями это обычный репозиторий, который забирает версии с этими стадиями. Источник проверяется с ключом до любых изменений. Сертификат центра источника задаётся на самой площадке.',
+  fleetAgentUpdating: 'Площадка устанавливает обновление: изменения ждут, пока оно закончится.',
+  fleetAgentBlocked:
+    'Изменение на площадке прервалось на полпути. Агент не возьмёт другое, пока администратор площадки не проверит её и не выполнит там arkvory changes-reset.',
+  fleetSingleOffAsk:
+    'Отменить решение об одной копии? Пока копий не хватает, запись остановится до их возвращения.',
+  fleetErrorExpired: 'Истёк срок, прежде чем агент его взял.',
+  fleetErrorInterrupted: 'Прервано; площадку нужно проверить.',
+  fleetErrorKeyMissing: 'Ключ источника не пришёл.',
+  fleetErrorNotMirror: 'Это не зеркало этой площадки.',
+  fleetErrorAttached: 'Уже зеркало или импорт: замените ключ или сначала отключите.',
+  fleetErrorMirror:
+    'Изменение зеркала не удалось; агент вернул прежнюю конфигурацию. Подробности — в журнале агента на площадке.',
+  fleetErrorSwitchover: 'Переключение не удалось. Подробности — в журнале агента на площадке.',
+  fleetErrorSingleCopy:
+    'Решение об одной копии не принято. Подробности — в журнале агента на площадке.',
+  fleetErrorUnreadable: 'Запрос не удалось прочитать.',
 };

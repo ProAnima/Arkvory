@@ -681,6 +681,8 @@
             <h3 data-i18n="fleetAgent">Зеркала и кластер</h3>
             <p class="hint" data-i18n="fleetAgentHint"></p>
             <p id="fleet-agent-missing" class="hint" data-i18n="fleetAgentMissing" hidden></p>
+            <p id="fleet-agent-updating" class="hint" data-i18n="fleetAgentUpdating" hidden></p>
+            <p id="fleet-agent-blocked" class="hint" data-i18n="fleetAgentBlocked" hidden></p>
             <div class="table" tabindex="0" role="region" data-i18n-label="tableRegion">
               <table class="fleet-table">
                 <thead>
@@ -738,10 +740,6 @@
                     ><input id="fleet-mirror-new-key" type="password" autocomplete="off" required
                   /></label>
                 </div>
-                <label
-                  ><span data-i18n="fleetMirrorCertificate">Сертификат центра источника (PEM)</span
-                  ><textarea id="fleet-mirror-certificate" rows="3" spellcheck="false"></textarea>
-                </label>
                 <p class="hint" data-i18n="fleetMirrorAttachHint"></p>
                 <p class="button-row">
                   <button data-i18n="fleetMirrorAttachButton">Подключить</button>

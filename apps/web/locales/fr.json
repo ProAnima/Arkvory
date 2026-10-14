@@ -4387,13 +4387,9 @@
     "en": "Import stages, comma-separated",
     "text": "Étapes d’importation, séparées par des virgules"
   },
-  "fleetMirrorCertificate": {
-    "en": "Authority certificate of the source (PEM)",
-    "text": "Certificat de l’autorité de la source (PEM)"
-  },
   "fleetMirrorAttachHint": {
-    "en": "Without stages the repository mirrors the source read-only; with stages it is an ordinary repository that takes over versions with those stages. The source is checked with the key before anything changes.",
-    "text": "Sans étapes, le dépôt reflète la source en lecture seule ; avec des étapes, c’est un dépôt ordinaire qui reprend les versions portant ces étapes. La source est vérifiée avec la clé avant toute modification."
+    "en": "Attaches a new repository. Without stages it mirrors the source read-only; with stages it is an ordinary repository that takes over versions with those stages. The source is checked with the key before anything changes. An authority certificate of a source is set on the site itself.",
+    "text": "Rattache un nouveau dépôt. Sans étapes, il reflète la source en lecture seule ; avec des étapes, c’est un dépôt ordinaire qui reprend les versions portant ces étapes. La source est vérifiée avec la clé avant toute modification. Le certificat de l’autorité d’une source se définit sur le site lui-même."
   },
   "fleetMirrorAttachButton": {
     "en": "Attach",
@@ -4526,5 +4522,53 @@
   "fleetChangeQueued": {
     "en": "Queued. The site’s agent applies it within a minute.",
     "text": "En file d’attente. L’agent du site l’applique en moins d’une minute."
+  },
+  "fleetAgentUpdating": {
+    "en": "The site is installing an update: changes wait until it is done.",
+    "text": "Le site installe une mise à jour : les changements attendent qu’elle soit terminée."
+  },
+  "fleetAgentBlocked": {
+    "en": "A change was interrupted half done on the site. The agent takes no other until an administrator of the site checked it and ran arkvory changes-reset there.",
+    "text": "Un changement a été interrompu à mi-parcours sur le site. L’agent n’en prend aucun autre tant qu’un administrateur du site ne l’a pas vérifié et n’y a pas exécuté arkvory changes-reset."
+  },
+  "fleetSingleOffAsk": {
+    "en": "Withdraw the single-copy decision? While copies are still missing, writes stop until they are back.",
+    "text": "Retirer la décision de copie unique ? Tant que des copies manquent encore, les écritures sont arrêtées jusqu’à leur retour."
+  },
+  "fleetErrorExpired": {
+    "en": "Expired before the agent took it.",
+    "text": "Expiré avant que l’agent ne le prenne."
+  },
+  "fleetErrorInterrupted": {
+    "en": "Interrupted; the site needs checking.",
+    "text": "Interrompu ; le site doit être vérifié."
+  },
+  "fleetErrorKeyMissing": {
+    "en": "The source key did not arrive.",
+    "text": "La clé de la source n’est pas arrivée."
+  },
+  "fleetErrorNotMirror": {
+    "en": "Not a mirror of this site.",
+    "text": "Ce n’est pas un miroir de ce site."
+  },
+  "fleetErrorAttached": {
+    "en": "Already a mirror or an import: replace its key or detach it first.",
+    "text": "Déjà un miroir ou une importation : remplacez sa clé ou détachez-le d’abord."
+  },
+  "fleetErrorMirror": {
+    "en": "The mirror change failed; the agent restored the previous configuration. Details are in the agent log on the site.",
+    "text": "Le changement du miroir a échoué ; l’agent a rétabli la configuration précédente. Les détails figurent dans le journal de l’agent sur le site."
+  },
+  "fleetErrorSwitchover": {
+    "en": "The switchover failed. Details are in the agent log on the site.",
+    "text": "Le basculement a échoué. Les détails figurent dans le journal de l’agent sur le site."
+  },
+  "fleetErrorSingleCopy": {
+    "en": "The single-copy decision failed. Details are in the agent log on the site.",
+    "text": "La décision de copie unique a échoué. Les détails figurent dans le journal de l’agent sur le site."
+  },
+  "fleetErrorUnreadable": {
+    "en": "The request could not be read.",
+    "text": "La requête n’a pas pu être lue."
   }
 }

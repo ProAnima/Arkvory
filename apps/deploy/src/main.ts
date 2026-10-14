@@ -6,7 +6,7 @@ import { install, update, recover, upgrade, finishInstall, checkJournal } from '
 import { Services } from './services.js';
 import { deploymentHelp } from './help.js';
 import { createOwner } from './owner.js';
-import { pollChanges } from './site-changes.js';
+import { pollChanges, resetChanges } from './site-changes.js';
 import { pollUpdates, resetUpdateRequest } from './update-control.js';
 import { prepareUpdateControl } from './update-setup.js';
 import { report } from './output.js';
@@ -175,6 +175,9 @@ async function locked(operation: string, root: string, options: Map<string, stri
       if (failures.length) throw failures[0];
       break;
     }
+    case 'changes-reset':
+      await resetChanges(root);
+      break;
     case 'updates-reset':
       await resetUpdateRequest(root);
       break;
@@ -221,6 +224,7 @@ const COMMANDS = new Set([
   'configure',
   'updates-poll',
   'updates-reset',
+  'changes-reset',
   'updates-connect',
   'cluster-plan',
   'cluster-check',

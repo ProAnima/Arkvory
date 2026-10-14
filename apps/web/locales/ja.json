@@ -4387,13 +4387,9 @@
     "en": "Import stages, comma-separated",
     "text": "インポートするステージ（カンマ区切り）"
   },
-  "fleetMirrorCertificate": {
-    "en": "Authority certificate of the source (PEM)",
-    "text": "コピー元の証明機関の証明書（PEM）"
-  },
   "fleetMirrorAttachHint": {
-    "en": "Without stages the repository mirrors the source read-only; with stages it is an ordinary repository that takes over versions with those stages. The source is checked with the key before anything changes.",
-    "text": "ステージを指定しない場合、リポジトリはコピー元を読み取り専用でミラーします。ステージを指定すると、それらのステージが付いたバージョンを取り込む通常のリポジトリになります。変更の前に、キーでコピー元を確認します。"
+    "en": "Attaches a new repository. Without stages it mirrors the source read-only; with stages it is an ordinary repository that takes over versions with those stages. The source is checked with the key before anything changes. An authority certificate of a source is set on the site itself.",
+    "text": "新しいリポジトリを接続します。ステージを指定しない場合、コピー元を読み取り専用でミラーします。ステージを指定すると、それらのステージが付いたバージョンを取り込む通常のリポジトリになります。変更の前に、キーでコピー元を確認します。コピー元の証明機関の証明書は、サイト自体で設定します。"
   },
   "fleetMirrorAttachButton": {
     "en": "Attach",
@@ -4526,5 +4522,53 @@
   "fleetChangeQueued": {
     "en": "Queued. The site’s agent applies it within a minute.",
     "text": "キューに追加しました。サイトのエージェントが1分以内に適用します。"
+  },
+  "fleetAgentUpdating": {
+    "en": "The site is installing an update: changes wait until it is done.",
+    "text": "サイトで更新をインストールしています。完了するまで変更は待機します。"
+  },
+  "fleetAgentBlocked": {
+    "en": "A change was interrupted half done on the site. The agent takes no other until an administrator of the site checked it and ran arkvory changes-reset there.",
+    "text": "サイトで変更が途中で中断されました。サイトの管理者が確認し、そこで arkvory changes-reset を実行するまで、エージェントは他の変更を受け付けません。"
+  },
+  "fleetSingleOffAsk": {
+    "en": "Withdraw the single-copy decision? While copies are still missing, writes stop until they are back.",
+    "text": "単一コピーの決定を取り消しますか？コピーがまだ不足している間は、コピーが戻るまで書き込みが停止します。"
+  },
+  "fleetErrorExpired": {
+    "en": "Expired before the agent took it.",
+    "text": "エージェントが受け取る前に期限切れになりました。"
+  },
+  "fleetErrorInterrupted": {
+    "en": "Interrupted; the site needs checking.",
+    "text": "中断されました。サイトの確認が必要です。"
+  },
+  "fleetErrorKeyMissing": {
+    "en": "The source key did not arrive.",
+    "text": "コピー元のキーが届きませんでした。"
+  },
+  "fleetErrorNotMirror": {
+    "en": "Not a mirror of this site.",
+    "text": "このサイトのミラーではありません。"
+  },
+  "fleetErrorAttached": {
+    "en": "Already a mirror or an import: replace its key or detach it first.",
+    "text": "すでにミラーまたはインポートです。キーを置き換えるか、先に切り離してください。"
+  },
+  "fleetErrorMirror": {
+    "en": "The mirror change failed; the agent restored the previous configuration. Details are in the agent log on the site.",
+    "text": "ミラーの変更に失敗しました。エージェントは以前の構成を復元しました。詳細はサイト上のエージェントのログにあります。"
+  },
+  "fleetErrorSwitchover": {
+    "en": "The switchover failed. Details are in the agent log on the site.",
+    "text": "切り替えに失敗しました。詳細はサイト上のエージェントのログにあります。"
+  },
+  "fleetErrorSingleCopy": {
+    "en": "The single-copy decision failed. Details are in the agent log on the site.",
+    "text": "単一コピーの決定に失敗しました。詳細はサイト上のエージェントのログにあります。"
+  },
+  "fleetErrorUnreadable": {
+    "en": "The request could not be read.",
+    "text": "リクエストを読み取れませんでした。"
   }
 }

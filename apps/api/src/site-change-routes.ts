@@ -50,7 +50,17 @@ export function registerSiteChangeRoutes(
   app.get(ROUTE, async (request) => {
     administrator(principal(request));
     retentionObject(request.query, []);
-    return control.status();
+    const status = await control.status();
+    const pending = status.pending;
+    return {
+      ...status,
+      pending: pending && {
+        id: pending.id,
+        kind: pending.kind,
+        actor: pending.actor,
+        requestedAt: pending.requestedAt,
+      },
+    };
   });
   app.post(ROUTE, async (request, reply) => {
     const actor = principal(request);

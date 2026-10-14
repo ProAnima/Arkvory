@@ -388,13 +388,12 @@ test('a controller queues a mirror change for the agent of a site; the key goes 
       upstream: 'https://source.example',
       sourceRepository: 'releases',
       stages: ['tested'],
-      certificate: null,
     },
   });
   const queued = JSON.parse(await readFile(join(mailbox, 'inbox/change.json'), 'utf8'));
   assert.equal(queued.id, id);
   assert.match(queued.actor, /\(fleet:[0-9a-f-]+\)$/);
-  assert.equal(await readFile(join(mailbox, 'inbox/change.key'), 'utf8'), key);
+  assert.equal(await readFile(join(mailbox, `inbox/${id}.key`), 'utf8'), key);
   assert.doesNotMatch(JSON.stringify(queued), /zzzz/);
   const seen = await changes.status();
   assert.equal(seen.pending?.id, id);
@@ -410,5 +409,5 @@ test('a controller queues a mirror change for the agent of a site; the key goes 
     },
   });
   assert.equal(typo.statusCode, 400);
-  assert.deepEqual((await readdir(join(mailbox, 'inbox'))).sort(), ['change.json', 'change.key']);
+  assert.deepEqual((await readdir(join(mailbox, 'inbox'))).sort(), [`${id}.key`, 'change.json']);
 });

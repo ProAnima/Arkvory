@@ -4387,13 +4387,9 @@
     "en": "Import stages, comma-separated",
     "text": "导入阶段，以逗号分隔"
   },
-  "fleetMirrorCertificate": {
-    "en": "Authority certificate of the source (PEM)",
-    "text": "源的证书颁发机构证书（PEM）"
-  },
   "fleetMirrorAttachHint": {
-    "en": "Without stages the repository mirrors the source read-only; with stages it is an ordinary repository that takes over versions with those stages. The source is checked with the key before anything changes.",
-    "text": "不设阶段时，仓库以只读方式镜像源；设置阶段时，它是普通仓库，会接收带有这些阶段的版本。在进行任何更改之前，会先用密钥检查源。"
+    "en": "Attaches a new repository. Without stages it mirrors the source read-only; with stages it is an ordinary repository that takes over versions with those stages. The source is checked with the key before anything changes. An authority certificate of a source is set on the site itself.",
+    "text": "接入一个新仓库。不设阶段时，它以只读方式镜像源；设置阶段时，它是普通仓库，会接收带有这些阶段的版本。在进行任何更改之前，会先用密钥检查源。源的证书颁发机构证书在站点本身上设置。"
   },
   "fleetMirrorAttachButton": {
     "en": "Attach",
@@ -4526,5 +4522,53 @@
   "fleetChangeQueued": {
     "en": "Queued. The site’s agent applies it within a minute.",
     "text": "已加入队列。站点的代理会在一分钟内应用。"
+  },
+  "fleetAgentUpdating": {
+    "en": "The site is installing an update: changes wait until it is done.",
+    "text": "站点正在安装更新：更改将等待更新完成。"
+  },
+  "fleetAgentBlocked": {
+    "en": "A change was interrupted half done on the site. The agent takes no other until an administrator of the site checked it and ran arkvory changes-reset there.",
+    "text": "站点上的一项更改中途中断。在站点管理员检查并在该站点上运行 arkvory changes-reset 之前，代理不会接收其他更改。"
+  },
+  "fleetSingleOffAsk": {
+    "en": "Withdraw the single-copy decision? While copies are still missing, writes stop until they are back.",
+    "text": "撤回单副本决定？在副本仍然缺失期间，写入将停止，直到副本恢复。"
+  },
+  "fleetErrorExpired": {
+    "en": "Expired before the agent took it.",
+    "text": "在代理接收之前已过期。"
+  },
+  "fleetErrorInterrupted": {
+    "en": "Interrupted; the site needs checking.",
+    "text": "已中断；需要检查站点。"
+  },
+  "fleetErrorKeyMissing": {
+    "en": "The source key did not arrive.",
+    "text": "源密钥未送达。"
+  },
+  "fleetErrorNotMirror": {
+    "en": "Not a mirror of this site.",
+    "text": "不是此站点的镜像。"
+  },
+  "fleetErrorAttached": {
+    "en": "Already a mirror or an import: replace its key or detach it first.",
+    "text": "已是镜像或导入：请更换其密钥，或先将其断开。"
+  },
+  "fleetErrorMirror": {
+    "en": "The mirror change failed; the agent restored the previous configuration. Details are in the agent log on the site.",
+    "text": "镜像更改失败；代理已恢复之前的配置。详细信息见站点上的代理日志。"
+  },
+  "fleetErrorSwitchover": {
+    "en": "The switchover failed. Details are in the agent log on the site.",
+    "text": "切换失败。详细信息见站点上的代理日志。"
+  },
+  "fleetErrorSingleCopy": {
+    "en": "The single-copy decision failed. Details are in the agent log on the site.",
+    "text": "单副本决定失败。详细信息见站点上的代理日志。"
+  },
+  "fleetErrorUnreadable": {
+    "en": "The request could not be read.",
+    "text": "无法读取请求。"
   }
 }
