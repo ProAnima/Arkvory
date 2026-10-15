@@ -185,6 +185,20 @@ export async function delay(ms: number, signal?: AbortSignal) {
   } while (left > 0);
 }
 
+/** A wait until a time of the wall clock reads the clock again at least this often. */
+const WALL_CLOCK_STEP_MS = 60_000;
+
+/**
+ * Waits until the wall-clock time `at` (epoch milliseconds) or until the signal aborts. A timer
+ * counts running time only: a laptop asleep, a paused VM or a clock set anew would shift a single
+ * long timer by hours, so the remainder is read from the clock again every minute.
+ */
+export async function waitUntil(at: number, signal?: AbortSignal, now: () => number = Date.now) {
+  signal?.throwIfAborted();
+  for (let left = at - now(); left > 0; left = at - now())
+    await delay(Math.min(left, WALL_CLOCK_STEP_MS), signal);
+}
+
 function sleep(ms: number, signal?: AbortSignal) {
   return new Promise<void>((resolve, reject) => {
     const abort = () => {

@@ -108,6 +108,22 @@ test('reading the last range first does not finish a download; all its bytes do'
   assert.equal(sessions.idle, true);
 });
 
+test('a place that only served the tail is freed after a short pause, not the idle time', () => {
+  const sessions = new DownloadSessions(downloadSchedulePolicy(1, { idleMs: 30000 }));
+  const zip = session('zip', { size: 100 });
+  read(sessions, zip, 90, 99);
+  sessions.plan(5000);
+  assert.equal(sessions.snapshot(5000).active, 1, 'the next read of a ZIP reader follows at once');
+  sessions.plan(5500);
+  const snapshot = sessions.snapshot(5500);
+  assert.equal(snapshot.active, 0);
+  assert.equal(snapshot.resumable, 1, 'it keeps its turn and the tail it read');
+  // Once it read from its start, a pause keeps the place for the whole idle time.
+  read(sessions, zip, 0, 9, false, 6000);
+  sessions.plan(35000);
+  assert.equal(sessions.snapshot(35000).active, 1);
+});
+
 test('delivered ranges merge, stay bounded and never cover a byte that was not sent', () => {
   const coverage = new DownloadCoverage();
   coverage.add(10, 19);
@@ -156,6 +172,26 @@ test('an aborted range delivers nothing; the session completes only with every r
   assert.equal(sessions.snapshot(0).active, 1, 'the aborted range is not delivered');
   read(sessions, big, 50, 99);
   assert.equal(sessions.snapshot(0).completed, 1);
+});
+
+test('parallel ranges count each streamed byte once in the estimates', () => {
+  const sessions = new DownloadSessions(downloadSchedulePolicy(1, { rangesPerSession: 4 }));
+  const big = session('big', { size: 1000 });
+  const range = (start, end) => ({ start, end, open: false });
+  // Two ranges at once, as aria2 asks: the first ends while the second still streams.
+  assert.equal(sessions.request({ ...big, range: range(0, 499) }, 0).state, 'active');
+  assert.equal(sessions.request({ ...big, range: range(500, 999) }, 0).state, 'active');
+  assert.equal(sessions.request(session('next', { principal: 'other' }), 0).state, 'queued');
+  sessions.progress('big', 500, 0);
+  sessions.end('big', { finished: true, range: range(0, 499), streamed: 500 }, 0);
+  sessions.progress('big', 200, 0);
+  sessions.plan(1000);
+  // 300 bytes are left at 700 B/s: the next starts in about 429 ms, not at once.
+  const answer = sessions.request(session('next', { principal: 'other' }), 1000);
+  assert.equal(answer.state, 'queued');
+  assert.equal(answer.startsAt, 1429);
+  sessions.end('big', { finished: true, range: range(500, 999), streamed: 500 }, 1000);
+  assert.equal(sessions.snapshot(1000).completed, 1);
 });
 
 test('a download that paused keeps its turn and its delivered ranges when it comes back', () => {
@@ -248,6 +284,49 @@ test('a client of the queue protocol yields at a range boundary to a higher clas
   assert.equal(off.request(bulk, 61000).state, 'active');
 });
 
+test('a session that yielded does not take the place back before the head it yielded to', () => {
+  const sessions = new DownloadSessions(downloadSchedulePolicy(1, { idleMs: 120_000 }));
+  const bulk = session('agent', { principal: 'agents', class: 'bulk', size: 1000 });
+  const ci = session('ci', { principal: 'ci', size: 1000 });
+  sessions.request(bulk, 0);
+  sessions.end('agent', middle, 0);
+  for (const at of [0, 20000, 40000, 60000]) sessions.request(ci, at);
+  sessions.plan(61000);
+  assert.equal(sessions.request(bulk, 61000).state, 'queued');
+  sessions.plan(61500);
+  // The yielder is told to come back sooner than the head; it still waits for the head.
+  assert.equal(sessions.request(bulk, 61600).state, 'queued');
+  assert.equal(sessions.request(ci, 62000).state, 'active');
+  sessions.progress('ci', 1000, 62000);
+  sessions.end('ci', sent(0, 999, true), 62000);
+  sessions.plan(62500);
+  assert.equal(sessions.request(bulk, 62500).state, 'active');
+});
+
+test('nobody yields to a head that a freed place already serves', () => {
+  const policy = downloadSchedulePolicy(2, { idleMs: 120_000 });
+  const sessions = new DownloadSessions(policy);
+  const bulk = (key) => session(key, { principal: 'agents', class: 'bulk', size: 1000 });
+  for (const key of ['a1', 'a2']) {
+    sessions.request(bulk(key), 0);
+    sessions.end(key, middle, 0);
+  }
+  const ci = session('ci', { principal: 'ci', size: 1000 });
+  for (const at of [0, 20000, 40000, 60000]) sessions.request(ci, at);
+  // a1 asks its last range before the tick and finishes after it: its place is free, so a2
+  // keeps its own at its range boundary.
+  const last = { ...bulk('a1'), range: { start: 10, end: 999, open: false } };
+  assert.equal(sessions.request(last, 60500).state, 'active');
+  sessions.plan(61000);
+  sessions.end('a1', sent(10, 999), 61100);
+  assert.equal(sessions.request(bulk('a2'), 61200).state, 'active');
+  sessions.end('a2', middle, 61200);
+  // The next tick marks the freed place for the head.
+  sessions.plan(61500);
+  assert.equal(sessions.request(ci, 61500).state, 'active');
+  assert.equal(sessions.snapshot(61500).yielded, 0);
+});
+
 test('a principal above its share yields to one below it', () => {
   const sessions = new DownloadSessions(
     downloadSchedulePolicy(2, { perPrincipalActive: 1, idleMs: 120_000 }),
@@ -333,7 +412,8 @@ test('ordering 65 536 waiting sessions over many principals stays cheap', () => 
   const order = orderWaitingDownloads(waiting, policy, 0);
   const elapsed = performance.now() - started;
   assert.equal(order.length, 65536);
-  assert.ok(elapsed < 1000, `ordering took ${String(elapsed)} ms`);
+  // About 35 ms on a developer machine; the margin is for slow, shared CI runners.
+  assert.ok(elapsed < 5000, `ordering took ${String(elapsed)} ms`);
 });
 
 test('a client may lower its class, never raise it, and a typo is refused', () => {
