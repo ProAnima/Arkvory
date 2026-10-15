@@ -17,5 +17,17 @@ foreach ($entry in @(@('Arkvorybackup','service/arkvory-backup.exe'),@('Arkvoryw
     if ($LASTEXITCODE -ne 0) { throw 'Service removal failed' }
   }
 }
+# Release only the port exclusion Arkvory added (database/port-exclusion), after the database stopped.
+# A failure leaves the marker and does not block uninstall; reinstalling over the kept tree reuses it.
+$marker = Join-Path $Root 'database/port-exclusion'
+if (Test-Path -LiteralPath $marker) {
+  $port = 0
+  if (-not [int]::TryParse((Get-Content -LiteralPath $marker -Raw).Trim(), [ref]$port) -or $port -lt 1024 -or $port -gt 65535) {
+    Write-Warning 'Invalid database port exclusion marker; no exclusion removed'
+  } else {
+    & netsh.exe int ipv4 delete excludedportrange protocol=tcp startport=$port numberofports=1 store=persistent | Out-Null
+    if ($LASTEXITCODE -eq 0) { Remove-Item -LiteralPath $marker } else { Write-Warning "Cannot remove the exclusion of database port $port" }
+  }
+}
 # Deliberately retain the complete ProgramData tree, including database, blobs and recovery credentials.
 # The backup vault lives outside the root and is never touched.

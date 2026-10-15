@@ -17,6 +17,6 @@ CLI Linux: `arkvory help`. Windows: `& 'C:\Program Files\ProAnima\Arkvory\arkvor
 
 Сбой: сначала проверяйте журнал Inno Setup и `database/arkvory-database*.log` (Windows) / `journalctl -u arkvory-database` (Linux). Файл `database/bootstrap-started` без `initialized` означает прерванное создание роли/БД: не удаляйте кластер и не повторяйте SQL вслепую. После проверки состояния завершайте установку командой `finish-install`. Внешняя БД поддерживается операторскими install.sh/install.ps1; нативный GUI использует управляемую базу.
 
-Удаление сохраняет данные намеренно. Резервное копирование должно включать PostgreSQL и blobs, а не только директорию Program Files или пакет. Смена PostgreSQL major — отдельная миграция с резервной копией. Автообновления Arkvory не обновляют системные зависимости и runtime Node.
+Удаление сохраняет данные намеренно; на Windows оно снимает только исключение порта БД, записанное в `database/port-exclusion` ([ADR 0033](../../docs/adr/0033-native-installers-and-guided-setup.md)). Резервное копирование должно включать PostgreSQL и blobs, а не только директорию Program Files или пакет. Смена PostgreSQL major — отдельная миграция с резервной копией. Автообновления Arkvory не обновляют системные зависимости и runtime Node.
 
 [Границы, безопасность и приёмка](../../docs/adr/0033-native-installers-and-guided-setup.md). До предоставления signing credentials артефакты не подписаны издателем Arkvory; это не готовый доверенный публичный релиз.

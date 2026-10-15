@@ -48,14 +48,14 @@ Microsoft 런타임 때문에 다시 시작해야 한다고 Setup이 알려 주�
 
 ## 그래픽 설치 프로그램이 만드는 항목 {#what-the-graphical-installer-creates}
 
-| 항목               | 위치 또는 값                                                                            |
-| ------------------ | --------------------------------------------------------------------------------------- |
-| 프로그램 파일      | `C:\Program Files\ProAnima\Arkvory`                                                     |
-| 데이터, 구성, 로그 | `C:\ProgramData\ProAnima\Arkvory`(설치 루트)                                            |
-| 데이터베이스       | 루트의 `database\`에 있는 PostgreSQL 18.4, `127.0.0.1`의 45329-45348 중 첫 번째 빈 포트 |
-| 콘솔               | `http://127.0.0.1:8080/console/`                                                        |
-| 복구 키            | 루트의 `config\bootstrap-token.txt`                                                     |
-| 업데이트 작업      | 작업 스케줄러의 `ProAnimaArkvoryUpdate`. SYSTEM 계정으로 매분 실행됩니다                |
+| 항목               | 위치 또는 값                                                                                                                        |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------- |
+| 프로그램 파일      | `C:\Program Files\ProAnima\Arkvory`                                                                                                 |
+| 데이터, 구성, 로그 | `C:\ProgramData\ProAnima\Arkvory`(설치 루트)                                                                                        |
+| 데이터베이스       | 루트의 `database\`에 있는 PostgreSQL 18.4, `127.0.0.1`의 45329-45348 중 첫 번째 빈 포트, Windows가 부팅 시 예약하는 포트에서 제외됨 |
+| 콘솔               | `http://127.0.0.1:8080/console/`                                                                                                    |
+| 복구 키            | 루트의 `config\bootstrap-token.txt`                                                                                                 |
+| 업데이트 작업      | 작업 스케줄러의 `ProAnimaArkvoryUpdate`. SYSTEM 계정으로 매분 실행됩니다                                                            |
 
 ### 서비스 {#services}
 
@@ -157,7 +157,8 @@ Setup은 자체 로그도 실행한 사용자의 임시 폴더에 기록합니�
 
 1. `ProAnimaArkvoryUpdate` 작업을 제거합니다.
 2. `Arkvorybackup`, `Arkvoryworker`, `Arkvoryapi`, `Arkvorydatabase`를 중지하고 제거합니다.
-3. 프로그램 파일을 제거합니다.
+3. 설치 프로그램이 추가한 데이터베이스 포트 제외를 제거합니다.
+4. 프로그램 파일을 제거합니다.
 
 `C:\ProgramData\ProAnima\Arkvory`는 의도적으로 **남겨 둡니다**. 데이터베이스, 모든 파일, 구성, 복구 키가 들어 있기 때문입니다. 백업 보관소는 절대 건드리지 않습니다. 나중에 같은 버전 또는 더 새로운 버전의 Setup을 실행하면 남아 있는 데이터로 이어서 진행합니다. 데이터를 제거하려면 먼저 백업을 만든 다음 폴더를 직접 삭제하세요.
 

@@ -5,6 +5,8 @@ import { createServer } from 'node:net';
 import { command } from './process.js';
 import { jsonFile } from './files.js';
 import { record } from './model.js';
+import { report } from './output.js';
+import { netshExclusions, reservePort, type PortExclusions } from './port-reservation.js';
 
 /** The port of installations made before the port was chosen at install; still read as valid. */
 export const databasePort = 54329;
@@ -45,17 +47,81 @@ export async function chooseDatabasePort(
   );
 }
 
-export async function configureDatabase(root: string, bin: string): Promise<string> {
+/** Holds the port of the exclusion Arkvory added itself; uninstall removes only that one. */
+export const portExclusionMarker = 'database/port-exclusion';
+
+export interface PortChoice {
+  readonly port: number;
+  /** Arkvory added the port exclusion and owns it. */
+  readonly owned: boolean;
+}
+
+/**
+ * On Windows the chosen port is also excluded persistently, so a range Hyper-V or WinNAT reserves
+ * on a later boot cannot take it; a candidate that cannot be excluded is skipped.
+ */
+export async function chooseManagedPort(
+  platform: NodeJS.Platform = process.platform,
+  listen: (port: number) => Promise<boolean> = canListen,
+  exclusions: PortExclusions = netshExclusions,
+): Promise<PortChoice> {
+  const candidates = databasePortCandidates(platform);
+  if (platform !== 'win32')
+    return { port: await chooseDatabasePort(candidates, listen), owned: false };
+  const added = new Set<number>();
+  const port = await chooseDatabasePort(candidates, async (candidate) => {
+    if (!(await listen(candidate))) return false;
+    const outcome = await reservePort(candidate, exclusions);
+    if (outcome === 'added') added.add(candidate);
+    return outcome === 'added' || outcome === 'present';
+  });
+  return { port, owned: added.has(port) };
+}
+
+/**
+ * Repair, update and reinstallation over kept data restore a missing exclusion (removed at
+ * uninstall, or an installation made before exclusions). A refusal is reported, not fatal: the
+ * running database of such an installation still holds its port.
+ */
+export async function keepPortExcluded(
+  root: string,
+  port: number,
+  exclusions: PortExclusions = netshExclusions,
+): Promise<void> {
+  const outcome = await reservePort(port, exclusions);
+  // Written after the exclusion: an interruption between them leaves an unowned exclusion of an
+  // unused port, never a marker that would make uninstall remove someone else's exclusion.
+  if (outcome === 'added')
+    await writeFile(join(root, portExclusionMarker), String(port), { mode: 0o600, flush: true });
+  else if (outcome === 'system')
+    report(
+      'warning',
+      `Windows reserved database port ${String(port)} at boot; the database cannot listen on it (see Troubleshooting)`,
+    );
+  else if (outcome === 'refused')
+    report(
+      'warning',
+      `Cannot exclude database port ${String(port)} from the ranges Windows reserves at boot`,
+    );
+}
+
+export async function configureDatabase(
+  root: string,
+  bin: string,
+  choose: () => Promise<PortChoice> = () => chooseManagedPort(),
+): Promise<string> {
   if (!isAbsolute(bin) || /[\r\n\0"%$`]/.test(bin))
     throw new Error('Invalid PostgreSQL binary directory');
   const suffix = process.platform === 'win32' ? '.exe' : '';
   for (const name of ['initdb', 'postgres', 'pg_ctl', 'psql', 'pg_isready'])
     await access(join(bin, name + suffix));
-  const port = await chooseDatabasePort();
+  const { port, owned } = await choose();
   const administrator = randomBytes(32).toString('hex');
   const password = randomBytes(32).toString('hex');
   const directory = join(root, 'database');
   await mkdir(directory, { mode: 0o700 });
+  if (owned)
+    await writeFile(join(root, portExclusionMarker), String(port), { flag: 'wx', mode: 0o600 });
   await writeFile(join(directory, 'owner-password'), administrator, { flag: 'wx', mode: 0o600 });
   // Only generated hexadecimal literals enter SQL. The app role never receives cluster administration.
   await writeFile(
@@ -97,7 +163,8 @@ export async function databaseSettings(
 export async function provisionDatabase(root: string, releaseDirectory: string): Promise<void> {
   const settings = await databaseSettings(root);
   if (!settings) return;
-  if (process.platform === 'win32')
+  if (process.platform === 'win32') {
+    await keepPortExcluded(root, settings.port);
     await command('powershell.exe', [
       '-NoProfile',
       '-NonInteractive',
@@ -110,7 +177,7 @@ export async function provisionDatabase(root: string, releaseDirectory: string):
       '-Node',
       process.execPath,
     ]);
-  else
+  } else
     await command('bash', [
       join(releaseDirectory, 'deploy/database-linux.sh'),
       root,
