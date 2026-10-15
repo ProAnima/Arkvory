@@ -108,6 +108,22 @@ test('reading the last range first does not finish a download; all its bytes do'
   assert.equal(sessions.idle, true);
 });
 
+test('a place that only served the tail is freed after a short pause, not the idle time', () => {
+  const sessions = new DownloadSessions(downloadSchedulePolicy(1, { idleMs: 30000 }));
+  const zip = session('zip', { size: 100 });
+  read(sessions, zip, 90, 99);
+  sessions.plan(5000);
+  assert.equal(sessions.snapshot(5000).active, 1, 'the next read of a ZIP reader follows at once');
+  sessions.plan(5500);
+  const snapshot = sessions.snapshot(5500);
+  assert.equal(snapshot.active, 0);
+  assert.equal(snapshot.resumable, 1, 'it keeps its turn and the tail it read');
+  // Once it read from its start, a pause keeps the place for the whole idle time.
+  read(sessions, zip, 0, 9, false, 6000);
+  sessions.plan(35000);
+  assert.equal(sessions.snapshot(35000).active, 1);
+});
+
 test('delivered ranges merge, stay bounded and never cover a byte that was not sent', () => {
   const coverage = new DownloadCoverage();
   coverage.add(10, 19);

@@ -93,6 +93,12 @@ interface Session {
 const HANDOVER_MS = 5000;
 /** How soon a client that may take a place should come. */
 const CLAIM_CHECK_MS = 1000;
+/**
+ * A session that only read the tail (a ZIP directory, an SDK resuming inside its last range)
+ * keeps its place this long without responses: its next read, if any, follows at once, and a
+ * place must not stand idle for `idleMs` after a download that may well be over.
+ */
+const TAIL_IDLE_MS = 5000;
 /** A session keeps its place at least this long before it can be asked to yield. */
 const MIN_HOLD_MS = 60_000;
 
@@ -178,7 +184,11 @@ export class DownloadSessions {
     // parallel ranges must not be counted twice.
     session.pending =
       session.inFlight === 0 ? 0 : Math.max(0, session.pending - (how.streamed ?? 0));
-    session.expiresAt = now + this.current.idleMs;
+    session.expiresAt =
+      now +
+      (session.from === undefined
+        ? Math.min(TAIL_IDLE_MS, this.current.idleMs)
+        : this.current.idleMs);
     if (complete(session)) {
       this.counters.completed++;
       this.remove(session);
