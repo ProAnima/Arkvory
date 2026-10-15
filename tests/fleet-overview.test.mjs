@@ -152,11 +152,26 @@ test('fleet gauges carry hostile site names safely and drop the controller itsel
   assert.doesNotMatch(text, /site="self"[^\n]*arkvory_fleet_site_up/);
   for (const line of text.split('\n'))
     assert.ok(line === '' || /^(# |[a-z_]+(\{.*\})? -?[0-9.e+]+$)/.test(line), line);
-  // A failed reading is a counted collection failure, never stale gauges.
-  const broken = new FleetOverviewSource(
+});
+
+test('a failed collection is counted and keeps the last fleet gauges, so site alerts hold', async () => {
+  let down = false;
+  let mark = 0;
+  const sites = [
+    stored(
+      '22222222-2222-4222-8222-222222222222',
+      'Gone',
+      'https://gone.example',
+      'unreachable',
+      null,
+      null,
+    ),
+  ];
+  const overview = new FleetOverviewSource(
     {
       list: async () => {
-        throw new Error('database down');
+        if (down) throw new Error('database down');
+        return sites;
       },
     },
     async () => topology('Main'),
@@ -165,12 +180,34 @@ test('fleet gauges carry hostile site names safely and drop the controller itsel
       version: '1.2.0',
       url: null,
       lagLimit: 1000n,
-      now: () => now + 60000,
+      now: () => now,
+      monotonic: () => mark,
+    },
+  );
+  const registry = new MetricsRegistry(3);
+  overview.register(registry);
+  let failed = 0;
+  await overview.refresh(() => failed++);
+  down = true;
+  mark = 60000;
+  await overview.refresh(() => failed++);
+  assert.equal(failed, 1);
+  assert.match(registry.render(), /arkvory_fleet_site_up\{site="22222222-[^"]*",name="Gone"\} 0/);
+  // A collection without any reading yet still only counts the failure.
+  const empty = new FleetOverviewSource(
+    { list: async () => Promise.reject(new Error('database down')) },
+    async () => topology('Main'),
+    {
+      name: 'Main',
+      version: '1.2.0',
+      url: null,
+      lagLimit: 1000n,
+      now: () => now,
       monotonic: () => 0,
     },
   );
-  await broken.refresh(() => failed++);
-  assert.equal(failed, 1);
+  await empty.refresh(() => failed++);
+  assert.equal(failed, 2);
 });
 
 test('a silent site keeps its links and lag as last known; alerts use fresh reads only', async () => {

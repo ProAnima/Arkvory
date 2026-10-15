@@ -108,12 +108,16 @@ export class FleetOverviewSource {
     };
   }
 
-  /** For the metrics: refreshes the reading, reporting a failure instead of throwing. */
+  /**
+   * For the metrics: refreshes the reading, reporting a failure instead of throwing. The last
+   * reading stays: gauges that vanished on every failed collection would reset the `for` of the
+   * fleet alert rules, and a site that is down would never be reported while collection flaps.
+   * The failure itself is counted (`arkvory_metrics_collection_failures_total`).
+   */
   refresh(failed: () => void): Promise<void> {
     return this.read().then(
       () => undefined,
       () => {
-        this.reading = undefined;
         failed();
       },
     );

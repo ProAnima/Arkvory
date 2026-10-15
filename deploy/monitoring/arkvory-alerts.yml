@@ -69,7 +69,7 @@ groups:
           severity: warning
         annotations:
           summary: Database-backed Arkvory metrics could not be collected
-          description: arkvory_completion_* values are omitted until PostgreSQL answers again.
+          description: The collector label names the source. arkvory_completion_* values are omitted until PostgreSQL answers again; arkvory_fleet_* gauges keep the controller's last reading meanwhile.
 
       - alert: ArkvoryTlsCertificateExpiring
         expr: arkvory_tls_certificate_expiry_timestamp_seconds - time() < 14 * 86400
