@@ -24,6 +24,7 @@ export function mirrorResponse(entry: MirrorStatusEntry): RepositoryMirrorRespon
     errorAt: state?.errorAt ?? null,
     copiedArtifacts: state?.copiedArtifacts ?? 0,
     copiedBytes: state?.copiedBytes ?? '0',
+    conflicts: entry.conflicts,
   };
 }
 

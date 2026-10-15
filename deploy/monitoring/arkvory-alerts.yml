@@ -135,7 +135,18 @@ groups:
           severity: warning
         annotations:
           summary: Synchronization of mirror {{ $labels.repository }} keeps failing
-          description: Read errorCode in GET /api/v1/repositories/{repository}/mirror. mirror_mismatch - keep the copy and investigate the artifact; mirror_source_changed - detach before changing the source; mirror_detached - mirror into a new repository; mirror_package_conflict - remove the stage or the version on the source; mirror_id_taken - one source repository fills one repository here; mirror_delete_blocked or integrity_mismatch - investigate that artifact, nothing after it is applied meanwhile; otherwise the source, its key or the local disk.
+          description: Read errorCode in GET /api/v1/repositories/{repository}/mirror. mirror_mismatch - keep the copy and investigate the artifact; mirror_source_changed - detach before changing the source; mirror_detached - mirror into a new repository; mirror_id_taken - an image, Git LFS or npm entry of an artifact another repository here holds, one source repository fills one repository here (other conflicting entries are set aside, see ArkvoryMirrorConflicts); mirror_delete_blocked or integrity_mismatch - investigate that artifact, nothing after it is applied meanwhile; otherwise the source, its key or the local disk.
+
+      - alert: ArkvoryMirrorConflicts
+        # Entries of the source put aside on a conflict (ADR 0058, 2026-10-15): the rest of the
+        # feed goes on, these versions are not here until resolved.
+        expr: max by (repository) (arkvory_mirror_conflicts) > 0
+        for: 30m
+        labels:
+          severity: warning
+        annotations:
+          summary: Mirror {{ $labels.repository }} has set aside {{ $value }} conflicting entries of its source
+          description: Read conflicts in GET /api/v1/repositories/{repository}/mirror and the worker mirror.conflict_set_aside records. mirror_package_conflict - this repository holds that package version with other bytes; remove the stage or the version on the source, or publish it under another version. mirror_id_taken - another repository here holds the artifact; one source repository fills one repository. The server retries every 10 minutes and clears an entry once it applies or the source no longer has it.
 
       - alert: ArkvoryFleetSiteDown
         # The controller of the fleet console (ADR 0077) reads every managed site every 30 s.

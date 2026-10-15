@@ -99,6 +99,7 @@ async function exposedNames() {
               checkedAt: '2026-10-02T00:00:00.000Z',
               errorCode: null,
             },
+            conflicts: { count: 0, oldestAt: null, sample: [] },
           },
         ],
       },

@@ -1,6 +1,7 @@
 import { ArkvoryError, authorizeAction } from '@proanima/arkvory-domain';
 import type { Principal } from '@proanima/arkvory-domain';
 import type { MirrorState, MirrorStateStore } from './mirror-ports.js';
+import type { MirrorConflictReader, MirrorConflictSummary } from './mirror-conflicts.js';
 
 /** A configured mirror as the status API shows it; the source key never leaves the worker. */
 export interface MirrorConfiguration {
@@ -13,13 +14,19 @@ export interface MirrorConfiguration {
 export interface MirrorStatusEntry extends MirrorConfiguration {
   /** Null before the worker's first step. */
   readonly state: MirrorState | null;
+  /** Entries of the source put aside on a conflict while the rest goes on. */
+  readonly conflicts: MirrorConflictSummary;
 }
+
+/** The status names at most this many entries set aside; the count covers all of them. */
+export const CONFLICT_SAMPLE = 10;
 
 /** Mirror status of one repository for the console and CLI (ADR 0058). */
 export class MirrorStatus {
   constructor(
     private readonly mirrors: readonly MirrorConfiguration[],
     private readonly states: MirrorStateStore,
+    private readonly conflicts: MirrorConflictReader,
   ) {}
 
   /** Mirrored repositories of this installation: writes there are refused for every client. */
@@ -33,6 +40,7 @@ export class MirrorStatus {
       this.mirrors.map(async (mirror) => ({
         ...mirror,
         state: await this.states.load(mirror.repository),
+        conflicts: await this.conflicts.summary(mirror.repository, CONFLICT_SAMPLE),
       })),
     );
   }
@@ -61,6 +69,7 @@ export class MirrorStatus {
       sourceRepository,
       ...(mirror.stages ? { stages: mirror.stages } : {}),
       state: await this.states.load(repository),
+      conflicts: await this.conflicts.summary(repository, CONFLICT_SAMPLE),
     };
   }
 }

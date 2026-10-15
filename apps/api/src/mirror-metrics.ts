@@ -82,5 +82,10 @@ export class MirrorMetrics {
             : 1
           : null,
     );
+    gauge(
+      'arkvory_mirror_conflicts',
+      'Entries of the source put aside on a conflict while the rest of the feed goes on.',
+      (entry) => entry.conflicts.count,
+    );
   }
 }

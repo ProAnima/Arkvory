@@ -55,6 +55,29 @@ export interface RepositoryMirrorResponse {
   readonly errorAt: string | null;
   readonly copiedArtifacts: number;
   readonly copiedBytes: string;
+  /**
+   * Entries of the source put aside on a conflict while the feed goes on (2026-10-15). A server
+   * from before puts nothing aside (it stops instead, see `errorCode`): read as none.
+   */
+  readonly conflicts: MirrorConflictsResponse;
+}
+/** One entry put aside: the source artifact and the feed action (with its path or stage). */
+export interface MirrorConflictResponse {
+  readonly artifactId: string;
+  readonly action: string;
+  readonly detail: string | null;
+  /** `mirror_package_conflict` or `mirror_id_taken`; a newer server may add codes. */
+  readonly code: string;
+  readonly firstAt: string;
+  readonly lastAt: string;
+  readonly attempts: number;
+}
+export interface MirrorConflictsResponse {
+  readonly count: number;
+  /** When the oldest entry still set aside was put aside; null when there is none. */
+  readonly oldestAt: string | null;
+  /** The oldest entries, at most 10. */
+  readonly sample: readonly MirrorConflictResponse[];
 }
 
 const sequence = (value: unknown): string => {
@@ -79,6 +102,29 @@ export function readMirrorList(value: unknown): MirrorListResponse {
   return { items: items(record(value)['items']).map(readRepositoryMirror) };
 }
 
+const noConflicts: MirrorConflictsResponse = { count: 0, oldestAt: null, sample: [] };
+
+function readConflicts(value: unknown): MirrorConflictsResponse {
+  if (value === undefined) return noConflicts;
+  const row = record(value);
+  return {
+    count: integer(row['count']),
+    oldestAt: optional(row['oldestAt'], text),
+    sample: items(row['sample']).map((entry) => {
+      const conflict = record(entry);
+      return {
+        artifactId: text(conflict['artifactId']),
+        action: text(conflict['action']),
+        detail: optional(conflict['detail'], text),
+        code: text(conflict['code']),
+        firstAt: text(conflict['firstAt']),
+        lastAt: text(conflict['lastAt']),
+        attempts: integer(conflict['attempts']),
+      };
+    }),
+  };
+}
+
 export function readRepositoryMirror(value: unknown): RepositoryMirrorResponse {
   const row = record(value);
   return {
@@ -101,6 +147,7 @@ export function readRepositoryMirror(value: unknown): RepositoryMirrorResponse {
     errorAt: optional(row['errorAt'], text),
     copiedArtifacts: integer(row['copiedArtifacts']),
     copiedBytes: sequence(row['copiedBytes']),
+    conflicts: readConflicts(row['conflicts']),
   };
 }
 
@@ -133,6 +180,33 @@ const repository = {
 const nullableText = { type: 'string', nullable: true } as const;
 const nullableDecimal = { ...decimal, nullable: true } as const;
 const nullableTime = { type: 'string', format: 'date-time', nullable: true } as const;
+const conflictsSchema = {
+  type: 'object',
+  description:
+    'Entries of the source put aside on a conflict while the feed goes on; retried by the server',
+  required: ['count', 'oldestAt', 'sample'],
+  properties: {
+    count: { type: 'integer', minimum: 0 },
+    oldestAt: nullableTime,
+    sample: {
+      type: 'array',
+      maxItems: 10,
+      items: {
+        type: 'object',
+        required: ['artifactId', 'action', 'detail', 'code', 'firstAt', 'lastAt', 'attempts'],
+        properties: {
+          artifactId: { type: 'string', format: 'uuid' },
+          action: str,
+          detail: nullableText,
+          code: str,
+          firstAt: { type: 'string', format: 'date-time' },
+          lastAt: { type: 'string', format: 'date-time' },
+          attempts: { type: 'integer', minimum: 1 },
+        },
+      },
+    },
+  },
+};
 const mirrorSchema = {
   type: 'object',
   required: [
@@ -152,6 +226,7 @@ const mirrorSchema = {
     'errorAt',
     'copiedArtifacts',
     'copiedBytes',
+    'conflicts',
   ],
   properties: {
     repository: str,
@@ -170,6 +245,7 @@ const mirrorSchema = {
     errorAt: nullableTime,
     copiedArtifacts: { type: 'integer', minimum: 0 },
     copiedBytes: decimal,
+    conflicts: conflictsSchema,
   },
 };
 export const mirrorPaths: Record<string, Record<string, unknown>> = {
