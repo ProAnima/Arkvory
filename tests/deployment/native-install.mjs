@@ -13,6 +13,7 @@ import { exerciseNativeHang, exerciseNativeRecovery } from './native-recovery.mj
 import { requireDisposableHost } from './disposable-host.mjs';
 import { committedPoint, exerciseInstalledBackup, removeGateVault } from './native-backup.mjs';
 import { vaultReported, waitForAgent } from './backup-acceptance.mjs';
+import { excludedRanges } from '../../apps/deploy/dist/port-reservation.js';
 
 /** apt-daily on a fresh runner holds the dpkg lock for minutes: wait for it instead of failing. */
 const APT = ['-o', 'DPkg::Lock::Timeout=600'];
@@ -55,6 +56,18 @@ const vault = windows
   ? join(process.env.ProgramData, `arkvory-vault-gate-${process.pid}`)
   : `/srv/arkvory-vault-gate-${process.pid}`;
 let backupPoint = null;
+let databasePort = null;
+const exclusionMarker = join(root, 'database/port-exclusion');
+/** The single-port exclusions an administrator (here: the installer) added. */
+const excludedPorts = () =>
+  excludedRanges(
+    execFileSync('netsh.exe', ['int', 'ipv4', 'show', 'excludedportrange', 'protocol=tcp'], {
+      encoding: 'utf8',
+      windowsHide: true,
+    }),
+  )
+    .filter((range) => range.administered && range.start === range.end)
+    .map((range) => range.start);
 const temporary = await mkdtemp(join(tmpdir(), 'arkvory-owner-gate-'));
 const password = randomBytes(24).toString('hex');
 const ownerFile = join(temporary, 'owner.json');
@@ -130,6 +143,13 @@ try {
     windows ? port >= 45329 && port < 45349 : port === 54329 || (port >= 45329 && port < 45349),
     database.port,
   );
+  if (windows) {
+    // Excluded persistently by the installer, so a range Hyper-V or WinNAT reserves at a later
+    // boot cannot take it; the database answering below proves it still binds the port.
+    databasePort = port;
+    assert.ok(excludedPorts().includes(port), 'The database port must be excluded');
+    assert.equal(await read(exclusionMarker), String(port));
+  }
   const pg = windows ? join(root, 'runtime/postgres/bin/psql.exe') : 'psql';
   const restricted = execFileSync(
     pg,
@@ -257,6 +277,10 @@ try {
   } else run('sudo', ['apt-get', ...APT, 'remove', '-y', 'proanima-arkvory']);
 }
 await read(join(root, 'database/cluster/PG_VERSION'));
+if (databasePort !== null) {
+  assert.ok(!excludedPorts().includes(databasePort), 'Uninstall must release the port exclusion');
+  await assert.rejects(access(exclusionMarker), /ENOENT/);
+}
 await read(join(root, 'config/runtime.json'));
 // Uninstall leaves the vault and its points untouched.
 await committedPoint(vault, backupPoint.pointId);
