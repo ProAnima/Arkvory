@@ -1891,6 +1891,10 @@
     "en": "The last attempt failed ({code}). The server retries by itself; its log names the cause.",
     "text": "A última tentativa falhou ({code}). O servidor tentará novamente sozinho; o log dele indica a causa."
   },
+  "mirrorConflicts": {
+    "en": "Set aside: {count}. These entries of the source conflict with what is here and are not copied; everything else keeps syncing, and the server retries them.",
+    "text": "Deixadas de lado: {count}. Essas entradas da origem entram em conflito com o que existe aqui e não são copiadas; todo o resto continua sincronizando, e o servidor tenta de novo."
+  },
   "mirrors": {
     "en": "Mirrors",
     "text": "Espelhos"

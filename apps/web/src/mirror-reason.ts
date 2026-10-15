@@ -34,3 +34,23 @@ export function mirrorReasonView(status: RepositoryMirrorResponse): HTMLElement 
   box.append(link);
   return box;
 }
+
+/**
+ * Entries of the source set aside on a conflict while everything else keeps syncing: how many,
+ * and where the way to resolve them is described. Null when there is none.
+ */
+export function mirrorConflictsView(status: RepositoryMirrorResponse): HTMLElement | null {
+  const { count } = status.conflicts;
+  if (count === 0) return null;
+  const box = document.createElement('div');
+  box.className = 'mirror-problem mirror-conflicts';
+  const text = document.createElement('p');
+  message(text, 'mirrorConflicts', { count });
+  const link = document.createElement('a');
+  link.target = '_blank';
+  link.rel = 'noopener noreferrer';
+  link.dataset['docs'] = 'operate/mirrors#conflicts';
+  message(link, 'mirrorFixLink');
+  box.append(text, link);
+  return box;
+}

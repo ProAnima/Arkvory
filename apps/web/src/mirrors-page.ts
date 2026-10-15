@@ -3,7 +3,7 @@ import type { RepositoryMirrorResponse } from '@proanima/arkvory-contracts';
 import { element } from './dom.js';
 import { clearMessage, message, relativeMessage } from './i18n.js';
 import { hostOf, mirrorState, stageList, stateKeys } from './mirror-presentation.js';
-import { mirrorReasonView } from './mirror-reason.js';
+import { mirrorConflictsView, mirrorReasonView } from './mirror-reason.js';
 import { onViewOpen, showView } from './shell.js';
 import { showFailure } from './feedback.js';
 
@@ -17,6 +17,7 @@ interface Row {
   readonly mode: HTMLElement;
   readonly badge: HTMLElement;
   readonly reason: HTMLElement;
+  readonly conflicts: HTMLElement;
   readonly synced: HTMLElement;
   readonly copied: HTMLElement;
 }
@@ -128,10 +129,11 @@ export class MirrorsPage {
     name.onclick = () => {
       this.open(repository);
     };
-    const [source, mode, badge, reason, synced, copied] = [
+    const [source, mode, badge, reason, conflicts, synced, copied] = [
       'div',
       'div',
       'span',
+      'div',
       'div',
       'span',
       'span',
@@ -142,12 +144,19 @@ export class MirrorsPage {
       HTMLElement,
       HTMLElement,
       HTMLElement,
+      HTMLElement,
     ];
     mode.className = 'hint';
     badge.className = 'badge mirror-badge';
     const row = document.createElement('tr');
-    row.append(cell(name), cell(source, mode), cell(badge, reason), cell(synced), cell(copied));
-    const created = { row, source, mode, badge, reason, synced, copied };
+    row.append(
+      cell(name),
+      cell(source, mode),
+      cell(badge, reason, conflicts),
+      cell(synced),
+      cell(copied),
+    );
+    const created = { row, source, mode, badge, reason, conflicts, synced, copied };
     this.shown.set(repository, created);
     return created;
   }
@@ -168,6 +177,12 @@ export class MirrorsPage {
       row.reason.dataset['code'] = code;
       const view = mirrorReasonView(item);
       row.reason.replaceChildren(...(view ? [view] : []));
+    }
+    const count = String(item.conflicts.count);
+    if (row.conflicts.dataset['count'] !== count) {
+      row.conflicts.dataset['count'] = count;
+      const view = mirrorConflictsView(item);
+      row.conflicts.replaceChildren(...(view ? [view] : []));
     }
     if (item.syncedAt) relativeMessage(row.synced, item.syncedAt);
     else {

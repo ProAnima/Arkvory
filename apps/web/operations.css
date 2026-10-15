@@ -27,6 +27,10 @@
 .mirror-problem p {
   margin: 0;
 }
+/* Entries set aside while the rest syncs: a warning, not a stop. */
+.mirror-problem.mirror-conflicts {
+  border-inline-start-color: var(--color-warning);
+}
 .mirror-command {
   display: block;
   padding: var(--space-2) var(--space-3);
