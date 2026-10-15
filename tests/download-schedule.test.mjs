@@ -158,6 +158,26 @@ test('an aborted range delivers nothing; the session completes only with every r
   assert.equal(sessions.snapshot(0).completed, 1);
 });
 
+test('parallel ranges count each streamed byte once in the estimates', () => {
+  const sessions = new DownloadSessions(downloadSchedulePolicy(1, { rangesPerSession: 4 }));
+  const big = session('big', { size: 1000 });
+  const range = (start, end) => ({ start, end, open: false });
+  // Two ranges at once, as aria2 asks: the first ends while the second still streams.
+  assert.equal(sessions.request({ ...big, range: range(0, 499) }, 0).state, 'active');
+  assert.equal(sessions.request({ ...big, range: range(500, 999) }, 0).state, 'active');
+  assert.equal(sessions.request(session('next', { principal: 'other' }), 0).state, 'queued');
+  sessions.progress('big', 500, 0);
+  sessions.end('big', { finished: true, range: range(0, 499), streamed: 500 }, 0);
+  sessions.progress('big', 200, 0);
+  sessions.plan(1000);
+  // 300 bytes are left at 700 B/s: the next starts in about 429 ms, not at once.
+  const answer = sessions.request(session('next', { principal: 'other' }), 1000);
+  assert.equal(answer.state, 'queued');
+  assert.equal(answer.startsAt, 1429);
+  sessions.end('big', { finished: true, range: range(500, 999), streamed: 500 }, 1000);
+  assert.equal(sessions.snapshot(1000).completed, 1);
+});
+
 test('a download that paused keeps its turn and its delivered ranges when it comes back', () => {
   const policy = downloadSchedulePolicy(1, { idleMs: 30000 });
   const sessions = new DownloadSessions(policy);

@@ -14,7 +14,7 @@ import type { DownloadTickets } from './download-tickets.js';
  */
 export interface DownloadLease {
   progress(bytes: number): void;
-  end(how: Omit<DownloadResponseEnd, 'range'>): void;
+  end(how: Omit<DownloadResponseEnd, 'range' | 'streamed'>): void;
 }
 /** `ticket`: the queue ticket the client should send back, when tickets are on. */
 export type DownloadAdmission = (
@@ -179,16 +179,19 @@ export class DownloadScheduler {
 
   private lease(key: string, range: DownloadByteRange): DownloadAdmission {
     let ended = false;
+    let streamed = 0;
     return {
       state: 'active',
       lease: {
         progress: (bytes) => {
-          if (!ended) this.sessions.progress(key, bytes, this.now());
+          if (ended) return;
+          streamed += bytes;
+          this.sessions.progress(key, bytes, this.now());
         },
         end: (how) => {
           if (ended) return;
           ended = true;
-          this.sessions.end(key, { finished: how.finished, range }, this.now());
+          this.sessions.end(key, { finished: how.finished, range, streamed }, this.now());
         },
       },
     };

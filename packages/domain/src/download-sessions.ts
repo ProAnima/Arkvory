@@ -48,6 +48,11 @@ export type DownloadDecision =
 export interface DownloadResponseEnd {
   readonly finished: boolean;
   readonly range: DownloadByteRange;
+  /**
+   * Bytes this response reported through `progress`. They leave the estimate of bytes in flight
+   * when it ends, while other ranges of the session still stream; absent: none.
+   */
+  readonly streamed?: number;
 }
 
 interface Session {
@@ -167,7 +172,10 @@ export class DownloadSessions {
     if (session?.state !== 'active' || session.inFlight === 0) return;
     session.inFlight--;
     if (how.finished) session.coverage.add(how.range.start, how.range.end);
-    if (session.inFlight === 0) session.pending = 0;
+    // Exactly this response's bytes: a finished one now counts in the coverage instead, and
+    // parallel ranges must not be counted twice.
+    session.pending =
+      session.inFlight === 0 ? 0 : Math.max(0, session.pending - (how.streamed ?? 0));
     session.expiresAt = now + this.current.idleMs;
     if (complete(session)) {
       this.counters.completed++;
