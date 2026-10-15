@@ -4,7 +4,7 @@ import type { RepositoryMirrorResponse } from '@proanima/arkvory-contracts';
 import { element } from './dom.js';
 import { message, relativeMessage } from './i18n.js';
 import { hostOf, mirrorState, stageList } from './mirror-presentation.js';
-import { mirrorConflictsView, mirrorReasonView } from './mirror-reason.js';
+import { mirrorReasonView, showConflicts } from './mirror-reason.js';
 
 /** The badge follows the server's synchronization without a reload. */
 const REFRESH_MS = 20000;
@@ -36,7 +36,6 @@ export function installMirrorStatus(client: ArkvoryClient) {
     problem.replaceChildren();
     delete problem.dataset['code'];
     conflicts.hidden = true;
-    conflicts.replaceChildren();
     delete conflicts.dataset['count'];
     mirrored(false);
   };
@@ -71,14 +70,8 @@ export function installMirrorStatus(client: ArkvoryClient) {
       problem.replaceChildren(...(reason ? [reason] : []));
     }
     problem.hidden = status.errorCode === null;
-    // Entries set aside while the rest syncs: shown in any state, rebuilt when the count changes.
-    const count = String(status.conflicts.count);
-    if (conflicts.dataset['count'] !== count) {
-      conflicts.dataset['count'] = count;
-      const view = mirrorConflictsView(status);
-      conflicts.replaceChildren(...(view ? [view] : []));
-    }
-    conflicts.hidden = status.conflicts.count === 0;
+    // Entries set aside while the rest syncs: shown in any state.
+    showConflicts(conflicts, status);
     container.hidden = false;
     mirrored(!importing);
   };

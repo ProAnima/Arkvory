@@ -3,7 +3,7 @@ import type { RepositoryMirrorResponse } from '@proanima/arkvory-contracts';
 import { element } from './dom.js';
 import { clearMessage, message, relativeMessage } from './i18n.js';
 import { hostOf, mirrorState, stageList, stateKeys } from './mirror-presentation.js';
-import { mirrorConflictsView, mirrorReasonView } from './mirror-reason.js';
+import { mirrorReasonView, showConflicts } from './mirror-reason.js';
 import { onViewOpen, showView } from './shell.js';
 import { showFailure } from './feedback.js';
 
@@ -178,12 +178,7 @@ export class MirrorsPage {
       const view = mirrorReasonView(item);
       row.reason.replaceChildren(...(view ? [view] : []));
     }
-    const count = String(item.conflicts.count);
-    if (row.conflicts.dataset['count'] !== count) {
-      row.conflicts.dataset['count'] = count;
-      const view = mirrorConflictsView(item);
-      row.conflicts.replaceChildren(...(view ? [view] : []));
-    }
+    showConflicts(row.conflicts, item);
     if (item.syncedAt) relativeMessage(row.synced, item.syncedAt);
     else {
       clearMessage(row.synced);

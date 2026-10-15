@@ -39,7 +39,7 @@ export function mirrorReasonView(status: RepositoryMirrorResponse): HTMLElement 
  * Entries of the source set aside on a conflict while everything else keeps syncing: how many,
  * and where the way to resolve them is described. Null when there is none.
  */
-export function mirrorConflictsView(status: RepositoryMirrorResponse): HTMLElement | null {
+function mirrorConflictsView(status: RepositoryMirrorResponse): HTMLElement | null {
   const { count } = status.conflicts;
   if (count === 0) return null;
   const box = document.createElement('div');
@@ -53,4 +53,18 @@ export function mirrorConflictsView(status: RepositoryMirrorResponse): HTMLEleme
   message(link, 'mirrorFixLink');
   box.append(text, link);
   return box;
+}
+
+/**
+ * Shows the entries set aside in `slot`, hidden while there is none. Rebuilt only when their
+ * number changes, so the link keeps focus across refreshes.
+ */
+export function showConflicts(slot: HTMLElement, status: RepositoryMirrorResponse): void {
+  const count = String(status.conflicts.count);
+  if (slot.dataset['count'] !== count) {
+    slot.dataset['count'] = count;
+    const view = mirrorConflictsView(status);
+    slot.replaceChildren(...(view ? [view] : []));
+  }
+  slot.hidden = status.conflicts.count === 0;
 }
