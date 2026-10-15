@@ -111,7 +111,11 @@ test('a tool outside the protocol is held until its turn instead of failing on 5
   const s = await server(t, { holdMs: 10_000 });
   assert.equal((await s.get('10.0.0.1', { range: 'bytes=0-1023' })).statusCode, 206);
   const held = s.get('10.0.0.2');
-  await new Promise((resolve) => setTimeout(resolve, 50));
+  // The request reaches the scheduler after the routing; a slow machine may need longer.
+  for (const deadline = Date.now() + 5000; s.scheduler.snapshot.held === 0;) {
+    assert.ok(Date.now() < deadline, 'the request was never held');
+    await new Promise((resolve) => setTimeout(resolve, 10));
+  }
   assert.equal(s.scheduler.snapshot.held, 1);
   await s.get('10.0.0.1', { range: 'bytes=1024-' });
   s.scheduler.plan();

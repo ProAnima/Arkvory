@@ -236,13 +236,20 @@ test('a queued download keeps its turn over a server restart with its ticket (AD
   assert.equal((await ask('holder', { range: 'bytes=0-9' })).statusCode, 206);
   assert.equal((await ask('late')).statusCode, 503);
   assert.equal((await ask('early', { 'arkvory-queue-ticket': ticket })).statusCode, 503);
-  await new Promise((resolve) => setTimeout(resolve, 1200));
   const position = async (download, extra) =>
     (await ask(download, extra)).headers['arkvory-queue-position'];
-  assert.equal(await position('early', { 'arkvory-queue-ticket': ticket }), '1');
+  /** The position once the scheduler's own tick placed the download; a slow runner may lag. */
+  const placed = async (download, extra) => {
+    for (const deadline = Date.now() + 10_000; ;) {
+      const at = await position(download, extra);
+      if (at !== undefined) return at;
+      assert.ok(Date.now() < deadline, `${download} was never placed`);
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+  };
+  assert.equal(await placed('early', { 'arkvory-queue-ticket': ticket }), '1');
   assert.equal(await position('late'), '2');
   // A ticket of another download moves nothing.
   assert.equal((await ask('thief', { 'arkvory-queue-ticket': ticket })).statusCode, 503);
-  await new Promise((resolve) => setTimeout(resolve, 1200));
-  assert.equal(await position('thief'), '3');
+  assert.equal(await placed('thief'), '3');
 });
