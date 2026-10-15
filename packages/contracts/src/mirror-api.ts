@@ -182,8 +182,6 @@ const nullableDecimal = { ...decimal, nullable: true } as const;
 const nullableTime = { type: 'string', format: 'date-time', nullable: true } as const;
 const conflictsSchema = {
   type: 'object',
-  description:
-    'Entries of the source put aside on a conflict while the feed goes on; retried by the server',
   required: ['count', 'oldestAt', 'sample'],
   properties: {
     count: { type: 'integer', minimum: 0 },
