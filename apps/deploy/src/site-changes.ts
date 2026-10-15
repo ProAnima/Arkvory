@@ -23,14 +23,13 @@ import { Services } from './services.js';
 import { report } from './output.js';
 import { isUnconfirmedTermination } from './process.js';
 import { checkJournal } from './operations.js';
+import { claim, readClaimed } from './mailbox-claim.js';
 import {
-  claim,
   keepUnreadable,
   KEY_LIMIT,
   mailbox,
   markMoving,
   movingFor,
-  readClaimed,
   readStatus,
   removeAll,
   REQUEST_LIMIT,
