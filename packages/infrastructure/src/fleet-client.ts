@@ -186,7 +186,7 @@ function readAnswer(
 
 /**
  * One JSON request to a site. Over HTTPS the pinned certificate is the only trust anchor and its
- * public key must match the pin: the chain is still verified, against that anchor only. Bodies
+ * SHA-256 must match the pin: the chain is still verified, against that anchor only. Bodies
  * are bounded; redirects are not followed.
  */
 export function siteRequest(

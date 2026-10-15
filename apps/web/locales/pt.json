@@ -4575,6 +4575,10 @@
     "en": "The request could not be read.",
     "text": "Não foi possível ler a solicitação."
   },
+  "fleetErrorDigest": {
+    "en": "The request did not match what was sent; it was refused.",
+    "text": "O pedido não correspondia ao que foi enviado e foi recusado."
+  },
   "fleetOverview": {
     "en": "State of the cluster",
     "text": "Estado do cluster"

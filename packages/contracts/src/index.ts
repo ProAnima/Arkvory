@@ -73,6 +73,7 @@ export {
   readSiteChangeRequest,
   readSiteChangeStatus,
   siteChangeKinds,
+  siteChangeDigestText,
   siteChangeErrors,
   siteChangeTtlMs,
   SITE_CHANGE_ACTOR_LENGTH,

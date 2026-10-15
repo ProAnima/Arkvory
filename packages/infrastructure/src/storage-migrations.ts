@@ -18,7 +18,7 @@ import { migrateDownloadTickets } from './download-tickets.js';
 import { migrateFleet } from './fleet-schema.js';
 import { migrateDownloadSettings } from './download-settings-store.js';
 
-/** Steps of versions 15-39 (36 is an index step) in their historical order; each records its own version. */
+/** Steps of versions 15-40 (36 is an index step) in their historical order; each records its own version. */
 const storageSteps: readonly (readonly [number, (client: PoolClient) => Promise<void>])[] = [
   [15, migrateStoragePolicy],
   [16, migrateCleanup],

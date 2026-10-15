@@ -9,9 +9,14 @@
  */
 export function isFleetName(value: unknown): value is string {
   if (typeof value !== 'string' || value.trim() !== value) return false;
-  const points = Array.from(value, (char) => char.codePointAt(0) ?? 0);
-  const control = (code: number) => code < 0x20 || (code >= 0x7f && code <= 0x9f);
-  return points.length >= 1 && points.length <= 63 && !points.some(control);
+  const points = Array.from(value);
+  return points.length >= 1 && points.length <= 63 && !points.some(isControl);
+}
+
+/** C0 controls, DEL and C1 controls: never part of a name shown to people. */
+export function isControl(character: string): boolean {
+  const code = character.codePointAt(0) ?? 0;
+  return code < 0x20 || (code >= 0x7f && code <= 0x9f);
 }
 
 export interface HealthMirror {

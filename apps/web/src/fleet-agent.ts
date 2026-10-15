@@ -36,6 +36,7 @@ const errors: Record<SiteChangeError, MessageKey> = {
   switchover_failed: 'fleetErrorSwitchover',
   single_copy_failed: 'fleetErrorSingleCopy',
   unreadable: 'fleetErrorUnreadable',
+  digest_mismatch: 'fleetErrorDigest',
 };
 const states: Record<SiteChanges['recent'][number]['state'], MessageKey> = {
   pending: 'fleetChangePending',

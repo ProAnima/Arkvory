@@ -240,6 +240,7 @@ export const fleetEnglish = {
   fleetErrorSingleCopy:
     'The single-copy decision failed. Details are in the agent log on the site.',
   fleetErrorUnreadable: 'The request could not be read.',
+  fleetErrorDigest: 'The request did not match what was sent; it was refused.',
 } as const;
 
 export const fleetRussian: Record<keyof typeof fleetEnglish, string> = {
@@ -483,4 +484,5 @@ export const fleetRussian: Record<keyof typeof fleetEnglish, string> = {
   fleetErrorSingleCopy:
     'Решение об одной копии не принято. Подробности — в журнале агента на площадке.',
   fleetErrorUnreadable: 'Запрос не удалось прочитать.',
+  fleetErrorDigest: 'Запрос не совпал с отправленным и отклонён.',
 };

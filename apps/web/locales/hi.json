@@ -4575,6 +4575,10 @@
     "en": "The request could not be read.",
     "text": "अनुरोध पढ़ा नहीं जा सका।"
   },
+  "fleetErrorDigest": {
+    "en": "The request did not match what was sent; it was refused.",
+    "text": "अनुरोध भेजे गए अनुरोध से मेल नहीं खाता था; इसे अस्वीकार कर दिया गया।"
+  },
   "fleetOverview": {
     "en": "State of the cluster",
     "text": "क्लस्टर की स्थिति"
