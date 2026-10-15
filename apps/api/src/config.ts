@@ -45,7 +45,7 @@ export interface ServerConfig extends UploadTimeoutOptions, OperabilityOptions {
   readonly downloadHoldSeconds?: number;
   /** ADR 0077: how this installation is named in a fleet; the host name by default. */
   readonly siteName?: string;
-  /** ADR 0077: seals the keys of managed sites; without it this installation manages none. */
+  /** ADR 0077: seals the keys of managed sites; unset, `fleet.key` in the data directory. */
   readonly fleetKeyFile?: string;
   /** Where other sites reach this installation: links the fleet map to it (ADR 0077, F4). */
   readonly siteUrl?: string;

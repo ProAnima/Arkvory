@@ -40,6 +40,12 @@ export class FleetSeal {
    * on an HA cluster it moves with the data, and it is outside the database and its backups.
    */
   static async loadOrCreate(path: string): Promise<FleetSeal> {
+    // Every later start only reads the key: a temporary file is made once, not on each start.
+    try {
+      return await FleetSeal.fromFile(path);
+    } catch (error) {
+      if (!(error instanceof Error && 'code' in error && error.code === 'ENOENT')) throw error;
+    }
     // A complete, flushed temporary file linked to the name: a crash or a full disk never leaves
     // an empty key that would stop every later start, and a second process sees the whole key.
     const temporary = `${path}.${randomBytes(8).toString('hex')}.tmp`;
