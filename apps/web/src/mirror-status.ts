@@ -71,6 +71,7 @@ export function installMirrorStatus(client: ArkvoryClient) {
     mirrored(!importing);
   };
   const poll = async (repository: string, current: number) => {
+    let failure: unknown = null;
     try {
       const status = await client.repositoryMirror(repository);
       if (current !== generation) return;
@@ -83,11 +84,13 @@ export function installMirrorStatus(client: ArkvoryClient) {
         return;
       }
       // A failed refresh keeps the last state; the first read surfaces its failure.
-      if (container.hidden) throw error;
+      if (container.hidden) failure = error;
     }
+    // Also after a failed first read: a mirror must not stay unmarked, with uploads offered.
     timer = setTimeout(() => {
       void poll(repository, current).catch(() => undefined);
     }, REFRESH_MS);
+    if (failure !== null) throw failure;
   };
   let shown = '';
   return {

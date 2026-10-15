@@ -44,6 +44,10 @@ export class MirrorsPage {
   private readonly status = element('mirrors-status', HTMLOutputElement);
   private readonly shown = new Map<string, Row>();
   private generation = 0;
+  /** Only the newest read renders: an open view and the timer may read at the same time. */
+  private request = 0;
+  /** Whether a list was read since connecting; until then the entry may wrongly stay hidden. */
+  private known = false;
   private timer: ReturnType<typeof setTimeout> | undefined;
   constructor(
     private readonly client: ArkvoryClient,
@@ -56,14 +60,15 @@ export class MirrorsPage {
   /** Settles once it is known whether the entry shows. */
   async connect(administrator: boolean): Promise<void> {
     this.clear();
+    this.nav.hidden = !administrator;
     const generation = this.generation;
-    const items = await this.refresh(generation);
+    await this.refresh(generation);
     if (generation !== this.generation) return;
-    this.nav.hidden = !administrator && (items === null || items.length === 0);
     this.schedule(generation);
   }
   clear() {
     this.generation++;
+    this.known = false;
     clearTimeout(this.timer);
     this.nav.hidden = true;
     this.shown.clear();
@@ -72,26 +77,29 @@ export class MirrorsPage {
   }
   private schedule(generation: number) {
     this.timer = setTimeout(() => {
-      // Only an open page reads again; opening it reads at once.
-      const next = this.panel.hidden ? Promise.resolve(null) : this.refresh(generation);
+      // Only an open page reads again (opening it reads at once), and a session whose first
+      // read failed, so the entry of someone who may see a mirror still appears.
+      const next = this.panel.hidden && this.known ? Promise.resolve() : this.refresh(generation);
       void next.then(() => {
         if (generation === this.generation) this.schedule(generation);
       });
     }, REFRESH_MS);
   }
-  private async refresh(generation: number) {
+  private async refresh(generation: number): Promise<void> {
+    const request = ++this.request;
+    const current = () => generation === this.generation && request === this.request;
     try {
       const { items } = await this.client.mirrors();
-      if (generation !== this.generation) return null;
+      if (!current()) return;
       this.status.hidden = true;
       this.render(items);
-      return items;
+      this.known = true;
+      if (items.length > 0) this.nav.hidden = false;
     } catch (error) {
-      if (generation === this.generation) {
+      if (current()) {
         this.status.hidden = false;
         showFailure(this.status, error);
       }
-      return null;
     }
   }
   private render(items: readonly RepositoryMirrorResponse[]) {
