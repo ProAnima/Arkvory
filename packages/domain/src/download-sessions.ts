@@ -431,16 +431,7 @@ export class DownloadSessions {
       this.rate.capacity(now),
     );
     order.forEach((session, index) => {
-      const startsIn = starts[index];
-      session.position = index + 1;
-      session.startsAt = startsIn === undefined ? undefined : now + startsIn;
-      // Those who may take a place check sooner, down to a second: a place may free early.
-      const delay = downloadCheckDelay(startsIn, session.position, session.seq);
-      session.checkAt =
-        now +
-        (session.claimable
-          ? Math.max(CLAIM_CHECK_MS, Math.min(delay, (startsIn ?? 0) / 2))
-          : delay);
+      tellPlace(session, index + 1, starts[index], now);
     });
   }
 
@@ -462,6 +453,17 @@ function noteStart(session: Session, asked: DownloadByteRange | undefined) {
   const range = asked ?? { start: 0, end: session.size - 1, open: true };
   if (range.open || range.start === 0 || range.end < session.size - 1)
     session.from = Math.min(session.from ?? range.start, range.start);
+}
+
+/** A waiting session's place, estimated start and when it should check again. */
+function tellPlace(session: Session, position: number, startsIn: number | undefined, now: number) {
+  session.position = position;
+  session.startsAt = startsIn === undefined ? undefined : now + startsIn;
+  // Those who may take a place check sooner, down to a second: a place may free early.
+  const delay = downloadCheckDelay(startsIn, position, session.seq);
+  session.checkAt =
+    now +
+    (session.claimable ? Math.max(CLAIM_CHECK_MS, Math.min(delay, (startsIn ?? 0) / 2)) : delay);
 }
 
 /** Sessions streaming now that will have sent their last byte within HANDOVER_MS. */
