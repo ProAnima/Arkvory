@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { spawn } from 'node:child_process';
 import { setTimeout as delay } from 'node:timers/promises';
 import { databaseSettings, ownerPassword } from './managed-database.js';
-import { command } from './process.js';
+import { command, DeploymentCommandFailed } from './process.js';
 import { syncDirectory } from './files.js';
 
 async function exists(path: string): Promise<boolean> {
@@ -47,6 +47,50 @@ async function initializeCluster(
   return major;
 }
 
+/** What pg_isready said: 0 accepting, 1 rejecting (starting or recovering), 2 no answer. */
+export type Readiness = number | null;
+
+export interface ReadinessWait {
+  /** How long the server may not answer at all before the start fails. */
+  readonly silenceMs?: number;
+  readonly pause?: () => Promise<unknown>;
+  readonly now?: () => number;
+}
+
+/**
+ * Waits until PostgreSQL accepts connections. After an unclean stop, crash recovery replays WAL
+ * for as long as it needs and rejects connections meanwhile: that is waited for without limit,
+ * because stopping it would restart the recovery from the beginning, again and again. Only a
+ * server that exited, or that does not answer at all for `silenceMs`, fails the start.
+ */
+export async function waitForReady(
+  probe: () => Promise<Readiness>,
+  exited: () => boolean,
+  {
+    silenceMs = 60000,
+    pause = () => delay(1000),
+    now = () => performance.now(),
+  }: ReadinessWait = {},
+): Promise<void> {
+  let answered = now();
+  while (!exited()) {
+    const status = await probe();
+    if (status === 0) return;
+    if (status === 1) answered = now();
+    else if (now() - answered >= silenceMs)
+      throw new Error('Managed database did not become ready');
+    await pause();
+  }
+  throw new Error('Managed database exited before it became ready');
+}
+
+/**
+ * The runner's exit code once PostgreSQL exited. Stopped on request, a clean exit is a clean stop
+ * (the unit ends inactive, not failed); otherwise any exit is a failure, so it is restarted.
+ */
+export const runnerExitCode = (code: number | null, stopping: boolean): number =>
+  stopping ? (code ?? 1) : code || 1;
+
 export async function runDatabase(root: string): Promise<void> {
   const settings = await databaseSettings(root);
   if (!settings) throw new Error('Managed database not configured');
@@ -76,15 +120,15 @@ export async function runDatabase(root: string): Promise<void> {
     { stdio: 'inherit', windowsHide: true },
   );
   let exited = false;
+  let stopping = false;
   child.once('error', () => {
     exited = true;
     process.exitCode = 1;
   });
   child.once('exit', (code) => {
     exited = true;
-    process.exitCode = code || 1;
+    process.exitCode = runnerExitCode(code, stopping);
   });
-  let stopping = false;
   const stop = async () => {
     if (stopping || exited) return;
     stopping = true;
@@ -111,18 +155,14 @@ export async function runDatabase(root: string): Promise<void> {
       '-d',
       'postgres',
     ];
-    let ready = false;
-    const isExited = () => exited;
-    for (let attempt = 0; attempt < 60 && !isExited(); attempt++) {
-      try {
-        await command(executable('pg_isready'), args);
-        ready = true;
-        break;
-      } catch {
-        await delay(1000);
-      }
-    }
-    if (!ready) throw new Error('Managed database did not become ready');
+    await waitForReady(
+      () =>
+        command(executable('pg_isready'), args).then(
+          () => 0,
+          (error: unknown) => (error instanceof DeploymentCommandFailed ? error.exitCode : null),
+        ),
+      () => exited,
+    );
     if (!(await exists(join(directory, 'initialized')))) {
       // CREATE DATABASE cannot share a transaction with CREATE ROLE. A journal requires inspection
       // after interruption instead of replaying ambiguous SQL or dropping an existing database.
@@ -139,6 +179,8 @@ export async function runDatabase(root: string): Promise<void> {
       await unlink(join(directory, 'bootstrap.sql'));
     }
   } catch (error) {
+    // Asked to stop while starting (a long recovery, say): the stop is clean, the start not failed.
+    if (stopping) return;
     await stop();
     throw error;
   }

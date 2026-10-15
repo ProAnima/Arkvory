@@ -12,6 +12,14 @@ export class DeploymentCommandTimeout extends Error {
   }
 }
 
+/** A command that ran and exited with a non-zero code (null: ended by a signal). */
+export class DeploymentCommandFailed extends Error {
+  constructor(readonly exitCode: number | null) {
+    super(`Deployment command failed (${String(exitCode ?? 'signal')})`);
+    this.name = 'DeploymentCommandFailed';
+  }
+}
+
 export function isUnconfirmedTermination(error: unknown): boolean {
   const seen = new Set<object>();
   for (let depth = 0; depth < 16; depth++) {
@@ -118,8 +126,7 @@ async function execute(
     throw new DeploymentCommandTimeout(confirmed);
   }
   if (state.startupFailed) throw new Error('Cannot start deployment command');
-  if (result.code !== 0)
-    throw new Error(`Deployment command failed (${String(result.code ?? 'signal')})`);
+  if (result.code !== 0) throw new DeploymentCommandFailed(result.code);
   if (state.overflow) throw new Error('Deployment command printed more output than expected');
   return Buffer.concat(output).toString('utf8');
 }
