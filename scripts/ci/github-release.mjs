@@ -103,8 +103,6 @@ export function releaseNotes(version, evidence, acceptance) {
   return [
     'All release gates passed for this commit on the maintainer workstation (local CI). The release is signed (arkvory-release.json.sig, latest.json). Review deployment notes and platform evidence before publishing; after publishing, approve the version for a channel in the hub.',
     '',
-    'Все release-гейты для этого commit пройдены локальным конвейером на машине сопровождающего. Релиз подписан (arkvory-release.json.sig, latest.json). Перед публикацией проверьте инструкции развёртывания и результаты проверок платформ; после публикации одобрите версию для канала в хабе.',
-    '',
     `### Release gates (${version})`,
     '',
     renderMarkdown(evidence),
