@@ -14,6 +14,9 @@ import { requireDisposableHost } from './disposable-host.mjs';
 import { committedPoint, exerciseInstalledBackup, removeGateVault } from './native-backup.mjs';
 import { vaultReported, waitForAgent } from './backup-acceptance.mjs';
 
+/** apt-daily on a fresh runner holds the dpkg lock for minutes: wait for it instead of failing. */
+const APT = ['-o', 'DPkg::Lock::Timeout=600'];
+
 // This gate uses production service names only on disposable CI machines, never a developer workstation.
 requireDisposableHost('Native installation acceptance');
 const windows = process.platform === 'win32';
@@ -67,7 +70,7 @@ try {
       `/OWNERFILE=${ownerFile}`,
       `/LOG=${join(temporary, 'setup.log')}`,
     ]);
-  } else run('sudo', ['apt-get', 'install', '-y', join(output, 'Arkvory-amd64.deb')]);
+  } else run('sudo', ['apt-get', ...APT, 'install', '-y', join(output, 'Arkvory-amd64.deb')]);
   const token = await read(join(root, 'config/bootstrap-token.txt'));
   const response = await fetch('http://127.0.0.1:8080/health/ready', {
     headers: { Authorization: `Bearer ${token}` },
@@ -150,7 +153,15 @@ try {
   // Re-running the same installer is repair, not credential/data replacement.
   if (windows)
     run(join(output, 'Arkvory-Setup-x64.exe'), ['/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART']);
-  else run('sudo', ['apt-get', 'install', '--reinstall', '-y', join(output, 'Arkvory-amd64.deb')]);
+  else
+    run('sudo', [
+      'apt-get',
+      ...APT,
+      'install',
+      '--reinstall',
+      '-y',
+      join(output, 'Arkvory-amd64.deb'),
+    ]);
   assert.equal(await read(join(root, 'config/runtime.json')), before);
   assert.equal(await read(join(root, 'database/owner-password')), ownerBefore);
   // Repair keeps the configured vault and the agent comes back with it.
@@ -243,7 +254,7 @@ try {
     } catch (error) {
       if (error.code !== 'ENOENT') throw error;
     }
-  } else run('sudo', ['apt-get', 'remove', '-y', 'proanima-arkvory']);
+  } else run('sudo', ['apt-get', ...APT, 'remove', '-y', 'proanima-arkvory']);
 }
 await read(join(root, 'database/cluster/PG_VERSION'));
 await read(join(root, 'config/runtime.json'));
