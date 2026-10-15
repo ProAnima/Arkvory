@@ -61,9 +61,18 @@ export class FleetOverviewPanel {
       ...overview.links.map((link) => {
         const row = document.createElement('tr');
         const behind = document.createElement('td');
-        if (link.failing) message(behind, 'fleetLinkFailing');
-        else if (link.lagChanges === null) behind.textContent = '—';
-        else message(behind, 'fleetLagValue', { lag: link.lagChanges });
+        const lag = document.createElement('div');
+        if (link.failing) message(lag, 'fleetLinkFailing');
+        else if (link.lagChanges === null) lag.textContent = '—';
+        else message(lag, 'fleetLagValue', { lag: link.lagChanges });
+        behind.append(lag);
+        // A site that does not answer: its links and lag are as it last reported.
+        if (link.stale) {
+          const stale = document.createElement('div');
+          stale.className = 'hint';
+          message(stale, 'fleetLinkStale');
+          behind.append(stale);
+        }
         row.append(
           cell(nameOf(link.from)),
           cell(nameOf(link.to)),

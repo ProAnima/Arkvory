@@ -36,8 +36,11 @@ export class FleetPairingCard {
   private readonly addStatus = element('fleet-add-status', HTMLOutputElement);
   private readonly selfStatus = element('fleet-self-status', HTMLOutputElement);
   private readonly codeBox = element('fleet-code-box', HTMLElement);
-  private probed: FleetProbe | undefined;
+  /** The checked site and the address as typed when it was checked. */
+  private probed: { readonly probe: FleetProbe; readonly typed: string } | undefined;
   private generation = 0;
+  /** The newest check: an answer for an address typed before is dropped. */
+  private checking = 0;
   constructor(
     private readonly client: ArkvoryClient,
     private readonly paired: () => Promise<void>,
@@ -47,7 +50,9 @@ export class FleetPairingCard {
     };
     this.url.oninput = () => {
       // Another address needs its own check: a confirmed fingerprint belongs to one address.
+      this.checking++;
       this.probed = undefined;
+      this.addStatus.hidden = true;
       this.probeBox.hidden = true;
     };
     this.form.onsubmit = (event) => {
@@ -94,12 +99,17 @@ export class FleetPairingCard {
 
   private async check() {
     const generation = this.generation;
+    const request = ++this.checking;
+    const typed = this.url.value.trim();
+    const current = () => generation === this.generation && request === this.checking;
+    this.probed = undefined;
+    this.probeBox.hidden = true;
     this.addStatus.hidden = false;
     feedback(this.addStatus, 'fleetChecking');
     try {
-      const probe = await this.client.fleet.probe(this.url.value.trim());
-      if (generation !== this.generation) return;
-      this.probed = probe;
+      const probe = await this.client.fleet.probe(typed);
+      if (!current()) return;
+      this.probed = { probe, typed };
       this.addStatus.hidden = true;
       const fingerprint = element('fleet-fingerprint', HTMLElement);
       const compare = element('fleet-compare', HTMLElement);
@@ -117,16 +127,18 @@ export class FleetPairingCard {
       this.probeBox.hidden = false;
       this.code.focus();
     } catch (error) {
-      if (generation === this.generation) showFailure(this.addStatus, error);
+      if (current()) showFailure(this.addStatus, error);
     }
   }
 
+  /** Pairs the address that was checked and is still in the field; anything else is checked. */
   private async pair() {
-    const probed = this.probed;
-    if (!probed) {
+    const checked = this.probed;
+    if (!checked || checked.typed !== this.url.value.trim()) {
       await this.check();
       return;
     }
+    const probed = checked.probe;
     const generation = this.generation;
     const button = element('fleet-pair', HTMLButtonElement);
     button.disabled = true;

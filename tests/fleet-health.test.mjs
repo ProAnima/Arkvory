@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   fleetAlerts,
   fleetLinks,
+  isFleetName,
   siteOrigin,
   UNREACHABLE_GRACE_MS,
 } from '../packages/domain/dist/index.js';
@@ -32,6 +33,23 @@ const site = (extra = {}) => ({
   ...extra,
 });
 const kinds = (alerts) => alerts.map((alert) => `${alert.kind}:${alert.severity}`);
+
+test('a fleet name: any script, 1 to 63 code points, no control codes or outer spaces', () => {
+  for (const name of ['Main', 'Филиал «Восток»', '東京', '😀'.repeat(63)])
+    assert.ok(isFleetName(name), name);
+  for (const name of [
+    '',
+    ' Main',
+    'Main ',
+    'a\u0000b',
+    'a\nb',
+    'a\u007fb',
+    'a\u0085b',
+    'x'.repeat(64),
+  ])
+    assert.equal(isFleetName(name), false, JSON.stringify(name));
+  assert.equal(isFleetName(42), false);
+});
 
 test('one address in one spelling: case, default port, trailing slash and a final dot', () => {
   for (const spelling of [
@@ -82,9 +100,57 @@ test('an answer from a clock ahead of ours is not fresh forever, nor stale at on
   assert.deepEqual(kinds(fleetAlerts([silentOk], options)), ['stale:warning']);
 });
 
-test('trust failures page at once; the last report still tells the rest', () => {
+test('a long round through many unreachable sites is no stuck poll', () => {
+  // 400 sites: 50 turns of up to 15 s, so a site answering early waits ~12.5 min for its next read.
+  const slowRound = { ...options, roundMs: Math.ceil(400 / 8) * 15000 };
+  const waiting = site({ seenAt: now - 3 * 30000 - 10 * 60000 });
+  assert.deepEqual(fleetAlerts([waiting], slowRound), []);
+  assert.deepEqual(kinds(fleetAlerts([waiting], options)), ['stale:warning']);
+  const stuck = site({ seenAt: now - 3 * 30000 - slowRound.roundMs - 1 });
+  assert.deepEqual(kinds(fleetAlerts([stuck], slowRound)), ['stale:warning']);
+});
+
+test('trust failures page at once; the last report is not passed off as current', () => {
+  const failing = report({ copies: 1, required: 2, updatesError: 'x', version: '0.9.0' });
   for (const state of ['certificate', 'revoked', 'refused', 'invalid'])
-    assert.ok(kinds(fleetAlerts([site({ state })], options)).includes(`${state}:critical`), state);
+    assert.deepEqual(kinds(fleetAlerts([site({ state, report: failing })], options)), [
+      `${state}:critical`,
+    ]);
+  const down = site({ state: 'unreachable', seenAt: now - 600000, report: failing });
+  assert.deepEqual(kinds(fleetAlerts([down], options)), ['unreachable:critical']);
+});
+
+test('links of a site that does not answer stay, marked stale, with the last known lag', () => {
+  const mirror = {
+    repository: 'releases',
+    upstream: 'https://alpha.example',
+    sourceRepository: 'releases',
+    mode: 'mirror',
+    lagChanges: '5000',
+    errorCode: null,
+  };
+  const sites = [
+    site(),
+    site({
+      id: 'b',
+      name: 'Beta',
+      url: 'https://beta.example',
+      state: 'unreachable',
+      seenAt: now - 600000,
+      report: report({ mirrors: [mirror] }),
+    }),
+    site({ id: 'c', name: 'Gamma', url: null, report: report({ mirrors: [mirror] }) }),
+  ];
+  const { links } = fleetLinks(sites);
+  assert.deepEqual(
+    links.map((link) => `${link.from}->${link.to}:${link.lagChanges}:${String(link.stale)}`),
+    ['a->b:5000:true', 'a->c:5000:false'],
+  );
+  // The lag of the silent site alerts no more; the answering one still does.
+  assert.deepEqual(
+    fleetAlerts(sites, options).map((alert) => `${alert.site}:${alert.kind}`),
+    ['b:unreachable', 'c:mirror-lag'],
+  );
 });
 
 test('copies, writes, updates and versions', () => {

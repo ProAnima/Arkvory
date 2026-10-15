@@ -6,7 +6,7 @@ import type {
 } from '@proanima/arkvory-contracts';
 import { ArkvoryHttpError } from '@proanima/arkvory-sdk';
 import { element } from './dom.js';
-import { clearMessage, message, relativeMessage } from './i18n.js';
+import { message, relativeMessage } from './i18n.js';
 import { feedback, showFailure } from './feedback.js';
 import type { MessageKey } from './messages.js';
 
@@ -142,7 +142,7 @@ export class QueueSettingsForm {
     this.ready(false);
     this.form.reset();
     this.status.hidden = true;
-    clearMessage(this.changed);
+    this.changed.replaceChildren();
   }
 
   private ready(on: boolean) {
@@ -176,15 +176,19 @@ export class QueueSettingsForm {
       this.status.hidden = false;
       feedback(this.status, 'fleetQueueProblem', { problem: settings.problem }, 'error');
     }
+    // Who and when in elements of their own: each a whole translated message, spaced by CSS.
     if (settings.updatedAt) {
-      const who = settings.actor
-        ? `${settings.actor} (${settings.updatedBy ?? ''})`
-        : settings.updatedBy;
-      message(this.changed, 'fleetQueueChanged', { who: who ?? '—' });
+      const who = document.createElement('span');
+      if (settings.actor)
+        message(who, 'fleetQueueChangedVia', {
+          actor: settings.actor,
+          key: settings.updatedBy ?? '—',
+        });
+      else message(who, 'fleetQueueChanged', { who: settings.updatedBy ?? '—' });
       const when = document.createElement('span');
       relativeMessage(when, settings.updatedAt);
-      this.changed.append(' ', when);
-    } else clearMessage(this.changed);
+      this.changed.replaceChildren(who, when);
+    } else this.changed.replaceChildren();
   }
 
   /** The empty option names the default it stands for. */

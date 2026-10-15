@@ -91,6 +91,7 @@ export const fleetEnglish = {
   fleetLinkBehind: 'Behind',
   fleetLinksNone: 'No site mirrors or imports from another.',
   fleetLinkFailing: 'Failing',
+  fleetLinkStale: 'Last known: the site does not answer',
   fleetLagValue: '{lag} changes',
   fleetSeverityCritical: 'Critical',
   fleetSeverityWarning: 'Warning',
@@ -161,6 +162,7 @@ export const fleetEnglish = {
   fleetQueueReset: 'Back to defaults',
   fleetQueueSaved: 'Saved. The queue works with the new settings now.',
   fleetQueueChanged: 'Changed by {who}',
+  fleetQueueChangedVia: 'Changed by {actor} through {key}',
   fleetQueueProblem: 'Saved settings do not fit this server and are not used: {problem}',
   fleetQueueConflict:
     'Someone changed the settings meanwhile. The form shows them now: check and save again.',
@@ -332,6 +334,7 @@ export const fleetRussian: Record<keyof typeof fleetEnglish, string> = {
   fleetLinkBehind: 'Отставание',
   fleetLinksNone: 'Ни одна площадка не зеркалирует и не импортирует другую.',
   fleetLinkFailing: 'Сбой',
+  fleetLinkStale: 'По последним сведениям: площадка не отвечает',
   fleetLagValue: 'изменений: {lag}',
   fleetSeverityCritical: 'Критично',
   fleetSeverityWarning: 'Внимание',
@@ -403,6 +406,7 @@ export const fleetRussian: Record<keyof typeof fleetEnglish, string> = {
   fleetQueueReset: 'Вернуть значения по умолчанию',
   fleetQueueSaved: 'Сохранено. Очередь уже работает с новыми настройками.',
   fleetQueueChanged: 'Изменил: {who}',
+  fleetQueueChangedVia: 'Изменил: {actor} через {key}',
   fleetQueueProblem: 'Сохранённые настройки не подходят этому серверу и не используются: {problem}',
   fleetQueueConflict:
     'Кто-то изменил настройки за это время. Форма показывает их сейчас: проверьте и сохраните снова.',

@@ -20,7 +20,10 @@ export class FleetSettings {
   private readonly card = element('fleet-settings', HTMLElement);
   private readonly queue = new QueueSettingsForm();
   private readonly updates = new UpdateSettingsForm();
-  private readonly agent = new AgentPanel();
+  /** The agent is followed only while this card is on screen on the Sites page. */
+  private readonly agent = new AgentPanel(
+    () => !this.card.hidden && !element('fleet-panel', HTMLElement).hidden,
+  );
   /** The site shown, so removing it from the list closes its settings. */
   current: string | null = null;
 
@@ -28,6 +31,15 @@ export class FleetSettings {
     element('fleet-settings-close', HTMLButtonElement).onclick = () => {
       this.clear();
     };
+  }
+
+  /** Another page opened: stop following the site's agent until the Sites page is back. */
+  pause() {
+    this.agent.pause();
+  }
+
+  resume() {
+    this.agent.resume();
   }
 
   async open(target: SettingsTarget) {

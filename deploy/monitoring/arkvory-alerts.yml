@@ -148,13 +148,15 @@ groups:
           description: The Sites page names the state - unreachable (the site or the network), certificate (renewed - pair again), revoked or refused (pair again with a new code). The site itself may still work for its own clients.
 
       - alert: ArkvoryFleetMirrorBehind
-        expr: max by (site, repository) (arkvory_fleet_mirror_lag_changes) >= 1000
+        # The threshold is the controller's own ARKVORY_FLEET_LAG_ALERT, exported as a gauge, so the
+        # rule and the console alert at the same lag.
+        expr: max by (site, repository) (arkvory_fleet_mirror_lag_changes) >= on() group_left() max(arkvory_fleet_mirror_lag_alert_changes)
         for: 30m
         labels:
           severity: warning
         annotations:
           summary: Mirror {{ $labels.repository }} of a managed site is far behind its source
-          description: Open the site on the Sites page - Content and Settings show the mirror and its last error. The same threshold makes the console alert (ARKVORY_FLEET_LAG_ALERT).
+          description: Open the site on the Sites page - Content and Settings show the mirror and its last error. The threshold is the one the console alerts at (ARKVORY_FLEET_LAG_ALERT on the controller).
 
       - alert: ArkvoryFleetCritical
         # Everything the console marks critical: lost copies, a writer that refuses writes, trust.

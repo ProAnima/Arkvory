@@ -4315,6 +4315,10 @@
     "en": "Changed by {who}",
     "text": "変更者: {who}"
   },
+  "fleetQueueChangedVia": {
+    "en": "Changed by {actor} through {key}",
+    "text": "{actor} が {key} 経由で変更"
+  },
   "fleetQueueProblem": {
     "en": "Saved settings do not fit this server and are not used: {problem}",
     "text": "保存された設定はこのサーバーに合わないため使われていません: {problem}"
@@ -4606,6 +4610,10 @@
   "fleetLinkFailing": {
     "en": "Failing",
     "text": "障害"
+  },
+  "fleetLinkStale": {
+    "en": "Last known: the site does not answer",
+    "text": "最後に確認した状態: サイトが応答しません"
   },
   "fleetLagValue": {
     "en": "{lag} changes",

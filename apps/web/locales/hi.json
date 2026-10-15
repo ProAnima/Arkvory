@@ -4315,6 +4315,10 @@
     "en": "Changed by {who}",
     "text": "बदलने वाले: {who}"
   },
+  "fleetQueueChangedVia": {
+    "en": "Changed by {actor} through {key}",
+    "text": "{actor} ने {key} के माध्यम से बदला"
+  },
   "fleetQueueProblem": {
     "en": "Saved settings do not fit this server and are not used: {problem}",
     "text": "सहेजी गई सेटिंग इस सर्वर पर फिट नहीं होतीं और उपयोग नहीं हो रहीं: {problem}"
@@ -4606,6 +4610,10 @@
   "fleetLinkFailing": {
     "en": "Failing",
     "text": "विफल"
+  },
+  "fleetLinkStale": {
+    "en": "Last known: the site does not answer",
+    "text": "अंतिम ज्ञात स्थिति: साइट जवाब नहीं दे रही"
   },
   "fleetLagValue": {
     "en": "{lag} changes",

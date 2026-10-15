@@ -4315,6 +4315,10 @@
     "en": "Changed by {who}",
     "text": "修改者：{who}"
   },
+  "fleetQueueChangedVia": {
+    "en": "Changed by {actor} through {key}",
+    "text": "由 {actor} 通过 {key} 更改"
+  },
   "fleetQueueProblem": {
     "en": "Saved settings do not fit this server and are not used: {problem}",
     "text": "已保存的设置不适用于此服务器，未被使用：{problem}"
@@ -4606,6 +4610,10 @@
   "fleetLinkFailing": {
     "en": "Failing",
     "text": "故障"
+  },
+  "fleetLinkStale": {
+    "en": "Last known: the site does not answer",
+    "text": "最后已知状态：站点未响应"
   },
   "fleetLagValue": {
     "en": "{lag} changes",

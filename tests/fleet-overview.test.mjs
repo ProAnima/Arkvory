@@ -163,3 +163,74 @@ test('fleet gauges carry hostile site names safely and drop the controller itsel
   await broken.refresh(() => failed++);
   assert.equal(failed, 1);
 });
+
+test('a silent site keeps its links and lag as last known; alerts use fresh reads only', async () => {
+  const lagging = topology('Gone', [mirror('releases', 'https://main.example', '5000')]);
+  const sites = [
+    stored(
+      '22222222-2222-4222-8222-222222222222',
+      'Gone',
+      'https://gone.example',
+      'unreachable',
+      now - 600000,
+      lagging,
+    ),
+    // A lag longer than 30 digits does not read as the contract says: the site is invalid.
+    stored(
+      '44444444-4444-4444-8444-444444444444',
+      'Huge',
+      'https://huge.example',
+      'ok',
+      now - 1000,
+      topology('Huge', [mirror('vendor', 'https://main.example', '1'.repeat(31))]),
+    ),
+    // Rows without an id of their own still make one series each.
+    { name: 'First broken' },
+    { id: 7, name: 'Second broken' },
+  ];
+  const { overview } = source(sites);
+  const wire = readFleetOverview(await overview.overview());
+  assert.deepEqual(
+    wire.links.map(
+      (link) => `${link.from}->${link.to}:${String(link.lagChanges)}:${String(link.stale)}`,
+    ),
+    ['self->22222222-2222-4222-8222-222222222222:5000:true'],
+  );
+  assert.deepEqual(
+    wire.alerts.map((alert) => `${alert.kind}/${alert.name}`),
+    ['invalid/First broken', 'unreachable/Gone', 'invalid/Huge', 'invalid/Second broken'],
+  );
+  const registry = new MetricsRegistry(3);
+  overview.register(registry);
+  await overview.refresh(() => assert.fail('the reading failed'));
+  const text = registry.render();
+  assert.match(
+    text,
+    /arkvory_fleet_mirror_lag_changes\{site="22222222-[^"]*",repository="releases"\} 5000/,
+  );
+  assert.match(text, /arkvory_fleet_mirror_lag_alert_changes 1000/);
+  assert.match(text, /arkvory_fleet_site_up\{site="unknown:2",name="First broken"\} 0/);
+  assert.match(text, /arkvory_fleet_site_up\{site="unknown:3",name="Second broken"\} 0/);
+  assert.doesNotMatch(text, /NaN|Inf/);
+});
+
+test('an overview from an older controller without link staleness reads as fresh', () => {
+  const wire = readFleetOverview({
+    generatedAt: new Date(now).toISOString(),
+    self: { name: 'Main', version: '1.2.0', url: null },
+    alerts: [],
+    links: [
+      {
+        from: 'self',
+        to: 'a',
+        repository: 'r',
+        sourceRepository: 'r',
+        mode: 'mirror',
+        lagChanges: '1',
+        failing: false,
+      },
+    ],
+    external: [],
+  });
+  assert.equal(wire.links[0].stale, false);
+});

@@ -8,13 +8,10 @@
  * code points. The same rule on the site that names itself and on the controller that stores it.
  */
 export function isFleetName(value: unknown): value is string {
-  return (
-    typeof value === 'string' &&
-    value.trim() === value &&
-    !/[\u0000-\u001f\u007f-\u009f]/.test(value) &&
-    Array.from(value).length >= 1 &&
-    Array.from(value).length <= 63
-  );
+  if (typeof value !== 'string' || value.trim() !== value) return false;
+  const points = Array.from(value, (char) => char.codePointAt(0) ?? 0);
+  const control = (code: number) => code < 0x20 || (code >= 0x7f && code <= 0x9f);
+  return points.length >= 1 && points.length <= 63 && !points.some(control);
 }
 
 export interface HealthMirror {
@@ -37,7 +34,10 @@ export interface HealthSite {
     'ok' | 'pending' | 'unreachable' | 'certificate' | 'revoked' | 'invalid' | 'refused';
   readonly addedAt: number;
   readonly seenAt: number | null;
-  /** Null while the site was never read: everything below is then unknown. */
+  /**
+   * What the site last reported, null while it was never read. Kept while the site does not
+   * answer: links and lag show it as last known, alerts read it only from a site that answers.
+   */
   readonly report: {
     readonly version: string;
     readonly role: 'api' | 'reader';
@@ -78,8 +78,14 @@ export interface FleetAlert {
 }
 export interface FleetHealthOptions {
   readonly now: number;
-  /** How often the controller reads sites; a read older than three periods is stale. */
+  /** How often the controller reads sites (the pause between two rounds). */
   readonly pollMs: number;
+  /**
+   * The longest one round of reads may take (sites in turn, each up to its deadline): a round
+   * through many unreachable sites lasts longer than a period. A site that answers is stale when
+   * not read for three periods plus this, so a slow round is not taken for a stuck poll.
+   */
+  readonly roundMs?: number;
   /** A mirror this many changes behind its source alerts. */
   readonly lagLimit: bigint;
   /** The controller's version: other versions are reported for planning updates. */
@@ -128,9 +134,10 @@ function siteAlerts(site: HealthSite, options: FleetHealthOptions): FleetAlert[]
     if (site.state === failure) found.push(alert(failure, 'critical'));
   if ((site.state === 'unreachable' || site.state === 'pending') && silent >= UNREACHABLE_GRACE_MS)
     found.push(alert('unreachable', 'critical', null, seen));
-  else if (site.state === 'ok' && silent > 3 * options.pollMs)
+  else if (site.state === 'ok' && silent > 3 * options.pollMs + (options.roundMs ?? 0))
     found.push(alert('stale', 'warning', null, seen));
-  const report = site.report;
+  // Old facts are not passed off as current: a site that does not answer alerts for that alone.
+  const report = site.state === 'ok' ? site.report : null;
   if (!report) return found;
   // A draining writer refuses writes on purpose; a read gateway never writes.
   if (report.role === 'api' && !report.writable && !report.draining)
@@ -179,10 +186,13 @@ export interface FleetLink {
   readonly mode: 'mirror' | 'import';
   readonly lagChanges: string | null;
   readonly failing: boolean;
+  /** The site did not answer its last read: the link and its lag are as it last reported. */
+  readonly stale: boolean;
 }
 
 /**
- * Who feeds whom: each mirror or import of a site, from the site whose address is its source.
+ * Who feeds whom: each mirror or import of a site, from the site whose address is its source,
+ * as each site last reported (marked stale while the site does not answer).
  * Sources no managed site answers at become external nodes. Cycles and a site mirroring itself
  * are kept as they are: they are facts to show, not errors to hide.
  */
@@ -211,6 +221,7 @@ export function fleetLinks(sites: readonly HealthSite[]): {
         mode: mirror.mode,
         lagChanges: mirror.lagChanges,
         failing: mirror.errorCode !== null && mirror.errorCode !== 'mirror_source_behind',
+        stale: site.state !== 'ok',
       });
     }
   return { links, external: [...external].sort() };
