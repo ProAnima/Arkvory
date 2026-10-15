@@ -7,7 +7,11 @@ import { migrateRequestCorrelation } from './correlation-schema.js';
 import { migrateBackups } from './backup-schema.js';
 import { migrateBackupVaultEncryption, migrateUnattendedBackups } from './backup-agent-schema.js';
 import { migrateCatalogFeed } from './catalog-feed-schema.js';
-import { migrateMirrorRecovery, migrateMirrorState } from './mirror-schema.js';
+import {
+  migrateMirrorConflicts,
+  migrateMirrorRecovery,
+  migrateMirrorState,
+} from './mirror-schema.js';
 import { migrateTransferLinks } from './transfer-link-schema.js';
 import { migrateOciRegistry } from './oci-schema.js';
 import { migrateGitLfs } from './lfs-schema.js';
@@ -18,7 +22,7 @@ import { migrateDownloadTickets } from './download-tickets.js';
 import { migrateFleet } from './fleet-schema.js';
 import { migrateDownloadSettings } from './download-settings-store.js';
 
-/** Steps of versions 15-40 (36 is an index step) in their historical order; each records its own version. */
+/** Steps of versions 15-41 (36 is an index step) in their historical order; each records its own version. */
 const storageSteps: readonly (readonly [number, (client: PoolClient) => Promise<void>])[] = [
   [15, migrateStoragePolicy],
   [16, migrateCleanup],
@@ -44,6 +48,7 @@ const storageSteps: readonly (readonly [number, (client: PoolClient) => Promise<
   [38, migrateDownloadTickets],
   [39, migrateFleet],
   [40, migrateDownloadSettings],
+  [41, migrateMirrorConflicts],
 ];
 
 /** upTo bounds the applied versions (restore of an older backup); the order never changes. */

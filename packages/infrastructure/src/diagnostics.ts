@@ -43,6 +43,8 @@ export interface DiagnosticFields {
   repository?: string;
   /** Webhook subscription id (ADR 0069); an operator-chosen name, never a URL. */
   subscription?: string;
+  /** Feed action of a mirror entry put aside on a conflict (ADR 0058), e.g. `stage.add`. */
+  action?: string;
   durationMs?: number;
   bytesSent?: number;
   bytesReceived?: number;

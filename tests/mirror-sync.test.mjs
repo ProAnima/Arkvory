@@ -3,6 +3,15 @@ import assert from 'node:assert/strict';
 import { MirrorFailure, MirrorSync, mirrorErrorCode } from '@proanima/arkvory-application';
 
 const never = { throwIfAborted() {} };
+
+/** No entry of these sources conflicts: one put aside would be a fault of the test. */
+const noConflicts = {
+  setAside: async () => {
+    throw new Error('unexpected conflict');
+  },
+  due: async () => [],
+  resolve: async () => undefined,
+};
 const descriptor = (size = 1) => ({
   name: 'f',
   size,
@@ -123,6 +132,7 @@ function mirror(s, t, st, sourceName = 'https://a|releases') {
     upstream: s.port,
     target: t.port,
     states: st,
+    conflicts: noConflicts,
     now: () => '2026-10-02T00:00:00.000Z',
   });
 }

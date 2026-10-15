@@ -56,6 +56,8 @@ export const exportedTables: readonly BackupTable[] = [
   { name: 'arkvory_mirror_state', key: ['repository'], since: 28 },
   // Versions an import took over: with the catalog, so a restored import does not repeat them.
   { name: 'arkvory_mirror_adoptions', key: ['repository', 'artifact_id'], since: 37 },
+  // Entries put aside behind the restored cursor: without them they would be passed for good.
+  { name: 'arkvory_mirror_conflicts', key: ['repository', 'artifact_id', 'entry'], since: 41 },
   // The container registry rows name artifacts restored above (ADR 0063).
   { name: 'arkvory_oci_blobs', key: ['repository', 'digest'], since: 30 },
   { name: 'arkvory_oci_manifests', key: ['repository', 'image', 'digest'], since: 30 },
