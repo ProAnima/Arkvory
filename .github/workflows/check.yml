@@ -49,7 +49,7 @@ jobs:
         env:
           SEGMENT_DOWNLOAD_TIMEOUT_MINS: '2'
       - if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y rpm postgresql
+        run: sudo apt-get update && sudo apt-get -o DPkg::Lock::Timeout=600 install -y rpm postgresql
       - run: npm run gate -- native-install
       - name: Publish gate report
         if: ${{ always() }}
@@ -295,7 +295,7 @@ jobs:
           key: native-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/native-dependencies.mjs') }}
         env:
           SEGMENT_DOWNLOAD_TIMEOUT_MINS: '2'
-      - run: sudo apt-get update && sudo apt-get install -y rpm postgresql
+      - run: sudo apt-get update && sudo apt-get -o DPkg::Lock::Timeout=600 install -y rpm postgresql
       - run: npm run gate -- deployment-stand
       - name: Publish gate report
         if: ${{ always() }}
@@ -321,7 +321,7 @@ jobs:
           key: native-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/native-dependencies.mjs') }}
         env:
           SEGMENT_DOWNLOAD_TIMEOUT_MINS: '2'
-      - run: sudo apt-get update && sudo apt-get install -y rpm postgresql
+      - run: sudo apt-get update && sudo apt-get -o DPkg::Lock::Timeout=600 install -y rpm postgresql
       # The runner is disposable: the stand's SMB and NFS mounts need these kernel modules.
       - run: sudo modprobe cifs && sudo modprobe nfs && sudo modprobe nfsd
       - run: npm run gate -- deployment-nas
@@ -344,7 +344,7 @@ jobs:
       # The runner is disposable: the stand needs a hypervisor, libvirt and SSH for fence_virsh.
       - run: |
           sudo apt-get update
-          sudo apt-get install -y rpm postgresql qemu-system-x86 qemu-utils libvirt-daemon-system virtinst cloud-image-utils openssh-server
+          sudo apt-get -o DPkg::Lock::Timeout=600 install -y rpm postgresql qemu-system-x86 qemu-utils libvirt-daemon-system virtinst cloud-image-utils openssh-server
           sudo chmod 666 /dev/kvm
           sudo virsh net-start default || true
       # The guest base image (packages and the DRBD 9 module), rebuilt only when ha-base.mjs changes.
@@ -379,7 +379,7 @@ jobs:
       # The runner is disposable: the stand needs a hypervisor, libvirt and SSH for fence_virsh.
       - run: |
           sudo apt-get update
-          sudo apt-get install -y rpm postgresql qemu-system-x86 qemu-utils libvirt-daemon-system virtinst cloud-image-utils openssh-server
+          sudo apt-get -o DPkg::Lock::Timeout=600 install -y rpm postgresql qemu-system-x86 qemu-utils libvirt-daemon-system virtinst cloud-image-utils openssh-server
           sudo chmod 666 /dev/kvm
           sudo virsh net-start default || true
       # The guest base image (packages and the DRBD 9 module), rebuilt only when ha-base.mjs changes.
@@ -419,7 +419,7 @@ jobs:
       # The runner is disposable: the stand needs a hypervisor, libvirt and SSH for fence_virsh.
       - run: |
           sudo apt-get update
-          sudo apt-get install -y rpm postgresql qemu-system-x86 qemu-utils libvirt-daemon-system virtinst cloud-image-utils openssh-server
+          sudo apt-get -o DPkg::Lock::Timeout=600 install -y rpm postgresql qemu-system-x86 qemu-utils libvirt-daemon-system virtinst cloud-image-utils openssh-server
           sudo chmod 666 /dev/kvm
           sudo virsh net-start default || true
       # The guest base image (packages and the DRBD 9 module), rebuilt only when ha-base.mjs changes.
@@ -459,7 +459,7 @@ jobs:
       # The runner is disposable: the stand needs a hypervisor, libvirt and SSH for fence_virsh.
       - run: |
           sudo apt-get update
-          sudo apt-get install -y rpm postgresql qemu-system-x86 qemu-utils libvirt-daemon-system virtinst cloud-image-utils openssh-server
+          sudo apt-get -o DPkg::Lock::Timeout=600 install -y rpm postgresql qemu-system-x86 qemu-utils libvirt-daemon-system virtinst cloud-image-utils openssh-server
           sudo chmod 666 /dev/kvm
           sudo virsh net-start default || true
       # The guest base image (packages and the DRBD 9 module), rebuilt only when ha-base.mjs changes.
@@ -499,7 +499,7 @@ jobs:
       # The runner is disposable: the stand needs a hypervisor, libvirt and SSH for fence_virsh.
       - run: |
           sudo apt-get update
-          sudo apt-get install -y rpm postgresql qemu-system-x86 qemu-utils libvirt-daemon-system virtinst cloud-image-utils openssh-server
+          sudo apt-get -o DPkg::Lock::Timeout=600 install -y rpm postgresql qemu-system-x86 qemu-utils libvirt-daemon-system virtinst cloud-image-utils openssh-server
           sudo chmod 666 /dev/kvm
           sudo virsh net-start default || true
       # The guest base image (packages and the DRBD 9 module), rebuilt only when ha-base.mjs changes.
