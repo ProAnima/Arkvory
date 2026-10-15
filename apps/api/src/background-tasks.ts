@@ -7,8 +7,8 @@ interface Tasks {
   available: () => boolean;
   maintain: () => Promise<void>;
   collect?: () => Promise<void>;
-  /** Reads the managed sites (ADR 0077); writer only, one round at a time. */
-  fleet?: () => Promise<void>;
+  /** Reads the managed sites (ADR 0077); writer only, one round at a time, aborted on stop. */
+  fleet?: (signal: AbortSignal) => Promise<void>;
   /** Applies download queue settings saved by another writer (ADR 0076, stage 3). */
   settings?: () => Promise<void>;
   flush: () => Promise<void>;
@@ -18,17 +18,21 @@ interface Tasks {
 
 type Failure = Pick<DiagnosticRecord, 'level' | 'component' | 'code'>;
 
-/** One timer: a round never overlaps the previous one; the returned stop waits for it. */
+/**
+ * One timer: a round never overlaps the previous one; the returned stop waits for it. The signal
+ * given to a round is aborted on cancel, so a long round ends instead of outlasting shutdown.
+ */
 function repeat(
   every: number,
-  run: () => Promise<void>,
+  run: (signal: AbortSignal) => Promise<void>,
   when: () => boolean,
   report: (error: unknown) => void,
 ) {
   let running: Promise<void> | undefined;
+  const stop = new AbortController();
   const timer = setInterval(() => {
     if (running || !when()) return;
-    running = run()
+    running = run(stop.signal)
       .catch(report)
       .finally(() => {
         running = undefined;
@@ -40,6 +44,7 @@ function repeat(
   return {
     cancel: () => {
       clearInterval(timer);
+      stop.abort();
     },
     finished: () => running ?? Promise.resolve(),
   };
@@ -49,7 +54,11 @@ function repeat(
 export function registerBackgroundTasks(app: FastifyInstance, tasks: Tasks) {
   const stops: ReturnType<typeof repeat>[] = [];
   let stopping: Promise<void> | undefined;
-  const writer = (every: number, run: (() => Promise<void>) | undefined, failure: Failure) => {
+  const writer = (
+    every: number,
+    run: ((signal: AbortSignal) => Promise<void>) | undefined,
+    failure: Failure,
+  ) => {
     if (tasks.role !== 'api' || !run) return;
     stops.push(
       repeat(every, run, tasks.available, (error) => {

@@ -23,6 +23,8 @@ import { FleetOverviewPanel } from './fleet-overview-panel.js';
 
 /** While the page is open it follows the background reads of the server. */
 const REFRESH_MS = 30000;
+/** A refresh that hangs ends here: the schedule re-arms only after it settles. */
+const REQUEST_MS = 30000;
 
 /** The nodes of one row, updated in place: focus and a text selection survive a refresh. */
 interface Row {
@@ -141,9 +143,10 @@ export class FleetPage {
     const current = () => generation === this.generation && sequence === this.sequence;
     try {
       // The overview is built from the same reads; a failure of it never hides the list.
+      const signal = AbortSignal.timeout(REQUEST_MS);
       const [sites, overview] = await Promise.all([
-        this.client.fleet.sites(),
-        this.client.fleet.overview().catch(() => null),
+        this.client.fleet.sites(signal),
+        this.client.fleet.overview(signal).catch(() => null),
       ]);
       if (!current()) return;
       this.status.hidden = true;

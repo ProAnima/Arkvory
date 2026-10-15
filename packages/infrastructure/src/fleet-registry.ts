@@ -36,6 +36,12 @@ const record = (row: Row): FleetSiteRecord => ({
   topology: row.topology ?? null,
 });
 
+/** A check violation, invalid JSON text or a character jsonb does not store. */
+const refused = (error: unknown) =>
+  error instanceof Error &&
+  'code' in error &&
+  (error.code === '23514' || error.code === '22P02' || error.code === '22P05');
+
 /** The sites of a controller (ADR 0077); their keys only sealed. */
 export class PostgresFleetRegistry implements FleetSiteStore {
   constructor(private readonly pool: Pick<Pool, 'query'>) {}
@@ -45,6 +51,13 @@ export class PostgresFleetRegistry implements FleetSiteStore {
       'SELECT * FROM arkvory_fleet_sites ORDER BY name, url LIMIT 256',
     );
     return rows.rows.map(record);
+  }
+
+  async ids(): Promise<readonly string[]> {
+    const rows = await this.pool.query<{ id: string }>(
+      'SELECT id FROM arkvory_fleet_sites ORDER BY name, url LIMIT 256',
+    );
+    return rows.rows.map((row) => row.id);
   }
 
   async get(id: string): Promise<FleetSiteRecord | null> {
@@ -76,10 +89,23 @@ export class PostgresFleetRegistry implements FleetSiteStore {
     }
   }
 
-  async observe(id: string, observation: FleetObservation) {
+  /**
+   * A topology the column refuses (its size check, text jsonb cannot hold) is recorded as
+   * `invalid`: the round goes on and the old state is not left as the last good one.
+   */
+  async observe(id: string, observation: FleetObservation): Promise<void> {
+    try {
+      await this.write(id, observation);
+    } catch (error) {
+      if (observation.state !== 'ok' || !refused(error)) throw error;
+      await this.write(id, { state: 'invalid', error: 'invalid', at: observation.at });
+    }
+  }
+
+  private async write(id: string, observation: FleetObservation) {
     await this.pool.query(
       `UPDATE arkvory_fleet_sites SET state = $2::text, error = $3::text,
-         seen_at = CASE WHEN $2::text = 'ok' THEN now() ELSE seen_at END,
+         seen_at = CASE WHEN $2::text = 'ok' THEN $6::timestamptz ELSE seen_at END,
          topology = CASE WHEN $2::text = 'ok' THEN $4::jsonb ELSE topology END,
          name = COALESCE($5::text, name)
        WHERE id = $1`,
@@ -89,6 +115,7 @@ export class PostgresFleetRegistry implements FleetSiteStore {
         observation.error,
         observation.topology === undefined ? null : JSON.stringify(observation.topology),
         observation.name ?? null,
+        observation.at,
       ],
     );
   }

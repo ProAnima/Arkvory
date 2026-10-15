@@ -74,3 +74,12 @@ export function queueLine(topology: SiteTopology): Line {
     ? { key: 'fleetQueueShared', params: {} }
     : { key: 'fleetQueueValue', params: { active: queue.active, waiting: queue.waiting } };
 }
+
+/**
+ * How long the agent panel waits before its next look: five seconds (the agent takes a request
+ * within a minute), doubled after each failed look up to a minute, so a site that does not
+ * answer for a while is followed again once it does.
+ */
+export function followDelay(failures: number): number {
+  return Math.min(60_000, 5000 * 2 ** Math.min(Math.max(failures, 0), 4));
+}

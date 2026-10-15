@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { MetricsRegistry } from '@proanima/arkvory-infrastructure';
-import { readFleetOverview } from '@proanima/arkvory-contracts';
+import { readFleetOverview, readTopology } from '@proanima/arkvory-contracts';
 import { FleetOverviewSource } from '../apps/api/dist/fleet-overview.js';
 
 const now = Date.parse('2026-10-14T12:00:00Z');
@@ -52,6 +52,7 @@ const stored = (id, name, url, state, seenAt, topology) => ({
 
 function source(sites, own = topology('Main')) {
   let reads = 0;
+  const clock = { wall: now, mark: 0 };
   const overview = new FleetOverviewSource(
     {
       list: async () => {
@@ -65,10 +66,11 @@ function source(sites, own = topology('Main')) {
       version: '1.2.0',
       url: 'https://main.example',
       lagLimit: 1000n,
-      now: () => now,
+      now: () => clock.wall,
+      monotonic: () => clock.mark,
     },
   );
-  return { overview, reads: () => reads };
+  return { overview, reads: () => reads, clock };
 }
 
 test('the overview links a site to the controller and alerts what needs attention', async () => {
@@ -150,18 +152,62 @@ test('fleet gauges carry hostile site names safely and drop the controller itsel
   assert.doesNotMatch(text, /site="self"[^\n]*arkvory_fleet_site_up/);
   for (const line of text.split('\n'))
     assert.ok(line === '' || /^(# |[a-z_]+(\{.*\})? -?[0-9.e+]+$)/.test(line), line);
-  // A failed reading is a counted collection failure, never stale gauges.
-  const broken = new FleetOverviewSource(
+});
+
+test('a failed collection is counted and keeps the last fleet gauges, so site alerts hold', async () => {
+  let down = false;
+  let mark = 0;
+  const sites = [
+    stored(
+      '22222222-2222-4222-8222-222222222222',
+      'Gone',
+      'https://gone.example',
+      'unreachable',
+      null,
+      null,
+    ),
+  ];
+  const overview = new FleetOverviewSource(
     {
       list: async () => {
-        throw new Error('database down');
+        if (down) throw new Error('database down');
+        return sites;
       },
     },
     async () => topology('Main'),
-    { name: 'Main', version: '1.2.0', url: null, lagLimit: 1000n, now: () => now + 60000 },
+    {
+      name: 'Main',
+      version: '1.2.0',
+      url: null,
+      lagLimit: 1000n,
+      now: () => now,
+      monotonic: () => mark,
+    },
   );
-  await broken.refresh(() => failed++);
+  const registry = new MetricsRegistry(3);
+  overview.register(registry);
+  let failed = 0;
+  await overview.refresh(() => failed++);
+  down = true;
+  mark = 60000;
+  await overview.refresh(() => failed++);
   assert.equal(failed, 1);
+  assert.match(registry.render(), /arkvory_fleet_site_up\{site="22222222-[^"]*",name="Gone"\} 0/);
+  // A collection without any reading yet still only counts the failure.
+  const empty = new FleetOverviewSource(
+    { list: async () => Promise.reject(new Error('database down')) },
+    async () => topology('Main'),
+    {
+      name: 'Main',
+      version: '1.2.0',
+      url: null,
+      lagLimit: 1000n,
+      now: () => now,
+      monotonic: () => 0,
+    },
+  );
+  await empty.refresh(() => failed++);
+  assert.equal(failed, 2);
 });
 
 test('a silent site keeps its links and lag as last known; alerts use fresh reads only', async () => {
@@ -214,6 +260,21 @@ test('a silent site keeps its links and lag as last known; alerts use fresh read
   assert.doesNotMatch(text, /NaN|Inf/);
 });
 
+test('the overview cache follows a monotonic clock: a wall clock step back never freezes it', async () => {
+  const { overview, reads, clock } = source([]);
+  await overview.overview();
+  // The wall clock steps an hour back; five seconds pass.
+  clock.wall = now - 3600000;
+  clock.mark = 4999;
+  await overview.overview();
+  assert.equal(reads(), 1);
+  clock.mark = 5000;
+  const fresh = await overview.overview();
+  assert.equal(reads(), 2);
+  // Alert times stay on the wall clock.
+  assert.equal(fresh.generatedAt, new Date(now - 3600000).toISOString());
+});
+
 test('an overview from an older controller without link staleness reads as fresh', () => {
   const wire = readFleetOverview({
     generatedAt: new Date(now).toISOString(),
@@ -233,4 +294,15 @@ test('an overview from an older controller without link staleness reads as fresh
     external: [],
   });
   assert.equal(wire.links[0].stale, false);
+});
+
+test('a single-copy deadline that is no time makes the topology invalid, never NaN', () => {
+  const replication = (singleCopyUntil) =>
+    topology('Branch', [], { replication: { copies: 1, required: 2, singleCopyUntil } });
+  assert.equal(
+    readTopology(replication('2026-10-14T13:00:00Z')).replication.singleCopyUntil,
+    '2026-10-14T13:00:00Z',
+  );
+  assert.equal(readTopology(replication(null)).replication.singleCopyUntil, null);
+  assert.throws(() => readTopology(replication('soon')), /Invalid server time/);
 });

@@ -4,6 +4,7 @@ import { readTopology } from '@proanima/arkvory-contracts';
 import { setup, create, base } from './fixture.mjs';
 import { ArkvoryClient } from '@proanima/arkvory-sdk';
 import { separateInstance } from './mirror-fixture.mjs';
+import { PostgresFleetRegistry } from '@proanima/arkvory-infrastructure';
 import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -174,7 +175,8 @@ test('over HTTPS the controller trusts exactly the certificate the administrator
     tls: { certificateFile, keyFile, minVersion: 'TLSv1.3', reloadSeconds: 0 },
   });
   const controller = await separateInstance(t, { siteName: 'Main', fleetKeyFile: sealFile });
-  const address = `https://localhost:${new URL(await site.listen()).port}`;
+  // The site listens on 127.0.0.1 only; localhost may resolve to ::1 first.
+  const address = `https://127.0.0.1:${new URL(await site.listen()).port}`;
   const on = (f, method, url, payload) =>
     f.app.inject({ method, url, headers: f.headers, ...(payload ? { payload } : {}) });
   const probe = (
@@ -472,5 +474,45 @@ test('the controller sums up its sites: alerts, links and fleet gauges (ADR 0077
   assert.match(
     metrics,
     /arkvory_fleet_site_last_seen_timestamp_seconds\{site="[^"]+",name="Branch"\} \d+/,
+  );
+});
+
+test('a topology the registry column refuses is recorded as invalid, not as a failed round', async (t) => {
+  const f = await setup(t, { siteName: 'Main' });
+  const registry = new PostgresFleetRegistry(f.catalog.pool);
+  const id = '55555555-5555-4555-8555-555555555555';
+  await registry.add({
+    id,
+    name: 'Branch',
+    url: 'https://branch.example',
+    pin: null,
+    certificate: null,
+    sealedKey: Buffer.from([1]),
+    addedBy: 'admin',
+  });
+  // seen_at is the controller's time of the read, whatever the database's clock says.
+  const at = '2020-01-02T03:04:05.000Z';
+  await registry.observe(id, { state: 'ok', error: null, at, topology: { site: 'first' } });
+  // A round reads the ids alone, not every topology and sealed key.
+  assert.deepEqual(await registry.ids(), [id]);
+  assert.equal((await registry.get(id)).seenAt, at);
+  // 200001 bytes of JSON, 300000 of jsonb text: beyond the column's check.
+  const zeros = new Array(100000).fill(0);
+  await registry.observe(id, {
+    state: 'ok',
+    error: null,
+    at: '2020-01-02T03:05:05.000Z',
+    topology: zeros,
+    name: 'Renamed',
+  });
+  const site = await registry.get(id);
+  assert.equal(site.state, 'invalid');
+  assert.equal(site.error, 'invalid');
+  assert.equal(site.name, 'Branch');
+  assert.deepEqual(site.topology, { site: 'first' });
+  assert.equal(site.seenAt, at);
+  // A row the database refuses for another reason still fails the call.
+  await assert.rejects(
+    registry.observe('not-a-uuid', { state: 'ok', error: null, at, topology: 1 }),
   );
 });
