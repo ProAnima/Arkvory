@@ -138,7 +138,7 @@ export function readSiteCertificate(origin: string): Promise<FleetCertificate> {
       socket.destroy();
       reject(new FleetFailure('unreachable'));
     });
-    socket.once('error', () => {
+    socket.on('error', () => {
       reject(new FleetFailure('unreachable'));
     });
   });
@@ -179,7 +179,7 @@ function readAnswer(
     }
     resolve({ status, body });
   });
-  response.once('error', () => {
+  response.on('error', () => {
     settle(new FleetFailure('unreachable'));
   });
 }
@@ -257,7 +257,7 @@ export function siteRequest(
     request.once('close', () => {
       clearTimeout(deadline);
     });
-    request.once('error', (error: Error & { code?: string }) => {
+    request.on('error', (error: Error & { code?: string }) => {
       const tls =
         /CERT|SSL|TLS|pin mismatch|self.signed|UNABLE_TO/i.test(error.code ?? '') ||
         /pin mismatch|certificate/i.test(error.message);
