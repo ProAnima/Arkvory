@@ -52,6 +52,7 @@ const stored = (id, name, url, state, seenAt, topology) => ({
 
 function source(sites, own = topology('Main')) {
   let reads = 0;
+  const clock = { wall: now, mark: 0 };
   const overview = new FleetOverviewSource(
     {
       list: async () => {
@@ -65,10 +66,11 @@ function source(sites, own = topology('Main')) {
       version: '1.2.0',
       url: 'https://main.example',
       lagLimit: 1000n,
-      now: () => now,
+      now: () => clock.wall,
+      monotonic: () => clock.mark,
     },
   );
-  return { overview, reads: () => reads };
+  return { overview, reads: () => reads, clock };
 }
 
 test('the overview links a site to the controller and alerts what needs attention', async () => {
@@ -158,7 +160,14 @@ test('fleet gauges carry hostile site names safely and drop the controller itsel
       },
     },
     async () => topology('Main'),
-    { name: 'Main', version: '1.2.0', url: null, lagLimit: 1000n, now: () => now + 60000 },
+    {
+      name: 'Main',
+      version: '1.2.0',
+      url: null,
+      lagLimit: 1000n,
+      now: () => now + 60000,
+      monotonic: () => 0,
+    },
   );
   await broken.refresh(() => failed++);
   assert.equal(failed, 1);
@@ -212,6 +221,21 @@ test('a silent site keeps its links and lag as last known; alerts use fresh read
   assert.match(text, /arkvory_fleet_site_up\{site="unknown:2",name="First broken"\} 0/);
   assert.match(text, /arkvory_fleet_site_up\{site="unknown:3",name="Second broken"\} 0/);
   assert.doesNotMatch(text, /NaN|Inf/);
+});
+
+test('the overview cache follows a monotonic clock: a wall clock step back never freezes it', async () => {
+  const { overview, reads, clock } = source([]);
+  await overview.overview();
+  // The wall clock steps an hour back; five seconds pass.
+  clock.wall = now - 3600000;
+  clock.mark = 4999;
+  await overview.overview();
+  assert.equal(reads(), 1);
+  clock.mark = 5000;
+  const fresh = await overview.overview();
+  assert.equal(reads(), 2);
+  // Alert times stay on the wall clock.
+  assert.equal(fresh.generatedAt, new Date(now - 3600000).toISOString());
 });
 
 test('an overview from an older controller without link staleness reads as fresh', () => {

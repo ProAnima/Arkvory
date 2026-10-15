@@ -205,6 +205,7 @@ function fleetOverviewFor(
     url: parts.config.siteUrl ?? null,
     lagLimit: parts.config.fleetLagAlert ?? 1000n,
     now: Date.now,
+    monotonic: () => performance.now(),
   });
 }
 

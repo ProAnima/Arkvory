@@ -26,7 +26,10 @@ export interface FleetOverviewOptions {
   readonly url: string | null;
   /** Changes behind its source at which a mirror alerts (`ARKVORY_FLEET_LAG_ALERT`). */
   readonly lagLimit: bigint;
+  /** Wall clock (ms) of alert times and ages, the clock `seenAt` is written by. */
   readonly now: () => number;
+  /** Monotonic clock (ms) of the cache period: a step of the wall clock never freezes it. */
+  readonly monotonic: () => number;
 }
 
 /**
@@ -69,6 +72,8 @@ function reportOf(topology: SiteTopology): NonNullable<HealthSite['report']> {
 
 interface Reading {
   readonly at: number;
+  /** The monotonic time it was built. */
+  readonly mark: number;
   readonly sites: readonly HealthSite[];
   readonly alerts: readonly FleetAlert[];
 }
@@ -115,16 +120,17 @@ export class FleetOverviewSource {
   }
 
   private read(): Promise<Reading> {
-    const now = this.options.now();
-    if (this.reading && now - this.reading.at < TTL_MS) return Promise.resolve(this.reading);
-    this.building ??= this.build(now).finally(() => {
+    const mark = this.options.monotonic();
+    if (this.reading && mark - this.reading.mark < TTL_MS) return Promise.resolve(this.reading);
+    this.building ??= this.build(mark).finally(() => {
       this.building = undefined;
     });
     return this.building;
   }
 
-  private async build(now: number): Promise<Reading> {
+  private async build(mark: number): Promise<Reading> {
     const [stored, own] = await Promise.all([this.sites.list(), this.self()]);
+    const now = this.options.now();
     const sites: HealthSite[] = [
       {
         id: 'self',
@@ -150,7 +156,7 @@ export class FleetOverviewSource {
       lagLimit: this.options.lagLimit,
       version: this.options.version,
     });
-    this.reading = { at: now, sites, alerts };
+    this.reading = { at: now, mark, sites, alerts };
     return this.reading;
   }
 
