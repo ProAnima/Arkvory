@@ -137,7 +137,7 @@ test('the replica unit runs as root, hands the socket to the arkvory group and h
   assert.ok(!unit.includes('[Install]'), 'Pacemaker starts it; nothing enables it');
 });
 
-const { clusterChecks, clusterNodes, locatedOn } =
+const { clusterChecks, clusterNodes, locatedOn, waitFor } =
   await import('../apps/deploy/dist/cluster-ops.js');
 const drbdStatus = (peerDisk) =>
   JSON.stringify([
@@ -392,4 +392,34 @@ test('configure --cluster prints the commands that follow, in order', async () =
   assert.match(text, /systemctl enable --now corosync-qnetd/);
   const three = nextSteps('/opt/proanima-arkvory', { profile: 'ha-3', resource: 'arkvory' });
   assert.ok(!three.includes('corosync-qnetd'), 'ha-3 has no witness');
+});
+
+test('the switchover wait follows a monotonic clock, not the wall clock', async (t) => {
+  const wall = Date.now;
+  t.after(() => {
+    Date.now = wall;
+  });
+  let polls = 0;
+  // The wall clock steps an hour ahead on the first poll: the 5 minutes are not over.
+  await waitFor(
+    async () => {
+      polls++;
+      Date.now = () => wall() + 3600000;
+      return polls === 3;
+    },
+    300000,
+    'arkvory on node-b',
+    async () => undefined,
+  );
+  assert.equal(polls, 3);
+  Date.now = wall;
+  await assert.rejects(
+    waitFor(
+      async () => false,
+      20,
+      'arkvory on node-b',
+      () => new Promise((done) => setTimeout(done, 5)),
+    ),
+    /Timed out waiting for arkvory on node-b/,
+  );
 });
