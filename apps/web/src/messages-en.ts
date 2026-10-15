@@ -11,6 +11,7 @@ import { errorEnglish } from './error-messages.js';
 import { mirrorEnglish } from './mirror-messages.js';
 import { clusterEnglish } from './cluster-messages.js';
 import { fleetEnglish } from './fleet-messages.js';
+import { fleetChangeEnglish } from './fleet-change-messages.js';
 import { reportEnglish } from './report-messages.js';
 export const en = {
   ...errorEnglish,
@@ -21,6 +22,7 @@ export const en = {
   ...cleanupEnglish,
   ...updateEnglish,
   ...fleetEnglish,
+  ...fleetChangeEnglish,
   ...backupEnglish,
   ...promotionEnglish,
   ...mirrorEnglish,

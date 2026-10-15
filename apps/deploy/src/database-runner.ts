@@ -92,6 +92,53 @@ export async function waitForReady(
 export const runnerExitCode = (code: number | null, stopping: boolean): number =>
   stopping ? (code ?? 1) : code || 1;
 
+function startPostgres(executable: (name: string) => string, data: string, port: number) {
+  return spawn(
+    executable('postgres'),
+    [
+      '-D',
+      data,
+      '-h',
+      '127.0.0.1',
+      '-p',
+      String(port),
+      '-c',
+      'unix_socket_directories=',
+      '-c',
+      'password_encryption=scram-sha-256',
+      // API, write locks, worker, backup agent and read gateways share it (ADR 0073).
+      '-c',
+      'max_connections=200',
+    ],
+    { stdio: 'inherit', windowsHide: true },
+  );
+}
+
+function onStopSignal(stop: () => Promise<void>) {
+  for (const signal of ['SIGTERM', 'SIGINT'] as const)
+    process.once(signal, () => {
+      void stop().catch(() => {
+        process.exitCode = 1;
+      });
+    });
+}
+
+async function bootstrapOnce(
+  directory: string,
+  major: string,
+  psql: (args: readonly string[]) => Promise<unknown>,
+) {
+  if (await exists(join(directory, 'initialized'))) return;
+  // CREATE DATABASE cannot share a transaction with CREATE ROLE. A journal requires inspection
+  // after interruption instead of replaying ambiguous SQL or dropping an existing database.
+  if (await exists(join(directory, 'bootstrap-started')))
+    throw new Error('Interrupted database bootstrap requires inspection');
+  await durableMarker(directory, 'bootstrap-started', '1');
+  await psql(['-X', '-v', 'ON_ERROR_STOP=1', '-f', join(directory, 'bootstrap.sql')]);
+  await durableMarker(directory, 'initialized', major);
+  await unlink(join(directory, 'bootstrap.sql'));
+}
+
 export async function runDatabase(root: string): Promise<void> {
   const settings = await databaseSettings(root);
   if (!settings) throw new Error('Managed database not configured');
@@ -107,25 +154,7 @@ export async function runDatabase(root: string): Promise<void> {
       'error',
       `Database port ${String(settings.port)} on 127.0.0.1 is in use or reserved by Windows (netsh int ipv4 show excludedportrange protocol=tcp)`,
     );
-  const child = spawn(
-    executable('postgres'),
-    [
-      '-D',
-      data,
-      '-h',
-      '127.0.0.1',
-      '-p',
-      String(settings.port),
-      '-c',
-      'unix_socket_directories=',
-      '-c',
-      'password_encryption=scram-sha-256',
-      // API, write locks, worker, backup agent and read gateways share it (ADR 0073).
-      '-c',
-      'max_connections=200',
-    ],
-    { stdio: 'inherit', windowsHide: true },
-  );
+  const child = startPostgres(executable, data, settings.port);
   let exited = false;
   let stopping = false;
   child.once('error', () => {
@@ -143,16 +172,7 @@ export async function runDatabase(root: string): Promise<void> {
   };
   // Set by a signal handler: read through a function, not narrowed to its first value.
   const stopRequested = () => stopping;
-  process.once('SIGTERM', () => {
-    void stop().catch(() => {
-      process.exitCode = 1;
-    });
-  });
-  process.once('SIGINT', () => {
-    void stop().catch(() => {
-      process.exitCode = 1;
-    });
-  });
+  onStopSignal(stop);
   try {
     const args = [
       '-h',
@@ -172,21 +192,9 @@ export async function runDatabase(root: string): Promise<void> {
         ),
       () => exited,
     );
-    if (!(await exists(join(directory, 'initialized')))) {
-      // CREATE DATABASE cannot share a transaction with CREATE ROLE. A journal requires inspection
-      // after interruption instead of replaying ambiguous SQL or dropping an existing database.
-      if (await exists(join(directory, 'bootstrap-started')))
-        throw new Error('Interrupted database bootstrap requires inspection');
-      await durableMarker(directory, 'bootstrap-started', '1');
-      await command(
-        executable('psql'),
-        [...args, '-X', '-v', 'ON_ERROR_STOP=1', '-f', join(directory, 'bootstrap.sql')],
-        undefined,
-        environment,
-      );
-      await durableMarker(directory, 'initialized', major);
-      await unlink(join(directory, 'bootstrap.sql'));
-    }
+    await bootstrapOnce(directory, major, (extra) =>
+      command(executable('psql'), [...args, ...extra], undefined, environment),
+    );
   } catch (error) {
     // Asked to stop while starting (a long recovery, say): the stop is clean, the start not failed.
     if (stopRequested()) return;
