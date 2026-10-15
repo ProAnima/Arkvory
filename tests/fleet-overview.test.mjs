@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { MetricsRegistry } from '@proanima/arkvory-infrastructure';
-import { readFleetOverview } from '@proanima/arkvory-contracts';
+import { readFleetOverview, readTopology } from '@proanima/arkvory-contracts';
 import { FleetOverviewSource } from '../apps/api/dist/fleet-overview.js';
 
 const now = Date.parse('2026-10-14T12:00:00Z');
@@ -257,4 +257,15 @@ test('an overview from an older controller without link staleness reads as fresh
     external: [],
   });
   assert.equal(wire.links[0].stale, false);
+});
+
+test('a single-copy deadline that is no time makes the topology invalid, never NaN', () => {
+  const replication = (singleCopyUntil) =>
+    topology('Branch', [], { replication: { copies: 1, required: 2, singleCopyUntil } });
+  assert.equal(
+    readTopology(replication('2026-10-14T13:00:00Z')).replication.singleCopyUntil,
+    '2026-10-14T13:00:00Z',
+  );
+  assert.equal(readTopology(replication(null)).replication.singleCopyUntil, null);
+  assert.throws(() => readTopology(replication('soon')), /Invalid server time/);
 });

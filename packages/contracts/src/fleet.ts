@@ -87,6 +87,12 @@ const lag = (value: unknown): string => {
   if (parsed.length > 30) throw new Error('Invalid server decimal');
   return parsed;
 };
+/** A time the controller computes with: a value Date.parse cannot read never reaches it. */
+const time = (value: unknown): string => {
+  const parsed = text(value);
+  if (!Number.isFinite(Date.parse(parsed))) throw new Error('Invalid server time');
+  return parsed;
+};
 const nullable = <T>(value: unknown, read: (value: unknown) => T): T | null =>
   value === null ? null : read(value);
 function oneOf<T extends string>(value: unknown, allowed: readonly T[]): T {
@@ -100,7 +106,7 @@ function readReplication(value: unknown): SiteReplication {
   return {
     copies: integer(row['copies']),
     required: integer(row['required']),
-    singleCopyUntil: nullable(row['singleCopyUntil'], text),
+    singleCopyUntil: nullable(row['singleCopyUntil'], time),
     ...(row['node'] === undefined ? {} : { node: text(row['node']) }),
     ...(row['profile'] === undefined ? {} : { profile: text(row['profile']) }),
     ...(row['peers'] === undefined
