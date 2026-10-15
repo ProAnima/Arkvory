@@ -175,7 +175,8 @@ test('over HTTPS the controller trusts exactly the certificate the administrator
     tls: { certificateFile, keyFile, minVersion: 'TLSv1.3', reloadSeconds: 0 },
   });
   const controller = await separateInstance(t, { siteName: 'Main', fleetKeyFile: sealFile });
-  const address = `https://localhost:${new URL(await site.listen()).port}`;
+  // The site listens on 127.0.0.1 only; localhost may resolve to ::1 first.
+  const address = `https://127.0.0.1:${new URL(await site.listen()).port}`;
   const on = (f, method, url, payload) =>
     f.app.inject({ method, url, headers: f.headers, ...(payload ? { payload } : {}) });
   const probe = (
