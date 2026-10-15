@@ -74,7 +74,7 @@ export function queueRequestHeaders() {
 export const queueHeaders = {
   'Arkvory-Queue-Ticket': {
     description:
-      'Signed proof of when this download first queued, valid for a day; send it back with the next requests of the download.',
+      'Signed proof of when this download first queued. Accepted for 15 minutes after its issue and issued anew with every answer: send the latest one back with the next requests of the download.',
     schema: { type: 'string' },
   },
   'Arkvory-Download-Class': {
