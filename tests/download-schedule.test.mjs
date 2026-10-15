@@ -268,6 +268,49 @@ test('a client of the queue protocol yields at a range boundary to a higher clas
   assert.equal(off.request(bulk, 61000).state, 'active');
 });
 
+test('a session that yielded does not take the place back before the head it yielded to', () => {
+  const sessions = new DownloadSessions(downloadSchedulePolicy(1, { idleMs: 120_000 }));
+  const bulk = session('agent', { principal: 'agents', class: 'bulk', size: 1000 });
+  const ci = session('ci', { principal: 'ci', size: 1000 });
+  sessions.request(bulk, 0);
+  sessions.end('agent', middle, 0);
+  for (const at of [0, 20000, 40000, 60000]) sessions.request(ci, at);
+  sessions.plan(61000);
+  assert.equal(sessions.request(bulk, 61000).state, 'queued');
+  sessions.plan(61500);
+  // The yielder is told to come back sooner than the head; it still waits for the head.
+  assert.equal(sessions.request(bulk, 61600).state, 'queued');
+  assert.equal(sessions.request(ci, 62000).state, 'active');
+  sessions.progress('ci', 1000, 62000);
+  sessions.end('ci', sent(0, 999, true), 62000);
+  sessions.plan(62500);
+  assert.equal(sessions.request(bulk, 62500).state, 'active');
+});
+
+test('nobody yields to a head that a freed place already serves', () => {
+  const policy = downloadSchedulePolicy(2, { idleMs: 120_000 });
+  const sessions = new DownloadSessions(policy);
+  const bulk = (key) => session(key, { principal: 'agents', class: 'bulk', size: 1000 });
+  for (const key of ['a1', 'a2']) {
+    sessions.request(bulk(key), 0);
+    sessions.end(key, middle, 0);
+  }
+  const ci = session('ci', { principal: 'ci', size: 1000 });
+  for (const at of [0, 20000, 40000, 60000]) sessions.request(ci, at);
+  // a1 asks its last range before the tick and finishes after it: its place is free, so a2
+  // keeps its own at its range boundary.
+  const last = { ...bulk('a1'), range: { start: 10, end: 999, open: false } };
+  assert.equal(sessions.request(last, 60500).state, 'active');
+  sessions.plan(61000);
+  sessions.end('a1', sent(10, 999), 61100);
+  assert.equal(sessions.request(bulk('a2'), 61200).state, 'active');
+  sessions.end('a2', middle, 61200);
+  // The next tick marks the freed place for the head.
+  sessions.plan(61500);
+  assert.equal(sessions.request(ci, 61500).state, 'active');
+  assert.equal(sessions.snapshot(61500).yielded, 0);
+});
+
 test('a principal above its share yields to one below it', () => {
   const sessions = new DownloadSessions(
     downloadSchedulePolicy(2, { perPrincipalActive: 1, idleMs: 120_000 }),

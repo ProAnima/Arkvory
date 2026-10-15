@@ -85,6 +85,8 @@ interface Session {
   checkAt: number;
   /** Among the first in line at the last tick: may take a free place when it comes. */
   claimable: boolean;
+  /** The head this session yielded its place to: it takes no place while that one waits. */
+  yieldedTo: string | undefined;
 }
 
 /** Places of sessions finishing within this time already count as free for the next in line. */
@@ -111,7 +113,7 @@ export class DownloadSessions {
   /** Principals first in line at the last tick: their share then binds the others. */
   private readonly claimants = new Set<string>();
   /** The head of the queue waits with no place free: one active session may yield to it. */
-  private pressure: { classIndex: number; principal: string } | undefined;
+  private pressure: Session | undefined;
   private readonly counters = {
     admitted: 0,
     queued: 0,
@@ -201,7 +203,7 @@ export class DownloadSessions {
     // it takes it once the next tick marks it free.
     if (marked === 0 && head && this.current.preempt) {
       this.claimants.add(head.principal);
-      this.pressure = { classIndex: classIndex(head.class), principal: head.principal };
+      this.pressure = head;
     }
     this.estimate(order, now);
   }
@@ -219,7 +221,14 @@ export class DownloadSessions {
     let marked = 0;
     for (const session of order) {
       const person = session.class === 'interactive';
-      session.claimable = all > 0 && (person || shared > 0);
+      // A session that yielded must not take the place back before the head it yielded to: it
+      // comes back sooner and would win the place, then hold it another MIN_HOLD_MS.
+      if (
+        session.yieldedTo !== undefined &&
+        this.sessions.get(session.yieldedTo)?.state !== 'waiting'
+      )
+        session.yieldedTo = undefined;
+      session.claimable = all > 0 && (person || shared > 0) && session.yieldedTo === undefined;
       if (!session.claimable) continue;
       all--;
       if (!person) shared--;
@@ -300,6 +309,7 @@ export class DownloadSessions {
       startsAt: undefined,
       checkAt: now + MIN_DOWNLOAD_CHECK_MS,
       claimable: false,
+      yieldedTo: undefined,
     };
     this.sessions.set(session.key, session);
     this.owned.set(session.principal, owned + 1);
@@ -356,6 +366,10 @@ export class DownloadSessions {
     const pressure = this.pressure;
     if (
       !pressure ||
+      // The head left the queue, or a place freed since the tick: it needs no yielded one.
+      this.sessions.get(pressure.key) !== pressure ||
+      pressure.state !== 'waiting' ||
+      this.places.fits(pressure, this.current, false) ||
       !session.queueAware ||
       session.class === 'interactive' ||
       pressure.principal === session.principal ||
@@ -364,7 +378,7 @@ export class DownloadSessions {
       return false;
     const share = this.current.perPrincipalActive;
     return (
-      classIndex(session.class) > pressure.classIndex ||
+      classIndex(session.class) > classIndex(pressure.class) ||
       (this.places.of(session.principal) > share && this.places.of(pressure.principal) < share)
     );
   }
@@ -376,6 +390,7 @@ export class DownloadSessions {
     // A fresh wait: aging must not lift it straight back over the one it yielded to.
     session.queuedAt = now;
     session.claimable = false;
+    session.yieldedTo = this.pressure?.key;
     session.position = undefined;
     session.checkAt = now + MIN_DOWNLOAD_CHECK_MS;
     this.pressure = undefined;
