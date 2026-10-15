@@ -1,37 +1,27 @@
 import { ArkvoryError } from './artifact.js';
+import type { DownloadSchedulePolicy } from './download-policy.js';
 import {
-  downloadClasses,
-  type DownloadClass,
-  type DownloadSchedulePolicy,
-} from './download-policy.js';
-import {
-  downloadCheckDelay,
   downloadNoShowAfter,
-  estimateDownloadStarts,
   orderWaitingDownloads,
   MIN_DOWNLOAD_CHECK_MS,
 } from './download-schedule.js';
-import { DownloadCoverage, type DownloadByteRange } from './download-coverage.js';
+import type { DownloadByteRange } from './download-coverage.js';
 import { DownloadOccupancy } from './download-occupancy.js';
 import { DownloadRate } from './download-rate.js';
 import { DownloadResumes } from './download-resumes.js';
+import {
+  CLAIM_CHECK_MS,
+  complete,
+  estimateQueue,
+  finishingSoon,
+  noteStart,
+  openSession,
+  yieldsTo,
+  type DownloadSessionRequest,
+  type Session,
+} from './download-session-state.js';
 
-export interface DownloadSessionRequest {
-  /** Who and what: principal, object, and the client's download id or else its address. */
-  readonly key: string;
-  readonly principal: string;
-  readonly class: DownloadClass;
-  readonly size: number;
-  /** The client sent its own download id: it follows the queue protocol and may yield. */
-  readonly queueAware: boolean;
-  /**
-   * When this download first came, from a verified queue ticket after a restart: it takes its
-   * old turn. The caller checks the ticket; a time in the future is taken as now.
-   */
-  readonly arrivedAt?: number;
-  /** The bytes this response asks for; absent: the whole object. */
-  readonly range?: DownloadByteRange;
-}
+export type { DownloadSessionRequest } from './download-session-state.js';
 
 export type DownloadDecision =
   | { readonly state: 'active' }
@@ -55,52 +45,12 @@ export interface DownloadResponseEnd {
   readonly streamed?: number;
 }
 
-interface Session {
-  readonly key: string;
-  readonly principal: string;
-  readonly class: DownloadClass;
-  readonly size: number;
-  readonly queueAware: boolean;
-  readonly seq: number;
-  /** First arrival; the order of the queue. Kept when the session yields or pauses. */
-  readonly arrival: number;
-  queuedAt: number;
-  state: 'waiting' | 'active';
-  /** Responses streaming now; the place is freed only when none are. */
-  inFlight: number;
-  /** Ranges delivered in full: aborted responses add nothing. */
-  coverage: DownloadCoverage;
-  /**
-   * Where the download starts: the lowest offset a response asked for, apart from reads of the
-   * tail. A resumed download starts where it resumed, so it completes without the bytes before.
-   */
-  from: number | undefined;
-  /** Bytes streamed by the responses in flight, for estimates only. */
-  pending: number;
-  startedAt: number;
-  /** Waiting: no-show deadline. Active without responses: when its place is freed. */
-  expiresAt: number;
-  position: number | undefined;
-  startsAt: number | undefined;
-  checkAt: number;
-  /** Among the first in line at the last tick: may take a free place when it comes. */
-  claimable: boolean;
-  /** The head this session yielded its place to: it takes no place while that one waits. */
-  yieldedTo: string | undefined;
-}
-
-/** Places of sessions finishing within this time already count as free for the next in line. */
-const HANDOVER_MS = 5000;
-/** How soon a client that may take a place should come. */
-const CLAIM_CHECK_MS = 1000;
 /**
  * A session that only read the tail (a ZIP directory, an SDK resuming inside its last range)
  * keeps its place this long without responses: its next read, if any, follows at once, and a
  * place must not stand idle for `idleMs` after a download that may well be over.
  */
 const TAIL_IDLE_MS = 5000;
-/** A session keeps its place at least this long before it can be asked to yield. */
-const MIN_HOLD_MS = 60_000;
 
 /**
  * Download sessions of one process (ADR 0076): a place covers a whole download, not one range.
@@ -215,7 +165,7 @@ export class DownloadSessions {
       this.claimants.add(head.principal);
       this.pressure = head;
     }
-    this.estimate(order, now);
+    estimateQueue(this.sessions.values(), order, this.current, this.rate.capacity(now), now);
   }
 
   /**
@@ -297,30 +247,7 @@ export class DownloadSessions {
       throw busy('Download queue is full', 60_000);
     }
     const resumed = this.resumes.take(request.key, now);
-    const arrival = Math.min(now, resumed?.arrival ?? request.arrivedAt ?? now);
-    const session: Session = {
-      key: request.key,
-      principal: request.principal,
-      class: request.class,
-      size: request.size,
-      queueAware: request.queueAware,
-      seq: resumed?.seq ?? ++this.seq,
-      arrival,
-      // A download back from a restart keeps its turn but starts aging afresh.
-      queuedAt: resumed?.queuedAt ?? now,
-      state: 'waiting',
-      inFlight: 0,
-      coverage: resumed?.coverage ?? new DownloadCoverage(),
-      from: resumed?.from,
-      pending: 0,
-      startedAt: now,
-      expiresAt: now,
-      position: undefined,
-      startsAt: undefined,
-      checkAt: now + MIN_DOWNLOAD_CHECK_MS,
-      claimable: false,
-      yieldedTo: undefined,
-    };
+    const session = openSession(request, resumed?.seq ?? ++this.seq, resumed, now);
     this.sessions.set(session.key, session);
     this.owned.set(session.principal, owned + 1);
     this.places.wait(session);
@@ -367,29 +294,14 @@ export class DownloadSessions {
     return false;
   }
 
-  /**
-   * Whether this session, between two ranges, gives its place to the head of the queue: only a
-   * client of the queue protocol, after holding the place a minute, when the head is of a higher
-   * class or of a principal below its share while this one is above it.
-   */
+  /** Whether this session gives its place to the head of the queue now, see `yieldsTo`. */
   private shouldYield(session: Session, now: number) {
     const pressure = this.pressure;
-    if (
-      !pressure ||
-      // The head left the queue, or a place freed since the tick: it needs no yielded one.
-      this.sessions.get(pressure.key) !== pressure ||
-      pressure.state !== 'waiting' ||
-      this.places.fits(pressure, this.current, false) ||
-      !session.queueAware ||
-      session.class === 'interactive' ||
-      pressure.principal === session.principal ||
-      now - session.startedAt < MIN_HOLD_MS
-    )
-      return false;
-    const share = this.current.perPrincipalActive;
+    // The head left the queue since the tick: it needs no yielded place.
     return (
-      classIndex(session.class) > classIndex(pressure.class) ||
-      (this.places.of(session.principal) > share && this.places.of(pressure.principal) < share)
+      pressure !== undefined &&
+      this.sessions.get(pressure.key) === pressure &&
+      yieldsTo(session, pressure, this.places, this.current, now)
     );
   }
 
@@ -420,21 +332,6 @@ export class DownloadSessions {
     }
   }
 
-  private estimate(order: Session[], now: number) {
-    const left: number[] = [];
-    for (const session of this.sessions.values())
-      if (session.state === 'active') left.push(remaining(session));
-    const starts = estimateDownloadStarts(
-      left,
-      order.map(remaining),
-      this.current.slots - this.current.interactiveReserve,
-      this.rate.capacity(now),
-    );
-    order.forEach((session, index) => {
-      tellPlace(session, index + 1, starts[index], now);
-    });
-  }
-
   private remove(session: Session) {
     this.sessions.delete(session.key);
     if (session.state === 'waiting') this.places.leave(session);
@@ -443,54 +340,6 @@ export class DownloadSessions {
     if (owned === 0) this.owned.delete(session.principal);
     else this.owned.set(session.principal, owned);
   }
-}
-
-/**
- * Where an admitted response says the download starts: its offset, unless it reads the tail
- * without saying so (a suffix or bounded range ending at the last byte, see the range).
- */
-function noteStart(session: Session, asked: DownloadByteRange | undefined) {
-  const range = asked ?? { start: 0, end: session.size - 1, open: true };
-  if (range.open || range.start === 0 || range.end < session.size - 1)
-    session.from = Math.min(session.from ?? range.start, range.start);
-}
-
-/** A waiting session's place, estimated start and when it should check again. */
-function tellPlace(session: Session, position: number, startsIn: number | undefined, now: number) {
-  session.position = position;
-  session.startsAt = startsIn === undefined ? undefined : now + startsIn;
-  // Those who may take a place check sooner, down to a second: a place may free early.
-  const delay = downloadCheckDelay(startsIn, position, session.seq);
-  session.checkAt =
-    now +
-    (session.claimable ? Math.max(CLAIM_CHECK_MS, Math.min(delay, (startsIn ?? 0) / 2)) : delay);
-}
-
-/** Sessions streaming now that will have sent their last byte within HANDOVER_MS. */
-function finishingSoon(sessions: readonly Session[], bytesPerSecond: number) {
-  const streaming = sessions.filter((session) => session.inFlight > 0);
-  const perSession = bytesPerSecond / Math.max(1, streaming.length);
-  if (perSession === 0) return 0;
-  return streaming.filter((session) => remaining(session) / perSession <= HANDOVER_MS / 1000)
-    .length;
-}
-
-/** Delivered from where it started to the last byte, with no response in flight. */
-function complete(session: Session) {
-  const from = session.from;
-  return (
-    session.inFlight === 0 && from !== undefined && session.coverage.covers(from, session.size - 1)
-  );
-}
-
-/** Bytes still to deliver, estimated: streamed bytes count before their response ends. */
-function remaining(session: Session) {
-  const from = session.from ?? 0;
-  return Math.max(0, session.size - from - session.coverage.bytesFrom(from) - session.pending);
-}
-
-function classIndex(name: DownloadClass) {
-  return downloadClasses.indexOf(name);
 }
 
 function busy(message: string, retryMs: number) {
