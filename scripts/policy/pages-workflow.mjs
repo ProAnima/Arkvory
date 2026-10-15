@@ -2,7 +2,11 @@ import { parse } from 'yaml';
 import { inspectRunnerImages } from './runners.mjs';
 
 const pinnedAction = /^[\w-]+\/[\w-]+@[a-f0-9]{40}$/;
-const trustedMain = "github.ref == 'refs/heads/main'";
+/**
+ * Main only, and only once the owner turned publishing on (the repository variable ARKVORY_PAGES):
+ * a site under the project's name is a decision, not a side effect of a push.
+ */
+const trustedMain = "github.ref == 'refs/heads/main' && vars.ARKVORY_PAGES == 'true'";
 
 /**
  * The documentation workflow publishes a website under the project's name. Only main is built;

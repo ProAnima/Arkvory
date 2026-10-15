@@ -22,6 +22,9 @@ function gatewayRole(config: ServerConfig): 'api' | 'reader' {
   return role;
 }
 
+/** How often a process without the ticket key looks for it again. */
+const TICKET_KEY_RETRY_MS = 30_000;
+
 /** Owns process resources, including cleanup after partial startup. */
 export class ApiRuntime {
   readonly role;
@@ -33,6 +36,7 @@ export class ApiRuntime {
   readonly downloadSettings: DownloadSettingsControl;
   private closing: Promise<void> | undefined;
   private stopped = false;
+  private ticketRetry: ReturnType<typeof setInterval> | undefined;
 
   constructor(config: ServerConfig) {
     this.role = gatewayRole(config);
@@ -74,9 +78,8 @@ export class ApiRuntime {
       );
       await this.lease?.start();
       // Queue tickets keep a download's turn over a restart (ADR 0076); a reader without a key
-      // made by a writer yet simply issues none.
-      const key = await loadDownloadTicketKey(this.catalog.pool, this.role === 'api');
-      if (key) this.transfers.downloadScheduler.useTickets(new DownloadTickets(key));
+      // made by a writer yet issues none until a later look finds it.
+      if (!(await this.loadTicketKey())) this.retryTicketKey();
       // The environment runs until the record is read: a database hiccup here must not stop the
       // start, the background task retries every 10 seconds and reports a failure.
       if (this.role === 'api') await this.downloadSettings.sync().catch(() => undefined);
@@ -86,8 +89,34 @@ export class ApiRuntime {
     }
   }
 
+  private async loadTicketKey() {
+    const key = await loadDownloadTicketKey(this.catalog.pool, this.role === 'api');
+    if (key && !this.stopped) this.transfers.downloadScheduler.useTickets(new DownloadTickets(key));
+    return key !== undefined;
+  }
+
+  /** Looks for the key periodically; one look at a time, ended by success or `stop`. */
+  private retryTicketKey() {
+    let looking = false;
+    this.ticketRetry = setInterval(() => {
+      if (looking) return;
+      looking = true;
+      this.loadTicketKey()
+        .then((found) => {
+          if (found) clearInterval(this.ticketRetry);
+        })
+        // A database hiccup only delays tickets: the next look tries again.
+        .catch(() => undefined)
+        .finally(() => {
+          looking = false;
+        });
+    }, TICKET_KEY_RETRY_MS);
+    this.ticketRetry.unref();
+  }
+
   stop(): void {
     this.stopped = true;
+    clearInterval(this.ticketRetry);
     this.transfers.close();
     this.lease?.close();
   }

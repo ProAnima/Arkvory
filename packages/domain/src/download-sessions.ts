@@ -11,6 +11,7 @@ import {
   orderWaitingDownloads,
   MIN_DOWNLOAD_CHECK_MS,
 } from './download-schedule.js';
+import { DownloadCoverage, type DownloadByteRange } from './download-coverage.js';
 import { DownloadOccupancy } from './download-occupancy.js';
 import { DownloadRate } from './download-rate.js';
 import { DownloadResumes } from './download-resumes.js';
@@ -28,6 +29,8 @@ export interface DownloadSessionRequest {
    * old turn. The caller checks the ticket; a time in the future is taken as now.
    */
   readonly arrivedAt?: number;
+  /** The bytes this response asks for; absent: the whole object. */
+  readonly range?: DownloadByteRange;
 }
 
 export type DownloadDecision =
@@ -41,10 +44,10 @@ export type DownloadDecision =
       readonly checkAt: number;
     };
 
-/** How a response ended: sent to its end, and whether it covered the object's last byte. */
+/** How a response ended: `finished` when all of `range` was sent; its bytes then count. */
 export interface DownloadResponseEnd {
   readonly finished: boolean;
-  readonly reachedEnd: boolean;
+  readonly range: DownloadByteRange;
 }
 
 interface Session {
@@ -60,9 +63,15 @@ interface Session {
   state: 'waiting' | 'active';
   /** Responses streaming now; the place is freed only when none are. */
   inFlight: number;
-  served: number;
-  /** A response delivered the last byte: with all bytes served, the download is complete. */
-  sawEnd: boolean;
+  /** Ranges delivered in full: aborted responses add nothing. */
+  coverage: DownloadCoverage;
+  /**
+   * Where the download starts: the lowest offset a response asked for, apart from reads of the
+   * tail. A resumed download starts where it resumed, so it completes without the bytes before.
+   */
+  from: number | undefined;
+  /** Bytes streamed by the responses in flight, for estimates only. */
+  pending: number;
   startedAt: number;
   /** Waiting: no-show deadline. Active without responses: when its place is freed. */
   expiresAt: number;
@@ -125,6 +134,13 @@ export class DownloadSessions {
    * response in flight; the caller must call `end` exactly once for it.
    */
   request(request: DownloadSessionRequest, now: number): DownloadDecision {
+    const decision = this.decide(request, now);
+    const session = this.sessions.get(request.key);
+    if (decision.state === 'active' && session) noteStart(session, request.range);
+    return decision;
+  }
+
+  private decide(request: DownloadSessionRequest, now: number): DownloadDecision {
     const known = this.sessions.get(request.key);
     if (known?.state === 'active') return this.continueActive(known, now);
     if (this.draining) throw busy('Server is stopping; retry later', MIN_DOWNLOAD_CHECK_MS);
@@ -134,21 +150,26 @@ export class DownloadSessions {
     return this.queued(known, now);
   }
 
-  /** Bytes delivered for an active session; feeds the measured rate and its remaining size. */
+  /** Bytes streamed for an active session; feed the measured rate and its estimates. */
   progress(key: string, bytes: number, now: number) {
     const session = this.sessions.get(key);
-    if (session) session.served += bytes;
+    if (session?.state === 'active') session.pending += bytes;
     this.rate.add(bytes, now);
   }
 
-  /** A response ended; the download is complete once every byte was served and none is in flight. */
+  /**
+   * A response ended. The download is complete when the delivered ranges reach from where it
+   * started to the last byte and none is in flight: a tail read first (a ZIP directory) does not
+   * set the start, so it never completes a download alone.
+   */
   end(key: string, how: DownloadResponseEnd, now: number) {
     const session = this.sessions.get(key);
     if (session?.state !== 'active' || session.inFlight === 0) return;
     session.inFlight--;
-    if (how.finished && how.reachedEnd) session.sawEnd = true;
+    if (how.finished) session.coverage.add(how.range.start, how.range.end);
+    if (session.inFlight === 0) session.pending = 0;
     session.expiresAt = now + this.current.idleMs;
-    if (session.inFlight === 0 && session.sawEnd && session.served >= session.size) {
+    if (complete(session)) {
       this.counters.completed++;
       this.remove(session);
     }
@@ -183,7 +204,7 @@ export class DownloadSessions {
    * count as free. People may use the reserve, the others only the places outside it.
    */
   private markClaimants(order: Session[], now: number) {
-    const soon = this.finishingSoon(now);
+    const soon = finishingSoon([...this.sessions.values()], this.rate.capacity(now));
     const free = this.places.free(this.current);
     let all = 2 * (free.all + soon);
     let shared = 2 * (free.shared + soon);
@@ -262,8 +283,9 @@ export class DownloadSessions {
       queuedAt: resumed?.queuedAt ?? now,
       state: 'waiting',
       inFlight: 0,
-      served: resumed?.served ?? 0,
-      sawEnd: resumed?.sawEnd ?? false,
+      coverage: resumed?.coverage ?? new DownloadCoverage(),
+      from: resumed?.from,
+      pending: 0,
       startedAt: now,
       expiresAt: now,
       position: undefined,
@@ -275,13 +297,13 @@ export class DownloadSessions {
     this.owned.set(session.principal, owned + 1);
     this.places.wait(session);
     // A free place goes to it at once when nobody else waits, even beyond its principal's share;
-    // to a person when no other person waits, the reserve is theirs; and to a download that only
-    // paused, which keeps its turn.
+    // to a person when no other person waits, the reserve is theirs. A download that only paused
+    // keeps its arrival and so its turn, but waits in line like the others: it is not ahead of
+    // those that came before it.
     const alone =
       this.places.waiting === 1 ||
       (session.class === 'interactive' && this.places.waitingOf.interactive === 1);
-    if ((alone || resumed) && this.places.fits(session, this.current, !alone))
-      return this.admit(session, now);
+    if (alone && this.places.fits(session, this.current, false)) return this.admit(session, now);
     this.counters.queued++;
     return this.queued(session, now);
   }
@@ -358,35 +380,20 @@ export class DownloadSessions {
       if (session.state === 'waiting') this.counters.noShows++;
       else {
         this.counters.released++;
-        if (session.served < session.size) this.resumes.keep(session.key, session, now);
+        // Not complete, or `end` would have removed it.
+        this.resumes.keep(session.key, session, now);
       }
       this.remove(session);
     }
   }
 
-  /** Sessions streaming now that will have sent their last byte within HANDOVER_MS. */
-  private finishingSoon(now: number) {
-    let streaming = 0;
-    for (const session of this.sessions.values()) if (session.inFlight > 0) streaming++;
-    const perSession = this.rate.capacity(now) / Math.max(1, streaming);
-    if (perSession === 0) return 0;
-    let soon = 0;
-    for (const session of this.sessions.values())
-      if (
-        session.inFlight > 0 &&
-        (session.size - session.served) / perSession <= HANDOVER_MS / 1000
-      )
-        soon++;
-    return soon;
-  }
-
   private estimate(order: Session[], now: number) {
-    const remaining: number[] = [];
+    const left: number[] = [];
     for (const session of this.sessions.values())
-      if (session.state === 'active') remaining.push(Math.max(0, session.size - session.served));
+      if (session.state === 'active') left.push(remaining(session));
     const starts = estimateDownloadStarts(
-      remaining,
-      order.map((session) => Math.max(0, session.size - session.served)),
+      left,
+      order.map(remaining),
       this.current.slots - this.current.interactiveReserve,
       this.rate.capacity(now),
     );
@@ -412,6 +419,39 @@ export class DownloadSessions {
     if (owned === 0) this.owned.delete(session.principal);
     else this.owned.set(session.principal, owned);
   }
+}
+
+/**
+ * Where an admitted response says the download starts: its offset, unless it reads the tail
+ * without saying so (a suffix or bounded range ending at the last byte, see the range).
+ */
+function noteStart(session: Session, asked: DownloadByteRange | undefined) {
+  const range = asked ?? { start: 0, end: session.size - 1, open: true };
+  if (range.open || range.start === 0 || range.end < session.size - 1)
+    session.from = Math.min(session.from ?? range.start, range.start);
+}
+
+/** Sessions streaming now that will have sent their last byte within HANDOVER_MS. */
+function finishingSoon(sessions: readonly Session[], bytesPerSecond: number) {
+  const streaming = sessions.filter((session) => session.inFlight > 0);
+  const perSession = bytesPerSecond / Math.max(1, streaming.length);
+  if (perSession === 0) return 0;
+  return streaming.filter((session) => remaining(session) / perSession <= HANDOVER_MS / 1000)
+    .length;
+}
+
+/** Delivered from where it started to the last byte, with no response in flight. */
+function complete(session: Session) {
+  const from = session.from;
+  return (
+    session.inFlight === 0 && from !== undefined && session.coverage.covers(from, session.size - 1)
+  );
+}
+
+/** Bytes still to deliver, estimated: streamed bytes count before their response ends. */
+function remaining(session: Session) {
+  const from = session.from ?? 0;
+  return Math.max(0, session.size - from - session.coverage.bytesFrom(from) - session.pending);
 }
 
 function classIndex(name: DownloadClass) {

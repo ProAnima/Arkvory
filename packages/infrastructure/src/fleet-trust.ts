@@ -1,6 +1,6 @@
 import { createHash, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
 import type { Pool } from 'pg';
-import { ArkvoryError, type Principal } from '@proanima/arkvory-domain';
+import { isFleetName, ArkvoryError, type Principal } from '@proanima/arkvory-domain';
 
 /** Pairing codes live ten minutes and are shown once. */
 const CODE_MS = 10 * 60 * 1000;
@@ -10,7 +10,7 @@ export const FLEET_KEY_PREFIX = 'afk_';
 
 const digest = (value: string) => createHash('sha256').update(value).digest();
 
-/** `XXXX-XXXX-XXXX`: 60 random bits; with a ten-minute life and throttled enrollment, enough. */
+/** `XXXX-XXXX-XXXX`: 60 random bits; with a ten-minute life and single-use enrollment, enough. */
 function pairingCode(): string {
   const bytes = randomBytes(12);
   const letters = Array.from(bytes, (byte) => ALPHABET[byte % 32] ?? '0').join('');
@@ -51,8 +51,11 @@ export class PostgresFleetTrust {
     if (typeof code !== 'string' || normal(code).length !== 12)
       throw new ArkvoryError('invalid_input', 'Invalid pairing code');
     const trimmed = typeof name === 'string' ? name.trim() : '';
-    if (!trimmed || trimmed.length > 63 || Array.from(trimmed).some((c) => c.charCodeAt(0) < 32))
-      throw new ArkvoryError('invalid_input', 'Controller name must have 1 to 63 characters');
+    if (!isFleetName(trimmed))
+      throw new ArkvoryError(
+        'invalid_input',
+        'Controller name must have 1 to 63 characters without control codes',
+      );
     const used = await this.pool.query<{ created_by: string }>(
       'DELETE FROM arkvory_fleet_pairings WHERE code_sha256 = $1 AND expires_at >= now() RETURNING created_by',
       [digest(normal(code))],
@@ -101,8 +104,9 @@ export class PostgresFleetTrust {
   }
 
   /**
-   * Repositories that hold anything: the distinct names of the catalog journal, read by skipping
-   * along its index (one lookup per repository, not a scan of the journal). At most 1000.
+   * Repositories of the site: those that hold anything (the distinct names of the catalog
+   * journal, read by skipping along its index: one lookup per repository, not a scan) and those
+   * granted to a group, so an empty repository is readable too. At most 1000, by name.
    */
   private async repositories(): Promise<readonly string[]> {
     const rows = await this.pool.query<{ repository: string }>(
@@ -112,7 +116,10 @@ export class PostgresFleetTrust {
          SELECT (SELECT min(repository) FROM arkvory_audit WHERE repository > names.repository)
          FROM names WHERE names.repository IS NOT NULL
        )
-       SELECT repository FROM names WHERE repository IS NOT NULL LIMIT 1000`,
+       SELECT repository FROM names WHERE repository IS NOT NULL
+       UNION
+       SELECT repository FROM arkvory_group_grants
+       ORDER BY repository LIMIT 1000`,
     );
     return rows.rows.map((row) => row.repository);
   }

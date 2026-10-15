@@ -11,6 +11,13 @@ import type { MetricsRegistry } from '@proanima/arkvory-infrastructure';
 const TTL_MS = 5000;
 /** The background read of sites (ADR 0077): every 30 seconds. */
 const POLL_MS = 30000;
+/**
+ * One round reads at most this many sites at once (FleetControl's CONCURRENCY), each within this
+ * deadline (the fleet client's DEADLINE_MS): the longest a round of N sites takes is
+ * ceil(N / 8) × 15 s, which a site that answers may wait for its next read without being stale.
+ */
+const ROUND_CONCURRENCY = 8;
+const ROUND_DEADLINE_MS = 15000;
 
 export interface FleetOverviewOptions {
   readonly name: string;
@@ -22,9 +29,11 @@ export interface FleetOverviewOptions {
   readonly now: () => number;
 }
 
-/** What the controller last read of a site; a site that does not answer reports nothing new. */
+/**
+ * What the controller last read of a site, kept while it does not answer: links and lag show it
+ * as last known, and the alert rules read it only from a site that answers.
+ */
 function health(site: FleetSite): HealthSite {
-  const report = site.state === 'ok' ? site.topology : null;
   return {
     id: site.id,
     name: site.name,
@@ -32,7 +41,7 @@ function health(site: FleetSite): HealthSite {
     state: site.state,
     addedAt: Date.parse(site.addedAt),
     seenAt: site.seenAt === null ? null : Date.parse(site.seenAt),
-    report: report && reportOf(report),
+    report: site.topology && reportOf(site.topology),
   };
 }
 
@@ -126,17 +135,18 @@ export class FleetOverviewSource {
         seenAt: now,
         report: reportOf(own),
       },
-      ...stored.map((value) => {
+      ...stored.map((value, index) => {
         try {
           return health(readFleetSite(value));
         } catch {
-          return unread(value, now);
+          return unread(value, index, now);
         }
       }),
     ];
     const alerts = fleetAlerts(sites, {
       now,
       pollMs: POLL_MS,
+      roundMs: Math.ceil(stored.length / ROUND_CONCURRENCY) * ROUND_DEADLINE_MS,
       lagLimit: this.options.lagLimit,
       version: this.options.version,
     });
@@ -181,17 +191,24 @@ export class FleetOverviewSource {
       labels: ['site', 'repository'],
       collect: () =>
         (this.reading?.sites ?? []).flatMap((site) =>
-          (site.report?.mirrors ?? []).flatMap((mirror) =>
-            mirror.lagChanges === null
-              ? []
-              : [
-                  {
-                    labels: { site: site.id, repository: mirror.repository },
-                    value: Number(mirror.lagChanges),
-                  },
-                ],
-          ),
+          (site.report?.mirrors ?? []).flatMap((mirror) => {
+            // At most 30 digits by contract; a value that still is no finite number is left out.
+            const value = mirror.lagChanges === null ? NaN : Number(mirror.lagChanges);
+            return Number.isFinite(value)
+              ? [{ labels: { site: site.id, repository: mirror.repository }, value }]
+              : [];
+          }),
         ),
+    });
+    registry.sampled({
+      name: 'arkvory_fleet_mirror_lag_alert_changes',
+      help: 'Changes behind at which a mirror alerts (ARKVORY_FLEET_LAG_ALERT); alert rules compare with it.',
+      type: 'gauge',
+      labels: [],
+      collect: () => {
+        const value = Number(this.options.lagLimit);
+        return Number.isFinite(value) ? [{ labels: {}, value }] : [];
+      },
     });
     registry.sampled({
       name: 'arkvory_fleet_alerts',
@@ -214,13 +231,16 @@ export class FleetOverviewSource {
   }
 }
 
-/** A stored site that does not read as the contract says: its id and name, and nothing read. */
-function unread(value: unknown, now: number): HealthSite {
+/**
+ * A stored site that does not read as the contract says: its id and name, and nothing read.
+ * Without an id of its own it gets `unknown:<position>`, so two such rows never share a series.
+ */
+function unread(value: unknown, index: number, now: number): HealthSite {
   const row = typeof value === 'object' && value !== null ? value : {};
   const id: unknown = Reflect.get(row, 'id');
   const name: unknown = Reflect.get(row, 'name');
   return {
-    id: typeof id === 'string' ? id : 'unknown',
+    id: typeof id === 'string' && id !== '' ? id : `unknown:${String(index)}`,
     name: typeof name === 'string' ? name : 'unknown',
     url: null,
     state: 'invalid',

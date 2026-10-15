@@ -1,10 +1,13 @@
+import type { DownloadCoverage } from './download-coverage.js';
+
 /** What a download that lost its place keeps for its return. */
 export interface DownloadResume {
   readonly seq: number;
   readonly arrival: number;
   readonly queuedAt: number;
-  readonly served: number;
-  readonly sawEnd: boolean;
+  /** Owned by the entry once kept: the session that kept it is gone. */
+  readonly coverage: DownloadCoverage;
+  readonly from: number | undefined;
 }
 
 /** How long a half-finished download keeps its turn after its place was freed. */
@@ -12,8 +15,8 @@ const KEEP_MS = 10 * 60 * 1000;
 
 /**
  * Half-finished downloads whose place was freed by a pause (slow disk, network blip, client
- * restart). A return within ten minutes keeps its arrival order, so 9 GB of 10 GB do not go to
- * the end of the queue. Bounded: the oldest entries go first when `limit` is reached.
+ * restart). A return within ten minutes keeps its arrival order and its delivered ranges, so
+ * 9 GB of 10 GB do not go to the end of the queue. Bounded: the oldest entries go first when `limit` is reached.
  */
 export class DownloadResumes {
   private readonly kept = new Map<string, DownloadResume & { readonly until: number }>();

@@ -1,4 +1,4 @@
-import { ArkvoryError } from '@proanima/arkvory-domain';
+import { ArkvoryError, isFleetName } from '@proanima/arkvory-domain';
 
 /** A site as the controller keeps it (ADR 0077); `sealedKey` never leaves this layer. */
 export interface FleetSiteRecord {
@@ -88,6 +88,8 @@ const failureState = (error: unknown): FleetObservation['state'] => {
 
 /** Sites polled at once: a slow site must not hold the others. */
 const CONCURRENCY = 8;
+/** What the registry keeps of a site's topology (its column's limit). */
+const TOPOLOGY_LIMIT = 262144;
 /** Reads and changes passed to sites at once: per site and in all. */
 const PER_SITE = 4;
 const IN_FLIGHT = 16;
@@ -172,7 +174,11 @@ export class FleetControl {
     await this.sites.remove(id);
   }
 
-  /** Reads one site now and records the outcome; never throws for the site's failure. */
+  /**
+   * Reads one site now and records the outcome; never throws for the site's failure. A topology
+   * that cannot be stored (larger than the registry keeps, or with characters a JSON column
+   * refuses) is recorded as `invalid`, never left as the last good state.
+   */
   async poll(id: string, actor = 'fleet') {
     const site = await this.sites.get(id);
     if (!site) throw new ArkvoryError('not_found', 'Site not found');
@@ -180,6 +186,9 @@ export class FleetControl {
     try {
       const key = this.sealer().open(site.id, site.sealedKey);
       const topology = await this.client.topology(site, key, actor);
+      const text = JSON.stringify(topology);
+      if (text.length > TOPOLOGY_LIMIT || text.includes('\\u0000'))
+        throw Object.assign(new Error('Topology cannot be stored'), { code: 'invalid' });
       const name = siteName(topology);
       observation = { state: 'ok', error: null, topology, ...(name ? { name } : {}) };
     } catch (error) {
@@ -257,13 +266,23 @@ export class FleetControl {
     }
   }
 
-  /** Reads every site, at most CONCURRENCY at once. */
+  /**
+   * Reads every site, at most CONCURRENCY at once. One site's failure to be recorded (a removed
+   * site, a database hiccup) neither ends the round early nor lets the next one overlap it: the
+   * round finishes, then reports the first failure.
+   */
   async pollAll() {
     const queue = [...(await this.sites.list())];
+    const failures: unknown[] = [];
     const workers = Array.from({ length: Math.min(CONCURRENCY, queue.length) }, async () => {
-      for (let site = queue.shift(); site; site = queue.shift()) await this.poll(site.id);
+      for (let site = queue.shift(); site; site = queue.shift())
+        await this.poll(site.id).catch((error: unknown) => {
+          // Removed by an administrator during the round: nothing left to record.
+          if (!(error instanceof ArkvoryError && error.code === 'not_found')) failures.push(error);
+        });
     });
     await Promise.all(workers);
+    if (failures.length) throw failures[0];
   }
 
   private origin(url: unknown) {
@@ -293,12 +312,12 @@ export class FleetControl {
   }
 }
 
+/** The name a site reports of itself, when it is one the registry can keep. */
 function siteName(topology: unknown): string | undefined {
   if (!topology || typeof topology !== 'object' || !('site' in topology)) return undefined;
   const site = topology.site;
-  return site && typeof site === 'object' && 'name' in site && typeof site.name === 'string'
-    ? site.name
-    : undefined;
+  const name = site && typeof site === 'object' && 'name' in site ? site.name : undefined;
+  return isFleetName(name) ? name : undefined;
 }
 
 /** What the console sees of a site: no key, no certificate body. */

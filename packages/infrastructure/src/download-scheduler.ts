@@ -1,5 +1,6 @@
 import {
   DownloadSessions,
+  type DownloadByteRange,
   type DownloadDecision,
   type DownloadResponseEnd,
   type DownloadSchedulePolicy,
@@ -7,10 +8,13 @@ import {
 } from '@proanima/arkvory-domain';
 import type { DownloadTickets } from './download-tickets.js';
 
-/** One response of an active session; `end` is idempotent. */
+/**
+ * One response of an active session; `end` is idempotent. `finished`: the whole range asked for
+ * was sent; only then do its bytes count for the download's completion.
+ */
 export interface DownloadLease {
   progress(bytes: number): void;
-  end(how: DownloadResponseEnd): void;
+  end(how: Omit<DownloadResponseEnd, 'range'>): void;
 }
 /** `ticket`: the queue ticket the client should send back, when tickets are on. */
 export type DownloadAdmission = (
@@ -83,10 +87,16 @@ export class DownloadScheduler {
         : { ...session, arrivedAt: this.now() - (this.wall() - arrivedAt) },
       this.now(),
     );
-    const admission = decision.state === 'active' ? this.lease(session.key) : decision;
+    const range = session.range ?? { start: 0, end: session.size - 1, open: true };
+    const admission = decision.state === 'active' ? this.lease(session.key, range) : decision;
     const arrival = this.sessions.arrivalOf(session.key);
+    // Re-issued on every answer with the same arrival: a ticket is accepted only shortly after
+    // its issue, so a client waiting for days keeps its turn through the fresh ones.
     return this.tickets && arrival !== undefined
-      ? { ...admission, ticket: this.tickets.issue(session.key, this.wallClock(arrival)) }
+      ? {
+          ...admission,
+          ticket: this.tickets.issue(session.key, this.wallClock(arrival), this.wall()),
+        }
       : admission;
   }
 
@@ -167,7 +177,7 @@ export class DownloadScheduler {
     for (const wake of [...this.ticks]) wake();
   }
 
-  private lease(key: string): DownloadAdmission {
+  private lease(key: string, range: DownloadByteRange): DownloadAdmission {
     let ended = false;
     return {
       state: 'active',
@@ -178,7 +188,7 @@ export class DownloadScheduler {
         end: (how) => {
           if (ended) return;
           ended = true;
-          this.sessions.end(key, how, this.now());
+          this.sessions.end(key, { finished: how.finished, range }, this.now());
         },
       },
     };

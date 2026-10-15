@@ -6,7 +6,7 @@ import { feedback, showFailure } from './feedback.js';
 import type { MessageKey } from './messages.js';
 import { MirrorChanges } from './fleet-mirror-changes.js';
 import { ClusterChanges } from './fleet-cluster-changes.js';
-import type { Submit } from './fleet-agent-port.js';
+import type { Send, Submit } from './fleet-agent-port.js';
 
 /** The agent mailbox of a site: this installation's or a managed site's through it. */
 export interface ChangesPort {
@@ -36,6 +36,7 @@ const errors: Record<SiteChangeError, MessageKey> = {
   switchover_failed: 'fleetErrorSwitchover',
   single_copy_failed: 'fleetErrorSingleCopy',
   unreadable: 'fleetErrorUnreadable',
+  digest_mismatch: 'fleetErrorDigest',
 };
 const states: Record<SiteChanges['recent'][number]['state'], MessageKey> = {
   pending: 'fleetChangePending',
@@ -65,9 +66,12 @@ export class AgentPanel {
   private target: AgentTarget | null = null;
   private generation = 0;
   private timer: ReturnType<typeof setTimeout> | undefined;
+  /** The next look the follower owes, kept while the page is not shown. */
+  private next: { readonly generation: number; readonly topology: boolean } | null = null;
 
-  constructor() {
-    const submit: Submit = (change, key) => this.submit(change, key);
+  /** `visible`: whether the panel is on screen; a hidden panel stops following the agent. */
+  constructor(private readonly visible: () => boolean) {
+    const submit: Submit = () => this.bind();
     this.mirrors = new MirrorChanges(submit);
     this.cluster = new ClusterChanges(submit);
   }
@@ -78,9 +82,22 @@ export class AgentPanel {
     await this.refresh(this.generation, true);
   }
 
+  /** Leaving the page stops following; the look it owes waits for resume(). */
+  pause() {
+    clearTimeout(this.timer);
+  }
+
+  /** Back on the page: catch up at once on what the follower missed. */
+  resume() {
+    const next = this.next;
+    if (next && next.generation === this.generation && this.visible())
+      void this.refresh(next.generation, next.topology);
+  }
+
   clear() {
     this.generation++;
     clearTimeout(this.timer);
+    this.next = null;
     this.target = null;
     this.rows.replaceChildren();
     this.status.hidden = true;
@@ -90,10 +107,25 @@ export class AgentPanel {
       element(id, HTMLElement).hidden = true;
   }
 
-  private async submit(change: SiteChange, key?: string): Promise<boolean> {
+  /**
+   * The site shown now, captured before a confirmation dialog: a change confirmed after the
+   * panel moved to another site (or closed) is dropped, never sent to the new one.
+   */
+  private bind(): Send {
     const target = this.target;
-    if (!target) return false;
     const generation = this.generation;
+    return (change, key) =>
+      target && generation === this.generation && target === this.target
+        ? this.submit(target, generation, change, key)
+        : Promise.resolve(false);
+  }
+
+  private async submit(
+    target: AgentTarget,
+    generation: number,
+    change: SiteChange,
+    key?: string,
+  ): Promise<boolean> {
     try {
       await target.changes.request({
         id: crypto.randomUUID(),
@@ -119,6 +151,7 @@ export class AgentPanel {
     if (!target || generation !== this.generation) return;
     // One follower at a time: a submit while following replaces the timer, never adds one.
     clearTimeout(this.timer);
+    this.next = null;
     try {
       const [changes, state] = await Promise.all([
         target.changes.status(),
@@ -139,16 +172,24 @@ export class AgentPanel {
       const busy =
         changes.agent &&
         (changes.pending !== null || changes.recent.some((item) => item.state === 'applying'));
-      if (busy || !topology) {
-        // Cleared right before arming: two refreshes in flight still leave one follower.
-        clearTimeout(this.timer);
-        this.timer = setTimeout(() => void this.refresh(generation, !busy), FOLLOW_MS);
-      }
+      if (busy || !topology) this.arm(generation, !busy);
     } catch (error) {
       if (generation !== this.generation) return;
       this.status.hidden = false;
       showFailure(this.status, error);
     }
+  }
+
+  /**
+   * Cleared right before arming: two refreshes in flight still leave one follower. A timer that
+   * fires while the page is not shown keeps its look owed (`next`) instead of reading the site.
+   */
+  private arm(generation: number, topology: boolean) {
+    clearTimeout(this.timer);
+    this.next = { generation, topology };
+    this.timer = setTimeout(() => {
+      if (this.visible()) void this.refresh(generation, topology);
+    }, FOLLOW_MS);
   }
 
   private render(changes: SiteChanges) {

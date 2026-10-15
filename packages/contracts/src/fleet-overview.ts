@@ -35,6 +35,11 @@ export interface FleetOverviewLink {
   readonly mode: 'mirror' | 'import';
   readonly lagChanges: string | null;
   readonly failing: boolean;
+  /**
+   * The mirror's site did not answer its last read: the link is as it last reported. Optional on
+   * the wire (added after F4); an older controller that does not send it means false.
+   */
+  readonly stale: boolean;
 }
 /** The fleet at a glance (ADR 0077, stage F4): what needs attention and who feeds whom. */
 export interface FleetOverview {
@@ -54,6 +59,15 @@ const object = (properties: Record<string, unknown>) => ({
 const nullable = (schema: Record<string, unknown>) => ({ ...schema, nullable: true });
 const string = { type: 'string' };
 const time = { type: 'string', format: 'date-time' };
+const linkProperties = {
+  from: string,
+  to: string,
+  repository: string,
+  sourceRepository: string,
+  mode: { type: 'string', enum: ['mirror', 'import'] },
+  lagChanges: nullable({ type: 'string', pattern: '^(0|[1-9][0-9]*)$' }),
+  failing: { type: 'boolean' },
+};
 export const fleetOverviewSchema = object({
   generatedAt: time,
   self: object({ name: string, version: string, url: nullable(string) }),
@@ -70,15 +84,11 @@ export const fleetOverviewSchema = object({
   },
   links: {
     type: 'array',
-    items: object({
-      from: string,
-      to: string,
-      repository: string,
-      sourceRepository: string,
-      mode: { type: 'string', enum: ['mirror', 'import'] },
-      lagChanges: nullable({ type: 'string', pattern: '^(0|[1-9][0-9]*)$' }),
-      failing: { type: 'boolean' },
-    }),
+    // `stale` is not required: added after F4, readers take its absence as false.
+    items: {
+      ...object(linkProperties),
+      properties: { ...linkProperties, stale: { type: 'boolean' } },
+    },
   },
   external: { type: 'array', items: string },
 });
@@ -128,6 +138,7 @@ export function readFleetOverview(value: unknown): FleetOverview {
         mode: oneOf(link['mode'], ['mirror', 'import'] as const),
         lagChanges: optional(link['lagChanges']),
         failing: flag(link['failing']),
+        stale: link['stale'] === undefined ? false : flag(link['stale']),
       };
     }),
     external: items(row['external']).map(text),

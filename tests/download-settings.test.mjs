@@ -209,3 +209,25 @@ test('conflicts and refusals leave the queue as it runs; gateways keep shared ad
   assert.match(seen.problem, /read gateway/);
   await assert.rejects(reader.change(1, {}, { id: 'admin', actor: null }), { code: 'read_only' });
 });
+
+test('with gateways a writer keeps shared admission even for a record that asks for sessions', async () => {
+  const store = memoryStore();
+  // Saved before the gateways were added, or by a writer that did not know of them.
+  store.replace({ strategy: 'smallest-first', sessions: 6 });
+  const queue = target();
+  const shared = { ...base, strategy: 'shared' };
+  const control = new DownloadSettingsControl(store, shared, queue, {
+    applies: true,
+    gateways: true,
+  });
+  await control.sync();
+  assert.equal(queue.applied.at(-1).strategy, 'shared');
+  assert.equal(queue.applied.at(-1), shared, 'the environment runs');
+  const view = await control.view();
+  assert.equal(view.admission, 'per-request');
+  assert.match(view.problem, /strategy stays shared/);
+  // Without gateways the same record runs.
+  const alone = target();
+  await new DownloadSettingsControl(store, base, alone).sync();
+  assert.equal(alone.applied.at(-1).strategy, 'smallest-first');
+});

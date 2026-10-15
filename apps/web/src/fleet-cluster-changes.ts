@@ -40,7 +40,10 @@ export class ClusterChanges {
     });
     // Only a node holding a complete copy can take over without losing a write.
     const targets = (replication.peers ?? []).filter((peer) => peer.complete && !peer.witness);
+    // A refresh while following the agent keeps the node the administrator picked.
+    const chosen = this.node.value;
     this.node.replaceChildren(...targets.map((peer) => new Option(peer.name, peer.name)));
+    if (targets.some((peer) => peer.name === chosen)) this.node.value = chosen;
     element('fleet-switchover-form', HTMLFormElement).hidden = targets.length === 0;
   }
 
@@ -56,24 +59,27 @@ export class ClusterChanges {
     feedback(this.status, key, {}, 'error');
   }
 
+  // Each action binds its send to the site shown before asking: a dialog outlives a site switch.
   private async switchover() {
+    const send = this.submit();
     const node = this.node.value;
     if (!node || this.confirm.value.trim() !== node) {
       this.refuse('fleetSwitchoverTyped');
       return;
     }
     if (!(await confirmAction('fleetSwitchoverAsk', { node }, 'fleetSwitchover'))) return;
-    if (await this.submit({ kind: 'cluster-switchover', node, confirm: node }))
-      this.confirm.value = '';
+    if (await send({ kind: 'cluster-switchover', node, confirm: node })) this.confirm.value = '';
   }
 
   /** In a cluster still short of copies this stops writes again: asked first. */
   private async withdraw() {
+    const send = this.submit();
     if (!(await confirmAction('fleetSingleOffAsk', {}, 'fleetSingleOff'))) return;
-    await this.submit({ kind: 'single-copy', until: null, reason: 'withdrawn' });
+    await send({ kind: 'single-copy', until: null, reason: 'withdrawn' });
   }
 
   private async singleCopy() {
+    const send = this.submit();
     const local = element('fleet-single-until', HTMLInputElement).value;
     const reason = element('fleet-single-reason', HTMLInputElement).value.trim();
     // The field has no zone: it is this browser's time, sent as UTC.
@@ -84,6 +90,6 @@ export class ClusterChanges {
     }
     const iso = until.toISOString();
     if (!(await confirmAction('fleetSingleAsk', { until: iso }, 'fleetSingleOn'))) return;
-    await this.submit({ kind: 'single-copy', until: iso, reason });
+    await send({ kind: 'single-copy', until: iso, reason });
   }
 }

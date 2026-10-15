@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readdir } from 'node:fs/promises';
 import { randomBytes } from 'node:crypto';
 import { mkdtemp, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -35,6 +36,8 @@ test('the seal key is made once on first use, also by two processes at once', as
   const box = first.seal('site', 'afk_secret');
   assert.equal(second.open('site', box), 'afk_secret', 'both processes hold the same key');
   assert.equal((await FleetSeal.loadOrCreate(path)).open('site', box), 'afk_secret');
+  // Written through a temporary name and linked: nothing half-written or left behind.
+  assert.deepEqual(await readdir(directory), ['fleet.key']);
 });
 
 test('a site address is an HTTPS origin, or HTTP on loopback only', () => {

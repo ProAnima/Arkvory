@@ -14,6 +14,8 @@ test('the documentation workflow publishes main only, from a checked build, with
     [(w) => (w.jobs.build.permissions = { pages: 'write' }), /may not elevate/],
     [(w) => (w.jobs.deploy.permissions.contents = 'write'), /exactly pages:write/],
     [(w) => delete w.jobs.build.if, /build: trusted main/],
+    // Publishing waits for the owner's switch, not for the next push.
+    [(w) => (w.jobs.deploy.if = "github.ref == 'refs/heads/main'"), /deploy: trusted main/],
     [(w) => (w.jobs.deploy.needs = []), /publishes only what the build made/],
     [(w) => w.jobs.deploy.steps.unshift({ run: 'npm ci' }), /runs nothing but the deploy/],
     [

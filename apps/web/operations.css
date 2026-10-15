@@ -198,14 +198,16 @@ body:has(#cluster-panel:not([hidden])) #replication-open {
   font-size: var(--text-sm);
 }
 .fleet-map-node rect {
+  rx: var(--fleet-map-radius);
   fill: var(--color-subtle);
   stroke: var(--color-border);
 }
 .fleet-map-node text {
+  dominant-baseline: central;
   fill: var(--color-text);
 }
-.fleet-map-node[data-state='external'] rect {
-  stroke-dasharray: 4 3;
+.fleet-map-node:is([data-state='external'], [data-state='unknown']) rect {
+  stroke-dasharray: var(--dash-external);
 }
 .fleet-map-node[data-severity='warning'] rect {
   fill: var(--color-warning-bg);
@@ -221,11 +223,24 @@ body:has(#cluster-panel:not([hidden])) #replication-open {
 }
 .fleet-map-link.failing path {
   stroke: var(--color-error);
-  stroke-dasharray: 6 4;
+  stroke-dasharray: var(--dash-failing);
+}
+/* Last known: the mirror's site did not answer its last read. */
+.fleet-map-link.stale path {
+  stroke: var(--color-border-strong);
+  stroke-dasharray: var(--dash-stale);
+}
+.fleet-map-link.failing.stale path {
+  stroke: var(--color-error);
 }
 .fleet-map-link text {
   fill: var(--color-muted);
 }
 .fleet-map-arrowhead {
   fill: var(--color-muted);
+}
+.fleet-inline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
 }

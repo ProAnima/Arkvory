@@ -1,3 +1,4 @@
+import { isFleetName } from '@proanima/arkvory-domain';
 import type {
   FleetEndpointView,
   FleetSiteClient,
@@ -46,7 +47,7 @@ export class HttpFleetSiteClient implements FleetSiteClient {
       typeof key !== 'string' ||
       !/^afk_[A-Za-z0-9_-]{43}$/.test(key) ||
       typeof name !== 'string' ||
-      !/^[\x20-\x7e]{1,63}$/.test(name) ||
+      !isFleetName(name) ||
       typeof version !== 'string' ||
       !/^[0-9A-Za-z.+-]{1,64}$/.test(version)
     )

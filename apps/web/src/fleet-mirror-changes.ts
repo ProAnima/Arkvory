@@ -64,13 +64,14 @@ export class MirrorChanges {
       element('fleet-mirror-key', HTMLInputElement).focus();
     });
     const detach = this.button('fleetMirrorDetach', async () => {
+      // Bound before the dialog: a confirmation outlives a switch to another site.
+      const send = this.submit();
       const confirmed = await confirmAction(
         'fleetMirrorDetachConfirm',
         { repository: mirror.repository },
         'fleetMirrorDetach',
       );
-      if (confirmed)
-        await this.submit({ kind: 'mirror-detach', repositories: [mirror.repository] });
+      if (confirmed) await send({ kind: 'mirror-detach', repositories: [mirror.repository] });
     });
     buttons.append(key, detach);
     actions.append(buttons);
@@ -88,12 +89,16 @@ export class MirrorChanges {
       error.textContent = mirror.errorCode;
       phase.append(error);
     }
-    row.append(
-      cell(mirror.repository),
-      cell(`${mirror.upstream} / ${mirror.sourceRepository}`),
-      phase,
-      actions,
-    );
+    // The source address and its repository, each in its own line: data, not a composed text.
+    const source = document.createElement('td');
+    const upstream = document.createElement('div');
+    upstream.className = 'fleet-url';
+    upstream.textContent = mirror.upstream;
+    const sourceRepository = document.createElement('div');
+    sourceRepository.className = 'hint';
+    sourceRepository.textContent = mirror.sourceRepository;
+    source.append(upstream, sourceRepository);
+    row.append(cell(mirror.repository), source, phase, actions);
     return row;
   }
 
@@ -107,6 +112,7 @@ export class MirrorChanges {
   }
 
   private async attach() {
+    const send = this.submit();
     const value = (id: string) => element(id, HTMLInputElement).value.trim();
     const stages = value('fleet-mirror-stages');
     const key = element('fleet-mirror-new-key', HTMLInputElement);
@@ -127,15 +133,16 @@ export class MirrorChanges {
     const secret = key.value.trim();
     // The key leaves the page with this request and is not kept in the form.
     key.value = '';
-    if (await this.submit(change, secret)) this.form.reset();
+    if (await send(change, secret)) this.form.reset();
   }
 
   private async replaceKey() {
+    const send = this.submit();
     const input = element('fleet-mirror-key', HTMLInputElement);
     const secret = input.value.trim();
     input.value = '';
     if (this.keyFor === null) return;
-    if (await this.submit({ kind: 'mirror-key', repository: this.keyFor }, secret)) this.closeKey();
+    if (await send({ kind: 'mirror-key', repository: this.keyFor }, secret)) this.closeKey();
   }
 
   private closeKey() {

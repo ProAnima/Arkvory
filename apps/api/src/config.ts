@@ -5,6 +5,8 @@ import { hostname } from 'node:os';
 import {
   ArkvoryError,
   MAX_OBJECT_BYTES,
+  isControl,
+  isFleetName,
   siteOrigin,
   type DownloadSchedulePolicy,
 } from '@proanima/arkvory-domain';
@@ -269,19 +271,28 @@ export async function loadConfig(env: NodeJS.ProcessEnv): Promise<ServerConfig> 
   };
 }
 
-/** 1 to 63 printable characters without control codes; the host name when unset. */
+/**
+ * 1 to 63 characters without control codes, any script. When unset, the host name cut to fit:
+ * a long host name must not stop a server that never asked for a site name.
+ */
 function readSiteName(env: NodeJS.ProcessEnv): string {
-  const name = (env['ARKVORY_SITE_NAME'] ?? hostname()).trim();
-  if (!name || name.length > 63 || Array.from(name).some((c) => c.charCodeAt(0) < 32))
-    throw new Error('Invalid ARKVORY_SITE_NAME: 1 to 63 printable characters');
-  return name;
+  const set = env['ARKVORY_SITE_NAME']?.trim();
+  if (set === undefined || set === '') return siteNameOf(hostname()) || 'arkvory';
+  if (!isFleetName(set))
+    throw new Error('Invalid ARKVORY_SITE_NAME: 1 to 63 characters without control codes');
+  return set;
 }
 
 /** The fleet map and alerts of a controller; both optional, both checked at start. */
 function readFleetMap(env: NodeJS.ProcessEnv) {
-  const url = env['ARKVORY_SITE_URL'];
+  const url = env['ARKVORY_SITE_URL']?.trim() || undefined;
   const origin = url === undefined ? undefined : siteOrigin(url);
-  if (origin === null)
+  // HTTPS, or HTTP on this computer only: other sites reach a controller over pinned TLS.
+  if (
+    origin === null ||
+    (origin?.startsWith('http://') &&
+      !/^http:\/\/(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/.test(origin))
+  )
     throw new Error(
       'Invalid ARKVORY_SITE_URL: https://host[:port] where other sites reach this one',
     );
@@ -292,6 +303,15 @@ function readFleetMap(env: NodeJS.ProcessEnv) {
     ...(origin === undefined ? {} : { siteUrl: origin }),
     ...(lag === undefined ? {} : { fleetLagAlert: BigInt(lag) }),
   };
+}
+
+/** The host name made a fleet name: control codes dropped, cut to 63 code points. */
+function siteNameOf(value: string): string {
+  return Array.from(value)
+    .filter((character) => !isControl(character))
+    .slice(0, 63)
+    .join('')
+    .trim();
 }
 
 function readIdentityExposure(env: NodeJS.ProcessEnv) {

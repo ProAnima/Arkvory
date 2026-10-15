@@ -36,7 +36,14 @@ function simulate({ clients, bytesPerSecond, slots, step = 100, policy = {} }) {
   }));
   let now = 0;
   let idle = 0;
+  // Bounded ranges of 8 MiB, as the SDK reads.
+  const span = (person) => ({
+    start: person.offset,
+    end: Math.min(person.offset + 8 * MiB, person.size) - 1,
+    open: false,
+  });
   const ask = (person) => {
+    const range = span(person);
     const answer = sessions.request(
       {
         key: person.key,
@@ -44,13 +51,15 @@ function simulate({ clients, bytesPerSecond, slots, step = 100, policy = {} }) {
         class: person.class,
         size: person.size,
         queueAware: true,
+        range,
       },
       now,
     );
     if (answer.state === 'active') {
       person.started ??= now;
       person.reading = true;
-      person.range = Math.min(8 * MiB, person.size - person.offset);
+      person.asked = range;
+      person.range = range.end - range.start + 1;
       return;
     }
     person.polls++;
@@ -75,8 +84,10 @@ function simulate({ clients, bytesPerSecond, slots, step = 100, policy = {} }) {
         sessions.progress(person.key, bytes, now);
         if (person.range > 0) continue;
         person.reading = false;
+        // Shares are fractional; the range is whole once read.
+        person.offset = person.asked.end + 1;
         const done = person.offset >= person.size;
-        sessions.end(person.key, { finished: true, reachedEnd: done }, now);
+        sessions.end(person.key, { finished: true, range: person.asked }, now);
         if (done) person.finished = now;
         else ask(person);
       }

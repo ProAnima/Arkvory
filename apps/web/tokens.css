@@ -89,6 +89,24 @@
   /* A form of a few fields, such as pairing a site: wide enough for a fingerprint. */
   --form-width: 42rem;
   --fleet-map-height: 28rem;
+  /* The fleet map (SVG): a box per site, gaps between columns and rows, how links bend. The map
+     reads these as px or rem for its paths, so they stay plain lengths. */
+  --fleet-map-node-width: 11.5rem;
+  --fleet-map-node-height: 2.75rem;
+  --fleet-map-gap-x: 4.5rem;
+  --fleet-map-gap-y: 1.25rem;
+  --fleet-map-curve: 2.25rem;
+  --fleet-map-loop: 3.75rem;
+  --fleet-map-loop-reach: 3rem;
+  --fleet-map-padding: 0.5rem;
+  --fleet-map-label-inset: 0.75rem;
+  --fleet-map-lag-offset: 0.375rem;
+  --fleet-map-arrow: 0.5rem;
+  --fleet-map-radius: var(--radius-control);
+  /* Dash patterns: a source nobody here manages, a failing link, a link last known. */
+  --dash-external: 0.25rem 0.1875rem;
+  --dash-failing: 0.375rem 0.25rem;
+  --dash-stale: 0.125rem 0.25rem;
   --empty-icon-size: 2.5rem;
   --update-dialog-width: 36rem;
   --table-actions-width: 9rem;
