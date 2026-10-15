@@ -108,13 +108,17 @@ export class PostgresMirrorState implements MirrorStateStore {
    * followed again. Called by the worker that owns the storage before its mirrors start.
    */
   async reattach(repository: string, synchronizer: string): Promise<boolean> {
-    // One statement: a change committed after the check would otherwise slip in unseen. The
-    // journal and the mark share the database clock.
+    // The mark is written when the worker starts, after the API may already have taken writes,
+    // and journal times are transaction starts: neither bounds the changes made here. The
+    // journal order does. While mirrored only the synchronizer writes here, so any change of
+    // someone else after its first entry was made detached; without such an entry, any change
+    // at all counts (a refusal, never a mix). One statement: nothing slips in after the check.
     const cleared = await this.pool.query(
       `UPDATE arkvory_mirror_state s SET detached_at=NULL, updated_at=now()
        WHERE s.repository=$1 AND s.detached_at IS NOT NULL AND NOT EXISTS(
          SELECT 1 FROM arkvory_audit a
-         WHERE a.repository=$1 AND a.occurred_at >= s.detached_at AND a.actor <> $2)`,
+         WHERE a.repository=$1 AND a.actor <> $2 AND a.sequence > COALESCE(
+           (SELECT min(m.sequence) FROM arkvory_audit m WHERE m.repository=$1 AND m.actor=$2), 0))`,
       [repository, synchronizer],
     );
     return cleared.rowCount === 1;

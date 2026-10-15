@@ -417,3 +417,18 @@ test('a detach nobody acted on is undone; one with changes of its own here is fi
     (error) => error instanceof MirrorFailure && error.code === 'mirror_detached',
   );
 });
+
+test('a detached mirror is never picked up again by another source', async () => {
+  const st = states();
+  await settle(mirror(source({ artifacts: ['a'], head: '1' }), target(), st));
+  // Detached, nothing changed here since, then configured against another upstream.
+  st.rows.set('releases', { ...st.rows.get('releases'), detachedAt: '2026-10-12T10:00:00.000Z' });
+  const other = source({ artifacts: ['b'], head: '7' });
+  await assert.rejects(
+    mirror(other, target(), st, 'https://b|releases').step(never),
+    (error) => error instanceof MirrorFailure && error.code === 'mirror_detached',
+  );
+  const state = st.rows.get('releases');
+  assert.equal(state.detachedAt, '2026-10-12T10:00:00.000Z', 'the mark stays');
+  assert.equal(state.source, 'https://a|releases');
+});

@@ -26,10 +26,21 @@ export async function exerciseMirror(browser, f) {
     const page = await context.newPage();
     const errors = [];
     page.on('pageerror', (error) => errors.push(error.message));
+    // Time flows as usual; a refresh is brought forward instead of waited for.
+    await page.clock.install();
+    // The badge's first read fails: it is read again, and the mirror is marked after all.
+    const failed = { status: 500, json: { code: 'internal', message: 'Internal error' } };
+    await page.route('**/repositories/releases/mirror', (route) => route.fulfill(failed), {
+      times: 1,
+    });
+    const firstRead = page.waitForResponse('**/repositories/releases/mirror');
     await page.goto(`${origin}/console/`);
     await chooseLanguage(page, 'en');
     await connectWithKey(page, f.headers.authorization.slice(7));
     const badge = page.locator('#mirror-badge');
+    await firstRead;
+    assert.equal(await badge.isVisible(), false);
+    await page.clock.fastForward(20_000);
     await badge.waitFor();
     assert.equal(await page.locator('#mirror-state').getAttribute('data-state'), 'synced');
     assert.equal((await badge.textContent()).trim(), 'Mirror');
@@ -76,12 +87,45 @@ export async function exerciseMirror(browser, f) {
     assert.match(await rows.first().innerText(), /Sync error[\s\S]*no longer accepts/);
     // The page follows the server without a reload: a cleared failure shows within a refresh.
     await state(`UPDATE arkvory_mirror_state SET error_code=NULL, error_at=NULL`);
-    await page
-      .locator('#mirrors-rows .mirror-badge[data-state=synced]')
-      .waitFor({ timeout: 30000 });
+    await page.clock.fastForward(20_000);
+    await page.locator('#mirrors-rows .mirror-badge[data-state=synced]').waitFor();
+    // Two reads in flight: the older answer, arriving last, never replaces the newer one.
+    let release = () => undefined;
+    const held = new Promise((resolve) => {
+      release = resolve;
+    });
+    await page.route(
+      '**/api/v1/mirrors',
+      async (route) => {
+        const response = await route.fetch();
+        const body = await response.json();
+        await held;
+        body.items[0] = {
+          ...body.items[0],
+          errorCode: 'unauthorized',
+          errorAt: body.items[0].checkedAt,
+        };
+        await route.fulfill({ response, json: body });
+      },
+      { times: 1 },
+    );
+    await page.locator('[data-nav=catalog]').click();
+    const newer = page.waitForResponse('**/api/v1/mirrors');
+    await page.locator('[data-nav=mirrors]').click();
+    await page.clock.fastForward(20_000);
+    await newer;
+    const older = page.waitForResponse('**/api/v1/mirrors');
+    release();
+    await older;
+    await page.waitForTimeout(300);
+    assert.equal(
+      await page.locator('#mirrors-rows .mirror-badge').getAttribute('data-state'),
+      'synced',
+    );
     await state(`UPDATE arkvory_mirror_state SET error_code='mirror_unreachable', error_at=now()`);
     await page.locator('[data-nav=catalog]').click();
-    await page.locator('#mirror-state[data-state=failing]').waitFor({ timeout: 30000 });
+    await page.clock.fastForward(20_000);
+    await page.locator('#mirror-state[data-state=failing]').waitFor();
     assert.match(await problem.innerText(), /source\.example cannot be reached/);
     // Nothing wider than a phone in the stopped state.
     await page.setViewportSize({ width: 320, height: 800 });

@@ -92,6 +92,25 @@ test('a mirror detached since is never followed again from its old position', as
   assert.equal((await call(p.mirror, 'GET', '/mirror')).json().errorCode, 'mirror_detached');
 });
 
+test('a change made here before the worker wrote the detach mark still makes it final', async (t) => {
+  const p = await pair(t);
+  await publish(p.source, Buffer.from('before the detach'), 'a.bin');
+  await p.settle();
+  // The API took a write as soon as it ran without the mirror; the worker started later.
+  const [{ artifact_id: id }] = (
+    await p.catalog.pool.query(
+      "SELECT artifact_id FROM arkvory_audit WHERE repository='releases' LIMIT 1",
+    )
+  ).rows;
+  await p.catalog.pool.query(
+    `INSERT INTO arkvory_audit(repository, actor, action, artifact_id, occurred_at)
+     VALUES('releases', 'operator', 'annotations.replace', $1, now() - interval '1 minute')`,
+    [id],
+  );
+  await new PostgresMirrorState(p.catalog.pool).markDetached([]);
+  await assert.rejects(p.settle(), failsWith('mirror_detached'));
+});
+
 test('a package version both sides claim stops the import with its reason until resolved', async (t) => {
   const p = await pair(t, ['release']);
   const { source: staging, mirror: prod } = p;

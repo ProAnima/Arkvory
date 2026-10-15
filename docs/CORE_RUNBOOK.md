@@ -364,6 +364,7 @@ sudo arkvory configure --root /opt/proanima-arkvory --mirror-detach releases
 2. Затем worker следует ленте: проверка раз в 10 с, курсор сохраняется после каждого применённого события.
 3. Файлы копируются частями с проверкой SHA-256 части и всего файла; после обрыва копирование продолжается с первой отсутствующей части. Временная часть лежит в `<ARKVORY_DATA_DIR>/mirror-staging`, размер — одна часть.
 4. После ошибки шаг повторяется с паузой от 2 с до 5 минут. Журнал (`component: mirror`): `mirror.started`, `mirror.step_failed` (с `errorCode` и `attempts`), `mirror.recovered`, `mirror.stopped`.
+5. При запуске worker помечает отсоединённые зеркала и очищает `mirror-staging`. Недоступная БД не останавливает worker: пометка повторяется с той же паузой (`mirror.step_failed`, `errorCode: mirror_startup_failed`), зеркала начинают после неё; задания и вебхуки идут без ожидания. Неудачная очистка временных частей — `mirror_staging_failed`, зеркала всё равно запускаются.
 
 **Состояние** — `GET /api/v1/repositories/{r}/mirror` (SDK `repositoryMirror`, право `repository.read`):
 

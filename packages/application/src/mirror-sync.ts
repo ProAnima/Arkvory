@@ -45,7 +45,8 @@ export function sourceOrigin(source: string): string {
  * source and skips what is here (the copy counters and the last synchronization carry over). A
  * mirror refuses another upstream or source repository (`anyOrigin` false): it already holds a
  * copy of the other one. A mirror detached since holds changes of its own and is never followed
- * again; an import, which only adds, starts over.
+ * again; an import, which only adds, starts over. Only the same source picks a detached state
+ * up again: its cursor and anchor mean nothing in another source's feed.
  */
 export async function stateFor(
   d: Pick<MirrorSyncDependencies, 'repository' | 'source' | 'states'>,
@@ -55,6 +56,7 @@ export async function stateFor(
   if (
     loaded?.detachedAt != null &&
     !anyOrigin &&
+    loaded.source === d.source &&
     (await d.states.reattach(d.repository, mirrorPrincipalId(d.repository)))
   )
     return { ...loaded, detachedAt: null };
