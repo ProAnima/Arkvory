@@ -123,6 +123,17 @@ async function installedUnits(host: VolumeHost): Promise<Set<string>> {
   );
 }
 
+/** Runs work under the installation's operation lock, which lives on the mounted volume. */
+export type VolumeGuard = (work: () => Promise<void>) => Promise<void>;
+const unguarded: VolumeGuard = (work) => work();
+
+export interface ReleaseOptions {
+  /** What to do instead on a running cluster. */
+  readonly instead?: string;
+  readonly host?: VolumeHost;
+  readonly guard?: VolumeGuard;
+}
+
 /**
  * `arkvory cluster-release`: stops every Arkvory unit, unmounts the volume and makes this node
  * secondary, so another node can take it while the cluster is built. Pacemaker's group is
@@ -131,16 +142,22 @@ async function installedUnits(host: VolumeHost): Promise<Set<string>> {
 export async function releaseVolume(
   root: string,
   resource: string,
-  instead = SWITCHOVER,
-  host: VolumeHost = systemHost,
+  { instead = SWITCHOVER, host = systemHost, guard = unguarded }: ReleaseOptions = {},
 ): Promise<void> {
   await refuseUnderPacemaker(resource, instead, host);
   await ownMount(root, resource, host);
-  // One unit after another: a single systemctl call queues every stop at once, and the units
-  // have no ordering between them, so the database could stop under a running update.
-  const units = await installedUnits(host);
-  for (const unit of STOP_ORDER) if (units.has(unit)) await host.run('systemctl', ['stop', unit]);
-  if (await mounted(root, host)) await host.run('umount', [root]);
+  const stop = async () => {
+    // One unit after another: a single systemctl call queues every stop at once, and the units
+    // have no ordering between them, so the database could stop under a running update.
+    const units = await installedUnits(host);
+    for (const unit of STOP_ORDER) if (units.has(unit)) await host.run('systemctl', ['stop', unit]);
+  };
+  // While the volume is here the units stop under the lock: an update or a configure that holds
+  // it ends first instead of being stopped midway. The lock is released before the unmount (its
+  // open file would keep the volume busy); with every unit stopped nothing takes it again.
+  const here = await mounted(root, host);
+  await (here ? guard(stop) : stop());
+  if (here) await host.run('umount', [root]);
   await host.run('drbdadm', ['secondary', resource]);
   report('info', `${resource} is released: this node is secondary and the volume is unmounted`);
 }

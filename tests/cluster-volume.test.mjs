@@ -35,7 +35,7 @@ const standalone = {
 
 test('a root mounted from a plain data disk is never released: nothing stops, nothing unmounts', async () => {
   const disk = host(standalone);
-  await assert.rejects(releaseVolume(root, 'arkvory', 'switch over', disk), /\/dev\/sdb1/);
+  await assert.rejects(releaseVolume(root, 'arkvory', { host: disk }), /\/dev\/sdb1/);
   assert.deepEqual(
     disk.ran.filter((line) => !line.startsWith('systemctl is-active')),
     [],
@@ -46,17 +46,25 @@ test('a root mounted from a plain data disk is never released: nothing stops, no
   await assert.rejects(ownMount(root, 'arkvory', host(plain)), /drbdadm sh-dev arkvory failed/);
 });
 
-test('the volume mounted from its DRBD device is released in stop order', async () => {
+test('the volume mounted from its DRBD device is released in stop order, under the lock', async () => {
   const volume = host({
     ...standalone,
     [`findmnt -n -o SOURCE --mountpoint ${root}`]: '/dev/drbd0\n',
   });
-  await releaseVolume(root, 'arkvory', 'switch over', volume);
+  // The units stop under the installation lock; the unmount waits until it is released.
+  const guard = async (work) => {
+    volume.ran.push('lock');
+    await work();
+    volume.ran.push('unlock');
+  };
+  await releaseVolume(root, 'arkvory', { host: volume, guard });
   assert.deepEqual(
     volume.ran.filter((line) => !line.startsWith('systemctl is-active')),
     [
+      'lock',
       'systemctl stop arkvory-update.timer',
       'systemctl stop arkvory-api',
+      'unlock',
       `umount ${root}`,
       'drbdadm secondary arkvory',
     ],
