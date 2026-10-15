@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { FleetControl } from '@proanima/arkvory-application';
 
 const ID = '11111111-1111-4111-8111-111111111111';
+const AT = '2026-10-15T12:00:00.000Z';
 
 /** A registry in memory with one paired site; every observation is kept in order. */
 function store() {
@@ -45,7 +46,14 @@ function control(sites, topology) {
     change: async () => ({ status: 200, body: null }),
   };
   const seal = { seal: () => new Uint8Array([1]), open: () => 'afk_key' };
-  return new FleetControl(sites, client, seal, () => ID, 'Main');
+  return new FleetControl(
+    sites,
+    client,
+    seal,
+    () => ID,
+    'Main',
+    () => AT,
+  );
 }
 
 test('a topology too large for the registry in UTF-8 bytes is recorded as invalid', async () => {
@@ -53,8 +61,10 @@ test('a topology too large for the registry in UTF-8 bytes is recorded as invali
   // 100000 characters, 200000 bytes: within the column by characters, beyond it in jsonb text.
   const large = { site: { name: 'Branch' }, note: 'я'.repeat(100000) };
   await control(sites, async () => large).poll(ID);
-  assert.deepEqual(sites.observed, [{ state: 'invalid', error: 'invalid' }]);
+  assert.deepEqual(sites.observed, [{ state: 'invalid', error: 'invalid', at: AT }]);
   const small = { site: { name: 'Branch' }, note: 'я'.repeat(1000) };
   await control(sites, async () => small).poll(ID);
   assert.equal(sites.observed[1].state, 'ok');
+  // The time of the read is the application's clock, not the database's.
+  assert.equal(sites.observed[1].at, AT);
 });

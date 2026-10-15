@@ -74,6 +74,8 @@ export function createFleetControl(parts: FleetControlParts): FleetControl {
     parts.seal,
     () => randomUUID(),
     parts.controllerName,
+    // seenAt is compared with this process's clock by the overview: written by the same clock.
+    () => new Date().toISOString(),
   );
 }
 

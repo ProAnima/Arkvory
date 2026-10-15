@@ -19,6 +19,8 @@ export interface FleetSiteRecord {
 export interface FleetObservation {
   readonly state: 'ok' | 'unreachable' | 'certificate' | 'revoked' | 'invalid' | 'refused';
   readonly error: string | null;
+  /** When the controller read the site, by its clock: `seenAt` of an answer. */
+  readonly at: string;
   readonly topology?: unknown;
   readonly name?: string;
 }
@@ -112,6 +114,7 @@ export class FleetControl {
     private readonly seal: FleetKeySeal | undefined,
     private readonly ids: () => string,
     private readonly controllerName: string,
+    private readonly now: () => string,
   ) {}
 
   private sealer(): FleetKeySeal {
@@ -195,10 +198,16 @@ export class FleetControl {
       if (utf8Length(text) > TOPOLOGY_LIMIT || text.includes('\\u0000'))
         throw Object.assign(new Error('Topology cannot be stored'), { code: 'invalid' });
       const name = siteName(topology);
-      observation = { state: 'ok', error: null, topology, ...(name ? { name } : {}) };
+      observation = {
+        state: 'ok',
+        error: null,
+        at: this.now(),
+        topology,
+        ...(name ? { name } : {}),
+      };
     } catch (error) {
       const state = failureState(error);
-      observation = { state, error: state };
+      observation = { state, error: state, at: this.now() };
     }
     await this.sites.observe(id, observation);
   }

@@ -91,14 +91,14 @@ export class PostgresFleetRegistry implements FleetSiteStore {
       await this.write(id, observation);
     } catch (error) {
       if (observation.state !== 'ok' || !refused(error)) throw error;
-      await this.write(id, { state: 'invalid', error: 'invalid' });
+      await this.write(id, { state: 'invalid', error: 'invalid', at: observation.at });
     }
   }
 
   private async write(id: string, observation: FleetObservation) {
     await this.pool.query(
       `UPDATE arkvory_fleet_sites SET state = $2::text, error = $3::text,
-         seen_at = CASE WHEN $2::text = 'ok' THEN now() ELSE seen_at END,
+         seen_at = CASE WHEN $2::text = 'ok' THEN $6::timestamptz ELSE seen_at END,
          topology = CASE WHEN $2::text = 'ok' THEN $4::jsonb ELSE topology END,
          name = COALESCE($5::text, name)
        WHERE id = $1`,
@@ -108,6 +108,7 @@ export class PostgresFleetRegistry implements FleetSiteStore {
         observation.error,
         observation.topology === undefined ? null : JSON.stringify(observation.topology),
         observation.name ?? null,
+        observation.at,
       ],
     );
   }
