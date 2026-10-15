@@ -4315,6 +4315,10 @@
     "en": "Changed by {who}",
     "text": "변경한 사람: {who}"
   },
+  "fleetQueueChangedVia": {
+    "en": "Changed by {actor} through {key}",
+    "text": "{actor}이(가) {key}을(를) 통해 변경함"
+  },
   "fleetQueueProblem": {
     "en": "Saved settings do not fit this server and are not used: {problem}",
     "text": "저장된 설정이 이 서버에 맞지 않아 사용되지 않습니다: {problem}"
@@ -4610,6 +4614,10 @@
   "fleetLinkFailing": {
     "en": "Failing",
     "text": "실패 중"
+  },
+  "fleetLinkStale": {
+    "en": "Last known: the site does not answer",
+    "text": "마지막으로 알려진 상태: 사이트가 응답하지 않음"
   },
   "fleetLagValue": {
     "en": "{lag} changes",

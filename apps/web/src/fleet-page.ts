@@ -3,6 +3,7 @@ import type { FleetSite } from '@proanima/arkvory-contracts';
 import { element } from './dom.js';
 import { clearMessage, message, relativeMessage, t } from './i18n.js';
 import { onViewOpen } from './shell.js';
+import { views } from './routes.js';
 import { feedback, showFailure } from './feedback.js';
 import { confirmAction } from './confirm-dialog.js';
 import {
@@ -70,6 +71,8 @@ export class FleetPage {
   private readonly settings = new FleetSettings();
   private readonly overview = new FleetOverviewPanel();
   private generation = 0;
+  /** The newest refresh started; older answers are dropped. */
+  private sequence = 0;
   private timer: ReturnType<typeof setTimeout> | undefined;
   constructor(private readonly client: ArkvoryClient) {
     this.content = new FleetContent(client);
@@ -77,7 +80,15 @@ export class FleetPage {
     onViewOpen('fleet', () => {
       void this.refresh(this.generation);
       void this.pairing.open();
+      this.settings.resume();
     });
+    // Leaving the page stops following a site's agent at once (the follower also checks that
+    // the page is shown, for screens opened without these hooks).
+    for (const view of views)
+      if (view !== 'fleet')
+        onViewOpen(view, () => {
+          this.settings.pause();
+        });
     // This site's own settings, through its own API: the same card as for a managed site.
     element('fleet-self-settings', HTMLButtonElement).onclick = () => {
       void this.settings.open({
@@ -121,20 +132,26 @@ export class FleetPage {
     }, REFRESH_MS);
   }
 
+  /**
+   * Refreshes overlap (the timer, Read all, a removal): only the newest started one is shown, so
+   * an older answer arriving last cannot bring back a row removed meanwhile.
+   */
   private async refresh(generation: number) {
+    const sequence = ++this.sequence;
+    const current = () => generation === this.generation && sequence === this.sequence;
     try {
       // The overview is built from the same reads; a failure of it never hides the list.
       const [sites, overview] = await Promise.all([
         this.client.fleet.sites(),
         this.client.fleet.overview().catch(() => null),
       ]);
-      if (generation !== this.generation) return;
+      if (!current()) return;
       this.status.hidden = true;
       this.render(sites);
       if (overview) this.overview.show(overview, sites);
       else this.overview.clear();
     } catch (error) {
-      if (generation !== this.generation) return;
+      if (!current()) return;
       this.status.hidden = false;
       showFailure(this.status, error);
     }

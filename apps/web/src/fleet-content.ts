@@ -37,6 +37,11 @@ export class FleetContent {
   private generation = 0;
   private artifactsNext: string | null = null;
   private filesNext: string | null = null;
+  /**
+   * The repository and filter of the pages shown, taken at load: "more" continues those pages,
+   * not whatever the field holds now (a cursor belongs to its query).
+   */
+  private filter = { repository: '', text: '' };
 
   constructor(private readonly client: ArkvoryClient) {
     element('fleet-content-close', HTMLButtonElement).onclick = () => {
@@ -113,6 +118,7 @@ export class FleetContent {
     this.generation++;
     this.status.hidden = true;
     this.reset();
+    this.filter = { repository: this.repository.value, text: this.query.value.trim() };
     const generation = this.generation;
     await this.guard(generation, async () => {
       await Promise.all([this.moreArtifacts(), this.moreFiles()]);
@@ -121,10 +127,9 @@ export class FleetContent {
 
   private async moreArtifacts() {
     const remote = this.remote;
-    const repository = this.repository.value;
+    const { repository, text: q } = this.filter;
     if (!remote || !repository) return;
     const generation = this.generation;
-    const q = this.query.value.trim();
     const page = await remote.search(repository, {
       ...(q ? { q } : {}),
       ...(this.artifactsNext ? { after: this.artifactsNext } : {}),
@@ -138,10 +143,9 @@ export class FleetContent {
 
   private async moreFiles() {
     const remote = this.remote;
-    const repository = this.repository.value;
+    const { repository, text: prefix } = this.filter;
     if (!remote || !repository) return;
     const generation = this.generation;
-    const prefix = this.query.value.trim();
     const page = await remote.assetPage(repository, {
       ...(prefix ? { prefix } : {}),
       ...(this.filesNext ? { after: this.filesNext } : {}),

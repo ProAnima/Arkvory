@@ -4315,6 +4315,10 @@
     "en": "Changed by {who}",
     "text": "غيّرها: {who}"
   },
+  "fleetQueueChangedVia": {
+    "en": "Changed by {actor} through {key}",
+    "text": "غيّره {actor} عبر {key}"
+  },
   "fleetQueueProblem": {
     "en": "Saved settings do not fit this server and are not used: {problem}",
     "text": "الإعدادات المحفوظة لا تناسب هذا الخادم ولا تُستخدم: {problem}"
@@ -4610,6 +4614,10 @@
   "fleetLinkFailing": {
     "en": "Failing",
     "text": "متعطل"
+  },
+  "fleetLinkStale": {
+    "en": "Last known: the site does not answer",
+    "text": "آخر حالة معروفة: الموقع لا يستجيب"
   },
   "fleetLagValue": {
     "en": "{lag} changes",

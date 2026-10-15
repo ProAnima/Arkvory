@@ -78,6 +78,15 @@ const decimal = (value: unknown): string => {
   if (!/^(0|[1-9][0-9]*)$/.test(parsed)) throw new Error('Invalid server decimal');
   return parsed;
 };
+/**
+ * Changes behind: a decimal of at most 30 digits. Far beyond any real feed, and short enough that
+ * the controller's arithmetic and gauges stay bounded whatever a site sends.
+ */
+const lag = (value: unknown): string => {
+  const parsed = decimal(value);
+  if (parsed.length > 30) throw new Error('Invalid server decimal');
+  return parsed;
+};
 const nullable = <T>(value: unknown, read: (value: unknown) => T): T | null =>
   value === null ? null : read(value);
 function oneOf<T extends string>(value: unknown, allowed: readonly T[]): T {
@@ -122,7 +131,7 @@ function readMirror(value: unknown): SiteMirror {
     errorCode: nullable(row['errorCode'], text),
     checkedAt: nullable(row['checkedAt'], text),
     syncedAt: nullable(row['syncedAt'], text),
-    lagChanges: nullable(row['lagChanges'], decimal),
+    lagChanges: nullable(row['lagChanges'], lag),
     copiedArtifacts: integer(row['copiedArtifacts']),
     copiedBytes: decimal(row['copiedBytes']),
   };
