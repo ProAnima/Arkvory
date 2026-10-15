@@ -27,6 +27,16 @@ export type TicketedRequest = DownloadSessionRequest & { readonly ticket?: strin
 
 /** Scheduler tick: frequent enough for prompt hand-over, rare enough to cost nothing. */
 const TICK_MS = 500;
+/** A tick takes at most a tenth of the time: it sorts the whole queue, which may be long. */
+const TICK_SHARE = 10;
+
+/**
+ * The pause before the next tick: TICK_MS, or ten times the last tick when the queue is so long
+ * that planning it costs more than a twentieth of a second, so the event loop stays free.
+ */
+export function downloadTickDelay(lastTickMs: number) {
+  return Math.max(TICK_MS, Math.ceil(TICK_SHARE * lastTickMs));
+}
 
 /**
  * Epoch milliseconds that never step back or jump with the wall clock: deadlines and aging must
@@ -42,7 +52,7 @@ const monotonic = () => performance.timeOrigin + performance.now();
  */
 export class DownloadScheduler {
   private readonly sessions: DownloadSessions;
-  private readonly timer: ReturnType<typeof setInterval>;
+  private timer: ReturnType<typeof setTimeout> | undefined;
   private readonly ticks = new Set<() => void>();
   private held = 0;
   private closed = false;
@@ -59,10 +69,7 @@ export class DownloadScheduler {
     private readonly wall: () => number = Date.now,
   ) {
     this.sessions = new DownloadSessions(policy);
-    this.timer = setInterval(() => {
-      this.plan();
-    }, TICK_MS);
-    this.timer.unref();
+    this.schedule();
   }
 
   get policy() {
@@ -173,7 +180,7 @@ export class DownloadScheduler {
 
   close() {
     this.closed = true;
-    clearInterval(this.timer);
+    clearTimeout(this.timer);
     for (const wake of [...this.ticks]) wake();
   }
 
@@ -195,6 +202,15 @@ export class DownloadScheduler {
         },
       },
     };
+  }
+
+  private schedule() {
+    if (this.closed) return;
+    this.timer = setTimeout(() => {
+      this.plan();
+      this.schedule();
+    }, downloadTickDelay(this.tickMs));
+    this.timer.unref();
   }
 
   private nextTick(signal: AbortSignal) {
