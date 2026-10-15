@@ -48,6 +48,11 @@ export type DownloadDecision =
 export interface DownloadResponseEnd {
   readonly finished: boolean;
   readonly range: DownloadByteRange;
+  /**
+   * Bytes this response reported through `progress`. They leave the estimate of bytes in flight
+   * when it ends, while other ranges of the session still stream; absent: none.
+   */
+  readonly streamed?: number;
 }
 
 interface Session {
@@ -80,12 +85,20 @@ interface Session {
   checkAt: number;
   /** Among the first in line at the last tick: may take a free place when it comes. */
   claimable: boolean;
+  /** The head this session yielded its place to: it takes no place while that one waits. */
+  yieldedTo: string | undefined;
 }
 
 /** Places of sessions finishing within this time already count as free for the next in line. */
 const HANDOVER_MS = 5000;
 /** How soon a client that may take a place should come. */
 const CLAIM_CHECK_MS = 1000;
+/**
+ * A session that only read the tail (a ZIP directory, an SDK resuming inside its last range)
+ * keeps its place this long without responses: its next read, if any, follows at once, and a
+ * place must not stand idle for `idleMs` after a download that may well be over.
+ */
+const TAIL_IDLE_MS = 5000;
 /** A session keeps its place at least this long before it can be asked to yield. */
 const MIN_HOLD_MS = 60_000;
 
@@ -106,7 +119,7 @@ export class DownloadSessions {
   /** Principals first in line at the last tick: their share then binds the others. */
   private readonly claimants = new Set<string>();
   /** The head of the queue waits with no place free: one active session may yield to it. */
-  private pressure: { classIndex: number; principal: string } | undefined;
+  private pressure: Session | undefined;
   private readonly counters = {
     admitted: 0,
     queued: 0,
@@ -167,8 +180,15 @@ export class DownloadSessions {
     if (session?.state !== 'active' || session.inFlight === 0) return;
     session.inFlight--;
     if (how.finished) session.coverage.add(how.range.start, how.range.end);
-    if (session.inFlight === 0) session.pending = 0;
-    session.expiresAt = now + this.current.idleMs;
+    // Exactly this response's bytes: a finished one now counts in the coverage instead, and
+    // parallel ranges must not be counted twice.
+    session.pending =
+      session.inFlight === 0 ? 0 : Math.max(0, session.pending - (how.streamed ?? 0));
+    session.expiresAt =
+      now +
+      (session.from === undefined
+        ? Math.min(TAIL_IDLE_MS, this.current.idleMs)
+        : this.current.idleMs);
     if (complete(session)) {
       this.counters.completed++;
       this.remove(session);
@@ -193,7 +213,7 @@ export class DownloadSessions {
     // it takes it once the next tick marks it free.
     if (marked === 0 && head && this.current.preempt) {
       this.claimants.add(head.principal);
-      this.pressure = { classIndex: classIndex(head.class), principal: head.principal };
+      this.pressure = head;
     }
     this.estimate(order, now);
   }
@@ -211,7 +231,14 @@ export class DownloadSessions {
     let marked = 0;
     for (const session of order) {
       const person = session.class === 'interactive';
-      session.claimable = all > 0 && (person || shared > 0);
+      // A session that yielded must not take the place back before the head it yielded to: it
+      // comes back sooner and would win the place, then hold it another MIN_HOLD_MS.
+      if (
+        session.yieldedTo !== undefined &&
+        this.sessions.get(session.yieldedTo)?.state !== 'waiting'
+      )
+        session.yieldedTo = undefined;
+      session.claimable = all > 0 && (person || shared > 0) && session.yieldedTo === undefined;
       if (!session.claimable) continue;
       all--;
       if (!person) shared--;
@@ -292,6 +319,7 @@ export class DownloadSessions {
       startsAt: undefined,
       checkAt: now + MIN_DOWNLOAD_CHECK_MS,
       claimable: false,
+      yieldedTo: undefined,
     };
     this.sessions.set(session.key, session);
     this.owned.set(session.principal, owned + 1);
@@ -348,6 +376,10 @@ export class DownloadSessions {
     const pressure = this.pressure;
     if (
       !pressure ||
+      // The head left the queue, or a place freed since the tick: it needs no yielded one.
+      this.sessions.get(pressure.key) !== pressure ||
+      pressure.state !== 'waiting' ||
+      this.places.fits(pressure, this.current, false) ||
       !session.queueAware ||
       session.class === 'interactive' ||
       pressure.principal === session.principal ||
@@ -356,7 +388,7 @@ export class DownloadSessions {
       return false;
     const share = this.current.perPrincipalActive;
     return (
-      classIndex(session.class) > pressure.classIndex ||
+      classIndex(session.class) > classIndex(pressure.class) ||
       (this.places.of(session.principal) > share && this.places.of(pressure.principal) < share)
     );
   }
@@ -368,6 +400,7 @@ export class DownloadSessions {
     // A fresh wait: aging must not lift it straight back over the one it yielded to.
     session.queuedAt = now;
     session.claimable = false;
+    session.yieldedTo = this.pressure?.key;
     session.position = undefined;
     session.checkAt = now + MIN_DOWNLOAD_CHECK_MS;
     this.pressure = undefined;
@@ -398,16 +431,7 @@ export class DownloadSessions {
       this.rate.capacity(now),
     );
     order.forEach((session, index) => {
-      const startsIn = starts[index];
-      session.position = index + 1;
-      session.startsAt = startsIn === undefined ? undefined : now + startsIn;
-      // Those who may take a place check sooner, down to a second: a place may free early.
-      const delay = downloadCheckDelay(startsIn, session.position, session.seq);
-      session.checkAt =
-        now +
-        (session.claimable
-          ? Math.max(CLAIM_CHECK_MS, Math.min(delay, (startsIn ?? 0) / 2))
-          : delay);
+      tellPlace(session, index + 1, starts[index], now);
     });
   }
 
@@ -429,6 +453,17 @@ function noteStart(session: Session, asked: DownloadByteRange | undefined) {
   const range = asked ?? { start: 0, end: session.size - 1, open: true };
   if (range.open || range.start === 0 || range.end < session.size - 1)
     session.from = Math.min(session.from ?? range.start, range.start);
+}
+
+/** A waiting session's place, estimated start and when it should check again. */
+function tellPlace(session: Session, position: number, startsIn: number | undefined, now: number) {
+  session.position = position;
+  session.startsAt = startsIn === undefined ? undefined : now + startsIn;
+  // Those who may take a place check sooner, down to a second: a place may free early.
+  const delay = downloadCheckDelay(startsIn, position, session.seq);
+  session.checkAt =
+    now +
+    (session.claimable ? Math.max(CLAIM_CHECK_MS, Math.min(delay, (startsIn ?? 0) / 2)) : delay);
 }
 
 /** Sessions streaming now that will have sent their last byte within HANDOVER_MS. */

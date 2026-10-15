@@ -46,7 +46,7 @@ jobs:
           key: native-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/native-dependencies.mjs') }}
         env:
           SEGMENT_DOWNLOAD_TIMEOUT_MINS: '2'
-      - run: sudo apt-get update && sudo apt-get install -y rpm postgresql
+      - run: sudo apt-get update && sudo apt-get -o DPkg::Lock::Timeout=600 install -y rpm postgresql
       - run: npm run gate -- release
       - name: Package once after all release gates
         run: npm run release:package -- "$ARKVORY_RELEASE_VERSION"
@@ -125,7 +125,7 @@ jobs:
         env:
           SEGMENT_DOWNLOAD_TIMEOUT_MINS: '2'
       - if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y rpm postgresql
+        run: sudo apt-get update && sudo apt-get -o DPkg::Lock::Timeout=600 install -y rpm postgresql
       - run: npm run gate -- native-install
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:

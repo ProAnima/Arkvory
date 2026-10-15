@@ -26,6 +26,8 @@ const JOURNALED = new Set([
   'recover',
   'upgrade',
   'apply-installer',
+  // Only stops units, under the lock: a rerun stops the rest.
+  'cluster-release',
 ]);
 
 interface LockOwner {

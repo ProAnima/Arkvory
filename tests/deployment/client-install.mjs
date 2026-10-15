@@ -5,6 +5,9 @@ import { tmpdir } from 'node:os';
 import assert from 'node:assert/strict';
 import { requireDisposableHost } from './disposable-host.mjs';
 
+/** apt-daily on a fresh runner holds the dpkg lock for minutes: wait for it instead of failing. */
+const APT = ['-o', 'DPkg::Lock::Timeout=600'];
+
 export async function exerciseClient(output, version) {
   requireDisposableHost('Client installation');
   const windows = process.platform === 'win32';
@@ -30,6 +33,7 @@ export async function exerciseClient(output, version) {
         ])
       : run('sudo', [
           'apt-get',
+          ...APT,
           'install',
           '--reinstall',
           '-y',
@@ -86,7 +90,7 @@ export async function exerciseClient(output, version) {
   } else {
     const dependencies = run('dpkg-deb', ['-f', join(output, 'Arkvory-CLI-amd64.deb'), 'Depends']);
     assert.doesNotMatch(dependencies, /postgres|systemd/);
-    run('sudo', ['apt-get', 'remove', '-y', 'proanima-arkvory-cli']);
+    run('sudo', ['apt-get', ...APT, 'remove', '-y', 'proanima-arkvory-cli']);
     await assert.rejects(access('/usr/bin/arkvoryctl'), /ENOENT/);
   }
   assert.equal(await readFile(profile, 'utf8'), before);

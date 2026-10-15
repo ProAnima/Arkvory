@@ -34,7 +34,9 @@ export function installConnectionState(storage: RepositoryStorage, repository: H
     repository(connected: boolean) {
       connectedRepository.hidden = !connected;
       connectedRepository.textContent = connected ? repository.value : '';
-      if (connected) void storage.connect(repository.value);
+      // Nobody waits here: the storage panels and the mirror badge keep their own state, and
+      // the badge reads again after a failure.
+      if (connected) void storage.connect(repository.value).catch(() => undefined);
       else storage.clear();
     },
     credential: () => credential,

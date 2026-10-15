@@ -72,6 +72,8 @@ async function stagePart(
 
 /** Part files of copies in progress; only a worker that runs no copy yet may clear them. */
 export async function clearMirrorStaging(dataDirectory: string): Promise<void> {
+  // An empty root would resolve against the working directory of the process.
+  if (dataDirectory === '') throw new Error('The data directory is not set');
   await rm(join(dataDirectory, 'mirror-staging'), { recursive: true, force: true });
 }
 

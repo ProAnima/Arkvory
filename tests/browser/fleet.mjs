@@ -111,7 +111,10 @@ export async function exerciseFleet(browser, f, cleanup) {
     assert.equal(await page.locator('#fleet-repository').inputValue(), 'releases');
     assert.ok((await page.locator('#fleet-file-rows').innerText()).includes('tools/branch.bin'));
     assert.ok((await page.locator('#fleet-file-rows').innerText()).includes(id));
-    assert.equal(await page.locator(`#fleet-artifact-rows td[title="${id}"]`).count(), 1);
+    // Artifacts and files load side by side: each list is awaited on its own.
+    const artifact = page.locator(`#fleet-artifact-rows td[title="${id}"]`);
+    await artifact.first().waitFor();
+    assert.equal(await artifact.count(), 1);
     await page.locator('#fleet-query').fill('nothing-like-this');
     await page.locator('#fleet-content-filter button').click();
     await page.locator('#fleet-artifacts-empty').waitFor();

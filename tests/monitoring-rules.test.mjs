@@ -173,7 +173,14 @@ async function exposedNames() {
       async () => {
         throw new Error('not needed: the site above is enough');
       },
-      { name: 'Main', version: '1.0.0', url: null, lagLimit: 1000n, now: () => 0 },
+      {
+        name: 'Main',
+        version: '1.0.0',
+        url: null,
+        lagLimit: 1000n,
+        now: () => 0,
+        monotonic: () => 0,
+      },
     ),
     now: () => 0,
     startedAtSeconds: 0,

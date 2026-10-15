@@ -607,3 +607,30 @@ test('a huge Retry-After is waited for at most an hour before asking again', asy
   assert.equal(waits.length, 1);
   assert.ok(waits[0] >= 3600 * 1000 && waits[0] <= 1.5 * 3600 * 1000, String(waits[0]));
 });
+
+test('a wait until a time follows the wall clock through sleep and clock changes', async (t) => {
+  const { waitUntil } = await import('../packages/sdk/dist/transfer.js');
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  const flush = () => new Promise((resolve) => setImmediate(resolve));
+  const hour = 3600 * 1000;
+  let wall = 0;
+  let done = false;
+  const waiting = waitUntil(3 * hour, undefined, () => wall).then(() => (done = true));
+  const pass = async (ms, jump = 0) => {
+    wall += ms + jump;
+    t.mock.timers.tick(ms);
+    await flush();
+  };
+  // A minute passes; then the laptop sleeps two hours, which no timer counts.
+  await pass(60_000);
+  await pass(60_000, 2 * hour);
+  assert.equal(done, false);
+  // The clock is set back half an hour: the wait goes on until the time is reached.
+  await pass(60_000, -hour / 2);
+  const left = 3 * hour - wall;
+  for (let step = 0; step < Math.ceil(left / 60_000) - 1; step++) await pass(60_000);
+  assert.equal(done, false);
+  await pass(60_000);
+  await waiting;
+  assert.equal(done, true);
+});

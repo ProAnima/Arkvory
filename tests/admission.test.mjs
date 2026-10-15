@@ -84,3 +84,24 @@ test('a refused client is told to come back after the queue ahead of it, not eve
   for (const waiter of waiters) (await waiter)();
   gate.close();
 });
+
+test('a waiter that times out is told to come back after the queue ahead, counted once', async () => {
+  let now = 0;
+  const gate = new AdmissionQueue(1, 4, 4, 20, 1, { now: () => now, random: () => 0 });
+  // Six releases over a minute: a place every ten seconds.
+  for (let i = 0; i < 6; i++) {
+    now = i * 10000;
+    (await gate.acquire('a'))();
+  }
+  now = 60000;
+  const release = await gate.acquire('a');
+  // Nobody else waits: the timed-out waiter itself is ten seconds away, not twenty.
+  await assert.rejects(gate.acquire('b'), (error) => {
+    assert.equal(error.code, 'busy');
+    assert.equal(error.retryAfterSeconds, 10);
+    return true;
+  });
+  assert.equal(gate.snapshot.waiting, 0);
+  release();
+  gate.close();
+});

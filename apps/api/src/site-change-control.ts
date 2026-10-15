@@ -153,10 +153,14 @@ export class SiteChangeControl {
     const keyFile = `${request.id}.key`;
     // An existing key of this id is another attempt's: kept, and never removed by this one.
     const created = key !== null && (await publish(inbox, keyFile, key, 0o600));
-    if (!(await publish(inbox, 'change.json', JSON.stringify(request), 0o644))) {
-      if (created) await rm(join(inbox, keyFile), { force: true });
-      throw new ArkvoryError('busy', 'A site change is pending');
+    // The key never stays without its request: also not after a full disk or an I/O error.
+    let published = false;
+    try {
+      published = await publish(inbox, 'change.json', JSON.stringify(request), 0o644);
+    } finally {
+      if (created && !published) await rm(join(inbox, keyFile), { force: true });
     }
+    if (!published) throw new ArkvoryError('busy', 'A site change is pending');
     return { id: request.id };
   }
 }

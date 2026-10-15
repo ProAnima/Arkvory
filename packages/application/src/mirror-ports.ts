@@ -150,7 +150,8 @@ export interface MirrorStateStore {
   load(repository: string): Promise<MirrorState | null>;
   save(state: MirrorState): Promise<void>;
   /**
-   * Clears the detach mark of a repository nobody but `synchronizer` changed since the mark:
+   * Clears the detach mark of a repository nobody but `synchronizer` changed since it began to
+   * mirror (the mark itself may come after the first local change):
    * the detach never took effect (it was rolled back, or the worker briefly ran without the
    * mirror), so following on from the cursor mixes nothing. True when it was cleared.
    */

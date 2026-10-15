@@ -1,5 +1,6 @@
 import { isFleetName } from '@proanima/arkvory-domain';
 import type {
+  FleetAbortSignal,
   FleetEndpointView,
   FleetSiteClient,
   SiteCertificateView,
@@ -56,10 +57,17 @@ export class HttpFleetSiteClient implements FleetSiteClient {
   }
 
   /** A catalog read the controller checked against the list; the site checks it again. */
-  async read(endpoint: FleetEndpointView, key: string, actor: string, path: string) {
+  async read(
+    endpoint: FleetEndpointView,
+    key: string,
+    actor: string,
+    path: string,
+    signal?: FleetAbortSignal,
+  ) {
     return siteRequest(endpoint, 'GET', path, {
       key,
       actor,
+      ...(signal ? { signal } : {}),
       maxBytes: 16 * 1024 * 1024,
       deadlineMs: 60_000,
     });
@@ -73,12 +81,22 @@ export class HttpFleetSiteClient implements FleetSiteClient {
     method: 'PUT' | 'POST',
     path: string,
     body: unknown,
+    signal?: FleetAbortSignal,
   ) {
-    return siteRequest(endpoint, method, path, { key, actor, body });
+    return siteRequest(endpoint, method, path, { key, actor, body, ...(signal ? { signal } : {}) });
   }
 
-  async topology(endpoint: FleetEndpointView, key: string, actor: string): Promise<unknown> {
-    const answer = await siteRequest(endpoint, 'GET', '/api/v1/system/topology', { key, actor });
+  async topology(
+    endpoint: FleetEndpointView,
+    key: string,
+    actor: string,
+    signal?: FleetAbortSignal,
+  ): Promise<unknown> {
+    const answer = await siteRequest(endpoint, 'GET', '/api/v1/system/topology', {
+      key,
+      actor,
+      ...(signal ? { signal } : {}),
+    });
     if (answer.status !== 200) throw new FleetFailure('invalid', answer.status);
     return answer.body;
   }

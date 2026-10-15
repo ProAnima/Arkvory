@@ -1,16 +1,11 @@
-import { constants } from 'node:fs';
-import { lstat, open, readdir, rename, rmdir, unlink, writeFile } from 'node:fs/promises';
-import { randomUUID } from 'node:crypto';
-import { dirname, join } from 'node:path';
+import { lstat, open, readdir, rename, writeFile } from 'node:fs/promises';
+import { basename, dirname, join } from 'node:path';
 import { readSiteChangeStatus } from '@proanima/arkvory-contracts';
 import type { SiteChangeStatus } from '@proanima/arkvory-contracts';
 import { jsonFile } from './files.js';
+import { missing, readClaimed, removeName } from './mailbox-claim.js';
 
-/**
- * The API writes only into `updates/inbox` (world-writable under Compose): every name there may be
- * a link, a directory or a FIFO. Claimed files move to the root, which only root writes, and are
- * read through a descriptor that never follows a link and never waits.
- */
+/** The site-change mailbox (ADR 0077); its inbox is taken only through `mailbox-claim`. */
 export function mailbox(root: string) {
   return {
     inbox: join(root, 'updates/inbox'),
@@ -31,70 +26,6 @@ export const KEY_LIMIT = 4096;
 /** Leftovers of the API in the inbox (a key whose request never came) go after this long. */
 const LEFTOVER_MS = 60 * 60 * 1000;
 
-export const missing = (error: unknown) =>
-  error instanceof Error && 'code' in error && error.code === 'ENOENT';
-
-/**
- * Removes one name without ever descending: a link or any other non-directory loses its name
- * only (`unlink` never follows the last component), a directory goes only when empty. Nothing
- * from the inbox is removed recursively: the API (or whoever writes the inbox) could swap a
- * subdirectory for a link to `/etc` while root walks the tree.
- */
-async function removeName(path: string): Promise<void> {
-  const info = await lstat(path).catch(() => null);
-  if (!info) return;
-  await (info.isDirectory() ? rmdir(path) : unlink(path)).catch(() => undefined);
-}
-
-/**
- * Moves `from` to `to`, then checks what arrived: anything but a regular file with one name is
- * refused. Anything else than a regular file is refused before the move, so a directory is never
- * taken into the root; one swapped in between is put back into the inbox under a name the sweep
- * removes (empty) or leaves. False when nothing was there.
- */
-export async function claim(from: string, to: string): Promise<boolean> {
-  const before = await lstat(from).catch(() => null);
-  if (!before) return false;
-  if (!before.isFile()) {
-    // A link, FIFO or socket loses its name; a directory goes only when empty.
-    await removeName(from);
-    throw new Error(`${from} is not a regular file; refused`);
-  }
-  // The API links a complete temporary file to the name and removes the temporary right after:
-  // two names mean it is still publishing. Taken on the next tick, not refused.
-  if (before.nlink > 1) return false;
-  try {
-    await rename(from, to);
-  } catch (error) {
-    if (missing(error)) return false;
-    throw error;
-  }
-  const info = await lstat(to);
-  if (!info.isFile() || info.nlink !== 1) {
-    if (info.isDirectory())
-      await rename(to, join(dirname(from), `.refused-${randomUUID()}.tmp`)).catch(() => undefined);
-    else await removeName(to);
-    throw new Error(`${from} was not a regular file; refused`);
-  }
-  return true;
-}
-
-/** The text of a claimed file through a descriptor that follows no link and never waits. */
-export async function readClaimed(path: string, limit: number): Promise<string> {
-  const file = await open(path, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
-  try {
-    const info = await file.stat();
-    if (!info.isFile() || info.nlink !== 1 || info.size > limit)
-      throw new Error(`${path} is not a small regular file`);
-    const buffer = Buffer.alloc(limit + 1);
-    const { bytesRead } = await file.read(buffer, 0, buffer.length, 0);
-    if (bytesRead > limit) throw new Error(`${path} grew while read`);
-    return buffer.subarray(0, bytesRead).toString('utf8');
-  } finally {
-    await file.close();
-  }
-}
-
 export async function readStatus(path: string): Promise<SiteChangeStatus> {
   try {
     return readSiteChangeStatus(await jsonFile(path));
@@ -105,31 +36,43 @@ export async function readStatus(path: string): Promise<SiteChangeStatus> {
   }
 }
 
-/** Compact, so twenty records stay far below what the API reads. */
+/**
+ * Compact, so twenty records stay far below what the API reads. One fixed temporary name: the
+ * status directory is written by root only and every write runs under the operation lock, so a
+ * file a crash left there is simply replaced by the next write.
+ */
 export async function writeStatus(path: string, status: SiteChangeStatus): Promise<void> {
-  const temporary = `${path}.${String(process.pid)}.tmp`;
+  const temporary = `${path}.tmp`;
   await writeFile(temporary, JSON.stringify(status), { mode: 0o644 });
   await rename(temporary, path);
 }
 
-/**
- * Keys and temporary files the API left in the inbox longer than an hour: a request that never
- * came, a crash between two writes. Removed by name, never followed.
- */
-export async function sweep(box: Mailbox, now: number): Promise<void> {
-  let names: string[];
+async function names(directory: string): Promise<string[]> {
   try {
-    names = await readdir(box.inbox);
+    return await readdir(directory);
   } catch (error) {
-    if (missing(error)) return;
+    if (missing(error)) return [];
     throw error;
   }
-  for (const name of names) {
+}
+
+/**
+ * Keys and temporary files the API left in the inbox longer than an hour: a request that never
+ * came, a crash between two writes. Removed by name, never followed. A time in the future (a clock
+ * set back) counts as old too, or the file would outlive any sweep. Also the per-process status
+ * temporaries of earlier releases, which a crash left behind.
+ */
+export async function sweep(box: Mailbox, now: number): Promise<void> {
+  for (const name of await names(box.inbox)) {
     if (!name.endsWith('.key') && !(name.startsWith('.') && name.endsWith('.tmp'))) continue;
     const path = join(box.inbox, name);
     const info = await lstat(path).catch(() => null);
-    if (info && now - info.mtimeMs > LEFTOVER_MS) await removeName(path);
+    if (info && Math.abs(now - info.mtimeMs) > LEFTOVER_MS) await removeName(path);
   }
+  const legacy = new RegExp(`^${basename(box.status).replace('.', '\\.')}\\.\\d+\\.tmp$`);
+  const directory = dirname(box.status);
+  for (const name of await names(directory))
+    if (legacy.test(name)) await removeName(join(directory, name));
 }
 
 /** Every step on its own: one that fails does not keep the others, nor the key, from going. */

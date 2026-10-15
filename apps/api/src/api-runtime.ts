@@ -79,7 +79,8 @@ export class ApiRuntime {
       await this.lease?.start();
       // Queue tickets keep a download's turn over a restart (ADR 0076); a reader without a key
       // made by a writer yet issues none until a later look finds it.
-      if (!(await this.loadTicketKey())) this.retryTicketKey();
+      // A database hiccup here only delays tickets, as the retry below would.
+      if (!(await this.loadTicketKey().catch(() => false))) this.retryTicketKey();
       // The environment runs until the record is read: a database hiccup here must not stop the
       // start, the background task retries every 10 seconds and reports a failure.
       if (this.role === 'api') await this.downloadSettings.sync().catch(() => undefined);
@@ -97,9 +98,10 @@ export class ApiRuntime {
 
   /** Looks for the key periodically; one look at a time, ended by success or `stop`. */
   private retryTicketKey() {
+    if (this.stopped) return;
     let looking = false;
     this.ticketRetry = setInterval(() => {
-      if (looking) return;
+      if (looking || this.stopped) return;
       looking = true;
       this.loadTicketKey()
         .then((found) => {

@@ -1,4 +1,4 @@
-import { ArkvoryClientError, ArkvoryHttpError, TransferAttempts, delay } from './transfer.js';
+import { ArkvoryClientError, ArkvoryHttpError, TransferAttempts, waitUntil } from './transfer.js';
 import type { DownloadClass, TransferOptions } from './transfer.js';
 import { verifiedDownload } from './verified-download.js';
 import type { HttpPort } from './http-transport.js';
@@ -88,7 +88,7 @@ export class DownloadApi {
       options.queueTicket,
       options.notAfter,
     );
-    if (options.notBefore) await delay(options.notBefore.getTime() - Date.now(), options.signal);
+    if (options.notBefore) await waitUntil(options.notBefore.getTime(), options.signal);
     const controller = new AbortController();
     const signal = options.signal
       ? AbortSignal.any([options.signal, controller.signal])

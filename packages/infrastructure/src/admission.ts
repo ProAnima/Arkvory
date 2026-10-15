@@ -90,22 +90,24 @@ export class AdmissionQueue {
       });
     }
     return new Promise((resolve, reject) => {
-      const remove = (error: Error) => {
+      // The error is made once the waiter has left: its Retry-After counts it once, not twice.
+      const remove = (error: () => Error) => {
         const index = this.waiting.indexOf(waiter);
         if (index >= 0) this.waiting.splice(index, 1);
         waiter.cleanup();
-        reject(error);
+        reject(error());
       };
       const abort = () => {
         this.cancelled++;
-        remove(new ArkvoryError('busy', 'Transfer request aborted'));
+        remove(() => new ArkvoryError('busy', 'Transfer request aborted'));
       };
       const timer = setTimeout(() => {
         this.timedOut++;
         remove(
-          new ArkvoryError('busy', 'Transfer admission timed out', {
-            retryAfterSeconds: this.retryAfterSeconds(),
-          }),
+          () =>
+            new ArkvoryError('busy', 'Transfer admission timed out', {
+              retryAfterSeconds: this.retryAfterSeconds(),
+            }),
         );
       }, this.timeoutMs);
       const waiter: Waiter = {
