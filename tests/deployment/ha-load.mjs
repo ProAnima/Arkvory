@@ -35,7 +35,7 @@ async function digest(stream) {
 
 export function client({ host, ca, token }) {
   /** One HTTPS exchange; network failures resolve as status 0 so callers can count them. */
-  function exchange(method, path, { body, headers = {}, timeoutMs = 30000, sink } = {}) {
+  function exchange(method, path, { body, headers = {}, timeoutMs = 30000, sink, fresh } = {}) {
     return new Promise((done) => {
       const call = request(
         {
@@ -46,6 +46,9 @@ export function client({ host, ca, token }) {
           ca,
           headers: { authorization: `Bearer ${token}`, ...headers },
           timeout: timeoutMs,
+          // A connection of its own, never one from the pool, which may still lead to a node
+          // that failed over.
+          ...(fresh ? { agent: false } : {}),
         },
         (response) => {
           const chunks = [];
@@ -80,7 +83,7 @@ export function client({ host, ca, token }) {
     headers: { 'content-type': 'application/json' },
   });
 
-  async function create(item) {
+  async function create(item, fresh = false) {
     const created = json({
       name: item.name,
       size: String(item.size),
@@ -91,6 +94,7 @@ export function client({ host, ca, token }) {
     return exchange('POST', `${repository}/uploads`, {
       ...created,
       headers: { ...created.headers, 'idempotency-key': item.key },
+      fresh,
     });
   }
 
@@ -101,11 +105,14 @@ export function client({ host, ca, token }) {
   async function upload(item, onSent = () => {}) {
     item.sha256 ??= await digest(bytes(item.name, item.size));
     // Node keeps HTTPS connections alive: after a failover a pooled one still leads to the old
-    // node and is reset when reused. Like the SDK, repeat the create (its idempotency key makes
-    // that safe) instead of counting a reset before any byte was accepted as a failed upload.
+    // node and is reset when reused, and the pool may hold several. Like the SDK, repeat the
+    // create (its idempotency key makes that safe) on a new connection after a short pause,
+    // instead of counting a reset before any byte was accepted as a failed upload.
     let created = await create(item);
-    for (let attempt = 1; created.status === 0 && attempt < 3; attempt++)
-      created = await create(item);
+    for (let attempt = 1; created.status === 0 && attempt < 3; attempt++) {
+      await new Promise((resolve) => setTimeout(resolve, 200 * attempt));
+      created = await create(item, true);
+    }
     if (created.status !== 201) return settle(item, created);
     item.id = created.json.id;
     if (created.json.status === 'available') return settle(item, created);
