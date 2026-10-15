@@ -88,8 +88,13 @@ const failureState = (error: unknown): FleetObservation['state'] => {
 
 /** Sites polled at once: a slow site must not hold the others. */
 const CONCURRENCY = 8;
-/** What the registry keeps of a site's topology (its column's limit). */
-const TOPOLOGY_LIMIT = 262144;
+/**
+ * What the registry keeps of a site's topology. Its column holds 262144 bytes of jsonb text, which
+ * adds a space after every `,` and `:`: a contract-checked topology (plain integers, no exponents)
+ * grows by at most half there. Two thirds of the column in UTF-8 bytes of JSON, so the database
+ * check never is the one that refuses it.
+ */
+const TOPOLOGY_LIMIT = Math.floor((262144 * 2) / 3);
 /** Reads and changes passed to sites at once: per site and in all. */
 const PER_SITE = 4;
 const IN_FLIGHT = 16;
@@ -187,7 +192,7 @@ export class FleetControl {
       const key = this.sealer().open(site.id, site.sealedKey);
       const topology = await this.client.topology(site, key, actor);
       const text = JSON.stringify(topology);
-      if (text.length > TOPOLOGY_LIMIT || text.includes('\\u0000'))
+      if (utf8Length(text) > TOPOLOGY_LIMIT || text.includes('\\u0000'))
         throw Object.assign(new Error('Topology cannot be stored'), { code: 'invalid' });
       const name = siteName(topology);
       observation = { state: 'ok', error: null, topology, ...(name ? { name } : {}) };
@@ -310,6 +315,16 @@ export class FleetControl {
       throw new ArkvoryError('unavailable', `The site could not be reached: ${state}`);
     }
   }
+}
+
+/** Bytes of `text` in UTF-8; a lone surrogate counts as the three bytes of its replacement. */
+function utf8Length(text: string): number {
+  let bytes = 0;
+  for (const character of text) {
+    const code = character.codePointAt(0) ?? 0;
+    bytes += code < 0x80 ? 1 : code < 0x800 ? 2 : code < 0x10000 ? 3 : 4;
+  }
+  return bytes;
 }
 
 /** The name a site reports of itself, when it is one the registry can keep. */
