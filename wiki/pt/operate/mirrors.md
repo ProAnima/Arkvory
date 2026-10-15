@@ -132,42 +132,61 @@ Conectado a um repositório espelhado, o console também mostra um selo acima do
 
 [getRepositoryMirror](../api/reference/mirrors#getRepositoryMirror) retorna o status de um repositório. Ele exige a permissão de ler o repositório. Para um repositório comum, a resposta é 404.
 
-| Campo                            | Significado                                                                                                               |
-| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `mode`                           | `mirror` ou `import`                                                                                                      |
-| `phase`                          | `pending` (o worker não começou), `seeding` (primeiro preenchimento) ou `following`                                       |
-| `caughtUp`                       | `true` quando a posição salva é igual à posição mais recente da origem. `null` antes de o primeiro preenchimento terminar |
-| `checkedAt`, `syncedAt`          | Quando o worker leu o feed pela última vez e quando esteve em dia pela última vez                                         |
-| `copiedArtifacts`, `copiedBytes` | Totais copiados até agora (`copiedBytes` é uma string decimal)                                                            |
-| `errorCode`, `errorAt`           | A última falha de um passo, ou `null`                                                                                     |
+| Campo                            | Significado                                                                                                                              |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `mode`                           | `mirror` ou `import`                                                                                                                     |
+| `phase`                          | `pending` (o worker não começou), `seeding` (primeiro preenchimento) ou `following`                                                      |
+| `caughtUp`                       | `true` quando a posição salva é igual à posição mais recente da origem. `null` antes de o primeiro preenchimento terminar                |
+| `checkedAt`, `syncedAt`          | Quando o worker leu o feed pela última vez e quando esteve em dia pela última vez                                                        |
+| `copiedArtifacts`, `copiedBytes` | Totais copiados até agora (`copiedBytes` é uma string decimal)                                                                           |
+| `conflicts`                      | Entradas da origem deixadas de lado: `count`, `oldestAt` e até 10 entradas em `sample`. Consulte [Entradas deixadas de lado](#conflicts) |
+| `errorCode`, `errorAt`           | A última falha de um passo, ou `null`                                                                                                    |
 
 ### Códigos de erro {#error-codes}
 
-| `errorCode`               | Significado e o que fazer                                                                                                                                                                                                                                                                                                             |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `mirror_mismatch`         | O mesmo ID de artefato tem conteúdo diferente na origem. O espelho mantém o arquivo dele. Investigue o artefato; não exclua nenhuma das cópias antes de saber a causa                                                                                                                                                                 |
-| `mirror_source_changed`   | O repositório já contém uma cópia de outra origem. Desanexe-o ou espelhe a nova origem em um novo repositório                                                                                                                                                                                                                         |
-| `mirror_source_behind`    | A origem foi restaurada ou reinstalada: a alteração na posição do espelho não é a que ele aplicou ali. O espelho lê a origem de novo, e o código desaparece quando ele estiver em dia. Os arquivos que a origem restaurada não tem permanecem no espelho                                                                              |
-| `mirror_delete_blocked`   | A origem excluiu um arquivo que o espelho não consegue excluir, porque algo aqui ainda o usa, como uma referência ou o histórico de um caminho de arquivo                                                                                                                                                                             |
-| `mirror_detached`         | O repositório foi desanexado e tem alterações próprias. Ele nunca mais é sincronizado. Espelhe a origem em um repositório novo                                                                                                                                                                                                        |
-| `mirror_package_conflict` | Uma versão da origem tem uma versão de pacote (grupo, nome e versão) que este repositório guarda com outros bytes. Os clientes continuam recebendo a versão de pacote que está aqui; o arquivo copiado permanece sem registro de pacote até que você o exclua. Remova o estágio ou a versão na origem, ou publique-a com outra versão |
-| `mirror_id_taken`         | Um artefato da origem está em outro repositório desta instalação. Um repositório de origem só pode preencher um repositório aqui                                                                                                                                                                                                      |
-| `mirror_unreachable`      | Não é possível alcançar a origem: a conexão é recusada ou expira, ou o nome não é resolvido. O worker tenta de novo sozinho. Verifique a rede, o firewall e se a origem está em execução                                                                                                                                              |
-| `mirror_certificate`      | O certificado da origem não é confiável, expirou ou não corresponde ao nome dela. Adicione a autoridade dele com `--mirror-ca-file` (consulte [HTTPS com uma autoridade certificadora própria](#ca-file))                                                                                                                             |
-| `mirror_failed`           | Uma falha sem um código mais específico. Leia o log do worker                                                                                                                                                                                                                                                                         |
-| outros códigos            | O código da solicitação que falhou: `unauthorized` quando a origem não aceita mais a chave (dê uma nova ao espelho), `forbidden` quando a chave não tem permissão para ler o repositório, `not_found` quando o repositório de origem não existe mais, `capacity_exceeded` quando o espelho está cheio                                 |
+| `errorCode`               | Significado e o que fazer                                                                                                                                                                                                                                                                                          |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `mirror_mismatch`         | O mesmo ID de artefato tem conteúdo diferente na origem. O espelho mantém o arquivo dele. Investigue o artefato; não exclua nenhuma das cópias antes de saber a causa                                                                                                                                              |
+| `mirror_source_changed`   | O repositório já contém uma cópia de outra origem. Desanexe-o ou espelhe a nova origem em um novo repositório                                                                                                                                                                                                      |
+| `mirror_source_behind`    | A origem foi restaurada ou reinstalada: a alteração na posição do espelho não é a que ele aplicou ali. O espelho lê a origem de novo, e o código desaparece quando ele estiver em dia. Os arquivos que a origem restaurada não tem permanecem no espelho                                                           |
+| `mirror_delete_blocked`   | A origem excluiu um arquivo que o espelho não consegue excluir, porque algo aqui ainda o usa, como uma referência ou o histórico de um caminho de arquivo                                                                                                                                                          |
+| `mirror_detached`         | O repositório foi desanexado e tem alterações próprias. Ele nunca mais é sincronizado. Espelhe a origem em um repositório novo                                                                                                                                                                                     |
+| `mirror_package_conflict` | Uma versão da origem tem uma versão de pacote que este repositório guarda com outros bytes. A entrada é deixada de lado e a sincronização continua: consulte [Entradas deixadas de lado](#conflicts). Versões anteriores do produto paravam aqui                                                                   |
+| `mirror_id_taken`         | Um artefato da origem está em outro repositório desta instalação. A entrada é deixada de lado, consulte [Entradas deixadas de lado](#conflicts); em uma mudança de tags de imagens, objetos Git LFS ou pacotes npm, ela interrompe a sincronização. Um repositório de origem só pode preencher um repositório aqui |
+| `mirror_unreachable`      | Não é possível alcançar a origem: a conexão é recusada ou expira, ou o nome não é resolvido. O worker tenta de novo sozinho. Verifique a rede, o firewall e se a origem está em execução                                                                                                                           |
+| `mirror_certificate`      | O certificado da origem não é confiável, expirou ou não corresponde ao nome dela. Adicione a autoridade dele com `--mirror-ca-file` (consulte [HTTPS com uma autoridade certificadora própria](#ca-file))                                                                                                          |
+| `mirror_failed`           | Uma falha sem um código mais específico. Leia o log do worker                                                                                                                                                                                                                                                      |
+| outros códigos            | O código da solicitação que falhou: `unauthorized` quando a origem não aceita mais a chave (dê uma nova ao espelho), `forbidden` quando a chave não tem permissão para ler o repositório, `not_found` quando o repositório de origem não existe mais, `capacity_exceeded` quando o espelho está cheio              |
 
 O log do worker (`component` é `mirror`) tem `mirror.started`, `mirror.step_failed` com `errorCode` e `attempts`, `mirror.recovered` e `mirror.stopped`.
 
+### Entradas deixadas de lado {#conflicts}
+
+Algumas mudanças da origem não podem ser aplicadas aqui sem quebrar o que já existe. O worker deixa essa entrada de lado e continua com as demais mudanças, para que uma versão não segure todas as seguintes. Nada é ignorado em silêncio: cada entrada deixada de lado fica visível até ser resolvida.
+
+| Código                    | Significado                                                                                                                                                                                                  | O que fazer                                                                                                                       |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------- |
+| `mirror_package_conflict` | A versão tem uma versão de pacote (grupo, nome e versão) que este repositório guarda com outros bytes. Os clientes continuam recebendo a versão que está aqui; o arquivo copiado fica sem registro de pacote | Remova o estágio ou a versão na origem, ou publique-a com outra versão. Em uma importação, você também pode excluir a versão aqui |
+| `mirror_id_taken`         | Outro repositório desta instalação tem o ID do artefato                                                                                                                                                      | Um repositório de origem preenche um repositório aqui. Desconecte o outro espelho ou importação, ou exclua a outra cópia          |
+
+- O worker tenta cada entrada de novo 10 minutos após a última tentativa, até 8 entradas sempre que está em dia. Uma entrada é removida quando é aplicada, ou quando a origem não a tem mais: a versão foi excluída lá ou, em uma importação, o estágio dela foi removido.
+- O estado mostra `conflicts`: quantas entradas foram deixadas de lado, quando a mais antiga foi deixada de lado e até 10 delas com o ID do artefato, a mudança (`action` e `detail`), o código, a primeira e a última tentativa e o número de tentativas.
+- O console mostra o número em [[ui:mirrors]] e sob o selo do repositório. O estado não muda, porque o resto continua sincronizando.
+- O log do worker tem `mirror.conflict_set_aside` (warning, com `artifactId`, `action`, `errorCode` e `attempts`) a cada tentativa que falha e `mirror.conflict_resolved` quando uma entrada é removida.
+- A métrica `arkvory_mirror_conflicts` as conta, e a regra `ArkvoryMirrorConflicts` avisa quando há alguma por 30 minutos.
+
+Mudanças de tags e manifestos de imagens, objetos Git LFS e pacotes npm nunca são deixadas de lado: a ordem delas importa, e aplicar uma depois poderia desfazer uma mudança mais recente. Um conflito nelas interrompe a sincronização com o seu código até ser resolvido.
+
 ## Monitorar espelhos {#monitoring}
 
-A API da instalação do espelho expõe três métricas para cada repositório espelhado, com os rótulos `repository` e `mode`:
+A API da instalação do espelho expõe quatro métricas para cada repositório espelhado, com os rótulos `repository` e `mode`:
 
 - `arkvory_mirror_last_sync_timestamp_seconds`: a última vez em que o espelho esteve em dia.
 - `arkvory_mirror_last_check_timestamp_seconds`: a última vez em que ele leu o feed.
 - `arkvory_mirror_failing`: 1 enquanto a última tentativa falhou; não enquanto o espelho lê de novo uma origem restaurada (`mirror_source_behind`).
+- `arkvory_mirror_conflicts`: o número de [entradas deixadas de lado](#conflicts).
 
-As regras prontas do Prometheus são `ArkvoryMirrorStale` (sem estar em dia há mais de uma hora, por 15 minutos) e `ArkvoryMirrorFailing` (a falha dura 15 minutos). Consulte [Monitoramento](./monitoring). Um espelho que o worker ainda não alcançou não tem horário de sincronização, então a regra de atraso não dispara antes da primeira sincronização.
+As regras prontas do Prometheus são `ArkvoryMirrorStale` (sem estar em dia há mais de uma hora, por 15 minutos) e `ArkvoryMirrorFailing` (a falha dura 15 minutos). Consulte [Monitoramento](./monitoring). Um espelho que o worker ainda não alcançou não tem horário de sincronização, então a regra de atraso não dispara antes da primeira sincronização. `ArkvoryMirrorConflicts` avisa quando há entradas deixadas de lado por 30 minutos.
 
 ## Importar por estágio {#import}
 
@@ -185,7 +204,7 @@ sudo arkvory configure --root /opt/proanima-arkvory \
 - Os uploads e a política de armazenamento do repositório funcionam normalmente.
 - Os dados de imagens de contêiner, de Git LFS e do registro npm não são transferidos.
 - Uma alteração dos estágios inicia um novo primeiro preenchimento. Ele só traz as versões que ainda não estão aqui e deixa como estão as que já estão.
-- Uma versão da origem cuja versão de pacote este repositório já guarda com outros bytes interrompe a importação com `mirror_package_conflict`. Os clientes continuam recebendo a versão que está aqui.
+- Uma versão da origem cuja versão de pacote este repositório já guarda com outros bytes é deixada de lado com `mirror_package_conflict`, e a importação continua com as próximas versões. Os clientes continuam recebendo a versão que está aqui. Consulte [Entradas deixadas de lado](#conflicts).
 
 Duas instalações podem importar uma da outra. Por exemplo, a produção recebe `release` do staging, e o staging recebe `hotfix` da produção. Uma versão mantém o mesmo ID nos dois lados, então nada é copiado duas vezes nem fica circulando:
 
@@ -243,8 +262,9 @@ Ensaie a troca a cada trimestre e depois das atualizações. Desanexe um reposit
 - O espelho não é um backup. Ele não tem cópia de contas, chaves nem permissões de acesso, e não copia referências, anexos, registros de auditoria nem políticas de armazenamento.
 - O modo de importação não copia imagens de contêiner, Git LFS nem dados do npm.
 - Um novo primeiro preenchimento apenas adiciona e atualiza: depois de uma restauração da origem, os arquivos que a origem perdeu permanecem no espelho.
-- Um repositório de origem preenche um repositório de uma instalação: os IDs de artefato são os mesmos nos dois lados, então um segundo espelho ou importação dele é recusado ao ser configurado. Pelo mesmo motivo, duas instalações que importam uma da outra devem usar o mesmo nome de repositório nos dois lados: uma versão que veio do outro lado não pode ser levada aqui para outro repositório, e a importação para com `mirror_id_taken`.
-- Uma versão cuja versão de pacote já é guardada aqui com outros bytes é copiada, e então a importação para com `mirror_package_conflict`. A cópia permanece no repositório sem registro de pacote até que você a exclua.
+- Um repositório de origem preenche um repositório de uma instalação: os IDs de artefato são os mesmos nos dois lados, então um segundo espelho ou importação dele é recusado ao ser configurado. Pelo mesmo motivo, duas instalações que importam uma da outra devem usar o mesmo nome de repositório nos dois lados: uma versão que veio do outro lado não pode ser levada aqui para outro repositório, e ela é deixada de lado com `mirror_id_taken`.
+- Uma versão cuja versão de pacote já é guardada aqui com outros bytes é copiada e então deixada de lado com `mirror_package_conflict`. A cópia permanece no repositório sem registro de pacote até que você a exclua.
+- Uma entrada deixada de lado não está aqui até ser resolvida. Um conflito em uma mudança de tags de imagens, objetos Git LFS ou pacotes npm continua interrompendo a sincronização.
 - Depois de restaurar a instalação do espelho a partir de um backup, as versões que foram importadas e excluídas após o backup podem ser importadas de novo.
 - As duas instalações são atualizadas por conta própria. A origem precisa oferecer o feed de alterações do espelho.
 - O conjunto de autoridades confiáveis da origem vale para o worker inteiro.

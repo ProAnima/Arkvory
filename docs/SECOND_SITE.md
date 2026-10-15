@@ -25,7 +25,7 @@
 5. Настройте потребителей на запасной адрес B: скачивание сразу с B снимает нагрузку с канала до A.
    Зеркала не переносят ссылки удержания, вложения, журналы и политики хранения. Репозиторий, созданный на A позже, сам на B не появляется — подключите его зеркалом так же.
 6. Резервные копии A — по плану, vault на томе вне площадки A ([PRODUCTION](PRODUCTION.md)).
-7. Мониторинг B: правила `ArkvoryMirrorStale` и `ArkvoryMirrorFailing` ([arkvory-alerts.yml](../deploy/monitoring/arkvory-alerts.yml)) и состояние `GET /api/v1/repositories/{r}/mirror`.
+7. Мониторинг B: правила `ArkvoryMirrorStale`, `ArkvoryMirrorFailing` и `ArkvoryMirrorConflicts` ([arkvory-alerts.yml](../deploy/monitoring/arkvory-alerts.yml)) и состояние `GET /api/v1/repositories/{r}/mirror`.
 
 ## Переход при потере A
 
