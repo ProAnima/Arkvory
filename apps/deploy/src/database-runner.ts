@@ -2,7 +2,8 @@ import { access, readFile, writeFile, unlink } from 'node:fs/promises';
 import { join } from 'node:path';
 import { spawn } from 'node:child_process';
 import { setTimeout as delay } from 'node:timers/promises';
-import { databaseSettings, ownerPassword } from './managed-database.js';
+import { canListen, databaseSettings, ownerPassword } from './managed-database.js';
+import { report } from './output.js';
 import { command, DeploymentCommandFailed } from './process.js';
 import { syncDirectory } from './files.js';
 
@@ -100,6 +101,12 @@ export async function runDatabase(root: string): Promise<void> {
     join(settings.bin, name + (process.platform === 'win32' ? '.exe' : ''));
   const environment = { PGPASSWORD: await ownerPassword(root), PGCONNECT_TIMEOUT: '5' };
   const major = await initializeCluster(directory, executable);
+  // PostgreSQL itself says only "Permission denied" for a port Windows reserved at boot.
+  if (process.platform === 'win32' && !(await canListen(settings.port)))
+    report(
+      'error',
+      `Database port ${String(settings.port)} on 127.0.0.1 is in use or reserved by Windows (netsh int ipv4 show excludedportrange protocol=tcp)`,
+    );
   const child = spawn(
     executable('postgres'),
     [
