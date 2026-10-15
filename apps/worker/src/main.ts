@@ -112,7 +112,7 @@ try {
     2 + Math.min(mirrors.length, 16),
   );
   if (!acquired) throw new StoppedOnStandby();
-  const { catalog, blobs } = acquired;
+  const { catalog, blobs, dataDirectory } = acquired;
   let currentLease: PostgresJobLease | undefined;
   const recovery = setInterval(() => {
     if (stop.signal.aborted || (catalog.active && (!currentLease || currentLease.active))) return;
@@ -149,10 +149,19 @@ try {
   const mirroring = runMirrors({
     catalog,
     blobs,
-    dataDirectory: process.env['ARKVORY_DATA_DIR'] ?? '',
+    dataDirectory,
     mirrors,
     stop: stop.signal,
     diagnostics,
+  }).catch((error: unknown) => {
+    // Awaited only at shutdown: a rejection left until then would end the process early.
+    diagnostics.write({
+      level: 'error',
+      component: 'mirror',
+      code: 'mirror.step_failed',
+      errorCode: 'mirror_failed',
+      ...failureCause(error),
+    });
   });
   const delivering = runWebhooks({
     catalog,

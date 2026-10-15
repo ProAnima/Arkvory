@@ -27,7 +27,8 @@ export async function resources(role: 'worker' | 'maintenance', capacity = 0, wr
     await catalog.ready();
     await blobs.ready();
     await catalog.claimStorage(await blobs.identity(), role);
-    return { catalog, blobs };
+    // The validated root: mirror copies stage their parts under it.
+    return { catalog, blobs, dataDirectory: root };
   } catch (error) {
     await catalog.close();
     throw error;
