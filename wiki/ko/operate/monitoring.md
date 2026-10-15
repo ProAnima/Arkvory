@@ -116,7 +116,8 @@ scrape_configs:
 | `arkvory_database_pool_connections`, `arkvory_database_pool_idle`, `arkvory_database_pool_waiting` | `pool` (`queries`, `sessions`, `locks`)                    | 데이터베이스 풀 연결: 열린 연결, 유휴 연결, 대기 중인 호출; 대기가 오래 0보다 크면 풀이 작다는 뜻입니다                                      |
 | `arkvory_fleet_site_up`                                                                            | `site`, `name`                                             | 컨트롤러에서: 관리 대상 사이트가 마지막 읽기에 응답했으면 1, 아니면 0                                                                        |
 | `arkvory_fleet_site_last_seen_timestamp_seconds`                                                   | `site`, `name`                                             | 컨트롤러에서: 관리 대상 사이트가 마지막으로 응답한 시각                                                                                      |
-| `arkvory_fleet_mirror_lag_changes`                                                                 | `site`, `repository`                                       | 컨트롤러에서: 관리 대상 사이트의 미러가 원본보다 뒤처진 변경 수                                                                              |
+| `arkvory_fleet_mirror_lag_changes`                                                                 | `site`, `repository`                                       | 컨트롤러에서: 관리 대상 사이트의 미러가 원본보다 뒤처진 변경 수. 사이트가 응답하지 않는 동안에는 마지막으로 알려진 값                        |
+| `arkvory_fleet_mirror_lag_alert_changes`                                                           |                                                            | 컨트롤러에서: `ARKVORY_FLEET_LAG_ALERT`(기본값 1000), 미러가 경보를 내는 지연. `ArkvoryFleetMirrorBehind`가 이 값과 비교                     |
 | `arkvory_fleet_alerts`                                                                             | `severity`, `kind`                                         | 컨트롤러에서: [사이트](./sites#alerts) 페이지의 경보, 이 설치 포함                                                                           |
 
 데이터베이스 기반 메트릭(완료, 백업, 미러)은 최대 5초마다 읽습니다. 읽기가 실패하면 서버는 오래된 값을 보여 주는 대신 이 메트릭들을 생략하고, `arkvory_metrics_collection_failures_total`이 증가합니다.
@@ -246,26 +247,26 @@ Select-String -Path "$root\logs\*.log" -Pattern 'REQUEST_ID'
 
 릴리스에는 `releases/<version>/deploy/monitoring/arkvory-alerts.yml`에 바로 사용할 수 있는 Prometheus 규칙이 들어 있습니다. `prometheus.yml`의 `rule_files`에 이 파일을 추가하세요. 임계값은 시작점입니다. 측정한 트래픽에 맞게 조정하세요.
 
-| 경보                                                            | 조건                                                                       | 심각도     |
-| --------------------------------------------------------------- | -------------------------------------------------------------------------- | ---------- |
-| `ArkvoryDown`                                                   | 2분 동안 스크레이프 실패                                                   | 심각       |
-| `ArkvoryHighServerErrorRate`                                    | 10분 동안 응답의 5 % 넘게 5xx                                              | 경고       |
-| `ArkvorySlowMetadataRequests`                                   | 15분 동안 제어 요청의 99번째 백분위수가 2초 초과                           | 경고       |
-| `ArkvoryCompletionBacklog`                                      | 가장 오래된 대기 완료 작업이 10분 넘게 대기                                | 경고       |
-| `ArkvoryTransferAdmissionRejections`                            | 15분 동안 초당 0.1건 넘게 전송이 거부되거나 시간 초과                      | 경고       |
-| `ArkvoryDiagnosticsDropped`                                     | 지난 15분 동안 로그 줄이 버려짐                                            | 경고       |
-| `ArkvoryMetricsCollectionFailing`                               | 데이터베이스 기반 메트릭을 읽지 못함                                       | 경고       |
-| `ArkvoryTlsCertificateExpiring`, `ArkvoryTlsCertificateExpired` | 내장 인증서가 14일 이내에 만료되거나 이미 만료됨                           | 경고, 심각 |
-| `ArkvoryBackupStale`                                            | 가장 최근 지점이 26시간보다 오래됨                                         | 심각       |
-| `ArkvoryBackupAgentOffline`                                     | 5분 동안 2분 넘게 하트비트 없음                                            | 심각       |
-| `ArkvoryBackupWarning`                                          | 10분 동안 `vault_unavailable` 또는 `verify_failed`                         | 심각       |
-| `ArkvoryMirrorStale`                                            | 미러가 한 시간 동안 원본을 따라잡지 못함                                   | 경고       |
-| `ArkvoryMirrorFailing`                                          | 15분 동안 미러의 마지막 동기화 실패                                        | 경고       |
-| `ArkvoryRestartLoop`                                            | API 프로세스가 30분 동안 3회 이상 다시 시작됨                              | 경고       |
-| `ArkvoryWebhookFailing`                                         | 웹훅 전달이 15분째 실패하고 있음                                           | 경고       |
-| `ArkvoryFleetSiteDown`                                          | 관리 대상 사이트가 5분 동안 컨트롤러에 응답하지 않음                       | 심각       |
-| `ArkvoryFleetMirrorBehind`                                      | 관리 대상 사이트의 미러가 30분 동안 원본보다 1000개 이상의 변경만큼 뒤처짐 | 경고       |
-| `ArkvoryFleetCritical`                                          | 컨트롤러의 사이트 페이지가 5분 동안 심각 경보를 표시함                     | 심각       |
+| 경보                                                            | 조건                                                                                 | 심각도     |
+| --------------------------------------------------------------- | ------------------------------------------------------------------------------------ | ---------- |
+| `ArkvoryDown`                                                   | 2분 동안 스크레이프 실패                                                             | 심각       |
+| `ArkvoryHighServerErrorRate`                                    | 10분 동안 응답의 5 % 넘게 5xx                                                        | 경고       |
+| `ArkvorySlowMetadataRequests`                                   | 15분 동안 제어 요청의 99번째 백분위수가 2초 초과                                     | 경고       |
+| `ArkvoryCompletionBacklog`                                      | 가장 오래된 대기 완료 작업이 10분 넘게 대기                                          | 경고       |
+| `ArkvoryTransferAdmissionRejections`                            | 15분 동안 초당 0.1건 넘게 전송이 거부되거나 시간 초과                                | 경고       |
+| `ArkvoryDiagnosticsDropped`                                     | 지난 15분 동안 로그 줄이 버려짐                                                      | 경고       |
+| `ArkvoryMetricsCollectionFailing`                               | 데이터베이스 기반 메트릭을 읽지 못함                                                 | 경고       |
+| `ArkvoryTlsCertificateExpiring`, `ArkvoryTlsCertificateExpired` | 내장 인증서가 14일 이내에 만료되거나 이미 만료됨                                     | 경고, 심각 |
+| `ArkvoryBackupStale`                                            | 가장 최근 지점이 26시간보다 오래됨                                                   | 심각       |
+| `ArkvoryBackupAgentOffline`                                     | 5분 동안 2분 넘게 하트비트 없음                                                      | 심각       |
+| `ArkvoryBackupWarning`                                          | 10분 동안 `vault_unavailable` 또는 `verify_failed`                                   | 심각       |
+| `ArkvoryMirrorStale`                                            | 미러가 한 시간 동안 원본을 따라잡지 못함                                             | 경고       |
+| `ArkvoryMirrorFailing`                                          | 15분 동안 미러의 마지막 동기화 실패                                                  | 경고       |
+| `ArkvoryRestartLoop`                                            | API 프로세스가 30분 동안 3회 이상 다시 시작됨                                        | 경고       |
+| `ArkvoryWebhookFailing`                                         | 웹훅 전달이 15분째 실패하고 있음                                                     | 경고       |
+| `ArkvoryFleetSiteDown`                                          | 관리 대상 사이트가 5분 동안 컨트롤러에 응답하지 않음                                 | 심각       |
+| `ArkvoryFleetMirrorBehind`                                      | 관리 대상 사이트의 미러 지연이 30분 동안 `ARKVORY_FLEET_LAG_ALERT`(기본값 1000) 이상 | 경고       |
+| `ArkvoryFleetCritical`                                          | 컨트롤러의 사이트 페이지가 5분 동안 심각 경보를 표시함                               | 심각       |
 
 Arkvory가 데이터를 내보내지 않으므로 다음 경보는 직접 추가하세요:
 

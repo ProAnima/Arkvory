@@ -116,7 +116,8 @@ scrape_configs:
 | `arkvory_database_pool_connections`, `arkvory_database_pool_idle`, `arkvory_database_pool_waiting` | `pool` (`queries`, `sessions`, `locks`)                    | 数据库连接池的连接：打开、空闲和等待中的数量；等待数长时间大于零说明连接池太小                                                  |
 | `arkvory_fleet_site_up`                                                                            | `site`, `name`                                             | 在控制站点上：受管站点应答了最近一次读取时为 1，否则为 0                                                                        |
 | `arkvory_fleet_site_last_seen_timestamp_seconds`                                                   | `site`, `name`                                             | 在控制站点上：受管站点最后一次应答的时间                                                                                        |
-| `arkvory_fleet_mirror_lag_changes`                                                                 | `site`, `repository`                                       | 在控制站点上：受管站点的镜像落后于源的变更数                                                                                    |
+| `arkvory_fleet_mirror_lag_changes`                                                                 | `site`, `repository`                                       | 在控制站点上：受管站点的镜像落后于源的变更数；站点不应答时为最后已知的值                                                        |
+| `arkvory_fleet_mirror_lag_alert_changes`                                                           |                                                            | 在控制站点上：`ARKVORY_FLEET_LAG_ALERT`（默认 1000），镜像触发告警的落后数；`ArkvoryFleetMirrorBehind` 与它比较                 |
 | `arkvory_fleet_alerts`                                                                             | `severity`, `kind`                                         | 在控制站点上：[站点](./sites#alerts)页面的告警，包括本安装                                                                      |
 
 由数据库支持的指标（完成、备份、镜像）最多每 5 秒读取一次。当读取失败时，服务器会省略这些指标，而不是显示旧值，并且 `arkvory_metrics_collection_failures_total` 会增长。
@@ -246,26 +247,26 @@ Select-String -Path "$root\logs\*.log" -Pattern 'REQUEST_ID'
 
 发行版在 `releases/<version>/deploy/monitoring/arkvory-alerts.yml` 中包含现成的 Prometheus 规则。将该文件添加到 `prometheus.yml` 的 `rule_files` 中。这些阈值只是起点。请根据您实测的流量进行调整。
 
-| 告警                                                            | 条件                                                   | 严重程度          |
-| --------------------------------------------------------------- | ------------------------------------------------------ | ----------------- |
-| `ArkvoryDown`                                                   | 抓取失败持续 2 分钟                                    | Critical          |
-| `ArkvoryHighServerErrorRate`                                    | 10 分钟内超过 5% 的响应为 5xx                          | Warning           |
-| `ArkvorySlowMetadataRequests`                                   | 15 分钟内控制请求的第 99 百分位数高于 2 秒             | Warning           |
-| `ArkvoryCompletionBacklog`                                      | 最旧的排队完成作业等待超过 10 分钟                     | Warning           |
-| `ArkvoryTransferAdmissionRejections`                            | 15 分钟内每秒超过 0.1 次被拒绝或超时的传输             | Warning           |
-| `ArkvoryDiagnosticsDropped`                                     | 过去 15 分钟内有日志行被丢弃                           | Warning           |
-| `ArkvoryMetricsCollectionFailing`                               | 无法读取某个由数据库支持的指标                         | Warning           |
-| `ArkvoryTlsCertificateExpiring`, `ArkvoryTlsCertificateExpired` | 内置证书在 14 天内到期，或已过期                       | Warning, critical |
-| `ArkvoryBackupStale`                                            | 最新恢复点的存在时间超过 26 小时                       | Critical          |
-| `ArkvoryBackupAgentOffline`                                     | 超过 2 分钟没有心跳，持续 5 分钟                       | Critical          |
-| `ArkvoryBackupWarning`                                          | `vault_unavailable` 或 `verify_failed` 持续 10 分钟    | Critical          |
-| `ArkvoryMirrorStale`                                            | 镜像已有一小时未追平其源                               | Warning           |
-| `ArkvoryMirrorFailing`                                          | 镜像的上次同步失败，持续 15 分钟                       | Warning           |
-| `ArkvoryRestartLoop`                                            | API 进程在 30 分钟内重启了 3 次或更多                  | Warning           |
-| `ArkvoryWebhookFailing`                                         | Webhook 投递已连续失败 15 分钟                         | Warning           |
-| `ArkvoryFleetSiteDown`                                          | 受管站点 5 分钟未应答控制站点                          | Critical          |
-| `ArkvoryFleetMirrorBehind`                                      | 受管站点的镜像落后于源 1000 个或更多变更，持续 30 分钟 | Warning           |
-| `ArkvoryFleetCritical`                                          | 控制站点的“站点”页面显示严重告警，持续 5 分钟          | Critical          |
+| 告警                                                            | 条件                                                                                | 严重程度          |
+| --------------------------------------------------------------- | ----------------------------------------------------------------------------------- | ----------------- |
+| `ArkvoryDown`                                                   | 抓取失败持续 2 分钟                                                                 | Critical          |
+| `ArkvoryHighServerErrorRate`                                    | 10 分钟内超过 5% 的响应为 5xx                                                       | Warning           |
+| `ArkvorySlowMetadataRequests`                                   | 15 分钟内控制请求的第 99 百分位数高于 2 秒                                          | Warning           |
+| `ArkvoryCompletionBacklog`                                      | 最旧的排队完成作业等待超过 10 分钟                                                  | Warning           |
+| `ArkvoryTransferAdmissionRejections`                            | 15 分钟内每秒超过 0.1 次被拒绝或超时的传输                                          | Warning           |
+| `ArkvoryDiagnosticsDropped`                                     | 过去 15 分钟内有日志行被丢弃                                                        | Warning           |
+| `ArkvoryMetricsCollectionFailing`                               | 无法读取某个由数据库支持的指标                                                      | Warning           |
+| `ArkvoryTlsCertificateExpiring`, `ArkvoryTlsCertificateExpired` | 内置证书在 14 天内到期，或已过期                                                    | Warning, critical |
+| `ArkvoryBackupStale`                                            | 最新恢复点的存在时间超过 26 小时                                                    | Critical          |
+| `ArkvoryBackupAgentOffline`                                     | 超过 2 分钟没有心跳，持续 5 分钟                                                    | Critical          |
+| `ArkvoryBackupWarning`                                          | `vault_unavailable` 或 `verify_failed` 持续 10 分钟                                 | Critical          |
+| `ArkvoryMirrorStale`                                            | 镜像已有一小时未追平其源                                                            | Warning           |
+| `ArkvoryMirrorFailing`                                          | 镜像的上次同步失败，持续 15 分钟                                                    | Warning           |
+| `ArkvoryRestartLoop`                                            | API 进程在 30 分钟内重启了 3 次或更多                                               | Warning           |
+| `ArkvoryWebhookFailing`                                         | Webhook 投递已连续失败 15 分钟                                                      | Warning           |
+| `ArkvoryFleetSiteDown`                                          | 受管站点 5 分钟未应答控制站点                                                       | Critical          |
+| `ArkvoryFleetMirrorBehind`                                      | 受管站点的镜像落后数达到或超过 `ARKVORY_FLEET_LAG_ALERT`（默认 1000），持续 30 分钟 | Warning           |
+| `ArkvoryFleetCritical`                                          | 控制站点的“站点”页面显示严重告警，持续 5 分钟                                       | Critical          |
 
 请自行添加以下告警，因为 Arkvory 不导出这些数据：
 

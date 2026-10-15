@@ -15,18 +15,20 @@ description: 在一处查看集群的所有安装，用一次性代码配对站�
 
 每条告警指明站点和问题，最严重的排在前面：[[ui:fleetSeverityCritical]]，然后是 [[ui:fleetSeverityWarning]]，然后是 [[ui:fleetSeverityInfo]]。没有需要关注的问题时，列表会说明。
 
-| 告警                       | 严重程度                     | 何时                                                                        | 处理                                                 |
-| -------------------------- | ---------------------------- | --------------------------------------------------------------------------- | ---------------------------------------------------- |
-| 无法访问                   | [[ui:fleetSeverityCritical]] | 2 分钟没有应答。一次读取失败不算告警                                        | 检查站点和网络                                       |
-| 证书、已撤销、已拒绝、无效 | [[ui:fleetSeverityCritical]] | 立即，与同名[状态](#states)一起出现                                         | 重新配对，或将两个安装升级                           |
-| 过期                       | [[ui:fleetSeverityWarning]]  | 站点有应答，但超过 90 秒未被读取：控制站点的后台读取卡住了                  | 检查控制站点的 API 进程                              |
-| 不可写入                   | [[ui:fleetSeverityCritical]] | 写入进程拒绝写入，且并未在排空                                              | 检查它的数据库和磁盘                                 |
-| 副本                       | [[ui:fleetSeverityCritical]] | HA 站点缺少数据副本；写入暂停，直到副本恢复                                 | 恢复缺失的节点，参见[高可用集群](./cluster#failures) |
-| 单副本                     | [[ui:fleetSeverityWarning]]  | 缺少副本，但运维人员已接受在某个时间之前只有[单副本](./cluster#single-copy) | 在该时间之前恢复缺失的节点                           |
-| 镜像失败                   | [[ui:fleetSeverityWarning]]  | 镜像的上次同步失败。重新读取已恢复的源不算                                  | 查看镜像的[错误代码](./mirrors#error-codes)          |
-| 镜像落后                   | [[ui:fleetSeverityWarning]]  | 镜像落后于源 `ARKVORY_FLEET_LAG_ALERT` 个变更（默认 1000）或更多            | 检查源、网络和镜像                                   |
-| 更新失败                   | [[ui:fleetSeverityWarning]]  | 站点的更新程序报告失败                                                      | 在[站点设置](#site-settings)中打开 [[ui:updates]]    |
-| 版本不同                   | [[ui:fleetSeverityInfo]]     | 站点运行的版本与控制站点不同                                                | 将各站点升级到同一版本                               |
+| 告警                       | 严重程度                     | 何时                                                                                            | 处理                                                 |
+| -------------------------- | ---------------------------- | ----------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| 无法访问                   | [[ui:fleetSeverityCritical]] | 2 分钟没有应答。一次读取失败不算告警                                                            | 检查站点和网络                                       |
+| 证书、已撤销、已拒绝、无效 | [[ui:fleetSeverityCritical]] | 立即，与同名[状态](#states)一起出现                                                             | 重新配对，或将两个安装升级                           |
+| 过期                       | [[ui:fleetSeverityWarning]]  | 站点有应答，但超过三个读取周期（90 秒）加上一轮读取所需的时间未被读取：控制站点的后台读取卡住了 | 检查控制站点的 API 进程                              |
+| 不可写入                   | [[ui:fleetSeverityCritical]] | 写入进程拒绝写入，且并未在排空                                                                  | 检查它的数据库和磁盘                                 |
+| 副本                       | [[ui:fleetSeverityCritical]] | HA 站点缺少数据副本；写入暂停，直到副本恢复                                                     | 恢复缺失的节点，参见[高可用集群](./cluster#failures) |
+| 单副本                     | [[ui:fleetSeverityWarning]]  | 缺少副本，但运维人员已接受在某个时间之前只有[单副本](./cluster#single-copy)                     | 在该时间之前恢复缺失的节点                           |
+| 镜像失败                   | [[ui:fleetSeverityWarning]]  | 镜像的上次同步失败。重新读取已恢复的源不算                                                      | 查看镜像的[错误代码](./mirrors#error-codes)          |
+| 镜像落后                   | [[ui:fleetSeverityWarning]]  | 镜像落后于源 `ARKVORY_FLEET_LAG_ALERT` 个变更（默认 1000）或更多                                | 检查源、网络和镜像                                   |
+| 更新失败                   | [[ui:fleetSeverityWarning]]  | 站点的更新程序报告失败                                                                          | 在[站点设置](#site-settings)中打开 [[ui:updates]]    |
+| 版本不同                   | [[ui:fleetSeverityInfo]]     | 站点运行的版本与控制站点不同                                                                    | 将各站点升级到同一版本                               |
+
+告警只使用最新的读取结果：不应答的站点只产生它自己的告警，而不会根据它上次报告的内容产生告警。一轮读取每八个站点最多需要 15 秒，因为控制站点同时最多读取八个站点，每个最多等待 15 秒；过期告警会加上这段时间，这样大量无法访问的站点不会让健康的站点看起来卡住。Prometheus 使用同一个 `ARKVORY_FLEET_LAG_ALERT` 告警，参见[监控](./monitoring#alerts)。
 
 ### 关联 {#map}
 
@@ -35,6 +37,7 @@ description: 在一处查看集群的所有安装，用一次性代码配对站�
 - 如果没有任何受管站点在某个源的地址上应答，该源以其地址显示，带虚线边框。如果该源就是控制站点本身，请设置 `ARKVORY_SITE_URL`，参见[设置](#settings)。
 - 失败的关联显示为红色虚线。
 - 关联上的数字是镜像落后于源的变更数。
+- 站点不应答期间，它的关联及落后数保持为它上次报告的内容，并标记为最后已知状态：在地图上显示为虚线，在表格中带有提示 [[ui:fleetLinkStale]]。
 
 地图下方的表格列出相同的信息：[[ui:fleetLinkFrom]]、[[ui:fleetLinkTo]]、[[ui:fleetMirrorRepository]]、[[ui:fleetMirrorSourceRepository]] 和 [[ui:fleetLinkBehind]]。
 
