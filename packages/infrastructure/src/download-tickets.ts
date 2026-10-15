@@ -53,40 +53,57 @@ export async function loadDownloadTicketKey(
   return found.rows[0]?.secret;
 }
 
-/** How long a ticket keeps a download's turn. */
-const TICKET_MS = 24 * 60 * 60 * 1000;
+/**
+ * How long after its issue a ticket is accepted: the ten minutes a paused download keeps its turn
+ * plus slack. Every answer re-issues the ticket, so a waiting client always holds a fresh one,
+ * however long it waits; an old ticket cannot be replayed to restore an early arrival.
+ */
+const TICKET_MS = 15 * 60 * 1000;
+/** Clocks of HA nodes differ a little: a time this far ahead is taken as now, not refused. */
+const SKEW_MS = 2 * 60 * 1000;
 const base64url = (bytes: Buffer) => bytes.toString('base64url');
 
 /**
- * Queue tickets of ADR 0076: `1.<arrival>.<mac>`, the wall-clock time a download first came
- * and an HMAC over it and the session key. A client sends it back with its requests; after a
- * restart the download takes its old turn. It cannot be moved to another download or forged
- * earlier, and expires after a day. Anything wrong in it is ignored: the download queues anew.
+ * Queue tickets of ADR 0076: `2.<arrival>.<issued>.<mac>`, the wall-clock times a download first
+ * came and the ticket was issued, base 36, and an HMAC over both and the session key. A client
+ * sends it back with its requests; after a restart the download takes its old turn. It cannot be
+ * moved to another download or forged earlier, and is accepted for 15 minutes after its issue.
+ * Anything wrong in it is ignored: the download queues anew. Tickets of the first format
+ * (`1.<arrival>.<mac>`) are no longer read: a ticket is a hint, losing one costs a place once.
  */
 export class DownloadTickets {
   constructor(private readonly secret: Buffer) {}
 
-  issue(key: string, arrivedAt: number): string {
-    const arrival = Math.floor(arrivedAt).toString(36);
-    return `1.${arrival}.${this.mac(key, arrival)}`;
+  issue(key: string, arrivedAt: number, issuedAt: number): string {
+    const arrival = Math.floor(Math.min(arrivedAt, issuedAt)).toString(36);
+    const issued = Math.floor(issuedAt).toString(36);
+    return `2.${arrival}.${issued}.${this.mac(key, arrival, issued)}`;
   }
 
   /** The arrival time a valid ticket for `key` carries, or undefined. */
   read(key: string, ticket: string | undefined, now: number): number | undefined {
     const match =
-      ticket === undefined ? null : /^1\.([0-9a-z]{1,12})\.([A-Za-z0-9_-]{43})$/.exec(ticket);
+      ticket === undefined
+        ? null
+        : /^2\.([0-9a-z]{1,12})\.([0-9a-z]{1,12})\.([A-Za-z0-9_-]{43})$/.exec(ticket);
     if (!match) return undefined;
-    const [, arrival = '', mac = ''] = match;
-    const expected = Buffer.from(this.mac(key, arrival));
+    const [, arrival = '', issued = '', mac = ''] = match;
+    const expected = Buffer.from(this.mac(key, arrival, issued));
     const given = Buffer.from(mac);
     if (given.length !== expected.length || !timingSafeEqual(given, expected)) return undefined;
     const arrivedAt = parseInt(arrival, 36);
-    return arrivedAt <= now && now - arrivedAt <= TICKET_MS ? arrivedAt : undefined;
+    const issuedAt = parseInt(issued, 36);
+    if (arrivedAt > issuedAt || issuedAt > now + SKEW_MS || now - issuedAt > TICKET_MS)
+      return undefined;
+    return Math.min(arrivedAt, now);
   }
 
-  private mac(key: string, arrival: string) {
-    // The key is hashed first: it holds principal ids, and only its digest enters the MAC.
+  private mac(key: string, arrival: string, issued: string) {
+    // The key is hashed first: it holds principal ids, and only its digest enters the MAC. The
+    // separator keeps the two times apart: base 36 digits never contain it.
     const session = createHash('sha256').update(key).digest();
-    return base64url(createHmac('sha256', this.secret).update(session).update(arrival).digest());
+    return base64url(
+      createHmac('sha256', this.secret).update(session).update(`${arrival}.${issued}`).digest(),
+    );
   }
 }

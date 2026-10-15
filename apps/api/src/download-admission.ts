@@ -3,16 +3,16 @@ import type { FastifyReply, FastifyRequest } from 'fastify';
 import {
   ArkvoryError,
   requestedDownloadClass,
+  type DownloadByteRange,
   type DownloadClass,
-  type DownloadResponseEnd,
   type Principal,
 } from '@proanima/arkvory-domain';
 import type { AdmissionQueue, DownloadScheduler } from '@proanima/arkvory-infrastructure';
 
-/** One admitted response: bytes it sent and how it ended. `end` is idempotent. */
+/** One admitted response: bytes it sent and whether all were sent. `end` is idempotent. */
 export interface ContentAdmission {
   progress(bytes: number): void;
-  end(how: DownloadResponseEnd): void;
+  end(how: { readonly finished: boolean }): void;
 }
 
 /** A client's own id for one download: the session key instead of its address (ADR 0076). */
@@ -38,9 +38,18 @@ function queuePrincipal(request: FastifyRequest, principal: Principal) {
     : principal.id;
 }
 
+/**
+ * One header by its lower-case name. Node joins most repeated headers with ", " into one
+ * string, so a repeat is found in the raw list, not by the parsed value's type.
+ */
 function header(request: FastifyRequest, name: string): string | undefined {
-  const value = request.headers[name];
-  if (Array.isArray(value)) throw new ArkvoryError('invalid_input', `Repeated ${name} header`);
+  const raw = request.raw.rawHeaders;
+  let value: string | undefined;
+  for (let index = 0; index + 1 < raw.length; index += 2) {
+    if (raw[index]?.toLowerCase() !== name) continue;
+    if (value !== undefined) throw new ArkvoryError('invalid_input', `Repeated ${name} header`);
+    value = raw[index + 1];
+  }
   return value;
 }
 
@@ -68,6 +77,7 @@ export function createDownloadAdmission(services: AdmissionServices) {
     principal: Principal,
     objectId: string,
     size: number,
+    range: DownloadByteRange,
     signal: AbortSignal,
   ): Promise<ContentAdmission> => {
     const id = header(request, 'arkvory-download-id');
@@ -88,6 +98,7 @@ export function createDownloadAdmission(services: AdmissionServices) {
       const release = await services.downloadGate.acquire(principal.id, signal);
       return { progress: () => undefined, end: release };
     };
+    reply.header('Arkvory-Download-Class', downloadClass);
     if (perRequest()) return gate();
     const who = queuePrincipal(request, principal);
     const session = {
@@ -96,9 +107,9 @@ export function createDownloadAdmission(services: AdmissionServices) {
       class: downloadClass,
       size,
       queueAware: id !== undefined,
+      range,
     };
     const ticket = header(request, 'arkvory-queue-ticket');
-    reply.header('Arkvory-Download-Class', downloadClass);
     const asked = ticket === undefined ? session : { ...session, ticket };
     const admission = session.queueAware
       ? scheduler.admit(asked)

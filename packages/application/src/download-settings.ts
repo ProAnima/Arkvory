@@ -71,6 +71,7 @@ export interface DownloadSettingsOptions {
 }
 
 const GATEWAY = 'A read gateway keeps the download queue of its environment';
+const SHARED = 'With read gateways downloads are admitted per request: the strategy stays shared';
 
 /**
  * Queue settings changed while the server runs (ADR 0076, stage 3). The record is shared by the
@@ -103,11 +104,7 @@ export class DownloadSettingsControl {
     if (!this.options.applies)
       throw new ArkvoryError('read_only', 'Change the download queue on the writer');
     if (this.options.gateways && overrides.strategy && overrides.strategy !== 'shared')
-      throw fieldError(
-        '/overrides/strategy',
-        'invalid',
-        'With read gateways downloads are admitted per request: the strategy stays shared',
-      );
+      throw fieldError('/overrides/strategy', 'invalid', SHARED);
     const policy = withField('/overrides', () => overrideDownloadPolicy(this.base, overrides));
     const stored = await this.store.write(expectedRevision, overrides, author);
     if (!stored)
@@ -132,9 +129,16 @@ export class DownloadSettingsControl {
     this.target.configure(this.policyOf(stored).policy);
   }
 
+  /**
+   * The policy a writer runs for the record. A record saved before read gateways were added (or
+   * by a writer that did not know of them) may ask for sessions: with gateways the writer keeps
+   * its environment then, as `change` would have refused it.
+   */
   private policyOf(stored: StoredDownloadSettings) {
     try {
       const overrides = knownDownloadOverrides(stored.overrides);
+      if (this.options.gateways && overrides.strategy && overrides.strategy !== 'shared')
+        return { overrides, policy: this.base, problem: SHARED };
       return { overrides, policy: overrideDownloadPolicy(this.base, overrides), problem: null };
     } catch (error) {
       return {

@@ -230,7 +230,7 @@ test('a queued download keeps its turn over a server restart with its ticket (AD
   const early = await ask('early');
   assert.equal(early.statusCode, 503);
   const ticket = early.headers['arkvory-queue-ticket'];
-  assert.match(ticket, /^1\./);
+  assert.match(ticket, /^2\./);
   // The server restarts; a later client asks the new process first.
   await f.restart();
   assert.equal((await ask('holder', { range: 'bytes=0-9' })).statusCode, 206);
