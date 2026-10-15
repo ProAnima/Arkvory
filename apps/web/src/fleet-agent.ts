@@ -7,6 +7,7 @@ import type { MessageKey } from './messages.js';
 import { MirrorChanges } from './fleet-mirror-changes.js';
 import { ClusterChanges } from './fleet-cluster-changes.js';
 import type { Send, Submit } from './fleet-agent-port.js';
+import { followDelay } from './fleet-presentation.js';
 
 /** The agent mailbox of a site: this installation's or a managed site's through it. */
 export interface ChangesPort {
@@ -44,9 +45,6 @@ const states: Record<SiteChanges['recent'][number]['state'], MessageKey> = {
   done: 'fleetChangeDone',
   failed: 'fleetChangeFailed',
 };
-/** The agent takes a request within a minute; the panel looks a little more often. */
-const FOLLOW_MS = 5000;
-
 const cell = (text: string) => {
   const td = document.createElement('td');
   // Actors, reasons and names come from the site: text, never markup.
@@ -66,6 +64,8 @@ export class AgentPanel {
   private target: AgentTarget | null = null;
   private generation = 0;
   private timer: ReturnType<typeof setTimeout> | undefined;
+  /** Looks in a row that failed: the follower waits longer after each. */
+  private failures = 0;
   /** The next look the follower owes, kept while the page is not shown. */
   private next: { readonly generation: number; readonly topology: boolean } | null = null;
 
@@ -98,6 +98,7 @@ export class AgentPanel {
     this.generation++;
     clearTimeout(this.timer);
     this.next = null;
+    this.failures = 0;
     this.target = null;
     this.rows.replaceChildren();
     this.status.hidden = true;
@@ -158,6 +159,7 @@ export class AgentPanel {
         topology ? target.topology() : Promise.resolve(undefined),
       ]);
       if (generation !== this.generation) return;
+      this.failures = 0;
       element('fleet-agent-missing', HTMLElement).hidden = changes.agent || changes.updating;
       element('fleet-agent-updating', HTMLElement).hidden = !changes.updating;
       element('fleet-agent-blocked', HTMLElement).hidden = changes.blocked === null;
@@ -177,6 +179,9 @@ export class AgentPanel {
       if (generation !== this.generation) return;
       this.status.hidden = false;
       showFailure(this.status, error);
+      // A failed look (a site switching over, a proxy's 502) does not stop following.
+      this.failures++;
+      this.arm(generation, topology);
     }
   }
 
@@ -189,7 +194,7 @@ export class AgentPanel {
     this.next = { generation, topology };
     this.timer = setTimeout(() => {
       if (this.visible()) void this.refresh(generation, topology);
-    }, FOLLOW_MS);
+    }, followDelay(this.failures));
   }
 
   private render(changes: SiteChanges) {
