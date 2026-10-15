@@ -7,6 +7,7 @@ import { once } from 'node:events';
 import { randomUUID } from 'node:crypto';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { isDeepStrictEqual } from 'node:util';
 import { setup, create, base } from './fixture.mjs';
 
 /** A helper whose answers the test sets: each request takes the next answer, then the last. */
@@ -45,6 +46,21 @@ async function helper(t) {
 const two = { copies: 2, required: 2, singleCopyUntil: null };
 const one = { copies: 1, required: 2, singleCopyUntil: null };
 
+/**
+ * Waits until the API's snapshot of the copies (kept up to a second) is `expected`: readiness
+ * shows the snapshot and reads the helper again once it is older. Null is an unknown state.
+ */
+async function snapshot(f, expected) {
+  let seen;
+  for (let attempt = 0; attempt < 50; attempt++) {
+    const ready = await f.app.inject({ method: 'GET', url: '/health/ready', headers: f.headers });
+    seen = ready.json().replication;
+    if (isDeepStrictEqual(seen, expected)) return;
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+  assert.deepEqual(seen, expected, 'the snapshot of the copies never changed');
+}
+
 test('a write is acknowledged only with enough complete copies, read after it completed', async (t) => {
   const replica = await helper(t);
   replica.set(two);
@@ -55,7 +71,7 @@ test('a write is acknowledged only with enough complete copies, read after it co
 
   // One copy: refused before any work, in the API's envelope, with a time to retry.
   replica.set(one);
-  await new Promise((resolve) => setTimeout(resolve, 1100));
+  await snapshot(f, one);
   const refused = await create(f, Buffer.from('one copy'));
   assert.equal(refused.statusCode, 503);
   assert.equal(refused.json().code, 'unavailable');
@@ -81,8 +97,9 @@ test('a write is acknowledged only with enough complete copies, read after it co
     complete: false,
     witness: false,
   };
-  replica.set({ ...one, node: 'node-a', profile: 'ha-2', peers: [peer] });
-  await new Promise((resolve) => setTimeout(resolve, 1100));
+  const details = { ...one, node: 'node-a', profile: 'ha-2', peers: [peer] };
+  replica.set(details);
+  await snapshot(f, details);
   const detailed = await f.app.inject({ method: 'GET', url: '/health/ready', headers: f.headers });
   assert.deepEqual(detailed.json().replication, {
     ...one,
@@ -101,29 +118,33 @@ test('a write is acknowledged only with enough complete copies, read after it co
 
   // A copy lost while the write ran: the write completed, its success is not sent; a retry with
   // the same idempotency key after the copy returned is acknowledged.
+  // The check before the write takes the snapshot just read (two copies), the one after it reads
+  // the helper again (one copy).
   const key = randomUUID();
-  await new Promise((resolve) => setTimeout(resolve, 1100));
-  replica.set(two, one);
+  replica.set(two);
+  await snapshot(f, two);
+  replica.set(one);
   const lost = await create(f, Buffer.from('lost during the write'), key);
   assert.equal(lost.statusCode, 503);
   assert.equal(lost.json().reason, 'replication_degraded');
   replica.set(two);
-  await new Promise((resolve) => setTimeout(resolve, 1100));
+  await snapshot(f, two);
   const retried = await create(f, Buffer.from('lost during the write'), key);
   assert.ok([200, 201].includes(retried.statusCode), String(retried.statusCode));
 
   // An unknown state refuses: the helper failing is not a reason to acknowledge.
   replica.set('fail');
-  await new Promise((resolve) => setTimeout(resolve, 1100));
+  await snapshot(f, null);
   assert.equal((await create(f, Buffer.from('unknown'))).statusCode, 503);
 
   // An operator's decision to accept one copy arrives as required = 1.
-  replica.set({
+  const accepted = {
     copies: 1,
     required: 1,
     singleCopyUntil: new Date(Date.now() + 3600e3).toISOString(),
-  });
-  await new Promise((resolve) => setTimeout(resolve, 1100));
+  };
+  replica.set(accepted);
+  await snapshot(f, accepted);
   assert.equal((await create(f, Buffer.from('accepted single copy'))).statusCode, 201);
 });
 
