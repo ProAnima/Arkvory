@@ -48,14 +48,14 @@ Le programme d’installation supprime le fichier du propriétaire après avoir 
 
 ## Ce que crée le programme d’installation graphique {#what-the-graphical-installer-creates}
 
-| Élément                            | Emplacement ou valeur                                                                                |
-| ---------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| Fichiers du programme              | `C:\Program Files\ProAnima\Arkvory`                                                                  |
-| Données, configuration et journaux | `C:\ProgramData\ProAnima\Arkvory` (la racine d’installation)                                         |
-| Base de données                    | PostgreSQL 18.4 dans `database\` de la racine, sur `127.0.0.1`, au premier port libre de 45329-45348 |
-| Console                            | `http://127.0.0.1:8080/console/`                                                                     |
-| Clé de récupération                | `config\bootstrap-token.txt` dans la racine                                                          |
-| Tâche de mise à jour               | `ProAnimaArkvoryUpdate` dans le Planificateur de tâches. S’exécute chaque minute en tant que SYSTEM  |
+| Élément                            | Emplacement ou valeur                                                                                                                                  |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Fichiers du programme              | `C:\Program Files\ProAnima\Arkvory`                                                                                                                    |
+| Données, configuration et journaux | `C:\ProgramData\ProAnima\Arkvory` (la racine d’installation)                                                                                           |
+| Base de données                    | PostgreSQL 18.4 dans `database\` de la racine, sur `127.0.0.1`, au premier port libre de 45329-45348, exclu des ports que Windows réserve au démarrage |
+| Console                            | `http://127.0.0.1:8080/console/`                                                                                                                       |
+| Clé de récupération                | `config\bootstrap-token.txt` dans la racine                                                                                                            |
+| Tâche de mise à jour               | `ProAnimaArkvoryUpdate` dans le Planificateur de tâches. S’exécute chaque minute en tant que SYSTEM                                                    |
 
 ### Services {#services}
 
@@ -157,7 +157,8 @@ Ouvrez **Paramètres > Applications**, sélectionnez **ProAnima Arkvory** et cli
 
 1. Supprime la tâche `ProAnimaArkvoryUpdate`.
 2. Arrête et supprime `Arkvorybackup`, `Arkvoryworker`, `Arkvoryapi` et `Arkvorydatabase`.
-3. Supprime les fichiers du programme.
+3. Supprime l’exclusion du port de la base de données ajoutée par le programme d’installation.
+4. Supprime les fichiers du programme.
 
 Il **conserve** volontairement `C:\ProgramData\ProAnima\Arkvory` : la base de données, tous les fichiers, la configuration et la clé de récupération. Il ne touche jamais au stockage des sauvegardes. Si vous exécutez plus tard le programme d’installation de la même version ou d’une version plus récente, il reprend avec les données conservées. Pour supprimer les données, faites d’abord une sauvegarde, puis supprimez vous-même le dossier.
 

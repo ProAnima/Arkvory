@@ -48,14 +48,14 @@ The installer deletes the owner file after it creates the account. Never pass a 
 
 ## What the graphical installer creates {#what-the-graphical-installer-creates}
 
-| Item                         | Location or value                                                                                |
-| ---------------------------- | ------------------------------------------------------------------------------------------------ |
-| Program files                | `C:\Program Files\ProAnima\Arkvory`                                                              |
-| Data, configuration and logs | `C:\ProgramData\ProAnima\Arkvory` (the installation root)                                        |
-| Database                     | PostgreSQL 18.4 in `database\` of the root, on `127.0.0.1` at the first free port of 45329-45348 |
-| Console                      | `http://127.0.0.1:8080/console/`                                                                 |
-| Recovery key                 | `config\bootstrap-token.txt` in the root                                                         |
-| Update task                  | `ProAnimaArkvoryUpdate` in Task Scheduler. Runs every minute as SYSTEM                           |
+| Item                         | Location or value                                                                                                                                  |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Program files                | `C:\Program Files\ProAnima\Arkvory`                                                                                                                |
+| Data, configuration and logs | `C:\ProgramData\ProAnima\Arkvory` (the installation root)                                                                                          |
+| Database                     | PostgreSQL 18.4 in `database\` of the root, on `127.0.0.1` at the first free port of 45329-45348, excluded from the ports Windows reserves at boot |
+| Console                      | `http://127.0.0.1:8080/console/`                                                                                                                   |
+| Recovery key                 | `config\bootstrap-token.txt` in the root                                                                                                           |
+| Update task                  | `ProAnimaArkvoryUpdate` in Task Scheduler. Runs every minute as SYSTEM                                                                             |
 
 ### Services {#services}
 
@@ -157,7 +157,8 @@ Open **Settings > Apps**, select **ProAnima Arkvory** and click **Uninstall**. T
 
 1. Removes the `ProAnimaArkvoryUpdate` task.
 2. Stops and removes `Arkvorybackup`, `Arkvoryworker`, `Arkvoryapi` and `Arkvorydatabase`.
-3. Removes the program files.
+3. Removes the exclusion of the database port that Setup added.
+4. Removes the program files.
 
 It intentionally **keeps** `C:\ProgramData\ProAnima\Arkvory`: the database, all files, the configuration and the recovery key. It never touches the backup vault. If you run Setup of the same or a newer version later, it continues with the kept data. To remove the data, make a backup first and then delete the folder yourself.
 

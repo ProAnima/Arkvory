@@ -50,14 +50,14 @@ title: Windows
 
 ## 图形安装程序创建的内容 {#what-the-graphical-installer-creates}
 
-| 项目             | 位置或值                                                                                       |
-| ---------------- | ---------------------------------------------------------------------------------------------- |
-| 程序文件         | `C:\Program Files\ProAnima\Arkvory`                                                            |
-| 数据、配置和日志 | `C:\ProgramData\ProAnima\Arkvory`（安装根目录）                                                |
-| 数据库           | PostgreSQL 18.4，位于根目录的 `database\` 中，监听 `127.0.0.1` 上 45329-45348 中第一个空闲端口 |
-| 控制台           | `http://127.0.0.1:8080/console/`                                                               |
-| 恢复密钥         | 根目录中的 `config\bootstrap-token.txt`                                                        |
-| 更新任务         | 任务计划程序（Task Scheduler）中的 `ProAnimaArkvoryUpdate`。以 SYSTEM 身份每分钟运行一次       |
+| 项目             | 位置或值                                                                                                                            |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| 程序文件         | `C:\Program Files\ProAnima\Arkvory`                                                                                                 |
+| 数据、配置和日志 | `C:\ProgramData\ProAnima\Arkvory`（安装根目录）                                                                                     |
+| 数据库           | PostgreSQL 18.4，位于根目录的 `database\` 中，监听 `127.0.0.1` 上 45329-45348 中第一个空闲端口，已从 Windows 启动时保留的端口中排除 |
+| 控制台           | `http://127.0.0.1:8080/console/`                                                                                                    |
+| 恢复密钥         | 根目录中的 `config\bootstrap-token.txt`                                                                                             |
+| 更新任务         | 任务计划程序（Task Scheduler）中的 `ProAnimaArkvoryUpdate`。以 SYSTEM 身份每分钟运行一次                                            |
 
 ### 服务 {#services}
 
@@ -159,7 +159,8 @@ $root = 'C:\ProgramData\ProAnima\Arkvory'
 
 1. 删除 `ProAnimaArkvoryUpdate` 任务。
 2. 停止并删除 `Arkvorybackup`、`Arkvoryworker`、`Arkvoryapi` 和 `Arkvorydatabase`。
-3. 删除程序文件。
+3. 删除安装程序添加的数据库端口排除项。
+4. 删除程序文件。
 
 它有意**保留** `C:\ProgramData\ProAnima\Arkvory`：数据库、所有文件、配置和恢复密钥。它绝不会触碰备份存储。如果以后运行相同或更新版本的安装程序，它会继续使用保留的数据。要删除数据，请先做好备份，然后自行删除该文件夹。
 
