@@ -180,11 +180,20 @@ export async function checkCluster(tool: Tool = systemTool): Promise<void> {
   if (failures > 0) throw new Error(`${String(failures)} cluster checks failed`);
 }
 
-async function waitFor(condition: () => Promise<boolean>, timeoutMs: number, what: string) {
-  const deadline = Date.now() + timeoutMs;
-  while (Date.now() < deadline) {
+/**
+ * Polls until `condition` holds. The deadline is monotonic: a wall clock that NTP steps (often
+ * right after a failover) neither ends the wait at once nor stretches it without bound.
+ */
+export async function waitFor(
+  condition: () => Promise<boolean>,
+  timeoutMs: number,
+  what: string,
+  pause: () => Promise<unknown> = () => delay(2000),
+) {
+  const deadline = performance.now() + timeoutMs;
+  while (performance.now() < deadline) {
     if (await condition()) return;
-    await delay(2000);
+    await pause();
   }
   throw new Error(`Timed out waiting for ${what}`);
 }

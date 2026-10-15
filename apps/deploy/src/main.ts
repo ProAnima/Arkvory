@@ -247,8 +247,8 @@ const COMMANDS = new Set([
 
 /**
  * Cluster commands on one node that run outside the installation lock (ADR 0072): long-running
- * services, reads, an operator's decision during an incident, and the steps that take or release
- * the volume, whose root may not be mounted here (the lock lives on the volume).
+ * services, reads and an operator's decision during an incident. The steps that take or release
+ * the volume hold the lock only while it is mounted here: the lock lives on the volume.
  */
 async function nodeOperation(
   operation: string,
@@ -256,6 +256,7 @@ async function nodeOperation(
   options: Map<string, string>,
 ): Promise<boolean> {
   const resource = options.get('cluster-resource');
+  const guard = (work: () => Promise<void>) => exclusive(root, work, 120_000, operation);
   switch (operation) {
     case 'cluster-replica':
       await serveReplica(root);
@@ -270,10 +271,10 @@ async function nodeOperation(
       await decideSingleCopy(root, options);
       return true;
     case 'cluster-node':
-      await joinNode(root, resource, options.get('kit'));
+      await joinNode(root, resource, options.get('kit'), guard);
       return true;
     case 'cluster-release':
-      await releaseVolume(root, (await nodeMarker())?.resource ?? resource ?? 'arkvory');
+      await releaseVolume(root, (await nodeMarker())?.resource ?? resource ?? 'arkvory', { guard });
       return true;
     case 'cluster-kit': {
       const output = options.get('output');

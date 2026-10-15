@@ -4,7 +4,8 @@ import { atomicJson, atomicText, exists, jsonFile } from './files.js';
 import { command, commandOutput } from './process.js';
 import { report } from './output.js';
 import { installKitUnits, readKitFile } from './cluster-kit.js';
-import { JOIN_WITH_KIT, mounted, releaseVolume, takeVolume } from './cluster-volume.js';
+import { JOIN_WITH_KIT, mounted, ownMount, releaseVolume, takeVolume } from './cluster-volume.js';
+import type { VolumeGuard } from './cluster-volume.js';
 
 /**
  * A node of an HA cluster (ADR 0072) is marked outside the replicated volume: install, update and
@@ -279,12 +280,14 @@ async function volumeSettings(root: string): Promise<{ readonly resource: string
  * the same units, none enabled. With `--kit` (written by cluster-kit on the active node) the
  * volume is not needed, so a replacement node joins while the active node keeps serving. Without,
  * while the cluster is built (Pacemaker does not manage it yet), the node takes the volume, reads
- * what it needs and releases it again; a volume that is mounted here already stays mounted.
+ * what it needs and releases it again. While the volume is mounted here, `guard` holds the
+ * installation's operation lock, which lives on the volume.
  */
 export async function joinNode(
   root: string,
   resource: string | undefined,
   kitFile?: string,
+  guard: VolumeGuard = (work) => work(),
 ): Promise<void> {
   if (kitFile !== undefined) {
     const nodeKit = await readKitFile(kitFile);
@@ -298,30 +301,34 @@ export async function joinNode(
   }
   const name = resource ?? 'arkvory';
   // Mounted here already: a node of the cluster holds it (release first), or an earlier run
-  // failed before it released it; that one is taken over and released at the end.
+  // failed before it released it; that one is taken over and released at the end. Anything
+  // else mounted there (a plain data disk) is refused before the try: it is never released.
   const held = await mounted(root);
   if (held && (await exists(NODE_MARKER)))
     throw new Error(
       `This node holds the volume as a cluster node: run "arkvory cluster-release --root ${root}" first`,
     );
-  if (!held) await takeVolume(root, name, JOIN_WITH_KIT);
+  if (held) await ownMount(root, name);
+  else await takeVolume(root, name, JOIN_WITH_KIT);
   let failure: Error | undefined;
   try {
-    await replicatedMount(root);
-    const settings = await volumeSettings(root);
-    if (settings.resource !== name)
-      throw new Error(
-        `The volume belongs to ${settings.resource}; pass --cluster-resource ${settings.resource}`,
-      );
-    const accounts = (await jsonFile(join(kit(root), 'accounts.json'))) as Accounts;
-    await prepareNode(accounts, (units) => mirrorUnits(join(kit(root), 'units'), units));
-    await writeNodeMarker({ root, resource: name });
+    await guard(async () => {
+      await replicatedMount(root);
+      const settings = await volumeSettings(root);
+      if (settings.resource !== name)
+        throw new Error(
+          `The volume belongs to ${settings.resource}; pass --cluster-resource ${settings.resource}`,
+        );
+      const accounts = (await jsonFile(join(kit(root), 'accounts.json'))) as Accounts;
+      await prepareNode(accounts, (units) => mirrorUnits(join(kit(root), 'units'), units));
+      await writeNodeMarker({ root, resource: name });
+    });
   } catch (error) {
     failure = error instanceof Error ? error : new Error(String(error));
   }
   // The volume is released whatever happened, and the first failure is the one reported.
   try {
-    await releaseVolume(root, name, JOIN_WITH_KIT);
+    await releaseVolume(root, name, { instead: JOIN_WITH_KIT, guard });
   } catch (error) {
     if (failure === undefined) throw error;
     report(

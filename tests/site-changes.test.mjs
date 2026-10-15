@@ -232,8 +232,16 @@ test('a hostile inbox: links, directories and leftovers never reach a key or sto
   const hourAgo = new Date(Date.now() - 2 * 3600000);
   await utimes(old, hourAgo, hourAgo);
   await utimes(join(root, 'updates/inbox/.left.tmp'), hourAgo, hourAgo);
+  // A time far ahead (the clock was set back) is not a way to stay forever.
+  const ahead = join(root, `updates/inbox/${id(9)}.key`);
+  await writeFile(ahead, key);
+  const later = new Date(Date.now() + 2 * 3600000);
+  await utimes(ahead, later, later);
+  // The per-process status temporaries an earlier release left after a crash go as well.
+  await writeFile(join(root, 'updates/status/changes.json.4242.tmp'), '{');
   await pollChanges(root, actions());
   assert.deepEqual(await readdir(join(root, 'updates/inbox')), [`${id(8)}.key`]);
+  assert.deepEqual(await readdir(join(root, 'updates/status')), ['changes.json']);
 });
 
 test('names, clocks and sizes at their limits', async (t) => {
