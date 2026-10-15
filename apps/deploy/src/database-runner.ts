@@ -134,6 +134,8 @@ export async function runDatabase(root: string): Promise<void> {
     stopping = true;
     await command(executable('pg_ctl'), ['-D', data, 'stop', '-m', 'fast', '-w', '-t', '90']);
   };
+  // Set by a signal handler: read through a function, not narrowed to its first value.
+  const stopRequested = () => stopping;
   process.once('SIGTERM', () => {
     void stop().catch(() => {
       process.exitCode = 1;
@@ -180,7 +182,7 @@ export async function runDatabase(root: string): Promise<void> {
     }
   } catch (error) {
     // Asked to stop while starting (a long recovery, say): the stop is clean, the start not failed.
-    if (stopping) return;
+    if (stopRequested()) return;
     await stop();
     throw error;
   }
