@@ -53,6 +53,13 @@ export class PostgresFleetRegistry implements FleetSiteStore {
     return rows.rows.map(record);
   }
 
+  async ids(): Promise<readonly string[]> {
+    const rows = await this.pool.query<{ id: string }>(
+      'SELECT id FROM arkvory_fleet_sites ORDER BY name, url LIMIT 256',
+    );
+    return rows.rows.map((row) => row.id);
+  }
+
   async get(id: string): Promise<FleetSiteRecord | null> {
     const rows = await this.pool.query<Row>('SELECT * FROM arkvory_fleet_sites WHERE id = $1', [
       id,

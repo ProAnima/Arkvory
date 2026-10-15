@@ -492,6 +492,8 @@ test('a topology the registry column refuses is recorded as invalid, not as a fa
   // seen_at is the controller's time of the read, whatever the database's clock says.
   const at = '2020-01-02T03:04:05.000Z';
   await registry.observe(id, { state: 'ok', error: null, at, topology: { site: 'first' } });
+  // A round reads the ids alone, not every topology and sealed key.
+  assert.deepEqual(await registry.ids(), [id]);
   assert.equal((await registry.get(id)).seenAt, at);
   // 200001 bytes of JSON, 300000 of jsonb text: beyond the column's check.
   const zeros = new Array(100000).fill(0);

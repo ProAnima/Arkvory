@@ -26,6 +26,7 @@ function store(count = 1) {
   return {
     observed,
     list: async () => sites,
+    ids: async () => sites.map((site) => site.id),
     get: async (id) => sites.find((site) => site.id === id) ?? null,
     add: async () => undefined,
     observe: async (id, observation) => {

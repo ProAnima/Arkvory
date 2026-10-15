@@ -27,6 +27,8 @@ export interface FleetObservation {
 }
 export interface FleetSiteStore {
   list(): Promise<readonly FleetSiteRecord[]>;
+  /** The ids of the sites in `list()` order: what a round needs, without their topologies. */
+  ids(): Promise<readonly string[]>;
   get(id: string): Promise<FleetSiteRecord | null>;
   add(
     site: Omit<FleetSiteRecord, 'addedAt' | 'seenAt' | 'state' | 'error' | 'topology'>,
@@ -327,11 +329,11 @@ export class FleetControl {
    * reads in flight and takes no further site; a cancelled round reports nothing.
    */
   async pollAll(signal?: FleetAbortSignal) {
-    const queue = [...(await this.sites.list())];
+    const queue = [...(await this.sites.ids())];
     const failures: unknown[] = [];
     const workers = Array.from({ length: Math.min(CONCURRENCY, queue.length) }, async () => {
-      for (let site = queue.shift(); site && !signal?.aborted; site = queue.shift())
-        await this.poll(site.id, 'fleet', signal).catch((error: unknown) => {
+      for (let id = queue.shift(); id && !signal?.aborted; id = queue.shift())
+        await this.poll(id, 'fleet', signal).catch((error: unknown) => {
           // Cancelled, or removed by an administrator during the round: nothing to record.
           if (signal?.aborted || (error instanceof ArkvoryError && error.code === 'not_found'))
             return;
