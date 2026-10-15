@@ -4,7 +4,7 @@ import { atomicJson, atomicText, exists, jsonFile } from './files.js';
 import { command, commandOutput } from './process.js';
 import { report } from './output.js';
 import { installKitUnits, readKitFile } from './cluster-kit.js';
-import { JOIN_WITH_KIT, mounted, releaseVolume, takeVolume } from './cluster-volume.js';
+import { JOIN_WITH_KIT, mounted, ownMount, releaseVolume, takeVolume } from './cluster-volume.js';
 
 /**
  * A node of an HA cluster (ADR 0072) is marked outside the replicated volume: install, update and
@@ -298,13 +298,15 @@ export async function joinNode(
   }
   const name = resource ?? 'arkvory';
   // Mounted here already: a node of the cluster holds it (release first), or an earlier run
-  // failed before it released it; that one is taken over and released at the end.
+  // failed before it released it; that one is taken over and released at the end. Anything
+  // else mounted there (a plain data disk) is refused before the try: it is never released.
   const held = await mounted(root);
   if (held && (await exists(NODE_MARKER)))
     throw new Error(
       `This node holds the volume as a cluster node: run "arkvory cluster-release --root ${root}" first`,
     );
-  if (!held) await takeVolume(root, name, JOIN_WITH_KIT);
+  if (held) await ownMount(root, name);
+  else await takeVolume(root, name, JOIN_WITH_KIT);
   let failure: Error | undefined;
   try {
     await replicatedMount(root);
