@@ -141,16 +141,28 @@ export function registerFleetControlRoutes(
     await control.remove(siteId(request.params.id));
     return reply.code(204).send();
   });
+  registerFleetForwardRoutes(app, context, control);
+  app.post<{ Params: { id: string } }>('/api/v1/fleet/sites/:id/refresh', async (request) => {
+    const actor = administrator(principal(request));
+    const id = siteId(request.params.id);
+    await control.poll(id, actor.id);
+    return control.view(id);
+  });
+}
+
+/** Reads and changes forwarded to a site, its answer returned as it is. */
+function registerFleetForwardRoutes(
+  app: FastifyInstance,
+  context: FleetRouteContext,
+  control: FleetControl,
+) {
   // The site's own answer, status and body unchanged: the console reads it with the same readers
   // as its own catalog. Only GETs of the fixed metadata routes are forwarded.
   app.get<{ Params: { id: string }; Querystring: unknown }>(
     '/api/v1/fleet/sites/:id/read',
     async (request, reply) => {
-      const actor = administrator(principal(request));
-      const query = record(request.query);
-      const path = query['path'];
-      if (typeof path !== 'string' || Object.keys(query).length !== 1)
-        throw new ArkvoryError('invalid_input', 'path is the only read option');
+      const actor = administrator(context.principal(request));
+      const path = pathOption(request.query, 'read');
       // A slot for the site is held until it answers: not after the browser went away.
       const answer = await control.read(
         siteId(request.params.id),
@@ -167,11 +179,8 @@ export function registerFleetControlRoutes(
   app.post<{ Params: { id: string }; Querystring: unknown }>(
     '/api/v1/fleet/sites/:id/change',
     async (request, reply) => {
-      const actor = administrator(principal(request));
-      const query = record(request.query);
-      const path = query['path'];
-      if (typeof path !== 'string' || Object.keys(query).length !== 1)
-        throw new ArkvoryError('invalid_input', 'path is the only change option');
+      const actor = administrator(context.principal(request));
+      const path = pathOption(request.query, 'change');
       const answer = await control.change(
         siteId(request.params.id),
         path,
@@ -183,10 +192,12 @@ export function registerFleetControlRoutes(
       return reply.code(answer.status).send(answer.body);
     },
   );
-  app.post<{ Params: { id: string } }>('/api/v1/fleet/sites/:id/refresh', async (request) => {
-    const actor = administrator(principal(request));
-    const id = siteId(request.params.id);
-    await control.poll(id, actor.id);
-    return control.view(id);
-  });
+}
+
+function pathOption(query: unknown, kind: 'read' | 'change') {
+  const options = record(query);
+  const path = options['path'];
+  if (typeof path !== 'string' || Object.keys(options).length !== 1)
+    throw new ArkvoryError('invalid_input', `path is the only ${kind} option`);
+  return path;
 }
