@@ -7,7 +7,8 @@ import { call, content, never, pair, publish, upack } from './mirror-fixture.mjs
 /*
  * Replication between installations where it can go wrong (ADR 0058, 2026-10-12): a promotion
  * into the mirrored repository, a detached mirror, a package version both sides claim, a copy
- * longer than an upload's lifetime and an artifact ID another repository holds.
+ * longer than an upload's lifetime and an artifact ID another repository holds. The last two
+ * conflicts are put aside while the feed goes on (2026-10-15).
  */
 
 /** An upload into any repository of the installation, as CI would make it. */
@@ -111,7 +112,11 @@ test('a change made here before the worker wrote the detach mark still makes it 
   await assert.rejects(p.settle(), failsWith('mirror_detached'));
 });
 
-test('a package version both sides claim stops the import with its reason until resolved', async (t) => {
+/** Entries put aside are retried ten minutes after their last attempt: make them due now. */
+const due = (p) =>
+  p.catalog.pool.query("UPDATE arkvory_mirror_conflicts SET last_at = last_at - interval '1 hour'");
+
+test('a package version both sides claim is put aside; the import goes on and clears it once resolved', async (t) => {
   const p = await pair(t, ['release']);
   const { source: staging, mirror: prod } = p;
   // Production built app 1.0.0 itself; staging promotes another app 1.0.0.
@@ -121,17 +126,45 @@ test('a package version both sides claim stops the import with its reason until 
   const other = await publish(staging, Buffer.concat([await upack('1.0.0')]), 'app-other.upack');
   await call(staging, 'POST', `/artifacts/${other}/package`);
   await call(staging, 'PUT', `/artifacts/${other}/stages/release`, {});
-  await assert.rejects(p.settle(), failsWith('mirror_package_conflict'));
-  assert.equal((await call(prod, 'GET', '/mirror')).json().errorCode, 'mirror_package_conflict');
+  // A later promotion is not blocked by the conflicting one.
+  const next = await publish(staging, await upack('2.0.0'), 'app-next.upack');
+  await call(staging, 'POST', `/artifacts/${next}/package`);
+  await call(staging, 'PUT', `/artifacts/${next}/stages/release`, {});
+  await p.settle();
+  const status = (await call(prod, 'GET', '/mirror')).json();
+  assert.equal(status.errorCode, null, 'a conflict put aside is no stop');
+  assert.equal(status.conflicts.count, 1);
+  assert.ok(status.conflicts.oldestAt);
+  assert.partialDeepStrictEqual(status.conflicts.sample, [
+    {
+      artifactId: other,
+      action: 'stage.add',
+      detail: 'release',
+      code: 'mirror_package_conflict',
+      attempts: 1,
+    },
+  ]);
+  assert.equal(
+    (await call(prod, 'GET', '/packages/resolve?group=&name=app&version=2.0.0')).json().artifactId,
+    next,
+  );
   // Clients still get production's own build, never the other bytes under its version.
   assert.equal(
     (await call(prod, 'GET', '/packages/resolve?group=&name=app&version=1.0.0')).json().artifactId,
     own,
   );
-  // Staging withdraws the promotion: the import passes it and goes on.
+  const metrics = await prod.app.inject({ url: '/health/metrics', headers: prod.headers });
+  assert.match(
+    metrics.body,
+    /^arkvory_mirror_conflicts\{repository="releases",mode="import"\} 1$/m,
+  );
+  // Staging withdraws the promotion: the next retry finds nothing to take and clears it.
   await call(staging, 'DELETE', `/artifacts/${other}/stages/release`, undefined, 204);
+  await due(p);
   await p.settle();
-  assert.equal((await call(prod, 'GET', '/mirror')).json().errorCode, null);
+  const cleared = (await call(prod, 'GET', '/mirror')).json();
+  assert.deepEqual(cleared.conflicts, { count: 0, oldestAt: null, sample: [] });
+  assert.equal(cleared.errorCode, null);
 });
 
 test('a copy that outlives its upload continues from its parts instead of starting over', async (t) => {
@@ -151,16 +184,34 @@ test('a copy that outlives its upload continues from its parts instead of starti
   assert.deepEqual(await content(p.mirror, `/artifacts/${id}/content`), large);
 });
 
-test('an artifact ID another repository holds here stops the mirror with its reason', async (t) => {
+test('an artifact ID another repository holds here is put aside; the mirror goes on and takes it once free', async (t) => {
   const p = await pair(t);
   await p.settle();
-  const id = await publish(p.source, Buffer.from('shared id'), 'a.bin');
+  const bytes = Buffer.from('shared id');
+  const id = await publish(p.source, bytes, 'a.bin');
   // Another repository here holds that ID (a second mirror of the same source, say).
   await p.catalog.pool.query(
     `INSERT INTO arkvory_uploads(id,repository,owner,idempotency_key,descriptor,size,status,created_at)
      VALUES($1::uuid,'other','someone',$1::text,'{"name":"a.bin","size":"9","sha256":"x"}',9,'pending',now())`,
     [id],
   );
-  await assert.rejects(p.settle(), failsWith('mirror_id_taken'));
-  assert.equal((await call(p.mirror, 'GET', '/mirror')).json().errorCode, 'mirror_id_taken');
+  const later = await publish(p.source, Buffer.from('after it'), 'b.bin');
+  await p.settle();
+  const status = (await call(p.mirror, 'GET', '/mirror')).json();
+  assert.equal(status.errorCode, null);
+  assert.equal(status.caughtUp, true, 'the feed went past the entry');
+  assert.ok(status.conflicts.count >= 1);
+  for (const entry of status.conflicts.sample) {
+    assert.equal(entry.artifactId, id);
+    assert.equal(entry.code, 'mirror_id_taken');
+  }
+  assert.deepEqual(await content(p.mirror, `/artifacts/${later}/content`), Buffer.from('after it'));
+  // The other repository lets go of it: the retry copies it and clears every entry.
+  await p.catalog.pool.query("DELETE FROM arkvory_uploads WHERE id=$1 AND repository='other'", [
+    id,
+  ]);
+  await due(p);
+  await p.settle();
+  assert.equal((await call(p.mirror, 'GET', '/mirror')).json().conflicts.count, 0);
+  assert.deepEqual(await content(p.mirror, `/artifacts/${id}/content`), bytes);
 });

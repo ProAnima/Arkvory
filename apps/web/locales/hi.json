@@ -1891,6 +1891,10 @@
     "en": "The last attempt failed ({code}). The server retries by itself; its log names the cause.",
     "text": "पिछला प्रयास विफल रहा ({code})। सर्वर अपने-आप फिर प्रयास करेगा; उसके लॉग में कारण लिखा है।"
   },
+  "mirrorConflicts": {
+    "en": "Set aside: {count}. These entries of the source conflict with what is here and are not copied; everything else keeps syncing, and the server retries them.",
+    "text": "अलग रखे गए: {count}। स्रोत की ये प्रविष्टियाँ यहाँ मौजूद सामग्री से टकराती हैं और कॉपी नहीं होतीं; बाकी सब सिंक होता रहता है, और सर्वर इन्हें अपने आप फिर से आज़माता है।"
+  },
   "mirrors": {
     "en": "Mirrors",
     "text": "मिरर"

@@ -3,6 +3,15 @@ import assert from 'node:assert/strict';
 import { StageImport } from '@proanima/arkvory-application';
 
 const never = { throwIfAborted() {} };
+
+/** No entry of these sources conflicts: one put aside would be a fault of the test. */
+const noConflicts = {
+  setAside: async () => {
+    throw new Error('unexpected conflict');
+  },
+  due: async () => [],
+  resolve: async () => undefined,
+};
 const descriptor = { name: 'f', size: 2, sha256: 'a'.repeat(64), labels: [], metadata: {} };
 
 /**
@@ -96,6 +105,7 @@ const importer = (s, t, st, stages = ['release'], source = 'https://dev|builds|r
     upstream: s.port,
     target: t.port,
     states: st,
+    conflicts: noConflicts,
     stages,
     now: () => '2026-10-02T00:00:00.000Z',
   });

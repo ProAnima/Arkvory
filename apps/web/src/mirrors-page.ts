@@ -3,7 +3,7 @@ import type { RepositoryMirrorResponse } from '@proanima/arkvory-contracts';
 import { element } from './dom.js';
 import { clearMessage, message, relativeMessage } from './i18n.js';
 import { hostOf, mirrorState, stageList, stateKeys } from './mirror-presentation.js';
-import { mirrorReasonView } from './mirror-reason.js';
+import { mirrorReasonView, showConflicts } from './mirror-reason.js';
 import { onViewOpen, showView } from './shell.js';
 import { showFailure } from './feedback.js';
 
@@ -17,6 +17,7 @@ interface Row {
   readonly mode: HTMLElement;
   readonly badge: HTMLElement;
   readonly reason: HTMLElement;
+  readonly conflicts: HTMLElement;
   readonly synced: HTMLElement;
   readonly copied: HTMLElement;
 }
@@ -128,10 +129,11 @@ export class MirrorsPage {
     name.onclick = () => {
       this.open(repository);
     };
-    const [source, mode, badge, reason, synced, copied] = [
+    const [source, mode, badge, reason, conflicts, synced, copied] = [
       'div',
       'div',
       'span',
+      'div',
       'div',
       'span',
       'span',
@@ -142,12 +144,19 @@ export class MirrorsPage {
       HTMLElement,
       HTMLElement,
       HTMLElement,
+      HTMLElement,
     ];
     mode.className = 'hint';
     badge.className = 'badge mirror-badge';
     const row = document.createElement('tr');
-    row.append(cell(name), cell(source, mode), cell(badge, reason), cell(synced), cell(copied));
-    const created = { row, source, mode, badge, reason, synced, copied };
+    row.append(
+      cell(name),
+      cell(source, mode),
+      cell(badge, reason, conflicts),
+      cell(synced),
+      cell(copied),
+    );
+    const created = { row, source, mode, badge, reason, conflicts, synced, copied };
     this.shown.set(repository, created);
     return created;
   }
@@ -169,6 +178,7 @@ export class MirrorsPage {
       const view = mirrorReasonView(item);
       row.reason.replaceChildren(...(view ? [view] : []));
     }
+    showConflicts(row.conflicts, item);
     if (item.syncedAt) relativeMessage(row.synced, item.syncedAt);
     else {
       clearMessage(row.synced);

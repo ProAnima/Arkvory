@@ -1,8 +1,10 @@
 import { readFile } from 'node:fs/promises';
 import { setTimeout as delay } from 'node:timers/promises';
 import { MirrorSync, StageImport, mirrorErrorCode } from '@proanima/arkvory-application';
+import type { MirrorConflictStore } from '@proanima/arkvory-application';
 import {
   PostgresContentPins,
+  PostgresMirrorConflicts,
   PostgresMirrorState,
   failureCause,
 } from '@proanima/arkvory-infrastructure';
@@ -29,6 +31,44 @@ export interface MirrorLoopOptions {
 /** 2 s doubling to 5 minutes: a lost source is retried without hammering it. */
 export function mirrorBackoffMs(failures: number): number {
   return Math.min(300_000, 2000 * 2 ** Math.min(failures - 1, 8));
+}
+
+/**
+ * The conflict records of one mirror, with a log line per entry put aside or tried again in vain
+ * (warning) and per entry resolved (info): the journal of what the synchronization passed.
+ */
+export function loggedConflicts(
+  store: MirrorConflictStore,
+  diagnostics: DiagnosticLogger,
+  repository: string,
+): MirrorConflictStore {
+  const fields = { component: 'mirror', repository } as const;
+  return {
+    async setAside(target, entry, code, at) {
+      const attempts = await store.setAside(target, entry, code, at);
+      diagnostics.write({
+        level: 'warning',
+        ...fields,
+        code: 'mirror.conflict_set_aside',
+        errorCode: code,
+        artifactId: entry.artifactId,
+        action: entry.action,
+        attempts,
+      });
+      return attempts;
+    },
+    due: (target, before, limit) => store.due(target, before, limit),
+    async resolve(target, entry) {
+      await store.resolve(target, entry);
+      diagnostics.write({
+        level: 'info',
+        ...fields,
+        code: 'mirror.conflict_resolved',
+        artifactId: entry.artifactId,
+        action: entry.action,
+      });
+    },
+  };
 }
 
 async function pause(ms: number, stop: AbortSignal): Promise<void> {
@@ -62,6 +102,11 @@ async function follow(
       pins,
     ),
     states: new PostgresMirrorState(catalog.pool),
+    conflicts: loggedConflicts(
+      new PostgresMirrorConflicts(catalog.pool),
+      diagnostics,
+      mirror.repository,
+    ),
     now: () => new Date().toISOString(),
   };
   // With stages the repository imports promoted versions (ADR 0058); without, it mirrors.

@@ -73,3 +73,41 @@ export async function migrateMirrorRecovery(client: PoolClient): Promise<void> {
     MIRROR_RECOVERY_MIGRATION,
   ]);
 }
+
+export const MIRROR_CONFLICTS_MIGRATION = 41;
+
+/**
+ * Expand-only (ADR 0058, 2026-10-15): entries of a source put aside on a conflict while the feed
+ * goes on, one row per entry and repository. An entry is the artifact with the action and detail
+ * that brought it; `entry` is the MD5 of action and detail, because an asset path may exceed the
+ * size of an index entry. The artifact ID is the source's and need not exist here (another
+ * repository may hold it), so there is no foreign key.
+ */
+export async function migrateMirrorConflicts(client: PoolClient): Promise<void> {
+  if (
+    (
+      await client.query('SELECT version FROM arkvory_migrations WHERE version=$1', [
+        MIRROR_CONFLICTS_MIGRATION,
+      ])
+    ).rowCount
+  )
+    return;
+  await client.query(`
+    CREATE TABLE IF NOT EXISTS arkvory_mirror_conflicts(
+      repository text NOT NULL,
+      artifact_id uuid NOT NULL,
+      entry char(32) NOT NULL,
+      action text NOT NULL,
+      detail text,
+      code text NOT NULL,
+      first_at timestamptz NOT NULL,
+      last_at timestamptz NOT NULL,
+      attempts integer NOT NULL DEFAULT 1 CHECK (attempts >= 1),
+      PRIMARY KEY (repository, artifact_id, entry)
+    );
+    CREATE INDEX IF NOT EXISTS arkvory_mirror_conflicts_due
+      ON arkvory_mirror_conflicts(repository, last_at)`);
+  await client.query('INSERT INTO arkvory_migrations(version) VALUES($1)', [
+    MIRROR_CONFLICTS_MIGRATION,
+  ]);
+}

@@ -18,6 +18,9 @@ import type { MirrorTarget } from './mirror-ports.js';
 export const isRegistryChange = (action: string) =>
   action.startsWith('oci.') || action.startsWith('npm.') || action === lfsObjectAction;
 
+/** What a registry change names; its sequence does not matter here. */
+type Change = Pick<CatalogFeedEntry, 'action' | 'artifactId' | 'detail'>;
+
 type Target = Pick<
   MirrorTarget,
   | 'ociBlob'
@@ -32,7 +35,7 @@ type Target = Pick<
 
 /** npm entries; false for actions of the other registries. */
 async function applyNpmChange(
-  change: CatalogFeedEntry,
+  change: Change,
   target: Target,
   refresh: (id: string) => Promise<boolean>,
 ): Promise<boolean> {
@@ -60,7 +63,7 @@ async function applyNpmChange(
  * actions only refresh the artifact, like any action the mirror does not know.
  */
 export async function applyRegistryChange(
-  change: CatalogFeedEntry,
+  change: Change,
   target: Target,
   refresh: (id: string) => Promise<boolean>,
 ): Promise<void> {

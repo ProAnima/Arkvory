@@ -12,6 +12,7 @@ import {
   LocalBlobStore,
   PostgresCatalog,
   PostgresContentPins,
+  PostgresMirrorConflicts,
   PostgresMirrorState,
   migrate,
 } from '@proanima/arkvory-infrastructure';
@@ -171,6 +172,7 @@ export async function pair(t, stages) {
       upstream: upstreamSource,
       target,
       states: new PostgresMirrorState(catalog.pool),
+      conflicts: new PostgresMirrorConflicts(catalog.pool),
       now: () => new Date().toISOString(),
     };
     return stages ? new StageImport({ ...dependencies, stages }) : new MirrorSync(dependencies);
@@ -239,6 +241,7 @@ export async function importer(t, installation, upstream, readerToken, stages) {
       upstream: new SdkMirrorSource(upstream, 'releases', () => readerToken, stop.signal),
       target,
       states: new PostgresMirrorState(catalog.pool),
+      conflicts: new PostgresMirrorConflicts(catalog.pool),
       now: () => new Date().toISOString(),
       stages: now,
     });

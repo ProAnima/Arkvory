@@ -1,4 +1,5 @@
 import type { MirrorState } from './mirror-ports.js';
+import { retryConflicts, setAside } from './mirror-conflicts.js';
 import {
   changesAfter,
   feedAnchor,
@@ -80,7 +81,7 @@ export class StageImport {
       return 'progress';
     }
     const page = await this.d.upstream.staged(stage, after === '' ? null : after, cancellation);
-    for (const id of page.items) await this.take(id, null, cancellation);
+    for (const id of page.items) await this.guarded(id, null, cancellation);
     await this.save({
       seedAfter: page.next === null ? `${String(Number(index) + 1)}|` : `${index}|${page.next}`,
       ...seedProgress(state),
@@ -99,12 +100,26 @@ export class StageImport {
     for (const change of items) {
       const stage = change.action === 'stage.add' ? change.detail : null;
       if (stage !== null && this.d.stages.includes(stage))
-        await this.take(change.artifactId, stage, cancellation);
+        await this.guarded(change.artifactId, stage, cancellation);
       await this.save({ cursor: change.sequence, anchor: feedAnchor(change) });
     }
     if (page.next !== null) return 'progress';
     await this.save({ syncedAt: this.d.now(), errorCode: null, errorAt: null });
+    await retryConflicts(this.d, (entry) =>
+      this.take(entry.artifactId, entry.detail, cancellation),
+    );
     return items.length > 0 ? 'progress' : 'idle';
+  }
+
+  /**
+   * Takes one version over; a conflict puts it aside as `stage.add` with the stage that brought
+   * it (none from the seed), and the import goes on. A retry takes it again the same way: a stage
+   * removed on the source since, or a version deleted there, brings nothing and clears it.
+   */
+  private guarded(id: string, promoted: string | null, cancellation: Cancellation) {
+    return setAside(this.d, { artifactId: id, action: 'stage.add', detail: promoted }, () =>
+      this.take(id, promoted, cancellation),
+    );
   }
 
   /**

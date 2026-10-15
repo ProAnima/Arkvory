@@ -1891,6 +1891,10 @@
     "en": "The last attempt failed ({code}). The server retries by itself; its log names the cause.",
     "text": "前回の試行は失敗しました（{code}）。サーバーが自動的に再試行します。原因はサーバーのログに記録されています。"
   },
+  "mirrorConflicts": {
+    "en": "Set aside: {count}. These entries of the source conflict with what is here and are not copied; everything else keeps syncing, and the server retries them.",
+    "text": "保留中: {count}。ソースのこれらの項目はここにあるものと競合するため、コピーされません。それ以外は同期を続け、サーバーが自動で再試行します。"
+  },
   "mirrors": {
     "en": "Mirrors",
     "text": "ミラー"

@@ -42,6 +42,9 @@ export const mirrorEnglish = {
     'A file of the source is held by another repository here. One source repository can fill only one repository.',
   mirrorReasonOther:
     'The last attempt failed ({code}). The server retries by itself; its log names the cause.',
+  // Entries put aside on a conflict while the rest of the feed goes on.
+  mirrorConflicts:
+    'Set aside: {count}. These entries of the source conflict with what is here and are not copied; everything else keeps syncing, and the server retries them.',
   // The Mirrors page.
   mirrors: 'Mirrors',
   mirrorsRepository: 'Repository',
@@ -107,6 +110,8 @@ export const mirrorRussian: Record<keyof typeof mirrorEnglish, string> = {
     'Файл источника уже хранит другой репозиторий этого сервера. Один репозиторий источника наполняет только один репозиторий.',
   mirrorReasonOther:
     'Последняя попытка не удалась ({code}). Сервер повторит сам; причина — в его журнале.',
+  mirrorConflicts:
+    'Отложено: {count}. Эти записи источника конфликтуют с тем, что есть здесь, и не копируются; остальное продолжает синхронизироваться, а сервер повторяет их сам.',
   mirrors: 'Зеркала',
   mirrorsRepository: 'Репозиторий',
   mirrorsSource: 'Источник',

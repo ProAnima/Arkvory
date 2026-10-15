@@ -2,6 +2,8 @@ import type { CatalogFeedEntry } from './catalog-ports.js';
 import type { Cancellation } from './ports.js';
 import { MirrorFailure, mirrorPrincipalId } from './mirror-ports.js';
 import { applyRegistryChange, isRegistryChange } from './mirror-registry.js';
+import { retryConflicts, setAside } from './mirror-conflicts.js';
+import type { MirrorConflictEntry, MirrorConflictStore } from './mirror-conflicts.js';
 import type {
   MirrorArtifact,
   MirrorFeedPage,
@@ -18,6 +20,8 @@ export interface MirrorSyncDependencies {
   readonly upstream: MirrorSource;
   readonly target: MirrorTarget;
   readonly states: MirrorStateStore;
+  /** Entries put aside on a conflict instead of stopping the feed. */
+  readonly conflicts: MirrorConflictStore;
   readonly now: () => string;
 }
 export type MirrorStep = 'progress' | 'idle';
@@ -200,6 +204,8 @@ export function mirrorErrorCode(error: unknown): string {
  * (`seedHead` marks that replay); after it, every entry. Every applied page or event is saved
  * before the next one, so a restart repeats at most the unsaved unit, and every unit is
  * idempotent: it re-reads the current source state instead of replaying an event payload.
+ * A conflict of one entry (`mirrorConflictCodes`) puts that entry aside and the feed goes on;
+ * entries set aside are tried again once caught up (`retryConflicts`).
  */
 export class MirrorSync {
   private state: MirrorState | null = null;
@@ -233,7 +239,7 @@ export class MirrorSync {
   }
 
   private async seed(state: MirrorState, cancellation: Cancellation): Promise<MirrorStep> {
-    const { upstream, target } = this.d;
+    const { upstream } = this.d;
     if (state.seedHead === null) {
       // The head first: changes after it are replayed, so none during the seed is lost.
       const { head } = await upstream.changes('0', cancellation);
@@ -248,16 +254,28 @@ export class MirrorSync {
     }
     if (state.seedStep === 'artifacts') {
       const page = await upstream.artifacts(state.seedAfter, cancellation);
-      for (const artifact of page.items) await this.ensure(artifact, cancellation);
+      for (const artifact of page.items)
+        await setAside(
+          this.d,
+          { artifactId: artifact.id, action: 'artifact.publish', detail: null },
+          () => this.ensure(artifact, cancellation),
+        );
       await this.advance(page.next, 'packages');
     } else if (state.seedStep === 'packages') {
       const page = await upstream.packages(state.seedAfter, cancellation);
       for (const id of page.items)
-        if (await this.refresh(id, cancellation)) await target.register(id);
+        await this.guarded(
+          { artifactId: id, action: 'package.register', detail: null },
+          cancellation,
+        );
       await this.advance(page.next, 'assets');
     } else {
       const page = await upstream.assets(state.seedAfter, cancellation);
-      for (const asset of page.items) await this.syncAsset(asset.path, cancellation);
+      for (const asset of page.items)
+        await this.guarded(
+          { artifactId: asset.artifactId, action: 'asset.replace', detail: asset.path },
+          cancellation,
+        );
       if (page.next !== null) await this.save({ seedAfter: page.next, ...seedProgress(state) });
       else
         await this.save({
@@ -291,7 +309,7 @@ export class MirrorSync {
     await this.save({ head: page.head, checkedAt: this.d.now(), anchor });
     for (const change of items) {
       const replay = state.seedHead !== null && BigInt(change.sequence) <= BigInt(state.seedHead);
-      if (!replay || isRegistryChange(change.action)) await this.apply(change, cancellation);
+      if (!replay || isRegistryChange(change.action)) await this.guarded(change, cancellation);
       const at = { cursor: change.sequence, anchor: feedAnchor(change) };
       await this.save(
         replay && change.sequence === state.seedHead ? { ...at, seedHead: null } : at,
@@ -311,10 +329,21 @@ export class MirrorSync {
       errorAt: null,
       seedHead: null,
     });
+    await retryConflicts(this.d, (entry) => this.apply(entry, cancellation));
     return items.length > 0 ? 'progress' : 'idle';
   }
 
-  private async apply(change: CatalogFeedEntry, cancellation: Cancellation): Promise<void> {
+  /**
+   * One entry, put aside on a conflict. Registry entries are not: their order matters (a tag
+   * moves, a manifest is deleted), so one applied later could undo a newer change; a conflict
+   * there stops the feed as before.
+   */
+  private async guarded(change: MirrorConflictEntry, cancellation: Cancellation): Promise<void> {
+    if (isRegistryChange(change.action)) return this.apply(change, cancellation);
+    await setAside(this.d, change, () => this.apply(change, cancellation));
+  }
+
+  private async apply(change: MirrorConflictEntry, cancellation: Cancellation): Promise<void> {
     if (ignored.has(change.action)) return;
     if (isRegistryChange(change.action))
       return applyRegistryChange(change, this.d.target, (id) => this.refresh(id, cancellation));

@@ -1891,6 +1891,10 @@
     "en": "The last attempt failed ({code}). The server retries by itself; its log names the cause.",
     "text": "마지막 시도가 실패했습니다({code}). 서버가 자동으로 재시도하며, 원인은 서버 로그에 기록됩니다."
   },
+  "mirrorConflicts": {
+    "en": "Set aside: {count}. These entries of the source conflict with what is here and are not copied; everything else keeps syncing, and the server retries them.",
+    "text": "보류됨: {count}. 원본의 이 항목들은 여기에 있는 것과 충돌하여 복사되지 않습니다. 나머지는 계속 동기화되며 서버가 자동으로 다시 시도합니다."
+  },
   "mirrors": {
     "en": "Mirrors",
     "text": "미러"

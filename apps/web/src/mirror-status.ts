@@ -4,7 +4,7 @@ import type { RepositoryMirrorResponse } from '@proanima/arkvory-contracts';
 import { element } from './dom.js';
 import { message, relativeMessage } from './i18n.js';
 import { hostOf, mirrorState, stageList } from './mirror-presentation.js';
-import { mirrorReasonView } from './mirror-reason.js';
+import { mirrorReasonView, showConflicts } from './mirror-reason.js';
 
 /** The badge follows the server's synchronization without a reload. */
 const REFRESH_MS = 20000;
@@ -20,7 +20,8 @@ export function installMirrorStatus(client: ArkvoryClient) {
     badge = element('mirror-badge', HTMLSpanElement),
     source = element('mirror-source', HTMLSpanElement),
     synced = element('mirror-synced', HTMLSpanElement),
-    problem = element('mirror-problem', HTMLDivElement);
+    problem = element('mirror-problem', HTMLDivElement),
+    conflicts = element('mirror-conflicts', HTMLDivElement);
   let generation = 0;
   let timer: ReturnType<typeof setTimeout> | undefined;
   // The root flag hides upload actions in CSS; views toggle their own visibility independently.
@@ -34,6 +35,8 @@ export function installMirrorStatus(client: ArkvoryClient) {
     problem.hidden = true;
     problem.replaceChildren();
     delete problem.dataset['code'];
+    conflicts.hidden = true;
+    delete conflicts.dataset['count'];
     mirrored(false);
   };
   const render = (status: RepositoryMirrorResponse) => {
@@ -67,6 +70,8 @@ export function installMirrorStatus(client: ArkvoryClient) {
       problem.replaceChildren(...(reason ? [reason] : []));
     }
     problem.hidden = status.errorCode === null;
+    // Entries set aside while the rest syncs: shown in any state.
+    showConflicts(conflicts, status);
     container.hidden = false;
     mirrored(!importing);
   };

@@ -35,6 +35,7 @@ import {
   PostgresBackupPlan,
   PostgresBackupRequests,
   PostgresBackupStatus,
+  PostgresMirrorConflicts,
   PostgresMirrorState,
   PostgresWebhookState,
   PostgresTransferLinks,
@@ -81,7 +82,11 @@ export function createApiServices(
   const jobs = new PostgresJobs(catalog.pool);
   const backupStatus = new PostgresBackupStatus(catalog.pool);
   const backupRequests = new PostgresBackupRequests(catalog.pool);
-  const mirrors = new MirrorStatus(options.mirrors ?? [], new PostgresMirrorState(catalog.pool));
+  const mirrors = new MirrorStatus(
+    options.mirrors ?? [],
+    new PostgresMirrorState(catalog.pool),
+    new PostgresMirrorConflicts(catalog.pool),
+  );
   return {
     jobs,
     mirrors,

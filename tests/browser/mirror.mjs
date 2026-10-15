@@ -63,6 +63,27 @@ export async function exerciseMirror(browser, f) {
       await rows.first().innerText(),
       /releases[\s\S]*“builds” on source\.example[\s\S]*In sync/,
     );
+    // Entries set aside while the rest syncs: a count with the way to resolve them, on the page
+    // and under the badge, which stays in sync; gone once the server cleared them.
+    await state(`INSERT INTO arkvory_mirror_conflicts(repository, artifact_id, entry, action,
+        detail, code, first_at, last_at) VALUES('releases', gen_random_uuid(),
+        md5('package.register' || chr(10)), 'package.register', NULL, 'mirror_package_conflict',
+        now(), now())`);
+    await page.clock.fastForward(20_000);
+    const aside = page.locator('#mirrors-rows .mirror-conflicts');
+    await aside.waitFor();
+    assert.match(await aside.innerText(), /Set aside: 1\./);
+    assert.match(
+      (await aside.locator('a').getAttribute('href')) ?? '',
+      /\/Arkvory\/operate\/mirrors#conflicts$/,
+    );
+    await page.locator('[data-nav=catalog]').click();
+    await page.clock.fastForward(20_000);
+    await page.locator('#mirror-conflicts .mirror-conflicts').waitFor();
+    assert.equal(await page.locator('#mirror-state').getAttribute('data-state'), 'synced');
+    await state('DELETE FROM arkvory_mirror_conflicts');
+    await page.clock.fastForward(20_000);
+    await page.locator('#mirror-conflicts').waitFor({ state: 'hidden' });
     // A refused key stops it: the badge turns into a warning, and the reason with the command
     // that fixes it is in view, on the catalog and on the Mirrors page; downloads keep working.
     await state(`UPDATE arkvory_mirror_state SET error_code='unauthorized', error_at=now()`);
@@ -154,7 +175,7 @@ export async function exerciseMirror(browser, f) {
     assert.match(await details.textContent(), /marked release in “builds”/);
     assert.deepEqual(errors, []);
     console.log(
-      'PASS mirror: badge per sync state, source in the tooltip, reason and fix in view, Mirrors page refreshing by itself, 320px, RU/EN; import badge keeps uploads',
+      'PASS mirror: badge per sync state, source in the tooltip, reason and fix in view, entries set aside, Mirrors page refreshing by itself, 320px, RU/EN; import badge keeps uploads',
     );
   } finally {
     await context.close();

@@ -132,42 +132,61 @@ Connected to a mirrored repository, the console also shows a badge above the cat
 
 [getRepositoryMirror](../api/reference/mirrors#getRepositoryMirror) returns the status of a repository. It needs the right to read the repository. For an ordinary repository the answer is 404.
 
-| Field                            | Meaning                                                                                                    |
-| -------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `mode`                           | `mirror` or `import`                                                                                       |
-| `phase`                          | `pending` (the worker has not started), `seeding` (first fill) or `following`                              |
-| `caughtUp`                       | `true` when the saved position equals the newest position of the source. `null` before the first fill ends |
-| `checkedAt`, `syncedAt`          | When the worker last read the feed, and when it was last caught up                                         |
-| `copiedArtifacts`, `copiedBytes` | Totals copied so far (`copiedBytes` is a decimal string)                                                   |
-| `errorCode`, `errorAt`           | The last failure of a step, or `null`                                                                      |
+| Field                            | Meaning                                                                                                                    |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `mode`                           | `mirror` or `import`                                                                                                       |
+| `phase`                          | `pending` (the worker has not started), `seeding` (first fill) or `following`                                              |
+| `caughtUp`                       | `true` when the saved position equals the newest position of the source. `null` before the first fill ends                 |
+| `checkedAt`, `syncedAt`          | When the worker last read the feed, and when it was last caught up                                                         |
+| `copiedArtifacts`, `copiedBytes` | Totals copied so far (`copiedBytes` is a decimal string)                                                                   |
+| `conflicts`                      | Entries of the source set aside: `count`, `oldestAt` and up to 10 entries in `sample`. See [Entries set aside](#conflicts) |
+| `errorCode`, `errorAt`           | The last failure of a step, or `null`                                                                                      |
 
 ### Error codes {#error-codes}
 
-| `errorCode`               | Meaning and what to do                                                                                                                                                                                                                                                                                                             |
-| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `mirror_mismatch`         | The same artifact ID has different content on the source. The mirror keeps its file. Investigate the artifact; do not delete either copy before you know the cause                                                                                                                                                                 |
-| `mirror_source_changed`   | The repository already holds a copy of another source. Detach it, or mirror the new source into a new repository                                                                                                                                                                                                                   |
-| `mirror_source_behind`    | The source was restored or reinstalled: the change at the position of the mirror is not the one it applied there. The mirror reads the source again, and the code clears when it has caught up. Files that the restored source lacks stay on the mirror                                                                            |
-| `mirror_delete_blocked`   | The source deleted a file that the mirror cannot delete, because something here still uses it, such as a reference or a file path history                                                                                                                                                                                          |
-| `mirror_detached`         | The repository was detached and has changes of its own. It is never synchronized again. Mirror the source into a new repository                                                                                                                                                                                                    |
-| `mirror_package_conflict` | A version of the source has a package version (group, name and version) that this repository holds with other bytes. The package version here stays what clients get; the copied file stays without a package registration until you delete it. Remove the stage or the version on the source, or publish it under another version |
-| `mirror_id_taken`         | An artifact of the source is held by another repository of this installation. One source repository can fill only one repository here                                                                                                                                                                                              |
-| `mirror_unreachable`      | The source cannot be reached: the connection is refused or times out, or the name does not resolve. The worker retries by itself. Check the network, the firewall and that the source is running                                                                                                                                   |
-| `mirror_certificate`      | The certificate of the source is not trusted, has expired or does not match its name. Add its authority with `--mirror-ca-file` (see [HTTPS with your own certificate authority](#ca-file))                                                                                                                                        |
-| `mirror_failed`           | A failure without a more specific code. Read the worker log                                                                                                                                                                                                                                                                        |
-| other codes               | The code of the failed request: `unauthorized` when the source no longer accepts the key (give the mirror a new one), `forbidden` when the key may not read the repository, `not_found` when the source repository is gone, `capacity_exceeded` when the mirror is full                                                            |
+| `errorCode`               | Meaning and what to do                                                                                                                                                                                                                                                                      |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `mirror_mismatch`         | The same artifact ID has different content on the source. The mirror keeps its file. Investigate the artifact; do not delete either copy before you know the cause                                                                                                                          |
+| `mirror_source_changed`   | The repository already holds a copy of another source. Detach it, or mirror the new source into a new repository                                                                                                                                                                            |
+| `mirror_source_behind`    | The source was restored or reinstalled: the change at the position of the mirror is not the one it applied there. The mirror reads the source again, and the code clears when it has caught up. Files that the restored source lacks stay on the mirror                                     |
+| `mirror_delete_blocked`   | The source deleted a file that the mirror cannot delete, because something here still uses it, such as a reference or a file path history                                                                                                                                                   |
+| `mirror_detached`         | The repository was detached and has changes of its own. It is never synchronized again. Mirror the source into a new repository                                                                                                                                                             |
+| `mirror_package_conflict` | A version of the source has a package version that this repository holds with other bytes. The entry is set aside and the synchronization goes on: see [Entries set aside](#conflicts). Earlier releases stopped here                                                                       |
+| `mirror_id_taken`         | An artifact of the source is held by another repository of this installation. The entry is set aside, see [Entries set aside](#conflicts); in a change of image tags, Git LFS objects or npm packages it stops the synchronization. One source repository can fill only one repository here |
+| `mirror_unreachable`      | The source cannot be reached: the connection is refused or times out, or the name does not resolve. The worker retries by itself. Check the network, the firewall and that the source is running                                                                                            |
+| `mirror_certificate`      | The certificate of the source is not trusted, has expired or does not match its name. Add its authority with `--mirror-ca-file` (see [HTTPS with your own certificate authority](#ca-file))                                                                                                 |
+| `mirror_failed`           | A failure without a more specific code. Read the worker log                                                                                                                                                                                                                                 |
+| other codes               | The code of the failed request: `unauthorized` when the source no longer accepts the key (give the mirror a new one), `forbidden` when the key may not read the repository, `not_found` when the source repository is gone, `capacity_exceeded` when the mirror is full                     |
 
 The worker log (`component` is `mirror`) has `mirror.started`, `mirror.step_failed` with `errorCode` and `attempts`, `mirror.recovered` and `mirror.stopped`.
 
+### Entries set aside {#conflicts}
+
+Some changes of the source cannot be applied here without breaking what is here. The worker sets such an entry aside and goes on with the rest of the feed, so one version does not hold back every later change. Nothing is skipped silently: every entry set aside is visible until it is resolved.
+
+| Code                      | Meaning                                                                                                                                                                                                      | What to do                                                                                                                             |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `mirror_package_conflict` | The version has a package version (group, name and version) that this repository holds with other bytes. Clients keep getting the version that is here; the copied file stays without a package registration | Remove the stage or the version on the source, or publish it under another version. In an import, you can also delete the version here |
+| `mirror_id_taken`         | Another repository of this installation holds the artifact ID                                                                                                                                                | One source repository fills one repository here. Detach the other mirror or import, or delete the other copy                           |
+
+- The worker tries each entry again 10 minutes after its last attempt, up to 8 entries each time it is caught up. An entry is removed when it applies, or when the source no longer has it: the version was deleted there, or, for an import, its stage was removed.
+- The status shows `conflicts`: how many entries are set aside, when the oldest was set aside, and up to 10 of them with the artifact ID, the change (`action` and `detail`), the code, the first and last attempt and the number of attempts.
+- The console shows the count on [[ui:mirrors]] and under the badge of the repository. The state stays as it is, because the rest keeps syncing.
+- The worker log has `mirror.conflict_set_aside` (warning, with `artifactId`, `action`, `errorCode` and `attempts`) for every attempt that fails, and `mirror.conflict_resolved` when an entry is removed.
+- The metric `arkvory_mirror_conflicts` counts them, and the rule `ArkvoryMirrorConflicts` warns when there are any for 30 minutes.
+
+Changes of image tags and manifests, Git LFS objects and npm packages are never set aside: their order matters, so applying one later could undo a newer change. A conflict there stops the synchronization with its code until it is resolved.
+
 ## Monitor mirrors {#monitoring}
 
-The API of the mirror installation exposes three metrics for each mirrored repository, with the labels `repository` and `mode`:
+The API of the mirror installation exposes four metrics for each mirrored repository, with the labels `repository` and `mode`:
 
 - `arkvory_mirror_last_sync_timestamp_seconds`: the last time the mirror was caught up.
 - `arkvory_mirror_last_check_timestamp_seconds`: the last time it read the feed.
 - `arkvory_mirror_failing`: 1 while the last attempt failed; not while the mirror reads a restored source again (`mirror_source_behind`).
+- `arkvory_mirror_conflicts`: the number of [entries set aside](#conflicts).
 
-The ready-made Prometheus rules are `ArkvoryMirrorStale` (not caught up for more than an hour, for 15 minutes) and `ArkvoryMirrorFailing` (the failure lasts 15 minutes). See [Monitoring](./monitoring). A mirror that the worker has not reached yet has no sync time, so the stale rule does not fire before its first synchronization.
+The ready-made Prometheus rules are `ArkvoryMirrorStale` (not caught up for more than an hour, for 15 minutes), `ArkvoryMirrorFailing` (the failure lasts 15 minutes) and `ArkvoryMirrorConflicts` (entries set aside for 30 minutes). See [Monitoring](./monitoring). A mirror that the worker has not reached yet has no sync time, so the stale rule does not fire before its first synchronization.
 
 ## Import by stage {#import}
 
@@ -185,7 +204,7 @@ sudo arkvory configure --root /opt/proanima-arkvory \
 - Uploads and the storage policy of the repository work as usual.
 - Container image, Git LFS and npm registry data are not carried over.
 - A change of stages starts a new first fill. It only brings versions that are not here yet, and leaves the ones that are here as they are.
-- A version of the source whose package version this repository already holds with other bytes stops the import with `mirror_package_conflict`. Clients keep getting the version that is here.
+- A version of the source whose package version this repository already holds with other bytes is set aside with `mirror_package_conflict`, and the import goes on with the next versions. Clients keep getting the version that is here. See [Entries set aside](#conflicts).
 
 Two installations can import from each other. For example, production takes `release` from staging, and staging takes `hotfix` from production. A version keeps its ID on both sides, so nothing is copied twice or goes round in circles:
 
@@ -243,8 +262,9 @@ Rehearse the switch every quarter and after updates. Detach one repository on a 
 - The mirror is not a backup. It has no copy of accounts, keys or grants, and it does not copy references, attachments, audit trails or storage policies.
 - Import mode does not copy container images, Git LFS or npm data.
 - A new first fill only adds and updates: after a restore of the source, files that the source lost stay on the mirror.
-- One source repository fills one repository of an installation: artifact IDs are the same on both sides, so a second mirror or import of it is refused when it is configured. For the same reason, two installations that import from each other must use the same repository name on both sides: a version that came from the other side cannot be taken into a different repository here, and the import stops with `mirror_id_taken`.
-- A version whose package version is already held here with other bytes is copied, then the import stops with `mirror_package_conflict`. The copy stays in the repository without a package registration until you delete it.
+- One source repository fills one repository of an installation: artifact IDs are the same on both sides, so a second mirror or import of it is refused when it is configured. For the same reason, two installations that import from each other must use the same repository name on both sides: a version that came from the other side cannot be taken into a different repository here, and it is set aside with `mirror_id_taken`.
+- A version whose package version is already held here with other bytes is copied, then set aside with `mirror_package_conflict`. The copy stays in the repository without a package registration until you delete it.
+- An entry set aside is not here until it is resolved. A conflict in a change of image tags, Git LFS objects or npm packages still stops the synchronization.
 - After a restore of the mirror installation from a backup, versions that were imported and deleted after the backup was taken can be imported again.
 - Both installations are updated on their own. The source must offer the mirror change feed.
 - The set of trusted authorities of the source applies to the whole worker.
