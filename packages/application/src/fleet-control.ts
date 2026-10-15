@@ -1,4 +1,5 @@
 import { ArkvoryError, isFleetName } from '@proanima/arkvory-domain';
+import type { Cancellation } from './ports.js';
 
 /** A site as the controller keeps it (ADR 0077); `sealedKey` never leaves this layer. */
 export interface FleetSiteRecord {
@@ -45,7 +46,16 @@ export interface SiteCertificateView {
   readonly issuer: string;
   readonly validTo: string;
 }
-/** How the controller talks to sites; failures carry a `code` of FleetObservation states. */
+/** The part of an AbortSignal the fleet passes on; the core has no DOM or Node globals. */
+export interface FleetAbortSignal extends Cancellation {
+  readonly aborted: boolean;
+  addEventListener(type: 'abort', listener: () => void): void;
+  removeEventListener(type: 'abort', listener: () => void): void;
+}
+/**
+ * How the controller talks to sites; failures carry a `code` of FleetObservation states. An
+ * aborted `signal` ends the request at once and releases what it holds.
+ */
 export interface FleetSiteClient {
   origin(url: unknown): string;
   certificate(origin: string): Promise<SiteCertificateView | null>;
@@ -54,13 +64,19 @@ export interface FleetSiteClient {
     code: string,
     controllerName: string,
   ): Promise<{ readonly key: string; readonly name: string; readonly version: string }>;
-  topology(endpoint: FleetEndpointView, key: string, actor: string): Promise<unknown>;
+  topology(
+    endpoint: FleetEndpointView,
+    key: string,
+    actor: string,
+    signal?: FleetAbortSignal,
+  ): Promise<unknown>;
   /** A GET of `path` on the site with its key; the answer's status and JSON body. */
   read(
     endpoint: FleetEndpointView,
     key: string,
     actor: string,
     path: string,
+    signal?: FleetAbortSignal,
   ): Promise<{ readonly status: number; readonly body: unknown }>;
   /** A change of `path` on the site with its key, sent once. */
   change(
@@ -70,6 +86,7 @@ export interface FleetSiteClient {
     method: 'PUT' | 'POST',
     path: string,
     body: unknown,
+    signal?: FleetAbortSignal,
   ): Promise<{ readonly status: number; readonly body: unknown }>;
 }
 export interface FleetKeySeal {
@@ -107,6 +124,7 @@ const IN_FLIGHT = 16;
  */
 export class FleetControl {
   private readonly inFlight = new Map<string, number>();
+  private readonly polls = new Map<string, Promise<void>>();
   private total = 0;
   constructor(
     private readonly sites: FleetSiteStore,
@@ -186,14 +204,27 @@ export class FleetControl {
    * Reads one site now and records the outcome; never throws for the site's failure. A topology
    * that cannot be stored (larger than the registry keeps, or with characters a JSON column
    * refuses) is recorded as `invalid`, never left as the last good state.
+   *
+   * One read of a site at a time: a caller while one runs joins it (its actor and signal stay
+   * the first caller's), so an older answer finishing last never overwrites a newer one.
    */
-  async poll(id: string, actor = 'fleet') {
+  poll(id: string, actor = 'fleet', signal?: FleetAbortSignal): Promise<void> {
+    const running = this.polls.get(id);
+    if (running) return running;
+    const started = this.observe(id, actor, signal).finally(() => {
+      this.polls.delete(id);
+    });
+    this.polls.set(id, started);
+    return started;
+  }
+
+  private async observe(id: string, actor: string, signal: FleetAbortSignal | undefined) {
     const site = await this.sites.get(id);
     if (!site) throw new ArkvoryError('not_found', 'Site not found');
     let observation: FleetObservation;
     try {
       const key = this.sealer().open(site.id, site.sealedKey);
-      const topology = await this.client.topology(site, key, actor);
+      const topology = await this.client.topology(site, key, actor, signal);
       const text = JSON.stringify(topology);
       if (utf8Length(text) > TOPOLOGY_LIMIT || text.includes('\\u0000'))
         throw Object.assign(new Error('Topology cannot be stored'), { code: 'invalid' });
@@ -206,6 +237,8 @@ export class FleetControl {
         ...(name ? { name } : {}),
       };
     } catch (error) {
+      // Cancelled (shutdown): nothing was learnt of the site, so nothing is recorded.
+      signal?.throwIfAborted();
       const state = failureState(error);
       observation = { state, error: state, at: this.now() };
     }
@@ -216,10 +249,16 @@ export class FleetControl {
    * Reads catalog metadata of a site with its key. `allowed` is the fixed list of read paths: a
    * path outside it is refused here, before the site is asked.
    */
-  async read(id: string, path: string, actor: string, allowed: (path: string) => boolean) {
+  async read(
+    id: string,
+    path: string,
+    actor: string,
+    allowed: (path: string) => boolean,
+    signal?: FleetAbortSignal,
+  ) {
     if (!allowed(path))
       throw new ArkvoryError('invalid_input', 'Only catalog metadata of a site can be read');
-    return this.forward(id, (site, key) => this.client.read(site, key, actor, path));
+    return this.forward(id, (site, key) => this.client.read(site, key, actor, path, signal));
   }
 
   /**
@@ -232,12 +271,13 @@ export class FleetControl {
     body: unknown,
     actor: string,
     methodOf: (path: string) => 'PUT' | 'POST' | undefined,
+    signal?: FleetAbortSignal,
   ) {
     const method = methodOf(path);
     if (!method)
       throw new ArkvoryError('invalid_input', 'Only the listed settings of a site can be changed');
     return this.forward(id, (site, key) =>
-      this.client.change(site, key, actor, method, path, body),
+      this.client.change(site, key, actor, method, path, body, signal),
     );
   }
 
@@ -283,16 +323,19 @@ export class FleetControl {
   /**
    * Reads every site, at most CONCURRENCY at once. One site's failure to be recorded (a removed
    * site, a database hiccup) neither ends the round early nor lets the next one overlap it: the
-   * round finishes, then reports the first failure.
+   * round finishes, then reports the first failure. An aborted `signal` (shutdown) ends the
+   * reads in flight and takes no further site; a cancelled round reports nothing.
    */
-  async pollAll() {
+  async pollAll(signal?: FleetAbortSignal) {
     const queue = [...(await this.sites.list())];
     const failures: unknown[] = [];
     const workers = Array.from({ length: Math.min(CONCURRENCY, queue.length) }, async () => {
-      for (let site = queue.shift(); site; site = queue.shift())
-        await this.poll(site.id).catch((error: unknown) => {
-          // Removed by an administrator during the round: nothing left to record.
-          if (!(error instanceof ArkvoryError && error.code === 'not_found')) failures.push(error);
+      for (let site = queue.shift(); site && !signal?.aborted; site = queue.shift())
+        await this.poll(site.id, 'fleet', signal).catch((error: unknown) => {
+          // Cancelled, or removed by an administrator during the round: nothing to record.
+          if (signal?.aborted || (error instanceof ArkvoryError && error.code === 'not_found'))
+            return;
+          failures.push(error);
         });
     });
     await Promise.all(workers);

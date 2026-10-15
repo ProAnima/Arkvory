@@ -3,6 +3,7 @@ import { request as httpRequest, type IncomingMessage } from 'node:http';
 import { request as httpsRequest } from 'node:https';
 import { connect, type PeerCertificate } from 'node:tls';
 import { isIP } from 'node:net';
+import type { FleetAbortSignal } from '@proanima/arkvory-application';
 
 /** Why a site could not be reached (ADR 0077); the console explains each. */
 export type FleetFailureCode = 'unreachable' | 'certificate' | 'revoked' | 'invalid' | 'refused';
@@ -196,7 +197,8 @@ export function siteRequest(
   options: {
     readonly key?: string;
     readonly body?: unknown;
-    readonly signal?: AbortSignal;
+    /** Ends the exchange at once, as unreachable: the caller went away or shuts down. */
+    readonly signal?: FleetAbortSignal;
     /** The controller's administrator acting, for the site's audit; not a credential. */
     readonly actor?: string;
     /** Largest answer read; catalog pages are larger than state. */
@@ -221,6 +223,8 @@ export function siteRequest(
   const secure = url.protocol === 'https:';
   if (secure && (!endpoint.pin || !endpoint.certificate))
     return Promise.reject(new FleetFailure('certificate'));
+  const signal = options.signal;
+  if (signal?.aborted) return Promise.reject(new FleetFailure('unreachable'));
   return new Promise((resolve, reject) => {
     const settle = (failure: FleetFailure) => {
       reject(failure);
@@ -231,7 +235,6 @@ export function siteRequest(
         method,
         headers,
         timeout: TIMEOUT_MS,
-        ...(options.signal ? { signal: options.signal } : {}),
         ...(secure
           ? {
               ca: [endpoint.certificate ?? ''],
@@ -254,8 +257,15 @@ export function siteRequest(
       settle(new FleetFailure('unreachable'));
     }, options.deadlineMs ?? DEADLINE_MS);
     deadline.unref();
+    const abort = () => {
+      request.destroy();
+      settle(new FleetFailure('unreachable'));
+    };
+    signal?.addEventListener('abort', abort);
+    // 'close' follows every end of the exchange (answer read, error, destroy): nothing outlives it.
     request.once('close', () => {
       clearTimeout(deadline);
+      signal?.removeEventListener('abort', abort);
     });
     request.on('error', (error: Error & { code?: string }) => {
       const tls =

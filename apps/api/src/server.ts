@@ -69,7 +69,7 @@ function registerMaintenance(
   return registerBackgroundTasks(app, {
     role: runtime.role,
     available: runtime.available,
-    fleet: () => fleet.pollAll(),
+    fleet: (signal) => fleet.pollAll(signal),
     settings: () => runtime.downloadSettings.sync(),
     maintain: async () => {
       try {
@@ -253,7 +253,7 @@ function registerRoutes(app: FastifyInstance, parts: RouteParts) {
     context.principal,
     new SiteChangeControl(config.updateControlDirectory),
   );
-  registerFleetControlRoutes(app, context.principal, parts.fleetControl, parts.fleetOverview);
+  registerFleetControlRoutes(app, context, parts.fleetControl, parts.fleetOverview);
   registerFleetRoutes(app, context.principal, {
     trust: parts.fleetTrust,
     name: config.siteName ?? 'arkvory',

@@ -1,10 +1,11 @@
-import type { FastifyInstance, FastifyRequest } from 'fastify';
+import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { randomUUID } from 'node:crypto';
 import { ArkvoryError, retentionObject } from '@proanima/arkvory-domain';
 import type { Principal } from '@proanima/arkvory-domain';
 import type { FleetOverviewSource } from './fleet-overview.js';
 import {
   FleetControl,
+  type FleetAbortSignal,
   type FleetEndpointView,
   type FleetKeySeal,
   type FleetSiteClient,
@@ -32,11 +33,16 @@ function validating(client: FleetSiteClient): FleetSiteClient {
     origin: (url) => client.origin(url),
     certificate: (origin) => client.certificate(origin),
     enroll: (endpoint, code, name) => client.enroll(endpoint, code, name),
-    read: (endpoint, key, actor, path) => client.read(endpoint, key, actor, path),
-    change: (endpoint, key, actor, method, path, payload) =>
-      client.change(endpoint, key, actor, method, path, payload),
-    topology: async (endpoint: FleetEndpointView, key: string, actor: string) => {
-      const body = await client.topology(endpoint, key, actor);
+    read: (endpoint, key, actor, path, signal) => client.read(endpoint, key, actor, path, signal),
+    change: (endpoint, key, actor, method, path, payload, signal) =>
+      client.change(endpoint, key, actor, method, path, payload, signal),
+    topology: async (
+      endpoint: FleetEndpointView,
+      key: string,
+      actor: string,
+      signal?: FleetAbortSignal,
+    ) => {
+      const body = await client.topology(endpoint, key, actor, signal);
       try {
         return readTopology(body);
       } catch {
@@ -79,13 +85,20 @@ export function createFleetControl(parts: FleetControlParts): FleetControl {
   );
 }
 
+/** Who asks, and the signal that ends a forwarded request when the browser goes away. */
+export interface FleetRouteContext {
+  readonly principal: (request: FastifyRequest) => Principal;
+  readonly signal: (request: FastifyRequest, reply: FastifyReply) => AbortSignal;
+}
+
 /** The controller's routes of ADR 0077: its sites, pairing and reading them. */
 export function registerFleetControlRoutes(
   app: FastifyInstance,
-  principal: (request: FastifyRequest) => Principal,
+  context: FleetRouteContext,
   control: FleetControl,
   overview?: Pick<FleetOverviewSource, 'overview'>,
 ) {
+  const { principal } = context;
   // Alerts and links of every site (stage F4): built on the writer, which reads the sites.
   app.get('/api/v1/fleet/overview', async (request) => {
     administrator(principal(request));
@@ -138,7 +151,14 @@ export function registerFleetControlRoutes(
       const path = query['path'];
       if (typeof path !== 'string' || Object.keys(query).length !== 1)
         throw new ArkvoryError('invalid_input', 'path is the only read option');
-      const answer = await control.read(siteId(request.params.id), path, actor.id, isFleetReadPath);
+      // A slot for the site is held until it answers: not after the browser went away.
+      const answer = await control.read(
+        siteId(request.params.id),
+        path,
+        actor.id,
+        isFleetReadPath,
+        context.signal(request, reply),
+      );
       return reply.code(answer.status).send(answer.body);
     },
   );
@@ -158,6 +178,7 @@ export function registerFleetControlRoutes(
         body(request),
         actor.id,
         fleetChangeMethod,
+        context.signal(request, reply),
       );
       return reply.code(answer.status).send(answer.body);
     },
