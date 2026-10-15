@@ -51,6 +51,9 @@ else {
 const powershellEnvironment = Object.fromEntries(
   Object.entries(process.env).filter(([key]) => key.toLowerCase() !== 'psmodulepath'),
 );
+// The release workflow names the version it cuts in ARKVORY_RELEASE_VERSION, which install.sh
+// reads as a pin: the gate installs its own 0.0.x bundle and must not inherit it.
+const { ARKVORY_RELEASE_VERSION: _releaseVersion, ...installerEnvironment } = process.env;
 // Both hosts run the shipped bundle entrypoint, including the checksum-verified Node.js download.
 function installFromBundle() {
   if (windows)
@@ -74,7 +77,7 @@ function installFromBundle() {
     );
   else
     execFileSync('bash', [join(bundle, 'install.sh'), '--mode', 'compose'], {
-      env: { ...process.env, ARKVORY_INSTALL_ROOT: root, ARKVORY_ARTIFACT_DIR: bundle },
+      env: { ...installerEnvironment, ARKVORY_INSTALL_ROOT: root, ARKVORY_ARTIFACT_DIR: bundle },
       stdio: 'inherit',
     });
 }
