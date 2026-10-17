@@ -57,6 +57,11 @@ export async function exerciseClient(output, version) {
   // ADR 0081: `arkvoryctl mcp` ships with the notices of the code bundled for it.
   await access(join(windows ? installation : '/usr/lib/proanima-arkvory-cli', 'MCP-LICENSES.txt'));
   assert.match(cli('mcp --help'), /mcp \[--root DIR\]/);
+  // The agent skill ships beside arkvoryctl.mjs and installs from the installed client (M3).
+  const skill = join(directory, 'skill');
+  const installed = JSON.parse(cli(`skill install --target ${skill} --json`));
+  assert.ok(installed.added.includes('SKILL.md'), JSON.stringify(installed));
+  await access(join(skill, 'reference', 'tools.md'));
   cli('profile add acceptance --server https://arkvory.example');
   const profile = join(env.ARKVORY_CLI_HOME, 'profiles.json');
   const before = await readFile(profile, 'utf8');

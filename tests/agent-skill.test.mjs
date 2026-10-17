@@ -163,6 +163,11 @@ test('the packaged skill installs, keeps changed files and removes only unchange
 test('the Windows client installer ships the skill directory', async () => {
   const script = await readFile('deploy/client/windows.iss', 'utf8');
   assert.match(script, /^Source: "\{#Payload\}\\\*";.*Flags: [^;]*recursesubdirs/m);
+  // An upgrade must not leave a file behind that a newer skill no longer has.
+  assert.match(
+    script,
+    /^\[InstallDelete\]\r?\nType: filesandordirs; Name: "\{app\}\\agent-skills"$/m,
+  );
 });
 
 test('skill install stays in the target: manifest names and linked directories lead nowhere else', async (t) => {
