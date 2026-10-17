@@ -59,7 +59,7 @@ A API e os gateways de leitura executam os módulos. O worker verifica os mesmos
 
 Antes de um serviço importar qualquer código de um módulo, ele verifica o pacote de novo:
 
-1. Somente root (no Windows: SYSTEM e Administrators) ou o dono do diretório de instalação podem alterar `modules/`, o conjunto de módulos e a lista de revogação. A instalação já deixa assim. Um arquivo que outra conta pode alterar e um link dentro de um pacote são recusados (`access_unsafe`, `access_link`).
+1. Somente root (no Windows: SYSTEM e Administrators) ou o dono do diretório de instalação podem alterar o diretório de instalação, `modules/`, o conjunto de módulos, a lista de revogação e seu diretório. A instalação já deixa assim. Um arquivo que outra conta pode alterar e um link dentro de um pacote são recusados (`access_unsafe`, `access_link`).
 2. A assinatura, cada arquivo e a versão do Arkvory, como `module install` os verifica.
 3. A lista de revogação. Uma versão revogada nunca é carregada. Uma lista expirada ou a falta de lista não param um módulo.
 

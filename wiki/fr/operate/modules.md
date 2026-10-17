@@ -59,7 +59,7 @@ L’API et les passerelles de lecture exécutent les modules. Le worker vérifie
 
 Avant qu’un service importe le moindre code d’un module, il vérifie de nouveau le paquet :
 
-1. Seuls root (sous Windows : SYSTEM et Administrators) ou le propriétaire du répertoire d’installation peuvent modifier `modules/`, l’ensemble des modules et la liste de révocation. L’installation le prévoit ainsi. Un fichier qu’un autre compte peut modifier et un lien dans un paquet sont refusés (`access_unsafe`, `access_link`).
+1. Seuls root (sous Windows : SYSTEM et Administrators) ou le propriétaire du répertoire d’installation peuvent modifier le répertoire d’installation, `modules/`, l’ensemble des modules, la liste de révocation et son répertoire. L’installation le prévoit ainsi. Un fichier qu’un autre compte peut modifier et un lien dans un paquet sont refusés (`access_unsafe`, `access_link`).
 2. La signature, chaque fichier et la version d’Arkvory, comme `module install` les vérifie.
 3. La liste de révocation. Une version révoquée n’est jamais chargée. Une liste expirée ou l’absence de liste n’arrêtent pas un module.
 

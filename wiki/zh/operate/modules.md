@@ -59,7 +59,7 @@ API 和读取网关运行模块。worker 检查相同的模块，但不运行任
 
 服务在导入模块的任何代码之前，会再次检查包：
 
-1. 只有 root（Windows 上为 SYSTEM 和 Administrators）或安装目录的所有者可以更改 `modules/`、模块集和吊销列表。安装过程会这样设置。其他账户可以更改的文件以及包内的链接都会被拒绝（`access_unsafe`、`access_link`）。
+1. 只有 root（Windows 上为 SYSTEM 和 Administrators）或安装目录的所有者可以更改安装目录、`modules/`、模块集、吊销列表及其所在目录。安装过程会这样设置。其他账户可以更改的文件以及包内的链接都会被拒绝（`access_unsafe`、`access_link`）。
 2. 签名、每个文件和 Arkvory 的版本，与 `module install` 的检查相同。
 3. 吊销列表。被吊销的版本永远不会加载。过期的列表或没有列表都不会停止模块。
 

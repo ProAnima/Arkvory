@@ -59,7 +59,7 @@ La API y las puertas de enlace de lectura ejecutan los módulos. El worker compr
 
 Antes de que un servicio importe cualquier código de un módulo, vuelve a comprobar el paquete:
 
-1. Solo root (en Windows: SYSTEM y Administrators) o el propietario del directorio de instalación pueden cambiar `modules/`, el conjunto de módulos y la lista de revocación. La instalación lo deja así. Se rechaza un archivo que otra cuenta pueda cambiar y un enlace dentro de un paquete (`access_unsafe`, `access_link`).
+1. Solo root (en Windows: SYSTEM y Administrators) o el propietario del directorio de instalación pueden cambiar el directorio de instalación, `modules/`, el conjunto de módulos, la lista de revocación y su directorio. La instalación lo deja así. Se rechaza un archivo que otra cuenta pueda cambiar y un enlace dentro de un paquete (`access_unsafe`, `access_link`).
 2. La firma, cada archivo y la versión de Arkvory, como los comprueba `module install`.
 3. La lista de revocación. Una versión revocada nunca se carga. Una lista caducada o la falta de lista no detienen un módulo.
 

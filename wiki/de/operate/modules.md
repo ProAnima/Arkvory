@@ -59,7 +59,7 @@ Die API und die Lese-Gateways führen Module aus. Der Worker prüft dieselben Mo
 
 Bevor ein Dienst irgendeinen Code eines Moduls importiert, prüft er das Paket erneut:
 
-1. Nur root (unter Windows: SYSTEM und Administrators) oder der Eigentümer des Installationsverzeichnisses darf `modules/`, den Modulsatz und die Widerrufsliste ändern. Die Installation richtet das so ein. Eine Datei, die ein anderes Konto ändern darf, und ein Link in einem Paket werden abgelehnt (`access_unsafe`, `access_link`).
+1. Nur root (unter Windows: SYSTEM und Administrators) oder der Eigentümer des Installationsverzeichnisses darf das Installationsverzeichnis, `modules/`, den Modulsatz, die Widerrufsliste und ihr Verzeichnis ändern. Die Installation richtet das so ein. Eine Datei, die ein anderes Konto ändern darf, und ein Link in einem Paket werden abgelehnt (`access_unsafe`, `access_link`).
 2. Die Signatur, jede Datei und die Version von Arkvory, so wie `module install` sie prüft.
 3. Die Widerrufsliste. Eine widerrufene Version wird nie geladen. Eine abgelaufene oder fehlende Liste hält kein Modul an.
 

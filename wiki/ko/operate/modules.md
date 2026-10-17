@@ -59,7 +59,7 @@ Arkvory는 다음 경우 패키지를 거부합니다.
 
 서비스는 모듈의 코드를 가져오기 전에 패키지를 다시 확인합니다.
 
-1. `modules/`, 모듈 집합, 폐기 목록은 root(Windows에서는 SYSTEM과 Administrators) 또는 설치 디렉터리의 소유자만 변경할 수 있습니다. 설치 과정이 이렇게 설정합니다. 다른 계정이 변경할 수 있는 파일과 패키지 안의 링크는 거부됩니다(`access_unsafe`, `access_link`).
+1. 설치 디렉터리, `modules/`, 모듈 집합, 폐기 목록과 그 디렉터리는 root(Windows에서는 SYSTEM과 Administrators) 또는 설치 디렉터리의 소유자만 변경할 수 있습니다. 설치 과정이 이렇게 설정합니다. 다른 계정이 변경할 수 있는 파일과 패키지 안의 링크는 거부됩니다(`access_unsafe`, `access_link`).
 2. 서명, 모든 파일, Arkvory 버전을 `module install`과 같은 방식으로 확인합니다.
 3. 폐기 목록. 폐기된 버전은 절대 로드되지 않습니다. 만료된 목록이나 목록이 없는 상태는 모듈을 멈추지 않습니다.
 

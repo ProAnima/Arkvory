@@ -59,7 +59,7 @@ The API and the read gateways run modules. The worker checks the same modules an
 
 Before a service imports any code of a module, it checks the package again:
 
-1. Only root (on Windows: SYSTEM and Administrators) or the owner of the installation directory may change `modules/`, the module set and the revocation list. The installation sets this up. A file that another account may change, or a link inside a package, is refused (`access_unsafe`, `access_link`).
+1. Only root (on Windows: SYSTEM and Administrators) or the owner of the installation directory may change the installation directory, `modules/`, the module set, the revocation list and its directory. The installation sets this up. A file that another account may change, or a link inside a package, is refused (`access_unsafe`, `access_link`).
 2. The signature, every file and the version of Arkvory, as `module install` checks them.
 3. The revocation list. A revoked version is never loaded. An expired list or no list does not stop a module.
 
