@@ -1,6 +1,7 @@
 import type { Pool, PoolClient } from 'pg';
 import { setTimeout as delay } from 'node:timers/promises';
 import { ArkvoryError, parseCleanupPolicy } from '@proanima/arkvory-domain';
+import { collectEverywhere } from '@proanima/arkvory-application';
 import type { CleanupBlobs } from '@proanima/arkvory-application';
 import { StorageOwnership } from './storage-ownership.js';
 import { contentLockKey, uploadLockKey } from './content-pins.js';
@@ -12,6 +13,7 @@ interface Candidate {
   status: string;
   size: string;
   storage_backend: string;
+  parts_backend: string | null;
 }
 interface Result {
   collected: number;
@@ -81,7 +83,7 @@ export class PostgresOnlineCleanup {
     if (!policy.enabled) return;
     const result: Result = { collected: 0, deferred: 0, failed: 0, bytes: 0n, error: null };
     const rows = await c.query<Candidate>(
-      `SELECT id,status,size::text,storage_backend FROM arkvory_uploads WHERE repository=$1
+      `SELECT id,status,size::text,storage_backend,parts_backend FROM arkvory_uploads WHERE repository=$1
       AND NOT reclaimed AND (status<>'available' OR NOT temp_cleaned)
       AND ((status='pending' AND expires_at<=now()) OR (status='available' AND NOT temp_cleaned)
         OR (status='cancelled' AND NOT reclaimed AND cancelled_at<=now()-make_interval(hours=>$2)))
@@ -208,12 +210,19 @@ export class PostgresOnlineCleanup {
           return;
         }
       }
-      await this.blobs.collect(
-        item.id,
-        item.status === 'cancelled',
-        { throwIfAborted: check },
-        item.storage_backend,
-      );
+      try {
+        await collectEverywhere(
+          this.blobs,
+          { id: item.id, storageBackend: item.storage_backend, partsBackend: item.parts_backend },
+          item.status === 'cancelled',
+          { throwIfAborted: check },
+        );
+      } catch (error) {
+        // A storage that is not available keeps its files until it is back (ADR 0078, L5).
+        if (!(error instanceof ArkvoryError && error.code === 'busy')) throw error;
+        result.deferred++;
+        return;
+      }
       check();
       // Retry after crash is safe: unlink is idempotent; quota is released only after durable deletion.
       const reclaimed = await c.query(

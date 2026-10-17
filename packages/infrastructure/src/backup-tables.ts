@@ -74,6 +74,8 @@ export const exportedTables: readonly BackupTable[] = [
   { name: 'arkvory_npm_tags', key: ['repository', 'name', 'tag'], since: 32 },
   // The delivery cursor belongs to the feed it follows: restored together, no event repeats or is lost.
   { name: 'arkvory_webhook_state', key: ['subscription'], since: 33 },
+  // Where new uploads go (ADR 0083, N11); the restored storages carry the same ids.
+  { name: 'arkvory_storage_placement', key: ['repository'], since: 44 },
 ];
 
 /**
@@ -87,6 +89,10 @@ export function tablesAt(schema: number): readonly BackupTable[] {
 export const excludedTables: readonly ExcludedTable[] = [
   { name: 'arkvory_migrations', reason: 'schema history; restore migrates the target itself' },
   { name: 'arkvory_storage_identity', reason: 'bound to the new target storage directory' },
+  {
+    name: 'arkvory_storage_backends',
+    reason: 'identities of the source storages; the restored storages are recorded at first start',
+  },
   { name: 'arkvory_user_sessions', reason: 'ephemeral sign-in sessions are never restored' },
   { name: 'arkvory_transfer_links', reason: 'download links live at most a day; never restored' },
   { name: 'arkvory_gateway_leases', reason: 'runtime ownership of gateway slots' },
