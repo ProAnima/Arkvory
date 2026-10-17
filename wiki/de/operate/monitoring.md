@@ -154,7 +154,7 @@ Jede Zeile beginnt mit denselben Feldern:
 | `component`                  | `api`, `http`, `storage`, `worker`, `maintenance`, `backup`, `mirror`, `migrate`, `process` oder `diagnostics` |
 | `code`                       | Der Ereignisname                                                                                               |
 
-Andere Felder stammen aus einer festen Liste: Bezeichner (`requestId`, `traceId`, `jobId`, `uploadId`, `artifactId`, `repository`, `principal`, `clientIp`), Zahlen (`status`, `durationMs`, `bytesSent`, `bytesReceived`, `attempts`) und Grundfelder (`errorCode`, `errorName`, `errno`, `sqlstate`, `reason`). `ARKVORY_LOG_LEVEL` legt die niedrigste Stufe fest, die geschrieben wird.
+Andere Felder stammen aus einer festen Liste: Bezeichner (`requestId`, `traceId`, `jobId`, `uploadId`, `artifactId`, `repository`, `principal`, `clientIp`, `client`), Zahlen (`status`, `durationMs`, `bytesSent`, `bytesReceived`, `attempts`) und Grundfelder (`errorCode`, `errorName`, `errno`, `sqlstate`, `reason`). `ARKVORY_LOG_LEVEL` legt die niedrigste Stufe fest, die geschrieben wird.
 
 ### Wichtige Ereignisse {#log-events}
 
