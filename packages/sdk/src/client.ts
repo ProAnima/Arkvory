@@ -38,7 +38,7 @@ export interface ClientOptions extends TransferPolicy {
   readonly onRequest?: (event: RequestEvent) => void;
   /**
    * Sent as `Arkvory-Client` on every request so the access log can tell clients apart
-   * (ADR 0081): printable ASCII, 1–64 characters, such as `arkvoryctl-mcp/1.2.3`.
+   * (ADR 0081): printable ASCII, 1–64 characters, no outer spaces, such as `arkvoryctl-mcp/1.2.3`.
    */
   readonly clientName?: string;
 }

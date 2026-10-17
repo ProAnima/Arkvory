@@ -21,14 +21,29 @@ test('clientName becomes the Arkvory-Client header and is checked before any req
     limit: 5,
   });
   await new ArkvoryClient(base, () => 'k').searchAll();
+  // Without URLSearchParams.size (browsers before 2023) the filters are still sent.
+  const size = Object.getOwnPropertyDescriptor(URLSearchParams.prototype, 'size');
+  Object.defineProperty(URLSearchParams.prototype, 'size', {
+    configurable: true,
+    get: () => undefined,
+  });
+  try {
+    await new ArkvoryClient(base, () => 'k').searchAll({ q: 'old' });
+  } finally {
+    Object.defineProperty(URLSearchParams.prototype, 'size', size);
+  }
+  await new ArkvoryClient(base, () => 'k', { clientName: 'a b' }).searchAll();
   assert.deepEqual(seen, [
     {
       client: 'arkvoryctl-mcp/1.0.0',
       url: '/api/v1/search?q=a+b&repositories=r1%2Cr2&labels=x&stage=qa&limit=5',
     },
     { client: undefined, url: '/api/v1/search' },
+    { client: undefined, url: '/api/v1/search?q=old' },
+    { client: 'a b', url: '/api/v1/search' },
   ]);
-  for (const clientName of ['', 'x'.repeat(65), 'tab\there', 'кириллица'])
+  // A header value loses outer spaces on the wire, so such a name is refused, not altered.
+  for (const clientName of ['', ' ', ' a', 'a ', 'x'.repeat(65), 'tab\there', 'кириллица'])
     assert.throws(() => new ArkvoryClient(base, () => 'k', { clientName }), {
       code: 'invalid_argument',
     });

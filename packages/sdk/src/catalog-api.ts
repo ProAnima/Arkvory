@@ -116,8 +116,10 @@ export class CatalogApi {
     if (query.stage !== undefined) params.set('stage', query.stage);
     if (query.after !== undefined) params.set('after', query.after);
     if (query.limit !== undefined) params.set('limit', String(query.limit));
-    // No bare "?": how a URL keeps an empty query differs between Node releases.
-    const search = params.size > 0 ? `?${params.toString()}` : '';
+    // No bare "?": how a URL keeps an empty query differs between Node releases. The text is
+    // tested, not URLSearchParams.size, which browsers before 2023 (Safari 16) do not have.
+    const encoded = params.toString();
+    const search = encoded ? `?${encoded}` : '';
     return readGlobalSearchPage(
       await this.http.call(`api/v1/search${search}`, 'GET', undefined, signal),
     );
