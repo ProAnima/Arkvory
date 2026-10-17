@@ -968,6 +968,14 @@
       "summary": "플릿 콘솔용으로 이 사이트 가져오기",
       "description": "이 설치를 플릿의 한 사이트로 반환합니다(ADR 0077): 이름, 버전, 스키마와 역할, 사용 가능 여부와 쓰기 가능 여부, HA 사본과 노드, 임대 기준의 읽기 게이트웨이, 각 미러와 가져오기의 단계, 마지막 동기화 및 `lagChanges`(아직 적용되지 않은 원본 변경), 업데이트 에이전트 상태와 다운로드 대기열. 사이트의 전역 관리자나 페어링된 컨트롤러만 읽을 수 있습니다."
     },
+    "getSystemModules": {
+      "en": {
+        "summary": "List the modules of this installation",
+        "description": "Returns every module this installation plans, in `id` order: `id`, `version`, the extension point (`kind`), `source` (`builtin` for modules of the core), whether it is part of the free core (`core`, never disabled) and whether it is `enabled`, the processes it runs in (`roles`), whether the answering process runs it (`running`) and its `health` there (`ok`, `degraded` or `failed` with a code; null when it does not run there). `fingerprint` is the SHA-256 of the plan and is equal on every process of the installation; `extensionApi` is the version of the module contract of this core. Settings, paths and secrets are never returned. Only the global administrator may read it."
+      },
+      "summary": "이 설치의 모듈 목록 조회",
+      "description": "이 설치가 계획한 모든 모듈을 `id` 순서로 반환합니다: `id`, `version`, 확장 지점(`kind`), `source`(코어 모듈은 `builtin`), 무료 코어에 속하는지(`core`, 비활성화 불가)와 활성화 여부(`enabled`), 실행되는 프로세스(`roles`), 응답한 프로세스가 실행하는지(`running`)와 그 프로세스에서의 상태(`health`: `ok`, `degraded` 또는 코드가 있는 `failed`, 그곳에서 실행되지 않으면 null). `fingerprint`는 계획의 SHA-256이며 설치의 모든 프로세스에서 같습니다. `extensionApi`는 이 코어의 모듈 계약 버전입니다. 설정, 경로, 비밀은 반환하지 않습니다. 전역 관리자만 읽을 수 있습니다."
+    },
     "createFleetPairing": {
       "en": {
         "summary": "Make a pairing code",

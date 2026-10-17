@@ -968,6 +968,14 @@
       "summary": "Получить площадку для единой консоли",
       "description": "Возвращает установку как одну площадку парка (ADR 0077): имя, версию, схему и роль, доступна ли она и принимает ли запись, копии и узлы HA, шлюзы чтения по их арендам, каждое зеркало и импорт с фазой, последней синхронизацией и `lagChanges` (ещё не применённые изменения источника), состояние агента обновлений и очередь скачиваний. Читать может только глобальный администратор площадки или сопряжённый с ней управляющий."
     },
+    "getSystemModules": {
+      "en": {
+        "summary": "List the modules of this installation",
+        "description": "Returns every module this installation plans, in `id` order: `id`, `version`, the extension point (`kind`), `source` (`builtin` for modules of the core), whether it is part of the free core (`core`, never disabled) and whether it is `enabled`, the processes it runs in (`roles`), whether the answering process runs it (`running`) and its `health` there (`ok`, `degraded` or `failed` with a code; null when it does not run there). `fingerprint` is the SHA-256 of the plan and is equal on every process of the installation; `extensionApi` is the version of the module contract of this core. Settings, paths and secrets are never returned. Only the global administrator may read it."
+      },
+      "summary": "Список модулей установки",
+      "description": "Возвращает все модули, запланированные в установке, по порядку `id`: `id`, `version`, точку расширения (`kind`), `source` (`builtin` — модули ядра), входит ли модуль в бесплатное ядро (`core`, не выключается) и включён ли он (`enabled`), процессы, в которых он работает (`roles`), работает ли он в ответившем процессе (`running`) и его состояние там (`health`: `ok`, `degraded` или `failed` с кодом; null, если модуль там не работает). `fingerprint` — SHA-256 плана, одинаковый во всех процессах установки; `extensionApi` — версия контракта модулей этого ядра. Настройки, пути и секреты не возвращаются. Читать может только глобальный администратор."
+    },
     "createFleetPairing": {
       "en": {
         "summary": "Make a pairing code",

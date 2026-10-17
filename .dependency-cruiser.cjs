@@ -43,7 +43,7 @@ module.exports = {
     {
       name: 'pure-core-no-external-runtime',
       severity: 'error',
-      from: { path: '^packages/(domain|application)/' },
+      from: { path: '^packages/(domain|application|extension-api)/' },
       to: {
         dependencyTypes: [
           'core',
@@ -61,13 +61,14 @@ module.exports = {
     {
       name: 'portable-layers-no-node',
       severity: 'error',
-      from: { path: '^(packages/(domain|application|contracts|sdk)|apps/web)/' },
+      from: { path: '^(packages/(domain|application|contracts|extension-api|sdk)|apps/web)/' },
       to: { dependencyTypes: ['core'] },
     },
   ],
   options: {
     doNotFollow: { path: 'node_modules' },
-    exclude: { path: '/dist/' },
+    // dist/ and the extension API report are built declarations, not sources.
+    exclude: { path: '(/dist/|^packages/extension-api/api-report\\.d\\.ts$)' },
     tsPreCompilationDeps: true,
     tsConfig: { fileName: 'tsconfig.json' },
     enhancedResolveOptions: {

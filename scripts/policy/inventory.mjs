@@ -146,7 +146,7 @@ export async function inspectWorkspaces(root, architecture) {
         ...inspectCompilerOptions(
           parsed?.options,
           unit.path + '/' + config,
-          /^packages\/(domain|application|contracts)$/.test(unit.path),
+          /^packages\/(domain|application|contracts|extension-api)$/.test(unit.path),
         ),
       );
       if (parsed?.errors.length) problems.push(`${unit.path}: tsconfig errors`);

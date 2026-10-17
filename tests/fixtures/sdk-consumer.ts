@@ -84,6 +84,8 @@ export type UnchangedKeys = Assert<
       | 'fleet'
       | 'downloadSettings'
       | 'siteChanges'
+      // ADR 0078/0079: the installation's modules as the additive namespace `system`.
+      | 'system'
     >,
     keyof LegacyClient
   >
