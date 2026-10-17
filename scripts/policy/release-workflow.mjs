@@ -6,6 +6,7 @@ export function inspectReleaseWorkflow(text) {
   return [
     ...inspectReleaseShape(workflow),
     ...inspectReleaseSteps(workflow.jobs ?? {}),
+    ...inspectAdmission(workflow),
     ...inspectReleaseOrder(workflow),
     ...inspectNative(workflow),
     ...inspectRunnerImages(workflow.jobs),
@@ -19,14 +20,14 @@ function inspectReleaseShape(workflow) {
   if (
     Object.keys(workflow.jobs ?? {})
       .sort()
-      .join() !== 'acceptance,build,native,publish'
+      .join() !== 'acceptance,admission,build,native,publish'
   )
     errors.push('Unexpected release jobs require an explicit policy change');
   if (Object.keys(workflow.on ?? {}).join() !== 'workflow_dispatch')
     errors.push('Release must be manual');
   if (workflow.permissions?.contents !== 'read' || Object.keys(workflow.permissions).length !== 1)
     errors.push('Release default permission must be read-only');
-  for (const name of ['build', 'publish'])
+  for (const name of ['admission', 'build', 'publish'])
     if (workflow.jobs?.[name]?.if !== "github.ref == 'refs/heads/main'")
       errors.push(`${name}: trusted main required`);
   if (build?.permissions || acceptance?.permissions || workflow.jobs?.native?.permissions)
@@ -37,7 +38,8 @@ function inspectReleaseShape(workflow) {
     errors.push('Only publishing receives the bounded release token');
   if (
     acceptance?.needs !== 'build' ||
-    JSON.stringify(publish?.needs) !== JSON.stringify(['build', 'acceptance', 'native'])
+    JSON.stringify(publish?.needs) !==
+      JSON.stringify(['admission', 'build', 'acceptance', 'native'])
   )
     errors.push('Publishing requires artifact acceptance');
   const platforms = ['ubuntu-22.04', 'ubuntu-24.04', 'windows-2022', 'windows-2025'];
@@ -70,19 +72,46 @@ function inspectReleaseSteps(jobs) {
         errors.push(`${name}: checkout credentials must not persist`);
       if (name === 'publish' && step.run && step.run !== 'node scripts/publish-release.mjs')
         errors.push('Publishing cannot install dependencies, build or execute candidate code');
+      if (name === 'admission' && step.run && step.run !== 'node scripts/release-admission.mjs')
+        errors.push('Admission cannot install dependencies or execute other code');
     }
   }
   return errors;
 }
 
-/** Gates before packaging before upload; acceptance and publishing use this run's candidate. */
+/**
+ * The release gates themselves need stands only check.yml prepares (KVM guests, kernel modules,
+ * disposable Windows services). The release workflow therefore proves them by admission: the
+ * first job requires a successful check.yml run with the merge gate and both 5 GiB transfers for
+ * this exact commit (scripts/release-admission.mjs), and building waits for it. Removing
+ * admission or letting the build start without it would release an unproven commit.
+ */
+function inspectAdmission(workflow) {
+  const { admission, build } = workflow.jobs ?? {};
+  const errors = [];
+  if (
+    JSON.stringify(admission?.permissions) !== JSON.stringify({ contents: 'read', actions: 'read' })
+  )
+    errors.push('Admission reads workflow results and nothing else');
+  if (
+    !admission?.steps?.some(
+      (s) =>
+        s.run === 'node scripts/release-admission.mjs' &&
+        !Object.hasOwn(s, 'if') &&
+        s.env?.GH_TOKEN === '${{ github.token }}',
+    )
+  )
+    errors.push('Release requires the complete merge gate for the exact commit');
+  if (build?.needs !== 'admission') errors.push('Building requires release admission');
+  return errors;
+}
+
+/** Build before packaging before upload; acceptance and publishing use this run's candidate. */
 function inspectReleaseOrder(workflow) {
   const errors = [];
   const { build, acceptance } = workflow.jobs ?? {};
   const steps = build?.steps ?? [];
-  const gate = steps.findIndex(
-    (s) => s.run === 'npm run gate -- release' && !Object.hasOwn(s, 'if'),
-  );
+  const built = steps.findIndex((s) => s.run === 'npm run build' && !Object.hasOwn(s, 'if'));
   const packaging = steps.findIndex(
     (s) =>
       s.run === 'npm run release:package -- "$ARKVORY_RELEASE_VERSION"' && !Object.hasOwn(s, 'if'),
@@ -93,8 +122,8 @@ function inspectReleaseOrder(workflow) {
       !Object.hasOwn(s, 'if') &&
       s.with?.['if-no-files-found'] === 'error',
   );
-  if (gate < 0 || packaging <= gate || upload <= packaging)
-    errors.push('Build, test and required artifact transfer must be ordered');
+  if (built < 0 || packaging <= built || upload <= packaging)
+    errors.push('Build, packaging and required artifact transfer must be ordered');
   if (
     !acceptance?.steps?.some(
       (s) => s.run === 'npm run gate -- deployment deployment-services' && !Object.hasOwn(s, 'if'),

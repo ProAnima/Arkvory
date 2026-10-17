@@ -4,6 +4,7 @@ import { stat } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
 import { releaseFiles, verifyReleaseFiles } from './release-files.mjs';
 import { nativeFiles, verifyNativeFiles } from './native-files.mjs';
+import { admitCommit, githubSource } from './release-admission.mjs';
 
 const version = process.env.ARKVORY_RELEASE_VERSION;
 if (!/^(0|[1-9][0-9]{0,5})\.(0|[1-9][0-9]{0,5})\.(0|[1-9][0-9]{0,5})$/.test(version ?? ''))
@@ -37,20 +38,14 @@ async function request(url, options = {}) {
   return response.json();
 }
 const base = 'https://api.github.com/repos/ProAnima/Arkvory';
-const checks = await request(
-  `${base}/actions/workflows/check.yml/runs?head_sha=${sha}&per_page=30`,
+// The release workflow admitted this commit before building; the token holder checks again.
+const admission = await admitCommit(
+  sha,
+  githubSource((path) => request(`https://api.github.com${path}`)),
 );
-if (
-  !checks.workflow_runs?.some(
-    (run) =>
-      run.head_sha === sha &&
-      run.head_branch === 'main' &&
-      ['push', 'workflow_dispatch'].includes(run.event) &&
-      run.conclusion === 'success',
-  )
-)
+if (!admission.run)
   throw Error(
-    'The complete Windows/Linux merge gate must pass for this exact commit before release creation',
+    `The complete merge gate must pass for this exact commit before release creation: ${admission.problems.join('; ')}`,
   );
 await request(`${base}/git/refs`, {
   method: 'POST',
@@ -65,7 +60,7 @@ const release = await request(`${base}/releases`, {
     draft: true,
     prerelease: false,
     // The signing key never reaches CI (ADR 0060): the draft is signed on the release workstation.
-    body: `All release gates passed for this commit. Sign the draft on the release workstation before publishing: npm run release:sign -- sign-draft ${version}. Installations refuse unsigned releases; after publishing, approve the version in the hub.`,
+    body: `All release gates passed for this commit in ${admission.run.url}; the packaged candidate passed acceptance in this workflow. Sign the draft on the release workstation before publishing: npm run release:sign -- sign-draft ${version}. Installations refuse unsigned releases; after publishing, approve the version in the hub.`,
   }),
 });
 if (

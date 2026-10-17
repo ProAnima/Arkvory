@@ -81,16 +81,47 @@ export function summarize(input) {
     startedAt,
     finishedAt,
     status,
-    // Releases need every lane of the release profile on a clean, committed tree.
-    releasable:
+    // Every lane of the release profile passed on a clean, committed tree. This alone never
+    // admits a release: the local gaps still need GitHub CI for the same commit (admitRelease).
+    localPassed:
       status === 'passed' &&
       !dirtyRun &&
       profile === 'release' &&
       Object.keys(catalog).every((name) => lanes.some((lane) => lane.name === name)),
+    releasable: false,
     lanes,
     gaps: notExecuted.filter((entry) => entry.kind === 'gap'),
     covered: notExecuted.filter((entry) => entry.kind === 'covered'),
   };
+}
+
+/**
+ * Release admission: local release lanes passed (`localPassed`) and GitHub CI covered every
+ * local gap for the same commit. `ci` comes from scripts/ci/release-local.mjs: `status` is
+ * 'passed' only with an admitted check.yml run; 'failed' and 'unavailable' keep the problems.
+ */
+export function admitRelease(evidence, ci) {
+  const covered =
+    ci.status === 'passed' &&
+    ci.commit === evidence.commit &&
+    typeof ci.run?.url === 'string' &&
+    ci.problems.length === 0 &&
+    evidence.gaps.every((gap) =>
+      ci.coverage.some(
+        (item) => item.gate === gap.gate && item.platform === gap.platform && item.jobs.length > 0,
+      ),
+    );
+  return { ...evidence, ci, releasable: evidence.localPassed === true && covered };
+}
+
+function ciLines(ci) {
+  const lines = ['', `GitHub CI for this commit: ${ci.status}${ci.run ? ` (${ci.run.url})` : ''}.`];
+  for (const item of ci.coverage)
+    lines.push(
+      `- ${item.gate} (${item.platform}) in CI on ${item.ciPlatform}: ${item.jobs.join(', ')}`,
+    );
+  for (const problem of ci.problems) lines.push(`- problem: ${bounded(problem)}`);
+  return lines;
 }
 
 export function renderMarkdown(evidence) {
@@ -114,6 +145,7 @@ export function renderMarkdown(evidence) {
     );
   lines.push('', 'Not executed locally:');
   for (const gap of evidence.gaps) lines.push(`- ${gap.gate} (${gap.platform}): ${gap.reason}`);
+  if (evidence.ci) lines.push(...ciLines(evidence.ci));
   lines.push('', 'Covered by another lane:');
   for (const item of evidence.covered)
     lines.push(`- ${item.gate} (${item.platform}): ${item.reason}`);
