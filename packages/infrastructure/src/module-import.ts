@@ -1,3 +1,5 @@
+import { realpathSync } from 'node:fs';
+import { registerHooks } from 'node:module';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { canonicalJson, parseModuleManifest } from '@proanima/arkvory-extension-api';
@@ -99,12 +101,67 @@ function healthOf(report: unknown): ModuleHealth {
   return { status: 'failed', code: 'health_invalid' };
 }
 
+/** What a signed module's code gets when it reaches for a file outside its verified package. */
+class ModuleOutsideError extends Error {
+  override readonly name = 'ModuleOutsideError';
+  readonly code = 'ERR_MODULE_OUTSIDE_PACKAGE';
+  constructor() {
+    super('A signed module may import only its own files and Node built-ins');
+  }
+}
+
+/** `file:` URLs of the verified package directories, each ending in `/`; Windows: lower case. */
+const verifiedPackages = new Set<string>();
+/** The entry URLs the loader imports, with the package each must stay in. */
+const verifiedEntries = new Map<string, string>();
+let confined = false;
+
+const comparable = (url: string) => (process.platform === 'win32' ? url.toLowerCase() : url);
+
+function packageOf(url: string | undefined): string | undefined {
+  if (url === undefined) return undefined;
+  const key = comparable(url);
+  for (const root of verifiedPackages) if (key.startsWith(root)) return root;
+  return undefined;
+}
+
+/**
+ * Keeps the code of signed modules inside the packages that were verified (ADR 0078, 3.3). Node
+ * looks for a bare name in `node_modules` of every parent directory up to the drive root, in the
+ * home directory of the service account and in NODE_PATH; on Windows any local user may create
+ * `C:\node_modules` and `C:\ProgramData\node_modules`, and the service profile is writable by
+ * every LocalService service. Without this hook an optional dependency a bundle probes for would
+ * load from there into the service. Whatever a module file resolves — `import`, `import()`,
+ * `import.meta.resolve`, `require` — must be a Node built-in or a file of the same package;
+ * anything else throws `ERR_MODULE_OUTSIDE_PACKAGE` before it is loaded. Resolution itself
+ * only reads files; the code a resolution names is never evaluated when it is refused. The hook
+ * runs in this thread only: a Worker a module starts is its own code's choice (ADR 0078, 7).
+ */
+function confine(): void {
+  if (confined) return;
+  confined = true;
+  registerHooks({
+    resolve(specifier, context, nextResolve) {
+      const resolved = nextResolve(specifier, context);
+      const root = packageOf(context.parentURL) ?? verifiedEntries.get(specifier);
+      if (
+        root !== undefined &&
+        !resolved.url.startsWith('node:') &&
+        !comparable(resolved.url).startsWith(root)
+      )
+        throw new ModuleOutsideError();
+      return resolved;
+    },
+  });
+}
+
 /**
  * The only place of the core that imports code by a computed specifier (ADR 0078, 3.3; listed in
  * COMPUTED_IMPORTS of the policy). The caller passes a package directory that passed the access
  * check and `verifyInstalledModule` in this process start, and an entry path of its signed
- * manifest; the import uses a `file:` URL inside that directory. Node caches a module by its URL,
- * so a second server in the same process reuses the code it verified the first time.
+ * manifest; the import uses a `file:` URL inside that directory, and the code it loads may
+ * resolve only files of that directory (`confine`). Node caches a module by its URL, so a second
+ * server in the same process reuses the code it verified the first time.
  */
 export async function importVerifiedEntry(
   directory: string,
@@ -112,6 +169,11 @@ export async function importVerifiedEntry(
   signed: ModuleManifest,
 ): Promise<ModuleDescriptor<unknown, unknown>> {
   const url = pathToFileURL(join(directory, ...entry.split('/'))).href;
+  // Node resolves a file URL to its real path, so the package is known by its real path too.
+  const root = comparable(`${pathToFileURL(realpathSync(directory)).href}/`);
+  verifiedPackages.add(root);
+  verifiedEntries.set(url, root);
+  confine();
   let exported: unknown;
   try {
     exported = await import(url);
