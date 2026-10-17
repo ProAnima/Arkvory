@@ -1971,6 +1971,10 @@
     "en": "This repository is a mirror of another installation and cannot be changed here. Make the change on the source; the mirror follows by itself.",
     "text": "Este repositório é um espelho de outra instalação e não pode ser alterado aqui. Faça a alteração na origem; o espelho a acompanhará sozinho."
   },
+  "errorGone": {
+    "en": "The server no longer keeps what was asked for. Reload the page to read the current state.",
+    "text": "O servidor não guarda mais o que foi solicitado. Recarregue a página para ler o estado atual."
+  },
   "cluster": {
     "en": "Cluster",
     "text": "Cluster"

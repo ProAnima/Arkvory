@@ -134,6 +134,10 @@
         "title": "Espejos",
         "intro": "El estado de un repositorio espejo y la fuente de cambios que sigue un espejo."
       },
+      "events": {
+        "title": "Eventos",
+        "intro": "El flujo de eventos de la instalación después de un cursor y la lista de tipos de eventos."
+      },
       "links": {
         "title": "Enlaces de descarga",
         "intro": "Enlaces de duración limitada que permiten a alguien sin clave descargar un artefacto."

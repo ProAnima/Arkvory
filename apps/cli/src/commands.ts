@@ -1,8 +1,8 @@
 import { record, readAnnotations, readAttachmentRevision } from '@proanima/arkvory-contracts';
-import { connection, profiles } from './profiles.js';
+import { connection, profiles, repositoryName } from './profiles.js';
 import { option, word, revision, validateCommand, numericOption } from './arguments.js';
 import type { Arguments } from './arguments.js';
-import type { RepositoryClient } from '@proanima/arkvory-sdk';
+import type { ArkvoryClient, RepositoryClient } from '@proanima/arkvory-sdk';
 import { readJson } from './local-files.js';
 import { publishPackage } from './publish-package.js';
 import { upload } from './upload.js';
@@ -11,6 +11,7 @@ import { getFromPath, putToPath } from './path-transfer.js';
 import { CliError } from './errors.js';
 import { isPromotionCommand, promotionCommand } from './promotion-commands.js';
 import { backupCommand } from './backup-commands.js';
+import { eventsCommand } from './event-commands.js';
 
 const remoteCommands = [
   'doctor',
@@ -33,6 +34,7 @@ const remoteCommands = [
   'stages',
   'promotions',
   'backup',
+  'events',
 ];
 
 export async function execute(
@@ -45,6 +47,8 @@ export async function execute(
   if (!remoteCommands.includes(command)) throw new CliError('unknown_command');
   const connected = await connection(args, signal);
   if (command === 'backup') return backupCommand(args, connected, timed(args, signal));
+  // A tail with --follow runs until Ctrl+C: each request keeps the client's own deadline.
+  if (command === 'events') return eventsCommand(args, connected, signal);
   if (isPromotionCommand(args)) return promotionCommand(args, connected, signal, progress);
   const { client, server, repository } = connected;
   if (
@@ -76,7 +80,7 @@ export async function execute(
       validateCommand(args, 1, ['after']);
       return scoped.artifacts.list(args.options.get('after'));
     case 'search':
-      return search(args, scoped);
+      return args.options.has('all') ? searchAll(args, client, signal) : search(args, scoped);
     case 'inspect':
       validateCommand(args, 2);
       return scoped.artifacts.get(word(args, 1), signal);
@@ -213,6 +217,21 @@ async function attachments(args: Arguments, scoped: RepositoryClient, signal: Ab
   return scoped.attachments.replace(id, revision(args), items, signal);
 }
 
+/** `search --all` (ADR 0081, A1): every repository the key may list; lists are comma-separated. */
+function searchAll(args: Arguments, client: ArkvoryClient, signal: AbortSignal) {
+  validateCommand(args, 1, ['all', 'query', 'repositories', 'label', 'stage', 'after', 'limit']);
+  const list = (name: string) => args.options.get(name)?.split(',') ?? [];
+  return client.searchAll(
+    {
+      ...(args.options.has('query') ? { q: option(args, 'query') } : {}),
+      repositories: list('repositories').map(repositoryName),
+      labels: list('label'),
+      ...query(args, ['stage', 'after']),
+      ...(args.options.has('limit') ? { limit: numericOption(args, 'limit', 50, 1, 100) } : {}),
+    },
+    signal,
+  );
+}
 function search(args: Arguments, scoped: RepositoryClient) {
   validateCommand(args, 1, [
     'query',

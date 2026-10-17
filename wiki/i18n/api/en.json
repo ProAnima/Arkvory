@@ -176,6 +176,14 @@
       "summary": "Search artifacts",
       "description": "Finds published artifacts by `q` (a case-insensitive substring of the name or of a current metadata value), an exact current `label`, a `collection`, and an exact `metadataKey`/`metadataValue` pair, which go together; all given filters must match. Results come in pages of 100 ordered by ID, each with size, creation and publication times, current labels and promotion stages; continue with `after` set to `next`. Metadata and collections are not returned: read them with `getAnnotations`."
     },
+    "searchAllRepositories": {
+      "en": {
+        "summary": "Search artifacts in every repository the caller may list (at most 1000 by name); newest publication first, pages of up to 100 with an opaque cursor",
+        "description": ""
+      },
+      "summary": "Search all repositories",
+      "description": "Finds published artifacts in every repository where the caller may list artifacts (`artifact.list`), at most the first 1000 by name. Filters: `q` (a case-insensitive substring of the name or of a current metadata value), `repositories` (comma-separated, at most 100), `labels` (comma-separated current labels, at most 8, all required) and `stage`; all given filters must match. A repository the caller cannot list is skipped exactly like one that does not exist. Results are ordered by publication time, newest first, then by repository and ID; each is a `searchArtifacts` item plus its `repository`. Pages hold `limit` items (1–100, default 50); continue with `after` set to `next` and the same filters."
+    },
     "getCatalogAudit": {
       "en": {
         "summary": "Audit of catalog mutations, write scope; pages of 100",
@@ -1103,6 +1111,22 @@
       },
       "summary": "Read the fleet overview",
       "description": "Alerts across the managed sites and this installation, most severe first (`critical`, `warning`, `info`), and the mirror links between them. Built from the last background reads, at most once per 5 seconds. A source no managed site answers at is `external:<origin>`; this installation is `self` and meets the links to it only when `ARKVORY_SITE_URL` is set. Answered by the writer only."
+    },
+    "listEvents": {
+      "en": {
+        "summary": "Events of the installation after a cursor, oldest first: CloudEvents the caller may see",
+        "description": ""
+      },
+      "summary": "Read the events of the installation",
+      "description": "Returns, oldest first, up to `limit` events (1–500, default 100) after the cursor `after`, as CloudEvents 1.0: publications, deletions, file revisions, package registrations, annotations, attachments, stages, promotions, image, npm and Git LFS changes of every repository the caller may list (`artifact.list`). Without `after` the feed starts at the oldest kept event. Pass `next` as `after` to continue: it also moves past events the caller may not see, at most 5000 per request. `types` keeps the named types or prefixes such as `artifact.*`, `repository` one repository. A cursor older than `oldest` answers 410 `events_cursor_expired`; a cursor of another `epoch` (the server was restored from a backup) answers 409 `events_epoch_changed`; both carry the current `epoch`, `oldest` and `head` in `events`. Deduplicate by `id`; an event is a hint, read the current state through the ordinary routes."
+    },
+    "listEventTypes": {
+      "en": {
+        "summary": "Event types of this server with their data schemas",
+        "description": ""
+      },
+      "summary": "List the event types",
+      "description": "Returns every event type this server writes: name, `schemaVersion`, scope, the permission a reader needs, the partition that keeps its order and the JSON Schema of `data`. The CloudEvents `type` is `arkvory.<name>.v<schemaVersion>`."
     }
   },
   "errors": {
@@ -1118,7 +1142,8 @@
       "unavailable": "A dependency is not available right now; repeat after Retry-After.",
       "rate_limited": "Too many attempts; wait for Retry-After.",
       "read_only": "This node does not accept changes (a read gateway answers this way; a mirror answers conflict with the reason mirror_read_only).",
-      "internal": "An unexpected server defect; the request ID helps support find it. Do not repeat blindly."
+      "internal": "An unexpected server defect; the request ID helps support find it. Do not repeat blindly.",
+      "gone": "What the request names is no longer kept; read the current state again."
     },
     "reasons": {
       "validation": "A field is missing or has a value outside its rules; details name the field.",
@@ -1172,7 +1197,9 @@
       "registration_attempts": "Too many registration attempts; wait.",
       "password_attempts": "Too many password attempts; wait.",
       "feedback_attempts": "Too many feedback reports; wait.",
-      "replication_degraded": "An HA cluster has fewer complete copies than a write needs, so the change was not acknowledged; repeat after Retry-After. Downloads still work."
+      "replication_degraded": "An HA cluster has fewer complete copies than a write needs, so the change was not acknowledged; repeat after Retry-After. Downloads still work.",
+      "events_cursor_expired": "The event cursor is older than the oldest event the server keeps; read the current state, then continue from `oldest`.",
+      "events_epoch_changed": "The server was restored from a backup, so its events started a new epoch; read the current state, then continue under the new epoch."
     }
   }
 }

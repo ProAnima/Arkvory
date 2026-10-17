@@ -176,6 +176,14 @@
       "summary": "Artefakte suchen",
       "description": "Findet veröffentlichte Artefakte anhand von `q` (einer Teilzeichenfolge des Namens oder eines aktuellen Metadatenwerts, ohne Beachtung der Groß-/Kleinschreibung), eines exakten aktuellen `label`, einer `collection` und eines exakten Paars `metadataKey`/`metadataValue`, die nur zusammen angegeben werden; alle angegebenen Filter müssen zutreffen. Die Ergebnisse kommen in Seiten zu 100, nach ID geordnet, jeweils mit Größe, Erstellungs- und Veröffentlichungszeit, aktuellen Labels und Hochstufungsstufen; weiter mit `after` = `next`. Metadaten und Sammlungen werden nicht zurückgegeben: Lesen Sie sie mit `getAnnotations`."
     },
+    "searchAllRepositories": {
+      "en": {
+        "summary": "Search all repositories",
+        "description": "Finds published artifacts in every repository where the caller may list artifacts (`artifact.list`), at most the first 1000 by name. Filters: `q` (a case-insensitive substring of the name or of a current metadata value), `repositories` (comma-separated, at most 100), `labels` (comma-separated current labels, at most 8, all required) and `stage`; all given filters must match. A repository the caller cannot list is skipped exactly like one that does not exist. Results are ordered by publication time, newest first, then by repository and ID; each is a `searchArtifacts` item plus its `repository`. Pages hold `limit` items (1–100, default 50); continue with `after` set to `next` and the same filters."
+      },
+      "summary": "In allen Repositorys suchen",
+      "description": "Findet veröffentlichte Artefakte in allen Repositorys, in denen der Aufrufer Artefakte auflisten darf (`artifact.list`), höchstens in den ersten 1000 nach Namen. Filter: `q` (Teilzeichenfolge ohne Beachtung der Groß-/Kleinschreibung im Namen oder in einem aktuellen Metadatenwert), `repositories` (kommagetrennt, höchstens 100), `labels` (aktuelle Labels, kommagetrennt, höchstens 8, alle erforderlich) und `stage`; alle angegebenen Filter müssen zutreffen. Ein Repository, das der Aufrufer nicht auflisten darf, wird genauso übersprungen wie ein nicht vorhandenes. Die Ergebnisse sind nach Veröffentlichungszeit geordnet, neueste zuerst, dann nach Repository und ID; jedes ist ein Element von `searchArtifacts` mit seinem `repository`. Seiten enthalten `limit` Elemente (1–100, Standard 50); weiter mit `after` = `next` und denselben Filtern."
+    },
     "getCatalogAudit": {
       "en": {
         "summary": "Read the catalog audit of a repository",
@@ -1103,6 +1111,22 @@
       },
       "summary": "Übersicht der Standorte lesen",
       "description": "Warnungen über die verwalteten Standorte und diese Installation, die schwersten zuerst (`critical`, `warning`, `info`), und die Spiegelverbindungen zwischen ihnen. Aus den letzten Hintergrundabfragen erstellt, höchstens alle 5 Sekunden. Eine Quelle, an deren Adresse kein verwalteter Standort antwortet, ist `external:<origin>`; diese Installation ist `self` und erhält Verbindungen zu ihr nur, wenn `ARKVORY_SITE_URL` gesetzt ist. Nur der Schreibprozess antwortet."
+    },
+    "listEvents": {
+      "en": {
+        "summary": "Read the events of the installation",
+        "description": "Returns, oldest first, up to `limit` events (1–500, default 100) after the cursor `after`, as CloudEvents 1.0: publications, deletions, file revisions, package registrations, annotations, attachments, stages, promotions, image, npm and Git LFS changes of every repository the caller may list (`artifact.list`). Without `after` the feed starts at the oldest kept event. Pass `next` as `after` to continue: it also moves past events the caller may not see, at most 5000 per request. `types` keeps the named types or prefixes such as `artifact.*`, `repository` one repository. A cursor older than `oldest` answers 410 `events_cursor_expired`; a cursor of another `epoch` (the server was restored from a backup) answers 409 `events_epoch_changed`; both carry the current `epoch`, `oldest` and `head` in `events`. Deduplicate by `id`; an event is a hint, read the current state through the ordinary routes."
+      },
+      "summary": "Die Ereignisse der Installation lesen",
+      "description": "Liefert, älteste zuerst, bis zu `limit` Ereignisse (1–500, Standard 100) nach dem Cursor `after` als CloudEvents 1.0: Veröffentlichungen, Löschungen, Dateirevisionen, Paketregistrierungen, Annotationen, Anhänge, Stufen, Hochstufungen sowie Änderungen an Images, npm und Git LFS in jedem Repository, das der Aufrufer auflisten darf (`artifact.list`). Ohne `after` beginnt der Feed beim ältesten aufbewahrten Ereignis. Zum Weiterlesen übergeben Sie `next` als `after`: Es rückt auch über Ereignisse hinweg, die der Aufrufer nicht sehen darf, höchstens 5000 je Anfrage. `types` behält die genannten Typen oder Präfixe wie `artifact.*`, `repository` ein Repository. Ein Cursor älter als `oldest` erhält 410 `events_cursor_expired`, ein Cursor einer anderen `epoch` (der Server wurde aus einem Backup wiederhergestellt) 409 `events_epoch_changed`; beide enthalten die aktuellen `epoch`, `oldest` und `head` in `events`. Deduplizieren Sie nach `id`; ein Ereignis ist ein Hinweis, den aktuellen Stand lesen Sie über die üblichen Routen."
+    },
+    "listEventTypes": {
+      "en": {
+        "summary": "List the event types",
+        "description": "Returns every event type this server writes: name, `schemaVersion`, scope, the permission a reader needs, the partition that keeps its order and the JSON Schema of `data`. The CloudEvents `type` is `arkvory.<name>.v<schemaVersion>`."
+      },
+      "summary": "Die Ereignistypen auflisten",
+      "description": "Liefert jeden Ereignistyp, den dieser Server schreibt: Name, `schemaVersion`, Bereich, das Recht, das ein Leser braucht, die Partition, die seine Reihenfolge hält, und das JSON Schema von `data`. Der CloudEvents-`type` ist `arkvory.<name>.v<schemaVersion>`."
     }
   },
   "errors": {
@@ -1118,7 +1142,8 @@
       "unavailable": "Eine Abhängigkeit ist derzeit nicht verfügbar; wiederholen Sie die Anfrage nach Retry-After.",
       "rate_limited": "Zu viele Versuche; warten Sie Retry-After ab.",
       "read_only": "Dieser Server oder dieses Gateway nimmt keine Änderungen an (Lese-Gateway oder Spiegel).",
-      "internal": "Ein unerwarteter Serverfehler; die Anfrage-ID hilft dem Support, ihn zu finden. Nicht blind wiederholen."
+      "internal": "Ein unerwarteter Serverfehler; die Anfrage-ID hilft dem Support, ihn zu finden. Nicht blind wiederholen.",
+      "gone": "Was die Anfrage nennt, wird nicht mehr aufbewahrt; lesen Sie den aktuellen Stand erneut."
     },
     "reasons": {
       "validation": "Ein Feld fehlt oder hat einen Wert außerhalb seiner Regeln; details nennt das Feld.",
@@ -1172,7 +1197,9 @@
       "registration_attempts": "Zu viele Registrierungsversuche; warten Sie.",
       "password_attempts": "Zu viele Passwortversuche; warten Sie.",
       "feedback_attempts": "Zu viele Feedback-Meldungen; warten Sie.",
-      "replication_degraded": "Ein HA-Cluster hat weniger vollständige Kopien, als ein Schreibvorgang braucht; die Änderung wurde nicht bestätigt. Nach Retry-After wiederholen. Downloads funktionieren weiter."
+      "replication_degraded": "Ein HA-Cluster hat weniger vollständige Kopien, als ein Schreibvorgang braucht; die Änderung wurde nicht bestätigt. Nach Retry-After wiederholen. Downloads funktionieren weiter.",
+      "events_cursor_expired": "Der Ereigniscursor ist älter als das älteste Ereignis, das der Server aufbewahrt; lesen Sie den aktuellen Stand und fahren Sie ab `oldest` fort.",
+      "events_epoch_changed": "Der Server wurde aus einem Backup wiederhergestellt, seine Ereignisse haben eine neue Epoche begonnen; lesen Sie den aktuellen Stand und fahren Sie in der neuen Epoche fort."
     }
   },
   "fields": {
@@ -1194,6 +1221,10 @@
     "Snapshot time T; the age of a point counts from T.": "Snapshot-Zeitpunkt T; das Alter eines Punkts zählt ab T.",
     "Start of execution, or the request time while queued.": "Beginn der Ausführung oder, solange eingereiht, die Zeit der Anfrage.",
     "Upload reservation time": "Zeitpunkt der Upload-Reservierung",
-    "Vault is encrypted; null when unknown or not connected.": "Das Vault ist verschlüsselt; null, wenn unbekannt oder nicht verbunden."
+    "Vault is encrypted; null when unknown or not connected.": "Das Vault ist verschlüsselt; null, wenn unbekannt oder nicht verbunden.",
+    "Event id, `<epoch>:<position>`; deduplicate by it": "Ereignis-ID, `<epoch>:<position>`; danach deduplizieren",
+    "Artifact id, or the path of a file event": "Artefakt-ID oder der Pfad bei Dateiereignissen",
+    "`repository:<repository>`; events of one partition keep their commit order": "`repository:<repository>`; Ereignisse einer Partition behalten ihre Commit-Reihenfolge",
+    "Data of the type; its JSON Schema is in the type list": "Daten des Typs; ihr JSON Schema steht in der Typliste"
   }
 }

@@ -176,6 +176,14 @@
       "summary": "البحث في المُخرَجات",
       "description": "يعثر على المُخرَجات المنشورة حسب `q` (سلسلة جزئية من الاسم أو من قيمة بيانات تعريف حالية، دون مراعاة حالة الأحرف)، و`label` حالية مطابقة تمامًا، و`collection`، وزوج `metadataKey`/`metadataValue` مطابق تمامًا ويُستخدمان معًا؛ ويجب أن تتطابق كل المرشحات المعطاة. تأتي النتائج في صفحات من 100 مرتبةً حسب المعرّف، لكل منها الحجم وأوقات الإنشاء والنشر والتسميات الحالية ومراحل الترقية؛ وللمتابعة اضبط `after` على قيمة `next`. لا تُعاد بيانات التعريف ولا التجميعات: اقرأها عبر `getAnnotations`."
     },
+    "searchAllRepositories": {
+      "en": {
+        "summary": "Search all repositories",
+        "description": "Finds published artifacts in every repository where the caller may list artifacts (`artifact.list`), at most the first 1000 by name. Filters: `q` (a case-insensitive substring of the name or of a current metadata value), `repositories` (comma-separated, at most 100), `labels` (comma-separated current labels, at most 8, all required) and `stage`; all given filters must match. A repository the caller cannot list is skipped exactly like one that does not exist. Results are ordered by publication time, newest first, then by repository and ID; each is a `searchArtifacts` item plus its `repository`. Pages hold `limit` items (1–100, default 50); continue with `after` set to `next` and the same filters."
+      },
+      "summary": "البحث في جميع المستودعات",
+      "description": "يعثر على العناصر المنشورة في كل مستودع يُسمح فيه للمستدعي بسرد العناصر (`artifact.list`)، وبحد أقصى أول 1000 مستودع حسب الاسم. عوامل التصفية: `q` (سلسلة جزئية دون مراعاة حالة الأحرف في الاسم أو في قيمة بيانات وصفية حالية)، و`repositories` (مفصولة بفواصل، 100 كحد أقصى)، و`labels` (تسميات حالية مفصولة بفواصل، 8 كحد أقصى، ويلزم وجودها جميعًا)، و`stage`؛ ويجب أن تتطابق جميع عوامل التصفية المحددة. يُتخطّى المستودع الذي لا يستطيع المستدعي سرده تمامًا كما يُتخطّى مستودع غير موجود. تُرتَّب النتائج حسب وقت النشر، الأحدث أولًا، ثم حسب المستودع والمعرّف؛ وكل نتيجة عنصر من `searchArtifacts` مع `repository` الخاص به. تحتوي الصفحة على `limit` عنصر (من 1 إلى 100، والافتراضي 50)؛ وللمتابعة اضبط `after` على قيمة `next` مع عوامل التصفية نفسها."
+    },
     "getCatalogAudit": {
       "en": {
         "summary": "Read the catalog audit of a repository",
@@ -1103,6 +1111,22 @@
       },
       "summary": "قراءة نظرة عامة على المواقع",
       "description": "تنبيهات المواقع المُدارة وهذا التثبيت، الأشد أولًا (`critical` و`warning` و`info`)، وروابط المرايا بينها. تُبنى من آخر القراءات في الخلفية، مرة كل 5 ثوانٍ على الأكثر. المصدر الذي لا يجيب على عنوانه أي موقع مُدار هو `external:<origin>`؛ وهذا التثبيت هو `self` ولا تظهر الروابط إليه إلا عند ضبط `ARKVORY_SITE_URL`. تجيب عملية الكتابة فقط."
+    },
+    "listEvents": {
+      "en": {
+        "summary": "Read the events of the installation",
+        "description": "Returns, oldest first, up to `limit` events (1–500, default 100) after the cursor `after`, as CloudEvents 1.0: publications, deletions, file revisions, package registrations, annotations, attachments, stages, promotions, image, npm and Git LFS changes of every repository the caller may list (`artifact.list`). Without `after` the feed starts at the oldest kept event. Pass `next` as `after` to continue: it also moves past events the caller may not see, at most 5000 per request. `types` keeps the named types or prefixes such as `artifact.*`, `repository` one repository. A cursor older than `oldest` answers 410 `events_cursor_expired`; a cursor of another `epoch` (the server was restored from a backup) answers 409 `events_epoch_changed`; both carry the current `epoch`, `oldest` and `head` in `events`. Deduplicate by `id`; an event is a hint, read the current state through the ordinary routes."
+      },
+      "summary": "قراءة أحداث التثبيت",
+      "description": "يعيد، بدءًا من الأقدم، ما يصل إلى `limit` حدثًا (1–500، الافتراضي 100) بعد المؤشر `after` بصيغة CloudEvents 1.0: عمليات النشر والحذف، ومراجعات الملفات، وتسجيلات الحزم، والتعليقات التوضيحية، والمرفقات، والمراحل، والترقيات، وتغييرات الصور وnpm وGit LFS في كل مستودع يستطيع المستدعي سرده (`artifact.list`). من دون `after` تبدأ التغذية من أقدم حدث محفوظ. للمتابعة مرّر `next` بوصفه `after`: فهو يتقدّم أيضًا متجاوزًا الأحداث التي لا يراها المستدعي، بحد أقصى 5000 لكل طلب. يُبقي `types` الأنواع المسمّاة أو بادئات مثل `artifact.*`، و`repository` مستودعًا واحدًا. يتلقى المؤشر الأقدم من `oldest` الرمز 410 `events_cursor_expired`، ومؤشر حقبة `epoch` أخرى (استُعيد الخادم من نسخة احتياطية) الرمز 409 `events_epoch_changed`؛ ويحمل كلاهما القيم الحالية `epoch` و`oldest` و`head` في `events`. أزل التكرار بحسب `id`؛ فالحدث تلميح، واقرأ الحالة الحالية عبر المسارات المعتادة."
+    },
+    "listEventTypes": {
+      "en": {
+        "summary": "List the event types",
+        "description": "Returns every event type this server writes: name, `schemaVersion`, scope, the permission a reader needs, the partition that keeps its order and the JSON Schema of `data`. The CloudEvents `type` is `arkvory.<name>.v<schemaVersion>`."
+      },
+      "summary": "سرد أنواع الأحداث",
+      "description": "يعيد كل نوع حدث يكتبه هذا الخادم: الاسم، و`schemaVersion`، والنطاق، والإذن الذي يحتاجه القارئ، والقسم الذي يحافظ على ترتيبه، ومخطط JSON Schema للحقل `data`. قيمة `type` في CloudEvents هي `arkvory.<name>.v<schemaVersion>`."
     }
   },
   "errors": {
@@ -1118,7 +1142,8 @@
       "unavailable": "إحدى التبعيات غير متاحة الآن؛ أعد المحاولة بعد المدة المحددة في Retry-After.",
       "rate_limited": "محاولات كثيرة جدًا؛ انتظر المدة المحددة في Retry-After.",
       "read_only": "هذا الخادم أو هذه البوابة لا يقبل التغييرات (بوابة قراءة أو مرآة).",
-      "internal": "عطل غير متوقع في الخادم؛ يساعد معرّف الطلب الدعم على العثور عليه. لا تكرر الطلب دون تمحيص."
+      "internal": "عطل غير متوقع في الخادم؛ يساعد معرّف الطلب الدعم على العثور عليه. لا تكرر الطلب دون تمحيص.",
+      "gone": "ما يشير إليه الطلب لم يعد محفوظًا؛ اقرأ الحالة الحالية من جديد."
     },
     "reasons": {
       "validation": "حقل مفقود أو قيمته خارج قواعده؛ وتسمّي details الحقل.",
@@ -1172,7 +1197,9 @@
       "registration_attempts": "محاولات تسجيل كثيرة جدًا؛ انتظر.",
       "password_attempts": "محاولات كلمة مرور كثيرة جدًا؛ انتظر.",
       "feedback_attempts": "تقارير ملاحظات كثيرة جدًا؛ انتظر.",
-      "replication_degraded": "يحتوي عنقود HA على نسخ كاملة أقل مما تحتاجه الكتابة، لذلك لم يُؤكَّد التغيير؛ أعد المحاولة بعد Retry-After. ما زال التنزيل يعمل."
+      "replication_degraded": "يحتوي عنقود HA على نسخ كاملة أقل مما تحتاجه الكتابة، لذلك لم يُؤكَّد التغيير؛ أعد المحاولة بعد Retry-After. ما زال التنزيل يعمل.",
+      "events_cursor_expired": "مؤشر الأحداث أقدم من أقدم حدث يحتفظ به الخادم؛ اقرأ الحالة الحالية ثم تابع من `oldest`.",
+      "events_epoch_changed": "استُعيد الخادم من نسخة احتياطية، فبدأت أحداثه حقبة جديدة؛ اقرأ الحالة الحالية ثم تابع في الحقبة الجديدة."
     }
   },
   "fields": {
@@ -1194,6 +1221,10 @@
     "Snapshot time T; the age of a point counts from T.": "وقت اللقطة T؛ ويُحتسب عمر النقطة منذ T.",
     "Start of execution, or the request time while queued.": "بداية التنفيذ، أو وقت الطلب ما دام في الطابور.",
     "Upload reservation time": "وقت حجز الرفع",
-    "Vault is encrypted; null when unknown or not connected.": "هل الخزنة مشفّرة؛ القيمة null عند عدم المعرفة أو عدم الاتصال."
+    "Vault is encrypted; null when unknown or not connected.": "هل الخزنة مشفّرة؛ القيمة null عند عدم المعرفة أو عدم الاتصال.",
+    "Event id, `<epoch>:<position>`; deduplicate by it": "معرّف الحدث، `<epoch>:<position>`؛ أزل التكرار به",
+    "Artifact id, or the path of a file event": "معرّف المُخرَج، أو المسار في أحداث الملفات",
+    "`repository:<repository>`; events of one partition keep their commit order": "`repository:<repository>`؛ تحافظ أحداث القسم الواحد على ترتيب تثبيتها",
+    "Data of the type; its JSON Schema is in the type list": "بيانات النوع؛ مخطط JSON Schema الخاص بها في قائمة الأنواع"
   }
 }

@@ -66,6 +66,11 @@ export interface MetricSources {
     refresh(failed: () => void): Promise<void>;
     register(registry: MetricsRegistry): void;
   };
+  /** Event outbox gauges, same cache rules (ADR 0080). */
+  readonly events?: {
+    refresh(failed: () => void): Promise<void>;
+    register(registry: MetricsRegistry): void;
+  };
   /** Connections of the database pools, sampled at scrape time. */
   readonly databasePools?: () => readonly {
     readonly pool: string;
@@ -131,6 +136,7 @@ export class ApiMetrics {
     sources.fleet?.register(this.registry);
     sources.webhooks?.register(this.registry);
     sources.replica?.register(this.registry);
+    sources.events?.register(this.registry);
   }
 
   observe(observed: ObservedResponse): void {
@@ -161,6 +167,9 @@ export class ApiMetrics {
       }),
       this.sources.replica?.refresh(() => {
         this.collectionFailures.inc({ collector: 'replica' });
+      }),
+      this.sources.events?.refresh(() => {
+        this.collectionFailures.inc({ collector: 'events' });
       }),
     ]);
     return this.registry.render();

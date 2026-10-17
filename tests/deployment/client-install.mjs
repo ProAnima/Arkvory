@@ -54,6 +54,9 @@ export async function exerciseClient(output, version) {
     : run('/usr/bin/arkvory-remote', ['--help']);
   assert.match(remoteHelp, /Remote Setup/);
   assert.equal(JSON.parse(cli('--version')).version, version);
+  // ADR 0081: `arkvoryctl mcp` ships with the notices of the code bundled for it.
+  await access(join(windows ? installation : '/usr/lib/proanima-arkvory-cli', 'MCP-LICENSES.txt'));
+  assert.match(cli('mcp --help'), /mcp \[--root DIR\]/);
   cli('profile add acceptance --server https://arkvory.example');
   const profile = join(env.ARKVORY_CLI_HOME, 'profiles.json');
   const before = await readFile(profile, 'utf8');

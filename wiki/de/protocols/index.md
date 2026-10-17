@@ -92,4 +92,5 @@ Siehe [Lese-Gateways](../operate/read-gateways) und [Spiegel](../operate/mirrors
 - [Unity- und npm-Pakete](./unity-npm)
 - [Raw-Dateien](./raw-files)
 - [Webhooks](./webhooks)
+- [Ereignisse](./events)
 - [API-Überblick](../api/index) und [Fehler](../api/errors)

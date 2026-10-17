@@ -98,6 +98,7 @@ export function pageOf(operation) {
     Backups: 'backups',
     Updates: 'updates',
     Feedback: 'feedback',
+    Events: 'events',
   };
   if (byTag[operation.tag]) return byTag[operation.tag];
   const rest = operation.path.replace(/^\/api\/v1\/repositories\/\{repository\}/, '');

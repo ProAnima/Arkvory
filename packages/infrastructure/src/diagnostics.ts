@@ -12,6 +12,7 @@ export type LogComponent =
   | 'backup'
   | 'mirror'
   | 'webhook'
+  | 'events'
   | 'fleet'
   | 'migrate'
   | 'process'
@@ -50,6 +51,8 @@ export interface DiagnosticFields {
   bytesReceived?: number;
   principal?: string;
   clientIp?: string;
+  /** `Arkvory-Client` of the request (ADR 0081): printable ASCII up to 64, e.g. `arkvoryctl-mcp/1.2.3`. */
+  client?: string;
   completed?: boolean;
   attempts?: number;
   generation?: number;

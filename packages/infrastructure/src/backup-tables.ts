@@ -128,6 +128,15 @@ export const excludedTables: readonly ExcludedTable[] = [
     name: 'arkvory_oci_uploads',
     reason: 'image uploads in progress; their staged bytes stay with the source',
   },
+  // ADR 0080: events are a window, not history; a restored installation answers old cursors 409.
+  {
+    name: 'arkvory_events',
+    reason: 'event window of the source; consumers resynchronize under the new epoch',
+  },
+  {
+    name: 'arkvory_event_state',
+    reason: 'epoch and positions of the source; migrating the target starts a new epoch',
+  },
 ];
 
 const identifier = /^[a-z_][a-z0-9_]{0,62}$/;

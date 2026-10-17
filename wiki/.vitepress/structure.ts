@@ -22,7 +22,17 @@ export const SECTIONS: readonly Section[] = [
   },
   {
     id: 'protocols',
-    pages: ['index', 'cli', 'sdk', 'containers', 'git-lfs', 'unity-npm', 'raw-files', 'webhooks'],
+    pages: [
+      'index',
+      'cli',
+      'sdk',
+      'containers',
+      'git-lfs',
+      'unity-npm',
+      'raw-files',
+      'webhooks',
+      'events',
+    ],
   },
   {
     id: 'operate',
@@ -57,6 +67,7 @@ export const API_PAGES = [
   'promotion',
   'storage',
   'mirrors',
+  'events',
   'links',
   'attachments',
   'accounts',

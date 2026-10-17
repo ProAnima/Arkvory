@@ -15,7 +15,12 @@ import {
 import { join } from 'node:path';
 import { Pool } from 'pg';
 import { ArkvoryClient } from '@proanima/arkvory-sdk';
-import { FileVault, PostgresRestoreDatabase, tablesAt } from '@proanima/arkvory-infrastructure';
+import {
+  FileVault,
+  PostgresRestoreDatabase,
+  SCHEMA_VERSION,
+  tablesAt,
+} from '@proanima/arkvory-infrastructure';
 import { createServer } from '../../apps/api/dist/index.js';
 import { setup, create, base } from './fixture.mjs';
 import {
@@ -225,6 +230,22 @@ test('a captured point restores into an empty database and storage and serves th
     (await pool.query('SELECT count(*)::int AS n FROM arkvory_user_sessions')).rows[0].n,
     1,
   );
+  // Events stay out of the point (ADR 0080): the restored feed is empty under a new epoch, and
+  // a cursor of the source answers 409 with the new window.
+  const epochOf = async (db) =>
+    (await db.query('SELECT epoch::text, head::text FROM arkvory_event_state')).rows[0];
+  const source = await epochOf(f.catalog.pool);
+  const restoredState = await epochOf(pool);
+  assert.notEqual(restoredState.epoch, source.epoch);
+  assert.equal(restoredState.head, '0');
+  assert.equal((await pool.query('SELECT count(*)::int AS n FROM arkvory_events')).rows[0].n, 0);
+  const stale = await app.inject({
+    url: `/api/v1/events?after=${source.epoch}:0`,
+    headers: f.headers,
+  });
+  assert.equal(stale.statusCode, 409, stale.body);
+  assert.equal(stale.json().reason, 'events_epoch_changed');
+  assert.deepEqual(stale.json().events, { epoch: restoredState.epoch, oldest: '0', head: '0' });
   const again = await runBackup([...restoreArgs, '--yes'], target);
   assert.equal(again.code, 3);
   assert.equal(record(again, 'backup.failed').errorCode, 'target_not_empty');
@@ -356,6 +377,6 @@ test('a point of an older schema restores; the migrations after it create the la
   const created = await pool.query(
     "SELECT to_regclass('arkvory_mirror_adoptions') IS NOT NULL AS present, (SELECT max(version) FROM arkvory_migrations) AS version",
   );
-  assert.deepEqual(created.rows[0], { present: true, version: 41 });
+  assert.deepEqual(created.rows[0], { present: true, version: SCHEMA_VERSION });
   await pool.end();
 });

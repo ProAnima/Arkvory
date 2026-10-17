@@ -134,6 +134,10 @@
         "title": "Miroirs",
         "intro": "L’état d’un dépôt miroir et le flux que suit un miroir."
       },
+      "events": {
+        "title": "Événements",
+        "intro": "Le flux d’événements de l’installation après un curseur et la liste des types d’événements."
+      },
       "links": {
         "title": "Liens de téléchargement",
         "intro": "Liens à durée limitée qui permettent à une personne sans clé de télécharger un artefact."

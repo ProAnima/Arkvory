@@ -15,6 +15,7 @@ import type { ServerConfig } from './config.js';
 import { ApiRuntime } from './api-runtime.js';
 import { createApiServices } from './api-services.js';
 import { registerApiRoutes } from './api-routes.js';
+import { registerEventRoutes } from './event-routes.js';
 import { createHttpServer } from './http-server.js';
 import { prepareTls } from './tls-transport.js';
 import { createRequestContext } from './request-context.js';
@@ -263,6 +264,7 @@ function registerRoutes(app: FastifyInstance, parts: RouteParts) {
     ...(config.tls ? { certificateFile: config.tls.certificateFile } : {}),
   });
   registerTopologyRoutes(app, context.principal, topologyParts(parts));
+  registerEventRoutes(app, services.events, context, config.siteName ?? 'arkvory');
   registerModuleRoutes(app, context.principal, runtime.modules);
   registerFeedback(app, context.principal, {
     hub: config.hub ?? null,

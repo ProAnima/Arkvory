@@ -21,6 +21,7 @@ import {
 import { composeApiPaths } from './openapi-compose.js';
 import { delegationPaths } from './delegation-api.js';
 import { repositoryPaths } from './repositories.js';
+import { globalSearchPaths } from './global-search.js';
 import { operationPaths } from './operations.js';
 import { promotionPaths } from './promotion-api.js';
 import { metricsPaths } from './metrics.js';
@@ -29,6 +30,8 @@ import { mirrorPaths } from './mirror-api.js';
 import { downloadLinkParameter, downloadLinkPaths } from './download-link-api.js';
 import { rawPaths } from './raw-paths.js';
 import { feedbackPaths } from './feedback-api.js';
+import { eventPaths } from './events/feed.js';
+import { eventDataSchemas } from './events/catalog.js';
 import type { ApiSurface } from './api-surfaces.js';
 export const descriptorSchema = {
   type: 'object',
@@ -253,6 +256,7 @@ const composed = composeApiPaths({
   ...metricsPaths,
   ...delegationPaths,
   ...repositoryPaths,
+  ...globalSearchPaths,
   ...operationPaths,
   ...attachmentPaths,
   ...promotionPaths,
@@ -269,6 +273,7 @@ const composed = composeApiPaths({
   ...downloadLinkPaths,
   ...rawPaths,
   ...feedbackPaths,
+  ...eventPaths,
   ['/api/v1/repositories/{repository}/artifacts/{id}']: {
     ...baseDocument.paths['/api/v1/repositories/{repository}/artifacts/{id}'],
     delete: deletionOperation,
@@ -280,7 +285,7 @@ export const openApiDocument = {
   info: { ...baseDocument.info, title: 'ProAnima Arkvory API', version: '0.15.0' },
   components: {
     ...baseDocument.components,
-    schemas: { NativeError: nativeErrorSchema },
+    schemas: { NativeError: nativeErrorSchema, ...eventDataSchemas },
     securitySchemes: baseDocument.components.securitySchemes,
   },
   paths: composed.paths,

@@ -12,6 +12,8 @@ export const errorReasons = {
     'range_not_satisfiable',
   ],
   not_found: ['route_not_found'],
+  /** A cursor older than the retained window (ADR 0080): 410, read the state again. */
+  gone: ['events_cursor_expired'],
   conflict: [
     'upload_expired',
     'upload_state',
@@ -24,6 +26,7 @@ export const errorReasons = {
     'stage_limit',
     'state_conflict',
     'mirror_read_only',
+    'events_epoch_changed',
   ],
   forbidden: [
     'permission_missing',

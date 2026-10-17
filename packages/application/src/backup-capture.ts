@@ -120,6 +120,7 @@ export function backupFailureOf(error: unknown): BackupFailure {
         return new BackupFailure('unavailable', error.message, { cause: error });
       case 'invalid_input':
       case 'not_found':
+      case 'gone':
       case 'conflict':
       case 'forbidden':
       case 'unauthorized':

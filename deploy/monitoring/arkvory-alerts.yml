@@ -197,6 +197,15 @@ groups:
           summary: Webhook {{ $labels.subscription }} keeps failing to reach its receiver
           description: Read errorCode in the worker webhook.step_failed records (blocked - the address is not allowed, tls - certificate, timeout or network - the path, http_4xx or http_5xx - the receiver, secret - the secret file). Events wait in the change feed and are delivered in order when the receiver answers again.
 
+      - alert: ArkvoryEventSequencerStalled
+        # ADR 0080: committed events wait for the worker to number them before readers see them.
+        expr: max(arkvory_events_unsequenced_age_seconds) > 120
+        labels:
+          severity: warning
+        annotations:
+          summary: Events wait more than 2 minutes for the worker to number them
+          description: Readers of GET /api/v1/events see nothing new until the worker numbers the events; nothing is lost meanwhile. Check that the worker runs and holds the storage, and read events.step_failed in its journal.
+
       - alert: ArkvoryReplicationDegraded
         # HA cluster (ADR 0072): writes are refused with replication_degraded while copies are short.
         expr: max(arkvory_replication_copies) < max(arkvory_replication_required_copies)

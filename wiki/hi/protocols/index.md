@@ -92,4 +92,5 @@ Arkvory का स्टोरेज और एक्सेस मॉडल ए�
 - [Unity और npm पैकेज](./unity-npm)
 - [रॉ फ़ाइलें](./raw-files)
 - [वेबहुक](./webhooks)
+- [इवेंट](./events)
 - [API का अवलोकन](../api/index) और [त्रुटियाँ](../api/errors)

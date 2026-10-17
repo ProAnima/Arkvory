@@ -176,6 +176,14 @@
       "summary": "Buscar artefactos",
       "description": "Encuentra artefactos publicados por `q` (una subcadena, sin distinguir mayúsculas, del nombre o de un valor de metadatos actual), una `label` actual exacta, una `collection` y un par exacto `metadataKey`/`metadataValue`, que van juntos; deben cumplirse todos los filtros indicados. Los resultados llegan en páginas de 100 ordenadas por ID, cada uno con tamaño, horas de creación y de publicación, etiquetas actuales y etapas de promoción; continúe pasando `next` como `after`. Los metadatos y las colecciones no se devuelven: léalos con `getAnnotations`."
     },
+    "searchAllRepositories": {
+      "en": {
+        "summary": "Search all repositories",
+        "description": "Finds published artifacts in every repository where the caller may list artifacts (`artifact.list`), at most the first 1000 by name. Filters: `q` (a case-insensitive substring of the name or of a current metadata value), `repositories` (comma-separated, at most 100), `labels` (comma-separated current labels, at most 8, all required) and `stage`; all given filters must match. A repository the caller cannot list is skipped exactly like one that does not exist. Results are ordered by publication time, newest first, then by repository and ID; each is a `searchArtifacts` item plus its `repository`. Pages hold `limit` items (1–100, default 50); continue with `after` set to `next` and the same filters."
+      },
+      "summary": "Buscar en todos los repositorios",
+      "description": "Busca artefactos publicados en todos los repositorios donde quien llama puede listar artefactos (`artifact.list`), como máximo los 1000 primeros por nombre. Filtros: `q` (subcadena sin distinguir mayúsculas en el nombre o en un valor actual de metadatos), `repositories` (separados por comas, como máximo 100), `labels` (etiquetas actuales separadas por comas, como máximo 8, todas obligatorias) y `stage`; deben coincidir todos los filtros indicados. Un repositorio que quien llama no puede listar se omite igual que uno que no existe. Los resultados se ordenan por fecha de publicación, los más recientes primero, y después por repositorio e ID; cada uno es un elemento de `searchArtifacts` más su `repository`. Las páginas contienen `limit` elementos (1–100, 50 por defecto); continúe con `after` igual a `next` y los mismos filtros."
+    },
     "getCatalogAudit": {
       "en": {
         "summary": "Read the catalog audit of a repository",
@@ -1103,6 +1111,22 @@
       },
       "summary": "Leer el resumen de los sitios",
       "description": "Alertas de los sitios gestionados y de esta instalación, las más graves primero (`critical`, `warning`, `info`), y los vínculos de espejo entre ellos. Se construye con las últimas lecturas en segundo plano, como mucho una vez cada 5 segundos. Un origen en cuya dirección no responde ningún sitio gestionado es `external:<origin>`; esta instalación es `self` y los vínculos hacia ella solo aparecen con `ARKVORY_SITE_URL` definido. Solo responde el proceso de escritura."
+    },
+    "listEvents": {
+      "en": {
+        "summary": "Read the events of the installation",
+        "description": "Returns, oldest first, up to `limit` events (1–500, default 100) after the cursor `after`, as CloudEvents 1.0: publications, deletions, file revisions, package registrations, annotations, attachments, stages, promotions, image, npm and Git LFS changes of every repository the caller may list (`artifact.list`). Without `after` the feed starts at the oldest kept event. Pass `next` as `after` to continue: it also moves past events the caller may not see, at most 5000 per request. `types` keeps the named types or prefixes such as `artifact.*`, `repository` one repository. A cursor older than `oldest` answers 410 `events_cursor_expired`; a cursor of another `epoch` (the server was restored from a backup) answers 409 `events_epoch_changed`; both carry the current `epoch`, `oldest` and `head` in `events`. Deduplicate by `id`; an event is a hint, read the current state through the ordinary routes."
+      },
+      "summary": "Leer los eventos de la instalación",
+      "description": "Devuelve, del más antiguo al más reciente, hasta `limit` eventos (1–500, 100 por defecto) posteriores al cursor `after`, como CloudEvents 1.0: publicaciones, eliminaciones, revisiones de archivos, registros de paquetes, anotaciones, adjuntos, etapas, promociones y cambios de imágenes, npm y Git LFS de cada repositorio que el llamante puede listar (`artifact.list`). Sin `after`, el flujo empieza en el evento conservado más antiguo. Para continuar, pase `next` como `after`: también avanza más allá de los eventos que el llamante no puede ver, como máximo 5000 por solicitud. `types` conserva los tipos nombrados o prefijos como `artifact.*`; `repository`, un repositorio. Un cursor anterior a `oldest` recibe 410 `events_cursor_expired`; un cursor de otra `epoch` (el servidor se restauró desde una copia de seguridad), 409 `events_epoch_changed`; ambos incluyen los `epoch`, `oldest` y `head` actuales en `events`. Deduplique por `id`; un evento es una pista: lea el estado actual con las rutas habituales."
+    },
+    "listEventTypes": {
+      "en": {
+        "summary": "List the event types",
+        "description": "Returns every event type this server writes: name, `schemaVersion`, scope, the permission a reader needs, the partition that keeps its order and the JSON Schema of `data`. The CloudEvents `type` is `arkvory.<name>.v<schemaVersion>`."
+      },
+      "summary": "Listar los tipos de eventos",
+      "description": "Devuelve cada tipo de evento que escribe este servidor: nombre, `schemaVersion`, ámbito, el permiso que necesita un lector, la partición que conserva su orden y el JSON Schema de `data`. El `type` de CloudEvents es `arkvory.<name>.v<schemaVersion>`."
     }
   },
   "errors": {
@@ -1118,7 +1142,8 @@
       "unavailable": "Una dependencia no está disponible en este momento; repita la solicitud después del plazo indicado en Retry-After.",
       "rate_limited": "Demasiados intentos; espere el plazo indicado en Retry-After.",
       "read_only": "Este servidor o esta puerta de enlace no acepta cambios (puerta de enlace de lectura o espejo).",
-      "internal": "Un defecto inesperado del servidor; el ID de solicitud ayuda al soporte a encontrarlo. No repita la solicitud a ciegas."
+      "internal": "Un defecto inesperado del servidor; el ID de solicitud ayuda al soporte a encontrarlo. No repita la solicitud a ciegas.",
+      "gone": "Lo que nombra la solicitud ya no se conserva; vuelva a leer el estado actual."
     },
     "reasons": {
       "validation": "Falta un campo o tiene un valor fuera de las reglas; details indica el campo.",
@@ -1172,7 +1197,9 @@
       "registration_attempts": "Demasiados intentos de registro; espere.",
       "password_attempts": "Demasiados intentos de contraseña; espere.",
       "feedback_attempts": "Demasiados envíos de comentarios; espere.",
-      "replication_degraded": "Un clúster HA tiene menos copias completas de las que necesita una escritura, por lo que el cambio no se confirmó; repítalo después de Retry-After. Las descargas siguen funcionando."
+      "replication_degraded": "Un clúster HA tiene menos copias completas de las que necesita una escritura, por lo que el cambio no se confirmó; repítalo después de Retry-After. Las descargas siguen funcionando.",
+      "events_cursor_expired": "El cursor de eventos es anterior al evento más antiguo que conserva el servidor; lea el estado actual y continúe desde `oldest`.",
+      "events_epoch_changed": "El servidor se restauró desde una copia de seguridad y sus eventos empezaron una nueva época; lea el estado actual y continúe en la nueva época."
     }
   },
   "fields": {
@@ -1194,6 +1221,10 @@
     "Snapshot time T; the age of a point counts from T.": "Hora T de la instantánea; la antigüedad de un punto se cuenta desde T.",
     "Start of execution, or the request time while queued.": "Inicio de la ejecución, o la hora de la solicitud mientras está en cola.",
     "Upload reservation time": "Hora de reserva de la subida",
-    "Vault is encrypted; null when unknown or not connected.": "El almacén está cifrado; null si se desconoce o no está conectado."
+    "Vault is encrypted; null when unknown or not connected.": "El almacén está cifrado; null si se desconoce o no está conectado.",
+    "Event id, `<epoch>:<position>`; deduplicate by it": "Id del evento, `<epoch>:<position>`; deduplique por él",
+    "Artifact id, or the path of a file event": "Id del artefacto, o la ruta en los eventos de archivos",
+    "`repository:<repository>`; events of one partition keep their commit order": "`repository:<repository>`; los eventos de una partición conservan su orden de confirmación",
+    "Data of the type; its JSON Schema is in the type list": "Datos del tipo; su JSON Schema está en la lista de tipos"
   }
 }

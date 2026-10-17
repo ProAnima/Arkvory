@@ -176,6 +176,14 @@
       "summary": "아티팩트 검색",
       "description": "게시된 아티팩트를 다음 조건으로 찾습니다. `q`(이름 또는 현재 메타데이터 값에 포함된 부분 문자열, 대소문자 구분 없음), 현재 `label`과 정확히 일치하는 값, `collection`, 함께 지정해야 하는 `metadataKey`/`metadataValue` 쌍입니다. 지정한 필터는 모두 일치해야 합니다. 결과는 ID 순으로 100개씩 페이지로 나뉘고, 각 항목에 크기, 생성·게시 시각, 현재 레이블, 승격 스테이지가 있으며 `after`에 `next` 값을 넣어 이어서 조회합니다. 메타데이터와 컬렉션은 반환되지 않으므로 `getAnnotations`로 읽습니다."
     },
+    "searchAllRepositories": {
+      "en": {
+        "summary": "Search all repositories",
+        "description": "Finds published artifacts in every repository where the caller may list artifacts (`artifact.list`), at most the first 1000 by name. Filters: `q` (a case-insensitive substring of the name or of a current metadata value), `repositories` (comma-separated, at most 100), `labels` (comma-separated current labels, at most 8, all required) and `stage`; all given filters must match. A repository the caller cannot list is skipped exactly like one that does not exist. Results are ordered by publication time, newest first, then by repository and ID; each is a `searchArtifacts` item plus its `repository`. Pages hold `limit` items (1–100, default 50); continue with `after` set to `next` and the same filters."
+      },
+      "summary": "모든 저장소에서 검색",
+      "description": "호출자가 아티팩트를 나열할 수 있는(`artifact.list`) 모든 저장소에서, 이름순으로 최대 처음 1000개까지, 게시된 아티팩트를 찾습니다. 필터: `q`(이름 또는 현재 메타데이터 값에서 대소문자를 구분하지 않는 부분 문자열), `repositories`(쉼표로 구분, 최대 100개), `labels`(쉼표로 구분한 현재 레이블, 최대 8개, 모두 필요), `stage`; 지정한 필터는 모두 일치해야 합니다. 호출자가 나열할 수 없는 저장소는 존재하지 않는 저장소와 똑같이 건너뜁니다. 결과는 게시 시각 기준 최신순, 그다음 저장소와 ID 순으로 정렬되며, 각 항목은 `searchArtifacts` 항목에 `repository`가 더해진 것입니다. 페이지에는 `limit`개 항목(1–100, 기본값 50)이 들어 있으며, `after`를 `next`로 설정하고 같은 필터로 계속합니다."
+    },
     "getCatalogAudit": {
       "en": {
         "summary": "Read the catalog audit of a repository",
@@ -1103,6 +1111,22 @@
       },
       "summary": "사이트 개요 읽기",
       "description": "관리 사이트와 이 설치의 경고(심각한 것부터: `critical`, `warning`, `info`)와 그 사이의 미러 연결. 마지막 백그라운드 읽기로 만들며 최대 5초에 한 번입니다. 어떤 관리 사이트도 그 주소에서 응답하지 않는 소스는 `external:<origin>`이고, 이 설치는 `self`이며 `ARKVORY_SITE_URL`이 설정된 경우에만 이 설치로 향하는 연결이 나타납니다. 쓰기 프로세스만 응답합니다."
+    },
+    "listEvents": {
+      "en": {
+        "summary": "Read the events of the installation",
+        "description": "Returns, oldest first, up to `limit` events (1–500, default 100) after the cursor `after`, as CloudEvents 1.0: publications, deletions, file revisions, package registrations, annotations, attachments, stages, promotions, image, npm and Git LFS changes of every repository the caller may list (`artifact.list`). Without `after` the feed starts at the oldest kept event. Pass `next` as `after` to continue: it also moves past events the caller may not see, at most 5000 per request. `types` keeps the named types or prefixes such as `artifact.*`, `repository` one repository. A cursor older than `oldest` answers 410 `events_cursor_expired`; a cursor of another `epoch` (the server was restored from a backup) answers 409 `events_epoch_changed`; both carry the current `epoch`, `oldest` and `head` in `events`. Deduplicate by `id`; an event is a hint, read the current state through the ordinary routes."
+      },
+      "summary": "설치의 이벤트 읽기",
+      "description": "커서 `after` 이후의 이벤트를 오래된 순으로 최대 `limit`개(1–500, 기본 100) CloudEvents 1.0으로 반환합니다. 호출자가 목록을 볼 수 있는(`artifact.list`) 모든 리포지토리의 게시, 삭제, 파일 리비전, 패키지 등록, 어노테이션, 첨부 파일, 스테이지, 승격, 이미지·npm·Git LFS 변경이 포함됩니다. `after`가 없으면 보관된 가장 오래된 이벤트부터 시작합니다. 이어서 읽으려면 `next`를 `after`로 전달하세요. 호출자가 볼 수 없는 이벤트도 지나가며, 요청당 최대 5000개입니다. `types`는 지정한 유형이나 `artifact.*` 같은 접두사만, `repository`는 리포지토리 하나만 남깁니다. `oldest`보다 오래된 커서는 410 `events_cursor_expired`, 다른 `epoch`(서버가 백업에서 복원됨)의 커서는 409 `events_epoch_changed`를 받으며, 둘 다 `events`에 현재 `epoch`, `oldest`, `head`를 담습니다. `id`로 중복을 제거하세요. 이벤트는 힌트이며 현재 상태는 일반 경로로 읽습니다."
+    },
+    "listEventTypes": {
+      "en": {
+        "summary": "List the event types",
+        "description": "Returns every event type this server writes: name, `schemaVersion`, scope, the permission a reader needs, the partition that keeps its order and the JSON Schema of `data`. The CloudEvents `type` is `arkvory.<name>.v<schemaVersion>`."
+      },
+      "summary": "이벤트 유형 나열",
+      "description": "이 서버가 기록하는 모든 이벤트 유형을 반환합니다. 이름, `schemaVersion`, 범위, 읽는 쪽에 필요한 권한, 순서를 유지하는 파티션, `data`의 JSON Schema입니다. CloudEvents `type`은 `arkvory.<name>.v<schemaVersion>`입니다."
     }
   },
   "errors": {
@@ -1118,7 +1142,8 @@
       "unavailable": "종속 서비스를 지금은 사용할 수 없습니다. Retry-After 이후에 다시 시도합니다.",
       "rate_limited": "시도 횟수가 너무 많습니다. Retry-After까지 기다립니다.",
       "read_only": "이 서버 또는 게이트웨이는 변경을 받지 않습니다(읽기 게이트웨이 또는 미러).",
-      "internal": "예기치 않은 서버 결함입니다. 요청 ID를 알려 주면 지원팀이 원인을 찾는 데 도움이 됩니다. 무작정 반복하지 않습니다."
+      "internal": "예기치 않은 서버 결함입니다. 요청 ID를 알려 주면 지원팀이 원인을 찾는 데 도움이 됩니다. 무작정 반복하지 않습니다.",
+      "gone": "요청이 가리키는 내용은 더 이상 보관되지 않습니다. 현재 상태를 다시 읽으세요."
     },
     "reasons": {
       "validation": "필드가 없거나 규칙에서 벗어난 값이 있습니다. 세부 정보에 해당 필드 이름이 들어 있습니다.",
@@ -1172,7 +1197,9 @@
       "registration_attempts": "등록 시도가 너무 많습니다. 기다립니다.",
       "password_attempts": "비밀번호 시도가 너무 많습니다. 기다립니다.",
       "feedback_attempts": "피드백 보고가 너무 많습니다. 기다립니다.",
-      "replication_degraded": "HA 클러스터의 완전한 사본 수가 쓰기에 필요한 수보다 적어 변경이 확인되지 않았습니다. Retry-After 이후 다시 시도하세요. 다운로드는 계속 사용할 수 있습니다."
+      "replication_degraded": "HA 클러스터의 완전한 사본 수가 쓰기에 필요한 수보다 적어 변경이 확인되지 않았습니다. Retry-After 이후 다시 시도하세요. 다운로드는 계속 사용할 수 있습니다.",
+      "events_cursor_expired": "이벤트 커서가 서버가 보관하는 가장 오래된 이벤트보다 오래되었습니다. 현재 상태를 읽은 뒤 `oldest`부터 계속하세요.",
+      "events_epoch_changed": "서버가 백업에서 복원되어 이벤트가 새 에포크로 시작되었습니다. 현재 상태를 읽은 뒤 새 에포크에서 계속하세요."
     }
   },
   "fields": {
@@ -1194,6 +1221,10 @@
     "Snapshot time T; the age of a point counts from T.": "스냅샷 시각 T. 지점의 경과 시간은 T부터 계산합니다.",
     "Start of execution, or the request time while queued.": "실행 시작 시각. 큐에 있는 동안은 요청 시각",
     "Upload reservation time": "업로드 예약 시각",
-    "Vault is encrypted; null when unknown or not connected.": "볼트가 암호화되어 있는지 여부. 알 수 없거나 연결되지 않았으면 null."
+    "Vault is encrypted; null when unknown or not connected.": "볼트가 암호화되어 있는지 여부. 알 수 없거나 연결되지 않았으면 null.",
+    "Event id, `<epoch>:<position>`; deduplicate by it": "이벤트 ID, `<epoch>:<position>`. 이것으로 중복을 제거합니다",
+    "Artifact id, or the path of a file event": "아티팩트 ID, 파일 이벤트에서는 경로",
+    "`repository:<repository>`; events of one partition keep their commit order": "`repository:<repository>`. 한 파티션의 이벤트는 커밋 순서를 유지합니다",
+    "Data of the type; its JSON Schema is in the type list": "유형의 데이터. JSON Schema는 유형 목록에 있습니다"
   }
 }

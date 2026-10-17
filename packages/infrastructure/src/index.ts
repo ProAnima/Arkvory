@@ -10,6 +10,7 @@ export { WorkerSingletonBusy } from './storage-claim.js';
 
 export * from './service-keys.js';
 export * from './browse.js';
+export * from './global-search.js';
 export * from './upack.js';
 export * from './admission.js';
 export * from './download-scheduler.js';
@@ -111,6 +112,8 @@ export {
   rotateAgentKey,
 } from './vault-setup.js';
 export { PostgresWebhookFeed, PostgresWebhookState } from './webhook-state.js';
+export { PostgresEventLog } from './event-log.js';
+export type { EventLogSnapshot, EventRetentionPolicy } from './event-log.js';
 export { readWebhookSettings, parseWebhookSettings } from './webhook-config.js';
 export { parseAllowedNetworks, readWebhookCertificates } from './webhook-config.js';
 export type { WebhookSettings } from './webhook-config.js';

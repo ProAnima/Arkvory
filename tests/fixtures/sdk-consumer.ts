@@ -84,6 +84,10 @@ export type UnchangedKeys = Assert<
       | 'fleet'
       | 'downloadSettings'
       | 'siteChanges'
+      // ADR 0080: the installation's event feed as the additive namespace `events`.
+      | 'events'
+      // ADR 0081 (A1): search across every repository the credential may list.
+      | 'searchAll'
       // ADR 0078/0079: the installation's modules as the additive namespace `system`.
       | 'system'
     >,
@@ -100,11 +104,19 @@ export type ObserverIsOptional = Assert<
     (event: RequestEvent) => void
   >
 >;
+// ADR 0081 adds the optional ClientOptions.clientName (the Arkvory-Client header).
+export type ClientNameIsOptional = Assert<
+  Equal<
+    NonNullable<ConstructorParameters<typeof ArkvoryClient>[2]>['clientName'],
+    string | undefined
+  >
+>;
 
 // ADR 0051: ArkvoryHttpError keeps its constructor and fields and adds serverMessage, reason,
 // details and retryAfterSeconds; local failures become ArkvoryClientError, still an Error with
 // the previous message text. Exhaustive consumers of `code` must tolerate new values.
 // ADR 0076 adds `queue`: the place of a download in the server's queue (503 download_queued).
+// ADR 0080 adds `events`: the event feed window of 410 events_cursor_expired and 409 epochs.
 interface LegacyHttpError extends Error {
   readonly status: number;
   readonly code: string;
@@ -117,7 +129,7 @@ export type HttpErrorStillReadable = Assert<
 export type HttpErrorAdditions = Assert<
   Equal<
     Exclude<keyof ArkvoryHttpError, keyof LegacyHttpError>,
-    'serverMessage' | 'reason' | 'details' | 'retryAfterSeconds' | 'queue'
+    'serverMessage' | 'reason' | 'details' | 'retryAfterSeconds' | 'queue' | 'events'
   >
 >;
 export type ClientErrorIsError = Assert<ArkvoryClientError extends Error ? true : false>;

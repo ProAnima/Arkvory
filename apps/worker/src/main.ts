@@ -28,6 +28,7 @@ import type { LogLevel, PostgresJobLease } from '@proanima/arkvory-infrastructur
 import { capacityBytes, standbyRetryMs, workerResources } from './runtime.js';
 import { runMirrors } from './mirror-loop.js';
 import { runWebhooks } from './webhook-loop.js';
+import { readEventRetention, runEventSequencer } from './event-loop.js';
 import { processJob, retireExhausted } from './completion.js';
 
 let levelError: Error | undefined;
@@ -100,6 +101,8 @@ try {
     process.env['ARKVORY_WEBHOOKS_CA_FILE'],
     receiverAuthorities,
   );
+  // ADR 0080: retention of the event outbox, checked before the worker takes its lock.
+  const eventRetention = readEventRetention(process.env);
   // Mirror copies create uploads here, so they need the installation's capacity limit.
   const acquired = await workerResources(
     mirrors.length > 0 ? capacityBytes(process.env['ARKVORY_CAPACITY_BYTES']) : 0,
@@ -171,6 +174,12 @@ try {
     stop: stop.signal,
     diagnostics,
   });
+  const sequencing = runEventSequencer({
+    catalog,
+    retention: eventRetention,
+    stop: stop.signal,
+    diagnostics,
+  });
   try {
     while (!stop.signal.aborted && catalog.active) {
       await retireExhausted(jobs, diagnostics);
@@ -190,6 +199,7 @@ try {
     if (!stop.signal.aborted) stopWorker();
     await mirroring;
     await delivering;
+    await sequencing;
     clearInterval(recovery);
     await catalog.close();
   }

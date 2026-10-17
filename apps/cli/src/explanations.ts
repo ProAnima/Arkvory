@@ -64,6 +64,38 @@ const local: Readonly<Record<string, Text>> = {
     'Укажите текущую ревизию неотрицательным целым числом.',
   ],
   invalid_language: ['Use --lang en or --lang ru.', 'Используйте --lang en или --lang ru.'],
+  invalid_root: [
+    'Pass an existing directory with --root; MCP tools read and write files only below it.',
+    'Укажите существующий каталог в --root: инструменты MCP работают с файлами только внутри него.',
+  ],
+  invalid_max_output_bytes: [
+    'Use --max-output-bytes from 4096 to 1048576 (65536 by default).',
+    'Укажите --max-output-bytes от 4096 до 1048576 (по умолчанию 65536).',
+  ],
+  invalid_path: [
+    'Pass a file path relative to the MCP root; on Windows not a device name such as NUL, a stream (a:b) or a name ending in a dot or space.',
+    'Укажите путь к файлу относительно корня MCP; в Windows — не имя устройства вроде NUL, не поток (a:b) и не имя с точкой или пробелом в конце.',
+  ],
+  invalid_cursor: [
+    'Pass back the `next` value of the previous result unchanged.',
+    'Передайте значение `next` предыдущего результата без изменений.',
+  ],
+  path_outside_root: [
+    'The path leads outside the MCP root or is not a regular file. Choose a file below --root.',
+    'Путь ведёт за корень MCP или указывает не на обычный файл. Выберите файл внутри --root.',
+  ],
+  directory_not_found: [
+    'The target directory does not exist. Create it first.',
+    'Каталог назначения не существует. Сначала создайте его.',
+  ],
+  output_too_large: [
+    'The result does not fit --max-output-bytes even shortened. Ask for less or raise the limit.',
+    'Результат не помещается в --max-output-bytes даже сокращённым. Запросите меньше или увеличьте лимит.',
+  ],
+  max_bytes_exceeded: [
+    'The artifact is larger than maxBytes; nothing was transferred.',
+    'Артефакт больше maxBytes; ничего не передано.',
+  ],
   invalid_order: [
     'Use --order version or --order promoted.',
     'Используйте --order version или --order promoted.',
@@ -211,6 +243,18 @@ const server: Readonly<Record<string, Text>> = {
   'conflict/version_exists': [
     'This package version already exists with other content. Publish a new version.',
     'Такая версия пакета уже есть с другим содержимым. Опубликуйте новую версию.',
+  ],
+  'conflict/events_epoch_changed': [
+    'The server was restored from a backup. Read the current state, then tail again without --after.',
+    'Сервер восстановлен из резервной копии. Прочитайте текущее состояние и запустите tail заново без --after.',
+  ],
+  'gone/events_cursor_expired': [
+    'The cursor is older than the events the server keeps. Read the current state, then tail again from the oldest event.',
+    'Курсор старше хранимых сервером событий. Прочитайте текущее состояние и запустите tail заново с самого старого события.',
+  ],
+  gone: [
+    'The server no longer keeps what was asked for. Read the current state again.',
+    'Сервер больше не хранит запрошенное. Прочитайте текущее состояние заново.',
   ],
   conflict: [
     'The request conflicts with the current state. Read it again and repeat.',

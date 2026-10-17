@@ -3,6 +3,7 @@ export * from './native.js';
 export * from './responses.js';
 export * from './assets.js';
 export * from './artifact-search.js';
+export * from './global-search.js';
 export * from './health.js';
 export * from './identity.js';
 export * from './security-audit.js';
@@ -25,6 +26,8 @@ export * from './cleanup.js';
 export * from './updates.js';
 export * from './backup-wire.js';
 export * from './mirror-api.js';
+export * from './events/catalog.js';
+export * from './events/feed.js';
 export * from './fleet.js';
 export {
   fleetChangeMethod,
@@ -58,6 +61,7 @@ export type {
   ErrorReasonName,
   ErrorDetailResponse,
   NativeErrorResponse,
+  EventWindowResponse,
 } from './errors.js';
 export {
   moduleOperations,

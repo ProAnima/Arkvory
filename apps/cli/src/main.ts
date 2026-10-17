@@ -3,6 +3,7 @@ import { parseArguments } from './arguments.js';
 import { execute } from './commands.js';
 import { failure, failureText } from './errors.js';
 import { help } from './help.js';
+import { runMcp } from './mcp-command.js';
 import { Rendered } from './backup-commands.js';
 
 const controller = new AbortController();
@@ -21,6 +22,9 @@ try {
     console.log(
       JSON.stringify({ version: process.env['ARKVORY_CLI_VERSION'] ?? 'development', api: 'v1' }),
     );
+  } else if (args.words[0] === 'mcp' && !args.options.has('help')) {
+    // The MCP server owns stdout for the protocol until the client closes stdin.
+    await runMcp(args, controller.signal);
   } else if (args.options.has('help') || args.words.length === 0) {
     const content = help(args.language);
     console.log(json ? JSON.stringify({ help: content }) : content);
@@ -36,7 +40,9 @@ try {
     if (result instanceof Rendered) {
       console.log(json ? JSON.stringify(result.json) : result.text(args.language));
       process.exitCode = result.exitCode;
-    } else console.log(JSON.stringify(result, null, json ? undefined : 2));
+    } else if (result !== undefined)
+      // Streaming commands (events tail) print as they go and return nothing.
+      console.log(JSON.stringify(result, null, json ? undefined : 2));
   }
 } catch (error) {
   const result = failure(error, controller.signal.aborted);

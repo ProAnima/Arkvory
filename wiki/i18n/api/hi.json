@@ -176,6 +176,14 @@
       "summary": "आर्टिफ़ैक्ट खोजें",
       "description": "प्रकाशित आर्टिफ़ैक्ट `q` (नाम या किसी वर्तमान मेटाडेटा मान का बड़े-छोटे अक्षर का भेद न करने वाला सबस्ट्रिंग), किसी सटीक वर्तमान `label`, किसी `collection`, और सटीक `metadataKey`/`metadataValue` जोड़ी से खोजता है, जो साथ-साथ दिए जाते हैं; दिए गए सभी फ़िल्टर मेल खाने चाहिए। परिणाम ID के क्रम में 100 के पृष्ठों में आते हैं, प्रत्येक के साथ आकार, निर्माण और प्रकाशन का समय, वर्तमान लेबल और प्रमोशन स्टेज; `after` में `next` देकर आगे बढ़ें। मेटाडेटा और संग्रह नहीं लौटाए जाते: उन्हें `getAnnotations` से पढ़ें।"
     },
+    "searchAllRepositories": {
+      "en": {
+        "summary": "Search all repositories",
+        "description": "Finds published artifacts in every repository where the caller may list artifacts (`artifact.list`), at most the first 1000 by name. Filters: `q` (a case-insensitive substring of the name or of a current metadata value), `repositories` (comma-separated, at most 100), `labels` (comma-separated current labels, at most 8, all required) and `stage`; all given filters must match. A repository the caller cannot list is skipped exactly like one that does not exist. Results are ordered by publication time, newest first, then by repository and ID; each is a `searchArtifacts` item plus its `repository`. Pages hold `limit` items (1–100, default 50); continue with `after` set to `next` and the same filters."
+      },
+      "summary": "सभी रिपॉज़िटरी में खोजें",
+      "description": "उन सभी रिपॉज़िटरी में प्रकाशित आर्टिफ़ैक्ट खोजता है जिनमें कॉलर आर्टिफ़ैक्ट सूचीबद्ध कर सकता है (`artifact.list`), नाम के क्रम में अधिकतम पहली 1000। फ़िल्टर: `q` (नाम में या किसी वर्तमान मेटाडेटा मान में केस-असंवेदी सबस्ट्रिंग), `repositories` (अल्पविराम से अलग, अधिकतम 100), `labels` (अल्पविराम से अलग वर्तमान लेबल, अधिकतम 8, सभी आवश्यक) और `stage`; दिए गए सभी फ़िल्टर मेल खाने चाहिए। जिस रिपॉज़िटरी को कॉलर सूचीबद्ध नहीं कर सकता, उसे ठीक वैसे ही छोड़ दिया जाता है जैसे किसी मौजूद न होने वाली रिपॉज़िटरी को। परिणाम प्रकाशन समय के अनुसार, सबसे नए पहले, फिर रिपॉज़िटरी और ID के अनुसार क्रमबद्ध होते हैं; हर परिणाम `searchArtifacts` का एक आइटम और उसकी `repository` है। पृष्ठों में `limit` आइटम होते हैं (1–100, डिफ़ॉल्ट 50); आगे के लिए `after` को `next` पर सेट करें और वही फ़िल्टर रखें।"
+    },
     "getCatalogAudit": {
       "en": {
         "summary": "Read the catalog audit of a repository",
@@ -1103,6 +1111,22 @@
       },
       "summary": "साइटों का अवलोकन पढ़ें",
       "description": "प्रबंधित साइटों और इस इंस्टॉलेशन की चेतावनियाँ, सबसे गंभीर पहले (`critical`, `warning`, `info`), और उनके बीच मिरर संबंध। पिछली पृष्ठभूमि रीड से बनता है, अधिकतम हर 5 सेकंड में एक बार। जिस स्रोत के पते पर कोई प्रबंधित साइट उत्तर नहीं देती वह `external:<origin>` है; यह इंस्टॉलेशन `self` है और इसकी ओर के संबंध केवल `ARKVORY_SITE_URL` सेट होने पर दिखते हैं। केवल लेखन प्रक्रिया उत्तर देती है।"
+    },
+    "listEvents": {
+      "en": {
+        "summary": "Read the events of the installation",
+        "description": "Returns, oldest first, up to `limit` events (1–500, default 100) after the cursor `after`, as CloudEvents 1.0: publications, deletions, file revisions, package registrations, annotations, attachments, stages, promotions, image, npm and Git LFS changes of every repository the caller may list (`artifact.list`). Without `after` the feed starts at the oldest kept event. Pass `next` as `after` to continue: it also moves past events the caller may not see, at most 5000 per request. `types` keeps the named types or prefixes such as `artifact.*`, `repository` one repository. A cursor older than `oldest` answers 410 `events_cursor_expired`; a cursor of another `epoch` (the server was restored from a backup) answers 409 `events_epoch_changed`; both carry the current `epoch`, `oldest` and `head` in `events`. Deduplicate by `id`; an event is a hint, read the current state through the ordinary routes."
+      },
+      "summary": "इंस्टॉलेशन के इवेंट पढ़ें",
+      "description": "कर्सर `after` के बाद के अधिकतम `limit` इवेंट (1–500, डिफ़ॉल्ट 100), सबसे पुराना पहले, CloudEvents 1.0 के रूप में लौटाता है: हर उस रिपॉज़िटरी के प्रकाशन, हटाना, फ़ाइल रिविज़न, पैकेज पंजीकरण, एनोटेशन, अटैचमेंट, स्टेज, प्रमोशन तथा इमेज, npm और Git LFS के परिवर्तन, जिसकी सूची कॉलर देख सकता है (`artifact.list`)। `after` के बिना फ़ीड रखे गए सबसे पुराने इवेंट से शुरू होती है। आगे पढ़ने के लिए `next` को `after` में दें: यह उन इवेंट के पार भी बढ़ता है जिन्हें कॉलर नहीं देख सकता, प्रति अनुरोध अधिकतम 5000। `types` नामित टाइप या `artifact.*` जैसे उपसर्ग रखता है, `repository` एक रिपॉज़िटरी। `oldest` से पुराने कर्सर को 410 `events_cursor_expired` मिलता है; दूसरे `epoch` के कर्सर को (सर्वर बैकअप से पुनर्स्थापित हुआ) 409 `events_epoch_changed`; दोनों `events` में वर्तमान `epoch`, `oldest` और `head` देते हैं। `id` से डुप्लिकेट हटाएँ; इवेंट एक संकेत है, वर्तमान स्थिति सामान्य रूट से पढ़ें।"
+    },
+    "listEventTypes": {
+      "en": {
+        "summary": "List the event types",
+        "description": "Returns every event type this server writes: name, `schemaVersion`, scope, the permission a reader needs, the partition that keeps its order and the JSON Schema of `data`. The CloudEvents `type` is `arkvory.<name>.v<schemaVersion>`."
+      },
+      "summary": "इवेंट टाइप सूचीबद्ध करें",
+      "description": "यह सर्वर जो भी इवेंट टाइप लिखता है, सब लौटाता है: नाम, `schemaVersion`, दायरा, पाठक को चाहिए अनुमति, क्रम बनाए रखने वाला पार्टिशन और `data` का JSON Schema। CloudEvents का `type` `arkvory.<name>.v<schemaVersion>` है।"
     }
   },
   "errors": {
@@ -1118,7 +1142,8 @@
       "unavailable": "कोई निर्भरता अभी उपलब्ध नहीं है; Retry-After के बाद दोहराएँ।",
       "rate_limited": "बहुत अधिक प्रयास; Retry-After तक प्रतीक्षा करें।",
       "read_only": "यह सर्वर या गेटवे परिवर्तन स्वीकार नहीं करता (रीड गेटवे या मिरर)।",
-      "internal": "सर्वर की अप्रत्याशित खराबी; अनुरोध ID से सहायता टीम उसे खोज पाती है। आँख मूँदकर दोबारा न भेजें।"
+      "internal": "सर्वर की अप्रत्याशित खराबी; अनुरोध ID से सहायता टीम उसे खोज पाती है। आँख मूँदकर दोबारा न भेजें।",
+      "gone": "अनुरोध जिसका नाम लेता है, वह अब नहीं रखा जाता; वर्तमान स्थिति फिर से पढ़ें।"
     },
     "reasons": {
       "validation": "कोई फ़ील्ड अनुपस्थित है या उसका मान नियमों से बाहर है; details फ़ील्ड का नाम बताते हैं।",
@@ -1172,7 +1197,9 @@
       "registration_attempts": "पंजीकरण के बहुत अधिक प्रयास; प्रतीक्षा करें।",
       "password_attempts": "पासवर्ड के बहुत अधिक प्रयास; प्रतीक्षा करें।",
       "feedback_attempts": "बहुत अधिक फ़ीडबैक रिपोर्ट; प्रतीक्षा करें।",
-      "replication_degraded": "HA क्लस्टर में लिखने के लिए आवश्यक से कम पूर्ण प्रतियाँ हैं, इसलिए परिवर्तन की पुष्टि नहीं हुई; Retry-After के बाद दोबारा प्रयास करें। डाउनलोड काम करते रहते हैं।"
+      "replication_degraded": "HA क्लस्टर में लिखने के लिए आवश्यक से कम पूर्ण प्रतियाँ हैं, इसलिए परिवर्तन की पुष्टि नहीं हुई; Retry-After के बाद दोबारा प्रयास करें। डाउनलोड काम करते रहते हैं।",
+      "events_cursor_expired": "इवेंट कर्सर सर्वर द्वारा रखे गए सबसे पुराने इवेंट से पुराना है; वर्तमान स्थिति पढ़ें, फिर `oldest` से जारी रखें।",
+      "events_epoch_changed": "सर्वर को बैकअप से पुनर्स्थापित किया गया, इसलिए उसके इवेंट ने नया युग (epoch) शुरू किया; वर्तमान स्थिति पढ़ें, फिर नए युग में जारी रखें।"
     }
   },
   "fields": {
@@ -1194,6 +1221,10 @@
     "Snapshot time T; the age of a point counts from T.": "स्नैपशॉट समय T; बिंदु की आयु T से गिनी जाती है।",
     "Start of execution, or the request time while queued.": "निष्पादन का आरंभ, या कतार में रहते समय अनुरोध का समय।",
     "Upload reservation time": "अपलोड आरक्षण का समय",
-    "Vault is encrypted; null when unknown or not connected.": "वॉल्ट एन्क्रिप्टेड है या नहीं; अज्ञात या कनेक्ट न होने पर null।"
+    "Vault is encrypted; null when unknown or not connected.": "वॉल्ट एन्क्रिप्टेड है या नहीं; अज्ञात या कनेक्ट न होने पर null।",
+    "Event id, `<epoch>:<position>`; deduplicate by it": "इवेंट ID, `<epoch>:<position>`; इसी से डुप्लिकेट हटाएँ",
+    "Artifact id, or the path of a file event": "आर्टिफ़ैक्ट ID, या फ़ाइल इवेंट में पथ",
+    "`repository:<repository>`; events of one partition keep their commit order": "`repository:<repository>`; एक पार्टिशन के इवेंट अपना कमिट क्रम बनाए रखते हैं",
+    "Data of the type; its JSON Schema is in the type list": "टाइप का डेटा; उसका JSON Schema टाइप सूची में है"
   }
 }
