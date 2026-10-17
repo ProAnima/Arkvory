@@ -7,25 +7,63 @@ function symbol(node, source) {
   return '<anonymous>';
 }
 /**
- * Files of the product that may call import() with a computed specifier, and why. Every other
- * import of code is a literal that the build and the dependency rules see. The loader of
- * verified module packages (ADR 0078, 3.3) joins this list with stage X4 of ADR 0079.
+ * Files of the product that may load code by a computed name, and why. Every other import of
+ * code is a literal that the build and the dependency rules see. The loader of verified module
+ * packages (ADR 0078, 3.3) joins this list with stage X4 of ADR 0079.
+ *
+ * The rule sees `import()` and `require()` calls, `node:module` (createRequire, register) and
+ * the text `import(` inside string literals, which is code for another process. It cannot see
+ * code assembled from fragments of strings, `process.dlopen`, or code run through `eval`,
+ * `new Function` or a Worker with `eval: true`; review covers those.
  */
 export const COMPUTED_IMPORTS = {
   // The service launcher and the management entry start the installed core release (ADR 0031),
   // whose files were verified against the signed release manifest when staged (ADR 0060).
   'apps/deploy/src/runtime.ts': 'core release',
   'apps/deploy/src/manage.ts': 'core release',
+  // Scripts sent to `node -e` on a remote host import its installed core release, as above.
+  'apps/deploy/src/remote-workflow.ts': 'core release, in scripts run on the remote host',
 };
 
+const NODE_MODULE = new Set(['module', 'node:module']);
+
+function literal(node) {
+  return node !== undefined && ts.isStringLiteralLike(node);
+}
+
+/** Why `node` loads code by a computed name, or null. */
+function computedLoad(node) {
+  if (ts.isCallExpression(node)) {
+    const [first, ...rest] = node.arguments;
+    const callee = node.expression;
+    const dynamic = callee.kind === ts.SyntaxKind.ImportKeyword;
+    const required = ts.isIdentifier(callee) && callee.text === 'require';
+    if ((dynamic || required) && !(literal(first) && rest.length === 0))
+      return `${dynamic ? 'import()' : 'require()'} with a computed specifier`;
+    if ((dynamic || required) && NODE_MODULE.has(first.text))
+      return 'node:module (createRequire, register) loads code by a computed specifier';
+  }
+  if (
+    (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) &&
+    node.moduleSpecifier !== undefined &&
+    literal(node.moduleSpecifier) &&
+    NODE_MODULE.has(node.moduleSpecifier.text)
+  )
+    return 'node:module (createRequire, register) loads code by a computed specifier';
+  if (
+    (ts.isStringLiteral(node) ||
+      ts.isNoSubstitutionTemplateLiteral(node) ||
+      ts.isTemplateLiteralToken(node)) &&
+    /\bimport\s*\(/.test(node.text)
+  )
+    return 'import() in a string (code for another process) is a computed specifier';
+  return null;
+}
+
 function computedImport(file, node) {
-  return (
-    /^(apps|packages)\/[^/]+\/src\//.test(file) &&
-    !Object.hasOwn(COMPUTED_IMPORTS, file) &&
-    ts.isCallExpression(node) &&
-    node.expression.kind === ts.SyntaxKind.ImportKeyword &&
-    !(node.arguments.length === 1 && ts.isStringLiteralLike(node.arguments[0]))
-  );
+  return /^(apps|packages)\/[^/]+\/src\//.test(file) && !Object.hasOwn(COMPUTED_IMPORTS, file)
+    ? computedLoad(node)
+    : null;
 }
 
 export function analyzeSource(file, text) {
@@ -77,10 +115,9 @@ export function analyzeSource(file, text) {
     });
   }
   function inspect(node) {
-    if (computedImport(file, node))
-      problems.push(
-        `${file}: import() with a computed specifier is reserved for the loaders of COMPUTED_IMPORTS (ADR 0078)`,
-      );
+    const load = computedImport(file, node);
+    if (load !== null)
+      problems.push(`${file}: ${load}; reserved for the loaders of COMPUTED_IMPORTS (ADR 0078)`);
     if (ts.isClassDeclaration(node) || ts.isClassExpression(node)) measure(node, 'class');
     if (ts.isFunctionLike(node) && node.body) measure(node, 'function');
     if (/^packages\/(domain|application|extension-api)\//.test(file)) {
