@@ -57,7 +57,7 @@ export function analyzeSource(file, text) {
   function inspect(node) {
     if (ts.isClassDeclaration(node) || ts.isClassExpression(node)) measure(node, 'class');
     if (ts.isFunctionLike(node) && node.body) measure(node, 'function');
-    if (/^packages\/(domain|application)\//.test(file)) {
+    if (/^packages\/(domain|application|extension-api)\//.test(file)) {
       const impureCall =
         ts.isCallExpression(node) &&
         ['Date.now', 'Math.random', 'performance.now'].includes(node.expression.getText(source));

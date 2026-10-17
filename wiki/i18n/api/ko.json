@@ -176,6 +176,14 @@
       "summary": "아티팩트 검색",
       "description": "게시된 아티팩트를 다음 조건으로 찾습니다. `q`(이름 또는 현재 메타데이터 값에 포함된 부분 문자열, 대소문자 구분 없음), 현재 `label`과 정확히 일치하는 값, `collection`, 함께 지정해야 하는 `metadataKey`/`metadataValue` 쌍입니다. 지정한 필터는 모두 일치해야 합니다. 결과는 ID 순으로 100개씩 페이지로 나뉘고, 각 항목에 크기, 생성·게시 시각, 현재 레이블, 승격 스테이지가 있으며 `after`에 `next` 값을 넣어 이어서 조회합니다. 메타데이터와 컬렉션은 반환되지 않으므로 `getAnnotations`로 읽습니다."
     },
+    "searchAllRepositories": {
+      "en": {
+        "summary": "Search all repositories",
+        "description": "Finds published artifacts in every repository where the caller may list artifacts (`artifact.list`), at most the first 1000 by name. Filters: `q` (a case-insensitive substring of the name or of a current metadata value), `repositories` (comma-separated, at most 100), `labels` (comma-separated current labels, at most 8, all required) and `stage`; all given filters must match. A repository the caller cannot list is skipped exactly like one that does not exist. Results are ordered by publication time, newest first, then by repository and ID; each is a `searchArtifacts` item plus its `repository`. Pages hold `limit` items (1–100, default 50); continue with `after` set to `next` and the same filters."
+      },
+      "summary": "모든 저장소에서 검색",
+      "description": "호출자가 아티팩트를 나열할 수 있는(`artifact.list`) 모든 저장소에서, 이름순으로 최대 처음 1000개까지, 게시된 아티팩트를 찾습니다. 필터: `q`(이름 또는 현재 메타데이터 값에서 대소문자를 구분하지 않는 부분 문자열), `repositories`(쉼표로 구분, 최대 100개), `labels`(쉼표로 구분한 현재 레이블, 최대 8개, 모두 필요), `stage`; 지정한 필터는 모두 일치해야 합니다. 호출자가 나열할 수 없는 저장소는 존재하지 않는 저장소와 똑같이 건너뜁니다. 결과는 게시 시각 기준 최신순, 그다음 저장소와 ID 순으로 정렬되며, 각 항목은 `searchArtifacts` 항목에 `repository`가 더해진 것입니다. 페이지에는 `limit`개 항목(1–100, 기본값 50)이 들어 있으며, `after`를 `next`로 설정하고 같은 필터로 계속합니다."
+    },
     "getCatalogAudit": {
       "en": {
         "summary": "Read the catalog audit of a repository",
@@ -967,6 +975,14 @@
       },
       "summary": "플릿 콘솔용으로 이 사이트 가져오기",
       "description": "이 설치를 플릿의 한 사이트로 반환합니다(ADR 0077): 이름, 버전, 스키마와 역할, 사용 가능 여부와 쓰기 가능 여부, HA 사본과 노드, 임대 기준의 읽기 게이트웨이, 각 미러와 가져오기의 단계, 마지막 동기화 및 `lagChanges`(아직 적용되지 않은 원본 변경), 업데이트 에이전트 상태와 다운로드 대기열. 사이트의 전역 관리자나 페어링된 컨트롤러만 읽을 수 있습니다."
+    },
+    "getSystemModules": {
+      "en": {
+        "summary": "List the modules of this installation",
+        "description": "Returns every module this installation plans, in `id` order: `id`, `version`, the extension point (`kind`), `source` (`builtin` for modules of the core), whether it is part of the free core (`core`, never disabled) and whether it is `enabled`, the processes it runs in (`roles`), whether the answering process runs it (`running`) and its `health` there (`ok`, `degraded` or `failed` with a code; null when it does not run there). `fingerprint` is the SHA-256 of the plan and is equal on every process of the installation; `extensionApi` is the version of the module contract of this core. Settings, paths and secrets are never returned. Only the global administrator may read it."
+      },
+      "summary": "이 설치의 모듈 목록 조회",
+      "description": "이 설치가 계획한 모든 모듈을 `id` 순서로 반환합니다: `id`, `version`, 확장 지점(`kind`), `source`(코어 모듈은 `builtin`), 무료 코어에 속하는지(`core`, 비활성화 불가)와 활성화 여부(`enabled`), 실행되는 프로세스(`roles`), 응답한 프로세스가 실행하는지(`running`)와 그 프로세스에서의 상태(`health`: `ok`, `degraded` 또는 코드가 있는 `failed`, 그곳에서 실행되지 않으면 null). `fingerprint`는 계획의 SHA-256이며 설치의 모든 프로세스에서 같습니다. `extensionApi`는 이 코어의 모듈 계약 버전입니다. 설정, 경로, 비밀은 반환하지 않습니다. 전역 관리자만 읽을 수 있습니다."
     },
     "createFleetPairing": {
       "en": {

@@ -77,16 +77,17 @@ arkvoryctl doctor
 
 ### 検出とカタログ {#discovery-and-catalog}
 
-| コマンド                                                                   | 結果                                   |
-| -------------------------------------------------------------------------- | -------------------------------------- |
-| `doctor`                                                                   | 接続、機能、権限                       |
-| `repositories [--after CURSOR]`                                            | キーから見えるリポジトリ               |
-| `operations [--after CURSOR]`                                              | リポジトリで利用できるAPI操作          |
-| `list [--after CURSOR]`                                                    | リポジトリのアーティファクト           |
-| `search [--query TEXT] [--label TAG] [--collection NAME] [--after CURSOR]` | 名前とメタデータのテキストで検索       |
-| `search --metadata-key KEY --metadata-value VALUE`                         | メタデータの完全一致（両方を指定）     |
-| `inspect ID`                                                               | 1つのアーティファクトのメタデータ      |
-| `storage usage` / `storage policy`                                         | リポジトリの使用量とストレージポリシー |
+| コマンド                                                                                     | 結果                                               |
+| -------------------------------------------------------------------------------------------- | -------------------------------------------------- |
+| `doctor`                                                                                     | 接続、機能、権限                                   |
+| `repositories [--after CURSOR]`                                                              | キーから見えるリポジトリ                           |
+| `operations [--after CURSOR]`                                                                | リポジトリで利用できるAPI操作                      |
+| `list [--after CURSOR]`                                                                      | リポジトリのアーティファクト                       |
+| `search [--query TEXT] [--label TAG] [--collection NAME] [--after CURSOR]`                   | 名前とメタデータのテキストで検索                   |
+| `search --metadata-key KEY --metadata-value VALUE`                                           | メタデータの完全一致（両方を指定）                 |
+| `search --all [--query TEXT] [--repositories R1,R2] [--label L1,L2] [--stage S] [--limit N]` | キーが一覧表示できるすべてのリポジトリ（新しい順） |
+| `inspect ID`                                                                                 | 1つのアーティファクトのメタデータ                  |
+| `storage usage` / `storage policy`                                                           | リポジトリの使用量とストレージポリシー             |
 
 ページは`next`を返します。次のページを読むには、`--after`にその値を渡します。
 
@@ -235,6 +236,21 @@ pipeline {
 ```
 
 TeamCity や Buildkite など、ほかのシステムでも同じです。そのシークレットストアから `ARKVORY_BASE_URL` と `ARKVORY_TOKEN` を設定し、コマンドを実行してください。結果は[終了コード](#exit-codes)で判断してください。
+
+## AI エージェント（MCP） {#mcp}
+
+`arkvoryctl mcp` を使うと、Claude Code など Model Context Protocol に対応した AI エージェントのクライアントが Arkvory を扱えます。クライアントがコマンドを起動し、stdin と stdout で通信します。ネットワークポートは開きません。呼び出しにはプロファイルまたは環境のキーが使われ、サーバーは他のコマンドと同様にその権限を確認します。
+
+```bash
+claude mcp add arkvory -- arkvoryctl mcp --profile production --root ~/work
+```
+
+- **読み取り専用。** ツールはリポジトリの一覧、全リポジトリの検索、アーティファクト、パッケージ、パス別ファイル、変更フィード、インストールの状態の読み取り、アーティファクトのダウンロードを行います。アップロード、変更、削除はできません。キーが使えないツールは提供されません。
+- **ファイル。** ダウンロードは `--root`（既定は現在のディレクトリ）の下にのみ書き込みます。サイズと SHA-256 の検証後にのみファイルが現れます。既存のファイルは、エージェントが求めた場合にのみ置き換えられます。
+- **出力。** 1 つの結果は最大 `--max-output-bytes`（既定 64 KiB、最大 1 MiB）かつ 100 件です。続きは `next` を `after` として渡します。キーとダウンロードリンクが結果に現れることはありません。
+- **キー。** 必要なリポジトリだけを読み取れる専用のサービスキーをエージェントに渡してください。キーをチャットに貼り付けないでください。
+- **データ。** 結果の名前、ラベル、メタデータは他の人が書いたものです。エージェントはそれらを指示ではなくデータとして扱う必要があります。
+- クライアントは MCP 2025-06-18 以降に対応している必要があります。
 
 ## 出力 {#output}
 

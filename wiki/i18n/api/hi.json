@@ -176,6 +176,14 @@
       "summary": "आर्टिफ़ैक्ट खोजें",
       "description": "प्रकाशित आर्टिफ़ैक्ट `q` (नाम या किसी वर्तमान मेटाडेटा मान का बड़े-छोटे अक्षर का भेद न करने वाला सबस्ट्रिंग), किसी सटीक वर्तमान `label`, किसी `collection`, और सटीक `metadataKey`/`metadataValue` जोड़ी से खोजता है, जो साथ-साथ दिए जाते हैं; दिए गए सभी फ़िल्टर मेल खाने चाहिए। परिणाम ID के क्रम में 100 के पृष्ठों में आते हैं, प्रत्येक के साथ आकार, निर्माण और प्रकाशन का समय, वर्तमान लेबल और प्रमोशन स्टेज; `after` में `next` देकर आगे बढ़ें। मेटाडेटा और संग्रह नहीं लौटाए जाते: उन्हें `getAnnotations` से पढ़ें।"
     },
+    "searchAllRepositories": {
+      "en": {
+        "summary": "Search all repositories",
+        "description": "Finds published artifacts in every repository where the caller may list artifacts (`artifact.list`), at most the first 1000 by name. Filters: `q` (a case-insensitive substring of the name or of a current metadata value), `repositories` (comma-separated, at most 100), `labels` (comma-separated current labels, at most 8, all required) and `stage`; all given filters must match. A repository the caller cannot list is skipped exactly like one that does not exist. Results are ordered by publication time, newest first, then by repository and ID; each is a `searchArtifacts` item plus its `repository`. Pages hold `limit` items (1–100, default 50); continue with `after` set to `next` and the same filters."
+      },
+      "summary": "सभी रिपॉज़िटरी में खोजें",
+      "description": "उन सभी रिपॉज़िटरी में प्रकाशित आर्टिफ़ैक्ट खोजता है जिनमें कॉलर आर्टिफ़ैक्ट सूचीबद्ध कर सकता है (`artifact.list`), नाम के क्रम में अधिकतम पहली 1000। फ़िल्टर: `q` (नाम में या किसी वर्तमान मेटाडेटा मान में केस-असंवेदी सबस्ट्रिंग), `repositories` (अल्पविराम से अलग, अधिकतम 100), `labels` (अल्पविराम से अलग वर्तमान लेबल, अधिकतम 8, सभी आवश्यक) और `stage`; दिए गए सभी फ़िल्टर मेल खाने चाहिए। जिस रिपॉज़िटरी को कॉलर सूचीबद्ध नहीं कर सकता, उसे ठीक वैसे ही छोड़ दिया जाता है जैसे किसी मौजूद न होने वाली रिपॉज़िटरी को। परिणाम प्रकाशन समय के अनुसार, सबसे नए पहले, फिर रिपॉज़िटरी और ID के अनुसार क्रमबद्ध होते हैं; हर परिणाम `searchArtifacts` का एक आइटम और उसकी `repository` है। पृष्ठों में `limit` आइटम होते हैं (1–100, डिफ़ॉल्ट 50); आगे के लिए `after` को `next` पर सेट करें और वही फ़िल्टर रखें।"
+    },
     "getCatalogAudit": {
       "en": {
         "summary": "Read the catalog audit of a repository",
@@ -967,6 +975,14 @@
       },
       "summary": "फ़्लीट कंसोल के लिए यह साइट पाएँ",
       "description": "इस इंस्टॉलेशन को फ़्लीट की एक साइट के रूप में लौटाता है (ADR 0077): नाम, संस्करण, स्कीमा और भूमिका, उपलब्ध और लिखने योग्य है या नहीं, HA प्रतियाँ और नोड, लीज़ के आधार पर रीड गेटवे, हर मिरर और इम्पोर्ट उसके चरण, अंतिम सिंक और `lagChanges` (स्रोत के अभी लागू न हुए बदलाव) के साथ, अपडेट एजेंट की स्थिति और डाउनलोड कतार। केवल साइट का ग्लोबल व्यवस्थापक या उससे युग्मित नियंत्रक इसे पढ़ सकता है।"
+    },
+    "getSystemModules": {
+      "en": {
+        "summary": "List the modules of this installation",
+        "description": "Returns every module this installation plans, in `id` order: `id`, `version`, the extension point (`kind`), `source` (`builtin` for modules of the core), whether it is part of the free core (`core`, never disabled) and whether it is `enabled`, the processes it runs in (`roles`), whether the answering process runs it (`running`) and its `health` there (`ok`, `degraded` or `failed` with a code; null when it does not run there). `fingerprint` is the SHA-256 of the plan and is equal on every process of the installation; `extensionApi` is the version of the module contract of this core. Settings, paths and secrets are never returned. Only the global administrator may read it."
+      },
+      "summary": "इस इंस्टॉलेशन के मॉड्यूल की सूची",
+      "description": "यह इंस्टॉलेशन जिन मॉड्यूल की योजना बनाता है, उन सभी को `id` के क्रम में लौटाता है: `id`, `version`, एक्सटेंशन पॉइंट (`kind`), `source` (कोर के मॉड्यूल के लिए `builtin`), क्या वह मुफ़्त कोर का हिस्सा है (`core`, कभी बंद नहीं होता) और क्या वह सक्षम है (`enabled`), वे प्रोसेस जिनमें वह चलता है (`roles`), क्या जवाब देने वाला प्रोसेस उसे चलाता है (`running`) और वहाँ उसकी स्थिति (`health`: `ok`, `degraded` या कोड के साथ `failed`; वहाँ न चले तो null)। `fingerprint` योजना का SHA-256 है और इंस्टॉलेशन के हर प्रोसेस में एक जैसा होता है; `extensionApi` इस कोर के मॉड्यूल अनुबंध का संस्करण है। सेटिंग्स, पाथ और सीक्रेट कभी नहीं लौटाए जाते। केवल ग्लोबल एडमिनिस्ट्रेटर पढ़ सकता है।"
     },
     "createFleetPairing": {
       "en": {

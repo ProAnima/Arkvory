@@ -15,6 +15,10 @@
       "allowed": []
     },
     {
+      "path": "packages/extension-api",
+      "allowed": []
+    },
+    {
       "path": "packages/application",
       "allowed": ["packages/domain"]
     },
@@ -36,7 +40,8 @@
         "packages/application",
         "packages/domain",
         "packages/contracts",
-        "packages/infrastructure"
+        "packages/infrastructure",
+        "packages/extension-api"
       ]
     },
     {

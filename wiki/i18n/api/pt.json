@@ -176,6 +176,14 @@
       "summary": "Pesquisar artefatos",
       "description": "Encontra artefatos publicados por `q` (uma substring, sem distinção entre maiúsculas e minúsculas, do nome ou de um valor de metadados atual), um `label` atual exato, uma `collection` e um par exato `metadataKey`/`metadataValue`, que devem ser informados juntos; todos os filtros informados precisam coincidir. Os resultados vêm em páginas de 100 ordenadas por ID, cada um com tamanho, datas de criação e de publicação, rótulos atuais e estágios de promoção; continue com `after` definido como `next`. Metadados e coleções não são retornados: leia-os com `getAnnotations`."
     },
+    "searchAllRepositories": {
+      "en": {
+        "summary": "Search all repositories",
+        "description": "Finds published artifacts in every repository where the caller may list artifacts (`artifact.list`), at most the first 1000 by name. Filters: `q` (a case-insensitive substring of the name or of a current metadata value), `repositories` (comma-separated, at most 100), `labels` (comma-separated current labels, at most 8, all required) and `stage`; all given filters must match. A repository the caller cannot list is skipped exactly like one that does not exist. Results are ordered by publication time, newest first, then by repository and ID; each is a `searchArtifacts` item plus its `repository`. Pages hold `limit` items (1–100, default 50); continue with `after` set to `next` and the same filters."
+      },
+      "summary": "Pesquisar em todos os repositórios",
+      "description": "Encontra artefatos publicados em todos os repositórios em que quem chama pode listar artefatos (`artifact.list`), no máximo os 1000 primeiros por nome. Filtros: `q` (substring sem diferenciar maiúsculas no nome ou em um valor atual de metadados), `repositories` (separados por vírgula, no máximo 100), `labels` (rótulos atuais separados por vírgula, no máximo 8, todos obrigatórios) e `stage`; todos os filtros informados precisam corresponder. Um repositório que quem chama não pode listar é ignorado exatamente como um que não existe. Os resultados são ordenados pela data de publicação, os mais recentes primeiro, depois por repositório e ID; cada um é um item de `searchArtifacts` com seu `repository`. As páginas têm `limit` itens (1–100, padrão 50); continue com `after` igual a `next` e os mesmos filtros."
+    },
     "getCatalogAudit": {
       "en": {
         "summary": "Read the catalog audit of a repository",
@@ -967,6 +975,14 @@
       },
       "summary": "Obter este site para o console da frota",
       "description": "Retorna esta instalação como um site de uma frota (ADR 0077): nome, versão, esquema e papel, se está disponível e aceita gravações, as cópias e nós de HA, os gateways de leitura pelas suas concessões, cada espelho e importação com fase, última sincronização e `lagChanges` (alterações da origem ainda não aplicadas), o estado do agente de atualização e a fila de downloads. Só o administrador global do site ou um controlador pareado pode lê-lo."
+    },
+    "getSystemModules": {
+      "en": {
+        "summary": "List the modules of this installation",
+        "description": "Returns every module this installation plans, in `id` order: `id`, `version`, the extension point (`kind`), `source` (`builtin` for modules of the core), whether it is part of the free core (`core`, never disabled) and whether it is `enabled`, the processes it runs in (`roles`), whether the answering process runs it (`running`) and its `health` there (`ok`, `degraded` or `failed` with a code; null when it does not run there). `fingerprint` is the SHA-256 of the plan and is equal on every process of the installation; `extensionApi` is the version of the module contract of this core. Settings, paths and secrets are never returned. Only the global administrator may read it."
+      },
+      "summary": "Listar os módulos desta instalação",
+      "description": "Retorna cada módulo planejado por esta instalação, em ordem de `id`: `id`, `version`, o ponto de extensão (`kind`), `source` (`builtin` para módulos do núcleo), se faz parte do núcleo gratuito (`core`, nunca desativado) e se está habilitado (`enabled`), os processos em que roda (`roles`), se o processo que responde o executa (`running`) e seu estado nele (`health`: `ok`, `degraded` ou `failed` com um código; null quando não roda ali). `fingerprint` é o SHA-256 do plano e é igual em todos os processos da instalação; `extensionApi` é a versão do contrato de módulos deste núcleo. Configurações, caminhos e segredos nunca são retornados. Somente o administrador global pode ler."
     },
     "createFleetPairing": {
       "en": {

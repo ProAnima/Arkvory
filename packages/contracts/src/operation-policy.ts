@@ -12,6 +12,7 @@ import { fleetOperations } from './fleet-api.js';
 import { downloadSettingsOperations } from './download-settings-api.js';
 import { siteChangeOperations } from './site-changes-api.js';
 import { eventOperations } from './events/feed.js';
+import { moduleOperations } from './modules-api.js';
 import type { BackupPermissionName } from './backup-wire.js';
 import type { servicePermissionNames } from './service-api.js';
 import type { AdministrationPermission } from './delegation-api.js';
@@ -108,6 +109,7 @@ for (const [tag, operations] of [
   ['Downloads', downloadSettingsOperations],
   ['Changes', siteChangeOperations],
   ['Feedback', feedbackOperations],
+  ['System', moduleOperations],
 ] as const)
   for (const [path, method, id, kind, retry] of operations)
     add(`/api/v1${path}`, method, id, tag, { kind }, retry);
@@ -125,6 +127,8 @@ add(
   },
   'read',
 );
+// ADR 0081 (A1): the handler filters repositories by artifact.list; unreadable ones are skipped.
+add('/api/v1/search', 'get', 'searchAllRepositories', 'Catalog', { kind: 'authenticated' }, 'read');
 add(
   '/api/v1/mirrors',
   'get',

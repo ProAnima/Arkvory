@@ -26,6 +26,7 @@ export type { CreateTokenOptions } from './identity-api.js';
 export { BackupApi } from './backup-api.js';
 export { FleetApi } from './fleet-api.js';
 export { DownloadSettingsApi } from './download-settings-api.js';
+export { SystemApi } from './system-api.js';
 export { SiteChangesApi, type SiteChanges } from './site-changes-api.js';
 export { FeedbackApi } from './feedback-api.js';
 export { EventsApi } from './events-api.js';

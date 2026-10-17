@@ -81,16 +81,17 @@ Chaque option ne peut apparaître qu’une fois. Les options inconnues sont refu
 
 ### Découverte et catalogue {#discovery-and-catalog}
 
-| Commande                                                                   | Résultat                                                  |
-| -------------------------------------------------------------------------- | --------------------------------------------------------- |
-| `doctor`                                                                   | Connexion, fonctionnalités et autorisations               |
-| `repositories [--after CURSOR]`                                            | Dépôts visibles avec la clé                               |
-| `operations [--after CURSOR]`                                              | Opérations d’API disponibles dans le dépôt                |
-| `list [--after CURSOR]`                                                    | Artefacts du dépôt                                        |
-| `search [--query TEXT] [--label TAG] [--collection NAME] [--after CURSOR]` | Recherche par nom et par texte de métadonnées             |
-| `search --metadata-key KEY --metadata-value VALUE`                         | Correspondance exacte des métadonnées (indiquez les deux) |
-| `inspect ID`                                                               | Métadonnées d’un artefact                                 |
-| `storage usage` / `storage policy`                                         | Utilisation du dépôt et politique de stockage             |
+| Commande                                                                                     | Résultat                                                         |
+| -------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| `doctor`                                                                                     | Connexion, fonctionnalités et autorisations                      |
+| `repositories [--after CURSOR]`                                                              | Dépôts visibles avec la clé                                      |
+| `operations [--after CURSOR]`                                                                | Opérations d’API disponibles dans le dépôt                       |
+| `list [--after CURSOR]`                                                                      | Artefacts du dépôt                                               |
+| `search [--query TEXT] [--label TAG] [--collection NAME] [--after CURSOR]`                   | Recherche par nom et par texte de métadonnées                    |
+| `search --metadata-key KEY --metadata-value VALUE`                                           | Correspondance exacte des métadonnées (indiquez les deux)        |
+| `search --all [--query TEXT] [--repositories R1,R2] [--label L1,L2] [--stage S] [--limit N]` | Tous les dépôts que la clé peut lister, les plus récents d’abord |
+| `inspect ID`                                                                                 | Métadonnées d’un artefact                                        |
+| `storage usage` / `storage policy`                                                           | Utilisation du dépôt et politique de stockage                    |
 
 Les pages renvoient `next`. Transmettez-le avec `--after` pour lire la page suivante.
 
@@ -239,6 +240,21 @@ pipeline {
 ```
 
 Tout autre système, comme TeamCity ou Buildkite, fonctionne de la même façon : définissez `ARKVORY_BASE_URL` et `ARKVORY_TOKEN` depuis son coffre de secrets et lancez la commande. Décidez selon le [code de sortie](#exit-codes).
+
+## Agents d’IA (MCP) {#mcp}
+
+`arkvoryctl mcp` permet à un client d’agent d’IA qui parle le Model Context Protocol, comme Claude Code, de travailler avec Arkvory. Le client lance la commande et dialogue avec elle par stdin et stdout ; aucun port réseau n’est ouvert. Les appels utilisent la clé du profil ou de l’environnement, et le serveur vérifie ses permissions comme pour toute autre commande.
+
+```bash
+claude mcp add arkvory -- arkvoryctl mcp --profile production --root ~/work
+```
+
+- **Lecture seule.** Les outils listent les dépôts, recherchent dans tous, lisent les artefacts, les paquets, les fichiers par chemin, le flux des changements et l’état de l’installation, et téléchargent un artefact. Ils ne peuvent rien téléverser, modifier ni supprimer. Les outils que la clé ne peut pas utiliser ne sont pas proposés.
+- **Fichiers.** Un téléchargement n’écrit que sous `--root` (par défaut, le répertoire courant). Le fichier n’apparaît qu’après vérification de sa taille et de son SHA-256 ; un fichier existant n’est remplacé que si l’agent le demande.
+- **Sortie.** Un résultat fait au plus `--max-output-bytes` (64 Kio par défaut, jusqu’à 1 Mio) et 100 éléments ; pour la suite, renvoyez `next` dans `after`. La clé et les liens de téléchargement n’apparaissent jamais dans les résultats.
+- **Clé.** Donnez à l’agent sa propre clé de service, qui ne peut lire que les dépôts dont il a besoin. Ne collez jamais une clé dans la conversation.
+- **Données.** Les noms, étiquettes et métadonnées des résultats sont écrits par d’autres personnes. L’agent doit les traiter comme des données, pas comme des instructions.
+- Le client doit prendre en charge MCP 2025-06-18 ou plus récent.
 
 ## Sortie {#output}
 

@@ -4,7 +4,15 @@ import tseslint from 'typescript-eslint';
 const sourceFiles = ['apps/**/*.ts', 'packages/**/*.ts'];
 
 export default [
-  { ignores: ['**/node_modules/**', '**/dist/**', '**/coverage/**'] },
+  {
+    // The declarations report of the extension API is a reviewed snapshot of built output.
+    ignores: [
+      '**/node_modules/**',
+      '**/dist/**',
+      '**/coverage/**',
+      'packages/extension-api/api-report.d.ts',
+    ],
+  },
   { ...js.configs.recommended, files: sourceFiles },
   ...tseslint.configs.strictTypeChecked.map((config) => ({ ...config, files: sourceFiles })),
   {
@@ -41,6 +49,7 @@ export default [
       'packages/domain/**/*.ts',
       'packages/application/**/*.ts',
       'packages/contracts/**/*.ts',
+      'packages/extension-api/**/*.ts',
       'packages/sdk/**/*.ts',
       'apps/web/**/*.ts',
     ],

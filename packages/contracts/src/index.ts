@@ -3,6 +3,7 @@ export * from './native.js';
 export * from './responses.js';
 export * from './assets.js';
 export * from './artifact-search.js';
+export * from './global-search.js';
 export * from './health.js';
 export * from './identity.js';
 export * from './security-audit.js';
@@ -62,6 +63,14 @@ export type {
   NativeErrorResponse,
   EventWindowResponse,
 } from './errors.js';
+export {
+  moduleOperations,
+  readSystemModules,
+  systemModulesSchema,
+  type SystemModule,
+  type SystemModuleHealth,
+  type SystemModules,
+} from './modules-api.js';
 export {
   downloadSettingsOperations,
   readDownloadSettings,

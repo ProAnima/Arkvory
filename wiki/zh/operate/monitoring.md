@@ -157,7 +157,7 @@ API、工作进程（worker）、备份代理和维护工具每行向标准输�
 | `component`                  | `api`、`http`、`storage`、`worker`、`maintenance`、`backup`、`mirror`、`migrate`、`process` 或 `diagnostics` |
 | `code`                       | 事件名称                                                                                                     |
 
-其他字段来自一个固定的列表：标识符（`requestId`、`traceId`、`jobId`、`uploadId`、`artifactId`、`repository`、`principal`、`clientIp`），数字（`status`、`durationMs`、`bytesSent`、`bytesReceived`、`attempts`）以及原因字段（`errorCode`、`errorName`、`errno`、`sqlstate`、`reason`）。`ARKVORY_LOG_LEVEL` 设置写入的最低级别。
+其他字段来自一个固定的列表：标识符（`requestId`、`traceId`、`jobId`、`uploadId`、`artifactId`、`repository`、`principal`、`clientIp`、`client`），数字（`status`、`durationMs`、`bytesSent`、`bytesReceived`、`attempts`）以及原因字段（`errorCode`、`errorName`、`errno`、`sqlstate`、`reason`）。`ARKVORY_LOG_LEVEL` 设置写入的最低级别。
 
 ### 重要事件 {#log-events}
 

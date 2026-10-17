@@ -39,6 +39,7 @@ import { registerFeedback } from './feedback-routes.js';
 import { collectTopology, registerTopologyRoutes, type TopologyParts } from './topology-routes.js';
 import { FleetOverviewSource } from './fleet-overview.js';
 import { registerFleetRoutes } from './fleet-routes.js';
+import { registerModuleRoutes } from './module-routes.js';
 import { RecentLog } from './recent-log.js';
 import { registerOwnershipRecovery } from './ownership-recovery.js';
 import { registerAccessLog } from './access-log.js';
@@ -264,6 +265,7 @@ function registerRoutes(app: FastifyInstance, parts: RouteParts) {
   });
   registerTopologyRoutes(app, context.principal, topologyParts(parts));
   registerEventRoutes(app, services.events, context, config.siteName ?? 'arkvory');
+  registerModuleRoutes(app, context.principal, runtime.modules);
   registerFeedback(app, context.principal, {
     hub: config.hub ?? null,
     version: parts.identity.version,
@@ -287,12 +289,12 @@ export async function createServer(config: ServerConfig, lifecycle: ServerLifecy
   const policy = resolveUploadTimeouts(config);
   const tls = await prepareTls(config);
   const app = createHttpServer({ trustedProxies: config.trustedProxies ?? [], ...tls.options });
-  const runtime = new ApiRuntime(config);
+  const identity = lifecycle.identity ?? processIdentity('api', 'dev');
+  const runtime = new ApiRuntime(config, identity.version);
   const drain = lifecycle.drain ?? new RequestDrain();
   drain.onBegin(runtime.transfers.drain);
   if (lifecycle.onOwnershipLost)
     registerOwnershipRecovery(app, runtime.available, lifecycle.onOwnershipLost);
-  const identity = lifecycle.identity ?? processIdentity('api', 'dev');
   const { diagnostics, recentLog } = processLog(config, lifecycle, identity);
   // Only a logger created here is closed here; a caller's logger outlives the server.
   const closeDiagnostics = () => {

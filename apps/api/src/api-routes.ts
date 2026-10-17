@@ -18,6 +18,7 @@ import { registerRetentionRoutes } from './retention-routes.js';
 import { registerAttachmentRoutes } from './attachment-routes.js';
 import { registerUploadRoutes } from './upload-routes.js';
 import { registerCatalogRoutes } from './catalog-routes.js';
+import { registerGlobalSearchRoute } from './search-routes.js';
 import { registerPromotionRoutes } from './promotion-routes.js';
 import { registerBackupRoutes } from './backup-routes.js';
 import { registerMirrorRoutes } from './mirror-routes.js';
@@ -93,6 +94,7 @@ export function registerApiRoutes(app: FastifyInstance, dependencies: Compositio
     diagnostics,
   });
   registerCatalogRoutes(app, { browse: s.browse, principal, modifying });
+  registerGlobalSearchRoute(app, s.search, principal);
   registerPromotionRoutes(app, {
     promotion: s.promotion,
     resolver: s.resolver,

@@ -81,16 +81,17 @@ arkvoryctl doctor
 
 ### 탐색과 카탈로그 {#discovery-and-catalog}
 
-| 명령                                                                       | 결과                                   |
-| -------------------------------------------------------------------------- | -------------------------------------- |
-| `doctor`                                                                   | 연결, 기능, 권한                       |
-| `repositories [--after CURSOR]`                                            | 키로 볼 수 있는 리포지토리             |
-| `operations [--after CURSOR]`                                              | 리포지토리에서 사용할 수 있는 API 작업 |
-| `list [--after CURSOR]`                                                    | 리포지토리의 아티팩트                  |
-| `search [--query TEXT] [--label TAG] [--collection NAME] [--after CURSOR]` | 이름과 메타데이터 텍스트로 검색        |
-| `search --metadata-key KEY --metadata-value VALUE`                         | 메타데이터 정확 일치(둘 다 지정)       |
-| `inspect ID`                                                               | 아티팩트 하나의 메타데이터             |
-| `storage usage` / `storage policy`                                         | 리포지토리 사용량과 스토리지 정책      |
+| 명령                                                                                         | 결과                                            |
+| -------------------------------------------------------------------------------------------- | ----------------------------------------------- |
+| `doctor`                                                                                     | 연결, 기능, 권한                                |
+| `repositories [--after CURSOR]`                                                              | 키로 볼 수 있는 리포지토리                      |
+| `operations [--after CURSOR]`                                                                | 리포지토리에서 사용할 수 있는 API 작업          |
+| `list [--after CURSOR]`                                                                      | 리포지토리의 아티팩트                           |
+| `search [--query TEXT] [--label TAG] [--collection NAME] [--after CURSOR]`                   | 이름과 메타데이터 텍스트로 검색                 |
+| `search --metadata-key KEY --metadata-value VALUE`                                           | 메타데이터 정확 일치(둘 다 지정)                |
+| `search --all [--query TEXT] [--repositories R1,R2] [--label L1,L2] [--stage S] [--limit N]` | 키가 나열할 수 있는 모든 저장소, 최신 항목 먼저 |
+| `inspect ID`                                                                                 | 아티팩트 하나의 메타데이터                      |
+| `storage usage` / `storage policy`                                                           | 리포지토리 사용량과 스토리지 정책               |
 
 목록은 페이지 단위로 반환되며 응답에 `next`가 포함됩니다. 다음 페이지를 읽으려면 이 값을 `--after`로 전달하세요.
 
@@ -239,6 +240,21 @@ pipeline {
 ```
 
 TeamCity나 Buildkite 같은 다른 시스템도 같은 방식으로 동작합니다. 해당 시스템의 비밀 저장소에서 `ARKVORY_BASE_URL`과 `ARKVORY_TOKEN`을 설정하고 명령을 실행하세요. 결과는 [종료 코드](#exit-codes)로 판단하세요.
+
+## AI 에이전트(MCP) {#mcp}
+
+`arkvoryctl mcp`를 사용하면 Claude Code처럼 Model Context Protocol을 지원하는 AI 에이전트 클라이언트가 Arkvory로 작업할 수 있습니다. 클라이언트가 명령을 실행하고 stdin과 stdout으로 통신하며, 네트워크 포트는 열지 않습니다. 호출에는 프로필 또는 환경의 키가 사용되며, 서버는 다른 명령과 마찬가지로 그 권한을 확인합니다.
+
+```bash
+claude mcp add arkvory -- arkvoryctl mcp --profile production --root ~/work
+```
+
+- **읽기 전용.** 도구는 저장소 목록, 모든 저장소 검색, 아티팩트, 패키지, 경로별 파일, 변경 피드와 설치 상태 읽기, 아티팩트 다운로드를 수행합니다. 업로드, 변경, 삭제는 할 수 없습니다. 키가 사용할 수 없는 도구는 제공되지 않습니다.
+- **파일.** 다운로드는 `--root`(기본값은 현재 디렉터리) 아래에만 기록합니다. 크기와 SHA-256이 검증된 뒤에만 파일이 나타나며, 기존 파일은 에이전트가 요청할 때만 교체됩니다.
+- **출력.** 결과 하나는 최대 `--max-output-bytes`(기본 64 KiB, 최대 1 MiB)와 100개 항목입니다. 더 보려면 `next`를 `after`로 다시 전달합니다. 키와 다운로드 링크는 결과에 나타나지 않습니다.
+- **키.** 필요한 저장소만 읽을 수 있는 별도의 서비스 키를 에이전트에 주십시오. 키를 채팅에 붙여 넣지 마십시오.
+- **데이터.** 결과의 이름, 레이블, 메타데이터는 다른 사람이 작성한 것입니다. 에이전트는 이를 지시가 아닌 데이터로 다루어야 합니다.
+- 클라이언트는 MCP 2025-06-18 이상을 지원해야 합니다.
 
 ## 출력 {#output}
 

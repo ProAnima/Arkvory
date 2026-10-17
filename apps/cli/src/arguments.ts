@@ -15,6 +15,7 @@ const flags = new Set([
   'verbose',
   'off',
   'follow',
+  'all',
 ]);
 const values = new Set([
   'lang',
@@ -50,6 +51,9 @@ const values = new Set([
   'types',
   'cursor-file',
   'limit',
+  'repositories',
+  'root',
+  'max-output-bytes',
 ]);
 export function parseArguments(argv: readonly string[]): Arguments {
   const options = new Map<string, string>(),

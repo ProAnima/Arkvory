@@ -157,7 +157,7 @@ API, обработчик, агент резервного копировани�
 | `component`                  | `api`, `http`, `storage`, `worker`, `maintenance`, `backup`, `mirror`, `migrate`, `process` или `diagnostics` |
 | `code`                       | Имя события                                                                                                   |
 
-Остальные поля берутся из фиксированного списка: идентификаторы (`requestId`, `traceId`, `jobId`, `uploadId`, `artifactId`, `repository`, `principal`, `clientIp`), числа (`status`, `durationMs`, `bytesSent`, `bytesReceived`, `attempts`) и поля причины (`errorCode`, `errorName`, `errno`, `sqlstate`, `reason`). `ARKVORY_LOG_LEVEL` задаёт самый низкий записываемый уровень.
+Остальные поля берутся из фиксированного списка: идентификаторы (`requestId`, `traceId`, `jobId`, `uploadId`, `artifactId`, `repository`, `principal`, `clientIp`, `client`), числа (`status`, `durationMs`, `bytesSent`, `bytesReceived`, `attempts`) и поля причины (`errorCode`, `errorName`, `errno`, `sqlstate`, `reason`). `ARKVORY_LOG_LEVEL` задаёт самый низкий записываемый уровень.
 
 ### Важные события {#log-events}
 

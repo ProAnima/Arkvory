@@ -8,18 +8,19 @@
 
 ## Направление зависимостей
 
-| Модуль         | Разрешённые внутренние зависимости             | Что запрещено                                               |
-| -------------- | ---------------------------------------------- | ----------------------------------------------------------- |
-| domain         | Нет                                            | HTTP, БД, Node/browser globals, внешние runtime-библиотеки  |
-| application    | domain                                         | Конкретные адаптеры, transport DTO, глобальная конфигурация |
-| contracts      | Нет                                            | Домен, application, storage и HTTP server framework         |
-| infrastructure | application, domain                            | Приложения, UI и SDK                                        |
-| sdk            | contracts                                      | Серверные пакеты и Node-only API                            |
-| apps/api       | application, domain, contracts, infrastructure | Другие apps и SDK                                           |
-| apps/worker    | application, domain, infrastructure            | HTTP/Web/SDK                                                |
-| apps/scheduler | application, domain, infrastructure            | HTTP/Web/SDK                                                |
-| apps/backup    | application, domain, infrastructure            | HTTP/Web/SDK и другие apps                                  |
-| apps/web       | sdk, contracts                                 | Все серверные пакеты и другие apps                          |
+| Модуль         | Разрешённые внутренние зависимости                            | Что запрещено                                               |
+| -------------- | ------------------------------------------------------------- | ----------------------------------------------------------- |
+| domain         | Нет                                                           | HTTP, БД, Node/browser globals, внешние runtime-библиотеки  |
+| application    | domain                                                        | Конкретные адаптеры, transport DTO, глобальная конфигурация |
+| contracts      | Нет                                                           | Домен, application, storage и HTTP server framework         |
+| infrastructure | application, domain                                           | Приложения, UI и SDK                                        |
+| sdk            | contracts                                                     | Серверные пакеты и Node-only API                            |
+| extension-api  | Нет                                                           | Node/browser globals, внешние runtime-библиотеки, apps      |
+| apps/api       | application, domain, contracts, infrastructure, extension-api | Другие apps и SDK                                           |
+| apps/worker    | application, domain, infrastructure                           | HTTP/Web/SDK                                                |
+| apps/scheduler | application, domain, infrastructure                           | HTTP/Web/SDK                                                |
+| apps/backup    | application, domain, infrastructure                           | HTTP/Web/SDK и другие apps                                  |
+| apps/web       | sdk, contracts                                                | Все серверные пакеты и другие apps                          |
 
 Импорты типов также соблюдают границы. Межпакетный доступ — по workspace-имени через `src/index.ts`; даже разрешённый соседний пакет не открывает все свои внутренние файлы. Граф проверяется dependency-cruiser. Для domain/application дополнительно запрещены runtime-зависимости на сторонние пакеты и Node builtins; `import type` не должен использоваться для обхода модели.
 
@@ -111,6 +112,8 @@ HA одной площадки ([ADR 0072](adr/0072-single-site-ha.md)): пер�
 Очередь скачиваний ([ADR 0076](adr/0076-download-scheduling.md)): правила сессий и очереди — domain `DownloadSessions`, исполнитель `DownloadScheduler` и подписанные талоны — infrastructure, допуск на HTTP-потоке — `apps/api`. Очередь живёт в памяти процесса записи; у шлюзов чтения своя очередь на процесс, общей очереди в PostgreSQL нет.
 
 Единая консоль площадок ([ADR 0077](adr/0077-fleet-console.md), этапы F1–F4): реестр площадок, сопряжение и опрос — application `fleet-control` и PostgreSQL-адаптеры; управляющая площадка ходит к другим по закреплённому сертификату с ключом `fleet-key`, который ограничен белым списком маршрутов. Изменения на площадке исполняет её собственный API или агент площадки (`apps/deploy`).
+
+Модули ([ADR 0079](adr/0079-extension-modules.md), первая часть X1): переносимый пакет `extension-api` — публичный контракт модулей (манифест, жизненный цикл, чистая `planModules`, снимок деклараций `api-report.d.ts`); `domain`, `application`, `contracts` и `web` его не импортируют. В `apps/api` явный список встроенных модулей `modules.ts` (`upack`, `raw` — ядро, `oci`, `lfs`, `npm`) и хост `module-host.ts`, которым владеет `ApiRuntime`: план до старта, старт в порядке плана, откат и остановка в обратном порядке до закрытия пулов. Маршруты протоколов по-прежнему регистрирует `registerProtocolRoutes`; загрузки внешних модулей и выключения протоколов пока нет. `GET /api/v1/system/modules` показывает план глобальному администратору.
 
 Наблюдаемость остаётся в infrastructure без внешних зависимостей: `DiagnosticLogger` (JSON-строки, уровни, поля процесса, неблокирующий учёт потерь) и `MetricsRegistry` (Prometheus text). Composition roots создают один логгер на процесс, ставят crash-only обработчики и регистрируют `/health/metrics`. Correlation ID передаётся явно копией `Principal` на запрос и сохраняется адаптерами задач и аудита; domain/application его не интерпретируют, глобального контекста нет: [ADR 0052](adr/0052-structured-observability.md).
 

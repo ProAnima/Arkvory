@@ -1,6 +1,7 @@
 import { DiscoveryApi } from './discovery-api.js';
 import { UpdatesApi } from './updates-api.js';
 import { DownloadSettingsApi } from './download-settings-api.js';
+import { SystemApi } from './system-api.js';
 import { SiteChangesApi } from './site-changes-api.js';
 import { FleetApi } from './fleet-api.js';
 import { ReplicationApi } from './replication-api.js';
@@ -37,6 +38,11 @@ export interface ClientOptions extends TransferPolicy {
    * (ADR 0051); for diagnostics such as a CLI --verbose mode. Never receives credentials.
    */
   readonly onRequest?: (event: RequestEvent) => void;
+  /**
+   * Sent as `Arkvory-Client` on every request so the access log can tell clients apart
+   * (ADR 0081): printable ASCII, 1–64 characters, no outer spaces, such as `arkvoryctl-mcp/1.2.3`.
+   */
+  readonly clientName?: string;
 }
 
 /** Compatible public facade. Each operation delegates to its responsible API module. */
@@ -55,6 +61,8 @@ export class ArkvoryClient extends AccountClient {
   readonly updates: UpdatesApi;
   /** Download queue settings changed without a restart (ADR 0076, stage 3). */
   readonly downloadSettings: DownloadSettingsApi;
+  /** The installation's modules (ADR 0078, 0079): global administrators. */
+  readonly system: SystemApi;
   /** Mirrors and HA through the site's agent (ADR 0077, stage F3). */
   readonly siteChanges: SiteChangesApi;
   /** The fleet of ADR 0077: sites, pairing, topology. */
@@ -75,6 +83,7 @@ export class ArkvoryClient extends AccountClient {
     super(http);
     this.updates = new UpdatesApi(http);
     this.downloadSettings = new DownloadSettingsApi(http);
+    this.system = new SystemApi(http);
     this.siteChanges = new SiteChangesApi(http);
     this.fleet = new FleetApi(http);
     this.replication = new ReplicationApi(http);
@@ -121,6 +130,9 @@ export class ArkvoryClient extends AccountClient {
   }
   search(...args: Parameters<CatalogApi['search']>) {
     return this.catalog.search(...args);
+  }
+  searchAll(...args: Parameters<CatalogApi['searchAll']>) {
+    return this.catalog.searchAll(...args);
   }
   attachments(...args: Parameters<CatalogApi['attachments']>) {
     return this.catalog.attachments(...args);

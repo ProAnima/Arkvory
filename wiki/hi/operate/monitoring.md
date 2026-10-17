@@ -157,7 +157,7 @@ API, वर्कर, बैकअप एजेंट और रखरखाव 
 | `component`                  | `api`, `http`, `storage`, `worker`, `maintenance`, `backup`, `mirror`, `migrate`, `process` या `diagnostics` |
 | `code`                       | इवेंट का नाम                                                                                                 |
 
-अन्य फ़ील्ड एक निश्चित सूची से आते हैं: पहचानकर्ता (`requestId`, `traceId`, `jobId`, `uploadId`, `artifactId`, `repository`, `principal`, `clientIp`), संख्याएँ (`status`, `durationMs`, `bytesSent`, `bytesReceived`, `attempts`) और कारण फ़ील्ड (`errorCode`, `errorName`, `errno`, `sqlstate`, `reason`)। `ARKVORY_LOG_LEVEL` वह निम्नतम स्तर सेट करता है जो लिखा जाता है।
+अन्य फ़ील्ड एक निश्चित सूची से आते हैं: पहचानकर्ता (`requestId`, `traceId`, `jobId`, `uploadId`, `artifactId`, `repository`, `principal`, `clientIp`, `client`), संख्याएँ (`status`, `durationMs`, `bytesSent`, `bytesReceived`, `attempts`) और कारण फ़ील्ड (`errorCode`, `errorName`, `errno`, `sqlstate`, `reason`)। `ARKVORY_LOG_LEVEL` वह निम्नतम स्तर सेट करता है जो लिखा जाता है।
 
 ### महत्वपूर्ण इवेंट {#log-events}
 

@@ -20,6 +20,8 @@ ${ru ? 'КОМАНДЫ' : 'COMMANDS'}
   list [--after CURSOR]
   search [--query TEXT] [--label TAG] [--collection NAME] [--after CURSOR]
   search --metadata-key KEY --metadata-value VALUE
+  search --all [--query TEXT] [--repositories R1,R2] [--label L1,L2] [--stage S] [--limit N]
+                                              ${ru ? 'Во всех доступных репозиториях, новые первыми' : 'Every repository you can list, newest first'}
   inspect ID
   upload FILE [--label TAG] [--file METADATA.json] [--state CHECKPOINT.json]
   download ID OUTPUT
@@ -44,6 +46,7 @@ ${ru ? 'КОМАНДЫ' : 'COMMANDS'}
   backup verify POINT_ID | pin POINT_ID [--off]  ${ru ? 'Глубокая проверка, закрепление' : 'Deep verification, pinning'}
   events tail [--after ID] [--types T,PREFIX.*] [--limit N] [--follow] [--cursor-file PATH]
                                               ${ru ? 'События установки JSON-строками; --repository фильтрует' : 'Installation events as JSON lines; --repository filters'}
+  mcp [--root DIR] [--max-output-bytes N]     ${ru ? 'MCP-сервер на stdio для ИИ-агентов, только чтение' : 'MCP server on stdio for AI agents, read-only'}
 
 ${ru ? 'ОБЩИЕ ПАРАМЕТРЫ' : 'GLOBAL OPTIONS'}
   --profile NAME  --repository NAME  --json  --lang en|ru  --help  --version

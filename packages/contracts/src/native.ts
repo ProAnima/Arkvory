@@ -3,6 +3,7 @@ import { cleanupPaths } from './cleanup.js';
 import { updatePaths } from './updates-api.js';
 import { fleetPaths } from './fleet-api.js';
 import { downloadSettingsPaths } from './download-settings-api.js';
+import { modulePaths } from './modules-api.js';
 import { siteChangePaths } from './site-changes-api.js';
 import { retentionPaths, deletionOperation } from './retention.js';
 import { attachmentPaths } from './attachments.js';
@@ -20,6 +21,7 @@ import {
 import { composeApiPaths } from './openapi-compose.js';
 import { delegationPaths } from './delegation-api.js';
 import { repositoryPaths } from './repositories.js';
+import { globalSearchPaths } from './global-search.js';
 import { operationPaths } from './operations.js';
 import { promotionPaths } from './promotion-api.js';
 import { metricsPaths } from './metrics.js';
@@ -254,6 +256,7 @@ const composed = composeApiPaths({
   ...metricsPaths,
   ...delegationPaths,
   ...repositoryPaths,
+  ...globalSearchPaths,
   ...operationPaths,
   ...attachmentPaths,
   ...promotionPaths,
@@ -263,6 +266,7 @@ const composed = composeApiPaths({
   ...updatePaths,
   ...fleetPaths,
   ...downloadSettingsPaths,
+  ...modulePaths,
   ...siteChangePaths,
   ...backupPaths,
   ...mirrorPaths,

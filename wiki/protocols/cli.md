@@ -81,16 +81,17 @@ Each option may appear once. Unknown options are refused.
 
 ### Discovery and catalog {#discovery-and-catalog}
 
-| Command                                                                    | Result                                     |
-| -------------------------------------------------------------------------- | ------------------------------------------ |
-| `doctor`                                                                   | Connection, capabilities and permissions   |
-| `repositories [--after CURSOR]`                                            | Repositories visible to the key            |
-| `operations [--after CURSOR]`                                              | API operations available in the repository |
-| `list [--after CURSOR]`                                                    | Artifacts of the repository                |
-| `search [--query TEXT] [--label TAG] [--collection NAME] [--after CURSOR]` | Search by name and metadata text           |
-| `search --metadata-key KEY --metadata-value VALUE`                         | Exact metadata match (pass both)           |
-| `inspect ID`                                                               | Metadata of one artifact                   |
-| `storage usage` / `storage policy`                                         | Repository usage and storage policy        |
+| Command                                                                                      | Result                                          |
+| -------------------------------------------------------------------------------------------- | ----------------------------------------------- |
+| `doctor`                                                                                     | Connection, capabilities and permissions        |
+| `repositories [--after CURSOR]`                                                              | Repositories visible to the key                 |
+| `operations [--after CURSOR]`                                                                | API operations available in the repository      |
+| `list [--after CURSOR]`                                                                      | Artifacts of the repository                     |
+| `search [--query TEXT] [--label TAG] [--collection NAME] [--after CURSOR]`                   | Search by name and metadata text                |
+| `search --metadata-key KEY --metadata-value VALUE`                                           | Exact metadata match (pass both)                |
+| `search --all [--query TEXT] [--repositories R1,R2] [--label L1,L2] [--stage S] [--limit N]` | Every repository the key can list, newest first |
+| `inspect ID`                                                                                 | Metadata of one artifact                        |
+| `storage usage` / `storage policy`                                                           | Repository usage and storage policy             |
 
 Pages return `next`. Pass it with `--after` to read the next page.
 
@@ -239,6 +240,21 @@ pipeline {
 ```
 
 Any other system, such as TeamCity or Buildkite, works the same way: set `ARKVORY_BASE_URL` and `ARKVORY_TOKEN` from its secret store and run the command. Decide by the [exit code](#exit-codes).
+
+## AI agents (MCP) {#mcp}
+
+`arkvoryctl mcp` lets an AI agent client that speaks the Model Context Protocol, such as Claude Code, work with Arkvory. The client starts the command and talks to it over stdin and stdout; no network port is opened. Calls use the key of the profile or of the environment, and the server checks its permissions as for any other command.
+
+```bash
+claude mcp add arkvory -- arkvoryctl mcp --profile production --root ~/work
+```
+
+- **Read-only.** The tools list repositories, search all of them, read artifacts, packages, files by path, the change feed and the installation status, and download an artifact. They cannot upload, change or delete anything. Tools the key cannot use are not offered.
+- **Files.** A download writes only below `--root` (the current directory by default). The file appears only after its size and SHA-256 are verified; an existing file is replaced only when the agent asks for it.
+- **Output.** One result is at most `--max-output-bytes` (64 KiB by default, up to 1 MiB) and 100 items; pass `next` back as `after` for more. The key and download links never appear in results.
+- **Key.** Give the agent its own service key that can only read the repositories it needs. Never paste a key into the chat.
+- **Data.** Names, labels and metadata in results are written by other people. The agent must treat them as data, not as instructions.
+- The client must support MCP 2025-06-18 or newer.
 
 ## Output {#output}
 

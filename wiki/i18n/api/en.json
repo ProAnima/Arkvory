@@ -176,6 +176,14 @@
       "summary": "Search artifacts",
       "description": "Finds published artifacts by `q` (a case-insensitive substring of the name or of a current metadata value), an exact current `label`, a `collection`, and an exact `metadataKey`/`metadataValue` pair, which go together; all given filters must match. Results come in pages of 100 ordered by ID, each with size, creation and publication times, current labels and promotion stages; continue with `after` set to `next`. Metadata and collections are not returned: read them with `getAnnotations`."
     },
+    "searchAllRepositories": {
+      "en": {
+        "summary": "Search artifacts in every repository the caller may list (at most 1000 by name); newest publication first, pages of up to 100 with an opaque cursor",
+        "description": ""
+      },
+      "summary": "Search all repositories",
+      "description": "Finds published artifacts in every repository where the caller may list artifacts (`artifact.list`), at most the first 1000 by name. Filters: `q` (a case-insensitive substring of the name or of a current metadata value), `repositories` (comma-separated, at most 100), `labels` (comma-separated current labels, at most 8, all required) and `stage`; all given filters must match. A repository the caller cannot list is skipped exactly like one that does not exist. Results are ordered by publication time, newest first, then by repository and ID; each is a `searchArtifacts` item plus its `repository`. Pages hold `limit` items (1–100, default 50); continue with `after` set to `next` and the same filters."
+    },
     "getCatalogAudit": {
       "en": {
         "summary": "Audit of catalog mutations, write scope; pages of 100",
@@ -967,6 +975,14 @@
       },
       "summary": "Get this site for the fleet console",
       "description": "Returns this installation as one site of a fleet (ADR 0077): its name, version, schema and role, whether it is available and writable, the HA copies and nodes, the read gateways from their leases, every mirror and import with its phase, last sync and `lagChanges` (changes of the source not applied yet), the host updater state and the download queue. Only the global administrator of the site or a controller paired with it may read it."
+    },
+    "getSystemModules": {
+      "en": {
+        "summary": "List the modules of this installation: version, extension point, whether core and enabled, health in the answering process, and the plan fingerprint",
+        "description": ""
+      },
+      "summary": "List the modules of this installation",
+      "description": "Returns every module this installation plans, in `id` order: `id`, `version`, the extension point (`kind`), `source` (`builtin` for modules of the core), whether it is part of the free core (`core`, never disabled) and whether it is `enabled`, the processes it runs in (`roles`), whether the answering process runs it (`running`) and its `health` there (`ok`, `degraded` or `failed` with a code; null when it does not run there). `fingerprint` is the SHA-256 of the plan and is equal on every process of the installation; `extensionApi` is the version of the module contract of this core. Settings, paths and secrets are never returned. Only the global administrator may read it."
     },
     "createFleetPairing": {
       "en": {

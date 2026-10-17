@@ -157,7 +157,7 @@ API, 워커, 백업 에이전트, 유지 관리 도구는 표준 출력에 한 �
 | `component`                  | `api`, `http`, `storage`, `worker`, `maintenance`, `backup`, `mirror`, `migrate`, `process` 또는 `diagnostics` |
 | `code`                       | 이벤트 이름                                                                                                    |
 
-다른 필드는 고정 목록에서 옵니다. 식별자(`requestId`, `traceId`, `jobId`, `uploadId`, `artifactId`, `repository`, `principal`, `clientIp`), 숫자(`status`, `durationMs`, `bytesSent`, `bytesReceived`, `attempts`) 및 사유 필드(`errorCode`, `errorName`, `errno`, `sqlstate`, `reason`)입니다. `ARKVORY_LOG_LEVEL`은 기록되는 최저 수준을 설정합니다.
+다른 필드는 고정 목록에서 옵니다. 식별자(`requestId`, `traceId`, `jobId`, `uploadId`, `artifactId`, `repository`, `principal`, `clientIp`, `client`), 숫자(`status`, `durationMs`, `bytesSent`, `bytesReceived`, `attempts`) 및 사유 필드(`errorCode`, `errorName`, `errno`, `sqlstate`, `reason`)입니다. `ARKVORY_LOG_LEVEL`은 기록되는 최저 수준을 설정합니다.
 
 ### 주요 이벤트 {#log-events}
 
