@@ -82,6 +82,9 @@ test('placement rules: wire form round trip, bounds and JSON Pointer of the refu
   refused([rule, { ...rule, id: 'x', minSizeBytes: '9007199254740992' }], '/rules/1/minSizeBytes');
   refused([{ ...rule, minSizeBytes: 5 }], '/rules/0/minSizeBytes');
   refused([{ ...rule, packageGroup: 'a\nb' }], '/rules/0/packageGroup');
+  // The wire allows 256 characters: a group of 255 with `/*` is not stored.
+  parsePlacementRules([{ ...rule, packageGroup: 'g'.repeat(254) + '/*' }]);
+  refused([{ ...rule, packageGroup: 'g'.repeat(255) + '/*' }], '/rules/0/packageGroup');
   refused([{ ...rule, id: '' }], '/rules/0/id');
   refused([rule, rule], '/rules');
   refused(

@@ -8,8 +8,8 @@ import type { StorageRoutingRule } from './storage-routing.js';
 export const STORAGE_BACKEND_ID = /^(?=.{1,64}$)[a-z][a-z0-9-]*(\.[a-z][a-z0-9-]*)?$/;
 export const MAX_PLACEMENT_RULES = 32;
 const RULE_ID = /^[a-z0-9][a-z0-9-]{0,63}$/;
-/** A package group, a `prefix/*` of groups or `*`; no control characters. */
-const PACKAGE_GROUP = /^(\*|[^\s*\p{Cc}][^*\p{Cc}]{0,254}(\/\*)?)$/u;
+/** A package group, a `prefix/*` of groups or `*`, at most 256 characters as on the wire. */
+const PACKAGE_GROUP = /^(?=.{1,256}$)(\*|[^\s*\p{Cc}][^*\p{Cc}]*(\/\*)?)$/u;
 const BYTES = /^(0|[1-9][0-9]{0,15})$/;
 
 /**
