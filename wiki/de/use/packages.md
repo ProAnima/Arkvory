@@ -152,12 +152,13 @@ Registrierte Pakete sind das, was die Aufbewahrungsrichtlinie eines Repositorys 
 
 ## Fehler {#errors}
 
-| Antwort                               | Bedeutung                                                                                                                                                                                  |
-| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `400 invalid_input` beim Registrieren | Kein gültiges UPack-ZIP, keine `upack.json` im Wurzelverzeichnis oder ein falscher Name oder eine falsche Version                                                                          |
-| `409 version_exists`                  | Die Identität gehört bereits zu einem anderen Archiv. Veröffentlichen Sie eine neue Version. Das Hochstufen in ein Repository, das die Version mit anderen Bytes hat, schlägt genauso fehl |
-| `404 not_found` beim Auflösen         | Nichts passt zu den Filtern. Prüfen Sie die Gruppe, den Bereich und die Stufe                                                                                                              |
-| `403 permission_missing`              | Dem Schlüssel fehlt `package.read`, `package.publish` oder `content.read`                                                                                                                  |
+| Antwort                               | Bedeutung                                                                                                                                                                                                                                       |
+| ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `400 invalid_input` beim Registrieren | Kein gültiges UPack-ZIP, keine `upack.json` im Wurzelverzeichnis oder ein falscher Name oder eine falsche Version                                                                                                                               |
+| `503 unavailable` beim Registrieren   | Das gespeicherte Archiv lässt sich nicht lesen: Der Speicher antwortet nicht oder das Archiv fehlt darin. Das SDK und der Kommandozeilen-Client wiederholen die Anfrage. Bleibt die Antwort, lassen Sie einen Administrator den Speicher prüfen |
+| `409 version_exists`                  | Die Identität gehört bereits zu einem anderen Archiv. Veröffentlichen Sie eine neue Version. Das Hochstufen in ein Repository, das die Version mit anderen Bytes hat, schlägt genauso fehl                                                      |
+| `404 not_found` beim Auflösen         | Nichts passt zu den Filtern. Prüfen Sie die Gruppe, den Bereich und die Stufe                                                                                                                                                                   |
+| `403 permission_missing`              | Dem Schlüssel fehlt `package.read`, `package.publish` oder `content.read`                                                                                                                                                                       |
 
 ## Verwandte Seiten {#related-pages}
 
