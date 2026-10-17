@@ -41,7 +41,7 @@ This license grants no rights to the names and marks ProAnima, ProAnimaStudio an
 
 ## 7. Data
 
-Files and data you store with the software stay on your servers. To check for and install updates the software contacts the ProAnimaStudio update service, and GitHub when that service cannot be reached. With these checks and in anonymous statistics it sends a random installation identifier, the version, operating system, architecture, update channel and installed updates; names, addresses, content and IP addresses are not stored. Statistics can be turned off. Feedback is sent only when a user sends it and contains what the feedback form shows before sending.
+Files and data you store with the software stay on your servers. To check for and install updates the software contacts the ProAnimaStudio update service, and GitHub when that service cannot be reached. With these checks and in anonymous statistics it sends a random installation identifier, the version, operating system, architecture, update channel and installed updates; names, addresses, content and IP addresses are not stored. Statistics can be turned off. Feedback is sent only when a user sends it and contains what the feedback form shows before sending. Paid modules are separate products under their own terms. When a paid module is activated, and periodically while it is installed, the software checks its licence with the ProAnimaStudio update service and sends the installation identifier, the licence identifier, the identifiers and versions of the installed modules and the version of the software; no content is sent. An installation without paid modules never makes such requests, and if the service cannot be reached the software keeps working and your data stays readable.
 
 ## 8. No warranty
 
