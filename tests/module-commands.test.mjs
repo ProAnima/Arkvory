@@ -1,11 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { chmod, mkdir, readFile, readdir, stat, writeFile } from 'node:fs/promises';
+import { chmod, mkdir, readFile, readdir, rm, stat, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { EXTENSION_API_VERSION } from '../packages/extension-api/dist/index.js';
 import { minisignPublicKeyText } from '../packages/signing/dist/index.js';
 import { moduleCommand } from '../apps/deploy/dist/module-commands.js';
+import { checkReleaseRevocationKeys } from '../apps/deploy/dist/module-rotation.js';
 import { recover } from '../apps/deploy/dist/operations.js';
 import {
   defaultFiles,
@@ -26,7 +28,11 @@ const release = {
   setupSha256: 'c'.repeat(64),
 };
 
-async function setup(t) {
+/**
+ * An installation with a current revocation list (sequence 1, valid until 2027-01-15) unless
+ * `current` is false: installs need one (ADR 0078, 3.4).
+ */
+async function setup(t, { current = true } = {}) {
   const root = await temporaryDirectory(t, 'arkvory-module-root-');
   const files = await temporaryDirectory(t, 'arkvory-module-files-');
   await mkdir(join(root, 'config'));
@@ -43,20 +49,26 @@ async function setup(t) {
     }),
   );
   const keys = testHost();
+  if (current)
+    await writeFile(
+      join(root, 'config/module-revocations.json'),
+      revocationList(keys.module, { sequence: 1, entries: [] }),
+    );
   const lines = [];
+  const clock = { now: Date.parse('2026-10-17T12:00:00Z') };
   const context = {
     moduleKeys: [keys.module.key],
     licenseKeys: [keys.license.key],
     releaseKeys: [keys.release.key],
     extensionApi: EXTENSION_API_VERSION,
-    now: () => Date.parse('2026-10-17T12:00:00Z'),
+    now: () => clock.now,
     print: (line) => lines.push(line),
   };
   const run = (...args) => moduleCommand([...args, '--root', root], context);
   let count = 0;
   const pack = (options) =>
     writePackage(files, packageEntries({ signer: keys.module, ...options }), `p${++count}.tgz`);
-  return { root, files, keys, lines, context, run, pack };
+  return { root, files, keys, lines, context, clock, run, pack };
 }
 
 const readJson = async (path) => JSON.parse(await readFile(path, 'utf8'));
@@ -110,7 +122,11 @@ test('install, upgrade, list and remove keep one previous package and journal ea
     /^sample 1\.1\.0 {2}ok {2}data none {2}key [0-9a-f]{16} {2}sha256 [0-9a-f]{64}$/,
   );
   assert.ok(lines.includes('kept until the next change: sample 1.0.0'));
-  assert.ok(lines.includes('Revocation list: none'));
+  assert.ok(
+    lines.includes(
+      'Revocation list: 1 of 2026-10-17T10:00:00Z, current until 2027-01-15T10:00:00Z',
+    ),
+  );
   await run('remove', 'sample');
   set = await readJson(join(root, 'modules/installed.json'));
   assert.deepEqual(set.modules, []);
@@ -215,7 +231,11 @@ test('revocation lists only move forward and stop revoked versions', async (t) =
   lines.length = 0;
   await run('list');
   assert.match(lines[0], /^sample 1\.0\.0 {2}revoked \(read_path_defect\), read path only/);
-  assert.ok(lines.includes('Revocation list: 5 of 2026-10-17T10:00:00Z'));
+  assert.ok(
+    lines.includes(
+      'Revocation list: 5 of 2026-10-17T10:00:00Z, current until 2027-01-15T10:00:00Z',
+    ),
+  );
   await run('remove', 'sample');
   await assert.rejects(
     run('install', await pack(), '--yes'),
@@ -339,7 +359,7 @@ test('module commands refuse unknown commands, options and argument counts', asy
 });
 
 test('the arkvory entry runs module commands with the built-in keys', async (t) => {
-  const { root, pack } = await setup(t);
+  const { root, pack } = await setup(t, { current: false });
   const main = join(import.meta.dirname, '../apps/deploy/dist/main.js');
   const list = spawnSync(process.execPath, [main, 'module', 'list', '--root', root], {
     encoding: 'utf8',
@@ -401,7 +421,7 @@ test('prerelease versions follow semver precedence and a removal keeps the downg
 });
 
 test('trust and revocation commands wait for recover after an interrupted change', async (t) => {
-  const { root, files, keys, run } = await setup(t);
+  const { root, files, keys, run } = await setup(t, { current: false });
   const pub = join(files, 'author.pub');
   await writeFile(pub, minisignPublicKeyText(testKey().key, 'minisign public key'));
   const list = join(files, 'list.json');
@@ -463,4 +483,110 @@ test('a committed change removes packages that no set names, such as leftovers o
     'modules/notes.txt',
   ])
     await stat(join(root, kept));
+});
+
+const readLines = async (path) =>
+  (await readFile(path, 'utf8'))
+    .trim()
+    .split('\n')
+    .map((line) => JSON.parse(line));
+
+test('install needs a current revocation list unless the operator accepts a stale one', async (t) => {
+  const { root, files, keys, lines, run, pack } = await setup(t, { current: false });
+  await assert.rejects(
+    run('install', await pack(), '--yes'),
+    /stale_revocations.*no revocation list/,
+  );
+  await assert.rejects(readFile(join(root, 'modules/installed.json')), { code: 'ENOENT' });
+  // An expired list with a higher number is stored (it is the newest known), but stays stale.
+  const expired = join(files, 'expired.json');
+  await writeFile(
+    expired,
+    revocationList(keys.module, {
+      sequence: 2,
+      entries: [],
+      issuedAt: '2026-08-01T00:00:00Z',
+      expiresAt: '2026-09-01T00:00:00Z',
+    }),
+  );
+  await run('revocations', expired);
+  assert.ok(
+    lines.some((line) =>
+      line.startsWith('Warning: revocation list 2 expired at 2026-09-01T00:00:00Z'),
+    ),
+  );
+  await assert.rejects(
+    run('install', await pack(), '--yes'),
+    /stale_revocations.*list 2 expired at 2026-09-01T00:00:00Z/,
+  );
+  lines.length = 0;
+  await run('install', await pack(), '--yes', '--allow-stale-revocations');
+  assert.ok(
+    lines.some((line) => line.startsWith('Warning: installing with a stale revocation list')),
+  );
+  const audit = await readLines(join(root, 'modules/audit.jsonl'));
+  assert.equal(audit.length, 1);
+  assert.equal(audit[0].event, 'stale_revocations_allowed');
+  assert.equal(audit[0].command, 'install');
+  assert.equal(audit[0].module, 'sample');
+  assert.equal(audit[0].version, '1.0.0');
+  assert.equal(audit[0].sequence, 2);
+  assert.equal(audit[0].expiresAt, '2026-09-01T00:00:00Z');
+  assert.equal(audit[0].at, '2026-10-17T12:00:00.000Z');
+  assert.equal((await readJson(join(root, 'journal.json'))).modules.staleRevocations, true);
+  // A package that ships a current list makes installs current again without the option.
+  const shipped = revocationList(keys.module, { sequence: 3, entries: [] });
+  await run(
+    'install',
+    await pack({ manifest: { version: '1.1.0' }, revocations: shipped }),
+    '--yes',
+  );
+  assert.equal((await readLines(join(root, 'modules/audit.jsonl'))).length, 1);
+});
+
+test('a stale list blocks pins but never stops what is installed', async (t) => {
+  const { root, lines, clock, run, pack } = await setup(t);
+  await run('install', await pack(), '--yes');
+  clock.now = Date.parse('2027-02-01T00:00:00Z');
+  await assert.rejects(run('pin', 'sample', '1.0.0'), /stale_revocations/);
+  await run('pin', 'sample', '1.0.0', '--allow-stale-revocations');
+  assert.equal((await readLines(join(root, 'modules/audit.jsonl')))[0].command, 'pin');
+  await run('pin', 'sample', '--unpin');
+  lines.length = 0;
+  await run('list');
+  assert.match(lines[0], /^sample 1\.0\.0 {2}ok /);
+  assert.ok(
+    lines.includes(
+      'Revocation list: 1 of 2026-10-17T10:00:00Z, expired at 2027-01-15T10:00:00Z; installs and pins need a newer one',
+    ),
+  );
+  await run('remove', 'sample');
+});
+
+test('a release that no longer trusts the key of the stored list is refused before the switch', async (t) => {
+  const { root, keys, context, run } = await setup(t);
+  // The release itself: its built-in keys must verify the stored list.
+  await run('check-revocations');
+  await assert.rejects(
+    moduleCommand(['check-revocations', '--root', root], {
+      ...context,
+      moduleKeys: [testKey().key],
+    }),
+    new RegExp(`signed by key ${keys.module.id}, which this release does not trust`),
+  );
+  // The updater asks the staged release (the real entry, whose built-in module keys are empty).
+  const staged = join(root, 'releases/9.9.9/apps/deploy/dist');
+  await mkdir(staged, { recursive: true });
+  const entry = pathToFileURL(join(import.meta.dirname, '../apps/deploy/dist/main.js')).href;
+  await writeFile(join(staged, 'main.js'), `await import(${JSON.stringify(entry)});\n`);
+  await assert.rejects(
+    checkReleaseRevocationKeys(root, '9.9.9'),
+    /Release 9\.9\.9 does not trust the key of the stored module revocation list/,
+  );
+  // A release that verifies the list, and a host without a list, pass.
+  await writeFile(join(staged, 'main.js'), 'process.exitCode = 0;\n');
+  await checkReleaseRevocationKeys(root, '9.9.9');
+  await writeFile(join(staged, 'main.js'), 'process.exitCode = 1;\n');
+  await rm(join(root, 'config/module-revocations.json'));
+  await checkReleaseRevocationKeys(root, '9.9.9');
 });

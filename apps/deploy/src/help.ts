@@ -28,17 +28,21 @@ cluster-plan         --cluster ha-2|ha-3 --nodes a=10.0.0.1,b=10.0.0.2[,c=…] [
 `;
 
 /** Module packages and operator keys (ADR 0078, ADR 0082). */
-const moduleHelp = `module install <file.tgz> [--yes] [--downgrade]
+const moduleHelp = `module install <file.tgz> [--yes] [--downgrade] [--allow-stale-revocations]
                      Verify a signed module package (signature, files, compatibility, revocation),
-                     show it and its terms; --yes installs it into modules/ through the journal
+                     show it and its terms; --yes installs it into modules/ through the journal;
+                     needs a current revocation list unless stale is allowed (warned, audited)
                      / Проверить и установить подписанный пакет модуля
 module list          Installed modules, each verified again; kept packages; revocation list
                      / Установленные модули с повторной проверкой
 module remove <id>   Remove from the set; a module storing published bytes (data layout) is refused
                      / Удалить модуль из набора
-module pin <id> <version> | module pin <id> --unpin   Keep the installed version / Закрепить
+module pin <id> <version> [--allow-stale-revocations] | module pin <id> --unpin
+                     Keep the installed version / Закрепить
 module revocations <file>   Store a signed revocation list; an older list is refused
                      / Список отзыва из файла
+module check-revocations   Whether this release trusts the key of the stored revocation list
+                     / Доверяет ли релиз ключу сохранённого списка отзыва
 module trust add <file.pub | key> --label <text> [--plugins op-a-*,…] [--allow-in-process]
                      [--expires <UTC time>] [--yes]  Trust a plugin author's key on this host
                      / Доверять ключу автора плагинов

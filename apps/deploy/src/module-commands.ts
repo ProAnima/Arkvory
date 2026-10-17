@@ -1,7 +1,12 @@
 import { createHash } from 'node:crypto';
 import { createReadStream } from 'node:fs';
 import { resolve } from 'node:path';
-import { SigningError, revocationOf, verifyInstalledModule } from '@proanima/arkvory-signing';
+import {
+  SigningError,
+  revocationOf,
+  revocationsCurrent,
+  verifyInstalledModule,
+} from '@proanima/arkvory-signing';
 import type { PackageHost, RevocationList } from '@proanima/arkvory-signing';
 import { refreshNodeKit } from './cluster-node.js';
 import { exclusive } from './operation-lock.js';
@@ -17,6 +22,7 @@ import {
 import { moduleLayout, readModuleSet } from './module-store.js';
 import { checkJournal } from './operations.js';
 import type { InstalledModule } from './module-store.js';
+import { checkRevocations } from './module-rotation.js';
 import { trustAdd, trustList, trustRemove } from './module-trust.js';
 
 interface CommandSpec {
@@ -27,11 +33,12 @@ interface CommandSpec {
 
 /** Every `arkvory module …` command, its positional arguments and options. */
 const SPECS: Readonly<Record<string, CommandSpec>> = {
-  install: { positional: 1, flags: ['yes', 'downgrade'], values: [] },
+  install: { positional: 1, flags: ['yes', 'downgrade', 'allow-stale-revocations'], values: [] },
   list: { positional: 0, flags: [], values: [] },
   remove: { positional: 1, flags: [], values: [] },
-  pin: { positional: 2, flags: ['unpin'], values: [] },
+  pin: { positional: 2, flags: ['unpin', 'allow-stale-revocations'], values: [] },
   revocations: { positional: 1, flags: [], values: [] },
+  'check-revocations': { positional: 0, flags: [], values: [] },
   'trust add': {
     positional: 1,
     flags: ['allow-in-process', 'yes'],
@@ -119,6 +126,15 @@ async function moduleState(
   return `revoked (${revoked.reason})${revoked.readOnly ? ', read path only' : ''}`;
 }
 
+/** A stale list changes no module state above: only an entry of the list stops a module. */
+function revocationStatus(list: RevocationList | null, now: number): string {
+  if (list === null) return 'Revocation list: none; installs and pins need one';
+  const head = `Revocation list: ${String(list.sequence)} of ${list.issuedAt}`;
+  return revocationsCurrent(list, now)
+    ? `${head}, current until ${list.expiresAt}`
+    : `${head}, expired at ${list.expiresAt}; installs and pins need a newer one`;
+}
+
 /** `arkvory module list`: every installed package verified again, as at a process start. */
 async function listModules(root: string, context: ModuleCommandContext): Promise<void> {
   const state = await installation(root);
@@ -134,11 +150,7 @@ async function listModules(root: string, context: ModuleCommandContext): Promise
   }
   for (const kept of set.retained)
     context.print(`kept until the next change: ${kept.id} ${kept.version}`);
-  context.print(
-    revocations === null
-      ? 'Revocation list: none'
-      : `Revocation list: ${String(revocations.sequence)} of ${revocations.issuedAt}`,
-  );
+  context.print(revocationStatus(revocations, context.now()));
 }
 
 async function run(parsed: Parsed, context: ModuleCommandContext): Promise<void> {
@@ -151,13 +163,23 @@ async function run(parsed: Parsed, context: ModuleCommandContext): Promise<void>
       return installModule(
         root,
         first,
-        { yes: options.has('yes'), downgrade: options.has('downgrade') },
+        {
+          yes: options.has('yes'),
+          downgrade: options.has('downgrade'),
+          allowStale: options.has('allow-stale-revocations'),
+        },
         context,
       );
     case 'remove':
       return removeModule(root, first, context);
     case 'pin':
-      return pinModule(root, first, options.has('unpin') ? null : (positional[1] ?? null), context);
+      return pinModule(
+        root,
+        first,
+        options.has('unpin') ? null : (positional[1] ?? null),
+        options.has('allow-stale-revocations'),
+        context,
+      );
     case 'revocations':
       return applyRevocations(root, first, context);
     case 'trust add':
@@ -193,6 +215,7 @@ export async function moduleCommand(
   const parsed = parse(args);
   if (parsed.command === 'list') return listModules(parsed.root, context);
   if (parsed.command === 'trust list') return trustList(parsed.root, context);
+  if (parsed.command === 'check-revocations') return checkRevocations(parsed.root, context);
   await exclusive(
     parsed.root,
     async () => {

@@ -18,6 +18,7 @@ import { protectInstallation } from './preflight.js';
 import { prepareUpdateControl } from './update-setup.js';
 import { report } from './output.js';
 import { warnEngineAutostart } from './engine-autostart.js';
+import { checkReleaseRevocationKeys } from './module-rotation.js';
 import { recoverModuleSet } from './module-store.js';
 
 export async function save(root: string, state: Installation): Promise<void> {
@@ -107,6 +108,9 @@ function updatePort(root: string, selected: Source, services: Services): UpdateP
   return {
     stage: async () => {
       await stage(root, selected);
+      // A release that dropped the key of the stored module revocation list is refused here,
+      // before anything stops (ADR 0078, key rotation).
+      await checkReleaseRevocationKeys(root, selected.release.version);
       await services.prepare(selected.release);
     },
     stop: () => services.stop(),

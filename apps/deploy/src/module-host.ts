@@ -1,4 +1,5 @@
-import { stat } from 'node:fs/promises';
+import { open, stat } from 'node:fs/promises';
+import { hostname, userInfo } from 'node:os';
 import { join } from 'node:path';
 import { EXTENSION_API_VERSION } from '@proanima/arkvory-extension-api';
 import {
@@ -9,6 +10,7 @@ import {
   moduleKeys,
   parsePluginTrust,
   readRevocations,
+  revocationsCurrent,
 } from '@proanima/arkvory-signing';
 import type {
   ClassifiedKey,
@@ -20,6 +22,7 @@ import type {
 import { atomicText, inside, jsonFile, readOptional } from './files.js';
 import type { FileOwner } from './files.js';
 import type { Installation } from './model.js';
+import { moduleLayout } from './module-store.js';
 import { releaseKeys } from './release-keys.js';
 
 /** What module commands trust and how they report; tests pass throwaway keys and a clock. */
@@ -111,4 +114,63 @@ export async function readStoredRevocations(
 ): Promise<RevocationList | null> {
   const text = await readOptional(revocationsPath(root));
   return text === null ? null : readRevocations(text, keys);
+}
+
+/** Why the newest known list does not make an install or pin current, or null when it does. */
+export function staleRevocations(list: RevocationList | null, now: number): string | null {
+  if (revocationsCurrent(list, now)) return null;
+  return list === null
+    ? 'no revocation list is stored'
+    : `list ${String(list.sequence)} expired at ${list.expiresAt}`;
+}
+
+/**
+ * Installs and pins need a current list (ADR 0078, 3.4): with a stale one a revocation that
+ * delivery withheld would go unnoticed. `--allow-stale-revocations` is the operator's explicit
+ * decision; it is warned about and recorded by `recordStaleRevocations`.
+ */
+export function refuseStaleRevocations(reason: string | null, allowed: boolean): void {
+  if (reason !== null && !allowed)
+    throw new Error(
+      `No current module revocation list (stale_revocations): ${reason}; store a newer one with arkvory module revocations <file>, or repeat with --allow-stale-revocations`,
+    );
+}
+
+export interface StaleUse {
+  readonly command: 'install' | 'pin';
+  readonly module: string;
+  readonly version: string;
+}
+
+/**
+ * Prints the warning and appends one line to `modules/audit.jsonl` (owner only and the service
+ * group, 0640): who went on with which list, when, for which module.
+ */
+export async function recordStaleRevocations(
+  root: string,
+  list: RevocationList | null,
+  use: StaleUse,
+  context: ModuleCommandContext,
+): Promise<void> {
+  const reason = staleRevocations(list, context.now()) ?? 'stale';
+  context.print(
+    `Warning: ${use.command === 'install' ? 'installing' : 'pinning'} with a stale revocation list (${reason}); versions revoked since may not be known on this host`,
+  );
+  const by = `${userInfo().username}@${hostname()}`.replace(/\p{Cc}/gu, '').slice(0, 128);
+  const line = JSON.stringify({
+    at: new Date(context.now()).toISOString(),
+    event: 'stale_revocations_allowed',
+    ...use,
+    sequence: list?.sequence ?? null,
+    expiresAt: list?.expiresAt ?? null,
+    by,
+  });
+  const file = await open(moduleLayout(root).audit, 'a', 0o640);
+  try {
+    await file.writeFile(`${line}
+`);
+    await file.sync();
+  } finally {
+    await file.close();
+  }
 }

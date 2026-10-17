@@ -46,6 +46,8 @@ export function moduleLayout(root: string) {
   return {
     directory,
     set: join(directory, 'installed.json'),
+    /** Operator decisions the module commands record, one JSON object per line. */
+    audit: join(directory, 'audit.jsonl'),
     staging: join(directory, '.staging'),
     archives: join(directory, '.packages'),
     /** The unpacked package that the loader verifies and imports from. */

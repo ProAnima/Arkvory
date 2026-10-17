@@ -17,7 +17,10 @@ import type { Installation } from './model.js';
 import {
   packageHost,
   readStoredRevocations,
+  recordStaleRevocations,
+  refuseStaleRevocations,
   revocationsPath,
+  staleRevocations,
   writeHostFile,
 } from './module-host.js';
 import type { ModuleCommandContext } from './module-host.js';
@@ -48,13 +51,16 @@ async function changeSet(
   state: Installation,
   before: ModuleSet,
   after: ModuleSet,
+  staleRevocations = false,
 ): Promise<void> {
+  const modules = { before: before.modules, after: after.modules, retained: before.retained };
   const record = (phase: string) =>
     atomicJson(join(root, 'journal.json'), {
       phase,
       previous: state.current,
       next: state.current,
-      modules: { before: before.modules, after: after.modules, retained: before.retained },
+      // True when the operator went on without a current revocation list.
+      modules: staleRevocations ? { ...modules, staleRevocations } : modules,
     });
   await record('prepared');
   try {
@@ -188,6 +194,8 @@ async function place(root: string, staged: string, inspected: InspectedPackage):
 export interface InstallOptions {
   readonly yes: boolean;
   readonly downgrade: boolean;
+  /** Go on without a current revocation list; warned about and audited. */
+  readonly allowStale: boolean;
 }
 
 /**
@@ -229,7 +237,17 @@ export async function installModule(
       context.print(`Module ${id} ${version} is already installed`);
       return;
     }
+    // After a list the package shipped is kept: a current one there makes the install current.
+    const stale = staleRevocations(revocations, context.now());
+    refuseStaleRevocations(stale, options.allowStale);
     if (!options.yes) throw new Error('Review the module and its terms, then repeat with --yes');
+    if (stale !== null)
+      await recordStaleRevocations(
+        root,
+        revocations,
+        { command: 'install', module: id, version },
+        context,
+      );
     await place(root, staged, inspected);
     const previous = set.modules.find((m) => m.id === id);
     const entry: InstalledModule = {
@@ -242,13 +260,19 @@ export async function installModule(
       pinned: false,
       installedAt: new Date(context.now()).toISOString(),
     };
-    await changeSet(root, state, set, {
-      format: 1,
-      modules: [...set.modules.filter((m) => m.id !== id), entry].sort((a, b) =>
-        a.id < b.id ? -1 : 1,
-      ),
-      retained: previous ? [{ id, version: previous.version, sha256: previous.sha256 }] : [],
-    });
+    await changeSet(
+      root,
+      state,
+      set,
+      {
+        format: 1,
+        modules: [...set.modules.filter((m) => m.id !== id), entry].sort((a, b) =>
+          a.id < b.id ? -1 : 1,
+        ),
+        retained: previous ? [{ id, version: previous.version, sha256: previous.sha256 }] : [],
+      },
+      stale !== null,
+    );
     context.print(
       `Installed module ${id} ${version}; services load external modules from a later release (ADR 0079, X4)`,
     );
@@ -286,11 +310,16 @@ export async function removeModule(
   );
 }
 
-/** `arkvory module pin <id> <version> | --unpin`: updates keep a pinned version (ADR 0078, 3.5). */
+/**
+ * `arkvory module pin <id> <version> | --unpin`: updates keep a pinned version (ADR 0078, 3.5).
+ * Pinning keeps a version against later updates, so it needs a current revocation list like an
+ * install; `--unpin` only lets updates through again and needs none.
+ */
 export async function pinModule(
   root: string,
   id: string,
   version: string | null,
+  allowStale: boolean,
   context: ModuleCommandContext,
 ): Promise<void> {
   await checkJournal(root);
@@ -299,6 +328,14 @@ export async function pinModule(
   if (entry === undefined) throw new Error(`Module ${id} is not installed`);
   if (version !== null && version !== entry.version)
     throw new Error(`Module ${id} is installed at ${entry.version}; pin the installed version`);
+  if (version !== null) {
+    const host = await packageHost(root, await installation(root), context);
+    const list = await readStoredRevocations(root, host.keys);
+    const stale = staleRevocations(list, context.now());
+    refuseStaleRevocations(stale, allowStale);
+    if (stale !== null)
+      await recordStaleRevocations(root, list, { command: 'pin', module: id, version }, context);
+  }
   const modules = set.modules.map((m) => (m.id === id ? { ...m, pinned: version !== null } : m));
   await writeModuleSet(root, { ...set, modules });
   context.print(
@@ -325,8 +362,13 @@ export async function applyRevocations(
     context.print(`Revocation list ${String(candidate.sequence)} is already stored`);
     return;
   }
+  // The newest list is stored even when it is expired: it carries the newest revocations.
   await writeHostFile(root, state, revocationsPath(root), candidate.envelope);
   context.print(
     `Stored revocation list ${String(candidate.sequence)} (${String(candidate.entries.length)} entries)`,
   );
+  if (staleRevocations(candidate, context.now()) !== null)
+    context.print(
+      `Warning: revocation list ${String(candidate.sequence)} expired at ${candidate.expiresAt}; installs and pins stay refused until a current list is stored`,
+    );
 }
