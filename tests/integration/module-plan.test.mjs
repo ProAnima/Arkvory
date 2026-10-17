@@ -73,15 +73,13 @@ test('the writer records its plan; a read gateway with another plan is not ready
   assert.equal((await same.inject({ url: '/health/status' })).statusCode, 503);
 });
 
-test('a worker with another module plan takes no work until the plans agree', async (t) => {
-  const f = await fixture(t);
+/** A production worker process of this installation; its output is kept for assertions. */
+async function worker(f, modulesFile) {
   const keys = join(f.directory, 'worker-keys.json');
   await writeFile(
     keys,
     JSON.stringify(f.config.keys.map((key) => ({ ...key.principal, sha256: key.sha256 }))),
   );
-  const file = join(f.directory, 'modules.json');
-  await writeFile(file, JSON.stringify({ format: 1, modules: { npm: { enabled: false } } }));
   const child = spawn(process.execPath, ['apps/worker/dist/main.js'], {
     windowsHide: true,
     stdio: ['ignore', 'pipe', 'pipe'],
@@ -90,13 +88,13 @@ test('a worker with another module plan takes no work until the plans agree', as
       ARKVORY_DATABASE_URL: f.config.databaseUrl,
       ARKVORY_DATA_DIR: f.directory,
       ARKVORY_KEYS_FILE: keys,
-      ARKVORY_MODULES_FILE: file,
+      ...(modulesFile ? { ARKVORY_MODULES_FILE: modulesFile } : {}),
     },
   });
+  const process_ = { child, output: '' };
   const ended = once(child, 'exit');
-  let output = '';
   const keep = (chunk) => {
-    output = (output + chunk).slice(-32768);
+    process_.output = (process_.output + chunk).slice(-32768);
   };
   child.stdout.on('data', keep);
   child.stderr.on('data', keep);
@@ -106,17 +104,43 @@ test('a worker with another module plan takes no work until the plans agree', as
       await ended;
     }
   });
-  const deadline = performance.now() + 20000;
-  while (!output.includes('worker.module_plan_mismatch') && performance.now() < deadline)
+  return process_;
+}
+
+async function until(condition, what, ms = 20000) {
+  const deadline = performance.now() + ms;
+  while (!condition()) {
+    if (performance.now() > deadline) throw new Error(`Timed out waiting for ${what}`);
     await delay(100);
-  assert.match(output, /worker\.module_plan_mismatch/);
-  assert.doesNotMatch(output, /worker\.started/);
-  assert.equal(child.exitCode, null, 'the worker waits instead of exiting');
+  }
+}
+
+async function npmOff(f) {
+  const file = join(f.directory, 'modules.json');
+  await writeFile(file, JSON.stringify({ format: 1, modules: { npm: { enabled: false } } }));
+  return file;
+}
+
+test('a worker with another module plan takes no work until the plans agree', async (t) => {
+  const f = await fixture(t);
+  const waiting = await worker(f, await npmOff(f));
+  await until(() => waiting.output.includes('worker.module_plan_mismatch'), 'the mismatch');
+  assert.doesNotMatch(waiting.output, /worker.started/);
+  assert.equal(waiting.child.exitCode, null, 'the worker waits instead of exiting');
   // The writer restarts with the worker's plan; the worker starts within its retry pause.
   f.config.modules = parseModuleSelections({ format: 1, modules: { npm: { enabled: false } } });
   await f.restart();
-  const started = performance.now() + 20000;
-  while (!output.includes('worker.started') && performance.now() < started) await delay(100);
-  assert.match(output, /worker\.started/);
-  assert.equal(output.match(/worker\.module_plan_mismatch/g)?.length, 1, 'reported once');
+  await until(() => waiting.output.includes('worker.started'), 'the start', 20000);
+  assert.equal(waiting.output.match(/worker.module_plan_mismatch/g)?.length, 1, 'reported once');
+});
+
+test('a worker waiting for its plan leaves the lock to a standby with the writer plan', async (t) => {
+  const f = await fixture(t);
+  const waiting = await worker(f, await npmOff(f));
+  await until(() => waiting.output.includes('worker.module_plan_mismatch'), 'the mismatch');
+  // Without a file the second worker plans what the writer recorded: it takes over the work.
+  const matching = await worker(f);
+  await until(() => matching.output.includes('worker.started'), 'the matching worker', 20000);
+  assert.doesNotMatch(waiting.output, /worker.started/);
+  assert.equal(waiting.child.exitCode, null, `the waiting worker keeps waiting: ${waiting.output}`);
 });

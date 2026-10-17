@@ -10,27 +10,50 @@ export const planRetryMs = 5000;
 /** How often a running worker compares its plan with the recorded one. */
 export const planWatchMs = 30_000;
 
+/** How the worker takes and gives back its lock and resources around a look at the plan. */
+export interface PlannedStart<Resources> {
+  /** Takes the completion worker's lock with the resources; null once the process stops. */
+  acquire(): Promise<Resources | null>;
+  /** The writer's recorded plan, read through the acquired resources. */
+  recorded(resources: Resources): RecordedPlan;
+  /** Gives the resources and so the lock back. */
+  release(resources: Resources): Promise<void>;
+  /** Called once, on the first mismatch. */
+  onMismatch(): void;
+}
+
 /**
- * Waits until the writer has recorded this worker's module plan (ADR 0079, section 3): a worker
- * with another plan, or before any writer of this schema started, takes no work. The mismatch is
- * reported once; stopping the process while it waits returns false. A database failure rejects,
- * like any other failure of the worker's start.
+ * Takes the worker's lock and resources once the writer has recorded this worker's module plan
+ * (ADR 0079, section 3): a worker with another plan, or before any writer of this schema
+ * started, takes no work. It releases the lock while it waits, so a standby worker with the
+ * writer's plan can take over meanwhile, and looks again every `retryMs`. The mismatch is
+ * reported once; stopping the process while it waits returns null. A database failure releases
+ * the resources and rejects, like any other failure of the worker's start.
  */
-export async function awaitModulePlan(
-  recorded: RecordedPlan,
+export async function acquireWithPlan<Resources>(
+  start: PlannedStart<Resources>,
   fingerprint: string,
   stop: AbortSignal,
-  onMismatch: () => void,
   retryMs = planRetryMs,
-): Promise<boolean> {
+): Promise<Resources | null> {
   let reported = false;
   while (!stop.aborted) {
-    if ((await recorded.read()) === fingerprint) return true;
-    if (!reported) onMismatch();
+    const resources = await start.acquire();
+    if (resources === null) return null;
+    let current: string | null;
+    try {
+      current = await start.recorded(resources).read();
+    } catch (error) {
+      await start.release(resources);
+      throw error;
+    }
+    if (current === fingerprint) return resources;
+    await start.release(resources);
+    if (!reported) start.onMismatch();
     reported = true;
     await delay(retryMs, undefined, { signal: stop }).catch(() => undefined);
   }
-  return false;
+  return null;
 }
 
 /**
