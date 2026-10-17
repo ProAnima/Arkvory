@@ -32,7 +32,7 @@ curl -H "Authorization: Bearer $ARKVORY_TOKEN" \
   "https://arkvory.example.com/api/v1/events?limit=100&types=artifact.*"
 ```
 
-Ответ содержит `items`, `next`, `head`, `oldest` и `epoch`. Передайте `next` как `after` в следующем запросе. Без `after` лента начинается с самого старого события, которое хранит сервер. Запрос возвращает до `limit` событий (1–500, по умолчанию 100). См. [listEvents](../api/reference/events#listEvents).
+Ответ содержит `items`, `next`, `head`, `oldest` и `epoch`. Передайте `next` как `after` в следующем запросе. Без `after` лента начинается с самого старого события, которое хранит сервер. Запрос возвращает до `limit` событий (1–500, по умолчанию 100). Страница короче `limit` ещё не конец ленты: запрос просматривает не больше 5000 событий, поэтому всё прочитано, когда позиция в `next` равна `head`. См. [listEvents](../api/reference/events#listEvents).
 
 ## Событие {#event}
 

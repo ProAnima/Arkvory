@@ -317,7 +317,7 @@ $root = 'C:\ProgramData\ProAnima\Arkvory'
 
 **Диагностика.** Строки worker `events.step_failed` (`errorCode`: `unavailable` — БД недоступна, `internal` — прочее; `attempts`), `events.recovered`, `events.pruned` (`rows`); метрики `arkvory_events_head_position`, `arkvory_events_oldest_position`, `arkvory_events_unsequenced_age_seconds`, `arkvory_events_pruned_total`; оповещение `ArkvoryEventSequencerStalled` (событие ждёт номера дольше 2 минут: worker остановлен, в режиме ожидания или теряет БД). Пока worker не работает, события копятся без позиций и не теряются.
 
-**Восстановление из копии.** Таблицы `arkvory_events` и `arkvory_event_state` в копию не входят; восстановленная установка начинает новую эпоху, курсоры прежней получают 409 `events_epoch_changed`, и потребители перечитывают состояние обычными маршрутами.
+**Восстановление из копии.** Таблицы `arkvory_events` и `arkvory_event_state` в копию не входят; восстановленная установка начинает новую эпоху, курсоры прежней получают 409 `events_epoch_changed`, и потребители перечитывают состояние обычными маршрутами. Это относится к `arkvory-backup restore`. Копия БД средствами PostgreSQL (`pg_dump`, базовая копия, снимок тома) переносит эпоху вместе с позициями: после её восстановления потребитель с курсором новее восстановленного `head` получает 400, а когда новые события дойдут до его позиции, пропустит их без ошибки. Поэтому до запуска API и worker на такой копии смените эпоху: `UPDATE arkvory_event_state SET epoch = gen_random_uuid();` — потребители получат 409 и пересинхронизируются.
 
 ## Зеркала репозиториев
 

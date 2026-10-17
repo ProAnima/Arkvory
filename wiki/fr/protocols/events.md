@@ -32,7 +32,7 @@ curl -H "Authorization: Bearer $ARKVORY_TOKEN" \
   "https://arkvory.example.com/api/v1/events?limit=100&types=artifact.*"
 ```
 
-La réponse contient `items`, `next`, `head`, `oldest` et `epoch`. Passez `next` comme `after` dans la requête suivante. Sans `after`, le flux commence au plus ancien événement conservé par le serveur. Une requête renvoie jusqu’à `limit` événements (1–500, 100 par défaut). Voir [listEvents](../api/reference/events#listEvents).
+La réponse contient `items`, `next`, `head`, `oldest` et `epoch`. Passez `next` comme `after` dans la requête suivante. Sans `after`, le flux commence au plus ancien événement conservé par le serveur. Une requête renvoie jusqu’à `limit` événements (1–500, 100 par défaut). Une page de moins de `limit` événements n’est pas la fin du flux. Une requête examine au plus 5000 événements, vous avez donc tout lu lorsque la position de `next` est égale à `head`. Voir [listEvents](../api/reference/events#listEvents).
 
 ## L’événement {#event}
 

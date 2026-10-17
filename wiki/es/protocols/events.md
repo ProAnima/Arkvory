@@ -32,7 +32,7 @@ curl -H "Authorization: Bearer $ARKVORY_TOKEN" \
   "https://arkvory.example.com/api/v1/events?limit=100&types=artifact.*"
 ```
 
-La respuesta contiene `items`, `next`, `head`, `oldest` y `epoch`. Pase `next` como `after` en la siguiente solicitud. Sin `after`, el flujo empieza en el evento más antiguo que conserva el servidor. Una solicitud devuelve hasta `limit` eventos (1–500, 100 por defecto). Consulte [listEvents](../api/reference/events#listEvents).
+La respuesta contiene `items`, `next`, `head`, `oldest` y `epoch`. Pase `next` como `after` en la siguiente solicitud. Sin `after`, el flujo empieza en el evento más antiguo que conserva el servidor. Una solicitud devuelve hasta `limit` eventos (1–500, 100 por defecto). Una página con menos de `limit` eventos no es el final del flujo. Una solicitud revisa como máximo 5000 eventos, así que ha leído todo cuando la posición de `next` es igual a `head`. Consulte [listEvents](../api/reference/events#listEvents).
 
 ## El evento {#event}
 

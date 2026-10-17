@@ -32,7 +32,7 @@ curl -H "Authorization: Bearer $ARKVORY_TOKEN" \
   "https://arkvory.example.com/api/v1/events?limit=100&types=artifact.*"
 ```
 
-응답에는 `items`, `next`, `head`, `oldest`, `epoch`가 들어 있습니다. 다음 요청에서 `next`를 `after`로 전달하세요. `after`가 없으면 서버가 보관하는 가장 오래된 이벤트부터 시작합니다. 요청 하나는 최대 `limit`개(1–500, 기본 100)의 이벤트를 반환합니다. [listEvents](../api/reference/events#listEvents)를 참고하세요.
+응답에는 `items`, `next`, `head`, `oldest`, `epoch`가 들어 있습니다. 다음 요청에서 `next`를 `after`로 전달하세요. `after`가 없으면 서버가 보관하는 가장 오래된 이벤트부터 시작합니다. 요청 하나는 최대 `limit`개(1–500, 기본 100)의 이벤트를 반환합니다. 이벤트가 `limit`개보다 적다고 끝은 아닙니다. 요청 하나는 최대 5000개의 이벤트를 살펴보므로, `next`의 위치가 `head`와 같을 때 모두 읽은 것입니다. [listEvents](../api/reference/events#listEvents)를 참고하세요.
 
 ## 이벤트 {#event}
 

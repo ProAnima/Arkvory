@@ -32,7 +32,7 @@ curl -H "Authorization: Bearer $ARKVORY_TOKEN" \
   "https://arkvory.example.com/api/v1/events?limit=100&types=artifact.*"
 ```
 
-响应包含 `items`、`next`、`head`、`oldest` 和 `epoch`。在下一次请求中把 `next` 作为 `after` 传入。不传 `after` 时，事件流从服务器保留的最早事件开始。一次请求最多返回 `limit` 个事件（1–500，默认 100）。参见 [listEvents](../api/reference/events#listEvents)。
+响应包含 `items`、`next`、`head`、`oldest` 和 `epoch`。在下一次请求中把 `next` 作为 `after` 传入。不传 `after` 时，事件流从服务器保留的最早事件开始。一次请求最多返回 `limit` 个事件（1–500，默认 100）。返回的事件少于 `limit` 并不表示已到末尾：一次请求最多查看 5000 个事件，`next` 中的位置等于 `head` 时才表示已全部读完。参见 [listEvents](../api/reference/events#listEvents)。
 
 ## 事件 {#event}
 

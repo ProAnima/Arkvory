@@ -32,7 +32,7 @@ curl -H "Authorization: Bearer $ARKVORY_TOKEN" \
   "https://arkvory.example.com/api/v1/events?limit=100&types=artifact.*"
 ```
 
-The answer holds `items`, `next`, `head`, `oldest` and `epoch`. Pass `next` as `after` in the next request. Without `after` the feed starts at the oldest event the server keeps. A request returns up to `limit` events (1–500, 100 by default). See [listEvents](../api/reference/events#listEvents).
+The answer holds `items`, `next`, `head`, `oldest` and `epoch`. Pass `next` as `after` in the next request. Without `after` the feed starts at the oldest event the server keeps. A request returns up to `limit` events (1–500, 100 by default). A page with fewer than `limit` events is not the end of the feed: one request looks at no more than 5000 events, so you have read everything when the position in `next` equals `head`. See [listEvents](../api/reference/events#listEvents).
 
 ## The event {#event}
 

@@ -32,7 +32,7 @@ curl -H "Authorization: Bearer $ARKVORY_TOKEN" \
   "https://arkvory.example.com/api/v1/events?limit=100&types=artifact.*"
 ```
 
-उत्तर में `items`, `next`, `head`, `oldest` और `epoch` होते हैं। अगले अनुरोध में `next` को `after` के रूप में दें। `after` के बिना फ़ीड सर्वर द्वारा रखे गए सबसे पुराने इवेंट से शुरू होती है। एक अनुरोध अधिकतम `limit` इवेंट लौटाता है (1–500, डिफ़ॉल्ट 100)। देखें [listEvents](../api/reference/events#listEvents)।
+उत्तर में `items`, `next`, `head`, `oldest` और `epoch` होते हैं। अगले अनुरोध में `next` को `after` के रूप में दें। `after` के बिना फ़ीड सर्वर द्वारा रखे गए सबसे पुराने इवेंट से शुरू होती है। एक अनुरोध अधिकतम `limit` इवेंट लौटाता है (1–500, डिफ़ॉल्ट 100)। `limit` से कम इवेंट वाला पेज फ़ीड का अंत नहीं है। एक अनुरोध अधिकतम 5000 इवेंट देखता है, इसलिए जब `next` में स्थिति `head` के बराबर हो, तब आपने सब पढ़ लिया है। देखें [listEvents](../api/reference/events#listEvents)।
 
 ## इवेंट {#event}
 
