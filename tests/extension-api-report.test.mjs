@@ -48,27 +48,20 @@ test('changing an internal declaration leaves the report unchanged; a public one
   const copy = await mkdtemp(join(tmpdir(), 'arkvory-api-report-'));
   t.after(() => rm(copy, { recursive: true, force: true }));
   await cp(dist, copy, { recursive: true });
-  const order = join(copy, 'plan-order.d.ts');
-  await writeFile(
-    order,
-    (await readFile(order, 'utf8')).replace(
-      'export declare function startOrder',
-      'export declare function internalHelper(): void;\nexport declare function startOrder',
-    ),
+  // Each edit must apply: an edit that matched nothing would leave the report equal vacuously.
+  const edit = async (name, from, to) => {
+    const file = join(copy, name);
+    const text = await readFile(file, 'utf8');
+    assert.ok(text.includes(from), `${name} no longer declares ${from}`);
+    await writeFile(file, text.replace(from, to));
+  };
+  await edit(
+    'plan-order.d.ts',
+    'export declare function startOrder',
+    'export declare function internalHelper(): void;\nexport declare function startOrder',
   );
-  const rules = join(copy, 'plan-rules.d.ts');
-  await writeFile(
-    rules,
-    (await readFile(rules, 'utf8')).replace('readonly enabled: boolean;', 'readonly on: boolean;'),
-  );
+  await edit('plan-rules.d.ts', 'readonly enabled: boolean;', 'readonly on: boolean;');
   assert.equal(await extensionApiReport(copy), await extensionApiReport());
-  const context = join(copy, 'context.d.ts');
-  await writeFile(
-    context,
-    (await readFile(context, 'utf8')).replace(
-      'readonly mode: ModuleMode;',
-      'readonly mode: string;',
-    ),
-  );
+  await edit('context.d.ts', 'readonly mode: ModuleMode;', 'readonly mode: string;');
   assert.notEqual(await extensionApiReport(copy), await extensionApiReport());
 });
