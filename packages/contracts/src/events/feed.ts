@@ -164,7 +164,7 @@ const eventSchema = {
     id: {
       type: 'string',
       pattern: eventCursorPattern,
-      description: 'Event id, <epoch>:<position>; deduplicate by it',
+      description: 'Event id, `<epoch>:<position>`; deduplicate by it',
     },
     source: { type: 'string' },
     type: { type: 'string' },
@@ -174,7 +174,7 @@ const eventSchema = {
     dataschema: { type: 'string' },
     partitionkey: {
       type: 'string',
-      description: 'repository:<repository>; events of one partition keep their commit order',
+      description: '`repository:<repository>`; events of one partition keep their commit order',
     },
     arkvoryposition: { type: 'string', pattern: decimalPattern },
     arkvoryepoch: { type: 'string', format: 'uuid' },

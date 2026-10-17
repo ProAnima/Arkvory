@@ -1206,9 +1206,9 @@
     "Upload reservation time": "Heure de réservation du téléversement",
     "Explicit IANA time zone, e.g. Europe/Moscow; validated by the server.": "Fuseau horaire IANA explicite, par exemple Europe/Moscow ; validé par le serveur.",
     "Vault is encrypted; null when unknown or not connected.": "Le coffre est chiffré ; null si inconnu ou non connecté.",
-    "Event id, <epoch>:<position>; deduplicate by it": "Id de l’événement, <epoch>:<position> ; dédupliquez par lui",
+    "Event id, `<epoch>:<position>`; deduplicate by it": "Id de l’événement, `<epoch>:<position>` ; dédupliquez par lui",
     "Artifact id, or the path of a file event": "Id de l’artefact, ou le chemin pour un événement de fichier",
-    "repository:<repository>; events of one partition keep their commit order": "repository:<repository> ; les événements d’une partition gardent leur ordre de validation",
+    "`repository:<repository>`; events of one partition keep their commit order": "`repository:<repository>` ; les événements d’une partition gardent leur ordre de validation",
     "Data of the type; its JSON Schema is in the type list": "Données du type ; leur JSON Schema est dans la liste des types"
   }
 }

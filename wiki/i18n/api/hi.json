@@ -1206,9 +1206,9 @@
     "Start of execution, or the request time while queued.": "निष्पादन का आरंभ, या कतार में रहते समय अनुरोध का समय।",
     "Upload reservation time": "अपलोड आरक्षण का समय",
     "Vault is encrypted; null when unknown or not connected.": "वॉल्ट एन्क्रिप्टेड है या नहीं; अज्ञात या कनेक्ट न होने पर null।",
-    "Event id, <epoch>:<position>; deduplicate by it": "इवेंट ID, <epoch>:<position>; इसी से डुप्लिकेट हटाएँ",
+    "Event id, `<epoch>:<position>`; deduplicate by it": "इवेंट ID, `<epoch>:<position>`; इसी से डुप्लिकेट हटाएँ",
     "Artifact id, or the path of a file event": "आर्टिफ़ैक्ट ID, या फ़ाइल इवेंट में पथ",
-    "repository:<repository>; events of one partition keep their commit order": "repository:<repository>; एक पार्टिशन के इवेंट अपना कमिट क्रम बनाए रखते हैं",
+    "`repository:<repository>`; events of one partition keep their commit order": "`repository:<repository>`; एक पार्टिशन के इवेंट अपना कमिट क्रम बनाए रखते हैं",
     "Data of the type; its JSON Schema is in the type list": "टाइप का डेटा; उसका JSON Schema टाइप सूची में है"
   }
 }

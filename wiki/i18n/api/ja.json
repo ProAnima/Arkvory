@@ -1206,9 +1206,9 @@
     "Start of execution, or the request time while queued.": "実行の開始時刻。キューで待機している間はリクエスト時刻。",
     "Upload reservation time": "アップロードの予約時刻",
     "Vault is encrypted; null when unknown or not connected.": "ボールトが暗号化されているか。不明または未接続の場合は null。",
-    "Event id, <epoch>:<position>; deduplicate by it": "イベント ID、<epoch>:<position>。これで重複を除きます",
+    "Event id, `<epoch>:<position>`; deduplicate by it": "イベント ID、`<epoch>:<position>`。これで重複を除きます",
     "Artifact id, or the path of a file event": "アーティファクト ID、ファイルのイベントではパス",
-    "repository:<repository>; events of one partition keep their commit order": "repository:<repository>。同じパーティションのイベントはコミット順を保ちます",
+    "`repository:<repository>`; events of one partition keep their commit order": "`repository:<repository>`。同じパーティションのイベントはコミット順を保ちます",
     "Data of the type; its JSON Schema is in the type list": "タイプのデータ。その JSON Schema はタイプ一覧にあります"
   }
 }

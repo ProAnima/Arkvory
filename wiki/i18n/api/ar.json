@@ -1206,9 +1206,9 @@
     "Start of execution, or the request time while queued.": "بداية التنفيذ، أو وقت الطلب ما دام في الطابور.",
     "Upload reservation time": "وقت حجز الرفع",
     "Vault is encrypted; null when unknown or not connected.": "هل الخزنة مشفّرة؛ القيمة null عند عدم المعرفة أو عدم الاتصال.",
-    "Event id, <epoch>:<position>; deduplicate by it": "معرّف الحدث، <epoch>:<position>؛ أزل التكرار به",
+    "Event id, `<epoch>:<position>`; deduplicate by it": "معرّف الحدث، `<epoch>:<position>`؛ أزل التكرار به",
     "Artifact id, or the path of a file event": "معرّف المُخرَج، أو المسار في أحداث الملفات",
-    "repository:<repository>; events of one partition keep their commit order": "repository:<repository>؛ تحافظ أحداث القسم الواحد على ترتيب تثبيتها",
+    "`repository:<repository>`; events of one partition keep their commit order": "`repository:<repository>`؛ تحافظ أحداث القسم الواحد على ترتيب تثبيتها",
     "Data of the type; its JSON Schema is in the type list": "بيانات النوع؛ مخطط JSON Schema الخاص بها في قائمة الأنواع"
   }
 }

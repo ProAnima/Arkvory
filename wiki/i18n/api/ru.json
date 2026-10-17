@@ -1206,9 +1206,9 @@
     "Start of execution, or the request time while queued.": "Начало выполнения или время запроса, пока задание в очереди.",
     "Upload reservation time": "Время резервирования загрузки",
     "Vault is encrypted; null when unknown or not connected.": "Хранилище зашифровано; null, если неизвестно или не подключено.",
-    "Event id, <epoch>:<position>; deduplicate by it": "Идентификатор события, <epoch>:<position>; дедуплицируйте по нему",
+    "Event id, `<epoch>:<position>`; deduplicate by it": "Идентификатор события, `<epoch>:<position>`; дедуплицируйте по нему",
     "Artifact id, or the path of a file event": "ID артефакта или путь файла для событий файлов",
-    "repository:<repository>; events of one partition keep their commit order": "repository:<repository>; события одного раздела сохраняют порядок фиксации",
+    "`repository:<repository>`; events of one partition keep their commit order": "`repository:<repository>`; события одного раздела сохраняют порядок фиксации",
     "Data of the type; its JSON Schema is in the type list": "Данные типа; их JSON Schema — в списке типов"
   }
 }

@@ -1206,9 +1206,9 @@
     "Start of execution, or the request time while queued.": "Início da execução ou, enquanto na fila, o horário da solicitação.",
     "Upload reservation time": "Hora da reserva do upload",
     "Vault is encrypted; null when unknown or not connected.": "O cofre está criptografado; null quando desconhecido ou não conectado.",
-    "Event id, <epoch>:<position>; deduplicate by it": "Id do evento, <epoch>:<position>; deduplique por ele",
+    "Event id, `<epoch>:<position>`; deduplicate by it": "Id do evento, `<epoch>:<position>`; deduplique por ele",
     "Artifact id, or the path of a file event": "Id do artefato, ou o caminho em eventos de arquivo",
-    "repository:<repository>; events of one partition keep their commit order": "repository:<repository>; os eventos de uma partição mantêm a ordem de confirmação",
+    "`repository:<repository>`; events of one partition keep their commit order": "`repository:<repository>`; os eventos de uma partição mantêm a ordem de confirmação",
     "Data of the type; its JSON Schema is in the type list": "Dados do tipo; seu JSON Schema está na lista de tipos"
   }
 }
