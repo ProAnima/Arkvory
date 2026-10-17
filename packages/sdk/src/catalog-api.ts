@@ -116,8 +116,10 @@ export class CatalogApi {
     if (query.stage !== undefined) params.set('stage', query.stage);
     if (query.after !== undefined) params.set('after', query.after);
     if (query.limit !== undefined) params.set('limit', String(query.limit));
+    // No bare "?": how a URL keeps an empty query differs between Node releases.
+    const search = params.size > 0 ? `?${params.toString()}` : '';
     return readGlobalSearchPage(
-      await this.http.call(`api/v1/search?${params.toString()}`, 'GET', undefined, signal),
+      await this.http.call(`api/v1/search${search}`, 'GET', undefined, signal),
     );
   }
   async attachments(repository: string, id: string, signal?: AbortSignal) {
