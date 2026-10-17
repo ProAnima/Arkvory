@@ -48,6 +48,7 @@ ${ru ? 'КОМАНДЫ' : 'COMMANDS'}
                                               ${ru ? 'События установки JSON-строками; --repository фильтрует' : 'Installation events as JSON lines; --repository filters'}
   mcp [--root DIR] [--max-output-bytes N] [--write [--write-repositories R1,R2]]
                                               ${ru ? 'MCP-сервер на stdio для ИИ-агентов; без --write только чтение' : 'MCP server on stdio for AI agents; read-only without --write'}
+  skill install [--target DIR] [--force]      ${ru ? 'Навык для агентов в ~/.claude/skills/arkvory' : 'Agent skill into ~/.claude/skills/arkvory'}
 
 ${ru ? 'ОБЩИЕ ПАРАМЕТРЫ' : 'GLOBAL OPTIONS'}
   --profile NAME  --repository NAME  --json  --lang en|ru  --help  --version

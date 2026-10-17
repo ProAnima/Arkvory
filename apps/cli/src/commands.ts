@@ -12,6 +12,7 @@ import { CliError } from './errors.js';
 import { isPromotionCommand, promotionCommand } from './promotion-commands.js';
 import { backupCommand } from './backup-commands.js';
 import { eventsCommand } from './event-commands.js';
+import { skillCommand } from './skill-command.js';
 
 const remoteCommands = [
   'doctor',
@@ -44,6 +45,7 @@ export async function execute(
 ): Promise<unknown> {
   const command = word(args, 0);
   if (command === 'profile') return profiles(args);
+  if (command === 'skill') return skillCommand(args);
   if (!remoteCommands.includes(command)) throw new CliError('unknown_command');
   const connected = await connection(args, signal);
   if (command === 'backup') return backupCommand(args, connected, timed(args, signal));

@@ -120,6 +120,22 @@ const local: Readonly<Record<string, Text>> = {
     'The file contains the access key and is never uploaded. Choose another file.',
     'Файл содержит ключ доступа и никогда не загружается. Выберите другой файл.',
   ],
+  skill_not_found: [
+    'The agent skill is not beside arkvoryctl. Reinstall the client package.',
+    'Навыка для агентов нет рядом с arkvoryctl. Переустановите клиентский пакет.',
+  ],
+  invalid_skill_source: [
+    'The packaged agent skill is damaged. Reinstall the client package.',
+    'Навык для агентов в пакете повреждён. Переустановите клиентский пакет.',
+  ],
+  skill_modified: [
+    'Files in the target were changed since the last install; nothing was written. Keep your copy, or repeat with --force to replace it.',
+    'Файлы в каталоге назначения изменены после прошлой установки; ничего не записано. Сохраните свою копию или повторите с --force, чтобы заменить её.',
+  ],
+  skill_target_not_file: [
+    'A skill file in the target is a link or a directory. Remove it or choose another --target.',
+    'Файл навыка в каталоге назначения — ссылка или каталог. Удалите его или выберите другой --target.',
+  ],
   invalid_order: [
     'Use --order version or --order promoted.',
     'Используйте --order version или --order promoted.',
