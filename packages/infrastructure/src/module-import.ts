@@ -13,6 +13,7 @@ import type {
 /** Why the code of a verified package could not be used in this process. */
 export type ModuleLoadProblem =
   | 'import_failed'
+  | 'import_timeout'
   | 'descriptor_invalid'
   | 'descriptor_mismatch'
   | 'config_invalid'
@@ -155,6 +156,27 @@ function confine(): void {
   });
 }
 
+/** How long one entry may take to import, its top-level code included (ADR 0079, X4). */
+export const SIGNED_IMPORT_BUDGET_MS = 30_000;
+
+/**
+ * The import, or `import_timeout` after `budgetMs`: top-level code that awaits forever must not
+ * hold the start of the process. Node cannot cancel an import; its late result is ignored.
+ */
+async function bounded<T>(work: Promise<T>, budgetMs: number): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const expired = new Promise<never>((_resolve, reject) => {
+    timer = setTimeout(() => {
+      reject(new ModuleLoadError('import_timeout'));
+    }, budgetMs);
+  });
+  try {
+    return await Promise.race([work, expired]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 /**
  * The only place of the core that imports code by a computed specifier (ADR 0078, 3.3; listed in
  * COMPUTED_IMPORTS of the policy). The caller passes a package directory that passed the access
@@ -167,6 +189,7 @@ export async function importVerifiedEntry(
   directory: string,
   entry: string,
   signed: ModuleManifest,
+  budgetMs = SIGNED_IMPORT_BUDGET_MS,
 ): Promise<ModuleDescriptor<unknown, unknown>> {
   const url = pathToFileURL(join(directory, ...entry.split('/'))).href;
   // Node resolves a file URL to its real path, so the package is known by its real path too.
@@ -176,8 +199,9 @@ export async function importVerifiedEntry(
   confine();
   let exported: unknown;
   try {
-    exported = await import(url);
+    exported = await bounded(import(url), budgetMs);
   } catch (error) {
+    if (error instanceof ModuleLoadError) throw error;
     throw new ModuleLoadError('import_failed', { cause: error });
   }
   return descriptorOf(exported, signed);

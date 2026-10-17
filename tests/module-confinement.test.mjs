@@ -86,3 +86,28 @@ test('a signed module imports only its own verified files and Node built-ins', a
     'function',
   );
 });
+
+test('an entry whose top-level code never finishes fails alone after the import budget', async (t) => {
+  const host = await moduleInstallation(t);
+  const manifest = { id: 'stuck', roles: ['api'], entry: { api: 'files/main.mjs' } };
+  const hang = Buffer.from('await new Promise(() => undefined);\n');
+  await host.install(
+    packageEntries({
+      signer: host.keys.module,
+      manifest,
+      files: {
+        'files/main.mjs': Buffer.concat([hang, moduleSource(moduleManifestOf(manifest))]),
+        'files/LICENSE.md': Buffer.from('# Module terms\n\nTest terms.\n'),
+      },
+    }),
+  );
+  const loaded = await loadInstallation({
+    role: 'api',
+    coreVersion: '0.6.0',
+    selections: parseModuleSelections({ format: 1, modules: { stuck: { enabled: true } } }),
+    installed: host.source(),
+    now: Date.now(),
+    importBudgetMs: 200,
+  });
+  assert.throws(() => loaded.prepared.get('stuck').create({}), { code: 'import_timeout' });
+});

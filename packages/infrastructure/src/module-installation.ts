@@ -146,11 +146,17 @@ async function loadSigned<Context>(
   planned: PreparedModule<Context>,
   role: ModuleRole,
   selection: ModuleSelection | undefined,
+  budgetMs: number | undefined,
 ): Promise<PreparedModule<Context>> {
   const entry = module.manifest.package.entry[role];
   try {
     if (entry === undefined) throw new ModuleLoadError('descriptor_invalid');
-    const descriptor = await importVerifiedEntry(module.directory, entry, module.manifest.module);
+    const descriptor = await importVerifiedEntry(
+      module.directory,
+      entry,
+      module.manifest.module,
+      budgetMs,
+    );
     let config: unknown;
     try {
       config = descriptor.parseConfig(selection?.config);
@@ -190,6 +196,8 @@ export interface LoadOptions {
   readonly installed?: InstalledModulesSource | undefined;
   /** Milliseconds since the epoch, for the expiry of keys in the package check. */
   readonly now: number;
+  /** How long one entry may take to import; tests shorten SIGNED_IMPORT_BUDGET_MS. */
+  readonly importBudgetMs?: number | undefined;
 }
 
 /**
@@ -222,7 +230,16 @@ export async function loadInstallation<Context>(
       !current
     )
       continue;
-    prepared.set(id, await loadSigned(module, current, options.role, options.selections.get(id)));
+    prepared.set(
+      id,
+      await loadSigned(
+        module,
+        current,
+        options.role,
+        options.selections.get(id),
+        options.importBudgetMs,
+      ),
+    );
   }
   return { ...planned, prepared };
 }
