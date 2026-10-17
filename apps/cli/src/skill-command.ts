@@ -65,6 +65,30 @@ async function installed(target: string): Promise<Map<string, string>> {
   }
 }
 
+/**
+ * Where a skill or manifest name lies in the target: `/`-separated relative segments only. A
+ * manifest is a file in the target that anyone with access there could edit, so `..`, an empty
+ * or `.` segment, a backslash, a drive or stream colon and NUL are refused (null), and every
+ * directory between the target and the file must be a real directory, not a link or junction
+ * that would lead the write or removal elsewhere (`skill_target_not_file`).
+ */
+async function placed(target: string, name: string): Promise<string | null> {
+  const segments = name.split('/');
+  const unsafe = (s: string) => ['\\', ':', '\0'].some((part) => s.includes(part));
+  if (segments.some((s) => s === '' || s === '.' || s === '..' || unsafe(s))) return null;
+  let at = target;
+  for (const segment of segments.slice(0, -1)) {
+    at = join(at, segment);
+    try {
+      if (!(await lstat(at)).isDirectory()) throw new CliError('skill_target_not_file', 6);
+    } catch (error) {
+      if (isMissing(error)) break;
+      throw error;
+    }
+  }
+  return join(target, ...segments);
+}
+
 /** SHA-256 of a file in the target, null when absent; a link or directory is never written. */
 async function present(path: string): Promise<string | null> {
   try {
@@ -111,30 +135,38 @@ export async function skillCommand(args: Arguments) {
   const before = await installed(target);
   const plan = { added: [] as string[], updated: [] as string[], unchanged: [] as string[] };
   const modified: string[] = [];
+  const paths = new Map<string, string>();
   for (const [name, content] of files) {
-    const current = await present(join(target, ...name.split('/')));
+    const path = await placed(target, name);
+    if (path === null) throw new CliError('invalid_skill_source', 7);
+    paths.set(name, path);
+    const current = await present(path);
     if (current === null) plan.added.push(name);
     else if (current === hash(content)) plan.unchanged.push(name);
     else if (current === before.get(name)) plan.updated.push(name);
     else modified.push(name);
   }
   if (modified.length > 0 && !force) throw new CliError('skill_modified', 6);
-  const removed: string[] = [];
+  // Decided before anything changes. A name differing from a kept one only in case is the same
+  // file on Windows and macOS, so it is never removed.
+  const kept = new Set([...files.keys()].map((name) => name.toLowerCase()));
+  const obsolete: [string, string][] = [];
   for (const [name, sha256] of before) {
-    if (files.has(name) || name.includes('..') || name.startsWith('/')) continue;
-    const path = join(target, ...name.split('/'));
-    if ((await present(path)) === sha256) {
-      await unlink(path);
-      removed.push(name);
-    }
+    if (kept.has(name.toLowerCase())) continue;
+    // A name that is not a plain file in the target any more is left alone, not an error.
+    const path = await placed(target, name).catch(() => null);
+    const current = path === null ? null : await present(path).catch(() => null);
+    if (path !== null && current === sha256) obsolete.push([name, path]);
   }
+  for (const [, path] of obsolete) await unlink(path);
   for (const name of [...plan.added, ...plan.updated, ...modified]) {
     const content = files.get(name);
-    if (content) await writeFileAtomically(join(target, ...name.split('/')), content);
+    const path = paths.get(name);
+    if (content && path) await writeFileAtomically(path, content);
   }
   await saveJson(join(target, MANIFEST), {
     format: 1,
     files: Object.fromEntries([...files].map(([name, content]) => [name, hash(content)])),
   });
-  return { target, ...plan, replaced: modified, removed };
+  return { target, ...plan, replaced: modified, removed: obsolete.map(([name]) => name) };
 }

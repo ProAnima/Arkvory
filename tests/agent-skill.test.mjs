@@ -2,12 +2,23 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import { access, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
+import {
+  access,
+  mkdir,
+  mkdtemp,
+  readdir,
+  readFile,
+  rm,
+  symlink,
+  writeFile,
+} from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join, relative } from 'node:path';
 import { build } from 'esbuild';
 import { parseArguments } from '../apps/cli/dist/arguments.js';
 import { help } from '../apps/cli/dist/help.js';
+import { skillCommand } from '../apps/cli/dist/skill-command.js';
 import { copyAgentSkill } from '../scripts/package-client.mjs';
 import { removeTestDirectory } from './helpers.mjs';
 
@@ -152,4 +163,45 @@ test('the packaged skill installs, keeps changed files and removes only unchange
 test('the Windows client installer ships the skill directory', async () => {
   const script = await readFile('deploy/client/windows.iss', 'utf8');
   assert.match(script, /^Source: "\{#Payload\}\\\*";.*Flags: [^;]*recursesubdirs/m);
+});
+
+test('skill install stays in the target: manifest names and linked directories lead nowhere else', async (t) => {
+  const directory = await mkdtemp(join(tmpdir(), 'arkvory-skill-'));
+  t.after(async () => {
+    await rm(join(directory, 'linked', 'reference'), { force: true });
+    await removeTestDirectory(directory);
+  });
+  const outside = join(directory, 'outside');
+  await mkdir(outside);
+  const victim = join(outside, 'victim.txt');
+  await writeFile(victim, 'keep me');
+  const sha256 = createHash('sha256').update('keep me').digest('hex');
+  const install = (target, ...extra) =>
+    skillCommand(parseArguments(['skill', 'install', '--target', target, ...extra]));
+  // A manifest anyone with access to the target could edit names files outside it.
+  const target = join(directory, 'target');
+  await install(target);
+  const names = [
+    '../outside/victim.txt',
+    'reference/../../outside/victim.txt',
+    'reference\\..\\..\\outside\\victim.txt',
+    victim.split('\\').join('/'),
+    `${victim.split('\\').join('/')}:stream`,
+    './../outside/victim.txt',
+  ];
+  const manifest = join(target, '.arkvory-skill.json');
+  const saved = JSON.parse(await readFile(manifest, 'utf8'));
+  for (const name of names) saved.files[name] = sha256;
+  await writeFile(manifest, JSON.stringify(saved));
+  const again = await install(target);
+  assert.deepEqual(again.removed, []);
+  assert.equal(await readFile(victim, 'utf8'), 'keep me');
+  // A skill directory that is a link (a junction needs no privilege on Windows) is not followed.
+  const linked = join(directory, 'linked');
+  await mkdir(linked);
+  await symlink(outside, join(linked, 'reference'), 'junction');
+  await assert.rejects(install(linked), { code: 'skill_target_not_file' });
+  await assert.rejects(install(linked, '--force'), { code: 'skill_target_not_file' });
+  assert.deepEqual(await readdir(outside), ['victim.txt'], 'nothing written through the link');
+  await assert.rejects(access(join(linked, 'SKILL.md')), 'nothing written at all');
 });
