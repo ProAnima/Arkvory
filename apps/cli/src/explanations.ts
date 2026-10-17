@@ -64,6 +64,34 @@ const local: Readonly<Record<string, Text>> = {
     'Укажите текущую ревизию неотрицательным целым числом.',
   ],
   invalid_language: ['Use --lang en or --lang ru.', 'Используйте --lang en или --lang ru.'],
+  invalid_root: [
+    'Pass an existing directory with --root; MCP tools read and write files only below it.',
+    'Укажите существующий каталог в --root: инструменты MCP работают с файлами только внутри него.',
+  ],
+  invalid_max_output_bytes: [
+    'Use --max-output-bytes from 4096 to 1048576 (65536 by default).',
+    'Укажите --max-output-bytes от 4096 до 1048576 (по умолчанию 65536).',
+  ],
+  invalid_path: [
+    'Pass a file path relative to the MCP root.',
+    'Укажите путь к файлу относительно корня MCP.',
+  ],
+  path_outside_root: [
+    'The path leads outside the MCP root or is not a regular file. Choose a file below --root.',
+    'Путь ведёт за корень MCP или указывает не на обычный файл. Выберите файл внутри --root.',
+  ],
+  directory_not_found: [
+    'The target directory does not exist. Create it first.',
+    'Каталог назначения не существует. Сначала создайте его.',
+  ],
+  output_too_large: [
+    'The result does not fit --max-output-bytes even shortened. Ask for less or raise the limit.',
+    'Результат не помещается в --max-output-bytes даже сокращённым. Запросите меньше или увеличьте лимит.',
+  ],
+  max_bytes_exceeded: [
+    'The artifact is larger than maxBytes; nothing was transferred.',
+    'Артефакт больше maxBytes; ничего не передано.',
+  ],
   invalid_order: [
     'Use --order version or --order promoted.',
     'Используйте --order version или --order promoted.',

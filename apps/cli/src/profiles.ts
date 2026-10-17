@@ -154,7 +154,18 @@ function downloadClass(args: Arguments): DownloadClass {
   if (!known) throw new CliError('invalid_class');
   return known;
 }
-export async function connection(args: Arguments, signal: AbortSignal) {
+/** What only `arkvoryctl mcp` asks of a connection (ADR 0081). */
+export interface ConnectionExtras {
+  /** Sent as Arkvory-Client, such as `arkvoryctl-mcp/1.2.3`. */
+  readonly clientName?: string;
+  /** Receives the key once, so results can be checked never to contain it. */
+  readonly onCredential?: (token: string) => void;
+}
+export async function connection(
+  args: Arguments,
+  signal: AbortSignal,
+  extras: ConnectionExtras = {},
+) {
   const config = await configuration();
   const name = args.options.get('profile') ?? config.active;
   const profile = Object.hasOwn(config.profiles, name) ? config.profiles[name] : undefined;
@@ -172,6 +183,7 @@ export async function connection(args: Arguments, signal: AbortSignal) {
   ).trim();
   if (!token || Array.from(token).some((character) => character.charCodeAt(0) < 32))
     throw new CliError('credential_required', 3);
+  extras.onCredential?.(token);
   return {
     client: new ArkvoryClient(server, () => token, {
       signal,
@@ -183,6 +195,7 @@ export async function connection(args: Arguments, signal: AbortSignal) {
         : {}),
       onWait: waitLine(args.language),
       ...(args.options.has('verbose') ? { onRequest: verboseLine } : {}),
+      ...(extras.clientName === undefined ? {} : { clientName: extras.clientName }),
     }),
     server,
     repository,

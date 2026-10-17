@@ -1,8 +1,8 @@
 import { record, readAnnotations, readAttachmentRevision } from '@proanima/arkvory-contracts';
-import { connection, profiles } from './profiles.js';
+import { connection, profiles, repositoryName } from './profiles.js';
 import { option, word, revision, validateCommand, numericOption } from './arguments.js';
 import type { Arguments } from './arguments.js';
-import type { RepositoryClient } from '@proanima/arkvory-sdk';
+import type { ArkvoryClient, RepositoryClient } from '@proanima/arkvory-sdk';
 import { readJson } from './local-files.js';
 import { publishPackage } from './publish-package.js';
 import { upload } from './upload.js';
@@ -76,7 +76,7 @@ export async function execute(
       validateCommand(args, 1, ['after']);
       return scoped.artifacts.list(args.options.get('after'));
     case 'search':
-      return search(args, scoped);
+      return args.options.has('all') ? searchAll(args, client, signal) : search(args, scoped);
     case 'inspect':
       validateCommand(args, 2);
       return scoped.artifacts.get(word(args, 1), signal);
@@ -213,6 +213,21 @@ async function attachments(args: Arguments, scoped: RepositoryClient, signal: Ab
   return scoped.attachments.replace(id, revision(args), items, signal);
 }
 
+/** `search --all` (ADR 0081, A1): every repository the key may list; lists are comma-separated. */
+function searchAll(args: Arguments, client: ArkvoryClient, signal: AbortSignal) {
+  validateCommand(args, 1, ['all', 'query', 'repositories', 'label', 'stage', 'after', 'limit']);
+  const list = (name: string) => args.options.get(name)?.split(',') ?? [];
+  return client.searchAll(
+    {
+      ...(args.options.has('query') ? { q: option(args, 'query') } : {}),
+      repositories: list('repositories').map(repositoryName),
+      labels: list('label'),
+      ...query(args, ['stage', 'after']),
+      ...(args.options.has('limit') ? { limit: numericOption(args, 'limit', 50, 1, 100) } : {}),
+    },
+    signal,
+  );
+}
 function search(args: Arguments, scoped: RepositoryClient) {
   validateCommand(args, 1, [
     'query',
