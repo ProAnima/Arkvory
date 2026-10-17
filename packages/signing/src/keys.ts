@@ -14,17 +14,22 @@ export type KeyClass = (typeof KEY_CLASSES)[number];
 /**
  * ProAnimaStudio module-signing keys built into the core (ADR 0078, 3.2); separate from the
  * release keys in apps/deploy. Rotation as for releases: core release N carries the old and the
- * new key. The list is empty until the owner creates the first key on the module release
- * workstation (`node scripts/module-signing.mjs keygen module`); until then every module package
- * is refused with `unknown_key`. Tests sign with throwaway keys and pass them explicitly.
+ * new key, and the revocation list is re-signed with the new key before a release drops the old
+ * one. The private key stays on the module release workstation and its offline backups. Tests
+ * sign with throwaway keys and pass them explicitly.
  */
-export const moduleKeys: readonly SigningKey[] = [];
+export const moduleKeys: readonly SigningKey[] = [
+  { id: '480096ab97b13571', publicKey: 'Fol++X0p1/bcE6GzL/dkaBUfQ+C4xTmrTDthPlNDmao=' },
+];
 
 /**
- * ProAnimaStudio license-signing keys (ADR 0078, 6.1), separate from release and module keys;
- * empty until the owner creates the first one (`keygen license`). Licenses are read from stage O3.
+ * ProAnimaStudio license root keys (ADR 0078, 6.1), separate from release and module keys. The
+ * private root key is kept offline; it only delegates the hub's online key. Licenses are read
+ * from stage O3.
  */
-export const licenseKeys: readonly SigningKey[] = [];
+export const licenseKeys: readonly SigningKey[] = [
+  { id: '5980f7b85ee39694', publicKey: '/Wfo5nU+pEB21/FMY2PxxmcrhA4xIfWodMCs6Ug6djQ=' },
+];
 
 /** A trusted key with its class; an operator key carries its entry of the trust list. */
 export interface ClassifiedKey extends SigningKey {
