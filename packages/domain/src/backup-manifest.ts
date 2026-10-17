@@ -25,6 +25,9 @@ const snapshotId = /^[0-9A-F]{1,16}-[0-9A-F]{1,16}-[0-9]{1,10}$/;
 const releaseVersion = /^[0-9A-Za-z][0-9A-Za-z.+-]{0,63}$/;
 const commitPattern = /^[a-f0-9]{40}$/;
 const reasonPattern = /^[a-z0-9 ,.;:()/_'-]{1,160}$/;
+/** A storage instance id: `default`, `volume-2`, or `<module>.<name>` (ADR 0083, N11). */
+const backendPattern = /^[a-z][a-z0-9.-]{0,63}$/;
+export const DEFAULT_STORAGE_BACKEND = 'default';
 
 export interface VaultIdentity {
   readonly format: typeof VAULT_FORMAT;
@@ -41,6 +44,11 @@ export interface InventoryEntry {
   readonly id: string;
   readonly size: number;
   readonly sha256: string;
+  /**
+   * Storage that held the blob at capture (ADR 0083, N9); absent means `default`. Lines of the
+   * default storage omit it, so points of a single-storage installation keep their old form.
+   */
+  readonly backend?: string;
 }
 export interface PointFile {
   readonly sha256: string;
@@ -148,19 +156,29 @@ export function parseVaultIdentity(value: unknown): VaultIdentity {
 }
 
 export function parseInventoryEntry(value: unknown): InventoryEntry {
-  const row = fields(value, ['id', 'size', 'sha256'], 'inventory entry');
+  const placed = typeof value === 'object' && value !== null && Object.hasOwn(value, 'backend');
+  const keys = placed ? ['id', 'size', 'sha256', 'backend'] : ['id', 'size', 'sha256'];
+  const row = fields(value, keys, 'inventory entry');
   const size = Number(text(row['size'], decimal, 'inventory size'));
   if (!Number.isSafeInteger(size) || size > MAX_OBJECT_BYTES) throw invalid('Invalid object size');
-  return {
+  const entry = {
     id: identifier(row['id'], 'inventory id'),
     size,
     sha256: text(row['sha256'], sha256, 'inventory digest'),
   };
+  if (!placed) return entry;
+  const backend = text(row['backend'], backendPattern, 'inventory storage');
+  return backend === DEFAULT_STORAGE_BACKEND ? entry : { ...entry, backend };
 }
 
 /** One inventory NDJSON line; sizes are decimal strings like every other byte count. */
 export function inventoryLine(entry: InventoryEntry): string {
-  return JSON.stringify({ id: entry.id, size: String(entry.size), sha256: entry.sha256 });
+  const line = { id: entry.id, size: String(entry.size), sha256: entry.sha256 };
+  return JSON.stringify(
+    entry.backend === undefined || entry.backend === DEFAULT_STORAGE_BACKEND
+      ? line
+      : { ...line, backend: entry.backend },
+  );
 }
 
 export function parseCommitRecord(value: unknown): CommitRecord {

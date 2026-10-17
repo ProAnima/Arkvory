@@ -1,10 +1,8 @@
 import { Pool } from 'pg';
-import { BackupFailure } from '@proanima/arkvory-domain';
+import { ArkvoryError, BackupFailure, DEFAULT_STORAGE_BACKEND } from '@proanima/arkvory-domain';
 import type { InventoryEntry } from '@proanima/arkvory-domain';
-import type { ContentSource } from '@proanima/arkvory-application';
+import type { BlobStore, ContentSource } from '@proanima/arkvory-application';
 import { StorageOwnership } from './storage-ownership.js';
-import { hasCode } from './fs-durability.js';
-import type { LocalBlobStore } from './local-blobs.js';
 
 export type BackupPool = Pool;
 
@@ -69,15 +67,20 @@ export async function claimBackupSource(pool: Pool, storageId: string): Promise<
   }
 }
 
-/** Published content of the source storage; pins keep every listed file in place. */
+/**
+ * Published content of the source installation, read through the storage port from the storage
+ * the inventory names (ADR 0083, N9); pins keep every listed blob in place. A blob the port
+ * reports `unavailable` is missing: the point fails rather than leaving it out.
+ */
 export class LocalContentSource implements ContentSource {
-  constructor(private readonly blobs: LocalBlobStore) {}
+  constructor(private readonly blobs: BlobStore) {}
 
   async *read(entry: InventoryEntry): AsyncIterable<Uint8Array> {
+    const backend = entry.backend ?? DEFAULT_STORAGE_BACKEND;
     try {
-      yield* this.blobs.read(entry.id, entry.size);
+      yield* this.blobs.read(entry.id, entry.size, undefined, backend);
     } catch (error) {
-      if (hasCode(error, 'ENOENT'))
+      if (error instanceof ArkvoryError && error.code === 'unavailable')
         throw new BackupFailure('blob_missing', 'Pinned content is missing from storage', {
           cause: error,
         });

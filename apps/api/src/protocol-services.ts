@@ -11,22 +11,22 @@ import {
   PostgresNpmIndex,
   PostgresOciIndex,
 } from '@proanima/arkvory-infrastructure';
-import type { LocalBlobStore, PostgresCatalog } from '@proanima/arkvory-infrastructure';
+import type { PostgresCatalog, StagingArea } from '@proanima/arkvory-infrastructure';
 
 /**
  * Services of the protocols beside /api/v1: raw files, Git LFS, npm and the image registry
- * (ADR 0063–0066). Their staging lives on the artifact volume, so its free-space reserve
- * covers staged bytes too; npm publishes stage like raw files.
+ * (ADR 0063–0066). Their staging lives in the staging area of the data volume, so its
+ * free-space reserve covers staged bytes too; npm publishes stage like raw files.
+ * They read and write content only through the storage service, never by path (ADR 0083, N9).
  */
 export function createProtocolServices(
   service: StorageService,
   browse: ArtifactCatalog,
   catalog: PostgresCatalog,
-  blobs: LocalBlobStore,
+  staging: StagingArea,
   now: () => string,
 ) {
-  const space = (bytes: number) => blobs.checkSpace(bytes);
-  const rawStaging = new FileRawStaging(blobs.root, space);
+  const rawStaging = new FileRawStaging(staging);
   const ids = { next: randomUUID, now };
   const npmIndex = new PostgresNpmIndex(catalog.pool);
   return {
@@ -49,7 +49,7 @@ export function createProtocolServices(
     registry: new OciRegistry(
       service,
       new PostgresOciIndex(catalog.pool, catalog.capacityBytes),
-      new FileOciStaging(blobs.root, space),
+      new FileOciStaging(staging),
       ids,
       service.maxObjectBytes,
     ),

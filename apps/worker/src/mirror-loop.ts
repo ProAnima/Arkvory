@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { setTimeout as delay } from 'node:timers/promises';
 import { MirrorSync, StageImport, mirrorErrorCode } from '@proanima/arkvory-application';
-import type { MirrorConflictStore } from '@proanima/arkvory-application';
+import type { BlobStore, MirrorConflictStore } from '@proanima/arkvory-application';
 import {
   PostgresContentPins,
   PostgresMirrorConflicts,
@@ -10,17 +10,19 @@ import {
 } from '@proanima/arkvory-infrastructure';
 import type {
   DiagnosticLogger,
-  LocalBlobStore,
   MirrorSettings,
   PostgresCatalog,
+  StagingArea,
 } from '@proanima/arkvory-infrastructure';
 import { SdkMirrorSource } from './mirror-source.js';
 import { ServiceMirrorTarget, clearMirrorStaging } from './mirror-target.js';
 
 export interface MirrorLoopOptions {
   readonly catalog: PostgresCatalog;
-  readonly blobs: LocalBlobStore;
-  readonly dataDirectory: string;
+  /** Mirrored content is read and written only through the port (ADR 0083, N9). */
+  readonly blobs: BlobStore;
+  /** Part files of copies in progress live in its `mirror-staging` directory. */
+  readonly staging: StagingArea;
   readonly mirrors: readonly MirrorSettings[];
   readonly stop: AbortSignal;
   readonly diagnostics: DiagnosticLogger;
@@ -98,7 +100,7 @@ async function follow(
       mirror.repository,
       catalog,
       options.blobs,
-      options.dataDirectory,
+      options.staging,
       pins,
     ),
     states: new PostgresMirrorState(catalog.pool),
@@ -212,7 +214,7 @@ export async function runMirrors(options: MirrorLoopOptions): Promise<void> {
   const states = new PostgresMirrorState(options.catalog.pool);
   const startup = {
     markDetached: (configured: readonly string[]) => states.markDetached(configured),
-    clearStaging: () => clearMirrorStaging(options.dataDirectory),
+    clearStaging: () => clearMirrorStaging(options.staging),
   };
   if (!(await prepareMirrors(startup, options, () => options.catalog.active))) return;
   if (options.mirrors.length === 0) return;

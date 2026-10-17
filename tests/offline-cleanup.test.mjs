@@ -71,7 +71,7 @@ test('local reclamation stops between filesystem phases after protection loss', 
   await mkdir(parts);
   await writeFile(join(staging, 'temporary'), 'staging');
   await writeFile(join(parts, 'part'), 'parts');
-  await writeFile(blobs.contentPath(row.id), 'content');
+  await writeFile(join(blobs.root, 'blobs', row.id), 'content');
   let checked = 0;
   const lost = new Error('Ownership lost after staging removal');
   await assert.rejects(
@@ -84,7 +84,7 @@ test('local reclamation stops between filesystem phases after protection loss', 
   );
   await assert.rejects(access(staging), { code: 'ENOENT' });
   assert.equal(await readFile(join(parts, 'part'), 'utf8'), 'parts');
-  assert.equal(await readFile(blobs.contentPath(row.id), 'utf8'), 'content');
+  assert.equal(await readFile(join(blobs.root, 'blobs', row.id), 'utf8'), 'content');
 });
 
 test('offline cleanup defers an object refused as busy, such as backup-pinned content', async () => {
@@ -121,4 +121,36 @@ test('offline cleanup defers an object refused as busy, such as backup-pinned co
   });
   assert.equal(deleted, 1);
   assert.equal(reclaimed, 1);
+});
+
+test('offline cleanup collects each upload from the storage that holds it', async () => {
+  const placed = { ...row, id: '00000000-0000-4000-8000-000000000003', storageBackend: 'volume-2' };
+  const kept = { ...row, id: '00000000-0000-4000-8000-000000000004', status: 'available' };
+  const collected = [];
+  const gc = new GarbageCollector(
+    {
+      async page(after) {
+        return after ? [] : [placed, kept];
+      },
+      async exclusive(_id, _removeContent, action) {
+        return action({ throwIfAborted() {} });
+      },
+      async reclaimed() {},
+      async expire() {
+        assert.fail('No record here is pending');
+      },
+    },
+    {
+      async collect(id, removeContent, _cancellation, backendId) {
+        collected.push({ id, removeContent, backendId });
+      },
+    },
+    { throwIfAborted() {} },
+  );
+  await gc.run('2026-01-03T00:00:00.000Z');
+  // Absent is the default storage, as on a record written before storages were named.
+  assert.deepEqual(collected, [
+    { id: placed.id, removeContent: true, backendId: 'volume-2' },
+    { id: kept.id, removeContent: false, backendId: undefined },
+  ]);
 });

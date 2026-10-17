@@ -54,6 +54,7 @@ import type {
   LocalBlobStore,
   PostgresCatalog,
   PostgresContentPins,
+  StagingArea,
 } from '@proanima/arkvory-infrastructure';
 
 /** Composition only: each registrar receives just the services it consumes. */
@@ -62,12 +63,14 @@ export function createApiServices(
   blobs: LocalBlobStore,
   pins: PostgresContentPins,
   options: {
+    /** Temporary files of raw and OCI uploads on the data volume (ADR 0083, N9). */
+    staging: StagingArea;
     allowRegistration?: boolean;
     maxObjectBytes?: number;
     mirrors?: readonly MirrorConfiguration[];
-  } = {},
+  },
 ) {
-  const { allowRegistration = false, maxObjectBytes } = options;
+  const { allowRegistration = false, maxObjectBytes, staging } = options;
   const now = () => new Date().toISOString();
   const service = new StorageService(
     catalog,
@@ -143,7 +146,7 @@ export function createApiServices(
     retention: new ArtifactRetention(new PostgresRetention(catalog.pool), now),
     attachments: new BuildAttachments(service, new PostgresAttachments(catalog.pool)),
     links: new DownloadLinks(service, new PostgresTransferLinks(catalog.pool)),
-    ...createProtocolServices(service, browse, catalog, blobs, now),
+    ...createProtocolServices(service, browse, catalog, staging, now),
     completion: new CompletionQueue(jobs, randomUUID),
   };
 }

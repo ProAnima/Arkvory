@@ -152,12 +152,13 @@ Los paquetes registrados son lo que cuenta la política de retención de un repo
 
 ## Errores {#errors}
 
-| Respuesta                        | Significado                                                                                                                                                   |
-| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `400 invalid_input` al registrar | No es un ZIP UPack válido, no hay `upack.json` en la raíz, o un nombre o versión incorrectos                                                                  |
-| `409 version_exists`             | La identidad ya pertenece a otro archivo. Publique una versión nueva. Promover a un repositorio que tiene la versión con otros bytes falla de la misma manera |
-| `404 not_found` al resolver      | Nada coincide con los filtros. Compruebe el grupo, el rango y la etapa                                                                                        |
-| `403 permission_missing`         | A la clave le falta `package.read`, `package.publish` o `content.read`                                                                                        |
+| Respuesta                        | Significado                                                                                                                                                                                                                                 |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `400 invalid_input` al registrar | No es un ZIP UPack válido, no hay `upack.json` en la raíz, o un nombre o versión incorrectos                                                                                                                                                |
+| `503 unavailable` al registrar   | No se puede leer el archivo guardado: el almacenamiento no responde o el archivo falta en él. El SDK y el cliente de línea de comandos repiten la solicitud. Si la respuesta persiste, pida a un administrador que revise el almacenamiento |
+| `409 version_exists`             | La identidad ya pertenece a otro archivo. Publique una versión nueva. Promover a un repositorio que tiene la versión con otros bytes falla de la misma manera                                                                               |
+| `404 not_found` al resolver      | Nada coincide con los filtros. Compruebe el grupo, el rango y la etapa                                                                                                                                                                      |
+| `403 permission_missing`         | A la clave le falta `package.read`, `package.publish` o `content.read`                                                                                                                                                                      |
 
 ## Páginas relacionadas {#related-pages}
 

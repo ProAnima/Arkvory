@@ -314,6 +314,7 @@ export async function createServer(config: ServerConfig, lifecycle: ServerLifecy
   try {
     await runtime.start();
     const services = createApiServices(runtime.catalog, runtime.blobs, runtime.pins, {
+      staging: runtime.staging,
       allowRegistration: config.allowRegistration ?? false,
       ...(config.maxObjectBytes === undefined ? {} : { maxObjectBytes: config.maxObjectBytes }),
       ...(config.mirrors ? { mirrors: config.mirrors } : {}),

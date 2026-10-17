@@ -14,8 +14,14 @@ import type { AssetPage, AssetPageOptions } from './asset-page.js';
 import type { BrowseStore, PackageListOptions, PackagePage } from './catalog-ports.js';
 export type { AssetEntry } from './asset-page.js';
 
+/** A published UPack blob and the storage that holds it; the reader goes through its port. */
+export interface ManifestSource {
+  readonly id: string;
+  readonly size: number;
+  readonly storageBackend?: string | undefined;
+}
 export interface ManifestReader {
-  inspect(id: string): Promise<PackageManifest>;
+  inspect(source: ManifestSource): Promise<PackageManifest>;
 }
 
 export class ArtifactCatalog {
@@ -65,8 +71,9 @@ export class ArtifactCatalog {
   }
   async register(p: Principal, repo: string, id: string) {
     authorizeAction(p, repo, 'package.publish', ['write']);
-    await this.storage.artifact(p, repo, id);
-    return this.store.register(repo, id, await this.manifests.inspect(id), p.id, {
+    const upload = await this.storage.artifact(p, repo, id);
+    const source = { id, size: upload.descriptor.size, storageBackend: upload.storageBackend };
+    return this.store.register(repo, id, await this.manifests.inspect(source), p.id, {
       principal: p,
       repository: repo,
       actions: ['package.publish', 'artifact.read'],

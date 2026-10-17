@@ -338,7 +338,7 @@ test('a truncated blob aborts native full/Range and legacy responses and release
       yield chunk;
       if (!cut) {
         cut = true;
-        await truncate(this.contentPath(id), 0);
+        await truncate(join(this.root, 'blobs', id), 0);
       }
     }
   };

@@ -6,7 +6,11 @@ import { join } from 'node:path';
 import { ArkvoryClient } from '@proanima/arkvory-sdk';
 import { OciRegistry } from '@proanima/arkvory-application';
 import { serviceActions } from '@proanima/arkvory-domain';
-import { FileOciStaging, PostgresOciIndex } from '@proanima/arkvory-infrastructure';
+import {
+  FileOciStaging,
+  PostgresOciIndex,
+  dataVolumeStaging,
+} from '@proanima/arkvory-infrastructure';
 import { setup } from './fixture.mjs';
 
 const digestOf = (bytes) => `sha256:${createHash('sha256').update(bytes).digest('hex')}`;
@@ -359,7 +363,7 @@ test('an index needs its platform manifests; abandoned uploads expire with their
   const sweeper = new OciRegistry(
     null,
     new PostgresOciIndex(f.catalog.pool),
-    new FileOciStaging(f.directory, async () => undefined),
+    new FileOciStaging(dataVolumeStaging(f.directory, async () => undefined)),
     { next: () => id },
     1,
   );

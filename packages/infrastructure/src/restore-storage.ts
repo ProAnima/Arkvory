@@ -1,34 +1,29 @@
-import { mkdir, readdir } from 'node:fs/promises';
-import { BackupFailure } from '@proanima/arkvory-domain';
+import { ArkvoryError, BackupFailure, DEFAULT_STORAGE_BACKEND } from '@proanima/arkvory-domain';
 import type { InventoryEntry } from '@proanima/arkvory-domain';
-import type { Cancellation, RestoreStorage } from '@proanima/arkvory-application';
-import { LocalBlobStore } from './local-blobs.js';
-import { hasCode } from './fs-durability.js';
+import type { BlobStore, Cancellation, RestoreStorage } from '@proanima/arkvory-application';
+import type { StorageLifecycle } from './storage-lifecycle.js';
 
-/** Empty target storage directory filled through the regular LocalBlobStore write path. */
+/**
+ * An empty target storage filled through its regular write path (ADR 0054), only through its
+ * port and lifecycle (ADR 0083, N9): each blob goes to the storage its inventory line names.
+ */
 export class LocalRestoreStorage implements RestoreStorage {
-  private readonly blobs: LocalBlobStore;
-  constructor(
-    private readonly root: string,
-    reserveBytes: number,
-  ) {
-    this.blobs = new LocalBlobStore(root, reserveBytes);
-  }
+  constructor(private readonly target: BlobStore & StorageLifecycle) {}
 
   async requireEmpty(): Promise<void> {
     try {
-      if ((await readdir(this.blobs.root)).length)
-        throw new BackupFailure('target_not_empty', 'Target storage directory is not empty');
+      await this.target.requireEmpty();
     } catch (error) {
-      if (!hasCode(error, 'ENOENT')) throw error;
+      if (error instanceof ArkvoryError && error.code === 'conflict')
+        throw new BackupFailure('target_not_empty', 'Target storage directory is not empty');
+      throw error;
     }
   }
 
   async prepare(): Promise<string> {
     await this.requireEmpty();
-    await mkdir(this.root, { recursive: true, mode: 0o700 });
-    await this.blobs.initialize();
-    return this.blobs.identity();
+    await this.target.initialize();
+    return this.target.identity();
   }
 
   async put(
@@ -36,14 +31,16 @@ export class LocalRestoreStorage implements RestoreStorage {
     source: AsyncIterable<Uint8Array>,
     cancellation: Cancellation,
   ): Promise<void> {
+    const backend = entry.backend ?? DEFAULT_STORAGE_BACKEND;
     const descriptor = { name: 'restored', size: entry.size, sha256: entry.sha256 };
-    await this.blobs.put(
+    await this.target.put(
       entry.id,
       { ...descriptor, labels: [], metadata: {} },
       source,
       cancellation,
+      backend,
     );
     // Only the empty staging folder of this write is removed; published content stays.
-    await this.blobs.collect(entry.id, false, cancellation);
+    await this.target.collect?.(entry.id, false, cancellation, backend);
   }
 }

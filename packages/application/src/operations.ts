@@ -8,6 +8,8 @@ export interface CleanupRecord {
   status: 'pending' | 'available' | 'cancelled';
   expiresAt: string;
   cancelledAt: string | null;
+  /** Storage of the upload's parts and content; absent means the default storage. */
+  storageBackend?: string;
 }
 export interface CleanupCatalog {
   /**
@@ -26,7 +28,12 @@ export interface CleanupCatalog {
 }
 export interface CleanupBlobs {
   /** Check ownership between filesystem operations; an already submitted syscall cannot be revoked. */
-  collect(id: string, removeContent: boolean, cancellation: Cancellation): Promise<void>;
+  collect(
+    id: string,
+    removeContent: boolean,
+    cancellation: Cancellation,
+    backendId?: string,
+  ): Promise<void>;
 }
 
 export class GarbageCollector {
@@ -99,7 +106,12 @@ export class GarbageCollector {
         cancellation.throwIfAborted();
         return 'skipped';
       }
-      await this.blobs.collect(row.id, row.status === 'cancelled', cancellation);
+      await this.blobs.collect(
+        row.id,
+        row.status === 'cancelled',
+        cancellation,
+        row.storageBackend,
+      );
       cancellation.throwIfAborted();
       if (row.status === 'available') return 'skipped';
       await this.catalog.reclaimed(row.id);
