@@ -14,8 +14,11 @@ import {
   startupReason,
   PostgresJobs,
   PostgresIdentity,
+  PostgresModulePlan,
   PostgresServices,
+  planBuiltinModules,
   readMirrorSettings,
+  readModuleSelections,
   readWebhookCertificates,
   readWebhookSettings,
   parseAllowedNetworks,
@@ -31,9 +34,10 @@ import { runMirrors } from './mirror-loop.js';
 import { runWebhooks } from './webhook-loop.js';
 import { readEventRetention, runEventSequencer } from './event-loop.js';
 import { processJob, retireExhausted } from './completion.js';
+import { acquireWithPlan, watchModulePlan } from './module-plan.js';
 
 let levelError: Error | undefined;
-/** Stopped while another worker held the lock: a clean stop, not a failure. */
+/** Stopped before taking work, as standby or waiting for the module plan: a clean stop. */
 class StoppedOnStandby extends Error {}
 function level(): LogLevel {
   try {
@@ -104,19 +108,48 @@ try {
   );
   // ADR 0080: retention of the event outbox, checked before the worker takes its lock.
   const eventRetention = readEventRetention(process.env);
+  // ADR 0079: the installation's module plan, refused before the worker takes its lock.
+  const { compatibilityFingerprint } = planBuiltinModules(
+    identity.version,
+    await readModuleSelections(process.env['ARKVORY_MODULES_FILE']),
+  ).plan;
   // Mirror copies create uploads here, so they need the installation's capacity limit.
-  const acquired = await workerResources(
-    mirrors.length > 0 ? capacityBytes(process.env['ARKVORY_CAPACITY_BYTES']) : 0,
-    stop.signal,
-    () => {
-      diagnostics.write({ level: 'info', component: 'worker', code: 'worker.standby' });
+  const capacity = mirrors.length > 0 ? capacityBytes(process.env['ARKVORY_CAPACITY_BYTES']) : 0;
+  // A worker with another plan than the writer's gives its lock back while it waits.
+  const acquired = await acquireWithPlan(
+    {
+      acquire: () =>
+        workerResources(
+          capacity,
+          stop.signal,
+          () => {
+            diagnostics.write({ level: 'info', component: 'worker', code: 'worker.standby' });
+          },
+          standbyRetryMs,
+          // Every mirror holds a write lock for a whole part copy: one connection each (ADR 0073).
+          2 + Math.min(mirrors.length, 16),
+        ),
+      recorded: (resources) => new PostgresModulePlan(resources.catalog.pool),
+      release: (resources) => resources.catalog.close(),
+      onMismatch: () => {
+        diagnostics.write({
+          level: 'warning',
+          component: 'worker',
+          code: 'worker.module_plan_mismatch',
+        });
+      },
     },
-    standbyRetryMs,
-    // Every mirror holds a write lock for a whole part copy: one connection each (ADR 0073).
-    2 + Math.min(mirrors.length, 16),
+    compatibilityFingerprint,
+    stop.signal,
   );
   if (!acquired) throw new StoppedOnStandby();
   const { catalog, blobs, dataDirectory } = acquired;
+  const recordedPlan = new PostgresModulePlan(catalog.pool);
+  const unwatchPlan = watchModulePlan(recordedPlan, compatibilityFingerprint, () => {
+    process.exitCode = 1;
+    diagnostics.write({ level: 'error', component: 'worker', code: 'worker.module_plan_changed' });
+    stopWorker();
+  });
   let currentLease: PostgresJobLease | undefined;
   const recovery = setInterval(() => {
     if (stop.signal.aborted || (catalog.active && (!currentLease || currentLease.active))) return;
@@ -202,6 +235,7 @@ try {
     await delivering;
     await sequencing;
     clearInterval(recovery);
+    unwatchPlan();
     await catalog.close();
   }
   diagnostics.write({ level: 'info', component: 'worker', code: 'worker.stopped' });

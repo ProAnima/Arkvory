@@ -17,6 +17,7 @@ export function describeModules(modules: Pick<ModuleRuntime, 'plan' | 'states'>)
   return {
     extensionApi: modules.plan.extensionApi,
     fingerprint: modules.plan.fingerprint,
+    compatibilityFingerprint: modules.plan.compatibilityFingerprint,
     modules: modules.states().map(({ module, running, health }) => ({
       id: module.manifest.id,
       version: module.manifest.version,

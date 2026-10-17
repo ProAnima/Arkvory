@@ -7,13 +7,16 @@ import {
   PostgresDownloadLease,
   PostgresContentPins,
   PostgresDownloadSettings,
+  PostgresModulePlan,
 } from '@proanima/arkvory-infrastructure';
-import type { StagingArea } from '@proanima/arkvory-infrastructure';
+import type { DiagnosticRecord, StagingArea } from '@proanima/arkvory-infrastructure';
 import { DownloadSettingsControl } from '@proanima/arkvory-application';
+import { ArkvoryError } from '@proanima/arkvory-domain';
 import type { ServerConfig } from './config.js';
 import { createTransferControls } from './transfer-controls.js';
 import { planApiModules, type ApiModuleContext } from './modules.js';
 import type { ModuleRuntime } from './module-host.js';
+import { ModuleTelemetry } from './module-telemetry.js';
 
 function gatewayRole(config: ServerConfig): 'api' | 'reader' {
   const role: unknown = config.role ?? 'api';
@@ -47,15 +50,22 @@ export class ApiRuntime {
   private ticketRetry: ReturnType<typeof setInterval> | undefined;
   /** The modules of this process (ADR 0079); planned at construction, started last by `start`. */
   readonly modules: ModuleRuntime<ApiModuleContext>;
+  /** The modules' log and metrics, bound to the process log. */
+  readonly telemetry: ModuleTelemetry;
+  /** The plan the writer records and read gateways compare with theirs. */
+  private readonly modulePlan: PostgresModulePlan;
 
   constructor(
     config: ServerConfig,
     /** Release version of the core: the version of built-in modules and part of their plan. */
     coreVersion: string,
+    /** The process log; modules write to it through their telemetry. */
+    log: { write(record: DiagnosticRecord): void } = { write: () => undefined },
   ) {
     this.role = gatewayRole(config);
+    this.telemetry = new ModuleTelemetry(log, () => performance.now());
     // Module settings and the plan are checked before any pool, storage or timer exists.
-    this.modules = planApiModules(this.role, coreVersion);
+    this.modules = planApiModules(this.role, coreVersion, config.modules, this.telemetry);
     // Validate local limits before allocating pools or claiming ownership.
     this.transfers = createTransferControls(config, this.available);
     this.blobs = new LocalBlobStore(config.dataDirectory, config.storageReserveBytes);
@@ -67,6 +77,7 @@ export class ApiRuntime {
       config.databasePoolSize ?? 20,
     );
     this.pins = new PostgresContentPins(this.catalog.sessions);
+    this.modulePlan = new PostgresModulePlan(this.catalog.pool);
     this.lease = config.sharedDownloads
       ? new PostgresDownloadLease(this.catalog.sessions, config.sharedDownloads)
       : undefined;
@@ -83,6 +94,27 @@ export class ApiRuntime {
 
   readonly available = () => !this.stopped && this.catalog.active && (this.lease?.active ?? true);
 
+  /**
+   * Readiness of the modules (ADR 0079, sections 3 and 4): no failed module that the process
+   * cannot do without and, on a read gateway, the plan the writer recorded.
+   */
+  readonly modulesReady = async (): Promise<void> => {
+    if (this.modules.blockingFailure() !== null)
+      throw new ArkvoryError('unavailable', 'A required module failed', {
+        reason: 'module_failed',
+      });
+    // The compatibility fingerprint, not the full one: a gateway of the previous release serves
+    // beside an updated writer with the same modules, as an update without a migration allows.
+    if (
+      this.role === 'reader' &&
+      (await this.modulePlan.read())?.compatibilityFingerprint !==
+        this.modules.plan.compatibilityFingerprint
+    )
+      throw new ArkvoryError('unavailable', 'The module plan differs from the writer', {
+        reason: 'module_plan_mismatch',
+      });
+  };
+
   async start(): Promise<void> {
     try {
       if (this.role === 'reader') await this.blobs.ready();
@@ -94,6 +126,9 @@ export class ApiRuntime {
         this.lease !== undefined,
       );
       await this.lease?.start();
+      // One plan per installation (ADR 0079, section 3): the storage owner records it, and read
+      // gateways and the worker with another plan are not ready until they are restarted.
+      if (this.role === 'api') await this.modulePlan.record(this.modules.plan);
       // Queue tickets keep a download's turn over a restart (ADR 0076); a reader without a key
       // made by a writer yet issues none until a later look finds it.
       // A database hiccup here only delays tickets, as the retry below would.

@@ -14,9 +14,16 @@ test('the global administrator reads the module plan of the installation; nobody
   const answer = await f.app.inject({ url: URL, headers: f.headers });
   assert.equal(answer.statusCode, 200, answer.body);
   const body = answer.json();
-  assert.deepEqual(Object.keys(body).sort(), ['extensionApi', 'fingerprint', 'modules']);
+  assert.deepEqual(Object.keys(body).sort(), [
+    'compatibilityFingerprint',
+    'extensionApi',
+    'fingerprint',
+    'modules',
+  ]);
   assert.equal(body.extensionApi, EXTENSION_API_VERSION);
   assert.match(body.fingerprint, /^[0-9a-f]{64}$/);
+  assert.match(body.compatibilityFingerprint, /^[0-9a-f]{64}$/);
+  assert.notEqual(body.compatibilityFingerprint, body.fingerprint);
   for (const module of body.modules) assert.deepEqual(Object.keys(module).sort(), FIELDS);
   assert.deepEqual(
     body.modules.map((m) => [m.id, m.kind, m.source, m.core, m.enabled, m.running]),
@@ -48,6 +55,7 @@ test('the global administrator reads the module plan of the installation; nobody
   await f.restart();
   const again = (await f.app.inject({ url: URL, headers: f.headers })).json();
   assert.equal(again.fingerprint, body.fingerprint);
+  assert.equal(again.compatibilityFingerprint, body.compatibilityFingerprint);
 
   const origin = await f.listen();
   const client = new ArkvoryClient(origin, () => f.headers.authorization.slice(7));
@@ -74,6 +82,7 @@ test('a read gateway runs the same plan and answers by the published schema', as
   for (const response of [writer, gateway]) validateResponse(URL, 'get', response);
   validateResponse(URL, 'get', await reader.inject({ url: URL, headers: f.readerHeaders }));
   assert.equal(gateway.json().fingerprint, writer.json().fingerprint);
+  assert.equal(gateway.json().compatibilityFingerprint, writer.json().compatibilityFingerprint);
   // Every built-in module serves read gateways too; none of them is idle there.
   assert.ok(gateway.json().modules.every((m) => m.running && m.roles.includes('reader')));
 });

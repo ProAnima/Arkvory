@@ -11,7 +11,13 @@ import {
   type DownloadSchedulePolicy,
 } from '@proanima/arkvory-domain';
 import { readDownloadQueue } from './download-config.js';
-import { parseKeys, downloadShare, readMirrorSettings } from '@proanima/arkvory-infrastructure';
+import {
+  parseKeys,
+  downloadShare,
+  readMirrorSettings,
+  readModuleSelections,
+} from '@proanima/arkvory-infrastructure';
+import type { ModuleSelections } from '@proanima/arkvory-infrastructure';
 import type { MirrorConfiguration } from '@proanima/arkvory-application';
 import type { SharedDownloadPolicy } from '@proanima/arkvory-infrastructure';
 import type { ServiceKey } from '@proanima/arkvory-infrastructure';
@@ -68,6 +74,11 @@ export interface ServerConfig extends UploadTimeoutOptions, OperabilityOptions {
   readonly tls?: TlsSettings;
   /** Mirrored repositories (ADR 0058): read-only for clients, synchronized by the worker. */
   readonly mirrors?: readonly MirrorConfiguration[];
+  /**
+   * The operator's module choices (`ARKVORY_MODULES_FILE`, ADR 0079). Absent: every built-in
+   * module enabled with its defaults.
+   */
+  readonly modules?: ModuleSelections;
   /**
    * Where console feedback goes (ADR 0060). Absent or null: feedback is off; loadConfig turns
    * the studio hub on unless ARKVORY_HUB_URL is set empty.
@@ -201,6 +212,7 @@ export async function loadConfig(env: NodeJS.ProcessEnv): Promise<ServerConfig> 
     );
   const keys = await readKeys(required('ARKVORY_KEYS_FILE'));
   const mirrors = await readMirrors(env);
+  const modules = await readModuleSelections(env['ARKVORY_MODULES_FILE']);
   const maxUploads = number('ARKVORY_MAX_UPLOADS', 8, 32);
   const maxDownloads = number('ARKVORY_MAX_DOWNLOADS', 16, 256);
   const transferQueueLimit = number('ARKVORY_TRANSFER_QUEUE_LIMIT', 64, 1024);
@@ -221,6 +233,7 @@ export async function loadConfig(env: NodeJS.ProcessEnv): Promise<ServerConfig> 
     dataDirectory: required('ARKVORY_DATA_DIR'),
     keys,
     ...(mirrors.length > 0 ? { mirrors } : {}),
+    ...(modules.size > 0 ? { modules } : {}),
     ...readHub(env),
     corsOrigins: parseCorsOrigins(env['ARKVORY_CORS_ORIGINS']),
     webDirectory: env['ARKVORY_WEB_DIR'] ?? 'apps/web/public',

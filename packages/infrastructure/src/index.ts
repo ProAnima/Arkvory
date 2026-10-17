@@ -140,3 +140,20 @@ export type { MirrorSettings } from './mirror-config.js';
 export { SocketReplicaState, parseReplicaCopies } from './replica-socket.js';
 export { stagedFile } from './blob-files.js';
 export type { StagedFile } from './blob-files.js';
+export {
+  CORE_PUBLISHER,
+  CORE_ROUTE_PREFIXES,
+  builtinModules,
+  builtinVersion,
+} from './builtin-modules.js';
+export {
+  ModulePlanError,
+  PROVIDED_HOST_SERVICES,
+  planBuiltinModules,
+  planOrThrow,
+  prepareModule,
+} from './module-plan.js';
+export type { PreparedModule } from './module-plan.js';
+export { parseModuleSelections, readModuleSelections } from './module-selection.js';
+export type { ModuleSelection, ModuleSelections } from './module-selection.js';
+export { PostgresModulePlan, type ModulePlanFingerprints } from './module-plan-store.js';

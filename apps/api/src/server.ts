@@ -40,6 +40,7 @@ import { collectTopology, registerTopologyRoutes, type TopologyParts } from './t
 import { FleetOverviewSource } from './fleet-overview.js';
 import { registerFleetRoutes } from './fleet-routes.js';
 import { registerModuleRoutes } from './module-routes.js';
+import { moduleMetrics } from './module-metrics.js';
 import { RecentLog } from './recent-log.js';
 import { registerOwnershipRecovery } from './ownership-recovery.js';
 import { registerAccessLog } from './access-log.js';
@@ -102,7 +103,7 @@ function registerMaintenance(
 function processMetrics(
   sources: Pick<
     MetricSources,
-    'identity' | 'transfers' | 'diagnostics' | 'jobs' | 'backup' | 'fleet'
+    'identity' | 'transfers' | 'diagnostics' | 'jobs' | 'backup' | 'fleet' | 'modules'
   >,
   activeRequests: () => number,
   {
@@ -140,6 +141,29 @@ function processLog(config: ServerConfig, lifecycle: ServerLifecycle, identity: 
 }
 
 /**
+ * The process log and the runtime, whose modules write to it. Module settings and the plan are
+ * refused while the runtime is built, before any pool or storage exists; a logger created here
+ * is then closed again. Only a logger created here is closed here; a caller's outlives the server.
+ */
+function processRuntime(
+  config: ServerConfig,
+  lifecycle: ServerLifecycle,
+  identity: ProcessIdentity,
+) {
+  const { diagnostics, recentLog } = processLog(config, lifecycle, identity);
+  const closeDiagnostics = () => {
+    if (diagnostics !== lifecycle.diagnostics) diagnostics.close();
+  };
+  try {
+    const runtime = new ApiRuntime(config, identity.version, diagnostics);
+    return { diagnostics, recentLog, closeDiagnostics, runtime };
+  } catch (error) {
+    closeDiagnostics();
+    throw error;
+  }
+}
+
+/**
  * The access log and the metrics. Registered before the security hooks, so both observe every
  * response, rejections included.
  */
@@ -166,6 +190,7 @@ function registerObservation(
         diagnostics,
         ...services.metricSources,
         ...(parts.fleetOverview ? { fleet: parts.fleetOverview } : {}),
+        modules: moduleMetrics(runtime.modules, runtime.telemetry),
       },
       () => drain.activeRequests,
       { certificate: parts.certificate, replica: parts.replica, catalog: runtime.catalog },
@@ -281,6 +306,10 @@ function registerRoutes(app: FastifyInstance, parts: RouteParts) {
     role: runtime.role,
     policy: parts.policy,
     diagnostics: parts.diagnostics,
+    modules: runtime.modules.planned().map(({ manifest }) => ({
+      id: manifest.id,
+      kind: manifest.kind,
+    })),
   });
   if (runtime.role === 'api') registerConsole(app, config.webDirectory ?? 'apps/web/public');
 }
@@ -290,16 +319,15 @@ export async function createServer(config: ServerConfig, lifecycle: ServerLifecy
   const tls = await prepareTls(config);
   const app = createHttpServer({ trustedProxies: config.trustedProxies ?? [], ...tls.options });
   const identity = lifecycle.identity ?? processIdentity('api', 'dev');
-  const runtime = new ApiRuntime(config, identity.version);
+  const { diagnostics, recentLog, closeDiagnostics, runtime } = processRuntime(
+    config,
+    lifecycle,
+    identity,
+  );
   const drain = lifecycle.drain ?? new RequestDrain();
   drain.onBegin(runtime.transfers.drain);
   if (lifecycle.onOwnershipLost)
     registerOwnershipRecovery(app, runtime.available, lifecycle.onOwnershipLost);
-  const { diagnostics, recentLog } = processLog(config, lifecycle, identity);
-  // Only a logger created here is closed here; a caller's logger outlives the server.
-  const closeDiagnostics = () => {
-    if (diagnostics !== lifecycle.diagnostics) diagnostics.close();
-  };
   const certificate = tls.attach(app, diagnostics);
   let background: ReturnType<typeof registerBackgroundTasks> | undefined;
   app.addHook('preClose', async () => {
@@ -327,7 +355,7 @@ export async function createServer(config: ServerConfig, lifecycle: ServerLifecy
     const fleetOverview = fleetOverviewFor(fleet);
     const responses = new ResponseDiagnostics(diagnostics, services.storagePolicies, context);
     // Guard registration precedes feature routes and background startup.
-    registerContractGuard(app);
+    registerContractGuard(app, runtime.modules.planned());
     // Collects routes like the guard does, for the 405 Allow answer of unmatched requests.
     registerNotFound(app, context, runtime.role);
     registerObservation(app, {

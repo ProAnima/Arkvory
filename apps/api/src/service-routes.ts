@@ -20,7 +20,16 @@ export function registerServiceRoutes(
   service: ServiceAccess,
   principal: (request: FastifyRequest) => Principal,
   role: 'api' | 'reader',
-  { maxObjectBytes, selfRegistration }: { maxObjectBytes: number; selfRegistration: boolean },
+  {
+    maxObjectBytes,
+    selfRegistration,
+    modules,
+  }: {
+    maxObjectBytes: number;
+    selfRegistration: boolean;
+    /** Enabled modules this gateway runs (ADR 0079, section 9), in id order. */
+    modules: readonly { readonly id: string; readonly kind: string }[];
+  },
 ): void {
   app.get('/api/v1/capabilities', () =>
     Promise.resolve({
@@ -56,6 +65,7 @@ export function registerServiceRoutes(
         maxParts: MAX_PARTS,
         maxPageSize: 100,
       },
+      modules: modules.map(({ id, kind }) => ({ id, kind })),
     }),
   );
   app.get('/api/v1/auth/permissions', (request) => {

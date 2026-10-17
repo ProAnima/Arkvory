@@ -136,7 +136,7 @@ You cannot change the rates or the number of slots while the installation runs, 
 
 Never do this while any process may still run.
 
-An update needs the same care. Stop every gateway before the installation updates, and start them from the new release afterwards. A gateway that keeps running old code against a newer database schema reports itself as not ready. The offline repair tools for cleanup need all gateways stopped too. The online cleanup of the writer does not.
+An update that changes the database schema needs the same care. Stop every gateway before the installation updates, and start them from the new release afterwards. A gateway that keeps running old code against a newer database schema reports itself as not ready. An update without a schema change does not need this: a gateway of the previous release keeps serving beside the updated writer as long as both plan the same modules with the same settings, and you restart it from the new release when it suits you. The offline repair tools for cleanup need all gateways stopped too. The online cleanup of the writer does not.
 
 ## Gateways or mirrors {#gateways-or-mirrors}
 

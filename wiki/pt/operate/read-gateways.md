@@ -136,7 +136,7 @@ Você não pode alterar as taxas nem o número de slots enquanto a instalação 
 
 Nunca faça isso enquanto qualquer processo ainda possa estar em execução.
 
-Uma atualização exige o mesmo cuidado. Pare todos os gateways antes de a instalação atualizar, e inicie-os a partir da nova versão depois. Um gateway que continua rodando código antigo contra um esquema de banco de dados mais novo se reporta como não pronto. As ferramentas de reparo offline para limpeza também precisam de todos os gateways parados. A limpeza online do escritor não.
+Uma atualização que muda o esquema do banco de dados exige o mesmo cuidado. Pare todos os gateways antes de a instalação atualizar, e inicie-os a partir da nova versão depois. Um gateway que continua rodando código antigo contra um esquema de banco de dados mais novo se reporta como não pronto. Uma atualização sem mudança de esquema não precisa disso: um gateway da versão anterior continua servindo ao lado do escritor atualizado enquanto ambos planejarem os mesmos módulos com as mesmas configurações, e você o reinicia a partir da nova versão quando for conveniente. As ferramentas de reparo offline para limpeza também precisam de todos os gateways parados. A limpeza online do escritor não.
 
 ## Gateways ou espelhos {#gateways-or-mirrors}
 

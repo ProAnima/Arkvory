@@ -63,7 +63,13 @@ export const errorReasons = {
   ],
   integrity_mismatch: [],
   busy: ['request_limit', 'download_queued'],
-  unavailable: ['feedback_disabled', 'hub_unreachable', 'replication_degraded'],
+  unavailable: [
+    'feedback_disabled',
+    'hub_unreachable',
+    'replication_degraded',
+    'module_failed',
+    'module_plan_mismatch',
+  ],
   rate_limited: [
     'login_attempts',
     'registration_attempts',

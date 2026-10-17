@@ -392,6 +392,18 @@ export const servicePaths = {
               maxPageSize: { type: 'integer' },
             },
           },
+          modules: {
+            type: 'array',
+            maxItems: 256,
+            items: {
+              type: 'object',
+              required: ['id', 'kind'],
+              properties: {
+                id: { type: 'string', pattern: '^[a-z][a-z0-9-]{1,31}$' },
+                kind: { type: 'string', pattern: '^[a-z][a-z0-9-]{1,31}$' },
+              },
+            },
+          },
         },
       },
       undefined,

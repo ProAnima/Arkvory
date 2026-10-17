@@ -136,7 +136,7 @@ Vous ne pouvez pas modifier les débits ni le nombre d’emplacements pendant qu
 
 Ne faites jamais cela tant qu’un processus peut encore s’exécuter.
 
-Une mise à jour demande le même soin. Arrêtez chaque passerelle avant que l’installation ne se mette à jour, et redémarrez-les depuis la nouvelle version ensuite. Une passerelle qui continue d’exécuter l’ancien code face à un schéma de base de données plus récent se signale comme non disponible. Les outils de réparation hors ligne pour le nettoyage nécessitent eux aussi l’arrêt de toutes les passerelles. Le nettoyage en ligne du processus d’écriture, non.
+Une mise à jour qui change le schéma de la base de données demande le même soin. Arrêtez chaque passerelle avant que l’installation ne se mette à jour, et redémarrez-les depuis la nouvelle version ensuite. Une passerelle qui continue d’exécuter l’ancien code face à un schéma de base de données plus récent se signale comme non disponible. Une mise à jour sans changement de schéma n’en a pas besoin : une passerelle de la version précédente continue de servir à côté du processus d’écriture mis à jour tant que les deux prévoient les mêmes modules avec les mêmes paramètres, et vous la redémarrez depuis la nouvelle version quand cela vous convient. Les outils de réparation hors ligne pour le nettoyage nécessitent eux aussi l’arrêt de toutes les passerelles. Le nettoyage en ligne du processus d’écriture, non.
 
 ## Passerelles ou miroirs {#gateways-or-mirrors}
 

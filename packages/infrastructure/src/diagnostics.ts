@@ -14,6 +14,7 @@ export type LogComponent =
   | 'webhook'
   | 'events'
   | 'fleet'
+  | 'module'
   | 'migrate'
   | 'process'
   | 'diagnostics';
@@ -116,6 +117,9 @@ export interface DiagnosticFields {
   freedBytes?: string;
   damaged?: number;
   points?: number;
+  /** A module of ADR 0079: its id, and a count it reports about itself. */
+  module?: string;
+  count?: number;
 }
 export interface DiagnosticRecord extends DiagnosticFields {
   level: LogLevel;
