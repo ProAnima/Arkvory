@@ -82,9 +82,15 @@ const INHERITANCE_ONLY = ['S-1-3-0', 'S-1-3-1'];
  * Reads owner and access rules as SIDs, so the result does not depend on the display language.
  * Paths arrive on standard input as JSON with every non-ASCII character escaped, and the answer
  * is UTF-8 JSON in input order, so no path is quoted into the script or read back from it.
+ * Commands come only from the modules of this PowerShell: autoloading would search the module
+ * path first in Documents of the service profile, which every LocalService service may write,
+ * and a module planted there could answer Get-Acl with "SYSTEM only" for every path.
  */
 const ACL_SCRIPT = `
 $ErrorActionPreference = 'Stop'
+$PSModuleAutoLoadingPreference = 'None'
+Import-Module -Name ($PSHOME + '\\Modules\\Microsoft.PowerShell.Security\\Microsoft.PowerShell.Security.psd1')
+Import-Module -Name ($PSHOME + '\\Modules\\Microsoft.PowerShell.Utility\\Microsoft.PowerShell.Utility.psd1')
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 $sid = [System.Security.Principal.SecurityIdentifier]
 $paths = [Console]::In.ReadToEnd() | ConvertFrom-Json
@@ -148,21 +154,19 @@ const escaped = (text: string) =>
   text.replace(/[\u007f-\uffff]/g, (c) => `\\u${c.charCodeAt(0).toString(16).padStart(4, '0')}`);
 
 function readAcls(paths: readonly string[]): Promise<AclEntry[]> {
-  const shell = join(
-    process.env['SystemRoot'] ?? 'C:\\Windows',
-    'System32',
-    'WindowsPowerShell',
-    'v1.0',
-    'powershell.exe',
-  );
+  // SystemRoot comes from the service environment, which only the administrator sets.
+  const home = join(process.env['SystemRoot'] ?? 'C:\\Windows', 'System32', 'WindowsPowerShell');
   const script = Buffer.from(ACL_SCRIPT, 'utf16le').toString('base64');
-  // Windows PowerShell 5 must not inherit the module search path of PowerShell 7.
-  const env = Object.fromEntries(
-    Object.entries(process.env).filter(([key]) => key.toLowerCase() !== 'psmodulepath'),
-  );
+  // Neither the module path of PowerShell 7 nor the per-user one: the system modules only.
+  const env = {
+    ...Object.fromEntries(
+      Object.entries(process.env).filter(([key]) => key.toLowerCase() !== 'psmodulepath'),
+    ),
+    PSModulePath: join(home, 'v1.0', 'Modules'),
+  };
   return new Promise((resolve, reject) => {
     const child = execFile(
-      shell,
+      join(home, 'v1.0', 'powershell.exe'),
       ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-EncodedCommand', script],
       { env, timeout: 60_000, maxBuffer: 64 * 1024 * 1024, windowsHide: true },
       (error, stdout) => {
