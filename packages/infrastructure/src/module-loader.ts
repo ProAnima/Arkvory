@@ -1,4 +1,4 @@
-import { lstat, open } from 'node:fs/promises';
+import { lstat, open, realpath } from 'node:fs/promises';
 import { dirname, isAbsolute, join } from 'node:path';
 import {
   MODULE_SET_FILE,
@@ -138,6 +138,21 @@ async function accessPaths(source: InstalledModulesSource, set: ModuleSet) {
   return { shared, trees };
 }
 
+/**
+ * Directories whose change would undo the checks below them, by their real path: the
+ * installation root, whose owner the check trusts and where `modules/` could be renamed and
+ * replaced after the check, and the directory of the revocation list, where deleting the list
+ * would bring a revoked version back (a missing list revokes nothing). A link may lead to them;
+ * what it leads to must be safe. Their parents are trusted as the core release below the root is.
+ */
+async function guardedDirectories(source: InstalledModulesSource) {
+  const installation = await realpath(dirname(source.directory));
+  const lists = dirname(source.revocationsFile);
+  const guarded = [installation];
+  if (await present(lists)) guarded.push(await realpath(lists));
+  return { installation, guarded };
+}
+
 /** The stored list verified again, or the code that refuses every module without one. */
 async function revocations(
   file: string,
@@ -217,15 +232,17 @@ export async function checkInstalledModules(
   // The shared entries are checked as themselves: a link would lead the checks elsewhere.
   for (const path of shared)
     if ((await lstat(path)).isSymbolicLink()) return refuseAll(set, 'access_link');
-  const all = [...shared, ...[...trees.values()].flatMap((t) => (Array.isArray(t) ? t : []))];
+  const { installation, guarded } = await guardedDirectories(source);
+  const common = [...guarded, ...shared];
+  const all = [...common, ...[...trees.values()].flatMap((t) => (Array.isArray(t) ? t : []))];
   let unsafe: ReadonlySet<string>;
   try {
-    unsafe = await unsafeEntries(all, dirname(source.directory));
+    unsafe = await unsafeEntries(all, installation);
   } catch (error) {
     if (error instanceof ModuleAccessError) return refuseAll(set, error.code);
     throw error;
   }
-  if (shared.some((path) => unsafe.has(path))) return refuseAll(set, 'access_unsafe');
+  if (common.some((path) => unsafe.has(path))) return refuseAll(set, 'access_unsafe');
   const list = await revocations(source.revocationsFile, keys);
   if (list === 'revocations_invalid') return refuseAll(set, list);
   const verified: VerifiedModule[] = [];
