@@ -10,6 +10,7 @@ import { WebhookMetrics } from '../apps/api/dist/webhook-metrics.js';
 import { EventMetrics } from '../apps/api/dist/event-metrics.js';
 import { FleetOverviewSource } from '../apps/api/dist/fleet-overview.js';
 import { ReplicaGuard } from '../apps/api/dist/replica-guard.js';
+import { StorageMetrics } from '../apps/api/dist/storage-metrics.js';
 
 /** Every metric the API can expose, including histogram series and optional TLS/job sources. */
 async function exposedNames() {
@@ -190,6 +191,11 @@ async function exposedNames() {
         monotonic: () => 0,
       },
     ),
+    // A volume that is down and one removed from the configuration: every storage series.
+    storage: new StorageMetrics({
+      status: () => [{ id: 'volume-2', state: 'unavailable', fault: 'probe_failed' }],
+      unconfigured: () => ['volume-3'],
+    }),
     now: () => 0,
     startedAtSeconds: 0,
     residentMemory: () => 0,

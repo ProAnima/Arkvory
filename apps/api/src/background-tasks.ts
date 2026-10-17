@@ -9,6 +9,8 @@ interface Tasks {
   collect?: () => Promise<void>;
   /** Reads the managed sites (ADR 0077); writer only, one round at a time, aborted on stop. */
   fleet?: (signal: AbortSignal) => Promise<void>;
+  /** Rechecks the storages other than `default` (ADR 0083, N11); every role. */
+  storage?: () => Promise<void>;
   /** Applies download queue settings saved by another writer (ADR 0076, stage 3). */
   settings?: () => Promise<void>;
   flush: () => Promise<void>;
@@ -84,6 +86,17 @@ export function registerBackgroundTasks(app: FastifyInstance, tasks: Tasks) {
       component: maintenance,
       code: 'maintenance.unavailable',
     });
+    if (tasks.storage)
+      stops.push(
+        repeat(30000, tasks.storage, tasks.available, (error) => {
+          tasks.diagnostics.write({
+            level: 'warning',
+            component: 'storage',
+            code: 'storage.probe_failed',
+            ...failureCause(error),
+          });
+        }),
+      );
     // Diagnostics persist on every role.
     stops.push(
       repeat(

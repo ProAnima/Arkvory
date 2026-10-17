@@ -219,6 +219,12 @@
 - **Отложено:** `packages/signing` (вместе с O1; сделан, см. ниже), `arkvoryctl doctor`, `arkvory configure --module` с перезапуском и откатом (сейчас файл задаётся в `config/runtime.json` вручную), проверка плана агентом копий (у `apps/backup` нет модулей до X3), реализации служб хоста (этапы Y2–Y11 ADR 0083).
 - **`packages/signing` сделан в этапе O1 ADR 0078** (его «Уточнения реализации (этап O1 и подготовка O2)»): проверка minisign, классы ключей, список отзыва, формат пакета и проверка установленного каталога. В отличие от п. 2 пакет зависит от `extension-api`: манифест пакета читается тем же `parseModuleManifest`. Связь со `signing` пока есть только у `apps/deploy`; `infrastructure` и `apps/cli` получат её с загрузчиком (X4) и клиентскими модулями (X5).
 
+## Уточнения реализации (этап X2, вместе с Y3 ADR 0083)
+
+- `local-storage` — встроенный модуль `storage-backend` с ролями `api`, `reader`, `worker`, `backup`; его настройки в `ARKVORY_MODULES_FILE` (`instances`) задают хранилища помимо `default`. Процессы строят экземпляры сами (`localStorageBackends`), `create` модуля ресурсов не держит, как у протоколов X1. Модуль `core: true`, пока он единственное хранилище ядра (отступление от таблицы п. 8, подробно — ADR 0083, «Y3»).
+- `RoutedBlobStore` и его утиная типизация удалены: `StorageBackends` получает `StorageInstance` с явными `BlobStore`, `StorageLifecycle`, `mode` (`full | read-only`) и `acceptsWrites`; режим `read-only` отказывает в записи кодом `read_only`. Возврат новых записей в хранилище ядра — ADR 0083, N11.
+- Наборы `blob-store` и `readability` пока не в `extension-testkit`: набор хранилища — `tests/contracts/storage-backend.mjs` с тестовым хранилищем `tests/contracts/directory-backend.mjs`; переносимых типов `storage-backend` в `extension-api` этот этап не добавляет. Типизированная конфигурация worker — только для хранилищ (`resources` читает `ARKVORY_MODULES_FILE`), остальной `process.env` worker — отдельно.
+
 ## Последствия
 
 - Три новых workspace и новые связи в `config/architecture.json` (п. 2). Allowlist остальных пакетов не меняется.

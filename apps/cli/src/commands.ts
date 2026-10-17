@@ -1,4 +1,9 @@
-import { record, readAnnotations, readAttachmentRevision } from '@proanima/arkvory-contracts';
+import {
+  record,
+  readAnnotations,
+  readAttachmentRevision,
+  readStoragePlacement,
+} from '@proanima/arkvory-contracts';
 import { connection, profiles, repositoryName } from './profiles.js';
 import { option, word, revision, validateCommand, numericOption } from './arguments.js';
 import type { Arguments } from './arguments.js';
@@ -113,6 +118,7 @@ export async function execute(
       if (word(args, 1) === 'register') return scoped.packages.register(word(args, 2));
       break;
     case 'storage':
+      if (word(args, 1) === 'placement') return placement(args, scoped, signal);
       validateCommand(args, 2);
       if (word(args, 1) === 'usage') return scoped.storage.usage(signal);
       if (word(args, 1) === 'policy') return scoped.storage.policy(signal);
@@ -202,6 +208,21 @@ async function annotations(args: Arguments, scoped: RepositoryClient) {
     metadata: value.metadata,
     collections: value.collections,
   });
+}
+/**
+ * `storage placement` reads where new uploads go and the state of each storage; with
+ * `--file RULES.json --revision N` it replaces the rules (ADR 0083, N11). Stored data never moves.
+ */
+async function placement(args: Arguments, scoped: RepositoryClient, signal: AbortSignal) {
+  validateCommand(args, 2, ['file', 'revision']);
+  if (!args.options.has('file')) return scoped.storage.placement(signal);
+  const { rules } = readStoragePlacement({
+    revision: 0,
+    rules: await readJson(option(args, 'file')),
+    updatedAt: null,
+    backends: [],
+  });
+  return scoped.storage.configurePlacement(revision(args), rules, signal);
 }
 async function attachments(args: Arguments, scoped: RepositoryClient, signal: AbortSignal) {
   const operation = word(args, 1);

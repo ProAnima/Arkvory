@@ -1,7 +1,11 @@
 import { readFile } from 'node:fs/promises';
 import { setTimeout as delay } from 'node:timers/promises';
 import { MirrorSync, StageImport, mirrorErrorCode } from '@proanima/arkvory-application';
-import type { BlobStore, MirrorConflictStore } from '@proanima/arkvory-application';
+import type {
+  BlobStore,
+  MirrorConflictStore,
+  UploadPlacement,
+} from '@proanima/arkvory-application';
 import {
   PostgresContentPins,
   PostgresMirrorConflicts,
@@ -23,6 +27,8 @@ export interface MirrorLoopOptions {
   readonly blobs: BlobStore;
   /** Part files of copies in progress live in its `mirror-staging` directory. */
   readonly staging: StagingArea;
+  /** Storage of the copies by the placement of each repository (ADR 0083, N11). */
+  readonly placement?: UploadPlacement;
   readonly mirrors: readonly MirrorSettings[];
   readonly stop: AbortSignal;
   readonly diagnostics: DiagnosticLogger;
@@ -102,6 +108,7 @@ async function follow(
       options.blobs,
       options.staging,
       pins,
+      options.placement,
     ),
     states: new PostgresMirrorState(catalog.pool),
     conflicts: loggedConflicts(

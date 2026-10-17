@@ -64,6 +64,13 @@ export type {
   EventWindowResponse,
 } from './errors.js';
 export {
+  readStoragePlacement,
+  storagePlacementSchema,
+  type StoragePlacement,
+  type StoragePlacementBackend,
+  type StoragePlacementRule,
+} from './storage-placement.js';
+export {
   moduleOperations,
   readSystemModules,
   systemModulesSchema,

@@ -54,6 +54,7 @@ Toutes les commandes requièrent des droits d’administrateur et l’option `--
 | `finish-install`                                 | Poursuit une première installation interrompue                                                                                                                           |
 | `updates-connect`                                | Connecte la console et le minuteur de mise à jour, et enregistre les services qui manquent à une ancienne installation                                                   |
 | `updates-poll`, `updates-reset`, `changes-reset` | Exécutées par le minuteur de mise à jour et pour la récupération. Voir [Mises à jour](./updates#recover-update)                                                          |
+| `volume-init`                                    | Marque un répertoire vide comme nouveau volume de stockage. N’a pas besoin de `--root`. Voir [Plusieurs volumes](../operate/storage#volumes)                             |
 
 Une seule commande s’exécute à la fois. Une seconde commande s’arrête avec `Installation is locked`. Ne mettez jamais une clé ni un mot de passe dans une option de commande : utilisez des fichiers.
 

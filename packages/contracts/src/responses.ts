@@ -30,6 +30,7 @@ export function readUpload(value: unknown): UploadResponse {
       labels: strings(d['labels']),
       metadata: stringMap(d['metadata']),
     },
+    ...(row['storageBackend'] === undefined ? {} : { storageBackend: text(row['storageBackend']) }),
   };
 }
 export interface AnnotationsResponse {

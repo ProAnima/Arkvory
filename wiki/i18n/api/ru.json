@@ -512,6 +512,22 @@
       "summary": "Запросить пачку очистки сейчас",
       "description": "Планирует немедленный запуск следующей пачки включённой политики очистки; ответ — состояние очистки, а байты освобождаются только после выполнения пачки (см. `lastRunAt` в `getCleanup`). `expectedRevision` должна быть текущей ревизией; выключенная очистка — 409 `state_conflict`. Объекты, которые читаются или записываются, откладываются до следующей пачки."
     },
+    "getStoragePlacement": {
+      "en": {
+        "summary": "Read the storage placement",
+        "description": "Returns the placement rules of the repository and its `revision` (0 before the first change), and every storage of the answering server in `backends`, `default` first, with its `state`: `accepting` (takes new uploads), `not_accepting` (keeps serving and finishing what it holds, takes no new uploads), `read_only`, `disabled`, `unavailable` (not open or not answering) or `not_loaded` (not configured). Needs `storage.read`."
+      },
+      "summary": "Прочитать размещение хранилищ",
+      "description": "Возвращает правила размещения репозитория и `revision` (0 до первого изменения), а также все хранилища ответившего сервера в `backends`, первым `default`, с состоянием `state`: `accepting` (принимает новые загрузки), `not_accepting` (продолжает обслуживать и завершать то, что хранит, но новых загрузок не принимает), `read_only`, `disabled`, `unavailable` (не открыто или не отвечает) или `not_loaded` (не настроено). Нужно право `storage.read`."
+    },
+    "setStoragePlacement": {
+      "en": {
+        "summary": "Set the storage placement",
+        "description": "Replaces the rules that choose the storage of new uploads of the repository. A rule has an `id`, the storage `backendId` and two optional conditions: `packageGroup` (a group, `prefix/*` or `*`) and `minSizeBytes` (a decimal string); the first rule whose conditions hold wins, no match means `default`. At most 32 rules. A storage that is not configured is refused with 400 `backend_unknown`. When the chosen storage does not take new uploads at upload time, the upload is created in `default` and its `storageBackend` says so; publication never fails because of placement. Stored data never moves. `expectedRevision` must be the current revision, otherwise 409 `revision_mismatch`. Needs `storage.manage`."
+      },
+      "summary": "Задать размещение хранилищ",
+      "description": "Заменяет правила, выбирающие хранилище новых загрузок репозитория. У правила есть `id`, хранилище `backendId` и два необязательных условия: `packageGroup` (группа, `prefix/*` или `*`) и `minSizeBytes` (десятичная строка); выигрывает первое правило, условия которого выполнены, без совпадения — `default`. Не больше 32 правил. Ненастроенное хранилище отклоняется с 400 `backend_unknown`. Если выбранное хранилище в момент загрузки не принимает новые данные, загрузка создаётся в `default`, и её `storageBackend` это показывает; публикация из-за размещения не отказывает. Сохранённые данные не переносятся. `expectedRevision` должна быть текущей ревизией, иначе 409 `revision_mismatch`. Нужно право `storage.manage`."
+    },
     "getRepositoryMirror": {
       "en": {
         "summary": "Get the synchronization state of a mirror",
@@ -1152,6 +1168,7 @@
       "unsupported_media_type": "Эта операция не принимает указанный Content-Type.",
       "method_not_allowed": "Путь существует, но не для этого метода.",
       "range_not_satisfiable": "Запрошенный диапазон байтов выходит за пределы содержимого.",
+      "backend_unknown": "Правило размещения называет хранилище, которого на этом сервере нет.",
       "route_not_found": "Такого маршрута нет.",
       "upload_expired": "Срок сессии загрузки истёк до её завершения.",
       "upload_state": "Загрузка находится в состоянии, в котором этот шаг недопустим.",
@@ -1164,6 +1181,7 @@
       "stage_limit": "У артефакта максимальное число стадий.",
       "state_conflict": "Объект находится в состоянии, в котором это изменение недопустимо.",
       "mirror_read_only": "Репозиторий является зеркалом; он меняется только через синхронизацию.",
+      "backend_read_only": "Хранилище этой загрузки не принимает новые данные; начните новую загрузку, она попадёт в хранилище, которое принимает.",
       "permission_missing": "У учётных данных нет действия, которое требует эта операция.",
       "read_only_token": "Персональный токен только для чтения ничего не может изменять.",
       "credential_revoked": "Ключ или токен отозван.",

@@ -1,5 +1,32 @@
 export * from './local-blobs.js';
-export * from './routed-blobs.js';
+export { StorageBackends } from './storage-backends.js';
+export type {
+  CollectingBlobStore,
+  StorageBackendStatus,
+  StorageFault,
+  StorageInstance,
+} from './storage-backends.js';
+export {
+  LOCAL_STORAGE_MODULE,
+  localStorageBackends,
+  localStorageSettings,
+  parseLocalStorageConfig,
+  readLocalStorageSettings,
+  requireReplicatedVolumes,
+} from './storage-backend-config.js';
+export type {
+  LocalStorageConfig,
+  LocalStorageSettings,
+  StorageBackendOptions,
+} from './storage-backend-config.js';
+export {
+  probeStorageBackends,
+  watchStorageBackends,
+  STORAGE_PROBE_MS,
+  storageChangeRecord,
+} from './storage-backend-probe.js';
+export type { ProbeOptions, StorageIdentityRecords } from './storage-backend-probe.js';
+export { PostgresPlacementPolicies, PostgresStorageIdentities } from './storage-placement-store.js';
 export * from './postgres-catalog.js';
 export { databasePlaintextExposed } from './database-transport.js';
 export * from './migrations.js';

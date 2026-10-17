@@ -1,5 +1,6 @@
 import {
   BackupFailure,
+  DEFAULT_STORAGE_BACKEND,
   INVENTORY_FILE,
   parseInventoryEntry,
   parseVaultJson,
@@ -90,6 +91,7 @@ export class RestoreToEmptyTarget {
     if (!check.ok) throw new BackupFailure('integrity_mismatch', 'Point failed verification');
     await this.deps.database.requireEmpty();
     await this.deps.storage.requireEmpty();
+    await this.requireTargets(manifest, cancellation);
     if (!request.confirmed) return { outcome: 'planned', ...plan(manifest) };
     this.deps.progress?.('content');
     const storageId = await this.deps.storage.prepare();
@@ -117,6 +119,32 @@ export class RestoreToEmptyTarget {
     this.deps.progress?.('done');
     const { rows: loadedRows, ...normalization } = loaded;
     return { outcome: 'restored', ...plan(manifest), normalization, loadedRows };
+  }
+
+  /**
+   * Every storage the point's content lives in must be a storage of the target, checked before
+   * anything is written: a restore never puts a blob where its upload row will not look.
+   */
+  private async requireTargets(manifest: BackupManifest, cancellation: Cancellation) {
+    const supports = this.deps.storage.supports?.bind(this.deps.storage);
+    if (!supports) return;
+    const checked = new Set<string>();
+    for await (const line of this.deps.vault.lines(
+      manifest.pointId,
+      INVENTORY_FILE,
+      manifest.inventory,
+      cancellation,
+    )) {
+      cancellation.throwIfAborted();
+      const backend = parseInventoryEntry(parseVaultJson(line)).backend ?? DEFAULT_STORAGE_BACKEND;
+      if (checked.has(backend)) continue;
+      if (!supports(backend))
+        throw new BackupFailure(
+          'invalid_argument',
+          'The point holds content of a storage the restore target does not name',
+        );
+      checked.add(backend);
+    }
   }
 
   private async copyContent(manifest: BackupManifest, cancellation: Cancellation): Promise<void> {

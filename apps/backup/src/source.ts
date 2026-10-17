@@ -4,7 +4,6 @@ import { defaultCaptureLimits } from '@proanima/arkvory-application';
 import type { CaptureDependencies, CaptureEvent } from '@proanima/arkvory-application';
 import {
   FileVault,
-  LocalBlobStore,
   LocalContentSource,
   PacedContentSource,
   PostgresBackupJobs,
@@ -16,14 +15,18 @@ import {
   backupPool,
   claimBackupSource,
   keyFileSource,
-  requireSeparateTrees,
+  localStorageBackends,
+  PostgresStorageIdentities,
+  probeStorageBackends,
 } from '@proanima/arkvory-infrastructure';
-import type { BackupPool, VaultKeySource } from '@proanima/arkvory-infrastructure';
+import type { BackupPool, StorageBackends, VaultKeySource } from '@proanima/arkvory-infrastructure';
 import type { SourceConfig } from './config.js';
+import { requireVaultApart, sourceVolumes } from './storage-roots.js';
 
 export interface CaptureSource {
   readonly pool: BackupPool;
-  readonly blobs: LocalBlobStore;
+  /** Every storage of the source; content is read from the storage of its inventory line. */
+  readonly blobs: StorageBackends;
   readonly storageId: string;
   /** False once the capture session (maintenance and singleton locks) is lost. */
   readonly active: () => boolean;
@@ -35,11 +38,15 @@ export interface CaptureSource {
  * the schema must be this release's. The capture session holds 18471/4 shared and 18471/19.
  */
 export async function openCaptureSource(config: SourceConfig): Promise<CaptureSource> {
-  const blobs = new LocalBlobStore(config.dataDirectory, config.reserveBytes);
+  const blobs = localStorageBackends(
+    config.dataDirectory,
+    config.reserveBytes,
+    await sourceVolumes(config.dataDirectory, config.modulesFile),
+  );
   let storageId: string;
   try {
-    await blobs.ready();
-    storageId = await blobs.identity(true);
+    await blobs.core.lifecycle.ready();
+    storageId = await blobs.core.lifecycle.identity(true);
   } catch (error) {
     throw new BackupFailure('storage_mismatch', 'ARKVORY_DATA_DIR is not an initialized storage', {
       cause: error,
@@ -50,6 +57,9 @@ export async function openCaptureSource(config: SourceConfig): Promise<CaptureSo
     if ((await appliedSchemaVersion(pool)) !== SCHEMA_VERSION)
       throw new BackupFailure('schema_mismatch', 'Source schema differs from this release');
     const session = await claimBackupSource(pool, storageId);
+    // Read-only: a storage the writer has not recorded yet holds nothing to copy. Content of a
+    // storage that is not available fails the capture as missing content, never silently.
+    await probeStorageBackends(blobs, new PostgresStorageIdentities(pool), { create: false });
     return {
       pool,
       blobs,
@@ -79,17 +89,20 @@ export function vaultKeys(
   return path === undefined || path === '' ? undefined : keyFileSource(path);
 }
 
-/** Opens a vault and proves its identity; refuses a vault overlapping the storage root. */
+/**
+ * Opens a vault and proves its identity; refuses a vault overlapping the storage root or, given
+ * every root of the source, any of its volumes.
+ */
 export async function openVault(
   directory: string,
-  storageRoot?: string,
+  storageRoots?: string | readonly string[],
   keys?: VaultKeySource,
 ): Promise<FileVault> {
   const vault = await FileVault.open(directory, undefined, keys);
-  if (storageRoot !== undefined)
-    await requireSeparateTrees(
-      { label: 'vault', path: vault.root },
-      { label: 'storage root', path: storageRoot },
+  if (storageRoots !== undefined)
+    await requireVaultApart(
+      vault.root,
+      typeof storageRoots === 'string' ? [storageRoots] : storageRoots,
     );
   await vault.identity();
   return vault;

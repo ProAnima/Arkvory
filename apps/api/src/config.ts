@@ -16,8 +16,11 @@ import {
   downloadShare,
   readMirrorSettings,
   readModuleSelections,
+  localStorageSettings,
+  LOCAL_STORAGE_MODULE,
+  requireReplicatedVolumes,
 } from '@proanima/arkvory-infrastructure';
-import type { ModuleSelections } from '@proanima/arkvory-infrastructure';
+import type { LocalStorageSettings, ModuleSelections } from '@proanima/arkvory-infrastructure';
 import type { MirrorConfiguration } from '@proanima/arkvory-application';
 import type { SharedDownloadPolicy } from '@proanima/arkvory-infrastructure';
 import type { ServiceKey } from '@proanima/arkvory-infrastructure';
@@ -36,6 +39,8 @@ export interface ServerConfig extends UploadTimeoutOptions, OperabilityOptions {
   readonly sharedDownloads?: SharedDownloadPolicy;
   readonly databaseUrl: string;
   readonly dataDirectory: string;
+  /** More `local-storage` instances beside `default` (ADR 0083, N11; ARKVORY_MODULES_FILE). */
+  readonly storageBackends?: readonly LocalStorageSettings[];
   readonly host: string;
   readonly port: number;
   readonly capacityBytes: number;
@@ -213,6 +218,10 @@ export async function loadConfig(env: NodeJS.ProcessEnv): Promise<ServerConfig> 
   const keys = await readKeys(required('ARKVORY_KEYS_FILE'));
   const mirrors = await readMirrors(env);
   const modules = await readModuleSelections(env['ARKVORY_MODULES_FILE']);
+  const dataDirectory = required('ARKVORY_DATA_DIR');
+  const storageBackends = localStorageSettings(modules.get(LOCAL_STORAGE_MODULE), dataDirectory);
+  if (env['ARKVORY_REPLICA_SOCKET'] && storageBackends.length > 0)
+    await requireReplicatedVolumes(dataDirectory, storageBackends);
   const maxUploads = number('ARKVORY_MAX_UPLOADS', 8, 32);
   const maxDownloads = number('ARKVORY_MAX_DOWNLOADS', 16, 256);
   const transferQueueLimit = number('ARKVORY_TRANSFER_QUEUE_LIMIT', 64, 1024);
@@ -230,7 +239,8 @@ export async function loadConfig(env: NodeJS.ProcessEnv): Promise<ServerConfig> 
     ...(env['ARKVORY_MAX_OBJECT_BYTES'] === undefined
       ? {}
       : { maxObjectBytes: number('ARKVORY_MAX_OBJECT_BYTES', MAX_OBJECT_BYTES, MAX_OBJECT_BYTES) }),
-    dataDirectory: required('ARKVORY_DATA_DIR'),
+    dataDirectory,
+    ...(storageBackends.length > 0 ? { storageBackends } : {}),
     keys,
     ...(mirrors.length > 0 ? { mirrors } : {}),
     ...(modules.size > 0 ? { modules } : {}),

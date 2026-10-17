@@ -512,6 +512,22 @@
       "summary": "طلب دفعة تنظيف الآن",
       "description": "يجدول بدء الدفعة التالية من سياسة التنظيف المفعّلة فورًا؛ والردّ هو حالة التنظيف، ولا تتحرر البايتات إلا بعد تشغيل الدفعة (انظر `lastRunAt` في `getCleanup`). يجب أن تكون `expectedRevision` هي المراجعة الحالية؛ والتنظيف المعطّل يعطي 409 `state_conflict`. الكائنات التي تجري قراءتها أو كتابتها تُؤجَّل إلى دفعة لاحقة."
     },
+    "getStoragePlacement": {
+      "en": {
+        "summary": "Read the storage placement",
+        "description": "Returns the placement rules of the repository and its `revision` (0 before the first change), and every storage of the answering server in `backends`, `default` first, with its `state`: `accepting` (takes new uploads), `not_accepting` (keeps serving and finishing what it holds, takes no new uploads), `read_only`, `disabled`, `unavailable` (not open or not answering) or `not_loaded` (not configured). Needs `storage.read`."
+      },
+      "summary": "قراءة توزيع التخزين",
+      "description": "يُرجع قواعد التوزيع للمستودع ورقم `revision` الخاص بها (0 قبل أول تغيير)، وكل مخزن في الخادم المجيب ضمن `backends`، بدءًا بـ `default`، مع حالته `state`: `accepting` (يقبل عمليات رفع جديدة)، أو `not_accepting` (يواصل تقديم ما يحفظه وإكماله لكنه لا يقبل عمليات رفع جديدة)، أو `read_only`، أو `disabled`، أو `unavailable` (غير مفتوح أو لا يستجيب)، أو `not_loaded` (غير مُعدّ). يتطلب `storage.read`."
+    },
+    "setStoragePlacement": {
+      "en": {
+        "summary": "Set the storage placement",
+        "description": "Replaces the rules that choose the storage of new uploads of the repository. A rule has an `id`, the storage `backendId` and two optional conditions: `packageGroup` (a group, `prefix/*` or `*`) and `minSizeBytes` (a decimal string); the first rule whose conditions hold wins, no match means `default`. At most 32 rules. A storage that is not configured is refused with 400 `backend_unknown`. When the chosen storage does not take new uploads at upload time, the upload is created in `default` and its `storageBackend` says so; publication never fails because of placement. Stored data never moves. `expectedRevision` must be the current revision, otherwise 409 `revision_mismatch`. Needs `storage.manage`."
+      },
+      "summary": "تعيين توزيع التخزين",
+      "description": "يستبدل القواعد التي تختار مخزن عمليات الرفع الجديدة للمستودع. للقاعدة `id` والمخزن `backendId` وشرطان اختياريان: `packageGroup` (مجموعة، أو `prefix/*`، أو `*`) و`minSizeBytes` (سلسلة عشرية)؛ تفوز أول قاعدة تتحقق شروطها، وعند عدم التطابق يُستخدم `default`. 32 قاعدة على الأكثر. يُرفض المخزن غير المُعدّ بالرمز 400 `backend_unknown`. إذا لم يقبل المخزن المختار بيانات جديدة وقت الرفع، تُنشأ عملية الرفع في `default` ويبيّن ذلك حقلُها `storageBackend`؛ ولا يفشل النشر أبدًا بسبب التوزيع. لا تُنقل البيانات المخزنة أبدًا. يجب أن يكون `expectedRevision` هو المراجعة الحالية، وإلا 409 `revision_mismatch`. يتطلب `storage.manage`."
+    },
     "getRepositoryMirror": {
       "en": {
         "summary": "Get the synchronization state of a mirror",
@@ -1152,6 +1168,7 @@
       "unsupported_media_type": "قيمة Content-Type ليست مما تقبله هذه العملية.",
       "method_not_allowed": "المسار موجود لكن ليس بهذه الطريقة.",
       "range_not_satisfiable": "نطاق البايتات المطلوب يقع خارج المحتوى.",
+      "backend_unknown": "تسمّي قاعدة توزيع مخزنًا غير موجود في هذا الخادم.",
       "route_not_found": "لا يوجد مسار (route) كهذا.",
       "upload_expired": "انتهت صلاحية جلسة الرفع قبل إكمالها.",
       "upload_state": "عملية الرفع ليست في حالة تسمح بهذه الخطوة.",
@@ -1164,6 +1181,7 @@
       "stage_limit": "بلغ المُخرَج الحد الأقصى لعدد المراحل.",
       "state_conflict": "الكائن في حالة لا تسمح بهذا التغيير.",
       "mirror_read_only": "المستودع مرآة؛ ولا يتغير إلا بالمزامنة.",
+      "backend_read_only": "مخزن عملية الرفع هذه لا يقبل بيانات جديدة؛ ابدأ عملية رفع جديدة، فستذهب إلى مخزن يقبلها.",
       "permission_missing": "تفتقر بيانات الاعتماد إلى الإجراء الذي تحتاجه هذه العملية.",
       "read_only_token": "الرمز الشخصي للقراءة فقط لا يستطيع تغيير أي شيء.",
       "credential_revoked": "أُبطل المفتاح أو الرمز.",

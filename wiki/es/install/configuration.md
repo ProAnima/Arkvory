@@ -54,6 +54,7 @@ Todos los comandos necesitan derechos de administrador y la opción `--root` con
 | `finish-install`                                 | Continúa una primera instalación interrumpida                                                                                                                    |
 | `updates-connect`                                | Conecta la consola y el temporizador de actualizaciones, y registra los servicios que le faltan a una instalación antigua                                        |
 | `updates-poll`, `updates-reset`, `changes-reset` | Los ejecuta el temporizador de actualizaciones y sirven para la recuperación. Consulte [Actualizaciones](./updates#recover-update)                               |
+| `volume-init`                                    | Marca un directorio vacío como nuevo volumen de almacenamiento. No necesita `--root`. Consulte [Varios volúmenes](../operate/storage#volumes)                    |
 
 Solo se ejecuta un comando a la vez. Un segundo comando se detiene con `Installation is locked`. Nunca ponga una clave ni una contraseña en una opción de comando: use archivos.
 

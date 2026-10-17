@@ -28,7 +28,6 @@ import {
   backupPool,
   failureCause,
   redactDiagnostic,
-  requireSeparateTrees,
 } from '@proanima/arkvory-infrastructure';
 import type {
   BackupPool,
@@ -39,6 +38,7 @@ import type { AgentConfig } from './config.js';
 import { captureDependencies, openCaptureSource } from './source.js';
 import { captureObserver } from './capture-progress.js';
 import { VaultProbe } from './agent-probe.js';
+import { requireVaultApart, sourceStorageRoots } from './storage-roots.js';
 
 type Logger = Pick<DiagnosticLogger, 'write'>;
 export interface AgentOptions {
@@ -167,9 +167,10 @@ async function agentVault(config: AgentConfig): Promise<FileVault | null> {
     undefined,
     config.vaultKeyFile === null ? undefined : keyFileSource(config.vaultKeyFile),
   );
-  await requireSeparateTrees(
-    { label: 'vault', path: vault.root },
-    { label: 'storage root', path: config.source.dataDirectory },
+  // Like a restore target: never inside, or around, the storage directory or a volume.
+  await requireVaultApart(
+    vault.root,
+    await sourceStorageRoots(config.source.dataDirectory, config.source.modulesFile),
   );
   return vault;
 }

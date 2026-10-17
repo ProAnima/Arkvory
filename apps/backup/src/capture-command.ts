@@ -6,6 +6,7 @@ import type { CliContext } from './context.js';
 import { sourceConfig } from './config.js';
 import { captureDependencies, openCaptureSource, openVault, vaultKeys } from './source.js';
 import { captureObserver } from './capture-progress.js';
+import { sourceStorageRoots } from './storage-roots.js';
 
 export async function runCapture(
   command: Extract<BackupCommand, { kind: 'capture' }>,
@@ -14,7 +15,7 @@ export async function runCapture(
   const config = sourceConfig(context.env);
   const vault = await openVault(
     command.vault,
-    config.dataDirectory,
+    await sourceStorageRoots(config.dataDirectory, config.modulesFile),
     vaultKeys(command.keyFile, context.env),
   );
   const { vaultId } = await vault.identity();

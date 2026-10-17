@@ -39,3 +39,29 @@ export async function transitionUpload(
     );
   return row;
 }
+
+/**
+ * Names another storage for a pending upload inside the caller's transaction, on the connection
+ * that holds its upload lock (ADR 0083, N11). It runs before the first byte of the object is
+ * written to that storage, so a retry after a crash writes to the same one. Parts already
+ * accepted keep their storage in `parts_backend`; the first switch records it, a repeated one
+ * keeps it.
+ */
+export async function relocateUpload(
+  client: PoolClient,
+  id: string,
+  storageBackend: string,
+  partsBackend: string | null,
+): Promise<Record<string, unknown>> {
+  const updated = await client.query<Record<string, unknown>>(
+    `UPDATE arkvory_uploads SET storage_backend=$2, parts_backend=COALESCE(parts_backend,$3)
+     WHERE id=$1 AND status='pending' AND expires_at>now() RETURNING *`,
+    [id, storageBackend, partsBackend],
+  );
+  const row = updated.rows[0];
+  if (!row)
+    throw new ArkvoryError('conflict', 'Upload state prevents this operation', {
+      reason: 'upload_state',
+    });
+  return row;
+}

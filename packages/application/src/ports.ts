@@ -35,6 +35,12 @@ export interface Catalog {
 export interface UploadMutation extends Cancellation {
   recordPart(part: UploadPart): Promise<void>;
   publish(repository: string): Promise<Upload>;
+  /**
+   * Moves a pending upload to another storage before any byte of its object is written there
+   * (ADR 0083, N11); `partsBackend` names where its accepted parts stay, null when it has none.
+   * Only a pending upload; bytes are never moved.
+   */
+  relocate(storageBackend: string, partsBackend: string | null): Promise<Upload>;
   cancel(repository: string): Promise<Upload>;
 }
 

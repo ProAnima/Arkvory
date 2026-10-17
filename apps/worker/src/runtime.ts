@@ -1,7 +1,13 @@
 import { setTimeout as delay } from 'node:timers/promises';
+import { PolicyPlacement } from '@proanima/arkvory-application';
 import {
-  LocalBlobStore,
+  dataVolumeStaging,
+  localStorageBackends,
   PostgresCatalog,
+  PostgresPlacementPolicies,
+  PostgresStorageIdentities,
+  probeStorageBackends,
+  readLocalStorageSettings,
   WorkerSingletonBusy,
   storageReserveBytes,
 } from '@proanima/arkvory-infrastructure';
@@ -18,17 +24,32 @@ export async function resources(role: 'worker' | 'maintenance', capacity = 0, wr
   const root = process.env['ARKVORY_DATA_DIR'];
   if (!databaseUrl || !root)
     throw new Error('ARKVORY_DATABASE_URL and ARKVORY_DATA_DIR are required');
-  const blobs = new LocalBlobStore(
+  // Every storage of the installation: `local-storage` in ARKVORY_MODULES_FILE (ADR 0083, N11).
+  const blobs = localStorageBackends(
     root,
     storageReserveBytes(process.env['ARKVORY_STORAGE_RESERVE_BYTES']),
+    await readLocalStorageSettings(process.env['ARKVORY_MODULES_FILE'], root),
   );
+  const core = blobs.core.lifecycle;
   const catalog = new PostgresCatalog(databaseUrl, capacity, writers);
   try {
     await catalog.ready();
-    await blobs.ready();
-    await catalog.claimStorage(await blobs.identity(), role);
-    // The validated root: mirror copies stage their parts under it.
-    return { catalog, blobs, dataDirectory: root };
+    await core.ready();
+    await catalog.claimStorage(await core.identity(), role);
+    // Only the writer API records a storage seen for the first time; this process waits for it.
+    // The worker rechecks them while it runs (`watchWorkerStorage`); maintenance runs once.
+    await probeStorageBackends(blobs, new PostgresStorageIdentities(catalog.pool), {
+      create: false,
+    });
+    return {
+      catalog,
+      blobs,
+      // The validated root: mirror copies stage their parts under it.
+      dataDirectory: root,
+      staging: dataVolumeStaging(root, (bytes) => core.checkSpace(bytes)),
+      /** New uploads of the worker (mirror copies) and the storage checks of completion. */
+      placement: new PolicyPlacement(new PostgresPlacementPolicies(catalog.pool), blobs),
+    };
   } catch (error) {
     await catalog.close();
     throw error;

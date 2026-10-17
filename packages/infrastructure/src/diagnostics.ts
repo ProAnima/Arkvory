@@ -43,6 +43,8 @@ export interface DiagnosticFields {
   method?: string;
   status?: number;
   repository?: string;
+  /** A storage instance id (ADR 0083, N11), such as `default` or `volume-2`; never a path. */
+  backend?: string;
   /** Webhook subscription id (ADR 0069); an operator-chosen name, never a URL. */
   subscription?: string;
   /** Feed action of a mirror entry put aside on a conflict (ADR 0058), e.g. `stage.add`. */

@@ -41,7 +41,7 @@ ${ru ? 'КОМАНДЫ' : 'COMMANDS'}
   annotations set ID --revision N --file ANNOTATIONS.json
   attachments get ID | history ID
   attachments set ID --revision N --file ATTACHMENTS.json
-  storage usage | policy
+  storage usage | policy | placement [--revision N --file RULES.json]
   backup status | run | jobs [--after CURSOR] | points [--after CURSOR]  ${ru ? 'Резервные копии экземпляра' : 'Instance backups'}
   backup verify POINT_ID | pin POINT_ID [--off]  ${ru ? 'Глубокая проверка, закрепление' : 'Deep verification, pinning'}
   events tail [--after ID] [--types T,PREFIX.*] [--limit N] [--follow] [--cursor-file PATH]

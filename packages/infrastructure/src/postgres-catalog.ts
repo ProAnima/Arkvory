@@ -16,7 +16,7 @@ import type { StorageRole } from './storage-claim.js';
 import { StorageOwnership } from './storage-ownership.js';
 import { lockServiceAccess } from './service-authorization.js';
 import { accessCorrelation } from './request-correlation.js';
-import { transitionUpload } from './upload-transition.js';
+import { relocateUpload, transitionUpload } from './upload-transition.js';
 import { SCHEMA_VERSION } from './schema-version.js';
 import type { Catalog, UploadMutation } from '@proanima/arkvory-application';
 
@@ -47,6 +47,7 @@ export function decode(row: Record<string, unknown> | undefined): Upload {
             throw new ArkvoryError('unavailable', 'Invalid expiry');
           })(),
     storageBackend: typeof row['storage_backend'] === 'string' ? row['storage_backend'] : 'default',
+    ...(typeof row['parts_backend'] === 'string' ? { partsBackend: row['parts_backend'] } : {}),
     partBytes: typeof row['part_bytes'] === 'number' ? row['part_bytes'] : PART_BYTES,
   };
 }
@@ -294,6 +295,10 @@ export class PostgresCatalog implements Catalog {
               });
           }),
         throwIfAborted: check,
+        relocate: (storageBackend, partsBackend) =>
+          guarded(async () =>
+            decode(await relocateUpload(client, id, storageBackend, partsBackend)),
+          ),
         publish: (repository) => transition(repository, 'available'),
         cancel: (repository) => transition(repository, 'cancelled'),
       });

@@ -21,6 +21,7 @@ import { writeKitFile } from './cluster-kit.js';
 import { writePlan } from './cluster-plan-files.js';
 import { checkCluster, fenceTest, switchover } from './cluster-ops.js';
 import { moduleCommand } from './module-commands.js';
+import { expectMount, initializeVolume } from './storage-volume.js';
 
 function argumentsOf(args: string[]): Map<string, string> {
   const options = new Map<string, string>();
@@ -39,6 +40,8 @@ function argumentsOf(args: string[]): Map<string, string> {
     'backup-vault-off',
     'off',
     'yes',
+    'expect-mount',
+    'no-expect-mount',
   ];
   const values = [
     'root',
@@ -90,6 +93,7 @@ function argumentsOf(args: string[]): Map<string, string> {
     'to',
     'node',
     'kit',
+    'directory',
   ];
   for (let index = 0; index < args.length; index++) {
     const name = args[index]?.replace(/^--/, '');
@@ -244,6 +248,7 @@ const COMMANDS = new Set([
   'cluster-node',
   'cluster-release',
   'cluster-kit',
+  'volume-init',
 ]);
 
 /**
@@ -307,6 +312,14 @@ async function main(): Promise<void> {
   if (operation === 'cluster-check') return checkCluster();
   if (operation === 'cluster-switchover') return switchover(options.get('to'));
   if (operation === 'cluster-fence-test') return fenceTest(options.get('node'), options.has('yes'));
+  // A storage volume is marked on the host before any service may use it (ADR 0083, N11).
+  if (operation === 'volume-init') {
+    const directory = options.get('directory');
+    if (!directory) throw new Error('volume-init needs --directory <absolute directory>');
+    await initializeVolume({ directory, expectMount: expectMount(options) });
+    report('info', 'Storage volume initialized; add it to the modules file and restart');
+    return;
+  }
   const rawRoot = options.get('root');
   if (!rawRoot) throw new Error('Specify --root (absolute installation directory)');
   const root = resolve(rawRoot);

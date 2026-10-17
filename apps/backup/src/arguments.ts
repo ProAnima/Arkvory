@@ -37,6 +37,8 @@ export type BackupCommand =
       readonly pointId: string;
       readonly databaseUrl?: string;
       readonly storage: string;
+      /** The target's modules file: its `local-storage` instances receive their content. */
+      readonly modulesFile?: string;
       readonly confirmed: boolean;
       readonly report?: string;
     };
@@ -68,7 +70,8 @@ export const usage = `Usage: arkvory-backup <command>
   capture --vault <dir> [--key-file <file>] [--idempotency-key <key>]
   list --vault <dir> [--key-file <file>]
   verify --vault <dir> [--key-file <file>] [--point <id>] [--deep]
-  restore --vault <dir> [--key-file <file>] --point <id> --storage <dir> [--database-url <url>] [--yes] [--report <file>]
+  restore --vault <dir> [--key-file <file>] --point <id> --storage <dir> [--modules-file <file>]
+          [--database-url <url>] [--yes] [--report <file>]
 Source configuration: ARKVORY_DATABASE_URL, ARKVORY_DATA_DIR (as for API and worker).
 Agent: ARKVORY_BACKUP_VAULT (initialized vault), ARKVORY_BACKUP_BYTES_PER_SECOND (copy cap),
 ARKVORY_BACKUP_POLL_SECONDS (15). SIGTERM/SIGINT stop it after the current phase (exit 0).
@@ -307,18 +310,21 @@ function restore(rest: readonly string[]): BackupCommand {
     '--point': 'value',
     '--database-url': 'value',
     '--storage': 'value',
+    '--modules-file': 'value',
     '--yes': 'switch',
     '--report': 'value',
   });
   const databaseUrl = text(values, '--database-url');
   const report = text(values, '--report');
   const keyFile = text(values, '--key-file');
+  const modulesFile = text(values, '--modules-file');
   return {
     kind: 'restore',
     vault: required(values, '--vault'),
     ...(keyFile === undefined ? {} : { keyFile }),
     pointId: point(required(values, '--point')),
     storage: required(values, '--storage'),
+    ...(modulesFile === undefined ? {} : { modulesFile }),
     confirmed: values.has('--yes'),
     ...(databaseUrl === undefined ? {} : { databaseUrl }),
     ...(report === undefined ? {} : { report }),

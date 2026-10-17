@@ -5,7 +5,7 @@ description: 'Planen Sie Datenträgerspeicher, legen Sie Kontingente und Aufbewa
 
 # Speicher
 
-Arkvory hält jede veröffentlichte Datei einmal, unverändert, in einem Speicherverzeichnis auf einem lokalen Datenträger des Servers. Diese Seite erklärt, was Datenträgerspeicher belegt, wie Sie ihn mit Kontingenten und Aufbewahrungsrichtlinien begrenzen, wie gelöschte Dateien den Datenträger verlassen und was zu tun ist, wenn der Datenträger voll ist.
+Arkvory hält jede veröffentlichte Datei einmal, unverändert, in einem Speicherverzeichnis auf einem lokalen Datenträger des Servers und optional auf [weiteren Volumes](#volumes). Diese Seite erklärt, was Datenträgerspeicher belegt, wie Sie ihn mit Kontingenten und Aufbewahrungsrichtlinien begrenzen, wie gelöschte Dateien den Datenträger verlassen und was zu tun ist, wenn der Datenträger voll ist.
 
 ## Wo die Inhalte liegen {#location}
 
@@ -22,6 +22,81 @@ Darin enthält `blobs/` die fertigen Dateien, `staging/` und `parts/` enthalten 
 - Verwenden Sie ein lokales Dateisystem, das Hardlinks unterstützt. Verwenden Sie keine Netzwerkfreigabe für den Speicher.
 - Fügen Sie Dateien im Verzeichnis nicht von Hand hinzu, ändern oder löschen Sie sie nicht. Arkvory entfernt Dateien selbst, wie unten beschrieben.
 - Eine veröffentlichte Datei wird nie geändert. Neuer Inhalt ist eine neue Datei mit einer neuen ID.
+
+## Mehrere Volumes {#volumes}
+
+Statt ein Volume zu vergrößern, können Sie Arkvory weitere Speicherverzeichnisse geben, zum Beispiel auf einem zweiten Datenträger. Jedes zusätzliche Verzeichnis ist eine Instanz des eingebauten Moduls `local-storage` mit eigener ID. Das Speicherverzeichnis aus `ARKVORY_DATA_DIR` ist immer die Instanz `default`.
+
+Konfigurieren Sie die Instanzen in der Moduldatei (`ARKVORY_MODULES_FILE`, siehe [Umgebungsvariablen](../reference/environment)):
+
+```json
+{
+  "format": 1,
+  "modules": {
+    "local-storage": {
+      "enabled": true,
+      "config": {
+        "instances": {
+          "volume-2": { "directory": "/srv/arkvory-volume-2" }
+        }
+      }
+    }
+  }
+}
+```
+
+| Feld            | Bedeutung                                                                                                                                                | Standard                        |
+| --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- |
+| `directory`     | Absoluter Pfad des Verzeichnisses. Es darf das Speicherverzeichnis oder eine andere Instanz weder enthalten noch darin liegen                            | Erforderlich                    |
+| `acceptsWrites` | `false` stoppt neue Uploads auf dieses Volume. Seine Dateien bleiben lesbar, und Uploads, die darauf bereits begonnen haben, können abgeschlossen werden | `true`                          |
+| `mode`          | `read-only` bedient nur Downloads und Prüfungen und lehnt jedes Schreiben und Entfernen ab, zum Beispiel für ein schreibgeschützt eingehängtes Volume    | `full`                          |
+| `enabled`       | `false` schließt das Volume: Seine Dateien lassen sich nicht herunterladen, bis Sie es wieder einschalten                                                | `true`                          |
+| `reserveBytes`  | Freier Speicherplatz, der auf diesem Volume frei bleibt, in Bytes                                                                                        | `ARKVORY_STORAGE_RESERVE_BYTES` |
+
+Eine ID besteht aus Kleinbuchstaben, Ziffern und `-`, beginnt mit einem Buchstaben und ist nicht `default`. Sie können bis zu 16 Instanzen hinzufügen. Jeder Prozess (die API, die Lese-Gateways, der Worker und der Backup-Agent) muss dieselbe Moduldatei lesen: Ein Prozess, der andere Instanzen plant, ist nicht bereit. Starten Sie nach einer Änderung alle Dienste neu.
+
+So fügen Sie ein Volume hinzu:
+
+1. Hängen Sie das Volume ein und erstellen Sie das Verzeichnis. Es muss dem Konto gehören, das die Dienste ausführt. Arkvory erstellt dieses Verzeichnis nicht. Fehlt es, etwa weil das Volume nicht eingehängt ist, bleibt das Volume nicht verfügbar, und unter den Einhängepunkt wird nichts geschrieben.
+2. Markieren Sie das Verzeichnis als neues Volume: `arkvory volume-init --directory /srv/arkvory-volume-2`. Der Befehl braucht kein `--root`. Er lehnt ein Verzeichnis ab, das nicht existiert oder nicht leer ist (nur `lost+found` darf darin sein), und schreibt die Identitätsdatei `storage-id`. Unter Linux lehnt er außerdem ein Verzeichnis ab, das kein Einhängepunkt ist, etwa das leere Verzeichnis eines nicht eingehängten Volumes. Für ein Verzeichnis innerhalb eines eingehängten Volumes fügen Sie `--no-expect-mount` hinzu. Unter Windows schaltet `--expect-mount` diese Prüfung ein. Die Dienste erstellen die Datei nie: Ein Volume ohne sie bleibt nicht verfügbar.
+3. Fügen Sie die Instanz der Moduldatei hinzu und starten Sie die Dienste neu. Beim ersten Start hält die API die Identität des Volumes fest, die Datei `storage-id` im Verzeichnis. Ab dann prüft jeder Prozess diese Datei. Auf ein nicht eingehängtes Volume oder ein anderes Volume unter demselben Pfad wird nie geschrieben. Vor jedem Schreiben und Löschen auf dem Volume wird die Datei erneut geprüft.
+4. Wählen Sie mit einer [Platzierungsrichtlinie](#placement), welche Uploads auf das Volume gehen.
+
+### Platzierung neuer Uploads {#placement}
+
+Die Platzierungsrichtlinie eines Repositorys wählt den Speicher jedes neuen Uploads. Eine Regel hat eine ID, einen Speicher (`backendId`) und zwei optionale Bedingungen: eine Paketgruppe (`models/*`, `tools` oder `*`) und eine Mindestgröße in Bytes. Die erste Regel, deren Bedingungen zutreffen, gewinnt. Ohne Treffer geht der Upload nach `default`. Ein Repository kann bis zu 32 Regeln haben.
+
+Lesen und ändern Sie die Richtlinie mit `arkvoryctl` oder den API-Vorgängen [getStoragePlacement](../api/reference/storage#getStoragePlacement) und [setStoragePlacement](../api/reference/storage#setStoragePlacement):
+
+```bash
+arkvoryctl storage placement --repository releases
+arkvoryctl storage placement --repository releases --revision 0 --file rules.json
+```
+
+Die Datei `rules.json` enthält die Liste der Regeln, zum Beispiel alle Dateien ab 1 GiB auf `volume-2`:
+
+```json
+[{ "id": "large", "backendId": "volume-2", "packageGroup": null, "minSizeBytes": "1073741824" }]
+```
+
+- Zum Lesen der Richtlinie ist `storage.read` nötig, zum Ändern `storage.manage`. Die Antwort listet außerdem jeden Speicher mit seinem Zustand: `accepting`, `not_accepting`, `read_only`, `disabled`, `unavailable` oder `not_loaded`.
+- Eine Regel kann nur einen konfigurierten Speicher nennen. Ein anderer Name wird mit 400 `backend_unknown` abgelehnt.
+- Die Richtlinie wird mit einer Revision gespeichert. Wenn jemand anderes sie geändert hat, lesen Sie sie erneut und speichern Sie noch einmal.
+- Eine Änderung gilt nur für neue Uploads. Bereits gespeicherte Dateien wandern nie zwischen Volumes.
+
+### Wenn ein Volume keine neuen Uploads annimmt {#placement-fallback}
+
+Die Veröffentlichung schlägt nie wegen der Platzierung fehl. Wenn der gewählte Speicher in diesem Moment keine Uploads annimmt, wegen `acceptsWrites: false`, `read-only`, `enabled: false`, einer fehlenden Instanz oder eines nicht verfügbaren Volumes (nicht eingehängt, fehlgeschlagene Identitätsprüfung, keine Antwort), wird der neue Upload stattdessen in `default` angelegt. Der Upload zeigt seinen Speicher in `storageBackend`, die Metrik `arkvory_storage_placement_fallback_total` zählt ihn, und das Log enthält die Zeile `storage.placement_fallback`.
+
+- **Laufende Uploads werden nicht verschoben.** Wenn ein Volume keine Daten mehr annimmt, während darauf ein Upload in Teilen läuft, werden neue Teile mit 409 `backend_read_only` abgelehnt, und der Client beginnt einen neuen Upload. Sind bereits alle Teile da, schreibt der Abschluss des Uploads die Datei nach `default`. Die Teile werden von dem Volume gelesen, auf dem sie liegen. Eine Datei, die ein abgebrochener Versuch bereits vollständig auf dem Volume gespeichert hat, bleibt dort.
+- **Ein nicht verfügbares Volume** lässt Downloads seiner Dateien mit 503 `unavailable` fehlschlagen, bis es wieder da ist. Der Server läuft weiter, und die Bereitschaft und `writable` richten sich nur nach `default`. Jeder Prozess prüft seine Volumes alle 30 Sekunden erneut.
+- **Die Bereinigung** entfernt jede Datei auf dem Volume, das sie enthält, einschließlich der Teile, die auf einem anderen Volume übrig sind. Auf einem nicht verfügbaren oder schreibgeschützten Volume überspringt die Bereinigung die Datei und versucht es später erneut.
+- **Kontingente und Grenzen.** Kontingente und `ARKVORY_CAPACITY_BYTES` zählen alle Volumes zusammen. Die Reserve gilt für jedes Volume einzeln.
+- **Temporäre Dateien** von Raw-, OCI- und Spiegel-Uploads bleiben im Speicherverzeichnis `default`.
+- **Cluster.** In einem [Hochverfügbarkeitscluster](./cluster) muss jedes Volume ein Verzeichnis auf dem replizierten Volume sein, wie das Speicherverzeichnis: Eine andere Festplatte wird nicht auf die anderen Server kopiert. Sonst startet die API nicht.
+- **Ein aus der Konfiguration entferntes Volume.** Arkvory merkt sich jedes Volume, das Daten enthielt. Steht eines nicht mehr in der Moduldatei, können seine Dateien weder heruntergeladen noch bereinigt noch gesichert werden: Eine Sicherung schlägt mit `blob_missing` fehl. Jeder Prozess meldet das mit der Metrik `arkvory_storage_backend_unconfigured`, der Logzeile `storage.backend_unconfigured` und dem Alarm `ArkvoryStorageVolumeUnconfigured`, und die Antwort der Platzierung führt es mit dem Zustand `not_loaded`. Konfigurieren Sie es wieder, um das zu beheben. Um ein Volume außer Betrieb zu nehmen, lassen Sie es mit `acceptsWrites: false` konfiguriert: Gespeicherte Dateien wandern nie zwischen Volumes.
+
+Beobachten Sie `arkvory_storage_backend_up` und `arkvory_storage_backend_accepting`, siehe [Monitoring](./monitoring#metrics). Backups kopieren jedes Volume. Eine Wiederherstellung braucht ein leeres Verzeichnis für jedes Volume, siehe [Mehrere Volumes wiederherstellen](./backups#restore-volumes).
 
 ## Den Datenträger planen {#disk}
 
@@ -50,12 +125,12 @@ Siehe [Umgebungsvariablen](../reference/environment#storage-and-limits). Arkvory
 
 Speichereinstellungen sind nicht Teil der normalen Lese- und Schreibrechte. Ein Dienstschlüssel braucht ausdrückliche Aktionen am Repository:
 
-| Aktion             | Erlaubt                                                                                                          |
-| ------------------ | ---------------------------------------------------------------------------------------------------------------- |
-| `storage.read`     | Die Richtlinie, die Nutzung und die Bereinigungseinstellungen sehen                                              |
-| `storage.manage`   | Die Richtlinie, das Kontingent und die Bereinigungseinstellungen ändern und einen Bereinigungsstapel anfordern   |
-| `artifact.delete`  | Löschungen in der Vorschau anzeigen, Artefakte löschen und eine automatische Aufbewahrungsrichtlinie einschalten |
-| `diagnostics.read` | Die Speicherereignisse lesen                                                                                     |
+| Aktion             | Erlaubt                                                                                                                         |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
+| `storage.read`     | Die Richtlinie, die Nutzung, die Bereinigungseinstellungen und die Platzierung sehen                                            |
+| `storage.manage`   | Die Richtlinie, das Kontingent, die Bereinigungseinstellungen und die Platzierung ändern und einen Bereinigungsstapel anfordern |
+| `artifact.delete`  | Löschungen in der Vorschau anzeigen, Artefakte löschen und eine automatische Aufbewahrungsrichtlinie einschalten                |
+| `diagnostics.read` | Die Speicherereignisse lesen                                                                                                    |
 
 Konten mit Passwort und der Wiederherstellungsschlüssel haben diese Rechte nicht von selbst. So verwalten Sie den Speicher in der Konsole:
 
@@ -208,6 +283,7 @@ Der Abschnitt [[ui:storageEvents]] listet auf, was im Repository passiert ist, �
 | `retention.completed`                                                                                 | info                     | Ein Stapel hat Builds gelöscht. Das Ereignis enthält die Anzahl                                                                                 |
 | `retention.failed`                                                                                    | error                    | Die automatische Löschung wurde gestoppt, zum Beispiel weil der autorisierende Schlüssel widerrufen wurde                                       |
 | `cleanup.configured`                                                                                  | info                     | Die Bereinigungseinstellungen wurden gespeichert                                                                                                |
+| `storage.placement_updated`                                                                           | info                     | Die Platzierungsrichtlinie wurde gespeichert                                                                                                    |
 | `cleanup.completed`                                                                                   | info oder error          | Ein Bereinigungsstapel hat Dateien verarbeitet, übersprungen oder ist fehlgeschlagen. Er listet die Anzahlen und die freigegebenen Bytes        |
 | `capacity.normal`, `capacity.warning`, `capacity.critical`, `capacity.exceeded`, `capacity.unlimited` | info, warning oder error | Der Kontingentzustand hat sich geändert                                                                                                         |
 | HTTP-Fehlercodes                                                                                      | warning oder error       | Eine Anfrage eines verwalteten Schlüssels an dieses Repository ist fehlgeschlagen. Das Ereignis behält die Anfrage-ID, die Route und den Status |
@@ -223,7 +299,7 @@ Anzeichen: Uploads schlagen mit HTTP 507 und dem Grund `storage_full` fehl, `GET
 1. **Finden Sie die Ursache.** Prüfen Sie den freien Speicherplatz des Speicher-Volumes, des Datenbank-Volumes und des Backup-Speicher-Volumes. Vergleichen Sie die Nutzungszahlen im Speicherpanel. Große Zahlen bei „warten auf Bereinigung“ bedeuten, dass gelöschte Daten noch auf dem Datenträger liegen. Eine große Zahl bei „unfertige Uploads“ bedeutet verwaiste Uploads.
 2. **Führen Sie die Bereinigung aus.** Wenn die Bereinigung aus ist, schalten Sie sie in jedem Repository ein, mit einer kurzen Karenzzeit wie 0, wenn Sie akzeptieren, dass gelöschte Dateien sofort verschwinden. Wählen Sie [[ui:cleanupRun]]. Sie entfernt auch die temporären Teile abgeschlossener Uploads und die abgelaufenen Uploads. Warten Sie auf die Stapel und lesen Sie das letzte Ergebnis. Die Bereinigung überspringt Dateien, die in Verwendung sind, wiederholen Sie sie also.
 3. **Löschen Sie, was Sie nicht brauchen.** Wenden Sie eine Aufbewahrungsrichtlinie an oder löschen Sie Artefakte. Das gibt Speicherplatz erst frei, nachdem die Bereinigung die Bytes entfernt hat.
-4. **Fügen Sie Speicherplatz hinzu.** Erweitern Sie das Volume oder den Datenträger. Verschieben Sie den Backup-Speicher oder andere Daten vom Volume, wenn sie es gemeinsam nutzen.
+4. **Fügen Sie Speicherplatz hinzu.** Erweitern Sie das Volume oder den Datenträger. Verschieben Sie den Backup-Speicher oder andere Daten vom Volume, wenn sie es gemeinsam nutzen. Sie können auch [ein Volume hinzufügen](#volumes) und neue Uploads dort platzieren.
 5. **Prüfen Sie die Erholung.** Nachdem Speicherplatz frei ist, kehrt `writable` zu `true` zurück, und Uploads funktionieren wieder.
 
 Löschen Sie keine Dateien in `blobs/`, `staging/` oder `parts/` von Hand: Das bricht die Verbindung zwischen Datenbank und Datenträger. Wenn die Reserve für Ihre Logs und die Datenbank auf demselben Volume zu klein ist, erhöhen Sie `ARKVORY_STORAGE_RESERVE_BYTES`.
@@ -238,7 +314,7 @@ Wenn ein Upload stattdessen mit dem Grund `storage_quota` oder `catalog_limit` f
 - Die physische Bereinigung ist standardmäßig aus und wird für jedes Repository festgelegt.
 - Ein gelöschtes Artefakt kann nicht wiederhergestellt werden. Stellen Sie Daten aus einem Backup wieder her. Siehe [Backups](./backups).
 - Gespiegelte Repositorys führen keine Speicherrichtlinie aus. Siehe [Spiegel](./mirrors).
-- Der Speicher muss ein lokales Dateisystem sein. Es gibt keine Unterstützung für Netzwerkfreigaben oder mehrere Speicher-Backends.
+- Der Speicher muss ein lokales Dateisystem sein. Es gibt keine Unterstützung für Netzwerkfreigaben. Zusätzliche [Volumes](#volumes) sind ebenfalls lokale Verzeichnisse, und Arkvory verschiebt gespeicherte Dateien nicht zwischen ihnen.
 - Unter Windows schreibt Arkvory jede Datei fest auf den Datenträger, kann aber den Verzeichniseintrag, der sie veröffentlicht, nicht synchronisieren: Node.js bietet dort keine Verzeichnissynchronisierung. Ein Stromausfall kurz nach einem Upload kann eine veröffentlichte Datei ohne Inhalt auf dem Datenträger hinterlassen. Verwenden Sie eine USV und halten Sie [Backups](./backups) oder einen [Spiegel](./mirrors) vor. Unter Linux werden auch die Verzeichniseinträge synchronisiert.
 
 ## Verwandte Seiten {#related-pages}

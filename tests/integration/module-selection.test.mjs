@@ -55,6 +55,7 @@ test('disabled protocols register no routes, leave capabilities and stay in the 
     modules.modules.map((m) => [m.id, m.enabled, m.running, m.health]),
     [
       ['lfs', false, false, null],
+      ['local-storage', true, true, { status: 'ok', code: null }],
       ['npm', false, false, null],
       ['oci', false, false, null],
       ['raw', true, true, { status: 'ok', code: null }],
@@ -83,7 +84,8 @@ test('by default every built-in protocol is served, listed and measured', async 
   );
   assert.equal((await f.app.inject({ url: '/v2/', headers: f.headers })).statusCode, 200);
   const metrics = (await f.app.inject({ url: '/health/metrics', headers: f.headers })).body;
-  for (const id of ['lfs', 'npm', 'oci', 'raw', 'upack'])
+  // The core's storage is measured as a module but is no client surface of the capabilities.
+  for (const id of ['lfs', 'local-storage', 'npm', 'oci', 'raw', 'upack'])
     assert.match(metrics, new RegExp(`^arkvory_module_up\\{module="${id}"\\} 1$`, 'm'));
 });
 
