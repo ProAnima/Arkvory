@@ -14,6 +14,8 @@ export interface SigningKey {
 export interface VerifiedSignature {
   readonly keyId: string;
   readonly trustedComment: string;
+  /** `ED`: BLAKE2b-512 prehashed (minisign's default); `Ed`: the legacy signature of the bytes. */
+  readonly algorithm: 'ED' | 'Ed';
 }
 
 const KEY_ID = /^[0-9a-f]{16}$/;
@@ -39,14 +41,24 @@ interface SignatureParts {
   readonly global: Buffer;
 }
 
+/**
+ * Standard base64 in its one canonical spelling. Node's decoder skips unknown characters and
+ * accepts missing padding and set filler bits, so one signature would have many texts.
+ */
+function canonicalBase64(line: string): Buffer {
+  const bytes = Buffer.from(line, 'base64');
+  if (bytes.toString('base64') !== line) throw new SigningError('signature_malformed');
+  return bytes;
+}
+
 function parts(signature: string): SignatureParts {
   const lines = signature.replace(/\r\n/g, '\n').trimEnd().split('\n');
   const trusted = lines[2] ?? '';
   if (lines.length !== 4 || !lines[0]?.startsWith('untrusted comment: '))
     throw new SigningError('signature_malformed');
   if (!trusted.startsWith('trusted comment: ')) throw new SigningError('signature_malformed');
-  const body = Buffer.from(lines[1] ?? '', 'base64');
-  const global = Buffer.from(lines[3] ?? '', 'base64');
+  const body = canonicalBase64(lines[1] ?? '');
+  const global = canonicalBase64(lines[3] ?? '');
   if (body.length !== 74 || global.length !== 64) throw new SigningError('signature_malformed');
   return {
     algorithm: body.subarray(0, 2),
@@ -88,7 +100,7 @@ export function verifyMinisign(
     !verify(null, Buffer.concat([value, Buffer.from(trustedComment)]), trusted, global)
   )
     throw new SigningError('signature_invalid', keyId);
-  return { keyId, trustedComment };
+  return { keyId, trustedComment, algorithm: algorithm.equals(prehashed) ? 'ED' : 'Ed' };
 }
 
 /**

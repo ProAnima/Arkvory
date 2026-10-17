@@ -41,7 +41,10 @@ export interface KeyRingInput {
 
 /**
  * Every key the caller trusts, each with its class. A key id may appear once across all classes:
- * the signature names only the id, so one id in two classes would make the class ambiguous.
+ * the signature names only the id, so one id in two classes would make the class ambiguous. A
+ * public key may appear once too: minisign does not sign the key id, so anyone can relabel a
+ * signature with another id, and the same public key under a second id (say, a release key
+ * trusted again as an operator key) would let its holder sign for the second class.
  */
 export function keyRing(input: KeyRingInput): readonly ClassifiedKey[] {
   const ring: ClassifiedKey[] = [
@@ -52,11 +55,14 @@ export function keyRing(input: KeyRingInput): readonly ClassifiedKey[] {
       classified({ id: entry.keyId, publicKey: entry.publicKey }, 'operator', entry),
     ),
   ];
-  const seen = new Set<string>();
+  const ids = new Set<string>();
+  const publicKeys = new Set<string>();
   for (const key of ring) {
     keyObject(key);
-    if (seen.has(key.id)) throw new SigningError('duplicate_key', key.id);
-    seen.add(key.id);
+    if (ids.has(key.id) || publicKeys.has(key.publicKey))
+      throw new SigningError('duplicate_key', key.id);
+    ids.add(key.id);
+    publicKeys.add(key.publicKey);
   }
   return ring;
 }
@@ -69,7 +75,10 @@ function classified(key: SigningKey, keyClass: KeyClass, operator: OperatorKey |
  * Verifies a signature against the ring and requires one of `accepted` classes and the purpose
  * `file:<name>` among the tab-separated fields of the trusted comment, as `minisign -S` writes
  * it. The purpose separates what one key signs: a module key signs both manifests and revocation
- * lists, and neither signature may stand for the other.
+ * lists, and neither signature may stand for the other. Only the prehashed algorithm `ED` is
+ * accepted (`signature_algorithm`): with the legacy `Ed` also accepted, every `ED` signature of
+ * a file X would also be a valid `Ed` signature of the 64 bytes BLAKE2b(X). Release manifests
+ * keep the legacy algorithm through `verifyMinisign` (ADR 0060).
  */
 export function verifyClassified(
   bytes: Uint8Array,
@@ -81,9 +90,10 @@ export function verifyClassified(
   const keyId = signatureKeyId(signature);
   const key = ring.find((candidate) => candidate.id === keyId);
   if (!key) throw new SigningError('unknown_key', keyId);
-  const { trustedComment } = verifyMinisign(bytes, signature, [key]);
+  const { trustedComment, algorithm } = verifyMinisign(bytes, signature, [key]);
   // Checked after the signature: a forged signature naming a key of another class is invalid.
   if (!accepted.includes(key.keyClass)) throw new SigningError('wrong_key_class', keyId);
+  if (algorithm !== 'ED') throw new SigningError('signature_algorithm', keyId);
   if (!trustedComment.split('\t').includes(`file:${purpose}`))
     throw new SigningError('signature_purpose', keyId);
   return key;

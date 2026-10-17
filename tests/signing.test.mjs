@@ -250,3 +250,72 @@ test('a revocation payload is validated field by field', () => {
   ])
     assert.throws(() => readRevocations(envelope, host.keys), code('revocations_invalid'));
 });
+
+test('one public key belongs to one id and one class: a relabelled key id is refused', () => {
+  const { module, release } = testHost();
+  // minisign does not sign the key id, so the same public key under a new id would let the
+  // holder of a release or module key sign as an operator key the host trusts.
+  const relabelled = { id: '0123456789abcdef', key: { publicKey: release.key.publicKey } };
+  assert.throws(
+    () => keyRing({ release: [release.key], operator: [operatorEntry(relabelled)] }),
+    code('duplicate_key'),
+  );
+  assert.throws(
+    () =>
+      keyRing({
+        module: [module.key, { id: '0123456789abcdef', publicKey: module.key.publicKey }],
+      }),
+    code('duplicate_key'),
+  );
+});
+
+test('module, operator and revocation signatures must be prehashed (ED)', () => {
+  const { host, module, operator } = testHost();
+  const bytes = Buffer.from('{}');
+  for (const signer of [module, operator]) {
+    const comment = 'timestamp:1\tfile:module.json';
+    const value = edSign(null, bytes, createPrivateKey(signer.pem));
+    const global = edSign(
+      null,
+      Buffer.concat([value, Buffer.from(comment)]),
+      createPrivateKey(signer.pem),
+    );
+    const body = Buffer.concat([Buffer.from('Ed'), Buffer.from(signer.id, 'hex'), value]);
+    const legacy = `untrusted comment: x\n${body.toString('base64')}\ntrusted comment: ${comment}\n${global.toString('base64')}\n`;
+    // Release manifests keep accepting the legacy algorithm (see above); new formats do not.
+    verifyMinisign(bytes, legacy, [signer.key]);
+    assert.throws(
+      () => verifyClassified(bytes, legacy, host.keys, ['module', 'operator'], 'module.json'),
+      code('signature_algorithm'),
+    );
+  }
+});
+
+test('signature lines and revocation payloads must be canonical base64', () => {
+  const { host, module } = testHost();
+  const bytes = Buffer.from('{}');
+  const signature = sign(bytes, module);
+  const lines = signature.split('\n');
+  for (const broken of [
+    [lines[0], lines[1].replace(/=+$/, ''), ...lines.slice(2)].join('\n'),
+    [lines[0], ` ${lines[1]}`, ...lines.slice(2)].join('\n'),
+    [...lines.slice(0, 3), lines[3].replace(/=+$/, ''), lines[4]].join('\n'),
+  ])
+    assert.throws(() => verifyMinisign(bytes, broken, [module.key]), code('signature_malformed'));
+  // Another spelling of the same signed bytes must not pass as a different list of one sequence.
+  const envelope = JSON.parse(revocationList(module, { sequence: 7, entries: [] }));
+  const { payload } = envelope;
+  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
+  const respelled =
+    payload.length % 4 === 0
+      ? `${payload}A`
+      : payload.slice(0, -1) + alphabet[alphabet.indexOf(payload.at(-1)) ^ 1];
+  assert.ok(
+    Buffer.from(respelled, 'base64url').equals(Buffer.from(payload, 'base64url')),
+    'the respelled payload decodes to the same bytes',
+  );
+  assert.throws(
+    () => readRevocations(JSON.stringify({ ...envelope, payload: respelled }), host.keys),
+    (error) => error.code === 'revocations_invalid' && error.subject === '/payload',
+  );
+});

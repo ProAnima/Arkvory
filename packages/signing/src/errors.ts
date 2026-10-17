@@ -9,6 +9,7 @@ export const SIGNING_PROBLEMS = [
   'unknown_key',
   'signature_invalid',
   'signature_purpose',
+  'signature_algorithm',
   'wrong_key_class',
   'key_invalid',
   'duplicate_key',

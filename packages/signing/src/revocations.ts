@@ -124,8 +124,12 @@ export function readRevocations(envelope: string, ring: readonly ClassifiedKey[]
   if (outer['format'] !== 1) throw new SigningError('revocations_invalid', '/format');
   if (typeof encoded !== 'string' || !/^[A-Za-z0-9_-]*$/.test(encoded))
     throw new SigningError('revocations_invalid', '/payload');
-  if (typeof signature !== 'string') throw new SigningError('revocations_invalid', '/signature');
   const bytes = Buffer.from(encoded, 'base64url');
+  // One spelling per payload: lists of one sequence are compared by this text, and set filler
+  // bits or a dangling character would make the same signed list look like a conflicting one.
+  if (bytes.toString('base64url') !== encoded)
+    throw new SigningError('revocations_invalid', '/payload');
+  if (typeof signature !== 'string') throw new SigningError('revocations_invalid', '/signature');
   const key = verifyClassified(bytes, signature, ring, ['module'], REVOCATIONS_FILE);
   return { ...payload(bytes), keyId: key.id, payload: encoded, envelope };
 }
