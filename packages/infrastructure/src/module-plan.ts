@@ -82,7 +82,8 @@ function prepareSelected<Context, Config>(
   } catch (error) {
     if (!(error instanceof ModuleConfigError)) throw error;
     const path = `/modules/${descriptor.manifest.id}/config${error.path}`;
-    throw new Error(`Invalid ARKVORY_MODULES_FILE: ${path}: ${error.code}`, { cause: error });
+    // The code before the pointer: a field named `token` or `key` must not hide it in the log.
+    throw new Error(`Invalid ARKVORY_MODULES_FILE: ${error.code} ${path}`, { cause: error });
   }
 }
 

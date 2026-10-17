@@ -1,4 +1,5 @@
-import { readFile } from 'node:fs/promises';
+import { open, type FileHandle } from 'node:fs/promises';
+import { isAbsolute } from 'node:path';
 import { MODULE_ID_PATTERN } from '@proanima/arkvory-extension-api';
 
 /** The operator's choice for one module (ADR 0079, section 3). */
@@ -17,7 +18,9 @@ const MAX_FILE_BYTES = 1024 * 1024;
 
 /**
  * Messages name the JSON Pointer of the field, never a value: settings may hold paths to secret
- * files. An id that is not a module id is not echoed either.
+ * files. An id that is not a module id is not echoed either. Nothing follows a pointer after a
+ * colon: `startupReason` redacts the word after `token:` or `key:`, and a field named so must
+ * still reach the log.
  */
 function fail(path: string): never {
   throw new Error(`Invalid ARKVORY_MODULES_FILE: ${path}`);
@@ -28,7 +31,11 @@ function fields(value: unknown, path: string, known: readonly string[]): Record<
   const row: Record<string, unknown> = Object.fromEntries(Object.entries(value));
   const unknown = Object.keys(row).find((key) => !known.includes(key));
   if (unknown !== undefined)
-    fail(MODULE_ID_PATTERN.test(unknown) ? `${path}/${unknown}: unknown field` : `${path}: field`);
+    fail(
+      MODULE_ID_PATTERN.test(unknown)
+        ? `unknown field ${path}/${unknown}`
+        : `unknown field in ${path || '/'}`,
+    );
   return row;
 }
 
@@ -59,18 +66,44 @@ export function parseModuleSelections(value: unknown): ModuleSelections {
 }
 
 /**
- * No file configured: every built-in module with its defaults, as before modules existed. A
- * configured file that cannot be read or parsed stops the start before storage is claimed.
+ * The file as UTF-8 text. It is read at most `MAX_FILE_BYTES + 1` bytes far, so a huge file or a
+ * device never fills memory before it is refused.
  */
-export async function readModuleSelections(file: string | undefined): Promise<ModuleSelections> {
-  if (file === undefined || file === '') return new Map();
-  let text: string;
+async function boundedText(file: string): Promise<string> {
+  let handle: FileHandle;
   try {
-    text = await readFile(file, 'utf8');
+    handle = await open(file, 'r');
   } catch (error) {
     throw new Error('ARKVORY_MODULES_FILE cannot be read', { cause: error });
   }
-  if (text.length > MAX_FILE_BYTES) fail('file too large');
+  try {
+    const buffer = Buffer.alloc(MAX_FILE_BYTES + 1);
+    let length = 0;
+    for (;;) {
+      const { bytesRead } = await handle
+        .read(buffer, length, buffer.length - length, null)
+        .catch((error: unknown) => {
+          throw new Error('ARKVORY_MODULES_FILE cannot be read', { cause: error });
+        });
+      if (bytesRead === 0) return buffer.toString('utf8', 0, length);
+      length += bytesRead;
+      if (length > MAX_FILE_BYTES) fail('file too large');
+    }
+  } finally {
+    await handle.close();
+  }
+}
+
+/**
+ * No file configured: every built-in module with its defaults, as before modules existed. A
+ * configured file that cannot be read or parsed stops the start before storage is claimed. The
+ * path is absolute: installed services start in the directory of the current release, where a
+ * relative path would resolve and then be lost at the next update.
+ */
+export async function readModuleSelections(file: string | undefined): Promise<ModuleSelections> {
+  if (file === undefined || file === '') return new Map();
+  if (!isAbsolute(file)) throw new Error('ARKVORY_MODULES_FILE must be an absolute path');
+  const text = await boundedText(file);
   let document: unknown;
   try {
     document = JSON.parse(text);

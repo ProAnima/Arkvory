@@ -305,7 +305,7 @@ test('the modules file disables protocols beside /api/v1 and changes the plan of
   refuse({ teleport: { enabled: true } }, /Invalid ARKVORY_MODULES_FILE: unknown module teleport/);
   refuse(
     { npm: { enabled: true, config: { port: 1 } } },
-    /Invalid ARKVORY_MODULES_FILE: \/modules\/npm\/config\/port: unknown_field/,
+    /Invalid ARKVORY_MODULES_FILE: unknown_field \/modules\/npm\/config\/port$/,
   );
 });
 
@@ -317,10 +317,13 @@ test('the modules file is read field by field and never echoes a value', () => {
   invalid({ format: 2, modules: {} }, /: \/format$/);
   invalid({ format: '1', modules: {} }, /: \/format$/);
   invalid({ format: 1, modules: [] }, /: \/modules$/);
-  invalid({ format: 1, extra: true }, /: \/extra: unknown field$/);
+  invalid({ format: 1, extra: true }, /: unknown field \/extra$/);
   invalid({ format: 1, modules: { npm: { enabled: 'no' } } }, /: \/modules\/npm\/enabled$/);
   invalid({ format: 1, modules: { npm: {} } }, /: \/modules\/npm\/enabled$/);
-  invalid({ format: 1, modules: { npm: { enabled: true, mode: 1 } } }, /npm\/mode: unknown field$/);
+  invalid(
+    { format: 1, modules: { npm: { enabled: true, mode: 1 } } },
+    /field \/modules\/npm\/mode$/,
+  );
   const secret = '/etc/Secret Path/key';
   for (const document of [
     { format: 1, modules: { [secret]: { enabled: true } } },

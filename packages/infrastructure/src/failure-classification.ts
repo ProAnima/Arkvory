@@ -1,4 +1,5 @@
 import { ArkvoryError } from '@proanima/arkvory-domain';
+import { ModulePlanError } from './module-plan.js';
 
 /** Only constant identifiers from an error; never its message, stack, URL or parameters. */
 export interface FailureCause {
@@ -93,11 +94,14 @@ const startupStates: Readonly<Record<string, string>> = {
 
 /**
  * Startup reason safe for operator logs. Only messages written by Arkvory validation
- * (ArkvoryError or a plain Error) are kept, and still redacted; library and system errors
- * are reduced to their constant identifiers because their texts may echo inputs.
+ * (ArkvoryError, a refused module plan or a plain Error) are kept, and still redacted; library
+ * and system errors are reduced to their constant identifiers because their texts may echo
+ * inputs.
  */
 export function startupReason(error: unknown): string {
   if (error instanceof ArkvoryError) return `${error.code}: ${redactDiagnostic(error.message)}`;
+  // A refused plan names machine codes and module ids only (ADR 0079), such as core_disabled.
+  if (error instanceof ModulePlanError) return redactDiagnostic(error.message);
   const cause = failureCause(error);
   const known = cause.sqlstate ? startupStates[cause.sqlstate] : undefined;
   if (known) return known;
