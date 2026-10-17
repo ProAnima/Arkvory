@@ -3,8 +3,9 @@ export type ModuleJson =
   null | boolean | number | string | readonly ModuleJson[] | { readonly [key: string]: ModuleJson };
 
 /**
- * JSON text with object keys in code-point order and no whitespace, so equal values always give
- * equal text. Non-finite numbers have no JSON form and are refused.
+ * JSON text with object keys in UTF-16 code unit order (as RFC 8785 sorts them) and no
+ * whitespace, so equal values always give equal text. Non-finite numbers have no JSON form and
+ * are refused.
  */
 export function canonicalJson(value: ModuleJson): string {
   if (value === null || typeof value === 'boolean' || typeof value === 'string')
