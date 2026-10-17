@@ -9,6 +9,12 @@ import type {
   ModuleLifecycle,
   ModuleManifest,
 } from '@proanima/arkvory-extension-api';
+import {
+  describeLocalStorageConfig,
+  LOCAL_STORAGE_MODULE,
+  parseLocalStorageConfig,
+} from './storage-backend-config.js';
+import type { LocalStorageConfig } from './storage-backend-config.js';
 
 type NoSettings = Readonly<Record<string, never>>;
 
@@ -66,6 +72,37 @@ function protocol(
 }
 
 /**
+ * The core's storage (ADR 0079, sections 5.1 and 8; ADR 0083, N11): `default` at
+ * ARKVORY_DATA_DIR and the instances of its settings, such as a second volume. The processes
+ * build the instances from these settings themselves (`localStorageBackends`); every process
+ * that reads or writes content runs it. It is core while it is the only storage of the core:
+ * new uploads fall back to it.
+ */
+function localStorage(version: string): ModuleDescriptor<unknown, LocalStorageConfig> {
+  return {
+    manifest: {
+      format: MODULE_MANIFEST_FORMAT,
+      version,
+      extensionApi: `^${EXTENSION_API_VERSION}`,
+      kind: 'storage-backend',
+      publisher: CORE_PUBLISHER,
+      uses: [],
+      requires: [],
+      provides: [],
+      metricPrefix: null,
+      id: LOCAL_STORAGE_MODULE,
+      core: true,
+      roles: ['api', 'reader', 'worker', 'backup'],
+      routePrefixes: [],
+      tablePrefix: null,
+    },
+    parseConfig: parseLocalStorageConfig,
+    describeConfig: describeLocalStorageConfig,
+    create: wiredByCore,
+  };
+}
+
+/**
  * The built-in modules of the release, explicitly (ADR 0079, section 8). One list for every
  * process: the plan and its fingerprint are those of the installation, so the API, its read
  * gateways and the worker must plan the same modules. Built-in modules carry the core's version.
@@ -73,8 +110,11 @@ function protocol(
  * The worker writes registry rows of mirrored images and npm packages, hence its role for `oci`
  * and `npm`.
  */
-export function builtinModules(version: string): readonly ModuleDescriptor<unknown, NoSettings>[] {
+export function builtinModules(
+  version: string,
+): readonly ModuleDescriptor<unknown, NoSettings | LocalStorageConfig>[] {
   return [
+    localStorage(version),
     protocol(version, {
       id: 'upack',
       core: true,

@@ -10,7 +10,7 @@ import {
   RESTORE_NORMALIZATION_VERSION,
   SCHEMA_VERSION,
   backupPool,
-  readStorageBackends,
+  readLocalStorageSettings,
   requireSeparateTrees,
 } from '@proanima/arkvory-infrastructure';
 import type { LocalStorageSettings } from '@proanima/arkvory-infrastructure';
@@ -39,12 +39,15 @@ async function writeReport(path: string, report: RestoreReport, context: CliCont
   }
 }
 
-/** The other storages of the target (ADR 0083, N11); none without `--storage-backends`. */
+/**
+ * The other storages of the target (ADR 0083, N11): the `local-storage` instances of the
+ * target's modules file; none without `--modules-file`.
+ */
 async function targetBackends(command: RestoreCommand): Promise<readonly LocalStorageSettings[]> {
   try {
-    return await readStorageBackends(command.storageBackends, command.storage);
+    return await readLocalStorageSettings(command.modulesFile, command.storage);
   } catch (error) {
-    throw new BackupFailure('invalid_argument', 'Invalid --storage-backends file', {
+    throw new BackupFailure('invalid_argument', 'Invalid --modules-file', {
       cause: error,
     });
   }

@@ -16,7 +16,8 @@ import {
   downloadShare,
   readMirrorSettings,
   readModuleSelections,
-  readStorageBackends,
+  localStorageSettings,
+  LOCAL_STORAGE_MODULE,
 } from '@proanima/arkvory-infrastructure';
 import type { LocalStorageSettings, ModuleSelections } from '@proanima/arkvory-infrastructure';
 import type { MirrorConfiguration } from '@proanima/arkvory-application';
@@ -37,7 +38,7 @@ export interface ServerConfig extends UploadTimeoutOptions, OperabilityOptions {
   readonly sharedDownloads?: SharedDownloadPolicy;
   readonly databaseUrl: string;
   readonly dataDirectory: string;
-  /** More `local-storage` instances beside `default` (ADR 0083, N11; ARKVORY_STORAGE_BACKENDS_FILE). */
+  /** More `local-storage` instances beside `default` (ADR 0083, N11; ARKVORY_MODULES_FILE). */
   readonly storageBackends?: readonly LocalStorageSettings[];
   readonly host: string;
   readonly port: number;
@@ -217,10 +218,7 @@ export async function loadConfig(env: NodeJS.ProcessEnv): Promise<ServerConfig> 
   const mirrors = await readMirrors(env);
   const modules = await readModuleSelections(env['ARKVORY_MODULES_FILE']);
   const dataDirectory = required('ARKVORY_DATA_DIR');
-  const storageBackends = await readStorageBackends(
-    env['ARKVORY_STORAGE_BACKENDS_FILE'],
-    dataDirectory,
-  );
+  const storageBackends = localStorageSettings(modules.get(LOCAL_STORAGE_MODULE), dataDirectory);
   const maxUploads = number('ARKVORY_MAX_UPLOADS', 8, 32);
   const maxDownloads = number('ARKVORY_MAX_DOWNLOADS', 16, 256);
   const transferQueueLimit = number('ARKVORY_TRANSFER_QUEUE_LIMIT', 64, 1024);

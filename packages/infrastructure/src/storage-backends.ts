@@ -119,14 +119,14 @@ export class StorageBackends implements BlobStore, StorageBackendStates {
     return instance.blobs;
   }
 
-  putPart(
+  async putPart(
     id: string,
     part: UploadPart,
     source: AsyncIterable<Uint8Array>,
     cancellation: Cancellation,
     backendId?: string,
   ): Promise<void> {
-    return this.target(backendId, 'write').putPart(id, part, source, cancellation, backendId);
+    await this.target(backendId, 'write').putPart(id, part, source, cancellation, backendId);
   }
 
   /** Lazy like every read: an unusable storage fails the first `next`, as a read error would. */
@@ -138,27 +138,27 @@ export class StorageBackends implements BlobStore, StorageBackendStates {
     yield* this.target(backendId, 'read').readParts(id, parts, backendId);
   }
 
-  put(
+  async put(
     id: string,
     expected: ArtifactDescriptor,
     source: AsyncIterable<Uint8Array>,
     cancellation: Cancellation,
     backendId?: string,
   ): Promise<void> {
-    return this.target(backendId, 'write').put(id, expected, source, cancellation, backendId);
+    await this.target(backendId, 'write').put(id, expected, source, cancellation, backendId);
   }
 
-  verify(
+  async verify(
     id: string,
     expected: ArtifactDescriptor,
     cancellation: Cancellation,
     backendId?: string,
   ): Promise<void> {
-    return this.target(backendId, 'read').verify(id, expected, cancellation, backendId);
+    await this.target(backendId, 'read').verify(id, expected, cancellation, backendId);
   }
 
   /** A shared copy stays in the source's storage: hard links do not cross storages. */
-  duplicate(
+  async duplicate(
     sourceId: string,
     targetId: string,
     expected: ArtifactDescriptor,
@@ -166,7 +166,7 @@ export class StorageBackends implements BlobStore, StorageBackendStates {
     backendId?: string,
   ): Promise<void> {
     const target = this.target(backendId, 'write');
-    return target.duplicate(sourceId, targetId, expected, cancellation, backendId);
+    await target.duplicate(sourceId, targetId, expected, cancellation, backendId);
   }
 
   async *read(
@@ -178,16 +178,16 @@ export class StorageBackends implements BlobStore, StorageBackendStates {
     yield* this.target(backendId, 'read').read(id, size, range, backendId);
   }
 
-  exists(id: string, size: number, backendId?: string): Promise<void> {
-    return this.target(backendId, 'read').exists(id, size, backendId);
+  async exists(id: string, size: number, backendId?: string): Promise<void> {
+    await this.target(backendId, 'read').exists(id, size, backendId);
   }
 
-  collect(
+  async collect(
     id: string,
     removeContent: boolean,
     cancellation: Cancellation,
     backendId?: string,
   ): Promise<void> {
-    return this.target(backendId, 'collect').collect(id, removeContent, cancellation, backendId);
+    await this.target(backendId, 'collect').collect(id, removeContent, cancellation, backendId);
   }
 }

@@ -18,7 +18,7 @@ import {
   localStorageBackends,
   PostgresStorageIdentities,
   probeStorageBackends,
-  readStorageBackends,
+  readLocalStorageSettings,
   requireSeparateTrees,
 } from '@proanima/arkvory-infrastructure';
 import type { BackupPool, StorageBackends, VaultKeySource } from '@proanima/arkvory-infrastructure';
@@ -42,9 +42,9 @@ export async function openCaptureSource(config: SourceConfig): Promise<CaptureSo
   const blobs = localStorageBackends(
     config.dataDirectory,
     config.reserveBytes,
-    await readStorageBackends(config.storageBackendsFile, config.dataDirectory).catch(
+    await readLocalStorageSettings(config.modulesFile, config.dataDirectory).catch(
       (error: unknown) => {
-        throw new BackupFailure('invalid_argument', 'Invalid ARKVORY_STORAGE_BACKENDS_FILE', {
+        throw new BackupFailure('invalid_argument', 'Invalid ARKVORY_MODULES_FILE', {
           cause: error,
         });
       },

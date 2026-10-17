@@ -7,11 +7,13 @@ export type {
   StorageInstance,
 } from './storage-backends.js';
 export {
+  LOCAL_STORAGE_MODULE,
   localStorageBackends,
-  parseStorageBackends,
-  readStorageBackends,
+  localStorageSettings,
+  parseLocalStorageConfig,
+  readLocalStorageSettings,
 } from './storage-backend-config.js';
-export type { LocalStorageSettings } from './storage-backend-config.js';
+export type { LocalStorageConfig, LocalStorageSettings } from './storage-backend-config.js';
 export {
   probeStorageBackends,
   watchStorageBackends,

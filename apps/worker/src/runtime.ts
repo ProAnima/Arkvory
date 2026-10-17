@@ -7,7 +7,7 @@ import {
   PostgresPlacementPolicies,
   PostgresStorageIdentities,
   probeStorageBackends,
-  readStorageBackends,
+  readLocalStorageSettings,
   WorkerSingletonBusy,
   storageReserveBytes,
   watchStorageBackends,
@@ -25,11 +25,11 @@ export async function resources(role: 'worker' | 'maintenance', capacity = 0, wr
   const root = process.env['ARKVORY_DATA_DIR'];
   if (!databaseUrl || !root)
     throw new Error('ARKVORY_DATABASE_URL and ARKVORY_DATA_DIR are required');
-  // Every storage of the installation (ADR 0083, N11); a bad file stops the start here.
+  // Every storage of the installation: `local-storage` in ARKVORY_MODULES_FILE (ADR 0083, N11).
   const blobs = localStorageBackends(
     root,
     storageReserveBytes(process.env['ARKVORY_STORAGE_RESERVE_BYTES']),
-    await readStorageBackends(process.env['ARKVORY_STORAGE_BACKENDS_FILE'], root),
+    await readLocalStorageSettings(process.env['ARKVORY_MODULES_FILE'], root),
   );
   const core = blobs.core.lifecycle;
   const catalog = new PostgresCatalog(databaseUrl, capacity, writers);

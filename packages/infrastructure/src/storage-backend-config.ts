@@ -1,9 +1,15 @@
-import { readFile, stat } from 'node:fs/promises';
 import { isAbsolute } from 'node:path';
 import { DEFAULT_STORAGE_BACKEND } from '@proanima/arkvory-domain';
+import { ModuleConfigError } from '@proanima/arkvory-extension-api';
+import type { ModuleJson } from '@proanima/arkvory-extension-api';
 import { LocalBlobStore } from './local-blobs.js';
 import { StorageBackends } from './storage-backends.js';
 import { containsPath } from './vault-paths.js';
+import { readModuleSelections } from './module-selection.js';
+import type { ModuleSelection, ModuleSelections } from './module-selection.js';
+
+/** Id of the built-in storage module (ADR 0079, section 8). */
+export const LOCAL_STORAGE_MODULE = 'local-storage';
 
 /**
  * One more `local-storage` instance (ADR 0083, N11), for example a second volume. The core's
@@ -20,34 +26,36 @@ export interface LocalStorageSettings {
   readonly reserveBytes: number | undefined;
 }
 
-const FORMAT = 1;
-const MAX_BACKENDS = 16;
-const MAX_FILE_BYTES = 64 * 1024;
-/** `local-storage` ids have no dot: `<module>.<name>` belongs to storage modules. */
-const LOCAL_ID = /^[a-z][a-z0-9-]{0,63}$/;
-const NAME = 'ARKVORY_STORAGE_BACKENDS_FILE';
-
-/** Messages name the field, never a value: the file holds paths of the installation. */
-function fail(field: string): never {
-  throw new Error(`Invalid ${NAME}: ${field}`);
+export interface LocalStorageConfig {
+  readonly instances: readonly LocalStorageSettings[];
 }
 
+const MAX_INSTANCES = 16;
+/** `local-storage` ids have no dot: `<module>.<name>` belongs to storage modules. */
+const LOCAL_ID = /^[a-z][a-z0-9-]{0,63}$/;
+
 function fields(value: unknown, path: string, known: readonly string[]): Record<string, unknown> {
-  if (typeof value !== 'object' || value === null || Array.isArray(value)) fail(path || '/');
+  if (typeof value !== 'object' || value === null || Array.isArray(value))
+    throw new ModuleConfigError('type', path);
   const row: Record<string, unknown> = Object.fromEntries(Object.entries(value));
-  if (Object.keys(row).some((key) => !known.includes(key))) fail(`unknown field in ${path || '/'}`);
+  const unknown = Object.keys(row).find((key) => !known.includes(key));
+  if (unknown !== undefined)
+    throw new ModuleConfigError(
+      'unknown_field',
+      LOCAL_ID.test(unknown) ? `${path}/${unknown}` : path,
+    );
   return row;
 }
 
 function flag(row: Record<string, unknown>, key: string, path: string, fallback: boolean) {
   const value = row[key];
   if (value === undefined) return fallback;
-  if (typeof value !== 'boolean') fail(`${path}/${key}`);
+  if (typeof value !== 'boolean') throw new ModuleConfigError('type', `${path}/${key}`);
   return value;
 }
 
-function settings(id: string, value: unknown): LocalStorageSettings {
-  const path = `/backends/${id}`;
+function instance(id: string, value: unknown): LocalStorageSettings {
+  const path = `/instances/${id}`;
   const row = fields(value, path, [
     'directory',
     'enabled',
@@ -56,19 +64,21 @@ function settings(id: string, value: unknown): LocalStorageSettings {
     'reserveBytes',
   ]);
   const { directory, mode, reserveBytes } = row;
+  if (directory === undefined) throw new ModuleConfigError('required', `${path}/directory`);
   if (
     typeof directory !== 'string' ||
     !isAbsolute(directory) ||
     directory.length > 1024 ||
     directory.includes('\0')
   )
-    fail(`${path}/directory`);
-  if (mode !== undefined && mode !== 'full' && mode !== 'read-only') fail(`${path}/mode`);
+    throw new ModuleConfigError('format', `${path}/directory`);
+  if (mode !== undefined && mode !== 'full' && mode !== 'read-only')
+    throw new ModuleConfigError('invalid', `${path}/mode`);
   if (
     reserveBytes !== undefined &&
     (typeof reserveBytes !== 'number' || !Number.isSafeInteger(reserveBytes) || reserveBytes < 0)
   )
-    fail(`${path}/reserveBytes`);
+    throw new ModuleConfigError('range', `${path}/reserveBytes`);
   return {
     id,
     directory,
@@ -80,57 +90,83 @@ function settings(id: string, value: unknown): LocalStorageSettings {
 }
 
 /**
- * `{"format": 1, "backends": {"volume-2": {"directory": "/srv/arkvory-2"}}}`; `enabled`,
- * `mode` (`full` | `read-only`), `acceptsWrites` and `reserveBytes` are optional. Directories
- * may not contain each other or the data directory: one file would then belong to two storages.
+ * The settings of `local-storage` in ARKVORY_MODULES_FILE:
+ * `{"instances": {"volume-2": {"directory": "/srv/arkvory-2"}}}` with optional `enabled`,
+ * `mode` (`full` | `read-only`), `acceptsWrites` and `reserveBytes`. No settings: only the
+ * core's storage `default` at ARKVORY_DATA_DIR, as before placement existed.
  */
-export function parseStorageBackends(
-  value: unknown,
+export function parseLocalStorageConfig(input: unknown): LocalStorageConfig {
+  if (input === undefined) return { instances: [] };
+  const row = fields(input, '', ['instances']);
+  const list = row['instances'];
+  if (list === undefined) return { instances: [] };
+  if (typeof list !== 'object' || list === null || Array.isArray(list))
+    throw new ModuleConfigError('type', '/instances');
+  const entries = Object.entries(Object.fromEntries(Object.entries(list)));
+  if (entries.length > MAX_INSTANCES) throw new ModuleConfigError('length', '/instances');
+  return {
+    instances: entries.map(([id, entry]) => {
+      if (!LOCAL_ID.test(id) || id === DEFAULT_STORAGE_BACKEND)
+        throw new ModuleConfigError('format', '/instances');
+      return instance(id, entry);
+    }),
+  };
+}
+
+/**
+ * What every process of the installation must agree on: which storages exist and how they
+ * take writes. Directories and reserves stay out: they are where this host mounts a volume.
+ */
+export function describeLocalStorageConfig(config: LocalStorageConfig): ModuleJson {
+  if (config.instances.length === 0) return {};
+  return {
+    instances: Object.fromEntries(
+      config.instances.map((entry) => [
+        entry.id,
+        { enabled: entry.enabled, mode: entry.mode, acceptsWrites: entry.acceptsWrites },
+      ]),
+    ),
+  };
+}
+
+/**
+ * The instances of `local-storage` for this host. Directories may not contain each other or the
+ * data directory: one file would then belong to two storages. Messages name the field only.
+ */
+export function localStorageSettings(
+  selection: ModuleSelection | undefined,
   dataDirectory: string,
 ): readonly LocalStorageSettings[] {
-  const document = fields(value, '', ['format', 'backends']);
-  if (document['format'] !== FORMAT) fail('/format');
-  const list = document['backends'];
-  if (list === undefined) return [];
-  if (typeof list !== 'object' || list === null || Array.isArray(list)) fail('/backends');
-  const entries = Object.entries(Object.fromEntries(Object.entries(list)));
-  if (entries.length > MAX_BACKENDS) fail('/backends: too many backends');
-  const backends = entries.map(([id, entry]) => {
-    if (!LOCAL_ID.test(id) || id === DEFAULT_STORAGE_BACKEND) fail('/backends: backend id');
-    return settings(id, entry);
-  });
-  const roots = [dataDirectory, ...backends.map((backend) => backend.directory)];
+  let config: LocalStorageConfig;
+  try {
+    config = parseLocalStorageConfig(selection?.config);
+  } catch (error) {
+    if (!(error instanceof ModuleConfigError)) throw error;
+    throw new Error(
+      `Invalid ARKVORY_MODULES_FILE: ${error.code} /modules/${LOCAL_STORAGE_MODULE}/config${error.path}`,
+      { cause: error },
+    );
+  }
+  const roots = [dataDirectory, ...config.instances.map((entry) => entry.directory)];
   roots.forEach((outer, i) => {
     roots.forEach((inner, j) => {
       if (i < j && (containsPath(outer, inner) || containsPath(inner, outer)))
-        fail(`/backends/${backends[j - 1]?.id ?? ''}/directory: overlaps another storage`);
+        throw new Error(
+          `Invalid ARKVORY_MODULES_FILE: overlapping /modules/${LOCAL_STORAGE_MODULE}/config/instances/${config.instances[j - 1]?.id ?? ''}/directory`,
+        );
     });
   });
-  return backends;
+  return config.instances;
 }
 
-/** No file: the installation has only its core storage, as before placement existed. */
-export async function readStorageBackends(
-  file: string | undefined,
+/** The instances from a modules file, for processes that read it themselves. */
+export async function readLocalStorageSettings(
+  modulesFile: string | undefined,
   dataDirectory: string,
+  selections?: ModuleSelections,
 ): Promise<readonly LocalStorageSettings[]> {
-  if (file === undefined || file === '') return [];
-  if (!isAbsolute(file)) throw new Error(`${NAME} must be an absolute path`);
-  let text: string;
-  try {
-    if ((await stat(file)).size > MAX_FILE_BYTES) fail('file too large');
-    text = await readFile(file, 'utf8');
-  } catch (error) {
-    if (error instanceof Error && error.message.startsWith(`Invalid ${NAME}`)) throw error;
-    throw new Error(`${NAME} cannot be read`, { cause: error });
-  }
-  let document: unknown;
-  try {
-    document = JSON.parse(text);
-  } catch (error) {
-    throw new Error(`Invalid ${NAME}: JSON`, { cause: error });
-  }
-  return parseStorageBackends(document, dataDirectory);
+  const chosen = selections ?? (await readModuleSelections(modulesFile));
+  return localStorageSettings(chosen.get(LOCAL_STORAGE_MODULE), dataDirectory);
 }
 
 /**

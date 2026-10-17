@@ -5,8 +5,8 @@ import { storageReserveBytes } from '@proanima/arkvory-infrastructure';
 export interface SourceConfig {
   readonly databaseUrl: string;
   readonly dataDirectory: string;
-  /** More storages beside `default` (ADR 0083, N11); read when the source is opened. */
-  readonly storageBackendsFile: string | undefined;
+  /** ARKVORY_MODULES_FILE: storages beside `default` (ADR 0083, N11), read at opening. */
+  readonly modulesFile: string | undefined;
   readonly reserveBytes: number;
   readonly leaseSeconds: number;
   readonly snapshotSeconds: number;
@@ -42,7 +42,7 @@ export function sourceConfig(env: NodeJS.ProcessEnv): SourceConfig {
   return {
     databaseUrl: databaseUrl(env['ARKVORY_DATABASE_URL'], 'ARKVORY_DATABASE_URL'),
     dataDirectory,
-    storageBackendsFile: env['ARKVORY_STORAGE_BACKENDS_FILE'] || undefined,
+    modulesFile: env['ARKVORY_MODULES_FILE'] || undefined,
     reserveBytes,
     leaseSeconds: bounded(env, 'ARKVORY_BACKUP_LEASE_SECONDS', 60, 2, 3600),
     snapshotSeconds: bounded(env, 'ARKVORY_BACKUP_SNAPSHOT_SECONDS', 1800, 60, 86400),
