@@ -25,7 +25,11 @@ import {
   readNativeError,
 } from '@proanima/arkvory-contracts';
 import { ArkvoryClient, ArkvoryHttpError } from '@proanima/arkvory-sdk';
-import { readEventRetention } from '../apps/worker/dist/event-loop.js';
+import {
+  eventRetryPauseMs,
+  readEventRetention,
+  runEventSequencer,
+} from '../apps/worker/dist/event-loop.js';
 
 const epoch = '0f7d8e3c-1d2b-4a5c-9e8f-0a1b2c3d4e5f';
 const artifact = '9a7b6c5d-4e3f-4a1b-8c2d-1e0f9a8b7c6d';
@@ -446,3 +450,30 @@ test(
     assert.equal(reached('9223372036854775807', '9223372036854775807'), true);
   },
 );
+
+test('a failing sequencer step backs off up to 30 s instead of a warning every tick', async () => {
+  assert.deepEqual(
+    [1, 2, 5, 6, 1000].map((attempts) => eventRetryPauseMs(attempts, 500)),
+    [1000, 2000, 16000, 30000, 30000],
+  );
+  const records = [];
+  const stop = new AbortController();
+  const down = Object.assign(new Error('database down'), { code: 'ECONNREFUSED' });
+  const loop = runEventSequencer({
+    catalog: { pool: { connect: () => Promise.reject(down) }, active: true },
+    retention: { hours: 168, maxRows: 1000n },
+    stop: stop.signal,
+    diagnostics: { write: (record) => records.push(record) },
+    tickMs: 10,
+  });
+  await new Promise((resolve) => setTimeout(resolve, 400));
+  stop.abort();
+  await loop;
+  // Pauses of 20, 40, 80, 160 and 320 ms: a handful of warnings, not one per 10 ms tick.
+  assert.ok(records.length >= 2 && records.length <= 6, `${records.length} warnings`);
+  assert.ok(records.every((record) => record.code === 'events.step_failed'));
+  assert.deepEqual(
+    records.map((record) => record.attempts),
+    records.map((_, index) => index + 1),
+  );
+});

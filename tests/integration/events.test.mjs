@@ -498,3 +498,39 @@ test('positions, pages and retention follow numeric order past one digit', async
     ['e10', 'e11', 'e12'],
   );
 });
+
+test('a retention backlog larger than one pass goes on the next tick, not a minute later', async (t) => {
+  const f = await setup(t, { keys });
+  const log = new PostgresEventLog(f.catalog.pool);
+  await f.catalog.pool.query(
+    `INSERT INTO arkvory_events(type,schema_version,scope,repository,partition_key,subject,data)
+     SELECT 'artifact.published',1,'repository','releases','repository:releases','e'||n,
+       jsonb_build_object('repository','releases','artifactId',gen_random_uuid())
+     FROM generate_series(1,30000) n`,
+  );
+  assert.equal(await log.sequence(30000), 30000);
+  const stop = new AbortController();
+  t.after(() => stop.abort());
+  const records = [];
+  const loop = runEventSequencer({
+    catalog: { pool: f.catalog.pool, active: true },
+    retention: { hours: 168, maxRows: 1000n },
+    stop: stop.signal,
+    diagnostics: { write: (record) => records.push(record) },
+    tickMs: 10,
+    // One pass deletes at most 20 batches of 1000; the next pass would be an hour away.
+    pruneEveryMs: 3_600_000,
+  });
+  let snapshot = await log.snapshot();
+  for (let attempt = 0; attempt < 500 && snapshot.oldest < 29000n; attempt++) {
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    snapshot = await log.snapshot();
+  }
+  stop.abort();
+  await loop;
+  assert.deepEqual(
+    [snapshot.head, snapshot.oldest, snapshot.prunedTotal],
+    [30000n, 29000n, 29000n],
+    JSON.stringify(records),
+  );
+});

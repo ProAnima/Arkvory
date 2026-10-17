@@ -39,13 +39,42 @@ export interface EventLoopOptions {
 
 /** Batches one tick may number or delete: a backlog never starves the other step. */
 const batchesPerTick = 20;
+const maxRetryPauseMs = 30_000;
+
+/**
+ * Pause after the n-th failed step in a row: doubles from the tick up to 30 s, so a database
+ * outage writes a few warnings, not two a second, and a recovered worker resumes well within
+ * the 2 minutes of ArkvoryEventSequencerStalled.
+ */
+export function eventRetryPauseMs(attempts: number, tickMs: number): number {
+  return Math.min(tickMs * 2 ** Math.min(attempts, 16), maxRetryPauseMs);
+}
+
+/**
+ * One retention pass of at most `batchesPerTick` batches. `done` is false when the budget ran
+ * out with a full batch: the backlog continues on the next tick instead of a minute later.
+ */
+async function prunePass(
+  log: PostgresEventLog,
+  retention: EventRetentionPolicy,
+  stopped: () => boolean,
+): Promise<{ readonly rows: number; readonly done: boolean }> {
+  let rows = 0;
+  for (let batch = 0; batch < batchesPerTick && !stopped(); batch++) {
+    const pruned = await log.prune(retention);
+    rows += pruned;
+    if (pruned < EVENT_SEQUENCE_BATCH) return { rows, done: true };
+  }
+  return { rows, done: false };
+}
 
 /**
  * The single event sequencer (ADR 0080), a loop of the completion worker: only the process that
  * holds the worker lock runs it. Storage ownership is checked before every transaction, so a
  * worker that lost it stops numbering at once; even two sequencers would stay correct, because
  * every transaction locks the state row first. A failed step is logged with a constant code
- * and repeated on the next tick; nothing is lost, the events wait without a position.
+ * and repeated after a pause that doubles up to 30 s; nothing is lost, the events wait without
+ * a position.
  */
 export async function runEventSequencer(options: EventLoopOptions): Promise<void> {
   const { catalog, stop, diagnostics } = options;
@@ -59,13 +88,8 @@ export async function runEventSequencer(options: EventLoopOptions): Promise<void
       for (let batch = 0; batch < batchesPerTick && !stopped(); batch++)
         if ((await log.sequence()) < EVENT_SEQUENCE_BATCH) break;
       if (now() - prunedAt >= (options.pruneEveryMs ?? 60_000)) {
-        let rows = 0;
-        for (let batch = 0; batch < batchesPerTick && !stopped(); batch++) {
-          const pruned = await log.prune(options.retention);
-          rows += pruned;
-          if (pruned === 0) break;
-        }
-        prunedAt = now();
+        const { rows, done } = await prunePass(log, options.retention, stopped);
+        if (done) prunedAt = now();
         if (rows > 0)
           diagnostics.write({ level: 'info', component: 'events', code: 'events.pruned', rows });
       }
@@ -89,6 +113,8 @@ export async function runEventSequencer(options: EventLoopOptions): Promise<void
         attempts,
       });
     }
-    await delay(options.tickMs ?? 500, undefined, { signal: stop }).catch(() => undefined);
+    const tickMs = options.tickMs ?? 500;
+    const pause = attempts > 0 ? eventRetryPauseMs(attempts, tickMs) : tickMs;
+    await delay(pause, undefined, { signal: stop }).catch(() => undefined);
   }
 }
