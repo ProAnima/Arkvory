@@ -15,6 +15,8 @@ export interface SemanticVersion {
 
 const VERSION_PATTERN =
   /^(0|[1-9][0-9]{0,8})\.(0|[1-9][0-9]{0,8})\.(0|[1-9][0-9]{0,8})(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$/;
+/** A numeric pre-release identifier with a leading zero, which semver 2.0.0 (item 9) forbids. */
+const LEADING_ZERO = /^0[0-9]+$/;
 const MAX_VERSION_LENGTH = 64;
 
 /** A semver version without build metadata, or null when the text is not one. */
@@ -22,11 +24,13 @@ export function parseSemanticVersion(text: string): SemanticVersion | null {
   if (text.length > MAX_VERSION_LENGTH) return null;
   const match = VERSION_PATTERN.exec(text);
   if (!match) return null;
+  const prerelease = match[4] ?? null;
+  if (prerelease?.split('.').some((identifier) => LEADING_ZERO.test(identifier))) return null;
   return {
     major: Number(match[1]),
     minor: Number(match[2]),
     patch: Number(match[3]),
-    prerelease: match[4] ?? null,
+    prerelease,
   };
 }
 

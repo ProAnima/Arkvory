@@ -82,10 +82,12 @@ type Fields = Readonly<Record<string, unknown>>;
 function fields(input: unknown): Fields {
   if (typeof input !== 'object' || input === null || Array.isArray(input))
     throw new ModuleManifestError('type', '');
-  const entries = Object.fromEntries(Object.entries(input));
-  const unknown = Object.keys(entries).find((key) => !FIELDS.some((field) => field === key));
+  return Object.fromEntries(Object.entries(input));
+}
+
+function refuseUnknown(row: Fields) {
+  const unknown = Object.keys(row).find((key) => !FIELDS.some((field) => field === key));
   if (unknown !== undefined) throw new ModuleManifestError('unknown_field', `/${unknown}`);
-  return entries;
 }
 
 function present(row: Fields, key: (typeof FIELDS)[number]): unknown {
@@ -153,10 +155,14 @@ function format(row: Fields): typeof MODULE_MANIFEST_FORMAT {
  */
 export function parseModuleManifest(input: unknown): ModuleManifest {
   const row = fields(input);
+  // The format decides which fields exist: a manifest of a later format is unsupported, not
+  // malformed, whatever fields it has.
+  const manifestFormat = format(row);
+  refuseUnknown(row);
   const core = present(row, 'core');
   if (typeof core !== 'boolean') throw new ModuleManifestError('type', '/core');
   return {
-    format: format(row),
+    format: manifestFormat,
     id: text(row, 'id', (value) => MODULE_ID_PATTERN.test(value)),
     version: text(row, 'version', (value) => parseSemanticVersion(value) !== null),
     extensionApi: text(row, 'extensionApi', (value) => parseCaretRange(value) !== null),

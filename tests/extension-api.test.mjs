@@ -67,6 +67,9 @@ test('a manifest is read from untrusted input field by field, naming the field, 
   const { roles: _roles, ...noRoles } = manifest('npm');
   refused(noRoles, 'required', '/roles');
   refused(manifest('npm', { format: 2 }), 'unsupported_format', '/format');
+  // A later format may add or drop fields: it is unsupported, not malformed.
+  refused({ ...manifest('npm'), format: 2, dataClass: 'layout' }, 'unsupported_format', '/format');
+  refused({ format: 2 }, 'unsupported_format', '/format');
   refused(manifest('npm', { format: '1' }), 'type', '/format');
   refused(manifest('npm', { core: 'yes' }), 'type', '/core');
   refused(manifest('n'), 'format', '/id');
@@ -98,8 +101,20 @@ test('versions follow semver and caret ranges as npm reads them', () => {
     patch: 3,
     prerelease: 'rc.1',
   });
-  for (const text of ['01.2.3', '1.2', '1.2.3+build', 'v1.2.3', '1.2.3-', '9999999999.0.0'])
+  for (const text of [
+    '01.2.3',
+    '1.2',
+    '1.2.3+build',
+    'v1.2.3',
+    '1.2.3-',
+    '9999999999.0.0',
+    '1.2.3-01',
+    '1.2.3-rc.01',
+    '1.2.3-rc..1',
+  ])
     assert.equal(parseSemanticVersion(text), null, text);
+  for (const text of ['1.2.3-0', '1.2.3-0a', '1.2.3-rc.10', '1.2.3-x-1'])
+    assert.notEqual(parseSemanticVersion(text), null, text);
   assert.equal(parseCaretRange('1.2.3'), null);
   const satisfied = (range, version) =>
     satisfiesCaret(parseCaretRange(range), parseSemanticVersion(version));
