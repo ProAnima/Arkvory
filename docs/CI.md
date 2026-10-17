@@ -76,4 +76,4 @@ npm run release:local -- 1.2.3  # черновик релиза на GitHub
 
 Каждая job публикует итог в logs и job summary даже после ошибки. Архивы test-results загружаются только при repository variable `ARKVORY_UPLOAD_ARTIFACTS=true`; это дополнительный канал, который требует свободной квоты GitHub. Подробности и локальные эквиваленты: [ENGINEERING_GATES](ENGINEERING_GATES.md).
 
-Окружение — Node.js 24 LTS, npm 11. [Измерения локального стенда](CORE_VALIDATION.md), [запуск](CORE_RUNBOOK.md). HA и промышленный failover этими jobs не подтверждаются.
+Окружение — Node.js 24 LTS, npm 11. [Измерения локального стенда](CORE_VALIDATION.md), [запуск](CORE_RUNBOOK.md). Сценарии HA ([ADR 0072](adr/0072-single-site-ha.md)) подтверждают jobs `ha-*` на гостевых ВМ KVM с `fence_virsh`; агент fencing конкретной площадки (IPMI, Redfish, PDU, гипервизор) ими не проверяется и доказывается на месте `arkvory cluster-fence-test`.
