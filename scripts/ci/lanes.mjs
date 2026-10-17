@@ -36,7 +36,11 @@ export const lanes = {
 };
 
 /**
- * `gap`: nothing local covers the gate on that platform; evidence and release notes list it.
+ * `gap`: nothing local covers the gate on that platform; evidence and release notes list it, and
+ * a release needs the GitHub CI jobs executing it for the same commit (scripts/ci/ci-jobs.mjs).
+ * `ci` names the CI platform when it differs: the NAS and HA stands are Linux guests and
+ * containers driven from a Linux runner, so CI runs them on Linux only; GitHub Windows runners
+ * have neither Linux containers nor KVM.
  * `covered`: the platform-independent result is produced by another lane.
  */
 export const notExecuted = [
@@ -58,6 +62,7 @@ export const notExecuted = [
     gate: 'deployment-nas',
     platform: 'win32',
     kind: 'gap',
+    ci: 'linux',
     reason: 'Needs cifs/nfs/nfsd kernel modules on the Docker host; runs on a GitHub runner',
   },
   {
@@ -72,6 +77,7 @@ export const notExecuted = [
     gate: 'deployment-ha',
     platform: 'win32',
     kind: 'gap',
+    ci: 'linux',
     reason: 'Needs KVM guests with DRBD 9 and fence_virsh; runs on a GitHub runner',
   },
   {
@@ -84,6 +90,7 @@ export const notExecuted = [
     gate: 'deployment-ha-power',
     platform: 'win32',
     kind: 'gap',
+    ci: 'linux',
     reason: 'Needs KVM guests with DRBD 9 and fence_virsh; runs on a GitHub runner',
   },
   {
@@ -96,6 +103,7 @@ export const notExecuted = [
     gate: 'deployment-ha-operations',
     platform: 'win32',
     kind: 'gap',
+    ci: 'linux',
     reason: 'Needs KVM guests with DRBD 9 and fence_virsh; runs on a GitHub runner',
   },
   {
@@ -108,6 +116,7 @@ export const notExecuted = [
     gate: 'deployment-ha-three',
     platform: 'win32',
     kind: 'gap',
+    ci: 'linux',
     reason: 'Needs KVM guests with DRBD 9 and fence_virsh; runs on a GitHub runner',
   },
   {

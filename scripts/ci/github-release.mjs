@@ -100,8 +100,11 @@ export async function releasePreconditions(
 }
 
 export function releaseNotes(version, evidence, acceptance) {
+  const ci = evidence.ci?.run
+    ? `GitHub CI run ${evidence.ci.run.url} passed the complete merge gate for the same commit, including every gate local CI cannot run (listed below).`
+    : 'GitHub CI coverage of the local gaps was NOT confirmed (rehearsal only; not releasable).';
   return [
-    'All release gates passed for this commit on the maintainer workstation (local CI). The release is signed (arkvory-release.json.sig, latest.json). Review deployment notes and platform evidence before publishing; after publishing, approve the version for a channel in the hub.',
+    `All release gates of local CI passed for this commit on the maintainer workstation. ${ci} The release is signed (arkvory-release.json.sig, latest.json). Review deployment notes and platform evidence before publishing; after publishing, approve the version for a channel in the hub.`,
     '',
     `### Release gates (${version})`,
     '',

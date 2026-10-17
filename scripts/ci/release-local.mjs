@@ -4,6 +4,9 @@ import { join, resolve } from 'node:path';
 import { nativeFiles, verifyNativeFiles } from '../native-files.mjs';
 import { releaseFiles, verifyReleaseFiles } from '../release-files.mjs';
 import { signDirectory, signingKeyFile } from '../release-signing.mjs';
+import { githubSource } from '../release-admission.mjs';
+import { ciAdmission, ghRequest } from './ci-admission.mjs';
+import { admitRelease } from './evidence.mjs';
 import { runLocalCi } from './local-run.mjs';
 import { npm } from './windows-lane.mjs';
 import {
@@ -16,9 +19,10 @@ import {
 const root = fileURLToPath(new URL('../../', import.meta.url));
 const usage = `Usage: npm run release:local -- <x.y.z> [--dry-run] [--reuse-evidence]
 
-Cuts a release on this workstation: release gates in all local CI lanes, one packaged candidate,
-acceptance of that candidate on Windows and in the disposable Linux systemd container, then a
-DRAFT GitHub release with the tested bytes. Publishing the draft stays a manual step.`;
+Cuts a release on this workstation: the GitHub merge gate (check.yml) must have passed for the
+same commit, covering every gate local CI cannot run; then release gates in all local CI lanes,
+one packaged candidate, acceptance of that candidate on Windows and in the disposable Linux
+systemd container, and a DRAFT GitHub release with the tested bytes. Publishing stays manual.`;
 const dayMs = 24 * 60 * 60 * 1000;
 
 export function parseArguments(argv) {
@@ -34,21 +38,31 @@ export function parseArguments(argv) {
   return options;
 }
 
-/** Fresh evidence for the same commit may be reused; anything older or dirty is re-run. */
+/** Fresh local evidence for the same commit may be reused; anything older or dirty is re-run. */
 async function releaseEvidence(commit, reuse, signal) {
   const path = resolve(root, 'test-results/local-ci', `${commit}-release`, 'evidence.json');
   if (reuse)
     try {
       const evidence = JSON.parse(await readFile(path, 'utf8'));
       const fresh = Date.now() - Date.parse(evidence.finishedAt) < dayMs;
-      if (evidence.commit === commit && evidence.releasable === true && fresh) return evidence;
+      if (evidence.commit === commit && evidence.localPassed === true && fresh) return evidence;
       process.stdout.write('Stored release evidence is stale or incomplete; running gates\n');
     } catch (error) {
       if (error.code !== 'ENOENT') throw error;
     }
   const { evidence } = await runLocalCi(root, { profile: 'release', signal });
-  if (!evidence.releasable) throw new Error('Release gates failed; see test-results/local-ci');
+  if (!evidence.localPassed) throw new Error('Release gates failed; see test-results/local-ci');
   return evidence;
+}
+
+/** Checked before an hour of local gates: without CI for this commit nothing is released. */
+async function githubCi(commit, strict) {
+  return ciAdmission(commit, {
+    workflow: await readFile(resolve(root, '.github/workflows/check.yml'), 'utf8'),
+    registry: JSON.parse(await readFile(resolve(root, 'config/gates.json'), 'utf8')),
+    source: githubSource(ghRequest(root)),
+    strict,
+  });
 }
 
 async function acceptCandidate(output, signal) {
@@ -107,7 +121,7 @@ async function main(options) {
   const controller = new AbortController();
   process.once('SIGINT', () => controller.abort());
   const { signal } = controller;
-  // A rehearsal never reuses a real candidate folder and never touches GitHub.
+  // A rehearsal never reuses a real candidate folder and never writes to GitHub.
   const name = options.dryRun
     ? `${options.version}-rehearsal-${new Date().toISOString().replace(/\D/g, '').slice(0, 14)}`
     : options.version;
@@ -115,8 +129,13 @@ async function main(options) {
   const { commit, tag, warnings } = await releasePreconditions(root, options.version, output, {
     strict: !options.dryRun,
   });
-  for (const warning of warnings) process.stdout.write(`Warning (rehearsal): ${warning}\n`);
-  const evidence = await releaseEvidence(commit, options.reuse, signal);
+  const ci = await githubCi(commit, !options.dryRun);
+  for (const warning of [...warnings, ...ci.problems])
+    process.stdout.write(`Warning (rehearsal): ${warning}\n`);
+  const evidence = admitRelease(await releaseEvidence(commit, options.reuse, signal), ci);
+  // A real release has already failed closed in ciAdmission; the record must agree with it.
+  if (!options.dryRun && !evidence.releasable)
+    throw new Error('Release is not admissible: local gates and GitHub CI must both pass');
   await npm(root, ['run', 'release:package', '--', options.version, output], { signal });
   const acceptance = await acceptCandidate(output, signal);
   const files = await assemble(output, options.version, commit, acceptance.native);

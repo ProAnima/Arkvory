@@ -104,15 +104,17 @@ test('a lane passes only with every planned gate passed for the expected commit'
   assert.deepEqual([dirty.status, dirty.dirty], ['passed', true]);
 });
 
-test('only clean, complete release-profile evidence is releasable', () => {
+test('only clean, complete release-profile evidence passes locally, never releasable alone', () => {
   const all = Object.keys(lanes).map((name) => ({ name, status: 'passed', planned: [] }));
   const base = { profile: 'release', commit, dirty: false, host, lanes: all };
-  assert.equal(summarize(base).releasable, true);
-  assert.equal(summarize({ ...base, profile: 'verify' }).releasable, false);
-  assert.equal(summarize({ ...base, dirty: true }).releasable, false);
-  assert.equal(summarize({ ...base, lanes: all.slice(1) }).releasable, false);
+  assert.equal(summarize(base).localPassed, true);
+  // Local gaps need GitHub CI for the same commit (tests/release-admission.test.mjs).
+  assert.equal(summarize(base).releasable, false);
+  assert.equal(summarize({ ...base, profile: 'verify' }).localPassed, false);
+  assert.equal(summarize({ ...base, dirty: true }).localPassed, false);
+  assert.equal(summarize({ ...base, lanes: all.slice(1) }).localPassed, false);
   const failed = summarize({ ...base, lanes: [{ ...all[0], status: 'failed' }, ...all.slice(1)] });
-  assert.deepEqual([failed.status, failed.releasable], ['failed', false]);
+  assert.deepEqual([failed.status, failed.localPassed], ['failed', false]);
   const text = renderMarkdown(summarize(base));
   assert.match(text, /PASSED/);
   assert.match(text, /deployment-services \(win32\)/);
