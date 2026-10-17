@@ -212,6 +212,8 @@ test('requirements are closed by enabled providers that run wherever their consu
       candidate('a-mod', { requires: ['b'], provides: ['a'] }),
       candidate('b-mod', { requires: ['a'], provides: ['b'] }),
       candidate('c-mod'),
+      // Waits behind the cycle but is not on it: not named.
+      candidate('d-mod', { requires: ['a'] }),
     ]),
     [
       ['requirement_cycle', 'a-mod', null],

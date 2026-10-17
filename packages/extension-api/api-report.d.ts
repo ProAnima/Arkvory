@@ -214,7 +214,8 @@ import type { ReadModule, RuleProblem } from './plan-rules.js';
 /**
  * Start order of the enabled modules: every provider before its consumers, and among modules
  * that are free to start the smallest id first, so the order is the same on every process.
- * Modules left on a requirement cycle are reported and not ordered.
+ * Modules on a requirement cycle are reported; neither they nor the modules waiting behind them
+ * are ordered, and only the modules on the cycle are named.
  */
 export declare function startOrder(
   modules: readonly ReadModule[],

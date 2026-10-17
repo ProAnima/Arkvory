@@ -34,10 +34,24 @@ function dependents(enabled: readonly ReadModule[], problems: RuleProblem[]) {
   return edges;
 }
 
+/** Whether `id` can reach itself along provider → consumer edges. */
+function onCycle(id: string, edges: ReadonlyMap<string, ReadonlySet<string>>): boolean {
+  const seen = new Set<string>();
+  const next = [...(edges.get(id) ?? [])];
+  for (let found = next.pop(); found !== undefined; found = next.pop()) {
+    if (found === id) return true;
+    if (seen.has(found)) continue;
+    seen.add(found);
+    next.push(...(edges.get(found) ?? []));
+  }
+  return false;
+}
+
 /**
  * Start order of the enabled modules: every provider before its consumers, and among modules
  * that are free to start the smallest id first, so the order is the same on every process.
- * Modules left on a requirement cycle are reported and not ordered.
+ * Modules on a requirement cycle are reported; neither they nor the modules waiting behind them
+ * are ordered, and only the modules on the cycle are named.
  */
 export function startOrder(modules: readonly ReadModule[], problems: RuleProblem[]): string[] {
   const enabled = modules.filter((m) => m.enabled);
@@ -56,6 +70,6 @@ export function startOrder(modules: readonly ReadModule[], problems: RuleProblem
       waiting.set(consumer, (waiting.get(consumer) ?? 1) - 1);
   }
   for (const id of [...waiting.keys()].sort())
-    problems.push({ code: 'requirement_cycle', module: id, subject: null });
+    if (onCycle(id, edges)) problems.push({ code: 'requirement_cycle', module: id, subject: null });
   return order;
 }
