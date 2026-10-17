@@ -5,11 +5,12 @@ import { join } from 'node:path';
 import { buffer as streamBytes } from 'node:stream/consumers';
 import { ZipFile } from 'yazl';
 import { Pool } from 'pg';
-import { RestoreToEmptyTarget } from '@proanima/arkvory-application';
+import { GarbageCollector, RestoreToEmptyTarget } from '@proanima/arkvory-application';
 import {
   LocalContentSource,
   LocalRestoreStorage,
   MINIMUM_RESTORE_SCHEMA,
+  PostgresCleanup,
   PostgresRestoreDatabase,
   SCHEMA_VERSION,
 } from '@proanima/arkvory-infrastructure';
@@ -61,6 +62,23 @@ test('capture and restore go through the port and keep the storage of each blob'
   await f.catalog.pool.query("UPDATE arkvory_uploads SET storage_backend='volume-2' WHERE id=$1", [
     placed.id,
   ]);
+  // Cleanup asks the storage of each row for its temporary files, not the default one.
+  const collected = new Map();
+  const gc = new GarbageCollector(
+    new PostgresCleanup(f.catalog.pool),
+    {
+      async collect(id, removeContent, _cancellation, backendId) {
+        collected.set(id, { removeContent, backendId });
+      },
+    },
+    { throwIfAborted() {} },
+  );
+  await gc.run(new Date().toISOString());
+  for (const { id } of published)
+    assert.deepEqual(collected.get(id), {
+      removeContent: false,
+      backendId: id === placed.id ? 'volume-2' : 'default',
+    });
   const reads = [];
   const { path: vaultPath } = await newVault(t);
   const result = await capture(f, vaultPath, 'port-only', (deps, source) => {
