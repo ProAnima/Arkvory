@@ -28,7 +28,7 @@
   3. Один `release:package`, затем приёмка именно этих байтов: на Windows deployment, deployment-containers, native-package; в systemd-контейнере deployment, deployment-services, native-install.
   4. Сверка хешей `verifyReleaseFiles` и `verifyNativeFiles`.
   5. `gh release create --draft --target <sha>` с проверенными файлами, `arkvory-local-ci-evidence.json` и заметками, где перечислены непокрытые гейты. Тег GitHub создаёт при публикации; опубликовать черновик сопровождающий решает вручную. `--dry-run` останавливается перед созданием черновика.
-- GitHub workflows и `scripts/publish-release.mjs` не меняются. При восстановлении биллинга основным путём снова становится CI.
+- GitHub workflows и `scripts/publish-release.mjs` не меняются. При восстановлении биллинга основным путём снова становится CI. (Изменено дополнением 2026-10-17: оба пути выпуска требуют успешный merge gate для того же коммита.)
 
 ## Альтернативы
 
@@ -58,3 +58,32 @@
 - правило одноразовой машины.
 
 Сценарии `native-install` и `deployment-services` прошли в `linux-system` на Windows 11 + Docker Desktop 29.4: RPM в Fedora 44 через sibling-контейнер, updater, SSH и восстановление служб.
+
+## Дополнение 2026-10-17: единое правило допуска релиза
+
+Аудит выявил два расхождения:
+
+- `release:local` считал evidence releasable, когда прошли все локальные lanes. Объявленные пробелы на это не влияли: Windows `deployment-services` и `native-install`, NAS, четыре HA-стенда, Linux `deployment-containers`. Успешный GitHub CI для того же коммита не требовался.
+- `release.yml` запускал `npm run gate -- release` в одном job. Release-профиль включает стенды с KVM/libvirt, модулями ядра и одноразовым Windows-runner. Их готовит только `check.yml`, поэтому workflow не мог пройти.
+
+Решение — одно правило для обоих путей выпуска. Кандидат допускается, только если:
+
+1. Весь release-профиль доказан для того же SHA. Каждый гейт прошёл локально или в GitHub CI, пробелы проходом не считаются. GitHub CI здесь — запуск `check.yml` на push в main или в merge queue для main, завершённый успешно. В нём успешны `Arkvory merge gate`, оба сценария 5 GiB и каждое задание, которое выполняет гейт пробела.
+2. Приёмка кандидата прошла на упакованных байтах.
+
+Реализация:
+
+- `scripts/release-admission.mjs` выбирает новейший доверенный запуск для SHA. Запуски для другого SHA, pull request, расписание и ручной запуск (он может пропустить large) не принимаются. Задания читаются в последней попытке; неполный список заданий — отказ. Модуль без зависимостей: его запускают job `admission` и publisher.
+- Задания для пробелов выводятся из закоммиченного `check.yml` (`scripts/ci/ci-jobs.mjs`). Матрица раскрывается в имена заданий GitHub. Шаг гейта с условием, кроме проверки ОС runner’а, не считается. Пробел без задания — проблема.
+- Поле `ci` пробела в `lanes.mjs` задаёт CI-платформу, если она отличается от платформы пробела. NAS и HA на win32 покрываются Linux-заданиями: стенды — Linux-гости и контейнеры под управлением Linux-runner’а, а у Windows-runner’ов GitHub нет ни Linux-контейнеров, ни KVM. Это совпадает с составом merge gate, который требует `ci-verdict`.
+- В evidence два флага. `localPassed`: все локальные lanes release-профиля прошли на чистом дереве. `releasable`: `localPassed` и покрытие пробелов для того же коммита (`admitRelease`). `ci:local` всегда пишет `releasable: false`.
+- `release:local` проверяет CI до локальных гейтов. Реальный выпуск при недоступном GitHub или любой проблеме останавливается. `--dry-run` записывает проблемы как предупреждения, а заметки помечают выпуск как непригодный. Запуск CI (id, URL, событие, попытка) записывается в `arkvory-local-ci-evidence.json` и заметки.
+- `release.yml`: `admission` (`contents: read`, `actions: read`), затем `build` (`npm run build` и одна упаковка), `acceptance`, `native`, `publish`. Publisher повторно проверяет допуск. Гейты release-профиля workflow не повторяет: допуск уже доказал их для того же SHA. Policy `scripts/policy/release-workflow.mjs` требует job `admission` с этими правами и шагом, зависимость `build` от него и `publish` от всех jobs.
+
+Ограничение: `check.yml` отменяет предыдущий запуск при новом push в тот же ref (`cancel-in-progress`). Коммит с отменённым запуском выпустить нельзя, пока запуск не перезапущен до успеха.
+
+Проверка:
+
+- `tests/release-admission.test.mjs`: пробел без задания CI, запуск для другого SHA, проваленные merge gate, large и задание пробела, недоверенные события, неполный список заданий, строгий и репетиционный режимы, `releasable`;
+- `tests/release-policy.test.mjs`: удаление или обход `admission`;
+- `tests/local-ci.test.mjs`: `localPassed` без `releasable`.

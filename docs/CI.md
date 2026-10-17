@@ -25,13 +25,13 @@
 
 Обязательны все lanes, кроме `large`. Итоговый `Arkvory merge gate` (verdict) запускается всегда и блокирует результат при missing/failed/cancelled/skipped любого обязательного job. Для push в main, `v*`, merge queue, расписания и ручного запуска с `large_transfers` он требует также оба сценария 5 GiB. Обычный pull request может пропустить только `large`.
 
-Сценарии 5 GiB: `large-full` (полная передача) и `large-multipart` (`--multipart --verified --traffic --managed`, убийство сервера на середине загрузки, resume, Range, SHA-256, RSS клиента/сервера). В check workflow они идут на двух независимых runner’ах. Release workflow выполняет их последовательно внутри `npm run gate -- release` до упаковки candidate.
+Сценарии 5 GiB: `large-full` (полная передача) и `large-multipart` (`--multipart --verified --traffic --managed`, убийство сервера на середине загрузки, resume, Range, SHA-256, RSS клиента/сервера). В check workflow они идут на двух независимых runner’ах. Release workflow их не повторяет: допуск требует успешных обоих заданий в запуске check.yml для того же коммита.
 
 Windows lanes не запускают `deployment-containers`: на GitHub-hosted Windows нет Linux containers. Контейнерный gate на Windows выполняется локально на хосте с Docker Desktop (см. ниже).
 
 ## Release workflow
 
-[`Prepare stable release`](../.github/workflows/release.yml) запускается вручную только с main: `build` (ubuntu-24.04) выполняет `npm run gate -- release` и собирает один candidate; `acceptance` на четырёх ОС проверяет этот candidate через `deployment deployment-services`, а на Linux дополнительно `deployment-containers`; `native` (ubuntu-24.04, windows-2022) — `native-install`; `publish` проверяет хеши и создаёт draft. Подробности: [ENGINEERING_GATES](ENGINEERING_GATES.md#проверки-поставки-и-служб).
+[`Prepare stable release`](../.github/workflows/release.yml) запускается вручную только с main. `admission` (`node scripts/release-admission.mjs`, токен только `actions: read`) требует успешный запуск check.yml для `GITHUB_SHA` на push или merge queue в main с `Arkvory merge gate` и обоими сценариями 5 GiB. Гейты release-профиля здесь не повторяются: их стенды (KVM, модули ядра, одноразовые Windows-службы) готовит только check.yml, поэтому прежний `npm run gate -- release` в одном job пройти не мог. `build` (ubuntu-24.04) после допуска выполняет `npm run build` и собирает один candidate; `acceptance` на четырёх ОС проверяет этот candidate через `deployment deployment-services`, а на Linux дополнительно `deployment-containers`; `native` (ubuntu-24.04, windows-2022) — `native-install`; `publish` повторно проверяет допуск и хеши и создаёт draft. Подробности: [ENGINEERING_GATES](ENGINEERING_GATES.md#проверки-поставки-и-служб).
 
 ## Локальный конвейер
 
@@ -58,11 +58,12 @@ npm run release:local -- 1.2.3  # черновик релиза на GitHub
 `release:local` создаёт только черновик:
 
 1. Проверяет main, чистое дерево, HEAD = `origin/main` (сначала push), `gh auth`, право записи, отсутствие тега и релиза, версию выше опубликованных.
-2. Берёт свежее releasable evidence release-профиля (`--reuse-evidence`) или запускает его.
-3. Упаковывает один candidate в `artifacts/<версия>`.
-4. Принимает его на Windows и в systemd-контейнере.
-5. Сверяет хеши.
-6. Создаёт `gh release create --draft --target <sha>` с проверенными файлами, `arkvory-local-ci-evidence.json` и заметками о пробелах.
+2. Через `gh api` требует успешный запуск check.yml для того же коммита (push или merge queue в main). В нём успешны merge gate, оба сценария 5 GiB и все задания, которые выполняют локальные пробелы. Без этого реальный выпуск останавливается до локальных гейтов; `--dry-run` только предупреждает.
+3. Берёт свежее evidence release-профиля с `localPassed` (`--reuse-evidence`) или запускает его. `releasable` = `localPassed` + покрытие пробелов в CI. Запуск CI (id, ссылка) записывается в evidence и заметки.
+4. Упаковывает один candidate в `artifacts/<версия>`.
+5. Принимает его на Windows и в systemd-контейнере.
+6. Сверяет хеши.
+7. Создаёт `gh release create --draft --target <sha>` с проверенными файлами, `arkvory-local-ci-evidence.json` и заметками о пробелах.
 
 Опубликовать черновик на GitHub нужно вручную. До публикации автообновление его не видит.
 
