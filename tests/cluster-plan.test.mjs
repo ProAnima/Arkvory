@@ -32,7 +32,8 @@ test('ha-2 plan: witness is diskless, gets the next node id and is not a Pacemak
     'protocol C;',
     'fencing resource-and-stonith;',
     'c-min-rate 20M;',
-    'crm-fence-peer.9.sh --timeout 20',
+    // The diskless witness is no peer to fence: the handler would wait out its timeout for it.
+    'fence-peer "env -u DRBD_NODE_ID_2 /usr/lib/drbd/crm-fence-peer.9.sh --timeout 20";',
     'hosts node-a node-b witness;',
     'address 10.0.0.3:7789;\n    disk none;',
   ])
@@ -41,6 +42,8 @@ test('ha-2 plan: witness is diskless, gets the next node id and is not a Pacemak
   assert.ok(pacemaker.includes('stonith-enabled=true'));
   assert.ok(pacemaker.includes('host=witness algorithm=ffsplit'));
   assert.ok(pacemaker.includes('clone-max=2'));
+  // A standby that lost its promotion score gets it back within one standby monitor.
+  assert.ok(pacemaker.includes('op monitor interval=5s role=Unpromoted'));
   assert.ok(!pacemaker.includes('fence-witness'), 'the witness is never fenced by Pacemaker');
   assert.ok(pacemaker.includes('directory=/opt/proanima-arkvory fstype=xfs'));
   // The group starts in order: the filesystem first, the address last.
@@ -62,15 +65,26 @@ test('ha-2 plan: witness is diskless, gets the next node id and is not a Pacemak
   );
 });
 
+test('ha-2 plan: the fence-peer handler leaves out the witness by its own node id', () => {
+  const input = planInput(options());
+  const resource = drbdResource({ ...input, witness: { ...input.witness, id: 7 } });
+  assert.ok(resource.includes('fence-peer "env -u DRBD_NODE_ID_7 /usr/lib/drbd/crm-fence-peer'));
+  assert.ok(!resource.includes('DRBD_NODE_ID_2'));
+});
+
 test('ha-3 plan: three data nodes decide by majority, without a quorum device', () => {
-  const pacemaker = pacemakerCommands(
-    planInput(
-      new Map([...options({ cluster: 'ha-3', nodes: 'a=10.0.0.1,b=10.0.0.2,c=10.0.0.3' })]).set(
-        'witness',
-        '',
-      ),
+  const input = planInput(
+    new Map([...options({ cluster: 'ha-3', nodes: 'a=10.0.0.1,b=10.0.0.2,c=10.0.0.3' })]).set(
+      'witness',
+      '',
     ),
   );
+  const pacemaker = pacemakerCommands(input);
+  // Every other node is a data peer: the handler checks them all.
+  assert.ok(
+    drbdResource(input).includes('fence-peer "/usr/lib/drbd/crm-fence-peer.9.sh --timeout 20";'),
+  );
+  assert.ok(pacemaker.includes('op monitor interval=5s role=Unpromoted'));
   assert.ok(!pacemaker.includes('quorum device'));
   assert.equal(pacemaker.match(/ stonith create /g)?.length, 3);
   // Resources and constraints reach the cluster in one push, never one by one.
