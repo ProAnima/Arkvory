@@ -10,24 +10,24 @@ import {
   PART_BYTES,
 } from '@proanima/arkvory-domain';
 import type { Principal, Upload } from '@proanima/arkvory-domain';
+import { DEFAULT_STORAGE_BACKEND } from '@proanima/arkvory-domain';
 import type { BlobStore, Cancellation, Catalog, IdentitySource } from './ports.js';
-
-export interface StorageRouter {
-  resolveBackend(context: {
-    repository: string;
-    packageGroup?: string | undefined;
-    size: number;
-  }): string;
-}
+import type { UploadPlacement } from './storage-placement.js';
 
 export interface StorageOptions {
-  readonly router?: StorageRouter;
+  /** Storage of new uploads (ADR 0083, N11); without it everything stays in `default`. */
+  readonly placement?: UploadPlacement;
   /** Operator ceiling; the multipart layout limit applies when omitted. */
   readonly maxObjectBytes?: number;
 }
 
+/** The storage that holds an upload's parts: where they were written, even after a switch. */
+export function partsBackendOf(upload: Upload): string {
+  return upload.partsBackend ?? upload.storageBackend ?? DEFAULT_STORAGE_BACKEND;
+}
+
 export class StorageService {
-  private readonly router: StorageRouter | undefined;
+  private readonly placement: UploadPlacement | undefined;
   readonly maxObjectBytes: number;
   constructor(
     private readonly catalog: Catalog,
@@ -35,7 +35,7 @@ export class StorageService {
     private readonly identity: IdentitySource,
     options: StorageOptions = {},
   ) {
-    this.router = options.router;
+    this.placement = options.placement;
     this.maxObjectBytes = Math.min(options.maxObjectBytes ?? MAX_OBJECT_BYTES, MAX_OBJECT_BYTES);
   }
 
@@ -53,13 +53,15 @@ export class StorageService {
     if (parsed.size > this.maxObjectBytes)
       throw new ArkvoryError('invalid_input', 'Object exceeds the configured maximum size');
     const resolvedGroup = group ?? parsed.metadata['upack.group'] ?? parsed.metadata['group'];
-    const storageBackend = this.router
-      ? this.router.resolveBackend({
-          repository,
-          packageGroup: typeof resolvedGroup === 'string' ? resolvedGroup : undefined,
-          size: parsed.size,
-        })
-      : 'default';
+    const storageBackend = this.placement
+      ? (
+          await this.placement.place({
+            repository,
+            packageGroup: typeof resolvedGroup === 'string' ? resolvedGroup : undefined,
+            size: parsed.size,
+          })
+        ).backendId
+      : DEFAULT_STORAGE_BACKEND;
     return this.catalog.create({
       id: this.identity.next(),
       repository,
@@ -86,12 +88,16 @@ export class StorageService {
     return this.catalog.exclusive(
       id,
       async (mutation) => {
-        const upload = await this.owned(principal, repository, id);
+        let upload = await this.owned(principal, repository, id);
         this.pending(upload);
         if ((await this.catalog.parts(id)).length > 0)
           throw new ArkvoryError('conflict', 'Multipart upload must be completed using its parts', {
             reason: 'upload_state',
           });
+        // Nothing of this upload is stored yet, so a storage that stopped taking data is left
+        // before the first byte, by a pending-row change, never by moving bytes.
+        if (this.refuses(upload.storageBackend))
+          upload = await mutation.relocate(DEFAULT_STORAGE_BACKEND, null);
         await this.blobs.put(
           id,
           upload.descriptor,
@@ -122,7 +128,7 @@ export class StorageService {
     return this.catalog.exclusive(
       id,
       async (mutation) => {
-        const upload = await this.owned(principal, repository, id);
+        let upload = await this.owned(principal, repository, id);
         if (upload.status === 'available') return upload;
         if (upload.status === 'cancelled')
           throw new ArkvoryError('conflict', 'Upload is cancelled', { reason: 'upload_state' });
@@ -130,10 +136,15 @@ export class StorageService {
         const parts = await this.catalog.parts(id);
         if (parts.length > 0) {
           checkParts(upload.descriptor.size, parts, upload.partBytes ?? PART_BYTES);
+          // ADR 0083, N11: accepted parts stay readable where they are; the object is written
+          // to the core's storage. The switch is recorded before the write, so a retry after a
+          // crash writes to the same storage and leaves no object behind in the other one.
+          if (this.refuses(upload.storageBackend))
+            upload = await mutation.relocate(DEFAULT_STORAGE_BACKEND, partsBackendOf(upload));
           await this.blobs.put(
             id,
             upload.descriptor,
-            this.blobs.readParts(id, parts, upload.storageBackend),
+            this.blobs.readParts(id, parts, partsBackendOf(upload)),
             {
               throwIfAborted() {
                 cancellation.throwIfAborted();
@@ -214,6 +225,11 @@ export class StorageService {
           throw new ArkvoryError('conflict', 'Part already has different content', {
             reason: 'part_mismatch',
           });
+        // Parts of one upload stay in one storage; the client starts a new upload instead.
+        if (this.refuses(partsBackendOf(upload)))
+          throw new ArkvoryError('conflict', 'The storage of this upload takes no new data', {
+            reason: 'backend_read_only',
+          });
         await this.blobs.putPart(
           id,
           part,
@@ -224,12 +240,24 @@ export class StorageService {
               mutation.throwIfAborted();
             },
           },
-          upload.storageBackend,
+          partsBackendOf(upload),
         );
         await mutation.recordPart(part);
       },
       { principal, repository, actions: ['upload.write'] },
     );
+  }
+
+  /**
+   * Whether the upload's storage durably refuses new data now. A storage that is only
+   * `unavailable` is not: the write fails with `unavailable` and is retried, rather than
+   * switching storage over a passing outage. The core's storage never refuses here.
+   */
+  private refuses(backendId: string | undefined): boolean {
+    const id = backendId ?? DEFAULT_STORAGE_BACKEND;
+    if (!this.placement || id === DEFAULT_STORAGE_BACKEND) return false;
+    const state = this.placement.state(id);
+    return state !== 'accepting' && state !== 'unavailable';
   }
 
   private pending(upload: Upload): void {

@@ -10,6 +10,7 @@ export const errorReasons = {
     'unsupported_media_type',
     'method_not_allowed',
     'range_not_satisfiable',
+    'backend_unknown',
   ],
   not_found: ['route_not_found'],
   /** A cursor older than the retained window (ADR 0080): 410, read the state again. */
@@ -27,6 +28,7 @@ export const errorReasons = {
     'state_conflict',
     'mirror_read_only',
     'events_epoch_changed',
+    'backend_read_only',
   ],
   forbidden: [
     'permission_missing',

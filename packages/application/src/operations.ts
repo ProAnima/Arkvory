@@ -1,4 +1,9 @@
-import { authorizeAction, ArkvoryError, requireId } from '@proanima/arkvory-domain';
+import {
+  authorizeAction,
+  ArkvoryError,
+  DEFAULT_STORAGE_BACKEND,
+  requireId,
+} from '@proanima/arkvory-domain';
 import type { Principal, MutationAccess } from '@proanima/arkvory-domain';
 import type { Cancellation } from './ports.js';
 
@@ -8,8 +13,10 @@ export interface CleanupRecord {
   status: 'pending' | 'available' | 'cancelled';
   expiresAt: string;
   cancelledAt: string | null;
-  /** Storage of the upload's parts and content; absent means the default storage. */
+  /** Storage of the upload's content (and its parts); absent means the default storage. */
   storageBackend?: string;
+  /** Storage of the parts when they stayed behind a switch (ADR 0083, N11). */
+  partsBackend?: string | null;
 }
 export interface CleanupCatalog {
   /**
@@ -34,6 +41,24 @@ export interface CleanupBlobs {
     cancellation: Cancellation,
     backendId?: string,
   ): Promise<void>;
+}
+
+/**
+ * Removes the temporary files of an upload, and its content when `removeContent`, from every
+ * storage that holds them: parts left behind a switch to the core's storage (ADR 0083, N11)
+ * are collected in their own storage first, so they never outlive the upload.
+ */
+export async function collectEverywhere(
+  blobs: CleanupBlobs,
+  row: Pick<CleanupRecord, 'id' | 'storageBackend' | 'partsBackend'>,
+  removeContent: boolean,
+  cancellation: Cancellation,
+): Promise<void> {
+  const storage = row.storageBackend ?? DEFAULT_STORAGE_BACKEND;
+  if (row.partsBackend && row.partsBackend !== storage)
+    await blobs.collect(row.id, false, cancellation, row.partsBackend);
+  cancellation.throwIfAborted();
+  await blobs.collect(row.id, removeContent, cancellation, storage);
 }
 
 export class GarbageCollector {
@@ -106,12 +131,7 @@ export class GarbageCollector {
         cancellation.throwIfAborted();
         return 'skipped';
       }
-      await this.blobs.collect(
-        row.id,
-        row.status === 'cancelled',
-        cancellation,
-        row.storageBackend,
-      );
+      await collectEverywhere(this.blobs, row, row.status === 'cancelled', cancellation);
       cancellation.throwIfAborted();
       if (row.status === 'available') return 'skipped';
       await this.catalog.reclaimed(row.id);

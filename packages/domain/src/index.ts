@@ -55,3 +55,4 @@ export type {
 } from './errors.js';
 export { acknowledges } from './replica.js';
 export type { ReplicaCopies, ReplicaPeer } from './replica.js';
+export * from './storage-placement.js';

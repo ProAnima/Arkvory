@@ -22,6 +22,12 @@ export interface Upload {
   readonly expiresAt: string;
   readonly status: 'pending' | 'available' | 'cancelled';
   readonly storageBackend?: string;
+  /**
+   * Storage of the parts when it differs from `storageBackend`: an upload whose storage stopped
+   * taking data is finished in the core's storage, its accepted parts stay where they are
+   * (ADR 0083, N11). Absent means the parts are in `storageBackend`.
+   */
+  readonly partsBackend?: string;
   /** Multipart segment size chosen at creation; whole-file uploads ignore it. */
   readonly partBytes?: number;
 }
