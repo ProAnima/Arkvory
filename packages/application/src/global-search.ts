@@ -94,10 +94,13 @@ export function encodeSearchCursor(position: GlobalSearchPosition): string {
 export function decodeSearchCursor(value: string): GlobalSearchPosition {
   const parts = value.split('.');
   const [time = '', name = '', id = ''] = parts;
+  // A forged time beyond the exact range of the SQL comparison (year 1684 to 2255) would fail
+  // in the database as a server error; it is refused here like any malformed cursor.
   if (
     value.length > MAX_CURSOR ||
     parts.length !== 3 ||
     !micros.test(time) ||
+    !Number.isSafeInteger(Number(time)) ||
     !repository.test(name) ||
     !uuid.test(id)
   )
@@ -106,14 +109,22 @@ export function decodeSearchCursor(value: string): GlobalSearchPosition {
 }
 
 /**
- * Repositories this principal may list, by name, at most GLOBAL_SEARCH_REPOSITORIES. Each one
- * passes the same check as the repository search route, so the result never names a repository
- * that route would refuse.
+ * Repositories this principal may list, by name, at most GLOBAL_SEARCH_REPOSITORIES; with
+ * `only`, just those of them (the cap then never hides a named repository). Each one passes the
+ * same check as the repository search route, so the result never names a repository that route
+ * would refuse. Nothing here reads the catalog: an absent and an unreadable name cost the same.
  */
-export function listableRepositories(principal: Principal): readonly string[] {
+export function listableRepositories(
+  principal: Principal,
+  only?: readonly string[],
+): readonly string[] {
   const names = new Set<string>();
   for (const binding of effectivePermissions(principal))
-    if (binding.actions.includes('artifact.list')) names.add(binding.resource.id);
+    if (
+      binding.actions.includes('artifact.list') &&
+      (only === undefined || only.includes(binding.resource.id))
+    )
+      names.add(binding.resource.id);
   const allowed: string[] = [];
   for (const name of [...names].sort()) {
     if (allowed.length === GLOBAL_SEARCH_REPOSITORIES) break;
@@ -133,6 +144,8 @@ export class GlobalSearch {
   async search(principal: Principal, input: GlobalSearchInput): Promise<GlobalSearchPage> {
     const query = optionalText(input.q, 'q') ?? '';
     if (query.length > MAX_QUERY) throw fieldError('q', 'length', 'Search text too long');
+    // PostgreSQL text cannot hold NUL; the statement would fail as a server error.
+    if (query.includes('\0')) throw fieldError('q', 'format', 'Invalid search text');
     const requested = list(input.repositories, 'repositories', MAX_REPOSITORY_FILTER, repository);
     const labels = list(input.labels, 'labels', MAX_LABELS, label);
     const rawStage = optionalText(input.stage, 'stage');
@@ -140,12 +153,9 @@ export class GlobalSearch {
     const rawAfter = optionalText(input.after, 'after');
     const after = rawAfter === undefined ? undefined : decodeSearchCursor(rawAfter);
     const limit = pageSize(input.limit);
-    const listable = listableRepositories(principal);
     // An unreadable repository in the filter is dropped like an absent one: the answer is the
     // same either way, so the filter cannot be used to learn which repositories exist.
-    const repositories = requested.length
-      ? listable.filter((name) => requested.includes(name))
-      : listable;
+    const repositories = listableRepositories(principal, requested.length ? requested : undefined);
     if (repositories.length === 0) return { items: [], next: null };
     const rows = await this.store.searchRepositories(
       { repositories, query, labels, stage, after },

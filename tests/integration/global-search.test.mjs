@@ -138,6 +138,16 @@ test('installation-wide search: ACL, no existence oracle, filters and keyset pag
   const invalid = await f.app.inject({ url: '/api/v1/search?after=forged', headers: theirs });
   assert.equal(invalid.statusCode, 400);
   assert.deepEqual(invalid.json().details, [{ field: 'after', problem: 'format' }]);
+  // Values PostgreSQL would reject (bigint and timestamp range, NUL in text) are input errors.
+  for (const [query, field] of [
+    [`after=9999999999999999999.archive.${ids.gamma}`, 'after'],
+    [`after=9223372036854775807.archive.${ids.gamma}`, 'after'],
+    ['q=a%00b', 'q'],
+  ]) {
+    const refused = await f.app.inject({ url: `/api/v1/search?${query}`, headers: theirs });
+    assert.equal(refused.statusCode, 400, `${query}: ${refused.body}`);
+    assert.deepEqual(refused.json().details, [{ field, problem: 'format' }]);
+  }
 
   const client = new ArkvoryClient(await f.listen(), () => reader, {
     clientName: 'arkvoryctl-mcp/test',

@@ -80,7 +80,7 @@ test('global search reads only repositories the caller may list, without an exis
   });
 });
 
-test('global search reads at most the first 1000 listable repositories by name', () => {
+test('global search reads at most the first 1000 listable repositories by name', async () => {
   const names = Array.from(
     { length: GLOBAL_SEARCH_REPOSITORIES + 5 },
     (_, i) => `r${String(i).padStart(5, '0')}`,
@@ -92,6 +92,10 @@ test('global search reads at most the first 1000 listable repositories by name',
   assert.equal(allowed.length, GLOBAL_SEARCH_REPOSITORIES);
   assert.equal(allowed[0], 'r00000');
   assert.equal(allowed.at(-1), 'r00999');
+  // A repository named in the filter is searched even when it is not among the first 1000.
+  const s = store(1);
+  await new GlobalSearch(s).search(principal, { repositories: 'r01004,r00000' });
+  assert.deepEqual(s.calls[0].filter.repositories, ['r00000', 'r01004']);
 });
 
 test('global search pages with an opaque keyset cursor and asks for one extra row', async () => {
@@ -123,6 +127,8 @@ test('global search rejects malformed filters with a field and problem', async (
   const cases = [
     [{ q: 'x'.repeat(241) }, 'q', 'length'],
     [{ q: ['a', 'b'] }, 'q', 'type'],
+    // PostgreSQL text holds no NUL: refused as input, not failed as a server error.
+    [{ q: 'a\0b' }, 'q', 'format'],
     [{ repositories: 'Alpha' }, 'repositories', 'format'],
     [
       { repositories: Array.from({ length: 101 }, (_, i) => `r${i}`).join(',') },
@@ -135,6 +141,9 @@ test('global search rejects malformed filters with a field and problem', async (
     [{ after: 'x' }, 'after', 'format'],
     [{ after: `1.alpha.${ID(1)}.extra` }, 'after', 'format'],
     [{ after: `01.alpha.${ID(1)}` }, 'after', 'format'],
+    // Times the database cannot compare exactly (bigint and interval range) are forged.
+    [{ after: `9999999999999999999.alpha.${ID(1)}` }, 'after', 'format'],
+    [{ after: `-9007199254740992.alpha.${ID(1)}` }, 'after', 'format'],
     [{ limit: '0' }, 'limit', 'range'],
     [{ limit: '101' }, 'limit', 'range'],
     [{ limit: '1e2' }, 'limit', 'range'],
