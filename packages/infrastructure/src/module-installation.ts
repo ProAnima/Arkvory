@@ -214,7 +214,13 @@ export async function loadInstallation<Context>(
     const id = module.entry.id;
     const plannedModule = planned.plan.modules.find((m: PlannedModule) => m.manifest.id === id);
     const current = prepared.get(id);
-    if (!plannedModule?.enabled || !plannedModule.manifest.roles.includes(options.role) || !current)
+    // A verified module the plan refused is gone from it, or its id is a built-in module's.
+    if (
+      plannedModule?.source !== 'signed' ||
+      !plannedModule.enabled ||
+      !plannedModule.manifest.roles.includes(options.role) ||
+      !current
+    )
       continue;
     prepared.set(id, await loadSigned(module, current, options.role, options.selections.get(id)));
   }

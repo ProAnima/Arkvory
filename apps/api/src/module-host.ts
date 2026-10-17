@@ -209,10 +209,11 @@ export class ModuleRuntime<Context = unknown> {
       });
     } catch (error) {
       if (signal.aborted) throw error;
-      this.running.splice(this.running.indexOf(started), 1);
-      await Promise.resolve()
-        .then(() => instance.stop())
-        .catch(() => undefined);
+      const index = this.running.indexOf(started);
+      if (index >= 0) this.running.splice(index, 1);
+      // Bounded like the start: a stop that hangs must not hold the process start either.
+      const stopped = Promise.resolve().then(() => instance.stop());
+      await within(stopped, this.startBudgetMs, () => undefined).catch(() => undefined);
       this.failed.set(id, error instanceof StartTimeout ? 'start_timeout' : 'start_failed');
     }
   }

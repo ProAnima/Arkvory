@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFile, rm, symlink, unlink, writeFile } from 'node:fs/promises';
+import { readFile, rename, rm, symlink, unlink, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { parseModuleManifest } from '../packages/extension-api/dist/index.js';
 import {
@@ -373,28 +373,30 @@ test('a module of another extension API is refused as incompatible', async (t) =
 
 test('a package others may change, a link inside it or a missing package is refused', async (t) => {
   const host = await moduleInstallation(t);
-  for (const id of ['writable', 'linked', 'vanished', 'fine'])
-    await host.install(modulePackage(host.keys.module, { id }));
+  const ids = ['writable', 'linked', 'aliased', 'vanished', 'fine'];
+  for (const id of ids) await host.install(modulePackage(host.keys.module, { id }));
   await openToEveryone(join(host.modules, 'writable/1.0.0/files/main.mjs'));
   const link = join(host.modules, 'linked/1.0.0/files/more');
   await symlink(join(host.modules, 'fine/1.0.0/files'), link, 'junction');
+  // `modules/<id>` itself leading elsewhere: the tree below it is not the one checked.
+  const alias = join(host.modules, 'aliased');
+  await rename(alias, join(host.modules, '.aliased'));
+  await symlink(join(host.modules, '.aliased'), alias, 'junction');
   await rm(join(host.modules, 'vanished/1.0.0'), { recursive: true });
   const loaded = await loadInstallation({
     role: 'api',
     coreVersion: '0.6.0',
-    selections: selections(
-      Object.fromEntries(
-        ['writable', 'linked', 'vanished', 'fine'].map((id) => [id, { enabled: true }]),
-      ),
-    ),
+    selections: selections(Object.fromEntries(ids.map((id) => [id, { enabled: true }]))),
     installed: host.source(),
     now: Date.now(),
   });
   // Unlinked at once: a recursive removal through a junction can fail on Windows.
   await unlink(link);
+  await unlink(alias);
   assert.deepEqual(
     loaded.refused.map((m) => [m.id, m.status, m.code]),
     [
+      ['aliased', 'failed', 'access_link'],
       ['linked', 'failed', 'access_link'],
       ['vanished', 'unavailable', 'module_unavailable'],
       ['writable', 'failed', 'access_unsafe'],
@@ -423,6 +425,26 @@ test('code that fails to load, describes another module or refuses its settings 
   assert.equal(await outcome(host, 'impostor'), 'code:descriptor_mismatch');
   assert.equal(await outcome(host, 'picky'), 'code:config_invalid');
   assert.equal(await outcome(host, 'picky', { config: { mode: 'on' } }), 'loaded');
+});
+
+test('a package named like a built-in module never replaces it and is never imported', async (t) => {
+  const host = await moduleInstallation(t);
+  await host.install(modulePackage(host.keys.module, { id: 'upack' }));
+  const loaded = await loadInstallation({
+    role: 'api',
+    coreVersion: '0.6.0',
+    selections: new Map(),
+    installed: host.source(),
+    now: Date.now(),
+  });
+  assert.deepEqual(
+    loaded.refused.map((m) => [m.id, m.code]),
+    [['upack', 'duplicate_id']],
+  );
+  assert.equal(loaded.plan.modules.find((m) => m.manifest.id === 'upack').source, 'builtin');
+  assert.equal(loaded.prepared.get('upack').candidate.source, 'builtin');
+  loaded.prepared.get('upack').create({});
+  assert.ok(!imported().includes('upack@1.0.0'));
 });
 
 test('the set file and the environment are read strictly', async (t) => {

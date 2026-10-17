@@ -1,4 +1,4 @@
-import { open } from 'node:fs/promises';
+import { lstat, open } from 'node:fs/promises';
 import { dirname, isAbsolute, join } from 'node:path';
 import {
   MODULE_SET_FILE,
@@ -106,15 +106,27 @@ const refuseAll = (set: ModuleSet, code: string): InstalledModules => ({
   refused: set.modules.map((m) => refusal(m, 'failed', code)),
 });
 
+/** Whether a path exists, without following a link; other errors are the host's. */
+async function present(path: string): Promise<boolean> {
+  try {
+    await lstat(path);
+    return true;
+  } catch (error) {
+    if (missing(error)) return false;
+    throw error;
+  }
+}
+
 /** Every path the access check covers: shared files first, then each package tree. */
 async function accessPaths(source: InstalledModulesSource, set: ModuleSet) {
   const shared = [source.directory, join(source.directory, MODULE_SET_FILE)];
-  if ((await bounded(source.revocationsFile, PACKAGE_LIMITS.revocationsBytes)) !== null)
-    shared.push(source.revocationsFile);
+  if (await present(source.revocationsFile)) shared.push(source.revocationsFile);
   const trees = new Map<string, string[] | ModuleAccessError | 'missing'>();
   for (const m of set.modules) {
     const parent = join(source.directory, m.id);
     try {
+      // `modules/<id>` itself must not lead elsewhere: the package tree below is walked as is.
+      if ((await lstat(parent)).isSymbolicLink()) throw new ModuleAccessError('access_link');
       const tree = await packageTree(join(parent, m.version));
       trees.set(m.id, [parent, ...tree]);
     } catch (error) {
@@ -202,6 +214,9 @@ export async function checkInstalledModules(
   if (set.modules.length === 0) return { verified: [], refused: [] };
   const keys = keyRing({ module: source.keys });
   const { shared, trees } = await accessPaths(source, set);
+  // The shared entries are checked as themselves: a link would lead the checks elsewhere.
+  for (const path of shared)
+    if ((await lstat(path)).isSymbolicLink()) return refuseAll(set, 'access_link');
   const all = [...shared, ...[...trees.values()].flatMap((t) => (Array.isArray(t) ? t : []))];
   let unsafe: ReadonlySet<string>;
   try {
