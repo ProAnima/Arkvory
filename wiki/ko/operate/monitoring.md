@@ -53,7 +53,7 @@ API 포트에서 세 개의 엔드포인트가 응답합니다. 어느 것도 �
 | `/health/status` | 없음           | 200 `{"status":"ready"}`, 또는 `Retry-After: 2`와 함께 503 `{"status":"unavailable"}` 또는 `{"status":"draining"}` | 로드 밸런서와 가동 시간 프로브 |
 | `/health/ready`  | 모든 유효한 키 | 아래의 세부 정보와 함께 200, 또는 오류 봉투와 `Retry-After`와 함께 503                                             | 배포 확인과 Compose 상태 확인  |
 
-`/health/status`와 `/health/ready`는 세 가지를 확인합니다. 데이터베이스가 응답하고 이 릴리스의 마이그레이션을 정확히 가지고 있는지, 스토리지 디렉터리의 `blobs` 폴더가 존재하는지, 프로세스가 여전히 스토리지 잠금을 소유하고 있는지입니다. `/health/status`의 결과는 1초 동안 캐시되므로 공개 프로브가 데이터베이스 쿼리를 증폭시킬 수 없습니다. 드레이닝 중인 서버는 즉시 `draining`으로 응답합니다. 프로세스에 꼭 필요한 모듈이 실패했을 때(이유 `module_failed`), 그리고 읽기 게이트웨이의 모듈 계획이 쓰기 프로세스가 기록한 계획과 다를 때(이유 `module_plan_mismatch`)에도 503으로 응답합니다. [ARKVORY_MODULES_FILE](../reference/environment#core)를 참고하세요.
+`/health/status`와 `/health/ready`는 세 가지를 확인합니다. 데이터베이스가 응답하고 이 릴리스의 마이그레이션을 정확히 가지고 있는지, 스토리지 디렉터리의 `blobs` 폴더가 존재하는지, 프로세스가 여전히 스토리지 잠금을 소유하고 있는지입니다. `/health/status`의 결과는 1초 동안 캐시되므로 공개 프로브가 데이터베이스 쿼리를 증폭시킬 수 없습니다. 드레이닝 중인 서버는 즉시 `draining`으로 응답합니다. 프로세스에 꼭 필요한 모듈이 실패했을 때(이유 `module_failed`), 그리고 읽기 게이트웨이의 모듈 계획이 쓰기 프로세스가 기록한 계획과 다를 때(이유 `module_plan_mismatch`)에도 503으로 응답합니다. [ARKVORY_MODULES_FILE](../reference/environment#core)를 참고하세요. 비교 대상은 모듈과 그 소스, 설정이며 릴리스 버전은 아닙니다. 데이터베이스 스키마가 바뀌지 않는 한 이전 릴리스의 읽기 게이트웨이는 업데이트된 쓰기 프로세스 옆에서 준비 상태를 유지합니다.
 
 키가 없으면 `/health/ready`는 401을 반환합니다. 설치 프로그램이 만드는 `deployment-health` 키에는 리포지토리 권한과 관리자 권한이 없습니다. 이 키의 시크릿은 `config/health-token.txt`에 있습니다.
 

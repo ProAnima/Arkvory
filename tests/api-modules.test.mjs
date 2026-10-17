@@ -38,7 +38,14 @@ test('the API process plans its built-in modules: UPack and raw are core, the pr
   );
   const again = planApiModules('reader', '1.6.0');
   assert.equal(again.plan.fingerprint, plan.fingerprint, 'one plan for every process');
-  assert.notEqual(planApiModules('api', '1.6.1').plan.fingerprint, plan.fingerprint);
+  // Another release with the same modules: another build, but the processes still agree.
+  const next = planApiModules('api', '1.6.1').plan;
+  assert.notEqual(next.fingerprint, plan.fingerprint);
+  assert.equal(next.compatibilityFingerprint, plan.compatibilityFingerprint);
+  assert.equal(
+    planApiModules('api', 'dev').plan.compatibilityFingerprint,
+    plan.compatibilityFingerprint,
+  );
   await runtime.shutdown(100);
   assert.equal(builtinVersion('dev'), '0.0.0-dev');
   assert.equal(builtinVersion('2.0.1'), '2.0.1');
@@ -288,6 +295,11 @@ test('the modules file disables protocols beside /api/v1 and changes the plan of
   assert.equal(runtime.plan.modules.find((m) => m.manifest.id === 'npm').enabled, false);
   const defaults = planApiModules('reader', '1.6.0').plan.fingerprint;
   assert.notEqual(runtime.plan.fingerprint, defaults);
+  assert.notEqual(
+    runtime.plan.compatibilityFingerprint,
+    planApiModules('reader', '1.6.1').plan.compatibilityFingerprint,
+    'a disabled module is a disagreement in any release',
+  );
   // Naming a module with its defaults keeps the plan of an installation without a file.
   const same = parseModuleSelections({ format: 1, modules: { npm: { enabled: true } } });
   assert.equal(planApiModules('api', '1.6.0', same).plan.fingerprint, defaults);

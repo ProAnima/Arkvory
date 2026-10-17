@@ -389,6 +389,52 @@ test('the fingerprint is stable for equal plans and changes with anything that m
   assert.throws(() => planModules(base, { ...host, extensionApi: 'one' }), TypeError);
 });
 
+test('the compatibility fingerprint leaves out the versions of the core and of built-in modules', () => {
+  const base = [candidate('npm', {}, { config: { a: 'x' } }), candidate('oci')];
+  const before = plan(base);
+  assert.match(before.compatibilityFingerprint, /^[0-9a-f]{64}$/);
+  assert.notEqual(before.compatibilityFingerprint, before.fingerprint, 'two different digests');
+  const reordered = [candidate('oci'), candidate('npm', {}, { config: { a: 'x' } })];
+  assert.equal(plan(reordered).compatibilityFingerprint, before.compatibilityFingerprint);
+  // An update of the core without a migration: built-in modules carry the new release version.
+  const updated = plan(
+    base.map((c) => ({ ...c, manifest: { ...c.manifest, version: '1.4.1' } })),
+    { ...host, coreVersion: '1.4.1' },
+  );
+  assert.equal(updated.compatibilityFingerprint, before.compatibilityFingerprint);
+  assert.notEqual(updated.fingerprint, before.fingerprint, 'the full fingerprint names the build');
+  // What the processes must agree on changes both.
+  const changed = [
+    [candidate('npm', {}, { config: { a: 'y' } }), base[1]],
+    [base[0], candidate('oci', {}, { enabled: false })],
+    [base[0], candidate('oci', {}, signed)],
+    [base[0], candidate('oci', { kind: 'event-sink' })],
+    [base[0]],
+  ];
+  for (const candidates of changed) {
+    const other = plan(candidates);
+    assert.notEqual(other.compatibilityFingerprint, before.compatibilityFingerprint);
+    assert.notEqual(other.fingerprint, before.fingerprint);
+  }
+});
+
+test('a module that is not built in keeps its compatibility fingerprint along its caret line', () => {
+  const at = (version) => plan([candidate('oci', { version }, signed)]);
+  const line = (version) => at(version).compatibilityFingerprint;
+  assert.equal(line('1.0.0'), line('1.4.2'), 'one major version');
+  assert.notEqual(at('1.0.0').fingerprint, at('1.4.2').fingerprint);
+  assert.notEqual(line('1.4.2'), line('2.0.0'));
+  assert.equal(line('0.3.0'), line('0.3.9'), 'below 1.0.0 the minor version is the line');
+  assert.notEqual(line('0.3.0'), line('0.4.0'));
+  assert.notEqual(line('0.0.1'), line('0.0.2'), 'at 0.0.z every patch is its own line');
+  const hashed = (sha) => plan([candidate('oci', {}, { ...signed, packageSha256: sha })]);
+  assert.equal(
+    hashed('b'.repeat(64)).compatibilityFingerprint,
+    hashed('c'.repeat(64)).compatibilityFingerprint,
+    'another package of the same line',
+  );
+});
+
 test('canonical JSON sorts keys at every depth and refuses numbers JSON cannot carry', () => {
   assert.equal(
     canonicalJson({ b: 1, a: [{ d: 'x', c: null }, false] }),

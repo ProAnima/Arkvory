@@ -103,7 +103,13 @@ export class ApiRuntime {
       throw new ArkvoryError('unavailable', 'A required module failed', {
         reason: 'module_failed',
       });
-    if (this.role === 'reader' && (await this.modulePlan.read()) !== this.modules.plan.fingerprint)
+    // The compatibility fingerprint, not the full one: a gateway of the previous release serves
+    // beside an updated writer with the same modules, as an update without a migration allows.
+    if (
+      this.role === 'reader' &&
+      (await this.modulePlan.read())?.compatibilityFingerprint !==
+        this.modules.plan.compatibilityFingerprint
+    )
       throw new ArkvoryError('unavailable', 'The module plan differs from the writer', {
         reason: 'module_plan_mismatch',
       });
@@ -122,7 +128,7 @@ export class ApiRuntime {
       await this.lease?.start();
       // One plan per installation (ADR 0079, section 3): the storage owner records it, and read
       // gateways and the worker with another plan are not ready until they are restarted.
-      if (this.role === 'api') await this.modulePlan.record(this.modules.plan.fingerprint);
+      if (this.role === 'api') await this.modulePlan.record(this.modules.plan);
       // Queue tickets keep a download's turn over a restart (ADR 0076); a reader without a key
       // made by a writer yet issues none until a later look finds it.
       // A database hiccup here only delays tickets, as the retry below would.

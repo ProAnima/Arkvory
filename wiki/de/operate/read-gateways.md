@@ -136,7 +136,7 @@ Sie können die Raten oder die Anzahl der Slots nicht ändern, während die Inst
 
 Tun Sie dies nie, solange noch ein Prozess laufen könnte.
 
-Ein Update erfordert dieselbe Sorgfalt. Stoppen Sie jedes Gateway, bevor die Installation aktualisiert, und starten Sie sie danach aus dem neuen Release. Ein Gateway, das mit altem Code gegen ein neueres Datenbankschema weiterläuft, meldet sich als nicht bereit. Die Offline-Reparaturwerkzeuge für die Bereinigung erfordern ebenfalls, dass alle Gateways gestoppt sind. Die Online-Bereinigung des Writer nicht.
+Ein Update, das das Datenbankschema ändert, erfordert dieselbe Sorgfalt. Stoppen Sie jedes Gateway, bevor die Installation aktualisiert, und starten Sie sie danach aus dem neuen Release. Ein Gateway, das mit altem Code gegen ein neueres Datenbankschema weiterläuft, meldet sich als nicht bereit. Ein Update ohne Schemaänderung braucht das nicht: Ein Gateway des vorigen Releases bedient neben dem aktualisierten Writer weiter, solange beide dieselben Module mit denselben Einstellungen planen, und Sie starten es zu einem passenden Zeitpunkt aus dem neuen Release neu. Die Offline-Reparaturwerkzeuge für die Bereinigung erfordern ebenfalls, dass alle Gateways gestoppt sind. Die Online-Bereinigung des Writer nicht.
 
 ## Gateways oder Spiegel {#gateways-or-mirrors}
 

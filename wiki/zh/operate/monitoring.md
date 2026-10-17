@@ -53,7 +53,7 @@ Arkvory 为您提供四类事实来源：回答“它是否在运行”的健康
 | `/health/status` | 否           | 200 `{"status":"ready"}`，或带 `Retry-After: 2` 的 503 `{"status":"unavailable"}` 或 `{"status":"draining"}` | 负载均衡器和在线时长探测    |
 | `/health/ready`  | 任意有效密钥 | 200，内容见下文；或 503，带错误封装和 `Retry-After`                                                          | 部署检查和 Compose 健康检查 |
 
-`/health/status` 和 `/health/ready` 检查三件事：数据库能够应答，且恰好具有本版本的迁移；存储目录的 `blobs` 文件夹存在；进程仍然持有其存储锁。`/health/status` 的结果会缓存一秒，因此公共探测无法使数据库查询倍增。正在排空的服务器会立即应答 `draining`。 当进程不可缺少的模块失败（原因 `module_failed`），以及读取网关的模块规划与写入进程记录的不同（原因 `module_plan_mismatch`）时，它们也返回 503；参见 [ARKVORY_MODULES_FILE](../reference/environment#core)。
+`/health/status` 和 `/health/ready` 检查三件事：数据库能够应答，且恰好具有本版本的迁移；存储目录的 `blobs` 文件夹存在；进程仍然持有其存储锁。`/health/status` 的结果会缓存一秒，因此公共探测无法使数据库查询倍增。正在排空的服务器会立即应答 `draining`。 当进程不可缺少的模块失败（原因 `module_failed`），以及读取网关的模块规划与写入进程记录的不同（原因 `module_plan_mismatch`）时，它们也返回 503；参见 [ARKVORY_MODULES_FILE](../reference/environment#core)。比较的是模块及其来源和设置，而不是版本：只要数据库架构不变，上一版本的读取网关在已更新的写入进程旁仍保持就绪。
 
 不带密钥时，`/health/ready` 返回 401。安装程序创建的密钥 `deployment-health` 没有仓库权限，也没有管理员权限。它的机密位于 `config/health-token.txt`。
 

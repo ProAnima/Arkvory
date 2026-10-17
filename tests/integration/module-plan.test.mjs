@@ -5,7 +5,11 @@ import { once } from 'node:events';
 import { writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
-import { PostgresModulePlan, parseModuleSelections } from '@proanima/arkvory-infrastructure';
+import {
+  PostgresModulePlan,
+  parseModuleSelections,
+  processIdentity,
+} from '@proanima/arkvory-infrastructure';
 import { createServer } from '../../apps/api/dist/index.js';
 import { setup } from './fixture.mjs';
 
@@ -15,33 +19,39 @@ const withoutProtocols = parseModuleSelections({
 });
 const policy = { slots: 3, slot: 0, bytesPerSecond: 262144, perPrincipalBytesPerSecond: 262144 };
 
-async function fixture(t, overrides = {}) {
+async function fixture(t, overrides = {}, lifecycle = {}) {
   const cleanup = [];
   t.after(async () => {
     for (const close of cleanup.reverse()) await close();
   });
-  const f = await setup({ after: (close) => cleanup.push(close) }, overrides);
+  const f = await setup({ after: (close) => cleanup.push(close) }, overrides, lifecycle);
   return { ...f, cleanup };
 }
 
-async function reader(f, slot, modules) {
-  const gateway = await createServer({
-    ...f.config,
-    role: 'reader',
-    sharedDownloads: { ...policy, slot },
-    ...(modules ? { modules } : {}),
-  });
+/** A process of a staged release: the version its release manifest would give it. */
+const release = (version) => ({ identity: processIdentity('api', version) });
+
+async function reader(f, slot, modules, lifecycle = {}) {
+  const gateway = await createServer(
+    {
+      ...f.config,
+      role: 'reader',
+      sharedDownloads: { ...policy, slot },
+      ...(modules ? { modules } : {}),
+    },
+    lifecycle,
+  );
   f.cleanup.push(() => gateway.close());
   return gateway;
 }
 
 test('the writer records its plan; a read gateway with another plan is not ready', async (t) => {
   const f = await fixture(t, { sharedDownloads: policy });
-  const fingerprint = (
+  const { compatibilityFingerprint, fingerprint } = (
     await f.app.inject({ url: '/api/v1/system/modules', headers: f.headers })
-  ).json().fingerprint;
+  ).json();
   const recorded = new PostgresModulePlan(f.catalog.pool);
-  assert.equal(await recorded.read(), fingerprint);
+  assert.deepEqual(await recorded.read(), { compatibilityFingerprint, fingerprint });
 
   const same = await reader(f, 1);
   assert.equal((await same.inject({ url: '/health/status' })).json().status, 'ready');
@@ -67,10 +77,38 @@ test('the writer records its plan; a read gateway with another plan is not ready
   // The writer restarted with the gateway's plan: the gateway becomes ready again.
   f.config.modules = withoutProtocols;
   await f.restart();
-  assert.notEqual(await recorded.read(), fingerprint);
+  assert.notEqual((await recorded.read()).compatibilityFingerprint, compatibilityFingerprint);
   await delay(1100);
   assert.equal((await other.inject({ url: '/health/status' })).json().status, 'ready');
   assert.equal((await same.inject({ url: '/health/status' })).statusCode, 503);
+});
+
+test('a read gateway of another release with the same modules serves beside the writer', async (t) => {
+  // A rolling update without a migration: the writer runs 1.6.1, the gateway is still 1.6.0.
+  const f = await fixture(t, { sharedDownloads: policy }, release('1.6.1'));
+  const writer = (await f.app.inject({ url: '/api/v1/system/modules', headers: f.headers })).json();
+  const previous = await reader(f, 1, undefined, release('1.6.0'));
+  assert.equal((await previous.inject({ url: '/health/status' })).json().status, 'ready');
+  const ready = await previous.inject({ url: '/health/ready', headers: f.headers });
+  assert.equal(ready.statusCode, 200, ready.body);
+  const gateway = (
+    await previous.inject({ url: '/api/v1/system/modules', headers: f.headers })
+  ).json();
+  assert.ok(gateway.modules.every((m) => m.version === '1.6.0'));
+  assert.ok(writer.modules.every((m) => m.version === '1.6.1'));
+  assert.equal(gateway.compatibilityFingerprint, writer.compatibilityFingerprint);
+  assert.notEqual(gateway.fingerprint, writer.fingerprint, 'the full fingerprint names the build');
+  assert.deepEqual(await new PostgresModulePlan(f.catalog.pool).read(), {
+    compatibilityFingerprint: writer.compatibilityFingerprint,
+    fingerprint: writer.fingerprint,
+  });
+
+  // Another release that also enables other modules is still a disagreement.
+  const disagreeing = await reader(f, 2, withoutProtocols, release('1.6.0'));
+  const refused = await disagreeing.inject({ url: '/health/ready', headers: f.headers });
+  assert.equal(refused.statusCode, 503);
+  assert.equal(refused.json().reason, 'module_plan_mismatch');
+  assert.equal((await disagreeing.inject({ url: '/health/status' })).statusCode, 503);
 });
 
 /** A production worker process of this installation; its output is kept for assertions. */
@@ -143,4 +181,12 @@ test('a worker waiting for its plan leaves the lock to a standby with the writer
   await until(() => matching.output.includes('worker.started'), 'the matching worker', 20000);
   assert.doesNotMatch(waiting.output, /worker.started/);
   assert.equal(waiting.child.exitCode, null, `the waiting worker keeps waiting: ${waiting.output}`);
+});
+
+test('a worker of another release with the writer plan takes the work', async (t) => {
+  // The writer runs release 1.6.1; the worker of this checkout is a development build (`dev`).
+  const f = await fixture(t, {}, release('1.6.1'));
+  const running = await worker(f);
+  await until(() => running.output.includes('worker.started'), 'the start', 20000);
+  assert.doesNotMatch(running.output, /worker.module_plan_mismatch/);
 });

@@ -5,6 +5,18 @@ import { acquireWithPlan, watchModulePlan } from '../apps/worker/dist/module-pla
 
 const mine = 'a'.repeat(64);
 const other = 'b'.repeat(64);
+let release = 0;
+/**
+ * The writer's record with the given compatibility fingerprint. Its full fingerprint changes on
+ * every read, like a writer of another release: the worker must not look at it.
+ */
+const recordedAs = (compatibility) =>
+  compatibility === null
+    ? null
+    : {
+        compatibilityFingerprint: compatibility,
+        fingerprint: (++release).toString(16).padStart(64, 'c'),
+      };
 
 /** A worker start whose lock is a counter; `answers` are the recorded plans it reads in turn. */
 function lock(answers, { fail } = {}) {
@@ -24,7 +36,7 @@ function lock(answers, { fail } = {}) {
       recorded: () => ({
         read: async () => {
           if (fail) throw fail;
-          return answers.length > 0 ? answers.shift() : mine;
+          return recordedAs(answers.length > 0 ? answers.shift() : mine);
         },
       }),
       release: async () => {
@@ -93,7 +105,7 @@ test('a running worker notices once that the writer changed the plan', async () 
     read: async () => {
       reads++;
       if (reads === 2) throw new Error('hiccup');
-      return current;
+      return recordedAs(current);
     },
   };
   const unwatch = watchModulePlan(recorded, mine, () => changes++, 5);

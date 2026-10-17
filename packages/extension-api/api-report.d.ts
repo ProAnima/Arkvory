@@ -348,7 +348,7 @@ export interface ModuleCandidate {
 }
 /** What the planning process knows of itself. */
 export interface ModuleHost {
-  /** Release version of the core; part of the fingerprint. */
+  /** Release version of the core; part of `fingerprint`, not of `compatibilityFingerprint`. */
   readonly coreVersion: string;
   /** The extension API version the core implements, normally `EXTENSION_API_VERSION`. */
   readonly extensionApi: string;
@@ -376,10 +376,22 @@ export interface ModulePlan {
   readonly stopOrder: readonly string[];
   /**
    * SHA-256 of the core version, the extension API version and every module's id, version,
-   * source, package hash, choice and normalized configuration. Equal plans on every process of
-   * an installation give an equal fingerprint.
+   * source, extension point, package hash, choice and normalized configuration: what
+   * `compatibilityFingerprint` covers and the exact build of the plan, equal for equal plans of
+   * one release. It is informational; the processes of an installation compare
+   * `compatibilityFingerprint`.
    */
   readonly fingerprint: string;
+  /**
+   * SHA-256 of what the processes of one installation must agree on: every module's id, source,
+   * extension point, choice and normalized configuration and, for a module that is not built in,
+   * its compatibility line: what a caret range keeps of its version (the major version, `0.minor`
+   * below 1.0.0, `0.0.patch` for 0.0.z). Versions of the core, of the extension API and of
+   * built-in modules stay out: built-in modules change with the core, whose updates that change
+   * the database are held back by the exact schema version check, so a release without a
+   * migration may serve beside the previous one during an update.
+   */
+  readonly compatibilityFingerprint: string;
 }
 export type ModulePlanProblemCode = 'invalid_manifest' | 'duplicate_id' | ModulePlanRuleCode;
 export type ModulePlanProblem =

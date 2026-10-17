@@ -109,7 +109,7 @@ try {
   // ADR 0080: retention of the event outbox, checked before the worker takes its lock.
   const eventRetention = readEventRetention(process.env);
   // ADR 0079: the installation's module plan, refused before the worker takes its lock.
-  const { fingerprint } = planBuiltinModules(
+  const { compatibilityFingerprint } = planBuiltinModules(
     identity.version,
     await readModuleSelections(process.env['ARKVORY_MODULES_FILE']),
   ).plan;
@@ -139,13 +139,13 @@ try {
         });
       },
     },
-    fingerprint,
+    compatibilityFingerprint,
     stop.signal,
   );
   if (!acquired) throw new StoppedOnStandby();
   const { catalog, blobs, dataDirectory } = acquired;
   const recordedPlan = new PostgresModulePlan(catalog.pool);
-  const unwatchPlan = watchModulePlan(recordedPlan, fingerprint, () => {
+  const unwatchPlan = watchModulePlan(recordedPlan, compatibilityFingerprint, () => {
     process.exitCode = 1;
     diagnostics.write({ level: 'error', component: 'worker', code: 'worker.module_plan_changed' });
     stopWorker();

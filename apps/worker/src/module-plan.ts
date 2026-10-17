@@ -1,8 +1,12 @@
 import { setTimeout as delay } from 'node:timers/promises';
 
-/** The writer's recorded plan (`PostgresModulePlan`). */
+/**
+ * The writer's recorded plan (`PostgresModulePlan`). The worker compares only its compatibility
+ * fingerprint: a worker of the previous release keeps working beside an updated writer with the
+ * same modules, as an update without a migration allows (ADR 0079, section 3).
+ */
 export interface RecordedPlan {
-  read(): Promise<string | null>;
+  read(): Promise<{ readonly compatibilityFingerprint: string } | null>;
 }
 
 /** Pause between looks at the recorded plan while this worker's differs. */
@@ -32,7 +36,8 @@ export interface PlannedStart<Resources> {
  */
 export async function acquireWithPlan<Resources>(
   start: PlannedStart<Resources>,
-  fingerprint: string,
+  /** This worker's compatibility fingerprint. */
+  compatibility: string,
   stop: AbortSignal,
   retryMs = planRetryMs,
 ): Promise<Resources | null> {
@@ -40,14 +45,14 @@ export async function acquireWithPlan<Resources>(
   while (!stop.aborted) {
     const resources = await start.acquire();
     if (resources === null) return null;
-    let current: string | null;
+    let current: string | undefined;
     try {
-      current = await start.recorded(resources).read();
+      current = (await start.recorded(resources).read())?.compatibilityFingerprint;
     } catch (error) {
       await start.release(resources);
       throw error;
     }
-    if (current === fingerprint) return resources;
+    if (current === compatibility) return resources;
     await start.release(resources);
     if (!reported) start.onMismatch();
     reported = true;
@@ -64,7 +69,7 @@ export async function acquireWithPlan<Resources>(
  */
 export function watchModulePlan(
   recorded: RecordedPlan,
-  fingerprint: string,
+  compatibility: string,
   onChange: () => void,
   intervalMs = planWatchMs,
 ): () => void {
@@ -76,7 +81,7 @@ export function watchModulePlan(
     recorded
       .read()
       .then((current) => {
-        if (current === fingerprint || changed) return;
+        if (current?.compatibilityFingerprint === compatibility || changed) return;
         changed = true;
         onChange();
       })
