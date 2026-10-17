@@ -15,6 +15,7 @@ import {
   removeModule,
 } from './module-install.js';
 import { moduleLayout, readModuleSet } from './module-store.js';
+import { checkJournal } from './operations.js';
 import type { InstalledModule } from './module-store.js';
 import { trustAdd, trustList, trustRemove } from './module-trust.js';
 
@@ -143,6 +144,8 @@ async function listModules(root: string, context: ModuleCommandContext): Promise
 async function run(parsed: Parsed, context: ModuleCommandContext): Promise<void> {
   const { command, root, positional, options } = parsed;
   const first = positional[0] ?? '';
+  // Every change waits for `recover` after an interrupted deployment step, as updates do.
+  await checkJournal(root);
   switch (command) {
     case 'install':
       return installModule(

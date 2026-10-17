@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdir, readFile, readdir, stat, writeFile } from 'node:fs/promises';
+import { chmod, mkdir, readFile, readdir, stat, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { EXTENSION_API_VERSION } from '../packages/extension-api/dist/index.js';
 import { minisignPublicKeyText } from '../packages/signing/dist/index.js';
@@ -357,4 +357,110 @@ test('the arkvory entry runs module commands with the built-in keys', async (t) 
   assert.equal(install.status, 1);
   assert.match(install.stderr, /unknown_key/);
   await assert.rejects(readFile(join(root, 'modules/installed.json')), { code: 'ENOENT' });
+});
+
+test('the kept archive gets the installer mode, not the mode of the operator file', async (t) => {
+  const { root, run, pack } = await setup(t);
+  const file = await pack();
+  await chmod(file, 0o666);
+  await run('install', file, '--yes');
+  const archive = join(root, 'modules/.packages/sample@1.0.0.tgz');
+  if (process.platform !== 'win32') assert.equal((await stat(archive)).mode & 0o777, 0o644);
+  else await stat(archive);
+});
+
+test('prerelease versions follow semver precedence and a removal keeps the downgrade guard', async (t) => {
+  const { run, pack } = await setup(t);
+  await run('install', await pack({ manifest: { version: '1.0.0-beta.9' } }), '--yes');
+  // beta.10 is newer than beta.9 (numeric identifiers compare as numbers).
+  await run('install', await pack({ manifest: { version: '1.0.0-beta.10' } }), '--yes');
+  await assert.rejects(
+    run('install', await pack({ manifest: { version: '1.0.0-beta.9' } }), '--yes'),
+    /--downgrade/,
+  );
+  for (const [older, newer] of [
+    ['1.0.0-alpha', '1.0.0-alpha.1'],
+    ['1.0.0-alpha.1', '1.0.0-alpha.beta'],
+    ['1.0.0-beta.11', '1.0.0-rc.1'],
+    ['1.0.0-rc.1', '1.0.0'],
+  ]) {
+    await run('install', await pack({ manifest: { id: 'order', version: newer } }), '--yes');
+    await assert.rejects(
+      run('install', await pack({ manifest: { id: 'order', version: older } }), '--yes'),
+      /--downgrade/,
+      `${older} < ${newer}`,
+    );
+    await run('remove', 'order');
+    // The removed version is kept: installing an older one is still a downgrade.
+    await assert.rejects(
+      run('install', await pack({ manifest: { id: 'order', version: older } }), '--yes'),
+      /--downgrade/,
+      `${older} after removing ${newer}`,
+    );
+  }
+});
+
+test('trust and revocation commands wait for recover after an interrupted change', async (t) => {
+  const { root, files, keys, run } = await setup(t);
+  const pub = join(files, 'author.pub');
+  await writeFile(pub, minisignPublicKeyText(testKey().key, 'minisign public key'));
+  const list = join(files, 'list.json');
+  await writeFile(list, revocationList(keys.module, { sequence: 1, entries: [] }));
+  await writeFile(
+    join(root, 'journal.json'),
+    JSON.stringify({ phase: 'prepared', previous: release, next: release }),
+  );
+  await assert.rejects(run('revocations', list), /Interrupted deployment/);
+  await assert.rejects(
+    run('trust', 'add', pub, '--label', 'Acme', '--yes'),
+    /Interrupted deployment/,
+  );
+  await assert.rejects(run('trust', 'remove', '0123456789abcdef'), /Interrupted deployment/);
+  await assert.rejects(readFile(join(root, 'config/plugin-trust.json')), { code: 'ENOENT' });
+  await assert.rejects(readFile(join(root, 'config/module-revocations.json')), {
+    code: 'ENOENT',
+  });
+});
+
+test('recover keeps the packages the interrupted change still had to keep', async (t) => {
+  const { root, run, pack } = await setup(t);
+  await run('install', await pack(), '--yes');
+  await run('install', await pack({ manifest: { version: '1.1.0' } }), '--yes');
+  const before = await readJson(join(root, 'modules/installed.json'));
+  await run('install', await pack({ manifest: { version: '1.2.0' } }), '--yes');
+  const journal = await readJson(join(root, 'journal.json'));
+  // As if the last change stopped after writing the set and before committing the journal.
+  await writeFile(join(root, 'journal.json'), JSON.stringify({ ...journal, phase: 'prepared' }));
+  await recover(root);
+  const restored = await readJson(join(root, 'modules/installed.json'));
+  assert.deepEqual(restored.modules, before.modules);
+  // 1.0.0 was kept by the change before the interrupted one; it stays kept.
+  assert.deepEqual(restored.retained.map((p) => p.version).sort(), ['1.0.0', '1.1.0', '1.2.0']);
+});
+
+test('a committed change removes packages that no set names, such as leftovers of a crash', async (t) => {
+  const { root, run, pack } = await setup(t);
+  await run('install', await pack(), '--yes');
+  // Placed by a change that stopped before its journal record, or half discarded.
+  await mkdir(join(root, 'modules/sample/9.9.9/files'), { recursive: true });
+  await writeFile(join(root, 'modules/.packages/sample@9.9.9.tgz'), 'orphan');
+  await mkdir(join(root, 'modules/ghost/1.0.0'), { recursive: true });
+  await writeFile(join(root, 'modules/.packages/ghost@1.0.0.tgz'), 'orphan');
+  await writeFile(join(root, 'modules/notes.txt'), 'not ours');
+  await run('install', await pack({ manifest: { version: '1.1.0' } }), '--yes');
+  for (const gone of [
+    'modules/sample/9.9.9',
+    'modules/.packages/sample@9.9.9.tgz',
+    'modules/ghost',
+    'modules/.packages/ghost@1.0.0.tgz',
+  ])
+    await assert.rejects(stat(join(root, gone)), { code: 'ENOENT' }, gone);
+  for (const kept of [
+    'modules/sample/1.0.0/module.json',
+    'modules/sample/1.1.0/module.json',
+    'modules/.packages/sample@1.0.0.tgz',
+    'modules/.packages/sample@1.1.0.tgz',
+    'modules/notes.txt',
+  ])
+    await stat(join(root, kept));
 });

@@ -1,7 +1,6 @@
 import { randomUUID } from 'node:crypto';
-import { copyFile, lstat, mkdir, readFile, rename, rm, stat } from 'node:fs/promises';
+import { chmod, copyFile, lstat, mkdir, readFile, rename, rm, stat } from 'node:fs/promises';
 import { isAbsolute, join } from 'node:path';
-import { parseSemanticVersion } from '@proanima/arkvory-extension-api';
 import {
   PACKAGE_LIMITS,
   acceptRevocations,
@@ -23,13 +22,14 @@ import {
 } from './module-host.js';
 import type { ModuleCommandContext } from './module-host.js';
 import {
-  discardPackages,
+  discardUnreferenced,
   moduleLayout,
   prepareModuleDirectories,
   readModuleSet,
   writeModuleSet,
 } from './module-store.js';
 import type { InstalledModule, ModuleSet } from './module-store.js';
+import { compareVersions } from './module-version.js';
 import { checkJournal } from './operations.js';
 
 export async function installation(root: string): Promise<Installation> {
@@ -38,9 +38,10 @@ export async function installation(root: string): Promise<Installation> {
 
 /**
  * A change of the module set is a record of the update journal (ADR 0059, ADR 0078 section 4)
- * with the release unchanged and `modules.before/after`. The set file is replaced atomically,
- * so `recover` after an interruption only has to put the previous set back. No service is
- * restarted: no process loads external modules before stage X4 of ADR 0079.
+ * with the release unchanged and `modules.before/after`, and `modules.retained`, what the set
+ * before kept, so that `recover` keeps it too. The set file is replaced atomically, so `recover`
+ * after an interruption only has to put the previous set back. No service is restarted: no
+ * process loads external modules before stage X4 of ADR 0079.
  */
 async function changeSet(
   root: string,
@@ -53,34 +54,27 @@ async function changeSet(
       phase,
       previous: state.current,
       next: state.current,
-      modules: { before: before.modules, after: after.modules },
+      modules: { before: before.modules, after: after.modules, retained: before.retained },
     });
   await record('prepared');
   try {
     await writeModuleSet(root, after);
   } catch (error) {
-    await record('rolled-back').catch(() => undefined);
+    // A failed write may still have replaced the set (the rename succeeds, the directory sync
+    // fails). Only a set written back makes `rolled-back` true; otherwise the journal stays
+    // `prepared` and the next command asks for `recover`.
+    try {
+      await writeModuleSet(root, before);
+      await record('rolled-back');
+    } catch {
+      // Kept `prepared` on purpose; the first error is the one to report.
+    }
     throw error;
   }
   await record('committed');
-  // Only now are the packages of the change before this one released.
-  await discardPackages(root, before.retained, after);
-}
-
-function compareVersions(a: string, b: string): number {
-  const x = parseSemanticVersion(a);
-  const y = parseSemanticVersion(b);
-  if (!x || !y) throw new Error('Invalid module version');
-  for (const key of ['major', 'minor', 'patch'] as const)
-    if (x[key] !== y[key]) return x[key] - y[key];
-  if (x.prerelease === y.prerelease) return 0;
-  return x.prerelease === null
-    ? 1
-    : y.prerelease === null
-      ? -1
-      : x.prerelease < y.prerelease
-        ? -1
-        : 1;
+  // Only now are packages the set no longer names released: those the change before retained
+  // and leftovers of interrupted commands.
+  await discardUnreferenced(root, after);
 }
 
 /** Whether the package changes the set; refusals keep pinned versions and forbid silent downgrades. */
@@ -96,7 +90,19 @@ function decide(
     throw new Error(
       `Module ${id} ${version} is kept with different bytes; one version has one package`,
     );
-  if (current === undefined) return 'install';
+  if (current === undefined) {
+    // A removed module keeps its package until the next change; going below it is a downgrade.
+    const removed = set.retained
+      .filter((p) => p.id === id)
+      .map((p) => p.version)
+      .sort(compareVersions)
+      .at(-1);
+    if (removed !== undefined && compareVersions(version, removed) < 0 && !downgrade)
+      throw new Error(
+        `Module ${id} ${version} is older than the removed ${removed}; a downgrade needs --downgrade`,
+      );
+    return 'install';
+  }
   if (current.version === version) {
     if (current.sha256 !== inspected.sha256)
       throw new Error(
@@ -155,6 +161,9 @@ async function stage(file: string, staging: string): Promise<string> {
     throw new Error('The module package must be a file of at most 1 GiB');
   const staged = join(staging, `${randomUUID()}.tgz`);
   await copyFile(file, staged);
+  // copyFile keeps the mode of the operator's file (0666 in /tmp, say); this copy becomes the
+  // kept archive of modules/.packages, written only by the host administrator.
+  await chmod(staged, 0o644);
   return staged;
 }
 
@@ -303,11 +312,13 @@ export async function applyRevocations(
   file: string,
   context: ModuleCommandContext,
 ): Promise<void> {
+  await checkJournal(root);
   const state = await installation(root);
   const host = await packageHost(root, state, context);
+  const tooBig = 'The revocation list must be an absolute path of a file of at most 1 MiB';
+  if (!isAbsolute(file)) throw new Error(tooBig);
   const info = await lstat(file);
-  if (!isAbsolute(file) || !info.isFile() || info.size > PACKAGE_LIMITS.revocationsBytes)
-    throw new Error('The revocation list must be an absolute path of a file of at most 1 MiB');
+  if (!info.isFile() || info.size > PACKAGE_LIMITS.revocationsBytes) throw new Error(tooBig);
   const candidate = readRevocations(await readFile(file, 'utf8'), host.keys);
   const stored = await readStoredRevocations(root, host.keys);
   if (acceptRevocations(stored, candidate) === 'unchanged') {

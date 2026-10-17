@@ -125,53 +125,61 @@ function referenced(set: ModuleSet, id: string, version: string): boolean {
   return [...set.modules, ...set.retained].some((p) => p.id === id && p.version === version);
 }
 
+const ARCHIVE = /^(.+)@(.+)\.tgz$/;
+
 /**
- * Deletes the packages of `candidates` that `set` no longer names: after a committed change,
- * the packages retained by the change before it. A package that a module still names is never
- * deleted, and neither is anything this command did not put in the list.
+ * Deletes every package that `set` does not name, after a committed change: the packages the
+ * change before it retained, and whatever an interrupted command left behind (a package placed
+ * before its journal record, a set write that failed, a half finished discard). Only names this
+ * layout gives packages are touched: `<id>/<version>/` and `.packages/<id>@<version>.tgz` with
+ * a valid id and version. A package the set names is never deleted.
  */
-export async function discardPackages(
-  root: string,
-  candidates: readonly RetainedPackage[],
-  set: ModuleSet,
-): Promise<void> {
+export async function discardUnreferenced(root: string, set: ModuleSet): Promise<void> {
   const layout = moduleLayout(root);
-  for (const item of candidates) {
-    if (referenced(set, item.id, item.version)) continue;
-    await rm(layout.unpacked(item.id, item.version), { recursive: true, force: true });
-    await rm(layout.archive(item.id, item.version), { force: true });
-    const parent = join(layout.directory, item.id);
-    if ((await readdir(parent).catch(() => null))?.length === 0)
-      await rm(parent, { recursive: true });
+  const valid = (id: string, version: string) =>
+    MODULE_ID_PATTERN.test(id) && parseSemanticVersion(version) !== null;
+  for (const name of await readdir(layout.archives)) {
+    const match = ARCHIVE.exec(name);
+    const [id, version] = [match?.[1] ?? '', match?.[2] ?? ''];
+    if (match && valid(id, version) && !referenced(set, id, version))
+      await rm(layout.archive(id, version), { force: true });
+  }
+  for (const id of await readdir(layout.directory)) {
+    if (!MODULE_ID_PATTERN.test(id)) continue;
+    const parent = join(layout.directory, id);
+    const versions = await readdir(parent).catch(() => null);
+    if (versions === null) continue;
+    for (const version of versions)
+      if (valid(id, version) && !referenced(set, id, version))
+        await rm(layout.unpacked(id, version), { recursive: true, force: true });
+    if ((await readdir(parent)).length === 0) await rm(parent, { recursive: true });
   }
 }
 
+function retainedOf(value: unknown): readonly RetainedPackage[] {
+  return Array.isArray(value) ? value.map((item: unknown) => retained(item)) : [];
+}
+
 /**
- * `recover` of a module set change (ADR 0059): the previous set returns. Packages of the
- * interrupted change stay retained, so the next successful change discards them; nothing a set
- * may name is deleted here.
+ * `recover` of a module set change (ADR 0059): the previous set returns. Packages that set
+ * retained (`modules.retained` of the journal) stay retained, and so do the packages of the
+ * interrupted change, so the next successful change discards them; nothing a set may name is
+ * deleted here.
  */
 export async function recoverModuleSet(
   root: string,
   journal: Record<string, unknown>,
 ): Promise<void> {
-  const modules = journal['modules'];
-  const before =
-    typeof modules === 'object' && modules !== null && 'before' in modules
-      ? modules.before
-      : undefined;
-  const previous = parseModuleSet({ format: 1, modules: before, retained: [] }).modules;
+  const modules = record(journal['modules']);
+  const previous = parseModuleSet({ format: 1, modules: modules['before'], retained: [] }).modules;
   const set = await readModuleSet(root);
   const left = set.modules.filter(
     (m) => !previous.some((p) => p.id === m.id && p.version === m.version),
   );
-  await writeModuleSet(root, {
-    format: 1,
-    modules: previous,
-    retained: [
-      ...set.retained,
-      ...left.map(({ id, version, sha256 }) => ({ id, version, sha256 })),
-    ],
-  });
+  const kept: RetainedPackage[] = [];
+  for (const item of [...retainedOf(modules['retained']), ...set.retained, ...left])
+    if (!kept.some((p) => p.id === item.id && p.version === item.version))
+      kept.push({ id: item.id, version: item.version, sha256: item.sha256 });
+  await writeModuleSet(root, { format: 1, modules: previous, retained: kept });
   await atomicJson(join(root, 'journal.json'), { ...journal, phase: 'recovered' });
 }
