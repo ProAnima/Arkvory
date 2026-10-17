@@ -1,0 +1,19 @@
+{
+  "name": "@proanima/arkvory-extension-api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "sideEffects": false,
+  "description": "Публичный контракт модулей ядра: описание, жизненный цикл и план модулей",
+  "exports": {
+    "arkvory-source": "./src/index.ts",
+    "types": "./dist/index.d.ts",
+    "import": "./dist/index.js"
+  },
+  "license": "SEE LICENSE IN LICENSE.md",
+  "author": "Ian Panaev",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ProAnima/Arkvory.git"
+  }
+}
