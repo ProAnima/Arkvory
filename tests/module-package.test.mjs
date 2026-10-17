@@ -4,10 +4,12 @@ import { gunzipSync, gzipSync } from 'node:zlib';
 import { mkdir, readFile, readdir, symlink, unlink, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import {
+  SigningError,
   extractModulePackage,
   inspectModulePackage,
   verifyInstalledModule,
 } from '../packages/signing/dist/index.js';
+import { archiveFailure } from '../packages/signing/dist/package-archive.js';
 import { packModule, signRevocations, tarGzip, ustarHeader } from '../scripts/module-signing.mjs';
 import {
   manifestOf,
@@ -444,4 +446,42 @@ test('random corruption of a package is refused with a code or changes nothing s
     }
   }
   assert.ok(outcomes.size > 1, JSON.stringify([...outcomes]));
+});
+
+test('bytes after the gzip stream are refused, even after a zero byte', async (t) => {
+  const { host, module } = testHost();
+  const good = tarGzip(packageEntries({ signer: module }));
+  // zlib stops quietly at a zero byte after a member; the archive hash would cover bytes that
+  // no check saw, and one package would have many hashes.
+  for (const tail of [Buffer.from([0]), Buffer.concat([Buffer.alloc(1), Buffer.from('payload')])])
+    await refused(t, Buffer.concat([good, tail]), host, 'archive_invalid');
+});
+
+test('package versions are lower case: a case-folding file system would merge two of them', async (t) => {
+  const { host, module } = testHost();
+  await assert.rejects(
+    inspect(t, packageEntries({ signer: module, manifest: { version: '1.0.0-Beta' } }), host),
+    (error) => error.code === 'manifest_invalid' && error.subject === '/version',
+  );
+  const inspected = await inspect(
+    t,
+    packageEntries({ signer: module, manifest: { version: '1.0.0-beta.2' } }),
+    host,
+  );
+  assert.equal(inspected.manifest.module.version, '1.0.0-beta.2');
+});
+
+test('local I/O failures keep their own error; only a broken stream is archive_invalid', () => {
+  const disk = Object.assign(new Error('no space left on device'), { code: 'ENOSPC' });
+  assert.equal(archiveFailure(disk), disk);
+  const denied = Object.assign(new Error('permission denied'), { code: 'EACCES' });
+  assert.equal(archiveFailure(denied), denied);
+  const zlib = Object.assign(new Error('incorrect header check'), { code: 'Z_DATA_ERROR' });
+  const mapped = archiveFailure(zlib);
+  assert.equal(mapped.code, 'archive_invalid');
+  assert.equal(mapped.cause, zlib);
+  const ended = Object.assign(new Error('The operation was aborted'), { code: 'ABORT_ERR' });
+  assert.equal(archiveFailure(ended).code, 'archive_invalid');
+  const refusal = new SigningError('unsafe_path');
+  assert.equal(archiveFailure(refusal), refusal);
 });

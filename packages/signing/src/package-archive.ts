@@ -72,11 +72,12 @@ async function walkArchive(
   // pipeline reports a failure of its last stage as an abort of the earlier ones; the reader's
   // own refusal is kept to report its code.
   let refusal: unknown = null;
+  const gunzip = createGunzip();
   try {
     await pipeline(
       createReadStream(file, { highWaterMark: 64 * 1024 }),
       tap,
-      createGunzip(),
+      gunzip,
       async (source: AsyncIterable<unknown>) => {
         try {
           await readTar(source, visit, {
@@ -90,12 +91,29 @@ async function walkArchive(
       },
     );
   } catch (error) {
-    const cause = refusal ?? error;
-    if (cause instanceof SigningError) throw cause;
-    if (error instanceof SigningError) throw error;
-    throw new SigningError('archive_invalid', null, { cause });
+    // A refusal of the reader names the entry; any other failure of the reader is an abort
+    // caused by the stage that failed first, which pipeline reports.
+    throw archiveFailure(refusal instanceof SigningError ? refusal : error);
   }
+  // zlib ends quietly at a zero byte after a gzip member and drops the rest: the archive hash
+  // would then cover bytes no check read. Every byte of the file must belong to the stream.
+  if (gunzip.bytesWritten !== size) throw new SigningError('archive_invalid');
   return { sha256: hash.digest('hex'), size };
+}
+
+/**
+ * What a failed pass reports: a refusal keeps its code, and a damaged gzip stream is
+ * `archive_invalid` (zlib's `Z_…` codes, and `ABORT_ERR` when zlib ends its stream early on
+ * bytes after a member; no pass takes an AbortSignal). Any other error, such as a full disk or a
+ * denied write while unpacking, is the host's and is thrown unchanged rather than blamed on the
+ * package.
+ */
+export function archiveFailure(cause: unknown): Error {
+  if (cause instanceof SigningError) return cause;
+  const code = cause instanceof Error && 'code' in cause ? String(cause.code) : '';
+  if (!(cause instanceof Error) || /^Z_/.test(code) || code === 'ABORT_ERR')
+    return new SigningError('archive_invalid', null, { cause });
+  return cause;
 }
 
 /**

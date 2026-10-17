@@ -148,6 +148,10 @@ export function parsePackageManifest(input: unknown): PackageManifest {
     Object.entries(row).filter(([key]) => !PACKAGE_FIELDS.includes(key)),
   );
   const module = moduleManifest(rest);
+  // `modules/<id>/<version>/` is a directory name: on a case-folding file system (Windows,
+  // macOS) `1.0.0-Beta` and `1.0.0-beta` would be one package, and replacing one would delete
+  // the other. Module ids are lower case already.
+  if (/[A-Z]/.test(module.version)) throw invalid('/version');
   if (row['side'] !== 'server') throw invalid('/side');
   const dataClass = DATA_CLASSES.find((value) => value === row['dataClass']);
   if (dataClass === undefined) throw invalid('/dataClass');
