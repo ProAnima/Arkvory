@@ -1,13 +1,13 @@
 ---
 title: Modules
-description: Installer des paquets de modules signés sur un hôte, les vérifier, les supprimer et conserver les clés des auteurs de plugins auxquels vous faites confiance.
+description: Installer des paquets de modules signés sur un hôte, les activer, les vérifier, les supprimer et conserver les clés des auteurs de plugins auxquels vous faites confiance.
 ---
 
 # Modules
 
 Un paquet de module ajoute une fonction à Arkvory. Arkvory n'installe que les paquets dont il peut vérifier la signature. Les commandes de cette page s'exécutent sur l'hôte de l'installation, en root sous Linux ou en administrateur sous Windows. La console et l'API HTTP ne peuvent ni installer de modules ni faire confiance à des clés : un compte administrateur de la console volé ne permet donc pas d'exécuter du code sur le serveur.
 
-Cette version stocke et vérifie les paquets de modules. Les services n'exécutent pas encore le code des modules : une version ultérieure chargera les modules installés.
+Les services vérifient de nouveau les modules installés et les chargent à chaque démarrage. Un module ne s’exécute qu’une fois que vous l’avez activé.
 
 ## Installer un paquet {#install}
 
@@ -42,6 +42,39 @@ Limites : 1 Gio par paquet, 256 Mio par fichier, 4096 fichiers. Un paquet plus g
 
 Une version déjà installée avec les mêmes octets reste telle quelle. La même version avec d'autres octets est refusée.
 
+## Activer et charger un module {#load}
+
+Un module installé reste désactivé jusqu’à ce que vous l’activiez. Les services ne chargent les modules qu’au démarrage.
+
+1. Ajoutez le module au fichier des modules (`ARKVORY_MODULES_FILE`, voir [Variables d’environnement](../reference/environment#core)). Les paramètres du module vont dans `config` :
+
+   ```json
+   { "format": 1, "modules": { "sample": { "enabled": true } } }
+   ```
+
+2. Redémarrez les services, comme dans [Appliquer une modification](../install/configuration#apply-change).
+3. Vérifiez le module en tant qu’administrateur global : `GET /api/v1/system/modules` l’affiche avec `running: true` et `health.status` `ok` sur l’API et sur chaque passerelle de lecture.
+
+L’API et les passerelles de lecture exécutent les modules. Le worker vérifie les mêmes modules et n’en exécute aucun. Cette version refuse les modules qui s’exécutent dans le worker ou dans l’agent de sauvegarde (`role_unsupported`) et ceux qui déclarent leurs propres routes (`routes_unsupported`). Les installations Docker Compose ne chargent pas encore de modules.
+
+Avant qu’un service importe le moindre code d’un module, il vérifie de nouveau le paquet :
+
+1. Seuls root (sous Windows : SYSTEM et Administrators) ou le propriétaire du répertoire d’installation peuvent modifier `modules/`, l’ensemble des modules et la liste de révocation. L’installation le prévoit ainsi. Un fichier qu’un autre compte peut modifier et un lien dans un paquet sont refusés (`access_unsafe`, `access_link`).
+2. La signature, chaque fichier et la version d’Arkvory, comme `module install` les vérifie.
+3. La liste de révocation. Une version révoquée n’est jamais chargée. Une liste expirée ou l’absence de liste n’arrêtent pas un module.
+
+Un module qui échoue à une vérification n’est pas chargé ; les autres modules et Arkvory continuent. `GET /api/v1/system/modules` l’affiche avec `running: false` :
+
+| `health.status` | Signification                                                              | Codes                                                                                                                |
+| --------------- | -------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `failed`        | Le paquet a été refusé, ou son code ne s’est pas chargé ou n’a pas démarré | `file_mismatch`, `unknown_key`, `module_incompatible`, `access_unsafe`, `config_invalid`, `start_failed` et d’autres |
+| `revoked`       | ProAnimaStudio a révoqué cette version                                     | le motif de la liste de révocation                                                                                   |
+| `unavailable`   | Le répertoire du paquet manque sur l’hôte                                  | `module_unavailable`                                                                                                 |
+
+Un module en échec ne rend Arkvory non prêt (`/health/ready` répond 503 avec `module_failed`) que si un autre module activé en a besoin. Un module qui stocke les octets des fichiers publiés (données `layout`) ne le fait jamais : Arkvory continue de servir ses données et écrit les nouveaux envois dans son propre stockage au lieu de celui du module. Le journal enregistre `module.refused` et `module.failed` avec le code dans `errorCode`.
+
+Pour réparer un paquet modifié ou absent, installez-le de nouveau. Tous les services de l’installation doivent voir les mêmes modules, activés ou non : une passerelle de lecture ou un worker avec d’autres modules n’est pas prêt (`module_plan_mismatch`). Installez les mêmes paquets sur l’hôte de chaque passerelle de lecture.
+
 ## Mettre à jour, épingler, revenir en arrière {#versions}
 
 Installez le fichier de la nouvelle version avec `--yes`. Le paquet précédent reste sur l'hôte jusqu'au prochain changement de modules.
@@ -60,7 +93,7 @@ Un module épinglé refuse toute autre version jusqu'à ce que vous retiriez l'�
 sudo arkvory module list --root /opt/proanima-arkvory
 ```
 
-La commande vérifie de nouveau chaque paquet installé, comme le feront les services avant de le charger : la signature, chaque fichier et l'archive. Chaque module affiche un état :
+La commande vérifie de nouveau chaque paquet installé, comme le font les services avant de le charger : la signature, chaque fichier et l'archive. Chaque module affiche un état :
 
 | État                 | Signification                                                                                                       |
 | -------------------- | ------------------------------------------------------------------------------------------------------------------- |

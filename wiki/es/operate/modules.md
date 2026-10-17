@@ -1,13 +1,13 @@
 ---
 title: Módulos
-description: Instale paquetes de módulos firmados en un host, compruébelos, elimínelos y guarde las claves de los autores de plugins en los que confía.
+description: Instale paquetes de módulos firmados en un host, actívelos, compruébelos, elimínelos y guarde las claves de los autores de plugins en los que confía.
 ---
 
 # Módulos
 
 Un paquete de módulo añade una función a Arkvory. Arkvory solo instala paquetes cuya firma puede verificar. Los comandos de esta página se ejecutan en el host de la instalación, como root en Linux o como administrador en Windows. La consola y la API HTTP no pueden instalar módulos ni confiar en claves, así que una cuenta de administrador de la consola robada no permite ejecutar código en el servidor.
 
-Esta versión guarda y verifica paquetes de módulos. Los servicios todavía no ejecutan código de módulos: una versión posterior cargará los módulos instalados.
+Los servicios vuelven a verificar los módulos instalados y los cargan cada vez que se inician. Un módulo solo se ejecuta después de que usted lo active.
 
 ## Instalar un paquete {#install}
 
@@ -42,6 +42,39 @@ Límites: 1 GiB por paquete, 256 MiB por archivo, 4096 archivos. Un paquete mayo
 
 Una versión ya instalada con los mismos bytes se deja como está. La misma versión con otros bytes se rechaza.
 
+## Activar y cargar un módulo {#load}
+
+Un módulo instalado permanece desactivado hasta que usted lo active. Los servicios cargan los módulos solo al iniciarse.
+
+1. Añada el módulo al archivo de módulos (`ARKVORY_MODULES_FILE`, consulte [Variables de entorno](../reference/environment#core)). La configuración del módulo va en `config`:
+
+   ```json
+   { "format": 1, "modules": { "sample": { "enabled": true } } }
+   ```
+
+2. Reinicie los servicios, como en [Aplicar un cambio](../install/configuration#apply-change).
+3. Compruebe el módulo como administrador global: `GET /api/v1/system/modules` lo muestra con `running: true` y `health.status` `ok` en la API y en cada puerta de enlace de lectura.
+
+La API y las puertas de enlace de lectura ejecutan los módulos. El worker comprueba los mismos módulos y no ejecuta ninguno. Esta versión rechaza los módulos que se ejecutan en el worker o en el agente de copias de seguridad (`role_unsupported`) y los que declaran rutas propias (`routes_unsupported`). Las instalaciones con Docker Compose todavía no cargan módulos.
+
+Antes de que un servicio importe cualquier código de un módulo, vuelve a comprobar el paquete:
+
+1. Solo root (en Windows: SYSTEM y Administrators) o el propietario del directorio de instalación pueden cambiar `modules/`, el conjunto de módulos y la lista de revocación. La instalación lo deja así. Se rechaza un archivo que otra cuenta pueda cambiar y un enlace dentro de un paquete (`access_unsafe`, `access_link`).
+2. La firma, cada archivo y la versión de Arkvory, como los comprueba `module install`.
+3. La lista de revocación. Una versión revocada nunca se carga. Una lista caducada o la falta de lista no detienen un módulo.
+
+Un módulo que no supera una comprobación no se carga; los demás módulos y Arkvory siguen funcionando. `GET /api/v1/system/modules` lo muestra con `running: false`:
+
+| `health.status` | Significado                                                 | Códigos                                                                                                          |
+| --------------- | ----------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `failed`        | El paquete se rechazó, o su código no se cargó o no arrancó | `file_mismatch`, `unknown_key`, `module_incompatible`, `access_unsafe`, `config_invalid`, `start_failed` y otros |
+| `revoked`       | ProAnimaStudio revocó esta versión                          | el motivo de la lista de revocación                                                                              |
+| `unavailable`   | Falta el directorio del paquete en el host                  | `module_unavailable`                                                                                             |
+
+Un módulo con fallo deja Arkvory fuera de servicio (`/health/ready` responde 503 con `module_failed`) solo cuando otro módulo activado lo necesita. Un módulo que guarda los bytes de los archivos publicados (datos `layout`) nunca lo hace: Arkvory sigue sirviendo sus datos y escribe las nuevas subidas en su propio almacenamiento en lugar del del módulo. El registro anota `module.refused` y `module.failed` con el código en `errorCode`.
+
+Para reparar un paquete cambiado o ausente, instálelo de nuevo. Todos los servicios de la instalación deben ver los mismos módulos, activados o no: una puerta de enlace de lectura o un worker con otros módulos no está listo (`module_plan_mismatch`). Instale los mismos paquetes en el host de cada puerta de enlace de lectura.
+
 ## Actualizar, fijar y volver a una versión anterior {#versions}
 
 Instale el archivo de la versión nueva con `--yes`. El paquete anterior se queda en el host hasta el siguiente cambio de módulos.
@@ -60,7 +93,7 @@ Un módulo fijado rechaza cualquier otra versión hasta que lo libere. Una versi
 sudo arkvory module list --root /opt/proanima-arkvory
 ```
 
-El comando vuelve a verificar cada paquete instalado, como harán los servicios antes de cargarlo: la firma, cada archivo y el archivo comprimido. Cada módulo muestra un estado:
+El comando vuelve a verificar cada paquete instalado, como hacen los servicios antes de cargarlo: la firma, cada archivo y el archivo comprimido. Cada módulo muestra un estado:
 
 | Estado               | Significado                                                                                                        |
 | -------------------- | ------------------------------------------------------------------------------------------------------------------ |
