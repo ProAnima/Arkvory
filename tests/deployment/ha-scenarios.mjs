@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { power, setFencing } from './ha-vms.mjs';
 import { activeNodes, dpkg, ROOT, until, volumeOn } from './ha-cluster.mjs';
 import { bigItem, writer } from './ha-load.mjs';
+import { failoverReport } from './ha-failover.mjs';
 
 /*
  * The failure scenarios of ADR 0072 ("Проверка"). Each starts and ends with a healthy cluster:
@@ -284,25 +285,22 @@ export const activeFailure = {
     const since = Date.now();
     await powerOff(lost);
     const seconds = await readRecovery(api, since);
-    (timings.activeLosses ??= []).push({ node: lost.name, readRecoverySeconds: seconds });
-    // Fencing, promotion and the services take well under a minute (ADR 0072, stand results).
-    assert.ok(seconds < 60, `reads returned after ${String(seconds)} s`);
-    // Where the failover spends its time: quorum, fencing, DRBD promotion, the services.
-    const taken = await active(cluster);
-    step(
-      (
-        await taken.shell.tryExec(
-          "journalctl --since '-8min' -o short-precise | grep -Ei 'fence-peer|crm-fence|promot|stonith|fenced|votequorum|qdevice|Quorate|Result of (start|promote)' | grep -v monitor | head -n 120; grep -n 'timeout' /usr/lib/drbd/crm-fence-peer.9.sh | head -n 20",
-        )
-      ).output,
-    );
+    // Where the failover spent its time, read before any check can end the scenario.
+    const { phases, excerpt } = await failoverReport(await active(cluster), since);
+    step(excerpt);
+    step(`reads back after ${String(seconds)} s; phases (s): ${JSON.stringify(phases)}`);
+    (timings.activeLosses ??= []).push({ node: lost.name, readRecoverySeconds: seconds, phases });
     await sending;
     if (cluster.profile === 'ha-2') await writes(api, 503);
     else await writes(api, 201);
     await rejoin(cluster, lost);
     await complete(cluster);
     await writes(api, 201);
-    return settle(api, [...(await load.stop()), big]);
+    const kept = await settle(api, [...(await load.stop()), big]);
+    // After the data check: a slow failover never hides a lost upload. Fencing, promotion and
+    // the services take well under a minute (ADR 0072, stand results).
+    assert.ok(seconds < 60, `reads returned after ${String(seconds)} s ${JSON.stringify(phases)}`);
+    return kept;
   },
 };
 

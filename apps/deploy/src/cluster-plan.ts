@@ -70,6 +70,23 @@ export function checkPlan(input: ClusterPlanInput): void {
     throw new Error('Invalid DRBD minor or port');
 }
 
+/**
+ * The fence-peer handler. Pacemaker promotes only after the fence is confirmed; the handler's
+ * default 90 s wait for the peer to look fenced would only delay the promotion (and outlast its
+ * timeout), so it waits 20 s at most.
+ *
+ * ha-2: the handler counts every DRBD node outside UP_TO_DATE_NODES as a peer to fence. The
+ * witness is diskless, so never up to date, and it is not a Pacemaker node: with no node state
+ * in the CIB the handler takes it for a node Pacemaker is about to fence and polls for the whole
+ * timeout on every promotion (20 s of each failover, ADR 0072). The witness holds no data and
+ * the constraint names only the up-to-date nodes, so the handler runs without the witness's
+ * node id; the data peers are still checked as before.
+ */
+function fencePeer(input: ClusterPlanInput): string {
+  const handler = '/usr/lib/drbd/crm-fence-peer.9.sh --timeout 20';
+  return input.witness ? `env -u DRBD_NODE_ID_${String(input.witness.id)} ${handler}` : handler;
+}
+
 /** The DRBD 9 resource: protocol C, fencing through Pacemaker, quorum by majority. */
 export function drbdResource(input: ClusterPlanInput): string {
   checkPlan(input);
@@ -96,9 +113,7 @@ export function drbdResource(input: ClusterPlanInput): string {
     '    c-max-rate 1G;',
     '  }',
     '  handlers {',
-    // Pacemaker promotes only after the fence is confirmed; the handler's default 90 s wait for
-    // the peer to look fenced would only delay the promotion (and outlast its timeout).
-    '    fence-peer "/usr/lib/drbd/crm-fence-peer.9.sh --timeout 20";',
+    `    fence-peer "${fencePeer(input)}";`,
     '    unfence-peer "/usr/lib/drbd/crm-unfence-peer.9.sh";',
     '  }',
     ...input.nodes.map((node) => host(node, input.disk)),
@@ -144,7 +159,11 @@ export function pacemakerCommands(input: ClusterPlanInput): string {
       (node) =>
         `${cib} stonith create fence-${node.name} ${input.fenceAgent} pcmk_host_list=${node.name} <agent parameters: address, login, password or key file, plug>`,
     ),
-    `${cib} resource create ${r}-drbd ocf:linbit:drbd drbd_resource=${r} op monitor interval=15s role=Promoted op monitor interval=29s role=Unpromoted promotable promoted-max=1 promoted-node-max=1 clone-max=${String(input.nodes.length)} clone-node-max=1 notify=true`,
+    // The agent scores a standby for promotion in its monitor and after each notification. A
+    // notification that lands while DRBD is still confirming the lost primary (the standby's
+    // disk is Consistent for about a second) removes the score, and only the next standby
+    // monitor restores it: its interval bounds that delay of the failover (29 s gave 79 s).
+    `${cib} resource create ${r}-drbd ocf:linbit:drbd drbd_resource=${r} op monitor interval=15s role=Promoted op monitor interval=5s role=Unpromoted promotable promoted-max=1 promoted-node-max=1 clone-max=${String(input.nodes.length)} clone-node-max=1 notify=true`,
     `${cib} resource create ${r}-fs ocf:heartbeat:Filesystem device=/dev/drbd${String(input.minor)} directory=${input.root} fstype=${input.filesystem} --group ${r}`,
     `${cib} resource create ${r}-units systemd:arkvory-units --group ${r}`,
     `${cib} resource create ${r}-database systemd:arkvory-database op monitor interval=15s --group ${r}`,
