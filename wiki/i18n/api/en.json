@@ -1200,7 +1200,7 @@
       "replication_degraded": "An HA cluster has fewer complete copies than a write needs, so the change was not acknowledged; repeat after Retry-After. Downloads still work.",
       "events_cursor_expired": "The event cursor is older than the oldest event the server keeps; read the current state, then continue from `oldest`.",
       "events_epoch_changed": "The server was restored from a backup, so its events started a new epoch; read the current state, then continue under the new epoch.",
-      "module_failed": "A module this node cannot do without has failed, so the node is not ready; `getSystemModules` and the log name it.",
+      "module_failed": "A module this node cannot do without has failed, so the node is not ready; `getSystemModules` names it.",
       "module_plan_mismatch": "This node plans other modules than the writer recorded; restart it with the installation’s `ARKVORY_MODULES_FILE`."
     }
   }

@@ -1200,7 +1200,7 @@
       "replication_degraded": "Ein HA-Cluster hat weniger vollständige Kopien, als ein Schreibvorgang braucht; die Änderung wurde nicht bestätigt. Nach Retry-After wiederholen. Downloads funktionieren weiter.",
       "events_cursor_expired": "Der Ereigniscursor ist älter als das älteste Ereignis, das der Server aufbewahrt; lesen Sie den aktuellen Stand und fahren Sie ab `oldest` fort.",
       "events_epoch_changed": "Der Server wurde aus einem Backup wiederhergestellt, seine Ereignisse haben eine neue Epoche begonnen; lesen Sie den aktuellen Stand und fahren Sie in der neuen Epoche fort.",
-      "module_failed": "Ein Modul, ohne das dieser Knoten nicht arbeitet, ist ausgefallen; der Knoten ist daher nicht bereit. `getSystemModules` und das Protokoll nennen es.",
+      "module_failed": "Ein Modul, ohne das dieser Knoten nicht arbeitet, ist ausgefallen; der Knoten ist daher nicht bereit. `getSystemModules` nennt es.",
       "module_plan_mismatch": "Dieser Knoten plant andere Module, als der Schreibprozess gespeichert hat; starten Sie ihn mit der `ARKVORY_MODULES_FILE` der Installation neu."
     }
   },

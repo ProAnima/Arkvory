@@ -1200,7 +1200,7 @@
       "replication_degraded": "HA 集群中完整副本的数量少于写入所需，因此更改未被确认；请在 Retry-After 之后重试。下载仍可正常进行。",
       "events_cursor_expired": "事件游标早于服务器保留的最早事件；请读取当前状态，然后从 `oldest` 继续。",
       "events_epoch_changed": "服务器已从备份恢复，其事件开始了新的纪元；请读取当前状态，然后在新纪元中继续。",
-      "module_failed": "此节点不可缺少的模块已失败，因此节点未就绪；`getSystemModules` 和日志会指出是哪个模块。",
+      "module_failed": "此节点不可缺少的模块已失败，因此节点未就绪；`getSystemModules` 会指出是哪个模块。",
       "module_plan_mismatch": "此节点规划的模块与写入进程记录的不同；请使用安装的 `ARKVORY_MODULES_FILE` 重启它。"
     }
   },

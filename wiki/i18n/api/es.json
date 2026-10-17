@@ -1200,7 +1200,7 @@
       "replication_degraded": "Un clúster HA tiene menos copias completas de las que necesita una escritura, por lo que el cambio no se confirmó; repítalo después de Retry-After. Las descargas siguen funcionando.",
       "events_cursor_expired": "El cursor de eventos es anterior al evento más antiguo que conserva el servidor; lea el estado actual y continúe desde `oldest`.",
       "events_epoch_changed": "El servidor se restauró desde una copia de seguridad y sus eventos empezaron una nueva época; lea el estado actual y continúe en la nueva época.",
-      "module_failed": "Falló un módulo imprescindible para este nodo, así que el nodo no está listo; `getSystemModules` y el registro lo nombran.",
+      "module_failed": "Falló un módulo imprescindible para este nodo, así que el nodo no está listo; `getSystemModules` lo nombra.",
       "module_plan_mismatch": "Este nodo planifica otros módulos que los que registró el proceso de escritura; reinícielo con el `ARKVORY_MODULES_FILE` de la instalación."
     }
   },

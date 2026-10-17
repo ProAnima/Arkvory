@@ -1200,7 +1200,7 @@
       "replication_degraded": "Un cluster HA a moins de copies complètes qu'il n'en faut pour une écriture : la modification n'a pas été confirmée ; réessayez après Retry-After. Les téléchargements fonctionnent toujours.",
       "events_cursor_expired": "Le curseur d’événements est plus ancien que le plus ancien événement conservé par le serveur ; lisez l’état actuel, puis continuez depuis `oldest`.",
       "events_epoch_changed": "Le serveur a été restauré depuis une sauvegarde et ses événements ont commencé une nouvelle époque ; lisez l’état actuel, puis continuez dans la nouvelle époque.",
-      "module_failed": "Un module indispensable à ce nœud a échoué, le nœud n’est donc pas prêt ; `getSystemModules` et le journal le nomment.",
+      "module_failed": "Un module indispensable à ce nœud a échoué, le nœud n’est donc pas prêt ; `getSystemModules` le nomme.",
       "module_plan_mismatch": "Ce nœud prévoit d’autres modules que ceux enregistrés par le processus d’écriture ; redémarrez-le avec le `ARKVORY_MODULES_FILE` de l’installation."
     }
   },
