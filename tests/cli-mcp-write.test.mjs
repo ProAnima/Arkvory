@@ -270,14 +270,39 @@ test('nothing builds on bytes that were not verified: no partial publish', async
   assert.deepEqual([placed.path, placed.revision, placed.created], ['apps/app.upack', 1, true]);
 });
 
-test('a file that contains the key is never uploaded', async (t) => {
+test('a file that contains the key anywhere is never uploaded, at any size', async (t) => {
   const { root, context } = await workspace(t);
-  await writeFile(join(root, 'notes.txt'), `token=${KEY}\n`);
+  const MiB = 1024 * 1024;
+  const placed = (size, at) => {
+    const bytes = Buffer.alloc(size, 0x61);
+    if (at !== undefined) bytes.write(KEY, at, 'latin1');
+    return bytes;
+  };
+  const files = {
+    'notes.txt': Buffer.from(`token=${KEY}
+`),
+    // Past the first 64 KiB, inside the second read, and split across the seam of two reads.
+    'padded.bin': placed(3 * MiB, 2 * MiB + 77),
+    'seam.bin': placed(2 * MiB, MiB - 10),
+    'tail.bin': placed(MiB + 5, MiB + 5 - KEY.length),
+  };
+  for (const [name, bytes] of Object.entries(files)) {
+    await writeFile(join(root, name), bytes);
+    const fake = uploads();
+    await assert.rejects(
+      uploadFromRoot(context(fake.client), { file: name }, call()),
+      { code: 'source_contains_credential' },
+      name,
+    );
+    assert.deepEqual(fake.calls, [], `${name}: nothing is sent`);
+  }
+  // A near miss at the seam is an ordinary file.
+  const near = placed(2 * MiB, MiB - 10);
+  near[MiB + 5] = 0x21;
+  await writeFile(join(root, 'near.bin'), near);
   const fake = uploads();
-  await assert.rejects(uploadFromRoot(context(fake.client), { file: 'notes.txt' }, call()), {
-    code: 'source_contains_credential',
-  });
-  assert.deepEqual(fake.calls, []);
+  const done = await uploadFromRoot(context(fake.client), { file: 'near.bin' }, call());
+  assert.equal(done.sha256, sha256(near));
 });
 
 test('a checkpoint of an expired or cancelled upload is replaced once, never reused for good', async (t) => {

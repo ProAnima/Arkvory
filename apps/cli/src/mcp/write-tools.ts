@@ -5,11 +5,11 @@ import type { McpServer } from '@modelcontextprotocol/server';
 import { CliError } from '../errors.js';
 import { putToPath } from '../path-transfer.js';
 import { publishPackage } from '../publish-package.js';
-import { digest, upload } from '../upload.js';
+import { upload } from '../upload.js';
 import { startingOver } from './checkpoints.js';
 import type { KeyActions, ToolContext, WriteOptions } from './context.js';
 import { objectResult } from './output.js';
-import { openSource, refuseSecrets } from './source.js';
+import { openSource, searchedDigest } from './source.js';
 import type { LocalSource } from './source.js';
 import { defineTool, repositoryInput } from './tool.js';
 import type { ToolCall } from './tool.js';
@@ -71,8 +71,7 @@ async function prepared(
   input: SourceInput,
   call: ToolCall,
 ) {
-  await refuseSecrets(source, ctx.secrets);
-  const sha256 = await digest(source.blob, call.signal);
+  const sha256 = await searchedDigest(source.blob, ctx.secrets, call.signal);
   const values = { labels: input.labels ?? [], metadata: input.metadata ?? {} };
   const key = createHash('sha256')
     .update(

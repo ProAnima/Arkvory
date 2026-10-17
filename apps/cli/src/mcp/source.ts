@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { constants } from 'node:fs';
 import { open, realpath, stat } from 'node:fs/promises';
 import type { BigIntStats } from 'node:fs';
@@ -8,8 +9,6 @@ import { isMissing } from '../local-files.js';
 import { below, windowsName } from './paths.js';
 
 const CHUNK = 1024 * 1024;
-// A key file is small (`connection()` reads at most 16 KiB); larger files are not searched.
-const SEARCHED_BYTES = 64 * 1024;
 
 /** Blob positions as the File API takes them: negative from the end, clamped to the size. */
 function position(value: number | undefined, size: number, fallback: number): number {
@@ -162,14 +161,42 @@ export async function openSource(root: string, requested: string): Promise<Local
 }
 
 /**
- * Refuses a small file that contains the key, such as the key file itself below the root: an
- * instruction planted in data must not be able to publish the credential. Larger files are not
- * searched; the dedicated, narrowly bound key (ADR 0017) limits what such a leak could reach.
+ * SHA-256 of the source in one pass through its handle, refusing a file that contains the key
+ * anywhere (`source_contains_credential`), such as the key file itself or a copy padded to any
+ * size: an instruction planted in data must not be able to publish the credential. Every chunk
+ * and every seam between two chunks is searched, so the cost is one `indexOf` per MiB. The
+ * server verifies the final SHA-256, so what it stores is exactly what was searched here. The
+ * key is only compared, never logged or returned. An encoded or compressed copy is not found;
+ * the dedicated, narrowly bound key (ADR 0017) limits what such a leak could reach.
  */
-export async function refuseSecrets(source: LocalSource, secrets: readonly string[]) {
-  if (source.blob.size > SEARCHED_BYTES) return;
-  const content = Buffer.from(await source.blob.bytes()).toString('latin1');
-  for (const secret of secrets)
-    if (secret && content.includes(Buffer.from(secret, 'utf8').toString('latin1')))
-      throw new CliError('source_contains_credential');
+export async function searchedDigest(
+  blob: Blob,
+  secrets: readonly string[],
+  signal: AbortSignal,
+): Promise<string> {
+  const needles = secrets.filter((secret) => secret.length > 0).map((s) => Buffer.from(s, 'utf8'));
+  const overlap = Math.max(0, ...needles.map((needle) => needle.length - 1));
+  const hash = createHash('sha256');
+  const reader = blob.stream().getReader();
+  let tail = Buffer.alloc(0);
+  try {
+    for (;;) {
+      signal.throwIfAborted();
+      const read = await reader.read();
+      if (read.done) return hash.digest('hex');
+      const value: unknown = read.value;
+      if (!(value instanceof Uint8Array)) throw new CliError('invalid_file_stream');
+      hash.update(value);
+      const chunk = Buffer.from(value.buffer, value.byteOffset, value.byteLength);
+      // A key split between two reads lies in the seam: the end of one and the start of the next.
+      const seam = Buffer.concat([tail, chunk.subarray(0, overlap)]);
+      if (needles.some((needle) => chunk.includes(needle) || seam.includes(needle)))
+        throw new CliError('source_contains_credential');
+      const joined = chunk.length >= overlap ? chunk : Buffer.concat([tail, chunk]);
+      tail = Buffer.from(joined.subarray(joined.length - Math.min(overlap, joined.length)));
+    }
+  } finally {
+    await reader.cancel();
+    reader.releaseLock();
+  }
 }
