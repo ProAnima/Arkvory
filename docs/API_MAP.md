@@ -1,6 +1,6 @@
 # Карта API Arkvory
 
-Модули установки ([ADR 0079](adr/0079-extension-modules.md), [ADR 0078](adr/0078-open-core-modules-and-licenses.md)): `GET/HEAD /api/v1/system/modules` — версия API расширений, отпечаток плана и каждый модуль (версия, точка расширения, источник, `core`, `enabled`, роли, состояние в ответившем процессе). Surface discovery, глобальный administrator, без настроек и путей. SDK: `client.system.modules()`.
+Модули установки ([ADR 0079](adr/0079-extension-modules.md), [ADR 0078](adr/0078-open-core-modules-and-licenses.md)): `GET/HEAD /api/v1/system/modules` — версия API расширений, отпечаток плана и каждый модуль (версия, точка расширения, источник, `core`, `enabled`, роли, состояние в ответившем процессе). Surface discovery, глобальный administrator, без настроек и путей. SDK: `client.system.modules()`. `GET /api/v1/capabilities` дополнительно возвращает `modules: [{id, kind}]` — включённые модули ответившего шлюза (выключенный в `ARKVORY_MODULES_FILE` протокол отсутствует, его маршруты отвечают 404 `not_found`).
 
 Управление установленным кодом: `GET/HEAD /api/v1/system/updates` и `POST /api/v1/system/updates/requests`. Surface administration, глобальный administrator, команды check/configure/apply с revision и UUID. SDK: `client.updates`. [Контракт, права и восстановление](UPDATES.md).
 
