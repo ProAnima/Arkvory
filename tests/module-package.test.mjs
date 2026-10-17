@@ -409,3 +409,39 @@ test('the signing tool packs and signs packages and revocation lists the core ac
   await assert.rejects(packModule(source, output, module), { code: 'EEXIST' });
   await assert.rejects(signRevocations(payload, list, module), { code: 'EEXIST' });
 });
+
+test('random corruption of a package is refused with a code or changes nothing signed', async (t) => {
+  const { host, module } = testHost();
+  const directory = await temporaryDirectory(t);
+  const tar = gunzipSync(tarGzip(packageEntries({ signer: module })));
+  const reference = await inspectModulePackage(
+    await writePackage(directory, gzipSync(tar), 'ok.tgz'),
+    host,
+  );
+  // A fixed seed keeps every run reproducible (xorshift32).
+  let seed = 0x2f6b9a1d;
+  const next = () => {
+    seed ^= seed << 13;
+    seed ^= seed >>> 17;
+    seed ^= seed << 5;
+    return (seed >>> 0) / 0x100000000;
+  };
+  const outcomes = new Map();
+  for (let round = 0; round < 300; round++) {
+    const bytes = Buffer.from(tar);
+    for (let flips = 1 + Math.floor(next() * 4); flips > 0; flips--)
+      bytes[Math.floor(next() * bytes.length)] = Math.floor(next() * 256);
+    const file = await writePackage(directory, gzipSync(bytes), `fuzz-${round}.tgz`);
+    try {
+      const inspected = await inspectModulePackage(file, host);
+      // Only bytes outside what is signed and hashed may change: padding, mode, owner, time.
+      assert.deepEqual(inspected.manifest, reference.manifest);
+      assert.deepEqual(inspected.signature, reference.signature);
+      outcomes.set('accepted', (outcomes.get('accepted') ?? 0) + 1);
+    } catch (error) {
+      assert.equal(error?.name, 'SigningError', String(error));
+      outcomes.set(error.code, (outcomes.get(error.code) ?? 0) + 1);
+    }
+  }
+  assert.ok(outcomes.size > 1, JSON.stringify([...outcomes]));
+});

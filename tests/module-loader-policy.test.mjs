@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import { COMPUTED_IMPORTS, analyzeSource } from '../scripts/policy/source.mjs';
 
 const problems = (file, text) =>
@@ -22,4 +23,19 @@ test('only the listed loaders may import code by a computed specifier (ADR 0078,
   // Tests and scripts load fixtures and tools; the rule covers the product.
   assert.equal(problems('tests/sample.test.mjs', 'await import(path);').length, 0);
   assert.equal(problems('scripts/tool.mjs', 'await import(path);').length, 0);
+});
+
+test('packages/signing keeps its allowlist and only the host tool depends on it', async () => {
+  const { units } = JSON.parse(await readFile('config/architecture.json', 'utf8'));
+  const unit = (path) => units.find((candidate) => candidate.path === path);
+  assert.deepEqual(unit('packages/signing').allowed, ['packages/extension-api']);
+  // A new consumer (the loader in infrastructure, X4; arkvoryctl, X5) is added with review.
+  assert.deepEqual(
+    units.filter((candidate) => candidate.allowed.includes('packages/signing')).map((u) => u.path),
+    ['apps/deploy'],
+  );
+  assert.ok(
+    units.findIndex((u) => u.path === 'packages/signing') >
+      units.findIndex((u) => u.path === 'packages/extension-api'),
+  );
 });
