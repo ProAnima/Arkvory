@@ -1,4 +1,4 @@
-import { readEventPage, readEventTypes } from '@proanima/arkvory-contracts';
+import { eventPageReachedHead, readEventPage, readEventTypes } from '@proanima/arkvory-contracts';
 import type {
   CloudEventResponse,
   EventPageResponse,
@@ -99,7 +99,8 @@ export class EventsApi {
       }
       if (page.next !== saved) await save?.(page.next);
       after = page.next;
-      if (page.items.length < limit) await delay(pollMs, signal);
+      // A short page below head only ended its bounded scan: read on without the pause.
+      if (eventPageReachedHead(page)) await delay(pollMs, signal);
     }
   }
 }

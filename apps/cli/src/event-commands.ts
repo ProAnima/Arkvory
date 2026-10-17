@@ -1,6 +1,6 @@
 import { once } from 'node:events';
 import type { CloudEventResponse } from '@proanima/arkvory-contracts';
-import { record } from '@proanima/arkvory-contracts';
+import { eventPageReachedHead, record } from '@proanima/arkvory-contracts';
 import { validateCommand, word, numericOption } from './arguments.js';
 import type { Arguments } from './arguments.js';
 import type { connection } from './profiles.js';
@@ -75,6 +75,7 @@ export async function eventsCommand(
     }
     if (page.next !== page.items.at(-1)?.id) await save(page.next);
     after = page.next;
-    if (page.items.length < limit) return undefined;
+    // Not the length of the page: a short one may only end the server's bounded scan.
+    if (eventPageReachedHead(page)) return undefined;
   }
 }

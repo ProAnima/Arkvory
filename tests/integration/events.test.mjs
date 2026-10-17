@@ -422,6 +422,42 @@ test('arkvoryctl events tail prints JSON lines and goes on from its cursor file'
   assert.equal(JSON.parse(failed.stderr).error.reason, 'events_cursor_expired');
 });
 
+test('events tail reads past a bounded scan without visible events to the newest one', async (t) => {
+  const f = await setup(t, { keys });
+  const server = (await f.listen()) + '/';
+  const log = new PostgresEventLog(f.catalog.pool);
+  // More hidden events than one read scans (5000), then one the reader may see.
+  await f.catalog.pool.query(
+    `INSERT INTO arkvory_events(type,schema_version,scope,repository,partition_key,subject,data)
+     SELECT 'artifact.published',1,'repository','other','repository:other',gen_random_uuid()::text,
+       jsonb_build_object('repository','other','artifactId',gen_random_uuid())
+     FROM generate_series(1,5001)`,
+  );
+  await publish(f, 'releases', 'beyond');
+  assert.equal(await log.sequence(6000), 5002);
+  const first = await page(f, {}, readOnly);
+  assert.deepEqual(first.items, []);
+  assert.equal(first.next, `${first.epoch}:5000`, 'one read stops at its scan bound');
+  const env = { ...process.env, ARKVORY_CLI_HOME: join(f.directory, 'cli') };
+  delete env['ARKVORY_TOKEN_FILE'];
+  const { stdout } = await promisify(execFile)(
+    process.execPath,
+    [resolve('apps/cli/dist/main.js'), 'events', 'tail'],
+    {
+      env: { ...env, ARKVORY_BASE_URL: server, ARKVORY_TOKEN: reader },
+      windowsHide: true,
+      timeout: 30000,
+    },
+  );
+  assert.deepEqual(
+    stdout
+      .split('\n')
+      .filter(Boolean)
+      .map((line) => JSON.parse(line).data.name),
+    ['beyond.bin'],
+  );
+});
+
 test('positions, pages and retention follow numeric order past one digit', async (t) => {
   const f = await setup(t, { keys });
   const log = new PostgresEventLog(f.catalog.pool);

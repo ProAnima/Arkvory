@@ -118,6 +118,16 @@ export function readEventPage(value: unknown): EventPageResponse {
   };
 }
 
+/**
+ * True when the page reached the newest event of its snapshot. A page shorter than `limit` is
+ * not the end: one read scans a bounded number of rows, and `next` may stop below `head` after
+ * events the caller may not see or did not select.
+ */
+export function eventPageReachedHead(page: EventPageResponse): boolean {
+  const position = page.next.slice(page.next.lastIndexOf(':') + 1);
+  return BigInt(position) >= BigInt(page.head);
+}
+
 export function readEventTypes(value: unknown): EventTypeListResponse {
   return {
     items: items(record(value)['items']).map((entry) => {

@@ -19,6 +19,7 @@ import {
 import {
   cloudEvent,
   eventCatalog,
+  eventPageReachedHead,
   openApiDocument,
   readEventPage,
   readNativeError,
@@ -413,3 +414,35 @@ test('SDK follow saves the cursor after each event and past invisible ones; 410 
   );
   assert.equal(new URLSearchParams(requests[0]).get('types'), 'artifact.*');
 });
+
+test(
+  'SDK follow reads on without a pause until next reaches head',
+  { timeout: 10000 },
+  async (t) => {
+    const { requests, client } = scripted(t, [
+      // Only hidden events in the bounded scan: a short page that is not the end.
+      { body: { epoch, items: [], next: `${epoch}:5000`, head: '9000', oldest: '0' } },
+      {
+        body: {
+          epoch,
+          items: [envelopeAt(9000)],
+          next: `${epoch}:9000`,
+          head: '9000',
+          oldest: '0',
+        },
+      },
+    ]);
+    const seen = [];
+    for await (const item of client.events.follow({ limit: 100, pollMs: 60000 })) {
+      seen.push(item.arkvoryposition);
+      break;
+    }
+    assert.deepEqual(seen, ['9000']);
+    assert.equal(requests.length, 2);
+    const reached = (next, head) =>
+      eventPageReachedHead({ epoch, items: [], next: `${epoch}:${next}`, head, oldest: '0' });
+    assert.equal(reached('5000', '9000'), false);
+    assert.equal(reached('9000', '9000'), true);
+    assert.equal(reached('9223372036854775807', '9223372036854775807'), true);
+  },
+);
