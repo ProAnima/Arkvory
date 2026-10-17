@@ -112,6 +112,10 @@ const local: Readonly<Record<string, Text>> = {
     'Pass up to 100 repository names separated by commas, such as --write-repositories builds,staging.',
     'Укажите до 100 имён репозиториев через запятую, например --write-repositories builds,staging.',
   ],
+  integrity_mismatch: [
+    'The server receipt does not name the bytes that were read; nothing was registered. Repeat the command, then report it if it persists.',
+    'Квитанция сервера не совпадает с прочитанными байтами; ничего не зарегистрировано. Повторите команду и сообщите о сбое, если он повторится.',
+  ],
   source_changed: [
     'The file changed while it was being read. Wait until it is complete and repeat the call.',
     'Файл изменился во время чтения. Дождитесь его готовности и повторите вызов.',

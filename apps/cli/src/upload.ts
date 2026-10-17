@@ -2,7 +2,6 @@ import { openAsBlob } from 'node:fs';
 import { basename, resolve } from 'node:path';
 import { createHash, randomUUID } from 'node:crypto';
 import { record, text, readUpload, readAnnotations } from '@proanima/arkvory-contracts';
-import { ArkvoryIntegrityError } from '@proanima/arkvory-sdk';
 import type { ArkvoryClient } from '@proanima/arkvory-sdk';
 import { exists, exclusive, readJson, saveJson } from './local-files.js';
 import { CliError } from './errors.js';
@@ -109,13 +108,14 @@ export async function upload(input: UploadInput) {
         input.progress(bytes, blob.size);
       },
     });
-    // The receipt must name exactly the bytes that were read; nothing builds on any other.
+    // The receipt must name exactly the bytes that were read; nothing builds on any other. The
+    // contract's code for a size or SHA-256 mismatch, not the download's `integrity_failed`.
     if (
       result.status !== 'available' ||
       result.descriptor.sha256 !== sha256 ||
       result.descriptor.size !== descriptor.size
     )
-      throw new ArkvoryIntegrityError();
+      throw new CliError('integrity_mismatch', 5);
     // Retain the receipt so retrying the same command after a lost success is idempotent.
     return { ...result, checkpoint: state };
   });
