@@ -10,6 +10,8 @@ export const EVENTS_MIGRATION = 42;
  * `pruned_through` the last position retention removed: positions are dense between the two.
  * The epoch is new for every database this migration creates, a restored one included, because
  * both tables stay out of backups: consumers learn about a restore from the changed epoch.
+ * Statements tolerate existing objects, like the other late migrations, so a partly migrated
+ * database completes the step; an existing state row keeps its epoch.
  */
 export async function migrateEvents(client: PoolClient): Promise<void> {
   if (
@@ -21,7 +23,7 @@ export async function migrateEvents(client: PoolClient): Promise<void> {
   )
     return;
   await client.query(`
-    CREATE TABLE arkvory_event_state(
+    CREATE TABLE IF NOT EXISTS arkvory_event_state(
       singleton boolean PRIMARY KEY DEFAULT true CHECK (singleton),
       epoch uuid NOT NULL,
       head bigint NOT NULL DEFAULT 0 CHECK (head >= 0),
@@ -30,9 +32,11 @@ export async function migrateEvents(client: PoolClient): Promise<void> {
       sequenced_at timestamptz,
       pruned_at timestamptz
     )`);
-  await client.query('INSERT INTO arkvory_event_state(epoch) VALUES($1)', [randomUUID()]);
+  await client.query('INSERT INTO arkvory_event_state(epoch) VALUES($1) ON CONFLICT DO NOTHING', [
+    randomUUID(),
+  ]);
   await client.query(`
-    CREATE TABLE arkvory_events(
+    CREATE TABLE IF NOT EXISTS arkvory_events(
       id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
       position bigint UNIQUE CHECK (position > 0),
       type text NOT NULL,
@@ -48,7 +52,7 @@ export async function migrateEvents(client: PoolClient): Promise<void> {
     )`);
   // The sequencer's backlog: small, read in id order.
   await client.query(
-    'CREATE INDEX arkvory_events_unsequenced ON arkvory_events(id) WHERE position IS NULL',
+    'CREATE INDEX IF NOT EXISTS arkvory_events_unsequenced ON arkvory_events(id) WHERE position IS NULL',
   );
   await client.query('INSERT INTO arkvory_migrations(version) VALUES($1)', [EVENTS_MIGRATION]);
 }

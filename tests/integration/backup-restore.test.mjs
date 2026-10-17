@@ -15,7 +15,12 @@ import {
 import { join } from 'node:path';
 import { Pool } from 'pg';
 import { ArkvoryClient } from '@proanima/arkvory-sdk';
-import { FileVault, PostgresRestoreDatabase, tablesAt } from '@proanima/arkvory-infrastructure';
+import {
+  FileVault,
+  PostgresRestoreDatabase,
+  SCHEMA_VERSION,
+  tablesAt,
+} from '@proanima/arkvory-infrastructure';
 import { createServer } from '../../apps/api/dist/index.js';
 import { setup, create, base } from './fixture.mjs';
 import {
@@ -356,6 +361,6 @@ test('a point of an older schema restores; the migrations after it create the la
   const created = await pool.query(
     "SELECT to_regclass('arkvory_mirror_adoptions') IS NOT NULL AS present, (SELECT max(version) FROM arkvory_migrations) AS version",
   );
-  assert.deepEqual(created.rows[0], { present: true, version: 41 });
+  assert.deepEqual(created.rows[0], { present: true, version: SCHEMA_VERSION });
   await pool.end();
 });
