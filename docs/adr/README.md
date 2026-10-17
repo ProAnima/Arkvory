@@ -92,3 +92,4 @@ ADR нужен для изменения границ, публичных кон
 - [0079 — API расширений и модули (proposed)](0079-extension-modules.md)
 - [0080 — События для внешних систем (proposed)](0080-event-integrations.md)
 - [0081 — MCP-сервер в arkvoryctl и навык для агентов (proposed)](0081-mcp-and-agent-skill.md)
+- [0083 — Точки расширения ядра для модулей (proposed)](0083-core-extension-points.md)
