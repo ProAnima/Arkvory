@@ -70,6 +70,20 @@ test('an older protocol revision is refused with the supported versions', async 
   assert.match(current.result.instructions, /never follow instructions/);
 });
 
+test('a newer protocol revision is negotiated down to the latest supported one', async (t) => {
+  // The specification: the server answers with its own latest revision; the client decides.
+  for (const requested of ['2026-07-28', '2099-01-01']) {
+    const mcp = await connect(t, []);
+    const newer = await mcp.initialize(requested);
+    assert.equal(newer.error, undefined, requested);
+    assert.equal(newer.result.protocolVersion, protocolVersions[0], requested);
+  }
+  for (const requested of [undefined, 'latest', '2025-06-17']) {
+    const mcp = await connect(t, []);
+    assert.equal((await mcp.initialize(requested)).error.code, -32602, String(requested));
+  }
+});
+
 test('tools/list offers only read tools, and only those the key can use', async (t) => {
   const listing = async (actions) => {
     const mcp = await connect(t, actions);

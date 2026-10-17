@@ -43,6 +43,16 @@ function initializeVersion(message: JSONRPCMessage): string | undefined | null {
 }
 
 /**
+ * Whether the server may negotiate with this requested revision. A newer one is passed on: the
+ * specification has the server answer with its own latest revision and leaves the decision to
+ * the client. Only a revision older than the oldest supported one (or none) is refused.
+ */
+function negotiable(requested: string | undefined): boolean {
+  const oldest = protocolVersions.at(-1) ?? '';
+  return requested !== undefined && /^\d{4}-\d{2}-\d{2}$/.test(requested) && requested >= oldest;
+}
+
+/**
  * Wraps the stdio transport and answers an `initialize` with an older protocol revision with
  * the specification's error (-32602, supported versions in `data`) before the server sees it.
  */
@@ -55,7 +65,7 @@ export class VersionGate implements Transport {
     inner.onerror = (error) => this.onerror?.(error);
     inner.onmessage = (message) => {
       const requested = initializeVersion(message);
-      if (requested === null || (requested && protocolVersions.includes(requested))) {
+      if (requested === null || negotiable(requested)) {
         this.onmessage?.(message);
         return;
       }
