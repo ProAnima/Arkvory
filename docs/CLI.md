@@ -81,7 +81,7 @@ node ./arkvoryctl.mjs packages publish ./build.upack --state ./job-state/upload.
 | 3         | Нет ключа, 401/403 (`unauthorized`, `forbidden`) / Missing credential or access denied                                        |
 | 4         | HTTP, сеть, request timeout, перегрузка (`busy`, `rate_limited`, `unavailable`, `internal`, 404) / HTTP, network or busy      |
 | 5         | Целостность: SHA-256 скачивания или `integrity_mismatch` (422) / Integrity failure                                            |
-| 6         | Конфликт ревизии, состояния, блокировки, существующий файл (`conflict`, 409) / Conflict                                       |
+| 6         | Конфликт ревизии, состояния, блокировки, существующий файл (`conflict`, 409); курсор событий истёк (`gone`, 410) / Conflict   |
 | 7         | Локальный I/O или недопустимый протокол / Local I/O or protocol error                                                         |
 | 8         | Лимит ёмкости сервера: квота, диск, учётные записи, ключи, очередь (`capacity_exceeded`, 507) / Server capacity limit reached |
 | 9         | `backup status`: активно критическое предупреждение резервирования / A critical backup warning is active                      |
@@ -121,6 +121,12 @@ CI should inject `ARKVORY_BASE_URL` and `ARKVORY_TOKEN_FILE` (or `ARKVORY_TOKEN`
 Без `--json` вывод — строки для человека на языке `--lang` (байты в двоичных единицах, время ISO UTC); с `--json` stdout содержит ровно объект ответа API (`BackupStatus`, `{items, next}`, задание или точку). Пример мониторинга: `arkvoryctl backup status --json || alert` — exit 9 означает активное critical-предупреждение (`agent_offline`, `backup_stale`, `vault_unavailable`, `verify_failed`), остальные коды — как в таблице выше.
 
 `backup status|run|jobs|points|verify ID|pin ID [--off]` reads and queues instance backups through `client.backup`; the server's backup agent executes them. Text output is human-readable, `--json` prints the API object. `backup status` exits 9 while a critical warning is active.
+
+## События / Events
+
+`arkvoryctl events tail [--after ID] [--types T,PREFIX.*] [--repository R] [--limit N] [--follow] [--cursor-file PATH]` читает ленту событий установки ([ADR 0080](adr/0080-event-integrations.md)): по CloudEvent в строке stdout (JSON Lines), без итогового объекта. Начало — `--after`, иначе курсор из `--cursor-file`, иначе самое старое хранимое событие. Курсор (`{"cursor": "<epoch>:<position>"}`) пишется атомарно после каждого события и в конце страницы, поэтому повтор команды продолжает без пропусков; событие может повториться, если процесс прервали между выводом и записью курсора. Без `--follow` команда завершается, дойдя до новейшего события; с `--follow` ждёт новых до Ctrl+C (exit 130). `--repository` здесь фильтр, а не репозиторий профиля. Курсор старше `oldest` (410) или прежней эпохи после восстановления сервера (409) — exit 6, `reason` в stderr.
+
+`events tail` prints the installation's events as JSON lines and keeps the cursor in `--cursor-file`; `--follow` waits for new ones until Ctrl+C. An expired cursor or a restored server exits with 6.
 
 ## Продвижение и выбор версии / Promotion and version selection
 
