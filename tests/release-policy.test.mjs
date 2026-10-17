@@ -41,13 +41,32 @@ test('release workflow rejects privilege escalation, unchecked bytes and accepta
       ] = 123;
     },
     (w) => {
-      w.jobs.build.steps.find((s) => s.run === 'npm run gate -- release').if = 'false';
+      w.jobs.build.steps.find((s) => s.run === 'npm run build').if = 'false';
+    },
+    (w) => {
+      delete w.jobs.admission;
+    },
+    (w) => {
+      delete w.jobs.build.needs;
+    },
+    (w) => {
+      w.jobs.admission.steps.find((s) => s.run === 'node scripts/release-admission.mjs').if =
+        'false';
+    },
+    (w) => {
+      w.jobs.admission.permissions = { contents: 'write', actions: 'read' };
+    },
+    (w) => {
+      w.jobs.admission.steps.unshift({ run: 'npm ci' });
+    },
+    (w) => {
+      w.jobs.publish.needs = ['build', 'acceptance', 'native'];
     },
     (w) => {
       w.jobs.publish.if = 'always()';
     },
     (w) => {
-      w.jobs.build.steps.find((s) => s.run === 'npm run gate -- release').if = false;
+      w.jobs.admission.if = 'always()';
     },
     (w) => {
       w.jobs.unchecked = { permissions: { contents: 'write' }, steps: [] };
