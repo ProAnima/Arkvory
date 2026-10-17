@@ -111,6 +111,8 @@ export {
   rotateAgentKey,
 } from './vault-setup.js';
 export { PostgresWebhookFeed, PostgresWebhookState } from './webhook-state.js';
+export { PostgresEventLog } from './event-log.js';
+export type { EventLogSnapshot, EventRetentionPolicy } from './event-log.js';
 export { readWebhookSettings, parseWebhookSettings } from './webhook-config.js';
 export { parseAllowedNetworks, readWebhookCertificates } from './webhook-config.js';
 export type { WebhookSettings } from './webhook-config.js';

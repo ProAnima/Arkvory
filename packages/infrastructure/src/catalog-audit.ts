@@ -1,5 +1,6 @@
 import type { Pool, PoolClient } from 'pg';
 import type { CatalogAuditEntry, CatalogFeedPage } from '@proanima/arkvory-application';
+import { appendCatalogEvents } from './event-outbox.js';
 
 /**
  * Catalog mutation journal after a decimal sequence cursor; at most 100 entries per call.
@@ -76,6 +77,8 @@ export interface CatalogAuditRow {
 /**
  * Caller owns the transaction: audit rows commit or roll back with the change they describe.
  * Rows receive sequence numbers in array order. requestId is the stored correlation or NULL.
+ * The only writer of the journal, so it also writes the events of the rows (ADR 0080): journal
+ * and event outbox never disagree about what committed.
  */
 export async function appendCatalogAudit(
   client: PoolClient,
@@ -96,6 +99,15 @@ export async function appendCatalogAudit(
       rows.map((row) => row.detail ?? null),
       requestId,
     ],
+  );
+  await appendCatalogEvents(
+    client,
+    rows.map((row) => ({
+      repository: row.repository,
+      artifactId: row.artifactId,
+      action: row.action,
+      detail: row.detail ?? null,
+    })),
   );
 }
 

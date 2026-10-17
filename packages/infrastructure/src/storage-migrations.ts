@@ -21,8 +21,9 @@ import { migrateUploadBytes } from './upload-bytes.js';
 import { migrateDownloadTickets } from './download-tickets.js';
 import { migrateFleet } from './fleet-schema.js';
 import { migrateDownloadSettings } from './download-settings-store.js';
+import { migrateEvents } from './event-schema.js';
 
-/** Steps of versions 15-41 (36 is an index step) in their historical order; each records its own version. */
+/** Steps of versions 15-42 (36 is an index step) in their historical order; each records its own version. */
 const storageSteps: readonly (readonly [number, (client: PoolClient) => Promise<void>])[] = [
   [15, migrateStoragePolicy],
   [16, migrateCleanup],
@@ -49,6 +50,7 @@ const storageSteps: readonly (readonly [number, (client: PoolClient) => Promise<
   [39, migrateFleet],
   [40, migrateDownloadSettings],
   [41, migrateMirrorConflicts],
+  [42, migrateEvents],
 ];
 
 /** upTo bounds the applied versions (restore of an older backup); the order never changes. */

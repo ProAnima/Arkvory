@@ -29,6 +29,7 @@ export * from './backup-requests.js';
 export * from './oci.js';
 export * from './lfs.js';
 export * from './npm.js';
+export * from './events.js';
 export * from './download-policy.js';
 export * from './download-overrides.js';
 export * from './fleet-health.js';
