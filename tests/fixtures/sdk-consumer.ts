@@ -84,6 +84,8 @@ export type UnchangedKeys = Assert<
       | 'fleet'
       | 'downloadSettings'
       | 'siteChanges'
+      // ADR 0081 (A1): search across every repository the credential may list.
+      | 'searchAll'
       // ADR 0078/0079: the installation's modules as the additive namespace `system`.
       | 'system'
     >,
@@ -98,6 +100,13 @@ export type ObserverIsOptional = Assert<
   Equal<
     NonNullable<NonNullable<ConstructorParameters<typeof ArkvoryClient>[2]>['onRequest']>,
     (event: RequestEvent) => void
+  >
+>;
+// ADR 0081 adds the optional ClientOptions.clientName (the Arkvory-Client header).
+export type ClientNameIsOptional = Assert<
+  Equal<
+    NonNullable<ConstructorParameters<typeof ArkvoryClient>[2]>['clientName'],
+    string | undefined
   >
 >;
 

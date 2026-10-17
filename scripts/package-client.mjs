@@ -1,12 +1,14 @@
 import { mkdir, copyFile, writeFile, readFile, chmod } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { execFileSync } from 'node:child_process';
+import { mcpLicenseText } from './client-licenses.mjs';
 
 async function clientFiles(source, destination, node, license) {
   await mkdir(destination, { recursive: true });
   await copyFile(join(source, 'arkvoryctl.mjs'), join(destination, 'arkvoryctl.mjs'));
   await copyFile(join(source, 'arkvory-remote.mjs'), join(destination, 'arkvory-remote.mjs'));
   await copyFile('node_modules/ssh2/LICENSE', join(destination, 'SSH2-LICENSE.txt'));
+  await writeFile(join(destination, 'MCP-LICENSES.txt'), await mcpLicenseText());
   await copyFile(node, join(destination, process.platform === 'win32' ? 'node.exe' : 'node'));
   await copyFile(license, join(destination, 'NODE-LICENSE.txt'));
   for (const name of ['LICENSE.md', 'LICENSE.ru.md', 'NOTICE.md'])

@@ -8,12 +8,15 @@ import {
   items,
   readPackageList,
   readArtifactSearchPage,
+  readGlobalSearchPage,
   readCatalogChangePage,
   readMirrorList,
   readRepositoryMirror,
 } from '@proanima/arkvory-contracts';
 import type {
   ArtifactSearchPageResponse,
+  GlobalSearchPageResponse,
+  GlobalSearchQuery,
   CatalogChangePageResponse,
   BuildAttachmentResponse,
   AnnotationsResponse,
@@ -96,6 +99,29 @@ export class CatalogApi {
     for (const [key, value] of Object.entries(query)) q.set(key, value);
     return readArtifactSearchPage(
       await this.http.call(repositoryPath(repository, `search?${q.toString()}`)),
+    );
+  }
+  /**
+   * Search every repository this credential may list (ADR 0081, A1), newest publication first.
+   * Follow `next` with the same filters; repositories the caller cannot list are skipped.
+   */
+  async searchAll(
+    query: GlobalSearchQuery = {},
+    signal?: AbortSignal,
+  ): Promise<GlobalSearchPageResponse> {
+    const params = new URLSearchParams();
+    if (query.q !== undefined) params.set('q', query.q);
+    if (query.repositories?.length) params.set('repositories', query.repositories.join(','));
+    if (query.labels?.length) params.set('labels', query.labels.join(','));
+    if (query.stage !== undefined) params.set('stage', query.stage);
+    if (query.after !== undefined) params.set('after', query.after);
+    if (query.limit !== undefined) params.set('limit', String(query.limit));
+    // No bare "?": how a URL keeps an empty query differs between Node releases. The text is
+    // tested, not URLSearchParams.size, which browsers before 2023 (Safari 16) do not have.
+    const encoded = params.toString();
+    const search = encoded ? `?${encoded}` : '';
+    return readGlobalSearchPage(
+      await this.http.call(`api/v1/search${search}`, 'GET', undefined, signal),
     );
   }
   async attachments(repository: string, id: string, signal?: AbortSignal) {

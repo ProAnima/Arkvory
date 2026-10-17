@@ -126,6 +126,8 @@ add(
   },
   'read',
 );
+// ADR 0081 (A1): the handler filters repositories by artifact.list; unreadable ones are skipped.
+add('/api/v1/search', 'get', 'searchAllRepositories', 'Catalog', { kind: 'authenticated' }, 'read');
 add(
   '/api/v1/mirrors',
   'get',

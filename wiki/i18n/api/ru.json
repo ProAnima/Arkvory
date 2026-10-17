@@ -176,6 +176,14 @@
       "summary": "Искать артефакты",
       "description": "Находит опубликованные артефакты по `q` (подстрока без учёта регистра в имени или в текущем значении метаданных), точной текущей метке `label`, коллекции `collection` и точной паре `metadataKey`/`metadataValue` (они указываются только вместе); должны совпасть все заданные фильтры. Результаты выдаются страницами по 100 в порядке ID, для каждого — размер, время создания и публикации, текущие метки и стадии продвижения; продолжайте с `after`, равным `next`. Метаданные и коллекции не возвращаются: читайте их через `getAnnotations`."
     },
+    "searchAllRepositories": {
+      "en": {
+        "summary": "Search all repositories",
+        "description": "Finds published artifacts in every repository where the caller may list artifacts (`artifact.list`), at most the first 1000 by name. Filters: `q` (a case-insensitive substring of the name or of a current metadata value), `repositories` (comma-separated, at most 100), `labels` (comma-separated current labels, at most 8, all required) and `stage`; all given filters must match. A repository the caller cannot list is skipped exactly like one that does not exist. Results are ordered by publication time, newest first, then by repository and ID; each is a `searchArtifacts` item plus its `repository`. Pages hold `limit` items (1–100, default 50); continue with `after` set to `next` and the same filters."
+      },
+      "summary": "Искать во всех репозиториях",
+      "description": "Находит опубликованные артефакты во всех репозиториях, где вызывающему разрешено перечислять артефакты (`artifact.list`), — не больше первых 1000 по имени. Фильтры: `q` (подстрока без учёта регистра в имени или в текущем значении метаданных), `repositories` (через запятую, не больше 100), `labels` (текущие метки через запятую, не больше 8, нужны все) и `stage`; должны совпасть все заданные фильтры. Репозиторий, который вызывающий не может перечислять, пропускается так же, как несуществующий. Результаты упорядочены по времени публикации, сначала новые, затем по репозиторию и ID; каждый — элемент `searchArtifacts` с полем `repository`. Страница содержит `limit` элементов (1–100, по умолчанию 50); продолжайте с `after`, равным `next`, и теми же фильтрами."
+    },
     "getCatalogAudit": {
       "en": {
         "summary": "Read the catalog audit of a repository",

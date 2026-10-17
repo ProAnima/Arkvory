@@ -154,7 +154,7 @@ Toda linha começa com os mesmos campos:
 | `component`                  | `api`, `http`, `storage`, `worker`, `maintenance`, `backup`, `mirror`, `migrate`, `process` ou `diagnostics` |
 | `code`                       | O nome do evento                                                                                             |
 
-Outros campos vêm de uma lista fixa: identificadores (`requestId`, `traceId`, `jobId`, `uploadId`, `artifactId`, `repository`, `principal`, `clientIp`), números (`status`, `durationMs`, `bytesSent`, `bytesReceived`, `attempts`) e campos de motivo (`errorCode`, `errorName`, `errno`, `sqlstate`, `reason`). `ARKVORY_LOG_LEVEL` define o nível mais baixo que é gravado.
+Outros campos vêm de uma lista fixa: identificadores (`requestId`, `traceId`, `jobId`, `uploadId`, `artifactId`, `repository`, `principal`, `clientIp`, `client`), números (`status`, `durationMs`, `bytesSent`, `bytesReceived`, `attempts`) e campos de motivo (`errorCode`, `errorName`, `errno`, `sqlstate`, `reason`). `ARKVORY_LOG_LEVEL` define o nível mais baixo que é gravado.
 
 ### Eventos importantes {#log-events}
 

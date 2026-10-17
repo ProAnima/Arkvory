@@ -176,6 +176,14 @@
       "summary": "Artefakte suchen",
       "description": "Findet veröffentlichte Artefakte anhand von `q` (einer Teilzeichenfolge des Namens oder eines aktuellen Metadatenwerts, ohne Beachtung der Groß-/Kleinschreibung), eines exakten aktuellen `label`, einer `collection` und eines exakten Paars `metadataKey`/`metadataValue`, die nur zusammen angegeben werden; alle angegebenen Filter müssen zutreffen. Die Ergebnisse kommen in Seiten zu 100, nach ID geordnet, jeweils mit Größe, Erstellungs- und Veröffentlichungszeit, aktuellen Labels und Hochstufungsstufen; weiter mit `after` = `next`. Metadaten und Sammlungen werden nicht zurückgegeben: Lesen Sie sie mit `getAnnotations`."
     },
+    "searchAllRepositories": {
+      "en": {
+        "summary": "Search all repositories",
+        "description": "Finds published artifacts in every repository where the caller may list artifacts (`artifact.list`), at most the first 1000 by name. Filters: `q` (a case-insensitive substring of the name or of a current metadata value), `repositories` (comma-separated, at most 100), `labels` (comma-separated current labels, at most 8, all required) and `stage`; all given filters must match. A repository the caller cannot list is skipped exactly like one that does not exist. Results are ordered by publication time, newest first, then by repository and ID; each is a `searchArtifacts` item plus its `repository`. Pages hold `limit` items (1–100, default 50); continue with `after` set to `next` and the same filters."
+      },
+      "summary": "In allen Repositorys suchen",
+      "description": "Findet veröffentlichte Artefakte in allen Repositorys, in denen der Aufrufer Artefakte auflisten darf (`artifact.list`), höchstens in den ersten 1000 nach Namen. Filter: `q` (Teilzeichenfolge ohne Beachtung der Groß-/Kleinschreibung im Namen oder in einem aktuellen Metadatenwert), `repositories` (kommagetrennt, höchstens 100), `labels` (aktuelle Labels, kommagetrennt, höchstens 8, alle erforderlich) und `stage`; alle angegebenen Filter müssen zutreffen. Ein Repository, das der Aufrufer nicht auflisten darf, wird genauso übersprungen wie ein nicht vorhandenes. Die Ergebnisse sind nach Veröffentlichungszeit geordnet, neueste zuerst, dann nach Repository und ID; jedes ist ein Element von `searchArtifacts` mit seinem `repository`. Seiten enthalten `limit` Elemente (1–100, Standard 50); weiter mit `after` = `next` und denselben Filtern."
+    },
     "getCatalogAudit": {
       "en": {
         "summary": "Read the catalog audit of a repository",

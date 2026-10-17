@@ -116,6 +116,7 @@ await build({
   define: { 'process.env.ARKVORY_CLI_VERSION': JSON.stringify(version) },
   banner: {
     js:
+      '/* Bundled MCP server (ADR 0081), zod and the code they embed: see MCP-LICENSES.txt. */\n' +
       '/* Bundled SHA-256 implementation: @noble/hashes, MIT License.\n' +
       (await readFile('node_modules/@noble/hashes/LICENSE', 'utf8')).replaceAll('*/', '* /') +
       '\n*/',
