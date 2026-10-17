@@ -47,14 +47,14 @@ A restore point does not contain:
 
 ### Requirements {#vault-requirements}
 
-| Requirement                                                                                                         | Why                                                                                                               |
-| ------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| A new or empty directory, mounted before the services start                                                         | The agent writes `vault.json` and the restore points there                                                        |
-| Outside the installation directory and outside the storage directory, also through links, junctions and short names | A vault inside the storage is lost with it. The check refuses a path that contains or is inside them              |
-| Writable by the service account                                                                                     | On Linux, `arkvory`. On Windows, `NT AUTHORITY\LocalService`. `arkvory configure` sets the rights for you         |
-| At least 1 GiB of free space beyond the data being copied                                                           | The vault keeps this reserve. A full volume ends the backup with `vault_full`, and the earlier points stay intact |
-| On Linux, not under `/home`, `/root`, `/run/user`, `/tmp` or `/var/tmp`                                             | The service sandbox hides these trees                                                                             |
-| On Windows, a local or iSCSI volume with a drive letter                                                             | `LocalService` cannot sign in to SMB shares, so paths like `\\nas\share` are refused                              |
+| Requirement                                                                                                         | Why                                                                                                                                                                  |
+| ------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A new or empty directory, mounted before the services start                                                         | The agent writes `vault.json` and the restore points there                                                                                                           |
+| Outside the installation directory and outside the storage directory, also through links, junctions and short names | A vault inside the storage is lost with it. The check refuses a path that contains or is inside them. The same applies to every [storage volume](./storage#volumes). |
+| Writable by the service account                                                                                     | On Linux, `arkvory`. On Windows, `NT AUTHORITY\LocalService`. `arkvory configure` sets the rights for you                                                            |
+| At least 1 GiB of free space beyond the data being copied                                                           | The vault keeps this reserve. A full volume ends the backup with `vault_full`, and the earlier points stay intact                                                    |
+| On Linux, not under `/home`, `/root`, `/run/user`, `/tmp` or `/var/tmp`                                             | The service sandbox hides these trees                                                                                                                                |
+| On Windows, a local or iSCSI volume with a drive letter                                                             | `LocalService` cannot sign in to SMB shares, so paths like `\\nas\share` are refused                                                                                 |
 
 Use a volume on another disk, or on a NAS, so that a failed storage disk does not take the backups with it. A vault on the same physical disk as the storage protects against mistakes, not against a disk failure.
 

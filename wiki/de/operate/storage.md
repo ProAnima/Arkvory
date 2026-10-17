@@ -34,6 +34,7 @@ Konfigurieren Sie die Instanzen in der Moduldatei (`ARKVORY_MODULES_FILE`, siehe
   "format": 1,
   "modules": {
     "local-storage": {
+      "enabled": true,
       "config": {
         "instances": {
           "volume-2": { "directory": "/srv/arkvory-volume-2" }
@@ -56,8 +57,8 @@ Eine ID besteht aus Kleinbuchstaben, Ziffern und `-`, beginnt mit einem Buchstab
 
 So fügen Sie ein Volume hinzu:
 
-1. Hängen Sie das Volume ein und erstellen Sie das Verzeichnis. Es muss dem Konto gehören, das die Dienste ausführt.
-2. Fügen Sie die Instanz der Moduldatei hinzu und starten Sie die Dienste neu. Beim ersten Start hält die API die Identität des Volumes fest, die Datei `storage-id` im Verzeichnis. Ab dann prüft jeder Prozess diese Datei. Auf ein nicht eingehängtes Volume oder ein anderes Volume unter demselben Pfad wird nie geschrieben.
+1. Hängen Sie das Volume ein und erstellen Sie das Verzeichnis. Es muss dem Konto gehören, das die Dienste ausführt. Arkvory erstellt dieses Verzeichnis nicht. Fehlt es, etwa weil das Volume nicht eingehängt ist, bleibt das Volume nicht verfügbar, und unter den Einhängepunkt wird nichts geschrieben.
+2. Fügen Sie die Instanz der Moduldatei hinzu und starten Sie die Dienste neu. Beim ersten Start hält die API die Identität des Volumes fest, die Datei `storage-id` im Verzeichnis. Ab dann prüft jeder Prozess diese Datei. Auf ein nicht eingehängtes Volume oder ein anderes Volume unter demselben Pfad wird nie geschrieben. Vor jedem Schreiben und Löschen auf dem Volume wird die Datei erneut geprüft.
 3. Wählen Sie mit einer [Platzierungsrichtlinie](#placement), welche Uploads auf das Volume gehen.
 
 ### Platzierung neuer Uploads {#placement}
@@ -86,11 +87,12 @@ Die Datei `rules.json` enthält die Liste der Regeln, zum Beispiel alle Dateien 
 
 Die Veröffentlichung schlägt nie wegen der Platzierung fehl. Wenn der gewählte Speicher in diesem Moment keine Uploads annimmt, wegen `acceptsWrites: false`, `read-only`, `enabled: false`, einer fehlenden Instanz oder eines nicht verfügbaren Volumes (nicht eingehängt, fehlgeschlagene Identitätsprüfung, keine Antwort), wird der neue Upload stattdessen in `default` angelegt. Der Upload zeigt seinen Speicher in `storageBackend`, die Metrik `arkvory_storage_placement_fallback_total` zählt ihn, und das Log enthält die Zeile `storage.placement_fallback`.
 
-- **Laufende Uploads werden nicht verschoben.** Wenn ein Volume keine Daten mehr annimmt, während darauf ein Upload in Teilen läuft, werden neue Teile mit 409 `backend_read_only` abgelehnt, und der Client beginnt einen neuen Upload. Sind bereits alle Teile da, schreibt der Abschluss des Uploads die Datei nach `default`. Die Teile werden von dem Volume gelesen, auf dem sie liegen.
+- **Laufende Uploads werden nicht verschoben.** Wenn ein Volume keine Daten mehr annimmt, während darauf ein Upload in Teilen läuft, werden neue Teile mit 409 `backend_read_only` abgelehnt, und der Client beginnt einen neuen Upload. Sind bereits alle Teile da, schreibt der Abschluss des Uploads die Datei nach `default`. Die Teile werden von dem Volume gelesen, auf dem sie liegen. Eine Datei, die ein abgebrochener Versuch bereits vollständig auf dem Volume gespeichert hat, bleibt dort.
 - **Ein nicht verfügbares Volume** lässt Downloads seiner Dateien mit 503 `unavailable` fehlschlagen, bis es wieder da ist. Der Server läuft weiter, und die Bereitschaft und `writable` richten sich nur nach `default`. Jeder Prozess prüft seine Volumes alle 30 Sekunden erneut.
 - **Die Bereinigung** entfernt jede Datei auf dem Volume, das sie enthält, einschließlich der Teile, die auf einem anderen Volume übrig sind. Auf einem nicht verfügbaren oder schreibgeschützten Volume überspringt die Bereinigung die Datei und versucht es später erneut.
 - **Kontingente und Grenzen.** Kontingente und `ARKVORY_CAPACITY_BYTES` zählen alle Volumes zusammen. Die Reserve gilt für jedes Volume einzeln.
 - **Temporäre Dateien** von Raw-, OCI- und Spiegel-Uploads bleiben im Speicherverzeichnis `default`.
+- **Cluster.** In einem [Hochverfügbarkeitscluster](./cluster) muss jedes Volume ein Verzeichnis auf dem replizierten Volume sein, wie das Speicherverzeichnis: Eine andere Festplatte wird nicht auf die anderen Server kopiert. Sonst startet die API nicht.
 
 Beobachten Sie `arkvory_storage_backend_up` und `arkvory_storage_backend_accepting`, siehe [Monitoring](./monitoring#metrics). Backups kopieren jedes Volume. Eine Wiederherstellung braucht ein leeres Verzeichnis für jedes Volume, siehe [Mehrere Volumes wiederherstellen](./backups#restore-volumes).
 

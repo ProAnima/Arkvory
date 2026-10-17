@@ -34,6 +34,7 @@ Arkvory 把每个已发布的文件原样保存一份，存放在服务器本地
   "format": 1,
   "modules": {
     "local-storage": {
+      "enabled": true,
       "config": {
         "instances": {
           "volume-2": { "directory": "/srv/arkvory-volume-2" }
@@ -56,8 +57,8 @@ ID 由小写字母、数字和 `-` 组成，以字母开头，且不能是 `defa
 
 添加卷：
 
-1. 挂载卷并创建目录。该目录必须属于运行服务的账户。
-2. 把实例添加到模块文件中，然后重新启动服务。API 首次启动时会记录卷的身份，即目录中的文件 `storage-id`。此后每个进程都会检查此文件。未挂载的卷，或同一路径上的另一个卷，绝不会被写入。
+1. 挂载卷并创建目录。该目录必须属于运行服务的账户。Arkvory 不会创建此目录。如果目录不存在，例如因为卷未挂载，该卷会保持不可用，挂载点下面不会写入任何内容。
+2. 把实例添加到模块文件中，然后重新启动服务。API 首次启动时会记录卷的身份，即目录中的文件 `storage-id`。此后每个进程都会检查此文件。未挂载的卷，或同一路径上的另一个卷，绝不会被写入。每次在该卷上写入或删除之前，都会再次检查此文件。
 3. 用[放置策略](#placement)选择哪些上传进入该卷。
 
 ### 新上传的放置 {#placement}
@@ -86,11 +87,12 @@ arkvoryctl storage placement --repository releases --revision 0 --file rules.jso
 
 发布绝不会因为放置而失败。如果所选存储此时不接受上传，原因是 `acceptsWrites: false`、`read-only`、`enabled: false`、缺少实例，或卷不可用（未挂载、身份检查失败、无应答），新上传会改为在 `default` 中创建。上传在 `storageBackend` 中显示其存储，指标 `arkvory_storage_placement_fallback_total` 会计数，日志中有一行 `storage.placement_fallback`。
 
-- **进行中的上传不会移动。** 如果某个分片上传正在一个卷上进行时，该卷停止接收数据，新的分片会以 409 `backend_read_only` 被拒绝，客户端会开始新的上传。如果所有分片都已到位，完成上传时会把文件写入 `default`。分片从它们所在的卷读取。
+- **进行中的上传不会移动。** 如果某个分片上传正在一个卷上进行时，该卷停止接收数据，新的分片会以 409 `backend_read_only` 被拒绝，客户端会开始新的上传。如果所有分片都已到位，完成上传时会把文件写入 `default`。分片从它们所在的卷读取。被中断的尝试已经完整保存在该卷上的文件会留在那里。
 - **不可用的卷**会使其文件的下载以 503 `unavailable` 失败，直到它恢复。服务器继续运行，就绪状态和 `writable` 只跟随 `default`。每个进程每 30 秒重新检查一次自己的卷。
 - **清理**会在保存文件的卷上删除每个文件，包括留在另一个卷上的分片。在不可用或只读的卷上，清理会跳过该文件，稍后再试。
 - **配额和限制。** 配额和 `ARKVORY_CAPACITY_BYTES` 把所有卷合并计算。预留空间适用于每个卷。
 - raw、OCI 和镜像上传的**临时文件**保留在存储目录 `default` 中。
+- **集群。** 在[高可用集群](./cluster)中，每个卷都必须像存储目录一样，是复制卷上的一个目录：另一块磁盘不会被复制到其他服务器。否则 API 不会启动。
 
 请关注 `arkvory_storage_backend_up` 和 `arkvory_storage_backend_accepting`，参见[监控](./monitoring#metrics)。备份会复制每个卷。恢复需要为每个卷准备一个空目录，参见[恢复多个卷](./backups#restore-volumes)。
 

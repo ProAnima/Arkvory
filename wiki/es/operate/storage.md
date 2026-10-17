@@ -34,6 +34,7 @@ Configure las instancias en el archivo de módulos (`ARKVORY_MODULES_FILE`, cons
   "format": 1,
   "modules": {
     "local-storage": {
+      "enabled": true,
       "config": {
         "instances": {
           "volume-2": { "directory": "/srv/arkvory-volume-2" }
@@ -56,8 +57,8 @@ Un ID tiene letras minúsculas, dígitos y `-`, empieza por una letra y no es `d
 
 Para añadir un volumen:
 
-1. Monte el volumen y cree el directorio. Debe pertenecer a la cuenta que ejecuta los servicios.
-2. Añada la instancia al archivo de módulos y reinicie los servicios. En su primer arranque, la API registra la identidad del volumen, el archivo `storage-id` del directorio. A partir de entonces, cada proceso comprueba este archivo. Nunca se escribe en un volumen que no está montado ni en otro volumen en la misma ruta.
+1. Monte el volumen y cree el directorio. Debe pertenecer a la cuenta que ejecuta los servicios. Arkvory no crea este directorio. Si falta, por ejemplo porque el volumen no está montado, el volumen sigue no disponible y no se escribe nada bajo el punto de montaje.
+2. Añada la instancia al archivo de módulos y reinicie los servicios. En su primer arranque, la API registra la identidad del volumen, el archivo `storage-id` del directorio. A partir de entonces, cada proceso comprueba este archivo. Nunca se escribe en un volumen que no está montado ni en otro volumen en la misma ruta. Antes de cada escritura y eliminación en el volumen se vuelve a comprobar el archivo.
 3. Elija qué subidas van al volumen con una [política de ubicación](#placement).
 
 ### Ubicación de las subidas nuevas {#placement}
@@ -86,11 +87,12 @@ El archivo `rules.json` contiene la lista de reglas, por ejemplo todos los archi
 
 La publicación nunca falla por la ubicación. Si el almacenamiento elegido no acepta subidas en ese momento, por `acceptsWrites: false`, `read-only`, `enabled: false`, una instancia que falta o un volumen que no está disponible (sin montar, con la comprobación de identidad fallida o sin respuesta), la subida nueva se crea en `default`. La subida muestra su almacenamiento en `storageBackend`, la métrica `arkvory_storage_placement_fallback_total` la cuenta y el registro tiene la línea `storage.placement_fallback`.
 
-- **Las subidas en curso no se mueven.** Si un volumen deja de aceptar datos mientras una subida en partes se ejecuta en él, las partes nuevas se rechazan con 409 `backend_read_only` y el cliente empieza una subida nueva. Si ya están todas las partes, al finalizar la subida el archivo se escribe en `default`. Las partes se leen del volumen en el que están.
+- **Las subidas en curso no se mueven.** Si un volumen deja de aceptar datos mientras una subida en partes se ejecuta en él, las partes nuevas se rechazan con 409 `backend_read_only` y el cliente empieza una subida nueva. Si ya están todas las partes, al finalizar la subida el archivo se escribe en `default`. Las partes se leen del volumen en el que están. Un archivo que un intento interrumpido ya guardó completo en el volumen se queda allí.
 - **Un volumen no disponible** hace que las descargas de sus archivos fallen con 503 `unavailable` hasta que vuelva. El servidor sigue funcionando, y la disponibilidad y `writable` dependen solo de `default`. Cada proceso vuelve a comprobar sus volúmenes cada 30 segundos.
 - **La limpieza** elimina cada archivo en el volumen que lo contiene, incluidas las partes que quedan en otro volumen. En un volumen no disponible o de solo lectura, la limpieza omite el archivo y lo intenta más tarde.
 - **Cuotas y límites.** Las cuotas y `ARKVORY_CAPACITY_BYTES` cuentan todos los volúmenes juntos. La reserva se aplica a cada volumen.
 - **Los archivos temporales** de las subidas raw, OCI y de espejo se quedan en el directorio de almacenamiento `default`.
+- **Clúster.** En un [clúster de alta disponibilidad](./cluster), cada volumen debe ser un directorio en el volumen replicado, como el directorio de almacenamiento: otro disco no se copia a los demás servidores. De lo contrario, la API no se inicia.
 
 Vigile `arkvory_storage_backend_up` y `arkvory_storage_backend_accepting`; consulte [Monitorización](./monitoring#metrics). Las copias de seguridad copian todos los volúmenes. Una restauración necesita un directorio vacío para cada volumen; consulte [Restaurar varios volúmenes](./backups#restore-volumes).
 

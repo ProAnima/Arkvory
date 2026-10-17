@@ -34,6 +34,7 @@ Configure the instances in the modules file (`ARKVORY_MODULES_FILE`, see [Enviro
   "format": 1,
   "modules": {
     "local-storage": {
+      "enabled": true,
       "config": {
         "instances": {
           "volume-2": { "directory": "/srv/arkvory-volume-2" }
@@ -56,8 +57,8 @@ An ID has lowercase letters, digits and `-`, starts with a letter and is not `de
 
 To add a volume:
 
-1. Mount the volume and create the directory. It must belong to the account that runs the services.
-2. Add the instance to the modules file and restart the services. At its first start, the API records the identity of the volume, the file `storage-id` in the directory. From then on, every process checks this file. A volume that is not mounted, or another volume at the same path, is never written to.
+1. Mount the volume and create the directory. It must belong to the account that runs the services. Arkvory does not create this directory. If it is missing, for example because the volume is not mounted, the volume stays unavailable and nothing is written beneath the mount point.
+2. Add the instance to the modules file and restart the services. At its first start, the API records the identity of the volume, the file `storage-id` in the directory. From then on, every process checks this file. A volume that is not mounted, or another volume at the same path, is never written to. Every write and removal on the volume checks this file again first.
 3. Choose which uploads go to the volume with a [placement policy](#placement).
 
 ### Placement of new uploads {#placement}
@@ -86,11 +87,12 @@ The file `rules.json` holds the list of rules, for example all files of 1 GiB or
 
 Publication never fails because of placement. If the chosen storage does not accept uploads at that moment, because of `acceptsWrites: false`, `read-only`, `enabled: false`, a missing instance or a volume that is not available (not mounted, a failed identity check, no answer), the new upload is created in `default` instead. The upload shows its storage in `storageBackend`, the metric `arkvory_storage_placement_fallback_total` counts it, and the log has the line `storage.placement_fallback`.
 
-- **Uploads in progress are not moved.** If a volume stops taking data while an upload in parts runs on it, new parts are refused with 409 `backend_read_only`, and the client starts a new upload. If all parts are already there, completing the upload writes the file to `default`. The parts are read from the volume where they are.
+- **Uploads in progress are not moved.** If a volume stops taking data while an upload in parts runs on it, new parts are refused with 409 `backend_read_only`, and the client starts a new upload. If all parts are already there, completing the upload writes the file to `default`. The parts are read from the volume where they are. A file that an interrupted attempt already stored completely on the volume stays there.
 - **An unavailable volume** makes downloads of its files fail with 503 `unavailable` until it is back. The server keeps running, and readiness and `writable` follow `default` only. Every process checks its volumes again every 30 seconds.
 - **Cleanup** removes each file on the volume that holds it, the parts left on another volume included. On a volume that is unavailable or read-only, cleanup skips the file and tries again later.
 - **Quotas and limits.** Quotas and `ARKVORY_CAPACITY_BYTES` count all volumes together. The reserve applies to each volume.
 - **Temporary files** of raw, OCI and mirror uploads stay in the storage directory `default`.
+- **Cluster.** In a [high availability cluster](./cluster), every volume must be a directory on the replicated volume, like the storage directory: another disk is not copied to the other servers. Otherwise the API does not start.
 
 Watch `arkvory_storage_backend_up` and `arkvory_storage_backend_accepting`, see [Monitoring](./monitoring#metrics). Backups copy every volume. A restore needs an empty directory for each volume, see [Restore several volumes](./backups#restore-volumes).
 

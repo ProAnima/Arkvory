@@ -34,6 +34,7 @@ Configure as instâncias no arquivo de módulos (`ARKVORY_MODULES_FILE`, consult
   "format": 1,
   "modules": {
     "local-storage": {
+      "enabled": true,
       "config": {
         "instances": {
           "volume-2": { "directory": "/srv/arkvory-volume-2" }
@@ -56,8 +57,8 @@ Um ID tem letras minúsculas, dígitos e `-`, começa com uma letra e não é `d
 
 Para acrescentar um volume:
 
-1. Monte o volume e crie o diretório. Ele deve pertencer à conta que executa os serviços.
-2. Acrescente a instância ao arquivo de módulos e reinicie os serviços. Na primeira inicialização, a API registra a identidade do volume, o arquivo `storage-id` no diretório. A partir daí, todos os processos verificam esse arquivo. Um volume que não está montado, ou outro volume no mesmo caminho, nunca recebe gravações.
+1. Monte o volume e crie o diretório. Ele deve pertencer à conta que executa os serviços. O Arkvory não cria esse diretório. Se ele não existir, por exemplo porque o volume não está montado, o volume fica indisponível e nada é gravado sob o ponto de montagem.
+2. Acrescente a instância ao arquivo de módulos e reinicie os serviços. Na primeira inicialização, a API registra a identidade do volume, o arquivo `storage-id` no diretório. A partir daí, todos os processos verificam esse arquivo. Um volume que não está montado, ou outro volume no mesmo caminho, nunca recebe gravações. Antes de cada gravação e remoção no volume, o arquivo é verificado de novo.
 3. Escolha quais uploads vão para o volume com uma [política de alocação](#placement).
 
 ### Alocação de novos uploads {#placement}
@@ -86,11 +87,12 @@ O arquivo `rules.json` contém a lista de regras, por exemplo todos os arquivos 
 
 A publicação nunca falha por causa da alocação. Se o armazenamento escolhido não aceita uploads naquele momento, por causa de `acceptsWrites: false`, `read-only`, `enabled: false`, de uma instância ausente ou de um volume indisponível (não montado, verificação de identidade com falha, sem resposta), o novo upload é criado em `default`. O upload mostra seu armazenamento em `storageBackend`, a métrica `arkvory_storage_placement_fallback_total` o conta, e o log tem a linha `storage.placement_fallback`.
 
-- **Uploads em andamento não são movidos.** Se um volume deixa de aceitar dados enquanto um upload em partes está em andamento nele, novas partes são recusadas com 409 `backend_read_only`, e o cliente inicia um novo upload. Se todas as partes já estão lá, a conclusão do upload grava o arquivo em `default`. As partes são lidas do volume onde estão.
+- **Uploads em andamento não são movidos.** Se um volume deixa de aceitar dados enquanto um upload em partes está em andamento nele, novas partes são recusadas com 409 `backend_read_only`, e o cliente inicia um novo upload. Se todas as partes já estão lá, a conclusão do upload grava o arquivo em `default`. As partes são lidas do volume onde estão. Um arquivo que uma tentativa interrompida já gravou por completo no volume permanece lá.
 - **Um volume indisponível** faz os downloads de seus arquivos falharem com 503 `unavailable` até ele voltar. O servidor continua funcionando, e a prontidão e `writable` seguem somente `default`. Cada processo verifica seus volumes de novo a cada 30 segundos.
 - **A limpeza física** remove cada arquivo no volume que o contém, incluindo as partes que ficaram em outro volume. Em um volume indisponível ou somente leitura, a limpeza pula o arquivo e tenta de novo mais tarde.
 - **Cotas e limites.** As cotas e `ARKVORY_CAPACITY_BYTES` contam todos os volumes juntos. A reserva vale para cada volume.
 - **Arquivos temporários** de uploads raw, OCI e de espelhos ficam no diretório de armazenamento `default`.
+- **Cluster.** Em um [cluster de alta disponibilidade](./cluster), cada volume deve ser um diretório no volume replicado, como o diretório de armazenamento: outro disco não é copiado para os demais servidores. Caso contrário, a API não inicia.
 
 Acompanhe `arkvory_storage_backend_up` e `arkvory_storage_backend_accepting`; consulte [Monitoramento](./monitoring#metrics). Os backups copiam todos os volumes. Uma restauração precisa de um diretório vazio para cada volume; consulte [Restaurar vários volumes](./backups#restore-volumes).
 
