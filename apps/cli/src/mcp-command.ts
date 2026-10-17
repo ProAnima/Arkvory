@@ -5,6 +5,7 @@ import { numericOption, validateCommand } from './arguments.js';
 import type { Arguments } from './arguments.js';
 import { CliError } from './errors.js';
 import { privateDirectory } from './local-files.js';
+import { pruneCheckpoints } from './mcp/checkpoints.js';
 import { outputBytes } from './mcp/output.js';
 import { rootDirectory } from './mcp/paths.js';
 import { createMcpServer, VersionGate } from './mcp/server.js';
@@ -56,6 +57,8 @@ export async function runMcp(args: Arguments, signal: AbortSignal): Promise<void
   if (args.options.has('write')) {
     const checkpoints = join(cliHome(), 'mcp-uploads');
     await privateDirectory(checkpoints);
+    // Housekeeping only: a directory that cannot be tidied must not keep the server from starting.
+    await pruneCheckpoints(checkpoints, Date.now()).catch(() => undefined);
     write = { repositories, checkpoints, server: connected.server };
   }
   const server = createMcpServer(

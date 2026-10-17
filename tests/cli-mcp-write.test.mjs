@@ -4,10 +4,21 @@ import { createHash } from 'node:crypto';
 import { createServer } from 'node:http';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import { mkdir, mkdtemp, open, readdir, rename, rm, symlink, writeFile } from 'node:fs/promises';
+import {
+  mkdir,
+  mkdtemp,
+  open,
+  readdir,
+  rename,
+  rm,
+  symlink,
+  utimes,
+  writeFile,
+} from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { ArkvoryHttpError, ArkvoryNetworkError } from '@proanima/arkvory-sdk';
+import { ArkvoryClientError, ArkvoryHttpError, ArkvoryNetworkError } from '@proanima/arkvory-sdk';
+import { pruneCheckpoints } from '../apps/cli/dist/mcp/checkpoints.js';
 import { errorResult } from '../apps/cli/dist/mcp/output.js';
 import { rootDirectory } from '../apps/cli/dist/mcp/paths.js';
 import { HandleBlob, openSource } from '../apps/cli/dist/mcp/source.js';
@@ -267,6 +278,97 @@ test('a file that contains the key is never uploaded', async (t) => {
     code: 'source_contains_credential',
   });
   assert.deepEqual(fake.calls, []);
+});
+
+test('a checkpoint of an expired or cancelled upload is replaced once, never reused for good', async (t) => {
+  const { outer, root, context } = await workspace(t);
+  await writeFile(join(root, 'build.bin'), 'build bytes');
+  const fake = uploads();
+  const ctx = context(fake.client);
+  const input = { file: 'build.bin', labels: ['test'] };
+  const resume = fake.client.resume;
+  let stale = true;
+  // The first session never finishes: the call fails and leaves its checkpoint.
+  fake.client.resume = async () => {
+    throw new ArkvoryNetworkError('down');
+  };
+  await assert.rejects(uploadFromRoot(ctx, input, call()), { name: 'ArkvoryNetworkError' });
+  // Days later the server let it expire (or someone cancelled it).
+  for (const failure of [
+    new ArkvoryHttpError(409, 'conflict', 'req-1', undefined, { reason: 'upload_expired' }),
+    new ArkvoryClientError('upload_cancelled', 'Upload is cancelled'),
+  ]) {
+    stale = true;
+    fake.client.resume = async (repository, id, blob) => {
+      if (stale) {
+        stale = false;
+        throw failure;
+      }
+      return resume(repository, id, blob);
+    };
+    const before = fake.calls.filter(([name]) => name === 'create').length;
+    const done = await uploadFromRoot(ctx, input, call());
+    assert.equal(done.artifact.status, 'available');
+    const creates = fake.calls.filter(([name]) => name === 'create');
+    assert.equal(creates.length, before + 1, 'one new upload');
+    assert.notEqual(creates.at(-1)[2], creates.at(-2)[2], 'under a new idempotency key');
+    // The finished upload is now the checkpoint: repeating returns it.
+    assert.equal((await uploadFromRoot(ctx, input, call())).artifact.id, done.artifact.id);
+    await rm(join(outer, 'checkpoints'), { recursive: true });
+    await mkdir(join(outer, 'checkpoints'));
+    fake.client.resume = async () => {
+      throw new ArkvoryNetworkError('down');
+    };
+    await assert.rejects(uploadFromRoot(ctx, input, call()));
+  }
+  // An upload this call began itself is not restarted when it is cancelled meanwhile.
+  await rm(join(outer, 'checkpoints'), { recursive: true });
+  await mkdir(join(outer, 'checkpoints'));
+  fake.client.resume = async () => {
+    throw new ArkvoryClientError('upload_cancelled', 'Upload is cancelled');
+  };
+  const before = fake.calls.filter(([name]) => name === 'create').length;
+  await assert.rejects(uploadFromRoot(ctx, input, call()), { code: 'upload_cancelled' });
+  assert.equal(fake.calls.filter(([name]) => name === 'create').length, before + 1);
+});
+
+test('the checkpoint directory stays bounded and never loses a locked checkpoint', async (t) => {
+  const { outer } = await workspace(t);
+  const directory = join(outer, 'checkpoints');
+  const now = Date.parse('2026-10-17T12:00:00Z');
+  const day = 24 * 60 * 60 * 1000;
+  const name = (n) => `${String(n).padStart(64, '0')}.json`;
+  const make = async (file, age) => {
+    await writeFile(join(directory, file), '{}');
+    const when = new Date(now - age);
+    await utimes(join(directory, file), when, when);
+  };
+  for (let n = 0; n < 5; n++) await make(name(n), n * day);
+  await make(name(10), 40 * day);
+  await make(name(11), 40 * day);
+  await writeFile(join(directory, `${name(11)}.lock`), '{"pid":1}');
+  await make(`${name(12)}.00000000-0000-4000-8000-000000000000.tmp`, 2 * day);
+  await make(`${name(13)}.00000000-0000-4000-8000-000000000000.tmp`, 60 * 1000);
+  await make('notes.txt', 400 * day);
+  const removed = await pruneCheckpoints(directory, now, { ageMs: 30 * day, count: 3 });
+  assert.deepEqual(removed.sort(), [
+    name(3),
+    name(4),
+    name(10),
+    `${name(12)}.00000000-0000-4000-8000-000000000000.tmp`,
+  ]);
+  assert.deepEqual(
+    (await readdir(directory)).sort(),
+    [
+      name(0),
+      name(1),
+      name(11),
+      `${name(11)}.lock`,
+      `${name(13)}.00000000-0000-4000-8000-000000000000.tmp`,
+      name(2),
+      'notes.txt',
+    ].sort(),
+  );
 });
 
 test('a source that shrinks while it is read fails instead of sending other bytes', async (t) => {

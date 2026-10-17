@@ -6,6 +6,7 @@ import { CliError } from '../errors.js';
 import { putToPath } from '../path-transfer.js';
 import { publishPackage } from '../publish-package.js';
 import { digest, upload } from '../upload.js';
+import { startingOver } from './checkpoints.js';
 import type { KeyActions, ToolContext, WriteOptions } from './context.js';
 import { objectResult } from './output.js';
 import { openSource, refuseSecrets } from './source.js';
@@ -116,9 +117,14 @@ export async function uploadFromRoot(
   return withSource(ctx, input.file, async (source) => {
     const common = await prepared(ctx, write, repository, source, input, call);
     const file = { file: source.shown, size: String(source.blob.size), sha256: common.sha256 };
-    if (input.repositoryPath === undefined)
-      return { repository, ...file, artifact: receipt(await upload(common)) };
-    const placed = await putToPath({ ...common, assetPath: input.repositoryPath });
+    if (input.repositoryPath === undefined) {
+      const uploaded = await startingOver(common.state, () => upload(common));
+      return { repository, ...file, artifact: receipt(uploaded) };
+    }
+    const path = input.repositoryPath;
+    const placed = await startingOver(common.state, () =>
+      putToPath({ ...common, assetPath: path }),
+    );
     return { repository, ...file, ...placed };
   });
 }
@@ -127,7 +133,7 @@ export async function publishFromRoot(ctx: ToolContext, input: SourceInput, call
   const { write, repository } = writeTarget(ctx, input.repository);
   return withSource(ctx, input.file, async (source) => {
     const common = await prepared(ctx, write, repository, source, input, call);
-    const published = await publishPackage(common);
+    const published = await startingOver(common.state, () => publishPackage(common));
     return {
       repository,
       file: source.shown,
