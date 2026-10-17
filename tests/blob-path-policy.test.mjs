@@ -26,6 +26,34 @@ test('the policy finds blob paths and unplaced reads outside the storage adapter
   assert.equal(app.length, 1);
 });
 
+test('the policy sees through aliases, computed names and built path strings', () => {
+  // The same reaches as above, written so that a check of the plain spelling misses them.
+  for (const [text, problem] of [
+    ['const content = this.blobs; yield* content.read(entry.id, entry.size);', 'content.read'],
+    ['const { blobs: local } = deps; await local.verify(id, d, c);', 'local.verify without'],
+    ['const a = this.blobs, b = (a as BlobStore); await b.exists(id, size);', 'b.exists'],
+    ["await this.blobs['collect'](id, true, cancellation);", 'blobs.collect without'],
+    ["const raw = new FileRawStaging(this.blobs['root'], space);", 'storage root path'],
+    ['const { root } = this.blobs;', 'storage root path'],
+    ['const { contentPath: where } = blobs;', 'blob content path'],
+    ["open(blobs['contentPath'](id), options, done);", 'blob content path'],
+    ['const file = join(dataDirectory, `blobs/${id}`);', 'path into the blobs directory'],
+    ["const file = resolve(root, 'data' + '/blobs/' + id);", 'path into the blobs directory'],
+    ["const file = join(root, 'data\\\\blobs');", 'path into the blobs directory'],
+  ]) {
+    const found = inspectBlobPaths(product, text);
+    assert.equal(found.length, 1, `${text}: ${found.join('; ')}`);
+    assert.match(found[0], new RegExp(`^${product}:1: ${problem}`), text);
+  }
+  for (const text of [
+    'const settings = this.store; await settings.read();',
+    'const url = `/v2/${name}/blobs/${digest}`; join(root, `releases/${id}`);',
+    'await this.blobs.read(...placed);',
+    'const { ready } = this.blobs; const { root } = options;',
+  ])
+    assert.deepEqual(inspectBlobPaths(product, text), [], text);
+});
+
 test('the policy allows the adapter, the vault, placed reads and other roots', () => {
   for (const [file] of blobPathOwners)
     assert.deepEqual(inspectBlobPaths(file, "join(this.root, 'blobs', id); x.contentPath;"), []);

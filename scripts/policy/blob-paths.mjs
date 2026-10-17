@@ -22,21 +22,109 @@ const placedCalls = new Map([
   ['exists', 3],
   ['collect', 4],
 ]);
+/** A `blobs` path segment in the literal parts of a string (`\0` separates the parts). */
+const blobsSegment = /(^|[\\/\0])blobs([\\/\0]|$)/;
 
+/** The expression without parentheses, `as`, `satisfies`, `!` and `<T>` around it. */
+function unwrap(expression) {
+  let node = expression;
+  while (
+    ts.isParenthesizedExpression(node) ||
+    ts.isAsExpression(node) ||
+    ts.isSatisfiesExpression(node) ||
+    ts.isNonNullExpression(node) ||
+    ts.isTypeAssertionExpression(node)
+  )
+    node = node.expression;
+  return node;
+}
+
+/** The last name of `a.b`, `a['b']` or `b`; empty for anything computed. */
 function lastName(expression) {
-  if (ts.isPropertyAccessExpression(expression)) return expression.name.text;
-  if (ts.isIdentifier(expression)) return expression.text;
+  const node = unwrap(expression);
+  if (ts.isPropertyAccessExpression(node)) return node.name.text;
+  if (ts.isElementAccessExpression(node) && ts.isStringLiteralLike(node.argumentExpression))
+    return node.argumentExpression.text;
+  if (ts.isIdentifier(node)) return node.text;
+  return '';
+}
+
+/** The literal parts of a string expression: literals, templates and `+` concatenations. */
+function literalText(expression) {
+  const node = unwrap(expression);
+  if (ts.isStringLiteralLike(node)) return node.text;
+  if (ts.isTemplateExpression(node))
+    return [node.head.text, ...node.templateSpans.map((span) => span.literal.text)].join('\0');
+  if (ts.isBinaryExpression(node) && node.operatorToken.kind === ts.SyntaxKind.PlusToken)
+    return `${literalText(node.left)}\0${literalText(node.right)}`;
   return '';
 }
 
 /**
+ * Names bound to the `blobs` port in a file, in source order: `const s = this.blobs`, a chain
+ * of such aliases and `{ blobs: s }`. Scopes are ignored: a name is an alias in the whole file.
+ */
+function portAliases(source) {
+  const names = new Set(['blobs']);
+  function visit(node) {
+    if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name) && node.initializer) {
+      if (names.has(lastName(node.initializer))) names.add(node.name.text);
+    } else if (ts.isBindingElement(node) && ts.isIdentifier(node.name)) {
+      const key = node.propertyName ?? node.name;
+      if (ts.isIdentifier(key) && key.text === 'blobs') names.add(node.name.text);
+    }
+    ts.forEachChild(node, visit);
+  }
+  visit(source);
+  return names;
+}
+
+/** `{ root }` or `{ contentPath }` taken apart from a storage. */
+function destructuredPaths(node, isStorage, report) {
+  if (!ts.isVariableDeclaration(node) || !ts.isObjectBindingPattern(node.name)) return;
+  if (!node.initializer || !isStorage(lastName(node.initializer))) return;
+  for (const element of node.name.elements) {
+    const key = element.propertyName ?? element.name;
+    if (!ts.isIdentifier(key)) continue;
+    if (key.text === 'root') report(element, 'storage root path');
+    if (key.text === 'contentPath') report(element, 'blob content path');
+  }
+}
+
+/** `join`/`resolve` with a `blobs` segment, and port reads of an upload without its storage. */
+function calls(node, aliases, report) {
+  if (!ts.isCallExpression(node)) return;
+  const callee = lastName(node.expression);
+  if (
+    (callee === 'join' || callee === 'resolve') &&
+    node.arguments.some((argument) => blobsSegment.test(literalText(argument)))
+  )
+    report(node, 'path into the blobs directory');
+  const required = placedCalls.get(callee);
+  const target = unwrap(node.expression);
+  if (
+    required === undefined ||
+    !(ts.isPropertyAccessExpression(target) || ts.isElementAccessExpression(target))
+  )
+    return;
+  const receiver = lastName(target.expression);
+  // A spread may carry every argument; the rule cannot count it.
+  if (!aliases.has(receiver) || node.arguments.some((a) => ts.isSpreadElement(a))) return;
+  if (node.arguments.length < required)
+    report(node, `${receiver}.${callee} without the upload's storage backend`);
+}
+
+/**
  * Problems of one product source file: a `contentPath`, the `.root` of a storage, a path built
- * with a `blobs` segment, or a read, verify, exists or collect through `blobs` without the
- * storage backend of the upload. Syntactic on purpose: it runs before any build.
+ * with a `blobs` segment, or a read, verify, exists or collect through the `blobs` port (or an
+ * alias of it) without the storage backend of the upload. Syntactic on purpose: it runs before
+ * any build, so a port passed under another name than `blobs` or its aliases is not seen.
  */
 export function inspectBlobPaths(file, text) {
   if (!/^(apps|packages)\/[^/]+\/src\//.test(file) || blobPathOwners.has(file)) return [];
   const source = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true);
+  const aliases = portAliases(source);
+  const isStorage = (name) => storageNames.test(name) || aliases.has(name);
   const problems = [];
   const report = (node, what) => {
     const line = source.getLineAndCharacterOfPosition(node.getStart(source)).line + 1;
@@ -45,29 +133,22 @@ export function inspectBlobPaths(file, text) {
     );
   };
   function visit(node) {
-    if (ts.isIdentifier(node) && node.text === 'contentPath') report(node, 'blob content path');
+    if (ts.isIdentifier(node) && node.text === 'contentPath' && !ts.isBindingElement(node.parent))
+      report(node, 'blob content path');
+    if (ts.isElementAccessExpression(node) && ts.isStringLiteralLike(node.argumentExpression)) {
+      const name = node.argumentExpression.text;
+      if (name === 'contentPath') report(node, 'blob content path');
+      if (name === 'root' && isStorage(lastName(node.expression)))
+        report(node, 'storage root path');
+    }
     if (
       ts.isPropertyAccessExpression(node) &&
       node.name.text === 'root' &&
-      storageNames.test(lastName(node.expression))
+      isStorage(lastName(node.expression))
     )
       report(node, 'storage root path');
-    if (ts.isCallExpression(node)) {
-      const callee = lastName(node.expression);
-      if (
-        (callee === 'join' || callee === 'resolve') &&
-        node.arguments.some((a) => ts.isStringLiteralLike(a) && /(^|\/)blobs(\/|$)/.test(a.text))
-      )
-        report(node, 'path into the blobs directory');
-      const required = placedCalls.get(callee);
-      if (
-        required !== undefined &&
-        ts.isPropertyAccessExpression(node.expression) &&
-        lastName(node.expression.expression) === 'blobs' &&
-        node.arguments.length < required
-      )
-        report(node, `blobs.${callee} without the upload's storage backend`);
-    }
+    destructuredPaths(node, isStorage, report);
+    calls(node, aliases, report);
     ts.forEachChild(node, visit);
   }
   visit(source);
