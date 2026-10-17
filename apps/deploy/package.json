@@ -13,6 +13,8 @@
   "author": "Ian Panaev",
   "dependencies": {
     "@proanima/arkvory-contracts": "0.0.0",
+    "@proanima/arkvory-extension-api": "0.2.0",
+    "@proanima/arkvory-signing": "0.0.0",
     "ssh2": "1.17.0",
     "yauzl": "3.4.0"
   }

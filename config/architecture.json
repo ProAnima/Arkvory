@@ -19,6 +19,10 @@
       "allowed": []
     },
     {
+      "path": "packages/signing",
+      "allowed": ["packages/extension-api"]
+    },
+    {
       "path": "packages/application",
       "allowed": ["packages/domain"]
     },
@@ -67,7 +71,7 @@
     },
     {
       "path": "apps/deploy",
-      "allowed": ["packages/contracts"]
+      "allowed": ["packages/contracts", "packages/extension-api", "packages/signing"]
     }
   ]
 }
