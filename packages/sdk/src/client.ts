@@ -200,6 +200,12 @@ export class ArkvoryClient extends AccountClient {
   setStoragePolicy(...args: Parameters<StorageApi['setStoragePolicy']>) {
     return this.storage.setStoragePolicy(...args);
   }
+  storagePlacement(...args: Parameters<StorageApi['storagePlacement']>) {
+    return this.storage.storagePlacement(...args);
+  }
+  setStoragePlacement(...args: Parameters<StorageApi['setStoragePlacement']>) {
+    return this.storage.setStoragePlacement(...args);
+  }
   storageUsage(...args: Parameters<StorageApi['storageUsage']>) {
     return this.storage.storageUsage(...args);
   }

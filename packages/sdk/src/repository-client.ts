@@ -17,6 +17,8 @@ type RepositoryTransport = Pick<
   | 'configureCleanup'
   | 'requestCleanup'
   | 'setStoragePolicy'
+  | 'storagePlacement'
+  | 'setStoragePlacement'
   | 'storageUsage'
   | 'previewStoragePolicy'
   | 'runStoragePolicy'
@@ -107,6 +109,8 @@ export function repositoryClient(client: RepositoryTransport, repository: string
       preview: bind(client.previewStoragePolicy),
       run: bind(client.runStoragePolicy),
       events: bind(client.storageEvents),
+      placement: bind(client.storagePlacement),
+      configurePlacement: bind(client.setStoragePlacement),
     }),
     retention: Object.freeze({
       preview: bind(client.previewRetention),

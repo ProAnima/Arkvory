@@ -1,14 +1,22 @@
 import {
   dataVolumeStaging,
+  defaultStorageReserveBytes,
   DownloadTickets,
-  LocalBlobStore,
+  localStorageBackends,
   loadDownloadTicketKey,
+  PostgresStorageIdentities,
+  probeStorageBackends,
   PostgresCatalog,
   PostgresDownloadLease,
   PostgresContentPins,
   PostgresDownloadSettings,
 } from '@proanima/arkvory-infrastructure';
-import type { StagingArea } from '@proanima/arkvory-infrastructure';
+import type {
+  StagingArea,
+  StorageBackends,
+  StorageFault,
+  StorageLifecycle,
+} from '@proanima/arkvory-infrastructure';
 import { DownloadSettingsControl } from '@proanima/arkvory-application';
 import type { ServerConfig } from './config.js';
 import { createTransferControls } from './transfer-controls.js';
@@ -36,7 +44,10 @@ export class ApiRuntime {
   readonly role;
   readonly transfers;
   readonly catalog: PostgresCatalog;
-  readonly blobs: LocalBlobStore;
+  /** Every storage of the installation behind one port (ADR 0083, N11). */
+  readonly blobs: StorageBackends;
+  /** The core's storage `default`: readiness, ownership and the reserve of the data volume. */
+  readonly core: StorageLifecycle;
   /** Temporary files of raw and OCI uploads, on the data volume beside the content. */
   readonly staging: StagingArea;
   readonly pins: PostgresContentPins;
@@ -58,8 +69,13 @@ export class ApiRuntime {
     this.modules = planApiModules(this.role, coreVersion);
     // Validate local limits before allocating pools or claiming ownership.
     this.transfers = createTransferControls(config, this.available);
-    this.blobs = new LocalBlobStore(config.dataDirectory, config.storageReserveBytes);
-    this.staging = dataVolumeStaging(config.dataDirectory, (bytes) => this.blobs.checkSpace(bytes));
+    this.blobs = localStorageBackends(
+      config.dataDirectory,
+      config.storageReserveBytes ?? defaultStorageReserveBytes,
+      config.storageBackends ?? [],
+    );
+    this.core = this.blobs.core.lifecycle;
+    this.staging = dataVolumeStaging(config.dataDirectory, (bytes) => this.core.checkSpace(bytes));
     this.catalog = new PostgresCatalog(
       config.databaseUrl,
       config.capacityBytes,
@@ -85,15 +101,18 @@ export class ApiRuntime {
 
   async start(): Promise<void> {
     try {
-      if (this.role === 'reader') await this.blobs.ready();
-      else await this.blobs.initialize();
+      if (this.role === 'reader') await this.core.ready();
+      else await this.core.initialize();
       await this.catalog.ready();
       await this.catalog.claimStorage(
-        await this.blobs.identity(this.role === 'reader'),
+        await this.core.identity(this.role === 'reader'),
         this.role,
         this.lease !== undefined,
       );
       await this.lease?.start();
+      // Storages other than `default` open once ownership is held; one that fails leaves the
+      // process running with that storage unavailable (ADR 0078, L5).
+      await this.probeStorage();
       // Queue tickets keep a download's turn over a restart (ADR 0076); a reader without a key
       // made by a writer yet issues none until a later look finds it.
       // A database hiccup here only delays tickets, as the retry below would.
@@ -106,6 +125,17 @@ export class ApiRuntime {
       await this.close();
       throw error;
     }
+  }
+
+  /**
+   * Opens or rechecks the storages other than `default`: at start and then periodically. Only
+   * the writer records the identity of a storage it sees first.
+   */
+  probeStorage(changed?: (id: string, fault: StorageFault | null) => void): Promise<void> {
+    return probeStorageBackends(this.blobs, new PostgresStorageIdentities(this.catalog.pool), {
+      create: this.role === 'api',
+      ...(changed ? { changed } : {}),
+    });
   }
 
   private async loadTicketKey() {

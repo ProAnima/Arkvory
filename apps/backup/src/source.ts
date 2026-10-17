@@ -4,7 +4,6 @@ import { defaultCaptureLimits } from '@proanima/arkvory-application';
 import type { CaptureDependencies, CaptureEvent } from '@proanima/arkvory-application';
 import {
   FileVault,
-  LocalBlobStore,
   LocalContentSource,
   PacedContentSource,
   PostgresBackupJobs,
@@ -16,14 +15,19 @@ import {
   backupPool,
   claimBackupSource,
   keyFileSource,
+  localStorageBackends,
+  PostgresStorageIdentities,
+  probeStorageBackends,
+  readStorageBackends,
   requireSeparateTrees,
 } from '@proanima/arkvory-infrastructure';
-import type { BackupPool, VaultKeySource } from '@proanima/arkvory-infrastructure';
+import type { BackupPool, StorageBackends, VaultKeySource } from '@proanima/arkvory-infrastructure';
 import type { SourceConfig } from './config.js';
 
 export interface CaptureSource {
   readonly pool: BackupPool;
-  readonly blobs: LocalBlobStore;
+  /** Every storage of the source; content is read from the storage of its inventory line. */
+  readonly blobs: StorageBackends;
   readonly storageId: string;
   /** False once the capture session (maintenance and singleton locks) is lost. */
   readonly active: () => boolean;
@@ -35,11 +39,21 @@ export interface CaptureSource {
  * the schema must be this release's. The capture session holds 18471/4 shared and 18471/19.
  */
 export async function openCaptureSource(config: SourceConfig): Promise<CaptureSource> {
-  const blobs = new LocalBlobStore(config.dataDirectory, config.reserveBytes);
+  const blobs = localStorageBackends(
+    config.dataDirectory,
+    config.reserveBytes,
+    await readStorageBackends(config.storageBackendsFile, config.dataDirectory).catch(
+      (error: unknown) => {
+        throw new BackupFailure('invalid_argument', 'Invalid ARKVORY_STORAGE_BACKENDS_FILE', {
+          cause: error,
+        });
+      },
+    ),
+  );
   let storageId: string;
   try {
-    await blobs.ready();
-    storageId = await blobs.identity(true);
+    await blobs.core.lifecycle.ready();
+    storageId = await blobs.core.lifecycle.identity(true);
   } catch (error) {
     throw new BackupFailure('storage_mismatch', 'ARKVORY_DATA_DIR is not an initialized storage', {
       cause: error,
@@ -50,6 +64,9 @@ export async function openCaptureSource(config: SourceConfig): Promise<CaptureSo
     if ((await appliedSchemaVersion(pool)) !== SCHEMA_VERSION)
       throw new BackupFailure('schema_mismatch', 'Source schema differs from this release');
     const session = await claimBackupSource(pool, storageId);
+    // Read-only: a storage the writer has not recorded yet holds nothing to copy. Content of a
+    // storage that is not available fails the capture as missing content, never silently.
+    await probeStorageBackends(blobs, new PostgresStorageIdentities(pool), { create: false });
     return {
       pool,
       blobs,

@@ -1,9 +1,16 @@
 import { setTimeout as delay } from 'node:timers/promises';
+import { PolicyPlacement } from '@proanima/arkvory-application';
 import {
-  LocalBlobStore,
+  dataVolumeStaging,
+  localStorageBackends,
   PostgresCatalog,
+  PostgresPlacementPolicies,
+  PostgresStorageIdentities,
+  probeStorageBackends,
+  readStorageBackends,
   WorkerSingletonBusy,
   storageReserveBytes,
+  watchStorageBackends,
 } from '@proanima/arkvory-infrastructure';
 /** Capacity matters only for uploads the worker creates itself (mirror copies, ADR 0058). */
 export function capacityBytes(value: string | undefined): number {
@@ -18,17 +25,33 @@ export async function resources(role: 'worker' | 'maintenance', capacity = 0, wr
   const root = process.env['ARKVORY_DATA_DIR'];
   if (!databaseUrl || !root)
     throw new Error('ARKVORY_DATABASE_URL and ARKVORY_DATA_DIR are required');
-  const blobs = new LocalBlobStore(
+  // Every storage of the installation (ADR 0083, N11); a bad file stops the start here.
+  const blobs = localStorageBackends(
     root,
     storageReserveBytes(process.env['ARKVORY_STORAGE_RESERVE_BYTES']),
+    await readStorageBackends(process.env['ARKVORY_STORAGE_BACKENDS_FILE'], root),
   );
+  const core = blobs.core.lifecycle;
   const catalog = new PostgresCatalog(databaseUrl, capacity, writers);
   try {
     await catalog.ready();
-    await blobs.ready();
-    await catalog.claimStorage(await blobs.identity(), role);
-    // The validated root: mirror copies stage their parts under it.
-    return { catalog, blobs, dataDirectory: root };
+    await core.ready();
+    await catalog.claimStorage(await core.identity(), role);
+    // Only the writer API records a storage seen for the first time; this process waits for it.
+    const identities = new PostgresStorageIdentities(catalog.pool);
+    await probeStorageBackends(blobs, identities, { create: false });
+    const unwatch =
+      role === 'worker' ? watchStorageBackends(blobs, identities, { create: false }) : () => {};
+    return {
+      catalog,
+      blobs,
+      // The validated root: mirror copies stage their parts under it.
+      dataDirectory: root,
+      staging: dataVolumeStaging(root, (bytes) => core.checkSpace(bytes)),
+      /** New uploads of the worker (mirror copies) and the storage checks of completion. */
+      placement: new PolicyPlacement(new PostgresPlacementPolicies(catalog.pool), blobs),
+      unwatch,
+    };
   } catch (error) {
     await catalog.close();
     throw error;

@@ -16,6 +16,8 @@ import {
   MirrorStatus,
   DownloadLinks,
   EventFeed,
+  PlacementControl,
+  PolicyPlacement,
 } from '@proanima/arkvory-application';
 import type { MirrorConfiguration } from '@proanima/arkvory-application';
 import {
@@ -43,24 +45,26 @@ import {
   PostgresWebhookState,
   PostgresTransferLinks,
   PostgresEventLog,
+  PostgresPlacementPolicies,
 } from '@proanima/arkvory-infrastructure';
 import { AuthThrottle } from './auth-throttle.js';
 import { BackupMetrics } from './backup-metrics.js';
 import { MirrorMetrics } from './mirror-metrics.js';
 import { WebhookMetrics } from './webhook-metrics.js';
 import { EventMetrics } from './event-metrics.js';
+import { StorageMetrics } from './storage-metrics.js';
 import { createProtocolServices } from './protocol-services.js';
 import type {
-  LocalBlobStore,
   PostgresCatalog,
   PostgresContentPins,
   StagingArea,
+  StorageBackends,
 } from '@proanima/arkvory-infrastructure';
 
 /** Composition only: each registrar receives just the services it consumes. */
 export function createApiServices(
   catalog: PostgresCatalog,
-  blobs: LocalBlobStore,
+  blobs: StorageBackends,
   pins: PostgresContentPins,
   options: {
     /** Temporary files of raw and OCI uploads on the data volume (ADR 0083, N9). */
@@ -72,11 +76,18 @@ export function createApiServices(
 ) {
   const { allowRegistration = false, maxObjectBytes, staging } = options;
   const now = () => new Date().toISOString();
+  const placements = new PostgresPlacementPolicies(catalog.pool);
+  const storageMetrics = new StorageMetrics(blobs);
   const service = new StorageService(
     catalog,
     blobs,
     { next: randomUUID, now },
-    maxObjectBytes === undefined ? {} : { maxObjectBytes },
+    {
+      placement: new PolicyPlacement(placements, blobs, (decision) => {
+        storageMetrics.fellBack(decision);
+      }),
+      ...(maxObjectBytes === undefined ? {} : { maxObjectBytes }),
+    },
   );
   const serviceAccounts = new PostgresServices(catalog.pool);
   const storagePolicies = new PostgresStoragePolicy(catalog.pool);
@@ -106,6 +117,7 @@ export function createApiServices(
       // No rows without a webhooks file, so an installation without webhooks has no samples.
       webhooks: new WebhookMetrics(new PostgresWebhookState(catalog.pool), () => performance.now()),
       events: new EventMetrics(events, () => performance.now()),
+      storage: storageMetrics,
       // Only an installation with mirrors exposes mirror gauges.
       ...((options.mirrors ?? []).length > 0
         ? { mirrors: new MirrorMetrics(mirrors, () => performance.now()) }
@@ -132,6 +144,8 @@ export function createApiServices(
     service,
     serviceAccounts,
     storagePolicies,
+    placement: new PlacementControl(placements, blobs),
+    storageMetrics,
     browse,
     search: new GlobalSearch(new PostgresGlobalSearch(catalog.pool)),
     securityAudit,

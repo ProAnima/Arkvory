@@ -66,6 +66,8 @@ export interface MetricSources {
     refresh(failed: () => void): Promise<void>;
     register(registry: MetricsRegistry): void;
   };
+  /** Storages of the process and placement fallbacks, from memory (ADR 0083, N11). */
+  readonly storage?: { register(registry: MetricsRegistry): void };
   /** Event outbox gauges, same cache rules (ADR 0080). */
   readonly events?: {
     refresh(failed: () => void): Promise<void>;
@@ -137,6 +139,7 @@ export class ApiMetrics {
     sources.webhooks?.register(this.registry);
     sources.replica?.register(this.registry);
     sources.events?.register(this.registry);
+    sources.storage?.register(this.registry);
   }
 
   observe(observed: ObservedResponse): void {

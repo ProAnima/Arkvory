@@ -90,6 +90,9 @@ export type UnchangedKeys = Assert<
       | 'searchAll'
       // ADR 0078/0079: the installation's modules as the additive namespace `system`.
       | 'system'
+      // ADR 0083 (N11): where new uploads of a repository are stored.
+      | 'storagePlacement'
+      | 'setStoragePlacement'
     >,
     keyof LegacyClient
   >

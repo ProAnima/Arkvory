@@ -1,5 +1,6 @@
 import { storagePolicyPaths } from './storage-policy.js';
 import { cleanupPaths } from './cleanup.js';
+import { storagePlacementPaths } from './storage-placement.js';
 import { updatePaths } from './updates-api.js';
 import { fleetPaths } from './fleet-api.js';
 import { downloadSettingsPaths } from './download-settings-api.js';
@@ -63,6 +64,8 @@ export interface UploadResponse {
     labels: readonly string[];
     metadata: Readonly<Record<string, string>>;
   };
+  /** Upload routes only: where the upload is stored (ADR 0083, N11). */
+  storageBackend?: string;
 }
 
 export const uploadSchema = {
@@ -76,6 +79,8 @@ export const uploadSchema = {
     createdAt: { type: 'string', format: 'date-time' },
     expiresAt: { type: 'string', format: 'date-time' },
     descriptor: descriptorSchema,
+    /** Upload routes only (ADR 0083, N11): the storage the upload was created in. */
+    storageBackend: { type: 'string', minLength: 1, maxLength: 64 },
   },
 } as const;
 
@@ -263,6 +268,7 @@ const composed = composeApiPaths({
   ...retentionPaths,
   ...storagePolicyPaths,
   ...cleanupPaths,
+  ...storagePlacementPaths,
   ...updatePaths,
   ...fleetPaths,
   ...downloadSettingsPaths,

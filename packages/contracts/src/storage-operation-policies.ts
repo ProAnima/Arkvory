@@ -18,6 +18,8 @@ export const storageOperations = [
   ['/storage/cleanup', 'get', 'getCleanup', ['storage.read'], 'read'],
   ['/storage/cleanup', 'put', 'setCleanup', ['storage.manage'], 'compare-and-swap'],
   ['/storage/cleanup/run', 'post', 'requestCleanup', ['storage.manage'], 'never-automatic'],
+  ['/storage/placement', 'get', 'getStoragePlacement', ['storage.read'], 'read'],
+  ['/storage/placement', 'put', 'setStoragePlacement', ['storage.manage'], 'compare-and-swap'],
 ] as const;
 
 export const attachmentOperations = [

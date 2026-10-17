@@ -23,7 +23,6 @@ import {
   startEventLoopWatchdog,
   trustMirrorCertificates,
   watchdogSeconds,
-  dataVolumeStaging,
 } from '@proanima/arkvory-infrastructure';
 import type { LogLevel, PostgresJobLease } from '@proanima/arkvory-infrastructure';
 import { capacityBytes, standbyRetryMs, workerResources } from './runtime.js';
@@ -116,7 +115,7 @@ try {
     2 + Math.min(mirrors.length, 16),
   );
   if (!acquired) throw new StoppedOnStandby();
-  const { catalog, blobs, dataDirectory } = acquired;
+  const { catalog, blobs, staging, placement } = acquired;
   let currentLease: PostgresJobLease | undefined;
   const recovery = setInterval(() => {
     if (stop.signal.aborted || (catalog.active && (!currentLease || currentLease.active))) return;
@@ -130,10 +129,12 @@ try {
     jobs,
     identity: new PostgresIdentity(catalog.pool),
     services: new PostgresServices(catalog.pool),
-    storage: new StorageService(catalog, blobs, {
-      next: randomUUID,
-      now: () => new Date().toISOString(),
-    }),
+    storage: new StorageService(
+      catalog,
+      blobs,
+      { next: randomUUID, now: () => new Date().toISOString() },
+      { placement },
+    ),
     keyFile,
     ownerActive: () => catalog.active,
     stopped: stop.signal,
@@ -153,7 +154,8 @@ try {
   const mirroring = runMirrors({
     catalog,
     blobs,
-    staging: dataVolumeStaging(dataDirectory, (bytes) => blobs.checkSpace(bytes)),
+    staging,
+    placement,
     mirrors,
     stop: stop.signal,
     diagnostics,

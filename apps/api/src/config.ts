@@ -11,7 +11,13 @@ import {
   type DownloadSchedulePolicy,
 } from '@proanima/arkvory-domain';
 import { readDownloadQueue } from './download-config.js';
-import { parseKeys, downloadShare, readMirrorSettings } from '@proanima/arkvory-infrastructure';
+import {
+  parseKeys,
+  downloadShare,
+  readMirrorSettings,
+  readStorageBackends,
+} from '@proanima/arkvory-infrastructure';
+import type { LocalStorageSettings } from '@proanima/arkvory-infrastructure';
 import type { MirrorConfiguration } from '@proanima/arkvory-application';
 import type { SharedDownloadPolicy } from '@proanima/arkvory-infrastructure';
 import type { ServiceKey } from '@proanima/arkvory-infrastructure';
@@ -30,6 +36,8 @@ export interface ServerConfig extends UploadTimeoutOptions, OperabilityOptions {
   readonly sharedDownloads?: SharedDownloadPolicy;
   readonly databaseUrl: string;
   readonly dataDirectory: string;
+  /** More `local-storage` instances beside `default` (ADR 0083, N11; ARKVORY_STORAGE_BACKENDS_FILE). */
+  readonly storageBackends?: readonly LocalStorageSettings[];
   readonly host: string;
   readonly port: number;
   readonly capacityBytes: number;
@@ -201,6 +209,11 @@ export async function loadConfig(env: NodeJS.ProcessEnv): Promise<ServerConfig> 
     );
   const keys = await readKeys(required('ARKVORY_KEYS_FILE'));
   const mirrors = await readMirrors(env);
+  const dataDirectory = required('ARKVORY_DATA_DIR');
+  const storageBackends = await readStorageBackends(
+    env['ARKVORY_STORAGE_BACKENDS_FILE'],
+    dataDirectory,
+  );
   const maxUploads = number('ARKVORY_MAX_UPLOADS', 8, 32);
   const maxDownloads = number('ARKVORY_MAX_DOWNLOADS', 16, 256);
   const transferQueueLimit = number('ARKVORY_TRANSFER_QUEUE_LIMIT', 64, 1024);
@@ -218,7 +231,8 @@ export async function loadConfig(env: NodeJS.ProcessEnv): Promise<ServerConfig> 
     ...(env['ARKVORY_MAX_OBJECT_BYTES'] === undefined
       ? {}
       : { maxObjectBytes: number('ARKVORY_MAX_OBJECT_BYTES', MAX_OBJECT_BYTES, MAX_OBJECT_BYTES) }),
-    dataDirectory: required('ARKVORY_DATA_DIR'),
+    dataDirectory,
+    ...(storageBackends.length > 0 ? { storageBackends } : {}),
     keys,
     ...(mirrors.length > 0 ? { mirrors } : {}),
     ...readHub(env),

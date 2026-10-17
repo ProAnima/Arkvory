@@ -5,8 +5,13 @@ import {
   readStorageRun,
   readStorageEvents,
   readCleanupSnapshot,
+  readStoragePlacement,
 } from '@proanima/arkvory-contracts';
-import type { StoragePolicyRequest, CleanupPolicyRequest } from '@proanima/arkvory-contracts';
+import type {
+  StoragePolicyRequest,
+  CleanupPolicyRequest,
+  StoragePlacementRule,
+} from '@proanima/arkvory-contracts';
 import {
   readDeletionCandidate,
   readDeletionResult,
@@ -19,6 +24,33 @@ import { repositoryPath } from './http-transport.js';
 
 export class StorageApi {
   constructor(private readonly http: HttpPort) {}
+  /** Where new uploads of the repository go and the state of each storage (ADR 0083, N11). */
+  async storagePlacement(repository: string, signal?: AbortSignal) {
+    return readStoragePlacement(
+      await this.http.call(
+        repositoryPath(repository, 'storage/placement'),
+        'GET',
+        undefined,
+        signal,
+      ),
+    );
+  }
+  /** Replaces the rules; only new uploads follow them, stored data never moves. */
+  async setStoragePlacement(
+    repository: string,
+    expectedRevision: number,
+    rules: readonly StoragePlacementRule[],
+    signal?: AbortSignal,
+  ) {
+    return readStoragePlacement(
+      await this.http.call(
+        repositoryPath(repository, 'storage/placement'),
+        'PUT',
+        { expectedRevision, rules },
+        signal,
+      ),
+    );
+  }
   async cleanup(repository: string, signal?: AbortSignal) {
     return readCleanupSnapshot(
       await this.http.call(repositoryPath(repository, 'storage/cleanup'), 'GET', undefined, signal),

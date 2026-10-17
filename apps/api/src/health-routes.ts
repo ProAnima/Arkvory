@@ -3,7 +3,7 @@ import { ArkvoryError } from '@proanima/arkvory-domain';
 import type { Principal, ReplicaCopies } from '@proanima/arkvory-domain';
 import { readinessSchema, healthStatusSchema } from '@proanima/arkvory-contracts';
 import type {
-  LocalBlobStore,
+  StorageLifecycle,
   PostgresCatalog,
   PostgresDownloadLease,
   AdmissionQueue,
@@ -15,7 +15,11 @@ import type { ReplicaGuard } from './replica-guard.js';
 
 interface Health {
   catalog: Pick<PostgresCatalog, 'ready'>;
-  blobs: Pick<LocalBlobStore, 'ready' | 'checkSpace'>;
+  /**
+   * The core's storage: readiness and `writable` follow it alone. Another storage that is not
+   * available makes its uploads unavailable and sends new ones to this one (ADR 0083, N11).
+   */
+  core: Pick<StorageLifecycle, 'ready' | 'checkSpace'>;
   role: 'api' | 'reader';
   lease: Pick<PostgresDownloadLease, 'snapshot'> | undefined;
   available: () => boolean;
@@ -34,13 +38,13 @@ export function registerHealthRoutes(
   replica?: ReplicaGuard,
   principal?: (request: FastifyRequest) => Principal,
 ) {
-  const { catalog, blobs, role, lease, available } = dependencies;
+  const { catalog, core, role, lease, available } = dependencies;
   const { uploadGate, downloadGate, downloadScheduler, uploadBandwidth, downloadBandwidth } =
     dependencies.transfers;
   const probe = new ReadinessProbe(
     async () => {
       await catalog.ready();
-      await blobs.ready();
+      await core.ready();
       if (!available()) throw new ArkvoryError('unavailable', 'Gateway ownership lost');
     },
     draining,
@@ -66,10 +70,10 @@ export function registerHealthRoutes(
   app.get('/health/ready', { schema: { response: { 200: readinessSchema } } }, async (request) => {
     if (draining()) throw new ArkvoryError('unavailable', 'Server is draining');
     await catalog.ready();
-    await blobs.ready();
+    await core.ready();
     let writable = role === 'api';
     try {
-      if (writable) await blobs.checkSpace(0);
+      if (writable) await core.checkSpace(0);
     } catch (error) {
       if (error instanceof ArkvoryError && error.code === 'capacity_exceeded') writable = false;
       else throw error;

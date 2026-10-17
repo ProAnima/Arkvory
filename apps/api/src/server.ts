@@ -68,6 +68,9 @@ function registerMaintenance(
   diagnostics: DiagnosticLogger,
   fleet: FleetControl,
 ) {
+  services.storageMetrics.bind((record) => {
+    diagnostics.write(record);
+  });
   return registerBackgroundTasks(app, {
     role: runtime.role,
     available: runtime.available,
@@ -90,6 +93,10 @@ function registerMaintenance(
       }
     },
     collect: () => services.collector.tick(runtime.available),
+    storage: () =>
+      runtime.probeStorage((id, fault) => {
+        services.storageMetrics.changed(id, fault);
+      }),
     flush: () => responses.flush(),
     close: () => {
       responses.close();
