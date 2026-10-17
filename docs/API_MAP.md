@@ -1,5 +1,7 @@
 # Карта API Arkvory
 
+Модули установки ([ADR 0079](adr/0079-extension-modules.md), [ADR 0078](adr/0078-open-core-modules-and-licenses.md)): `GET/HEAD /api/v1/system/modules` — версия API расширений, отпечаток плана и каждый модуль (версия, точка расширения, источник, `core`, `enabled`, роли, состояние в ответившем процессе). Surface discovery, глобальный administrator, без настроек и путей. SDK: `client.system.modules()`.
+
 Управление установленным кодом: `GET/HEAD /api/v1/system/updates` и `POST /api/v1/system/updates/requests`. Surface administration, глобальный administrator, команды check/configure/apply с revision и UUID. SDK: `client.updates`. [Контракт, права и восстановление](UPDATES.md).
 
 Резервные копии экземпляра (B2, [ADR 0056](adr/0056-unattended-backups.md)): `/api/v1/backup/*`, surface administration, системные права `backup.read`/`backup.manage` (администратор учётных записей или файловый ключ владельца/bootstrap; ключи репозиториев — 403). Подробности — [раздел 1a](#1a-резервные-копии--реализовано). Схема БД введена в 26; актуальная — 34 (`SCHEMA_VERSION`).
