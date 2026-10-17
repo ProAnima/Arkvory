@@ -81,16 +81,17 @@ arkvoryctl doctor
 
 ### 发现与目录 {#discovery-and-catalog}
 
-| 命令                                                                       | 结果                           |
-| -------------------------------------------------------------------------- | ------------------------------ |
-| `doctor`                                                                   | 连接、功能和权限               |
-| `repositories [--after CURSOR]`                                            | 密钥可见的仓库                 |
-| `operations [--after CURSOR]`                                              | 仓库中可用的 API 操作          |
-| `list [--after CURSOR]`                                                    | 仓库中的制品                   |
-| `search [--query TEXT] [--label TAG] [--collection NAME] [--after CURSOR]` | 按名称和元数据文本搜索         |
-| `search --metadata-key KEY --metadata-value VALUE`                         | 精确匹配元数据（两者都要传入） |
-| `inspect ID`                                                               | 单个制品的元数据               |
-| `storage usage` / `storage policy`                                         | 仓库用量和存储策略             |
+| 命令                                                                                         | 结果                                     |
+| -------------------------------------------------------------------------------------------- | ---------------------------------------- |
+| `doctor`                                                                                     | 连接、功能和权限                         |
+| `repositories [--after CURSOR]`                                                              | 密钥可见的仓库                           |
+| `operations [--after CURSOR]`                                                                | 仓库中可用的 API 操作                    |
+| `list [--after CURSOR]`                                                                      | 仓库中的制品                             |
+| `search [--query TEXT] [--label TAG] [--collection NAME] [--after CURSOR]`                   | 按名称和元数据文本搜索                   |
+| `search --metadata-key KEY --metadata-value VALUE`                                           | 精确匹配元数据（两者都要传入）           |
+| `search --all [--query TEXT] [--repositories R1,R2] [--label L1,L2] [--stage S] [--limit N]` | 在密钥可列出的所有仓库中搜索，最新的在前 |
+| `inspect ID`                                                                                 | 单个制品的元数据                         |
+| `storage usage` / `storage policy`                                                           | 仓库用量和存储策略                       |
 
 分页结果会返回 `next`。将它通过 `--after` 传入即可读取下一页。
 
@@ -239,6 +240,21 @@ pipeline {
 ```
 
 其他系统（例如 TeamCity 或 Buildkite）的做法相同：从其密钥存储中设置 `ARKVORY_BASE_URL` 和 `ARKVORY_TOKEN`，然后运行命令。请根据[退出码](#exit-codes)判断结果。
+
+## AI 代理（MCP） {#mcp}
+
+`arkvoryctl mcp` 让支持 Model Context Protocol 的 AI 代理客户端（例如 Claude Code）使用 Arkvory。客户端启动该命令，并通过 stdin 和 stdout 与其通信；不会打开任何网络端口。调用使用配置文件或环境中的密钥，服务器会像对待其他命令一样检查其权限。
+
+```bash
+claude mcp add arkvory -- arkvoryctl mcp --profile production --root ~/work
+```
+
+- **只读。** 这些工具可以列出仓库、在所有仓库中搜索、读取制品、软件包、按路径的文件、变更流和安装状态，并下载制品。它们不能上传、更改或删除任何内容。密钥无法使用的工具不会提供。
+- **文件。** 下载只写入 `--root`（默认为当前目录）之下。只有在大小和 SHA-256 验证通过后文件才会出现；只有代理明确要求时才会替换已有文件。
+- **输出。** 单个结果最多 `--max-output-bytes`（默认 64 KiB，最大 1 MiB）和 100 项；如需更多，请将 `next` 作为 `after` 传回。密钥和下载链接绝不会出现在结果中。
+- **密钥。** 为代理提供单独的服务密钥，只能读取它需要的仓库。切勿将密钥粘贴到聊天中。
+- **数据。** 结果中的名称、标签和元数据由其他人编写。代理必须将其视为数据，而不是指令。
+- 客户端必须支持 MCP 2025-06-18 或更高版本。
 
 ## 输出 {#output}
 

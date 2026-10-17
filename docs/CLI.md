@@ -139,6 +139,27 @@ arkvoryctl search --metadata-key commit --metadata-value abc123
 
 `--metadata-key` и `--metadata-value` передаются вместе и задают точное, регистрозависимое равенство. Пустая строка значения допустима. Лимиты: ключ 64, значение 1024, общий текст 240 символов; до 100 результатов, продолжение через `--after`. Каждый результат содержит `id`, `name`, `size` (десятичная строка), `createdAt`, `publishedAt`, текущие `labels` и `stages`. UI и SDK предоставляют те же фильтры. Поиск использует актуальную annotation, а не скрытые старые значения upload descriptor. Substring search may scan the repository; this is not an indexed full-text engine. Exact metadata filters are case-sensitive and must be supplied as a key/value pair.
 
+`search --all` ищет во всех репозиториях, где у ключа есть `artifact.list` (не больше первых 1000 по имени), через `GET /api/v1/search` ([ADR 0081](adr/0081-mcp-and-agent-skill.md), этап A1). Фильтры: `--query`, `--repositories R1,R2` (до 100), `--label L1,L2` (до 8, нужны все), `--stage`, `--limit` (1–100, по умолчанию 50), `--after` — непрозрачный курсор `next`. Порядок: время публикации (сначала новые), затем репозиторий и ID. Каждый результат — тот же элемент, что у `search`, плюс `repository`. Репозиторий без права в `--repositories` пропускается так же, как несуществующий.
+
+```sh
+arkvoryctl search --all --query build-42 --label release --limit 20
+```
+
+## MCP для ИИ-агентов / MCP for AI agents
+
+`arkvoryctl mcp [--root DIR] [--max-output-bytes N]` — MCP-сервер на stdin/stdout для клиента агента, который запускает его дочерним процессом (этап M1 [ADR 0081](adr/0081-mcp-and-agent-skill.md)). Сетевого слушателя нет; все вызовы идут через SDK к API с ключом профиля или окружения (те же правила, что у `connection()`), сервер проверяет права как обычно. Запросы несут `Arkvory-Client: arkvoryctl-mcp/<версия>`.
+
+```sh
+claude mcp add arkvory -- arkvoryctl mcp --profile production --root ~/work
+```
+
+- Инструменты только чтения: `arkvory_repositories`, `arkvory_search` (общий поиск), `arkvory_artifacts`, `arkvory_artifact` (дескриптор, стадии, аннотации и вложения при `annotation.read`), `arkvory_packages` (список и `resolve`), `arkvory_files` (страница путей или история пути), `arkvory_history` (лента `R/changes`), `arkvory_status` (возможности, HA, зеркала, резервные копии, площадки; недоступный раздел — `forbidden`), `arkvory_download`. Инструменты, которые ключ заведомо не может выполнить (по `GET /api/v1/auth/permissions`), не регистрируются. Записи, удаления и `--write` на этом этапе нет.
+- `arkvory_download` пишет только внутри `--root` (по умолчанию текущий каталог): путь разрешается через `realpath`, ссылка за корень, каталог, устройство и FIFO отклоняются (`path_outside_root`). Байты идут во временный файл рядом с целью, размер и SHA-256 сверяются (SDK и повторно CLI), затем hard link (без `overwrite`) или rename (с `overwrite: true`). При ошибке временный файл удаляется. `maxBytes` отклоняет больший артефакт до передачи.
+- Результат — `structuredContent` по `outputSchema` и текстовый блок со сводкой и тем же JSON (для клиентов, читающих только текст); оба вместе не больше `--max-output-bytes` (по умолчанию 65536, 4096–1048576). Списки — до 100 элементов; страница, не помещающаяся в лимит, обрезается так, что `next` продолжает сразу после последнего возвращённого элемента; `truncated: true` отмечает обрезку.
+- Управляющие символы в чужих строках заменяются пробелом; значение ключа и токены `dtl_…` заменяются на `[withheld]`. Ошибки — `isError: true` с кодом ADR 0051 (`code`, `reason`, `status`, `requestId`, `retryAfterSeconds`), без текста исключений, путей и адресов.
+- Протокол MCP `2025-11-25` или `2025-06-18`; клиент с более ранней ревизией получает ошибку -32602 со списком поддерживаемых версий.
+- Тексты лицензий встроенных зависимостей — `MCP-LICENSES.txt` рядом с `arkvoryctl.mjs`.
+
 ## Метки, метаданные и вложения
 
 Для начального upload: `--label test` либо `--file metadata.json`, содержащий `labels` и `metadata`. JSON имеет приоритет над `--label`. Метаданные — string-to-string map. Каналы `test`, `staging`, `release` — обычные метки, не встроенные неизменяемые статусы.
@@ -189,6 +210,6 @@ Repeat the same command after interruption. Upload receipts make repeated public
 
 ## Границы и развитие
 
-Команды чтения: `doctor`, `repositories`, `operations`, `list`, `search`, `inspect`, `packages list`, `annotations get`, `attachments get/history`, `storage usage/policy`, `uploads status`. Запись: `upload`, `packages publish`, `packages register`, `annotations set`, `attachments set`, `uploads cancel`. Download потоковый, с bounded retries и backpressure SDK. Клиент не обходит ACL и не управляет сервисами ОС.
+Команды чтения: `doctor`, `repositories`, `operations`, `list`, `search`, `inspect`, `packages list`, `annotations get`, `attachments get/history`, `storage usage/policy`, `uploads status`, `search --all`, `mcp` (только чтение и скачивание внутри `--root`). Запись: `upload`, `packages publish`, `packages register`, `annotations set`, `attachments set`, `uploads cancel`. Download потоковый, с bounded retries и backpressure SDK. Клиент не обходит ACL и не управляет сервисами ОС.
 
 Создание ключей/пользователей, destructive retention и настройка topology пока остаются в административном API/UI. Полный каталог: [API_MAP](API_MAP.md). Архитектура и проверки: [ADR 0034](adr/0034-remote-client-cli.md). Гейты: `npm run gate -- quick`, `integration`, `deployment`, `native-install` (последний только disposable CI runner). Публикация — только после release gates.

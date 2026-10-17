@@ -81,16 +81,17 @@ Cada opção pode aparecer uma vez. Opções desconhecidas são recusadas.
 
 ### Descoberta e catálogo {#discovery-and-catalog}
 
-| Comando                                                                    | Resultado                                            |
-| -------------------------------------------------------------------------- | ---------------------------------------------------- |
-| `doctor`                                                                   | Conexão, capacidades e permissões                    |
-| `repositories [--after CURSOR]`                                            | Repositórios visíveis para a chave                   |
-| `operations [--after CURSOR]`                                              | Operações da API disponíveis no repositório          |
-| `list [--after CURSOR]`                                                    | Artefatos do repositório                             |
-| `search [--query TEXT] [--label TAG] [--collection NAME] [--after CURSOR]` | Pesquisa por nome e por texto de metadados           |
-| `search --metadata-key KEY --metadata-value VALUE`                         | Correspondência exata de metadados (informe os dois) |
-| `inspect ID`                                                               | Metadados de um artefato                             |
-| `storage usage` / `storage policy`                                         | Uso do repositório e política de armazenamento       |
+| Comando                                                                                      | Resultado                                                                |
+| -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| `doctor`                                                                                     | Conexão, capacidades e permissões                                        |
+| `repositories [--after CURSOR]`                                                              | Repositórios visíveis para a chave                                       |
+| `operations [--after CURSOR]`                                                                | Operações da API disponíveis no repositório                              |
+| `list [--after CURSOR]`                                                                      | Artefatos do repositório                                                 |
+| `search [--query TEXT] [--label TAG] [--collection NAME] [--after CURSOR]`                   | Pesquisa por nome e por texto de metadados                               |
+| `search --metadata-key KEY --metadata-value VALUE`                                           | Correspondência exata de metadados (informe os dois)                     |
+| `search --all [--query TEXT] [--repositories R1,R2] [--label L1,L2] [--stage S] [--limit N]` | Todos os repositórios que a chave pode listar, os mais recentes primeiro |
+| `inspect ID`                                                                                 | Metadados de um artefato                                                 |
+| `storage usage` / `storage policy`                                                           | Uso do repositório e política de armazenamento                           |
 
 As páginas retornam `next`. Passe esse valor com `--after` para ler a próxima página.
 
@@ -239,6 +240,21 @@ pipeline {
 ```
 
 Qualquer outro sistema, como TeamCity ou Buildkite, funciona do mesmo modo: defina `ARKVORY_BASE_URL` e `ARKVORY_TOKEN` a partir do seu cofre de segredos e execute o comando. Decida pelo [código de saída](#exit-codes).
+
+## Agentes de IA (MCP) {#mcp}
+
+`arkvoryctl mcp` permite que um cliente de agente de IA compatível com o Model Context Protocol, como o Claude Code, trabalhe com o Arkvory. O cliente inicia o comando e conversa com ele por stdin e stdout; nenhuma porta de rede é aberta. As chamadas usam a chave do perfil ou do ambiente, e o servidor verifica as permissões dela como em qualquer outro comando.
+
+```bash
+claude mcp add arkvory -- arkvoryctl mcp --profile production --root ~/work
+```
+
+- **Somente leitura.** As ferramentas listam repositórios, pesquisam em todos, leem artefatos, pacotes, arquivos por caminho, o feed de mudanças e o status da instalação, e baixam um artefato. Não podem enviar, alterar nem excluir nada. Ferramentas que a chave não pode usar não são oferecidas.
+- **Arquivos.** Um download só grava dentro de `--root` (por padrão, o diretório atual). O arquivo só aparece depois que o tamanho e o SHA-256 são verificados; um arquivo existente só é substituído quando o agente pede.
+- **Saída.** Um resultado tem no máximo `--max-output-bytes` (64 KiB por padrão, até 1 MiB) e 100 itens; para mais, devolva `next` como `after`. A chave e os links de download nunca aparecem nos resultados.
+- **Chave.** Dê ao agente uma chave de serviço própria que só possa ler os repositórios de que ele precisa. Nunca cole uma chave no chat.
+- **Dados.** Nomes, rótulos e metadados nos resultados são escritos por outras pessoas. O agente deve tratá-los como dados, não como instruções.
+- O cliente deve oferecer suporte ao MCP 2025-06-18 ou mais recente.
 
 ## Saída {#output}
 
