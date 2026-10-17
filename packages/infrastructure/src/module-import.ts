@@ -136,7 +136,7 @@ function packageOf(url: string | undefined): string | undefined {
  * `import.meta.resolve`, `require` — must be a Node built-in or a file of the same package;
  * anything else throws `ERR_MODULE_OUTSIDE_PACKAGE` before it is loaded. Resolution itself
  * only reads files; the code a resolution names is never evaluated when it is refused. The hook
- * runs in this thread only: a Worker a module starts is its own code's choice (ADR 0078, 7).
+ * runs in this thread only: a Worker a module starts is not confined (ADR 0079, X4 notes).
  */
 function confine(): void {
   if (confined) return;
