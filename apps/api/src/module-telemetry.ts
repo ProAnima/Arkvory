@@ -9,6 +9,8 @@ import type {
 } from '@proanima/arkvory-extension-api';
 import type { DiagnosticRecord, MetricsRegistry } from '@proanima/arkvory-infrastructure';
 
+/** A module's level is read as unknown: one outside the contract would bypass the log level. */
+const LEVELS: readonly ModuleLogLevel[] = ['debug', 'info', 'warning', 'error'];
 const CODE = /^[a-z][a-z0-9_.]{0,63}$/;
 /** An identifier: no `/` or `:`, so neither a path nor a URL fits. */
 const SUBJECT = /^[A-Za-z0-9._@-]{1,128}$/;
@@ -56,6 +58,7 @@ export class ModuleTelemetry {
     if (!this.admit(module)) return;
     const { code, subject, durationMs, count } = record;
     const valid =
+      LEVELS.includes(level) &&
       typeof code === 'string' &&
       CODE.test(code) &&
       (subject === undefined || (typeof subject === 'string' && SUBJECT.test(subject))) &&

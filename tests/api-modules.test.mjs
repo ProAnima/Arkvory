@@ -468,10 +468,20 @@ test('module logs are checked, prefixed with the module and limited per window',
       module: 'probe',
     });
   }
+  // A level outside the contract would be written past the process log level.
+  for (const level of ['fatal', 'WARNING', undefined]) {
+    log.write(level, { code: 'ok' });
+    assert.deepEqual(records.at(-1), {
+      level: 'warning',
+      component: 'module',
+      code: 'module.log_invalid',
+      module: 'probe',
+    });
+  }
   assert.ok(records.every((r) => !JSON.stringify(r).includes('secret')));
   records.length = 0;
   for (let i = 0; i < 60; i++) log.write('info', { code: 'tick' });
-  assert.equal(records.filter((r) => r.code === 'module.tick').length, 45);
+  assert.equal(records.filter((r) => r.code === 'module.tick').length, 42);
   assert.equal(records.filter((r) => r.code === 'module.log_suppressed').length, 1);
   now = 10_000;
   log.write('info', { code: 'tick' });
