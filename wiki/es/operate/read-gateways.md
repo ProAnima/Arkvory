@@ -136,7 +136,7 @@ No puede cambiar las velocidades ni el número de slots mientras la instalación
 
 No lo haga nunca mientras algún proceso pueda seguir ejecutándose.
 
-Una actualización requiere el mismo cuidado. Detenga todas las puertas de enlace antes de que la instalación se actualice e inícielas después desde la versión nueva. Una puerta de enlace que sigue ejecutando código antiguo con un esquema de base de datos más nuevo se declara a sí misma como no lista. Las herramientas sin conexión de reparación de la limpieza también requieren detener todas las puertas de enlace. La limpieza en línea del writer, no.
+Una actualización que cambia el esquema de la base de datos requiere el mismo cuidado. Detenga todas las puertas de enlace antes de que la instalación se actualice e inícielas después desde la versión nueva. Una puerta de enlace que sigue ejecutando código antiguo con un esquema de base de datos más nuevo se declara a sí misma como no lista. Una actualización sin cambio de esquema no lo necesita: una puerta de enlace de la versión anterior sigue sirviendo junto al writer actualizado mientras ambos planifiquen los mismos módulos con los mismos ajustes, y puede reiniciarla desde la versión nueva cuando le convenga. Las herramientas sin conexión de reparación de la limpieza también requieren detener todas las puertas de enlace. La limpieza en línea del writer, no.
 
 ## Puertas de enlace o espejos {#gateways-or-mirrors}
 

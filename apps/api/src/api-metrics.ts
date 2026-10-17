@@ -73,6 +73,8 @@ export interface MetricSources {
     refresh(failed: () => void): Promise<void>;
     register(registry: MetricsRegistry): void;
   };
+  /** Modules of this process and their own series, sampled at scrape time (ADR 0079). */
+  readonly modules?: { register(registry: MetricsRegistry): void };
   /** Connections of the database pools, sampled at scrape time. */
   readonly databasePools?: () => readonly {
     readonly pool: string;
@@ -139,6 +141,7 @@ export class ApiMetrics {
     sources.webhooks?.register(this.registry);
     sources.replica?.register(this.registry);
     sources.events?.register(this.registry);
+    sources.modules?.register(this.registry);
     sources.storage?.register(this.registry);
   }
 

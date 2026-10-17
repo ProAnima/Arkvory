@@ -1,67 +1,12 @@
-import { planModules } from '@proanima/arkvory-extension-api';
 import type {
-  ModuleCandidate,
-  ModuleDescriptor,
   ModuleHealth,
-  ModuleHost,
   ModuleLifecycle,
   ModulePlan,
-  ModulePlanProblem,
   ModuleRole,
+  ModuleSignal,
   PlannedModule,
 } from '@proanima/arkvory-extension-api';
-
-/** A descriptor with its configuration parsed: what the plan reads and what `create` builds. */
-export interface PreparedModule<Context> {
-  readonly candidate: ModuleCandidate;
-  create(context: Context): ModuleLifecycle;
-}
-
-/** The operator's choice for one module; built-in modules are enabled with no settings by default. */
-export interface ModuleSelection {
-  readonly enabled: boolean;
-  readonly config: unknown;
-}
-
-/** Parses the configuration before anything starts; a `ModuleConfigError` stops the start. */
-export function prepareModule<Context, Config>(
-  descriptor: ModuleDescriptor<Context, Config>,
-  selection: ModuleSelection = { enabled: true, config: undefined },
-): PreparedModule<Context> {
-  const config = descriptor.parseConfig(selection.config);
-  return {
-    candidate: {
-      manifest: descriptor.manifest,
-      source: 'builtin',
-      packageSha256: null,
-      enabled: selection.enabled,
-      config: descriptor.describeConfig(config),
-    },
-    create: (context) => descriptor.create(context, config),
-  };
-}
-
-/** A refused plan; the message lists machine codes and module ids only. */
-export class ModulePlanError extends Error {
-  override readonly name = 'ModulePlanError';
-  constructor(readonly problems: readonly ModulePlanProblem[]) {
-    super(
-      `Module plan refused: ${problems.map((p) => `${p.code}(${p.module ?? p.subject})`).join(', ')}`,
-    );
-  }
-}
-
-export function planOrThrow<Context>(
-  prepared: ReadonlyMap<string, PreparedModule<Context>>,
-  host: ModuleHost,
-): ModulePlan {
-  const result = planModules(
-    [...prepared.values()].map((module) => module.candidate),
-    host,
-  );
-  if (!result.ok) throw new ModulePlanError(result.problems);
-  return result.plan;
-}
+import type { PreparedModule } from '@proanima/arkvory-infrastructure';
 
 export interface ModuleState {
   readonly module: PlannedModule;
@@ -129,7 +74,8 @@ async function stopAll(running: readonly Running[]): Promise<unknown[]> {
 /** The process this runtime runs in and what its modules receive. */
 export interface ModuleProcess<Context> {
   readonly role: ModuleRole;
-  readonly context: Context;
+  /** The context of one module, built right before its `create`; `signal` is the process stop. */
+  context(module: PlannedModule, signal: ModuleSignal): Context;
 }
 
 /**
@@ -170,7 +116,7 @@ export class ModuleRuntime<Context = unknown> {
         const module = this.prepared.get(id);
         if (!module) throw new Error('Planned module was not prepared');
         signal.throwIfAborted();
-        const instance = module.create(this.process.context);
+        const instance = module.create(this.process.context(planned, signal));
         // Recorded before start: stop() also runs after a failed or cancelled start.
         this.running.push({ id, instance });
         await instance.start(signal);
@@ -187,6 +133,30 @@ export class ModuleRuntime<Context = unknown> {
   /** Cancels a start in progress; modules already started run until `shutdown`. */
   cancelStart(): void {
     this.cancel.abort();
+  }
+
+  /** Enabled modules of this process's role, in id order: what it runs once started. */
+  planned(): PlannedModule[] {
+    return this.plan.modules.filter(
+      (m) => m.enabled && m.manifest.roles.includes(this.process.role),
+    );
+  }
+
+  /**
+   * A running module whose failure takes the process out of readiness (ADR 0079, section 4): a
+   * core module, or one providing a capability that an enabled module requires. Other modules
+   * may fail or degrade while the process stays ready; metrics and `system/modules` show them.
+   */
+  blockingFailure(): string | null {
+    const required = new Set(
+      this.plan.modules.filter((m) => m.enabled).flatMap((m) => m.manifest.requires),
+    );
+    const failed = this.states().find(
+      ({ module, health }) =>
+        health?.status === 'failed' &&
+        (module.manifest.core || module.manifest.provides.some((c) => required.has(c))),
+    );
+    return failed?.module.manifest.id ?? null;
   }
 
   states(): ModuleState[] {

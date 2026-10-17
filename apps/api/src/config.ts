@@ -15,9 +15,10 @@ import {
   parseKeys,
   downloadShare,
   readMirrorSettings,
+  readModuleSelections,
   readStorageBackends,
 } from '@proanima/arkvory-infrastructure';
-import type { LocalStorageSettings } from '@proanima/arkvory-infrastructure';
+import type { LocalStorageSettings, ModuleSelections } from '@proanima/arkvory-infrastructure';
 import type { MirrorConfiguration } from '@proanima/arkvory-application';
 import type { SharedDownloadPolicy } from '@proanima/arkvory-infrastructure';
 import type { ServiceKey } from '@proanima/arkvory-infrastructure';
@@ -76,6 +77,11 @@ export interface ServerConfig extends UploadTimeoutOptions, OperabilityOptions {
   readonly tls?: TlsSettings;
   /** Mirrored repositories (ADR 0058): read-only for clients, synchronized by the worker. */
   readonly mirrors?: readonly MirrorConfiguration[];
+  /**
+   * The operator's module choices (`ARKVORY_MODULES_FILE`, ADR 0079). Absent: every built-in
+   * module enabled with its defaults.
+   */
+  readonly modules?: ModuleSelections;
   /**
    * Where console feedback goes (ADR 0060). Absent or null: feedback is off; loadConfig turns
    * the studio hub on unless ARKVORY_HUB_URL is set empty.
@@ -209,6 +215,7 @@ export async function loadConfig(env: NodeJS.ProcessEnv): Promise<ServerConfig> 
     );
   const keys = await readKeys(required('ARKVORY_KEYS_FILE'));
   const mirrors = await readMirrors(env);
+  const modules = await readModuleSelections(env['ARKVORY_MODULES_FILE']);
   const dataDirectory = required('ARKVORY_DATA_DIR');
   const storageBackends = await readStorageBackends(
     env['ARKVORY_STORAGE_BACKENDS_FILE'],
@@ -235,6 +242,7 @@ export async function loadConfig(env: NodeJS.ProcessEnv): Promise<ServerConfig> 
     ...(storageBackends.length > 0 ? { storageBackends } : {}),
     keys,
     ...(mirrors.length > 0 ? { mirrors } : {}),
+    ...(modules.size > 0 ? { modules } : {}),
     ...readHub(env),
     corsOrigins: parseCorsOrigins(env['ARKVORY_CORS_ORIGINS']),
     webDirectory: env['ARKVORY_WEB_DIR'] ?? 'apps/web/public',

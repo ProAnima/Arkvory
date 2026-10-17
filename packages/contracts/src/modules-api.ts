@@ -32,8 +32,18 @@ export interface SystemModule {
 export interface SystemModules {
   /** The extension API version of this core. */
   readonly extensionApi: string;
-  /** SHA-256 of the plan, equal on every process of one installation. */
+  /**
+   * SHA-256 of the exact plan: the core version and every module version, source, package hash,
+   * choice and settings. Equal for equal plans of one release; another release gives another one.
+   */
   readonly fingerprint: string;
+  /**
+   * SHA-256 of what the processes of the installation must agree on: modules, sources, extension
+   * points, choices, settings and, for modules that are not built in, their compatibility line,
+   * without the core version. A read gateway or worker is ready only with the writer's value.
+   * Absent on servers before it was added.
+   */
+  readonly compatibilityFingerprint?: string;
   readonly modules: readonly SystemModule[];
 }
 
@@ -48,9 +58,12 @@ const code = { type: 'string', pattern: '^[a-z][a-z0-9_]{0,63}$', maxLength: 64,
 const version = { type: 'string', minLength: 5, maxLength: 64 };
 const health = { ...object({ status: word, code }), nullable: true };
 
+const sha256 = { type: 'string', pattern: '^[0-9a-f]{64}$' };
+
 export const systemModulesSchema = object({
   extensionApi: version,
-  fingerprint: { type: 'string', pattern: '^[0-9a-f]{64}$' },
+  fingerprint: sha256,
+  compatibilityFingerprint: sha256,
   modules: {
     type: 'array',
     maxItems: 256,
@@ -72,7 +85,7 @@ export const modulePaths = {
   '/api/v1/system/modules': {
     get: {
       summary:
-        'List the modules of this installation: version, extension point, whether core and enabled, health in the answering process, and the plan fingerprint',
+        'List the modules of this installation: version, extension point, whether core and enabled, health in the answering process, and the plan fingerprints',
       responses: {
         200: {
           description: 'Every planned module in id order; no settings, paths or secrets',
@@ -109,14 +122,20 @@ function readModule(value: unknown): SystemModule {
   };
 }
 
+function digest(value: unknown): string {
+  const fingerprint = text(value);
+  if (!/^[0-9a-f]{64}$/.test(fingerprint)) throw new Error('Invalid server fingerprint');
+  return fingerprint;
+}
+
 /** Validates `GET /api/v1/system/modules`; new fields of a newer server are left out. */
 export function readSystemModules(value: unknown): SystemModules {
   const row = record(value);
-  const fingerprint = text(row['fingerprint']);
-  if (!/^[0-9a-f]{64}$/.test(fingerprint)) throw new Error('Invalid server fingerprint');
+  const compatibility = row['compatibilityFingerprint'];
   return {
     extensionApi: text(row['extensionApi']),
-    fingerprint,
+    fingerprint: digest(row['fingerprint']),
+    ...(compatibility === undefined ? {} : { compatibilityFingerprint: digest(compatibility) }),
     modules: items(row['modules']).map(readModule),
   };
 }

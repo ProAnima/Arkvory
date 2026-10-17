@@ -143,6 +143,10 @@ export const excludedTables: readonly ExcludedTable[] = [
     name: 'arkvory_event_state',
     reason: 'epoch and positions of the source; migrating the target starts a new epoch',
   },
+  {
+    name: 'arkvory_module_plan',
+    reason: 'module plan of the source writer; the writer of the target records its own',
+  },
 ];
 
 const identifier = /^[a-z_][a-z0-9_]{0,62}$/;

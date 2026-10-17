@@ -40,14 +40,15 @@ Restart-Service Arkvoryapi, Arkvoryworker, Arkvorybackup
 
 ## 核心 {#core}
 
-| 变量                         | 读取方                   | 默认值            | 含义                                                                                                           |
-| ---------------------------- | ------------------------ | ----------------- | -------------------------------------------------------------------------------------------------------------- |
-| `ARKVORY_DATABASE_URL`       | API、worker、agent、迁移 | 必需              | PostgreSQL 连接 URL（`postgres://` 或 `postgresql://`）。每个安装使用单独的数据库。                            |
-| `ARKVORY_DATA_DIR`           | API、worker、agent       | 必需              | 本地存储目录：暂存区、内容和 `storage-id` 文件。不要使用网络共享。                                             |
-| `ARKVORY_HOST`               | API                      | `127.0.0.1`       | 监听的地址。安装程序写入 `127.0.0.1`；在 Docker Compose 中，容器内为 `0.0.0.0`，端口只发布在主机的回环地址上。 |
-| `ARKVORY_PORT`               | API                      | `8080`            | TCP 端口，1–65535。                                                                                            |
-| `ARKVORY_WEB_DIR`            | API                      | `apps/web/public` | 包含 Web 控制台文件的目录。启动器每次启动时都会把它设置为当前发行版。                                          |
-| `ARKVORY_DATABASE_POOL_SIZE` | API                      | `20`              | API 查询连接池的大小，4–200。长时间会话使用单独的 3 个连接的池。                                               |
+| 变量                         | 读取方                   | 默认值            | 含义                                                                                                                                                                                                                                                                              |
+| ---------------------------- | ------------------------ | ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ARKVORY_DATABASE_URL`       | API、worker、agent、迁移 | 必需              | PostgreSQL 连接 URL（`postgres://` 或 `postgresql://`）。每个安装使用单独的数据库。                                                                                                                                                                                               |
+| `ARKVORY_DATA_DIR`           | API、worker、agent       | 必需              | 本地存储目录：暂存区、内容和 `storage-id` 文件。不要使用网络共享。                                                                                                                                                                                                                |
+| `ARKVORY_HOST`               | API                      | `127.0.0.1`       | 监听的地址。安装程序写入 `127.0.0.1`；在 Docker Compose 中，容器内为 `0.0.0.0`，端口只发布在主机的回环地址上。                                                                                                                                                                    |
+| `ARKVORY_PORT`               | API                      | `8080`            | TCP 端口，1–65535。                                                                                                                                                                                                                                                               |
+| `ARKVORY_WEB_DIR`            | API                      | `apps/web/public` | 包含 Web 控制台文件的目录。启动器每次启动时都会把它设置为当前发行版。                                                                                                                                                                                                             |
+| `ARKVORY_DATABASE_POOL_SIZE` | API                      | `20`              | API 查询连接池的大小，4–200。长时间会话使用单独的 3 个连接的池。                                                                                                                                                                                                                  |
+| `ARKVORY_MODULES_FILE`       | API、worker              | 未设置            | 选择内置模块的 JSON 文件的绝对路径，例如 `{"format": 1, "modules": {"npm": {"enabled": false}}}`。只有 `oci`、`lfs` 和 `npm` 可以关闭；`upack` 和 `raw` 属于核心。未知的模块或字段会使启动停止。API、读取网关和 worker 必须读取同一个文件：规划不同的读取网关或 worker 不会就绪。 |
 
 ## 存储与限制 {#storage-and-limits}
 

@@ -22,9 +22,10 @@ import { migrateDownloadTickets } from './download-tickets.js';
 import { migrateFleet } from './fleet-schema.js';
 import { migrateDownloadSettings } from './download-settings-store.js';
 import { migrateEvents } from './event-schema.js';
+import { migrateModulePlan } from './module-plan-store.js';
 import { migrateStoragePlacement } from './storage-placement-store.js';
 
-/** Steps of versions 15-44 (36 is an index step; 43 is ADR 0079's module plan) in their historical order; each records its own version. */
+/** Steps of versions 15-44 (36 is an index step) in their historical order; each records its own version. */
 const storageSteps: readonly (readonly [number, (client: PoolClient) => Promise<void>])[] = [
   [15, migrateStoragePolicy],
   [16, migrateCleanup],
@@ -52,6 +53,7 @@ const storageSteps: readonly (readonly [number, (client: PoolClient) => Promise<
   [40, migrateDownloadSettings],
   [41, migrateMirrorConflicts],
   [42, migrateEvents],
+  [43, migrateModulePlan],
   [44, migrateStoragePlacement],
 ];
 

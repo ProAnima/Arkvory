@@ -23,6 +23,8 @@ interface Health {
   role: 'api' | 'reader';
   lease: Pick<PostgresDownloadLease, 'snapshot'> | undefined;
   available: () => boolean;
+  /** Rejects with `unavailable` while a required module failed or the module plan differs. */
+  modulesReady: () => Promise<void>;
   transfers: {
     uploadGate: Pick<AdmissionQueue, 'snapshot'>;
     downloadGate: Pick<AdmissionQueue, 'snapshot'>;
@@ -38,7 +40,7 @@ export function registerHealthRoutes(
   replica?: ReplicaGuard,
   principal?: (request: FastifyRequest) => Principal,
 ) {
-  const { catalog, core, role, lease, available } = dependencies;
+  const { catalog, core, role, lease, available, modulesReady } = dependencies;
   const { uploadGate, downloadGate, downloadScheduler, uploadBandwidth, downloadBandwidth } =
     dependencies.transfers;
   const probe = new ReadinessProbe(
@@ -46,6 +48,7 @@ export function registerHealthRoutes(
       await catalog.ready();
       await core.ready();
       if (!available()) throw new ArkvoryError('unavailable', 'Gateway ownership lost');
+      await modulesReady();
     },
     draining,
     () => performance.now(),
@@ -80,6 +83,7 @@ export function registerHealthRoutes(
     }
     if (!available())
       throw new ArkvoryError('unavailable', 'Gateway ownership or download lease lost');
+    await modulesReady();
     // Missing copies stop writes, not the node: readiness stays 200 so the cluster manager
     // does not move a healthy writer, and writable says whether writes are acknowledged.
     if (replica) await replica.refresh();
