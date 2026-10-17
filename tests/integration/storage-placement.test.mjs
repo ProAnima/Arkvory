@@ -1,9 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
 import { access, mkdtemp, readFile, rename, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { Pool } from 'pg';
 import { ArkvoryClient } from '@proanima/arkvory-sdk';
 import { serviceActions } from '@proanima/arkvory-domain';
@@ -65,7 +67,7 @@ async function manager(f) {
   const key = await root.issueServiceKey(account.id, randomUUID(), { name: 'placement', bindings });
   const client = new ArkvoryClient(url, () => key.secret);
   await client.activateServiceKey();
-  return { client, headers: { authorization: 'Bearer ' + key.secret } };
+  return { client, url, secret: key.secret, headers: { authorization: 'Bearer ' + key.secret } };
 }
 
 const everything = [{ id: 'all', backendId: 'volume-2', packageGroup: null, minSizeBytes: null }];
@@ -111,7 +113,7 @@ const putPart = (f, id, bytes) =>
 
 test('a placement switch affects only new uploads; earlier ones stay readable where they are', async (t) => {
   const { f, second } = await twoVolumes(t);
-  const { client, headers } = await manager(f);
+  const { client, headers, url: server, secret } = await manager(f);
   const before = await publish(f);
   assert.equal(before.storageBackend, 'default');
   const url = `${base}/storage/placement`;
@@ -170,6 +172,39 @@ test('a placement switch affects only new uploads; earlier ones stay readable wh
   assert.equal((await f.app.inject({ url, headers: f.headers })).statusCode, 403);
   const events = await client.storageEvents('releases');
   assert.ok(events.items.some((event) => event.code === 'storage.placement_updated'));
+  // arkvoryctl reads and replaces the same policy.
+  const home = await scratch(t, 'arkvory-cli-');
+  const env = {
+    ...process.env,
+    ARKVORY_CLI_HOME: home,
+    ARKVORY_BASE_URL: server,
+    ARKVORY_TOKEN: secret,
+  };
+  delete env.ARKVORY_TOKEN_FILE;
+  const cli = async (...args) =>
+    JSON.parse(
+      (
+        await promisify(execFile)(
+          process.execPath,
+          [
+            resolve('apps/cli/dist/main.js'),
+            'storage',
+            'placement',
+            '--repository',
+            'releases',
+            ...args,
+            '--json',
+          ],
+          { env, windowsHide: true, timeout: 30000 },
+        )
+      ).stdout,
+    );
+  assert.equal((await cli()).revision, 2);
+  const rules = join(home, 'rules.json');
+  await writeFile(rules, JSON.stringify(everything));
+  const replaced = await cli('--revision', '2', '--file', rules);
+  assert.equal(replaced.revision, 3);
+  assert.deepEqual(replaced.rules, everything);
 });
 
 test('a storage that is down or takes no data sends new uploads to default; nothing fails', async (t) => {

@@ -313,10 +313,11 @@ function registerRoutes(app: FastifyInstance, parts: RouteParts) {
     role: runtime.role,
     policy: parts.policy,
     diagnostics: parts.diagnostics,
-    modules: runtime.modules.planned().map(({ manifest }) => ({
-      id: manifest.id,
-      kind: manifest.kind,
-    })),
+    // Modules with a public surface (ADR 0079, section 9): a storage has none for clients.
+    modules: runtime.modules
+      .planned()
+      .filter(({ manifest }) => manifest.kind !== 'storage-backend')
+      .map(({ manifest }) => ({ id: manifest.id, kind: manifest.kind })),
   });
   if (runtime.role === 'api') registerConsole(app, config.webDirectory ?? 'apps/web/public');
 }

@@ -22,14 +22,14 @@ export async function migrateStoragePlacement(client: PoolClient): Promise<void>
   if ((await client.query('SELECT version FROM arkvory_migrations WHERE version=44')).rowCount)
     return;
   await client.query(`
-    CREATE TABLE arkvory_storage_placement (
+    CREATE TABLE IF NOT EXISTS arkvory_storage_placement (
       repository text PRIMARY KEY,
       revision integer NOT NULL CHECK (revision > 0),
       rules jsonb NOT NULL,
       updated_by text NOT NULL,
       updated_at timestamptz NOT NULL DEFAULT now()
     );
-    CREATE TABLE arkvory_storage_backends (
+    CREATE TABLE IF NOT EXISTS arkvory_storage_backends (
       backend_id varchar(64) PRIMARY KEY,
       storage_id uuid NOT NULL,
       recorded_at timestamptz NOT NULL DEFAULT now()
