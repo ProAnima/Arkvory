@@ -65,7 +65,7 @@ const release = await request(`${base}/releases`, {
     draft: true,
     prerelease: false,
     // The signing key never reaches CI (ADR 0060): the draft is signed on the release workstation.
-    body: `All release gates passed for this commit. Sign the draft on the release workstation before publishing: npm run release:sign -- sign-draft ${version}. Installations refuse unsigned releases; after publishing, approve the version in the hub.\n\nВсе release-гейты пройдены. Перед публикацией подпишите черновик на рабочей станции выпуска: npm run release:sign -- sign-draft ${version}. Установки не принимают неподписанные релизы; после публикации одобрите версию в хабе.`,
+    body: `All release gates passed for this commit. Sign the draft on the release workstation before publishing: npm run release:sign -- sign-draft ${version}. Installations refuse unsigned releases; after publishing, approve the version in the hub.`,
   }),
 });
 if (
