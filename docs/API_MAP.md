@@ -12,6 +12,8 @@
 
 Физическая очистка: GET/HEAD `R/storage/cleanup` (`storage.read`), PUT того же пути и POST `R/storage/cleanup/run` (`storage.manage`). Настройки с CAS, динамическая пауза, ограниченный проход и результат последнего выполнения: [ONLINE_CLEANUP](ONLINE_CLEANUP.md). Выполняется в фоне без остановки HTTP; 200 при запросе прохода не означает завершение удаления.
 
+Размещение новых загрузок: GET/HEAD `R/storage/placement` (`storage.read`) и PUT того же пути (`storage.manage`, CAS по `expectedRevision`) — правила выбора хранилища и состояние каждого хранилища ответившего процесса; ненастроенное хранилище — 400 `backend_unknown`. Ответы upload-маршрутов содержат `storageBackend`; новая часть upload хранилища, переставшего принимать данные, — 409 `backend_read_only` ([ADR 0083](adr/0083-core-extension-points.md), N11).
+
 ## Обозначения и общие правила
 
 `R = /api/v1/repositories/{repository}`. `read`, `write`, `administrator` — реальные сегодняшние проверки; `own` означает того же principal, не просто любой ключ с write. Пользовательская сессия также допустима. Администратор не обходит read/write. В таблице «целевое право» permissions репозиторных операций разделов 2–3 уже действуют для managed keys; глобальные identity/policy permissions пока проектные. Service administration выполняется file bootstrap либо делегатом с отдельными действиями на точные аккаунты, см. [текущий контракт ключей](SERVICE_KEYS.md). Несколько прав через `+` обязательны одновременно.

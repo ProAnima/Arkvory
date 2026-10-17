@@ -264,7 +264,7 @@ Une restauration écrit dans une base de données **vide** et un répertoire de 
 - **La version.** Utilisez la version qui a créé le point ou une version plus récente. Un point issu d’une version plus récente est refusé avec `schema_mismatch`.
 - **Le compte.** Exécutez la commande avec un compte qui peut lire le stockage des sauvegardes. Sous Linux, le stockage des sauvegardes appartient à `arkvory` et a le mode 0700, utilisez donc `sudo -u arkvory`. Sous Windows, utilisez une console PowerShell élevée. Le nouveau répertoire de stockage doit finir par appartenir au compte qui exécutera l’API.
 - **La clé.** Un vault chiffré a besoin de sa clé. Donnez le kit de récupération ou un fichier de clé en `--key-file FILE` à chaque commande ci-dessous, ou définissez `ARKVORY_BACKUP_VAULT_KEY_FILE`. La clé est toujours un fichier, jamais un argument.
-- **La cible.** Créez une base de données vide, par exemple `CREATE DATABASE arkvory_restore OWNER arkvory;`. Choisissez un répertoire de stockage qui n’existe pas ou qui est vide, sur un volume différent du stockage des sauvegardes et non à l’intérieur du stockage source.
+- **La cible.** Créez une base de données vide, par exemple `CREATE DATABASE arkvory_restore OWNER arkvory;`. Choisissez un répertoire de stockage qui n’existe pas ou qui est vide, sur un volume différent du stockage des sauvegardes et non à l’intérieur du stockage source. Une installation avec [plusieurs volumes](./storage#volumes) a besoin d’un répertoire vide de plus pour chaque volume, voir [Restaurer plusieurs volumes](#restore-volumes).
 - **L’URL de la base de données.** Passez-la dans l’environnement, pas comme argument, car les arguments sont visibles dans la liste des processus.
 
 ### Restauration étape par étape {#restore-steps}
@@ -307,6 +307,21 @@ Une restauration écrit dans une base de données **vide** et un répertoire de 
 6. Démarrez une instance d’API distincte sur les données restaurées : `ARKVORY_DATABASE_URL` de la nouvelle base de données, `ARKVORY_DATA_DIR` du nouveau répertoire, son propre `ARKVORY_KEYS_FILE` et un autre port. Vérifiez que `/health/ready` répond, que vous pouvez vous connecter, que le catalogue est complet et qu’un fichier de contrôle se télécharge avec le même SHA-256.
 
 Si une restauration échoue, supprimez la base de données et le répertoire cibles puis recréez-les. Une cible non vide est refusée avec `target_not_empty`, ce qui protège les données existantes.
+
+### Restaurer plusieurs volumes {#restore-volumes}
+
+Un point de restauration retient le volume de chaque fichier. Restaurez chaque fichier dans son volume :
+
+1. Écrivez le fichier des modules de l’installation restaurée, avec une instance pour chaque volume de la source sous le même ID et un nouveau répertoire vide pour chacune, par exemple `/srv/arkvory-restore-volume-2`. Les répertoires suivent les mêmes règles que `--storage`.
+2. Ajoutez `--modules-file FILE` aux deux commandes de restauration :
+
+   ```bash
+   arkvory-backup restore --vault /mnt/backup/arkvory --point POINT_ID --storage /srv/arkvory-restore --modules-file /srv/arkvory-restore-modules.json
+   ```
+
+3. Démarrez l’instance restaurée avec ce fichier des modules comme `ARKVORY_MODULES_FILE`.
+
+Un point qui contient des fichiers d’un volume que la cible ne nomme pas est refusé avant toute écriture, y compris lors de la simulation. Les politiques de placement font partie de la sauvegarde. Les identités des volumes, non : l’API restaurée enregistre les nouveaux répertoires à son premier démarrage.
 
 ### Ce qu’une restauration modifie {#after-restore}
 

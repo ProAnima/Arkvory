@@ -5,7 +5,7 @@ description: Planifique el espacio en disco, defina cuotas y políticas de reten
 
 # Almacenamiento
 
-Arkvory guarda cada archivo publicado una sola vez, sin cambios, en un directorio de almacenamiento de un disco local del servidor. Esta página explica qué ocupa espacio en disco, cómo limitarlo con cuotas y políticas de retención, cómo salen del disco los archivos eliminados y qué hacer cuando el disco está lleno.
+Arkvory guarda cada archivo publicado una sola vez, sin cambios, en un directorio de almacenamiento de un disco local del servidor y, opcionalmente, en [más volúmenes](#volumes). Esta página explica qué ocupa espacio en disco, cómo limitarlo con cuotas y políticas de retención, cómo salen del disco los archivos eliminados y qué hacer cuando el disco está lleno.
 
 ## Dónde está el contenido {#location}
 
@@ -22,6 +22,77 @@ Dentro de él, `blobs/` contiene los archivos terminados, `staging/` y `parts/` 
 - Use un sistema de archivos local que admita enlaces físicos. No use un recurso compartido de red para el almacenamiento.
 - No añada, cambie ni elimine archivos del directorio a mano. Arkvory elimina los archivos por sí mismo, como se describe más abajo.
 - Un archivo publicado nunca cambia. El contenido nuevo es un archivo nuevo con un ID nuevo.
+
+## Varios volúmenes {#volumes}
+
+En lugar de ampliar un volumen, puede dar a Arkvory más directorios de almacenamiento, por ejemplo en un segundo disco. Cada directorio adicional es una instancia del módulo integrado `local-storage` con su propio ID. El directorio de almacenamiento de `ARKVORY_DATA_DIR` es siempre la instancia `default`.
+
+Configure las instancias en el archivo de módulos (`ARKVORY_MODULES_FILE`, consulte [Variables de entorno](../reference/environment)):
+
+```json
+{
+  "format": 1,
+  "modules": {
+    "local-storage": {
+      "config": {
+        "instances": {
+          "volume-2": { "directory": "/srv/arkvory-volume-2" }
+        }
+      }
+    }
+  }
+}
+```
+
+| Campo           | Significado                                                                                                                                         | Valor predeterminado            |
+| --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- |
+| `directory`     | Ruta absoluta del directorio. No debe contener el directorio de almacenamiento ni otra instancia, ni estar dentro de ellos                          | Obligatorio                     |
+| `acceptsWrites` | `false` detiene las subidas nuevas a este volumen. Sus archivos siguen pudiéndose leer, y las subidas que ya empezaron en él pueden terminar        | `true`                          |
+| `mode`          | `read-only` solo sirve descargas y comprobaciones, y rechaza toda escritura y eliminación, por ejemplo para un volumen montado como de solo lectura | `full`                          |
+| `enabled`       | `false` cierra el volumen: sus archivos no se pueden descargar hasta que lo vuelva a activar                                                        | `true`                          |
+| `reserveBytes`  | Espacio libre que se mantiene en este volumen, en bytes                                                                                             | `ARKVORY_STORAGE_RESERVE_BYTES` |
+
+Un ID tiene letras minúsculas, dígitos y `-`, empieza por una letra y no es `default`. Puede añadir hasta 16 instancias. Todos los procesos (la API, las puertas de enlace de lectura, el worker y el agente de copias de seguridad) deben leer el mismo archivo de módulos: un proceso que prevé otras instancias no está listo. Reinicie todos los servicios después de un cambio.
+
+Para añadir un volumen:
+
+1. Monte el volumen y cree el directorio. Debe pertenecer a la cuenta que ejecuta los servicios.
+2. Añada la instancia al archivo de módulos y reinicie los servicios. En su primer arranque, la API registra la identidad del volumen, el archivo `storage-id` del directorio. A partir de entonces, cada proceso comprueba este archivo. Nunca se escribe en un volumen que no está montado ni en otro volumen en la misma ruta.
+3. Elija qué subidas van al volumen con una [política de ubicación](#placement).
+
+### Ubicación de las subidas nuevas {#placement}
+
+La política de ubicación de un repositorio elige el almacenamiento de cada subida nueva. Una regla tiene un ID, un almacenamiento (`backendId`) y dos condiciones opcionales: un grupo de paquetes (`models/*`, `tools` o `*`) y un tamaño mínimo en bytes. Gana la primera regla cuyas condiciones se cumplen. Si ninguna coincide, la subida va a `default`. Un repositorio puede tener hasta 32 reglas.
+
+Lea y cambie la política con `arkvoryctl` o con las operaciones de la API [getStoragePlacement](../api/reference/storage#getStoragePlacement) y [setStoragePlacement](../api/reference/storage#setStoragePlacement):
+
+```bash
+arkvoryctl storage placement --repository releases
+arkvoryctl storage placement --repository releases --revision 0 --file rules.json
+```
+
+El archivo `rules.json` contiene la lista de reglas, por ejemplo todos los archivos de 1 GiB o más en `volume-2`:
+
+```json
+[{ "id": "large", "backendId": "volume-2", "packageGroup": null, "minSizeBytes": "1073741824" }]
+```
+
+- Leer la política requiere `storage.read`, y cambiarla, `storage.manage`. La respuesta también enumera cada almacenamiento con su estado: `accepting`, `not_accepting`, `read_only`, `disabled`, `unavailable` o `not_loaded`.
+- Una regla solo puede nombrar un almacenamiento configurado. Otro nombre se rechaza con 400 `backend_unknown`.
+- La política se guarda con una revisión. Si otra persona la cambió, léala de nuevo y vuelva a guardarla.
+- Un cambio se aplica solo a las subidas nuevas. Los archivos ya almacenados nunca se mueven entre volúmenes.
+
+### Cuando un volumen no acepta subidas nuevas {#placement-fallback}
+
+La publicación nunca falla por la ubicación. Si el almacenamiento elegido no acepta subidas en ese momento, por `acceptsWrites: false`, `read-only`, `enabled: false`, una instancia que falta o un volumen que no está disponible (sin montar, con la comprobación de identidad fallida o sin respuesta), la subida nueva se crea en `default`. La subida muestra su almacenamiento en `storageBackend`, la métrica `arkvory_storage_placement_fallback_total` la cuenta y el registro tiene la línea `storage.placement_fallback`.
+
+- **Las subidas en curso no se mueven.** Si un volumen deja de aceptar datos mientras una subida en partes se ejecuta en él, las partes nuevas se rechazan con 409 `backend_read_only` y el cliente empieza una subida nueva. Si ya están todas las partes, al finalizar la subida el archivo se escribe en `default`. Las partes se leen del volumen en el que están.
+- **Un volumen no disponible** hace que las descargas de sus archivos fallen con 503 `unavailable` hasta que vuelva. El servidor sigue funcionando, y la disponibilidad y `writable` dependen solo de `default`. Cada proceso vuelve a comprobar sus volúmenes cada 30 segundos.
+- **La limpieza** elimina cada archivo en el volumen que lo contiene, incluidas las partes que quedan en otro volumen. En un volumen no disponible o de solo lectura, la limpieza omite el archivo y lo intenta más tarde.
+- **Cuotas y límites.** Las cuotas y `ARKVORY_CAPACITY_BYTES` cuentan todos los volúmenes juntos. La reserva se aplica a cada volumen.
+- **Los archivos temporales** de las subidas raw, OCI y de espejo se quedan en el directorio de almacenamiento `default`.
+
+Vigile `arkvory_storage_backend_up` y `arkvory_storage_backend_accepting`; consulte [Monitorización](./monitoring#metrics). Las copias de seguridad copian todos los volúmenes. Una restauración necesita un directorio vacío para cada volumen; consulte [Restaurar varios volúmenes](./backups#restore-volumes).
 
 ## Planificar el disco {#disk}
 
@@ -50,12 +121,12 @@ Consulte [Variables de entorno](../reference/environment#storage-and-limits). Ar
 
 Los ajustes del almacenamiento no forman parte de los permisos normales de lectura y escritura. Una clave de servicio necesita acciones explícitas sobre el repositorio:
 
-| Acción             | Permite                                                                                         |
-| ------------------ | ----------------------------------------------------------------------------------------------- |
-| `storage.read`     | Ver la política, el uso y los ajustes de limpieza                                               |
-| `storage.manage`   | Cambiar la política, la cuota y los ajustes de limpieza, y solicitar un lote de limpieza        |
-| `artifact.delete`  | Previsualizar eliminaciones, eliminar artefactos y activar una política de retención automática |
-| `diagnostics.read` | Leer los eventos del almacenamiento                                                             |
+| Acción             | Permite                                                                                                |
+| ------------------ | ------------------------------------------------------------------------------------------------------ |
+| `storage.read`     | Ver la política, el uso, los ajustes de limpieza y la ubicación                                        |
+| `storage.manage`   | Cambiar la política, la cuota, los ajustes de limpieza y la ubicación, y solicitar un lote de limpieza |
+| `artifact.delete`  | Previsualizar eliminaciones, eliminar artefactos y activar una política de retención automática        |
+| `diagnostics.read` | Leer los eventos del almacenamiento                                                                    |
 
 Las cuentas con contraseña y la clave de recuperación no tienen estos permisos por sí mismas. Para administrar el almacenamiento en la consola:
 
@@ -208,6 +279,7 @@ La sección [[ui:storageEvents]] enumera lo que ocurrió en el repositorio, del 
 | `retention.completed`                                                                                 | info                  | Un lote eliminó compilaciones. El evento contiene el recuento                                                                |
 | `retention.failed`                                                                                    | error                 | La eliminación automática se detuvo, por ejemplo porque se revocó la clave que la autorizaba                                 |
 | `cleanup.configured`                                                                                  | info                  | Se guardaron los ajustes de limpieza                                                                                         |
+| `storage.placement_updated`                                                                           | info                  | Se guardó la política de ubicación                                                                                           |
 | `cleanup.completed`                                                                                   | info o error          | Un lote de limpieza procesó archivos, omitió algunos o falló. Enumera los recuentos y los bytes liberados                    |
 | `capacity.normal`, `capacity.warning`, `capacity.critical`, `capacity.exceeded`, `capacity.unlimited` | info, warning o error | Cambió el estado de la cuota                                                                                                 |
 | Códigos de error HTTP                                                                                 | warning o error       | Falló una solicitud de una clave administrada a este repositorio. El evento conserva el ID de solicitud, la ruta y el estado |
@@ -223,7 +295,7 @@ Señales: las subidas fallan con HTTP 507 y el motivo `storage_full`, `GET /heal
 1. **Encuentre la causa.** Compruebe el espacio libre del volumen de almacenamiento, del volumen de la base de datos y del volumen del almacén de copias. Compare las cifras de uso del panel de almacenamiento. Unas cifras grandes de «pendiente de limpieza» significan que los datos eliminados siguen en el disco. Una cifra grande de «subidas sin terminar» significa subidas abandonadas.
 2. **Ejecute la limpieza.** Si la limpieza está desactivada, actívela en cada repositorio, con un período de gracia corto, como 0 si acepta que los archivos eliminados se vayan de inmediato. Seleccione [[ui:cleanupRun]]. También elimina las partes temporales de las subidas terminadas y las subidas caducadas. Espere a los lotes y lea el último resultado. La limpieza omite los archivos que están en uso, así que repítala.
 3. **Elimine lo que no necesita.** Aplique una política de retención o elimine artefactos. Esto libera espacio solo después de que la limpieza elimine los bytes.
-4. **Añada espacio.** Amplíe el volumen o el disco. Traslade el almacén de copias u otros datos fuera del volumen si lo comparten.
+4. **Añada espacio.** Amplíe el volumen o el disco. Traslade el almacén de copias u otros datos fuera del volumen si lo comparten. También puede [añadir un volumen](#volumes) y ubicar allí las subidas nuevas.
 5. **Compruebe la recuperación.** Cuando hay espacio libre, `writable` vuelve a `true` y las subidas funcionan de nuevo.
 
 No elimine a mano archivos de `blobs/`, `staging/` ni `parts/`: esto rompe el vínculo entre la base de datos y el disco. Si la reserva es demasiado pequeña para sus registros y su base de datos en el mismo volumen, aumente `ARKVORY_STORAGE_RESERVE_BYTES`.
@@ -238,7 +310,7 @@ Si una subida falla en cambio con el motivo `storage_quota` o `catalog_limit`, e
 - La limpieza física está desactivada de forma predeterminada y se configura para cada repositorio.
 - Un artefacto eliminado no se puede restaurar. Restaure los datos desde una copia de seguridad. Consulte [Copias de seguridad](./backups).
 - Los repositorios espejo no ejecutan ninguna política de almacenamiento. Consulte [Espejos](./mirrors).
-- El almacenamiento debe ser un sistema de archivos local. No se admiten recursos compartidos de red ni varios backends de almacenamiento.
+- El almacenamiento debe ser un sistema de archivos local. No se admiten recursos compartidos de red. Los [volúmenes](#volumes) adicionales también son directorios locales, y Arkvory no mueve los archivos almacenados entre ellos.
 - En Windows, Arkvory sincroniza cada archivo con el disco, pero no puede sincronizar la entrada de directorio que lo publica: Node.js no ofrece sincronización de directorios allí. Un corte de energía poco después de una subida puede dejar un archivo publicado sin su contenido en el disco. Use un SAI y mantenga [copias de seguridad](./backups) o un [espejo](./mirrors). En Linux, las entradas de directorio también se sincronizan.
 
 ## Páginas relacionadas {#related-pages}

@@ -5,7 +5,7 @@ description: '规划磁盘空间，为每个仓库设置配额和保留策略，
 
 # 存储
 
-Arkvory 把每个已发布的文件原样保存在服务器本地磁盘上的存储目录中，只保存一份。本页说明哪些内容占用磁盘空间、如何用配额和保留策略限制它、已删除的文件如何离开磁盘，以及磁盘写满时该怎么做。
+Arkvory 把每个已发布的文件原样保存一份，存放在服务器本地磁盘上的存储目录中，也可以存放在[更多卷](#volumes)上。本页说明哪些内容占用磁盘空间、如何用配额和保留策略限制它、已删除的文件如何离开磁盘，以及磁盘写满时该怎么做。
 
 ## 内容所在位置 {#location}
 
@@ -22,6 +22,77 @@ Arkvory 把每个已发布的文件原样保存在服务器本地磁盘上的存
 - 使用支持硬链接的本地文件系统。不要将网络共享用于存储。
 - 不要手动在目录中添加、更改或删除文件。Arkvory 会自行删除文件，如下所述。
 - 已发布的文件绝不会更改。新内容是具有新 ID 的新文件。
+
+## 多个卷 {#volumes}
+
+你可以为 Arkvory 添加更多存储目录，例如放在第二块磁盘上，而不必扩展一个卷。每个额外的目录都是内置模块 `local-storage` 的一个实例，并有自己的 ID。`ARKVORY_DATA_DIR` 的存储目录始终是实例 `default`。
+
+在模块文件中配置实例（`ARKVORY_MODULES_FILE`，参见[环境变量](../reference/environment)）：
+
+```json
+{
+  "format": 1,
+  "modules": {
+    "local-storage": {
+      "config": {
+        "instances": {
+          "volume-2": { "directory": "/srv/arkvory-volume-2" }
+        }
+      }
+    }
+  }
+}
+```
+
+| 字段            | 含义                                                                           | 默认值                          |
+| --------------- | ------------------------------------------------------------------------------ | ------------------------------- |
+| `directory`     | 目录的绝对路径。它不能包含存储目录或其他实例，也不能位于它们内部               | 必填                            |
+| `acceptsWrites` | `false` 会停止向此卷的新上传。卷上的文件仍可读取，已经在其上开始的上传可以完成 | `true`                          |
+| `mode`          | `read-only` 只提供下载和检查，拒绝所有写入和删除，例如用于以只读方式挂载的卷   | `full`                          |
+| `enabled`       | `false` 会关闭该卷：在你再次启用它之前，其中的文件无法下载                     | `true`                          |
+| `reserveBytes`  | 在此卷上保留的可用空间，以字节为单位                                           | `ARKVORY_STORAGE_RESERVE_BYTES` |
+
+ID 由小写字母、数字和 `-` 组成，以字母开头，且不能是 `default`。最多可以添加 16 个实例。每个进程（API、读取网关、worker 和备份代理）都必须读取同一个模块文件：规划了不同实例的进程不会就绪。更改后请重新启动所有服务。
+
+添加卷：
+
+1. 挂载卷并创建目录。该目录必须属于运行服务的账户。
+2. 把实例添加到模块文件中，然后重新启动服务。API 首次启动时会记录卷的身份，即目录中的文件 `storage-id`。此后每个进程都会检查此文件。未挂载的卷，或同一路径上的另一个卷，绝不会被写入。
+3. 用[放置策略](#placement)选择哪些上传进入该卷。
+
+### 新上传的放置 {#placement}
+
+仓库的放置策略为每个新上传选择存储。一条规则有一个 ID、一个存储（`backendId`）和两个可选条件：包组（`models/*`、`tools` 或 `*`）和以字节为单位的最小大小。第一条条件成立的规则生效。没有匹配时，上传进入 `default`。一个仓库最多可以有 32 条规则。
+
+使用 `arkvoryctl` 或 API 操作 [getStoragePlacement](../api/reference/storage#getStoragePlacement) 和 [setStoragePlacement](../api/reference/storage#setStoragePlacement) 读取和更改策略：
+
+```bash
+arkvoryctl storage placement --repository releases
+arkvoryctl storage placement --repository releases --revision 0 --file rules.json
+```
+
+文件 `rules.json` 包含规则列表，例如把所有 1 GiB 及以上的文件放到 `volume-2`：
+
+```json
+[{ "id": "large", "backendId": "volume-2", "packageGroup": null, "minSizeBytes": "1073741824" }]
+```
+
+- 读取策略需要 `storage.read`，更改策略需要 `storage.manage`。响应还会列出每个存储及其状态：`accepting`、`not_accepting`、`read_only`、`disabled`、`unavailable` 或 `not_loaded`。
+- 规则只能指定已配置的存储。其他名称会以 400 `backend_unknown` 被拒绝。
+- 策略保存时会带有修订版本。如果其他人更改了它，请重新读取并再次保存。
+- 更改只适用于新上传。已经存储的文件绝不会在卷之间移动。
+
+### 卷不接受新上传时 {#placement-fallback}
+
+发布绝不会因为放置而失败。如果所选存储此时不接受上传，原因是 `acceptsWrites: false`、`read-only`、`enabled: false`、缺少实例，或卷不可用（未挂载、身份检查失败、无应答），新上传会改为在 `default` 中创建。上传在 `storageBackend` 中显示其存储，指标 `arkvory_storage_placement_fallback_total` 会计数，日志中有一行 `storage.placement_fallback`。
+
+- **进行中的上传不会移动。** 如果某个分片上传正在一个卷上进行时，该卷停止接收数据，新的分片会以 409 `backend_read_only` 被拒绝，客户端会开始新的上传。如果所有分片都已到位，完成上传时会把文件写入 `default`。分片从它们所在的卷读取。
+- **不可用的卷**会使其文件的下载以 503 `unavailable` 失败，直到它恢复。服务器继续运行，就绪状态和 `writable` 只跟随 `default`。每个进程每 30 秒重新检查一次自己的卷。
+- **清理**会在保存文件的卷上删除每个文件，包括留在另一个卷上的分片。在不可用或只读的卷上，清理会跳过该文件，稍后再试。
+- **配额和限制。** 配额和 `ARKVORY_CAPACITY_BYTES` 把所有卷合并计算。预留空间适用于每个卷。
+- raw、OCI 和镜像上传的**临时文件**保留在存储目录 `default` 中。
+
+请关注 `arkvory_storage_backend_up` 和 `arkvory_storage_backend_accepting`，参见[监控](./monitoring#metrics)。备份会复制每个卷。恢复需要为每个卷准备一个空目录，参见[恢复多个卷](./backups#restore-volumes)。
 
 ## 规划磁盘 {#disk}
 
@@ -50,12 +121,12 @@ Arkvory 在存储卷上预留一份可用空间。默认是 1 GiB（`ARKVORY_STO
 
 存储设置不属于常规的读写权限。服务密钥需要对仓库具有明确的动作：
 
-| 动作               | 允许                                         |
-| ------------------ | -------------------------------------------- |
-| `storage.read`     | 查看策略、用量和清理设置                     |
-| `storage.manage`   | 更改策略、配额和清理设置，并请求一次清理批次 |
-| `artifact.delete`  | 预览删除、删除制品，并开启自动保留策略       |
-| `diagnostics.read` | 读取存储事件                                 |
+| 动作               | 允许                                               |
+| ------------------ | -------------------------------------------------- |
+| `storage.read`     | 查看策略、用量、清理设置和放置                     |
+| `storage.manage`   | 更改策略、配额、清理设置和放置，并请求一次清理批次 |
+| `artifact.delete`  | 预览删除、删除制品，并开启自动保留策略             |
+| `diagnostics.read` | 读取存储事件                                       |
 
 带密码的账户和恢复密钥本身不具备这些权限。要在控制台中管理存储：
 
@@ -208,6 +279,7 @@ Arkvory 在存储卷上预留一份可用空间。默认是 1 GiB（`ARKVORY_STO
 | `retention.completed`                                                                                 | info                   | 一个批次删除了构建。事件包含数量                               |
 | `retention.failed`                                                                                    | error                  | 自动删除停止，例如因为授权密钥被撤销                           |
 | `cleanup.configured`                                                                                  | info                   | 清理设置已保存                                                 |
+| `storage.placement_updated`                                                                           | info                   | 放置策略已保存                                                 |
 | `cleanup.completed`                                                                                   | info or error          | 一个清理批次处理、跳过或失败于某些文件。它列出数量和释放的字节 |
 | `capacity.normal`、`capacity.warning`、`capacity.critical`、`capacity.exceeded`、`capacity.unlimited` | info、warning 或 error | 配额状态发生变化                                               |
 | HTTP 错误码                                                                                           | warning 或 error       | 受管密钥对此仓库的一次请求失败。事件保留请求 ID、路由和状态    |
@@ -223,7 +295,7 @@ Arkvory 在存储卷上预留一份可用空间。默认是 1 GiB（`ARKVORY_STO
 1. **找出原因。** 检查存储卷、数据库卷和备份存储卷的可用空间。比较存储面板中的用量数字。较大的“等待清理”数字意味着已删除的数据仍在磁盘上。较大的“未完成上传”数字意味着被放弃的上传。
 2. **运行清理。** 如果清理已关闭，请在每个仓库中开启它，并使用较短的宽限期，例如 0（如果你接受已删除文件立即离开）。选择 [[ui:cleanupRun]]。它还会移除已完成上传的临时分片和过期的上传。等待各批次并读取上一次结果。清理会跳过正在使用的文件，因此请重复执行。
 3. **删除你不需要的内容。** 应用保留策略，或删除制品。只有在清理移除字节之后，这才会释放空间。
-4. **增加空间。** 扩展卷或磁盘。如果备份存储或其他数据与该卷共用，请把它们移出该卷。
+4. **增加空间。** 扩展卷或磁盘。如果备份存储或其他数据与该卷共用，请把它们移出该卷。你也可以[添加一个卷](#volumes)，把新上传放到那里。
 5. **检查恢复情况。** 空间释放后，`writable` 会恢复为 `true`，上传重新工作。
 
 不要手动删除 `blobs/`、`staging/` 或 `parts/` 中的文件：这会破坏数据库与磁盘之间的联系。如果预留对你的日志和同一卷上的数据库来说太小，请提高 `ARKVORY_STORAGE_RESERVE_BYTES`。
@@ -238,7 +310,7 @@ Arkvory 在存储卷上预留一份可用空间。默认是 1 GiB（`ARKVORY_STO
 - 物理清理默认关闭，并按每个仓库设置。
 - 已删除的制品无法恢复。请从备份恢复数据。参见[备份](./backups)。
 - 镜像仓库不运行存储策略。参见[镜像](./mirrors)。
-- 存储必须是本地文件系统。不支持网络共享或多个存储后端。
+- 存储必须是本地文件系统。不支持网络共享。额外的[卷](#volumes)也是本地目录，Arkvory 不会在它们之间移动已存储的文件。
 - 在 Windows 上，Arkvory 会把每个文件同步到磁盘，但无法同步发布该文件的目录项：Node.js 在那里不提供目录同步。上传完成后不久断电，可能导致已发布的文件在磁盘上缺失。请使用 UPS，并保留[备份](./backups)或[镜像](./mirrors)。在 Linux 上，目录项也会同步。
 
 ## 相关页面 {#related-pages}

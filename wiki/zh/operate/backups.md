@@ -264,7 +264,7 @@ arkvoryctl backup status --json || echo "backup problem"
 - **发行版。** 请使用生成该恢复点的发行版或更新的发行版。来自更新发行版的恢复点会以 `schema_mismatch` 被拒绝。
 - **账户。** 请使用能读取备份存储的账户运行命令。在 Linux 上，备份存储属于 `arkvory`，权限为 0700，因此请使用 `sudo -u arkvory`。在 Windows 上，请使用提升权限的 PowerShell。新的存储目录最终必须归运行 API 的账户所有。
 - **密钥。** 加密的 vault 需要它的密钥。请把恢复套件或密钥文件作为 `--key-file FILE` 传给下面的每条命令，或设置 `ARKVORY_BACKUP_VAULT_KEY_FILE`。密钥始终是文件，绝不是参数。
-- **目标。** 创建一个空数据库，例如 `CREATE DATABASE arkvory_restore OWNER arkvory;`。选择一个不存在或为空的存储目录，它必须位于与备份存储不同的卷上，且不在源存储内部。
+- **目标。** 创建一个空数据库，例如 `CREATE DATABASE arkvory_restore OWNER arkvory;`。选择一个不存在或为空的存储目录，它必须位于与备份存储不同的卷上，且不在源存储内部。具有[多个卷](./storage#volumes)的安装实例还需要为每个卷再准备一个空目录，参见[恢复多个卷](#restore-volumes)。
 - **数据库 URL。** 请通过环境变量传递，不要作为参数传递，因为参数在进程列表中是可见的。
 
 ### 逐步恢复 {#restore-steps}
@@ -307,6 +307,21 @@ arkvoryctl backup status --json || echo "backup problem"
 6. 在恢复的数据上启动一个单独的 API 实例：`ARKVORY_DATABASE_URL` 指向新数据库，`ARKVORY_DATA_DIR` 指向新目录，使用它自己的 `ARKVORY_KEYS_FILE` 和另一个端口。检查 `/health/ready` 是否有响应，能否登录，目录是否完整，以及一个对照文件下载后的 SHA-256 是否相同。
 
 如果恢复失败，请删除目标数据库和目录，然后重新创建。目标不为空时，会以 `target_not_empty` 被拒绝，这样可以保护已有数据。
+
+### 恢复多个卷 {#restore-volumes}
+
+恢复点会记住每个文件所在的卷。把每个文件恢复到它的卷中：
+
+1. 编写恢复后安装实例的模块文件：为源中的每个卷使用相同 ID 添加一个实例，并为每个实例指定一个新的空目录，例如 `/srv/arkvory-restore-volume-2`。这些目录遵循与 `--storage` 相同的规则。
+2. 在两条恢复命令中都添加 `--modules-file FILE`：
+
+   ```bash
+   arkvory-backup restore --vault /mnt/backup/arkvory --point POINT_ID --storage /srv/arkvory-restore --modules-file /srv/arkvory-restore-modules.json
+   ```
+
+3. 以此模块文件作为 `ARKVORY_MODULES_FILE` 启动恢复后的实例。
+
+如果恢复点包含目标未指定的卷上的文件，它会在写入任何内容之前被拒绝，试运行中也是如此。放置策略是备份的一部分。卷的身份不是：恢复后的 API 会在首次启动时记录新的目录。
 
 ### 恢复会更改什么 {#after-restore}
 

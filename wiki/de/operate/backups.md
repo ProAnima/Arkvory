@@ -264,7 +264,7 @@ Eine Wiederherstellung schreibt in eine **leere** Datenbank und ein **leeres** S
 - **Das Release.** Verwenden Sie das Release, das den Punkt erzeugt hat, oder ein neueres. Ein Punkt aus einem neueren Release wird mit `schema_mismatch` abgelehnt.
 - **Das Konto.** Führen Sie den Befehl als ein Konto aus, das den Backup-Speicher lesen kann. Unter Linux gehört der Backup-Speicher `arkvory` und hat den Modus 0700, verwenden Sie also `sudo -u arkvory`. Unter Windows verwenden Sie eine erhöhte PowerShell. Das neue Speicherverzeichnis muss am Ende dem Konto gehören, das die API ausführen wird.
 - **Der Schlüssel.** Ein verschlüsseltes Vault braucht seinen Schlüssel. Geben Sie das Recovery-Kit oder eine Schlüsseldatei als `--key-file FILE` an jeden folgenden Befehl, oder setzen Sie `ARKVORY_BACKUP_VAULT_KEY_FILE`. Der Schlüssel ist immer eine Datei, nie ein Argument.
-- **Das Ziel.** Erstellen Sie eine leere Datenbank, zum Beispiel `CREATE DATABASE arkvory_restore OWNER arkvory;`. Wählen Sie ein Speicherverzeichnis, das nicht existiert oder leer ist, auf einem anderen Volume als der Backup-Speicher und nicht innerhalb des Quellspeichers.
+- **Das Ziel.** Erstellen Sie eine leere Datenbank, zum Beispiel `CREATE DATABASE arkvory_restore OWNER arkvory;`. Wählen Sie ein Speicherverzeichnis, das nicht existiert oder leer ist, auf einem anderen Volume als der Backup-Speicher und nicht innerhalb des Quellspeichers. Eine Installation mit [mehreren Volumes](./storage#volumes) braucht für jedes Volume ein weiteres leeres Verzeichnis, siehe [Mehrere Volumes wiederherstellen](#restore-volumes).
 - **Die Datenbank-URL.** Übergeben Sie sie in der Umgebung, nicht als Argument, weil Argumente in der Prozessliste sichtbar sind.
 
 ### Schritt für Schritt wiederherstellen {#restore-steps}
@@ -307,6 +307,21 @@ Eine Wiederherstellung schreibt in eine **leere** Datenbank und ein **leeres** S
 6. Starten Sie eine separate API-Instanz auf den wiederhergestellten Daten: `ARKVORY_DATABASE_URL` der neuen Datenbank, `ARKVORY_DATA_DIR` des neuen Verzeichnisses, eine eigene `ARKVORY_KEYS_FILE` und einen anderen Port. Prüfen Sie, ob `/health/ready` antwortet, ob Sie sich anmelden können, ob der Katalog vollständig ist und ob eine Kontrolldatei mit demselben SHA-256 heruntergeladen wird.
 
 Wenn eine Wiederherstellung fehlschlägt, löschen Sie die Zieldatenbank und das Verzeichnis und erstellen Sie sie neu. Ein nicht leeres Ziel wird mit `target_not_empty` abgelehnt, was vorhandene Daten schützt.
+
+### Mehrere Volumes wiederherstellen {#restore-volumes}
+
+Ein Wiederherstellungspunkt merkt sich das Volume jeder Datei. Stellen Sie jede Datei in ihrem Volume wieder her:
+
+1. Schreiben Sie die Moduldatei der wiederhergestellten Installation, mit einer Instanz für jedes Volume der Quelle unter derselben ID und mit einem neuen, leeren Verzeichnis für jede, zum Beispiel `/srv/arkvory-restore-volume-2`. Für die Verzeichnisse gelten dieselben Regeln wie für `--storage`.
+2. Fügen Sie `--modules-file FILE` zu beiden Wiederherstellungsbefehlen hinzu:
+
+   ```bash
+   arkvory-backup restore --vault /mnt/backup/arkvory --point POINT_ID --storage /srv/arkvory-restore --modules-file /srv/arkvory-restore-modules.json
+   ```
+
+3. Starten Sie die wiederhergestellte Instanz mit dieser Moduldatei als `ARKVORY_MODULES_FILE`.
+
+Ein Punkt mit Dateien eines Volumes, das das Ziel nicht nennt, wird abgelehnt, bevor etwas geschrieben wird, auch im Probelauf. Die Platzierungsrichtlinien sind Teil des Backups. Die Identitäten der Volumes sind es nicht: Die wiederhergestellte API hält die neuen Verzeichnisse bei ihrem ersten Start fest.
 
 ### Was eine Wiederherstellung ändert {#after-restore}
 
