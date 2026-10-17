@@ -6,14 +6,39 @@ import type {
   ModuleSignal,
   PlannedModule,
 } from '@proanima/arkvory-extension-api';
-import type { PreparedModule } from '@proanima/arkvory-infrastructure';
+import { ModuleLoadError } from '@proanima/arkvory-infrastructure';
+import type { PreparedModule, RefusedModule } from '@proanima/arkvory-infrastructure';
 
 export interface ModuleState {
   readonly module: PlannedModule;
   /** Whether this process runs the module: enabled and one of its roles. */
   readonly running: boolean;
-  /** Health of a running module; null when it does not run in this process. */
+  /**
+   * Health of a running module, or `failed` with the reason of a signed module that should run
+   * here but could not be loaded or started; null when it does not belong to this process.
+   */
   readonly health: ModuleHealth | null;
+}
+
+/** How long one signed module may take to start before it is stopped and reported failed. */
+export const SIGNED_START_BUDGET_MS = 30_000;
+
+class StartTimeout extends Error {}
+
+/** `work`, or a `StartTimeout` after `budgetMs`; the timer never outlives the race. */
+async function within<T>(work: Promise<T>, budgetMs: number, expired: () => void): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_resolve, reject) => {
+    timer = setTimeout(() => {
+      expired();
+      reject(new StartTimeout());
+    }, budgetMs);
+  });
+  try {
+    return await Promise.race([work, timeout]);
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 interface Running {
@@ -86,6 +111,8 @@ export interface ModuleProcess<Context> {
  */
 export class ModuleRuntime<Context = unknown> {
   private readonly running: Running[] = [];
+  /** Signed modules of this process that could not be loaded, created or started: their code. */
+  private readonly failed = new Map<string, string>();
   private readonly cancel = new AbortController();
   private starting: Promise<void> | undefined;
   private closing: Promise<void> | undefined;
@@ -94,6 +121,9 @@ export class ModuleRuntime<Context = unknown> {
     readonly plan: ModulePlan,
     private readonly prepared: ReadonlyMap<string, PreparedModule<Context>>,
     private readonly process: ModuleProcess<Context>,
+    /** Installed signed modules the loader refused before planning (ADR 0079, X4). */
+    readonly refused: readonly RefusedModule[] = [],
+    private readonly startBudgetMs = SIGNED_START_BUDGET_MS,
   ) {}
 
   /**
@@ -116,10 +146,8 @@ export class ModuleRuntime<Context = unknown> {
         const module = this.prepared.get(id);
         if (!module) throw new Error('Planned module was not prepared');
         signal.throwIfAborted();
-        const instance = module.create(this.process.context(planned, signal));
-        // Recorded before start: stop() also runs after a failed or cancelled start.
-        this.running.push({ id, instance });
-        await instance.start(signal);
+        if (planned.source === 'builtin') await this.startBuiltin(id, planned, module, signal);
+        else await this.startSigned(id, planned, module, signal);
       }
       // A module that ignored the cancellation must not leave a stopping process running it.
       signal.throwIfAborted();
@@ -127,6 +155,65 @@ export class ModuleRuntime<Context = unknown> {
       const failures = await stopAll(this.running.splice(0).reverse());
       if (failures.length === 0) throw error;
       throw new AggregateError([error, ...failures], 'Module start failed', { cause: error });
+    }
+  }
+
+  /** A built-in module: any failure stops the process start, as it always did. */
+  private async startBuiltin(
+    id: string,
+    planned: PlannedModule,
+    module: PreparedModule<Context>,
+    signal: AbortSignal,
+  ): Promise<void> {
+    const instance = module.create(this.process.context(planned, signal));
+    // Recorded before start: stop() also runs after a failed or cancelled start.
+    this.running.push({ id, instance });
+    await instance.start(signal);
+  }
+
+  /**
+   * A signed module fails alone (ADR 0079, X4): code that did not load, a `create` or `start`
+   * that throws, or a start beyond `startBudgetMs` marks it failed, stops what was created and
+   * lets the next module start. A module that requires a capability of a failed one is not
+   * created (`requirement_failed`). Only the cancellation of the process start is rethrown.
+   */
+  private async startSigned(
+    id: string,
+    planned: PlannedModule,
+    module: PreparedModule<Context>,
+    signal: AbortSignal,
+  ): Promise<void> {
+    const unavailable = new Set(
+      this.plan.modules
+        .filter((m) => this.failed.has(m.manifest.id))
+        .flatMap((m) => m.manifest.provides),
+    );
+    if (planned.manifest.requires.some((capability) => unavailable.has(capability))) {
+      this.failed.set(id, 'requirement_failed');
+      return;
+    }
+    let instance: ModuleLifecycle;
+    try {
+      instance = module.create(this.process.context(planned, signal));
+    } catch (error) {
+      this.failed.set(id, error instanceof ModuleLoadError ? error.code : 'create_failed');
+      return;
+    }
+    const own = new AbortController();
+    const started = { id, instance };
+    this.running.push(started);
+    try {
+      const start = instance.start(AbortSignal.any([signal, own.signal]));
+      await within(start, this.startBudgetMs, () => {
+        own.abort();
+      });
+    } catch (error) {
+      if (signal.aborted) throw error;
+      this.running.splice(this.running.indexOf(started), 1);
+      await Promise.resolve()
+        .then(() => instance.stop())
+        .catch(() => undefined);
+      this.failed.set(id, error instanceof StartTimeout ? 'start_timeout' : 'start_failed');
     }
   }
 
@@ -143,9 +230,13 @@ export class ModuleRuntime<Context = unknown> {
   }
 
   /**
-   * A running module whose failure takes the process out of readiness (ADR 0079, section 4): a
-   * core module, or one providing a capability that an enabled module requires. Other modules
-   * may fail or degrade while the process stays ready; metrics and `system/modules` show them.
+   * A module whose failure takes the process out of readiness (ADR 0079, section 4): a core
+   * module, or one providing a capability that an enabled module requires, that failed while
+   * running or, if signed, could not be loaded or started here; or an enabled signed module
+   * refused before planning because a module it requires is missing. Other modules may fail or
+   * degrade while the process stays ready; metrics and `system/modules` show them. A module that
+   * stores published bytes (`dataClass: layout`) never takes the process out: the core keeps
+   * serving its own data and new uploads go to the core's storage (ADR 0078, I1 and L4).
    */
   blockingFailure(): string | null {
     const required = new Set(
@@ -154,19 +245,22 @@ export class ModuleRuntime<Context = unknown> {
     const failed = this.states().find(
       ({ module, health }) =>
         health?.status === 'failed' &&
+        this.prepared.get(module.manifest.id)?.dataClass !== 'layout' &&
         (module.manifest.core || module.manifest.provides.some((c) => required.has(c))),
     );
-    return failed?.module.manifest.id ?? null;
+    const consumer = this.refused.find((m) => m.enabled && m.code === 'missing_requirement');
+    return failed?.module.manifest.id ?? consumer?.id ?? null;
   }
 
   states(): ModuleState[] {
     return this.plan.modules.map((module) => {
-      const instance = this.running.find((r) => r.id === module.manifest.id)?.instance;
-      return {
-        module,
-        running: instance !== undefined,
-        health: instance ? healthOf(instance) : null,
-      };
+      const id = module.manifest.id;
+      const instance = this.running.find((r) => r.id === id)?.instance;
+      const failure = this.failed.get(id);
+      let health: ModuleHealth | null = null;
+      if (instance) health = healthOf(instance);
+      else if (failure !== undefined) health = { status: 'failed', code: failure };
+      return { module, running: instance !== undefined, health };
     });
   }
 
