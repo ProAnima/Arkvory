@@ -59,6 +59,7 @@ test('every arkvoryctl command the skill shows exists and parses', async () => {
       .filter((line) => /^ {2}[a-z]/.test(line))
       .map((line) => line.trim().split(' ')[0]),
   );
+  const documented = new Set(help('en').match(/--[a-z][a-z-]*/g));
   let checked = 0;
   for (const { path, text } of await texts())
     for (const line of text.split(/\r?\n/)) {
@@ -72,6 +73,9 @@ test('every arkvoryctl command the skill shows exists and parses', async () => {
       const args = parseArguments(argv);
       const [command, sub] = args.words;
       assert.ok(commands.has(command), `${path}: ${command}`);
+      // Every option the skill passes is one the help documents (parsing accepts any known one).
+      for (const option of args.options.keys())
+        assert.ok(documented.has(`--${option}`), `${path}: ${command} --${option}`);
       if (sub !== undefined && /^[a-z]+$/.test(sub)) {
         const usage = help('en')
           .split('\n')
