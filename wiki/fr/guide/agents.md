@@ -53,7 +53,7 @@ claude mcp add arkvory-publish -- arkvoryctl mcp --profile agent --root ~/work -
 
 - L’agent lit et écrit des fichiers locaux uniquement sous `--root` (le répertoire courant par défaut). Un chemin qui en sort, y compris par un lien, est refusé (`path_outside_root`).
 - Un téléchargement n’apparaît qu’après la vérification de sa taille et de son SHA-256. Un fichier existant n’est remplacé que si l’agent le demande.
-- Un petit fichier qui contient la clé n’est jamais téléversé (`source_contains_credential`).
+- Un fichier qui contient la clé n’est jamais téléversé (`source_contains_credential`), et les fichiers propres à arkvoryctl (profils, fichiers de clé, points de reprise des téléversements) ne sont jamais lus ni remplacés, même sous `--root` (`private_path`).
 - Un résultat fait au plus `--max-output-bytes` (64 Kio par défaut, jusqu’à 1 Mio) et 100 éléments ; pour la suite, l’agent renvoie `next` comme `after`.
 
 ## Installer la compétence {#skill}
@@ -74,10 +74,11 @@ La compétence va dans `~/.claude/skills/arkvory` ; passez `--target DIR` pour l
 
 ## Dépannage {#troubleshooting}
 
-| Erreur                   | Cause et solution                                                                                                        |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------------------ |
-| Aucun outil d’écriture   | Le serveur a été lancé sans `--write`, ou la clé n’a pas la permission.                                                  |
-| `repository_not_allowed` | Le dépôt n’est pas dans `--write-repositories`. Modifiez la configuration MCP.                                           |
-| `forbidden`              | La clé n’a pas la permission. Lancez `arkvoryctl doctor` pour voir les permissions.                                      |
-| `path_outside_root`      | Le fichier est hors de `--root` ou n’est pas un fichier ordinaire.                                                       |
-| `skill_modified`         | Vous avez modifié un fichier de la compétence. Gardez votre copie ou relancez `arkvoryctl skill install` avec `--force`. |
+| Erreur                   | Cause et solution                                                                                                                                                                                                                                 |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Aucun outil d’écriture   | Le serveur a été lancé sans `--write`, ou la clé n’a pas la permission.                                                                                                                                                                           |
+| `repository_not_allowed` | Le dépôt n’est pas dans `--write-repositories`. Modifiez la configuration MCP.                                                                                                                                                                    |
+| `forbidden`              | La clé n’a pas la permission. Lancez `arkvoryctl doctor` pour voir les permissions.                                                                                                                                                               |
+| `path_outside_root`      | Le fichier est hors de `--root` ou n’est pas un fichier ordinaire.                                                                                                                                                                                |
+| `state_locked`           | Le même téléversement est encore en cours dans un autre appel. Après un plantage, vérifiez qu’aucun `arkvoryctl mcp` ne téléverse ce fichier, puis supprimez le fichier `.lock` dans `mcp-uploads` du répertoire de la CLI (`~/.config/arkvory`). |
+| `skill_modified`         | Vous avez modifié un fichier de la compétence. Gardez votre copie ou relancez `arkvoryctl skill install` avec `--force`.                                                                                                                          |

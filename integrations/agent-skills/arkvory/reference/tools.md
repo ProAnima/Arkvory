@@ -33,7 +33,7 @@ Lists return at most 100 items. When `next` is not null, call again with `after`
 - The upload result carries `size` and `sha256` of the file that was read, and the server's receipt for the same bytes.
 - A path that already holds the same bytes uploads nothing (`created: false`).
 - A write to a repository outside `--write-repositories` fails with `repository_not_allowed` before any request.
-- A file that contains the access key is refused (`source_contains_credential`).
+- A file that contains the access key is refused (`source_contains_credential`), and arkvoryctl's own files (profiles, key files) are never read or replaced (`private_path`).
 
 ## Never available
 

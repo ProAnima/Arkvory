@@ -16,7 +16,7 @@ A failed tool call has `isError: true` and `error.code`; server errors may add `
 | `rate_limited`       | Too many requests. Wait `retryAfterSeconds`, then repeat once.                                          |
 | `unavailable`        | The server or a dependency is down. Try once more later, then tell the user.                            |
 | `capacity_exceeded`  | Quota, disk or queue full. Tell the user; repeating does not help.                                      |
-| `integrity_mismatch` | Bytes do not match the SHA-256. Nothing was kept. Tell the user; do not use the artifact.               |
+| `integrity_mismatch` | Bytes do not match the SHA-256. Nothing was built on them. Tell the user; do not use the artifact.      |
 | `read_only`          | The server is in read-only mode. Writes are refused until an administrator changes it.                  |
 | `internal`           | Server failure. Report the `requestId`.                                                                 |
 
@@ -33,7 +33,8 @@ A failed tool call has `isError: true` and `error.code`; server errors may add `
 | `max_bytes_exceeded`         | The artifact is larger than `maxBytes`; nothing was transferred.                         |
 | `source_changed`             | The file changed while being read. Wait until the build is finished, then repeat.        |
 | `source_contains_credential` | The file contains the access key. Never upload it.                                       |
-| `state_locked`               | The same upload runs in another call. Wait for it to finish.                             |
+| `state_locked`               | The same upload runs in another call. Wait for it; if it persists, tell the user.        |
+| `private_path`               | The path is one of arkvoryctl's own files (profiles, keys). Never read or write them.    |
 | `output_too_large`           | The result does not fit. Ask for fewer items (`limit`).                                  |
 | `invalid_cursor`             | Pass `next` back unchanged as `after`.                                                   |
 | `network_failed`             | The server cannot be reached. Repeat once; an upload resumes.                            |

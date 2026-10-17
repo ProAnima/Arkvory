@@ -53,7 +53,7 @@ claude mcp add arkvory-publish -- arkvoryctl mcp --profile agent --root ~/work -
 
 - 代理只在 `--root`（默认为当前目录）之下读写本地文件。指向其外部的路径（包括通过链接）会被拒绝（`path_outside_root`）。
 - 下载的文件只有在大小和 SHA-256 校验通过后才会出现。只有当代理要求时，已有文件才会被替换。
-- 包含密钥的小文件永远不会被上传（`source_contains_credential`）。
+- 包含密钥的文件永远不会被上传（`source_contains_credential`）；arkvoryctl 自己的文件（配置文件、密钥文件、上传检查点）即使位于 `--root` 之下也从不读取或替换（`private_path`）。
 - 单个结果最多为 `--max-output-bytes`（默认 64 KiB，最多 1 MiB）和 100 项；要获取更多，代理将 `next` 作为 `after` 传回。
 
 ## 安装技能 {#skill}
@@ -74,10 +74,11 @@ arkvoryctl skill install
 
 ## 故障排除 {#troubleshooting}
 
-| 错误                     | 原因与解决方法                                                                       |
-| ------------------------ | ------------------------------------------------------------------------------------ |
-| 没有写入工具             | 服务器启动时未带 `--write`，或密钥缺少权限。                                         |
-| `repository_not_allowed` | 该仓库不在 `--write-repositories` 中。请修改 MCP 配置。                              |
-| `forbidden`              | 密钥缺少权限。运行 `arkvoryctl doctor` 查看权限。                                    |
-| `path_outside_root`      | 文件在 `--root` 之外，或不是普通文件。                                               |
-| `skill_modified`         | 您改动了技能文件。保留您的副本，或带 `--force` 重新运行 `arkvoryctl skill install`。 |
+| 错误                     | 原因与解决方法                                                                                                                                                 |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 没有写入工具             | 服务器启动时未带 `--write`，或密钥缺少权限。                                                                                                                   |
+| `repository_not_allowed` | 该仓库不在 `--write-repositories` 中。请修改 MCP 配置。                                                                                                        |
+| `forbidden`              | 密钥缺少权限。运行 `arkvoryctl doctor` 查看权限。                                                                                                              |
+| `path_outside_root`      | 文件在 `--root` 之外，或不是普通文件。                                                                                                                         |
+| `state_locked`           | 同一上传仍在另一个调用中进行。崩溃后，请确认没有 `arkvoryctl mcp` 正在上传该文件，然后删除 CLI 目录（`~/.config/arkvory`）下 `mcp-uploads` 中的 `.lock` 文件。 |
+| `skill_modified`         | 您改动了技能文件。保留您的副本，或带 `--force` 重新运行 `arkvoryctl skill install`。                                                                           |

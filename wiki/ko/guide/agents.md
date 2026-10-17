@@ -53,7 +53,7 @@ claude mcp add arkvory-publish -- arkvoryctl mcp --profile agent --root ~/work -
 
 - 에이전트는 `--root`(기본값은 현재 디렉터리) 아래에서만 로컬 파일을 읽고 씁니다. 링크를 통한 경우를 포함해 바깥으로 나가는 경로는 거부됩니다(`path_outside_root`).
 - 다운로드한 파일은 크기와 SHA-256을 확인한 뒤에만 나타납니다. 기존 파일은 에이전트가 요청할 때만 교체됩니다.
-- 키가 들어 있는 작은 파일은 절대 업로드되지 않습니다(`source_contains_credential`).
+- 키가 들어 있는 파일은 절대 업로드되지 않으며(`source_contains_credential`), arkvoryctl 자체 파일(프로필, 키 파일, 업로드 체크포인트)은 `--root` 아래에 있어도 읽거나 교체하지 않습니다(`private_path`).
 - 결과 하나는 최대 `--max-output-bytes`(기본 64 KiB, 최대 1 MiB)와 100개 항목입니다. 더 받으려면 에이전트가 `next`를 `after`로 다시 전달합니다.
 
 ## 스킬 설치 {#skill}
@@ -74,10 +74,11 @@ arkvoryctl skill install
 
 ## 문제 해결 {#troubleshooting}
 
-| 오류                     | 원인과 해결                                                                                                |
-| ------------------------ | ---------------------------------------------------------------------------------------------------------- |
-| 쓰기 도구가 없음         | 서버가 `--write` 없이 시작되었거나 키에 권한이 없습니다.                                                   |
-| `repository_not_allowed` | 리포지토리가 `--write-repositories`에 없습니다. MCP 구성을 변경하세요.                                     |
-| `forbidden`              | 키에 권한이 없습니다. `arkvoryctl doctor`로 권한을 확인하세요.                                             |
-| `path_outside_root`      | 파일이 `--root` 밖에 있거나 일반 파일이 아닙니다.                                                          |
-| `skill_modified`         | 스킬 파일을 변경했습니다. 사본을 유지하거나 `--force`와 함께 `arkvoryctl skill install`을 다시 실행하세요. |
+| 오류                     | 원인과 해결                                                                                                                                                                                                    |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 쓰기 도구가 없음         | 서버가 `--write` 없이 시작되었거나 키에 권한이 없습니다.                                                                                                                                                       |
+| `repository_not_allowed` | 리포지토리가 `--write-repositories`에 없습니다. MCP 구성을 변경하세요.                                                                                                                                         |
+| `forbidden`              | 키에 권한이 없습니다. `arkvoryctl doctor`로 권한을 확인하세요.                                                                                                                                                 |
+| `path_outside_root`      | 파일이 `--root` 밖에 있거나 일반 파일이 아닙니다.                                                                                                                                                              |
+| `state_locked`           | 같은 업로드가 다른 호출에서 아직 진행 중입니다. 비정상 종료 후라면 그 파일을 업로드하는 `arkvoryctl mcp`가 없는지 확인한 다음 CLI 디렉터리(`~/.config/arkvory`)의 `mcp-uploads`에서 `.lock` 파일을 삭제하세요. |
+| `skill_modified`         | 스킬 파일을 변경했습니다. 사본을 유지하거나 `--force`와 함께 `arkvoryctl skill install`을 다시 실행하세요.                                                                                                     |

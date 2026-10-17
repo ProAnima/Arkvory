@@ -53,7 +53,7 @@ claude mcp add arkvory-publish -- arkvoryctl mcp --profile agent --root ~/work -
 
 - The agent reads and writes local files only below `--root` (the current directory by default). A path that leads outside it, including through a link, is refused (`path_outside_root`).
 - A download appears only after its size and SHA-256 are verified. An existing file is replaced only when the agent asks for it.
-- A small file that contains the key is never uploaded (`source_contains_credential`).
+- A file that contains the key is never uploaded (`source_contains_credential`), and arkvoryctl's own files (profiles, key files, upload checkpoints) are never read or replaced, even below `--root` (`private_path`).
 - One result is at most `--max-output-bytes` (64 KiB by default, up to 1 MiB) and 100 items; the agent passes `next` back as `after` for more.
 
 ## Install the skill {#skill}
@@ -74,10 +74,11 @@ The skill goes to `~/.claude/skills/arkvory`; pass `--target DIR` to install it 
 
 ## Troubleshooting {#troubleshooting}
 
-| Error                    | Cause and fix                                                                                 |
-| ------------------------ | --------------------------------------------------------------------------------------------- |
-| No write tools           | The server was started without `--write`, or the key lacks the permission.                    |
-| `repository_not_allowed` | The repository is not in `--write-repositories`. Change the MCP configuration.                |
-| `forbidden`              | The key lacks the permission. Run `arkvoryctl doctor` to see the permissions.                 |
-| `path_outside_root`      | The file is outside `--root` or not a regular file.                                           |
-| `skill_modified`         | You changed a skill file. Keep your copy or repeat `arkvoryctl skill install` with `--force`. |
+| Error                    | Cause and fix                                                                                                                                                                                                    |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| No write tools           | The server was started without `--write`, or the key lacks the permission.                                                                                                                                       |
+| `repository_not_allowed` | The repository is not in `--write-repositories`. Change the MCP configuration.                                                                                                                                   |
+| `forbidden`              | The key lacks the permission. Run `arkvoryctl doctor` to see the permissions.                                                                                                                                    |
+| `path_outside_root`      | The file is outside `--root` or not a regular file.                                                                                                                                                              |
+| `state_locked`           | The same upload is still running in another call. After a crash, make sure no `arkvoryctl mcp` is uploading that file, then delete the `.lock` file in `mcp-uploads` of the CLI directory (`~/.config/arkvory`). |
+| `skill_modified`         | You changed a skill file. Keep your copy or repeat `arkvoryctl skill install` with `--force`.                                                                                                                    |

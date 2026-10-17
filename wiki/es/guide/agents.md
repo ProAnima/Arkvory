@@ -53,7 +53,7 @@ claude mcp add arkvory-publish -- arkvoryctl mcp --profile agent --root ~/work -
 
 - El agente lee y escribe archivos locales solo dentro de `--root` (el directorio actual de forma predeterminada). Una ruta que sale de él, también a través de un enlace, se rechaza (`path_outside_root`).
 - Una descarga aparece solo después de comprobar su tamaño y su SHA-256. Un archivo existente solo se reemplaza cuando el agente lo pide.
-- Un archivo pequeño que contiene la clave nunca se sube (`source_contains_credential`).
+- Un archivo que contiene la clave nunca se sube (`source_contains_credential`), y los archivos propios de arkvoryctl (perfiles, archivos de clave, puntos de control de subidas) nunca se leen ni se reemplazan, ni siquiera dentro de `--root` (`private_path`).
 - Un resultado ocupa como máximo `--max-output-bytes` (64 KiB de forma predeterminada, hasta 1 MiB) y 100 elementos; para obtener más, el agente pasa `next` como `after`.
 
 ## Instalar la habilidad {#skill}
@@ -74,10 +74,11 @@ La habilidad se instala en `~/.claude/skills/arkvory`; pase `--target DIR` para 
 
 ## Solución de problemas {#troubleshooting}
 
-| Error                            | Causa y solución                                                                                              |
-| -------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| No hay herramientas de escritura | El servidor se inició sin `--write` o la clave no tiene el permiso.                                           |
-| `repository_not_allowed`         | El repositorio no está en `--write-repositories`. Cambie la configuración de MCP.                             |
-| `forbidden`                      | La clave no tiene el permiso. Ejecute `arkvoryctl doctor` para ver los permisos.                              |
-| `path_outside_root`              | El archivo está fuera de `--root` o no es un archivo normal.                                                  |
-| `skill_modified`                 | Usted cambió un archivo de la habilidad. Conserve su copia o repita `arkvoryctl skill install` con `--force`. |
+| Error                            | Causa y solución                                                                                                                                                                                                             |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| No hay herramientas de escritura | El servidor se inició sin `--write` o la clave no tiene el permiso.                                                                                                                                                          |
+| `repository_not_allowed`         | El repositorio no está en `--write-repositories`. Cambie la configuración de MCP.                                                                                                                                            |
+| `forbidden`                      | La clave no tiene el permiso. Ejecute `arkvoryctl doctor` para ver los permisos.                                                                                                                                             |
+| `path_outside_root`              | El archivo está fuera de `--root` o no es un archivo normal.                                                                                                                                                                 |
+| `state_locked`                   | La misma subida sigue en curso en otra llamada. Tras un fallo, compruebe que ningún `arkvoryctl mcp` está subiendo ese archivo y elimine el archivo `.lock` en `mcp-uploads` del directorio de la CLI (`~/.config/arkvory`). |
+| `skill_modified`                 | Usted cambió un archivo de la habilidad. Conserve su copia o repita `arkvoryctl skill install` con `--force`.                                                                                                                |

@@ -53,7 +53,7 @@ claude mcp add arkvory-publish -- arkvoryctl mcp --profile agent --root ~/work -
 
 - Der Agent liest und schreibt lokale Dateien nur unterhalb von `--root` (standardmäßig das aktuelle Verzeichnis). Ein Pfad, der hinausführt, auch über einen Link, wird abgelehnt (`path_outside_root`).
 - Ein Download erscheint erst, nachdem Größe und SHA-256 geprüft sind. Eine vorhandene Datei wird nur ersetzt, wenn der Agent darum bittet.
-- Eine kleine Datei, die den Schlüssel enthält, wird nie hochgeladen (`source_contains_credential`).
+- Eine Datei, die den Schlüssel enthält, wird nie hochgeladen (`source_contains_credential`), und die eigenen Dateien von arkvoryctl (Profile, Schlüsseldateien, Upload-Checkpoints) werden auch unterhalb von `--root` nie gelesen oder ersetzt (`private_path`).
 - Ein Ergebnis umfasst höchstens `--max-output-bytes` (standardmäßig 64 KiB, bis 1 MiB) und 100 Einträge; für mehr gibt der Agent `next` als `after` zurück.
 
 ## Skill installieren {#skill}
@@ -74,10 +74,11 @@ Der Skill landet in `~/.claude/skills/arkvory`; mit `--target DIR` installieren 
 
 ## Fehlerbehebung {#troubleshooting}
 
-| Fehler                   | Ursache und Lösung                                                                                                          |
-| ------------------------ | --------------------------------------------------------------------------------------------------------------------------- |
-| Keine Schreibwerkzeuge   | Der Server wurde ohne `--write` gestartet, oder dem Schlüssel fehlt die Berechtigung.                                       |
-| `repository_not_allowed` | Das Repository steht nicht in `--write-repositories`. Ändern Sie die MCP-Konfiguration.                                     |
-| `forbidden`              | Dem Schlüssel fehlt die Berechtigung. `arkvoryctl doctor` zeigt die Berechtigungen.                                         |
-| `path_outside_root`      | Die Datei liegt außerhalb von `--root` oder ist keine reguläre Datei.                                                       |
-| `skill_modified`         | Sie haben eine Skill-Datei geändert. Behalten Sie Ihre Kopie oder wiederholen Sie `arkvoryctl skill install` mit `--force`. |
+| Fehler                   | Ursache und Lösung                                                                                                                                                                                                                    |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Keine Schreibwerkzeuge   | Der Server wurde ohne `--write` gestartet, oder dem Schlüssel fehlt die Berechtigung.                                                                                                                                                 |
+| `repository_not_allowed` | Das Repository steht nicht in `--write-repositories`. Ändern Sie die MCP-Konfiguration.                                                                                                                                               |
+| `forbidden`              | Dem Schlüssel fehlt die Berechtigung. `arkvoryctl doctor` zeigt die Berechtigungen.                                                                                                                                                   |
+| `path_outside_root`      | Die Datei liegt außerhalb von `--root` oder ist keine reguläre Datei.                                                                                                                                                                 |
+| `state_locked`           | Derselbe Upload läuft noch in einem anderen Aufruf. Prüfen Sie nach einem Absturz, dass kein `arkvoryctl mcp` diese Datei hochlädt, und löschen Sie dann die `.lock`-Datei in `mcp-uploads` im CLI-Verzeichnis (`~/.config/arkvory`). |
+| `skill_modified`         | Sie haben eine Skill-Datei geändert. Behalten Sie Ihre Kopie oder wiederholen Sie `arkvoryctl skill install` mit `--force`.                                                                                                           |

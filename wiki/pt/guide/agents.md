@@ -53,7 +53,7 @@ claude mcp add arkvory-publish -- arkvoryctl mcp --profile agent --root ~/work -
 
 - O agente lê e grava arquivos locais apenas dentro de `--root` (o diretório atual por padrão). Um caminho que sai dele, inclusive por um link, é recusado (`path_outside_root`).
 - Um download só aparece depois que o tamanho e o SHA-256 são verificados. Um arquivo existente só é substituído quando o agente pede.
-- Um arquivo pequeno que contém a chave nunca é enviado (`source_contains_credential`).
+- Um arquivo que contém a chave nunca é enviado (`source_contains_credential`), e os arquivos do próprio arkvoryctl (perfis, arquivos de chave, checkpoints de envio) nunca são lidos nem substituídos, mesmo dentro de `--root` (`private_path`).
 - Um resultado tem no máximo `--max-output-bytes` (64 KiB por padrão, até 1 MiB) e 100 itens; para mais, o agente passa `next` como `after`.
 
 ## Instalar a skill {#skill}
@@ -74,10 +74,11 @@ A skill vai para `~/.claude/skills/arkvory`; passe `--target DIR` para instalá-
 
 ## Solução de problemas {#troubleshooting}
 
-| Erro                          | Causa e solução                                                                                          |
-| ----------------------------- | -------------------------------------------------------------------------------------------------------- |
-| Nenhuma ferramenta de escrita | O servidor foi iniciado sem `--write`, ou a chave não tem a permissão.                                   |
-| `repository_not_allowed`      | O repositório não está em `--write-repositories`. Altere a configuração do MCP.                          |
-| `forbidden`                   | A chave não tem a permissão. Execute `arkvoryctl doctor` para ver as permissões.                         |
-| `path_outside_root`           | O arquivo está fora de `--root` ou não é um arquivo comum.                                               |
-| `skill_modified`              | Você alterou um arquivo da skill. Mantenha sua cópia ou repita `arkvoryctl skill install` com `--force`. |
+| Erro                          | Causa e solução                                                                                                                                                                                                                |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Nenhuma ferramenta de escrita | O servidor foi iniciado sem `--write`, ou a chave não tem a permissão.                                                                                                                                                         |
+| `repository_not_allowed`      | O repositório não está em `--write-repositories`. Altere a configuração do MCP.                                                                                                                                                |
+| `forbidden`                   | A chave não tem a permissão. Execute `arkvoryctl doctor` para ver as permissões.                                                                                                                                               |
+| `path_outside_root`           | O arquivo está fora de `--root` ou não é um arquivo comum.                                                                                                                                                                     |
+| `state_locked`                | O mesmo envio ainda está em andamento em outra chamada. Após uma falha, confirme que nenhum `arkvoryctl mcp` está enviando esse arquivo e apague o arquivo `.lock` em `mcp-uploads` no diretório da CLI (`~/.config/arkvory`). |
+| `skill_modified`              | Você alterou um arquivo da skill. Mantenha sua cópia ou repita `arkvoryctl skill install` com `--force`.                                                                                                                       |
