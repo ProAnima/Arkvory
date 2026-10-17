@@ -15,6 +15,7 @@ export const errorReasons = {
     'range_not_satisfiable',
   ],
   not_found: ['route_not_found'],
+  gone: ['events_cursor_expired'],
   conflict: [
     'upload_expired',
     'upload_state',
@@ -27,6 +28,7 @@ export const errorReasons = {
     'stage_limit',
     'state_conflict',
     'mirror_read_only',
+    'events_epoch_changed',
   ],
   forbidden: [
     'permission_missing',
@@ -102,7 +104,17 @@ export interface NativeErrorResponse {
   readonly reason?: string;
   readonly details?: readonly ErrorDetailResponse[];
   readonly retryAfterSeconds?: number;
+  /** The event feed window, with events_cursor_expired and events_epoch_changed (ADR 0080). */
+  readonly events?: EventWindowResponse;
 }
+/** Epoch of the event feed and its retained positions as decimal strings (ADR 0080). */
+export interface EventWindowResponse {
+  readonly epoch: string;
+  /** The lowest cursor still accepted: every event after it is retained. */
+  readonly oldest: string;
+  readonly head: string;
+}
+const decimalPattern = '^(0|[1-9][0-9]{0,18})$';
 
 const reasonList = Object.entries(errorReasons)
   .filter(([, reasons]) => reasons.length > 0)
@@ -154,6 +166,17 @@ export const nativeErrorSchema = {
       minimum: 0,
       description: 'Present with Retry-After (429, 503): seconds before a retry may succeed.',
     },
+    events: {
+      type: 'object',
+      required: ['epoch', 'oldest', 'head'],
+      description:
+        'Present with events_cursor_expired and events_epoch_changed: the event feed epoch, the lowest cursor it accepts and its newest position.',
+      properties: {
+        epoch: { type: 'string', format: 'uuid' },
+        oldest: { type: 'string', pattern: decimalPattern },
+        head: { type: 'string', pattern: decimalPattern },
+      },
+    },
   },
 } as const;
 const header = (description: string) => ({ description, schema: { type: 'string' } });
@@ -185,6 +208,21 @@ function readDetails(value: unknown): readonly ErrorDetailResponse[] {
   return result;
 }
 
+function readEventWindow(value: unknown): EventWindowResponse | undefined {
+  if (typeof value !== 'object' || value === null) return undefined;
+  const entry: Record<string, unknown> = Object.fromEntries(Object.entries(value));
+  const { epoch, oldest, head } = entry;
+  const decimal = new RegExp(decimalPattern);
+  return typeof epoch === 'string' &&
+    /^[0-9a-f-]{36}$/.test(epoch) &&
+    typeof oldest === 'string' &&
+    decimal.test(oldest) &&
+    typeof head === 'string' &&
+    decimal.test(head)
+    ? { epoch, oldest, head }
+    : undefined;
+}
+
 /**
  * Lenient reader for clients: unknown codes and reasons are kept as text, malformed optional
  * members are dropped. Throws only when the mandatory envelope is absent.
@@ -196,6 +234,7 @@ export function readNativeError(value: unknown): NativeErrorResponse {
   const reason = machine(row['reason']);
   const details = readDetails(row['details']);
   const seconds = row['retryAfterSeconds'];
+  const events = readEventWindow(row['events']);
   return {
     code,
     message: boundedText(row['message'], maxMessageLength) ?? '',
@@ -205,5 +244,6 @@ export function readNativeError(value: unknown): NativeErrorResponse {
     ...(typeof seconds === 'number' && Number.isSafeInteger(seconds) && seconds >= 0
       ? { retryAfterSeconds: seconds }
       : {}),
+    ...(events === undefined ? {} : { events }),
   };
 }

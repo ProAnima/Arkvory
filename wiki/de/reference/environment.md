@@ -148,6 +148,15 @@ Siehe [Spiegel](../operate/mirrors).
 
 Siehe [Webhooks](../protocols/webhooks).
 
+## Ereignisse {#events}
+
+| Variable                         | Gelesen von | Standard | Bedeutung                                                                                                                                |
+| -------------------------------- | ----------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `ARKVORY_EVENTS_RETENTION_HOURS` | Worker      | 168      | Wie viele Stunden der Ereignis-Feed ein Ereignis aufbewahrt, 1 bis 8760. Ältere Ereignisse werden entfernt; ein Cursor davor erhält 410. |
+| `ARKVORY_EVENTS_MAX_ROWS`        | Worker      | 5000000  | Höchstzahl der Ereignisse im Feed, 1000 bis 1000000000. Die ältesten werden zuerst entfernt.                                             |
+
+Siehe [Ereignisse](../protocols/events).
+
 ## Hochverfügbarkeits-Cluster {#cluster}
 
 | Variable                 | Gelesen von | Standard      | Bedeutung                                                                                                                                                                                                              |

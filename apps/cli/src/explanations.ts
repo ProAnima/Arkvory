@@ -244,6 +244,18 @@ const server: Readonly<Record<string, Text>> = {
     'This package version already exists with other content. Publish a new version.',
     'Такая версия пакета уже есть с другим содержимым. Опубликуйте новую версию.',
   ],
+  'conflict/events_epoch_changed': [
+    'The server was restored from a backup. Read the current state, then tail again without --after.',
+    'Сервер восстановлен из резервной копии. Прочитайте текущее состояние и запустите tail заново без --after.',
+  ],
+  'gone/events_cursor_expired': [
+    'The cursor is older than the events the server keeps. Read the current state, then tail again from the oldest event.',
+    'Курсор старше хранимых сервером событий. Прочитайте текущее состояние и запустите tail заново с самого старого события.',
+  ],
+  gone: [
+    'The server no longer keeps what was asked for. Read the current state again.',
+    'Сервер больше не хранит запрошенное. Прочитайте текущее состояние заново.',
+  ],
   conflict: [
     'The request conflicts with the current state. Read it again and repeat.',
     'Запрос противоречит текущему состоянию. Прочитайте его снова и повторите.',

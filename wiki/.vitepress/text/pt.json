@@ -134,6 +134,10 @@
         "title": "Espelhos",
         "intro": "O estado de um repositório espelhado e o feed que um espelho acompanha."
       },
+      "events": {
+        "title": "Eventos",
+        "intro": "O fluxo de eventos da instalação após um cursor e a lista de tipos de eventos."
+      },
       "links": {
         "title": "Links de download",
         "intro": "Links com prazo limitado que permitem a alguém sem chave baixar um artefato."

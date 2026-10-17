@@ -11,6 +11,7 @@ import { updateOperations } from './updates-api.js';
 import { fleetOperations } from './fleet-api.js';
 import { downloadSettingsOperations } from './download-settings-api.js';
 import { siteChangeOperations } from './site-changes-api.js';
+import { eventOperations } from './events/feed.js';
 import { moduleOperations } from './modules-api.js';
 import type { BackupPermissionName } from './backup-wire.js';
 import type { servicePermissionNames } from './service-api.js';
@@ -156,6 +157,9 @@ add(
   },
   'read',
 );
+// ADR 0080: every caller may read; each event is filtered by the caller's permissions.
+for (const [path, method, id, retry] of eventOperations)
+  add(`/api/v1${path}`, method, id, 'Events', { kind: 'authenticated' }, retry);
 add('/health/ready', 'get', 'getReadiness', 'System', { kind: 'authenticated' }, 'read');
 add('/health/metrics', 'get', 'getMetrics', 'System', { kind: 'authenticated' }, 'read');
 add('/api/v1/openapi.json', 'get', 'getOpenApi', 'System', { kind: 'authenticated' }, 'read');

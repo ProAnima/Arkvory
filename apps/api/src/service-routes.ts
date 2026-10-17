@@ -46,6 +46,8 @@ export function registerServiceRoutes(
         replicatedStorage: false,
         // A source a mirror can follow (ADR 0058): GET repositories/{r}/changes.
         mirrorFeed: true,
+        // The installation's event feed (ADR 0080): GET /api/v1/events and /events/types.
+        events: true,
       },
       limits: {
         maxObjectBytes: String(maxObjectBytes),

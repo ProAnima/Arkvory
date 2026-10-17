@@ -1971,6 +1971,10 @@
     "en": "This repository is a mirror of another installation and cannot be changed here. Make the change on the source; the mirror follows by itself.",
     "text": "이 리포지토리는 다른 설치 환경의 미러이므로 여기서 변경할 수 없습니다. 원본에서 변경하세요. 미러에는 자동으로 반영됩니다."
   },
+  "errorGone": {
+    "en": "The server no longer keeps what was asked for. Reload the page to read the current state.",
+    "text": "서버가 요청한 내용을 더 이상 보관하지 않습니다. 페이지를 새로 고쳐 현재 상태를 읽으세요."
+  },
   "cluster": {
     "en": "Cluster",
     "text": "클러스터"

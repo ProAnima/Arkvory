@@ -1111,6 +1111,22 @@
       },
       "summary": "Прочитать обзор площадок",
       "description": "Оповещения по управляемым площадкам и этой установке, самые серьёзные первыми (`critical`, `warning`, `info`), и связи зеркал между ними. Строится по последним фоновым опросам, не чаще раза в 5 секунд. Источник, по адресу которого не отвечает ни одна управляемая площадка, — `external:<origin>`; эта установка — `self`, и связи к ней видны только при заданном `ARKVORY_SITE_URL`. Отвечает только процесс записи."
+    },
+    "listEvents": {
+      "en": {
+        "summary": "Read the events of the installation",
+        "description": "Returns, oldest first, up to `limit` events (1–500, default 100) after the cursor `after`, as CloudEvents 1.0: publications, deletions, file revisions, package registrations, annotations, attachments, stages, promotions, image, npm and Git LFS changes of every repository the caller may list (`artifact.list`). Without `after` the feed starts at the oldest kept event. Pass `next` as `after` to continue: it also moves past events the caller may not see, at most 5000 per request. `types` keeps the named types or prefixes such as `artifact.*`, `repository` one repository. A cursor older than `oldest` answers 410 `events_cursor_expired`; a cursor of another `epoch` (the server was restored from a backup) answers 409 `events_epoch_changed`; both carry the current `epoch`, `oldest` and `head` in `events`. Deduplicate by `id`; an event is a hint, read the current state through the ordinary routes."
+      },
+      "summary": "Прочитать события установки",
+      "description": "Возвращает от старых к новым до `limit` событий (1–500, по умолчанию 100) после курсора `after` в формате CloudEvents 1.0: публикации, удаления, ревизии файлов, регистрации пакетов, аннотации, вложения, стадии, продвижения, изменения образов, npm и Git LFS во всех репозиториях, список которых вызывающему доступен (`artifact.list`). Без `after` лента начинается с самого старого хранимого события. Чтобы продолжить, передайте `next` как `after`: он продвигается и за события, которые вызывающему не видны, не больше 5000 за запрос. `types` оставляет названные типы или префиксы вроде `artifact.*`, `repository` — один репозиторий. Курсор старше `oldest` получает 410 `events_cursor_expired`; курсор другой эпохи `epoch` (сервер восстановлен из резервной копии) — 409 `events_epoch_changed`; оба ответа несут текущие `epoch`, `oldest` и `head` в `events`. Дедуплицируйте по `id`; событие — подсказка, текущее состояние читайте обычными маршрутами."
+    },
+    "listEventTypes": {
+      "en": {
+        "summary": "List the event types",
+        "description": "Returns every event type this server writes: name, `schemaVersion`, scope, the permission a reader needs, the partition that keeps its order and the JSON Schema of `data`. The CloudEvents `type` is `arkvory.<name>.v<schemaVersion>`."
+      },
+      "summary": "Перечислить типы событий",
+      "description": "Возвращает все типы событий, которые пишет этот сервер: имя, `schemaVersion`, область, право, нужное читателю, раздел, сохраняющий порядок, и JSON Schema поля `data`. `type` в CloudEvents — `arkvory.<name>.v<schemaVersion>`."
     }
   },
   "errors": {
@@ -1126,7 +1142,8 @@
       "unavailable": "Зависимость сейчас недоступна; повторите после времени, указанного в Retry-After.",
       "rate_limited": "Слишком много попыток; дождитесь времени, указанного в Retry-After.",
       "read_only": "Этот узел не принимает изменения (так отвечает шлюз чтения; зеркало отвечает conflict с причиной mirror_read_only).",
-      "internal": "Непредвиденный дефект сервера; ID запроса поможет поддержке найти его. Не повторяйте запрос вслепую."
+      "internal": "Непредвиденный дефект сервера; ID запроса поможет поддержке найти его. Не повторяйте запрос вслепую.",
+      "gone": "То, что называет запрос, больше не хранится; прочитайте текущее состояние заново."
     },
     "reasons": {
       "validation": "Поле отсутствует или его значение нарушает правила; поле названо в details.",
@@ -1180,7 +1197,9 @@
       "registration_attempts": "Слишком много попыток регистрации; подождите.",
       "password_attempts": "Слишком много попыток ввода пароля; подождите.",
       "feedback_attempts": "Слишком много отчётов обратной связи; подождите.",
-      "replication_degraded": "В HA-кластере меньше полных копий, чем нужно для записи, поэтому изменение не подтверждено; повторите после Retry-After. Скачивание работает."
+      "replication_degraded": "В HA-кластере меньше полных копий, чем нужно для записи, поэтому изменение не подтверждено; повторите после Retry-After. Скачивание работает.",
+      "events_cursor_expired": "Курсор событий старше самого старого события, которое хранит сервер; прочитайте текущее состояние и продолжите с `oldest`.",
+      "events_epoch_changed": "Сервер восстановлен из резервной копии, и его события начали новую эпоху; прочитайте текущее состояние и продолжите в новой эпохе."
     }
   },
   "fields": {
@@ -1202,6 +1221,10 @@
     "Snapshot time T; the age of a point counts from T.": "Время снимка T; возраст точки отсчитывается от T.",
     "Start of execution, or the request time while queued.": "Начало выполнения или время запроса, пока задание в очереди.",
     "Upload reservation time": "Время резервирования загрузки",
-    "Vault is encrypted; null when unknown or not connected.": "Хранилище зашифровано; null, если неизвестно или не подключено."
+    "Vault is encrypted; null when unknown or not connected.": "Хранилище зашифровано; null, если неизвестно или не подключено.",
+    "Event id, `<epoch>:<position>`; deduplicate by it": "Идентификатор события, `<epoch>:<position>`; дедуплицируйте по нему",
+    "Artifact id, or the path of a file event": "ID артефакта или путь файла для событий файлов",
+    "`repository:<repository>`; events of one partition keep their commit order": "`repository:<repository>`; события одного раздела сохраняют порядок фиксации",
+    "Data of the type; its JSON Schema is in the type list": "Данные типа; их JSON Schema — в списке типов"
   }
 }

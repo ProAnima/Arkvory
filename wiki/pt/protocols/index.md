@@ -92,4 +92,5 @@ Consulte [Gateways de leitura](../operate/read-gateways) e [Espelhos](../operate
 - [Pacotes Unity e npm](./unity-npm)
 - [Arquivos brutos](./raw-files)
 - [Webhooks](./webhooks)
+- [Eventos](./events)
 - [Visão geral da API](../api/index) e [Erros](../api/errors)

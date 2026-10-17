@@ -92,4 +92,5 @@ title: العملاء والبروتوكولات
 - [حزم Unity وnpm](./unity-npm)
 - [الملفات الخام](./raw-files)
 - [Webhook](./webhooks)
+- [الأحداث](./events)
 - [نظرة عامة على API](../api/index) و[الأخطاء](../api/errors)

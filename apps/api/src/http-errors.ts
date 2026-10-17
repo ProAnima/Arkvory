@@ -5,12 +5,14 @@ import { classifyFailure, failureCause } from '@proanima/arkvory-infrastructure'
 import type { RequestContext } from './request-context.js';
 import { frameworkFailure } from './framework-errors.js';
 import type { HttpFailure } from './http-failure.js';
+import type { EventWindowResponse } from '@proanima/arkvory-contracts';
 export type { HttpFailure } from './http-failure.js';
 
 const statuses: Record<ErrorCode, number> = {
   invalid_input: 400,
   not_found: 404,
   conflict: 409,
+  gone: 410,
   forbidden: 403,
   unauthorized: 401,
   capacity_exceeded: 507,
@@ -111,13 +113,17 @@ export function errorBody(failure: HttpFailure, requestId: string) {
   };
 }
 
-/** Sends a failure outside the error handler (hooks, 404/405) with the same envelope. */
+/**
+ * Sends a failure outside the error handler (hooks, 404/405, outcomes of a use case) with the
+ * same envelope. `extra` holds the additive members a specific failure carries (ADR 0080).
+ */
 export async function sendFailure(
   request: FastifyRequest,
   reply: FastifyReply,
   failure: HttpFailure,
+  extra: { readonly events?: EventWindowResponse } = {},
 ): Promise<FastifyReply> {
-  const body = errorBody(failure, request.id);
+  const body = { ...errorBody(failure, request.id), ...extra };
   if (body.retryAfterSeconds !== undefined)
     reply.header('Retry-After', String(body.retryAfterSeconds));
   return reply.code(httpStatus(failure)).send(body);

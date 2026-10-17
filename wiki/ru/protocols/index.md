@@ -92,4 +92,5 @@ title: Клиенты и протоколы
 - [Пакеты Unity и npm](./unity-npm)
 - [Обычные файлы](./raw-files)
 - [Вебхуки](./webhooks)
+- [События](./events)
 - [Обзор API](../api/index) и [Ошибки](../api/errors)

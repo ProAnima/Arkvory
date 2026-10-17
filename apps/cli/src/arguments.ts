@@ -6,7 +6,17 @@ export interface Arguments {
   readonly json: boolean;
   readonly language: 'en' | 'ru';
 }
-const flags = new Set(['json', 'help', 'version', 'move', 'prerelease', 'verbose', 'off', 'all']);
+const flags = new Set([
+  'json',
+  'help',
+  'version',
+  'move',
+  'prerelease',
+  'verbose',
+  'off',
+  'follow',
+  'all',
+]);
 const values = new Set([
   'lang',
   'profile',
@@ -38,8 +48,10 @@ const values = new Set([
   'range',
   'order',
   'ttl',
-  'repositories',
+  'types',
+  'cursor-file',
   'limit',
+  'repositories',
   'root',
   'max-output-bytes',
 ]);

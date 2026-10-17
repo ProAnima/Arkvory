@@ -1971,6 +1971,10 @@
     "en": "This repository is a mirror of another installation and cannot be changed here. Make the change on the source; the mirror follows by itself.",
     "text": "यह रिपॉज़िटरी किसी दूसरे इंस्टॉलेशन का मिरर है, इसलिए इसे यहाँ बदला नहीं जा सकता। बदलाव स्रोत पर करें; मिरर उसे अपने-आप ले लेगा।"
   },
+  "errorGone": {
+    "en": "The server no longer keeps what was asked for. Reload the page to read the current state.",
+    "text": "सर्वर अब अनुरोधित डेटा नहीं रखता। वर्तमान स्थिति पढ़ने के लिए पृष्ठ फिर से लोड करें।"
+  },
   "cluster": {
     "en": "Cluster",
     "text": "क्लस्टर"
