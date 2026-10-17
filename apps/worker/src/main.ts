@@ -14,8 +14,11 @@ import {
   startupReason,
   PostgresJobs,
   PostgresIdentity,
+  PostgresModulePlan,
   PostgresServices,
+  planBuiltinModules,
   readMirrorSettings,
+  readModuleSelections,
   readWebhookCertificates,
   readWebhookSettings,
   parseAllowedNetworks,
@@ -30,9 +33,10 @@ import { runMirrors } from './mirror-loop.js';
 import { runWebhooks } from './webhook-loop.js';
 import { readEventRetention, runEventSequencer } from './event-loop.js';
 import { processJob, retireExhausted } from './completion.js';
+import { awaitModulePlan, watchModulePlan } from './module-plan.js';
 
 let levelError: Error | undefined;
-/** Stopped while another worker held the lock: a clean stop, not a failure. */
+/** Stopped before taking work, as standby or waiting for the module plan: a clean stop. */
 class StoppedOnStandby extends Error {}
 function level(): LogLevel {
   try {
@@ -103,6 +107,11 @@ try {
   );
   // ADR 0080: retention of the event outbox, checked before the worker takes its lock.
   const eventRetention = readEventRetention(process.env);
+  // ADR 0079: the installation's module plan, refused before the worker takes its lock.
+  const { fingerprint } = planBuiltinModules(
+    identity.version,
+    await readModuleSelections(process.env['ARKVORY_MODULES_FILE']),
+  ).plan;
   // Mirror copies create uploads here, so they need the installation's capacity limit.
   const acquired = await workerResources(
     mirrors.length > 0 ? capacityBytes(process.env['ARKVORY_CAPACITY_BYTES']) : 0,
@@ -116,6 +125,26 @@ try {
   );
   if (!acquired) throw new StoppedOnStandby();
   const { catalog, blobs, dataDirectory } = acquired;
+  const recordedPlan = new PostgresModulePlan(catalog.pool);
+  const planned = await awaitModulePlan(recordedPlan, fingerprint, stop.signal, () => {
+    diagnostics.write({
+      level: 'warning',
+      component: 'worker',
+      code: 'worker.module_plan_mismatch',
+    });
+  }).catch(async (error: unknown) => {
+    await catalog.close();
+    throw error;
+  });
+  if (!planned) {
+    await catalog.close();
+    throw new StoppedOnStandby();
+  }
+  const unwatchPlan = watchModulePlan(recordedPlan, fingerprint, () => {
+    process.exitCode = 1;
+    diagnostics.write({ level: 'error', component: 'worker', code: 'worker.module_plan_changed' });
+    stopWorker();
+  });
   let currentLease: PostgresJobLease | undefined;
   const recovery = setInterval(() => {
     if (stop.signal.aborted || (catalog.active && (!currentLease || currentLease.active))) return;
@@ -201,6 +230,7 @@ try {
     await delivering;
     await sequencing;
     clearInterval(recovery);
+    unwatchPlan();
     await catalog.close();
   }
   diagnostics.write({ level: 'info', component: 'worker', code: 'worker.stopped' });

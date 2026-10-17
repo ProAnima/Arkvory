@@ -79,6 +79,9 @@ const byReason: Readonly<Record<string, Readonly<Record<string, MessageKey>>>> =
     feedback_disabled: 'errorFeedbackDisabled',
     hub_unreachable: 'errorHubUnreachable',
     replication_degraded: 'errorReplicationDegraded',
+    // Readiness answers of a node (ADR 0079); the console shows them as an unavailable server.
+    module_failed: 'errorUnavailable',
+    module_plan_mismatch: 'errorUnavailable',
   },
 };
 const byCode: Readonly<Record<string, MessageKey>> = {

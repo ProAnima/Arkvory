@@ -3,18 +3,18 @@
     "getReadiness": {
       "en": {
         "summary": "Check detailed readiness",
-        "description": "Answers `ready` when the database and storage respond, with this node's `role` (`api` or `reader`), whether it accepts writes now (`writable` is false on a read gateway and while the disk keeps its free-space reserve), the shared download slot of a read gateway and aggregate upload and download admission and bandwidth counters. While the server drains or a dependency is unavailable it answers 503 with Retry-After. It does not count against the request budget; for a load balancer without a key use `getReadinessStatus`."
+        "description": "Answers `ready` when the database and storage respond, with this node's `role` (`api` or `reader`), whether it accepts writes now (`writable` is false on a read gateway and while the disk keeps its free-space reserve), the shared download slot of a read gateway and aggregate upload and download admission and bandwidth counters. While the server drains or a dependency is unavailable it answers 503 with Retry-After. It does not count against the request budget; for a load balancer without a key use `getReadinessStatus`. A failed module the node cannot do without (`module_failed`) and, on a read gateway, a module plan other than the one the writer recorded (`module_plan_mismatch`) also answer 503."
       },
       "summary": "Verificar a prontidão detalhada",
-      "description": "Responde `ready` quando o banco de dados e o armazenamento respondem, com o `role` deste nó (`api` ou `reader`), se ele aceita gravações agora (`writable` é false em um gateway de leitura e enquanto o disco mantém sua reserva de espaço livre), o slot de download compartilhado de um gateway de leitura e os contadores agregados de admissão e de largura de banda de upload e download. Enquanto o servidor drena as conexões ou uma dependência está indisponível, responde 503 com Retry-After. Não conta no orçamento de solicitações; para um balanceador de carga sem chave, use `getReadinessStatus`."
+      "description": "Responde `ready` quando o banco de dados e o armazenamento respondem, com o `role` deste nó (`api` ou `reader`), se ele aceita gravações agora (`writable` é false em um gateway de leitura e enquanto o disco mantém sua reserva de espaço livre), o slot de download compartilhado de um gateway de leitura e os contadores agregados de admissão e de largura de banda de upload e download. Enquanto o servidor drena as conexões ou uma dependência está indisponível, responde 503 com Retry-After. Não conta no orçamento de solicitações; para um balanceador de carga sem chave, use `getReadinessStatus`. Também responde 503 quando falhou um módulo indispensável ao nó (`module_failed`) ou, em um gateway de leitura, quando o plano de módulos difere do registrado pelo processo de gravação (`module_plan_mismatch`)."
     },
     "getCapabilities": {
       "en": {
         "summary": "Get server capabilities and limits",
-        "description": "Returns the API versions, the gateway role, feature flags (for example `selfRegistration` or `mirrorFeed`) and the limits a client adapts to: the largest object (`maxObjectBytes`, a decimal string), the smallest and largest multipart segment, the largest number of parts and the largest page size. Read it once when a client starts; it lists no resources."
+        "description": "Returns the API versions, the gateway role, feature flags (for example `selfRegistration` or `mirrorFeed`) and the limits a client adapts to: the largest object (`maxObjectBytes`, a decimal string), the smallest and largest multipart segment, the largest number of parts and the largest page size. Read it once when a client starts; it lists no resources. `modules` lists the enabled modules this gateway serves, each with its `id` and extension point (`kind`); a protocol switched off in `ARKVORY_MODULES_FILE` is not listed."
       },
       "summary": "Obter as capacidades e os limites do servidor",
-      "description": "Retorna as versões da API, o papel do gateway, as flags de recurso (por exemplo `selfRegistration` ou `mirrorFeed`) e os limites aos quais um cliente se adapta: o maior objeto (`maxObjectBytes`, uma string decimal), o menor e o maior segmento multipart, o maior número de partes e o maior tamanho de página. Leia-o uma vez quando um cliente iniciar; ele não lista nenhum recurso."
+      "description": "Retorna as versões da API, o papel do gateway, as flags de recurso (por exemplo `selfRegistration` ou `mirrorFeed`) e os limites aos quais um cliente se adapta: o maior objeto (`maxObjectBytes`, uma string decimal), o menor e o maior segmento multipart, o maior número de partes e o maior tamanho de página. Leia-o uma vez quando um cliente iniciar; ele não lista nenhum recurso. `modules` lista os módulos habilitados que este gateway atende, cada um com seu `id` e ponto de extensão (`kind`); um protocolo desligado em `ARKVORY_MODULES_FILE` não aparece."
     },
     "getReadinessStatus": {
       "en": {
@@ -1199,7 +1199,9 @@
       "feedback_attempts": "Relatos de feedback demais; aguarde.",
       "replication_degraded": "Um cluster HA tem menos cópias completas do que uma gravação exige, por isso a alteração não foi confirmada; repita após Retry-After. Os downloads continuam funcionando.",
       "events_cursor_expired": "O cursor de eventos é anterior ao evento mais antigo que o servidor guarda; leia o estado atual e continue a partir de `oldest`.",
-      "events_epoch_changed": "O servidor foi restaurado de um backup e seus eventos começaram uma nova época; leia o estado atual e continue na nova época."
+      "events_epoch_changed": "O servidor foi restaurado de um backup e seus eventos começaram uma nova época; leia o estado atual e continue na nova época.",
+      "module_failed": "Falhou um módulo indispensável a este nó, por isso o nó não está pronto; `getSystemModules` e o log o identificam.",
+      "module_plan_mismatch": "Este nó planeja módulos diferentes dos registrados pelo processo de gravação; reinicie-o com o `ARKVORY_MODULES_FILE` da instalação."
     }
   },
   "fields": {

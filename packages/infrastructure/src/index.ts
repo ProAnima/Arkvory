@@ -151,3 +151,4 @@ export {
 export type { PreparedModule } from './module-plan.js';
 export { parseModuleSelections, readModuleSelections } from './module-selection.js';
 export type { ModuleSelection, ModuleSelections } from './module-selection.js';
+export { PostgresModulePlan } from './module-plan-store.js';

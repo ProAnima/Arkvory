@@ -6,9 +6,11 @@ import {
   PostgresDownloadLease,
   PostgresContentPins,
   PostgresDownloadSettings,
+  PostgresModulePlan,
 } from '@proanima/arkvory-infrastructure';
 import type { DiagnosticRecord } from '@proanima/arkvory-infrastructure';
 import { DownloadSettingsControl } from '@proanima/arkvory-application';
+import { ArkvoryError } from '@proanima/arkvory-domain';
 import type { ServerConfig } from './config.js';
 import { createTransferControls } from './transfer-controls.js';
 import { planApiModules, type ApiModuleContext } from './modules.js';
@@ -47,6 +49,8 @@ export class ApiRuntime {
   readonly modules: ModuleRuntime<ApiModuleContext>;
   /** The modules' log and metrics, bound to the process log. */
   readonly telemetry: ModuleTelemetry;
+  /** The plan the writer records and read gateways compare with theirs. */
+  private readonly modulePlan: PostgresModulePlan;
 
   constructor(
     config: ServerConfig,
@@ -69,6 +73,7 @@ export class ApiRuntime {
       config.databasePoolSize ?? 20,
     );
     this.pins = new PostgresContentPins(this.catalog.sessions);
+    this.modulePlan = new PostgresModulePlan(this.catalog.pool);
     this.lease = config.sharedDownloads
       ? new PostgresDownloadLease(this.catalog.sessions, config.sharedDownloads)
       : undefined;
@@ -85,6 +90,21 @@ export class ApiRuntime {
 
   readonly available = () => !this.stopped && this.catalog.active && (this.lease?.active ?? true);
 
+  /**
+   * Readiness of the modules (ADR 0079, sections 3 and 4): no failed module that the process
+   * cannot do without and, on a read gateway, the plan the writer recorded.
+   */
+  readonly modulesReady = async (): Promise<void> => {
+    if (this.modules.blockingFailure() !== null)
+      throw new ArkvoryError('unavailable', 'A required module failed', {
+        reason: 'module_failed',
+      });
+    if (this.role === 'reader' && (await this.modulePlan.read()) !== this.modules.plan.fingerprint)
+      throw new ArkvoryError('unavailable', 'The module plan differs from the writer', {
+        reason: 'module_plan_mismatch',
+      });
+  };
+
   async start(): Promise<void> {
     try {
       if (this.role === 'reader') await this.blobs.ready();
@@ -96,6 +116,9 @@ export class ApiRuntime {
         this.lease !== undefined,
       );
       await this.lease?.start();
+      // One plan per installation (ADR 0079, section 3): the storage owner records it, and read
+      // gateways and the worker with another plan are not ready until they are restarted.
+      if (this.role === 'api') await this.modulePlan.record(this.modules.plan.fingerprint);
       // Queue tickets keep a download's turn over a restart (ADR 0076); a reader without a key
       // made by a writer yet issues none until a later look finds it.
       // A database hiccup here only delays tickets, as the retry below would.
