@@ -9,12 +9,12 @@ import {
   listSlots,
   parseKey,
   removeKeySlot,
-  requireSeparateTrees,
   rotateAgentKey,
 } from '@proanima/arkvory-infrastructure';
 import type { BackupCommand } from './arguments.js';
 import type { CliContext } from './context.js';
 import { openVault, vaultKeys } from './source.js';
+import { requireVaultApart, sourceStorageRoots } from './storage-roots.js';
 
 export async function runVaultInit(
   command: Extract<BackupCommand, { kind: 'vault-init' }>,
@@ -22,9 +22,9 @@ export async function runVaultInit(
 ): Promise<number> {
   const storage = context.env['ARKVORY_DATA_DIR'];
   if (storage)
-    await requireSeparateTrees(
-      { label: 'vault', path: command.vault },
-      { label: 'storage root', path: storage },
+    await requireVaultApart(
+      command.vault,
+      await sourceStorageRoots(storage, context.env['ARKVORY_MODULES_FILE'] || undefined),
     );
   const created = { vaultId: randomUUID(), createdAt: new Date().toISOString() };
   const encryption = command.encryption;

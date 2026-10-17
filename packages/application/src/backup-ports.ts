@@ -181,6 +181,11 @@ export interface RestoreStorage {
   requireEmpty(): Promise<void>;
   /** Creates the storage layout and its new identity. */
   prepare(): Promise<string>;
+  /**
+   * Whether the target has the storage an inventory line names (ADR 0083, N11). Without it,
+   * every blob goes to the one storage of the target.
+   */
+  supports?(backend: string): boolean;
   /** Verifies size and SHA-256 before the content becomes visible. */
   put(
     entry: InventoryEntry,

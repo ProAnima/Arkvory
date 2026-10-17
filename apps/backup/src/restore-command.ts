@@ -1,19 +1,23 @@
 import { open } from 'node:fs/promises';
+import { BackupFailure } from '@proanima/arkvory-domain';
 import { RestoreToEmptyTarget } from '@proanima/arkvory-application';
 import type { RestoreReport } from '@proanima/arkvory-application';
 import {
-  LocalBlobStore,
+  localStorageBackends,
   LocalRestoreStorage,
   MINIMUM_RESTORE_SCHEMA,
   PostgresRestoreDatabase,
   RESTORE_NORMALIZATION_VERSION,
   SCHEMA_VERSION,
   backupPool,
+  readLocalStorageSettings,
   requireSeparateTrees,
 } from '@proanima/arkvory-infrastructure';
+import type { LocalStorageSettings } from '@proanima/arkvory-infrastructure';
 import type { BackupCommand } from './arguments.js';
 import type { CliContext } from './context.js';
 import { databaseUrl, restoreReserveBytes } from './config.js';
+import { sourceStorageRoots } from './storage-roots.js';
 import { openVault, vaultKeys } from './source.js';
 
 type RestoreCommand = Extract<BackupCommand, { kind: 'restore' }>;
@@ -36,21 +40,41 @@ async function writeReport(path: string, report: RestoreReport, context: CliCont
   }
 }
 
+/**
+ * The other storages of the target (ADR 0083, N11): the `local-storage` instances of the
+ * target's modules file; none without `--modules-file`.
+ */
+async function targetBackends(command: RestoreCommand): Promise<readonly LocalStorageSettings[]> {
+  try {
+    return await readLocalStorageSettings(command.modulesFile, command.storage);
+  } catch (error) {
+    throw new BackupFailure('invalid_argument', 'Invalid --modules-file', {
+      cause: error,
+    });
+  }
+}
+
 async function requireSeparateTargets(
-  command: RestoreCommand,
+  targets: readonly string[],
   vaultRoot: string,
   env: NodeJS.ProcessEnv,
 ) {
-  await requireSeparateTrees(
-    { label: 'vault', path: vaultRoot },
-    { label: 'restore storage', path: command.storage },
-  );
   const source = env['ARKVORY_DATA_DIR'];
-  if (source)
+  // The source's own storage directory and volumes, when this host runs the source too.
+  const sources = source
+    ? await sourceStorageRoots(source, env['ARKVORY_MODULES_FILE'] || undefined)
+    : [];
+  for (const target of targets) {
     await requireSeparateTrees(
-      { label: 'source storage root', path: source },
-      { label: 'restore storage', path: command.storage },
+      { label: 'vault', path: vaultRoot },
+      { label: 'restore storage', path: target },
     );
+    for (const path of sources)
+      await requireSeparateTrees(
+        { label: 'source storage root', path },
+        { label: 'restore storage', path: target },
+      );
+  }
 }
 
 export async function runRestore(command: RestoreCommand, context: CliContext): Promise<number> {
@@ -59,16 +83,24 @@ export async function runRestore(command: RestoreCommand, context: CliContext): 
     'restore database URL (--database-url or ARKVORY_RESTORE_DATABASE_URL)',
   );
   const vault = await openVault(command.vault, undefined, vaultKeys(command.keyFile, context.env));
-  await requireSeparateTargets(command, vault.root, context.env);
+  const backends = await targetBackends(command);
+  await requireSeparateTargets(
+    [command.storage, ...backends.map((backend) => backend.directory)],
+    vault.root,
+    context.env,
+  );
   const started = performance.now();
   const pool = backupPool(url, 3);
   try {
     const restore = new RestoreToEmptyTarget({
       vault,
       database: new PostgresRestoreDatabase(pool),
-      // The target's root is created private (0700): it holds the restored content.
+      // The target's roots are created private (0700): they hold the restored content.
       storage: new LocalRestoreStorage(
-        new LocalBlobStore(command.storage, restoreReserveBytes(context.env), 0o700),
+        localStorageBackends(command.storage, restoreReserveBytes(context.env), backends, {
+          rootMode: 0o700,
+          createVolumeRoots: true,
+        }),
       ),
       identity: { now: () => new Date().toISOString() },
       releaseSchema: SCHEMA_VERSION,

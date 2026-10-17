@@ -15,15 +15,16 @@ import { planApiModules } from '../apps/api/dist/modules.js';
 import { ModuleTelemetry } from '../apps/api/dist/module-telemetry.js';
 import { moduleMetrics } from '../apps/api/dist/module-metrics.js';
 
-test('the API process plans its built-in modules: UPack and raw are core, the protocols beside', async () => {
+test('the API process plans its built-in modules: UPack, raw and local storage are core, the protocols beside', async () => {
   const runtime = planApiModules('api', '1.6.0');
   await runtime.start();
   const plan = runtime.plan;
-  assert.deepEqual(plan.startOrder, ['lfs', 'npm', 'oci', 'raw', 'upack']);
+  assert.deepEqual(plan.startOrder, ['lfs', 'local-storage', 'npm', 'oci', 'raw', 'upack']);
   assert.deepEqual(
     plan.modules.map((m) => [m.manifest.id, m.manifest.core, m.enabled, m.source]),
     [
       ['lfs', false, true, 'builtin'],
+      ['local-storage', true, true, 'builtin'],
       ['npm', false, true, 'builtin'],
       ['oci', false, true, 'builtin'],
       ['raw', true, true, 'builtin'],
@@ -51,8 +52,8 @@ test('the API process plans its built-in modules: UPack and raw are core, the pr
   assert.equal(builtinVersion('2.0.1'), '2.0.1');
 });
 
-test('built-in modules take no settings yet and refuse any field by its path', () => {
-  const [upack] = builtinModules('1.0.0');
+test('built-in protocols take no settings yet and refuse any field by its path', () => {
+  const upack = builtinModules('1.0.0').find((d) => d.manifest.id === 'upack');
   assert.deepEqual(prepareModule(upack, { enabled: true, config: {} }).candidate.config, {});
   assert.throws(
     () => prepareModule(upack, { enabled: true, config: { port: 1 } }),
@@ -290,7 +291,7 @@ test('the modules file disables protocols beside /api/v1 and changes the plan of
   const runtime = planApiModules('reader', '1.6.0', choices);
   assert.deepEqual(
     runtime.planned().map((m) => m.manifest.id),
-    ['lfs', 'oci', 'raw', 'upack'],
+    ['lfs', 'local-storage', 'oci', 'raw', 'upack'],
   );
   assert.equal(runtime.plan.modules.find((m) => m.manifest.id === 'npm').enabled, false);
   const defaults = planApiModules('reader', '1.6.0').plan.fingerprint;
@@ -379,7 +380,7 @@ test('each module gets its own context: role, source, mode, the stop signal, log
   const api = planApiModules('reader', '1.6.0');
   assert.deepEqual(
     api.planned().map((m) => m.manifest.publisher),
-    ['proanimastudio', 'proanimastudio', 'proanimastudio', 'proanimastudio', 'proanimastudio'],
+    Array.from({ length: 6 }, () => 'proanimastudio'),
   );
 });
 

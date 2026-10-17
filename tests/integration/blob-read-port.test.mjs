@@ -13,6 +13,7 @@ import {
   PostgresCleanup,
   PostgresRestoreDatabase,
   SCHEMA_VERSION,
+  StorageBackends,
 } from '@proanima/arkvory-infrastructure';
 import { openVault } from '../../apps/backup/dist/index.js';
 import { setup, base } from './fixture.mjs';
@@ -58,7 +59,8 @@ test('capture and restore go through the port and keep the storage of each blob'
   const f = await setup(t);
   const published = [await publish(f), await publish(f, Buffer.alloc(0)), await publish(f)];
   const placed = published[2];
-  // Placement is not wired yet (ADR 0083, N11): the row names a second storage directly.
+  // The row names a second storage directly; its bytes stay in the data directory, which the
+  // recording port below reads for every storage (the two-volume case: storage-placement).
   await f.catalog.pool.query("UPDATE arkvory_uploads SET storage_backend='volume-2' WHERE id=$1", [
     placed.id,
   ]);
@@ -82,7 +84,7 @@ test('capture and restore go through the port and keep the storage of each blob'
   const reads = [];
   const { path: vaultPath } = await newVault(t);
   const result = await capture(f, vaultPath, 'port-only', (deps, source) => {
-    const port = portOnly(source.blobs);
+    const port = portOnly(source.blobs.core.blobs);
     const recording = {
       ...port,
       read: (id, size, range, backendId) => {
@@ -101,10 +103,21 @@ test('capture and restore go through the port and keep the storage of each blob'
   const pool = new Pool({ connectionString: database.url, max: 3 });
   database.release(() => pool.end());
   const target = new MemoryBlobStore();
+  const second = new MemoryBlobStore();
+  const instance = (id, store) => ({
+    id,
+    blobs: store,
+    lifecycle: store,
+    mode: 'full',
+    acceptsWrites: true,
+    enabled: true,
+  });
   const restore = new RestoreToEmptyTarget({
     vault: await openVault(vaultPath),
     database: new PostgresRestoreDatabase(pool),
-    storage: new LocalRestoreStorage(target),
+    storage: new LocalRestoreStorage(
+      new StorageBackends([instance('default', target), instance('volume-2', second)]),
+    ),
     identity: { now: () => new Date().toISOString() },
     releaseSchema: SCHEMA_VERSION,
     minimumSchema: MINIMUM_RESTORE_SCHEMA,
@@ -115,9 +128,11 @@ test('capture and restore go through the port and keep the storage of each blob'
   );
   assert.equal(report.outcome, 'restored');
   for (const item of published) {
-    assert.equal(sha(target.bytesOf(item.id)), sha(item.bytes));
-    await target.exists(item.id, item.bytes.length, item === placed ? 'volume-2' : 'default');
+    const store = item === placed ? second : target;
+    assert.equal(sha(store.bytesOf(item.id)), sha(item.bytes));
+    await store.exists(item.id, item.bytes.length, item === placed ? 'volume-2' : 'default');
   }
+  assert.equal(target.has(placed.id), false, 'each blob lands in the storage of its line');
   const rows = await pool.query('SELECT id::text, storage_backend FROM arkvory_uploads');
   assert.equal(rows.rows.find((row) => row.id === placed.id).storage_backend, 'volume-2');
 });

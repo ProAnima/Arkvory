@@ -26,7 +26,6 @@ import {
   startEventLoopWatchdog,
   trustMirrorCertificates,
   watchdogSeconds,
-  dataVolumeStaging,
 } from '@proanima/arkvory-infrastructure';
 import type { LogLevel, PostgresJobLease } from '@proanima/arkvory-infrastructure';
 import { capacityBytes, standbyRetryMs, workerResources } from './runtime.js';
@@ -35,6 +34,7 @@ import { runWebhooks } from './webhook-loop.js';
 import { readEventRetention, runEventSequencer } from './event-loop.js';
 import { processJob, retireExhausted } from './completion.js';
 import { acquireWithPlan, watchModulePlan } from './module-plan.js';
+import { watchWorkerStorage } from './storage-watch.js';
 
 let levelError: Error | undefined;
 /** Stopped before taking work, as standby or waiting for the module plan: a clean stop. */
@@ -143,7 +143,8 @@ try {
     stop.signal,
   );
   if (!acquired) throw new StoppedOnStandby();
-  const { catalog, blobs, dataDirectory } = acquired;
+  const { catalog, blobs, staging, placement } = acquired;
+  const unwatchStorage = watchWorkerStorage(blobs, catalog, diagnostics);
   const recordedPlan = new PostgresModulePlan(catalog.pool);
   const unwatchPlan = watchModulePlan(recordedPlan, compatibilityFingerprint, () => {
     process.exitCode = 1;
@@ -163,10 +164,12 @@ try {
     jobs,
     identity: new PostgresIdentity(catalog.pool),
     services: new PostgresServices(catalog.pool),
-    storage: new StorageService(catalog, blobs, {
-      next: randomUUID,
-      now: () => new Date().toISOString(),
-    }),
+    storage: new StorageService(
+      catalog,
+      blobs,
+      { next: randomUUID, now: () => new Date().toISOString() },
+      { placement },
+    ),
     keyFile,
     ownerActive: () => catalog.active,
     stopped: stop.signal,
@@ -186,7 +189,8 @@ try {
   const mirroring = runMirrors({
     catalog,
     blobs,
-    staging: dataVolumeStaging(dataDirectory, (bytes) => blobs.checkSpace(bytes)),
+    staging,
+    placement,
     mirrors,
     stop: stop.signal,
     diagnostics,
@@ -236,6 +240,7 @@ try {
     await sequencing;
     clearInterval(recovery);
     unwatchPlan();
+    unwatchStorage();
     await catalog.close();
   }
   diagnostics.write({ level: 'info', component: 'worker', code: 'worker.stopped' });

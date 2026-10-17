@@ -512,6 +512,22 @@
       "summary": "立即请求一个物理清理批次",
       "description": "安排已启用的清理策略的下一个批次立即开始；响应为清理状态，只有批次运行之后字节才会被释放（参见 `getCleanup` 中的 `lastRunAt`）。`expectedRevision` 必须是当前修订版本；清理已禁用则返回 409 `state_conflict`。正在被读取或写入的对象会推迟到后续批次。"
     },
+    "getStoragePlacement": {
+      "en": {
+        "summary": "Read the storage placement",
+        "description": "Returns the placement rules of the repository and its `revision` (0 before the first change), and every storage of the answering server in `backends`, `default` first, with its `state`: `accepting` (takes new uploads), `not_accepting` (keeps serving and finishing what it holds, takes no new uploads), `read_only`, `disabled`, `unavailable` (not open or not answering) or `not_loaded` (not configured). Needs `storage.read`."
+      },
+      "summary": "读取存储放置",
+      "description": "返回仓库的放置规则及其 `revision`（首次修改前为 0），并在 `backends` 中列出应答服务器的每个存储（`default` 在前）及其 `state`：`accepting`（接收新上传）、`not_accepting`（继续服务并完成已有内容，但不接收新上传）、`read_only`、`disabled`、`unavailable`（未打开或无响应）或 `not_loaded`（未配置）。需要 `storage.read`。"
+    },
+    "setStoragePlacement": {
+      "en": {
+        "summary": "Set the storage placement",
+        "description": "Replaces the rules that choose the storage of new uploads of the repository. A rule has an `id`, the storage `backendId` and two optional conditions: `packageGroup` (a group, `prefix/*` or `*`) and `minSizeBytes` (a decimal string); the first rule whose conditions hold wins, no match means `default`. At most 32 rules. A storage that is not configured is refused with 400 `backend_unknown`. When the chosen storage does not take new uploads at upload time, the upload is created in `default` and its `storageBackend` says so; publication never fails because of placement. Stored data never moves. `expectedRevision` must be the current revision, otherwise 409 `revision_mismatch`. Needs `storage.manage`."
+      },
+      "summary": "设置存储放置",
+      "description": "替换为仓库新上传选择存储的规则。规则包含 `id`、存储 `backendId` 和两个可选条件：`packageGroup`（一个组、`prefix/*` 或 `*`）和 `minSizeBytes`（十进制字符串）；第一条条件成立的规则生效，无匹配时使用 `default`。最多 32 条规则。未配置的存储以 400 `backend_unknown` 拒绝。如果所选存储在上传时不接收新数据，上传会创建在 `default` 中，并由其 `storageBackend` 表明；发布绝不会因放置而失败。已存储的数据不会移动。`expectedRevision` 必须是当前修订号，否则返回 409 `revision_mismatch`。需要 `storage.manage`。"
+    },
     "getRepositoryMirror": {
       "en": {
         "summary": "Get the synchronization state of a mirror",
@@ -1152,6 +1168,7 @@
       "unsupported_media_type": "Content-Type 不是此操作接受的类型。",
       "method_not_allowed": "路径存在，但不支持此方法。",
       "range_not_satisfiable": "请求的字节范围超出了内容范围。",
+      "backend_unknown": "放置规则指定了此服务器没有的存储。",
       "route_not_found": "没有这样的路由。",
       "upload_expired": "上传会话在完成之前已过期。",
       "upload_state": "上传所处的状态不允许执行此步骤。",
@@ -1164,6 +1181,7 @@
       "stage_limit": "该制品的阶段数已达上限。",
       "state_conflict": "对象所处的状态不允许此变更。",
       "mirror_read_only": "该仓库是镜像；它只能通过同步来变更。",
+      "backend_read_only": "此上传所在的存储不再接收新数据；请开始新的上传，它会进入接收数据的存储。",
       "permission_missing": "凭据缺少此操作所需的权限（action）。",
       "read_only_token": "只读的个人令牌不能更改任何内容。",
       "credential_revoked": "密钥或令牌已被撤销。",

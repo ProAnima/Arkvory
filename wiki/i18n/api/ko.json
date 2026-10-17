@@ -512,6 +512,22 @@
       "summary": "정리 배치를 지금 요청",
       "description": "활성화된 정리 정책의 다음 배치가 즉시 시작되도록 예약하며, 응답은 정리 상태입니다. 바이트는 배치가 실행된 뒤에야 확보됩니다(`getCleanup`의 `lastRunAt` 참조). `expectedRevision`은 현재 리비전이어야 하며, 비활성화된 정리는 409 `state_conflict`입니다. 읽거나 쓰는 중인 객체는 이후 배치로 미뤄집니다."
     },
+    "getStoragePlacement": {
+      "en": {
+        "summary": "Read the storage placement",
+        "description": "Returns the placement rules of the repository and its `revision` (0 before the first change), and every storage of the answering server in `backends`, `default` first, with its `state`: `accepting` (takes new uploads), `not_accepting` (keeps serving and finishing what it holds, takes no new uploads), `read_only`, `disabled`, `unavailable` (not open or not answering) or `not_loaded` (not configured). Needs `storage.read`."
+      },
+      "summary": "스토리지 배치 읽기",
+      "description": "저장소의 배치 규칙과 그 `revision`(첫 변경 전에는 0), 그리고 응답한 서버의 모든 스토리지를 `backends`에 `default`부터 `state`와 함께 반환합니다. `accepting`(새 업로드를 받음), `not_accepting`(보관 중인 것은 계속 제공하고 마무리하지만 새 업로드는 받지 않음), `read_only`, `disabled`, `unavailable`(열리지 않았거나 응답 없음), `not_loaded`(구성되지 않음). `storage.read`가 필요합니다."
+    },
+    "setStoragePlacement": {
+      "en": {
+        "summary": "Set the storage placement",
+        "description": "Replaces the rules that choose the storage of new uploads of the repository. A rule has an `id`, the storage `backendId` and two optional conditions: `packageGroup` (a group, `prefix/*` or `*`) and `minSizeBytes` (a decimal string); the first rule whose conditions hold wins, no match means `default`. At most 32 rules. A storage that is not configured is refused with 400 `backend_unknown`. When the chosen storage does not take new uploads at upload time, the upload is created in `default` and its `storageBackend` says so; publication never fails because of placement. Stored data never moves. `expectedRevision` must be the current revision, otherwise 409 `revision_mismatch`. Needs `storage.manage`."
+      },
+      "summary": "스토리지 배치 설정",
+      "description": "저장소의 새 업로드가 저장될 스토리지를 고르는 규칙을 바꿉니다. 규칙에는 `id`, 스토리지 `backendId`, 그리고 선택 조건 두 가지가 있습니다. `packageGroup`(그룹, `prefix/*` 또는 `*`)과 `minSizeBytes`(10진수 문자열)입니다. 조건이 맞는 첫 규칙이 적용되고, 일치하는 규칙이 없으면 `default`입니다. 규칙은 최대 32개입니다. 구성되지 않은 스토리지는 400 `backend_unknown`으로 거부됩니다. 업로드 시점에 선택된 스토리지가 새 데이터를 받지 않으면 업로드는 `default`에 만들어지고 그 `storageBackend`가 이를 보여 줍니다. 배치 때문에 게시가 실패하는 일은 없습니다. 저장된 데이터는 옮겨지지 않습니다. `expectedRevision`은 현재 리비전이어야 하며, 아니면 409 `revision_mismatch`입니다. `storage.manage`가 필요합니다."
+    },
     "getRepositoryMirror": {
       "en": {
         "summary": "Get the synchronization state of a mirror",
@@ -1152,6 +1168,7 @@
       "unsupported_media_type": "Content-Type이 이 작업에서 받아들이는 형식이 아닙니다.",
       "method_not_allowed": "경로는 있지만 이 메서드로는 사용할 수 없습니다.",
       "range_not_satisfiable": "요청한 바이트 범위가 콘텐츠 밖에 있습니다.",
+      "backend_unknown": "배치 규칙이 이 서버에 없는 스토리지를 지정합니다.",
       "route_not_found": "해당 라우트가 없습니다.",
       "upload_expired": "업로드 세션이 완료되기 전에 만료되었습니다.",
       "upload_state": "업로드가 이 단계를 허용하는 상태가 아닙니다.",
@@ -1164,6 +1181,7 @@
       "stage_limit": "아티팩트가 허용되는 최대 스테이지 수에 도달했습니다.",
       "state_conflict": "객체가 이 변경을 허용하지 않는 상태입니다.",
       "mirror_read_only": "리포지토리가 미러이므로 동기화를 통해서만 변경됩니다.",
+      "backend_read_only": "이 업로드의 스토리지는 새 데이터를 받지 않습니다. 새 업로드를 시작하면 데이터를 받는 스토리지로 갑니다.",
       "permission_missing": "자격 증명에 이 작업에 필요한 액션 권한이 없습니다.",
       "read_only_token": "읽기 전용 개인용 토큰은 아무것도 변경할 수 없습니다.",
       "credential_revoked": "키 또는 토큰이 폐기되었습니다.",

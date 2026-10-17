@@ -151,6 +151,50 @@ test('offline cleanup collects each upload from the storage that holds it', asyn
   // Absent is the default storage, as on a record written before storages were named.
   assert.deepEqual(collected, [
     { id: placed.id, removeContent: true, backendId: 'volume-2' },
-    { id: kept.id, removeContent: false, backendId: undefined },
+    { id: kept.id, removeContent: false, backendId: 'default' },
+  ]);
+});
+
+test('offline cleanup collects parts left behind a switch in their own storage first', async () => {
+  // Finished in `default` after volume-2 stopped taking data (ADR 0083, N11).
+  const switched = {
+    ...row,
+    id: '00000000-0000-4000-8000-000000000005',
+    storageBackend: 'default',
+    partsBackend: 'volume-2',
+  };
+  const collected = [];
+  let busy = true;
+  const gc = new GarbageCollector(
+    {
+      async page(after) {
+        return after ? [] : [switched];
+      },
+      async exclusive(_id, _removeContent, action) {
+        return action({ throwIfAborted() {} });
+      },
+      async reclaimed() {},
+      async expire() {
+        assert.fail('No record here is pending');
+      },
+    },
+    {
+      async collect(id, removeContent, _cancellation, backendId) {
+        // A storage that is not available makes cleanup wait (ADR 0078, L5).
+        if (busy && backendId === 'volume-2') {
+          busy = false;
+          throw new ArkvoryError('busy', 'Storage backend is not available');
+        }
+        collected.push({ id, removeContent, backendId });
+      },
+    },
+    { throwIfAborted() {} },
+  );
+  assert.equal((await gc.run('2026-01-03T00:00:00.000Z')).deferred, 1);
+  assert.deepEqual(collected, []);
+  assert.equal((await gc.run('2026-01-03T00:00:00.000Z')).collected, 1);
+  assert.deepEqual(collected, [
+    { id: switched.id, removeContent: false, backendId: 'volume-2' },
+    { id: switched.id, removeContent: true, backendId: 'default' },
   ]);
 });

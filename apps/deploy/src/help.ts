@@ -31,7 +31,7 @@ export function deploymentHelp(): string {
   return `ProAnima Arkvory · Installation & lifecycle / Установка и обслуживание
 
 arkvory <command> --root <absolute-directory> [options]
-(cluster-plan, cluster-check, cluster-switchover and cluster-fence-test need no --root)
+(cluster-plan, cluster-check, cluster-switchover, cluster-fence-test and volume-init need no --root)
 
 install        Install a verified stable release / Установить проверенный релиз
 finish-install Resume saved installation / Продолжить сохранённую установку
@@ -47,7 +47,11 @@ update         Update; a schema change first captures and verifies a backup in t
 upgrade        Schema change without the built-in vault; --backup-record required / Вручную
 recover        Finish an interrupted update: back before a migration, forward after it
                / Завершить прерванное обновление
-${clusterHelp}configure      --cluster ha-2|ha-3 [--cluster-resource r]: on the primary of a replicated volume,
+${clusterHelp}volume-init    --directory <absolute dir> [--expect-mount | --no-expect-mount]
+               Mark an empty directory as a new storage volume (file storage-id); the services
+               never do it. --expect-mount (default on Linux): the directory must be a mount
+               point / Подготовить пустой каталог как новый том хранилища
+configure      --cluster ha-2|ha-3 [--cluster-resource r]: on the primary of a replicated volume,
                acknowledge writes only with two complete copies (ADR 0072) / Режим HA-кластера
 configure      --enable-updates | --disable-updates | --pin --version X.Y.Z | --unpin
                --hub-url <https://origin> | --hub-off, --update-channel stable|beta,

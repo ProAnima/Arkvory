@@ -2,7 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash, randomUUID } from 'node:crypto';
 import { BackupFailure, inventoryLine, parseInventoryEntry } from '@proanima/arkvory-domain';
-import { LocalContentSource, LocalRestoreStorage } from '@proanima/arkvory-infrastructure';
+import {
+  LocalContentSource,
+  LocalRestoreStorage,
+  StorageBackends,
+} from '@proanima/arkvory-infrastructure';
 import { MemoryBlobStore } from './memory-blobs.mjs';
 
 test('inventory lines carry a non-default storage and keep the old form for the default', () => {
@@ -45,12 +49,27 @@ test('capture and restore read and write the storage named by the inventory, wit
     },
     { code: 'blob_missing' },
   );
+  // The target has both storages, each without paths: the blob lands in the one it names.
+  const core = new MemoryBlobStore();
   const target = new MemoryBlobStore();
-  const restore = new LocalRestoreStorage(target);
+  const instance = (id, store) => ({
+    id,
+    blobs: store,
+    lifecycle: store,
+    mode: 'full',
+    acceptsWrites: true,
+    enabled: true,
+  });
+  const restore = new LocalRestoreStorage(
+    new StorageBackends([instance('default', core), instance('volume-2', target)]),
+  );
+  assert.equal(restore.supports('volume-2'), true);
+  assert.equal(restore.supports('volume-3'), false, 'a storage the target lacks is refused');
   await restore.requireEmpty();
-  assert.equal(await restore.prepare(), await target.identity());
+  assert.equal(await restore.prepare(), await core.identity());
   await restore.put(entry, content.read(entry), { throwIfAborted() {} });
   assert.deepEqual(target.bytesOf(entry.id), bytes);
+  assert.equal(core.has(entry.id), false);
   await target.exists(entry.id, entry.size, 'volume-2');
   await assert.rejects(restore.requireEmpty(), { code: 'target_not_empty' });
 });

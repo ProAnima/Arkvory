@@ -512,6 +512,22 @@
       "summary": "क्लीनअप बैच अभी माँगें",
       "description": "सक्षम क्लीनअप नीति का अगला बैच तुरंत शुरू होने के लिए निर्धारित करता है; उत्तर क्लीनअप की स्थिति है, और बाइट तभी मुक्त होते हैं जब बैच चल चुका हो (देखें `getCleanup` में `lastRunAt`)। `expectedRevision` वर्तमान संशोधन होना चाहिए; अक्षम क्लीनअप पर 409 `state_conflict`। जिन ऑब्जेक्ट को पढ़ा या लिखा जा रहा है वे बाद के बैच तक टाल दिए जाते हैं।"
     },
+    "getStoragePlacement": {
+      "en": {
+        "summary": "Read the storage placement",
+        "description": "Returns the placement rules of the repository and its `revision` (0 before the first change), and every storage of the answering server in `backends`, `default` first, with its `state`: `accepting` (takes new uploads), `not_accepting` (keeps serving and finishing what it holds, takes no new uploads), `read_only`, `disabled`, `unavailable` (not open or not answering) or `not_loaded` (not configured). Needs `storage.read`."
+      },
+      "summary": "स्टोरेज प्लेसमेंट पढ़ें",
+      "description": "रिपॉज़िटरी के प्लेसमेंट नियम और उनका `revision` (पहले बदलाव से पहले 0) लौटाता है, और उत्तर देने वाले सर्वर का हर स्टोरेज `backends` में, पहले `default`, उसके `state` के साथ: `accepting` (नए अपलोड लेता है), `not_accepting` (जो उसके पास है उसे परोसता और पूरा करता रहता है, पर नए अपलोड नहीं लेता), `read_only`, `disabled`, `unavailable` (खुला नहीं या जवाब नहीं देता) या `not_loaded` (कॉन्फ़िगर नहीं)। `storage.read` चाहिए।"
+    },
+    "setStoragePlacement": {
+      "en": {
+        "summary": "Set the storage placement",
+        "description": "Replaces the rules that choose the storage of new uploads of the repository. A rule has an `id`, the storage `backendId` and two optional conditions: `packageGroup` (a group, `prefix/*` or `*`) and `minSizeBytes` (a decimal string); the first rule whose conditions hold wins, no match means `default`. At most 32 rules. A storage that is not configured is refused with 400 `backend_unknown`. When the chosen storage does not take new uploads at upload time, the upload is created in `default` and its `storageBackend` says so; publication never fails because of placement. Stored data never moves. `expectedRevision` must be the current revision, otherwise 409 `revision_mismatch`. Needs `storage.manage`."
+      },
+      "summary": "स्टोरेज प्लेसमेंट सेट करें",
+      "description": "रिपॉज़िटरी के नए अपलोड का स्टोरेज चुनने वाले नियम बदलता है। नियम में `id`, स्टोरेज `backendId` और दो वैकल्पिक शर्तें होती हैं: `packageGroup` (एक समूह, `prefix/*` या `*`) और `minSizeBytes` (दशमलव स्ट्रिंग); जिस पहले नियम की शर्तें पूरी हों वही लागू होता है, कोई मेल न हो तो `default`। अधिकतम 32 नियम। जो स्टोरेज कॉन्फ़िगर नहीं है उसे 400 `backend_unknown` के साथ अस्वीकार किया जाता है। अगर अपलोड के समय चुना गया स्टोरेज नया डेटा नहीं लेता, तो अपलोड `default` में बनता है और उसका `storageBackend` यह बताता है; प्लेसमेंट की वजह से प्रकाशन कभी विफल नहीं होता। सहेजा गया डेटा कभी नहीं हटाया जाता। `expectedRevision` मौजूदा रिविज़न होना चाहिए, वरना 409 `revision_mismatch`। `storage.manage` चाहिए।"
+    },
     "getRepositoryMirror": {
       "en": {
         "summary": "Get the synchronization state of a mirror",
@@ -1152,6 +1168,7 @@
       "unsupported_media_type": "Content-Type ऐसा नहीं है जिसे यह ऑपरेशन स्वीकार करता हो।",
       "method_not_allowed": "पथ मौजूद है, पर इस मेथड के साथ नहीं।",
       "range_not_satisfiable": "माँगी गई बाइट श्रेणी सामग्री के बाहर है।",
+      "backend_unknown": "एक प्लेसमेंट नियम ऐसे स्टोरेज का नाम लेता है जो इस सर्वर पर नहीं है।",
       "route_not_found": "ऐसा कोई रूट नहीं है।",
       "upload_expired": "अपलोड सत्र पूरा होने से पहले समाप्त हो गया।",
       "upload_state": "अपलोड ऐसी स्थिति में नहीं है जो यह चरण करने दे।",
@@ -1164,6 +1181,7 @@
       "stage_limit": "आर्टिफ़ैक्ट में स्टेज की अधिकतम संख्या पहले ही है।",
       "state_conflict": "ऑब्जेक्ट ऐसी स्थिति में है जो यह परिवर्तन नहीं होने देती।",
       "mirror_read_only": "रिपॉज़िटरी मिरर है; वह केवल सिंक्रनाइज़ेशन से बदलती है।",
+      "backend_read_only": "इस अपलोड का स्टोरेज नया डेटा नहीं लेता; नया अपलोड शुरू करें, वह ऐसे स्टोरेज में जाएगा जो डेटा लेता है।",
       "permission_missing": "क्रेडेंशियल के पास वह क्रिया नहीं है जो इस ऑपरेशन को चाहिए।",
       "read_only_token": "केवल-पढ़ने वाला व्यक्तिगत टोकन कुछ नहीं बदल सकता।",
       "credential_revoked": "कुंजी या टोकन निरस्त कर दिया गया है।",

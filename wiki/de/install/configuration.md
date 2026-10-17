@@ -54,6 +54,7 @@ Alle Befehle benötigen Administratorrechte und die Option `--root` mit dem Inst
 | `finish-install`                                 | Setzt eine unterbrochene Erstinstallation fort                                                                                        |
 | `updates-connect`                                | Verbindet die Konsole und den Update-Timer und registriert Dienste, die einer alten Installation fehlen                               |
 | `updates-poll`, `updates-reset`, `changes-reset` | Werden vom Update-Timer und zur Wiederherstellung ausgeführt. Siehe [Updates](./updates#recover-update)                               |
+| `volume-init`                                    | Markiert ein leeres Verzeichnis als neues Speichervolume. Braucht kein `--root`. Siehe [Mehrere Volumes](../operate/storage#volumes)  |
 
 Es läuft immer nur ein Befehl gleichzeitig. Ein zweiter Befehl bricht mit `Installation is locked` ab. Geben Sie niemals einen Schlüssel oder ein Passwort in einer Befehlsoption an: Verwenden Sie Dateien.
 

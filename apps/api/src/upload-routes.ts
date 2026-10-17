@@ -3,7 +3,7 @@ import type { StorageService, CompletionQueue } from '@proanima/arkvory-applicat
 import type { Principal } from '@proanima/arkvory-domain';
 import { ArkvoryError } from '@proanima/arkvory-domain';
 import { descriptorSchema, uploadSchema } from '@proanima/arkvory-contracts';
-import { wireUpload } from './upload-response.js';
+import { wireOwnUpload as wireUpload } from './upload-response.js';
 import { UploadReceiver, withUploadDeadline } from './upload-lifetime.js';
 import type { BandwidthGovernor, DiagnosticLogger } from '@proanima/arkvory-infrastructure';
 import type { resolveUploadTimeouts } from './upload-policy.js';

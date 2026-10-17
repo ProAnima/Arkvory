@@ -47,14 +47,14 @@ Um ponto de restauração não contém:
 
 ### Requisitos {#vault-requirements}
 
-| Requisito                                                                                                           | Motivo                                                                                                                              |
-| ------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| Um diretório novo ou vazio, montado antes de os serviços iniciarem                                                  | O agente grava ali o `vault.json` e os pontos de restauração                                                                        |
-| Fora do diretório da instalação e fora do diretório de armazenamento, inclusive por links, junctions e nomes curtos | Um vault dentro do armazenamento se perde junto com ele. A verificação recusa um caminho que os contenha ou que esteja dentro deles |
-| Com permissão de gravação para a conta do serviço                                                                   | No Linux, `arkvory`. No Windows, `NT AUTHORITY\LocalService`. O `arkvory configure` define as permissões para você                  |
-| Pelo menos 1 GiB de espaço livre além dos dados copiados                                                            | O vault mantém essa reserva. Um volume cheio encerra o backup com `vault_full`, e os pontos anteriores permanecem intactos          |
-| No Linux, fora de `/home`, `/root`, `/run/user`, `/tmp` e `/var/tmp`                                                | O sandbox do serviço oculta essas árvores                                                                                           |
-| No Windows, um volume local ou iSCSI com uma letra de unidade                                                       | O `LocalService` não consegue entrar em compartilhamentos SMB, então caminhos como `\\nas\share` são recusados                      |
+| Requisito                                                                                                           | Motivo                                                                                                                                                                                                    |
+| ------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Um diretório novo ou vazio, montado antes de os serviços iniciarem                                                  | O agente grava ali o `vault.json` e os pontos de restauração                                                                                                                                              |
+| Fora do diretório da instalação e fora do diretório de armazenamento, inclusive por links, junctions e nomes curtos | Um vault dentro do armazenamento se perde junto com ele. A verificação recusa um caminho que os contenha ou que esteja dentro deles. O mesmo vale para cada [volume de armazenamento](./storage#volumes). |
+| Com permissão de gravação para a conta do serviço                                                                   | No Linux, `arkvory`. No Windows, `NT AUTHORITY\LocalService`. O `arkvory configure` define as permissões para você                                                                                        |
+| Pelo menos 1 GiB de espaço livre além dos dados copiados                                                            | O vault mantém essa reserva. Um volume cheio encerra o backup com `vault_full`, e os pontos anteriores permanecem intactos                                                                                |
+| No Linux, fora de `/home`, `/root`, `/run/user`, `/tmp` e `/var/tmp`                                                | O sandbox do serviço oculta essas árvores                                                                                                                                                                 |
+| No Windows, um volume local ou iSCSI com uma letra de unidade                                                       | O `LocalService` não consegue entrar em compartilhamentos SMB, então caminhos como `\\nas\share` são recusados                                                                                            |
 
 Use um volume em outro disco ou em um NAS, para que a falha do disco de armazenamento não leve os backups junto. Um vault no mesmo disco físico do armazenamento protege contra erros, mas não contra a falha do disco.
 
@@ -264,7 +264,7 @@ Uma restauração grava em um banco de dados **vazio** e em um diretório de arm
 - **O release.** Use o release que criou o ponto ou um mais novo. Um ponto de um release mais novo é recusado com `schema_mismatch`.
 - **A conta.** Execute o comando com uma conta que possa ler o vault. No Linux, o vault pertence ao `arkvory` e tem o modo 0700, então use `sudo -u arkvory`. No Windows, use um PowerShell com privilégios elevados. O novo diretório de armazenamento precisa terminar como propriedade da conta que executará a API.
 - **A chave.** Um vault criptografado precisa da sua chave. Passe o kit de recuperação ou um arquivo de chave como `--key-file FILE` a cada comando abaixo, ou defina `ARKVORY_BACKUP_VAULT_KEY_FILE`. A chave é sempre um arquivo, nunca um argumento.
-- **O destino.** Crie um banco de dados vazio, por exemplo `CREATE DATABASE arkvory_restore OWNER arkvory;`. Escolha um diretório de armazenamento que não exista ou esteja vazio, em um volume diferente do vault e fora do armazenamento de origem.
+- **O destino.** Crie um banco de dados vazio, por exemplo `CREATE DATABASE arkvory_restore OWNER arkvory;`. Escolha um diretório de armazenamento que não exista ou esteja vazio, em um volume diferente do vault e fora do armazenamento de origem. Uma instalação com [vários volumes](./storage#volumes) precisa de mais um diretório vazio para cada volume; consulte [Restaurar vários volumes](#restore-volumes).
 - **A URL do banco de dados.** Passe-a pelo ambiente, não como argumento, porque os argumentos ficam visíveis na lista de processos.
 
 ### Restaurar passo a passo {#restore-steps}
@@ -307,6 +307,21 @@ Uma restauração grava em um banco de dados **vazio** e em um diretório de arm
 6. Inicie uma instância separada da API com os dados restaurados: o `ARKVORY_DATABASE_URL` do novo banco de dados, o `ARKVORY_DATA_DIR` do novo diretório, o próprio `ARKVORY_KEYS_FILE` e outra porta. Verifique se o `/health/ready` responde, se você consegue entrar, se o catálogo está completo e se um arquivo de controle é baixado com o mesmo SHA-256.
 
 Se uma restauração falhar, exclua o banco de dados e o diretório de destino e crie-os de novo. Um destino que não está vazio é recusado com `target_not_empty`, o que protege os dados existentes.
+
+### Restaurar vários volumes {#restore-volumes}
+
+Um ponto de restauração lembra o volume de cada arquivo. Restaure cada arquivo no seu volume:
+
+1. Escreva o arquivo de módulos da instalação restaurada, com uma instância para cada volume da origem sob o mesmo ID e com um diretório novo e vazio para cada uma, por exemplo `/srv/arkvory-restore-volume-2`. Os diretórios seguem as mesmas regras que `--storage`.
+2. Acrescente `--modules-file FILE` aos dois comandos de restauração:
+
+   ```bash
+   arkvory-backup restore --vault /mnt/backup/arkvory --point POINT_ID --storage /srv/arkvory-restore --modules-file /srv/arkvory-restore-modules.json
+   ```
+
+3. Inicie a instância restaurada com esse arquivo de módulos como `ARKVORY_MODULES_FILE`.
+
+Um ponto que contém arquivos de um volume que o destino não cita é recusado antes de qualquer gravação, também na simulação. As políticas de alocação fazem parte do backup. As identidades dos volumes não: a API restaurada registra os novos diretórios na primeira inicialização.
 
 ### O que uma restauração altera {#after-restore}
 

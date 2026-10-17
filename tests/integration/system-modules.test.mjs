@@ -29,6 +29,7 @@ test('the global administrator reads the module plan of the installation; nobody
     body.modules.map((m) => [m.id, m.kind, m.source, m.core, m.enabled, m.running]),
     [
       ['lfs', 'protocol', 'builtin', false, true, true],
+      ['local-storage', 'storage-backend', 'builtin', true, true, true],
       ['npm', 'protocol', 'builtin', false, true, true],
       ['oci', 'protocol', 'builtin', false, true, true],
       ['raw', 'protocol', 'builtin', true, true, true],

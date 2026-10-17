@@ -512,6 +512,22 @@
       "summary": "Request a cleanup batch now",
       "description": "Schedules the next batch of the enabled cleanup policy to start at once; the answer is the cleanup state, and the bytes are freed only when the batch has run (see `lastRunAt` in `getCleanup`). `expectedRevision` must be the current revision; a disabled cleanup is a 409 `state_conflict`. Objects that are being read or written are deferred to a later batch."
     },
+    "getStoragePlacement": {
+      "en": {
+        "summary": "Read where new uploads of the repository are stored",
+        "description": ""
+      },
+      "summary": "Read the storage placement",
+      "description": "Returns the placement rules of the repository and its `revision` (0 before the first change), and every storage of the answering server in `backends`, `default` first, with its `state`: `accepting` (takes new uploads), `not_accepting` (keeps serving and finishing what it holds, takes no new uploads), `read_only`, `disabled`, `unavailable` (not open or not answering) or `not_loaded` (not configured). Needs `storage.read`."
+    },
+    "setStoragePlacement": {
+      "en": {
+        "summary": "Replace the placement rules with a revision check; only new uploads follow them, stored data never moves",
+        "description": ""
+      },
+      "summary": "Set the storage placement",
+      "description": "Replaces the rules that choose the storage of new uploads of the repository. A rule has an `id`, the storage `backendId` and two optional conditions: `packageGroup` (a group, `prefix/*` or `*`) and `minSizeBytes` (a decimal string); the first rule whose conditions hold wins, no match means `default`. At most 32 rules. A storage that is not configured is refused with 400 `backend_unknown`. When the chosen storage does not take new uploads at upload time, the upload is created in `default` and its `storageBackend` says so; publication never fails because of placement. Stored data never moves. `expectedRevision` must be the current revision, otherwise 409 `revision_mismatch`. Needs `storage.manage`."
+    },
     "getRepositoryMirror": {
       "en": {
         "summary": "Synchronization of a mirrored repository of this installation (ADR 0058)",
@@ -1152,6 +1168,7 @@
       "unsupported_media_type": "The Content-Type is not one this operation accepts.",
       "method_not_allowed": "The path exists but not with this method.",
       "range_not_satisfiable": "The requested byte range lies outside the content.",
+      "backend_unknown": "A placement rule names a storage this server does not have.",
       "route_not_found": "There is no such route.",
       "upload_expired": "The upload session expired before it was completed.",
       "upload_state": "The upload is not in a state that allows this step.",
@@ -1164,6 +1181,7 @@
       "stage_limit": "The artifact has the maximum number of stages.",
       "state_conflict": "The object is in a state that does not allow this change.",
       "mirror_read_only": "The repository is a mirror; it changes only through synchronization.",
+      "backend_read_only": "The storage of this upload takes no new data; start a new upload, it goes to a storage that does.",
       "permission_missing": "The credential lacks the action this operation needs.",
       "read_only_token": "A read-only personal token cannot change anything.",
       "credential_revoked": "The key or token was revoked.",

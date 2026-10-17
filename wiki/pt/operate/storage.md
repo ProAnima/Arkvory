@@ -5,7 +5,7 @@ description: Planeje o espaço em disco, defina cotas e políticas de retenção
 
 # Armazenamento
 
-O Arkvory mantém cada arquivo publicado uma vez, sem alterações, em um diretório de armazenamento no disco local do servidor. Esta página explica o que ocupa espaço, como limitá-lo com cotas e políticas de retenção, como arquivos excluídos saem do disco e o que fazer quando ele fica cheio.
+O Arkvory mantém cada arquivo publicado uma vez, sem alterações, em um diretório de armazenamento no disco local do servidor e, opcionalmente, em [mais volumes](#volumes). Esta página explica o que ocupa espaço, como limitá-lo com cotas e políticas de retenção, como arquivos excluídos saem do disco e o que fazer quando ele fica cheio.
 
 ## Onde fica o conteúdo {#location}
 
@@ -22,6 +22,81 @@ Dentro dele, `blobs/` contém arquivos concluídos, `staging/` e `parts/` contê
 - Use um sistema de arquivos local com suporte a hard links. Não use um compartilhamento de rede.
 - Não acrescente, altere nem exclua arquivos manualmente no diretório. O Arkvory os remove como descrito abaixo.
 - Um arquivo publicado nunca muda. Novo conteúdo é um novo arquivo com novo ID.
+
+## Vários volumes {#volumes}
+
+Você pode dar ao Arkvory mais diretórios de armazenamento, por exemplo em um segundo disco, em vez de ampliar um volume. Cada diretório extra é uma instância do módulo integrado `local-storage` com seu próprio ID. O diretório de armazenamento de `ARKVORY_DATA_DIR` é sempre a instância `default`.
+
+Configure as instâncias no arquivo de módulos (`ARKVORY_MODULES_FILE`, consulte [Variáveis de ambiente](../reference/environment)):
+
+```json
+{
+  "format": 1,
+  "modules": {
+    "local-storage": {
+      "enabled": true,
+      "config": {
+        "instances": {
+          "volume-2": { "directory": "/srv/arkvory-volume-2" }
+        }
+      }
+    }
+  }
+}
+```
+
+| Campo           | Significado                                                                                                                              | Padrão                          |
+| --------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- |
+| `directory`     | Caminho absoluto do diretório. Ele não pode conter o diretório de armazenamento ou outra instância, nem ficar dentro deles               | Obrigatório                     |
+| `acceptsWrites` | `false` interrompe novos uploads para este volume. Seus arquivos continuam legíveis, e uploads que já começaram nele podem terminar      | `true`                          |
+| `mode`          | `read-only` atende somente downloads e verificações e recusa toda gravação e remoção, por exemplo para um volume montado somente leitura | `full`                          |
+| `enabled`       | `false` fecha o volume: seus arquivos não podem ser baixados até você ativá-lo de novo                                                   | `true`                          |
+| `reserveBytes`  | Espaço livre mantido neste volume, em bytes                                                                                              | `ARKVORY_STORAGE_RESERVE_BYTES` |
+
+Um ID tem letras minúsculas, dígitos e `-`, começa com uma letra e não é `default`. Você pode acrescentar até 16 instâncias. Todos os processos (a API, os gateways de leitura, o worker e o agente de backup) devem ler o mesmo arquivo de módulos: um processo que planeja outras instâncias não fica pronto. Reinicie todos os serviços após uma alteração.
+
+Para acrescentar um volume:
+
+1. Monte o volume e crie o diretório. Ele deve pertencer à conta que executa os serviços. O Arkvory não cria esse diretório. Se ele não existir, por exemplo porque o volume não está montado, o volume fica indisponível e nada é gravado sob o ponto de montagem.
+2. Marque o diretório como novo volume: `arkvory volume-init --directory /srv/arkvory-volume-2`. O comando não precisa de `--root`. Ele recusa um diretório que não existe ou não está vazio (só `lost+found` pode estar nele) e grava o arquivo de identidade `storage-id`. No Linux, também recusa um diretório que não é um ponto de montagem, como o diretório vazio de um volume não montado. Para um diretório dentro de um volume montado, acrescente `--no-expect-mount`. No Windows, `--expect-mount` ativa essa verificação. Os serviços nunca criam o arquivo: um volume sem ele fica indisponível.
+3. Acrescente a instância ao arquivo de módulos e reinicie os serviços. Na primeira inicialização, a API registra a identidade do volume, o arquivo `storage-id` no diretório. A partir daí, todos os processos verificam esse arquivo. Um volume que não está montado, ou outro volume no mesmo caminho, nunca recebe gravações. Antes de cada gravação e remoção no volume, o arquivo é verificado de novo.
+4. Escolha quais uploads vão para o volume com uma [política de alocação](#placement).
+
+### Alocação de novos uploads {#placement}
+
+A política de alocação de um repositório escolhe o armazenamento de cada novo upload. Uma regra tem um ID, um armazenamento (`backendId`) e duas condições opcionais: um grupo de pacotes (`models/*`, `tools` ou `*`) e um tamanho mínimo em bytes. Vence a primeira regra cujas condições são atendidas. Sem correspondência, o upload vai para `default`. Um repositório pode ter até 32 regras.
+
+Leia e altere a política com `arkvoryctl` ou com as operações de API [getStoragePlacement](../api/reference/storage#getStoragePlacement) e [setStoragePlacement](../api/reference/storage#setStoragePlacement):
+
+```bash
+arkvoryctl storage placement --repository releases
+arkvoryctl storage placement --repository releases --revision 0 --file rules.json
+```
+
+O arquivo `rules.json` contém a lista de regras, por exemplo todos os arquivos de 1 GiB ou mais em `volume-2`:
+
+```json
+[{ "id": "large", "backendId": "volume-2", "packageGroup": null, "minSizeBytes": "1073741824" }]
+```
+
+- Ler a política exige `storage.read`, alterá-la exige `storage.manage`. A resposta também lista cada armazenamento com seu estado: `accepting`, `not_accepting`, `read_only`, `disabled`, `unavailable` ou `not_loaded`.
+- Uma regra só pode citar um armazenamento configurado. Outro nome é recusado com 400 `backend_unknown`.
+- A política é salva com uma revisão. Se outra pessoa a alterou, leia-a de novo e salve novamente.
+- Uma alteração vale somente para novos uploads. Arquivos já armazenados nunca mudam de volume.
+
+### Quando um volume não aceita novos uploads {#placement-fallback}
+
+A publicação nunca falha por causa da alocação. Se o armazenamento escolhido não aceita uploads naquele momento, por causa de `acceptsWrites: false`, `read-only`, `enabled: false`, de uma instância ausente ou de um volume indisponível (não montado, verificação de identidade com falha, sem resposta), o novo upload é criado em `default`. O upload mostra seu armazenamento em `storageBackend`, a métrica `arkvory_storage_placement_fallback_total` o conta, e o log tem a linha `storage.placement_fallback`.
+
+- **Uploads em andamento não são movidos.** Se um volume deixa de aceitar dados enquanto um upload em partes está em andamento nele, novas partes são recusadas com 409 `backend_read_only`, e o cliente inicia um novo upload. Se todas as partes já estão lá, a conclusão do upload grava o arquivo em `default`. As partes são lidas do volume onde estão. Um arquivo que uma tentativa interrompida já gravou por completo no volume permanece lá.
+- **Um volume indisponível** faz os downloads de seus arquivos falharem com 503 `unavailable` até ele voltar. O servidor continua funcionando, e a prontidão e `writable` seguem somente `default`. Cada processo verifica seus volumes de novo a cada 30 segundos.
+- **A limpeza física** remove cada arquivo no volume que o contém, incluindo as partes que ficaram em outro volume. Em um volume indisponível ou somente leitura, a limpeza pula o arquivo e tenta de novo mais tarde.
+- **Cotas e limites.** As cotas e `ARKVORY_CAPACITY_BYTES` contam todos os volumes juntos. A reserva vale para cada volume.
+- **Arquivos temporários** de uploads raw, OCI e de espelhos ficam no diretório de armazenamento `default`.
+- **Cluster.** Em um [cluster de alta disponibilidade](./cluster), cada volume deve ser um diretório no volume replicado, como o diretório de armazenamento: outro disco não é copiado para os demais servidores. Caso contrário, a API não inicia.
+- **Um volume removido da configuração.** O Arkvory lembra cada volume que teve dados. Se um deles não estiver mais no arquivo de módulos, seus arquivos não podem ser baixados, limpos nem copiados: um backup falha com `blob_missing`. Cada processo informa isso com a métrica `arkvory_storage_backend_unconfigured`, a linha de log `storage.backend_unconfigured` e o alerta `ArkvoryStorageVolumeUnconfigured`, e a resposta do posicionamento o lista com o estado `not_loaded`. Para corrigir, configure-o de novo. Para aposentar um volume, mantenha-o configurado com `acceptsWrites: false`: arquivos armazenados nunca passam de um volume para outro.
+
+Acompanhe `arkvory_storage_backend_up` e `arkvory_storage_backend_accepting`; consulte [Monitoramento](./monitoring#metrics). Os backups copiam todos os volumes. Uma restauração precisa de um diretório vazio para cada volume; consulte [Restaurar vários volumes](./backups#restore-volumes).
 
 ## Planeje o disco {#disk}
 
@@ -50,12 +125,12 @@ Consulte [Variáveis de ambiente](../reference/environment#storage-and-limits). 
 
 As configurações não fazem parte dos direitos normais de leitura e escrita. Uma chave de serviço precisa de ações explícitas no repositório:
 
-| Ação               | Permite                                                                                 |
-| ------------------ | --------------------------------------------------------------------------------------- |
-| `storage.read`     | Ver a política, o uso e as configurações de limpeza física                              |
-| `storage.manage`   | Alterar política, cota e configurações de limpeza física e solicitar um lote de limpeza |
-| `artifact.delete`  | Visualizar exclusões, excluir artefatos e ativar uma política automática de retenção    |
-| `diagnostics.read` | Ler os eventos de armazenamento                                                         |
+| Ação               | Permite                                                                                           |
+| ------------------ | ------------------------------------------------------------------------------------------------- |
+| `storage.read`     | Ver a política, o uso, as configurações de limpeza física e a alocação                            |
+| `storage.manage`   | Alterar política, cota, configurações de limpeza física e alocação e solicitar um lote de limpeza |
+| `artifact.delete`  | Visualizar exclusões, excluir artefatos e ativar uma política automática de retenção              |
+| `diagnostics.read` | Ler os eventos de armazenamento                                                                   |
 
 Contas com senha e a chave de recuperação não têm esses direitos por si só. Para gerenciar no console:
 
@@ -208,6 +283,7 @@ Para muitos artefatos, a API oferece [previewRetention](../api/reference/storage
 | `retention.completed`                                                                                 | info                   | Um lote excluiu builds. O evento contém a contagem                                                                           |
 | `retention.failed`                                                                                    | error                  | A exclusão automática parou, por exemplo porque a chave autorizadora foi revogada                                            |
 | `cleanup.configured`                                                                                  | info                   | As configurações de limpeza física foram salvas                                                                              |
+| `storage.placement_updated`                                                                           | info                   | A política de alocação foi salva                                                                                             |
 | `cleanup.completed`                                                                                   | info ou error          | Um lote processou, ignorou ou falhou em arquivos. Lista as contagens e os bytes liberados                                    |
 | `capacity.normal`, `capacity.warning`, `capacity.critical`, `capacity.exceeded`, `capacity.unlimited` | info, warning ou error | O estado da cota mudou                                                                                                       |
 | Códigos de erro HTTP                                                                                  | warning ou error       | Uma solicitação de uma chave gerenciada para este repositório falhou. O evento mantém o ID da solicitação, a rota e o status |
@@ -223,7 +299,7 @@ Sinais: uploads falham com HTTP 507 e motivo `storage_full`, `GET /health/ready`
 1. **Encontre a causa.** Verifique espaço livre nos volumes de armazenamento, banco e backups. Compare os números no painel. Muitos bytes aguardando limpeza indicam dados excluídos ainda no disco. Muitos uploads incompletos indicam uploads abandonados.
 2. **Execute a limpeza.** Se estiver desativada, ative em cada repositório, com carência curta como 0 se aceitar remover arquivos excluídos imediatamente. Selecione [[ui:cleanupRun]]. Ela também remove partes temporárias de uploads concluídos e uploads expirados. Aguarde os lotes e leia o último resultado. A limpeza ignora arquivos em uso, então repita.
 3. **Exclua o que não precisa.** Aplique uma política de retenção ou exclua artefatos. Isso só libera espaço quando a limpeza remove os bytes.
-4. **Acrescente espaço.** Amplie o volume ou disco. Mova backups ou outros dados para outro volume se o compartilham.
+4. **Acrescente espaço.** Amplie o volume ou disco. Mova backups ou outros dados para outro volume se o compartilham. Você também pode [acrescentar um volume](#volumes) e alocar novos uploads nele.
 5. **Verifique a recuperação.** Com espaço livre, `writable` volta a `true` e uploads funcionam novamente.
 
 Não exclua manualmente arquivos em `blobs/`, `staging/` ou `parts/`: isso rompe a ligação entre banco e disco. Se a reserva for pequena para logs e banco no mesmo volume, aumente `ARKVORY_STORAGE_RESERVE_BYTES`.
@@ -238,7 +314,7 @@ Se o motivo for `storage_quota` ou `catalog_limit`, o problema não é o disco. 
 - A limpeza física é desativada por padrão e definida por repositório.
 - Um artefato excluído não pode ser restaurado. Restaure os dados de um backup. Consulte [Backups](./backups).
 - Repositórios espelhados não executam políticas de armazenamento. Consulte [Espelhos](./mirrors).
-- O armazenamento deve ser um sistema de arquivos local. Não há suporte a compartilhamentos de rede ou vários backends de armazenamento.
+- O armazenamento deve ser um sistema de arquivos local. Não há suporte a compartilhamentos de rede. Os [volumes](#volumes) extras também são diretórios locais, e o Arkvory não move arquivos armazenados entre eles.
 - No Windows, o Arkvory sincroniza cada arquivo com o disco, mas não consegue sincronizar a entrada de diretório que o publica: o Node.js não oferece sincronização de diretórios ali. Uma queda de energia logo após um upload pode deixar um arquivo publicado ausente do disco. Use um nobreak e mantenha [backups](./backups) ou um [espelho](./mirrors). No Linux, as entradas de diretório também são sincronizadas.
 
 ## Páginas relacionadas {#related-pages}

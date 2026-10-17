@@ -69,6 +69,9 @@ function registerMaintenance(
   diagnostics: DiagnosticLogger,
   fleet: FleetControl,
 ) {
+  services.storageMetrics.bind((record) => {
+    diagnostics.write(record);
+  });
   return registerBackgroundTasks(app, {
     role: runtime.role,
     available: runtime.available,
@@ -91,6 +94,10 @@ function registerMaintenance(
       }
     },
     collect: () => services.collector.tick(runtime.available),
+    storage: () =>
+      runtime.probeStorage((id, fault) => {
+        services.storageMetrics.changed(id, fault);
+      }),
     flush: () => responses.flush(),
     close: () => {
       responses.close();
@@ -306,10 +313,11 @@ function registerRoutes(app: FastifyInstance, parts: RouteParts) {
     role: runtime.role,
     policy: parts.policy,
     diagnostics: parts.diagnostics,
-    modules: runtime.modules.planned().map(({ manifest }) => ({
-      id: manifest.id,
-      kind: manifest.kind,
-    })),
+    // Modules with a public surface (ADR 0079, section 9): a storage has none for clients.
+    modules: runtime.modules
+      .planned()
+      .filter(({ manifest }) => manifest.kind !== 'storage-backend')
+      .map(({ manifest }) => ({ id: manifest.id, kind: manifest.kind })),
   });
   if (runtime.role === 'api') registerConsole(app, config.webDirectory ?? 'apps/web/public');
 }

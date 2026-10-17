@@ -24,6 +24,28 @@ export function storageReserveBytes(raw: string | undefined): number {
   return value;
 }
 
+/**
+ * A storage on a volume of its own (ADR 0083, N11), such as a second disk: its layout folders
+ * are made only by `initialize`, and only inside a directory that exists unless `createRoot`
+ * (a restore target). A volume that is not mounted has no layout beneath its mount point, so
+ * neither a first start nor a write ever puts files on the file system below it.
+ */
+export interface VolumeLayout {
+  readonly createRoot: boolean;
+}
+
+/** The folder of one upload inside a layout folder that must exist already. */
+async function volumeFolder(path: string): Promise<void> {
+  try {
+    await mkdir(path);
+  } catch (error) {
+    if (hasCode(error, 'EEXIST')) return;
+    if (hasCode(error, 'ENOENT'))
+      throw new ArkvoryError('unavailable', 'Storage layout is missing');
+    throw error;
+  }
+}
+
 export class LocalBlobStore implements BlobStore, StorageLifecycle {
   readonly root: string;
   private reservedBytes = 0;
@@ -32,6 +54,7 @@ export class LocalBlobStore implements BlobStore, StorageLifecycle {
     private readonly reserveBytes = defaultStorageReserveBytes,
     /** Mode of a root that `initialize` creates; a restore target is private (0700). */
     private readonly rootMode?: number,
+    private readonly volume?: VolumeLayout,
   ) {
     if (!Number.isSafeInteger(reserveBytes) || reserveBytes < 0)
       throw new Error('Invalid storage reserve');
@@ -39,10 +62,14 @@ export class LocalBlobStore implements BlobStore, StorageLifecycle {
   }
 
   async initialize(): Promise<void> {
-    await mkdir(this.root, {
-      recursive: true,
-      ...(this.rootMode === undefined ? {} : { mode: this.rootMode }),
-    });
+    if (this.volume && !this.volume.createRoot) {
+      if (!(await stat(this.root)).isDirectory())
+        throw new ArkvoryError('unavailable', 'Storage directory is not a directory');
+    } else
+      await mkdir(this.root, {
+        recursive: true,
+        ...(this.rootMode === undefined ? {} : { mode: this.rootMode }),
+      });
     await mkdir(join(this.root, 'blobs'), { recursive: true });
     await mkdir(join(this.root, 'staging'), { recursive: true });
     await mkdir(join(this.root, 'parts'), { recursive: true });
@@ -82,6 +109,10 @@ export class LocalBlobStore implements BlobStore, StorageLifecycle {
   }
   private staging(id: string): string {
     return join(this.root, 'staging', requireId(id));
+  }
+  private async folder(path: string): Promise<void> {
+    if (this.volume) await volumeFolder(path);
+    else await mkdir(path, { recursive: true });
   }
 
   async checkSpace(required: number): Promise<void> {
@@ -127,7 +158,7 @@ export class LocalBlobStore implements BlobStore, StorageLifecycle {
     target = this.blob(id),
   ): Promise<void> {
     const directory = this.staging(id);
-    await mkdir(directory, { recursive: true });
+    await this.folder(directory);
     await syncDirectory(join(this.root, 'staging'));
     const temporary = join(directory, randomUUID());
     const handle = await open(temporary, 'wx', 0o600);
@@ -262,7 +293,7 @@ export class LocalBlobStore implements BlobStore, StorageLifecycle {
     cancellation: Cancellation,
   ): Promise<void> {
     const path = this.partPath(id, part);
-    await mkdir(dirname(path), { recursive: true });
+    await this.folder(dirname(path));
     await syncDirectory(join(this.root, 'parts'));
     const descriptor = {
       name: 'part',
@@ -281,9 +312,16 @@ export class LocalBlobStore implements BlobStore, StorageLifecycle {
     }
   }
 
+  /** A missing part (a volume that is not mounted, say) is `unavailable`: completion retries. */
   async *readParts(id: string, parts: readonly UploadPart[]): AsyncIterable<Uint8Array> {
-    for (const part of parts)
-      yield* streamFile(this.partPath(id, part), part.size, undefined, internalChunkBytes);
+    try {
+      for (const part of parts)
+        yield* streamFile(this.partPath(id, part), part.size, undefined, internalChunkBytes);
+    } catch (error) {
+      if (hasCode(error, 'ENOENT'))
+        throw new ArkvoryError('unavailable', 'Upload part is unavailable');
+      throw error;
+    }
   }
 
   async collect(id: string, removeContent: boolean, cancellation: Cancellation): Promise<void> {

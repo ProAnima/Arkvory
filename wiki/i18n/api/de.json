@@ -512,6 +512,22 @@
       "summary": "Einen Bereinigungs-Batch jetzt anfordern",
       "description": "Plant den nächsten Batch der aktivierten Bereinigungsrichtlinie zum sofortigen Start; die Antwort ist der Bereinigungszustand, und die Bytes werden erst freigegeben, wenn der Batch gelaufen ist (siehe `lastRunAt` in `getCleanup`). `expectedRevision` muss die aktuelle Revision sein; eine deaktivierte Bereinigung ergibt 409 `state_conflict`. Objekte, die gerade gelesen oder geschrieben werden, werden auf einen späteren Batch verschoben."
     },
+    "getStoragePlacement": {
+      "en": {
+        "summary": "Read the storage placement",
+        "description": "Returns the placement rules of the repository and its `revision` (0 before the first change), and every storage of the answering server in `backends`, `default` first, with its `state`: `accepting` (takes new uploads), `not_accepting` (keeps serving and finishing what it holds, takes no new uploads), `read_only`, `disabled`, `unavailable` (not open or not answering) or `not_loaded` (not configured). Needs `storage.read`."
+      },
+      "summary": "Speicherplatzierung lesen",
+      "description": "Gibt die Platzierungsregeln des Repositorys und ihre `revision` (0 vor der ersten Änderung) sowie jeden Speicher des antwortenden Servers in `backends` zurück, `default` zuerst, mit seinem `state`: `accepting` (nimmt neue Uploads an), `not_accepting` (bedient und beendet weiter, was er hält, nimmt aber keine neuen Uploads an), `read_only`, `disabled`, `unavailable` (nicht geöffnet oder antwortet nicht) oder `not_loaded` (nicht konfiguriert). Erfordert `storage.read`."
+    },
+    "setStoragePlacement": {
+      "en": {
+        "summary": "Set the storage placement",
+        "description": "Replaces the rules that choose the storage of new uploads of the repository. A rule has an `id`, the storage `backendId` and two optional conditions: `packageGroup` (a group, `prefix/*` or `*`) and `minSizeBytes` (a decimal string); the first rule whose conditions hold wins, no match means `default`. At most 32 rules. A storage that is not configured is refused with 400 `backend_unknown`. When the chosen storage does not take new uploads at upload time, the upload is created in `default` and its `storageBackend` says so; publication never fails because of placement. Stored data never moves. `expectedRevision` must be the current revision, otherwise 409 `revision_mismatch`. Needs `storage.manage`."
+      },
+      "summary": "Speicherplatzierung festlegen",
+      "description": "Ersetzt die Regeln, die den Speicher neuer Uploads des Repositorys wählen. Eine Regel hat eine `id`, den Speicher `backendId` und zwei optionale Bedingungen: `packageGroup` (eine Gruppe, `prefix/*` oder `*`) und `minSizeBytes` (eine Dezimalzeichenkette); die erste Regel, deren Bedingungen zutreffen, gewinnt, ohne Treffer gilt `default`. Höchstens 32 Regeln. Ein nicht konfigurierter Speicher wird mit 400 `backend_unknown` abgelehnt. Nimmt der gewählte Speicher zum Zeitpunkt des Uploads keine neuen Daten an, wird der Upload in `default` angelegt, und sein `storageBackend` zeigt das; die Veröffentlichung schlägt wegen der Platzierung nie fehl. Gespeicherte Daten werden nie verschoben. `expectedRevision` muss die aktuelle Revision sein, sonst 409 `revision_mismatch`. Erfordert `storage.manage`."
+    },
     "getRepositoryMirror": {
       "en": {
         "summary": "Get the synchronization state of a mirror",
@@ -1152,6 +1168,7 @@
       "unsupported_media_type": "Der Content-Type wird von dieser Operation nicht akzeptiert.",
       "method_not_allowed": "Der Pfad existiert, aber nicht mit dieser Methode.",
       "range_not_satisfiable": "Der angeforderte Byte-Bereich liegt außerhalb des Inhalts.",
+      "backend_unknown": "Eine Platzierungsregel nennt einen Speicher, den dieser Server nicht hat.",
       "route_not_found": "Diese Route gibt es nicht.",
       "upload_expired": "Die Upload-Sitzung ist abgelaufen, bevor sie abgeschlossen wurde.",
       "upload_state": "Der Upload befindet sich nicht in einem Zustand, der diesen Schritt erlaubt.",
@@ -1164,6 +1181,7 @@
       "stage_limit": "Das Artefakt hat die maximale Anzahl von Stufen.",
       "state_conflict": "Das Objekt befindet sich in einem Zustand, der diese Änderung nicht erlaubt.",
       "mirror_read_only": "Das Repository ist ein Spiegel; es ändert sich nur durch Synchronisierung.",
+      "backend_read_only": "Der Speicher dieses Uploads nimmt keine neuen Daten an; starten Sie einen neuen Upload, er landet in einem Speicher, der sie annimmt.",
       "permission_missing": "Den Anmeldedaten fehlt die Aktion, die diese Operation benötigt.",
       "read_only_token": "Ein schreibgeschütztes persönliches Token kann nichts ändern.",
       "credential_revoked": "Der Schlüssel oder das Token wurde widerrufen.",

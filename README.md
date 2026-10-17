@@ -23,7 +23,7 @@ It is a standalone product with its own HTTP API, command-line client and TypeSc
 - **Access you can explain.** Accounts, groups, personal access tokens and service accounts whose keys get only the repository actions they need. Sign-ins and access changes are audited.
 - **Stages and promotion.** Mark a build `qa`, `release` or `prod`, publish it in another repository without a new upload, and let a deployment agent ask for "the newest `release` build in range `^1.4`".
 - **Metadata.** Labels, text metadata, collections and attachments: manifests, SBOMs, signatures, reports.
-- **Retention.** Keep the last N builds of each package, set quotas and warnings, and free disk space in the background without stopping the server.
+- **Retention.** Keep the last N builds of each package, set quotas and warnings, and free disk space in the background without stopping the server. Add a second disk as another storage volume and choose per repository which new uploads go there.
 - **Backups.** A backup agent copies the database and all content to another disk or a network share on a schedule, verifies the copies and restores into an empty target.
 - **High availability on one site.** Two or three Linux servers keep one synchronous copy of all data (DRBD, Pacemaker, mandatory fencing): when the active server fails, another takes over, and a write is acknowledged only when it is on two complete copies.
 - **Mass updates without failures.** When a thousand clients fetch a large update at once, whole downloads queue in order: each client learns its place and the expected start, waits instead of failing, and people in the console are served first.

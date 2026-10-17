@@ -47,14 +47,14 @@ A restore point does not contain:
 
 ### Requirements {#vault-requirements}
 
-| Requirement                                                                                                         | Why                                                                                                               |
-| ------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| A new or empty directory, mounted before the services start                                                         | The agent writes `vault.json` and the restore points there                                                        |
-| Outside the installation directory and outside the storage directory, also through links, junctions and short names | A vault inside the storage is lost with it. The check refuses a path that contains or is inside them              |
-| Writable by the service account                                                                                     | On Linux, `arkvory`. On Windows, `NT AUTHORITY\LocalService`. `arkvory configure` sets the rights for you         |
-| At least 1 GiB of free space beyond the data being copied                                                           | The vault keeps this reserve. A full volume ends the backup with `vault_full`, and the earlier points stay intact |
-| On Linux, not under `/home`, `/root`, `/run/user`, `/tmp` or `/var/tmp`                                             | The service sandbox hides these trees                                                                             |
-| On Windows, a local or iSCSI volume with a drive letter                                                             | `LocalService` cannot sign in to SMB shares, so paths like `\\nas\share` are refused                              |
+| Requirement                                                                                                         | Why                                                                                                                                                                  |
+| ------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A new or empty directory, mounted before the services start                                                         | The agent writes `vault.json` and the restore points there                                                                                                           |
+| Outside the installation directory and outside the storage directory, also through links, junctions and short names | A vault inside the storage is lost with it. The check refuses a path that contains or is inside them. The same applies to every [storage volume](./storage#volumes). |
+| Writable by the service account                                                                                     | On Linux, `arkvory`. On Windows, `NT AUTHORITY\LocalService`. `arkvory configure` sets the rights for you                                                            |
+| At least 1 GiB of free space beyond the data being copied                                                           | The vault keeps this reserve. A full volume ends the backup with `vault_full`, and the earlier points stay intact                                                    |
+| On Linux, not under `/home`, `/root`, `/run/user`, `/tmp` or `/var/tmp`                                             | The service sandbox hides these trees                                                                                                                                |
+| On Windows, a local or iSCSI volume with a drive letter                                                             | `LocalService` cannot sign in to SMB shares, so paths like `\\nas\share` are refused                                                                                 |
 
 Use a volume on another disk, or on a NAS, so that a failed storage disk does not take the backups with it. A vault on the same physical disk as the storage protects against mistakes, not against a disk failure.
 
@@ -264,7 +264,7 @@ A restore writes into an **empty** database and an **empty** storage directory. 
 - **The release.** Use the release that made the point or a newer one. A point from a newer release is refused with `schema_mismatch`.
 - **The account.** Run the command as an account that can read the vault. On Linux, the vault belongs to `arkvory` and has mode 0700, so use `sudo -u arkvory`. On Windows, use an elevated PowerShell. The new storage directory must end up owned by the account that will run the API.
 - **The key.** An encrypted vault needs its key. Give the recovery kit or a key file as `--key-file FILE` to every command below, or set `ARKVORY_BACKUP_VAULT_KEY_FILE`. The key is always a file, never an argument.
-- **The target.** Create an empty database, for example `CREATE DATABASE arkvory_restore OWNER arkvory;`. Choose a storage directory that does not exist or is empty, on a different volume from the vault and not inside the source storage.
+- **The target.** Create an empty database, for example `CREATE DATABASE arkvory_restore OWNER arkvory;`. Choose a storage directory that does not exist or is empty, on a different volume from the vault and not inside the source storage. An installation with [several volumes](./storage#volumes) needs one more empty directory for each volume, see [Restore several volumes](#restore-volumes).
 - **The database URL.** Pass it in the environment, not as an argument, because arguments are visible in the process list.
 
 ### Restore step by step {#restore-steps}
@@ -307,6 +307,21 @@ A restore writes into an **empty** database and an **empty** storage directory. 
 6. Start a separate API instance on the restored data: `ARKVORY_DATABASE_URL` of the new database, `ARKVORY_DATA_DIR` of the new directory, its own `ARKVORY_KEYS_FILE` and another port. Check that `/health/ready` answers, that you can sign in, that the catalog is complete and that a control file downloads with the same SHA-256.
 
 If a restore fails, delete the target database and directory and create them again. A non-empty target is refused with `target_not_empty`, which protects existing data.
+
+### Restore several volumes {#restore-volumes}
+
+A restore point remembers the volume of each file. Restore each file into its volume:
+
+1. Write the modules file of the restored installation, with an instance for every volume of the source under the same ID and with a new, empty directory for each, for example `/srv/arkvory-restore-volume-2`. The directories follow the same rules as `--storage`.
+2. Add `--modules-file FILE` to both restore commands:
+
+   ```bash
+   arkvory-backup restore --vault /mnt/backup/arkvory --point POINT_ID --storage /srv/arkvory-restore --modules-file /srv/arkvory-restore-modules.json
+   ```
+
+3. Start the restored instance with this modules file as `ARKVORY_MODULES_FILE`.
+
+A point that holds files of a volume that the target does not name is refused before anything is written, also in the dry run. The placement policies are part of the backup. The identities of the volumes are not: the restored API records the new directories at its first start.
 
 ### What a restore changes {#after-restore}
 

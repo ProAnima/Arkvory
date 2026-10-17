@@ -5,7 +5,7 @@ description: 'Planifier l’espace disque, définir des quotas et des politiques
 
 # Stockage
 
-Arkvory conserve chaque fichier publié une seule fois, inchangé, dans un répertoire de stockage sur un disque local du serveur. Cette page explique ce qui occupe l’espace disque, comment le limiter par des quotas et des politiques de rétention, comment les fichiers supprimés quittent le disque et quoi faire lorsque le disque est plein.
+Arkvory conserve chaque fichier publié une seule fois, inchangé, dans un répertoire de stockage sur un disque local du serveur, et éventuellement sur [d’autres volumes](#volumes). Cette page explique ce qui occupe l’espace disque, comment le limiter par des quotas et des politiques de rétention, comment les fichiers supprimés quittent le disque et quoi faire lorsque le disque est plein.
 
 ## Où se trouvent les contenus {#location}
 
@@ -22,6 +22,81 @@ Le répertoire de stockage est défini par `ARKVORY_DATA_DIR`. Les programmes d�
 - Utilisez un système de fichiers local qui prend en charge les liens physiques. N’utilisez pas un partage réseau pour le stockage.
 - N’ajoutez, ne modifiez et ne supprimez pas de fichiers dans le répertoire à la main. Arkvory supprime les fichiers lui-même, comme décrit ci-dessous.
 - Un fichier publié n’est jamais modifié. Un nouveau contenu est un nouveau fichier avec un nouvel ID.
+
+## Plusieurs volumes {#volumes}
+
+Au lieu d’agrandir un volume, vous pouvez donner à Arkvory d’autres répertoires de stockage, par exemple sur un second disque. Chaque répertoire supplémentaire est une instance du module intégré `local-storage` avec son propre ID. Le répertoire de stockage de `ARKVORY_DATA_DIR` est toujours l’instance `default`.
+
+Configurez les instances dans le fichier des modules (`ARKVORY_MODULES_FILE`, voir [Variables d’environnement](../reference/environment)) :
+
+```json
+{
+  "format": 1,
+  "modules": {
+    "local-storage": {
+      "enabled": true,
+      "config": {
+        "instances": {
+          "volume-2": { "directory": "/srv/arkvory-volume-2" }
+        }
+      }
+    }
+  }
+}
+```
+
+| Champ           | Signification                                                                                                                                                          | Valeur par défaut               |
+| --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- |
+| `directory`     | Chemin absolu du répertoire. Il ne doit ni contenir le répertoire de stockage ou une autre instance, ni se trouver à l’intérieur                                       | Obligatoire                     |
+| `acceptsWrites` | `false` arrête les nouveaux téléversements vers ce volume. Ses fichiers restent lisibles, et les téléversements déjà commencés sur lui peuvent se terminer             | `true`                          |
+| `mode`          | `read-only` sert uniquement les téléchargements et les vérifications, et refuse toute écriture et toute suppression, par exemple pour un volume monté en lecture seule | `full`                          |
+| `enabled`       | `false` ferme le volume : ses fichiers ne peuvent plus être téléchargés tant que vous ne le réactivez pas                                                              | `true`                          |
+| `reserveBytes`  | Espace libre conservé sur ce volume, en octets                                                                                                                         | `ARKVORY_STORAGE_RESERVE_BYTES` |
+
+Un ID se compose de lettres minuscules, de chiffres et de `-`, commence par une lettre et n’est pas `default`. Vous pouvez ajouter jusqu’à 16 instances. Chaque processus (l’API, les passerelles de lecture, le worker et l’agent de sauvegarde) doit lire le même fichier des modules : un processus qui prévoit d’autres instances n’est pas prêt. Redémarrez tous les services après une modification.
+
+Pour ajouter un volume :
+
+1. Montez le volume et créez le répertoire. Il doit appartenir au compte qui exécute les services. Arkvory ne crée pas ce répertoire. S’il manque, par exemple parce que le volume n’est pas monté, le volume reste indisponible et rien n’est écrit sous le point de montage.
+2. Marquez le répertoire comme nouveau volume : `arkvory volume-init --directory /srv/arkvory-volume-2`. La commande n’a pas besoin de `--root`. Elle refuse un répertoire qui n’existe pas ou qui n’est pas vide (seul `lost+found` peut s’y trouver) et écrit le fichier d’identité `storage-id`. Sous Linux, elle refuse aussi un répertoire qui n’est pas un point de montage, comme le répertoire vide d’un volume non monté. Pour un répertoire à l’intérieur d’un volume monté, ajoutez `--no-expect-mount`. Sous Windows, `--expect-mount` active cette vérification. Les services ne créent jamais ce fichier : un volume sans lui reste indisponible.
+3. Ajoutez l’instance au fichier des modules et redémarrez les services. À son premier démarrage, l’API enregistre l’identité du volume, le fichier `storage-id` du répertoire. Ensuite, chaque processus vérifie ce fichier. Arkvory n’écrit jamais sur un volume non monté ni sur un autre volume au même chemin. Avant chaque écriture et chaque suppression sur le volume, le fichier est vérifié à nouveau.
+4. Choisissez les téléversements qui vont sur le volume avec une [politique de placement](#placement).
+
+### Placement des nouveaux téléversements {#placement}
+
+La politique de placement d’un dépôt choisit le stockage de chaque nouveau téléversement. Une règle a un ID, un stockage (`backendId`) et deux conditions facultatives : un groupe de paquets (`models/*`, `tools` ou `*`) et une taille minimale en octets. La première règle dont les conditions sont remplies l’emporte. Sans correspondance, le téléversement va dans `default`. Un dépôt peut avoir jusqu’à 32 règles.
+
+Lisez et modifiez la politique avec `arkvoryctl` ou les opérations d’API [getStoragePlacement](../api/reference/storage#getStoragePlacement) et [setStoragePlacement](../api/reference/storage#setStoragePlacement) :
+
+```bash
+arkvoryctl storage placement --repository releases
+arkvoryctl storage placement --repository releases --revision 0 --file rules.json
+```
+
+Le fichier `rules.json` contient la liste des règles, par exemple tous les fichiers de 1 GiB ou plus sur `volume-2` :
+
+```json
+[{ "id": "large", "backendId": "volume-2", "packageGroup": null, "minSizeBytes": "1073741824" }]
+```
+
+- La lecture de la politique nécessite `storage.read`, sa modification `storage.manage`. La réponse liste aussi chaque stockage avec son état : `accepting`, `not_accepting`, `read_only`, `disabled`, `unavailable` ou `not_loaded`.
+- Une règle ne peut nommer qu’un stockage configuré. Un autre nom est refusé avec 400 `backend_unknown`.
+- La politique est enregistrée avec une révision. Si quelqu’un d’autre l’a modifiée, relisez-la et enregistrez à nouveau.
+- Une modification ne s’applique qu’aux nouveaux téléversements. Les fichiers déjà stockés ne passent jamais d’un volume à l’autre.
+
+### Quand un volume n’accepte pas de nouveaux téléversements {#placement-fallback}
+
+La publication n’échoue jamais à cause du placement. Si le stockage choisi n’accepte pas de téléversements à ce moment-là, à cause de `acceptsWrites: false`, `read-only`, `enabled: false`, d’une instance absente ou d’un volume indisponible (non monté, vérification d’identité échouée, pas de réponse), le nouveau téléversement est créé dans `default` à la place. Le téléversement indique son stockage dans `storageBackend`, la métrique `arkvory_storage_placement_fallback_total` le compte et le journal contient la ligne `storage.placement_fallback`.
+
+- **Les téléversements en cours ne sont pas déplacés.** Si un volume cesse d’accepter des données pendant qu’un téléversement en parties s’y déroule, les nouvelles parties sont refusées avec 409 `backend_read_only`, et le client commence un nouveau téléversement. Si toutes les parties sont déjà là, la finalisation du téléversement écrit le fichier dans `default`. Les parties sont lues depuis le volume où elles se trouvent. Un fichier qu’une tentative interrompue a déjà entièrement enregistré sur le volume y reste.
+- **Un volume indisponible** fait échouer les téléchargements de ses fichiers avec 503 `unavailable` jusqu’à son retour. Le serveur continue de fonctionner, et la disponibilité et `writable` ne suivent que `default`. Chaque processus revérifie ses volumes toutes les 30 secondes.
+- **Le nettoyage** supprime chaque fichier sur le volume qui le contient, y compris les parties restées sur un autre volume. Sur un volume indisponible ou en lecture seule, le nettoyage ignore le fichier et réessaie plus tard.
+- **Quotas et limites.** Les quotas et `ARKVORY_CAPACITY_BYTES` comptent tous les volumes ensemble. La réserve s’applique à chaque volume.
+- **Les fichiers temporaires** des téléversements raw, OCI et de miroir restent dans le répertoire de stockage `default`.
+- **Cluster.** Dans un [cluster haute disponibilité](./cluster), chaque volume doit être un répertoire sur le volume répliqué, comme le répertoire de stockage : un autre disque n’est pas copié sur les autres serveurs. Sinon, l’API ne démarre pas.
+- **Un volume retiré de la configuration.** Arkvory se souvient de chaque volume qui a contenu des données. S’il ne figure plus dans le fichier des modules, ses fichiers ne peuvent être ni téléchargés, ni nettoyés, ni sauvegardés : une sauvegarde échoue avec `blob_missing`. Chaque processus le signale par la métrique `arkvory_storage_backend_unconfigured`, la ligne de journal `storage.backend_unconfigured` et l’alerte `ArkvoryStorageVolumeUnconfigured`, et la réponse du placement l’affiche avec l’état `not_loaded`. Pour corriger cela, configurez-le de nouveau. Pour retirer un volume, gardez-le configuré avec `acceptsWrites: false` : les fichiers enregistrés ne passent jamais d’un volume à l’autre.
+
+Surveillez `arkvory_storage_backend_up` et `arkvory_storage_backend_accepting`, voir [Supervision](./monitoring#metrics). Les sauvegardes copient chaque volume. Une restauration a besoin d’un répertoire vide pour chaque volume, voir [Restaurer plusieurs volumes](./backups#restore-volumes).
 
 ## Planifier le disque {#disk}
 
@@ -50,12 +125,12 @@ Voir [Variables d’environnement](../reference/environment#storage-and-limits).
 
 Les paramètres de stockage ne font pas partie des droits normaux de lecture et d’écriture. Une clé de service a besoin d’actions explicites sur le dépôt :
 
-| Action             | Permet                                                                                                    |
-| ------------------ | --------------------------------------------------------------------------------------------------------- |
-| `storage.read`     | Voir la politique, l’utilisation et les paramètres de nettoyage                                           |
-| `storage.manage`   | Modifier la politique, le quota et les paramètres de nettoyage, et demander un lot de nettoyage           |
-| `artifact.delete`  | Prévisualiser les suppressions, supprimer des artefacts et activer une politique de rétention automatique |
-| `diagnostics.read` | Lire les événements de stockage                                                                           |
+| Action             | Permet                                                                                                        |
+| ------------------ | ------------------------------------------------------------------------------------------------------------- |
+| `storage.read`     | Voir la politique, l’utilisation, les paramètres de nettoyage et le placement                                 |
+| `storage.manage`   | Modifier la politique, le quota, les paramètres de nettoyage et le placement, et demander un lot de nettoyage |
+| `artifact.delete`  | Prévisualiser les suppressions, supprimer des artefacts et activer une politique de rétention automatique     |
+| `diagnostics.read` | Lire les événements de stockage                                                                               |
 
 Les comptes avec un mot de passe et la clé de récupération n’ont pas ces droits par eux-mêmes. Pour gérer le stockage dans la console :
 
@@ -208,6 +283,7 @@ La section [[ui:storageEvents]] liste ce qui s’est passé dans le dépôt, du 
 | `retention.completed`                                                                                 | info                   | Un lot a supprimé des builds. L’événement contient le nombre                                                    |
 | `retention.failed`                                                                                    | error                  | La suppression automatique s’est arrêtée, par exemple parce que la clé d’autorisation a été révoquée            |
 | `cleanup.configured`                                                                                  | info                   | Les paramètres de nettoyage ont été enregistrés                                                                 |
+| `storage.placement_updated`                                                                           | info                   | La politique de placement a été enregistrée                                                                     |
 | `cleanup.completed`                                                                                   | info ou error          | Un lot de nettoyage a traité, ignoré ou échoué sur des fichiers. Il liste les nombres et les octets libérés     |
 | `capacity.normal`, `capacity.warning`, `capacity.critical`, `capacity.exceeded`, `capacity.unlimited` | info, warning ou error | L’état du quota a changé                                                                                        |
 | Codes d’erreur HTTP                                                                                   | warning ou error       | Une requête d’une clé gérée vers ce dépôt a échoué. L’événement conserve l’ID de requête, la route et le statut |
@@ -223,7 +299,7 @@ Signes : les téléversements échouent avec HTTP 507 et la raison `storage_full
 1. **Trouvez la cause.** Vérifiez l’espace libre du volume de stockage, du volume de la base de données et du volume du coffre. Comparez les chiffres d’utilisation dans le panneau de stockage. Des chiffres élevés pour « en attente de nettoyage » signifient que des données supprimées sont encore sur le disque. Un chiffre élevé pour « téléversements inachevés » signifie des téléversements abandonnés.
 2. **Lancez le nettoyage.** Si le nettoyage est désactivé, activez-le dans chaque dépôt, avec un court délai de grâce tel que 0 si vous acceptez que les fichiers supprimés disparaissent immédiatement. Sélectionnez [[ui:cleanupRun]]. Il supprime aussi les parties temporaires des téléversements terminés et les téléversements expirés. Attendez les lots et lisez le dernier résultat. Le nettoyage ignore les fichiers en cours d’utilisation, alors répétez-le.
 3. **Supprimez ce dont vous n’avez pas besoin.** Appliquez une politique de rétention, ou supprimez des artefacts. Cela ne libère de l’espace qu’après que le nettoyage a supprimé les octets.
-4. **Ajoutez de l’espace.** Étendez le volume ou le disque. Déplacez le coffre ou d’autres données hors du volume s’ils le partagent.
+4. **Ajoutez de l’espace.** Étendez le volume ou le disque. Déplacez le coffre ou d’autres données hors du volume s’ils le partagent. Vous pouvez aussi [ajouter un volume](#volumes) et y placer les nouveaux téléversements.
 5. **Vérifiez la reprise.** Une fois l’espace libre, `writable` repasse à `true` et les téléversements fonctionnent à nouveau.
 
 Ne supprimez pas de fichiers dans `blobs/`, `staging/` ou `parts/` à la main : cela rompt le lien entre la base de données et le disque. Si la réserve est trop petite pour vos journaux et votre base de données sur le même volume, augmentez `ARKVORY_STORAGE_RESERVE_BYTES`.
@@ -238,7 +314,7 @@ Si un téléversement échoue avec la raison `storage_quota` ou `catalog_limit` 
 - Le nettoyage physique est désactivé par défaut et se définit pour chaque dépôt.
 - Un artefact supprimé ne peut pas être restauré. Restaurez les données depuis une sauvegarde. Voir [Sauvegardes](./backups).
 - Les dépôts en miroir n’exécutent aucune politique de stockage. Voir [Miroirs](./mirrors).
-- Le stockage doit être un système de fichiers local. Les partages réseau et les multiples backends de stockage ne sont pas pris en charge.
+- Le stockage doit être un système de fichiers local. Les partages réseau ne sont pas pris en charge. Les [volumes](#volumes) supplémentaires sont aussi des répertoires locaux, et Arkvory ne déplace pas les fichiers stockés entre eux.
 - Sous Windows, Arkvory synchronise chaque fichier sur le disque, mais ne peut pas synchroniser l’entrée de répertoire qui le publie : Node.js n’y offre pas de synchronisation de répertoire. Une coupure de courant peu après un téléversement peut laisser un fichier publié absent du disque. Utilisez un onduleur et gardez des [sauvegardes](./backups) ou un [miroir](./mirrors). Sous Linux, les entrées de répertoire sont aussi synchronisées.
 
 ## Pages associées {#related-pages}

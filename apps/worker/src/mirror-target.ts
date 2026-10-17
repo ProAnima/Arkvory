@@ -18,6 +18,7 @@ import type {
   MirrorSource,
   MirrorStage,
   MirrorTarget,
+  UploadPlacement,
 } from '@proanima/arkvory-application';
 import { ArkvoryError, descriptorWire } from '@proanima/arkvory-domain';
 import { MirrorRegistryRows } from './mirror-registry-rows.js';
@@ -98,6 +99,8 @@ export class ServiceMirrorTarget implements MirrorTarget {
     staging: StagingArea,
     /** Owned by the caller, closed before the catalog: it holds its own database session. */
     pins: PostgresContentPins,
+    /** Where copies are stored (ADR 0083, N11); without it, in `default`. */
+    private readonly placement?: UploadPlacement,
   ) {
     this.principal = {
       credential: 'file-key',
@@ -133,7 +136,12 @@ export class ServiceMirrorTarget implements MirrorTarget {
 
   /** The copy keeps the source ID: the storage service of one artifact issues exactly it. */
   private storage(id: string): StorageService {
-    return new StorageService(this.catalog, this.blobs, { next: () => id, now });
+    return new StorageService(
+      this.catalog,
+      this.blobs,
+      { next: () => id, now },
+      this.placement ? { placement: this.placement } : {},
+    );
   }
 
   private async uploadOf(storage: StorageService, id: string): Promise<Upload | null> {
