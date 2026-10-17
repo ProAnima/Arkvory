@@ -1,0 +1,37 @@
+import { PostgresStorageIdentities, watchStorageBackends } from '@proanima/arkvory-infrastructure';
+import type {
+  DiagnosticLogger,
+  PostgresCatalog,
+  StorageBackends,
+  StorageFault,
+} from '@proanima/arkvory-infrastructure';
+
+/**
+ * Rechecks the volumes of the worker every 30 s (ADR 0083, N11) and logs each one that is not
+ * usable at start or changes later, as the API does: completion and mirror copies of a volume
+ * that is not available wait, and new mirror copies go to `default` meanwhile.
+ */
+export function watchWorkerStorage(
+  blobs: StorageBackends,
+  catalog: Pick<PostgresCatalog, 'pool'>,
+  diagnostics: Pick<DiagnosticLogger, 'write'>,
+): () => void {
+  const changed = (id: string, fault: StorageFault | null) => {
+    diagnostics.write(
+      fault === null
+        ? { level: 'info', component: 'storage', code: 'storage.backend_available', backend: id }
+        : {
+            level: 'warning',
+            component: 'storage',
+            code: 'storage.backend_unavailable',
+            backend: id,
+            reason: fault,
+          },
+    );
+  };
+  for (const { id, fault } of blobs.status()) if (fault !== null) changed(id, fault);
+  return watchStorageBackends(blobs, new PostgresStorageIdentities(catalog.pool), {
+    create: false,
+    changed,
+  });
+}

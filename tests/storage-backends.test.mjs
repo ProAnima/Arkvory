@@ -437,3 +437,31 @@ test('in a cluster every volume must be on the replicated file system of the dat
   const beside = await directory(t, 'arkvory-cluster-v2-');
   await requireReplicatedVolumes(data, settings(beside));
 });
+
+test('the worker logs a volume that is not usable at start and every later change', async (t) => {
+  const { watchWorkerStorage } = await import('../apps/worker/dist/storage-watch.js');
+  const data = await directory(t, 'arkvory-worker-core-');
+  const settings = [
+    {
+      id: 'volume-2',
+      directory: join(data + '-absent'),
+      enabled: true,
+      mode: 'full',
+      acceptsWrites: true,
+    },
+  ];
+  const backends = localStorageBackends(data, 0, settings);
+  backends.mark('volume-2', 'identity_unknown');
+  const lines = [];
+  const unwatch = watchWorkerStorage(backends, { pool: {} }, { write: (line) => lines.push(line) });
+  unwatch();
+  assert.deepEqual(lines, [
+    {
+      level: 'warning',
+      component: 'storage',
+      code: 'storage.backend_unavailable',
+      backend: 'volume-2',
+      reason: 'identity_unknown',
+    },
+  ]);
+});

@@ -34,6 +34,7 @@ import { runWebhooks } from './webhook-loop.js';
 import { readEventRetention, runEventSequencer } from './event-loop.js';
 import { processJob, retireExhausted } from './completion.js';
 import { acquireWithPlan, watchModulePlan } from './module-plan.js';
+import { watchWorkerStorage } from './storage-watch.js';
 
 let levelError: Error | undefined;
 /** Stopped before taking work, as standby or waiting for the module plan: a clean stop. */
@@ -143,6 +144,7 @@ try {
   );
   if (!acquired) throw new StoppedOnStandby();
   const { catalog, blobs, staging, placement } = acquired;
+  const unwatchStorage = watchWorkerStorage(blobs, catalog, diagnostics);
   const recordedPlan = new PostgresModulePlan(catalog.pool);
   const unwatchPlan = watchModulePlan(recordedPlan, compatibilityFingerprint, () => {
     process.exitCode = 1;
@@ -238,6 +240,7 @@ try {
     await sequencing;
     clearInterval(recovery);
     unwatchPlan();
+    unwatchStorage();
     await catalog.close();
   }
   diagnostics.write({ level: 'info', component: 'worker', code: 'worker.stopped' });
