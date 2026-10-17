@@ -8,7 +8,7 @@ import { CliError } from '../errors.js';
 import { syncDirectory } from '../local-files.js';
 import type { ToolContext } from './context.js';
 import { objectResult } from './output.js';
-import { downloadTarget, unmoved } from './paths.js';
+import { downloadTarget, refusePrivate, unmoved } from './paths.js';
 import { defineTool, idInput, repositoryInput } from './tool.js';
 import type { ToolCall } from './tool.js';
 
@@ -58,6 +58,8 @@ async function store(
 /** Where the download may write, refusing an existing target unless replacing was asked for. */
 async function place(ctx: ToolContext, input: DownloadInput) {
   const target = await downloadTarget(ctx.root, input.path);
+  // The real directory and the name: the file, or the link it replaces, never one of these.
+  refusePrivate(ctx.privatePaths, target.path);
   if (target.exists && input.overwrite !== true) throw new CliError('destination_exists', 6);
   return target;
 }

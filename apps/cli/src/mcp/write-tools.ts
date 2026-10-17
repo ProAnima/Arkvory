@@ -9,6 +9,7 @@ import { upload } from '../upload.js';
 import { startingOver } from './checkpoints.js';
 import type { KeyActions, ToolContext, WriteOptions } from './context.js';
 import { objectResult } from './output.js';
+import { refusePrivate } from './paths.js';
 import { openSource, searchedDigest } from './source.js';
 import type { LocalSource } from './source.js';
 import { defineTool, repositoryInput } from './tool.js';
@@ -96,6 +97,7 @@ async function prepared(
 async function withSource<T>(ctx: ToolContext, file: string, use: (s: LocalSource) => Promise<T>) {
   const source = await openSource(ctx.root, file);
   try {
+    refusePrivate(ctx.privatePaths, source.path);
     return await use(source);
   } finally {
     await source.handle.close();

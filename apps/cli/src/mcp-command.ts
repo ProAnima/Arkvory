@@ -1,4 +1,5 @@
-import { join } from 'node:path';
+import { realpath } from 'node:fs/promises';
+import { join, resolve } from 'node:path';
 import { StdioServerTransport } from '@modelcontextprotocol/server/stdio';
 import { cliHome, connection, repositoryName } from './profiles.js';
 import { numericOption, validateCommand } from './arguments.js';
@@ -44,10 +45,15 @@ export async function runMcp(args: Arguments, signal: AbortSignal): Promise<void
   }
   const root = await rootDirectory(args.options.get('root') ?? process.cwd());
   const secrets: string[] = [];
+  const keyFiles: string[] = [];
   const connected = await connection(args, signal, {
     clientName: `arkvoryctl-mcp/${version()}`,
     onCredential: (token) => secrets.push(token),
+    onCredentialFile: (path) => keyFiles.push(path),
   });
+  const privatePaths = await Promise.all(
+    [cliHome(), ...keyFiles].map((path) => realpath(resolve(path)).catch(() => resolve(path))),
+  );
   const requestTimeoutMs = numericOption(args, 'timeout', 60000, 1, 3600000);
   const permissions = await connected.client.permissions(
     AbortSignal.any([signal, AbortSignal.timeout(requestTimeoutMs)]),
@@ -66,6 +72,7 @@ export async function runMcp(args: Arguments, signal: AbortSignal): Promise<void
       client: connected.client,
       repository: connected.repository,
       root,
+      privatePaths,
       maxOutputBytes,
       secrets,
       requestTimeoutMs,

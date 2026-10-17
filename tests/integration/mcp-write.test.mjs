@@ -173,4 +173,23 @@ test('arkvoryctl mcp --write: publish, verify, promote, annotate; refusals are c
 
   assert.equal(await mcp.close(), 0);
   assert.equal(mcp.output().includes(token), false, 'the key never reaches stdout or stderr');
+
+  // A root that holds the CLI home and the key file: neither is ever replaced or sent.
+  const wide = start(t, env, ['--root', f.directory, '--write']);
+  await wide.request('initialize', {
+    protocolVersion: '2025-11-25',
+    capabilities: {},
+    clientInfo: { name: 'integration', version: '1' },
+  });
+  wide.notify('notifications/initialized');
+  const replaced = await wide.call('arkvory_download', {
+    id,
+    path: 'cli/mcp-uploads/x.json',
+    overwrite: true,
+  });
+  assert.equal(replaced.structuredContent.error.code, 'private_path');
+  const sent = await wide.call('arkvory_upload', { file: 'key' });
+  assert.equal(sent.structuredContent.error.code, 'private_path');
+  assert.equal(await wide.close(), 0);
+  assert.equal(wide.output().includes(token), false);
 });

@@ -116,6 +116,10 @@ const local: Readonly<Record<string, Text>> = {
     'The server receipt does not name the bytes that were read; nothing was registered. Repeat the command, then report it if it persists.',
     'Квитанция сервера не совпадает с прочитанными байтами; ничего не зарегистрировано. Повторите команду и сообщите о сбое, если он повторится.',
   ],
+  private_path: [
+    "arkvoryctl's own files (profiles, key files, upload checkpoints) are never read or written through MCP. Choose another path below the root.",
+    'Собственные файлы arkvoryctl (профили, файлы ключей, чекпойнты загрузок) через MCP не читаются и не пишутся. Выберите другой путь внутри корня.',
+  ],
   source_changed: [
     'The file changed while it was being read. Wait until it is complete and repeat the call.',
     'Файл изменился во время чтения. Дождитесь его готовности и повторите вызов.',

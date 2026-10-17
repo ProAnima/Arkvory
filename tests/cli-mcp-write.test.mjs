@@ -9,6 +9,7 @@ import {
   mkdtemp,
   open,
   readdir,
+  readFile,
   rename,
   rm,
   symlink,
@@ -19,6 +20,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { ArkvoryClientError, ArkvoryHttpError, ArkvoryNetworkError } from '@proanima/arkvory-sdk';
 import { pruneCheckpoints } from '../apps/cli/dist/mcp/checkpoints.js';
+import { downloadToRoot } from '../apps/cli/dist/mcp/download-tool.js';
 import { errorResult } from '../apps/cli/dist/mcp/output.js';
 import { rootDirectory } from '../apps/cli/dist/mcp/paths.js';
 import { HandleBlob, openSource } from '../apps/cli/dist/mcp/source.js';
@@ -394,6 +396,42 @@ test('the checkpoint directory stays bounded and never loses a locked checkpoint
       'notes.txt',
     ].sort(),
   );
+});
+
+test("arkvoryctl's own files below the root are never replaced or sent", async (t) => {
+  const { root, context } = await workspace(t);
+  // The agent was started in the home directory: the CLI home and the key lie below the root.
+  const home = join(root, '.config', 'arkvory');
+  await mkdir(home, { recursive: true });
+  const profiles = '{"active":"agent","profiles":{}}';
+  await writeFile(join(home, 'profiles.json'), profiles);
+  await writeFile(join(root, 'agent.key'), 'not the key itself');
+  const artifact = {
+    descriptor: { name: 'x', size: '4', sha256: sha256(Buffer.from('evil')) },
+  };
+  let downloads = 0;
+  const client = {
+    ...uploads().client,
+    artifact: async () => artifact,
+    downloadVerified: async () => {
+      downloads++;
+      return new Blob(['evil']).stream();
+    },
+  };
+  const ctx = { ...context(client), privatePaths: [home, join(root, 'agent.key')] };
+  for (const path of ['.config/arkvory/profiles.json', '.config/arkvory/x.json', 'agent.key'])
+    await assert.rejects(
+      downloadToRoot(ctx, { id: ID, path, overwrite: true }, call()),
+      { code: 'private_path' },
+      path,
+    );
+  assert.equal(downloads, 0, 'refused before any transfer');
+  assert.equal(await readFile(join(home, 'profiles.json'), 'utf8'), profiles);
+  for (const file of ['.config/arkvory/profiles.json', 'agent.key', './.config/../agent.key'])
+    await assert.rejects(uploadFromRoot(ctx, { file }, call()), { code: 'private_path' }, file);
+  // Elsewhere below the root both work as before.
+  assert.equal((await downloadToRoot(ctx, { id: ID, path: 'evil.bin' }, call())).size, '4');
+  assert.equal((await uploadFromRoot(ctx, { file: 'evil.bin' }, call())).size, '4');
 });
 
 test('a source that shrinks while it is read fails instead of sending other bytes', async (t) => {

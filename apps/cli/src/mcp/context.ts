@@ -56,6 +56,12 @@ export interface ToolContext {
   readonly repository: string;
   /** Real path of `--root`; local files are read and written only below it. */
   readonly root: string;
+  /**
+   * Real paths of arkvoryctl's own files: the CLI home (profiles, upload checkpoints) and the
+   * key file. No tool reads or writes them, even below the root (`private_path`): a download
+   * replacing `profiles.json` could point the next command, and its key, at another server.
+   */
+  readonly privatePaths?: readonly string[];
   /** Bound of one tool result in UTF-8 bytes (`--max-output-bytes`). */
   readonly maxOutputBytes: number;
   /** Values that must never reach a result, such as the key; replaced if they ever appear. */
