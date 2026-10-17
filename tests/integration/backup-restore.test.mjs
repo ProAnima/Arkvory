@@ -9,6 +9,7 @@ import {
   readdir,
   readFile,
   rm,
+  stat,
   symlink,
   writeFile,
 } from 'node:fs/promises';
@@ -168,6 +169,8 @@ test('a captured point restores into an empty database and storage and serves th
   const report = join(storage, '..', 'report.json');
   const restored = await runBackup([...restoreArgs, '--yes', '--report', report], target);
   assert.equal(restored.code, 0, restored.stdout + restored.stderr);
+  // The restored content is private to the service account: its root is created 0700.
+  if (process.platform !== 'win32') assert.equal((await stat(storage)).mode & 0o777, 0o700);
   const completed = record(restored, 'backup.restore.completed');
   t.diagnostic(`restore ${completed.durationMs} ms`);
   assert.equal(completed.cancelledUploads, 1);
