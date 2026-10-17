@@ -6,6 +6,14 @@ import type { BlobStore, ManifestReader, ManifestSource } from '@proanima/arkvor
 import type { PostgresContentPins } from './content-pins.js';
 import { BlobRangeReader } from './blob-range-reader.js';
 
+/** The largest root manifest, inflated. */
+const maxManifestBytes = 65536;
+/**
+ * The longest compressed manifest entry: deflate adds a few bytes per block to its input, so a
+ * longer entry inflates to far less than its own size and would only make the parse read it.
+ */
+const maxManifestEntryBytes = 2 * maxManifestBytes;
+
 const zipOptions = {
   lazyEntries: true,
   autoClose: true,
@@ -85,7 +93,11 @@ export class ZipManifestReader implements ManifestReader {
             zip.readEntry();
             return;
           }
-          if (entry.uncompressedSize > 65536) throw new Error('Large manifest');
+          if (
+            entry.uncompressedSize > maxManifestBytes ||
+            entry.compressedSize > maxManifestEntryBytes
+          )
+            throw new Error('Large manifest');
           zip.openReadStream(entry, (error, stream) => {
             if (error) {
               fail();
@@ -96,7 +108,7 @@ export class ZipManifestReader implements ManifestReader {
             stream.on('error', fail);
             stream.on('data', (chunk: Buffer) => {
               bytes += chunk.length;
-              if (bytes > 65536) {
+              if (bytes > maxManifestBytes) {
                 stream.destroy();
                 fail();
               } else chunks.push(chunk);

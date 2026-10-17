@@ -252,6 +252,71 @@ test('storage failures keep their code; only defects of the archive are invalid_
   await assert.rejects(new ZipManifestReader(store).inspect(blob), { code: 'invalid_input' });
 });
 
+/**
+ * A ZIP whose only entry, `upack.json`, is deflated as `padding` empty stored blocks and then
+ * the manifest: tiny once inflated, but as long as the padding makes it (a zip bomb inverted).
+ */
+function paddedManifest(bytes, padding) {
+  const name = Buffer.from('upack.json');
+  const empty = Buffer.from([0, 0, 0, 0xff, 0xff]);
+  const last = Buffer.from([1, 0, 0, 0, 0]);
+  last.writeUInt16LE(bytes.length, 1);
+  last.writeUInt16LE(~bytes.length & 0xffff, 3);
+  const compressed = padding * empty.length + last.length + bytes.length;
+  const header = (signature, size) => {
+    const fields = Buffer.alloc(size);
+    fields.writeUInt32LE(signature, 0);
+    return fields;
+  };
+  const local = header(0x04034b50, 30);
+  local.writeUInt16LE(8, 8);
+  local.writeUInt32LE(compressed, 18);
+  local.writeUInt32LE(bytes.length, 22);
+  local.writeUInt16LE(name.length, 26);
+  const central = header(0x02014b50, 46);
+  central.writeUInt16LE(8, 10);
+  central.writeUInt32LE(compressed, 20);
+  central.writeUInt32LE(bytes.length, 24);
+  central.writeUInt16LE(name.length, 28);
+  central.writeUInt32LE(0o100644 * 65536, 38);
+  const end = header(0x06054b50, 22);
+  end.writeUInt16LE(1, 8);
+  end.writeUInt16LE(1, 10);
+  end.writeUInt32LE(central.length + name.length, 12);
+  end.writeUInt32LE(local.length + name.length + compressed, 16);
+  const head = Buffer.concat([local, name]);
+  const tail = Buffer.concat([last, bytes, central, name, end]);
+  const tailStart = head.length + padding * empty.length;
+  const byteAt = (i) =>
+    i < head.length
+      ? head[i]
+      : i < tailStart
+        ? empty[(i - head.length) % empty.length]
+        : tail[i - tailStart];
+  return {
+    size: tailStart + tail.length,
+    slice: (s, e) => Buffer.from(Array.from({ length: e - s }, (_, k) => byteAt(s + k))),
+  };
+}
+
+test('a manifest entry longer than any deflated manifest is refused before its data', async () => {
+  const store = new MemoryBlobStore();
+  const small = paddedManifest(manifest, 10);
+  const valid = randomUUID();
+  store.placeVirtual(valid, small.size, small.slice);
+  const parsed = await new ZipManifestReader(store).inspect({ id: valid, size: small.size });
+  assert.equal(parsed.name, 'example');
+  // 20 MB of compressed data that inflates to the same few bytes is not read through the port.
+  const padded = paddedManifest(manifest, 4_000_000);
+  const id = randomUUID();
+  store.placeVirtual(id, padded.size, padded.slice);
+  store.reads.length = 0;
+  await assert.rejects(new ZipManifestReader(store).inspect({ id, size: padded.size }), {
+    code: 'invalid_input',
+  });
+  assert.ok(store.readBytes() <= 2 * 1024 * 1024, `read ${String(store.readBytes())} bytes`);
+});
+
 test('a central directory of many entries is parsed in bounded event loop turns', async () => {
   const entries = [['upack.json', manifest]];
   for (let i = 0; i < 20_000; i++) entries.push([`package/f${String(i)}.bin`, Buffer.from('x')]);
