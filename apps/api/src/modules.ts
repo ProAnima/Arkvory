@@ -55,6 +55,9 @@ function protocol(
       version,
       extensionApi: `^${EXTENSION_API_VERSION}`,
       kind: 'protocol',
+      // The core and the modules it signs are published by ProAnimaStudio (ADR 0083, 2.3).
+      publisher: 'proanimastudio',
+      uses: [],
       requires: [],
       provides: [],
       metricPrefix: null,
@@ -143,6 +146,8 @@ export function planApiModules(
     extensionApi: EXTENSION_API_VERSION,
     reservedRoutePrefixes: CORE_ROUTE_PREFIXES,
     sha256,
+    // No service of HOST_SERVICES is implemented yet: a module that uses one is refused.
+    services: [],
   });
   return new ModuleRuntime(plan, prepared, { role, context: { role } });
 }

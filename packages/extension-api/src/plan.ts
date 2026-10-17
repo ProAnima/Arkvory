@@ -1,3 +1,4 @@
+import type { HostService, ModuleSource } from './context.js';
 import { canonicalJson, type ModuleJson } from './json.js';
 import {
   MODULE_ID_PATTERN,
@@ -12,9 +13,10 @@ import {
   checkModules,
   checkOverlaps,
   checkOwnership,
+  type ModulePlanRuleCode,
   type ReadModule,
-  type RuleCode,
 } from './plan-rules.js';
+import { checkServices } from './plan-services.js';
 import {
   parseCaretRange,
   parseSemanticVersion,
@@ -22,15 +24,12 @@ import {
   type SemanticVersion,
 } from './version.js';
 
-/** Built into the core release, or installed as a package signed by ProAnimaStudio. */
-export type ModuleSource = 'builtin' | 'signed';
-
 /** One module offered to the plan, with the operator's choice and its normalized settings. */
 export interface ModuleCandidate {
   /** Read with `parseModuleManifest`; untrusted until then. */
   readonly manifest: unknown;
   readonly source: ModuleSource;
-  /** Lowercase hex SHA-256 of the signed package; null for built-in modules. */
+  /** Lowercase hex SHA-256 of the installed package; null for built-in modules. */
   readonly packageSha256: string | null;
   readonly enabled: boolean;
   /** `describeConfig` of the parsed configuration. */
@@ -47,6 +46,8 @@ export interface ModuleHost {
   readonly reservedRoutePrefixes: readonly string[];
   /** Lowercase hex SHA-256 of UTF-8 text; the contract has no hashing of its own. */
   readonly sha256: (text: string) => string;
+  /** The services of `HOST_SERVICES` this core implements; a module may use only these. */
+  readonly services: readonly HostService[];
 }
 
 export interface PlannedModule {
@@ -73,7 +74,7 @@ export interface ModulePlan {
   readonly fingerprint: string;
 }
 
-export type ModulePlanProblemCode = 'invalid_manifest' | 'duplicate_id' | RuleCode;
+export type ModulePlanProblemCode = 'invalid_manifest' | 'duplicate_id' | ModulePlanRuleCode;
 
 export type ModulePlanProblem =
   | {
@@ -86,7 +87,7 @@ export type ModulePlanProblem =
   | {
       readonly code: Exclude<ModulePlanProblemCode, 'invalid_manifest'>;
       readonly module: string;
-      /** The capability, prefix or range concerned, when there is one. */
+      /** The capability, prefix, range, extension point or service concerned, when there is one. */
       readonly subject: string | null;
     };
 
@@ -176,6 +177,7 @@ export function planModules(
   const found = [
     ...checkModules(modules, hostApi),
     ...checkOwnership(modules),
+    ...checkServices(modules, host.services),
     ...checkOverlaps(modules, host.reservedRoutePrefixes),
   ];
   const order = startOrder(modules, found);

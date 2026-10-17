@@ -3,7 +3,11 @@ import { parseCaretRange, parseSemanticVersion } from './version.js';
 /** The only manifest format this version reads. */
 export const MODULE_MANIFEST_FORMAT = 1;
 
-/** Extension points a module may implement (ADR 0079, section 5). */
+/**
+ * Extension points this version of the contract knows (ADR 0079, section 5). A manifest may name
+ * another one, written for a later version: it is read, and the plan refuses it only when the
+ * module is enabled (`unknown_kind`, ADR 0083, section 2.2).
+ */
 export const MODULE_KINDS = [
   'protocol',
   'storage-backend',
@@ -30,10 +34,21 @@ export interface ModuleManifest {
   readonly version: string;
   /** Caret range of extension API versions the module works with, such as `^0.1.0`. */
   readonly extensionApi: string;
-  readonly kind: ModuleKind;
+  /** `[a-z][a-z0-9-]{1,31}`: one of `MODULE_KINDS`, or a point of a later contract version. */
+  readonly kind: string;
+  /**
+   * Who publishes the module, `[a-z][a-z0-9-]{1,31}`: `proanimastudio` for the core and its
+   * signed modules. The loader matches it with the signing key; the plan does not.
+   */
+  readonly publisher: string;
   /** A core module is part of the free core and is never disabled. */
   readonly core: boolean;
   readonly roles: readonly ModuleRole[];
+  /**
+   * Services of the core the module uses (`HOST_SERVICES`); `context.services` holds only these.
+   * Absent in a manifest means none.
+   */
+  readonly uses: readonly string[];
   /** Capabilities the module needs from other enabled modules. */
   readonly requires: readonly string[];
   /** Capabilities the module gives other modules; one provider per capability. */
@@ -67,8 +82,10 @@ const FIELDS = [
   'version',
   'extensionApi',
   'kind',
+  'publisher',
   'core',
   'roles',
+  'uses',
   'requires',
   'provides',
   'routePrefixes',
@@ -81,6 +98,8 @@ const FIELDS = [
  */
 export const MODULE_ID_PATTERN = /^(?=.{2,32}$)[a-z](?:-?[a-z0-9])+$/;
 const CAPABILITY = /^[a-z][a-z0-9-]{0,63}$/;
+/** Pattern of an extension point, a publisher and a service name. */
+const NAME = /^[a-z][a-z0-9-]{1,31}$/;
 const ROUTE_PREFIX = /^\/(?:[a-z0-9][a-z0-9._-]{0,63}\/){1,8}$/;
 const NAME_PREFIX = /^arkvory_[a-z][a-z0-9_]{0,38}_$/;
 
@@ -173,11 +192,13 @@ export function parseModuleManifest(input: unknown): ModuleManifest {
     id: text(row, 'id', (value) => MODULE_ID_PATTERN.test(value)),
     version: text(row, 'version', (value) => parseSemanticVersion(value) !== null),
     extensionApi: text(row, 'extensionApi', (value) => parseCaretRange(value) !== null),
-    kind: oneOf(present(row, 'kind'), MODULE_KINDS, '/kind'),
+    kind: text(row, 'kind', (value) => NAME.test(value)),
+    publisher: text(row, 'publisher', (value) => NAME.test(value)),
     core,
     roles: list(row, 'roles', { min: 1, max: MODULE_ROLES.length }, (value, path) =>
       oneOf(value, MODULE_ROLES, path),
     ),
+    uses: row['uses'] === undefined ? [] : list(row, 'uses', { min: 0, max: 32 }, matching(NAME)),
     requires: list(row, 'requires', { min: 0, max: 32 }, matching(CAPABILITY)),
     provides: list(row, 'provides', { min: 0, max: 32 }, matching(CAPABILITY)),
     routePrefixes: list(row, 'routePrefixes', { min: 0, max: 16 }, matching(ROUTE_PREFIX)),

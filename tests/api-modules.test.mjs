@@ -61,6 +61,7 @@ test('built-in modules take no settings yet and refuse any field by its path', (
     extensionApi: EXTENSION_API_VERSION,
     reservedRoutePrefixes: ['/api/v1/'],
     sha256: () => '0'.repeat(64),
+    services: [],
   };
   assert.throws(
     () => planOrThrow(prepared, host),
@@ -79,6 +80,7 @@ function recorder(log, id, behaviour = {}) {
       version: '1.0.0',
       extensionApi: `^${EXTENSION_API_VERSION}`,
       kind: 'event-sink',
+      publisher: 'proanimastudio',
       core: false,
       roles: behaviour.roles ?? ['api'],
       requires: behaviour.requires ?? [],
@@ -114,6 +116,7 @@ function planned(descriptors) {
     extensionApi: EXTENSION_API_VERSION,
     reservedRoutePrefixes: [],
     sha256: () => 'f'.repeat(64),
+    services: [],
   };
   return { plan: planOrThrow(prepared, host), prepared };
 }

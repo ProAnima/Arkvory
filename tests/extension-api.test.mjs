@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import {
   EXTENSION_API_VERSION,
+  HOST_SERVICES,
+  MODULE_SOURCES,
   ModuleManifestError,
   canonicalJson,
   parseCaretRange,
@@ -18,6 +20,7 @@ const manifest = (id, extra = {}) => ({
   version: '1.0.0',
   extensionApi: `^${EXTENSION_API_VERSION}`,
   kind: 'protocol',
+  publisher: 'proanimastudio',
   core: false,
   roles: ['api'],
   requires: [],
@@ -41,14 +44,15 @@ const host = {
   extensionApi: EXTENSION_API_VERSION,
   reservedRoutePrefixes: ['/api/v1/', '/health/', '/console/'],
   sha256: (text) => createHash('sha256').update(text).digest('hex'),
+  services: [],
 };
 const plan = (candidates, at = host) => {
   const result = planModules(candidates, at);
   assert.equal(result.ok, true, JSON.stringify(result.problems));
   return result.plan;
 };
-const problems = (candidates) => {
-  const result = planModules(candidates, host);
+const problems = (candidates, at = host) => {
+  const result = planModules(candidates, at);
   assert.equal(result.ok, false, 'the plan must be refused');
   return result.problems.map(({ code, module, subject }) => [code, module, subject]);
 };
@@ -60,7 +64,7 @@ const refused = (input, code, path) =>
   );
 
 test('a manifest is read from untrusted input field by field, naming the field, never the value', () => {
-  assert.deepEqual(parseModuleManifest(manifest('npm')), manifest('npm'));
+  assert.deepEqual(parseModuleManifest(manifest('npm')), { ...manifest('npm'), uses: [] });
   refused(null, 'type', '');
   refused([], 'type', '');
   refused({ ...manifest('npm'), entry: 'x.js' }, 'unknown_field', '/entry');
@@ -83,7 +87,19 @@ test('a manifest is read from untrusted input field by field, naming the field, 
   refused(manifest('npm', { version: '1.0' }), 'format', '/version');
   refused(manifest('npm', { extensionApi: '>=0.1.0' }), 'format', '/extensionApi');
   refused(manifest('npm', { extensionApi: '^0.1.0-beta' }), 'format', '/extensionApi');
-  refused(manifest('npm', { kind: 'plugin' }), 'format', '/kind');
+  refused(manifest('npm', { kind: 'Plugin' }), 'format', '/kind');
+  refused(manifest('npm', { kind: 'p' }), 'format', '/kind');
+  // A later contract may name an extension point this one does not know: still readable.
+  assert.equal(parseModuleManifest(manifest('npm', { kind: 'search' })).kind, 'search');
+  const { publisher: _publisher, ...anonymous } = manifest('npm');
+  refused(anonymous, 'required', '/publisher');
+  refused(manifest('npm', { publisher: 'ProAnima' }), 'format', '/publisher');
+  refused(manifest('npm', { publisher: 7 }), 'type', '/publisher');
+  const uses = ['routes', 'catalog-read'];
+  assert.deepEqual(parseModuleManifest(manifest('npm', { uses })).uses, uses);
+  refused(manifest('npm', { uses: 'routes' }), 'type', '/uses');
+  refused(manifest('npm', { uses: ['routes', 'routes'] }), 'duplicate', '/uses/1');
+  refused(manifest('npm', { uses: ['Routes'] }), 'format', '/uses/0');
   refused(manifest('npm', { roles: [] }), 'format', '/roles');
   refused(manifest('npm', { roles: ['api', 'api'] }), 'duplicate', '/roles/1');
   refused(manifest('npm', { roles: ['web'] }), 'format', '/roles/0');
@@ -141,7 +157,7 @@ test('versions follow semver and caret ranges as npm reads them', () => {
 
 test('a plan refuses unreadable manifests and duplicate ids before any other rule', () => {
   assert.deepEqual(
-    planModules([candidate('npm'), candidate('oci', { kind: 'plugin' })], host).problems,
+    planModules([candidate('npm'), candidate('oci', { kind: 'Plugin' })], host).problems,
     [{ code: 'invalid_manifest', module: null, subject: '/1/kind', reason: 'format' }],
   );
   assert.deepEqual(problems([candidate('npm'), candidate('npm', { core: true })]), [
@@ -151,12 +167,12 @@ test('a plan refuses unreadable manifests and duplicate ids before any other rul
 
 test('a manifest written for another extension API is incompatible, not malformed', () => {
   // A later contract may add fields and extension points this core cannot read.
-  const later = { ...manifest('next', { extensionApi: '^0.2.0', kind: 'search' }), dataClass: 'x' };
+  const later = { ...manifest('next', { extensionApi: '^0.3.0', kind: 'search' }), dataClass: 'x' };
   assert.deepEqual(problems([candidate('npm'), { ...candidate('next'), manifest: later }]), [
-    ['incompatible_api', 'next', '^0.2.0'],
+    ['incompatible_api', 'next', '^0.3.0'],
   ]);
   // Without a readable id or range there is nothing to name: the manifest is malformed.
-  const nameless = manifest('Next', { extensionApi: '^0.2.0' });
+  const nameless = manifest('Next', { extensionApi: '^0.3.0' });
   assert.deepEqual(planModules([{ ...candidate('next'), manifest: nameless }], host).problems, [
     { code: 'invalid_manifest', module: null, subject: '/0/id', reason: 'format' },
   ]);
@@ -176,8 +192,13 @@ test('core modules are built in and enabled; every module matches the extension 
   assert.deepEqual(problems([candidate('next', { extensionApi: '^1.0.0' })]), [
     ['incompatible_api', 'next', '^1.0.0'],
   ]);
-  assert.deepEqual(problems([candidate('newer', { extensionApi: '^0.2.0' })]), [
-    ['incompatible_api', 'newer', '^0.2.0'],
+  assert.deepEqual(problems([candidate('newer', { extensionApi: '^0.3.0' })]), [
+    ['incompatible_api', 'newer', '^0.3.0'],
+  ]);
+  // A manifest of the previous contract lacks fields this one requires: incompatible.
+  const { publisher: _publisher, ...previous } = manifest('old', { extensionApi: '^0.1.0' });
+  assert.deepEqual(problems([{ ...candidate('old'), manifest: previous }]), [
+    ['incompatible_api', 'old', '^0.1.0'],
   ]);
   // Even a disabled module must be readable by this core: its migrations and data stay known.
   assert.deepEqual(problems([candidate('old', { extensionApi: '^9.0.0' }, { enabled: false })]), [
@@ -375,4 +396,115 @@ test('canonical JSON sorts keys at every depth and refuses numbers JSON cannot c
   );
   assert.throws(() => canonicalJson({ a: Number.NaN }), RangeError);
   assert.throws(() => canonicalJson([Number.POSITIVE_INFINITY]), RangeError);
+});
+
+test('sources and host services are published as lists of known values', () => {
+  assert.deepEqual(MODULE_SOURCES, ['builtin', 'signed', 'operator', 'development']);
+  assert.deepEqual(HOST_SERVICES, [
+    'blob-store',
+    'staged-completion',
+    'catalog-read',
+    'content-read',
+    'change-feed',
+    'data-directory',
+    'routes',
+    'compute',
+    'license',
+  ]);
+});
+
+test('an unknown extension point stops only an enabled module', () => {
+  assert.deepEqual(problems([candidate('search', { kind: 'search' })]), [
+    ['unknown_kind', 'search', 'search'],
+  ]);
+  // A module of a later extension point stays in the plan, disabled, until a core knows it.
+  const result = plan([candidate('search', { kind: 'search' }, { enabled: false })]);
+  assert.deepEqual(result.startOrder, []);
+  assert.equal(result.modules[0].manifest.kind, 'search');
+});
+
+test('ids of operator and development plugins start with op-, every other id never does', () => {
+  const operator = { source: 'operator', packageSha256: 'b'.repeat(64) };
+  const development = { source: 'development', packageSha256: 'c'.repeat(64) };
+  plan([candidate('op-tool', {}, operator), candidate('op-probe', {}, development)]);
+  plan([candidate(`op-a${'b'.repeat(20)}`, {}, operator)]);
+  assert.deepEqual(
+    problems([
+      candidate('op-tool'),
+      candidate('op-signed', {}, signed),
+      candidate('tool', {}, operator),
+      candidate('probe', {}, development),
+      candidate(`op-a${'b'.repeat(21)}`, {}, operator),
+    ]),
+    [
+      ['id_namespace_mismatch', `op-a${'b'.repeat(21)}`, null],
+      ['id_namespace_mismatch', 'op-signed', null],
+      ['id_namespace_mismatch', 'op-tool', null],
+      ['id_namespace_mismatch', 'probe', null],
+      ['id_namespace_mismatch', 'tool', null],
+    ],
+  );
+  // Plugins keep the namespaces of external modules: `op-tool` names `arkvory_x_op_tool__`.
+  plan([
+    candidate(
+      'op-tool',
+      {
+        routePrefixes: ['/api/ext/op-tool/v1/'],
+        metricPrefix: 'arkvory_x_op_tool__',
+        tablePrefix: 'arkvory_x_op_tool__',
+      },
+      operator,
+    ),
+  ]);
+  const unpackaged = { source: 'operator', packageSha256: null };
+  assert.deepEqual(problems([candidate('op-tool', {}, unpackaged)]), [
+    ['invalid_package', 'op-tool', null],
+  ]);
+});
+
+test('table prefixes leave PostgreSQL room for every name of the table', () => {
+  const builtin = (length) => `arkvory_${'t'.repeat(length - 9)}_`;
+  plan([candidate('wide', { tablePrefix: builtin(36) })]);
+  assert.deepEqual(problems([candidate('wide', { tablePrefix: builtin(37) })]), [
+    ['table_prefix_too_long', 'wide', builtin(37)],
+  ]);
+  // arkvory_x_<id>__ fits 36 characters with an id of at most 24.
+  const id = (length) => `a${'b'.repeat(length - 1)}`;
+  const names = (moduleId) => ({ tablePrefix: `arkvory_x_${moduleId}__` });
+  plan([candidate(id(24), names(id(24)), signed)]);
+  assert.deepEqual(problems([candidate(id(25), names(id(25)), signed)]), [
+    ['table_prefix_too_long', id(25), `arkvory_x_${id(25)}__`],
+  ]);
+  // A module without tables may use the whole id length.
+  plan([candidate(id(32), {}, signed)]);
+});
+
+test('a module uses only services this host provides, in its processes and for its source', () => {
+  const every = { ...host, services: [...HOST_SERVICES] };
+  const operator = { source: 'operator', packageSha256: 'b'.repeat(64) };
+  plan([candidate('router', { roles: ['api', 'reader'], uses: ['routes'] })], every);
+  plan([candidate('feed', { roles: ['worker'], uses: ['change-feed', 'catalog-read'] })], every);
+  plan([candidate('op-reader', { uses: ['catalog-read', 'content-read'] }, operator)], every);
+  assert.deepEqual(
+    problems(
+      [
+        candidate('router', { roles: ['api', 'worker'], uses: ['routes'] }),
+        candidate('teleport', { uses: ['teleport'] }),
+        candidate('op-licensed', { uses: ['license', 'blob-store'] }, operator),
+      ],
+      every,
+    ),
+    [
+      ['service_unavailable', 'op-licensed', 'license'],
+      ['service_unavailable', 'op-licensed', 'blob-store'],
+      ['service_unavailable', 'router', 'routes'],
+      ['service_unavailable', 'teleport', 'teleport'],
+    ],
+  );
+  // A service of the contract this host does not implement yet is unavailable too.
+  assert.deepEqual(problems([candidate('router', { uses: ['routes'] })]), [
+    ['service_unavailable', 'router', 'routes'],
+  ]);
+  // A disabled module may use services of a later contract.
+  plan([candidate('later', { uses: ['teleport'] }, { enabled: false })]);
 });

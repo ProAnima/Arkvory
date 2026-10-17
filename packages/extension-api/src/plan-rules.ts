@@ -1,4 +1,5 @@
-import type { ModuleManifest } from './manifest.js';
+import type { ModuleSource } from './context.js';
+import { MODULE_KINDS, type ModuleManifest } from './manifest.js';
 import {
   parseCaretRange,
   parseSemanticVersion,
@@ -9,13 +10,18 @@ import {
 /** A module after its manifest was read; the input of the rules below. */
 export interface ReadModule {
   readonly manifest: ModuleManifest;
-  readonly source: 'builtin' | 'signed';
+  readonly source: ModuleSource;
   readonly packageSha256: string | null;
   readonly enabled: boolean;
 }
 
-export type RuleCode =
+/** Codes of the rules a plan applies to readable manifests; part of `ModulePlanProblemCode`. */
+export type ModulePlanRuleCode =
   | 'invalid_package'
+  | 'unknown_kind'
+  | 'id_namespace_mismatch'
+  | 'table_prefix_too_long'
+  | 'service_unavailable'
   | 'core_not_builtin'
   | 'core_disabled'
   | 'incompatible_api'
@@ -31,7 +37,7 @@ export type RuleCode =
   | 'requirement_cycle';
 
 export interface RuleProblem {
-  readonly code: RuleCode;
+  readonly code: ModulePlanRuleCode;
   readonly module: string;
   readonly subject: string | null;
 }
@@ -42,11 +48,41 @@ const EXTERNAL_ROUTES = '/api/ext/';
 /** Table and metric namespace of signed modules (ADR 0079, 5.6); built-in modules stay outside. */
 const EXTERNAL_NAMES = 'arkvory_x_';
 
-/** Package, core flag and extension API version of each module. */
+/**
+ * Ids of operator and development plugins (ADR 0082, section 4): `op-` and at most 21 more
+ * characters. ProAnimaStudio never publishes an `op-` id, so a plugin never meets a later module.
+ */
+const PLUGIN_ID = /^op-[a-z][a-z0-9-]{1,20}$/;
+const PLUGIN_SOURCES: readonly ModuleSource[] = ['operator', 'development'];
+/**
+ * PostgreSQL cuts identifiers longer than 63 bytes without an error, and a cut name could equal
+ * another module's. A table prefix of at most 36 characters leaves 27 for the table name and the
+ * suffixes of its indexes and constraints; an external prefix `arkvory_x_<id>__` fits only with
+ * an id of at most 24 characters (ADR 0083, section 2.5).
+ */
+const MAX_TABLE_PREFIX = 36;
+const MAX_TABLE_OWNER_ID = 24;
+
+/** Whether the id is in the namespace of the module's source. */
+function idFitsSource(m: ReadModule): boolean {
+  const plugin = PLUGIN_SOURCES.includes(m.source);
+  return plugin ? PLUGIN_ID.test(m.manifest.id) : !m.manifest.id.startsWith('op-');
+}
+
+/** A known extension point is required of enabled modules only (ADR 0083, section 2.2). */
+function knownKind(m: ReadModule): boolean {
+  return !m.enabled || MODULE_KINDS.some((kind) => kind === m.manifest.kind);
+}
+
+/**
+ * Package, core flag, extension point, id namespace, table prefix budget and extension API
+ * version of each module.
+ */
 export function checkModules(modules: readonly ReadModule[], host: SemanticVersion): RuleProblem[] {
   const problems: RuleProblem[] = [];
   for (const m of modules) {
     const id = m.manifest.id;
+    const tables = m.manifest.tablePrefix;
     const sha = m.packageSha256;
     if (m.source === 'builtin' ? sha !== null : sha === null || !SHA256.test(sha))
       problems.push({ code: 'invalid_package', module: id, subject: null });
@@ -54,6 +90,12 @@ export function checkModules(modules: readonly ReadModule[], host: SemanticVersi
       problems.push({ code: 'core_not_builtin', module: id, subject: null });
     if (m.manifest.core && !m.enabled)
       problems.push({ code: 'core_disabled', module: id, subject: null });
+    if (!knownKind(m))
+      problems.push({ code: 'unknown_kind', module: id, subject: m.manifest.kind });
+    if (!idFitsSource(m))
+      problems.push({ code: 'id_namespace_mismatch', module: id, subject: null });
+    if (tables !== null && (tables.length > MAX_TABLE_PREFIX || id.length > MAX_TABLE_OWNER_ID))
+      problems.push({ code: 'table_prefix_too_long', module: id, subject: tables });
     const range = parseCaretRange(m.manifest.extensionApi);
     if (range === null || !satisfiesCaret(range, host))
       problems.push({ code: 'incompatible_api', module: id, subject: m.manifest.extensionApi });
@@ -94,7 +136,7 @@ const overlap = (a: string, b: string) => a.startsWith(b) || b.startsWith(a);
 
 /** Each claim against every earlier one; the later module in id order is reported. */
 function overlaps(
-  code: RuleCode,
+  code: ModulePlanRuleCode,
   claims: readonly { readonly module: string | null; readonly prefix: string }[],
 ): RuleProblem[] {
   const problems: RuleProblem[] = [];
