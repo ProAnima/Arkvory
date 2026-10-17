@@ -4,7 +4,7 @@
 
 Модульная архитектура с направлением зависимостей внутрь: предметные правила → сценарии и порты → внешние адаптеры → точки сборки. Наличие TypeScript-интерфейса само по себе не делает код чистым: домен должен оставаться независимым от инфраструктуры и её форматов.
 
-Базовый стек: TypeScript strict, Node.js 24 LTS, npm workspaces. Для HTTP используется Fastify, для каталога и устойчивых completion jobs — PostgreSQL. Консоль написана на TypeScript и обращается через SDK; файловые шлюзы Nginx и конкретный HA blob-store ещё не реализованы.
+Базовый стек: TypeScript strict, Node.js 24 LTS, npm workspaces. Для HTTP используется Fastify, для каталога и устойчивых completion jobs — PostgreSQL. Консоль написана на TypeScript и обращается через SDK. Содержимое хранит `LocalBlobStore` на локальной файловой системе; отдельного HA blob-store, S3-backend и файловых шлюзов Nginx нет: HA одной площадки реплицирует весь том установки средствами DRBD ([ADR 0072](adr/0072-single-site-ha.md)), раздачу масштабируют шлюзы чтения того же API ([ADR 0009](adr/0009-leased-read-gateways.md)).
 
 ## Направление зависимостей
 
@@ -39,7 +39,7 @@
 
 PostgreSQL хранит каталог, права, ревизии, состояния загрузок/задач, outbox. Blob-store хранит исходные байты; API не читает файлы целиком в память. Шлюз раздаёт разрешённый неизменяемый blob. Внешние приложения не являются промежуточными узлами передачи или обязательными серверами авторизации.
 
-LocalBlobStore — профиль одного сервера. HA использует проверенное отказоустойчивое хранилище с документированными гарантиями и доступные копии БД/входного адреса. Выбор схемы и провайдера оформляется ADR до обещаний о доступности.
+LocalBlobStore — профиль одного сервера; на Windows он не синхронизирует записи каталога (fsync каталога недоступен, [ADR 0004](adr/0004-native-standalone-core.md)). HA ([ADR 0072](adr/0072-single-site-ha.md)) не вводит другого backend: PostgreSQL, LocalBlobStore и конфигурация лежат на одном томе DRBD, активный узел выбирает Pacemaker с обязательным fencing, а приложение лишь проверяет число копий перед подтверждением записи. Новая схема хранения или провайдер оформляется ADR до обещаний о доступности. Границы профилей: [RELIABILITY](RELIABILITY.md#profiles).
 
 ## Правила изменений
 
@@ -59,7 +59,7 @@ LocalBlobStore — профиль одного сервера. HA использ
 
 В infrastructure добавлен BandwidthGovernor — локальный исполнитель upload/download бюджета и квоты принципала. API подключает его к HTTP-потокам; application/storage и worker не зависят от HTTP pacing. AdmissionQueue ограничивает также активные операции принципала. Контракт и граница одного процесса: [ADR 0008](adr/0008-gateway-bandwidth-budgets.md).
 
-Реализованы domain/application, нативный HTTP API, PostgreSQL с миграциями, LocalBlobStore, multipart/resume, каталог и история assets, SDK, консоль, completion worker и скачивание по ID артефакта, идентичности UPack и пути файла. Один API владеет standalone-БД. Распределённый scheduler и HA остаются будущими ролями. Рабочие контракты и ограничения: [CORE_RUNBOOK](CORE_RUNBOOK.md), [LIFECYCLE_AND_CATALOG](LIFECYCLE_AND_CATALOG.md), [ADR 0006](adr/0006-asset-history-and-restore.md).
+Реализованы domain/application, нативный HTTP API, PostgreSQL с миграциями, LocalBlobStore, multipart/resume, каталог и история assets, SDK, консоль, completion worker и скачивание по ID артефакта, идентичности UPack и пути файла. Один API-процесс записи владеет БД. `apps/scheduler` остаётся каркасом без сценариев: распределённого scheduler нет; HA одной площадки и зеркала описаны ниже. Рабочие контракты и ограничения: [CORE_RUNBOOK](CORE_RUNBOOK.md), [LIFECYCLE_AND_CATALOG](LIFECYCLE_AND_CATALOG.md), [ADR 0006](adr/0006-asset-history-and-restore.md).
 
 Учётные записи, группы и сессии добавлены в тех же слоях: domain проверяет идентификаторы и точные repository grants, application определяет сценарий/порт, infrastructure реализует PostgreSQL и хеширование. API проверяет сессию и собирает principal при каждом запросе; UI использует SDK. Порядок и группировка списка UPack задаются чистой функцией application. [ADR 0011](adr/0011-users-groups-and-package-browser.md).
 
@@ -102,6 +102,14 @@ SDK использует композицию: публичный ArkvoryClient 
 
 Объектные locks uploads/GC и динамические content pins используют тот же инфраструктурный монитор SQL-сессии. PostgresJobLease отдельно связывает heartbeat/finish reservation с конечным локальным окном; worker отслеживает потери и ограничивает shutdown. [ADR 0043](adr/0043-operation-session-protection.md).
 
-Проект независимой репликации отделяет переносимое mirror с авторитетным primary от синхронного HA с внешним fencing. Ordered outbox, durable pins/receipts, bounded transfer, новый worker и отдельная gateway composition добавляются только вместе с первым рабочим сценарием. Пока это проект, без новых runtime ролей или HTTP маршрутов: [ADR 0044](adr/0044-replication-profiles-and-control.md), [протокол](REPLICATION.md), [API](REPLICATION_API.md), [UI](REPLICATION_UX.md).
+Ранний проект репликации ([ADR 0044](adr/0044-replication-profiles-and-control.md), [REPLICATION](REPLICATION.md), [API](REPLICATION_API.md), [UI](REPLICATION_UX.md)) не реализован в этом виде и сохранён как история; действующие решения ниже.
+
+Зеркала и импорт по стадиям ([ADR 0058](adr/0058-pull-mirrors.md)): у зеркала свой каталог, ключи и права; worker забирает ленту изменений (`R/changes`, журнал `arkvory_audit`) и содержимое через публичный API источника. Application владеет `mirror-sync`, `mirror-import`, `mirror-conflicts` и портами источника и состояния; адаптеры источника и цели — в `apps/worker`, состояние и отложенные конфликты — PostgreSQL в infrastructure. Запись в зеркальный репозиторий отклоняется сценариями (`mirror_read_only`).
+
+HA одной площадки ([ADR 0072](adr/0072-single-site-ha.md)): переключение и fencing — Pacemaker/DRBD вне приложения. Служба `arkvory-replica` (`apps/deploy`, root) читает состояние ядра DRBD; API читает его через порт application `ReplicaState` и адаптер `SocketReplicaState` и в `replica-guard` отказывает в подтверждении записи (503 `replication_degraded`), пока копий меньше требуемого. Команды `arkvory cluster-*` принадлежат `apps/deploy`.
+
+Очередь скачиваний ([ADR 0076](adr/0076-download-scheduling.md)): правила сессий и очереди — domain `DownloadSessions`, исполнитель `DownloadScheduler` и подписанные талоны — infrastructure, допуск на HTTP-потоке — `apps/api`. Очередь живёт в памяти процесса записи; у шлюзов чтения своя очередь на процесс, общей очереди в PostgreSQL нет.
+
+Единая консоль площадок ([ADR 0077](adr/0077-fleet-console.md), этапы F1–F4): реестр площадок, сопряжение и опрос — application `fleet-control` и PostgreSQL-адаптеры; управляющая площадка ходит к другим по закреплённому сертификату с ключом `fleet-key`, который ограничен белым списком маршрутов. Изменения на площадке исполняет её собственный API или агент площадки (`apps/deploy`).
 
 Наблюдаемость остаётся в infrastructure без внешних зависимостей: `DiagnosticLogger` (JSON-строки, уровни, поля процесса, неблокирующий учёт потерь) и `MetricsRegistry` (Prometheus text). Composition roots создают один логгер на процесс, ставят crash-only обработчики и регистрируют `/health/metrics`. Correlation ID передаётся явно копией `Principal` на запрос и сохраняется адаптерами задач и аудита; domain/application его не интерпретируют, глобального контекста нет: [ADR 0052](adr/0052-structured-observability.md).
