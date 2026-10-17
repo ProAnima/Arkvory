@@ -36,6 +36,7 @@ description: 在主机上安装、检查和移除已签名的模块包，并保�
 | 归档包含原生插件（`.node`）                            | `native_addon`                                                 |
 | 模块需要另一个版本的 Arkvory                           | `module_incompatible`                                          |
 | ProAnimaStudio 已撤销此版本                            | `module_revoked`，并给出替代版本                               |
+| 没有有效的撤销列表（见下文）                           | `stale_revocations`                                            |
 
 限制：每个包 1 GiB，每个文件 256 MiB，最多 4096 个文件。更大的包会在读取其数据之前被拒绝。
 
@@ -84,6 +85,10 @@ ProAnimaStudio 发布已撤销模块版本的签名列表。每个列表都有�
 ```bash
 sudo arkvory module revocations /root/module-revocations.json --root /opt/proanima-arkvory
 ```
+
+每个列表都带有签名的到期时间：默认 90 天，最长 180 天。`module install` 和 `module pin <id> <version>` 需要有效的列表；列表已过期或没有列表时，会以 `stale_revocations` 拒绝。携带有效列表的软件包也算数。若仍要继续，请添加 `--allow-stale-revocations`：Arkvory 会显示警告，并把该决定记录到 `modules/audit.jsonl`。过期的列表从不停止已安装的模块：它们继续运行，数据仍可读取；只有撤销条目才会停止某个版本。编号更大的列表总会替换已存储的列表，即使它已经过期。
+
+当 ProAnimaStudio 更换模块签名密钥时，会有一个版本同时携带两把密钥，下一个列表用新密钥签名；只有之后的版本才移除旧密钥。只要主机仍存储着用旧密钥签名的列表，升级到该版本就会被拒绝：请先存储有效的列表。`sudo arkvory module check-revocations --root …` 会显示此版本是否信任已存储列表的密钥。
 
 ## 信任插件作者 {#trust}
 

@@ -36,6 +36,7 @@ Arkvory refuse un paquet quand :
 | L'archive contient un module natif (`.node`)                                                                              | `native_addon`                                                 |
 | Le module a besoin d'une autre version d'Arkvory                                                                          | `module_incompatible`                                          |
 | ProAnimaStudio a révoqué cette version                                                                                    | `module_revoked`, avec la version de remplacement              |
+| Aucune liste de révocation à jour (voir plus bas)                                                                         | `stale_revocations`                                            |
 
 Limites : 1 Gio par paquet, 256 Mio par fichier, 4096 fichiers. Un paquet plus grand est refusé avant la lecture de ses données.
 
@@ -84,6 +85,10 @@ ProAnimaStudio publie une liste signée des versions de modules révoquées. Cha
 ```bash
 sudo arkvory module revocations /root/module-revocations.json --root /opt/proanima-arkvory
 ```
+
+Chaque liste est signée avec une date d'expiration : 90 jours par défaut, jamais plus de 180. `module install` et `module pin <id> <version>` exigent une liste à jour ; avec une liste expirée ou sans liste, ils refusent avec `stale_revocations`. Un paquet qui porte une liste à jour compte. Pour continuer malgré tout, ajoutez `--allow-stale-revocations` : Arkvory affiche un avertissement et enregistre la décision dans `modules/audit.jsonl`. Une liste expirée n'arrête jamais les modules installés : ils continuent de fonctionner et leurs données restent lisibles ; seule une entrée de révocation arrête une version. Une liste de numéro supérieur remplace toujours la liste stockée, même si elle a expiré.
+
+Lorsque ProAnimaStudio remplace sa clé de signature des modules, une version porte les deux clés et la liste suivante est signée avec la nouvelle clé ; seule une version ultérieure retire l'ancienne clé. La mise à jour vers cette version est refusée tant que l'hôte stocke une liste signée avec l'ancienne clé : stockez d'abord une liste à jour. `sudo arkvory module check-revocations --root …` indique si cette version fait confiance à la clé de la liste stockée.
 
 ## Faire confiance à un auteur de plugins {#trust}
 

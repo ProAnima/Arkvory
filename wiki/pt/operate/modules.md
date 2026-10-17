@@ -36,6 +36,7 @@ O Arkvory recusa um pacote quando:
 | O arquivo compactado contém um complemento nativo (`.node`)                                                    | `native_addon`                                                 |
 | O módulo precisa de outra versão do Arkvory                                                                    | `module_incompatible`                                          |
 | A ProAnimaStudio revogou esta versão                                                                           | `module_revoked`, com a versão substituta                      |
+| Não há lista de revogação vigente (veja abaixo)                                                                | `stale_revocations`                                            |
 
 Limites: 1 GiB por pacote, 256 MiB por arquivo, 4096 arquivos. Um pacote maior é recusado antes de seus dados serem lidos.
 
@@ -84,6 +85,10 @@ A ProAnimaStudio publica uma lista assinada de versões de módulos revogadas. C
 ```bash
 sudo arkvory module revocations /root/module-revocations.json --root /opt/proanima-arkvory
 ```
+
+Cada lista é assinada com uma data de expiração: 90 dias por padrão, nunca mais de 180. `module install` e `module pin <id> <version>` precisam de uma lista vigente; com uma lista expirada ou sem lista, recusam com `stale_revocations`. Um pacote que traz uma lista vigente conta. Para continuar mesmo assim, adicione `--allow-stale-revocations`: o Arkvory mostra um aviso e registra a decisão em `modules/audit.jsonl`. Uma lista expirada nunca para os módulos instalados: eles continuam funcionando e seus dados continuam legíveis; só uma entrada de revogação para uma versão. Uma lista com número maior sempre substitui a armazenada, mesmo que tenha expirado.
+
+Quando a ProAnimaStudio substitui sua chave de assinatura de módulos, uma versão traz as duas chaves e a lista seguinte é assinada com a chave nova; só uma versão posterior remove a chave antiga. A atualização para essa versão é recusada enquanto o host ainda armazenar uma lista assinada com a chave antiga: armazene antes uma lista vigente. `sudo arkvory module check-revocations --root …` mostra se esta versão confia na chave da lista armazenada.
 
 ## Confiar em um autor de plugins {#trust}
 

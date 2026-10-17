@@ -36,6 +36,7 @@ Arkvory refuses a package when:
 | The archive holds a native addon (`.node`)                                               | `native_addon`                                                 |
 | The module needs another version of Arkvory                                              | `module_incompatible`                                          |
 | ProAnimaStudio revoked this version                                                      | `module_revoked`, with the replacement version                 |
+| No current revocation list (see below)                                                   | `stale_revocations`                                            |
 
 Limits: 1 GiB per package, 256 MiB per file, 4096 files. A larger package is refused before its data is read.
 
@@ -84,6 +85,10 @@ ProAnimaStudio publishes a signed list of revoked module versions. Each list has
 ```bash
 sudo arkvory module revocations /root/module-revocations.json --root /opt/proanima-arkvory
 ```
+
+Each list is signed with an expiry: 90 days by default, never more than 180. `module install` and `module pin <id> <version>` need a current list; with an expired list or none they refuse with `stale_revocations`. A package that carries a current list counts. To go on anyway, add `--allow-stale-revocations`: Arkvory prints a warning and records the decision in `modules/audit.jsonl`. An expired list never stops installed modules: they keep running and their data stays readable; only a revocation entry stops a version. A list with a higher number always replaces the stored one, even when it has expired.
+
+When ProAnimaStudio replaces its module signing key, one release carries both keys and the next list is signed with the new key; only a later release drops the old key. An update to that release is refused while the host still stores a list signed with the old key: store a current list first. `sudo arkvory module check-revocations --root …` shows whether this release trusts the key of the stored list.
 
 ## Trust a plugin author {#trust}
 

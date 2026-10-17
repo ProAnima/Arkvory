@@ -36,6 +36,7 @@ Arkvory lehnt ein Paket ab, wenn:
 | Das Archiv enthält ein natives Add-on (`.node`)                                                                                      | `native_addon`                                                 |
 | Das Modul braucht eine andere Version von Arkvory                                                                                    | `module_incompatible`                                          |
 | ProAnimaStudio hat diese Version widerrufen                                                                                          | `module_revoked`, mit der Ersatzversion                        |
+| Keine aktuelle Widerrufsliste (siehe unten)                                                                                          | `stale_revocations`                                            |
 
 Grenzen: 1 GiB pro Paket, 256 MiB pro Datei, 4096 Dateien. Ein größeres Paket wird abgelehnt, bevor seine Daten gelesen werden.
 
@@ -84,6 +85,10 @@ ProAnimaStudio veröffentlicht eine signierte Liste widerrufener Modulversionen.
 ```bash
 sudo arkvory module revocations /root/module-revocations.json --root /opt/proanima-arkvory
 ```
+
+Jede Liste ist mit einem Ablaufdatum signiert: standardmäßig 90 Tage, nie mehr als 180. `module install` und `module pin <id> <version>` brauchen eine aktuelle Liste; mit einer abgelaufenen oder ohne Liste lehnen sie mit `stale_revocations` ab. Ein Paket mit einer aktuellen Liste zählt. Um trotzdem fortzufahren, fügen Sie `--allow-stale-revocations` hinzu: Arkvory gibt eine Warnung aus und hält die Entscheidung in `modules/audit.jsonl` fest. Eine abgelaufene Liste hält installierte Module nie an: Sie laufen weiter, und ihre Daten bleiben lesbar; nur ein Widerrufseintrag stoppt eine Version. Eine Liste mit höherer Nummer ersetzt die gespeicherte immer, auch wenn sie abgelaufen ist.
+
+Wenn ProAnimaStudio seinen Modul-Signaturschlüssel ersetzt, enthält ein Release beide Schlüssel, und die nächste Liste wird mit dem neuen Schlüssel signiert; erst ein späteres Release entfernt den alten Schlüssel. Ein Update auf dieses Release wird abgelehnt, solange der Host noch eine mit dem alten Schlüssel signierte Liste speichert: Speichern Sie zuerst eine aktuelle Liste. `sudo arkvory module check-revocations --root …` zeigt, ob dieses Release dem Schlüssel der gespeicherten Liste vertraut.
 
 ## Einem Plugin-Autor vertrauen {#trust}
 

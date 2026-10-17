@@ -36,6 +36,7 @@ Arkvory는 다음 경우 패키지를 거부합니다.
 | 아카이브에 네이티브 애드온(`.node`)이 있음                             | `native_addon`                                                 |
 | 모듈에 다른 버전의 Arkvory가 필요함                                    | `module_incompatible`                                          |
 | ProAnimaStudio가 이 버전을 폐기함                                      | `module_revoked`, 대체 버전과 함께                             |
+| 현재 유효한 폐기 목록이 없음(아래 참조)                                | `stale_revocations`                                            |
 
 제한: 패키지당 1 GiB, 파일당 256 MiB, 파일 4096개. 더 큰 패키지는 데이터를 읽기 전에 거부됩니다.
 
@@ -84,6 +85,10 @@ ProAnimaStudio는 폐기된 모듈 버전의 서명된 목록을 게시합니다
 ```bash
 sudo arkvory module revocations /root/module-revocations.json --root /opt/proanima-arkvory
 ```
+
+각 목록은 만료 시각과 함께 서명됩니다. 기본 90일이며 180일을 넘지 않습니다. `module install`과 `module pin <id> <version>`에는 현재 유효한 목록이 필요하며, 만료된 목록이거나 목록이 없으면 `stale_revocations`로 거부됩니다. 현재 유효한 목록을 담은 패키지도 인정됩니다. 그래도 진행하려면 `--allow-stale-revocations`를 추가하십시오. Arkvory는 경고를 출력하고 결정을 `modules/audit.jsonl`에 기록합니다. 만료된 목록은 설치된 모듈을 멈추지 않습니다. 모듈은 계속 실행되고 데이터도 읽을 수 있으며, 버전을 멈추는 것은 폐기 항목뿐입니다. 번호가 더 큰 목록은 만료되었더라도 항상 저장된 목록을 대체합니다.
+
+ProAnimaStudio가 모듈 서명 키를 교체할 때는 한 릴리스가 두 키를 모두 포함하고 다음 목록은 새 키로 서명됩니다. 이전 키는 그 이후 릴리스에서만 제거됩니다. 호스트가 이전 키로 서명된 목록을 아직 저장하고 있으면 그 릴리스로의 업데이트는 거부됩니다. 먼저 현재 유효한 목록을 저장하십시오. `sudo arkvory module check-revocations --root …`는 이 릴리스가 저장된 목록의 키를 신뢰하는지 보여 줍니다.
 
 ## 플러그인 작성자 신뢰 {#trust}
 
