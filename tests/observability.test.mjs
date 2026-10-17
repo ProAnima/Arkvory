@@ -311,3 +311,27 @@ test('graceful stop logs drain start, settle or timeout, expedite and stop with 
   assert.deepEqual(closed, ['quick', 'slow']);
   assert.deepEqual(exits, []);
 });
+
+test('a stopped process exits even when a handle left by module code keeps it alive', async () => {
+  const records = [];
+  const diagnostics = { write: (r) => records.push(r), flush: async () => undefined };
+  const exits = [];
+  const stop = createShutdown({
+    app: { close: async () => undefined },
+    drain: new RequestDrain(),
+    drainTimeoutMs: 0,
+    closeBudgetMs: 60000,
+    diagnostics,
+    now: () => 0,
+    exit: (code) => exits.push(code),
+    lingerMs: 20,
+  });
+  stop({ signal: 'SIGTERM' });
+  // This test's own timer plays the handle a module forgot: the loop stays alive past the stop.
+  await new Promise((resolve) => setTimeout(resolve, 200));
+  assert.deepEqual(
+    records.map((r) => r.code),
+    ['drain.started', 'drain.settled', 'api.stopped', 'process.handles_left'],
+  );
+  assert.deepEqual(exits, [0]);
+});

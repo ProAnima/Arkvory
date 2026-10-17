@@ -66,3 +66,11 @@ export {
   type InspectedPackage,
 } from './package-archive.js';
 export { verifyInstalledModule } from './package-installed.js';
+export {
+  MODULE_SET_FILE,
+  parseModuleSet,
+  parseRetained,
+  type InstalledModule,
+  type ModuleSet,
+  type RetainedPackage,
+} from './module-set.js';

@@ -13,12 +13,19 @@ import type {
   ModulePlan,
   ModulePlanProblem,
 } from '@proanima/arkvory-extension-api';
-import { builtinModules, builtinVersion, CORE_ROUTE_PREFIXES } from './builtin-modules.js';
-import type { ModuleSelection, ModuleSelections } from './module-selection.js';
+import type { DataClass } from '@proanima/arkvory-signing';
+import { CORE_ROUTE_PREFIXES } from './builtin-modules.js';
+import type { ModuleSelection } from './module-selection.js';
 
 /** A descriptor with its configuration parsed: what the plan reads and what `create` builds. */
 export interface PreparedModule<Context> {
   readonly candidate: ModuleCandidate;
+  /** What a signed package stores (ADR 0078, I1); null for built-in modules. */
+  readonly dataClass: DataClass | null;
+  /**
+   * Builds the instance. For a signed module whose code could not be loaded in this process it
+   * throws `ModuleLoadError`; the host then reports the module failed instead of running it.
+   */
   create(context: Context): ModuleLifecycle;
 }
 
@@ -38,6 +45,7 @@ export function prepareModule<Context, Config>(
       enabled: selection.enabled,
       config: descriptor.describeConfig(config),
     },
+    dataClass: null,
     create: (context) => descriptor.create(context, config),
   };
 }
@@ -70,10 +78,10 @@ export function planOrThrow<Context>(
  */
 export const PROVIDED_HOST_SERVICES: readonly HostService[] = [];
 
-const sha256 = (text: string) => createHash('sha256').update(text, 'utf8').digest('hex');
+export const sha256 = (text: string) => createHash('sha256').update(text, 'utf8').digest('hex');
 
 /** The settings of a module as `ARKVORY_MODULES_FILE` gives them, by their path in the file. */
-function prepareSelected<Context, Config>(
+export function prepareSelected<Context, Config>(
   descriptor: ModuleDescriptor<Context, Config>,
   selection: ModuleSelection | undefined,
 ): PreparedModule<Context> {
@@ -87,30 +95,13 @@ function prepareSelected<Context, Config>(
   }
 }
 
-/**
- * The plan of the built-in modules with the operator's choices. Pure apart from hashing: every
- * process of an installation that reads the same file plans the same modules and computes the
- * same fingerprint. A choice for a module this release does not have stops the start.
- */
-export function planBuiltinModules(coreVersion: string, selections: ModuleSelections) {
-  const descriptors = builtinModules(builtinVersion(coreVersion));
-  const unknown = [...selections.keys()].filter(
-    (id) => !descriptors.some((descriptor) => descriptor.manifest.id === id),
-  );
-  if (unknown.length > 0)
-    throw new Error(`Invalid ARKVORY_MODULES_FILE: unknown module ${unknown.sort().join(', ')}`);
-  const prepared = new Map(
-    descriptors.map((descriptor) => [
-      descriptor.manifest.id,
-      prepareSelected(descriptor, selections.get(descriptor.manifest.id)),
-    ]),
-  );
-  const plan = planOrThrow(prepared, {
+/** What every process of this release tells the plan about itself. */
+export function moduleHost(coreVersion: string): ModuleHost {
+  return {
     coreVersion,
     extensionApi: EXTENSION_API_VERSION,
     reservedRoutePrefixes: CORE_ROUTE_PREFIXES,
     sha256,
     services: PROVIDED_HOST_SERVICES,
-  });
-  return { plan, prepared };
+  };
 }

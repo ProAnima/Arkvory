@@ -43,8 +43,9 @@ export async function installation(root: string): Promise<Installation> {
  * A change of the module set is a record of the update journal (ADR 0059, ADR 0078 section 4)
  * with the release unchanged and `modules.before/after`, and `modules.retained`, what the set
  * before kept, so that `recover` keeps it too. The set file is replaced atomically, so `recover`
- * after an interruption only has to put the previous set back. No service is restarted: no
- * process loads external modules before stage X4 of ADR 0079.
+ * after an interruption only has to put the previous set back. No service is restarted: the
+ * services read the set at their next start (ADR 0079, X4), where a new module stays disabled
+ * until ARKVORY_MODULES_FILE enables it; restart and rollback by readiness come with stage O2.
  */
 async function changeSet(
   root: string,
@@ -274,7 +275,7 @@ export async function installModule(
       stale !== null,
     );
     context.print(
-      `Installed module ${id} ${version}; services load external modules from a later release (ADR 0079, X4)`,
+      `Installed module ${id} ${version}; it loads at the next start of the services once ARKVORY_MODULES_FILE enables it`,
     );
   } finally {
     await rm(staged, { force: true });

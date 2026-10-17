@@ -1,13 +1,13 @@
 ---
 title: Module
-description: Signierte Modulpakete auf einem Host installieren, prüfen und entfernen und die Schlüssel von Plugin-Autoren verwalten, denen Sie vertrauen.
+description: Signierte Modulpakete auf einem Host installieren, einschalten, prüfen und entfernen und die Schlüssel von Plugin-Autoren verwalten, denen Sie vertrauen.
 ---
 
 # Module
 
 Ein Modulpaket fügt Arkvory eine Funktion hinzu. Arkvory installiert nur Pakete, deren Signatur es prüfen kann. Die Befehle dieser Seite laufen auf dem Host der Installation, unter Linux als root, unter Windows als Administrator. Konsole und HTTP-API können weder Module installieren noch Schlüsseln vertrauen. Ein gestohlenes Administratorkonto der Konsole kann daher keinen Code auf dem Server ausführen.
 
-Diese Version speichert und prüft Modulpakete. Die Dienste führen noch keinen Modulcode aus: Eine spätere Version lädt die installierten Module.
+Die Dienste prüfen die installierten Module bei jedem Start erneut und laden sie. Ein Modul läuft erst, nachdem Sie es eingeschaltet haben.
 
 ## Ein Paket installieren {#install}
 
@@ -42,6 +42,39 @@ Grenzen: 1 GiB pro Paket, 256 MiB pro Datei, 4096 Dateien. Ein größeres Paket 
 
 Eine Version, die mit denselben Bytes bereits installiert ist, bleibt unverändert. Dieselbe Version mit anderen Bytes wird abgelehnt.
 
+## Ein Modul einschalten und laden {#load}
+
+Ein installiertes Modul bleibt abgeschaltet, bis Sie es einschalten. Die Dienste laden Module nur beim Start.
+
+1. Tragen Sie das Modul in die Moduldatei ein (`ARKVORY_MODULES_FILE`, siehe [Umgebungsvariablen](../reference/environment#core)). Die Einstellungen des Moduls stehen in `config`:
+
+   ```json
+   { "format": 1, "modules": { "sample": { "enabled": true } } }
+   ```
+
+2. Starten Sie die Dienste neu, wie unter [Eine Änderung anwenden](../install/configuration#apply-change).
+3. Prüfen Sie das Modul als globaler Administrator: `GET /api/v1/system/modules` zeigt es auf der API und auf jedem Lese-Gateway mit `running: true` und `health.status` `ok`.
+
+Die API und die Lese-Gateways führen Module aus. Der Worker prüft dieselben Module und führt keines aus. Diese Version lehnt Module ab, die im Worker oder im Backup-Agenten laufen (`role_unsupported`), und Module mit eigenen Routen (`routes_unsupported`). Docker-Compose-Installationen laden noch keine Module.
+
+Bevor ein Dienst irgendeinen Code eines Moduls importiert, prüft er das Paket erneut:
+
+1. Nur root (unter Windows: SYSTEM und Administrators) oder der Eigentümer des Installationsverzeichnisses darf das Installationsverzeichnis, `modules/`, den Modulsatz, die Widerrufsliste und ihr Verzeichnis ändern. Die Installation richtet das so ein. Eine Datei, die ein anderes Konto ändern darf, und ein Link in einem Paket werden abgelehnt (`access_unsafe`, `access_link`).
+2. Die Signatur, jede Datei und die Version von Arkvory, so wie `module install` sie prüft.
+3. Die Widerrufsliste. Eine widerrufene Version wird nie geladen. Eine abgelaufene oder fehlende Liste hält kein Modul an.
+
+Ein Modul, das eine Prüfung nicht besteht, wird nicht geladen; die anderen Module und Arkvory laufen weiter. `GET /api/v1/system/modules` zeigt es mit `running: false`:
+
+| `health.status` | Bedeutung                                                                    | Codes                                                                                                                |
+| --------------- | ---------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `failed`        | Das Paket wurde abgelehnt, oder sein Code ließ sich nicht laden oder starten | `file_mismatch`, `unknown_key`, `module_incompatible`, `access_unsafe`, `config_invalid`, `start_failed` und weitere |
+| `revoked`       | ProAnimaStudio hat diese Version widerrufen                                  | der Grund aus der Widerrufsliste                                                                                     |
+| `unavailable`   | Das Paketverzeichnis fehlt auf dem Host                                      | `module_unavailable`                                                                                                 |
+
+Ein ausgefallenes Modul nimmt Arkvory nur dann die Bereitschaft (`/health/ready` antwortet 503 mit `module_failed`), wenn ein anderes eingeschaltetes Modul es braucht. Ein Modul, das die Bytes veröffentlichter Dateien speichert (Daten `layout`), tut das nie: Arkvory liefert seine Daten weiter aus und schreibt neue Uploads in den eigenen Speicher statt in den des Moduls. Das Protokoll verzeichnet `module.refused` und `module.failed` mit dem Code in `errorCode`.
+
+Um ein geändertes oder fehlendes Paket zu reparieren, installieren Sie es erneut. Alle Dienste der Installation müssen dieselben Module sehen, eingeschaltet oder nicht: Ein Lese-Gateway oder Worker mit anderen Modulen ist nicht bereit (`module_plan_mismatch`). Installieren Sie dieselben Pakete auf dem Host jedes Lese-Gateways.
+
 ## Aktualisieren, festhalten, zurückstufen {#versions}
 
 Installieren Sie die Datei der neuen Version mit `--yes`. Das vorherige Paket bleibt bis zur nächsten Moduländerung auf dem Host.
@@ -60,7 +93,7 @@ Ein festgehaltenes Modul lehnt jede andere Version ab, bis Sie es freigeben. Ein
 sudo arkvory module list --root /opt/proanima-arkvory
 ```
 
-Der Befehl prüft jedes installierte Paket erneut, so wie die Dienste es vor dem Laden tun werden: die Signatur, jede Datei und das Archiv. Jedes Modul zeigt einen Zustand:
+Der Befehl prüft jedes installierte Paket erneut, so wie die Dienste es vor dem Laden tun: die Signatur, jede Datei und das Archiv. Jedes Modul zeigt einen Zustand:
 
 | Zustand              | Bedeutung                                                                                                                        |
 | -------------------- | -------------------------------------------------------------------------------------------------------------------------------- |

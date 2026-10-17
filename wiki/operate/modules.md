@@ -1,13 +1,13 @@
 ---
 title: Modules
-description: Install signed module packages on a host, check them, remove them, and keep the keys of plugin authors you trust.
+description: Install signed module packages on a host, enable and check them, remove them, and keep the keys of plugin authors you trust.
 ---
 
 # Modules
 
 A module package adds a feature to Arkvory. Arkvory installs only packages whose signature it can verify. The commands of this page run on the host of the installation, as root on Linux or as an administrator on Windows. The console and the HTTP API cannot install modules or trust keys, so a stolen administrator account of the console cannot run code on the server.
 
-This release stores and verifies module packages. The services do not run module code yet: a later release loads the installed modules.
+The services check the installed modules again and load them each time they start. A module runs only after you enable it.
 
 ## Install a package {#install}
 
@@ -42,6 +42,39 @@ Limits: 1 GiB per package, 256 MiB per file, 4096 files. A larger package is ref
 
 A version that is already installed with the same bytes is left as it is. The same version with other bytes is refused.
 
+## Enable and load a module {#load}
+
+An installed module stays disabled until you enable it. The services load modules only when they start.
+
+1. Add the module to the modules file (`ARKVORY_MODULES_FILE`, see [Environment variables](../reference/environment#core)). Settings of the module go into `config`:
+
+   ```json
+   { "format": 1, "modules": { "sample": { "enabled": true } } }
+   ```
+
+2. Restart the services, as in [Apply a change](../install/configuration#apply-change).
+3. Check the module as a global administrator: `GET /api/v1/system/modules` lists it with `running: true` and `health.status` `ok` on the API and on each read gateway.
+
+The API and the read gateways run modules. The worker checks the same modules and runs none of them. This release refuses modules that run in the worker or the backup agent (`role_unsupported`) and modules that declare their own routes (`routes_unsupported`). Docker Compose installations do not load modules yet.
+
+Before a service imports any code of a module, it checks the package again:
+
+1. Only root (on Windows: SYSTEM and Administrators) or the owner of the installation directory may change the installation directory, `modules/`, the module set, the revocation list and its directory. The installation sets this up. A file that another account may change, or a link inside a package, is refused (`access_unsafe`, `access_link`).
+2. The signature, every file and the version of Arkvory, as `module install` checks them.
+3. The revocation list. A revoked version is never loaded. An expired list or no list does not stop a module.
+
+A module that fails a check is not loaded; the other modules and Arkvory go on. `GET /api/v1/system/modules` shows it with `running: false`:
+
+| `health.status` | Meaning                                                    | Codes                                                                                                               |
+| --------------- | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `failed`        | The package was refused, or its code did not load or start | `file_mismatch`, `unknown_key`, `module_incompatible`, `access_unsafe`, `config_invalid`, `start_failed` and others |
+| `revoked`       | ProAnimaStudio revoked this version                        | the reason from the revocation list                                                                                 |
+| `unavailable`   | The package directory is missing from the host             | `module_unavailable`                                                                                                |
+
+A module that failed takes Arkvory out of readiness (`/health/ready` answers 503 with `module_failed`) only when another enabled module needs it. A module that stores the bytes of published files (data `layout`) never does: Arkvory keeps serving its data and writes new uploads to its own storage instead of the module's. The log records `module.refused` and `module.failed` with the code in `errorCode`.
+
+Install the package again to repair a changed or missing package. Every service of the installation must see the same modules, enabled or not: a read gateway or worker with other modules is not ready (`module_plan_mismatch`). Install the same packages on the host of each read gateway.
+
 ## Update, pin and downgrade {#versions}
 
 Install the file of the new version with `--yes`. The previous package stays on the host until the next module change.
@@ -60,7 +93,7 @@ A pinned module refuses every other version until you unpin it. A version older 
 sudo arkvory module list --root /opt/proanima-arkvory
 ```
 
-The command verifies every installed package again, as the services will before they load it: the signature, every file and the archive. Each module shows one state:
+The command verifies every installed package again, as the services do before they load it: the signature, every file and the archive. Each module shows one state:
 
 | State                | Meaning                                                                                                     |
 | -------------------- | ----------------------------------------------------------------------------------------------------------- |

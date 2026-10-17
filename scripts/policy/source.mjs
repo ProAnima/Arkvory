@@ -23,6 +23,9 @@ export const COMPUTED_IMPORTS = {
   'apps/deploy/src/manage.ts': 'core release',
   // Scripts sent to `node -e` on a remote host import its installed core release, as above.
   'apps/deploy/src/remote-workflow.ts': 'core release, in scripts run on the remote host',
+  // The loader of signed modules (ADR 0079, X4): imports an entry only of a package directory
+  // that passed the access check and verifyInstalledModule in the same process start.
+  'packages/infrastructure/src/module-import.ts': 'verified signed module package',
 };
 
 const NODE_MODULE = new Set(['module', 'node:module']);

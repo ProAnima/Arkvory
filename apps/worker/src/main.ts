@@ -16,7 +16,8 @@ import {
   PostgresIdentity,
   PostgresModulePlan,
   PostgresServices,
-  planBuiltinModules,
+  installedModulesFrom,
+  loadInstallation,
   readMirrorSettings,
   readModuleSelections,
   readWebhookCertificates,
@@ -108,10 +109,16 @@ try {
   );
   // ADR 0080: retention of the event outbox, checked before the worker takes its lock.
   const eventRetention = readEventRetention(process.env);
-  // ADR 0079: the installation's module plan, refused before the worker takes its lock.
-  const { compatibilityFingerprint } = planBuiltinModules(
-    identity.version,
-    await readModuleSelections(process.env['ARKVORY_MODULES_FILE']),
+  // ADR 0079: the installation's module plan, refused before the worker takes its lock. The
+  // installed signed modules are verified and planned like the writer's; none runs here (X4).
+  const { compatibilityFingerprint } = (
+    await loadInstallation({
+      role: 'worker',
+      coreVersion: identity.version,
+      selections: await readModuleSelections(process.env['ARKVORY_MODULES_FILE']),
+      installed: installedModulesFrom(process.env),
+      now: Date.now(),
+    })
   ).plan;
   // Mirror copies create uploads here, so they need the installation's capacity limit.
   const capacity = mirrors.length > 0 ? capacityBytes(process.env['ARKVORY_CAPACITY_BYTES']) : 0;

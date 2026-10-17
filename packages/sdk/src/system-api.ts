@@ -7,7 +7,10 @@ import type { HttpPort } from './http-transport.js';
  */
 export class SystemApi {
   constructor(private readonly http: HttpPort) {}
-  /** Every planned module with its health in the answering process, and the plan fingerprints. */
+  /**
+   * Every planned module with its health in the answering process, the refused installed signed
+   * modules, and the plan fingerprints.
+   */
   async modules(signal?: AbortSignal) {
     return readSystemModules(
       await this.http.call('/api/v1/system/modules', 'GET', undefined, signal),

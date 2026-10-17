@@ -176,11 +176,20 @@ export {
 export {
   ModulePlanError,
   PROVIDED_HOST_SERVICES,
-  planBuiltinModules,
   planOrThrow,
   prepareModule,
 } from './module-plan.js';
 export type { PreparedModule } from './module-plan.js';
+export { HOSTED_ROLES, admitPackage, signedRefusals } from './module-admission.js';
+export type { RefusalStatus, RefusedModule, VerifiedModule } from './module-admission.js';
+export { ModuleAccessError, packageTree, unsafeEntries } from './module-access.js';
+export type { ModuleAccessProblem } from './module-access.js';
+export { ModuleLoadError } from './module-import.js';
+export type { ModuleLoadProblem } from './module-import.js';
+export { checkInstalledModules, installedModulesFrom } from './module-loader.js';
+export type { InstalledModules, InstalledModulesSource, LoadingHost } from './module-loader.js';
+export { loadInstallation, planBuiltinModules, planInstallation } from './module-installation.js';
+export type { InstallationPlan, LoadOptions } from './module-installation.js';
 export { parseModuleSelections, readModuleSelections } from './module-selection.js';
 export type { ModuleSelection, ModuleSelections } from './module-selection.js';
 export { PostgresModulePlan, type ModulePlanFingerprints } from './module-plan-store.js';

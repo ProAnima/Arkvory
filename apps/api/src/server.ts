@@ -6,13 +6,15 @@ import {
   HttpFleetSiteClient,
   PostgresFleetRegistry,
   PostgresFleetTrust,
+  loadInstallation,
   processIdentity,
 } from '@proanima/arkvory-infrastructure';
 import type { FleetControl } from '@proanima/arkvory-application';
 import { createFleetControl, registerFleetControlRoutes } from './fleet-control-routes.js';
 import type { PostgresCatalog, ProcessIdentity } from '@proanima/arkvory-infrastructure';
 import type { ServerConfig } from './config.js';
-import { ApiRuntime } from './api-runtime.js';
+import { ApiRuntime, gatewayRole } from './api-runtime.js';
+import type { ApiModuleContext } from './modules.js';
 import { createApiServices } from './api-services.js';
 import { registerApiRoutes } from './api-routes.js';
 import { registerEventRoutes } from './event-routes.js';
@@ -152,7 +154,7 @@ function processLog(config: ServerConfig, lifecycle: ServerLifecycle, identity: 
  * refused while the runtime is built, before any pool or storage exists; a logger created here
  * is then closed again. Only a logger created here is closed here; a caller's outlives the server.
  */
-function processRuntime(
+async function processRuntime(
   config: ServerConfig,
   lifecycle: ServerLifecycle,
   identity: ProcessIdentity,
@@ -162,12 +164,41 @@ function processRuntime(
     if (diagnostics !== lifecycle.diagnostics) diagnostics.close();
   };
   try {
-    const runtime = new ApiRuntime(config, identity.version, diagnostics);
+    // Installed signed modules are checked and their code imported before any pool or storage.
+    const installation = await loadInstallation<ApiModuleContext>({
+      role: gatewayRole(config),
+      coreVersion: identity.version,
+      selections: config.modules ?? new Map(),
+      installed: config.installedModules,
+      now: Date.now(),
+    });
+    const runtime = new ApiRuntime(config, identity.version, diagnostics, installation);
+    for (const module of installation.refused)
+      diagnostics.write({
+        level: module.enabled ? 'warning' : 'info',
+        component: 'module',
+        code: 'module.refused',
+        module: module.id,
+        errorCode: module.code,
+      });
     return { diagnostics, recentLog, closeDiagnostics, runtime };
   } catch (error) {
     closeDiagnostics();
     throw error;
   }
+}
+
+/** One line per signed module that should run in this process but could not start here. */
+function reportModuleFailures(runtime: ApiRuntime, diagnostics: DiagnosticLogger) {
+  for (const { module, running, health } of runtime.modules.states())
+    if (!running && health?.status === 'failed')
+      diagnostics.write({
+        level: 'warning',
+        component: 'module',
+        code: 'module.failed',
+        module: module.manifest.id,
+        errorCode: health.code ?? 'failed',
+      });
 }
 
 /**
@@ -313,11 +344,12 @@ function registerRoutes(app: FastifyInstance, parts: RouteParts) {
     role: runtime.role,
     policy: parts.policy,
     diagnostics: parts.diagnostics,
-    // Modules with a public surface (ADR 0079, section 9): a storage has none for clients.
+    // Modules with a public surface (ADR 0079, section 9): a storage has none for clients, and
+    // a signed module that failed to start here has none either.
     modules: runtime.modules
-      .planned()
-      .filter(({ manifest }) => manifest.kind !== 'storage-backend')
-      .map(({ manifest }) => ({ id: manifest.id, kind: manifest.kind })),
+      .states()
+      .filter(({ running, module }) => running && module.manifest.kind !== 'storage-backend')
+      .map(({ module }) => ({ id: module.manifest.id, kind: module.manifest.kind })),
   });
   if (runtime.role === 'api') registerConsole(app, config.webDirectory ?? 'apps/web/public');
 }
@@ -327,7 +359,7 @@ export async function createServer(config: ServerConfig, lifecycle: ServerLifecy
   const tls = await prepareTls(config);
   const app = createHttpServer({ trustedProxies: config.trustedProxies ?? [], ...tls.options });
   const identity = lifecycle.identity ?? processIdentity('api', 'dev');
-  const { diagnostics, recentLog, closeDiagnostics, runtime } = processRuntime(
+  const { diagnostics, recentLog, closeDiagnostics, runtime } = await processRuntime(
     config,
     lifecycle,
     identity,
@@ -349,6 +381,7 @@ export async function createServer(config: ServerConfig, lifecycle: ServerLifecy
   });
   try {
     await runtime.start();
+    reportModuleFailures(runtime, diagnostics);
     const services = createApiServices(runtime.catalog, runtime.blobs, runtime.pins, {
       staging: runtime.staging,
       allowRegistration: config.allowRegistration ?? false,
