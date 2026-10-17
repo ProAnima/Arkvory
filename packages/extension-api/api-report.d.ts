@@ -160,7 +160,10 @@ export type ModuleRole = (typeof MODULE_ROLES)[number];
 /** What the core reads about a module before creating it; no code and no configuration. */
 export interface ModuleManifest {
   readonly format: typeof MODULE_MANIFEST_FORMAT;
-  /** `[a-z][a-z0-9-]{1,31}`; unique within an installation. */
+  /**
+   * `MODULE_ID_PATTERN`: 2 to 32 lowercase letters, digits and single inner hyphens; unique within
+   * an installation.
+   */
   readonly id: string;
   /** Semver version of the module. */
   readonly version: string;
@@ -195,6 +198,10 @@ export declare class ModuleManifestError extends Error {
     path: string,
   );
 }
+/**
+ * `[a-z][a-z0-9-]{1,31}` without a doubled or trailing hyphen. With hyphens written as `_`, the
+ * names `arkvory_x_<id>__` of signed modules then never start one another (see plan-rules).
+ */
 export declare const MODULE_ID_PATTERN: RegExp;
 /**
  * Reads a manifest from untrusted input. Unknown fields, wrong types, malformed names and
@@ -216,6 +223,7 @@ export declare function startOrder(
 
 // plan-rules.d.ts
 import type { ModuleManifest } from './manifest.js';
+import { type SemanticVersion } from './version.js';
 /** A module after its manifest was read; the input of the rules below. */
 export interface ReadModule {
   readonly manifest: ModuleManifest;
@@ -246,11 +254,14 @@ export interface RuleProblem {
 /** Package, core flag and extension API version of each module. */
 export declare function checkModules(
   modules: readonly ReadModule[],
-  hostApi: string,
+  host: SemanticVersion,
 ): RuleProblem[];
 /**
- * Names a module may use. A signed module serves routes only under `/api/ext/<id>/v<major>/` and
- * names tables and metrics only `arkvory_x_<id>_`; built-in modules never use those namespaces.
+ * Names a module may use. A module from outside the release serves routes only under
+ * `/api/ext/<id>/v<major>/` and names tables and metrics only `arkvory_x_<id>__`, hyphens of the
+ * id written as `_`; built-in modules never use those namespaces. The double `_` ends the id: an
+ * id has no doubled or trailing hyphen, so `foo` (`arkvory_x_foo__`) and `foo-bar`
+ * (`arkvory_x_foo_bar__`) can both be installed and a table name tells which one owns it.
  */
 export declare function checkOwnership(modules: readonly ReadModule[]): RuleProblem[];
 /**

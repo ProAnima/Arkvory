@@ -74,6 +74,12 @@ test('a manifest is read from untrusted input field by field, naming the field, 
   refused(manifest('npm', { core: 'yes' }), 'type', '/core');
   refused(manifest('n'), 'format', '/id');
   refused(manifest('Npm'), 'format', '/id');
+  // A doubled or trailing hyphen would make the names of two modules ambiguous.
+  refused(manifest('foo--bar'), 'format', '/id');
+  refused(manifest('foo-'), 'format', '/id');
+  refused(manifest('-foo'), 'format', '/id');
+  refused(manifest(`a${'b'.repeat(32)}`), 'format', '/id');
+  parseModuleManifest(manifest(`a${'b-c'.repeat(10)}b`));
   refused(manifest('npm', { version: '1.0' }), 'format', '/version');
   refused(manifest('npm', { extensionApi: '>=0.1.0' }), 'format', '/extensionApi');
   refused(manifest('npm', { extensionApi: '^0.1.0-beta' }), 'format', '/extensionApi');
@@ -261,8 +267,8 @@ test('signed modules stay in their own namespaces; built-in modules stay out of 
         version: '2.1.0',
         kind: 'transfer',
         routePrefixes: ['/api/ext/delta/v2/'],
-        metricPrefix: 'arkvory_x_delta_',
-        tablePrefix: 'arkvory_x_delta_',
+        metricPrefix: 'arkvory_x_delta__',
+        tablePrefix: 'arkvory_x_delta__',
       },
       signed,
     ),
@@ -286,7 +292,17 @@ test('signed modules stay in their own namespaces; built-in modules stay out of 
       ['table_prefix_not_owned', 'delta', 'arkvory_x_other_'],
     ],
   );
-  plan([candidate('two-words', { tablePrefix: 'arkvory_x_two_words_' }, signed)]);
+  // The double `_` ends the id: `foo` and `foo-bar` both fit, and neither name starts the other.
+  const names = (id) => ({ metricPrefix: `arkvory_x_${id}__`, tablePrefix: `arkvory_x_${id}__` });
+  plan([
+    candidate('foo', names('foo'), signed),
+    candidate('foo-bar', names('foo_bar'), signed),
+    candidate('foo1', names('foo1'), signed),
+  ]);
+  assert.deepEqual(
+    problems([candidate('two-words', { tablePrefix: 'arkvory_x_two_words_' }, signed)]),
+    [['table_prefix_not_owned', 'two-words', 'arkvory_x_two_words_']],
+  );
   assert.deepEqual(
     problems([
       candidate('own', {

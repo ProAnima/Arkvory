@@ -21,7 +21,10 @@ export type ModuleRole = (typeof MODULE_ROLES)[number];
 /** What the core reads about a module before creating it; no code and no configuration. */
 export interface ModuleManifest {
   readonly format: typeof MODULE_MANIFEST_FORMAT;
-  /** `[a-z][a-z0-9-]{1,31}`; unique within an installation. */
+  /**
+   * `MODULE_ID_PATTERN`: 2 to 32 lowercase letters, digits and single inner hyphens; unique within
+   * an installation.
+   */
   readonly id: string;
   /** Semver version of the module. */
   readonly version: string;
@@ -72,7 +75,11 @@ const FIELDS = [
   'metricPrefix',
   'tablePrefix',
 ] as const;
-export const MODULE_ID_PATTERN = /^[a-z][a-z0-9-]{1,31}$/;
+/**
+ * `[a-z][a-z0-9-]{1,31}` without a doubled or trailing hyphen. With hyphens written as `_`, the
+ * names `arkvory_x_<id>__` of signed modules then never start one another (see plan-rules).
+ */
+export const MODULE_ID_PATTERN = /^(?=.{2,32}$)[a-z](?:-?[a-z0-9])+$/;
 const CAPABILITY = /^[a-z][a-z0-9-]{0,63}$/;
 const ROUTE_PREFIX = /^\/(?:[a-z0-9][a-z0-9._-]{0,63}\/){1,8}$/;
 const NAME_PREFIX = /^arkvory_[a-z][a-z0-9_]{0,38}_$/;

@@ -62,25 +62,29 @@ export function checkModules(modules: readonly ReadModule[], host: SemanticVersi
 }
 
 /**
- * Names a module may use. A signed module serves routes only under `/api/ext/<id>/v<major>/` and
- * names tables and metrics only `arkvory_x_<id>_`; built-in modules never use those namespaces.
+ * Names a module may use. A module from outside the release serves routes only under
+ * `/api/ext/<id>/v<major>/` and names tables and metrics only `arkvory_x_<id>__`, hyphens of the
+ * id written as `_`; built-in modules never use those namespaces. The double `_` ends the id: an
+ * id has no doubled or trailing hyphen, so `foo` (`arkvory_x_foo__`) and `foo-bar`
+ * (`arkvory_x_foo_bar__`) can both be installed and a table name tells which one owns it.
  */
 export function checkOwnership(modules: readonly ReadModule[]): RuleProblem[] {
   const problems: RuleProblem[] = [];
   for (const m of modules) {
     const { id, version, routePrefixes, metricPrefix, tablePrefix } = m.manifest;
-    const signed = m.source === 'signed';
+    // Every source but the release itself gets the external namespaces, a future one included.
+    const external = m.source !== 'builtin';
     const major = parseSemanticVersion(version)?.major ?? 0;
     const routes = `${EXTERNAL_ROUTES}${id}/v${String(major)}/`;
-    const names = `${EXTERNAL_NAMES}${id.replaceAll('-', '_')}_`;
+    const names = `${EXTERNAL_NAMES}${id.replaceAll('-', '_')}__`;
     for (const prefix of routePrefixes)
-      if (signed ? !prefix.startsWith(routes) : prefix.startsWith(EXTERNAL_ROUTES))
+      if (external ? !prefix.startsWith(routes) : prefix.startsWith(EXTERNAL_ROUTES))
         problems.push({ code: 'route_prefix_not_owned', module: id, subject: prefix });
     for (const [code, prefix] of [
       ['metric_prefix_not_owned', metricPrefix],
       ['table_prefix_not_owned', tablePrefix],
     ] as const)
-      if (prefix !== null && (signed ? prefix !== names : prefix.startsWith(EXTERNAL_NAMES)))
+      if (prefix !== null && (external ? prefix !== names : prefix.startsWith(EXTERNAL_NAMES)))
         problems.push({ code, module: id, subject: prefix });
   }
   return problems;
