@@ -249,7 +249,7 @@ Tout autre système, comme TeamCity ou Buildkite, fonctionne de la même façon 
 claude mcp add arkvory -- arkvoryctl mcp --profile production --root ~/work
 ```
 
-- **Lecture seule.** Les outils listent les dépôts, recherchent dans tous, lisent les artefacts, les paquets, les fichiers par chemin, le flux des changements et l’état de l’installation, et téléchargent un artefact. Ils ne peuvent rien téléverser, modifier ni supprimer. Les outils que la clé ne peut pas utiliser ne sont pas proposés.
+- **Lecture seule par défaut.** Les outils listent les dépôts, recherchent dans tous, lisent les artefacts, les paquets, les fichiers par chemin, le flux des changements et l’état de l’installation, et téléchargent un artefact. Les outils que la clé ne peut pas utiliser ne sont pas proposés. Avec `--write`, l’agent peut aussi téléverser, publier, promouvoir et étiqueter, mais jamais supprimer : voir [Agents d’IA](../guide/agents).
 - **Fichiers.** Un téléchargement n’écrit que sous `--root` (par défaut, le répertoire courant). Le fichier n’apparaît qu’après vérification de sa taille et de son SHA-256 ; un fichier existant n’est remplacé que si l’agent le demande.
 - **Sortie.** Un résultat fait au plus `--max-output-bytes` (64 Kio par défaut, jusqu’à 1 Mio) et 100 éléments ; pour la suite, renvoyez `next` dans `after`. La clé et les liens de téléchargement n’apparaissent jamais dans les résultats.
 - **Clé.** Donnez à l’agent sa propre clé de service, qui ne peut lire que les dépôts dont il a besoin. Ne collez jamais une clé dans la conversation.

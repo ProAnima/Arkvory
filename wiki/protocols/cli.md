@@ -249,7 +249,7 @@ Any other system, such as TeamCity or Buildkite, works the same way: set `ARKVOR
 claude mcp add arkvory -- arkvoryctl mcp --profile production --root ~/work
 ```
 
-- **Read-only.** The tools list repositories, search all of them, read artifacts, packages, files by path, the change feed and the installation status, and download an artifact. They cannot upload, change or delete anything. Tools the key cannot use are not offered.
+- **Read-only by default.** The tools list repositories, search all of them, read artifacts, packages, files by path, the change feed and the installation status, and download an artifact. Tools the key cannot use are not offered. With `--write` the agent can also upload, publish, promote and annotate, but never delete: see [AI agents](../guide/agents).
 - **Files.** A download writes only below `--root` (the current directory by default). The file appears only after its size and SHA-256 are verified; an existing file is replaced only when the agent asks for it.
 - **Output.** One result is at most `--max-output-bytes` (64 KiB by default, up to 1 MiB) and 100 items; pass `next` back as `after` for more. The key and download links never appear in results.
 - **Key.** Give the agent its own service key that can only read the repositories it needs. Never paste a key into the chat.

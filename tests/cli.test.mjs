@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, writeFile, readFile, access } from 'node:fs/promises';
+import { mkdtemp, writeFile, readFile, access, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createHash } from 'node:crypto';
@@ -9,6 +9,7 @@ import { upload } from '../apps/cli/dist/upload.js';
 import { download } from '../apps/cli/dist/download.js';
 import { moment } from '../apps/cli/dist/time-window.js';
 import { exclusive, readSmall } from '../apps/cli/dist/local-files.js';
+import { failure, failureText } from '../apps/cli/dist/errors.js';
 import { ArkvoryClient, ArkvoryIntegrityError } from '@proanima/arkvory-sdk';
 import { createServer } from 'node:http';
 import { removeTestDirectory } from './helpers.mjs';
@@ -73,6 +74,59 @@ test('CLI upload persists idempotency before create and refuses a changed source
   await writeFile(path, 'other');
   await assert.rejects(upload(input), { code: 'checkpoint_mismatch' });
   await assert.rejects(access(path + '.arkvory-upload.json.lock'), /ENOENT/);
+});
+
+test('CLI upload refuses a receipt for other bytes with the contract code, not a download text', async (t) => {
+  const directory = await mkdtemp(join(tmpdir(), 'arkvory-cli-'));
+  t.after(() => removeTestDirectory(directory));
+  const path = join(directory, 'build.bin');
+  await writeFile(path, 'build');
+  const session = (descriptor, status) => ({
+    id: 'test-id',
+    repository: 'releases',
+    descriptor,
+    status,
+    createdAt: '',
+    expiresAt: '',
+  });
+  let receipt;
+  const client = {
+    create: async (repository, key, descriptor) => session(descriptor, 'pending'),
+    status: async () => assert.fail('no checkpoint id yet'),
+    resume: async () => receipt,
+  };
+  const input = {
+    client,
+    path,
+    state: join(directory, 'state.json'),
+    server: 'https://arkvory.example/',
+    repository: 'releases',
+    signal: new AbortController().signal,
+    progress() {},
+  };
+  const descriptor = {
+    name: 'build.bin',
+    size: '5',
+    sha256: createHash('sha256').update('build').digest('hex'),
+    labels: [],
+    metadata: {},
+  };
+  receipt = session(descriptor, 'available');
+  assert.equal((await upload(input)).status, 'available', 'the matching receipt is accepted');
+  for (receipt of [
+    session({ ...descriptor, sha256: 'f'.repeat(64) }, 'available'),
+    session({ ...descriptor, size: '6' }, 'available'),
+    session(descriptor, 'pending'),
+  ]) {
+    await rm(input.state, { force: true });
+    const error = await upload(input).then(
+      () => assert.fail('must fail'),
+      (e) => e,
+    );
+    const result = failure(error, false);
+    assert.deepEqual([result.code, result.exitCode], ['integrity_mismatch', 5]);
+    assert.doesNotMatch(failureText(result, 'en'), /download/i);
+  }
 });
 
 test('CLI download publishes only a verified stream and never replaces a destination', async (t) => {

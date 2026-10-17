@@ -1,8 +1,14 @@
-import { mkdir, copyFile, writeFile, readFile, chmod } from 'node:fs/promises';
+import { mkdir, copyFile, writeFile, readFile, chmod, cp } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { mcpLicenseText } from './client-licenses.mjs';
 
+/** The agent skill (ADR 0081), where `arkvoryctl skill install` looks for it: beside the CLI. */
+export async function copyAgentSkill(destination) {
+  await cp('integrations/agent-skills/arkvory', join(destination, 'agent-skills', 'arkvory'), {
+    recursive: true,
+  });
+}
 async function clientFiles(source, destination, node, license) {
   await mkdir(destination, { recursive: true });
   await copyFile(join(source, 'arkvoryctl.mjs'), join(destination, 'arkvoryctl.mjs'));
@@ -15,6 +21,7 @@ async function clientFiles(source, destination, node, license) {
     await copyFile(name, join(destination, name));
   await copyFile('docs/CLI.md', join(destination, 'CLI.md'));
   await copyFile('docs/REMOTE_DEPLOYMENT.md', join(destination, 'REMOTE_DEPLOYMENT.md'));
+  await copyAgentSkill(destination);
 }
 export async function windowsClient(source, stage, output, release, compiler, runtime, artwork) {
   const payload = join(stage, 'client');

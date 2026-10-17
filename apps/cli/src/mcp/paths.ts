@@ -22,6 +22,12 @@ export function below(root: string, path: string): boolean {
   return rest !== '' && rest !== '..' && !rest.startsWith(`..${sep}`) && !isAbsolute(rest);
 }
 
+/** Whether `path` (absolute, resolved) is one of `kept` or lies below one (`private_path`). */
+export function refusePrivate(kept: readonly string[] | undefined, path: string): void {
+  if (kept?.some((place) => relative(place, path) === '' || below(place, path)))
+    throw new CliError('private_path');
+}
+
 // Names Windows maps to devices whatever the extension, and characters it does not allow.
 const deviceName = /^(con|prn|aux|nul|com[0-9¹²³]|lpt[0-9¹²³]|conin\$|conout\$)$/i;
 const forbidden = /[<>:"|?*]/;

@@ -39,8 +39,13 @@ ru.WelcomeLabel2=Ваше хранилище — в вашем терминал�
 en.OpenRemote=Open Arkvory Remote Setup
 ru.OpenRemote=Открыть мастер удалённой установки Arkvory
 
+; An upgrade replaces the packaged agent skill as a whole: a file a newer skill no longer has
+; must not stay behind for `arkvoryctl skill install` to copy.
+[InstallDelete]
+Type: filesandordirs; Name: "{app}\agent-skills"
+
 [Files]
-Source: "{#Payload}\*"; DestDir: "{app}"; Flags: ignoreversion; Excludes: "wizard.png"
+Source: "{#Payload}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "wizard.png"
 
 [Icons]
 Name: "{autoprograms}\Arkvory Remote Setup"; Filename: "{sys}\WindowsPowerShell\v1.0\powershell.exe"; Parameters: "-NoProfile -NonInteractive -ExecutionPolicy Bypass -WindowStyle Hidden -File ""{app}\remote-setup.ps1"""; Flags: runminimized; IconFilename: "{app}\arkvory-remote.ico"
