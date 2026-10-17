@@ -7,6 +7,7 @@ import {
   readdir,
   readFile,
   realpath,
+  rename,
   rm,
   symlink,
   writeFile,
@@ -21,7 +22,7 @@ import {
   objectResult,
   outputBytes,
 } from '../apps/cli/dist/mcp/output.js';
-import { downloadTarget, rootDirectory } from '../apps/cli/dist/mcp/paths.js';
+import { downloadTarget, rootDirectory, windowsName } from '../apps/cli/dist/mcp/paths.js';
 import { downloadToRoot } from '../apps/cli/dist/mcp/download-tool.js';
 import { readStatus } from '../apps/cli/dist/mcp/status-tool.js';
 import { removeTestDirectory } from './helpers.mjs';
@@ -279,6 +280,24 @@ test('downloads stay below the root: dot segments, absolute paths, links out and
   if (linked) await assert.rejects(downloadTarget(root, 'link.bin'), { code: 'path_outside_root' });
 });
 
+test('on Windows, device names, streams and names Windows would trim are refused', async (t) => {
+  for (const name of ['NUL', 'nul.txt', 'Con', 'aux .log', 'COM1', 'lpt9.bin', 'CONIN$'])
+    assert.equal(windowsName(name), false, name);
+  for (const name of ['a.txt:stream', 'a.txt::$DATA', 'b.txt.', 'c.txt ', 'q?.bin', 'x\u0001y'])
+    assert.equal(windowsName(name), false, name);
+  for (const name of ['a.bin', 'console.log', 'nullable', 'com10', '.hidden', 'отчёт.zip'])
+    assert.equal(windowsName(name), true, name);
+  const directory = await mkdtemp(join(tmpdir(), 'arkvory-mcp-'));
+  t.after(() => removeTestDirectory(directory));
+  const root = await realpath(directory);
+  for (const name of ['NUL', 'x/../con.txt', 'a.txt:s', 'b.']) {
+    const outcome = downloadTarget(root, name);
+    if (process.platform === 'win32') await assert.rejects(outcome, { code: 'invalid_path' });
+    else assert.equal((await outcome).exists, false, name);
+  }
+  assert.deepEqual(await readdir(root), []);
+});
+
 function fakeDownloads(bytes, descriptorBytes = bytes) {
   const calls = { downloads: 0 };
   return {
@@ -365,6 +384,57 @@ test('a download is verified, appears in one step and never leaves a partial fil
     ),
   );
   assert.deepEqual((await readdir(root)).sort(), ['a.bin']);
+});
+
+test('a directory swapped for a link out of the root during a download never gets the file', async (t) => {
+  const directory = await mkdtemp(join(tmpdir(), 'arkvory-mcp-'));
+  const outer = await realpath(directory);
+  const root = join(outer, 'root');
+  const steps = ['metadata', 'transfer'];
+  t.after(async () => {
+    // The links first: a recursive removal must not walk through them.
+    for (const step of steps) await rm(join(root, step), { force: true }).catch(() => undefined);
+    await removeTestDirectory(directory);
+  });
+  await mkdir(join(outer, 'elsewhere'));
+  const bytes = Buffer.from('payload');
+  for (const step of steps) {
+    await mkdir(join(root, step), { recursive: true });
+    const client = fakeDownloads(bytes);
+    const name = step === 'metadata' ? 'artifact' : 'downloadVerified';
+    const original = client[name];
+    // What another local process could do while a request is in flight: a junction needs no
+    // privilege on Windows, a directory link none elsewhere. Windows refuses to move a directory
+    // with an open file in it, so during the transfer no swap is possible there.
+    const possible = step === 'metadata' || process.platform !== 'win32';
+    client[name] = async (...args) => {
+      if (possible) {
+        await rename(join(root, step), join(root, `moved-${step}`));
+        await symlink(join(outer, 'elsewhere'), join(root, step), 'junction');
+      } else await assert.rejects(rename(join(root, step), join(root, 'moved')), { code: 'EPERM' });
+      return original(...args);
+    };
+    const download = downloadToRoot(
+      context(client, { root }),
+      { id: ID, path: `${step}/a.bin` },
+      call(),
+    );
+    if (possible) await assert.rejects(download, { code: 'path_outside_root' }, step);
+    else assert.equal((await download).path, 'transfer/a.bin');
+    assert.deepEqual(await readdir(join(outer, 'elsewhere')), [], step);
+  }
+});
+
+test('a long target name is not lengthened by the temporary file name', async (t) => {
+  const directory = await mkdtemp(join(tmpdir(), 'arkvory-mcp-'));
+  t.after(() => removeTestDirectory(directory));
+  const root = await realpath(directory);
+  // A valid 244-character name; the old temporary name added 43 more, past the 255 limit.
+  const name = 'x'.repeat(240) + '.bin';
+  const client = fakeDownloads(Buffer.from('long'));
+  const receipt = await downloadToRoot(context(client, { root }), { id: ID, path: name }, call());
+  assert.equal(receipt.path, name);
+  assert.deepEqual(await readdir(root), [name]);
 });
 
 test('status reports a section the key may not read as forbidden, not as a failure', async () => {

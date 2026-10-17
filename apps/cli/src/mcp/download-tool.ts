@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { link, open, rename, unlink } from 'node:fs/promises';
-import { basename, dirname, join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/server';
 import { ArkvoryIntegrityError, newDownloadId } from '@proanima/arkvory-sdk';
@@ -8,7 +8,7 @@ import { CliError } from '../errors.js';
 import { syncDirectory } from '../local-files.js';
 import type { ToolContext } from './context.js';
 import { objectResult } from './output.js';
-import { downloadTarget } from './paths.js';
+import { downloadTarget, unmoved } from './paths.js';
 import { defineTool, idInput, repositoryInput } from './tool.js';
 import type { ToolCall } from './tool.js';
 
@@ -55,17 +55,25 @@ async function store(
   return { size: offset, sha256: hash.digest('hex') };
 }
 
+/** Where the download may write, refusing an existing target unless replacing was asked for. */
+async function place(ctx: ToolContext, input: DownloadInput) {
+  const target = await downloadTarget(ctx.root, input.path);
+  if (target.exists && input.overwrite !== true) throw new CliError('destination_exists', 6);
+  return target;
+}
+
 /**
  * Verified download into the root. Bytes go to a new temporary file beside the target; the SDK
  * checks every range and the final SHA-256, and the tool checks size and SHA-256 of what it
  * wrote once more. Only then the file takes the target name in one step: rename when replacing
  * was asked for, otherwise a hard link that refuses an existing name. On any failure the
- * temporary file is removed and the target is untouched.
+ * temporary file is removed and the target is untouched. The place is checked before the
+ * metadata request, again right before the file opens, then once it is open and before it takes
+ * the target name, so a directory swapped for a link meanwhile never receives the bytes.
  */
 export async function downloadToRoot(ctx: ToolContext, input: DownloadInput, call: ToolCall) {
   const repository = input.repository ?? ctx.repository;
-  const target = await downloadTarget(ctx.root, input.path);
-  if (target.exists && input.overwrite !== true) throw new CliError('destination_exists', 6);
+  await place(ctx, input);
   const artifact = await ctx.client.artifact(
     repository,
     input.id,
@@ -74,10 +82,15 @@ export async function downloadToRoot(ctx: ToolContext, input: DownloadInput, cal
   const { size, sha256 } = artifact.descriptor;
   if (input.maxBytes !== undefined && BigInt(size) > BigInt(input.maxBytes))
     throw new CliError('max_bytes_exceeded');
-  const temporary = join(dirname(target.path), `.${basename(target.path)}.${randomUUID()}.part`);
+  const target = await place(ctx, input);
+  const directory = dirname(target.path);
+  // A fixed short name: the target's own name may already be near the file name length limit.
+  const temporary = join(directory, `.arkvory-${randomUUID()}.part`);
   const file = await open(temporary, 'wx', 0o600);
   let closed = false;
   try {
+    const opened = await file.stat({ bigint: true });
+    await unmoved(directory, temporary, opened);
     const stream = await ctx.client.downloadVerified(repository, input.id, {
       signal: call.signal,
       downloadId: newDownloadId(),
@@ -88,6 +101,7 @@ export async function downloadToRoot(ctx: ToolContext, input: DownloadInput, cal
     if (String(written.size) !== size || written.sha256 !== sha256)
       throw new ArkvoryIntegrityError();
     call.signal.throwIfAborted();
+    await unmoved(directory, temporary, opened);
     if (input.overwrite === true) await rename(temporary, target.path);
     else
       await link(temporary, target.path).catch((error: unknown) => {
@@ -95,7 +109,7 @@ export async function downloadToRoot(ctx: ToolContext, input: DownloadInput, cal
           throw new CliError('destination_exists', 6);
         throw error;
       });
-    await syncDirectory(dirname(target.path));
+    await syncDirectory(directory);
   } finally {
     if (!closed) await file.close().catch(() => undefined);
     // After rename the temporary name is gone; after link it is a second name of the target.
