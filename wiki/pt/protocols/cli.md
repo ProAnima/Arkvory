@@ -249,7 +249,7 @@ Qualquer outro sistema, como TeamCity ou Buildkite, funciona do mesmo modo: defi
 claude mcp add arkvory -- arkvoryctl mcp --profile production --root ~/work
 ```
 
-- **Somente leitura.** As ferramentas listam repositórios, pesquisam em todos, leem artefatos, pacotes, arquivos por caminho, o feed de mudanças e o status da instalação, e baixam um artefato. Não podem enviar, alterar nem excluir nada. Ferramentas que a chave não pode usar não são oferecidas.
+- **Somente leitura por padrão.** As ferramentas listam repositórios, pesquisam em todos, leem artefatos, pacotes, arquivos por caminho, o feed de mudanças e o status da instalação, e baixam um artefato. Ferramentas que a chave não pode usar não são oferecidas. Com `--write`, o agente também pode enviar, publicar, promover e rotular, mas nunca excluir: veja [Agentes de IA](../guide/agents).
 - **Arquivos.** Um download só grava dentro de `--root` (por padrão, o diretório atual). O arquivo só aparece depois que o tamanho e o SHA-256 são verificados; um arquivo existente só é substituído quando o agente pede.
 - **Saída.** Um resultado tem no máximo `--max-output-bytes` (64 KiB por padrão, até 1 MiB) e 100 itens; para mais, devolva `next` como `after`. A chave e os links de download nunca aparecem nos resultados.
 - **Chave.** Dê ao agente uma chave de serviço própria que só possa ler os repositórios de que ele precisa. Nunca cole uma chave no chat.

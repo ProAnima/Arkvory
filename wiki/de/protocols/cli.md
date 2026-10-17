@@ -249,7 +249,7 @@ Jedes andere System, etwa TeamCity oder Buildkite, funktioniert genauso: Setzen 
 claude mcp add arkvory -- arkvoryctl mcp --profile production --root ~/work
 ```
 
-- **Nur lesen.** Die Werkzeuge listen Repositorys auf, durchsuchen alle, lesen Artefakte, Pakete, Dateien nach Pfad, den Änderungsfeed und den Status der Installation und laden ein Artefakt herunter. Sie können nichts hochladen, ändern oder löschen. Werkzeuge, die der Schlüssel nicht nutzen kann, werden nicht angeboten.
+- **Standardmäßig nur lesen.** Die Werkzeuge listen Repositorys auf, durchsuchen alle, lesen Artefakte, Pakete, Dateien nach Pfad, den Änderungsfeed und den Status der Installation und laden ein Artefakt herunter. Werkzeuge, die der Schlüssel nicht nutzen kann, werden nicht angeboten. Mit `--write` kann der Agent auch hochladen, veröffentlichen, hochstufen und Labels setzen, aber nie löschen: siehe [KI-Agenten](../guide/agents).
 - **Dateien.** Ein Download schreibt nur unterhalb von `--root` (standardmäßig das aktuelle Verzeichnis). Die Datei erscheint erst, wenn Größe und SHA-256 geprüft sind; eine vorhandene Datei wird nur ersetzt, wenn der Agent es verlangt.
 - **Ausgabe.** Ein Ergebnis hat höchstens `--max-output-bytes` (standardmäßig 64 KiB, bis 1 MiB) und 100 Elemente; für mehr `next` als `after` zurückgeben. Der Schlüssel und Download-Links erscheinen nie in Ergebnissen.
 - **Schlüssel.** Geben Sie dem Agenten einen eigenen Dienstschlüssel, der nur die benötigten Repositorys lesen darf. Fügen Sie nie einen Schlüssel in den Chat ein.
