@@ -142,4 +142,4 @@ if (status.snapshot) {
 
 `apply` дополнительно требует `version` и `sha256` из snapshot.latest. Конфликт revision — 409, занятая очередь или недоступный updater — 503. После сетевой ошибки сначала прочитайте статус и сопоставьте ID; не создавайте повторную установку вслепую. Снимок имеет фиксированный размерный предел, а публичный контракт не содержит физических путей и секретов.
 
-Механизм рассчитан на standalone writer/worker. Он не является rolling update или координатором HA; reader-узлы и shared-root установки требуют операторского согласования по READ_GATEWAYS.
+Механизм рассчитан на standalone writer/worker. Он не является rolling update; в HA-кластере обновление идёт на активном узле с переводом группы Pacemaker в maintenance ([ADR 0072](adr/0072-single-site-ha.md), wiki «High availability cluster»); reader-узлы и shared-root установки требуют операторского согласования по READ_GATEWAYS.

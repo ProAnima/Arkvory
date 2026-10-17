@@ -263,3 +263,14 @@ Les règles d’alerte de `deploy/monitoring/arkvory-alerts.yml` comprennent `Ar
 ## Sauvegardes {#backups}
 
 L’agent de sauvegarde s’exécute uniquement sur le serveur actif, au sein du groupe. Conservez le stockage des sauvegardes en dehors du volume du cluster, par exemple sur un NAS. Voir [Sauvegardes](./backups).
+
+## Limites {#limits}
+
+- Linux avec les paquets natifs uniquement. Les installations Windows et Docker Compose ne peuvent pas rejoindre un cluster.
+- Le fencing est obligatoire. Un cluster sans dispositif de fencing pour chaque serveur de données ne démarre pas, et Pacemaker ne déplace jamais Arkvory sans fencing confirmé. Arrêter un serveur par SSH n’est pas du fencing.
+- `ha-2` a besoin de son témoin sur une machine distincte qui ne partage ni l’alimentation ni l’hôte avec les serveurs de données. Un témoin sur un serveur de données ou sur le même hyperviseur transforme une seule panne en perte de quorum. `ha-3` n’a pas besoin de témoin.
+- Chaque version est testée sur des machines virtuelles avec `fence_virsh`. Votre agent et votre dispositif de fencing (IPMI, iDRAC, iLO, Redfish, une PDU ou un hyperviseur) ne le sont pas : prouvez-les sur site avec `arkvory cluster-fence-test` pour chaque serveur de données avant de compter sur le cluster, puis de nouveau après le remplacement d’un serveur ou d’un dispositif de fencing.
+- Un seul site. Le cluster ne protège ni contre la perte du site, ni contre une suppression ou un dommage que le volume copie sur tous les serveurs : gardez des [miroirs](./mirrors) sur un autre site et des [sauvegardes](./backups).
+- Tant qu’une [décision de copie unique](#single-copy) est active, la perte du serveur actif fait perdre les écritures acquittées après elle.
+- Chaque écriture attend les autres serveurs de données : la latence du lien s’ajoute donc à chaque écriture.
+- Arkvory ne revient jamais de lui-même sur un serveur réparé.

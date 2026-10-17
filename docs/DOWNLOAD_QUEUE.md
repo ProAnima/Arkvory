@@ -73,7 +73,7 @@ DownloadQueue управляет состояниями и расписание�
 
 Существующие maxUploads/maxDownloads, per-principal active caps и bytes/s сохраняются. Настройки применяются при запуске; общий HTTP admission в 128 запросов также продолжает действовать, поэтому увеличение waiting limit не создаёт гарантированную дополнительную ёмкость. Readiness показывает waitingCapacity, perPrincipalWaitingCapacity и timeoutMs. HTTP timeout/full queue сохраняют прежние 503/Retry-After. OpenAPI document 0.8.0, inventory по-прежнему 108 операций.
 
-Это очередь клиента и допуски конкретного шлюза. Durable cluster-wide download jobs, динамическое перераспределение полосы, server-side operator cancellation чужих передач и HA остаются отдельными задачами; app/scheduler не объявляется реализованным благодаря клиентской очереди.
+Это очередь клиента и допуски конкретного шлюза. Серверная очередь скачиваний с сессиями, классами и талонами реализована отдельно ([ADR 0076](adr/0076-download-scheduling.md), [TRAFFIC_CONTROL](TRAFFIC_CONTROL.md)): объекты больше `ARKVORY_DOWNLOAD_SESSION_MIN_BYTES` ждут в ней, меньшие идут через описанную выше очередь допуска. Она живёт в памяти процесса записи, на HA-узлах переживает переключение только через талоны клиентов. Общая очередь в PostgreSQL для шлюзов чтения, динамическое перераспределение полосы и server-side cancellation чужих передач остаются отдельными задачами; app/scheduler не объявляется реализованным.
 
 ## Проверки
 

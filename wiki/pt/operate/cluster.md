@@ -263,3 +263,14 @@ As regras de alerta em `deploy/monitoring/arkvory-alerts.yml` incluem `ArkvoryRe
 ## Backups {#backups}
 
 O agente de backup executa somente no servidor ativo, como parte do grupo. Mantenha o armazenamento de backups fora do volume do cluster, por exemplo em um NAS. Veja [Backups](./backups).
+
+## Limites {#limits}
+
+- Somente Linux com os pacotes nativos. Instalações Windows e Docker Compose não podem entrar em um cluster.
+- O fencing é obrigatório. Um cluster sem um dispositivo de fencing para cada servidor de dados não inicia, e o Pacemaker nunca move o Arkvory sem um fencing confirmado. Parar um servidor por SSH não é fencing.
+- O `ha-2` precisa da testemunha em uma máquina separada que não compartilhe nem a alimentação elétrica nem o host com os servidores de dados. Uma testemunha em um servidor de dados ou no mesmo hipervisor transforma uma única falha em perda de quórum. O `ha-3` não precisa de testemunha.
+- Cada versão é testada em máquinas virtuais com `fence_virsh`. O seu agente e o seu dispositivo de fencing (IPMI, iDRAC, iLO, Redfish, uma PDU ou um hipervisor) não: comprove-os no local com `arkvory cluster-fence-test` para cada servidor de dados antes de confiar no cluster, e de novo depois de substituir um servidor ou mudar um dispositivo de fencing.
+- Somente um site. O cluster não protege contra a perda do site, nem contra uma exclusão ou um dano que o volume copia para todos os servidores: mantenha [espelhos](./mirrors) em outro site e [backups](./backups).
+- Enquanto uma [decisão de cópia única](#single-copy) está ativa, a perda do servidor ativo perde as gravações confirmadas depois dela.
+- Cada gravação espera os outros servidores de dados, por isso a latência do link se soma a cada gravação.
+- O Arkvory nunca volta sozinho para um servidor reparado.

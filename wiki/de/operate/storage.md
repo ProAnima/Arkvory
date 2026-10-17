@@ -239,6 +239,7 @@ Wenn ein Upload stattdessen mit dem Grund `storage_quota` oder `catalog_limit` f
 - Ein gelöschtes Artefakt kann nicht wiederhergestellt werden. Stellen Sie Daten aus einem Backup wieder her. Siehe [Backups](./backups).
 - Gespiegelte Repositorys führen keine Speicherrichtlinie aus. Siehe [Spiegel](./mirrors).
 - Der Speicher muss ein lokales Dateisystem sein. Es gibt keine Unterstützung für Netzwerkfreigaben oder mehrere Speicher-Backends.
+- Unter Windows schreibt Arkvory jede Datei fest auf den Datenträger, kann aber den Verzeichniseintrag, der sie veröffentlicht, nicht synchronisieren: Node.js bietet dort keine Verzeichnissynchronisierung. Ein Stromausfall kurz nach einem Upload kann eine veröffentlichte Datei ohne Inhalt auf dem Datenträger hinterlassen. Verwenden Sie eine USV und halten Sie [Backups](./backups) oder einen [Spiegel](./mirrors) vor. Unter Linux werden auch die Verzeichniseinträge synchronisiert.
 
 ## Verwandte Seiten {#related-pages}
 

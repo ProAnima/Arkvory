@@ -263,3 +263,14 @@ Die Alarmregeln in `deploy/monitoring/arkvory-alerts.yml` enthalten `ArkvoryRepl
 ## Backups {#backups}
 
 Der Backup-Agent läuft nur auf dem aktiven Server, als Teil der Gruppe. Halten Sie den Backup-Speicher außerhalb des Cluster-Volumes vor, zum Beispiel auf einem NAS. Siehe [Backups](./backups).
+
+## Grenzen {#limits}
+
+- Nur Linux mit den nativen Paketen. Windows-Installationen und Docker Compose können keinem Cluster beitreten.
+- Fencing ist verpflichtend. Ein Cluster ohne Fence-Gerät für jeden Datenserver startet nicht, und Pacemaker verschiebt Arkvory nie ohne bestätigtes Fencing. Einen Server per SSH anzuhalten ist kein Fencing.
+- `ha-2` braucht seinen Zeugen auf einer eigenen Maschine, die weder die Stromversorgung noch den Host mit den Datenservern teilt. Ein Zeuge auf einem Datenserver oder auf demselben Hypervisor macht aus einem Ausfall einen Quorumverlust. `ha-3` braucht keinen Zeugen.
+- Jedes Release wird auf virtuellen Maschinen mit `fence_virsh` getestet. Ihr Fence-Agent und Ihr Fence-Gerät (IPMI, iDRAC, iLO, Redfish, eine PDU oder ein Hypervisor) nicht: Beweisen Sie sie vor Ort mit `arkvory cluster-fence-test` für jeden Datenserver, bevor Sie sich auf den Cluster verlassen, und erneut, nachdem Sie einen Server ersetzt oder ein Fence-Gerät geändert haben.
+- Nur ein Standort. Der Cluster schützt weder vor dem Verlust des Standorts noch vor einer Löschung oder Beschädigung, die das Volume auf alle Server kopiert: Halten Sie [Spiegel](./mirrors) an einem anderen Standort und [Backups](./backups) vor.
+- Solange eine [Ein-Kopie-Entscheidung](#single-copy) aktiv ist, verliert ein Ausfall des aktiven Servers die danach bestätigten Schreibvorgänge.
+- Jeder Schreibvorgang wartet auf die anderen Datenserver, daher kommt die Latenz der Verbindung zu jedem Schreibvorgang hinzu.
+- Arkvory wechselt nie von selbst auf einen reparierten Server zurück.

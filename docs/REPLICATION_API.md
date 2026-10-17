@@ -1,6 +1,8 @@
 # API управления репликацией — проект
 
-Статус: **planned**. Ни один маршрут ниже пока не зарегистрирован и не включается в текущую OpenAPI как работающий. [Протокол](REPLICATION.md) определяет инварианты, [UX](REPLICATION_UX.md) — пользовательские сценарии. UI и внешние приложения используют один и тот же API через SDK; endpoint в браузере не получает привилегий installer/SSH.
+> **Исторический проект, не реализуется.** Работающие маршруты зеркал другие ([ADR 0058](adr/0058-pull-mirrors.md)): `GET /api/v1/mirrors`, `GET /api/v1/repositories/{repository}/mirror`, лента `GET /api/v1/repositories/{repository}/changes`; зеркала подключаются конфигурацией установки (`arkvory configure --mirror …`, `ARKVORY_MIRRORS_FILE`), HA одной площадки — командами `arkvory cluster-*` ([ADR 0072](adr/0072-single-site-ha.md)), удалённое управление площадками — [ADR 0077](adr/0077-fleet-console.md). Справочник: [карта API](API_MAP.md) и wiki «HTTP API».
+
+Исходный статус: **planned**. Ни один маршрут ниже не зарегистрирован и не включается в текущую OpenAPI как работающий. [Протокол](REPLICATION.md) определяет инварианты, [UX](REPLICATION_UX.md) — пользовательские сценарии. UI и внешние приложения используют один и тот же API через SDK; endpoint в браузере не получает привилегий installer/SSH.
 
 ## Ответственность и доступ
 

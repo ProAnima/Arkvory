@@ -263,3 +263,14 @@ The alert rules in `deploy/monitoring/arkvory-alerts.yml` include `ArkvoryReplic
 ## Backups {#backups}
 
 The backup agent runs on the active server only, as part of the group. Keep the backup vault outside the cluster volume, for example on a NAS. See [Backups](./backups).
+
+## Limits {#limits}
+
+- Linux with the native packages only. Windows installations and Docker Compose cannot join a cluster.
+- Fencing is mandatory. A cluster without a fence device for every data server does not start, and Pacemaker never moves Arkvory without a confirmed fence. Stopping a server over SSH is not fencing.
+- `ha-2` needs its witness on a separate machine that shares neither the power supply nor the host with the data servers. A witness on a data server or on the same hypervisor turns one failure into a loss of quorum. `ha-3` needs no witness.
+- Each release is tested on virtual machines with `fence_virsh`. Your fence agent and device (IPMI, iDRAC, iLO, Redfish, a PDU or a hypervisor) are not: prove them on site with `arkvory cluster-fence-test` for every data server before you rely on the cluster, and again after you replace a server or change a fence device.
+- One site only. The cluster does not protect against the loss of the site, or against a deletion or damage that the volume copies to every server: keep [mirrors](./mirrors) at another site and [backups](./backups).
+- While a [single-copy decision](#single-copy) is active, a loss of the active server loses the writes acknowledged after it.
+- Every write waits for the other data servers, so the latency of the link adds to each write.
+- Arkvory never moves back to a repaired server by itself.

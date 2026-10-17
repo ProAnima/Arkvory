@@ -1,6 +1,6 @@
 # План автономного хранилища пакетов и файлов
 
-> Целевой план продукта. Уже реализованный standalone subset и его ограничения: [CORE_RUNBOOK](CORE_RUNBOOK.md), [CORE_VALIDATION](CORE_VALIDATION.md).
+> Исходный целевой план продукта (2026-09-22); его статус и предложения не обновляются по мере реализации. Что реализовано сейчас: [README](../README.md), [ARCHITECTURE](ARCHITECTURE.md), [CORE_RUNBOOK](CORE_RUNBOOK.md); гарантии и границы профилей: [RELIABILITY](RELIABILITY.md#profiles). В частности, HA реализован репликацией тома DRBD ([ADR 0072](adr/0072-single-site-ha.md)), а не `ObjectBlobStore`; S3-backend не реализован.
 
 Дата: 22 сентября 2026 года. Статус: архитектурный план; каркас ProAnima Arkvory подготовлен, продуктовые функции ещё не реализованы.
 

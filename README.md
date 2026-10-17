@@ -77,7 +77,7 @@ The full walkthrough: [Quick start](https://proanima.github.io/Arkvory/guide/qui
 
 ## Limits
 
-A standalone installation is one server with PostgreSQL and a local content directory: if it stops, clients wait until it is back. A high-availability cluster needs Linux servers on one site with DRBD 9, Pacemaker and a fence device for each server; Windows and Docker Compose stay standalone. Neither protects against the loss of a site: use backups and, where needed, a mirror on a second site. Content storage and the backup vault are local directories; S3 is not implemented. A new backup vault is encrypted by default, with a recovery kit kept off the server.
+A standalone installation is one server with PostgreSQL and a local content directory: if it stops, clients wait until it is back. On Windows, Node.js cannot flush directory entries to disk, so a power loss shortly after an upload can leave a published file missing; use a UPS and keep backups. A high-availability cluster needs Linux servers on one site with DRBD 9, Pacemaker and a working fence device for each server, verified on site; two data servers also need a separate witness server. Windows and Docker Compose stay standalone. Neither protects against the loss of a site: use backups and, where needed, a mirror on a second site. A mirror is asynchronous and read-only until you switch to it by hand; it does not copy accounts, keys, attachments, references or audit trails. Content storage and the backup vault are local directories; S3 is not implemented. A new backup vault is encrypted by default, with a recovery kit kept off the server.
 
 ## For developers
 
