@@ -25,11 +25,12 @@ interface Configuration {
   active: string;
   profiles: Record<string, Profile>;
 }
+/** The CLI's own directory: profiles and, for `mcp --write`, upload checkpoints. */
+export function cliHome(): string {
+  return process.env['ARKVORY_CLI_HOME'] ?? join(homedir(), '.config', 'arkvory');
+}
 function configPath() {
-  return join(
-    process.env['ARKVORY_CLI_HOME'] ?? join(homedir(), '.config', 'arkvory'),
-    'profiles.json',
-  );
+  return join(cliHome(), 'profiles.json');
 }
 export function serverUrl(value: string): string {
   try {

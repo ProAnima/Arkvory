@@ -17,7 +17,7 @@ interface PathInput {
   requestTimeoutMs?: number;
 }
 
-async function current(client: ArkvoryClient, repository: string, path: string) {
+async function current(client: Pick<ArkvoryClient, 'asset'>, repository: string, path: string) {
   try {
     return await client.asset(repository, path);
   } catch (error) {
@@ -33,10 +33,13 @@ async function current(client: ArkvoryClient, repository: string, path: string) 
  * revision_mismatch instead of overwriting it.
  */
 export async function putToPath(
-  input: PathInput & Pick<UploadInput, 'path' | 'state' | 'label' | 'annotations'>,
+  input: Omit<PathInput, 'client'> &
+    Pick<UploadInput, 'path' | 'state' | 'label' | 'annotations' | 'blob' | 'values' | 'sha256'> & {
+      client: UploadInput['client'] & Pick<ArkvoryClient, 'asset' | 'artifact' | 'setAsset'>;
+    },
 ) {
-  const blob = await openAsBlob(resolve(input.path));
-  const sha256 = await digest(blob, input.signal);
+  const blob = input.blob ?? (await openAsBlob(resolve(input.path)));
+  const sha256 = input.sha256 ?? (await digest(blob, input.signal));
   const before = await current(input.client, input.repository, input.assetPath);
   if (before) {
     const existing = await input.client.artifact(input.repository, before.artifactId);
@@ -48,7 +51,7 @@ export async function putToPath(
         id: before.artifactId,
       };
   }
-  const uploaded = await upload({ ...input, sha256 });
+  const uploaded = await upload({ ...input, blob, sha256 });
   const entry = await input.client.setAsset(
     input.repository,
     input.assetPath,

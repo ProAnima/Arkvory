@@ -2,12 +2,13 @@ import { openAsBlob } from 'node:fs';
 import { basename, resolve } from 'node:path';
 import { createHash, randomUUID } from 'node:crypto';
 import { record, text, readUpload, readAnnotations } from '@proanima/arkvory-contracts';
+import { ArkvoryIntegrityError } from '@proanima/arkvory-sdk';
 import type { ArkvoryClient } from '@proanima/arkvory-sdk';
 import { exists, exclusive, readJson, saveJson } from './local-files.js';
 import { CliError } from './errors.js';
 
 export interface UploadInput {
-  client: ArkvoryClient;
+  client: Pick<ArkvoryClient, 'create' | 'status' | 'resume'>;
   server: string;
   repository: string;
   path: string;
@@ -19,6 +20,10 @@ export interface UploadInput {
   requestTimeoutMs?: number;
   /** Already computed by the caller (put): the file is not read twice. */
   sha256?: string;
+  /** The source already open (`mcp`): read through it instead of opening `path` again. */
+  blob?: Blob;
+  /** Labels and metadata as values (`mcp`) instead of an `annotations` file. */
+  values?: { readonly labels?: readonly string[]; readonly metadata?: Record<string, string> };
 }
 export async function digest(blob: Blob, signal: AbortSignal) {
   const hash = createHash('sha256'),
@@ -42,14 +47,14 @@ export async function upload(input: UploadInput) {
     state = resolve(input.state ?? path + '.arkvory-upload.json');
   if (state === path) throw new CliError('invalid_state_path');
   return exclusive(state, async () => {
-    const blob = await openAsBlob(path);
+    const blob = input.blob ?? (await openAsBlob(path));
     const sha256 = input.sha256 ?? (await digest(blob, input.signal));
     const annotations = readAnnotations({
       revision: 0,
       labels: input.label ? [input.label] : [],
       metadata: {},
       collections: [],
-      ...(input.annotations ? record(await readJson(input.annotations)) : {}),
+      ...(input.values ?? (input.annotations ? record(await readJson(input.annotations)) : {})),
     });
     const descriptor = {
       name: basename(path),
@@ -104,6 +109,13 @@ export async function upload(input: UploadInput) {
         input.progress(bytes, blob.size);
       },
     });
+    // The receipt must name exactly the bytes that were read; nothing builds on any other.
+    if (
+      result.status !== 'available' ||
+      result.descriptor.sha256 !== sha256 ||
+      result.descriptor.size !== descriptor.size
+    )
+      throw new ArkvoryIntegrityError();
     // Retain the receipt so retrying the same command after a lost success is idempotent.
     return { ...result, checkpoint: state };
   });
