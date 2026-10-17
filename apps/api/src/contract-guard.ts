@@ -1,20 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { apiOperations, assertRouteInventory } from '@proanima/arkvory-contracts';
 import type { RuntimeRoute } from '@proanima/arkvory-contracts';
-import { registryRoute } from './oci-errors.js';
-
-const lfs = '/lfs/:repository';
-const lfsRoutes = [
-  ['POST', `${lfs}/objects/batch`],
-  ['PUT', `${lfs}/objects/:oid`],
-  ['GET', `${lfs}/objects/:oid`],
-  ['HEAD', `${lfs}/objects/:oid`],
-  ['POST', `${lfs}/locks`],
-  ['GET', `${lfs}/locks`],
-  ['HEAD', `${lfs}/locks`],
-  ['POST', `${lfs}/locks/verify`],
-  ['POST', `${lfs}/locks/:id/unlock`],
-] as const;
+import type { PlannedModule } from '@proanima/arkvory-extension-api';
 
 // Exact static exclusions. A new API beneath /console/ must not silently escape inventory.
 const staticPaths = [
@@ -31,17 +18,30 @@ const staticPaths = [
   '/console/locales/:file',
   '/console/flags/:file',
 ];
-// The container registry follows the OCI Distribution specification, not the /api/v1 contract.
-const registryMethods = ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE'];
-const exclusions = [
-  ...staticPaths.flatMap((url) => ['GET', 'HEAD'].map((method) => ({ method, url }))),
-  ...registryMethods.map((method) => ({ method, url: registryRoute })),
-  // Git LFS follows the git-lfs batch, transfer and locking APIs (ADR 0065).
-  ...lfsRoutes.map(([method, url]) => ({ method, url })),
-  // The npm registry protocol for Unity Package Manager and npm (ADR 0066).
-  ...['GET', 'HEAD', 'PUT', 'DELETE'].map((method) => ({ method, url: '/npm/:repository/*' })),
-];
-export function registerContractGuard(app: FastifyInstance): void {
+const exclusions = staticPaths.flatMap((url) => ['GET', 'HEAD'].map((method) => ({ method, url })));
+
+/**
+ * Routes beside /api/v1 belong to the protocol modules that declare their prefixes (ADR 0079,
+ * 5.7): the image registry follows the OCI Distribution specification (ADR 0063), Git LFS its
+ * batch, transfer and locking APIs (ADR 0065), npm its registry protocol (ADR 0066). A route under
+ * no enabled module's prefix is checked against the /api/v1 inventory and fails as undocumented,
+ * so a disabled protocol cannot leave a route behind; an enabled module that registered nothing
+ * under one of its prefixes fails too.
+ */
+function moduleRoutes(routes: readonly RuntimeRoute[], modules: readonly PlannedModule[]) {
+  const prefixes = modules.flatMap((m) => m.manifest.routePrefixes);
+  const owned = (route: RuntimeRoute) => prefixes.some((prefix) => route.url.startsWith(prefix));
+  const idle = prefixes.filter((prefix) => !routes.some((route) => route.url.startsWith(prefix)));
+  if (idle.length > 0)
+    throw new Error(`API route drift: module prefixes without routes [${idle.join(', ')}]`);
+  return routes.filter((route) => !owned(route));
+}
+
+/** `modules`: the enabled modules of this process, whose prefixes it serves. */
+export function registerContractGuard(
+  app: FastifyInstance,
+  modules: readonly PlannedModule[],
+): void {
   const routes: RuntimeRoute[] = [];
   app.addHook('onRoute', (options) => {
     for (const method of Array.isArray(options.method) ? options.method : [options.method])
@@ -49,7 +49,7 @@ export function registerContractGuard(app: FastifyInstance): void {
   });
   app.addHook('onReady', () =>
     Promise.resolve().then(() => {
-      assertRouteInventory(routes, apiOperations, exclusions);
+      assertRouteInventory(moduleRoutes(routes, modules), apiOperations, exclusions);
     }),
   );
 }

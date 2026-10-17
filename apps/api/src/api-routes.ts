@@ -33,11 +33,22 @@ interface Composition {
   role: 'api' | 'reader';
   policy: ReturnType<typeof resolveUploadTimeouts>;
   diagnostics: Pick<DiagnosticLogger, 'write'>;
+  /** Enabled modules of this process (ADR 0079): their routes and `capabilities.modules`. */
+  modules: readonly { readonly id: string; readonly kind: string }[];
 }
 
 /** Explicit HTTP wiring; the complete composition is never passed into a route handler. */
 export function registerApiRoutes(app: FastifyInstance, dependencies: Composition) {
-  const { services: s, context, transfers, available, role, policy, diagnostics } = dependencies;
+  const {
+    services: s,
+    context,
+    transfers,
+    available,
+    role,
+    policy,
+    diagnostics,
+    modules,
+  } = dependencies;
   const { principal, signal } = context;
   const modifying = createUploadAdmission(transfers.uploadGate, context, available);
   registerOperationRoutes(app, s.access, principal, role);
@@ -52,6 +63,7 @@ export function registerApiRoutes(app: FastifyInstance, dependencies: Compositio
   registerServiceRoutes(app, s.access, principal, role, {
     maxObjectBytes: s.service.maxObjectBytes,
     selfRegistration: s.identity.allowRegistration,
+    modules,
   });
   registerRepositoryRoutes(app, principal);
   registerArtifactRoutes(app, s.service, principal);
@@ -66,7 +78,7 @@ export function registerApiRoutes(app: FastifyInstance, dependencies: Compositio
     pins: s.pins,
   });
   registerDownloadRoutes(app, { resolver: s.resolver, browse: s.browse }, principal, sendContent);
-  registerProtocolRoutes(app, s, {
+  registerProtocolRoutes(app, s, new Set(modules.map((m) => m.id)), {
     principal,
     signal,
     context,

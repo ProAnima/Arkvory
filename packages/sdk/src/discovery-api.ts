@@ -37,6 +37,14 @@ export class DiscoveryApi {
       }),
     );
     const limits = record(r['limits']);
+    // ADR 0079, section 9: absent on servers before modules could be disabled.
+    const modules =
+      r['modules'] === undefined
+        ? undefined
+        : items(r['modules']).map((value) => {
+            const row = record(value);
+            return { id: text(row['id']), kind: text(row['kind']) };
+          });
     return {
       apiVersions: items(r['apiVersions']).map(text),
       gatewayRole,
@@ -48,6 +56,7 @@ export class DiscoveryApi {
         maxParts: integer(limits['maxParts']),
         maxPageSize: integer(limits['maxPageSize']),
       },
+      ...(modules === undefined ? {} : { modules }),
     };
   }
   async repositories(options: { after?: string; limit?: number } = {}, signal?: AbortSignal) {

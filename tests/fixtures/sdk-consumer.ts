@@ -15,7 +15,7 @@ type ChangedMethods = {
 }[keyof LegacyClient];
 
 // ADR 0041 adds an optional AbortSignal to registerPackage; ADR 0046 adds part layout limits to
-// capabilities. Existing invocations and reads remain assignable.
+// capabilities and ADR 0079 its optional modules. Existing invocations and reads remain assignable.
 // ADR 0047 widens deletion blockers (promotion_stage) and permission names (artifact.promote);
 // exhaustive consumers of these values must handle the additions.
 type Widened =

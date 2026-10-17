@@ -24,7 +24,7 @@
     },
     {
       "path": "packages/infrastructure",
-      "allowed": ["packages/application", "packages/domain"]
+      "allowed": ["packages/application", "packages/domain", "packages/extension-api"]
     },
     {
       "path": "packages/sdk",

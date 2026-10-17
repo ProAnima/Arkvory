@@ -7,11 +7,13 @@ import {
   PostgresContentPins,
   PostgresDownloadSettings,
 } from '@proanima/arkvory-infrastructure';
+import type { DiagnosticRecord } from '@proanima/arkvory-infrastructure';
 import { DownloadSettingsControl } from '@proanima/arkvory-application';
 import type { ServerConfig } from './config.js';
 import { createTransferControls } from './transfer-controls.js';
 import { planApiModules, type ApiModuleContext } from './modules.js';
 import type { ModuleRuntime } from './module-host.js';
+import { ModuleTelemetry } from './module-telemetry.js';
 
 function gatewayRole(config: ServerConfig): 'api' | 'reader' {
   const role: unknown = config.role ?? 'api';
@@ -43,15 +45,20 @@ export class ApiRuntime {
   private ticketRetry: ReturnType<typeof setInterval> | undefined;
   /** The modules of this process (ADR 0079); planned at construction, started last by `start`. */
   readonly modules: ModuleRuntime<ApiModuleContext>;
+  /** The modules' log and metrics, bound to the process log. */
+  readonly telemetry: ModuleTelemetry;
 
   constructor(
     config: ServerConfig,
     /** Release version of the core: the version of built-in modules and part of their plan. */
     coreVersion: string,
+    /** The process log; modules write to it through their telemetry. */
+    log: { write(record: DiagnosticRecord): void } = { write: () => undefined },
   ) {
     this.role = gatewayRole(config);
+    this.telemetry = new ModuleTelemetry(log, () => performance.now());
     // Module settings and the plan are checked before any pool, storage or timer exists.
-    this.modules = planApiModules(this.role, coreVersion);
+    this.modules = planApiModules(this.role, coreVersion, config.modules, this.telemetry);
     // Validate local limits before allocating pools or claiming ownership.
     this.transfers = createTransferControls(config, this.available);
     this.blobs = new LocalBlobStore(config.dataDirectory, config.storageReserveBytes);
