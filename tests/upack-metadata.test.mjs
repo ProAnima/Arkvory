@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, writeFile, readFile } from 'node:fs/promises';
+import { mkdtemp, writeFile, readFile, stat } from 'node:fs/promises';
 import { createWriteStream } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -49,8 +49,9 @@ test('prepared UPack manifest preserves nested custom metadata inside the immuta
   zip.addBuffer(Buffer.from('payload'), 'package/file.bin');
   zip.addBuffer(Buffer.from('{"sbom":"example"}'), 'metadata/sbom.json');
   zip.end();
-  await pipeline(zip.outputStream, createWriteStream(blobs.contentPath(id)));
-  const manifest = await new ZipManifestReader(blobs).inspect(id);
+  await pipeline(zip.outputStream, createWriteStream(join(blobs.root, 'blobs', id)));
+  const size = (await stat(join(blobs.root, 'blobs', id))).size;
+  const manifest = await new ZipManifestReader(blobs).inspect({ id, size });
   assert.deepEqual(manifest.original._build, custom._build);
   assert.deepEqual(manifest.original._labels, custom._labels);
   assert.equal(manifest.name, 'example');
@@ -76,6 +77,9 @@ test('UPack manifest decoding rejects invalid UTF-8 instead of changing metadata
     'upack.json',
   );
   zip.end();
-  await pipeline(zip.outputStream, createWriteStream(blobs.contentPath(id)));
-  await assert.rejects(new ZipManifestReader(blobs).inspect(id), { code: 'invalid_input' });
+  await pipeline(zip.outputStream, createWriteStream(join(blobs.root, 'blobs', id)));
+  const size = (await stat(join(blobs.root, 'blobs', id))).size;
+  await assert.rejects(new ZipManifestReader(blobs).inspect({ id, size }), {
+    code: 'invalid_input',
+  });
 });

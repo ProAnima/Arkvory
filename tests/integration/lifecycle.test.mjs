@@ -186,8 +186,8 @@ test('offline GC requires exclusive maintenance, retains published bytes, releas
     },
   });
   await gc.run(new Date().toISOString(), 0);
-  assert.deepEqual(await readFile(blobs.contentPath(kept)), data);
-  await assert.rejects(readFile(blobs.contentPath(discarded)), { code: 'ENOENT' });
+  assert.deepEqual(await readFile(join(blobs.root, 'blobs', kept)), data);
+  await assert.rejects(readFile(join(blobs.root, 'blobs', discarded)), { code: 'ENOENT' });
   await maintenance.close();
   closed = true;
   await f.restart();

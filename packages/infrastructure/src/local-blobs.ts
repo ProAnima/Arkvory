@@ -1,10 +1,11 @@
 import { createHash, randomUUID } from 'node:crypto';
-import { mkdir, open, link, unlink, stat, statfs, readFile, rm } from 'node:fs/promises';
+import { mkdir, open, link, unlink, stat, statfs, readFile, readdir, rm } from 'node:fs/promises';
 import { join, resolve, dirname, relative } from 'node:path';
 import { ArkvoryError, MAX_PARTS, requireId } from '@proanima/arkvory-domain';
 import type { ArtifactDescriptor, UploadPart } from '@proanima/arkvory-domain';
 import type { BlobStore, Cancellation } from '@proanima/arkvory-application';
 import { hasCode, syncDirectory } from './fs-durability.js';
+import type { StorageLifecycle } from './storage-lifecycle.js';
 import {
   adoptStagedFile,
   internalChunkBytes,
@@ -23,12 +24,14 @@ export function storageReserveBytes(raw: string | undefined): number {
   return value;
 }
 
-export class LocalBlobStore implements BlobStore {
+export class LocalBlobStore implements BlobStore, StorageLifecycle {
   readonly root: string;
   private reservedBytes = 0;
   constructor(
     root: string,
     private readonly reserveBytes = defaultStorageReserveBytes,
+    /** Mode of a root that `initialize` creates; a restore target is private (0700). */
+    private readonly rootMode?: number,
   ) {
     if (!Number.isSafeInteger(reserveBytes) || reserveBytes < 0)
       throw new Error('Invalid storage reserve');
@@ -36,7 +39,10 @@ export class LocalBlobStore implements BlobStore {
   }
 
   async initialize(): Promise<void> {
-    await mkdir(this.root, { recursive: true });
+    await mkdir(this.root, {
+      recursive: true,
+      ...(this.rootMode === undefined ? {} : { mode: this.rootMode }),
+    });
     await mkdir(join(this.root, 'blobs'), { recursive: true });
     await mkdir(join(this.root, 'staging'), { recursive: true });
     await mkdir(join(this.root, 'parts'), { recursive: true });
@@ -223,12 +229,19 @@ export class LocalBlobStore implements BlobStore {
     await syncDirectory(dirname(target));
   }
 
+  /** A missing file is `unavailable`, as for `exists`: readers never see a file system code. */
   async *read(
     id: string,
     size: number,
     range?: { start: number; end: number },
   ): AsyncIterable<Uint8Array> {
-    yield* streamFile(this.blob(id), size, range);
+    try {
+      yield* streamFile(this.blob(id), size, range);
+    } catch (error) {
+      if (hasCode(error, 'ENOENT'))
+        throw new ArkvoryError('unavailable', 'Artifact content is unavailable');
+      throw error;
+    }
   }
 
   private partPath(id: string, part: UploadPart): string {
@@ -298,11 +311,19 @@ export class LocalBlobStore implements BlobStore {
     cancellation.throwIfAborted();
   }
 
-  contentPath(id: string): string {
-    return this.blob(id);
-  }
-
   async ready(): Promise<void> {
     await stat(join(this.root, 'blobs'));
+  }
+
+  /** A restore target must hold nothing yet: an absent or empty storage directory. */
+  async requireEmpty(): Promise<void> {
+    try {
+      if ((await readdir(this.root)).length)
+        throw new ArkvoryError('conflict', 'Storage directory is not empty', {
+          reason: 'already_exists',
+        });
+    } catch (error) {
+      if (!hasCode(error, 'ENOENT')) throw error;
+    }
   }
 }

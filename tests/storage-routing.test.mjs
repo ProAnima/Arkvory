@@ -43,9 +43,6 @@ function createMockStore(name) {
     async checkSpace(needed) {
       operations.push({ action: 'checkSpace', needed });
     },
-    contentPath(id) {
-      return '/path/' + name + '/' + id;
-    },
   };
 }
 
@@ -105,7 +102,6 @@ test('routed blob store validates targets and dispatches operations to named bac
   assert.ok(fast.operations.some((op) => op.action === 'ready'));
   assert.ok(hdd.operations.some((op) => op.action === 'ready'));
 
-  // Content path returns target path
-  assert.equal(routed.contentPath('art-1', 'hdd'), '/path/hdd/art-1');
-  assert.equal(routed.contentPath('art-2', 'fast'), '/path/fast/art-2');
+  // Paths of stored content are not part of the routed port (ADR 0083, N9).
+  assert.equal('contentPath' in routed, false);
 });

@@ -71,7 +71,7 @@ test('local reclamation stops between filesystem phases after protection loss', 
   await mkdir(parts);
   await writeFile(join(staging, 'temporary'), 'staging');
   await writeFile(join(parts, 'part'), 'parts');
-  await writeFile(blobs.contentPath(row.id), 'content');
+  await writeFile(join(blobs.root, 'blobs', row.id), 'content');
   let checked = 0;
   const lost = new Error('Ownership lost after staging removal');
   await assert.rejects(
@@ -84,7 +84,7 @@ test('local reclamation stops between filesystem phases after protection loss', 
   );
   await assert.rejects(access(staging), { code: 'ENOENT' });
   assert.equal(await readFile(join(parts, 'part'), 'utf8'), 'parts');
-  assert.equal(await readFile(blobs.contentPath(row.id), 'utf8'), 'content');
+  assert.equal(await readFile(join(blobs.root, 'blobs', row.id), 'utf8'), 'content');
 });
 
 test('offline cleanup defers an object refused as busy, such as backup-pinned content', async () => {
