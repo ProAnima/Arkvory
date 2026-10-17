@@ -263,3 +263,14 @@ Las reglas de alerta de `deploy/monitoring/arkvory-alerts.yml` incluyen `Arkvory
 ## Copias de seguridad {#backups}
 
 El agente de copias de seguridad se ejecuta solo en el servidor activo, como parte del grupo. Mantenga el almacén de copias fuera del volumen del clúster, por ejemplo en un NAS. Consulte [Copias de seguridad](./backups).
+
+## Límites {#limits}
+
+- Solo Linux con los paquetes nativos. Las instalaciones de Windows y Docker Compose no pueden formar parte de un clúster.
+- El fencing es obligatorio. Un clúster sin un dispositivo de fencing para cada servidor de datos no arranca, y Pacemaker nunca mueve Arkvory sin un fencing confirmado. Detener un servidor por SSH no es fencing.
+- `ha-2` necesita su testigo en una máquina aparte que no comparta ni la alimentación eléctrica ni el host con los servidores de datos. Un testigo en un servidor de datos o en el mismo hipervisor convierte un solo fallo en una pérdida de quórum. `ha-3` no necesita testigo.
+- Cada versión se prueba en máquinas virtuales con `fence_virsh`. Su agente y su dispositivo de fencing (IPMI, iDRAC, iLO, Redfish, una PDU o un hipervisor) no: demuéstrelos en el sitio con `arkvory cluster-fence-test` para cada servidor de datos antes de confiar en el clúster, y de nuevo después de sustituir un servidor o cambiar un dispositivo de fencing.
+- Un solo sitio. El clúster no protege contra la pérdida del sitio, ni contra un borrado o un daño que el volumen copia a todos los servidores: mantenga [espejos](./mirrors) en otro sitio y [copias de seguridad](./backups).
+- Mientras una [decisión de copia única](#single-copy) está activa, la pérdida del servidor activo pierde las escrituras confirmadas después de ella.
+- Cada escritura espera a los demás servidores de datos, así que la latencia del enlace se suma a cada escritura.
+- Arkvory nunca vuelve por sí mismo a un servidor reparado.
