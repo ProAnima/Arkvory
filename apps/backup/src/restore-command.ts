@@ -92,7 +92,10 @@ export async function runRestore(command: RestoreCommand, context: CliContext): 
       database: new PostgresRestoreDatabase(pool),
       // The target's roots are created private (0700): they hold the restored content.
       storage: new LocalRestoreStorage(
-        localStorageBackends(command.storage, restoreReserveBytes(context.env), backends, 0o700),
+        localStorageBackends(command.storage, restoreReserveBytes(context.env), backends, {
+          rootMode: 0o700,
+          createVolumeRoots: true,
+        }),
       ),
       identity: { now: () => new Date().toISOString() },
       releaseSchema: SCHEMA_VERSION,

@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash, randomUUID } from 'node:crypto';
-import { mkdtemp, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readdir, rename, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, sep } from 'node:path';
 import {
   LocalBlobStore,
   StorageBackends,
@@ -61,14 +61,29 @@ for (const [name, Store] of [
       await directory(t, 'arkvory-contract-core-'),
       await directory(t, 'arkvory-contract-v2-'),
     ];
+    // Usable once opened, with the identity it proved, as after `probeStorageBackends`; a
+    // reopened handle knows the identity proven before.
+    let proven;
     const make = () => {
       const store = new Store(second, 0);
       const backends = new StorageBackends([
         instance('default', new LocalBlobStore(core, 0)),
         instance('volume-2', store),
       ]);
-      backends.mark('volume-2', null);
-      return { blobs: backends, lifecycle: store, backendId: 'volume-2' };
+      if (proven !== undefined) backends.mark('volume-2', null, proven);
+      const opened = async () => {
+        await store.initialize();
+        proven = await store.identity();
+        backends.mark('volume-2', null, proven);
+      };
+      const lifecycle = {
+        initialize: opened,
+        ready: () => store.ready(),
+        identity: (readOnly) => store.identity(readOnly),
+        checkSpace: (bytes) => store.checkSpace(bytes),
+        requireEmpty: () => store.requireEmpty(),
+      };
+      return { blobs: backends, lifecycle, backendId: 'volume-2' };
     };
     return { ...make(), reopen: make };
   });
@@ -97,7 +112,7 @@ test('each call goes to exactly the named storage: no probing, no fallback to de
     code: 'unavailable',
   });
   await assert.rejects(backends.collect(id, true, cancellation, 'volume-2'), { code: 'busy' });
-  backends.mark('volume-2', null);
+  backends.mark('volume-2', null, await second.identity());
   await backends.put(id, descriptor, once(), cancellation, 'volume-2');
   assert.equal(second.has(id), true);
   assert.equal(core.has(id), false);
@@ -119,14 +134,19 @@ test('read-only serves reads and refuses writes; not accepting still finishes it
   const id = randomUUID();
   const frozen = new MemoryBlobStore();
   frozen.place(id, bytes, 'archive');
+  const [draining, off] = [new MemoryBlobStore(), new MemoryBlobStore()];
   const backends = new StorageBackends([
     instance('default', new MemoryBlobStore()),
     instance('archive', frozen, { mode: 'read-only' }),
-    instance('draining', new MemoryBlobStore(), { acceptsWrites: false }),
-    instance('off', new MemoryBlobStore(), { enabled: false }),
+    instance('draining', draining, { acceptsWrites: false }),
+    instance('off', off, { enabled: false }),
   ]);
-  for (const id of ['archive', 'draining']) backends.mark(id, null);
-  backends.mark('off', null);
+  for (const [id, store] of [
+    ['archive', frozen],
+    ['draining', draining],
+    ['off', off],
+  ])
+    backends.mark(id, null, await store.identity());
   assert.deepEqual(
     backends.status().map(({ id, state }) => [id, state]),
     [
@@ -291,4 +311,105 @@ test('opening a storage proves its identity: the writer records it, others wait 
   ]);
   await probeStorageBackends(gone, known, { create: true });
   assert.equal(gone.fault('volume-2'), 'probe_failed');
+});
+
+/** Two directories as on a host: the data directory and the mount point of volume-2. */
+async function mounted(t) {
+  const data = await directory(t, 'arkvory-mount-core-');
+  const mountPoint = await directory(t, 'arkvory-mount-v2-');
+  const settings = [
+    { id: 'volume-2', directory: mountPoint, enabled: true, mode: 'full', acceptsWrites: true },
+  ];
+  const backends = localStorageBackends(data, 0, settings);
+  // As at the start of the API: `default` is initialized and has its identity before the rest.
+  await backends.core.lifecycle.initialize();
+  await backends.core.lifecycle.identity();
+  const known = records();
+  await probeStorageBackends(backends, known, { create: true });
+  assert.equal(backends.state('volume-2'), 'accepting');
+  return { data, mountPoint, settings, backends, known };
+}
+const tree = async (root) =>
+  (await readdir(root, { recursive: true })).map((entry) => entry.split(sep).join('/')).sort();
+
+test('a volume that goes away between rechecks is never written to, and nothing lands beneath its mount point', async (t) => {
+  const { mountPoint, backends } = await mounted(t);
+  const id = randomUUID();
+  await backends.put(id, descriptor, once(), cancellation, 'volume-2');
+  // The volume is unmounted: the mount point is an empty directory of the root file system.
+  // The next recheck is up to 30 s away, yet the very next write and removal already refuse.
+  const unmounted = `${mountPoint}-mounted`;
+  await rename(mountPoint, unmounted);
+  t.after(() => removeTestDirectory(unmounted));
+  await mkdir(mountPoint);
+  assert.equal(backends.state('volume-2'), 'accepting');
+  const part = { index: 0, size: bytes.length, sha256: descriptor.sha256 };
+  await assert.rejects(backends.putPart(randomUUID(), part, once(), cancellation, 'volume-2'), {
+    code: 'unavailable',
+  });
+  await assert.rejects(backends.put(randomUUID(), descriptor, once(), cancellation, 'volume-2'), {
+    code: 'unavailable',
+  });
+  await assert.rejects(backends.duplicate(id, randomUUID(), descriptor, cancellation, 'volume-2'), {
+    code: 'unavailable',
+  });
+  // Cleanup waits instead of counting files of an absent volume as removed.
+  await assert.rejects(backends.collect(id, true, cancellation, 'volume-2'), { code: 'busy' });
+  assert.deepEqual(await tree(mountPoint), []);
+  // Reads of the absent volume fail too, without falling back to another storage.
+  await assert.rejects(backends.exists(id, bytes.length, 'volume-2'), { code: 'unavailable' });
+  // Another volume at the same path (another identity) is refused the same way.
+  await writeFile(join(mountPoint, 'storage-id'), randomUUID());
+  await assert.rejects(backends.put(randomUUID(), descriptor, once(), cancellation, 'volume-2'), {
+    code: 'unavailable',
+  });
+  assert.deepEqual(await tree(mountPoint), ['storage-id']);
+  // Mounted again: the same volume is used again without waiting for a recheck.
+  await rm(mountPoint, { recursive: true });
+  await rename(unmounted, mountPoint);
+  await backends.put(randomUUID(), descriptor, once(), cancellation, 'volume-2');
+  await backends.collect(id, true, cancellation, 'volume-2');
+});
+
+test('a volume storage never creates its directory or layout outside initialize of a restore', async (t) => {
+  const parent = await directory(t, 'arkvory-volume-layout-');
+  const missing = join(parent, 'not-mounted');
+  const store = new LocalBlobStore(missing, 0, undefined, { createRoot: false });
+  await assert.rejects(store.initialize(), { code: 'ENOENT' });
+  assert.deepEqual(await tree(parent), []);
+  // A mount point without layout (the volume is not mounted): writes create nothing.
+  await mkdir(missing);
+  const part = { index: 0, size: bytes.length, sha256: descriptor.sha256 };
+  await assert.rejects(store.putPart(randomUUID(), part, once(), cancellation), {
+    code: 'unavailable',
+  });
+  await assert.rejects(store.put(randomUUID(), descriptor, once(), cancellation), {
+    code: 'unavailable',
+  });
+  assert.deepEqual(await tree(parent), ['not-mounted']);
+  await store.initialize();
+  await store.putPart(randomUUID(), part, once(), cancellation);
+  // A restore target creates its new, empty directories.
+  const restored = new LocalBlobStore(join(parent, 'restored'), 0, 0o700, { createRoot: true });
+  await restored.initialize();
+  await restored.ready();
+});
+
+test('a recheck never creates an identity on record again, and two ids for one directory are refused', async (t) => {
+  const { data, mountPoint, settings, backends, known } = await mounted(t);
+  // The layout without its identity file: an emptied or foreign volume is not adopted.
+  await rm(join(mountPoint, 'storage-id'));
+  await probeStorageBackends(backends, known, { create: true });
+  assert.equal(backends.fault('volume-2'), 'probe_failed');
+  assert.deepEqual(await tree(mountPoint), ['blobs', 'parts', 'staging']);
+  // A second id configured for the data directory itself (through a link, say) proves the
+  // identity of `default` and is refused before anything is recorded for it.
+  const aliased = localStorageBackends(data, 0, [
+    ...settings,
+    { ...settings[0], id: 'volume-3', directory: data },
+  ]);
+  const fresh = records();
+  await probeStorageBackends(aliased, fresh, { create: true });
+  assert.equal(aliased.fault('volume-3'), 'identity_mismatch');
+  assert.equal(fresh.map.has('volume-3'), false);
 });

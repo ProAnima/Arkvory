@@ -13,7 +13,11 @@ export {
   parseLocalStorageConfig,
   readLocalStorageSettings,
 } from './storage-backend-config.js';
-export type { LocalStorageConfig, LocalStorageSettings } from './storage-backend-config.js';
+export type {
+  LocalStorageConfig,
+  LocalStorageSettings,
+  StorageBackendOptions,
+} from './storage-backend-config.js';
 export {
   probeStorageBackends,
   watchStorageBackends,

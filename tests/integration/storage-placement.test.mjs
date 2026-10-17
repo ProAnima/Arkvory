@@ -340,7 +340,7 @@ test('cleanup removes content and parts in the storage that holds each, across v
     (await f.catalog.pool.query('SELECT reclaimed FROM arkvory_uploads WHERE id=$1', [other.id]))
       .rows[0].reclaimed;
   assert.equal(await reclaimed(), false);
-  storages.mark('volume-2', null);
+  storages.mark('volume-2', null, await storages.extras()[0].lifecycle.identity(true));
   await sweep(storages);
   assert.equal(await exists(join(second, 'blobs', other.id)), false);
   assert.equal(await reclaimed(), true);
@@ -386,7 +386,11 @@ test('a backup of two volumes restores each blob into the volume its upload name
   });
   assert.equal(await exists(join(target, 'default')), false);
   const restored = { ...backend, directory: join(target, 'volume-2') };
-  const report = await restore(localStorageBackends(join(target, 'default'), 0, [restored]), true);
+  // A restore creates the new, empty directories of its volumes; a running installation never.
+  const report = await restore(
+    localStorageBackends(join(target, 'default'), 0, [restored], { createVolumeRoots: true }),
+    true,
+  );
   assert.equal(report.outcome, 'restored');
   assert.equal(
     sha(await readFile(join(target, 'volume-2', 'blobs', placed.id))),

@@ -169,6 +169,17 @@ export async function readLocalStorageSettings(
   return localStorageSettings(chosen.get(LOCAL_STORAGE_MODULE), dataDirectory);
 }
 
+export interface StorageBackendOptions {
+  /** Mode of the roots a restore creates (0700). */
+  readonly rootMode?: number;
+  /**
+   * Only a restore target: `initialize` may create the directory of a volume. Otherwise it
+   * must exist, so the first start of a volume that is not mounted fails instead of writing
+   * beneath its mount point (ADR 0083, N11).
+   */
+  readonly createVolumeRoots?: boolean;
+}
+
 /**
  * The storages of a process: `default` at the data directory and every configured instance,
  * each a `LocalBlobStore` with its own reserve. Nothing is opened here.
@@ -177,26 +188,35 @@ export function localStorageBackends(
   dataDirectory: string,
   reserveBytes: number,
   configured: readonly LocalStorageSettings[],
-  rootMode?: number,
+  options: StorageBackendOptions = {},
 ): StorageBackends {
-  const local = (directory: string, reserve: number) => {
-    const store = new LocalBlobStore(directory, reserve, rootMode);
-    return { blobs: store, lifecycle: store };
-  };
+  const { rootMode } = options;
+  const volume = { createRoot: options.createVolumeRoots ?? false };
+  const core = new LocalBlobStore(dataDirectory, reserveBytes, rootMode);
   return new StorageBackends([
     {
       id: DEFAULT_STORAGE_BACKEND,
-      ...local(dataDirectory, reserveBytes),
+      blobs: core,
+      lifecycle: core,
       mode: 'full',
       acceptsWrites: true,
       enabled: true,
     },
-    ...configured.map((backend) => ({
-      id: backend.id,
-      ...local(backend.directory, backend.reserveBytes ?? reserveBytes),
-      mode: backend.mode,
-      acceptsWrites: backend.acceptsWrites,
-      enabled: backend.enabled,
-    })),
+    ...configured.map((backend) => {
+      const store = new LocalBlobStore(
+        backend.directory,
+        backend.reserveBytes ?? reserveBytes,
+        rootMode,
+        volume,
+      );
+      return {
+        id: backend.id,
+        blobs: store,
+        lifecycle: store,
+        mode: backend.mode,
+        acceptsWrites: backend.acceptsWrites,
+        enabled: backend.enabled,
+      };
+    }),
   ]);
 }

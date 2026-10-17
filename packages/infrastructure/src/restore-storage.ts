@@ -33,10 +33,11 @@ export class LocalRestoreStorage implements RestoreStorage {
   async prepare(): Promise<string> {
     await this.requireEmpty();
     await this.target.core.lifecycle.initialize();
-    // The restored installation records the identities of its other storages at first start.
+    // Each volume gets its new identity file here; the restored installation records it at
+    // the first start of its writer.
     for (const instance of this.target.extras()) {
       await instance.lifecycle.initialize();
-      this.target.mark(instance.id, null);
+      this.target.mark(instance.id, null, await instance.lifecycle.identity());
     }
     return this.target.core.lifecycle.identity();
   }

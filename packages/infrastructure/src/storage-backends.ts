@@ -47,6 +47,8 @@ type Use = 'read' | 'write' | 'collect';
 export class StorageBackends implements BlobStore, StorageBackendStates {
   private readonly instances = new Map<string, StorageInstance>();
   private readonly faults = new Map<string, StorageFault>();
+  /** The identity each usable storage proved when it was last opened or rechecked. */
+  private readonly identities = new Map<string, string>();
   readonly core: StorageInstance;
 
   constructor(instances: readonly StorageInstance[]) {
@@ -73,12 +75,23 @@ export class StorageBackends implements BlobStore, StorageBackendStates {
     return [...this.instances.keys()];
   }
 
-  /** Marks an enabled storage usable (null) or not, after opening or probing it. */
-  mark(id: string, fault: StorageFault | null): void {
+  /**
+   * Marks an enabled storage usable with the identity it proved, or unusable with a fault, after
+   * opening or rechecking it. Every later write and removal checks that identity again.
+   */
+  mark(id: string, fault: StorageFault): void;
+  mark(id: string, fault: null, identity: string): void;
+  mark(id: string, fault: StorageFault | null, identity?: string): void {
     const instance = this.instances.get(id);
     if (!instance || instance === this.core || !instance.enabled) return;
-    if (fault === null) this.faults.delete(id);
-    else this.faults.set(id, fault);
+    if (fault !== null) {
+      this.faults.set(id, fault);
+      this.identities.delete(id);
+      return;
+    }
+    if (identity === undefined) throw new Error('A usable storage needs its proven identity');
+    this.identities.set(id, identity);
+    this.faults.delete(id);
   }
 
   fault(backendId: string): StorageFault | null {
@@ -102,7 +115,7 @@ export class StorageBackends implements BlobStore, StorageBackendStates {
     }));
   }
 
-  private target(backendId: string | undefined, use: Use): CollectingBlobStore {
+  private target(backendId: string | undefined, use: Use): StorageInstance {
     const id = backendId ?? DEFAULT_STORAGE_BACKEND;
     const state = this.state(id);
     if (state === 'not_loaded' || state === 'disabled' || state === 'unavailable') {
@@ -116,7 +129,34 @@ export class StorageBackends implements BlobStore, StorageBackendStates {
     }
     const instance = this.instances.get(id);
     if (!instance) throw new ArkvoryError('unavailable', 'Storage backend is not available');
-    return instance.blobs;
+    return instance;
+  }
+
+  /**
+   * The storage at the path is still the one that was opened: its identity is read again
+   * before and after every write and removal. A volume that went away or was replaced between
+   * two rechecks is never written to, a part or object written there is not reported as stored,
+   * and files of a volume that is not mounted are never counted as removed (ADR 0083, N11).
+   * The core's storage is held by the storage ownership of the installation instead.
+   */
+  private async confirm(instance: StorageInstance, use: Use): Promise<void> {
+    if (instance === this.core) return;
+    const expected = this.identities.get(instance.id);
+    const actual = await instance.lifecycle.identity(true).catch(() => null);
+    if (expected !== undefined && actual === expected) return;
+    if (use === 'collect') throw new ArkvoryError('busy', 'Storage backend is not available');
+    throw new ArkvoryError('unavailable', 'Storage backend is not available');
+  }
+
+  private async change(
+    backendId: string | undefined,
+    use: Exclude<Use, 'read'>,
+    work: (blobs: CollectingBlobStore) => Promise<void>,
+  ): Promise<void> {
+    const instance = this.target(backendId, use);
+    await this.confirm(instance, use);
+    await work(instance.blobs);
+    await this.confirm(instance, use);
   }
 
   async putPart(
@@ -126,7 +166,9 @@ export class StorageBackends implements BlobStore, StorageBackendStates {
     cancellation: Cancellation,
     backendId?: string,
   ): Promise<void> {
-    await this.target(backendId, 'write').putPart(id, part, source, cancellation, backendId);
+    await this.change(backendId, 'write', (blobs) =>
+      blobs.putPart(id, part, source, cancellation, backendId),
+    );
   }
 
   /** Lazy like every read: an unusable storage fails the first `next`, as a read error would. */
@@ -135,7 +177,7 @@ export class StorageBackends implements BlobStore, StorageBackendStates {
     parts: readonly UploadPart[],
     backendId?: string,
   ): AsyncIterable<Uint8Array> {
-    yield* this.target(backendId, 'read').readParts(id, parts, backendId);
+    yield* this.target(backendId, 'read').blobs.readParts(id, parts, backendId);
   }
 
   async put(
@@ -145,7 +187,9 @@ export class StorageBackends implements BlobStore, StorageBackendStates {
     cancellation: Cancellation,
     backendId?: string,
   ): Promise<void> {
-    await this.target(backendId, 'write').put(id, expected, source, cancellation, backendId);
+    await this.change(backendId, 'write', (blobs) =>
+      blobs.put(id, expected, source, cancellation, backendId),
+    );
   }
 
   async verify(
@@ -154,7 +198,7 @@ export class StorageBackends implements BlobStore, StorageBackendStates {
     cancellation: Cancellation,
     backendId?: string,
   ): Promise<void> {
-    await this.target(backendId, 'read').verify(id, expected, cancellation, backendId);
+    await this.target(backendId, 'read').blobs.verify(id, expected, cancellation, backendId);
   }
 
   /** A shared copy stays in the source's storage: hard links do not cross storages. */
@@ -165,8 +209,9 @@ export class StorageBackends implements BlobStore, StorageBackendStates {
     cancellation: Cancellation,
     backendId?: string,
   ): Promise<void> {
-    const target = this.target(backendId, 'write');
-    await target.duplicate(sourceId, targetId, expected, cancellation, backendId);
+    await this.change(backendId, 'write', (blobs) =>
+      blobs.duplicate(sourceId, targetId, expected, cancellation, backendId),
+    );
   }
 
   async *read(
@@ -175,11 +220,11 @@ export class StorageBackends implements BlobStore, StorageBackendStates {
     range?: { start: number; end: number },
     backendId?: string,
   ): AsyncIterable<Uint8Array> {
-    yield* this.target(backendId, 'read').read(id, size, range, backendId);
+    yield* this.target(backendId, 'read').blobs.read(id, size, range, backendId);
   }
 
   async exists(id: string, size: number, backendId?: string): Promise<void> {
-    await this.target(backendId, 'read').exists(id, size, backendId);
+    await this.target(backendId, 'read').blobs.exists(id, size, backendId);
   }
 
   async collect(
@@ -188,6 +233,8 @@ export class StorageBackends implements BlobStore, StorageBackendStates {
     cancellation: Cancellation,
     backendId?: string,
   ): Promise<void> {
-    await this.target(backendId, 'collect').collect(id, removeContent, cancellation, backendId);
+    await this.change(backendId, 'collect', (blobs) =>
+      blobs.collect(id, removeContent, cancellation, backendId),
+    );
   }
 }

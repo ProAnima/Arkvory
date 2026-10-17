@@ -7,32 +7,43 @@ export interface StorageIdentityRecords {
   record(backendId: string, storageId: string): Promise<string>;
 }
 
+type Probed =
+  | { readonly fault: StorageFault; readonly identity?: undefined }
+  | {
+      readonly fault: null;
+      readonly identity: string;
+    };
+
 /**
  * Opens one storage, or checks an open one again. The identity file of the storage must be the
  * one on record: a volume that is not mounted, or another installation's volume at the same
  * path, is never written to. Only a process that may create (`create`, the writer API) records
- * the identity of a storage seen for the first time; the others wait for it. Failures of the
- * database are thrown: they say nothing about the storage, so its state is kept.
+ * the identity of a storage seen for the first time; the others wait for it. Once an identity
+ * is on record no process creates one again, and an identity that another storage of this
+ * process already has (two ids for one directory) is refused before it is recorded. Failures of
+ * the database are thrown: they say nothing about the storage, so its state is kept.
  */
 async function probe(
   instance: StorageInstance,
   records: StorageIdentityRecords,
   create: boolean,
-): Promise<StorageFault | null> {
+  taken: ReadonlySet<string>,
+): Promise<Probed> {
   const recorded = await records.recorded(instance.id);
   const { lifecycle } = instance;
-  const readOnly = instance.mode === 'read-only' || !create;
+  const readOnly = instance.mode === 'read-only' || !create || recorded !== null;
   let identity: string;
   try {
-    if (recorded === null && !create) return 'identity_unknown';
+    if (recorded === null && !create) return { fault: 'identity_unknown' };
     if (recorded === null && !readOnly) await lifecycle.initialize();
     else await lifecycle.ready();
     identity = await lifecycle.identity(readOnly);
   } catch {
-    return recorded === null ? 'open_failed' : 'probe_failed';
+    return { fault: recorded === null ? 'open_failed' : 'probe_failed' };
   }
+  if (taken.has(identity)) return { fault: 'identity_mismatch' };
   const expected = recorded ?? (await records.record(instance.id, identity));
-  return identity === expected ? null : 'identity_mismatch';
+  return identity === expected ? { fault: null, identity } : { fault: 'identity_mismatch' };
 }
 
 export interface ProbeOptions {
@@ -51,17 +62,23 @@ export async function probeStorageBackends(
   records: StorageIdentityRecords,
   options: ProbeOptions,
 ): Promise<void> {
+  const taken = new Set<string>();
+  const core = await backends.core.lifecycle.identity(true).catch(() => null);
+  if (core !== null) taken.add(core);
   for (const instance of backends.extras()) {
     if (!instance.enabled) continue;
     const before = backends.fault(instance.id);
-    let fault: StorageFault | null;
+    let probed: Probed;
     try {
-      fault = await probe(instance, records, options.create);
+      probed = await probe(instance, records, options.create, taken);
     } catch {
       continue;
     }
-    backends.mark(instance.id, fault);
-    if (before !== fault) options.changed?.(instance.id, fault);
+    if (probed.fault === null) {
+      taken.add(probed.identity);
+      backends.mark(instance.id, null, probed.identity);
+    } else backends.mark(instance.id, probed.fault);
+    if (before !== probed.fault) options.changed?.(instance.id, probed.fault);
   }
 }
 
