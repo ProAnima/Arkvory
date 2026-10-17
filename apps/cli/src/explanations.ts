@@ -73,8 +73,12 @@ const local: Readonly<Record<string, Text>> = {
     'Укажите --max-output-bytes от 4096 до 1048576 (по умолчанию 65536).',
   ],
   invalid_path: [
-    'Pass a file path relative to the MCP root.',
-    'Укажите путь к файлу относительно корня MCP.',
+    'Pass a file path relative to the MCP root; on Windows not a device name such as NUL, a stream (a:b) or a name ending in a dot or space.',
+    'Укажите путь к файлу относительно корня MCP; в Windows — не имя устройства вроде NUL, не поток (a:b) и не имя с точкой или пробелом в конце.',
+  ],
+  invalid_cursor: [
+    'Pass back the `next` value of the previous result unchanged.',
+    'Передайте значение `next` предыдущего результата без изменений.',
   ],
   path_outside_root: [
     'The path leads outside the MCP root or is not a regular file. Choose a file below --root.',

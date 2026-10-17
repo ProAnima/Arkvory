@@ -2,6 +2,7 @@ import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/server';
 import type { UploadResponse } from '@proanima/arkvory-contracts';
 import type { KeyActions, ToolContext } from './context.js';
+import { CliError } from '../errors.js';
 import { listResult, objectResult } from './output.js';
 import {
   afterInput,
@@ -293,6 +294,13 @@ function registerPackageTool(server: McpServer, ctx: ToolContext) {
   );
 }
 
+function revisionCursor(after: string | undefined): number | undefined {
+  if (after === undefined) return undefined;
+  if (!/^[1-9][0-9]{0,15}$/.test(after) || !Number.isSafeInteger(Number(after)))
+    throw new CliError('invalid_cursor');
+  return Number(after);
+}
+
 function registerFileTool(server: McpServer, ctx: ToolContext) {
   defineTool(
     server,
@@ -300,14 +308,14 @@ function registerFileTool(server: McpServer, ctx: ToolContext) {
     {
       title: 'Files by path',
       description:
-        'Current files of a repository by path prefix; with `path`, the revision history of that path (newest first, 50 per page, continue with `before`).',
+        'Current files of a repository by path prefix; with `path`, the revision history of that path (newest first, 50 per page). Both continue with `after` = `next`.',
       input: z.strictObject({
         repository: repositoryInput,
         prefix: z.string().max(1024).optional(),
         after: afterInput,
         limit: limitInput,
         path: z.string().min(1).max(1024).optional(),
-        before: z.int().min(1).optional(),
+        before: z.int().min(1).optional().describe('History only: revisions older than this one.'),
       }),
       output: pageOutput(z.looseObject({ path: text, revision: z.number(), artifactId: text })),
       annotations: readOnly,
@@ -315,7 +323,9 @@ function registerFileTool(server: McpServer, ctx: ToolContext) {
     async (input, call) => {
       const repository = input.repository ?? ctx.repository;
       const path = input.path;
-      if (path !== undefined)
+      if (path !== undefined) {
+        // The history cursor is a revision number; as `after` it continues like every other list.
+        const before = input.before ?? revisionCursor(input.after);
         return listResult(ctx, {
           limit: 50,
           noun: 'revisions',
@@ -323,13 +333,14 @@ function registerFileTool(server: McpServer, ctx: ToolContext) {
             const page = await ctx.client.assetHistory(
               repository,
               path,
-              input.before,
+              before,
               deadline(ctx, call),
             );
             return { items: page.items, next: page.next === null ? null : String(page.next) };
           },
           cursorOf: (revision) => String(revision.revision),
         });
+      }
       return listResult(ctx, {
         limit: input.limit ?? 100,
         noun: 'files',

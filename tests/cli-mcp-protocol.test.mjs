@@ -171,3 +171,30 @@ test('tools/call returns structured, cleaned data and coded errors', async (t) =
   assert.ok(missing.error || missing.result.isError, 'a hidden tool cannot be called');
   assert.equal(JSON.stringify(mcp.transcript).includes(KEY), false, 'the key never reaches stdout');
 });
+
+test('file history continues with after = next like every other list', async (t) => {
+  const asked = [];
+  const revision = (n) => ({ path: 'a/b.txt', revision: n, artifactId: ID });
+  const mcp = await connect(t, ['asset.read'], {
+    assetHistory: async (repository, path, before) => {
+      asked.push(before);
+      const top = before === undefined ? 100 : before - 1;
+      return { items: [revision(top), revision(top - 1)], next: top - 1 };
+    },
+  });
+  await mcp.initialize('2025-11-25');
+  mcp.notify('notifications/initialized');
+  const history = (args) =>
+    mcp.request('tools/call', { name: 'arkvory_files', arguments: { path: 'a/b.txt', ...args } });
+  const first = (await history({})).result;
+  assert.match(first.content[0].text, /more with after = next/);
+  const second = (await history({ after: first.structuredContent.next })).result;
+  assert.deepEqual(
+    second.structuredContent.items.map((item) => item.revision),
+    [98, 97],
+  );
+  assert.equal((await history({ before: 50 })).result.isError, undefined);
+  assert.deepEqual(asked, [undefined, 99, 50]);
+  const forged = (await history({ after: 'x' })).result;
+  assert.equal(forged.structuredContent.error.code, 'invalid_cursor');
+});
