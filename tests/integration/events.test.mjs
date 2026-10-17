@@ -534,3 +534,34 @@ test('a retention backlog larger than one pass goes on the next tick, not a minu
     JSON.stringify(records),
   );
 });
+
+test('concurrent sequencers and retention keep positions dense and in id order', async (t) => {
+  const f = await setup(t, { keys });
+  // Two workers for a moment (a lost lease not noticed yet): the state row orders them.
+  const logs = [new PostgresEventLog(f.catalog.pool), new PostgresEventLog(f.catalog.pool)];
+  await f.catalog.pool.query(
+    `INSERT INTO arkvory_events(type,schema_version,scope,repository,partition_key,subject,data)
+     SELECT 'artifact.published',1,'repository','releases','repository:releases','e'||n,
+       jsonb_build_object('repository','releases','artifactId',gen_random_uuid())
+     FROM generate_series(1,3000) n`,
+  );
+  let total = 0;
+  for (let round = 0; round < 20; round++) {
+    const counts = await Promise.all([
+      ...logs.map((log) => log.sequence(250)),
+      ...logs.map((log) => log.sequence(250)),
+      logs[0].prune({ hours: 168, maxRows: 2000n }),
+    ]);
+    total += counts.slice(0, 4).reduce((sum, count) => sum + count, 0);
+    if (total === 3000) break;
+  }
+  assert.equal(total, 3000);
+  await logs[1].prune({ hours: 168, maxRows: 2000n });
+  const rows = await f.catalog.pool.query('SELECT position::text FROM arkvory_events ORDER BY id');
+  assert.deepEqual(
+    rows.rows.map((row) => row.position),
+    Array.from({ length: 2000 }, (_, index) => String(index + 1001)),
+  );
+  const snapshot = await logs[0].snapshot();
+  assert.deepEqual([snapshot.head, snapshot.oldest, snapshot.prunedTotal], [3000n, 1000n, 1000n]);
+});
