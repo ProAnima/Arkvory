@@ -51,7 +51,7 @@ Instale el archivo de la versión nueva con `--yes`. El paquete anterior se qued
 | Volver a permitir otras versiones | `sudo arkvory module pin sample --unpin --root …`               |
 | Instalar una versión anterior     | `sudo arkvory module install <file> --downgrade --yes --root …` |
 
-Un módulo fijado rechaza cualquier otra versión hasta que lo libere.
+Un módulo fijado rechaza cualquier otra versión hasta que lo libere. Una versión anterior a la instalada, o a una eliminada cuyo paquete sigue en el host, necesita `--downgrade`.
 
 ## Comprobar los módulos instalados {#list}
 
@@ -105,7 +105,7 @@ Los plugins de su equipo o de otro autor se firman con la clave del autor. Añad
 | `--expires`          | Hora UTC como `2027-01-31T00:00:00Z`. Después, la clave no acepta instalaciones nuevas                                            |
 | `--allow-in-process` | Permite que los plugins de la clave se ejecuten dentro del proceso de Arkvory. Ese código obtiene todos los derechos del servicio |
 
-Los ids de plugins siempre empiezan por `op-`. Una clave de plugins nunca firma módulos de ProAnimaStudio, y las claves de ProAnimaStudio nunca firman plugins `op-`.
+Los ids de plugins siempre empiezan por `op-`. Una clave de plugins nunca firma módulos de ProAnimaStudio, y las claves de ProAnimaStudio nunca firman plugins `op-`. Una clave que el host ya conoce con otro id o como clave de otro tipo se rechaza (`duplicate_key`). Las firmas deben ser prehash, lo predeterminado en las versiones actuales de minisign; las firmas heredadas se rechazan con `signature_algorithm`.
 
 `sudo arkvory module trust list --root …` muestra las claves de confianza. `sudo arkvory module trust remove <key id> --root …` elimina una.
 
@@ -113,4 +113,4 @@ Esta versión mantiene la lista de confianza; los plugins se instalan con una ve
 
 ## Después de una interrupción {#recover}
 
-Cada cambio del conjunto de módulos se registra en el diario de actualizaciones. Si un comando se detiene a medias, el siguiente comando de despliegue se rechaza con `Interrupted deployment`. Ejecute `sudo arkvory recover --root …`: restaura el conjunto de módulos anterior.
+Cada cambio del conjunto de módulos se registra en el diario de actualizaciones. Si un comando se detiene a medias, el siguiente comando de despliegue se rechaza con `Interrupted deployment`. Ejecute `sudo arkvory recover --root …`: restaura el conjunto de módulos anterior. Hasta entonces, todo comando de módulos que cambia algo se rechaza, incluidos `module trust` y `module revocations`.

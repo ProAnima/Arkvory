@@ -51,7 +51,7 @@ Instale o arquivo da nova versão com `--yes`. O pacote anterior fica no host at
 | Permitir outras versões de novo | `sudo arkvory module pin sample --unpin --root …`               |
 | Instalar uma versão mais antiga | `sudo arkvory module install <file> --downgrade --yes --root …` |
 
-Um módulo fixado recusa qualquer outra versão até você liberá-lo.
+Um módulo fixado recusa qualquer outra versão até você liberá-lo. Uma versão mais antiga que a instalada, ou que uma removida cujo pacote ainda está no host, precisa de `--downgrade`.
 
 ## Verificar os módulos instalados {#list}
 
@@ -105,7 +105,7 @@ Plugins da sua equipe ou de outro autor são assinados com a chave do autor. Adi
 | `--expires`          | Hora UTC como `2027-01-31T00:00:00Z`. Depois dela, a chave não aceita novas instalações                              |
 | `--allow-in-process` | Permite que os plugins da chave rodem dentro do processo do Arkvory. Esse código recebe todos os direitos do serviço |
 
-Ids de plugins sempre começam com `op-`. Uma chave de plugins nunca assina módulos da ProAnimaStudio, e as chaves da ProAnimaStudio nunca assinam plugins `op-`.
+Ids de plugins sempre começam com `op-`. Uma chave de plugins nunca assina módulos da ProAnimaStudio, e as chaves da ProAnimaStudio nunca assinam plugins `op-`. Uma chave que o host já conhece com outro id ou como chave de outro tipo é recusada (`duplicate_key`). As assinaturas devem ser prehash, o padrão das versões atuais do minisign; assinaturas legadas são recusadas com `signature_algorithm`.
 
 `sudo arkvory module trust list --root …` mostra as chaves confiáveis. `sudo arkvory module trust remove <key id> --root …` remove uma.
 
@@ -113,4 +113,4 @@ Esta versão mantém a lista de confiança; os plugins são instalados por uma v
 
 ## Depois de uma interrupção {#recover}
 
-Cada mudança do conjunto de módulos é registrada no diário de atualizações. Se um comando parar no meio, o próximo comando de implantação recusa com `Interrupted deployment`. Execute `sudo arkvory recover --root …`: ele restaura o conjunto de módulos anterior.
+Cada mudança do conjunto de módulos é registrada no diário de atualizações. Se um comando parar no meio, o próximo comando de implantação recusa com `Interrupted deployment`. Execute `sudo arkvory recover --root …`: ele restaura o conjunto de módulos anterior. Até lá, todo comando de módulos que muda algo é recusado, inclusive `module trust` e `module revocations`.

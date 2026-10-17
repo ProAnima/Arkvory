@@ -51,7 +51,7 @@ description: 在主机上安装、检查和移除已签名的模块包，并保�
 | 重新允许其他版本 | `sudo arkvory module pin sample --unpin --root …`               |
 | 安装更旧的版本   | `sudo arkvory module install <file> --downgrade --yes --root …` |
 
-已固定的模块会拒绝任何其他版本，直到您取消固定。
+已固定的模块会拒绝任何其他版本，直到您取消固定。 比已安装版本更旧的版本，或比已移除但其软件包仍在主机上的版本更旧的版本，需要 `--downgrade`。
 
 ## 检查已安装的模块 {#list}
 
@@ -105,7 +105,7 @@ sudo arkvory module revocations /root/module-revocations.json --root /opt/proani
 | `--expires`          | UTC 时间，例如 `2027-01-31T00:00:00Z`。此后该密钥不再接受新的安装           |
 | `--allow-in-process` | 允许该密钥的插件在 Arkvory 进程内运行。此类代码获得服务的全部权限           |
 
-插件 id 始终以 `op-` 开头。插件密钥从不签名 ProAnimaStudio 模块，ProAnimaStudio 的密钥也从不签名 `op-` 插件。
+插件 id 始终以 `op-` 开头。插件密钥从不签名 ProAnimaStudio 模块，ProAnimaStudio 的密钥也从不签名 `op-` 插件。 主机已经以其他 id 或其他类型的密钥知道的密钥会被拒绝（`duplicate_key`）。签名必须是预哈希签名，即当前 minisign 版本的默认方式；旧式签名会以 `signature_algorithm` 拒绝。
 
 `sudo arkvory module trust list --root …` 显示受信任的密钥。`sudo arkvory module trust remove <key id> --root …` 移除一个密钥。
 
@@ -113,4 +113,4 @@ sudo arkvory module revocations /root/module-revocations.json --root /opt/proani
 
 ## 中断之后 {#recover}
 
-模块集合的每次更改都会记录在更新日志中。如果命令中途停止，下一个部署命令会以 `Interrupted deployment` 拒绝。运行 `sudo arkvory recover --root …`：它会恢复之前的模块集合。
+模块集合的每次更改都会记录在更新日志中。如果命令中途停止，下一个部署命令会以 `Interrupted deployment` 拒绝。运行 `sudo arkvory recover --root …`：它会恢复之前的模块集合。 在此之前，每个会更改内容的模块命令都会拒绝，包括 `module trust` 和 `module revocations`。

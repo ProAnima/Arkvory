@@ -51,7 +51,7 @@ Installez le fichier de la nouvelle version avec `--yes`. Le paquet précédent 
 | Autoriser de nouveau d'autres versions | `sudo arkvory module pin sample --unpin --root …`               |
 | Installer une version plus ancienne    | `sudo arkvory module install <file> --downgrade --yes --root …` |
 
-Un module épinglé refuse toute autre version jusqu'à ce que vous retiriez l'épinglage.
+Un module épinglé refuse toute autre version jusqu'à ce que vous retiriez l'épinglage. Une version plus ancienne que la version installée, ou qu'une version supprimée dont le paquet est encore sur l'hôte, exige `--downgrade`.
 
 ## Vérifier les modules installés {#list}
 
@@ -105,7 +105,7 @@ Les plugins de votre équipe ou d'un autre auteur sont signés avec la clé de l
 | `--expires`          | Heure UTC comme `2027-01-31T00:00:00Z`. Ensuite, la clé n'accepte plus de nouvelle installation                         |
 | `--allow-in-process` | Permet aux plugins de la clé de s'exécuter dans le processus d'Arkvory. Ce code reçoit tous les droits du service       |
 
-Les ids de plugins commencent toujours par `op-`. Une clé de plugins ne signe jamais de modules ProAnimaStudio, et les clés ProAnimaStudio ne signent jamais de plugins `op-`.
+Les ids de plugins commencent toujours par `op-`. Une clé de plugins ne signe jamais de modules ProAnimaStudio, et les clés ProAnimaStudio ne signent jamais de plugins `op-`. Une clé que l'hôte connaît déjà sous un autre id ou comme clé d'une autre sorte est refusée (`duplicate_key`). Les signatures doivent être pré-hachées, le choix par défaut des versions actuelles de minisign ; les anciennes signatures sont refusées avec `signature_algorithm`.
 
 `sudo arkvory module trust list --root …` affiche les clés de confiance. `sudo arkvory module trust remove <key id> --root …` en supprime une.
 
@@ -113,4 +113,4 @@ Cette version tient la liste de confiance ; les plugins seront installés par un
 
 ## Après une interruption {#recover}
 
-Chaque changement de l'ensemble des modules est enregistré dans le journal des mises à jour. Si une commande s'arrête en cours de route, la commande de déploiement suivante est refusée avec `Interrupted deployment`. Exécutez `sudo arkvory recover --root …` : elle rétablit l'ensemble de modules précédent.
+Chaque changement de l'ensemble des modules est enregistré dans le journal des mises à jour. Si une commande s'arrête en cours de route, la commande de déploiement suivante est refusée avec `Interrupted deployment`. Exécutez `sudo arkvory recover --root …` : elle rétablit l'ensemble de modules précédent. D'ici là, toute commande de modules qui modifie quelque chose est refusée, y compris `module trust` et `module revocations`.

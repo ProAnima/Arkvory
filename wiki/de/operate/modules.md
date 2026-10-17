@@ -51,7 +51,7 @@ Installieren Sie die Datei der neuen Version mit `--yes`. Das vorherige Paket bl
 | Andere Versionen wieder zulassen | `sudo arkvory module pin sample --unpin --root …`               |
 | Eine ältere Version installieren | `sudo arkvory module install <file> --downgrade --yes --root …` |
 
-Ein festgehaltenes Modul lehnt jede andere Version ab, bis Sie es freigeben.
+Ein festgehaltenes Modul lehnt jede andere Version ab, bis Sie es freigeben. Eine Version, die älter ist als die installierte oder als eine entfernte, deren Paket noch auf dem Host liegt, braucht `--downgrade`.
 
 ## Installierte Module prüfen {#list}
 
@@ -105,7 +105,7 @@ Plugins Ihres Teams oder eines anderen Autors sind mit dem Schlüssel des Autors
 | `--expires`          | UTC-Zeit wie `2027-01-31T00:00:00Z`. Danach nimmt der Schlüssel keine neue Installation mehr an                              |
 | `--allow-in-process` | Erlaubt den Plugins des Schlüssels, im Prozess von Arkvory zu laufen. Solcher Code erhält alle Rechte des Dienstes           |
 
-Plugin-IDs beginnen immer mit `op-`. Ein Plugin-Schlüssel signiert nie Module von ProAnimaStudio, und Schlüssel von ProAnimaStudio signieren nie `op-`-Plugins.
+Plugin-IDs beginnen immer mit `op-`. Ein Plugin-Schlüssel signiert nie Module von ProAnimaStudio, und Schlüssel von ProAnimaStudio signieren nie `op-`-Plugins. Ein Schlüssel, den der Host schon unter einer anderen ID oder als Schlüssel einer anderen Art kennt, wird abgelehnt (`duplicate_key`). Signaturen müssen vorab gehasht sein, die Vorgabe aktueller minisign-Versionen; alte Signaturen werden mit `signature_algorithm` abgelehnt.
 
 `sudo arkvory module trust list --root …` zeigt die vertrauenswürdigen Schlüssel. `sudo arkvory module trust remove <key id> --root …` entfernt einen.
 
@@ -113,4 +113,4 @@ Diese Version führt die Vertrauensliste; Plugins installiert eine spätere Vers
 
 ## Nach einer Unterbrechung {#recover}
 
-Jede Änderung der Modulmenge wird im Aktualisierungsjournal festgehalten. Bricht ein Befehl auf halbem Weg ab, lehnt der nächste Bereitstellungsbefehl mit `Interrupted deployment` ab. Führen Sie `sudo arkvory recover --root …` aus: Es stellt die vorherige Modulmenge wieder her.
+Jede Änderung der Modulmenge wird im Aktualisierungsjournal festgehalten. Bricht ein Befehl auf halbem Weg ab, lehnt der nächste Bereitstellungsbefehl mit `Interrupted deployment` ab. Führen Sie `sudo arkvory recover --root …` aus: Es stellt die vorherige Modulmenge wieder her. Bis dahin lehnt jeder Modulbefehl ab, der etwas ändert, auch `module trust` und `module revocations`.

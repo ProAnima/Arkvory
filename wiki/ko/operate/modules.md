@@ -51,7 +51,7 @@ Arkvory는 다음 경우 패키지를 거부합니다.
 | 다른 버전 다시 허용 | `sudo arkvory module pin sample --unpin --root …`               |
 | 더 오래된 버전 설치 | `sudo arkvory module install <file> --downgrade --yes --root …` |
 
-고정된 모듈은 고정을 해제할 때까지 다른 모든 버전을 거부합니다.
+고정된 모듈은 고정을 해제할 때까지 다른 모든 버전을 거부합니다. 설치된 버전보다, 또는 패키지가 아직 호스트에 남아 있는 제거된 버전보다 오래된 버전에는 `--downgrade`가 필요합니다.
 
 ## 설치된 모듈 확인 {#list}
 
@@ -105,7 +105,7 @@ sudo arkvory module revocations /root/module-revocations.json --root /opt/proani
 | `--expires`          | `2027-01-31T00:00:00Z` 같은 UTC 시간. 이후에는 키로 새 설치를 받아들이지 않음                  |
 | `--allow-in-process` | 키의 플러그인이 Arkvory 프로세스 안에서 실행되도록 허용. 이런 코드는 서비스의 모든 권한을 가짐 |
 
-플러그인 id는 항상 `op-`로 시작합니다. 플러그인 키는 ProAnimaStudio 모듈에 서명하지 않으며, ProAnimaStudio 키는 `op-` 플러그인에 서명하지 않습니다.
+플러그인 id는 항상 `op-`로 시작합니다. 플러그인 키는 ProAnimaStudio 모듈에 서명하지 않으며, ProAnimaStudio 키는 `op-` 플러그인에 서명하지 않습니다. 호스트가 이미 다른 id 또는 다른 종류의 키로 알고 있는 키는 거부됩니다(`duplicate_key`). 서명은 현재 minisign 버전의 기본값인 prehash 방식이어야 하며, 레거시 서명은 `signature_algorithm`으로 거부됩니다.
 
 `sudo arkvory module trust list --root …`는 신뢰하는 키를 보여 줍니다. `sudo arkvory module trust remove <key id> --root …`는 키 하나를 제거합니다.
 
@@ -113,4 +113,4 @@ sudo arkvory module revocations /root/module-revocations.json --root /opt/proani
 
 ## 중단된 후 {#recover}
 
-모듈 집합의 모든 변경은 업데이트 저널에 기록됩니다. 명령이 중간에 멈추면 다음 배포 명령이 `Interrupted deployment`로 거부됩니다. `sudo arkvory recover --root …`를 실행하십시오. 이전 모듈 집합을 복원합니다.
+모듈 집합의 모든 변경은 업데이트 저널에 기록됩니다. 명령이 중간에 멈추면 다음 배포 명령이 `Interrupted deployment`로 거부됩니다. `sudo arkvory recover --root …`를 실행하십시오. 이전 모듈 집합을 복원합니다. 그때까지 무언가를 바꾸는 모든 모듈 명령은 거부되며, `module trust`와 `module revocations`도 마찬가지입니다.

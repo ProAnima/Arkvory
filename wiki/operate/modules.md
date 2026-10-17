@@ -51,7 +51,7 @@ Install the file of the new version with `--yes`. The previous package stays on 
 | Allow other versions again | `sudo arkvory module pin sample --unpin --root …`               |
 | Install an older version   | `sudo arkvory module install <file> --downgrade --yes --root …` |
 
-A pinned module refuses every other version until you unpin it.
+A pinned module refuses every other version until you unpin it. A version older than the installed one, or than a removed one whose package is still on the host, needs `--downgrade`.
 
 ## Check installed modules {#list}
 
@@ -105,7 +105,7 @@ Plugins of your own team or of another author are signed with the author's key. 
 | `--expires`          | UTC time such as `2027-01-31T00:00:00Z`. After it, the key accepts no new installation               |
 | `--allow-in-process` | Allows the key's plugins to run inside the Arkvory process. Such code gets all rights of the service |
 
-Plugin ids always start with `op-`. A plugin key never signs ProAnimaStudio modules, and ProAnimaStudio keys never sign `op-` plugins.
+Plugin ids always start with `op-`. A plugin key never signs ProAnimaStudio modules, and ProAnimaStudio keys never sign `op-` plugins. A key that the host already knows under another id or as a key of another kind is refused (`duplicate_key`). Signatures must be prehashed, the default of current minisign versions; legacy signatures are refused with `signature_algorithm`.
 
 `sudo arkvory module trust list --root …` shows the trusted keys. `sudo arkvory module trust remove <key id> --root …` removes one.
 
@@ -113,4 +113,4 @@ This release keeps the trust list; plugins are installed by a later release.
 
 ## After an interruption {#recover}
 
-Every change of the module set is recorded in the update journal. If a command stops halfway, the next deployment command refuses with `Interrupted deployment`. Run `sudo arkvory recover --root …`: it restores the previous module set.
+Every change of the module set is recorded in the update journal. If a command stops halfway, the next deployment command refuses with `Interrupted deployment`. Run `sudo arkvory recover --root …`: it restores the previous module set. Until then, every module command that changes something refuses, `module trust` and `module revocations` included.
