@@ -12,7 +12,6 @@ export interface LocalStorageLifecycle {
   initialize(): Promise<void>;
   identity(readOnly?: boolean): Promise<string>;
   checkSpace(needed: number): Promise<void>;
-  contentPath(id: string): string;
 }
 
 function hasLifecycle(store: unknown): store is LocalStorageLifecycle {
@@ -170,14 +169,6 @@ export class RoutedBlobStore implements BlobStore {
         await store.collect(id, removeContent, cancellation, key);
       }
     }
-  }
-
-  contentPath(id: string, backendId?: string): string {
-    const store = this.getTarget(backendId);
-    if (hasLifecycle(store)) {
-      return store.contentPath(id);
-    }
-    throw new ArkvoryError('unavailable', 'Storage target does not support local content paths');
   }
 
   async ready(): Promise<void> {

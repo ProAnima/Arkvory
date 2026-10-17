@@ -1,12 +1,15 @@
 import { PostgresCleanup, failureCause } from '@proanima/arkvory-infrastructure';
 import { ArkvoryError } from '@proanima/arkvory-domain';
+import type { BlobStore } from '@proanima/arkvory-application';
 import { resources } from './runtime.js';
 import { maintenanceFailed, maintenanceLogger } from './maintenance-log.js';
 
 const diagnostics = await maintenanceLogger('scrub');
 const started = performance.now();
 try {
-  const { catalog, blobs } = await resources('maintenance');
+  const { catalog, blobs: local } = await resources('maintenance');
+  // Through the port: each upload names the storage that holds it (ADR 0083, N9).
+  const blobs: BlobStore = local;
   let checked = 0,
     failed = 0;
   let after: string | undefined;
@@ -22,11 +25,12 @@ try {
         if (row.status !== 'available') continue;
         const upload = await catalog.get(row.repository, row.id);
         try {
-          await blobs.verify(row.id, upload.descriptor, {
+          const cancellation = {
             throwIfAborted() {
               if (!catalog.active) throw new ArkvoryError('unavailable', 'Maintenance claim lost');
             },
-          });
+          };
+          await blobs.verify(row.id, upload.descriptor, cancellation, upload.storageBackend);
           checked++;
         } catch (error) {
           failed++;

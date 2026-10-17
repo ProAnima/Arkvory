@@ -152,12 +152,13 @@ Les paquets enregistrés sont ce que compte la politique de rétention d’un d�
 
 ## Erreurs {#errors}
 
-| Réponse                                | Signification                                                                                                                                                        |
-| -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `400 invalid_input` à l’enregistrement | Ce n’est pas un ZIP UPack valide, pas d’`upack.json` à la racine, ou un nom ou une version incorrects                                                                |
-| `409 version_exists`                   | L’identité appartient déjà à une autre archive. Publiez une nouvelle version. Promouvoir vers un dépôt qui a la version avec d’autres octets échoue de la même façon |
-| `404 not_found` à la résolution        | Rien ne correspond aux filtres. Vérifiez le groupe, la plage et l’étape                                                                                              |
-| `403 permission_missing`               | La clé n’a pas `package.read`, `package.publish` ou `content.read`                                                                                                   |
+| Réponse                                | Signification                                                                                                                                                                                                                 |
+| -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `400 invalid_input` à l’enregistrement | Ce n’est pas un ZIP UPack valide, pas d’`upack.json` à la racine, ou un nom ou une version incorrects                                                                                                                         |
+| `503 unavailable` à l’enregistrement   | L’archive stockée est illisible : le stockage ne répond pas ou l’archive y manque. Le SDK et le client en ligne de commande répètent la requête. Si la réponse persiste, demandez à un administrateur de vérifier le stockage |
+| `409 version_exists`                   | L’identité appartient déjà à une autre archive. Publiez une nouvelle version. Promouvoir vers un dépôt qui a la version avec d’autres octets échoue de la même façon                                                          |
+| `404 not_found` à la résolution        | Rien ne correspond aux filtres. Vérifiez le groupe, la plage et l’étape                                                                                                                                                       |
+| `403 permission_missing`               | La clé n’a pas `package.read`, `package.publish` ou `content.read`                                                                                                                                                            |
 
 ## Pages associées {#related-pages}
 

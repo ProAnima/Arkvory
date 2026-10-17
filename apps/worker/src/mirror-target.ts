@@ -10,6 +10,7 @@ import {
   StorageService,
 } from '@proanima/arkvory-application';
 import type {
+  BlobStore,
   Cancellation,
   MirrorAnnotation,
   MirrorArtifact,
@@ -34,9 +35,9 @@ import {
   stagedFile,
 } from '@proanima/arkvory-infrastructure';
 import type {
-  LocalBlobStore,
   PostgresCatalog,
   PostgresContentPins,
+  StagingArea,
 } from '@proanima/arkvory-infrastructure';
 
 const absent = (error: unknown) => error instanceof ArkvoryError && error.code === 'not_found';
@@ -71,10 +72,8 @@ async function stagePart(
 }
 
 /** Part files of copies in progress; only a worker that runs no copy yet may clear them. */
-export async function clearMirrorStaging(dataDirectory: string): Promise<void> {
-  // An empty root would resolve against the working directory of the process.
-  if (dataDirectory === '') throw new Error('The data directory is not set');
-  await rm(join(dataDirectory, 'mirror-staging'), { recursive: true, force: true });
+export async function clearMirrorStaging(staging: StagingArea): Promise<void> {
+  await rm(staging.directory('mirror-staging'), { recursive: true, force: true });
 }
 
 /**
@@ -95,8 +94,8 @@ export class ServiceMirrorTarget implements MirrorTarget {
   constructor(
     private readonly repository: string,
     private readonly catalog: PostgresCatalog,
-    private readonly blobs: LocalBlobStore,
-    dataDirectory: string,
+    private readonly blobs: BlobStore,
+    staging: StagingArea,
     /** Owned by the caller, closed before the catalog: it holds its own database session. */
     pins: PostgresContentPins,
   ) {
@@ -120,7 +119,7 @@ export class ServiceMirrorTarget implements MirrorTarget {
       { next: randomUUID, now },
     );
     this.deletions = new PostgresRetention(pool);
-    this.staging = join(dataDirectory, 'mirror-staging');
+    this.staging = staging.directory('mirror-staging');
     this.registry = new MirrorRegistryRows(repository, pool, this.principal, storage);
     this.lfs = new PostgresLfsIndex(pool);
     this.adoption = new MirrorAdoption(

@@ -5,6 +5,7 @@ import { readFile, access, mkdir, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { resolve } from 'node:path';
 import { analyzeSource, inspectExceptions } from './policy/source.mjs';
+import { inspectBlobPaths } from './policy/blob-paths.mjs';
 import {
   filesUnder,
   planGates,
@@ -34,6 +35,7 @@ for (const folder of ['tests', 'scripts'])
       analyses.set(file, analyzeSource(file, await readFile(resolve(root, file), 'utf8')));
 const production = new Map([...analyses].filter(([file]) => !file.startsWith('tests/')));
 problems.push(...inspectExceptions(production, policy, exceptions, Date.now()));
+for (const [file, a] of production) problems.push(...inspectBlobPaths(file, a.text));
 for (const a of analyses.values()) problems.push(...a.problems);
 for (const e of exceptions)
   for (const file of [e.decision, ...(e.tests ?? [])]) {

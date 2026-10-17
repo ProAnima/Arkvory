@@ -152,12 +152,13 @@ Registered packages are what the retention policy of a repository counts. By def
 
 ## Errors {#errors}
 
-| Answer                          | Meaning                                                                                                                                                    |
-| ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `400 invalid_input` on register | Not a valid UPack ZIP, no `upack.json` in the root, or a wrong name or version                                                                             |
-| `409 version_exists`            | The identity already belongs to another archive. Publish a new version. Promoting to a repository that has the version with other bytes fails the same way |
-| `404 not_found` on resolve      | Nothing matches the filters. Check the group, the range and the stage                                                                                      |
-| `403 permission_missing`        | The key lacks `package.read`, `package.publish` or `content.read`                                                                                          |
+| Answer                          | Meaning                                                                                                                                                                                                                  |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `400 invalid_input` on register | Not a valid UPack ZIP, no `upack.json` in the root, or a wrong name or version                                                                                                                                           |
+| `503 unavailable` on register   | The stored archive cannot be read: the storage does not answer or the archive is missing from it. The SDK and the command-line client repeat the request. If the answer stays, ask an administrator to check the storage |
+| `409 version_exists`            | The identity already belongs to another archive. Publish a new version. Promoting to a repository that has the version with other bytes fails the same way                                                               |
+| `404 not_found` on resolve      | Nothing matches the filters. Check the group, the range and the stage                                                                                                                                                    |
+| `403 permission_missing`        | The key lacks `package.read`, `package.publish` or `content.read`                                                                                                                                                        |
 
 ## Related pages {#related-pages}
 

@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import { join } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import { GarbageCollector } from '@proanima/arkvory-application';
 import { ArkvoryError } from '@proanima/arkvory-domain';
@@ -72,7 +73,7 @@ test('offline GC keeps per-object protection when its maintenance session dies a
     );
     resume.resolve();
     assert.equal((await running).code, 'unavailable');
-    assert.deepEqual(await readFile(blobs.contentPath(id)), bytes);
+    assert.deepEqual(await readFile(join(blobs.root, 'blobs', id)), bytes);
     assert.equal(
       (await f.catalog.pool.query('SELECT reclaimed FROM arkvory_uploads WHERE id=$1', [id]))
         .rows[0].reclaimed,

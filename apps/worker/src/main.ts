@@ -26,6 +26,7 @@ import {
   startEventLoopWatchdog,
   trustMirrorCertificates,
   watchdogSeconds,
+  dataVolumeStaging,
 } from '@proanima/arkvory-infrastructure';
 import type { LogLevel, PostgresJobLease } from '@proanima/arkvory-infrastructure';
 import { capacityBytes, standbyRetryMs, workerResources } from './runtime.js';
@@ -185,7 +186,7 @@ try {
   const mirroring = runMirrors({
     catalog,
     blobs,
-    dataDirectory,
+    staging: dataVolumeStaging(dataDirectory, (bytes) => blobs.checkSpace(bytes)),
     mirrors,
     stop: stop.signal,
     diagnostics,

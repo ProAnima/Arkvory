@@ -42,6 +42,8 @@ PostgreSQL хранит каталог, права, ревизии, состоя
 
 LocalBlobStore — профиль одного сервера; на Windows он не синхронизирует записи каталога (fsync каталога недоступен, [ADR 0004](adr/0004-native-standalone-core.md)). HA ([ADR 0072](adr/0072-single-site-ha.md)) не вводит другого backend: PostgreSQL, LocalBlobStore и конфигурация лежат на одном томе DRBD, активный узел выбирает Pacemaker с обязательным fencing, а приложение лишь проверяет число копий перед подтверждением записи. Новая схема хранения или провайдер оформляется ADR до обещаний о доступности. Границы профилей: [RELIABILITY](RELIABILITY.md#profiles).
 
+Байты содержимого читаются только через порт `BlobStore.read(range)` с хранилищем из строки upload: разбор UPack (yauzl поверх `BlobRangeReader`), зеркала, копия и восстановление (поле `backend` в инвентаре точки), scrub и очистка. Пути blob строят только `local-blobs.ts`, `blob-files.ts` и раскладка vault; временные файлы raw, OCI и зеркал лежат в `StagingArea` тома данных. Это проверяет policy `scripts/policy/blob-paths.mjs` ([ADR 0083](adr/0083-core-extension-points.md), N9).
+
 ## Правила изменений
 
 Расширение авторизации сервисов проектируется внутри существующих слоёв: stable service account, credentials, action/resource bindings и общий application authorizer для HTTP API и worker. Новые границы и миграция старых read/write описаны в [ADR 0016](adr/0016-service-access-and-api-evolution.md); широкая модель остаётся proposed, первый рабочий профиль принят в [ADR 0017](adr/0017-managed-service-keys.md): root bootstrap, точные repository actions, managed credentials и повторная проверка mutations перед commit. [Карта API](API_MAP.md) отделяет работающие маршруты от планируемых.

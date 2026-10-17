@@ -162,14 +162,26 @@ class PostgresSnapshot implements SnapshotSession {
   }
 
   async inventory(after: string | undefined, limit: number): Promise<readonly InventoryEntry[]> {
-    const rows = await this.query<{ id: string; size: string; sha256: string | null }>(
-      `SELECT id::text AS id, size::text AS size, descriptor->>'sha256' AS sha256
+    const rows = await this.query<{
+      id: string;
+      size: string;
+      sha256: string | null;
+      backend: string;
+    }>(
+      `SELECT id::text AS id, size::text AS size, descriptor->>'sha256' AS sha256,
+       storage_backend AS backend
        FROM arkvory_uploads WHERE status='available' AND ($1::uuid IS NULL OR id>$1::uuid)
        ORDER BY id LIMIT $2`,
       [after ?? null, limit],
     );
+    // The storage of each blob is read in the same snapshot as its row (ADR 0083, N9).
     return rows.map((row) =>
-      parseInventoryEntry({ id: row.id, size: row.size, sha256: row.sha256 }),
+      parseInventoryEntry({
+        id: row.id,
+        size: row.size,
+        sha256: row.sha256,
+        backend: row.backend,
+      }),
     );
   }
 

@@ -2,6 +2,7 @@ import { open } from 'node:fs/promises';
 import { RestoreToEmptyTarget } from '@proanima/arkvory-application';
 import type { RestoreReport } from '@proanima/arkvory-application';
 import {
+  LocalBlobStore,
   LocalRestoreStorage,
   MINIMUM_RESTORE_SCHEMA,
   PostgresRestoreDatabase,
@@ -65,7 +66,10 @@ export async function runRestore(command: RestoreCommand, context: CliContext): 
     const restore = new RestoreToEmptyTarget({
       vault,
       database: new PostgresRestoreDatabase(pool),
-      storage: new LocalRestoreStorage(command.storage, restoreReserveBytes(context.env)),
+      // The target's root is created private (0700): it holds the restored content.
+      storage: new LocalRestoreStorage(
+        new LocalBlobStore(command.storage, restoreReserveBytes(context.env), 0o700),
+      ),
       identity: { now: () => new Date().toISOString() },
       releaseSchema: SCHEMA_VERSION,
       minimumSchema: MINIMUM_RESTORE_SCHEMA,

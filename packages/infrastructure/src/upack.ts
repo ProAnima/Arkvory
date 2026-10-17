@@ -1,36 +1,56 @@
-import { open } from 'yauzl';
+import { fromRandomAccessReader } from 'yauzl';
 import type { Entry, ZipFile } from 'yauzl';
 import { ArkvoryError, parseManifest, requireAssetPath } from '@proanima/arkvory-domain';
 import type { PackageManifest } from '@proanima/arkvory-domain';
-import type { ManifestReader } from '@proanima/arkvory-application';
-import type { LocalBlobStore } from './local-blobs.js';
+import type { BlobStore, ManifestReader, ManifestSource } from '@proanima/arkvory-application';
 import type { PostgresContentPins } from './content-pins.js';
+import { BlobRangeReader } from './blob-range-reader.js';
 
+/** The largest root manifest, inflated. */
+const maxManifestBytes = 65536;
+/**
+ * The longest compressed manifest entry: deflate adds a few bytes per block to its input, so a
+ * longer entry inflates to far less than its own size and would only make the parse read it.
+ */
+const maxManifestEntryBytes = 2 * maxManifestBytes;
+
+const zipOptions = {
+  lazyEntries: true,
+  autoClose: true,
+  strictFileNames: true,
+  validateEntrySizes: true,
+} as const;
+
+/**
+ * The root `upack.json` of a published archive, read through `BlobStore.read(range)` under a
+ * shared content pin (ADR 0035): the central directory and the manifest entry only, never the
+ * whole blob (ADR 0083, N9). A storage failure keeps its own code; only the archive's own
+ * defects are `invalid_input`.
+ */
 export class ZipManifestReader implements ManifestReader {
   constructor(
-    private readonly blobs: LocalBlobStore,
+    private readonly blobs: BlobStore,
     private readonly pins?: PostgresContentPins,
   ) {}
-  async inspect(id: string): Promise<PackageManifest> {
-    const pin = await this.pins?.acquire(id);
+  async inspect(source: ManifestSource): Promise<PackageManifest> {
+    const pin = await this.pins?.acquire(source.id);
     try {
-      const result = await this.inspectArchive(id);
+      const reader = new BlobRangeReader(this.blobs, source, { check: () => pin?.check() });
+      const result = await this.inspectArchive(reader, source.size);
       pin?.check();
       return result;
     } finally {
       await pin?.release();
     }
   }
-  private async inspectArchive(id: string): Promise<PackageManifest> {
+  private async inspectArchive(reader: BlobRangeReader, size: number): Promise<PackageManifest> {
+    const invalid = (message: string) =>
+      reader.failure ?? new ArkvoryError('invalid_input', message);
     const zip = await new Promise<ZipFile>((resolve, reject) => {
-      open(
-        this.blobs.contentPath(id),
-        { lazyEntries: true, autoClose: true, strictFileNames: true, validateEntrySizes: true },
-        (error, value) => {
-          if (error) reject(new ArkvoryError('invalid_input', 'Invalid UPack ZIP'));
-          else resolve(value);
-        },
-      );
+      fromRandomAccessReader(reader, size, zipOptions, (error, value) => {
+        if (error) reject(invalid('Invalid UPack ZIP'));
+        else resolve(value);
+      });
     });
     return new Promise<PackageManifest>((resolve, reject) => {
       let count = 0,
@@ -42,7 +62,7 @@ export class ZipManifestReader implements ManifestReader {
         if (!settled) {
           settled = true;
           zip.close();
-          reject(new ArkvoryError('invalid_input', 'Unsafe or invalid UPack archive'));
+          reject(invalid('Unsafe or invalid UPack archive'));
         }
       };
       zip.on('error', fail);
@@ -73,7 +93,11 @@ export class ZipManifestReader implements ManifestReader {
             zip.readEntry();
             return;
           }
-          if (entry.uncompressedSize > 65536) throw new Error('Large manifest');
+          if (
+            entry.uncompressedSize > maxManifestBytes ||
+            entry.compressedSize > maxManifestEntryBytes
+          )
+            throw new Error('Large manifest');
           zip.openReadStream(entry, (error, stream) => {
             if (error) {
               fail();
@@ -84,7 +108,7 @@ export class ZipManifestReader implements ManifestReader {
             stream.on('error', fail);
             stream.on('data', (chunk: Buffer) => {
               bytes += chunk.length;
-              if (bytes > 65536) {
+              if (bytes > maxManifestBytes) {
                 stream.destroy();
                 fail();
               } else chunks.push(chunk);

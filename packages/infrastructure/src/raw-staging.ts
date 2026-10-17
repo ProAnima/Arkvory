@@ -1,10 +1,11 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { createReadStream } from 'node:fs';
 import { mkdir, open, readdir, rm, stat } from 'node:fs/promises';
-import { join, resolve } from 'node:path';
+import { join } from 'node:path';
 import { ArkvoryError, requireId } from '@proanima/arkvory-domain';
 import type { Cancellation, RawStaging } from '@proanima/arkvory-application';
 import { hasCode } from './fs-durability.js';
+import type { StagingArea } from './staging-area.js';
 import { stagedFile } from './blob-files.js';
 
 const spaceCheckBytes = 64 * 1024 ** 2;
@@ -20,11 +21,10 @@ export class FileRawStaging implements RawStaging {
   private readonly root: string;
   /** Size and SHA-256 measured while each staged file was written, until it is removed. */
   private readonly measured = new Map<string, { size: number; sha256: string }>();
-  constructor(
-    dataDirectory: string,
-    private readonly space: (bytes: number) => Promise<void>,
-  ) {
-    this.root = resolve(dataDirectory, 'raw-staging');
+  private readonly space: (bytes: number) => Promise<void>;
+  constructor(staging: StagingArea) {
+    this.root = staging.directory('raw-staging');
+    this.space = (bytes) => staging.checkSpace(bytes);
   }
 
   private path(id: string) {
