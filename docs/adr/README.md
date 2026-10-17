@@ -88,3 +88,7 @@ ADR нужен для изменения границ, публичных кон
 - [0075 — Границы запросов каталога](0075-catalog-query-bounds.md)
 - [0076 — Планировщик скачиваний: сессии, очередь, приоритеты и окна](0076-download-scheduling.md)
 - [0077 — Единая консоль площадок](0077-fleet-console.md)
+- [0078 — Открытое ядро: бесплатное ядро, подписанные модули и лицензии (proposed)](0078-open-core-modules-and-licenses.md)
+- [0079 — API расширений и модули (proposed)](0079-extension-modules.md)
+- [0080 — События для внешних систем (proposed)](0080-event-integrations.md)
+- [0081 — MCP-сервер в arkvoryctl и навык для агентов (proposed)](0081-mcp-and-agent-skill.md)
