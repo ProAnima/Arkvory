@@ -159,14 +159,19 @@ test('entry streams pull the range with backpressure and release it when destroy
   const reader = new BlobRangeReader(store, blob);
   const whole = await streamBytes(reader.createReadStream({ start: 1000, end: 700_000 }));
   assert.deepEqual(whole, bytes.subarray(1000, 700_000));
-  let pulled = 0;
+  let pulled = 0,
+    released = 0;
   const counting = {
     read: (...args) => {
       const source = store.read(...args);
       return (async function* () {
-        for await (const chunk of source) {
-          pulled += chunk.length;
-          yield chunk;
+        try {
+          for await (const chunk of source) {
+            pulled += chunk.length;
+            yield chunk;
+          }
+        } finally {
+          released++;
         }
       })();
     },
@@ -180,7 +185,11 @@ test('entry streams pull the range with backpressure and release it when destroy
   await new Promise((resolve) => setTimeout(resolve, 20));
   // A paused consumer stops the reads after a few chunks instead of buffering the range.
   assert.ok(first.length > 0 && pulled <= 1024 * 1024, `pulled ${String(pulled)}`);
+  assert.equal(released, 0);
   stream.destroy();
+  // Destroying the stream returns the port's iterator, which closes its file or connection.
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  assert.equal(released, 1);
 });
 
 test('UPack manifests are parsed through the port, with the upload storage and small reads', async () => {
