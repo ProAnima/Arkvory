@@ -25,11 +25,12 @@ interface Configuration {
   active: string;
   profiles: Record<string, Profile>;
 }
+/** The CLI's own directory: profiles and, for `mcp --write`, upload checkpoints. */
+export function cliHome(): string {
+  return process.env['ARKVORY_CLI_HOME'] ?? join(homedir(), '.config', 'arkvory');
+}
 function configPath() {
-  return join(
-    process.env['ARKVORY_CLI_HOME'] ?? join(homedir(), '.config', 'arkvory'),
-    'profiles.json',
-  );
+  return join(cliHome(), 'profiles.json');
 }
 export function serverUrl(value: string): string {
   try {
@@ -160,6 +161,8 @@ export interface ConnectionExtras {
   readonly clientName?: string;
   /** Receives the key once, so results can be checked never to contain it. */
   readonly onCredential?: (token: string) => void;
+  /** Receives the absolute path of the key file when the key came from one. */
+  readonly onCredentialFile?: (path: string) => void;
 }
 export async function connection(
   args: Arguments,
@@ -184,6 +187,8 @@ export async function connection(
   if (!token || Array.from(token).some((character) => character.charCodeAt(0) < 32))
     throw new CliError('credential_required', 3);
   extras.onCredential?.(token);
+  if (tokenFile && process.env['ARKVORY_TOKEN'] === undefined)
+    extras.onCredentialFile?.(resolve(tokenFile));
   return {
     client: new ArkvoryClient(server, () => token, {
       signal,

@@ -96,6 +96,54 @@ const local: Readonly<Record<string, Text>> = {
     'The artifact is larger than maxBytes; nothing was transferred.',
     'Артефакт больше maxBytes; ничего не передано.',
   ],
+  repository_not_allowed: [
+    'This MCP server may write only to the repositories in --write-repositories; nothing was sent. Ask the user to change the MCP configuration.',
+    'Этому MCP-серверу разрешена запись только в репозитории из --write-repositories; ничего не отправлено. Попросите пользователя изменить конфигурацию MCP.',
+  ],
+  write_not_enabled: [
+    'Start arkvoryctl mcp with --write to offer write tools.',
+    'Запустите arkvoryctl mcp с --write, чтобы получить инструменты записи.',
+  ],
+  write_repositories_without_write: [
+    '--write-repositories limits --write; pass both.',
+    '--write-repositories ограничивает --write; передайте оба параметра.',
+  ],
+  invalid_write_repositories: [
+    'Pass up to 100 repository names separated by commas, such as --write-repositories builds,staging.',
+    'Укажите до 100 имён репозиториев через запятую, например --write-repositories builds,staging.',
+  ],
+  integrity_mismatch: [
+    'The server receipt does not name the bytes that were read; nothing was registered. Repeat the command, then report it if it persists.',
+    'Квитанция сервера не совпадает с прочитанными байтами; ничего не зарегистрировано. Повторите команду и сообщите о сбое, если он повторится.',
+  ],
+  private_path: [
+    "arkvoryctl's own files (profiles, key files, upload checkpoints) are never read or written through MCP. Choose another path below the root.",
+    'Собственные файлы arkvoryctl (профили, файлы ключей, чекпойнты загрузок) через MCP не читаются и не пишутся. Выберите другой путь внутри корня.',
+  ],
+  source_changed: [
+    'The file changed while it was being read. Wait until it is complete and repeat the call.',
+    'Файл изменился во время чтения. Дождитесь его готовности и повторите вызов.',
+  ],
+  source_contains_credential: [
+    'The file contains the access key and is never uploaded. Choose another file.',
+    'Файл содержит ключ доступа и никогда не загружается. Выберите другой файл.',
+  ],
+  skill_not_found: [
+    'The agent skill is not beside arkvoryctl. Reinstall the client package.',
+    'Навыка для агентов нет рядом с arkvoryctl. Переустановите клиентский пакет.',
+  ],
+  invalid_skill_source: [
+    'The packaged agent skill is damaged. Reinstall the client package.',
+    'Навык для агентов в пакете повреждён. Переустановите клиентский пакет.',
+  ],
+  skill_modified: [
+    'Files in the target were changed since the last install; nothing was written. Keep your copy, or repeat with --force to replace it.',
+    'Файлы в каталоге назначения изменены после прошлой установки; ничего не записано. Сохраните свою копию или повторите с --force, чтобы заменить её.',
+  ],
+  skill_target_not_file: [
+    'A skill file in the target is a link or a directory. Remove it or choose another --target.',
+    'Файл навыка в каталоге назначения — ссылка или каталог. Удалите его или выберите другой --target.',
+  ],
   invalid_order: [
     'Use --order version or --order promoted.',
     'Используйте --order version или --order promoted.',

@@ -11,7 +11,7 @@ export interface Section {
 }
 
 export const SECTIONS: readonly Section[] = [
-  { id: 'guide', pages: ['index', 'concepts', 'quick-start', 'console'] },
+  { id: 'guide', pages: ['index', 'concepts', 'quick-start', 'console', 'agents'] },
   {
     id: 'install',
     pages: ['index', 'windows', 'linux', 'docker', 'configuration', 'https', 'updates'],

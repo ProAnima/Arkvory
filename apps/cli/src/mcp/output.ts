@@ -215,6 +215,9 @@ export function errorResult(error: unknown, signal: AbortSignal): CallToolResult
     ...(requestId === undefined ? {} : { requestId }),
     ...(f.retryAfterSeconds === undefined ? {} : { retryAfterSeconds: f.retryAfterSeconds }),
     ...(f.details === undefined ? {} : { details: f.details }),
+    // A publication whose bytes are stored but whose UPack registration is unconfirmed.
+    ...(f.stage === undefined ? {} : { stage: f.stage }),
+    ...(f.artifactId === undefined ? {} : { artifactId: f.artifactId }),
   };
   const structured = record(clean({ error: detail }, []));
   const id = requestId === undefined ? '' : ` (request ${requestId})`;
