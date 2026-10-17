@@ -46,10 +46,19 @@ const exitByCode: Readonly<Record<string, number>> = {
   unauthorized: 3,
   forbidden: 3,
   conflict: 6,
+  // An expired event cursor (ADR 0080) is a state to resolve, like a conflict.
+  gone: 6,
   integrity_mismatch: 5,
   capacity_exceeded: 8,
 };
-const exitByStatus: Readonly<Record<number, number>> = { 401: 3, 403: 3, 409: 6, 422: 5, 507: 8 };
+const exitByStatus: Readonly<Record<number, number>> = {
+  401: 3,
+  403: 3,
+  409: 6,
+  410: 6,
+  422: 5,
+  507: 8,
+};
 const clientExit: Readonly<Record<ClientErrorCode, number>> = {
   invalid_argument: 2,
   insecure_url: 2,

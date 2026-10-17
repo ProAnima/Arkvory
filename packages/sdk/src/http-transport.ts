@@ -146,6 +146,7 @@ export class HttpTransport implements HttpPort {
             serverMessage: parsed.message,
             ...(parsed.reason === undefined ? {} : { reason: parsed.reason }),
             ...(parsed.details ? { details: parsed.details } : {}),
+            ...(parsed.events ? { events: parsed.events } : {}),
             ...queuePlace(response.headers),
           }
         : {},

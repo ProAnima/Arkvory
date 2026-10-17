@@ -42,6 +42,8 @@ ${ru ? 'КОМАНДЫ' : 'COMMANDS'}
   storage usage | policy
   backup status | run | jobs [--after CURSOR] | points [--after CURSOR]  ${ru ? 'Резервные копии экземпляра' : 'Instance backups'}
   backup verify POINT_ID | pin POINT_ID [--off]  ${ru ? 'Глубокая проверка, закрепление' : 'Deep verification, pinning'}
+  events tail [--after ID] [--types T,PREFIX.*] [--limit N] [--follow] [--cursor-file PATH]
+                                              ${ru ? 'События установки JSON-строками; --repository фильтрует' : 'Installation events as JSON lines; --repository filters'}
 
 ${ru ? 'ОБЩИЕ ПАРАМЕТРЫ' : 'GLOBAL OPTIONS'}
   --profile NAME  --repository NAME  --json  --lang en|ru  --help  --version

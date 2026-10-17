@@ -5,6 +5,7 @@ import { SiteChangesApi } from './site-changes-api.js';
 import { FleetApi } from './fleet-api.js';
 import { ReplicationApi } from './replication-api.js';
 import { FeedbackApi } from './feedback-api.js';
+import { EventsApi } from './events-api.js';
 import { AccountClient } from './account-client.js';
 import { CatalogApi } from './catalog-api.js';
 import { AssetsApi } from './assets-api.js';
@@ -66,6 +67,8 @@ export class ArkvoryClient extends AccountClient {
   readonly backup: BackupApi;
   /** Feedback with screenshots and logs to ProAnimaStudio, through this server. */
   readonly feedback: FeedbackApi;
+  /** The installation's event feed (ADR 0080): list, follow with a saved cursor, types. */
+  readonly events: EventsApi;
   constructor(baseUrl: string, token: () => string, policy: ClientOptions = {}) {
     const normalized = transferPolicy(policy);
     const http = new HttpTransport(baseUrl, token, policy);
@@ -78,6 +81,7 @@ export class ArkvoryClient extends AccountClient {
     this.promotions = new PromotionsApi(http);
     this.backup = new BackupApi(http);
     this.feedback = new FeedbackApi(http);
+    this.events = new EventsApi(http);
     this.discovery = new DiscoveryApi(http);
     this.catalog = new CatalogApi(http);
     this.assets = new AssetsApi(http);

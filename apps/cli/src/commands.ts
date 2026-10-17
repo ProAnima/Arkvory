@@ -11,6 +11,7 @@ import { getFromPath, putToPath } from './path-transfer.js';
 import { CliError } from './errors.js';
 import { isPromotionCommand, promotionCommand } from './promotion-commands.js';
 import { backupCommand } from './backup-commands.js';
+import { eventsCommand } from './event-commands.js';
 
 const remoteCommands = [
   'doctor',
@@ -33,6 +34,7 @@ const remoteCommands = [
   'stages',
   'promotions',
   'backup',
+  'events',
 ];
 
 export async function execute(
@@ -45,6 +47,8 @@ export async function execute(
   if (!remoteCommands.includes(command)) throw new CliError('unknown_command');
   const connected = await connection(args, signal);
   if (command === 'backup') return backupCommand(args, connected, timed(args, signal));
+  // A tail with --follow runs until Ctrl+C: each request keeps the client's own deadline.
+  if (command === 'events') return eventsCommand(args, connected, signal);
   if (isPromotionCommand(args)) return promotionCommand(args, connected, signal, progress);
   const { client, server, repository } = connected;
   if (

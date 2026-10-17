@@ -36,7 +36,9 @@ try {
     if (result instanceof Rendered) {
       console.log(json ? JSON.stringify(result.json) : result.text(args.language));
       process.exitCode = result.exitCode;
-    } else console.log(JSON.stringify(result, null, json ? undefined : 2));
+    } else if (result !== undefined)
+      // Streaming commands (events tail) print as they go and return nothing.
+      console.log(JSON.stringify(result, null, json ? undefined : 2));
   }
 } catch (error) {
   const result = failure(error, controller.signal.aborted);

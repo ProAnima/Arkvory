@@ -1,4 +1,4 @@
-import type { ErrorDetailResponse } from '@proanima/arkvory-contracts';
+import type { ErrorDetailResponse, EventWindowResponse } from '@proanima/arkvory-contracts';
 
 /** Optional members of the server error envelope (ADR 0051). */
 export interface HttpErrorDetails {
@@ -6,6 +6,8 @@ export interface HttpErrorDetails {
   readonly reason?: string;
   readonly details?: readonly ErrorDetailResponse[];
   readonly queue?: DownloadQueuePlace;
+  /** The event feed window of events_cursor_expired and events_epoch_changed (ADR 0080). */
+  readonly events?: EventWindowResponse;
 }
 
 /** Queue classes of downloads, highest first (ADR 0076). */
@@ -32,6 +34,8 @@ export class ArkvoryHttpError extends Error {
   readonly details: readonly ErrorDetailResponse[];
   /** For 503 busy with reason download_queued: the place in the server's download queue. */
   readonly queue: DownloadQueuePlace | undefined;
+  /** For gone/events_cursor_expired and conflict/events_epoch_changed: epoch, oldest, head. */
+  readonly events: EventWindowResponse | undefined;
   constructor(
     readonly status: number,
     readonly code: string,
@@ -45,6 +49,7 @@ export class ArkvoryHttpError extends Error {
     this.reason = extra.reason;
     this.details = extra.details ?? [];
     this.queue = extra.queue;
+    this.events = extra.events;
   }
   /** Whole seconds of Retry-After or of the body's retryAfterSeconds, when the server sent one. */
   get retryAfterSeconds(): number | undefined {

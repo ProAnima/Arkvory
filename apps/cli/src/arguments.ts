@@ -6,7 +6,16 @@ export interface Arguments {
   readonly json: boolean;
   readonly language: 'en' | 'ru';
 }
-const flags = new Set(['json', 'help', 'version', 'move', 'prerelease', 'verbose', 'off']);
+const flags = new Set([
+  'json',
+  'help',
+  'version',
+  'move',
+  'prerelease',
+  'verbose',
+  'off',
+  'follow',
+]);
 const values = new Set([
   'lang',
   'profile',
@@ -38,6 +47,9 @@ const values = new Set([
   'range',
   'order',
   'ttl',
+  'types',
+  'cursor-file',
+  'limit',
 ]);
 export function parseArguments(argv: readonly string[]): Arguments {
   const options = new Map<string, string>(),
