@@ -94,9 +94,11 @@ export class StorageService {
           throw new ArkvoryError('conflict', 'Multipart upload must be completed using its parts', {
             reason: 'upload_state',
           });
-        // Nothing of this upload is stored yet, so a storage that stopped taking data is left
-        // before the first byte, by a pending-row change, never by moving bytes.
-        if (this.refuses(upload.storageBackend))
+        // A storage that stopped taking data is left before the first byte, by a pending-row
+        // change, never by moving bytes. Not when it already holds the whole object from an
+        // attempt that stopped before publication: that object would lose its owner, so the
+        // write goes there again and finds it.
+        if (this.refuses(upload.storageBackend) && !(await this.holds(upload)))
           upload = await mutation.relocate(DEFAULT_STORAGE_BACKEND, null);
         await this.blobs.put(
           id,
@@ -134,7 +136,11 @@ export class StorageService {
           throw new ArkvoryError('conflict', 'Upload is cancelled', { reason: 'upload_state' });
         this.pending(upload);
         const parts = await this.catalog.parts(id);
-        if (parts.length > 0) {
+        // An attempt that wrote the whole object and stopped before publication: the storage
+        // keeps it, even one that takes no new data now, and it is only verified again.
+        const held =
+          parts.length > 0 && this.refuses(upload.storageBackend) && (await this.holds(upload));
+        if (parts.length > 0 && !held) {
           checkParts(upload.descriptor.size, parts, upload.partBytes ?? PART_BYTES);
           // ADR 0083, N11: accepted parts stay readable where they are; the object is written
           // to the core's storage. The switch is recorded before the write, so a retry after a
@@ -154,7 +160,7 @@ export class StorageService {
             upload.storageBackend,
           );
         }
-        if (parts.length === 0)
+        if (parts.length === 0 || held)
           await this.blobs.verify(
             id,
             upload.descriptor,
@@ -258,6 +264,16 @@ export class StorageService {
     if (!this.placement || id === DEFAULT_STORAGE_BACKEND) return false;
     const state = this.placement.state(id);
     return state !== 'accepting' && state !== 'unavailable';
+  }
+
+  /** Whether the upload's own storage already holds its whole object; any failure is no. */
+  private async holds(upload: Upload): Promise<boolean> {
+    try {
+      await this.blobs.exists(upload.id, upload.descriptor.size, upload.storageBackend);
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   private pending(upload: Upload): void {

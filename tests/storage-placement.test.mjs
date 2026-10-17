@@ -223,10 +223,15 @@ function memoryCatalog(upload, parts = []) {
   };
 }
 
-function recordingBlobs() {
+function recordingBlobs(held = new Set()) {
   const calls = [];
   return {
     calls,
+    /** Objects of earlier attempts, as `storage/id`; every other object is missing. */
+    async exists(id, _size, backendId) {
+      if (!held.has(`${backendId}/${id}`))
+        throw Object.assign(new Error('missing'), { code: 'unavailable' });
+    },
     async put(id, _descriptor, source, _cancellation, backendId) {
       for await (const chunk of source) assert.ok(chunk);
       calls.push(['put', backendId]);
@@ -238,7 +243,9 @@ function recordingBlobs() {
       calls.push(['readParts', backendId]);
       yield Buffer.from('abc');
     },
-    async verify() {},
+    async verify(_id, _descriptor, _cancellation, backendId) {
+      calls.push(['verify', backendId]);
+    },
   };
 }
 
@@ -382,6 +389,41 @@ test('a whole-body upload to a storage that refuses data is written to default, 
   assert.deepEqual(blobs.calls, [['put', 'default']]);
   assert.equal(result.storageBackend, 'default');
   assert.equal(result.partsBackend, undefined);
+});
+
+test('an object written before a stop keeps its storage: a retry does not orphan it', async () => {
+  // The whole object reached volume-2, the process stopped before publication, and volume-2
+  // took no new data any more when the client retried. Writing it again in default would
+  // leave the first copy in volume-2 without an upload row that cleanup could follow.
+  for (const state of ['not_accepting', 'read_only']) {
+    const pending = upload('volume-2');
+    const catalog = memoryCatalog(pending, [part]);
+    const blobs = recordingBlobs(new Set([`volume-2/${pending.id}`]));
+    const result = await service(catalog, blobs, { 'volume-2': state }).complete(
+      writer,
+      'r',
+      pending.id,
+      done,
+    );
+    assert.deepEqual(catalog.state.relocations, [], state);
+    assert.deepEqual(blobs.calls, [['verify', 'volume-2']], state);
+    assert.equal(result.storageBackend, 'volume-2');
+    assert.equal(result.status, 'available');
+  }
+  const whole = upload('volume-2');
+  const catalog = memoryCatalog(whole);
+  const blobs = recordingBlobs(new Set([`volume-2/${whole.id}`]));
+  await service(catalog, blobs, { 'volume-2': 'not_accepting' }).upload(
+    writer,
+    'r',
+    whole.id,
+    (async function* () {
+      yield Buffer.from('abc');
+    })(),
+    done,
+  );
+  assert.deepEqual(catalog.state.relocations, []);
+  assert.deepEqual(blobs.calls, [['put', 'volume-2']]);
 });
 
 test('a new upload is created in the storage its placement chose, or in default', async () => {
