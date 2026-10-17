@@ -10,7 +10,7 @@ const ID = '00000000-0000-4000-8000-000000000001';
 const writeNames = /upload|publish|promote|stage_remove|annotate|delete|restore|link|user|key/;
 
 /** The server on one in-process stdio pair, and a line-oriented JSON-RPC client for it. */
-async function connect(t, actions, client = {}) {
+async function connect(t, actions, client = {}, extra = {}) {
   const input = new PassThrough();
   const output = new PassThrough();
   let wire = '';
@@ -35,6 +35,7 @@ async function connect(t, actions, client = {}) {
       maxOutputBytes: 64 * 1024,
       secrets: [KEY],
       requestTimeoutMs: 1000,
+      ...extra,
     },
     new Set(actions),
     '1.0.0',
@@ -204,4 +205,99 @@ test('file history continues with after = next like every other list', async (t)
   assert.deepEqual(asked, [undefined, 99, 50]);
   const forged = (await history({ after: 'x' })).result;
   assert.equal(forged.structuredContent.error.code, 'invalid_cursor');
+});
+
+const writing = [
+  'artifact.list',
+  'artifact.read',
+  'content.read',
+  'upload.create',
+  'package.publish',
+  'artifact.promote',
+  'annotation.read',
+  'annotation.write',
+];
+const writeOptions = (repositories = null) => ({
+  write: { repositories, checkpoints: tmpdir(), server: 'https://arkvory.test/' },
+});
+
+test('tools/list differs with --write: write tools with honest hints, never delete or admin', async (t) => {
+  const listing = async (actions, extra) => {
+    const mcp = await connect(t, actions, {}, extra);
+    const hello = await mcp.initialize('2025-11-25');
+    mcp.notify('notifications/initialized');
+    const tools = (await mcp.request('tools/list', {})).result.tools;
+    return { tools, instructions: hello.result.instructions };
+  };
+  const plain = await listing(writing, {});
+  assert.deepEqual(
+    plain.tools.map((tool) => tool.name).filter((name) => writeNames.test(name)),
+    [],
+    'without --write no write tool exists, whatever the key may do',
+  );
+  assert.match(plain.instructions, /read-only/);
+  const written = await listing(writing, writeOptions(new Set(['builds'])));
+  const byName = new Map(written.tools.map((tool) => [tool.name, tool]));
+  const hints = (name) => {
+    const { readOnlyHint, destructiveHint, idempotentHint, openWorldHint } =
+      byName.get(name).annotations;
+    return [readOnlyHint, destructiveHint, idempotentHint, openWorldHint];
+  };
+  assert.deepEqual(hints('arkvory_upload'), [false, false, false, false]);
+  assert.deepEqual(hints('arkvory_publish_package'), [false, false, false, false]);
+  assert.deepEqual(hints('arkvory_promote'), [false, false, true, false]);
+  assert.deepEqual(hints('arkvory_stage_remove'), [false, true, true, false]);
+  assert.deepEqual(hints('arkvory_annotate'), [false, true, true, false]);
+  assert.equal(written.tools.length, plain.tools.length + 5);
+  for (const tool of written.tools) {
+    assert.doesNotMatch(tool.name, /delete|restore|link|user|group|key|polic|backup|update/);
+    assert.equal(tool.inputSchema.additionalProperties, false, tool.name);
+  }
+  assert.match(written.instructions, /Writes are limited to: builds\./);
+  assert.match(written.instructions, /wait for their confirmation/);
+  // Write tools the key plainly cannot use are not offered either.
+  const narrow = await listing(['artifact.list', 'upload.create'], writeOptions());
+  assert.deepEqual(
+    narrow.tools.map((tool) => tool.name).filter((name) => writeNames.test(name)),
+    ['arkvory_upload'],
+  );
+});
+
+test('a write outside --write-repositories is a coded error and sends nothing', async (t) => {
+  const asked = [];
+  const record =
+    (name) =>
+    async (...args) => {
+      asked.push(name);
+      return args;
+    };
+  const client = {
+    artifact: record('artifact'),
+    promotions: { setStage: record('setStage'), removeStage: record('removeStage') },
+    annotations: record('annotations'),
+    annotate: record('annotate'),
+  };
+  const mcp = await connect(t, writing, client, writeOptions(new Set(['builds'])));
+  await mcp.initialize('2025-11-25');
+  mcp.notify('notifications/initialized');
+  const tool = async (name, args) =>
+    (await mcp.request('tools/call', { name, arguments: args })).result;
+  for (const [name, args] of [
+    ['arkvory_promote', { id: ID, stage: 'release' }],
+    ['arkvory_stage_remove', { repository: 'releases', id: ID, stage: 'release' }],
+    ['arkvory_annotate', { id: ID, expectedRevision: 1, labels: ['x'] }],
+    ['arkvory_upload', { file: 'a.bin' }],
+    ['arkvory_publish_package', { repository: 'other', file: 'a.upack' }],
+  ]) {
+    const refused = await tool(name, args);
+    assert.equal(refused.isError, true, name);
+    assert.equal(refused.structuredContent.error.code, 'repository_not_allowed', name);
+  }
+  assert.deepEqual(asked, []);
+  const extra = await tool('arkvory_promote', { repository: 'builds', id: ID, stage: 'x', y: 1 });
+  assert.equal(extra.isError, true, 'unknown arguments are refused');
+  const allowed = await tool('arkvory_stage_remove', { repository: 'builds', id: ID, stage: 'qa' });
+  assert.equal(allowed.isError, undefined);
+  assert.deepEqual(allowed.structuredContent.removed, 'qa');
+  assert.deepEqual(asked, ['removeStage']);
 });

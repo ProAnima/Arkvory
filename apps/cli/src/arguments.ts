@@ -16,6 +16,7 @@ const flags = new Set([
   'off',
   'follow',
   'all',
+  'write',
 ]);
 const values = new Set([
   'lang',
@@ -54,6 +55,7 @@ const values = new Set([
   'repositories',
   'root',
   'max-output-bytes',
+  'write-repositories',
 ]);
 export function parseArguments(argv: readonly string[]): Arguments {
   const options = new Map<string, string>(),

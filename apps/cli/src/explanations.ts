@@ -96,6 +96,30 @@ const local: Readonly<Record<string, Text>> = {
     'The artifact is larger than maxBytes; nothing was transferred.',
     'Артефакт больше maxBytes; ничего не передано.',
   ],
+  repository_not_allowed: [
+    'This MCP server may write only to the repositories in --write-repositories; nothing was sent. Ask the user to change the MCP configuration.',
+    'Этому MCP-серверу разрешена запись только в репозитории из --write-repositories; ничего не отправлено. Попросите пользователя изменить конфигурацию MCP.',
+  ],
+  write_not_enabled: [
+    'Start arkvoryctl mcp with --write to offer write tools.',
+    'Запустите arkvoryctl mcp с --write, чтобы получить инструменты записи.',
+  ],
+  write_repositories_without_write: [
+    '--write-repositories limits --write; pass both.',
+    '--write-repositories ограничивает --write; передайте оба параметра.',
+  ],
+  invalid_write_repositories: [
+    'Pass up to 100 repository names separated by commas, such as --write-repositories builds,staging.',
+    'Укажите до 100 имён репозиториев через запятую, например --write-repositories builds,staging.',
+  ],
+  source_changed: [
+    'The file changed while it was being read. Wait until it is complete and repeat the call.',
+    'Файл изменился во время чтения. Дождитесь его готовности и повторите вызов.',
+  ],
+  source_contains_credential: [
+    'The file contains the access key and is never uploaded. Choose another file.',
+    'Файл содержит ключ доступа и никогда не загружается. Выберите другой файл.',
+  ],
   invalid_order: [
     'Use --order version or --order promoted.',
     'Используйте --order version или --order promoted.',
