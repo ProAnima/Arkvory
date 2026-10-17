@@ -36,6 +36,11 @@ export interface ClientOptions extends TransferPolicy {
    * (ADR 0051); for diagnostics such as a CLI --verbose mode. Never receives credentials.
    */
   readonly onRequest?: (event: RequestEvent) => void;
+  /**
+   * Sent as `Arkvory-Client` on every request so the access log can tell clients apart
+   * (ADR 0081): printable ASCII, 1–64 characters, such as `arkvoryctl-mcp/1.2.3`.
+   */
+  readonly clientName?: string;
 }
 
 /** Compatible public facade. Each operation delegates to its responsible API module. */
@@ -117,6 +122,9 @@ export class ArkvoryClient extends AccountClient {
   }
   search(...args: Parameters<CatalogApi['search']>) {
     return this.catalog.search(...args);
+  }
+  searchAll(...args: Parameters<CatalogApi['searchAll']>) {
+    return this.catalog.searchAll(...args);
   }
   attachments(...args: Parameters<CatalogApi['attachments']>) {
     return this.catalog.attachments(...args);

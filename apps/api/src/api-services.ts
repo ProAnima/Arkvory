@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import {
   StorageService,
   ArtifactCatalog,
+  GlobalSearch,
   CompletionQueue,
   IdentityService,
   ServiceAccess,
@@ -22,6 +23,7 @@ import {
   PostgresServices,
   PostgresStoragePolicy,
   PostgresBrowse,
+  PostgresGlobalSearch,
   ZipManifestReader,
   PostgresJobs,
   PostgresRetention,
@@ -122,6 +124,7 @@ export function createApiServices(
     serviceAccounts,
     storagePolicies,
     browse,
+    search: new GlobalSearch(new PostgresGlobalSearch(catalog.pool)),
     securityAudit,
     authThrottle: new AuthThrottle(() => Date.now()),
     identity: new IdentityService(new PostgresIdentity(catalog.pool), {

@@ -176,6 +176,14 @@
       "summary": "搜索制品",
       "description": "按以下条件查找已发布的制品：`q`（名称或当前元数据值的子串，不区分大小写）、精确匹配的当前 `label`、`collection`，以及精确匹配的 `metadataKey`/`metadataValue` 键值对（两者须同时提供）；所有给出的过滤条件必须同时满足。结果按每页 100 条、按 ID 排序，每项包含大小、创建和发布时间、当前标签和晋级阶段；将 `after` 设为 `next` 即可继续。不返回元数据和集合：请用 `getAnnotations` 读取。"
     },
+    "searchAllRepositories": {
+      "en": {
+        "summary": "Search all repositories",
+        "description": "Finds published artifacts in every repository where the caller may list artifacts (`artifact.list`), at most the first 1000 by name. Filters: `q` (a case-insensitive substring of the name or of a current metadata value), `repositories` (comma-separated, at most 100), `labels` (comma-separated current labels, at most 8, all required) and `stage`; all given filters must match. A repository the caller cannot list is skipped exactly like one that does not exist. Results are ordered by publication time, newest first, then by repository and ID; each is a `searchArtifacts` item plus its `repository`. Pages hold `limit` items (1–100, default 50); continue with `after` set to `next` and the same filters."
+      },
+      "summary": "在所有仓库中搜索",
+      "description": "在调用方可以列出制品（`artifact.list`）的所有仓库中查找已发布的制品，最多按名称取前 1000 个仓库。过滤条件：`q`（名称或当前元数据值中不区分大小写的子字符串）、`repositories`（逗号分隔，最多 100 个）、`labels`（逗号分隔的当前标签，最多 8 个，须全部具备）和 `stage`；所有给定的过滤条件都必须匹配。调用方无法列出的仓库会被跳过，与不存在的仓库完全相同。结果按发布时间排序，最新的在前，然后按仓库和 ID 排序；每一项都是 `searchArtifacts` 的条目外加其 `repository`。每页包含 `limit` 项（1–100，默认 50）；将 `after` 设为 `next` 并使用相同的过滤条件继续。"
+    },
     "getCatalogAudit": {
       "en": {
         "summary": "Read the catalog audit of a repository",

@@ -176,6 +176,14 @@
       "summary": "البحث في المُخرَجات",
       "description": "يعثر على المُخرَجات المنشورة حسب `q` (سلسلة جزئية من الاسم أو من قيمة بيانات تعريف حالية، دون مراعاة حالة الأحرف)، و`label` حالية مطابقة تمامًا، و`collection`، وزوج `metadataKey`/`metadataValue` مطابق تمامًا ويُستخدمان معًا؛ ويجب أن تتطابق كل المرشحات المعطاة. تأتي النتائج في صفحات من 100 مرتبةً حسب المعرّف، لكل منها الحجم وأوقات الإنشاء والنشر والتسميات الحالية ومراحل الترقية؛ وللمتابعة اضبط `after` على قيمة `next`. لا تُعاد بيانات التعريف ولا التجميعات: اقرأها عبر `getAnnotations`."
     },
+    "searchAllRepositories": {
+      "en": {
+        "summary": "Search all repositories",
+        "description": "Finds published artifacts in every repository where the caller may list artifacts (`artifact.list`), at most the first 1000 by name. Filters: `q` (a case-insensitive substring of the name or of a current metadata value), `repositories` (comma-separated, at most 100), `labels` (comma-separated current labels, at most 8, all required) and `stage`; all given filters must match. A repository the caller cannot list is skipped exactly like one that does not exist. Results are ordered by publication time, newest first, then by repository and ID; each is a `searchArtifacts` item plus its `repository`. Pages hold `limit` items (1–100, default 50); continue with `after` set to `next` and the same filters."
+      },
+      "summary": "البحث في جميع المستودعات",
+      "description": "يعثر على العناصر المنشورة في كل مستودع يُسمح فيه للمستدعي بسرد العناصر (`artifact.list`)، وبحد أقصى أول 1000 مستودع حسب الاسم. عوامل التصفية: `q` (سلسلة جزئية دون مراعاة حالة الأحرف في الاسم أو في قيمة بيانات وصفية حالية)، و`repositories` (مفصولة بفواصل، 100 كحد أقصى)، و`labels` (تسميات حالية مفصولة بفواصل، 8 كحد أقصى، ويلزم وجودها جميعًا)، و`stage`؛ ويجب أن تتطابق جميع عوامل التصفية المحددة. يُتخطّى المستودع الذي لا يستطيع المستدعي سرده تمامًا كما يُتخطّى مستودع غير موجود. تُرتَّب النتائج حسب وقت النشر، الأحدث أولًا، ثم حسب المستودع والمعرّف؛ وكل نتيجة عنصر من `searchArtifacts` مع `repository` الخاص به. تحتوي الصفحة على `limit` عنصر (من 1 إلى 100، والافتراضي 50)؛ وللمتابعة اضبط `after` على قيمة `next` مع عوامل التصفية نفسها."
+    },
     "getCatalogAudit": {
       "en": {
         "summary": "Read the catalog audit of a repository",

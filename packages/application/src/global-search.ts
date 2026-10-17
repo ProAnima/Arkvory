@@ -1,0 +1,168 @@
+import {
+  ArkvoryError,
+  authorizeAction,
+  fieldError,
+  repositoryPattern,
+  requireStage,
+} from '@proanima/arkvory-domain';
+import type { Principal } from '@proanima/arkvory-domain';
+import { effectivePermissions } from './effective-permissions.js';
+import type { ArtifactSearchItem } from './catalog-ports.js';
+
+/** Bounds of the installation-wide search (ADR 0081, A1; query bounds of ADR 0075). */
+export const GLOBAL_SEARCH_REPOSITORIES = 1000;
+const MAX_REPOSITORY_FILTER = 100;
+const MAX_LABELS = 8;
+const MAX_QUERY = 240;
+const MAX_CURSOR = 160;
+
+/**
+ * Keyset position of a result: publication time in microseconds since the epoch (reservation
+ * time for rows without one), then repository and id. Ordered by time descending, the rest
+ * ascending in byte order.
+ */
+export interface GlobalSearchPosition {
+  readonly micros: string;
+  readonly repository: string;
+  readonly id: string;
+}
+export type GlobalSearchItem = ArtifactSearchItem & { readonly repository: string };
+export interface GlobalSearchRow {
+  readonly item: GlobalSearchItem;
+  readonly position: GlobalSearchPosition;
+}
+export interface GlobalSearchFilter {
+  /** Already authorized, unique, sorted; never empty. */
+  readonly repositories: readonly string[];
+  readonly query: string;
+  readonly labels: readonly string[];
+  readonly stage: string | undefined;
+  readonly after: GlobalSearchPosition | undefined;
+}
+export interface GlobalSearchStore {
+  /** At most `limit` available artifacts in keyset order, strictly after `filter.after`. */
+  searchRepositories(
+    filter: GlobalSearchFilter,
+    limit: number,
+  ): Promise<readonly GlobalSearchRow[]>;
+}
+/** Raw query parameters; every value is unknown until checked here. */
+export interface GlobalSearchInput {
+  readonly q?: unknown;
+  readonly repositories?: unknown;
+  readonly labels?: unknown;
+  readonly stage?: unknown;
+  readonly after?: unknown;
+  readonly limit?: unknown;
+}
+export interface GlobalSearchPage {
+  readonly items: readonly GlobalSearchItem[];
+  readonly next: string | null;
+}
+
+const repository = new RegExp(repositoryPattern);
+const label = /^[\p{L}\p{N}_.:-]{1,64}$/u;
+const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+const micros = /^-?(0|[1-9][0-9]{0,18})$/;
+
+function optionalText(value: unknown, field: string): string | undefined {
+  if (value === undefined) return undefined;
+  if (typeof value !== 'string') throw fieldError(field, 'type', `Invalid ${field}`);
+  return value;
+}
+function list(value: unknown, field: string, limit: number, pattern: RegExp): readonly string[] {
+  const raw = optionalText(value, field);
+  if (raw === undefined || raw === '') return [];
+  const entries = raw.split(',');
+  if (entries.length > limit) throw fieldError(field, 'length', `Too many ${field}`);
+  if (entries.some((entry) => !pattern.test(entry)))
+    throw fieldError(field, 'format', `Invalid ${field}`);
+  return [...new Set(entries)].sort();
+}
+function pageSize(value: unknown): number {
+  const raw = optionalText(value, 'limit');
+  if (raw === undefined) return 50;
+  if (!/^[1-9][0-9]{0,2}$/.test(raw) || Number(raw) > 100)
+    throw fieldError('limit', 'range', 'Search page limit must be between 1 and 100');
+  return Number(raw);
+}
+
+/** The cursor is opaque to clients; its form is `<micros>.<repository>.<id>`. */
+export function encodeSearchCursor(position: GlobalSearchPosition): string {
+  return `${position.micros}.${position.repository}.${position.id}`;
+}
+export function decodeSearchCursor(value: string): GlobalSearchPosition {
+  const parts = value.split('.');
+  const [time = '', name = '', id = ''] = parts;
+  if (
+    value.length > MAX_CURSOR ||
+    parts.length !== 3 ||
+    !micros.test(time) ||
+    !repository.test(name) ||
+    !uuid.test(id)
+  )
+    throw fieldError('after', 'format', 'Invalid search cursor');
+  return { micros: time, repository: name, id };
+}
+
+/**
+ * Repositories this principal may list, by name, at most GLOBAL_SEARCH_REPOSITORIES. Each one
+ * passes the same check as the repository search route, so the result never names a repository
+ * that route would refuse.
+ */
+export function listableRepositories(principal: Principal): readonly string[] {
+  const names = new Set<string>();
+  for (const binding of effectivePermissions(principal))
+    if (binding.actions.includes('artifact.list')) names.add(binding.resource.id);
+  const allowed: string[] = [];
+  for (const name of [...names].sort()) {
+    if (allowed.length === GLOBAL_SEARCH_REPOSITORIES) break;
+    try {
+      authorizeAction(principal, name, 'artifact.list', ['read']);
+      allowed.push(name);
+    } catch (error) {
+      if (!(error instanceof ArkvoryError)) throw error;
+    }
+  }
+  return allowed;
+}
+
+/** `GET /api/v1/search`: one bounded keyset query over the repositories the caller may list. */
+export class GlobalSearch {
+  constructor(private readonly store: GlobalSearchStore) {}
+  async search(principal: Principal, input: GlobalSearchInput): Promise<GlobalSearchPage> {
+    const query = optionalText(input.q, 'q') ?? '';
+    if (query.length > MAX_QUERY) throw fieldError('q', 'length', 'Search text too long');
+    const requested = list(input.repositories, 'repositories', MAX_REPOSITORY_FILTER, repository);
+    const labels = list(input.labels, 'labels', MAX_LABELS, label);
+    const rawStage = optionalText(input.stage, 'stage');
+    const stage = rawStage === undefined ? undefined : requireStageField(rawStage);
+    const rawAfter = optionalText(input.after, 'after');
+    const after = rawAfter === undefined ? undefined : decodeSearchCursor(rawAfter);
+    const limit = pageSize(input.limit);
+    const listable = listableRepositories(principal);
+    // An unreadable repository in the filter is dropped like an absent one: the answer is the
+    // same either way, so the filter cannot be used to learn which repositories exist.
+    const repositories = requested.length
+      ? listable.filter((name) => requested.includes(name))
+      : listable;
+    if (repositories.length === 0) return { items: [], next: null };
+    const rows = await this.store.searchRepositories(
+      { repositories, query, labels, stage, after },
+      limit + 1,
+    );
+    const page = rows.slice(0, limit);
+    const last = page.at(-1);
+    return {
+      items: page.map((row) => row.item),
+      next: rows.length > limit && last ? encodeSearchCursor(last.position) : null,
+    };
+  }
+}
+function requireStageField(value: string): string {
+  try {
+    return requireStage(value);
+  } catch {
+    throw fieldError('stage', 'format', 'Invalid promotion stage');
+  }
+}

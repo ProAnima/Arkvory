@@ -11,6 +11,13 @@ interface AccessLog {
   now: () => number;
 }
 const probes = new Set(['/health/live', '/health/status']);
+// `Arkvory-Client` (ADR 0081) names the client program; anything else than one short printable
+// ASCII value is left out rather than escaped, so the log never carries arbitrary header bytes.
+const clientName = /^[\x20-\x7e]{1,64}$/;
+function clientOf(request: FastifyRequest): string | undefined {
+  const value = request.headers['arkvory-client'];
+  return typeof value === 'string' && clientName.test(value) ? value : undefined;
+}
 
 /**
  * One JSON line per request when its response closes, aborted transfers included. Only the
@@ -24,6 +31,7 @@ export function registerAccessLog(app: FastifyInstance, log: AccessLog): void {
     if (probes.has(route) && status < 400) return;
     const principal = log.principal(request)?.id;
     const traceId = traceIdOf(request.headers['traceparent']);
+    const client = clientOf(request);
     log.writer.write({
       level: 'info',
       component: 'http',
@@ -38,6 +46,7 @@ export function registerAccessLog(app: FastifyInstance, log: AccessLog): void {
       ...(observed.bytesReceived === undefined ? {} : { bytesReceived: observed.bytesReceived }),
       ...(principal ? { principal } : {}),
       clientIp: request.ip,
+      ...(client ? { client } : {}),
       completed: observed.completed,
     });
   });

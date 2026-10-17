@@ -30,6 +30,8 @@ export interface TransportOptions {
   readonly requestTimeoutMs?: number;
   /** Diagnostics only; an observer failure never affects the request. */
   readonly onRequest?: (event: RequestEvent) => void;
+  /** Value of the `Arkvory-Client` request header; printable ASCII, 1–64 characters. */
+  readonly clientName?: string;
 }
 export function repositoryPath(repository: string, suffix: string) {
   return `api/v1/repositories/${encodeURIComponent(repository)}/${suffix}`;
@@ -53,6 +55,8 @@ export class HttpTransport implements HttpPort {
         options.requestTimeoutMs > 3600000)
     )
       throw new ArkvoryClientError('invalid_argument', 'Invalid request timeout');
+    if (options.clientName !== undefined && !/^[\x20-\x7e]{1,64}$/.test(options.clientName))
+      throw new ArkvoryClientError('invalid_argument', 'Invalid client name');
     this.base = new URL(baseUrl);
     if (
       this.base.username ||
@@ -84,6 +88,8 @@ export class HttpTransport implements HttpPort {
     signal = signals.length ? AbortSignal.any(signals) : undefined;
     const headers = new Headers(init.headers);
     headers.set('Authorization', `Bearer ${this.token()}`);
+    if (this.options.clientName !== undefined)
+      headers.set('Arkvory-Client', this.options.clientName);
     const url = new URL(this.href(path));
     const started = Date.now();
     const observe = (response?: Response) => {

@@ -176,6 +176,14 @@
       "summary": "Rechercher des artefacts",
       "description": "Trouve les artefacts publiés selon `q` (sous-chaîne, sans tenir compte de la casse, du nom ou d’une valeur de métadonnées actuelle), une étiquette `label` exacte et actuelle, une `collection`, et une paire exacte `metadataKey`/`metadataValue`, qui vont ensemble ; tous les filtres donnés doivent correspondre. Les résultats arrivent par pages de 100 triées par ID, chacun avec sa taille, ses dates de création et de publication, ses étiquettes actuelles et ses étapes de promotion ; poursuivez avec `after` défini sur `next`. Les métadonnées et les collections ne sont pas renvoyées : lisez-les avec `getAnnotations`."
     },
+    "searchAllRepositories": {
+      "en": {
+        "summary": "Search all repositories",
+        "description": "Finds published artifacts in every repository where the caller may list artifacts (`artifact.list`), at most the first 1000 by name. Filters: `q` (a case-insensitive substring of the name or of a current metadata value), `repositories` (comma-separated, at most 100), `labels` (comma-separated current labels, at most 8, all required) and `stage`; all given filters must match. A repository the caller cannot list is skipped exactly like one that does not exist. Results are ordered by publication time, newest first, then by repository and ID; each is a `searchArtifacts` item plus its `repository`. Pages hold `limit` items (1–100, default 50); continue with `after` set to `next` and the same filters."
+      },
+      "summary": "Rechercher dans tous les dépôts",
+      "description": "Trouve les artefacts publiés dans tous les dépôts où l’appelant peut lister les artefacts (`artifact.list`), au plus les 1000 premiers par nom. Filtres : `q` (sous-chaîne sans distinction de casse dans le nom ou dans une valeur de métadonnées actuelle), `repositories` (séparés par des virgules, au plus 100), `labels` (étiquettes actuelles séparées par des virgules, au plus 8, toutes requises) et `stage` ; tous les filtres fournis doivent correspondre. Un dépôt que l’appelant ne peut pas lister est ignoré exactement comme un dépôt inexistant. Les résultats sont triés par date de publication, du plus récent au plus ancien, puis par dépôt et ID ; chacun est un élément de `searchArtifacts` avec son `repository`. Les pages contiennent `limit` éléments (1–100, 50 par défaut) ; continuez avec `after` égal à `next` et les mêmes filtres."
+    },
     "getCatalogAudit": {
       "en": {
         "summary": "Read the catalog audit of a repository",

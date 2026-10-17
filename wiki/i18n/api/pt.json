@@ -176,6 +176,14 @@
       "summary": "Pesquisar artefatos",
       "description": "Encontra artefatos publicados por `q` (uma substring, sem distinção entre maiúsculas e minúsculas, do nome ou de um valor de metadados atual), um `label` atual exato, uma `collection` e um par exato `metadataKey`/`metadataValue`, que devem ser informados juntos; todos os filtros informados precisam coincidir. Os resultados vêm em páginas de 100 ordenadas por ID, cada um com tamanho, datas de criação e de publicação, rótulos atuais e estágios de promoção; continue com `after` definido como `next`. Metadados e coleções não são retornados: leia-os com `getAnnotations`."
     },
+    "searchAllRepositories": {
+      "en": {
+        "summary": "Search all repositories",
+        "description": "Finds published artifacts in every repository where the caller may list artifacts (`artifact.list`), at most the first 1000 by name. Filters: `q` (a case-insensitive substring of the name or of a current metadata value), `repositories` (comma-separated, at most 100), `labels` (comma-separated current labels, at most 8, all required) and `stage`; all given filters must match. A repository the caller cannot list is skipped exactly like one that does not exist. Results are ordered by publication time, newest first, then by repository and ID; each is a `searchArtifacts` item plus its `repository`. Pages hold `limit` items (1–100, default 50); continue with `after` set to `next` and the same filters."
+      },
+      "summary": "Pesquisar em todos os repositórios",
+      "description": "Encontra artefatos publicados em todos os repositórios em que quem chama pode listar artefatos (`artifact.list`), no máximo os 1000 primeiros por nome. Filtros: `q` (substring sem diferenciar maiúsculas no nome ou em um valor atual de metadados), `repositories` (separados por vírgula, no máximo 100), `labels` (rótulos atuais separados por vírgula, no máximo 8, todos obrigatórios) e `stage`; todos os filtros informados precisam corresponder. Um repositório que quem chama não pode listar é ignorado exatamente como um que não existe. Os resultados são ordenados pela data de publicação, os mais recentes primeiro, depois por repositório e ID; cada um é um item de `searchArtifacts` com seu `repository`. As páginas têm `limit` itens (1–100, padrão 50); continue com `after` igual a `next` e os mesmos filtros."
+    },
     "getCatalogAudit": {
       "en": {
         "summary": "Read the catalog audit of a repository",

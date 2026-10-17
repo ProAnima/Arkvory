@@ -20,6 +20,7 @@ import {
 import { composeApiPaths } from './openapi-compose.js';
 import { delegationPaths } from './delegation-api.js';
 import { repositoryPaths } from './repositories.js';
+import { globalSearchPaths } from './global-search.js';
 import { operationPaths } from './operations.js';
 import { promotionPaths } from './promotion-api.js';
 import { metricsPaths } from './metrics.js';
@@ -252,6 +253,7 @@ const composed = composeApiPaths({
   ...metricsPaths,
   ...delegationPaths,
   ...repositoryPaths,
+  ...globalSearchPaths,
   ...operationPaths,
   ...attachmentPaths,
   ...promotionPaths,

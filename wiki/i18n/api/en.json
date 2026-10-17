@@ -176,6 +176,14 @@
       "summary": "Search artifacts",
       "description": "Finds published artifacts by `q` (a case-insensitive substring of the name or of a current metadata value), an exact current `label`, a `collection`, and an exact `metadataKey`/`metadataValue` pair, which go together; all given filters must match. Results come in pages of 100 ordered by ID, each with size, creation and publication times, current labels and promotion stages; continue with `after` set to `next`. Metadata and collections are not returned: read them with `getAnnotations`."
     },
+    "searchAllRepositories": {
+      "en": {
+        "summary": "Search artifacts in every repository the caller may list (at most 1000 by name); newest publication first, pages of up to 100 with an opaque cursor",
+        "description": ""
+      },
+      "summary": "Search all repositories",
+      "description": "Finds published artifacts in every repository where the caller may list artifacts (`artifact.list`), at most the first 1000 by name. Filters: `q` (a case-insensitive substring of the name or of a current metadata value), `repositories` (comma-separated, at most 100), `labels` (comma-separated current labels, at most 8, all required) and `stage`; all given filters must match. A repository the caller cannot list is skipped exactly like one that does not exist. Results are ordered by publication time, newest first, then by repository and ID; each is a `searchArtifacts` item plus its `repository`. Pages hold `limit` items (1–100, default 50); continue with `after` set to `next` and the same filters."
+    },
     "getCatalogAudit": {
       "en": {
         "summary": "Audit of catalog mutations, write scope; pages of 100",

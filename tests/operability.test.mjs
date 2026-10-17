@@ -152,10 +152,16 @@ test('access log records route templates, status, timing and principal but never
   t.after(() => app.close());
   const address = await app.listen({ host: '127.0.0.1', port: 0 });
   await (
-    await fetch(`${address}/items/42?token=secret-value`, { headers: { authorization: 'x' } })
+    await fetch(`${address}/items/42?token=secret-value`, {
+      headers: { authorization: 'x', 'arkvory-client': 'arkvoryctl-mcp/1.2.3' },
+    })
   ).text();
   await (await fetch(`${address}/health/live`)).text();
-  await (await fetch(`${address}/missing?key=secret-value`)).text();
+  await (
+    await fetch(`${address}/missing?key=secret-value`, {
+      headers: { 'arkvory-client': 'x'.repeat(65) },
+    })
+  ).text();
   // Records are written on the server response 'close', which may trail the client body.
   for (let i = 0; i < 100 && records.length < 2; i++)
     await new Promise((resolve) => setTimeout(resolve, 10));
@@ -169,6 +175,8 @@ test('access log records route templates, status, timing and principal but never
   assert.equal(item.completed, true);
   assert.ok(item.bytesSent > 0);
   assert.equal(item.clientIp, '127.0.0.1');
+  assert.equal(item.client, 'arkvoryctl-mcp/1.2.3', 'Arkvory-Client names the program (ADR 0081)');
+  assert.equal(missing.client, undefined, 'an oversized client name is left out');
   assert.equal(missing.route, 'unmatched');
   assert.equal(missing.principal, undefined);
   assert.doesNotMatch(JSON.stringify(records), /secret-value|token|\/items\/42/);
