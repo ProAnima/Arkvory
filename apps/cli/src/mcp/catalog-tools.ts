@@ -14,6 +14,7 @@ import {
 } from './tool.js';
 import type { ToolCall } from './tool.js';
 
+const label = /^[\p{L}\p{N}_.:-]{1,64}$/u;
 const readOnly = { readOnlyHint: true, destructiveHint: false, idempotentHint: true } as const;
 const text = z.string();
 const strings = z.array(z.string());
@@ -94,8 +95,16 @@ function registerSearchTool(server: McpServer, ctx: ToolContext) {
           .array(z.string().regex(/^[a-z0-9][a-z0-9_-]{0,63}$/))
           .max(100)
           .optional(),
+        // The Unicode class is checked by refine, not exported as a JSON Schema pattern: \p{L}
+        // needs the u flag, which many schema validators (Python re among them) do not apply.
         labels: z
-          .array(z.string().regex(/^[\p{L}\p{N}_.:-]{1,64}$/u))
+          .array(
+            z
+              .string()
+              .min(1)
+              .max(64)
+              .refine((value) => label.test(value), 'Invalid label'),
+          )
           .max(8)
           .optional(),
         stage: z

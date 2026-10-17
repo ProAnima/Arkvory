@@ -123,6 +123,8 @@ test('tools/list offers only read tools, and only those the key can use', async 
     assert.equal(tool.inputSchema.additionalProperties, false, tool.name);
     assert.equal(tool.outputSchema.type, 'object', tool.name);
   }
+  // Schemas stay portable: no pattern needs the u flag (Python re, for one, rejects \p{L}).
+  assert.doesNotMatch(JSON.stringify(all.map((tool) => tool.inputSchema)), /\\\\p\{/);
   const download = all.find((tool) => tool.name === 'arkvory_download');
   assert.equal(download.annotations.idempotentHint, true);
 });
@@ -166,6 +168,11 @@ test('tools/call returns structured, cleaned data and coded errors', async (t) =
     arguments: { query: 'x', token: KEY },
   });
   assert.equal(extra.result.isError, true, 'unknown arguments are refused');
+  const badLabel = await mcp.request('tools/call', {
+    name: 'arkvory_search',
+    arguments: { labels: ['no spaces'] },
+  });
+  assert.equal(badLabel.result.isError, true, 'labels are still checked');
   assert.equal(asked.length, 1);
   const missing = await mcp.request('tools/call', { name: 'arkvory_download', arguments: {} });
   assert.ok(missing.error || missing.result.isError, 'a hidden tool cannot be called');
