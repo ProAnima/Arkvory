@@ -9,7 +9,6 @@ import type {
   ModuleDescriptor,
   ModuleLifecycle,
   ModuleManifest,
-  ModuleSignal,
 } from '@proanima/arkvory-extension-api';
 import { ModuleRuntime, planOrThrow, prepareModule } from './module-host.js';
 
@@ -125,14 +124,14 @@ export function builtinVersion(coreVersion: string): string {
 const sha256 = (text: string) => createHash('sha256').update(text, 'utf8').digest('hex');
 
 /**
- * Plans and starts the modules of this API process: every built-in module enabled, as before
- * modules existed. Each configuration is parsed and the plan checked before any module starts.
+ * Plans the modules of this API process: every built-in module enabled, as before modules
+ * existed. No I/O: each configuration is parsed and the plan checked before anything is
+ * allocated; `ModuleRuntime.start` then starts them.
  */
-export function startApiModules(
+export function planApiModules(
   role: ApiModuleContext['role'],
   coreVersion: string,
-  signal: ModuleSignal,
-): Promise<ModuleRuntime> {
+): ModuleRuntime<ApiModuleContext> {
   const prepared = new Map(
     builtinModules(builtinVersion(coreVersion)).map((descriptor) => [
       descriptor.manifest.id,
@@ -145,5 +144,5 @@ export function startApiModules(
     reservedRoutePrefixes: CORE_ROUTE_PREFIXES,
     sha256,
   });
-  return ModuleRuntime.start(plan, prepared, { role, context: { role }, signal });
+  return new ModuleRuntime(plan, prepared, { role, context: { role } });
 }

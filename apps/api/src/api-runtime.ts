@@ -10,7 +10,7 @@ import {
 import { DownloadSettingsControl } from '@proanima/arkvory-application';
 import type { ServerConfig } from './config.js';
 import { createTransferControls } from './transfer-controls.js';
-import { startApiModules } from './modules.js';
+import { planApiModules, type ApiModuleContext } from './modules.js';
 import type { ModuleRuntime } from './module-host.js';
 
 function gatewayRole(config: ServerConfig): 'api' | 'reader' {
@@ -41,16 +41,17 @@ export class ApiRuntime {
   private closing: Promise<void> | undefined;
   private stopped = false;
   private ticketRetry: ReturnType<typeof setInterval> | undefined;
-  /** Aborts a module start still running when the process stops. */
-  private readonly moduleStart = new AbortController();
-  private started: ModuleRuntime | undefined;
+  /** The modules of this process (ADR 0079); planned at construction, started last by `start`. */
+  readonly modules: ModuleRuntime<ApiModuleContext>;
 
   constructor(
     config: ServerConfig,
     /** Release version of the core: the version of built-in modules and part of their plan. */
-    private readonly coreVersion: string,
+    coreVersion: string,
   ) {
     this.role = gatewayRole(config);
+    // Module settings and the plan are checked before any pool, storage or timer exists.
+    this.modules = planApiModules(this.role, coreVersion);
     // Validate local limits before allocating pools or claiming ownership.
     this.transfers = createTransferControls(config, this.available);
     this.blobs = new LocalBlobStore(config.dataDirectory, config.storageReserveBytes);
@@ -95,7 +96,7 @@ export class ApiRuntime {
       // The environment runs until the record is read: a database hiccup here must not stop the
       // start, the background task retries every 10 seconds and reports a failure.
       if (this.role === 'api') await this.downloadSettings.sync().catch(() => undefined);
-      this.started = await startApiModules(this.role, this.coreVersion, this.moduleStart.signal);
+      await this.modules.start();
     } catch (error) {
       await this.close();
       throw error;
@@ -128,15 +129,9 @@ export class ApiRuntime {
     this.ticketRetry.unref();
   }
 
-  /** The modules of this process (ADR 0079); available once start has succeeded. */
-  get modules(): ModuleRuntime {
-    if (!this.started) throw new Error('Modules are not started');
-    return this.started;
-  }
-
   stop(): void {
     this.stopped = true;
-    this.moduleStart.abort();
+    this.modules.cancelStart();
     clearInterval(this.ticketRetry);
     this.transfers.close();
     this.lease?.close();
@@ -151,8 +146,9 @@ export class ApiRuntime {
 
   private async release(): Promise<void> {
     try {
-      // Modules drain and stop before the pools they may use close (ADR 0079, section 4).
-      await this.started?.shutdown(MODULE_DRAIN_BUDGET_MS);
+      // Modules drain and stop before the pools they may use close (ADR 0079, section 4); a
+      // module start still running is cancelled and settles first.
+      await this.modules.shutdown(MODULE_DRAIN_BUDGET_MS);
     } finally {
       await this.pins.close();
       await this.catalog.close();

@@ -7,12 +7,11 @@ import {
   planOrThrow,
   prepareModule,
 } from '../apps/api/dist/module-host.js';
-import { builtinModules, builtinVersion, startApiModules } from '../apps/api/dist/modules.js';
-
-const live = () => new AbortController().signal;
+import { builtinModules, builtinVersion, planApiModules } from '../apps/api/dist/modules.js';
 
 test('the API process plans its built-in modules: UPack and raw are core, the protocols beside', async () => {
-  const runtime = await startApiModules('api', '1.6.0', live());
+  const runtime = planApiModules('api', '1.6.0');
+  await runtime.start();
   const plan = runtime.plan;
   assert.deepEqual(plan.startOrder, ['lfs', 'npm', 'oci', 'raw', 'upack']);
   assert.deepEqual(
@@ -31,12 +30,9 @@ test('the API process plans its built-in modules: UPack and raw are core, the pr
     runtime.states().map((s) => [s.module.manifest.id, s.running, s.health]),
     plan.startOrder.map((id) => [id, true, { status: 'ok', code: null }]),
   );
-  const again = await startApiModules('reader', '1.6.0', live());
+  const again = planApiModules('reader', '1.6.0');
   assert.equal(again.plan.fingerprint, plan.fingerprint, 'one plan for every process');
-  assert.notEqual(
-    (await startApiModules('api', '1.6.1', live())).plan.fingerprint,
-    plan.fingerprint,
-  );
+  assert.notEqual(planApiModules('api', '1.6.1').plan.fingerprint, plan.fingerprint);
   await runtime.shutdown(100);
   assert.equal(builtinVersion('dev'), '0.0.0-dev');
   assert.equal(builtinVersion('2.0.1'), '2.0.1');
@@ -121,8 +117,13 @@ function planned(descriptors) {
   };
   return { plan: planOrThrow(prepared, host), prepared };
 }
-const run = ({ plan, prepared }, signal = live(), role = 'api') =>
-  ModuleRuntime.start(plan, prepared, { role, context: {}, signal });
+const runtimeOf = ({ plan, prepared }, role = 'api') =>
+  new ModuleRuntime(plan, prepared, { role, context: {} });
+const run = async (parts, role = 'api') => {
+  const runtime = runtimeOf(parts, role);
+  await runtime.start();
+  return runtime;
+};
 
 test('modules start in plan order in their own roles and stop in reverse', async () => {
   const log = [];
@@ -153,13 +154,78 @@ test('a failed start stops what started, the failed module included, in reverse'
     }),
     recorder(log, 'third'),
   ]);
-  await assert.rejects(run(parts), (error) => error === failure);
+  const runtime = runtimeOf(parts);
+  await assert.rejects(runtime.start(), (error) => {
+    // The failure of the rollback is kept beside the cause, not lost.
+    assert.ok(error instanceof AggregateError);
+    assert.equal(error.cause, failure);
+    assert.deepEqual(
+      error.errors.map((e) => e.message),
+      ['cannot start', 'stop fails too'],
+    );
+    return true;
+  });
   assert.deepEqual(log, ['start first', 'start second', 'stop second', 'stop first']);
-  const stopped = new AbortController();
-  stopped.abort();
+  assert.ok(runtime.states().every((s) => !s.running));
+  await runtime.shutdown(100);
+  assert.equal(log.length, 4, 'a rolled back module is not stopped again');
+  await assert.rejects(runtime.start(), /once/);
+
   log.length = 0;
-  await assert.rejects(run(parts, stopped.signal), { name: 'AbortError' });
+  const clean = planned([
+    recorder(log, 'first'),
+    recorder(log, 'second', { start: () => Promise.reject(failure) }),
+  ]);
+  await assert.rejects(run(clean), (error) => error === failure);
+  const cancelled = runtimeOf(parts);
+  cancelled.cancelStart();
+  log.length = 0;
+  await assert.rejects(cancelled.start(), { name: 'AbortError' });
   assert.deepEqual(log, []);
+});
+
+test('a stop while modules start cancels the start and settles it before close returns', async () => {
+  const log = [];
+  let release;
+  const slow = new Promise((resolve) => {
+    release = resolve;
+  });
+  // The last module ignores the cancellation and finishes its start anyway.
+  const runtime = runtimeOf(
+    planned([recorder(log, 'first'), recorder(log, 'second', { start: () => slow })]),
+  );
+  const starting = runtime.start();
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.deepEqual(log, ['start first', 'start second']);
+  let closed = false;
+  const closing = runtime.shutdown(100).then(() => {
+    closed = true;
+  });
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(closed, false, 'close waits for the start to settle');
+  release();
+  await assert.rejects(starting, { name: 'AbortError' });
+  await closing;
+  // Rolled back by the start itself, so nothing is drained and nothing is stopped twice.
+  assert.deepEqual(log, ['start first', 'start second', 'stop second', 'stop first']);
+  assert.ok(runtime.states().every((s) => !s.running));
+});
+
+test('an asynchronous health report is invalid and its rejection does not escape', async () => {
+  const escaped = [];
+  const listener = (reason) => escaped.push(reason);
+  process.on('unhandledRejection', listener);
+  try {
+    const runtime = await run(
+      planned([recorder([], 'async', { health: () => Promise.reject(new Error('later')) })]),
+    );
+    assert.deepEqual(runtime.states()[0].health, { status: 'failed', code: 'health_invalid' });
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    assert.deepEqual(escaped, []);
+    await runtime.shutdown(100);
+  } finally {
+    process.off('unhandledRejection', listener);
+  }
 });
 
 test('shutdown bounds the drain, stops every module and reports failures together', async () => {

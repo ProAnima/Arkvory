@@ -8,7 +8,6 @@ import type {
   ModulePlan,
   ModulePlanProblem,
   ModuleRole,
-  ModuleSignal,
   PlannedModule,
 } from '@proanima/arkvory-extension-api';
 
@@ -89,6 +88,8 @@ function healthOf(instance: ModuleLifecycle): ModuleHealth {
     const report: unknown = instance.health();
     if (typeof report !== 'object' || report === null)
       return { status: 'failed', code: 'health_invalid' };
+    // An asynchronous health() breaks the contract; its rejection must not end the process.
+    if (report instanceof Promise) report.catch(() => undefined);
     const value: unknown = Reflect.get(report, 'status');
     const code: unknown = Reflect.get(report, 'code');
     const status = HEALTH_STATUSES.find((known) => known === value);
@@ -125,50 +126,67 @@ async function stopAll(running: readonly Running[]): Promise<unknown[]> {
   return failures;
 }
 
+/** The process this runtime runs in and what its modules receive. */
+export interface ModuleProcess<Context> {
+  readonly role: ModuleRole;
+  readonly context: Context;
+}
+
 /**
- * The modules of one process (ADR 0079, section 4). Owns their instances: started in plan order,
- * drained with one shared budget and stopped in reverse order exactly once.
+ * The modules of one process (ADR 0079, section 4). Owns their instances: started once in plan
+ * order, drained with one shared budget and stopped in reverse order exactly once. The plan is
+ * known from construction, so settings and plan problems stop a process before it touches
+ * storage; `start` is the only step with I/O.
  */
-export class ModuleRuntime {
+export class ModuleRuntime<Context = unknown> {
+  private readonly running: Running[] = [];
+  private readonly cancel = new AbortController();
+  private starting: Promise<void> | undefined;
   private closing: Promise<void> | undefined;
 
-  private constructor(
+  constructor(
     readonly plan: ModulePlan,
-    private readonly running: readonly Running[],
+    private readonly prepared: ReadonlyMap<string, PreparedModule<Context>>,
+    private readonly process: ModuleProcess<Context>,
   ) {}
 
   /**
-   * Creates and starts every enabled module of `role` in plan order. When a start fails or the
-   * signal aborts, the modules created so far, the failed one included, are stopped in reverse
-   * order and the error is rethrown.
+   * Creates and starts every enabled module of the process role in plan order, once. When a
+   * start fails or is cancelled, the modules created so far, the failed one included, are
+   * stopped in reverse order and the error is rethrown, with the failures of those stops if any.
    */
-  static async start<Context>(
-    plan: ModulePlan,
-    prepared: ReadonlyMap<string, PreparedModule<Context>>,
-    process: {
-      readonly role: ModuleRole;
-      readonly context: Context;
-      readonly signal: ModuleSignal;
-    },
-  ): Promise<ModuleRuntime> {
-    const running: Running[] = [];
+  start(): Promise<void> {
+    if (this.starting || this.closing) return Promise.reject(new Error('Modules start once'));
+    this.starting = this.startAll();
+    return this.starting;
+  }
+
+  private async startAll(): Promise<void> {
+    const signal = this.cancel.signal;
     try {
-      for (const id of plan.startOrder) {
-        const planned = plan.modules.find((m) => m.manifest.id === id);
-        if (!planned?.manifest.roles.includes(process.role)) continue;
-        const module = prepared.get(id);
+      for (const id of this.plan.startOrder) {
+        const planned = this.plan.modules.find((m) => m.manifest.id === id);
+        if (!planned?.manifest.roles.includes(this.process.role)) continue;
+        const module = this.prepared.get(id);
         if (!module) throw new Error('Planned module was not prepared');
-        process.signal.throwIfAborted();
-        const instance = module.create(process.context);
-        // Recorded before start: stop() also runs after a failed or aborted start.
-        running.push({ id, instance });
-        await instance.start(process.signal);
+        signal.throwIfAborted();
+        const instance = module.create(this.process.context);
+        // Recorded before start: stop() also runs after a failed or cancelled start.
+        this.running.push({ id, instance });
+        await instance.start(signal);
       }
+      // A module that ignored the cancellation must not leave a stopping process running it.
+      signal.throwIfAborted();
     } catch (error) {
-      await stopAll(running.reverse());
-      throw error;
+      const failures = await stopAll(this.running.splice(0).reverse());
+      if (failures.length === 0) throw error;
+      throw new AggregateError([error, ...failures], 'Module start failed', { cause: error });
     }
-    return new ModuleRuntime(plan, running);
+  }
+
+  /** Cancels a start in progress; modules already started run until `shutdown`. */
+  cancelStart(): void {
+    this.cancel.abort();
   }
 
   states(): ModuleState[] {
@@ -183,8 +201,9 @@ export class ModuleRuntime {
   }
 
   /**
-   * Drains every running module in reverse start order within `budgetMs` in total, then stops
-   * each. Idempotent: startup rollback and process close may both call it.
+   * Cancels a start in progress and waits until it settles, then drains every running module in
+   * reverse start order within `budgetMs` in total and stops each. Idempotent: startup rollback
+   * and process close may both call it, also while the modules are still starting.
    */
   shutdown(budgetMs: number): Promise<void> {
     this.closing ??= this.close(budgetMs);
@@ -192,7 +211,11 @@ export class ModuleRuntime {
   }
 
   private async close(budgetMs: number): Promise<void> {
-    const reverse = [...this.running].reverse();
+    this.cancel.abort();
+    // The start owns its rollback; whatever it leaves running is drained and stopped here, and
+    // the caller closes the pools only after that (ADR 0079, section 4).
+    await this.starting?.catch(() => undefined);
+    const reverse = this.running.splice(0).reverse();
     const deadline = performance.now() + budgetMs;
     const failures: unknown[] = [];
     for (const { instance } of reverse) {
