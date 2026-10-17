@@ -239,6 +239,7 @@ Se o motivo for `storage_quota` ou `catalog_limit`, o problema não é o disco. 
 - Um artefato excluído não pode ser restaurado. Restaure os dados de um backup. Consulte [Backups](./backups).
 - Repositórios espelhados não executam políticas de armazenamento. Consulte [Espelhos](./mirrors).
 - O armazenamento deve ser um sistema de arquivos local. Não há suporte a compartilhamentos de rede ou vários backends de armazenamento.
+- No Windows, o Arkvory sincroniza cada arquivo com o disco, mas não consegue sincronizar a entrada de diretório que o publica: o Node.js não oferece sincronização de diretórios ali. Uma queda de energia logo após um upload pode deixar um arquivo publicado ausente do disco. Use um nobreak e mantenha [backups](./backups) ou um [espelho](./mirrors). No Linux, as entradas de diretório também são sincronizadas.
 
 ## Páginas relacionadas {#related-pages}
 

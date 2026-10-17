@@ -239,6 +239,7 @@ Si un téléversement échoue avec la raison `storage_quota` ou `catalog_limit` 
 - Un artefact supprimé ne peut pas être restauré. Restaurez les données depuis une sauvegarde. Voir [Sauvegardes](./backups).
 - Les dépôts en miroir n’exécutent aucune politique de stockage. Voir [Miroirs](./mirrors).
 - Le stockage doit être un système de fichiers local. Les partages réseau et les multiples backends de stockage ne sont pas pris en charge.
+- Sous Windows, Arkvory synchronise chaque fichier sur le disque, mais ne peut pas synchroniser l’entrée de répertoire qui le publie : Node.js n’y offre pas de synchronisation de répertoire. Une coupure de courant peu après un téléversement peut laisser un fichier publié absent du disque. Utilisez un onduleur et gardez des [sauvegardes](./backups) ou un [miroir](./mirrors). Sous Linux, les entrées de répertoire sont aussi synchronisées.
 
 ## Pages associées {#related-pages}
 

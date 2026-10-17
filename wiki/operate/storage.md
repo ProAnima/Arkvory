@@ -239,6 +239,7 @@ If an upload fails with the reason `storage_quota` or `catalog_limit` instead, t
 - A deleted artifact cannot be restored. Restore data from a backup. See [Backups](./backups).
 - Mirrored repositories run no storage policy. See [Mirrors](./mirrors).
 - The storage must be a local file system. There is no support for network shares or several storage backends.
+- On Windows, Arkvory syncs each file to disk but cannot sync the directory entry that publishes it: Node.js has no directory sync there. A power loss shortly after an upload can leave a published file missing from the disk. Use a UPS and keep [backups](./backups) or a [mirror](./mirrors). On Linux, the directory entries are synced too.
 
 ## Related pages {#related-pages}
 

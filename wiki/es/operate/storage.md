@@ -239,6 +239,7 @@ Si una subida falla en cambio con el motivo `storage_quota` o `catalog_limit`, e
 - Un artefacto eliminado no se puede restaurar. Restaure los datos desde una copia de seguridad. Consulte [Copias de seguridad](./backups).
 - Los repositorios espejo no ejecutan ninguna política de almacenamiento. Consulte [Espejos](./mirrors).
 - El almacenamiento debe ser un sistema de archivos local. No se admiten recursos compartidos de red ni varios backends de almacenamiento.
+- En Windows, Arkvory sincroniza cada archivo con el disco, pero no puede sincronizar la entrada de directorio que lo publica: Node.js no ofrece sincronización de directorios allí. Un corte de energía poco después de una subida puede dejar un archivo publicado sin su contenido en el disco. Use un SAI y mantenga [copias de seguridad](./backups) o un [espejo](./mirrors). En Linux, las entradas de directorio también se sincronizan.
 
 ## Páginas relacionadas {#related-pages}
 
