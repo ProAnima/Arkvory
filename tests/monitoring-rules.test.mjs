@@ -7,6 +7,7 @@ import { ApiMetrics } from '../apps/api/dist/api-metrics.js';
 import { BackupMetrics } from '../apps/api/dist/backup-metrics.js';
 import { MirrorMetrics } from '../apps/api/dist/mirror-metrics.js';
 import { WebhookMetrics } from '../apps/api/dist/webhook-metrics.js';
+import { EventMetrics } from '../apps/api/dist/event-metrics.js';
 import { FleetOverviewSource } from '../apps/api/dist/fleet-overview.js';
 import { ReplicaGuard } from '../apps/api/dist/replica-guard.js';
 
@@ -120,6 +121,12 @@ async function exposedNames() {
             deliveredCount: 1,
           },
         ],
+      },
+      () => 0,
+    ),
+    events: new EventMetrics(
+      {
+        snapshot: async () => ({ head: 9n, oldest: 2n, prunedTotal: 2n, unsequencedAgeSeconds: 0 }),
       },
       () => 0,
     ),
