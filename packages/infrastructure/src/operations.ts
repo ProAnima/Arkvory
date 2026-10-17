@@ -61,8 +61,9 @@ export class PostgresCleanup implements CleanupCatalog {
       status: 'pending' | 'available' | 'cancelled';
       expires_at: Date;
       cancelled_at: Date | null;
+      storage_backend: string;
     }>(
-      'SELECT id,repository,status,expires_at,cancelled_at FROM arkvory_uploads WHERE ($1::uuid IS NULL OR id>$1) ORDER BY id LIMIT $2',
+      'SELECT id,repository,status,expires_at,cancelled_at,storage_backend FROM arkvory_uploads WHERE ($1::uuid IS NULL OR id>$1) ORDER BY id LIMIT $2',
       [after ?? null, limit],
     );
     return result.rows.map((row) => ({
@@ -71,6 +72,7 @@ export class PostgresCleanup implements CleanupCatalog {
       status: row.status,
       expiresAt: row.expires_at.toISOString(),
       cancelledAt: row.cancelled_at?.toISOString() ?? null,
+      storageBackend: row.storage_backend,
     }));
   }
   async expire(id: string, now: string) {
