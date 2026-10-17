@@ -212,6 +212,9 @@ const writing = [
   'artifact.read',
   'content.read',
   'upload.create',
+  'upload.read',
+  'upload.write',
+  'upload.complete',
   'package.publish',
   'artifact.promote',
   'annotation.read',
@@ -256,11 +259,15 @@ test('tools/list differs with --write: write tools with honest hints, never dele
   assert.match(written.instructions, /Writes are limited to: builds\./);
   assert.match(written.instructions, /wait for their confirmation/);
   // Write tools the key plainly cannot use are not offered either.
-  const narrow = await listing(['artifact.list', 'upload.create'], writeOptions());
-  assert.deepEqual(
-    narrow.tools.map((tool) => tool.name).filter((name) => writeNames.test(name)),
-    ['arkvory_upload'],
-  );
+  const offered = async (actions) =>
+    (await listing(actions, writeOptions())).tools
+      .map((tool) => tool.name)
+      .filter((name) => writeNames.test(name));
+  const uploads = ['upload.create', 'upload.read', 'upload.write', 'upload.complete'];
+  assert.deepEqual(await offered(['artifact.list', ...uploads]), ['arkvory_upload']);
+  // Creating an upload without sending its parts or completing it publishes nothing.
+  for (const missing of uploads)
+    assert.deepEqual(await offered(uploads.filter((action) => action !== missing)), [], missing);
 });
 
 test('a write outside --write-repositories is a coded error and sends nothing', async (t) => {

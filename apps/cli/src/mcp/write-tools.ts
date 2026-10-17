@@ -152,8 +152,11 @@ const sourceFields = {
 };
 const sent = { file: z.string(), size: z.string(), sha256: z.string(), truncated: z.boolean() };
 
+// Every action one resumable upload takes: create, status, parts and completion.
+const uploading = ['upload.create', 'upload.read', 'upload.write', 'upload.complete'];
+
 export function registerUploadTools(server: McpServer, ctx: ToolContext, actions: KeyActions) {
-  if (!actions.has('upload.create')) return;
+  if (!uploading.every((action) => actions.has(action))) return;
   defineTool(
     server,
     'arkvory_upload',
