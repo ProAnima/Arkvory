@@ -285,12 +285,12 @@ export async function createServer(config: ServerConfig, lifecycle: ServerLifecy
   const policy = resolveUploadTimeouts(config);
   const tls = await prepareTls(config);
   const app = createHttpServer({ trustedProxies: config.trustedProxies ?? [], ...tls.options });
-  const runtime = new ApiRuntime(config);
+  const identity = lifecycle.identity ?? processIdentity('api', 'dev');
+  const runtime = new ApiRuntime(config, identity.version);
   const drain = lifecycle.drain ?? new RequestDrain();
   drain.onBegin(runtime.transfers.drain);
   if (lifecycle.onOwnershipLost)
     registerOwnershipRecovery(app, runtime.available, lifecycle.onOwnershipLost);
-  const identity = lifecycle.identity ?? processIdentity('api', 'dev');
   const { diagnostics, recentLog } = processLog(config, lifecycle, identity);
   // Only a logger created here is closed here; a caller's logger outlives the server.
   const closeDiagnostics = () => {
