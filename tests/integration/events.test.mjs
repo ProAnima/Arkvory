@@ -421,3 +421,44 @@ test('arkvoryctl events tail prints JSON lines and goes on from its cursor file'
   assert.equal(failed.code, 6);
   assert.equal(JSON.parse(failed.stderr).error.reason, 'events_cursor_expired');
 });
+
+test('positions, pages and retention follow numeric order past one digit', async (t) => {
+  const f = await setup(t, { keys });
+  const log = new PostgresEventLog(f.catalog.pool);
+  // Twelve events of one repository in commit order; ids and positions cross 9 → 10.
+  await f.catalog.pool.query(
+    `INSERT INTO arkvory_events(type,schema_version,scope,repository,partition_key,subject,data)
+     SELECT 'artifact.published',1,'repository','releases','repository:releases','e'||n,
+       jsonb_build_object('repository','releases','artifactId',gen_random_uuid(),'n',n)
+     FROM generate_series(1,12) n ORDER BY n`,
+  );
+  assert.equal(await log.sequence(), 12);
+  const numbered = await f.catalog.pool.query(
+    'SELECT subject, position::int FROM arkvory_events ORDER BY id',
+  );
+  assert.deepEqual(
+    numbered.rows.map((row) => [row.subject, row.position]),
+    Array.from({ length: 12 }, (_, index) => [`e${index + 1}`, index + 1]),
+  );
+  const read = [];
+  let after;
+  for (let pageCount = 0; pageCount < 10; pageCount++) {
+    const body = await page(f, { limit: '5', ...(after ? { after } : {}) });
+    read.push(...body.items.map((event) => event.subject));
+    after = body.next;
+    if (body.items.length === 0) break;
+  }
+  assert.deepEqual(
+    read,
+    Array.from({ length: 12 }, (_, index) => `e${index + 1}`),
+    'pages of five keep position order and skip nothing',
+  );
+  // Over the row limit by nine: positions 1-9 go, 10-12 stay.
+  assert.equal(await log.prune({ hours: 168, maxRows: 3n }), 9);
+  const kept = await page(f);
+  assert.equal(kept.oldest, '9');
+  assert.deepEqual(
+    kept.items.map((event) => event.subject),
+    ['e10', 'e11', 'e12'],
+  );
+});

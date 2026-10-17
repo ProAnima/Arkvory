@@ -69,6 +69,11 @@ async function lockedState(client: PoolClient): Promise<StateRow & { now_ms: num
   return row;
 }
 
+/*
+ * ORDER BY names the table column: a bare name would sort by the `::text` output column of the
+ * same name, so '10' would come before '9' (PostgreSQL resolves ORDER BY to output names first).
+ */
+
 /**
  * The event outbox in PostgreSQL (ADR 0080). Sequencing and retention both lock the single
  * state row first, so they run one at a time across processes: positions are handed out by
@@ -97,7 +102,7 @@ export class PostgresEventLog implements EventLogReader {
          FROM (${scanned}) s
          WHERE ((scope='repository' AND repository=ANY($3::text[])) OR (scope='system' AND $4::boolean))
            AND ($5::text[] IS NULL OR type=ANY($5::text[]))
-         ORDER BY position LIMIT $6`,
+         ORDER BY s.position LIMIT $6`,
         [String(after), query.scan, query.repositories, query.system, query.types, query.limit],
       );
       const frontier = await client.query<{ through: string | null }>(
@@ -125,7 +130,7 @@ export class PostgresEventLog implements EventLogReader {
     return inTransaction(this.pool, async (client) => {
       const state = await lockedState(client);
       const pending = await client.query<{ id: string }>(
-        'SELECT id::text FROM arkvory_events WHERE position IS NULL ORDER BY id LIMIT $1',
+        'SELECT id::text FROM arkvory_events WHERE position IS NULL ORDER BY arkvory_events.id LIMIT $1',
         [limit],
       );
       const ids = pending.rows.map((row) => row.id);
@@ -148,7 +153,7 @@ export class PostgresEventLog implements EventLogReader {
       const state = await lockedState(client);
       const oldest = await client.query<{ position: string; at_ms: number }>(
         `SELECT position::text, (extract(epoch FROM occurred_at) * 1000)::float8 AS at_ms
-         FROM arkvory_events WHERE position > $1 ORDER BY position LIMIT $2`,
+         FROM arkvory_events WHERE position > $1 ORDER BY arkvory_events.position LIMIT $2`,
         [state.pruned_through, EVENT_SEQUENCE_BATCH],
       );
       const through = pruneThrough({
