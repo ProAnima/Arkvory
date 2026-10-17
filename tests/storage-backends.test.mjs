@@ -465,3 +465,11 @@ test('the worker logs a volume that is not usable at start and every later chang
     },
   ]);
 });
+
+test('a part that is not there is unavailable, not a file system error', async (t) => {
+  const store = new LocalBlobStore(await directory(t, 'arkvory-parts-missing-'), 0);
+  await store.initialize();
+  const part = { index: 0, size: bytes.length, sha256: descriptor.sha256 };
+  const reading = store.readParts(randomUUID(), [part]);
+  await assert.rejects(reading[Symbol.asyncIterator]().next(), { code: 'unavailable' });
+});

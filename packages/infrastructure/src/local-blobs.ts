@@ -312,9 +312,16 @@ export class LocalBlobStore implements BlobStore, StorageLifecycle {
     }
   }
 
+  /** A missing part (a volume that is not mounted, say) is `unavailable`: completion retries. */
   async *readParts(id: string, parts: readonly UploadPart[]): AsyncIterable<Uint8Array> {
-    for (const part of parts)
-      yield* streamFile(this.partPath(id, part), part.size, undefined, internalChunkBytes);
+    try {
+      for (const part of parts)
+        yield* streamFile(this.partPath(id, part), part.size, undefined, internalChunkBytes);
+    } catch (error) {
+      if (hasCode(error, 'ENOENT'))
+        throw new ArkvoryError('unavailable', 'Upload part is unavailable');
+      throw error;
+    }
   }
 
   async collect(id: string, removeContent: boolean, cancellation: Cancellation): Promise<void> {
