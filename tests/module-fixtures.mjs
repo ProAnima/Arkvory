@@ -131,7 +131,12 @@ export function packageEntries({
 /** A signed revocation list envelope. */
 export function revocationList(signer, payload, purpose = 'module-revocations.json') {
   const bytes = Buffer.from(
-    JSON.stringify({ format: 1, issuedAt: '2026-10-17T10:00:00Z', ...payload }),
+    JSON.stringify({
+      format: 1,
+      issuedAt: '2026-10-17T10:00:00Z',
+      expiresAt: '2027-01-15T10:00:00Z',
+      ...payload,
+    }),
   );
   return revocationsEnvelope(bytes, sign(bytes, signer, purpose));
 }

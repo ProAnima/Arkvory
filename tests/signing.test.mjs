@@ -4,6 +4,7 @@ import { createPrivateKey, sign as edSign } from 'node:crypto';
 import { MODULE_ID_PATTERN } from '../packages/extension-api/dist/index.js';
 import {
   OPERATOR_ID_PATTERN,
+  REVOCATION_VALIDITY_DAYS,
   acceptRevocations,
   keyFingerprint,
   keyRing,
@@ -17,6 +18,7 @@ import {
   pluginPatternCovers,
   readRevocations,
   revocationOf,
+  revocationsCurrent,
   verifyClassified,
   verifyMinisign,
 } from '../packages/signing/dist/index.js';
@@ -235,6 +237,11 @@ test('a revocation payload is validated field by field', () => {
     [{ sequence: 1, entries: [{ ...entry, readOnly: 'no' }] }, '/entries/0/readOnly'],
     [{ sequence: 1, entries: [{ ...entry, replacement: 'next' }] }, '/entries/0/replacement'],
     [{ sequence: 1, entries: [], issuedAt: 'yesterday' }, '/issuedAt'],
+    // Signed validity: required, after issuedAt, at most 180 days (ADR 0078, 3.4).
+    [{ sequence: 1, entries: [], expiresAt: undefined }, '/expiresAt'],
+    [{ sequence: 1, entries: [], expiresAt: 'soon' }, '/expiresAt'],
+    [{ sequence: 1, entries: [], expiresAt: '2026-10-17T10:00:00Z' }, '/expiresAt'],
+    [{ sequence: 1, entries: [], expiresAt: '2027-04-15T10:00:01Z' }, '/expiresAt'],
   ];
   for (const [payload, pointer] of cases)
     assert.throws(
@@ -318,4 +325,33 @@ test('signature lines and revocation payloads must be canonical base64', () => {
     () => readRevocations(JSON.stringify({ ...envelope, payload: respelled }), host.keys),
     (error) => error.code === 'revocations_invalid' && error.subject === '/payload',
   );
+});
+
+test('a revocation list is current until its signed expiry; a newer sequence wins regardless', () => {
+  const { host, module } = testHost();
+  assert.deepEqual(REVOCATION_VALIDITY_DAYS, { default: 90, maximum: 180 });
+  const list = readRevocations(revocationList(module, { sequence: 3, entries: [] }), host.keys);
+  assert.equal(list.expiresAt, '2027-01-15T10:00:00Z');
+  assert.equal(revocationsCurrent(list, Date.parse('2027-01-15T09:59:59Z')), true);
+  assert.equal(revocationsCurrent(list, Date.parse('2027-01-15T10:00:00Z')), false);
+  assert.equal(revocationsCurrent(null, Date.parse('2026-10-17T12:00:00Z')), false);
+  // The maximum is exact: 180 days to the second.
+  readRevocations(
+    revocationList(module, { sequence: 4, entries: [], expiresAt: '2027-04-15T10:00:00Z' }),
+    host.keys,
+  );
+  // An expired list with a higher sequence still replaces the stored one: it carries the newest
+  // revocations; only installs treat it as stale.
+  const expired = readRevocations(
+    revocationList(module, {
+      sequence: 9,
+      entries: [],
+      issuedAt: '2026-01-01T00:00:00Z',
+      expiresAt: '2026-02-01T00:00:00Z',
+    }),
+    host.keys,
+  );
+  assert.equal(acceptRevocations(list, expired), 'accepted');
+  assert.equal(newerRevocations(list, expired), expired);
+  assert.equal(revocationsCurrent(expired, Date.parse('2026-10-17T12:00:00Z')), false);
 });

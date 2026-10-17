@@ -407,6 +407,21 @@ test('the signing tool packs and signs packages and revocation lists the core ac
     ['files/lib/util.mjs', 'files/main.mjs'],
   );
   assert.equal(inspected.revocations.sequence, 7);
+  // Without expiresAt the tool signs the default validity of 90 days.
+  assert.equal(inspected.revocations.expiresAt, '2027-01-15T00:00:00Z');
+  const long = join(directory, 'long.json');
+  await writeFile(
+    long,
+    JSON.stringify({
+      format: 1,
+      sequence: 8,
+      issuedAt: '2026-10-17T00:00:00Z',
+      expiresAt: '2027-10-17T00:00:00Z',
+      entries: [],
+    }),
+  );
+  // The tool refuses a validity the core would refuse (at most 180 days).
+  await assert.rejects(signRevocations(long, join(directory, 'long-out.json'), module), /180 days/);
   // The tool never overwrites a package or a list.
   await assert.rejects(packModule(source, output, module), { code: 'EEXIST' });
   await assert.rejects(signRevocations(payload, list, module), { code: 'EEXIST' });

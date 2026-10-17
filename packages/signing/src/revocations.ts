@@ -9,6 +9,15 @@ export const REVOCATIONS_FILE = 'module-revocations.json';
 const MAX_ENVELOPE = 1024 * 1024;
 const MAX_ENTRIES = 4096;
 const REASON = /^[a-z][a-z0-9_]{0,63}$/;
+const DAY = 24 * 60 * 60 * 1000;
+
+/**
+ * Signed validity of a list (ADR 0078, 3.4): the signing tool gives 90 days unless the payload
+ * names `expiresAt`, and no list is valid for more than 180 days. The bound is what an attacker
+ * who controls delivery (a hub channel, a mirror) can freeze a host at: after it, installs and
+ * pins of that host stop until a current list arrives.
+ */
+export const REVOCATION_VALIDITY_DAYS = { default: 90, maximum: 180 } as const;
 
 /** One revoked module and its versions (ADR 0078, 3.4). */
 export interface RevocationEntry {
@@ -27,6 +36,8 @@ export interface RevocationEntry {
 export interface RevocationList {
   readonly sequence: number;
   readonly issuedAt: string;
+  /** Signed; after it the list still revokes, but no longer makes installs current. */
+  readonly expiresAt: string;
   readonly entries: readonly RevocationEntry[];
   readonly keyId: string;
   /** The signed payload, base64url, as the envelope carries it. */
@@ -81,7 +92,7 @@ function payload(bytes: Buffer): Omit<RevocationList, 'keyId' | 'payload' | 'env
   } catch (error) {
     throw new SigningError('revocations_invalid', '', { cause: error });
   }
-  const list = row(parsed, '', ['format', 'sequence', 'issuedAt', 'entries']);
+  const list = row(parsed, '', ['format', 'sequence', 'issuedAt', 'expiresAt', 'entries']);
   if (list['format'] !== 1) throw new SigningError('revocations_invalid', '/format');
   const sequence = list['sequence'];
   if (typeof sequence !== 'number' || !Number.isSafeInteger(sequence) || sequence < 1)
@@ -89,18 +100,24 @@ function payload(bytes: Buffer): Omit<RevocationList, 'keyId' | 'payload' | 'env
   const entries = list['entries'];
   if (!Array.isArray(entries) || entries.length > MAX_ENTRIES)
     throw new SigningError('revocations_invalid', '/entries');
+  const issuedAt = utcTimeOf(list['issuedAt'], '/issuedAt');
+  const expiresAt = utcTimeOf(list['expiresAt'], '/expiresAt');
+  const validity = Date.parse(expiresAt) - Date.parse(issuedAt);
+  if (validity <= 0 || validity > REVOCATION_VALIDITY_DAYS.maximum * DAY)
+    throw new SigningError('revocations_invalid', '/expiresAt');
   return {
     sequence,
-    issuedAt: utcTimeOf(list['issuedAt']),
+    issuedAt,
+    expiresAt,
     entries: entries.map((item: unknown, index) => entry(item, `/entries/${String(index)}`)),
   };
 }
 
-function utcTimeOf(value: unknown): string {
+function utcTimeOf(value: unknown, path: '/issuedAt' | '/expiresAt'): string {
   try {
-    return utcTime(value, '/issuedAt');
+    return utcTime(value, path);
   } catch (error) {
-    throw new SigningError('revocations_invalid', '/issuedAt', { cause: error });
+    throw new SigningError('revocations_invalid', path, { cause: error });
   }
 }
 
@@ -147,7 +164,9 @@ export function revocationsEnvelope(payloadBytes: Uint8Array, signature: string)
 /**
  * Whether `candidate` replaces `stored`. A lower sequence is a rollback and is refused, so an
  * old list cannot bring back a revoked version; the same sequence is accepted only with the
- * same payload (a different one means a signing defect, never a choice).
+ * same payload (a different one means a signing defect, never a choice). Expiry plays no part:
+ * an expired list with a higher sequence still carries the newest revocations and replaces the
+ * stored one; it only does not make installs current (`revocationsCurrent`).
  */
 export function acceptRevocations(
   stored: RevocationList | null,
@@ -178,4 +197,12 @@ export function revocationOf(
   moduleVersion: string,
 ): RevocationEntry | null {
   return list?.entries.find((e) => e.id === id && e.versions.includes(moduleVersion)) ?? null;
+}
+
+/**
+ * Whether `list` is current at `now` (milliseconds): installs and pins need one. A stale or
+ * missing list never stops installed modules; only an entry of the list does.
+ */
+export function revocationsCurrent(list: RevocationList | null, now: number): boolean {
+  return list !== null && Date.parse(list.expiresAt) > now;
 }

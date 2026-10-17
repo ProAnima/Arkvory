@@ -7,6 +7,7 @@ import { gzipSync } from 'node:zlib';
 import {
   MANIFEST_FILE,
   REVOCATIONS_FILE,
+  REVOCATION_VALIDITY_DAYS,
   SIGNATURE_FILE,
   publicKeyOf,
   revocationsEnvelope,
@@ -132,12 +133,25 @@ export async function packModule(directory, output, key, revocationsFile = null)
   await writeFile(output, tarGzip(entries), { flag: 'wx' });
 }
 
-/** Signs a revocation list payload (ADR 0078, 3.4) into its envelope. */
+const DAY = 24 * 60 * 60 * 1000;
+const utc = (ms) => new Date(ms).toISOString().replace(/\.\d{3}Z$/, 'Z');
+
+/**
+ * Signs a revocation list payload (ADR 0078, 3.4) into its envelope. `issuedAt` defaults to
+ * now and `expiresAt` to 90 days later; a validity over 180 days is refused, as the core would.
+ */
 export async function signRevocations(payloadFile, output, key) {
-  const payload = await readFile(payloadFile);
-  const list = JSON.parse(payload.toString('utf8'));
-  if (list.format !== 1 || !Number.isSafeInteger(list.sequence) || list.sequence < 1)
+  const source = JSON.parse(await readFile(payloadFile, 'utf8'));
+  if (source.format !== 1 || !Number.isSafeInteger(source.sequence) || source.sequence < 1)
     throw Error('A revocation list needs format 1 and a positive integer sequence');
+  const issuedAt = source.issuedAt ?? utc(Date.now());
+  const expiresAt =
+    source.expiresAt ?? utc(Date.parse(issuedAt) + REVOCATION_VALIDITY_DAYS.default * DAY);
+  const validity = Date.parse(expiresAt) - Date.parse(issuedAt);
+  if (!(validity > 0 && validity <= REVOCATION_VALIDITY_DAYS.maximum * DAY))
+    throw Error('expiresAt must follow issuedAt by at most 180 days');
+  const list = { ...source, issuedAt, expiresAt };
+  const payload = Buffer.from(JSON.stringify(list));
   const comment = `timestamp:${Math.floor(Date.now() / 1000)}\tfile:${REVOCATIONS_FILE}\tsequence:${list.sequence}`;
   const signature = signMinisign(
     payload,

@@ -35,10 +35,12 @@ export {
 } from './trust.js';
 export {
   REVOCATIONS_FILE,
+  REVOCATION_VALIDITY_DAYS,
   acceptRevocations,
   newerRevocations,
   readRevocations,
   revocationOf,
+  revocationsCurrent,
   revocationsEnvelope,
   type RevocationEntry,
   type RevocationList,
