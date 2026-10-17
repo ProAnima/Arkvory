@@ -14,6 +14,8 @@ export * from './global-search.js';
 export * from './upack.js';
 export { BlobRangeReader } from './blob-range-reader.js';
 export type { BlobLocation, BlobRangeReaderOptions } from './blob-range-reader.js';
+export { dataVolumeStaging } from './staging-area.js';
+export type { StagingArea, StagingName } from './staging-area.js';
 export * from './admission.js';
 export * from './download-scheduler.js';
 export * from './download-tickets.js';

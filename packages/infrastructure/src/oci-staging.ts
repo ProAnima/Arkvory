@@ -2,10 +2,11 @@ import { createReadStream } from 'node:fs';
 import { stagedFile } from './blob-files.js';
 import { mkdir, open, readdir, rm, stat } from 'node:fs/promises';
 import type { FileHandle } from 'node:fs/promises';
-import { join, resolve } from 'node:path';
+import { join } from 'node:path';
 import { OciError, requireId } from '@proanima/arkvory-domain';
 import type { Cancellation, OciStaging } from '@proanima/arkvory-application';
 import { hasCode } from './fs-durability.js';
+import type { StagingArea } from './staging-area.js';
 
 const spaceCheckBytes = 64 * 1024 ** 2;
 const writeBytes = 1024 * 1024;
@@ -28,11 +29,10 @@ async function writeAll(handle: FileHandle, chunk: Uint8Array, position: number)
  */
 export class FileOciStaging implements OciStaging {
   private readonly root: string;
-  constructor(
-    dataDirectory: string,
-    private readonly space: (bytes: number) => Promise<void>,
-  ) {
-    this.root = resolve(dataDirectory, 'oci-uploads');
+  private readonly space: (bytes: number) => Promise<void>;
+  constructor(staging: StagingArea) {
+    this.root = staging.directory('oci-uploads');
+    this.space = (bytes) => staging.checkSpace(bytes);
   }
 
   private path(id: string) {

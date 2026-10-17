@@ -1,4 +1,5 @@
 import {
+  dataVolumeStaging,
   DownloadTickets,
   LocalBlobStore,
   loadDownloadTicketKey,
@@ -7,6 +8,7 @@ import {
   PostgresContentPins,
   PostgresDownloadSettings,
 } from '@proanima/arkvory-infrastructure';
+import type { StagingArea } from '@proanima/arkvory-infrastructure';
 import { DownloadSettingsControl } from '@proanima/arkvory-application';
 import type { ServerConfig } from './config.js';
 import { createTransferControls } from './transfer-controls.js';
@@ -35,6 +37,8 @@ export class ApiRuntime {
   readonly transfers;
   readonly catalog: PostgresCatalog;
   readonly blobs: LocalBlobStore;
+  /** Temporary files of raw and OCI uploads, on the data volume beside the content. */
+  readonly staging: StagingArea;
   readonly pins: PostgresContentPins;
   readonly lease: PostgresDownloadLease | undefined;
   readonly downloadSettings: DownloadSettingsControl;
@@ -55,6 +59,7 @@ export class ApiRuntime {
     // Validate local limits before allocating pools or claiming ownership.
     this.transfers = createTransferControls(config, this.available);
     this.blobs = new LocalBlobStore(config.dataDirectory, config.storageReserveBytes);
+    this.staging = dataVolumeStaging(config.dataDirectory, (bytes) => this.blobs.checkSpace(bytes));
     this.catalog = new PostgresCatalog(
       config.databaseUrl,
       config.capacityBytes,

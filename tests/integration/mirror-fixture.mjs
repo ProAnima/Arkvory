@@ -14,8 +14,10 @@ import {
   PostgresContentPins,
   PostgresMirrorConflicts,
   PostgresMirrorState,
+  dataVolumeStaging,
   migrate,
 } from '@proanima/arkvory-infrastructure';
+import { portOnly } from '../memory-blobs.mjs';
 import { SdkMirrorSource } from '../../apps/worker/dist/mirror-source.js';
 import { ServiceMirrorTarget } from '../../apps/worker/dist/mirror-target.js';
 import { setup, base } from './fixture.mjs';
@@ -164,7 +166,14 @@ export async function pair(t, stages) {
   });
   await catalog.claimStorage(await blobs.identity(), 'worker');
   const reader = source.readerHeaders.authorization.slice(7);
-  const target = new ServiceMirrorTarget('releases', catalog, blobs, mirror.directory, pins);
+  // Only the storage port, as any storage without local files would offer (ADR 0083, N9).
+  const target = new ServiceMirrorTarget(
+    'releases',
+    catalog,
+    portOnly(blobs),
+    dataVolumeStaging(mirror.directory, (bytes) => blobs.checkSpace(bytes)),
+    pins,
+  );
   const make = (upstreamSource) => {
     const dependencies = {
       repository: 'releases',
@@ -232,7 +241,13 @@ export async function importer(t, installation, upstream, readerToken, stages) {
     await catalog.close();
   });
   await catalog.claimStorage(await blobs.identity(), 'worker');
-  const target = new ServiceMirrorTarget('releases', catalog, blobs, dataDirectory, pins);
+  const target = new ServiceMirrorTarget(
+    'releases',
+    catalog,
+    blobs,
+    dataVolumeStaging(dataDirectory, (bytes) => blobs.checkSpace(bytes)),
+    pins,
+  );
   /** Other stages than the first ones start a new first fill, as a changed configuration does. */
   const settle = async (now = stages) => {
     const worker = new StageImport({
