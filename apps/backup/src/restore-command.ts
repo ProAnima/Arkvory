@@ -17,6 +17,7 @@ import type { LocalStorageSettings } from '@proanima/arkvory-infrastructure';
 import type { BackupCommand } from './arguments.js';
 import type { CliContext } from './context.js';
 import { databaseUrl, restoreReserveBytes } from './config.js';
+import { sourceStorageRoots } from './storage-roots.js';
 import { openVault, vaultKeys } from './source.js';
 
 type RestoreCommand = Extract<BackupCommand, { kind: 'restore' }>;
@@ -59,14 +60,18 @@ async function requireSeparateTargets(
   env: NodeJS.ProcessEnv,
 ) {
   const source = env['ARKVORY_DATA_DIR'];
+  // The source's own storage directory and volumes, when this host runs the source too.
+  const sources = source
+    ? await sourceStorageRoots(source, env['ARKVORY_MODULES_FILE'] || undefined)
+    : [];
   for (const target of targets) {
     await requireSeparateTrees(
       { label: 'vault', path: vaultRoot },
       { label: 'restore storage', path: target },
     );
-    if (source)
+    for (const path of sources)
       await requireSeparateTrees(
-        { label: 'source storage root', path: source },
+        { label: 'source storage root', path },
         { label: 'restore storage', path: target },
       );
   }

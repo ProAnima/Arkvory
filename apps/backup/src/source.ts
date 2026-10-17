@@ -18,11 +18,10 @@ import {
   localStorageBackends,
   PostgresStorageIdentities,
   probeStorageBackends,
-  readLocalStorageSettings,
-  requireSeparateTrees,
 } from '@proanima/arkvory-infrastructure';
 import type { BackupPool, StorageBackends, VaultKeySource } from '@proanima/arkvory-infrastructure';
 import type { SourceConfig } from './config.js';
+import { requireVaultApart, sourceVolumes } from './storage-roots.js';
 
 export interface CaptureSource {
   readonly pool: BackupPool;
@@ -42,13 +41,7 @@ export async function openCaptureSource(config: SourceConfig): Promise<CaptureSo
   const blobs = localStorageBackends(
     config.dataDirectory,
     config.reserveBytes,
-    await readLocalStorageSettings(config.modulesFile, config.dataDirectory).catch(
-      (error: unknown) => {
-        throw new BackupFailure('invalid_argument', 'Invalid ARKVORY_MODULES_FILE', {
-          cause: error,
-        });
-      },
-    ),
+    await sourceVolumes(config.dataDirectory, config.modulesFile),
   );
   let storageId: string;
   try {
@@ -96,17 +89,20 @@ export function vaultKeys(
   return path === undefined || path === '' ? undefined : keyFileSource(path);
 }
 
-/** Opens a vault and proves its identity; refuses a vault overlapping the storage root. */
+/**
+ * Opens a vault and proves its identity; refuses a vault overlapping the storage root or, given
+ * every root of the source, any of its volumes.
+ */
 export async function openVault(
   directory: string,
-  storageRoot?: string,
+  storageRoots?: string | readonly string[],
   keys?: VaultKeySource,
 ): Promise<FileVault> {
   const vault = await FileVault.open(directory, undefined, keys);
-  if (storageRoot !== undefined)
-    await requireSeparateTrees(
-      { label: 'vault', path: vault.root },
-      { label: 'storage root', path: storageRoot },
+  if (storageRoots !== undefined)
+    await requireVaultApart(
+      vault.root,
+      typeof storageRoots === 'string' ? [storageRoots] : storageRoots,
     );
   await vault.identity();
   return vault;

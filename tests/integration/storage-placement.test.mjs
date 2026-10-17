@@ -11,6 +11,7 @@ import { ArkvoryClient } from '@proanima/arkvory-sdk';
 import { serviceActions } from '@proanima/arkvory-domain';
 import { GarbageCollector, RestoreToEmptyTarget } from '@proanima/arkvory-application';
 import {
+  FileVault,
   LocalRestoreStorage,
   MINIMUM_RESTORE_SCHEMA,
   PostgresCleanup,
@@ -22,10 +23,17 @@ import {
   localStorageBackends,
   probeStorageBackends,
 } from '@proanima/arkvory-infrastructure';
-import { openVault } from '../../apps/backup/dist/index.js';
+import { agentConfig, openVault, runAgent } from '../../apps/backup/dist/index.js';
 import { removeTestDirectory } from '../helpers.mjs';
 import { setup, base, descriptor } from './fixture.mjs';
-import { capture, newVault, temporaryDatabase } from './backup-fixture.mjs';
+import {
+  capture,
+  newVault,
+  record,
+  runBackup,
+  sourceEnv,
+  temporaryDatabase,
+} from './backup-fixture.mjs';
 import { validateResponse } from '../api-schema.mjs';
 
 const exists = (path) =>
@@ -404,4 +412,58 @@ test('a backup of two volumes restores each blob into the volume its upload name
     (await pool.query('SELECT count(*)::int AS n FROM arkvory_storage_backends')).rows[0].n,
     0,
   );
+});
+
+test('the backup agent, capture and vault init refuse a vault inside a volume, as restore does', async (t) => {
+  const { f, backend } = await twoVolumes(t);
+  const modules = join(await scratch(t, 'arkvory-modules-'), 'modules.json');
+  const instances = { 'volume-2': { directory: backend.directory } };
+  await writeFile(
+    modules,
+    JSON.stringify({
+      format: 1,
+      modules: { 'local-storage': { enabled: true, config: { instances } } },
+    }),
+  );
+  const env = sourceEnv(f, { ARKVORY_MODULES_FILE: modules });
+  const inside = join(backend.directory, 'vault');
+  const init = await runBackup(['vault', 'init', inside, '--no-encryption'], env);
+  assert.equal(init.code, 3, init.stdout);
+  assert.equal(record(init, 'backup.failed').errorCode, 'unsafe_path');
+  assert.equal(await exists(inside), false);
+  // A vault made there by other means is refused before the first copy, by both entry points.
+  await FileVault.initialize(inside, {
+    vaultId: randomUUID(),
+    createdAt: new Date().toISOString(),
+  });
+  const captured = await runBackup(['capture', '--vault', inside], env);
+  assert.equal(captured.code, 3, captured.stdout);
+  assert.equal(record(captured, 'backup.failed').errorCode, 'unsafe_path');
+  await assert.rejects(
+    runAgent({
+      config: agentConfig({ ...env, ARKVORY_BACKUP_VAULT: inside }),
+      release: { version: '9.9.9', commit: null },
+      logger: { write() {} },
+      signal: new AbortController().signal,
+    }),
+    { code: 'unsafe_path' },
+  );
+  const { path: apart } = await newVault(t);
+  const separate = await runBackup(['capture', '--vault', apart], env);
+  assert.equal(separate.code, 0, separate.stdout);
+  // A restore target inside a volume of the source on the same host is refused as well.
+  const restore = await runBackup(
+    [
+      'restore',
+      '--vault',
+      apart,
+      '--point',
+      record(separate, 'backup.capture.completed').pointId,
+      '--storage',
+      join(backend.directory, 'restore'),
+    ],
+    { ...env, ARKVORY_RESTORE_DATABASE_URL: f.config.databaseUrl },
+  );
+  assert.equal(restore.code, 3, restore.stdout);
+  assert.equal(record(restore, 'backup.failed').errorCode, 'unsafe_path');
 });
