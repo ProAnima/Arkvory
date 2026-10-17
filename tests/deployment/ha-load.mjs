@@ -144,7 +144,9 @@ export function client({ host, ca, token }) {
     exchange,
     upload,
     /** Readiness through the virtual address: 200 means some node serves reads. */
-    ready: () => exchange('GET', '/health/ready', { timeoutMs: 5000 }),
+    // A connection of its own: a pooled one may still lead to the node that lost power, and a
+    // probe on it waits out its timeout instead of reaching the new active node.
+    ready: () => exchange('GET', '/health/ready', { timeoutMs: 5000, fresh: true }),
     canWrite: async () => {
       const probe = { name: `probe-${String(Date.now())}`, size: 1, key: crypto.randomUUID() };
       probe.sha256 = await digest(bytes(probe.name, 1));
