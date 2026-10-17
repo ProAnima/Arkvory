@@ -512,6 +512,22 @@
       "summary": "クリーンアップバッチの即時実行の要求",
       "description": "有効なクリーンアップポリシーの次のバッチを、ただちに開始するようスケジュールします。応答はクリーンアップの状態で、バイトが解放されるのはバッチが実行された後だけです（`getCleanup`の`lastRunAt`を参照）。`expectedRevision`は現在のリビジョンでなければならず、クリーンアップが無効な場合は409 `state_conflict`になります。読み取り中または書き込み中のオブジェクトは、後のバッチに持ち越されます。"
     },
+    "getStoragePlacement": {
+      "en": {
+        "summary": "Read the storage placement",
+        "description": "Returns the placement rules of the repository and its `revision` (0 before the first change), and every storage of the answering server in `backends`, `default` first, with its `state`: `accepting` (takes new uploads), `not_accepting` (keeps serving and finishing what it holds, takes no new uploads), `read_only`, `disabled`, `unavailable` (not open or not answering) or `not_loaded` (not configured). Needs `storage.read`."
+      },
+      "summary": "ストレージ配置を読む",
+      "description": "リポジトリの配置ルールとその `revision`（最初の変更前は 0）、および応答したサーバーのすべてのストレージを `backends` に `default` を先頭として `state` とともに返します。`accepting`（新しいアップロードを受け付ける）、`not_accepting`（保持している内容の提供と完了は続けるが新しいアップロードは受け付けない）、`read_only`、`disabled`、`unavailable`（開かれていない、または応答しない）、`not_loaded`（未設定）です。`storage.read` が必要です。"
+    },
+    "setStoragePlacement": {
+      "en": {
+        "summary": "Set the storage placement",
+        "description": "Replaces the rules that choose the storage of new uploads of the repository. A rule has an `id`, the storage `backendId` and two optional conditions: `packageGroup` (a group, `prefix/*` or `*`) and `minSizeBytes` (a decimal string); the first rule whose conditions hold wins, no match means `default`. At most 32 rules. A storage that is not configured is refused with 400 `backend_unknown`. When the chosen storage does not take new uploads at upload time, the upload is created in `default` and its `storageBackend` says so; publication never fails because of placement. Stored data never moves. `expectedRevision` must be the current revision, otherwise 409 `revision_mismatch`. Needs `storage.manage`."
+      },
+      "summary": "ストレージ配置を設定する",
+      "description": "リポジトリの新しいアップロードのストレージを選ぶルールを置き換えます。ルールには `id`、ストレージ `backendId`、および省略可能な 2 つの条件 `packageGroup`（グループ、`prefix/*` または `*`）と `minSizeBytes`（10 進文字列）があります。条件が成り立つ最初のルールが採用され、一致しなければ `default` です。ルールは最大 32 個です。設定されていないストレージは 400 `backend_unknown` で拒否されます。アップロード時に選ばれたストレージが新しいデータを受け付けない場合、アップロードは `default` に作成され、その `storageBackend` に示されます。配置が原因で公開が失敗することはありません。保存済みのデータは移動しません。`expectedRevision` は現在のリビジョンである必要があり、異なれば 409 `revision_mismatch` です。`storage.manage` が必要です。"
+    },
     "getRepositoryMirror": {
       "en": {
         "summary": "Get the synchronization state of a mirror",
@@ -1152,6 +1168,7 @@
       "unsupported_media_type": "Content-Typeが、このオペレーションの受け付けるものではありません。",
       "method_not_allowed": "パスは存在しますが、このメソッドには対応していません。",
       "range_not_satisfiable": "要求されたバイト範囲がコンテンツの範囲外です。",
+      "backend_unknown": "配置ルールが、このサーバーにないストレージを指定しています。",
       "route_not_found": "そのようなルートはありません。",
       "upload_expired": "アップロードが完了する前に、アップロードセッションの有効期限が切れました。",
       "upload_state": "アップロードがこの手順を許す状態にありません。",
@@ -1164,6 +1181,7 @@
       "stage_limit": "アーティファクトのステージ数が上限に達しています。",
       "state_conflict": "オブジェクトがこの変更を許さない状態にあります。",
       "mirror_read_only": "リポジトリはミラーであり、同期によってのみ変更されます。",
+      "backend_read_only": "このアップロードのストレージは新しいデータを受け付けません。新しいアップロードを開始すると、受け付けるストレージに入ります。",
       "permission_missing": "認証情報に、このオペレーションに必要なアクションの権限がありません。",
       "read_only_token": "読み取り専用の個人用トークンでは何も変更できません。",
       "credential_revoked": "キーまたはトークンは取り消されています。",
