@@ -18,6 +18,7 @@ import {
   readModuleSelections,
   localStorageSettings,
   LOCAL_STORAGE_MODULE,
+  requireReplicatedVolumes,
 } from '@proanima/arkvory-infrastructure';
 import type { LocalStorageSettings, ModuleSelections } from '@proanima/arkvory-infrastructure';
 import type { MirrorConfiguration } from '@proanima/arkvory-application';
@@ -219,6 +220,8 @@ export async function loadConfig(env: NodeJS.ProcessEnv): Promise<ServerConfig> 
   const modules = await readModuleSelections(env['ARKVORY_MODULES_FILE']);
   const dataDirectory = required('ARKVORY_DATA_DIR');
   const storageBackends = localStorageSettings(modules.get(LOCAL_STORAGE_MODULE), dataDirectory);
+  if (env['ARKVORY_REPLICA_SOCKET'] && storageBackends.length > 0)
+    await requireReplicatedVolumes(dataDirectory, storageBackends);
   const maxUploads = number('ARKVORY_MAX_UPLOADS', 8, 32);
   const maxDownloads = number('ARKVORY_MAX_DOWNLOADS', 16, 256);
   const transferQueueLimit = number('ARKVORY_TRANSFER_QUEUE_LIMIT', 64, 1024);

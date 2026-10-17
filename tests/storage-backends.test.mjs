@@ -11,6 +11,7 @@ import {
   localStorageSettings,
   parseLocalStorageConfig,
   probeStorageBackends,
+  requireReplicatedVolumes,
   builtinModules,
 } from '@proanima/arkvory-infrastructure';
 import { ModuleConfigError } from '@proanima/arkvory-extension-api';
@@ -412,4 +413,27 @@ test('a recheck never creates an identity on record again, and two ids for one d
   await probeStorageBackends(aliased, fresh, { create: true });
   assert.equal(aliased.fault('volume-3'), 'identity_mismatch');
   assert.equal(fresh.map.has('volume-3'), false);
+});
+
+test('in a cluster every volume must be on the replicated file system of the data directory', async (t) => {
+  const data = await directory(t, 'arkvory-cluster-core-');
+  const settings = (directory) => [
+    { id: 'volume-2', directory, enabled: true, mode: 'full', acceptsWrites: true },
+  ];
+  await requireReplicatedVolumes(data, settings(join(data + '-beside')), async () => 1);
+  // Another disk stays behind on a failed server; a missing directory is no proof either.
+  for (const device of [
+    async (path) => (path === data ? 1 : 2),
+    async (path) => {
+      if (path !== data) throw Object.assign(new Error('missing'), { code: 'ENOENT' });
+      return 1;
+    },
+  ])
+    await assert.rejects(
+      requireReplicatedVolumes(data, settings(join(data + '-other')), device),
+      /not on the replicated volume \/modules\/local-storage\/config\/instances\/volume-2\/directory$/,
+    );
+  // The real file system: a directory beside the data directory in the same temporary folder.
+  const beside = await directory(t, 'arkvory-cluster-v2-');
+  await requireReplicatedVolumes(data, settings(beside));
 });

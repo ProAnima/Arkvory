@@ -1,3 +1,4 @@
+import { stat } from 'node:fs/promises';
 import { isAbsolute } from 'node:path';
 import { DEFAULT_STORAGE_BACKEND } from '@proanima/arkvory-domain';
 import { ModuleConfigError } from '@proanima/arkvory-extension-api';
@@ -157,6 +158,27 @@ export function localStorageSettings(
     });
   });
   return config.instances;
+}
+
+/**
+ * In a cluster (ADR 0072) one replicated file system moves between the servers: a volume on
+ * another disk would stay behind on the failed server, its files unavailable or lost. Every
+ * volume must be a directory on the file system of the data directory; a volume that is
+ * missing or elsewhere stops the start. `device` is the file system of a path (tests).
+ */
+export async function requireReplicatedVolumes(
+  dataDirectory: string,
+  configured: readonly LocalStorageSettings[],
+  device: (path: string) => Promise<number> = async (path) => (await stat(path)).dev,
+): Promise<void> {
+  const replicated = await device(dataDirectory);
+  for (const volume of configured) {
+    const own = await device(volume.directory).catch(() => null);
+    if (own !== replicated)
+      throw new Error(
+        `Invalid ARKVORY_MODULES_FILE: not on the replicated volume /modules/${LOCAL_STORAGE_MODULE}/config/instances/${volume.id}/directory`,
+      );
+  }
 }
 
 /** The instances from a modules file, for processes that read it themselves. */

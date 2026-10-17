@@ -12,6 +12,7 @@ export {
   localStorageSettings,
   parseLocalStorageConfig,
   readLocalStorageSettings,
+  requireReplicatedVolumes,
 } from './storage-backend-config.js';
 export type {
   LocalStorageConfig,
