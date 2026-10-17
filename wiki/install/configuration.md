@@ -54,6 +54,7 @@ All commands need administrator rights and the option `--root` with the installa
 | `finish-install`                                 | Continues an interrupted first installation                                                                                   |
 | `updates-connect`                                | Connects the console and the update timer, and registers services that an old installation lacks                              |
 | `updates-poll`, `updates-reset`, `changes-reset` | Run by the update timer and for recovery. See [Updates](./updates#recover-update)                                             |
+| `volume-init`                                    | Marks an empty directory as a new storage volume. Needs no `--root`. See [Several volumes](../operate/storage#volumes)        |
 
 Only one command runs at a time. A second command stops with `Installation is locked`. Never put a key or a password in a command option: use files.
 

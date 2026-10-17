@@ -121,6 +121,7 @@ scrape_configs:
 | `arkvory_storage_backend_up`                                                                       | `backend`                                                              | 此进程的存储卷已打开并有应答时为 1，不可用或已禁用时为 0。参见[多个卷](./storage#volumes)                                                      |
 | `arkvory_storage_backend_accepting`                                                                | `backend`                                                              | 存储接受新上传时为 1，新上传改为进入 `default` 时为 0                                                                                          |
 | `arkvory_storage_placement_fallback_total`                                                         | `backend`, `reason`                                                    | 由于放置所选的存储不接收数据而在 `default` 中创建的新上传；`reason` 为 `not_accepting`、`read_only`、`disabled`、`unavailable` 或 `not_loaded` |
+| `arkvory_storage_backend_unconfigured`                                                             | `backend`                                                              | 对于存有本安装数据、但已不在配置中的卷为 1。其文件无法读取、清理或备份                                                                         |
 | `arkvory_process_start_time_seconds`, `arkvory_process_resident_memory_bytes`                      |                                                                        | 启动时间和常驻内存                                                                                                                             |
 | `arkvory_database_pool_connections`, `arkvory_database_pool_idle`, `arkvory_database_pool_waiting` | `pool` (`queries`, `sessions`, `locks`)                                | 数据库连接池的连接：打开、空闲和等待中的数量；等待数长时间大于零说明连接池太小                                                                 |
 | `arkvory_fleet_site_up`                                                                            | `site`, `name`                                                         | 在控制站点上：受管站点应答了最近一次读取时为 1，否则为 0                                                                                       |
@@ -281,6 +282,7 @@ Select-String -Path "$root\logs\*.log" -Pattern 'REQUEST_ID'
 | `ArkvoryFleetSiteDown`                                          | 受管站点 5 分钟未应答控制站点                                                       | Critical          |
 | `ArkvoryFleetMirrorBehind`                                      | 受管站点的镜像落后数达到或超过 `ARKVORY_FLEET_LAG_ALERT`（默认 1000），持续 30 分钟 | Warning           |
 | `ArkvoryFleetCritical`                                          | 控制站点的“站点”页面显示严重告警，持续 5 分钟                                       | Critical          |
+| `ArkvoryStorageVolumeUnconfigured`                              | 存有数据的卷在配置中缺失 10 分钟                                                    | Critical          |
 
 请自行添加以下告警，因为 Arkvory 不导出这些数据：
 

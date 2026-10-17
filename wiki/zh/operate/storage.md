@@ -58,8 +58,9 @@ ID 由小写字母、数字和 `-` 组成，以字母开头，且不能是 `defa
 添加卷：
 
 1. 挂载卷并创建目录。该目录必须属于运行服务的账户。Arkvory 不会创建此目录。如果目录不存在，例如因为卷未挂载，该卷会保持不可用，挂载点下面不会写入任何内容。
-2. 把实例添加到模块文件中，然后重新启动服务。API 首次启动时会记录卷的身份，即目录中的文件 `storage-id`。此后每个进程都会检查此文件。未挂载的卷，或同一路径上的另一个卷，绝不会被写入。每次在该卷上写入或删除之前，都会再次检查此文件。
-3. 用[放置策略](#placement)选择哪些上传进入该卷。
+2. 把目录标记为新卷：`arkvory volume-init --directory /srv/arkvory-volume-2`。该命令不需要 `--root`。它拒绝不存在或非空的目录（只允许有 `lost+found`），并写入身份文件 `storage-id`。在 Linux 上，它还拒绝不是挂载点的目录，例如未挂载卷的空目录。对于已挂载卷内部的目录，请加上 `--no-expect-mount`。在 Windows 上，`--expect-mount` 会开启这项检查。服务从不创建此文件：没有该文件的卷保持不可用。
+3. 把实例添加到模块文件中，然后重新启动服务。API 首次启动时会记录卷的身份，即目录中的文件 `storage-id`。此后每个进程都会检查此文件。未挂载的卷，或同一路径上的另一个卷，绝不会被写入。每次在该卷上写入或删除之前，都会再次检查此文件。
+4. 用[放置策略](#placement)选择哪些上传进入该卷。
 
 ### 新上传的放置 {#placement}
 
@@ -93,6 +94,7 @@ arkvoryctl storage placement --repository releases --revision 0 --file rules.jso
 - **配额和限制。** 配额和 `ARKVORY_CAPACITY_BYTES` 把所有卷合并计算。预留空间适用于每个卷。
 - raw、OCI 和镜像上传的**临时文件**保留在存储目录 `default` 中。
 - **集群。** 在[高可用集群](./cluster)中，每个卷都必须像存储目录一样，是复制卷上的一个目录：另一块磁盘不会被复制到其他服务器。否则 API 不会启动。
+- **从配置中移除的卷。** Arkvory 会记住每个存过数据的卷。如果某个卷不再出现在模块文件中，它的文件就无法下载、清理或备份：备份会以 `blob_missing` 失败。每个进程都会通过指标 `arkvory_storage_backend_unconfigured`、日志行 `storage.backend_unconfigured` 和告警 `ArkvoryStorageVolumeUnconfigured` 报告它，放置策略的应答会以状态 `not_loaded` 列出它。要修复，请重新配置它。要让卷退役，请保留其配置并设置 `acceptsWrites: false`：已存储的文件不会在卷之间移动。
 
 请关注 `arkvory_storage_backend_up` 和 `arkvory_storage_backend_accepting`，参见[监控](./monitoring#metrics)。备份会复制每个卷。恢复需要为每个卷准备一个空目录，参见[恢复多个卷](./backups#restore-volumes)。
 

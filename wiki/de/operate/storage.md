@@ -58,8 +58,9 @@ Eine ID besteht aus Kleinbuchstaben, Ziffern und `-`, beginnt mit einem Buchstab
 So fügen Sie ein Volume hinzu:
 
 1. Hängen Sie das Volume ein und erstellen Sie das Verzeichnis. Es muss dem Konto gehören, das die Dienste ausführt. Arkvory erstellt dieses Verzeichnis nicht. Fehlt es, etwa weil das Volume nicht eingehängt ist, bleibt das Volume nicht verfügbar, und unter den Einhängepunkt wird nichts geschrieben.
-2. Fügen Sie die Instanz der Moduldatei hinzu und starten Sie die Dienste neu. Beim ersten Start hält die API die Identität des Volumes fest, die Datei `storage-id` im Verzeichnis. Ab dann prüft jeder Prozess diese Datei. Auf ein nicht eingehängtes Volume oder ein anderes Volume unter demselben Pfad wird nie geschrieben. Vor jedem Schreiben und Löschen auf dem Volume wird die Datei erneut geprüft.
-3. Wählen Sie mit einer [Platzierungsrichtlinie](#placement), welche Uploads auf das Volume gehen.
+2. Markieren Sie das Verzeichnis als neues Volume: `arkvory volume-init --directory /srv/arkvory-volume-2`. Der Befehl braucht kein `--root`. Er lehnt ein Verzeichnis ab, das nicht existiert oder nicht leer ist (nur `lost+found` darf darin sein), und schreibt die Identitätsdatei `storage-id`. Unter Linux lehnt er außerdem ein Verzeichnis ab, das kein Einhängepunkt ist, etwa das leere Verzeichnis eines nicht eingehängten Volumes. Für ein Verzeichnis innerhalb eines eingehängten Volumes fügen Sie `--no-expect-mount` hinzu. Unter Windows schaltet `--expect-mount` diese Prüfung ein. Die Dienste erstellen die Datei nie: Ein Volume ohne sie bleibt nicht verfügbar.
+3. Fügen Sie die Instanz der Moduldatei hinzu und starten Sie die Dienste neu. Beim ersten Start hält die API die Identität des Volumes fest, die Datei `storage-id` im Verzeichnis. Ab dann prüft jeder Prozess diese Datei. Auf ein nicht eingehängtes Volume oder ein anderes Volume unter demselben Pfad wird nie geschrieben. Vor jedem Schreiben und Löschen auf dem Volume wird die Datei erneut geprüft.
+4. Wählen Sie mit einer [Platzierungsrichtlinie](#placement), welche Uploads auf das Volume gehen.
 
 ### Platzierung neuer Uploads {#placement}
 
@@ -93,6 +94,7 @@ Die Veröffentlichung schlägt nie wegen der Platzierung fehl. Wenn der gewählt
 - **Kontingente und Grenzen.** Kontingente und `ARKVORY_CAPACITY_BYTES` zählen alle Volumes zusammen. Die Reserve gilt für jedes Volume einzeln.
 - **Temporäre Dateien** von Raw-, OCI- und Spiegel-Uploads bleiben im Speicherverzeichnis `default`.
 - **Cluster.** In einem [Hochverfügbarkeitscluster](./cluster) muss jedes Volume ein Verzeichnis auf dem replizierten Volume sein, wie das Speicherverzeichnis: Eine andere Festplatte wird nicht auf die anderen Server kopiert. Sonst startet die API nicht.
+- **Ein aus der Konfiguration entferntes Volume.** Arkvory merkt sich jedes Volume, das Daten enthielt. Steht eines nicht mehr in der Moduldatei, können seine Dateien weder heruntergeladen noch bereinigt noch gesichert werden: Eine Sicherung schlägt mit `blob_missing` fehl. Jeder Prozess meldet das mit der Metrik `arkvory_storage_backend_unconfigured`, der Logzeile `storage.backend_unconfigured` und dem Alarm `ArkvoryStorageVolumeUnconfigured`, und die Antwort der Platzierung führt es mit dem Zustand `not_loaded`. Konfigurieren Sie es wieder, um das zu beheben. Um ein Volume außer Betrieb zu nehmen, lassen Sie es mit `acceptsWrites: false` konfiguriert: Gespeicherte Dateien wandern nie zwischen Volumes.
 
 Beobachten Sie `arkvory_storage_backend_up` und `arkvory_storage_backend_accepting`, siehe [Monitoring](./monitoring#metrics). Backups kopieren jedes Volume. Eine Wiederherstellung braucht ein leeres Verzeichnis für jedes Volume, siehe [Mehrere Volumes wiederherstellen](./backups#restore-volumes).
 

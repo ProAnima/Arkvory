@@ -58,8 +58,9 @@ An ID has lowercase letters, digits and `-`, starts with a letter and is not `de
 To add a volume:
 
 1. Mount the volume and create the directory. It must belong to the account that runs the services. Arkvory does not create this directory. If it is missing, for example because the volume is not mounted, the volume stays unavailable and nothing is written beneath the mount point.
-2. Add the instance to the modules file and restart the services. At its first start, the API records the identity of the volume, the file `storage-id` in the directory. From then on, every process checks this file. A volume that is not mounted, or another volume at the same path, is never written to. Every write and removal on the volume checks this file again first.
-3. Choose which uploads go to the volume with a [placement policy](#placement).
+2. Mark the directory as a new volume: `arkvory volume-init --directory /srv/arkvory-volume-2`. The command needs no `--root`. It refuses a directory that does not exist or is not empty (only `lost+found` may be there) and writes the identity file `storage-id`. On Linux it also refuses a directory that is not a mount point, such as the empty directory of a volume that is not mounted. For a directory inside a mounted volume, add `--no-expect-mount`. On Windows, `--expect-mount` turns this check on. The services never create the file: a volume without it stays unavailable.
+3. Add the instance to the modules file and restart the services. At its first start, the API records the identity of the volume, the file `storage-id` in the directory. From then on, every process checks this file. A volume that is not mounted, or another volume at the same path, is never written to. Every write and removal on the volume checks this file again first.
+4. Choose which uploads go to the volume with a [placement policy](#placement).
 
 ### Placement of new uploads {#placement}
 
@@ -93,6 +94,7 @@ Publication never fails because of placement. If the chosen storage does not acc
 - **Quotas and limits.** Quotas and `ARKVORY_CAPACITY_BYTES` count all volumes together. The reserve applies to each volume.
 - **Temporary files** of raw, OCI and mirror uploads stay in the storage directory `default`.
 - **Cluster.** In a [high availability cluster](./cluster), every volume must be a directory on the replicated volume, like the storage directory: another disk is not copied to the other servers. Otherwise the API does not start.
+- **A volume removed from the configuration.** Arkvory remembers every volume that held data. If one is no longer in the modules file, its files cannot be downloaded, cleaned up or backed up: a backup fails with `blob_missing`. Every process reports it with the metric `arkvory_storage_backend_unconfigured`, the log line `storage.backend_unconfigured` and the alert `ArkvoryStorageVolumeUnconfigured`, and the placement answer lists it as `not_loaded`. Configure it again to fix this. To retire a volume, keep it configured with `acceptsWrites: false`: stored files never move between volumes.
 
 Watch `arkvory_storage_backend_up` and `arkvory_storage_backend_accepting`, see [Monitoring](./monitoring#metrics). Backups copy every volume. A restore needs an empty directory for each volume, see [Restore several volumes](./backups#restore-volumes).
 

@@ -58,8 +58,9 @@ Un ID se compose de lettres minuscules, de chiffres et de `-`, commence par une 
 Pour ajouter un volume :
 
 1. Montez le volume et créez le répertoire. Il doit appartenir au compte qui exécute les services. Arkvory ne crée pas ce répertoire. S’il manque, par exemple parce que le volume n’est pas monté, le volume reste indisponible et rien n’est écrit sous le point de montage.
-2. Ajoutez l’instance au fichier des modules et redémarrez les services. À son premier démarrage, l’API enregistre l’identité du volume, le fichier `storage-id` du répertoire. Ensuite, chaque processus vérifie ce fichier. Arkvory n’écrit jamais sur un volume non monté ni sur un autre volume au même chemin. Avant chaque écriture et chaque suppression sur le volume, le fichier est vérifié à nouveau.
-3. Choisissez les téléversements qui vont sur le volume avec une [politique de placement](#placement).
+2. Marquez le répertoire comme nouveau volume : `arkvory volume-init --directory /srv/arkvory-volume-2`. La commande n’a pas besoin de `--root`. Elle refuse un répertoire qui n’existe pas ou qui n’est pas vide (seul `lost+found` peut s’y trouver) et écrit le fichier d’identité `storage-id`. Sous Linux, elle refuse aussi un répertoire qui n’est pas un point de montage, comme le répertoire vide d’un volume non monté. Pour un répertoire à l’intérieur d’un volume monté, ajoutez `--no-expect-mount`. Sous Windows, `--expect-mount` active cette vérification. Les services ne créent jamais ce fichier : un volume sans lui reste indisponible.
+3. Ajoutez l’instance au fichier des modules et redémarrez les services. À son premier démarrage, l’API enregistre l’identité du volume, le fichier `storage-id` du répertoire. Ensuite, chaque processus vérifie ce fichier. Arkvory n’écrit jamais sur un volume non monté ni sur un autre volume au même chemin. Avant chaque écriture et chaque suppression sur le volume, le fichier est vérifié à nouveau.
+4. Choisissez les téléversements qui vont sur le volume avec une [politique de placement](#placement).
 
 ### Placement des nouveaux téléversements {#placement}
 
@@ -93,6 +94,7 @@ La publication n’échoue jamais à cause du placement. Si le stockage choisi n
 - **Quotas et limites.** Les quotas et `ARKVORY_CAPACITY_BYTES` comptent tous les volumes ensemble. La réserve s’applique à chaque volume.
 - **Les fichiers temporaires** des téléversements raw, OCI et de miroir restent dans le répertoire de stockage `default`.
 - **Cluster.** Dans un [cluster haute disponibilité](./cluster), chaque volume doit être un répertoire sur le volume répliqué, comme le répertoire de stockage : un autre disque n’est pas copié sur les autres serveurs. Sinon, l’API ne démarre pas.
+- **Un volume retiré de la configuration.** Arkvory se souvient de chaque volume qui a contenu des données. S’il ne figure plus dans le fichier des modules, ses fichiers ne peuvent être ni téléchargés, ni nettoyés, ni sauvegardés : une sauvegarde échoue avec `blob_missing`. Chaque processus le signale par la métrique `arkvory_storage_backend_unconfigured`, la ligne de journal `storage.backend_unconfigured` et l’alerte `ArkvoryStorageVolumeUnconfigured`, et la réponse du placement l’affiche avec l’état `not_loaded`. Pour corriger cela, configurez-le de nouveau. Pour retirer un volume, gardez-le configuré avec `acceptsWrites: false` : les fichiers enregistrés ne passent jamais d’un volume à l’autre.
 
 Surveillez `arkvory_storage_backend_up` et `arkvory_storage_backend_accepting`, voir [Supervision](./monitoring#metrics). Les sauvegardes copient chaque volume. Une restauration a besoin d’un répertoire vide pour chaque volume, voir [Restaurer plusieurs volumes](./backups#restore-volumes).
 

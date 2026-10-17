@@ -121,6 +121,7 @@ scrape_configs:
 | `arkvory_storage_backend_up`                                                                       | `backend`                                                              | 이 프로세스의 스토리지 볼륨이 열려 있고 응답하는 동안 1, 사용할 수 없거나 비활성화된 동안 0. [여러 볼륨](./storage#volumes) 참조                                 |
 | `arkvory_storage_backend_accepting`                                                                | `backend`                                                              | 스토리지가 새 업로드를 받는 동안 1, 새 업로드가 대신 `default`로 가는 동안 0                                                                                     |
 | `arkvory_storage_placement_fallback_total`                                                         | `backend`, `reason`                                                    | 배치가 선택한 스토리지가 데이터를 받지 않아 `default`에 만들어진 새 업로드. `reason`은 `not_accepting`, `read_only`, `disabled`, `unavailable` 또는 `not_loaded` |
+| `arkvory_storage_backend_unconfigured`                                                             | `backend`                                                              | 설치의 데이터가 있지만 더 이상 구성에 없는 볼륨이면 1. 그 파일은 읽거나 정리하거나 백업할 수 없습니다                                                            |
 | `arkvory_process_start_time_seconds`, `arkvory_process_resident_memory_bytes`                      |                                                                        | 시작 시각과 상주 메모리                                                                                                                                          |
 | `arkvory_database_pool_connections`, `arkvory_database_pool_idle`, `arkvory_database_pool_waiting` | `pool` (`queries`, `sessions`, `locks`)                                | 데이터베이스 풀 연결: 열린 연결, 유휴 연결, 대기 중인 호출; 대기가 오래 0보다 크면 풀이 작다는 뜻입니다                                                          |
 | `arkvory_fleet_site_up`                                                                            | `site`, `name`                                                         | 컨트롤러에서: 관리 대상 사이트가 마지막 읽기에 응답했으면 1, 아니면 0                                                                                            |
@@ -281,6 +282,7 @@ Select-String -Path "$root\logs\*.log" -Pattern 'REQUEST_ID'
 | `ArkvoryFleetSiteDown`                                          | 관리 대상 사이트가 5분 동안 컨트롤러에 응답하지 않음                                 | 심각       |
 | `ArkvoryFleetMirrorBehind`                                      | 관리 대상 사이트의 미러 지연이 30분 동안 `ARKVORY_FLEET_LAG_ALERT`(기본값 1000) 이상 | 경고       |
 | `ArkvoryFleetCritical`                                          | 컨트롤러의 사이트 페이지가 5분 동안 심각 경보를 표시함                               | 심각       |
+| `ArkvoryStorageVolumeUnconfigured`                              | 데이터가 있는 볼륨이 10분 동안 구성에 없음                                           | 심각       |
 
 Arkvory가 데이터를 내보내지 않으므로 다음 경보는 직접 추가하세요:
 

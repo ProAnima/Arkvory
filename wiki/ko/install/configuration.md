@@ -54,6 +54,7 @@ Arkvory에는 두 종류의 설정이 있습니다:
 | `finish-install`                                 | 중단된 최초 설치를 계속합니다                                                                                                    |
 | `updates-connect`                                | 콘솔과 업데이트 타이머를 연결하고, 오래된 설치에 없는 서비스를 등록합니다                                                        |
 | `updates-poll`, `updates-reset`, `changes-reset` | 업데이트 타이머가 실행하며 복구에도 사용됩니다. [업데이트](./updates#recover-update)를 참조하세요                                |
+| `volume-init`                                    | 빈 디렉터리를 새 스토리지 볼륨으로 표시합니다. `--root`가 필요 없습니다. [여러 볼륨](../operate/storage#volumes)을 참조하세요    |
 
 한 번에 하나의 명령만 실행됩니다. 두 번째 명령은 `Installation is locked`와 함께 중지됩니다. 명령 옵션에 키나 비밀번호를 넣지 마세요: 파일을 사용하세요.
 

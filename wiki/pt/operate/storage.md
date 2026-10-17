@@ -58,8 +58,9 @@ Um ID tem letras minúsculas, dígitos e `-`, começa com uma letra e não é `d
 Para acrescentar um volume:
 
 1. Monte o volume e crie o diretório. Ele deve pertencer à conta que executa os serviços. O Arkvory não cria esse diretório. Se ele não existir, por exemplo porque o volume não está montado, o volume fica indisponível e nada é gravado sob o ponto de montagem.
-2. Acrescente a instância ao arquivo de módulos e reinicie os serviços. Na primeira inicialização, a API registra a identidade do volume, o arquivo `storage-id` no diretório. A partir daí, todos os processos verificam esse arquivo. Um volume que não está montado, ou outro volume no mesmo caminho, nunca recebe gravações. Antes de cada gravação e remoção no volume, o arquivo é verificado de novo.
-3. Escolha quais uploads vão para o volume com uma [política de alocação](#placement).
+2. Marque o diretório como novo volume: `arkvory volume-init --directory /srv/arkvory-volume-2`. O comando não precisa de `--root`. Ele recusa um diretório que não existe ou não está vazio (só `lost+found` pode estar nele) e grava o arquivo de identidade `storage-id`. No Linux, também recusa um diretório que não é um ponto de montagem, como o diretório vazio de um volume não montado. Para um diretório dentro de um volume montado, acrescente `--no-expect-mount`. No Windows, `--expect-mount` ativa essa verificação. Os serviços nunca criam o arquivo: um volume sem ele fica indisponível.
+3. Acrescente a instância ao arquivo de módulos e reinicie os serviços. Na primeira inicialização, a API registra a identidade do volume, o arquivo `storage-id` no diretório. A partir daí, todos os processos verificam esse arquivo. Um volume que não está montado, ou outro volume no mesmo caminho, nunca recebe gravações. Antes de cada gravação e remoção no volume, o arquivo é verificado de novo.
+4. Escolha quais uploads vão para o volume com uma [política de alocação](#placement).
 
 ### Alocação de novos uploads {#placement}
 
@@ -93,6 +94,7 @@ A publicação nunca falha por causa da alocação. Se o armazenamento escolhido
 - **Cotas e limites.** As cotas e `ARKVORY_CAPACITY_BYTES` contam todos os volumes juntos. A reserva vale para cada volume.
 - **Arquivos temporários** de uploads raw, OCI e de espelhos ficam no diretório de armazenamento `default`.
 - **Cluster.** Em um [cluster de alta disponibilidade](./cluster), cada volume deve ser um diretório no volume replicado, como o diretório de armazenamento: outro disco não é copiado para os demais servidores. Caso contrário, a API não inicia.
+- **Um volume removido da configuração.** O Arkvory lembra cada volume que teve dados. Se um deles não estiver mais no arquivo de módulos, seus arquivos não podem ser baixados, limpos nem copiados: um backup falha com `blob_missing`. Cada processo informa isso com a métrica `arkvory_storage_backend_unconfigured`, a linha de log `storage.backend_unconfigured` e o alerta `ArkvoryStorageVolumeUnconfigured`, e a resposta do posicionamento o lista com o estado `not_loaded`. Para corrigir, configure-o de novo. Para aposentar um volume, mantenha-o configurado com `acceptsWrites: false`: arquivos armazenados nunca passam de um volume para outro.
 
 Acompanhe `arkvory_storage_backend_up` e `arkvory_storage_backend_accepting`; consulte [Monitoramento](./monitoring#metrics). Os backups copiam todos os volumes. Uma restauração precisa de um diretório vazio para cada volume; consulte [Restaurar vários volumes](./backups#restore-volumes).
 

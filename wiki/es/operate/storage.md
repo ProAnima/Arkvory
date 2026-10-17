@@ -58,8 +58,9 @@ Un ID tiene letras minúsculas, dígitos y `-`, empieza por una letra y no es `d
 Para añadir un volumen:
 
 1. Monte el volumen y cree el directorio. Debe pertenecer a la cuenta que ejecuta los servicios. Arkvory no crea este directorio. Si falta, por ejemplo porque el volumen no está montado, el volumen sigue no disponible y no se escribe nada bajo el punto de montaje.
-2. Añada la instancia al archivo de módulos y reinicie los servicios. En su primer arranque, la API registra la identidad del volumen, el archivo `storage-id` del directorio. A partir de entonces, cada proceso comprueba este archivo. Nunca se escribe en un volumen que no está montado ni en otro volumen en la misma ruta. Antes de cada escritura y eliminación en el volumen se vuelve a comprobar el archivo.
-3. Elija qué subidas van al volumen con una [política de ubicación](#placement).
+2. Marque el directorio como volumen nuevo: `arkvory volume-init --directory /srv/arkvory-volume-2`. El comando no necesita `--root`. Rechaza un directorio que no existe o que no está vacío (solo puede contener `lost+found`) y escribe el archivo de identidad `storage-id`. En Linux también rechaza un directorio que no es un punto de montaje, como el directorio vacío de un volumen que no está montado. Para un directorio dentro de un volumen montado, añada `--no-expect-mount`. En Windows, `--expect-mount` activa esta comprobación. Los servicios nunca crean el archivo: un volumen sin él sigue no disponible.
+3. Añada la instancia al archivo de módulos y reinicie los servicios. En su primer arranque, la API registra la identidad del volumen, el archivo `storage-id` del directorio. A partir de entonces, cada proceso comprueba este archivo. Nunca se escribe en un volumen que no está montado ni en otro volumen en la misma ruta. Antes de cada escritura y eliminación en el volumen se vuelve a comprobar el archivo.
+4. Elija qué subidas van al volumen con una [política de ubicación](#placement).
 
 ### Ubicación de las subidas nuevas {#placement}
 
@@ -93,6 +94,7 @@ La publicación nunca falla por la ubicación. Si el almacenamiento elegido no a
 - **Cuotas y límites.** Las cuotas y `ARKVORY_CAPACITY_BYTES` cuentan todos los volúmenes juntos. La reserva se aplica a cada volumen.
 - **Los archivos temporales** de las subidas raw, OCI y de espejo se quedan en el directorio de almacenamiento `default`.
 - **Clúster.** En un [clúster de alta disponibilidad](./cluster), cada volumen debe ser un directorio en el volumen replicado, como el directorio de almacenamiento: otro disco no se copia a los demás servidores. De lo contrario, la API no se inicia.
+- **Un volumen eliminado de la configuración.** Arkvory recuerda cada volumen que tuvo datos. Si uno ya no está en el archivo de módulos, sus archivos no se pueden descargar, limpiar ni copiar: una copia de seguridad falla con `blob_missing`. Cada proceso lo informa con la métrica `arkvory_storage_backend_unconfigured`, la línea de registro `storage.backend_unconfigured` y la alerta `ArkvoryStorageVolumeUnconfigured`, y la respuesta de la ubicación lo muestra con el estado `not_loaded`. Para corregirlo, vuelva a configurarlo. Para retirar un volumen, manténgalo configurado con `acceptsWrites: false`: los archivos guardados nunca se mueven entre volúmenes.
 
 Vigile `arkvory_storage_backend_up` y `arkvory_storage_backend_accepting`; consulte [Monitorización](./monitoring#metrics). Las copias de seguridad copian todos los volúmenes. Una restauración necesita un directorio vacío para cada volumen; consulte [Restaurar varios volúmenes](./backups#restore-volumes).
 
