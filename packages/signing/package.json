@@ -1,0 +1,22 @@
+{
+  "name": "@proanima/arkvory-signing",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "sideEffects": false,
+  "description": "Проверка подписей minisign, ключи подписи, список доверия, список отзыва и формат пакета модуля",
+  "exports": {
+    "arkvory-source": "./src/index.ts",
+    "types": "./dist/index.d.ts",
+    "import": "./dist/index.js"
+  },
+  "license": "SEE LICENSE IN LICENSE.md",
+  "author": "Ian Panaev",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ProAnima/Arkvory.git"
+  },
+  "dependencies": {
+    "@proanima/arkvory-extension-api": "0.2.0"
+  }
+}

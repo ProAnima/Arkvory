@@ -1,0 +1,177 @@
+import { MODULE_ID_PATTERN, parseSemanticVersion } from '@proanima/arkvory-extension-api';
+import { SigningError } from './errors.js';
+import { verifyClassified } from './keys.js';
+import type { ClassifiedKey } from './keys.js';
+import { utcTime } from './trust.js';
+
+/** The purpose in the trusted comment and the name of the file a list is stored and shipped as. */
+export const REVOCATIONS_FILE = 'module-revocations.json';
+const MAX_ENVELOPE = 1024 * 1024;
+const MAX_ENTRIES = 4096;
+const REASON = /^[a-z][a-z0-9_]{0,63}$/;
+
+/** One revoked module and its versions (ADR 0078, 3.4). */
+export interface RevocationEntry {
+  readonly id: string;
+  /** Exact semver versions. */
+  readonly versions: readonly string[];
+  /** Machine code of the reason. */
+  readonly reason: string;
+  /** True: the read path of the version still serves reads, export and evacuation. */
+  readonly readOnly: boolean;
+  /** The version that replaces the revoked ones, or null. */
+  readonly replacement: string | null;
+}
+
+/** A verified revocation list with the exact envelope it was read from, to store it unchanged. */
+export interface RevocationList {
+  readonly sequence: number;
+  readonly issuedAt: string;
+  readonly entries: readonly RevocationEntry[];
+  readonly keyId: string;
+  /** The signed payload, base64url, as the envelope carries it. */
+  readonly payload: string;
+  readonly envelope: string;
+}
+
+type Row = Readonly<Record<string, unknown>>;
+
+function row(value: unknown, path: string, fields: readonly string[]): Row {
+  if (typeof value !== 'object' || value === null || Array.isArray(value))
+    throw new SigningError('revocations_invalid', path);
+  const entries = Object.fromEntries(Object.entries(value));
+  const unknown = Object.keys(entries).find((key) => !fields.includes(key));
+  if (unknown !== undefined) throw new SigningError('revocations_invalid', `${path}/${unknown}`);
+  return entries;
+}
+
+function version(value: unknown, path: string): string {
+  if (typeof value !== 'string' || parseSemanticVersion(value) === null)
+    throw new SigningError('revocations_invalid', path);
+  return value;
+}
+
+function entry(value: unknown, path: string): RevocationEntry {
+  const item = row(value, path, ['id', 'versions', 'reason', 'readOnly', 'replacement']);
+  const id = item['id'];
+  if (typeof id !== 'string' || !MODULE_ID_PATTERN.test(id))
+    throw new SigningError('revocations_invalid', `${path}/id`);
+  const versions = item['versions'];
+  if (!Array.isArray(versions) || versions.length < 1 || versions.length > 256)
+    throw new SigningError('revocations_invalid', `${path}/versions`);
+  const reason = item['reason'];
+  if (typeof reason !== 'string' || !REASON.test(reason))
+    throw new SigningError('revocations_invalid', `${path}/reason`);
+  if (typeof item['readOnly'] !== 'boolean')
+    throw new SigningError('revocations_invalid', `${path}/readOnly`);
+  return {
+    id,
+    versions: versions.map((v: unknown, index) => version(v, `${path}/versions/${String(index)}`)),
+    reason,
+    readOnly: item['readOnly'],
+    replacement:
+      item['replacement'] === null ? null : version(item['replacement'], `${path}/replacement`),
+  };
+}
+
+function payload(bytes: Buffer): Omit<RevocationList, 'keyId' | 'payload' | 'envelope'> {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(bytes.toString('utf8'));
+  } catch (error) {
+    throw new SigningError('revocations_invalid', '', { cause: error });
+  }
+  const list = row(parsed, '', ['format', 'sequence', 'issuedAt', 'entries']);
+  if (list['format'] !== 1) throw new SigningError('revocations_invalid', '/format');
+  const sequence = list['sequence'];
+  if (typeof sequence !== 'number' || !Number.isSafeInteger(sequence) || sequence < 1)
+    throw new SigningError('revocations_invalid', '/sequence');
+  const entries = list['entries'];
+  if (!Array.isArray(entries) || entries.length > MAX_ENTRIES)
+    throw new SigningError('revocations_invalid', '/entries');
+  return {
+    sequence,
+    issuedAt: utcTimeOf(list['issuedAt']),
+    entries: entries.map((item: unknown, index) => entry(item, `/entries/${String(index)}`)),
+  };
+}
+
+function utcTimeOf(value: unknown): string {
+  try {
+    return utcTime(value, '/issuedAt');
+  } catch (error) {
+    throw new SigningError('revocations_invalid', '/issuedAt', { cause: error });
+  }
+}
+
+/**
+ * Reads a signed revocation list: `{"format": 1, "payload": "<base64url>", "signature":
+ * "<minisign>"}`. The signature covers the exact payload bytes, so no JSON canonicalization is
+ * needed. Only a ProAnimaStudio module key with the purpose `file:module-revocations.json`
+ * signs a list; the payload is then read as untrusted input.
+ */
+export function readRevocations(envelope: string, ring: readonly ClassifiedKey[]): RevocationList {
+  if (envelope.length > MAX_ENVELOPE) throw new SigningError('revocations_invalid', '');
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(envelope);
+  } catch (error) {
+    throw new SigningError('revocations_invalid', '', { cause: error });
+  }
+  const outer = row(parsed, '', ['format', 'payload', 'signature']);
+  const encoded = outer['payload'];
+  const signature = outer['signature'];
+  if (outer['format'] !== 1) throw new SigningError('revocations_invalid', '/format');
+  if (typeof encoded !== 'string' || !/^[A-Za-z0-9_-]*$/.test(encoded))
+    throw new SigningError('revocations_invalid', '/payload');
+  if (typeof signature !== 'string') throw new SigningError('revocations_invalid', '/signature');
+  const bytes = Buffer.from(encoded, 'base64url');
+  const key = verifyClassified(bytes, signature, ring, ['module'], REVOCATIONS_FILE);
+  return { ...payload(bytes), keyId: key.id, payload: encoded, envelope };
+}
+
+/** The envelope text of a signed payload, for the signing tool. */
+export function revocationsEnvelope(payloadBytes: Uint8Array, signature: string): string {
+  const text = JSON.stringify({
+    format: 1,
+    payload: Buffer.from(payloadBytes).toString('base64url'),
+    signature,
+  });
+  return `${text}\n`;
+}
+
+/**
+ * Whether `candidate` replaces `stored`. A lower sequence is a rollback and is refused, so an
+ * old list cannot bring back a revoked version; the same sequence is accepted only with the
+ * same payload (a different one means a signing defect, never a choice).
+ */
+export function acceptRevocations(
+  stored: RevocationList | null,
+  candidate: RevocationList,
+): 'accepted' | 'unchanged' {
+  if (stored === null || candidate.sequence > stored.sequence) return 'accepted';
+  if (candidate.sequence < stored.sequence)
+    throw new SigningError('revocation_rollback', String(candidate.sequence));
+  if (candidate.payload !== stored.payload)
+    throw new SigningError('revocation_conflict', String(candidate.sequence));
+  return 'unchanged';
+}
+
+/** The newer of two verified lists without refusing either: for lists shipped in packages. */
+export function newerRevocations(
+  a: RevocationList | null,
+  b: RevocationList | null,
+): RevocationList | null {
+  if (a === null) return b;
+  if (b === null) return a;
+  return b.sequence > a.sequence ? b : a;
+}
+
+/** The entry that revokes `id@version`, or null. */
+export function revocationOf(
+  list: RevocationList | null,
+  id: string,
+  moduleVersion: string,
+): RevocationEntry | null {
+  return list?.entries.find((e) => e.id === id && e.versions.includes(moduleVersion)) ?? null;
+}

@@ -6,6 +6,28 @@ function symbol(node, source) {
     return node.parent.name.getText(source);
   return '<anonymous>';
 }
+/**
+ * Files of the product that may call import() with a computed specifier, and why. Every other
+ * import of code is a literal that the build and the dependency rules see. The loader of
+ * verified module packages (ADR 0078, 3.3) joins this list with stage X4 of ADR 0079.
+ */
+export const COMPUTED_IMPORTS = {
+  // The service launcher and the management entry start the installed core release (ADR 0031),
+  // whose files were verified against the signed release manifest when staged (ADR 0060).
+  'apps/deploy/src/runtime.ts': 'core release',
+  'apps/deploy/src/manage.ts': 'core release',
+};
+
+function computedImport(file, node) {
+  return (
+    /^(apps|packages)\/[^/]+\/src\//.test(file) &&
+    !Object.hasOwn(COMPUTED_IMPORTS, file) &&
+    ts.isCallExpression(node) &&
+    node.expression.kind === ts.SyntaxKind.ImportKeyword &&
+    !(node.arguments.length === 1 && ts.isStringLiteralLike(node.arguments[0]))
+  );
+}
+
 export function analyzeSource(file, text) {
   const source = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true);
   const rawLines = text.split(/\r?\n/),
@@ -55,6 +77,10 @@ export function analyzeSource(file, text) {
     });
   }
   function inspect(node) {
+    if (computedImport(file, node))
+      problems.push(
+        `${file}: import() with a computed specifier is reserved for the loaders of COMPUTED_IMPORTS (ADR 0078)`,
+      );
     if (ts.isClassDeclaration(node) || ts.isClassExpression(node)) measure(node, 'class');
     if (ts.isFunctionLike(node) && node.body) measure(node, 'function');
     if (/^packages\/(domain|application|extension-api)\//.test(file)) {

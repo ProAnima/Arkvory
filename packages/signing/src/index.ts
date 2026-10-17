@@ -1,0 +1,66 @@
+export { SIGNING_PROBLEMS, SigningError, type SigningProblem } from './errors.js';
+export {
+  keyFingerprint,
+  keyObject,
+  minisignPublicKeyText,
+  parseMinisignPublicKey,
+  publicKeyOf,
+  signMinisign,
+  signatureKeyId,
+  verifyMinisign,
+  type SigningKey,
+  type VerifiedSignature,
+} from './minisign.js';
+export {
+  KEY_CLASSES,
+  keyRing,
+  licenseKeys,
+  moduleKeys,
+  verifyClassified,
+  type ClassifiedKey,
+  type KeyClass,
+  type KeyRingInput,
+} from './keys.js';
+export {
+  MAX_TRUSTED_KEYS,
+  OPERATOR_ID_PATTERN,
+  PLUGIN_TRUST_FILE,
+  operatorKeyExpired,
+  parsePluginTrust,
+  pluginPattern,
+  pluginPatternCovers,
+  utcTime,
+  type OperatorKey,
+  type PluginTrust,
+} from './trust.js';
+export {
+  REVOCATIONS_FILE,
+  acceptRevocations,
+  newerRevocations,
+  readRevocations,
+  revocationOf,
+  revocationsEnvelope,
+  type RevocationEntry,
+  type RevocationList,
+} from './revocations.js';
+export {
+  DATA_CLASSES,
+  PACKAGE_LIMITS,
+  checkCompatibility,
+  parsePackageManifest,
+  type CompatibilityHost,
+  type DataClass,
+  type PackageFields,
+  type PackageFile,
+  type PackageManifest,
+} from './package-manifest.js';
+export { FILES_DIRECTORY, MANIFEST_FILE, SIGNATURE_FILE, safePath } from './package-paths.js';
+export { PROANIMASTUDIO, type PackageSigner, type SignerPurpose } from './signer.js';
+export type { PackageHost, SignedManifest } from './package-verify.js';
+export {
+  TERMS_FILE,
+  extractModulePackage,
+  inspectModulePackage,
+  type InspectedPackage,
+} from './package-archive.js';
+export { verifyInstalledModule } from './package-installed.js';

@@ -16,6 +16,7 @@
 | infrastructure | application, domain, extension-api                            | Приложения, UI и SDK                                        |
 | sdk            | contracts                                                     | Серверные пакеты и Node-only API                            |
 | extension-api  | Нет                                                           | Node/browser globals, внешние runtime-библиотеки, apps      |
+| signing        | extension-api                                                 | Внешние runtime-библиотеки, apps, БД и сеть                 |
 | apps/api       | application, domain, contracts, infrastructure, extension-api | Другие apps и SDK                                           |
 | apps/worker    | application, domain, infrastructure                           | HTTP/Web/SDK                                                |
 | apps/scheduler | application, domain, infrastructure                           | HTTP/Web/SDK                                                |
