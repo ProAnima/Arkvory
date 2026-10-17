@@ -25,6 +25,8 @@ export function registryCredential(header: string | undefined): string {
 const ociCodes: Record<ErrorCode, string> = {
   invalid_input: 'UNSUPPORTED',
   not_found: 'NAME_UNKNOWN',
+  // Only the event feed answers gone (ADR 0080); registry requests never do.
+  gone: 'NAME_UNKNOWN',
   conflict: 'DENIED',
   forbidden: 'DENIED',
   unauthorized: 'UNAUTHORIZED',

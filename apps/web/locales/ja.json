@@ -1971,6 +1971,10 @@
     "en": "This repository is a mirror of another installation and cannot be changed here. Make the change on the source; the mirror follows by itself.",
     "text": "このリポジトリは別のインストール環境のミラーのため、ここでは変更できません。コピー元で変更してください。ミラーには自動的に反映されます。"
   },
+  "errorGone": {
+    "en": "The server no longer keeps what was asked for. Reload the page to read the current state.",
+    "text": "要求された内容はサーバーに保持されていません。ページを再読み込みして現在の状態を読み込んでください。"
+  },
   "cluster": {
     "en": "Cluster",
     "text": "クラスター"

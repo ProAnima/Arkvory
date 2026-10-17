@@ -28,6 +28,8 @@ import { mirrorPaths } from './mirror-api.js';
 import { downloadLinkParameter, downloadLinkPaths } from './download-link-api.js';
 import { rawPaths } from './raw-paths.js';
 import { feedbackPaths } from './feedback-api.js';
+import { eventPaths } from './events/feed.js';
+import { eventDataSchemas } from './events/catalog.js';
 import type { ApiSurface } from './api-surfaces.js';
 export const descriptorSchema = {
   type: 'object',
@@ -267,6 +269,7 @@ const composed = composeApiPaths({
   ...downloadLinkPaths,
   ...rawPaths,
   ...feedbackPaths,
+  ...eventPaths,
   ['/api/v1/repositories/{repository}/artifacts/{id}']: {
     ...baseDocument.paths['/api/v1/repositories/{repository}/artifacts/{id}'],
     delete: deletionOperation,
@@ -278,7 +281,7 @@ export const openApiDocument = {
   info: { ...baseDocument.info, title: 'ProAnima Arkvory API', version: '0.15.0' },
   components: {
     ...baseDocument.components,
-    schemas: { NativeError: nativeErrorSchema },
+    schemas: { NativeError: nativeErrorSchema, ...eventDataSchemas },
     securitySchemes: baseDocument.components.securitySchemes,
   },
   paths: composed.paths,

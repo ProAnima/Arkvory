@@ -84,6 +84,7 @@ const byReason: Readonly<Record<string, Readonly<Record<string, MessageKey>>>> =
 const byCode: Readonly<Record<string, MessageKey>> = {
   invalid_input: 'errorInput',
   not_found: 'errorNotFound',
+  gone: 'errorGone',
   conflict: 'errorConflict',
   forbidden: 'errorForbidden',
   capacity_exceeded: 'errorCapacity',
@@ -101,6 +102,7 @@ const byStatus: Readonly<Record<number, MessageKey>> = {
   404: 'errorNotFound',
   405: 'errorRouteMissing',
   409: 'errorConflict',
+  410: 'errorGone',
   413: 'errorBodyTooLarge',
   415: 'errorMediaType',
   416: 'errorRange',

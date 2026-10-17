@@ -90,7 +90,9 @@ export function apiClassification(policy: OperationPolicy): {
     case 'Services':
       surface = access.kind === 'pending-or-active-key' ? 'identity' : 'administration';
       break;
+    // Events (ADR 0080): the installation's feed of what changed in the catalog.
     case 'Catalog':
+    case 'Events':
       surface = 'catalog';
       break;
     case 'Content':
