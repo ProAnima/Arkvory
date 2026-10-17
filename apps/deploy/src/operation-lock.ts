@@ -28,6 +28,13 @@ const JOURNALED = new Set([
   'apply-installer',
   // Only stops units, under the lock: a rerun stops the rest.
   'cluster-release',
+  // Module set changes are journaled; pins, trust and revocation lists are one atomic write.
+  'module-install',
+  'module-remove',
+  'module-pin',
+  'module-revocations',
+  'module-trust-add',
+  'module-trust-remove',
 ]);
 
 interface LockOwner {

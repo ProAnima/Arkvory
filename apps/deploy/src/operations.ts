@@ -18,6 +18,7 @@ import { protectInstallation } from './preflight.js';
 import { prepareUpdateControl } from './update-setup.js';
 import { report } from './output.js';
 import { warnEngineAutostart } from './engine-autostart.js';
+import { recoverModuleSet } from './module-store.js';
 
 export async function save(root: string, state: Installation): Promise<void> {
   // Compose image follows the same journalled switch; data volumes never depend on a release directory.
@@ -178,6 +179,9 @@ export async function recover(root: string): Promise<void> {
   const journal = record(await jsonFile(join(root, 'journal.json')));
   const previous = parseRelease(journal['previous']);
   const next = parseRelease(journal['next']);
+  // A module set change (same release) touched no service: its previous set returns.
+  if (journal['modules'] !== undefined && previous.version === next.version)
+    return recoverModuleSet(root, journal);
   const services = new Services(root, state);
   await services.stop();
   if (recoveryDirection(previous, next, String(journal['phase'])) === 'forward') {

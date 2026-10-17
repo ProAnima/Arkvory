@@ -27,6 +27,24 @@ cluster-plan         --cluster ha-2|ha-3 --nodes a=10.0.0.1,b=10.0.0.2[,c=…] [
                      / Конфигурация DRBD и Pacemaker для проверки и применения
 `;
 
+/** Module packages and operator keys (ADR 0078, ADR 0082). */
+const moduleHelp = `module install <file.tgz> [--yes] [--downgrade]
+                     Verify a signed module package (signature, files, compatibility, revocation),
+                     show it and its terms; --yes installs it into modules/ through the journal
+                     / Проверить и установить подписанный пакет модуля
+module list          Installed modules, each verified again; kept packages; revocation list
+                     / Установленные модули с повторной проверкой
+module remove <id>   Remove from the set; a module storing published bytes (data layout) is refused
+                     / Удалить модуль из набора
+module pin <id> <version> | module pin <id> --unpin   Keep the installed version / Закрепить
+module revocations <file>   Store a signed revocation list; an older list is refused
+                     / Список отзыва из файла
+module trust add <file.pub | key> --label <text> [--plugins op-a-*,…] [--allow-in-process]
+                     [--expires <UTC time>] [--yes]  Trust a plugin author's key on this host
+                     / Доверять ключу автора плагинов
+module trust list | module trust remove <keyId>   / Список доверия
+`;
+
 export function deploymentHelp(): string {
   return `ProAnima Arkvory · Installation & lifecycle / Установка и обслуживание
 
@@ -47,7 +65,7 @@ update         Update; a schema change first captures and verifies a backup in t
 upgrade        Schema change without the built-in vault; --backup-record required / Вручную
 recover        Finish an interrupted update: back before a migration, forward after it
                / Завершить прерванное обновление
-${clusterHelp}configure      --cluster ha-2|ha-3 [--cluster-resource r]: on the primary of a replicated volume,
+${clusterHelp}${moduleHelp}configure      --cluster ha-2|ha-3 [--cluster-resource r]: on the primary of a replicated volume,
                acknowledge writes only with two complete copies (ADR 0072) / Режим HA-кластера
 configure      --enable-updates | --disable-updates | --pin --version X.Y.Z | --unpin
                --hub-url <https://origin> | --hub-off, --update-channel stable|beta,
