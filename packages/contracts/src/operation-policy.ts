@@ -11,6 +11,7 @@ import { updateOperations } from './updates-api.js';
 import { fleetOperations } from './fleet-api.js';
 import { downloadSettingsOperations } from './download-settings-api.js';
 import { siteChangeOperations } from './site-changes-api.js';
+import { moduleOperations } from './modules-api.js';
 import type { BackupPermissionName } from './backup-wire.js';
 import type { servicePermissionNames } from './service-api.js';
 import type { AdministrationPermission } from './delegation-api.js';
@@ -107,6 +108,7 @@ for (const [tag, operations] of [
   ['Downloads', downloadSettingsOperations],
   ['Changes', siteChangeOperations],
   ['Feedback', feedbackOperations],
+  ['System', moduleOperations],
 ] as const)
   for (const [path, method, id, kind, retry] of operations)
     add(`/api/v1${path}`, method, id, tag, { kind }, retry);

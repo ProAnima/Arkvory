@@ -976,6 +976,14 @@
       "summary": "جلب هذا الموقع لوحدة تحكم الأسطول",
       "description": "يعيد هذا التثبيت بوصفه موقعًا واحدًا من أسطول (ADR 0077): الاسم والإصدار والمخطط والدور، وهل هو متاح ويقبل الكتابة، ونسخ HA وعقدها، وبوابات القراءة حسب عقودها، وكل مرآة واستيراد مع مرحلتها وآخر مزامنة و`lagChanges` (تغييرات المصدر التي لم تُطبَّق بعد)، وحالة وكيل التحديث وطابور التنزيل. لا يقرأه إلا المسؤول العام للموقع أو وحدة تحكم مقترنة به."
     },
+    "getSystemModules": {
+      "en": {
+        "summary": "List the modules of this installation",
+        "description": "Returns every module this installation plans, in `id` order: `id`, `version`, the extension point (`kind`), `source` (`builtin` for modules of the core), whether it is part of the free core (`core`, never disabled) and whether it is `enabled`, the processes it runs in (`roles`), whether the answering process runs it (`running`) and its `health` there (`ok`, `degraded` or `failed` with a code; null when it does not run there). `fingerprint` is the SHA-256 of the plan and is equal on every process of the installation; `extensionApi` is the version of the module contract of this core. Settings, paths and secrets are never returned. Only the global administrator may read it."
+      },
+      "summary": "سرد وحدات هذا التثبيت",
+      "description": "يعيد كل وحدة يخطط لها هذا التثبيت مرتبة حسب `id`: `id` و`version` ونقطة التوسعة (`kind`) و`source` (`builtin` لوحدات النواة)، وهل هي جزء من النواة المجانية (`core`، لا تُعطَّل أبدًا) وهل هي مفعّلة (`enabled`)، والعمليات التي تعمل فيها (`roles`)، وهل تشغّلها العملية التي أجابت (`running`) وحالتها هناك (`health`: `ok` أو `degraded` أو `failed` مع رمز؛ null إذا لم تعمل هناك). `fingerprint` هو SHA-256 للخطة وهو متطابق في كل عمليات التثبيت؛ و`extensionApi` هو إصدار عقد الوحدات لهذه النواة. لا تُعاد الإعدادات والمسارات والأسرار أبدًا. لا يقرؤها إلا المسؤول العام."
+    },
     "createFleetPairing": {
       "en": {
         "summary": "Make a pairing code",

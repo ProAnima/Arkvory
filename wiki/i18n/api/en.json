@@ -976,6 +976,14 @@
       "summary": "Get this site for the fleet console",
       "description": "Returns this installation as one site of a fleet (ADR 0077): its name, version, schema and role, whether it is available and writable, the HA copies and nodes, the read gateways from their leases, every mirror and import with its phase, last sync and `lagChanges` (changes of the source not applied yet), the host updater state and the download queue. Only the global administrator of the site or a controller paired with it may read it."
     },
+    "getSystemModules": {
+      "en": {
+        "summary": "List the modules of this installation: version, extension point, whether core and enabled, health in the answering process, and the plan fingerprint",
+        "description": ""
+      },
+      "summary": "List the modules of this installation",
+      "description": "Returns every module this installation plans, in `id` order: `id`, `version`, the extension point (`kind`), `source` (`builtin` for modules of the core), whether it is part of the free core (`core`, never disabled) and whether it is `enabled`, the processes it runs in (`roles`), whether the answering process runs it (`running`) and its `health` there (`ok`, `degraded` or `failed` with a code; null when it does not run there). `fingerprint` is the SHA-256 of the plan and is equal on every process of the installation; `extensionApi` is the version of the module contract of this core. Settings, paths and secrets are never returned. Only the global administrator may read it."
+    },
     "createFleetPairing": {
       "en": {
         "summary": "Make a one-time pairing code, valid ten minutes, that lets a controller manage this site",

@@ -976,6 +976,14 @@
       "summary": "Diesen Standort für die Flottenkonsole lesen",
       "description": "Liefert diese Installation als einen Standort einer Flotte (ADR 0077): Name, Version, Schema und Rolle, ob sie verfügbar und beschreibbar ist, die HA-Kopien und -Knoten, die Lese-Gateways aus ihren Leases, jeden Spiegel und Import mit Phase, letzter Synchronisierung und `lagChanges` (noch nicht übernommene Änderungen der Quelle), den Zustand des Update-Agenten und die Download-Warteschlange. Lesen darf nur der globale Administrator des Standorts oder ein damit gekoppelter Controller."
     },
+    "getSystemModules": {
+      "en": {
+        "summary": "List the modules of this installation",
+        "description": "Returns every module this installation plans, in `id` order: `id`, `version`, the extension point (`kind`), `source` (`builtin` for modules of the core), whether it is part of the free core (`core`, never disabled) and whether it is `enabled`, the processes it runs in (`roles`), whether the answering process runs it (`running`) and its `health` there (`ok`, `degraded` or `failed` with a code; null when it does not run there). `fingerprint` is the SHA-256 of the plan and is equal on every process of the installation; `extensionApi` is the version of the module contract of this core. Settings, paths and secrets are never returned. Only the global administrator may read it."
+      },
+      "summary": "Module dieser Installation auflisten",
+      "description": "Liefert jedes Modul, das diese Installation plant, sortiert nach `id`: `id`, `version`, den Erweiterungspunkt (`kind`), `source` (`builtin` für Module des Kerns), ob es zum kostenlosen Kern gehört (`core`, nie abschaltbar) und ob es aktiviert ist (`enabled`), die Prozesse, in denen es läuft (`roles`), ob der antwortende Prozess es ausführt (`running`), und seinen Zustand dort (`health`: `ok`, `degraded` oder `failed` mit einem Code; null, wenn es dort nicht läuft). `fingerprint` ist der SHA-256 des Plans und in allen Prozessen der Installation gleich; `extensionApi` ist die Version des Modulvertrags dieses Kerns. Einstellungen, Pfade und Geheimnisse werden nie zurückgegeben. Lesen darf nur der globale Administrator."
+    },
     "createFleetPairing": {
       "en": {
         "summary": "Make a pairing code",

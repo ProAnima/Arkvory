@@ -976,6 +976,14 @@
       "summary": "फ़्लीट कंसोल के लिए यह साइट पाएँ",
       "description": "इस इंस्टॉलेशन को फ़्लीट की एक साइट के रूप में लौटाता है (ADR 0077): नाम, संस्करण, स्कीमा और भूमिका, उपलब्ध और लिखने योग्य है या नहीं, HA प्रतियाँ और नोड, लीज़ के आधार पर रीड गेटवे, हर मिरर और इम्पोर्ट उसके चरण, अंतिम सिंक और `lagChanges` (स्रोत के अभी लागू न हुए बदलाव) के साथ, अपडेट एजेंट की स्थिति और डाउनलोड कतार। केवल साइट का ग्लोबल व्यवस्थापक या उससे युग्मित नियंत्रक इसे पढ़ सकता है।"
     },
+    "getSystemModules": {
+      "en": {
+        "summary": "List the modules of this installation",
+        "description": "Returns every module this installation plans, in `id` order: `id`, `version`, the extension point (`kind`), `source` (`builtin` for modules of the core), whether it is part of the free core (`core`, never disabled) and whether it is `enabled`, the processes it runs in (`roles`), whether the answering process runs it (`running`) and its `health` there (`ok`, `degraded` or `failed` with a code; null when it does not run there). `fingerprint` is the SHA-256 of the plan and is equal on every process of the installation; `extensionApi` is the version of the module contract of this core. Settings, paths and secrets are never returned. Only the global administrator may read it."
+      },
+      "summary": "इस इंस्टॉलेशन के मॉड्यूल की सूची",
+      "description": "यह इंस्टॉलेशन जिन मॉड्यूल की योजना बनाता है, उन सभी को `id` के क्रम में लौटाता है: `id`, `version`, एक्सटेंशन पॉइंट (`kind`), `source` (कोर के मॉड्यूल के लिए `builtin`), क्या वह मुफ़्त कोर का हिस्सा है (`core`, कभी बंद नहीं होता) और क्या वह सक्षम है (`enabled`), वे प्रोसेस जिनमें वह चलता है (`roles`), क्या जवाब देने वाला प्रोसेस उसे चलाता है (`running`) और वहाँ उसकी स्थिति (`health`: `ok`, `degraded` या कोड के साथ `failed`; वहाँ न चले तो null)। `fingerprint` योजना का SHA-256 है और इंस्टॉलेशन के हर प्रोसेस में एक जैसा होता है; `extensionApi` इस कोर के मॉड्यूल अनुबंध का संस्करण है। सेटिंग्स, पाथ और सीक्रेट कभी नहीं लौटाए जाते। केवल ग्लोबल एडमिनिस्ट्रेटर पढ़ सकता है।"
+    },
     "createFleetPairing": {
       "en": {
         "summary": "Make a pairing code",

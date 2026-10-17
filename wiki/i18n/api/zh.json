@@ -976,6 +976,14 @@
       "summary": "获取本站点供集群控制台使用",
       "description": "把本安装作为集群中的一个站点返回（ADR 0077）：名称、版本、架构和角色，是否可用、是否可写，HA 副本和节点，按租约列出的只读网关，每个镜像和导入及其阶段、最后同步时间和 `lagChanges`（源中尚未应用的变更），更新代理状态和下载队列。只有站点的全局管理员或已配对的控制站点可以读取。"
     },
+    "getSystemModules": {
+      "en": {
+        "summary": "List the modules of this installation",
+        "description": "Returns every module this installation plans, in `id` order: `id`, `version`, the extension point (`kind`), `source` (`builtin` for modules of the core), whether it is part of the free core (`core`, never disabled) and whether it is `enabled`, the processes it runs in (`roles`), whether the answering process runs it (`running`) and its `health` there (`ok`, `degraded` or `failed` with a code; null when it does not run there). `fingerprint` is the SHA-256 of the plan and is equal on every process of the installation; `extensionApi` is the version of the module contract of this core. Settings, paths and secrets are never returned. Only the global administrator may read it."
+      },
+      "summary": "列出此安装的模块",
+      "description": "按 `id` 顺序返回此安装规划的每个模块：`id`、`version`、扩展点（`kind`）、`source`（核心模块为 `builtin`）、是否属于免费核心（`core`，永不禁用）以及是否启用（`enabled`）、运行它的进程（`roles`）、应答的进程是否运行它（`running`）及其在该进程中的状态（`health`：`ok`、`degraded` 或带代码的 `failed`；不在该进程运行时为 null）。`fingerprint` 是规划的 SHA-256，在安装的所有进程中相同；`extensionApi` 是此核心的模块契约版本。从不返回设置、路径和密钥。只有全局管理员可以读取。"
+    },
     "createFleetPairing": {
       "en": {
         "summary": "Make a pairing code",

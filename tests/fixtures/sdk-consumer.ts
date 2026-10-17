@@ -86,6 +86,8 @@ export type UnchangedKeys = Assert<
       | 'siteChanges'
       // ADR 0081 (A1): search across every repository the credential may list.
       | 'searchAll'
+      // ADR 0078/0079: the installation's modules as the additive namespace `system`.
+      | 'system'
     >,
     keyof LegacyClient
   >

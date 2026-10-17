@@ -976,6 +976,14 @@
       "summary": "Lire ce site pour la console de flotte",
       "description": "Renvoie cette installation comme un site d’une flotte (ADR 0077) : nom, version, schéma et rôle, disponibilité et acceptation des écritures, copies et nœuds HA, passerelles de lecture d’après leurs baux, chaque miroir et import avec sa phase, sa dernière synchronisation et `lagChanges` (changements de la source pas encore appliqués), l’état de l’agent de mise à jour et la file des téléchargements. Seul l’administrateur global du site ou un contrôleur appairé peut le lire."
     },
+    "getSystemModules": {
+      "en": {
+        "summary": "List the modules of this installation",
+        "description": "Returns every module this installation plans, in `id` order: `id`, `version`, the extension point (`kind`), `source` (`builtin` for modules of the core), whether it is part of the free core (`core`, never disabled) and whether it is `enabled`, the processes it runs in (`roles`), whether the answering process runs it (`running`) and its `health` there (`ok`, `degraded` or `failed` with a code; null when it does not run there). `fingerprint` is the SHA-256 of the plan and is equal on every process of the installation; `extensionApi` is the version of the module contract of this core. Settings, paths and secrets are never returned. Only the global administrator may read it."
+      },
+      "summary": "Lister les modules de cette installation",
+      "description": "Renvoie chaque module prévu par cette installation, par ordre d’`id` : `id`, `version`, le point d’extension (`kind`), `source` (`builtin` pour les modules du cœur), s’il fait partie du cœur gratuit (`core`, jamais désactivé) et s’il est activé (`enabled`), les processus où il s’exécute (`roles`), si le processus qui répond l’exécute (`running`) et son état dans ce processus (`health` : `ok`, `degraded` ou `failed` avec un code ; null s’il ne s’y exécute pas). `fingerprint` est le SHA-256 du plan, identique dans tous les processus de l’installation ; `extensionApi` est la version du contrat des modules de ce cœur. Les paramètres, chemins et secrets ne sont jamais renvoyés. Seul l’administrateur global peut le lire."
+    },
     "createFleetPairing": {
       "en": {
         "summary": "Make a pairing code",
