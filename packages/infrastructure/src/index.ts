@@ -23,6 +23,7 @@ export {
   probeStorageBackends,
   watchStorageBackends,
   STORAGE_PROBE_MS,
+  storageChangeRecord,
 } from './storage-backend-probe.js';
 export type { ProbeOptions, StorageIdentityRecords } from './storage-backend-probe.js';
 export { PostgresPlacementPolicies, PostgresStorageIdentities } from './storage-placement-store.js';

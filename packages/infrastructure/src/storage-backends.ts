@@ -21,9 +21,19 @@ export interface StorageInstance {
   readonly enabled: boolean;
 }
 
-/** Why an enabled storage is not usable: a machine code for logs and metrics, never a path. */
+/**
+ * Why a storage is not usable: a machine code for logs and metrics, never a path.
+ * `not_initialized`: the volume has no identity file (`arkvory volume-init` was not run, or the
+ * volume is not mounted); `not_configured`: a storage on record that the configuration lost.
+ */
 export type StorageFault =
-  'not_opened' | 'open_failed' | 'identity_unknown' | 'identity_mismatch' | 'probe_failed';
+  | 'not_opened'
+  | 'not_initialized'
+  | 'open_failed'
+  | 'identity_unknown'
+  | 'identity_mismatch'
+  | 'probe_failed'
+  | 'not_configured';
 
 export interface StorageBackendStatus {
   readonly id: string;
@@ -49,6 +59,8 @@ export class StorageBackends implements BlobStore, StorageBackendStates {
   private readonly faults = new Map<string, StorageFault>();
   /** The identity each usable storage proved when it was last opened or rechecked. */
   private readonly identities = new Map<string, string>();
+  /** Storages on record that the configuration no longer names (ADR 0083, N11). */
+  private removed: readonly string[] = [];
   readonly core: StorageInstance;
 
   constructor(instances: readonly StorageInstance[]) {
@@ -73,6 +85,18 @@ export class StorageBackends implements BlobStore, StorageBackendStates {
 
   ids(): readonly string[] {
     return [...this.instances.keys()];
+  }
+
+  /**
+   * Storages that held data of the installation but are not configured here: uploads naming
+   * them cannot be read, cleaned or copied until the instance is configured again.
+   */
+  unconfigured(): readonly string[] {
+    return this.removed;
+  }
+
+  markUnconfigured(ids: readonly string[]): void {
+    this.removed = ids.filter((id) => !this.instances.has(id));
   }
 
   /**

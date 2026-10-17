@@ -12,10 +12,13 @@ import {
   parseLocalStorageConfig,
   probeStorageBackends,
   requireReplicatedVolumes,
+  storageChangeRecord,
   builtinModules,
 } from '@proanima/arkvory-infrastructure';
+import { PlacementControl } from '@proanima/arkvory-application';
 import { ModuleConfigError } from '@proanima/arkvory-extension-api';
 import { removeTestDirectory } from './helpers.mjs';
+import { initializeVolume } from '../apps/deploy/dist/storage-volume.js';
 import { storageBackendContract } from './contracts/storage-backend.mjs';
 import { DirectoryBackend } from './contracts/directory-backend.mjs';
 import { MemoryBlobStore } from './memory-blobs.mjs';
@@ -265,8 +268,14 @@ function records() {
       if (!map.has(id)) map.set(id, storageId);
       return map.get(id);
     },
+    async known() {
+      return [...map.keys()].sort();
+    },
   };
 }
+
+/** `arkvory volume-init` on the host, for a temporary directory that is no mount point. */
+const volumeInit = (directory) => initializeVolume({ directory, expectMount: false });
 
 test('opening a storage proves its identity: the writer records it, others wait for it', async (t) => {
   const data = await directory(t, 'arkvory-probe-core-');
@@ -281,10 +290,17 @@ test('opening a storage proves its identity: the writer records it, others wait 
   const reader = localStorageBackends(data, 0, settings);
   await probeStorageBackends(reader, known, { create: false, changed });
   assert.equal(reader.fault('volume-2'), 'identity_unknown');
-  // The writer initializes it and records its identity.
+  // No process makes a volume: without `arkvory volume-init` it stays unavailable, untouched.
   const writer = localStorageBackends(data, 0, settings);
   await probeStorageBackends(writer, known, { create: true, changed });
+  assert.equal(writer.fault('volume-2'), 'not_initialized');
+  assert.deepEqual(await readdir(second), []);
+  assert.equal(known.map.size, 0);
+  // Marked on the host: the writer records its identity and lays it out inside.
+  await volumeInit(second);
+  await probeStorageBackends(writer, known, { create: true, changed });
   assert.equal(writer.state('volume-2'), 'accepting');
+  assert.deepEqual((await readdir(second)).sort(), ['blobs', 'parts', 'staging', 'storage-id']);
   assert.equal(known.map.size, 1);
   await probeStorageBackends(reader, known, { create: false, changed });
   assert.equal(reader.state('volume-2'), 'accepting');
@@ -301,6 +317,7 @@ test('opening a storage proves its identity: the writer records it, others wait 
   assert.equal(writer.fault('volume-2'), null);
   assert.deepEqual(changes, [
     ['volume-2', 'identity_unknown'],
+    ['volume-2', 'not_initialized'],
     ['volume-2', null],
     ['volume-2', null],
     ['volume-2', 'identity_mismatch'],
@@ -325,6 +342,7 @@ async function mounted(t) {
   // As at the start of the API: `default` is initialized and has its identity before the rest.
   await backends.core.lifecycle.initialize();
   await backends.core.lifecycle.identity();
+  await volumeInit(mountPoint);
   const known = records();
   await probeStorageBackends(backends, known, { create: true });
   assert.equal(backends.state('volume-2'), 'accepting');
@@ -472,4 +490,70 @@ test('a part that is not there is unavailable, not a file system error', async (
   const part = { index: 0, size: bytes.length, sha256: descriptor.sha256 };
   const reading = store.readParts(randomUUID(), [part]);
   await assert.rejects(reading[Symbol.asyncIterator]().next(), { code: 'unavailable' });
+});
+
+test('a volume removed from the configuration is reported, never deferred silently', async (t) => {
+  const data = await directory(t, 'arkvory-removed-core-');
+  const second = await directory(t, 'arkvory-removed-v2-');
+  await volumeInit(second);
+  const settings = [
+    { id: 'volume-2', directory: second, enabled: true, mode: 'full', acceptsWrites: true },
+  ];
+  const known = records();
+  const before = localStorageBackends(data, 0, settings);
+  await probeStorageBackends(before, known, { create: true });
+  assert.equal(before.state('volume-2'), 'accepting');
+  // The operator drops the instance from the modules file: the installation still has its data.
+  const after = localStorageBackends(data, 0, []);
+  const changes = [];
+  const options = { create: true, changed: (id, fault) => changes.push([id, fault]) };
+  await probeStorageBackends(after, known, options);
+  await probeStorageBackends(after, known, options);
+  assert.deepEqual(after.unconfigured(), ['volume-2']);
+  assert.deepEqual(changes, [['volume-2', 'not_configured']], 'reported once');
+  assert.equal(after.state('volume-2'), 'not_loaded');
+  // Configured again: nothing is missing any more.
+  const back = localStorageBackends(data, 0, settings);
+  await probeStorageBackends(back, known, { create: true });
+  assert.deepEqual(back.unconfigured(), []);
+  // The placement answer lists it, so an operator sees what is missing.
+  const control = new PlacementControl(
+    {
+      get: async () => ({
+        repository: 'r',
+        revision: 0,
+        rules: [],
+        updatedBy: null,
+        updatedAt: null,
+      }),
+    },
+    after,
+  );
+  const reader = {
+    id: 'service:s',
+    repositories: ['r'],
+    permissions: [],
+    managed: {
+      accountId: 'a',
+      keyId: 'k',
+      bindings: [{ resource: { kind: 'repository', id: 'r' }, actions: ['storage.read'] }],
+    },
+  };
+  const view = await control.get(reader, 'r');
+  assert.deepEqual(view.backends, [
+    { id: 'default', state: 'accepting' },
+    { id: 'volume-2', state: 'not_loaded' },
+  ]);
+  // The metric and the log line of every process.
+  assert.deepEqual(storageChangeRecord('volume-2', 'not_configured'), {
+    level: 'warning',
+    component: 'storage',
+    code: 'storage.backend_unconfigured',
+    backend: 'volume-2',
+  });
+  const { StorageMetrics } = await import('../apps/api/dist/storage-metrics.js');
+  const lines = [];
+  const metrics = new StorageMetrics(after);
+  metrics.bind((line) => lines.push(line.code));
+  assert.deepEqual(lines, ['storage.backend_unconfigured']);
 });

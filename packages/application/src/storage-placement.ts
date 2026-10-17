@@ -37,6 +37,8 @@ export interface StorageBackendStates {
   /** Configured ids in a stable order, the core's `default` first. */
   ids(): readonly string[];
   state(backendId: string): BackendWriteState;
+  /** Storages on record that are not configured: their uploads cannot be served. */
+  unconfigured?(): readonly string[];
 }
 
 /**
@@ -75,6 +77,9 @@ export interface PlacementView extends PlacementPolicy {
   readonly backends: readonly { readonly id: string; readonly state: BackendWriteState }[];
 }
 
+/** The wire lists at most this many storages. */
+const MAX_LISTED_BACKENDS = 64;
+
 /** `GET|PUT /api/v1/repositories/{r}/storage/placement`. */
 export class PlacementControl {
   constructor(
@@ -109,10 +114,13 @@ export class PlacementControl {
     return this.view(saved);
   }
 
+  /** Configured storages, then those on record but no longer configured (`not_loaded`). */
   private view(policy: PlacementPolicy): PlacementView {
-    return {
-      ...policy,
-      backends: this.backends.ids().map((id) => ({ id, state: this.backends.state(id) })),
-    };
+    const configured = this.backends.ids().map((id) => ({ id, state: this.backends.state(id) }));
+    const removed = (this.backends.unconfigured?.() ?? []).map((id) => ({
+      id,
+      state: 'not_loaded' as const,
+    }));
+    return { ...policy, backends: [...configured, ...removed].slice(0, MAX_LISTED_BACKENDS) };
   }
 }

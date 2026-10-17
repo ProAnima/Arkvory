@@ -1,4 +1,5 @@
 import type { PlacementDecision } from '@proanima/arkvory-domain';
+import { storageChangeRecord } from '@proanima/arkvory-infrastructure';
 import type {
   DiagnosticRecord,
   MetricsRegistry,
@@ -25,7 +26,7 @@ export class StorageMetrics {
   private log: Log | undefined;
 
   constructor(
-    private readonly backends: Pick<StorageBackends, 'status'>,
+    private readonly backends: Pick<StorageBackends, 'status' | 'unconfigured'>,
     private readonly now: () => number = () => performance.now(),
   ) {}
 
@@ -33,6 +34,7 @@ export class StorageMetrics {
   bind(log: Log): void {
     this.log = log;
     for (const { id, fault } of this.backends.status()) if (fault !== null) this.changed(id, fault);
+    for (const id of this.backends.unconfigured()) this.changed(id, 'not_configured');
   }
 
   fellBack(decision: PlacementDecision): void {
@@ -57,19 +59,9 @@ export class StorageMetrics {
     });
   }
 
-  /** A storage became unavailable (`fault`) or available again (null). */
+  /** A storage became unavailable (`fault`), available again (null) or unconfigured. */
   changed(id: string, fault: StorageFault | null): void {
-    this.log?.(
-      fault === null
-        ? { level: 'info', component: 'storage', code: 'storage.backend_available', backend: id }
-        : {
-            level: 'warning',
-            component: 'storage',
-            code: 'storage.backend_unavailable',
-            backend: id,
-            reason: fault,
-          },
-    );
+    this.log?.(storageChangeRecord(id, fault));
   }
 
   register(registry: MetricsRegistry): void {
@@ -95,6 +87,14 @@ export class StorageMetrics {
           labels: { backend: id },
           value: state === 'accepting' ? 1 : 0,
         })),
+    });
+    registry.sampled({
+      name: 'arkvory_storage_backend_unconfigured',
+      help: 'A storage that holds data of the installation but is not configured here (always 1).',
+      type: 'gauge',
+      labels: ['backend'],
+      collect: () =>
+        this.backends.unconfigured().map((id) => ({ labels: { backend: id }, value: 1 })),
     });
     registry.sampled({
       name: 'arkvory_storage_placement_fallback_total',

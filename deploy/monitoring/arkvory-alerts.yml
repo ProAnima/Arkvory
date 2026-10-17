@@ -118,6 +118,16 @@ groups:
           summary: Arkvory backups report {{ $labels.code }}
           description: vault_unavailable - mount the vault volume of ARKVORY_BACKUP_VAULT for the agent and keep it writable; verify_failed - keep the vault unchanged and investigate the damaged point.
 
+      - alert: ArkvoryStorageVolumeUnconfigured
+        # A volume that held data was removed from ARKVORY_MODULES_FILE: its uploads are unreadable.
+        expr: max by (backend) (arkvory_storage_backend_unconfigured) > 0
+        for: 10m
+        labels:
+          severity: critical
+        annotations:
+          summary: Storage volume {{ $labels.backend }} holds data but is not configured
+          description: Its files cannot be downloaded, cleaned up or backed up. Add the local-storage instance back to the modules file of every service (acceptsWrites false stops new uploads) and restart; see storage.backend_unconfigured.
+
       - alert: ArkvoryMirrorStale
         # Mirrors and imports (ADR 0058): caught up with the source feed less than an hour ago.
         expr: time() - arkvory_mirror_last_sync_timestamp_seconds > 3600

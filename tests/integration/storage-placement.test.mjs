@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import { access, mkdtemp, readFile, rename, writeFile } from 'node:fs/promises';
+import { access, mkdtemp, readFile, readdir, rename, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { Pool } from 'pg';
@@ -25,6 +25,7 @@ import {
 } from '@proanima/arkvory-infrastructure';
 import { agentConfig, openVault, runAgent } from '../../apps/backup/dist/index.js';
 import { removeTestDirectory } from '../helpers.mjs';
+import { initializeVolume } from '../../apps/deploy/dist/storage-volume.js';
 import { setup, base, descriptor } from './fixture.mjs';
 import {
   capture,
@@ -52,6 +53,8 @@ async function scratch(t, prefix) {
 /** An installation with a second volume `volume-2` (the base implementation of N11). */
 async function twoVolumes(t, volume = {}) {
   const second = await scratch(t, 'arkvory-volume-2-');
+  // Marked on the host first, as `arkvory volume-init` does; no service creates a volume.
+  await initializeVolume({ directory: second, expectMount: false });
   const backend = {
     id: 'volume-2',
     directory: second,
@@ -466,4 +469,44 @@ test('the backup agent, capture and vault init refuse a vault inside a volume, a
   );
   assert.equal(restore.code, 3, restore.stdout);
   assert.equal(record(restore, 'backup.failed').errorCode, 'unsafe_path');
+});
+
+test('a volume is used only after volume-init, and one removed from the configuration is reported', async (t) => {
+  const second = await scratch(t, 'arkvory-volume-raw-');
+  const backend = {
+    id: 'volume-2',
+    directory: second,
+    enabled: true,
+    mode: 'full',
+    acceptsWrites: true,
+    reserveBytes: 0,
+  };
+  const f = await setup(t, { storageBackends: [backend], storageReserveBytes: 0 });
+  const { client, headers } = await manager(f);
+  await client.setStoragePlacement('releases', 0, everything);
+  const metrics = async () =>
+    (await f.app.inject({ url: '/health/metrics', headers: f.headers })).body;
+  // Never initialized implicitly: unavailable, nothing laid out, new uploads go to default.
+  assert.match(await metrics(), /arkvory_storage_backend_up\{backend="volume-2"\} 0/);
+  assert.equal((await publish(f)).storageBackend, 'default');
+  assert.deepEqual(await readdir(second), []);
+  await initializeVolume({ directory: second, expectMount: false });
+  await f.app.close();
+  await f.restart();
+  const placed = await publish(f);
+  assert.equal(placed.storageBackend, 'volume-2');
+  // Removed from the modules file while it holds data: metric, placement answer, 503 reads.
+  await f.app.close();
+  f.config.storageBackends = [];
+  await f.restart();
+  assert.match(await metrics(), /arkvory_storage_backend_unconfigured\{backend="volume-2"\} 1/);
+  const view = await f.app.inject({ url: `${base}/storage/placement`, headers });
+  assert.equal(view.statusCode, 200, view.body);
+  validateResponse('/api/v1/repositories/{repository}/storage/placement', 'get', view);
+  assert.deepEqual(view.json().backends, [
+    { id: 'default', state: 'accepting' },
+    { id: 'volume-2', state: 'not_loaded' },
+  ]);
+  const unreadable = await download(f, placed.id);
+  assert.equal(unreadable.statusCode, 503, unreadable.body);
 });

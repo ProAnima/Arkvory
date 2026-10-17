@@ -125,6 +125,13 @@ export class PostgresStorageIdentities implements StorageIdentityRecords {
     return row?.storage_id ?? null;
   }
 
+  async known(): Promise<readonly string[]> {
+    const rows = await this.pool.query<{ backend_id: string }>(
+      'SELECT backend_id FROM arkvory_storage_backends ORDER BY backend_id LIMIT 64',
+    );
+    return rows.rows.map((row) => row.backend_id);
+  }
+
   async record(backendId: string, storageId: string): Promise<string> {
     // Two writers starting together both insert; the first identity wins and the other sees it.
     await this.pool.query(

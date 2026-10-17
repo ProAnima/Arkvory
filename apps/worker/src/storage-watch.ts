@@ -1,4 +1,8 @@
-import { PostgresStorageIdentities, watchStorageBackends } from '@proanima/arkvory-infrastructure';
+import {
+  PostgresStorageIdentities,
+  storageChangeRecord,
+  watchStorageBackends,
+} from '@proanima/arkvory-infrastructure';
 import type {
   DiagnosticLogger,
   PostgresCatalog,
@@ -17,19 +21,10 @@ export function watchWorkerStorage(
   diagnostics: Pick<DiagnosticLogger, 'write'>,
 ): () => void {
   const changed = (id: string, fault: StorageFault | null) => {
-    diagnostics.write(
-      fault === null
-        ? { level: 'info', component: 'storage', code: 'storage.backend_available', backend: id }
-        : {
-            level: 'warning',
-            component: 'storage',
-            code: 'storage.backend_unavailable',
-            backend: id,
-            reason: fault,
-          },
-    );
+    diagnostics.write(storageChangeRecord(id, fault));
   };
   for (const { id, fault } of blobs.status()) if (fault !== null) changed(id, fault);
+  for (const id of blobs.unconfigured()) changed(id, 'not_configured');
   return watchStorageBackends(blobs, new PostgresStorageIdentities(catalog.pool), {
     create: false,
     changed,
