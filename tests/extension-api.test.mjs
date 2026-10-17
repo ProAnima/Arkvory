@@ -143,6 +143,23 @@ test('a plan refuses unreadable manifests and duplicate ids before any other rul
   ]);
 });
 
+test('a manifest written for another extension API is incompatible, not malformed', () => {
+  // A later contract may add fields and extension points this core cannot read.
+  const later = { ...manifest('next', { extensionApi: '^0.2.0', kind: 'search' }), dataClass: 'x' };
+  assert.deepEqual(problems([candidate('npm'), { ...candidate('next'), manifest: later }]), [
+    ['incompatible_api', 'next', '^0.2.0'],
+  ]);
+  // Without a readable id or range there is nothing to name: the manifest is malformed.
+  const nameless = manifest('Next', { extensionApi: '^0.2.0' });
+  assert.deepEqual(planModules([{ ...candidate('next'), manifest: nameless }], host).problems, [
+    { code: 'invalid_manifest', module: null, subject: '/0/id', reason: 'format' },
+  ]);
+  const compatible = { ...later, extensionApi: `^${EXTENSION_API_VERSION}` };
+  assert.deepEqual(planModules([{ ...candidate('next'), manifest: compatible }], host).problems, [
+    { code: 'invalid_manifest', module: null, subject: '/0/dataClass', reason: 'unknown_field' },
+  ]);
+});
+
 test('core modules are built in and enabled; every module matches the extension API', () => {
   assert.deepEqual(problems([candidate('upack', { core: true }, { enabled: false })]), [
     ['core_disabled', 'upack', null],

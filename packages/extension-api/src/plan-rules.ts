@@ -1,5 +1,10 @@
 import type { ModuleManifest } from './manifest.js';
-import { parseCaretRange, parseSemanticVersion, satisfiesCaret } from './version.js';
+import {
+  parseCaretRange,
+  parseSemanticVersion,
+  satisfiesCaret,
+  type SemanticVersion,
+} from './version.js';
 
 /** A module after its manifest was read; the input of the rules below. */
 export interface ReadModule {
@@ -38,9 +43,7 @@ const EXTERNAL_ROUTES = '/api/ext/';
 const EXTERNAL_NAMES = 'arkvory_x_';
 
 /** Package, core flag and extension API version of each module. */
-export function checkModules(modules: readonly ReadModule[], hostApi: string): RuleProblem[] {
-  const host = parseSemanticVersion(hostApi);
-  if (host === null) throw new TypeError('Invalid host extension API version');
+export function checkModules(modules: readonly ReadModule[], host: SemanticVersion): RuleProblem[] {
   const problems: RuleProblem[] = [];
   for (const m of modules) {
     const id = m.manifest.id;

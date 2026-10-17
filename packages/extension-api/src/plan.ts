@@ -1,5 +1,6 @@
 import { canonicalJson, type ModuleJson } from './json.js';
 import {
+  MODULE_ID_PATTERN,
   MODULE_MANIFEST_FORMAT,
   ModuleManifestError,
   parseModuleManifest,
@@ -14,6 +15,12 @@ import {
   type ReadModule,
   type RuleCode,
 } from './plan-rules.js';
+import {
+  parseCaretRange,
+  parseSemanticVersion,
+  satisfiesCaret,
+  type SemanticVersion,
+} from './version.js';
 
 /** Built into the core release, or installed as a package signed by ProAnimaStudio. */
 export type ModuleSource = 'builtin' | 'signed';
@@ -91,7 +98,32 @@ interface Candidate extends ReadModule {
   readonly config: ModuleJson;
 }
 
-function readCandidates(candidates: readonly ModuleCandidate[]) {
+/**
+ * A manifest this core cannot read. When it still names a valid id and an extension API range
+ * this core does not satisfy, it was written for another version of the contract, whose fields or
+ * extension points this core does not know: the module is incompatible, not malformed, so that an
+ * updater can look for a compatible version (ADR 0078, section 4).
+ */
+function unreadable(
+  input: unknown,
+  index: number,
+  error: ModuleManifestError,
+  hostApi: SemanticVersion,
+): ModulePlanProblem {
+  const field = (key: string): unknown =>
+    typeof input === 'object' && input !== null ? Reflect.get(input, key) : undefined;
+  const id = field('id');
+  const range = field('extensionApi');
+  if (typeof id === 'string' && MODULE_ID_PATTERN.test(id) && typeof range === 'string') {
+    const caret = parseCaretRange(range);
+    if (caret && !satisfiesCaret(caret, hostApi))
+      return { code: 'incompatible_api', module: id, subject: range };
+  }
+  const subject = `/${String(index)}${error.path}`;
+  return { code: 'invalid_manifest', module: null, subject, reason: error.code };
+}
+
+function readCandidates(candidates: readonly ModuleCandidate[], hostApi: SemanticVersion) {
   const problems: ModulePlanProblem[] = [];
   const modules: Candidate[] = [];
   candidates.forEach((candidate, index) => {
@@ -102,8 +134,7 @@ function readCandidates(candidates: readonly ModuleCandidate[]) {
       else modules.push({ ...candidate, manifest });
     } catch (error) {
       if (!(error instanceof ModuleManifestError)) throw error;
-      const subject = `/${String(index)}${error.path}`;
-      problems.push({ code: 'invalid_manifest', module: null, subject, reason: error.code });
+      problems.push(unreadable(candidate.manifest, index, error, hostApi));
     }
   });
   modules.sort((a, b) => (a.manifest.id < b.manifest.id ? -1 : 1));
@@ -138,10 +169,12 @@ export function planModules(
   candidates: readonly ModuleCandidate[],
   host: ModuleHost,
 ): ModulePlanResult {
-  const { modules, problems } = readCandidates(candidates);
+  const hostApi = parseSemanticVersion(host.extensionApi);
+  if (hostApi === null) throw new TypeError('Invalid host extension API version');
+  const { modules, problems } = readCandidates(candidates, hostApi);
   if (problems.length > 0) return { ok: false, problems };
   const found = [
-    ...checkModules(modules, host.extensionApi),
+    ...checkModules(modules, hostApi),
     ...checkOwnership(modules),
     ...checkOverlaps(modules, host.reservedRoutePrefixes),
   ];
