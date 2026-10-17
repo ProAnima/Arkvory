@@ -968,6 +968,14 @@
       "summary": "フリートコンソール用にこのサイトを取得",
       "description": "このインストールをフリートの1サイトとして返します（ADR 0077）：名前、バージョン、スキーマと役割、利用可能か・書き込み可能か、HA のコピーとノード、リースに基づく読み取りゲートウェイ、各ミラーとインポートのフェーズ・最終同期・`lagChanges`（まだ適用されていない元の変更）、更新エージェントの状態とダウンロードキュー。サイトのグローバル管理者かペアリング済みのコントローラーだけが読めます。"
     },
+    "getSystemModules": {
+      "en": {
+        "summary": "List the modules of this installation",
+        "description": "Returns every module this installation plans, in `id` order: `id`, `version`, the extension point (`kind`), `source` (`builtin` for modules of the core), whether it is part of the free core (`core`, never disabled) and whether it is `enabled`, the processes it runs in (`roles`), whether the answering process runs it (`running`) and its `health` there (`ok`, `degraded` or `failed` with a code; null when it does not run there). `fingerprint` is the SHA-256 of the plan and is equal on every process of the installation; `extensionApi` is the version of the module contract of this core. Settings, paths and secrets are never returned. Only the global administrator may read it."
+      },
+      "summary": "このインストールのモジュールを一覧表示",
+      "description": "このインストールが計画しているすべてのモジュールを `id` 順に返します：`id`、`version`、拡張ポイント（`kind`）、`source`（コアのモジュールは `builtin`）、無料コアの一部か（`core`、無効化不可）と有効か（`enabled`）、動作するプロセス（`roles`）、応答したプロセスで動作しているか（`running`）とそこでの状態（`health`：`ok`、`degraded`、またはコード付きの `failed`。そこで動作していなければ null）。`fingerprint` は計画の SHA-256 で、インストールのすべてのプロセスで同じです。`extensionApi` はこのコアのモジュール契約のバージョンです。設定、パス、シークレットは返しません。グローバル管理者だけが読めます。"
+    },
     "createFleetPairing": {
       "en": {
         "summary": "Make a pairing code",

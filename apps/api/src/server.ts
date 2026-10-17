@@ -38,6 +38,7 @@ import { registerFeedback } from './feedback-routes.js';
 import { collectTopology, registerTopologyRoutes, type TopologyParts } from './topology-routes.js';
 import { FleetOverviewSource } from './fleet-overview.js';
 import { registerFleetRoutes } from './fleet-routes.js';
+import { registerModuleRoutes } from './module-routes.js';
 import { RecentLog } from './recent-log.js';
 import { registerOwnershipRecovery } from './ownership-recovery.js';
 import { registerAccessLog } from './access-log.js';
@@ -262,6 +263,7 @@ function registerRoutes(app: FastifyInstance, parts: RouteParts) {
     ...(config.tls ? { certificateFile: config.tls.certificateFile } : {}),
   });
   registerTopologyRoutes(app, context.principal, topologyParts(parts));
+  registerModuleRoutes(app, context.principal, runtime.modules);
   registerFeedback(app, context.principal, {
     hub: config.hub ?? null,
     version: parts.identity.version,

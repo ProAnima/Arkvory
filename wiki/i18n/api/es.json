@@ -968,6 +968,14 @@
       "summary": "Obtener este sitio para la consola de flota",
       "description": "Devuelve esta instalación como un sitio de una flota (ADR 0077): nombre, versión, esquema y rol, si está disponible y admite escrituras, las copias y nodos de HA, las pasarelas de lectura según sus arrendamientos, cada espejo e importación con su fase, última sincronización y `lagChanges` (cambios del origen aún no aplicados), el estado del agente de actualizaciones y la cola de descargas. Solo puede leerlo el administrador global del sitio o un controlador emparejado con él."
     },
+    "getSystemModules": {
+      "en": {
+        "summary": "List the modules of this installation",
+        "description": "Returns every module this installation plans, in `id` order: `id`, `version`, the extension point (`kind`), `source` (`builtin` for modules of the core), whether it is part of the free core (`core`, never disabled) and whether it is `enabled`, the processes it runs in (`roles`), whether the answering process runs it (`running`) and its `health` there (`ok`, `degraded` or `failed` with a code; null when it does not run there). `fingerprint` is the SHA-256 of the plan and is equal on every process of the installation; `extensionApi` is the version of the module contract of this core. Settings, paths and secrets are never returned. Only the global administrator may read it."
+      },
+      "summary": "Listar los módulos de esta instalación",
+      "description": "Devuelve todos los módulos que planifica esta instalación, ordenados por `id`: `id`, `version`, el punto de extensión (`kind`), `source` (`builtin` para los módulos del núcleo), si forma parte del núcleo gratuito (`core`, nunca se desactiva) y si está habilitado (`enabled`), los procesos en los que se ejecuta (`roles`), si el proceso que responde lo ejecuta (`running`) y su estado allí (`health`: `ok`, `degraded` o `failed` con un código; null si no se ejecuta allí). `fingerprint` es el SHA-256 del plan y es igual en todos los procesos de la instalación; `extensionApi` es la versión del contrato de módulos de este núcleo. Nunca se devuelven ajustes, rutas ni secretos. Solo puede leerlo el administrador global."
+    },
     "createFleetPairing": {
       "en": {
         "summary": "Make a pairing code",

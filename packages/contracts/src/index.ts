@@ -60,6 +60,14 @@ export type {
   NativeErrorResponse,
 } from './errors.js';
 export {
+  moduleOperations,
+  readSystemModules,
+  systemModulesSchema,
+  type SystemModule,
+  type SystemModuleHealth,
+  type SystemModules,
+} from './modules-api.js';
+export {
   downloadSettingsOperations,
   readDownloadSettings,
   type DownloadOverrides as DownloadSettingOverrides,
