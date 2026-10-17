@@ -148,6 +148,15 @@ Voir [Miroirs](../operate/mirrors).
 
 Voir [Webhooks](../protocols/webhooks).
 
+## Événements {#events}
+
+| Variable                         | Lue par | Valeur par défaut | Signification                                                                                                                                                             |
+| -------------------------------- | ------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ARKVORY_EVENTS_RETENTION_HOURS` | worker  | 168               | Nombre d’heures pendant lesquelles le flux d’événements conserve un événement, de 1 à 8760. Les événements plus anciens sont supprimés ; un curseur antérieur reçoit 410. |
+| `ARKVORY_EVENTS_MAX_ROWS`        | worker  | 5000000           | Nombre maximal d’événements conservés par le flux, de 1000 à 1000000000. Les plus anciens sont supprimés en premier.                                                      |
+
+Voir [Événements](../protocols/events).
+
 ## Cluster à haute disponibilité {#cluster}
 
 | Variable                 | Lue par | Valeur par défaut | Signification                                                                                                                                                                                         |

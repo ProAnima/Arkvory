@@ -134,6 +134,10 @@
         "title": "Mirrors",
         "intro": "The state of a mirrored repository and the feed a mirror follows."
       },
+      "events": {
+        "title": "Events",
+        "intro": "The installation's event feed after a cursor and the list of event types."
+      },
       "links": {
         "title": "Download links",
         "intro": "Time-limited links that let someone without a key download one artifact."

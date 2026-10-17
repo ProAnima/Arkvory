@@ -1095,6 +1095,22 @@
       },
       "summary": "サイトの概要を読む",
       "description": "管理対象サイトとこのインストールのアラート（重大なものから `critical`、`warning`、`info`）と、それらの間のミラーのリンク。直近のバックグラウンド読み取りから最大 5 秒に 1 回作成されます。どの管理対象サイトもそのアドレスで応答しないソースは `external:<origin>`、このインストールは `self` で、`ARKVORY_SITE_URL` を設定したときだけこのインストールへのリンクが現れます。書き込みプロセスのみが応答します。"
+    },
+    "listEvents": {
+      "en": {
+        "summary": "Read the events of the installation",
+        "description": "Returns, oldest first, up to `limit` events (1–500, default 100) after the cursor `after`, as CloudEvents 1.0: publications, deletions, file revisions, package registrations, annotations, attachments, stages, promotions, image, npm and Git LFS changes of every repository the caller may list (`artifact.list`). Without `after` the feed starts at the oldest kept event. Pass `next` as `after` to continue: it also moves past events the caller may not see, at most 5000 per request. `types` keeps the named types or prefixes such as `artifact.*`, `repository` one repository. A cursor older than `oldest` answers 410 `events_cursor_expired`; a cursor of another `epoch` (the server was restored from a backup) answers 409 `events_epoch_changed`; both carry the current `epoch`, `oldest` and `head` in `events`. Deduplicate by `id`; an event is a hint, read the current state through the ordinary routes."
+      },
+      "summary": "インストールのイベントを読む",
+      "description": "カーソル `after` より後のイベントを、古いものから最大 `limit` 件（1–500、既定は 100）、CloudEvents 1.0 として返します。対象は、呼び出し元が一覧できる（`artifact.list`）すべてのリポジトリの公開、削除、ファイルのリビジョン、パッケージの登録、アノテーション、添付ファイル、ステージ、プロモーション、イメージ・npm・Git LFS の変更です。`after` がなければ、保持されている最も古いイベントから始まります。続けるには `next` を `after` として渡します。呼び出し元に見えないイベントも越えて進みます（1 リクエストあたり最大 5000 件）。`types` は指定したタイプまたは `artifact.*` のようなプレフィックスに、`repository` は 1 つのリポジトリに絞ります。`oldest` より古いカーソルには 410 `events_cursor_expired`、別の `epoch`（サーバーがバックアップから復元された）のカーソルには 409 `events_epoch_changed` が返り、どちらも `events` に現在の `epoch`、`oldest`、`head` を含みます。`id` で重複を除いてください。イベントはヒントであり、現在の状態は通常のルートで読み込みます。"
+    },
+    "listEventTypes": {
+      "en": {
+        "summary": "List the event types",
+        "description": "Returns every event type this server writes: name, `schemaVersion`, scope, the permission a reader needs, the partition that keeps its order and the JSON Schema of `data`. The CloudEvents `type` is `arkvory.<name>.v<schemaVersion>`."
+      },
+      "summary": "イベントタイプを一覧する",
+      "description": "このサーバーが書き込むすべてのイベントタイプを返します。名前、`schemaVersion`、スコープ、読み手に必要な権限、順序を保つパーティション、`data` の JSON Schema です。CloudEvents の `type` は `arkvory.<name>.v<schemaVersion>` です。"
     }
   },
   "errors": {
@@ -1110,7 +1126,8 @@
       "unavailable": "依存先が現在利用できません。Retry-Afterで示される時間の経過後に再試行してください。",
       "rate_limited": "試行回数が多すぎます。Retry-Afterで示される時間まで待ってください。",
       "read_only": "このサーバーまたはゲートウェイは変更を受け付けません（読み取りゲートウェイまたはミラー）。",
-      "internal": "サーバーで予期しない不具合が発生しました。リクエストIDがあると、サポートが原因を特定しやすくなります。やみくもに再試行しないでください。"
+      "internal": "サーバーで予期しない不具合が発生しました。リクエストIDがあると、サポートが原因を特定しやすくなります。やみくもに再試行しないでください。",
+      "gone": "リクエストが指すものはもう保持されていません。現在の状態を読み直してください。"
     },
     "reasons": {
       "validation": "フィールドが欠けているか、規則に反する値が指定されています。detailsにフィールド名が示されます。",
@@ -1164,7 +1181,9 @@
       "registration_attempts": "登録の試行が多すぎます。しばらく待ってください。",
       "password_attempts": "パスワードの試行が多すぎます。しばらく待ってください。",
       "feedback_attempts": "フィードバックのレポートが多すぎます。しばらく待ってください。",
-      "replication_degraded": "HA クラスターの完全なコピーが書き込みに必要な数より少ないため、変更は確認されていません。Retry-After の後に再試行してください。ダウンロードは引き続き使用できます。"
+      "replication_degraded": "HA クラスターの完全なコピーが書き込みに必要な数より少ないため、変更は確認されていません。Retry-After の後に再試行してください。ダウンロードは引き続き使用できます。",
+      "events_cursor_expired": "イベントカーソルが、サーバーが保持する最も古いイベントより古くなっています。現在の状態を読み込み、`oldest` から続けてください。",
+      "events_epoch_changed": "サーバーがバックアップから復元され、イベントが新しいエポックで始まりました。現在の状態を読み込み、新しいエポックで続けてください。"
     }
   },
   "fields": {
@@ -1186,6 +1205,10 @@
     "Snapshot time T; the age of a point counts from T.": "スナップショット時刻T。ポイントの経過期間はTから数えます。",
     "Start of execution, or the request time while queued.": "実行の開始時刻。キューで待機している間はリクエスト時刻。",
     "Upload reservation time": "アップロードの予約時刻",
-    "Vault is encrypted; null when unknown or not connected.": "ボールトが暗号化されているか。不明または未接続の場合は null。"
+    "Vault is encrypted; null when unknown or not connected.": "ボールトが暗号化されているか。不明または未接続の場合は null。",
+    "Event id, <epoch>:<position>; deduplicate by it": "イベント ID、<epoch>:<position>。これで重複を除きます",
+    "Artifact id, or the path of a file event": "アーティファクト ID、ファイルのイベントではパス",
+    "repository:<repository>; events of one partition keep their commit order": "repository:<repository>。同じパーティションのイベントはコミット順を保ちます",
+    "Data of the type; its JSON Schema is in the type list": "タイプのデータ。その JSON Schema はタイプ一覧にあります"
   }
 }

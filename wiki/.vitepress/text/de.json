@@ -134,6 +134,10 @@
         "title": "Spiegel",
         "intro": "Der Zustand eines gespiegelten Repositorys und der Feed, dem ein Spiegel folgt."
       },
+      "events": {
+        "title": "Ereignisse",
+        "intro": "Der Ereignis-Feed der Installation nach einem Cursor und die Liste der Ereignistypen."
+      },
       "links": {
         "title": "Download-Links",
         "intro": "Zeitlich begrenzte Links, mit denen jemand ohne Schlüssel ein Artefakt herunterladen kann."

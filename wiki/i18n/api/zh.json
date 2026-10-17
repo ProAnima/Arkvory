@@ -1095,6 +1095,22 @@
       },
       "summary": "读取站点概览",
       "description": "受管站点和本安装的告警，最严重的在前（`critical`、`warning`、`info`），以及它们之间的镜像关联。根据最近的后台读取构建，最多每 5 秒一次。没有受管站点在其地址上应答的源记为 `external:<origin>`；本安装为 `self`，只有设置了 `ARKVORY_SITE_URL` 时才会出现指向它的关联。仅由写入进程应答。"
+    },
+    "listEvents": {
+      "en": {
+        "summary": "Read the events of the installation",
+        "description": "Returns, oldest first, up to `limit` events (1–500, default 100) after the cursor `after`, as CloudEvents 1.0: publications, deletions, file revisions, package registrations, annotations, attachments, stages, promotions, image, npm and Git LFS changes of every repository the caller may list (`artifact.list`). Without `after` the feed starts at the oldest kept event. Pass `next` as `after` to continue: it also moves past events the caller may not see, at most 5000 per request. `types` keeps the named types or prefixes such as `artifact.*`, `repository` one repository. A cursor older than `oldest` answers 410 `events_cursor_expired`; a cursor of another `epoch` (the server was restored from a backup) answers 409 `events_epoch_changed`; both carry the current `epoch`, `oldest` and `head` in `events`. Deduplicate by `id`; an event is a hint, read the current state through the ordinary routes."
+      },
+      "summary": "读取安装的事件",
+      "description": "按从旧到新的顺序，以 CloudEvents 1.0 格式返回游标 `after` 之后的最多 `limit` 个事件（1–500，默认 100）：调用方可列出（`artifact.list`）的每个仓库中的发布、删除、文件修订、包注册、注解、附件、阶段、晋级，以及镜像、npm 和 Git LFS 的变更。不传 `after` 时，从保留的最早事件开始。要继续读取，请将 `next` 作为 `after` 传入：它也会越过调用方无权看到的事件，每个请求最多 5000 个。`types` 保留指定的类型或 `artifact.*` 这样的前缀，`repository` 只保留一个仓库。早于 `oldest` 的游标返回 410 `events_cursor_expired`；属于另一个 `epoch` 的游标（服务器已从备份恢复）返回 409 `events_epoch_changed`；两者都在 `events` 中带有当前的 `epoch`、`oldest` 和 `head`。请按 `id` 去重；事件只是提示，当前状态请通过常规路由读取。"
+    },
+    "listEventTypes": {
+      "en": {
+        "summary": "List the event types",
+        "description": "Returns every event type this server writes: name, `schemaVersion`, scope, the permission a reader needs, the partition that keeps its order and the JSON Schema of `data`. The CloudEvents `type` is `arkvory.<name>.v<schemaVersion>`."
+      },
+      "summary": "列出事件类型",
+      "description": "返回此服务器写入的每种事件类型：名称、`schemaVersion`、范围、读取者所需的权限、保持其顺序的分区，以及 `data` 的 JSON Schema。CloudEvents 的 `type` 为 `arkvory.<name>.v<schemaVersion>`。"
     }
   },
   "errors": {
@@ -1110,7 +1126,8 @@
       "unavailable": "某个依赖项当前不可用；请在 Retry-After 之后重试。",
       "rate_limited": "尝试次数过多；请等待 Retry-After。",
       "read_only": "此服务器或网关不接受变更（读取网关或镜像）。",
-      "internal": "服务器发生意外缺陷；请求 ID 有助于支持人员找到它。请勿盲目重试。"
+      "internal": "服务器发生意外缺陷；请求 ID 有助于支持人员找到它。请勿盲目重试。",
+      "gone": "请求所指的内容已不再保留；请重新读取当前状态。"
     },
     "reasons": {
       "validation": "某个字段缺失，或其值超出规则；details 会指明该字段。",
@@ -1164,7 +1181,9 @@
       "registration_attempts": "注册尝试次数过多；请等待。",
       "password_attempts": "密码尝试次数过多；请等待。",
       "feedback_attempts": "反馈报告过多；请等待。",
-      "replication_degraded": "HA 集群中完整副本的数量少于写入所需，因此更改未被确认；请在 Retry-After 之后重试。下载仍可正常进行。"
+      "replication_degraded": "HA 集群中完整副本的数量少于写入所需，因此更改未被确认；请在 Retry-After 之后重试。下载仍可正常进行。",
+      "events_cursor_expired": "事件游标早于服务器保留的最早事件；请读取当前状态，然后从 `oldest` 继续。",
+      "events_epoch_changed": "服务器已从备份恢复，其事件开始了新的纪元；请读取当前状态，然后在新纪元中继续。"
     }
   },
   "fields": {
@@ -1186,6 +1205,10 @@
     "Snapshot time T; the age of a point counts from T.": "快照时间 T；恢复点的存续时间从 T 起算。",
     "Start of execution, or the request time while queued.": "开始执行的时间，排队期间则为请求时间。",
     "Upload reservation time": "上传预留时间",
-    "Vault is encrypted; null when unknown or not connected.": "保管库是否已加密；未知或未连接时为 null。"
+    "Vault is encrypted; null when unknown or not connected.": "保管库是否已加密；未知或未连接时为 null。",
+    "Event id, <epoch>:<position>; deduplicate by it": "事件 ID，<epoch>:<position>；按它去重",
+    "Artifact id, or the path of a file event": "制品 ID，文件事件则为路径",
+    "repository:<repository>; events of one partition keep their commit order": "repository:<repository>；同一分区的事件保持提交顺序",
+    "Data of the type; its JSON Schema is in the type list": "该类型的数据；其 JSON Schema 见类型列表"
   }
 }

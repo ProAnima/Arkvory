@@ -148,6 +148,15 @@ See [Mirrors](../operate/mirrors).
 
 See [Webhooks](../protocols/webhooks).
 
+## Events {#events}
+
+| Variable                         | Read by | Default | Meaning                                                                                                              |
+| -------------------------------- | ------- | ------- | -------------------------------------------------------------------------------------------------------------------- |
+| `ARKVORY_EVENTS_RETENTION_HOURS` | worker  | 168     | How many hours the event feed keeps an event, 1 to 8760. Older events are removed; a cursor before them answers 410. |
+| `ARKVORY_EVENTS_MAX_ROWS`        | worker  | 5000000 | Most events the feed keeps, 1000 to 1000000000. The oldest are removed first.                                        |
+
+See [Events](../protocols/events).
+
 ## HA cluster {#cluster}
 
 | Variable                 | Read by | Default | Meaning                                                                                                                                                                             |

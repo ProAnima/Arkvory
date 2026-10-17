@@ -148,6 +148,15 @@ Restart-Service Arkvoryapi, Arkvoryworker, Arkvorybackup
 
 参见 [Webhook](../protocols/webhooks)。
 
+## 事件 {#events}
+
+| 变量                             | 读取方 | 默认值  | 含义                                                                                |
+| -------------------------------- | ------ | ------- | ----------------------------------------------------------------------------------- |
+| `ARKVORY_EVENTS_RETENTION_HOURS` | worker | 168     | 事件流保留每个事件的小时数，1 到 8760。更早的事件会被删除；早于它们的游标返回 410。 |
+| `ARKVORY_EVENTS_MAX_ROWS`        | worker | 5000000 | 事件流最多保留的事件数，1000 到 1000000000。最早的事件先被删除。                    |
+
+参见 [事件](../protocols/events)。
+
 ## 高可用集群 {#cluster}
 
 | 变量                     | 读取方 | 默认值 | 含义                                                                                                                                         |

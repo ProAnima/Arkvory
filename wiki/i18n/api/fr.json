@@ -1095,6 +1095,22 @@
       },
       "summary": "Lire la vue d’ensemble des sites",
       "description": "Les alertes des sites gérés et de cette installation, les plus graves d’abord (`critical`, `warning`, `info`), et les liens de miroir entre eux. Construite à partir des dernières lectures en arrière-plan, au plus une fois toutes les 5 secondes. Une source à l’adresse de laquelle aucun site géré ne répond est `external:<origin>` ; cette installation est `self` et ne reçoit les liens vers elle que si `ARKVORY_SITE_URL` est défini. Seul le processus d’écriture répond."
+    },
+    "listEvents": {
+      "en": {
+        "summary": "Read the events of the installation",
+        "description": "Returns, oldest first, up to `limit` events (1–500, default 100) after the cursor `after`, as CloudEvents 1.0: publications, deletions, file revisions, package registrations, annotations, attachments, stages, promotions, image, npm and Git LFS changes of every repository the caller may list (`artifact.list`). Without `after` the feed starts at the oldest kept event. Pass `next` as `after` to continue: it also moves past events the caller may not see, at most 5000 per request. `types` keeps the named types or prefixes such as `artifact.*`, `repository` one repository. A cursor older than `oldest` answers 410 `events_cursor_expired`; a cursor of another `epoch` (the server was restored from a backup) answers 409 `events_epoch_changed`; both carry the current `epoch`, `oldest` and `head` in `events`. Deduplicate by `id`; an event is a hint, read the current state through the ordinary routes."
+      },
+      "summary": "Lire les événements de l’installation",
+      "description": "Renvoie, du plus ancien au plus récent, jusqu’à `limit` événements (1–500, 100 par défaut) après le curseur `after`, au format CloudEvents 1.0 : publications, suppressions, révisions de fichiers, enregistrements de paquets, annotations, pièces jointes, étapes, promotions et modifications d’images, npm et Git LFS de chaque dépôt que l’appelant peut lister (`artifact.list`). Sans `after`, le flux commence au plus ancien événement conservé. Pour continuer, passez `next` comme `after` : il avance aussi au-delà des événements que l’appelant ne peut pas voir, au plus 5000 par requête. `types` garde les types nommés ou des préfixes comme `artifact.*`, `repository` un seul dépôt. Un curseur plus ancien que `oldest` reçoit 410 `events_cursor_expired` ; un curseur d’une autre `epoch` (le serveur a été restauré depuis une sauvegarde) reçoit 409 `events_epoch_changed` ; les deux portent les `epoch`, `oldest` et `head` actuels dans `events`. Dédupliquez par `id` ; un événement est une indication : lisez l’état actuel par les routes habituelles."
+    },
+    "listEventTypes": {
+      "en": {
+        "summary": "List the event types",
+        "description": "Returns every event type this server writes: name, `schemaVersion`, scope, the permission a reader needs, the partition that keeps its order and the JSON Schema of `data`. The CloudEvents `type` is `arkvory.<name>.v<schemaVersion>`."
+      },
+      "summary": "Lister les types d’événements",
+      "description": "Renvoie chaque type d’événement que ce serveur écrit : nom, `schemaVersion`, portée, la permission dont un lecteur a besoin, la partition qui garde son ordre et le JSON Schema de `data`. Le `type` CloudEvents est `arkvory.<name>.v<schemaVersion>`."
     }
   },
   "errors": {
@@ -1110,7 +1126,8 @@
       "unavailable": "Une dépendance n’est pas disponible pour le moment ; réessayez après le délai indiqué par Retry-After.",
       "rate_limited": "Trop de tentatives ; attendez le délai indiqué par Retry-After.",
       "read_only": "Ce serveur ou cette passerelle n’accepte pas de modifications (passerelle de lecture ou miroir).",
-      "internal": "Défaut inattendu du serveur ; l’ID de requête aide le support à le retrouver. Ne répétez pas la requête à l’aveugle."
+      "internal": "Défaut inattendu du serveur ; l’ID de requête aide le support à le retrouver. Ne répétez pas la requête à l’aveugle.",
+      "gone": "Ce que nomme la requête n’est plus conservé ; relisez l’état actuel."
     },
     "reasons": {
       "validation": "Un champ est absent ou sa valeur sort de ses règles ; `details` nomme le champ.",
@@ -1164,7 +1181,9 @@
       "registration_attempts": "Trop de tentatives d’inscription ; attendez.",
       "password_attempts": "Trop de tentatives de mot de passe ; attendez.",
       "feedback_attempts": "Trop d’envois de commentaires ; attendez.",
-      "replication_degraded": "Un cluster HA a moins de copies complètes qu'il n'en faut pour une écriture : la modification n'a pas été confirmée ; réessayez après Retry-After. Les téléchargements fonctionnent toujours."
+      "replication_degraded": "Un cluster HA a moins de copies complètes qu'il n'en faut pour une écriture : la modification n'a pas été confirmée ; réessayez après Retry-After. Les téléchargements fonctionnent toujours.",
+      "events_cursor_expired": "Le curseur d’événements est plus ancien que le plus ancien événement conservé par le serveur ; lisez l’état actuel, puis continuez depuis `oldest`.",
+      "events_epoch_changed": "Le serveur a été restauré depuis une sauvegarde et ses événements ont commencé une nouvelle époque ; lisez l’état actuel, puis continuez dans la nouvelle époque."
     }
   },
   "fields": {
@@ -1186,6 +1205,10 @@
     "Start of execution, or the request time while queued.": "Début de l’exécution, ou heure de la demande tant qu’elle est en file.",
     "Upload reservation time": "Heure de réservation du téléversement",
     "Explicit IANA time zone, e.g. Europe/Moscow; validated by the server.": "Fuseau horaire IANA explicite, par exemple Europe/Moscow ; validé par le serveur.",
-    "Vault is encrypted; null when unknown or not connected.": "Le coffre est chiffré ; null si inconnu ou non connecté."
+    "Vault is encrypted; null when unknown or not connected.": "Le coffre est chiffré ; null si inconnu ou non connecté.",
+    "Event id, <epoch>:<position>; deduplicate by it": "Id de l’événement, <epoch>:<position> ; dédupliquez par lui",
+    "Artifact id, or the path of a file event": "Id de l’artefact, ou le chemin pour un événement de fichier",
+    "repository:<repository>; events of one partition keep their commit order": "repository:<repository> ; les événements d’une partition gardent leur ordre de validation",
+    "Data of the type; its JSON Schema is in the type list": "Données du type ; leur JSON Schema est dans la liste des types"
   }
 }
