@@ -25,6 +25,7 @@ import {
   readNativeError,
 } from '@proanima/arkvory-contracts';
 import { ArkvoryClient, ArkvoryHttpError } from '@proanima/arkvory-sdk';
+import { validateJson } from './api-schema.mjs';
 import {
   eventRetryPauseMs,
   readEventRetention,
@@ -476,4 +477,29 @@ test('a failing sequencer step backs off up to 30 s instead of a warning every t
     records.map((record) => record.attempts),
     records.map((_, index) => index + 1),
   );
+});
+
+test('the data of every event type satisfies the JSON Schema the type list publishes', () => {
+  const digest = `sha256:${'b'.repeat(64)}`;
+  // The journal detail each writer stores for its action (oci-index, npm-store, lfs-store...).
+  const details = {
+    'asset.replace': 'bin/game.exe',
+    'asset.restore': 'bin/game.exe',
+    'stage.add': 'release',
+    'stage.remove': 'release',
+    'oci.manifest': `app@${digest}`,
+    'oci.manifest.delete': `app@${digest}`,
+    'oci.tag': 'app:latest',
+    'oci.tag.delete': 'app:latest',
+    'npm.version': '{"name":"@s/p","version":"2.0.0"}',
+    'npm.tag': '{"name":"@s/p","tag":"next","version":"2.0.0"}',
+    'npm.tag.delete': '{"name":"@s/p","tag":"next"}',
+    'lfs.object': 'c'.repeat(64),
+  };
+  const schemas = new Map(eventCatalog.map((type) => [type.name, type.dataSchema]));
+  for (const action of Object.keys(catalogEventActions))
+    for (const known of [facts, null]) {
+      const draft = catalogEventDraft(row(action, details[action] ?? null), known);
+      validateJson(schemas.get(draft.type), draft.data);
+    }
 });
