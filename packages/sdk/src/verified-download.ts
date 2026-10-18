@@ -79,7 +79,9 @@ async function extensionStep(
       // and what it already gave cannot be taken back.
       if (!(value instanceof Uint8Array) || offset + value.length > size)
         throw new ArkvoryIntegrityError();
-      return value;
+      // A copy: the extension keeps its own reference and could change the bytes after they
+      // were hashed, while the consumer still holds them.
+      return new Uint8Array(value);
     }
     if (offset === size) return 'end';
     reason = 'incomplete';

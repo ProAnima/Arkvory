@@ -307,6 +307,26 @@ test('a substituted byte is checksum_mismatch through the extension and the core
   );
 });
 
+test('bytes an extension changes after yielding them never reach the consumer', async (t) => {
+  const bytes = Buffer.from('verified bytes the consumer must receive, not later edits');
+  const extension = testExtension({
+    async download() {
+      return (async function* () {
+        const reused = Buffer.from(bytes.subarray(0, 20));
+        yield reused;
+        // The SDK hashed this chunk already; editing it now must not change what was passed on.
+        reused.fill(0x58);
+        yield Buffer.from(bytes.subarray(20));
+      })();
+    },
+  });
+  const { client } = await server(t, bytes, { offers: offer(), extensions: [extension] });
+  const stream = await client.downloadVerified('releases', 'a1');
+  const chunks = [];
+  for await (const chunk of stream) chunks.push(chunk);
+  assert.deepEqual(Buffer.concat(chunks), bytes);
+});
+
 test('a resumed download asks the extension only for the bytes after the saved prefix', async (t) => {
   const bytes = Buffer.from('prefix-and-the-rest-of-the-content');
   const extension = testExtension();
