@@ -68,7 +68,7 @@ Le programme d’installation supprime le fichier du propriétaire après avoir 
 
 Les services s’exécutent sans utilisateur connecté. L’API, le processus de traitement et l’agent de sauvegarde partagent le compte LocalService. La base de données s’exécute sous NetworkService : le compte de l’API ne peut donc pas lire les fichiers de la base.
 
-La racine accorde le contrôle total à SYSTEM et aux administrateurs uniquement. LocalService peut lire la racine et ne peut modifier que `data\`, `logs\` et la boîte de réception des mises à jour. La clé de récupération et les autres fichiers d’identifiants du programme d’installation ne sont lisibles que par SYSTEM et les administrateurs.
+La racine accorde le contrôle total à SYSTEM et aux administrateurs uniquement. LocalService peut lire la racine et ne peut modifier que `data\`, `logs\` et la boîte de réception des mises à jour. La clé de récupération et les autres fichiers d’identifiants du programme d’installation ne sont lisibles que par SYSTEM et les administrateurs. Les dossiers du programme `runtime\`, `releases\`, `config\` et `modules\` appartiennent aux administrateurs, et seuls SYSTEM et les administrateurs peuvent les modifier. Si l’un de ces dossiers, ou un dossier qu’ils contiennent, est une jonction ou un lien symbolique, le programme d’installation et `install.ps1` s’arrêtent avec une erreur. Remplacez-le par un dossier ordinaire et relancez l’installation.
 
 ## Installer avec PowerShell et un PostgreSQL existant {#install-with-powershell-and-an-existing-postgresql}
 
@@ -82,7 +82,7 @@ Utilisez cette méthode si votre organisation exploite déjà PostgreSQL. Elle n
 .\install.ps1 -AutomaticUpdates
 ```
 
-Le script demande l’URL de connexion PostgreSQL. La saisie est masquée. Il télécharge ensuite Node.js 24.21.0 depuis `nodejs.org`, vérifie son SHA-256 et installe la dernière version stable.
+Le script demande l’URL de connexion PostgreSQL. La saisie est masquée. Il télécharge ensuite Node.js 24.21.0 depuis `nodejs.org`, vérifie son SHA-256 et installe la dernière version stable. Si la racine contient déjà Node.js, le script ne l’utilise que si `node.exe` a le SHA-256 attendu et que le dossier ne contient rien d’autre. Sinon, il télécharge de nouveau Node.js et déplace l’ancien dossier vers `runtime\unverified-…`.
 
 Au lieu de l’invite, vous pouvez transmettre un fichier JSON protégé :
 

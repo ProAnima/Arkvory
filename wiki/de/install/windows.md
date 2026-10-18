@@ -68,7 +68,7 @@ Der Installer löscht die Besitzerdatei, nachdem er das Konto erstellt hat. Übe
 
 Die Dienste laufen ohne angemeldeten Benutzer. API, Worker und Backup-Agent teilen sich das Konto LocalService. Die Datenbank läuft unter NetworkService, sodass das Konto der API die Datenbankdateien nicht lesen kann.
 
-Das Installationsverzeichnis gewährt nur SYSTEM und Administratoren Vollzugriff. LocalService kann das Verzeichnis lesen und nur `data\`, `logs\` und den Update-Eingang ändern. Der Wiederherstellungsschlüssel und die anderen Dateien des Installers mit Anmeldedaten können nur SYSTEM und Administratoren lesen.
+Das Installationsverzeichnis gewährt nur SYSTEM und Administratoren Vollzugriff. LocalService kann das Verzeichnis lesen und nur `data\`, `logs\` und den Update-Eingang ändern. Der Wiederherstellungsschlüssel und die anderen Dateien des Installers mit Anmeldedaten können nur SYSTEM und Administratoren lesen. Die Programmordner `runtime\`, `releases\`, `config\` und `modules\` gehören den Administratoren; nur SYSTEM und Administratoren können sie ändern. Ist einer dieser Ordner oder ein Ordner darin eine Verzeichnisverbindung (Junction) oder ein symbolischer Link, brechen Setup und `install.ps1` mit einem Fehler ab. Ersetzen Sie ihn durch einen normalen Ordner und führen Sie Setup erneut aus.
 
 ## Mit PowerShell und vorhandener PostgreSQL installieren {#install-with-powershell-and-an-existing-postgresql}
 
@@ -82,7 +82,7 @@ Verwenden Sie diese Methode, wenn Ihre Organisation bereits PostgreSQL betreibt.
 .\install.ps1 -AutomaticUpdates
 ```
 
-Das Skript fragt nach der PostgreSQL-Verbindungs-URL. Die Eingabe wird nicht angezeigt. Anschließend lädt es Node.js 24.21.0 von `nodejs.org` herunter, prüft dessen SHA-256-Wert und installiert das neueste stabile Release.
+Das Skript fragt nach der PostgreSQL-Verbindungs-URL. Die Eingabe wird nicht angezeigt. Anschließend lädt es Node.js 24.21.0 von `nodejs.org` herunter, prüft dessen SHA-256-Wert und installiert das neueste stabile Release. Liegt Node.js bereits im Installationsverzeichnis, verwendet das Skript es nur, wenn `node.exe` den erwarteten SHA-256-Wert hat und der Ordner nichts anderes enthält. Andernfalls lädt es Node.js erneut herunter und verschiebt den alten Ordner nach `runtime\unverified-…`.
 
 Statt der Abfrage können Sie eine geschützte JSON-Datei übergeben:
 
