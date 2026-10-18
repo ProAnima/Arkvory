@@ -147,7 +147,7 @@ export class StorageService {
         const parts = await this.catalog.parts(id);
         // An attempt that wrote the whole object and stopped before publication: the storage
         // keeps it, even one that takes no new data now, and it is only verified again.
-        const held =
+        let held =
           parts.length > 0 && this.refuses(upload.storageBackend) && (await this.holds(upload));
         if (parts.length > 0 && !held) {
           checkParts(upload.descriptor.size, parts, upload.partBytes ?? PART_BYTES);
@@ -157,10 +157,16 @@ export class StorageService {
           if (this.refuses(upload.storageBackend))
             upload = await mutation.relocate(DEFAULT_STORAGE_BACKEND, partsBackendOf(upload));
           const check = guarded(cancellation, mutation);
-          const composed = await completeFromParts(this.staged, upload, parts, check);
+          let composed = await completeFromParts(this.staged, upload, parts, check);
+          // A storage that turned read-only after committing the object keeps it: verified
+          // below and published there, never written again elsewhere and left without owner.
+          if (composed === 'refused' && (await this.holds(upload))) {
+            held = true;
+            composed = 'committed';
+          }
           if (composed === 'refused')
             upload = await mutation.relocate(DEFAULT_STORAGE_BACKEND, partsBackendOf(upload));
-          if (composed !== 'committed')
+          if (composed === 'skipped' || composed === 'refused')
             await this.blobs.put(
               id,
               upload.descriptor,

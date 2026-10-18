@@ -200,3 +200,35 @@ test('a storage that refuses composing read-only gets the object written to the 
   assert.equal(done.partsBackend, 'volume-2');
   assert.deepEqual(await gather(blobs.read(id, bytes.length, undefined, 'default')), bytes);
 });
+
+test('a storage that refuses composing after a commit keeps the object it committed', async (t) => {
+  const f = await setup(t);
+  let phase = 'crash';
+  const { blobs, writes } = await storages(t, (store) => ({
+    async compose(id, parts, signal) {
+      if (phase === 'read-only') throw new ModuleServiceError('read_only');
+      const object = await store.staged().compose(id, parts, signal);
+      return {
+        ...object,
+        size: object.size,
+        read: (range) => object.read(range),
+        async commit(expected, commitSignal) {
+          await object.commit(expected, commitSignal);
+          throw new Error('process stopped after the commit');
+        },
+      };
+    },
+  }));
+  const service = serviceOf(f.catalog, blobs);
+  const { id, bytes } = await uploaded(service, blobs);
+  await assert.rejects(service.complete(principal, 'releases', id, cancellation));
+  // The storage turned read-only before the retry: its committed object is verified and
+  // published where it is, never written again to the core and left without an owner.
+  phase = 'read-only';
+  const done = await service.complete(principal, 'releases', id, cancellation);
+  assert.equal(done.status, 'available');
+  assert.equal(done.storageBackend, 'volume-2');
+  assert.equal(writes(), 0);
+  await assert.rejects(blobs.exists(id, bytes.length, 'default'), { code: 'unavailable' });
+  assert.deepEqual(await gather(blobs.read(id, bytes.length, undefined, 'volume-2')), bytes);
+});

@@ -1079,7 +1079,10 @@ export interface StagedObject {
   read(range?: ByteRange): AsyncIterable<Uint8Array>;
   /**
    * Makes the object published and durable: it is immutable afterwards and survives the failures
-   * the storage declares. Repeating it after success succeeds.
+   * the storage declares. Repeating it after success succeeds. It publishes exactly the bytes
+   * `read` gave the core, which checked them: the core cannot read them a second time, so a
+   * storage whose accepted parts can still change after `compose` holds them fixed until the
+   * commit (by content address, version or snapshot) or refuses it with `integrity_mismatch`.
    */
   commit(expected: BlobDescriptor, signal: ModuleSignal): Promise<void>;
   /**
