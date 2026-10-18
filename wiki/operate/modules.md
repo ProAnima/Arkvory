@@ -55,7 +55,7 @@ An installed module stays disabled until you enable it. The services load module
 2. Restart the services, as in [Apply a change](../install/configuration#apply-change).
 3. Check the module as a global administrator: `GET /api/v1/system/modules` lists it with `running: true` and `health.status` `ok` on the API and on each read gateway.
 
-The API and the read gateways run modules. The worker checks the same modules and runs none of them. This release refuses modules that run in the worker or the backup agent (`role_unsupported`) and modules that declare their own routes (`routes_unsupported`). Docker Compose installations do not load modules yet.
+The API and the read gateways run modules. The worker checks the same modules and runs none of them. This release refuses modules that run in the worker or the backup agent (`role_unsupported`) and modules that declare route prefixes without serving routes through Arkvory (`routes_unsupported`). Docker Compose installations do not load modules yet.
 
 Before a service imports any code of a module, it checks the package again:
 
@@ -74,6 +74,37 @@ A module that fails a check is not loaded; the other modules and Arkvory go on. 
 A module that failed takes Arkvory out of readiness (`/health/ready` answers 503 with `module_failed`) only when another enabled module needs it. A module that stores the bytes of published files (data `layout`) never does: Arkvory keeps serving its data and writes new uploads to its own storage instead of the module's. The log records `module.refused` and `module.failed` with the code in `errorCode`.
 
 Install the package again to repair a changed or missing package. Every service of the installation must see the same modules, enabled or not: a read gateway or worker with other modules is not ready (`module_plan_mismatch`). Install the same packages on the host of each read gateway.
+
+## Routes of modules {#routes}
+
+A module may add HTTP routes under its own prefix `/api/ext/<id>/v<major>/`, for example `/api/ext/sample/v1/`. Arkvory checks every request before any code of the module runs:
+
+| Check        | As for `/api/v1`                                                                                                                                                    |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Credential   | The same keys, sessions and tokens; a route is open to every signed-in caller or only to the global administrator                                                   |
+| Permission   | The permission the route names on the repository in its path, such as `content.read` or `upload.create`: a service key needs it, an account its read or write grant |
+| Request body | The size limit of the route, the upload limits, deadlines and bandwidth of the server                                                                               |
+| Files        | Sent by Arkvory itself: ETag, Range, `If-Range`, 304, the download queue and the download bandwidth                                                                 |
+
+Errors have the error format of the API. A module never sees the credential or other headers. A read gateway serves the reading routes of a module and answers `read_only` to the others.
+
+Each module describes its routes in an OpenAPI document, and Arkvory compares both when the module starts. A module whose routes break the rules does not start and serves nothing; Arkvory goes on. `GET /api/v1/system/modules` shows it with `running: false` and `health.status` `failed`:
+
+| Code                     | Meaning                                                                                                             |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------- |
+| `routes_invalid`         | A route breaks the rules, for example a path outside the module's prefix or a change open to every signed-in caller |
+| `openapi_invalid`        | The OpenAPI document is missing or invalid                                                                          |
+| `openapi_route_mismatch` | A route has no operation in the document, or an operation has no route                                              |
+| `transfer_invalid`       | The module offers a transfer protocol it may not offer                                                              |
+
+The documents of the routes:
+
+| Address                                                                                     | Who may read it          | Content                                                                              |
+| ------------------------------------------------------------------------------------------- | ------------------------ | ------------------------------------------------------------------------------------ |
+| `GET /api/ext/openapi.json`                                                                 | Every signed-in caller   | The routes of all modules this service runs, with the operations the caller may call |
+| [`GET /api/v1/system/modules/{id}/openapi`](../api/reference/system#getSystemModuleOpenApi) | The global administrator | The routes of one module                                                             |
+
+`/api/v1/openapi.json` never lists module routes. A module of the kind `transfer` may offer another way to transfer files: `GET /api/v1/capabilities` lists it in `transfer`. A client uses it only with a matching extension; otherwise it transfers files as usual.
 
 ## Update, pin and downgrade {#versions}
 

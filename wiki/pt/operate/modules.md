@@ -55,7 +55,7 @@ Um módulo instalado fica desativado até você ativá-lo. Os serviços carregam
 2. Reinicie os serviços, como em [Aplicar uma alteração](../install/configuration#apply-change).
 3. Verifique o módulo como administrador global: `GET /api/v1/system/modules` o mostra com `running: true` e `health.status` `ok` na API e em cada gateway de leitura.
 
-A API e os gateways de leitura executam os módulos. O worker verifica os mesmos módulos e não executa nenhum. Esta versão recusa módulos que rodam no worker ou no agente de backup (`role_unsupported`) e módulos que declaram rotas próprias (`routes_unsupported`). Instalações com Docker Compose ainda não carregam módulos.
+A API e os gateways de leitura executam os módulos. O worker verifica os mesmos módulos e não executa nenhum. Esta versão recusa módulos que rodam no worker ou no agente de backup (`role_unsupported`) e módulos que declaram prefixos de rotas sem atender rotas pelo Arkvory (`routes_unsupported`). Instalações com Docker Compose ainda não carregam módulos.
 
 Antes de um serviço importar qualquer código de um módulo, ele verifica o pacote de novo:
 
@@ -74,6 +74,37 @@ Um módulo que falha numa verificação não é carregado; os outros módulos e 
 Um módulo com falha tira o Arkvory da prontidão (`/health/ready` responde 503 com `module_failed`) somente quando outro módulo ativado precisa dele. Um módulo que guarda os bytes dos arquivos publicados (dados `layout`) nunca faz isso: o Arkvory continua servindo os dados dele e grava os novos uploads no próprio armazenamento em vez do armazenamento do módulo. O log registra `module.refused` e `module.failed` com o código em `errorCode`.
 
 Para reparar um pacote alterado ou ausente, instale-o de novo. Todos os serviços da instalação devem ver os mesmos módulos, ativados ou não: um gateway de leitura ou worker com outros módulos não fica pronto (`module_plan_mismatch`). Instale os mesmos pacotes no host de cada gateway de leitura.
+
+## Rotas de módulos {#routes}
+
+Um módulo pode adicionar rotas HTTP sob o próprio prefixo `/api/ext/<id>/v<major>/`, por exemplo `/api/ext/sample/v1/`. O Arkvory verifica cada requisição antes que qualquer código do módulo seja executado:
+
+| Verificação         | Como em `/api/v1`                                                                                                                                                                              |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Credencial          | As mesmas chaves, sessões e tokens; uma rota fica aberta a qualquer chamador conectado ou apenas ao administrador global                                                                       |
+| Permissão           | A permissão que a rota nomeia sobre o repositório do caminho, como `content.read` ou `upload.create`: uma chave de serviço precisa dela, uma conta precisa da permissão de leitura ou gravação |
+| Corpo da requisição | O limite de tamanho da rota, os limites de upload, os prazos e a largura de banda do servidor                                                                                                  |
+| Arquivos            | Enviados pelo próprio Arkvory: ETag, Range, `If-Range`, 304, a fila de downloads e a largura de banda de download                                                                              |
+
+Os erros têm o formato de erro da API. Um módulo nunca vê a credencial nem outros cabeçalhos. Um gateway de leitura atende as rotas de leitura de um módulo e responde `read_only` às demais.
+
+Cada módulo descreve as rotas em um documento OpenAPI, e o Arkvory compara os dois quando o módulo inicia. Um módulo cujas rotas violam as regras não inicia e não atende nada; o Arkvory continua funcionando. `GET /api/v1/system/modules` o mostra com `running: false` e `health.status` `failed`:
+
+| Código                   | Significado                                                                                                                      |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
+| `routes_invalid`         | Uma rota viola as regras, por exemplo um caminho fora do prefixo do módulo ou uma alteração aberta a qualquer chamador conectado |
+| `openapi_invalid`        | O documento OpenAPI está ausente ou é inválido                                                                                   |
+| `openapi_route_mismatch` | Uma rota não tem operação no documento, ou uma operação não tem rota                                                             |
+| `transfer_invalid`       | O módulo oferece um protocolo de transferência que não pode oferecer                                                             |
+
+Os documentos das rotas:
+
+| Endereço                                                                                    | Quem pode ler               | Conteúdo                                                                                           |
+| ------------------------------------------------------------------------------------------- | --------------------------- | -------------------------------------------------------------------------------------------------- |
+| `GET /api/ext/openapi.json`                                                                 | Qualquer chamador conectado | As rotas de todos os módulos que este serviço executa, com as operações que o chamador pode chamar |
+| [`GET /api/v1/system/modules/{id}/openapi`](../api/reference/system#getSystemModuleOpenApi) | O administrador global      | As rotas de um módulo                                                                              |
+
+`/api/v1/openapi.json` nunca lista rotas de módulos. Um módulo do tipo `transfer` pode oferecer outra forma de transferir arquivos: `GET /api/v1/capabilities` a lista em `transfer`. Um cliente só a usa com uma extensão correspondente; caso contrário, transfere os arquivos normalmente.
 
 ## Atualizar, fixar e voltar a uma versão anterior {#versions}
 

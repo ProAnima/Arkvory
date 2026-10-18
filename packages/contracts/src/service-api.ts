@@ -408,7 +408,7 @@ export const servicePaths = {
             type: 'array',
             maxItems: 256,
             description:
-              'Transfer protocols of the enabled modules this gateway runs (ADR 0079, 5.2). A client uses one only with an extension of the same name and a common version; otherwise the core transfer.',
+              'Transfer protocols of the enabled modules this gateway runs; a client uses one only with an extension of the same name and a common version.',
             items: {
               type: 'object',
               required: ['name', 'versions', 'module', 'prefix'],
