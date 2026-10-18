@@ -122,8 +122,11 @@ async function invoke(
     }, route.timeoutMs);
   });
   const answer = route.handle(request, signal);
+  let returned = false;
   try {
-    return await Promise.race([answer, expired]);
+    const value = await Promise.race([answer, expired]);
+    returned = true;
+    return value;
   } catch (error) {
     if (error instanceof ArkvoryError || external.aborted) throw error;
     services.diagnostics.write({
@@ -138,7 +141,8 @@ async function invoke(
     throw new ModuleRouteFailure('Module route failed');
   } finally {
     clearTimeout(timer);
-    if (signal.aborted) void answer.then(closeBody, () => undefined);
+    // Only an answer the race did not return is closed here; a returned one belongs to the caller.
+    if (!returned) void answer.then(closeBody, () => undefined);
   }
 }
 
