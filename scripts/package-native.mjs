@@ -115,6 +115,8 @@ async function windowsPackage() {
   await copyFile(await dependency('visualCpp', cache), join(payload, 'vc_redist.x64.exe'));
   for (const name of ['prepare.ps1', 'remove.ps1', 'arkvory.ps1', 'apply.ps1'])
     await copyFile(join('deploy/native', name), join(payload, name));
+  // prepare.ps1 protects the root with the same script as register-windows.ps1.
+  await copyFile('deploy/protect-windows.ps1', join(payload, 'protect-windows.ps1'));
   await copyFile('branding/icons/arkvory.ico', join(payload, 'arkvory.ico'));
   await copyFile('branding/icons/arkvory-cli.ico', join(payload, 'arkvory-cli.ico'));
   await copyFile('deploy/native/THIRD-PARTY.md', join(payload, 'THIRD-PARTY.md'));
