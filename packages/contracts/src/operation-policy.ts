@@ -13,6 +13,7 @@ import { downloadSettingsOperations } from './download-settings-api.js';
 import { siteChangeOperations } from './site-changes-api.js';
 import { eventOperations } from './events/feed.js';
 import { moduleOperations } from './modules-api.js';
+import { licenseOperations } from './license-api.js';
 import type { BackupPermissionName } from './backup-wire.js';
 import type { servicePermissionNames } from './service-api.js';
 import type { AdministrationPermission } from './delegation-api.js';
@@ -110,6 +111,7 @@ for (const [tag, operations] of [
   ['Changes', siteChangeOperations],
   ['Feedback', feedbackOperations],
   ['System', moduleOperations],
+  ['System', licenseOperations],
 ] as const)
   for (const [path, method, id, kind, retry] of operations)
     add(`/api/v1${path}`, method, id, tag, { kind }, retry);

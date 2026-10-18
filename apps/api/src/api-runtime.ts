@@ -11,6 +11,9 @@ import {
   PostgresContentPins,
   PostgresDownloadSettings,
   PostgresModulePlan,
+  PostgresLicenceStore,
+  createLicenseService,
+  licenceVerifier,
 } from '@proanima/arkvory-infrastructure';
 import type {
   DiagnosticRecord,
@@ -21,6 +24,8 @@ import type {
   StorageLifecycle,
 } from '@proanima/arkvory-infrastructure';
 import { DownloadSettingsControl } from '@proanima/arkvory-application';
+import type { LicenceReader } from '@proanima/arkvory-application';
+import type { LicenseService } from '@proanima/arkvory-extension-api';
 import { ArkvoryError } from '@proanima/arkvory-domain';
 import type { ServerConfig } from './config.js';
 import { createTransferControls } from './transfer-controls.js';
@@ -67,6 +72,9 @@ export class ApiRuntime {
   readonly telemetry: ModuleTelemetry;
   /** The plan the writer records and read gateways compare with theirs. */
   private readonly modulePlan: PostgresModulePlan;
+  /** The licences the writer keeps (ADR 0078, R2): read only, never through the hub. */
+  readonly licences: LicenceReader;
+  private licenseService: LicenseService | undefined;
 
   constructor(
     config: ServerConfig,
@@ -80,9 +88,11 @@ export class ApiRuntime {
     this.role = gatewayRole(config);
     this.telemetry = new ModuleTelemetry(log, () => performance.now());
     // Module settings and the plan are checked before any pool, storage or timer exists.
+    // Services are bound when a module starts, after the pools below exist.
+    const provider = { license: () => this.license() };
     this.modules = installation
-      ? apiModules(this.role, installation, this.telemetry)
-      : planApiModules(this.role, coreVersion, config.modules, this.telemetry);
+      ? apiModules(this.role, installation, this.telemetry, provider)
+      : planApiModules(this.role, coreVersion, config.modules, this.telemetry, provider);
     // Validate local limits before allocating pools or claiming ownership.
     this.transfers = createTransferControls(config, this.available);
     this.blobs = localStorageBackends(
@@ -100,6 +110,10 @@ export class ApiRuntime {
     );
     this.pins = new PostgresContentPins(this.catalog.sessions);
     this.modulePlan = new PostgresModulePlan(this.catalog.pool);
+    this.licences = {
+      store: new PostgresLicenceStore(this.catalog.pool),
+      verifier: licenceVerifier(),
+    };
     this.lease = config.sharedDownloads
       ? new PostgresDownloadLease(this.catalog.sessions, config.sharedDownloads)
       : undefined;
@@ -177,6 +191,12 @@ export class ApiRuntime {
       create: this.role === 'api',
       ...(changed ? { changed } : {}),
     });
+  }
+
+  /** The `license` service of modules: one per process, shared by the modules that use it. */
+  license(): LicenseService {
+    this.licenseService ??= createLicenseService(this.licences);
+    return this.licenseService;
   }
 
   private async loadTicketKey() {

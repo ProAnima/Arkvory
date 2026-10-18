@@ -5,6 +5,7 @@ import { updatePaths } from './updates-api.js';
 import { fleetPaths } from './fleet-api.js';
 import { downloadSettingsPaths } from './download-settings-api.js';
 import { modulePaths } from './modules-api.js';
+import { licensePaths } from './license-api.js';
 import { siteChangePaths } from './site-changes-api.js';
 import { retentionPaths, deletionOperation } from './retention.js';
 import { attachmentPaths } from './attachments.js';
@@ -273,6 +274,7 @@ const composed = composeApiPaths({
   ...fleetPaths,
   ...downloadSettingsPaths,
   ...modulePaths,
+  ...licensePaths,
   ...siteChangePaths,
   ...backupPaths,
   ...mirrorPaths,

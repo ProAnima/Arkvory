@@ -1000,6 +1000,14 @@
       "summary": "List the modules of this installation",
       "description": "Returns every module this installation plans, in `id` order: `id`, `version`, the extension point (`kind`), `source` (`builtin` for modules of the core), whether it is part of the free core (`core`, never disabled) and whether it is `enabled`, the processes it runs in (`roles`), whether the answering process runs it (`running`) and its `health` there (`ok`, `degraded` or `failed` with a code; null when it does not run there). `compatibilityFingerprint` is the SHA-256 of what every process of the installation must agree on: the modules with their sources, extension points, choices and settings, without release versions; a read gateway or the worker is ready only with the writer's value. `fingerprint` is the SHA-256 of the exact plan with every version, so it changes with each release; `extensionApi` is the version of the module contract of this core. Settings, paths and secrets are never returned. Only the global administrator may read it. Installed signed modules that the loader refused are listed as well, with `running` false and `health` `failed`, `revoked` or `unavailable` and a code; a signed module that should run there but did not load or start shows `failed` with its code."
     },
+    "getSystemLicense": {
+      "en": {
+        "summary": "Show the licences of this installation: type, licensee, features, limits, terms, offline window and state, judged at effective time",
+        "description": ""
+      },
+      "summary": "Show the licences of this installation",
+      "description": "Returns the installation id the writer recorded (`installation`), the time licences are judged by (`effectiveTime`: the latest of the database clock, the highest time already seen and the latest issue time of an accepted document, so setting a clock back extends nothing), `clockRollback` when the database clock is more than a day behind a time already seen, the number of offline activation requests waiting for their answer (`pendingRequests`), and every activation in `licenses`: `licenseId`, `activationId`, `licensee`, `licenseType`, `activation` (`online` or `offline`), `features`, `limits` (decimal strings of 64-bit values), the end of the licence term (`notAfter`, null when perpetual), `graceUntil`, the end of the current token (`offlineGraceUntil`), `lastRefreshAt`, `refreshFailing` and `state` (`valid`, `offline-grace`, `grace`, `expired`, `revoked`, `mismatch` or `invalid`) with its `reason`. Every stored document is verified again on each request. No licence key, activation secret or signature bytes are returned, and the answer never waits for the hub. The free core works without any licence. Only the global administrator may read it."
+    },
     "createFleetPairing": {
       "en": {
         "summary": "Make a one-time pairing code, valid ten minutes, that lets a controller manage this site",

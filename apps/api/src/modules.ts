@@ -1,14 +1,36 @@
-import type { ModuleContext, ModuleSignal, PlannedModule } from '@proanima/arkvory-extension-api';
+import type {
+  LicenseService,
+  ModuleContext,
+  ModuleSignal,
+  PlannedModule,
+} from '@proanima/arkvory-extension-api';
 import { planBuiltinModules } from '@proanima/arkvory-infrastructure';
 import type { InstallationPlan, ModuleSelections } from '@proanima/arkvory-infrastructure';
 import { ModuleRuntime } from './module-host.js';
 import { ModuleTelemetry } from './module-telemetry.js';
 
 /**
- * Services the API process gives modules (`HOST_SERVICES`, ADR 0083); none is implemented yet,
- * so the plan refuses a module that uses one and every module receives an empty object.
+ * Services the API process gives modules (`HOST_SERVICES`, ADR 0083): only those a module
+ * declared in `uses`. `license` (ADR 0078, R2) goes to signed ProAnimaStudio modules only; the
+ * plan already refuses it to operator and development plugins (ADR 0082, 18).
  */
-export type ApiServices = Readonly<Record<string, never>>;
+export interface ApiServices {
+  readonly license?: LicenseService;
+}
+
+/** The services the process implements, bound once its pools exist (at module start). */
+export interface ApiServiceProvider {
+  license(): LicenseService;
+}
+
+/** The services of one module: what it declared, from the provider, nothing else. */
+export function moduleServices(module: PlannedModule, provider?: ApiServiceProvider): ApiServices {
+  const license =
+    provider !== undefined &&
+    module.source === 'signed' &&
+    module.manifest.uses.includes('license');
+  return license ? { license: provider.license() } : {};
+}
 
 /** What a module of the API process receives from the core (ADR 0083, section 2.4). */
 export type ApiModuleContext = ModuleContext<ApiServices> & { readonly role: 'api' | 'reader' };
@@ -23,6 +45,7 @@ export function apiModules(
   role: ApiModuleContext['role'],
   installation: InstallationPlan<ApiModuleContext>,
   telemetry: ModuleTelemetry,
+  provider?: ApiServiceProvider,
 ): ModuleRuntime<ApiModuleContext> {
   const context = (module: PlannedModule, signal: ModuleSignal): ApiModuleContext => ({
     role,
@@ -32,7 +55,7 @@ export function apiModules(
     signal,
     log: telemetry.log(module.manifest),
     metrics: telemetry.metrics(module.manifest),
-    services: {},
+    services: moduleServices(module, provider),
   });
   return new ModuleRuntime<ApiModuleContext>(
     installation.plan,
@@ -52,6 +75,7 @@ export function planApiModules(
   selections: ModuleSelections = new Map(),
   // Tests plan without a process log; a server passes the telemetry bound to its own.
   telemetry = new ModuleTelemetry({ write: () => undefined }, () => performance.now()),
+  provider?: ApiServiceProvider,
 ): ModuleRuntime<ApiModuleContext> {
-  return apiModules(role, planBuiltinModules(coreVersion, selections), telemetry);
+  return apiModules(role, planBuiltinModules(coreVersion, selections), telemetry, provider);
 }

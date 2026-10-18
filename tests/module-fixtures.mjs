@@ -186,6 +186,8 @@ export default {
   describeConfig: () => ({}),
   create(context) {
     if (options.createThrows) throw new Error('cannot create');
+    if (options.recordServices)
+      globalThis.arkvoryServices = { ...(globalThis.arkvoryServices ?? {}), [manifest.id]: context.services };
     return {
       async start(signal) {
         if (options.startFails) throw new Error('cannot start');
