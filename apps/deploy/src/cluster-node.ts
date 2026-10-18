@@ -113,6 +113,7 @@ UMask=0007
 RuntimeDirectory=arkvory
 RuntimeDirectoryMode=0750
 ExecStart=/usr/bin/arkvory cluster-replica --root ${root}
+UnsetEnvironment=NODE_PATH
 Restart=always
 RestartSec=2
 `;
@@ -128,6 +129,7 @@ Type=oneshot
 RemainAfterExit=yes
 User=root
 ExecStart=/usr/bin/arkvory cluster-units --root ${root}
+UnsetEnvironment=NODE_PATH
 `;
 }
 

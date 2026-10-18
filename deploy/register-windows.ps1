@@ -9,6 +9,21 @@ if (-not $ServicesOnly) {
     # SIDs are independent of the Windows display language. Application identity cannot modify releases or updater credentials.
     & icacls.exe $Root /inheritance:r /grant:r '*S-1-5-18:(OI)(CI)F' '*S-1-5-32-544:(OI)(CI)F' '*S-1-5-19:(OI)(CI)RX' | Out-Null
     if ($LASTEXITCODE -ne 0) { throw 'Cannot secure installation directory' }
+    # %ProgramData%\ProAnima above the default root inherits from ProgramData, where every user
+    # may create folders and owns what they create. Administrators take it over and only they
+    # write it (ADR 0031, addendum 2026-10-18). Protected children such as the root keep their
+    # own ACLs. Another parent is the operator's choice and stays as it is.
+    $vendor = Split-Path -Parent $Root
+    if ($env:ProgramData -and $vendor -ieq (Join-Path $env:ProgramData 'ProAnima')) {
+        & takeown.exe /F $vendor /A | Out-Null
+        if ($LASTEXITCODE -ne 0) { throw 'Cannot take ownership of the ProAnima directory' }
+        $acl = [Security.AccessControl.DirectorySecurity]::new()
+        $acl.SetAccessRuleProtection($true, $false)
+        foreach ($grant in @(@('S-1-5-18', 'FullControl'), @('S-1-5-32-544', 'FullControl'), @('S-1-5-32-545', 'ReadAndExecute'))) {
+            $acl.AddAccessRule([Security.AccessControl.FileSystemAccessRule]::new([Security.Principal.SecurityIdentifier]::new($grant[0]), $grant[1], 'ContainerInherit,ObjectInherit', 'None', 'Allow'))
+        }
+        [IO.Directory]::SetAccessControl($vendor, $acl)
+    }
     foreach ($name in @('data','logs','updates/inbox')) {
         if (-not (Test-Path -LiteralPath (Join-Path $Root $name))) { continue }
         & icacls.exe (Join-Path $Root $name) /grant:r '*S-1-5-19:(OI)(CI)M' | Out-Null
@@ -45,6 +60,7 @@ foreach ($role in @('api','worker','backup')) {
   <executable>$(Xml $Node)</executable>
   <arguments>&quot;$(Xml (Join-Path $Root 'launcher.mjs'))&quot; &quot;$(Xml $Root)&quot; $role</arguments>
   <workingdirectory>$(Xml $Root)</workingdirectory>
+  <env name="NODE_PATH" value=""/>
   <serviceaccount><domain>NT AUTHORITY</domain><user>LocalService</user></serviceaccount>
   <startmode>Automatic</startmode><delayedAutoStart/>
   <stoptimeout>120 sec</stoptimeout>

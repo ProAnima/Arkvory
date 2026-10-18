@@ -30,6 +30,7 @@ if (-not $existing) {
   <executable>$(Xml $Node)</executable>
   <startarguments>&quot;$(Xml (Join-Path $Root 'launcher.mjs'))&quot; &quot;$(Xml $Root)&quot; database</startarguments>
   <workingdirectory>$(Xml $directory)</workingdirectory>
+  <env name="NODE_PATH" value=""/>
   <serviceaccount><domain>NT AUTHORITY</domain><user>NetworkService</user></serviceaccount>
   <startmode>Automatic</startmode><onfailure action="restart" delay="10 sec"/>
   <stopexecutable>$(Xml (Join-Path $settings.bin 'pg_ctl.exe'))</stopexecutable>

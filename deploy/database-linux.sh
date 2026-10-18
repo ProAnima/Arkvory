@@ -23,6 +23,7 @@ Type=exec
 User=arkvory-db
 Group=arkvory-db
 ExecStart="$node" "$root/launcher.mjs" "$root" database
+UnsetEnvironment=NODE_PATH
 Restart=on-failure
 RestartSec=10
 KillMode=mixed

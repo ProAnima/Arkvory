@@ -55,6 +55,7 @@ Type=exec
 User=arkvory
 Group=arkvory
 ExecStart="$node" "$root/launcher.mjs" "$root" "$role"
+UnsetEnvironment=NODE_PATH
 WorkingDirectory=$root
 Restart=always
 RestartSec=10

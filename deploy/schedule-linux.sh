@@ -16,6 +16,7 @@ After=network-online.target
 [Service]
 Type=oneshot
 ExecStart="$node" "$root/manage.mjs" updates-poll --root "$root"
+UnsetEnvironment=NODE_PATH
 TimeoutStartSec=1800
 UMask=0077
 EOF
