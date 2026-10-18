@@ -35,7 +35,7 @@ export default {
   manifest,
   create(context) {
     ${body?.create ?? ''}
-    return { transfer: [{ name: 'test-delta', versions: [1, 2], async download() { return null; } }] };
+    return { transfer: [{ name: 'test-delta', versions: ['1.0.0', '2.0.0'], async download() { return null; } }] };
   },
 };
 `);

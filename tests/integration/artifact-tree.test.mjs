@@ -161,7 +161,7 @@ test('the worker indexes published archives and the route pages through their en
   const capabilities = await reader.inject({ url: '/api/v1/capabilities', headers: f.headers });
   validateResponse('/api/v1/capabilities', 'get', capabilities);
   assert.deepEqual(capabilities.json().tree, [
-    { name: 'zip-tree', versions: [1], module: 'core', prefix: '/api/v1/' },
+    { name: 'zip-tree', versions: ['1.0.0'], module: 'core', prefix: '/api/v1/' },
   ]);
 });
 

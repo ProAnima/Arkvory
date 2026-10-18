@@ -10,7 +10,8 @@ export const TRANSFER_NAME_PATTERN = /^[a-z][a-z0-9-]{1,31}$/;
  */
 export interface TransferOffer {
   readonly name: string;
-  readonly version: number;
+  /** Semver version of the protocol, as `capabilities.transfer` lists it. */
+  readonly version: string;
   /** The module that serves the capability on the server. */
   readonly module: string;
   /** Path prefix of the module's routes, such as `/api/ext/<id>/v1/`. */
@@ -85,8 +86,11 @@ export interface TransferUpload {
  */
 export interface TransferExtension {
   readonly name: string;
-  /** Versions of the capability this extension speaks, positive integers. */
-  readonly versions: readonly number[];
+  /**
+   * Semver versions of the protocol this extension speaks, as the server's
+   * `capabilities.transfer` lists them (`ModuleTransferOffer.versions`); matched exactly.
+   */
+  readonly versions: readonly string[];
   /**
    * The content from `plan.offset` to the end, in order. The client stops reading at the size
    * and continues with the core transfer from wherever a failing stream stopped.

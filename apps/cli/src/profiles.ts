@@ -185,7 +185,7 @@ export async function activeProfile(args: Arguments): Promise<string> {
 /** --verbose: which way a transfer's bytes travelled. */
 function transferLine(event: TransferEvent): void {
   const way = event.extension
-    ? `${event.extension.name} v${String(event.extension.version)}`
+    ? `${event.extension.name} v${event.extension.version}`
     : `core${event.fallback ? ` (extension ${event.fallback})` : ''}`;
   process.stderr.write(`arkvoryctl: ${event.operation} via ${way}\n`);
 }

@@ -85,7 +85,7 @@ async function server(t, bytes, options = {}) {
   return { client, requests, events, meta };
 }
 
-const offer = (versions = [2, 3]) => [
+const offer = (versions = ['2.0.0', '3.0.0']) => [
   { name: 'test-delta', versions, module: 'test-delta', prefix: PREFIX },
 ];
 
@@ -93,7 +93,7 @@ const offer = (versions = [2, 3]) => [
 function testExtension(overrides = {}) {
   return {
     name: 'test-delta',
-    versions: [1, 2],
+    versions: ['1.0.0', '2.0.0'],
     plans: [],
     async download(plan, signal) {
       this.plans.push(plan);
@@ -112,15 +112,20 @@ function testExtension(overrides = {}) {
 const read = async (stream) => Buffer.from(await new Response(stream).arrayBuffer());
 
 test('the highest common version of the first offered extension is chosen', () => {
-  const a = { name: 'aaa', versions: [1, 4] };
-  const b = { name: 'bbb', versions: [1, 2, 3] };
+  const a = { name: 'aaa', versions: ['1.0.0', '4.0.0'] };
+  const b = { name: 'bbb', versions: ['1.0.0', '2.0.0', '3.0.0-beta.2', '3.0.0-beta.10'] };
   const offers = [
-    { name: 'bbb', versions: [2, 3], module: 'bb', prefix: '/api/ext/bb/v1/' },
-    { name: 'aaa', versions: [2, 3], module: 'aa', prefix: '/api/ext/aa/v1/' },
+    {
+      name: 'bbb',
+      versions: ['2.0.0', '3.0.0-beta.2', '3.0.0-beta.10'],
+      module: 'bb',
+      prefix: '/api/ext/bb/v1/',
+    },
+    { name: 'aaa', versions: ['2.0.0', '3.0.0'], module: 'aa', prefix: '/api/ext/aa/v1/' },
   ];
   assert.deepEqual(chooseTransfer([a, b], offers)?.offer, {
     name: 'bbb',
-    version: 3,
+    version: '3.0.0-beta.10',
     module: 'bb',
     prefix: '/api/ext/bb/v1/',
   });
@@ -137,10 +142,10 @@ test('an agreed extension carries the download and the SDK verifies it', async (
     extensions: [extension],
   });
   assert.deepEqual(await read(await client.downloadVerified('releases', 'a1')), bytes);
-  assert.equal(extension.plans[0].offer.version, 2);
+  assert.equal(extension.plans[0].offer.version, '2.0.0');
   assert.equal(extension.plans[0].sha256, sha256(bytes));
   assert.deepEqual(events, [
-    { operation: 'download', extension: { name: 'test-delta', version: 2 } },
+    { operation: 'download', extension: { name: 'test-delta', version: '2.0.0' } },
   ]);
   assert.equal(requests.filter((r) => r.includes('/content')).length, 0);
   // The capabilities are read once per client.
@@ -150,7 +155,7 @@ test('an agreed extension carries the download and the SDK verifies it', async (
 
 test('without a common version or without capabilities.transfer the core transfer runs', async (t) => {
   const bytes = Buffer.from('core transfer bytes');
-  for (const offers of [offer([3]), undefined]) {
+  for (const offers of [offer(['3.0.0']), undefined]) {
     const extension = testExtension();
     const { client, events } = await server(t, bytes, { offers, extensions: [extension] });
     assert.deepEqual(await read(await client.downloadVerified('releases', 'a1')), bytes);
@@ -182,7 +187,7 @@ test('a declining or failing extension falls back, except in strict mode', async
     await assert.rejects(strict.client.downloadVerified('releases', 'a1'));
   }
   const none = await server(t, bytes, {
-    offers: offer([9]),
+    offers: offer(['9.0.0']),
     extensions: [testExtension()],
     mode: 'strict',
   });
@@ -238,7 +243,7 @@ test('a substituted byte is checksum_mismatch through the extension and the core
     ArkvoryIntegrityError,
   );
   const viaCore = await server(t, bytes, {
-    offers: offer([7]),
+    offers: offer(['7.0.0']),
     content: forged,
     extensions: [testExtension()],
   });
@@ -309,7 +314,7 @@ test('the channel stays under the module prefix', async (t) => {
   assert.throws(
     () =>
       new ArkvoryClient('http://127.0.0.1:1', () => 't', {
-        transferExtensions: [{ name: 'X', versions: [1] }],
+        transferExtensions: [{ name: 'X', versions: ['1.0.0'] }],
       }),
     (error) => error.code === 'invalid_argument',
   );
@@ -329,7 +334,7 @@ test('an extension upload is accepted only when the published upload is the one 
   };
   const sender = (state, result = true) => ({
     name: 'test-delta',
-    versions: [2],
+    versions: ['2.0.0'],
     async upload(plan, signal) {
       assert.equal(plan.uploadId, 'u1');
       assert.deepEqual(Buffer.from(await plan.read(0, bytes.length - 1, signal)), bytes);
@@ -346,7 +351,7 @@ test('an extension upload is accepted only when the published upload is the one 
   const done = await first.client.resume('releases', 'u1', new Blob([bytes]));
   assert.equal(done.status, 'available');
   assert.deepEqual(first.events, [
-    { operation: 'upload', extension: { name: 'test-delta', version: 2 } },
+    { operation: 'upload', extension: { name: 'test-delta', version: '2.0.0' } },
   ]);
   const forged = { forged: true };
   const second = await server(t, bytes, {

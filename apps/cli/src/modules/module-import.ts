@@ -77,13 +77,14 @@ function transferExtension(value: unknown): TransferExtension {
     (download === undefined && upload === undefined)
   )
     throw new ClientLoadError('contribution_invalid');
-  const numbers = versions.filter(
-    (v: unknown): v is number => typeof v === 'number' && Number.isSafeInteger(v) && v >= 1,
+  const known = versions.filter(
+    (v: unknown): v is string =>
+      typeof v === 'string' && /^[0-9]{1,9}\.[0-9]{1,9}\.[0-9]{1,9}(-[0-9A-Za-z.-]+)?$/.test(v),
   );
-  if (numbers.length !== versions.length) throw new ClientLoadError('contribution_invalid');
+  if (known.length !== versions.length) throw new ClientLoadError('contribution_invalid');
   return {
     name,
-    versions: numbers,
+    versions: known,
     ...(typeof download === 'function'
       ? {
           download: async (plan, signal) => {

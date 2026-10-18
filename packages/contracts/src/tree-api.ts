@@ -73,12 +73,13 @@ export const artifactTreeSchema = object({
 
 /**
  * One capability of directory trees the server offers (ADR 0083, N8): the free core offers
- * `zip-tree` version 1 — the archive table of contents route — with `module: "core"` and
+ * `zip-tree` version `1.0.0` — the archive table of contents route — with `module: "core"` and
  * `prefix: "/api/v1/"`; a client module may offer another way under its module prefix.
  */
 export interface TreeCapability {
   readonly name: string;
-  readonly versions: readonly number[];
+  /** Semver versions of the protocol, such as `1.0.0`. */
+  readonly versions: readonly string[];
   readonly module: string;
   readonly prefix: string;
 }
@@ -89,7 +90,7 @@ export const treeCapabilitySchema = object({
     type: 'array',
     minItems: 1,
     maxItems: 32,
-    items: { type: 'integer', minimum: 1, maximum: 65535 },
+    items: { type: 'string', maxLength: 64 },
   },
   module: { type: 'string', pattern: '^[a-z][a-z0-9-]{1,31}$' },
   prefix: { type: 'string', pattern: '^/api/(v1|ext/[a-z][a-z0-9-]{1,31}/v[1-9][0-9]{0,3})/$' },
@@ -137,6 +138,9 @@ export const artifactTreePaths = {
 };
 
 const DIGEST = /^[a-f0-9]{64}$/;
+/** A semver 2.0.0 version without build metadata, as extension API versions are written. */
+const SEMVER =
+  /^(0|[1-9][0-9]{0,8})\.(0|[1-9][0-9]{0,8})\.(0|[1-9][0-9]{0,8})(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$/;
 const DECIMAL = /^(0|[1-9][0-9]{0,15})$/;
 
 function digest(value: unknown): string {
@@ -196,10 +200,9 @@ export function readCapabilityOffers(value: unknown): readonly TreeCapability[] 
       !Array.isArray(versions)
     )
       return [];
-    const numbers = versions.filter(
-      (version): version is number =>
-        typeof version === 'number' && Number.isSafeInteger(version) && version >= 1,
+    const known = versions.filter(
+      (version): version is string => typeof version === 'string' && SEMVER.test(version),
     );
-    return numbers.length === 0 ? [] : [{ name, versions: numbers, module, prefix }];
+    return known.length === 0 ? [] : [{ name, versions: known, module, prefix }];
   });
 }

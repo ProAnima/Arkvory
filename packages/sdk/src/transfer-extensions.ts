@@ -20,7 +20,7 @@ export type TransferMode = 'auto' | 'strict';
 export interface TransferEvent {
   readonly operation: 'download' | 'upload';
   /** The extension's name and the agreed version, or null for the core transfer. */
-  readonly extension: { readonly name: string; readonly version: number } | null;
+  readonly extension: { readonly name: string; readonly version: string } | null;
   /**
    * Why the core transfer took over from an extension: `declined` (it returned null or
    * false), `failed` (it threw), `incomplete` (its stream ended early).
@@ -40,14 +40,42 @@ const PREFIX = /^\/api\/(v1|ext\/[a-z][a-z0-9-]{1,31}\/v[1-9][0-9]{0,3})\/$/;
 /** A relative path under the prefix: no scheme, no leading slash, no `.` or `..` segment. */
 const RELATIVE = /^(?![/\\])[A-Za-z0-9._~!$&'()*+,;=:@%/?-]{0,2048}$/;
 
+/** A semver 2.0.0 version without build metadata, as `capabilities.transfer` lists them. */
+const SEMVER =
+  /^(0|[1-9][0-9]{0,8})\.(0|[1-9][0-9]{0,8})\.(0|[1-9][0-9]{0,8})(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$/;
+
 function validExtension(extension: TransferExtension): boolean {
   const versions: readonly unknown[] = extension.versions;
   return (
     NAME.test(extension.name) &&
     versions.length > 0 &&
     versions.length <= 32 &&
-    versions.every((v) => typeof v === 'number' && Number.isSafeInteger(v) && v >= 1)
+    versions.every((v) => typeof v === 'string' && SEMVER.test(v))
   );
+}
+
+/** Semver precedence (item 11): numbers, then a pre-release below its release. */
+export function compareVersions(a: string, b: string): number {
+  const pa = SEMVER.exec(a);
+  const pb = SEMVER.exec(b);
+  if (!pa || !pb) return a < b ? -1 : a > b ? 1 : 0;
+  for (let i = 1; i <= 3; i++) {
+    const d = Number(pa[i]) - Number(pb[i]);
+    if (d !== 0) return d;
+  }
+  const [ra, rb] = [pa[4], pb[4]];
+  if (ra === undefined || rb === undefined) return ra === rb ? 0 : ra === undefined ? 1 : -1;
+  const xa = ra.split('.');
+  const xb = rb.split('.');
+  for (let i = 0; i < Math.max(xa.length, xb.length); i++) {
+    const [ia, ib] = [xa[i], xb[i]];
+    if (ia === undefined || ib === undefined) return ia === undefined ? -1 : 1;
+    const [na, nb] = [/^[0-9]+$/.test(ia), /^[0-9]+$/.test(ib)];
+    if (na && nb && Number(ia) !== Number(ib)) return Number(ia) - Number(ib);
+    if (na !== nb) return na ? -1 : 1;
+    if (ia !== ib) return ia < ib ? -1 : 1;
+  }
+  return 0;
 }
 
 /**
@@ -67,7 +95,7 @@ export function chooseTransfer(
         extension,
         offer: {
           name: offer.name,
-          version: Math.max(...common),
+          version: common.reduce((best, v) => (compareVersions(v, best) > 0 ? v : best)),
           module: offer.module,
           prefix: offer.prefix,
         },
