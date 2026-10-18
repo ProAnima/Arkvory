@@ -57,7 +57,7 @@ async function unsafePosix(
     if ((info.mode & 0o022) !== 0 || !trusted.has(info.uid))
       unsafe.set(
         path,
-        `mode ${(info.mode & 0o7777).toString(8)} uid ${info.uid}; root uid ${owner}`,
+        `mode ${(info.mode & 0o7777).toString(8)} uid ${String(info.uid)}; root uid ${String(owner)}`,
       );
   }
   return unsafe;
