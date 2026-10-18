@@ -70,7 +70,7 @@ title: Windows
 
 这些服务无需用户登录即可运行。API、worker 和备份代理共用 LocalService 账户。数据库在 NetworkService 下运行，因此 API 账户无法读取数据库文件。
 
-根目录只向 SYSTEM 和 Administrators 授予完全控制权限。LocalService 可以读取根目录，但只能修改 `data\`、`logs\` 和更新请求目录。恢复密钥以及安装程序的其他凭据文件只有 SYSTEM 和 Administrators 可以读取。
+根目录只向 SYSTEM 和 Administrators 授予完全控制权限。LocalService 可以读取根目录，但只能修改 `data\`、`logs\` 和更新请求目录。恢复密钥以及安装程序的其他凭据文件只有 SYSTEM 和 Administrators 可以读取。程序目录 `runtime\`、`releases\`、`config\` 和 `modules\` 归 Administrators 所有，只有 SYSTEM 和 Administrators 可以修改。如果其中某个目录或其内部的目录是联接（junction）或符号链接，安装程序和 `install.ps1` 会报错停止。请将其替换为普通目录，然后重新运行安装程序。
 
 ## 使用 PowerShell 和现有 PostgreSQL 安装 {#install-with-powershell-and-an-existing-postgresql}
 
@@ -84,7 +84,7 @@ title: Windows
 .\install.ps1 -AutomaticUpdates
 ```
 
-脚本会询问 PostgreSQL 连接 URL，输入内容不会显示。然后它从 `nodejs.org` 下载 Node.js 24.21.0，检查其 SHA-256，并安装最新的稳定版。
+脚本会询问 PostgreSQL 连接 URL，输入内容不会显示。然后它从 `nodejs.org` 下载 Node.js 24.21.0，检查其 SHA-256，并安装最新的稳定版。如果根目录中已有 Node.js，只有当 `node.exe` 的 SHA-256 与预期一致且该目录中没有其他内容时，脚本才会使用它。否则脚本会重新下载 Node.js，并把旧目录移到 `runtime\unverified-…`。
 
 也可以不使用提示，而是传入一个受保护的 JSON 文件：
 
