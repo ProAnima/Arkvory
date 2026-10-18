@@ -112,7 +112,7 @@ arkvory storage moves --root /opt/proanima-arkvory
 3. `moves` prints the moves by state: `planned`, `copied`, `switched`, `released` (done), `skipped` (the file was deleted meanwhile; its copy in the target was removed) and `failed`.
 
 - **Downloads and backups.** A download that started before the switch reads to its end from the source. The source copy is removed only after that download and after any backup that includes the file. The removal waits; it never blocks a download.
-- **Failures.** A failed step is repeated with a growing pause. After 5 failed attempts, or when the target stops taking uploads, the move is `failed` and the file stays where it is. Run `rehome` again to plan a new move. The next move checks and reuses a copy that a failed move left in the target.
+- **Failures.** A failed step is repeated with a growing pause. After 5 failed attempts, or when the target stops taking uploads, the move is `failed` and the file stays where it is. Run `rehome` again to plan a new move. The next move checks and reuses a copy that a failed move left in the target. This applies until the switch: after it the move is never `failed`, and removing the source copy is retried until it succeeds. While a storage is unavailable or read-only, for example the source of an evacuation, the step waits for it and is checked again every 5 minutes.
 - **Speed.** `ARKVORY_REHOME_BYTES_PER_SECOND` limits how fast the worker copies. By default there is no limit.
 - **Quotas** count each file once, during and after the move.
 - With Docker Compose, the command runs a one-off worker container.

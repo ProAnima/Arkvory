@@ -5,6 +5,7 @@ import { mkdtemp } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { RehomeBlobs, StorageService, planRehome } from '@proanima/arkvory-application';
+import { MAX_MOVE_ATTEMPTS, MOVE_WAIT_SECONDS } from '@proanima/arkvory-domain';
 import {
   LocalBlobStore,
   PostgresBlobMoves,
@@ -64,14 +65,8 @@ async function moving(t) {
   });
   const moves = new PostgresBlobMoves(f.catalog.pool);
   const switcher = new PostgresUploadSwitch(f.catalog.pool);
-  const rehome = new RehomeBlobs(
-    moves,
-    switcher,
-    new PostgresCopyRemoval(f.catalog.pool, blobs),
-    blobs,
-    blobs,
-    pins,
-  );
+  const removal = new PostgresCopyRemoval(f.catalog.pool, blobs);
+  const rehome = new RehomeBlobs(moves, switcher, removal, blobs, blobs, pins);
   const storage = new StorageService(f.catalog, blobs, {
     next: randomUUID,
     now: () => new Date().toISOString(),
@@ -121,6 +116,7 @@ async function moving(t) {
     pins,
     moves,
     switcher,
+    removal,
     rehome,
     storage,
     publish,
@@ -170,7 +166,8 @@ test('a crash after each step repeats only that step', async (t) => {
     state: 'copied',
   });
   // Crash after the switch, before its record.
-  assert.equal(await m.switcher.switchStorage(id, 'default', 'volume-2'), 'switched');
+  const switching = await m.claimOne();
+  assert.equal(await m.switcher.switchStorage(switching), 'switched');
   assert.deepEqual(await m.rehome.step(await m.claimOne(), cancellation), {
     kind: 'advanced',
     state: 'switched',
@@ -334,4 +331,68 @@ test('the worker loop performs planned moves under its singleton and stops on re
   assert.deepEqual(await gather(m.blobs.read(id, bytes.length, undefined, 'volume-2')), bytes);
   assert.equal(rehomeBytesPerSecond(undefined), 0);
   assert.throws(() => rehomeBytesPerSecond('1e6'), /ARKVORY_REHOME_BYTES_PER_SECOND/);
+});
+
+test('a holder that lost its lease neither switches nor removes; the live copy is never removed', async (t) => {
+  const m = await moving(t);
+  const { id, bytes } = await m.publish();
+  await m.plan();
+  assert.equal((await m.rehome.step(await m.claimOne(), cancellation)).state, 'copied');
+  const stale = await m.claimOne();
+  const fresh = await m.claimOne();
+  assert.equal(await m.switcher.switchStorage(stale), 'lost');
+  assert.equal((await m.row(id)).storage_backend, 'default');
+  assert.equal((await m.rehome.step(fresh, cancellation)).state, 'switched');
+  const staleRelease = await m.claimOne();
+  const current = await m.claimOne();
+  assert.equal(await m.removal.remove(staleRelease, 'default', cancellation), 'lost');
+  await m.core.exists(id, bytes.length);
+  // The upload reads from volume-2 now: removing that copy is refused, whoever asks.
+  await assert.rejects(m.removal.remove(current, 'volume-2', cancellation), {
+    code: 'conflict',
+  });
+  await m.second.exists(id, bytes.length);
+  assert.equal(await m.removal.remove(current, 'default', cancellation), 'removed');
+  await assert.rejects(m.core.exists(id, bytes.length), { code: 'unavailable' });
+});
+
+test('a switched move only backs off: its source copy is never left without an owner', async (t) => {
+  const m = await moving(t);
+  const { id } = await m.publish();
+  await m.plan();
+  await m.f.catalog.pool.query(
+    `UPDATE arkvory_blob_moves SET attempts=${String(MAX_MOVE_ATTEMPTS + 2)}`,
+  );
+  const planned = await m.claimOne();
+  assert.equal(await m.moves.fail(planned, 'unavailable', false), true);
+  assert.equal((await m.row(id)).state, 'failed', 'a move before the switch ends as failed');
+  await m.f.catalog.pool.query(
+    `UPDATE arkvory_blob_moves SET state='switched', attempts=${String(MAX_MOVE_ATTEMPTS + 30)}`,
+  );
+  const switched = await m.claimOne();
+  assert.equal(await m.moves.fail(switched, 'unavailable', false), true);
+  const after = await m.moves.claim(1);
+  assert.deepEqual(after, [], 'backing off, not claimable at once');
+  // Even a failure the step calls final leaves it to back off.
+  assert.equal(await m.moves.fail(switched, 'backend_read_only', true), true);
+  assert.equal((await m.row(id)).state, 'switched');
+});
+
+test('moves are claimed when due: a deferred one never holds back those planned after it', async (t) => {
+  const m = await moving(t);
+  await m.publish();
+  await m.publish();
+  assert.equal(await m.plan(), 2);
+  const [first] = await m.moves.claim(1);
+  assert.ok(first);
+  assert.equal(await m.moves.defer(first, MOVE_WAIT_SECONDS), true);
+  // The deferral is over, but it ended after the other move was planned.
+  await m.f.catalog.pool.query(
+    `UPDATE arkvory_blob_moves SET lease_until=now()-CASE WHEN id=$1
+      THEN interval '1 second' ELSE interval '2 seconds' END`,
+    [first.id],
+  );
+  const [next] = await m.moves.claim(1);
+  assert.ok(next);
+  assert.notEqual(next.uploadId, first.uploadId);
 });

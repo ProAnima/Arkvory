@@ -5,6 +5,8 @@ import { RehomeBlobs, planRehome } from '@proanima/arkvory-application';
 import {
   ArkvoryError,
   MAX_MOVE_ATTEMPTS,
+  MOVE_RETRY_SECONDS,
+  MOVE_WAIT_SECONDS,
   afterStep,
   requireMove,
   stepOf,
@@ -63,7 +65,7 @@ class Storages {
 }
 
 /** Two storages in memory, an upload row and a move store that records every write. */
-function world({ state = 'accepting' } = {}) {
+function world({ state = 'accepting', states: given = {} } = {}) {
   const blobs = new Storages();
   const id = randomUUID();
   const upload = { descriptor, status: 'available', storageBackend: 'default' };
@@ -77,8 +79,8 @@ function world({ state = 'accepting' } = {}) {
       log.push(next);
       return true;
     },
-    defer: async (move) => {
-      log.push('deferred');
+    defer: async (move, seconds) => {
+      log.push(`deferred:${String(seconds)}`);
       return move.generation === record.generation;
     },
     fail: async (move, code, final) => {
@@ -92,10 +94,14 @@ function world({ state = 'accepting' } = {}) {
   };
   const busy = { switch: false, removal: new Set(), pin: false };
   const removed = [];
+  // The fence of the PostgreSQL adapters: a holder whose generation is old does nothing.
+  const holds = (move) => move.generation === record.generation && move.state === record.state;
   const uploads = {
     read: async () => ({ ...upload }),
-    switchStorage: async (_id, from, to) => {
+    switchStorage: async (move) => {
+      const { from, to } = move;
       if (busy.switch) return 'busy';
+      if (!holds(move)) return 'lost';
       if (upload.storageBackend === to) return 'switched';
       if (upload.storageBackend !== from || upload.status !== 'available') return 'gone';
       upload.storageBackend = to;
@@ -103,11 +109,13 @@ function world({ state = 'accepting' } = {}) {
     },
   };
   const removal = {
-    remove: async (uploadId, backend) => {
-      if (busy.removal.has(backend)) return false;
-      await blobs.collect(uploadId, true, cancellation, backend);
+    remove: async (move, backend) => {
+      if (busy.removal.has(backend)) return 'busy';
+      if (!holds(move)) return 'lost';
+      if (upload.storageBackend === backend) throw new ArkvoryError('conflict', 'live copy');
+      await blobs.collect(move.uploadId, true, cancellation, backend);
       removed.push(backend);
-      return true;
+      return 'removed';
     },
   };
   const pins = {
@@ -116,7 +124,9 @@ function world({ state = 'accepting' } = {}) {
       return { check() {}, release: async () => undefined };
     },
   };
-  const states = { state: (backend) => (backend === 'volume-2' ? state : 'accepting') };
+  const states = {
+    state: (backend) => given[backend] ?? (backend === 'volume-2' ? state : 'accepting'),
+  };
   const rehome = new RehomeBlobs(moves, uploads, removal, blobs, states, pins);
   const move = () => ({
     id: randomUUID(),
@@ -126,7 +136,7 @@ function world({ state = 'accepting' } = {}) {
     state: record.state,
     generation: record.generation,
   });
-  return { blobs, id, upload, log, record, busy, removed, rehome, move, moves, states };
+  return { blobs, id, upload, log, record, busy, removed, rehome, move, moves, states, given };
 }
 
 async function published(w) {
@@ -276,4 +286,64 @@ test('a lost lease stops the move: the stale holder writes nothing', async () =>
   };
   await assert.rejects(w.rehome.run(w.move(), stopping));
   assert.equal(w.record.attempts, 0);
+});
+
+test('a storage that cannot remove files now is waited for, never asked, without an attempt', async () => {
+  const w = world();
+  await published(w);
+  assert.deepEqual(await w.rehome.step(w.move(), cancellation), {
+    kind: 'advanced',
+    state: 'copied',
+  });
+  assert.deepEqual(await w.rehome.step(w.move(), cancellation), {
+    kind: 'advanced',
+    state: 'switched',
+  });
+  // The source of an evacuation is read-only: its copy stays until it takes changes again.
+  w.given.default = 'read_only';
+  assert.deepEqual(await w.rehome.run(w.move(), cancellation), {
+    outcome: 'deferred',
+    state: 'switched',
+  });
+  assert.deepEqual(w.removed, []);
+  assert.equal(w.log.at(-1), `deferred:${String(MOVE_WAIT_SECONDS)}`);
+  w.given.default = 'unavailable';
+  assert.equal((await w.rehome.run(w.move(), cancellation)).outcome, 'deferred');
+  w.given.default = 'accepting';
+  assert.deepEqual(await w.rehome.run(w.move(), cancellation), {
+    outcome: 'done',
+    state: 'released',
+  });
+  assert.equal(w.record.attempts, 0);
+});
+
+test('an unmounted source is waited for before the copy; a busy lock is retried soon', async () => {
+  const w = world({ states: { default: 'unavailable' } });
+  await published(w);
+  assert.deepEqual(await w.rehome.run(w.move(), cancellation), {
+    outcome: 'deferred',
+    state: 'planned',
+  });
+  assert.deepEqual(w.log, [`deferred:${String(MOVE_WAIT_SECONDS)}`]);
+  assert.equal(w.record.attempts, 0);
+  w.given.default = 'accepting';
+  w.busy.pin = true;
+  await w.rehome.run(w.move(), cancellation);
+  assert.equal(w.log.at(-1), `deferred:${String(MOVE_RETRY_SECONDS)}`);
+});
+
+test('a holder that lost its lease neither switches nor removes a copy', async () => {
+  const w = world();
+  await published(w);
+  assert.equal((await w.rehome.step(w.move(), cancellation)).state, 'copied');
+  const stale = w.move();
+  w.record.generation++;
+  assert.deepEqual(await w.rehome.step(stale, cancellation), { kind: 'lost' });
+  assert.equal(w.upload.storageBackend, 'default');
+  assert.equal((await w.rehome.step(w.move(), cancellation)).state, 'switched');
+  const staleRelease = w.move();
+  w.record.generation++;
+  assert.deepEqual(await w.rehome.step(staleRelease, cancellation), { kind: 'lost' });
+  assert.deepEqual(w.removed, []);
+  await w.blobs.verify(w.id, descriptor, cancellation, 'default');
 });

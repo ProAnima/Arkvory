@@ -20,8 +20,16 @@ export type BlobMoveState = (typeof BLOB_MOVE_STATES)[number];
 export type ActiveMoveState = Extract<BlobMoveState, 'planned' | 'copied' | 'switched'>;
 export const ACTIVE_MOVE_STATES: readonly ActiveMoveState[] = ['planned', 'copied', 'switched'];
 
-/** A failed step is repeated; the fifth failure ends the move as `failed`. */
+/**
+ * A failed step is repeated; the fifth failure ends the move as `failed`, except in `switched`:
+ * the upload already lives in the target there, and only the source copy is left to release,
+ * which nothing else would ever remove, so its attempts keep backing off instead.
+ */
 export const MAX_MOVE_ATTEMPTS = 5;
+/** A step deferred by a busy lock (a download, a backup pin) is tried again this soon. */
+export const MOVE_RETRY_SECONDS = 5;
+/** A step waiting for a storage that is unavailable or read-only now is tried again this late. */
+export const MOVE_WAIT_SECONDS = 300;
 /** Moves planned by one command at most. */
 export const MAX_MOVES_PLANNED = 100_000;
 

@@ -10,6 +10,9 @@ export const MOVE_LEASE_SECONDS = 60;
  * Version 45 (ADR 0083, N2), expand-only: moves of published blobs between storages. One
  * active move per upload (partial unique index); `generation` fences every write of the worker
  * that holds the lease. Not part of a backup: a move is a property of the source's storages.
+ * No foreign key to the upload: a move outlives its upload's deletion and then removes the
+ * copy it made (`skipped`), and the upload lock, not a row lock, orders the two. The states
+ * are a literal: a migration never changes with the code that runs after it.
  */
 export async function migrateBlobMoves(client: PoolClient): Promise<void> {
   if ((await client.query('SELECT version FROM arkvory_migrations WHERE version=45')).rowCount)
@@ -20,7 +23,8 @@ export async function migrateBlobMoves(client: PoolClient): Promise<void> {
       upload_id uuid NOT NULL,
       from_backend varchar(64) NOT NULL,
       to_backend varchar(64) NOT NULL,
-      state varchar(16) NOT NULL CHECK (state IN (${BLOB_MOVE_STATES.map((s) => `'${s}'`).join(',')})),
+      state varchar(16) NOT NULL
+        CHECK (state IN ('planned','copied','switched','released','skipped','failed')),
       generation bigint NOT NULL DEFAULT 0,
       lease_until timestamptz,
       attempts integer NOT NULL DEFAULT 0 CHECK (attempts >= 0),
@@ -67,8 +71,9 @@ export class PostgresBlobMoves implements BlobMoveStore {
 
   async plan(plan: MovePlan): Promise<number> {
     const result = await this.pool.query(
-      `INSERT INTO arkvory_blob_moves(id, upload_id, from_backend, to_backend, state)
-       SELECT gen_random_uuid(), u.id, $1::varchar, $2::varchar, 'planned' FROM arkvory_uploads u
+      `INSERT INTO arkvory_blob_moves(id, upload_id, from_backend, to_backend, state, lease_until)
+       SELECT gen_random_uuid(), u.id, $1::varchar, $2::varchar, 'planned', now()
+       FROM arkvory_uploads u
        WHERE u.status='available' AND u.storage_backend=$1 AND ($3::text IS NULL OR u.repository=$3)
          AND NOT EXISTS (SELECT 1 FROM arkvory_blob_moves m WHERE m.upload_id=u.id
            AND m.state IN ('planned','copied','switched'))
@@ -91,13 +96,17 @@ export class PostgresBlobMoves implements BlobMoveStore {
     return counts;
   }
 
+  /**
+   * Due first (`lease_until`: planning time, or the end of a deferral or backoff), so moves
+   * that keep waiting for a storage or a lock never hold back the ones planned behind them.
+   */
   async claim(limit: number): Promise<readonly ClaimedMove[]> {
     const result = await this.pool.query<MoveRow>(
       `UPDATE arkvory_blob_moves SET generation=generation+1,
          lease_until=now()+make_interval(secs=>$2::integer), updated_at=now()
        WHERE id IN (SELECT id FROM arkvory_blob_moves
          WHERE state IN ('planned','copied','switched') AND (lease_until IS NULL OR lease_until<now())
-         ORDER BY created_at, id LIMIT $1 FOR UPDATE SKIP LOCKED)
+         ORDER BY lease_until, created_at, id LIMIT $1 FOR UPDATE SKIP LOCKED)
        RETURNING id, upload_id, from_backend, to_backend, state, generation::text`,
       [limit, MOVE_LEASE_SECONDS],
     );
@@ -118,16 +127,19 @@ export class PostgresBlobMoves implements BlobMoveStore {
     return this.fenced(move, 'state=$4, error_code=NULL', [state]);
   }
 
-  defer(move: ClaimedMove): Promise<boolean> {
-    return this.fenced(move, 'lease_until=now()+make_interval(secs=>$4::integer)', [5]);
+  defer(move: ClaimedMove, seconds: number): Promise<boolean> {
+    if (!Number.isSafeInteger(seconds) || seconds < 1) throw new Error('Invalid move deferral');
+    return this.fenced(move, 'lease_until=now()+make_interval(secs=>$4::integer)', [seconds]);
   }
 
+  /** A move in `switched` only backs off: its source copy has no other way to be released. */
   fail(move: ClaimedMove, code: string, final: boolean): Promise<boolean> {
     return this.fenced(
       move,
       `attempts=attempts+1, error_code=$4,
-       state=CASE WHEN $5::boolean OR attempts+1 >= $6::integer THEN 'failed' ELSE state END,
-       lease_until=now()+make_interval(secs=>least(300, 5 * power(2, attempts)::integer))`,
+       state=CASE WHEN state<>'switched' AND ($5::boolean OR attempts+1 >= $6::integer)
+         THEN 'failed' ELSE state END,
+       lease_until=now()+make_interval(secs=>least(300, 5 * power(2, least(attempts, 6))::integer))`,
       [code.slice(0, 64), final, MAX_MOVE_ATTEMPTS],
     );
   }

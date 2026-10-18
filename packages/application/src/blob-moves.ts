@@ -1,6 +1,8 @@
 import {
   ArkvoryError,
   MAX_MOVES_PLANNED,
+  MOVE_RETRY_SECONDS,
+  MOVE_WAIT_SECONDS,
   afterStep,
   isActiveMove,
   requireMove,
@@ -39,9 +41,16 @@ export interface BlobMoveStore {
   claim(limit: number): Promise<readonly ClaimedMove[]>;
   /** Records a step done; false when the lease was lost (the move is someone else's). */
   advance(move: ClaimedMove, state: BlobMoveState): Promise<boolean>;
-  /** Gives the lease back without counting an attempt: a lock or a storage was busy. */
-  defer(move: ClaimedMove): Promise<boolean>;
-  /** Counts a failed attempt; the last one, or a `final` failure, ends the move as `failed`. */
+  /**
+   * Gives the lease back for `seconds` without counting an attempt: a lock or a storage was
+   * busy. Moves are claimed in the order they are due, so a deferred one never holds back the
+   * moves planned behind it.
+   */
+  defer(move: ClaimedMove, seconds: number): Promise<boolean>;
+  /**
+   * Counts a failed attempt; the last one, or a `final` failure, ends the move as `failed`. A
+   * move in `switched` never ends as `failed` (see `MAX_MOVE_ATTEMPTS`): it keeps backing off.
+   */
   fail(move: ClaimedMove, code: string, final: boolean): Promise<boolean>;
   /** Extends the lease during a long copy; false when it was lost. */
   heartbeat(move: ClaimedMove): Promise<boolean>;
@@ -57,20 +66,33 @@ export interface MovedUpload {
 export interface UploadStorageSwitch {
   read(uploadId: string): Promise<MovedUpload | null>;
   /**
-   * In one short transaction under the upload's lock, no I/O: the upload's storage becomes `to`
-   * when it is still published in `from`. `switched` also when it already is in `to`; `gone`
-   * when it is neither; `busy` when the upload is locked now.
+   * In one short transaction under the upload's lock, no I/O: the upload's storage becomes
+   * `move.to` when it is still published in `move.from`. `switched` also when it already is in
+   * `to`; `gone` when it is neither; `busy` when the upload is locked now; `lost` when `move`
+   * no longer holds its lease (generation and state), checked in the same transaction: a stale
+   * holder never switches an upload that a later move has already moved on.
    */
-  switchStorage(uploadId: string, from: string, to: string): Promise<'switched' | 'gone' | 'busy'>;
+  switchStorage(move: ClaimedMove): Promise<'switched' | 'gone' | 'busy' | 'lost'>;
 }
 
 /**
  * Removal of one copy in the core's deletion order (ADR 0035, ADR 0054): upload lock → content
- * lock (try exclusive) → unlink admission (barrier open, no backup pin) → collect → unlock.
- * False when any of them is busy: the removal is deferred, never waited for.
+ * lock (try exclusive) → lease of `move` → unlink admission (barrier open, no backup pin) →
+ * collect → unlock. `busy` when any of them is busy: the removal is deferred, never waited
+ * for; `lost` when `move` no longer holds its lease. Under the upload lock the copy is never
+ * the upload's current one: a removal of the live copy is refused with `conflict`.
  */
 export interface CopyRemoval {
-  remove(uploadId: string, backend: string, cancellation: Cancellation): Promise<boolean>;
+  remove(
+    move: ClaimedMove,
+    backend: string,
+    cancellation: Cancellation,
+  ): Promise<'removed' | 'busy' | 'lost'>;
+}
+
+/** Storages a removal can reach now: any other one keeps its files until it is back (L5). */
+function collectable(state: string): boolean {
+  return state === 'accepting' || state === 'not_accepting';
 }
 
 /**
@@ -171,14 +193,17 @@ export class RehomeBlobs {
     if (upload?.status !== 'available' || upload.storageBackend !== move.from)
       return this.settle(move, move.to, 'skipped', cancellation);
     const target = this.states.state(move.to);
-    if (target === 'unavailable') return this.defer(move);
+    // An unmounted volume on either side waits for its return instead of using up attempts.
+    if (target === 'unavailable' || this.states.state(move.from) === 'unavailable')
+      return this.defer(move, MOVE_WAIT_SECONDS);
     if (target !== 'accepting') return this.failure(move, 'backend_read_only', true);
     let pin;
     try {
       pin = await this.pins.acquire(move.uploadId);
     } catch (error) {
       // Being reclaimed: the next attempt finds the upload cancelled and skips it.
-      if (error instanceof ArkvoryError && error.code === 'busy') return this.defer(move);
+      if (error instanceof ArkvoryError && error.code === 'busy')
+        return this.defer(move, MOVE_RETRY_SECONDS);
       throw error;
     }
     try {
@@ -200,21 +225,29 @@ export class RehomeBlobs {
   }
 
   private async switch(move: ClaimedMove, cancellation: Cancellation): Promise<MoveOutcome> {
-    const result = await this.uploads.switchStorage(move.uploadId, move.from, move.to);
-    if (result === 'busy') return this.defer(move);
+    const result = await this.uploads.switchStorage(move);
+    if (result === 'lost') return { kind: 'lost' };
+    if (result === 'busy') return this.defer(move, MOVE_RETRY_SECONDS);
     // Cancelled or deleted meanwhile: the copy in the target has no owner and is removed.
     if (result === 'gone') return this.settle(move, move.to, 'skipped', cancellation);
     return this.advance(move, 'switched');
   }
 
-  /** Removes the copy in `backend` and records `state`, or defers while anything is busy. */
+  /**
+   * Removes the copy in `backend` and records `state`, or defers while anything is busy. A
+   * storage that cannot remove files now (read-only, the source of an evacuation; unavailable)
+   * is not even asked: the step waits for it without taking locks or connections.
+   */
   private async settle(
     move: ClaimedMove,
     backend: string,
     state: BlobMoveState,
     cancellation: Cancellation,
   ): Promise<MoveOutcome> {
-    if (!(await this.removal.remove(move.uploadId, backend, cancellation))) return this.defer(move);
+    if (!collectable(this.states.state(backend))) return this.defer(move, MOVE_WAIT_SECONDS);
+    const removed = await this.removal.remove(move, backend, cancellation);
+    if (removed === 'lost') return { kind: 'lost' };
+    if (removed === 'busy') return this.defer(move, MOVE_RETRY_SECONDS);
     return this.advance(move, state);
   }
 
@@ -222,7 +255,7 @@ export class RehomeBlobs {
     return (await this.moves.advance(move, state)) ? { kind: 'advanced', state } : { kind: 'lost' };
   }
 
-  private async defer(move: ClaimedMove): Promise<MoveOutcome> {
-    return { kind: (await this.moves.defer(move)) ? 'deferred' : 'lost' };
+  private async defer(move: ClaimedMove, seconds: number): Promise<MoveOutcome> {
+    return { kind: (await this.moves.defer(move, seconds)) ? 'deferred' : 'lost' };
   }
 }
