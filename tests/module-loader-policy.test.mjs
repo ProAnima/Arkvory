@@ -7,12 +7,14 @@ const problems = (file, text) =>
   analyzeSource(file, text).problems.filter((problem) => problem.includes('computed specifier'));
 
 test('only the listed loaders may import code by a computed specifier (ADR 0078, 3.3)', () => {
-  // The launchers of the core release and the one loader of signed modules (stage X4).
+  // The launchers of the core release, the confinement of every entry's resolution and the one
+  // loader of signed modules (stage X4).
   assert.deepEqual(Object.keys(COMPUTED_IMPORTS).sort(), [
     'apps/deploy/src/manage.ts',
     'apps/deploy/src/remote-workflow.ts',
     'apps/deploy/src/runtime.ts',
     'packages/infrastructure/src/module-import.ts',
+    'packages/resolution/src/index.ts',
   ]);
   assert.equal(problems('apps/deploy/src/runtime.ts', 'await import(entry);').length, 0);
   assert.equal(

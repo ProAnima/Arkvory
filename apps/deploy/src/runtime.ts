@@ -1,5 +1,6 @@
 import { isAbsolute, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { allowResolutionUnder } from '@proanima/arkvory-resolution';
 import { jsonFile, inside } from './files.js';
 import { record, parseInstallation } from './model.js';
 import { runDatabase } from './database-runner.js';
@@ -89,6 +90,9 @@ export async function runRole(
       if (!stopRequested) process.exitCode = 1;
     });
   }
+  // The entry process confined resolution first (launcher.mjs, container.js); the release is the
+  // directory its code loads from. Unconfined callers fail here (ADR 0031, addendum 2026-10-18).
+  allowResolutionUnder(directory);
   await import(pathToFileURL(entry).href);
 }
 export async function launch(root: string, role: string, args: readonly string[] = []) {

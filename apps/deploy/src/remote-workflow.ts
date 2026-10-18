@@ -208,13 +208,21 @@ export class RemoteWorkflow {
     this.owner = undefined;
   }
 }
+/**
+ * Confines module resolution of a server-side script to the installed release before it imports
+ * release code (ADR 0031, addendum 2026-10-18). A release older than the confinement has no
+ * confine.js and runs unconfined, as before.
+ */
+const confineRelease = ` const release=path.join(root,'releases',state.current.version), confine=path.join(release,'apps/deploy/dist/confine.js');
+ if(await fs.access(confine).then(()=>true,()=>false))await import(require('node:url').pathToFileURL(confine).href);`;
 // Health credentials stay on the server; the client only observes readiness success/failure.
 const readinessScript = `(async()=>{
  const fs=require('node:fs/promises'), path=require('node:path'), {pathToFileURL}=require('node:url');
  const root=process.platform==='win32'?'C:/ProgramData/ProAnima/Arkvory':'/opt/proanima-arkvory';
  const state=JSON.parse(await fs.readFile(path.join(root,'installation.json'),'utf8'));
  if(!/^[0-9]+\\.[0-9]+\\.[0-9]+$/.test(state.current.version))throw Error('version');
- const {Services}=await import(pathToFileURL(path.join(root,'releases',state.current.version,'apps/deploy/dist/services.js')).href);
+${confineRelease}
+ const {Services}=await import(pathToFileURL(path.join(release,'apps/deploy/dist/services.js')).href);
  await new Services(root,state).healthy();
 })().catch(()=>{process.exitCode=1;});`;
 const ownerScript = `(async()=>{
@@ -223,8 +231,9 @@ const ownerScript = `(async()=>{
  let input=''; for await(const chunk of process.stdin){input+=chunk;if(input.length>8192)throw Error('input');}
  const state=JSON.parse(await fs.readFile(path.join(root,'installation.json'),'utf8'));
  if(!/^[0-9]+\\.[0-9]+\\.[0-9]+$/.test(state.current.version))throw Error('version');
+${confineRelease}
  const {pathToFileURL}=require('node:url');
- const owner=await import(pathToFileURL(path.join(root,'releases',state.current.version,'apps/deploy/dist/owner.js')).href);
+ const owner=await import(pathToFileURL(path.join(release,'apps/deploy/dist/owner.js')).href);
  const file=path.join(root,'config/remote-owner.json');
  await fs.writeFile(file,Buffer.from(input,'base64'),{flag:'wx',mode:0o600});
  try{await owner.createOwner(root,file);}finally{await fs.rm(file,{force:true});}

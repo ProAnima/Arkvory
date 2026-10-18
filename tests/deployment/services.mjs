@@ -1,5 +1,14 @@
-import { execFileSync } from 'node:child_process';
-import { mkdtemp, mkdir, writeFile, copyFile, readFile, readdir } from 'node:fs/promises';
+import { execFileSync, spawnSync } from 'node:child_process';
+import {
+  mkdtemp,
+  mkdir,
+  writeFile,
+  copyFile,
+  readFile,
+  readdir,
+  symlink,
+  unlink,
+} from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import assert from 'node:assert/strict';
@@ -81,8 +90,63 @@ function openVault() {
       prefix,
     ]);
 }
+/** Windows: one PowerShell expression evaluated for its output. */
+const powershellValue = (expression) =>
+  execFileSync('powershell.exe', ['-NoProfile', '-Command', expression], {
+    env: environment,
+    encoding: 'utf8',
+    windowsHide: true,
+  }).trim();
+const quoted = (path) => `'${path.replaceAll("'", "''")}'`;
+const ownerOf = (path) =>
+  powershellValue(
+    `(Get-Acl -LiteralPath ${quoted(path)}).GetOwner([Security.Principal.SecurityIdentifier]).Value`,
+  );
+/**
+ * A %ProgramData%\ProAnima that is a link (a user may create it before Setup) is refused before
+ * the script changes anything: its target stays the user's (ADR 0031, addendum 2026-10-18).
+ */
+async function refuseLinkedVendor() {
+  // Beside the gate's root, in the machine-wide directory the installer uses.
+  const base = await mkdtemp(join(root, '..', 'arkvory-vendor-gate-'));
+  const target = join(base, 'target');
+  await mkdir(join(target, 'Arkvory'), { recursive: true });
+  const vendor = join(base, 'ProAnima');
+  await symlink(target, vendor, 'junction');
+  try {
+    const env = Object.fromEntries(
+      Object.entries(environment).filter(([key]) => key.toLowerCase() !== 'programdata'),
+    );
+    env.ProgramData = base;
+    const script = resolve('deploy/register-windows.ps1');
+    const linked = join(vendor, 'Arkvory');
+    const result = spawnSync(
+      'powershell.exe',
+      [
+        ...['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', script],
+        ...['-Root', linked, '-Node', process.execPath, '-Prefix', prefix],
+      ],
+      { env, encoding: 'utf8', windowsHide: true, timeout: 60_000 },
+    );
+    assert.notEqual(result.status, 0, 'A linked ProAnima directory must be refused');
+    assert.match(result.stderr + result.stdout, /must not be a link/);
+    const protectedRoot = `(Get-Acl -LiteralPath ${quoted(join(target, 'Arkvory'))}).AreAccessRulesProtected`;
+    assert.equal(powershellValue(protectedRoot), 'False', 'Refused before any change');
+  } finally {
+    // A recursive removal does not take a Windows junction.
+    await unlink(vendor);
+  }
+}
 try {
+  if (windows) {
+    await refuseLinkedVendor();
+    // A root another account owns keeps that account able to rewrite its DACL: install and
+    // repair give it to Administrators.
+    const self = powershellValue('[Security.Principal.WindowsIdentity]::GetCurrent().User.Value');
+    run('icacls.exe', [root, '/setowner', `*${self}`]);
+  }
   register();
+  if (windows) assert.equal(ownerOf(root), 'S-1-5-32-544', 'Administrators own the root');
   openVault();
   if (!windows) run('sudo', ['touch', marker]);
   // Repair must restore persisted boot/recovery settings, not merely rewrite configuration files.

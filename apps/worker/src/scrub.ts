@@ -1,3 +1,4 @@
+import './confine.js';
 import { PostgresCleanup, failureCause } from '@proanima/arkvory-infrastructure';
 import { ArkvoryError } from '@proanima/arkvory-domain';
 import type { BlobStore } from '@proanima/arkvory-application';

@@ -1,3 +1,4 @@
+import './confine.js';
 import { resolve, join } from 'node:path';
 import { jsonFile } from './files.js';
 import { exclusive } from './operation-lock.js';

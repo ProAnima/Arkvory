@@ -19,6 +19,10 @@
       "allowed": []
     },
     {
+      "path": "packages/resolution",
+      "allowed": []
+    },
+    {
       "path": "packages/signing",
       "allowed": ["packages/extension-api"]
     },
@@ -41,7 +45,7 @@
     },
     {
       "path": "apps/cli",
-      "allowed": ["packages/sdk", "packages/contracts"]
+      "allowed": ["packages/sdk", "packages/contracts", "packages/resolution"]
     },
     {
       "path": "apps/api",
@@ -50,7 +54,8 @@
         "packages/domain",
         "packages/contracts",
         "packages/infrastructure",
-        "packages/extension-api"
+        "packages/extension-api",
+        "packages/resolution"
       ]
     },
     {
@@ -59,7 +64,8 @@
         "packages/application",
         "packages/domain",
         "packages/infrastructure",
-        "packages/sdk"
+        "packages/sdk",
+        "packages/resolution"
       ]
     },
     {
@@ -68,7 +74,12 @@
     },
     {
       "path": "apps/backup",
-      "allowed": ["packages/application", "packages/domain", "packages/infrastructure"]
+      "allowed": [
+        "packages/application",
+        "packages/domain",
+        "packages/infrastructure",
+        "packages/resolution"
+      ]
     },
     {
       "path": "apps/web",
@@ -76,7 +87,12 @@
     },
     {
       "path": "apps/deploy",
-      "allowed": ["packages/contracts", "packages/extension-api", "packages/signing"]
+      "allowed": [
+        "packages/contracts",
+        "packages/extension-api",
+        "packages/signing",
+        "packages/resolution"
+      ]
     }
   ]
 }

@@ -8,6 +8,7 @@ import { source, stage } from '../../apps/deploy/dist/staging.js';
 import { verifyReleaseFiles } from '../../scripts/release-files.mjs';
 import { verifyInstallers } from '../../scripts/verify-installers.mjs';
 import { extractArchive } from '../../apps/deploy/dist/archive.js';
+import { checkConfinement } from './confinement.mjs';
 
 const root = await mkdtemp(join(tmpdir(), 'arkvory-package-gate-'));
 const output = process.env.ARKVORY_RELEASE_ARTIFACT ?? join(root, 'artifact');
@@ -134,8 +135,9 @@ assert.equal(
   JSON.parse(await readFile(join(runtime, 'release.json'), 'utf8')).version,
   release.version,
 );
+await checkConfinement({ root, output, target, runtime });
 console.log(
-  'Portable release packaging, extraction, standalone bootstrap and production dependency resolution passed',
+  'Portable release packaging, extraction, standalone bootstrap and production dependency resolution confined to the release passed',
 );
 // Kept on failure for diagnosis; a passing run must not accumulate candidates in TEMP.
 await rm(root, { recursive: true, force: true, maxRetries: 3 });
