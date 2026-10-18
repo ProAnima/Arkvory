@@ -312,14 +312,16 @@ function rawZip(entries) {
   const locals = [];
   const centrals = [];
   let offset = 0;
-  for (const { name, data, mode = 0o100644, method = 0, size = data.length, at } of entries) {
+  for (const entry of entries) {
+    const { name, data, mode = 0o100644, method = 0, size = data.length, at } = entry;
+    const crc = entry.crc ?? crc32(data);
     const nameBytes = Buffer.from(name);
     const local = Buffer.alloc(30);
     local.writeUInt32LE(0x04034b50, 0);
     local.writeUInt16LE(20, 4);
     local.writeUInt16LE(0x800, 6);
     local.writeUInt16LE(method, 8);
-    local.writeUInt32LE(crc32(data), 14);
+    local.writeUInt32LE(crc, 14);
     local.writeUInt32LE(data.length, 18);
     local.writeUInt32LE(size, 22);
     local.writeUInt16LE(nameBytes.length, 26);
@@ -330,7 +332,7 @@ function rawZip(entries) {
     central.writeUInt16LE(20, 6);
     central.writeUInt16LE(0x800, 8);
     central.writeUInt16LE(method, 10);
-    central.writeUInt32LE(crc32(data), 16);
+    central.writeUInt32LE(crc, 16);
     central.writeUInt32LE(data.length, 20);
     central.writeUInt32LE(size, 24);
     central.writeUInt16LE(nameBytes.length, 28);
@@ -487,4 +489,18 @@ test('a folder swapped for a link while a file is written never receives it', as
     (await readdir(outside)).filter((name) => name === 'file.txt'),
     [],
   );
+});
+
+test('verify from the whole archive checks each entry against its CRC-32 too', async (t) => {
+  const data = Buffer.from('content whose checksum in the archive is wrong');
+  const bytes = rawZip([{ name: 'file.txt', data, crc: (crc32(data) ^ 1) >>> 0 }]);
+  const { connected } = await serve(t, bytes, { table: null });
+  const target = join(await temporary(t), 'tree');
+  await mkdir(target);
+  await writeFile(join(target, 'file.txt'), data);
+  // The same entry cannot be pulled (checksum_mismatch), so it cannot verify either.
+  await assert.rejects(run(connected, 'verify', 'a1', target), { code: 'checksum_mismatch' });
+  await assert.rejects(run(connected, 'pull', 'a1', join(target, 'new')), {
+    code: 'checksum_mismatch',
+  });
 });

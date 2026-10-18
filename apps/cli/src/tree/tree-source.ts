@@ -1,5 +1,5 @@
 import { open } from 'node:fs/promises';
-import { createInflateRaw } from 'node:zlib';
+import { crc32, createInflateRaw } from 'node:zlib';
 import { Readable, pipeline } from 'node:stream';
 import { createHash } from 'node:crypto';
 import { ArkvoryHttpError } from '@proanima/arkvory-sdk';
@@ -194,7 +194,17 @@ export async function archiveSource(file: string): Promise<TreeSource> {
         const kept = digests.get(entry.path);
         if (kept !== undefined) return kept;
         const hash = createHash('sha256');
-        for await (const chunk of content(entry, signal)) hash.update(chunk);
+        let size = 0;
+        let crc = 0;
+        for await (const chunk of content(entry, signal)) {
+          hash.update(chunk);
+          crc = crc32(chunk, crc);
+          size += chunk.length;
+        }
+        // The archive's own checks, as the writer applies them: an entry that cannot be
+        // pulled does not verify either.
+        if (size !== entry.size || crc >>> 0 !== (entry.crc32 ?? 0) >>> 0)
+          throw new CliError('checksum_mismatch', 5);
         const value = hash.digest('hex');
         digests.set(entry.path, value);
         return value;
